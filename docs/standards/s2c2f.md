@@ -332,7 +332,7 @@ pipeline_check --pipeline aws --standard s2c2f --standard owasp_cicd_top_10
 
 Every check that evidences this standard, rendered once with its detection mechanism, recommendation, and any known false-positive modes or real-world incident references. The per-control tables above link to the matching block here.
 
-#### `ADO-001`: Task reference not pinned to specific version <span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> { #detail-ado-001 }
+### `ADO-001`: Task reference not pinned to specific version <span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> { #detail-ado-001 }
 
 **Evidences:** [`UPD-1`](#ctrl-upd-1) L1: Update vulnerable OSS manually (pin + track versions).
 
@@ -344,7 +344,7 @@ Every check that evidences this standard, rendered once with its detection mecha
 
 **Source:** [`ADO-001`](../providers/azure.md#ado-001) in the [Azure DevOps provider](../providers/azure.md).
 
-#### `ADO-004`: Deployment job missing environment binding <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-ado-004 }
+### `ADO-004`: Deployment job missing environment binding <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-ado-004 }
 
 **Evidences:** [`ENF-1`](#ctrl-enf-1) L2: Enforce security policy of OSS usage (block on violation).
 
@@ -358,7 +358,7 @@ Every check that evidences this standard, rendered once with its detection mecha
 
 **Source:** [`ADO-004`](../providers/azure.md#ado-004) in the [Azure DevOps provider](../providers/azure.md).
 
-#### `ADO-005`: Container image not pinned to specific version <span class="pg-sev pg-sev--high">HIGH</span> { #detail-ado-005 }
+### `ADO-005`: Container image not pinned to specific version <span class="pg-sev pg-sev--high">HIGH</span> { #detail-ado-005 }
 
 **Evidences:** [`UPD-1`](#ctrl-upd-1) L1: Update vulnerable OSS manually (pin + track versions).
 
@@ -368,7 +368,7 @@ Every check that evidences this standard, rendered once with its detection mecha
 
 **Source:** [`ADO-005`](../providers/azure.md#ado-005) in the [Azure DevOps provider](../providers/azure.md).
 
-#### `ADO-006`: Artifacts not signed <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-ado-006 }
+### `ADO-006`: Artifacts not signed <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-ado-006 }
 
 **Evidences:** [`REB-2`](#ctrl-reb-2) L4: Digitally sign rebuilt / produced OSS artifacts.
 
@@ -378,7 +378,7 @@ Every check that evidences this standard, rendered once with its detection mecha
 
 **Source:** [`ADO-006`](../providers/azure.md#ado-006) in the [Azure DevOps provider](../providers/azure.md).
 
-#### `ADO-007`: SBOM not produced <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-ado-007 }
+### `ADO-007`: SBOM not produced <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-ado-007 }
 
 **Evidences:** [`REB-3`](#ctrl-reb-3) L4: Generate SBOMs for artifacts produced.
 
@@ -388,7 +388,7 @@ Every check that evidences this standard, rendered once with its detection mecha
 
 **Source:** [`ADO-007`](../providers/azure.md#ado-007) in the [Azure DevOps provider](../providers/azure.md).
 
-#### `ADO-009`: Container image pinned by tag rather than sha256 digest <span class="pg-sev pg-sev--low">LOW</span> { #detail-ado-009 }
+### `ADO-009`: Container image pinned by tag rather than sha256 digest <span class="pg-sev pg-sev--low">LOW</span> { #detail-ado-009 }
 
 **Evidences:** [`UPD-1`](#ctrl-upd-1) L1: Update vulnerable OSS manually (pin + track versions).
 
@@ -398,7 +398,7 @@ Every check that evidences this standard, rendered once with its detection mecha
 
 **Source:** [`ADO-009`](../providers/azure.md#ado-009) in the [Azure DevOps provider](../providers/azure.md).
 
-#### `ADO-018`: Package install from insecure source <span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> { #detail-ado-018 }
+### `ADO-018`: Package install from insecure source <span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> { #detail-ado-018 }
 
 **Evidences:** [`ING-1`](#ctrl-ing-1) L1: Use package managers trusted by your organization.
 
@@ -410,7 +410,7 @@ Every check that evidences this standard, rendered once with its detection mecha
 
 **Source:** [`ADO-018`](../providers/azure.md#ado-018) in the [Azure DevOps provider](../providers/azure.md).
 
-#### `ADO-020`: No vulnerability scanning step <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-ado-020 }
+### `ADO-020`: No vulnerability scanning step <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-ado-020 }
 
 **Evidences:** [`SCA-1`](#ctrl-sca-1) L1: Scan OSS for known vulnerabilities.
 
@@ -420,7 +420,7 @@ Every check that evidences this standard, rendered once with its detection mecha
 
 **Source:** [`ADO-020`](../providers/azure.md#ado-020) in the [Azure DevOps provider](../providers/azure.md).
 
-#### `ADO-021`: Package install without lockfile enforcement <span class="pg-sev pg-sev--medium">MEDIUM</span> <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> { #detail-ado-021 }
+### `ADO-021`: Package install without lockfile enforcement <span class="pg-sev pg-sev--medium">MEDIUM</span> <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> { #detail-ado-021 }
 
 **Evidences:** [`UPD-1`](#ctrl-upd-1) L1: Update vulnerable OSS manually (pin + track versions).
 
@@ -432,7 +432,7 @@ Every check that evidences this standard, rendered once with its detection mecha
 
 **Source:** [`ADO-021`](../providers/azure.md#ado-021) in the [Azure DevOps provider](../providers/azure.md).
 
-#### `ADO-022`: Dependency update command bypasses lockfile pins <span class="pg-sev pg-sev--medium">MEDIUM</span> <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> { #detail-ado-022 }
+### `ADO-022`: Dependency update command bypasses lockfile pins <span class="pg-sev pg-sev--medium">MEDIUM</span> <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> { #detail-ado-022 }
 
 **Evidences:** [`UPD-2`](#ctrl-upd-2) L3: Enable automated OSS updates (Dependabot / Renovate).
 
@@ -448,7 +448,7 @@ Every check that evidences this standard, rendered once with its detection mecha
 
 **Source:** [`ADO-022`](../providers/azure.md#ado-022) in the [Azure DevOps provider](../providers/azure.md).
 
-#### `ADO-023`: TLS / certificate verification bypass <span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> { #detail-ado-023 }
+### `ADO-023`: TLS / certificate verification bypass <span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> { #detail-ado-023 }
 
 **Evidences:** [`ING-1`](#ctrl-ing-1) L1: Use package managers trusted by your organization.
 
@@ -460,7 +460,7 @@ Every check that evidences this standard, rendered once with its detection mecha
 
 **Source:** [`ADO-023`](../providers/azure.md#ado-023) in the [Azure DevOps provider](../providers/azure.md).
 
-#### `ADO-024`: No SLSA provenance attestation produced <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-ado-024 }
+### `ADO-024`: No SLSA provenance attestation produced <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-ado-024 }
 
 **Evidences:** [`REB-4`](#ctrl-reb-4) L4: Digitally sign SBOMs produced (attested provenance).
 
@@ -470,7 +470,7 @@ Every check that evidences this standard, rendered once with its detection mecha
 
 **Source:** [`ADO-024`](../providers/azure.md#ado-024) in the [Azure DevOps provider](../providers/azure.md).
 
-#### `ADO-025`: Cross-repo template not pinned to commit SHA <span class="pg-sev pg-sev--high">HIGH</span> { #detail-ado-025 }
+### `ADO-025`: Cross-repo template not pinned to commit SHA <span class="pg-sev pg-sev--high">HIGH</span> { #detail-ado-025 }
 
 **Evidences:** [`UPD-1`](#ctrl-upd-1) L1: Update vulnerable OSS manually (pin + track versions).
 
@@ -480,7 +480,7 @@ Every check that evidences this standard, rendered once with its detection mecha
 
 **Source:** [`ADO-025`](../providers/azure.md#ado-025) in the [Azure DevOps provider](../providers/azure.md).
 
-#### `ADO-026`: Pipeline contains indicators of malicious activity <span class="pg-sev pg-sev--critical">CRITICAL</span> { #detail-ado-026 }
+### `ADO-026`: Pipeline contains indicators of malicious activity <span class="pg-sev pg-sev--critical">CRITICAL</span> { #detail-ado-026 }
 
 **Evidences:** [`SCA-3`](#ctrl-sca-3) L2: Scan OSS for malware.
 
@@ -495,7 +495,7 @@ Every check that evidences this standard, rendered once with its detection mecha
 
 **Source:** [`ADO-026`](../providers/azure.md#ado-026) in the [Azure DevOps provider](../providers/azure.md).
 
-#### `ADO-028`: Package install bypasses registry integrity (git / path / tarball source) <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-ado-028 }
+### `ADO-028`: Package install bypasses registry integrity (git / path / tarball source) <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-ado-028 }
 
 **Evidences:** [`ING-1`](#ctrl-ing-1) L1: Use package managers trusted by your organization.
 
@@ -505,7 +505,7 @@ Every check that evidences this standard, rendered once with its detection mecha
 
 **Source:** [`ADO-028`](../providers/azure.md#ado-028) in the [Azure DevOps provider](../providers/azure.md).
 
-#### `ARGO-001`: Argo template container image not pinned to a digest <span class="pg-sev pg-sev--high">HIGH</span> { #detail-argo-001 }
+### `ARGO-001`: Argo template container image not pinned to a digest <span class="pg-sev pg-sev--high">HIGH</span> { #detail-argo-001 }
 
 **Evidences:** [`UPD-1`](#ctrl-upd-1) L1: Update vulnerable OSS manually (pin + track versions).
 
@@ -515,7 +515,7 @@ Every check that evidences this standard, rendered once with its detection mecha
 
 **Source:** [`ARGO-001`](../providers/argo.md#argo-001) in the [Argo Workflows provider](../providers/argo.md).
 
-#### `ARGO-008`: Argo script source pipes remote install or disables TLS <span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> { #detail-argo-008 }
+### `ARGO-008`: Argo script source pipes remote install or disables TLS <span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> { #detail-argo-008 }
 
 **Evidences:** [`ING-1`](#ctrl-ing-1) L1: Use package managers trusted by your organization.
 
@@ -527,7 +527,7 @@ Every check that evidences this standard, rendered once with its detection mecha
 
 **Source:** [`ARGO-008`](../providers/argo.md#argo-008) in the [Argo Workflows provider](../providers/argo.md).
 
-#### `ARGO-009`: Artifacts not signed (no cosign/sigstore step) <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-argo-009 }
+### `ARGO-009`: Artifacts not signed (no cosign/sigstore step) <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-argo-009 }
 
 **Evidences:** [`REB-2`](#ctrl-reb-2) L4: Digitally sign rebuilt / produced OSS artifacts.
 
@@ -537,7 +537,7 @@ Every check that evidences this standard, rendered once with its detection mecha
 
 **Source:** [`ARGO-009`](../providers/argo.md#argo-009) in the [Argo Workflows provider](../providers/argo.md).
 
-#### `ARGO-010`: No SBOM generated for build artifacts <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-argo-010 }
+### `ARGO-010`: No SBOM generated for build artifacts <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-argo-010 }
 
 **Evidences:** [`REB-3`](#ctrl-reb-3) L4: Generate SBOMs for artifacts produced.
 
@@ -547,7 +547,7 @@ Every check that evidences this standard, rendered once with its detection mecha
 
 **Source:** [`ARGO-010`](../providers/argo.md#argo-010) in the [Argo Workflows provider](../providers/argo.md).
 
-#### `ARGO-011`: No SLSA provenance attestation produced <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-argo-011 }
+### `ARGO-011`: No SLSA provenance attestation produced <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-argo-011 }
 
 **Evidences:** [`REB-4`](#ctrl-reb-4) L4: Digitally sign SBOMs produced (attested provenance).
 
@@ -557,7 +557,7 @@ Every check that evidences this standard, rendered once with its detection mecha
 
 **Source:** [`ARGO-011`](../providers/argo.md#argo-011) in the [Argo Workflows provider](../providers/argo.md).
 
-#### `ARGO-012`: No vulnerability scanning step <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-argo-012 }
+### `ARGO-012`: No vulnerability scanning step <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-argo-012 }
 
 **Evidences:** [`SCA-1`](#ctrl-sca-1) L1: Scan OSS for known vulnerabilities.
 
@@ -567,7 +567,7 @@ Every check that evidences this standard, rendered once with its detection mecha
 
 **Source:** [`ARGO-012`](../providers/argo.md#argo-012) in the [Argo Workflows provider](../providers/argo.md).
 
-#### `ATTEST-001`: SLSA provenance attests an untrusted builder identity <span class="pg-sev pg-sev--high">HIGH</span> { #detail-attest-001 }
+### `ATTEST-001`: SLSA provenance attests an untrusted builder identity <span class="pg-sev pg-sev--high">HIGH</span> { #detail-attest-001 }
 
 **Evidences:** [`REB-4`](#ctrl-reb-4) L4: Digitally sign SBOMs produced (attested provenance).
 
@@ -589,7 +589,7 @@ Triggering this rule means the bytes of the runtime image were produced by a bui
 
 **Source:** [`ATTEST-001`](../providers/oci.md#attest-001) in the [OCI manifest provider](../providers/oci.md).
 
-#### `ATTEST-002`: SLSA provenance source-repo claim is missing or unverifiable <span class="pg-sev pg-sev--high">HIGH</span> { #detail-attest-002 }
+### `ATTEST-002`: SLSA provenance source-repo claim is missing or unverifiable <span class="pg-sev pg-sev--high">HIGH</span> { #detail-attest-002 }
 
 **Evidences:** [`REB-4`](#ctrl-reb-4) L4: Digitally sign SBOMs produced (attested provenance).
 
@@ -618,7 +618,7 @@ Fires when:
 
 **Source:** [`ATTEST-002`](../providers/oci.md#attest-002) in the [OCI manifest provider](../providers/oci.md).
 
-#### `ATTEST-003`: SBOM contains floating-version dependencies <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-attest-003 }
+### `ATTEST-003`: SBOM contains floating-version dependencies <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-attest-003 }
 
 **Evidences:** [`REB-3`](#ctrl-reb-3) L4: Generate SBOMs for artifacts produced.
 
@@ -640,7 +640,7 @@ Detection walks every SBOM attestation (predicate types starting with ``https://
 
 **Source:** [`ATTEST-003`](../providers/oci.md#attest-003) in the [OCI manifest provider](../providers/oci.md).
 
-#### `ATTEST-004`: SLSA provenance ships without a resolved-dependencies set <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-attest-004 }
+### `ATTEST-004`: SLSA provenance ships without a resolved-dependencies set <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-attest-004 }
 
 **Evidences:** [`REB-3`](#ctrl-reb-3) L4: Generate SBOMs for artifacts produced.
 
@@ -709,7 +709,7 @@ $ docker buildx build \
 
 **Source:** [`ATTEST-004`](../providers/oci.md#attest-004) in the [OCI manifest provider](../providers/oci.md).
 
-#### `ATTEST-005`: In-toto Statement subject is missing or unpinned <span class="pg-sev pg-sev--high">HIGH</span> { #detail-attest-005 }
+### `ATTEST-005`: In-toto Statement subject is missing or unpinned <span class="pg-sev pg-sev--high">HIGH</span> { #detail-attest-005 }
 
 **Evidences:** [`REB-4`](#ctrl-reb-4) L4: Digitally sign SBOMs produced (attested provenance).
 
@@ -776,7 +776,7 @@ Hex validation is conservative: the value must consist entirely of ``0-9`` and `
 
 **Source:** [`ATTEST-005`](../providers/oci.md#attest-005) in the [OCI manifest provider](../providers/oci.md).
 
-#### `ATTEST-006`: SLSA provenance lacks a meaningful buildType <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-attest-006 }
+### `ATTEST-006`: SLSA provenance lacks a meaningful buildType <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-attest-006 }
 
 **Evidences:** [`REB-4`](#ctrl-reb-4) L4: Digitally sign SBOMs produced (attested provenance).
 
@@ -840,7 +840,7 @@ Doesn't validate that the URI is reachable or that the schema it names is one a 
 
 **Source:** [`ATTEST-006`](../providers/oci.md#attest-006) in the [OCI manifest provider](../providers/oci.md).
 
-#### `ATTEST-007`: SBOM packages lack supplier / originator attribution <span class="pg-sev pg-sev--low">LOW</span> { #detail-attest-007 }
+### `ATTEST-007`: SBOM packages lack supplier / originator attribution <span class="pg-sev pg-sev--low">LOW</span> { #detail-attest-007 }
 
 **Evidences:** [`REB-3`](#ctrl-reb-3) L4: Generate SBOMs for artifacts produced.
 
@@ -862,7 +862,7 @@ Severity LOW because the failure mode is downstream correlation friction rather 
 
 **Source:** [`ATTEST-007`](../providers/oci.md#attest-007) in the [OCI manifest provider](../providers/oci.md).
 
-#### `BB-001`: pipe: action not pinned to exact version <span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> { #detail-bb-001 }
+### `BB-001`: pipe: action not pinned to exact version <span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> { #detail-bb-001 }
 
 **Evidences:** [`UPD-1`](#ctrl-upd-1) L1: Update vulnerable OSS manually (pin + track versions).
 
@@ -874,7 +874,7 @@ Severity LOW because the failure mode is downstream correlation friction rather 
 
 **Source:** [`BB-001`](../providers/bitbucket.md#bb-001) in the [Bitbucket provider](../providers/bitbucket.md).
 
-#### `BB-004`: Deploy step missing `deployment:` environment gate <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-bb-004 }
+### `BB-004`: Deploy step missing `deployment:` environment gate <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-bb-004 }
 
 **Evidences:** [`ENF-1`](#ctrl-enf-1) L2: Enforce security policy of OSS usage (block on violation).
 
@@ -884,7 +884,7 @@ Severity LOW because the failure mode is downstream correlation friction rather 
 
 **Source:** [`BB-004`](../providers/bitbucket.md#bb-004) in the [Bitbucket provider](../providers/bitbucket.md).
 
-#### `BB-006`: Artifacts not signed <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-bb-006 }
+### `BB-006`: Artifacts not signed <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-bb-006 }
 
 **Evidences:** [`REB-2`](#ctrl-reb-2) L4: Digitally sign rebuilt / produced OSS artifacts.
 
@@ -894,7 +894,7 @@ Severity LOW because the failure mode is downstream correlation friction rather 
 
 **Source:** [`BB-006`](../providers/bitbucket.md#bb-006) in the [Bitbucket provider](../providers/bitbucket.md).
 
-#### `BB-007`: SBOM not produced <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-bb-007 }
+### `BB-007`: SBOM not produced <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-bb-007 }
 
 **Evidences:** [`REB-3`](#ctrl-reb-3) L4: Generate SBOMs for artifacts produced.
 
@@ -904,7 +904,7 @@ Severity LOW because the failure mode is downstream correlation friction rather 
 
 **Source:** [`BB-007`](../providers/bitbucket.md#bb-007) in the [Bitbucket provider](../providers/bitbucket.md).
 
-#### `BB-009`: pipe: pinned by version rather than sha256 digest <span class="pg-sev pg-sev--low">LOW</span> { #detail-bb-009 }
+### `BB-009`: pipe: pinned by version rather than sha256 digest <span class="pg-sev pg-sev--low">LOW</span> { #detail-bb-009 }
 
 **Evidences:** [`UPD-1`](#ctrl-upd-1) L1: Update vulnerable OSS manually (pin + track versions).
 
@@ -914,7 +914,7 @@ Severity LOW because the failure mode is downstream correlation friction rather 
 
 **Source:** [`BB-009`](../providers/bitbucket.md#bb-009) in the [Bitbucket provider](../providers/bitbucket.md).
 
-#### `BB-014`: Package install from insecure source <span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> { #detail-bb-014 }
+### `BB-014`: Package install from insecure source <span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> { #detail-bb-014 }
 
 **Evidences:** [`ING-1`](#ctrl-ing-1) L1: Use package managers trusted by your organization.
 
@@ -926,7 +926,7 @@ Severity LOW because the failure mode is downstream correlation friction rather 
 
 **Source:** [`BB-014`](../providers/bitbucket.md#bb-014) in the [Bitbucket provider](../providers/bitbucket.md).
 
-#### `BB-015`: No vulnerability scanning step <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-bb-015 }
+### `BB-015`: No vulnerability scanning step <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-bb-015 }
 
 **Evidences:** [`SCA-1`](#ctrl-sca-1) L1: Scan OSS for known vulnerabilities.
 
@@ -936,7 +936,7 @@ Severity LOW because the failure mode is downstream correlation friction rather 
 
 **Source:** [`BB-015`](../providers/bitbucket.md#bb-015) in the [Bitbucket provider](../providers/bitbucket.md).
 
-#### `BB-021`: Package install without lockfile enforcement <span class="pg-sev pg-sev--medium">MEDIUM</span> <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> { #detail-bb-021 }
+### `BB-021`: Package install without lockfile enforcement <span class="pg-sev pg-sev--medium">MEDIUM</span> <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> { #detail-bb-021 }
 
 **Evidences:** [`UPD-1`](#ctrl-upd-1) L1: Update vulnerable OSS manually (pin + track versions).
 
@@ -948,7 +948,7 @@ Severity LOW because the failure mode is downstream correlation friction rather 
 
 **Source:** [`BB-021`](../providers/bitbucket.md#bb-021) in the [Bitbucket provider](../providers/bitbucket.md).
 
-#### `BB-022`: Dependency update command bypasses lockfile pins <span class="pg-sev pg-sev--medium">MEDIUM</span> <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> { #detail-bb-022 }
+### `BB-022`: Dependency update command bypasses lockfile pins <span class="pg-sev pg-sev--medium">MEDIUM</span> <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> { #detail-bb-022 }
 
 **Evidences:** [`UPD-2`](#ctrl-upd-2) L3: Enable automated OSS updates (Dependabot / Renovate).
 
@@ -964,7 +964,7 @@ Severity LOW because the failure mode is downstream correlation friction rather 
 
 **Source:** [`BB-022`](../providers/bitbucket.md#bb-022) in the [Bitbucket provider](../providers/bitbucket.md).
 
-#### `BB-023`: TLS / certificate verification bypass <span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> { #detail-bb-023 }
+### `BB-023`: TLS / certificate verification bypass <span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> { #detail-bb-023 }
 
 **Evidences:** [`ING-1`](#ctrl-ing-1) L1: Use package managers trusted by your organization.
 
@@ -976,7 +976,7 @@ Severity LOW because the failure mode is downstream correlation friction rather 
 
 **Source:** [`BB-023`](../providers/bitbucket.md#bb-023) in the [Bitbucket provider](../providers/bitbucket.md).
 
-#### `BB-024`: No SLSA provenance attestation produced <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-bb-024 }
+### `BB-024`: No SLSA provenance attestation produced <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-bb-024 }
 
 **Evidences:** [`REB-4`](#ctrl-reb-4) L4: Digitally sign SBOMs produced (attested provenance).
 
@@ -986,7 +986,7 @@ Severity LOW because the failure mode is downstream correlation friction rather 
 
 **Source:** [`BB-024`](../providers/bitbucket.md#bb-024) in the [Bitbucket provider](../providers/bitbucket.md).
 
-#### `BB-025`: Pipeline contains indicators of malicious activity <span class="pg-sev pg-sev--critical">CRITICAL</span> { #detail-bb-025 }
+### `BB-025`: Pipeline contains indicators of malicious activity <span class="pg-sev pg-sev--critical">CRITICAL</span> { #detail-bb-025 }
 
 **Evidences:** [`SCA-3`](#ctrl-sca-3) L2: Scan OSS for malware.
 
@@ -1001,7 +1001,7 @@ Severity LOW because the failure mode is downstream correlation friction rather 
 
 **Source:** [`BB-025`](../providers/bitbucket.md#bb-025) in the [Bitbucket provider](../providers/bitbucket.md).
 
-#### `BB-027`: Package install bypasses registry integrity (git / path / tarball source) <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-bb-027 }
+### `BB-027`: Package install bypasses registry integrity (git / path / tarball source) <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-bb-027 }
 
 **Evidences:** [`ING-1`](#ctrl-ing-1) L1: Use package managers trusted by your organization.
 
@@ -1011,7 +1011,7 @@ Severity LOW because the failure mode is downstream correlation friction rather 
 
 **Source:** [`BB-027`](../providers/bitbucket.md#bb-027) in the [Bitbucket provider](../providers/bitbucket.md).
 
-#### `BB-029`: image: (step or service) not pinned by sha256 digest <span class="pg-sev pg-sev--high">HIGH</span> { #detail-bb-029 }
+### `BB-029`: image: (step or service) not pinned by sha256 digest <span class="pg-sev pg-sev--high">HIGH</span> { #detail-bb-029 }
 
 **Evidences:** [`UPD-1`](#ctrl-upd-1) L1: Update vulnerable OSS manually (pin + track versions).
 
@@ -1025,7 +1025,7 @@ Severity LOW because the failure mode is downstream correlation friction rather 
 
 **Source:** [`BB-029`](../providers/bitbucket.md#bb-029) in the [Bitbucket provider](../providers/bitbucket.md).
 
-#### `BK-001`: Buildkite plugin not pinned to an exact version <span class="pg-sev pg-sev--high">HIGH</span> { #detail-bk-001 }
+### `BK-001`: Buildkite plugin not pinned to an exact version <span class="pg-sev pg-sev--high">HIGH</span> { #detail-bk-001 }
 
 **Evidences:** [`UPD-1`](#ctrl-upd-1) L1: Update vulnerable OSS manually (pin + track versions).
 
@@ -1035,7 +1035,7 @@ Severity LOW because the failure mode is downstream correlation friction rather 
 
 **Source:** [`BK-001`](../providers/buildkite.md#bk-001) in the [Buildkite provider](../providers/buildkite.md).
 
-#### `BK-004`: Remote script piped into shell interpreter <span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> { #detail-bk-004 }
+### `BK-004`: Remote script piped into shell interpreter <span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> { #detail-bk-004 }
 
 **Evidences:** [`ING-1`](#ctrl-ing-1) L1: Use package managers trusted by your organization.
 
@@ -1047,7 +1047,7 @@ Severity LOW because the failure mode is downstream correlation friction rather 
 
 **Source:** [`BK-004`](../providers/buildkite.md#bk-004) in the [Buildkite provider](../providers/buildkite.md).
 
-#### `BK-007`: Deploy step not gated by a manual block / input <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-bk-007 }
+### `BK-007`: Deploy step not gated by a manual block / input <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-bk-007 }
 
 **Evidences:** [`ENF-1`](#ctrl-enf-1) L2: Enforce security policy of OSS usage (block on violation).
 
@@ -1061,7 +1061,7 @@ Severity LOW because the failure mode is downstream correlation friction rather 
 
 **Source:** [`BK-007`](../providers/buildkite.md#bk-007) in the [Buildkite provider](../providers/buildkite.md).
 
-#### `BK-008`: TLS verification disabled in step command <span class="pg-sev pg-sev--medium">MEDIUM</span> <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> { #detail-bk-008 }
+### `BK-008`: TLS verification disabled in step command <span class="pg-sev pg-sev--medium">MEDIUM</span> <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> { #detail-bk-008 }
 
 **Evidences:** [`ING-1`](#ctrl-ing-1) L1: Use package managers trusted by your organization.
 
@@ -1073,7 +1073,7 @@ Severity LOW because the failure mode is downstream correlation friction rather 
 
 **Source:** [`BK-008`](../providers/buildkite.md#bk-008) in the [Buildkite provider](../providers/buildkite.md).
 
-#### `BK-009`: Artifacts not signed (no cosign/sigstore step) <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-bk-009 }
+### `BK-009`: Artifacts not signed (no cosign/sigstore step) <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-bk-009 }
 
 **Evidences:** [`REB-2`](#ctrl-reb-2) L4: Digitally sign rebuilt / produced OSS artifacts.
 
@@ -1083,7 +1083,7 @@ Severity LOW because the failure mode is downstream correlation friction rather 
 
 **Source:** [`BK-009`](../providers/buildkite.md#bk-009) in the [Buildkite provider](../providers/buildkite.md).
 
-#### `BK-010`: No SBOM generated for build artifacts <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-bk-010 }
+### `BK-010`: No SBOM generated for build artifacts <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-bk-010 }
 
 **Evidences:** [`REB-3`](#ctrl-reb-3) L4: Generate SBOMs for artifacts produced.
 
@@ -1093,7 +1093,7 @@ Severity LOW because the failure mode is downstream correlation friction rather 
 
 **Source:** [`BK-010`](../providers/buildkite.md#bk-010) in the [Buildkite provider](../providers/buildkite.md).
 
-#### `BK-011`: No SLSA provenance attestation produced <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-bk-011 }
+### `BK-011`: No SLSA provenance attestation produced <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-bk-011 }
 
 **Evidences:** [`REB-4`](#ctrl-reb-4) L4: Digitally sign SBOMs produced (attested provenance).
 
@@ -1103,7 +1103,7 @@ Severity LOW because the failure mode is downstream correlation friction rather 
 
 **Source:** [`BK-011`](../providers/buildkite.md#bk-011) in the [Buildkite provider](../providers/buildkite.md).
 
-#### `BK-012`: No vulnerability scanning step <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-bk-012 }
+### `BK-012`: No vulnerability scanning step <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-bk-012 }
 
 **Evidences:** [`SCA-1`](#ctrl-sca-1) L1: Scan OSS for known vulnerabilities.
 
@@ -1113,7 +1113,7 @@ Severity LOW because the failure mode is downstream correlation friction rather 
 
 **Source:** [`BK-012`](../providers/buildkite.md#bk-012) in the [Buildkite provider](../providers/buildkite.md).
 
-#### `BK-013`: Deploy step has no branches: filter <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-bk-013 }
+### `BK-013`: Deploy step has no branches: filter <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-bk-013 }
 
 **Evidences:** [`ENF-1`](#ctrl-enf-1) L2: Enforce security policy of OSS usage (block on violation).
 
@@ -1127,7 +1127,7 @@ Severity LOW because the failure mode is downstream correlation friction rather 
 
 **Source:** [`BK-013`](../providers/buildkite.md#bk-013) in the [Buildkite provider](../providers/buildkite.md).
 
-#### `CA-001`: CodeArtifact domain not encrypted with customer KMS CMK <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-ca-001 }
+### `CA-001`: CodeArtifact domain not encrypted with customer KMS CMK <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-ca-001 }
 
 **Evidences:** [`REB-2`](#ctrl-reb-2) L4: Digitally sign rebuilt / produced OSS artifacts.
 
@@ -1137,7 +1137,7 @@ Severity LOW because the failure mode is downstream correlation friction rather 
 
 **Source:** [`CA-001`](../providers/aws.md) in the [AWS provider](../providers/aws.md).
 
-#### `CA-002`: CodeArtifact repository has a public external connection <span class="pg-sev pg-sev--high">HIGH</span> { #detail-ca-002 }
+### `CA-002`: CodeArtifact repository has a public external connection <span class="pg-sev pg-sev--high">HIGH</span> { #detail-ca-002 }
 
 **Evidences:** [`ING-1`](#ctrl-ing-1) L1: Use package managers trusted by your organization, [`ING-3`](#ctrl-ing-3) L1: Have the capability to deny-list specific vulnerable / malicious OSS.
 
@@ -1147,7 +1147,7 @@ Severity LOW because the failure mode is downstream correlation friction rather 
 
 **Source:** [`CA-002`](../providers/aws.md) in the [AWS provider](../providers/aws.md).
 
-#### `CB-005`: Outdated managed build image <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-cb-005 }
+### `CB-005`: Outdated managed build image <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-cb-005 }
 
 **Evidences:** [`UPD-1`](#ctrl-upd-1) L1: Update vulnerable OSS manually (pin + track versions).
 
@@ -1161,7 +1161,7 @@ Severity LOW because the failure mode is downstream correlation friction rather 
 
 **Source:** [`CB-005`](../providers/aws.md) in the [AWS provider](../providers/aws.md).
 
-#### `CB-008`: CodeBuild buildspec is inline (not sourced from a protected repo) <span class="pg-sev pg-sev--high">HIGH</span> { #detail-cb-008 }
+### `CB-008`: CodeBuild buildspec is inline (not sourced from a protected repo) <span class="pg-sev pg-sev--high">HIGH</span> { #detail-cb-008 }
 
 **Evidences:** [`ENF-1`](#ctrl-enf-1) L2: Enforce security policy of OSS usage (block on violation).
 
@@ -1171,7 +1171,7 @@ Severity LOW because the failure mode is downstream correlation friction rather 
 
 **Source:** [`CB-008`](../providers/aws.md) in the [AWS provider](../providers/aws.md).
 
-#### `CB-009`: CodeBuild image not pinned by digest <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-cb-009 }
+### `CB-009`: CodeBuild image not pinned by digest <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-cb-009 }
 
 **Evidences:** [`UPD-1`](#ctrl-upd-1) L1: Update vulnerable OSS manually (pin + track versions).
 
@@ -1181,7 +1181,7 @@ Severity LOW because the failure mode is downstream correlation friction rather 
 
 **Source:** [`CB-009`](../providers/aws.md) in the [AWS provider](../providers/aws.md).
 
-#### `CB-011`: CodeBuild buildspec contains indicators of malicious activity <span class="pg-sev pg-sev--critical">CRITICAL</span> { #detail-cb-011 }
+### `CB-011`: CodeBuild buildspec contains indicators of malicious activity <span class="pg-sev pg-sev--critical">CRITICAL</span> { #detail-cb-011 }
 
 **Evidences:** [`SCA-3`](#ctrl-sca-3) L2: Scan OSS for malware.
 
@@ -1196,7 +1196,7 @@ Severity LOW because the failure mode is downstream correlation friction rather 
 
 **Source:** [`CB-011`](../providers/aws.md) in the [AWS provider](../providers/aws.md).
 
-#### `CC-001`: Orb not pinned to exact semver <span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> { #detail-cc-001 }
+### `CC-001`: Orb not pinned to exact semver <span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> { #detail-cc-001 }
 
 **Evidences:** [`UPD-1`](#ctrl-upd-1) L1: Update vulnerable OSS manually (pin + track versions).
 
@@ -1208,7 +1208,7 @@ Severity LOW because the failure mode is downstream correlation friction rather 
 
 **Source:** [`CC-001`](../providers/circleci.md#cc-001) in the [CircleCI provider](../providers/circleci.md).
 
-#### `CC-003`: Docker image not pinned by digest <span class="pg-sev pg-sev--high">HIGH</span> { #detail-cc-003 }
+### `CC-003`: Docker image not pinned by digest <span class="pg-sev pg-sev--high">HIGH</span> { #detail-cc-003 }
 
 **Evidences:** [`UPD-1`](#ctrl-upd-1) L1: Update vulnerable OSS manually (pin + track versions).
 
@@ -1218,7 +1218,7 @@ Severity LOW because the failure mode is downstream correlation friction rather 
 
 **Source:** [`CC-003`](../providers/circleci.md#cc-003) in the [CircleCI provider](../providers/circleci.md).
 
-#### `CC-006`: Artifacts not signed (no cosign/sigstore step) <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-cc-006 }
+### `CC-006`: Artifacts not signed (no cosign/sigstore step) <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-cc-006 }
 
 **Evidences:** [`REB-2`](#ctrl-reb-2) L4: Digitally sign rebuilt / produced OSS artifacts.
 
@@ -1228,7 +1228,7 @@ Severity LOW because the failure mode is downstream correlation friction rather 
 
 **Source:** [`CC-006`](../providers/circleci.md#cc-006) in the [CircleCI provider](../providers/circleci.md).
 
-#### `CC-007`: SBOM not produced (no CycloneDX/syft/Trivy-SBOM step) <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-cc-007 }
+### `CC-007`: SBOM not produced (no CycloneDX/syft/Trivy-SBOM step) <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-cc-007 }
 
 **Evidences:** [`REB-3`](#ctrl-reb-3) L4: Generate SBOMs for artifacts produced.
 
@@ -1238,7 +1238,7 @@ Severity LOW because the failure mode is downstream correlation friction rather 
 
 **Source:** [`CC-007`](../providers/circleci.md#cc-007) in the [CircleCI provider](../providers/circleci.md).
 
-#### `CC-009`: Deploy job missing manual approval gate <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-cc-009 }
+### `CC-009`: Deploy job missing manual approval gate <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-cc-009 }
 
 **Evidences:** [`ENF-1`](#ctrl-enf-1) L2: Enforce security policy of OSS usage (block on violation).
 
@@ -1248,7 +1248,7 @@ Severity LOW because the failure mode is downstream correlation friction rather 
 
 **Source:** [`CC-009`](../providers/circleci.md#cc-009) in the [CircleCI provider](../providers/circleci.md).
 
-#### `CC-018`: Package install from insecure source <span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> { #detail-cc-018 }
+### `CC-018`: Package install from insecure source <span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> { #detail-cc-018 }
 
 **Evidences:** [`ING-1`](#ctrl-ing-1) L1: Use package managers trusted by your organization.
 
@@ -1260,7 +1260,7 @@ Severity LOW because the failure mode is downstream correlation friction rather 
 
 **Source:** [`CC-018`](../providers/circleci.md#cc-018) in the [CircleCI provider](../providers/circleci.md).
 
-#### `CC-020`: No vulnerability scanning step <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-cc-020 }
+### `CC-020`: No vulnerability scanning step <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-cc-020 }
 
 **Evidences:** [`SCA-1`](#ctrl-sca-1) L1: Scan OSS for known vulnerabilities.
 
@@ -1270,7 +1270,7 @@ Severity LOW because the failure mode is downstream correlation friction rather 
 
 **Source:** [`CC-020`](../providers/circleci.md#cc-020) in the [CircleCI provider](../providers/circleci.md).
 
-#### `CC-021`: Package install without lockfile enforcement <span class="pg-sev pg-sev--medium">MEDIUM</span> <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> { #detail-cc-021 }
+### `CC-021`: Package install without lockfile enforcement <span class="pg-sev pg-sev--medium">MEDIUM</span> <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> { #detail-cc-021 }
 
 **Evidences:** [`UPD-1`](#ctrl-upd-1) L1: Update vulnerable OSS manually (pin + track versions).
 
@@ -1282,7 +1282,7 @@ Severity LOW because the failure mode is downstream correlation friction rather 
 
 **Source:** [`CC-021`](../providers/circleci.md#cc-021) in the [CircleCI provider](../providers/circleci.md).
 
-#### `CC-022`: Dependency update command bypasses lockfile pins <span class="pg-sev pg-sev--medium">MEDIUM</span> <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> { #detail-cc-022 }
+### `CC-022`: Dependency update command bypasses lockfile pins <span class="pg-sev pg-sev--medium">MEDIUM</span> <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> { #detail-cc-022 }
 
 **Evidences:** [`UPD-2`](#ctrl-upd-2) L3: Enable automated OSS updates (Dependabot / Renovate).
 
@@ -1298,7 +1298,7 @@ Severity LOW because the failure mode is downstream correlation friction rather 
 
 **Source:** [`CC-022`](../providers/circleci.md#cc-022) in the [CircleCI provider](../providers/circleci.md).
 
-#### `CC-024`: No SLSA provenance attestation produced <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-cc-024 }
+### `CC-024`: No SLSA provenance attestation produced <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-cc-024 }
 
 **Evidences:** [`REB-4`](#ctrl-reb-4) L4: Digitally sign SBOMs produced (attested provenance).
 
@@ -1308,7 +1308,7 @@ Severity LOW because the failure mode is downstream correlation friction rather 
 
 **Source:** [`CC-024`](../providers/circleci.md#cc-024) in the [CircleCI provider](../providers/circleci.md).
 
-#### `CC-026`: Config contains indicators of malicious activity <span class="pg-sev pg-sev--critical">CRITICAL</span> { #detail-cc-026 }
+### `CC-026`: Config contains indicators of malicious activity <span class="pg-sev pg-sev--critical">CRITICAL</span> { #detail-cc-026 }
 
 **Evidences:** [`SCA-3`](#ctrl-sca-3) L2: Scan OSS for malware.
 
@@ -1323,7 +1323,7 @@ Severity LOW because the failure mode is downstream correlation friction rather 
 
 **Source:** [`CC-026`](../providers/circleci.md#cc-026) in the [CircleCI provider](../providers/circleci.md).
 
-#### `CC-028`: Package install bypasses registry integrity (git / path / tarball source) <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-cc-028 }
+### `CC-028`: Package install bypasses registry integrity (git / path / tarball source) <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-cc-028 }
 
 **Evidences:** [`ING-1`](#ctrl-ing-1) L1: Use package managers trusted by your organization.
 
@@ -1333,7 +1333,7 @@ Severity LOW because the failure mode is downstream correlation friction rather 
 
 **Source:** [`CC-028`](../providers/circleci.md#cc-028) in the [CircleCI provider](../providers/circleci.md).
 
-#### `CC-029`: Machine executor image not pinned <span class="pg-sev pg-sev--high">HIGH</span> { #detail-cc-029 }
+### `CC-029`: Machine executor image not pinned <span class="pg-sev pg-sev--high">HIGH</span> { #detail-cc-029 }
 
 **Evidences:** [`UPD-1`](#ctrl-upd-1) L1: Update vulnerable OSS manually (pin + track versions).
 
@@ -1343,7 +1343,7 @@ Severity LOW because the failure mode is downstream correlation friction rather 
 
 **Source:** [`CC-029`](../providers/circleci.md#cc-029) in the [CircleCI provider](../providers/circleci.md).
 
-#### `CD-002`: AllAtOnce deployment config, no canary or rolling strategy <span class="pg-sev pg-sev--high">HIGH</span> { #detail-cd-002 }
+### `CD-002`: AllAtOnce deployment config, no canary or rolling strategy <span class="pg-sev pg-sev--high">HIGH</span> { #detail-cd-002 }
 
 **Evidences:** [`ENF-1`](#ctrl-enf-1) L2: Enforce security policy of OSS usage (block on violation).
 
@@ -1353,7 +1353,7 @@ Severity LOW because the failure mode is downstream correlation friction rather 
 
 **Source:** [`CD-002`](../providers/aws.md) in the [AWS provider](../providers/aws.md).
 
-#### `CP-001`: No approval action before deploy stages <span class="pg-sev pg-sev--high">HIGH</span> { #detail-cp-001 }
+### `CP-001`: No approval action before deploy stages <span class="pg-sev pg-sev--high">HIGH</span> { #detail-cp-001 }
 
 **Evidences:** [`ENF-1`](#ctrl-enf-1) L2: Enforce security policy of OSS usage (block on violation), [`ENF-2`](#ctrl-enf-2) L2: Break the build when a violation is detected.
 
@@ -1363,7 +1363,7 @@ Severity LOW because the failure mode is downstream correlation friction rather 
 
 **Source:** [`CP-001`](../providers/aws.md) in the [AWS provider](../providers/aws.md).
 
-#### `CP-002`: Artifact store not encrypted with customer-managed KMS key <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-cp-002 }
+### `CP-002`: Artifact store not encrypted with customer-managed KMS key <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-cp-002 }
 
 **Evidences:** [`REB-2`](#ctrl-reb-2) L4: Digitally sign rebuilt / produced OSS artifacts.
 
@@ -1373,7 +1373,7 @@ Severity LOW because the failure mode is downstream correlation friction rather 
 
 **Source:** [`CP-002`](../providers/aws.md) in the [AWS provider](../providers/aws.md).
 
-#### `CP-005`: Production Deploy stage has no preceding ManualApproval <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-cp-005 }
+### `CP-005`: Production Deploy stage has no preceding ManualApproval <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-cp-005 }
 
 **Evidences:** [`ENF-1`](#ctrl-enf-1) L2: Enforce security policy of OSS usage (block on violation), [`ENF-2`](#ctrl-enf-2) L2: Break the build when a violation is detected.
 
@@ -1383,7 +1383,7 @@ Severity LOW because the failure mode is downstream correlation friction rather 
 
 **Source:** [`CP-005`](../providers/aws.md) in the [AWS provider](../providers/aws.md).
 
-#### `DF-001`: FROM image not pinned to sha256 digest <span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> { #detail-df-001 }
+### `DF-001`: FROM image not pinned to sha256 digest <span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> { #detail-df-001 }
 
 **Evidences:** [`ING-1`](#ctrl-ing-1) L1: Use package managers trusted by your organization, [`UPD-1`](#ctrl-upd-1) L1: Update vulnerable OSS manually (pin + track versions).
 
@@ -1400,7 +1400,7 @@ Severity LOW because the failure mode is downstream correlation friction rather 
 
 **Source:** [`DF-001`](../providers/dockerfile.md#df-001) in the [Dockerfile provider](../providers/dockerfile.md).
 
-#### `DF-003`: ADD pulls remote URL without integrity verification <span class="pg-sev pg-sev--high">HIGH</span> { #detail-df-003 }
+### `DF-003`: ADD pulls remote URL without integrity verification <span class="pg-sev pg-sev--high">HIGH</span> { #detail-df-003 }
 
 **Evidences:** [`ING-1`](#ctrl-ing-1) L1: Use package managers trusted by your organization, [`UPD-1`](#ctrl-upd-1) L1: Update vulnerable OSS manually (pin + track versions).
 
@@ -1414,7 +1414,7 @@ Severity LOW because the failure mode is downstream correlation friction rather 
 
 **Source:** [`DF-003`](../providers/dockerfile.md#df-003) in the [Dockerfile provider](../providers/dockerfile.md).
 
-#### `DF-004`: RUN executes a remote script via curl-pipe / wget-pipe <span class="pg-sev pg-sev--high">HIGH</span> { #detail-df-004 }
+### `DF-004`: RUN executes a remote script via curl-pipe / wget-pipe <span class="pg-sev pg-sev--high">HIGH</span> { #detail-df-004 }
 
 **Evidences:** [`ING-1`](#ctrl-ing-1) L1: Use package managers trusted by your organization.
 
@@ -1424,7 +1424,7 @@ Severity LOW because the failure mode is downstream correlation friction rather 
 
 **Source:** [`DF-004`](../providers/dockerfile.md#df-004) in the [Dockerfile provider](../providers/dockerfile.md).
 
-#### `DF-010`: apt-get dist-upgrade / upgrade pulls unknown package versions <span class="pg-sev pg-sev--low">LOW</span> { #detail-df-010 }
+### `DF-010`: apt-get dist-upgrade / upgrade pulls unknown package versions <span class="pg-sev pg-sev--low">LOW</span> { #detail-df-010 }
 
 **Evidences:** [`UPD-1`](#ctrl-upd-1) L1: Update vulnerable OSS manually (pin + track versions).
 
@@ -1434,7 +1434,7 @@ Severity LOW because the failure mode is downstream correlation friction rather 
 
 **Source:** [`DF-010`](../providers/dockerfile.md#df-010) in the [Dockerfile provider](../providers/dockerfile.md).
 
-#### `DF-011`: Package manager install without cache cleanup in same layer <span class="pg-sev pg-sev--low">LOW</span> { #detail-df-011 }
+### `DF-011`: Package manager install without cache cleanup in same layer <span class="pg-sev pg-sev--low">LOW</span> { #detail-df-011 }
 
 **Evidences:** [`UPD-1`](#ctrl-upd-1) L1: Update vulnerable OSS manually (pin + track versions).
 
@@ -1444,7 +1444,7 @@ Severity LOW because the failure mode is downstream correlation friction rather 
 
 **Source:** [`DF-011`](../providers/dockerfile.md#df-011) in the [Dockerfile provider](../providers/dockerfile.md).
 
-#### `DF-016`: Image lacks OCI provenance labels <span class="pg-sev pg-sev--low">LOW</span> { #detail-df-016 }
+### `DF-016`: Image lacks OCI provenance labels <span class="pg-sev pg-sev--low">LOW</span> { #detail-df-016 }
 
 **Evidences:** [`REB-3`](#ctrl-reb-3) L4: Generate SBOMs for artifacts produced.
 
@@ -1458,7 +1458,7 @@ Severity LOW because the failure mode is downstream correlation friction rather 
 
 **Source:** [`DF-016`](../providers/dockerfile.md#df-016) in the [Dockerfile provider](../providers/dockerfile.md).
 
-#### `DF-021`: RUN pip install bypasses TLS or uses an HTTP index <span class="pg-sev pg-sev--high">HIGH</span> { #detail-df-021 }
+### `DF-021`: RUN pip install bypasses TLS or uses an HTTP index <span class="pg-sev pg-sev--high">HIGH</span> { #detail-df-021 }
 
 **Evidences:** [`ING-1`](#ctrl-ing-1) L1: Use package managers trusted by your organization.
 
@@ -1472,7 +1472,7 @@ Severity LOW because the failure mode is downstream correlation friction rather 
 
 **Source:** [`DF-021`](../providers/dockerfile.md#df-021) in the [Dockerfile provider](../providers/dockerfile.md).
 
-#### `DF-022`: RUN uses npm install instead of npm ci <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-df-022 }
+### `DF-022`: RUN uses npm install instead of npm ci <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-df-022 }
 
 **Evidences:** [`ING-1`](#ctrl-ing-1) L1: Use package managers trusted by your organization, [`UPD-1`](#ctrl-upd-1) L1: Update vulnerable OSS manually (pin + track versions).
 
@@ -1487,7 +1487,7 @@ Severity LOW because the failure mode is downstream correlation friction rather 
 
 **Source:** [`DF-022`](../providers/dockerfile.md#df-022) in the [Dockerfile provider](../providers/dockerfile.md).
 
-#### `DF-024`: RUN npm/yarn/pnpm install runs lifecycle scripts <span class="pg-sev pg-sev--high">HIGH</span> { #detail-df-024 }
+### `DF-024`: RUN npm/yarn/pnpm install runs lifecycle scripts <span class="pg-sev pg-sev--high">HIGH</span> { #detail-df-024 }
 
 **Evidences:** [`ING-1`](#ctrl-ing-1) L1: Use package managers trusted by your organization.
 
@@ -1531,7 +1531,7 @@ RUN npm rebuild better-sqlite3 sharp    # audited allowlist
 
 **Source:** [`DF-024`](../providers/dockerfile.md#df-024) in the [Dockerfile provider](../providers/dockerfile.md).
 
-#### `DF-026`: ENV disables Node.js TLS certificate verification <span class="pg-sev pg-sev--high">HIGH</span> { #detail-df-026 }
+### `DF-026`: ENV disables Node.js TLS certificate verification <span class="pg-sev pg-sev--high">HIGH</span> { #detail-df-026 }
 
 **Evidences:** [`ING-1`](#ctrl-ing-1) L1: Use package managers trusted by your organization.
 
@@ -1547,7 +1547,7 @@ If the internal registry / API genuinely has a self-signed cert, install the CA 
 
 **Source:** [`DF-026`](../providers/dockerfile.md#df-026) in the [Dockerfile provider](../providers/dockerfile.md).
 
-#### `DF-027`: ENV disables Python HTTPS certificate verification <span class="pg-sev pg-sev--high">HIGH</span> { #detail-df-027 }
+### `DF-027`: ENV disables Python HTTPS certificate verification <span class="pg-sev pg-sev--high">HIGH</span> { #detail-df-027 }
 
 **Evidences:** [`ING-1`](#ctrl-ing-1) L1: Use package managers trusted by your organization.
 
@@ -1561,7 +1561,7 @@ If the internal index has a self-signed cert, install the CA into the image's tr
 
 **Source:** [`DF-027`](../providers/dockerfile.md#df-027) in the [Dockerfile provider](../providers/dockerfile.md).
 
-#### `DF-028`: ENV disables Git TLS certificate verification <span class="pg-sev pg-sev--high">HIGH</span> { #detail-df-028 }
+### `DF-028`: ENV disables Git TLS certificate verification <span class="pg-sev pg-sev--high">HIGH</span> { #detail-df-028 }
 
 **Evidences:** [`ING-1`](#ctrl-ing-1) L1: Use package managers trusted by your organization.
 
@@ -1579,7 +1579,7 @@ If you need to clone from an internal Git server with a self-signed cert, instal
 
 **Source:** [`DF-028`](../providers/dockerfile.md#df-028) in the [Dockerfile provider](../providers/dockerfile.md).
 
-#### `DF-029`: ENV neuters Python requests CA bundle <span class="pg-sev pg-sev--high">HIGH</span> { #detail-df-029 }
+### `DF-029`: ENV neuters Python requests CA bundle <span class="pg-sev pg-sev--high">HIGH</span> { #detail-df-029 }
 
 **Evidences:** [`ING-1`](#ctrl-ing-1) L1: Use package managers trusted by your organization.
 
@@ -1597,7 +1597,7 @@ The same shape as DF-027 (``PYTHONHTTPSVERIFY=0``) but narrower in surface — `
 
 **Source:** [`DF-029`](../providers/dockerfile.md#df-029) in the [Dockerfile provider](../providers/dockerfile.md).
 
-#### `DR-001`: Step image not pinned to a digest <span class="pg-sev pg-sev--high">HIGH</span> { #detail-dr-001 }
+### `DR-001`: Step image not pinned to a digest <span class="pg-sev pg-sev--high">HIGH</span> { #detail-dr-001 }
 
 **Evidences:** [`UPD-1`](#ctrl-upd-1) L1: Update vulnerable OSS manually (pin + track versions).
 
@@ -1611,7 +1611,7 @@ The same shape as DF-027 (``PYTHONHTTPSVERIFY=0``) but narrower in surface — `
 
 **Source:** [`DR-001`](../providers/drone.md#dr-001) in the [Drone CI provider](../providers/drone.md).
 
-#### `DR-005`: Plugin step uses a floating image tag <span class="pg-sev pg-sev--high">HIGH</span> { #detail-dr-005 }
+### `DR-005`: Plugin step uses a floating image tag <span class="pg-sev pg-sev--high">HIGH</span> { #detail-dr-005 }
 
 **Evidences:** [`UPD-1`](#ctrl-upd-1) L1: Update vulnerable OSS manually (pin + track versions).
 
@@ -1625,7 +1625,7 @@ The same shape as DF-027 (``PYTHONHTTPSVERIFY=0``) but narrower in surface — `
 
 **Source:** [`DR-005`](../providers/drone.md#dr-005) in the [Drone CI provider](../providers/drone.md).
 
-#### `DR-006`: TLS verification disabled in step commands <span class="pg-sev pg-sev--high">HIGH</span> { #detail-dr-006 }
+### `DR-006`: TLS verification disabled in step commands <span class="pg-sev pg-sev--high">HIGH</span> { #detail-dr-006 }
 
 **Evidences:** [`ING-1`](#ctrl-ing-1) L1: Use package managers trusted by your organization.
 
@@ -1635,7 +1635,7 @@ The same shape as DF-027 (``PYTHONHTTPSVERIFY=0``) but narrower in surface — `
 
 **Source:** [`DR-006`](../providers/drone.md#dr-006) in the [Drone CI provider](../providers/drone.md).
 
-#### `DR-008`: Step uses ``pull: never`` (skips registry verification) <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-dr-008 }
+### `DR-008`: Step uses ``pull: never`` (skips registry verification) <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-dr-008 }
 
 **Evidences:** [`UPD-1`](#ctrl-upd-1) L1: Update vulnerable OSS manually (pin + track versions).
 
@@ -1649,7 +1649,7 @@ The same shape as DF-027 (``PYTHONHTTPSVERIFY=0``) but narrower in surface — `
 
 **Source:** [`DR-008`](../providers/drone.md#dr-008) in the [Drone CI provider](../providers/drone.md).
 
-#### `ECR-001`: Image scanning on push not enabled <span class="pg-sev pg-sev--high">HIGH</span> { #detail-ecr-001 }
+### `ECR-001`: Image scanning on push not enabled <span class="pg-sev pg-sev--high">HIGH</span> { #detail-ecr-001 }
 
 **Evidences:** [`SCA-1`](#ctrl-sca-1) L1: Scan OSS for known vulnerabilities.
 
@@ -1659,7 +1659,7 @@ The same shape as DF-027 (``PYTHONHTTPSVERIFY=0``) but narrower in surface — `
 
 **Source:** [`ECR-001`](../providers/aws.md) in the [AWS provider](../providers/aws.md).
 
-#### `ECR-002`: Image tags are mutable <span class="pg-sev pg-sev--high">HIGH</span> { #detail-ecr-002 }
+### `ECR-002`: Image tags are mutable <span class="pg-sev pg-sev--high">HIGH</span> { #detail-ecr-002 }
 
 **Evidences:** [`UPD-1`](#ctrl-upd-1) L1: Update vulnerable OSS manually (pin + track versions).
 
@@ -1669,7 +1669,7 @@ The same shape as DF-027 (``PYTHONHTTPSVERIFY=0``) but narrower in surface — `
 
 **Source:** [`ECR-002`](../providers/aws.md) in the [AWS provider](../providers/aws.md).
 
-#### `ECR-005`: Repository encrypted with AES256 rather than KMS CMK <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-ecr-005 }
+### `ECR-005`: Repository encrypted with AES256 rather than KMS CMK <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-ecr-005 }
 
 **Evidences:** [`REB-2`](#ctrl-reb-2) L4: Digitally sign rebuilt / produced OSS artifacts.
 
@@ -1679,7 +1679,7 @@ The same shape as DF-027 (``PYTHONHTTPSVERIFY=0``) but narrower in surface — `
 
 **Source:** [`ECR-005`](../providers/aws.md) in the [AWS provider](../providers/aws.md).
 
-#### `ECR-006`: ECR pull-through cache rule uses an untrusted upstream <span class="pg-sev pg-sev--high">HIGH</span> { #detail-ecr-006 }
+### `ECR-006`: ECR pull-through cache rule uses an untrusted upstream <span class="pg-sev pg-sev--high">HIGH</span> { #detail-ecr-006 }
 
 **Evidences:** [`ING-1`](#ctrl-ing-1) L1: Use package managers trusted by your organization, [`ING-3`](#ctrl-ing-3) L1: Have the capability to deny-list specific vulnerable / malicious OSS.
 
@@ -1689,7 +1689,7 @@ The same shape as DF-027 (``PYTHONHTTPSVERIFY=0``) but narrower in surface — `
 
 **Source:** [`ECR-006`](../providers/aws.md) in the [AWS provider](../providers/aws.md).
 
-#### `ECR-007`: Inspector v2 enhanced scanning disabled for ECR <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-ecr-007 }
+### `ECR-007`: Inspector v2 enhanced scanning disabled for ECR <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-ecr-007 }
 
 **Evidences:** [`SCA-1`](#ctrl-sca-1) L1: Scan OSS for known vulnerabilities.
 
@@ -1699,7 +1699,7 @@ The same shape as DF-027 (``PYTHONHTTPSVERIFY=0``) but narrower in surface — `
 
 **Source:** [`ECR-007`](../providers/aws.md) in the [AWS provider](../providers/aws.md).
 
-#### `GCB-001`: Cloud Build step image not pinned by digest <span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> { #detail-gcb-001 }
+### `GCB-001`: Cloud Build step image not pinned by digest <span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> { #detail-gcb-001 }
 
 **Evidences:** [`UPD-1`](#ctrl-upd-1) L1: Update vulnerable OSS manually (pin + track versions).
 
@@ -1711,7 +1711,7 @@ The same shape as DF-027 (``PYTHONHTTPSVERIFY=0``) but narrower in surface — `
 
 **Source:** [`GCB-001`](../providers/cloudbuild.md#gcb-001) in the [Cloud Build provider](../providers/cloudbuild.md).
 
-#### `GCB-008`: No vulnerability scanning step in Cloud Build pipeline <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-gcb-008 }
+### `GCB-008`: No vulnerability scanning step in Cloud Build pipeline <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-gcb-008 }
 
 **Evidences:** [`SCA-1`](#ctrl-sca-1) L1: Scan OSS for known vulnerabilities.
 
@@ -1721,7 +1721,7 @@ The same shape as DF-027 (``PYTHONHTTPSVERIFY=0``) but narrower in surface — `
 
 **Source:** [`GCB-008`](../providers/cloudbuild.md#gcb-008) in the [Cloud Build provider](../providers/cloudbuild.md).
 
-#### `GCB-009`: Artifacts not signed (no cosign / sigstore step) <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-gcb-009 }
+### `GCB-009`: Artifacts not signed (no cosign / sigstore step) <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-gcb-009 }
 
 **Evidences:** [`REB-2`](#ctrl-reb-2) L4: Digitally sign rebuilt / produced OSS artifacts.
 
@@ -1731,7 +1731,7 @@ The same shape as DF-027 (``PYTHONHTTPSVERIFY=0``) but narrower in surface — `
 
 **Source:** [`GCB-009`](../providers/cloudbuild.md#gcb-009) in the [Cloud Build provider](../providers/cloudbuild.md).
 
-#### `GCB-011`: TLS / certificate verification bypass <span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> { #detail-gcb-011 }
+### `GCB-011`: TLS / certificate verification bypass <span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> { #detail-gcb-011 }
 
 **Evidences:** [`ING-1`](#ctrl-ing-1) L1: Use package managers trusted by your organization.
 
@@ -1743,7 +1743,7 @@ The same shape as DF-027 (``PYTHONHTTPSVERIFY=0``) but narrower in surface — `
 
 **Source:** [`GCB-011`](../providers/cloudbuild.md#gcb-011) in the [Cloud Build provider](../providers/cloudbuild.md).
 
-#### `GHA-001`: Action not pinned to commit SHA <span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> { #detail-gha-001 }
+### `GHA-001`: Action not pinned to commit SHA <span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> { #detail-gha-001 }
 
 **Evidences:** [`UPD-1`](#ctrl-upd-1) L1: Update vulnerable OSS manually (pin + track versions).
 
@@ -1779,7 +1779,7 @@ The same shape as DF-027 (``PYTHONHTTPSVERIFY=0``) but narrower in surface — `
 
 **Source:** [`GHA-001`](../providers/github.md#gha-001) in the [GitHub Actions provider](../providers/github.md).
 
-#### `GHA-006`: Artifacts not signed (no cosign/sigstore step) <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-gha-006 }
+### `GHA-006`: Artifacts not signed (no cosign/sigstore step) <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-gha-006 }
 
 **Evidences:** [`REB-2`](#ctrl-reb-2) L4: Digitally sign rebuilt / produced OSS artifacts.
 
@@ -1794,7 +1794,7 @@ The same shape as DF-027 (``PYTHONHTTPSVERIFY=0``) but narrower in surface — `
 
 **Source:** [`GHA-006`](../providers/github.md#gha-006) in the [GitHub Actions provider](../providers/github.md).
 
-#### `GHA-007`: SBOM not produced (no CycloneDX/syft/Trivy-SBOM step) <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-gha-007 }
+### `GHA-007`: SBOM not produced (no CycloneDX/syft/Trivy-SBOM step) <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-gha-007 }
 
 **Evidences:** [`REB-3`](#ctrl-reb-3) L4: Generate SBOMs for artifacts produced.
 
@@ -1804,7 +1804,7 @@ The same shape as DF-027 (``PYTHONHTTPSVERIFY=0``) but narrower in surface — `
 
 **Source:** [`GHA-007`](../providers/github.md#gha-007) in the [GitHub Actions provider](../providers/github.md).
 
-#### `GHA-014`: Deploy job missing environment binding <span class="pg-sev pg-sev--medium">MEDIUM</span> <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> { #detail-gha-014 }
+### `GHA-014`: Deploy job missing environment binding <span class="pg-sev pg-sev--medium">MEDIUM</span> <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> { #detail-gha-014 }
 
 **Evidences:** [`ENF-1`](#ctrl-enf-1) L2: Enforce security policy of OSS usage (block on violation).
 
@@ -1820,7 +1820,7 @@ The same shape as DF-027 (``PYTHONHTTPSVERIFY=0``) but narrower in surface — `
 
 **Source:** [`GHA-014`](../providers/github.md#gha-014) in the [GitHub Actions provider](../providers/github.md).
 
-#### `GHA-016`: Remote script piped to shell interpreter <span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> { #detail-gha-016 }
+### `GHA-016`: Remote script piped to shell interpreter <span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> { #detail-gha-016 }
 
 **Evidences:** [`ING-1`](#ctrl-ing-1) L1: Use package managers trusted by your organization.
 
@@ -1869,7 +1869,7 @@ steps:
 
 **Source:** [`GHA-016`](../providers/github.md#gha-016) in the [GitHub Actions provider](../providers/github.md).
 
-#### `GHA-017`: Docker run with insecure flags (privileged/host mount) <span class="pg-sev pg-sev--critical">CRITICAL</span> <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> { #detail-gha-017 }
+### `GHA-017`: Docker run with insecure flags (privileged/host mount) <span class="pg-sev pg-sev--critical">CRITICAL</span> <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> { #detail-gha-017 }
 
 **Evidences:** [`ING-1`](#ctrl-ing-1) L1: Use package managers trusted by your organization.
 
@@ -1881,7 +1881,7 @@ steps:
 
 **Source:** [`GHA-017`](../providers/github.md#gha-017) in the [GitHub Actions provider](../providers/github.md).
 
-#### `GHA-018`: Package install from insecure source <span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> { #detail-gha-018 }
+### `GHA-018`: Package install from insecure source <span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> { #detail-gha-018 }
 
 **Evidences:** [`ING-1`](#ctrl-ing-1) L1: Use package managers trusted by your organization.
 
@@ -1893,7 +1893,7 @@ steps:
 
 **Source:** [`GHA-018`](../providers/github.md#gha-018) in the [GitHub Actions provider](../providers/github.md).
 
-#### `GHA-020`: No vulnerability scanning step <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-gha-020 }
+### `GHA-020`: No vulnerability scanning step <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-gha-020 }
 
 **Evidences:** [`SCA-1`](#ctrl-sca-1) L1: Scan OSS for known vulnerabilities.
 
@@ -1903,7 +1903,7 @@ steps:
 
 **Source:** [`GHA-020`](../providers/github.md#gha-020) in the [GitHub Actions provider](../providers/github.md).
 
-#### `GHA-021`: Package install without lockfile enforcement <span class="pg-sev pg-sev--medium">MEDIUM</span> <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> { #detail-gha-021 }
+### `GHA-021`: Package install without lockfile enforcement <span class="pg-sev pg-sev--medium">MEDIUM</span> <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> { #detail-gha-021 }
 
 **Evidences:** [`UPD-1`](#ctrl-upd-1) L1: Update vulnerable OSS manually (pin + track versions).
 
@@ -1915,7 +1915,7 @@ steps:
 
 **Source:** [`GHA-021`](../providers/github.md#gha-021) in the [GitHub Actions provider](../providers/github.md).
 
-#### `GHA-022`: Dependency update command bypasses lockfile pins <span class="pg-sev pg-sev--medium">MEDIUM</span> <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> { #detail-gha-022 }
+### `GHA-022`: Dependency update command bypasses lockfile pins <span class="pg-sev pg-sev--medium">MEDIUM</span> <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> { #detail-gha-022 }
 
 **Evidences:** [`UPD-2`](#ctrl-upd-2) L3: Enable automated OSS updates (Dependabot / Renovate).
 
@@ -1931,7 +1931,7 @@ steps:
 
 **Source:** [`GHA-022`](../providers/github.md#gha-022) in the [GitHub Actions provider](../providers/github.md).
 
-#### `GHA-023`: TLS / certificate verification bypass <span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> { #detail-gha-023 }
+### `GHA-023`: TLS / certificate verification bypass <span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> { #detail-gha-023 }
 
 **Evidences:** [`UPD-1`](#ctrl-upd-1) L1: Update vulnerable OSS manually (pin + track versions).
 
@@ -1943,7 +1943,7 @@ steps:
 
 **Source:** [`GHA-023`](../providers/github.md#gha-023) in the [GitHub Actions provider](../providers/github.md).
 
-#### `GHA-024`: No SLSA provenance attestation produced <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-gha-024 }
+### `GHA-024`: No SLSA provenance attestation produced <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-gha-024 }
 
 **Evidences:** [`REB-4`](#ctrl-reb-4) L4: Digitally sign SBOMs produced (attested provenance).
 
@@ -1953,7 +1953,7 @@ steps:
 
 **Source:** [`GHA-024`](../providers/github.md#gha-024) in the [GitHub Actions provider](../providers/github.md).
 
-#### `GHA-025`: Reusable workflow not pinned to commit SHA <span class="pg-sev pg-sev--high">HIGH</span> { #detail-gha-025 }
+### `GHA-025`: Reusable workflow not pinned to commit SHA <span class="pg-sev pg-sev--high">HIGH</span> { #detail-gha-025 }
 
 **Evidences:** [`UPD-1`](#ctrl-upd-1) L1: Update vulnerable OSS manually (pin + track versions).
 
@@ -1963,7 +1963,7 @@ steps:
 
 **Source:** [`GHA-025`](../providers/github.md#gha-025) in the [GitHub Actions provider](../providers/github.md).
 
-#### `GHA-027`: Workflow contains indicators of malicious activity <span class="pg-sev pg-sev--critical">CRITICAL</span> { #detail-gha-027 }
+### `GHA-027`: Workflow contains indicators of malicious activity <span class="pg-sev pg-sev--critical">CRITICAL</span> { #detail-gha-027 }
 
 **Evidences:** [`SCA-3`](#ctrl-sca-3) L2: Scan OSS for malware.
 
@@ -1978,7 +1978,7 @@ steps:
 
 **Source:** [`GHA-027`](../providers/github.md#gha-027) in the [GitHub Actions provider](../providers/github.md).
 
-#### `GHA-029`: Package install bypasses registry integrity (git / path / tarball source) <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-gha-029 }
+### `GHA-029`: Package install bypasses registry integrity (git / path / tarball source) <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-gha-029 }
 
 **Evidences:** [`ING-1`](#ctrl-ing-1) L1: Use package managers trusted by your organization.
 
@@ -1988,7 +1988,7 @@ steps:
 
 **Source:** [`GHA-029`](../providers/github.md#gha-029) in the [GitHub Actions provider](../providers/github.md).
 
-#### `GHA-040`: Action reference matches a known-compromised SHA or tag <span class="pg-sev pg-sev--critical">CRITICAL</span> { #detail-gha-040 }
+### `GHA-040`: Action reference matches a known-compromised SHA or tag <span class="pg-sev pg-sev--critical">CRITICAL</span> { #detail-gha-040 }
 
 **Evidences:** [`ING-3`](#ctrl-ing-3) L1: Have the capability to deny-list specific vulnerable / malicious OSS, [`SCA-3`](#ctrl-sca-3) L2: Scan OSS for malware.
 
@@ -2034,7 +2034,7 @@ steps:
 
 **Source:** [`GHA-040`](../providers/github.md#gha-040) in the [GitHub Actions provider](../providers/github.md).
 
-#### `GHA-041`: Action upstream repo has a single contributor <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-gha-041 }
+### `GHA-041`: Action upstream repo has a single contributor <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-gha-041 }
 
 **Evidences:** [`ING-3`](#ctrl-ing-3) L1: Have the capability to deny-list specific vulnerable / malicious OSS.
 
@@ -2052,7 +2052,7 @@ steps:
 
 **Source:** [`GHA-041`](../providers/github.md#gha-041) in the [GitHub Actions provider](../providers/github.md).
 
-#### `GHA-042`: Action upstream repo is newly created <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-gha-042 }
+### `GHA-042`: Action upstream repo is newly created <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-gha-042 }
 
 **Evidences:** [`ING-3`](#ctrl-ing-3) L1: Have the capability to deny-list specific vulnerable / malicious OSS.
 
@@ -2070,7 +2070,7 @@ steps:
 
 **Source:** [`GHA-042`](../providers/github.md#gha-042) in the [GitHub Actions provider](../providers/github.md).
 
-#### `GHA-043`: Low-star action runs with sensitive permissions <span class="pg-sev pg-sev--high">HIGH</span> { #detail-gha-043 }
+### `GHA-043`: Low-star action runs with sensitive permissions <span class="pg-sev pg-sev--high">HIGH</span> { #detail-gha-043 }
 
 **Evidences:** [`ING-3`](#ctrl-ing-3) L1: Have the capability to deny-list specific vulnerable / malicious OSS.
 
@@ -2088,7 +2088,7 @@ steps:
 
 **Source:** [`GHA-043`](../providers/github.md#gha-043) in the [GitHub Actions provider](../providers/github.md).
 
-#### `GHA-047`: Action ref resolves to a recently committed tag or SHA <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-gha-047 }
+### `GHA-047`: Action ref resolves to a recently committed tag or SHA <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-gha-047 }
 
 **Evidences:** [`ING-3`](#ctrl-ing-3) L1: Have the capability to deny-list specific vulnerable / malicious OSS.
 
@@ -2106,7 +2106,7 @@ steps:
 
 **Source:** [`GHA-047`](../providers/github.md#gha-047) in the [GitHub Actions provider](../providers/github.md).
 
-#### `GHA-051`: services / container image is not pinned by digest <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-gha-051 }
+### `GHA-051`: services / container image is not pinned by digest <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-gha-051 }
 
 **Evidences:** [`UPD-1`](#ctrl-upd-1) L1: Update vulnerable OSS manually (pin + track versions).
 
@@ -2122,7 +2122,7 @@ Complements DF-001 (Dockerfile ``FROM`` pinning), GHA-001 (action ``uses:`` pinn
 
 **Source:** [`GHA-051`](../providers/github.md#gha-051) in the [GitHub Actions provider](../providers/github.md).
 
-#### `GHA-056`: Workflow body contains a known supply-chain worm indicator <span class="pg-sev pg-sev--critical">CRITICAL</span> { #detail-gha-056 }
+### `GHA-056`: Workflow body contains a known supply-chain worm indicator <span class="pg-sev pg-sev--critical">CRITICAL</span> { #detail-gha-056 }
 
 **Evidences:** [`ING-3`](#ctrl-ing-3) L1: Have the capability to deny-list specific vulnerable / malicious OSS, [`SCA-3`](#ctrl-sca-3) L2: Scan OSS for malware.
 
@@ -2173,7 +2173,7 @@ jobs:
 
 **Source:** [`GHA-056`](../providers/github.md#gha-056) in the [GitHub Actions provider](../providers/github.md).
 
-#### `GHA-057`: Secret-scanner output sent to network egress <span class="pg-sev pg-sev--critical">CRITICAL</span> { #detail-gha-057 }
+### `GHA-057`: Secret-scanner output sent to network egress <span class="pg-sev pg-sev--critical">CRITICAL</span> { #detail-gha-057 }
 
 **Evidences:** [`SCA-3`](#ctrl-sca-3) L2: Scan OSS for malware.
 
@@ -2225,7 +2225,7 @@ jobs:
 
 **Source:** [`GHA-057`](../providers/github.md#gha-057) in the [GitHub Actions provider](../providers/github.md).
 
-#### `GHA-058`: Agentic CLI invoked with permission-bypass flags <span class="pg-sev pg-sev--high">HIGH</span> { #detail-gha-058 }
+### `GHA-058`: Agentic CLI invoked with permission-bypass flags <span class="pg-sev pg-sev--high">HIGH</span> { #detail-gha-058 }
 
 **Evidences:** [`SCA-3`](#ctrl-sca-3) L2: Scan OSS for malware.
 
@@ -2281,7 +2281,7 @@ jobs:
 
 **Source:** [`GHA-058`](../providers/github.md#gha-058) in the [GitHub Actions provider](../providers/github.md).
 
-#### `GL-001`: Image not pinned to specific version or digest <span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> { #detail-gl-001 }
+### `GL-001`: Image not pinned to specific version or digest <span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> { #detail-gl-001 }
 
 **Evidences:** [`UPD-1`](#ctrl-upd-1) L1: Update vulnerable OSS manually (pin + track versions).
 
@@ -2293,7 +2293,7 @@ jobs:
 
 **Source:** [`GL-001`](../providers/gitlab.md#gl-001) in the [GitLab CI provider](../providers/gitlab.md).
 
-#### `GL-004`: Deploy job lacks manual approval or environment gate <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-gl-004 }
+### `GL-004`: Deploy job lacks manual approval or environment gate <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-gl-004 }
 
 **Evidences:** [`ENF-1`](#ctrl-enf-1) L2: Enforce security policy of OSS usage (block on violation), [`ENF-2`](#ctrl-enf-2) L2: Break the build when a violation is detected.
 
@@ -2303,7 +2303,7 @@ jobs:
 
 **Source:** [`GL-004`](../providers/gitlab.md#gl-004) in the [GitLab CI provider](../providers/gitlab.md).
 
-#### `GL-005`: include: pulls remote / project without pinned ref <span class="pg-sev pg-sev--high">HIGH</span> { #detail-gl-005 }
+### `GL-005`: include: pulls remote / project without pinned ref <span class="pg-sev pg-sev--high">HIGH</span> { #detail-gl-005 }
 
 **Evidences:** [`UPD-1`](#ctrl-upd-1) L1: Update vulnerable OSS manually (pin + track versions).
 
@@ -2313,7 +2313,7 @@ jobs:
 
 **Source:** [`GL-005`](../providers/gitlab.md#gl-005) in the [GitLab CI provider](../providers/gitlab.md).
 
-#### `GL-006`: Artifacts not signed <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-gl-006 }
+### `GL-006`: Artifacts not signed <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-gl-006 }
 
 **Evidences:** [`REB-2`](#ctrl-reb-2) L4: Digitally sign rebuilt / produced OSS artifacts.
 
@@ -2323,7 +2323,7 @@ jobs:
 
 **Source:** [`GL-006`](../providers/gitlab.md#gl-006) in the [GitLab CI provider](../providers/gitlab.md).
 
-#### `GL-007`: SBOM not produced <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-gl-007 }
+### `GL-007`: SBOM not produced <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-gl-007 }
 
 **Evidences:** [`REB-3`](#ctrl-reb-3) L4: Generate SBOMs for artifacts produced.
 
@@ -2333,7 +2333,7 @@ jobs:
 
 **Source:** [`GL-007`](../providers/gitlab.md#gl-007) in the [GitLab CI provider](../providers/gitlab.md).
 
-#### `GL-009`: Image pinned to version tag rather than sha256 digest <span class="pg-sev pg-sev--low">LOW</span> { #detail-gl-009 }
+### `GL-009`: Image pinned to version tag rather than sha256 digest <span class="pg-sev pg-sev--low">LOW</span> { #detail-gl-009 }
 
 **Evidences:** [`UPD-1`](#ctrl-upd-1) L1: Update vulnerable OSS manually (pin + track versions).
 
@@ -2343,7 +2343,7 @@ jobs:
 
 **Source:** [`GL-009`](../providers/gitlab.md#gl-009) in the [GitLab CI provider](../providers/gitlab.md).
 
-#### `GL-018`: Package install from insecure source <span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> { #detail-gl-018 }
+### `GL-018`: Package install from insecure source <span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> { #detail-gl-018 }
 
 **Evidences:** [`ING-1`](#ctrl-ing-1) L1: Use package managers trusted by your organization.
 
@@ -2355,7 +2355,7 @@ jobs:
 
 **Source:** [`GL-018`](../providers/gitlab.md#gl-018) in the [GitLab CI provider](../providers/gitlab.md).
 
-#### `GL-019`: No vulnerability scanning step <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-gl-019 }
+### `GL-019`: No vulnerability scanning step <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-gl-019 }
 
 **Evidences:** [`SCA-1`](#ctrl-sca-1) L1: Scan OSS for known vulnerabilities.
 
@@ -2365,7 +2365,7 @@ jobs:
 
 **Source:** [`GL-019`](../providers/gitlab.md#gl-019) in the [GitLab CI provider](../providers/gitlab.md).
 
-#### `GL-021`: Package install without lockfile enforcement <span class="pg-sev pg-sev--medium">MEDIUM</span> <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> { #detail-gl-021 }
+### `GL-021`: Package install without lockfile enforcement <span class="pg-sev pg-sev--medium">MEDIUM</span> <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> { #detail-gl-021 }
 
 **Evidences:** [`UPD-1`](#ctrl-upd-1) L1: Update vulnerable OSS manually (pin + track versions).
 
@@ -2377,7 +2377,7 @@ jobs:
 
 **Source:** [`GL-021`](../providers/gitlab.md#gl-021) in the [GitLab CI provider](../providers/gitlab.md).
 
-#### `GL-022`: Dependency update command bypasses lockfile pins <span class="pg-sev pg-sev--medium">MEDIUM</span> <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> { #detail-gl-022 }
+### `GL-022`: Dependency update command bypasses lockfile pins <span class="pg-sev pg-sev--medium">MEDIUM</span> <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> { #detail-gl-022 }
 
 **Evidences:** [`UPD-2`](#ctrl-upd-2) L3: Enable automated OSS updates (Dependabot / Renovate).
 
@@ -2393,7 +2393,7 @@ jobs:
 
 **Source:** [`GL-022`](../providers/gitlab.md#gl-022) in the [GitLab CI provider](../providers/gitlab.md).
 
-#### `GL-023`: TLS / certificate verification bypass <span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> { #detail-gl-023 }
+### `GL-023`: TLS / certificate verification bypass <span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> { #detail-gl-023 }
 
 **Evidences:** [`ING-1`](#ctrl-ing-1) L1: Use package managers trusted by your organization.
 
@@ -2405,7 +2405,7 @@ jobs:
 
 **Source:** [`GL-023`](../providers/gitlab.md#gl-023) in the [GitLab CI provider](../providers/gitlab.md).
 
-#### `GL-024`: No SLSA provenance attestation produced <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-gl-024 }
+### `GL-024`: No SLSA provenance attestation produced <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-gl-024 }
 
 **Evidences:** [`REB-4`](#ctrl-reb-4) L4: Digitally sign SBOMs produced (attested provenance).
 
@@ -2415,7 +2415,7 @@ jobs:
 
 **Source:** [`GL-024`](../providers/gitlab.md#gl-024) in the [GitLab CI provider](../providers/gitlab.md).
 
-#### `GL-025`: Pipeline contains indicators of malicious activity <span class="pg-sev pg-sev--critical">CRITICAL</span> { #detail-gl-025 }
+### `GL-025`: Pipeline contains indicators of malicious activity <span class="pg-sev pg-sev--critical">CRITICAL</span> { #detail-gl-025 }
 
 **Evidences:** [`SCA-3`](#ctrl-sca-3) L2: Scan OSS for malware.
 
@@ -2430,7 +2430,7 @@ jobs:
 
 **Source:** [`GL-025`](../providers/gitlab.md#gl-025) in the [GitLab CI provider](../providers/gitlab.md).
 
-#### `GL-027`: Package install bypasses registry integrity (git / path / tarball source) <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-gl-027 }
+### `GL-027`: Package install bypasses registry integrity (git / path / tarball source) <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-gl-027 }
 
 **Evidences:** [`ING-1`](#ctrl-ing-1) L1: Use package managers trusted by your organization.
 
@@ -2440,7 +2440,7 @@ jobs:
 
 **Source:** [`GL-027`](../providers/gitlab.md#gl-027) in the [GitLab CI provider](../providers/gitlab.md).
 
-#### `GL-028`: services: image not pinned <span class="pg-sev pg-sev--high">HIGH</span> { #detail-gl-028 }
+### `GL-028`: services: image not pinned <span class="pg-sev pg-sev--high">HIGH</span> { #detail-gl-028 }
 
 **Evidences:** [`UPD-1`](#ctrl-upd-1) L1: Update vulnerable OSS manually (pin + track versions).
 
@@ -2450,7 +2450,7 @@ jobs:
 
 **Source:** [`GL-028`](../providers/gitlab.md#gl-028) in the [GitLab CI provider](../providers/gitlab.md).
 
-#### `GL-029`: Manual deploy job defaults to allow_failure: true <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-gl-029 }
+### `GL-029`: Manual deploy job defaults to allow_failure: true <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-gl-029 }
 
 **Evidences:** [`ENF-2`](#ctrl-enf-2) L2: Break the build when a violation is detected.
 
@@ -2460,7 +2460,7 @@ jobs:
 
 **Source:** [`GL-029`](../providers/gitlab.md#gl-029) in the [GitLab CI provider](../providers/gitlab.md).
 
-#### `GL-030`: trigger: include: pulls child pipeline without pinned ref <span class="pg-sev pg-sev--high">HIGH</span> { #detail-gl-030 }
+### `GL-030`: trigger: include: pulls child pipeline without pinned ref <span class="pg-sev pg-sev--high">HIGH</span> { #detail-gl-030 }
 
 **Evidences:** [`UPD-1`](#ctrl-upd-1) L1: Update vulnerable OSS manually (pin + track versions).
 
@@ -2470,7 +2470,7 @@ jobs:
 
 **Source:** [`GL-030`](../providers/gitlab.md#gl-030) in the [GitLab CI provider](../providers/gitlab.md).
 
-#### `HELM-001`: Chart.yaml declares legacy apiVersion: v1 <span class="pg-sev pg-sev--medium">MEDIUM</span> <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> { #detail-helm-001 }
+### `HELM-001`: Chart.yaml declares legacy apiVersion: v1 <span class="pg-sev pg-sev--medium">MEDIUM</span> <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> { #detail-helm-001 }
 
 **Evidences:** [`ING-1`](#ctrl-ing-1) L1: Use package managers trusted by your organization.
 
@@ -2482,7 +2482,7 @@ jobs:
 
 **Source:** [`HELM-001`](../providers/helm.md) in the [Helm provider](../providers/helm.md).
 
-#### `HELM-002`: Chart.lock missing per-dependency digests <span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> { #detail-helm-002 }
+### `HELM-002`: Chart.lock missing per-dependency digests <span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> { #detail-helm-002 }
 
 **Evidences:** [`UPD-1`](#ctrl-upd-1) L1: Update vulnerable OSS manually (pin + track versions), [`REB-3`](#ctrl-reb-3) L4: Generate SBOMs for artifacts produced.
 
@@ -2504,7 +2504,7 @@ v1 charts (HELM-001) are skipped. They predate ``Chart.lock`` and use ``requirem
 
 **Source:** [`HELM-002`](../providers/helm.md) in the [Helm provider](../providers/helm.md).
 
-#### `HELM-003`: Chart dependency declared on a non-HTTPS repository <span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> { #detail-helm-003 }
+### `HELM-003`: Chart dependency declared on a non-HTTPS repository <span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> { #detail-helm-003 }
 
 **Evidences:** [`ING-1`](#ctrl-ing-1) L1: Use package managers trusted by your organization.
 
@@ -2521,7 +2521,7 @@ v1 charts (HELM-001) are skipped. They predate ``Chart.lock`` and use ``requirem
 
 **Source:** [`HELM-003`](../providers/helm.md) in the [Helm provider](../providers/helm.md).
 
-#### `HELM-004`: Chart dependency version is a range, not an exact pin <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-helm-004 }
+### `HELM-004`: Chart dependency version is a range, not an exact pin <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-helm-004 }
 
 **Evidences:** [`UPD-1`](#ctrl-upd-1) L1: Update vulnerable OSS manually (pin + track versions).
 
@@ -2531,7 +2531,7 @@ v1 charts (HELM-001) are skipped. They predate ``Chart.lock`` and use ``requirem
 
 **Source:** [`HELM-004`](../providers/helm.md) in the [Helm provider](../providers/helm.md).
 
-#### `HELM-005`: Chart maintainers field empty or missing chain-of-custody info <span class="pg-sev pg-sev--low">LOW</span> { #detail-helm-005 }
+### `HELM-005`: Chart maintainers field empty or missing chain-of-custody info <span class="pg-sev pg-sev--low">LOW</span> { #detail-helm-005 }
 
 **Evidences:** [`REB-3`](#ctrl-reb-3) L4: Generate SBOMs for artifacts produced.
 
@@ -2545,7 +2545,7 @@ v1 charts (HELM-001) are skipped. They predate ``Chart.lock`` and use ``requirem
 
 **Source:** [`HELM-005`](../providers/helm.md) in the [Helm provider](../providers/helm.md).
 
-#### `HELM-007`: Chart.yaml description field is empty or missing <span class="pg-sev pg-sev--low">LOW</span> { #detail-helm-007 }
+### `HELM-007`: Chart.yaml description field is empty or missing <span class="pg-sev pg-sev--low">LOW</span> { #detail-helm-007 }
 
 **Evidences:** [`REB-3`](#ctrl-reb-3) L4: Generate SBOMs for artifacts produced.
 
@@ -2555,7 +2555,7 @@ v1 charts (HELM-001) are skipped. They predate ``Chart.lock`` and use ``requirem
 
 **Source:** [`HELM-007`](../providers/helm.md) in the [Helm provider](../providers/helm.md).
 
-#### `HELM-008`: Chart.lock generated more than 90 days ago <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-helm-008 }
+### `HELM-008`: Chart.lock generated more than 90 days ago <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-helm-008 }
 
 **Evidences:** [`UPD-1`](#ctrl-upd-1) L1: Update vulnerable OSS manually (pin + track versions).
 
@@ -2569,7 +2569,7 @@ v1 charts (HELM-001) are skipped. They predate ``Chart.lock`` and use ``requirem
 
 **Source:** [`HELM-008`](../providers/helm.md) in the [Helm provider](../providers/helm.md).
 
-#### `HELM-009`: Chart home / sources URL uses a non-HTTPS scheme <span class="pg-sev pg-sev--low">LOW</span> { #detail-helm-009 }
+### `HELM-009`: Chart home / sources URL uses a non-HTTPS scheme <span class="pg-sev pg-sev--low">LOW</span> { #detail-helm-009 }
 
 **Evidences:** [`ING-1`](#ctrl-ing-1) L1: Use package managers trusted by your organization.
 
@@ -2579,7 +2579,7 @@ v1 charts (HELM-001) are skipped. They predate ``Chart.lock`` and use ``requirem
 
 **Source:** [`HELM-009`](../providers/helm.md) in the [Helm provider](../providers/helm.md).
 
-#### `HELM-010`: Chart.yaml appVersion field is empty or missing <span class="pg-sev pg-sev--low">LOW</span> { #detail-helm-010 }
+### `HELM-010`: Chart.yaml appVersion field is empty or missing <span class="pg-sev pg-sev--low">LOW</span> { #detail-helm-010 }
 
 **Evidences:** [`REB-3`](#ctrl-reb-3) L4: Generate SBOMs for artifacts produced.
 
@@ -2589,7 +2589,7 @@ v1 charts (HELM-001) are skipped. They predate ``Chart.lock`` and use ``requirem
 
 **Source:** [`HELM-010`](../providers/helm.md) in the [Helm provider](../providers/helm.md).
 
-#### `JF-001`: Shared library not pinned to a tag or commit <span class="pg-sev pg-sev--high">HIGH</span> { #detail-jf-001 }
+### `JF-001`: Shared library not pinned to a tag or commit <span class="pg-sev pg-sev--high">HIGH</span> { #detail-jf-001 }
 
 **Evidences:** [`UPD-1`](#ctrl-upd-1) L1: Update vulnerable OSS manually (pin + track versions).
 
@@ -2599,7 +2599,7 @@ v1 charts (HELM-001) are skipped. They predate ``Chart.lock`` and use ``requirem
 
 **Source:** [`JF-001`](../providers/jenkins.md#jf-001) in the [Jenkins provider](../providers/jenkins.md).
 
-#### `JF-005`: Deploy stage missing manual `input` approval <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-jf-005 }
+### `JF-005`: Deploy stage missing manual `input` approval <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-jf-005 }
 
 **Evidences:** [`ENF-1`](#ctrl-enf-1) L2: Enforce security policy of OSS usage (block on violation).
 
@@ -2609,7 +2609,7 @@ v1 charts (HELM-001) are skipped. They predate ``Chart.lock`` and use ``requirem
 
 **Source:** [`JF-005`](../providers/jenkins.md#jf-005) in the [Jenkins provider](../providers/jenkins.md).
 
-#### `JF-006`: Artifacts not signed <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-jf-006 }
+### `JF-006`: Artifacts not signed <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-jf-006 }
 
 **Evidences:** [`REB-2`](#ctrl-reb-2) L4: Digitally sign rebuilt / produced OSS artifacts.
 
@@ -2619,7 +2619,7 @@ v1 charts (HELM-001) are skipped. They predate ``Chart.lock`` and use ``requirem
 
 **Source:** [`JF-006`](../providers/jenkins.md#jf-006) in the [Jenkins provider](../providers/jenkins.md).
 
-#### `JF-007`: SBOM not produced <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-jf-007 }
+### `JF-007`: SBOM not produced <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-jf-007 }
 
 **Evidences:** [`REB-3`](#ctrl-reb-3) L4: Generate SBOMs for artifacts produced.
 
@@ -2629,7 +2629,7 @@ v1 charts (HELM-001) are skipped. They predate ``Chart.lock`` and use ``requirem
 
 **Source:** [`JF-007`](../providers/jenkins.md#jf-007) in the [Jenkins provider](../providers/jenkins.md).
 
-#### `JF-009`: Agent docker image not pinned to sha256 digest <span class="pg-sev pg-sev--high">HIGH</span> { #detail-jf-009 }
+### `JF-009`: Agent docker image not pinned to sha256 digest <span class="pg-sev pg-sev--high">HIGH</span> { #detail-jf-009 }
 
 **Evidences:** [`UPD-1`](#ctrl-upd-1) L1: Update vulnerable OSS manually (pin + track versions).
 
@@ -2639,7 +2639,7 @@ v1 charts (HELM-001) are skipped. They predate ``Chart.lock`` and use ``requirem
 
 **Source:** [`JF-009`](../providers/jenkins.md#jf-009) in the [Jenkins provider](../providers/jenkins.md).
 
-#### `JF-018`: Package install from insecure source <span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> { #detail-jf-018 }
+### `JF-018`: Package install from insecure source <span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> { #detail-jf-018 }
 
 **Evidences:** [`ING-1`](#ctrl-ing-1) L1: Use package managers trusted by your organization.
 
@@ -2651,7 +2651,7 @@ v1 charts (HELM-001) are skipped. They predate ``Chart.lock`` and use ``requirem
 
 **Source:** [`JF-018`](../providers/jenkins.md#jf-018) in the [Jenkins provider](../providers/jenkins.md).
 
-#### `JF-020`: No vulnerability scanning step <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-jf-020 }
+### `JF-020`: No vulnerability scanning step <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-jf-020 }
 
 **Evidences:** [`SCA-1`](#ctrl-sca-1) L1: Scan OSS for known vulnerabilities.
 
@@ -2661,7 +2661,7 @@ v1 charts (HELM-001) are skipped. They predate ``Chart.lock`` and use ``requirem
 
 **Source:** [`JF-020`](../providers/jenkins.md#jf-020) in the [Jenkins provider](../providers/jenkins.md).
 
-#### `JF-021`: Package install without lockfile enforcement <span class="pg-sev pg-sev--medium">MEDIUM</span> <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> { #detail-jf-021 }
+### `JF-021`: Package install without lockfile enforcement <span class="pg-sev pg-sev--medium">MEDIUM</span> <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> { #detail-jf-021 }
 
 **Evidences:** [`UPD-1`](#ctrl-upd-1) L1: Update vulnerable OSS manually (pin + track versions).
 
@@ -2673,7 +2673,7 @@ v1 charts (HELM-001) are skipped. They predate ``Chart.lock`` and use ``requirem
 
 **Source:** [`JF-021`](../providers/jenkins.md#jf-021) in the [Jenkins provider](../providers/jenkins.md).
 
-#### `JF-022`: Dependency update command bypasses lockfile pins <span class="pg-sev pg-sev--medium">MEDIUM</span> <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> { #detail-jf-022 }
+### `JF-022`: Dependency update command bypasses lockfile pins <span class="pg-sev pg-sev--medium">MEDIUM</span> <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> { #detail-jf-022 }
 
 **Evidences:** [`UPD-2`](#ctrl-upd-2) L3: Enable automated OSS updates (Dependabot / Renovate).
 
@@ -2689,7 +2689,7 @@ v1 charts (HELM-001) are skipped. They predate ``Chart.lock`` and use ``requirem
 
 **Source:** [`JF-022`](../providers/jenkins.md#jf-022) in the [Jenkins provider](../providers/jenkins.md).
 
-#### `JF-023`: TLS / certificate verification bypass <span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> { #detail-jf-023 }
+### `JF-023`: TLS / certificate verification bypass <span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> { #detail-jf-023 }
 
 **Evidences:** [`ING-1`](#ctrl-ing-1) L1: Use package managers trusted by your organization.
 
@@ -2701,7 +2701,7 @@ v1 charts (HELM-001) are skipped. They predate ``Chart.lock`` and use ``requirem
 
 **Source:** [`JF-023`](../providers/jenkins.md#jf-023) in the [Jenkins provider](../providers/jenkins.md).
 
-#### `JF-024`: `input` approval step missing submitter restriction <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-jf-024 }
+### `JF-024`: `input` approval step missing submitter restriction <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-jf-024 }
 
 **Evidences:** [`ENF-1`](#ctrl-enf-1) L2: Enforce security policy of OSS usage (block on violation).
 
@@ -2711,7 +2711,7 @@ v1 charts (HELM-001) are skipped. They predate ``Chart.lock`` and use ``requirem
 
 **Source:** [`JF-024`](../providers/jenkins.md#jf-024) in the [Jenkins provider](../providers/jenkins.md).
 
-#### `JF-028`: No SLSA provenance attestation produced <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-jf-028 }
+### `JF-028`: No SLSA provenance attestation produced <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-jf-028 }
 
 **Evidences:** [`REB-4`](#ctrl-reb-4) L4: Digitally sign SBOMs produced (attested provenance).
 
@@ -2721,7 +2721,7 @@ v1 charts (HELM-001) are skipped. They predate ``Chart.lock`` and use ``requirem
 
 **Source:** [`JF-028`](../providers/jenkins.md#jf-028) in the [Jenkins provider](../providers/jenkins.md).
 
-#### `JF-029`: Jenkinsfile contains indicators of malicious activity <span class="pg-sev pg-sev--critical">CRITICAL</span> { #detail-jf-029 }
+### `JF-029`: Jenkinsfile contains indicators of malicious activity <span class="pg-sev pg-sev--critical">CRITICAL</span> { #detail-jf-029 }
 
 **Evidences:** [`SCA-3`](#ctrl-sca-3) L2: Scan OSS for malware.
 
@@ -2736,7 +2736,7 @@ v1 charts (HELM-001) are skipped. They predate ``Chart.lock`` and use ``requirem
 
 **Source:** [`JF-029`](../providers/jenkins.md#jf-029) in the [Jenkins provider](../providers/jenkins.md).
 
-#### `JF-031`: Package install bypasses registry integrity (git / path / tarball source) <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-jf-031 }
+### `JF-031`: Package install bypasses registry integrity (git / path / tarball source) <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-jf-031 }
 
 **Evidences:** [`ING-1`](#ctrl-ing-1) L1: Use package managers trusted by your organization.
 
@@ -2746,7 +2746,7 @@ v1 charts (HELM-001) are skipped. They predate ``Chart.lock`` and use ``requirem
 
 **Source:** [`JF-031`](../providers/jenkins.md#jf-031) in the [Jenkins provider](../providers/jenkins.md).
 
-#### `JF-035`: httpRequest step disables SSL verification <span class="pg-sev pg-sev--high">HIGH</span> { #detail-jf-035 }
+### `JF-035`: httpRequest step disables SSL verification <span class="pg-sev pg-sev--high">HIGH</span> { #detail-jf-035 }
 
 **Evidences:** [`ING-1`](#ctrl-ing-1) L1: Use package managers trusted by your organization.
 
@@ -2756,7 +2756,7 @@ v1 charts (HELM-001) are skipped. They predate ``Chart.lock`` and use ``requirem
 
 **Source:** [`JF-035`](../providers/jenkins.md#jf-035) in the [Jenkins provider](../providers/jenkins.md).
 
-#### `LMB-001`: Lambda function has no code-signing config <span class="pg-sev pg-sev--high">HIGH</span> { #detail-lmb-001 }
+### `LMB-001`: Lambda function has no code-signing config <span class="pg-sev pg-sev--high">HIGH</span> { #detail-lmb-001 }
 
 **Evidences:** [`REB-2`](#ctrl-reb-2) L4: Digitally sign rebuilt / produced OSS artifacts.
 
@@ -2766,7 +2766,7 @@ v1 charts (HELM-001) are skipped. They predate ``Chart.lock`` and use ``requirem
 
 **Source:** [`LMB-001`](../providers/aws.md) in the [AWS provider](../providers/aws.md).
 
-#### `MVN-001`: pom.xml dependency uses a floating version range <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-mvn-001 }
+### `MVN-001`: pom.xml dependency uses a floating version range <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-mvn-001 }
 
 **Evidences:** [`UPD-1`](#ctrl-upd-1) L1: Update vulnerable OSS manually (pin + track versions).
 
@@ -2810,7 +2810,7 @@ Managed entries in ``<dependencyManagement>`` are NOT evaluated by this rule (th
 
 **Source:** [`MVN-001`](../providers/maven.md#mvn-001) in the [maven provider](../providers/maven.md).
 
-#### `MVN-002`: pom.xml depends on a mutable SNAPSHOT version <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-mvn-002 }
+### `MVN-002`: pom.xml depends on a mutable SNAPSHOT version <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-mvn-002 }
 
 **Evidences:** [`UPD-1`](#ctrl-upd-1) L1: Update vulnerable OSS manually (pin + track versions).
 
@@ -2824,7 +2824,7 @@ Managed entries in ``<dependencyManagement>`` are NOT evaluated by this rule (th
 
 **Source:** [`MVN-002`](../providers/maven.md#mvn-002) in the [maven provider](../providers/maven.md).
 
-#### `MVN-003`: pom.xml declares a plaintext-HTTP Maven repository <span class="pg-sev pg-sev--high">HIGH</span> { #detail-mvn-003 }
+### `MVN-003`: pom.xml declares a plaintext-HTTP Maven repository <span class="pg-sev pg-sev--high">HIGH</span> { #detail-mvn-003 }
 
 **Evidences:** [`ING-1`](#ctrl-ing-1) L1: Use package managers trusted by your organization.
 
@@ -2842,7 +2842,7 @@ Managed entries in ``<dependencyManagement>`` are NOT evaluated by this rule (th
 
 **Source:** [`MVN-003`](../providers/maven.md#mvn-003) in the [maven provider](../providers/maven.md).
 
-#### `MVN-004`: pom.xml dependency omits an explicit ``<version>`` <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-mvn-004 }
+### `MVN-004`: pom.xml dependency omits an explicit ``<version>`` <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-mvn-004 }
 
 **Evidences:** [`UPD-1`](#ctrl-upd-1) L1: Update vulnerable OSS manually (pin + track versions).
 
@@ -2856,7 +2856,7 @@ Managed entries in ``<dependencyManagement>`` are NOT evaluated by this rule (th
 
 **Source:** [`MVN-004`](../providers/maven.md#mvn-004) in the [maven provider](../providers/maven.md).
 
-#### `MVN-005`: Maven repository accepts artifacts without strict checksum gating <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-mvn-005 }
+### `MVN-005`: Maven repository accepts artifacts without strict checksum gating <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-mvn-005 }
 
 **Evidences:** [`UPD-1`](#ctrl-upd-1) L1: Update vulnerable OSS manually (pin + track versions).
 
@@ -2870,7 +2870,7 @@ Managed entries in ``<dependencyManagement>`` are NOT evaluated by this rule (th
 
 **Source:** [`MVN-005`](../providers/maven.md#mvn-005) in the [maven provider](../providers/maven.md).
 
-#### `MVN-006`: pom.xml pins a known-compromised Maven Central artifact version <span class="pg-sev pg-sev--critical">CRITICAL</span> { #detail-mvn-006 }
+### `MVN-006`: pom.xml pins a known-compromised Maven Central artifact version <span class="pg-sev pg-sev--critical">CRITICAL</span> { #detail-mvn-006 }
 
 **Evidences:** [`ING-3`](#ctrl-ing-3) L1: Have the capability to deny-list specific vulnerable / malicious OSS, [`SCA-3`](#ctrl-sca-3) L2: Scan OSS for malware.
 
@@ -2913,7 +2913,7 @@ Managed entries in ``<dependencyManagement>`` are NOT evaluated by this rule (th
 
 **Source:** [`MVN-006`](../providers/maven.md#mvn-006) in the [maven provider](../providers/maven.md).
 
-#### `MVN-007`: settings.xml mirror routes external traffic through one repo <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-mvn-007 }
+### `MVN-007`: settings.xml mirror routes external traffic through one repo <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-mvn-007 }
 
 **Evidences:** [`ING-1`](#ctrl-ing-1) L1: Use package managers trusted by your organization.
 
@@ -2927,7 +2927,7 @@ Managed entries in ``<dependencyManagement>`` are NOT evaluated by this rule (th
 
 **Source:** [`MVN-007`](../providers/maven.md#mvn-007) in the [maven provider](../providers/maven.md).
 
-#### `OCI-001`: Image manifest is missing OCI provenance annotations <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-oci-001 }
+### `OCI-001`: Image manifest is missing OCI provenance annotations <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-oci-001 }
 
 **Evidences:** [`REB-3`](#ctrl-reb-3) L4: Generate SBOMs for artifacts produced.
 
@@ -2941,7 +2941,7 @@ Managed entries in ``<dependencyManagement>`` are NOT evaluated by this rule (th
 
 **Source:** [`OCI-001`](../providers/oci.md#oci-001) in the [OCI manifest provider](../providers/oci.md).
 
-#### `OCI-002`: Image is missing a build attestation manifest <span class="pg-sev pg-sev--high">HIGH</span> { #detail-oci-002 }
+### `OCI-002`: Image is missing a build attestation manifest <span class="pg-sev pg-sev--high">HIGH</span> { #detail-oci-002 }
 
 **Evidences:** [`REB-4`](#ctrl-reb-4) L4: Digitally sign SBOMs produced (attested provenance).
 
@@ -2956,7 +2956,7 @@ Managed entries in ``<dependencyManagement>`` are NOT evaluated by this rule (th
 
 **Source:** [`OCI-002`](../providers/oci.md#oci-002) in the [OCI manifest provider](../providers/oci.md).
 
-#### `OCI-003`: Image manifest is missing the ``image.created`` annotation <span class="pg-sev pg-sev--low">LOW</span> { #detail-oci-003 }
+### `OCI-003`: Image manifest is missing the ``image.created`` annotation <span class="pg-sev pg-sev--low">LOW</span> { #detail-oci-003 }
 
 **Evidences:** [`REB-3`](#ctrl-reb-3) L4: Generate SBOMs for artifacts produced.
 
@@ -2970,7 +2970,7 @@ Managed entries in ``<dependencyManagement>`` are NOT evaluated by this rule (th
 
 **Source:** [`OCI-003`](../providers/oci.md#oci-003) in the [OCI manifest provider](../providers/oci.md).
 
-#### `OCI-005`: Image manifest is missing the ``image.licenses`` annotation <span class="pg-sev pg-sev--low">LOW</span> { #detail-oci-005 }
+### `OCI-005`: Image manifest is missing the ``image.licenses`` annotation <span class="pg-sev pg-sev--low">LOW</span> { #detail-oci-005 }
 
 **Evidences:** [`REB-3`](#ctrl-reb-3) L4: Generate SBOMs for artifacts produced.
 
@@ -2985,7 +2985,7 @@ Managed entries in ``<dependencyManagement>`` are NOT evaluated by this rule (th
 
 **Source:** [`OCI-005`](../providers/oci.md#oci-005) in the [OCI manifest provider](../providers/oci.md).
 
-#### `OCI-007`: Image manifest uses legacy schemaVersion 1 (no content addressing) <span class="pg-sev pg-sev--high">HIGH</span> { #detail-oci-007 }
+### `OCI-007`: Image manifest uses legacy schemaVersion 1 (no content addressing) <span class="pg-sev pg-sev--high">HIGH</span> { #detail-oci-007 }
 
 **Evidences:** [`UPD-1`](#ctrl-upd-1) L1: Update vulnerable OSS manually (pin + track versions).
 
@@ -2999,7 +2999,7 @@ Managed entries in ``<dependencyManagement>`` are NOT evaluated by this rule (th
 
 **Source:** [`OCI-007`](../providers/oci.md#oci-007) in the [OCI manifest provider](../providers/oci.md).
 
-#### `OCI-008`: Manifest references digest using unsupported hash algorithm <span class="pg-sev pg-sev--high">HIGH</span> { #detail-oci-008 }
+### `OCI-008`: Manifest references digest using unsupported hash algorithm <span class="pg-sev pg-sev--high">HIGH</span> { #detail-oci-008 }
 
 **Evidences:** [`UPD-1`](#ctrl-upd-1) L1: Update vulnerable OSS manually (pin + track versions).
 
@@ -3015,7 +3015,7 @@ Detection scope: the config descriptor digest, every layer descriptor digest (si
 
 **Source:** [`OCI-008`](../providers/oci.md#oci-008) in the [OCI manifest provider](../providers/oci.md).
 
-#### `SIGN-001`: No AWS Signer profile defined for Lambda deploys <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-sign-001 }
+### `SIGN-001`: No AWS Signer profile defined for Lambda deploys <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-sign-001 }
 
 **Evidences:** [`REB-2`](#ctrl-reb-2) L4: Digitally sign rebuilt / produced OSS artifacts.
 
@@ -3025,7 +3025,7 @@ Detection scope: the config descriptor digest, every layer descriptor digest (si
 
 **Source:** [`SIGN-001`](../providers/aws.md) in the [AWS provider](../providers/aws.md).
 
-#### `SIGN-002`: AWS Signer profile is revoked or inactive <span class="pg-sev pg-sev--high">HIGH</span> { #detail-sign-002 }
+### `SIGN-002`: AWS Signer profile is revoked or inactive <span class="pg-sev pg-sev--high">HIGH</span> { #detail-sign-002 }
 
 **Evidences:** [`REB-2`](#ctrl-reb-2) L4: Digitally sign rebuilt / produced OSS artifacts.
 
@@ -3035,7 +3035,7 @@ Detection scope: the config descriptor digest, every layer descriptor digest (si
 
 **Source:** [`SIGN-002`](../providers/aws.md) in the [AWS provider](../providers/aws.md).
 
-#### `TKN-001`: Tekton step image not pinned to a digest <span class="pg-sev pg-sev--high">HIGH</span> { #detail-tkn-001 }
+### `TKN-001`: Tekton step image not pinned to a digest <span class="pg-sev pg-sev--high">HIGH</span> { #detail-tkn-001 }
 
 **Evidences:** [`UPD-1`](#ctrl-upd-1) L1: Update vulnerable OSS manually (pin + track versions).
 
@@ -3045,7 +3045,7 @@ Detection scope: the config descriptor digest, every layer descriptor digest (si
 
 **Source:** [`TKN-001`](../providers/tekton.md#tkn-001) in the [Tekton provider](../providers/tekton.md).
 
-#### `TKN-008`: Tekton step script pipes remote install or disables TLS <span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> { #detail-tkn-008 }
+### `TKN-008`: Tekton step script pipes remote install or disables TLS <span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> { #detail-tkn-008 }
 
 **Evidences:** [`ING-1`](#ctrl-ing-1) L1: Use package managers trusted by your organization.
 
@@ -3061,7 +3061,7 @@ Detection scope: the config descriptor digest, every layer descriptor digest (si
 
 **Source:** [`TKN-008`](../providers/tekton.md#tkn-008) in the [Tekton provider](../providers/tekton.md).
 
-#### `TKN-009`: Artifacts not signed (no cosign/sigstore step) <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-tkn-009 }
+### `TKN-009`: Artifacts not signed (no cosign/sigstore step) <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-tkn-009 }
 
 **Evidences:** [`REB-2`](#ctrl-reb-2) L4: Digitally sign rebuilt / produced OSS artifacts.
 
@@ -3071,7 +3071,7 @@ Detection scope: the config descriptor digest, every layer descriptor digest (si
 
 **Source:** [`TKN-009`](../providers/tekton.md#tkn-009) in the [Tekton provider](../providers/tekton.md).
 
-#### `TKN-010`: No SBOM generated for build artifacts <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-tkn-010 }
+### `TKN-010`: No SBOM generated for build artifacts <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-tkn-010 }
 
 **Evidences:** [`REB-3`](#ctrl-reb-3) L4: Generate SBOMs for artifacts produced.
 
@@ -3081,7 +3081,7 @@ Detection scope: the config descriptor digest, every layer descriptor digest (si
 
 **Source:** [`TKN-010`](../providers/tekton.md#tkn-010) in the [Tekton provider](../providers/tekton.md).
 
-#### `TKN-011`: No SLSA provenance attestation produced <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-tkn-011 }
+### `TKN-011`: No SLSA provenance attestation produced <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-tkn-011 }
 
 **Evidences:** [`REB-4`](#ctrl-reb-4) L4: Digitally sign SBOMs produced (attested provenance).
 
@@ -3091,7 +3091,7 @@ Detection scope: the config descriptor digest, every layer descriptor digest (si
 
 **Source:** [`TKN-011`](../providers/tekton.md#tkn-011) in the [Tekton provider](../providers/tekton.md).
 
-#### `TKN-012`: No vulnerability scanning step <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-tkn-012 }
+### `TKN-012`: No vulnerability scanning step <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-tkn-012 }
 
 **Evidences:** [`SCA-1`](#ctrl-sca-1) L1: Scan OSS for known vulnerabilities.
 

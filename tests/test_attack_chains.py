@@ -541,12 +541,48 @@ class TestChainAC006:
 class TestChainAC008:
     """AC-008 — Dependency Confusion Window."""
 
+    WF = ".github/workflows/release.yml"
+
     def test_fires_with_no_lockfile_and_integrity_bypass(self):
-        wf = ".github/workflows/release.yml"
-        out = chains_pkg.evaluate([_f("GHA-021", wf), _f("GHA-029", wf)])
+        out = chains_pkg.evaluate([_f("GHA-021", self.WF), _f("GHA-029", self.WF)])
         ac8 = [c for c in out if c.chain_id == "AC-008"]
         assert len(ac8) == 1
         assert "T1195.001" in ac8[0].mitre_attack
+
+    def test_reachability_confirmed_when_anchor_jobs_intersect(self):
+        # Same job both skips the lockfile AND installs from an
+        # integrity-bypass source: the tightest dep-confusion window.
+        out = chains_pkg.evaluate([
+            _f("GHA-021", self.WF, job_anchors=("build",)),
+            _f(
+                "GHA-029",
+                self.WF,
+                job_anchors=("build",),
+                confidence=Confidence.MEDIUM,
+            ),
+        ])
+        ac8 = next(c for c in out if c.chain_id == "AC-008")
+        assert ac8.confirmed_reachable is True
+        assert "build" in ac8.reachability_note
+        assert ac8.confidence is Confidence.HIGH
+
+    def test_reachability_unconfirmed_when_jobs_disjoint(self):
+        # Lockfile miss in ``test``, integrity bypass in ``deploy`` —
+        # both still real findings but the chain stays at the
+        # weaker co-occurrence signal.
+        out = chains_pkg.evaluate([
+            _f("GHA-021", self.WF, job_anchors=("test",)),
+            _f(
+                "GHA-029",
+                self.WF,
+                job_anchors=("deploy",),
+                confidence=Confidence.MEDIUM,
+            ),
+        ])
+        ac8 = next(c for c in out if c.chain_id == "AC-008")
+        assert ac8.confirmed_reachable is False
+        assert ac8.reachability_note == ""
+        assert ac8.confidence is Confidence.MEDIUM
 
 
 class TestChainAC007:
@@ -576,12 +612,13 @@ class TestChainAC007:
 class TestChainAC009:
     """AC-009 — Supply Chain Repo Poisoning."""
 
+    WF = ".github/workflows/release.yml"
+
     def test_fires_with_all_three_legs_on_same_workflow(self):
-        wf = ".github/workflows/release.yml"
         out = chains_pkg.evaluate([
-            _f("GHA-001", wf),
-            _f("GHA-002", wf),
-            _f("GHA-008", wf),
+            _f("GHA-001", self.WF),
+            _f("GHA-002", self.WF),
+            _f("GHA-008", self.WF),
         ])
         ac9 = [c for c in out if c.chain_id == "AC-009"]
         assert len(ac9) == 1
@@ -589,10 +626,9 @@ class TestChainAC009:
         assert "T1195.002" in ac9[0].mitre_attack
 
     def test_does_not_fire_with_only_two_legs(self):
-        wf = ".github/workflows/release.yml"
         out = chains_pkg.evaluate([
-            _f("GHA-001", wf),
-            _f("GHA-002", wf),
+            _f("GHA-001", self.WF),
+            _f("GHA-002", self.WF),
         ])
         assert not any(c.chain_id == "AC-009" for c in out)
 
@@ -605,6 +641,46 @@ class TestChainAC009:
             _f("GHA-008", ".github/workflows/c.yml"),
         ])
         assert not any(c.chain_id == "AC-009" for c in out)
+
+    def test_reachability_confirmed_when_all_three_anchor_intersect(self):
+        # One job pulls the unpinned action, runs the injection sink,
+        # AND has the literal credential in scope — the precise
+        # one-execution-context exfil route.
+        out = chains_pkg.evaluate([
+            _f("GHA-001", self.WF, job_anchors=("release",)),
+            _f("GHA-002", self.WF, job_anchors=("release",)),
+            _f(
+                "GHA-008",
+                self.WF,
+                job_anchors=("release",),
+                confidence=Confidence.MEDIUM,
+            ),
+        ])
+        ac9 = next(c for c in out if c.chain_id == "AC-009")
+        assert ac9.confirmed_reachable is True
+        assert "release" in ac9.reachability_note
+        assert ac9.confidence is Confidence.HIGH
+
+    def test_reachability_unconfirmed_when_three_jobs_disjoint(self):
+        # Unpinned action in ``docs``, injection in ``release``,
+        # literal credential at workflow ``env:`` (fans out to all
+        # jobs in GHA-008's anchor set, but we pass just ``other``
+        # here to simulate a hand-scoped credential block that
+        # doesn't reach either release job).
+        out = chains_pkg.evaluate([
+            _f("GHA-001", self.WF, job_anchors=("docs",)),
+            _f("GHA-002", self.WF, job_anchors=("release",)),
+            _f(
+                "GHA-008",
+                self.WF,
+                job_anchors=("other",),
+                confidence=Confidence.MEDIUM,
+            ),
+        ])
+        ac9 = next(c for c in out if c.chain_id == "AC-009")
+        assert ac9.confirmed_reachable is False
+        assert ac9.reachability_note == ""
+        assert ac9.confidence is Confidence.MEDIUM
 
 
 class TestChainAC010:
@@ -767,6 +843,44 @@ class TestChainAC012:
             _f("GHA-034", self.WF, confidence=Confidence.MEDIUM),
         ])
         ac12 = next(c for c in out if c.chain_id == "AC-012")
+        # Without job anchors the chain is unconfirmed and confidence
+        # falls through to the weakest leg.
+        assert ac12.confidence is Confidence.MEDIUM
+        assert ac12.confirmed_reachable is False
+
+    def test_reachability_confirmed_when_anchor_jobs_intersect(self):
+        # Same call site both unpins the callee AND passes
+        # ``secrets: inherit``, the single-step exfil channel.
+        out = chains_pkg.evaluate([
+            _f("GHA-025", self.WF, job_anchors=("call_release",)),
+            _f(
+                "GHA-034",
+                self.WF,
+                job_anchors=("call_release",),
+                confidence=Confidence.MEDIUM,
+            ),
+        ])
+        ac12 = next(c for c in out if c.chain_id == "AC-012")
+        assert ac12.confirmed_reachable is True
+        assert "call_release" in ac12.reachability_note
+        assert ac12.confidence is Confidence.HIGH
+
+    def test_reachability_unconfirmed_when_jobs_disjoint(self):
+        # Unpinned call in ``build``, inherit call in ``deploy`` —
+        # two reusable-workflow calls on the same file but neither
+        # one exposes both legs, so no single-step exfil.
+        out = chains_pkg.evaluate([
+            _f("GHA-025", self.WF, job_anchors=("build",)),
+            _f(
+                "GHA-034",
+                self.WF,
+                job_anchors=("deploy",),
+                confidence=Confidence.MEDIUM,
+            ),
+        ])
+        ac12 = next(c for c in out if c.chain_id == "AC-012")
+        assert ac12.confirmed_reachable is False
+        assert ac12.reachability_note == ""
         assert ac12.confidence is Confidence.MEDIUM
 
 
@@ -1602,6 +1716,51 @@ class TestChainAC023:
         assert len(ac23) == 2
         assert {c.resources[0] for c in ac23} == {self.TASK, self.OTHER_TASK}
 
+    def test_reachability_confirmed_when_step_anchors_intersect(self):
+        # The same step (``Task/build:build-image``) both runs
+        # privileged AND interpolates an unsafe param — the precise
+        # node-escape primitive.
+        out = chains_pkg.evaluate([
+            _f(
+                "TKN-002",
+                self.TASK,
+                job_anchors=("Task/build:build-image",),
+            ),
+            _f(
+                "TKN-003",
+                self.TASK,
+                job_anchors=("Task/build:build-image",),
+                confidence=Confidence.MEDIUM,
+            ),
+        ])
+        chain = next(c for c in out if c.chain_id == "AC-023")
+        assert chain.confirmed_reachable is True
+        assert "Task/build:build-image" in chain.reachability_note
+        assert chain.confidence is Confidence.HIGH
+
+    def test_reachability_unconfirmed_when_steps_disjoint(self):
+        # Privileged step is ``build``, param-injection sink is
+        # ``release``. Both Tasks fire but neither single step
+        # exposes the kernel-RCE shape, fall back to the
+        # co-occurrence signal.
+        out = chains_pkg.evaluate([
+            _f(
+                "TKN-002",
+                self.TASK,
+                job_anchors=("Task/build:build",),
+            ),
+            _f(
+                "TKN-003",
+                self.TASK,
+                job_anchors=("Task/build:release",),
+                confidence=Confidence.MEDIUM,
+            ),
+        ])
+        chain = next(c for c in out if c.chain_id == "AC-023")
+        assert chain.confirmed_reachable is False
+        assert chain.reachability_note == ""
+        assert chain.confidence is Confidence.MEDIUM
+
 
 class TestChainAC024:
     """AC-024 — OIDC trust drift lands on a mutable ECR tag."""
@@ -1780,6 +1939,50 @@ class TestChainAC025:
         chain_ids = {c.chain_id for c in out}
         assert "AC-025" in chain_ids
         assert "AC-021" not in chain_ids
+
+    def test_reachability_confirmed_when_template_anchors_intersect(self):
+        # The same template (``Workflow/build:main``) both runs
+        # privileged AND interpolates an unsafe param — the precise
+        # node-escape primitive.
+        out = chains_pkg.evaluate([
+            _f(
+                "ARGO-002",
+                self.WF,
+                job_anchors=("Workflow/build:main",),
+            ),
+            _f(
+                "ARGO-005",
+                self.WF,
+                job_anchors=("Workflow/build:main",),
+                confidence=Confidence.MEDIUM,
+            ),
+        ])
+        chain = next(c for c in out if c.chain_id == "AC-025")
+        assert chain.confirmed_reachable is True
+        assert "Workflow/build:main" in chain.reachability_note
+        assert chain.confidence is Confidence.HIGH
+
+    def test_reachability_unconfirmed_when_templates_disjoint(self):
+        # Privileged template is ``init``, param-injection sink is
+        # ``deploy``. Both findings fire on the same workflow file
+        # but neither single template exposes the kernel-RCE shape.
+        out = chains_pkg.evaluate([
+            _f(
+                "ARGO-002",
+                self.WF,
+                job_anchors=("Workflow/build:init",),
+            ),
+            _f(
+                "ARGO-005",
+                self.WF,
+                job_anchors=("Workflow/build:deploy",),
+                confidence=Confidence.MEDIUM,
+            ),
+        ])
+        chain = next(c for c in out if c.chain_id == "AC-025")
+        assert chain.confirmed_reachable is False
+        assert chain.reachability_note == ""
+        assert chain.confidence is Confidence.MEDIUM
 
 
 class TestChainAC026:

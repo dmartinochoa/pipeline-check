@@ -16,14 +16,17 @@ the source of truth and the doc can never drift.
 
 Usage
 -----
-    python scripts/gen_provider_docs.py           # write every supported provider
-    python scripts/gen_provider_docs.py github    # write just one provider
+    python scripts/gen_provider_docs.py             # write every supported provider
+    python scripts/gen_provider_docs.py github      # write just one provider
+    python scripts/gen_provider_docs.py --check     # exit 1 if any doc is stale
+    python scripts/gen_provider_docs.py --check aws # check just one
 
 The supported provider list is enumerated by ``SUPPORTED_PROVIDERS``
 below; pass ``--help`` to a fresh checkout to see the current set.
 """
 from __future__ import annotations
 
+import argparse
 import sys
 from collections.abc import Iterable
 from pathlib import Path
@@ -45,6 +48,253 @@ _AUTOFIXABLE: frozenset[str] = frozenset(_FIXERS.keys())
 # ``provider_slug -> (display_title, rules_package_fqn, docs_output_path,
 #                     per-provider header markdown)``
 SUPPORTED_PROVIDERS: dict[str, tuple[str, str, Path, str]] = {
+    "aws": (
+        "AWS",
+        "pipeline_check.core.checks.aws.rules",
+        _REPO_ROOT / "docs" / "providers" / "aws.md",
+        """\
+# AWS provider
+
+The AWS provider uses a `boto3.Session` scoped to a single region. It
+supports named AWS CLI profiles via `--profile` and honors the
+`AWS_ENDPOINT_URL` environment variable (for LocalStack).
+
+Every AWS rule is one module under
+`pipeline_check/core/checks/aws/rules/<id>_<slug>.py`, auto-discovered by
+`AWSRuleChecks` and given a shared `ResourceCatalog` so enumerations run
+once per scan.
+
+## Services covered
+
+| Service | Check IDs |
+|---|---|
+| CodeBuild | CB-001..011 |
+| CodePipeline | CP-001..007 |
+| CodeDeploy | CD-001, CD-002, CD-003 |
+| ECR | ECR-001..007 |
+| IAM | IAM-001..008 |
+| PBAC (CodeBuild roles/VPC, pipeline role scoping) | PBAC-001..005 |
+| S3 | S3-001, S3-002, S3-003, S3-004, S3-005 |
+| CloudTrail | CT-001, CT-002, CT-003 |
+| CloudWatch Logs | CWL-001, CWL-002 |
+| CloudWatch Alarms | CW-001 |
+| Secrets Manager | SM-001, SM-002 |
+| CodeArtifact | CA-001, CA-002, CA-003, CA-004 |
+| CodeCommit | CCM-001, CCM-002, CCM-003 |
+| Lambda | LMB-001, LMB-002, LMB-003, LMB-004 |
+| KMS | KMS-001, KMS-002 |
+| SSM Parameter Store | SSM-001, SSM-002 |
+| EventBridge | EB-001, EB-002 |
+| AWS Signer | SIGN-001, SIGN-002 |
+
+## CLI usage
+
+```bash
+# Default: scan us-east-1 with the ambient boto3 credential chain
+pipeline_check --pipeline aws
+
+# Pick a region
+pipeline_check --pipeline aws --region eu-west-1
+
+# Use a named AWS CLI profile (~/.aws/credentials)
+pipeline_check --pipeline aws --profile prod-readonly
+
+# Scope the scan to a single resource (e.g. one CodePipeline)
+pipeline_check --pipeline aws --target my-release-pipeline
+
+# Point boto3 at a local endpoint (LocalStack, etc.)
+AWS_ENDPOINT_URL=http://localhost:4566 pipeline_check --pipeline aws
+```
+
+Credentials are resolved through the standard
+[boto3 credential chain](https://boto3.amazonaws.com/v1/documentation/api/latest/guide/credentials.html). Environment variables, `~/.aws/credentials`, IMDS on EC2, container
+credentials on ECS/Fargate, EKS Pod Identity, or SSO. To scan a different
+account, assume the role first with `aws sts assume-role` (or
+`aws sso login` / `aws-vault`) and export the resulting credentials, then
+invoke `pipeline_check`. The provider does not currently accept an
+`--assume-role-arn` flag.
+
+## Required IAM permissions
+
+The scanner is **read-only**: every API call is a `List*`, `Describe*`,
+`Get*`, or `BatchGet*`. It never mutates state. Per-resource API calls
+are scoped to the active `--region`; IAM, S3, and STS are global and are
+reached through the same regional session.
+
+### Quickest path: managed policies
+
+If you don't care about least-privilege, attach one of:
+
+- `arn:aws:iam::aws:policy/SecurityAudit`: covers everything below
+  except a few `Get*Policy` calls; produces the same findings minus
+  `S3-005` (bucket policies), `LMB-004` (Lambda resource policy),
+  `KMS-002` (key policy), `CA-003`/`CA-004` (CodeArtifact policies),
+  `ECR-003` (repo policy), `SM-002` (secret resource policy).
+- `arn:aws:iam::aws:policy/ReadOnlyAccess`: covers every action the
+  scanner uses, plus a great deal more. Convenient but broad.
+
+For least-privilege, use the policy below.
+
+### Permission map by service
+
+Each row lists the check IDs that depend on the actions in that service.
+If you skip a service entirely, you can drop its row from the policy and
+the scanner will emit a `<PREFIX>-000` degraded finding (INFO) for that
+service rather than failing.
+
+| Service | Check IDs that need it | Required actions |
+|---|---|---|
+| CodeBuild | CB-001..011, PBAC-001 | `codebuild:ListProjects`, `codebuild:BatchGetProjects`, `codebuild:ListSourceCredentials` |
+| CodePipeline | CP-001..007, PBAC-005 (also feeds S3 artifact-bucket discovery) | `codepipeline:ListPipelines`, `codepipeline:GetPipeline` |
+| CodeDeploy | CD-001..003 | `codedeploy:ListApplications`, `codedeploy:ListDeploymentGroups`, `codedeploy:BatchGetDeploymentGroups` |
+| ECR | ECR-001..007 | `ecr:DescribeRepositories`, `ecr:GetRepositoryPolicy`, `ecr:GetLifecyclePolicy`, `ecr:DescribePullThroughCacheRules` |
+| Inspector v2 | ECR-007 | `inspector2:BatchGetAccountStatus` |
+| IAM | IAM-001..008, PBAC-002, CICD-role enumeration | `iam:ListRoles`, `iam:ListUsers`, `iam:ListAccessKeys`, `iam:GetAccessKeyLastUsed`, `iam:ListRolePolicies`, `iam:GetRolePolicy`, `iam:ListAttachedRolePolicies`, `iam:GetPolicy`, `iam:GetPolicyVersion` |
+| CloudTrail | CT-001..003 | `cloudtrail:DescribeTrails`, `cloudtrail:GetTrailStatus` |
+| CloudWatch Logs | CWL-001, CWL-002 | `logs:DescribeLogGroups` |
+| CloudWatch Alarms | CW-001 | `cloudwatch:DescribeAlarms` |
+| Secrets Manager | SM-001, SM-002 | `secretsmanager:ListSecrets`, `secretsmanager:GetResourcePolicy` |
+| CodeArtifact | CA-001..004 | `codeartifact:ListDomains`, `codeartifact:ListRepositories`, `codeartifact:DescribeRepository`, `codeartifact:GetDomainPermissionsPolicy`, `codeartifact:GetRepositoryPermissionsPolicy` |
+| CodeCommit | CCM-001..003 | `codecommit:ListRepositories`, `codecommit:GetRepository`, `codecommit:GetRepositoryTriggers`, `codecommit:ListAssociatedApprovalRuleTemplatesForRepository` |
+| Lambda | LMB-001..004 | `lambda:ListFunctions`, `lambda:GetFunctionCodeSigningConfig`, `lambda:GetFunctionUrlConfig`, `lambda:GetPolicy` |
+| KMS | KMS-001, KMS-002 | `kms:ListKeys`, `kms:DescribeKey`, `kms:GetKeyRotationStatus`, `kms:GetKeyPolicy` |
+| SSM Parameter Store | SSM-001, SSM-002 | `ssm:DescribeParameters` |
+| EventBridge | EB-001, EB-002 | `events:ListRules`, `events:ListTargetsByRule` |
+| Signer | SIGN-001, SIGN-002 | `signer:ListSigningProfiles` |
+| S3 | S3-001..005 (artifact buckets discovered via CodePipeline) | `s3:GetPublicAccessBlock`, `s3:GetBucketEncryption`, `s3:GetBucketVersioning`, `s3:GetBucketLogging`, `s3:GetBucketPolicy` |
+| EC2 | PBAC-003 (CodeBuild VPC security groups) | `ec2:DescribeSecurityGroups` |
+| STS | CCM-003 (current account ID for cross-account trigger detection) | `sts:GetCallerIdentity` |
+
+### Copy-paste IAM policy
+
+Save the following as `pipeline-check-readonly.json` and attach it to the
+role or user the scanner runs as. Every action is read-only and every
+resource is `*` because boto3 list/describe APIs do not accept
+resource-level conditions.
+
+```json
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Sid": "PipelineCheckReadOnlyScan",
+      "Effect": "Allow",
+      "Action": [
+        "cloudtrail:DescribeTrails",
+        "cloudtrail:GetTrailStatus",
+        "cloudwatch:DescribeAlarms",
+        "codeartifact:DescribeRepository",
+        "codeartifact:GetDomainPermissionsPolicy",
+        "codeartifact:GetRepositoryPermissionsPolicy",
+        "codeartifact:ListDomains",
+        "codeartifact:ListRepositories",
+        "codebuild:BatchGetProjects",
+        "codebuild:ListProjects",
+        "codebuild:ListSourceCredentials",
+        "codecommit:GetRepository",
+        "codecommit:GetRepositoryTriggers",
+        "codecommit:ListAssociatedApprovalRuleTemplatesForRepository",
+        "codecommit:ListRepositories",
+        "codedeploy:BatchGetDeploymentGroups",
+        "codedeploy:ListApplications",
+        "codedeploy:ListDeploymentGroups",
+        "codepipeline:GetPipeline",
+        "codepipeline:ListPipelines",
+        "ec2:DescribeSecurityGroups",
+        "ecr:DescribePullThroughCacheRules",
+        "ecr:DescribeRepositories",
+        "ecr:GetLifecyclePolicy",
+        "ecr:GetRepositoryPolicy",
+        "events:ListRules",
+        "events:ListTargetsByRule",
+        "iam:GetAccessKeyLastUsed",
+        "iam:GetPolicy",
+        "iam:GetPolicyVersion",
+        "iam:GetRolePolicy",
+        "iam:ListAccessKeys",
+        "iam:ListAttachedRolePolicies",
+        "iam:ListRolePolicies",
+        "iam:ListRoles",
+        "iam:ListUsers",
+        "inspector2:BatchGetAccountStatus",
+        "kms:DescribeKey",
+        "kms:GetKeyPolicy",
+        "kms:GetKeyRotationStatus",
+        "kms:ListKeys",
+        "lambda:GetFunctionCodeSigningConfig",
+        "lambda:GetFunctionUrlConfig",
+        "lambda:GetPolicy",
+        "lambda:ListFunctions",
+        "logs:DescribeLogGroups",
+        "s3:GetBucketEncryption",
+        "s3:GetBucketLogging",
+        "s3:GetBucketPolicy",
+        "s3:GetBucketVersioning",
+        "s3:GetPublicAccessBlock",
+        "secretsmanager:GetResourcePolicy",
+        "secretsmanager:ListSecrets",
+        "signer:ListSigningProfiles",
+        "ssm:DescribeParameters",
+        "sts:GetCallerIdentity"
+      ],
+      "Resource": "*"
+    }
+  ]
+}
+```
+
+The policy is **2.5 KB**, well inside the 6,144-byte limit for a
+customer-managed policy and the 10,240-byte limit for an inline role
+policy.
+
+### Trust policy for an IAM role
+
+If you run the scanner from CI (e.g. GitHub Actions with OIDC), pair
+the policy above with a trust policy that lets your CI system assume
+the role. Below is an example for GitHub Actions OIDC; adapt for your
+provider.
+
+```json
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Effect": "Allow",
+      "Principal": {
+        "Federated": "arn:aws:iam::123456789012:oidc-provider/token.actions.githubusercontent.com"
+      },
+      "Action": "sts:AssumeRoleWithWebIdentity",
+      "Condition": {
+        "StringEquals": {
+          "token.actions.githubusercontent.com:aud": "sts.amazonaws.com"
+        },
+        "StringLike": {
+          "token.actions.githubusercontent.com:sub": "repo:my-org/my-repo:ref:refs/heads/main"
+        }
+      }
+    }
+  ]
+}
+```
+
+### Behavior when permissions are missing
+
+The scanner does not fail closed when the principal lacks an action.
+Instead, the per-service enumeration records the error and the
+orchestrator emits one `<PREFIX>-000` finding (INFO severity) per
+degraded service, for example `CT-000`, `LMB-000`, `KMS-000`. Every
+rule that depends on that service is suppressed for the run. Operators
+can therefore see exactly which permission gaps are masking findings.
+
+Two exceptions are tolerated silently because their endpoints are
+optional:
+
+- `ecr:DescribePullThroughCacheRules`: not all regions/accounts have
+  PTC; only ECR-006 is suppressed if it fails.
+- `inspector2:BatchGetAccountStatus`: only ECR-007 is suppressed if
+  Inspector v2 is not enabled in the region.
+""",
+    ),
     "github": (
         "GitHub Actions",
         "pipeline_check.core.checks.github.rules",
@@ -939,6 +1189,352 @@ left unresolved; deeply-recursive property graphs are rare in
 real-world POMs and out of scope for static analysis.
 """,
     ),
+    "cloudformation": (
+        "CloudFormation",
+        "pipeline_check.core.checks.cloudformation.rules",
+        _REPO_ROOT / "docs" / "providers" / "cloudformation.md",
+        """\
+# CloudFormation provider
+
+Scans a **CloudFormation template** (YAML or JSON), no live AWS
+credentials required. Short-form intrinsics (`!Ref`, `!Sub`, `!GetAtt`,
+`!Join`, `!If`, …) are normalized to their JSON-form equivalents at
+parse time so rules operate on one uniform structure.
+
+Every AWS-mirrored check ID (CB-*, CP-*, CD-*, ECR-*, IAM-*, PBAC-*,
+S3-*, CT-*, CWL-*, SM-*, CA-*, CCM-*, LMB-*, KMS-*, SSM-*, EB-*,
+SIGN-*, CW-*) maps one-to-one to its AWS-provider counterpart. The
+semantics are identical, only the data source differs (template
+properties instead of boto3 list/describe). CF-* rules are
+CloudFormation-only and have no AWS-runtime analogue.
+
+## Producer workflow
+
+```bash
+pipeline_check --pipeline cloudformation --cfn-template path/to/template.yaml
+# or point at a directory and every *.yml / *.yaml / *.json / *.template is scanned
+pipeline_check --pipeline cloudformation --cfn-template infra/
+```
+
+All other flags (`--output`, `--severity-threshold`, `--checks`,
+`--standard`, …) behave the same as with the AWS provider.
+
+## Intrinsic handling
+
+CFN values may be literals (``"ap-southeast-2"``), booleans,
+unresolved intrinsics (``{"Ref": "Region"}``, ``{"Fn::Sub": "..."}``),
+or condition references. The scanner follows two conventions:
+
+1. **Anything not provably safe is treated as a potential offender
+   unless the rule explicitly skips unresolved values.** For
+   instance, ``is_true(value)`` returns ``True`` only for ``True`` or
+   ``"true"``, so a template that hides a ``Ref`` behind a
+   boolean-typed property is scored as if the flag were disabled.
+2. **Statically-reducible intrinsics are reduced before matching.**
+   ``resolve_literal(value, parameters)`` in
+   ``cloudformation/base.py`` evaluates
+   ``{"Ref": "ParamName"}`` against the template's
+   ``Parameters.<Name>.Default``, ``{"Fn::Sub": "literal"}`` /
+   ``{"Fn::Sub": "...${Var}..."}`` including the
+   ``[template, {var-map}]`` form, and ``{"Fn::Join": [delim,
+   [list]]}`` when every list item resolves. Rules that benefit
+   (``EB-002`` target ARNs, ``CF-003`` VPC IDs) call the resolver
+   first and fall back to the old "skip unresolved" path only when
+   the intrinsic references a pseudo-parameter (``AWS::Region``) or
+   a runtime-dependent intrinsic (``Fn::GetAtt``,
+   ``Fn::ImportValue``, ``Fn::If``).
+
+Rule helpers (importable from ``cloudformation/base.py``):
+
+- ``as_str(value)`` — literal-only accessor, returns ``""`` for intrinsics.
+- ``resolve_literal(value, parameters)`` — tries to reduce every
+  statically-resolvable intrinsic; returns ``None`` when it can't.
+- ``is_true(value)`` — strict boolean gate.
+- ``is_intrinsic(value)`` — predicate used by ``CF-002`` to skip
+  intrinsic dicts entirely when walking for hard-coded secrets.
+
+This matches cfn-lint and cfn-nag conventions and keeps findings
+useful under the common case where templates are parameterised.
+
+## Resource-type coverage
+
+| Service          | IDs               | CloudFormation resources consumed |
+|------------------|-------------------|-----------------------------------|
+| CodeBuild        | `CB-001…011`      | `AWS::CodeBuild::Project`, `AWS::CodeBuild::SourceCredential` |
+| CodePipeline     | `CP-001…005`, `CP-007` | `AWS::CodePipeline::Pipeline` |
+| CodeDeploy       | `CD-001…003`      | `AWS::CodeDeploy::DeploymentGroup` |
+| ECR              | `ECR-001…006`     | `AWS::ECR::Repository`, `AWS::ECR::PullThroughCacheRule` |
+| IAM              | `IAM-001…006`, `IAM-008` | `AWS::IAM::Role`, `AWS::IAM::Policy`, `AWS::IAM::ManagedPolicy` |
+| PBAC             | `PBAC-001…003`, `PBAC-005` | `AWS::CodeBuild::Project`, `AWS::EC2::SecurityGroup` |
+| S3               | `S3-001…005`      | `AWS::S3::Bucket` (artifact buckets discovered from pipelines) |
+| CloudTrail       | `CT-001…003`      | `AWS::CloudTrail::Trail` |
+| CloudWatch Logs  | `CWL-001…002`     | `AWS::Logs::LogGroup` |
+| Secrets Manager  | `SM-001…002`      | `AWS::SecretsManager::Secret`, `AWS::SecretsManager::RotationSchedule` |
+| CodeArtifact     | `CA-001…004`      | `AWS::CodeArtifact::Domain`, `AWS::CodeArtifact::Repository` |
+| CodeCommit       | `CCM-002…003`     | `AWS::CodeCommit::Repository` (CCM-001 omitted, no equivalent CFN resource) |
+| Lambda           | `LMB-001…004`     | `AWS::Lambda::Function`, `AWS::Lambda::Url`, `AWS::Lambda::Permission` |
+| KMS              | `KMS-001…002`     | `AWS::KMS::Key` |
+| SSM              | `SSM-001…002`     | `AWS::SSM::Parameter` |
+| EventBridge      | `EB-001…002`      | `AWS::Events::Rule` (targets are inline) |
+| Signer           | `SIGN-001`        | `AWS::Lambda::Function.CodeSigningConfigArn`, `AWS::Signer::SigningProfile` |
+| CloudWatch       | `CW-001`          | `AWS::CloudWatch::Alarm` (namespace=`AWS/CodeBuild`, metric=`FailedBuilds`) |
+| CFN-native       | `CF-001…003`      | `AWS::IAM::AccessKey`, stateful data-store types, `AWS::EC2::Subnet` |
+
+## Limitations
+
+- **Template-level only.** Resources provisioned outside the
+  template (console, SDK, sister stacks) are not scanned — use
+  `--pipeline aws` alongside for a live view.
+- **Intrinsics are not evaluated** beyond the statically-reducible
+  forms above. A ``Fn::GetAtt``, ``Fn::ImportValue``, or ``Fn::If``
+  passes through as an opaque dict; rules that require a literal
+  value silently skip the finding rather than guess at the resolved
+  shape.
+- **No cross-stack resolution.** ``Fn::ImportValue`` references are
+  preserved as-is; the exporting stack is not fetched.
+- **Transform macros are ignored.** ``AWS::Serverless-2016-10-31``
+  (SAM) and custom transforms run server-side; the pre-transform
+  resources are what the scanner sees.
+""",
+    ),
+    "terraform": (
+        "Terraform",
+        "pipeline_check.core.checks.terraform.rules",
+        _REPO_ROOT / "docs" / "providers" / "terraform.md",
+        """\
+# Terraform provider
+
+Scans a parsed **`terraform show -json`** plan document, no live AWS
+credentials required. The provider reads the resolved, typed resource
+representation Terraform emits post-`plan`, so checks never parse raw HCL.
+
+Every AWS-mirrored check ID (CB-*, CP-*, CD-*, ECR-*, IAM-*, PBAC-*,
+S3-*, CT-*, CWL-*, SM-*, CA-*, CCM-*, LMB-*, KMS-*, SSM-*, EB-*,
+SIGN-*, CW-*) maps one-to-one to its AWS-provider counterpart. The
+semantics are identical, only the data source differs (plan JSON
+attributes instead of boto3 list/describe). TF-* rules are
+Terraform-only and have no AWS-runtime analogue.
+
+## Producer workflow
+
+```bash
+terraform init
+terraform plan -out=tfplan
+terraform show -json tfplan > plan.json
+pipeline_check --pipeline terraform --tf-plan plan.json
+```
+
+All other flags (`--output`, `--severity-threshold`, `--checks`,
+`--standard`, …) behave the same as with the AWS provider.
+
+Child modules are walked recursively; `mode = "data"` entries are
+exposed separately from managed resources so rules that only care
+about to-be-created state keep their current semantics.
+
+## Per-check schema mapping
+
+Every check reads Terraform's native attribute names (snake_case);
+single-nested blocks appear as one-item lists. The summary table
+below names the rule body's primary input; for the full per-attribute
+path list, see the rule's source under
+`pipeline_check/core/checks/terraform/rules/`.
+
+### CodeBuild (`aws_codebuild_project`)
+
+| Check   | Primary attribute(s) read |
+|---------|---------------------------|
+| CB-001  | `environment[0].environment_variable[*].{name,type,value}` |
+| CB-002  | `environment[0].privileged_mode` |
+| CB-003  | `logs_config[0].cloudwatch_logs[0].status`, `logs_config[0].s3_logs[0].status` |
+| CB-004  | `build_timeout` |
+| CB-005  | `environment[0].image` (matched against `aws/codebuild/standard:<major>.<minor>`) |
+| CB-006  | `source[0].{type, auth[0].type}` + `aws_codebuild_source_credential.{server_type, auth_type}` |
+| CB-007  | `aws_codebuild_webhook.{project_name, filter_group[*]}` |
+| CB-008  | `source[0].buildspec` (inline detection) |
+| CB-009  | `environment[0].image` (digest-pin classifier) |
+| CB-010  | `aws_codebuild_webhook.filter_group[*].filter[*]` |
+| CB-011  | `source[0].buildspec` (IOC matcher) |
+
+### CodePipeline (`aws_codepipeline`)
+
+| Check   | Primary attribute(s) read |
+|---------|---------------------------|
+| CP-001  | `stage[*].action[*].category` |
+| CP-002  | `artifact_store[*].encryption_key[*]` |
+| CP-003  | `stage[*].action[*]` where `category = "Source"` and `configuration.PollForSourceChanges` |
+| CP-004  | `stage[*].action[*]` where `owner = "ThirdParty"` and `provider = "GitHub"` |
+| CP-005  | Stages whose `name` matches `prod` / `production` / `live` |
+| CP-007  | `pipeline_type = "V2"` + `trigger.git_configuration.pull_request[*].branches.includes` |
+
+### CodeDeploy (`aws_codedeploy_deployment_group`)
+
+| Check   | Primary attribute(s) read |
+|---------|---------------------------|
+| CD-001  | `auto_rollback_configuration[0].{enabled,events}` |
+| CD-002  | `deployment_config_name` |
+| CD-003  | `alarm_configuration[0].{enabled,alarms}` |
+
+### ECR
+
+| Check   | Resource | Attribute(s) read |
+|---------|----------|-------------------|
+| ECR-001 | `aws_ecr_repository` | `image_scanning_configuration[0].scan_on_push` |
+| ECR-002 | `aws_ecr_repository` | `image_tag_mutability` |
+| ECR-003 | `aws_ecr_repository_policy` | `policy` (JSON, joined on `repository`) |
+| ECR-004 | `aws_ecr_lifecycle_policy` | presence (joined on `repository`) |
+| ECR-005 | `aws_ecr_repository` | `encryption_configuration[0].{encryption_type,kms_key}` |
+| ECR-006 | `aws_ecr_pull_through_cache_rule` | `{upstream_registry_url,credential_arn}` |
+
+### IAM (scoped to CI/CD service roles)
+
+Scope filter: `aws_iam_role.assume_role_policy` includes
+`codebuild.amazonaws.com`, `codepipeline.amazonaws.com`, or
+`codedeploy.amazonaws.com` as a `Service` principal.
+
+| Check   | Primary input |
+|---------|---------------|
+| IAM-001 | `managed_policy_arns` + `aws_iam_role_policy_attachment.policy_arn` |
+| IAM-002 | inline + attached policy JSON (Action `*`) |
+| IAM-003 | `aws_iam_role.permissions_boundary` |
+| IAM-004 | inline + attached policy JSON (`iam:PassRole` on `Resource = "*"`) |
+| IAM-005 | `aws_iam_role.assume_role_policy` (external principal w/o `sts:ExternalId`) |
+| IAM-006 | inline + attached policy JSON (sensitive actions on `Resource = "*"`) |
+| IAM-008 | `aws_iam_role.assume_role_policy` (OIDC `:aud` / `:sub` pin) |
+
+### S3 (artifact buckets discovered from pipelines)
+
+Discovery: walks every `aws_codepipeline.artifact_store[*].location`.
+Per bucket, the helper resources below are joined by `bucket` name.
+
+| Check   | Helper resource | Attribute(s) read |
+|---------|-----------------|-------------------|
+| S3-001  | `aws_s3_bucket_public_access_block` | all four `block_*` / `ignore_*` / `restrict_*` flags |
+| S3-002  | `aws_s3_bucket_server_side_encryption_configuration` | `rule[0].apply_server_side_encryption_by_default[0].sse_algorithm` |
+| S3-003  | `aws_s3_bucket_versioning` | `versioning_configuration[0].status` |
+| S3-004  | `aws_s3_bucket_logging` | `target_bucket` |
+| S3-005  | `aws_s3_bucket_policy` | `policy` (JSON, `Deny` on `aws:SecureTransport=false`) |
+
+### Terraform-native (TF-*)
+
+| Check  | Primary input |
+|--------|---------------|
+| TF-001 | `aws_iam_access_key` (any) |
+| TF-002 | string leaves on `aws_db_instance`, `aws_rds_cluster`, `aws_redshift_cluster`, `aws_elasticache_replication_group`, `aws_docdb_cluster`, `aws_neptune_cluster`, `aws_opensearch_domain`, `aws_memorydb_cluster` |
+| TF-003 | `aws_codebuild_project.vpc_config[0].vpc_id` + every `aws_subnet` in that VPC (`map_public_ip_on_launch`) |
+
+## Working with data sources
+
+The context exposes a second iterator, `ctx.data_sources(type=None)`,
+for resources with `mode = "data"` (e.g. `aws_iam_policy_document`,
+`aws_caller_identity`). Managed-resource iteration via
+`ctx.resources()` is unchanged. In most plans, Terraform resolves
+`aws_iam_policy_document` data sources inline, the rendered JSON
+arrives on `aws_iam_policy.policy` or `aws_iam_role_policy.policy`
+directly and the IAM checks see it without any extra work. The data
+iterator only matters when the data source depends on a
+to-be-created resource and Terraform defers it to apply.
+
+## Limitations
+
+- **Only the plan's resource set is visible.** Resources provisioned
+  outside Terraform (console, other stacks) are not scanned.
+- **No runtime state.** Checks like ECR-003 that in AWS-provider mode
+  query the live repository policy rely here on whether an
+  `aws_ecr_repository_policy` resource exists in the plan.
+""",
+    ),
+    "helm": (
+        "Helm",
+        "pipeline_check.core.checks.helm.rules",
+        _REPO_ROOT / "docs" / "providers" / "helm.md",
+        """\
+# Helm chart provider
+
+Renders Helm charts via `helm template` and runs the [Kubernetes
+provider's](kubernetes.md) full K8S-* rule pack against the resulting
+manifests, plus a chart-supply-chain rule pack
+(`HELM-001`--`010`) that reads `Chart.yaml` and `Chart.lock`
+straight off disk. The K8s pass scores rendered workloads
+(securityContext, hostPath, RBAC, …); the HELM pass scores the
+chart's own posture (legacy schema, lockfile drift, plaintext
+dependency repos).
+
+Most production Kubernetes ships through Helm, so a chart-aware
+front-end means today's K8S-* rules finally see the bulk of real
+workloads instead of the hand-written manifests that happen to land
+in `k8s/`. Findings from the K8s pass carry the source-template path
+(e.g. `mychart/templates/deployment.yaml`) so a "privileged
+container" finding points at the actual template file, not the
+rendered output.
+
+## Requirements
+
+- **`helm` (Helm 3) on PATH.** The provider shells out to `helm
+  template`. Helm 2 is rejected on probe. It has been EOL since
+  November 2020. Install instructions:
+  [helm.sh/docs/intro/install](https://helm.sh/docs/intro/install/).
+- **Chart dependencies pre-resolved.** If your chart declares
+  dependencies in `Chart.yaml`, run `helm dependency update` first.
+  The provider does not fetch dependencies for you (network access
+  during scanning is out of scope for the static-analysis posture
+  the tool keeps everywhere else).
+
+## Producer workflow
+
+```bash
+# --helm-path is auto-detected when Chart.yaml exists at cwd, or
+# when a charts/ directory holds one or more sub-charts.
+pipeline_check --pipeline helm
+
+# …or pass it explicitly. Either a single chart directory or a
+# packaged chart .tgz works.
+pipeline_check --pipeline helm --helm-path ./charts/myapp
+pipeline_check --pipeline helm --helm-path ./dist/myapp-1.2.3.tgz
+
+# A parent directory containing multiple charts renders each one
+# (one Chart.yaml per immediate subdirectory). Vendored
+# dependencies under <chart>/charts/ are not double-rendered.
+pipeline_check --pipeline helm --helm-path ./charts/
+```
+
+### Values and overrides
+
+`--helm-values` and `--helm-set` map straight onto `helm template -f`
+and `helm template --set`. Repeat each flag for multiple values:
+
+```bash
+pipeline_check --pipeline helm --helm-path ./mychart \\
+    --helm-values values-prod.yaml \\
+    --helm-values values-prod-overrides.yaml \\
+    --helm-set image.tag=v1.2.3 \\
+    --helm-set replicas=3
+```
+
+Precedence matches Helm's: later `-f` files override earlier ones,
+and `--set` overrides files. The chart's own `values.yaml` is
+applied automatically by Helm; you don't need to pass it.
+
+Scanning a chart with the **production** values is usually what you
+want. A chart that only exposes a `privileged: true` workload when
+`debug: true` is set should not fail the gate during routine
+scanning.
+
+## Rendered Kubernetes manifests
+
+The full K8S-* rule pack listed on the [Kubernetes provider
+page](kubernetes.md) applies to rendered chart output identically
+(`securityContext`, `hostPath`, RBAC blast radius, Secret hygiene,
+control-plane scheduling). The rules see the manifest output of
+`helm template`, so values-driven toggles and conditional templates
+are scored as they would actually deploy.
+
+The HELM-* pack below is additive: those rules score the chart's
+own packaging metadata, read straight off `Chart.yaml` /
+`Chart.lock` rather than the rendered output. A chart can have a
+perfect `securityContext` posture and still ship a v1 schema, an
+unlocked dependency, or no maintainers.
+""",
+    ),
     "dockerfile": (
         "Dockerfile",
         "pipeline_check.core.checks.dockerfile.rules",
@@ -1017,6 +1613,178 @@ _FOOTER_TEMPLATE = """\
    python scripts/gen_provider_docs.py {slug}
    ```
 """
+
+
+# Per-provider footer overrides. The default ``_FOOTER_TEMPLATE`` above
+# assumes a single rule-id prefix per provider and a ``tests/fixtures/
+# per_check/<pkg>/`` fixture layout. AWS rules cross many prefixes
+# (CB / CP / IAM / ECR / ...) and the tests live under
+# ``tests/aws/rules/`` against a ``ResourceCatalog`` mock, not against
+# YAML snippets, so the standard recipe doesn't apply verbatim.
+_FOOTER_OVERRIDES: dict[str, str] = {
+    "cloudformation": """\
+---
+
+## Adding a new CloudFormation check
+
+1. Drop a single module at
+   `pipeline_check/core/checks/cloudformation/rules/<id>_<slug>.py`
+   exporting a `RULE` (metadata) and a
+   `check(ctx: CloudFormationContext) -> list[Finding]` callable. The
+   orchestrator (`CloudFormationRuleChecks`) auto-discovers it and
+   this doc's table picks it up on the next regen.
+2. If the rule needs side resources (managed-policy dereferencing,
+   artifact-bucket discovery, policy documents joined on
+   ``Bucket`` / ``RoleName``), add a private helper to
+   `pipeline_check/core/checks/cloudformation/rules/_<service>_context.py`
+   following the `_iam_context.py` / `_s3_context.py` pattern.
+3. Add the check ID to
+   `pipeline_check/core/standards/data/owasp_cicd_top_10.py` (and any
+   other standard that applies).
+4. Add unit tests in `tests/cloudformation/test_<service>.py` using
+   `make_cfn_ctx` or one of the existing template fixtures.
+5. (Recommended) Add an AWS-runtime parity rule under
+   `pipeline_check/core/checks/aws/rules/` and a Terraform parity
+   rule under `pipeline_check/core/checks/terraform/rules/` so the
+   three IaC entry points stay aligned.
+6. Regenerate this doc:
+
+   ```bash
+   python scripts/gen_provider_docs.py cloudformation
+   ```
+""",
+    "terraform": """\
+---
+
+## Adding a new Terraform check
+
+1. Drop a single module at
+   `pipeline_check/core/checks/terraform/rules/<id>_<slug>.py`
+   exporting a `RULE` (metadata) and a
+   `check(ctx: TerraformContext) -> list[Finding]` callable. The
+   orchestrator (`TerraformRuleChecks`) auto-discovers it and this
+   doc's table picks it up on the next regen.
+2. If the rule needs side resources (webhooks, attachments, policy
+   documents joined on `bucket` / `role`), add a private helper to
+   `pipeline_check/core/checks/terraform/rules/_<service>_context.py`
+   following the `_iam_context.py` / `_s3_context.py` pattern so the
+   pre-fetch lands once per scan.
+3. Add the check ID to
+   `pipeline_check/core/standards/data/owasp_cicd_top_10.py` (and any
+   other standard that applies).
+4. Add unit tests in `tests/terraform/test_<service>.py` using
+   `make_terraform_ctx` or one of the existing plan fixtures.
+5. (Recommended) Add an AWS-runtime parity rule under
+   `pipeline_check/core/checks/aws/rules/` so shift-left scans stay
+   at parity with runtime.
+6. Regenerate this doc:
+
+   ```bash
+   python scripts/gen_provider_docs.py terraform
+   ```
+""",
+    "helm": """\
+---
+
+## What it can't see
+
+`helm template` renders charts against a synthetic release context.
+A few constructs aren't represented faithfully:
+
+- **`.Capabilities.APIVersions`** renders against Helm's default
+  capability set, not your real cluster. Charts that conditionally
+  emit a `NetworkPolicy` only when the `networking.k8s.io/v1` API
+  is present will render assuming it is.
+- **`lookup`** functions return empty maps: there's no cluster
+  to query, so resources gated on a live `lookup` won't render.
+- **Hooks** (`helm.sh/hook` annotations) render like any other
+  manifest. K8S-* rules apply to them equally; this is the right
+  call because a privileged hook pod is just as dangerous as a
+  privileged long-lived workload.
+- **Library charts** (`Chart.yaml` `type: library`) produce no
+  output and are skipped with an info-level warning.
+
+The render context uses synthetic `.Release.Name = "pipeline-check"`
+and `.Release.Namespace = "default"`. Templates that hardcode
+namespace logic against `.Release.Namespace` see `default` and
+behave accordingly.
+
+## Render failures
+
+If `helm template` exits non-zero (bad template syntax, undefined
+values, missing dependency), the chart is recorded in
+`ctx.warnings` and skipped. Other charts in the same scan continue
+to render. The first non-empty stderr line is surfaced so the user
+can find the template error without re-running helm by hand.
+
+## Source attribution
+
+`helm template` injects `# Source: <chart>/templates/<file>.yaml`
+above each rendered document. The provider parses these and
+attaches the chart-relative template path to the parsed manifest,
+which surfaces in:
+
+- the inventory output (`source` column points at the template
+  file, not the synthetic `<rendered>` path)
+- the Kubernetes manifest's display string used by reporters
+- the `Manifest.source_template` field exposed via the public
+  Python API
+
+Per-finding location attribution at the line level is a separate
+concern that affects the K8s rule pack as a whole; in this
+release, finding offenders are listed by `Kind/name` and the
+template file shows up in inventory.
+
+---
+
+## Adding a new Helm check
+
+1. Create a new module at
+   `pipeline_check/core/checks/helm/rules/helmNNN_<name>.py`
+   exporting a top-level `RULE = Rule(...)` and a
+   `check(ctx: HelmContext) -> Finding` function. The orchestrator
+   (`HelmChartChecks`) auto-discovers `RULE` and calls `check` with
+   the shared `HelmContext` (parsed `Chart` records).
+2. Add a mapping for the new ID in
+   `pipeline_check/core/standards/data/owasp_cicd_top_10.py` (and
+   any other standard that applies).
+3. Add unit tests in `tests/helm/rules/test_<name>.py`. Use the
+   `make_helm_ctx` fixture to build a synthetic `Chart` record
+   without invoking `helm template`.
+4. Regenerate this doc:
+
+   ```bash
+   python scripts/gen_provider_docs.py helm
+   ```
+""",
+    "aws": """\
+---
+
+## Adding a new AWS check
+
+1. Drop a single module in
+   `pipeline_check/core/checks/aws/rules/<id>_<slug>.py` exporting a
+   `RULE` (metadata) and a `check(catalog: ResourceCatalog) -> list[Finding]`
+   callable. The orchestrator (`AWSRuleChecks`) auto-discovers it and
+   this doc's table picks it up on the next regen.
+2. If the check needs a new enumeration, add a cached method to
+   `ResourceCatalog` in `pipeline_check/core/checks/aws/_catalog.py`
+   so every dependent rule reads from the same in-memory snapshot.
+3. Add the check ID to
+   `pipeline_check/core/standards/data/owasp_cicd_top_10.py` (and any
+   other standard that applies).
+4. Add unit tests in `tests/aws/rules/test_<name>.py` using the
+   `make_catalog` fixture.
+5. (Recommended) Add a Terraform parity rule in
+   `pipeline_check/core/checks/terraform/{extended,services,phase3}.py`
+   so shift-left scans stay at parity with the runtime provider.
+6. Regenerate this doc:
+
+   ```bash
+   python scripts/gen_provider_docs.py aws
+   ```
+""",
+}
 
 
 # Per-provider check signature strings. Tekton and Argo (and other
@@ -1113,10 +1881,16 @@ def _render_provider(title: str, header: str, rules_fqn: str, slug: str = "") ->
     for rule, _ in pairs:
         lines.append(_render_rule(rule))
 
-    footer_cfg = dict(_FOOTER_CONFIG.get(slug, {"prefix": "", "prefix_lc": "", "pkg": slug}))
-    footer_cfg.setdefault("signature", _DEFAULT_SIGNATURE)
-    footer_cfg.setdefault("arg_kind", _DEFAULT_ARG_KIND)
-    lines.append(_FOOTER_TEMPLATE.format(title=title, slug=slug, **footer_cfg))
+    # Per-provider footer override wins over the templated default;
+    # see ``_FOOTER_OVERRIDES`` for the rationale (AWS, etc.).
+    override = _FOOTER_OVERRIDES.get(slug)
+    if override is not None:
+        lines.append(override)
+    else:
+        footer_cfg = dict(_FOOTER_CONFIG.get(slug, {"prefix": "", "prefix_lc": "", "pkg": slug}))
+        footer_cfg.setdefault("signature", _DEFAULT_SIGNATURE)
+        footer_cfg.setdefault("arg_kind", _DEFAULT_ARG_KIND)
+        lines.append(_FOOTER_TEMPLATE.format(title=title, slug=slug, **footer_cfg))
     return "".join(lines)
 
 
@@ -1253,15 +2027,46 @@ def _providers_to_render(argv: Iterable[str]) -> list[str]:
     return argv
 
 
-def main(argv: Iterable[str] | None = None) -> None:
-    targets = _providers_to_render(argv if argv is not None else sys.argv[1:])
+def main(argv: Iterable[str] | None = None) -> int:
+    parser = argparse.ArgumentParser(description=__doc__.split("\n")[0])
+    parser.add_argument(
+        "--check",
+        action="store_true",
+        help="Exit 1 if any provider doc would change. Useful in CI.",
+    )
+    parser.add_argument(
+        "providers",
+        nargs="*",
+        help="Subset of providers to render (default: all).",
+    )
+    args = parser.parse_args(list(argv) if argv is not None else None)
+
+    targets = _providers_to_render(args.providers)
+    stale: list[str] = []
     for slug in targets:
         title, rules_fqn, out_path, header = SUPPORTED_PROVIDERS[slug]
         body = _render_provider(title, header, rules_fqn, slug)
+        rel = out_path.relative_to(_REPO_ROOT)
+        if args.check:
+            current = out_path.read_text(encoding="utf-8") if out_path.exists() else ""
+            if current != body:
+                stale.append(str(rel))
+                print(f"[gen-docs] {rel}: out of sync", file=sys.stderr)
+            else:
+                print(f"[gen-docs] {rel}: in sync")
+            continue
         out_path.write_text(body, encoding="utf-8")
-        print(f"[gen-docs] wrote {out_path.relative_to(_REPO_ROOT)} "
-              f"({body.count(chr(10))} lines)")
+        print(f"[gen-docs] wrote {rel} ({body.count(chr(10))} lines)")
+
+    if args.check and stale:
+        print(
+            f"[gen-docs] {len(stale)} provider doc(s) out of sync. "
+            f"Re-run scripts/gen_provider_docs.py to update.",
+            file=sys.stderr,
+        )
+        return 1
+    return 0
 
 
 if __name__ == "__main__":
-    main()
+    sys.exit(main())

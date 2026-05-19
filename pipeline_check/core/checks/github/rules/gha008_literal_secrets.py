@@ -6,6 +6,7 @@ from typing import Any
 from ..._secrets import find_secret_values
 from ...base import Finding, Severity
 from ...rule import Rule
+from ..base import iter_jobs
 
 RULE = Rule(
     id="GHA-008",
@@ -90,6 +91,28 @@ RULE = Rule(
 def check(path: str, doc: dict[str, Any]) -> Finding:
     hits = find_secret_values(doc)
     passed = not hits
+    # AC-009 intersects this with GHA-001 ∩ GHA-002 job anchors to
+    # confirm the literal credentials are in scope of the same job
+    # that has the injection sink and pulls the unpinned action.
+    # Per-job pass for the per-job anchors; if the doc-wide scan
+    # found hits that no individual job carries, the secret is at
+    # the workflow level (top-level ``env:``, ``defaults.run.env``)
+    # and inherits into every job, so fan the anchor out to all
+    # jobs in that case.
+    anchor_jobs: dict[str, None] = {}
+    if hits:
+        all_job_ids = [job_id for job_id, _ in iter_jobs(doc)]
+        per_job_hits = False
+        for job_id, job in iter_jobs(doc):
+            if find_secret_values(job):
+                anchor_jobs[job_id] = None
+                per_job_hits = True
+        if hits and not per_job_hits and all_job_ids:
+            # Workflow-level secret inherits into every job; fan out
+            # so reachability with GHA-001 / GHA-002 lands on any of
+            # them.
+            for job_id in all_job_ids:
+                anchor_jobs[job_id] = None
     desc = (
         "No string in the workflow matches a known credential pattern."
         if passed else
@@ -103,4 +126,5 @@ def check(path: str, doc: dict[str, Any]) -> Finding:
         check_id=RULE.id, title=RULE.title, severity=RULE.severity,
         resource=path, description=desc,
         recommendation=RULE.recommendation, passed=passed,
+        job_anchors=tuple(anchor_jobs),
     )

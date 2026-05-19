@@ -12,8 +12,8 @@ the scanner evidences controls that surface in CI/CD configuration.
 
 - **Controls in this standard:** 24
 - **Controls evidenced by at least one check:** 24 / 24
-- **Distinct checks evidencing this standard:** 508
-- **Of those, autofixable with `--fix`:** 98
+- **Distinct checks evidencing this standard:** 551
+- **Of those, autofixable with `--fix`:** 111
 
 _Severity levels (`CRITICAL` / `HIGH` / `MEDIUM` / `LOW` / `INFO`) follow the same scale across every provider and standard. See [How to read severity](README.md#how-to-read-severity) on the standards overview for the definitions._
 
@@ -23,29 +23,29 @@ Click a control ID to jump to the per-control section with the full check list. 
 
 | Control | Title | Checks | Severity mix |
 |---------|-------|-------:|--------------|
-| [`ESF-D-BUILD-ENV`](#ctrl-esf-d-build-env) | Harden the build environment (isolated, minimal, ephemeral workers) | 33 | 9C · 9H · 10M · 5L |
+| [`ESF-D-BUILD-ENV`](#ctrl-esf-d-build-env) | Harden the build environment (isolated, minimal, ephemeral workers) | 48 | 9C · 16H · 17M · 6L |
 | [`ESF-D-BUILD-LOGS`](#ctrl-esf-d-build-logs) | Generate and preserve build audit logs | 5 | 1H · 2M · 2L |
 | [`ESF-D-BUILD-TIMEOUT`](#ctrl-esf-d-build-timeout) | Enforce bounded build execution (single-use, time-limited) | 12 | 8M · 4L |
-| [`ESF-D-SECRETS`](#ctrl-esf-d-secrets) | Protect secrets used during build; no secrets in source or env | 41 | 23C · 15H · 2M · 1L |
-| [`ESF-D-PRIV-BUILD`](#ctrl-esf-d-priv-build) | Avoid privileged / host-networked build workers | 28 | 4C · 13H · 11M |
+| [`ESF-D-SECRETS`](#ctrl-esf-d-secrets) | Protect secrets used during build; no secrets in source or env | 44 | 25C · 16H · 2M · 1L |
+| [`ESF-D-PRIV-BUILD`](#ctrl-esf-d-priv-build) | Avoid privileged / host-networked build workers | 41 | 6C · 20H · 14M · 1L |
 | [`ESF-D-SIGN-ARTIFACTS`](#ctrl-esf-d-sign-artifacts) | Sign build artifacts and verify signatures before release | 28 | 5H · 23M |
 | [`ESF-D-SBOM`](#ctrl-esf-d-sbom) | Produce SBOM / provenance metadata with every build | 26 | 1H · 20M · 5L |
 | [`ESF-D-CODE-REVIEW`](#ctrl-esf-d-code-review) | Require peer review of source and pipeline configuration | 35 | 14H · 13M · 8L |
 | [`ESF-D-TOKEN-HYGIENE`](#ctrl-esf-d-token-hygiene) | Use short-lived, federated credentials (OIDC), not long-lived tokens | 26 | 1C · 18H · 7M |
 | [`ESF-D-INJECTION`](#ctrl-esf-d-injection) | Prevent script / template injection from untrusted pipeline context | 71 | 20C · 44H · 6M · 1L |
 | [`ESF-D-TAMPER`](#ctrl-esf-d-tamper) | Protect build artifacts from tampering and detect unauthorized modification | 6 | 1C · 4M · 1L |
-| [`ESF-S-VERIFY-DEPS`](#ctrl-esf-s-verify-deps) | Verify third-party and open-source dependencies before use | 91 | 15C · 46H · 26M · 4L |
-| [`ESF-S-PIN-DEPS`](#ctrl-esf-s-pin-deps) | Pin dependencies / actions / images to immutable digests | 70 | 1C · 28H · 35M · 6L |
-| [`ESF-S-TRUSTED-REG`](#ctrl-esf-s-trusted-reg) | Use only trusted, authenticated package and image registries | 24 | 1C · 18H · 4M · 1L |
+| [`ESF-S-VERIFY-DEPS`](#ctrl-esf-s-verify-deps) | Verify third-party and open-source dependencies before use | 92 | 15C · 47H · 26M · 4L |
+| [`ESF-S-PIN-DEPS`](#ctrl-esf-s-pin-deps) | Pin dependencies / actions / images to immutable digests | 72 | 1C · 29H · 36M · 6L |
+| [`ESF-S-TRUSTED-REG`](#ctrl-esf-s-trusted-reg) | Use only trusted, authenticated package and image registries | 25 | 1C · 18H · 5M · 1L |
 | [`ESF-S-VULN-MGMT`](#ctrl-esf-s-vuln-mgmt) | Scan inbound artifacts (images, packages) for known vulnerabilities | 21 | 3C · 1H · 14M · 3L |
 | [`ESF-S-IMMUTABLE`](#ctrl-esf-s-immutable) | Enforce artifact / tag immutability to preserve provenance | 12 | 8H · 1M · 3L |
 | [`ESF-S-PROVENANCE`](#ctrl-esf-s-provenance) | Generate and verify provenance metadata (SLSA / in-toto) for produced artifacts | 9 | 4H · 5M |
 | [`ESF-C-APPROVAL`](#ctrl-esf-c-approval) | Require explicit approval before production deployment | 22 | 8H · 13M · 1L |
 | [`ESF-C-ROLLBACK`](#ctrl-esf-c-rollback) | Automated rollback on deployment failure or alarm | 4 | 2H · 2M |
-| [`ESF-C-DEPLOY-MON`](#ctrl-esf-c-deploy-mon) | Monitor deployments with alarms / health checks | 4 | 2M · 2L |
-| [`ESF-C-ENV-SEP`](#ctrl-esf-c-env-sep) | Separate deployment environments (dev / staging / prod) | 9 | 1H · 7M · 1L |
+| [`ESF-C-DEPLOY-MON`](#ctrl-esf-c-deploy-mon) | Monitor deployments with alarms / health checks | 5 | 3M · 2L |
+| [`ESF-C-ENV-SEP`](#ctrl-esf-c-env-sep) | Separate deployment environments (dev / staging / prod) | 10 | 1H · 7M · 2L |
 | [`ESF-C-ARTIFACT-AUTHZ`](#ctrl-esf-c-artifact-authz) | Restrict access to artifact storage and deployment pipelines | 14 | 4C · 2H · 8M |
-| [`ESF-C-LEAST-PRIV`](#ctrl-esf-c-least-priv) | Apply least-privilege to CI/CD service roles and pipelines | 21 | 2C · 11H · 8M |
+| [`ESF-C-LEAST-PRIV`](#ctrl-esf-c-least-priv) | Apply least-privilege to CI/CD service roles and pipelines | 28 | 4C · 13H · 11M |
 | [`ESF-C-AUDIT`](#ctrl-esf-c-audit) | Audit deployment / pipeline activity and retain logs | 25 | 1H · 4M · 4L · 16I |
 
 ## Filter at runtime
@@ -67,7 +67,7 @@ pipeline_check --pipeline aws --standard esf_supply_chain --standard owasp_cicd_
 
 ### ESF-D-BUILD-ENV: Harden the build environment (isolated, minimal, ephemeral workers) { #ctrl-esf-d-build-env }
 
-**Evidenced by 33 checks** across 15 providers (AWS, Argo Workflows, Azure DevOps, Bitbucket, CircleCI, Cloud Build, CloudFormation, Dockerfile, Drone CI, GitHub Actions, GitLab CI, Jenkins, OCI manifest, Tekton, Terraform).
+**Evidenced by 48 checks** across 16 providers (AWS, Argo Workflows, Azure DevOps, Bitbucket, CircleCI, Cloud Build, CloudFormation, Dockerfile, Drone CI, GitHub Actions, GitLab CI, Jenkins, Kubernetes, OCI manifest, Tekton, Terraform).
 
 | Check | Title | Severity | Provider | Fix |
 |-------|-------|----------|----------|-----|
@@ -99,6 +99,21 @@ pipeline_check --pipeline aws --standard esf_supply_chain --standard owasp_cicd_
 | [`JF-014`](#detail-jf-014) | Agent label missing ephemeral marker | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [Jenkins](../providers/jenkins.md) |  |
 | [`JF-017`](#detail-jf-017) | Docker run with insecure flags (privileged/host mount) | <span class="pg-sev pg-sev--critical">CRITICAL</span> | [Jenkins](../providers/jenkins.md) | <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> |
 | [`JF-025`](#detail-jf-025) | Kubernetes agent pod template runs privileged or mounts hostPath | <span class="pg-sev pg-sev--high">HIGH</span> | [Jenkins](../providers/jenkins.md) |  |
+| [`K8S-002`](#detail-k8s-002) | Pod hostNetwork: true | <span class="pg-sev pg-sev--high">HIGH</span> | [Kubernetes](../providers/kubernetes.md) | <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> |
+| [`K8S-003`](#detail-k8s-003) | Pod hostPID: true | <span class="pg-sev pg-sev--high">HIGH</span> | [Kubernetes](../providers/kubernetes.md) | <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> |
+| [`K8S-004`](#detail-k8s-004) | Pod hostIPC: true | <span class="pg-sev pg-sev--high">HIGH</span> | [Kubernetes](../providers/kubernetes.md) | <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> |
+| [`K8S-015`](#detail-k8s-015) | Container missing resources.limits.memory | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [Kubernetes](../providers/kubernetes.md) |  |
+| [`K8S-016`](#detail-k8s-016) | Container missing resources.limits.cpu | <span class="pg-sev pg-sev--low">LOW</span> | [Kubernetes](../providers/kubernetes.md) |  |
+| [`K8S-022`](#detail-k8s-022) | Service exposes SSH (port 22) | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [Kubernetes](../providers/kubernetes.md) |  |
+| [`K8S-025`](#detail-k8s-025) | System priority class used outside kube-system | <span class="pg-sev pg-sev--high">HIGH</span> | [Kubernetes](../providers/kubernetes.md) |  |
+| [`K8S-026`](#detail-k8s-026) | LoadBalancer Service has no loadBalancerSourceRanges | <span class="pg-sev pg-sev--high">HIGH</span> | [Kubernetes](../providers/kubernetes.md) |  |
+| [`K8S-028`](#detail-k8s-028) | Container declares hostPort | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [Kubernetes](../providers/kubernetes.md) | <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> |
+| [`K8S-030`](#detail-k8s-030) | Workload schedules onto a control-plane node | <span class="pg-sev pg-sev--high">HIGH</span> | [Kubernetes](../providers/kubernetes.md) | <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> |
+| [`K8S-032`](#detail-k8s-032) | Namespace lacks default-deny NetworkPolicy | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [Kubernetes](../providers/kubernetes.md) |  |
+| [`K8S-033`](#detail-k8s-033) | Namespace lacks ResourceQuota or LimitRange | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [Kubernetes](../providers/kubernetes.md) |  |
+| [`K8S-038`](#detail-k8s-038) | NetworkPolicy ingress / egress allows all sources or destinations | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [Kubernetes](../providers/kubernetes.md) |  |
+| [`K8S-041`](#detail-k8s-041) | Service.externalIPs allows traffic interception (CVE-2020-8554) | <span class="pg-sev pg-sev--high">HIGH</span> | [Kubernetes](../providers/kubernetes.md) |  |
+| [`K8S-043`](#detail-k8s-043) | Ingress rule has wildcard or missing host (catch-all) | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [Kubernetes](../providers/kubernetes.md) |  |
 | [`OCI-006`](#detail-oci-006) | Image has an excessive layer count | <span class="pg-sev pg-sev--low">LOW</span> | [OCI manifest](../providers/oci.md) |  |
 | [`PBAC-001`](#detail-pbac-001) | CodeBuild project has no VPC configuration | <span class="pg-sev pg-sev--high">HIGH</span> | [AWS](../providers/aws.md) |  |
 | [`PBAC-003`](#detail-pbac-003) | CodeBuild security group allows 0.0.0.0/0 all-port egress | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [AWS](../providers/aws.md) |  |
@@ -138,7 +153,7 @@ pipeline_check --pipeline aws --standard esf_supply_chain --standard owasp_cicd_
 
 ### ESF-D-SECRETS: Protect secrets used during build; no secrets in source or env { #ctrl-esf-d-secrets }
 
-**Evidenced by 41 checks** across 16 providers (AWS, Argo Workflows, Azure DevOps, Bitbucket, Buildkite, CircleCI, Cloud Build, CloudFormation, Dockerfile, Drone CI, GitHub Actions, GitLab CI, Jenkins, SCM, Tekton, Terraform).
+**Evidenced by 44 checks** across 17 providers (AWS, Argo Workflows, Azure DevOps, Bitbucket, Buildkite, CircleCI, Cloud Build, CloudFormation, Dockerfile, Drone CI, GitHub Actions, GitLab CI, Jenkins, Kubernetes, SCM, Tekton, Terraform).
 
 | Check | Title | Severity | Provider | Fix |
 |-------|-------|----------|----------|-----|
@@ -177,6 +192,9 @@ pipeline_check --pipeline aws --standard esf_supply_chain --standard owasp_cicd_
 | [`JF-010`](#detail-jf-010) | Long-lived AWS keys exposed via environment {} block | <span class="pg-sev pg-sev--high">HIGH</span> | [Jenkins](../providers/jenkins.md) | <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> |
 | [`JF-033`](#detail-jf-033) | withCredentials secret leaked via Groovy ${...} interpolation in sh step | <span class="pg-sev pg-sev--high">HIGH</span> | [Jenkins](../providers/jenkins.md) |  |
 | [`JF-034`](#detail-jf-034) | Pipeline declares a password() build parameter | <span class="pg-sev pg-sev--high">HIGH</span> | [Jenkins](../providers/jenkins.md) |  |
+| [`K8S-017`](#detail-k8s-017) | Container env value carries a credential-shaped literal | <span class="pg-sev pg-sev--critical">CRITICAL</span> | [Kubernetes](../providers/kubernetes.md) |  |
+| [`K8S-018`](#detail-k8s-018) | Secret stringData/data carries a credential-shaped literal | <span class="pg-sev pg-sev--critical">CRITICAL</span> | [Kubernetes](../providers/kubernetes.md) |  |
+| [`K8S-037`](#detail-k8s-037) | ConfigMap data carries a credential-shaped literal | <span class="pg-sev pg-sev--high">HIGH</span> | [Kubernetes](../providers/kubernetes.md) |  |
 | [`LMB-003`](#detail-lmb-003) | Lambda function env vars may contain plaintext secrets | <span class="pg-sev pg-sev--high">HIGH</span> | [AWS](../providers/aws.md) |  |
 | [`SCM-004`](#detail-scm-004) | GitHub secret scanning is not enabled | <span class="pg-sev pg-sev--high">HIGH</span> | [SCM](../providers/scm.md) |  |
 | [`SCM-015`](#detail-scm-015) | Secret scanning push protection is not enabled | <span class="pg-sev pg-sev--high">HIGH</span> | [SCM](../providers/scm.md) |  |
@@ -186,7 +204,7 @@ pipeline_check --pipeline aws --standard esf_supply_chain --standard owasp_cicd_
 
 ### ESF-D-PRIV-BUILD: Avoid privileged / host-networked build workers { #ctrl-esf-d-priv-build }
 
-**Evidenced by 28 checks** across 13 providers (AWS, Argo Workflows, Azure DevOps, Bitbucket, Buildkite, CircleCI, Cloud Build, Dockerfile, Drone CI, GitHub Actions, GitLab CI, Jenkins, Tekton).
+**Evidenced by 41 checks** across 14 providers (AWS, Argo Workflows, Azure DevOps, Bitbucket, Buildkite, CircleCI, Cloud Build, Dockerfile, Drone CI, GitHub Actions, GitLab CI, Jenkins, Kubernetes, Tekton).
 
 | Check | Title | Severity | Provider | Fix |
 |-------|-------|----------|----------|-----|
@@ -215,6 +233,19 @@ pipeline_check --pipeline aws --standard esf_supply_chain --standard owasp_cicd_
 | [`GL-014`](#detail-gl-014) | Self-managed runner without ephemeral tag | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [GitLab CI](../providers/gitlab.md) |  |
 | [`JF-003`](#detail-jf-003) | Pipeline uses `agent any` (no executor isolation) | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [Jenkins](../providers/jenkins.md) |  |
 | [`JF-014`](#detail-jf-014) | Agent label missing ephemeral marker | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [Jenkins](../providers/jenkins.md) |  |
+| [`K8S-005`](#detail-k8s-005) | Container securityContext.privileged: true | <span class="pg-sev pg-sev--critical">CRITICAL</span> | [Kubernetes](../providers/kubernetes.md) | <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> |
+| [`K8S-006`](#detail-k8s-006) | Container allowPrivilegeEscalation not explicitly false | <span class="pg-sev pg-sev--high">HIGH</span> | [Kubernetes](../providers/kubernetes.md) | <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> |
+| [`K8S-007`](#detail-k8s-007) | Container runAsNonRoot not true / runAsUser is 0 | <span class="pg-sev pg-sev--high">HIGH</span> | [Kubernetes](../providers/kubernetes.md) | <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> |
+| [`K8S-008`](#detail-k8s-008) | Container readOnlyRootFilesystem not true | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [Kubernetes](../providers/kubernetes.md) | <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> |
+| [`K8S-009`](#detail-k8s-009) | Container capabilities not dropping ALL / adding dangerous caps | <span class="pg-sev pg-sev--high">HIGH</span> | [Kubernetes](../providers/kubernetes.md) |  |
+| [`K8S-010`](#detail-k8s-010) | Container seccompProfile not RuntimeDefault or Localhost | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [Kubernetes](../providers/kubernetes.md) |  |
+| [`K8S-013`](#detail-k8s-013) | Pod uses a hostPath volume | <span class="pg-sev pg-sev--high">HIGH</span> | [Kubernetes](../providers/kubernetes.md) | <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> |
+| [`K8S-014`](#detail-k8s-014) | Pod hostPath references a sensitive host directory | <span class="pg-sev pg-sev--critical">CRITICAL</span> | [Kubernetes](../providers/kubernetes.md) |  |
+| [`K8S-023`](#detail-k8s-023) | Namespace missing Pod Security Admission enforcement label | <span class="pg-sev pg-sev--high">HIGH</span> | [Kubernetes](../providers/kubernetes.md) |  |
+| [`K8S-031`](#detail-k8s-031) | Namespace missing PSA warn label | <span class="pg-sev pg-sev--low">LOW</span> | [Kubernetes](../providers/kubernetes.md) |  |
+| [`K8S-035`](#detail-k8s-035) | Container securityContext.runAsUser is 0 | <span class="pg-sev pg-sev--high">HIGH</span> | [Kubernetes](../providers/kubernetes.md) |  |
+| [`K8S-039`](#detail-k8s-039) | Pod uses shareProcessNamespace: true | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [Kubernetes](../providers/kubernetes.md) |  |
+| [`K8S-040`](#detail-k8s-040) | Container securityContext.procMount: Unmasked | <span class="pg-sev pg-sev--high">HIGH</span> | [Kubernetes](../providers/kubernetes.md) |  |
 | [`TKN-002`](#detail-tkn-002) | Tekton step runs privileged or as root | <span class="pg-sev pg-sev--high">HIGH</span> | [Tekton](../providers/tekton.md) |  |
 | [`TKN-004`](#detail-tkn-004) | Tekton Task mounts hostPath or shares host namespaces | <span class="pg-sev pg-sev--critical">CRITICAL</span> | [Tekton](../providers/tekton.md) |  |
 | [`TKN-013`](#detail-tkn-013) | Tekton sidecar runs privileged or as root | <span class="pg-sev pg-sev--high">HIGH</span> | [Tekton](../providers/tekton.md) |  |
@@ -455,7 +486,7 @@ pipeline_check --pipeline aws --standard esf_supply_chain --standard owasp_cicd_
 
 ### ESF-S-VERIFY-DEPS: Verify third-party and open-source dependencies before use { #ctrl-esf-s-verify-deps }
 
-**Evidenced by 91 checks** across 17 providers (AWS, Argo Workflows, Azure DevOps, Bitbucket, Buildkite, CircleCI, Cloud Build, Dockerfile, Drone CI, GitHub Actions, GitLab CI, Helm, Jenkins, OCI manifest, SCM, Tekton, maven).
+**Evidenced by 92 checks** across 18 providers (AWS, Argo Workflows, Azure DevOps, Bitbucket, Buildkite, CircleCI, Cloud Build, Dockerfile, Drone CI, GitHub Actions, GitLab CI, Helm, Jenkins, Kubernetes, OCI manifest, SCM, Tekton, maven).
 
 | Check | Title | Severity | Provider | Fix |
 |-------|-------|----------|----------|-----|
@@ -543,6 +574,7 @@ pipeline_check --pipeline aws --standard esf_supply_chain --standard owasp_cicd_
 | [`JF-023`](#detail-jf-023) | TLS / certificate verification bypass | <span class="pg-sev pg-sev--high">HIGH</span> | [Jenkins](../providers/jenkins.md) | <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> |
 | [`JF-029`](#detail-jf-029) | Jenkinsfile contains indicators of malicious activity | <span class="pg-sev pg-sev--critical">CRITICAL</span> | [Jenkins](../providers/jenkins.md) |  |
 | [`JF-031`](#detail-jf-031) | Package install bypasses registry integrity (git / path / tarball source) | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [Jenkins](../providers/jenkins.md) |  |
+| [`K8S-001`](#detail-k8s-001) | Container image not pinned by sha256 digest | <span class="pg-sev pg-sev--high">HIGH</span> | [Kubernetes](../providers/kubernetes.md) | <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> |
 | [`MVN-005`](#detail-mvn-005) | Maven repository accepts artifacts without strict checksum gating | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [maven](../providers/maven.md) |  |
 | [`MVN-006`](#detail-mvn-006) | pom.xml pins a known-compromised Maven Central artifact version | <span class="pg-sev pg-sev--critical">CRITICAL</span> | [maven](../providers/maven.md) |  |
 | [`OCI-007`](#detail-oci-007) | Image manifest uses legacy schemaVersion 1 (no content addressing) | <span class="pg-sev pg-sev--high">HIGH</span> | [OCI manifest](../providers/oci.md) |  |
@@ -553,7 +585,7 @@ pipeline_check --pipeline aws --standard esf_supply_chain --standard owasp_cicd_
 
 ### ESF-S-PIN-DEPS: Pin dependencies / actions / images to immutable digests { #ctrl-esf-s-pin-deps }
 
-**Evidenced by 70 checks** across 15 providers (AWS, Argo Workflows, Azure DevOps, Bitbucket, Buildkite, CircleCI, Cloud Build, Dockerfile, Drone CI, GitHub Actions, GitLab CI, Helm, Jenkins, Tekton, maven).
+**Evidenced by 72 checks** across 16 providers (AWS, Argo Workflows, Azure DevOps, Bitbucket, Buildkite, CircleCI, Cloud Build, Dockerfile, Drone CI, GitHub Actions, GitLab CI, Helm, Jenkins, Kubernetes, Tekton, maven).
 
 | Check | Title | Severity | Provider | Fix |
 |-------|-------|----------|----------|-----|
@@ -622,6 +654,8 @@ pipeline_check --pipeline aws --standard esf_supply_chain --standard owasp_cicd_
 | [`JF-021`](#detail-jf-021) | Package install without lockfile enforcement | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [Jenkins](../providers/jenkins.md) | <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> |
 | [`JF-022`](#detail-jf-022) | Dependency update command bypasses lockfile pins | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [Jenkins](../providers/jenkins.md) | <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> |
 | [`JF-031`](#detail-jf-031) | Package install bypasses registry integrity (git / path / tarball source) | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [Jenkins](../providers/jenkins.md) |  |
+| [`K8S-001`](#detail-k8s-001) | Container image not pinned by sha256 digest | <span class="pg-sev pg-sev--high">HIGH</span> | [Kubernetes](../providers/kubernetes.md) | <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> |
+| [`K8S-036`](#detail-k8s-036) | ServiceAccount imagePullSecrets references missing Secret | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [Kubernetes](../providers/kubernetes.md) |  |
 | [`MVN-001`](#detail-mvn-001) | pom.xml dependency uses a floating version range | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [maven](../providers/maven.md) |  |
 | [`MVN-002`](#detail-mvn-002) | pom.xml depends on a mutable SNAPSHOT version | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [maven](../providers/maven.md) |  |
 | [`MVN-004`](#detail-mvn-004) | pom.xml dependency omits an explicit ``<version>`` | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [maven](../providers/maven.md) |  |
@@ -630,7 +664,7 @@ pipeline_check --pipeline aws --standard esf_supply_chain --standard owasp_cicd_
 
 ### ESF-S-TRUSTED-REG: Use only trusted, authenticated package and image registries { #ctrl-esf-s-trusted-reg }
 
-**Evidenced by 24 checks** across 14 providers (AWS, Argo Workflows, Azure DevOps, Buildkite, Cloud Build, Dockerfile, Drone CI, GitLab CI, Helm, Jenkins, OCI manifest, SCM, Tekton, maven).
+**Evidenced by 25 checks** across 15 providers (AWS, Argo Workflows, Azure DevOps, Buildkite, Cloud Build, Dockerfile, Drone CI, GitLab CI, Helm, Jenkins, Kubernetes, OCI manifest, SCM, Tekton, maven).
 
 | Check | Title | Severity | Provider | Fix |
 |-------|-------|----------|----------|-----|
@@ -653,6 +687,7 @@ pipeline_check --pipeline aws --standard esf_supply_chain --standard owasp_cicd_
 | [`HELM-003`](#detail-helm-003) | Chart dependency declared on a non-HTTPS repository | <span class="pg-sev pg-sev--high">HIGH</span> | [Helm](../providers/helm.md) | <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> |
 | [`HELM-009`](#detail-helm-009) | Chart home / sources URL uses a non-HTTPS scheme | <span class="pg-sev pg-sev--low">LOW</span> | [Helm](../providers/helm.md) |  |
 | [`JF-035`](#detail-jf-035) | httpRequest step disables SSL verification | <span class="pg-sev pg-sev--high">HIGH</span> | [Jenkins](../providers/jenkins.md) |  |
+| [`K8S-027`](#detail-k8s-027) | Ingress has no TLS configuration | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [Kubernetes](../providers/kubernetes.md) |  |
 | [`MVN-003`](#detail-mvn-003) | pom.xml declares a plaintext-HTTP Maven repository | <span class="pg-sev pg-sev--high">HIGH</span> | [maven](../providers/maven.md) |  |
 | [`MVN-007`](#detail-mvn-007) | settings.xml mirror routes external traffic through one repo | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [maven](../providers/maven.md) |  |
 | [`OCI-004`](#detail-oci-004) | Image layer references an arbitrary URL (foreign layer) | <span class="pg-sev pg-sev--high">HIGH</span> | [OCI manifest](../providers/oci.md) |  |
@@ -764,7 +799,7 @@ pipeline_check --pipeline aws --standard esf_supply_chain --standard owasp_cicd_
 
 ### ESF-C-DEPLOY-MON: Monitor deployments with alarms / health checks { #ctrl-esf-c-deploy-mon }
 
-**Evidenced by 4 checks** across 2 providers (AWS, Dockerfile).
+**Evidenced by 5 checks** across 3 providers (AWS, Dockerfile, Kubernetes).
 
 | Check | Title | Severity | Provider | Fix |
 |-------|-------|----------|----------|-----|
@@ -772,10 +807,11 @@ pipeline_check --pipeline aws --standard esf_supply_chain --standard owasp_cicd_
 | [`CW-001`](#detail-cw-001) | No CloudWatch alarm on CodeBuild FailedBuilds metric | <span class="pg-sev pg-sev--low">LOW</span> | [AWS](../providers/aws.md) |  |
 | [`DF-007`](#detail-df-007) | No HEALTHCHECK directive declared | <span class="pg-sev pg-sev--low">LOW</span> | [Dockerfile](../providers/dockerfile.md) | <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> |
 | [`EB-001`](#detail-eb-001) | No EventBridge rule for CodePipeline failure notifications | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [AWS](../providers/aws.md) |  |
+| [`K8S-024`](#detail-k8s-024) | Container missing both livenessProbe and readinessProbe | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [Kubernetes](../providers/kubernetes.md) |  |
 
 ### ESF-C-ENV-SEP: Separate deployment environments (dev / staging / prod) { #ctrl-esf-c-env-sep }
 
-**Evidenced by 9 checks** across 8 providers (AWS, Azure DevOps, Bitbucket, Buildkite, CircleCI, GitHub Actions, GitLab CI, SCM).
+**Evidenced by 10 checks** across 9 providers (AWS, Azure DevOps, Bitbucket, Buildkite, CircleCI, GitHub Actions, GitLab CI, Kubernetes, SCM).
 
 | Check | Title | Severity | Provider | Fix |
 |-------|-------|----------|----------|-----|
@@ -786,6 +822,7 @@ pipeline_check --pipeline aws --standard esf_supply_chain --standard owasp_cicd_
 | [`CD-002`](#detail-cd-002) | AllAtOnce deployment config, no canary or rolling strategy | <span class="pg-sev pg-sev--high">HIGH</span> | [AWS](../providers/aws.md) |  |
 | [`GHA-014`](#detail-gha-014) | Deploy job missing environment binding | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [GitHub Actions](../providers/github.md) | <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> |
 | [`GL-004`](#detail-gl-004) | Deploy job lacks manual approval or environment gate | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [GitLab CI](../providers/gitlab.md) |  |
+| [`K8S-019`](#detail-k8s-019) | Workload deployed in the 'default' namespace | <span class="pg-sev pg-sev--low">LOW</span> | [Kubernetes](../providers/kubernetes.md) |  |
 | [`SCM-024`](#detail-scm-024) | Deployment environment can deploy from any branch | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [SCM](../providers/scm.md) |  |
 | [`SCM-041`](#detail-scm-041) | Active ruleset doesn't gate on a deployment environment | <span class="pg-sev pg-sev--low">LOW</span> | [SCM](../providers/scm.md) |  |
 
@@ -812,7 +849,7 @@ pipeline_check --pipeline aws --standard esf_supply_chain --standard owasp_cicd_
 
 ### ESF-C-LEAST-PRIV: Apply least-privilege to CI/CD service roles and pipelines { #ctrl-esf-c-least-priv }
 
-**Evidenced by 21 checks** across 5 providers (AWS, Argo Workflows, GitHub Actions, SCM, Tekton).
+**Evidenced by 28 checks** across 6 providers (AWS, Argo Workflows, GitHub Actions, Kubernetes, SCM, Tekton).
 
 | Check | Title | Severity | Provider | Fix |
 |-------|-------|----------|----------|-----|
@@ -830,6 +867,13 @@ pipeline_check --pipeline aws --standard esf_supply_chain --standard owasp_cicd_
 | [`IAM-005`](#detail-iam-005) | CI/CD role trust policy missing sts:ExternalId | <span class="pg-sev pg-sev--high">HIGH</span> | [AWS](../providers/aws.md) |  |
 | [`IAM-006`](#detail-iam-006) | Sensitive actions granted with wildcard Resource | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [AWS](../providers/aws.md) |  |
 | [`IAM-008`](#detail-iam-008) | OIDC-federated role trust policy missing audience or subject pin | <span class="pg-sev pg-sev--high">HIGH</span> | [AWS](../providers/aws.md) |  |
+| [`K8S-011`](#detail-k8s-011) | Pod serviceAccountName unset or 'default' | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [Kubernetes](../providers/kubernetes.md) |  |
+| [`K8S-012`](#detail-k8s-012) | Pod automountServiceAccountToken not false | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [Kubernetes](../providers/kubernetes.md) |  |
+| [`K8S-020`](#detail-k8s-020) | ClusterRoleBinding grants cluster-admin or system:masters | <span class="pg-sev pg-sev--critical">CRITICAL</span> | [Kubernetes](../providers/kubernetes.md) | <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> |
+| [`K8S-021`](#detail-k8s-021) | Role or ClusterRole grants wildcard verbs+resources | <span class="pg-sev pg-sev--high">HIGH</span> | [Kubernetes](../providers/kubernetes.md) |  |
+| [`K8S-029`](#detail-k8s-029) | RoleBinding grants permissions to the default ServiceAccount | <span class="pg-sev pg-sev--high">HIGH</span> | [Kubernetes](../providers/kubernetes.md) | <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> |
+| [`K8S-034`](#detail-k8s-034) | ServiceAccount automountServiceAccountToken not explicitly false | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [Kubernetes](../providers/kubernetes.md) |  |
+| [`K8S-042`](#detail-k8s-042) | RoleBinding grants access to system:anonymous / system:unauthenticated | <span class="pg-sev pg-sev--critical">CRITICAL</span> | [Kubernetes](../providers/kubernetes.md) |  |
 | [`KMS-002`](#detail-kms-002) | KMS key policy grants wildcard KMS actions | <span class="pg-sev pg-sev--high">HIGH</span> | [AWS](../providers/aws.md) |  |
 | [`PBAC-002`](#detail-pbac-002) | CodeBuild service role shared across multiple projects | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [AWS](../providers/aws.md) |  |
 | [`PBAC-005`](#detail-pbac-005) | CodePipeline stage action roles mirror the pipeline role | <span class="pg-sev pg-sev--high">HIGH</span> | [AWS](../providers/aws.md) |  |
@@ -874,7 +918,7 @@ pipeline_check --pipeline aws --standard esf_supply_chain --standard owasp_cicd_
 
 Every check that evidences this standard, rendered once with its detection mechanism, recommendation, and any known false-positive modes or real-world incident references. The per-control tables above link to the matching block here.
 
-#### `ADO-001`: Task reference not pinned to specific version <span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> { #detail-ado-001 }
+### `ADO-001`: Task reference not pinned to specific version <span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> { #detail-ado-001 }
 
 **Evidences:** [`ESF-S-VERIFY-DEPS`](#ctrl-esf-s-verify-deps) Verify third-party and open-source dependencies before use, [`ESF-S-PIN-DEPS`](#ctrl-esf-s-pin-deps) Pin dependencies / actions / images to immutable digests.
 
@@ -886,7 +930,7 @@ Every check that evidences this standard, rendered once with its detection mecha
 
 **Source:** [`ADO-001`](../providers/azure.md#ado-001) in the [Azure DevOps provider](../providers/azure.md).
 
-#### `ADO-002`: Script injection via attacker-controllable context <span class="pg-sev pg-sev--high">HIGH</span> { #detail-ado-002 }
+### `ADO-002`: Script injection via attacker-controllable context <span class="pg-sev pg-sev--high">HIGH</span> { #detail-ado-002 }
 
 **Evidences:** [`ESF-D-INJECTION`](#ctrl-esf-d-injection) Prevent script / template injection from untrusted pipeline context.
 
@@ -933,7 +977,7 @@ jobs:
 
 **Source:** [`ADO-002`](../providers/azure.md#ado-002) in the [Azure DevOps provider](../providers/azure.md).
 
-#### `ADO-003`: Variables contain literal secret values <span class="pg-sev pg-sev--critical">CRITICAL</span> { #detail-ado-003 }
+### `ADO-003`: Variables contain literal secret values <span class="pg-sev pg-sev--critical">CRITICAL</span> { #detail-ado-003 }
 
 **Evidences:** [`ESF-D-SECRETS`](#ctrl-esf-d-secrets) Protect secrets used during build; no secrets in source or env.
 
@@ -943,7 +987,7 @@ jobs:
 
 **Source:** [`ADO-003`](../providers/azure.md#ado-003) in the [Azure DevOps provider](../providers/azure.md).
 
-#### `ADO-004`: Deployment job missing environment binding <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-ado-004 }
+### `ADO-004`: Deployment job missing environment binding <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-ado-004 }
 
 **Evidences:** [`ESF-C-APPROVAL`](#ctrl-esf-c-approval) Require explicit approval before production deployment, [`ESF-C-ENV-SEP`](#ctrl-esf-c-env-sep) Separate deployment environments (dev / staging / prod).
 
@@ -957,7 +1001,7 @@ jobs:
 
 **Source:** [`ADO-004`](../providers/azure.md#ado-004) in the [Azure DevOps provider](../providers/azure.md).
 
-#### `ADO-005`: Container image not pinned to specific version <span class="pg-sev pg-sev--high">HIGH</span> { #detail-ado-005 }
+### `ADO-005`: Container image not pinned to specific version <span class="pg-sev pg-sev--high">HIGH</span> { #detail-ado-005 }
 
 **Evidences:** [`ESF-S-PIN-DEPS`](#ctrl-esf-s-pin-deps) Pin dependencies / actions / images to immutable digests, [`ESF-S-TRUSTED-REG`](#ctrl-esf-s-trusted-reg) Use only trusted, authenticated package and image registries.
 
@@ -967,7 +1011,7 @@ jobs:
 
 **Source:** [`ADO-005`](../providers/azure.md#ado-005) in the [Azure DevOps provider](../providers/azure.md).
 
-#### `ADO-006`: Artifacts not signed <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-ado-006 }
+### `ADO-006`: Artifacts not signed <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-ado-006 }
 
 **Evidences:** [`ESF-D-SIGN-ARTIFACTS`](#ctrl-esf-d-sign-artifacts) Sign build artifacts and verify signatures before release.
 
@@ -977,7 +1021,7 @@ jobs:
 
 **Source:** [`ADO-006`](../providers/azure.md#ado-006) in the [Azure DevOps provider](../providers/azure.md).
 
-#### `ADO-007`: SBOM not produced <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-ado-007 }
+### `ADO-007`: SBOM not produced <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-ado-007 }
 
 **Evidences:** [`ESF-D-SBOM`](#ctrl-esf-d-sbom) Produce SBOM / provenance metadata with every build.
 
@@ -987,7 +1031,7 @@ jobs:
 
 **Source:** [`ADO-007`](../providers/azure.md#ado-007) in the [Azure DevOps provider](../providers/azure.md).
 
-#### `ADO-008`: Credential-shaped literal in pipeline body <span class="pg-sev pg-sev--critical">CRITICAL</span> <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> { #detail-ado-008 }
+### `ADO-008`: Credential-shaped literal in pipeline body <span class="pg-sev pg-sev--critical">CRITICAL</span> <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> { #detail-ado-008 }
 
 **Evidences:** [`ESF-D-SECRETS`](#ctrl-esf-d-secrets) Protect secrets used during build; no secrets in source or env.
 
@@ -1003,7 +1047,7 @@ jobs:
 
 **Source:** [`ADO-008`](../providers/azure.md#ado-008) in the [Azure DevOps provider](../providers/azure.md).
 
-#### `ADO-009`: Container image pinned by tag rather than sha256 digest <span class="pg-sev pg-sev--low">LOW</span> { #detail-ado-009 }
+### `ADO-009`: Container image pinned by tag rather than sha256 digest <span class="pg-sev pg-sev--low">LOW</span> { #detail-ado-009 }
 
 **Evidences:** [`ESF-S-PIN-DEPS`](#ctrl-esf-s-pin-deps) Pin dependencies / actions / images to immutable digests, [`ESF-S-IMMUTABLE`](#ctrl-esf-s-immutable) Enforce artifact / tag immutability to preserve provenance.
 
@@ -1013,7 +1057,7 @@ jobs:
 
 **Source:** [`ADO-009`](../providers/azure.md#ado-009) in the [Azure DevOps provider](../providers/azure.md).
 
-#### `ADO-010`: Cross-pipeline `download:` ingestion unverified <span class="pg-sev pg-sev--critical">CRITICAL</span> { #detail-ado-010 }
+### `ADO-010`: Cross-pipeline `download:` ingestion unverified <span class="pg-sev pg-sev--critical">CRITICAL</span> { #detail-ado-010 }
 
 **Evidences:** [`ESF-D-INJECTION`](#ctrl-esf-d-injection) Prevent script / template injection from untrusted pipeline context, [`ESF-S-VERIFY-DEPS`](#ctrl-esf-s-verify-deps) Verify third-party and open-source dependencies before use.
 
@@ -1023,7 +1067,7 @@ jobs:
 
 **Source:** [`ADO-010`](../providers/azure.md#ado-010) in the [Azure DevOps provider](../providers/azure.md).
 
-#### `ADO-011`: `template: <local-path>` on PR-validated pipeline <span class="pg-sev pg-sev--high">HIGH</span> { #detail-ado-011 }
+### `ADO-011`: `template: <local-path>` on PR-validated pipeline <span class="pg-sev pg-sev--high">HIGH</span> { #detail-ado-011 }
 
 **Evidences:** [`ESF-D-INJECTION`](#ctrl-esf-d-injection) Prevent script / template injection from untrusted pipeline context, [`ESF-S-PIN-DEPS`](#ctrl-esf-s-pin-deps) Pin dependencies / actions / images to immutable digests.
 
@@ -1033,7 +1077,7 @@ jobs:
 
 **Source:** [`ADO-011`](../providers/azure.md#ado-011) in the [Azure DevOps provider](../providers/azure.md).
 
-#### `ADO-012`: Cache@2 key derives from $(System.PullRequest.*) <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-ado-012 }
+### `ADO-012`: Cache@2 key derives from $(System.PullRequest.*) <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-ado-012 }
 
 **Evidences:** [`ESF-D-INJECTION`](#ctrl-esf-d-injection) Prevent script / template injection from untrusted pipeline context, [`ESF-S-VERIFY-DEPS`](#ctrl-esf-s-verify-deps) Verify third-party and open-source dependencies before use.
 
@@ -1043,7 +1087,7 @@ jobs:
 
 **Source:** [`ADO-012`](../providers/azure.md#ado-012) in the [Azure DevOps provider](../providers/azure.md).
 
-#### `ADO-013`: Self-hosted pool without explicit ephemeral marker <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-ado-013 }
+### `ADO-013`: Self-hosted pool without explicit ephemeral marker <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-ado-013 }
 
 **Evidences:** [`ESF-D-BUILD-ENV`](#ctrl-esf-d-build-env) Harden the build environment (isolated, minimal, ephemeral workers), [`ESF-D-PRIV-BUILD`](#ctrl-esf-d-priv-build) Avoid privileged / host-networked build workers.
 
@@ -1053,7 +1097,7 @@ jobs:
 
 **Source:** [`ADO-013`](../providers/azure.md#ado-013) in the [Azure DevOps provider](../providers/azure.md).
 
-#### `ADO-014`: AWS auth uses long-lived access keys <span class="pg-sev pg-sev--medium">MEDIUM</span> <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> { #detail-ado-014 }
+### `ADO-014`: AWS auth uses long-lived access keys <span class="pg-sev pg-sev--medium">MEDIUM</span> <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> { #detail-ado-014 }
 
 **Evidences:** [`ESF-D-TOKEN-HYGIENE`](#ctrl-esf-d-token-hygiene) Use short-lived, federated credentials (OIDC), not long-lived tokens.
 
@@ -1069,7 +1113,7 @@ jobs:
 
 **Source:** [`ADO-014`](../providers/azure.md#ado-014) in the [Azure DevOps provider](../providers/azure.md).
 
-#### `ADO-015`: Job has no `timeoutInMinutes`, unbounded build <span class="pg-sev pg-sev--medium">MEDIUM</span> <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> { #detail-ado-015 }
+### `ADO-015`: Job has no `timeoutInMinutes`, unbounded build <span class="pg-sev pg-sev--medium">MEDIUM</span> <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> { #detail-ado-015 }
 
 **Evidences:** [`ESF-D-BUILD-TIMEOUT`](#ctrl-esf-d-build-timeout) Enforce bounded build execution (single-use, time-limited).
 
@@ -1081,7 +1125,7 @@ jobs:
 
 **Source:** [`ADO-015`](../providers/azure.md#ado-015) in the [Azure DevOps provider](../providers/azure.md).
 
-#### `ADO-016`: Remote script piped to shell interpreter <span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> { #detail-ado-016 }
+### `ADO-016`: Remote script piped to shell interpreter <span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> { #detail-ado-016 }
 
 **Evidences:** [`ESF-S-VERIFY-DEPS`](#ctrl-esf-s-verify-deps) Verify third-party and open-source dependencies before use.
 
@@ -1097,7 +1141,7 @@ jobs:
 
 **Source:** [`ADO-016`](../providers/azure.md#ado-016) in the [Azure DevOps provider](../providers/azure.md).
 
-#### `ADO-017`: Docker run with insecure flags (privileged/host mount) <span class="pg-sev pg-sev--critical">CRITICAL</span> <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> { #detail-ado-017 }
+### `ADO-017`: Docker run with insecure flags (privileged/host mount) <span class="pg-sev pg-sev--critical">CRITICAL</span> <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> { #detail-ado-017 }
 
 **Evidences:** [`ESF-D-BUILD-ENV`](#ctrl-esf-d-build-env) Harden the build environment (isolated, minimal, ephemeral workers).
 
@@ -1109,7 +1153,7 @@ jobs:
 
 **Source:** [`ADO-017`](../providers/azure.md#ado-017) in the [Azure DevOps provider](../providers/azure.md).
 
-#### `ADO-018`: Package install from insecure source <span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> { #detail-ado-018 }
+### `ADO-018`: Package install from insecure source <span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> { #detail-ado-018 }
 
 **Evidences:** [`ESF-S-VERIFY-DEPS`](#ctrl-esf-s-verify-deps) Verify third-party and open-source dependencies before use.
 
@@ -1121,7 +1165,7 @@ jobs:
 
 **Source:** [`ADO-018`](../providers/azure.md#ado-018) in the [Azure DevOps provider](../providers/azure.md).
 
-#### `ADO-019`: `extends:` template on PR-validated pipeline points to local path <span class="pg-sev pg-sev--critical">CRITICAL</span> { #detail-ado-019 }
+### `ADO-019`: `extends:` template on PR-validated pipeline points to local path <span class="pg-sev pg-sev--critical">CRITICAL</span> { #detail-ado-019 }
 
 **Evidences:** [`ESF-D-INJECTION`](#ctrl-esf-d-injection) Prevent script / template injection from untrusted pipeline context, [`ESF-S-PIN-DEPS`](#ctrl-esf-s-pin-deps) Pin dependencies / actions / images to immutable digests.
 
@@ -1170,7 +1214,7 @@ extends:
 
 **Source:** [`ADO-019`](../providers/azure.md#ado-019) in the [Azure DevOps provider](../providers/azure.md).
 
-#### `ADO-020`: No vulnerability scanning step <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-ado-020 }
+### `ADO-020`: No vulnerability scanning step <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-ado-020 }
 
 **Evidences:** [`ESF-S-VULN-MGMT`](#ctrl-esf-s-vuln-mgmt) Scan inbound artifacts (images, packages) for known vulnerabilities.
 
@@ -1180,7 +1224,7 @@ extends:
 
 **Source:** [`ADO-020`](../providers/azure.md#ado-020) in the [Azure DevOps provider](../providers/azure.md).
 
-#### `ADO-021`: Package install without lockfile enforcement <span class="pg-sev pg-sev--medium">MEDIUM</span> <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> { #detail-ado-021 }
+### `ADO-021`: Package install without lockfile enforcement <span class="pg-sev pg-sev--medium">MEDIUM</span> <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> { #detail-ado-021 }
 
 **Evidences:** [`ESF-S-PIN-DEPS`](#ctrl-esf-s-pin-deps) Pin dependencies / actions / images to immutable digests.
 
@@ -1192,7 +1236,7 @@ extends:
 
 **Source:** [`ADO-021`](../providers/azure.md#ado-021) in the [Azure DevOps provider](../providers/azure.md).
 
-#### `ADO-022`: Dependency update command bypasses lockfile pins <span class="pg-sev pg-sev--medium">MEDIUM</span> <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> { #detail-ado-022 }
+### `ADO-022`: Dependency update command bypasses lockfile pins <span class="pg-sev pg-sev--medium">MEDIUM</span> <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> { #detail-ado-022 }
 
 **Evidences:** [`ESF-S-PIN-DEPS`](#ctrl-esf-s-pin-deps) Pin dependencies / actions / images to immutable digests.
 
@@ -1208,7 +1252,7 @@ extends:
 
 **Source:** [`ADO-022`](../providers/azure.md#ado-022) in the [Azure DevOps provider](../providers/azure.md).
 
-#### `ADO-023`: TLS / certificate verification bypass <span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> { #detail-ado-023 }
+### `ADO-023`: TLS / certificate verification bypass <span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> { #detail-ado-023 }
 
 **Evidences:** [`ESF-S-VERIFY-DEPS`](#ctrl-esf-s-verify-deps) Verify third-party and open-source dependencies before use.
 
@@ -1220,7 +1264,7 @@ extends:
 
 **Source:** [`ADO-023`](../providers/azure.md#ado-023) in the [Azure DevOps provider](../providers/azure.md).
 
-#### `ADO-024`: No SLSA provenance attestation produced <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-ado-024 }
+### `ADO-024`: No SLSA provenance attestation produced <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-ado-024 }
 
 **Evidences:** [`ESF-D-SIGN-ARTIFACTS`](#ctrl-esf-d-sign-artifacts) Sign build artifacts and verify signatures before release, [`ESF-D-SBOM`](#ctrl-esf-d-sbom) Produce SBOM / provenance metadata with every build.
 
@@ -1230,7 +1274,7 @@ extends:
 
 **Source:** [`ADO-024`](../providers/azure.md#ado-024) in the [Azure DevOps provider](../providers/azure.md).
 
-#### `ADO-025`: Cross-repo template not pinned to commit SHA <span class="pg-sev pg-sev--high">HIGH</span> { #detail-ado-025 }
+### `ADO-025`: Cross-repo template not pinned to commit SHA <span class="pg-sev pg-sev--high">HIGH</span> { #detail-ado-025 }
 
 **Evidences:** [`ESF-S-VERIFY-DEPS`](#ctrl-esf-s-verify-deps) Verify third-party and open-source dependencies before use, [`ESF-S-PIN-DEPS`](#ctrl-esf-s-pin-deps) Pin dependencies / actions / images to immutable digests.
 
@@ -1240,7 +1284,7 @@ extends:
 
 **Source:** [`ADO-025`](../providers/azure.md#ado-025) in the [Azure DevOps provider](../providers/azure.md).
 
-#### `ADO-026`: Pipeline contains indicators of malicious activity <span class="pg-sev pg-sev--critical">CRITICAL</span> { #detail-ado-026 }
+### `ADO-026`: Pipeline contains indicators of malicious activity <span class="pg-sev pg-sev--critical">CRITICAL</span> { #detail-ado-026 }
 
 **Evidences:** [`ESF-D-INJECTION`](#ctrl-esf-d-injection) Prevent script / template injection from untrusted pipeline context, [`ESF-S-VERIFY-DEPS`](#ctrl-esf-s-verify-deps) Verify third-party and open-source dependencies before use.
 
@@ -1255,7 +1299,7 @@ extends:
 
 **Source:** [`ADO-026`](../providers/azure.md#ado-026) in the [Azure DevOps provider](../providers/azure.md).
 
-#### `ADO-027`: Dangerous shell idiom (eval, sh -c variable, backtick exec) <span class="pg-sev pg-sev--high">HIGH</span> { #detail-ado-027 }
+### `ADO-027`: Dangerous shell idiom (eval, sh -c variable, backtick exec) <span class="pg-sev pg-sev--high">HIGH</span> { #detail-ado-027 }
 
 **Evidences:** [`ESF-D-INJECTION`](#ctrl-esf-d-injection) Prevent script / template injection from untrusted pipeline context.
 
@@ -1269,7 +1313,7 @@ extends:
 
 **Source:** [`ADO-027`](../providers/azure.md#ado-027) in the [Azure DevOps provider](../providers/azure.md).
 
-#### `ADO-028`: Package install bypasses registry integrity (git / path / tarball source) <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-ado-028 }
+### `ADO-028`: Package install bypasses registry integrity (git / path / tarball source) <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-ado-028 }
 
 **Evidences:** [`ESF-S-VERIFY-DEPS`](#ctrl-esf-s-verify-deps) Verify third-party and open-source dependencies before use, [`ESF-S-PIN-DEPS`](#ctrl-esf-s-pin-deps) Pin dependencies / actions / images to immutable digests.
 
@@ -1279,7 +1323,7 @@ extends:
 
 **Source:** [`ADO-028`](../providers/azure.md#ado-028) in the [Azure DevOps provider](../providers/azure.md).
 
-#### `ADO-029`: Service-connection-using job without environment or branch gate <span class="pg-sev pg-sev--high">HIGH</span> { #detail-ado-029 }
+### `ADO-029`: Service-connection-using job without environment or branch gate <span class="pg-sev pg-sev--high">HIGH</span> { #detail-ado-029 }
 
 **Evidences:** [`ESF-C-APPROVAL`](#ctrl-esf-c-approval) Require explicit approval before production deployment.
 
@@ -1289,7 +1333,7 @@ extends:
 
 **Source:** [`ADO-029`](../providers/azure.md#ado-029) in the [Azure DevOps provider](../providers/azure.md).
 
-#### `ADO-030`: pool interpolates attacker-controllable value <span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> { #detail-ado-030 }
+### `ADO-030`: pool interpolates attacker-controllable value <span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> { #detail-ado-030 }
 
 **Evidences:** [`ESF-D-INJECTION`](#ctrl-esf-d-injection) Prevent script / template injection from untrusted pipeline context.
 
@@ -1344,7 +1388,7 @@ jobs:
 
 **Source:** [`ADO-030`](../providers/azure.md#ado-030) in the [Azure DevOps provider](../providers/azure.md).
 
-#### `ARGO-001`: Argo template container image not pinned to a digest <span class="pg-sev pg-sev--high">HIGH</span> { #detail-argo-001 }
+### `ARGO-001`: Argo template container image not pinned to a digest <span class="pg-sev pg-sev--high">HIGH</span> { #detail-argo-001 }
 
 **Evidences:** [`ESF-S-PIN-DEPS`](#ctrl-esf-s-pin-deps) Pin dependencies / actions / images to immutable digests, [`ESF-S-IMMUTABLE`](#ctrl-esf-s-immutable) Enforce artifact / tag immutability to preserve provenance.
 
@@ -1354,7 +1398,7 @@ jobs:
 
 **Source:** [`ARGO-001`](../providers/argo.md#argo-001) in the [Argo Workflows provider](../providers/argo.md).
 
-#### `ARGO-002`: Argo template container runs privileged or as root <span class="pg-sev pg-sev--high">HIGH</span> { #detail-argo-002 }
+### `ARGO-002`: Argo template container runs privileged or as root <span class="pg-sev pg-sev--high">HIGH</span> { #detail-argo-002 }
 
 **Evidences:** [`ESF-D-PRIV-BUILD`](#ctrl-esf-d-priv-build) Avoid privileged / host-networked build workers.
 
@@ -1364,7 +1408,7 @@ jobs:
 
 **Source:** [`ARGO-002`](../providers/argo.md#argo-002) in the [Argo Workflows provider](../providers/argo.md).
 
-#### `ARGO-003`: Argo workflow uses the default ServiceAccount <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-argo-003 }
+### `ARGO-003`: Argo workflow uses the default ServiceAccount <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-argo-003 }
 
 **Evidences:** [`ESF-C-LEAST-PRIV`](#ctrl-esf-c-least-priv) Apply least-privilege to CI/CD service roles and pipelines.
 
@@ -1374,7 +1418,7 @@ jobs:
 
 **Source:** [`ARGO-003`](../providers/argo.md#argo-003) in the [Argo Workflows provider](../providers/argo.md).
 
-#### `ARGO-004`: Argo workflow mounts hostPath or shares host namespaces <span class="pg-sev pg-sev--critical">CRITICAL</span> { #detail-argo-004 }
+### `ARGO-004`: Argo workflow mounts hostPath or shares host namespaces <span class="pg-sev pg-sev--critical">CRITICAL</span> { #detail-argo-004 }
 
 **Evidences:** [`ESF-D-BUILD-ENV`](#ctrl-esf-d-build-env) Harden the build environment (isolated, minimal, ephemeral workers), [`ESF-D-PRIV-BUILD`](#ctrl-esf-d-priv-build) Avoid privileged / host-networked build workers.
 
@@ -1384,7 +1428,7 @@ jobs:
 
 **Source:** [`ARGO-004`](../providers/argo.md#argo-004) in the [Argo Workflows provider](../providers/argo.md).
 
-#### `ARGO-005`: Argo input parameter interpolated unsafely in script / args <span class="pg-sev pg-sev--critical">CRITICAL</span> { #detail-argo-005 }
+### `ARGO-005`: Argo input parameter interpolated unsafely in script / args <span class="pg-sev pg-sev--critical">CRITICAL</span> { #detail-argo-005 }
 
 **Evidences:** [`ESF-D-INJECTION`](#ctrl-esf-d-injection) Prevent script / template injection from untrusted pipeline context.
 
@@ -1444,7 +1488,7 @@ spec:
 
 **Source:** [`ARGO-005`](../providers/argo.md#argo-005) in the [Argo Workflows provider](../providers/argo.md).
 
-#### `ARGO-006`: Literal secret value in Argo template env or parameter default <span class="pg-sev pg-sev--critical">CRITICAL</span> <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> { #detail-argo-006 }
+### `ARGO-006`: Literal secret value in Argo template env or parameter default <span class="pg-sev pg-sev--critical">CRITICAL</span> <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> { #detail-argo-006 }
 
 **Evidences:** [`ESF-D-SECRETS`](#ctrl-esf-d-secrets) Protect secrets used during build; no secrets in source or env.
 
@@ -1456,7 +1500,7 @@ spec:
 
 **Source:** [`ARGO-006`](../providers/argo.md#argo-006) in the [Argo Workflows provider](../providers/argo.md).
 
-#### `ARGO-007`: Argo workflow has no activeDeadlineSeconds <span class="pg-sev pg-sev--low">LOW</span> { #detail-argo-007 }
+### `ARGO-007`: Argo workflow has no activeDeadlineSeconds <span class="pg-sev pg-sev--low">LOW</span> { #detail-argo-007 }
 
 **Evidences:** [`ESF-D-BUILD-TIMEOUT`](#ctrl-esf-d-build-timeout) Enforce bounded build execution (single-use, time-limited).
 
@@ -1466,7 +1510,7 @@ spec:
 
 **Source:** [`ARGO-007`](../providers/argo.md#argo-007) in the [Argo Workflows provider](../providers/argo.md).
 
-#### `ARGO-008`: Argo script source pipes remote install or disables TLS <span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> { #detail-argo-008 }
+### `ARGO-008`: Argo script source pipes remote install or disables TLS <span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> { #detail-argo-008 }
 
 **Evidences:** [`ESF-S-VERIFY-DEPS`](#ctrl-esf-s-verify-deps) Verify third-party and open-source dependencies before use, [`ESF-S-TRUSTED-REG`](#ctrl-esf-s-trusted-reg) Use only trusted, authenticated package and image registries.
 
@@ -1478,7 +1522,7 @@ spec:
 
 **Source:** [`ARGO-008`](../providers/argo.md#argo-008) in the [Argo Workflows provider](../providers/argo.md).
 
-#### `ARGO-009`: Artifacts not signed (no cosign/sigstore step) <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-argo-009 }
+### `ARGO-009`: Artifacts not signed (no cosign/sigstore step) <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-argo-009 }
 
 **Evidences:** [`ESF-D-SIGN-ARTIFACTS`](#ctrl-esf-d-sign-artifacts) Sign build artifacts and verify signatures before release.
 
@@ -1488,7 +1532,7 @@ spec:
 
 **Source:** [`ARGO-009`](../providers/argo.md#argo-009) in the [Argo Workflows provider](../providers/argo.md).
 
-#### `ARGO-010`: No SBOM generated for build artifacts <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-argo-010 }
+### `ARGO-010`: No SBOM generated for build artifacts <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-argo-010 }
 
 **Evidences:** [`ESF-D-SBOM`](#ctrl-esf-d-sbom) Produce SBOM / provenance metadata with every build.
 
@@ -1498,7 +1542,7 @@ spec:
 
 **Source:** [`ARGO-010`](../providers/argo.md#argo-010) in the [Argo Workflows provider](../providers/argo.md).
 
-#### `ARGO-011`: No SLSA provenance attestation produced <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-argo-011 }
+### `ARGO-011`: No SLSA provenance attestation produced <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-argo-011 }
 
 **Evidences:** [`ESF-D-SIGN-ARTIFACTS`](#ctrl-esf-d-sign-artifacts) Sign build artifacts and verify signatures before release, [`ESF-S-PROVENANCE`](#ctrl-esf-s-provenance) Generate and verify provenance metadata (SLSA / in-toto) for produced artifacts.
 
@@ -1508,7 +1552,7 @@ spec:
 
 **Source:** [`ARGO-011`](../providers/argo.md#argo-011) in the [Argo Workflows provider](../providers/argo.md).
 
-#### `ARGO-012`: No vulnerability scanning step <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-argo-012 }
+### `ARGO-012`: No vulnerability scanning step <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-argo-012 }
 
 **Evidences:** [`ESF-S-VULN-MGMT`](#ctrl-esf-s-vuln-mgmt) Scan inbound artifacts (images, packages) for known vulnerabilities.
 
@@ -1518,7 +1562,7 @@ spec:
 
 **Source:** [`ARGO-012`](../providers/argo.md#argo-012) in the [Argo Workflows provider](../providers/argo.md).
 
-#### `ARGO-013`: Argo workflow does not opt out of SA token automount <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-argo-013 }
+### `ARGO-013`: Argo workflow does not opt out of SA token automount <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-argo-013 }
 
 **Evidences:** [`ESF-C-LEAST-PRIV`](#ctrl-esf-c-least-priv) Apply least-privilege to CI/CD service roles and pipelines.
 
@@ -1532,7 +1576,7 @@ spec:
 
 **Source:** [`ARGO-013`](../providers/argo.md#argo-013) in the [Argo Workflows provider](../providers/argo.md).
 
-#### `ARGO-014`: Argo template script runs unpinned package install <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-argo-014 }
+### `ARGO-014`: Argo template script runs unpinned package install <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-argo-014 }
 
 **Evidences:** [`ESF-S-VERIFY-DEPS`](#ctrl-esf-s-verify-deps) Verify third-party and open-source dependencies before use, [`ESF-S-PIN-DEPS`](#ctrl-esf-s-pin-deps) Pin dependencies / actions / images to immutable digests.
 
@@ -1548,7 +1592,7 @@ Walks ``script.source`` plus joined ``container.args`` / ``container.command`` t
 
 **Source:** [`ARGO-014`](../providers/argo.md#argo-014) in the [Argo Workflows provider](../providers/argo.md).
 
-#### `ARGO-015`: Input artifact pulls from an insecure (non-HTTPS) URL <span class="pg-sev pg-sev--high">HIGH</span> { #detail-argo-015 }
+### `ARGO-015`: Input artifact pulls from an insecure (non-HTTPS) URL <span class="pg-sev pg-sev--high">HIGH</span> { #detail-argo-015 }
 
 **Evidences:** [`ESF-S-TRUSTED-REG`](#ctrl-esf-s-trusted-reg) Use only trusted, authenticated package and image registries.
 
@@ -1568,7 +1612,7 @@ Other artifact sources are skipped, an OCI / S3 / GCS pull carries its own integ
 
 **Source:** [`ARGO-015`](../providers/argo.md#argo-015) in the [Argo Workflows provider](../providers/argo.md).
 
-#### `ATTEST-001`: SLSA provenance attests an untrusted builder identity <span class="pg-sev pg-sev--high">HIGH</span> { #detail-attest-001 }
+### `ATTEST-001`: SLSA provenance attests an untrusted builder identity <span class="pg-sev pg-sev--high">HIGH</span> { #detail-attest-001 }
 
 **Evidences:** [`ESF-D-SIGN-ARTIFACTS`](#ctrl-esf-d-sign-artifacts) Sign build artifacts and verify signatures before release, [`ESF-S-PROVENANCE`](#ctrl-esf-s-provenance) Generate and verify provenance metadata (SLSA / in-toto) for produced artifacts.
 
@@ -1590,7 +1634,7 @@ Triggering this rule means the bytes of the runtime image were produced by a bui
 
 **Source:** [`ATTEST-001`](../providers/oci.md#attest-001) in the [OCI manifest provider](../providers/oci.md).
 
-#### `ATTEST-002`: SLSA provenance source-repo claim is missing or unverifiable <span class="pg-sev pg-sev--high">HIGH</span> { #detail-attest-002 }
+### `ATTEST-002`: SLSA provenance source-repo claim is missing or unverifiable <span class="pg-sev pg-sev--high">HIGH</span> { #detail-attest-002 }
 
 **Evidences:** [`ESF-S-PROVENANCE`](#ctrl-esf-s-provenance) Generate and verify provenance metadata (SLSA / in-toto) for produced artifacts.
 
@@ -1619,7 +1663,7 @@ Fires when:
 
 **Source:** [`ATTEST-002`](../providers/oci.md#attest-002) in the [OCI manifest provider](../providers/oci.md).
 
-#### `ATTEST-003`: SBOM contains floating-version dependencies <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-attest-003 }
+### `ATTEST-003`: SBOM contains floating-version dependencies <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-attest-003 }
 
 **Evidences:** [`ESF-D-SBOM`](#ctrl-esf-d-sbom) Produce SBOM / provenance metadata with every build.
 
@@ -1641,7 +1685,7 @@ Detection walks every SBOM attestation (predicate types starting with ``https://
 
 **Source:** [`ATTEST-003`](../providers/oci.md#attest-003) in the [OCI manifest provider](../providers/oci.md).
 
-#### `ATTEST-004`: SLSA provenance ships without a resolved-dependencies set <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-attest-004 }
+### `ATTEST-004`: SLSA provenance ships without a resolved-dependencies set <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-attest-004 }
 
 **Evidences:** [`ESF-S-PROVENANCE`](#ctrl-esf-s-provenance) Generate and verify provenance metadata (SLSA / in-toto) for produced artifacts.
 
@@ -1710,7 +1754,7 @@ $ docker buildx build \
 
 **Source:** [`ATTEST-004`](../providers/oci.md#attest-004) in the [OCI manifest provider](../providers/oci.md).
 
-#### `ATTEST-005`: In-toto Statement subject is missing or unpinned <span class="pg-sev pg-sev--high">HIGH</span> { #detail-attest-005 }
+### `ATTEST-005`: In-toto Statement subject is missing or unpinned <span class="pg-sev pg-sev--high">HIGH</span> { #detail-attest-005 }
 
 **Evidences:** [`ESF-S-IMMUTABLE`](#ctrl-esf-s-immutable) Enforce artifact / tag immutability to preserve provenance, [`ESF-S-PROVENANCE`](#ctrl-esf-s-provenance) Generate and verify provenance metadata (SLSA / in-toto) for produced artifacts.
 
@@ -1777,7 +1821,7 @@ Hex validation is conservative: the value must consist entirely of ``0-9`` and `
 
 **Source:** [`ATTEST-005`](../providers/oci.md#attest-005) in the [OCI manifest provider](../providers/oci.md).
 
-#### `ATTEST-006`: SLSA provenance lacks a meaningful buildType <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-attest-006 }
+### `ATTEST-006`: SLSA provenance lacks a meaningful buildType <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-attest-006 }
 
 **Evidences:** [`ESF-S-PROVENANCE`](#ctrl-esf-s-provenance) Generate and verify provenance metadata (SLSA / in-toto) for produced artifacts.
 
@@ -1841,7 +1885,7 @@ Doesn't validate that the URI is reachable or that the schema it names is one a 
 
 **Source:** [`ATTEST-006`](../providers/oci.md#attest-006) in the [OCI manifest provider](../providers/oci.md).
 
-#### `ATTEST-007`: SBOM packages lack supplier / originator attribution <span class="pg-sev pg-sev--low">LOW</span> { #detail-attest-007 }
+### `ATTEST-007`: SBOM packages lack supplier / originator attribution <span class="pg-sev pg-sev--low">LOW</span> { #detail-attest-007 }
 
 **Evidences:** [`ESF-D-SBOM`](#ctrl-esf-d-sbom) Produce SBOM / provenance metadata with every build.
 
@@ -1863,7 +1907,7 @@ Severity LOW because the failure mode is downstream correlation friction rather 
 
 **Source:** [`ATTEST-007`](../providers/oci.md#attest-007) in the [OCI manifest provider](../providers/oci.md).
 
-#### `BB-001`: pipe: action not pinned to exact version <span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> { #detail-bb-001 }
+### `BB-001`: pipe: action not pinned to exact version <span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> { #detail-bb-001 }
 
 **Evidences:** [`ESF-S-VERIFY-DEPS`](#ctrl-esf-s-verify-deps) Verify third-party and open-source dependencies before use, [`ESF-S-PIN-DEPS`](#ctrl-esf-s-pin-deps) Pin dependencies / actions / images to immutable digests.
 
@@ -1875,7 +1919,7 @@ Severity LOW because the failure mode is downstream correlation friction rather 
 
 **Source:** [`BB-001`](../providers/bitbucket.md#bb-001) in the [Bitbucket provider](../providers/bitbucket.md).
 
-#### `BB-002`: Script injection via attacker-controllable context <span class="pg-sev pg-sev--high">HIGH</span> { #detail-bb-002 }
+### `BB-002`: Script injection via attacker-controllable context <span class="pg-sev pg-sev--high">HIGH</span> { #detail-bb-002 }
 
 **Evidences:** [`ESF-D-INJECTION`](#ctrl-esf-d-injection) Prevent script / template injection from untrusted pipeline context.
 
@@ -1927,7 +1971,7 @@ pipelines:
 
 **Source:** [`BB-002`](../providers/bitbucket.md#bb-002) in the [Bitbucket provider](../providers/bitbucket.md).
 
-#### `BB-003`: Variables contain literal secret values <span class="pg-sev pg-sev--critical">CRITICAL</span> { #detail-bb-003 }
+### `BB-003`: Variables contain literal secret values <span class="pg-sev pg-sev--critical">CRITICAL</span> { #detail-bb-003 }
 
 **Evidences:** [`ESF-D-SECRETS`](#ctrl-esf-d-secrets) Protect secrets used during build; no secrets in source or env.
 
@@ -1937,7 +1981,7 @@ pipelines:
 
 **Source:** [`BB-003`](../providers/bitbucket.md#bb-003) in the [Bitbucket provider](../providers/bitbucket.md).
 
-#### `BB-004`: Deploy step missing `deployment:` environment gate <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-bb-004 }
+### `BB-004`: Deploy step missing `deployment:` environment gate <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-bb-004 }
 
 **Evidences:** [`ESF-C-APPROVAL`](#ctrl-esf-c-approval) Require explicit approval before production deployment, [`ESF-C-ENV-SEP`](#ctrl-esf-c-env-sep) Separate deployment environments (dev / staging / prod).
 
@@ -1947,7 +1991,7 @@ pipelines:
 
 **Source:** [`BB-004`](../providers/bitbucket.md#bb-004) in the [Bitbucket provider](../providers/bitbucket.md).
 
-#### `BB-005`: Step has no `max-time`, unbounded build <span class="pg-sev pg-sev--medium">MEDIUM</span> <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> { #detail-bb-005 }
+### `BB-005`: Step has no `max-time`, unbounded build <span class="pg-sev pg-sev--medium">MEDIUM</span> <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> { #detail-bb-005 }
 
 **Evidences:** [`ESF-D-BUILD-TIMEOUT`](#ctrl-esf-d-build-timeout) Enforce bounded build execution (single-use, time-limited).
 
@@ -1959,7 +2003,7 @@ pipelines:
 
 **Source:** [`BB-005`](../providers/bitbucket.md#bb-005) in the [Bitbucket provider](../providers/bitbucket.md).
 
-#### `BB-006`: Artifacts not signed <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-bb-006 }
+### `BB-006`: Artifacts not signed <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-bb-006 }
 
 **Evidences:** [`ESF-D-SIGN-ARTIFACTS`](#ctrl-esf-d-sign-artifacts) Sign build artifacts and verify signatures before release.
 
@@ -1969,7 +2013,7 @@ pipelines:
 
 **Source:** [`BB-006`](../providers/bitbucket.md#bb-006) in the [Bitbucket provider](../providers/bitbucket.md).
 
-#### `BB-007`: SBOM not produced <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-bb-007 }
+### `BB-007`: SBOM not produced <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-bb-007 }
 
 **Evidences:** [`ESF-D-SBOM`](#ctrl-esf-d-sbom) Produce SBOM / provenance metadata with every build.
 
@@ -1979,7 +2023,7 @@ pipelines:
 
 **Source:** [`BB-007`](../providers/bitbucket.md#bb-007) in the [Bitbucket provider](../providers/bitbucket.md).
 
-#### `BB-008`: Credential-shaped literal in pipeline body <span class="pg-sev pg-sev--critical">CRITICAL</span> <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> { #detail-bb-008 }
+### `BB-008`: Credential-shaped literal in pipeline body <span class="pg-sev pg-sev--critical">CRITICAL</span> <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> { #detail-bb-008 }
 
 **Evidences:** [`ESF-D-SECRETS`](#ctrl-esf-d-secrets) Protect secrets used during build; no secrets in source or env.
 
@@ -1995,7 +2039,7 @@ pipelines:
 
 **Source:** [`BB-008`](../providers/bitbucket.md#bb-008) in the [Bitbucket provider](../providers/bitbucket.md).
 
-#### `BB-009`: pipe: pinned by version rather than sha256 digest <span class="pg-sev pg-sev--low">LOW</span> { #detail-bb-009 }
+### `BB-009`: pipe: pinned by version rather than sha256 digest <span class="pg-sev pg-sev--low">LOW</span> { #detail-bb-009 }
 
 **Evidences:** [`ESF-S-PIN-DEPS`](#ctrl-esf-s-pin-deps) Pin dependencies / actions / images to immutable digests, [`ESF-S-IMMUTABLE`](#ctrl-esf-s-immutable) Enforce artifact / tag immutability to preserve provenance.
 
@@ -2005,7 +2049,7 @@ pipelines:
 
 **Source:** [`BB-009`](../providers/bitbucket.md#bb-009) in the [Bitbucket provider](../providers/bitbucket.md).
 
-#### `BB-010`: Deploy step ingests pull-request artifact unverified <span class="pg-sev pg-sev--critical">CRITICAL</span> { #detail-bb-010 }
+### `BB-010`: Deploy step ingests pull-request artifact unverified <span class="pg-sev pg-sev--critical">CRITICAL</span> { #detail-bb-010 }
 
 **Evidences:** [`ESF-D-INJECTION`](#ctrl-esf-d-injection) Prevent script / template injection from untrusted pipeline context, [`ESF-S-VERIFY-DEPS`](#ctrl-esf-s-verify-deps) Verify third-party and open-source dependencies before use.
 
@@ -2015,7 +2059,7 @@ pipelines:
 
 **Source:** [`BB-010`](../providers/bitbucket.md#bb-010) in the [Bitbucket provider](../providers/bitbucket.md).
 
-#### `BB-011`: AWS auth uses long-lived access keys <span class="pg-sev pg-sev--medium">MEDIUM</span> <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> { #detail-bb-011 }
+### `BB-011`: AWS auth uses long-lived access keys <span class="pg-sev pg-sev--medium">MEDIUM</span> <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> { #detail-bb-011 }
 
 **Evidences:** [`ESF-D-TOKEN-HYGIENE`](#ctrl-esf-d-token-hygiene) Use short-lived, federated credentials (OIDC), not long-lived tokens.
 
@@ -2027,7 +2071,7 @@ pipelines:
 
 **Source:** [`BB-011`](../providers/bitbucket.md#bb-011) in the [Bitbucket provider](../providers/bitbucket.md).
 
-#### `BB-012`: Remote script piped to shell interpreter <span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> { #detail-bb-012 }
+### `BB-012`: Remote script piped to shell interpreter <span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> { #detail-bb-012 }
 
 **Evidences:** [`ESF-S-VERIFY-DEPS`](#ctrl-esf-s-verify-deps) Verify third-party and open-source dependencies before use.
 
@@ -2043,7 +2087,7 @@ pipelines:
 
 **Source:** [`BB-012`](../providers/bitbucket.md#bb-012) in the [Bitbucket provider](../providers/bitbucket.md).
 
-#### `BB-013`: Docker run with insecure flags (privileged/host mount) <span class="pg-sev pg-sev--critical">CRITICAL</span> <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> { #detail-bb-013 }
+### `BB-013`: Docker run with insecure flags (privileged/host mount) <span class="pg-sev pg-sev--critical">CRITICAL</span> <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> { #detail-bb-013 }
 
 **Evidences:** [`ESF-D-BUILD-ENV`](#ctrl-esf-d-build-env) Harden the build environment (isolated, minimal, ephemeral workers).
 
@@ -2055,7 +2099,7 @@ pipelines:
 
 **Source:** [`BB-013`](../providers/bitbucket.md#bb-013) in the [Bitbucket provider](../providers/bitbucket.md).
 
-#### `BB-014`: Package install from insecure source <span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> { #detail-bb-014 }
+### `BB-014`: Package install from insecure source <span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> { #detail-bb-014 }
 
 **Evidences:** [`ESF-S-VERIFY-DEPS`](#ctrl-esf-s-verify-deps) Verify third-party and open-source dependencies before use.
 
@@ -2067,7 +2111,7 @@ pipelines:
 
 **Source:** [`BB-014`](../providers/bitbucket.md#bb-014) in the [Bitbucket provider](../providers/bitbucket.md).
 
-#### `BB-015`: No vulnerability scanning step <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-bb-015 }
+### `BB-015`: No vulnerability scanning step <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-bb-015 }
 
 **Evidences:** [`ESF-S-VULN-MGMT`](#ctrl-esf-s-vuln-mgmt) Scan inbound artifacts (images, packages) for known vulnerabilities.
 
@@ -2077,7 +2121,7 @@ pipelines:
 
 **Source:** [`BB-015`](../providers/bitbucket.md#bb-015) in the [Bitbucket provider](../providers/bitbucket.md).
 
-#### `BB-016`: Self-hosted runner without ephemeral marker <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-bb-016 }
+### `BB-016`: Self-hosted runner without ephemeral marker <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-bb-016 }
 
 **Evidences:** [`ESF-D-BUILD-ENV`](#ctrl-esf-d-build-env) Harden the build environment (isolated, minimal, ephemeral workers), [`ESF-D-PRIV-BUILD`](#ctrl-esf-d-priv-build) Avoid privileged / host-networked build workers.
 
@@ -2087,7 +2131,7 @@ pipelines:
 
 **Source:** [`BB-016`](../providers/bitbucket.md#bb-016) in the [Bitbucket provider](../providers/bitbucket.md).
 
-#### `BB-017`: Repository token written to persistent storage <span class="pg-sev pg-sev--critical">CRITICAL</span> <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> { #detail-bb-017 }
+### `BB-017`: Repository token written to persistent storage <span class="pg-sev pg-sev--critical">CRITICAL</span> <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> { #detail-bb-017 }
 
 **Evidences:** [`ESF-D-SECRETS`](#ctrl-esf-d-secrets) Protect secrets used during build; no secrets in source or env.
 
@@ -2099,7 +2143,7 @@ pipelines:
 
 **Source:** [`BB-017`](../providers/bitbucket.md#bb-017) in the [Bitbucket provider](../providers/bitbucket.md).
 
-#### `BB-018`: Cache key derives from attacker-controllable input <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-bb-018 }
+### `BB-018`: Cache key derives from attacker-controllable input <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-bb-018 }
 
 **Evidences:** [`ESF-D-INJECTION`](#ctrl-esf-d-injection) Prevent script / template injection from untrusted pipeline context, [`ESF-S-VERIFY-DEPS`](#ctrl-esf-s-verify-deps) Verify third-party and open-source dependencies before use.
 
@@ -2109,7 +2153,7 @@ pipelines:
 
 **Source:** [`BB-018`](../providers/bitbucket.md#bb-018) in the [Bitbucket provider](../providers/bitbucket.md).
 
-#### `BB-019`: after-script references secrets <span class="pg-sev pg-sev--high">HIGH</span> { #detail-bb-019 }
+### `BB-019`: after-script references secrets <span class="pg-sev pg-sev--high">HIGH</span> { #detail-bb-019 }
 
 **Evidences:** [`ESF-D-SECRETS`](#ctrl-esf-d-secrets) Protect secrets used during build; no secrets in source or env.
 
@@ -2123,7 +2167,7 @@ pipelines:
 
 **Source:** [`BB-019`](../providers/bitbucket.md#bb-019) in the [Bitbucket provider](../providers/bitbucket.md).
 
-#### `BB-020`: Full clone depth exposes complete history <span class="pg-sev pg-sev--low">LOW</span> { #detail-bb-020 }
+### `BB-020`: Full clone depth exposes complete history <span class="pg-sev pg-sev--low">LOW</span> { #detail-bb-020 }
 
 **Evidences:** [`ESF-D-BUILD-ENV`](#ctrl-esf-d-build-env) Harden the build environment (isolated, minimal, ephemeral workers).
 
@@ -2133,7 +2177,7 @@ pipelines:
 
 **Source:** [`BB-020`](../providers/bitbucket.md#bb-020) in the [Bitbucket provider](../providers/bitbucket.md).
 
-#### `BB-021`: Package install without lockfile enforcement <span class="pg-sev pg-sev--medium">MEDIUM</span> <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> { #detail-bb-021 }
+### `BB-021`: Package install without lockfile enforcement <span class="pg-sev pg-sev--medium">MEDIUM</span> <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> { #detail-bb-021 }
 
 **Evidences:** [`ESF-S-PIN-DEPS`](#ctrl-esf-s-pin-deps) Pin dependencies / actions / images to immutable digests.
 
@@ -2145,7 +2189,7 @@ pipelines:
 
 **Source:** [`BB-021`](../providers/bitbucket.md#bb-021) in the [Bitbucket provider](../providers/bitbucket.md).
 
-#### `BB-022`: Dependency update command bypasses lockfile pins <span class="pg-sev pg-sev--medium">MEDIUM</span> <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> { #detail-bb-022 }
+### `BB-022`: Dependency update command bypasses lockfile pins <span class="pg-sev pg-sev--medium">MEDIUM</span> <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> { #detail-bb-022 }
 
 **Evidences:** [`ESF-S-PIN-DEPS`](#ctrl-esf-s-pin-deps) Pin dependencies / actions / images to immutable digests.
 
@@ -2161,7 +2205,7 @@ pipelines:
 
 **Source:** [`BB-022`](../providers/bitbucket.md#bb-022) in the [Bitbucket provider](../providers/bitbucket.md).
 
-#### `BB-023`: TLS / certificate verification bypass <span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> { #detail-bb-023 }
+### `BB-023`: TLS / certificate verification bypass <span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> { #detail-bb-023 }
 
 **Evidences:** [`ESF-S-VERIFY-DEPS`](#ctrl-esf-s-verify-deps) Verify third-party and open-source dependencies before use.
 
@@ -2173,7 +2217,7 @@ pipelines:
 
 **Source:** [`BB-023`](../providers/bitbucket.md#bb-023) in the [Bitbucket provider](../providers/bitbucket.md).
 
-#### `BB-024`: No SLSA provenance attestation produced <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-bb-024 }
+### `BB-024`: No SLSA provenance attestation produced <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-bb-024 }
 
 **Evidences:** [`ESF-D-SIGN-ARTIFACTS`](#ctrl-esf-d-sign-artifacts) Sign build artifacts and verify signatures before release, [`ESF-D-SBOM`](#ctrl-esf-d-sbom) Produce SBOM / provenance metadata with every build.
 
@@ -2183,7 +2227,7 @@ pipelines:
 
 **Source:** [`BB-024`](../providers/bitbucket.md#bb-024) in the [Bitbucket provider](../providers/bitbucket.md).
 
-#### `BB-025`: Pipeline contains indicators of malicious activity <span class="pg-sev pg-sev--critical">CRITICAL</span> { #detail-bb-025 }
+### `BB-025`: Pipeline contains indicators of malicious activity <span class="pg-sev pg-sev--critical">CRITICAL</span> { #detail-bb-025 }
 
 **Evidences:** [`ESF-D-INJECTION`](#ctrl-esf-d-injection) Prevent script / template injection from untrusted pipeline context, [`ESF-S-VERIFY-DEPS`](#ctrl-esf-s-verify-deps) Verify third-party and open-source dependencies before use.
 
@@ -2198,7 +2242,7 @@ pipelines:
 
 **Source:** [`BB-025`](../providers/bitbucket.md#bb-025) in the [Bitbucket provider](../providers/bitbucket.md).
 
-#### `BB-026`: Dangerous shell idiom (eval, sh -c variable, backtick exec) <span class="pg-sev pg-sev--high">HIGH</span> { #detail-bb-026 }
+### `BB-026`: Dangerous shell idiom (eval, sh -c variable, backtick exec) <span class="pg-sev pg-sev--high">HIGH</span> { #detail-bb-026 }
 
 **Evidences:** [`ESF-D-INJECTION`](#ctrl-esf-d-injection) Prevent script / template injection from untrusted pipeline context.
 
@@ -2212,7 +2256,7 @@ pipelines:
 
 **Source:** [`BB-026`](../providers/bitbucket.md#bb-026) in the [Bitbucket provider](../providers/bitbucket.md).
 
-#### `BB-027`: Package install bypasses registry integrity (git / path / tarball source) <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-bb-027 }
+### `BB-027`: Package install bypasses registry integrity (git / path / tarball source) <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-bb-027 }
 
 **Evidences:** [`ESF-S-VERIFY-DEPS`](#ctrl-esf-s-verify-deps) Verify third-party and open-source dependencies before use, [`ESF-S-PIN-DEPS`](#ctrl-esf-s-pin-deps) Pin dependencies / actions / images to immutable digests.
 
@@ -2222,7 +2266,7 @@ pipelines:
 
 **Source:** [`BB-027`](../providers/bitbucket.md#bb-027) in the [Bitbucket provider](../providers/bitbucket.md).
 
-#### `BB-028`: OIDC step without deployment-gated environment <span class="pg-sev pg-sev--high">HIGH</span> { #detail-bb-028 }
+### `BB-028`: OIDC step without deployment-gated environment <span class="pg-sev pg-sev--high">HIGH</span> { #detail-bb-028 }
 
 **Evidences:** [`ESF-D-TOKEN-HYGIENE`](#ctrl-esf-d-token-hygiene) Use short-lived, federated credentials (OIDC), not long-lived tokens, [`ESF-C-APPROVAL`](#ctrl-esf-c-approval) Require explicit approval before production deployment.
 
@@ -2232,7 +2276,7 @@ pipelines:
 
 **Source:** [`BB-028`](../providers/bitbucket.md#bb-028) in the [Bitbucket provider](../providers/bitbucket.md).
 
-#### `BB-029`: image: (step or service) not pinned by sha256 digest <span class="pg-sev pg-sev--high">HIGH</span> { #detail-bb-029 }
+### `BB-029`: image: (step or service) not pinned by sha256 digest <span class="pg-sev pg-sev--high">HIGH</span> { #detail-bb-029 }
 
 **Evidences:** [`ESF-S-VERIFY-DEPS`](#ctrl-esf-s-verify-deps) Verify third-party and open-source dependencies before use, [`ESF-S-PIN-DEPS`](#ctrl-esf-s-pin-deps) Pin dependencies / actions / images to immutable digests.
 
@@ -2246,7 +2290,7 @@ pipelines:
 
 **Source:** [`BB-029`](../providers/bitbucket.md#bb-029) in the [Bitbucket provider](../providers/bitbucket.md).
 
-#### `BK-001`: Buildkite plugin not pinned to an exact version <span class="pg-sev pg-sev--high">HIGH</span> { #detail-bk-001 }
+### `BK-001`: Buildkite plugin not pinned to an exact version <span class="pg-sev pg-sev--high">HIGH</span> { #detail-bk-001 }
 
 **Evidences:** [`ESF-S-PIN-DEPS`](#ctrl-esf-s-pin-deps) Pin dependencies / actions / images to immutable digests.
 
@@ -2256,7 +2300,7 @@ pipelines:
 
 **Source:** [`BK-001`](../providers/buildkite.md#bk-001) in the [Buildkite provider](../providers/buildkite.md).
 
-#### `BK-002`: Literal secret value in pipeline env block <span class="pg-sev pg-sev--critical">CRITICAL</span> <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> { #detail-bk-002 }
+### `BK-002`: Literal secret value in pipeline env block <span class="pg-sev pg-sev--critical">CRITICAL</span> <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> { #detail-bk-002 }
 
 **Evidences:** [`ESF-D-SECRETS`](#ctrl-esf-d-secrets) Protect secrets used during build; no secrets in source or env.
 
@@ -2272,7 +2316,7 @@ pipelines:
 
 **Source:** [`BK-002`](../providers/buildkite.md#bk-002) in the [Buildkite provider](../providers/buildkite.md).
 
-#### `BK-003`: Untrusted Buildkite variable interpolated in command <span class="pg-sev pg-sev--high">HIGH</span> { #detail-bk-003 }
+### `BK-003`: Untrusted Buildkite variable interpolated in command <span class="pg-sev pg-sev--high">HIGH</span> { #detail-bk-003 }
 
 **Evidences:** [`ESF-D-INJECTION`](#ctrl-esf-d-injection) Prevent script / template injection from untrusted pipeline context.
 
@@ -2286,7 +2330,7 @@ pipelines:
 
 **Source:** [`BK-003`](../providers/buildkite.md#bk-003) in the [Buildkite provider](../providers/buildkite.md).
 
-#### `BK-004`: Remote script piped into shell interpreter <span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> { #detail-bk-004 }
+### `BK-004`: Remote script piped into shell interpreter <span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> { #detail-bk-004 }
 
 **Evidences:** [`ESF-S-VERIFY-DEPS`](#ctrl-esf-s-verify-deps) Verify third-party and open-source dependencies before use.
 
@@ -2298,7 +2342,7 @@ pipelines:
 
 **Source:** [`BK-004`](../providers/buildkite.md#bk-004) in the [Buildkite provider](../providers/buildkite.md).
 
-#### `BK-005`: Container started with --privileged or host-bind escalation <span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> { #detail-bk-005 }
+### `BK-005`: Container started with --privileged or host-bind escalation <span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> { #detail-bk-005 }
 
 **Evidences:** [`ESF-D-PRIV-BUILD`](#ctrl-esf-d-priv-build) Avoid privileged / host-networked build workers.
 
@@ -2310,7 +2354,7 @@ pipelines:
 
 **Source:** [`BK-005`](../providers/buildkite.md#bk-005) in the [Buildkite provider](../providers/buildkite.md).
 
-#### `BK-006`: Step has no timeout_in_minutes <span class="pg-sev pg-sev--low">LOW</span> { #detail-bk-006 }
+### `BK-006`: Step has no timeout_in_minutes <span class="pg-sev pg-sev--low">LOW</span> { #detail-bk-006 }
 
 **Evidences:** [`ESF-D-BUILD-TIMEOUT`](#ctrl-esf-d-build-timeout) Enforce bounded build execution (single-use, time-limited).
 
@@ -2324,7 +2368,7 @@ pipelines:
 
 **Source:** [`BK-006`](../providers/buildkite.md#bk-006) in the [Buildkite provider](../providers/buildkite.md).
 
-#### `BK-007`: Deploy step not gated by a manual block / input <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-bk-007 }
+### `BK-007`: Deploy step not gated by a manual block / input <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-bk-007 }
 
 **Evidences:** [`ESF-C-APPROVAL`](#ctrl-esf-c-approval) Require explicit approval before production deployment.
 
@@ -2338,7 +2382,7 @@ pipelines:
 
 **Source:** [`BK-007`](../providers/buildkite.md#bk-007) in the [Buildkite provider](../providers/buildkite.md).
 
-#### `BK-008`: TLS verification disabled in step command <span class="pg-sev pg-sev--medium">MEDIUM</span> <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> { #detail-bk-008 }
+### `BK-008`: TLS verification disabled in step command <span class="pg-sev pg-sev--medium">MEDIUM</span> <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> { #detail-bk-008 }
 
 **Evidences:** [`ESF-S-TRUSTED-REG`](#ctrl-esf-s-trusted-reg) Use only trusted, authenticated package and image registries.
 
@@ -2350,7 +2394,7 @@ pipelines:
 
 **Source:** [`BK-008`](../providers/buildkite.md#bk-008) in the [Buildkite provider](../providers/buildkite.md).
 
-#### `BK-009`: Artifacts not signed (no cosign/sigstore step) <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-bk-009 }
+### `BK-009`: Artifacts not signed (no cosign/sigstore step) <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-bk-009 }
 
 **Evidences:** [`ESF-D-SIGN-ARTIFACTS`](#ctrl-esf-d-sign-artifacts) Sign build artifacts and verify signatures before release.
 
@@ -2360,7 +2404,7 @@ pipelines:
 
 **Source:** [`BK-009`](../providers/buildkite.md#bk-009) in the [Buildkite provider](../providers/buildkite.md).
 
-#### `BK-010`: No SBOM generated for build artifacts <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-bk-010 }
+### `BK-010`: No SBOM generated for build artifacts <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-bk-010 }
 
 **Evidences:** [`ESF-D-SBOM`](#ctrl-esf-d-sbom) Produce SBOM / provenance metadata with every build.
 
@@ -2370,7 +2414,7 @@ pipelines:
 
 **Source:** [`BK-010`](../providers/buildkite.md#bk-010) in the [Buildkite provider](../providers/buildkite.md).
 
-#### `BK-011`: No SLSA provenance attestation produced <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-bk-011 }
+### `BK-011`: No SLSA provenance attestation produced <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-bk-011 }
 
 **Evidences:** [`ESF-D-SIGN-ARTIFACTS`](#ctrl-esf-d-sign-artifacts) Sign build artifacts and verify signatures before release, [`ESF-S-PROVENANCE`](#ctrl-esf-s-provenance) Generate and verify provenance metadata (SLSA / in-toto) for produced artifacts.
 
@@ -2380,7 +2424,7 @@ pipelines:
 
 **Source:** [`BK-011`](../providers/buildkite.md#bk-011) in the [Buildkite provider](../providers/buildkite.md).
 
-#### `BK-012`: No vulnerability scanning step <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-bk-012 }
+### `BK-012`: No vulnerability scanning step <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-bk-012 }
 
 **Evidences:** [`ESF-S-VULN-MGMT`](#ctrl-esf-s-vuln-mgmt) Scan inbound artifacts (images, packages) for known vulnerabilities.
 
@@ -2390,7 +2434,7 @@ pipelines:
 
 **Source:** [`BK-012`](../providers/buildkite.md#bk-012) in the [Buildkite provider](../providers/buildkite.md).
 
-#### `BK-013`: Deploy step has no branches: filter <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-bk-013 }
+### `BK-013`: Deploy step has no branches: filter <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-bk-013 }
 
 **Evidences:** [`ESF-C-ENV-SEP`](#ctrl-esf-c-env-sep) Separate deployment environments (dev / staging / prod).
 
@@ -2404,7 +2448,7 @@ pipelines:
 
 **Source:** [`BK-013`](../providers/buildkite.md#bk-013) in the [Buildkite provider](../providers/buildkite.md).
 
-#### `BK-014`: Step commands run unpinned package installs <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-bk-014 }
+### `BK-014`: Step commands run unpinned package installs <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-bk-014 }
 
 **Evidences:** [`ESF-S-VERIFY-DEPS`](#ctrl-esf-s-verify-deps) Verify third-party and open-source dependencies before use, [`ESF-S-PIN-DEPS`](#ctrl-esf-s-pin-deps) Pin dependencies / actions / images to immutable digests.
 
@@ -2420,7 +2464,7 @@ Insecure variants (``PKG_INSECURE_RE``): ``pip --index-url http://``, ``pip --tr
 
 **Source:** [`BK-014`](../providers/buildkite.md#bk-014) in the [Buildkite provider](../providers/buildkite.md).
 
-#### `BK-015`: agents map interpolates attacker-controllable Buildkite variable <span class="pg-sev pg-sev--high">HIGH</span> { #detail-bk-015 }
+### `BK-015`: agents map interpolates attacker-controllable Buildkite variable <span class="pg-sev pg-sev--high">HIGH</span> { #detail-bk-015 }
 
 **Evidences:** [`ESF-D-INJECTION`](#ctrl-esf-d-injection) Prevent script / template injection from untrusted pipeline context.
 
@@ -2436,7 +2480,7 @@ Quote-state aware in the same way BK-003 is. ``"$BUILDKITE_BRANCH"`` doesn't fir
 
 **Source:** [`BK-015`](../providers/buildkite.md#bk-015) in the [Buildkite provider](../providers/buildkite.md).
 
-#### `CA-000`: CodeArtifact API access failed <span class="pg-sev pg-sev--info">INFO</span> { #detail-ca-000 }
+### `CA-000`: CodeArtifact API access failed <span class="pg-sev pg-sev--info">INFO</span> { #detail-ca-000 }
 
 **Evidences:** [`ESF-C-AUDIT`](#ctrl-esf-c-audit) Audit deployment / pipeline activity and retain logs.
 
@@ -2446,7 +2490,7 @@ Quote-state aware in the same way BK-003 is. ``"$BUILDKITE_BRANCH"`` doesn't fir
 
 **Source:** [`CA-000`](../providers/aws.md) in the [AWS provider](../providers/aws.md).
 
-#### `CA-001`: CodeArtifact domain not encrypted with customer KMS CMK <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-ca-001 }
+### `CA-001`: CodeArtifact domain not encrypted with customer KMS CMK <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-ca-001 }
 
 **Evidences:** [`ESF-C-ARTIFACT-AUTHZ`](#ctrl-esf-c-artifact-authz) Restrict access to artifact storage and deployment pipelines.
 
@@ -2456,7 +2500,7 @@ Quote-state aware in the same way BK-003 is. ``"$BUILDKITE_BRANCH"`` doesn't fir
 
 **Source:** [`CA-001`](../providers/aws.md) in the [AWS provider](../providers/aws.md).
 
-#### `CA-002`: CodeArtifact repository has a public external connection <span class="pg-sev pg-sev--high">HIGH</span> { #detail-ca-002 }
+### `CA-002`: CodeArtifact repository has a public external connection <span class="pg-sev pg-sev--high">HIGH</span> { #detail-ca-002 }
 
 **Evidences:** [`ESF-S-TRUSTED-REG`](#ctrl-esf-s-trusted-reg) Use only trusted, authenticated package and image registries.
 
@@ -2466,7 +2510,7 @@ Quote-state aware in the same way BK-003 is. ``"$BUILDKITE_BRANCH"`` doesn't fir
 
 **Source:** [`CA-002`](../providers/aws.md) in the [AWS provider](../providers/aws.md).
 
-#### `CA-003`: CodeArtifact domain policy allows cross-account wildcard <span class="pg-sev pg-sev--critical">CRITICAL</span> { #detail-ca-003 }
+### `CA-003`: CodeArtifact domain policy allows cross-account wildcard <span class="pg-sev pg-sev--critical">CRITICAL</span> { #detail-ca-003 }
 
 **Evidences:** [`ESF-C-ARTIFACT-AUTHZ`](#ctrl-esf-c-artifact-authz) Restrict access to artifact storage and deployment pipelines.
 
@@ -2476,7 +2520,7 @@ Quote-state aware in the same way BK-003 is. ``"$BUILDKITE_BRANCH"`` doesn't fir
 
 **Source:** [`CA-003`](../providers/aws.md) in the [AWS provider](../providers/aws.md).
 
-#### `CA-004`: CodeArtifact repo policy grants ``codeartifact:*`` with ``Resource '*'`` <span class="pg-sev pg-sev--high">HIGH</span> { #detail-ca-004 }
+### `CA-004`: CodeArtifact repo policy grants ``codeartifact:*`` with ``Resource '*'`` <span class="pg-sev pg-sev--high">HIGH</span> { #detail-ca-004 }
 
 **Evidences:** [`ESF-C-ARTIFACT-AUTHZ`](#ctrl-esf-c-artifact-authz) Restrict access to artifact storage and deployment pipelines.
 
@@ -2486,7 +2530,7 @@ Quote-state aware in the same way BK-003 is. ``"$BUILDKITE_BRANCH"`` doesn't fir
 
 **Source:** [`CA-004`](../providers/aws.md) in the [AWS provider](../providers/aws.md).
 
-#### `CB-000`: CodeBuild API access failed <span class="pg-sev pg-sev--info">INFO</span> { #detail-cb-000 }
+### `CB-000`: CodeBuild API access failed <span class="pg-sev pg-sev--info">INFO</span> { #detail-cb-000 }
 
 **Evidences:** [`ESF-C-AUDIT`](#ctrl-esf-c-audit) Audit deployment / pipeline activity and retain logs.
 
@@ -2496,7 +2540,7 @@ Quote-state aware in the same way BK-003 is. ``"$BUILDKITE_BRANCH"`` doesn't fir
 
 **Source:** [`CB-000`](../providers/aws.md) in the [AWS provider](../providers/aws.md).
 
-#### `CB-001`: Secrets in plaintext environment variables <span class="pg-sev pg-sev--critical">CRITICAL</span> { #detail-cb-001 }
+### `CB-001`: Secrets in plaintext environment variables <span class="pg-sev pg-sev--critical">CRITICAL</span> { #detail-cb-001 }
 
 **Evidences:** [`ESF-D-SECRETS`](#ctrl-esf-d-secrets) Protect secrets used during build; no secrets in source or env.
 
@@ -2546,7 +2590,7 @@ Quote-state aware in the same way BK-003 is. ``"$BUILDKITE_BRANCH"`` doesn't fir
 
 **Source:** [`CB-001`](../providers/aws.md) in the [AWS provider](../providers/aws.md).
 
-#### `CB-002`: Privileged mode enabled <span class="pg-sev pg-sev--high">HIGH</span> { #detail-cb-002 }
+### `CB-002`: Privileged mode enabled <span class="pg-sev pg-sev--high">HIGH</span> { #detail-cb-002 }
 
 **Evidences:** [`ESF-D-BUILD-ENV`](#ctrl-esf-d-build-env) Harden the build environment (isolated, minimal, ephemeral workers), [`ESF-D-PRIV-BUILD`](#ctrl-esf-d-priv-build) Avoid privileged / host-networked build workers.
 
@@ -2556,7 +2600,7 @@ Quote-state aware in the same way BK-003 is. ``"$BUILDKITE_BRANCH"`` doesn't fir
 
 **Source:** [`CB-002`](../providers/aws.md) in the [AWS provider](../providers/aws.md).
 
-#### `CB-003`: Build logging not enabled <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-cb-003 }
+### `CB-003`: Build logging not enabled <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-cb-003 }
 
 **Evidences:** [`ESF-D-BUILD-LOGS`](#ctrl-esf-d-build-logs) Generate and preserve build audit logs, [`ESF-C-AUDIT`](#ctrl-esf-c-audit) Audit deployment / pipeline activity and retain logs.
 
@@ -2566,7 +2610,7 @@ Quote-state aware in the same way BK-003 is. ``"$BUILDKITE_BRANCH"`` doesn't fir
 
 **Source:** [`CB-003`](../providers/aws.md) in the [AWS provider](../providers/aws.md).
 
-#### `CB-004`: No build timeout configured <span class="pg-sev pg-sev--low">LOW</span> { #detail-cb-004 }
+### `CB-004`: No build timeout configured <span class="pg-sev pg-sev--low">LOW</span> { #detail-cb-004 }
 
 **Evidences:** [`ESF-D-BUILD-ENV`](#ctrl-esf-d-build-env) Harden the build environment (isolated, minimal, ephemeral workers), [`ESF-D-BUILD-TIMEOUT`](#ctrl-esf-d-build-timeout) Enforce bounded build execution (single-use, time-limited).
 
@@ -2576,7 +2620,7 @@ Quote-state aware in the same way BK-003 is. ``"$BUILDKITE_BRANCH"`` doesn't fir
 
 **Source:** [`CB-004`](../providers/aws.md) in the [AWS provider](../providers/aws.md).
 
-#### `CB-005`: Outdated managed build image <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-cb-005 }
+### `CB-005`: Outdated managed build image <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-cb-005 }
 
 **Evidences:** [`ESF-S-VERIFY-DEPS`](#ctrl-esf-s-verify-deps) Verify third-party and open-source dependencies before use, [`ESF-S-PIN-DEPS`](#ctrl-esf-s-pin-deps) Pin dependencies / actions / images to immutable digests.
 
@@ -2590,7 +2634,7 @@ Quote-state aware in the same way BK-003 is. ``"$BUILDKITE_BRANCH"`` doesn't fir
 
 **Source:** [`CB-005`](../providers/aws.md) in the [AWS provider](../providers/aws.md).
 
-#### `CB-006`: CodeBuild source auth uses long-lived token <span class="pg-sev pg-sev--high">HIGH</span> { #detail-cb-006 }
+### `CB-006`: CodeBuild source auth uses long-lived token <span class="pg-sev pg-sev--high">HIGH</span> { #detail-cb-006 }
 
 **Evidences:** [`ESF-D-TOKEN-HYGIENE`](#ctrl-esf-d-token-hygiene) Use short-lived, federated credentials (OIDC), not long-lived tokens.
 
@@ -2600,7 +2644,7 @@ Quote-state aware in the same way BK-003 is. ``"$BUILDKITE_BRANCH"`` doesn't fir
 
 **Source:** [`CB-006`](../providers/aws.md) in the [AWS provider](../providers/aws.md).
 
-#### `CB-007`: CodeBuild webhook has no filter group <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-cb-007 }
+### `CB-007`: CodeBuild webhook has no filter group <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-cb-007 }
 
 **Evidences:** [`ESF-D-CODE-REVIEW`](#ctrl-esf-d-code-review) Require peer review of source and pipeline configuration.
 
@@ -2610,7 +2654,7 @@ Quote-state aware in the same way BK-003 is. ``"$BUILDKITE_BRANCH"`` doesn't fir
 
 **Source:** [`CB-007`](../providers/aws.md) in the [AWS provider](../providers/aws.md).
 
-#### `CB-008`: CodeBuild buildspec is inline (not sourced from a protected repo) <span class="pg-sev pg-sev--high">HIGH</span> { #detail-cb-008 }
+### `CB-008`: CodeBuild buildspec is inline (not sourced from a protected repo) <span class="pg-sev pg-sev--high">HIGH</span> { #detail-cb-008 }
 
 **Evidences:** [`ESF-D-CODE-REVIEW`](#ctrl-esf-d-code-review) Require peer review of source and pipeline configuration.
 
@@ -2620,7 +2664,7 @@ Quote-state aware in the same way BK-003 is. ``"$BUILDKITE_BRANCH"`` doesn't fir
 
 **Source:** [`CB-008`](../providers/aws.md) in the [AWS provider](../providers/aws.md).
 
-#### `CB-009`: CodeBuild image not pinned by digest <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-cb-009 }
+### `CB-009`: CodeBuild image not pinned by digest <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-cb-009 }
 
 **Evidences:** [`ESF-S-VERIFY-DEPS`](#ctrl-esf-s-verify-deps) Verify third-party and open-source dependencies before use, [`ESF-S-PIN-DEPS`](#ctrl-esf-s-pin-deps) Pin dependencies / actions / images to immutable digests.
 
@@ -2630,7 +2674,7 @@ Quote-state aware in the same way BK-003 is. ``"$BUILDKITE_BRANCH"`` doesn't fir
 
 **Source:** [`CB-009`](../providers/aws.md) in the [AWS provider](../providers/aws.md).
 
-#### `CB-010`: CodeBuild webhook allows fork-PR builds without actor filtering <span class="pg-sev pg-sev--high">HIGH</span> { #detail-cb-010 }
+### `CB-010`: CodeBuild webhook allows fork-PR builds without actor filtering <span class="pg-sev pg-sev--high">HIGH</span> { #detail-cb-010 }
 
 **Evidences:** [`ESF-D-CODE-REVIEW`](#ctrl-esf-d-code-review) Require peer review of source and pipeline configuration.
 
@@ -2640,7 +2684,7 @@ Quote-state aware in the same way BK-003 is. ``"$BUILDKITE_BRANCH"`` doesn't fir
 
 **Source:** [`CB-010`](../providers/aws.md) in the [AWS provider](../providers/aws.md).
 
-#### `CB-011`: CodeBuild buildspec contains indicators of malicious activity <span class="pg-sev pg-sev--critical">CRITICAL</span> { #detail-cb-011 }
+### `CB-011`: CodeBuild buildspec contains indicators of malicious activity <span class="pg-sev pg-sev--critical">CRITICAL</span> { #detail-cb-011 }
 
 **Evidences:** [`ESF-D-INJECTION`](#ctrl-esf-d-injection) Prevent script / template injection from untrusted pipeline context, [`ESF-S-VERIFY-DEPS`](#ctrl-esf-s-verify-deps) Verify third-party and open-source dependencies before use.
 
@@ -2655,7 +2699,7 @@ Quote-state aware in the same way BK-003 is. ``"$BUILDKITE_BRANCH"`` doesn't fir
 
 **Source:** [`CB-011`](../providers/aws.md) in the [AWS provider](../providers/aws.md).
 
-#### `CC-001`: Orb not pinned to exact semver <span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> { #detail-cc-001 }
+### `CC-001`: Orb not pinned to exact semver <span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> { #detail-cc-001 }
 
 **Evidences:** [`ESF-S-VERIFY-DEPS`](#ctrl-esf-s-verify-deps) Verify third-party and open-source dependencies before use, [`ESF-S-PIN-DEPS`](#ctrl-esf-s-pin-deps) Pin dependencies / actions / images to immutable digests.
 
@@ -2667,7 +2711,7 @@ Quote-state aware in the same way BK-003 is. ``"$BUILDKITE_BRANCH"`` doesn't fir
 
 **Source:** [`CC-001`](../providers/circleci.md#cc-001) in the [CircleCI provider](../providers/circleci.md).
 
-#### `CC-002`: Script injection via untrusted environment variable <span class="pg-sev pg-sev--high">HIGH</span> { #detail-cc-002 }
+### `CC-002`: Script injection via untrusted environment variable <span class="pg-sev pg-sev--high">HIGH</span> { #detail-cc-002 }
 
 **Evidences:** [`ESF-D-INJECTION`](#ctrl-esf-d-injection) Prevent script / template injection from untrusted pipeline context.
 
@@ -2677,7 +2721,7 @@ Quote-state aware in the same way BK-003 is. ``"$BUILDKITE_BRANCH"`` doesn't fir
 
 **Source:** [`CC-002`](../providers/circleci.md#cc-002) in the [CircleCI provider](../providers/circleci.md).
 
-#### `CC-003`: Docker image not pinned by digest <span class="pg-sev pg-sev--high">HIGH</span> { #detail-cc-003 }
+### `CC-003`: Docker image not pinned by digest <span class="pg-sev pg-sev--high">HIGH</span> { #detail-cc-003 }
 
 **Evidences:** [`ESF-S-VERIFY-DEPS`](#ctrl-esf-s-verify-deps) Verify third-party and open-source dependencies before use, [`ESF-S-PIN-DEPS`](#ctrl-esf-s-pin-deps) Pin dependencies / actions / images to immutable digests.
 
@@ -2687,7 +2731,7 @@ Quote-state aware in the same way BK-003 is. ``"$BUILDKITE_BRANCH"`` doesn't fir
 
 **Source:** [`CC-003`](../providers/circleci.md#cc-003) in the [CircleCI provider](../providers/circleci.md).
 
-#### `CC-004`: Secret-like environment variable not managed via context <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-cc-004 }
+### `CC-004`: Secret-like environment variable not managed via context <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-cc-004 }
 
 **Evidences:** [`ESF-D-SECRETS`](#ctrl-esf-d-secrets) Protect secrets used during build; no secrets in source or env.
 
@@ -2697,7 +2741,7 @@ Quote-state aware in the same way BK-003 is. ``"$BUILDKITE_BRANCH"`` doesn't fir
 
 **Source:** [`CC-004`](../providers/circleci.md#cc-004) in the [CircleCI provider](../providers/circleci.md).
 
-#### `CC-005`: AWS auth uses long-lived access keys in environment block <span class="pg-sev pg-sev--medium">MEDIUM</span> <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> { #detail-cc-005 }
+### `CC-005`: AWS auth uses long-lived access keys in environment block <span class="pg-sev pg-sev--medium">MEDIUM</span> <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> { #detail-cc-005 }
 
 **Evidences:** [`ESF-D-TOKEN-HYGIENE`](#ctrl-esf-d-token-hygiene) Use short-lived, federated credentials (OIDC), not long-lived tokens.
 
@@ -2709,7 +2753,7 @@ Quote-state aware in the same way BK-003 is. ``"$BUILDKITE_BRANCH"`` doesn't fir
 
 **Source:** [`CC-005`](../providers/circleci.md#cc-005) in the [CircleCI provider](../providers/circleci.md).
 
-#### `CC-006`: Artifacts not signed (no cosign/sigstore step) <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-cc-006 }
+### `CC-006`: Artifacts not signed (no cosign/sigstore step) <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-cc-006 }
 
 **Evidences:** [`ESF-D-SIGN-ARTIFACTS`](#ctrl-esf-d-sign-artifacts) Sign build artifacts and verify signatures before release.
 
@@ -2719,7 +2763,7 @@ Quote-state aware in the same way BK-003 is. ``"$BUILDKITE_BRANCH"`` doesn't fir
 
 **Source:** [`CC-006`](../providers/circleci.md#cc-006) in the [CircleCI provider](../providers/circleci.md).
 
-#### `CC-007`: SBOM not produced (no CycloneDX/syft/Trivy-SBOM step) <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-cc-007 }
+### `CC-007`: SBOM not produced (no CycloneDX/syft/Trivy-SBOM step) <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-cc-007 }
 
 **Evidences:** [`ESF-D-SBOM`](#ctrl-esf-d-sbom) Produce SBOM / provenance metadata with every build.
 
@@ -2729,7 +2773,7 @@ Quote-state aware in the same way BK-003 is. ``"$BUILDKITE_BRANCH"`` doesn't fir
 
 **Source:** [`CC-007`](../providers/circleci.md#cc-007) in the [CircleCI provider](../providers/circleci.md).
 
-#### `CC-008`: Credential-shaped literal in config body <span class="pg-sev pg-sev--critical">CRITICAL</span> <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> { #detail-cc-008 }
+### `CC-008`: Credential-shaped literal in config body <span class="pg-sev pg-sev--critical">CRITICAL</span> <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> { #detail-cc-008 }
 
 **Evidences:** [`ESF-D-SECRETS`](#ctrl-esf-d-secrets) Protect secrets used during build; no secrets in source or env.
 
@@ -2745,7 +2789,7 @@ Quote-state aware in the same way BK-003 is. ``"$BUILDKITE_BRANCH"`` doesn't fir
 
 **Source:** [`CC-008`](../providers/circleci.md#cc-008) in the [CircleCI provider](../providers/circleci.md).
 
-#### `CC-009`: Deploy job missing manual approval gate <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-cc-009 }
+### `CC-009`: Deploy job missing manual approval gate <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-cc-009 }
 
 **Evidences:** [`ESF-C-APPROVAL`](#ctrl-esf-c-approval) Require explicit approval before production deployment, [`ESF-C-ENV-SEP`](#ctrl-esf-c-env-sep) Separate deployment environments (dev / staging / prod).
 
@@ -2755,7 +2799,7 @@ Quote-state aware in the same way BK-003 is. ``"$BUILDKITE_BRANCH"`` doesn't fir
 
 **Source:** [`CC-009`](../providers/circleci.md#cc-009) in the [CircleCI provider](../providers/circleci.md).
 
-#### `CC-010`: Self-hosted runner without ephemeral marker <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-cc-010 }
+### `CC-010`: Self-hosted runner without ephemeral marker <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-cc-010 }
 
 **Evidences:** [`ESF-D-BUILD-ENV`](#ctrl-esf-d-build-env) Harden the build environment (isolated, minimal, ephemeral workers), [`ESF-D-PRIV-BUILD`](#ctrl-esf-d-priv-build) Avoid privileged / host-networked build workers.
 
@@ -2765,7 +2809,7 @@ Quote-state aware in the same way BK-003 is. ``"$BUILDKITE_BRANCH"`` doesn't fir
 
 **Source:** [`CC-010`](../providers/circleci.md#cc-010) in the [CircleCI provider](../providers/circleci.md).
 
-#### `CC-011`: No store_test_results step (test results not archived) <span class="pg-sev pg-sev--low">LOW</span> { #detail-cc-011 }
+### `CC-011`: No store_test_results step (test results not archived) <span class="pg-sev pg-sev--low">LOW</span> { #detail-cc-011 }
 
 **Evidences:** [`ESF-D-BUILD-LOGS`](#ctrl-esf-d-build-logs) Generate and preserve build audit logs, [`ESF-C-AUDIT`](#ctrl-esf-c-audit) Audit deployment / pipeline activity and retain logs.
 
@@ -2775,7 +2819,7 @@ Quote-state aware in the same way BK-003 is. ``"$BUILDKITE_BRANCH"`` doesn't fir
 
 **Source:** [`CC-011`](../providers/circleci.md#cc-011) in the [CircleCI provider](../providers/circleci.md).
 
-#### `CC-012`: Dynamic config via `setup: true` enables code injection <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-cc-012 }
+### `CC-012`: Dynamic config via `setup: true` enables code injection <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-cc-012 }
 
 **Evidences:** [`ESF-D-INJECTION`](#ctrl-esf-d-injection) Prevent script / template injection from untrusted pipeline context.
 
@@ -2785,7 +2829,7 @@ Quote-state aware in the same way BK-003 is. ``"$BUILDKITE_BRANCH"`` doesn't fir
 
 **Source:** [`CC-012`](../providers/circleci.md#cc-012) in the [CircleCI provider](../providers/circleci.md).
 
-#### `CC-013`: Deploy job in workflow has no branch filter <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-cc-013 }
+### `CC-013`: Deploy job in workflow has no branch filter <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-cc-013 }
 
 **Evidences:** [`ESF-C-APPROVAL`](#ctrl-esf-c-approval) Require explicit approval before production deployment.
 
@@ -2795,7 +2839,7 @@ Quote-state aware in the same way BK-003 is. ``"$BUILDKITE_BRANCH"`` doesn't fir
 
 **Source:** [`CC-013`](../providers/circleci.md#cc-013) in the [CircleCI provider](../providers/circleci.md).
 
-#### `CC-014`: Job missing `resource_class` declaration <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-cc-014 }
+### `CC-014`: Job missing `resource_class` declaration <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-cc-014 }
 
 **Evidences:** [`ESF-D-BUILD-ENV`](#ctrl-esf-d-build-env) Harden the build environment (isolated, minimal, ephemeral workers).
 
@@ -2805,7 +2849,7 @@ Quote-state aware in the same way BK-003 is. ``"$BUILDKITE_BRANCH"`` doesn't fir
 
 **Source:** [`CC-014`](../providers/circleci.md#cc-014) in the [CircleCI provider](../providers/circleci.md).
 
-#### `CC-015`: No `no_output_timeout` configured <span class="pg-sev pg-sev--medium">MEDIUM</span> <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> { #detail-cc-015 }
+### `CC-015`: No `no_output_timeout` configured <span class="pg-sev pg-sev--medium">MEDIUM</span> <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> { #detail-cc-015 }
 
 **Evidences:** [`ESF-D-BUILD-TIMEOUT`](#ctrl-esf-d-build-timeout) Enforce bounded build execution (single-use, time-limited).
 
@@ -2817,7 +2861,7 @@ Quote-state aware in the same way BK-003 is. ``"$BUILDKITE_BRANCH"`` doesn't fir
 
 **Source:** [`CC-015`](../providers/circleci.md#cc-015) in the [CircleCI provider](../providers/circleci.md).
 
-#### `CC-016`: Remote script piped to shell interpreter <span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> { #detail-cc-016 }
+### `CC-016`: Remote script piped to shell interpreter <span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> { #detail-cc-016 }
 
 **Evidences:** [`ESF-S-VERIFY-DEPS`](#ctrl-esf-s-verify-deps) Verify third-party and open-source dependencies before use.
 
@@ -2833,7 +2877,7 @@ Quote-state aware in the same way BK-003 is. ``"$BUILDKITE_BRANCH"`` doesn't fir
 
 **Source:** [`CC-016`](../providers/circleci.md#cc-016) in the [CircleCI provider](../providers/circleci.md).
 
-#### `CC-017`: Docker run with insecure flags (privileged/host mount) <span class="pg-sev pg-sev--critical">CRITICAL</span> <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> { #detail-cc-017 }
+### `CC-017`: Docker run with insecure flags (privileged/host mount) <span class="pg-sev pg-sev--critical">CRITICAL</span> <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> { #detail-cc-017 }
 
 **Evidences:** [`ESF-D-BUILD-ENV`](#ctrl-esf-d-build-env) Harden the build environment (isolated, minimal, ephemeral workers).
 
@@ -2845,7 +2889,7 @@ Quote-state aware in the same way BK-003 is. ``"$BUILDKITE_BRANCH"`` doesn't fir
 
 **Source:** [`CC-017`](../providers/circleci.md#cc-017) in the [CircleCI provider](../providers/circleci.md).
 
-#### `CC-018`: Package install from insecure source <span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> { #detail-cc-018 }
+### `CC-018`: Package install from insecure source <span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> { #detail-cc-018 }
 
 **Evidences:** [`ESF-S-VERIFY-DEPS`](#ctrl-esf-s-verify-deps) Verify third-party and open-source dependencies before use.
 
@@ -2857,7 +2901,7 @@ Quote-state aware in the same way BK-003 is. ``"$BUILDKITE_BRANCH"`` doesn't fir
 
 **Source:** [`CC-018`](../providers/circleci.md#cc-018) in the [CircleCI provider](../providers/circleci.md).
 
-#### `CC-019`: `add_ssh_keys` without fingerprint restriction <span class="pg-sev pg-sev--high">HIGH</span> { #detail-cc-019 }
+### `CC-019`: `add_ssh_keys` without fingerprint restriction <span class="pg-sev pg-sev--high">HIGH</span> { #detail-cc-019 }
 
 **Evidences:** [`ESF-D-SECRETS`](#ctrl-esf-d-secrets) Protect secrets used during build; no secrets in source or env.
 
@@ -2867,7 +2911,7 @@ Quote-state aware in the same way BK-003 is. ``"$BUILDKITE_BRANCH"`` doesn't fir
 
 **Source:** [`CC-019`](../providers/circleci.md#cc-019) in the [CircleCI provider](../providers/circleci.md).
 
-#### `CC-020`: No vulnerability scanning step <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-cc-020 }
+### `CC-020`: No vulnerability scanning step <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-cc-020 }
 
 **Evidences:** [`ESF-S-VULN-MGMT`](#ctrl-esf-s-vuln-mgmt) Scan inbound artifacts (images, packages) for known vulnerabilities.
 
@@ -2877,7 +2921,7 @@ Quote-state aware in the same way BK-003 is. ``"$BUILDKITE_BRANCH"`` doesn't fir
 
 **Source:** [`CC-020`](../providers/circleci.md#cc-020) in the [CircleCI provider](../providers/circleci.md).
 
-#### `CC-021`: Package install without lockfile enforcement <span class="pg-sev pg-sev--medium">MEDIUM</span> <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> { #detail-cc-021 }
+### `CC-021`: Package install without lockfile enforcement <span class="pg-sev pg-sev--medium">MEDIUM</span> <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> { #detail-cc-021 }
 
 **Evidences:** [`ESF-S-PIN-DEPS`](#ctrl-esf-s-pin-deps) Pin dependencies / actions / images to immutable digests.
 
@@ -2889,7 +2933,7 @@ Quote-state aware in the same way BK-003 is. ``"$BUILDKITE_BRANCH"`` doesn't fir
 
 **Source:** [`CC-021`](../providers/circleci.md#cc-021) in the [CircleCI provider](../providers/circleci.md).
 
-#### `CC-022`: Dependency update command bypasses lockfile pins <span class="pg-sev pg-sev--medium">MEDIUM</span> <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> { #detail-cc-022 }
+### `CC-022`: Dependency update command bypasses lockfile pins <span class="pg-sev pg-sev--medium">MEDIUM</span> <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> { #detail-cc-022 }
 
 **Evidences:** [`ESF-S-PIN-DEPS`](#ctrl-esf-s-pin-deps) Pin dependencies / actions / images to immutable digests.
 
@@ -2905,7 +2949,7 @@ Quote-state aware in the same way BK-003 is. ``"$BUILDKITE_BRANCH"`` doesn't fir
 
 **Source:** [`CC-022`](../providers/circleci.md#cc-022) in the [CircleCI provider](../providers/circleci.md).
 
-#### `CC-023`: TLS / certificate verification bypass <span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> { #detail-cc-023 }
+### `CC-023`: TLS / certificate verification bypass <span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> { #detail-cc-023 }
 
 **Evidences:** [`ESF-S-VERIFY-DEPS`](#ctrl-esf-s-verify-deps) Verify third-party and open-source dependencies before use.
 
@@ -2917,7 +2961,7 @@ Quote-state aware in the same way BK-003 is. ``"$BUILDKITE_BRANCH"`` doesn't fir
 
 **Source:** [`CC-023`](../providers/circleci.md#cc-023) in the [CircleCI provider](../providers/circleci.md).
 
-#### `CC-024`: No SLSA provenance attestation produced <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-cc-024 }
+### `CC-024`: No SLSA provenance attestation produced <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-cc-024 }
 
 **Evidences:** [`ESF-D-SIGN-ARTIFACTS`](#ctrl-esf-d-sign-artifacts) Sign build artifacts and verify signatures before release, [`ESF-D-SBOM`](#ctrl-esf-d-sbom) Produce SBOM / provenance metadata with every build.
 
@@ -2927,7 +2971,7 @@ Quote-state aware in the same way BK-003 is. ``"$BUILDKITE_BRANCH"`` doesn't fir
 
 **Source:** [`CC-024`](../providers/circleci.md#cc-024) in the [CircleCI provider](../providers/circleci.md).
 
-#### `CC-025`: Cache key derives from attacker-controllable input <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-cc-025 }
+### `CC-025`: Cache key derives from attacker-controllable input <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-cc-025 }
 
 **Evidences:** [`ESF-D-INJECTION`](#ctrl-esf-d-injection) Prevent script / template injection from untrusted pipeline context, [`ESF-S-VERIFY-DEPS`](#ctrl-esf-s-verify-deps) Verify third-party and open-source dependencies before use.
 
@@ -2937,7 +2981,7 @@ Quote-state aware in the same way BK-003 is. ``"$BUILDKITE_BRANCH"`` doesn't fir
 
 **Source:** [`CC-025`](../providers/circleci.md#cc-025) in the [CircleCI provider](../providers/circleci.md).
 
-#### `CC-026`: Config contains indicators of malicious activity <span class="pg-sev pg-sev--critical">CRITICAL</span> { #detail-cc-026 }
+### `CC-026`: Config contains indicators of malicious activity <span class="pg-sev pg-sev--critical">CRITICAL</span> { #detail-cc-026 }
 
 **Evidences:** [`ESF-D-INJECTION`](#ctrl-esf-d-injection) Prevent script / template injection from untrusted pipeline context, [`ESF-S-VERIFY-DEPS`](#ctrl-esf-s-verify-deps) Verify third-party and open-source dependencies before use.
 
@@ -2952,7 +2996,7 @@ Quote-state aware in the same way BK-003 is. ``"$BUILDKITE_BRANCH"`` doesn't fir
 
 **Source:** [`CC-026`](../providers/circleci.md#cc-026) in the [CircleCI provider](../providers/circleci.md).
 
-#### `CC-027`: Dangerous shell idiom (eval, sh -c variable, backtick exec) <span class="pg-sev pg-sev--high">HIGH</span> { #detail-cc-027 }
+### `CC-027`: Dangerous shell idiom (eval, sh -c variable, backtick exec) <span class="pg-sev pg-sev--high">HIGH</span> { #detail-cc-027 }
 
 **Evidences:** [`ESF-D-INJECTION`](#ctrl-esf-d-injection) Prevent script / template injection from untrusted pipeline context.
 
@@ -2966,7 +3010,7 @@ Quote-state aware in the same way BK-003 is. ``"$BUILDKITE_BRANCH"`` doesn't fir
 
 **Source:** [`CC-027`](../providers/circleci.md#cc-027) in the [CircleCI provider](../providers/circleci.md).
 
-#### `CC-028`: Package install bypasses registry integrity (git / path / tarball source) <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-cc-028 }
+### `CC-028`: Package install bypasses registry integrity (git / path / tarball source) <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-cc-028 }
 
 **Evidences:** [`ESF-S-VERIFY-DEPS`](#ctrl-esf-s-verify-deps) Verify third-party and open-source dependencies before use, [`ESF-S-PIN-DEPS`](#ctrl-esf-s-pin-deps) Pin dependencies / actions / images to immutable digests.
 
@@ -2976,7 +3020,7 @@ Quote-state aware in the same way BK-003 is. ``"$BUILDKITE_BRANCH"`` doesn't fir
 
 **Source:** [`CC-028`](../providers/circleci.md#cc-028) in the [CircleCI provider](../providers/circleci.md).
 
-#### `CC-029`: Machine executor image not pinned <span class="pg-sev pg-sev--high">HIGH</span> { #detail-cc-029 }
+### `CC-029`: Machine executor image not pinned <span class="pg-sev pg-sev--high">HIGH</span> { #detail-cc-029 }
 
 **Evidences:** [`ESF-S-VERIFY-DEPS`](#ctrl-esf-s-verify-deps) Verify third-party and open-source dependencies before use, [`ESF-S-PIN-DEPS`](#ctrl-esf-s-pin-deps) Pin dependencies / actions / images to immutable digests.
 
@@ -2986,7 +3030,7 @@ Quote-state aware in the same way BK-003 is. ``"$BUILDKITE_BRANCH"`` doesn't fir
 
 **Source:** [`CC-029`](../providers/circleci.md#cc-029) in the [CircleCI provider](../providers/circleci.md).
 
-#### `CC-030`: Workflow job uses context without branch filter or approval gate <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-cc-030 }
+### `CC-030`: Workflow job uses context without branch filter or approval gate <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-cc-030 }
 
 **Evidences:** [`ESF-C-APPROVAL`](#ctrl-esf-c-approval) Require explicit approval before production deployment.
 
@@ -2996,7 +3040,7 @@ Quote-state aware in the same way BK-003 is. ``"$BUILDKITE_BRANCH"`` doesn't fir
 
 **Source:** [`CC-030`](../providers/circleci.md#cc-030) in the [CircleCI provider](../providers/circleci.md).
 
-#### `CC-031`: OIDC role assumption without branch filter or approval gate <span class="pg-sev pg-sev--high">HIGH</span> { #detail-cc-031 }
+### `CC-031`: OIDC role assumption without branch filter or approval gate <span class="pg-sev pg-sev--high">HIGH</span> { #detail-cc-031 }
 
 **Evidences:** [`ESF-D-TOKEN-HYGIENE`](#ctrl-esf-d-token-hygiene) Use short-lived, federated credentials (OIDC), not long-lived tokens, [`ESF-C-APPROVAL`](#ctrl-esf-c-approval) Require explicit approval before production deployment.
 
@@ -3006,7 +3050,7 @@ Quote-state aware in the same way BK-003 is. ``"$BUILDKITE_BRANCH"`` doesn't fir
 
 **Source:** [`CC-031`](../providers/circleci.md#cc-031) in the [CircleCI provider](../providers/circleci.md).
 
-#### `CCM-000`: CodeCommit API access failed <span class="pg-sev pg-sev--info">INFO</span> { #detail-ccm-000 }
+### `CCM-000`: CodeCommit API access failed <span class="pg-sev pg-sev--info">INFO</span> { #detail-ccm-000 }
 
 **Evidences:** [`ESF-C-AUDIT`](#ctrl-esf-c-audit) Audit deployment / pipeline activity and retain logs.
 
@@ -3016,7 +3060,7 @@ Quote-state aware in the same way BK-003 is. ``"$BUILDKITE_BRANCH"`` doesn't fir
 
 **Source:** [`CCM-000`](../providers/aws.md) in the [AWS provider](../providers/aws.md).
 
-#### `CCM-001`: CodeCommit repository has no approval rule template attached <span class="pg-sev pg-sev--high">HIGH</span> { #detail-ccm-001 }
+### `CCM-001`: CodeCommit repository has no approval rule template attached <span class="pg-sev pg-sev--high">HIGH</span> { #detail-ccm-001 }
 
 **Evidences:** [`ESF-D-CODE-REVIEW`](#ctrl-esf-d-code-review) Require peer review of source and pipeline configuration.
 
@@ -3026,7 +3070,7 @@ Quote-state aware in the same way BK-003 is. ``"$BUILDKITE_BRANCH"`` doesn't fir
 
 **Source:** [`CCM-001`](../providers/aws.md) in the [AWS provider](../providers/aws.md).
 
-#### `CCM-002`: CodeCommit repository not encrypted with customer KMS CMK <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-ccm-002 }
+### `CCM-002`: CodeCommit repository not encrypted with customer KMS CMK <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-ccm-002 }
 
 **Evidences:** [`ESF-C-ARTIFACT-AUTHZ`](#ctrl-esf-c-artifact-authz) Restrict access to artifact storage and deployment pipelines.
 
@@ -3036,7 +3080,7 @@ Quote-state aware in the same way BK-003 is. ``"$BUILDKITE_BRANCH"`` doesn't fir
 
 **Source:** [`CCM-002`](../providers/aws.md) in the [AWS provider](../providers/aws.md).
 
-#### `CCM-003`: CodeCommit trigger targets SNS/Lambda in a different account <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-ccm-003 }
+### `CCM-003`: CodeCommit trigger targets SNS/Lambda in a different account <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-ccm-003 }
 
 **Evidences:** [`ESF-C-ARTIFACT-AUTHZ`](#ctrl-esf-c-artifact-authz) Restrict access to artifact storage and deployment pipelines.
 
@@ -3046,7 +3090,7 @@ Quote-state aware in the same way BK-003 is. ``"$BUILDKITE_BRANCH"`` doesn't fir
 
 **Source:** [`CCM-003`](../providers/aws.md) in the [AWS provider](../providers/aws.md).
 
-#### `CD-000`: CodeDeploy API access failed <span class="pg-sev pg-sev--info">INFO</span> { #detail-cd-000 }
+### `CD-000`: CodeDeploy API access failed <span class="pg-sev pg-sev--info">INFO</span> { #detail-cd-000 }
 
 **Evidences:** [`ESF-C-AUDIT`](#ctrl-esf-c-audit) Audit deployment / pipeline activity and retain logs.
 
@@ -3056,7 +3100,7 @@ Quote-state aware in the same way BK-003 is. ``"$BUILDKITE_BRANCH"`` doesn't fir
 
 **Source:** [`CD-000`](../providers/aws.md) in the [AWS provider](../providers/aws.md).
 
-#### `CD-001`: Automatic rollback on failure not enabled <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-cd-001 }
+### `CD-001`: Automatic rollback on failure not enabled <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-cd-001 }
 
 **Evidences:** [`ESF-C-ROLLBACK`](#ctrl-esf-c-rollback) Automated rollback on deployment failure or alarm.
 
@@ -3066,7 +3110,7 @@ Quote-state aware in the same way BK-003 is. ``"$BUILDKITE_BRANCH"`` doesn't fir
 
 **Source:** [`CD-001`](../providers/aws.md) in the [AWS provider](../providers/aws.md).
 
-#### `CD-002`: AllAtOnce deployment config, no canary or rolling strategy <span class="pg-sev pg-sev--high">HIGH</span> { #detail-cd-002 }
+### `CD-002`: AllAtOnce deployment config, no canary or rolling strategy <span class="pg-sev pg-sev--high">HIGH</span> { #detail-cd-002 }
 
 **Evidences:** [`ESF-C-APPROVAL`](#ctrl-esf-c-approval) Require explicit approval before production deployment, [`ESF-C-ROLLBACK`](#ctrl-esf-c-rollback) Automated rollback on deployment failure or alarm, [`ESF-C-ENV-SEP`](#ctrl-esf-c-env-sep) Separate deployment environments (dev / staging / prod).
 
@@ -3076,7 +3120,7 @@ Quote-state aware in the same way BK-003 is. ``"$BUILDKITE_BRANCH"`` doesn't fir
 
 **Source:** [`CD-002`](../providers/aws.md) in the [AWS provider](../providers/aws.md).
 
-#### `CD-003`: No CloudWatch alarm monitoring on deployment group <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-cd-003 }
+### `CD-003`: No CloudWatch alarm monitoring on deployment group <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-cd-003 }
 
 **Evidences:** [`ESF-C-DEPLOY-MON`](#ctrl-esf-c-deploy-mon) Monitor deployments with alarms / health checks.
 
@@ -3086,7 +3130,7 @@ Quote-state aware in the same way BK-003 is. ``"$BUILDKITE_BRANCH"`` doesn't fir
 
 **Source:** [`CD-003`](../providers/aws.md) in the [AWS provider](../providers/aws.md).
 
-#### `CF-001`: Inline credential parameter on a CloudFormation resource <span class="pg-sev pg-sev--high">HIGH</span> { #detail-cf-001 }
+### `CF-001`: Inline credential parameter on a CloudFormation resource <span class="pg-sev pg-sev--high">HIGH</span> { #detail-cf-001 }
 
 **Evidences:** [`ESF-D-TOKEN-HYGIENE`](#ctrl-esf-d-token-hygiene) Use short-lived, federated credentials (OIDC), not long-lived tokens.
 
@@ -3096,7 +3140,7 @@ Quote-state aware in the same way BK-003 is. ``"$BUILDKITE_BRANCH"`` doesn't fir
 
 **Source:** [`CF-001`](../providers/cloudformation.md) in the [CloudFormation provider](../providers/cloudformation.md).
 
-#### `CF-002`: CloudFormation parameter declares a default secret value <span class="pg-sev pg-sev--high">HIGH</span> { #detail-cf-002 }
+### `CF-002`: CloudFormation parameter declares a default secret value <span class="pg-sev pg-sev--high">HIGH</span> { #detail-cf-002 }
 
 **Evidences:** [`ESF-D-SECRETS`](#ctrl-esf-d-secrets) Protect secrets used during build; no secrets in source or env.
 
@@ -3106,7 +3150,7 @@ Quote-state aware in the same way BK-003 is. ``"$BUILDKITE_BRANCH"`` doesn't fir
 
 **Source:** [`CF-002`](../providers/cloudformation.md) in the [CloudFormation provider](../providers/cloudformation.md).
 
-#### `CF-003`: CloudFormation resource opens a 0.0.0.0/0 ingress <span class="pg-sev pg-sev--high">HIGH</span> { #detail-cf-003 }
+### `CF-003`: CloudFormation resource opens a 0.0.0.0/0 ingress <span class="pg-sev pg-sev--high">HIGH</span> { #detail-cf-003 }
 
 **Evidences:** [`ESF-D-BUILD-ENV`](#ctrl-esf-d-build-env) Harden the build environment (isolated, minimal, ephemeral workers).
 
@@ -3116,7 +3160,7 @@ Quote-state aware in the same way BK-003 is. ``"$BUILDKITE_BRANCH"`` doesn't fir
 
 **Source:** [`CF-003`](../providers/cloudformation.md) in the [CloudFormation provider](../providers/cloudformation.md).
 
-#### `CP-000`: CodePipeline API access failed <span class="pg-sev pg-sev--info">INFO</span> { #detail-cp-000 }
+### `CP-000`: CodePipeline API access failed <span class="pg-sev pg-sev--info">INFO</span> { #detail-cp-000 }
 
 **Evidences:** [`ESF-C-AUDIT`](#ctrl-esf-c-audit) Audit deployment / pipeline activity and retain logs.
 
@@ -3126,7 +3170,7 @@ Quote-state aware in the same way BK-003 is. ``"$BUILDKITE_BRANCH"`` doesn't fir
 
 **Source:** [`CP-000`](../providers/aws.md) in the [AWS provider](../providers/aws.md).
 
-#### `CP-001`: No approval action before deploy stages <span class="pg-sev pg-sev--high">HIGH</span> { #detail-cp-001 }
+### `CP-001`: No approval action before deploy stages <span class="pg-sev pg-sev--high">HIGH</span> { #detail-cp-001 }
 
 **Evidences:** [`ESF-D-CODE-REVIEW`](#ctrl-esf-d-code-review) Require peer review of source and pipeline configuration, [`ESF-C-APPROVAL`](#ctrl-esf-c-approval) Require explicit approval before production deployment.
 
@@ -3136,7 +3180,7 @@ Quote-state aware in the same way BK-003 is. ``"$BUILDKITE_BRANCH"`` doesn't fir
 
 **Source:** [`CP-001`](../providers/aws.md) in the [AWS provider](../providers/aws.md).
 
-#### `CP-002`: Artifact store not encrypted with customer-managed KMS key <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-cp-002 }
+### `CP-002`: Artifact store not encrypted with customer-managed KMS key <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-cp-002 }
 
 **Evidences:** [`ESF-D-SIGN-ARTIFACTS`](#ctrl-esf-d-sign-artifacts) Sign build artifacts and verify signatures before release, [`ESF-C-ARTIFACT-AUTHZ`](#ctrl-esf-c-artifact-authz) Restrict access to artifact storage and deployment pipelines.
 
@@ -3146,7 +3190,7 @@ Quote-state aware in the same way BK-003 is. ``"$BUILDKITE_BRANCH"`` doesn't fir
 
 **Source:** [`CP-002`](../providers/aws.md) in the [AWS provider](../providers/aws.md).
 
-#### `CP-003`: Source stage using polling instead of event-driven trigger <span class="pg-sev pg-sev--low">LOW</span> { #detail-cp-003 }
+### `CP-003`: Source stage using polling instead of event-driven trigger <span class="pg-sev pg-sev--low">LOW</span> { #detail-cp-003 }
 
 **Evidences:** [`ESF-D-CODE-REVIEW`](#ctrl-esf-d-code-review) Require peer review of source and pipeline configuration.
 
@@ -3160,7 +3204,7 @@ Quote-state aware in the same way BK-003 is. ``"$BUILDKITE_BRANCH"`` doesn't fir
 
 **Source:** [`CP-003`](../providers/aws.md) in the [AWS provider](../providers/aws.md).
 
-#### `CP-004`: Legacy ThirdParty/GitHub source action (OAuth token) <span class="pg-sev pg-sev--high">HIGH</span> { #detail-cp-004 }
+### `CP-004`: Legacy ThirdParty/GitHub source action (OAuth token) <span class="pg-sev pg-sev--high">HIGH</span> { #detail-cp-004 }
 
 **Evidences:** [`ESF-D-TOKEN-HYGIENE`](#ctrl-esf-d-token-hygiene) Use short-lived, federated credentials (OIDC), not long-lived tokens.
 
@@ -3170,7 +3214,7 @@ Quote-state aware in the same way BK-003 is. ``"$BUILDKITE_BRANCH"`` doesn't fir
 
 **Source:** [`CP-004`](../providers/aws.md) in the [AWS provider](../providers/aws.md).
 
-#### `CP-005`: Production Deploy stage has no preceding ManualApproval <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-cp-005 }
+### `CP-005`: Production Deploy stage has no preceding ManualApproval <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-cp-005 }
 
 **Evidences:** [`ESF-C-APPROVAL`](#ctrl-esf-c-approval) Require explicit approval before production deployment.
 
@@ -3180,7 +3224,7 @@ Quote-state aware in the same way BK-003 is. ``"$BUILDKITE_BRANCH"`` doesn't fir
 
 **Source:** [`CP-005`](../providers/aws.md) in the [AWS provider](../providers/aws.md).
 
-#### `CP-007`: CodePipeline v2 PR trigger accepts all branches <span class="pg-sev pg-sev--high">HIGH</span> { #detail-cp-007 }
+### `CP-007`: CodePipeline v2 PR trigger accepts all branches <span class="pg-sev pg-sev--high">HIGH</span> { #detail-cp-007 }
 
 **Evidences:** [`ESF-D-CODE-REVIEW`](#ctrl-esf-d-code-review) Require peer review of source and pipeline configuration.
 
@@ -3190,7 +3234,7 @@ Quote-state aware in the same way BK-003 is. ``"$BUILDKITE_BRANCH"`` doesn't fir
 
 **Source:** [`CP-007`](../providers/aws.md) in the [AWS provider](../providers/aws.md).
 
-#### `CT-000`: CloudTrail API access failed <span class="pg-sev pg-sev--info">INFO</span> { #detail-ct-000 }
+### `CT-000`: CloudTrail API access failed <span class="pg-sev pg-sev--info">INFO</span> { #detail-ct-000 }
 
 **Evidences:** [`ESF-C-AUDIT`](#ctrl-esf-c-audit) Audit deployment / pipeline activity and retain logs.
 
@@ -3200,7 +3244,7 @@ Quote-state aware in the same way BK-003 is. ``"$BUILDKITE_BRANCH"`` doesn't fir
 
 **Source:** [`CT-000`](../providers/aws.md) in the [AWS provider](../providers/aws.md).
 
-#### `CT-001`: No active CloudTrail trail in region <span class="pg-sev pg-sev--high">HIGH</span> { #detail-ct-001 }
+### `CT-001`: No active CloudTrail trail in region <span class="pg-sev pg-sev--high">HIGH</span> { #detail-ct-001 }
 
 **Evidences:** [`ESF-C-AUDIT`](#ctrl-esf-c-audit) Audit deployment / pipeline activity and retain logs.
 
@@ -3210,7 +3254,7 @@ Quote-state aware in the same way BK-003 is. ``"$BUILDKITE_BRANCH"`` doesn't fir
 
 **Source:** [`CT-001`](../providers/aws.md) in the [AWS provider](../providers/aws.md).
 
-#### `CT-002`: CloudTrail log-file validation disabled <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-ct-002 }
+### `CT-002`: CloudTrail log-file validation disabled <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-ct-002 }
 
 **Evidences:** [`ESF-C-AUDIT`](#ctrl-esf-c-audit) Audit deployment / pipeline activity and retain logs.
 
@@ -3220,7 +3264,7 @@ Quote-state aware in the same way BK-003 is. ``"$BUILDKITE_BRANCH"`` doesn't fir
 
 **Source:** [`CT-002`](../providers/aws.md) in the [AWS provider](../providers/aws.md).
 
-#### `CT-003`: CloudTrail trail is not multi-region <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-ct-003 }
+### `CT-003`: CloudTrail trail is not multi-region <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-ct-003 }
 
 **Evidences:** [`ESF-C-AUDIT`](#ctrl-esf-c-audit) Audit deployment / pipeline activity and retain logs.
 
@@ -3230,7 +3274,7 @@ Quote-state aware in the same way BK-003 is. ``"$BUILDKITE_BRANCH"`` doesn't fir
 
 **Source:** [`CT-003`](../providers/aws.md) in the [AWS provider](../providers/aws.md).
 
-#### `CW-001`: No CloudWatch alarm on CodeBuild FailedBuilds metric <span class="pg-sev pg-sev--low">LOW</span> { #detail-cw-001 }
+### `CW-001`: No CloudWatch alarm on CodeBuild FailedBuilds metric <span class="pg-sev pg-sev--low">LOW</span> { #detail-cw-001 }
 
 **Evidences:** [`ESF-C-DEPLOY-MON`](#ctrl-esf-c-deploy-mon) Monitor deployments with alarms / health checks.
 
@@ -3240,7 +3284,7 @@ Quote-state aware in the same way BK-003 is. ``"$BUILDKITE_BRANCH"`` doesn't fir
 
 **Source:** [`CW-001`](../providers/aws.md) in the [AWS provider](../providers/aws.md).
 
-#### `CWL-000`: CloudWatch Logs API access failed <span class="pg-sev pg-sev--info">INFO</span> { #detail-cwl-000 }
+### `CWL-000`: CloudWatch Logs API access failed <span class="pg-sev pg-sev--info">INFO</span> { #detail-cwl-000 }
 
 **Evidences:** [`ESF-C-AUDIT`](#ctrl-esf-c-audit) Audit deployment / pipeline activity and retain logs.
 
@@ -3250,7 +3294,7 @@ Quote-state aware in the same way BK-003 is. ``"$BUILDKITE_BRANCH"`` doesn't fir
 
 **Source:** [`CWL-000`](../providers/aws.md) in the [AWS provider](../providers/aws.md).
 
-#### `CWL-001`: CodeBuild log group has no retention policy <span class="pg-sev pg-sev--low">LOW</span> { #detail-cwl-001 }
+### `CWL-001`: CodeBuild log group has no retention policy <span class="pg-sev pg-sev--low">LOW</span> { #detail-cwl-001 }
 
 **Evidences:** [`ESF-C-AUDIT`](#ctrl-esf-c-audit) Audit deployment / pipeline activity and retain logs.
 
@@ -3260,7 +3304,7 @@ Quote-state aware in the same way BK-003 is. ``"$BUILDKITE_BRANCH"`` doesn't fir
 
 **Source:** [`CWL-001`](../providers/aws.md) in the [AWS provider](../providers/aws.md).
 
-#### `CWL-002`: CodeBuild log group not KMS-encrypted <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-cwl-002 }
+### `CWL-002`: CodeBuild log group not KMS-encrypted <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-cwl-002 }
 
 **Evidences:** [`ESF-C-AUDIT`](#ctrl-esf-c-audit) Audit deployment / pipeline activity and retain logs.
 
@@ -3270,7 +3314,7 @@ Quote-state aware in the same way BK-003 is. ``"$BUILDKITE_BRANCH"`` doesn't fir
 
 **Source:** [`CWL-002`](../providers/aws.md) in the [AWS provider](../providers/aws.md).
 
-#### `DF-001`: FROM image not pinned to sha256 digest <span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> { #detail-df-001 }
+### `DF-001`: FROM image not pinned to sha256 digest <span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> { #detail-df-001 }
 
 **Evidences:** [`ESF-S-VERIFY-DEPS`](#ctrl-esf-s-verify-deps) Verify third-party and open-source dependencies before use, [`ESF-S-PIN-DEPS`](#ctrl-esf-s-pin-deps) Pin dependencies / actions / images to immutable digests.
 
@@ -3287,7 +3331,7 @@ Quote-state aware in the same way BK-003 is. ``"$BUILDKITE_BRANCH"`` doesn't fir
 
 **Source:** [`DF-001`](../providers/dockerfile.md#df-001) in the [Dockerfile provider](../providers/dockerfile.md).
 
-#### `DF-002`: Container runs as root (missing or root USER directive) <span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> { #detail-df-002 }
+### `DF-002`: Container runs as root (missing or root USER directive) <span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> { #detail-df-002 }
 
 **Evidences:** [`ESF-D-PRIV-BUILD`](#ctrl-esf-d-priv-build) Avoid privileged / host-networked build workers.
 
@@ -3338,7 +3382,7 @@ CMD ["python3", "/app/app.py"]
 
 **Source:** [`DF-002`](../providers/dockerfile.md#df-002) in the [Dockerfile provider](../providers/dockerfile.md).
 
-#### `DF-003`: ADD pulls remote URL without integrity verification <span class="pg-sev pg-sev--high">HIGH</span> { #detail-df-003 }
+### `DF-003`: ADD pulls remote URL without integrity verification <span class="pg-sev pg-sev--high">HIGH</span> { #detail-df-003 }
 
 **Evidences:** [`ESF-S-VERIFY-DEPS`](#ctrl-esf-s-verify-deps) Verify third-party and open-source dependencies before use.
 
@@ -3352,7 +3396,7 @@ CMD ["python3", "/app/app.py"]
 
 **Source:** [`DF-003`](../providers/dockerfile.md#df-003) in the [Dockerfile provider](../providers/dockerfile.md).
 
-#### `DF-004`: RUN executes a remote script via curl-pipe / wget-pipe <span class="pg-sev pg-sev--high">HIGH</span> { #detail-df-004 }
+### `DF-004`: RUN executes a remote script via curl-pipe / wget-pipe <span class="pg-sev pg-sev--high">HIGH</span> { #detail-df-004 }
 
 **Evidences:** [`ESF-S-VERIFY-DEPS`](#ctrl-esf-s-verify-deps) Verify third-party and open-source dependencies before use, [`ESF-S-TRUSTED-REG`](#ctrl-esf-s-trusted-reg) Use only trusted, authenticated package and image registries.
 
@@ -3362,7 +3406,7 @@ CMD ["python3", "/app/app.py"]
 
 **Source:** [`DF-004`](../providers/dockerfile.md#df-004) in the [Dockerfile provider](../providers/dockerfile.md).
 
-#### `DF-005`: RUN uses shell-eval (eval / sh -c on a variable / backticks) <span class="pg-sev pg-sev--high">HIGH</span> { #detail-df-005 }
+### `DF-005`: RUN uses shell-eval (eval / sh -c on a variable / backticks) <span class="pg-sev pg-sev--high">HIGH</span> { #detail-df-005 }
 
 **Evidences:** [`ESF-D-INJECTION`](#ctrl-esf-d-injection) Prevent script / template injection from untrusted pipeline context.
 
@@ -3372,7 +3416,7 @@ CMD ["python3", "/app/app.py"]
 
 **Source:** [`DF-005`](../providers/dockerfile.md#df-005) in the [Dockerfile provider](../providers/dockerfile.md).
 
-#### `DF-006`: ENV or ARG carries a credential-shaped literal value <span class="pg-sev pg-sev--critical">CRITICAL</span> { #detail-df-006 }
+### `DF-006`: ENV or ARG carries a credential-shaped literal value <span class="pg-sev pg-sev--critical">CRITICAL</span> { #detail-df-006 }
 
 **Evidences:** [`ESF-D-SECRETS`](#ctrl-esf-d-secrets) Protect secrets used during build; no secrets in source or env.
 
@@ -3382,7 +3426,7 @@ CMD ["python3", "/app/app.py"]
 
 **Source:** [`DF-006`](../providers/dockerfile.md#df-006) in the [Dockerfile provider](../providers/dockerfile.md).
 
-#### `DF-007`: No HEALTHCHECK directive declared <span class="pg-sev pg-sev--low">LOW</span> <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> { #detail-df-007 }
+### `DF-007`: No HEALTHCHECK directive declared <span class="pg-sev pg-sev--low">LOW</span> <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> { #detail-df-007 }
 
 **Evidences:** [`ESF-C-DEPLOY-MON`](#ctrl-esf-c-deploy-mon) Monitor deployments with alarms / health checks.
 
@@ -3394,7 +3438,7 @@ CMD ["python3", "/app/app.py"]
 
 **Source:** [`DF-007`](../providers/dockerfile.md#df-007) in the [Dockerfile provider](../providers/dockerfile.md).
 
-#### `DF-008`: RUN invokes docker --privileged or escalates capabilities <span class="pg-sev pg-sev--high">HIGH</span> { #detail-df-008 }
+### `DF-008`: RUN invokes docker --privileged or escalates capabilities <span class="pg-sev pg-sev--high">HIGH</span> { #detail-df-008 }
 
 **Evidences:** [`ESF-D-PRIV-BUILD`](#ctrl-esf-d-priv-build) Avoid privileged / host-networked build workers.
 
@@ -3404,7 +3448,7 @@ CMD ["python3", "/app/app.py"]
 
 **Source:** [`DF-008`](../providers/dockerfile.md#df-008) in the [Dockerfile provider](../providers/dockerfile.md).
 
-#### `DF-009`: ADD used where COPY would suffice <span class="pg-sev pg-sev--low">LOW</span> { #detail-df-009 }
+### `DF-009`: ADD used where COPY would suffice <span class="pg-sev pg-sev--low">LOW</span> { #detail-df-009 }
 
 **Evidences:** [`ESF-S-VERIFY-DEPS`](#ctrl-esf-s-verify-deps) Verify third-party and open-source dependencies before use, [`ESF-S-PIN-DEPS`](#ctrl-esf-s-pin-deps) Pin dependencies / actions / images to immutable digests.
 
@@ -3414,7 +3458,7 @@ CMD ["python3", "/app/app.py"]
 
 **Source:** [`DF-009`](../providers/dockerfile.md#df-009) in the [Dockerfile provider](../providers/dockerfile.md).
 
-#### `DF-010`: apt-get dist-upgrade / upgrade pulls unknown package versions <span class="pg-sev pg-sev--low">LOW</span> { #detail-df-010 }
+### `DF-010`: apt-get dist-upgrade / upgrade pulls unknown package versions <span class="pg-sev pg-sev--low">LOW</span> { #detail-df-010 }
 
 **Evidences:** [`ESF-S-PIN-DEPS`](#ctrl-esf-s-pin-deps) Pin dependencies / actions / images to immutable digests.
 
@@ -3424,7 +3468,7 @@ CMD ["python3", "/app/app.py"]
 
 **Source:** [`DF-010`](../providers/dockerfile.md#df-010) in the [Dockerfile provider](../providers/dockerfile.md).
 
-#### `DF-011`: Package manager install without cache cleanup in same layer <span class="pg-sev pg-sev--low">LOW</span> { #detail-df-011 }
+### `DF-011`: Package manager install without cache cleanup in same layer <span class="pg-sev pg-sev--low">LOW</span> { #detail-df-011 }
 
 **Evidences:** [`ESF-D-BUILD-ENV`](#ctrl-esf-d-build-env) Harden the build environment (isolated, minimal, ephemeral workers).
 
@@ -3434,7 +3478,7 @@ CMD ["python3", "/app/app.py"]
 
 **Source:** [`DF-011`](../providers/dockerfile.md#df-011) in the [Dockerfile provider](../providers/dockerfile.md).
 
-#### `DF-012`: RUN invokes sudo <span class="pg-sev pg-sev--high">HIGH</span> { #detail-df-012 }
+### `DF-012`: RUN invokes sudo <span class="pg-sev pg-sev--high">HIGH</span> { #detail-df-012 }
 
 **Evidences:** [`ESF-D-PRIV-BUILD`](#ctrl-esf-d-priv-build) Avoid privileged / host-networked build workers.
 
@@ -3444,7 +3488,7 @@ CMD ["python3", "/app/app.py"]
 
 **Source:** [`DF-012`](../providers/dockerfile.md#df-012) in the [Dockerfile provider](../providers/dockerfile.md).
 
-#### `DF-013`: EXPOSE declares sensitive remote-access port <span class="pg-sev pg-sev--critical">CRITICAL</span> <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> { #detail-df-013 }
+### `DF-013`: EXPOSE declares sensitive remote-access port <span class="pg-sev pg-sev--critical">CRITICAL</span> <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> { #detail-df-013 }
 
 **Evidences:** [`ESF-D-PRIV-BUILD`](#ctrl-esf-d-priv-build) Avoid privileged / host-networked build workers.
 
@@ -3456,7 +3500,7 @@ CMD ["python3", "/app/app.py"]
 
 **Source:** [`DF-013`](../providers/dockerfile.md#df-013) in the [Dockerfile provider](../providers/dockerfile.md).
 
-#### `DF-014`: WORKDIR set to a system / kernel filesystem path <span class="pg-sev pg-sev--critical">CRITICAL</span> { #detail-df-014 }
+### `DF-014`: WORKDIR set to a system / kernel filesystem path <span class="pg-sev pg-sev--critical">CRITICAL</span> { #detail-df-014 }
 
 **Evidences:** [`ESF-D-PRIV-BUILD`](#ctrl-esf-d-priv-build) Avoid privileged / host-networked build workers.
 
@@ -3466,7 +3510,7 @@ CMD ["python3", "/app/app.py"]
 
 **Source:** [`DF-014`](../providers/dockerfile.md#df-014) in the [Dockerfile provider](../providers/dockerfile.md).
 
-#### `DF-015`: RUN grants world-writable permissions (chmod 777 / a+w) <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-df-015 }
+### `DF-015`: RUN grants world-writable permissions (chmod 777 / a+w) <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-df-015 }
 
 **Evidences:** [`ESF-D-PRIV-BUILD`](#ctrl-esf-d-priv-build) Avoid privileged / host-networked build workers.
 
@@ -3480,7 +3524,7 @@ CMD ["python3", "/app/app.py"]
 
 **Source:** [`DF-015`](../providers/dockerfile.md#df-015) in the [Dockerfile provider](../providers/dockerfile.md).
 
-#### `DF-016`: Image lacks OCI provenance labels <span class="pg-sev pg-sev--low">LOW</span> { #detail-df-016 }
+### `DF-016`: Image lacks OCI provenance labels <span class="pg-sev pg-sev--low">LOW</span> { #detail-df-016 }
 
 **Evidences:** [`ESF-D-SBOM`](#ctrl-esf-d-sbom) Produce SBOM / provenance metadata with every build.
 
@@ -3494,7 +3538,7 @@ CMD ["python3", "/app/app.py"]
 
 **Source:** [`DF-016`](../providers/dockerfile.md#df-016) in the [Dockerfile provider](../providers/dockerfile.md).
 
-#### `DF-017`: ENV PATH prepends a world-writable directory <span class="pg-sev pg-sev--medium">MEDIUM</span> <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> { #detail-df-017 }
+### `DF-017`: ENV PATH prepends a world-writable directory <span class="pg-sev pg-sev--medium">MEDIUM</span> <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> { #detail-df-017 }
 
 **Evidences:** [`ESF-D-PRIV-BUILD`](#ctrl-esf-d-priv-build) Avoid privileged / host-networked build workers.
 
@@ -3506,7 +3550,7 @@ CMD ["python3", "/app/app.py"]
 
 **Source:** [`DF-017`](../providers/dockerfile.md#df-017) in the [Dockerfile provider](../providers/dockerfile.md).
 
-#### `DF-018`: RUN chown rewrites ownership of a system path <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-df-018 }
+### `DF-018`: RUN chown rewrites ownership of a system path <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-df-018 }
 
 **Evidences:** [`ESF-D-PRIV-BUILD`](#ctrl-esf-d-priv-build) Avoid privileged / host-networked build workers.
 
@@ -3516,7 +3560,7 @@ CMD ["python3", "/app/app.py"]
 
 **Source:** [`DF-018`](../providers/dockerfile.md#df-018) in the [Dockerfile provider](../providers/dockerfile.md).
 
-#### `DF-019`: COPY/ADD source path looks like a credential file <span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> { #detail-df-019 }
+### `DF-019`: COPY/ADD source path looks like a credential file <span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> { #detail-df-019 }
 
 **Evidences:** [`ESF-D-SECRETS`](#ctrl-esf-d-secrets) Protect secrets used during build; no secrets in source or env.
 
@@ -3532,7 +3576,7 @@ CMD ["python3", "/app/app.py"]
 
 **Source:** [`DF-019`](../providers/dockerfile.md#df-019) in the [Dockerfile provider](../providers/dockerfile.md).
 
-#### `DF-020`: ARG declares a credential-named build argument <span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> { #detail-df-020 }
+### `DF-020`: ARG declares a credential-named build argument <span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> { #detail-df-020 }
 
 **Evidences:** [`ESF-D-SECRETS`](#ctrl-esf-d-secrets) Protect secrets used during build; no secrets in source or env.
 
@@ -3548,7 +3592,7 @@ CMD ["python3", "/app/app.py"]
 
 **Source:** [`DF-020`](../providers/dockerfile.md#df-020) in the [Dockerfile provider](../providers/dockerfile.md).
 
-#### `DF-021`: RUN pip install bypasses TLS or uses an HTTP index <span class="pg-sev pg-sev--high">HIGH</span> { #detail-df-021 }
+### `DF-021`: RUN pip install bypasses TLS or uses an HTTP index <span class="pg-sev pg-sev--high">HIGH</span> { #detail-df-021 }
 
 **Evidences:** [`ESF-S-TRUSTED-REG`](#ctrl-esf-s-trusted-reg) Use only trusted, authenticated package and image registries.
 
@@ -3562,7 +3606,7 @@ CMD ["python3", "/app/app.py"]
 
 **Source:** [`DF-021`](../providers/dockerfile.md#df-021) in the [Dockerfile provider](../providers/dockerfile.md).
 
-#### `DF-022`: RUN uses npm install instead of npm ci <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-df-022 }
+### `DF-022`: RUN uses npm install instead of npm ci <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-df-022 }
 
 **Evidences:** [`ESF-S-VERIFY-DEPS`](#ctrl-esf-s-verify-deps) Verify third-party and open-source dependencies before use, [`ESF-S-PIN-DEPS`](#ctrl-esf-s-pin-deps) Pin dependencies / actions / images to immutable digests.
 
@@ -3577,7 +3621,7 @@ CMD ["python3", "/app/app.py"]
 
 **Source:** [`DF-022`](../providers/dockerfile.md#df-022) in the [Dockerfile provider](../providers/dockerfile.md).
 
-#### `DF-023`: ENV sets a dynamic-loader hijack variable <span class="pg-sev pg-sev--high">HIGH</span> { #detail-df-023 }
+### `DF-023`: ENV sets a dynamic-loader hijack variable <span class="pg-sev pg-sev--high">HIGH</span> { #detail-df-023 }
 
 **Evidences:** [`ESF-D-PRIV-BUILD`](#ctrl-esf-d-priv-build) Avoid privileged / host-networked build workers.
 
@@ -3591,7 +3635,7 @@ CMD ["python3", "/app/app.py"]
 
 **Source:** [`DF-023`](../providers/dockerfile.md#df-023) in the [Dockerfile provider](../providers/dockerfile.md).
 
-#### `DF-024`: RUN npm/yarn/pnpm install runs lifecycle scripts <span class="pg-sev pg-sev--high">HIGH</span> { #detail-df-024 }
+### `DF-024`: RUN npm/yarn/pnpm install runs lifecycle scripts <span class="pg-sev pg-sev--high">HIGH</span> { #detail-df-024 }
 
 **Evidences:** [`ESF-D-BUILD-ENV`](#ctrl-esf-d-build-env) Harden the build environment (isolated, minimal, ephemeral workers).
 
@@ -3635,7 +3679,7 @@ RUN npm rebuild better-sqlite3 sharp    # audited allowlist
 
 **Source:** [`DF-024`](../providers/dockerfile.md#df-024) in the [Dockerfile provider](../providers/dockerfile.md).
 
-#### `DF-025`: RUN writes a registry auth token into a Docker layer <span class="pg-sev pg-sev--critical">CRITICAL</span> { #detail-df-025 }
+### `DF-025`: RUN writes a registry auth token into a Docker layer <span class="pg-sev pg-sev--critical">CRITICAL</span> { #detail-df-025 }
 
 **Evidences:** [`ESF-D-SECRETS`](#ctrl-esf-d-secrets) Protect secrets used during build; no secrets in source or env.
 
@@ -3678,7 +3722,7 @@ RUN --mount=type=secret,id=npmrc,target=/root/.npmrc \
 
 **Source:** [`DF-025`](../providers/dockerfile.md#df-025) in the [Dockerfile provider](../providers/dockerfile.md).
 
-#### `DF-026`: ENV disables Node.js TLS certificate verification <span class="pg-sev pg-sev--high">HIGH</span> { #detail-df-026 }
+### `DF-026`: ENV disables Node.js TLS certificate verification <span class="pg-sev pg-sev--high">HIGH</span> { #detail-df-026 }
 
 **Evidences:** [`ESF-S-TRUSTED-REG`](#ctrl-esf-s-trusted-reg) Use only trusted, authenticated package and image registries.
 
@@ -3694,7 +3738,7 @@ If the internal registry / API genuinely has a self-signed cert, install the CA 
 
 **Source:** [`DF-026`](../providers/dockerfile.md#df-026) in the [Dockerfile provider](../providers/dockerfile.md).
 
-#### `DF-027`: ENV disables Python HTTPS certificate verification <span class="pg-sev pg-sev--high">HIGH</span> { #detail-df-027 }
+### `DF-027`: ENV disables Python HTTPS certificate verification <span class="pg-sev pg-sev--high">HIGH</span> { #detail-df-027 }
 
 **Evidences:** [`ESF-S-TRUSTED-REG`](#ctrl-esf-s-trusted-reg) Use only trusted, authenticated package and image registries.
 
@@ -3708,7 +3752,7 @@ If the internal index has a self-signed cert, install the CA into the image's tr
 
 **Source:** [`DF-027`](../providers/dockerfile.md#df-027) in the [Dockerfile provider](../providers/dockerfile.md).
 
-#### `DF-028`: ENV disables Git TLS certificate verification <span class="pg-sev pg-sev--high">HIGH</span> { #detail-df-028 }
+### `DF-028`: ENV disables Git TLS certificate verification <span class="pg-sev pg-sev--high">HIGH</span> { #detail-df-028 }
 
 **Evidences:** [`ESF-S-TRUSTED-REG`](#ctrl-esf-s-trusted-reg) Use only trusted, authenticated package and image registries.
 
@@ -3726,7 +3770,7 @@ If you need to clone from an internal Git server with a self-signed cert, instal
 
 **Source:** [`DF-028`](../providers/dockerfile.md#df-028) in the [Dockerfile provider](../providers/dockerfile.md).
 
-#### `DF-029`: ENV neuters Python requests CA bundle <span class="pg-sev pg-sev--high">HIGH</span> { #detail-df-029 }
+### `DF-029`: ENV neuters Python requests CA bundle <span class="pg-sev pg-sev--high">HIGH</span> { #detail-df-029 }
 
 **Evidences:** [`ESF-S-TRUSTED-REG`](#ctrl-esf-s-trusted-reg) Use only trusted, authenticated package and image registries.
 
@@ -3744,7 +3788,7 @@ The same shape as DF-027 (``PYTHONHTTPSVERIFY=0``) but narrower in surface — `
 
 **Source:** [`DF-029`](../providers/dockerfile.md#df-029) in the [Dockerfile provider](../providers/dockerfile.md).
 
-#### `DF-030`: ENV NODE_OPTIONS preloads code or opens an inspector <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-df-030 }
+### `DF-030`: ENV NODE_OPTIONS preloads code or opens an inspector <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-df-030 }
 
 **Evidences:** [`ESF-D-PRIV-BUILD`](#ctrl-esf-d-priv-build) Avoid privileged / host-networked build workers.
 
@@ -3768,7 +3812,7 @@ If your image needs an APM-style preload (Datadog, Sentry, OpenTelemetry), scope
 
 **Source:** [`DF-030`](../providers/dockerfile.md#df-030) in the [Dockerfile provider](../providers/dockerfile.md).
 
-#### `DR-001`: Step image not pinned to a digest <span class="pg-sev pg-sev--high">HIGH</span> { #detail-dr-001 }
+### `DR-001`: Step image not pinned to a digest <span class="pg-sev pg-sev--high">HIGH</span> { #detail-dr-001 }
 
 **Evidences:** [`ESF-S-PIN-DEPS`](#ctrl-esf-s-pin-deps) Pin dependencies / actions / images to immutable digests, [`ESF-S-IMMUTABLE`](#ctrl-esf-s-immutable) Enforce artifact / tag immutability to preserve provenance.
 
@@ -3782,7 +3826,7 @@ If your image needs an APM-style preload (Datadog, Sentry, OpenTelemetry), scope
 
 **Source:** [`DR-001`](../providers/drone.md#dr-001) in the [Drone CI provider](../providers/drone.md).
 
-#### `DR-002`: Step runs with privileged: true <span class="pg-sev pg-sev--high">HIGH</span> { #detail-dr-002 }
+### `DR-002`: Step runs with privileged: true <span class="pg-sev pg-sev--high">HIGH</span> { #detail-dr-002 }
 
 **Evidences:** [`ESF-D-PRIV-BUILD`](#ctrl-esf-d-priv-build) Avoid privileged / host-networked build workers.
 
@@ -3792,7 +3836,7 @@ If your image needs an APM-style preload (Datadog, Sentry, OpenTelemetry), scope
 
 **Source:** [`DR-002`](../providers/drone.md#dr-002) in the [Drone CI provider](../providers/drone.md).
 
-#### `DR-003`: Untrusted Drone template variable in shell command <span class="pg-sev pg-sev--high">HIGH</span> { #detail-dr-003 }
+### `DR-003`: Untrusted Drone template variable in shell command <span class="pg-sev pg-sev--high">HIGH</span> { #detail-dr-003 }
 
 **Evidences:** [`ESF-D-INJECTION`](#ctrl-esf-d-injection) Prevent script / template injection from untrusted pipeline context.
 
@@ -3814,7 +3858,7 @@ The rule only fires on **unquoted** uses inside a command body. Quoted (``"${DRO
 
 **Source:** [`DR-003`](../providers/drone.md#dr-003) in the [Drone CI provider](../providers/drone.md).
 
-#### `DR-004`: Literal credential in step environment / settings <span class="pg-sev pg-sev--critical">CRITICAL</span> { #detail-dr-004 }
+### `DR-004`: Literal credential in step environment / settings <span class="pg-sev pg-sev--critical">CRITICAL</span> { #detail-dr-004 }
 
 **Evidences:** [`ESF-D-SECRETS`](#ctrl-esf-d-secrets) Protect secrets used during build; no secrets in source or env.
 
@@ -3828,7 +3872,7 @@ The rule only fires on **unquoted** uses inside a command body. Quoted (``"${DRO
 
 **Source:** [`DR-004`](../providers/drone.md#dr-004) in the [Drone CI provider](../providers/drone.md).
 
-#### `DR-005`: Plugin step uses a floating image tag <span class="pg-sev pg-sev--high">HIGH</span> { #detail-dr-005 }
+### `DR-005`: Plugin step uses a floating image tag <span class="pg-sev pg-sev--high">HIGH</span> { #detail-dr-005 }
 
 **Evidences:** [`ESF-S-PIN-DEPS`](#ctrl-esf-s-pin-deps) Pin dependencies / actions / images to immutable digests.
 
@@ -3842,7 +3886,7 @@ The rule only fires on **unquoted** uses inside a command body. Quoted (``"${DRO
 
 **Source:** [`DR-005`](../providers/drone.md#dr-005) in the [Drone CI provider](../providers/drone.md).
 
-#### `DR-006`: TLS verification disabled in step commands <span class="pg-sev pg-sev--high">HIGH</span> { #detail-dr-006 }
+### `DR-006`: TLS verification disabled in step commands <span class="pg-sev pg-sev--high">HIGH</span> { #detail-dr-006 }
 
 **Evidences:** [`ESF-S-TRUSTED-REG`](#ctrl-esf-s-trusted-reg) Use only trusted, authenticated package and image registries.
 
@@ -3852,7 +3896,7 @@ The rule only fires on **unquoted** uses inside a command body. Quoted (``"${DRO
 
 **Source:** [`DR-006`](../providers/drone.md#dr-006) in the [Drone CI provider](../providers/drone.md).
 
-#### `DR-007`: Step mounts a sensitive host path <span class="pg-sev pg-sev--high">HIGH</span> { #detail-dr-007 }
+### `DR-007`: Step mounts a sensitive host path <span class="pg-sev pg-sev--high">HIGH</span> { #detail-dr-007 }
 
 **Evidences:** [`ESF-D-BUILD-ENV`](#ctrl-esf-d-build-env) Harden the build environment (isolated, minimal, ephemeral workers), [`ESF-D-PRIV-BUILD`](#ctrl-esf-d-priv-build) Avoid privileged / host-networked build workers.
 
@@ -3874,7 +3918,7 @@ The rule fires on the volume *declaration*, not on step-level mounts. A pipeline
 
 **Source:** [`DR-007`](../providers/drone.md#dr-007) in the [Drone CI provider](../providers/drone.md).
 
-#### `DR-008`: Step uses ``pull: never`` (skips registry verification) <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-dr-008 }
+### `DR-008`: Step uses ``pull: never`` (skips registry verification) <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-dr-008 }
 
 **Evidences:** [`ESF-S-VERIFY-DEPS`](#ctrl-esf-s-verify-deps) Verify third-party and open-source dependencies before use, [`ESF-S-PIN-DEPS`](#ctrl-esf-s-pin-deps) Pin dependencies / actions / images to immutable digests.
 
@@ -3888,7 +3932,7 @@ The rule fires on the volume *declaration*, not on step-level mounts. A pipeline
 
 **Source:** [`DR-008`](../providers/drone.md#dr-008) in the [Drone CI provider](../providers/drone.md).
 
-#### `DR-009`: Cache plugin key embeds an attacker-controllable Drone variable <span class="pg-sev pg-sev--high">HIGH</span> { #detail-dr-009 }
+### `DR-009`: Cache plugin key embeds an attacker-controllable Drone variable <span class="pg-sev pg-sev--high">HIGH</span> { #detail-dr-009 }
 
 **Evidences:** [`ESF-D-INJECTION`](#ctrl-esf-d-injection) Prevent script / template injection from untrusted pipeline context.
 
@@ -3902,7 +3946,7 @@ The rule fires on the volume *declaration*, not on step-level mounts. A pipeline
 
 **Source:** [`DR-009`](../providers/drone.md#dr-009) in the [Drone CI provider](../providers/drone.md).
 
-#### `DR-010`: Step commands run unpinned package installs <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-dr-010 }
+### `DR-010`: Step commands run unpinned package installs <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-dr-010 }
 
 **Evidences:** [`ESF-S-VERIFY-DEPS`](#ctrl-esf-s-verify-deps) Verify third-party and open-source dependencies before use, [`ESF-S-PIN-DEPS`](#ctrl-esf-s-pin-deps) Pin dependencies / actions / images to immutable digests.
 
@@ -3918,7 +3962,7 @@ Insecure variants matched (``PKG_INSECURE_RE``): ``pip --index-url http://``, ``
 
 **Source:** [`DR-010`](../providers/drone.md#dr-010) in the [Drone CI provider](../providers/drone.md).
 
-#### `DR-011`: node map interpolates attacker-controllable Drone variable <span class="pg-sev pg-sev--high">HIGH</span> { #detail-dr-011 }
+### `DR-011`: node map interpolates attacker-controllable Drone variable <span class="pg-sev pg-sev--high">HIGH</span> { #detail-dr-011 }
 
 **Evidences:** [`ESF-D-INJECTION`](#ctrl-esf-d-injection) Prevent script / template injection from untrusted pipeline context.
 
@@ -3934,7 +3978,7 @@ Detection is value-only and case-sensitive against the documented variable names
 
 **Source:** [`DR-011`](../providers/drone.md#dr-011) in the [Drone CI provider](../providers/drone.md).
 
-#### `EB-000`: EventBridge API access failed <span class="pg-sev pg-sev--info">INFO</span> { #detail-eb-000 }
+### `EB-000`: EventBridge API access failed <span class="pg-sev pg-sev--info">INFO</span> { #detail-eb-000 }
 
 **Evidences:** [`ESF-C-AUDIT`](#ctrl-esf-c-audit) Audit deployment / pipeline activity and retain logs.
 
@@ -3944,7 +3988,7 @@ Detection is value-only and case-sensitive against the documented variable names
 
 **Source:** [`EB-000`](../providers/aws.md) in the [AWS provider](../providers/aws.md).
 
-#### `EB-001`: No EventBridge rule for CodePipeline failure notifications <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-eb-001 }
+### `EB-001`: No EventBridge rule for CodePipeline failure notifications <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-eb-001 }
 
 **Evidences:** [`ESF-C-DEPLOY-MON`](#ctrl-esf-c-deploy-mon) Monitor deployments with alarms / health checks.
 
@@ -3954,7 +3998,7 @@ Detection is value-only and case-sensitive against the documented variable names
 
 **Source:** [`EB-001`](../providers/aws.md) in the [AWS provider](../providers/aws.md).
 
-#### `EB-002`: EventBridge rule has a wildcard target ARN <span class="pg-sev pg-sev--high">HIGH</span> { #detail-eb-002 }
+### `EB-002`: EventBridge rule has a wildcard target ARN <span class="pg-sev pg-sev--high">HIGH</span> { #detail-eb-002 }
 
 **Evidences:** [`ESF-C-LEAST-PRIV`](#ctrl-esf-c-least-priv) Apply least-privilege to CI/CD service roles and pipelines.
 
@@ -3964,7 +4008,7 @@ Detection is value-only and case-sensitive against the documented variable names
 
 **Source:** [`EB-002`](../providers/aws.md) in the [AWS provider](../providers/aws.md).
 
-#### `ECR-000`: ECR API access failed <span class="pg-sev pg-sev--info">INFO</span> { #detail-ecr-000 }
+### `ECR-000`: ECR API access failed <span class="pg-sev pg-sev--info">INFO</span> { #detail-ecr-000 }
 
 **Evidences:** [`ESF-C-AUDIT`](#ctrl-esf-c-audit) Audit deployment / pipeline activity and retain logs.
 
@@ -3974,7 +4018,7 @@ Detection is value-only and case-sensitive against the documented variable names
 
 **Source:** [`ECR-000`](../providers/aws.md) in the [AWS provider](../providers/aws.md).
 
-#### `ECR-001`: Image scanning on push not enabled <span class="pg-sev pg-sev--high">HIGH</span> { #detail-ecr-001 }
+### `ECR-001`: Image scanning on push not enabled <span class="pg-sev pg-sev--high">HIGH</span> { #detail-ecr-001 }
 
 **Evidences:** [`ESF-S-VERIFY-DEPS`](#ctrl-esf-s-verify-deps) Verify third-party and open-source dependencies before use, [`ESF-S-VULN-MGMT`](#ctrl-esf-s-vuln-mgmt) Scan inbound artifacts (images, packages) for known vulnerabilities.
 
@@ -3984,7 +4028,7 @@ Detection is value-only and case-sensitive against the documented variable names
 
 **Source:** [`ECR-001`](../providers/aws.md) in the [AWS provider](../providers/aws.md).
 
-#### `ECR-002`: Image tags are mutable <span class="pg-sev pg-sev--high">HIGH</span> { #detail-ecr-002 }
+### `ECR-002`: Image tags are mutable <span class="pg-sev pg-sev--high">HIGH</span> { #detail-ecr-002 }
 
 **Evidences:** [`ESF-D-SBOM`](#ctrl-esf-d-sbom) Produce SBOM / provenance metadata with every build, [`ESF-S-IMMUTABLE`](#ctrl-esf-s-immutable) Enforce artifact / tag immutability to preserve provenance, [`ESF-C-ROLLBACK`](#ctrl-esf-c-rollback) Automated rollback on deployment failure or alarm.
 
@@ -3994,7 +4038,7 @@ Detection is value-only and case-sensitive against the documented variable names
 
 **Source:** [`ECR-002`](../providers/aws.md) in the [AWS provider](../providers/aws.md).
 
-#### `ECR-003`: Repository policy allows public access <span class="pg-sev pg-sev--critical">CRITICAL</span> { #detail-ecr-003 }
+### `ECR-003`: Repository policy allows public access <span class="pg-sev pg-sev--critical">CRITICAL</span> { #detail-ecr-003 }
 
 **Evidences:** [`ESF-S-TRUSTED-REG`](#ctrl-esf-s-trusted-reg) Use only trusted, authenticated package and image registries, [`ESF-C-ARTIFACT-AUTHZ`](#ctrl-esf-c-artifact-authz) Restrict access to artifact storage and deployment pipelines.
 
@@ -4004,7 +4048,7 @@ Detection is value-only and case-sensitive against the documented variable names
 
 **Source:** [`ECR-003`](../providers/aws.md) in the [AWS provider](../providers/aws.md).
 
-#### `ECR-004`: No lifecycle policy configured <span class="pg-sev pg-sev--low">LOW</span> { #detail-ecr-004 }
+### `ECR-004`: No lifecycle policy configured <span class="pg-sev pg-sev--low">LOW</span> { #detail-ecr-004 }
 
 **Evidences:** [`ESF-D-BUILD-ENV`](#ctrl-esf-d-build-env) Harden the build environment (isolated, minimal, ephemeral workers).
 
@@ -4014,7 +4058,7 @@ Detection is value-only and case-sensitive against the documented variable names
 
 **Source:** [`ECR-004`](../providers/aws.md) in the [AWS provider](../providers/aws.md).
 
-#### `ECR-005`: Repository encrypted with AES256 rather than KMS CMK <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-ecr-005 }
+### `ECR-005`: Repository encrypted with AES256 rather than KMS CMK <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-ecr-005 }
 
 **Evidences:** [`ESF-D-SIGN-ARTIFACTS`](#ctrl-esf-d-sign-artifacts) Sign build artifacts and verify signatures before release.
 
@@ -4024,7 +4068,7 @@ Detection is value-only and case-sensitive against the documented variable names
 
 **Source:** [`ECR-005`](../providers/aws.md) in the [AWS provider](../providers/aws.md).
 
-#### `ECR-006`: ECR pull-through cache rule uses an untrusted upstream <span class="pg-sev pg-sev--high">HIGH</span> { #detail-ecr-006 }
+### `ECR-006`: ECR pull-through cache rule uses an untrusted upstream <span class="pg-sev pg-sev--high">HIGH</span> { #detail-ecr-006 }
 
 **Evidences:** [`ESF-S-VERIFY-DEPS`](#ctrl-esf-s-verify-deps) Verify third-party and open-source dependencies before use, [`ESF-S-TRUSTED-REG`](#ctrl-esf-s-trusted-reg) Use only trusted, authenticated package and image registries.
 
@@ -4034,7 +4078,7 @@ Detection is value-only and case-sensitive against the documented variable names
 
 **Source:** [`ECR-006`](../providers/aws.md) in the [AWS provider](../providers/aws.md).
 
-#### `ECR-007`: Inspector v2 enhanced scanning disabled for ECR <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-ecr-007 }
+### `ECR-007`: Inspector v2 enhanced scanning disabled for ECR <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-ecr-007 }
 
 **Evidences:** [`ESF-S-VULN-MGMT`](#ctrl-esf-s-vuln-mgmt) Scan inbound artifacts (images, packages) for known vulnerabilities.
 
@@ -4044,7 +4088,7 @@ Detection is value-only and case-sensitive against the documented variable names
 
 **Source:** [`ECR-007`](../providers/aws.md) in the [AWS provider](../providers/aws.md).
 
-#### `GCB-001`: Cloud Build step image not pinned by digest <span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> { #detail-gcb-001 }
+### `GCB-001`: Cloud Build step image not pinned by digest <span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> { #detail-gcb-001 }
 
 **Evidences:** [`ESF-S-VERIFY-DEPS`](#ctrl-esf-s-verify-deps) Verify third-party and open-source dependencies before use, [`ESF-S-PIN-DEPS`](#ctrl-esf-s-pin-deps) Pin dependencies / actions / images to immutable digests.
 
@@ -4056,7 +4100,7 @@ Detection is value-only and case-sensitive against the documented variable names
 
 **Source:** [`GCB-001`](../providers/cloudbuild.md#gcb-001) in the [Cloud Build provider](../providers/cloudbuild.md).
 
-#### `GCB-002`: Cloud Build uses the default service account <span class="pg-sev pg-sev--high">HIGH</span> { #detail-gcb-002 }
+### `GCB-002`: Cloud Build uses the default service account <span class="pg-sev pg-sev--high">HIGH</span> { #detail-gcb-002 }
 
 **Evidences:** [`ESF-D-SECRETS`](#ctrl-esf-d-secrets) Protect secrets used during build; no secrets in source or env.
 
@@ -4066,7 +4110,7 @@ Detection is value-only and case-sensitive against the documented variable names
 
 **Source:** [`GCB-002`](../providers/cloudbuild.md#gcb-002) in the [Cloud Build provider](../providers/cloudbuild.md).
 
-#### `GCB-003`: Secret Manager value referenced in step args <span class="pg-sev pg-sev--high">HIGH</span> { #detail-gcb-003 }
+### `GCB-003`: Secret Manager value referenced in step args <span class="pg-sev pg-sev--high">HIGH</span> { #detail-gcb-003 }
 
 **Evidences:** [`ESF-D-SECRETS`](#ctrl-esf-d-secrets) Protect secrets used during build; no secrets in source or env.
 
@@ -4080,7 +4124,7 @@ Detection is value-only and case-sensitive against the documented variable names
 
 **Source:** [`GCB-003`](../providers/cloudbuild.md#gcb-003) in the [Cloud Build provider](../providers/cloudbuild.md).
 
-#### `GCB-004`: dynamicSubstitutions on with user substitutions in step args <span class="pg-sev pg-sev--high">HIGH</span> { #detail-gcb-004 }
+### `GCB-004`: dynamicSubstitutions on with user substitutions in step args <span class="pg-sev pg-sev--high">HIGH</span> { #detail-gcb-004 }
 
 **Evidences:** [`ESF-S-VERIFY-DEPS`](#ctrl-esf-s-verify-deps) Verify third-party and open-source dependencies before use, [`ESF-S-PIN-DEPS`](#ctrl-esf-s-pin-deps) Pin dependencies / actions / images to immutable digests.
 
@@ -4094,7 +4138,7 @@ Detection is value-only and case-sensitive against the documented variable names
 
 **Source:** [`GCB-004`](../providers/cloudbuild.md#gcb-004) in the [Cloud Build provider](../providers/cloudbuild.md).
 
-#### `GCB-005`: Build timeout unset or excessive <span class="pg-sev pg-sev--low">LOW</span> <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> { #detail-gcb-005 }
+### `GCB-005`: Build timeout unset or excessive <span class="pg-sev pg-sev--low">LOW</span> <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> { #detail-gcb-005 }
 
 **Evidences:** [`ESF-D-SECRETS`](#ctrl-esf-d-secrets) Protect secrets used during build; no secrets in source or env.
 
@@ -4106,7 +4150,7 @@ Detection is value-only and case-sensitive against the documented variable names
 
 **Source:** [`GCB-005`](../providers/cloudbuild.md#gcb-005) in the [Cloud Build provider](../providers/cloudbuild.md).
 
-#### `GCB-006`: Dangerous shell idiom (eval, sh -c variable, backtick exec) <span class="pg-sev pg-sev--high">HIGH</span> { #detail-gcb-006 }
+### `GCB-006`: Dangerous shell idiom (eval, sh -c variable, backtick exec) <span class="pg-sev pg-sev--high">HIGH</span> { #detail-gcb-006 }
 
 **Evidences:** [`ESF-D-BUILD-LOGS`](#ctrl-esf-d-build-logs) Generate and preserve build audit logs.
 
@@ -4120,7 +4164,7 @@ Detection is value-only and case-sensitive against the documented variable names
 
 **Source:** [`GCB-006`](../providers/cloudbuild.md#gcb-006) in the [Cloud Build provider](../providers/cloudbuild.md).
 
-#### `GCB-007`: availableSecrets references ``versions/latest`` <span class="pg-sev pg-sev--medium">MEDIUM</span> <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> { #detail-gcb-007 }
+### `GCB-007`: availableSecrets references ``versions/latest`` <span class="pg-sev pg-sev--medium">MEDIUM</span> <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> { #detail-gcb-007 }
 
 **Evidences:** [`ESF-S-PIN-DEPS`](#ctrl-esf-s-pin-deps) Pin dependencies / actions / images to immutable digests.
 
@@ -4132,7 +4176,7 @@ Detection is value-only and case-sensitive against the documented variable names
 
 **Source:** [`GCB-007`](../providers/cloudbuild.md#gcb-007) in the [Cloud Build provider](../providers/cloudbuild.md).
 
-#### `GCB-008`: No vulnerability scanning step in Cloud Build pipeline <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-gcb-008 }
+### `GCB-008`: No vulnerability scanning step in Cloud Build pipeline <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-gcb-008 }
 
 **Evidences:** [`ESF-D-SIGN-ARTIFACTS`](#ctrl-esf-d-sign-artifacts) Sign build artifacts and verify signatures before release.
 
@@ -4142,7 +4186,7 @@ Detection is value-only and case-sensitive against the documented variable names
 
 **Source:** [`GCB-008`](../providers/cloudbuild.md#gcb-008) in the [Cloud Build provider](../providers/cloudbuild.md).
 
-#### `GCB-009`: Artifacts not signed (no cosign / sigstore step) <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-gcb-009 }
+### `GCB-009`: Artifacts not signed (no cosign / sigstore step) <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-gcb-009 }
 
 **Evidences:** [`ESF-D-SBOM`](#ctrl-esf-d-sbom) Produce SBOM / provenance metadata with every build.
 
@@ -4152,7 +4196,7 @@ Detection is value-only and case-sensitive against the documented variable names
 
 **Source:** [`GCB-009`](../providers/cloudbuild.md#gcb-009) in the [Cloud Build provider](../providers/cloudbuild.md).
 
-#### `GCB-010`: Remote script piped to shell interpreter <span class="pg-sev pg-sev--high">HIGH</span> { #detail-gcb-010 }
+### `GCB-010`: Remote script piped to shell interpreter <span class="pg-sev pg-sev--high">HIGH</span> { #detail-gcb-010 }
 
 **Evidences:** [`ESF-D-BUILD-ENV`](#ctrl-esf-d-build-env) Harden the build environment (isolated, minimal, ephemeral workers).
 
@@ -4162,7 +4206,7 @@ Detection is value-only and case-sensitive against the documented variable names
 
 **Source:** [`GCB-010`](../providers/cloudbuild.md#gcb-010) in the [Cloud Build provider](../providers/cloudbuild.md).
 
-#### `GCB-011`: TLS / certificate verification bypass <span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> { #detail-gcb-011 }
+### `GCB-011`: TLS / certificate verification bypass <span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> { #detail-gcb-011 }
 
 **Evidences:** [`ESF-S-VERIFY-DEPS`](#ctrl-esf-s-verify-deps) Verify third-party and open-source dependencies before use.
 
@@ -4174,7 +4218,7 @@ Detection is value-only and case-sensitive against the documented variable names
 
 **Source:** [`GCB-011`](../providers/cloudbuild.md#gcb-011) in the [Cloud Build provider](../providers/cloudbuild.md).
 
-#### `GCB-012`: Credential-shaped literal in pipeline body <span class="pg-sev pg-sev--critical">CRITICAL</span> { #detail-gcb-012 }
+### `GCB-012`: Credential-shaped literal in pipeline body <span class="pg-sev pg-sev--critical">CRITICAL</span> { #detail-gcb-012 }
 
 **Evidences:** [`ESF-S-VULN-MGMT`](#ctrl-esf-s-vuln-mgmt) Scan inbound artifacts (images, packages) for known vulnerabilities.
 
@@ -4184,7 +4228,7 @@ Detection is value-only and case-sensitive against the documented variable names
 
 **Source:** [`GCB-012`](../providers/cloudbuild.md#gcb-012) in the [Cloud Build provider](../providers/cloudbuild.md).
 
-#### `GCB-013`: Package install bypasses registry integrity (git / path / tarball) <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-gcb-013 }
+### `GCB-013`: Package install bypasses registry integrity (git / path / tarball) <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-gcb-013 }
 
 **Evidences:** [`ESF-D-TOKEN-HYGIENE`](#ctrl-esf-d-token-hygiene) Use short-lived, federated credentials (OIDC), not long-lived tokens.
 
@@ -4194,7 +4238,7 @@ Detection is value-only and case-sensitive against the documented variable names
 
 **Source:** [`GCB-013`](../providers/cloudbuild.md#gcb-013) in the [Cloud Build provider](../providers/cloudbuild.md).
 
-#### `GCB-014`: Build logging disabled (options.logging: NONE) <span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> { #detail-gcb-014 }
+### `GCB-014`: Build logging disabled (options.logging: NONE) <span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> { #detail-gcb-014 }
 
 **Evidences:** [`ESF-D-INJECTION`](#ctrl-esf-d-injection) Prevent script / template injection from untrusted pipeline context.
 
@@ -4206,7 +4250,7 @@ Detection is value-only and case-sensitive against the documented variable names
 
 **Source:** [`GCB-014`](../providers/cloudbuild.md#gcb-014) in the [Cloud Build provider](../providers/cloudbuild.md).
 
-#### `GCB-015`: SBOM not produced (no CycloneDX / syft / Trivy-SBOM step) <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-gcb-015 }
+### `GCB-015`: SBOM not produced (no CycloneDX / syft / Trivy-SBOM step) <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-gcb-015 }
 
 **Evidences:** [`ESF-D-SBOM`](#ctrl-esf-d-sbom) Produce SBOM / provenance metadata with every build.
 
@@ -4216,7 +4260,7 @@ Detection is value-only and case-sensitive against the documented variable names
 
 **Source:** [`GCB-015`](../providers/cloudbuild.md#gcb-015) in the [Cloud Build provider](../providers/cloudbuild.md).
 
-#### `GCB-016`: Step dir field contains parent-directory escape (..) <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-gcb-016 }
+### `GCB-016`: Step dir field contains parent-directory escape (..) <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-gcb-016 }
 
 **Evidences:** [`ESF-D-BUILD-TIMEOUT`](#ctrl-esf-d-build-timeout) Enforce bounded build execution (single-use, time-limited).
 
@@ -4226,7 +4270,7 @@ Detection is value-only and case-sensitive against the documented variable names
 
 **Source:** [`GCB-016`](../providers/cloudbuild.md#gcb-016) in the [Cloud Build provider](../providers/cloudbuild.md).
 
-#### `GCB-017`: Image-producing build does not request SLSA provenance <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-gcb-017 }
+### `GCB-017`: Image-producing build does not request SLSA provenance <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-gcb-017 }
 
 **Evidences:** [`ESF-D-BUILD-LOGS`](#ctrl-esf-d-build-logs) Generate and preserve build audit logs.
 
@@ -4236,7 +4280,7 @@ Detection is value-only and case-sensitive against the documented variable names
 
 **Source:** [`GCB-017`](../providers/cloudbuild.md#gcb-017) in the [Cloud Build provider](../providers/cloudbuild.md).
 
-#### `GCB-018`: Legacy KMS secrets block in use (prefer availableSecrets / Secret Manager) <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-gcb-018 }
+### `GCB-018`: Legacy KMS secrets block in use (prefer availableSecrets / Secret Manager) <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-gcb-018 }
 
 **Evidences:** [`ESF-S-TRUSTED-REG`](#ctrl-esf-s-trusted-reg) Use only trusted, authenticated package and image registries.
 
@@ -4250,7 +4294,7 @@ Detection is value-only and case-sensitive against the documented variable names
 
 **Source:** [`GCB-018`](../providers/cloudbuild.md#gcb-018) in the [Cloud Build provider](../providers/cloudbuild.md).
 
-#### `GCB-019`: Shell entrypoint inlines a user substitution into args <span class="pg-sev pg-sev--high">HIGH</span> { #detail-gcb-019 }
+### `GCB-019`: Shell entrypoint inlines a user substitution into args <span class="pg-sev pg-sev--high">HIGH</span> { #detail-gcb-019 }
 
 **Evidences:** [`ESF-D-PRIV-BUILD`](#ctrl-esf-d-priv-build) Avoid privileged / host-networked build workers.
 
@@ -4264,7 +4308,7 @@ Detection is value-only and case-sensitive against the documented variable names
 
 **Source:** [`GCB-019`](../providers/cloudbuild.md#gcb-019) in the [Cloud Build provider](../providers/cloudbuild.md).
 
-#### `GCB-020`: serviceAccount points at the default Cloud Build service account <span class="pg-sev pg-sev--high">HIGH</span> { #detail-gcb-020 }
+### `GCB-020`: serviceAccount points at the default Cloud Build service account <span class="pg-sev pg-sev--high">HIGH</span> { #detail-gcb-020 }
 
 **Evidences:** [`ESF-D-TOKEN-HYGIENE`](#ctrl-esf-d-token-hygiene) Use short-lived, federated credentials (OIDC), not long-lived tokens.
 
@@ -4278,7 +4322,7 @@ Detection is value-only and case-sensitive against the documented variable names
 
 **Source:** [`GCB-020`](../providers/cloudbuild.md#gcb-020) in the [Cloud Build provider](../providers/cloudbuild.md).
 
-#### `GCB-021`: No private worker pool, build runs on the shared default pool <span class="pg-sev pg-sev--medium">MEDIUM</span> <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> { #detail-gcb-021 }
+### `GCB-021`: No private worker pool, build runs on the shared default pool <span class="pg-sev pg-sev--medium">MEDIUM</span> <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> { #detail-gcb-021 }
 
 **Evidences:** [`ESF-D-BUILD-ENV`](#ctrl-esf-d-build-env) Harden the build environment (isolated, minimal, ephemeral workers).
 
@@ -4294,7 +4338,7 @@ Detection is value-only and case-sensitive against the documented variable names
 
 **Source:** [`GCB-021`](../providers/cloudbuild.md#gcb-021) in the [Cloud Build provider](../providers/cloudbuild.md).
 
-#### `GCB-022`: options.substitutionOption set to ALLOW_LOOSE <span class="pg-sev pg-sev--low">LOW</span> <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> { #detail-gcb-022 }
+### `GCB-022`: options.substitutionOption set to ALLOW_LOOSE <span class="pg-sev pg-sev--low">LOW</span> <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> { #detail-gcb-022 }
 
 **Evidences:** [`ESF-D-INJECTION`](#ctrl-esf-d-injection) Prevent script / template injection from untrusted pipeline context.
 
@@ -4310,7 +4354,7 @@ Detection is value-only and case-sensitive against the documented variable names
 
 **Source:** [`GCB-022`](../providers/cloudbuild.md#gcb-022) in the [Cloud Build provider](../providers/cloudbuild.md).
 
-#### `GCB-023`: Step references a user substitution not declared in substitutions: <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-gcb-023 }
+### `GCB-023`: Step references a user substitution not declared in substitutions: <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-gcb-023 }
 
 **Evidences:** [`ESF-D-SIGN-ARTIFACTS`](#ctrl-esf-d-sign-artifacts) Sign build artifacts and verify signatures before release.
 
@@ -4324,7 +4368,7 @@ Detection is value-only and case-sensitive against the documented variable names
 
 **Source:** [`GCB-023`](../providers/cloudbuild.md#gcb-023) in the [Cloud Build provider](../providers/cloudbuild.md).
 
-#### `GCB-024`: Build pushes Docker images but top-level images: is empty <span class="pg-sev pg-sev--low">LOW</span> { #detail-gcb-024 }
+### `GCB-024`: Build pushes Docker images but top-level images: is empty <span class="pg-sev pg-sev--low">LOW</span> { #detail-gcb-024 }
 
 **Evidences:** [`ESF-D-SBOM`](#ctrl-esf-d-sbom) Produce SBOM / provenance metadata with every build.
 
@@ -4338,7 +4382,7 @@ Detection is value-only and case-sensitive against the documented variable names
 
 **Source:** [`GCB-024`](../providers/cloudbuild.md#gcb-024) in the [Cloud Build provider](../providers/cloudbuild.md).
 
-#### `GCB-025`: Build has no tags for audit / discoverability <span class="pg-sev pg-sev--low">LOW</span> { #detail-gcb-025 }
+### `GCB-025`: Build has no tags for audit / discoverability <span class="pg-sev pg-sev--low">LOW</span> { #detail-gcb-025 }
 
 **Evidences:** [`ESF-S-PIN-DEPS`](#ctrl-esf-s-pin-deps) Pin dependencies / actions / images to immutable digests.
 
@@ -4352,7 +4396,7 @@ Detection is value-only and case-sensitive against the documented variable names
 
 **Source:** [`GCB-025`](../providers/cloudbuild.md#gcb-025) in the [Cloud Build provider](../providers/cloudbuild.md).
 
-#### `GCB-026`: Step waitFor: references an unknown step id <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-gcb-026 }
+### `GCB-026`: Step waitFor: references an unknown step id <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-gcb-026 }
 
 **Evidences:** [`ESF-C-ARTIFACT-AUTHZ`](#ctrl-esf-c-artifact-authz) Restrict access to artifact storage and deployment pipelines.
 
@@ -4362,7 +4406,7 @@ Detection is value-only and case-sensitive against the documented variable names
 
 **Source:** [`GCB-026`](../providers/cloudbuild.md#gcb-026) in the [Cloud Build provider](../providers/cloudbuild.md).
 
-#### `GHA-001`: Action not pinned to commit SHA <span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> { #detail-gha-001 }
+### `GHA-001`: Action not pinned to commit SHA <span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> { #detail-gha-001 }
 
 **Evidences:** [`ESF-S-VERIFY-DEPS`](#ctrl-esf-s-verify-deps) Verify third-party and open-source dependencies before use, [`ESF-S-PIN-DEPS`](#ctrl-esf-s-pin-deps) Pin dependencies / actions / images to immutable digests.
 
@@ -4398,7 +4442,7 @@ Detection is value-only and case-sensitive against the documented variable names
 
 **Source:** [`GHA-001`](../providers/github.md#gha-001) in the [GitHub Actions provider](../providers/github.md).
 
-#### `GHA-002`: pull_request_target checks out PR head <span class="pg-sev pg-sev--critical">CRITICAL</span> <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> { #detail-gha-002 }
+### `GHA-002`: pull_request_target checks out PR head <span class="pg-sev pg-sev--critical">CRITICAL</span> <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> { #detail-gha-002 }
 
 **Evidences:** [`ESF-D-BUILD-ENV`](#ctrl-esf-d-build-env) Harden the build environment (isolated, minimal, ephemeral workers), [`ESF-D-INJECTION`](#ctrl-esf-d-injection) Prevent script / template injection from untrusted pipeline context.
 
@@ -4470,7 +4514,7 @@ jobs:
 
 **Source:** [`GHA-002`](../providers/github.md#gha-002) in the [GitHub Actions provider](../providers/github.md).
 
-#### `GHA-003`: Script injection via untrusted context <span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> { #detail-gha-003 }
+### `GHA-003`: Script injection via untrusted context <span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> { #detail-gha-003 }
 
 **Evidences:** [`ESF-D-INJECTION`](#ctrl-esf-d-injection) Prevent script / template injection from untrusted pipeline context.
 
@@ -4521,7 +4565,7 @@ jobs:
 
 **Source:** [`GHA-003`](../providers/github.md#gha-003) in the [GitHub Actions provider](../providers/github.md).
 
-#### `GHA-004`: Workflow has no explicit permissions block <span class="pg-sev pg-sev--medium">MEDIUM</span> <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> { #detail-gha-004 }
+### `GHA-004`: Workflow has no explicit permissions block <span class="pg-sev pg-sev--medium">MEDIUM</span> <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> { #detail-gha-004 }
 
 **Evidences:** [`ESF-C-LEAST-PRIV`](#ctrl-esf-c-least-priv) Apply least-privilege to CI/CD service roles and pipelines.
 
@@ -4537,7 +4581,7 @@ jobs:
 
 **Source:** [`GHA-004`](../providers/github.md#gha-004) in the [GitHub Actions provider](../providers/github.md).
 
-#### `GHA-005`: AWS auth uses long-lived access keys <span class="pg-sev pg-sev--medium">MEDIUM</span> <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> { #detail-gha-005 }
+### `GHA-005`: AWS auth uses long-lived access keys <span class="pg-sev pg-sev--medium">MEDIUM</span> <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> { #detail-gha-005 }
 
 **Evidences:** [`ESF-D-TOKEN-HYGIENE`](#ctrl-esf-d-token-hygiene) Use short-lived, federated credentials (OIDC), not long-lived tokens.
 
@@ -4553,7 +4597,7 @@ jobs:
 
 **Source:** [`GHA-005`](../providers/github.md#gha-005) in the [GitHub Actions provider](../providers/github.md).
 
-#### `GHA-006`: Artifacts not signed (no cosign/sigstore step) <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-gha-006 }
+### `GHA-006`: Artifacts not signed (no cosign/sigstore step) <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-gha-006 }
 
 **Evidences:** [`ESF-D-SIGN-ARTIFACTS`](#ctrl-esf-d-sign-artifacts) Sign build artifacts and verify signatures before release.
 
@@ -4568,7 +4612,7 @@ jobs:
 
 **Source:** [`GHA-006`](../providers/github.md#gha-006) in the [GitHub Actions provider](../providers/github.md).
 
-#### `GHA-007`: SBOM not produced (no CycloneDX/syft/Trivy-SBOM step) <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-gha-007 }
+### `GHA-007`: SBOM not produced (no CycloneDX/syft/Trivy-SBOM step) <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-gha-007 }
 
 **Evidences:** [`ESF-D-SBOM`](#ctrl-esf-d-sbom) Produce SBOM / provenance metadata with every build.
 
@@ -4578,7 +4622,7 @@ jobs:
 
 **Source:** [`GHA-007`](../providers/github.md#gha-007) in the [GitHub Actions provider](../providers/github.md).
 
-#### `GHA-008`: Credential-shaped literal in workflow body <span class="pg-sev pg-sev--critical">CRITICAL</span> <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> { #detail-gha-008 }
+### `GHA-008`: Credential-shaped literal in workflow body <span class="pg-sev pg-sev--critical">CRITICAL</span> <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> { #detail-gha-008 }
 
 **Evidences:** [`ESF-D-SECRETS`](#ctrl-esf-d-secrets) Protect secrets used during build; no secrets in source or env.
 
@@ -4636,7 +4680,7 @@ steps:
 
 **Source:** [`GHA-008`](../providers/github.md#gha-008) in the [GitHub Actions provider](../providers/github.md).
 
-#### `GHA-009`: workflow_run downloads upstream artifact unverified <span class="pg-sev pg-sev--critical">CRITICAL</span> { #detail-gha-009 }
+### `GHA-009`: workflow_run downloads upstream artifact unverified <span class="pg-sev pg-sev--critical">CRITICAL</span> { #detail-gha-009 }
 
 **Evidences:** [`ESF-D-INJECTION`](#ctrl-esf-d-injection) Prevent script / template injection from untrusted pipeline context, [`ESF-S-VERIFY-DEPS`](#ctrl-esf-s-verify-deps) Verify third-party and open-source dependencies before use.
 
@@ -4646,7 +4690,7 @@ steps:
 
 **Source:** [`GHA-009`](../providers/github.md#gha-009) in the [GitHub Actions provider](../providers/github.md).
 
-#### `GHA-010`: Local action (./path) on untrusted-trigger workflow <span class="pg-sev pg-sev--high">HIGH</span> { #detail-gha-010 }
+### `GHA-010`: Local action (./path) on untrusted-trigger workflow <span class="pg-sev pg-sev--high">HIGH</span> { #detail-gha-010 }
 
 **Evidences:** [`ESF-D-INJECTION`](#ctrl-esf-d-injection) Prevent script / template injection from untrusted pipeline context, [`ESF-S-PIN-DEPS`](#ctrl-esf-s-pin-deps) Pin dependencies / actions / images to immutable digests.
 
@@ -4656,7 +4700,7 @@ steps:
 
 **Source:** [`GHA-010`](../providers/github.md#gha-010) in the [GitHub Actions provider](../providers/github.md).
 
-#### `GHA-011`: Cache key derives from attacker-controllable input <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-gha-011 }
+### `GHA-011`: Cache key derives from attacker-controllable input <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-gha-011 }
 
 **Evidences:** [`ESF-D-INJECTION`](#ctrl-esf-d-injection) Prevent script / template injection from untrusted pipeline context, [`ESF-S-VERIFY-DEPS`](#ctrl-esf-s-verify-deps) Verify third-party and open-source dependencies before use.
 
@@ -4666,7 +4710,7 @@ steps:
 
 **Source:** [`GHA-011`](../providers/github.md#gha-011) in the [GitHub Actions provider](../providers/github.md).
 
-#### `GHA-012`: Self-hosted runner without ephemeral marker <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-gha-012 }
+### `GHA-012`: Self-hosted runner without ephemeral marker <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-gha-012 }
 
 **Evidences:** [`ESF-D-BUILD-ENV`](#ctrl-esf-d-build-env) Harden the build environment (isolated, minimal, ephemeral workers), [`ESF-D-PRIV-BUILD`](#ctrl-esf-d-priv-build) Avoid privileged / host-networked build workers.
 
@@ -4680,7 +4724,7 @@ steps:
 
 **Source:** [`GHA-012`](../providers/github.md#gha-012) in the [GitHub Actions provider](../providers/github.md).
 
-#### `GHA-013`: issue_comment trigger without author guard <span class="pg-sev pg-sev--high">HIGH</span> { #detail-gha-013 }
+### `GHA-013`: issue_comment trigger without author guard <span class="pg-sev pg-sev--high">HIGH</span> { #detail-gha-013 }
 
 **Evidences:** [`ESF-D-INJECTION`](#ctrl-esf-d-injection) Prevent script / template injection from untrusted pipeline context.
 
@@ -4694,7 +4738,7 @@ steps:
 
 **Source:** [`GHA-013`](../providers/github.md#gha-013) in the [GitHub Actions provider](../providers/github.md).
 
-#### `GHA-014`: Deploy job missing environment binding <span class="pg-sev pg-sev--medium">MEDIUM</span> <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> { #detail-gha-014 }
+### `GHA-014`: Deploy job missing environment binding <span class="pg-sev pg-sev--medium">MEDIUM</span> <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> { #detail-gha-014 }
 
 **Evidences:** [`ESF-C-APPROVAL`](#ctrl-esf-c-approval) Require explicit approval before production deployment, [`ESF-C-ENV-SEP`](#ctrl-esf-c-env-sep) Separate deployment environments (dev / staging / prod).
 
@@ -4710,7 +4754,7 @@ steps:
 
 **Source:** [`GHA-014`](../providers/github.md#gha-014) in the [GitHub Actions provider](../providers/github.md).
 
-#### `GHA-015`: Job has no `timeout-minutes`, unbounded build <span class="pg-sev pg-sev--medium">MEDIUM</span> <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> { #detail-gha-015 }
+### `GHA-015`: Job has no `timeout-minutes`, unbounded build <span class="pg-sev pg-sev--medium">MEDIUM</span> <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> { #detail-gha-015 }
 
 **Evidences:** [`ESF-D-BUILD-TIMEOUT`](#ctrl-esf-d-build-timeout) Enforce bounded build execution (single-use, time-limited).
 
@@ -4722,7 +4766,7 @@ steps:
 
 **Source:** [`GHA-015`](../providers/github.md#gha-015) in the [GitHub Actions provider](../providers/github.md).
 
-#### `GHA-016`: Remote script piped to shell interpreter <span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> { #detail-gha-016 }
+### `GHA-016`: Remote script piped to shell interpreter <span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> { #detail-gha-016 }
 
 **Evidences:** [`ESF-S-VERIFY-DEPS`](#ctrl-esf-s-verify-deps) Verify third-party and open-source dependencies before use.
 
@@ -4771,7 +4815,7 @@ steps:
 
 **Source:** [`GHA-016`](../providers/github.md#gha-016) in the [GitHub Actions provider](../providers/github.md).
 
-#### `GHA-017`: Docker run with insecure flags (privileged/host mount) <span class="pg-sev pg-sev--critical">CRITICAL</span> <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> { #detail-gha-017 }
+### `GHA-017`: Docker run with insecure flags (privileged/host mount) <span class="pg-sev pg-sev--critical">CRITICAL</span> <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> { #detail-gha-017 }
 
 **Evidences:** [`ESF-D-BUILD-ENV`](#ctrl-esf-d-build-env) Harden the build environment (isolated, minimal, ephemeral workers).
 
@@ -4783,7 +4827,7 @@ steps:
 
 **Source:** [`GHA-017`](../providers/github.md#gha-017) in the [GitHub Actions provider](../providers/github.md).
 
-#### `GHA-018`: Package install from insecure source <span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> { #detail-gha-018 }
+### `GHA-018`: Package install from insecure source <span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> { #detail-gha-018 }
 
 **Evidences:** [`ESF-S-VERIFY-DEPS`](#ctrl-esf-s-verify-deps) Verify third-party and open-source dependencies before use.
 
@@ -4795,7 +4839,7 @@ steps:
 
 **Source:** [`GHA-018`](../providers/github.md#gha-018) in the [GitHub Actions provider](../providers/github.md).
 
-#### `GHA-019`: GITHUB_TOKEN written to persistent storage <span class="pg-sev pg-sev--critical">CRITICAL</span> <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> { #detail-gha-019 }
+### `GHA-019`: GITHUB_TOKEN written to persistent storage <span class="pg-sev pg-sev--critical">CRITICAL</span> <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> { #detail-gha-019 }
 
 **Evidences:** [`ESF-D-SECRETS`](#ctrl-esf-d-secrets) Protect secrets used during build; no secrets in source or env.
 
@@ -4849,7 +4893,7 @@ jobs:
 
 **Source:** [`GHA-019`](../providers/github.md#gha-019) in the [GitHub Actions provider](../providers/github.md).
 
-#### `GHA-020`: No vulnerability scanning step <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-gha-020 }
+### `GHA-020`: No vulnerability scanning step <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-gha-020 }
 
 **Evidences:** [`ESF-S-VULN-MGMT`](#ctrl-esf-s-vuln-mgmt) Scan inbound artifacts (images, packages) for known vulnerabilities.
 
@@ -4859,7 +4903,7 @@ jobs:
 
 **Source:** [`GHA-020`](../providers/github.md#gha-020) in the [GitHub Actions provider](../providers/github.md).
 
-#### `GHA-021`: Package install without lockfile enforcement <span class="pg-sev pg-sev--medium">MEDIUM</span> <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> { #detail-gha-021 }
+### `GHA-021`: Package install without lockfile enforcement <span class="pg-sev pg-sev--medium">MEDIUM</span> <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> { #detail-gha-021 }
 
 **Evidences:** [`ESF-S-PIN-DEPS`](#ctrl-esf-s-pin-deps) Pin dependencies / actions / images to immutable digests.
 
@@ -4871,7 +4915,7 @@ jobs:
 
 **Source:** [`GHA-021`](../providers/github.md#gha-021) in the [GitHub Actions provider](../providers/github.md).
 
-#### `GHA-022`: Dependency update command bypasses lockfile pins <span class="pg-sev pg-sev--medium">MEDIUM</span> <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> { #detail-gha-022 }
+### `GHA-022`: Dependency update command bypasses lockfile pins <span class="pg-sev pg-sev--medium">MEDIUM</span> <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> { #detail-gha-022 }
 
 **Evidences:** [`ESF-S-PIN-DEPS`](#ctrl-esf-s-pin-deps) Pin dependencies / actions / images to immutable digests.
 
@@ -4887,7 +4931,7 @@ jobs:
 
 **Source:** [`GHA-022`](../providers/github.md#gha-022) in the [GitHub Actions provider](../providers/github.md).
 
-#### `GHA-023`: TLS / certificate verification bypass <span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> { #detail-gha-023 }
+### `GHA-023`: TLS / certificate verification bypass <span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> { #detail-gha-023 }
 
 **Evidences:** [`ESF-S-VERIFY-DEPS`](#ctrl-esf-s-verify-deps) Verify third-party and open-source dependencies before use.
 
@@ -4899,7 +4943,7 @@ jobs:
 
 **Source:** [`GHA-023`](../providers/github.md#gha-023) in the [GitHub Actions provider](../providers/github.md).
 
-#### `GHA-024`: No SLSA provenance attestation produced <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-gha-024 }
+### `GHA-024`: No SLSA provenance attestation produced <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-gha-024 }
 
 **Evidences:** [`ESF-D-SIGN-ARTIFACTS`](#ctrl-esf-d-sign-artifacts) Sign build artifacts and verify signatures before release, [`ESF-D-SBOM`](#ctrl-esf-d-sbom) Produce SBOM / provenance metadata with every build.
 
@@ -4909,7 +4953,7 @@ jobs:
 
 **Source:** [`GHA-024`](../providers/github.md#gha-024) in the [GitHub Actions provider](../providers/github.md).
 
-#### `GHA-025`: Reusable workflow not pinned to commit SHA <span class="pg-sev pg-sev--high">HIGH</span> { #detail-gha-025 }
+### `GHA-025`: Reusable workflow not pinned to commit SHA <span class="pg-sev pg-sev--high">HIGH</span> { #detail-gha-025 }
 
 **Evidences:** [`ESF-S-VERIFY-DEPS`](#ctrl-esf-s-verify-deps) Verify third-party and open-source dependencies before use, [`ESF-S-PIN-DEPS`](#ctrl-esf-s-pin-deps) Pin dependencies / actions / images to immutable digests.
 
@@ -4919,7 +4963,7 @@ jobs:
 
 **Source:** [`GHA-025`](../providers/github.md#gha-025) in the [GitHub Actions provider](../providers/github.md).
 
-#### `GHA-026`: Container job disables isolation via `options:` <span class="pg-sev pg-sev--high">HIGH</span> { #detail-gha-026 }
+### `GHA-026`: Container job disables isolation via `options:` <span class="pg-sev pg-sev--high">HIGH</span> { #detail-gha-026 }
 
 **Evidences:** [`ESF-D-BUILD-ENV`](#ctrl-esf-d-build-env) Harden the build environment (isolated, minimal, ephemeral workers), [`ESF-D-PRIV-BUILD`](#ctrl-esf-d-priv-build) Avoid privileged / host-networked build workers.
 
@@ -4929,7 +4973,7 @@ jobs:
 
 **Source:** [`GHA-026`](../providers/github.md#gha-026) in the [GitHub Actions provider](../providers/github.md).
 
-#### `GHA-027`: Workflow contains indicators of malicious activity <span class="pg-sev pg-sev--critical">CRITICAL</span> { #detail-gha-027 }
+### `GHA-027`: Workflow contains indicators of malicious activity <span class="pg-sev pg-sev--critical">CRITICAL</span> { #detail-gha-027 }
 
 **Evidences:** [`ESF-D-INJECTION`](#ctrl-esf-d-injection) Prevent script / template injection from untrusted pipeline context, [`ESF-S-VERIFY-DEPS`](#ctrl-esf-s-verify-deps) Verify third-party and open-source dependencies before use.
 
@@ -4944,7 +4988,7 @@ jobs:
 
 **Source:** [`GHA-027`](../providers/github.md#gha-027) in the [GitHub Actions provider](../providers/github.md).
 
-#### `GHA-028`: Dangerous shell idiom (eval, sh -c variable, backtick exec) <span class="pg-sev pg-sev--high">HIGH</span> { #detail-gha-028 }
+### `GHA-028`: Dangerous shell idiom (eval, sh -c variable, backtick exec) <span class="pg-sev pg-sev--high">HIGH</span> { #detail-gha-028 }
 
 **Evidences:** [`ESF-D-INJECTION`](#ctrl-esf-d-injection) Prevent script / template injection from untrusted pipeline context.
 
@@ -4958,7 +5002,7 @@ jobs:
 
 **Source:** [`GHA-028`](../providers/github.md#gha-028) in the [GitHub Actions provider](../providers/github.md).
 
-#### `GHA-029`: Package install bypasses registry integrity (git / path / tarball source) <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-gha-029 }
+### `GHA-029`: Package install bypasses registry integrity (git / path / tarball source) <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-gha-029 }
 
 **Evidences:** [`ESF-S-VERIFY-DEPS`](#ctrl-esf-s-verify-deps) Verify third-party and open-source dependencies before use, [`ESF-S-PIN-DEPS`](#ctrl-esf-s-pin-deps) Pin dependencies / actions / images to immutable digests.
 
@@ -4968,7 +5012,7 @@ jobs:
 
 **Source:** [`GHA-029`](../providers/github.md#gha-029) in the [GitHub Actions provider](../providers/github.md).
 
-#### `GHA-030`: OIDC token requested without environment-protected job <span class="pg-sev pg-sev--high">HIGH</span> { #detail-gha-030 }
+### `GHA-030`: OIDC token requested without environment-protected job <span class="pg-sev pg-sev--high">HIGH</span> { #detail-gha-030 }
 
 **Evidences:** [`ESF-D-TOKEN-HYGIENE`](#ctrl-esf-d-token-hygiene) Use short-lived, federated credentials (OIDC), not long-lived tokens, [`ESF-C-APPROVAL`](#ctrl-esf-c-approval) Require explicit approval before production deployment.
 
@@ -4978,7 +5022,7 @@ jobs:
 
 **Source:** [`GHA-030`](../providers/github.md#gha-030) in the [GitHub Actions provider](../providers/github.md).
 
-#### `GHA-031`: Workflow uses retired set-output / save-state command <span class="pg-sev pg-sev--high">HIGH</span> { #detail-gha-031 }
+### `GHA-031`: Workflow uses retired set-output / save-state command <span class="pg-sev pg-sev--high">HIGH</span> { #detail-gha-031 }
 
 **Evidences:** [`ESF-D-INJECTION`](#ctrl-esf-d-injection) Prevent script / template injection from untrusted pipeline context.
 
@@ -4988,7 +5032,7 @@ jobs:
 
 **Source:** [`GHA-031`](../providers/github.md#gha-031) in the [GitHub Actions provider](../providers/github.md).
 
-#### `GHA-032`: run: invokes local script on untrusted-trigger workflow <span class="pg-sev pg-sev--critical">CRITICAL</span> { #detail-gha-032 }
+### `GHA-032`: run: invokes local script on untrusted-trigger workflow <span class="pg-sev pg-sev--critical">CRITICAL</span> { #detail-gha-032 }
 
 **Evidences:** [`ESF-D-INJECTION`](#ctrl-esf-d-injection) Prevent script / template injection from untrusted pipeline context.
 
@@ -5002,7 +5046,7 @@ jobs:
 
 **Source:** [`GHA-032`](../providers/github.md#gha-032) in the [GitHub Actions provider](../providers/github.md).
 
-#### `GHA-033`: Secret value echoed / printed in a run: block <span class="pg-sev pg-sev--critical">CRITICAL</span> { #detail-gha-033 }
+### `GHA-033`: Secret value echoed / printed in a run: block <span class="pg-sev pg-sev--critical">CRITICAL</span> { #detail-gha-033 }
 
 **Evidences:** [`ESF-D-SECRETS`](#ctrl-esf-d-secrets) Protect secrets used during build; no secrets in source or env.
 
@@ -5012,7 +5056,7 @@ jobs:
 
 **Source:** [`GHA-033`](../providers/github.md#gha-033) in the [GitHub Actions provider](../providers/github.md).
 
-#### `GHA-034`: Reusable workflow called with secrets: inherit <span class="pg-sev pg-sev--medium">MEDIUM</span> <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> { #detail-gha-034 }
+### `GHA-034`: Reusable workflow called with secrets: inherit <span class="pg-sev pg-sev--medium">MEDIUM</span> <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> { #detail-gha-034 }
 
 **Evidences:** [`ESF-D-SECRETS`](#ctrl-esf-d-secrets) Protect secrets used during build; no secrets in source or env, [`ESF-C-LEAST-PRIV`](#ctrl-esf-c-least-priv) Apply least-privilege to CI/CD service roles and pipelines.
 
@@ -5028,7 +5072,7 @@ jobs:
 
 **Source:** [`GHA-034`](../providers/github.md#gha-034) in the [GitHub Actions provider](../providers/github.md).
 
-#### `GHA-035`: github-script step interpolates untrusted context <span class="pg-sev pg-sev--high">HIGH</span> { #detail-gha-035 }
+### `GHA-035`: github-script step interpolates untrusted context <span class="pg-sev pg-sev--high">HIGH</span> { #detail-gha-035 }
 
 **Evidences:** [`ESF-D-INJECTION`](#ctrl-esf-d-injection) Prevent script / template injection from untrusted pipeline context.
 
@@ -5042,7 +5086,7 @@ jobs:
 
 **Source:** [`GHA-035`](../providers/github.md#gha-035) in the [GitHub Actions provider](../providers/github.md).
 
-#### `GHA-036`: runs-on interpolates untrusted context <span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> { #detail-gha-036 }
+### `GHA-036`: runs-on interpolates untrusted context <span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> { #detail-gha-036 }
 
 **Evidences:** [`ESF-D-INJECTION`](#ctrl-esf-d-injection) Prevent script / template injection from untrusted pipeline context.
 
@@ -5058,7 +5102,7 @@ jobs:
 
 **Source:** [`GHA-036`](../providers/github.md#gha-036) in the [GitHub Actions provider](../providers/github.md).
 
-#### `GHA-037`: actions/checkout persists GITHUB_TOKEN into .git/config <span class="pg-sev pg-sev--high">HIGH</span> { #detail-gha-037 }
+### `GHA-037`: actions/checkout persists GITHUB_TOKEN into .git/config <span class="pg-sev pg-sev--high">HIGH</span> { #detail-gha-037 }
 
 **Evidences:** [`ESF-D-TOKEN-HYGIENE`](#ctrl-esf-d-token-hygiene) Use short-lived, federated credentials (OIDC), not long-lived tokens.
 
@@ -5076,7 +5120,7 @@ Sister rule: GHA-019 catches the explicit ``echo $GITHUB_TOKEN > file`` shape; G
 
 **Source:** [`GHA-037`](../providers/github.md#gha-037) in the [GitHub Actions provider](../providers/github.md).
 
-#### `GHA-038`: Workflow re-enables retired ::set-env / ::add-path commands <span class="pg-sev pg-sev--critical">CRITICAL</span> { #detail-gha-038 }
+### `GHA-038`: Workflow re-enables retired ::set-env / ::add-path commands <span class="pg-sev pg-sev--critical">CRITICAL</span> { #detail-gha-038 }
 
 **Evidences:** [`ESF-D-INJECTION`](#ctrl-esf-d-injection) Prevent script / template injection from untrusted pipeline context.
 
@@ -5092,7 +5136,7 @@ Sister rule GHA-031 catches direct uses of ``::set-output::`` / ``::save-state::
 
 **Source:** [`GHA-038`](../providers/github.md#gha-038) in the [GitHub Actions provider](../providers/github.md).
 
-#### `GHA-039`: services / container credentials embedded as literal in workflow <span class="pg-sev pg-sev--critical">CRITICAL</span> { #detail-gha-039 }
+### `GHA-039`: services / container credentials embedded as literal in workflow <span class="pg-sev pg-sev--critical">CRITICAL</span> { #detail-gha-039 }
 
 **Evidences:** [`ESF-D-SECRETS`](#ctrl-esf-d-secrets) Protect secrets used during build; no secrets in source or env.
 
@@ -5108,7 +5152,7 @@ GHA-008 scans the workflow for credential **patterns** (AWS access keys, JWTs, S
 
 **Source:** [`GHA-039`](../providers/github.md#gha-039) in the [GitHub Actions provider](../providers/github.md).
 
-#### `GHA-040`: Action reference matches a known-compromised SHA or tag <span class="pg-sev pg-sev--critical">CRITICAL</span> { #detail-gha-040 }
+### `GHA-040`: Action reference matches a known-compromised SHA or tag <span class="pg-sev pg-sev--critical">CRITICAL</span> { #detail-gha-040 }
 
 **Evidences:** [`ESF-S-VERIFY-DEPS`](#ctrl-esf-s-verify-deps) Verify third-party and open-source dependencies before use, [`ESF-S-VULN-MGMT`](#ctrl-esf-s-vuln-mgmt) Scan inbound artifacts (images, packages) for known vulnerabilities.
 
@@ -5154,7 +5198,7 @@ GHA-008 scans the workflow for credential **patterns** (AWS access keys, JWTs, S
 
 **Source:** [`GHA-040`](../providers/github.md#gha-040) in the [GitHub Actions provider](../providers/github.md).
 
-#### `GHA-041`: Action upstream repo has a single contributor <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-gha-041 }
+### `GHA-041`: Action upstream repo has a single contributor <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-gha-041 }
 
 **Evidences:** [`ESF-S-VERIFY-DEPS`](#ctrl-esf-s-verify-deps) Verify third-party and open-source dependencies before use.
 
@@ -5172,7 +5216,7 @@ GHA-008 scans the workflow for credential **patterns** (AWS access keys, JWTs, S
 
 **Source:** [`GHA-041`](../providers/github.md#gha-041) in the [GitHub Actions provider](../providers/github.md).
 
-#### `GHA-042`: Action upstream repo is newly created <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-gha-042 }
+### `GHA-042`: Action upstream repo is newly created <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-gha-042 }
 
 **Evidences:** [`ESF-S-VERIFY-DEPS`](#ctrl-esf-s-verify-deps) Verify third-party and open-source dependencies before use.
 
@@ -5190,7 +5234,7 @@ GHA-008 scans the workflow for credential **patterns** (AWS access keys, JWTs, S
 
 **Source:** [`GHA-042`](../providers/github.md#gha-042) in the [GitHub Actions provider](../providers/github.md).
 
-#### `GHA-043`: Low-star action runs with sensitive permissions <span class="pg-sev pg-sev--high">HIGH</span> { #detail-gha-043 }
+### `GHA-043`: Low-star action runs with sensitive permissions <span class="pg-sev pg-sev--high">HIGH</span> { #detail-gha-043 }
 
 **Evidences:** [`ESF-S-VERIFY-DEPS`](#ctrl-esf-s-verify-deps) Verify third-party and open-source dependencies before use, [`ESF-C-LEAST-PRIV`](#ctrl-esf-c-least-priv) Apply least-privilege to CI/CD service roles and pipelines.
 
@@ -5208,7 +5252,7 @@ GHA-008 scans the workflow for credential **patterns** (AWS access keys, JWTs, S
 
 **Source:** [`GHA-043`](../providers/github.md#gha-043) in the [GitHub Actions provider](../providers/github.md).
 
-#### `GHA-044`: Build tool runs lifecycle scripts on untrusted-trigger workflow <span class="pg-sev pg-sev--high">HIGH</span> { #detail-gha-044 }
+### `GHA-044`: Build tool runs lifecycle scripts on untrusted-trigger workflow <span class="pg-sev pg-sev--high">HIGH</span> { #detail-gha-044 }
 
 **Evidences:** [`ESF-D-INJECTION`](#ctrl-esf-d-injection) Prevent script / template injection from untrusted pipeline context.
 
@@ -5270,7 +5314,7 @@ jobs:
 
 **Source:** [`GHA-044`](../providers/github.md#gha-044) in the [GitHub Actions provider](../providers/github.md).
 
-#### `GHA-045`: Caller-controlled ref input feeds actions/checkout <span class="pg-sev pg-sev--high">HIGH</span> { #detail-gha-045 }
+### `GHA-045`: Caller-controlled ref input feeds actions/checkout <span class="pg-sev pg-sev--high">HIGH</span> { #detail-gha-045 }
 
 **Evidences:** [`ESF-D-INJECTION`](#ctrl-esf-d-injection) Prevent script / template injection from untrusted pipeline context.
 
@@ -5330,7 +5374,7 @@ jobs:
 
 **Source:** [`GHA-045`](../providers/github.md#gha-045) in the [GitHub Actions provider](../providers/github.md).
 
-#### `GHA-046`: Manual PR-head fetch on untrusted-trigger workflow <span class="pg-sev pg-sev--critical">CRITICAL</span> { #detail-gha-046 }
+### `GHA-046`: Manual PR-head fetch on untrusted-trigger workflow <span class="pg-sev pg-sev--critical">CRITICAL</span> { #detail-gha-046 }
 
 **Evidences:** [`ESF-D-INJECTION`](#ctrl-esf-d-injection) Prevent script / template injection from untrusted pipeline context.
 
@@ -5384,7 +5428,7 @@ jobs:
 
 **Source:** [`GHA-046`](../providers/github.md#gha-046) in the [GitHub Actions provider](../providers/github.md).
 
-#### `GHA-047`: Action ref resolves to a recently committed tag or SHA <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-gha-047 }
+### `GHA-047`: Action ref resolves to a recently committed tag or SHA <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-gha-047 }
 
 **Evidences:** [`ESF-S-VERIFY-DEPS`](#ctrl-esf-s-verify-deps) Verify third-party and open-source dependencies before use.
 
@@ -5402,7 +5446,7 @@ jobs:
 
 **Source:** [`GHA-047`](../providers/github.md#gha-047) in the [GitHub Actions provider](../providers/github.md).
 
-#### `GHA-048`: Workflow step writes a file under .github/workflows/ <span class="pg-sev pg-sev--critical">CRITICAL</span> { #detail-gha-048 }
+### `GHA-048`: Workflow step writes a file under .github/workflows/ <span class="pg-sev pg-sev--critical">CRITICAL</span> { #detail-gha-048 }
 
 **Evidences:** [`ESF-D-TAMPER`](#ctrl-esf-d-tamper) Protect build artifacts from tampering and detect unauthorized modification.
 
@@ -5455,7 +5499,7 @@ jobs:
 
 **Source:** [`GHA-048`](../providers/github.md#gha-048) in the [GitHub Actions provider](../providers/github.md).
 
-#### `GHA-049`: Workflow step pushes to a repo outside the current owner <span class="pg-sev pg-sev--high">HIGH</span> { #detail-gha-049 }
+### `GHA-049`: Workflow step pushes to a repo outside the current owner <span class="pg-sev pg-sev--high">HIGH</span> { #detail-gha-049 }
 
 **Evidences:** [`ESF-C-LEAST-PRIV`](#ctrl-esf-c-least-priv) Apply least-privilege to CI/CD service roles and pipelines.
 
@@ -5509,7 +5553,7 @@ jobs:
 
 **Source:** [`GHA-049`](../providers/github.md#gha-049) in the [GitHub Actions provider](../providers/github.md).
 
-#### `GHA-050`: Publish step relies on long-lived registry token <span class="pg-sev pg-sev--high">HIGH</span> { #detail-gha-050 }
+### `GHA-050`: Publish step relies on long-lived registry token <span class="pg-sev pg-sev--high">HIGH</span> { #detail-gha-050 }
 
 **Evidences:** [`ESF-D-TOKEN-HYGIENE`](#ctrl-esf-d-token-hygiene) Use short-lived, federated credentials (OIDC), not long-lived tokens.
 
@@ -5583,7 +5627,7 @@ jobs:
 
 **Source:** [`GHA-050`](../providers/github.md#gha-050) in the [GitHub Actions provider](../providers/github.md).
 
-#### `GHA-051`: services / container image is not pinned by digest <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-gha-051 }
+### `GHA-051`: services / container image is not pinned by digest <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-gha-051 }
 
 **Evidences:** [`ESF-S-VERIFY-DEPS`](#ctrl-esf-s-verify-deps) Verify third-party and open-source dependencies before use, [`ESF-S-PIN-DEPS`](#ctrl-esf-s-pin-deps) Pin dependencies / actions / images to immutable digests.
 
@@ -5599,7 +5643,7 @@ Complements DF-001 (Dockerfile ``FROM`` pinning), GHA-001 (action ``uses:`` pinn
 
 **Source:** [`GHA-051`](../providers/github.md#gha-051) in the [GitHub Actions provider](../providers/github.md).
 
-#### `GHA-052`: actions/cache key includes untrusted PR-controllable input <span class="pg-sev pg-sev--high">HIGH</span> { #detail-gha-052 }
+### `GHA-052`: actions/cache key includes untrusted PR-controllable input <span class="pg-sev pg-sev--high">HIGH</span> { #detail-gha-052 }
 
 **Evidences:** [`ESF-D-INJECTION`](#ctrl-esf-d-injection) Prevent script / template injection from untrusted pipeline context.
 
@@ -5617,7 +5661,7 @@ The attack is cache poisoning: an attacker opens a PR whose branch name (``head_
 
 **Source:** [`GHA-052`](../providers/github.md#gha-052) in the [GitHub Actions provider](../providers/github.md).
 
-#### `GHA-053`: if: predicate evaluates attacker-controllable context as expression <span class="pg-sev pg-sev--high">HIGH</span> { #detail-gha-053 }
+### `GHA-053`: if: predicate evaluates attacker-controllable context as expression <span class="pg-sev pg-sev--high">HIGH</span> { #detail-gha-053 }
 
 **Evidences:** [`ESF-D-INJECTION`](#ctrl-esf-d-injection) Prevent script / template injection from untrusted pipeline context.
 
@@ -5637,7 +5681,7 @@ Documented attack: a PR title of ``${{ secrets.X }}`` inside an ``if: contains(g
 
 **Source:** [`GHA-053`](../providers/github.md#gha-053) in the [GitHub Actions provider](../providers/github.md).
 
-#### `GHA-054`: actions/checkout with ssh-key persists SSH credential in repo <span class="pg-sev pg-sev--high">HIGH</span> { #detail-gha-054 }
+### `GHA-054`: actions/checkout with ssh-key persists SSH credential in repo <span class="pg-sev pg-sev--high">HIGH</span> { #detail-gha-054 }
 
 **Evidences:** [`ESF-D-TOKEN-HYGIENE`](#ctrl-esf-d-token-hygiene) Use short-lived, federated credentials (OIDC), not long-lived tokens.
 
@@ -5658,7 +5702,7 @@ The safe pattern: ``actions/checkout@<sha>`` with ``ssh-key: ${{ secrets.DEPLOY_
 
 **Source:** [`GHA-054`](../providers/github.md#gha-054) in the [GitHub Actions provider](../providers/github.md).
 
-#### `GHA-055`: Reusable workflow outputs derive a secret or caller-input value <span class="pg-sev pg-sev--high">HIGH</span> { #detail-gha-055 }
+### `GHA-055`: Reusable workflow outputs derive a secret or caller-input value <span class="pg-sev pg-sev--high">HIGH</span> { #detail-gha-055 }
 
 **Evidences:** [`ESF-D-SECRETS`](#ctrl-esf-d-secrets) Protect secrets used during build; no secrets in source or env.
 
@@ -5676,7 +5720,7 @@ If the caller genuinely needs information derived from a secret (e.g., a build a
 
 **Source:** [`GHA-055`](../providers/github.md#gha-055) in the [GitHub Actions provider](../providers/github.md).
 
-#### `GHA-056`: Workflow body contains a known supply-chain worm indicator <span class="pg-sev pg-sev--critical">CRITICAL</span> { #detail-gha-056 }
+### `GHA-056`: Workflow body contains a known supply-chain worm indicator <span class="pg-sev pg-sev--critical">CRITICAL</span> { #detail-gha-056 }
 
 **Evidences:** [`ESF-S-VERIFY-DEPS`](#ctrl-esf-s-verify-deps) Verify third-party and open-source dependencies before use.
 
@@ -5727,7 +5771,7 @@ jobs:
 
 **Source:** [`GHA-056`](../providers/github.md#gha-056) in the [GitHub Actions provider](../providers/github.md).
 
-#### `GHA-057`: Secret-scanner output sent to network egress <span class="pg-sev pg-sev--critical">CRITICAL</span> { #detail-gha-057 }
+### `GHA-057`: Secret-scanner output sent to network egress <span class="pg-sev pg-sev--critical">CRITICAL</span> { #detail-gha-057 }
 
 **Evidences:** [`ESF-D-SECRETS`](#ctrl-esf-d-secrets) Protect secrets used during build; no secrets in source or env.
 
@@ -5779,7 +5823,7 @@ jobs:
 
 **Source:** [`GHA-057`](../providers/github.md#gha-057) in the [GitHub Actions provider](../providers/github.md).
 
-#### `GHA-058`: Agentic CLI invoked with permission-bypass flags <span class="pg-sev pg-sev--high">HIGH</span> { #detail-gha-058 }
+### `GHA-058`: Agentic CLI invoked with permission-bypass flags <span class="pg-sev pg-sev--high">HIGH</span> { #detail-gha-058 }
 
 **Evidences:** [`ESF-D-INJECTION`](#ctrl-esf-d-injection) Prevent script / template injection from untrusted pipeline context.
 
@@ -5835,7 +5879,7 @@ jobs:
 
 **Source:** [`GHA-058`](../providers/github.md#gha-058) in the [GitHub Actions provider](../providers/github.md).
 
-#### `GL-001`: Image not pinned to specific version or digest <span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> { #detail-gl-001 }
+### `GL-001`: Image not pinned to specific version or digest <span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> { #detail-gl-001 }
 
 **Evidences:** [`ESF-S-VERIFY-DEPS`](#ctrl-esf-s-verify-deps) Verify third-party and open-source dependencies before use, [`ESF-S-PIN-DEPS`](#ctrl-esf-s-pin-deps) Pin dependencies / actions / images to immutable digests.
 
@@ -5847,7 +5891,7 @@ jobs:
 
 **Source:** [`GL-001`](../providers/gitlab.md#gl-001) in the [GitLab CI provider](../providers/gitlab.md).
 
-#### `GL-002`: Script injection via untrusted commit/MR context <span class="pg-sev pg-sev--high">HIGH</span> { #detail-gl-002 }
+### `GL-002`: Script injection via untrusted commit/MR context <span class="pg-sev pg-sev--high">HIGH</span> { #detail-gl-002 }
 
 **Evidences:** [`ESF-D-INJECTION`](#ctrl-esf-d-injection) Prevent script / template injection from untrusted pipeline context.
 
@@ -5857,7 +5901,7 @@ jobs:
 
 **Source:** [`GL-002`](../providers/gitlab.md#gl-002) in the [GitLab CI provider](../providers/gitlab.md).
 
-#### `GL-003`: Variables contain literal secret values <span class="pg-sev pg-sev--critical">CRITICAL</span> { #detail-gl-003 }
+### `GL-003`: Variables contain literal secret values <span class="pg-sev pg-sev--critical">CRITICAL</span> { #detail-gl-003 }
 
 **Evidences:** [`ESF-D-SECRETS`](#ctrl-esf-d-secrets) Protect secrets used during build; no secrets in source or env.
 
@@ -5867,7 +5911,7 @@ jobs:
 
 **Source:** [`GL-003`](../providers/gitlab.md#gl-003) in the [GitLab CI provider](../providers/gitlab.md).
 
-#### `GL-004`: Deploy job lacks manual approval or environment gate <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-gl-004 }
+### `GL-004`: Deploy job lacks manual approval or environment gate <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-gl-004 }
 
 **Evidences:** [`ESF-C-APPROVAL`](#ctrl-esf-c-approval) Require explicit approval before production deployment, [`ESF-C-ENV-SEP`](#ctrl-esf-c-env-sep) Separate deployment environments (dev / staging / prod).
 
@@ -5877,7 +5921,7 @@ jobs:
 
 **Source:** [`GL-004`](../providers/gitlab.md#gl-004) in the [GitLab CI provider](../providers/gitlab.md).
 
-#### `GL-005`: include: pulls remote / project without pinned ref <span class="pg-sev pg-sev--high">HIGH</span> { #detail-gl-005 }
+### `GL-005`: include: pulls remote / project without pinned ref <span class="pg-sev pg-sev--high">HIGH</span> { #detail-gl-005 }
 
 **Evidences:** [`ESF-S-PIN-DEPS`](#ctrl-esf-s-pin-deps) Pin dependencies / actions / images to immutable digests, [`ESF-S-TRUSTED-REG`](#ctrl-esf-s-trusted-reg) Use only trusted, authenticated package and image registries.
 
@@ -5887,7 +5931,7 @@ jobs:
 
 **Source:** [`GL-005`](../providers/gitlab.md#gl-005) in the [GitLab CI provider](../providers/gitlab.md).
 
-#### `GL-006`: Artifacts not signed <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-gl-006 }
+### `GL-006`: Artifacts not signed <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-gl-006 }
 
 **Evidences:** [`ESF-D-SIGN-ARTIFACTS`](#ctrl-esf-d-sign-artifacts) Sign build artifacts and verify signatures before release.
 
@@ -5897,7 +5941,7 @@ jobs:
 
 **Source:** [`GL-006`](../providers/gitlab.md#gl-006) in the [GitLab CI provider](../providers/gitlab.md).
 
-#### `GL-007`: SBOM not produced <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-gl-007 }
+### `GL-007`: SBOM not produced <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-gl-007 }
 
 **Evidences:** [`ESF-D-SBOM`](#ctrl-esf-d-sbom) Produce SBOM / provenance metadata with every build.
 
@@ -5907,7 +5951,7 @@ jobs:
 
 **Source:** [`GL-007`](../providers/gitlab.md#gl-007) in the [GitLab CI provider](../providers/gitlab.md).
 
-#### `GL-008`: Credential-shaped literal in pipeline body <span class="pg-sev pg-sev--critical">CRITICAL</span> <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> { #detail-gl-008 }
+### `GL-008`: Credential-shaped literal in pipeline body <span class="pg-sev pg-sev--critical">CRITICAL</span> <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> { #detail-gl-008 }
 
 **Evidences:** [`ESF-D-SECRETS`](#ctrl-esf-d-secrets) Protect secrets used during build; no secrets in source or env.
 
@@ -5923,7 +5967,7 @@ jobs:
 
 **Source:** [`GL-008`](../providers/gitlab.md#gl-008) in the [GitLab CI provider](../providers/gitlab.md).
 
-#### `GL-009`: Image pinned to version tag rather than sha256 digest <span class="pg-sev pg-sev--low">LOW</span> { #detail-gl-009 }
+### `GL-009`: Image pinned to version tag rather than sha256 digest <span class="pg-sev pg-sev--low">LOW</span> { #detail-gl-009 }
 
 **Evidences:** [`ESF-S-PIN-DEPS`](#ctrl-esf-s-pin-deps) Pin dependencies / actions / images to immutable digests, [`ESF-S-IMMUTABLE`](#ctrl-esf-s-immutable) Enforce artifact / tag immutability to preserve provenance.
 
@@ -5933,7 +5977,7 @@ jobs:
 
 **Source:** [`GL-009`](../providers/gitlab.md#gl-009) in the [GitLab CI provider](../providers/gitlab.md).
 
-#### `GL-010`: Multi-project pipeline ingests upstream artifact unverified <span class="pg-sev pg-sev--critical">CRITICAL</span> { #detail-gl-010 }
+### `GL-010`: Multi-project pipeline ingests upstream artifact unverified <span class="pg-sev pg-sev--critical">CRITICAL</span> { #detail-gl-010 }
 
 **Evidences:** [`ESF-D-INJECTION`](#ctrl-esf-d-injection) Prevent script / template injection from untrusted pipeline context, [`ESF-S-VERIFY-DEPS`](#ctrl-esf-s-verify-deps) Verify third-party and open-source dependencies before use.
 
@@ -5943,7 +5987,7 @@ jobs:
 
 **Source:** [`GL-010`](../providers/gitlab.md#gl-010) in the [GitLab CI provider](../providers/gitlab.md).
 
-#### `GL-011`: include: local file pulled in MR-triggered pipeline <span class="pg-sev pg-sev--high">HIGH</span> { #detail-gl-011 }
+### `GL-011`: include: local file pulled in MR-triggered pipeline <span class="pg-sev pg-sev--high">HIGH</span> { #detail-gl-011 }
 
 **Evidences:** [`ESF-D-INJECTION`](#ctrl-esf-d-injection) Prevent script / template injection from untrusted pipeline context, [`ESF-S-PIN-DEPS`](#ctrl-esf-s-pin-deps) Pin dependencies / actions / images to immutable digests.
 
@@ -5953,7 +5997,7 @@ jobs:
 
 **Source:** [`GL-011`](../providers/gitlab.md#gl-011) in the [GitLab CI provider](../providers/gitlab.md).
 
-#### `GL-012`: Cache key derives from MR-controlled CI variable <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-gl-012 }
+### `GL-012`: Cache key derives from MR-controlled CI variable <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-gl-012 }
 
 **Evidences:** [`ESF-D-INJECTION`](#ctrl-esf-d-injection) Prevent script / template injection from untrusted pipeline context, [`ESF-S-VERIFY-DEPS`](#ctrl-esf-s-verify-deps) Verify third-party and open-source dependencies before use.
 
@@ -5963,7 +6007,7 @@ jobs:
 
 **Source:** [`GL-012`](../providers/gitlab.md#gl-012) in the [GitLab CI provider](../providers/gitlab.md).
 
-#### `GL-013`: AWS auth uses long-lived access keys <span class="pg-sev pg-sev--medium">MEDIUM</span> <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> { #detail-gl-013 }
+### `GL-013`: AWS auth uses long-lived access keys <span class="pg-sev pg-sev--medium">MEDIUM</span> <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> { #detail-gl-013 }
 
 **Evidences:** [`ESF-D-TOKEN-HYGIENE`](#ctrl-esf-d-token-hygiene) Use short-lived, federated credentials (OIDC), not long-lived tokens.
 
@@ -5975,7 +6019,7 @@ jobs:
 
 **Source:** [`GL-013`](../providers/gitlab.md#gl-013) in the [GitLab CI provider](../providers/gitlab.md).
 
-#### `GL-014`: Self-managed runner without ephemeral tag <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-gl-014 }
+### `GL-014`: Self-managed runner without ephemeral tag <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-gl-014 }
 
 **Evidences:** [`ESF-D-BUILD-ENV`](#ctrl-esf-d-build-env) Harden the build environment (isolated, minimal, ephemeral workers), [`ESF-D-PRIV-BUILD`](#ctrl-esf-d-priv-build) Avoid privileged / host-networked build workers.
 
@@ -5985,7 +6029,7 @@ jobs:
 
 **Source:** [`GL-014`](../providers/gitlab.md#gl-014) in the [GitLab CI provider](../providers/gitlab.md).
 
-#### `GL-015`: Job has no `timeout`, unbounded build <span class="pg-sev pg-sev--medium">MEDIUM</span> <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> { #detail-gl-015 }
+### `GL-015`: Job has no `timeout`, unbounded build <span class="pg-sev pg-sev--medium">MEDIUM</span> <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> { #detail-gl-015 }
 
 **Evidences:** [`ESF-D-BUILD-TIMEOUT`](#ctrl-esf-d-build-timeout) Enforce bounded build execution (single-use, time-limited).
 
@@ -5997,7 +6041,7 @@ jobs:
 
 **Source:** [`GL-015`](../providers/gitlab.md#gl-015) in the [GitLab CI provider](../providers/gitlab.md).
 
-#### `GL-016`: Remote script piped to shell interpreter <span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> { #detail-gl-016 }
+### `GL-016`: Remote script piped to shell interpreter <span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> { #detail-gl-016 }
 
 **Evidences:** [`ESF-S-VERIFY-DEPS`](#ctrl-esf-s-verify-deps) Verify third-party and open-source dependencies before use.
 
@@ -6013,7 +6057,7 @@ jobs:
 
 **Source:** [`GL-016`](../providers/gitlab.md#gl-016) in the [GitLab CI provider](../providers/gitlab.md).
 
-#### `GL-017`: Docker run with insecure flags (privileged/host mount) <span class="pg-sev pg-sev--critical">CRITICAL</span> <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> { #detail-gl-017 }
+### `GL-017`: Docker run with insecure flags (privileged/host mount) <span class="pg-sev pg-sev--critical">CRITICAL</span> <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> { #detail-gl-017 }
 
 **Evidences:** [`ESF-D-BUILD-ENV`](#ctrl-esf-d-build-env) Harden the build environment (isolated, minimal, ephemeral workers).
 
@@ -6025,7 +6069,7 @@ jobs:
 
 **Source:** [`GL-017`](../providers/gitlab.md#gl-017) in the [GitLab CI provider](../providers/gitlab.md).
 
-#### `GL-018`: Package install from insecure source <span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> { #detail-gl-018 }
+### `GL-018`: Package install from insecure source <span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> { #detail-gl-018 }
 
 **Evidences:** [`ESF-S-VERIFY-DEPS`](#ctrl-esf-s-verify-deps) Verify third-party and open-source dependencies before use.
 
@@ -6037,7 +6081,7 @@ jobs:
 
 **Source:** [`GL-018`](../providers/gitlab.md#gl-018) in the [GitLab CI provider](../providers/gitlab.md).
 
-#### `GL-019`: No vulnerability scanning step <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-gl-019 }
+### `GL-019`: No vulnerability scanning step <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-gl-019 }
 
 **Evidences:** [`ESF-S-VULN-MGMT`](#ctrl-esf-s-vuln-mgmt) Scan inbound artifacts (images, packages) for known vulnerabilities.
 
@@ -6047,7 +6091,7 @@ jobs:
 
 **Source:** [`GL-019`](../providers/gitlab.md#gl-019) in the [GitLab CI provider](../providers/gitlab.md).
 
-#### `GL-020`: CI_JOB_TOKEN written to persistent storage <span class="pg-sev pg-sev--critical">CRITICAL</span> <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> { #detail-gl-020 }
+### `GL-020`: CI_JOB_TOKEN written to persistent storage <span class="pg-sev pg-sev--critical">CRITICAL</span> <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> { #detail-gl-020 }
 
 **Evidences:** [`ESF-D-SECRETS`](#ctrl-esf-d-secrets) Protect secrets used during build; no secrets in source or env.
 
@@ -6059,7 +6103,7 @@ jobs:
 
 **Source:** [`GL-020`](../providers/gitlab.md#gl-020) in the [GitLab CI provider](../providers/gitlab.md).
 
-#### `GL-021`: Package install without lockfile enforcement <span class="pg-sev pg-sev--medium">MEDIUM</span> <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> { #detail-gl-021 }
+### `GL-021`: Package install without lockfile enforcement <span class="pg-sev pg-sev--medium">MEDIUM</span> <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> { #detail-gl-021 }
 
 **Evidences:** [`ESF-S-PIN-DEPS`](#ctrl-esf-s-pin-deps) Pin dependencies / actions / images to immutable digests.
 
@@ -6071,7 +6115,7 @@ jobs:
 
 **Source:** [`GL-021`](../providers/gitlab.md#gl-021) in the [GitLab CI provider](../providers/gitlab.md).
 
-#### `GL-022`: Dependency update command bypasses lockfile pins <span class="pg-sev pg-sev--medium">MEDIUM</span> <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> { #detail-gl-022 }
+### `GL-022`: Dependency update command bypasses lockfile pins <span class="pg-sev pg-sev--medium">MEDIUM</span> <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> { #detail-gl-022 }
 
 **Evidences:** [`ESF-S-PIN-DEPS`](#ctrl-esf-s-pin-deps) Pin dependencies / actions / images to immutable digests.
 
@@ -6087,7 +6131,7 @@ jobs:
 
 **Source:** [`GL-022`](../providers/gitlab.md#gl-022) in the [GitLab CI provider](../providers/gitlab.md).
 
-#### `GL-023`: TLS / certificate verification bypass <span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> { #detail-gl-023 }
+### `GL-023`: TLS / certificate verification bypass <span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> { #detail-gl-023 }
 
 **Evidences:** [`ESF-S-VERIFY-DEPS`](#ctrl-esf-s-verify-deps) Verify third-party and open-source dependencies before use.
 
@@ -6099,7 +6143,7 @@ jobs:
 
 **Source:** [`GL-023`](../providers/gitlab.md#gl-023) in the [GitLab CI provider](../providers/gitlab.md).
 
-#### `GL-024`: No SLSA provenance attestation produced <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-gl-024 }
+### `GL-024`: No SLSA provenance attestation produced <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-gl-024 }
 
 **Evidences:** [`ESF-D-SIGN-ARTIFACTS`](#ctrl-esf-d-sign-artifacts) Sign build artifacts and verify signatures before release, [`ESF-D-SBOM`](#ctrl-esf-d-sbom) Produce SBOM / provenance metadata with every build.
 
@@ -6109,7 +6153,7 @@ jobs:
 
 **Source:** [`GL-024`](../providers/gitlab.md#gl-024) in the [GitLab CI provider](../providers/gitlab.md).
 
-#### `GL-025`: Pipeline contains indicators of malicious activity <span class="pg-sev pg-sev--critical">CRITICAL</span> { #detail-gl-025 }
+### `GL-025`: Pipeline contains indicators of malicious activity <span class="pg-sev pg-sev--critical">CRITICAL</span> { #detail-gl-025 }
 
 **Evidences:** [`ESF-D-INJECTION`](#ctrl-esf-d-injection) Prevent script / template injection from untrusted pipeline context, [`ESF-S-VERIFY-DEPS`](#ctrl-esf-s-verify-deps) Verify third-party and open-source dependencies before use.
 
@@ -6124,7 +6168,7 @@ jobs:
 
 **Source:** [`GL-025`](../providers/gitlab.md#gl-025) in the [GitLab CI provider](../providers/gitlab.md).
 
-#### `GL-026`: Dangerous shell idiom (eval, sh -c variable, backtick exec) <span class="pg-sev pg-sev--high">HIGH</span> { #detail-gl-026 }
+### `GL-026`: Dangerous shell idiom (eval, sh -c variable, backtick exec) <span class="pg-sev pg-sev--high">HIGH</span> { #detail-gl-026 }
 
 **Evidences:** [`ESF-D-INJECTION`](#ctrl-esf-d-injection) Prevent script / template injection from untrusted pipeline context.
 
@@ -6138,7 +6182,7 @@ jobs:
 
 **Source:** [`GL-026`](../providers/gitlab.md#gl-026) in the [GitLab CI provider](../providers/gitlab.md).
 
-#### `GL-027`: Package install bypasses registry integrity (git / path / tarball source) <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-gl-027 }
+### `GL-027`: Package install bypasses registry integrity (git / path / tarball source) <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-gl-027 }
 
 **Evidences:** [`ESF-S-VERIFY-DEPS`](#ctrl-esf-s-verify-deps) Verify third-party and open-source dependencies before use, [`ESF-S-PIN-DEPS`](#ctrl-esf-s-pin-deps) Pin dependencies / actions / images to immutable digests.
 
@@ -6148,7 +6192,7 @@ jobs:
 
 **Source:** [`GL-027`](../providers/gitlab.md#gl-027) in the [GitLab CI provider](../providers/gitlab.md).
 
-#### `GL-028`: services: image not pinned <span class="pg-sev pg-sev--high">HIGH</span> { #detail-gl-028 }
+### `GL-028`: services: image not pinned <span class="pg-sev pg-sev--high">HIGH</span> { #detail-gl-028 }
 
 **Evidences:** [`ESF-S-VERIFY-DEPS`](#ctrl-esf-s-verify-deps) Verify third-party and open-source dependencies before use, [`ESF-S-PIN-DEPS`](#ctrl-esf-s-pin-deps) Pin dependencies / actions / images to immutable digests.
 
@@ -6158,7 +6202,7 @@ jobs:
 
 **Source:** [`GL-028`](../providers/gitlab.md#gl-028) in the [GitLab CI provider](../providers/gitlab.md).
 
-#### `GL-029`: Manual deploy job defaults to allow_failure: true <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-gl-029 }
+### `GL-029`: Manual deploy job defaults to allow_failure: true <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-gl-029 }
 
 **Evidences:** [`ESF-C-APPROVAL`](#ctrl-esf-c-approval) Require explicit approval before production deployment.
 
@@ -6168,7 +6212,7 @@ jobs:
 
 **Source:** [`GL-029`](../providers/gitlab.md#gl-029) in the [GitLab CI provider](../providers/gitlab.md).
 
-#### `GL-030`: trigger: include: pulls child pipeline without pinned ref <span class="pg-sev pg-sev--high">HIGH</span> { #detail-gl-030 }
+### `GL-030`: trigger: include: pulls child pipeline without pinned ref <span class="pg-sev pg-sev--high">HIGH</span> { #detail-gl-030 }
 
 **Evidences:** [`ESF-S-VERIFY-DEPS`](#ctrl-esf-s-verify-deps) Verify third-party and open-source dependencies before use, [`ESF-S-PIN-DEPS`](#ctrl-esf-s-pin-deps) Pin dependencies / actions / images to immutable digests.
 
@@ -6178,7 +6222,7 @@ jobs:
 
 **Source:** [`GL-030`](../providers/gitlab.md#gl-030) in the [GitLab CI provider](../providers/gitlab.md).
 
-#### `GL-031`: id_tokens: missing audience pin or environment binding <span class="pg-sev pg-sev--high">HIGH</span> { #detail-gl-031 }
+### `GL-031`: id_tokens: missing audience pin or environment binding <span class="pg-sev pg-sev--high">HIGH</span> { #detail-gl-031 }
 
 **Evidences:** [`ESF-D-TOKEN-HYGIENE`](#ctrl-esf-d-token-hygiene) Use short-lived, federated credentials (OIDC), not long-lived tokens, [`ESF-C-APPROVAL`](#ctrl-esf-c-approval) Require explicit approval before production deployment.
 
@@ -6188,7 +6232,7 @@ jobs:
 
 **Source:** [`GL-031`](../providers/gitlab.md#gl-031) in the [GitLab CI provider](../providers/gitlab.md).
 
-#### `GL-032`: tags: interpolates untrusted CI variable <span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> { #detail-gl-032 }
+### `GL-032`: tags: interpolates untrusted CI variable <span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> { #detail-gl-032 }
 
 **Evidences:** [`ESF-D-INJECTION`](#ctrl-esf-d-injection) Prevent script / template injection from untrusted pipeline context.
 
@@ -6204,7 +6248,7 @@ jobs:
 
 **Source:** [`GL-032`](../providers/gitlab.md#gl-032) in the [GitLab CI provider](../providers/gitlab.md).
 
-#### `GL-033`: Global before_script / after_script propagates taint to every job <span class="pg-sev pg-sev--high">HIGH</span> { #detail-gl-033 }
+### `GL-033`: Global before_script / after_script propagates taint to every job <span class="pg-sev pg-sev--high">HIGH</span> { #detail-gl-033 }
 
 **Evidences:** [`ESF-D-INJECTION`](#ctrl-esf-d-injection) Prevent script / template injection from untrusted pipeline context.
 
@@ -6227,7 +6271,7 @@ for direct interpolation of the same attacker-controllable predefined variables 
 
 **Source:** [`GL-033`](../providers/gitlab.md#gl-033) in the [GitLab CI provider](../providers/gitlab.md).
 
-#### `HELM-001`: Chart.yaml declares legacy apiVersion: v1 <span class="pg-sev pg-sev--medium">MEDIUM</span> <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> { #detail-helm-001 }
+### `HELM-001`: Chart.yaml declares legacy apiVersion: v1 <span class="pg-sev pg-sev--medium">MEDIUM</span> <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> { #detail-helm-001 }
 
 **Evidences:** [`ESF-S-PIN-DEPS`](#ctrl-esf-s-pin-deps) Pin dependencies / actions / images to immutable digests.
 
@@ -6239,7 +6283,7 @@ for direct interpolation of the same attacker-controllable predefined variables 
 
 **Source:** [`HELM-001`](../providers/helm.md) in the [Helm provider](../providers/helm.md).
 
-#### `HELM-002`: Chart.lock missing per-dependency digests <span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> { #detail-helm-002 }
+### `HELM-002`: Chart.lock missing per-dependency digests <span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> { #detail-helm-002 }
 
 **Evidences:** [`ESF-S-VERIFY-DEPS`](#ctrl-esf-s-verify-deps) Verify third-party and open-source dependencies before use, [`ESF-S-PIN-DEPS`](#ctrl-esf-s-pin-deps) Pin dependencies / actions / images to immutable digests.
 
@@ -6261,7 +6305,7 @@ v1 charts (HELM-001) are skipped. They predate ``Chart.lock`` and use ``requirem
 
 **Source:** [`HELM-002`](../providers/helm.md) in the [Helm provider](../providers/helm.md).
 
-#### `HELM-003`: Chart dependency declared on a non-HTTPS repository <span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> { #detail-helm-003 }
+### `HELM-003`: Chart dependency declared on a non-HTTPS repository <span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> { #detail-helm-003 }
 
 **Evidences:** [`ESF-S-TRUSTED-REG`](#ctrl-esf-s-trusted-reg) Use only trusted, authenticated package and image registries.
 
@@ -6278,7 +6322,7 @@ v1 charts (HELM-001) are skipped. They predate ``Chart.lock`` and use ``requirem
 
 **Source:** [`HELM-003`](../providers/helm.md) in the [Helm provider](../providers/helm.md).
 
-#### `HELM-004`: Chart dependency version is a range, not an exact pin <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-helm-004 }
+### `HELM-004`: Chart dependency version is a range, not an exact pin <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-helm-004 }
 
 **Evidences:** [`ESF-S-PIN-DEPS`](#ctrl-esf-s-pin-deps) Pin dependencies / actions / images to immutable digests.
 
@@ -6288,7 +6332,7 @@ v1 charts (HELM-001) are skipped. They predate ``Chart.lock`` and use ``requirem
 
 **Source:** [`HELM-004`](../providers/helm.md) in the [Helm provider](../providers/helm.md).
 
-#### `HELM-005`: Chart maintainers field empty or missing chain-of-custody info <span class="pg-sev pg-sev--low">LOW</span> { #detail-helm-005 }
+### `HELM-005`: Chart maintainers field empty or missing chain-of-custody info <span class="pg-sev pg-sev--low">LOW</span> { #detail-helm-005 }
 
 **Evidences:** [`ESF-S-VERIFY-DEPS`](#ctrl-esf-s-verify-deps) Verify third-party and open-source dependencies before use.
 
@@ -6302,7 +6346,7 @@ v1 charts (HELM-001) are skipped. They predate ``Chart.lock`` and use ``requirem
 
 **Source:** [`HELM-005`](../providers/helm.md) in the [Helm provider](../providers/helm.md).
 
-#### `HELM-006`: Chart.yaml does not declare a kubeVersion compatibility range <span class="pg-sev pg-sev--low">LOW</span> { #detail-helm-006 }
+### `HELM-006`: Chart.yaml does not declare a kubeVersion compatibility range <span class="pg-sev pg-sev--low">LOW</span> { #detail-helm-006 }
 
 **Evidences:** [`ESF-D-CODE-REVIEW`](#ctrl-esf-d-code-review) Require peer review of source and pipeline configuration.
 
@@ -6316,7 +6360,7 @@ v1 charts (HELM-001) are skipped. They predate ``Chart.lock`` and use ``requirem
 
 **Source:** [`HELM-006`](../providers/helm.md) in the [Helm provider](../providers/helm.md).
 
-#### `HELM-007`: Chart.yaml description field is empty or missing <span class="pg-sev pg-sev--low">LOW</span> { #detail-helm-007 }
+### `HELM-007`: Chart.yaml description field is empty or missing <span class="pg-sev pg-sev--low">LOW</span> { #detail-helm-007 }
 
 **Evidences:** [`ESF-S-VERIFY-DEPS`](#ctrl-esf-s-verify-deps) Verify third-party and open-source dependencies before use.
 
@@ -6326,7 +6370,7 @@ v1 charts (HELM-001) are skipped. They predate ``Chart.lock`` and use ``requirem
 
 **Source:** [`HELM-007`](../providers/helm.md) in the [Helm provider](../providers/helm.md).
 
-#### `HELM-008`: Chart.lock generated more than 90 days ago <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-helm-008 }
+### `HELM-008`: Chart.lock generated more than 90 days ago <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-helm-008 }
 
 **Evidences:** [`ESF-S-PIN-DEPS`](#ctrl-esf-s-pin-deps) Pin dependencies / actions / images to immutable digests.
 
@@ -6340,7 +6384,7 @@ v1 charts (HELM-001) are skipped. They predate ``Chart.lock`` and use ``requirem
 
 **Source:** [`HELM-008`](../providers/helm.md) in the [Helm provider](../providers/helm.md).
 
-#### `HELM-009`: Chart home / sources URL uses a non-HTTPS scheme <span class="pg-sev pg-sev--low">LOW</span> { #detail-helm-009 }
+### `HELM-009`: Chart home / sources URL uses a non-HTTPS scheme <span class="pg-sev pg-sev--low">LOW</span> { #detail-helm-009 }
 
 **Evidences:** [`ESF-S-TRUSTED-REG`](#ctrl-esf-s-trusted-reg) Use only trusted, authenticated package and image registries.
 
@@ -6350,7 +6394,7 @@ v1 charts (HELM-001) are skipped. They predate ``Chart.lock`` and use ``requirem
 
 **Source:** [`HELM-009`](../providers/helm.md) in the [Helm provider](../providers/helm.md).
 
-#### `HELM-010`: Chart.yaml appVersion field is empty or missing <span class="pg-sev pg-sev--low">LOW</span> { #detail-helm-010 }
+### `HELM-010`: Chart.yaml appVersion field is empty or missing <span class="pg-sev pg-sev--low">LOW</span> { #detail-helm-010 }
 
 **Evidences:** [`ESF-S-VERIFY-DEPS`](#ctrl-esf-s-verify-deps) Verify third-party and open-source dependencies before use.
 
@@ -6360,7 +6404,7 @@ v1 charts (HELM-001) are skipped. They predate ``Chart.lock`` and use ``requirem
 
 **Source:** [`HELM-010`](../providers/helm.md) in the [Helm provider](../providers/helm.md).
 
-#### `IAM-000`: IAM API access failed <span class="pg-sev pg-sev--info">INFO</span> { #detail-iam-000 }
+### `IAM-000`: IAM API access failed <span class="pg-sev pg-sev--info">INFO</span> { #detail-iam-000 }
 
 **Evidences:** [`ESF-C-AUDIT`](#ctrl-esf-c-audit) Audit deployment / pipeline activity and retain logs.
 
@@ -6370,7 +6414,7 @@ v1 charts (HELM-001) are skipped. They predate ``Chart.lock`` and use ``requirem
 
 **Source:** [`IAM-000`](../providers/aws.md) in the [AWS provider](../providers/aws.md).
 
-#### `IAM-001`: CI/CD role has AdministratorAccess policy attached <span class="pg-sev pg-sev--critical">CRITICAL</span> { #detail-iam-001 }
+### `IAM-001`: CI/CD role has AdministratorAccess policy attached <span class="pg-sev pg-sev--critical">CRITICAL</span> { #detail-iam-001 }
 
 **Evidences:** [`ESF-C-LEAST-PRIV`](#ctrl-esf-c-least-priv) Apply least-privilege to CI/CD service roles and pipelines.
 
@@ -6417,7 +6461,7 @@ resource "aws_iam_role_policy" "codebuild_least_priv" {
 
 **Source:** [`IAM-001`](../providers/aws.md) in the [AWS provider](../providers/aws.md).
 
-#### `IAM-002`: CI/CD role has wildcard Action in attached policy <span class="pg-sev pg-sev--high">HIGH</span> { #detail-iam-002 }
+### `IAM-002`: CI/CD role has wildcard Action in attached policy <span class="pg-sev pg-sev--high">HIGH</span> { #detail-iam-002 }
 
 **Evidences:** [`ESF-C-LEAST-PRIV`](#ctrl-esf-c-least-priv) Apply least-privilege to CI/CD service roles and pipelines.
 
@@ -6427,7 +6471,7 @@ resource "aws_iam_role_policy" "codebuild_least_priv" {
 
 **Source:** [`IAM-002`](../providers/aws.md) in the [AWS provider](../providers/aws.md).
 
-#### `IAM-003`: CI/CD role has no permission boundary <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-iam-003 }
+### `IAM-003`: CI/CD role has no permission boundary <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-iam-003 }
 
 **Evidences:** [`ESF-C-LEAST-PRIV`](#ctrl-esf-c-least-priv) Apply least-privilege to CI/CD service roles and pipelines.
 
@@ -6437,7 +6481,7 @@ resource "aws_iam_role_policy" "codebuild_least_priv" {
 
 **Source:** [`IAM-003`](../providers/aws.md) in the [AWS provider](../providers/aws.md).
 
-#### `IAM-004`: CI/CD role can PassRole to any role <span class="pg-sev pg-sev--high">HIGH</span> { #detail-iam-004 }
+### `IAM-004`: CI/CD role can PassRole to any role <span class="pg-sev pg-sev--high">HIGH</span> { #detail-iam-004 }
 
 **Evidences:** [`ESF-C-LEAST-PRIV`](#ctrl-esf-c-least-priv) Apply least-privilege to CI/CD service roles and pipelines.
 
@@ -6486,7 +6530,7 @@ resource "aws_iam_role_policy" "codebuild_least_priv" {
 
 **Source:** [`IAM-004`](../providers/aws.md) in the [AWS provider](../providers/aws.md).
 
-#### `IAM-005`: CI/CD role trust policy missing sts:ExternalId <span class="pg-sev pg-sev--high">HIGH</span> { #detail-iam-005 }
+### `IAM-005`: CI/CD role trust policy missing sts:ExternalId <span class="pg-sev pg-sev--high">HIGH</span> { #detail-iam-005 }
 
 **Evidences:** [`ESF-D-TOKEN-HYGIENE`](#ctrl-esf-d-token-hygiene) Use short-lived, federated credentials (OIDC), not long-lived tokens, [`ESF-C-LEAST-PRIV`](#ctrl-esf-c-least-priv) Apply least-privilege to CI/CD service roles and pipelines.
 
@@ -6496,7 +6540,7 @@ resource "aws_iam_role_policy" "codebuild_least_priv" {
 
 **Source:** [`IAM-005`](../providers/aws.md) in the [AWS provider](../providers/aws.md).
 
-#### `IAM-006`: Sensitive actions granted with wildcard Resource <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-iam-006 }
+### `IAM-006`: Sensitive actions granted with wildcard Resource <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-iam-006 }
 
 **Evidences:** [`ESF-C-LEAST-PRIV`](#ctrl-esf-c-least-priv) Apply least-privilege to CI/CD service roles and pipelines.
 
@@ -6506,7 +6550,7 @@ resource "aws_iam_role_policy" "codebuild_least_priv" {
 
 **Source:** [`IAM-006`](../providers/aws.md) in the [AWS provider](../providers/aws.md).
 
-#### `IAM-007`: IAM user has access key older than 90 days <span class="pg-sev pg-sev--high">HIGH</span> { #detail-iam-007 }
+### `IAM-007`: IAM user has access key older than 90 days <span class="pg-sev pg-sev--high">HIGH</span> { #detail-iam-007 }
 
 **Evidences:** [`ESF-D-TOKEN-HYGIENE`](#ctrl-esf-d-token-hygiene) Use short-lived, federated credentials (OIDC), not long-lived tokens.
 
@@ -6516,7 +6560,7 @@ resource "aws_iam_role_policy" "codebuild_least_priv" {
 
 **Source:** [`IAM-007`](../providers/aws.md) in the [AWS provider](../providers/aws.md).
 
-#### `IAM-008`: OIDC-federated role trust policy missing audience or subject pin <span class="pg-sev pg-sev--high">HIGH</span> { #detail-iam-008 }
+### `IAM-008`: OIDC-federated role trust policy missing audience or subject pin <span class="pg-sev pg-sev--high">HIGH</span> { #detail-iam-008 }
 
 **Evidences:** [`ESF-D-TOKEN-HYGIENE`](#ctrl-esf-d-token-hygiene) Use short-lived, federated credentials (OIDC), not long-lived tokens, [`ESF-C-LEAST-PRIV`](#ctrl-esf-c-least-priv) Apply least-privilege to CI/CD service roles and pipelines.
 
@@ -6526,7 +6570,7 @@ resource "aws_iam_role_policy" "codebuild_least_priv" {
 
 **Source:** [`IAM-008`](../providers/aws.md) in the [AWS provider](../providers/aws.md).
 
-#### `JF-001`: Shared library not pinned to a tag or commit <span class="pg-sev pg-sev--high">HIGH</span> { #detail-jf-001 }
+### `JF-001`: Shared library not pinned to a tag or commit <span class="pg-sev pg-sev--high">HIGH</span> { #detail-jf-001 }
 
 **Evidences:** [`ESF-S-VERIFY-DEPS`](#ctrl-esf-s-verify-deps) Verify third-party and open-source dependencies before use, [`ESF-S-PIN-DEPS`](#ctrl-esf-s-pin-deps) Pin dependencies / actions / images to immutable digests.
 
@@ -6536,7 +6580,7 @@ resource "aws_iam_role_policy" "codebuild_least_priv" {
 
 **Source:** [`JF-001`](../providers/jenkins.md#jf-001) in the [Jenkins provider](../providers/jenkins.md).
 
-#### `JF-002`: Script step interpolates attacker-controllable env var <span class="pg-sev pg-sev--high">HIGH</span> { #detail-jf-002 }
+### `JF-002`: Script step interpolates attacker-controllable env var <span class="pg-sev pg-sev--high">HIGH</span> { #detail-jf-002 }
 
 **Evidences:** [`ESF-D-INJECTION`](#ctrl-esf-d-injection) Prevent script / template injection from untrusted pipeline context.
 
@@ -6546,7 +6590,7 @@ resource "aws_iam_role_policy" "codebuild_least_priv" {
 
 **Source:** [`JF-002`](../providers/jenkins.md#jf-002) in the [Jenkins provider](../providers/jenkins.md).
 
-#### `JF-003`: Pipeline uses `agent any` (no executor isolation) <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-jf-003 }
+### `JF-003`: Pipeline uses `agent any` (no executor isolation) <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-jf-003 }
 
 **Evidences:** [`ESF-D-BUILD-ENV`](#ctrl-esf-d-build-env) Harden the build environment (isolated, minimal, ephemeral workers), [`ESF-D-PRIV-BUILD`](#ctrl-esf-d-priv-build) Avoid privileged / host-networked build workers.
 
@@ -6556,7 +6600,7 @@ resource "aws_iam_role_policy" "codebuild_least_priv" {
 
 **Source:** [`JF-003`](../providers/jenkins.md#jf-003) in the [Jenkins provider](../providers/jenkins.md).
 
-#### `JF-004`: AWS auth uses long-lived access keys via withCredentials <span class="pg-sev pg-sev--medium">MEDIUM</span> <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> { #detail-jf-004 }
+### `JF-004`: AWS auth uses long-lived access keys via withCredentials <span class="pg-sev pg-sev--medium">MEDIUM</span> <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> { #detail-jf-004 }
 
 **Evidences:** [`ESF-D-TOKEN-HYGIENE`](#ctrl-esf-d-token-hygiene) Use short-lived, federated credentials (OIDC), not long-lived tokens.
 
@@ -6568,7 +6612,7 @@ resource "aws_iam_role_policy" "codebuild_least_priv" {
 
 **Source:** [`JF-004`](../providers/jenkins.md#jf-004) in the [Jenkins provider](../providers/jenkins.md).
 
-#### `JF-005`: Deploy stage missing manual `input` approval <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-jf-005 }
+### `JF-005`: Deploy stage missing manual `input` approval <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-jf-005 }
 
 **Evidences:** [`ESF-C-APPROVAL`](#ctrl-esf-c-approval) Require explicit approval before production deployment.
 
@@ -6578,7 +6622,7 @@ resource "aws_iam_role_policy" "codebuild_least_priv" {
 
 **Source:** [`JF-005`](../providers/jenkins.md#jf-005) in the [Jenkins provider](../providers/jenkins.md).
 
-#### `JF-006`: Artifacts not signed <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-jf-006 }
+### `JF-006`: Artifacts not signed <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-jf-006 }
 
 **Evidences:** [`ESF-D-SIGN-ARTIFACTS`](#ctrl-esf-d-sign-artifacts) Sign build artifacts and verify signatures before release.
 
@@ -6588,7 +6632,7 @@ resource "aws_iam_role_policy" "codebuild_least_priv" {
 
 **Source:** [`JF-006`](../providers/jenkins.md#jf-006) in the [Jenkins provider](../providers/jenkins.md).
 
-#### `JF-007`: SBOM not produced <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-jf-007 }
+### `JF-007`: SBOM not produced <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-jf-007 }
 
 **Evidences:** [`ESF-D-SBOM`](#ctrl-esf-d-sbom) Produce SBOM / provenance metadata with every build.
 
@@ -6598,7 +6642,7 @@ resource "aws_iam_role_policy" "codebuild_least_priv" {
 
 **Source:** [`JF-007`](../providers/jenkins.md#jf-007) in the [Jenkins provider](../providers/jenkins.md).
 
-#### `JF-008`: Credential-shaped literal in pipeline body <span class="pg-sev pg-sev--critical">CRITICAL</span> <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> { #detail-jf-008 }
+### `JF-008`: Credential-shaped literal in pipeline body <span class="pg-sev pg-sev--critical">CRITICAL</span> <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> { #detail-jf-008 }
 
 **Evidences:** [`ESF-D-SECRETS`](#ctrl-esf-d-secrets) Protect secrets used during build; no secrets in source or env.
 
@@ -6614,7 +6658,7 @@ resource "aws_iam_role_policy" "codebuild_least_priv" {
 
 **Source:** [`JF-008`](../providers/jenkins.md#jf-008) in the [Jenkins provider](../providers/jenkins.md).
 
-#### `JF-009`: Agent docker image not pinned to sha256 digest <span class="pg-sev pg-sev--high">HIGH</span> { #detail-jf-009 }
+### `JF-009`: Agent docker image not pinned to sha256 digest <span class="pg-sev pg-sev--high">HIGH</span> { #detail-jf-009 }
 
 **Evidences:** [`ESF-S-PIN-DEPS`](#ctrl-esf-s-pin-deps) Pin dependencies / actions / images to immutable digests, [`ESF-S-IMMUTABLE`](#ctrl-esf-s-immutable) Enforce artifact / tag immutability to preserve provenance.
 
@@ -6624,7 +6668,7 @@ resource "aws_iam_role_policy" "codebuild_least_priv" {
 
 **Source:** [`JF-009`](../providers/jenkins.md#jf-009) in the [Jenkins provider](../providers/jenkins.md).
 
-#### `JF-010`: Long-lived AWS keys exposed via environment {} block <span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> { #detail-jf-010 }
+### `JF-010`: Long-lived AWS keys exposed via environment {} block <span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> { #detail-jf-010 }
 
 **Evidences:** [`ESF-D-SECRETS`](#ctrl-esf-d-secrets) Protect secrets used during build; no secrets in source or env, [`ESF-D-TOKEN-HYGIENE`](#ctrl-esf-d-token-hygiene) Use short-lived, federated credentials (OIDC), not long-lived tokens.
 
@@ -6636,7 +6680,7 @@ resource "aws_iam_role_policy" "codebuild_least_priv" {
 
 **Source:** [`JF-010`](../providers/jenkins.md#jf-010) in the [Jenkins provider](../providers/jenkins.md).
 
-#### `JF-011`: Pipeline has no `buildDiscarder` retention policy <span class="pg-sev pg-sev--low">LOW</span> <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> { #detail-jf-011 }
+### `JF-011`: Pipeline has no `buildDiscarder` retention policy <span class="pg-sev pg-sev--low">LOW</span> <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> { #detail-jf-011 }
 
 **Evidences:** [`ESF-D-BUILD-LOGS`](#ctrl-esf-d-build-logs) Generate and preserve build audit logs, [`ESF-C-AUDIT`](#ctrl-esf-c-audit) Audit deployment / pipeline activity and retain logs.
 
@@ -6648,7 +6692,7 @@ resource "aws_iam_role_policy" "codebuild_least_priv" {
 
 **Source:** [`JF-011`](../providers/jenkins.md#jf-011) in the [Jenkins provider](../providers/jenkins.md).
 
-#### `JF-012`: `load` step pulls Groovy from disk without integrity pin <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-jf-012 }
+### `JF-012`: `load` step pulls Groovy from disk without integrity pin <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-jf-012 }
 
 **Evidences:** [`ESF-S-VERIFY-DEPS`](#ctrl-esf-s-verify-deps) Verify third-party and open-source dependencies before use, [`ESF-S-PIN-DEPS`](#ctrl-esf-s-pin-deps) Pin dependencies / actions / images to immutable digests.
 
@@ -6658,7 +6702,7 @@ resource "aws_iam_role_policy" "codebuild_least_priv" {
 
 **Source:** [`JF-012`](../providers/jenkins.md#jf-012) in the [Jenkins provider](../providers/jenkins.md).
 
-#### `JF-013`: copyArtifacts ingests another job's output unverified <span class="pg-sev pg-sev--critical">CRITICAL</span> { #detail-jf-013 }
+### `JF-013`: copyArtifacts ingests another job's output unverified <span class="pg-sev pg-sev--critical">CRITICAL</span> { #detail-jf-013 }
 
 **Evidences:** [`ESF-D-INJECTION`](#ctrl-esf-d-injection) Prevent script / template injection from untrusted pipeline context, [`ESF-S-VERIFY-DEPS`](#ctrl-esf-s-verify-deps) Verify third-party and open-source dependencies before use.
 
@@ -6668,7 +6712,7 @@ resource "aws_iam_role_policy" "codebuild_least_priv" {
 
 **Source:** [`JF-013`](../providers/jenkins.md#jf-013) in the [Jenkins provider](../providers/jenkins.md).
 
-#### `JF-014`: Agent label missing ephemeral marker <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-jf-014 }
+### `JF-014`: Agent label missing ephemeral marker <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-jf-014 }
 
 **Evidences:** [`ESF-D-BUILD-ENV`](#ctrl-esf-d-build-env) Harden the build environment (isolated, minimal, ephemeral workers), [`ESF-D-PRIV-BUILD`](#ctrl-esf-d-priv-build) Avoid privileged / host-networked build workers.
 
@@ -6682,7 +6726,7 @@ resource "aws_iam_role_policy" "codebuild_least_priv" {
 
 **Source:** [`JF-014`](../providers/jenkins.md#jf-014) in the [Jenkins provider](../providers/jenkins.md).
 
-#### `JF-015`: Pipeline has no `timeout` wrapper, unbounded build <span class="pg-sev pg-sev--medium">MEDIUM</span> <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> { #detail-jf-015 }
+### `JF-015`: Pipeline has no `timeout` wrapper, unbounded build <span class="pg-sev pg-sev--medium">MEDIUM</span> <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> { #detail-jf-015 }
 
 **Evidences:** [`ESF-D-BUILD-TIMEOUT`](#ctrl-esf-d-build-timeout) Enforce bounded build execution (single-use, time-limited).
 
@@ -6694,7 +6738,7 @@ resource "aws_iam_role_policy" "codebuild_least_priv" {
 
 **Source:** [`JF-015`](../providers/jenkins.md#jf-015) in the [Jenkins provider](../providers/jenkins.md).
 
-#### `JF-016`: Remote script piped to shell interpreter <span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> { #detail-jf-016 }
+### `JF-016`: Remote script piped to shell interpreter <span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> { #detail-jf-016 }
 
 **Evidences:** [`ESF-S-VERIFY-DEPS`](#ctrl-esf-s-verify-deps) Verify third-party and open-source dependencies before use.
 
@@ -6710,7 +6754,7 @@ resource "aws_iam_role_policy" "codebuild_least_priv" {
 
 **Source:** [`JF-016`](../providers/jenkins.md#jf-016) in the [Jenkins provider](../providers/jenkins.md).
 
-#### `JF-017`: Docker run with insecure flags (privileged/host mount) <span class="pg-sev pg-sev--critical">CRITICAL</span> <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> { #detail-jf-017 }
+### `JF-017`: Docker run with insecure flags (privileged/host mount) <span class="pg-sev pg-sev--critical">CRITICAL</span> <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> { #detail-jf-017 }
 
 **Evidences:** [`ESF-D-BUILD-ENV`](#ctrl-esf-d-build-env) Harden the build environment (isolated, minimal, ephemeral workers).
 
@@ -6722,7 +6766,7 @@ resource "aws_iam_role_policy" "codebuild_least_priv" {
 
 **Source:** [`JF-017`](../providers/jenkins.md#jf-017) in the [Jenkins provider](../providers/jenkins.md).
 
-#### `JF-018`: Package install from insecure source <span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> { #detail-jf-018 }
+### `JF-018`: Package install from insecure source <span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> { #detail-jf-018 }
 
 **Evidences:** [`ESF-S-VERIFY-DEPS`](#ctrl-esf-s-verify-deps) Verify third-party and open-source dependencies before use.
 
@@ -6734,7 +6778,7 @@ resource "aws_iam_role_policy" "codebuild_least_priv" {
 
 **Source:** [`JF-018`](../providers/jenkins.md#jf-018) in the [Jenkins provider](../providers/jenkins.md).
 
-#### `JF-019`: Groovy sandbox escape pattern detected <span class="pg-sev pg-sev--critical">CRITICAL</span> { #detail-jf-019 }
+### `JF-019`: Groovy sandbox escape pattern detected <span class="pg-sev pg-sev--critical">CRITICAL</span> { #detail-jf-019 }
 
 **Evidences:** [`ESF-D-INJECTION`](#ctrl-esf-d-injection) Prevent script / template injection from untrusted pipeline context.
 
@@ -6744,7 +6788,7 @@ resource "aws_iam_role_policy" "codebuild_least_priv" {
 
 **Source:** [`JF-019`](../providers/jenkins.md#jf-019) in the [Jenkins provider](../providers/jenkins.md).
 
-#### `JF-020`: No vulnerability scanning step <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-jf-020 }
+### `JF-020`: No vulnerability scanning step <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-jf-020 }
 
 **Evidences:** [`ESF-S-VULN-MGMT`](#ctrl-esf-s-vuln-mgmt) Scan inbound artifacts (images, packages) for known vulnerabilities.
 
@@ -6754,7 +6798,7 @@ resource "aws_iam_role_policy" "codebuild_least_priv" {
 
 **Source:** [`JF-020`](../providers/jenkins.md#jf-020) in the [Jenkins provider](../providers/jenkins.md).
 
-#### `JF-021`: Package install without lockfile enforcement <span class="pg-sev pg-sev--medium">MEDIUM</span> <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> { #detail-jf-021 }
+### `JF-021`: Package install without lockfile enforcement <span class="pg-sev pg-sev--medium">MEDIUM</span> <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> { #detail-jf-021 }
 
 **Evidences:** [`ESF-S-PIN-DEPS`](#ctrl-esf-s-pin-deps) Pin dependencies / actions / images to immutable digests.
 
@@ -6766,7 +6810,7 @@ resource "aws_iam_role_policy" "codebuild_least_priv" {
 
 **Source:** [`JF-021`](../providers/jenkins.md#jf-021) in the [Jenkins provider](../providers/jenkins.md).
 
-#### `JF-022`: Dependency update command bypasses lockfile pins <span class="pg-sev pg-sev--medium">MEDIUM</span> <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> { #detail-jf-022 }
+### `JF-022`: Dependency update command bypasses lockfile pins <span class="pg-sev pg-sev--medium">MEDIUM</span> <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> { #detail-jf-022 }
 
 **Evidences:** [`ESF-S-PIN-DEPS`](#ctrl-esf-s-pin-deps) Pin dependencies / actions / images to immutable digests.
 
@@ -6782,7 +6826,7 @@ resource "aws_iam_role_policy" "codebuild_least_priv" {
 
 **Source:** [`JF-022`](../providers/jenkins.md#jf-022) in the [Jenkins provider](../providers/jenkins.md).
 
-#### `JF-023`: TLS / certificate verification bypass <span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> { #detail-jf-023 }
+### `JF-023`: TLS / certificate verification bypass <span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> { #detail-jf-023 }
 
 **Evidences:** [`ESF-S-VERIFY-DEPS`](#ctrl-esf-s-verify-deps) Verify third-party and open-source dependencies before use.
 
@@ -6794,7 +6838,7 @@ resource "aws_iam_role_policy" "codebuild_least_priv" {
 
 **Source:** [`JF-023`](../providers/jenkins.md#jf-023) in the [Jenkins provider](../providers/jenkins.md).
 
-#### `JF-024`: `input` approval step missing submitter restriction <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-jf-024 }
+### `JF-024`: `input` approval step missing submitter restriction <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-jf-024 }
 
 **Evidences:** [`ESF-C-APPROVAL`](#ctrl-esf-c-approval) Require explicit approval before production deployment.
 
@@ -6804,7 +6848,7 @@ resource "aws_iam_role_policy" "codebuild_least_priv" {
 
 **Source:** [`JF-024`](../providers/jenkins.md#jf-024) in the [Jenkins provider](../providers/jenkins.md).
 
-#### `JF-025`: Kubernetes agent pod template runs privileged or mounts hostPath <span class="pg-sev pg-sev--high">HIGH</span> { #detail-jf-025 }
+### `JF-025`: Kubernetes agent pod template runs privileged or mounts hostPath <span class="pg-sev pg-sev--high">HIGH</span> { #detail-jf-025 }
 
 **Evidences:** [`ESF-D-BUILD-ENV`](#ctrl-esf-d-build-env) Harden the build environment (isolated, minimal, ephemeral workers).
 
@@ -6814,7 +6858,7 @@ resource "aws_iam_role_policy" "codebuild_least_priv" {
 
 **Source:** [`JF-025`](../providers/jenkins.md#jf-025) in the [Jenkins provider](../providers/jenkins.md).
 
-#### `JF-026`: `build job:` trigger ignores downstream failure <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-jf-026 }
+### `JF-026`: `build job:` trigger ignores downstream failure <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-jf-026 }
 
 **Evidences:** [`ESF-C-APPROVAL`](#ctrl-esf-c-approval) Require explicit approval before production deployment.
 
@@ -6824,7 +6868,7 @@ resource "aws_iam_role_policy" "codebuild_least_priv" {
 
 **Source:** [`JF-026`](../providers/jenkins.md#jf-026) in the [Jenkins provider](../providers/jenkins.md).
 
-#### `JF-027`: `archiveArtifacts` does not record a fingerprint <span class="pg-sev pg-sev--low">LOW</span> { #detail-jf-027 }
+### `JF-027`: `archiveArtifacts` does not record a fingerprint <span class="pg-sev pg-sev--low">LOW</span> { #detail-jf-027 }
 
 **Evidences:** [`ESF-D-TAMPER`](#ctrl-esf-d-tamper) Protect build artifacts from tampering and detect unauthorized modification.
 
@@ -6834,7 +6878,7 @@ resource "aws_iam_role_policy" "codebuild_least_priv" {
 
 **Source:** [`JF-027`](../providers/jenkins.md#jf-027) in the [Jenkins provider](../providers/jenkins.md).
 
-#### `JF-028`: No SLSA provenance attestation produced <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-jf-028 }
+### `JF-028`: No SLSA provenance attestation produced <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-jf-028 }
 
 **Evidences:** [`ESF-D-SIGN-ARTIFACTS`](#ctrl-esf-d-sign-artifacts) Sign build artifacts and verify signatures before release, [`ESF-D-SBOM`](#ctrl-esf-d-sbom) Produce SBOM / provenance metadata with every build.
 
@@ -6844,7 +6888,7 @@ resource "aws_iam_role_policy" "codebuild_least_priv" {
 
 **Source:** [`JF-028`](../providers/jenkins.md#jf-028) in the [Jenkins provider](../providers/jenkins.md).
 
-#### `JF-029`: Jenkinsfile contains indicators of malicious activity <span class="pg-sev pg-sev--critical">CRITICAL</span> { #detail-jf-029 }
+### `JF-029`: Jenkinsfile contains indicators of malicious activity <span class="pg-sev pg-sev--critical">CRITICAL</span> { #detail-jf-029 }
 
 **Evidences:** [`ESF-D-INJECTION`](#ctrl-esf-d-injection) Prevent script / template injection from untrusted pipeline context, [`ESF-S-VERIFY-DEPS`](#ctrl-esf-s-verify-deps) Verify third-party and open-source dependencies before use.
 
@@ -6859,7 +6903,7 @@ resource "aws_iam_role_policy" "codebuild_least_priv" {
 
 **Source:** [`JF-029`](../providers/jenkins.md#jf-029) in the [Jenkins provider](../providers/jenkins.md).
 
-#### `JF-030`: Dangerous shell idiom (eval, sh -c variable, backtick exec) <span class="pg-sev pg-sev--high">HIGH</span> { #detail-jf-030 }
+### `JF-030`: Dangerous shell idiom (eval, sh -c variable, backtick exec) <span class="pg-sev pg-sev--high">HIGH</span> { #detail-jf-030 }
 
 **Evidences:** [`ESF-D-INJECTION`](#ctrl-esf-d-injection) Prevent script / template injection from untrusted pipeline context.
 
@@ -6873,7 +6917,7 @@ resource "aws_iam_role_policy" "codebuild_least_priv" {
 
 **Source:** [`JF-030`](../providers/jenkins.md#jf-030) in the [Jenkins provider](../providers/jenkins.md).
 
-#### `JF-031`: Package install bypasses registry integrity (git / path / tarball source) <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-jf-031 }
+### `JF-031`: Package install bypasses registry integrity (git / path / tarball source) <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-jf-031 }
 
 **Evidences:** [`ESF-S-VERIFY-DEPS`](#ctrl-esf-s-verify-deps) Verify third-party and open-source dependencies before use, [`ESF-S-PIN-DEPS`](#ctrl-esf-s-pin-deps) Pin dependencies / actions / images to immutable digests.
 
@@ -6883,7 +6927,7 @@ resource "aws_iam_role_policy" "codebuild_least_priv" {
 
 **Source:** [`JF-031`](../providers/jenkins.md#jf-031) in the [Jenkins provider](../providers/jenkins.md).
 
-#### `JF-032`: Agent label interpolates attacker-controllable value <span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> { #detail-jf-032 }
+### `JF-032`: Agent label interpolates attacker-controllable value <span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> { #detail-jf-032 }
 
 **Evidences:** [`ESF-D-INJECTION`](#ctrl-esf-d-injection) Prevent script / template injection from untrusted pipeline context.
 
@@ -6899,7 +6943,7 @@ resource "aws_iam_role_policy" "codebuild_least_priv" {
 
 **Source:** [`JF-032`](../providers/jenkins.md#jf-032) in the [Jenkins provider](../providers/jenkins.md).
 
-#### `JF-033`: withCredentials secret leaked via Groovy ${...} interpolation in sh step <span class="pg-sev pg-sev--high">HIGH</span> { #detail-jf-033 }
+### `JF-033`: withCredentials secret leaked via Groovy ${...} interpolation in sh step <span class="pg-sev pg-sev--high">HIGH</span> { #detail-jf-033 }
 
 **Evidences:** [`ESF-D-SECRETS`](#ctrl-esf-d-secrets) Protect secrets used during build; no secrets in source or env.
 
@@ -6913,7 +6957,7 @@ resource "aws_iam_role_policy" "codebuild_least_priv" {
 
 **Source:** [`JF-033`](../providers/jenkins.md#jf-033) in the [Jenkins provider](../providers/jenkins.md).
 
-#### `JF-034`: Pipeline declares a password() build parameter <span class="pg-sev pg-sev--high">HIGH</span> { #detail-jf-034 }
+### `JF-034`: Pipeline declares a password() build parameter <span class="pg-sev pg-sev--high">HIGH</span> { #detail-jf-034 }
 
 **Evidences:** [`ESF-D-SECRETS`](#ctrl-esf-d-secrets) Protect secrets used during build; no secrets in source or env.
 
@@ -6927,7 +6971,7 @@ resource "aws_iam_role_policy" "codebuild_least_priv" {
 
 **Source:** [`JF-034`](../providers/jenkins.md#jf-034) in the [Jenkins provider](../providers/jenkins.md).
 
-#### `JF-035`: httpRequest step disables SSL verification <span class="pg-sev pg-sev--high">HIGH</span> { #detail-jf-035 }
+### `JF-035`: httpRequest step disables SSL verification <span class="pg-sev pg-sev--high">HIGH</span> { #detail-jf-035 }
 
 **Evidences:** [`ESF-S-TRUSTED-REG`](#ctrl-esf-s-trusted-reg) Use only trusted, authenticated package and image registries.
 
@@ -6937,7 +6981,572 @@ resource "aws_iam_role_policy" "codebuild_least_priv" {
 
 **Source:** [`JF-035`](../providers/jenkins.md#jf-035) in the [Jenkins provider](../providers/jenkins.md).
 
-#### `KMS-000`: KMS API access failed <span class="pg-sev pg-sev--info">INFO</span> { #detail-kms-000 }
+### `K8S-001`: Container image not pinned by sha256 digest <span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> { #detail-k8s-001 }
+
+**Evidences:** [`ESF-S-VERIFY-DEPS`](#ctrl-esf-s-verify-deps) Verify third-party and open-source dependencies before use, [`ESF-S-PIN-DEPS`](#ctrl-esf-s-pin-deps) Pin dependencies / actions / images to immutable digests.
+
+**How this is detected.** Reuses ``_primitives.image_pinning.classify`` so the floating-tag semantics match DF-001 / GL-001 / JF-009 / ADO-009 / CC-003. Even a ``PINNED_TAG`` like ``nginx:1.25.4`` is treated as unpinned, only an explicit ``@sha256:`` survives, since a tag is mutable on the registry side and Kubernetes will happily pull the new content on a node restart.
+
+**Recommendation.** Resolve every workload container image to its current digest (``crane digest <ref>`` or ``docker buildx imagetools inspect``) and pin via ``image: repo@sha256:<digest>``. Floating tags (``:latest``, ``:3``, no tag) silently swap the running image on the next rollout, breaking provenance and reproducibility.
+
+**Autofix.** `pipeline_check --fix` will patch this finding automatically. Review the diff before committing; the fixer applies the conservative remediation pattern (e.g. swap a floating tag for the digest it currently resolves to), not the most aggressive one.
+
+**Source:** [`K8S-001`](../providers/kubernetes.md#k8s-001) in the [Kubernetes provider](../providers/kubernetes.md).
+
+### `K8S-002`: Pod hostNetwork: true <span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> { #detail-k8s-002 }
+
+**Evidences:** [`ESF-D-BUILD-ENV`](#ctrl-esf-d-build-env) Harden the build environment (isolated, minimal, ephemeral workers).
+
+**How this is detected.** Compromised containers on hostNetwork can sniff or interfere with traffic from every other pod on the node. Reserve the flag for system DaemonSets that genuinely require it (CNI agents, ingress data planes); applications never need it.
+
+**Recommendation.** Set ``spec.hostNetwork: false`` (the default) on every workload. ``hostNetwork: true`` puts the pod directly on the node's network namespace, exposing every host-bound listener to the container and bypassing CNI network policies.
+
+**Autofix.** `pipeline_check --fix` will patch this finding automatically. Review the diff before committing; the fixer applies the conservative remediation pattern (e.g. swap a floating tag for the digest it currently resolves to), not the most aggressive one.
+
+**Source:** [`K8S-002`](../providers/kubernetes.md#k8s-002) in the [Kubernetes provider](../providers/kubernetes.md).
+
+### `K8S-003`: Pod hostPID: true <span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> { #detail-k8s-003 }
+
+**Evidences:** [`ESF-D-BUILD-ENV`](#ctrl-esf-d-build-env) Harden the build environment (isolated, minimal, ephemeral workers).
+
+**How this is detected.** There is no application use case for hostPID. Only specialised node agents (process exporters, debuggers) legitimately need it, and those are typically deployed via a system DaemonSet with an explicit security review.
+
+**Recommendation.** Set ``spec.hostPID: false`` (the default) on every workload. ``hostPID: true`` makes every host process visible inside the container, and combined with privileged execution allows trivial escape via ``nsenter`` / ``/proc/<pid>/root``.
+
+**Autofix.** `pipeline_check --fix` will patch this finding automatically. Review the diff before committing; the fixer applies the conservative remediation pattern (e.g. swap a floating tag for the digest it currently resolves to), not the most aggressive one.
+
+**Source:** [`K8S-003`](../providers/kubernetes.md#k8s-003) in the [Kubernetes provider](../providers/kubernetes.md).
+
+### `K8S-004`: Pod hostIPC: true <span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> { #detail-k8s-004 }
+
+**Evidences:** [`ESF-D-BUILD-ENV`](#ctrl-esf-d-build-env) Harden the build environment (isolated, minimal, ephemeral workers).
+
+**How this is detected.** Modern applications coordinate via gRPC / sockets, never via host IPC. Treat this flag as a strong red flag in code review unless paired with a documented system-level use case.
+
+**Recommendation.** Set ``spec.hostIPC: false`` (the default) on every workload. ``hostIPC: true`` lets the container read and write the host's shared-memory segments and POSIX message queues, exposing data exchanged by every other process on the node.
+
+**Autofix.** `pipeline_check --fix` will patch this finding automatically. Review the diff before committing; the fixer applies the conservative remediation pattern (e.g. swap a floating tag for the digest it currently resolves to), not the most aggressive one.
+
+**Source:** [`K8S-004`](../providers/kubernetes.md#k8s-004) in the [Kubernetes provider](../providers/kubernetes.md).
+
+### `K8S-005`: Container securityContext.privileged: true <span class="pg-sev pg-sev--critical">CRITICAL</span> <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> { #detail-k8s-005 }
+
+**Evidences:** [`ESF-D-PRIV-BUILD`](#ctrl-esf-d-priv-build) Avoid privileged / host-networked build workers.
+
+**How this is detected.** ``privileged: true`` is the strongest possible escalation in Kubernetes. It overrides every other securityContext setting and is the single largest cluster-takeover vector after RBAC misconfiguration.
+
+**Recommendation.** Remove ``securityContext.privileged: true`` from every container. A privileged container has full access to the host's devices and capabilities, escape to the node is trivial. If the workload genuinely needs a kernel capability, grant only that capability via ``capabilities.add`` rather than enabling privileged mode.
+
+**Autofix.** `pipeline_check --fix` will patch this finding automatically. Review the diff before committing; the fixer applies the conservative remediation pattern (e.g. swap a floating tag for the digest it currently resolves to), not the most aggressive one.
+
+**Source:** [`K8S-005`](../providers/kubernetes.md#k8s-005) in the [Kubernetes provider](../providers/kubernetes.md).
+
+### `K8S-006`: Container allowPrivilegeEscalation not explicitly false <span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> { #detail-k8s-006 }
+
+**Evidences:** [`ESF-D-PRIV-BUILD`](#ctrl-esf-d-priv-build) Avoid privileged / host-networked build workers.
+
+**How this is detected.** The default for non-root containers is True (Pod Security Standard 'baseline' allows this; 'restricted' does not). An explicit ``false`` is required because Kubernetes treats an unset field as a deferral to the cluster admission controller, which may not enforce ``restricted``.
+
+**Recommendation.** Set ``securityContext.allowPrivilegeEscalation: false`` on every container. The Linux ``no_new_privs`` flag stops setuid binaries and capabilities from gaining elevated privileges, without this, a compromised process can escape via setuid utilities still installed in many base images.
+
+**Autofix.** `pipeline_check --fix` will patch this finding automatically. Review the diff before committing; the fixer applies the conservative remediation pattern (e.g. swap a floating tag for the digest it currently resolves to), not the most aggressive one.
+
+**Source:** [`K8S-006`](../providers/kubernetes.md#k8s-006) in the [Kubernetes provider](../providers/kubernetes.md).
+
+### `K8S-007`: Container runAsNonRoot not true / runAsUser is 0 <span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> { #detail-k8s-007 }
+
+**Evidences:** [`ESF-D-PRIV-BUILD`](#ctrl-esf-d-priv-build) Avoid privileged / host-networked build workers.
+
+**How this is detected.** A container is considered safe when EITHER its own securityContext OR the pod-level securityContext sets ``runAsNonRoot: true`` and a non-zero ``runAsUser``. An explicit ``runAsUser: 0`` always fails, even if ``runAsNonRoot`` is unset.
+
+**Recommendation.** Set ``securityContext.runAsNonRoot: true`` and ``runAsUser: <non-zero UID>`` on every container, OR set the same fields at pod level so all containers inherit. Running as UID 0 inside a container makes container-escape exploits dramatically more dangerous, the attacker already has root inside the container, so any kernel CVE that matters becomes immediately exploitable.
+
+**Autofix.** `pipeline_check --fix` will patch this finding automatically. Review the diff before committing; the fixer applies the conservative remediation pattern (e.g. swap a floating tag for the digest it currently resolves to), not the most aggressive one.
+
+**Source:** [`K8S-007`](../providers/kubernetes.md#k8s-007) in the [Kubernetes provider](../providers/kubernetes.md).
+
+### `K8S-008`: Container readOnlyRootFilesystem not true <span class="pg-sev pg-sev--medium">MEDIUM</span> <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> { #detail-k8s-008 }
+
+**Evidences:** [`ESF-D-PRIV-BUILD`](#ctrl-esf-d-priv-build) Avoid privileged / host-networked build workers.
+
+**How this is detected.** Many post-exploitation toolchains (cryptominers, persistence implants, shell-callbacks) assume a writable root. Locking it down forces the attacker to use distroless or runtime tmpfs they can't easily place.
+
+**Recommendation.** Set ``securityContext.readOnlyRootFilesystem: true`` on every container. A read-only root filesystem stops attackers from dropping additional payloads into ``/tmp``, ``/var``, or writable system paths. Mount tmpfs ``emptyDir`` volumes for the directories the application genuinely needs to write to.
+
+**Autofix.** `pipeline_check --fix` will patch this finding automatically. Review the diff before committing; the fixer applies the conservative remediation pattern (e.g. swap a floating tag for the digest it currently resolves to), not the most aggressive one.
+
+**Source:** [`K8S-008`](../providers/kubernetes.md#k8s-008) in the [Kubernetes provider](../providers/kubernetes.md).
+
+### `K8S-009`: Container capabilities not dropping ALL / adding dangerous caps <span class="pg-sev pg-sev--high">HIGH</span> { #detail-k8s-009 }
+
+**Evidences:** [`ESF-D-PRIV-BUILD`](#ctrl-esf-d-priv-build) Avoid privileged / host-networked build workers.
+
+**How this is detected.** Fails when the container does NOT drop ``ALL`` *or* when ``capabilities.add`` includes any of: SYS_ADMIN, NET_ADMIN, SYS_PTRACE, SYS_MODULE, DAC_READ_SEARCH, DAC_OVERRIDE, SYS_RAWIO, SYS_BOOT, BPF, PERFMON, or the literal ``ALL``.
+
+**Recommendation.** Drop every capability and add back only what the workload actually needs:
+
+    securityContext:
+      capabilities:
+        drop: ["ALL"]
+        add: ["NET_BIND_SERVICE"]   # only if binding <1024
+
+Most stateless services need no capabilities at all. Avoid ``SYS_ADMIN`` (effectively root), ``SYS_PTRACE`` (process snooping), ``NET_ADMIN`` (raw socket access), and ``SYS_MODULE`` (kernel module loading).
+
+**Source:** [`K8S-009`](../providers/kubernetes.md#k8s-009) in the [Kubernetes provider](../providers/kubernetes.md).
+
+### `K8S-010`: Container seccompProfile not RuntimeDefault or Localhost <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-k8s-010 }
+
+**Evidences:** [`ESF-D-PRIV-BUILD`](#ctrl-esf-d-priv-build) Avoid privileged / host-networked build workers.
+
+**How this is detected.** Pod-level ``securityContext.seccompProfile`` covers all containers in the pod. Either path passes this rule. The default of ``Unconfined`` (or unset, which inherits the node default, usually Unconfined) fails.
+
+**Recommendation.** Set ``securityContext.seccompProfile.type: RuntimeDefault`` (or ``Localhost`` with a path to your tuned profile) at either pod or container level. Without seccomp, every syscall is reachable from the container, modern kernel CVEs (e.g. ``io_uring``) become trivially exploitable.
+
+**Source:** [`K8S-010`](../providers/kubernetes.md#k8s-010) in the [Kubernetes provider](../providers/kubernetes.md).
+
+### `K8S-011`: Pod serviceAccountName unset or 'default' <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-k8s-011 }
+
+**Evidences:** [`ESF-C-LEAST-PRIV`](#ctrl-esf-c-least-priv) Apply least-privilege to CI/CD service roles and pipelines.
+
+**How this is detected.** Both an unset ``serviceAccountName`` (which defaults to ``default``) and an explicit ``serviceAccountName: default`` fail the rule. Pair this with K8S-012 to also disable token auto-mounting where the workload doesn't need API access.
+
+**Recommendation.** Bind every workload to a dedicated, narrow ``ServiceAccount``. The 'default' SA exists in every namespace and tends to accrete RoleBindings over time, using it gives the workload every privilege any other service in the namespace ever needed. Create a per-workload SA with the minimum RBAC needed and reference it via ``spec.serviceAccountName``.
+
+**Source:** [`K8S-011`](../providers/kubernetes.md#k8s-011) in the [Kubernetes provider](../providers/kubernetes.md).
+
+### `K8S-012`: Pod automountServiceAccountToken not false <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-k8s-012 }
+
+**Evidences:** [`ESF-C-LEAST-PRIV`](#ctrl-esf-c-least-priv) Apply least-privilege to CI/CD service roles and pipelines.
+
+**How this is detected.** An unset value defaults to True in Kubernetes. This rule fails on unset because most application workloads do NOT need API access and the default exposes credentials by accident. Workloads that explicitly call the API should set the field to ``true`` so the choice is visible in code review.
+
+**Recommendation.** Set ``spec.automountServiceAccountToken: false`` on every workload that doesn't need to talk to the Kubernetes API. Auto-mounted SA tokens are a free credential for an attacker who lands a shell, without explicit opt-out the token sits at ``/var/run/secrets/kubernetes.io/serviceaccount/token`` ready to be exfiltrated. If the workload needs API access, leave it true but pair with a tight, dedicated RBAC role.
+
+**Source:** [`K8S-012`](../providers/kubernetes.md#k8s-012) in the [Kubernetes provider](../providers/kubernetes.md).
+
+### `K8S-013`: Pod uses a hostPath volume <span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> { #detail-k8s-013 }
+
+**Evidences:** [`ESF-D-PRIV-BUILD`](#ctrl-esf-d-priv-build) Avoid privileged / host-networked build workers.
+
+**How this is detected.** Some legitimate system DaemonSets need hostPath (log collectors, CSI node plugins). Those should be deployed with explicit security review and a narrow ``path:``; this rule fires regardless because *application* workloads should never use hostPath.
+
+**Recommendation.** Replace ``hostPath`` volumes with ``configMap``, ``secret``, ``emptyDir``, ``persistentVolumeClaim``, or CSI volumes. ``hostPath`` opens a direct read/write window onto the node's filesystem; combined with even mild container compromise it gives the attacker access to other pods' data, kubelet credentials, and the container runtime.
+
+**Autofix.** `pipeline_check --fix` will patch this finding automatically. Review the diff before committing; the fixer applies the conservative remediation pattern (e.g. swap a floating tag for the digest it currently resolves to), not the most aggressive one.
+
+**Seen in the wild.**
+
+- [CVE-2021-25741](https://www.cve.org/CVERecord?id=CVE-2021-25741) (Kubernetes subPath volume traversal): a container could craft a ``subPath`` on a volume mount to access files outside the volume boundary. The bug affected multiple volume kinds; ``hostPath`` makes the blast radius worse because the volume already references host paths, so escaping the subpath lands directly on the node filesystem with the kubelet's privileges in scope.
+- TeamTNT / Kinsing crypto-jacking campaigns (2020-2022): cluster compromise reports repeatedly traced lateral movement from a single misconfigured pod to the underlying node via hostPath:/, then to kubelet credentials and other tenants. Sysdig and Aqua incident reports document the pattern.
+
+**Proof of exploit.**
+
+```
+# Vulnerable: pod mounts the host's root filesystem.
+apiVersion: v1
+kind: Pod
+metadata:
+  name: attacker
+spec:
+  containers:
+    - name: shell
+      image: busybox
+      command: ["sleep", "infinity"]
+      volumeMounts:
+        - name: host-root
+          mountPath: /host
+  volumes:
+    - name: host-root
+      hostPath:
+        path: /            # full node filesystem
+
+# Attack from a shell inside the container:
+#
+#   # Read kubelet credentials and pivot to API server:
+#   cat /host/var/lib/kubelet/kubeconfig
+#   cat /host/etc/kubernetes/admin.conf
+#
+#   # Read service account tokens for every other pod on
+#   # the node and impersonate them:
+#   ls /host/var/lib/kubelet/pods/*/volumes/kubernetes.io~projected/*/token
+#
+#   # Drop a setuid binary and pin persistence on the host:
+#   cp /bin/busybox /host/usr/local/bin/.bd
+#   chmod 4755 /host/usr/local/bin/.bd
+
+# Safe: use scoped volume types that don't bridge to the host.
+spec:
+  volumes:
+    - name: data
+      persistentVolumeClaim:
+        claimName: app-data
+```
+
+**Source:** [`K8S-013`](../providers/kubernetes.md#k8s-013) in the [Kubernetes provider](../providers/kubernetes.md).
+
+### `K8S-014`: Pod hostPath references a sensitive host directory <span class="pg-sev pg-sev--critical">CRITICAL</span> { #detail-k8s-014 }
+
+**Evidences:** [`ESF-D-PRIV-BUILD`](#ctrl-esf-d-priv-build) Avoid privileged / host-networked build workers.
+
+**How this is detected.** Stricter than K8S-013: that rule flags any hostPath, this one upgrades to CRITICAL when the path is one of the well-known cluster-escape vectors.
+
+**Recommendation.** Never mount the container runtime socket (``/var/run/docker.sock``, ``containerd.sock``, ``crio.sock``), kubelet credentials (``/var/lib/kubelet``), the cluster config (``/etc/kubernetes``), the host root (``/``), or ``/proc`` / ``/sys`` / ``/etc`` into a workload container. Each of these is a one-line cluster takeover. If a container genuinely needs node-level metrics, use an exporter DaemonSet with a narrowly-scoped read-only mount.
+
+**Source:** [`K8S-014`](../providers/kubernetes.md#k8s-014) in the [Kubernetes provider](../providers/kubernetes.md).
+
+### `K8S-015`: Container missing resources.limits.memory <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-k8s-015 }
+
+**Evidences:** [`ESF-D-BUILD-ENV`](#ctrl-esf-d-build-env) Harden the build environment (isolated, minimal, ephemeral workers).
+
+**How this is detected.** Init containers and ephemeral containers are also checked: a leaking init container holds a slot on the node until it completes and can crowd out other pods just as readily as an application container.
+
+**Recommendation.** Set ``resources.limits.memory`` on every container. Without a memory limit, a leaking or compromised container can consume the node's RAM until the kernel OOM-kills neighbouring pods, taking down workloads that share the node. Pair the limit with a ``requests.memory`` to inform the scheduler.
+
+**Source:** [`K8S-015`](../providers/kubernetes.md#k8s-015) in the [Kubernetes provider](../providers/kubernetes.md).
+
+### `K8S-016`: Container missing resources.limits.cpu <span class="pg-sev pg-sev--low">LOW</span> { #detail-k8s-016 }
+
+**Evidences:** [`ESF-D-BUILD-ENV`](#ctrl-esf-d-build-env) Harden the build environment (isolated, minimal, ephemeral workers).
+
+**How this is detected.** Lower severity than K8S-015 because CPU throttling is self-healing (workloads slow down rather than die) and some controllers (e.g. SchedulerProfile, LimitRange) supply a cluster-default cpu limit transparently.
+
+**Recommendation.** Set ``resources.limits.cpu`` on every container. CPU throttling is the kernel's defense against a neighbour consuming all node cycles, without a limit, a compromised container can stall everything else on the node, including the kubelet. Pair the limit with a ``requests.cpu`` for scheduling.
+
+**Source:** [`K8S-016`](../providers/kubernetes.md#k8s-016) in the [Kubernetes provider](../providers/kubernetes.md).
+
+### `K8S-017`: Container env value carries a credential-shaped literal <span class="pg-sev pg-sev--critical">CRITICAL</span> { #detail-k8s-017 }
+
+**Evidences:** [`ESF-D-SECRETS`](#ctrl-esf-d-secrets) Protect secrets used during build; no secrets in source or env.
+
+**How this is detected.** Reuses ``_primitives/secret_shapes``, flags AKIA-prefixed AWS access keys outright, plus credential-named keys (``API_KEY``, ``DB_PASSWORD``, ``SECRET_TOKEN``) when the value is a non-empty literal. ``valueFrom`` entries are always safe (no inline value).
+
+**Recommendation.** Replace literal ``env[].value`` entries that hold credentials with ``env[].valueFrom.secretKeyRef`` or ``envFrom.secretRef``. A literal env value lives in the manifest YAML. It gets committed to git, surfaced by ``kubectl get pod -o yaml``, and embedded in audit logs. Externalising into a Secret (and ideally a SealedSecret / ExternalSecret / SOPS-encrypted source) keeps the value out of the manifest.
+
+**Source:** [`K8S-017`](../providers/kubernetes.md#k8s-017) in the [Kubernetes provider](../providers/kubernetes.md).
+
+### `K8S-018`: Secret stringData/data carries a credential-shaped literal <span class="pg-sev pg-sev--critical">CRITICAL</span> { #detail-k8s-018 }
+
+**Evidences:** [`ESF-D-SECRETS`](#ctrl-esf-d-secrets) Protect secrets used during build; no secrets in source or env.
+
+**How this is detected.** Walks both ``stringData`` (plain text) and ``data`` (base64). Base64-encoded values are decoded and checked for AKIA-shaped AWS keys. Credential-shaped key NAMES with any non-empty value are flagged regardless of encoding, even if the value is the literal placeholder ``REPLACE_ME``, having the name in the manifest is a maintenance footgun.
+
+**Recommendation.** A ``Kind: Secret`` manifest committed to git defeats every secret-management story Kubernetes claims to provide, the base64 encoding in ``data`` is *not* encryption. Replace with SealedSecrets (Bitnami), ExternalSecrets / ESO, SOPS-encrypted manifests, or HashiCorp Vault Agent injection. If the manifest must remain in git, the only acceptable contents are placeholders that are filled in by an operator at apply time.
+
+**Source:** [`K8S-018`](../providers/kubernetes.md#k8s-018) in the [Kubernetes provider](../providers/kubernetes.md).
+
+### `K8S-019`: Workload deployed in the 'default' namespace <span class="pg-sev pg-sev--low">LOW</span> { #detail-k8s-019 }
+
+**Evidences:** [`ESF-C-ENV-SEP`](#ctrl-esf-c-env-sep) Separate deployment environments (dev / staging / prod).
+
+**How this is detected.** Severity is LOW because in a well-curated cluster the default namespace is empty by policy. If your cluster treats default as a sandbox you can suppress this rule via ``.pipelinecheckignore``.
+
+**Recommendation.** Set ``metadata.namespace`` to a dedicated namespace per workload (or per environment). The ``default`` namespace tends to accumulate cluster-wide RoleBindings, NetworkPolicies, and operators that grant broader access than intended; placing application workloads there means every privilege grant in default applies to them. A purpose-built namespace also lets you enforce Pod Security Standards (``pod-security.kubernetes.io/enforce`` label) scoped to that workload.
+
+**Source:** [`K8S-019`](../providers/kubernetes.md#k8s-019) in the [Kubernetes provider](../providers/kubernetes.md).
+
+### `K8S-020`: ClusterRoleBinding grants cluster-admin or system:masters <span class="pg-sev pg-sev--critical">CRITICAL</span> <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> { #detail-k8s-020 }
+
+**Evidences:** [`ESF-C-LEAST-PRIV`](#ctrl-esf-c-least-priv) Apply least-privilege to CI/CD service roles and pipelines.
+
+**How this is detected.** The rule fires on a ``ClusterRoleBinding`` whose ``roleRef.name`` is ``cluster-admin``, ``admin``, or ``system:masters``. Subject type does not matter, even binding cluster-admin to a Group is a cluster-takeover risk.
+
+**Recommendation.** Replace cluster-admin / system:masters bindings with narrowly-scoped ClusterRoles or namespace-scoped Roles. Granting cluster-admin to a service account is equivalent to giving every pod that uses it root on every node, credential theft from any such pod becomes immediate cluster takeover. Audit-log every existing cluster-admin binding and replace each with the minimum verbs/resources the consumer actually needs.
+
+**Autofix.** `pipeline_check --fix` will patch this finding automatically. Review the diff before committing; the fixer applies the conservative remediation pattern (e.g. swap a floating tag for the digest it currently resolves to), not the most aggressive one.
+
+**Seen in the wild.**
+
+- [Tesla Kubernetes dashboard compromise](https://redlock.io/cloud-security-trends-october-2018) (RedLock, 2018): an unauthenticated Kubernetes dashboard exposed to the internet held tokens for service accounts bound to cluster-admin. Attackers used the dashboard credentials to deploy crypto-mining workloads with full cluster access. Least-privilege RBAC would have capped the blast radius even after dashboard exposure.
+- Argo CD [CVE-2022-24348](https://www.cve.org/CVERecord?id=CVE-2022-24348) (2022): a Helm path-traversal bug let a project member read other applications' YAML, exposing credentials. Combined with the default cluster-admin RBAC install, the recovered tokens were a direct cluster takeover. Argo's recommendation post-fix was to scope the controller's RBAC away from cluster-admin so a similar future bug couldn't escalate the same way.
+
+**Source:** [`K8S-020`](../providers/kubernetes.md#k8s-020) in the [Kubernetes provider](../providers/kubernetes.md).
+
+### `K8S-021`: Role or ClusterRole grants wildcard verbs+resources <span class="pg-sev pg-sev--high">HIGH</span> { #detail-k8s-021 }
+
+**Evidences:** [`ESF-C-LEAST-PRIV`](#ctrl-esf-c-least-priv) Apply least-privilege to CI/CD service roles and pipelines.
+
+**How this is detected.** Fires on any rule entry where BOTH ``verbs`` and ``resources`` contain a literal ``"*"``. A wildcard in only one of the two is still risky but is often a legitimate read-everything pattern (e.g. monitoring); this rule targets the strict superset 'do anything to everything'.
+
+**Recommendation.** Replace ``verbs: ["*"]`` and ``resources: ["*"]`` with explicit lists. Wildcards bypass the principle of least privilege: today they grant `read pods` and tomorrow they grant `delete crds` because a new resource was registered in that apiGroup. Explicit verbs (``get``, ``list``, ``watch``) and explicit resources (``configmaps``, ``services``) keep grants stable across cluster upgrades.
+
+**Source:** [`K8S-021`](../providers/kubernetes.md#k8s-021) in the [Kubernetes provider](../providers/kubernetes.md).
+
+### `K8S-022`: Service exposes SSH (port 22) <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-k8s-022 }
+
+**Evidences:** [`ESF-D-BUILD-ENV`](#ctrl-esf-d-build-env) Harden the build environment (isolated, minimal, ephemeral workers).
+
+**How this is detected.** Mirrors DF-013 (``EXPOSE 22`` in a Dockerfile) at the Service level. The check fires on Service ports whose ``port`` or ``targetPort`` is 22, regardless of Service type, a NodePort/LoadBalancer 22 is dramatically worse but a ClusterIP 22 still indicates an sshd container somewhere.
+
+**Recommendation.** Containers should not run sshd. If you need an interactive shell into a running pod, use ``kubectl exec`` (subject to RBAC) or ``kubectl debug``. Removing the port-22 Service removes a pre-auth network surface that's a frequent lateral-movement target after initial cluster compromise.
+
+**Source:** [`K8S-022`](../providers/kubernetes.md#k8s-022) in the [Kubernetes provider](../providers/kubernetes.md).
+
+### `K8S-023`: Namespace missing Pod Security Admission enforcement label <span class="pg-sev pg-sev--high">HIGH</span> { #detail-k8s-023 }
+
+**Evidences:** [`ESF-D-PRIV-BUILD`](#ctrl-esf-d-priv-build) Avoid privileged / host-networked build workers.
+
+**How this is detected.** Pod Security Admission (PSA) replaced the deprecated PodSecurityPolicy in 1.25. The three levels are ``privileged``, ``baseline``, and ``restricted``; ``baseline`` is a sensible production default and ``restricted`` matches the spirit of K8S-005..010. ``kube-system`` is exempt by convention since control-plane pods may legitimately need elevated permissions.
+
+**Recommendation.** Set ``metadata.labels.pod-security.kubernetes.io/enforce`` to ``baseline`` or ``restricted`` on every Namespace. Without an enforce label the namespace runs the cluster's default policy, which on most installations is ``privileged`` and silently admits pods that violate every K8S-002..010 rule.
+
+**Known false positives.**
+
+- Single-tenant clusters running only operator-managed workloads may apply PSA via an admission webhook instead. The label-based check can't see that.
+
+**Source:** [`K8S-023`](../providers/kubernetes.md#k8s-023) in the [Kubernetes provider](../providers/kubernetes.md).
+
+### `K8S-024`: Container missing both livenessProbe and readinessProbe <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-k8s-024 }
+
+**Evidences:** [`ESF-C-DEPLOY-MON`](#ctrl-esf-c-deploy-mon) Monitor deployments with alarms / health checks.
+
+**How this is detected.** Init containers and ephemeral debug containers are exempt, neither makes sense to probe. Jobs and CronJobs are also exempt because Kubernetes treats them as one-shot work; completion is the lifecycle signal, not health.
+
+**Recommendation.** Define at least one of ``livenessProbe`` or ``readinessProbe`` on every long-running container. Without probes, a wedged pod stays listed as ``Running`` and keeps receiving traffic, which masks incidents and amplifies the blast radius of a single faulty replica.
+
+**Source:** [`K8S-024`](../providers/kubernetes.md#k8s-024) in the [Kubernetes provider](../providers/kubernetes.md).
+
+### `K8S-025`: System priority class used outside kube-system <span class="pg-sev pg-sev--high">HIGH</span> { #detail-k8s-025 }
+
+**Evidences:** [`ESF-D-BUILD-ENV`](#ctrl-esf-d-build-env) Harden the build environment (isolated, minimal, ephemeral workers).
+
+**How this is detected.** The kubelet reserves the two ``system-*`` priority classes for its own pods (kube-proxy, CNI agents). Granting them to a user workload also grants the right to preempt and evict anything below 2000000000, which is every non-system pod on the cluster. Outside kube-system this is almost always a misconfiguration copy-pasted from a control-plane manifest.
+
+**Recommendation.** Reserve ``system-cluster-critical`` and ``system-node-critical`` priority classes for control-plane workloads in ``kube-system``. Application pods that adopt them gain the right to evict normal workloads under resource pressure, which is a quiet path to a cluster-wide outage if the application has a bug or the attacker has any control over its spec.
+
+**Source:** [`K8S-025`](../providers/kubernetes.md#k8s-025) in the [Kubernetes provider](../providers/kubernetes.md).
+
+### `K8S-026`: LoadBalancer Service has no loadBalancerSourceRanges <span class="pg-sev pg-sev--high">HIGH</span> { #detail-k8s-026 }
+
+**Evidences:** [`ESF-D-BUILD-ENV`](#ctrl-esf-d-build-env) Harden the build environment (isolated, minimal, ephemeral workers).
+
+**How this is detected.** Internal-only services should use ``type: ClusterIP`` (and an Ingress for HTTP) or set the cloud-provider-specific internal-LB annotation. ``loadBalancerSourceRanges`` is the Kubernetes-native, cloud-portable way to scope an external LB; cloud-specific firewalls (AWS security groups, GCP firewall rules) are equivalent at the L4 level but invisible to a manifest scanner.
+
+**Recommendation.** Restrict every ``Service`` of ``type: LoadBalancer`` with ``spec.loadBalancerSourceRanges``. The default behavior is to provision an internet-facing load balancer that accepts traffic from 0.0.0.0/0, which exposes whatever the Service fronts to the entire internet. A short list of CIDRs scoped to known clients (office IPs, a NAT gateway, peered VPCs) removes the pre-auth attack surface entirely.
+
+**Source:** [`K8S-026`](../providers/kubernetes.md#k8s-026) in the [Kubernetes provider](../providers/kubernetes.md).
+
+### `K8S-027`: Ingress has no TLS configuration <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-k8s-027 }
+
+**Evidences:** [`ESF-S-TRUSTED-REG`](#ctrl-esf-s-trusted-reg) Use only trusted, authenticated package and image registries.
+
+**How this is detected.** An Ingress with no ``spec.tls`` (or an empty list) terminates HTTP at the load balancer and proxies plaintext upstream. Ingress controllers will respect ``ssl-redirect`` annotations, but those are advisory until ``tls:`` is populated. If the Ingress is intentionally HTTP-only (e.g. an ACME challenge endpoint or an internal-only path served behind a network policy), suppress via ``.pipelinecheckignore`` with a short rationale rather than leaving it open.
+
+**Recommendation.** Add a ``spec.tls`` block to every Ingress that fronts an HTTP backend. Each entry pairs one or more hostnames with a Secret holding the certificate / key, the canonical pattern is to provision the Secret via cert-manager and a ClusterIssuer pointing at Let's Encrypt or an internal CA. Plaintext-only Ingress lets a network attacker downgrade the connection and read or rewrite request bodies, which matters for any path carrying credentials, session cookies, or PII.
+
+**Source:** [`K8S-027`](../providers/kubernetes.md#k8s-027) in the [Kubernetes provider](../providers/kubernetes.md).
+
+### `K8S-028`: Container declares hostPort <span class="pg-sev pg-sev--medium">MEDIUM</span> <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> { #detail-k8s-028 }
+
+**Evidences:** [`ESF-D-BUILD-ENV`](#ctrl-esf-d-build-env) Harden the build environment (isolated, minimal, ephemeral workers).
+
+**How this is detected.** ``hostPort`` was the pre-Service way to publish a pod's port and survives in legacy manifests. Modern clusters use Services, which integrate with the kube-proxy, ingress controllers, and NetworkPolicies. ``hostPort`` is invisible to all of those, a port-scan from any other pod that knows the node IP reaches the workload directly. If a DaemonSet legitimately needs it (host-agent shape), suppress this rule with a brief ``.pipelinecheckignore`` rationale rather than leaving it open across the catalog.
+
+**Recommendation.** Drop ``hostPort`` from container ports and use a Service (ClusterIP / NodePort / LoadBalancer) to publish the workload. ``hostPort`` binds directly to the node IP, bypasses the cluster's network model, and creates a node-level scheduling constraint that fails replicas with the same port. Workloads that genuinely need node-port binding (some CNI/storage agents) should declare it on a DaemonSet with ``hostNetwork: true`` already approved by review.
+
+**Autofix.** `pipeline_check --fix` will patch this finding automatically. Review the diff before committing; the fixer applies the conservative remediation pattern (e.g. swap a floating tag for the digest it currently resolves to), not the most aggressive one.
+
+**Source:** [`K8S-028`](../providers/kubernetes.md#k8s-028) in the [Kubernetes provider](../providers/kubernetes.md).
+
+### `K8S-029`: RoleBinding grants permissions to the default ServiceAccount <span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> { #detail-k8s-029 }
+
+**Evidences:** [`ESF-C-LEAST-PRIV`](#ctrl-esf-c-least-priv) Apply least-privilege to CI/CD service roles and pipelines.
+
+**How this is detected.** Fires when a ``RoleBinding`` or ``ClusterRoleBinding`` lists ``kind: ServiceAccount, name: default`` among its subjects. ``kube-system``, ``kube-public``, and ``kube-node-lease`` are exempt because control-plane bootstrap manifests legitimately grant the default SA there.
+
+**Recommendation.** Bind permissions to a dedicated ServiceAccount, not to ``default``. Every pod that omits ``serviceAccountName`` runs as the namespace's ``default`` SA, so a binding to it grants the same verbs to every untargeted pod in that namespace, including future workloads. Create a purpose-built SA, set ``automountServiceAccountToken: false`` on the default, and bind to the new SA explicitly.
+
+**Autofix.** `pipeline_check --fix` will patch this finding automatically. Review the diff before committing; the fixer applies the conservative remediation pattern (e.g. swap a floating tag for the digest it currently resolves to), not the most aggressive one.
+
+**Known false positives.**
+
+- Charts that intentionally re-use the default SA in single-tenant namespaces. Consider creating a named SA anyway. It keeps the audit log unambiguous about which workload made an API call.
+
+**Source:** [`K8S-029`](../providers/kubernetes.md#k8s-029) in the [Kubernetes provider](../providers/kubernetes.md).
+
+### `K8S-030`: Workload schedules onto a control-plane node <span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> { #detail-k8s-030 }
+
+**Evidences:** [`ESF-D-BUILD-ENV`](#ctrl-esf-d-build-env) Harden the build environment (isolated, minimal, ephemeral workers).
+
+**How this is detected.** Fires on a non-system workload whose ``spec.nodeSelector`` contains a control-plane role label, OR whose ``spec.tolerations`` carries an entry with a control-plane taint key. Either condition is sufficient to land the pod on the control plane (the toleration is what survives the node taint; the nodeSelector picks the node).
+
+**Recommendation.** Drop the ``nodeSelector`` and ``tolerations`` entries that target ``node-role.kubernetes.io/control-plane`` (or the legacy ``master`` spelling) from non-system workloads. A pod scheduled on a control-plane node shares the kernel with the API server, etcd, and kubelet credentials, credential theft from any such pod yields cluster-wide takeover. Application workloads belong on dedicated worker nodes; system add-ons that legitimately need control-plane scheduling should run as a DaemonSet in ``kube-system``.
+
+**Autofix.** `pipeline_check --fix` will patch this finding automatically. Review the diff before committing; the fixer applies the conservative remediation pattern (e.g. swap a floating tag for the digest it currently resolves to), not the most aggressive one.
+
+**Known false positives.**
+
+- Audit/log shippers and CNI agents in kube-system are exempt by namespace. A workload that legitimately needs to run on the control plane outside kube-system is rare enough to warrant an explicit ``.pipelinecheckignore`` rationale.
+
+**Source:** [`K8S-030`](../providers/kubernetes.md#k8s-030) in the [Kubernetes provider](../providers/kubernetes.md).
+
+### `K8S-031`: Namespace missing PSA warn label <span class="pg-sev pg-sev--low">LOW</span> { #detail-k8s-031 }
+
+**Evidences:** [`ESF-D-PRIV-BUILD`](#ctrl-esf-d-priv-build) Avoid privileged / host-networked build workers.
+
+**How this is detected.** Pod Security Admission supports three modes: ``enforce`` (reject), ``audit`` (log to API audit), and ``warn`` (return a kubectl warning). K8S-023 covers ``enforce``; this rule covers ``warn``. The convention from upstream PSA docs is to set ``warn`` to the next-strictest tier above your current ``enforce`` so an upgrade from baseline to restricted is a predictable rollout, not a surprise.
+
+**Recommendation.** Set ``metadata.labels.pod-security.kubernetes.io/warn`` on every Namespace, ideally one tier ahead of the enforce label (e.g. ``enforce: baseline`` + ``warn: restricted``). The warn level surfaces violations as ``kubectl apply`` warnings without rejecting the resource, developers see what would break before an enforcement upgrade lands.
+
+**Known false positives.**
+
+- Single-tenant clusters may set ``warn`` and ``audit`` globally via the AdmissionConfiguration ``defaults:`` block instead of per-namespace labels. The label-based check can't see that.
+
+**Source:** [`K8S-031`](../providers/kubernetes.md#k8s-031) in the [Kubernetes provider](../providers/kubernetes.md).
+
+### `K8S-032`: Namespace lacks default-deny NetworkPolicy <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-k8s-032 }
+
+**Evidences:** [`ESF-D-BUILD-ENV`](#ctrl-esf-d-build-env) Harden the build environment (isolated, minimal, ephemeral workers).
+
+**How this is detected.** Kubernetes' default network model is allow-everything: without any NetworkPolicy targeting a namespace, every pod can talk to every other pod across every namespace, and every pod can reach the internet. A default-deny policy flips the default to deny, so the only flows that work are those an explicit allow policy permits. The check fires on namespaces declared in the manifest set that have at least one workload but no default-deny NetworkPolicy covering them. Cross-doc correlation: it walks the full manifest stream to match Namespace/workload/NetworkPolicy across files.
+
+**Recommendation.** Apply a default-deny NetworkPolicy in every namespace that carries workloads. The canonical shape is ``podSelector: {}`` (matches every pod) plus ``policyTypes: [Ingress, Egress]`` with no ``ingress:`` / ``egress:`` rules, every flow is denied unless a more permissive NetworkPolicy in the same namespace explicitly allows it. Pair with per-workload allow-list policies for the flows the application actually needs.
+
+**Known false positives.**
+
+- Mesh-managed clusters (Istio, Linkerd, Cilium ClusterMesh) often delegate L4 default-deny to the mesh's authorization policy. The check only looks at native NetworkPolicy and won't see that.
+- kube-system / kube-public / kube-node-lease are exempt, control-plane components frequently need open networking and have their own admission-time guards.
+
+**Source:** [`K8S-032`](../providers/kubernetes.md#k8s-032) in the [Kubernetes provider](../providers/kubernetes.md).
+
+### `K8S-033`: Namespace lacks ResourceQuota or LimitRange <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-k8s-033 }
+
+**Evidences:** [`ESF-D-BUILD-ENV`](#ctrl-esf-d-build-env) Harden the build environment (isolated, minimal, ephemeral workers).
+
+**How this is detected.** Without a ResourceQuota, a single namespace can consume the cluster's entire scheduling capacity, a fork bomb in a CronJob, a memory leak in a Deployment, or a cryptominer that landed via a fork-PR build can starve every other tenant. Without a LimitRange, individual pods without explicit ``resources:`` requests get a default of zero, the scheduler treats them as best-effort and packs them on any node, including ones already at memory pressure. The two work together: quota caps the aggregate, range caps the per-workload baseline. Cross-doc correlation: walks the manifest stream to match Namespace / workload / ResourceQuota / LimitRange across files.
+
+**Recommendation.** Apply a ``ResourceQuota`` *and* a ``LimitRange`` to every namespace that hosts application workloads. ResourceQuota caps the namespace's total CPU / memory / pod / object consumption; LimitRange enforces per-pod request / limit defaults so a workload that forgets to declare its own doesn't get unbounded scheduling. Together they bound the blast radius of a runaway, leaky, or attacker-driven pod explosion to a single namespace.
+
+**Source:** [`K8S-033`](../providers/kubernetes.md#k8s-033) in the [Kubernetes provider](../providers/kubernetes.md).
+
+### `K8S-034`: ServiceAccount automountServiceAccountToken not explicitly false <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-k8s-034 }
+
+**Evidences:** [`ESF-C-LEAST-PRIV`](#ctrl-esf-c-least-priv) Apply least-privilege to CI/CD service roles and pipelines.
+
+**How this is detected.** K8S-012 covers the pod-level ``automountServiceAccountToken`` setting; this rule covers the same control at the ServiceAccount level. The two are complementary: the SA-level default flips the cluster-wide baseline (``true`` -> ``false``), the pod-level override re-enables only where needed. Without the SA-level disable, every pod that doesn't set its own override mounts a token that can call the K8s API as that SA, a useful credential for an attacker who lands code in any pod, regardless of the workload's own intent.
+
+**Recommendation.** Set ``automountServiceAccountToken: false`` at the ServiceAccount level for every SA that doesn't actively need to call the Kubernetes API. The pods that legitimately do (operators, sidecars that read namespaces, controllers) can opt back in per-pod via ``spec.automountServiceAccountToken: true``. The default is mount-everywhere, which is the wrong direction for least privilege.
+
+**Known false positives.**
+
+- Operator / controller workloads (cert-manager, metrics-server, ingress controllers) legitimately need API access from every pod. Their dedicated SAs should keep automount enabled, leave them out of the cluster-wide disable. ``default`` SA in every namespace is the high-fire case worth disabling.
+
+**Source:** [`K8S-034`](../providers/kubernetes.md#k8s-034) in the [Kubernetes provider](../providers/kubernetes.md).
+
+### `K8S-035`: Container securityContext.runAsUser is 0 <span class="pg-sev pg-sev--high">HIGH</span> { #detail-k8s-035 }
+
+**Evidences:** [`ESF-D-PRIV-BUILD`](#ctrl-esf-d-priv-build) Avoid privileged / host-networked build workers.
+
+**How this is detected.** K8S-007 covers ``runAsNonRoot: false`` (the boolean form). This rule covers the explicit numeric form: a container that sets ``runAsUser: 0`` runs as root regardless of ``runAsNonRoot`` being declared elsewhere. Kubernetes won't reject the spec, it just runs the container as root. The two rules are paired so neither shape slips through alone. The pod-level ``securityContext.runAsUser`` inherits to every container that doesn't override it; this rule fires on the *effective* UID, walking pod-level first then per-container override.
+
+**Recommendation.** Set ``securityContext.runAsUser`` to a non-zero UID (e.g. 1000 or any application-specific value) on every workload container. The corresponding ``runAsGroup`` and ``fsGroup`` should also be non-zero. Root inside a container is not isolation, a kernel CVE, a misconfigured mount, or a mis-applied capability collapses straight into the host.
+
+**Source:** [`K8S-035`](../providers/kubernetes.md#k8s-035) in the [Kubernetes provider](../providers/kubernetes.md).
+
+### `K8S-036`: ServiceAccount imagePullSecrets references missing Secret <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-k8s-036 }
+
+**Evidences:** [`ESF-S-PIN-DEPS`](#ctrl-esf-s-pin-deps) Pin dependencies / actions / images to immutable digests.
+
+**How this is detected.** Cross-doc correlation: walks every ServiceAccount's ``imagePullSecrets`` and confirms the named Secret exists in the same namespace within the manifest set. Misses two cases: secrets created out-of-band (Sealed Secrets, External Secrets, or operator-applied ones) and SAs whose namespace is implicit / not declared in the manifest set. For those, the rule passes, false-negative-friendly.
+
+**Recommendation.** Create the missing ``Kind: Secret`` of ``type: kubernetes.io/dockerconfigjson`` (or ``dockercfg``) in the same namespace before applying the ServiceAccount, or fix the ``imagePullSecrets`` reference name. A dangling reference doesn't fail apply, kubelet silently falls back to anonymous registry pulls on every image fetch. Workloads either pull a different image than the operator intended or fail at runtime with ``ImagePullBackOff`` after the registry rate-limits the unauthenticated client.
+
+**Known false positives.**
+
+- Manifests rendered for partial deployment where the secret lives in a parallel manifest set the scanner doesn't see (separate ArgoCD application, Vault-injected, ESO-synced). Add ``# pipeline-check: ignore K8S-036`` or ignore the specific SA name to silence.
+
+**Source:** [`K8S-036`](../providers/kubernetes.md#k8s-036) in the [Kubernetes provider](../providers/kubernetes.md).
+
+### `K8S-037`: ConfigMap data carries a credential-shaped literal <span class="pg-sev pg-sev--high">HIGH</span> { #detail-k8s-037 }
+
+**Evidences:** [`ESF-D-SECRETS`](#ctrl-esf-d-secrets) Protect secrets used during build; no secrets in source or env.
+
+**How this is detected.** Companion to K8S-018 (which scans Kind: Secret). Walks ConfigMap ``data`` and ``binaryData`` for AKIA-shaped AWS keys and credential-shaped key NAMES. Even when the value is a placeholder, having ``api_key: REPLACE_ME`` in a ConfigMap is a maintenance footgun, someone will fill it in and commit. RBAC scoping for ``configmaps`` is typically much broader than ``secrets``, so any credential leak via this path reaches a wider audience.
+
+**Recommendation.** Move the value out of the ConfigMap. Secrets belong in ``Kind: Secret`` (better: SealedSecrets, ExternalSecrets / ESO, SOPS-encrypted manifests, or HashiCorp Vault Agent injection). ConfigMaps are intended for non-sensitive config and are mounted into pods without the access controls Secrets carry, the ``RoleBinding`` for ``configmaps:get`` is typically far broader than the one for ``secrets:get``. A credential in a ConfigMap is effectively unprotected once any pod can read the namespace's config.
+
+**Known false positives.**
+
+- ConfigMaps that legitimately carry placeholder names (``DEBUG_TOKEN_FORMAT``, ``LICENSE_KEY_HEADER``) where the VALUE is a format hint rather than a credential. Rename the key to avoid the credential-shaped name.
+
+**Source:** [`K8S-037`](../providers/kubernetes.md#k8s-037) in the [Kubernetes provider](../providers/kubernetes.md).
+
+### `K8S-038`: NetworkPolicy ingress / egress allows all sources or destinations <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-k8s-038 }
+
+**Evidences:** [`ESF-D-BUILD-ENV`](#ctrl-esf-d-build-env) Harden the build environment (isolated, minimal, ephemeral workers).
+
+**How this is detected.** K8S-032 covers the absence of a default-deny NetworkPolicy. This rule covers the inverse: a NetworkPolicy that exists but contains an ``ingress:`` rule with no ``from:`` (allow from all) or no ``ports:`` filter, or an ``egress:`` rule with no ``to:`` filter. The ``from: []`` / ``to: []`` shorthand is the canonical mistake. A rule that lists specific peers via ``podSelector`` / ``namespaceSelector`` / ``ipBlock`` passes.
+
+**Recommendation.** Replace the empty ``from: []`` / ``to: []`` rule with an explicit ``from: [{podSelector: {matchLabels: {…}}}]`` or ``from: [{namespaceSelector: {matchLabels: {…}}}]`` that names the legitimate peer. An empty ``from`` / ``to`` peers list means *every* source / destination, every pod in every namespace, plus every external IP. This is indistinguishable from having no NetworkPolicy at all for the targeted pod, but visually appears to enforce a policy (the false-sense-of-security failure mode is worse than no policy).
+
+**Known false positives.**
+
+- Policies intentionally allowing world traffic to a public ingress controller pod ({app: nginx-ingress, public: true}). Add ``# pipeline-check: ignore K8S-038`` on the specific NetworkPolicy if the wide-open shape is deliberate.
+
+**Source:** [`K8S-038`](../providers/kubernetes.md#k8s-038) in the [Kubernetes provider](../providers/kubernetes.md).
+
+### `K8S-039`: Pod uses shareProcessNamespace: true <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-k8s-039 }
+
+**Evidences:** [`ESF-D-PRIV-BUILD`](#ctrl-esf-d-priv-build) Avoid privileged / host-networked build workers.
+
+**How this is detected.** ``shareProcessNamespace: true`` makes every container in the pod share a single PID namespace. Any container can then enumerate every other container's processes (``ps``), read their environment variables and CLI args from ``/proc/<pid>/``, send them signals, and (with the right capabilities) ``ptrace`` them. A compromised sidecar, debug shell, logging agent, observability exporter, gets a free pivot into every primary container's secrets. The default is ``false``; setting it explicitly to ``true`` is the failing shape.
+
+**Recommendation.** Drop ``spec.shareProcessNamespace: true`` from the pod spec. Containers in the pod will go back to having isolated PID namespaces, each sees only its own processes, can't ``ptrace`` neighbors, and can't read their ``/proc/<pid>/environ`` for env-var-leaked secrets. If the requirement is sidecar-style log collection or process-level cooperation, prefer a sidecar pattern that exchanges data through a shared volume rather than collapsing the namespace.
+
+**Known false positives.**
+
+- Debug pods that explicitly need ``ps`` / ``strace`` across container boundaries, but those are typically ephemeralContainers attached to a running pod, not long-lived pod specs in a manifest. If a permanent workload genuinely requires it, ignore the rule with a documented justification.
+
+**Source:** [`K8S-039`](../providers/kubernetes.md#k8s-039) in the [Kubernetes provider](../providers/kubernetes.md).
+
+### `K8S-040`: Container securityContext.procMount: Unmasked <span class="pg-sev pg-sev--high">HIGH</span> { #detail-k8s-040 }
+
+**Evidences:** [`ESF-D-PRIV-BUILD`](#ctrl-esf-d-priv-build) Avoid privileged / host-networked build workers.
+
+**How this is detected.** ``procMount: Unmasked`` is rarely needed in practice. It exists for nested-container / KubeVirt scenarios where the container itself runs an inner container runtime that needs to set up its own ``/proc`` masking. For an ordinary application container, ``Unmasked`` is a runtime-isolation regression that exposes kernel-information paths and writable ``/proc/sys`` entries to the workload. Pod Security Standards classify ``Unmasked`` as 'restricted'-violating; the rule fires when any container (``containers``, ``initContainers``, ``ephemeralContainers``) explicitly sets ``procMount: Unmasked``.
+
+**Recommendation.** Remove ``securityContext.procMount: Unmasked`` (or set it explicitly to ``Default``). The default ``Default`` procMount type masks several kernel- and node-information paths under ``/proc`` (``/proc/asound``, ``/proc/acpi``, ``/proc/kcore``, ``/proc/keys``, ``/proc/latency_stats``, ``/proc/timer_list``, ``/proc/timer_stats``, ``/proc/sched_debug``, ``/proc/scsi``) and remounts ``/proc/sys`` as read-only. These maskings are what stop a container from reading the host's kernel structures or writing to ``/proc/sys`` and breaking the kernel out of namespace isolation. ``Unmasked`` undoes all of that.
+
+**Source:** [`K8S-040`](../providers/kubernetes.md#k8s-040) in the [Kubernetes provider](../providers/kubernetes.md).
+
+### `K8S-041`: Service.externalIPs allows traffic interception (CVE-2020-8554) <span class="pg-sev pg-sev--high">HIGH</span> { #detail-k8s-041 }
+
+**Evidences:** [`ESF-D-BUILD-ENV`](#ctrl-esf-d-build-env) Harden the build environment (isolated, minimal, ephemeral workers).
+
+**How this is detected.** CVE-2020-8554 is a design-level Kubernetes weakness rather than a code bug: any namespace user with ``services`` create permission can declare ``spec.externalIPs: [<arbitrary IP>]`` on a Service, and kube-proxy installs DNAT rules that intercept traffic destined for that IP on every node. The attacker primitive is to MITM in-cluster traffic to public endpoints, metadata services, or other tenants' workloads. Kubernetes upstream's remediation is admission-time enforcement (see the ``DenyServiceExternalIPs`` admission plugin and the RBAC pattern in the official guidance) rather than a runtime fix. This rule flags any non-empty ``externalIPs`` list so the team can confirm the field is gone from manifests before the admission policy is rolled out.
+
+**Recommendation.** Remove ``spec.externalIPs`` from the Service. The field has no legitimate use in most clusters and any namespace user with ``services.create`` can claim any IP, including the cluster's own kube-apiserver, metrics-server, or an external service IP, and the kube-proxy iptables rules will redirect matching traffic to their pods. Enforce the absence cluster-wide with an admission policy (Gatekeeper / Kyverno / ValidatingAdmissionPolicy) that rejects Services with a non-empty ``externalIPs`` list.
+
+**Seen in the wild.**
+
+- CVE-2020-8554 (Kubernetes, 2020): documented MITM-via-externalIPs design flaw. Kubernetes' upstream advisory recommends restricting externalIPs via admission control.
+
+**Source:** [`K8S-041`](../providers/kubernetes.md#k8s-041) in the [Kubernetes provider](../providers/kubernetes.md).
+
+### `K8S-042`: RoleBinding grants access to system:anonymous / system:unauthenticated <span class="pg-sev pg-sev--critical">CRITICAL</span> { #detail-k8s-042 }
+
+**Evidences:** [`ESF-C-LEAST-PRIV`](#ctrl-esf-c-least-priv) Apply least-privilege to CI/CD service roles and pipelines.
+
+**How this is detected.** Kubernetes resolves authentication failures into the ``system:anonymous`` user (member of ``system:unauthenticated`` group) rather than rejecting the request outright, so any RBAC subject naming either of those values applies to requests with no Authorization header. The rule fires on both ``RoleBinding`` (namespace-scoped) and ``ClusterRoleBinding`` (cluster-scoped) subjects. Pairs with K8S-020: cluster-admin bound to a named SA is bad; cluster-admin bound to ``system:anonymous`` is cluster takeover by anyone with TCP/443 to the apiserver.
+
+**Recommendation.** Remove the binding's subject entry for ``system:anonymous`` or ``system:unauthenticated``. Anything bound to either subject is reachable without an authentication token, anyone who can hit the apiserver, including from inside an untrusted pod or from the public internet on an exposed apiserver, gets the bound verbs. If the workload genuinely needs unauthenticated read access (rare, usually only for OIDC discovery or the deprecated ``system:public-info-viewer`` shape), audit the bound ClusterRole's verbs+resources and confirm no write or secret-read verb is included.
+
+**Source:** [`K8S-042`](../providers/kubernetes.md#k8s-042) in the [Kubernetes provider](../providers/kubernetes.md).
+
+### `K8S-043`: Ingress rule has wildcard or missing host (catch-all) <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-k8s-043 }
+
+**Evidences:** [`ESF-D-BUILD-ENV`](#ctrl-esf-d-build-env) Harden the build environment (isolated, minimal, ephemeral workers).
+
+**How this is detected.** An Ingress rule with no ``host:`` matches every Host header the controller receives; a rule with ``host: '*'`` is the explicit form of the same behavior. Both shape choices collapse the controller's hostname-based routing into a pure path-based match, which means anyone who can present any hostname (HTTP/1.1 Host header rewrite, malicious CNAME, controller hairpin) reaches this backend. The rule also fires on apex wildcards like ``host: '*.example.com'`` since they accept subdomains the cluster operator never intended to register. A backend that's intentionally wildcard-routed (a tenant-per-subdomain SaaS) should suppress with a rationale rather than disabling the check.
+
+**Recommendation.** Pin every Ingress rule to an explicit hostname. ``host: api.example.com`` (not ``host: '*'``, ``host: '*.example.com'``, and not an omitted ``host:``). A catch-all host binding means any request to the ingress controller's external address, regardless of HTTP Host header, can route to this backend; an attacker with control over an arbitrary hostname pointing at the same controller (a parked domain, a typo'd CNAME, a cluster-internal name on a shared controller) reaches paths that should have been host-scoped.
+
+**Known false positives.**
+
+- TLS terminators that intentionally use a single Ingress with a wildcard host to front many tenant subdomains are legitimate; suppress the finding for that Ingress specifically rather than disabling the rule.
+
+**Source:** [`K8S-043`](../providers/kubernetes.md#k8s-043) in the [Kubernetes provider](../providers/kubernetes.md).
+
+### `KMS-000`: KMS API access failed <span class="pg-sev pg-sev--info">INFO</span> { #detail-kms-000 }
 
 **Evidences:** [`ESF-C-AUDIT`](#ctrl-esf-c-audit) Audit deployment / pipeline activity and retain logs.
 
@@ -6947,7 +7556,7 @@ resource "aws_iam_role_policy" "codebuild_least_priv" {
 
 **Source:** [`KMS-000`](../providers/aws.md) in the [AWS provider](../providers/aws.md).
 
-#### `KMS-001`: KMS customer-managed key has rotation disabled <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-kms-001 }
+### `KMS-001`: KMS customer-managed key has rotation disabled <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-kms-001 }
 
 **Evidences:** [`ESF-C-ARTIFACT-AUTHZ`](#ctrl-esf-c-artifact-authz) Restrict access to artifact storage and deployment pipelines.
 
@@ -6957,7 +7566,7 @@ resource "aws_iam_role_policy" "codebuild_least_priv" {
 
 **Source:** [`KMS-001`](../providers/aws.md) in the [AWS provider](../providers/aws.md).
 
-#### `KMS-002`: KMS key policy grants wildcard KMS actions <span class="pg-sev pg-sev--high">HIGH</span> { #detail-kms-002 }
+### `KMS-002`: KMS key policy grants wildcard KMS actions <span class="pg-sev pg-sev--high">HIGH</span> { #detail-kms-002 }
 
 **Evidences:** [`ESF-C-LEAST-PRIV`](#ctrl-esf-c-least-priv) Apply least-privilege to CI/CD service roles and pipelines.
 
@@ -6967,7 +7576,7 @@ resource "aws_iam_role_policy" "codebuild_least_priv" {
 
 **Source:** [`KMS-002`](../providers/aws.md) in the [AWS provider](../providers/aws.md).
 
-#### `LMB-000`: Lambda API access failed <span class="pg-sev pg-sev--info">INFO</span> { #detail-lmb-000 }
+### `LMB-000`: Lambda API access failed <span class="pg-sev pg-sev--info">INFO</span> { #detail-lmb-000 }
 
 **Evidences:** [`ESF-C-AUDIT`](#ctrl-esf-c-audit) Audit deployment / pipeline activity and retain logs.
 
@@ -6977,7 +7586,7 @@ resource "aws_iam_role_policy" "codebuild_least_priv" {
 
 **Source:** [`LMB-000`](../providers/aws.md) in the [AWS provider](../providers/aws.md).
 
-#### `LMB-001`: Lambda function has no code-signing config <span class="pg-sev pg-sev--high">HIGH</span> { #detail-lmb-001 }
+### `LMB-001`: Lambda function has no code-signing config <span class="pg-sev pg-sev--high">HIGH</span> { #detail-lmb-001 }
 
 **Evidences:** [`ESF-D-SIGN-ARTIFACTS`](#ctrl-esf-d-sign-artifacts) Sign build artifacts and verify signatures before release.
 
@@ -6987,7 +7596,7 @@ resource "aws_iam_role_policy" "codebuild_least_priv" {
 
 **Source:** [`LMB-001`](../providers/aws.md) in the [AWS provider](../providers/aws.md).
 
-#### `LMB-002`: Lambda function URL has AuthType=NONE <span class="pg-sev pg-sev--high">HIGH</span> { #detail-lmb-002 }
+### `LMB-002`: Lambda function URL has AuthType=NONE <span class="pg-sev pg-sev--high">HIGH</span> { #detail-lmb-002 }
 
 **Evidences:** [`ESF-C-ARTIFACT-AUTHZ`](#ctrl-esf-c-artifact-authz) Restrict access to artifact storage and deployment pipelines.
 
@@ -6997,7 +7606,7 @@ resource "aws_iam_role_policy" "codebuild_least_priv" {
 
 **Source:** [`LMB-002`](../providers/aws.md) in the [AWS provider](../providers/aws.md).
 
-#### `LMB-003`: Lambda function env vars may contain plaintext secrets <span class="pg-sev pg-sev--high">HIGH</span> { #detail-lmb-003 }
+### `LMB-003`: Lambda function env vars may contain plaintext secrets <span class="pg-sev pg-sev--high">HIGH</span> { #detail-lmb-003 }
 
 **Evidences:** [`ESF-D-SECRETS`](#ctrl-esf-d-secrets) Protect secrets used during build; no secrets in source or env.
 
@@ -7007,7 +7616,7 @@ resource "aws_iam_role_policy" "codebuild_least_priv" {
 
 **Source:** [`LMB-003`](../providers/aws.md) in the [AWS provider](../providers/aws.md).
 
-#### `LMB-004`: Lambda resource policy allows wildcard principal <span class="pg-sev pg-sev--critical">CRITICAL</span> { #detail-lmb-004 }
+### `LMB-004`: Lambda resource policy allows wildcard principal <span class="pg-sev pg-sev--critical">CRITICAL</span> { #detail-lmb-004 }
 
 **Evidences:** [`ESF-C-ARTIFACT-AUTHZ`](#ctrl-esf-c-artifact-authz) Restrict access to artifact storage and deployment pipelines.
 
@@ -7017,7 +7626,7 @@ resource "aws_iam_role_policy" "codebuild_least_priv" {
 
 **Source:** [`LMB-004`](../providers/aws.md) in the [AWS provider](../providers/aws.md).
 
-#### `MVN-001`: pom.xml dependency uses a floating version range <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-mvn-001 }
+### `MVN-001`: pom.xml dependency uses a floating version range <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-mvn-001 }
 
 **Evidences:** [`ESF-S-PIN-DEPS`](#ctrl-esf-s-pin-deps) Pin dependencies / actions / images to immutable digests.
 
@@ -7061,7 +7670,7 @@ Managed entries in ``<dependencyManagement>`` are NOT evaluated by this rule (th
 
 **Source:** [`MVN-001`](../providers/maven.md#mvn-001) in the [maven provider](../providers/maven.md).
 
-#### `MVN-002`: pom.xml depends on a mutable SNAPSHOT version <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-mvn-002 }
+### `MVN-002`: pom.xml depends on a mutable SNAPSHOT version <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-mvn-002 }
 
 **Evidences:** [`ESF-S-PIN-DEPS`](#ctrl-esf-s-pin-deps) Pin dependencies / actions / images to immutable digests.
 
@@ -7075,7 +7684,7 @@ Managed entries in ``<dependencyManagement>`` are NOT evaluated by this rule (th
 
 **Source:** [`MVN-002`](../providers/maven.md#mvn-002) in the [maven provider](../providers/maven.md).
 
-#### `MVN-003`: pom.xml declares a plaintext-HTTP Maven repository <span class="pg-sev pg-sev--high">HIGH</span> { #detail-mvn-003 }
+### `MVN-003`: pom.xml declares a plaintext-HTTP Maven repository <span class="pg-sev pg-sev--high">HIGH</span> { #detail-mvn-003 }
 
 **Evidences:** [`ESF-S-TRUSTED-REG`](#ctrl-esf-s-trusted-reg) Use only trusted, authenticated package and image registries.
 
@@ -7093,7 +7702,7 @@ Managed entries in ``<dependencyManagement>`` are NOT evaluated by this rule (th
 
 **Source:** [`MVN-003`](../providers/maven.md#mvn-003) in the [maven provider](../providers/maven.md).
 
-#### `MVN-004`: pom.xml dependency omits an explicit ``<version>`` <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-mvn-004 }
+### `MVN-004`: pom.xml dependency omits an explicit ``<version>`` <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-mvn-004 }
 
 **Evidences:** [`ESF-S-PIN-DEPS`](#ctrl-esf-s-pin-deps) Pin dependencies / actions / images to immutable digests.
 
@@ -7107,7 +7716,7 @@ Managed entries in ``<dependencyManagement>`` are NOT evaluated by this rule (th
 
 **Source:** [`MVN-004`](../providers/maven.md#mvn-004) in the [maven provider](../providers/maven.md).
 
-#### `MVN-005`: Maven repository accepts artifacts without strict checksum gating <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-mvn-005 }
+### `MVN-005`: Maven repository accepts artifacts without strict checksum gating <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-mvn-005 }
 
 **Evidences:** [`ESF-S-VERIFY-DEPS`](#ctrl-esf-s-verify-deps) Verify third-party and open-source dependencies before use.
 
@@ -7121,7 +7730,7 @@ Managed entries in ``<dependencyManagement>`` are NOT evaluated by this rule (th
 
 **Source:** [`MVN-005`](../providers/maven.md#mvn-005) in the [maven provider](../providers/maven.md).
 
-#### `MVN-006`: pom.xml pins a known-compromised Maven Central artifact version <span class="pg-sev pg-sev--critical">CRITICAL</span> { #detail-mvn-006 }
+### `MVN-006`: pom.xml pins a known-compromised Maven Central artifact version <span class="pg-sev pg-sev--critical">CRITICAL</span> { #detail-mvn-006 }
 
 **Evidences:** [`ESF-S-VERIFY-DEPS`](#ctrl-esf-s-verify-deps) Verify third-party and open-source dependencies before use, [`ESF-S-VULN-MGMT`](#ctrl-esf-s-vuln-mgmt) Scan inbound artifacts (images, packages) for known vulnerabilities.
 
@@ -7164,7 +7773,7 @@ Managed entries in ``<dependencyManagement>`` are NOT evaluated by this rule (th
 
 **Source:** [`MVN-006`](../providers/maven.md#mvn-006) in the [maven provider](../providers/maven.md).
 
-#### `MVN-007`: settings.xml mirror routes external traffic through one repo <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-mvn-007 }
+### `MVN-007`: settings.xml mirror routes external traffic through one repo <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-mvn-007 }
 
 **Evidences:** [`ESF-S-TRUSTED-REG`](#ctrl-esf-s-trusted-reg) Use only trusted, authenticated package and image registries.
 
@@ -7178,7 +7787,7 @@ Managed entries in ``<dependencyManagement>`` are NOT evaluated by this rule (th
 
 **Source:** [`MVN-007`](../providers/maven.md#mvn-007) in the [maven provider](../providers/maven.md).
 
-#### `OCI-001`: Image manifest is missing OCI provenance annotations <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-oci-001 }
+### `OCI-001`: Image manifest is missing OCI provenance annotations <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-oci-001 }
 
 **Evidences:** [`ESF-D-SBOM`](#ctrl-esf-d-sbom) Produce SBOM / provenance metadata with every build.
 
@@ -7192,7 +7801,7 @@ Managed entries in ``<dependencyManagement>`` are NOT evaluated by this rule (th
 
 **Source:** [`OCI-001`](../providers/oci.md#oci-001) in the [OCI manifest provider](../providers/oci.md).
 
-#### `OCI-002`: Image is missing a build attestation manifest <span class="pg-sev pg-sev--high">HIGH</span> { #detail-oci-002 }
+### `OCI-002`: Image is missing a build attestation manifest <span class="pg-sev pg-sev--high">HIGH</span> { #detail-oci-002 }
 
 **Evidences:** [`ESF-D-SIGN-ARTIFACTS`](#ctrl-esf-d-sign-artifacts) Sign build artifacts and verify signatures before release, [`ESF-S-PROVENANCE`](#ctrl-esf-s-provenance) Generate and verify provenance metadata (SLSA / in-toto) for produced artifacts.
 
@@ -7207,7 +7816,7 @@ Managed entries in ``<dependencyManagement>`` are NOT evaluated by this rule (th
 
 **Source:** [`OCI-002`](../providers/oci.md#oci-002) in the [OCI manifest provider](../providers/oci.md).
 
-#### `OCI-003`: Image manifest is missing the ``image.created`` annotation <span class="pg-sev pg-sev--low">LOW</span> { #detail-oci-003 }
+### `OCI-003`: Image manifest is missing the ``image.created`` annotation <span class="pg-sev pg-sev--low">LOW</span> { #detail-oci-003 }
 
 **Evidences:** [`ESF-D-SBOM`](#ctrl-esf-d-sbom) Produce SBOM / provenance metadata with every build.
 
@@ -7221,7 +7830,7 @@ Managed entries in ``<dependencyManagement>`` are NOT evaluated by this rule (th
 
 **Source:** [`OCI-003`](../providers/oci.md#oci-003) in the [OCI manifest provider](../providers/oci.md).
 
-#### `OCI-004`: Image layer references an arbitrary URL (foreign layer) <span class="pg-sev pg-sev--high">HIGH</span> { #detail-oci-004 }
+### `OCI-004`: Image layer references an arbitrary URL (foreign layer) <span class="pg-sev pg-sev--high">HIGH</span> { #detail-oci-004 }
 
 **Evidences:** [`ESF-S-TRUSTED-REG`](#ctrl-esf-s-trusted-reg) Use only trusted, authenticated package and image registries.
 
@@ -7235,7 +7844,7 @@ Managed entries in ``<dependencyManagement>`` are NOT evaluated by this rule (th
 
 **Source:** [`OCI-004`](../providers/oci.md#oci-004) in the [OCI manifest provider](../providers/oci.md).
 
-#### `OCI-005`: Image manifest is missing the ``image.licenses`` annotation <span class="pg-sev pg-sev--low">LOW</span> { #detail-oci-005 }
+### `OCI-005`: Image manifest is missing the ``image.licenses`` annotation <span class="pg-sev pg-sev--low">LOW</span> { #detail-oci-005 }
 
 **Evidences:** [`ESF-D-SBOM`](#ctrl-esf-d-sbom) Produce SBOM / provenance metadata with every build.
 
@@ -7250,7 +7859,7 @@ Managed entries in ``<dependencyManagement>`` are NOT evaluated by this rule (th
 
 **Source:** [`OCI-005`](../providers/oci.md#oci-005) in the [OCI manifest provider](../providers/oci.md).
 
-#### `OCI-006`: Image has an excessive layer count <span class="pg-sev pg-sev--low">LOW</span> { #detail-oci-006 }
+### `OCI-006`: Image has an excessive layer count <span class="pg-sev pg-sev--low">LOW</span> { #detail-oci-006 }
 
 **Evidences:** [`ESF-D-BUILD-ENV`](#ctrl-esf-d-build-env) Harden the build environment (isolated, minimal, ephemeral workers).
 
@@ -7264,7 +7873,7 @@ Managed entries in ``<dependencyManagement>`` are NOT evaluated by this rule (th
 
 **Source:** [`OCI-006`](../providers/oci.md#oci-006) in the [OCI manifest provider](../providers/oci.md).
 
-#### `OCI-007`: Image manifest uses legacy schemaVersion 1 (no content addressing) <span class="pg-sev pg-sev--high">HIGH</span> { #detail-oci-007 }
+### `OCI-007`: Image manifest uses legacy schemaVersion 1 (no content addressing) <span class="pg-sev pg-sev--high">HIGH</span> { #detail-oci-007 }
 
 **Evidences:** [`ESF-S-VERIFY-DEPS`](#ctrl-esf-s-verify-deps) Verify third-party and open-source dependencies before use, [`ESF-S-IMMUTABLE`](#ctrl-esf-s-immutable) Enforce artifact / tag immutability to preserve provenance.
 
@@ -7278,7 +7887,7 @@ Managed entries in ``<dependencyManagement>`` are NOT evaluated by this rule (th
 
 **Source:** [`OCI-007`](../providers/oci.md#oci-007) in the [OCI manifest provider](../providers/oci.md).
 
-#### `OCI-008`: Manifest references digest using unsupported hash algorithm <span class="pg-sev pg-sev--high">HIGH</span> { #detail-oci-008 }
+### `OCI-008`: Manifest references digest using unsupported hash algorithm <span class="pg-sev pg-sev--high">HIGH</span> { #detail-oci-008 }
 
 **Evidences:** [`ESF-S-VERIFY-DEPS`](#ctrl-esf-s-verify-deps) Verify third-party and open-source dependencies before use, [`ESF-S-IMMUTABLE`](#ctrl-esf-s-immutable) Enforce artifact / tag immutability to preserve provenance.
 
@@ -7294,7 +7903,7 @@ Detection scope: the config descriptor digest, every layer descriptor digest (si
 
 **Source:** [`OCI-008`](../providers/oci.md#oci-008) in the [OCI manifest provider](../providers/oci.md).
 
-#### `PBAC-000`: PBAC enumeration failed <span class="pg-sev pg-sev--info">INFO</span> { #detail-pbac-000 }
+### `PBAC-000`: PBAC enumeration failed <span class="pg-sev pg-sev--info">INFO</span> { #detail-pbac-000 }
 
 **Evidences:** [`ESF-C-AUDIT`](#ctrl-esf-c-audit) Audit deployment / pipeline activity and retain logs.
 
@@ -7304,7 +7913,7 @@ Detection scope: the config descriptor digest, every layer descriptor digest (si
 
 **Source:** [`PBAC-000`](../providers/aws.md) in the [AWS provider](../providers/aws.md).
 
-#### `PBAC-001`: CodeBuild project has no VPC configuration <span class="pg-sev pg-sev--high">HIGH</span> { #detail-pbac-001 }
+### `PBAC-001`: CodeBuild project has no VPC configuration <span class="pg-sev pg-sev--high">HIGH</span> { #detail-pbac-001 }
 
 **Evidences:** [`ESF-D-BUILD-ENV`](#ctrl-esf-d-build-env) Harden the build environment (isolated, minimal, ephemeral workers).
 
@@ -7314,7 +7923,7 @@ Detection scope: the config descriptor digest, every layer descriptor digest (si
 
 **Source:** [`PBAC-001`](../providers/aws.md) in the [AWS provider](../providers/aws.md).
 
-#### `PBAC-002`: CodeBuild service role shared across multiple projects <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-pbac-002 }
+### `PBAC-002`: CodeBuild service role shared across multiple projects <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-pbac-002 }
 
 **Evidences:** [`ESF-D-BUILD-TIMEOUT`](#ctrl-esf-d-build-timeout) Enforce bounded build execution (single-use, time-limited), [`ESF-C-LEAST-PRIV`](#ctrl-esf-c-least-priv) Apply least-privilege to CI/CD service roles and pipelines.
 
@@ -7324,7 +7933,7 @@ Detection scope: the config descriptor digest, every layer descriptor digest (si
 
 **Source:** [`PBAC-002`](../providers/aws.md) in the [AWS provider](../providers/aws.md).
 
-#### `PBAC-003`: CodeBuild security group allows 0.0.0.0/0 all-port egress <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-pbac-003 }
+### `PBAC-003`: CodeBuild security group allows 0.0.0.0/0 all-port egress <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-pbac-003 }
 
 **Evidences:** [`ESF-D-BUILD-ENV`](#ctrl-esf-d-build-env) Harden the build environment (isolated, minimal, ephemeral workers).
 
@@ -7334,7 +7943,7 @@ Detection scope: the config descriptor digest, every layer descriptor digest (si
 
 **Source:** [`PBAC-003`](../providers/aws.md) in the [AWS provider](../providers/aws.md).
 
-#### `PBAC-005`: CodePipeline stage action roles mirror the pipeline role <span class="pg-sev pg-sev--high">HIGH</span> { #detail-pbac-005 }
+### `PBAC-005`: CodePipeline stage action roles mirror the pipeline role <span class="pg-sev pg-sev--high">HIGH</span> { #detail-pbac-005 }
 
 **Evidences:** [`ESF-C-LEAST-PRIV`](#ctrl-esf-c-least-priv) Apply least-privilege to CI/CD service roles and pipelines.
 
@@ -7344,7 +7953,7 @@ Detection scope: the config descriptor digest, every layer descriptor digest (si
 
 **Source:** [`PBAC-005`](../providers/aws.md) in the [AWS provider](../providers/aws.md).
 
-#### `S3-000`: S3 API access failed <span class="pg-sev pg-sev--info">INFO</span> { #detail-s3-000 }
+### `S3-000`: S3 API access failed <span class="pg-sev pg-sev--info">INFO</span> { #detail-s3-000 }
 
 **Evidences:** [`ESF-C-AUDIT`](#ctrl-esf-c-audit) Audit deployment / pipeline activity and retain logs.
 
@@ -7354,7 +7963,7 @@ Detection scope: the config descriptor digest, every layer descriptor digest (si
 
 **Source:** [`S3-000`](../providers/aws.md) in the [AWS provider](../providers/aws.md).
 
-#### `S3-001`: Artifact bucket public access block not fully enabled <span class="pg-sev pg-sev--critical">CRITICAL</span> { #detail-s3-001 }
+### `S3-001`: Artifact bucket public access block not fully enabled <span class="pg-sev pg-sev--critical">CRITICAL</span> { #detail-s3-001 }
 
 **Evidences:** [`ESF-C-ARTIFACT-AUTHZ`](#ctrl-esf-c-artifact-authz) Restrict access to artifact storage and deployment pipelines.
 
@@ -7364,7 +7973,7 @@ Detection scope: the config descriptor digest, every layer descriptor digest (si
 
 **Source:** [`S3-001`](../providers/aws.md) in the [AWS provider](../providers/aws.md).
 
-#### `S3-002`: Artifact bucket server-side encryption not configured <span class="pg-sev pg-sev--high">HIGH</span> { #detail-s3-002 }
+### `S3-002`: Artifact bucket server-side encryption not configured <span class="pg-sev pg-sev--high">HIGH</span> { #detail-s3-002 }
 
 **Evidences:** [`ESF-D-SIGN-ARTIFACTS`](#ctrl-esf-d-sign-artifacts) Sign build artifacts and verify signatures before release.
 
@@ -7374,7 +7983,7 @@ Detection scope: the config descriptor digest, every layer descriptor digest (si
 
 **Source:** [`S3-002`](../providers/aws.md) in the [AWS provider](../providers/aws.md).
 
-#### `S3-003`: Artifact bucket versioning not enabled <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-s3-003 }
+### `S3-003`: Artifact bucket versioning not enabled <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-s3-003 }
 
 **Evidences:** [`ESF-D-SBOM`](#ctrl-esf-d-sbom) Produce SBOM / provenance metadata with every build, [`ESF-S-IMMUTABLE`](#ctrl-esf-s-immutable) Enforce artifact / tag immutability to preserve provenance, [`ESF-C-ROLLBACK`](#ctrl-esf-c-rollback) Automated rollback on deployment failure or alarm.
 
@@ -7384,7 +7993,7 @@ Detection scope: the config descriptor digest, every layer descriptor digest (si
 
 **Source:** [`S3-003`](../providers/aws.md) in the [AWS provider](../providers/aws.md).
 
-#### `S3-004`: Artifact bucket access logging not enabled <span class="pg-sev pg-sev--low">LOW</span> { #detail-s3-004 }
+### `S3-004`: Artifact bucket access logging not enabled <span class="pg-sev pg-sev--low">LOW</span> { #detail-s3-004 }
 
 **Evidences:** [`ESF-C-AUDIT`](#ctrl-esf-c-audit) Audit deployment / pipeline activity and retain logs.
 
@@ -7394,7 +8003,7 @@ Detection scope: the config descriptor digest, every layer descriptor digest (si
 
 **Source:** [`S3-004`](../providers/aws.md) in the [AWS provider](../providers/aws.md).
 
-#### `S3-005`: Artifact bucket missing aws:SecureTransport deny <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-s3-005 }
+### `S3-005`: Artifact bucket missing aws:SecureTransport deny <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-s3-005 }
 
 **Evidences:** [`ESF-C-ARTIFACT-AUTHZ`](#ctrl-esf-c-artifact-authz) Restrict access to artifact storage and deployment pipelines.
 
@@ -7404,7 +8013,7 @@ Detection scope: the config descriptor digest, every layer descriptor digest (si
 
 **Source:** [`S3-005`](../providers/aws.md) in the [AWS provider](../providers/aws.md).
 
-#### `SCM-001`: Default branch has no protection rule <span class="pg-sev pg-sev--high">HIGH</span> { #detail-scm-001 }
+### `SCM-001`: Default branch has no protection rule <span class="pg-sev pg-sev--high">HIGH</span> { #detail-scm-001 }
 
 **Evidences:** [`ESF-D-CODE-REVIEW`](#ctrl-esf-d-code-review) Require peer review of source and pipeline configuration.
 
@@ -7438,7 +8047,7 @@ Detection scope: the config descriptor digest, every layer descriptor digest (si
 
 **Source:** [`SCM-001`](../providers/scm.md#scm-001) in the [SCM provider](../providers/scm.md).
 
-#### `SCM-002`: Default branch protection does not require pull request reviews <span class="pg-sev pg-sev--high">HIGH</span> { #detail-scm-002 }
+### `SCM-002`: Default branch protection does not require pull request reviews <span class="pg-sev pg-sev--high">HIGH</span> { #detail-scm-002 }
 
 **Evidences:** [`ESF-D-CODE-REVIEW`](#ctrl-esf-d-code-review) Require peer review of source and pipeline configuration.
 
@@ -7471,7 +8080,7 @@ Detection scope: the config descriptor digest, every layer descriptor digest (si
 
 **Source:** [`SCM-002`](../providers/scm.md#scm-002) in the [SCM provider](../providers/scm.md).
 
-#### `SCM-003`: GitHub default code scanning is not enabled <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-scm-003 }
+### `SCM-003`: GitHub default code scanning is not enabled <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-scm-003 }
 
 **Evidences:** [`ESF-S-VULN-MGMT`](#ctrl-esf-s-vuln-mgmt) Scan inbound artifacts (images, packages) for known vulnerabilities.
 
@@ -7504,7 +8113,7 @@ Detection scope: the config descriptor digest, every layer descriptor digest (si
 
 **Source:** [`SCM-003`](../providers/scm.md#scm-003) in the [SCM provider](../providers/scm.md).
 
-#### `SCM-004`: GitHub secret scanning is not enabled <span class="pg-sev pg-sev--high">HIGH</span> { #detail-scm-004 }
+### `SCM-004`: GitHub secret scanning is not enabled <span class="pg-sev pg-sev--high">HIGH</span> { #detail-scm-004 }
 
 **Evidences:** [`ESF-D-SECRETS`](#ctrl-esf-d-secrets) Protect secrets used during build; no secrets in source or env.
 
@@ -7522,7 +8131,7 @@ Detection scope: the config descriptor digest, every layer descriptor digest (si
 
 **Source:** [`SCM-004`](../providers/scm.md#scm-004) in the [SCM provider](../providers/scm.md).
 
-#### `SCM-005`: Dependabot security updates are not enabled <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-scm-005 }
+### `SCM-005`: Dependabot security updates are not enabled <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-scm-005 }
 
 **Evidences:** [`ESF-S-VULN-MGMT`](#ctrl-esf-s-vuln-mgmt) Scan inbound artifacts (images, packages) for known vulnerabilities.
 
@@ -7537,7 +8146,7 @@ Detection scope: the config descriptor digest, every layer descriptor digest (si
 
 **Source:** [`SCM-005`](../providers/scm.md#scm-005) in the [SCM provider](../providers/scm.md).
 
-#### `SCM-006`: Default branch protection does not require signed commits <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-scm-006 }
+### `SCM-006`: Default branch protection does not require signed commits <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-scm-006 }
 
 **Evidences:** [`ESF-D-TAMPER`](#ctrl-esf-d-tamper) Protect build artifacts from tampering and detect unauthorized modification.
 
@@ -7547,7 +8156,7 @@ Detection scope: the config descriptor digest, every layer descriptor digest (si
 
 **Source:** [`SCM-006`](../providers/scm.md#scm-006) in the [SCM provider](../providers/scm.md).
 
-#### `SCM-007`: Default branch protection allows force-pushes <span class="pg-sev pg-sev--high">HIGH</span> { #detail-scm-007 }
+### `SCM-007`: Default branch protection allows force-pushes <span class="pg-sev pg-sev--high">HIGH</span> { #detail-scm-007 }
 
 **Evidences:** [`ESF-D-CODE-REVIEW`](#ctrl-esf-d-code-review) Require peer review of source and pipeline configuration.
 
@@ -7557,7 +8166,7 @@ Detection scope: the config descriptor digest, every layer descriptor digest (si
 
 **Source:** [`SCM-007`](../providers/scm.md#scm-007) in the [SCM provider](../providers/scm.md).
 
-#### `SCM-008`: Default branch protection does not require status checks <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-scm-008 }
+### `SCM-008`: Default branch protection does not require status checks <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-scm-008 }
 
 **Evidences:** [`ESF-D-CODE-REVIEW`](#ctrl-esf-d-code-review) Require peer review of source and pipeline configuration.
 
@@ -7572,7 +8181,7 @@ Detection scope: the config descriptor digest, every layer descriptor digest (si
 
 **Source:** [`SCM-008`](../providers/scm.md#scm-008) in the [SCM provider](../providers/scm.md).
 
-#### `SCM-009`: Default branch protection allows branch deletion <span class="pg-sev pg-sev--high">HIGH</span> { #detail-scm-009 }
+### `SCM-009`: Default branch protection allows branch deletion <span class="pg-sev pg-sev--high">HIGH</span> { #detail-scm-009 }
 
 **Evidences:** [`ESF-D-CODE-REVIEW`](#ctrl-esf-d-code-review) Require peer review of source and pipeline configuration.
 
@@ -7582,7 +8191,7 @@ Detection scope: the config descriptor digest, every layer descriptor digest (si
 
 **Source:** [`SCM-009`](../providers/scm.md#scm-009) in the [SCM provider](../providers/scm.md).
 
-#### `SCM-010`: Branch protection allows administrators to bypass <span class="pg-sev pg-sev--high">HIGH</span> { #detail-scm-010 }
+### `SCM-010`: Branch protection allows administrators to bypass <span class="pg-sev pg-sev--high">HIGH</span> { #detail-scm-010 }
 
 **Evidences:** [`ESF-D-CODE-REVIEW`](#ctrl-esf-d-code-review) Require peer review of source and pipeline configuration.
 
@@ -7592,7 +8201,7 @@ Detection scope: the config descriptor digest, every layer descriptor digest (si
 
 **Source:** [`SCM-010`](../providers/scm.md#scm-010) in the [SCM provider](../providers/scm.md).
 
-#### `SCM-011`: Default branch protection does not require CODEOWNERS reviews <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-scm-011 }
+### `SCM-011`: Default branch protection does not require CODEOWNERS reviews <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-scm-011 }
 
 **Evidences:** [`ESF-D-CODE-REVIEW`](#ctrl-esf-d-code-review) Require peer review of source and pipeline configuration.
 
@@ -7606,7 +8215,7 @@ Detection scope: the config descriptor digest, every layer descriptor digest (si
 
 **Source:** [`SCM-011`](../providers/scm.md#scm-011) in the [SCM provider](../providers/scm.md).
 
-#### `SCM-012`: Default branch protection keeps stale reviews after a push <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-scm-012 }
+### `SCM-012`: Default branch protection keeps stale reviews after a push <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-scm-012 }
 
 **Evidences:** [`ESF-D-CODE-REVIEW`](#ctrl-esf-d-code-review) Require peer review of source and pipeline configuration.
 
@@ -7616,7 +8225,7 @@ Detection scope: the config descriptor digest, every layer descriptor digest (si
 
 **Source:** [`SCM-012`](../providers/scm.md#scm-012) in the [SCM provider](../providers/scm.md).
 
-#### `SCM-013`: Default branch protection does not require conversation resolution <span class="pg-sev pg-sev--low">LOW</span> { #detail-scm-013 }
+### `SCM-013`: Default branch protection does not require conversation resolution <span class="pg-sev pg-sev--low">LOW</span> { #detail-scm-013 }
 
 **Evidences:** [`ESF-D-CODE-REVIEW`](#ctrl-esf-d-code-review) Require peer review of source and pipeline configuration.
 
@@ -7626,7 +8235,7 @@ Detection scope: the config descriptor digest, every layer descriptor digest (si
 
 **Source:** [`SCM-013`](../providers/scm.md#scm-013) in the [SCM provider](../providers/scm.md).
 
-#### `SCM-014`: Default branch protection does not require approval of the most recent push <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-scm-014 }
+### `SCM-014`: Default branch protection does not require approval of the most recent push <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-scm-014 }
 
 **Evidences:** [`ESF-D-CODE-REVIEW`](#ctrl-esf-d-code-review) Require peer review of source and pipeline configuration.
 
@@ -7636,7 +8245,7 @@ Detection scope: the config descriptor digest, every layer descriptor digest (si
 
 **Source:** [`SCM-014`](../providers/scm.md#scm-014) in the [SCM provider](../providers/scm.md).
 
-#### `SCM-015`: Secret scanning push protection is not enabled <span class="pg-sev pg-sev--high">HIGH</span> { #detail-scm-015 }
+### `SCM-015`: Secret scanning push protection is not enabled <span class="pg-sev pg-sev--high">HIGH</span> { #detail-scm-015 }
 
 **Evidences:** [`ESF-D-SECRETS`](#ctrl-esf-d-secrets) Protect secrets used during build; no secrets in source or env.
 
@@ -7651,7 +8260,7 @@ Detection scope: the config descriptor digest, every layer descriptor digest (si
 
 **Source:** [`SCM-015`](../providers/scm.md#scm-015) in the [SCM provider](../providers/scm.md).
 
-#### `SCM-016`: Private vulnerability reporting is not enabled <span class="pg-sev pg-sev--low">LOW</span> { #detail-scm-016 }
+### `SCM-016`: Private vulnerability reporting is not enabled <span class="pg-sev pg-sev--low">LOW</span> { #detail-scm-016 }
 
 **Evidences:** [`ESF-S-VULN-MGMT`](#ctrl-esf-s-vuln-mgmt) Scan inbound artifacts (images, packages) for known vulnerabilities.
 
@@ -7666,7 +8275,7 @@ Detection scope: the config descriptor digest, every layer descriptor digest (si
 
 **Source:** [`SCM-016`](../providers/scm.md#scm-016) in the [SCM provider](../providers/scm.md).
 
-#### `SCM-017`: Repository has no CODEOWNERS file <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-scm-017 }
+### `SCM-017`: Repository has no CODEOWNERS file <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-scm-017 }
 
 **Evidences:** [`ESF-D-CODE-REVIEW`](#ctrl-esf-d-code-review) Require peer review of source and pipeline configuration.
 
@@ -7680,7 +8289,7 @@ Detection scope: the config descriptor digest, every layer descriptor digest (si
 
 **Source:** [`SCM-017`](../providers/scm.md#scm-017) in the [SCM provider](../providers/scm.md).
 
-#### `SCM-018`: Required PR reviews can be bypassed by named identities <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-scm-018 }
+### `SCM-018`: Required PR reviews can be bypassed by named identities <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-scm-018 }
 
 **Evidences:** [`ESF-D-CODE-REVIEW`](#ctrl-esf-d-code-review) Require peer review of source and pipeline configuration.
 
@@ -7694,7 +8303,7 @@ Detection scope: the config descriptor digest, every layer descriptor digest (si
 
 **Source:** [`SCM-018`](../providers/scm.md#scm-018) in the [SCM provider](../providers/scm.md).
 
-#### `SCM-019`: Push restrictions allowlist names individual users <span class="pg-sev pg-sev--low">LOW</span> { #detail-scm-019 }
+### `SCM-019`: Push restrictions allowlist names individual users <span class="pg-sev pg-sev--low">LOW</span> { #detail-scm-019 }
 
 **Evidences:** [`ESF-D-CODE-REVIEW`](#ctrl-esf-d-code-review) Require peer review of source and pipeline configuration.
 
@@ -7708,7 +8317,7 @@ Detection scope: the config descriptor digest, every layer descriptor digest (si
 
 **Source:** [`SCM-019`](../providers/scm.md#scm-019) in the [SCM provider](../providers/scm.md).
 
-#### `SCM-020`: Default workflow GITHUB_TOKEN has write permission <span class="pg-sev pg-sev--high">HIGH</span> { #detail-scm-020 }
+### `SCM-020`: Default workflow GITHUB_TOKEN has write permission <span class="pg-sev pg-sev--high">HIGH</span> { #detail-scm-020 }
 
 **Evidences:** [`ESF-D-TOKEN-HYGIENE`](#ctrl-esf-d-token-hygiene) Use short-lived, federated credentials (OIDC), not long-lived tokens, [`ESF-C-LEAST-PRIV`](#ctrl-esf-c-least-priv) Apply least-privilege to CI/CD service roles and pipelines.
 
@@ -7726,7 +8335,7 @@ Detection scope: the config descriptor digest, every layer descriptor digest (si
 
 **Source:** [`SCM-020`](../providers/scm.md#scm-020) in the [SCM provider](../providers/scm.md).
 
-#### `SCM-021`: Actions can approve pull requests (self-approval bypass) <span class="pg-sev pg-sev--high">HIGH</span> { #detail-scm-021 }
+### `SCM-021`: Actions can approve pull requests (self-approval bypass) <span class="pg-sev pg-sev--high">HIGH</span> { #detail-scm-021 }
 
 **Evidences:** [`ESF-D-CODE-REVIEW`](#ctrl-esf-d-code-review) Require peer review of source and pipeline configuration.
 
@@ -7740,7 +8349,7 @@ Detection scope: the config descriptor digest, every layer descriptor digest (si
 
 **Source:** [`SCM-021`](../providers/scm.md#scm-021) in the [SCM provider](../providers/scm.md).
 
-#### `SCM-022`: Repo Actions permissions allow any source (no allow-list) <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-scm-022 }
+### `SCM-022`: Repo Actions permissions allow any source (no allow-list) <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-scm-022 }
 
 **Evidences:** [`ESF-S-VERIFY-DEPS`](#ctrl-esf-s-verify-deps) Verify third-party and open-source dependencies before use, [`ESF-S-TRUSTED-REG`](#ctrl-esf-s-trusted-reg) Use only trusted, authenticated package and image registries.
 
@@ -7754,7 +8363,7 @@ Detection scope: the config descriptor digest, every layer descriptor digest (si
 
 **Source:** [`SCM-022`](../providers/scm.md#scm-022) in the [SCM provider](../providers/scm.md).
 
-#### `SCM-023`: Deployment environment lacks required-reviewer protection <span class="pg-sev pg-sev--high">HIGH</span> { #detail-scm-023 }
+### `SCM-023`: Deployment environment lacks required-reviewer protection <span class="pg-sev pg-sev--high">HIGH</span> { #detail-scm-023 }
 
 **Evidences:** [`ESF-C-APPROVAL`](#ctrl-esf-c-approval) Require explicit approval before production deployment.
 
@@ -7768,7 +8377,7 @@ Detection scope: the config descriptor digest, every layer descriptor digest (si
 
 **Source:** [`SCM-023`](../providers/scm.md#scm-023) in the [SCM provider](../providers/scm.md).
 
-#### `SCM-024`: Deployment environment can deploy from any branch <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-scm-024 }
+### `SCM-024`: Deployment environment can deploy from any branch <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-scm-024 }
 
 **Evidences:** [`ESF-C-ENV-SEP`](#ctrl-esf-c-env-sep) Separate deployment environments (dev / staging / prod).
 
@@ -7782,7 +8391,7 @@ Detection scope: the config descriptor digest, every layer descriptor digest (si
 
 **Source:** [`SCM-024`](../providers/scm.md#scm-024) in the [SCM provider](../providers/scm.md).
 
-#### `SCM-025`: Repo has write-enabled deploy keys (push backdoor) <span class="pg-sev pg-sev--high">HIGH</span> { #detail-scm-025 }
+### `SCM-025`: Repo has write-enabled deploy keys (push backdoor) <span class="pg-sev pg-sev--high">HIGH</span> { #detail-scm-025 }
 
 **Evidences:** [`ESF-D-TOKEN-HYGIENE`](#ctrl-esf-d-token-hygiene) Use short-lived, federated credentials (OIDC), not long-lived tokens.
 
@@ -7834,7 +8443,7 @@ GET /repos/acme/payments-api/keys
 
 **Source:** [`SCM-025`](../providers/scm.md#scm-025) in the [SCM provider](../providers/scm.md).
 
-#### `SCM-026`: Webhook ships events insecurely (HTTP / no-TLS / no-secret) <span class="pg-sev pg-sev--high">HIGH</span> { #detail-scm-026 }
+### `SCM-026`: Webhook ships events insecurely (HTTP / no-TLS / no-secret) <span class="pg-sev pg-sev--high">HIGH</span> { #detail-scm-026 }
 
 **Evidences:** [`ESF-D-CODE-REVIEW`](#ctrl-esf-d-code-review) Require peer review of source and pipeline configuration.
 
@@ -7863,7 +8472,7 @@ If the receiving service genuinely cannot handle HTTPS or shared secrets, termin
 
 **Source:** [`SCM-026`](../providers/scm.md#scm-026) in the [SCM provider](../providers/scm.md).
 
-#### `SCM-027`: Outside collaborator holds write / maintain / admin access <span class="pg-sev pg-sev--high">HIGH</span> { #detail-scm-027 }
+### `SCM-027`: Outside collaborator holds write / maintain / admin access <span class="pg-sev pg-sev--high">HIGH</span> { #detail-scm-027 }
 
 **Evidences:** [`ESF-C-LEAST-PRIV`](#ctrl-esf-c-least-priv) Apply least-privilege to CI/CD service roles and pipelines.
 
@@ -7883,7 +8492,7 @@ Requires admin scope on the repo to enumerate the outside-collaborator list; wit
 
 **Source:** [`SCM-027`](../providers/scm.md#scm-027) in the [SCM provider](../providers/scm.md).
 
-#### `SCM-028`: Private repo allows forking <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-scm-028 }
+### `SCM-028`: Private repo allows forking <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-scm-028 }
 
 **Evidences:** [`ESF-D-CODE-REVIEW`](#ctrl-esf-d-code-review) Require peer review of source and pipeline configuration.
 
@@ -7899,7 +8508,7 @@ If forks are genuinely needed for the development workflow, enforce ``Allow fork
 
 **Source:** [`SCM-028`](../providers/scm.md#scm-028) in the [SCM provider](../providers/scm.md).
 
-#### `SCM-029`: Repository ruleset is in evaluate / disabled mode (not enforced) <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-scm-029 }
+### `SCM-029`: Repository ruleset is in evaluate / disabled mode (not enforced) <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-scm-029 }
 
 **Evidences:** [`ESF-D-CODE-REVIEW`](#ctrl-esf-d-code-review) Require peer review of source and pipeline configuration.
 
@@ -7920,7 +8529,7 @@ Note: the legacy-branch-protection rules in this pack (SCM-001..010) do NOT see 
 
 **Source:** [`SCM-029`](../providers/scm.md#scm-029) in the [SCM provider](../providers/scm.md).
 
-#### `SCM-030`: Repository ruleset has bypass actor with bypass_mode: always <span class="pg-sev pg-sev--high">HIGH</span> { #detail-scm-030 }
+### `SCM-030`: Repository ruleset has bypass actor with bypass_mode: always <span class="pg-sev pg-sev--high">HIGH</span> { #detail-scm-030 }
 
 **Evidences:** [`ESF-D-CODE-REVIEW`](#ctrl-esf-d-code-review) Require peer review of source and pipeline configuration.
 
@@ -7936,7 +8545,7 @@ Rulesets in non-active enforcement modes are skipped — SCM-029 owns the not-en
 
 **Source:** [`SCM-030`](../providers/scm.md#scm-030) in the [SCM provider](../providers/scm.md).
 
-#### `SCM-031`: Repo allows auto-merge (no human-timing gate) <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-scm-031 }
+### `SCM-031`: Repo allows auto-merge (no human-timing gate) <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-scm-031 }
 
 **Evidences:** [`ESF-D-CODE-REVIEW`](#ctrl-esf-d-code-review) Require peer review of source and pipeline configuration.
 
@@ -7952,7 +8561,7 @@ If your team relies on auto-merge for throughput, the compensating controls are 
 
 **Source:** [`SCM-031`](../providers/scm.md#scm-031) in the [SCM provider](../providers/scm.md).
 
-#### `SCM-032`: Active ruleset doesn't require a PR review (governance theater) <span class="pg-sev pg-sev--high">HIGH</span> { #detail-scm-032 }
+### `SCM-032`: Active ruleset doesn't require a PR review (governance theater) <span class="pg-sev pg-sev--high">HIGH</span> { #detail-scm-032 }
 
 **Evidences:** [`ESF-D-CODE-REVIEW`](#ctrl-esf-d-code-review) Require peer review of source and pipeline configuration.
 
@@ -7970,7 +8579,7 @@ SCM-032 evaluates rulesets in isolation: it does not consult legacy branch-prote
 
 **Source:** [`SCM-032`](../providers/scm.md#scm-032) in the [SCM provider](../providers/scm.md).
 
-#### `SCM-033`: Active ruleset doesn't require status checks <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-scm-033 }
+### `SCM-033`: Active ruleset doesn't require status checks <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-scm-033 }
 
 **Evidences:** [`ESF-D-CODE-REVIEW`](#ctrl-esf-d-code-review) Require peer review of source and pipeline configuration.
 
@@ -7986,7 +8595,7 @@ An empty contexts list (``required_status_checks: []``) is the same as no rule �
 
 **Source:** [`SCM-033`](../providers/scm.md#scm-033) in the [SCM provider](../providers/scm.md).
 
-#### `SCM-034`: Active ruleset doesn't block force-push <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-scm-034 }
+### `SCM-034`: Active ruleset doesn't block force-push <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-scm-034 }
 
 **Evidences:** [`ESF-D-CODE-REVIEW`](#ctrl-esf-d-code-review) Require peer review of source and pipeline configuration.
 
@@ -8000,7 +8609,7 @@ An empty contexts list (``required_status_checks: []``) is the same as no rule �
 
 **Source:** [`SCM-034`](../providers/scm.md#scm-034) in the [SCM provider](../providers/scm.md).
 
-#### `SCM-035`: Active ruleset doesn't block branch deletion <span class="pg-sev pg-sev--low">LOW</span> { #detail-scm-035 }
+### `SCM-035`: Active ruleset doesn't block branch deletion <span class="pg-sev pg-sev--low">LOW</span> { #detail-scm-035 }
 
 **Evidences:** [`ESF-D-CODE-REVIEW`](#ctrl-esf-d-code-review) Require peer review of source and pipeline configuration.
 
@@ -8014,7 +8623,7 @@ An empty contexts list (``required_status_checks: []``) is the same as no rule �
 
 **Source:** [`SCM-035`](../providers/scm.md#scm-035) in the [SCM provider](../providers/scm.md).
 
-#### `SCM-036`: Active ruleset doesn't require signed commits <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-scm-036 }
+### `SCM-036`: Active ruleset doesn't require signed commits <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-scm-036 }
 
 **Evidences:** [`ESF-D-TAMPER`](#ctrl-esf-d-tamper) Protect build artifacts from tampering and detect unauthorized modification.
 
@@ -8028,7 +8637,7 @@ An empty contexts list (``required_status_checks: []``) is the same as no rule �
 
 **Source:** [`SCM-036`](../providers/scm.md#scm-036) in the [SCM provider](../providers/scm.md).
 
-#### `SCM-037`: Active ruleset's pull_request rule doesn't dismiss stale reviews <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-scm-037 }
+### `SCM-037`: Active ruleset's pull_request rule doesn't dismiss stale reviews <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-scm-037 }
 
 **Evidences:** [`ESF-D-CODE-REVIEW`](#ctrl-esf-d-code-review) Require peer review of source and pipeline configuration.
 
@@ -8044,7 +8653,7 @@ The ruleset analog of SCM-012 (legacy branch-protection stale-review dismissal).
 
 **Source:** [`SCM-037`](../providers/scm.md#scm-037) in the [SCM provider](../providers/scm.md).
 
-#### `SCM-038`: Active ruleset doesn't require linear history <span class="pg-sev pg-sev--low">LOW</span> { #detail-scm-038 }
+### `SCM-038`: Active ruleset doesn't require linear history <span class="pg-sev pg-sev--low">LOW</span> { #detail-scm-038 }
 
 **Evidences:** [`ESF-D-CODE-REVIEW`](#ctrl-esf-d-code-review) Require peer review of source and pipeline configuration.
 
@@ -8060,7 +8669,7 @@ Merge commits aren't a direct attacker primitive — force-push (SCM-034) is the
 
 **Source:** [`SCM-038`](../providers/scm.md#scm-038) in the [SCM provider](../providers/scm.md).
 
-#### `SCM-039`: Active ruleset doesn't pin a required workflow <span class="pg-sev pg-sev--low">LOW</span> { #detail-scm-039 }
+### `SCM-039`: Active ruleset doesn't pin a required workflow <span class="pg-sev pg-sev--low">LOW</span> { #detail-scm-039 }
 
 **Evidences:** [`ESF-D-CODE-REVIEW`](#ctrl-esf-d-code-review) Require peer review of source and pipeline configuration.
 
@@ -8076,7 +8685,7 @@ Pin the workflow ref to either a long-lived branch the ruleset bypass actors don
 
 **Source:** [`SCM-039`](../providers/scm.md#scm-039) in the [SCM provider](../providers/scm.md).
 
-#### `SCM-040`: Active ruleset doesn't gate on code scanning results <span class="pg-sev pg-sev--low">LOW</span> { #detail-scm-040 }
+### `SCM-040`: Active ruleset doesn't gate on code scanning results <span class="pg-sev pg-sev--low">LOW</span> { #detail-scm-040 }
 
 **Evidences:** [`ESF-S-VULN-MGMT`](#ctrl-esf-s-vuln-mgmt) Scan inbound artifacts (images, packages) for known vulnerabilities.
 
@@ -8092,7 +8701,7 @@ If your org doesn't license GHAS (the underlying feature), this rule type isn't 
 
 **Source:** [`SCM-040`](../providers/scm.md#scm-040) in the [SCM provider](../providers/scm.md).
 
-#### `SCM-041`: Active ruleset doesn't gate on a deployment environment <span class="pg-sev pg-sev--low">LOW</span> { #detail-scm-041 }
+### `SCM-041`: Active ruleset doesn't gate on a deployment environment <span class="pg-sev pg-sev--low">LOW</span> { #detail-scm-041 }
 
 **Evidences:** [`ESF-C-APPROVAL`](#ctrl-esf-c-approval) Require explicit approval before production deployment, [`ESF-C-ENV-SEP`](#ctrl-esf-c-env-sep) Separate deployment environments (dev / staging / prod).
 
@@ -8108,7 +8717,7 @@ An empty environments list (``required_deployment_environments: []``) documents 
 
 **Source:** [`SCM-041`](../providers/scm.md#scm-041) in the [SCM provider](../providers/scm.md).
 
-#### `SCM-042`: Active ruleset doesn't require merge queue <span class="pg-sev pg-sev--low">LOW</span> { #detail-scm-042 }
+### `SCM-042`: Active ruleset doesn't require merge queue <span class="pg-sev pg-sev--low">LOW</span> { #detail-scm-042 }
 
 **Evidences:** [`ESF-D-CODE-REVIEW`](#ctrl-esf-d-code-review) Require peer review of source and pipeline configuration.
 
@@ -8124,7 +8733,7 @@ Pair with SCM-033 (required status checks). SCM-033 ensures CI passes BEFORE mer
 
 **Source:** [`SCM-042`](../providers/scm.md#scm-042) in the [SCM provider](../providers/scm.md).
 
-#### `SCM-043`: Tag-targeted ruleset doesn't require signed commits <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-scm-043 }
+### `SCM-043`: Tag-targeted ruleset doesn't require signed commits <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-scm-043 }
 
 **Evidences:** [`ESF-D-TAMPER`](#ctrl-esf-d-tamper) Protect build artifacts from tampering and detect unauthorized modification.
 
@@ -8138,7 +8747,7 @@ Pair with SCM-033 (required status checks). SCM-033 ensures CI passes BEFORE mer
 
 **Source:** [`SCM-043`](../providers/scm.md#scm-043) in the [SCM provider](../providers/scm.md).
 
-#### `SCM-044`: Default-branch signed-commits requirement bypassed for admins <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-scm-044 }
+### `SCM-044`: Default-branch signed-commits requirement bypassed for admins <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-scm-044 }
 
 **Evidences:** [`ESF-D-TAMPER`](#ctrl-esf-d-tamper) Protect build artifacts from tampering and detect unauthorized modification.
 
@@ -8152,7 +8761,7 @@ Pair with SCM-033 (required status checks). SCM-033 ensures CI passes BEFORE mer
 
 **Source:** [`SCM-044`](../providers/scm.md#scm-044) in the [SCM provider](../providers/scm.md).
 
-#### `SCM-045`: Default code scanning uses the limited query suite <span class="pg-sev pg-sev--low">LOW</span> { #detail-scm-045 }
+### `SCM-045`: Default code scanning uses the limited query suite <span class="pg-sev pg-sev--low">LOW</span> { #detail-scm-045 }
 
 **Evidences:** [`ESF-S-VULN-MGMT`](#ctrl-esf-s-vuln-mgmt) Scan inbound artifacts (images, packages) for known vulnerabilities.
 
@@ -8166,7 +8775,7 @@ Pair with SCM-033 (required status checks). SCM-033 ensures CI passes BEFORE mer
 
 **Source:** [`SCM-045`](../providers/scm.md#scm-045) in the [SCM provider](../providers/scm.md).
 
-#### `SCM-046`: Default code scanning is configured but paused <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-scm-046 }
+### `SCM-046`: Default code scanning is configured but paused <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-scm-046 }
 
 **Evidences:** [`ESF-S-VULN-MGMT`](#ctrl-esf-s-vuln-mgmt) Scan inbound artifacts (images, packages) for known vulnerabilities.
 
@@ -8180,7 +8789,7 @@ Pair with SCM-033 (required status checks). SCM-033 ensures CI passes BEFORE mer
 
 **Source:** [`SCM-046`](../providers/scm.md#scm-046) in the [SCM provider](../providers/scm.md).
 
-#### `SCM-047`: Repo language excluded from default code-scanning coverage <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-scm-047 }
+### `SCM-047`: Repo language excluded from default code-scanning coverage <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-scm-047 }
 
 **Evidences:** [`ESF-S-VULN-MGMT`](#ctrl-esf-s-vuln-mgmt) Scan inbound artifacts (images, packages) for known vulnerabilities.
 
@@ -8194,7 +8803,7 @@ Pair with SCM-033 (required status checks). SCM-033 ensures CI passes BEFORE mer
 
 **Source:** [`SCM-047`](../providers/scm.md#scm-047) in the [SCM provider](../providers/scm.md).
 
-#### `SIGN-001`: No AWS Signer profile defined for Lambda deploys <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-sign-001 }
+### `SIGN-001`: No AWS Signer profile defined for Lambda deploys <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-sign-001 }
 
 **Evidences:** [`ESF-D-SIGN-ARTIFACTS`](#ctrl-esf-d-sign-artifacts) Sign build artifacts and verify signatures before release.
 
@@ -8204,7 +8813,7 @@ Pair with SCM-033 (required status checks). SCM-033 ensures CI passes BEFORE mer
 
 **Source:** [`SIGN-001`](../providers/aws.md) in the [AWS provider](../providers/aws.md).
 
-#### `SIGN-002`: AWS Signer profile is revoked or inactive <span class="pg-sev pg-sev--high">HIGH</span> { #detail-sign-002 }
+### `SIGN-002`: AWS Signer profile is revoked or inactive <span class="pg-sev pg-sev--high">HIGH</span> { #detail-sign-002 }
 
 **Evidences:** [`ESF-D-SIGN-ARTIFACTS`](#ctrl-esf-d-sign-artifacts) Sign build artifacts and verify signatures before release.
 
@@ -8214,7 +8823,7 @@ Pair with SCM-033 (required status checks). SCM-033 ensures CI passes BEFORE mer
 
 **Source:** [`SIGN-002`](../providers/aws.md) in the [AWS provider](../providers/aws.md).
 
-#### `SM-000`: Secrets Manager API access failed <span class="pg-sev pg-sev--info">INFO</span> { #detail-sm-000 }
+### `SM-000`: Secrets Manager API access failed <span class="pg-sev pg-sev--info">INFO</span> { #detail-sm-000 }
 
 **Evidences:** [`ESF-C-AUDIT`](#ctrl-esf-c-audit) Audit deployment / pipeline activity and retain logs.
 
@@ -8224,7 +8833,7 @@ Pair with SCM-033 (required status checks). SCM-033 ensures CI passes BEFORE mer
 
 **Source:** [`SM-000`](../providers/aws.md) in the [AWS provider](../providers/aws.md).
 
-#### `SM-001`: Secrets Manager secret has no rotation configured <span class="pg-sev pg-sev--high">HIGH</span> { #detail-sm-001 }
+### `SM-001`: Secrets Manager secret has no rotation configured <span class="pg-sev pg-sev--high">HIGH</span> { #detail-sm-001 }
 
 **Evidences:** [`ESF-D-TOKEN-HYGIENE`](#ctrl-esf-d-token-hygiene) Use short-lived, federated credentials (OIDC), not long-lived tokens.
 
@@ -8234,7 +8843,7 @@ Pair with SCM-033 (required status checks). SCM-033 ensures CI passes BEFORE mer
 
 **Source:** [`SM-001`](../providers/aws.md) in the [AWS provider](../providers/aws.md).
 
-#### `SM-002`: Secrets Manager resource policy allows wildcard principal <span class="pg-sev pg-sev--critical">CRITICAL</span> { #detail-sm-002 }
+### `SM-002`: Secrets Manager resource policy allows wildcard principal <span class="pg-sev pg-sev--critical">CRITICAL</span> { #detail-sm-002 }
 
 **Evidences:** [`ESF-C-LEAST-PRIV`](#ctrl-esf-c-least-priv) Apply least-privilege to CI/CD service roles and pipelines.
 
@@ -8244,7 +8853,7 @@ Pair with SCM-033 (required status checks). SCM-033 ensures CI passes BEFORE mer
 
 **Source:** [`SM-002`](../providers/aws.md) in the [AWS provider](../providers/aws.md).
 
-#### `SSM-000`: SSM Parameter Store API access failed <span class="pg-sev pg-sev--info">INFO</span> { #detail-ssm-000 }
+### `SSM-000`: SSM Parameter Store API access failed <span class="pg-sev pg-sev--info">INFO</span> { #detail-ssm-000 }
 
 **Evidences:** [`ESF-C-AUDIT`](#ctrl-esf-c-audit) Audit deployment / pipeline activity and retain logs.
 
@@ -8254,7 +8863,7 @@ Pair with SCM-033 (required status checks). SCM-033 ensures CI passes BEFORE mer
 
 **Source:** [`SSM-000`](../providers/aws.md) in the [AWS provider](../providers/aws.md).
 
-#### `SSM-001`: SSM Parameter with secret-like name is not a SecureString <span class="pg-sev pg-sev--high">HIGH</span> { #detail-ssm-001 }
+### `SSM-001`: SSM Parameter with secret-like name is not a SecureString <span class="pg-sev pg-sev--high">HIGH</span> { #detail-ssm-001 }
 
 **Evidences:** [`ESF-D-SECRETS`](#ctrl-esf-d-secrets) Protect secrets used during build; no secrets in source or env.
 
@@ -8296,7 +8905,7 @@ $ aws ssm put-parameter \
 
 **Source:** [`SSM-001`](../providers/aws.md) in the [AWS provider](../providers/aws.md).
 
-#### `SSM-002`: SSM SecureString uses the default AWS-managed key <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-ssm-002 }
+### `SSM-002`: SSM SecureString uses the default AWS-managed key <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-ssm-002 }
 
 **Evidences:** [`ESF-C-ARTIFACT-AUTHZ`](#ctrl-esf-c-artifact-authz) Restrict access to artifact storage and deployment pipelines.
 
@@ -8306,7 +8915,7 @@ $ aws ssm put-parameter \
 
 **Source:** [`SSM-002`](../providers/aws.md) in the [AWS provider](../providers/aws.md).
 
-#### `TAINT-001`: Untrusted input flows across step boundaries via step outputs <span class="pg-sev pg-sev--high">HIGH</span> { #detail-taint-001 }
+### `TAINT-001`: Untrusted input flows across step boundaries via step outputs <span class="pg-sev pg-sev--high">HIGH</span> { #detail-taint-001 }
 
 **Evidences:** [`ESF-D-INJECTION`](#ctrl-esf-d-injection) Prevent script / template injection from untrusted pipeline context.
 
@@ -8322,7 +8931,7 @@ v1 limitations: only same-job step outputs are tracked; ``jobs.<id>.outputs.*`` 
 
 **Source:** [`TAINT-001`](../providers/github.md#taint-001) in the [GitHub Actions provider](../providers/github.md).
 
-#### `TAINT-002`: Untrusted input flows across jobs via ``jobs.<id>.outputs:`` <span class="pg-sev pg-sev--high">HIGH</span> { #detail-taint-002 }
+### `TAINT-002`: Untrusted input flows across jobs via ``jobs.<id>.outputs:`` <span class="pg-sev pg-sev--high">HIGH</span> { #detail-taint-002 }
 
 **Evidences:** [`ESF-D-INJECTION`](#ctrl-esf-d-injection) Prevent script / template injection from untrusted pipeline context.
 
@@ -8338,7 +8947,7 @@ Same-step interpolations (the producer's own use of ``${{ github.event.* }}`` in
 
 **Source:** [`TAINT-002`](../providers/github.md#taint-002) in the [GitHub Actions provider](../providers/github.md).
 
-#### `TAINT-003`: Untrusted input forwarded into reusable workflow ``with:`` <span class="pg-sev pg-sev--high">HIGH</span> { #detail-taint-003 }
+### `TAINT-003`: Untrusted input forwarded into reusable workflow ``with:`` <span class="pg-sev pg-sev--high">HIGH</span> { #detail-taint-003 }
 
 **Evidences:** [`ESF-D-INJECTION`](#ctrl-esf-d-injection) Prevent script / template injection from untrusted pipeline context.
 
@@ -8354,7 +8963,7 @@ When the callee body is loaded into the same scan (local ``./.github/workflows/<
 
 **Source:** [`TAINT-003`](../providers/github.md#taint-003) in the [GitHub Actions provider](../providers/github.md).
 
-#### `TAINT-004`: Untrusted input flows across jobs via dotenv artifact <span class="pg-sev pg-sev--high">HIGH</span> { #detail-taint-004 }
+### `TAINT-004`: Untrusted input flows across jobs via dotenv artifact <span class="pg-sev pg-sev--high">HIGH</span> { #detail-taint-004 }
 
 **Evidences:** [`ESF-D-INJECTION`](#ctrl-esf-d-injection) Prevent script / template injection from untrusted pipeline context.
 
@@ -8370,7 +8979,7 @@ v1 limitations: ``extends:`` job-template inheritance and cross-pipeline ``inclu
 
 **Source:** [`TAINT-004`](../providers/gitlab.md#taint-004) in the [GitLab CI provider](../providers/gitlab.md).
 
-#### `TAINT-005`: Untrusted input flows across steps via ``buildkite-agent meta-data`` <span class="pg-sev pg-sev--high">HIGH</span> { #detail-taint-005 }
+### `TAINT-005`: Untrusted input flows across steps via ``buildkite-agent meta-data`` <span class="pg-sev pg-sev--high">HIGH</span> { #detail-taint-005 }
 
 **Evidences:** [`ESF-D-INJECTION`](#ctrl-esf-d-injection) Prevent script / template injection from untrusted pipeline context.
 
@@ -8386,7 +8995,7 @@ Buildkite meta-data is per-build, not per-step; any step in the same build can r
 
 **Source:** [`TAINT-005`](../providers/buildkite.md#taint-005) in the [Buildkite provider](../providers/buildkite.md).
 
-#### `TAINT-006`: Untrusted input flows across tasks via Tekton ``results`` <span class="pg-sev pg-sev--high">HIGH</span> { #detail-taint-006 }
+### `TAINT-006`: Untrusted input flows across tasks via Tekton ``results`` <span class="pg-sev pg-sev--high">HIGH</span> { #detail-taint-006 }
 
 **Evidences:** [`ESF-D-INJECTION`](#ctrl-esf-d-injection) Prevent script / template injection from untrusted pipeline context.
 
@@ -8402,7 +9011,7 @@ Body resolution: inline ``taskSpec:`` blocks are walked directly; ``taskRef: { n
 
 **Source:** [`TAINT-006`](../providers/tekton.md#taint-006) in the [Tekton provider](../providers/tekton.md).
 
-#### `TAINT-007`: Untrusted input flows across templates via Argo ``outputs.parameters`` <span class="pg-sev pg-sev--high">HIGH</span> { #detail-taint-007 }
+### `TAINT-007`: Untrusted input flows across templates via Argo ``outputs.parameters`` <span class="pg-sev pg-sev--high">HIGH</span> { #detail-taint-007 }
 
 **Evidences:** [`ESF-D-INJECTION`](#ctrl-esf-d-injection) Prevent script / template injection from untrusted pipeline context.
 
@@ -8498,7 +9107,7 @@ spec:
 
 **Source:** [`TAINT-007`](../providers/argo.md#taint-007) in the [Argo Workflows provider](../providers/argo.md).
 
-#### `TAINT-008`: Untrusted input flows via GitLab ``extends:`` template inheritance <span class="pg-sev pg-sev--high">HIGH</span> { #detail-taint-008 }
+### `TAINT-008`: Untrusted input flows via GitLab ``extends:`` template inheritance <span class="pg-sev pg-sev--high">HIGH</span> { #detail-taint-008 }
 
 **Evidences:** [`ESF-D-INJECTION`](#ctrl-esf-d-injection) Prevent script / template injection from untrusted pipeline context.
 
@@ -8514,7 +9123,7 @@ v1 limitations: ``include:`` cross-pipeline file inclusion isn't tracked yet (wo
 
 **Source:** [`TAINT-008`](../providers/gitlab.md#taint-008) in the [GitLab CI provider](../providers/gitlab.md).
 
-#### `TF-001`: aws_iam_access_key declares a long-lived access key <span class="pg-sev pg-sev--critical">CRITICAL</span> { #detail-tf-001 }
+### `TF-001`: aws_iam_access_key declares a long-lived access key <span class="pg-sev pg-sev--critical">CRITICAL</span> { #detail-tf-001 }
 
 **Evidences:** [`ESF-D-TOKEN-HYGIENE`](#ctrl-esf-d-token-hygiene) Use short-lived, federated credentials (OIDC), not long-lived tokens.
 
@@ -8524,7 +9133,7 @@ v1 limitations: ``include:`` cross-pipeline file inclusion isn't tracked yet (wo
 
 **Source:** [`TF-001`](../providers/terraform.md) in the [Terraform provider](../providers/terraform.md).
 
-#### `TF-002`: Resource attribute carries a hard-coded secret shape <span class="pg-sev pg-sev--critical">CRITICAL</span> { #detail-tf-002 }
+### `TF-002`: Resource attribute carries a hard-coded secret shape <span class="pg-sev pg-sev--critical">CRITICAL</span> { #detail-tf-002 }
 
 **Evidences:** [`ESF-D-SECRETS`](#ctrl-esf-d-secrets) Protect secrets used during build; no secrets in source or env.
 
@@ -8534,7 +9143,7 @@ v1 limitations: ``include:`` cross-pipeline file inclusion isn't tracked yet (wo
 
 **Source:** [`TF-002`](../providers/terraform.md) in the [Terraform provider](../providers/terraform.md).
 
-#### `TF-003`: CodeBuild VPC shares its VPC with a public subnet <span class="pg-sev pg-sev--high">HIGH</span> { #detail-tf-003 }
+### `TF-003`: CodeBuild VPC shares its VPC with a public subnet <span class="pg-sev pg-sev--high">HIGH</span> { #detail-tf-003 }
 
 **Evidences:** [`ESF-D-BUILD-ENV`](#ctrl-esf-d-build-env) Harden the build environment (isolated, minimal, ephemeral workers).
 
@@ -8544,7 +9153,7 @@ v1 limitations: ``include:`` cross-pipeline file inclusion isn't tracked yet (wo
 
 **Source:** [`TF-003`](../providers/terraform.md) in the [Terraform provider](../providers/terraform.md).
 
-#### `TKN-001`: Tekton step image not pinned to a digest <span class="pg-sev pg-sev--high">HIGH</span> { #detail-tkn-001 }
+### `TKN-001`: Tekton step image not pinned to a digest <span class="pg-sev pg-sev--high">HIGH</span> { #detail-tkn-001 }
 
 **Evidences:** [`ESF-S-PIN-DEPS`](#ctrl-esf-s-pin-deps) Pin dependencies / actions / images to immutable digests, [`ESF-S-IMMUTABLE`](#ctrl-esf-s-immutable) Enforce artifact / tag immutability to preserve provenance.
 
@@ -8554,7 +9163,7 @@ v1 limitations: ``include:`` cross-pipeline file inclusion isn't tracked yet (wo
 
 **Source:** [`TKN-001`](../providers/tekton.md#tkn-001) in the [Tekton provider](../providers/tekton.md).
 
-#### `TKN-002`: Tekton step runs privileged or as root <span class="pg-sev pg-sev--high">HIGH</span> { #detail-tkn-002 }
+### `TKN-002`: Tekton step runs privileged or as root <span class="pg-sev pg-sev--high">HIGH</span> { #detail-tkn-002 }
 
 **Evidences:** [`ESF-D-PRIV-BUILD`](#ctrl-esf-d-priv-build) Avoid privileged / host-networked build workers.
 
@@ -8564,7 +9173,7 @@ v1 limitations: ``include:`` cross-pipeline file inclusion isn't tracked yet (wo
 
 **Source:** [`TKN-002`](../providers/tekton.md#tkn-002) in the [Tekton provider](../providers/tekton.md).
 
-#### `TKN-003`: Tekton param interpolated unsafely in step script <span class="pg-sev pg-sev--critical">CRITICAL</span> { #detail-tkn-003 }
+### `TKN-003`: Tekton param interpolated unsafely in step script <span class="pg-sev pg-sev--critical">CRITICAL</span> { #detail-tkn-003 }
 
 **Evidences:** [`ESF-D-INJECTION`](#ctrl-esf-d-injection) Prevent script / template injection from untrusted pipeline context.
 
@@ -8574,7 +9183,7 @@ v1 limitations: ``include:`` cross-pipeline file inclusion isn't tracked yet (wo
 
 **Source:** [`TKN-003`](../providers/tekton.md#tkn-003) in the [Tekton provider](../providers/tekton.md).
 
-#### `TKN-004`: Tekton Task mounts hostPath or shares host namespaces <span class="pg-sev pg-sev--critical">CRITICAL</span> { #detail-tkn-004 }
+### `TKN-004`: Tekton Task mounts hostPath or shares host namespaces <span class="pg-sev pg-sev--critical">CRITICAL</span> { #detail-tkn-004 }
 
 **Evidences:** [`ESF-D-BUILD-ENV`](#ctrl-esf-d-build-env) Harden the build environment (isolated, minimal, ephemeral workers), [`ESF-D-PRIV-BUILD`](#ctrl-esf-d-priv-build) Avoid privileged / host-networked build workers.
 
@@ -8584,7 +9193,7 @@ v1 limitations: ``include:`` cross-pipeline file inclusion isn't tracked yet (wo
 
 **Source:** [`TKN-004`](../providers/tekton.md#tkn-004) in the [Tekton provider](../providers/tekton.md).
 
-#### `TKN-005`: Literal secret value in Tekton step env or param default <span class="pg-sev pg-sev--critical">CRITICAL</span> <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> { #detail-tkn-005 }
+### `TKN-005`: Literal secret value in Tekton step env or param default <span class="pg-sev pg-sev--critical">CRITICAL</span> <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> { #detail-tkn-005 }
 
 **Evidences:** [`ESF-D-SECRETS`](#ctrl-esf-d-secrets) Protect secrets used during build; no secrets in source or env.
 
@@ -8596,7 +9205,7 @@ v1 limitations: ``include:`` cross-pipeline file inclusion isn't tracked yet (wo
 
 **Source:** [`TKN-005`](../providers/tekton.md#tkn-005) in the [Tekton provider](../providers/tekton.md).
 
-#### `TKN-006`: Tekton run lacks an explicit timeout <span class="pg-sev pg-sev--low">LOW</span> { #detail-tkn-006 }
+### `TKN-006`: Tekton run lacks an explicit timeout <span class="pg-sev pg-sev--low">LOW</span> { #detail-tkn-006 }
 
 **Evidences:** [`ESF-D-BUILD-TIMEOUT`](#ctrl-esf-d-build-timeout) Enforce bounded build execution (single-use, time-limited).
 
@@ -8606,7 +9215,7 @@ v1 limitations: ``include:`` cross-pipeline file inclusion isn't tracked yet (wo
 
 **Source:** [`TKN-006`](../providers/tekton.md#tkn-006) in the [Tekton provider](../providers/tekton.md).
 
-#### `TKN-007`: Tekton run uses the default ServiceAccount <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-tkn-007 }
+### `TKN-007`: Tekton run uses the default ServiceAccount <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-tkn-007 }
 
 **Evidences:** [`ESF-C-LEAST-PRIV`](#ctrl-esf-c-least-priv) Apply least-privilege to CI/CD service roles and pipelines.
 
@@ -8616,7 +9225,7 @@ v1 limitations: ``include:`` cross-pipeline file inclusion isn't tracked yet (wo
 
 **Source:** [`TKN-007`](../providers/tekton.md#tkn-007) in the [Tekton provider](../providers/tekton.md).
 
-#### `TKN-008`: Tekton step script pipes remote install or disables TLS <span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> { #detail-tkn-008 }
+### `TKN-008`: Tekton step script pipes remote install or disables TLS <span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> { #detail-tkn-008 }
 
 **Evidences:** [`ESF-S-VERIFY-DEPS`](#ctrl-esf-s-verify-deps) Verify third-party and open-source dependencies before use, [`ESF-S-TRUSTED-REG`](#ctrl-esf-s-trusted-reg) Use only trusted, authenticated package and image registries.
 
@@ -8632,7 +9241,7 @@ v1 limitations: ``include:`` cross-pipeline file inclusion isn't tracked yet (wo
 
 **Source:** [`TKN-008`](../providers/tekton.md#tkn-008) in the [Tekton provider](../providers/tekton.md).
 
-#### `TKN-009`: Artifacts not signed (no cosign/sigstore step) <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-tkn-009 }
+### `TKN-009`: Artifacts not signed (no cosign/sigstore step) <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-tkn-009 }
 
 **Evidences:** [`ESF-D-SIGN-ARTIFACTS`](#ctrl-esf-d-sign-artifacts) Sign build artifacts and verify signatures before release.
 
@@ -8642,7 +9251,7 @@ v1 limitations: ``include:`` cross-pipeline file inclusion isn't tracked yet (wo
 
 **Source:** [`TKN-009`](../providers/tekton.md#tkn-009) in the [Tekton provider](../providers/tekton.md).
 
-#### `TKN-010`: No SBOM generated for build artifacts <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-tkn-010 }
+### `TKN-010`: No SBOM generated for build artifacts <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-tkn-010 }
 
 **Evidences:** [`ESF-D-SBOM`](#ctrl-esf-d-sbom) Produce SBOM / provenance metadata with every build.
 
@@ -8652,7 +9261,7 @@ v1 limitations: ``include:`` cross-pipeline file inclusion isn't tracked yet (wo
 
 **Source:** [`TKN-010`](../providers/tekton.md#tkn-010) in the [Tekton provider](../providers/tekton.md).
 
-#### `TKN-011`: No SLSA provenance attestation produced <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-tkn-011 }
+### `TKN-011`: No SLSA provenance attestation produced <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-tkn-011 }
 
 **Evidences:** [`ESF-D-SIGN-ARTIFACTS`](#ctrl-esf-d-sign-artifacts) Sign build artifacts and verify signatures before release, [`ESF-S-PROVENANCE`](#ctrl-esf-s-provenance) Generate and verify provenance metadata (SLSA / in-toto) for produced artifacts.
 
@@ -8662,7 +9271,7 @@ v1 limitations: ``include:`` cross-pipeline file inclusion isn't tracked yet (wo
 
 **Source:** [`TKN-011`](../providers/tekton.md#tkn-011) in the [Tekton provider](../providers/tekton.md).
 
-#### `TKN-012`: No vulnerability scanning step <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-tkn-012 }
+### `TKN-012`: No vulnerability scanning step <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-tkn-012 }
 
 **Evidences:** [`ESF-S-VULN-MGMT`](#ctrl-esf-s-vuln-mgmt) Scan inbound artifacts (images, packages) for known vulnerabilities.
 
@@ -8672,7 +9281,7 @@ v1 limitations: ``include:`` cross-pipeline file inclusion isn't tracked yet (wo
 
 **Source:** [`TKN-012`](../providers/tekton.md#tkn-012) in the [Tekton provider](../providers/tekton.md).
 
-#### `TKN-013`: Tekton sidecar runs privileged or as root <span class="pg-sev pg-sev--high">HIGH</span> { #detail-tkn-013 }
+### `TKN-013`: Tekton sidecar runs privileged or as root <span class="pg-sev pg-sev--high">HIGH</span> { #detail-tkn-013 }
 
 **Evidences:** [`ESF-D-PRIV-BUILD`](#ctrl-esf-d-priv-build) Avoid privileged / host-networked build workers.
 
@@ -8686,7 +9295,7 @@ v1 limitations: ``include:`` cross-pipeline file inclusion isn't tracked yet (wo
 
 **Source:** [`TKN-013`](../providers/tekton.md#tkn-013) in the [Tekton provider](../providers/tekton.md).
 
-#### `TKN-014`: Tekton step script runs unpinned package install <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-tkn-014 }
+### `TKN-014`: Tekton step script runs unpinned package install <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-tkn-014 }
 
 **Evidences:** [`ESF-S-VERIFY-DEPS`](#ctrl-esf-s-verify-deps) Verify third-party and open-source dependencies before use, [`ESF-S-PIN-DEPS`](#ctrl-esf-s-pin-deps) Pin dependencies / actions / images to immutable digests.
 
@@ -8700,7 +9309,7 @@ v1 limitations: ``include:`` cross-pipeline file inclusion isn't tracked yet (wo
 
 **Source:** [`TKN-014`](../providers/tekton.md#tkn-014) in the [Tekton provider](../providers/tekton.md).
 
-#### `TKN-015`: Workspace subPath interpolates a Task parameter (path traversal) <span class="pg-sev pg-sev--high">HIGH</span> { #detail-tkn-015 }
+### `TKN-015`: Workspace subPath interpolates a Task parameter (path traversal) <span class="pg-sev pg-sev--high">HIGH</span> { #detail-tkn-015 }
 
 **Evidences:** [`ESF-D-INJECTION`](#ctrl-esf-d-injection) Prevent script / template injection from untrusted pipeline context.
 

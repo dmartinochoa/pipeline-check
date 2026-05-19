@@ -626,5 +626,56 @@ STANDARD = Standard(
         "KMS-000":  ["10.2.1"],
         "SM-000":   ["10.2.1"],
         "SSM-000":  ["10.2.1"],
+        # ── Kubernetes manifests (deployment payload) ───────────
+        # K8s workload manifests are part of the system component
+        # change surface PCI's Req-6 covers. Image-pinning → 6.3.3
+        # + 6.5.1; privileged / runtime hardening / network →
+        # 6.4.1; RBAC / SA → 7.2.5 (least-privilege accounts);
+        # secret exposure → 8.2.1.
+        "K8S-001":  ["6.3.3", "6.5.1"],                  # image not digest-pinned
+        "K8S-002":  ["6.4.1"],                           # hostNetwork
+        "K8S-003":  ["6.4.1"],                           # hostPID
+        "K8S-004":  ["6.4.1"],                           # hostIPC
+        "K8S-005":  ["6.4.1", "6.5.1"],                  # privileged container
+        "K8S-006":  ["6.4.1", "6.5.1"],                  # allowPrivilegeEscalation
+        "K8S-007":  ["6.4.1"],                           # runAsNonRoot missing
+        "K8S-008":  ["6.4.1"],                           # readOnlyRootFilesystem missing
+        "K8S-009":  ["6.4.1"],                           # added capabilities
+        "K8S-010":  ["6.4.1"],                           # seccompProfile missing
+        "K8S-011":  ["7.2.5"],                           # default ServiceAccount
+        "K8S-012":  ["7.2.5"],                           # automountServiceAccountToken
+        "K8S-013":  ["6.4.1"],                           # hostPath volume
+        "K8S-014":  ["6.4.1"],                           # sensitive hostPath
+        "K8S-015":  ["6.4.1"],                           # no memory limit
+        "K8S-016":  ["6.4.1"],                           # no CPU limit
+        "K8S-017":  ["8.2.1"],                           # credential literal in env
+        "K8S-018":  ["8.2.1"],                           # Secret data plaintext
+        "K8S-019":  ["6.4.1"],                           # default namespace
+        "K8S-020":  ["7.2.1", "7.2.5"],                  # cluster-admin RoleBinding
+        "K8S-021":  ["7.2.1", "7.2.5"],                  # wildcard RBAC verbs
+        "K8S-022":  ["6.4.1"],                           # SSH service exposed
+        "K8S-023":  ["6.4.1"],                           # PSA enforce missing
+        "K8S-024":  ["10.2.1"],                          # missing health probes
+        "K8S-025":  ["6.4.1"],                           # system priority class
+        "K8S-026":  ["6.4.1"],                           # LB without source ranges
+        "K8S-027":  ["6.5.1"],                           # Ingress without TLS
+        "K8S-028":  ["6.4.1"],                           # container hostPort
+        "K8S-029":  ["7.2.5"],                           # default-SA RoleBinding
+        "K8S-030":  ["6.4.1"],                           # control-plane scheduling
+        "K8S-031":  ["6.4.1"],                           # PSA warn missing
+        "K8S-032":  ["6.4.1"],                           # NetworkPolicy default-deny missing
+        "K8S-033":  ["6.4.1"],                           # ResourceQuota / LimitRange missing
+        "K8S-034":  ["7.2.5"],                           # SA token automount default
+        "K8S-035":  ["6.4.1"],                           # runAsUser: 0
+        "K8S-036":  ["6.3.3"],                           # SA imagePullSecret missing
+        "K8S-037":  ["8.2.1"],                           # ConfigMap credential
+        "K8S-038":  ["6.4.1"],                           # NetworkPolicy allow-all
+        "K8S-039":  ["6.4.1"],                           # shareProcessNamespace
+        "K8S-040":  ["6.4.1"],                           # procMount: Unmasked
+        "K8S-041":  ["6.4.1"],                           # Service externalIPs
+        "K8S-042":  ["7.2.1", "7.2.5"],                  # anonymous RoleBinding
+        "K8S-043":  ["6.4.1"],                           # Ingress wildcard host
+        # S3-000 visibility gap, same audit-log precedent
+        "S3-000":   ["10.2.1"],
     },
 )

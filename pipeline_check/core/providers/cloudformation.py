@@ -19,17 +19,7 @@ from typing import Any
 
 from ..checks.base import BaseCheck
 from ..checks.cloudformation.base import CloudFormationContext
-from ..checks.cloudformation.codebuild import CodeBuildChecks
-from ..checks.cloudformation.codedeploy import CodeDeployChecks
-from ..checks.cloudformation.codepipeline import CodePipelineChecks
-from ..checks.cloudformation.ecr import ECRChecks
-from ..checks.cloudformation.extended import ExtendedChecks
-from ..checks.cloudformation.iam import IAMChecks
-from ..checks.cloudformation.pbac import PBACChecks
-from ..checks.cloudformation.phase3 import Phase3Checks
-from ..checks.cloudformation.phase4 import Phase4Checks
-from ..checks.cloudformation.s3 import S3Checks
-from ..checks.cloudformation.services import ServiceChecks
+from ..checks.cloudformation.workflows import CloudFormationRuleChecks
 from ..inventory import Component
 from .base import BaseProvider
 
@@ -49,19 +39,14 @@ class CloudFormationProvider(BaseProvider):
 
     @property
     def check_classes(self) -> list[type[BaseCheck]]:
-        return [
-            CodeBuildChecks,
-            CodePipelineChecks,
-            CodeDeployChecks,
-            ECRChecks,
-            IAMChecks,
-            PBACChecks,
-            S3Checks,
-            ExtendedChecks,
-            ServiceChecks,
-            Phase3Checks,
-            Phase4Checks,
-        ]
+        # Single orchestrator that auto-discovers every rule under
+        # ``pipeline_check.core.checks.cloudformation.rules``. The
+        # legacy per-service check classes still exist for the
+        # per-service unit tests under ``tests/cloudformation/`` but
+        # no longer participate in scans — they delegate to the same
+        # helper functions the rule modules call, so both paths
+        # share their semantics.
+        return [CloudFormationRuleChecks]
 
     def inventory(self, context: CloudFormationContext) -> list[Component]:
         out: list[Component] = []

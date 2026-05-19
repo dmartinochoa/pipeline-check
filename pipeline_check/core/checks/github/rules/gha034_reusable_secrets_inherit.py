@@ -78,4 +78,10 @@ def check(path: str, doc: dict[str, Any]) -> Finding:
         check_id=RULE.id, title=RULE.title, severity=RULE.severity,
         resource=path, description=desc,
         recommendation=RULE.recommendation, passed=passed,
+        # AC-012 intersects this with GHA-025's anchors to confirm the
+        # unpinned reusable-workflow call AND the ``secrets: inherit``
+        # land on the same call site, where a tag move on the callee
+        # repo hands the entire caller secret surface to attacker code
+        # in one run.
+        job_anchors=tuple(offenders),
     )

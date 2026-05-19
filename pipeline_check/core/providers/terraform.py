@@ -20,17 +20,7 @@ from typing import Any
 
 from ..checks.base import BaseCheck
 from ..checks.terraform.base import TerraformContext
-from ..checks.terraform.codebuild import CodeBuildChecks
-from ..checks.terraform.codedeploy import CodeDeployChecks
-from ..checks.terraform.codepipeline import CodePipelineChecks
-from ..checks.terraform.ecr import ECRChecks
-from ..checks.terraform.extended import ExtendedChecks
-from ..checks.terraform.iam import IAMChecks
-from ..checks.terraform.pbac import PBACChecks
-from ..checks.terraform.phase3 import Phase3Checks
-from ..checks.terraform.phase4 import Phase4Checks
-from ..checks.terraform.s3 import S3Checks
-from ..checks.terraform.services import ServiceChecks
+from ..checks.terraform.workflows import TerraformRuleChecks
 from ..inventory import Component
 from .base import BaseProvider
 
@@ -104,19 +94,14 @@ class TerraformProvider(BaseProvider):
 
     @property
     def check_classes(self) -> list[type[BaseCheck]]:
-        return [
-            CodeBuildChecks,
-            CodePipelineChecks,
-            CodeDeployChecks,
-            ECRChecks,
-            IAMChecks,
-            PBACChecks,
-            S3Checks,
-            ExtendedChecks,
-            ServiceChecks,
-            Phase3Checks,
-            Phase4Checks,
-        ]
+        # Single orchestrator that auto-discovers every rule under
+        # ``pipeline_check.core.checks.terraform.rules``. The legacy
+        # per-service check classes (CodeBuildChecks, IAMChecks, …)
+        # still exist for the per-service unit tests under
+        # ``tests/terraform/`` but no longer participate in scans —
+        # they delegate to the same helper functions the rule modules
+        # call, so both paths share their semantics.
+        return [TerraformRuleChecks]
 
     def inventory(self, context: TerraformContext) -> list[Component]:
         out: list[Component] = []

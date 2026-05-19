@@ -17,6 +17,15 @@ Detection of the combination is materially stronger than either
 finding alone: an isolated postinstall is hygiene debt; an isolated
 self-mutating workflow is hygiene debt; the *combination* is the
 fingerprint of code designed to spread.
+
+Reachability-model carve-out: unlike AC-002 / AC-006 / AC-008 /
+AC-012 / AC-023 / AC-025, this chain does not migrate to the
+``job_anchors`` intersection model. The threat IS the same-repo
+co-location, not a same-job dataflow, the package.json half lives
+in a manifest, not a CI job, and the worm topology by design has
+the two halves wired through ``npm publish`` + scheduled / fork-PR
+workflow execution rather than through one shared execution
+context. Repo-level co-occurrence is the reachability claim.
 """
 from __future__ import annotations
 

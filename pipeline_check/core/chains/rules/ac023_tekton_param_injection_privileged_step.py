@@ -41,7 +41,7 @@ quoted param is the right shape even on a non-privileged step.
 """
 from __future__ import annotations
 
-from ...checks.base import Finding, Severity
+from ...checks.base import Confidence, Finding, Severity
 from ..base import Chain, ChainRule, group_by_resource, min_confidence
 
 RULE = ChainRule(
@@ -94,10 +94,52 @@ RULE = ChainRule(
 
 
 def match(findings: list[Finding]) -> list[Chain]:
+    # Reachability: a shared step anchor (``<Kind>/<name>:<step>``)
+    # between TKN-002 (privileged / root step) and TKN-003 (unsafe
+    # ``$(params.<name>)`` in step script) confirms the same step
+    # is BOTH the injection sink AND the privilege amplifier, the
+    # exact node-escape primitive. Disjoint anchors still co-occur
+    # within the Tekton corpus (one Task has a privileged step
+    # somewhere, another Task interpolates a param somewhere else)
+    # but don't compose into the single-step kernel-RCE shape;
+    # we keep the weaker co-occurrence signal in that case because
+    # both legs remain individually risky.
     grouped = group_by_resource(findings, ["TKN-002", "TKN-003"])
     out: list[Chain] = []
     for resource, ck_map in grouped.items():
-        triggers = [ck_map["TKN-002"], ck_map["TKN-003"]]
+        tkn002 = ck_map["TKN-002"]
+        tkn003 = ck_map["TKN-003"]
+        triggers = [tkn002, tkn003]
+
+        priv_steps = set(tkn002.job_anchors)
+        inj_steps = set(tkn003.job_anchors)
+        shared = sorted(priv_steps & inj_steps)
+        confirmed = bool(shared)
+        if confirmed:
+            shared_repr = ", ".join(f"`{s}`" for s in shared)
+            reach_note = (
+                f"Privileged step and param-injection sink share "
+                f"step {shared_repr}"
+            )
+            reach_narrative = (
+                f"  4. Reachability confirmed: the same step(s) "
+                f"({shared_repr}) BOTH run privileged AND interpolate "
+                f"``$(params.<name>)`` unquoted. A crafted PipelineRun "
+                f"param value executes as a shell command inside the "
+                f"kernel-privileged container in one go, no inter-"
+                f"step dataflow required."
+            )
+        else:
+            reach_note = ""
+            reach_narrative = (
+                "  4. Reachability unconfirmed: the privileged step "
+                "and the param-injection sink live in different "
+                "steps (or different Tasks) of this Tekton corpus. "
+                "Each leg is independently risky but neither single "
+                "step exposes the kernel-RCE primitive; treat as a "
+                "co-occurrence signal."
+            )
+
         narrative = (
             f"In `{resource}`:\n"
             "  1. A step's ``script:`` interpolates "
@@ -124,13 +166,17 @@ def match(findings: list[Finding]) -> list[Chain]:
             "node. Pass the param via ``env:`` (Tekton substitutes "
             "into env values, the shell sees a quoted variable) or "
             "drop the privileged / root setting, either fix "
-            "breaks the chain."
+            "breaks the chain.\n"
+            f"{reach_narrative}"
         )
+
+        chain_confidence = Confidence.HIGH if confirmed else min_confidence(triggers)
+
         out.append(Chain(
             chain_id=RULE.id,
             title=RULE.title,
             severity=RULE.severity,
-            confidence=min_confidence(triggers),
+            confidence=chain_confidence,
             summary=RULE.summary,
             narrative=narrative,
             mitre_attack=list(RULE.mitre_attack),
@@ -140,5 +186,7 @@ def match(findings: list[Finding]) -> list[Chain]:
             resources=[resource],
             references=list(RULE.references),
             recommendation=RULE.recommendation,
+            confirmed_reachable=confirmed,
+            reachability_note=reach_note,
         ))
     return out

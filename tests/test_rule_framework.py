@@ -36,7 +36,10 @@ REPO_ROOT = Path(__file__).resolve().parent.parent
 # remove. ``test_rule_count_matches_expected`` enforces equality so
 # both directions (regression + growth) require an explicit update.
 EXPECTED_RULE_COUNTS: dict[str, int] = {
-    "github":     61,
+    "aws":            71,
+    "terraform":      71,
+    "cloudformation": 70,
+    "github":         61,
     "gitlab":     35,
     "bitbucket":  29,
     "azure":      30,
@@ -44,6 +47,7 @@ EXPECTED_RULE_COUNTS: dict[str, int] = {
     "circleci":   31,
     "cloudbuild": 26,
     "kubernetes": 43,
+    "helm":       10,
     "buildkite":  16,
     "tekton":     16,
     "argo":       16,

@@ -20,7 +20,7 @@
 
 Pipeline-Check is a security scanner for GitHub Actions, GitLab CI, Jenkins, CircleCI, Azure DevOps, Bitbucket Pipelines, Buildkite, Drone, Tekton, Argo Workflows, and Google Cloud Build, plus Terraform, CloudFormation, Kubernetes, Helm, Dockerfile, OCI image manifests, and live AWS accounts. It maps every finding to the [OWASP Top 10 CI/CD Security Risks](https://owasp.org/www-project-top-10-ci-cd-security-risks/), SLSA, NIST SSDF, PCI DSS, SOC 2, the CIS GitHub Benchmark, and nine other frameworks, and scores each scan A through D so you can gate merges on the result.
 
-**670+ checks** across **22 providers**, mapped to **15 compliance standards**, with **111 autofixers**, plus **38 attack chains** correlating findings into MITRE ATT&CK-mapped kill chains. A dataflow taint engine catches multi-step and cross-job propagation that single-rule scanners miss.
+**810+ checks** across **22 providers**, mapped to **15 compliance standards**, with **111 autofixers**, plus **38 attack chains** correlating findings into MITRE ATT&CK-mapped kill chains. A dataflow taint engine catches multi-step and cross-job propagation that single-rule scanners miss.
 
 [Quick start](#quick-start) |
 [Usage guide](docs/usage.md) |
@@ -156,7 +156,7 @@ for the full per-check reference.
 
 ```
                  +-----------+
-  Config files   |  Scanner  |   670+ checks across 22 providers
+  Config files   |  Scanner  |   810+ checks across 22 providers
   or live APIs ---->         +---> Findings (check_id, severity, resource)
                  +-----------+
                        |
@@ -196,6 +196,7 @@ standards, so a single scan satisfies multiple audit frameworks.
 | **Component inventory** | `--inventory` emits the list of resources / workflows / templates the scanner discovered, with per-type metadata (encryption, runtime, tags, lifecycle policies). Filter with `--inventory-type 'AWS::IAM::*'`; skip checks entirely with `--inventory-only`. Feeds asset-register dashboards and drift detectors. |
 | **STRIDE threat model** | `--output threatmodel` emits a self-contained Markdown threat-model document populated from the scan + inventory: assets, trust boundaries, findings grouped by STRIDE category, implemented controls, top-25 risk register. Mapping is derived from each rule's existing OWASP / CWE tags so re-policing is one table swap. Shaped for SOC 2 / PCI / NIST SSDF evidence packages. |
 | **MCP server** | `pipeline_check --serve` runs as a Model Context Protocol server on stdio so AI clients (Claude Desktop, Claude Code, Cursor, Continue, Zed) can drive scans and introspect the rule catalog directly. Ten tools advertised: scan / inventory / explain_check / list_chains / threat_model / etc. The `mcp` SDK is an optional `[mcp]` extra so the default install stays slim. See [docs/mcp.md](docs/mcp.md). |
+| **Editor diagnostics (LSP)** | `python -m pipeline_check.lsp` is the Language Server backing the [Pipeline-Check VS Code extension](https://github.com/greylag-ci/pipeline-check-vscode). Same rule registry the CLI uses, surfaced inline as you edit `.github/workflows/`, `.gitlab-ci.yml`, `azure-pipelines.yml`, `bitbucket-pipelines.yml`, `.circleci/`, `cloudbuild.yaml`, `.buildkite/`, `.drone.yml`, `Jenkinsfile`, and `Dockerfile`. Each diagnostic carries the rule ID, severity, the dynamic recommendation, and a `codeDescription` link straight to the per-rule docs page. `pygls` is an optional `[lsp]` extra so the default install stays slim. |
 | **Multi-scanner SARIF ingest** | `--ingest <file>.sarif` (repeatable) absorbs findings from Trivy / Checkov / Snyk / KICS / CodeQL / any conformant scanner. External rules become `INGEST-<tool>-<rule-id>` `Finding` rows; the chain engine RE-EVALUATES over the union, so cross-tool chains (e.g. `XPC-009` — ingested CVE finding + `DF-001` mutable runtime image) fire on compositions no individual scanner would surface. Caps: 25 MiB / 5,000 results per file. |
 | **Vulnerable-by-design benchmark** | Two complementary regression gates. `bench/cases/` is a synthetic set (one minimal fixture per attack pattern, gated at 100% recall in CI). `bench/goats/` is the real-world phase: pinned clones of [cicd-goat](https://github.com/cider-security-research/cicd-goat) (GHA + 7 Jenkinsfiles), [cfngoat](https://github.com/bridgecrewio/cfngoat), and [kubernetes-goat](https://github.com/madhuakula/kubernetes-goat), scanned via the same CLI a user runs, with hand-curated `expected.txt` locking **42 check IDs** across the three goats — each tied to a documented challenge or CIS benchmark control. The bench workflow runs nightly on master and on every PR that touches the rule pack; uploads a `goat-bench-report` artifact and posts a sticky PR comment. `python bench/goat_runner.py --markdown` reproduces locally. See [docs/goat_bench.md](docs/goat_bench.md). |
 
@@ -337,7 +338,7 @@ covers multiple audits.
 | Standard | Version | Coverage |
 |----------|---------|----------|
 | [OWASP Top 10 CI/CD Security Risks](docs/standards/owasp_cicd_top_10.md) | 2022 | 10/10 risks |
-| [SLSA Build Track](docs/standards/slsa.md) | 1.0 | 6/7 levels (110 check mappings) |
+| [SLSA Build Track](docs/standards/slsa.md) | 1.0 | 6/7 levels (413 check mappings) |
 | [NIST SSDF (SP 800-218)](docs/standards/nist_ssdf.md) | v1.1 | CI/CD subset |
 | [NIST SP 800-53](docs/standards/nist_800_53.md) | Rev. 5 | CI/CD subset |
 | [NIST SP 800-190](docs/standards/nist_800_190.md) | 2017 | Container CI/CD subset |

@@ -215,7 +215,7 @@ _No checks in this scanner currently evidence this control. Open an issue if you
 
 Every check that evidences this standard, rendered once with its detection mechanism, recommendation, and any known false-positive modes or real-world incident references. The per-control tables above link to the matching block here.
 
-#### `CA-000`: CodeArtifact API access failed <span class="pg-sev pg-sev--info">INFO</span> { #detail-ca-000 }
+### `CA-000`: CodeArtifact API access failed <span class="pg-sev pg-sev--info">INFO</span> { #detail-ca-000 }
 
 **Evidences:** [`3.1`](#ctrl-3-1) Ensure CloudTrail is enabled in all regions.
 
@@ -225,7 +225,7 @@ Every check that evidences this standard, rendered once with its detection mecha
 
 **Source:** [`CA-000`](../providers/aws.md) in the [AWS provider](../providers/aws.md).
 
-#### `CA-001`: CodeArtifact domain not encrypted with customer KMS CMK <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-ca-001 }
+### `CA-001`: CodeArtifact domain not encrypted with customer KMS CMK <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-ca-001 }
 
 **Evidences:** [`3.7`](#ctrl-3-7) Ensure CloudTrail logs are encrypted at rest using KMS CMKs.
 
@@ -235,7 +235,7 @@ Every check that evidences this standard, rendered once with its detection mecha
 
 **Source:** [`CA-001`](../providers/aws.md) in the [AWS provider](../providers/aws.md).
 
-#### `CA-003`: CodeArtifact domain policy allows cross-account wildcard <span class="pg-sev pg-sev--critical">CRITICAL</span> { #detail-ca-003 }
+### `CA-003`: CodeArtifact domain policy allows cross-account wildcard <span class="pg-sev pg-sev--critical">CRITICAL</span> { #detail-ca-003 }
 
 **Evidences:** [`1.16`](#ctrl-1-16) Ensure IAM policies that allow full '*:*' administrative privileges are not attached.
 
@@ -245,7 +245,7 @@ Every check that evidences this standard, rendered once with its detection mecha
 
 **Source:** [`CA-003`](../providers/aws.md) in the [AWS provider](../providers/aws.md).
 
-#### `CA-004`: CodeArtifact repo policy grants ``codeartifact:*`` with ``Resource '*'`` <span class="pg-sev pg-sev--high">HIGH</span> { #detail-ca-004 }
+### `CA-004`: CodeArtifact repo policy grants ``codeartifact:*`` with ``Resource '*'`` <span class="pg-sev pg-sev--high">HIGH</span> { #detail-ca-004 }
 
 **Evidences:** [`1.16`](#ctrl-1-16) Ensure IAM policies that allow full '*:*' administrative privileges are not attached.
 
@@ -255,7 +255,7 @@ Every check that evidences this standard, rendered once with its detection mecha
 
 **Source:** [`CA-004`](../providers/aws.md) in the [AWS provider](../providers/aws.md).
 
-#### `CB-000`: CodeBuild API access failed <span class="pg-sev pg-sev--info">INFO</span> { #detail-cb-000 }
+### `CB-000`: CodeBuild API access failed <span class="pg-sev pg-sev--info">INFO</span> { #detail-cb-000 }
 
 **Evidences:** [`3.1`](#ctrl-3-1) Ensure CloudTrail is enabled in all regions.
 
@@ -265,7 +265,7 @@ Every check that evidences this standard, rendered once with its detection mecha
 
 **Source:** [`CB-000`](../providers/aws.md) in the [AWS provider](../providers/aws.md).
 
-#### `CB-003`: Build logging not enabled <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-cb-003 }
+### `CB-003`: Build logging not enabled <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-cb-003 }
 
 **Evidences:** [`3.4`](#ctrl-3-4) Ensure CloudTrail trails are integrated with CloudWatch Logs.
 
@@ -275,7 +275,7 @@ Every check that evidences this standard, rendered once with its detection mecha
 
 **Source:** [`CB-003`](../providers/aws.md) in the [AWS provider](../providers/aws.md).
 
-#### `CB-006`: CodeBuild source auth uses long-lived token <span class="pg-sev pg-sev--high">HIGH</span> { #detail-cb-006 }
+### `CB-006`: CodeBuild source auth uses long-lived token <span class="pg-sev pg-sev--high">HIGH</span> { #detail-cb-006 }
 
 **Evidences:** [`1.14`](#ctrl-1-14) Ensure access keys are rotated every 90 days or less.
 
@@ -285,7 +285,7 @@ Every check that evidences this standard, rendered once with its detection mecha
 
 **Source:** [`CB-006`](../providers/aws.md) in the [AWS provider](../providers/aws.md).
 
-#### `CCM-000`: CodeCommit API access failed <span class="pg-sev pg-sev--info">INFO</span> { #detail-ccm-000 }
+### `CCM-000`: CodeCommit API access failed <span class="pg-sev pg-sev--info">INFO</span> { #detail-ccm-000 }
 
 **Evidences:** [`3.1`](#ctrl-3-1) Ensure CloudTrail is enabled in all regions.
 
@@ -295,7 +295,7 @@ Every check that evidences this standard, rendered once with its detection mecha
 
 **Source:** [`CCM-000`](../providers/aws.md) in the [AWS provider](../providers/aws.md).
 
-#### `CCM-002`: CodeCommit repository not encrypted with customer KMS CMK <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-ccm-002 }
+### `CCM-002`: CodeCommit repository not encrypted with customer KMS CMK <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-ccm-002 }
 
 **Evidences:** [`3.7`](#ctrl-3-7) Ensure CloudTrail logs are encrypted at rest using KMS CMKs.
 
@@ -305,7 +305,7 @@ Every check that evidences this standard, rendered once with its detection mecha
 
 **Source:** [`CCM-002`](../providers/aws.md) in the [AWS provider](../providers/aws.md).
 
-#### `CCM-003`: CodeCommit trigger targets SNS/Lambda in a different account <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-ccm-003 }
+### `CCM-003`: CodeCommit trigger targets SNS/Lambda in a different account <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-ccm-003 }
 
 **Evidences:** [`1.16`](#ctrl-1-16) Ensure IAM policies that allow full '*:*' administrative privileges are not attached.
 
@@ -315,7 +315,7 @@ Every check that evidences this standard, rendered once with its detection mecha
 
 **Source:** [`CCM-003`](../providers/aws.md) in the [AWS provider](../providers/aws.md).
 
-#### `CD-000`: CodeDeploy API access failed <span class="pg-sev pg-sev--info">INFO</span> { #detail-cd-000 }
+### `CD-000`: CodeDeploy API access failed <span class="pg-sev pg-sev--info">INFO</span> { #detail-cd-000 }
 
 **Evidences:** [`3.1`](#ctrl-3-1) Ensure CloudTrail is enabled in all regions.
 
@@ -325,7 +325,7 @@ Every check that evidences this standard, rendered once with its detection mecha
 
 **Source:** [`CD-000`](../providers/aws.md) in the [AWS provider](../providers/aws.md).
 
-#### `CD-003`: No CloudWatch alarm monitoring on deployment group <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-cd-003 }
+### `CD-003`: No CloudWatch alarm monitoring on deployment group <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-cd-003 }
 
 **Evidences:** [`3.4`](#ctrl-3-4) Ensure CloudTrail trails are integrated with CloudWatch Logs.
 
@@ -335,7 +335,7 @@ Every check that evidences this standard, rendered once with its detection mecha
 
 **Source:** [`CD-003`](../providers/aws.md) in the [AWS provider](../providers/aws.md).
 
-#### `CP-000`: CodePipeline API access failed <span class="pg-sev pg-sev--info">INFO</span> { #detail-cp-000 }
+### `CP-000`: CodePipeline API access failed <span class="pg-sev pg-sev--info">INFO</span> { #detail-cp-000 }
 
 **Evidences:** [`3.1`](#ctrl-3-1) Ensure CloudTrail is enabled in all regions.
 
@@ -345,7 +345,7 @@ Every check that evidences this standard, rendered once with its detection mecha
 
 **Source:** [`CP-000`](../providers/aws.md) in the [AWS provider](../providers/aws.md).
 
-#### `CP-002`: Artifact store not encrypted with customer-managed KMS key <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-cp-002 }
+### `CP-002`: Artifact store not encrypted with customer-managed KMS key <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-cp-002 }
 
 **Evidences:** [`3.7`](#ctrl-3-7) Ensure CloudTrail logs are encrypted at rest using KMS CMKs.
 
@@ -355,7 +355,7 @@ Every check that evidences this standard, rendered once with its detection mecha
 
 **Source:** [`CP-002`](../providers/aws.md) in the [AWS provider](../providers/aws.md).
 
-#### `CP-004`: Legacy ThirdParty/GitHub source action (OAuth token) <span class="pg-sev pg-sev--high">HIGH</span> { #detail-cp-004 }
+### `CP-004`: Legacy ThirdParty/GitHub source action (OAuth token) <span class="pg-sev pg-sev--high">HIGH</span> { #detail-cp-004 }
 
 **Evidences:** [`1.14`](#ctrl-1-14) Ensure access keys are rotated every 90 days or less.
 
@@ -365,7 +365,7 @@ Every check that evidences this standard, rendered once with its detection mecha
 
 **Source:** [`CP-004`](../providers/aws.md) in the [AWS provider](../providers/aws.md).
 
-#### `CT-000`: CloudTrail API access failed <span class="pg-sev pg-sev--info">INFO</span> { #detail-ct-000 }
+### `CT-000`: CloudTrail API access failed <span class="pg-sev pg-sev--info">INFO</span> { #detail-ct-000 }
 
 **Evidences:** [`3.1`](#ctrl-3-1) Ensure CloudTrail is enabled in all regions.
 
@@ -375,7 +375,7 @@ Every check that evidences this standard, rendered once with its detection mecha
 
 **Source:** [`CT-000`](../providers/aws.md) in the [AWS provider](../providers/aws.md).
 
-#### `CT-001`: No active CloudTrail trail in region <span class="pg-sev pg-sev--high">HIGH</span> { #detail-ct-001 }
+### `CT-001`: No active CloudTrail trail in region <span class="pg-sev pg-sev--high">HIGH</span> { #detail-ct-001 }
 
 **Evidences:** [`3.1`](#ctrl-3-1) Ensure CloudTrail is enabled in all regions.
 
@@ -385,7 +385,7 @@ Every check that evidences this standard, rendered once with its detection mecha
 
 **Source:** [`CT-001`](../providers/aws.md) in the [AWS provider](../providers/aws.md).
 
-#### `CT-002`: CloudTrail log-file validation disabled <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-ct-002 }
+### `CT-002`: CloudTrail log-file validation disabled <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-ct-002 }
 
 **Evidences:** [`3.2`](#ctrl-3-2) Ensure CloudTrail log file validation is enabled.
 
@@ -395,7 +395,7 @@ Every check that evidences this standard, rendered once with its detection mecha
 
 **Source:** [`CT-002`](../providers/aws.md) in the [AWS provider](../providers/aws.md).
 
-#### `CT-003`: CloudTrail trail is not multi-region <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-ct-003 }
+### `CT-003`: CloudTrail trail is not multi-region <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-ct-003 }
 
 **Evidences:** [`3.1`](#ctrl-3-1) Ensure CloudTrail is enabled in all regions.
 
@@ -405,7 +405,7 @@ Every check that evidences this standard, rendered once with its detection mecha
 
 **Source:** [`CT-003`](../providers/aws.md) in the [AWS provider](../providers/aws.md).
 
-#### `CW-001`: No CloudWatch alarm on CodeBuild FailedBuilds metric <span class="pg-sev pg-sev--low">LOW</span> { #detail-cw-001 }
+### `CW-001`: No CloudWatch alarm on CodeBuild FailedBuilds metric <span class="pg-sev pg-sev--low">LOW</span> { #detail-cw-001 }
 
 **Evidences:** [`4.16`](#ctrl-4-16) Ensure AWS Security Hub is enabled.
 
@@ -415,7 +415,7 @@ Every check that evidences this standard, rendered once with its detection mecha
 
 **Source:** [`CW-001`](../providers/aws.md) in the [AWS provider](../providers/aws.md).
 
-#### `CWL-000`: CloudWatch Logs API access failed <span class="pg-sev pg-sev--info">INFO</span> { #detail-cwl-000 }
+### `CWL-000`: CloudWatch Logs API access failed <span class="pg-sev pg-sev--info">INFO</span> { #detail-cwl-000 }
 
 **Evidences:** [`3.1`](#ctrl-3-1) Ensure CloudTrail is enabled in all regions.
 
@@ -425,7 +425,7 @@ Every check that evidences this standard, rendered once with its detection mecha
 
 **Source:** [`CWL-000`](../providers/aws.md) in the [AWS provider](../providers/aws.md).
 
-#### `CWL-001`: CodeBuild log group has no retention policy <span class="pg-sev pg-sev--low">LOW</span> { #detail-cwl-001 }
+### `CWL-001`: CodeBuild log group has no retention policy <span class="pg-sev pg-sev--low">LOW</span> { #detail-cwl-001 }
 
 **Evidences:** [`3.4`](#ctrl-3-4) Ensure CloudTrail trails are integrated with CloudWatch Logs.
 
@@ -435,7 +435,7 @@ Every check that evidences this standard, rendered once with its detection mecha
 
 **Source:** [`CWL-001`](../providers/aws.md) in the [AWS provider](../providers/aws.md).
 
-#### `CWL-002`: CodeBuild log group not KMS-encrypted <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-cwl-002 }
+### `CWL-002`: CodeBuild log group not KMS-encrypted <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-cwl-002 }
 
 **Evidences:** [`3.7`](#ctrl-3-7) Ensure CloudTrail logs are encrypted at rest using KMS CMKs.
 
@@ -445,7 +445,7 @@ Every check that evidences this standard, rendered once with its detection mecha
 
 **Source:** [`CWL-002`](../providers/aws.md) in the [AWS provider](../providers/aws.md).
 
-#### `EB-000`: EventBridge API access failed <span class="pg-sev pg-sev--info">INFO</span> { #detail-eb-000 }
+### `EB-000`: EventBridge API access failed <span class="pg-sev pg-sev--info">INFO</span> { #detail-eb-000 }
 
 **Evidences:** [`3.1`](#ctrl-3-1) Ensure CloudTrail is enabled in all regions.
 
@@ -455,7 +455,7 @@ Every check that evidences this standard, rendered once with its detection mecha
 
 **Source:** [`EB-000`](../providers/aws.md) in the [AWS provider](../providers/aws.md).
 
-#### `EB-001`: No EventBridge rule for CodePipeline failure notifications <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-eb-001 }
+### `EB-001`: No EventBridge rule for CodePipeline failure notifications <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-eb-001 }
 
 **Evidences:** [`4.16`](#ctrl-4-16) Ensure AWS Security Hub is enabled.
 
@@ -465,7 +465,7 @@ Every check that evidences this standard, rendered once with its detection mecha
 
 **Source:** [`EB-001`](../providers/aws.md) in the [AWS provider](../providers/aws.md).
 
-#### `EB-002`: EventBridge rule has a wildcard target ARN <span class="pg-sev pg-sev--high">HIGH</span> { #detail-eb-002 }
+### `EB-002`: EventBridge rule has a wildcard target ARN <span class="pg-sev pg-sev--high">HIGH</span> { #detail-eb-002 }
 
 **Evidences:** [`1.16`](#ctrl-1-16) Ensure IAM policies that allow full '*:*' administrative privileges are not attached.
 
@@ -475,7 +475,7 @@ Every check that evidences this standard, rendered once with its detection mecha
 
 **Source:** [`EB-002`](../providers/aws.md) in the [AWS provider](../providers/aws.md).
 
-#### `ECR-000`: ECR API access failed <span class="pg-sev pg-sev--info">INFO</span> { #detail-ecr-000 }
+### `ECR-000`: ECR API access failed <span class="pg-sev pg-sev--info">INFO</span> { #detail-ecr-000 }
 
 **Evidences:** [`3.1`](#ctrl-3-1) Ensure CloudTrail is enabled in all regions.
 
@@ -485,7 +485,7 @@ Every check that evidences this standard, rendered once with its detection mecha
 
 **Source:** [`ECR-000`](../providers/aws.md) in the [AWS provider](../providers/aws.md).
 
-#### `ECR-001`: Image scanning on push not enabled <span class="pg-sev pg-sev--high">HIGH</span> { #detail-ecr-001 }
+### `ECR-001`: Image scanning on push not enabled <span class="pg-sev pg-sev--high">HIGH</span> { #detail-ecr-001 }
 
 **Evidences:** [`4.16`](#ctrl-4-16) Ensure AWS Security Hub is enabled.
 
@@ -495,7 +495,7 @@ Every check that evidences this standard, rendered once with its detection mecha
 
 **Source:** [`ECR-001`](../providers/aws.md) in the [AWS provider](../providers/aws.md).
 
-#### `ECR-003`: Repository policy allows public access <span class="pg-sev pg-sev--critical">CRITICAL</span> { #detail-ecr-003 }
+### `ECR-003`: Repository policy allows public access <span class="pg-sev pg-sev--critical">CRITICAL</span> { #detail-ecr-003 }
 
 **Evidences:** [`1.16`](#ctrl-1-16) Ensure IAM policies that allow full '*:*' administrative privileges are not attached.
 
@@ -505,7 +505,7 @@ Every check that evidences this standard, rendered once with its detection mecha
 
 **Source:** [`ECR-003`](../providers/aws.md) in the [AWS provider](../providers/aws.md).
 
-#### `ECR-005`: Repository encrypted with AES256 rather than KMS CMK <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-ecr-005 }
+### `ECR-005`: Repository encrypted with AES256 rather than KMS CMK <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-ecr-005 }
 
 **Evidences:** [`3.7`](#ctrl-3-7) Ensure CloudTrail logs are encrypted at rest using KMS CMKs.
 
@@ -515,7 +515,7 @@ Every check that evidences this standard, rendered once with its detection mecha
 
 **Source:** [`ECR-005`](../providers/aws.md) in the [AWS provider](../providers/aws.md).
 
-#### `ECR-007`: Inspector v2 enhanced scanning disabled for ECR <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-ecr-007 }
+### `ECR-007`: Inspector v2 enhanced scanning disabled for ECR <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-ecr-007 }
 
 **Evidences:** [`4.16`](#ctrl-4-16) Ensure AWS Security Hub is enabled.
 
@@ -525,7 +525,7 @@ Every check that evidences this standard, rendered once with its detection mecha
 
 **Source:** [`ECR-007`](../providers/aws.md) in the [AWS provider](../providers/aws.md).
 
-#### `IAM-000`: IAM API access failed <span class="pg-sev pg-sev--info">INFO</span> { #detail-iam-000 }
+### `IAM-000`: IAM API access failed <span class="pg-sev pg-sev--info">INFO</span> { #detail-iam-000 }
 
 **Evidences:** [`3.1`](#ctrl-3-1) Ensure CloudTrail is enabled in all regions.
 
@@ -535,7 +535,7 @@ Every check that evidences this standard, rendered once with its detection mecha
 
 **Source:** [`IAM-000`](../providers/aws.md) in the [AWS provider](../providers/aws.md).
 
-#### `IAM-001`: CI/CD role has AdministratorAccess policy attached <span class="pg-sev pg-sev--critical">CRITICAL</span> { #detail-iam-001 }
+### `IAM-001`: CI/CD role has AdministratorAccess policy attached <span class="pg-sev pg-sev--critical">CRITICAL</span> { #detail-iam-001 }
 
 **Evidences:** [`1.16`](#ctrl-1-16) Ensure IAM policies that allow full '*:*' administrative privileges are not attached.
 
@@ -582,7 +582,7 @@ resource "aws_iam_role_policy" "codebuild_least_priv" {
 
 **Source:** [`IAM-001`](../providers/aws.md) in the [AWS provider](../providers/aws.md).
 
-#### `IAM-002`: CI/CD role has wildcard Action in attached policy <span class="pg-sev pg-sev--high">HIGH</span> { #detail-iam-002 }
+### `IAM-002`: CI/CD role has wildcard Action in attached policy <span class="pg-sev pg-sev--high">HIGH</span> { #detail-iam-002 }
 
 **Evidences:** [`1.16`](#ctrl-1-16) Ensure IAM policies that allow full '*:*' administrative privileges are not attached.
 
@@ -592,7 +592,7 @@ resource "aws_iam_role_policy" "codebuild_least_priv" {
 
 **Source:** [`IAM-002`](../providers/aws.md) in the [AWS provider](../providers/aws.md).
 
-#### `IAM-003`: CI/CD role has no permission boundary <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-iam-003 }
+### `IAM-003`: CI/CD role has no permission boundary <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-iam-003 }
 
 **Evidences:** [`1.16`](#ctrl-1-16) Ensure IAM policies that allow full '*:*' administrative privileges are not attached.
 
@@ -602,7 +602,7 @@ resource "aws_iam_role_policy" "codebuild_least_priv" {
 
 **Source:** [`IAM-003`](../providers/aws.md) in the [AWS provider](../providers/aws.md).
 
-#### `IAM-004`: CI/CD role can PassRole to any role <span class="pg-sev pg-sev--high">HIGH</span> { #detail-iam-004 }
+### `IAM-004`: CI/CD role can PassRole to any role <span class="pg-sev pg-sev--high">HIGH</span> { #detail-iam-004 }
 
 **Evidences:** [`1.16`](#ctrl-1-16) Ensure IAM policies that allow full '*:*' administrative privileges are not attached.
 
@@ -651,7 +651,7 @@ resource "aws_iam_role_policy" "codebuild_least_priv" {
 
 **Source:** [`IAM-004`](../providers/aws.md) in the [AWS provider](../providers/aws.md).
 
-#### `IAM-005`: CI/CD role trust policy missing sts:ExternalId <span class="pg-sev pg-sev--high">HIGH</span> { #detail-iam-005 }
+### `IAM-005`: CI/CD role trust policy missing sts:ExternalId <span class="pg-sev pg-sev--high">HIGH</span> { #detail-iam-005 }
 
 **Evidences:** [`1.16`](#ctrl-1-16) Ensure IAM policies that allow full '*:*' administrative privileges are not attached.
 
@@ -661,7 +661,7 @@ resource "aws_iam_role_policy" "codebuild_least_priv" {
 
 **Source:** [`IAM-005`](../providers/aws.md) in the [AWS provider](../providers/aws.md).
 
-#### `IAM-006`: Sensitive actions granted with wildcard Resource <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-iam-006 }
+### `IAM-006`: Sensitive actions granted with wildcard Resource <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-iam-006 }
 
 **Evidences:** [`1.16`](#ctrl-1-16) Ensure IAM policies that allow full '*:*' administrative privileges are not attached.
 
@@ -671,7 +671,7 @@ resource "aws_iam_role_policy" "codebuild_least_priv" {
 
 **Source:** [`IAM-006`](../providers/aws.md) in the [AWS provider](../providers/aws.md).
 
-#### `IAM-007`: IAM user has access key older than 90 days <span class="pg-sev pg-sev--high">HIGH</span> { #detail-iam-007 }
+### `IAM-007`: IAM user has access key older than 90 days <span class="pg-sev pg-sev--high">HIGH</span> { #detail-iam-007 }
 
 **Evidences:** [`1.14`](#ctrl-1-14) Ensure access keys are rotated every 90 days or less.
 
@@ -681,7 +681,7 @@ resource "aws_iam_role_policy" "codebuild_least_priv" {
 
 **Source:** [`IAM-007`](../providers/aws.md) in the [AWS provider](../providers/aws.md).
 
-#### `IAM-008`: OIDC-federated role trust policy missing audience or subject pin <span class="pg-sev pg-sev--high">HIGH</span> { #detail-iam-008 }
+### `IAM-008`: OIDC-federated role trust policy missing audience or subject pin <span class="pg-sev pg-sev--high">HIGH</span> { #detail-iam-008 }
 
 **Evidences:** [`1.16`](#ctrl-1-16) Ensure IAM policies that allow full '*:*' administrative privileges are not attached.
 
@@ -691,7 +691,7 @@ resource "aws_iam_role_policy" "codebuild_least_priv" {
 
 **Source:** [`IAM-008`](../providers/aws.md) in the [AWS provider](../providers/aws.md).
 
-#### `KMS-000`: KMS API access failed <span class="pg-sev pg-sev--info">INFO</span> { #detail-kms-000 }
+### `KMS-000`: KMS API access failed <span class="pg-sev pg-sev--info">INFO</span> { #detail-kms-000 }
 
 **Evidences:** [`3.1`](#ctrl-3-1) Ensure CloudTrail is enabled in all regions.
 
@@ -701,7 +701,7 @@ resource "aws_iam_role_policy" "codebuild_least_priv" {
 
 **Source:** [`KMS-000`](../providers/aws.md) in the [AWS provider](../providers/aws.md).
 
-#### `KMS-001`: KMS customer-managed key has rotation disabled <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-kms-001 }
+### `KMS-001`: KMS customer-managed key has rotation disabled <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-kms-001 }
 
 **Evidences:** [`3.8`](#ctrl-3-8) Ensure rotation for customer-created symmetric CMKs is enabled.
 
@@ -711,7 +711,7 @@ resource "aws_iam_role_policy" "codebuild_least_priv" {
 
 **Source:** [`KMS-001`](../providers/aws.md) in the [AWS provider](../providers/aws.md).
 
-#### `KMS-002`: KMS key policy grants wildcard KMS actions <span class="pg-sev pg-sev--high">HIGH</span> { #detail-kms-002 }
+### `KMS-002`: KMS key policy grants wildcard KMS actions <span class="pg-sev pg-sev--high">HIGH</span> { #detail-kms-002 }
 
 **Evidences:** [`1.16`](#ctrl-1-16) Ensure IAM policies that allow full '*:*' administrative privileges are not attached.
 
@@ -721,7 +721,7 @@ resource "aws_iam_role_policy" "codebuild_least_priv" {
 
 **Source:** [`KMS-002`](../providers/aws.md) in the [AWS provider](../providers/aws.md).
 
-#### `LMB-000`: Lambda API access failed <span class="pg-sev pg-sev--info">INFO</span> { #detail-lmb-000 }
+### `LMB-000`: Lambda API access failed <span class="pg-sev pg-sev--info">INFO</span> { #detail-lmb-000 }
 
 **Evidences:** [`3.1`](#ctrl-3-1) Ensure CloudTrail is enabled in all regions.
 
@@ -731,7 +731,7 @@ resource "aws_iam_role_policy" "codebuild_least_priv" {
 
 **Source:** [`LMB-000`](../providers/aws.md) in the [AWS provider](../providers/aws.md).
 
-#### `LMB-002`: Lambda function URL has AuthType=NONE <span class="pg-sev pg-sev--high">HIGH</span> { #detail-lmb-002 }
+### `LMB-002`: Lambda function URL has AuthType=NONE <span class="pg-sev pg-sev--high">HIGH</span> { #detail-lmb-002 }
 
 **Evidences:** [`1.16`](#ctrl-1-16) Ensure IAM policies that allow full '*:*' administrative privileges are not attached.
 
@@ -741,7 +741,7 @@ resource "aws_iam_role_policy" "codebuild_least_priv" {
 
 **Source:** [`LMB-002`](../providers/aws.md) in the [AWS provider](../providers/aws.md).
 
-#### `LMB-003`: Lambda function env vars may contain plaintext secrets <span class="pg-sev pg-sev--high">HIGH</span> { #detail-lmb-003 }
+### `LMB-003`: Lambda function env vars may contain plaintext secrets <span class="pg-sev pg-sev--high">HIGH</span> { #detail-lmb-003 }
 
 **Evidences:** [`3.7`](#ctrl-3-7) Ensure CloudTrail logs are encrypted at rest using KMS CMKs.
 
@@ -751,7 +751,7 @@ resource "aws_iam_role_policy" "codebuild_least_priv" {
 
 **Source:** [`LMB-003`](../providers/aws.md) in the [AWS provider](../providers/aws.md).
 
-#### `LMB-004`: Lambda resource policy allows wildcard principal <span class="pg-sev pg-sev--critical">CRITICAL</span> { #detail-lmb-004 }
+### `LMB-004`: Lambda resource policy allows wildcard principal <span class="pg-sev pg-sev--critical">CRITICAL</span> { #detail-lmb-004 }
 
 **Evidences:** [`1.16`](#ctrl-1-16) Ensure IAM policies that allow full '*:*' administrative privileges are not attached.
 
@@ -761,7 +761,7 @@ resource "aws_iam_role_policy" "codebuild_least_priv" {
 
 **Source:** [`LMB-004`](../providers/aws.md) in the [AWS provider](../providers/aws.md).
 
-#### `PBAC-000`: PBAC enumeration failed <span class="pg-sev pg-sev--info">INFO</span> { #detail-pbac-000 }
+### `PBAC-000`: PBAC enumeration failed <span class="pg-sev pg-sev--info">INFO</span> { #detail-pbac-000 }
 
 **Evidences:** [`3.1`](#ctrl-3-1) Ensure CloudTrail is enabled in all regions.
 
@@ -771,7 +771,7 @@ resource "aws_iam_role_policy" "codebuild_least_priv" {
 
 **Source:** [`PBAC-000`](../providers/aws.md) in the [AWS provider](../providers/aws.md).
 
-#### `PBAC-002`: CodeBuild service role shared across multiple projects <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-pbac-002 }
+### `PBAC-002`: CodeBuild service role shared across multiple projects <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-pbac-002 }
 
 **Evidences:** [`1.16`](#ctrl-1-16) Ensure IAM policies that allow full '*:*' administrative privileges are not attached.
 
@@ -781,7 +781,7 @@ resource "aws_iam_role_policy" "codebuild_least_priv" {
 
 **Source:** [`PBAC-002`](../providers/aws.md) in the [AWS provider](../providers/aws.md).
 
-#### `PBAC-005`: CodePipeline stage action roles mirror the pipeline role <span class="pg-sev pg-sev--high">HIGH</span> { #detail-pbac-005 }
+### `PBAC-005`: CodePipeline stage action roles mirror the pipeline role <span class="pg-sev pg-sev--high">HIGH</span> { #detail-pbac-005 }
 
 **Evidences:** [`1.16`](#ctrl-1-16) Ensure IAM policies that allow full '*:*' administrative privileges are not attached.
 
@@ -791,7 +791,7 @@ resource "aws_iam_role_policy" "codebuild_least_priv" {
 
 **Source:** [`PBAC-005`](../providers/aws.md) in the [AWS provider](../providers/aws.md).
 
-#### `S3-000`: S3 API access failed <span class="pg-sev pg-sev--info">INFO</span> { #detail-s3-000 }
+### `S3-000`: S3 API access failed <span class="pg-sev pg-sev--info">INFO</span> { #detail-s3-000 }
 
 **Evidences:** [`3.1`](#ctrl-3-1) Ensure CloudTrail is enabled in all regions, [`3.6`](#ctrl-3-6) Ensure S3 bucket access logging is enabled on the CloudTrail S3 bucket.
 
@@ -801,7 +801,7 @@ resource "aws_iam_role_policy" "codebuild_least_priv" {
 
 **Source:** [`S3-000`](../providers/aws.md) in the [AWS provider](../providers/aws.md).
 
-#### `S3-001`: Artifact bucket public access block not fully enabled <span class="pg-sev pg-sev--critical">CRITICAL</span> { #detail-s3-001 }
+### `S3-001`: Artifact bucket public access block not fully enabled <span class="pg-sev pg-sev--critical">CRITICAL</span> { #detail-s3-001 }
 
 **Evidences:** [`2.1.4`](#ctrl-2-1-4) Ensure that S3 Buckets are configured with 'Block public access'.
 
@@ -811,7 +811,7 @@ resource "aws_iam_role_policy" "codebuild_least_priv" {
 
 **Source:** [`S3-001`](../providers/aws.md) in the [AWS provider](../providers/aws.md).
 
-#### `S3-002`: Artifact bucket server-side encryption not configured <span class="pg-sev pg-sev--high">HIGH</span> { #detail-s3-002 }
+### `S3-002`: Artifact bucket server-side encryption not configured <span class="pg-sev pg-sev--high">HIGH</span> { #detail-s3-002 }
 
 **Evidences:** [`2.1.1`](#ctrl-2-1-1) Ensure all S3 buckets employ encryption-at-rest.
 
@@ -821,7 +821,7 @@ resource "aws_iam_role_policy" "codebuild_least_priv" {
 
 **Source:** [`S3-002`](../providers/aws.md) in the [AWS provider](../providers/aws.md).
 
-#### `S3-003`: Artifact bucket versioning not enabled <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-s3-003 }
+### `S3-003`: Artifact bucket versioning not enabled <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-s3-003 }
 
 **Evidences:** [`2.1.2`](#ctrl-2-1-2) Ensure S3 Bucket Policy is set to deny HTTP requests.
 
@@ -831,7 +831,7 @@ resource "aws_iam_role_policy" "codebuild_least_priv" {
 
 **Source:** [`S3-003`](../providers/aws.md) in the [AWS provider](../providers/aws.md).
 
-#### `S3-004`: Artifact bucket access logging not enabled <span class="pg-sev pg-sev--low">LOW</span> { #detail-s3-004 }
+### `S3-004`: Artifact bucket access logging not enabled <span class="pg-sev pg-sev--low">LOW</span> { #detail-s3-004 }
 
 **Evidences:** [`3.6`](#ctrl-3-6) Ensure S3 bucket access logging is enabled on the CloudTrail S3 bucket.
 
@@ -841,7 +841,7 @@ resource "aws_iam_role_policy" "codebuild_least_priv" {
 
 **Source:** [`S3-004`](../providers/aws.md) in the [AWS provider](../providers/aws.md).
 
-#### `S3-005`: Artifact bucket missing aws:SecureTransport deny <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-s3-005 }
+### `S3-005`: Artifact bucket missing aws:SecureTransport deny <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-s3-005 }
 
 **Evidences:** [`2.1.2`](#ctrl-2-1-2) Ensure S3 Bucket Policy is set to deny HTTP requests.
 
@@ -851,7 +851,7 @@ resource "aws_iam_role_policy" "codebuild_least_priv" {
 
 **Source:** [`S3-005`](../providers/aws.md) in the [AWS provider](../providers/aws.md).
 
-#### `SM-000`: Secrets Manager API access failed <span class="pg-sev pg-sev--info">INFO</span> { #detail-sm-000 }
+### `SM-000`: Secrets Manager API access failed <span class="pg-sev pg-sev--info">INFO</span> { #detail-sm-000 }
 
 **Evidences:** [`3.1`](#ctrl-3-1) Ensure CloudTrail is enabled in all regions.
 
@@ -861,7 +861,7 @@ resource "aws_iam_role_policy" "codebuild_least_priv" {
 
 **Source:** [`SM-000`](../providers/aws.md) in the [AWS provider](../providers/aws.md).
 
-#### `SM-001`: Secrets Manager secret has no rotation configured <span class="pg-sev pg-sev--high">HIGH</span> { #detail-sm-001 }
+### `SM-001`: Secrets Manager secret has no rotation configured <span class="pg-sev pg-sev--high">HIGH</span> { #detail-sm-001 }
 
 **Evidences:** [`1.14`](#ctrl-1-14) Ensure access keys are rotated every 90 days or less.
 
@@ -871,7 +871,7 @@ resource "aws_iam_role_policy" "codebuild_least_priv" {
 
 **Source:** [`SM-001`](../providers/aws.md) in the [AWS provider](../providers/aws.md).
 
-#### `SM-002`: Secrets Manager resource policy allows wildcard principal <span class="pg-sev pg-sev--critical">CRITICAL</span> { #detail-sm-002 }
+### `SM-002`: Secrets Manager resource policy allows wildcard principal <span class="pg-sev pg-sev--critical">CRITICAL</span> { #detail-sm-002 }
 
 **Evidences:** [`1.16`](#ctrl-1-16) Ensure IAM policies that allow full '*:*' administrative privileges are not attached.
 
@@ -881,7 +881,7 @@ resource "aws_iam_role_policy" "codebuild_least_priv" {
 
 **Source:** [`SM-002`](../providers/aws.md) in the [AWS provider](../providers/aws.md).
 
-#### `SSM-000`: SSM Parameter Store API access failed <span class="pg-sev pg-sev--info">INFO</span> { #detail-ssm-000 }
+### `SSM-000`: SSM Parameter Store API access failed <span class="pg-sev pg-sev--info">INFO</span> { #detail-ssm-000 }
 
 **Evidences:** [`3.1`](#ctrl-3-1) Ensure CloudTrail is enabled in all regions.
 
@@ -891,7 +891,7 @@ resource "aws_iam_role_policy" "codebuild_least_priv" {
 
 **Source:** [`SSM-000`](../providers/aws.md) in the [AWS provider](../providers/aws.md).
 
-#### `SSM-001`: SSM Parameter with secret-like name is not a SecureString <span class="pg-sev pg-sev--high">HIGH</span> { #detail-ssm-001 }
+### `SSM-001`: SSM Parameter with secret-like name is not a SecureString <span class="pg-sev pg-sev--high">HIGH</span> { #detail-ssm-001 }
 
 **Evidences:** [`3.7`](#ctrl-3-7) Ensure CloudTrail logs are encrypted at rest using KMS CMKs.
 
@@ -933,7 +933,7 @@ $ aws ssm put-parameter \
 
 **Source:** [`SSM-001`](../providers/aws.md) in the [AWS provider](../providers/aws.md).
 
-#### `SSM-002`: SSM SecureString uses the default AWS-managed key <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-ssm-002 }
+### `SSM-002`: SSM SecureString uses the default AWS-managed key <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-ssm-002 }
 
 **Evidences:** [`3.7`](#ctrl-3-7) Ensure CloudTrail logs are encrypted at rest using KMS CMKs, [`3.8`](#ctrl-3-8) Ensure rotation for customer-created symmetric CMKs is enabled.
 

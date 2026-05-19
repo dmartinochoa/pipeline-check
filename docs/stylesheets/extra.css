@@ -777,18 +777,27 @@ body {
   display: none;
 }
 
-/* Tabs row: tighter, more editorial */
+/* Tabs row: tighter, more editorial.
+   The font size and inline tab padding are tuned so the 13 top-level
+   nav items fit inside Material's 61rem `.md-grid` on a typical
+   desktop width without the last tab getting clipped under the right
+   edge. Material's defaults (0.7rem link / 0.6rem item padding) leave
+   room; the prior override at 0.78rem was the source of the overflow.
+   The list keeps Material's `overflow: auto` as a fallback for
+   narrower viewports. */
 .md-tabs__list {
   padding: 0 0.4rem;
 }
 .md-tabs__item {
   height: 2.4rem;
+  padding-right: 0.4rem;
+  padding-left: 0.4rem;
 }
 .md-tabs__link {
-  font-size: 0.78rem;
+  font-size: 0.74rem;
   font-weight: var(--fw-refined);
   opacity: 0.72;
-  letter-spacing: 0.01em;
+  letter-spacing: 0.005em;
   color: var(--md-default-fg-color);
 }
 .md-tabs__link:hover,

@@ -87,6 +87,8 @@ _RULE_PACKAGES: tuple[str, ...] = (
     "pipeline_check.core.checks.npm.rules",
     "pipeline_check.core.checks.pypi.rules",
     "pipeline_check.core.checks.maven.rules",
+    "pipeline_check.core.checks.terraform.rules",
+    "pipeline_check.core.checks.cloudformation.rules",
 )
 
 # Class-based packages: ID/TITLE/SEV recoverable via docstring table.

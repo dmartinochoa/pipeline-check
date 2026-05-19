@@ -339,27 +339,38 @@ def test_every_discovered_rule_id_renders():
     Catches both the structural-registration failure and a deeper
     case where a rule module imports cleanly but its metadata can't
     be rendered (e.g. a Severity enum drift).
+
+    AWS / Terraform / CloudFormation deliberately share rule IDs
+    (one logical control, three detection surfaces) and their titles
+    diverge in minor ways (``filter group`` vs ``filter_group``). The
+    explain index only renders one title per ID, so for shared IDs
+    the body just needs to match *some* registered title.
     """
     from pipeline_check.core.checks.rule import discover_rules
     from pipeline_check.core.explain import _RULE_PACKAGES
 
-    failures: list[str] = []
+    titles_by_id: dict[str, set[str]] = {}
+    sources_by_id: dict[str, list[str]] = {}
     for pkg_fqn in _RULE_PACKAGES:
         for rule, _ in discover_rules(pkg_fqn):
-            body, code = render(rule.id)
-            if code != 0:
-                failures.append(
-                    f"{rule.id} from {pkg_fqn}: render exited {code}"
-                )
-                continue
-            if rule.id not in body:
-                failures.append(
-                    f"{rule.id}: rendered body did not contain the ID"
-                )
-            if rule.title not in body:
-                failures.append(
-                    f"{rule.id}: rendered body did not contain the title"
-                )
+            titles_by_id.setdefault(rule.id, set()).add(rule.title)
+            sources_by_id.setdefault(rule.id, []).append(pkg_fqn)
+
+    failures: list[str] = []
+    for rule_id, titles in titles_by_id.items():
+        body, code = render(rule_id)
+        if code != 0:
+            failures.append(
+                f"{rule_id} from {sources_by_id[rule_id]}: render exited {code}"
+            )
+            continue
+        if rule_id not in body:
+            failures.append(f"{rule_id}: rendered body did not contain the ID")
+        if not any(title in body for title in titles):
+            failures.append(
+                f"{rule_id}: rendered body did not contain any registered "
+                f"title (expected one of {sorted(titles)})"
+            )
     assert not failures, "\n".join(failures)
 
 

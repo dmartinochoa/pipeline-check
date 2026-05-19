@@ -12,6 +12,19 @@ release commit collapses this section into `## [X.Y.Z] - <date>`.
 
 ### Added
 
+- **`[lsp]` optional install extra surfaces the Language Server.**
+  ``pip install pipeline-check[lsp]`` pulls ``pygls>=2.1.0`` and
+  ``lsprotocol>=2025.0.0``, the floor versions the
+  [Pipeline-Check VS Code extension](https://github.com/greylag-ci/pipeline-check-vscode)
+  is built against (older pygls releases break the server). The base
+  install still carries no LSP SDK, keeping the AWS-Lambda /
+  minimal-install paths slim. README gains an "Editor diagnostics
+  (LSP)" row in the key-features table pointing at the extension and
+  the supported single-file provider set (github, gitlab, azure,
+  bitbucket, circleci, cloudbuild, buildkite, drone, jenkins,
+  dockerfile). Closes the install-instructions gap left by the
+  initial LSP-server landing.
+
 - **`ResourceAnchor` foundation for cross-provider reachability
   (phase 0).** `Finding` gains a new
   ``resource_anchors: tuple[ResourceAnchor, ...]`` field, the
@@ -173,7 +186,153 @@ release commit collapses this section into `## [X.Y.Z] - <date>`.
   `GL-032` ∩ `GL-020` share a job. `GHA-019`, `GHA-036`, `GL-032`,
   `GL-020` all gained `Finding.job_anchors`.
 
+- **Reachability-aware AC-009 (3-leg supply-chain repo poisoning).**
+  `AC-009` (GHA-001 unpinned action + GHA-002 injection sink +
+  GHA-008 literal credential) now uses a 3-way `job_anchors`
+  intersection. GHA-008 was the last leg without anchors; it now
+  scans each job sub-tree with `find_secret_values` to attribute
+  per-job hits, and when the secret only matches at the workflow
+  level (top-level ``env:`` / ``defaults.run.env``, inherited by
+  every job) fans the anchor out to every job so reachability
+  with GHA-001 / GHA-002 lands on the inheriting jobs. Confirmed
+  → `confirmed_reachable=True`, confidence `HIGH`, reachability
+  note citing the shared job(s) — that's the single execution
+  context where a fork PR can exfiltrate the plaintext secret
+  through the injection sink in one run, with the unpinned
+  action giving a second route on the next upstream release.
+  Disjoint anchors keep the legacy co-occurrence signal (the
+  credential literal still needs rotating regardless).
+
+- **AC-028 (npm worm propagation) deliberately stays on
+  co-occurrence.** Unlike the other GHA-leg chains, AC-028's
+  legs straddle two distinct file shapes (a `package.json`
+  manifest + a GitHub Actions workflow) that are by design
+  wired through `npm publish` + scheduled / fork-PR workflow
+  execution rather than through one shared execution context.
+  Repo-level co-occurrence IS the reachability claim for the
+  Shai-Hulud-class worm topology; there's no tighter same-job
+  signal to add. Documented in the chain rule's docstring.
+
+- **Reachability-aware AC-025 (Argo param injection + privileged
+  template).** `AC-025` now intersects `ARGO-002` ∩ `ARGO-005`
+  template anchors, mirroring the AC-023 Tekton port. Argo's
+  check surface also collapses every Workflow / WorkflowTemplate
+  / ClusterWorkflowTemplate finding into a single
+  ``resource="argo"`` row, so before this migration AC-025 fired
+  on whole-corpus co-occurrence. Both leg rules now populate
+  `Finding.job_anchors` with a template-scoped identifier in
+  the form ``<Kind>/<name>:<template>``. When ARGO-002's
+  privilege comes from ``spec.podSpecPatch: 'privileged: true'``
+  (workflow-wide rather than per-template), the rule fans out
+  one anchor per template in that workflow so reachability with
+  ARGO-005 on any one of them still lands on the same key.
+  Confirmed → `confirmed_reachable=True`, confidence promoted to
+  `HIGH`, and a `reachability_note` citing the shared template(s).
+  Disjoint anchors fall back to the legacy co-occurrence signal.
+
+- **Reachability-aware AC-023 (Tekton param injection + privileged
+  step).** `AC-023` now intersects `TKN-002` ∩ `TKN-003` job
+  anchors. Tekton's check surface collapses every Task / ClusterTask
+  finding into a single ``resource="tekton"`` row, so prior to
+  this migration the chain fired whenever ANY Task in the corpus
+  had a privileged step AND ANY (possibly different) Task had an
+  unsafe param interpolation, even when the two were structurally
+  disjoint. Both leg rules now populate `Finding.job_anchors` with
+  a step-scoped identifier in the form ``<Kind>/<name>:<step>``
+  (e.g. ``Task/release:build-image``), and the chain confirms
+  reachable only when the same step both runs privileged AND
+  interpolates ``$(params.<name>)`` unquoted, the precise
+  kernel-RCE primitive (one shell command lands in one
+  privileged container in one PipelineRun). Confirmed →
+  `confirmed_reachable=True`, confidence promoted to `HIGH`, and a
+  `reachability_note` citing the shared step(s). Disjoint anchors
+  (privileged step in one Task, injection sink in another) fall
+  back to the legacy co-occurrence signal because each leg is
+  independently risky and worth surfacing, just not as the
+  single-step kernel-RCE composition.
+
+- **Reachability-aware AC-012 (reusable workflow secret exfil).**
+  `AC-012` (mutable reusable-workflow ref + ``secrets: inherit``)
+  now intersects `GHA-025` ∩ `GHA-034` job anchors. Both leg rules
+  already walked per-job; the migration was to surface the
+  offending job IDs as `Finding.job_anchors`. When the same call
+  site (`jobs.<id>.uses:` + `jobs.<id>.secrets: inherit`) carries
+  both the mutable ref AND the inherit pass-through, the chain
+  emits with `confirmed_reachable=True`, confidence promoted to
+  `HIGH`, and a `reachability_note` citing the shared job(s).
+  The single-step tag-move-to-credential-exfil channel: one tag
+  move on the callee repo and the entire caller secret surface
+  ships to attacker code in the next run. Disjoint anchors (two
+  reusable-workflow calls on the same file but in different jobs)
+  fall back to the legacy co-occurrence signal — each leg is
+  independently risky but neither single call site exposes both.
+
+- **Reachability-aware AC-008 (dependency confusion window).**
+  `AC-008` (lockfile miss + integrity-bypass install) now uses the
+  same `job_anchors` intersection model as the rest of the GHA
+  chain pack. `GHA-021` and `GHA-029` were both blob scans against
+  the whole workflow with no per-job attribution; they now walk
+  each job's ``steps[].run`` and anchor on the job IDs where the
+  offending install command was found. When the lockfile-skipping
+  install AND the integrity-bypass install land in the same job,
+  the chain emits with `confirmed_reachable=True`, confidence
+  promoted to `HIGH`, and a `reachability_note` citing the shared
+  job(s) — the tightest dependency-confusion / typosquatting
+  window where one execution context exposes both detection legs.
+  Disjoint anchors fall back to the legacy co-occurrence signal
+  (each install path is individually exploitable). Side effect of
+  the leg-rule migration: GHA-021 / GHA-029 now ignore non-`run:`
+  surfaces (step names, env values, action `with:` blocks) that
+  the prior blob scan was nominally scanning but where a shell
+  install command would be a false positive.
+
 ### Changed
+
+- **Image-reference parsing consolidated into one primitive.** New
+  ``pipeline_check/core/checks/_primitives/image_ref.py`` carries the
+  structural decomposition (registry / repository / tag / digest) for
+  OCI / Docker image references. ``container_image.classify`` (AWS-
+  managed / digest / trusted-registry verdict) and
+  ``image_pinning.classify`` (pin-tightness ``PinKind``) now delegate
+  to it instead of each carrying their own ``@sha256:`` regex and
+  ``rpartition('/')`` dance. Domain verdicts stay with their
+  classifier; only the grammar moved. ``DIGEST_RE`` and
+  ``VERSION_TAG_RE`` remain as module-level exports on
+  ``image_pinning`` because four provider ``_helpers.py`` modules
+  re-export them by identity. Edge-case behavior shift in
+  ``image_pinning.classify``: a trailing colon with no tag
+  (``foo:``) and a bare colon (``:``) now return ``PinKind.NO_TAG``
+  rather than ``PinKind.FLOATING`` (an explicit colon with no tag
+  really is an absent tag, not a mutable one); ``classify(None)``
+  returns ``PinKind.NO_TAG`` instead of raising ``TypeError``. The
+  common cases (``:latest``, ``:3.12.1``, ``@sha256:<64 hex>``,
+  bare ``alpine``) are unchanged.
+
+- **LSP diagnostics carry the upstream severity name in ``data``.**
+  ``finding_to_diagnostic`` now sets
+  ``Diagnostic.data = {"severity": finding.severity.name}`` (one of
+  ``CRITICAL`` / ``HIGH`` / ``MEDIUM`` / ``LOW`` / ``INFO``). The LSP
+  ``DiagnosticSeverity`` enum collapses CRITICAL + HIGH into a single
+  ``Error`` value, so a precise client-side filter (e.g. "critical
+  only" in an editor) needs the full upstream name on the wire. The
+  VS Code extension's v0.1.1
+  [pipelineCheck.severityThreshold](https://github.com/greylag-ci/pipeline-check-vscode)
+  knob reads this field; older clients that ignore ``data`` are
+  unaffected.
+
+- **LSP diagnostics now self-contain the fix and link to the rule
+  doc.** ``finding_to_diagnostic`` and ``findings_to_diagnostics``
+  accept the dispatched provider name and set
+  ``Diagnostic.codeDescription.href`` to
+  ``https://dmartinochoa.github.io/pipeline-check/providers/<provider>/#<id>``,
+  so the rule ID rendered next to each finding (e.g. ``GHA-001`` in
+  the Problems panel) becomes a clickable "Open documentation" link
+  in the editor. The diagnostic message also gains a ``Fix:``-prefixed
+  line carrying ``Finding.recommendation`` (the title and dynamic
+  description still lead), so a hover surfaces problem → why → fix
+  without sending the user to the docs site first. Both args are
+  optional and back-compatible: callers that don't supply a provider
+  get the old plain ``code``-only diagnostic.
 
 - **Broadened CIS Software Supply Chain Security Guide to near-full
   catalog coverage.** Cross-mapping pass: no new rule modules, 217
@@ -580,6 +739,88 @@ release commit collapses this section into `## [X.Y.Z] - <date>`.
   All three benchmarks are intentionally narrow caps on the
   catalog, not gaps to close. The percentages here reflect
   realistic ceilings given each benchmark's scope.
+
+- **Standards-coverage audit + corrections.** The standards-
+  expansion campaign above used 516 as the OWASP catalog
+  denominator. The true catalog size is 565 — the regex used to
+  count entries didn't allow digits in the rule-prefix, so it
+  missed the K8S-* and S3-* families. Restating the post-campaign
+  coverage against the correct denominator:
+
+  | Standard | Was reported | Actual (pre-backfill) |
+  |---|---|---|
+  | nist_800_53 | 100% | 99% (S3-000 missing) |
+  | nist_csf_2 | 100% | 99% (S3-000 missing) |
+  | soc2 | 100% | 98% (K8S-015/16/25/30 + S3-000/002) |
+  | pci_dss_v4 | 100% | 92% (full K8s pack missing) |
+  | esf_supply_chain | 100% | 92% (full K8s pack missing) |
+  | nist_ssdf | 99% | 92% (full K8s pack missing) |
+  | cis_supply_chain | 99% | 91% (full K8s pack + KMS-001/SM-001/S3-000) |
+
+  Audit-driven backfill restores the previously-claimed 100% as
+  honest numbers. The K8s manifest pack (K8S-001..043) is added to
+  cis_supply_chain (deployment Section 5), esf_supply_chain
+  (Customer-side deployment), nist_ssdf (PO/PW deployment env), and
+  pci_dss_v4 (Req-6 system-component change surface). Each
+  standard's K8s mappings follow the rule's natural fit within
+  that standard's vocabulary — image-pinning to dependency-verify
+  controls, RBAC / SA to least-privilege, secret literals to
+  credential-protection, runtime-hardening to env-separation /
+  secure-defaults. soc2 picks up the four missing K8s rules
+  (K8S-015/16/25/30) plus S3-002. nist_800_53 / nist_csf_2 / soc2
+  / cis_supply_chain absorb the S3-000 visibility-gap finding on
+  the same audit-trail controls the other -000 family already uses.
+  cis_supply_chain additionally maps KMS-001 (CMK rotation) and
+  SM-001 (Secrets Manager rotation) to 4.1.1 / 1.3.4 — the
+  rotation principle that already governs IAM-007 / CB-006 / CP-004.
+
+  After: six standards at legitimate **565/565 = 100%** (NIST 800-53,
+  NIST CSF 2.0, SOC 2, PCI DSS v4, ESF Supply Chain, OWASP). Two
+  more at 99% with documented per-rule carve-outs: CIS SSCS
+  (DF-007 HEALTHCHECK + OCI-006 layer count) and NIST SSDF (OCI-006
+  alone). Coverage-floor table in `tests/test_standards.py` is
+  ratcheted to a couple percent below current state for every
+  framework, including the previously-missing cis_github entry.
+
+- **Doc-claim drift fixes.** README.md compliance-standards table
+  listed SLSA Build Track as "6/7 levels (110 check mappings)";
+  actual after expansion is 413. The OWASP page intro in
+  `scripts/gen_standards_docs.py` said "the other 13 frameworks
+  layer their own labels"; correct count is 14 (15 total minus
+  OWASP itself). Both regenerated.
+
+### Fixed
+
+- **Doc drift on Terraform / CloudFormation provider pages.**
+  Published `docs/providers/terraform.md` and
+  `docs/providers/cloudformation.md` carried stale OWASP tags:
+  CD-001 / CD-002 showed `CICD-SEC-7` against `CWE-754`, TF-003 /
+  CF-003 showed `CICD-SEC-5` against `CWE-1327`. The underlying
+  rule modules had been retagged to `CICD-SEC-1` (deployment
+  rollback) and `CICD-SEC-7` (artifact-integrity boundary)
+  respectively, but the generator wasn't re-run, so GitHub Pages
+  served the old values. Regenerated both files.
+
+- **`scripts/link_standards_check_ids.py` corrupted in-page anchor
+  links.** Running the linker after `gen_standards_docs.py` would
+  nest the heading anchor `[`X-N`](#detail-x-n)` inside a second
+  markdown link, producing malformed `[[`X-N`](../providers/aws.md)](#detail-x-n)`
+  tokens. Tightened the regex (reject `[` / `]` lookbehind and `]`
+  lookahead) and scoped the linker to mapping-table rows only,
+  matching its documented intent. The full doc-generation pipeline
+  is now idempotent end-to-end.
+
+- **Per-generator `--check` mode is now uniform.**
+  `gen_provider_docs.py`, `gen_standards_docs.py`, and
+  `link_standards_check_ids.py` gain `--check` flags
+  (`gen_attack_chains_doc.py` already had one). Each exits 1 if any
+  on-disk doc would change. A new
+  `tests/test_generated_docs_in_sync.py` runs all four in `--check`
+  mode and is the catch-all drift guard, complementing the existing
+  numerical-claim tests (`tests/test_doc_claims.py`) and rule-id
+  presence tests (`tests/test_rule_framework.py`). The two
+  pre-existing terraform / cloudformation drifts above were caught
+  by this new test on first run.
 
 ## [1.0.5] - 2026-05-18
 

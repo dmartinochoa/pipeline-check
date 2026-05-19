@@ -220,6 +220,18 @@ findings. The ruff lesson is that an editor surface drives more
 adoption than any new rule pack. A few weeks of work to ship the
 MVP.
 
+Repo split (decided 2026-05-18): the LSP server lives in this repo
+as ``pipeline_check/lsp/`` (``pygls``-based, runnable via
+``python -m pipeline_check.lsp``) so ``Rule`` / ``Finding`` schema
+changes and the server consuming them land in the same diff. The
+VS Code extension itself lives in a separate repo
+(``pipeline-check-vscode``, TypeScript) and spawns the server over
+stdio JSON-RPC, mirroring the ``astral-sh/ruff`` +
+``astral-sh/ruff-vscode`` split. Trade-off accepted: the stdio
+schema becomes a stable contract between the two repos, in
+exchange for keeping the TS / ``vsce publish`` toolchain out of
+the Python project.
+
 ### Live Azure + GCP posture (parity with the 71-rule AWS pack)
 
 ``--cloud azure --subscription ...`` and ``--cloud gcp --project ...``

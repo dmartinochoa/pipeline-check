@@ -645,5 +645,57 @@ STANDARD = Standard(
         "CA-000":   ["ESF-C-AUDIT"],
         "CCM-000":  ["ESF-C-AUDIT"],
         "LMB-000":  ["ESF-C-AUDIT"],
+        # ── Kubernetes manifests (deployment payload) ───────────
+        # K8s workload manifests are the Customer-side deployment
+        # surface. Image-pinning → ESF-S-PIN-DEPS + ESF-S-VERIFY-DEPS;
+        # privileged / runtime / network → ESF-D-PRIV-BUILD +
+        # ESF-D-BUILD-ENV; RBAC / SA → ESF-C-LEAST-PRIV; secret
+        # exposure → ESF-D-SECRETS; deployment-env separation →
+        # ESF-C-ENV-SEP.
+        "K8S-001":  ["ESF-S-PIN-DEPS", "ESF-S-VERIFY-DEPS"],   # image not digest-pinned
+        "K8S-002":  ["ESF-D-BUILD-ENV"],            # hostNetwork
+        "K8S-003":  ["ESF-D-BUILD-ENV"],            # hostPID
+        "K8S-004":  ["ESF-D-BUILD-ENV"],            # hostIPC
+        "K8S-005":  ["ESF-D-PRIV-BUILD"],           # privileged container
+        "K8S-006":  ["ESF-D-PRIV-BUILD"],           # allowPrivilegeEscalation
+        "K8S-007":  ["ESF-D-PRIV-BUILD"],           # runAsNonRoot missing
+        "K8S-008":  ["ESF-D-PRIV-BUILD"],           # readOnlyRootFilesystem missing
+        "K8S-009":  ["ESF-D-PRIV-BUILD"],           # added capabilities
+        "K8S-010":  ["ESF-D-PRIV-BUILD"],           # seccompProfile missing
+        "K8S-011":  ["ESF-C-LEAST-PRIV"],           # default ServiceAccount
+        "K8S-012":  ["ESF-C-LEAST-PRIV"],           # automountServiceAccountToken
+        "K8S-013":  ["ESF-D-PRIV-BUILD"],           # hostPath volume
+        "K8S-014":  ["ESF-D-PRIV-BUILD"],           # sensitive hostPath
+        "K8S-015":  ["ESF-D-BUILD-ENV"],            # no memory limit
+        "K8S-016":  ["ESF-D-BUILD-ENV"],            # no CPU limit
+        "K8S-017":  ["ESF-D-SECRETS"],              # credential literal in env
+        "K8S-018":  ["ESF-D-SECRETS"],              # Secret data plaintext
+        "K8S-019":  ["ESF-C-ENV-SEP"],              # default namespace
+        "K8S-020":  ["ESF-C-LEAST-PRIV"],           # cluster-admin RoleBinding
+        "K8S-021":  ["ESF-C-LEAST-PRIV"],           # wildcard RBAC verbs
+        "K8S-022":  ["ESF-D-BUILD-ENV"],            # SSH service exposed
+        "K8S-023":  ["ESF-D-PRIV-BUILD"],           # PSA enforce missing
+        "K8S-024":  ["ESF-C-DEPLOY-MON"],           # missing health probes
+        "K8S-025":  ["ESF-D-BUILD-ENV"],            # system priority class
+        "K8S-026":  ["ESF-D-BUILD-ENV"],            # LB without source ranges
+        "K8S-027":  ["ESF-S-TRUSTED-REG"],          # Ingress without TLS
+        "K8S-028":  ["ESF-D-BUILD-ENV"],            # container hostPort
+        "K8S-029":  ["ESF-C-LEAST-PRIV"],           # default-SA RoleBinding
+        "K8S-030":  ["ESF-D-BUILD-ENV"],            # control-plane scheduling
+        "K8S-031":  ["ESF-D-PRIV-BUILD"],           # PSA warn missing
+        "K8S-032":  ["ESF-D-BUILD-ENV"],            # NetworkPolicy default-deny missing
+        "K8S-033":  ["ESF-D-BUILD-ENV"],            # ResourceQuota / LimitRange missing
+        "K8S-034":  ["ESF-C-LEAST-PRIV"],           # SA token automount default
+        "K8S-035":  ["ESF-D-PRIV-BUILD"],           # runAsUser: 0
+        "K8S-036":  ["ESF-S-PIN-DEPS"],             # SA imagePullSecret missing
+        "K8S-037":  ["ESF-D-SECRETS"],              # ConfigMap credential
+        "K8S-038":  ["ESF-D-BUILD-ENV"],            # NetworkPolicy allow-all
+        "K8S-039":  ["ESF-D-PRIV-BUILD"],           # shareProcessNamespace
+        "K8S-040":  ["ESF-D-PRIV-BUILD"],           # procMount: Unmasked
+        "K8S-041":  ["ESF-D-BUILD-ENV"],            # Service externalIPs
+        "K8S-042":  ["ESF-C-LEAST-PRIV"],           # anonymous RoleBinding
+        "K8S-043":  ["ESF-D-BUILD-ENV"],            # Ingress wildcard host
+        # S3-000 is already mapped above (line 60) as part of the
+        # original ``-000`` block at the top of the dict.
     },
 )

@@ -20,7 +20,7 @@ secret surface is decided per call site, not at the catalog level.
 """
 from __future__ import annotations
 
-from ...checks.base import Finding, Severity
+from ...checks.base import Confidence, Finding, Severity
 from ..base import Chain, ChainRule, group_by_resource, min_confidence
 
 RULE = ChainRule(
@@ -60,13 +60,48 @@ RULE = ChainRule(
 
 
 def match(findings: list[Finding]) -> list[Chain]:
-    # Same-workflow pairing matters here: a reusable-workflow ref in
-    # workflow A and an unrelated ``secrets: inherit`` in workflow B
-    # are independent risks, not a single chain.
+    # Reachability: a shared job between GHA-025 (the unpinned
+    # reusable-workflow ``uses:`` call site) and GHA-034 (the
+    # ``secrets: inherit`` call site) confirms the tag-move-to-
+    # credential-exfil happens in one execution context. Two
+    # reusable-workflow calls on the same file but in different jobs
+    # are independently risky but don't compose into the single-step
+    # exfil unless the same call site exposes both legs.
     grouped = group_by_resource(findings, ["GHA-025", "GHA-034"])
     out: list[Chain] = []
     for resource, ck_map in grouped.items():
-        triggers = [ck_map["GHA-025"], ck_map["GHA-034"]]
+        gha025 = ck_map["GHA-025"]
+        gha034 = ck_map["GHA-034"]
+        triggers = [gha025, gha034]
+
+        unpinned_jobs = set(gha025.job_anchors)
+        inherit_jobs = set(gha034.job_anchors)
+        shared = sorted(unpinned_jobs & inherit_jobs)
+        confirmed = bool(shared)
+        if confirmed:
+            shared_repr = ", ".join(f"`{j}`" for j in shared)
+            reach_note = (
+                f"Unpinned reusable-workflow call and ``secrets: inherit`` "
+                f"share job {shared_repr}"
+            )
+            reach_narrative = (
+                f"  4. Reachability confirmed: the same job(s) "
+                f"({shared_repr}) both call the reusable workflow "
+                f"via a mutable ref AND pass ``secrets: inherit``. "
+                f"A tag move on the callee repo exfiltrates the "
+                f"entire caller secret surface in one run, no "
+                f"second call site required."
+            )
+        else:
+            reach_note = ""
+            reach_narrative = (
+                "  4. Reachability unconfirmed: the unpinned "
+                "reusable-workflow ref and the ``secrets: inherit`` "
+                "fire on the same workflow file but in different "
+                "jobs. Each leg is independently risky; treat as "
+                "a co-occurrence signal."
+            )
+
         narrative = (
             f"In `{resource}`:\n"
             "  1. A reusable-workflow ``uses:`` ref is pinned to a "
@@ -80,13 +115,17 @@ def match(findings: list[Finding]) -> list[Chain]:
             "no allowlist.\n"
             "  3. A tag-move attack on the callee repo therefore "
             "exfiltrates the entire caller secret surface in a "
-            "single run, before any review of the called code."
+            "single run, before any review of the called code.\n"
+            f"{reach_narrative}"
         )
+
+        chain_confidence = Confidence.HIGH if confirmed else min_confidence(triggers)
+
         out.append(Chain(
             chain_id=RULE.id,
             title=RULE.title,
             severity=RULE.severity,
-            confidence=min_confidence(triggers),
+            confidence=chain_confidence,
             summary=RULE.summary,
             narrative=narrative,
             mitre_attack=list(RULE.mitre_attack),
@@ -96,5 +135,7 @@ def match(findings: list[Finding]) -> list[Chain]:
             resources=[resource],
             references=list(RULE.references),
             recommendation=RULE.recommendation,
+            confirmed_reachable=confirmed,
+            reachability_note=reach_note,
         ))
     return out

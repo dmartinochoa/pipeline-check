@@ -6,7 +6,7 @@ attacks on every run.
 """
 from __future__ import annotations
 
-from ...checks.base import Finding, Severity
+from ...checks.base import Confidence, Finding, Severity
 from ..base import Chain, ChainRule, group_by_resource, min_confidence
 
 RULE = ChainRule(
@@ -40,10 +40,51 @@ RULE = ChainRule(
 
 
 def match(findings: list[Finding]) -> list[Chain]:
+    # Reachability: a shared job between GHA-021 (the install command
+    # that skips lockfile enforcement) and GHA-029 (the install
+    # command that aims the resolver at a source the lockfile can't
+    # protect: git URL, local path, tarball URL) confirms the
+    # dependency-confusion / typosquatting window opens in one
+    # execution context. Disjoint jobs still co-occur on a
+    # poisonable workflow file but typically reflect two separate
+    # build paths (e.g. a Python deploy job + a Node test job); we
+    # keep that as the unconfirmed signal rather than dropping the
+    # chain, because either install path alone is still exploitable.
     grouped = group_by_resource(findings, ["GHA-021", "GHA-029"])
     out: list[Chain] = []
     for resource, ck_map in grouped.items():
-        triggers = [ck_map["GHA-021"], ck_map["GHA-029"]]
+        gha021 = ck_map["GHA-021"]
+        gha029 = ck_map["GHA-029"]
+        triggers = [gha021, gha029]
+
+        lockfile_jobs = set(gha021.job_anchors)
+        integrity_jobs = set(gha029.job_anchors)
+        shared = sorted(lockfile_jobs & integrity_jobs)
+        confirmed = bool(shared)
+        if confirmed:
+            shared_repr = ", ".join(f"`{j}`" for j in shared)
+            reach_note = (
+                f"Lockfile-skipping install and integrity-bypass install "
+                f"share job {shared_repr}"
+            )
+            reach_narrative = (
+                f"  4. Reachability confirmed: the same job(s) "
+                f"({shared_repr}) both install without lockfile "
+                f"enforcement AND from a source the lockfile cannot "
+                f"protect. A registry takeover or a poisoned tarball "
+                f"URL lands code in the same build context, no extra "
+                f"reachability step required."
+            )
+        else:
+            reach_note = ""
+            reach_narrative = (
+                "  4. Reachability unconfirmed: the lockfile miss and "
+                "the integrity-bypass install fire on the same "
+                "workflow file but in different jobs. Each install "
+                "path is still individually exploitable; treat as a "
+                "co-occurrence signal."
+            )
+
         narrative = (
             f"In `{resource}`:\n"
             "  1. Package install runs without lockfile enforcement "
@@ -55,13 +96,17 @@ def match(findings: list[Finding]) -> list[Chain]:
             "  3. Each run resolves to whatever the registry currently "
             "serves. An attacker publishing a higher-version package "
             "with the right name (dep-confusion) or a typo "
-            "(typosquatting) lands code in the build."
+            "(typosquatting) lands code in the build.\n"
+            f"{reach_narrative}"
         )
+
+        chain_confidence = Confidence.HIGH if confirmed else min_confidence(triggers)
+
         out.append(Chain(
             chain_id=RULE.id,
             title=RULE.title,
             severity=RULE.severity,
-            confidence=min_confidence(triggers),
+            confidence=chain_confidence,
             summary=RULE.summary,
             narrative=narrative,
             mitre_attack=list(RULE.mitre_attack),
@@ -71,5 +116,7 @@ def match(findings: list[Finding]) -> list[Chain]:
             resources=[resource],
             references=list(RULE.references),
             recommendation=RULE.recommendation,
+            confirmed_reachable=confirmed,
+            reachability_note=reach_note,
         ))
     return out

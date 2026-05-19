@@ -317,7 +317,7 @@ pipeline_check --pipeline aws --standard cis_kubernetes --standard owasp_cicd_to
 
 Every check that evidences this standard, rendered once with its detection mechanism, recommendation, and any known false-positive modes or real-world incident references. The per-control tables above link to the matching block here.
 
-#### `ARGO-002`: Argo template container runs privileged or as root <span class="pg-sev pg-sev--high">HIGH</span> { #detail-argo-002 }
+### `ARGO-002`: Argo template container runs privileged or as root <span class="pg-sev pg-sev--high">HIGH</span> { #detail-argo-002 }
 
 **Evidences:** [`5.2.2`](#ctrl-5-2-2) Minimize the admission of privileged containers, [`5.2.7`](#ctrl-5-2-7) Minimize the admission of root containers, [`5.7.3`](#ctrl-5-7-3) Apply SecurityContext to your Pods and Containers.
 
@@ -327,7 +327,7 @@ Every check that evidences this standard, rendered once with its detection mecha
 
 **Source:** [`ARGO-002`](../providers/argo.md#argo-002) in the [Argo Workflows provider](../providers/argo.md).
 
-#### `ARGO-003`: Argo workflow uses the default ServiceAccount <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-argo-003 }
+### `ARGO-003`: Argo workflow uses the default ServiceAccount <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-argo-003 }
 
 **Evidences:** [`5.1.5`](#ctrl-5-1-5) Ensure that default service accounts are not actively used.
 
@@ -337,7 +337,7 @@ Every check that evidences this standard, rendered once with its detection mecha
 
 **Source:** [`ARGO-003`](../providers/argo.md#argo-003) in the [Argo Workflows provider](../providers/argo.md).
 
-#### `ARGO-004`: Argo workflow mounts hostPath or shares host namespaces <span class="pg-sev pg-sev--critical">CRITICAL</span> { #detail-argo-004 }
+### `ARGO-004`: Argo workflow mounts hostPath or shares host namespaces <span class="pg-sev pg-sev--critical">CRITICAL</span> { #detail-argo-004 }
 
 **Evidences:** [`5.2.5`](#ctrl-5-2-5) Minimize the admission of containers wishing to share the host network namespace, [`5.2.12`](#ctrl-5-2-12) Minimize the admission of HostPath volumes.
 
@@ -347,7 +347,7 @@ Every check that evidences this standard, rendered once with its detection mecha
 
 **Source:** [`ARGO-004`](../providers/argo.md#argo-004) in the [Argo Workflows provider](../providers/argo.md).
 
-#### `ARGO-006`: Literal secret value in Argo template env or parameter default <span class="pg-sev pg-sev--critical">CRITICAL</span> <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> { #detail-argo-006 }
+### `ARGO-006`: Literal secret value in Argo template env or parameter default <span class="pg-sev pg-sev--critical">CRITICAL</span> <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> { #detail-argo-006 }
 
 **Evidences:** [`5.1.2`](#ctrl-5-1-2) Minimize access to secrets, [`5.4.1`](#ctrl-5-4-1) Prefer using Secrets as files over Secrets as environment variables, [`5.4.2`](#ctrl-5-4-2) Consider external secret storage.
 
@@ -359,7 +359,7 @@ Every check that evidences this standard, rendered once with its detection mecha
 
 **Source:** [`ARGO-006`](../providers/argo.md#argo-006) in the [Argo Workflows provider](../providers/argo.md).
 
-#### `ARGO-013`: Argo workflow does not opt out of SA token automount <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-argo-013 }
+### `ARGO-013`: Argo workflow does not opt out of SA token automount <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-argo-013 }
 
 **Evidences:** [`5.1.6`](#ctrl-5-1-6) Ensure that Service Account Tokens are only mounted where necessary.
 
@@ -373,7 +373,7 @@ Every check that evidences this standard, rendered once with its detection mecha
 
 **Source:** [`ARGO-013`](../providers/argo.md#argo-013) in the [Argo Workflows provider](../providers/argo.md).
 
-#### `HELM-006`: Chart.yaml does not declare a kubeVersion compatibility range <span class="pg-sev pg-sev--low">LOW</span> { #detail-helm-006 }
+### `HELM-006`: Chart.yaml does not declare a kubeVersion compatibility range <span class="pg-sev pg-sev--low">LOW</span> { #detail-helm-006 }
 
 **Evidences:** [`5.7.1`](#ctrl-5-7-1) Create administrative boundaries between resources using namespaces.
 
@@ -387,7 +387,7 @@ Every check that evidences this standard, rendered once with its detection mecha
 
 **Source:** [`HELM-006`](../providers/helm.md) in the [Helm provider](../providers/helm.md).
 
-#### `K8S-002`: Pod hostNetwork: true <span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> { #detail-k8s-002 }
+### `K8S-002`: Pod hostNetwork: true <span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> { #detail-k8s-002 }
 
 **Evidences:** [`5.2.5`](#ctrl-5-2-5) Minimize the admission of containers wishing to share the host network namespace.
 
@@ -399,7 +399,7 @@ Every check that evidences this standard, rendered once with its detection mecha
 
 **Source:** [`K8S-002`](../providers/kubernetes.md#k8s-002) in the [Kubernetes provider](../providers/kubernetes.md).
 
-#### `K8S-003`: Pod hostPID: true <span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> { #detail-k8s-003 }
+### `K8S-003`: Pod hostPID: true <span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> { #detail-k8s-003 }
 
 **Evidences:** [`5.2.3`](#ctrl-5-2-3) Minimize the admission of containers wishing to share the host process ID namespace.
 
@@ -411,7 +411,7 @@ Every check that evidences this standard, rendered once with its detection mecha
 
 **Source:** [`K8S-003`](../providers/kubernetes.md#k8s-003) in the [Kubernetes provider](../providers/kubernetes.md).
 
-#### `K8S-004`: Pod hostIPC: true <span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> { #detail-k8s-004 }
+### `K8S-004`: Pod hostIPC: true <span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> { #detail-k8s-004 }
 
 **Evidences:** [`5.2.4`](#ctrl-5-2-4) Minimize the admission of containers wishing to share the host IPC namespace.
 
@@ -423,7 +423,7 @@ Every check that evidences this standard, rendered once with its detection mecha
 
 **Source:** [`K8S-004`](../providers/kubernetes.md#k8s-004) in the [Kubernetes provider](../providers/kubernetes.md).
 
-#### `K8S-005`: Container securityContext.privileged: true <span class="pg-sev pg-sev--critical">CRITICAL</span> <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> { #detail-k8s-005 }
+### `K8S-005`: Container securityContext.privileged: true <span class="pg-sev pg-sev--critical">CRITICAL</span> <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> { #detail-k8s-005 }
 
 **Evidences:** [`5.2.2`](#ctrl-5-2-2) Minimize the admission of privileged containers, [`5.7.3`](#ctrl-5-7-3) Apply SecurityContext to your Pods and Containers.
 
@@ -435,7 +435,7 @@ Every check that evidences this standard, rendered once with its detection mecha
 
 **Source:** [`K8S-005`](../providers/kubernetes.md#k8s-005) in the [Kubernetes provider](../providers/kubernetes.md).
 
-#### `K8S-006`: Container allowPrivilegeEscalation not explicitly false <span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> { #detail-k8s-006 }
+### `K8S-006`: Container allowPrivilegeEscalation not explicitly false <span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> { #detail-k8s-006 }
 
 **Evidences:** [`5.2.6`](#ctrl-5-2-6) Minimize the admission of containers with allowPrivilegeEscalation, [`5.7.3`](#ctrl-5-7-3) Apply SecurityContext to your Pods and Containers.
 
@@ -447,7 +447,7 @@ Every check that evidences this standard, rendered once with its detection mecha
 
 **Source:** [`K8S-006`](../providers/kubernetes.md#k8s-006) in the [Kubernetes provider](../providers/kubernetes.md).
 
-#### `K8S-007`: Container runAsNonRoot not true / runAsUser is 0 <span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> { #detail-k8s-007 }
+### `K8S-007`: Container runAsNonRoot not true / runAsUser is 0 <span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> { #detail-k8s-007 }
 
 **Evidences:** [`5.2.7`](#ctrl-5-2-7) Minimize the admission of root containers, [`5.7.3`](#ctrl-5-7-3) Apply SecurityContext to your Pods and Containers.
 
@@ -459,7 +459,7 @@ Every check that evidences this standard, rendered once with its detection mecha
 
 **Source:** [`K8S-007`](../providers/kubernetes.md#k8s-007) in the [Kubernetes provider](../providers/kubernetes.md).
 
-#### `K8S-008`: Container readOnlyRootFilesystem not true <span class="pg-sev pg-sev--medium">MEDIUM</span> <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> { #detail-k8s-008 }
+### `K8S-008`: Container readOnlyRootFilesystem not true <span class="pg-sev pg-sev--medium">MEDIUM</span> <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> { #detail-k8s-008 }
 
 **Evidences:** [`5.7.3`](#ctrl-5-7-3) Apply SecurityContext to your Pods and Containers.
 
@@ -471,7 +471,7 @@ Every check that evidences this standard, rendered once with its detection mecha
 
 **Source:** [`K8S-008`](../providers/kubernetes.md#k8s-008) in the [Kubernetes provider](../providers/kubernetes.md).
 
-#### `K8S-009`: Container capabilities not dropping ALL / adding dangerous caps <span class="pg-sev pg-sev--high">HIGH</span> { #detail-k8s-009 }
+### `K8S-009`: Container capabilities not dropping ALL / adding dangerous caps <span class="pg-sev pg-sev--high">HIGH</span> { #detail-k8s-009 }
 
 **Evidences:** [`5.2.8`](#ctrl-5-2-8) Minimize the admission of containers with the NET_RAW capability, [`5.2.9`](#ctrl-5-2-9) Minimize the admission of containers with added capabilities, [`5.7.3`](#ctrl-5-7-3) Apply SecurityContext to your Pods and Containers.
 
@@ -488,7 +488,7 @@ Most stateless services need no capabilities at all. Avoid ``SYS_ADMIN`` (effect
 
 **Source:** [`K8S-009`](../providers/kubernetes.md#k8s-009) in the [Kubernetes provider](../providers/kubernetes.md).
 
-#### `K8S-010`: Container seccompProfile not RuntimeDefault or Localhost <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-k8s-010 }
+### `K8S-010`: Container seccompProfile not RuntimeDefault or Localhost <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-k8s-010 }
 
 **Evidences:** [`5.7.2`](#ctrl-5-7-2) Ensure that the seccomp profile is set to docker/default in your Pod definitions, [`5.7.3`](#ctrl-5-7-3) Apply SecurityContext to your Pods and Containers.
 
@@ -498,7 +498,7 @@ Most stateless services need no capabilities at all. Avoid ``SYS_ADMIN`` (effect
 
 **Source:** [`K8S-010`](../providers/kubernetes.md#k8s-010) in the [Kubernetes provider](../providers/kubernetes.md).
 
-#### `K8S-011`: Pod serviceAccountName unset or 'default' <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-k8s-011 }
+### `K8S-011`: Pod serviceAccountName unset or 'default' <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-k8s-011 }
 
 **Evidences:** [`5.1.5`](#ctrl-5-1-5) Ensure that default service accounts are not actively used.
 
@@ -508,7 +508,7 @@ Most stateless services need no capabilities at all. Avoid ``SYS_ADMIN`` (effect
 
 **Source:** [`K8S-011`](../providers/kubernetes.md#k8s-011) in the [Kubernetes provider](../providers/kubernetes.md).
 
-#### `K8S-012`: Pod automountServiceAccountToken not false <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-k8s-012 }
+### `K8S-012`: Pod automountServiceAccountToken not false <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-k8s-012 }
 
 **Evidences:** [`5.1.6`](#ctrl-5-1-6) Ensure that Service Account Tokens are only mounted where necessary.
 
@@ -518,7 +518,7 @@ Most stateless services need no capabilities at all. Avoid ``SYS_ADMIN`` (effect
 
 **Source:** [`K8S-012`](../providers/kubernetes.md#k8s-012) in the [Kubernetes provider](../providers/kubernetes.md).
 
-#### `K8S-013`: Pod uses a hostPath volume <span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> { #detail-k8s-013 }
+### `K8S-013`: Pod uses a hostPath volume <span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> { #detail-k8s-013 }
 
 **Evidences:** [`5.2.12`](#ctrl-5-2-12) Minimize the admission of HostPath volumes.
 
@@ -578,7 +578,7 @@ spec:
 
 **Source:** [`K8S-013`](../providers/kubernetes.md#k8s-013) in the [Kubernetes provider](../providers/kubernetes.md).
 
-#### `K8S-014`: Pod hostPath references a sensitive host directory <span class="pg-sev pg-sev--critical">CRITICAL</span> { #detail-k8s-014 }
+### `K8S-014`: Pod hostPath references a sensitive host directory <span class="pg-sev pg-sev--critical">CRITICAL</span> { #detail-k8s-014 }
 
 **Evidences:** [`5.2.12`](#ctrl-5-2-12) Minimize the admission of HostPath volumes.
 
@@ -588,7 +588,7 @@ spec:
 
 **Source:** [`K8S-014`](../providers/kubernetes.md#k8s-014) in the [Kubernetes provider](../providers/kubernetes.md).
 
-#### `K8S-017`: Container env value carries a credential-shaped literal <span class="pg-sev pg-sev--critical">CRITICAL</span> { #detail-k8s-017 }
+### `K8S-017`: Container env value carries a credential-shaped literal <span class="pg-sev pg-sev--critical">CRITICAL</span> { #detail-k8s-017 }
 
 **Evidences:** [`5.4.1`](#ctrl-5-4-1) Prefer using Secrets as files over Secrets as environment variables, [`5.4.2`](#ctrl-5-4-2) Consider external secret storage.
 
@@ -598,7 +598,7 @@ spec:
 
 **Source:** [`K8S-017`](../providers/kubernetes.md#k8s-017) in the [Kubernetes provider](../providers/kubernetes.md).
 
-#### `K8S-018`: Secret stringData/data carries a credential-shaped literal <span class="pg-sev pg-sev--critical">CRITICAL</span> { #detail-k8s-018 }
+### `K8S-018`: Secret stringData/data carries a credential-shaped literal <span class="pg-sev pg-sev--critical">CRITICAL</span> { #detail-k8s-018 }
 
 **Evidences:** [`5.1.2`](#ctrl-5-1-2) Minimize access to secrets, [`5.4.2`](#ctrl-5-4-2) Consider external secret storage.
 
@@ -608,7 +608,7 @@ spec:
 
 **Source:** [`K8S-018`](../providers/kubernetes.md#k8s-018) in the [Kubernetes provider](../providers/kubernetes.md).
 
-#### `K8S-019`: Workload deployed in the 'default' namespace <span class="pg-sev pg-sev--low">LOW</span> { #detail-k8s-019 }
+### `K8S-019`: Workload deployed in the 'default' namespace <span class="pg-sev pg-sev--low">LOW</span> { #detail-k8s-019 }
 
 **Evidences:** [`5.7.1`](#ctrl-5-7-1) Create administrative boundaries between resources using namespaces, [`5.7.4`](#ctrl-5-7-4) The default namespace should not be used.
 
@@ -618,7 +618,7 @@ spec:
 
 **Source:** [`K8S-019`](../providers/kubernetes.md#k8s-019) in the [Kubernetes provider](../providers/kubernetes.md).
 
-#### `K8S-020`: ClusterRoleBinding grants cluster-admin or system:masters <span class="pg-sev pg-sev--critical">CRITICAL</span> <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> { #detail-k8s-020 }
+### `K8S-020`: ClusterRoleBinding grants cluster-admin or system:masters <span class="pg-sev pg-sev--critical">CRITICAL</span> <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> { #detail-k8s-020 }
 
 **Evidences:** [`5.1.1`](#ctrl-5-1-1) Ensure that the cluster-admin role is only used where required, [`5.1.3`](#ctrl-5-1-3) Minimize wildcard use in Roles and ClusterRoles, [`5.1.4`](#ctrl-5-1-4) Minimize access to create pods, [`5.1.8`](#ctrl-5-1-8) Limit use of the Bind, Impersonate and Escalate permissions in the Kubernetes cluster.
 
@@ -635,7 +635,7 @@ spec:
 
 **Source:** [`K8S-020`](../providers/kubernetes.md#k8s-020) in the [Kubernetes provider](../providers/kubernetes.md).
 
-#### `K8S-021`: Role or ClusterRole grants wildcard verbs+resources <span class="pg-sev pg-sev--high">HIGH</span> { #detail-k8s-021 }
+### `K8S-021`: Role or ClusterRole grants wildcard verbs+resources <span class="pg-sev pg-sev--high">HIGH</span> { #detail-k8s-021 }
 
 **Evidences:** [`5.1.2`](#ctrl-5-1-2) Minimize access to secrets, [`5.1.3`](#ctrl-5-1-3) Minimize wildcard use in Roles and ClusterRoles, [`5.1.4`](#ctrl-5-1-4) Minimize access to create pods, [`5.1.8`](#ctrl-5-1-8) Limit use of the Bind, Impersonate and Escalate permissions in the Kubernetes cluster.
 
@@ -645,7 +645,7 @@ spec:
 
 **Source:** [`K8S-021`](../providers/kubernetes.md#k8s-021) in the [Kubernetes provider](../providers/kubernetes.md).
 
-#### `K8S-022`: Service exposes SSH (port 22) <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-k8s-022 }
+### `K8S-022`: Service exposes SSH (port 22) <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-k8s-022 }
 
 **Evidences:** [`5.2.13`](#ctrl-5-2-13) Minimize the admission of containers which use HostPorts.
 
@@ -655,7 +655,7 @@ spec:
 
 **Source:** [`K8S-022`](../providers/kubernetes.md#k8s-022) in the [Kubernetes provider](../providers/kubernetes.md).
 
-#### `K8S-023`: Namespace missing Pod Security Admission enforcement label <span class="pg-sev pg-sev--high">HIGH</span> { #detail-k8s-023 }
+### `K8S-023`: Namespace missing Pod Security Admission enforcement label <span class="pg-sev pg-sev--high">HIGH</span> { #detail-k8s-023 }
 
 **Evidences:** [`5.7.1`](#ctrl-5-7-1) Create administrative boundaries between resources using namespaces, [`5.7.3`](#ctrl-5-7-3) Apply SecurityContext to your Pods and Containers.
 
@@ -669,7 +669,7 @@ spec:
 
 **Source:** [`K8S-023`](../providers/kubernetes.md#k8s-023) in the [Kubernetes provider](../providers/kubernetes.md).
 
-#### `K8S-025`: System priority class used outside kube-system <span class="pg-sev pg-sev--high">HIGH</span> { #detail-k8s-025 }
+### `K8S-025`: System priority class used outside kube-system <span class="pg-sev pg-sev--high">HIGH</span> { #detail-k8s-025 }
 
 **Evidences:** [`5.7.1`](#ctrl-5-7-1) Create administrative boundaries between resources using namespaces.
 
@@ -679,7 +679,7 @@ spec:
 
 **Source:** [`K8S-025`](../providers/kubernetes.md#k8s-025) in the [Kubernetes provider](../providers/kubernetes.md).
 
-#### `K8S-028`: Container declares hostPort <span class="pg-sev pg-sev--medium">MEDIUM</span> <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> { #detail-k8s-028 }
+### `K8S-028`: Container declares hostPort <span class="pg-sev pg-sev--medium">MEDIUM</span> <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> { #detail-k8s-028 }
 
 **Evidences:** [`5.2.13`](#ctrl-5-2-13) Minimize the admission of containers which use HostPorts.
 
@@ -691,7 +691,7 @@ spec:
 
 **Source:** [`K8S-028`](../providers/kubernetes.md#k8s-028) in the [Kubernetes provider](../providers/kubernetes.md).
 
-#### `K8S-029`: RoleBinding grants permissions to the default ServiceAccount <span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> { #detail-k8s-029 }
+### `K8S-029`: RoleBinding grants permissions to the default ServiceAccount <span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> { #detail-k8s-029 }
 
 **Evidences:** [`5.1.5`](#ctrl-5-1-5) Ensure that default service accounts are not actively used.
 
@@ -707,7 +707,7 @@ spec:
 
 **Source:** [`K8S-029`](../providers/kubernetes.md#k8s-029) in the [Kubernetes provider](../providers/kubernetes.md).
 
-#### `K8S-030`: Workload schedules onto a control-plane node <span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> { #detail-k8s-030 }
+### `K8S-030`: Workload schedules onto a control-plane node <span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> { #detail-k8s-030 }
 
 **Evidences:** [`5.7.1`](#ctrl-5-7-1) Create administrative boundaries between resources using namespaces.
 
@@ -723,7 +723,7 @@ spec:
 
 **Source:** [`K8S-030`](../providers/kubernetes.md#k8s-030) in the [Kubernetes provider](../providers/kubernetes.md).
 
-#### `K8S-031`: Namespace missing PSA warn label <span class="pg-sev pg-sev--low">LOW</span> { #detail-k8s-031 }
+### `K8S-031`: Namespace missing PSA warn label <span class="pg-sev pg-sev--low">LOW</span> { #detail-k8s-031 }
 
 **Evidences:** [`5.7.1`](#ctrl-5-7-1) Create administrative boundaries between resources using namespaces, [`5.7.3`](#ctrl-5-7-3) Apply SecurityContext to your Pods and Containers.
 
@@ -737,7 +737,7 @@ spec:
 
 **Source:** [`K8S-031`](../providers/kubernetes.md#k8s-031) in the [Kubernetes provider](../providers/kubernetes.md).
 
-#### `K8S-032`: Namespace lacks default-deny NetworkPolicy <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-k8s-032 }
+### `K8S-032`: Namespace lacks default-deny NetworkPolicy <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-k8s-032 }
 
 **Evidences:** [`5.3.2`](#ctrl-5-3-2) Ensure that all Namespaces have NetworkPolicies defined.
 
@@ -752,7 +752,7 @@ spec:
 
 **Source:** [`K8S-032`](../providers/kubernetes.md#k8s-032) in the [Kubernetes provider](../providers/kubernetes.md).
 
-#### `K8S-033`: Namespace lacks ResourceQuota or LimitRange <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-k8s-033 }
+### `K8S-033`: Namespace lacks ResourceQuota or LimitRange <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-k8s-033 }
 
 **Evidences:** [`5.7.1`](#ctrl-5-7-1) Create administrative boundaries between resources using namespaces.
 
@@ -762,7 +762,7 @@ spec:
 
 **Source:** [`K8S-033`](../providers/kubernetes.md#k8s-033) in the [Kubernetes provider](../providers/kubernetes.md).
 
-#### `K8S-034`: ServiceAccount automountServiceAccountToken not explicitly false <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-k8s-034 }
+### `K8S-034`: ServiceAccount automountServiceAccountToken not explicitly false <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-k8s-034 }
 
 **Evidences:** [`5.1.6`](#ctrl-5-1-6) Ensure that Service Account Tokens are only mounted where necessary.
 
@@ -776,7 +776,7 @@ spec:
 
 **Source:** [`K8S-034`](../providers/kubernetes.md#k8s-034) in the [Kubernetes provider](../providers/kubernetes.md).
 
-#### `K8S-035`: Container securityContext.runAsUser is 0 <span class="pg-sev pg-sev--high">HIGH</span> { #detail-k8s-035 }
+### `K8S-035`: Container securityContext.runAsUser is 0 <span class="pg-sev pg-sev--high">HIGH</span> { #detail-k8s-035 }
 
 **Evidences:** [`5.2.7`](#ctrl-5-2-7) Minimize the admission of root containers, [`5.7.3`](#ctrl-5-7-3) Apply SecurityContext to your Pods and Containers.
 
@@ -786,7 +786,7 @@ spec:
 
 **Source:** [`K8S-035`](../providers/kubernetes.md#k8s-035) in the [Kubernetes provider](../providers/kubernetes.md).
 
-#### `K8S-036`: ServiceAccount imagePullSecrets references missing Secret <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-k8s-036 }
+### `K8S-036`: ServiceAccount imagePullSecrets references missing Secret <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-k8s-036 }
 
 **Evidences:** [`5.1.6`](#ctrl-5-1-6) Ensure that Service Account Tokens are only mounted where necessary.
 
@@ -800,7 +800,7 @@ spec:
 
 **Source:** [`K8S-036`](../providers/kubernetes.md#k8s-036) in the [Kubernetes provider](../providers/kubernetes.md).
 
-#### `K8S-037`: ConfigMap data carries a credential-shaped literal <span class="pg-sev pg-sev--high">HIGH</span> { #detail-k8s-037 }
+### `K8S-037`: ConfigMap data carries a credential-shaped literal <span class="pg-sev pg-sev--high">HIGH</span> { #detail-k8s-037 }
 
 **Evidences:** [`5.1.2`](#ctrl-5-1-2) Minimize access to secrets, [`5.4.2`](#ctrl-5-4-2) Consider external secret storage.
 
@@ -814,7 +814,7 @@ spec:
 
 **Source:** [`K8S-037`](../providers/kubernetes.md#k8s-037) in the [Kubernetes provider](../providers/kubernetes.md).
 
-#### `K8S-038`: NetworkPolicy ingress / egress allows all sources or destinations <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-k8s-038 }
+### `K8S-038`: NetworkPolicy ingress / egress allows all sources or destinations <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-k8s-038 }
 
 **Evidences:** [`5.3.2`](#ctrl-5-3-2) Ensure that all Namespaces have NetworkPolicies defined.
 
@@ -828,7 +828,7 @@ spec:
 
 **Source:** [`K8S-038`](../providers/kubernetes.md#k8s-038) in the [Kubernetes provider](../providers/kubernetes.md).
 
-#### `K8S-039`: Pod uses shareProcessNamespace: true <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-k8s-039 }
+### `K8S-039`: Pod uses shareProcessNamespace: true <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-k8s-039 }
 
 **Evidences:** [`5.7.3`](#ctrl-5-7-3) Apply SecurityContext to your Pods and Containers.
 
@@ -842,7 +842,7 @@ spec:
 
 **Source:** [`K8S-039`](../providers/kubernetes.md#k8s-039) in the [Kubernetes provider](../providers/kubernetes.md).
 
-#### `K8S-040`: Container securityContext.procMount: Unmasked <span class="pg-sev pg-sev--high">HIGH</span> { #detail-k8s-040 }
+### `K8S-040`: Container securityContext.procMount: Unmasked <span class="pg-sev pg-sev--high">HIGH</span> { #detail-k8s-040 }
 
 **Evidences:** [`5.7.3`](#ctrl-5-7-3) Apply SecurityContext to your Pods and Containers.
 
@@ -852,7 +852,7 @@ spec:
 
 **Source:** [`K8S-040`](../providers/kubernetes.md#k8s-040) in the [Kubernetes provider](../providers/kubernetes.md).
 
-#### `K8S-042`: RoleBinding grants access to system:anonymous / system:unauthenticated <span class="pg-sev pg-sev--critical">CRITICAL</span> { #detail-k8s-042 }
+### `K8S-042`: RoleBinding grants access to system:anonymous / system:unauthenticated <span class="pg-sev pg-sev--critical">CRITICAL</span> { #detail-k8s-042 }
 
 **Evidences:** [`5.1.1`](#ctrl-5-1-1) Ensure that the cluster-admin role is only used where required, [`5.1.2`](#ctrl-5-1-2) Minimize access to secrets, [`5.1.3`](#ctrl-5-1-3) Minimize wildcard use in Roles and ClusterRoles, [`5.1.4`](#ctrl-5-1-4) Minimize access to create pods, [`5.1.8`](#ctrl-5-1-8) Limit use of the Bind, Impersonate and Escalate permissions in the Kubernetes cluster.
 
@@ -862,7 +862,7 @@ spec:
 
 **Source:** [`K8S-042`](../providers/kubernetes.md#k8s-042) in the [Kubernetes provider](../providers/kubernetes.md).
 
-#### `TKN-002`: Tekton step runs privileged or as root <span class="pg-sev pg-sev--high">HIGH</span> { #detail-tkn-002 }
+### `TKN-002`: Tekton step runs privileged or as root <span class="pg-sev pg-sev--high">HIGH</span> { #detail-tkn-002 }
 
 **Evidences:** [`5.2.2`](#ctrl-5-2-2) Minimize the admission of privileged containers, [`5.2.7`](#ctrl-5-2-7) Minimize the admission of root containers, [`5.7.3`](#ctrl-5-7-3) Apply SecurityContext to your Pods and Containers.
 
@@ -872,7 +872,7 @@ spec:
 
 **Source:** [`TKN-002`](../providers/tekton.md#tkn-002) in the [Tekton provider](../providers/tekton.md).
 
-#### `TKN-004`: Tekton Task mounts hostPath or shares host namespaces <span class="pg-sev pg-sev--critical">CRITICAL</span> { #detail-tkn-004 }
+### `TKN-004`: Tekton Task mounts hostPath or shares host namespaces <span class="pg-sev pg-sev--critical">CRITICAL</span> { #detail-tkn-004 }
 
 **Evidences:** [`5.2.5`](#ctrl-5-2-5) Minimize the admission of containers wishing to share the host network namespace, [`5.2.12`](#ctrl-5-2-12) Minimize the admission of HostPath volumes.
 
@@ -882,7 +882,7 @@ spec:
 
 **Source:** [`TKN-004`](../providers/tekton.md#tkn-004) in the [Tekton provider](../providers/tekton.md).
 
-#### `TKN-007`: Tekton run uses the default ServiceAccount <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-tkn-007 }
+### `TKN-007`: Tekton run uses the default ServiceAccount <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-tkn-007 }
 
 **Evidences:** [`5.1.5`](#ctrl-5-1-5) Ensure that default service accounts are not actively used.
 
@@ -892,7 +892,7 @@ spec:
 
 **Source:** [`TKN-007`](../providers/tekton.md#tkn-007) in the [Tekton provider](../providers/tekton.md).
 
-#### `TKN-013`: Tekton sidecar runs privileged or as root <span class="pg-sev pg-sev--high">HIGH</span> { #detail-tkn-013 }
+### `TKN-013`: Tekton sidecar runs privileged or as root <span class="pg-sev pg-sev--high">HIGH</span> { #detail-tkn-013 }
 
 **Evidences:** [`5.2.2`](#ctrl-5-2-2) Minimize the admission of privileged containers, [`5.2.7`](#ctrl-5-2-7) Minimize the admission of root containers.
 

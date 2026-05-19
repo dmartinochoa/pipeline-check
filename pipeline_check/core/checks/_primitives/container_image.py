@@ -7,12 +7,12 @@ evaluates the same question about ``aws_codebuild_project.environment.image``:
 2. Is it pinned by digest (``@sha256:<64 hex>``)?
 3. Is it pulled from a trusted registry? (ECR, public.ecr.aws, etc.)
 
-Prior to this primitive, each provider carried its own copy of
-``_AWS_MANAGED_RE`` / ``_DIGEST_RE`` and interpreted them slightly
-differently. Consolidating here means (a) a registry or regex update
-lands everywhere at once, and (b) workflow providers that later
-grow a CodeBuild-style pinning rule can reuse the classifier without
-re-litigating the managed-image or trusted-registry list.
+The structural decomposition (registry / repo / tag / digest) lives
+in :mod:`image_ref`. This module owns the domain verdict:
+AWS-managed shortform, trusted-registry membership, and the pinning
+rule used by AWS / Terraform / CloudFormation rules (tag-only is
+acceptable for trusted registries; only digest or AWS-managed
+counts as ``pinned`` everywhere else).
 
 The classifier is deliberately pure, no I/O, no registry calls.
 ``classify(ref)`` returns a dataclass the caller can render however it
@@ -23,7 +23,8 @@ from __future__ import annotations
 import re
 from dataclasses import dataclass
 
-_DIGEST_RE = re.compile(r"@sha256:([0-9a-f]{64})$")
+from .image_ref import parse_image_ref
+
 _AWS_MANAGED_RE = re.compile(r"^aws/codebuild/")
 
 # Registries whose contents are signed + maintained by the vendor and
@@ -55,53 +56,39 @@ class ImageInfo:
     digest: str | None
     trusted_registry: bool
     pinned: bool
-
-    @property
-    def tag(self) -> str:
-        """The ``:tag`` component, or ``""`` for digest/unscoped refs."""
-        if self.digest:
-            return ""
-        base = self.ref.split("@", 1)[0]
-        # Only split on ``:`` after the last ``/``, a registry host with
-        # a port (``registry:5000/repo:v1``) would otherwise mis-split.
-        _, _, rest = base.rpartition("/")
-        if ":" in rest:
-            return rest.split(":", 1)[1]
-        return ""
-
-    @property
-    def registry(self) -> str:
-        """Registry host, or ``""`` when the ref is an AWS-managed shortform or bare repo name."""
-        if self.aws_managed:
-            return ""
-        host, sep, _ = self.ref.partition("/")
-        # A ref like ``python:3.11`` has no ``/``, treat as Docker Hub
-        # short form with no explicit registry. ``public.ecr.aws/X/Y``
-        # and ``ghcr.io/org/img`` both have a ``.`` in the first segment,
-        # which is how Docker's own parser distinguishes the two cases.
-        if not sep or "." not in host:
-            return ""
-        return host
+    tag: str = ""
+    registry: str = ""
 
 
 def classify(ref: str | None) -> ImageInfo:
     """Parse *ref* (a CodeBuild ``Image`` / Docker ref) into its pin facts."""
-    ref = (ref or "").strip()
-    if not ref:
+    parsed = parse_image_ref(ref)
+    if parsed is None:
         return ImageInfo(
             ref="", aws_managed=False, digest=None,
             trusted_registry=False, pinned=True,
         )
-    aws_managed = bool(_AWS_MANAGED_RE.match(ref))
-    digest_match = _DIGEST_RE.search(ref)
-    digest = digest_match.group(1) if digest_match else None
-    host, sep, _ = ref.partition("/")
-    trusted = bool(sep) and host in _TRUSTED_REGISTRY_HOSTS
+    aws_managed = bool(_AWS_MANAGED_RE.match(parsed.raw))
+    digest = parsed.digest_hex if parsed.is_digest_pinned else None
+    trusted = parsed.registry in _TRUSTED_REGISTRY_HOSTS
     pinned = aws_managed or bool(digest)
+    # Surface ``registry`` matches the prior behavior: dot-bearing
+    # hostnames only. ``localhost`` / port-only registries deliberately
+    # return "" so existing callers that branch on truthiness keep
+    # their semantics. AWS-managed shortforms also return "".
+    surface_registry = (
+        parsed.registry if not aws_managed and "." in parsed.registry else ""
+    )
+    # ``tag`` is intentionally blank when a digest pin is present;
+    # callers that need both fields read them off :func:`parse_image_ref`
+    # directly.
+    surface_tag = "" if digest else parsed.tag
     return ImageInfo(
-        ref=ref,
+        ref=parsed.raw,
         aws_managed=aws_managed,
         digest=digest,
         trusted_registry=trusted,
         pinned=pinned,
+        tag=surface_tag,
+        registry=surface_registry,
     )
