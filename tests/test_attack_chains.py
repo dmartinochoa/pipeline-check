@@ -612,12 +612,13 @@ class TestChainAC007:
 class TestChainAC009:
     """AC-009 — Supply Chain Repo Poisoning."""
 
+    WF = ".github/workflows/release.yml"
+
     def test_fires_with_all_three_legs_on_same_workflow(self):
-        wf = ".github/workflows/release.yml"
         out = chains_pkg.evaluate([
-            _f("GHA-001", wf),
-            _f("GHA-002", wf),
-            _f("GHA-008", wf),
+            _f("GHA-001", self.WF),
+            _f("GHA-002", self.WF),
+            _f("GHA-008", self.WF),
         ])
         ac9 = [c for c in out if c.chain_id == "AC-009"]
         assert len(ac9) == 1
@@ -625,10 +626,9 @@ class TestChainAC009:
         assert "T1195.002" in ac9[0].mitre_attack
 
     def test_does_not_fire_with_only_two_legs(self):
-        wf = ".github/workflows/release.yml"
         out = chains_pkg.evaluate([
-            _f("GHA-001", wf),
-            _f("GHA-002", wf),
+            _f("GHA-001", self.WF),
+            _f("GHA-002", self.WF),
         ])
         assert not any(c.chain_id == "AC-009" for c in out)
 
@@ -641,6 +641,46 @@ class TestChainAC009:
             _f("GHA-008", ".github/workflows/c.yml"),
         ])
         assert not any(c.chain_id == "AC-009" for c in out)
+
+    def test_reachability_confirmed_when_all_three_anchor_intersect(self):
+        # One job pulls the unpinned action, runs the injection sink,
+        # AND has the literal credential in scope — the precise
+        # one-execution-context exfil route.
+        out = chains_pkg.evaluate([
+            _f("GHA-001", self.WF, job_anchors=("release",)),
+            _f("GHA-002", self.WF, job_anchors=("release",)),
+            _f(
+                "GHA-008",
+                self.WF,
+                job_anchors=("release",),
+                confidence=Confidence.MEDIUM,
+            ),
+        ])
+        ac9 = next(c for c in out if c.chain_id == "AC-009")
+        assert ac9.confirmed_reachable is True
+        assert "release" in ac9.reachability_note
+        assert ac9.confidence is Confidence.HIGH
+
+    def test_reachability_unconfirmed_when_three_jobs_disjoint(self):
+        # Unpinned action in ``docs``, injection in ``release``,
+        # literal credential at workflow ``env:`` (fans out to all
+        # jobs in GHA-008's anchor set, but we pass just ``other``
+        # here to simulate a hand-scoped credential block that
+        # doesn't reach either release job).
+        out = chains_pkg.evaluate([
+            _f("GHA-001", self.WF, job_anchors=("docs",)),
+            _f("GHA-002", self.WF, job_anchors=("release",)),
+            _f(
+                "GHA-008",
+                self.WF,
+                job_anchors=("other",),
+                confidence=Confidence.MEDIUM,
+            ),
+        ])
+        ac9 = next(c for c in out if c.chain_id == "AC-009")
+        assert ac9.confirmed_reachable is False
+        assert ac9.reachability_note == ""
+        assert ac9.confidence is Confidence.MEDIUM
 
 
 class TestChainAC010:

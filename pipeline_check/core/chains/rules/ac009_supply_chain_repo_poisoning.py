@@ -14,7 +14,7 @@ the next release of the upstream action.
 """
 from __future__ import annotations
 
-from ...checks.base import Finding, Severity
+from ...checks.base import Confidence, Finding, Severity
 from ..base import Chain, ChainRule, group_by_resource, min_confidence
 
 RULE = ChainRule(
@@ -52,10 +52,57 @@ RULE = ChainRule(
 
 
 def match(findings: list[Finding]) -> list[Chain]:
+    # Reachability: a single job that BOTH pulls an unpinned action
+    # AND runs the script-injection sink AND has the credential
+    # literal in scope is the tight one-execution-context route to
+    # the plaintext secret. Three-way job_anchors intersection
+    # captures that. GHA-008 fans its anchor out to every job when
+    # the credential lives at workflow ``env:`` level (inherited)
+    # so a top-level secret intersects with any GHA-001 / GHA-002
+    # job. Disjoint anchors still co-occur on the workflow file but
+    # don't compose into the single-job exploit primitive — for
+    # instance an unpinned action in a docs-build job + an
+    # injection sink in a release job + a top-level-scoped literal
+    # is still bad, but the unpinned-action leg's exploit path is
+    # via the next upstream release rather than the immediate PR.
     grouped = group_by_resource(findings, ["GHA-001", "GHA-002", "GHA-008"])
     out: list[Chain] = []
     for resource, ck_map in grouped.items():
-        triggers = [ck_map["GHA-001"], ck_map["GHA-002"], ck_map["GHA-008"]]
+        gha001 = ck_map["GHA-001"]
+        gha002 = ck_map["GHA-002"]
+        gha008 = ck_map["GHA-008"]
+        triggers = [gha001, gha002, gha008]
+
+        action_jobs = set(gha001.job_anchors)
+        inj_jobs = set(gha002.job_anchors)
+        secret_jobs = set(gha008.job_anchors)
+        shared = sorted(action_jobs & inj_jobs & secret_jobs)
+        confirmed = bool(shared)
+        if confirmed:
+            shared_repr = ", ".join(f"`{j}`" for j in shared)
+            reach_note = (
+                f"Unpinned action, injection sink, and literal "
+                f"credential share job {shared_repr}"
+            )
+            reach_narrative = (
+                f"  4. Reachability confirmed: the same job(s) "
+                f"({shared_repr}) pull the unpinned action AND "
+                f"interpolate PR-controlled context AND have the "
+                f"literal credential in scope. A fork PR exfiltrates "
+                f"the plaintext secret through the injection sink "
+                f"in one execution context, with the unpinned-action "
+                f"leg as a second route on the next upstream release."
+            )
+        else:
+            reach_note = ""
+            reach_narrative = (
+                "  4. Reachability unconfirmed: the three legs fire "
+                "on the same workflow file but do not all share a "
+                "single job. Each leg is independently exploitable "
+                "(and the credential literal must be rotated "
+                "regardless); treat as a co-occurrence signal."
+            )
+
         narrative = (
             f"In `{resource}`:\n"
             "  1. Third-party action is referenced by tag rather than "
@@ -70,13 +117,17 @@ def match(findings: list[Finding]) -> list[Chain]:
             "shaped values in plaintext (GHA-008). Either of the "
             "above two execution vectors can read them; the fork "
             "itself can read them too if the repo accepts external "
-            "PRs."
+            "PRs.\n"
+            f"{reach_narrative}"
         )
+
+        chain_confidence = Confidence.HIGH if confirmed else min_confidence(triggers)
+
         out.append(Chain(
             chain_id=RULE.id,
             title=RULE.title,
             severity=RULE.severity,
-            confidence=min_confidence(triggers),
+            confidence=chain_confidence,
             summary=RULE.summary,
             narrative=narrative,
             mitre_attack=list(RULE.mitre_attack),
@@ -86,5 +137,7 @@ def match(findings: list[Finding]) -> list[Chain]:
             resources=[resource],
             references=list(RULE.references),
             recommendation=RULE.recommendation,
+            confirmed_reachable=confirmed,
+            reachability_note=reach_note,
         ))
     return out

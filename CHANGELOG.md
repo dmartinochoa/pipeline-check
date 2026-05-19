@@ -186,6 +186,33 @@ release commit collapses this section into `## [X.Y.Z] - <date>`.
   `GL-032` ∩ `GL-020` share a job. `GHA-019`, `GHA-036`, `GL-032`,
   `GL-020` all gained `Finding.job_anchors`.
 
+- **Reachability-aware AC-009 (3-leg supply-chain repo poisoning).**
+  `AC-009` (GHA-001 unpinned action + GHA-002 injection sink +
+  GHA-008 literal credential) now uses a 3-way `job_anchors`
+  intersection. GHA-008 was the last leg without anchors; it now
+  scans each job sub-tree with `find_secret_values` to attribute
+  per-job hits, and when the secret only matches at the workflow
+  level (top-level ``env:`` / ``defaults.run.env``, inherited by
+  every job) fans the anchor out to every job so reachability
+  with GHA-001 / GHA-002 lands on the inheriting jobs. Confirmed
+  → `confirmed_reachable=True`, confidence `HIGH`, reachability
+  note citing the shared job(s) — that's the single execution
+  context where a fork PR can exfiltrate the plaintext secret
+  through the injection sink in one run, with the unpinned
+  action giving a second route on the next upstream release.
+  Disjoint anchors keep the legacy co-occurrence signal (the
+  credential literal still needs rotating regardless).
+
+- **AC-028 (npm worm propagation) deliberately stays on
+  co-occurrence.** Unlike the other GHA-leg chains, AC-028's
+  legs straddle two distinct file shapes (a `package.json`
+  manifest + a GitHub Actions workflow) that are by design
+  wired through `npm publish` + scheduled / fork-PR workflow
+  execution rather than through one shared execution context.
+  Repo-level co-occurrence IS the reachability claim for the
+  Shai-Hulud-class worm topology; there's no tighter same-job
+  signal to add. Documented in the chain rule's docstring.
+
 - **Reachability-aware AC-025 (Argo param injection + privileged
   template).** `AC-025` now intersects `ARGO-002` ∩ `ARGO-005`
   template anchors, mirroring the AC-023 Tekton port. Argo's
