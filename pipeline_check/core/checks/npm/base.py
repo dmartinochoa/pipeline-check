@@ -546,6 +546,15 @@ def _synthesize_yarn_lock(
                 break
         if not name:
             continue
+        # Yarn Berry's ``__metadata:`` block is a top-level header
+        # that this yarn-1 parser would otherwise accept as a bare
+        # package name. The result would synthesize a fake
+        # ``node_modules/__metadata`` record and surface it to every
+        # NPM-* rule. Berry locks should be routed to a separate
+        # parser; this guard keeps yarn-1 parsing of a stray Berry
+        # file from materializing a phantom dep.
+        if name == "__metadata":
+            continue
         version = props.get("version", "")
         resolved = props.get("resolved")
         integrity = props.get("integrity")

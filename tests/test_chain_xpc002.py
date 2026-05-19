@@ -236,3 +236,42 @@ class TestXPC002:
         assert sorted(unconfirmed[0].resources) == [
             "k8s/worker.yaml", "worker/Dockerfile",
         ]
+
+    def test_partial_anchor_match_keeps_finding_in_fallback(self) -> None:
+        # A single DF-001 finding carries TWO oci_image anchors
+        # ({python, alpine}); a K8S-001 finding carries {python,
+        # redis}. The python pair confirms, but alpine on the
+        # Dockerfile and redis on the manifest stay unmatched. The
+        # finding should still feed the file-pair fallback so the
+        # operator gets the "audit alpine/redis on these files"
+        # triage prompt — suppressing the finding entirely after a
+        # single anchor match would drop that signal.
+        python = ResourceAnchor(
+            kind="oci_image", identity="docker.io/library/python",
+        )
+        alpine = ResourceAnchor(
+            kind="oci_image", identity="docker.io/library/alpine",
+        )
+        redis = ResourceAnchor(
+            kind="oci_image", identity="docker.io/library/redis",
+        )
+        chains = r.match([
+            _failing(
+                "DF-001", "Dockerfile",
+                resource_anchors=(python, alpine),
+            ),
+            _failing(
+                "K8S-001", "k8s/app.yaml",
+                resource_anchors=(python, redis),
+            ),
+        ])
+        confirmed = [c for c in chains if c.confirmed_reachable]
+        unconfirmed = [c for c in chains if not c.confirmed_reachable]
+        assert len(confirmed) == 1
+        assert confirmed[0].resources == ["docker.io/library/python"]
+        # File-pair fallback still emits because the alpine / redis
+        # anchors on these findings weren't matched.
+        assert len(unconfirmed) == 1
+        assert sorted(unconfirmed[0].resources) == [
+            "Dockerfile", "k8s/app.yaml",
+        ]

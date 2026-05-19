@@ -153,7 +153,15 @@ def match(findings: list[Finding]) -> list[Chain]:
     same evidence as both a confirmed and a co-occurrence chain.
     """
     out: list[Chain] = []
-    matched_findings: set[int] = set()
+    # Track at (finding, anchor_identity) granularity, not finding
+    # alone — a single DF-001 / K8S-001 finding can carry multiple
+    # ``oci_image`` anchors (e.g., a Dockerfile with two FROM refs,
+    # a manifest deploying two containers). Suppressing the whole
+    # finding when only one of its anchors matches would drop the
+    # legacy co-occurrence prompt for the other unmatched images
+    # on the same file pair (DF={python, alpine} +
+    # K8S={python, redis} would lose ``alpine × redis``).
+    matched_pairs: set[tuple[int, str]] = set()
 
     # Phase 1: confirmed pairs per shared image identity.
     grouped = group_by_anchor(
@@ -162,22 +170,37 @@ def match(findings: list[Finding]) -> list[Chain]:
     for image, ck_map in grouped.items():
         df_f = ck_map["DF-001"]
         k8s_f = ck_map["K8S-001"]
-        matched_findings.add(id(df_f))
-        matched_findings.add(id(k8s_f))
+        matched_pairs.add((id(df_f), image))
+        matched_pairs.add((id(k8s_f), image))
         out.append(_emit_confirmed(image, df_f, k8s_f))
 
-    # Fallback: per-pair cross-product over findings that did not
-    # contribute to a confirmed chain. Preserves the legacy triage
-    # prompt for cases where image identity didn't match (different
-    # registries, multi-arch tag aliases, or scans that can't
-    # canonicalize the ref).
+    def _all_anchors_matched(f: Finding) -> bool:
+        """True only when every ``oci_image`` anchor on *f* lands in
+        a confirmed pair. Findings with no ``oci_image`` anchor at
+        all return False so the legacy file-pair fallback still
+        sees them.
+        """
+        identities = {
+            a.identity for a in f.resource_anchors
+            if a.kind == "oci_image"
+        }
+        if not identities:
+            return False
+        return all((id(f), ident) in matched_pairs for ident in identities)
+
+    # Fallback: per-pair cross-product over findings that DIDN'T
+    # have every anchor consumed by a confirmed pair. Preserves the
+    # legacy triage prompt for cases where image identity didn't
+    # match (different registries, multi-arch tag aliases, or
+    # un-canonicalizable refs) AND for the unmatched images riding
+    # on the same finding as a confirmed one.
     df_001 = [
         f for f in failing(findings, "DF-001")
-        if id(f) not in matched_findings
+        if not _all_anchors_matched(f)
     ]
     k8s_001 = [
         f for f in failing(findings, "K8S-001")
-        if id(f) not in matched_findings
+        if not _all_anchors_matched(f)
     ]
     if not df_001 or not k8s_001:
         return out

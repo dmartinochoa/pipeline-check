@@ -213,6 +213,35 @@ class TestSynthesizeYarnLock:
         # presence still lets NPM-006 see the (name, version)
         # tuple.
 
+    def test_yarn_berry_metadata_header_skipped(self) -> None:
+        # Yarn Berry locks open with a ``__metadata:`` block whose
+        # header is a bare name with no ``@version``. The yarn-1
+        # pattern splitter accepts bare names as a tolerant default,
+        # so without an explicit skip the Berry metadata would
+        # synthesize ``node_modules/__metadata`` and surface as a
+        # fake package to every NPM-* rule. Berry locks should
+        # round-trip through their own (deferred) parser; this
+        # guard keeps a stray Berry file from poisoning yarn-1
+        # output.
+        entries = [
+            (
+                ["__metadata"],
+                {"version": "8"},
+            ),
+            (
+                ["lodash@^4.0.0"],
+                {
+                    "version": "4.17.21",
+                    "resolved": "https://example/lodash.tgz",
+                    "integrity": "sha512-xxx==",
+                },
+            ),
+        ]
+        out = _synthesize_yarn_lock(entries)
+        assert "node_modules/__metadata" not in out["packages"]
+        # Real entries still flow through.
+        assert "node_modules/lodash" in out["packages"]
+
 
 # ── Integration: end-to-end via NpmContext.from_path ─────────────
 
