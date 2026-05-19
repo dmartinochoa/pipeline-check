@@ -14,9 +14,8 @@ Registered via the `hooks:` key in `mkdocs.yml`.
 """
 from __future__ import annotations
 
-from pathlib import Path
-
 import tomllib
+from pathlib import Path
 
 _PYPROJECT = Path(__file__).resolve().parent.parent / "pyproject.toml"
 

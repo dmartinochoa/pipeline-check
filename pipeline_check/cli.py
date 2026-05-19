@@ -1164,6 +1164,21 @@ def _install_completion_callback(
     ),
 )
 @click.option(
+    "--npm-base-ref",
+    "npm_base_ref",
+    default=None,
+    metavar="REF",
+    help=(
+        "Git ref (branch, tag, or SHA) to diff each loaded lockfile "
+        "against. Enables NPM-009 (new-transitive-dependency diff "
+        "gate). Resolves each lockfile's contents at REF via "
+        "``git show REF:<relpath>`` and pairs the loaded current "
+        "lockfile against the base. When a base lockfile can't be "
+        "resolved (new file in this branch, ref missing, git "
+        "unavailable) NPM-009 silent-passes for that lockfile."
+    ),
+)
+@click.option(
     "--pypi-path",
     default=None,
     metavar="PATH",
@@ -1891,6 +1906,7 @@ def scan(
     k8s_path: str | None,
     helm_path: str | None,
     npm_path: str | None,
+    npm_base_ref: str | None,
     pypi_path: str | None,
     maven_path: str | None,
     helm_values: tuple[str, ...],
@@ -2469,6 +2485,7 @@ def scan(
         oci_manifest=oci_manifest,
         drone_path=drone_path,
         npm_path=npm_path,
+        npm_base_ref=npm_base_ref,
         pypi_path=pypi_path,
         maven_path=maven_path,
         scm_platform=scm_platform,

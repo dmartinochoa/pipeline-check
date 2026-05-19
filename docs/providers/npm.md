@@ -41,7 +41,7 @@ parsers and are queued for a follow-up.
 
 ## What it covers
 
-9 checks · 0 have an autofix patch (``--fix``).
+10 checks · 0 have an autofix patch (``--fix``).
 
 | Check | Title | Severity | Fix |
 |-------|-------|----------|-----|
@@ -53,6 +53,7 @@ parsers and are queued for a follow-up.
 | [NPM-006](#npm-006) | package-lock.json pins a known-compromised package version | <span class="pg-sev pg-sev--critical">CRITICAL</span> |  |
 | [NPM-007](#npm-007) | .npmrc does not disable install-time lifecycle scripts | <span class="pg-sev pg-sev--high">HIGH</span> |  |
 | [NPM-008](#npm-008) | Direct dependency was published within the cooldown window | <span class="pg-sev pg-sev--high">HIGH</span> |  |
+| [NPM-009](#npm-009) | New transitive dependency added since the base ref | <span class="pg-sev pg-sev--high">HIGH</span> |  |
 | [NPM-011](#npm-011) | package.json files field includes secret-shaped paths | <span class="pg-sev pg-sev--high">HIGH</span> |  |
 
 ---
@@ -287,6 +288,36 @@ Network-dependent: needs ``--resolve-remote`` to populate the per-package publis
 **Recommended action**
 
 Either skip the just-published version (pin to the last release older than the cooldown window) or wait until the cooldown has elapsed before bumping the lockfile. Most publisher-account compromises (Shai-Hulud / TanStack / axios -> plain-crypto-js) are detected and yanked from the registry within hours-to-days of publication; holding back N days converts a publisher-compromise window into a vulnerability-disclosure window where either the publisher rotates the malicious version off the registry or the security community files an advisory you can match against NPM-006. Tune the cooldown via ``--npm-cooldown-days`` (default 7).
+
+</div>
+
+</div>
+
+<div class="pg-rule pg-rule--high" markdown>
+
+## NPM-009: New transitive dependency added since the base ref { #npm-009 }
+
+<div class="pg-rule__tags">
+<span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-3</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-8</span> <span class="pg-tag pg-tag--esf">ESF-S-VERIFY-DEPS</span> <span class="pg-tag pg-tag--cwe">CWE-829</span> <span class="pg-tag pg-tag--cwe">CWE-1357</span>
+</div>
+
+Needs ``--npm-base-ref <ref>`` to materialize each lockfile's contents at the base ref via ``git show``. Compares the set of package names in the current vs. base lockfile and subtracts top-level direct dependencies (those are NPM-008's territory). Fires HIGH per lockfile when any name appears in the current set that isn't in the base set, after the direct-dep subtraction. Silent-passes when ``--npm-base-ref`` isn't set, the base ref can't be resolved by git, or the lockfile is brand new to this branch (no base counterpart). Diffs by package *name* only — version bumps of an existing transitive are out of scope (NPM-006 covers known-bad version pins; NPM-008 covers fresh-publication windows). Both ``package-lock.json`` (npm 7+) and ``pnpm-lock.yaml`` / ``yarn.lock`` are covered through the shared lockfile-shape synthesizers.
+
+**Known false-positive modes**
+
+- A legitimate maintainer bump can introduce new transitives by design (a library splitting an internal helper into a separate package, an upstream switching from a vendored copy to a published dep). Suppress per-resource via ``--ignore-file`` once a human audits the new transitive and confirms it's expected.
+- Branches that delete a direct dep also delete its transitives from the lockfile; re-adding the direct dep later resurrects the transitives. The rule fires on the re-add because the names are 'new' relative to the base ref. Review by reading the diff, then suppress.
+
+**Seen in the wild**
+
+- axios -> plain-crypto-js (March 2026): a malicious transitive was added in a patch release of axios. Consumers who diffed transitives against their previous lockfile saw the new package land before ``npm install`` executed the payload.
+- ua-parser-js (October 2021): a maintainer-account takeover published versions that quietly pulled in new transitives carrying a coinminer and credential stealer. Lockfile-pinning consumers who diffed transitives spotted the unexpected new packages before install.
+
+<div class="pg-rule__rec" markdown>
+
+**Recommended action**
+
+Audit the new transitive dependency before letting it land. Confirm the maintainer of the parent direct dependency intentionally added it (read the changelog of the patch / minor bump that introduced it). The axios -> plain-crypto-js backdoor (March 2026) was a single new transitive sneaked into a patch release; lockfile pinning alone is no defense when the new transient *is* the malicious payload. If the new transitive is unexpected, pin the parent dep to the previous version, file a registry advisory, and rotate any secret a CI build with the lockfile had access to. Pair with NPM-006 (known-compromised package) and NPM-008 (cooldown gate) so the catch isn't reliant on a single signal.
 
 </div>
 

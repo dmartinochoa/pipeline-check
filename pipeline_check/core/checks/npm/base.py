@@ -40,6 +40,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
 
+from ...diff import git_show
 from ..base import BaseCheck, safe_load_yaml
 
 #: Filenames the npm loader picks up. ``package.json`` is the manifest;
@@ -122,6 +123,13 @@ class NpmContext:
         #: the dict is empty so the rule's absence isn't a CI
         #: failure for users on the default no-network path.
         self.publish_times: dict[str, dict[str, _dt.datetime]] = {}
+        #: Base-ref counterparts of ``locks``, populated by the npm
+        #: provider's ``post_filter`` when ``--npm-base-ref`` is set.
+        #: Each base lock carries the same repo-relative path (under
+        #: ``path``) as its current-ref sibling so NPM-009 can pair
+        #: them. Empty by default; NPM-009 (new-transitive-dep diff
+        #: gate) reads it and passes silently when the list is empty.
+        self.base_locks: list[NpmLock] = []
 
     @classmethod
     def from_path(cls, path: str | Path) -> NpmContext:
@@ -161,43 +169,13 @@ class NpmContext:
                 settings = parse_npmrc(text)
                 rcs.append(NpmRc(path=str(f), text=text, settings=settings))
                 continue
-            if f.name == "yarn.lock":
-                # yarn.lock: parse the bespoke yarn 1 format and
-                # synthesize an npm-7+ lock-shape ``data`` dict so
-                # the existing lockfile rules apply unchanged.
-                try:
-                    entries = _parse_yarn_lock(text)
-                except Exception as exc:  # noqa: BLE001
-                    warnings.append(f"{f}: yarn.lock parse error: {exc}")
+            if f.name in LOCKFILE_NAMES:
+                lock, warn = _parse_lock_text(f.name, text, str(f))
+                if lock is None:
+                    warnings.append(f"{f}: {warn}")
                     skipped += 1
                     continue
-                synthesized = _synthesize_yarn_lock(entries)
-                locks.append(NpmLock(
-                    path=str(f), text=text, data=synthesized,
-                    lockfile_version=3,
-                ))
-                continue
-            if f.name == "pnpm-lock.yaml":
-                # pnpm-lock.yaml: parse the YAML, synthesize an npm-7+
-                # lock-shape ``data`` dict so existing lockfile rules
-                # (NPM-002 / NPM-003 / NPM-006) apply unchanged.
-                try:
-                    raw = safe_load_yaml(text)
-                except Exception as exc:  # noqa: BLE001
-                    warnings.append(f"{f}: YAML decode error: {exc}")
-                    skipped += 1
-                    continue
-                if not isinstance(raw, dict):
-                    warnings.append(f"{f}: top-level YAML is not a mapping")
-                    skipped += 1
-                    continue
-                synthesized = _synthesize_pnpm_lock(raw)
-                locks.append(NpmLock(
-                    path=str(f), text=text, data=synthesized,
-                    # Treat as npm 7+ shape so iter_lock_packages
-                    # reads the synthesized ``packages`` map.
-                    lockfile_version=3,
-                ))
+                locks.append(lock)
                 continue
             try:
                 data = json.loads(text)
@@ -211,17 +189,100 @@ class NpmContext:
                 continue
             if f.name in MANIFEST_NAMES:
                 manifests.append(NpmManifest(path=str(f), text=text, data=data))
-            else:
-                version = data.get("lockfileVersion")
-                lockfile_version = version if isinstance(version, int) else 1
-                locks.append(NpmLock(
-                    path=str(f), text=text, data=data,
-                    lockfile_version=lockfile_version,
-                ))
         ctx = cls(manifests, locks, rcs)
         ctx.files_skipped = skipped
         ctx.warnings = warnings
         return ctx
+
+
+def _parse_lock_text(
+    filename: str, text: str, path: str,
+) -> tuple[NpmLock | None, str | None]:
+    """Dispatch *text* to the right lockfile parser by *filename*.
+
+    Returns ``(NpmLock, None)`` on success or ``(None, reason)`` on
+    failure so the caller can decide how to surface the warning.
+    Used by both the on-disk loader (:meth:`NpmContext.from_path`)
+    and the base-ref loader (:func:`load_base_locks_via_git`) so
+    the per-format parse logic lives in exactly one place.
+    """
+    if filename == "yarn.lock":
+        try:
+            entries = _parse_yarn_lock(text)
+        except Exception as exc:  # noqa: BLE001
+            return None, f"yarn.lock parse error: {exc}"
+        synthesized = _synthesize_yarn_lock(entries)
+        return NpmLock(
+            path=path, text=text, data=synthesized, lockfile_version=3,
+        ), None
+    if filename == "pnpm-lock.yaml":
+        try:
+            raw = safe_load_yaml(text)
+        except Exception as exc:  # noqa: BLE001
+            return None, f"YAML decode error: {exc}"
+        if not isinstance(raw, dict):
+            return None, "top-level YAML is not a mapping"
+        synthesized = _synthesize_pnpm_lock(raw)
+        return NpmLock(
+            path=path, text=text, data=synthesized, lockfile_version=3,
+        ), None
+    # package-lock.json / npm-shrinkwrap.json (JSON variants)
+    try:
+        data = json.loads(text)
+    except json.JSONDecodeError as exc:
+        return None, f"JSON decode error: {exc}"
+    if not isinstance(data, dict):
+        return None, "top-level JSON is not an object"
+    version = data.get("lockfileVersion")
+    lockfile_version = version if isinstance(version, int) else 1
+    return NpmLock(
+        path=path, text=text, data=data, lockfile_version=lockfile_version,
+    ), None
+
+
+def load_base_locks_via_git(
+    ctx: NpmContext, base_ref: str, scan_root: str | Path,
+) -> None:
+    """Populate ``ctx.base_locks`` from each current lock's contents at ``base_ref``.
+
+    Uses :func:`pipeline_check.core.diff.git_show` to fetch each
+    tracked lockfile at the base ref, then routes the body through
+    :func:`_parse_lock_text` so the same dispatcher that handles
+    on-disk loads also handles base-ref loads.
+
+    Failure modes (no git on PATH, ref doesn't exist, file didn't
+    exist at the base ref, body fails to parse) land in
+    ``ctx.warnings`` rather than raising. NPM-009 silent-passes on
+    a lock whose base counterpart didn't load, so a brand-new
+    lockfile in this branch (no base sibling) doesn't fail CI.
+    """
+    root = Path(scan_root)
+    if root.is_file():
+        root = root.parent
+    for lock in ctx.locks:
+        lock_path = Path(lock.path)
+        try:
+            rel = lock_path.resolve().relative_to(root.resolve())
+        except ValueError:
+            # Lockfile lives outside the scan root somehow; fall
+            # back to the file name. ``git show`` will resolve it
+            # from the repo top if it's tracked, else warn.
+            rel = Path(lock_path.name)
+        body = git_show(base_ref, rel.as_posix(), cwd=root)
+        if body is None:
+            ctx.warnings.append(
+                f"{lock.path}: base ref {base_ref!r} could not be "
+                f"resolved for {rel.as_posix()!r} (new file or git "
+                f"unavailable)",
+            )
+            continue
+        base_lock, warn = _parse_lock_text(lock_path.name, body, lock.path)
+        if base_lock is None:
+            ctx.warnings.append(
+                f"{lock.path}: base-ref parse failed: {warn}",
+            )
+            continue
+        ctx.base_locks.append(base_lock)
 
 
 class NpmBaseCheck(BaseCheck):

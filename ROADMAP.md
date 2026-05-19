@@ -106,26 +106,21 @@ release; landing order is open.
 
 ### Dependency-supply-chain provider follow-ups (npm v2 / pypi v2 / maven v2)
 
-*Shipped so far: NPM-001..008 + NPM-011, PYPI-001..006 + PYPI-008,
+*Shipped so far: NPM-001..009 + NPM-011, PYPI-001..006 + PYPI-008,
 MVN-001..008 — static manifest / lockfile / .npmrc / pom.xml /
 settings.xml / build.gradle(.kts) analysis plus the curated
 compromised-package registries (npm, PyPI, Maven Central), the
 ``files``-field secret-leak detector, the three-registry cooldown
 trilogy (NPM-008 / PYPI-008 / MVN-008) behind ``--resolve-remote``,
-and full lockfile-format coverage on the npm / pypi sides
+full lockfile-format coverage on the npm / pypi sides
 (``package-lock.json`` v1/v2/v3, ``npm-shrinkwrap.json``,
 ``pnpm-lock.yaml`` v5/v6/v9, ``yarn.lock`` yarn-1 / Classic,
-``poetry.lock``, ``Pipfile.lock``).*
+``poetry.lock``, ``Pipfile.lock``), and the NPM-009 new-
+transitive-dep diff gate behind ``--npm-base-ref``.*
 The follow-up rules below require either new infrastructure
 (lockfile diff against a base ref) or different ecosystem
 plumbing and so are deferred:
 
-- **NPM-009** — transitive-dependency diff gate. When a CI run
-  mutates the lockfile, fail if a new transitive dep appears that
-  didn't exist in the base ref. The axios -> plain-crypto-js
-  backdoor would have been caught here at PR review time. Pairs
-  with the shipped NPM-008 (cooldown) and NPM-006 (known-bad
-  registry). Needs base-ref lockfile-diff infra.
 - **NPM-010** — ``npm audit signatures`` step missing from CI.
   Lockfile rules guarantee package contents match the recorded
   hash; ``npm audit signatures`` is what verifies those hashes are

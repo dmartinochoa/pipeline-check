@@ -10,7 +10,68 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 PRs landing on `dev` between releases append entries below. The
 release commit collapses this section into `## [X.Y.Z] - <date>`.
 
+## [1.1.0] - 2026-05-19
+
 ### Added
+
+- **NPM-009 new-transitive-dependency diff gate.** Fires HIGH per
+  lockfile when a package name appears in the current lockfile
+  that wasn't in the same lockfile at a base git ref, after
+  subtracting top-level direct dependencies (those are NPM-008's
+  territory). Closes the gap the axios -> plain-crypto-js
+  backdoor (March 2026) exercised: a maintainer-controlled patch
+  release silently added a new transitive that lockfile-pinning
+  consumers had no signal for, because the lockfile faithfully
+  pinned what the manifest resolved to.
+
+  New ``--npm-base-ref <ref>`` CLI flag opts the rule in: each
+  loaded lockfile's contents at ``<ref>`` is materialized via the
+  existing hardened ``git_show`` helper (the same one
+  ``--baseline-from-git`` uses, so the leading-dash argument-
+  injection guard and ``--end-of-options`` defense carry through),
+  parsed via the same per-filename dispatcher
+  (``_parse_lock_text``) that handles on-disk loads, and stashed
+  on ``NpmContext.base_locks``. The dispatcher was factored out of
+  ``NpmContext.from_path`` so both the current-load and base-load
+  paths share one parser per format
+  (``package-lock.json`` / ``npm-shrinkwrap.json`` /
+  ``pnpm-lock.yaml`` / ``yarn.lock``).
+
+  ``NpmProvider.post_filter`` gained a second opt-in branch
+  alongside ``--resolve-remote``: when ``--npm-base-ref`` is set
+  and lockfiles are loaded, the provider calls
+  ``load_base_locks_via_git(ctx, ref, npm_path)`` before the
+  ``--resolve-remote`` registry-fetch branch. Failures (git not
+  on PATH, ref missing, file didn't exist at the base ref, body
+  unparseable) land in ``ctx.warnings`` and the rule silent-
+  passes per-lockfile so a brand-new lockfile in this branch
+  doesn't fail CI on its own. The rule also passes silently when
+  ``--npm-base-ref`` was never set, mirroring NPM-008's no-flag-
+  no-CI-failure contract.
+
+  Rule diffs by package *name* only — version bumps of an
+  existing transitive are out of scope (NPM-006 covers known-bad
+  version pins; NPM-008 covers fresh-publication windows).
+  Install-path name extraction (``_name_from_install_path``)
+  handles npm 7+ ``node_modules/<name>``, scoped
+  ``node_modules/@scope/<name>``, nested
+  ``node_modules/foo/node_modules/bar``, pnpm / yarn-1
+  ``+<version>`` multi-version disambig suffix, and the npm 6
+  legacy ``foo/bar`` tree shape, so the diff is consistent
+  across all four supported lockfile formats.
+
+  Twenty-nine new tests in ``tests/npm/test_npm009.py`` cover the
+  name-extractor across every supported install-path shape, the
+  per-lock package-name collector (root-entry skip, disambig
+  dedupe), the rule (silent-pass without base, silent-pass with
+  no matching base, fires on new transitive, doesn't fire on
+  new direct, doesn't fire on version bump, 5-item description
+  truncation + location cap, subset-of-base, pnpm disambig
+  collapse), and the git loader (happy path, missing ref, parse
+  error, scan-root-as-file, yarn-1 round-trip). Bumps
+  test_rule_framework npm count 9 → 10; OWASP CICD-SEC-3 +
+  CICD-SEC-8 mapping; regenerated npm provider doc + OWASP
+  standard doc.
 
 - **CONTRIBUTING.md.** Contributor onboarding page covering dev
   setup (``make install`` vs. ``pip install -e ".[dev]"``), the
