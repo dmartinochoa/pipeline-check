@@ -195,6 +195,31 @@ class TestLoadHistory:
         with pytest.raises(ValueError):
             load_history(f)
 
+    def test_mtime_fallback_oserror_skips_file(
+        self, tmp_path: Path, monkeypatch,
+    ) -> None:
+        # File with no recognizable filename pattern AND a stat()
+        # that raises (simulating a rotate / delete mid-scan) must
+        # surface as a warning and skip — not abort the whole load.
+        _write_scan(
+            tmp_path, "good-20260519-120000.json", _scan_doc(score=90),
+        )
+        bad = tmp_path / "rotated.json"
+        bad.write_text(json.dumps(_scan_doc()), encoding="utf-8")
+
+        from pathlib import Path as _Path
+        real_stat = _Path.stat
+
+        def fake_stat(self, *args, **kwargs):  # type: ignore[no-untyped-def]
+            if self == bad:
+                raise OSError("simulated mid-scan rotation")
+            return real_stat(self, *args, **kwargs)
+
+        monkeypatch.setattr(_Path, "stat", fake_stat)
+        report = load_history(tmp_path)
+        assert len(report.snapshots) == 1
+        assert any("rotated.json" in w for w in report.warnings)
+
 
 # ── render_html ────────────────────────────────────────────────────
 
@@ -294,3 +319,23 @@ class TestHistoryCli:
         )
         assert result.exit_code != 0
         assert "does not exist" in result.output
+
+    def test_history_cli_errors_on_unwritable_output(
+        self, tmp_path: Path,
+    ) -> None:
+        # Output path is a directory (the loader's --dir itself) so
+        # write_text raises OSError. Without the click.UsageError
+        # wrap the user would see a bare Python traceback; with it,
+        # they get a clean CLI error message.
+        history_dir = tmp_path / ".pipeline-check-history"
+        history_dir.mkdir()
+        _write_scan(
+            history_dir, "scan-20260519-120000.json",
+            _scan_doc(score=90),
+        )
+        result = CliRunner().invoke(
+            history_cmd,
+            ["--dir", str(history_dir), "--output", str(history_dir)],
+        )
+        assert result.exit_code != 0
+        assert "could not write" in result.output

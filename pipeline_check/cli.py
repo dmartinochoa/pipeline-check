@@ -3606,7 +3606,12 @@ def history_cmd(history_dir: str, output_path: str, top_n: int) -> None:
         raise click.UsageError(str(exc)) from exc
     html = render_html(report, top_n=top_n)
     out = Path(output_path)
-    out.write_text(html, encoding="utf-8")
+    try:
+        out.write_text(html, encoding="utf-8")
+    except OSError as exc:
+        raise click.UsageError(
+            f"[history] could not write {out}: {exc}"
+        ) from exc
     click.echo(
         f"[history] {len(report.snapshots)} snapshot(s) -> {out} "
         f"({len(report.warnings)} warning(s))"

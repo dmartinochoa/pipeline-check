@@ -208,7 +208,18 @@ def load_history(directory: Path | str) -> HistoryReport:
             continue
         ts = _parse_timestamp_from_name(f.name)
         if ts is None:
-            ts = _dt.datetime.fromtimestamp(f.stat().st_mtime)
+            # File rotated / deleted between read and stat: log a
+            # warning and skip rather than abort the whole load.
+            # The directory is user-managed, mid-scan churn is
+            # plausible (CI writes a fresh scan while the dashboard
+            # is being rendered).
+            try:
+                ts = _dt.datetime.fromtimestamp(f.stat().st_mtime)
+            except OSError as exc:
+                warnings.append(
+                    f"{f.name}: stat error during mtime fallback: {exc}"
+                )
+                continue
         snapshots.append(_snapshot_from_json(f, doc, ts))
     snapshots.sort(key=lambda s: s.timestamp)
     return HistoryReport(
