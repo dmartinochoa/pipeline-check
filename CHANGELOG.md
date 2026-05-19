@@ -359,78 +359,57 @@ release commit collapses this section into `## [X.Y.Z] - <date>`.
   mix). Existing per-pair tests preserved via the fallback path.
 
 - **AC-005 oci_image extraction extended to every cross-provider
-  leg pair.** Follow-up to the AC-005 pilot that wired only the
-  GHA legs. Eleven more leg rules now emit ``oci_image`` anchors
-  via the ``_primitives/oci_refs.py`` helper:
+  leg pair.** Cross-provider extension of the GHA-only AC-005
+  pilot (see entry below). Eleven more leg rules now emit
+  ``oci_image`` anchors via ``_primitives/oci_refs.py``:
   - **Build-side**: GL-006, BB-006, ADO-006, CC-006, JF-006,
     GCB-009 (Cloud Build also walks its structured top-level
-    ``images:`` list directly before the generic text scan).
+    ``images:`` list directly before the publisher-only text
+    scan).
   - **Deploy-side**: GL-004, BB-004, ADO-004, CC-009, JF-005.
 
-  Jenkins legs (JF-006 / JF-005) pass the flat Groovy
-  ``jf.text`` string into ``extract_image_anchors_from_strings``;
-  the rest hand the YAML doc dict. All eleven gate on a failing
-  finding to avoid spending the extraction work on workflows
-  that already pass the rule.
+  Jenkins legs use ``jf.text_no_comments`` to skip commented
+  shell mentions; YAML providers hand the ungated job / step
+  sub-tree to the extractor rather than the whole document so a
+  gated job's image doesn't lend its identity to an AC-005
+  confirmation about an ungated leg. All eleven gate on a failing
+  finding.
 
-  Three leg rules are deliberately not wired: SIGN-001, CP-001,
-  and CP-005 all operate on the live AWS API surface
-  (``ResourceCatalog`` queries against AWS Signer / CodePipeline),
-  where the API responses don't name artifact image references.
-  Those legs stay on the scan-level co-occurrence fallback that
-  AC-005 already preserves.
+  SIGN-001 / CP-001 / CP-005 are deliberately not wired: they
+  operate on the live AWS API surface where the API responses
+  don't name artifact image references. Those legs stay on the
+  scan-level co-occurrence fallback AC-005 already preserves.
 
-  Eleven new parametrized ``TestChainAC005`` cases
-  (``test_reachability_confirmed_across_providers_via_oci_image``)
-  cover every cross-provider pair: each build-side rule paired
-  against GHA-014 and each deploy-side rule paired against
-  GHA-006, asserting one confirmed chain at HIGH confidence per
-  matched ``oci_image`` identity. Full suite: 6293 passed, 11
-  skipped.
+  Eleven new parametrized ``TestChainAC005`` cases (one per
+  cross-provider leg pair) assert one confirmed chain at HIGH
+  confidence per matched ``oci_image`` identity.
 
-- **ResourceAnchor phase 1: AC-005 (oci_image, build → deploy).**
-  Closes the phase 1 set with the last canonicalizer kind.
-  New ``_primitives/oci_refs.py`` helper extracts image references
-  from GHA workflows via two complementary passes:
-  (1) structured — walks every
+- **ResourceAnchor phase 1: AC-005 (oci_image, build → deploy) —
+  GHA pilot.** Original pilot for the cross-provider unsigned-
+  artifact-to-prod chain. New ``_primitives/oci_refs.py`` helper
+  extracts image references from GHA workflows via two
+  complementary passes: (1) structured — walks every
   ``docker/build-push-action`` / ``docker/metadata-action`` step's
-  ``with.tags`` input (string or multi-line list); (2) text scan
-  — pulls image-shaped tokens out of deploy-shaped shell commands
-  in ``run:`` blocks (``docker push``, ``docker tag``,
-  ``kubectl set image``, ``helm upgrade --set image=``,
-  ``gcloud run deploy``, ``az containerapp``,
-  ``aws ecs update-service``). Every candidate runs through the
-  phase 0 ``oci_image()`` canonicalizer.
+  ``with.tags`` input; (2) text scan — pulls image-shaped tokens
+  out of deploy-shaped shell commands in ``run:`` blocks
+  (``docker push`` / ``docker tag`` / ``kubectl set image`` /
+  ``helm upgrade --set image=`` / ``gcloud run deploy`` /
+  ``az containerapp`` / ``aws ecs update-service``). Every
+  candidate runs through the phase 0 ``oci_image()`` canonicalizer.
 
-  **GHA-006** (artifact signing) emits ``oci_image`` anchors for
-  every image the workflow tags / pushes — only on failure (a
-  workflow that DOES sign carries no chain risk).
-  **GHA-014** (deploy environment) emits ``oci_image`` anchors for
-  every image its deploy steps reference — only on failure
-  (an environment-gated deploy isn't a chain leg).
+  **GHA-006** (artifact signing) and **GHA-014** (deploy
+  environment) emit ``oci_image`` anchors for every image they
+  reference, only on failure.
 
-  **AC-005** now iterates the cross-product of build / deploy
-  leg IDs through ``group_by_anchor`` on ``oci_image``. Each
-  matched image identity emits ONE confirmed chain
+  **AC-005** iterates the cross-product of build / deploy leg
+  IDs through ``group_by_anchor`` on ``oci_image``. Each matched
+  image identity emits one confirmed chain
   (``confirmed_reachable=True``, ``Confidence.HIGH``, narrative
   cites the shared image, resource is the image identity). Falls
-  back to scan-level co-occurrence when no image matches —
-  preserves the legacy multi-provider signal for cross-tooling
-  flows (Cloud Build → CodePipeline, GitLab → ArgoCD, etc.)
-  where image extraction isn't wired yet, or where build and
-  deploy genuinely reference different images.
+  back to scan-level co-occurrence when no image matches.
 
-  Image extraction is currently wired only on the GHA legs
-  (GHA-006 / GHA-014). Extending it to the remaining build-side
-  legs (GL-006 / BB-006 / ADO-006 / JF-006 / CC-006 / GCB-009 /
-  SIGN-001) and deploy-side legs (GL-004 / BB-004 / ADO-004 /
-  JF-005 / CC-009 / CP-001 / CP-005) is the natural follow-up
-  — same pattern, per-provider context plumbing.
-
-  Three new ``TestChainAC005`` cases (confirmed shared image,
-  disjoint fallback, fan-out one chain per matched image).
-  Existing three tests preserved via the co-occurrence fallback
-  path. Full suite: 6282 passed, 11 skipped.
+  Cross-provider extension to GL-* / BB-* / ADO-* / CC-* /
+  GCB-* / JF-* legs lands in the follow-up entry above.
 
 - **ResourceAnchor phase 1: AC-011 / AC-020 / AC-021 (k8s_sa
   intersection across Kubernetes / Tekton / Argo).** Closes the
