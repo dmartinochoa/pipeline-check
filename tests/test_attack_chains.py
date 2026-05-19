@@ -1676,6 +1676,51 @@ class TestChainAC023:
         assert len(ac23) == 2
         assert {c.resources[0] for c in ac23} == {self.TASK, self.OTHER_TASK}
 
+    def test_reachability_confirmed_when_step_anchors_intersect(self):
+        # The same step (``Task/build:build-image``) both runs
+        # privileged AND interpolates an unsafe param — the precise
+        # node-escape primitive.
+        out = chains_pkg.evaluate([
+            _f(
+                "TKN-002",
+                self.TASK,
+                job_anchors=("Task/build:build-image",),
+            ),
+            _f(
+                "TKN-003",
+                self.TASK,
+                job_anchors=("Task/build:build-image",),
+                confidence=Confidence.MEDIUM,
+            ),
+        ])
+        chain = next(c for c in out if c.chain_id == "AC-023")
+        assert chain.confirmed_reachable is True
+        assert "Task/build:build-image" in chain.reachability_note
+        assert chain.confidence is Confidence.HIGH
+
+    def test_reachability_unconfirmed_when_steps_disjoint(self):
+        # Privileged step is ``build``, param-injection sink is
+        # ``release``. Both Tasks fire but neither single step
+        # exposes the kernel-RCE shape, fall back to the
+        # co-occurrence signal.
+        out = chains_pkg.evaluate([
+            _f(
+                "TKN-002",
+                self.TASK,
+                job_anchors=("Task/build:build",),
+            ),
+            _f(
+                "TKN-003",
+                self.TASK,
+                job_anchors=("Task/build:release",),
+                confidence=Confidence.MEDIUM,
+            ),
+        ])
+        chain = next(c for c in out if c.chain_id == "AC-023")
+        assert chain.confirmed_reachable is False
+        assert chain.reachability_note == ""
+        assert chain.confidence is Confidence.MEDIUM
+
 
 class TestChainAC024:
     """AC-024 — OIDC trust drift lands on a mutable ECR tag."""

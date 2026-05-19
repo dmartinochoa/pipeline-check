@@ -51,6 +51,13 @@ def _step_offends(sc: Any) -> list[str]:
 
 def check(ctx: TektonContext) -> Finding:
     offenders: list[str] = []
+    # Per-step anchor in the form ``<Kind>/<name>:<step>`` so AC-023
+    # can intersect with TKN-003's per-step anchors and confirm that
+    # the same step both runs privileged AND interpolates an unsafe
+    # param. The Tekton corpus collapses to one Finding per check, so
+    # the anchor is the only per-step attribution available to the
+    # chain engine. Order-preserving dict for reproducibility.
+    anchor_steps: dict[str, None] = {}
     examined = 0
     for doc in ctx.docs:
         if doc.kind not in ("Task", "ClusterTask"):
@@ -59,10 +66,12 @@ def check(ctx: TektonContext) -> Finding:
         for idx, step in enumerate(task_steps(doc)):
             issues = _step_offends(step.get("securityContext"))
             if issues:
+                sname = step_name(step, idx)
                 offenders.append(
-                    f"{doc.kind}/{doc.name} {step_name(step, idx)}: "
+                    f"{doc.kind}/{doc.name} {sname}: "
                     f"{', '.join(issues)}"
                 )
+                anchor_steps[f"{doc.kind}/{doc.name}:{sname}"] = None
     if examined == 0:
         return Finding(
             check_id=RULE.id, title=RULE.title, severity=RULE.severity,
@@ -82,4 +91,5 @@ def check(ctx: TektonContext) -> Finding:
         check_id=RULE.id, title=RULE.title, severity=RULE.severity,
         resource="tekton", description=desc,
         recommendation=RULE.recommendation, passed=passed,
+        job_anchors=tuple(anchor_steps),
     )

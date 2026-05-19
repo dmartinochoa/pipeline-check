@@ -186,6 +186,27 @@ release commit collapses this section into `## [X.Y.Z] - <date>`.
   `GL-032` ∩ `GL-020` share a job. `GHA-019`, `GHA-036`, `GL-032`,
   `GL-020` all gained `Finding.job_anchors`.
 
+- **Reachability-aware AC-023 (Tekton param injection + privileged
+  step).** `AC-023` now intersects `TKN-002` ∩ `TKN-003` job
+  anchors. Tekton's check surface collapses every Task / ClusterTask
+  finding into a single ``resource="tekton"`` row, so prior to
+  this migration the chain fired whenever ANY Task in the corpus
+  had a privileged step AND ANY (possibly different) Task had an
+  unsafe param interpolation, even when the two were structurally
+  disjoint. Both leg rules now populate `Finding.job_anchors` with
+  a step-scoped identifier in the form ``<Kind>/<name>:<step>``
+  (e.g. ``Task/release:build-image``), and the chain confirms
+  reachable only when the same step both runs privileged AND
+  interpolates ``$(params.<name>)`` unquoted, the precise
+  kernel-RCE primitive (one shell command lands in one
+  privileged container in one PipelineRun). Confirmed →
+  `confirmed_reachable=True`, confidence promoted to `HIGH`, and a
+  `reachability_note` citing the shared step(s). Disjoint anchors
+  (privileged step in one Task, injection sink in another) fall
+  back to the legacy co-occurrence signal because each leg is
+  independently risky and worth surfacing, just not as the
+  single-step kernel-RCE composition.
+
 - **Reachability-aware AC-012 (reusable workflow secret exfil).**
   `AC-012` (mutable reusable-workflow ref + ``secrets: inherit``)
   now intersects `GHA-025` ∩ `GHA-034` job anchors. Both leg rules

@@ -47,6 +47,11 @@ _EVAL_PARAM_RE = re.compile(
 
 def check(ctx: TektonContext) -> Finding:
     offenders: list[str] = []
+    # Per-step anchor in the form ``<Kind>/<name>:<step>`` so AC-023
+    # can intersect with TKN-002's anchors and confirm the unsafe
+    # param interpolation lands in the same step that runs
+    # privileged. Order-preserving dict for reproducibility.
+    anchor_steps: dict[str, None] = {}
     examined = 0
     for doc in ctx.docs:
         if doc.kind not in ("Task", "ClusterTask"):
@@ -58,6 +63,7 @@ def check(ctx: TektonContext) -> Finding:
                 offenders.append(
                     f"{doc.kind}/{doc.name} {sname}: {m.group(0)}"
                 )
+                anchor_steps[f"{doc.kind}/{doc.name}:{sname}"] = None
     if examined == 0:
         return Finding(
             check_id=RULE.id, title=RULE.title, severity=RULE.severity,
@@ -77,4 +83,5 @@ def check(ctx: TektonContext) -> Finding:
         check_id=RULE.id, title=RULE.title, severity=RULE.severity,
         resource="tekton", description=desc,
         recommendation=RULE.recommendation, passed=passed,
+        job_anchors=tuple(anchor_steps),
     )
