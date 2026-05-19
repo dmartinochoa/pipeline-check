@@ -102,6 +102,18 @@ def check(ctx: KubernetesContext) -> Finding:
     for m, ps in iter_workload_pod_specs(ctx):
         sa = ps.get("serviceAccountName")
         sa_name = sa.strip() if isinstance(sa, str) and sa.strip() else "default"
+        # Canonicalize the namespace too: namespaced workloads
+        # whose ``metadata.namespace`` is missing or blank land in
+        # the ``default`` namespace at apply time. Without this
+        # fallback the anchor identity would key on an empty
+        # namespace string, missing the (default, default) match
+        # AC-011 / K8S-029 need to confirm.
+        ns_raw = m.namespace
+        ns = (
+            ns_raw.strip()
+            if isinstance(ns_raw, str) and ns_raw.strip()
+            else "default"
+        )
         for v in iter_volumes(ps):
             hp = v.get("hostPath")
             if isinstance(hp, dict):
@@ -114,7 +126,7 @@ def check(ctx: KubernetesContext) -> Finding:
                     path=m.path, start_line=line, end_line=line,
                     doc_index=m.doc_index,
                 ))
-                built = k8s_sa(m.namespace, sa_name)
+                built = k8s_sa(ns, sa_name)
                 if built is not None:
                     anchor_set[built.identity] = built
     passed = not offenders
