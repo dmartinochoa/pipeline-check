@@ -186,6 +186,50 @@ release commit collapses this section into `## [X.Y.Z] - <date>`.
   `GL-032` ∩ `GL-020` share a job. `GHA-019`, `GHA-036`, `GL-032`,
   `GL-020` all gained `Finding.job_anchors`.
 
+- **ResourceAnchor phase 1: AC-005 (oci_image, build → deploy).**
+  Closes the phase 1 set with the last canonicalizer kind.
+  New ``_primitives/oci_refs.py`` helper extracts image references
+  from GHA workflows via two complementary passes:
+  (1) structured — walks every
+  ``docker/build-push-action`` / ``docker/metadata-action`` step's
+  ``with.tags`` input (string or multi-line list); (2) text scan
+  — pulls image-shaped tokens out of deploy-shaped shell commands
+  in ``run:`` blocks (``docker push``, ``docker tag``,
+  ``kubectl set image``, ``helm upgrade --set image=``,
+  ``gcloud run deploy``, ``az containerapp``,
+  ``aws ecs update-service``). Every candidate runs through the
+  phase 0 ``oci_image()`` canonicalizer.
+
+  **GHA-006** (artifact signing) emits ``oci_image`` anchors for
+  every image the workflow tags / pushes — only on failure (a
+  workflow that DOES sign carries no chain risk).
+  **GHA-014** (deploy environment) emits ``oci_image`` anchors for
+  every image its deploy steps reference — only on failure
+  (an environment-gated deploy isn't a chain leg).
+
+  **AC-005** now iterates the cross-product of build / deploy
+  leg IDs through ``group_by_anchor`` on ``oci_image``. Each
+  matched image identity emits ONE confirmed chain
+  (``confirmed_reachable=True``, ``Confidence.HIGH``, narrative
+  cites the shared image, resource is the image identity). Falls
+  back to scan-level co-occurrence when no image matches —
+  preserves the legacy multi-provider signal for cross-tooling
+  flows (Cloud Build → CodePipeline, GitLab → ArgoCD, etc.)
+  where image extraction isn't wired yet, or where build and
+  deploy genuinely reference different images.
+
+  Image extraction is currently wired only on the GHA legs
+  (GHA-006 / GHA-014). Extending it to the remaining build-side
+  legs (GL-006 / BB-006 / ADO-006 / JF-006 / CC-006 / GCB-009 /
+  SIGN-001) and deploy-side legs (GL-004 / BB-004 / ADO-004 /
+  JF-005 / CC-009 / CP-001 / CP-005) is the natural follow-up
+  — same pattern, per-provider context plumbing.
+
+  Three new ``TestChainAC005`` cases (confirmed shared image,
+  disjoint fallback, fan-out one chain per matched image).
+  Existing three tests preserved via the co-occurrence fallback
+  path. Full suite: 6282 passed, 11 skipped.
+
 - **ResourceAnchor phase 1: AC-011 / AC-020 / AC-021 (k8s_sa
   intersection across Kubernetes / Tekton / Argo).** Closes the
   K8s-side phase 1 set. Five leg rules now emit ``k8s_sa`` anchors

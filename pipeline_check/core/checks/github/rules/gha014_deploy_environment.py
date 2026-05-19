@@ -6,6 +6,7 @@ from typing import Any
 
 from ..._primitives.deploy_names import DEPLOY_RE as _DEPLOY_RE
 from ..._primitives.local_mock import env_targets_local_mock
+from ..._primitives.oci_refs import extract_image_anchors_from_workflow
 from ..._yaml_lines import line_of as _line_of
 from ...base import Finding, Location, Severity
 from ...rule import Rule
@@ -115,6 +116,17 @@ def check(path: str, doc: dict[str, Any]) -> Finding:
         f"{', '.join(ungated)}. Without an environment, the job "
         f"cannot be gated by required reviewers or branch policies."
     )
+    # ResourceAnchor phase 1: emit oci_image anchors for every image
+    # this workflow's deploy steps reference (``kubectl set image``,
+    # ``helm upgrade --set image=``, ``docker push``, etc. in any
+    # offending job's ``run:`` block). AC-005 intersects these with
+    # GHA-006's unsigned-build anchors on the canonical ``oci_image``
+    # kind, confirming the deploy that lacks an environment gate IS
+    # the same image the unsigned build ships. Only emit on a failing
+    # finding.
+    anchors = (
+        extract_image_anchors_from_workflow(doc) if not passed else ()
+    )
     return Finding(
         check_id=RULE.id, title=RULE.title, severity=RULE.severity,
         resource=path, description=desc,
@@ -125,4 +137,5 @@ def check(path: str, doc: dict[str, Any]) -> Finding:
         # jobs an injection rule (GHA-003 / TAINT-001 / TAINT-002)
         # fired in. Empty tuple on a passed finding.
         job_anchors=tuple(ungated),
+        resource_anchors=anchors,
     )

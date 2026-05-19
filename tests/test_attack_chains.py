@@ -316,6 +316,89 @@ class TestChainAC005:
         out = chains_pkg.evaluate([_f("CP-001", "arn:aws:codepipeline:.../x")])
         assert not any(c.chain_id == "AC-005" for c in out)
 
+    def test_reachability_confirmed_when_image_anchor_matches(self):
+        # GHA-006 emits the image its build pushes; GHA-014 emits the
+        # image its deploy references. Same canonical identity ⇒
+        # confirmed chain at HIGH with the image as the resource.
+        from pipeline_check.core.checks.base import ResourceAnchor
+        img = ResourceAnchor(
+            kind="oci_image", identity="ghcr.io/acme/app",
+        )
+        out = chains_pkg.evaluate([
+            _f(
+                "GHA-006", ".github/workflows/build.yml",
+                resource_anchors=(img,),
+            ),
+            _f(
+                "GHA-014", ".github/workflows/deploy.yml",
+                resource_anchors=(img,),
+                confidence=Confidence.MEDIUM,
+            ),
+        ])
+        ac5 = [c for c in out if c.chain_id == "AC-005"]
+        assert len(ac5) == 1
+        chain = ac5[0]
+        assert chain.confirmed_reachable is True
+        assert "ghcr.io/acme/app" in chain.reachability_note
+        assert chain.resources == ["ghcr.io/acme/app"]
+        assert chain.confidence is Confidence.HIGH
+
+    def test_falls_back_when_image_anchors_disjoint(self):
+        # Build pushes app-a; deploy references app-b. Co-occurrence
+        # fallback preserves the multi-provider signal.
+        from pipeline_check.core.checks.base import ResourceAnchor
+        a = ResourceAnchor(kind="oci_image", identity="ghcr.io/acme/app-a")
+        b = ResourceAnchor(kind="oci_image", identity="ghcr.io/acme/app-b")
+        out = chains_pkg.evaluate([
+            _f(
+                "GHA-006", ".github/workflows/build.yml",
+                resource_anchors=(a,),
+            ),
+            _f(
+                "GHA-014", ".github/workflows/deploy.yml",
+                resource_anchors=(b,),
+                confidence=Confidence.MEDIUM,
+            ),
+        ])
+        ac5 = [c for c in out if c.chain_id == "AC-005"]
+        assert len(ac5) == 1
+        chain = ac5[0]
+        assert chain.confirmed_reachable is False
+        assert chain.reachability_note == ""
+        assert chain.confidence is Confidence.MEDIUM
+
+    def test_one_confirmed_chain_per_image_identity(self):
+        # Two build workflows push two different images; two deploy
+        # workflows reference each. Expect two confirmed chains, one
+        # per shared image.
+        from pipeline_check.core.checks.base import ResourceAnchor
+        app_a = ResourceAnchor(kind="oci_image", identity="ghcr.io/acme/app-a")
+        app_b = ResourceAnchor(kind="oci_image", identity="ghcr.io/acme/app-b")
+        out = chains_pkg.evaluate([
+            _f(
+                "GHA-006", ".github/workflows/build-a.yml",
+                resource_anchors=(app_a,),
+            ),
+            _f(
+                "GHA-006", ".github/workflows/build-b.yml",
+                resource_anchors=(app_b,),
+            ),
+            _f(
+                "GHA-014", ".github/workflows/deploy-a.yml",
+                resource_anchors=(app_a,),
+            ),
+            _f(
+                "GHA-014", ".github/workflows/deploy-b.yml",
+                resource_anchors=(app_b,),
+            ),
+        ])
+        ac5 = [c for c in out if c.chain_id == "AC-005"]
+        confirmed = [c for c in ac5 if c.confirmed_reachable]
+        assert len(confirmed) == 2
+        assert {c.resources[0] for c in confirmed} == {
+            app_a.identity, app_b.identity,
+        }
+
 
 class TestChainAC002:
     """AC-002 — Script Injection to Unprotected Deploy."""
