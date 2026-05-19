@@ -27,20 +27,21 @@ Mirrors AC-011 / AC-015 in shape: each leg is a HIGH finding on
 its own; the chain captures that the *combination* removes every
 layer of defense the OIDC pattern was supposed to provide.
 
-Reachability-model note: this chain stays on scan-level
-co-occurrence. The two legs are cross-provider (GitHub workflow
-+ AWS IAM role); confirming "this GHA-030 workflow's
-``role-to-assume`` ARN IS the IAM-002 wildcard role" requires
-the ``ResourceAnchor`` phase 1 ``iam_role`` canonicalizer to
-parse the role ARN out of the workflow input and match it
-against IAM-002's resource ARN. ``job_anchors`` doesn't fit, the
-AWS-side leg has no CI-job structure to anchor on. Deferred to
-the cross-provider reachability work.
+ResourceAnchor phase 1 pilot: the chain prefers a confirmed
+reachability pairing when the offending workflow's
+``role-to-assume`` resolves to the same canonical ``iam_role``
+ARN that IAM-002 flagged. Each matched ARN composes ONE confirmed
+chain with ``confirmed_reachable=True``, ``Confidence.HIGH``, and
+a ``reachability_note`` citing the shared role. When no anchor
+matches (templated role refs, bare role names, or the chain
+fires across separate scans), the chain falls back to a single
+scan-level co-occurrence chain at ``min_confidence(legs)``
+because each leg is still independently exploitable.
 """
 from __future__ import annotations
 
-from ...checks.base import Finding, Severity
-from ..base import Chain, ChainRule, has_failing, min_confidence
+from ...checks.base import Confidence, Finding, Severity
+from ..base import Chain, ChainRule, group_by_anchor, has_failing, min_confidence
 
 RULE = ChainRule(
     id="AC-016",
@@ -82,18 +83,8 @@ RULE = ChainRule(
 )
 
 
-def match(findings: list[Finding]) -> list[Chain]:
-    if not has_failing(findings, "GHA-030"):
-        return []
-    if not has_failing(findings, "IAM-002"):
-        return []
-    triggers = [
-        f for f in findings
-        if (not f.passed) and f.check_id in {"GHA-030", "IAM-002"}
-    ]
-    resources = sorted({f.resource for f in triggers})
-    narrative = (
-        "In this scan:\n"
+def _base_narrative() -> str:
+    return (
         "  1. A GitHub Actions job requests an OIDC token "
         "(``permissions: id-token: write``) without an "
         "``environment:`` key on the job (GHA-030). GitHub's "
@@ -107,29 +98,100 @@ def match(findings: list[Finding]) -> list[Chain]:
         "like ``s3:*``) in an attached policy (IAM-002). Whatever "
         "scope the wildcard covers becomes the role's effective "
         "authority.\n"
-        "  3. If the trust policy on the wildcard-action role "
-        "accepts the OIDC token from this workflow's repo (and the "
-        "token claim filters don't carve out fork PRs), an "
-        "attacker who lands a workflow change has both "
-        "the token-mint surface (from the ungated workflow) and "
-        "the action authority (from the wildcard policy). The OIDC "
-        "pattern was supposed to replace long-lived keys with "
-        "tightly-scoped, short-lived ones. This combination "
-        "preserves the short-lived part without the tight-scope "
-        "part."
     )
-    return [Chain(
-        chain_id=RULE.id,
-        title=RULE.title,
-        severity=RULE.severity,
-        confidence=min_confidence(triggers),
-        summary=RULE.summary,
-        narrative=narrative,
-        mitre_attack=list(RULE.mitre_attack),
-        kill_chain_phase=RULE.kill_chain_phase,
-        triggering_check_ids=["GHA-030", "IAM-002"],
-        triggering_findings=triggers,
-        resources=resources,
-        references=list(RULE.references),
-        recommendation=RULE.recommendation,
-    )]
+
+
+def match(findings: list[Finding]) -> list[Chain]:
+    # ResourceAnchor phase 1: try the iam_role intersection first.
+    # group_by_anchor only returns groups where BOTH legs carry an
+    # anchor with kind=="iam_role" sharing the same identity. That's
+    # the precise reachability claim: the workflow names the same
+    # role ARN that IAM-002 flagged as wildcard.
+    by_role = group_by_anchor(findings, ["GHA-030", "IAM-002"], "iam_role")
+    out: list[Chain] = []
+    matched_findings: set[int] = set()
+    for role_arn, ck_map in by_role.items():
+        gha030 = ck_map["GHA-030"]
+        iam002 = ck_map["IAM-002"]
+        triggers = [gha030, iam002]
+        matched_findings.add(id(gha030))
+        matched_findings.add(id(iam002))
+        narrative = (
+            f"For role `{role_arn}`:\n"
+            + _base_narrative()
+            + f"  3. Reachability confirmed: the GHA-030 workflow's "
+            f"``role-to-assume`` resolves to `{role_arn}`, which is "
+            f"the same role IAM-002 flagged for wildcard authority. "
+            f"A token minted from any branch the workflow runs on "
+            f"assumes that exact role with the wildcard scope, no "
+            f"cross-account / cross-role guesswork required."
+        )
+        out.append(Chain(
+            chain_id=RULE.id,
+            title=RULE.title,
+            severity=RULE.severity,
+            confidence=Confidence.HIGH,
+            summary=RULE.summary,
+            narrative=narrative,
+            mitre_attack=list(RULE.mitre_attack),
+            kill_chain_phase=RULE.kill_chain_phase,
+            triggering_check_ids=["GHA-030", "IAM-002"],
+            triggering_findings=triggers,
+            resources=[role_arn],
+            references=list(RULE.references),
+            recommendation=RULE.recommendation,
+            confirmed_reachable=True,
+            reachability_note=(
+                f"GHA-030 workflow's ``role-to-assume`` matches "
+                f"IAM-002 role `{role_arn}`"
+            ),
+        ))
+
+    # Co-occurrence fallback: both legs fire SOMEWHERE in the scan
+    # but no role-ARN intersection matched (templated role refs, bare
+    # role names that IAM-002 didn't anchor to ARN, or unrelated
+    # roles). Emit one chain per (unmatched-GHA-030, unmatched-IAM-002)
+    # cross-product so the legacy "any drift × any wildcard" signal
+    # survives. Each leg is independently a HIGH finding; the chain
+    # remains useful as a co-occurrence prompt even without the
+    # confirmed pairing.
+    if has_failing(findings, "GHA-030") and has_failing(findings, "IAM-002"):
+        unmatched = [
+            f for f in findings
+            if (not f.passed)
+            and f.check_id in {"GHA-030", "IAM-002"}
+            and id(f) not in matched_findings
+        ]
+        unmatched_legs = {f.check_id for f in unmatched}
+        if "GHA-030" in unmatched_legs and "IAM-002" in unmatched_legs:
+            triggers = unmatched
+            resources = sorted({f.resource for f in triggers})
+            narrative = (
+                "In this scan:\n"
+                + _base_narrative()
+                + "  3. Reachability unconfirmed: no GHA-030 workflow's "
+                "``role-to-assume`` resolved to the same IAM role "
+                "that IAM-002 flagged (templated reference, bare role "
+                "name, or unrelated roles). Both legs remain "
+                "independently exploitable, treat as a co-occurrence "
+                "signal until the workflow's role pin can be matched "
+                "to the wildcard role."
+            )
+            out.append(Chain(
+                chain_id=RULE.id,
+                title=RULE.title,
+                severity=RULE.severity,
+                confidence=min_confidence(triggers),
+                summary=RULE.summary,
+                narrative=narrative,
+                mitre_attack=list(RULE.mitre_attack),
+                kill_chain_phase=RULE.kill_chain_phase,
+                triggering_check_ids=["GHA-030", "IAM-002"],
+                triggering_findings=triggers,
+                resources=resources,
+                references=list(RULE.references),
+                recommendation=RULE.recommendation,
+                confirmed_reachable=False,
+                reachability_note="",
+            ))
+    return out

@@ -1171,6 +1171,91 @@ class TestChainAC016:
         assert "credential-access" in chain.kill_chain_phase
         assert "privilege-escalation" in chain.kill_chain_phase
 
+    def test_reachability_confirmed_when_role_anchor_matches(self):
+        # ResourceAnchor phase 1 pilot: the workflow's
+        # ``role-to-assume`` resolves to the same ARN IAM-002 flagged
+        # for wildcard authority. Confirmed chain cites the role ARN
+        # as the resource and promotes confidence.
+        from pipeline_check.core.checks.base import ResourceAnchor
+        role_anchor = ResourceAnchor(kind="iam_role", identity=self.ROLE)
+        out = chains_pkg.evaluate([
+            _f("GHA-030", self.WF, resource_anchors=(role_anchor,)),
+            _f(
+                "IAM-002",
+                "ci-deploy",
+                resource_anchors=(role_anchor,),
+                confidence=Confidence.MEDIUM,
+            ),
+        ])
+        ac16 = [c for c in out if c.chain_id == "AC-016"]
+        assert len(ac16) == 1
+        chain = ac16[0]
+        assert chain.confirmed_reachable is True
+        assert self.ROLE in chain.reachability_note
+        assert chain.resources == [self.ROLE]
+        assert chain.confidence is Confidence.HIGH
+
+    def test_falls_back_to_cooccurrence_when_anchors_disjoint(self):
+        # GHA-030 names ``role-A``; IAM-002 fires on ``role-B``.
+        # No role-anchor intersection, so the chain falls back to
+        # the scan-level co-occurrence signal at min-confidence.
+        from pipeline_check.core.checks.base import ResourceAnchor
+        a = ResourceAnchor(
+            kind="iam_role",
+            identity="arn:aws:iam::123456789012:role/ci-A",
+        )
+        b = ResourceAnchor(
+            kind="iam_role",
+            identity="arn:aws:iam::123456789012:role/ci-B",
+        )
+        out = chains_pkg.evaluate([
+            _f("GHA-030", self.WF, resource_anchors=(a,)),
+            _f(
+                "IAM-002",
+                "ci-B",
+                resource_anchors=(b,),
+                confidence=Confidence.MEDIUM,
+            ),
+        ])
+        ac16 = [c for c in out if c.chain_id == "AC-016"]
+        assert len(ac16) == 1
+        chain = ac16[0]
+        assert chain.confirmed_reachable is False
+        assert chain.reachability_note == ""
+        assert chain.confidence is Confidence.MEDIUM
+
+    def test_one_confirmed_chain_per_matched_role(self):
+        # Two workflows each name a different wildcard role; IAM-002
+        # fires on both. Expect two confirmed chains, one per role.
+        from pipeline_check.core.checks.base import ResourceAnchor
+        role_a = ResourceAnchor(
+            kind="iam_role",
+            identity="arn:aws:iam::123456789012:role/ci-A",
+        )
+        role_b = ResourceAnchor(
+            kind="iam_role",
+            identity="arn:aws:iam::123456789012:role/ci-B",
+        )
+        out = chains_pkg.evaluate([
+            _f(
+                "GHA-030", ".github/workflows/a.yml",
+                resource_anchors=(role_a,),
+            ),
+            _f(
+                "GHA-030", ".github/workflows/b.yml",
+                resource_anchors=(role_b,),
+            ),
+            _f("IAM-002", "ci-A", resource_anchors=(role_a,)),
+            _f("IAM-002", "ci-B", resource_anchors=(role_b,)),
+        ])
+        ac16 = [c for c in out if c.chain_id == "AC-016"]
+        assert len(ac16) == 2
+        confirmed = [c for c in ac16 if c.confirmed_reachable]
+        assert len(confirmed) == 2
+        assert {c.resources[0] for c in confirmed} == {
+            role_a.identity, role_b.identity,
+        }
+
 
 class TestChainAC017:
     """AC-017 — Build cache poisoning that lands on a mutable ECR tag."""

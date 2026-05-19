@@ -2,7 +2,8 @@
 from __future__ import annotations
 
 from ..._iam_policy import has_wildcard_action
-from ...base import Finding, Severity
+from ..._primitives.anchors import iam_role
+from ...base import Finding, ResourceAnchor, Severity
 from ...rule import Rule
 from .._catalog import ResourceCatalog
 
@@ -36,9 +37,24 @@ def check(catalog: ResourceCatalog) -> list[Finding]:
             desc = f"Policy/policies {offenders} on '{role_name}' use Action: '*'."
         else:
             desc = f"No policy on '{role_name}' uses Action: '*'."
+        # ResourceAnchor phase 1: pair the wildcard-authority role with
+        # cross-provider chain legs (AC-016 GHA-030 ``role-to-assume``)
+        # via the canonical ``iam_role`` kind. boto3's list_roles output
+        # includes the full ``Arn`` field for every role, so the
+        # canonicalizer just verifies the shape. We don't emit an
+        # anchor when the role lacks an ARN (malformed fixture / very
+        # old API version) — better to skip than emit a half-formed key
+        # that would silently miss a chain intersection.
+        anchors: tuple[ResourceAnchor, ...] = ()
+        arn = role.get("Arn")
+        if isinstance(arn, str):
+            built = iam_role(arn)
+            if built is not None:
+                anchors = (built,)
         findings.append(Finding(
             check_id=RULE.id, title=RULE.title, severity=RULE.severity,
             resource=role_name, description=desc,
             recommendation=RULE.recommendation, passed=passed,
+            resource_anchors=anchors,
         ))
     return findings

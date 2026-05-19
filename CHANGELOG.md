@@ -186,6 +186,32 @@ release commit collapses this section into `## [X.Y.Z] - <date>`.
   `GL-032` ∩ `GL-020` share a job. `GHA-019`, `GHA-036`, `GL-032`,
   `GL-020` all gained `Finding.job_anchors`.
 
+- **ResourceAnchor phase 1: AC-016 pilot (OIDC role drift).**
+  First cross-provider chain to consume the phase 0 `ResourceAnchor`
+  foundation. **IAM-002** now emits an ``iam_role`` anchor from the
+  role's full ARN (already in the boto3 ``list_roles`` payload), and
+  **GHA-030** parses ``with.role-to-assume`` out of every offending
+  job's ``aws-actions/configure-aws-credentials`` step. Full ARNs
+  become ``iam_role`` anchors that intersect cleanly with IAM-002's;
+  bare role names emit the looser ``iam_role_name`` kind (which
+  doesn't fuzzy-match into ``iam_role``, by canonicalizer carve-out);
+  templated refs (``${{ secrets.ROLE_ARN }}``) produce no anchor.
+  AC-016 now does the intersection first via ``group_by_anchor``:
+  each matched role ARN emits ONE confirmed chain with
+  ``confirmed_reachable=True``, ``Confidence.HIGH``, narrative
+  citing the role ARN, and that ARN as the chain's resource. When
+  no anchor matches (template refs, bare names, unrelated roles),
+  the chain falls back to a single scan-level co-occurrence chain
+  at ``min_confidence(legs)`` so the legacy "any drift × any
+  wildcard" signal survives. Three new ``TestChainAC016`` cases
+  cover the confirmed pairing, the disjoint-anchor fallback, and
+  fan-out to one confirmed chain per matched ARN. The pilot
+  validates the foundation end-to-end: same ARN canonicalization
+  on both sides of the provider boundary, ``group_by_anchor``
+  ranks ahead of the legacy co-occurrence helper, and existing
+  synthetic tests (no anchors on the input) still produce the
+  prior single-chain output via the fallback path.
+
 - **Reachability-aware AC-029 (untrusted-trigger publish lane).**
   `AC-029` (Ultralytics / s1ngularity class) now uses the
   3-leg-set ``job_anchors`` intersection model. Each leg is an
