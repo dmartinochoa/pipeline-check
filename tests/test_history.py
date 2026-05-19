@@ -201,21 +201,26 @@ class TestLoadHistory:
         # File with no recognizable filename pattern AND a stat()
         # that raises (simulating a rotate / delete mid-scan) must
         # surface as a warning and skip — not abort the whole load.
+        # The good file has a parseable timestamp so it skips the
+        # mtime path; the bad file has no pattern and lands in the
+        # patched _file_mtime branch.
         _write_scan(
             tmp_path, "good-20260519-120000.json", _scan_doc(score=90),
         )
         bad = tmp_path / "rotated.json"
         bad.write_text(json.dumps(_scan_doc()), encoding="utf-8")
 
-        from pathlib import Path as _Path
-        real_stat = _Path.stat
+        # Monkeypatch the module-level _file_mtime helper rather
+        # than Path.stat itself: patching Path.stat would also trip
+        # the upstream is_file() guard on Linux 3.12+, where
+        # pathlib re-raises non-ENOENT OSError out of is_file()
+        # before the loader's mtime branch ever runs.
+        from pipeline_check.core import history as _history
 
-        def fake_stat(self, *args, **kwargs):  # type: ignore[no-untyped-def]
-            if self == bad:
-                raise OSError("simulated mid-scan rotation")
-            return real_stat(self, *args, **kwargs)
+        def fake_mtime(path):  # type: ignore[no-untyped-def]
+            raise OSError("simulated mid-scan rotation")
 
-        monkeypatch.setattr(_Path, "stat", fake_stat)
+        monkeypatch.setattr(_history, "_file_mtime", fake_mtime)
         report = load_history(tmp_path)
         assert len(report.snapshots) == 1
         assert any("rotated.json" in w for w in report.warnings)

@@ -98,6 +98,18 @@ class HistoryReport:
     warnings: tuple[str, ...] = ()
 
 
+def _file_mtime(path: Path) -> _dt.datetime:
+    """Return a file's mtime as a naive datetime.
+
+    Split out so tests can monkeypatch the stat without tripping
+    pathlib's ``is_file()`` upstream — patching ``Path.stat``
+    directly would short-circuit the loader's earlier ``is_file()``
+    filter on every platform whose pathlib re-raises non-ENOENT
+    OSError out of ``is_file()`` (Linux 3.12+).
+    """
+    return _dt.datetime.fromtimestamp(path.stat().st_mtime)
+
+
 def _parse_timestamp_from_name(name: str) -> _dt.datetime | None:
     """Return a parsed timestamp extracted from a filename, or None."""
     m = _TS_COMPACT_RE.search(name)
@@ -188,9 +200,15 @@ def load_history(directory: Path | str) -> HistoryReport:
     snapshots: list[HistorySnapshot] = []
     warnings: list[str] = []
     for f in sorted(root.glob("*.json")):
-        if not f.is_file():
-            continue
+        # ``is_file()`` and ``read_text()`` both touch the
+        # filesystem; either can raise OSError mid-iteration on a
+        # rotation / deletion (Linux pathlib re-raises non-ENOENT
+        # OSError out of is_file()). Wrap both together so a mid-
+        # scan churn surfaces as a per-file warning rather than
+        # aborting the whole load.
         try:
+            if not f.is_file():
+                continue
             text = f.read_text(encoding="utf-8")
         except (OSError, UnicodeDecodeError) as exc:
             warnings.append(f"{f.name}: read error: {exc}")
@@ -214,7 +232,7 @@ def load_history(directory: Path | str) -> HistoryReport:
             # plausible (CI writes a fresh scan while the dashboard
             # is being rendered).
             try:
-                ts = _dt.datetime.fromtimestamp(f.stat().st_mtime)
+                ts = _file_mtime(f)
             except OSError as exc:
                 warnings.append(
                     f"{f.name}: stat error during mtime fallback: {exc}"
