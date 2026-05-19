@@ -186,6 +186,51 @@ release commit collapses this section into `## [X.Y.Z] - <date>`.
   `GL-032` ∩ `GL-020` share a job. `GHA-019`, `GHA-036`, `GL-032`,
   `GL-020` all gained `Finding.job_anchors`.
 
+- **Reachability-aware AC-029 (untrusted-trigger publish lane).**
+  `AC-029` (Ultralytics / s1ngularity class) now uses the
+  3-leg-set ``job_anchors`` intersection model. Each leg is an
+  any-of: trigger ∈ {GHA-002, GHA-009, GHA-013}; credential ∈
+  {GHA-005, GHA-050}; integrity ∈ {GHA-021, GHA-029}. The chain
+  unions anchors *within* each leg (any of the variants
+  fires), then intersects *across* the three legs. Confirmed
+  reachable when one job carries all three at once — the precise
+  Ultralytics / s1ngularity execution context (an attacker-landed
+  input lands in the same job that holds the publish credential
+  AND runs the unguarded install). Backfilled three leg rules in
+  the same pass: GHA-009 anchors on the jobs that download an
+  upstream artifact unverified; GHA-013 anchors workflow-wide
+  (issue_comment fires every job, so fan out to all of them);
+  GHA-050 anchors on the publish jobs that hold the long-lived
+  registry token. GHA-009 carries a known-limitation note about
+  the workflow-level ``verified`` flag: a workflow where one job
+  downloads-without-verifying and a different job runs a
+  cosign / attestation check still reads as passed, so anchors
+  stay empty and AC-029 can't confirm reachability on that
+  shape — tightening to per-job verification belongs in a
+  GHA-009 reshape, not this chain pass. New TestChainAC029
+  class covers the new behavior plus the prior chain-level
+  contracts (no test existed before).
+
+- **Remaining AC chains carve out the reachability model.** The
+  ``job_anchors`` intersection pattern doesn't apply to every
+  chain shape; rather than silently leave half the catalog
+  inconsistent, each remaining chain now carries a one-paragraph
+  docstring note explaining the carve-out:
+  - **File-resource OK** (file/manifest co-location IS the
+    reachability claim, no per-job structure to anchor on):
+    AC-011 (K8s hostPath + cluster-admin), AC-015 (Helm chart),
+    AC-020 (Tekton hostPath + cluster-admin), AC-021 (Argo
+    default-SA + RoleBinding), AC-027 (Dockerfile credential +
+    EXPOSE), AC-028 (npm worm propagation).
+  - **ResourceAnchor phase 1 deferred** (legs are cross-provider
+    AWS / cluster resources, meaningful pairing needs the
+    ``iam_role`` / ``ecr_repo`` / ``oci_image`` / ``k8s_sa`` /
+    ``lambda_fn`` canonicalizers from the phase 0 foundation):
+    AC-005, AC-007, AC-016, AC-017, AC-019, AC-024.
+  Wraps the ``job_anchors`` migration arc: 16 of 28 AC chains
+  on the intersection model, the remaining 12 documented with
+  their model decision in-source.
+
 - **Reachability-aware AC-009 (3-leg supply-chain repo poisoning).**
   `AC-009` (GHA-001 unpinned action + GHA-002 injection sink +
   GHA-008 literal credential) now uses a 3-way `job_anchors`
