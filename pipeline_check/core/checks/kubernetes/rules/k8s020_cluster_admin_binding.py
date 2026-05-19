@@ -3,8 +3,9 @@ from __future__ import annotations
 
 from typing import Any
 
+from ..._primitives.anchors import k8s_sa
 from ..._yaml_lines import line_of as _line_of
-from ...base import Finding, Location, Severity
+from ...base import Finding, Location, ResourceAnchor, Severity
 from ...rule import Rule
 from ..base import KubernetesContext
 
@@ -77,6 +78,15 @@ def _subject_str(s: Any) -> str:
 def check(ctx: KubernetesContext) -> Finding:
     offenders: list[str] = []
     locations: list[Location] = []
+    # ResourceAnchor phase 1: emit one k8s_sa anchor per
+    # cluster-admin binding's ServiceAccount subject. AC-011
+    # intersects this with K8S-013's pod-SA anchors and AC-020
+    # intersects with TKN-004's Task-SA anchors so the chain only
+    # confirms when the host-escape primitive runs as the SA that
+    # has cluster-admin. Group / User subjects don't map to k8s_sa
+    # — they're a different identity kind and not in scope for
+    # phase 1.
+    anchor_set: dict[str, ResourceAnchor] = {}
     for m in ctx.manifests:
         if m.kind != "ClusterRoleBinding":
             continue
@@ -102,6 +112,22 @@ def check(ctx: KubernetesContext) -> Finding:
             path=m.path, start_line=line, end_line=line,
             doc_index=m.doc_index,
         ))
+        if isinstance(subjects, list):
+            for s in subjects:
+                if not isinstance(s, dict):
+                    continue
+                if s.get("kind") != "ServiceAccount":
+                    continue
+                sub_name = s.get("name")
+                sub_ns = s.get("namespace")
+                if not isinstance(sub_name, str):
+                    continue
+                built = k8s_sa(
+                    sub_ns if isinstance(sub_ns, str) else None,
+                    sub_name,
+                )
+                if built is not None:
+                    anchor_set[built.identity] = built
     passed = not offenders
     desc = (
         "No ClusterRoleBinding grants cluster-admin or system:masters."
@@ -116,4 +142,5 @@ def check(ctx: KubernetesContext) -> Finding:
         description=desc,
         recommendation=RULE.recommendation, passed=passed,
         locations=locations,
+        resource_anchors=tuple(anchor_set.values()),
     )

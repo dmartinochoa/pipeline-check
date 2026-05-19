@@ -1,8 +1,9 @@
 """K8S-013. Pod uses a ``hostPath`` volume."""
 from __future__ import annotations
 
+from ..._primitives.anchors import k8s_sa
 from ..._yaml_lines import line_of as _line_of
-from ...base import Finding, Location, Severity
+from ...base import Finding, Location, ResourceAnchor, Severity
 from ...rule import Rule
 from ..base import KubernetesContext, iter_volumes, iter_workload_pod_specs
 
@@ -89,7 +90,18 @@ RULE = Rule(
 def check(ctx: KubernetesContext) -> Finding:
     offenders: list[str] = []
     locations: list[Location] = []
+    # ResourceAnchor phase 1: emit one k8s_sa anchor per offending
+    # workload, identifying the ServiceAccount under which the
+    # hostPath pod actually runs. AC-011 / AC-020 intersect this
+    # against K8S-020's cluster-admin binding subjects so the chain
+    # only confirms when the host-escape pod runs as the
+    # cluster-admin SA (the single-step node-escape ⇒ cluster-takeover
+    # primitive). Pods that omit ``serviceAccountName`` inherit the
+    # namespace's ``default`` SA — the canonicalizer's same default.
+    anchor_set: dict[str, ResourceAnchor] = {}
     for m, ps in iter_workload_pod_specs(ctx):
+        sa = ps.get("serviceAccountName")
+        sa_name = sa.strip() if isinstance(sa, str) and sa.strip() else "default"
         for v in iter_volumes(ps):
             hp = v.get("hostPath")
             if isinstance(hp, dict):
@@ -102,6 +114,9 @@ def check(ctx: KubernetesContext) -> Finding:
                     path=m.path, start_line=line, end_line=line,
                     doc_index=m.doc_index,
                 ))
+                built = k8s_sa(m.namespace, sa_name)
+                if built is not None:
+                    anchor_set[built.identity] = built
     passed = not offenders
     desc = (
         "No workload uses hostPath volumes."
@@ -116,4 +131,5 @@ def check(ctx: KubernetesContext) -> Finding:
         description=desc,
         recommendation=RULE.recommendation, passed=passed,
         locations=locations,
+        resource_anchors=tuple(anchor_set.values()),
     )

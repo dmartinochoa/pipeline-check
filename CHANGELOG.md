@@ -186,6 +186,45 @@ release commit collapses this section into `## [X.Y.Z] - <date>`.
   `GL-032` ∩ `GL-020` share a job. `GHA-019`, `GHA-036`, `GL-032`,
   `GL-020` all gained `Finding.job_anchors`.
 
+- **ResourceAnchor phase 1: AC-011 / AC-020 / AC-021 (k8s_sa
+  intersection across Kubernetes / Tekton / Argo).** Closes the
+  K8s-side phase 1 set. Five leg rules now emit ``k8s_sa`` anchors
+  (canonical identity ``<namespace>/<name>``):
+  - **K8S-013** anchors each hostPath-mounting workload on its
+    effective ``serviceAccountName`` (falls back to the namespace's
+    ``default``, matching kubelet semantics).
+  - **K8S-020** anchors each cluster-admin ClusterRoleBinding on its
+    ServiceAccount subject(s); Group / User subjects don't map to
+    ``k8s_sa`` and skip silently.
+  - **K8S-029** anchors each default-SA RoleBinding on the
+    ``(namespace, default)`` pair it grants to (de-duped across
+    multiple offenders in the same namespace).
+  - **ARGO-003** anchors each offending Workflow on its
+    ``(namespace, default)`` pair — the SA the workflow runs as when
+    ``serviceAccountName`` is missing or explicitly ``default``.
+  - **TKN-004** anchors only when the Task pins
+    ``spec.podTemplate.serviceAccountName`` explicitly. The runtime
+    SA is normally TaskRun-determined and not visible in the manifest;
+    guessing ``default`` would over-confirm AC-020, so unanchored
+    Tasks fall through to the co-occurrence fallback.
+
+  Chain migrations:
+  - **AC-011** (K8S-013 ∩ K8S-020): confirmed when the
+    hostPath-mounting pod runs as a cluster-admin-bound SA — node
+    escape and API takeover in one execution context, no separate
+    token-theft step.
+  - **AC-020** (TKN-004 ∩ K8S-020): confirmed when the Task pins
+    its SA to a cluster-admin binding subject. Common case (Task
+    doesn't pin an SA) falls through to co-occurrence.
+  - **AC-021** (ARGO-003 ∩ K8S-029): confirmed when the Workflow's
+    namespace+default SA matches one of K8S-029's default-SA
+    binding subjects — single-namespace single-step privesc.
+
+  Six new TestChainAC{011,020,021} cases (confirmed-pair +
+  fallback-disjoint per chain). All previous tests preserved via
+  the co-occurrence fallback path. Full suite: 6279 passed,
+  11 skipped.
+
 - **ResourceAnchor phase 1: AC-007 (IAM PrivEsc via CodeBuild).**
   `AC-007` now uses ``group_by_anchor`` on ``iam_role`` against
   both IAM-side legs. CB-002 emits ``iam_role`` from the project's

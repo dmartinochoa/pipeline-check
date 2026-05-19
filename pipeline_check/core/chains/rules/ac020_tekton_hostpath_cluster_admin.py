@@ -21,18 +21,23 @@ runs in the cluster" to "any TaskRun the build pipeline kicks
 off", a much more frequently changing surface that ships with
 every PR.
 
-Reachability-model note: this chain stays on manifest-set
-co-occurrence. Confirming the bound subject (cluster-admin SA)
-matches the Task's effective ``serviceAccountName`` requires the
-``k8s_sa`` canonicalizer from ``ResourceAnchor`` phase 1; the
-``job_anchors`` intersection pattern doesn't fit because the two
-legs are independent K8s resources rather than steps in one CI
-job. Defer to the cross-provider reachability work.
+ResourceAnchor phase 1: prefers a confirmed pairing when the
+Task explicitly pins ``spec.podTemplate.serviceAccountName`` to a
+ServiceAccount that's also a subject of a cluster-admin
+ClusterRoleBinding (same ``<namespace>/<name>`` via the
+``k8s_sa`` canonicalizer). TKN-004 emits an anchor only when the
+Task pins an SA explicitly — Tekton's runtime SA is normally
+chosen by the TaskRun (not visible in the Task manifest), so
+guessing ``default`` would over-confirm. Tasks without an
+explicit pin fall through to the co-occurrence fallback, which
+preserves the original signal ("any node-escape Task + any
+cluster-admin binding") since the attacker who escapes the node
+has alternative paths to cluster-admin credentials regardless.
 """
 from __future__ import annotations
 
-from ...checks.base import Finding, Severity
-from ..base import Chain, ChainRule, has_failing, min_confidence
+from ...checks.base import Confidence, Finding, Severity
+from ..base import Chain, ChainRule, group_by_anchor, has_failing, min_confidence
 
 RULE = ChainRule(
     id="AC-020",
@@ -75,18 +80,8 @@ RULE = ChainRule(
 )
 
 
-def match(findings: list[Finding]) -> list[Chain]:
-    if not has_failing(findings, "TKN-004"):
-        return []
-    if not has_failing(findings, "K8S-020"):
-        return []
-    triggers = [
-        f for f in findings
-        if (not f.passed) and f.check_id in {"TKN-004", "K8S-020"}
-    ]
-    resources = sorted({f.resource for f in triggers})
-    narrative = (
-        "In this scan:\n"
+def _base_narrative() -> str:
+    return (
         "  1. A Tekton Task mounts a hostPath volume or shares a "
         "host namespace (TKN-004). Every step in that Task, and "
         "every TaskRun that references it, runs with read/write "
@@ -99,26 +94,104 @@ def match(findings: list[Finding]) -> list[Chain]:
         "as a member of that subject, or anyone with a token from "
         "a default ServiceAccount the binding covers, has "
         "unrestricted API access.\n"
-        "  3. An attacker who lands a malicious Task spec (a "
-        "compromised Git push, a fork PR that triggers a "
-        "PipelineRun, a poisoned ClusterTask) reaches both legs at "
-        "once: node-level filesystem access for persistence "
-        "(static-pod backdoor, runtime-socket access) plus cluster-"
-        "wide API authority for credential harvesting and lateral "
-        "movement. Either fix breaks the chain."
     )
-    return [Chain(
-        chain_id=RULE.id,
-        title=RULE.title,
-        severity=RULE.severity,
-        confidence=min_confidence(triggers),
-        summary=RULE.summary,
-        narrative=narrative,
-        mitre_attack=list(RULE.mitre_attack),
-        kill_chain_phase=RULE.kill_chain_phase,
-        triggering_check_ids=["TKN-004", "K8S-020"],
-        triggering_findings=triggers,
-        resources=resources,
-        references=list(RULE.references),
-        recommendation=RULE.recommendation,
-    )]
+
+
+def match(findings: list[Finding]) -> list[Chain]:
+    # ResourceAnchor phase 1: confirmed pairing when the Task pins
+    # serviceAccountName to a ServiceAccount that's also a subject
+    # of a cluster-admin binding. Only Tasks with an explicit
+    # podTemplate.serviceAccountName carry anchors (Tekton's runtime
+    # SA is normally TaskRun-determined); unanchored Tasks fall
+    # through to co-occurrence.
+    by_sa = group_by_anchor(findings, ["TKN-004", "K8S-020"], "k8s_sa")
+    out: list[Chain] = []
+    matched_findings: set[int] = set()
+    for sa_identity, ck_map in by_sa.items():
+        tkn004 = ck_map["TKN-004"]
+        k8s020 = ck_map["K8S-020"]
+        triggers = [tkn004, k8s020]
+        matched_findings.add(id(tkn004))
+        matched_findings.add(id(k8s020))
+        narrative = (
+            f"For ServiceAccount `{sa_identity}`:\n"
+            + _base_narrative()
+            + f"  3. Reachability confirmed: the Tekton Task pins "
+            f"``podTemplate.serviceAccountName`` to `{sa_identity}`, "
+            f"which is also a subject of a cluster-admin "
+            f"ClusterRoleBinding. The TaskRun's pod runs with "
+            f"node-filesystem access AND cluster-admin API authority "
+            f"in one execution context."
+        )
+        out.append(Chain(
+            chain_id=RULE.id,
+            title=RULE.title,
+            severity=RULE.severity,
+            confidence=Confidence.HIGH,
+            summary=RULE.summary,
+            narrative=narrative,
+            mitre_attack=list(RULE.mitre_attack),
+            kill_chain_phase=RULE.kill_chain_phase,
+            triggering_check_ids=["TKN-004", "K8S-020"],
+            triggering_findings=triggers,
+            resources=[sa_identity],
+            references=list(RULE.references),
+            recommendation=RULE.recommendation,
+            confirmed_reachable=True,
+            reachability_note=(
+                f"Tekton Task pins SA `{sa_identity}`, a cluster-admin "
+                f"binding subject"
+            ),
+        ))
+
+    # Co-occurrence fallback: TKN-004's Task didn't pin an SA (the
+    # common case — Tekton TaskRuns choose the SA), or the binding's
+    # subject SA differs from the Task's pin. The original "any
+    # hostPath Task + any cluster-admin binding" signal still
+    # applies because an attacker who lands a malicious Task spec
+    # gets node escape regardless of the runtime SA, and credentials
+    # for cluster-admin are sitting on the node in other pods'
+    # projected tokens.
+    if has_failing(findings, "TKN-004") and has_failing(findings, "K8S-020"):
+        unmatched = [
+            f for f in findings
+            if (not f.passed)
+            and f.check_id in {"TKN-004", "K8S-020"}
+            and id(f) not in matched_findings
+        ]
+        unmatched_legs = {f.check_id for f in unmatched}
+        if "TKN-004" in unmatched_legs and "K8S-020" in unmatched_legs:
+            triggers = unmatched
+            resources = sorted({f.resource for f in triggers})
+            narrative = (
+                "In this scan:\n"
+                + _base_narrative()
+                + "  3. Reachability unconfirmed: the Tekton Task "
+                "doesn't pin a podTemplate.serviceAccountName (or "
+                "its pin differs from the cluster-admin binding's "
+                "subject). The runtime SA comes from the TaskRun, "
+                "which isn't visible in the manifest set. An attacker "
+                "who lands a malicious Task spec still escapes the "
+                "node, and node escape opens alternative paths to "
+                "cluster-admin credentials regardless of the TaskRun's "
+                "configured SA, so the chain remains a co-occurrence "
+                "signal worth surfacing."
+            )
+            out.append(Chain(
+                chain_id=RULE.id,
+                title=RULE.title,
+                severity=RULE.severity,
+                confidence=min_confidence(triggers),
+                summary=RULE.summary,
+                narrative=narrative,
+                mitre_attack=list(RULE.mitre_attack),
+                kill_chain_phase=RULE.kill_chain_phase,
+                triggering_check_ids=["TKN-004", "K8S-020"],
+                triggering_findings=triggers,
+                resources=resources,
+                references=list(RULE.references),
+                recommendation=RULE.recommendation,
+                confirmed_reachable=False,
+                reachability_note="",
+            ))
+    return out

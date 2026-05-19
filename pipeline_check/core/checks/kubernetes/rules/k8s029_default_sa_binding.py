@@ -3,7 +3,8 @@ from __future__ import annotations
 
 from typing import Any
 
-from ...base import Finding, Severity
+from ..._primitives.anchors import k8s_sa
+from ...base import Finding, ResourceAnchor, Severity
 from ...rule import Rule
 from ..base import KubernetesContext
 
@@ -60,6 +61,13 @@ def _subject_targets_default(s: Any) -> tuple[bool, str]:
 
 def check(ctx: KubernetesContext) -> Finding:
     offenders: list[str] = []
+    # ResourceAnchor phase 1: emit one k8s_sa anchor per
+    # ``(namespace, default)`` pair this binding grants to. AC-021
+    # intersects against ARGO-003's workflow-SA anchors (also
+    # ``(namespace, default)`` for workflows that omit
+    # serviceAccountName), confirming the Argo workflow runs in a
+    # namespace whose default SA actually has a binding.
+    anchor_set: dict[str, ResourceAnchor] = {}
     for m in ctx.manifests:
         if m.kind not in ("RoleBinding", "ClusterRoleBinding"):
             continue
@@ -81,6 +89,9 @@ def check(ctx: KubernetesContext) -> Finding:
             offenders.append(
                 f"{m.kind}/{m.name} → ServiceAccount/default@{ns_disp}"
             )
+            built = k8s_sa(ns if ns else None, "default")
+            if built is not None:
+                anchor_set[built.identity] = built
     passed = not offenders
     desc = (
         "No RoleBinding grants permissions to a default ServiceAccount."
@@ -94,4 +105,5 @@ def check(ctx: KubernetesContext) -> Finding:
         resource="kubernetes/manifests",
         description=desc,
         recommendation=RULE.recommendation, passed=passed,
+        resource_anchors=tuple(anchor_set.values()),
     )

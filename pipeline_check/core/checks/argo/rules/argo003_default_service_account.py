@@ -3,7 +3,8 @@ from __future__ import annotations
 
 from typing import Any
 
-from ...base import Finding, Severity
+from ..._primitives.anchors import k8s_sa
+from ...base import Finding, ResourceAnchor, Severity
 from ...rule import Rule
 from ..base import ArgoContext, workflow_spec
 
@@ -46,6 +47,14 @@ def _missing_or_default(spec: dict[str, Any]) -> bool:
 def check(ctx: ArgoContext) -> Finding:
     offenders: list[str] = []
     examined = 0
+    # ResourceAnchor phase 1: emit one k8s_sa anchor per
+    # ``(namespace, default)`` pair the offending workflow runs as.
+    # AC-021 intersects this with K8S-029's default-SA-binding anchors
+    # to confirm the workflow's default SA actually has a binding in
+    # the same namespace. Order-preserving dict de-dupes the
+    # (namespace, default) pair when multiple workflows in one
+    # namespace all omit serviceAccountName.
+    anchor_set: dict[str, ResourceAnchor] = {}
     for doc in ctx.docs:
         if doc.kind not in ("Workflow", "CronWorkflow"):
             continue
@@ -53,6 +62,9 @@ def check(ctx: ArgoContext) -> Finding:
         spec = workflow_spec(doc)
         if _missing_or_default(spec):
             offenders.append(f"{doc.kind}/{doc.name}")
+            built = k8s_sa(doc.namespace or None, "default")
+            if built is not None:
+                anchor_set[built.identity] = built
     if examined == 0:
         return Finding(
             check_id=RULE.id, title=RULE.title, severity=RULE.severity,
@@ -73,4 +85,5 @@ def check(ctx: ArgoContext) -> Finding:
         check_id=RULE.id, title=RULE.title, severity=RULE.severity,
         resource="argo", description=desc,
         recommendation=RULE.recommendation, passed=passed,
+        resource_anchors=tuple(anchor_set.values()),
     )

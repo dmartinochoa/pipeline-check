@@ -3,7 +3,8 @@ from __future__ import annotations
 
 from typing import Any
 
-from ...base import Finding, Severity
+from ..._primitives.anchors import k8s_sa
+from ...base import Finding, ResourceAnchor, Severity
 from ...rule import Rule
 from ..base import TektonContext
 
@@ -74,6 +75,15 @@ def _scan_pod_template(spec: dict[str, Any]) -> list[str]:
 def check(ctx: TektonContext) -> Finding:
     offenders: list[str] = []
     examined = 0
+    # ResourceAnchor phase 1: emit one k8s_sa anchor only when the
+    # Task pins ``spec.podTemplate.serviceAccountName`` explicitly.
+    # Tekton's runtime SA is normally chosen by the TaskRun /
+    # PipelineRun (not visible in the Task manifest), so the
+    # conservative call when no explicit pin exists is to emit
+    # nothing rather than guess ``default`` and over-confirm AC-020.
+    # The chain then falls back to scan-level co-occurrence, which
+    # is still useful evidence.
+    anchor_set: dict[str, ResourceAnchor] = {}
     for doc in ctx.docs:
         if doc.kind not in ("Task", "ClusterTask", "Pipeline"):
             continue
@@ -88,6 +98,14 @@ def check(ctx: TektonContext) -> Finding:
         )
         for h in hits:
             offenders.append(f"{doc.kind}/{doc.name}: {h}")
+        if hits:
+            pt = spec.get("podTemplate")
+            if isinstance(pt, dict):
+                sa = pt.get("serviceAccountName")
+                if isinstance(sa, str) and sa.strip():
+                    built = k8s_sa(doc.namespace or None, sa.strip())
+                    if built is not None:
+                        anchor_set[built.identity] = built
     if examined == 0:
         return Finding(
             check_id=RULE.id, title=RULE.title, severity=RULE.severity,
@@ -107,4 +125,5 @@ def check(ctx: TektonContext) -> Finding:
         check_id=RULE.id, title=RULE.title, severity=RULE.severity,
         resource="tekton", description=desc,
         recommendation=RULE.recommendation, passed=passed,
+        resource_anchors=tuple(anchor_set.values()),
     )

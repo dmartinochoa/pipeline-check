@@ -863,6 +863,49 @@ class TestChainAC011:
         ])
         assert not any(c.chain_id == "AC-011" for c in out)
 
+    def test_reachability_confirmed_when_pod_sa_matches_binding_subject(self):
+        # The hostPath pod runs as the same SA the cluster-admin
+        # binding targets — one execution context for node escape +
+        # API takeover.
+        from pipeline_check.core.checks.base import ResourceAnchor
+        sa = ResourceAnchor(kind="k8s_sa", identity="prod/build-runner")
+        out = chains_pkg.evaluate([
+            _f("K8S-013", self.K8S_RESOURCE, resource_anchors=(sa,)),
+            _f(
+                "K8S-020", self.K8S_RESOURCE,
+                resource_anchors=(sa,),
+                confidence=Confidence.MEDIUM,
+            ),
+        ])
+        ac11 = [c for c in out if c.chain_id == "AC-011"]
+        assert len(ac11) == 1
+        chain = ac11[0]
+        assert chain.confirmed_reachable is True
+        assert "prod/build-runner" in chain.reachability_note
+        assert chain.resources == ["prod/build-runner"]
+        assert chain.confidence is Confidence.HIGH
+
+    def test_falls_back_when_pod_sa_differs_from_binding_subject(self):
+        # hostPath pod runs as ``prod/app``; cluster-admin binding
+        # targets ``ops/admin``. Disjoint anchors → fallback.
+        from pipeline_check.core.checks.base import ResourceAnchor
+        a = ResourceAnchor(kind="k8s_sa", identity="prod/app")
+        b = ResourceAnchor(kind="k8s_sa", identity="ops/admin")
+        out = chains_pkg.evaluate([
+            _f("K8S-013", self.K8S_RESOURCE, resource_anchors=(a,)),
+            _f(
+                "K8S-020", self.K8S_RESOURCE,
+                resource_anchors=(b,),
+                confidence=Confidence.MEDIUM,
+            ),
+        ])
+        ac11 = [c for c in out if c.chain_id == "AC-011"]
+        assert len(ac11) == 1
+        chain = ac11[0]
+        assert chain.confirmed_reachable is False
+        assert chain.reachability_note == ""
+        assert chain.confidence is Confidence.MEDIUM
+
 
 class TestChainAC012:
     """AC-012 — Reusable Workflow Secret Exfiltration."""
@@ -1659,6 +1702,43 @@ class TestChainAC020:
         assert set(chain.resources) == {self.TASK, self.BINDING}
         assert len(chain.resources) == len(set(chain.resources))
 
+    def test_reachability_confirmed_when_task_sa_matches_binding_subject(self):
+        # Task pins podTemplate.serviceAccountName to the same SA the
+        # cluster-admin binding targets.
+        from pipeline_check.core.checks.base import ResourceAnchor
+        sa = ResourceAnchor(kind="k8s_sa", identity="build/build-runner")
+        out = chains_pkg.evaluate([
+            _f("TKN-004", self.TASK, resource_anchors=(sa,)),
+            _f(
+                "K8S-020", self.BINDING,
+                resource_anchors=(sa,),
+                confidence=Confidence.MEDIUM,
+            ),
+        ])
+        ac20 = [c for c in out if c.chain_id == "AC-020"]
+        assert len(ac20) == 1
+        chain = ac20[0]
+        assert chain.confirmed_reachable is True
+        assert "build/build-runner" in chain.reachability_note
+        assert chain.confidence is Confidence.HIGH
+
+    def test_falls_back_when_task_has_no_pinned_sa(self):
+        # TKN-004 emits no anchors when the Task doesn't pin its SA
+        # (the common case). Co-occurrence fallback applies.
+        out = chains_pkg.evaluate([
+            _f("TKN-004", self.TASK),  # no resource_anchors
+            _f(
+                "K8S-020", self.BINDING,
+                confidence=Confidence.MEDIUM,
+            ),
+        ])
+        ac20 = [c for c in out if c.chain_id == "AC-020"]
+        assert len(ac20) == 1
+        chain = ac20[0]
+        assert chain.confirmed_reachable is False
+        assert chain.reachability_note == ""
+        assert chain.confidence is Confidence.MEDIUM
+
 
 class TestChainAC021:
     """AC-021 — Argo default-SA workflow lands on a default-SA RoleBinding."""
@@ -1708,6 +1788,47 @@ class TestChainAC021:
         ])
         chain = next(c for c in out if c.chain_id == "AC-021")
         assert chain.confidence is Confidence.LOW
+
+    def test_reachability_confirmed_when_workflow_ns_matches_binding_ns(self):
+        # Workflow runs as ``prod/default`` and the binding grants to
+        # ``prod/default`` — single-namespace single-step privesc.
+        from pipeline_check.core.checks.base import ResourceAnchor
+        sa = ResourceAnchor(kind="k8s_sa", identity="prod/default")
+        out = chains_pkg.evaluate([
+            _f("ARGO-003", self.WF, resource_anchors=(sa,)),
+            _f(
+                "K8S-029", self.BINDING,
+                resource_anchors=(sa,),
+                confidence=Confidence.MEDIUM,
+            ),
+        ])
+        ac21 = [c for c in out if c.chain_id == "AC-021"]
+        assert len(ac21) == 1
+        chain = ac21[0]
+        assert chain.confirmed_reachable is True
+        assert "prod/default" in chain.reachability_note
+        assert chain.confidence is Confidence.HIGH
+
+    def test_falls_back_when_workflow_and_binding_in_different_namespaces(self):
+        # ARGO-003 in ``prod``, K8S-029 in ``ops`` — chain remains a
+        # hygiene prompt at the lower confidence.
+        from pipeline_check.core.checks.base import ResourceAnchor
+        a = ResourceAnchor(kind="k8s_sa", identity="prod/default")
+        b = ResourceAnchor(kind="k8s_sa", identity="ops/default")
+        out = chains_pkg.evaluate([
+            _f("ARGO-003", self.WF, resource_anchors=(a,)),
+            _f(
+                "K8S-029", self.BINDING,
+                resource_anchors=(b,),
+                confidence=Confidence.MEDIUM,
+            ),
+        ])
+        ac21 = [c for c in out if c.chain_id == "AC-021"]
+        assert len(ac21) == 1
+        chain = ac21[0]
+        assert chain.confirmed_reachable is False
+        assert chain.reachability_note == ""
+        assert chain.confidence is Confidence.MEDIUM
 
 
 class TestChainAC022:
