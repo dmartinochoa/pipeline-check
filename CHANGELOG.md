@@ -12,6 +12,16 @@ release commit collapses this section into `## [X.Y.Z] - <date>`.
 
 ### Added
 
+- **CONTRIBUTING.md.** Contributor onboarding page covering dev
+  setup (``make install`` vs. ``pip install -e ".[dev]"``), the
+  test / lint / strict-mypy commands CI runs, the provider- and
+  standards-doc regeneration contract, the American-English rule,
+  the rule-addition workflow, and the PR / commit / release
+  conventions that previously only lived in ``CLAUDE.md``. Points
+  back at ``CLAUDE.md`` for the exhaustive English-variant pair
+  table and the maintainer-only release steps so the two files
+  don't drift.
+
 - **PYPI-008 cooldown gate + pypi registry fetcher.** Closes the
   PyPI half of the cooldown-gate trio (NPM-008 just landed; MVN-
   008 deferred). Same template: opt-in via ``--resolve-remote``;
