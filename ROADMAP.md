@@ -338,6 +338,236 @@ CRITICAL rule should ship one, and existing rules without an
 exploit example should be backfilled opportunistically. Not a
 discrete milestone, just a posture.
 
+### Internal: rule-infrastructure consolidation
+
+Code-quality findings from a 2026-05-20 sweep across the engine,
+parsers, and rule pack. Not user-facing, but compounds: every
+collapse here makes the next provider or rule cheaper to add.
+Landing order is open; each item stands alone.
+
+- **Blob-rule factory to collapse the per-provider clone clusters.**
+  Several rule families exist as near-verbatim wrappers around a
+  shared scanner: `dep_update` (5 providers), `tls_bypass` (7),
+  `pkg_insecure` + `docker_insecure` (6 each), `malicious_activity`
+  (6), plus the "No artifact production detected, check not
+  applicable" string repeated in 56 places. A
+  `_primitives/blob_rule.py` factory taking `(scanner, kind,
+  prose_suffix)` collapses each cluster into a 3-line module.
+  Removes roughly 300 lines of churn per new "applies to every CI
+  provider" rule the project ships in the future.
+- **Lift provider context loaders + base classes.** The `from_path`
+  body (root check, glob, `read_text`, `safe_load_yaml_lines`,
+  skip / warning bookkeeping) repeats near-verbatim in 11
+  `<provider>/base.py` files (github, gitlab, circleci, bitbucket,
+  azure, cloudbuild, buildkite, drone, tekton, kubernetes, jenkins).
+  The 4-line `XxxBaseCheck.__init__` boilerplate that re-annotates
+  `self.ctx` repeats in the same set. Hoist a `load_yaml_files(root,
+  filenames, multi_doc)` helper next to `_yaml_lines.py` and make
+  `BaseCheck` generic on its context type so providers declare
+  `class FooBaseCheck(BaseCheck[FooContext])`. Knocks the
+  per-provider boilerplate down to a few dozen lines.
+- **Legacy `TLS_BYPASS_RE` / `CURL_PIPE_RE` migration.** Most
+  providers moved to `_primitives/tls_bypass.py` (~20 patterns)
+  and `_primitives/remote_script_exec.py`. Holdouts (`bk008`,
+  `dr006`, `argo008`, `tkn008`, `bk004`) still pull from
+  `checks/base.py` and so miss helm / kubectl / ssh / docker /
+  maven / gradle bypasses every other provider catches. Migrate
+  the holdouts, delete the legacy constants from `base.py`. Real
+  coverage gap, small diff.
+- **Triplicated dependency-supply-chain plumbing.** `npm/`, `pypi/`,
+  and `maven/` each ship their own ~280-line `registry_fetcher.py`
+  and their own `CompromisedPackage` dataclass + lookup helpers.
+  The only ecosystem-specific bits are `BASE_URL`, the name
+  normalizer, and `_parse_publish_times`. A generic
+  `_primitives/registry_fetcher.py` parameterized on `url_builder
+  + parser + normalizer` reduces three near-clones to three small
+  adapters. Same shape for the compromised-package tables. This
+  one earns its keep before adding a fourth ecosystem (Go modules,
+  RubyGems, etc.).
+- **Autofix roundtrip safety.** `core/autofix/_impl.py` rewrites
+  YAML via line-oriented regexes. `_fix_gha008` misfires on flow
+  mappings, block scalars, and already-quoted values; `_fix_gha015`
+  leaks state across multi-doc streams. Wrap every generated patch
+  in a `yaml.safe_load(after)` parse-check and bail returning
+  `None` when the result no longer parses or its top-level
+  structure changed. Cheap safety net for a feature users run
+  unattended.
+- **Autofix re-declares provider keyword sets.** `autofix/_impl.py`
+  has its own copy of the GitLab top-level keywords (and the same
+  pattern for cloudbuild) that already live in
+  `gitlab/base.py:_TOPLEVEL_KEYWORDS`. Import the canonical set so
+  the two can't drift the next time GitLab adds a top-level key.
+- **CLI exit-code convergence.** `cli.py` mixes `sys.exit(3)`,
+  `ctx.exit(3)`, and `sys.exit(_eager_print_...())` across paths
+  with the same "info printed, exit cleanly" intent. Programmatic
+  callers get `SystemExit` from some paths and click-controlled
+  exit from others. Route every early exit through `ctx.exit()` /
+  `raise click.exceptions.Exit()`. Also move
+  `_tolerate_unencodable_stdio()` out of import-time side effects
+  into `main()` so MCP / LSP callers don't inherit stream
+  reconfiguration.
+- **Chain-engine and CLI swallowing exceptions silently.**
+  `chains/engine.py:73-79` plus several spots in `cli.py` do
+  `except Exception: continue` with no logging, so a broken chain
+  rule never surfaces. Log via `logging` at WARNING. Chains stay
+  additive (don't fail the scan), but leave a breadcrumb.
+- **Hot-path `looks_like_example` quadratic slice.**
+  `_context.py:81-87` runs `re.finditer(..., blob[:line_start])`
+  for every `_secrets` / `_malicious` match. For 50 matches in a
+  5 KB blob that's 50 full-prefix slices + 50 full-prefix regex
+  scans. Cache a sorted `(line_start, indent, name)` index keyed
+  on `id(blob)` (the same trick `blob_lower` already uses) and
+  bisect.
+- **Smaller cleanups bundled with the above.** Rule-metadata copy
+  boilerplate (the 4-line `finding.cwe = list(rule.cwe); ...`
+  block in ~20 orchestrators; `npm/pipelines.py` already extracted
+  a private `_apply_rule_metadata` worth promoting). Triplicated
+  `_wants_ctx_kwarg` in `npm` / `pypi` / `maven` `pipelines.py`.
+  `SHA_RE` (`^[0-9a-f]{40}$`) compiled in 6+ rule files; export
+  one from `_primitives/`. `custom/evaluator.py:460` bare
+  `except Exception:` while compiling user JSONPath silently
+  setting `path=None`. `custom/loader.py:116` letting `OSError` /
+  `UnicodeDecodeError` propagate raw while every provider wraps
+  these into `warnings.append(...)`. Standards registration is a
+  hand-maintained 15-item list when `chains/engine.py:_discover()`
+  already demonstrates the `pkgutil.iter_modules` pattern; copy
+  it over `standards/data/`.
+
+### Internal: test-suite tightening
+
+Findings from a 2026-05-20 audit of the 6,700-test pytest suite
+(91.4% line coverage, full sweep clean on `dev`). The suite is
+healthy; these are tightening opportunities, not fires. Each item
+stands alone.
+
+- **CLI tests over-mock the Scanner.** `tests/test_cli.py:45-77`
+  (`TestExitCodes`) and `tests/test_cli_branches.py:108-204`
+  `patch("pipeline_check.cli.Scanner")` and return canned
+  findings, so they exercise click wiring but skip every line of
+  loader / rule / baseline / score / gate code. The unmocked
+  `TestAutoDetect` (`test_cli.py:179-225`) and the disk-fixture
+  sweep in `test_workflow_fixtures.py` cover the real path, but
+  CLI-to-Scanner argument-marshalling regressions (the
+  `--output-file` shape, `--baseline`, `--diff-base`) can only
+  be caught by an unmocked CLI test. Add one end-to-end CLI test
+  per flag-marshalling surface and let the mocked tests focus on
+  exit-code wiring as advertised.
+- **MCP / Helm test-skip excepts are too broad.**
+  `tests/test_mcp_server.py:31-37` does
+  `try: import mcp.types except Exception: _HAS_MCP = False`, so
+  a real `AttributeError` / `TypeError` raised by
+  `pipeline_check.mcp_server.server` at import silently skips
+  every `TestServerRegistration` test. Same shape in
+  `tests/helm/test_helm_provider.py:187-190` where
+  `except HelmRenderError` converts every render failure into a
+  `pytest.skip`. Narrow both to the specific signals (`ImportError`
+  / `ModuleNotFoundError` for MCP; `OSError`, `FileNotFoundError`,
+  `TimeoutExpired` for Helm, or only when `exc.reason == "helm
+  exit"`) so a scanner-side bug can no longer hide behind a
+  green-skip.
+- **Subprocess-based stability tests are order-sensitive.**
+  `tests/test_stability_contract.py::test_exit_2_on_*` and
+  `::test_exit_0_on_clean_scan` `subprocess.run([sys.executable,
+  "-m", "pipeline_check", ...])` against a `tmp_path` cwd. They
+  pass in isolation and as a class but red intermittently when
+  interleaved into the full suite, which points at test pollution
+  leaking into the spawned process (a sibling test `os.chdir`ing
+  without restoring, or a `PIPELINE_CHECK_*` env var sticking).
+  Audit for unrestored `os.chdir` / `monkeypatch.delenv` paths and
+  add a session-scoped guard that asserts cwd / env haven't drifted
+  between tests.
+- **Clock-sensitive GHA-042 reputation test.**
+  `tests/github/test_action_reputation.py:324-358` subtracts an
+  extra second from "now" to dodge sub-second drift between the
+  test's `datetime.now` and the rule's. Author calls out the risk
+  in the docstring. Inject an `_now()` indirection into
+  `pipeline_check.core.checks.github.rules.gha042_young_action_repo`
+  and freeze it in the test (one-line `monkeypatch.setattr`). Same
+  shape exists across the cooldown / key-age tests in
+  `tests/pypi/test_pypi008.py`, `tests/maven/test_mvn008.py`,
+  `tests/npm/test_npm008.py`, `tests/aws/rules/test_iam007_key_age.py`,
+  and `test_workflow_fixtures.py:85-110`, none flaky today but all
+  ride the same wall-clock fault line.
+- **XPC chain test boilerplate duplicates nine times.**
+  `tests/test_chain_xpc001.py` through `tests/test_chain_xpc009.py`
+  each carry their own `_failing` / `_passing` factories and the
+  same three mechanical tests (engine dispatch, one-chain-per-combo,
+  confidence inheritance). The only per-file variance is the
+  resource pair. Factor the boilerplate into
+  `tests/_chain_helpers.py` and parameterize the mechanical tests
+  so adding chain ten doesn't carry forward 150 lines of clone.
+  The chain-specific `test_fires_on_combined_*` cases stay per-file.
+- **Standards-doc drift test is partially circular.**
+  `tests/test_attack_chains_doc.py` and
+  `tests/test_generated_docs_in_sync.py` invoke the generator
+  and diff its output against the on-disk doc, so a bug inside
+  the generator matches both sides and the drift test stays green.
+  `test_rule_framework.py::test_generated_doc_references_every_rule`
+  already mitigates this for provider docs by asserting each
+  `rule.id` / `rule.title` appears in the rendered output
+  independently of the generator. Add the equivalent guard for
+  `gen_standards_docs.py`: assert each control id from
+  `pipeline_check.core.standards.registry` appears verbatim in the
+  rendered standards page, without re-running the generator.
+- **IAM-003 has no real-shape boto3 coverage.**
+  `tests/integration/test_localstack.py:105-110` documents that
+  IAM-003 can't be asserted on LocalStack because pagination
+  doesn't echo `PermissionsBoundary` back, and the mocked
+  `tests/aws/test_iam.py::TestIAM003*` uses synthetic dicts. The
+  rule has zero coverage against a real boto3 response shape.
+  Capture one real `list_roles` paginator response (sanitized) into
+  a fixture and replay it via `botocore.stub.Stubber`. Same gap
+  shape may exist for other IAM rules; check pagination-dependent
+  fields (boundary, attached policies, instance profiles).
+- **Branch coverage for argo004 and k8s017.**
+  `pipeline_check/core/checks/argo/rules/argo004_host_namespace.py`
+  (64%) and
+  `pipeline_check/core/checks/kubernetes/rules/k8s017_env_credential.py`
+  (73%) carry the lowest non-deliberate coverage of any single rule
+  file. Each is ~20 lines of unhit branches. Add one positive +
+  negative test per missed branch.
+
+### Internal: dogfood code-scanning cleanup
+
+Findings from a 2026-05-20 review of the repo's GitHub Code
+Scanning queue. Pipeline-Check's own rules and the OpenSSF
+Scorecard upload both flag real hardening gaps in the project's
+own workflows. Each item stands alone.
+
+- **Pin the SLSA generator to a commit SHA** (`release.yml:167`,
+  GHA-025). The reusable workflow currently references
+  `slsa-framework/slsa-github-generator/.../v2.1.0` (tag). Switch
+  to the matching `@<sha>  # v2.1.0` form so the scanner that
+  fires this rule on user repos isn't itself in violation.
+- **Switch `pip install` to `--require-hashes`** in `release.yml`
+  and `docs.yml` (GHA-060). These are the two project workflows
+  still tripping the rule pipeline-check ships.
+- **Tighten elevated top-level GITHUB_TOKEN scopes** on
+  `dogfood.yml`, `docker-publish.yml`, and `codeql.yml` (Scorecard
+  `TokenPermissionsID`). Push `security-events: write` /
+  `packages: write` from the workflow top-level down to the single
+  job that needs them so the rest of the workflow runs with
+  `contents: read`.
+- **Add an OIDC step to `scorecard.yml`** or drop its
+  `id-token: write` (GHA-004). The workflow declares the
+  permission but has no auth step that consumes it.
+- **Mark fixture Dockerfiles / workflows as Scorecard-exempt.**
+  Roughly 15 `PinnedDependenciesID` errors hit
+  `tests/fixtures/workflows/**` and `bench/cases/**` files that
+  exist because they're insecure (they're negative test cases
+  for the project's own rules). Either dismiss via the API with
+  reason "used as a negative test case", or add path excludes to
+  `.github/workflows/scorecard.yml`.
+- **`master` branch protection** (Scorecard `BranchProtectionID`).
+  Real gaps: no required reviewers, no required status checks,
+  allow-deletion enabled. Tightening this also lifts the
+  Scorecard score on the next run.
+
+Out of scope for this cleanup: the Scorecard zero-score alerts
+(`FuzzingID`, `CIIBestPracticesID`, `MaintainedID`,
+`CodeReviewID`) are policy noise on a young / solo-maintainer
+repo, not security gaps. Dismiss with reason rather than chase.
+
 ### Lower priority
 
 - **GitHub App.** PR-comment integration with diff-level finding
