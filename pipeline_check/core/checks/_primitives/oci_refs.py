@@ -31,7 +31,8 @@ that silently misses a chain intersection.
 from __future__ import annotations
 
 import re
-from typing import Any, Iterable
+from collections.abc import Iterable
+from typing import Any
 
 from ..base import ResourceAnchor, walk_strings
 from .anchors import oci_image
