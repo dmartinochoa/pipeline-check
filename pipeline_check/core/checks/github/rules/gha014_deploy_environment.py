@@ -6,7 +6,7 @@ from typing import Any
 
 from ..._primitives.deploy_names import DEPLOY_RE as _DEPLOY_RE
 from ..._primitives.local_mock import env_targets_local_mock
-from ..._primitives.oci_refs import extract_image_anchors_from_workflow
+from ..._primitives.oci_refs import extract_image_anchors_from_jobs
 from ..._yaml_lines import line_of as _line_of
 from ...base import Finding, Location, Severity
 from ...rule import Rule
@@ -92,6 +92,7 @@ def _job_has_deploy_commands(job: dict[str, Any]) -> bool:
 
 def check(path: str, doc: dict[str, Any]) -> Finding:
     ungated: list[str] = []
+    ungated_jobs: list[dict[str, Any]] = []
     locations: list[Location] = []
     for job_id, job in iter_jobs(doc):
         is_deploy = bool(_DEPLOY_RE.search(job_id))
@@ -101,6 +102,7 @@ def check(path: str, doc: dict[str, Any]) -> Finding:
             continue
         if not job.get("environment"):
             ungated.append(job_id)
+            ungated_jobs.append(job)
             # Anchor on the offending job entry so the user lands on
             # the line where ``environment:`` should be added.
             line = _line_of(job)
@@ -117,15 +119,14 @@ def check(path: str, doc: dict[str, Any]) -> Finding:
         f"cannot be gated by required reviewers or branch policies."
     )
     # ResourceAnchor phase 1: emit oci_image anchors for every image
-    # this workflow's deploy steps reference (``kubectl set image``,
+    # the ungated deploy jobs reference (``kubectl set image``,
     # ``helm upgrade --set image=``, ``docker push``, etc. in any
-    # offending job's ``run:`` block). AC-005 intersects these with
-    # GHA-006's unsigned-build anchors on the canonical ``oci_image``
-    # kind, confirming the deploy that lacks an environment gate IS
-    # the same image the unsigned build ships. Only emit on a failing
-    # finding.
+    # ungated job's ``run:`` block). Scoping to the ungated jobs
+    # only — a gated deploy job in the same workflow shouldn't lend
+    # its image to AC-005's confirmed-reachability claim about an
+    # ungated leg. Only emit on a failing finding.
     anchors = (
-        extract_image_anchors_from_workflow(doc) if not passed else ()
+        extract_image_anchors_from_jobs(ungated_jobs) if not passed else ()
     )
     return Finding(
         check_id=RULE.id, title=RULE.title, severity=RULE.severity,

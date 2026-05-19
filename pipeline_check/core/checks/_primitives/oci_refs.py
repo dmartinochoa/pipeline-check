@@ -105,11 +105,41 @@ _DEPLOY_CMD_RE = re.compile(
     re.IGNORECASE,
 )
 
+# Producer-only verbs: commands that BUILD or PUBLISH an image
+# (the artifact this build-side leg is responsible for). Used by
+# signing / provenance checks so an anchor doesn't leak from a
+# deploy-side mention (``kubectl set image`` / ``helm upgrade``)
+# that happens to live in the same pipeline file.
+_PUBLISH_CMD_RE = re.compile(
+    r"\b(?:"
+    r"docker\s+(?:push|tag|build|buildx\s+build)"
+    r"|buildah\s+push"
+    r"|crane\s+push"
+    r"|skopeo\s+copy"
+    r")\b[^\n]*",
+    re.IGNORECASE,
+)
+
 
 def _candidates_from_text(text: str) -> list[str]:
     """Pull image-ref-shaped tokens out of *text* — coarse filter."""
     out: list[str] = []
     for line_match in _DEPLOY_CMD_RE.finditer(text):
+        line = line_match.group(0)
+        for m in _IMAGE_TOKEN_RE.finditer(line):
+            out.append(m.group(1))
+    return out
+
+
+def _publish_candidates_from_text(text: str) -> list[str]:
+    """Producer-only counterpart of :func:`_candidates_from_text`.
+
+    Limits the verb prefix to commands that BUILD or PUSH an image,
+    so a deploy-side mention in the same pipeline doesn't get
+    misattributed to a build-side signing finding.
+    """
+    out: list[str] = []
+    for line_match in _PUBLISH_CMD_RE.finditer(text):
         line = line_match.group(0)
         for m in _IMAGE_TOKEN_RE.finditer(line):
             out.append(m.group(1))
@@ -163,6 +193,11 @@ def extract_image_anchors_from_strings(
     Used by leg rules whose context isn't a GHA workflow dict and
     so can't use the structured extractor (Cloud Build, Helm
     chart, GitLab CI, etc.). Same canonicalization pipeline.
+
+    Pass a sub-tree (a single job dict, a single step dict) to
+    scope extraction — the walker recurses into any nested
+    container, so the same call works on a whole document, a job,
+    or a step.
     """
     seen: dict[str, ResourceAnchor] = {}
     for s in walk_strings(doc):
@@ -173,7 +208,58 @@ def extract_image_anchors_from_strings(
     return tuple(seen.values())
 
 
+def extract_publisher_anchors_from_strings(
+    doc: Any,
+) -> tuple[ResourceAnchor, ...]:
+    """Producer-only counterpart of
+    :func:`extract_image_anchors_from_strings`.
+
+    Used by build-side signing / provenance checks (GCB-009 and
+    relatives) where attaching anchors from a deploy-side mention
+    (``kubectl set image``, ``helm upgrade``, ``gcloud run deploy``)
+    would let AC-005 match unrelated runtime images as if they
+    were the unsigned build output.
+    """
+    seen: dict[str, ResourceAnchor] = {}
+    for s in walk_strings(doc):
+        for raw in _publish_candidates_from_text(s):
+            built = oci_image(raw)
+            if built is not None:
+                seen[built.identity] = built
+    return tuple(seen.values())
+
+
+def extract_image_anchors_from_jobs(
+    jobs: Iterable[dict[str, Any]],
+) -> tuple[ResourceAnchor, ...]:
+    """Walk an iterable of GHA-style job dicts and return canonical
+    ``oci_image`` anchors.
+
+    Mirrors :func:`extract_image_anchors_from_workflow` but takes
+    a pre-filtered job list so callers can scope extraction to
+    (e.g.) the *failing* jobs only. Same structured + text scan
+    pipeline.
+    """
+    from ..github.base import iter_steps
+    seen: dict[str, ResourceAnchor] = {}
+    for job in jobs:
+        for step in iter_steps(job):
+            for raw in _iter_action_tags(step):
+                built = oci_image(raw)
+                if built is not None:
+                    seen[built.identity] = built
+            run = step.get("run")
+            if isinstance(run, str):
+                for raw in _candidates_from_text(run):
+                    built = oci_image(raw)
+                    if built is not None:
+                        seen[built.identity] = built
+    return tuple(seen.values())
+
+
 __all__ = [
-    "extract_image_anchors_from_workflow",
+    "extract_image_anchors_from_jobs",
     "extract_image_anchors_from_strings",
+    "extract_image_anchors_from_workflow",
+    "extract_publisher_anchors_from_strings",
 ]

@@ -5,7 +5,7 @@ import re
 from typing import Any
 
 from ..._primitives.oci_refs import extract_image_anchors_from_strings
-from ...base import Finding, Severity
+from ...base import Finding, ResourceAnchor, Severity
 from ...rule import Rule
 from ..base import iter_jobs, job_scripts
 from ._helpers import DEPLOY_RE, rules_manual
@@ -47,6 +47,7 @@ RULE = Rule(
 
 def check(path: str, doc: dict[str, Any]) -> Finding:
     ungated: list[str] = []
+    ungated_jobs: list[dict[str, Any]] = []
     for name, job in iter_jobs(doc):
         stage = job.get("stage")
         # Cast each ``DEPLOY_RE.search(...)`` to bool so the variable's
@@ -68,6 +69,7 @@ def check(path: str, doc: dict[str, Any]) -> Finding:
         has_env = bool(job.get("environment"))
         if not (manual or has_env):
             ungated.append(name)
+            ungated_jobs.append(job)
     passed = not ungated
     desc = (
         "All deploy-like jobs are gated by manual approval or environment."
@@ -77,9 +79,18 @@ def check(path: str, doc: dict[str, Any]) -> Finding:
         f"to the trigger branch will ship to the target."
     )
     # ResourceAnchor phase 1 (AC-005): emit oci_image anchors for
-    # images this pipeline's deploy commands reference. Only on a
-    # failing finding — an environment-gated deploy isn't a chain leg.
-    anchors = extract_image_anchors_from_strings(doc) if not passed else ()
+    # images the UNGATED deploy jobs reference. Scoping to ungated
+    # jobs only so a gated job's image in the same .gitlab-ci.yml
+    # doesn't lend its identity to an AC-005 confirmation about an
+    # ungated leg. Only on a failing finding — a fully gated
+    # pipeline isn't a chain leg.
+    anchors: tuple[ResourceAnchor, ...] = ()
+    if not passed:
+        seen: dict[str, ResourceAnchor] = {}
+        for job in ungated_jobs:
+            for a in extract_image_anchors_from_strings(job):
+                seen.setdefault(a.identity, a)
+        anchors = tuple(seen.values())
     return Finding(
         check_id=RULE.id, title=RULE.title, severity=RULE.severity,
         resource=path, description=desc,

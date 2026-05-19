@@ -5,7 +5,7 @@ import re
 from typing import Any
 
 from ..._primitives.oci_refs import extract_image_anchors_from_strings
-from ...base import Finding, Severity
+from ...base import Finding, ResourceAnchor, Severity
 from ...rule import Rule
 from ..base import iter_steps, step_scripts
 from ._helpers import DEPLOY_RE
@@ -47,6 +47,7 @@ RULE = Rule(
 
 def check(path: str, doc: dict[str, Any]) -> Finding:
     ungated: list[str] = []
+    ungated_steps: list[dict[str, Any]] = []
     for loc, step in iter_steps(doc):
         name = step.get("name") or ""
         if not isinstance(name, str):
@@ -72,6 +73,7 @@ def check(path: str, doc: dict[str, Any]) -> Finding:
             continue
         if not step.get("deployment"):
             ungated.append(loc)
+            ungated_steps.append(step)
     passed = not ungated
     desc = (
         "All deploy-like steps declare a `deployment:` environment."
@@ -82,9 +84,17 @@ def check(path: str, doc: dict[str, Any]) -> Finding:
         f"deployment history."
     )
     # ResourceAnchor phase 1 (AC-005): emit oci_image anchors for
-    # images this pipeline's deploy commands reference. Only on
-    # failing finding.
-    anchors = extract_image_anchors_from_strings(doc) if not passed else ()
+    # images the UNGATED deploy steps reference. Scoping to ungated
+    # steps only so a gated step's image in the same pipeline doesn't
+    # lend its identity to an AC-005 confirmation about an ungated
+    # leg. Only on failing finding.
+    anchors: tuple[ResourceAnchor, ...] = ()
+    if not passed:
+        seen: dict[str, ResourceAnchor] = {}
+        for step in ungated_steps:
+            for a in extract_image_anchors_from_strings(step):
+                seen.setdefault(a.identity, a)
+        anchors = tuple(seen.values())
     return Finding(
         check_id=RULE.id, title=RULE.title, severity=RULE.severity,
         resource=path, description=desc,

@@ -14,7 +14,7 @@ from __future__ import annotations
 from typing import Any
 
 from ..._primitives.anchors import oci_image
-from ..._primitives.oci_refs import extract_image_anchors_from_strings
+from ..._primitives.oci_refs import extract_publisher_anchors_from_strings
 from ...base import Finding, ResourceAnchor, Severity, has_signing, produces_artifacts
 from ...rule import Rule
 from ..base import pipeline_publishes
@@ -66,11 +66,16 @@ def check(path: str, doc: dict[str, Any]) -> Finding:
         "legitimate one."
     )
     # ResourceAnchor phase 1 (AC-005): emit oci_image anchors for
-    # images this pipeline pushes. Cloud Build's top-level ``images:``
-    # list is structured (entries are raw image refs that GCB pushes
-    # implicitly after the build), so extract those directly; then
-    # the generic text scan picks up any ``docker push`` /
-    # ``gcloud run deploy`` shell mentions. Only on failing finding.
+    # images this pipeline PUBLISHES. Cloud Build's top-level
+    # ``images:`` list is the canonical structured producer field
+    # (GCB pushes those implicitly after the build); the text-scan
+    # fallback is restricted to publisher-shaped commands
+    # (``docker push``, ``buildah push``, ``crane push``,
+    # ``skopeo copy``) so deploy-side mentions
+    # (``kubectl set image``, ``helm upgrade``, ``gcloud run deploy``)
+    # in the same pipeline don't leak into a build-side signing
+    # anchor — that would let AC-005 match unrelated runtime images
+    # as if they were unsigned build outputs. Only on failing finding.
     anchors: tuple[ResourceAnchor, ...] = ()
     if not passed:
         seen: dict[str, ResourceAnchor] = {}
@@ -81,7 +86,7 @@ def check(path: str, doc: dict[str, Any]) -> Finding:
                     built = oci_image(item)
                     if built is not None:
                         seen[built.identity] = built
-        for built in extract_image_anchors_from_strings(doc):
+        for built in extract_publisher_anchors_from_strings(doc):
             seen[built.identity] = built
         anchors = tuple(seen.values())
     return Finding(

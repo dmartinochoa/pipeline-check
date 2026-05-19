@@ -46,10 +46,13 @@ def check(jf: Jenkinsfile) -> Finding:
     # ResourceAnchor phase 1 (AC-005): emit oci_image anchors for
     # images this Jenkinsfile tags / pushes. Jenkins source is a
     # flat Groovy string — the generic scanner pulls image refs
-    # out of ``sh 'docker push …'`` and similar blocks. Only on
+    # out of ``sh 'docker push …'`` and similar blocks. Use the
+    # comment-stripped text so a commented-out ``// docker push
+    # …`` doesn't leak a phantom anchor into AC-005. Only on
     # failing finding.
     anchors = (
-        extract_image_anchors_from_strings(jf.text) if not passed else ()
+        extract_image_anchors_from_strings(jf.text_no_comments)
+        if not passed else ()
     )
     return Finding(
         check_id=RULE.id, title=RULE.title, severity=RULE.severity,

@@ -5,7 +5,7 @@ from typing import Any
 
 from ..._primitives.oci_refs import extract_image_anchors_from_strings
 from ..._yaml_lines import line_of as _line_of
-from ...base import Finding, Location, Severity
+from ...base import Finding, Location, ResourceAnchor, Severity
 from ...rule import Rule
 from ..base import iter_workflow_jobs
 from ._helpers import DEPLOY_RE
@@ -44,6 +44,9 @@ def check(path: str, doc: dict[str, Any]) -> Finding:
             description="No workflows declared in the config.",
             recommendation="No action required.", passed=True,
         )
+    ungated_job_defs: list[dict[str, Any]] = []
+    jobs_top = doc.get("jobs")
+    jobs_top = jobs_top if isinstance(jobs_top, dict) else {}
     for wf_name, job_name, job_cfg in iter_workflow_jobs(doc):
         if not DEPLOY_RE.search(job_name):
             continue
@@ -68,6 +71,12 @@ def check(path: str, doc: dict[str, Any]) -> Finding:
         locations.append(Location(
             path=path, start_line=line, end_line=line,
         ))
+        # The workflow entry is a ref; the actual step body lives
+        # under ``jobs.<job_name>``. Pull that definition for
+        # scoped anchor extraction.
+        job_def = jobs_top.get(job_name)
+        if isinstance(job_def, dict):
+            ungated_job_defs.append(job_def)
     passed = not ungated
     desc = (
         "Every deploy job is gated by a manual approval step."
@@ -77,9 +86,17 @@ def check(path: str, doc: dict[str, Any]) -> Finding:
         f"the triggering branch deploys immediately with no human review."
     )
     # ResourceAnchor phase 1 (AC-005): emit oci_image anchors for
-    # images this pipeline's deploy steps reference. Only on
-    # failing finding.
-    anchors = extract_image_anchors_from_strings(doc) if not passed else ()
+    # images the UNGATED deploy jobs reference. Scoped to the
+    # ungated job definitions so a gated job's image in the same
+    # config doesn't lend its identity to an AC-005 confirmation
+    # about an ungated leg. Only on failing finding.
+    anchors: tuple[ResourceAnchor, ...] = ()
+    if not passed:
+        seen: dict[str, ResourceAnchor] = {}
+        for jd in ungated_job_defs:
+            for a in extract_image_anchors_from_strings(jd):
+                seen.setdefault(a.identity, a)
+        anchors = tuple(seen.values())
     return Finding(
         check_id=RULE.id, title=RULE.title, severity=RULE.severity,
         resource=path, description=desc,
