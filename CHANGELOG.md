@@ -10,6 +10,32 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 PRs landing on `dev` between releases append entries below. The
 release commit collapses this section into `## [X.Y.Z] - <date>`.
 
+### Added
+
+- **GHA-059 npm install without registry-signature verification.**
+  Closes the NPM-010 slot from the post-1.0 roadmap on the GitHub
+  Actions side. Fires once per workflow when at least one step runs
+  ``npm ci`` / ``npm install`` / ``npm i`` / ``pnpm install`` /
+  ``pnpm i`` / ``pnpm ci`` and no step anywhere in the same workflow
+  runs ``npm audit signatures`` or ``pnpm audit signatures``. Yarn /
+  Bun-only workflows pass silently because the ``audit signatures``
+  primitive is npm-CLI-specific (Yarn Berry's ``yarn npm audit``
+  does not yet verify registry trusted-publisher records). Severity
+  MEDIUM. Maps to OWASP CICD-SEC-3, ESF-S-VERIFY-DEPS, CWE-345, plus
+  the canonical supply-chain controls in the 12 other registered
+  standards.
+
+  Lockfile pinning (NPM-002, NPM-006) only guarantees the bytes
+  installed match the bytes the lockfile recorded; ``npm audit
+  signatures`` is what verifies those bytes were signed by the
+  registry's trusted publisher for that package. The Shai-Hulud /
+  TanStack / axios family of npm-worm compromises rode the gap
+  between the two: the lockfile faithfully pinned what the
+  maintainer's compromised account published, and integrity hashes
+  matched the malicious tarball. Registry trusted-publisher records
+  are the missing leg, and ``audit signatures`` is the gate that
+  consumes them.
+
 ## [1.1.0] - 2026-05-19
 
 ### Added

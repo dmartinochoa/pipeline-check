@@ -434,6 +434,7 @@ STANDARD = Standard(
         "GHA-056":  ["4.1.3"],                     # supply-chain worm IOC strings
         "GHA-057":  ["4.4.3"],                     # secret-scanner output → egress
         "GHA-058":  ["4.4.5"],                     # agentic CLI permission-bypass
+        "GHA-059":  ["4.1.5"],                     # npm install without audit signatures
         # ── GitLab CI container-touching extras ──────────────────
         "GL-015":  ["4.4.5"],                      # no timeout
         "GL-020":  ["4.1.4"],                      # CI_JOB_TOKEN persisted

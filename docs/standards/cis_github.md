@@ -21,7 +21,7 @@ posture. Pair with [OpenSSF Scorecard](openssf_scorecard.md) and
 
 - **Controls in this standard:** 28
 - **Controls evidenced by at least one check:** 28 / 28
-- **Distinct checks evidencing this standard:** 118
+- **Distinct checks evidencing this standard:** 119
 - **Of those, autofixable with `--fix`:** 15
 
 _Severity levels (`CRITICAL` / `HIGH` / `MEDIUM` / `LOW` / `INFO`) follow the same scale across every provider and standard. See [How to read severity](README.md#how-to-read-severity) on the standards overview for the definitions._
@@ -57,7 +57,7 @@ Click a control ID to jump to the per-control section with the full check list. 
 | [`1.4.3`](#ctrl-1-4-3) | Ensure the access granted to each installed application is limited | 2 | 1H · 1M |
 | [`1.4.4`](#ctrl-1-4-4) | Ensure only secured webhooks are used | 1 | 1H |
 | [`1.5.1`](#ctrl-1-5-1) | Ensure scanners are in place to identify and prevent sensitive data in code | 16 | 7C · 7H · 1M · 1L |
-| [`1.5.2`](#ctrl-1-5-2) | Ensure scanners are in place to secure CI/CD pipeline instructions | 45 | 11C · 26H · 7M · 1L |
+| [`1.5.2`](#ctrl-1-5-2) | Ensure scanners are in place to secure CI/CD pipeline instructions | 46 | 11C · 26H · 8M · 1L |
 | [`1.5.3`](#ctrl-1-5-3) | Ensure scanners are in place to secure IaC instructions | 25 | 6C · 19H |
 | [`1.5.4`](#ctrl-1-5-4) | Ensure scanners are in place to identify and confirm presence of vulnerabilities | 8 | 1H · 6M · 1L |
 
@@ -333,7 +333,7 @@ pipeline_check --pipeline aws --standard cis_github --standard owasp_cicd_top_10
 
 ### 1.5.2: Ensure scanners are in place to secure CI/CD pipeline instructions { #ctrl-1-5-2 }
 
-**Evidenced by 45 checks** across 6 providers (Argo Workflows, Buildkite, GitHub Actions, GitLab CI, SCM, Tekton).
+**Evidenced by 46 checks** across 6 providers (Argo Workflows, Buildkite, GitHub Actions, GitLab CI, SCM, Tekton).
 
 | Check | Title | Severity | Provider | Fix |
 |-------|-------|----------|----------|-----|
@@ -372,6 +372,7 @@ pipeline_check --pipeline aws --standard cis_github --standard owasp_cicd_top_10
 | [`GHA-056`](#detail-gha-056) | Workflow body contains a known supply-chain worm indicator | <span class="pg-sev pg-sev--critical">CRITICAL</span> | [GitHub Actions](../providers/github.md) |  |
 | [`GHA-057`](#detail-gha-057) | Secret-scanner output sent to network egress | <span class="pg-sev pg-sev--critical">CRITICAL</span> | [GitHub Actions](../providers/github.md) |  |
 | [`GHA-058`](#detail-gha-058) | Agentic CLI invoked with permission-bypass flags | <span class="pg-sev pg-sev--high">HIGH</span> | [GitHub Actions](../providers/github.md) |  |
+| [`GHA-059`](#detail-gha-059) | npm install without registry-signature verification step | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [GitHub Actions](../providers/github.md) |  |
 | [`SCM-020`](#detail-scm-020) | Default workflow GITHUB_TOKEN has write permission | <span class="pg-sev pg-sev--high">HIGH</span> | [SCM](../providers/scm.md) |  |
 | [`SCM-041`](#detail-scm-041) | Active ruleset doesn't gate on a deployment environment | <span class="pg-sev pg-sev--low">LOW</span> | [SCM](../providers/scm.md) |  |
 | [`TAINT-001`](#detail-taint-001) | Untrusted input flows across step boundaries via step outputs | <span class="pg-sev pg-sev--high">HIGH</span> | [GitHub Actions](../providers/github.md) |  |
@@ -1808,6 +1809,30 @@ jobs:
 ```
 
 **Source:** [`GHA-058`](../providers/github.md#gha-058) in the [GitHub Actions provider](../providers/github.md).
+
+### `GHA-059`: npm install without registry-signature verification step <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-gha-059 }
+
+**Evidences:** [`1.5.2`](#ctrl-1-5-2) Ensure scanners are in place to secure CI/CD pipeline instructions.
+
+**How this is detected.** Fires once per workflow when:
+
+1. The workflow runs at least one npm / pnpm install command (``npm ci``, ``npm install``, ``npm i``, ``pnpm install``, ``pnpm i``, ``pnpm ci``);
+2. No step anywhere in the workflow runs ``npm audit signatures`` or ``pnpm audit signatures``.
+
+Yarn / Bun-only workflows pass silently because the ``audit signatures`` primitive is npm-CLI-specific (Yarn Berry's equivalent ``yarn npm audit`` does not yet verify registry trusted-publisher signatures; Bun has no equivalent step). The rule pairs with NPM-002 (lockfile entry missing integrity hash) and NPM-006 (known-compromised package version): NPM-002 / NPM-006 verify *what* the lockfile pinned, and GHA-059 verifies the lockfile pinned what the maintainer actually signed.
+
+**Recommendation.** Add an ``npm audit signatures`` step (or ``pnpm audit signatures``) after the install step. Lockfile pinning only guarantees the bytes installed match the bytes the lockfile recorded; ``audit signatures`` is what verifies those bytes were signed by the maintainer the registry recognizes as the package's trusted publisher. Without it, an attacker who compromises a maintainer account and republishes a tarball under the same version + integrity hash still passes the lockfile gate. Place the step after ``npm ci`` / ``pnpm install`` and before any code from ``node_modules/`` runs (``npm run build``, test, publish).
+
+**Known false positives.**
+
+- Workflows that build and test against a private registry without trusted-publisher records (legacy Artifactory, self-hosted Verdaccio without sigstore integration) cannot run ``npm audit signatures`` meaningfully — the registry has no signatures to verify against. Suppress this rule on the specific workflow with a rationale that names the private registry; revisit when the registry adds trusted-publisher support.
+- Workflows whose only install command is ``npm install --no-save`` for a one-off tool (linter, doc generator) without a lockfile in the repo. Suppress if signature verification adds no signal because nothing is pinned in the first place; the right fix is usually to add the lockfile, not suppress the rule.
+
+**Seen in the wild.**
+
+- Shai-Hulud npm worm (2026) / TanStack / axios patch-release compromises: each abused the gap between lockfile-pinned integrity and registry-signed-publisher provenance. The lockfile faithfully pinned what the maintainer's account published; ``npm audit signatures`` would have flagged that the bytes weren't signed by the trusted-publisher record on file with the registry.
+
+**Source:** [`GHA-059`](../providers/github.md#gha-059) in the [GitHub Actions provider](../providers/github.md).
 
 ### `K8S-001`: Container image not pinned by sha256 digest <span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> { #detail-k8s-001 }
 

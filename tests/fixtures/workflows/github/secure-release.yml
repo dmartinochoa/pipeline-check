@@ -52,6 +52,12 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      # GHA-059 safe: verifies registry trusted-publisher signatures
+      # on the installed tarballs before any code from node_modules/
+      # runs.
+      - name: Verify dependency signatures
+        run: npm audit signatures
+
       - name: Publish
         env:
           TAG: ${{ github.ref_name }}

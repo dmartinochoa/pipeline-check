@@ -214,6 +214,7 @@ STANDARD = Standard(
         "GHA-056":  ["1.4.1", "2.1.3"],                  # known supply-chain worm IOC strings
         "GHA-057":  ["2.1.6", "1.5.1"],                  # secret-scanner output piped to egress
         "GHA-058":  ["2.1.3"],                           # agentic CLI with permission-bypass flags
+        "GHA-059":  ["1.4.1", "3.1.3"],                  # npm install without audit signatures
         # GitLab CI
         "GL-001":   ["1.4.1", "3.1.5"],
         "GL-002":   ["2.1.3", "2.3.8"],

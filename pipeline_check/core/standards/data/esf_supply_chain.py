@@ -517,6 +517,7 @@ STANDARD = Standard(
         "GHA-056":  ["ESF-S-VERIFY-DEPS"],          # worm IOC strings
         "GHA-057":  ["ESF-D-SECRETS"],              # secret-scanner output → egress
         "GHA-058":  ["ESF-D-INJECTION"],            # agentic CLI permission-bypass
+        "GHA-059":  ["ESF-S-VERIFY-DEPS"],          # npm install without audit signatures
         # ── GitLab CI extras ─────────────────────────────────────
         "GL-028":   ["ESF-S-PIN-DEPS", "ESF-S-VERIFY-DEPS"],   # services: image not pinned
         "GL-029":   ["ESF-C-APPROVAL"],             # manual deploy allow_failure

@@ -236,6 +236,7 @@ STANDARD = Standard(
         "GHA-056":  ["Dangerous-Workflow"],                            # supply-chain worm IOC strings
         "GHA-057":  ["Dangerous-Workflow", "Token-Permissions"],       # secret-scanner output → egress
         "GHA-058":  ["Dangerous-Workflow"],                            # agentic CLI permission-bypass
+        "GHA-059":  ["Signed-Releases", "Pinned-Dependencies"],        # npm install without audit signatures
         # Cross-pipeline / cross-project artifact ingestion = same
         # source-poisoning shape as the GHA workflow_run rule
         "ADO-010":  ["Dangerous-Workflow"],                            # cross-pipeline download

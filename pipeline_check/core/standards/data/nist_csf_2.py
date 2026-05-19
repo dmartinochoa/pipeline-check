@@ -488,6 +488,7 @@ STANDARD = Standard(
         "GHA-056":  ["PR.PS-05", "GV.SC-07"],   # worm IOC strings
         "GHA-057":  ["PR.DS-01", "DE.CM-06"],   # secret-scanner output → egress
         "GHA-058":  ["PR.PS-05"],               # agentic CLI permission-bypass
+        "GHA-059":  ["GV.SC-05"],               # npm install without audit signatures
         # ── GitLab CI ─────────────────────────────────────────────
         "GL-004":  ["PR.PS-06"],                # manual deploy allow_failure
         "GL-029":  ["PR.PS-06"],                # manual deploy allow_failure (variant)

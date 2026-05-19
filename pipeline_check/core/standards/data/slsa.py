@@ -141,6 +141,7 @@ STANDARD = Standard(
         "GHA-056":  ["Build.L3.NonFalsifiable"],                   # worm IOC strings
         "GHA-057":  ["Build.L3.Isolated"],                         # secret-scanner output → egress
         "GHA-058":  ["Build.L3.Isolated"],                         # agentic CLI permission-bypass
+        "GHA-059":  ["Build.L3.NonFalsifiable"],                   # npm install without audit signatures
         # ── GitLab CI ─────────────────────────────────────────────
         "GL-001":   ["Build.L3.NonFalsifiable"],                   # floating image tag
         "GL-002":   ["Build.L3.Isolated"],                         # script injection

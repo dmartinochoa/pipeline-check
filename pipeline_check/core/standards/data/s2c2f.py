@@ -112,6 +112,7 @@ STANDARD = Standard(
         "GHA-056":  ["SCA-3", "ING-3"],     # known worm IOC = denyable + malware-class
         "GHA-057":  ["SCA-3"],              # scanner-output-to-egress is malicious shape
         "GHA-058":  ["SCA-3"],              # AI-CLI bypass turns the runner into a scanner
+        "GHA-059":  ["SCA-3"],              # npm install without registry-signature verification
         # Known-compromised package / action references are the
         # canonical deny-list signal: each finding is one entry on a
         # curated deny-list of versions that should never be installed.

@@ -191,6 +191,7 @@ STANDARD = Standard(
         "GHA-056":  ["SR-3", "RA-5"],                    # worm IOC strings
         "GHA-057":  ["IA-5", "SC-7"],                    # secret-scanner output → egress
         "GHA-058":  ["CM-6", "SA-11"],                   # agentic CLI permission-bypass
+        "GHA-059":  ["SR-3", "SR-11", "SI-7"],            # npm install without audit signatures
         # GitLab CI
         "GL-001":   ["SR-3", "SR-11", "SI-2"],
         "GL-002":   ["SI-7", "SA-11", "CM-6"],

@@ -415,6 +415,7 @@ STANDARD = Standard(
         "GHA-056":  ["CC6.8"],              # worm IOC strings
         "GHA-057":  ["CC6.1", "CC6.6"],     # secret-scanner output → egress
         "GHA-058":  ["CC6.8"],              # agentic CLI permission-bypass
+        "GHA-059":  ["CC8.1"],              # npm install without audit signatures
         # ── GitLab CI ─────────────────────────────────────────────
         "GL-006":   ["CC8.1"],              # unsigned artifacts
         "GL-007":   ["CC8.1"],              # no SBOM
