@@ -121,9 +121,13 @@ new-transitive-dep diff gate behind ``--npm-base-ref``, the
 NPM-010 ``npm audit signatures``-missing detector ported across
 all three CI providers (GHA-059 / GL-034 / BB-030), the PYPI-007
 ``pip install --require-hashes``-missing detector ported across
-the same three providers (GHA-060 / GL-035 / BB-031), and
-in-file Gradle ``${propName}`` resolution against ``ext {}`` /
-``ext.foo`` / Groovy ``def`` / Kotlin ``val`` declarations.*
+the same three providers (GHA-060 / GL-035 / BB-031), Gradle
+``${propName}`` resolution against in-file ``ext {}`` /
+``ext.foo`` / Groovy ``def`` / Kotlin ``val`` declarations and
+sibling ``gradle.properties``, and ``libs.versions.toml``
+version-catalog resolution covering both the
+``module`` and ``group/name`` library shapes plus rich version
+constraints (``strictly`` / ``require`` / ``prefer``).*
 The follow-up rules below require either new infrastructure
 (lockfile diff against a base ref) or different ecosystem
 plumbing and so are deferred:
@@ -133,21 +137,13 @@ plumbing and so are deferred:
   the existing PYPI-004 / PYPI-006 rules; PYPI-007 (``pip install
   --require-hashes`` missing from CI) shipped across the three CI
   providers as GHA-060 / GL-035 / BB-031.
-- **Gradle version-catalog resolution.** In-file ``${propName}``
-  resolution and sibling ``gradle.properties`` cross-file lookup
-  both ship. The remaining gap is the ``libs.versions.toml``
-  Gradle version catalog: build scripts reference catalog
-  entries via the generated ``libs.X.Y`` DSL rather than a Maven
-  coordinate literal, so resolving them needs (1) a TOML walker
-  for ``[versions]`` + ``[libraries]`` + ``[plugins]`` and (2) a
-  new regex for ``libs.<dot.path>`` references in build scripts
-  that synthesizes the coordinate from the catalog entry. Closing
-  it lifts MVN-001 / MVN-008 hit rate to full Maven parity on
-  modern Gradle projects that keep versions in the catalog.
-  ``rootProject.ext.X`` cross-project indirection stays out of
-  scope until pipeline-check learns ``settings.gradle``
-  multi-project resolution; it's rarer in practice than the
-  catalog idiom.
+- **Gradle multi-project indirection.** In-file ``${propName}``
+  resolution, sibling ``gradle.properties`` cross-file lookup, and
+  ``libs.versions.toml`` version-catalog resolution all ship. The
+  only remaining gap is ``rootProject.ext.X`` cross-project
+  indirection, which would need pipeline-check to learn
+  ``settings.gradle`` multi-project layout resolution. Rarer in
+  practice than the three shapes already shipped; deferred.
 
 Architecture: extends the existing ``pipeline_check/core/checks/
 npm/``, ``pypi/``, and ``maven/`` packages; ``--resolve-remote``

@@ -12,6 +12,37 @@ release commit collapses this section into `## [X.Y.Z] - <date>`.
 
 ### Added
 
+- **Gradle `libs.versions.toml` version-catalog resolution.**
+  Closes the last open entry in the dependency-supply-chain
+  follow-ups section of the roadmap. ``_parse_versions_catalog``
+  walks the conventional ``gradle/libs.versions.toml`` file
+  (discovered by the same scan-root-bounded upward walk that
+  ``gradle.properties`` uses) and builds a ``{dotted_name:
+  (group, artifact, version)}`` index. Both library-entry shapes
+  Gradle accepts are supported:
+
+  - ``module = "group:artifact"`` (single-string form)
+  - ``group = "..." , name = "..."`` (two-field form)
+
+  Versions resolve through one of:
+
+  - ``version = "X"`` (inline literal)
+  - ``version.ref = "name"`` (alias into ``[versions]``)
+  - ``version = { strictly|require|prefer = "X" }`` (rich
+    constraint)
+
+  ``_parse_gradle`` then scans build scripts for
+  ``<config> libs.<dot.path>`` references (Groovy and Kotlin DSL
+  syntax both accepted, with optional parens) and synthesizes a
+  ``MavenDependency`` from the catalog entry the accessor resolves
+  to. ``libs.versions.X`` / ``libs.bundles.X`` / ``libs.plugins.X``
+  namespaces are deliberately skipped so accessing a version-only
+  ref doesn't materialize a phantom coordinate. MVN-001 (floating-
+  range) and MVN-006 (compromised package) now fire on catalog-
+  referenced pins in modern Gradle projects that hold every
+  version in ``libs.versions.toml``, the standard idiom in 2024+
+  Gradle builds.
+
 - **Gradle `gradle.properties` cross-file resolution.** Extends the
   in-file ``${propName}`` resolution shipped earlier this cycle to
   the sibling ``gradle.properties`` file. ``MavenContext.from_path``

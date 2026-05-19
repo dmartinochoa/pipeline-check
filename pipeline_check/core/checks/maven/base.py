@@ -37,9 +37,11 @@ from __future__ import annotations
 
 import datetime as _dt
 import re
+import tomllib
 import xml.etree.ElementTree as ET
 from dataclasses import dataclass, field
 from pathlib import Path
+from typing import Any
 
 from ..base import BaseCheck
 
@@ -187,11 +189,16 @@ class MavenContext:
                 skipped += 1
                 continue
             if f.name in GRADLE_NAMES:
+                scan_dir = root if root.is_dir() else root.parent
                 cross_file = _discover_gradle_cross_file_properties(
-                    f, root if root.is_dir() else root.parent,
+                    f, scan_dir,
                 )
+                catalog = _discover_gradle_version_catalog(f, scan_dir)
                 pf = _parse_gradle(
-                    str(f), text, extra_properties=cross_file,
+                    str(f),
+                    text,
+                    extra_properties=cross_file,
+                    version_catalog=catalog,
                 )
             else:
                 pf = _parse_pom(str(f), text)
@@ -562,6 +569,36 @@ _GRADLE_VERSION_REF_RE = re.compile(
     r"""\$\{?(?P<name>[A-Za-z_][\w.]*)\}?""",
 )
 
+# Catalog accessor references in build scripts:
+#
+#     implementation libs.junit.jupiter
+#     implementation(libs.spring.boot.starter)
+#     testImplementation libs.junit.engine
+#
+# Matches ``libs.<dot.path>`` anchored on a word boundary so it
+# doesn't grab partial identifiers. The first segment after ``libs.``
+# is captured so the dispatcher can skip the version-only (``libs.
+# versions.X``) and bundle (``libs.bundles.X``) namespaces.
+_GRADLE_CATALOG_REF_RE = re.compile(
+    r"""\blibs\.(?P<head>[a-zA-Z][\w]*)(?P<rest>(?:\.[a-zA-Z][\w]*)*)""",
+)
+# Configurations Gradle recognizes for the ``dependencies { }`` DSL.
+# Restricting catalog-ref detection to these configuration verbs
+# avoids matching ``libs.X.Y`` inside unrelated text (e.g. a comment
+# referencing ``libs.foo``).
+_GRADLE_CATALOG_DEP_CONFIGS: tuple[str, ...] = (
+    "api", "implementation", "compileOnly", "runtimeOnly",
+    "testImplementation", "testCompileOnly", "testRuntimeOnly",
+    "annotationProcessor", "kapt", "ksp",
+    "androidTestImplementation", "debugImplementation",
+    "releaseImplementation",
+)
+_GRADLE_CATALOG_LINE_RE = re.compile(
+    r"""\b(?P<config>"""
+    + "|".join(_GRADLE_CATALOG_DEP_CONFIGS)
+    + r""")\s*\(?\s*libs\.""",
+)
+
 
 def _extract_gradle_properties(text: str) -> dict[str, str]:
     """Return ``{name: value}`` for every in-file user-declared property.
@@ -619,6 +656,162 @@ def _parse_gradle_properties(text: str) -> dict[str, str]:
         value = line[idx + 1:].strip()
         if key:
             out[key] = value
+    return out
+
+
+VersionCatalog = dict[str, tuple[str, str, str]]
+"""Mapping from a normalized DSL name (``junit.jupiter``) to
+``(group_id, artifact_id, resolved_version)``. The DSL name uses
+``.`` as a separator the way Gradle's generated accessor does
+(catalog entries written with ``-`` are normalized to ``.``).
+Empty when no catalog was discovered, the parser silent-passes
+that case so a project without a catalog isn't penalized.
+"""
+
+
+def _parse_versions_catalog(text: str) -> VersionCatalog:
+    """Parse a ``libs.versions.toml`` body.
+
+    Returns a ``{dotted_name: (group, artifact, version)}`` index.
+    Handles both library entry shapes Gradle accepts:
+
+    * ``module = "group:artifact"`` (newer single-string form)
+    * ``group = "..." , name = "..."`` (older two-field form)
+
+    Version comes from either ``version = "..."`` (inline literal) or
+    ``version.ref = "..."`` (alias into ``[versions]``); the
+    alias-target lookup is one level deep and returns the literal
+    ``${ref:...}`` placeholder when the ref isn't declared so the
+    rule layer can still flag it as a dynamic / unresolved spec.
+
+    Skips bundles (``[bundles]``) and plugins (``[plugins]``)
+    deliberately, bundles point at multiple libraries (the per-
+    library entries they reference are already in the index), and
+    plugin references reach the dependency surface only through
+    the ``plugins { }`` block, not ``dependencies { }``.
+    """
+    out: VersionCatalog = {}
+    try:
+        raw = tomllib.loads(text)
+    except tomllib.TOMLDecodeError:
+        return out
+    if not isinstance(raw, dict):
+        return out
+    versions_block = raw.get("versions")
+    versions: dict[str, str] = {}
+    if isinstance(versions_block, dict):
+        for vname, vvalue in versions_block.items():
+            if isinstance(vname, str) and isinstance(vvalue, str):
+                versions[vname] = vvalue
+            elif isinstance(vname, str) and isinstance(vvalue, dict):
+                # Rich version constraint: ``strictly``, ``require``,
+                # ``prefer``. Pick the first one present so MVN-001
+                # sees a literal rather than a struct.
+                for key in ("strictly", "require", "prefer"):
+                    v = vvalue.get(key)
+                    if isinstance(v, str):
+                        versions[vname] = v
+                        break
+    libraries = raw.get("libraries")
+    if not isinstance(libraries, dict):
+        return out
+    for name, entry in libraries.items():
+        if not isinstance(name, str) or not isinstance(entry, dict):
+            continue
+        group, artifact = _catalog_coord(entry)
+        if not group or not artifact:
+            continue
+        version = _catalog_version(entry, versions)
+        if not version:
+            continue
+        # Normalize the catalog entry name to the DSL accessor:
+        # Gradle replaces ``-`` with ``.`` so ``junit-jupiter``
+        # becomes ``libs.junit.jupiter`` in the build script.
+        dsl_name = name.replace("-", ".")
+        out[dsl_name] = (group, artifact, version)
+    return out
+
+
+def _catalog_coord(entry: dict[str, Any]) -> tuple[str, str]:
+    """Return ``(group, artifact)`` from a catalog ``[libraries]`` entry."""
+    module = entry.get("module")
+    if isinstance(module, str) and ":" in module:
+        head, _, tail = module.partition(":")
+        return head.strip(), tail.strip()
+    group = entry.get("group")
+    name = entry.get("name")
+    if isinstance(group, str) and isinstance(name, str):
+        return group.strip(), name.strip()
+    return "", ""
+
+
+def _catalog_version(
+    entry: dict[str, Any], versions: dict[str, str],
+) -> str:
+    """Return the version literal for one ``[libraries]`` entry.
+
+    Resolves ``version.ref`` aliases against the ``[versions]`` map.
+    Unknown refs emit the ``${ref:...}`` placeholder so MVN-001 still
+    sees a non-literal version and fires.
+    """
+    version = entry.get("version")
+    if isinstance(version, str):
+        return version
+    if isinstance(version, dict):
+        ref = version.get("ref")
+        if isinstance(ref, str):
+            return versions.get(ref, f"${{ref:{ref}}}")
+        for key in ("strictly", "require", "prefer"):
+            v = version.get(key)
+            if isinstance(v, str):
+                return v
+    return ""
+
+
+def _discover_gradle_version_catalog(
+    gradle_path: Path, scan_root: Path,
+) -> VersionCatalog:
+    """Walk upward from *gradle_path* looking for
+    ``gradle/libs.versions.toml``; return the merged catalog.
+
+    The conventional layout puts the catalog at
+    ``<root>/gradle/libs.versions.toml``; the walk replicates the
+    scan-root-bounded upward search used for ``gradle.properties``
+    so subprojects pick up the root-level catalog without leaking
+    out-of-tree reads.
+    """
+    out: VersionCatalog = {}
+    try:
+        scan_resolved = scan_root.resolve()
+        cur = gradle_path.resolve().parent
+    except OSError:
+        return out
+    seen_dirs: set[Path] = set()
+    chain: list[Path] = []
+    while True:
+        if cur in seen_dirs:
+            break
+        seen_dirs.add(cur)
+        chain.append(cur)
+        if cur == scan_resolved:
+            break
+        parent = cur.parent
+        if parent == cur:
+            break
+        try:
+            cur.relative_to(scan_resolved)
+        except ValueError:
+            break
+        cur = parent
+    for d in reversed(chain):
+        catalog_file = d / "gradle" / "libs.versions.toml"
+        if not catalog_file.is_file():
+            continue
+        try:
+            text = catalog_file.read_text(encoding="utf-8")
+        except (OSError, UnicodeDecodeError):
+            continue
+        out.update(_parse_versions_catalog(text))
     return out
 
 
@@ -705,6 +898,7 @@ def _parse_gradle(
     path: str,
     text: str,
     extra_properties: dict[str, str] | None = None,
+    version_catalog: VersionCatalog | None = None,
 ) -> PomFile:
     """Parse a ``build.gradle`` / ``build.gradle.kts`` body.
 
@@ -799,6 +993,50 @@ def _parse_gradle(
             section="repositories",
             line_no=_line_at(text, m.start()),
         ))
+
+    # ── Version-catalog references ──────────────────────────────────
+    # Scan for ``<config> libs.<dot.path>`` shapes per line and
+    # synthesize a MavenDependency from the catalog when the
+    # accessor resolves. Lines that don't match a known dep
+    # configuration (or whose path lands in ``libs.versions.*`` /
+    # ``libs.bundles.*`` / ``libs.plugins.*`` namespaces) are
+    # skipped so we don't materialize phantom deps.
+    if version_catalog:
+        for line in text.splitlines():
+            if not _GRADLE_CATALOG_LINE_RE.search(line):
+                continue
+            for cm in _GRADLE_CATALOG_REF_RE.finditer(line):
+                head = cm.group("head")
+                rest = cm.group("rest") or ""
+                if head in ("versions", "bundles", "plugins"):
+                    continue
+                dotted = head + rest
+                resolved = version_catalog.get(dotted)
+                if resolved is None:
+                    # Path may include a trailing accessor that
+                    # isn't part of the catalog entry name (e.g.
+                    # ``.get()``); try progressive prefix lookups.
+                    parts = dotted.split(".")
+                    for n in range(len(parts), 0, -1):
+                        prefix = ".".join(parts[:n])
+                        if prefix in version_catalog:
+                            resolved = version_catalog[prefix]
+                            break
+                if resolved is None:
+                    continue
+                group_id, artifact_id, version = resolved
+                coord = (group_id, artifact_id, version)
+                if coord in seen_coords:
+                    continue
+                seen_coords.add(coord)
+                dependencies.append(MavenDependency(
+                    group_id=group_id,
+                    artifact_id=artifact_id,
+                    version=version,
+                    scope="compile",
+                    managed=False,
+                    line_no=_line_at(text, text.find(line)),
+                ))
 
     return PomFile(
         path=path,

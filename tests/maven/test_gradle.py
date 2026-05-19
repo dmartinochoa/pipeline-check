@@ -20,6 +20,7 @@ from pipeline_check.core.checks.maven.base import (
     _discover_gradle_cross_file_properties,
     _parse_gradle,
     _parse_gradle_properties,
+    _parse_versions_catalog,
 )
 from pipeline_check.core.checks.maven.pipelines import MavenChecks
 
@@ -587,6 +588,251 @@ def test_discover_walk_stops_at_scan_root(tmp_path: Path) -> None:
         project / "build.gradle", scan_root=project,
     )
     assert "leakedVersion" not in props
+
+
+# ── libs.versions.toml version-catalog resolution ─────────────────────
+
+
+class TestParseVersionsCatalog:
+    def test_module_form_with_version_ref(self) -> None:
+        body = textwrap.dedent(
+            """\
+            [versions]
+            junit = "5.10.0"
+
+            [libraries]
+            junit-jupiter = { module = "org.junit.jupiter:junit-jupiter", version.ref = "junit" }
+            """
+        )
+        catalog = _parse_versions_catalog(body)
+        assert catalog == {
+            "junit.jupiter": ("org.junit.jupiter", "junit-jupiter", "5.10.0"),
+        }
+
+    def test_module_form_with_inline_version(self) -> None:
+        body = textwrap.dedent(
+            """\
+            [libraries]
+            gson = { module = "com.google.code.gson:gson", version = "2.10.1" }
+            """
+        )
+        catalog = _parse_versions_catalog(body)
+        assert catalog == {
+            "gson": ("com.google.code.gson", "gson", "2.10.1"),
+        }
+
+    def test_group_name_form(self) -> None:
+        body = textwrap.dedent(
+            """\
+            [versions]
+            spring-boot = "3.1.0"
+
+            [libraries]
+            spring-boot-starter = { group = "org.springframework.boot", name = "spring-boot-starter", version.ref = "spring-boot" }
+            """
+        )
+        catalog = _parse_versions_catalog(body)
+        assert catalog == {
+            "spring.boot.starter": (
+                "org.springframework.boot",
+                "spring-boot-starter",
+                "3.1.0",
+            ),
+        }
+
+    def test_rich_version_strictly_resolves(self) -> None:
+        body = textwrap.dedent(
+            """\
+            [libraries]
+            kotlin = { module = "org.jetbrains.kotlin:kotlin-stdlib", version = { strictly = "1.9.0" } }
+            """
+        )
+        catalog = _parse_versions_catalog(body)
+        assert catalog["kotlin"] == (
+            "org.jetbrains.kotlin", "kotlin-stdlib", "1.9.0",
+        )
+
+    def test_unknown_version_ref_emits_placeholder(self) -> None:
+        body = textwrap.dedent(
+            """\
+            [libraries]
+            x = { module = "g:a", version.ref = "missing" }
+            """
+        )
+        catalog = _parse_versions_catalog(body)
+        assert catalog["x"][2] == "${ref:missing}"
+
+    def test_bundles_and_plugins_skipped(self) -> None:
+        body = textwrap.dedent(
+            """\
+            [versions]
+            junit = "5.10.0"
+            kotlin = "1.9.0"
+
+            [libraries]
+            junit-core = { module = "org.junit.jupiter:junit-jupiter", version.ref = "junit" }
+
+            [bundles]
+            testing = ["junit-core"]
+
+            [plugins]
+            kotlin-jvm = { id = "org.jetbrains.kotlin.jvm", version.ref = "kotlin" }
+            """
+        )
+        catalog = _parse_versions_catalog(body)
+        # Only the library entry made it; the plugin / bundle sections
+        # are silently dropped.
+        assert set(catalog.keys()) == {"junit.core"}
+
+    def test_invalid_toml_returns_empty(self) -> None:
+        catalog = _parse_versions_catalog("not = a [valid toml")
+        assert catalog == {}
+
+
+def test_libs_catalog_reference_resolves_to_coordinate(
+    tmp_path: Path,
+) -> None:
+    (tmp_path / "gradle").mkdir()
+    (tmp_path / "gradle" / "libs.versions.toml").write_text(
+        textwrap.dedent(
+            """\
+            [versions]
+            junit = "5.10.0"
+
+            [libraries]
+            junit-jupiter = { module = "org.junit.jupiter:junit-jupiter", version.ref = "junit" }
+            """
+        ),
+        encoding="utf-8",
+    )
+    (tmp_path / "build.gradle").write_text(
+        textwrap.dedent(
+            """\
+            dependencies {
+                testImplementation libs.junit.jupiter
+            }
+            """
+        ),
+        encoding="utf-8",
+    )
+    ctx = MavenContext.from_path(tmp_path)
+    pf = ctx.files[0]
+    coords = {(d.group_id, d.artifact_id, d.version) for d in pf.dependencies}
+    assert ("org.junit.jupiter", "junit-jupiter", "5.10.0") in coords
+
+
+def test_libs_catalog_reference_resolves_with_kotlin_dsl(
+    tmp_path: Path,
+) -> None:
+    # Kotlin DSL wraps the catalog accessor in parens. The detector
+    # accepts both shapes.
+    (tmp_path / "gradle").mkdir()
+    (tmp_path / "gradle" / "libs.versions.toml").write_text(
+        textwrap.dedent(
+            """\
+            [libraries]
+            gson = { module = "com.google.code.gson:gson", version = "2.10.1" }
+            """
+        ),
+        encoding="utf-8",
+    )
+    (tmp_path / "build.gradle.kts").write_text(
+        textwrap.dedent(
+            """\
+            dependencies {
+                implementation(libs.gson)
+            }
+            """
+        ),
+        encoding="utf-8",
+    )
+    ctx = MavenContext.from_path(tmp_path)
+    pf = ctx.files[0]
+    coords = {(d.group_id, d.artifact_id) for d in pf.dependencies}
+    assert ("com.google.code.gson", "gson") in coords
+
+
+def test_libs_catalog_compromised_coordinate_fires_mvn006(
+    tmp_path: Path,
+) -> None:
+    # A real Maven Central compromise referenced via the catalog
+    # still trips MVN-006, which is the whole point of resolving the
+    # accessor in the first place.
+    (tmp_path / "gradle").mkdir()
+    (tmp_path / "gradle" / "libs.versions.toml").write_text(
+        textwrap.dedent(
+            """\
+            [versions]
+            log4j = "2.14.1"
+
+            [libraries]
+            log4j-core = { module = "org.apache.logging.log4j:log4j-core", version.ref = "log4j" }
+            """
+        ),
+        encoding="utf-8",
+    )
+    (tmp_path / "build.gradle").write_text(
+        textwrap.dedent(
+            """\
+            dependencies {
+                implementation libs.log4j.core
+            }
+            """
+        ),
+        encoding="utf-8",
+    )
+    ctx = MavenContext.from_path(tmp_path)
+    findings = list(MavenChecks(ctx).run())
+    mvn006 = [f for f in findings if f.check_id == "MVN-006"]
+    assert mvn006 and not mvn006[0].passed
+    assert "log4j-core" in mvn006[0].description
+
+
+def test_libs_versions_accessor_does_not_synthesize_coordinate(
+    tmp_path: Path,
+) -> None:
+    # ``libs.versions.X`` returns the version literal only; resolving
+    # it as a coordinate would materialize a phantom dep. The
+    # detector skips this namespace.
+    (tmp_path / "gradle").mkdir()
+    (tmp_path / "gradle" / "libs.versions.toml").write_text(
+        textwrap.dedent(
+            """\
+            [versions]
+            junit = "5.10.0"
+            """
+        ),
+        encoding="utf-8",
+    )
+    (tmp_path / "build.gradle").write_text(
+        textwrap.dedent(
+            """\
+            ext {
+                myVer = libs.versions.junit
+            }
+            """
+        ),
+        encoding="utf-8",
+    )
+    ctx = MavenContext.from_path(tmp_path)
+    assert ctx.files[0].dependencies == ()
+
+
+def test_libs_catalog_not_found_silent_pass(tmp_path: Path) -> None:
+    # No catalog → the build script's catalog accessors are left
+    # alone; no phantom coordinates materialize.
+    (tmp_path / "build.gradle").write_text(
+        textwrap.dedent(
+            """\
+            dependencies {
+                implementation libs.junit.jupiter
+            }
+            """
+        ),
+        encoding="utf-8",
+    )
+    ctx = MavenContext.from_path(tmp_path)
+    assert ctx.files[0].dependencies == ()
 
 
 def test_build_gradle_skipped_under_build_dir(tmp_path: Path) -> None:
