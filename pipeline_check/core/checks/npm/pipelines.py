@@ -40,8 +40,15 @@ class NpmChecks(NpmBaseCheck):
             else:
                 # ``ctx`` form: rule wants the whole context (rare).
                 targets = [self.ctx]
+            # Rules that need cross-target state (NPM-008's publish-
+            # time table populated by --resolve-remote) declare a
+            # second parameter; pass the context for those.
+            wants_ctx = _wants_ctx_kwarg(check_fn)
             for tgt in targets:
-                finding = check_fn(tgt)
+                if wants_ctx:
+                    finding = check_fn(tgt, self.ctx)
+                else:
+                    finding = check_fn(tgt)
                 _apply_rule_metadata(finding, rule)
                 findings.append(finding)
         return findings
@@ -74,6 +81,22 @@ def _input_kind(check_fn: Callable[..., Finding]) -> str:
     if name == "NpmRc" or annotation is NpmRc:
         return "rc"
     return "ctx"
+
+
+def _wants_ctx_kwarg(check_fn: Callable[..., Finding]) -> bool:
+    """Return True if *check_fn* declares a second positional
+    parameter (typically annotated ``NpmContext``).
+
+    Lets rules that need cross-target state — e.g. NPM-008 reading
+    the publish-times table the provider's ``post_filter``
+    populates — opt in without forcing every rule to take a
+    context argument.
+    """
+    try:
+        params = list(inspect.signature(check_fn).parameters.values())
+    except (TypeError, ValueError):
+        return False
+    return len(params) >= 2
 
 
 def _apply_rule_metadata(finding: Finding, rule: Rule) -> None:

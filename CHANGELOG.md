@@ -12,6 +12,90 @@ release commit collapses this section into `## [X.Y.Z] - <date>`.
 
 ### Added
 
+- **NPM-008 cooldown gate + npm registry fetcher infrastructure.**
+  New rule that fires when a direct ``package.json`` dependency
+  was published to ``registry.npmjs.org`` within the cooldown
+  window (default 7 days), catching the same takedown-window
+  attacks (Shai-Hulud / TanStack / axios → plain-crypto-js,
+  @ctrl/* maintainer-account takeovers) that pure lockfile or
+  SHA pinning is blind to. Opt-in via ``--resolve-remote``:
+  passes silently when the flag is off so the rule's absence
+  isn't a CI failure on the default no-network path.
+
+  New ``pipeline_check/core/checks/npm/registry_fetcher.py``
+  module mirrors the GHA resolver pattern
+  (``RegistryMetadataFetcher`` Protocol + ``HttpRegistryFetcher``
+  stdlib-only impl + ``FileSystemCache`` with 7-day TTL +
+  ``default_cache_dir()`` platform helper). The fetcher returns
+  ``None`` on 404 / network error so failures land as warnings
+  on ``context.warnings`` and the scan continues — strictly
+  additive resolution, mirrors the GHA contract.
+
+  The ``NpmProvider.post_filter`` hook walks every direct
+  dependency in every loaded ``package.json``, fetches per-
+  package metadata, and populates the new
+  ``NpmContext.publish_times: dict[name, dict[version, ts_utc]]``
+  the rule reads. Per-package result is cached on disk so re-runs
+  in the same week skip network entirely (toggle via
+  ``--no-cache``). Scoped names (``@scope/foo``) are URL-encoded;
+  responses over 10 MiB are rejected as a precaution against
+  bloat / misrouted servers.
+
+  ``NpmChecks`` dispatcher gained a small extension: rules that
+  declare a second positional parameter receive the full
+  ``NpmContext`` alongside their per-target argument. Existing
+  one-arg rules are unaffected; NPM-008 is the first consumer.
+
+  Rule scope: exact-version specs only (``1.2.3`` / ``=1.2.3`` /
+  ``v1.2.3``, with pre-release suffixes kept). Range specs
+  (``^1.2.3`` / ``~1.2.3`` / ``>=1.2.3``), dist-tag specs
+  (``latest``), and source specs (``file:`` / ``workspace:`` /
+  ``git+...``) skip silently — the cooldown applies to a
+  specific version literal because that's what the maintainer
+  chose to pin. PYPI-008 and MVN-008 follow-ups can layer on top
+  of the same fetcher template in their own providers.
+
+  Twenty-seven new tests in ``tests/npm/test_npm008.py`` cover
+  ``_parse_publish_times`` (happy path, malformed timestamps,
+  non-JSON, top-level-non-dict, missing time block),
+  ``fetch_publish_times`` (happy / dedup / 404 warning / cache
+  short-circuit), the version-spec regex (bare / ``=`` / ``v``
+  / pre-release / caret / tilde / dist-tag), the cooldown math
+  (fresh / old / tz-naive), and the rule itself (silent pass
+  without metadata, fires on fresh, passes on old, ignores
+  ranges, ignores unresolved packages, covers devDependencies).
+
+- **Org-wide fleet scanner (`pipeline_check fleet`) phase 1.** New
+  CLI subcommand that reads a YAML list of GitHub-style
+  ``owner/repo`` coordinates, shallow-clones each into a tmpdir,
+  runs the existing scan in a fresh subprocess so per-repo state
+  stays isolated, and writes a unified output tree:
+  ``<output-dir>/<owner>/<repo>/findings.json`` per repo plus a
+  top-level ``fleet.json`` aggregate and ``fleet.md`` digest
+  (org-wide severity totals + per-repo posture table ranked worst
+  → best + warnings). Closes the "do we even have visibility?"
+  roadmap gap without dragging in a SaaS posture-management tool.
+  Compounds with the existing ``pipeline_check history`` command:
+  the same fleet output directory can be re-rendered as a
+  static-HTML dashboard. A single repo's clone or scan failure
+  becomes a per-repo warning on the digest rather than aborting
+  the whole run; per-repo timeout (``--per-repo-timeout``,
+  default 600s) bounds any one stuck repo's blast radius. Phase
+  1 limits coordinates to GitHub-style ``owner/repo`` (GitLab
+  ``group/sub/project`` and Bitbucket ``workspace/slug`` are
+  deferred and rejected at parse time with an explicit error so
+  the user sees the limitation immediately). Deferred to phase 2:
+  ``--from-org`` SCM API enumeration, ``--include`` /
+  ``--exclude`` globs, ``--baseline-dir`` regression diffing,
+  per-repo SARIF / ``threats.md`` outputs, and forwarding
+  arbitrary ``pipeline_check`` flags to the per-repo subprocess.
+  Twenty new tests in ``tests/test_fleet.py`` cover repo-list
+  parsing (flat list / mapping-with-``repos`` / malformed YAML /
+  non-string / wrong-shape coordinate / GitLab-style rejection),
+  digest rendering (ranking, warnings, truncation), the
+  orchestrator's clone-failure / scan-failure / corrupt-findings
+  paths, and CLI integration via ``CliRunner``.
+
 - **Dedicated `docs/vscode.md` reference page for the VS Code
   extension.** Promotes editor coverage from a two-paragraph
   subsection of `usage.md` to a top-level docs page with install
@@ -1192,6 +1276,31 @@ release commit collapses this section into `## [X.Y.Z] - <date>`.
   OWASP itself). Both regenerated.
 
 ### Fixed
+
+- **`_IMAGE_TOKEN_RE` now matches implicit-registry image refs.**
+  The OCI image-token pre-filter required either a dotted hostname
+  (``gcr.io/...``) or a registry-port shape (``localhost:5000/...``)
+  in the first component, so Docker Hub implicit refs like
+  ``myorg/app:1.2`` and ``library/redis:7.0`` were silently dropped
+  before reaching ``oci_image()``. Worked against AC-005
+  (build → deploy reachability) matching accuracy whenever the
+  workflow used Docker Hub names. Regex now accepts two shapes:
+  ``<host>/<repo>[/<sub>]*`` with explicit dotted/ported host, or
+  ``<seg>/<seg>[/<seg>]*`` with no host but at least two path
+  segments. Bare words (``latest``, ``python``) still don't match.
+  New ``tests/test_oci_refs.py`` pins both ends of the trade-off.
+
+- **Gradle map-style dependency parsing is now order-insensitive.**
+  ``_GRADLE_MAP_DEP_RE`` enforced ``group → name → version`` in
+  that exact order, but Gradle named arguments are unordered in
+  both Groovy and Kotlin DSL. Declarations like
+  ``api group: 'org.hibernate', version: '3.0.5', name: 'hibernate'``
+  or any other permutation were silently skipped, causing
+  ``MVN-*`` rules to miss real dependencies. Split the parser
+  into a window regex that locates three ``key: value`` pairs
+  followed by three per-key extractors that pull each coordinate
+  independently. All six permutations plus Kotlin DSL multi-line
+  are now covered by ``test_gradle.TestParseGradle``.
 
 - **Doc drift on Terraform / CloudFormation provider pages.**
   Published `docs/providers/terraform.md` and

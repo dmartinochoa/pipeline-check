@@ -34,6 +34,7 @@ Inputs the loader recognizes
 """
 from __future__ import annotations
 
+import datetime as _dt
 import json
 from dataclasses import dataclass, field
 from pathlib import Path
@@ -114,6 +115,13 @@ class NpmContext:
         )
         self.files_skipped: int = 0
         self.warnings: list[str] = []
+        #: ``{package_name: {version: utc_timestamp}}`` populated
+        #: by the npm provider's ``post_filter`` when
+        #: ``--resolve-remote`` is on. Empty by default; rules like
+        #: NPM-008 (cooldown gate) read it and pass silently when
+        #: the dict is empty so the rule's absence isn't a CI
+        #: failure for users on the default no-network path.
+        self.publish_times: dict[str, dict[str, _dt.datetime]] = {}
 
     @classmethod
     def from_path(cls, path: str | Path) -> NpmContext:

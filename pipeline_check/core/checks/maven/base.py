@@ -423,16 +423,32 @@ _GRADLE_COORD_RE = re.compile(
 # Map-form dep declaration:
 #   group: 'X', name: 'Y', version: 'Z'
 #   group = "X", name = "Y", version = "Z"   (Kotlin DSL)
-# All three fields are required; order-insensitive within the
-# matched window. Captures group / artifact / version separately.
-_GRADLE_MAP_DEP_RE = re.compile(
-    r"""group\s*[:=]\s*(?P<gq>['"])(?P<group>[\w.+-]+)(?P=gq)
+# All three fields are required; Gradle named arguments are
+# order-insensitive in both Groovy and Kotlin DSL, so a window
+# regex finds three "key: 'value'" pairs in any order and three
+# per-key extractors then pull the actual coordinate. Capture
+# fields ``group``, ``artifact``, ``version`` on each per-key
+# match's ``value`` named group.
+_GRADLE_MAP_KEY_VALUE = (
+    r"""\b(?:group|name|version)\s*[:=]\s*['"][^'"\n]{1,256}['"]"""
+)
+_GRADLE_MAP_DEP_WINDOW_RE = re.compile(
+    rf"""{_GRADLE_MAP_KEY_VALUE}
         \s*,?\s*
-        name\s*[:=]\s*(?P<aq>['"])(?P<artifact>[\w.+-]+)(?P=aq)
+        {_GRADLE_MAP_KEY_VALUE}
         \s*,?\s*
-        version\s*[:=]\s*(?P<vq>['"])(?P<version>[\w.+\-${}\[\](),]+)(?P=vq)
+        {_GRADLE_MAP_KEY_VALUE}
     """,
     re.VERBOSE,
+)
+_GRADLE_MAP_GROUP_RE = re.compile(
+    r"""\bgroup\s*[:=]\s*(['"])(?P<value>[\w.+-]+)\1""",
+)
+_GRADLE_MAP_NAME_RE = re.compile(
+    r"""\bname\s*[:=]\s*(['"])(?P<value>[\w.+-]+)\1""",
+)
+_GRADLE_MAP_VERSION_RE = re.compile(
+    r"""\bversion\s*[:=]\s*(['"])(?P<value>[\w.+\-${}\[\](),]+)\1""",
 )
 
 # Maven repository URL inside a ``maven { ... }`` block. Three real-
@@ -514,10 +530,14 @@ def _parse_gradle(path: str, text: str) -> PomFile:
             line_no=_line_at(text, m.start()),
         ))
 
-    for m in _GRADLE_MAP_DEP_RE.finditer(text):
-        coord = (
-            m.group("group"), m.group("artifact"), m.group("version"),
-        )
+    for m in _GRADLE_MAP_DEP_WINDOW_RE.finditer(text):
+        window = m.group(0)
+        g = _GRADLE_MAP_GROUP_RE.search(window)
+        a = _GRADLE_MAP_NAME_RE.search(window)
+        v = _GRADLE_MAP_VERSION_RE.search(window)
+        if not (g and a and v):
+            continue
+        coord = (g.group("value"), a.group("value"), v.group("value"))
         if coord in seen_coords:
             continue
         seen_coords.add(coord)

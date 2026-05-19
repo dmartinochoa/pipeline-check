@@ -41,7 +41,7 @@ parsers and are queued for a follow-up.
 
 ## What it covers
 
-8 checks · 0 have an autofix patch (``--fix``).
+9 checks · 0 have an autofix patch (``--fix``).
 
 | Check | Title | Severity | Fix |
 |-------|-------|----------|-----|
@@ -52,6 +52,7 @@ parsers and are queued for a follow-up.
 | [NPM-005](#npm-005) | package.json git dependency uses a mutable ref | <span class="pg-sev pg-sev--high">HIGH</span> |  |
 | [NPM-006](#npm-006) | package-lock.json pins a known-compromised package version | <span class="pg-sev pg-sev--critical">CRITICAL</span> |  |
 | [NPM-007](#npm-007) | .npmrc does not disable install-time lifecycle scripts | <span class="pg-sev pg-sev--high">HIGH</span> |  |
+| [NPM-008](#npm-008) | Direct dependency was published within the cooldown window | <span class="pg-sev pg-sev--high">HIGH</span> |  |
 | [NPM-011](#npm-011) | package.json files field includes secret-shaped paths | <span class="pg-sev pg-sev--high">HIGH</span> |  |
 
 ---
@@ -256,6 +257,36 @@ Complements NPM-004 (``package.json`` declares its own install-time hook on the 
 **Recommended action**
 
 Add ``ignore-scripts=true`` to the repo's ``.npmrc``. The setting tells npm / pnpm / Yarn 1 to skip every ``preinstall`` / ``install`` / ``postinstall`` / ``prepare`` hook on every transitive dependency, including the ones added in a future ``npm install``. This is the file-side complement to DF-024 (which catches the same primitive at ``docker build`` time) — DF-024 protects the image, NPM-007 protects the developer laptop and any unattended CI step running ``npm install`` outside a container. If a specific package legitimately needs its build script (a native module like ``better-sqlite3``), allow-list it after the install: ``npm rebuild better-sqlite3``.
+
+</div>
+
+</div>
+
+<div class="pg-rule pg-rule--high" markdown>
+
+## NPM-008: Direct dependency was published within the cooldown window { #npm-008 }
+
+<div class="pg-rule__tags">
+<span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-3</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-8</span> <span class="pg-tag pg-tag--esf">ESF-S-VERIFY-DEPS</span> <span class="pg-tag pg-tag--cwe">CWE-829</span> <span class="pg-tag pg-tag--cwe">CWE-494</span>
+</div>
+
+Network-dependent: needs ``--resolve-remote`` to populate the per-package publish timestamps from ``registry.npmjs.org``. Walks every direct dependency in ``dependencies`` / ``devDependencies`` / ``peerDependencies`` / ``optionalDependencies`` (transitive packages aren't covered, the cooldown applies to what *you* chose to bump). Lockfile entries are out of scope, the rule reasons about the manifest's pinned spec since that's what changes when a maintainer bumps a dep. When ``--resolve-remote`` is off or the registry can't be reached, the rule passes silently so the absence of the network path doesn't trip CI.
+
+**Known false-positive modes**
+
+- Pre-release versions (``foo@1.0.0-rc.1``) are often freshly published; the cooldown applies to them too because pre-release tags have been used as carriers in real compromises (see the @ctrl/* / nx campaigns). Suppress per-resource via ``--ignore-file`` when a release-train workflow legitimately bumps to a same-day RC.
+- Same-day patch upgrades from a maintainer the team directly trusts (e.g. a vendored fork the team owns) are flagged. Suppress per-resource, the cooldown is a default-safe gate, not a hard rule.
+
+**Seen in the wild**
+
+- Shai-Hulud-class npm worm (Sep 2025): malicious versions published, detected, and yanked within 48h on multiple packages. Consumers who held a 7-day cooldown caught the takedown before the version hit their lockfile.
+- @ctrl/tinycolor maintainer-account takeover (May 2024): the malicious versions stayed live for ~36 hours before GitHub Advisory and npm coordinated removal. Cooldown of any meaningful length would have skipped them.
+
+<div class="pg-rule__rec" markdown>
+
+**Recommended action**
+
+Either skip the just-published version (pin to the last release older than the cooldown window) or wait until the cooldown has elapsed before bumping the lockfile. Most publisher-account compromises (Shai-Hulud / TanStack / axios -> plain-crypto-js) are detected and yanked from the registry within hours-to-days of publication; holding back N days converts a publisher-compromise window into a vulnerability-disclosure window where either the publisher rotates the malicious version off the registry or the security community files an advisory you can match against NPM-006. Tune the cooldown via ``--npm-cooldown-days`` (default 7).
 
 </div>
 

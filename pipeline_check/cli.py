@@ -3620,6 +3620,83 @@ def history_cmd(history_dir: str, output_path: str, top_n: int) -> None:
         click.echo(f"  warn: {w}", err=True)
 
 
+# ────────────────────────────────────────────────────────────────────────────
+# `fleet` subcommand, scan a list of repos and emit a unified digest.
+# ────────────────────────────────────────────────────────────────────────────
+
+
+@click.command(name="fleet")
+@click.option(
+    "--repos",
+    "repos_path",
+    required=True,
+    metavar="PATH",
+    help=(
+        "YAML file with a list of 'owner/repo' coordinates "
+        "(GitHub-style, phase 1). Either a top-level list or a "
+        "mapping with a 'repos:' key holding the list."
+    ),
+)
+@click.option(
+    "--output-dir",
+    "output_dir",
+    default="fleet-out",
+    show_default=True,
+    metavar="PATH",
+    help=(
+        "Directory for the unified digest tree. Per-repo findings "
+        "land at <output-dir>/<owner>/<repo>/findings.json; the "
+        "aggregate is at <output-dir>/fleet.json + fleet.md."
+    ),
+)
+@click.option(
+    "--per-repo-timeout",
+    "timeout_sec",
+    default=600,
+    show_default=True,
+    type=click.IntRange(30, 3600),
+    help=(
+        "Maximum seconds to spend on any single repo (clone + scan "
+        "combined). A repo that exceeds this surfaces as a "
+        "warning in the digest and the run continues with the "
+        "remaining repos."
+    ),
+)
+def fleet_cmd(
+    repos_path: str, output_dir: str, timeout_sec: int,
+) -> None:
+    """Scan a list of repositories and emit a unified posture digest.
+
+    Phase 1: GitHub-style ``owner/repo`` coordinates only. Each
+    coordinate is shallow-cloned to a tmpdir, scanned via a fresh
+    ``pipeline_check`` subprocess, and the per-repo findings plus
+    a fleet-wide digest land under ``--output-dir``. A single
+    repo's clone / scan failure becomes a warning, not an abort.
+    """
+    from pathlib import Path
+
+    from .core.fleet import load_repo_list, run_fleet
+
+    try:
+        repos = load_repo_list(repos_path)
+    except ValueError as exc:
+        raise click.UsageError(str(exc)) from exc
+    if not repos:
+        raise click.UsageError(
+            f"[fleet] {repos_path} contains no repo coordinates."
+        )
+    out_dir = Path(output_dir)
+    digest = run_fleet(repos, out_dir, timeout_sec=timeout_sec)
+    ok = sum(1 for s in digest.snapshots if s.ok)
+    click.echo(
+        f"[fleet] scanned {len(digest.snapshots)} repo(s) "
+        f"({ok} OK, {len(digest.snapshots) - ok} errored) -> "
+        f"{out_dir}/fleet.md"
+    )
+    for w in digest.warnings:
+        click.echo(f"  warn: {w}", err=True)
+
+
 def main() -> None:
     """Console entry point: dispatches between ``scan`` and subcommands.
 
@@ -3643,5 +3720,9 @@ def main() -> None:
     if len(sys.argv) >= 2 and sys.argv[1] == "history":
         sys.argv.pop(1)
         history_cmd()
+        return
+    if len(sys.argv) >= 2 and sys.argv[1] == "fleet":
+        sys.argv.pop(1)
+        fleet_cmd()
         return
     scan()
