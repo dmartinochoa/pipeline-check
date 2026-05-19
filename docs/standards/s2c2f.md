@@ -1988,6 +1988,40 @@ steps:
 
 **Autofix.** `pipeline_check --fix` will patch this finding automatically. Review the diff before committing; the fixer applies the conservative remediation pattern (e.g. swap a floating tag for the digest it currently resolves to), not the most aggressive one.
 
+**Proof of exploit.**
+
+```
+# Vulnerable: every git fetch in the job ignores certificate
+# validity. An attacker on the same network (corporate proxy,
+# hostile WiFi at a remote-dev's home, compromised mirror)
+# returns a MITM-substituted clone of the dependency. The
+# downstream build runs the attacker's code with the
+# workflow's full secret + token set in scope.
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@<sha>
+      - run: git config --global http.sslVerify false
+      - run: git clone https://internal.example.com/lib.git
+      - run: ./build
+
+# Safe: install the missing CA chain so verification succeeds.
+# If the upstream really uses a private CA, ship its root in
+# the runner image rather than disabling verification for
+# every host the job talks to.
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@<sha>
+      - run: |
+          sudo cp ./ci/internal-ca.crt /usr/local/share/ca-certificates/
+          sudo update-ca-certificates
+      - run: git clone https://internal.example.com/lib.git
+      - run: ./build
+```
+
 **Source:** [`GHA-023`](../providers/github.md#gha-023) in the [GitHub Actions provider](../providers/github.md).
 
 ### `GHA-024`: No SLSA provenance attestation produced <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-gha-024 }
