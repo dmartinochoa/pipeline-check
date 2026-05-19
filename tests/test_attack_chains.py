@@ -803,6 +803,44 @@ class TestChainAC012:
             _f("GHA-034", self.WF, confidence=Confidence.MEDIUM),
         ])
         ac12 = next(c for c in out if c.chain_id == "AC-012")
+        # Without job anchors the chain is unconfirmed and confidence
+        # falls through to the weakest leg.
+        assert ac12.confidence is Confidence.MEDIUM
+        assert ac12.confirmed_reachable is False
+
+    def test_reachability_confirmed_when_anchor_jobs_intersect(self):
+        # Same call site both unpins the callee AND passes
+        # ``secrets: inherit``, the single-step exfil channel.
+        out = chains_pkg.evaluate([
+            _f("GHA-025", self.WF, job_anchors=("call_release",)),
+            _f(
+                "GHA-034",
+                self.WF,
+                job_anchors=("call_release",),
+                confidence=Confidence.MEDIUM,
+            ),
+        ])
+        ac12 = next(c for c in out if c.chain_id == "AC-012")
+        assert ac12.confirmed_reachable is True
+        assert "call_release" in ac12.reachability_note
+        assert ac12.confidence is Confidence.HIGH
+
+    def test_reachability_unconfirmed_when_jobs_disjoint(self):
+        # Unpinned call in ``build``, inherit call in ``deploy`` —
+        # two reusable-workflow calls on the same file but neither
+        # one exposes both legs, so no single-step exfil.
+        out = chains_pkg.evaluate([
+            _f("GHA-025", self.WF, job_anchors=("build",)),
+            _f(
+                "GHA-034",
+                self.WF,
+                job_anchors=("deploy",),
+                confidence=Confidence.MEDIUM,
+            ),
+        ])
+        ac12 = next(c for c in out if c.chain_id == "AC-012")
+        assert ac12.confirmed_reachable is False
+        assert ac12.reachability_note == ""
         assert ac12.confidence is Confidence.MEDIUM
 
 

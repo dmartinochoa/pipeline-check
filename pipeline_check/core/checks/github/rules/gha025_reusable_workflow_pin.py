@@ -50,6 +50,12 @@ def check(path: str, doc: dict[str, Any]) -> Finding:
         )
     unpinned: list[str] = []
     locations: list[Location] = []
+    # Preserve insertion order so the anchor set is reproducible across
+    # runs. AC-012 intersects this with GHA-034's anchors to confirm
+    # the unpinned reusable-workflow call AND the ``secrets: inherit``
+    # land on the same call site, the tight tag-move-to-credential-
+    # exfil reachability.
+    anchor_jobs: dict[str, None] = {}
     for job_id, job in jobs.items():
         if not isinstance(job, dict):
             continue
@@ -59,6 +65,7 @@ def check(path: str, doc: dict[str, Any]) -> Finding:
         if not ref.is_pinned_to_sha:
             unpinned.append(f"{job_id}: {ref.raw}")
             locations.append(job_location(path, job))
+            anchor_jobs[job_id] = None
     passed = not unpinned
     desc = (
         "Every reusable workflow reference is pinned to a commit SHA."
@@ -73,4 +80,5 @@ def check(path: str, doc: dict[str, Any]) -> Finding:
         resource=path, description=desc,
         recommendation=RULE.recommendation, passed=passed,
         locations=locations,
+        job_anchors=tuple(anchor_jobs),
     )

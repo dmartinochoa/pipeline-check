@@ -186,6 +186,22 @@ release commit collapses this section into `## [X.Y.Z] - <date>`.
   `GL-032` ∩ `GL-020` share a job. `GHA-019`, `GHA-036`, `GL-032`,
   `GL-020` all gained `Finding.job_anchors`.
 
+- **Reachability-aware AC-012 (reusable workflow secret exfil).**
+  `AC-012` (mutable reusable-workflow ref + ``secrets: inherit``)
+  now intersects `GHA-025` ∩ `GHA-034` job anchors. Both leg rules
+  already walked per-job; the migration was to surface the
+  offending job IDs as `Finding.job_anchors`. When the same call
+  site (`jobs.<id>.uses:` + `jobs.<id>.secrets: inherit`) carries
+  both the mutable ref AND the inherit pass-through, the chain
+  emits with `confirmed_reachable=True`, confidence promoted to
+  `HIGH`, and a `reachability_note` citing the shared job(s).
+  The single-step tag-move-to-credential-exfil channel: one tag
+  move on the callee repo and the entire caller secret surface
+  ships to attacker code in the next run. Disjoint anchors (two
+  reusable-workflow calls on the same file but in different jobs)
+  fall back to the legacy co-occurrence signal — each leg is
+  independently risky but neither single call site exposes both.
+
 - **Reachability-aware AC-008 (dependency confusion window).**
   `AC-008` (lockfile miss + integrity-bypass install) now uses the
   same `job_anchors` intersection model as the rest of the GHA
