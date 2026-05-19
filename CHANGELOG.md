@@ -186,6 +186,32 @@ release commit collapses this section into `## [X.Y.Z] - <date>`.
   `GL-032` ∩ `GL-020` share a job. `GHA-019`, `GHA-036`, `GL-032`,
   `GL-020` all gained `Finding.job_anchors`.
 
+- **poetry.lock parser via requirements-file synthesis.**
+  ``poetry.lock`` joins ``requirements*.txt`` / ``*.in`` in the
+  pypi provider's recognized inputs; the loader detects the
+  filename and routes through a new ``_parse_poetry_lock`` helper
+  that parses TOML via stdlib ``tomllib`` and projects each
+  ``[[package]]`` entry onto a :class:`RequirementLine`. Registry-
+  resolved packages get a ``<name>==<version>`` body; git-sourced
+  packages (``[package.source]`` ``type = "git"``) get a PEP 508
+  direct URL body (``<name> @ git+<url>@<sha>``) preferring
+  ``resolved_reference`` over the branch / tag in ``reference``
+  so a Poetry lockfile that pinned to ``main`` upstream still
+  passes PYPI-004 once the install materialized the SHA. Each
+  package's file hashes (lock-version 2.x inline ``files`` field,
+  lock-version 1.x ``[metadata.files]`` map) become per-line
+  ``--hash=sha256:...`` flags, and ``--require-hashes`` is set at
+  the file level since Poetry enforces hashes at install time —
+  PYPI-001 / PYPI-002 / PYPI-004 / PYPI-006 then apply to
+  Poetry-locked projects without per-rule changes. ``pyproject.toml``
+  (PEP 621 / Poetry deps) and ``Pipfile.lock`` stay deferred —
+  each warrants its own parser. Twelve new tests in
+  ``tests/pypi/test_poetry_lock.py`` exercise the parser (lock-
+  version 1 + 2 file shapes, git sources with / without
+  resolved_reference, packages missing files, empty lockfile)
+  and end-to-end firing through ``PypiChecks`` on a real
+  poetry.lock.
+
 - **yarn.lock (yarn 1 / Classic) parser via npm-lock-shape
   synthesis.** ``yarn.lock`` joins ``package-lock.json`` /
   ``npm-shrinkwrap.json`` / ``pnpm-lock.yaml`` in

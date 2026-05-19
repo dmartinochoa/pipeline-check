@@ -1,29 +1,40 @@
 """pypi context and base check.
 
 Loads pip ``requirements.txt`` / ``requirements*.txt`` / ``*.in``
-(pip-tools input) files from disk. Each file becomes a
-:class:`RequirementsFile` exposing the original text plus a list of
-parsed :class:`RequirementLine` entries: one per logical requirement,
-with line continuations joined and comments stripped.
+(pip-tools input) and ``poetry.lock`` files from disk. Each file
+becomes a :class:`RequirementsFile` exposing the original text plus
+a list of parsed :class:`RequirementLine` entries: one per logical
+requirement, with line continuations joined and comments stripped.
 
-pyproject.toml / Pipfile.lock / poetry.lock support is out of scope
-for the initial pack; the requirements.txt format covers the
-overwhelming majority of pip-installable build/install steps and
-captures the strongest supply-chain signals (pinning, hashing,
-``--extra-index-url`` dependency confusion).
+``poetry.lock`` is read by parsing the TOML and synthesizing the
+same ``RequirementsFile`` shape (see :func:`_parse_poetry_lock`)
+so every existing ``PYPI-NNN`` rule applies without per-rule
+changes. Poetry enforces per-package hashes at install time when
+the lockfile is present, so synthesized files carry
+``--require-hashes`` in their top-level options for PYPI-002's
+sake; git-sourced packages get a ``foo @ git+<url>@<sha>``
+PEP-508-direct-URL body so PYPI-004 classifies the ref correctly.
+
+``pyproject.toml`` (PEP 621 / Poetry dependency declarations) and
+``Pipfile.lock`` stay out of scope for this pass — both warrant
+their own parsers, deferred.
 """
 from __future__ import annotations
 
+import tomllib
 from dataclasses import dataclass, field
 from pathlib import Path
+from typing import Any
 
 from ..base import BaseCheck
 
 #: Recognized requirements-file shapes. Both ``requirements.txt`` style
 #: (resolved, hash-bearing) and ``*.in`` (pip-tools input, declarative)
 #: are scanned, the supply-chain signal is the same in both.
+#: ``poetry.lock`` joins the set via TOML parsing + synthesis
+#: (:func:`_parse_poetry_lock`).
 REQUIREMENTS_GLOBS: tuple[str, ...] = (
-    "requirements*.txt", "requirements/*.txt", "*.in",
+    "requirements*.txt", "requirements/*.txt", "*.in", "poetry.lock",
 )
 
 
@@ -94,7 +105,17 @@ class PypiContext:
                 warnings.append(f"{f}: read error: {exc}")
                 skipped += 1
                 continue
-            lines, options = _parse_requirements(text)
+            if f.name == "poetry.lock":
+                try:
+                    lines, options = _parse_poetry_lock(text)
+                except Exception as exc:  # noqa: BLE001
+                    warnings.append(
+                        f"{f}: poetry.lock parse error: {exc}"
+                    )
+                    skipped += 1
+                    continue
+            else:
+                lines, options = _parse_requirements(text)
             files.append(RequirementsFile(
                 path=str(f), text=text, lines=lines, options=options,
             ))
@@ -214,6 +235,133 @@ def _comment_start(line: str) -> int:
             return idx
         # No leading whitespace: ``foo==1.0#egg=...`` keeps the ``#``.
     return -1
+
+
+# ── poetry.lock synthesis ────────────────────────────────────────────
+
+
+def _files_for_package(
+    pkg: dict[str, Any],
+    metadata_files: dict[str, Any] | None,
+) -> list[dict[str, Any]]:
+    """Return the list of file records for a single poetry.lock package.
+
+    Lock-version 2.x carries a per-package ``files`` list inside the
+    ``[[package]]`` table. Lock-version 1.x keeps file records in a
+    top-level ``[metadata.files]`` map keyed by package name. The
+    helper hides both shapes from the synthesizer; callers see a
+    flat list of ``{file, hash}`` dicts regardless.
+    """
+    inline = pkg.get("files")
+    if isinstance(inline, list):
+        return [f for f in inline if isinstance(f, dict)]
+    if metadata_files is not None:
+        name = pkg.get("name")
+        if isinstance(name, str):
+            entries = metadata_files.get(name)
+            if isinstance(entries, list):
+                return [f for f in entries if isinstance(f, dict)]
+    return []
+
+
+def _hash_flag_from_file_entry(entry: dict[str, Any]) -> str | None:
+    """Return ``--hash=<algo>:<digest>`` from a poetry file record.
+
+    Poetry's per-file ``hash`` field already carries the ``algo:digest``
+    form (typically ``sha256:abc...``), so we just prefix ``--hash=``
+    and the resulting flag matches the shape PYPI-002 reads.
+    """
+    h = entry.get("hash")
+    if not isinstance(h, str) or ":" not in h:
+        return None
+    return f"--hash={h}"
+
+
+def _synthesize_body_for_package(pkg: dict[str, Any]) -> str | None:
+    """Return the requirement body for one ``[[package]]`` table.
+
+    Registry-resolved packages → ``<name>==<version>`` so PYPI-001 /
+    PYPI-006 see the exact pin.
+
+    Git-sourced packages (``[package.source]`` ``type = "git"``) →
+    ``<name> @ git+<url>@<resolved_reference>`` (PEP 508 direct URL)
+    so PYPI-004 classifies the ref. We prefer ``resolved_reference``
+    (the lock-time SHA Poetry resolves to) over the human-supplied
+    ``reference`` (which may be a branch or tag) so a lockfile that
+    pins to a 40-char SHA passes PYPI-004 even when the source block
+    asks for ``main``.
+
+    URL-sourced and directory-sourced packages fall through to a
+    bare ``<name>==<version>`` body — PYPI-004 only fires on VCS
+    schemes, so URL sources don't need the direct-URL shape.
+
+    Returns ``None`` when name or version are missing (defensive;
+    Poetry always writes both).
+    """
+    name = pkg.get("name")
+    version = pkg.get("version")
+    if not isinstance(name, str) or not isinstance(version, str):
+        return None
+    source = pkg.get("source")
+    if isinstance(source, dict) and source.get("type") == "git":
+        url = source.get("url")
+        ref = source.get("resolved_reference") or source.get("reference")
+        if isinstance(url, str) and isinstance(ref, str):
+            return f"{name} @ git+{url}@{ref}"
+        if isinstance(url, str):
+            return f"{name} @ git+{url}"
+    return f"{name}=={version}"
+
+
+def _parse_poetry_lock(
+    text: str,
+) -> tuple[tuple[RequirementLine, ...], tuple[str, ...]]:
+    """Parse a poetry.lock body and project it onto the
+    requirements-file shape.
+
+    Each ``[[package]]`` entry becomes one :class:`RequirementLine`
+    carrying a ``name==version`` body (or a PEP 508 direct URL for
+    git sources) plus one ``--hash=`` flag per file record. The
+    returned options always include ``--require-hashes`` because
+    Poetry verifies per-package hashes at install time when the lock
+    file is present; the per-line ``--hash`` flags carry the
+    individual file hashes PYPI-002 expects.
+
+    Line numbers are best-effort: the synthesized RequirementLines
+    each report a 1-based index into the ``[[package]]`` block they
+    came from (1, 2, 3, ...) rather than a literal byte offset into
+    the TOML. PYPI rules use the line number only for finding
+    locations, so a monotonic per-package index keeps locations
+    distinguishable without a costly TOML-line-tracking pass.
+    """
+    raw = tomllib.loads(text)
+    packages = raw.get("package")
+    if not isinstance(packages, list):
+        # Empty / malformed lockfile: emit nothing rather than raise.
+        return ((), ("--require-hashes",))
+    metadata = raw.get("metadata")
+    metadata_files = (
+        metadata.get("files")
+        if isinstance(metadata, dict) and isinstance(metadata.get("files"), dict)
+        else None
+    )
+    lines: list[RequirementLine] = []
+    for idx, pkg in enumerate(packages, start=1):
+        if not isinstance(pkg, dict):
+            continue
+        body = _synthesize_body_for_package(pkg)
+        if body is None:
+            continue
+        files = _files_for_package(pkg, metadata_files)
+        flags: list[str] = []
+        for f in files:
+            flag = _hash_flag_from_file_entry(f)
+            if flag is not None:
+                flags.append(flag)
+        lines.append(RequirementLine(
+            line_no=idx, body=body, flags=tuple(flags),
+        ))
+    return tuple(lines), ("--require-hashes",)
 
 
 # ── Helpers shared by multiple rule modules ────────────────────────────
