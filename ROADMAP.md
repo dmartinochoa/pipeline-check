@@ -235,13 +235,25 @@ rules per cloud first, expand.
 
 ### Distribution beyond `pip install`
 
-Standalone shiv or PyInstaller binary attached to every GitHub
-release plus a ``ghcr.io/<owner>/pipeline-check`` container image.
-Removes the Python-install friction for shops whose CI containers
-don't ship Python (Go-shop CI, JVM-shop CI, container-only build
-environments). Pure packaging move, no rule code change. The
-marketplace ``action.yml`` already shipped is the GHA half of this;
-the binary + container image cover every other CI.
+The container image half shipped: ``ghcr.io/dmartinochoa/
+pipeline-check`` and ``docker.io/dmartinochoa/pipeline-check``
+publish on every ``v*.*.*`` tag via ``.github/workflows/docker-
+publish.yml``, multi-arch (linux/amd64 + linux/arm64), with Docker
+Scout vuln-scan gating the promote-to-release-tag step and SLSA
+provenance + SBOM attestations bound to the digest. Quarantine-
+then-promote ensures a vulnerable image never escapes a throwaway
+tag. Together with the marketplace ``action.yml``, this covers
+every CI environment that can run a container.
+
+A standalone binary (shiv / PyInstaller) was the other half of
+this item. Deferred with stated reasoning: the container image
+already serves the no-Python use case; a shiv ``.pyz`` still
+requires Python on the target so it adds little over ``pip
+install``; PyInstaller's interaction with boto3's dynamic service
+loading and pipeline-check's pkgutil-based plugin discovery is a
+known-fragile combination that would carry significant ongoing
+maintenance surface. Revisit if there's clear user demand for a
+no-Docker-no-Python distribution path.
 
 ### Vulnerable-by-design benchmark — phase 2 (cross-scanner comparison)
 
@@ -279,17 +291,27 @@ avoided that plumbing change.
 
 ### Reachability-aware attack chains
 
-The chain engine today fires on co-occurrence: an ``AC-NNN`` chain
-emits when both anchor rules emit findings, regardless of whether
-the same execution path connects them. The next iteration walks the
-dataflow graph between the two anchor findings and only fires when
-an executable connection exists.
+Phase 1 (shared-job intersection) shipped incrementally across the
+chain pack: 26 of the 40 chain rules now intersect their anchor
+findings' ``job_anchors`` sets, promote the chain confidence to
+HIGH when a shared job exists, and emit a "reachability
+unconfirmed, co-occurrence only" note when it doesn't. The
+remaining 14 chains have explicit "Reachability-model note" or
+"Reachability-model carve-out" comments documenting why
+shared-job reachability doesn't apply (cross-provider scope,
+chart-file co-occurrence, Dockerfile-level locality, repo-level
+worm topology). AC-001 is the canonical example.
 
-Cuts the chain-engine false-positive rate, promotes confidence on
-every path that does fire to HIGH, and reuses the TAINT engine's
-DAG (no separate machinery). Closes the biggest legitimate
-criticism of the AC-* family: that co-occurrence is a weaker claim
-than reachability.
+Phase 2 is the dataflow-DAG variant: walk the TAINT engine's DAG
+between the two anchor findings and only fire when an executable
+connection exists. This is the right paradigm for the cross-
+provider chains (XPC-NNN and AC-024 / AC-016 class) where
+shared-job has no meaning — the anchors live in different
+documents (CI workflow + AWS state, package.json + workflow,
+Helm chart + cluster RBAC). Requires extending TAINT findings to
+expose their source / sink coordinates on a cross-document
+graph; the v1.0.x TAINT engine carries this state per-workflow
+but doesn't yet expose it to the chain engine.
 
 ### Pluggable LLM-assisted triage (opt-in, local)
 
