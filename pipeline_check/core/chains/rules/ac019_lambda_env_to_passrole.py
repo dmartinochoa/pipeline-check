@@ -46,7 +46,7 @@ shape that's still worth surfacing.
 """
 from __future__ import annotations
 
-from ...checks.base import Confidence, Finding, Severity
+from ...checks.base import Finding, Severity
 from ..base import Chain, ChainRule, group_by_anchor, has_failing, min_confidence
 
 RULE = ChainRule(
@@ -105,13 +105,18 @@ def _base_narrative() -> str:
 
 
 def match(findings: list[Finding]) -> list[Chain]:
-    # ResourceAnchor phase 1: confirmed pairing when the LMB-003
-    # Lambda's execution role IS the IAM-004 wildcard-PassRole role.
-    # LMB-003 emits the execution role as an iam_role anchor (alongside
-    # its lambda_fn anchor); IAM-004 emits its own role's ARN as
-    # iam_role. A shared identity means the same role both governs the
-    # secret-leaking Lambda's execution context AND carries
-    # ``iam:PassRole *`` — the tight one-step role-hop primitive.
+    # ResourceAnchor phase 1: same-role tightening. When the LMB-003
+    # Lambda's execution role IS the IAM-004 wildcard-PassRole role,
+    # emit a per-role chain whose narrative cites the role-equality
+    # as the tightening fact. The chain still ships with
+    # ``confirmed_reachable=False`` and weakest-leg confidence —
+    # LMB-003 only proves a credential-shaped literal is in the env
+    # vars, not that the leaked value is an AWS credential for THIS
+    # role, so promoting to HIGH would overclaim exploitability.
+    # The per-role narrative still distinguishes this signal from a
+    # disjoint scan-level co-occurrence; consumers wanting the
+    # tighter claim can read ``reachability_note`` for the role
+    # match and pair it with a separate secret-classification step.
     by_role = group_by_anchor(findings, ["LMB-003", "IAM-004"], "iam_role")
     out: list[Chain] = []
     matched_findings: set[int] = set()
@@ -124,20 +129,23 @@ def match(findings: list[Finding]) -> list[Chain]:
         narrative = (
             f"For role `{role_arn}`:\n"
             + _base_narrative()
-            + f"  3. Reachability confirmed: the secret-leaking "
-            f"Lambda (`{lmb003.resource}`) RUNS AS `{role_arn}`, "
-            f"and `{role_arn}` is the role IAM-004 flagged for "
-            f"``iam:PassRole *``. Anyone who exfils the env var "
-            f"holds credentials for a role that can hand any IAM "
-            f"role in the account to a fresh Lambda / EC2 / "
-            f"CodeBuild — one step, one execution context, no "
-            f"cross-principal pivot required."
+            + f"  3. Same-role tightening: the secret-leaking Lambda "
+            f"(`{lmb003.resource}`) RUNS AS `{role_arn}`, and "
+            f"`{role_arn}` is also the role IAM-004 flagged for "
+            f"``iam:PassRole *``. IF the leaked env var contains "
+            f"credentials for this role, the exfil-to-PassRole path "
+            f"is single-step and single-execution-context. The leak "
+            f"could also be a JWT / SMTP password / Stripe key / "
+            f"other non-AWS credential, so this stays a co-"
+            f"occurrence signal until a separate secret-"
+            f"classification step ties the env-var content to AWS "
+            f"credentials for this principal."
         )
         out.append(Chain(
             chain_id=RULE.id,
             title=RULE.title,
             severity=RULE.severity,
-            confidence=Confidence.HIGH,
+            confidence=min_confidence(triggers),
             summary=RULE.summary,
             narrative=narrative,
             mitre_attack=list(RULE.mitre_attack),
@@ -147,10 +155,11 @@ def match(findings: list[Finding]) -> list[Chain]:
             resources=[role_arn],
             references=list(RULE.references),
             recommendation=RULE.recommendation,
-            confirmed_reachable=True,
+            confirmed_reachable=False,
             reachability_note=(
                 f"LMB-003 Lambda's execution role matches IAM-004 "
-                f"role `{role_arn}`"
+                f"role `{role_arn}` (role-equality only; env-var "
+                f"content not verified as AWS credentials)"
             ),
         ))
 

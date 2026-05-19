@@ -321,7 +321,6 @@ class TestChainAC005:
         # GHA-006 emits the image its build pushes; GHA-014 emits the
         # image its deploy references. Same canonical identity ⇒
         # confirmed chain at HIGH with the image as the resource.
-        from pipeline_check.core.checks.base import ResourceAnchor
         img = ResourceAnchor(
             kind="oci_image", identity="ghcr.io/acme/app",
         )
@@ -347,7 +346,6 @@ class TestChainAC005:
     def test_falls_back_when_image_anchors_disjoint(self):
         # Build pushes app-a; deploy references app-b. Co-occurrence
         # fallback preserves the multi-provider signal.
-        from pipeline_check.core.checks.base import ResourceAnchor
         a = ResourceAnchor(kind="oci_image", identity="ghcr.io/acme/app-a")
         b = ResourceAnchor(kind="oci_image", identity="ghcr.io/acme/app-b")
         out = chains_pkg.evaluate([
@@ -372,7 +370,6 @@ class TestChainAC005:
         # Two build workflows push two different images; two deploy
         # workflows reference each. Expect two confirmed chains, one
         # per shared image.
-        from pipeline_check.core.checks.base import ResourceAnchor
         app_a = ResourceAnchor(kind="oci_image", identity="ghcr.io/acme/app-a")
         app_b = ResourceAnchor(kind="oci_image", identity="ghcr.io/acme/app-b")
         out = chains_pkg.evaluate([
@@ -427,7 +424,6 @@ class TestChainAC005:
         # cross-provider build → deploy pairing should confirm through
         # group_by_anchor for any (build_id, deploy_id) combination
         # AC-005 covers.
-        from pipeline_check.core.checks.base import ResourceAnchor
         img = ResourceAnchor(kind="oci_image", identity="ghcr.io/acme/app")
         out = chains_pkg.evaluate([
             _f(build_id, build_path, resource_anchors=(img,)),
@@ -736,7 +732,6 @@ class TestChainAC007:
 
     def test_reachability_confirmed_when_service_role_matches_iam002(self):
         # The privileged CodeBuild project runs AS the wildcard role.
-        from pipeline_check.core.checks.base import ResourceAnchor
         role_anchor = ResourceAnchor(kind="iam_role", identity=self.ROLE)
         out = chains_pkg.evaluate([
             _f("CB-002", "my-project", resource_anchors=(role_anchor,)),
@@ -758,7 +753,6 @@ class TestChainAC007:
         # When ONE role triggers BOTH IAM-002 and IAM-004, the chain
         # emits a single confirmed chain carrying both IAM legs (not
         # two separate chains for the same role).
-        from pipeline_check.core.checks.base import ResourceAnchor
         role_anchor = ResourceAnchor(kind="iam_role", identity=self.ROLE)
         out = chains_pkg.evaluate([
             _f("CB-002", "my-project", resource_anchors=(role_anchor,)),
@@ -773,7 +767,6 @@ class TestChainAC007:
 
     def test_falls_back_when_service_role_differs_from_bad_role(self):
         # Privileged project runs as role-A; IAM-002 fires on role-B.
-        from pipeline_check.core.checks.base import ResourceAnchor
         a = ResourceAnchor(
             kind="iam_role",
             identity="arn:aws:iam::123456789012:role/role-A",
@@ -796,6 +789,27 @@ class TestChainAC007:
         assert chain.confirmed_reachable is False
         assert chain.reachability_note == ""
         assert chain.confidence is Confidence.MEDIUM
+
+    def test_confirmed_chain_includes_all_cb002_projects_on_same_role(self):
+        # Two CodeBuild projects share the same service role that
+        # IAM-002 flagged. One confirmed chain emits, but its
+        # triggering_findings must include BOTH CB-002 findings so
+        # the blast radius isn't understated.
+        role_anchor = ResourceAnchor(kind="iam_role", identity=self.ROLE)
+        cb_a = _f(
+            "CB-002", "project-a", resource_anchors=(role_anchor,),
+        )
+        cb_b = _f(
+            "CB-002", "project-b", resource_anchors=(role_anchor,),
+        )
+        iam = _f("IAM-002", "build", resource_anchors=(role_anchor,))
+        out = chains_pkg.evaluate([cb_a, cb_b, iam])
+        ac7 = [c for c in out if c.chain_id == "AC-007"]
+        assert len(ac7) == 1
+        triggers = ac7[0].triggering_findings
+        cb_triggers = [t for t in triggers if t.check_id == "CB-002"]
+        assert len(cb_triggers) == 2
+        assert {t.resource for t in cb_triggers} == {"project-a", "project-b"}
 
 
 class TestChainAC009:
@@ -990,7 +1004,6 @@ class TestChainAC011:
         # The hostPath pod runs as the same SA the cluster-admin
         # binding targets — one execution context for node escape +
         # API takeover.
-        from pipeline_check.core.checks.base import ResourceAnchor
         sa = ResourceAnchor(kind="k8s_sa", identity="prod/build-runner")
         out = chains_pkg.evaluate([
             _f("K8S-013", self.K8S_RESOURCE, resource_anchors=(sa,)),
@@ -1011,7 +1024,6 @@ class TestChainAC011:
     def test_falls_back_when_pod_sa_differs_from_binding_subject(self):
         # hostPath pod runs as ``prod/app``; cluster-admin binding
         # targets ``ops/admin``. Disjoint anchors → fallback.
-        from pipeline_check.core.checks.base import ResourceAnchor
         a = ResourceAnchor(kind="k8s_sa", identity="prod/app")
         b = ResourceAnchor(kind="k8s_sa", identity="ops/admin")
         out = chains_pkg.evaluate([
@@ -1408,7 +1420,6 @@ class TestChainAC016:
         # ``role-to-assume`` resolves to the same ARN IAM-002 flagged
         # for wildcard authority. Confirmed chain cites the role ARN
         # as the resource and promotes confidence.
-        from pipeline_check.core.checks.base import ResourceAnchor
         role_anchor = ResourceAnchor(kind="iam_role", identity=self.ROLE)
         out = chains_pkg.evaluate([
             _f("GHA-030", self.WF, resource_anchors=(role_anchor,)),
@@ -1431,7 +1442,6 @@ class TestChainAC016:
         # GHA-030 names ``role-A``; IAM-002 fires on ``role-B``.
         # No role-anchor intersection, so the chain falls back to
         # the scan-level co-occurrence signal at min-confidence.
-        from pipeline_check.core.checks.base import ResourceAnchor
         a = ResourceAnchor(
             kind="iam_role",
             identity="arn:aws:iam::123456789012:role/ci-A",
@@ -1459,7 +1469,6 @@ class TestChainAC016:
     def test_one_confirmed_chain_per_matched_role(self):
         # Two workflows each name a different wildcard role; IAM-002
         # fires on both. Expect two confirmed chains, one per role.
-        from pipeline_check.core.checks.base import ResourceAnchor
         role_a = ResourceAnchor(
             kind="iam_role",
             identity="arn:aws:iam::123456789012:role/ci-A",
@@ -1487,6 +1496,29 @@ class TestChainAC016:
         assert {c.resources[0] for c in confirmed} == {
             role_a.identity, role_b.identity,
         }
+
+    def test_fallback_fans_out_one_chain_per_unmatched_pair(self):
+        # Two GHA-030 workflows and three IAM-002 roles, none of which
+        # share role-ARN anchors → six fallback chains (one per pair),
+        # not one composite merging unrelated legs. Each chain's
+        # triggering_findings names exactly the (workflow, role) pair
+        # that composed it.
+        out = chains_pkg.evaluate([
+            _f("GHA-030", ".github/workflows/a.yml"),
+            _f("GHA-030", ".github/workflows/b.yml"),
+            _f("IAM-002", "role-1"),
+            _f("IAM-002", "role-2"),
+            _f("IAM-002", "role-3"),
+        ])
+        ac16 = [c for c in out if c.chain_id == "AC-016"]
+        # 2 workflows × 3 roles = 6 unmatched-pair chains.
+        assert len(ac16) == 6
+        assert all(not c.confirmed_reachable for c in ac16)
+        # Each chain carries exactly two triggering findings (its pair).
+        assert all(len(c.triggering_findings) == 2 for c in ac16)
+        # Every (workflow, role) cell is covered exactly once.
+        pairs = {tuple(sorted(c.resources)) for c in ac16}
+        assert len(pairs) == 6
 
 
 class TestChainAC017:
@@ -1535,7 +1567,6 @@ class TestChainAC017:
     def test_reachability_confirmed_when_repo_uri_matches(self):
         # The workflow text references the same ECR repo URI that
         # ECR-002 flagged as mutable. Tight reachability claim.
-        from pipeline_check.core.checks.base import ResourceAnchor
         uri = "123456789012.dkr.ecr.us-east-1.amazonaws.com/myapp"
         repo_anchor = ResourceAnchor(kind="ecr_repo", identity=uri)
         out = chains_pkg.evaluate([
@@ -1558,7 +1589,6 @@ class TestChainAC017:
         # Workflow pushes to repo-A; ECR-002 flagged repo-B as
         # mutable. Co-occurrence fallback preserves the legacy
         # "cache poisoning + mutable tag somewhere" signal.
-        from pipeline_check.core.checks.base import ResourceAnchor
         a = ResourceAnchor(
             kind="ecr_repo",
             identity="123456789012.dkr.ecr.us-east-1.amazonaws.com/repo-A",
@@ -1721,10 +1751,14 @@ class TestChainAC019:
         chain = next(c for c in out if c.chain_id == "AC-019")
         assert chain.confidence is Confidence.LOW
 
-    def test_reachability_confirmed_when_lambda_runs_as_passrole_role(self):
+    def test_same_role_emits_role_specific_narrative_but_stays_unconfirmed(self):
         # The LMB-003 Lambda's execution role IS the IAM-004
-        # wildcard-PassRole role. Single-step role-hop primitive.
-        from pipeline_check.core.checks.base import ResourceAnchor
+        # wildcard-PassRole role. Same-role tightening produces a
+        # per-role chain whose narrative cites the role-equality,
+        # but ``confirmed_reachable`` stays False and confidence
+        # stays at min_leg: LMB-003 only proves a credential-shaped
+        # literal is in the env vars, not that the leaked value is
+        # an AWS credential for THIS role.
         role_anchor = ResourceAnchor(kind="iam_role", identity=self.ROLE)
         fn_anchor = ResourceAnchor(kind="lambda_fn", identity=self.LAMBDA)
         out = chains_pkg.evaluate([
@@ -1741,15 +1775,16 @@ class TestChainAC019:
         ac19 = [c for c in out if c.chain_id == "AC-019"]
         assert len(ac19) == 1
         chain = ac19[0]
-        assert chain.confirmed_reachable is True
+        assert chain.confirmed_reachable is False
         assert self.ROLE in chain.reachability_note
+        assert "role-equality only" in chain.reachability_note
         assert chain.resources == [self.ROLE]
-        assert chain.confidence is Confidence.HIGH
+        # Weakest-leg confidence propagates; HIGH would overclaim.
+        assert chain.confidence is Confidence.MEDIUM
 
     def test_falls_back_when_execution_role_differs_from_passrole(self):
         # The Lambda runs as ``role-A``; the PassRole-* role is
         # ``role-B``. Co-occurrence fallback at min confidence.
-        from pipeline_check.core.checks.base import ResourceAnchor
         a = ResourceAnchor(
             kind="iam_role",
             identity="arn:aws:iam::123456789012:role/role-A",
@@ -1828,7 +1863,6 @@ class TestChainAC020:
     def test_reachability_confirmed_when_task_sa_matches_binding_subject(self):
         # Task pins podTemplate.serviceAccountName to the same SA the
         # cluster-admin binding targets.
-        from pipeline_check.core.checks.base import ResourceAnchor
         sa = ResourceAnchor(kind="k8s_sa", identity="build/build-runner")
         out = chains_pkg.evaluate([
             _f("TKN-004", self.TASK, resource_anchors=(sa,)),
@@ -1915,7 +1949,6 @@ class TestChainAC021:
     def test_reachability_confirmed_when_workflow_ns_matches_binding_ns(self):
         # Workflow runs as ``prod/default`` and the binding grants to
         # ``prod/default`` — single-namespace single-step privesc.
-        from pipeline_check.core.checks.base import ResourceAnchor
         sa = ResourceAnchor(kind="k8s_sa", identity="prod/default")
         out = chains_pkg.evaluate([
             _f("ARGO-003", self.WF, resource_anchors=(sa,)),
@@ -1935,7 +1968,6 @@ class TestChainAC021:
     def test_falls_back_when_workflow_and_binding_in_different_namespaces(self):
         # ARGO-003 in ``prod``, K8S-029 in ``ops`` — chain remains a
         # hygiene prompt at the lower confidence.
-        from pipeline_check.core.checks.base import ResourceAnchor
         a = ResourceAnchor(kind="k8s_sa", identity="prod/default")
         b = ResourceAnchor(kind="k8s_sa", identity="ops/default")
         out = chains_pkg.evaluate([
@@ -2730,6 +2762,28 @@ class TestChainAC029:
         assert ac29.confirmed_reachable is False
         assert ac29.reachability_note == ""
         assert ac29.confidence is Confidence.MEDIUM
+
+    def test_anchors_unioned_across_duplicate_findings_per_check(self):
+        # Two distinct GHA-013 findings on the same workflow file,
+        # each anchored to a different job. The previous dedup-by-
+        # check_id code kept only the first and missed ``release``,
+        # so the three-leg intersection couldn't confirm. Unioning
+        # across duplicate findings recovers the shared job.
+        out = chains_pkg.evaluate([
+            _f("GHA-013", self.WF, job_anchors=("test",)),
+            _f("GHA-013", self.WF, job_anchors=("release",)),
+            _f("GHA-050", self.WF, job_anchors=("release",)),
+            _f("GHA-021", self.WF, job_anchors=("release",)),
+        ])
+        ac29 = next(c for c in out if c.chain_id == "AC-029")
+        assert ac29.confirmed_reachable is True
+        assert "release" in ac29.reachability_note
+        # Every per-check finding should appear in the chain's
+        # triggering_findings (both GHA-013 entries, not just one).
+        gha013_triggers = [
+            t for t in ac29.triggering_findings if t.check_id == "GHA-013"
+        ]
+        assert len(gha013_triggers) == 2
 
 
 # ── Gate integration ─────────────────────────────────────────────────

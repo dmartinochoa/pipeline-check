@@ -100,13 +100,21 @@ def _union_anchors(findings: list[Finding]) -> set[str]:
 
 
 def match(findings: list[Finding]) -> list[Chain]:
-    by_resource: dict[str, dict[str, Finding]] = defaultdict(dict)
+    # Per-resource bucket; each (resource, check_id) cell holds
+    # EVERY matching finding, not just the first. Deduping the way
+    # the prior implementation did would have hidden duplicate
+    # GHA-013 findings (one per issue_comment-triggered job in the
+    # workflow) and lost their ``job_anchors``, so the three-leg
+    # intersection couldn't see a shared job that only one of the
+    # duplicates was anchored to.
+    by_resource: dict[str, dict[str, list[Finding]]] = defaultdict(
+        lambda: defaultdict(list),
+    )
     interesting = set(_TRIGGER_LEG) | set(_CREDENTIAL_LEG) | set(_INTEGRITY_LEG)
     for f in findings:
         if f.passed or f.check_id not in interesting:
             continue
-        if f.check_id not in by_resource[f.resource]:
-            by_resource[f.resource][f.check_id] = f
+        by_resource[f.resource][f.check_id].append(f)
     out: list[Chain] = []
     for resource, ck_map in by_resource.items():
         trig_hits = [c for c in _TRIGGER_LEG if c in ck_map]
@@ -114,9 +122,10 @@ def match(findings: list[Finding]) -> list[Chain]:
         intg_hits = [c for c in _INTEGRITY_LEG if c in ck_map]
         if not (trig_hits and cred_hits and intg_hits):
             continue
-        triggers = [
-            ck_map[c] for c in trig_hits + cred_hits + intg_hits
-        ]
+        trig_findings = [f for c in trig_hits for f in ck_map[c]]
+        cred_findings = [f for c in cred_hits for f in ck_map[c]]
+        intg_findings = [f for c in intg_hits for f in ck_map[c]]
+        triggers = [*trig_findings, *cred_findings, *intg_findings]
 
         # Reachability: union anchors WITHIN each leg (any-of), then
         # intersect ACROSS the three legs (all-of). A shared job
@@ -125,9 +134,11 @@ def match(findings: list[Finding]) -> list[Chain]:
         # integrity-bypass install that lets a poisoned payload
         # piggyback on the publish. That's the Ultralytics /
         # s1ngularity exfil pattern compressed into one job.
-        trig_jobs = _union_anchors([ck_map[c] for c in trig_hits])
-        cred_jobs = _union_anchors([ck_map[c] for c in cred_hits])
-        intg_jobs = _union_anchors([ck_map[c] for c in intg_hits])
+        # Unioning across every finding per leg (not just the first
+        # of each check_id) keeps anchors from duplicate findings.
+        trig_jobs = _union_anchors(trig_findings)
+        cred_jobs = _union_anchors(cred_findings)
+        intg_jobs = _union_anchors(intg_findings)
         shared = sorted(trig_jobs & cred_jobs & intg_jobs)
         confirmed = bool(shared)
         if confirmed:

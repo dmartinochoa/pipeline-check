@@ -41,7 +41,7 @@ because each leg is still independently exploitable.
 from __future__ import annotations
 
 from ...checks.base import Confidence, Finding, Severity
-from ..base import Chain, ChainRule, group_by_anchor, has_failing, min_confidence
+from ..base import Chain, ChainRule, group_by_anchor, min_confidence
 
 RULE = ChainRule(
     id="AC-016",
@@ -151,47 +151,52 @@ def match(findings: list[Finding]) -> list[Chain]:
     # but no role-ARN intersection matched (templated role refs, bare
     # role names that IAM-002 didn't anchor to ARN, or unrelated
     # roles). Emit one chain per (unmatched-GHA-030, unmatched-IAM-002)
-    # cross-product so the legacy "any drift × any wildcard" signal
-    # survives. Each leg is independently a HIGH finding; the chain
-    # remains useful as a co-occurrence prompt even without the
-    # confirmed pairing.
-    if has_failing(findings, "GHA-030") and has_failing(findings, "IAM-002"):
-        unmatched = [
-            f for f in findings
-            if (not f.passed)
-            and f.check_id in {"GHA-030", "IAM-002"}
-            and id(f) not in matched_findings
-        ]
-        unmatched_legs = {f.check_id for f in unmatched}
-        if "GHA-030" in unmatched_legs and "IAM-002" in unmatched_legs:
-            triggers = unmatched
-            resources = sorted({f.resource for f in triggers})
-            narrative = (
-                "In this scan:\n"
-                + _base_narrative()
-                + "  3. Reachability unconfirmed: no GHA-030 workflow's "
-                "``role-to-assume`` resolved to the same IAM role "
-                "that IAM-002 flagged (templated reference, bare role "
-                "name, or unrelated roles). Both legs remain "
-                "independently exploitable, treat as a co-occurrence "
-                "signal until the workflow's role pin can be matched "
-                "to the wildcard role."
-            )
-            out.append(Chain(
-                chain_id=RULE.id,
-                title=RULE.title,
-                severity=RULE.severity,
-                confidence=min_confidence(triggers),
-                summary=RULE.summary,
-                narrative=narrative,
-                mitre_attack=list(RULE.mitre_attack),
-                kill_chain_phase=RULE.kill_chain_phase,
-                triggering_check_ids=["GHA-030", "IAM-002"],
-                triggering_findings=triggers,
-                resources=resources,
-                references=list(RULE.references),
-                recommendation=RULE.recommendation,
-                confirmed_reachable=False,
-                reachability_note="",
-            ))
+    # cross-product cell so the legacy "any drift × any wildcard"
+    # signal survives at per-pair granularity — collapsing all
+    # unmatched findings into one composite would merge unrelated
+    # legs (different workflows, different roles) under one chain
+    # and average confidence across pairs that shouldn't share it.
+    unmatched_gha030 = [
+        f for f in findings
+        if (not f.passed) and f.check_id == "GHA-030"
+        and id(f) not in matched_findings
+    ]
+    unmatched_iam002 = [
+        f for f in findings
+        if (not f.passed) and f.check_id == "IAM-002"
+        and id(f) not in matched_findings
+    ]
+    if unmatched_gha030 and unmatched_iam002:
+        for gha030 in unmatched_gha030:
+            for iam002 in unmatched_iam002:
+                triggers = [gha030, iam002]
+                narrative = (
+                    f"For workflow `{gha030.resource}` × "
+                    f"IAM role `{iam002.resource}`:\n"
+                    + _base_narrative()
+                    + "  3. Reachability unconfirmed: the workflow's "
+                    "``role-to-assume`` did not resolve to the IAM "
+                    "role IAM-002 flagged (templated reference, bare "
+                    "role name, or unrelated roles). Both legs remain "
+                    "independently exploitable, treat as a co-"
+                    "occurrence signal until the workflow's role pin "
+                    "can be matched to the wildcard role."
+                )
+                out.append(Chain(
+                    chain_id=RULE.id,
+                    title=RULE.title,
+                    severity=RULE.severity,
+                    confidence=min_confidence(triggers),
+                    summary=RULE.summary,
+                    narrative=narrative,
+                    mitre_attack=list(RULE.mitre_attack),
+                    kill_chain_phase=RULE.kill_chain_phase,
+                    triggering_check_ids=["GHA-030", "IAM-002"],
+                    triggering_findings=triggers,
+                    resources=[gha030.resource, iam002.resource],
+                    references=list(RULE.references),
+                    recommendation=RULE.recommendation,
+                    confirmed_reachable=False,
+                    reachability_note="",
+                ))
     return out

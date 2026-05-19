@@ -67,21 +67,22 @@ def _base_narrative(cb_resources: list[str], iam_check_ids: list[str]) -> str:
 
 def _emit_confirmed(
     role_arn: str,
-    cb002: Finding,
+    cb002_findings: list[Finding],
     iam_legs: list[Finding],
 ) -> Chain:
-    triggers = [cb002, *iam_legs]
+    triggers = [*cb002_findings, *iam_legs]
     iam_check_ids = sorted({f.check_id for f in iam_legs})
+    cb_resources = sorted({f.resource for f in cb002_findings})
     narrative = (
         f"For role `{role_arn}`:\n"
-        + _base_narrative([cb002.resource], iam_check_ids)
-        + f"  3. Reachability confirmed: the privileged CodeBuild "
-        f"project `{cb002.resource}` runs AS `{role_arn}`, the same "
-        f"role flagged by {', '.join(iam_check_ids)}. A malicious "
-        f"buildspec (planted via PR, poisoned dep, or a compromised "
-        f"upstream action) calls ``aws sts get-caller-identity`` and "
-        f"the wildcard / PassRole primitive applies immediately, no "
-        f"cross-principal pivot needed."
+        + _base_narrative(cb_resources, iam_check_ids)
+        + f"  3. Reachability confirmed: privileged CodeBuild "
+        f"project(s) {', '.join(cb_resources)} run AS `{role_arn}`, "
+        f"the same role flagged by {', '.join(iam_check_ids)}. A "
+        f"malicious buildspec (planted via PR, poisoned dep, or a "
+        f"compromised upstream action) calls ``aws sts get-caller-"
+        f"identity`` and the wildcard / PassRole primitive applies "
+        f"immediately, no cross-principal pivot needed."
     )
     return Chain(
         chain_id=RULE.id,
@@ -99,38 +100,58 @@ def _emit_confirmed(
         recommendation=RULE.recommendation,
         confirmed_reachable=True,
         reachability_note=(
-            f"CB-002 project's serviceRole matches IAM-side role "
+            f"CB-002 project(s) serviceRole matches IAM-side role "
             f"`{role_arn}`"
         ),
     )
+
+
+def _findings_anchored_to(
+    findings: list[Finding], check_id: str, role_arn: str,
+) -> list[Finding]:
+    """Return every failing *check_id* finding whose anchor set names
+    *role_arn* under the ``iam_role`` kind.
+
+    Plain ``group_by_anchor`` keeps one finding per (identity,
+    check_id); this helper preserves the full per-anchor list so a
+    role shared across multiple CodeBuild projects (or flagged twice
+    by IAM-002 on different statements) carries every finding into
+    the chain's triggering list and blast-radius prose.
+    """
+    out: list[Finding] = []
+    for f in findings:
+        if f.passed or f.check_id != check_id:
+            continue
+        for anchor in f.resource_anchors:
+            if anchor.kind == "iam_role" and anchor.identity == role_arn:
+                out.append(f)
+                break
+    return out
 
 
 def match(findings: list[Finding]) -> list[Chain]:
     # ResourceAnchor phase 1: confirmed pairing per iam_role identity
     # shared between CB-002 (project's service role) and either of
     # the IAM-side legs (IAM-002 wildcard or IAM-004 PassRole *).
-    # ``group_by_anchor`` requires one specific check_id pair, so run
-    # it once per IAM-side variant and union the matches.
+    # ``group_by_anchor`` is the right primitive to find which roles
+    # are confirmed; we then re-walk findings to recover every
+    # finding anchored to that role so a role shared across multiple
+    # CodeBuild projects (or flagged twice by IAM-002) keeps every
+    # finding in the chain's triggering list.
     by_role_002 = group_by_anchor(findings, ["CB-002", "IAM-002"], "iam_role")
     by_role_004 = group_by_anchor(findings, ["CB-002", "IAM-004"], "iam_role")
+    confirmed_roles: set[str] = (
+        set(by_role_002.keys()) | set(by_role_004.keys())
+    )
     out: list[Chain] = []
     matched_findings: set[int] = set()
-    # Collapse the two role→ck_map dicts: a role that appears in BOTH
-    # IAM-002 and IAM-004 should emit ONE confirmed chain carrying
-    # both IAM legs, not two separate chains.
-    confirmed_roles: dict[str, dict[str, Finding]] = {}
-    for role_arn, ck_map in by_role_002.items():
-        confirmed_roles.setdefault(role_arn, {})["CB-002"] = ck_map["CB-002"]
-        confirmed_roles[role_arn]["IAM-002"] = ck_map["IAM-002"]
-    for role_arn, ck_map in by_role_004.items():
-        confirmed_roles.setdefault(role_arn, {})["CB-002"] = ck_map["CB-002"]
-        confirmed_roles[role_arn]["IAM-004"] = ck_map["IAM-004"]
-    for role_arn, ck_map in confirmed_roles.items():
-        cb002 = ck_map["CB-002"]
-        iam_legs = [ck_map[k] for k in ("IAM-002", "IAM-004") if k in ck_map]
-        matched_findings.add(id(cb002))
-        for leg in iam_legs:
-            matched_findings.add(id(leg))
+    for role_arn in confirmed_roles:
+        cb002 = _findings_anchored_to(findings, "CB-002", role_arn)
+        iam002 = _findings_anchored_to(findings, "IAM-002", role_arn)
+        iam004 = _findings_anchored_to(findings, "IAM-004", role_arn)
+        iam_legs = [*iam002, *iam004]
+        for f in (*cb002, *iam_legs):
+            matched_findings.add(id(f))
         out.append(_emit_confirmed(role_arn, cb002, iam_legs))
 
     # Co-occurrence fallback: CB-002 fires somewhere and at least one

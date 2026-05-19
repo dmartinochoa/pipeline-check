@@ -52,6 +52,7 @@ def check(path: str, doc: dict[str, Any]) -> Finding:
     # confirm a poisoning path runs in the same job as the PR-head
     # code that supplies the malicious cache content.
     anchor_jobs: dict[str, None] = {}
+    offending_jobs: dict[str, Any] = {}
     for job_id, job in iter_jobs(doc):
         for idx, step in enumerate(iter_steps(job)):
             uses = step.get("uses") or ""
@@ -68,6 +69,7 @@ def check(path: str, doc: dict[str, Any]) -> Finding:
                 if CACHE_TAINT_RE.search(text):
                     offenders.append(f"{job_id}[{idx}].{key_name}")
                     anchor_jobs[job_id] = None
+                    offending_jobs[job_id] = job
     passed = not offenders
     desc = (
         "No actions/cache key derives from attacker-controllable input."
@@ -78,21 +80,28 @@ def check(path: str, doc: dict[str, Any]) -> Finding:
         f"poisoned cache entry that a later default-branch run "
         f"restores and treats as a clean build cache."
     )
-    # ResourceAnchor phase 1: extract any ECR registry URI mentioned
-    # in the workflow (a ``docker push``, a ``docker/build-push-action``
-    # ``tags:`` input, an ``aws ecr`` step) so AC-017 can intersect
-    # cache-poisonable workflows with mutable-tag ECR repos by URI
-    # rather than the prior whole-scan co-occurrence. We only collect
-    # anchors when the rule actually fires — a passed workflow has
-    # nothing to chain. Order-preserving dict de-dupes multiple
-    # references to the same repo URI within the file.
+    # ResourceAnchor phase 1: extract ECR registry URIs that appear
+    # WITHIN the offending jobs only (a ``docker push`` /
+    # ``docker/build-push-action`` ``tags:`` input / ``aws ecr`` step
+    # that shares an execution context with the poisonable cache
+    # step). AC-017 can then intersect cache-poisonable workflows
+    # with mutable-tag ECR repos honestly: the cache primitive and
+    # the push live in the same job, so the poisoned cache content
+    # actually reaches the image push. Walking the whole document
+    # would anchor unrelated push jobs (e.g., a separate ``deploy``
+    # job that pulls from a different ECR repo) and overstate
+    # reachability. Cross-job ``needs:`` relationships would
+    # legitimately chain too but require dataflow plumbing the
+    # rule pack doesn't have today; that's the deliberate
+    # under-claim, AC-017 falls back to co-occurrence in that case.
     ecr_anchors: dict[str, ResourceAnchor] = {}
     if not passed:
-        for s in walk_strings(doc):
-            for m in _ECR_URI_CANDIDATE_RE.finditer(s):
-                built = ecr_repo(m.group(0))
-                if built is not None:
-                    ecr_anchors[built.identity] = built
+        for job in offending_jobs.values():
+            for s in walk_strings(job):
+                for m in _ECR_URI_CANDIDATE_RE.finditer(s):
+                    built = ecr_repo(m.group(0))
+                    if built is not None:
+                        ecr_anchors[built.identity] = built
     return Finding(
         check_id=RULE.id, title=RULE.title, severity=RULE.severity,
         resource=path, description=desc,
