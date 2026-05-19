@@ -208,11 +208,10 @@ class TestParseGradle:
             "http://internal.example.com/m2"
         )
 
-    def test_variable_substitution_left_unresolved(self) -> None:
-        # ${junitVersion} is preserved verbatim — MVN-001 will then
-        # flag it as a dynamic version since ${...} isn't a clean
-        # release-version literal. Documented limitation; resolving
-        # ``ext { junitVersion = "..." }`` is a follow-up.
+    def test_ext_block_substitution_resolved(self) -> None:
+        # ``ext { junitVersion = '4.13.2' }`` declares a property the
+        # later ``${junitVersion}`` reference in the coordinate
+        # string resolves against.
         body = textwrap.dedent(
             """\
             ext {
@@ -225,7 +224,122 @@ class TestParseGradle:
         )
         pf = _parse_gradle("build.gradle", body)
         assert len(pf.dependencies) == 1
-        assert pf.dependencies[0].version == "${junitVersion}"
+        assert pf.dependencies[0].version == "4.13.2"
+
+    def test_ext_dot_assignment_substitution_resolved(self) -> None:
+        # ``ext.junitVersion = '...'`` (bare, outside an ext { } block)
+        # is the other common Groovy shape.
+        body = textwrap.dedent(
+            """\
+            ext.junitVersion = '4.13.2'
+            dependencies {
+                testImplementation "junit:junit:$junitVersion"
+            }
+            """
+        )
+        pf = _parse_gradle("build.gradle", body)
+        assert pf.dependencies[0].version == "4.13.2"
+
+    def test_def_assignment_substitution_resolved(self) -> None:
+        # Groovy ``def`` declarations also feed into the property map.
+        body = textwrap.dedent(
+            """\
+            def log4jVersion = '2.14.1'
+            dependencies {
+                implementation "org.apache.logging.log4j:log4j-core:${log4jVersion}"
+            }
+            """
+        )
+        pf = _parse_gradle("build.gradle", body)
+        assert pf.dependencies[0].version == "2.14.1"
+
+    def test_kotlin_val_substitution_resolved(self) -> None:
+        # Kotlin DSL ``val`` (with or without a type annotation).
+        body = textwrap.dedent(
+            """\
+            val springVersion: String = "5.3.20"
+            dependencies {
+                api("org.springframework:spring-beans:$springVersion")
+            }
+            """
+        )
+        pf = _parse_gradle("build.gradle.kts", body)
+        assert pf.dependencies[0].version == "5.3.20"
+
+    def test_unbraced_dollar_reference_resolved(self) -> None:
+        # Gradle accepts both ``$prop`` and ``${prop}``; both should
+        # substitute identically.
+        body = textwrap.dedent(
+            """\
+            ext {
+                jacksonVersion = '2.15.0'
+            }
+            dependencies {
+                implementation "com.fasterxml.jackson.core:jackson-core:$jacksonVersion"
+            }
+            """
+        )
+        pf = _parse_gradle("build.gradle", body)
+        assert pf.dependencies[0].version == "2.15.0"
+
+    def test_map_form_version_substitution_resolved(self) -> None:
+        # Map-form deps go through the same substitution pass.
+        body = textwrap.dedent(
+            """\
+            ext { springVersion = '5.3.20' }
+            dependencies {
+                api group: 'org.springframework', name: 'spring-beans', version: "$springVersion"
+            }
+            """
+        )
+        pf = _parse_gradle("build.gradle", body)
+        assert pf.dependencies[0].version == "5.3.20"
+
+    def test_undeclared_property_left_unresolved(self) -> None:
+        # A reference to a property that isn't declared in this file
+        # (real-world: it lives in gradle.properties / version catalog
+        # / parent project, all out of scope for this pass) is
+        # preserved verbatim so the rule can decide how to handle it.
+        body = textwrap.dedent(
+            """\
+            dependencies {
+                implementation "org.example:foo:$mysteryVersion"
+            }
+            """
+        )
+        pf = _parse_gradle("build.gradle", body)
+        assert pf.dependencies[0].version == "$mysteryVersion"
+
+    def test_last_write_wins_on_duplicate_property(self) -> None:
+        # If the same property is assigned twice, the later value
+        # wins (mirrors Gradle's in-script semantics).
+        body = textwrap.dedent(
+            """\
+            ext { logVer = '1.0.0' }
+            ext.logVer = '2.0.0'
+            dependencies {
+                implementation "org.example:foo:$logVer"
+            }
+            """
+        )
+        pf = _parse_gradle("build.gradle", body)
+        assert pf.dependencies[0].version == "2.0.0"
+
+    def test_properties_map_exposed_on_pomfile(self) -> None:
+        # Other consumers (e.g. iter_resolved_coordinates downstream)
+        # may inspect ``PomFile.properties`` directly; ensure the
+        # in-file extraction surfaces every declared name.
+        body = textwrap.dedent(
+            """\
+            ext {
+                aVer = '1'
+                bVer = "2"
+            }
+            def cVer = '3'
+            """
+        )
+        pf = _parse_gradle("build.gradle", body)
+        assert pf.properties == {"aVer": "1", "bVer": "2", "cVer": "3"}
 
     def test_parsed_ok_always_true(self) -> None:
         # Even on garbage input (no dependencies / repositories

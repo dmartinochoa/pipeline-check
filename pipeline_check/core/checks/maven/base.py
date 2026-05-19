@@ -494,6 +494,113 @@ _GRADLE_MAVEN_SHORT_RE = re.compile(
 )
 
 
+# ── Gradle property extraction ─────────────────────────────────────────
+#
+# Gradle exposes user-declared properties in three in-file shapes that
+# this parser resolves so MVN-001 (floating-range / LATEST) and
+# MVN-008 (cooldown) see the literal version the build actually pins
+# rather than the ``${prop}`` reference.
+#
+#   ext { logVer = '2.14.1' }                  (Groovy ext block)
+#   ext.logVer = '2.14.1'                      (Groovy ext property)
+#   def logVer = '2.14.1'                      (Groovy local def)
+#   val logVer = "2.14.1"                      (Kotlin DSL local val)
+#   val logVer: String = "2.14.1"              (Kotlin DSL with type ann)
+#
+# Cross-file ``gradle.properties`` and ``libs.versions.toml`` version
+# catalogs are deliberately out of scope for this pass.
+
+# Match ``key = "value"`` or ``key = 'value'`` (with optional ``=``).
+# Inside the ``ext { ... }`` block Groovy accepts both ``logVer = '2'``
+# and the bare ``logVer '2'`` (script-config DSL) shape; the regex
+# covers the leading-``=`` form which is by far the common one.
+_GRADLE_EXT_BLOCK_RE = re.compile(
+    r"""\bext\s*\{
+        (?P<body>[^{}]*)
+        \}
+    """,
+    re.VERBOSE | re.DOTALL,
+)
+_GRADLE_PROP_ASSIGN_RE = re.compile(
+    r"""(?P<name>[A-Za-z_][\w.]*)
+        \s*=\s*
+        (?P<q>['"])(?P<value>[^'"\n]{0,256})(?P=q)
+    """,
+    re.VERBOSE,
+)
+_GRADLE_EXT_DOT_RE = re.compile(
+    r"""\bext\.(?P<name>[A-Za-z_][\w.]*)
+        \s*=\s*
+        (?P<q>['"])(?P<value>[^'"\n]{0,256})(?P=q)
+    """,
+    re.VERBOSE,
+)
+_GRADLE_DEF_RE = re.compile(
+    r"""(?:^|\n)\s*def\s+(?P<name>[A-Za-z_][\w]*)
+        \s*=\s*
+        (?P<q>['"])(?P<value>[^'"\n]{0,256})(?P=q)
+    """,
+    re.VERBOSE,
+)
+_GRADLE_VAL_RE = re.compile(
+    r"""(?:^|\n)\s*val\s+(?P<name>[A-Za-z_][\w]*)
+        (?:\s*:\s*\w[\w<>,?\s]*)?
+        \s*=\s*
+        (?P<q>['"])(?P<value>[^'"\n]{0,256})(?P=q)
+    """,
+    re.VERBOSE,
+)
+# ``$prop`` / ``${prop}`` references inside a coordinate's version
+# field. Used to substitute property values back into the version
+# string before the MVN-* rules see it.
+_GRADLE_VERSION_REF_RE = re.compile(
+    r"""\$\{?(?P<name>[A-Za-z_][\w.]*)\}?""",
+)
+
+
+def _extract_gradle_properties(text: str) -> dict[str, str]:
+    """Return ``{name: value}`` for every in-file user-declared property.
+
+    Walks each Gradle property shape (``ext { ... }`` blocks, bare
+    ``ext.foo = ...`` lines, Groovy ``def`` declarations, Kotlin DSL
+    ``val`` declarations) and returns the merged map. When the same
+    name is assigned more than once the later assignment wins,
+    matching Gradle's last-write semantics for in-script properties.
+    """
+    out: dict[str, str] = {}
+    # ``ext { ... }`` blocks first so a later same-named ``ext.foo``
+    # outside the block still wins.
+    for m in _GRADLE_EXT_BLOCK_RE.finditer(text):
+        body = m.group("body")
+        for am in _GRADLE_PROP_ASSIGN_RE.finditer(body):
+            out[am.group("name")] = am.group("value")
+    for m in _GRADLE_EXT_DOT_RE.finditer(text):
+        out[m.group("name")] = m.group("value")
+    for m in _GRADLE_DEF_RE.finditer(text):
+        out[m.group("name")] = m.group("value")
+    for m in _GRADLE_VAL_RE.finditer(text):
+        out[m.group("name")] = m.group("value")
+    return out
+
+
+def _resolve_gradle_version(version: str, properties: dict[str, str]) -> str:
+    """Substitute ``$prop`` / ``${prop}`` references in *version*.
+
+    Single pass, no recursion: a property whose value itself contains
+    another reference stays half-resolved. Real Gradle scripts almost
+    never chain references at this depth; keeping the substitution
+    flat keeps the rule pack deterministic.
+    """
+    if "$" not in version:
+        return version
+
+    def _sub(match: re.Match[str]) -> str:
+        name = match.group("name")
+        return properties.get(name, match.group(0))
+
+    return _GRADLE_VERSION_REF_RE.sub(_sub, version)
+
+
 def _line_at(text: str, offset: int) -> int:
     """1-based line number for a byte offset into *text*."""
     if offset < 0:
@@ -521,11 +628,11 @@ def _parse_gradle(path: str, text: str) -> PomFile:
     repositories: list[MavenRepository] = []
     seen_coords: set[tuple[str, str, str | None]] = set()
     seen_urls: set[str] = set()
+    properties = _extract_gradle_properties(text)
 
     for m in _GRADLE_COORD_RE.finditer(text):
-        coord = (
-            m.group("group"), m.group("artifact"), m.group("version"),
-        )
+        version = _resolve_gradle_version(m.group("version"), properties)
+        coord = (m.group("group"), m.group("artifact"), version)
         if coord in seen_coords:
             continue
         seen_coords.add(coord)
@@ -545,7 +652,8 @@ def _parse_gradle(path: str, text: str) -> PomFile:
         v = _GRADLE_MAP_VERSION_RE.search(window)
         if not (g and a and v):
             continue
-        coord = (g.group("value"), a.group("value"), v.group("value"))
+        version = _resolve_gradle_version(v.group("value"), properties)
+        coord = (g.group("value"), a.group("value"), version)
         if coord in seen_coords:
             continue
         seen_coords.add(coord)
@@ -595,7 +703,7 @@ def _parse_gradle(path: str, text: str) -> PomFile:
         dependencies=tuple(dependencies),
         repositories=tuple(repositories),
         mirrors=(),
-        properties={},
+        properties=properties,
         parsed_ok=True,
     )
 

@@ -128,12 +128,14 @@ plumbing and so are deferred:
   PYPI-007 (``pip install --require-hashes`` missing from CI) is
   now shipped across the three CI providers as
   GHA-060 / GL-035 / BB-031.
-- **Gradle property resolution.** ``build.gradle(.kts)`` parsing
-  already ships under the maven provider (coordinate-string and
-  map-form deps + ``maven { url ... }`` repositories), but
-  ``${propName}`` and Gradle version-catalog references are left
-  unresolved on the first cut. Resolving them lifts MVN-001 /
-  MVN-008 hit rate on Gradle projects to Maven parity.
+- **Gradle version-catalog + cross-file property resolution.**
+  In-file ``${propName}`` resolution against ``ext { ... }`` /
+  ``ext.foo`` / ``def`` / Kotlin ``val`` declarations now ships.
+  The remaining gaps are cross-file: ``gradle.properties``
+  lookup, ``libs.versions.toml`` Gradle version catalogs, and
+  ``rootProject.ext.X`` indirection. Closing them lifts MVN-001 /
+  MVN-008 hit rate to full Maven parity on projects that keep
+  versions in a shared catalog.
 
 Architecture: extends the existing ``pipeline_check/core/checks/
 npm/``, ``pypi/``, and ``maven/`` packages; ``--resolve-remote``

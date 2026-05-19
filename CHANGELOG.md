@@ -12,6 +12,25 @@ release commit collapses this section into `## [X.Y.Z] - <date>`.
 
 ### Added
 
+- **Gradle in-file property resolution for MVN-001 / MVN-008.**
+  ``_parse_gradle`` now extracts user-declared properties from
+  every common in-file Gradle shape (``ext { foo = '1.0' }``
+  blocks, bare ``ext.foo = '1.0'`` lines, Groovy ``def foo = '1.0'``
+  declarations, Kotlin DSL ``val foo: String = "1.0"``
+  declarations) and substitutes ``$foo`` / ``${foo}`` references
+  in coordinate version strings before the rule pack sees them.
+  MVN-001 (floating-range / LATEST) and MVN-008 (cooldown via
+  ``--resolve-remote``) now see the literal version the Gradle
+  build actually pins on every project that holds its versions in
+  any of the above shapes. Last-write-wins on duplicate names,
+  matching Gradle's in-script semantics; undeclared references
+  are preserved verbatim so the rule still flags the dynamic-
+  version case as it did before. Cross-file resolution
+  (``gradle.properties``, ``libs.versions.toml`` version
+  catalogs, ``rootProject.ext.X`` indirection) stays out of scope
+  for this pass; the version-catalog leg is the next obvious
+  follow-up.
+
 - **GHA-060 + GL-035 + BB-031: pip install without
   ``--require-hashes``.** Closes the PYPI-007 slot from the
   dependency-supply-chain roadmap, mirroring the NPM-010 trilogy
