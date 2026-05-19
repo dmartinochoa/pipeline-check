@@ -150,7 +150,7 @@ class TestGitHubFixtures:
 
 class TestGitLabFixtures:
     EXPECTED_IDS = (
-        {f"GL-{i:03d}" for i in range(1, 34)}
+        {f"GL-{i:03d}" for i in range(1, 35)}
         | {"TAINT-004", "TAINT-008"}
     )
 
@@ -184,7 +184,7 @@ class TestGitLabFixtures:
 
 
 class TestBitbucketFixtures:
-    EXPECTED_IDS = {f"BB-{i:03d}" for i in range(1, 30)}
+    EXPECTED_IDS = {f"BB-{i:03d}" for i in range(1, 31)}
 
     def _scan(self, filename: str):
         ctx = BitbucketContext.from_path(FIXTURES / "bitbucket" / filename)
@@ -508,10 +508,10 @@ class TestArgoFixtures:
     ("github", "github/insecure-release.yml", GitHubContext, WorkflowChecks,
      {f"GHA-{i:03d}" for i in range(1, 60)} | {"TAINT-001", "TAINT-002", "TAINT-003"}),
     ("gitlab", "gitlab/insecure.gitlab-ci.yml", GitLabContext, GitLabPipelineChecks,
-     {f"GL-{i:03d}" for i in range(1, 34)} | {"TAINT-004", "TAINT-008"}),
+     {f"GL-{i:03d}" for i in range(1, 35)} | {"TAINT-004", "TAINT-008"}),
     ("bitbucket", "bitbucket/insecure-bitbucket-pipelines.yml",
      BitbucketContext, BitbucketPipelineChecks,
-     {f"BB-{i:03d}" for i in range(1, 30)}),
+     {f"BB-{i:03d}" for i in range(1, 31)}),
     ("azure", "azure/insecure-azure-pipelines.yml",
      AzureContext, AzurePipelineChecks,
      {f"ADO-{i:03d}" for i in range(1, 31)}),

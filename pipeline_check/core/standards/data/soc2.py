@@ -433,6 +433,7 @@ STANDARD = Standard(
         "GL-031":   ["CC6.1", "CC8.1"],     # id_tokens missing audience pin
         "GL-032":   ["CC6.8"],              # tags interpolates untrusted
         "GL-033":   ["CC6.8"],              # global before_script taint
+        "GL-034":   ["CC8.1"],              # npm install without audit signatures
         # ── Bitbucket Pipelines ──────────────────────────────────
         "BB-005":   ["CC6.1", "CC6.8"],     # privileged container
         "BB-006":   ["CC8.1"],              # unsigned artifacts
@@ -448,6 +449,7 @@ STANDARD = Standard(
         "BB-027":   ["CC8.1"],              # install bypasses registry integrity
         "BB-028":   ["CC6.1", "CC8.1"],     # OIDC step w/o env gate
         "BB-029":   ["CC8.1"],              # step + service image not pinned
+        "BB-030":   ["CC8.1"],              # npm install without audit signatures
         # ── Azure DevOps Pipelines ───────────────────────────────
         "ADO-005":  ["CC8.1"],              # unpinned container
         "ADO-006":  ["CC8.1"],              # unsigned artifacts

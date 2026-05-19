@@ -1,0 +1,8 @@
+build:
+  stage: build
+  image: node:20
+  script:
+    - npm ci
+    - npm audit signatures
+    - npm run build
+    - npm test

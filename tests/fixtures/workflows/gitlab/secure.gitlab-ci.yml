@@ -38,6 +38,9 @@ deploy-prod:
   script:
     # GL-021 safe: lockfile-enforcing install command.
     - npm ci
+    # GL-034 safe: verify registry trusted-publisher signatures
+    # before any code from node_modules/ executes.
+    - npm audit signatures
     - trivy fs --severity HIGH .
     - syft . -o cyclonedx-json > sbom.json
     - cosign attest --yes --predicate provenance.intoto.jsonl --type slsaprovenance "registry.example.com/app" && cosign sign --yes "$CI_REGISTRY_IMAGE@$DIGEST"

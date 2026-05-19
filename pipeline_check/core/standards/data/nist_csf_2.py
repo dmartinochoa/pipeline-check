@@ -495,10 +495,12 @@ STANDARD = Standard(
         "GL-031":  ["PR.AA-05"],                # id_tokens missing audience pin
         "GL-032":  ["PR.PS-05"],                # tags interpolates untrusted
         "GL-033":  ["PR.PS-05"],                # global before_script taint
+        "GL-034":  ["GV.SC-05"],                # npm install without audit signatures
         # ── Bitbucket Pipelines ──────────────────────────────────
         "BB-004":  ["PR.PS-06"],                # deploy step missing environment
         "BB-028":  ["PR.AA-05"],                # OIDC step w/o env gate
         "BB-029":  ["GV.SC-05"],                # step+service image not pinned
+        "BB-030":  ["GV.SC-05"],                # npm install without audit signatures
         # ── Azure DevOps Pipelines ───────────────────────────────
         "ADO-004": ["PR.PS-06"],                # deploy missing environment
         "ADO-029": ["PR.PS-06"],                # service-conn job w/o env gate

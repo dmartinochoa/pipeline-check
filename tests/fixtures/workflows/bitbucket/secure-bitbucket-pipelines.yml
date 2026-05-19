@@ -21,6 +21,9 @@ pipelines:
         script:
           # BB-021 safe: lockfile-enforcing install command.
           - npm ci
+          # BB-030 safe: verify registry trusted-publisher signatures
+          # before any code from node_modules/ executes.
+          - npm audit signatures
           - pipe: atlassian/aws-s3-deploy@sha256:0000000000000000000000000000000000000000000000000000000000000003
             variables:
               AWS_OIDC_ROLE_ARN: $OIDC_DEPLOY_ROLE

@@ -189,7 +189,7 @@ class TestAutoDetect:
         payload = json.loads(result.stdout)
         emitted = {f["check_id"] for f in payload["findings"]}
         assert emitted == (
-            {f"GL-{i:03d}" for i in range(1, 34)}
+            {f"GL-{i:03d}" for i in range(1, 35)}
             | {"TAINT-004", "TAINT-008"}
         )
 
@@ -203,7 +203,7 @@ class TestAutoDetect:
         assert "[auto] using --bitbucket-path bitbucket-pipelines.yml" in result.output
         payload = json.loads(result.stdout)
         emitted = {f["check_id"] for f in payload["findings"]}
-        assert emitted == {f"BB-{i:03d}" for i in range(1, 30)}
+        assert emitted == {f"BB-{i:03d}" for i in range(1, 31)}
 
 
     def test_github_path_autodetected(self, runner, tmp_path, monkeypatch):

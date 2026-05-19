@@ -115,19 +115,14 @@ trilogy (NPM-008 / PYPI-008 / MVN-008) behind ``--resolve-remote``,
 full lockfile-format coverage on the npm / pypi sides
 (``package-lock.json`` v1/v2/v3, ``npm-shrinkwrap.json``,
 ``pnpm-lock.yaml`` v5/v6/v9, ``yarn.lock`` yarn-1 / Classic,
-``poetry.lock``, ``Pipfile.lock``), and the NPM-009 new-
-transitive-dep diff gate behind ``--npm-base-ref``.*
+``poetry.lock``, ``Pipfile.lock``), the NPM-009 new-
+transitive-dep diff gate behind ``--npm-base-ref``, and the
+NPM-010 ``npm audit signatures``-missing detector ported across
+all three CI providers (GHA-059 / GL-034 / BB-030).*
 The follow-up rules below require either new infrastructure
 (lockfile diff against a base ref) or different ecosystem
 plumbing and so are deferred:
 
-- **NPM-010** — ``npm audit signatures`` step missing from CI.
-  Lockfile rules guarantee package contents match the recorded
-  hash; ``npm audit signatures`` is what verifies those hashes are
-  the ones the maintainer actually signed via the registry's
-  trusted-publisher records. Lockfile pinning without signature
-  verification is integrity theater. Belongs in the CI providers
-  (GHA / GitLab / Bitbucket) rather than the npm provider.
 - **Yarn 2+ / Berry lockfile parser.** Yarn 1 / Classic shipped via
   ``_parse_yarn_lock`` + ``_synthesize_yarn_lock``; Berry locks
   follow a different shape (``__metadata:`` header, ``checksum``

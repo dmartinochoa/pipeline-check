@@ -118,8 +118,8 @@ for inputs, idempotency, and fork-PR fallback behavior.
 | **Terraform** | `terraform show -json` plan | `--tf-plan` | AWS-parity shift-left checks, pre-provisioning |
 | **CloudFormation** | YAML or JSON template | `--cfn-template` | ~63 AWS-parity shift-left checks; handles `!Ref`/`!Sub`/`!GetAtt` intrinsics (treats unresolved values as strict) |
 | **GitHub Actions** | `.github/workflows/*.yml` | `--gha-path` | 62 checks (`GHA-001`--`059`, plus `TAINT-001..003`). `GHA-040` consults a curated registry of known-compromised action refs (CVE-2025-30066 et al.). `GHA-041..043` form the action-reputation pack: single-maintainer / very-young repo / low-star + sensitive-permission detection behind `--resolve-remote`. `GHA-044..046` catch build-tool lifecycle script execution (npm / yarn / pnpm / bun / deno install), caller-controlled `ref` into `actions/checkout`, and manual PR-head fetches on untrusted-trigger workflows. `GHA-047` flags action pins to refs committed within a cooldown window. `GHA-048..050` are the npm-worm propagation pack: workflow self-mutation, cross-repo push, and publish-without-OIDC. `GHA-051..055` cover advanced PPE / credential-leak surface: services/container image unpinned, `actions/cache` key from untrusted PR input, `if:` predicate evaluating untrusted context, `actions/checkout` SSH-key persistence, reusable workflow outputs leaking a secret. `GHA-056..058` are the worm-IOC pack: workflow body matches a curated Shai-Hulud / s1ngularity IOC registry (`_worm_indicators.py`), secret-scanner output (TruffleHog / gitleaks) piped to network egress on an untrusted trigger, and agentic CLI (`claude` / `gemini` / `q` / `cursor-agent` / `aider` / `openhands` / `goose`) invoked with permission-bypass flags (`--dangerously-skip-permissions`, `--yolo`, `--trust-all-tools`). `GHA-059` flags ``npm`` / ``pnpm`` install steps that don't pair with an ``npm audit signatures`` verification step, closing the lockfile-pinning-without-trusted-publisher gap the Shai-Hulud / TanStack / axios worms exploited. |
-| **GitLab CI** | `.gitlab-ci.yml` | `--gitlab-path` | 35 checks (`GL-001`--`033`, plus `TAINT-004` and `TAINT-008`) |
-| **Bitbucket Pipelines** | `bitbucket-pipelines.yml` | `--bitbucket-path` | 29 checks (`BB-001`--`029`) |
+| **GitLab CI** | `.gitlab-ci.yml` | `--gitlab-path` | 36 checks (`GL-001`--`034`, plus `TAINT-004` and `TAINT-008`) |
+| **Bitbucket Pipelines** | `bitbucket-pipelines.yml` | `--bitbucket-path` | 30 checks (`BB-001`--`030`) |
 | **Azure DevOps** | `azure-pipelines.yml` | `--azure-path` | 30 checks (`ADO-001`--`030`) |
 | **Jenkins** | `Jenkinsfile` (Declarative/Scripted) | `--jenkinsfile-path` | 35 checks (`JF-001`--`035`) |
 | **CircleCI** | `.circleci/config.yml` | `--circleci-path` | 31 checks (`CC-001`--`031`) |
@@ -464,8 +464,8 @@ pipeline_check/
         ├── terraform/         # AWS-parity checks against plan JSON
         ├── cloudformation/    # AWS-parity checks against CFN templates (YAML/JSON)
         ├── github/rules/      # GHA-001 .. GHA-059 + TAINT-001..003
-        ├── gitlab/rules/      # GL-001 .. GL-033 + TAINT-004 / TAINT-008
-        ├── bitbucket/rules/   # BB-001 .. BB-029
+        ├── gitlab/rules/      # GL-001 .. GL-034 + TAINT-004 / TAINT-008
+        ├── bitbucket/rules/   # BB-001 .. BB-030
         ├── azure/rules/       # ADO-001 .. ADO-030
         ├── jenkins/rules/     # JF-001 .. JF-035
         ├── circleci/rules/    # CC-001 .. CC-031

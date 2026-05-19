@@ -226,6 +226,7 @@ STANDARD = Standard(
         "GL-031":   ["AC-3", "IA-5"],                    # id_tokens missing audience pin
         "GL-032":   ["CM-6", "SA-11"],                   # tags interpolates untrusted
         "GL-033":   ["CM-6", "SA-11"],                   # global before_script taint
+        "GL-034":   ["SR-3", "SR-11", "SI-7"],            # npm install without audit signatures
         # Bitbucket Pipelines
         "BB-001":   ["SR-3", "SR-11", "SI-2"],
         "BB-002":   ["SI-7", "SA-11", "CM-6"],
@@ -256,6 +257,7 @@ STANDARD = Standard(
         "BB-027":   ["SR-3", "SR-11"],                   # install bypasses registry integrity
         "BB-028":   ["AC-3", "IA-5"],                    # OIDC step w/o env-gated deployment
         "BB-029":   ["SR-3", "SR-11", "SI-2"],           # step+service image pinning
+        "BB-030":   ["SR-3", "SR-11", "SI-7"],            # npm install without audit signatures
         # Azure DevOps Pipelines
         "ADO-001":  ["SR-3", "SR-11", "SI-2"],
         "ADO-002":  ["SI-7", "SA-11", "CM-6"],

@@ -237,6 +237,7 @@ STANDARD = Standard(
         "GL-031":   ["PO.5.1", "PS.1.1"],              # id_tokens missing audience pin
         "GL-032":   ["PW.6.1", "PW.9.1"],              # tags interpolates untrusted
         "GL-033":   ["PO.5.1", "PW.9.1"],              # global before_script taint
+        "GL-034":   ["PW.4.4"],                        # npm install without audit signatures
         # Bitbucket Pipelines
         "BB-001":   ["PW.4.1", "PW.4.4"],
         "BB-002":   ["PW.6.1", "PW.9.1"],
@@ -267,6 +268,7 @@ STANDARD = Standard(
         "BB-027":   ["PW.4.1", "PW.4.4"],              # install bypasses registry integrity
         "BB-028":   ["PO.5.1", "PS.1.1"],              # OIDC step w/o env-gated deployment
         "BB-029":   ["PW.4.1", "PW.4.4"],              # step + service image not pinned
+        "BB-030":   ["PW.4.4"],                        # npm install without audit signatures
         # Azure DevOps Pipelines
         "ADO-001":  ["PW.4.1", "PW.4.4"],
         "ADO-002":  ["PW.6.1", "PW.9.1"],

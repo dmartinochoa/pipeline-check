@@ -12,6 +12,19 @@ release commit collapses this section into `## [X.Y.Z] - <date>`.
 
 ### Added
 
+- **GL-034 + BB-030 npm install without audit-signatures (parity
+  with GHA-059).** Ports the GHA-059 detector to the GitLab CI and
+  Bitbucket Pipelines providers. Same shape: fires MEDIUM once per
+  pipeline file when an `npm`/`pnpm` install verb appears in any
+  job's script and `npm audit signatures` / `pnpm audit signatures`
+  does not. GitLab's check also recognizes installs / audits in
+  the document-level `before_script:` / `after_script:` so a
+  workflow-wide verification step counts for every job that
+  doesn't override it. Yarn / Bun-only pipelines pass silently in
+  both. Closes the NPM-010 roadmap slot across all three CI
+  providers (GHA + GitLab + Bitbucket) and brings the
+  GitLab pack to 36 rules and Bitbucket to 30.
+
 - **GHA-059 npm install without registry-signature verification.**
   Closes the NPM-010 slot from the post-1.0 roadmap on the GitHub
   Actions side. Fires once per workflow when at least one step runs

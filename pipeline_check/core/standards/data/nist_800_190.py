@@ -441,11 +441,13 @@ STANDARD = Standard(
         "GL-022":  ["4.1.5"],                      # dep-update bypasses lockfile pins
         "GL-032":  ["4.4.5"],                      # tags untrusted variable
         "GL-033":  ["4.4.5"],                      # global before_script taint
+        "GL-034":  ["4.1.5"],                      # npm install without audit signatures
         # ── Bitbucket Pipelines container-touching extras ────────
         "BB-005":  ["4.1.2", "4.4.4"],             # privileged container (in pipe)
         "BB-017":  ["4.1.4"],                      # repo token persisted
         "BB-022":  ["4.1.5"],                      # dep-update bypasses lockfile pins
         "BB-029":  ["4.1.5"],                      # step+service image not pinned
+        "BB-030":  ["4.1.5"],                      # npm install without audit signatures
         # ── Azure DevOps Pipelines container-touching extras ─────
         "ADO-015": ["4.4.5"],                      # no timeoutInMinutes
         "ADO-022": ["4.1.5"],                      # dep-update bypasses lockfile pins
