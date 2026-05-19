@@ -1,11 +1,16 @@
 """BB-031. pip install without `--require-hashes` (PYPI-007 from the roadmap)."""
 from __future__ import annotations
 
-import re
 from typing import Any
 
-from ...base import Finding, Severity, blob_lower
+from ..._primitives.dep_verification import (
+    has_hash_pinning_manager,
+    has_require_hashes,
+    is_real_pip_install_line,
+)
+from ...base import Finding, Severity
 from ...rule import Rule
+from ..base import iter_steps, step_scripts
 
 RULE = Rule(
     id="BB-031",
@@ -43,44 +48,18 @@ RULE = Rule(
 )
 
 
-_PIP_INSTALL_RE = re.compile(
-    r"\b(?:pip3?|python3?\s+-m\s+pip)\s+install\b",
-    re.IGNORECASE,
-)
-_TOOLING_INSTALL_RE = re.compile(
-    r"\b(?:pip3?|python3?\s+-m\s+pip)\s+install\s+"
-    r"(?:--upgrade\s+|-U\s+|--user\s+|-q\s+|--quiet\s+)*"
-    r"(?:pip(?:\s|$)|setuptools(?:\s|$)|wheel(?:\s|$)|virtualenv(?:\s|$)"
-    r"|pip-tools(?:\s|$)|pipx(?:\s|$)|pip-audit(?:\s|$)"
-    r"|cyclonedx-bom(?:\s|$)|semgrep(?:\s|$)|poetry(?:\s|$)|uv(?:\s|$)"
-    r"|pipenv(?:\s|$)|hatch(?:\s|$)|build(?:\s|$)|twine(?:\s|$))",
-    re.IGNORECASE,
-)
-_REQUIRE_HASHES_RE = re.compile(r"--require-hashes\b", re.IGNORECASE)
-_HASH_PINNING_MANAGER_RE = re.compile(
-    r"\b(?:"
-    r"uv\s+(?:sync|pip\s+install|pip\s+sync|run|tool\s+install)"
-    r"|poetry\s+install"
-    r"|pipenv\s+install\s+--deploy"
-    r"|pipenv\s+sync"
-    r"|hatch\s+env\s+create"
-    r")\b",
-    re.IGNORECASE,
-)
-
-
 def check(path: str, doc: dict[str, Any]) -> Finding:
-    blob = blob_lower(doc)
-    # ``blob_lower`` lowercases — that's fine, our regexes are
-    # case-insensitive but we need the raw lines to detect mixed
-    # tooling/real installs reliably. Walk lines manually instead.
     install_seen = False
-    require_hashes_seen = bool(_REQUIRE_HASHES_RE.search(blob))
-    hash_manager_seen = bool(_HASH_PINNING_MANAGER_RE.search(blob))
-    for line in blob.splitlines():
-        if _PIP_INSTALL_RE.search(line) and not _TOOLING_INSTALL_RE.search(line):
-            install_seen = True
-            break
+    require_hashes_seen = False
+    hash_manager_seen = False
+    for _loc, step in iter_steps(doc):
+        for line in step_scripts(step):
+            if has_require_hashes(line):
+                require_hashes_seen = True
+            if has_hash_pinning_manager(line):
+                hash_manager_seen = True
+            if is_real_pip_install_line(line):
+                install_seen = True
     if not install_seen or require_hashes_seen or hash_manager_seen:
         desc = (
             "Pipeline runs no real pip install commands; hash "

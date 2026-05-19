@@ -1,11 +1,15 @@
 """BB-030. npm/pnpm install without `npm audit signatures` verification step."""
 from __future__ import annotations
 
-import re
 from typing import Any
 
-from ...base import Finding, Severity, blob_lower
+from ..._primitives.dep_verification import (
+    has_npm_audit_signatures,
+    has_npm_install,
+)
+from ...base import Finding, Severity
 from ...rule import Rule
+from ..base import iter_steps, step_scripts
 
 RULE = Rule(
     id="BB-030",
@@ -51,20 +55,15 @@ RULE = Rule(
 )
 
 
-_INSTALL_RE = re.compile(
-    r"\b(?:npm|pnpm)\s+(?:ci|install|i)\b",
-    re.IGNORECASE,
-)
-_AUDIT_SIGNATURES_RE = re.compile(
-    r"\b(?:npm|pnpm)\s+audit\s+signatures\b",
-    re.IGNORECASE,
-)
-
-
 def check(path: str, doc: dict[str, Any]) -> Finding:
-    blob = blob_lower(doc)
-    install_seen = bool(_INSTALL_RE.search(blob))
-    audit_seen = bool(_AUDIT_SIGNATURES_RE.search(blob))
+    install_seen = False
+    audit_seen = False
+    for _loc, step in iter_steps(doc):
+        for line in step_scripts(step):
+            if has_npm_audit_signatures(line):
+                audit_seen = True
+            if has_npm_install(line):
+                install_seen = True
     if not install_seen or audit_seen:
         desc = (
             "Pipeline declares no npm/pnpm install steps; signature "

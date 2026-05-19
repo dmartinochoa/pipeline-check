@@ -1,9 +1,12 @@
 """GHA-059. npm/pnpm install without `npm audit signatures` verification step."""
 from __future__ import annotations
 
-import re
 from typing import Any
 
+from ..._primitives.dep_verification import (
+    has_npm_audit_signatures,
+    has_npm_install,
+)
 from ...base import Finding, Severity
 from ...rule import Rule
 from ..base import iter_jobs, iter_steps, step_location
@@ -73,24 +76,6 @@ RULE = Rule(
 )
 
 
-# npm / pnpm install primitives. Each is anchored on the verb so
-# unrelated invocations (``npm pack``, ``npm test``, ``pnpm exec``)
-# don't fire. ``\bi\b`` for ``npm i`` doesn't match ``npm install``
-# because ``i`` is mid-word in ``install``.
-_INSTALL_RE = re.compile(
-    r"\b(?:npm|pnpm)\s+(?:ci|install|i)\b",
-    re.IGNORECASE,
-)
-
-# The verification primitive itself. ``npm audit signatures`` is the
-# canonical form (npm 8.13+); ``pnpm audit signatures`` is the pnpm
-# 8.7+ port of the same primitive against the same registry endpoint.
-_AUDIT_SIGNATURES_RE = re.compile(
-    r"\b(?:npm|pnpm)\s+audit\s+signatures\b",
-    re.IGNORECASE,
-)
-
-
 def check(path: str, doc: dict[str, Any]) -> Finding:
     install_steps: list[tuple[str, dict[str, Any], int]] = []
     audit_seen = False
@@ -99,9 +84,9 @@ def check(path: str, doc: dict[str, Any]) -> Finding:
             run = step.get("run")
             if not isinstance(run, str):
                 continue
-            if _AUDIT_SIGNATURES_RE.search(run):
+            if has_npm_audit_signatures(run):
                 audit_seen = True
-            if _INSTALL_RE.search(run):
+            if has_npm_install(run):
                 install_steps.append((job_id, step, idx))
     if not install_steps or audit_seen:
         desc = (

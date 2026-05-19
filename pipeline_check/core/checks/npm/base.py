@@ -41,7 +41,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
 
-from ...diff import git_show
+from ...diff import git_show, git_top
 from ..base import BaseCheck, safe_load_yaml
 
 #: Filenames the npm loader picks up. ``package.json`` is the manifest;
@@ -268,16 +268,27 @@ def load_base_locks_via_git(
     root = Path(scan_root)
     if root.is_file():
         root = root.parent
+    # ``git show <ref>:<path>`` interprets ``<path>`` as repo-top-
+    # relative, not cwd-relative. Resolve the repo top so a scan
+    # rooted in a subdirectory (``--npm-path apps/web``) still hands
+    # git the right path. Fall back to ``root`` when git is
+    # unavailable or the scan root isn't inside a repo (test
+    # fixtures, ad-hoc directories) — in that case the loader
+    # degrades to the pre-fix behavior, which is correct as long as
+    # the scan root happens to be the repo top.
+    repo_top = git_top(root) or root
     for lock in ctx.locks:
         lock_path = Path(lock.path)
         try:
-            rel = lock_path.resolve().relative_to(root.resolve())
-        except ValueError:
-            # Lockfile lives outside the scan root somehow; fall
-            # back to the file name. ``git show`` will resolve it
-            # from the repo top if it's tracked, else warn.
-            rel = Path(lock_path.name)
-        body = git_show(base_ref, rel.as_posix(), cwd=root)
+            rel = lock_path.resolve().relative_to(repo_top.resolve())
+        except (ValueError, OSError):
+            ctx.warnings.append(
+                f"{lock.path}: lockfile is outside the git repo "
+                f"top {str(repo_top)!r}; skipped for base-ref "
+                f"comparison",
+            )
+            continue
+        body = git_show(base_ref, rel.as_posix(), cwd=repo_top)
         if body is None:
             ctx.warnings.append(
                 f"{lock.path}: base ref {base_ref!r} could not be "

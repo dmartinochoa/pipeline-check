@@ -30,6 +30,7 @@ from __future__ import annotations
 
 import datetime as _dt
 import json
+import re
 import tomllib
 from dataclasses import dataclass, field
 from pathlib import Path
@@ -511,6 +512,12 @@ def _parse_pipfile_lock(
 # ── pyproject.toml synthesis ────────────────────────────────────────
 
 
+#: A single numeric-leading version token (``"2.0.5"``, ``"1.2.3rc1"``,
+#: ``"2.0.0-beta.1"``). Used to disambiguate a Poetry exact-pin from
+#: a PEP 440 wildcard (``"1.*"``) or an OR-form (``"1.0 || 2.0"``).
+_BARE_VERSION_RE = re.compile(r"\d[\w.+\-]*")
+
+
 def _poetry_constraint_to_body(name: str, constraint: str) -> str | None:
     """Project a Poetry dependency constraint to a PEP 508-shaped body.
 
@@ -539,7 +546,12 @@ def _poetry_constraint_to_body(name: str, constraint: str) -> str | None:
         return f"{name}{c}"
     if c.startswith("=") and not c.startswith("=="):
         return f"{name}=={c[1:].strip()}"
-    if c[0].isdigit():
+    # Treat as an exact pin only when the constraint is a single
+    # numeric-leading token (``"2.0.5"`` / ``"1.2.3rc1"``). A bare
+    # ``c[0].isdigit()`` check fires on PEP 440 wildcards (``"1.*"``)
+    # and Poetry's OR-form (``"1.0 || 2.0"``), producing malformed
+    # PEP 508 bodies that confuse downstream rules.
+    if _BARE_VERSION_RE.fullmatch(c):
         return f"{name}=={c}"
     return f"{name} {c}"
 

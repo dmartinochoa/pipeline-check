@@ -103,6 +103,34 @@ def _norm(p: str) -> str:
     return Path(p).as_posix().lower()
 
 
+def git_top(cwd: str | Path = ".") -> Path | None:
+    """Return the absolute path of the git repo top, or ``None`` on failure.
+
+    ``git show <ref>:<path>`` interprets ``<path>`` as repo-top-relative
+    regardless of the cwd it's invoked from. Callers that need to fetch
+    a tracked file at a base ref must first resolve the repo top so the
+    path they hand to :func:`git_show` is correct even when the scan
+    root is a subdirectory of the repo.
+    """
+    try:
+        result = subprocess.run(
+            ["git", "rev-parse", "--show-toplevel"],
+            cwd=str(cwd),
+            capture_output=True,
+            text=True,
+            timeout=10,
+            check=False,
+        )
+    except (FileNotFoundError, subprocess.TimeoutExpired):
+        return None
+    if result.returncode != 0:
+        return None
+    top = result.stdout.strip()
+    if not top:
+        return None
+    return Path(top)
+
+
 def git_show(ref: str, path: str, cwd: str | Path = ".") -> str | None:
     """Return the content of ``path`` at ``ref`` via ``git show``, or None.
 
