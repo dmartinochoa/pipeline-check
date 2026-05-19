@@ -491,8 +491,11 @@ its build.
 
 ## Environment variables
 
-Every CLI flag has an env-var equivalent: `PIPELINE_CHECK_<FLAG>` with
-dashes converted to underscores. Gate flags nest under `GATE`:
+The common CLI flags have env-var equivalents: `PIPELINE_CHECK_<FLAG>`
+with dashes converted to underscores. Gate flags nest under `GATE`.
+The supported keys are the allowlist `_TOPLEVEL_KEYS` / `_GATE_KEYS`
+in `pipeline_check/core/config.py` (provider-specific path flags and
+many of the newer flags are CLI-only):
 
 ```bash
 PIPELINE_CHECK_PIPELINE=github \

@@ -181,7 +181,7 @@ work), but the message wording is not contracted.
 
 | Code | Meaning |
 |------|---------|
-| `0`  | Scan completed; gate passed (or `--quiet --gate-off`). |
+| `0`  | Scan completed; gate passed. |
 | `1`  | Scan completed; gate failed (`--fail-on` / `--min-grade` / `--max-failures` / `--fail-on-check` / `--fail-on-chain` / `--fail-on-any-chain` tripped). |
 | `2`  | Bad invocation or unexpected scan exception. Click `UsageError` (bad flag value, missing required path, mutually-exclusive conflict) and uncaught scanner exceptions both surface here. The error and any traceback are on stderr. |
 | `3`  | Operational failure on a non-scan action: `--list-checks` / `--explain` for an unknown ID, `--apply` without `--fix`, MCP support not installed, malformed `--ignore-file`, unparseable `--baseline`. |
@@ -216,12 +216,17 @@ bump.
 
 ## Python API — stable for the documented surface
 
-The `pipeline_check` package surface listed under
-[docs/usage.md](usage.md) (Scanner, ScanMetadata, Finding, Severity,
-Confidence, score, evaluate_gate, ReporterRegistry) is stable.
-Internal modules (`pipeline_check.core.checks.*`, `_primitives`,
-provider helpers) are not part of the public surface — they can
-change freely between minor releases.
+The `pipeline_check` package surface re-exported from the top-level
+module (`Scanner`, `ScanMetadata`, `Finding`, `Location`, `Severity`,
+`Confidence`, `ControlRef`, `severity_rank`, `confidence_rank`,
+`score`, `ScoreResult`, `Chain`, `ChainRule`, `evaluate_chains`,
+`list_chain_rules`, `available_providers`, `available_standards`,
+`load_custom_rules`, `LoadedCustomRules`, `CustomRuleError`,
+`__version__`) is stable. The authoritative list is `__all__` in
+`pipeline_check/__init__.py`. Internal modules
+(`pipeline_check.core.checks.*`, `_primitives`, provider helpers)
+are not part of the public surface — they can change freely between
+minor releases.
 
 ## Configuration file — stable
 

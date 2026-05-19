@@ -1,8 +1,11 @@
 # Configuration file
 
-Every CLI flag can be set in a config file so CI invocations stay short
-and repo policy lives alongside the code. Both TOML (inside
-`pyproject.toml`) and YAML (`.pipeline-check.yml`) are supported.
+The common CLI flags can be set in a config file so CI invocations
+stay short and repo policy lives alongside the code. Both TOML
+(inside `pyproject.toml`) and YAML (`.pipeline-check.yml`) are
+supported. The supported keys are the allowlist `_TOPLEVEL_KEYS` /
+`_GATE_KEYS` in `pipeline_check/core/config.py`; provider-specific
+path flags and many of the newer flags are CLI-only.
 
 ## Precedence
 

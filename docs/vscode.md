@@ -210,7 +210,7 @@ mode:
 | Per-rule diagnostic with hover prose | JSON only | yes |
 | Attack chains | yes | not in the pilot release |
 | Scoring + grade + CI gate | yes | not surfaced (the editor is read-only) |
-| STRIDE threat model export | yes (`--threatmodel`) | no |
+| STRIDE threat model export | yes (`--output threatmodel`) | no |
 | Multi-file providers (Kubernetes, Helm, Terraform plan, SCM, registries) | yes | later release |
 | MCP server (`--serve`) | yes (see [mcp.md](mcp.md)) | no |
 | Baselines and ignore files | yes | inherited via the LSP server's config-file reader |

@@ -218,6 +218,32 @@ release commit collapses this section into `## [X.Y.Z] - <date>`.
   (MCP, VS Code extension), and **Contributing**. No files moved,
   so deep links from external sources still resolve.
 
+### Fixed
+
+- **Doc-accuracy sweep on hand-written prose.** The headline counts
+  and generated provider / standards pages were already lock-tested,
+  but several free-form prose claims had drifted from the live
+  registries. README's per-provider rows had stale counts for SCM
+  (42 → 47), npm (9 → 10, plus a "NPM-009..010 reserved" sentence
+  that NPM-009 had since invalidated), and Maven (7 → 8, missing
+  the MVN-008 cooldown entry). README's `--scm-platform` flag
+  description said "37-rule pack" instead of 47, and the
+  `--man [TOPIC]` list omitted the registered ``inventory`` and
+  ``explain`` topics. ``docs/stability.md`` named ``evaluate_gate``
+  and a nonexistent ``ReporterRegistry`` as part of the public
+  surface (the real ``__all__`` is twenty names long) and
+  referenced an unreal ``--gate-off`` flag. ``docs/vscode.md``
+  pointed at a non-existent ``--threatmodel`` flag (the real
+  invocation is ``--output threatmodel``). The
+  ``writing_a_custom_rule.md`` / ``writing_a_chain.md`` tutorials
+  still cited a "590+ checks across 19 providers" / "36 chain
+  examples" snapshot. And both ``docs/usage.md`` and
+  ``docs/config.md`` overstated the env-var / config-file surface
+  ("every CLI flag") relative to the actual ``_TOPLEVEL_KEYS`` /
+  ``_GATE_KEYS`` allowlist in ``pipeline_check/core/config.py``.
+  All thirteen prose sites now match the live registries and
+  ``__all__``.
+
 ## [1.1.0] - 2026-05-19
 
 ### Added

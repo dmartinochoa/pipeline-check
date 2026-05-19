@@ -97,7 +97,7 @@ def match(findings: list[Finding]) -> list[Chain]:
 ```
 
 Read any existing `chains/rules/<id>_<slug>.py` for the canonical
-shape, the catalog has 36 examples to crib from.
+shape, the catalog has 38 examples to crib from.
 
 ### `ChainRule` fields
 
@@ -280,7 +280,7 @@ committed. Two checks enforce currency:
 The top-of-README tagline counts attack chains:
 
 ```markdown
-**590+ checks** across **19 providers**, ..., plus **N attack chains** ...
+**810+ checks** across **22 providers**, ..., plus **N attack chains** ...
 ```
 
 Bump `N` to match the new catalog size. `tests/test_doc_claims.py`
