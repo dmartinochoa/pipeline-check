@@ -13,11 +13,17 @@ from pipeline_check.core.chains.rules import (
 from pipeline_check.core.checks.base import (
     Confidence,
     Finding,
+    ResourceAnchor,
     Severity,
 )
 
 
-def _failing(check_id: str, resource: str) -> Finding:
+def _failing(
+    check_id: str,
+    resource: str,
+    *,
+    resource_anchors: tuple[ResourceAnchor, ...] = (),
+) -> Finding:
     return Finding(
         check_id=check_id,
         title="synthetic",
@@ -27,6 +33,7 @@ def _failing(check_id: str, resource: str) -> Finding:
         recommendation="",
         passed=False,
         confidence=Confidence.HIGH,
+        resource_anchors=resource_anchors,
     )
 
 
@@ -120,3 +127,112 @@ class TestXPC002:
         assert len(chains) == 1
         # MEDIUM (the weaker of the two legs) propagates.
         assert chains[0].confidence == Confidence.MEDIUM
+
+    def test_reachability_confirmed_when_image_anchor_matches(self) -> None:
+        img = ResourceAnchor(
+            kind="oci_image", identity="docker.io/library/redis",
+        )
+        chains = r.match([
+            _failing(
+                "DF-001", "Dockerfile", resource_anchors=(img,),
+            ),
+            _failing(
+                "K8S-001", "k8s/redis.yaml", resource_anchors=(img,),
+            ),
+        ])
+        assert len(chains) == 1
+        c = chains[0]
+        assert c.confirmed_reachable is True
+        assert c.confidence is Confidence.HIGH
+        assert c.resources == ["docker.io/library/redis"]
+        assert "docker.io/library/redis" in c.reachability_note
+
+    def test_falls_back_when_image_anchors_disjoint(self) -> None:
+        build = ResourceAnchor(
+            kind="oci_image", identity="docker.io/library/python",
+        )
+        runtime = ResourceAnchor(
+            kind="oci_image", identity="docker.io/acme/app",
+        )
+        chains = r.match([
+            _failing(
+                "DF-001", "Dockerfile", resource_anchors=(build,),
+            ),
+            _failing(
+                "K8S-001", "k8s/app.yaml", resource_anchors=(runtime,),
+            ),
+        ])
+        # Disjoint identities -> falls through to the per-pair
+        # cross-product co-occurrence fallback (1 dockerfile x 1
+        # manifest = 1 unconfirmed chain).
+        assert len(chains) == 1
+        c = chains[0]
+        assert c.confirmed_reachable is False
+        assert c.reachability_note == ""
+        assert sorted(c.resources) == ["Dockerfile", "k8s/app.yaml"]
+
+    def test_one_confirmed_chain_per_image_identity(self) -> None:
+        # Two distinct images, each unpinned at both build and
+        # runtime ends. Expect two confirmed chains (one per image),
+        # NOT four (no per-pair cross-product over confirmed legs).
+        img_a = ResourceAnchor(
+            kind="oci_image", identity="docker.io/library/nginx",
+        )
+        img_b = ResourceAnchor(
+            kind="oci_image", identity="ghcr.io/acme/api",
+        )
+        chains = r.match([
+            _failing(
+                "DF-001", "nginx/Dockerfile",
+                resource_anchors=(img_a,),
+            ),
+            _failing(
+                "DF-001", "api/Dockerfile", resource_anchors=(img_b,),
+            ),
+            _failing(
+                "K8S-001", "k8s/nginx.yaml",
+                resource_anchors=(img_a,),
+            ),
+            _failing(
+                "K8S-001", "k8s/api.yaml", resource_anchors=(img_b,),
+            ),
+        ])
+        confirmed = [c for c in chains if c.confirmed_reachable]
+        unconfirmed = [c for c in chains if not c.confirmed_reachable]
+        assert len(confirmed) == 2
+        assert {c.resources[0] for c in confirmed} == {
+            img_a.identity, img_b.identity,
+        }
+        # Every leg contributed to a confirmed pair, no fallback fires.
+        assert unconfirmed == []
+
+    def test_partial_match_keeps_unmatched_legs_in_fallback(self) -> None:
+        # One image matches across legs (confirmed); a second
+        # dockerfile and a second manifest with no matching anchor
+        # fall through to per-pair cross-product (one fallback chain
+        # for the leftover pair).
+        shared = ResourceAnchor(
+            kind="oci_image", identity="docker.io/library/redis",
+        )
+        chains = r.match([
+            _failing(
+                "DF-001", "redis/Dockerfile",
+                resource_anchors=(shared,),
+            ),
+            _failing("DF-001", "worker/Dockerfile"),
+            _failing(
+                "K8S-001", "k8s/redis.yaml",
+                resource_anchors=(shared,),
+            ),
+            _failing("K8S-001", "k8s/worker.yaml"),
+        ])
+        confirmed = [c for c in chains if c.confirmed_reachable]
+        unconfirmed = [c for c in chains if not c.confirmed_reachable]
+        assert len(confirmed) == 1
+        assert confirmed[0].resources == ["docker.io/library/redis"]
+        # Only the unmatched dockerfile x unmatched manifest pair
+        # makes it into the fallback — confirmed legs are excluded.
+        assert len(unconfirmed) == 1
+        assert sorted(unconfirmed[0].resources) == [
+            "k8s/worker.yaml", "worker/Dockerfile",
+        ]

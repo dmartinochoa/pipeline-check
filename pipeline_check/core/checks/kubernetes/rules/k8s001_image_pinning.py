@@ -1,9 +1,10 @@
 """K8S-001. Container image not pinned by ``@sha256:<digest>``."""
 from __future__ import annotations
 
+from ..._primitives.anchors import oci_image
 from ..._primitives.image_pinning import PinKind, classify
 from ..._yaml_lines import line_of as _line_of
-from ...base import Finding, Location, Severity
+from ...base import Finding, Location, ResourceAnchor, Severity
 from ...rule import Rule
 from ..base import (
     KubernetesContext,
@@ -40,6 +41,8 @@ RULE = Rule(
 def check(ctx: KubernetesContext) -> Finding:
     unpinned: list[str] = []
     locations: list[Location] = []
+    anchors: list[ResourceAnchor] = []
+    seen_identities: set[str] = set()
     for m, ps in iter_workload_pod_specs(ctx):
         for kind, c in iter_containers(ps):
             image = c.get("image")
@@ -57,6 +60,14 @@ def check(ctx: KubernetesContext) -> Finding:
                 path=m.path, start_line=line, end_line=line,
                 doc_index=m.doc_index,
             ))
+            # ResourceAnchor phase 1: XPC-002 intersects DF-001 and
+            # K8S-001 on the canonical ``oci_image`` identity so the
+            # chain confirms when the same image is unpinned at both
+            # the base-image and runtime-workload boundaries.
+            anchor = oci_image(image)
+            if anchor is not None and anchor.identity not in seen_identities:
+                seen_identities.add(anchor.identity)
+                anchors.append(anchor)
     passed = not unpinned
     desc = (
         "Every workload container image is pinned by sha256 digest."
@@ -71,4 +82,5 @@ def check(ctx: KubernetesContext) -> Finding:
         description=desc,
         recommendation=RULE.recommendation, passed=passed,
         locations=locations,
+        resource_anchors=tuple(anchors) if not passed else (),
     )

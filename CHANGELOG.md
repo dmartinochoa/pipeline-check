@@ -186,6 +186,25 @@ release commit collapses this section into `## [X.Y.Z] - <date>`.
   `GL-032` ∩ `GL-020` share a job. `GHA-019`, `GHA-036`, `GL-032`,
   `GL-020` all gained `Finding.job_anchors`.
 
+- **ResourceAnchor phase 1: XPC-002 (oci_image, base image →
+  runtime workload).** Closes one of the two phase-0 ResourceAnchor
+  follow-ups called out in the CHANGELOG ("XPC-002, XPC-003"). Both
+  legs now emit ``oci_image`` anchors via the phase-0
+  ``_primitives/anchors.oci_image()`` canonicalizer: ``DF-001``
+  walks each unpinned ``FROM`` ref and ``K8S-001`` walks every
+  unpinned workload container ``image:`` field. ``XPC-002.match()``
+  intersects the two legs on the shared image identity through
+  ``group_by_anchor`` — each matched image emits ONE confirmed
+  chain (``confirmed_reachable=True``, ``Confidence.HIGH``, image
+  identity as the chain resource, narrative cites the shared
+  image). Findings that didn't contribute to a confirmed pair feed
+  the legacy per-pair cross-product fallback so the original triage
+  prompt ("here are the (dockerfile, manifest) pairs to
+  investigate") still surfaces when build and runtime reference
+  different images. Four new TestXPC002 cases (confirmed pair,
+  disjoint fallback, fan-out one chain per image, partial-match
+  mix). Existing per-pair tests preserved via the fallback path.
+
 - **AC-005 oci_image extraction extended to every cross-provider
   leg pair.** Follow-up to the AC-005 pilot that wired only the
   GHA legs. Eleven more leg rules now emit ``oci_image`` anchors
