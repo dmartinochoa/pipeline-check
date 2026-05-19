@@ -485,6 +485,7 @@ STANDARD = Standard(
         "PYPI-004": ["CICD-SEC-3", "CICD-SEC-9"],  # VCS dep without commit SHA
         "PYPI-005": ["CICD-SEC-3"],   # --extra-index-url (dep confusion)
         "PYPI-006": ["CICD-SEC-3", "CICD-SEC-8"],  # compromised-package registry
+        "PYPI-008": ["CICD-SEC-3", "CICD-SEC-8"],  # cooldown gate (--resolve-remote)
         # maven (pom.xml + settings.xml static analysis)
         "MVN-001":  ["CICD-SEC-3"],                # floating Maven version range
         "MVN-002":  ["CICD-SEC-3"],                # mutable SNAPSHOT dependency

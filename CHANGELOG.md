@@ -12,6 +12,45 @@ release commit collapses this section into `## [X.Y.Z] - <date>`.
 
 ### Added
 
+- **PYPI-008 cooldown gate + pypi registry fetcher.** Closes the
+  PyPI half of the cooldown-gate trio (NPM-008 just landed; MVN-
+  008 deferred). Same template: opt-in via ``--resolve-remote``;
+  fetches per-package metadata from the PyPI JSON API
+  (``https://pypi.org/pypi/<name>/json``), reads the per-version
+  upload timestamps from ``releases.<version>[].upload_time_iso_8601``
+  (legacy ``upload_time`` field accepted too, treated as UTC),
+  populates ``PypiContext.publish_times``, and PYPI-008 fires when
+  a direct ``name==version`` requirement was published within the
+  cooldown window (default 7 days). Per-version timestamp is the
+  MIN across the file records (the moment the first artifact for
+  that release landed on the index — that's what the cooldown
+  measures from). Yanked versions (empty file lists) drop on the
+  floor. PEP 503 name normalization runs on both the fetcher's
+  cache key and the rule's lookup so ``Pillow`` / ``pillow`` /
+  ``Pil_Low`` collapse to one fetch.
+
+  New ``pipeline_check/core/checks/pypi/registry_fetcher.py``
+  module + ``PypiContext.publish_times`` field + ``PypiProvider.
+  post_filter`` hook mirror the npm template exactly so the two
+  providers stay shape-consistent. ``PypiChecks`` dispatcher
+  gained the same backward-compatible two-argument ctx-passing
+  pattern npm got. MVN-008 follow-up can layer on the same
+  template in its own provider.
+
+  Rule scope: ``==version`` exact pins only (with optional
+  ``[extras]`` and ``; markers`` suffixes stripped). Range specs
+  (``>=``, ``~=``, ``<``), VCS / URL / editable lines, and
+  unpinned specs skip silently. Twenty-eight new tests in
+  ``tests/pypi/test_pypi008.py`` cover the parser (min-across-
+  files, legacy ``upload_time`` field, yanked-version drop,
+  malformed inputs), ``fetch_publish_times`` (happy / dedup /
+  404 warning / cache short-circuit), the spec extractor
+  (bare / extras / markers / case-folding / range / VCS), the
+  cooldown math, and the rule. Bumps test_rule_framework pypi
+  count 6 → 7; OWASP CICD-SEC-3 + CICD-SEC-8 mapping; README
+  pypi range PYPI-006 → PYPI-008; regenerated provider + OWASP
+  standard docs.
+
 - **NPM-008 cooldown gate + npm registry fetcher infrastructure.**
   New rule that fires when a direct ``package.json`` dependency
   was published to ``registry.npmjs.org`` within the cooldown

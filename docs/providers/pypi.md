@@ -47,7 +47,7 @@ covered.
 
 ## What it covers
 
-6 checks · 0 have an autofix patch (``--fix``).
+7 checks · 0 have an autofix patch (``--fix``).
 
 | Check | Title | Severity | Fix |
 |-------|-------|----------|-----|
@@ -57,6 +57,7 @@ covered.
 | [PYPI-004](#pypi-004) | requirements.txt VCS dependency uses a mutable ref | <span class="pg-sev pg-sev--high">HIGH</span> |  |
 | [PYPI-005](#pypi-005) | requirements.txt declares --extra-index-url (dependency-confusion surface) | <span class="pg-sev pg-sev--high">HIGH</span> |  |
 | [PYPI-006](#pypi-006) | requirements.txt pins a known-compromised PyPI package version | <span class="pg-sev pg-sev--critical">CRITICAL</span> |  |
+| [PYPI-008](#pypi-008) | Direct dependency was published within the cooldown window | <span class="pg-sev pg-sev--high">HIGH</span> |  |
 
 ---
 
@@ -220,6 +221,36 @@ Walks every ``name==version`` line in the requirements file against the curated 
 **Recommended action**
 
 Rotate every secret reachable to any process that ran ``pip install`` against this requirements file during the window the compromised version was installed (AWS keys, GH tokens, SSH keys — most published PyPI compromises have been credential stealers). Bump the affected requirement to a post-incident clean version published after the maintainer / PyPI took down the malicious release, and audit CI logs for the exfiltration shape the advisory documents. Pair with PYPI-002 (``--require-hashes``) so a future swap of the same version literal fails verification.
+
+</div>
+
+</div>
+
+<div class="pg-rule pg-rule--high" markdown>
+
+## PYPI-008: Direct dependency was published within the cooldown window { #pypi-008 }
+
+<div class="pg-rule__tags">
+<span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-3</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-8</span> <span class="pg-tag pg-tag--esf">ESF-S-VERIFY-DEPS</span> <span class="pg-tag pg-tag--cwe">CWE-829</span> <span class="pg-tag pg-tag--cwe">CWE-494</span>
+</div>
+
+Network-dependent: needs ``--resolve-remote`` to populate the per-package publish timestamps from the PyPI JSON API (``https://pypi.org/pypi/<name>/json``). Walks every exact-version requirement (``foo==1.2.3``) and flags ones whose newest file record landed within the cooldown window (default 7 days). Range specs (``foo>=1.2``, ``foo~=1.2``), unpinned specs, VCS / URL / editable lines, and dist-tag-style specs are out of scope — the cooldown applies to a specific version literal because that's what the maintainer chose to pin. When ``--resolve-remote`` is off or the registry can't be reached, the rule passes silently so the absence of the network path doesn't trip CI.
+
+**Known false-positive modes**
+
+- Pre-release versions (``foo==1.0.0rc1``) are often freshly published; the cooldown applies to them too because pre-release tags have been used as carriers in real compromises. Suppress per-resource via ``--ignore-file`` when a release-train workflow legitimately pins to a same-day RC.
+- Same-day patch upgrades from a maintainer the team directly trusts (e.g. a vendored fork the team owns) are flagged. Suppress per-resource — the cooldown is a default-safe gate, not a hard rule.
+
+**Seen in the wild**
+
+- ctx package compromise (May 2022): the abandoned ``ctx`` package was claimed by an attacker and republished with an env-var exfiltration payload. The malicious 0.2.x versions stayed live until PyPI yanked them ~24h later. Consumers who held a 7-day cooldown caught the takedown before installing.
+- requests-darwin-lite 2.27.1 ([GHSA-7gjg-3qcj-9jvg](https://github.com/advisories/GHSA-7gjg-3qcj-9jvg), May 2024): typosquat-flavored package whose wheel embedded the Geneva malware framework. The malicious version was live for less than 48 hours before disclosure and yank.
+
+<div class="pg-rule__rec" markdown>
+
+**Recommended action**
+
+Either skip the just-published version (pin to the last release older than the cooldown window) or wait until the cooldown has elapsed before bumping the requirements file. Most publisher-account compromises on PyPI (``ctx`` 2022, ``requests-darwin-lite`` 2024, ``ultralytics`` 2024, the ``rspack`` / ``vant`` / ``nx`` / ``@ctrl/*`` campaigns) are detected and yanked from the index within hours-to-days of publication; holding back N days converts a publisher-compromise window into a vulnerability-disclosure window where either the maintainer rotates the malicious version off the index or the security community files an advisory that PYPI-006 can match against.
 
 </div>
 
