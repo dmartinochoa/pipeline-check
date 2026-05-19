@@ -602,6 +602,17 @@ network, and every cache in between.
 
 ---
 
+## 🤝 Contributing
+
+PRs welcome. See [CONTRIBUTING.md](CONTRIBUTING.md) for dev setup,
+the test / lint / mypy commands CI runs, the rule-addition
+workflow, and the commit / PR conventions. Project-wide conventions
+(American English, generated docs, release process) live in
+[CLAUDE.md](CLAUDE.md). Security issues: follow
+[SECURITY.md](SECURITY.md), not the public issue tracker.
+
+---
+
 ## 📜 License
 
 MIT. See [LICENSE](LICENSE).

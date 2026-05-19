@@ -20,7 +20,9 @@ release commit collapses this section into `## [X.Y.Z] - <date>`.
   conventions that previously only lived in ``CLAUDE.md``. Points
   back at ``CLAUDE.md`` for the exhaustive English-variant pair
   table and the maintainer-only release steps so the two files
-  don't drift.
+  don't drift. README gains a ``🤝 Contributing`` section linking
+  out to it (plus ``CLAUDE.md`` and ``SECURITY.md``) so the doc is
+  discoverable above the License footer.
 
 - **PYPI-008 cooldown gate + pypi registry fetcher.** Closes the
   PyPI half of the cooldown-gate trio (NPM-008 just landed; MVN-
