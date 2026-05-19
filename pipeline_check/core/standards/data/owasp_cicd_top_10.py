@@ -476,6 +476,7 @@ STANDARD = Standard(
         "NPM-005":  ["CICD-SEC-3", "CICD-SEC-9"],  # git dep with mutable ref
         "NPM-006":  ["CICD-SEC-3", "CICD-SEC-8"],  # compromised-package registry
         "NPM-007":  ["CICD-SEC-3", "CICD-SEC-7"],  # .npmrc ignore-scripts enforcement
+        "NPM-008":  ["CICD-SEC-3", "CICD-SEC-8"],  # cooldown gate (--resolve-remote)
         "NPM-011":  ["CICD-SEC-6", "CICD-SEC-3"],  # secret-shaped paths in files field
         # pypi (requirements file static analysis)
         "PYPI-001": ["CICD-SEC-3"],   # requirements line lacks ==pin

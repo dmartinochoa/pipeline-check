@@ -12,6 +12,59 @@ release commit collapses this section into `## [X.Y.Z] - <date>`.
 
 ### Added
 
+- **NPM-008 cooldown gate + npm registry fetcher infrastructure.**
+  New rule that fires when a direct ``package.json`` dependency
+  was published to ``registry.npmjs.org`` within the cooldown
+  window (default 7 days), catching the same takedown-window
+  attacks (Shai-Hulud / TanStack / axios → plain-crypto-js,
+  @ctrl/* maintainer-account takeovers) that pure lockfile or
+  SHA pinning is blind to. Opt-in via ``--resolve-remote``:
+  passes silently when the flag is off so the rule's absence
+  isn't a CI failure on the default no-network path.
+
+  New ``pipeline_check/core/checks/npm/registry_fetcher.py``
+  module mirrors the GHA resolver pattern
+  (``RegistryMetadataFetcher`` Protocol + ``HttpRegistryFetcher``
+  stdlib-only impl + ``FileSystemCache`` with 7-day TTL +
+  ``default_cache_dir()`` platform helper). The fetcher returns
+  ``None`` on 404 / network error so failures land as warnings
+  on ``context.warnings`` and the scan continues — strictly
+  additive resolution, mirrors the GHA contract.
+
+  The ``NpmProvider.post_filter`` hook walks every direct
+  dependency in every loaded ``package.json``, fetches per-
+  package metadata, and populates the new
+  ``NpmContext.publish_times: dict[name, dict[version, ts_utc]]``
+  the rule reads. Per-package result is cached on disk so re-runs
+  in the same week skip network entirely (toggle via
+  ``--no-cache``). Scoped names (``@scope/foo``) are URL-encoded;
+  responses over 10 MiB are rejected as a precaution against
+  bloat / misrouted servers.
+
+  ``NpmChecks`` dispatcher gained a small extension: rules that
+  declare a second positional parameter receive the full
+  ``NpmContext`` alongside their per-target argument. Existing
+  one-arg rules are unaffected; NPM-008 is the first consumer.
+
+  Rule scope: exact-version specs only (``1.2.3`` / ``=1.2.3`` /
+  ``v1.2.3``, with pre-release suffixes kept). Range specs
+  (``^1.2.3`` / ``~1.2.3`` / ``>=1.2.3``), dist-tag specs
+  (``latest``), and source specs (``file:`` / ``workspace:`` /
+  ``git+...``) skip silently — the cooldown applies to a
+  specific version literal because that's what the maintainer
+  chose to pin. PYPI-008 and MVN-008 follow-ups can layer on top
+  of the same fetcher template in their own providers.
+
+  Twenty-seven new tests in ``tests/npm/test_npm008.py`` cover
+  ``_parse_publish_times`` (happy path, malformed timestamps,
+  non-JSON, top-level-non-dict, missing time block),
+  ``fetch_publish_times`` (happy / dedup / 404 warning / cache
+  short-circuit), the version-spec regex (bare / ``=`` / ``v``
+  / pre-release / caret / tilde / dist-tag), the cooldown math
+  (fresh / old / tz-naive), and the rule itself (silent pass
+  without metadata, fires on fresh, passes on old, ignores
+  ranges, ignores unresolved packages, covers devDependencies).
+
 - **Org-wide fleet scanner (`pipeline_check fleet`) phase 1.** New
   CLI subcommand that reads a YAML list of GitHub-style
   ``owner/repo`` coordinates, shallow-clones each into a tmpdir,

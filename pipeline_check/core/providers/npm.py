@@ -3,15 +3,24 @@
     pipeline_check --pipeline npm --npm-path path/to/package.json
 
 No registry pull, no install, no daemon access; text-only static
-analysis of the manifest and lockfile shapes.
+analysis of the manifest and lockfile shapes by default. Opt in to
+publish-time resolution against ``registry.npmjs.org`` via
+``--resolve-remote`` so NPM-008 (cooldown gate) can flag freshly-
+published direct deps.
 """
 from __future__ import annotations
 
 from typing import Any
 
 from ..checks.base import BaseCheck
-from ..checks.npm.base import NpmContext
+from ..checks.npm.base import NpmContext, iter_manifest_dependencies
 from ..checks.npm.pipelines import NpmChecks
+from ..checks.npm.registry_fetcher import (
+    FileSystemCache,
+    HttpRegistryFetcher,
+    default_cache_dir,
+    fetch_publish_times,
+)
 from ..inventory import Component
 from .base import BaseProvider
 
@@ -37,6 +46,45 @@ class NpmProvider(BaseProvider):
     @property
     def check_classes(self) -> list[type[BaseCheck]]:
         return [NpmChecks]
+
+    def post_filter(
+        self,
+        context: NpmContext,
+        resolve_remote: bool = False,
+        no_cache: bool = False,
+        **_: Any,
+    ) -> None:
+        """Populate ``context.publish_times`` from ``registry.npmjs.org``.
+
+        Off by default. When ``resolve_remote`` is true, walks every
+        direct dependency in every loaded ``package.json``, fetches
+        per-package metadata, and stores ``{name: {version: ts}}``
+        on the context so NPM-008 can compute cooldown ages.
+
+        Failures (404, network error, malformed metadata) land in
+        ``context.warnings`` rather than raising, mirroring the GHA
+        resolver's strictly-additive contract — a transient
+        registry outage shouldn't fail CI.
+        """
+        if not resolve_remote:
+            return
+        names: list[str] = []
+        for manifest in context.manifests:
+            for _section, name, _spec in iter_manifest_dependencies(
+                manifest,
+            ):
+                names.append(name)
+        if not names:
+            return
+        fetcher = HttpRegistryFetcher()
+        cache = FileSystemCache(
+            default_cache_dir(), enabled=not no_cache,
+        )
+        publish_times, warnings = fetch_publish_times(
+            names, fetcher, cache=cache,
+        )
+        context.publish_times = publish_times
+        context.warnings.extend(warnings)
 
     def inventory(self, context: NpmContext) -> list[Component]:
         out: list[Component] = []
