@@ -179,10 +179,15 @@
   --md-code-bg-color:                   hsla(213, 32%, 6%, 1);
   --md-code-fg-color:                   hsla(213, 12%, 88%, 1);
 
-  --md-primary-fg-color:        #0b3954;
-  --md-primary-fg-color--light: #134e6f;
-  --md-primary-fg-color--dark:  #04101a;
-  --md-accent-fg-color:         #1ba3a9;
+  /* Primary surface tokens drive Material's accent UI (TOC active
+     bg, nav-link active bg, search highlight). On the dark canvas
+     the navy-800/-700 values read as muddy near-bg shapes; lift
+     them a few steps toward the teal family so the accent UI
+     reads as deliberate accent rather than washed-out blue. */
+  --md-primary-fg-color:        #134e6f;
+  --md-primary-fg-color--light: #1f6d8c;
+  --md-primary-fg-color--dark:  #0b3954;
+  --md-accent-fg-color:         #33c4ca;
 }
 
 /* ------------------------------------------------------------
@@ -781,9 +786,13 @@ body {
    Sizing predates the 2026 nav regroup (when ~15 leaf pages were
    collapsed into 6 intent-based tabs); kept as-is because the editorial
    feel reads well even with fewer items. The list keeps Material's
-   `overflow: auto` as a fallback for narrower viewports. */
+   `overflow: auto` as a fallback for narrower viewports. Tabs are
+   centered horizontally so the navigation reads as anchored chrome
+   rather than left-jammed UI; on viewports too narrow to fit the row
+   the flex layout falls back to `flex-start` via the scroll container. */
 .md-tabs__list {
   padding: 0 0.4rem;
+  justify-content: center;
 }
 .md-tabs__item {
   height: 2.4rem;
@@ -986,6 +995,21 @@ body:has(.pg-home) {
 @media screen and (min-width: 76.25em) {
   body:has(.pg-home) .md-sidebar--primary {
     display: none;
+  }
+}
+
+/* ----- Inner-page width --------------------------------------
+   Material's ``.md-grid`` caps the row containing the left nav,
+   the article, and the right TOC at 61rem. On modern widescreen
+   monitors that leaves a wide unused gutter on both sides while
+   the TOC and article fight for the same cramped column. Widen
+   the grid on viewports that have the room; below 76.25em the
+   primary nav collapses into a drawer anyway, so the default
+   Material behavior is fine there. Home (.pg-home) opts out via
+   its own ``max-width: none !important`` rule above. */
+@media screen and (min-width: 76.25em) {
+  body:not(:has(.pg-home)) .md-grid {
+    max-width: 86rem;
   }
 }
 
@@ -1619,9 +1643,9 @@ img.pg-hero__mark {
 }
 
 /* ----- Feature grid (hairline cards, no lift) -------------- */
-/* Six features: lock the desktop grid to 3 columns so the layout
-   reads as a clean 3×2 block rather than the asymmetric 5+1 the
-   prior auto-fit produced at common widescreen breakpoints. */
+/* Nine features: lock the desktop grid to 3 columns so the layout
+   reads as a clean 3×3 block rather than the asymmetric 3+3+x
+   the prior auto-fit produced at common widescreen breakpoints. */
 .pg-features {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
@@ -1693,6 +1717,10 @@ img.pg-hero__mark {
   text-decoration: none;
 }
 
+[data-md-color-scheme="slate"] .pg-feature a.pg-feature__link {
+  color: var(--pg-teal-400);
+}
+
 .pg-feature a.pg-feature__link:hover { text-decoration: underline; }
 .pg-feature a.pg-feature__link::after {
   content: "→";
@@ -1729,6 +1757,12 @@ img.pg-hero__mark {
   border-color: var(--pg-teal-500);
   color: var(--pg-teal-500);
   background: color-mix(in oklab, var(--md-default-bg-color) 96%, var(--pg-teal-500));
+}
+
+[data-md-color-scheme="slate"] .pg-provider:hover {
+  border-color: var(--pg-teal-400);
+  color: var(--pg-teal-400);
+  background: color-mix(in oklab, var(--md-default-bg-color) 88%, var(--pg-teal-500));
 }
 
 .pg-provider__name {
@@ -3006,6 +3040,20 @@ th.pg-sortable:focus-visible {
 @media screen and (max-width: 60em) {
   .md-sidebar--secondary {
     display: none;
+  }
+}
+
+/* TOC + primary nav widths: Material caps both sidebars at 12.1rem
+   (~194px), which truncates the longer rule and standard titles.
+   The widened ``.md-grid`` above gives us the horizontal room to
+   let each sidebar breathe, so bump them on viewports where the
+   desktop rails are visible. */
+@media screen and (min-width: 76.25em) {
+  body:not(:has(.pg-home)) .md-sidebar--secondary {
+    width: 14rem;
+  }
+  body:not(:has(.pg-home)) .md-sidebar--primary {
+    width: 14rem;
   }
 }
 

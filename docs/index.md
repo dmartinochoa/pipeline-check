@@ -156,6 +156,29 @@ source lives at <a href="https://github.com/greylag-ci/pipeline-check-vscode">gr
 <a class="pg-feature__link" href="vscode/">VS Code extension</a>
 </div>
 
+<div class="pg-feature" markdown>
+<div class="pg-feature__icon">
+<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7l9-4 9 4-9 4-9-4z"/><path d="M3 12l9 4 9-4"/><path d="M3 17l9 4 9-4"/></svg>
+</div>
+### Benchmarked on real goats
+Recall is locked against deliberately-vulnerable training repos: 100% on
+`cicd-goat`, `cfngoat`, and `kubernetes-goat`. Every rule change that stops a
+goat finding from firing trips the bench in CI, so coverage can't silently
+regress between releases.
+<a class="pg-feature__link" href="goat_bench/">GOAT bench</a>
+</div>
+
+<div class="pg-feature" markdown>
+<div class="pg-feature__icon">
+<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="12" rx="2"/><path d="M8 20h8"/><path d="M12 16v4"/><circle cx="9" cy="10" r="1"/><circle cx="15" cy="10" r="1"/></svg>
+</div>
+### MCP server for AI clients
+Drive scans and introspect the rule catalog from Claude Desktop, Claude Code,
+Cursor, Continue, or Zed over the Model Context Protocol. Runs locally on
+stdio: no network egress, no telemetry, no API tokens.
+<a class="pg-feature__link" href="mcp/">MCP server</a>
+</div>
+
 </div>
 </section>
 
