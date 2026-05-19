@@ -408,8 +408,9 @@ release commit collapses this section into `## [X.Y.Z] - <date>`.
   cites the shared image, resource is the image identity). Falls
   back to scan-level co-occurrence when no image matches.
 
-  Cross-provider extension to GL-* / BB-* / ADO-* / CC-* /
-  GCB-* / JF-* legs lands in the follow-up entry above.
+  Cross-provider extension to ``GL-*`` / ``BB-*`` / ``ADO-*`` /
+  ``CC-*`` / ``GCB-*`` / ``JF-*`` legs lands in the follow-up
+  entry above.
 
 - **ResourceAnchor phase 1: AC-011 / AC-020 / AC-021 (k8s_sa
   intersection across Kubernetes / Tekton / Argo).** Closes the
