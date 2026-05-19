@@ -1,11 +1,12 @@
 """pypi context and base check.
 
 Loads pip ``requirements.txt`` / ``requirements*.txt`` / ``*.in``
-(pip-tools input), ``poetry.lock``, and ``Pipfile.lock`` files
-from disk. Each file becomes a :class:`RequirementsFile` exposing
-the original text plus a list of parsed :class:`RequirementLine`
-entries: one per logical requirement, with line continuations
-joined and comments stripped.
+(pip-tools input), ``poetry.lock``, ``Pipfile.lock``, and
+``pyproject.toml`` files from disk. Each file becomes a
+:class:`RequirementsFile` exposing the original text plus a list
+of parsed :class:`RequirementLine` entries: one per logical
+requirement, with line continuations joined and comments
+stripped.
 
 ``poetry.lock`` is read by parsing the TOML and synthesizing the
 same ``RequirementsFile`` shape (see :func:`_parse_poetry_lock`);
@@ -16,9 +17,14 @@ their top-level options for PYPI-002's sake; git-sourced
 packages get a ``foo @ git+<url>@<sha>`` PEP-508-direct-URL body
 so PYPI-004 classifies the ref correctly.
 
-``pyproject.toml`` (PEP 621 / Poetry dependency declarations)
-stays out of scope for this pass — it's a manifest, not a
-resolved lockfile, and warrants its own parser, deferred.
+``pyproject.toml`` is read by :func:`_parse_pyproject_toml`,
+which walks PEP 621 (``[project].dependencies`` +
+``[project.optional-dependencies]``), Poetry
+(``[tool.poetry.dependencies]``, ``[tool.poetry.dev-dependencies]``,
+``[tool.poetry.group.<name>.dependencies]``), and PEP 518/517
+(``[build-system].requires``) tables. Manifests are exempted from
+PYPI-002 the same way ``*.in`` is (manifests don't carry hashes;
+the resolved lockfile is what does).
 """
 from __future__ import annotations
 
@@ -39,7 +45,7 @@ from ..base import BaseCheck
 #: :func:`_parse_pipfile_lock`).
 REQUIREMENTS_GLOBS: tuple[str, ...] = (
     "requirements*.txt", "requirements/*.txt", "*.in",
-    "poetry.lock", "Pipfile.lock",
+    "poetry.lock", "Pipfile.lock", "pyproject.toml",
 )
 
 
@@ -132,6 +138,15 @@ class PypiContext:
                 except Exception as exc:  # noqa: BLE001
                     warnings.append(
                         f"{f}: Pipfile.lock parse error: {exc}"
+                    )
+                    skipped += 1
+                    continue
+            elif f.name == "pyproject.toml":
+                try:
+                    lines, options = _parse_pyproject_toml(text)
+                except Exception as exc:  # noqa: BLE001
+                    warnings.append(
+                        f"{f}: pyproject.toml parse error: {exc}"
                     )
                     skipped += 1
                     continue
@@ -491,6 +506,181 @@ def _parse_pipfile_lock(
                 line_no=idx, body=body, flags=flags,
             ))
     return tuple(lines), ("--require-hashes",)
+
+
+# ── pyproject.toml synthesis ────────────────────────────────────────
+
+
+def _poetry_constraint_to_body(name: str, constraint: str) -> str | None:
+    """Project a Poetry dependency constraint to a PEP 508-shaped body.
+
+    Returns ``None`` for the special ``python`` entry (which is a
+    runtime requirement, not a package dependency) and for entries
+    whose constraint has no recoverable shape.
+
+    Mapping rules:
+
+    * Constraint starts with ``=`` / ``==`` → ``name==X`` (pinned).
+    * Bare numeric literal (``"2.0.5"``) → ``name==2.0.5``.
+      Current-Poetry interpretation of an unprefixed version is the
+      exact pin; older releases that interpreted bare numbers as
+      caret-style are uncommon enough in modern repos that the
+      false-negative window is small.
+    * Caret (``^X``), tilde (``~X``), comparison (``>``, ``<``, ``!``),
+      star (``*``), range (``X,Y``) → keep verbatim after the name
+      so PYPI-001's ``==`` regex doesn't match and the rule fires.
+    """
+    if name == "python":
+        return None
+    c = constraint.strip()
+    if not c:
+        return None
+    if c.startswith("=="):
+        return f"{name}{c}"
+    if c.startswith("=") and not c.startswith("=="):
+        return f"{name}=={c[1:].strip()}"
+    if c[0].isdigit():
+        return f"{name}=={c}"
+    return f"{name} {c}"
+
+
+def _poetry_table_to_body(name: str, spec: dict[str, Any]) -> str | None:
+    """Project a Poetry table-form dependency to a body.
+
+    Table-form shapes seen in real ``pyproject.toml`` files:
+
+    * ``{ version = "^1.0", extras = ["security"] }`` → use
+      :func:`_poetry_constraint_to_body` on the ``version`` field.
+    * ``{ git = "...", rev|tag|branch = "..." }`` → synthesize a
+      PEP-508 direct URL (``name @ git+<url>@<ref>``) so PYPI-004
+      classifies the ref. Prefer ``rev`` (commit SHA) over ``tag`` /
+      ``branch`` (mutable refs) so a lockfile-pinned SHA passes the
+      rule.
+    * ``{ url = "https://..." }`` → ``name @ https://...``.
+    * ``{ path = "./packages/x" }`` / ``{ file = "..." }`` →
+      ``None`` (local sources aren't a supply-chain surface).
+    """
+    git = spec.get("git")
+    if isinstance(git, str) and git:
+        ref = spec.get("rev") or spec.get("tag") or spec.get("branch")
+        if isinstance(ref, str) and ref:
+            return f"{name} @ git+{git}@{ref}"
+        return f"{name} @ git+{git}"
+    url = spec.get("url")
+    if isinstance(url, str) and url:
+        return f"{name} @ {url}"
+    if "path" in spec or "file" in spec:
+        return None
+    version = spec.get("version")
+    if isinstance(version, str):
+        return _poetry_constraint_to_body(name, version)
+    return None
+
+
+def _walk_poetry_deps(
+    table: Any, sink: list[str],
+) -> None:
+    """Append bodies for every entry in a Poetry dependency table."""
+    if not isinstance(table, dict):
+        return
+    for name, value in table.items():
+        if not isinstance(name, str):
+            continue
+        if isinstance(value, str):
+            body = _poetry_constraint_to_body(name, value)
+            if body:
+                sink.append(body)
+        elif isinstance(value, dict):
+            body = _poetry_table_to_body(name, value)
+            if body:
+                sink.append(body)
+        elif isinstance(value, list):
+            # Multiple-constraints form: list of dict entries.
+            for entry in value:
+                if isinstance(entry, dict):
+                    body = _poetry_table_to_body(name, entry)
+                    if body:
+                        sink.append(body)
+
+
+def _parse_pyproject_toml(
+    text: str,
+) -> tuple[tuple[RequirementLine, ...], tuple[str, ...]]:
+    """Parse a ``pyproject.toml`` body and project it onto the
+    requirements-file shape.
+
+    Walks every common dependency table:
+
+    * ``[project].dependencies`` — PEP 621 array of PEP 508 strings.
+    * ``[project.optional-dependencies]`` — PEP 621 extras (table of
+      arrays, walked alphabetically by extra name).
+    * ``[tool.poetry.dependencies]`` — Poetry classic main deps;
+      string and table forms supported, the ``python`` entry is
+      dropped (it's a runtime requirement, not a dep).
+    * ``[tool.poetry.dev-dependencies]`` — Poetry classic dev deps.
+    * ``[tool.poetry.group.<name>.dependencies]`` — Poetry groups.
+    * ``[build-system].requires`` — PEP 518/517 build deps.
+
+    Emits one :class:`RequirementLine` per dependency. Line numbers
+    are best-effort monotonic 1..N (same approach the lockfile
+    synthesizers use); PYPI rules use the line number only for
+    finding locations.
+
+    No top-level ``--require-hashes`` is emitted because manifests
+    don't carry hashes; PYPI-002 exempts ``pyproject.toml`` for the
+    same reason it exempts ``*.in``.
+    """
+    raw = tomllib.loads(text)
+    if not isinstance(raw, dict):
+        return ((), ())
+    bodies: list[str] = []
+
+    # ── PEP 621 ──────────────────────────────────────────────────
+    project = raw.get("project")
+    if isinstance(project, dict):
+        deps = project.get("dependencies")
+        if isinstance(deps, list):
+            for entry in deps:
+                if isinstance(entry, str) and entry.strip():
+                    bodies.append(entry.strip())
+        opt = project.get("optional-dependencies")
+        if isinstance(opt, dict):
+            for _extra, arr in sorted(opt.items()):
+                if not isinstance(arr, list):
+                    continue
+                for entry in arr:
+                    if isinstance(entry, str) and entry.strip():
+                        bodies.append(entry.strip())
+
+    # ── Poetry ───────────────────────────────────────────────────
+    tool = raw.get("tool")
+    if isinstance(tool, dict):
+        poetry = tool.get("poetry")
+        if isinstance(poetry, dict):
+            _walk_poetry_deps(poetry.get("dependencies"), bodies)
+            _walk_poetry_deps(poetry.get("dev-dependencies"), bodies)
+            groups = poetry.get("group")
+            if isinstance(groups, dict):
+                for _group_name, group in sorted(groups.items()):
+                    if isinstance(group, dict):
+                        _walk_poetry_deps(
+                            group.get("dependencies"), bodies,
+                        )
+
+    # ── PEP 518/517 build-system ─────────────────────────────────
+    build_system = raw.get("build-system")
+    if isinstance(build_system, dict):
+        requires = build_system.get("requires")
+        if isinstance(requires, list):
+            for entry in requires:
+                if isinstance(entry, str) and entry.strip():
+                    bodies.append(entry.strip())
+
+    lines = tuple(
+        RequirementLine(line_no=idx, body=body, flags=())
+        for idx, body in enumerate(bodies, start=1)
+    )
+    return lines, ()
 
 
 # ── Helpers shared by multiple rule modules ────────────────────────────

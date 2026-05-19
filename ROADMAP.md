@@ -112,22 +112,27 @@ settings.xml / build.gradle(.kts) analysis plus the curated
 compromised-package registries (npm, PyPI, Maven Central), the
 ``files``-field secret-leak detector, the three-registry cooldown
 trilogy (NPM-008 / PYPI-008 / MVN-008) behind ``--resolve-remote``,
-full lockfile-format coverage on the npm / pypi sides
+full lockfile + manifest-format coverage on the npm / pypi sides
 (``package-lock.json`` v1/v2/v3, ``npm-shrinkwrap.json``,
 ``pnpm-lock.yaml`` v5/v6/v9, ``yarn.lock`` yarn-1 / Classic and
-yarn 2+ / Berry, ``poetry.lock``, ``Pipfile.lock``), the NPM-009
-new-transitive-dep diff gate behind ``--npm-base-ref``, and the
+yarn 2+ / Berry, ``poetry.lock``, ``Pipfile.lock``,
+``pyproject.toml`` PEP 621 + Poetry + PEP 518), the NPM-009
+new-transitive-dep diff gate behind ``--npm-base-ref``, the
 NPM-010 ``npm audit signatures``-missing detector ported across
-all three CI providers (GHA-059 / GL-034 / BB-030).*
+all three CI providers (GHA-059 / GL-034 / BB-030), the PYPI-007
+``pip install --require-hashes``-missing detector ported across
+the same three providers (GHA-060 / GL-035 / BB-031), and
+in-file Gradle ``${propName}`` resolution against ``ext {}`` /
+``ext.foo`` / Groovy ``def`` / Kotlin ``val`` declarations.*
 The follow-up rules below require either new infrastructure
 (lockfile diff against a base ref) or different ecosystem
 plumbing and so are deferred:
 
-- **PYPI extensions.** ``pyproject.toml`` (PEP 621 / Poetry)
-  parser (``Pipfile.lock`` and ``poetry.lock`` already ship).
-  PYPI-007 (``pip install --require-hashes`` missing from CI) is
-  now shipped across the three CI providers as
-  GHA-060 / GL-035 / BB-031.
+- **PYPI extensions.** Both items shipped: the
+  ``pyproject.toml`` (PEP 621 / Poetry) manifest parser now feeds
+  the existing PYPI-004 / PYPI-006 rules; PYPI-007 (``pip install
+  --require-hashes`` missing from CI) shipped across the three CI
+  providers as GHA-060 / GL-035 / BB-031.
 - **Gradle version-catalog + cross-file property resolution.**
   In-file ``${propName}`` resolution against ``ext { ... }`` /
   ``ext.foo`` / ``def`` / Kotlin ``val`` declarations now ships.

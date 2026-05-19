@@ -12,6 +12,34 @@ release commit collapses this section into `## [X.Y.Z] - <date>`.
 
 ### Added
 
+- **`pyproject.toml` parser for the pypi provider.** Brings the
+  existing PYPI-004 (VCS mutable ref) and PYPI-006 (compromised
+  package) rules to bear on modern Python repos that hold their
+  dependency surface in ``pyproject.toml`` rather than
+  ``requirements.txt``. ``_parse_pyproject_toml`` walks:
+
+  - **PEP 621**: ``[project].dependencies`` array of PEP 508
+    strings + ``[project.optional-dependencies]`` table of arrays.
+  - **Poetry**: ``[tool.poetry.dependencies]``,
+    ``[tool.poetry.dev-dependencies]``, and
+    ``[tool.poetry.group.<name>.dependencies]``; string,
+    table-with-version, table-with-git/url, and multi-constraint
+    list forms all supported. The special ``python`` entry is
+    dropped (runtime requirement, not a dep). ``rev`` is preferred
+    over ``tag`` / ``branch`` for git deps so a SHA-pinned
+    coordinate passes PYPI-004. Path / file deps are skipped
+    (local sources aren't a supply-chain surface).
+  - **PEP 518/517**: ``[build-system].requires``.
+
+  ``poetry.lock`` was already supported as a resolved lockfile;
+  this slot adds the manifest side for projects that don't commit
+  the lock. PYPI-001 (version pin) and PYPI-002 (hash pin) silent-
+  pass on ``pyproject.toml`` because manifests legitimately use
+  caret / tilde / range constraints (the resolved lockfile is
+  where the exact pin lands). Reuses the existing
+  ``RequirementsFile`` shape so PYPI-004 and PYPI-006 work
+  unchanged.
+
 - **Gradle in-file property resolution for MVN-001 / MVN-008.**
   ``_parse_gradle`` now extracts user-declared properties from
   every common in-file Gradle shape (``ext { foo = '1.0' }``
