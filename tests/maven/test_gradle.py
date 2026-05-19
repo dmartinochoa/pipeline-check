@@ -415,8 +415,9 @@ def test_build_gradle_mvn006_flags_compromised_version(
     ctx = MavenContext.from_path(tmp_path)
     findings = list(MavenChecks(ctx).run())
     mvn006 = [f for f in findings if f.check_id == "MVN-006"]
-    assert mvn006 and not mvn006[0].passed
-    assert "log4j-core" in mvn006[0].description
+    failed = [f for f in mvn006 if not f.passed]
+    assert failed
+    assert any("log4j-core" in f.description for f in failed)
 
 
 def test_build_gradle_kts_picked_up_by_loader(tmp_path: Path) -> None:
@@ -784,8 +785,9 @@ def test_libs_catalog_compromised_coordinate_fires_mvn006(
     ctx = MavenContext.from_path(tmp_path)
     findings = list(MavenChecks(ctx).run())
     mvn006 = [f for f in findings if f.check_id == "MVN-006"]
-    assert mvn006 and not mvn006[0].passed
-    assert "log4j-core" in mvn006[0].description
+    failed = [f for f in mvn006 if not f.passed]
+    assert failed
+    assert any("log4j-core" in f.description for f in failed)
 
 
 def test_libs_versions_accessor_does_not_synthesize_coordinate(

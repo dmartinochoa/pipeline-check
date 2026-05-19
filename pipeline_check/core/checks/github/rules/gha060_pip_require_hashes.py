@@ -1,4 +1,4 @@
-"""GHA-060. pip install without `--require-hashes` (PYPI-007 from the roadmap)."""
+"""GHA-060. pip install without `--require-hashes`."""
 from __future__ import annotations
 
 from typing import Any
@@ -40,9 +40,9 @@ RULE = Rule(
         "install``, ``python3 -m pip install``) that isn't a "
         "tooling-bootstrap exempted by the allowlist;\n"
         "2. No invocation in the workflow passes "
-        "``--require-hashes`` AND no step uses a hash-pinning "
-        "manager (``uv sync`` / ``uv pip install``, ``poetry "
-        "install``, ``pipenv install --deploy``).\n\n"
+        "``--require-hashes`` AND no step uses a lockfile-consuming "
+        "manager (``uv sync`` / ``uv pip sync``, ``poetry install``, "
+        "``pipenv install --deploy`` / ``pipenv sync``).\n\n"
         "Tooling-bootstrap allowlist (silent-passes): ``pip install "
         "--upgrade pip``, ``pip install --upgrade setuptools wheel "
         "virtualenv``, ``pip install --upgrade pip-tools``, "
@@ -68,7 +68,7 @@ RULE = Rule(
     ),
     incident_refs=(
         "PyPI maintainer-account compromises (ctx 2022, "
-        "requests-darwin-lite 2023) shipped malicious sdists / "
+        "requests-darwin-lite 2024) shipped malicious sdists / "
         "wheels under existing version pins. ``--require-hashes`` "
         "would have refused the swapped artifact because the "
         "recorded SHA-256 wouldn't match the malicious tarball.",

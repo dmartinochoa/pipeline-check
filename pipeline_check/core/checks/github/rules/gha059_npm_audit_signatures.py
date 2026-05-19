@@ -20,16 +20,16 @@ RULE = Rule(
     cwe=("CWE-345",),
     recommendation=(
         "Add an ``npm audit signatures`` step (or ``pnpm audit "
-        "signatures``) after the install step. Lockfile pinning only "
-        "guarantees the bytes installed match the bytes the lockfile "
-        "recorded; ``audit signatures`` is what verifies those bytes "
-        "were signed by the maintainer the registry recognizes as the "
-        "package's trusted publisher. Without it, an attacker who "
-        "compromises a maintainer account and republishes a tarball "
-        "under the same version + integrity hash still passes the "
-        "lockfile gate. Place the step after ``npm ci`` / ``pnpm "
-        "install`` and before any code from ``node_modules/`` runs "
-        "(``npm run build``, test, publish)."
+        "signatures``) after the install step. Lockfile pinning "
+        "guarantees installed bytes match what the lockfile recorded; "
+        "``audit signatures`` verifies those bytes were signed by the "
+        "registry-trusted publisher for the package. Without it, a "
+        "compromised maintainer account can publish a malicious "
+        "version that the next lockfile refresh will pin and install "
+        "without complaint, because integrity-only checks have no "
+        "view into who actually signed the bytes. Place the step "
+        "after ``npm ci`` / ``pnpm install`` and before any code from "
+        "``node_modules/`` runs (``npm run build``, test, publish)."
     ),
     docs_note=(
         "Fires once per workflow when:\n\n"

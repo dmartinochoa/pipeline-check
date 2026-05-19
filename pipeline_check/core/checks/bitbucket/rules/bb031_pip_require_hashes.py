@@ -1,4 +1,4 @@
-"""BB-031. pip install without `--require-hashes` (PYPI-007 from the roadmap)."""
+"""BB-031. pip install without `--require-hashes`."""
 from __future__ import annotations
 
 from typing import Any
@@ -42,7 +42,7 @@ RULE = Rule(
     ),
     incident_refs=(
         "PyPI maintainer-account compromises (ctx 2022, "
-        "requests-darwin-lite 2023) shipped malicious sdists / "
+        "requests-darwin-lite 2024) shipped malicious sdists / "
         "wheels under existing version pins.",
     ),
 )

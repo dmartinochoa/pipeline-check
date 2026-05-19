@@ -886,8 +886,6 @@ def _classify_berry_resolution(resolution: str) -> tuple[str, str]:
         # Berry's ``git:`` shape is ``git:host:owner/repo.git#ref``;
         # forward as a git URL so NPM-003's classifier sees it.
         return protocol, f"git+ssh://git@{rest}"
-    if protocol in ("https", "http"):
-        return protocol, f"{protocol}:{rest}"
     return protocol, f"{protocol}:{rest}"
 
 

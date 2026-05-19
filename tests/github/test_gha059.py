@@ -62,6 +62,32 @@ class TestGHA059NpmAuditSignatures:
         f = run_check(wf, "GHA-059")
         assert not f.passed
 
+    def test_fails_when_pnpm_i_without_audit_signatures(self):
+        wf = """
+        name: ci
+        on: push
+        jobs:
+          build:
+            runs-on: ubuntu-latest
+            steps:
+              - run: pnpm i
+        """
+        f = run_check(wf, "GHA-059")
+        assert not f.passed
+
+    def test_fails_when_pnpm_ci_without_audit_signatures(self):
+        wf = """
+        name: ci
+        on: push
+        jobs:
+          build:
+            runs-on: ubuntu-latest
+            steps:
+              - run: pnpm ci
+        """
+        f = run_check(wf, "GHA-059")
+        assert not f.passed
+
     def test_passes_when_npm_ci_followed_by_audit_signatures(self):
         wf = """
         name: ci

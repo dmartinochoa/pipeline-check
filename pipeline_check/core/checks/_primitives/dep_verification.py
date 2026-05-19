@@ -77,14 +77,20 @@ _REQUIRE_HASHES_RE = re.compile(r"--require-hashes\b", re.IGNORECASE)
 
 #: Managers that hash-pin by default. Any invocation of these silences
 #: the pip-require-hashes rule because the manager itself enforces
-#: hash verification at install time.
+#: hash verification at install time. Limited to commands that
+#: unconditionally consume a lockfile (``uv sync`` / ``uv pip sync``
+#: read ``uv.lock``; ``poetry install`` reads ``poetry.lock``;
+#: ``pipenv install --deploy`` / ``pipenv sync`` read
+#: ``Pipfile.lock``). Commands that resolve from the index rather
+#: than the lockfile (``uv run`` without ``--frozen``/``--locked``,
+#: ``uv tool install``, ``hatch env create``) are deliberately
+#: excluded; they don't guarantee hash enforcement by default.
 _HASH_PINNING_MANAGER_RE = re.compile(
     r"\b(?:"
-    r"uv\s+(?:sync|pip\s+install|pip\s+sync|run|tool\s+install)"
+    r"uv\s+(?:sync|pip\s+sync)"
     r"|poetry\s+install"
     r"|pipenv\s+install\s+--deploy"
     r"|pipenv\s+sync"
-    r"|hatch\s+env\s+create"
     r")\b",
     re.IGNORECASE,
 )

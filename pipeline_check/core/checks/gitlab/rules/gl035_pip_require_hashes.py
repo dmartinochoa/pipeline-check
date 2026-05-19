@@ -1,4 +1,4 @@
-"""GL-035. pip install without `--require-hashes` (PYPI-007 from the roadmap)."""
+"""GL-035. pip install without `--require-hashes`."""
 from __future__ import annotations
 
 from typing import Any
@@ -35,8 +35,9 @@ RULE = Rule(
         "install``, ``pip3 install``, ``python -m pip install``) "
         "that isn't a tooling-bootstrap exempted by the allowlist;\n"
         "2. No job uses ``--require-hashes`` AND no job uses a "
-        "hash-pinning manager (``uv sync`` / ``uv pip install``, "
-        "``poetry install``, ``pipenv install --deploy``).\n\n"
+        "lockfile-consuming manager (``uv sync`` / ``uv pip sync``, "
+        "``poetry install``, ``pipenv install --deploy`` / ``pipenv "
+        "sync``).\n\n"
         "Tooling-bootstrap allowlist (same as GHA-060)."
     ),
     known_fp=(
@@ -48,7 +49,7 @@ RULE = Rule(
     ),
     incident_refs=(
         "PyPI maintainer-account compromises (ctx 2022, "
-        "requests-darwin-lite 2023) shipped malicious sdists / "
+        "requests-darwin-lite 2024) shipped malicious sdists / "
         "wheels under existing version pins; ``--require-hashes`` "
         "would have refused the swap.",
     ),
