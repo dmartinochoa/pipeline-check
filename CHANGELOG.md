@@ -581,21 +581,17 @@ release commit collapses this section into `## [X.Y.Z] - <date>`.
   ``job_anchors`` intersection pattern doesn't apply to every
   chain shape; rather than silently leave half the catalog
   inconsistent, each remaining chain now carries a one-paragraph
-  docstring note explaining the carve-out:
-  - **File-resource OK** (file/manifest co-location IS the
-    reachability claim, no per-job structure to anchor on):
-    AC-011 (K8s hostPath + cluster-admin), AC-015 (Helm chart),
-    AC-020 (Tekton hostPath + cluster-admin), AC-021 (Argo
-    default-SA + RoleBinding), AC-027 (Dockerfile credential +
-    EXPOSE), AC-028 (npm worm propagation).
-  - **ResourceAnchor phase 1 deferred** (legs are cross-provider
-    AWS / cluster resources, meaningful pairing needs the
-    ``iam_role`` / ``ecr_repo`` / ``oci_image`` / ``k8s_sa`` /
-    ``lambda_fn`` canonicalizers from the phase 0 foundation):
-    AC-005, AC-007, AC-016, AC-017, AC-019, AC-024.
-  Wraps the ``job_anchors`` migration arc: 16 of 28 AC chains
-  on the intersection model, the remaining 12 documented with
-  their model decision in-source.
+  docstring note explaining the carve-out. File-resource OK
+  (file/manifest co-location IS the reachability claim, no
+  per-job structure to anchor on): AC-015 (Helm chart), AC-027
+  (Dockerfile credential + EXPOSE). AC-028 (npm worm) carves
+  out for a different reason — covered in its own entry below.
+  AC-024 stays scan-aggregate by design — covered in its own
+  entry below. Every other AC chain (AC-005, AC-007, AC-011,
+  AC-016, AC-017, AC-019, AC-020, AC-021, plus the ``job_anchors``
+  pilots) migrates to an intersection model over the course of
+  this release. Wraps the migration arc with each chain's model
+  decision documented in-source.
 
 - **Reachability-aware AC-009 (3-leg supply-chain repo poisoning).**
   `AC-009` (GHA-001 unpinned action + GHA-002 injection sink +
