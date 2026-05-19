@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import json
 
+import pytest
 from click.testing import CliRunner
 
 from pipeline_check.cli import scan
@@ -398,6 +399,45 @@ class TestChainAC005:
         assert {c.resources[0] for c in confirmed} == {
             app_a.identity, app_b.identity,
         }
+
+    @pytest.mark.parametrize(
+        "build_id,build_path,deploy_id,deploy_path",
+        [
+            # Cross-provider confirmed pairs: build in one provider,
+            # deploy in another, but the same image identity flows
+            # between them via the oci_image anchor.
+            ("GL-006",  ".gitlab-ci.yml",            "GHA-014", ".github/workflows/deploy.yml"),
+            ("BB-006",  "bitbucket-pipelines.yml",   "GHA-014", ".github/workflows/deploy.yml"),
+            ("ADO-006", "azure-pipelines.yml",       "GHA-014", ".github/workflows/deploy.yml"),
+            ("CC-006",  ".circleci/config.yml",      "GHA-014", ".github/workflows/deploy.yml"),
+            ("GCB-009", "cloudbuild.yaml",           "GHA-014", ".github/workflows/deploy.yml"),
+            ("JF-006",  "Jenkinsfile",               "GHA-014", ".github/workflows/deploy.yml"),
+            # Same shape with the deploy on each non-GHA provider too.
+            ("GHA-006", ".github/workflows/build.yml", "GL-004",  ".gitlab-ci.yml"),
+            ("GHA-006", ".github/workflows/build.yml", "BB-004",  "bitbucket-pipelines.yml"),
+            ("GHA-006", ".github/workflows/build.yml", "ADO-004", "azure-pipelines.yml"),
+            ("GHA-006", ".github/workflows/build.yml", "CC-009",  ".circleci/config.yml"),
+            ("GHA-006", ".github/workflows/build.yml", "JF-005",  "Jenkinsfile"),
+        ],
+    )
+    def test_reachability_confirmed_across_providers_via_oci_image(
+        self, build_id, build_path, deploy_id, deploy_path,
+    ):
+        # Once every provider's leg rule emits oci_image anchors, the
+        # cross-provider build → deploy pairing should confirm through
+        # group_by_anchor for any (build_id, deploy_id) combination
+        # AC-005 covers.
+        from pipeline_check.core.checks.base import ResourceAnchor
+        img = ResourceAnchor(kind="oci_image", identity="ghcr.io/acme/app")
+        out = chains_pkg.evaluate([
+            _f(build_id, build_path, resource_anchors=(img,)),
+            _f(deploy_id, deploy_path, resource_anchors=(img,)),
+        ])
+        ac5 = [c for c in out if c.chain_id == "AC-005"]
+        confirmed = [c for c in ac5 if c.confirmed_reachable]
+        assert len(confirmed) == 1
+        assert confirmed[0].resources == ["ghcr.io/acme/app"]
+        assert confirmed[0].confidence is Confidence.HIGH
 
 
 class TestChainAC002:

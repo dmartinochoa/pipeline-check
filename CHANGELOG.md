@@ -186,6 +186,36 @@ release commit collapses this section into `## [X.Y.Z] - <date>`.
   `GL-032` ∩ `GL-020` share a job. `GHA-019`, `GHA-036`, `GL-032`,
   `GL-020` all gained `Finding.job_anchors`.
 
+- **AC-005 oci_image extraction extended to every cross-provider
+  leg pair.** Follow-up to the AC-005 pilot that wired only the
+  GHA legs. Eleven more leg rules now emit ``oci_image`` anchors
+  via the ``_primitives/oci_refs.py`` helper:
+  - **Build-side**: GL-006, BB-006, ADO-006, CC-006, JF-006,
+    GCB-009 (Cloud Build also walks its structured top-level
+    ``images:`` list directly before the generic text scan).
+  - **Deploy-side**: GL-004, BB-004, ADO-004, CC-009, JF-005.
+
+  Jenkins legs (JF-006 / JF-005) pass the flat Groovy
+  ``jf.text`` string into ``extract_image_anchors_from_strings``;
+  the rest hand the YAML doc dict. All eleven gate on a failing
+  finding to avoid spending the extraction work on workflows
+  that already pass the rule.
+
+  Three leg rules are deliberately not wired: SIGN-001, CP-001,
+  and CP-005 all operate on the live AWS API surface
+  (``ResourceCatalog`` queries against AWS Signer / CodePipeline),
+  where the API responses don't name artifact image references.
+  Those legs stay on the scan-level co-occurrence fallback that
+  AC-005 already preserves.
+
+  Eleven new parametrized ``TestChainAC005`` cases
+  (``test_reachability_confirmed_across_providers_via_oci_image``)
+  cover every cross-provider pair: each build-side rule paired
+  against GHA-014 and each deploy-side rule paired against
+  GHA-006, asserting one confirmed chain at HIGH confidence per
+  matched ``oci_image`` identity. Full suite: 6293 passed, 11
+  skipped.
+
 - **ResourceAnchor phase 1: AC-005 (oci_image, build → deploy).**
   Closes the phase 1 set with the last canonicalizer kind.
   New ``_primitives/oci_refs.py`` helper extracts image references

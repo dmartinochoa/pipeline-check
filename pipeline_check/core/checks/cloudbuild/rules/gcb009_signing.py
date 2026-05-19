@@ -13,7 +13,9 @@ from __future__ import annotations
 
 from typing import Any
 
-from ...base import Finding, Severity, has_signing, produces_artifacts
+from ..._primitives.anchors import oci_image
+from ..._primitives.oci_refs import extract_image_anchors_from_strings
+from ...base import Finding, ResourceAnchor, Severity, has_signing, produces_artifacts
 from ...rule import Rule
 from ..base import pipeline_publishes
 
@@ -63,8 +65,28 @@ def check(path: str, doc: dict[str, Any]) -> Finding:
         "downstream, so a tampered build is indistinguishable from a "
         "legitimate one."
     )
+    # ResourceAnchor phase 1 (AC-005): emit oci_image anchors for
+    # images this pipeline pushes. Cloud Build's top-level ``images:``
+    # list is structured (entries are raw image refs that GCB pushes
+    # implicitly after the build), so extract those directly; then
+    # the generic text scan picks up any ``docker push`` /
+    # ``gcloud run deploy`` shell mentions. Only on failing finding.
+    anchors: tuple[ResourceAnchor, ...] = ()
+    if not passed:
+        seen: dict[str, ResourceAnchor] = {}
+        images = doc.get("images")
+        if isinstance(images, list):
+            for item in images:
+                if isinstance(item, str):
+                    built = oci_image(item)
+                    if built is not None:
+                        seen[built.identity] = built
+        for built in extract_image_anchors_from_strings(doc):
+            seen[built.identity] = built
+        anchors = tuple(seen.values())
     return Finding(
         check_id=RULE.id, title=RULE.title, severity=RULE.severity,
         resource=path, description=desc,
         recommendation=RULE.recommendation, passed=passed,
+        resource_anchors=anchors,
     )

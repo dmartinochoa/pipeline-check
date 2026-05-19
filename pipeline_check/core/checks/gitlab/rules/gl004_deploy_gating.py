@@ -4,6 +4,7 @@ from __future__ import annotations
 import re
 from typing import Any
 
+from ..._primitives.oci_refs import extract_image_anchors_from_strings
 from ...base import Finding, Severity
 from ...rule import Rule
 from ..base import iter_jobs, job_scripts
@@ -75,6 +76,10 @@ def check(path: str, doc: dict[str, Any]) -> Finding:
         f"gate or `environment:` binding: {', '.join(ungated)}. Any push "
         f"to the trigger branch will ship to the target."
     )
+    # ResourceAnchor phase 1 (AC-005): emit oci_image anchors for
+    # images this pipeline's deploy commands reference. Only on a
+    # failing finding — an environment-gated deploy isn't a chain leg.
+    anchors = extract_image_anchors_from_strings(doc) if not passed else ()
     return Finding(
         check_id=RULE.id, title=RULE.title, severity=RULE.severity,
         resource=path, description=desc,
@@ -83,4 +88,5 @@ def check(path: str, doc: dict[str, Any]) -> Finding:
         # reachability-aware chain engine (AC-022) can intersect them
         # with the jobs GL-002 fired in. Empty tuple on a passed finding.
         job_anchors=tuple(ungated),
+        resource_anchors=anchors,
     )

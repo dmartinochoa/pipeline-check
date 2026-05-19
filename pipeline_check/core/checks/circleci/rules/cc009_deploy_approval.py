@@ -3,6 +3,7 @@ from __future__ import annotations
 
 from typing import Any
 
+from ..._primitives.oci_refs import extract_image_anchors_from_strings
 from ..._yaml_lines import line_of as _line_of
 from ...base import Finding, Location, Severity
 from ...rule import Rule
@@ -75,9 +76,14 @@ def check(path: str, doc: dict[str, Any]) -> Finding:
         f"{', '.join(ungated)}. Without an approval step, any push to "
         f"the triggering branch deploys immediately with no human review."
     )
+    # ResourceAnchor phase 1 (AC-005): emit oci_image anchors for
+    # images this pipeline's deploy steps reference. Only on
+    # failing finding.
+    anchors = extract_image_anchors_from_strings(doc) if not passed else ()
     return Finding(
         check_id=RULE.id, title=RULE.title, severity=RULE.severity,
         resource=path, description=desc,
         recommendation=RULE.recommendation, passed=passed,
         locations=locations,
+        resource_anchors=anchors,
     )

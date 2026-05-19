@@ -3,6 +3,7 @@ from __future__ import annotations
 
 from typing import Any
 
+from ..._primitives.oci_refs import extract_image_anchors_from_strings
 from ...base import Finding, Severity, has_signing, produces_artifacts
 from ...rule import Rule
 
@@ -45,8 +46,12 @@ def check(path: str, doc: dict[str, Any]) -> Finding:
         "verified downstream, so a tampered build is indistinguishable "
         "from a legitimate one."
     )
+    # ResourceAnchor phase 1 (AC-005): emit oci_image anchors for
+    # images this pipeline tags / pushes. Only on failing finding.
+    anchors = extract_image_anchors_from_strings(doc) if not passed else ()
     return Finding(
         check_id=RULE.id, title=RULE.title, severity=RULE.severity,
         resource=path, description=desc,
         recommendation=RULE.recommendation, passed=passed,
+        resource_anchors=anchors,
     )

@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import re
 
+from ..._primitives.oci_refs import extract_image_anchors_from_strings
 from ...base import Finding, Severity
 from ...rule import Rule
 from ..base import Jenkinsfile
@@ -49,8 +50,15 @@ def check(jf: Jenkinsfile) -> Finding:
         f"{len(ungated)} deploy-like stage(s) run without a manual "
         f"`input` gate: {', '.join(ungated)}."
     )
+    # ResourceAnchor phase 1 (AC-005): emit oci_image anchors for
+    # images this Jenkinsfile's deploy stages reference. Only on
+    # failing finding.
+    anchors = (
+        extract_image_anchors_from_strings(jf.text) if not passed else ()
+    )
     return Finding(
         check_id=RULE.id, title=RULE.title, severity=RULE.severity,
         resource=jf.path, description=desc,
         recommendation=RULE.recommendation, passed=passed,
+        resource_anchors=anchors,
     )
