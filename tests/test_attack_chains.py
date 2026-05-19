@@ -588,10 +588,13 @@ class TestChainAC008:
 class TestChainAC007:
     """AC-007 — IAM PrivEsc via CodeBuild (AWS-specific, multi-resource)."""
 
+    PROJECT = "arn:aws:codebuild:.../proj"
+    ROLE = "arn:aws:iam::123456789012:role/build"
+
     def test_fires_with_cb002_plus_iam002(self):
         out = chains_pkg.evaluate([
-            _f("CB-002", "arn:aws:codebuild:.../proj"),
-            _f("IAM-002", "arn:aws:iam::1:role/build"),
+            _f("CB-002", self.PROJECT),
+            _f("IAM-002", self.ROLE),
         ])
         ac7 = [c for c in out if c.chain_id == "AC-007"]
         assert len(ac7) == 1
@@ -599,14 +602,77 @@ class TestChainAC007:
 
     def test_fires_with_cb002_plus_iam004(self):
         out = chains_pkg.evaluate([
-            _f("CB-002", "arn:aws:codebuild:.../proj"),
-            _f("IAM-004", "arn:aws:iam::1:role/build"),
+            _f("CB-002", self.PROJECT),
+            _f("IAM-004", self.ROLE),
         ])
         assert any(c.chain_id == "AC-007" for c in out)
 
     def test_does_not_fire_without_iam_leg(self):
-        out = chains_pkg.evaluate([_f("CB-002", "arn:aws:codebuild:.../proj")])
+        out = chains_pkg.evaluate([_f("CB-002", self.PROJECT)])
         assert not any(c.chain_id == "AC-007" for c in out)
+
+    def test_reachability_confirmed_when_service_role_matches_iam002(self):
+        # The privileged CodeBuild project runs AS the wildcard role.
+        from pipeline_check.core.checks.base import ResourceAnchor
+        role_anchor = ResourceAnchor(kind="iam_role", identity=self.ROLE)
+        out = chains_pkg.evaluate([
+            _f("CB-002", "my-project", resource_anchors=(role_anchor,)),
+            _f(
+                "IAM-002", "build",
+                resource_anchors=(role_anchor,),
+                confidence=Confidence.MEDIUM,
+            ),
+        ])
+        ac7 = [c for c in out if c.chain_id == "AC-007"]
+        assert len(ac7) == 1
+        chain = ac7[0]
+        assert chain.confirmed_reachable is True
+        assert self.ROLE in chain.reachability_note
+        assert chain.resources == [self.ROLE]
+        assert chain.confidence is Confidence.HIGH
+
+    def test_reachability_confirmed_unions_iam002_and_iam004_on_same_role(self):
+        # When ONE role triggers BOTH IAM-002 and IAM-004, the chain
+        # emits a single confirmed chain carrying both IAM legs (not
+        # two separate chains for the same role).
+        from pipeline_check.core.checks.base import ResourceAnchor
+        role_anchor = ResourceAnchor(kind="iam_role", identity=self.ROLE)
+        out = chains_pkg.evaluate([
+            _f("CB-002", "my-project", resource_anchors=(role_anchor,)),
+            _f("IAM-002", "build", resource_anchors=(role_anchor,)),
+            _f("IAM-004", "build", resource_anchors=(role_anchor,)),
+        ])
+        ac7 = [c for c in out if c.chain_id == "AC-007"]
+        assert len(ac7) == 1
+        chain = ac7[0]
+        assert chain.confirmed_reachable is True
+        assert set(chain.triggering_check_ids) == {"CB-002", "IAM-002", "IAM-004"}
+
+    def test_falls_back_when_service_role_differs_from_bad_role(self):
+        # Privileged project runs as role-A; IAM-002 fires on role-B.
+        from pipeline_check.core.checks.base import ResourceAnchor
+        a = ResourceAnchor(
+            kind="iam_role",
+            identity="arn:aws:iam::123456789012:role/role-A",
+        )
+        b = ResourceAnchor(
+            kind="iam_role",
+            identity="arn:aws:iam::123456789012:role/role-B",
+        )
+        out = chains_pkg.evaluate([
+            _f("CB-002", "my-project", resource_anchors=(a,)),
+            _f(
+                "IAM-002", "role-B",
+                resource_anchors=(b,),
+                confidence=Confidence.MEDIUM,
+            ),
+        ])
+        ac7 = [c for c in out if c.chain_id == "AC-007"]
+        assert len(ac7) == 1
+        chain = ac7[0]
+        assert chain.confirmed_reachable is False
+        assert chain.reachability_note == ""
+        assert chain.confidence is Confidence.MEDIUM
 
 
 class TestChainAC009:

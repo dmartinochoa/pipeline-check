@@ -186,6 +186,23 @@ release commit collapses this section into `## [X.Y.Z] - <date>`.
   `GL-032` ∩ `GL-020` share a job. `GHA-019`, `GHA-036`, `GL-032`,
   `GL-020` all gained `Finding.job_anchors`.
 
+- **ResourceAnchor phase 1: AC-007 (IAM PrivEsc via CodeBuild).**
+  `AC-007` now uses ``group_by_anchor`` on ``iam_role`` against
+  both IAM-side legs. CB-002 emits ``iam_role`` from the project's
+  ``serviceRole`` ARN (boto3 ``BatchGetProjects`` payload). When
+  the privileged CodeBuild project's service role IS the IAM-002
+  wildcard role and/or the IAM-004 PassRole-* role, the chain
+  emits ONE confirmed chain carrying both IAM legs (a single
+  role triggering both isn't two separate chains). Confirmed →
+  ``confirmed_reachable=True``, ``Confidence.HIGH``, narrative
+  cites the shared role ARN, resource is that ARN. Falls back to
+  scan-level co-occurrence when the project's service role and
+  the IAM-flagged role differ (the cross-principal pivot still
+  applies but isn't visible from a single execution context).
+  Closes the IAM-leg side of the cross-provider phase 1 set
+  (AC-007 / AC-016 / AC-019 all on ``iam_role``;
+  AC-017 / AC-024 on ``ecr_repo``).
+
 - **ResourceAnchor phase 1: AC-017 (cache poisoning + mutable ECR
   tag).** `AC-017` now uses ``group_by_anchor`` on ``ecr_repo``.
   ECR-002 emits the canonical registry URI from boto3's

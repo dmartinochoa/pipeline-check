@@ -1,7 +1,8 @@
 """CB-002. CodeBuild project runs with Docker privileged mode."""
 from __future__ import annotations
 
-from ...base import Finding, Severity
+from ..._primitives.anchors import iam_role
+from ...base import Finding, ResourceAnchor, Severity
 from ...rule import Rule
 from .._catalog import ResourceCatalog
 
@@ -41,9 +42,21 @@ def check(catalog: ResourceCatalog) -> list[Finding]:
                 "necessary for Docker-in-Docker builds. A compromised build could "
                 "escape the container or tamper with the host."
             )
+        # ResourceAnchor phase 1: emit the project's service-role ARN
+        # so AC-007 can intersect with IAM-002 / IAM-004's role anchors
+        # — confirmed when the privileged CodeBuild project's effective
+        # identity IS the wildcard / PassRole-* role. boto3's
+        # BatchGetProjects returns ``serviceRole`` as a full ARN.
+        anchors: tuple[ResourceAnchor, ...] = ()
+        sr = project.get("serviceRole")
+        if isinstance(sr, str):
+            built = iam_role(sr)
+            if built is not None:
+                anchors = (built,)
         findings.append(Finding(
             check_id=RULE.id, title=RULE.title, severity=RULE.severity,
             resource=name, description=desc,
             recommendation=RULE.recommendation, passed=not privileged,
+            resource_anchors=anchors,
         ))
     return findings
