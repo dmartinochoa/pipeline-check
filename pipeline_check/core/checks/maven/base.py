@@ -35,6 +35,7 @@ effort static analysis over a repo tree.
 """
 from __future__ import annotations
 
+import datetime as _dt
 import re
 import xml.etree.ElementTree as ET
 from dataclasses import dataclass, field
@@ -145,6 +146,13 @@ class MavenContext:
         self.files_scanned: int = len(files)
         self.files_skipped: int = 0
         self.warnings: list[str] = []
+        #: ``{"group:artifact": {version: utc_timestamp}}`` populated
+        #: by the maven provider's ``post_filter`` when
+        #: ``--resolve-remote`` is on. Empty by default; MVN-008
+        #: (cooldown gate) reads it and passes silently when the
+        #: dict is empty so the rule's absence isn't a CI failure
+        #: for users on the default no-network path.
+        self.publish_times: dict[str, dict[str, _dt.datetime]] = {}
 
     @classmethod
     def from_path(cls, path: str | Path) -> MavenContext:
@@ -616,6 +624,31 @@ def iter_real_dependencies(pom: PomFile) -> list[MavenDependency]:
     return [d for d in pom.dependencies if not d.managed]
 
 
+def iter_resolved_coordinates(pom: PomFile) -> list[tuple[str, str, str]]:
+    """Return every ``(group_id, artifact_id, resolved_version)`` triple.
+
+    Skips ``<dependencyManagement>`` entries (those are version-
+    management declarations, not real consumption); skips dependencies
+    with no ``<version>`` (resolved by parent BOM, the registry-side
+    cooldown rule can't act on a coordinate it can't query); resolves
+    a single level of ``${prop}`` substitution against the POM's
+    ``<properties>`` block so ``${log4j.version}`` becomes the
+    literal the registry actually carries. Unresolved ``${...}``
+    references drop on the floor.
+    """
+    out: list[tuple[str, str, str]] = []
+    for dep in iter_real_dependencies(pom):
+        if dep.version is None:
+            continue
+        resolved = resolve_version(dep.version, pom.properties)
+        if not resolved or resolved.startswith("${"):
+            continue
+        if not dep.group_id or not dep.artifact_id:
+            continue
+        out.append((dep.group_id, dep.artifact_id, resolved))
+    return out
+
+
 __all__ = [
     "GRADLE_NAMES",
     "MANIFEST_NAMES",
@@ -627,5 +660,6 @@ __all__ = [
     "PomFile",
     "SETTINGS_NAMES",
     "iter_real_dependencies",
+    "iter_resolved_coordinates",
     "resolve_version",
 ]

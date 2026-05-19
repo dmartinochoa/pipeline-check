@@ -12,6 +12,106 @@ release commit collapses this section into `## [X.Y.Z] - <date>`.
 
 ### Added
 
+- **CONTRIBUTING.md.** Contributor onboarding page covering dev
+  setup (``make install`` vs. ``pip install -e ".[dev]"``), the
+  test / lint / strict-mypy commands CI runs, the provider- and
+  standards-doc regeneration contract, the American-English rule,
+  the rule-addition workflow, and the PR / commit / release
+  conventions that previously only lived in ``CLAUDE.md``. Points
+  back at ``CLAUDE.md`` for the exhaustive English-variant pair
+  table and the maintainer-only release steps so the two files
+  don't drift. README gains a ``🤝 Contributing`` section linking
+  out to it (plus ``CLAUDE.md`` and ``SECURITY.md``) so the doc is
+  discoverable above the License footer.
+
+- **MVN-008 cooldown gate + maven registry fetcher.** Completes
+  the cooldown-gate trio (NPM-008 + PYPI-008 already landed) by
+  closing the Maven Central half. Same shape: opt-in via
+  ``--resolve-remote``; fetches per-coordinate metadata from the
+  Maven Central search API
+  (``https://search.maven.org/solrsearch/select?core=gav``), reads
+  the per-version ingest timestamp from each ``response.docs[]``
+  entry's ``timestamp`` field (millisecond Unix epoch UTC),
+  populates ``MavenContext.publish_times: dict["group:artifact",
+  dict[version, ts_utc]]``, and MVN-008 fires when any non-managed
+  ``<dependency>`` was published within the cooldown window
+  (default 7 days). When the same version is double-listed (rare
+  but possible across snapshot ingests) the earlier timestamp is
+  kept; negative / malformed timestamps drop on the floor.
+
+  New ``pipeline_check/core/checks/maven/registry_fetcher.py``
+  module + ``MavenContext.publish_times`` field + ``MavenProvider.
+  post_filter`` hook mirror the npm / pypi template exactly so the
+  three providers stay shape-consistent. ``MavenChecks`` dispatcher
+  gained the same backward-compatible two-argument ctx-passing
+  pattern (``inspect.signature``-driven) so MVN-008 can receive
+  ``MavenContext`` without forcing the older single-arg rules
+  (MVN-001..007) to change. ``iter_resolved_coordinates()`` helper
+  surfaces ``(group, artifact, resolved_version)`` triples to the
+  provider with ``${prop}`` substitution applied and managed /
+  unresolved entries filtered out.
+
+  Rule scope: concrete release coordinates only. ``-SNAPSHOT``
+  (MVN-002 territory), Maven version ranges (``[1.0,2.0)``),
+  ``LATEST`` / ``RELEASE`` keywords, the Gradle ``+`` /
+  ``1.2.+`` wildcards, and unresolved ``${...}`` literals all
+  skip silently. ``<dependencyManagement>`` is skipped because
+  those are version-management declarations, not real
+  consumption. ``settings.xml`` short-circuits to pass since it
+  has no project dependencies. Twenty-three new tests in
+  ``tests/maven/test_mvn008.py`` cover the parser (``gav`` docs,
+  double-listed-version dedup, negative-timestamp rejection,
+  malformed inputs), ``fetch_publish_times`` (happy / dedup / 404
+  warning / cache short-circuit / empty-coordinate skip), the
+  ``_is_concrete_release`` classifier (plain / SNAPSHOT / range /
+  LATEST / RELEASE / Gradle wildcards / empty), the cooldown
+  math, and the rule (silent-pass / fires / passes-old /
+  SNAPSHOT-skip / range-skip / property-resolution / unresolved-
+  property-skip / unknown-coordinate-skip / managed-skip /
+  settings.xml-skip / confidence-default). Bumps
+  test_rule_framework maven count 7 → 8; OWASP CICD-SEC-3 +
+  CICD-SEC-8 mapping; README maven range MVN-007 → MVN-008;
+  regenerated provider + OWASP standard docs.
+
+- **PYPI-008 cooldown gate + pypi registry fetcher.** Closes the
+  PyPI half of the cooldown-gate trio (NPM-008 / MVN-008 land in
+  the same cycle). Same template: opt-in via ``--resolve-remote``;
+  fetches per-package metadata from the PyPI JSON API
+  (``https://pypi.org/pypi/<name>/json``), reads the per-version
+  upload timestamps from ``releases.<version>[].upload_time_iso_8601``
+  (legacy ``upload_time`` field accepted too, treated as UTC),
+  populates ``PypiContext.publish_times``, and PYPI-008 fires when
+  a direct ``name==version`` requirement was published within the
+  cooldown window (default 7 days). Per-version timestamp is the
+  MIN across the file records (the moment the first artifact for
+  that release landed on the index — that's what the cooldown
+  measures from). Yanked versions (empty file lists) drop on the
+  floor. PEP 503 name normalization runs on both the fetcher's
+  cache key and the rule's lookup so ``Pillow`` / ``pillow`` /
+  ``Pil_Low`` collapse to one fetch.
+
+  New ``pipeline_check/core/checks/pypi/registry_fetcher.py``
+  module + ``PypiContext.publish_times`` field + ``PypiProvider.
+  post_filter`` hook mirror the npm template exactly so the two
+  providers stay shape-consistent. ``PypiChecks`` dispatcher
+  gained the same backward-compatible two-argument ctx-passing
+  pattern npm got. MVN-008 follow-up can layer on the same
+  template in its own provider.
+
+  Rule scope: ``==version`` exact pins only (with optional
+  ``[extras]`` and ``; markers`` suffixes stripped). Range specs
+  (``>=``, ``~=``, ``<``), VCS / URL / editable lines, and
+  unpinned specs skip silently. Twenty-eight new tests in
+  ``tests/pypi/test_pypi008.py`` cover the parser (min-across-
+  files, legacy ``upload_time`` field, yanked-version drop,
+  malformed inputs), ``fetch_publish_times`` (happy / dedup /
+  404 warning / cache short-circuit), the spec extractor
+  (bare / extras / markers / case-folding / range / VCS), the
+  cooldown math, and the rule. Bumps test_rule_framework pypi
+  count 6 → 7; OWASP CICD-SEC-3 + CICD-SEC-8 mapping; README
+  pypi range PYPI-006 → PYPI-008; regenerated provider + OWASP
+  standard docs.
+
 - **NPM-008 cooldown gate + npm registry fetcher infrastructure.**
   New rule that fires when a direct ``package.json`` dependency
   was published to ``registry.npmjs.org`` within the cooldown

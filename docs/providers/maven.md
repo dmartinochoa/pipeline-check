@@ -48,7 +48,7 @@ real-world POMs and out of scope for static analysis.
 
 ## What it covers
 
-7 checks · 0 have an autofix patch (``--fix``).
+8 checks · 0 have an autofix patch (``--fix``).
 
 | Check | Title | Severity | Fix |
 |-------|-------|----------|-----|
@@ -59,6 +59,7 @@ real-world POMs and out of scope for static analysis.
 | [MVN-005](#mvn-005) | Maven repository accepts artifacts without strict checksum gating | <span class="pg-sev pg-sev--medium">MEDIUM</span> |  |
 | [MVN-006](#mvn-006) | pom.xml pins a known-compromised Maven Central artifact version | <span class="pg-sev pg-sev--critical">CRITICAL</span> |  |
 | [MVN-007](#mvn-007) | settings.xml mirror routes external traffic through one repo | <span class="pg-sev pg-sev--medium">MEDIUM</span> |  |
+| [MVN-008](#mvn-008) | Direct dependency was published within the cooldown window | <span class="pg-sev pg-sev--high">HIGH</span> |  |
 
 ---
 
@@ -240,6 +241,36 @@ Fires on any ``<mirror>`` in a ``settings.xml`` whose ``<mirrorOf>`` value is ``
 **Recommended action**
 
 Replace ``<mirrorOf>*</mirrorOf>`` and ``<mirrorOf>external:*</mirrorOf>`` with a narrowly-scoped list naming the upstream repositories you actually want to redirect (``central``, ``central,jcenter``). A wildcard mirror routes every dependency, including ones declared by transitive POMs the build hasn't approved, through the mirror operator: a single compromise of that mirror compromises every artifact the build resolves. Pin the mirror URL to ``https://`` and audit the mirror operator's publishing controls.
+
+</div>
+
+</div>
+
+<div class="pg-rule pg-rule--high" markdown>
+
+## MVN-008: Direct dependency was published within the cooldown window { #mvn-008 }
+
+<div class="pg-rule__tags">
+<span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-3</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-8</span> <span class="pg-tag pg-tag--esf">ESF-S-VERIFY-DEPS</span> <span class="pg-tag pg-tag--cwe">CWE-829</span> <span class="pg-tag pg-tag--cwe">CWE-494</span>
+</div>
+
+Network-dependent: needs ``--resolve-remote`` to populate the per-coordinate publish timestamps from the Maven Central search API (``https://search.maven.org/solrsearch/select``). Walks every non-managed ``<dependency>`` with an explicit ``<version>``; flags ones whose ingest timestamp on Central falls inside the cooldown window (default 7 days). ``<dependencyManagement>`` entries are skipped (those are version-management declarations, not real consumption). ``${prop}`` substitution against the POM's ``<properties>`` block is resolved before the lookup so ``${log4j.version}`` is checked against its resolved value. ``-SNAPSHOT`` and Maven version-range literals (``[1.0,2.0)``, ``LATEST``, ``RELEASE``) are out of scope — the cooldown applies to a specific released coordinate. When ``--resolve-remote`` is off or Central can't be reached, the rule passes silently so the absence of the network path doesn't trip CI.
+
+**Known false-positive modes**
+
+- Internally-published artifacts hosted on a private Sonatype Nexus / JFrog Artifactory instance won't appear in Central's search API and are silently skipped. The cooldown gate is a Central-only signal; vendor- or org- internal release trains are out of scope and shouldn't be suppressed (they simply don't fire).
+- Same-day patch upgrades from a maintainer the team directly trusts (e.g. an internal fork republished to Central under a corporate group ID) are flagged. Suppress per-resource via ``--ignore-file`` — the cooldown is a default-safe gate, not a hard rule.
+
+**Seen in the wild**
+
+- Log4Shell, CVE-2021-44228 (December 2021): public disclosure on 2021-12-09 triggered Apache's emergency 2.15.0 release the same day; mass exploitation began within hours. Consumers who held even a 1-day cooldown on the affected versions would have caught the upstream advisory before bumping. https://nvd.nist.gov/vuln/detail/CVE-2021-44228
+- Sonatype Lift abuse / typosquat campaigns (2022-2024): periodic surfacing of typosquat coordinates (``org.apaache.*``) pushed to Central, typically yanked within 48 hours of report. A cooldown of any meaningful length would skip them.
+
+<div class="pg-rule__rec" markdown>
+
+**Recommended action**
+
+Either skip the just-published version (pin to the last release older than the cooldown window) or wait until the cooldown has elapsed before bumping the POM. Publisher- account compromises on Maven Central are rarer than on npm / PyPI, but the takedown window is the same shape: Sonatype yanks malicious artifacts within hours-to-days once an advisory lands; holding back N days converts a publisher-compromise window into a vulnerability- disclosure window where either the maintainer rotates the malicious release off Central or the security community files a CVE that MVN-006 can match against.
 
 </div>
 
