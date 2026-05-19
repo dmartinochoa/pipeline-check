@@ -186,6 +186,31 @@ release commit collapses this section into `## [X.Y.Z] - <date>`.
   `GL-032` ∩ `GL-020` share a job. `GHA-019`, `GHA-036`, `GL-032`,
   `GL-020` all gained `Finding.job_anchors`.
 
+- **pnpm-lock.yaml parser closes the npm-side lockfile gap.**
+  ``pnpm-lock.yaml`` joins ``package-lock.json`` /
+  ``npm-shrinkwrap.json`` in ``NpmContext.LOCKFILE_NAMES``; the
+  loader detects the YAML extension, parses via the project's
+  ``safe_load_yaml``, and routes the result through a new
+  ``_synthesize_pnpm_lock`` helper that projects pnpm's
+  ``packages:`` block onto the npm-7+ lockfile shape every existing
+  rule already reads. The synthesizer handles every pnpm key form
+  shipped to date (v5 ``/<name>/<ver>``, v6 ``/<name>@<ver>``, v9
+  ``<name>@<ver>``, scoped names, peer-dep ``(react@18)`` suffix),
+  populates ``integrity`` from ``resolution.integrity`` for
+  registry tarballs, synthesizes the canonical
+  ``https://registry.npmjs.org/<name>/-/<unscoped>-<ver>.tgz`` URL
+  so NPM-003 sees the same source shape it sees in a real npm
+  lockfile, threads ``resolution.tarball`` URLs through for
+  non-registry sources (so NPM-003's HTTP / git+ssh classifier
+  fires correctly), and translates ``resolution: {type: git, repo,
+  commit}`` into ``git+<repo>#<sha>`` for NPM-003. NPM-002 / NPM-
+  003 / NPM-006 now apply to pnpm-locked projects without per-rule
+  changes; ``yarn.lock`` stays out of scope (its bespoke
+  YAML-flavored format warrants its own parser, deferred).
+  Twenty new tests in ``tests/npm/test_pnpm_lock.py`` exercise the
+  synthesizer's key parsing, resolved/integrity normalization, and
+  end-to-end firing through ``NpmChecks`` on a real pnpm-lock.yaml.
+
 - **ResourceAnchor phase 1: XPC-002 (oci_image, base image →
   runtime workload).** Closes one of the two phase-0 ResourceAnchor
   follow-ups called out in the CHANGELOG ("XPC-002, XPC-003"). Both
