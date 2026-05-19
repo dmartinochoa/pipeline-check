@@ -13,7 +13,11 @@ from __future__ import annotations
 from typing import Any
 
 from ..checks.base import BaseCheck
-from ..checks.npm.base import NpmContext, iter_manifest_dependencies
+from ..checks.npm.base import (
+    NpmContext,
+    iter_manifest_dependencies,
+    load_base_locks_via_git,
+)
 from ..checks.npm.pipelines import NpmChecks
 from ..checks.npm.registry_fetcher import (
     FileSystemCache,
@@ -52,20 +56,35 @@ class NpmProvider(BaseProvider):
         context: NpmContext,
         resolve_remote: bool = False,
         no_cache: bool = False,
+        npm_path: str | None = None,
+        npm_base_ref: str | None = None,
         **_: Any,
     ) -> None:
-        """Populate ``context.publish_times`` from ``registry.npmjs.org``.
+        """Populate ``context.publish_times`` and ``context.base_locks``.
 
-        Off by default. When ``resolve_remote`` is true, walks every
-        direct dependency in every loaded ``package.json``, fetches
-        per-package metadata, and stores ``{name: {version: ts}}``
-        on the context so NPM-008 can compute cooldown ages.
+        Two opt-ins:
 
-        Failures (404, network error, malformed metadata) land in
-        ``context.warnings`` rather than raising, mirroring the GHA
-        resolver's strictly-additive contract — a transient
-        registry outage shouldn't fail CI.
+        * ``resolve_remote`` (off by default). When true, walks every
+          direct dependency in every loaded ``package.json``, fetches
+          per-package metadata from ``registry.npmjs.org``, and
+          stores ``{name: {version: ts}}`` on the context so NPM-008
+          can compute cooldown ages.
+        * ``npm_base_ref`` (off by default). When set, resolves each
+          loaded lockfile's contents at the given git ref via
+          ``git show`` and populates ``context.base_locks`` so
+          NPM-009 (new-transitive-dep diff gate) can pair the
+          current and base lockfiles.
+
+        Failures (404, network error, missing base ref, malformed
+        metadata) land in ``context.warnings`` rather than raising,
+        mirroring the GHA resolver's strictly-additive contract.
+        A transient registry outage or a brand-new lockfile in
+        this branch shouldn't fail CI on its own.
         """
+        if npm_base_ref and context.locks:
+            load_base_locks_via_git(
+                context, npm_base_ref, npm_path or ".",
+            )
         if not resolve_remote:
             return
         names: list[str] = []

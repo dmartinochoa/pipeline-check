@@ -9267,6 +9267,7 @@ The standards data references check IDs the scanner does not ship. The mapping i
 - `NPM-006`
 - `NPM-007`
 - `NPM-008`
+- `NPM-009`
 - `NPM-011`
 - `PYPI-001`
 - `PYPI-002`
