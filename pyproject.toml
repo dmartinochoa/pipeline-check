@@ -58,6 +58,16 @@ ai = [
 # The default install carries no MCP SDK so the AWS-Lambda /
 # minimal-install paths stay slim.
 mcp = ["mcp>=1.27.1"]
+# Opt-in Language Server Protocol server (``python -m
+# pipeline_check.lsp``). Powers the Pipeline-Check VS Code
+# extension and any other LSP-aware editor. The default install
+# carries no LSP SDK so the AWS-Lambda / minimal-install paths
+# stay slim. Floors match the versions the extension is built
+# against; older pygls/lsprotocol releases break the server.
+lsp = [
+    "pygls>=2.1.0",
+    "lsprotocol>=2025.0.0",
+]
 
 [project.scripts]
 pipeline_check = "pipeline_check.cli:main"

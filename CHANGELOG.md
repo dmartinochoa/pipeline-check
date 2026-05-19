@@ -12,6 +12,19 @@ release commit collapses this section into `## [X.Y.Z] - <date>`.
 
 ### Added
 
+- **`[lsp]` optional install extra surfaces the Language Server.**
+  ``pip install pipeline-check[lsp]`` pulls ``pygls>=2.1.0`` and
+  ``lsprotocol>=2025.0.0``, the floor versions the
+  [Pipeline-Check VS Code extension](https://github.com/greylag-ci/pipeline-check-vscode)
+  is built against (older pygls releases break the server). The base
+  install still carries no LSP SDK, keeping the AWS-Lambda /
+  minimal-install paths slim. README gains an "Editor diagnostics
+  (LSP)" row in the key-features table pointing at the extension and
+  the supported single-file provider set (github, gitlab, azure,
+  bitbucket, circleci, cloudbuild, buildkite, drone, jenkins,
+  dockerfile). Closes the install-instructions gap left by the
+  initial LSP-server landing.
+
 - **`ResourceAnchor` foundation for cross-provider reachability
   (phase 0).** `Finding` gains a new
   ``resource_anchors: tuple[ResourceAnchor, ...]`` field, the
