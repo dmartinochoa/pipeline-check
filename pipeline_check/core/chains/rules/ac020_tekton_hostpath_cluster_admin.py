@@ -20,6 +20,14 @@ shape is the same, but the entry point shifts from "any pod that
 runs in the cluster" to "any TaskRun the build pipeline kicks
 off", a much more frequently changing surface that ships with
 every PR.
+
+Reachability-model note: this chain stays on manifest-set
+co-occurrence. Confirming the bound subject (cluster-admin SA)
+matches the Task's effective ``serviceAccountName`` requires the
+``k8s_sa`` canonicalizer from ``ResourceAnchor`` phase 1; the
+``job_anchors`` intersection pattern doesn't fit because the two
+legs are independent K8s resources rather than steps in one CI
+job. Defer to the cross-provider reachability work.
 """
 from __future__ import annotations
 

@@ -26,6 +26,16 @@ several public AWS breaches in the last two years.
 Mirrors AC-011 / AC-015 in shape: each leg is a HIGH finding on
 its own; the chain captures that the *combination* removes every
 layer of defense the OIDC pattern was supposed to provide.
+
+Reachability-model note: this chain stays on scan-level
+co-occurrence. The two legs are cross-provider (GitHub workflow
++ AWS IAM role); confirming "this GHA-030 workflow's
+``role-to-assume`` ARN IS the IAM-002 wildcard role" requires
+the ``ResourceAnchor`` phase 1 ``iam_role`` canonicalizer to
+parse the role ARN out of the workflow input and match it
+against IAM-002's resource ARN. ``job_anchors`` doesn't fit, the
+AWS-side leg has no CI-job structure to anchor on. Deferred to
+the cross-provider reachability work.
 """
 from __future__ import annotations
 

@@ -15,6 +15,16 @@ or impersonate any account.
 
 The chain fires when both K8S-013 (hostPath volume) and K8S-020
 (cluster-admin binding) are present in the same manifest set.
+
+Reachability-model note: this chain stays on manifest-set
+co-occurrence and does NOT migrate to the ``job_anchors``
+intersection pattern. The hostPath volume and the cluster-admin
+binding are independent Kubernetes resources, not steps within a
+shared CI job, and meaningful pairing requires matching the bound
+subject (ServiceAccount) against the hostPath pod's
+``serviceAccountName``. That's the ``ResourceAnchor`` phase 1
+``k8s_sa`` canonicalizer's job, deferred to the cross-provider
+reachability work.
 """
 from __future__ import annotations
 

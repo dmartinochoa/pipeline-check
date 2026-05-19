@@ -3,6 +3,14 @@
 A CodeBuild project that runs in privileged mode AND has an attached
 service role with `iam:PassRole` + wildcard actions lets a malicious
 buildspec assume any role in the account.
+
+Reachability-model note: this chain stays on scan-level
+co-occurrence. The two legs are distinct AWS resources (CodeBuild
+project vs. IAM role) tied together by the project's service-role
+ARN; ``job_anchors`` doesn't apply because neither leg has CI-job
+structure. Confirming "this CodeBuild project's service role IS
+the wildcard-PassRole role" requires the ``ResourceAnchor`` phase 1
+``iam_role`` canonicalizer; deferred to that work.
 """
 from __future__ import annotations
 

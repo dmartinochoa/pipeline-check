@@ -30,7 +30,7 @@ from __future__ import annotations
 
 from collections import defaultdict
 
-from ...checks.base import Finding, Severity
+from ...checks.base import Confidence, Finding, Severity
 from ..base import Chain, ChainRule, min_confidence
 
 RULE = ChainRule(
@@ -84,6 +84,21 @@ _CREDENTIAL_LEG = ("GHA-050", "GHA-005")
 _INTEGRITY_LEG = ("GHA-021", "GHA-029")
 
 
+def _union_anchors(findings: list[Finding]) -> set[str]:
+    """Union all ``job_anchors`` across the given leg findings.
+
+    The leg is an any-of: GHA-002 anchors the jobs that check out
+    PR-head code; GHA-009 anchors jobs that ingest a workflow_run
+    artifact unverified; GHA-013 fans out to every job in the
+    workflow (issue_comment fires every job). For reachability the
+    leg-side anchor set is the union of all the active variants.
+    """
+    out: set[str] = set()
+    for f in findings:
+        out.update(f.job_anchors)
+    return out
+
+
 def match(findings: list[Finding]) -> list[Chain]:
     by_resource: dict[str, dict[str, Finding]] = defaultdict(dict)
     interesting = set(_TRIGGER_LEG) | set(_CREDENTIAL_LEG) | set(_INTEGRITY_LEG)
@@ -102,6 +117,44 @@ def match(findings: list[Finding]) -> list[Chain]:
         triggers = [
             ck_map[c] for c in trig_hits + cred_hits + intg_hits
         ]
+
+        # Reachability: union anchors WITHIN each leg (any-of), then
+        # intersect ACROSS the three legs (all-of). A shared job
+        # means one execution context carries: an attacker-landed
+        # input, the credential it can exfiltrate, and the
+        # integrity-bypass install that lets a poisoned payload
+        # piggyback on the publish. That's the Ultralytics /
+        # s1ngularity exfil pattern compressed into one job.
+        trig_jobs = _union_anchors([ck_map[c] for c in trig_hits])
+        cred_jobs = _union_anchors([ck_map[c] for c in cred_hits])
+        intg_jobs = _union_anchors([ck_map[c] for c in intg_hits])
+        shared = sorted(trig_jobs & cred_jobs & intg_jobs)
+        confirmed = bool(shared)
+        if confirmed:
+            shared_repr = ", ".join(f"`{j}`" for j in shared)
+            reach_note = (
+                f"Trigger, credential, and integrity legs share "
+                f"job {shared_repr}"
+            )
+            reach_narrative = (
+                f"  5. Reachability confirmed: the same job(s) "
+                f"({shared_repr}) carry all three legs — an "
+                f"attacker-landed input lands in a job that holds "
+                f"the long-lived publish credential AND runs the "
+                f"unguarded install. One PR / comment / workflow_run "
+                f"hands the attacker the publish identity in one "
+                f"execution context."
+            )
+        else:
+            reach_note = ""
+            reach_narrative = (
+                "  5. Reachability unconfirmed: the three legs fire "
+                "on the same workflow file but no single job "
+                "carries all three. Each leg is still bad and the "
+                "credential rotation / OIDC migration applies "
+                "regardless; treat as a co-occurrence signal."
+            )
+
         narrative = (
             f"In `{resource}`:\n"
             f"  1. Untrusted-trigger leg ({', '.join(trig_hits)}): an "
@@ -121,13 +174,17 @@ def match(findings: list[Finding]) -> list[Chain]:
             "from the same poisoned job) and the Nx s1ngularity "
             "compromise (PR-title injection on a stale branch + npm "
             "publish with a long-lived token) both used this exact "
-            "three-leg shape."
+            "three-leg shape.\n"
+            f"{reach_narrative}"
         )
+
+        chain_confidence = Confidence.HIGH if confirmed else min_confidence(triggers)
+
         out.append(Chain(
             chain_id=RULE.id,
             title=RULE.title,
             severity=RULE.severity,
-            confidence=min_confidence(triggers),
+            confidence=chain_confidence,
             summary=RULE.summary,
             narrative=narrative,
             mitre_attack=list(RULE.mitre_attack),
@@ -137,5 +194,7 @@ def match(findings: list[Finding]) -> list[Chain]:
             resources=[resource],
             references=list(RULE.references),
             recommendation=RULE.recommendation,
+            confirmed_reachable=confirmed,
+            reachability_note=reach_note,
         ))
     return out

@@ -27,6 +27,14 @@ the role-hop. Each is bad alone; the combination is the canonical
 The chain fires when both findings appear in the same scan,
 regardless of whether the Lambda function and the CI/CD role
 sit in different AWS services, the pivot crosses service lines.
+
+Reachability-model note: this chain stays on scan-level
+co-occurrence. The two legs are distinct AWS resources (Lambda
+function + IAM role) with no CI-job structure to anchor on;
+``job_anchors`` doesn't apply. The tighter "this PassRole-*
+role IS the role that can target this Lambda's execution role"
+claim requires the ``ResourceAnchor`` phase 1 ``iam_role`` +
+``lambda_fn`` canonicalizers; deferred to that work.
 """
 from __future__ import annotations
 

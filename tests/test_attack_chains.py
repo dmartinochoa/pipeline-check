@@ -2151,6 +2151,88 @@ class TestChainAC027:
         assert {c.resources[0] for c in ac27} == {self.DF, self.OTHER_DF}
 
 
+class TestChainAC029:
+    """AC-029 — Untrusted trigger reaches a long-lived publish credential."""
+
+    WF = ".github/workflows/release.yml"
+
+    def test_fires_with_trigger_credential_integrity_on_same_workflow(self):
+        out = chains_pkg.evaluate([
+            _f("GHA-002", self.WF),
+            _f("GHA-050", self.WF),
+            _f("GHA-021", self.WF),
+        ])
+        ac29 = [c for c in out if c.chain_id == "AC-029"]
+        assert len(ac29) == 1
+        assert ac29[0].severity is Severity.CRITICAL
+        assert "T1195.002" in ac29[0].mitre_attack
+        assert "T1606" in ac29[0].mitre_attack
+
+    def test_fires_with_any_of_each_leg(self):
+        # GHA-013 (issue_comment) + GHA-005 (long-lived AWS key) +
+        # GHA-029 (integrity bypass) is a different combination of
+        # the same three-leg shape; the chain should still fire.
+        out = chains_pkg.evaluate([
+            _f("GHA-013", self.WF),
+            _f("GHA-005", self.WF),
+            _f("GHA-029", self.WF),
+        ])
+        assert any(c.chain_id == "AC-029" for c in out)
+
+    def test_does_not_fire_with_only_two_legs(self):
+        # Trigger + credential without the integrity leg is bad but
+        # not the AC-029 lane.
+        out = chains_pkg.evaluate([
+            _f("GHA-002", self.WF),
+            _f("GHA-050", self.WF),
+        ])
+        assert not any(c.chain_id == "AC-029" for c in out)
+
+    def test_does_not_fire_when_legs_on_different_workflows(self):
+        out = chains_pkg.evaluate([
+            _f("GHA-002", ".github/workflows/a.yml"),
+            _f("GHA-050", ".github/workflows/b.yml"),
+            _f("GHA-021", ".github/workflows/c.yml"),
+        ])
+        assert not any(c.chain_id == "AC-029" for c in out)
+
+    def test_reachability_confirmed_when_anchor_jobs_intersect(self):
+        # One job carries all three legs — the precise Ultralytics /
+        # s1ngularity execution context.
+        out = chains_pkg.evaluate([
+            _f("GHA-002", self.WF, job_anchors=("release",)),
+            _f("GHA-050", self.WF, job_anchors=("release",)),
+            _f(
+                "GHA-021",
+                self.WF,
+                job_anchors=("release",),
+                confidence=Confidence.MEDIUM,
+            ),
+        ])
+        ac29 = next(c for c in out if c.chain_id == "AC-029")
+        assert ac29.confirmed_reachable is True
+        assert "release" in ac29.reachability_note
+        assert ac29.confidence is Confidence.HIGH
+
+    def test_reachability_unconfirmed_when_jobs_disjoint(self):
+        # PR-head checkout in ``test``, publish credential in ``release``,
+        # lockfile miss in ``build`` — three real findings on one
+        # workflow but no shared execution context for the worm shape.
+        out = chains_pkg.evaluate([
+            _f("GHA-002", self.WF, job_anchors=("test",)),
+            _f("GHA-050", self.WF, job_anchors=("release",)),
+            _f(
+                "GHA-021",
+                self.WF,
+                job_anchors=("build",),
+                confidence=Confidence.MEDIUM,
+            ),
+        ])
+        ac29 = next(c for c in out if c.chain_id == "AC-029")
+        assert ac29.confirmed_reachable is False
+        assert ac29.reachability_note == ""
+        assert ac29.confidence is Confidence.MEDIUM
+
 
 # ── Gate integration ─────────────────────────────────────────────────
 

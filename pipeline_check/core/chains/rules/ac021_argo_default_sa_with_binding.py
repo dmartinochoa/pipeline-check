@@ -26,6 +26,14 @@ shortcut into the cluster API.
 The chain fires when both findings appear in the same scan, even
 across separate Argo and Kubernetes manifest sets, the cluster
 configuration is what matters, not which file declares it.
+
+Reachability-model note: this chain stays on scan-level
+co-occurrence. The tight reachability claim would be "the
+RoleBinding's subject (``default`` SA) lives in the same
+namespace as the Workflow", which requires a namespace-scoped
+``k8s_sa`` canonicalizer from ``ResourceAnchor`` phase 1. The
+``job_anchors`` intersection pattern doesn't fit — both legs are
+K8s resources, not CI jobs.
 """
 from __future__ import annotations
 

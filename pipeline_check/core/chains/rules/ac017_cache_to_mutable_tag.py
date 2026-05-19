@@ -21,6 +21,16 @@ against.
 The chain fires when a scan turns up both legs in the same
 session: GHA-011 on the workflow that produces the artifact, and
 ECR-002 on the registry the workflow pushes to.
+
+Reachability-model note: this chain stays on scan-level
+co-occurrence. The two legs are cross-provider (GHA workflow +
+ECR repo); confirming "this poisonable workflow pushes TO this
+mutable repo" requires the ``ResourceAnchor`` phase 1
+``ecr_repo`` canonicalizer to parse the registry URI out of the
+workflow's docker login / push steps and match it against
+ECR-002's repo URI. ``job_anchors`` doesn't fit, ECR-002 is an
+AWS resource with no CI-job structure. Deferred to the
+cross-provider reachability work.
 """
 from __future__ import annotations
 

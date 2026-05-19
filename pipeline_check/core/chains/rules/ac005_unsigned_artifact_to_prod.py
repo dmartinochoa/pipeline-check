@@ -3,6 +3,17 @@
 A pipeline that builds artifacts without signing/provenance AND
 auto-deploys to production without approval lets a build-time
 compromise reach production with no detection or rollback gate.
+
+Reachability-model note: this chain stays on scan-level
+co-occurrence. The two legs straddle distinct provider surfaces
+(build-side signing rules across GHA / GitLab / Bitbucket /
+CircleCI / Cloud Build / Azure / Buildkite / Drone / Jenkins
+vs. deploy-side approval gates on the same set, possibly in
+different files / different providers), so per-job intersection
+isn't a meaningful pairing. The tighter "this build artifact
+flows into this deploy" claim requires the ``ResourceAnchor``
+phase 1 ``oci_image`` canonicalizer to match producer + consumer
+on a content-addressed digest; deferred to that work.
 """
 from __future__ import annotations
 

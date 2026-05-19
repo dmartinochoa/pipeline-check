@@ -36,6 +36,17 @@ repository, repository-to-workflow attribution lives across two
 different planes (CI config + AWS state), and an attacker only
 needs *some* CI workflow with the trust drift and *some* mutable
 ECR repo whose image is consumed in production.
+
+Reachability-model note: this chain stays on scan-level
+co-occurrence. The deliberate scope above (no
+workflow-to-repository attribution required) is the point: a
+tighter "this workflow pushes to this repo" claim would
+under-report. If a future refinement wants per-pair attribution
+it would use the ``ResourceAnchor`` phase 1 ``ecr_repo``
+canonicalizer to match the workflow's docker login / push
+target against ECR-002's repo URI, but that becomes a different
+chain shape (per-pair, not aggregate). ``job_anchors`` doesn't
+apply because the AWS-side leg has no CI-job structure.
 """
 from __future__ import annotations
 

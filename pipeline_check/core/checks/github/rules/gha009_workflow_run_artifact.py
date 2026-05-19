@@ -44,7 +44,19 @@ def check(path: str, doc: dict[str, Any]) -> Finding:
         )
     downloads_artifact = False
     verified = False
-    for _, job in iter_jobs(doc):
+    # Track jobs that download the upstream artifact. AC-029 intersects
+    # this with the credential / integrity legs to confirm the
+    # unverified-download job is also the one holding the publish
+    # credential. Order-preserving dict for reproducibility.
+    #
+    # Known limitation: ``verified`` is workflow-level. A workflow where
+    # one job downloads without verifying and a different job runs a
+    # cosign / attestation check still reads as passed, so
+    # ``job_anchors`` is empty and AC-029 can't confirm reachability
+    # on the genuine worm shape. Tightening to per-job verification
+    # belongs in a follow-up that reshapes this rule itself.
+    download_jobs: dict[str, None] = {}
+    for job_id, job in iter_jobs(doc):
         for step in iter_steps(job):
             uses = step.get("uses") or ""
             run = step.get("run") or ""
@@ -55,6 +67,7 @@ def check(path: str, doc: dict[str, Any]) -> Finding:
                 or "gh api repos/" in blob and "/artifacts/" in blob
             ):
                 downloads_artifact = True
+                download_jobs[job_id] = None
             if (
                 "cosign verify" in blob
                 or "gh attestation verify" in blob
@@ -86,4 +99,5 @@ def check(path: str, doc: dict[str, Any]) -> Finding:
         check_id=RULE.id, title=RULE.title, severity=RULE.severity,
         resource=path, description=desc,
         recommendation=RULE.recommendation, passed=passed,
+        job_anchors=tuple(download_jobs) if not passed else (),
     )

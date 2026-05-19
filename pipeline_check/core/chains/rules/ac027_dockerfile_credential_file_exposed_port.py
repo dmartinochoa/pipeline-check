@@ -36,6 +36,13 @@ secret, AWS Secrets Manager, Vault, or container-level env)
 container runtime's ``exec`` path covers every legitimate
 operational use). Either fix is sufficient on its own; both is
 defense in depth.
+
+Reachability-model note: this chain stays on Dockerfile-level
+co-occurrence (``group_by_resource`` over the same Dockerfile
+path). A Dockerfile has no per-job structure — every instruction
+runs in the single build context that produces one image, so
+file-level co-location IS the reachability claim. The
+``job_anchors`` intersection pattern doesn't apply.
 """
 from __future__ import annotations
 
