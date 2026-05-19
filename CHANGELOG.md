@@ -12,6 +12,37 @@ release commit collapses this section into `## [X.Y.Z] - <date>`.
 
 ### Added
 
+- **Yarn 2+ / Berry lockfile parser.** Closes the Berry gap on the
+  npm provider. ``NpmContext`` now sniffs the ``__metadata:`` block
+  inside ``yarn.lock`` and routes Berry bodies through
+  ``_parse_yarn_berry_lock`` + ``_synthesize_yarn_berry_lock``;
+  Classic bodies continue to flow through the existing yarn-1 path.
+  Both synthesizers project to the same npm-7+ ``packages`` shape,
+  so NPM-002 (missing integrity), NPM-003 (non-registry source),
+  NPM-006 (compromised version), and NPM-009 (new-transitive diff
+  via ``--npm-base-ref``) run on Berry locks with zero per-rule
+  changes.
+
+  Berry-specific surface mapped:
+
+  - ``resolution: "name@npm:1.2.3"`` → registry ``resolved``
+    URL on ``https://registry.yarnpkg.com``; ``checksum: <hex>`` →
+    ``integrity: sha512-<hex>`` (NPM-002 reads the presence signal,
+    not the encoding).
+  - ``workspace:`` / ``link:`` / ``portal:`` → ``file:`` resolved
+    with ``link: true`` so NPM-002 correctly skips entries that
+    have no tarball.
+  - ``patch:`` wraps a real resolution; the classifier unwraps
+    one level so the underlying ``npm:`` / ``git:`` / ``http:``
+    is what NPM-003 sees.
+  - ``git:host:owner/repo.git`` → ``git+ssh://`` so NPM-003's
+    transport-prefix classifier flags it.
+
+  Includes a defensive guard: a Berry body fed to the yarn-1 parser
+  (e.g. via a wrongly-flagged file) still won't poison NPM-* output
+  because the yarn-1 synthesizer already drops the ``__metadata``
+  entry by name; that guard stays.
+
 - **GL-034 + BB-030 npm install without audit-signatures (parity
   with GHA-059).** Ports the GHA-059 detector to the GitLab CI and
   Bitbucket Pipelines providers. Same shape: fires MEDIUM once per

@@ -114,25 +114,15 @@ compromised-package registries (npm, PyPI, Maven Central), the
 trilogy (NPM-008 / PYPI-008 / MVN-008) behind ``--resolve-remote``,
 full lockfile-format coverage on the npm / pypi sides
 (``package-lock.json`` v1/v2/v3, ``npm-shrinkwrap.json``,
-``pnpm-lock.yaml`` v5/v6/v9, ``yarn.lock`` yarn-1 / Classic,
-``poetry.lock``, ``Pipfile.lock``), the NPM-009 new-
-transitive-dep diff gate behind ``--npm-base-ref``, and the
+``pnpm-lock.yaml`` v5/v6/v9, ``yarn.lock`` yarn-1 / Classic and
+yarn 2+ / Berry, ``poetry.lock``, ``Pipfile.lock``), the NPM-009
+new-transitive-dep diff gate behind ``--npm-base-ref``, and the
 NPM-010 ``npm audit signatures``-missing detector ported across
 all three CI providers (GHA-059 / GL-034 / BB-030).*
 The follow-up rules below require either new infrastructure
 (lockfile diff against a base ref) or different ecosystem
 plumbing and so are deferred:
 
-- **Yarn 2+ / Berry lockfile parser.** Yarn 1 / Classic shipped via
-  ``_parse_yarn_lock`` + ``_synthesize_yarn_lock``; Berry locks
-  follow a different shape (``__metadata:`` header, ``checksum``
-  field instead of ``integrity``, ``resolution`` keys carrying
-  ``npm:`` / ``patch:`` / ``workspace:`` / ``portal:`` protocols)
-  and would slot in alongside the existing yarn-1 path as a
-  separate synthesizer. The yarn-1 synthesizer already short-
-  circuits on a stray ``__metadata`` header so a Berry lockfile
-  mistakenly fed in won't poison NPM-002 / NPM-003 / NPM-006
-  output. That guard stays once the Berry path lands.
 - **PYPI extensions.** ``pyproject.toml`` (PEP 621 / Poetry)
   parser (``Pipfile.lock`` and ``poetry.lock`` already ship).
   PYPI-007 publish-time hash verification step missing from CI.

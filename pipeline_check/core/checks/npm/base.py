@@ -25,12 +25,13 @@ Inputs the loader recognizes
   ``snapshots:`` blocks so the existing NPM-002 / NPM-003 / NPM-006
   rules apply without per-rule changes — see
   :func:`_synthesize_pnpm_lock`)
-- ``yarn.lock`` (yarn 1 / Classic; the loader parses yarn's
-  bespoke YAML-ish format and synthesizes an npm-7+-shaped
-  ``packages`` map via :func:`_parse_yarn_lock` +
-  :func:`_synthesize_yarn_lock`. Yarn 2+ / Berry (which carries
-  ``__metadata:`` plus ``checksum`` instead of ``integrity``) is
-  out of scope for this pass and warrants a follow-up.)
+- ``yarn.lock`` (both yarn 1 / Classic and yarn 2+ / Berry; the
+  loader sniffs the ``__metadata:`` header to pick a parser. Classic
+  goes through :func:`_parse_yarn_lock` + :func:`_synthesize_yarn_lock`;
+  Berry goes through :func:`_parse_yarn_berry_lock` +
+  :func:`_synthesize_yarn_berry_lock`. Both project to an npm-7+
+  ``packages`` map so the NPM-* rules consume one shape regardless
+  of the source lockfile.)
 """
 from __future__ import annotations
 
@@ -207,11 +208,19 @@ def _parse_lock_text(
     the per-format parse logic lives in exactly one place.
     """
     if filename == "yarn.lock":
+        is_berry = _is_yarn_berry(text)
         try:
-            entries = _parse_yarn_lock(text)
+            if is_berry:
+                berry_entries = _parse_yarn_berry_lock(text)
+            else:
+                entries = _parse_yarn_lock(text)
         except Exception as exc:  # noqa: BLE001
-            return None, f"yarn.lock parse error: {exc}"
-        synthesized = _synthesize_yarn_lock(entries)
+            flavor = "yarn berry" if is_berry else "yarn.lock"
+            return None, f"{flavor} parse error: {exc}"
+        if is_berry:
+            synthesized = _synthesize_yarn_berry_lock(berry_entries)
+        else:
+            synthesized = _synthesize_yarn_lock(entries)
         return NpmLock(
             path=path, text=text, data=synthesized, lockfile_version=3,
         ), None
@@ -632,6 +641,289 @@ def _synthesize_yarn_lock(
             record["resolved"] = resolved
         if isinstance(integrity, str) and integrity:
             record["integrity"] = integrity
+        install_path = f"node_modules/{name}"
+        if install_path in seen_paths and version:
+            install_path = f"node_modules/{name}+{version}"
+        seen_paths.add(install_path)
+        packages[install_path] = record
+    return {"packages": packages, "lockfileVersion": 3}
+
+
+# ── Yarn 2+ / Berry ────────────────────────────────────────────────────
+
+
+def _is_yarn_berry(text: str) -> bool:
+    """Return ``True`` when *text* looks like a Yarn Berry lockfile.
+
+    Berry writes a ``__metadata:`` block as the first non-comment,
+    non-blank top-level entry. Yarn 1 / Classic has no such block.
+    The check scans the first ~50 non-blank lines so a wonky header
+    comment doesn't move the marker out of reach; finding
+    ``__metadata:`` at column 0 inside that window is sufficient
+    evidence to route the body through the Berry parser.
+    """
+    seen = 0
+    for raw in text.splitlines():
+        line = raw.rstrip("\r")
+        stripped = line.strip()
+        if not stripped or stripped.startswith("#"):
+            continue
+        if line.startswith("__metadata:"):
+            return True
+        seen += 1
+        if seen > 50:
+            break
+    return False
+
+
+# Berry's per-entry value keys. ``resolution`` and ``checksum`` replace
+# yarn-1's ``resolved`` and ``integrity`` respectively; ``version`` is
+# unchanged.
+_YARN_BERRY_VALUE_KEYS: frozenset[str] = frozenset({
+    "version", "resolution", "checksum",
+})
+
+
+def _parse_yarn_berry_lock(
+    text: str,
+) -> list[tuple[list[str], dict[str, str]]]:
+    """Parse a Yarn Berry lockfile body into a list of entries.
+
+    Mirrors :func:`_parse_yarn_lock` in shape (header pattern list +
+    flat property dict per entry) but reads Berry's key set
+    (``version`` / ``resolution`` / ``checksum``) and tolerates the
+    ``__metadata:`` block by letting the synthesizer drop it.
+
+    Berry headers use the same comma-separated pattern shape Classic
+    uses (``"name@npm:^1.0.0, name@npm:^2.0.0":``); the parser strips
+    quotes and splits on commas just like the Classic path.
+    """
+    entries: list[tuple[list[str], dict[str, str]]] = []
+    current_patterns: list[str] | None = None
+    current_props: dict[str, str] | None = None
+    current_indent: int | None = None
+    in_subblock = False
+    subblock_indent: int | None = None
+
+    for raw_line in text.splitlines():
+        line = raw_line.rstrip("\r")
+        stripped = line.strip()
+        if not stripped or stripped.startswith("#"):
+            continue
+        indent = len(line) - len(line.lstrip(" "))
+        if indent == 0:
+            if current_patterns is not None and current_props is not None:
+                entries.append((current_patterns, current_props))
+            header = stripped
+            if not header.endswith(":"):
+                current_patterns = None
+                current_props = None
+                current_indent = None
+                continue
+            header = header[:-1].strip()
+            patterns = [
+                pat.strip()
+                for pat in _split_berry_header_patterns(header)
+                if pat.strip()
+            ]
+            current_patterns = patterns
+            current_props = {}
+            current_indent = None
+            in_subblock = False
+            subblock_indent = None
+            continue
+        if current_patterns is None or current_props is None:
+            continue
+        if current_indent is None:
+            current_indent = indent
+        if in_subblock:
+            if subblock_indent is not None and indent <= subblock_indent:
+                in_subblock = False
+                subblock_indent = None
+            else:
+                continue
+        if indent > current_indent:
+            continue
+        if stripped.endswith(":"):
+            in_subblock = True
+            subblock_indent = indent
+            continue
+        # Berry writes ``key: value`` with a colon separator (yarn-1
+        # uses a space-separated ``key "value"`` instead).
+        if ":" not in stripped:
+            continue
+        key, _, value = stripped.partition(":")
+        key = key.strip()
+        if not key:
+            continue
+        if key in _YARN_BERRY_VALUE_KEYS:
+            current_props[key] = _strip_yarn_value(value)
+    if current_patterns is not None and current_props is not None:
+        entries.append((current_patterns, current_props))
+    return entries
+
+
+def _split_berry_header_patterns(header: str) -> list[str]:
+    """Split a Berry header like ``"a@npm:^1, b@npm:^2"`` into the
+    list of pattern strings, respecting a surrounding pair of double
+    quotes.
+
+    Yarn Berry quotes the whole header when any pattern contains a
+    comma; the comma splitter must look at the *unquoted* body, not
+    the literal source line.
+    """
+    h = header.strip()
+    if len(h) >= 2 and h[0] == '"' and h[-1] == '"':
+        h = h[1:-1]
+    return [p.strip() for p in h.split(",")]
+
+
+def _split_berry_pattern(pattern: str) -> str | None:
+    """Return the package name from a Berry pattern.
+
+    Berry patterns embed a protocol after the range separator:
+
+    * ``lodash@npm:^4.17.21``
+    * ``"@babel/code-frame@npm:^7.18.6"``
+    * ``my-fork@npm:lodash@npm:^4.17.21``      (aliased)
+    * ``myrepo@workspace:packages/myrepo``     (workspace)
+    * ``lodash@patch:lodash@npm:^4.17.21#~/p.patch::version=...``
+
+    The name is everything up to the protocol-separating ``@``; for
+    scoped packages the leading ``@`` is preserved.
+    """
+    if not isinstance(pattern, str):
+        return None
+    p = pattern.strip()
+    if (len(p) >= 2) and p[0] == '"' and p[-1] == '"':
+        p = p[1:-1]
+    p = p.strip()
+    if not p:
+        return None
+    # Find the FIRST ``@`` that isn't at position 0; everything before
+    # it is the package name. Scoped packages start with ``@`` so the
+    # search must skip that leading marker.
+    start = 1 if p.startswith("@") else 0
+    idx = p.find("@", start)
+    if idx <= 0:
+        return p
+    return p[:idx]
+
+
+def _classify_berry_resolution(resolution: str) -> tuple[str, str]:
+    """Map a Berry ``resolution:`` string to ``(protocol, resolved)``.
+
+    The synthesized ``resolved`` is what the NPM-* rules see in the
+    npm-7+ shape. The mapping preserves the verification signal the
+    rules care about:
+
+    * ``npm:...``        → ``https://registry.yarnpkg.com/...`` (registry)
+    * ``workspace:...``  → ``file:.`` (intra-monorepo, local)
+    * ``portal:./x``     → ``file:./x``
+    * ``link:./x``       → ``file:./x``
+    * ``file:./x``       → ``file:./x`` (kept as-is)
+    * ``patch:foo@npm:^1`` → unwrap to the wrapped resolution
+    * ``git:...`` / ``git+ssh:...`` / ``http:...`` / ``https:...`` →
+      preserved verbatim so NPM-003's prefix classifier flags the
+      unsafe transports the same way it would on a package-lock.json
+
+    Returns ``("", "")`` when the resolution is empty or unparseable.
+    """
+    r = resolution.strip()
+    if not r:
+        return "", ""
+    # ``patch:`` wraps another full resolution
+    # (``foo@patch:<name@protocol:version>#<patchfile>::<params>``);
+    # unwrap and recurse on the inner ``name@protocol:rest`` so the
+    # underlying protocol is what NPM-003 classifies.
+    if "@patch:" in r:
+        wrapped = r.split("@patch:", 1)[1]
+        if "#" in wrapped:
+            wrapped = wrapped.split("#", 1)[0]
+        # ``wrapped`` is a full ``name@protocol:rest`` string;
+        # recurse on it as a fresh resolution.
+        if "@" in wrapped:
+            return _classify_berry_resolution(wrapped)
+    # Resolutions are written as ``name@protocol:rest``; find the
+    # protocol separator. Scoped packages start with ``@``.
+    start = 1 if r.startswith("@") else 0
+    idx = r.find("@", start)
+    if idx <= 0:
+        return "", ""
+    protocol_and_rest = r[idx + 1:]
+    if ":" not in protocol_and_rest:
+        return "", ""
+    protocol, _, rest = protocol_and_rest.partition(":")
+    protocol = protocol.lower()
+    if protocol == "npm":
+        # Synthesize a registry URL the NPM-* rules will accept as a
+        # registry source. The rules check prefixes, not the actual
+        # tarball — a yarnpkg.com URL is the same signal as
+        # registry.npmjs.org for NPM-003.
+        name = r[:idx]
+        version = rest.split("::", 1)[0]
+        return (
+            "npm",
+            f"https://registry.yarnpkg.com/{name}/-/"
+            f"{name.split('/')[-1]}-{version}.tgz",
+        )
+    if protocol in ("workspace", "link", "portal"):
+        return protocol, f"file:{rest or '.'}"
+    if protocol in ("file",):
+        return protocol, f"file:{rest}"
+    if protocol == "git":
+        # Berry's ``git:`` shape is ``git:host:owner/repo.git#ref``;
+        # forward as a git URL so NPM-003's classifier sees it.
+        return protocol, f"git+ssh://git@{rest}"
+    if protocol in ("https", "http"):
+        return protocol, f"{protocol}:{rest}"
+    return protocol, f"{protocol}:{rest}"
+
+
+def _synthesize_yarn_berry_lock(
+    entries: list[tuple[list[str], dict[str, str]]],
+) -> dict[str, Any]:
+    """Project parsed Berry entries to an npm-7+ lockfile dict.
+
+    Mirrors :func:`_synthesize_yarn_lock` but reads Berry's
+    ``resolution`` / ``checksum`` field names. The ``checksum``
+    value (hex SHA-512 in Berry's wire format) maps directly to
+    ``integrity`` because the NPM-002 rule cares about *presence*,
+    not format: a lockfile entry that records a strong hash, in any
+    encoding, satisfies the rule. Entries whose ``resolution:`` maps
+    to a workspace / portal / link are emitted with ``link: true``
+    so NPM-002's tarball-only branch correctly skips them.
+    """
+    packages: dict[str, Any] = {}
+    seen_paths: set[str] = set()
+    for patterns, props in entries:
+        if not patterns:
+            continue
+        name: str | None = None
+        for pat in patterns:
+            name = _split_berry_pattern(pat)
+            if name:
+                break
+        if not name or name == "__metadata":
+            continue
+        version = props.get("version", "")
+        resolution = props.get("resolution", "")
+        checksum = props.get("checksum")
+        protocol, resolved = _classify_berry_resolution(resolution)
+        record: dict[str, Any] = {"name": name, "version": version}
+        if resolved:
+            record["resolved"] = resolved
+        if isinstance(checksum, str) and checksum:
+            # Encode as an SRI-shaped value so downstream regex
+            # matchers that look for the ``sha512-`` prefix don't
+            # need a Berry-specific branch. The wire format isn't
+            # identical (Berry: hex, npm: base64) but the presence
+            # signal is what NPM-002 reads.
+            record["integrity"] = f"sha512-{checksum}"
+        if protocol in ("workspace", "link", "portal"):
+            # Linked / workspace deps have no tarball; NPM-002 skips
+            # records carrying ``link: true``.
+            record["link"] = True
         install_path = f"node_modules/{name}"
         if install_path in seen_paths and version:
             install_path = f"node_modules/{name}+{version}"
