@@ -25,9 +25,12 @@ Inputs the loader recognizes
   ``snapshots:`` blocks so the existing NPM-002 / NPM-003 / NPM-006
   rules apply without per-rule changes — see
   :func:`_synthesize_pnpm_lock`)
-
-``yarn.lock`` remains out of scope; its custom YAML-ish format
-warrants its own parser, deferred.
+- ``yarn.lock`` (yarn 1 / Classic; the loader parses yarn's
+  bespoke YAML-ish format and synthesizes an npm-7+-shaped
+  ``packages`` map via :func:`_parse_yarn_lock` +
+  :func:`_synthesize_yarn_lock`. Yarn 2+ / Berry (which carries
+  ``__metadata:`` plus ``checksum`` instead of ``integrity``) is
+  out of scope for this pass and warrants a follow-up.)
 """
 from __future__ import annotations
 
@@ -44,6 +47,7 @@ from ..base import BaseCheck, safe_load_yaml
 MANIFEST_NAMES: frozenset[str] = frozenset({"package.json"})
 LOCKFILE_NAMES: frozenset[str] = frozenset({
     "package-lock.json", "npm-shrinkwrap.json", "pnpm-lock.yaml",
+    "yarn.lock",
 })
 #: ``.npmrc`` is npm's INI-style config file. Per-project ``.npmrc``
 #: lives alongside ``package.json``; we scan any ``.npmrc`` in the
@@ -148,6 +152,22 @@ class NpmContext:
                 # ``.npmrc`` is INI-style, not JSON. Parse separately.
                 settings = parse_npmrc(text)
                 rcs.append(NpmRc(path=str(f), text=text, settings=settings))
+                continue
+            if f.name == "yarn.lock":
+                # yarn.lock: parse the bespoke yarn 1 format and
+                # synthesize an npm-7+ lock-shape ``data`` dict so
+                # the existing lockfile rules apply unchanged.
+                try:
+                    entries = _parse_yarn_lock(text)
+                except Exception as exc:  # noqa: BLE001
+                    warnings.append(f"{f}: yarn.lock parse error: {exc}")
+                    skipped += 1
+                    continue
+                synthesized = _synthesize_yarn_lock(entries)
+                locks.append(NpmLock(
+                    path=str(f), text=text, data=synthesized,
+                    lockfile_version=3,
+                ))
                 continue
             if f.name == "pnpm-lock.yaml":
                 # pnpm-lock.yaml: parse the YAML, synthesize an npm-7+
@@ -327,6 +347,219 @@ def _line_of(text: str, needle: str) -> int:
     if idx < 0:
         return 1
     return text[:idx].count("\n") + 1
+
+
+def _split_yarn_pattern(pattern: str) -> str | None:
+    """Return the package name from a yarn 1 lock pattern like
+    ``"@babel/code-frame@^7.0.0"`` or ``lodash@^4.17.21``.
+
+    Strips surrounding quotes if present. Yarn 2+ Berry patterns
+    embed a protocol (``lodash@npm:^4.17.21``) — those are split
+    on the same trailing ``@`` and the resulting name comes back
+    clean even when this parser is fed a Berry lockfile that
+    slipped past the dispatcher (defensive, not a supported path).
+
+    Returns ``None`` when the pattern is empty or has no ``@``
+    separator that could carry a range.
+    """
+    if not isinstance(pattern, str):
+        return None
+    p = pattern.strip()
+    if (len(p) >= 2) and p[0] == '"' and p[-1] == '"':
+        p = p[1:-1]
+    p = p.strip()
+    if not p:
+        return None
+    # Find the LAST ``@`` that isn't at position 0 (scope marker on
+    # ``@scope/name`` keeps its leading ``@``).
+    idx = p.rfind("@")
+    if idx <= 0:
+        # No range separator — accept as a bare name. Real yarn.lock
+        # entries always have one, but be tolerant.
+        return p
+    return p[:idx]
+
+
+# Quoted ``key value`` shapes ("version", "resolved", etc.) we read
+# from each yarn 1 entry's indented property lines. Sub-blocks
+# (``dependencies:`` / ``optionalDependencies:``) are skipped — the
+# existing NPM-* rules don't need transitive metadata.
+_YARN_VALUE_KEYS: frozenset[str] = frozenset({
+    "version", "resolved", "integrity",
+})
+
+
+def _strip_yarn_value(value: str) -> str:
+    """Strip surrounding quotes and trailing comment from a yarn
+    property value.
+
+    Yarn 1 writes values like ``"4.17.21"`` (quoted) or
+    ``sha512-abc==`` (bare). Trailing comments after ``#`` are
+    possible but rare; this strips them defensively.
+    """
+    v = value.strip()
+    # Trailing ``#`` comment (must be space-prefixed to avoid
+    # eating ``#`` inside integrity strings).
+    idx = v.find(" #")
+    if idx >= 0:
+        v = v[:idx].rstrip()
+    if (len(v) >= 2) and v[0] == '"' and v[-1] == '"':
+        v = v[1:-1]
+    return v
+
+
+def _parse_yarn_lock(
+    text: str,
+) -> list[tuple[list[str], dict[str, str]]]:
+    """Parse a yarn 1 / Classic lockfile body into a list of entries.
+
+    Each returned tuple is ``(patterns, props)`` where ``patterns``
+    are the raw header pattern strings (one or more
+    comma-separated) and ``props`` is a flat string-keyed map of
+    the entry's top-level properties (``version`` / ``resolved`` /
+    ``integrity``). Nested sub-blocks like ``dependencies:`` are
+    walked over without recording — the existing NPM-* rules read
+    flat lockfile entries.
+
+    Tolerant of comments (``# ...``), blank lines, mixed indent
+    widths (yarn defaults to 2 spaces), and the trailing newline
+    quirks editors introduce on Windows. Raises ``ValueError`` only
+    for unrecoverable input (binary content, malformed header
+    lines that can't be split).
+    """
+    entries: list[tuple[list[str], dict[str, str]]] = []
+    current_patterns: list[str] | None = None
+    current_props: dict[str, str] | None = None
+    current_indent: int | None = None
+    in_subblock = False
+    subblock_indent: int | None = None
+
+    for raw_line in text.splitlines():
+        line = raw_line.rstrip("\r")
+        # Skip full-line comments and blank lines.
+        stripped = line.strip()
+        if not stripped or stripped.startswith("#"):
+            continue
+        # Count leading spaces (yarn uses spaces, not tabs).
+        indent = len(line) - len(line.lstrip(" "))
+        if indent == 0:
+            # New entry header. Close out the previous one.
+            if current_patterns is not None and current_props is not None:
+                entries.append((current_patterns, current_props))
+            # A header line ends in ``:`` (after any trailing comment).
+            header = stripped
+            if not header.endswith(":"):
+                # Defensive: skip unrecognized top-level content
+                # (yarn 2+ ``__metadata:`` block falls through here
+                # because it ends in ``:`` and just has no real
+                # patterns — the synthesizer will drop it).
+                current_patterns = None
+                current_props = None
+                current_indent = None
+                continue
+            header = header[:-1].strip()
+            # Yarn 1 separates multiple match patterns with ``,``;
+            # each pattern may be quoted independently.
+            patterns = [
+                pat.strip()
+                for pat in header.split(",")
+                if pat.strip()
+            ]
+            current_patterns = patterns
+            current_props = {}
+            current_indent = None
+            in_subblock = False
+            subblock_indent = None
+            continue
+        # Indented line. Determine if it's a top-level property of
+        # the current entry, or part of a sub-block (dependencies:
+        # ...).
+        if current_patterns is None or current_props is None:
+            # Floating indented line with no header — skip.
+            continue
+        if current_indent is None:
+            current_indent = indent
+        if in_subblock:
+            # Already inside a deeper sub-block. Exit when indent
+            # returns to the entry's primary level.
+            if subblock_indent is not None and indent <= subblock_indent:
+                in_subblock = False
+                subblock_indent = None
+                # Fall through to handle this line as a primary prop.
+            else:
+                continue
+        if indent > current_indent:
+            # Deeper indent without a corresponding sub-block header
+            # — treat as a nested value we don't read. Skip.
+            continue
+        # Primary property line.
+        if stripped.endswith(":"):
+            # Sub-block header — record so we can skip its body.
+            in_subblock = True
+            subblock_indent = indent
+            continue
+        # ``key value`` (with one-or-more spaces between).
+        key, _, value = stripped.partition(" ")
+        key = key.strip()
+        if not key:
+            continue
+        if key in _YARN_VALUE_KEYS:
+            current_props[key] = _strip_yarn_value(value)
+    # Flush the last entry.
+    if current_patterns is not None and current_props is not None:
+        entries.append((current_patterns, current_props))
+    return entries
+
+
+def _synthesize_yarn_lock(
+    entries: list[tuple[list[str], dict[str, str]]],
+) -> dict[str, Any]:
+    """Project parsed yarn 1 entries to an npm-7+ lockfile dict.
+
+    For each entry, pick the first pattern with a recoverable
+    package name (``_split_yarn_pattern``) and build a single
+    lock record carrying ``name`` / ``version`` / ``resolved`` /
+    ``integrity``. Multi-pattern headers (the common case where
+    several specifier patterns resolve to the same install) emit
+    one record; the install path is ``node_modules/<name>`` with
+    a ``+<version>`` suffix appended on the second-and-later
+    occurrence of the same name to avoid colliding multiple
+    versions in the synthesized output.
+
+    Entries without a ``version`` (yarn 1 always writes one for a
+    real install, but the parser is tolerant) get a synthesized
+    placeholder rather than being dropped — NPM-006 would otherwise
+    miss a name match on the install path, and NPM-002 / NPM-003
+    skip records without ``resolved`` regardless. Entries without
+    ``resolved`` (rare; yarn 1 records it for every fetched dep)
+    are still recorded so name lookups in NPM-006 work.
+    """
+    packages: dict[str, Any] = {}
+    seen_paths: set[str] = set()
+    for patterns, props in entries:
+        if not patterns:
+            continue
+        name: str | None = None
+        for pat in patterns:
+            name = _split_yarn_pattern(pat)
+            if name:
+                break
+        if not name:
+            continue
+        version = props.get("version", "")
+        resolved = props.get("resolved")
+        integrity = props.get("integrity")
+        record: dict[str, Any] = {"name": name, "version": version}
+        if isinstance(resolved, str) and resolved:
+            record["resolved"] = resolved
+        if isinstance(integrity, str) and integrity:
+            record["integrity"] = integrity
+        install_path = f"node_modules/{name}"
+        if install_path in seen_paths and version:
+            install_path = f"node_modules/{name}+{version}"
+        seen_paths.add(install_path)
+        packages[install_path] = record
+    return {"packages": packages, "lockfileVersion": 3}
 
 
 def _split_pnpm_key(key: str) -> tuple[str, str] | None:

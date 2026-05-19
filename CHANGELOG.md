@@ -186,6 +186,30 @@ release commit collapses this section into `## [X.Y.Z] - <date>`.
   `GL-032` ∩ `GL-020` share a job. `GHA-019`, `GHA-036`, `GL-032`,
   `GL-020` all gained `Finding.job_anchors`.
 
+- **yarn.lock (yarn 1 / Classic) parser via npm-lock-shape
+  synthesis.** ``yarn.lock`` joins ``package-lock.json`` /
+  ``npm-shrinkwrap.json`` / ``pnpm-lock.yaml`` in
+  ``NpmContext.LOCKFILE_NAMES``; the loader detects the filename
+  and routes through new ``_parse_yarn_lock`` +
+  ``_synthesize_yarn_lock`` helpers. The yarn 1 parser handles
+  multi-pattern headers (``"@babel/code-frame@^7.0.0",
+  "@babel/code-frame@^7.16.0":``), scoped names, comments,
+  blank lines, and the nested ``dependencies:`` sub-block (which
+  is skipped — the existing NPM-* rules don't need transitive
+  metadata). The synthesizer projects each entry to an npm-7+
+  record (``name`` / ``version`` / ``resolved`` / ``integrity``)
+  keyed by ``node_modules/<name>`` with the same ``+<version>``
+  disambiguation pnpm uses for multi-version installs. NPM-002 /
+  NPM-003 / NPM-006 now fire on yarn-locked projects without
+  per-rule changes. Yarn 2+ / Berry (which ships ``__metadata:``
+  plus ``checksum`` instead of ``integrity``) stays out of scope
+  for this pass — same template, different field names, deferred
+  to a follow-up. Nineteen new tests in
+  ``tests/npm/test_yarn_lock.py`` exercise the pattern splitter,
+  parser (multi-pattern / sub-block / comments), synthesizer
+  (scoped / multi-version / missing-resolved), and end-to-end
+  firing through ``NpmChecks`` on a real yarn.lock.
+
 - **pnpm-lock.yaml parser closes the npm-side lockfile gap.**
   ``pnpm-lock.yaml`` joins ``package-lock.json`` /
   ``npm-shrinkwrap.json`` in ``NpmContext.LOCKFILE_NAMES``; the
