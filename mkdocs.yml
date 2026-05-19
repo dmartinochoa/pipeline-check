@@ -128,73 +128,75 @@ hooks:
   - hooks/mkdocs_design_tokens.py
 
 nav:
-  # Order chosen by user-journey weight, not feature breadth:
-  #   Home              first — entry point
-  #   Usage             "how do I run it?"        — every new user goes here
-  #   Providers         "does it scan my stack?"  — adoption decision
-  #   Standards         "compliance fit"          — adoption decision
-  #   Configuration     operational tuning
-  #   Scoring & gate    CI gate integration
-  #   Output            operational reporting
-  #   Attack chains     advanced / niche feature
-  #   Contributing      last (developer audience)
+  # Six top-level tabs grouped by user intent. Previous layout exposed
+  # ~15 tabs (one per page), which overflowed the Material tab bar and
+  # made the site read as a flat dump. Grouping:
+  #   Home             entry point
+  #   Getting started  "how do I run / configure / gate / read output"
+  #   Coverage         "does it scan my stack / fit my compliance ask"
+  #   Concepts         scoring, threat model, attack-chain framing
+  #   Integrations     MCP server + VS Code extension
+  #   Contributing     developer audience (architecture + add-a-*)
   - Home: index.md
-  - Usage: usage.md
-  - Providers:
-      - Overview: providers/README.md
-      - AWS: providers/aws.md
-      - Terraform: providers/terraform.md
-      - CloudFormation: providers/cloudformation.md
-      - GitHub Actions: providers/github.md
-      - GitLab CI: providers/gitlab.md
-      - Bitbucket Pipelines: providers/bitbucket.md
-      - Azure DevOps: providers/azure.md
-      - Jenkins: providers/jenkins.md
-      - CircleCI: providers/circleci.md
-      - Google Cloud Build: providers/cloudbuild.md
-      - Buildkite: providers/buildkite.md
-      - Drone CI: providers/drone.md
-      - Tekton: providers/tekton.md
-      - Argo Workflows: providers/argo.md
-      - Dockerfile: providers/dockerfile.md
-      - Kubernetes: providers/kubernetes.md
-      - Helm: providers/helm.md
-      - OCI image manifest: providers/oci.md
-      - SCM posture (GitHub / GitLab / Bitbucket): providers/scm.md
-      - Package registries:
-          - Overview: providers/registries.md
-          - npm: providers/npm.md
-          - PyPI: providers/pypi.md
-          - Maven: providers/maven.md
-  - Standards:
-      - Overview: standards/README.md
-      - OWASP Top 10 CI/CD: standards/owasp_cicd_top_10.md
-      - CIS AWS Foundations: standards/cis_aws_foundations.md
-      - CIS GitHub Benchmark: standards/cis_github.md
-      - CIS Kubernetes Benchmark: standards/cis_kubernetes.md
-      - CIS Supply Chain: standards/cis_supply_chain.md
-      - NIST SSDF (800-218): standards/nist_ssdf.md
-      - NIST 800-53: standards/nist_800_53.md
-      - NIST 800-190: standards/nist_800_190.md
-      - NIST CSF 2.0: standards/nist_csf_2.md
-      - SLSA: standards/slsa.md
-      - PCI DSS v4.0: standards/pci_dss_v4.md
-      - ESF Supply Chain: standards/esf_supply_chain.md
-      - OpenSSF Scorecard: standards/openssf_scorecard.md
-      - S2C2F: standards/s2c2f.md
-      - SOC 2: standards/soc2.md
-  - Comparison: comparison.md
-  - GOAT bench: goat_bench.md
-  - Configuration: config.md
-  - Stability: stability.md
-  - Scoring & gate:
-      - Scoring model: scoring_model.md
+  - Getting started:
+      - Usage: usage.md
+      - Configuration: config.md
       - CI gate: ci_gate.md
-  - Output: output.md
-  - Threat model: threatmodel.md
-  - Attack chains: attack_chains.md
-  - MCP: mcp.md
-  - VS Code extension: vscode.md
+      - Output: output.md
+      - Stability: stability.md
+  - Coverage:
+      - Providers:
+          - Overview: providers/README.md
+          - AWS: providers/aws.md
+          - Terraform: providers/terraform.md
+          - CloudFormation: providers/cloudformation.md
+          - GitHub Actions: providers/github.md
+          - GitLab CI: providers/gitlab.md
+          - Bitbucket Pipelines: providers/bitbucket.md
+          - Azure DevOps: providers/azure.md
+          - Jenkins: providers/jenkins.md
+          - CircleCI: providers/circleci.md
+          - Google Cloud Build: providers/cloudbuild.md
+          - Buildkite: providers/buildkite.md
+          - Drone CI: providers/drone.md
+          - Tekton: providers/tekton.md
+          - Argo Workflows: providers/argo.md
+          - Dockerfile: providers/dockerfile.md
+          - Kubernetes: providers/kubernetes.md
+          - Helm: providers/helm.md
+          - OCI image manifest: providers/oci.md
+          - SCM posture (GitHub / GitLab / Bitbucket): providers/scm.md
+          - Package registries:
+              - Overview: providers/registries.md
+              - npm: providers/npm.md
+              - PyPI: providers/pypi.md
+              - Maven: providers/maven.md
+      - Standards:
+          - Overview: standards/README.md
+          - OWASP Top 10 CI/CD: standards/owasp_cicd_top_10.md
+          - CIS AWS Foundations: standards/cis_aws_foundations.md
+          - CIS GitHub Benchmark: standards/cis_github.md
+          - CIS Kubernetes Benchmark: standards/cis_kubernetes.md
+          - CIS Supply Chain: standards/cis_supply_chain.md
+          - NIST SSDF (800-218): standards/nist_ssdf.md
+          - NIST 800-53: standards/nist_800_53.md
+          - NIST 800-190: standards/nist_800_190.md
+          - NIST CSF 2.0: standards/nist_csf_2.md
+          - SLSA: standards/slsa.md
+          - PCI DSS v4.0: standards/pci_dss_v4.md
+          - ESF Supply Chain: standards/esf_supply_chain.md
+          - OpenSSF Scorecard: standards/openssf_scorecard.md
+          - S2C2F: standards/s2c2f.md
+          - SOC 2: standards/soc2.md
+      - Comparison: comparison.md
+      - GOAT bench: goat_bench.md
+  - Concepts:
+      - Scoring model: scoring_model.md
+      - Threat model: threatmodel.md
+      - Attack chains: attack_chains.md
+  - Integrations:
+      - MCP: mcp.md
+      - VS Code extension: vscode.md
   - Contributing:
       - Architecture: architecture.md
       - Adding a rule: writing_a_rule.md

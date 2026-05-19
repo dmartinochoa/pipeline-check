@@ -206,6 +206,18 @@ release commit collapses this section into `## [X.Y.Z] - <date>`.
   are the missing leg, and ``audit signatures`` is the gate that
   consumes them.
 
+### Changed
+
+- **Docs site navigation regrouped under six intent-based tabs.**
+  The mkdocs nav had grown to ~15 top-level entries, one per page,
+  which overflowed Material's tab bar and read as a flat dump.
+  Pages are now grouped as **Home**, **Getting started** (Usage,
+  Configuration, CI gate, Output, Stability), **Coverage**
+  (Providers, Standards, Comparison, GOAT bench), **Concepts**
+  (Scoring model, Threat model, Attack chains), **Integrations**
+  (MCP, VS Code extension), and **Contributing**. No files moved,
+  so deep links from external sources still resolve.
+
 ## [1.1.0] - 2026-05-19
 
 ### Added
