@@ -186,6 +186,33 @@ release commit collapses this section into `## [X.Y.Z] - <date>`.
   `GL-032` ∩ `GL-020` share a job. `GHA-019`, `GHA-036`, `GL-032`,
   `GL-020` all gained `Finding.job_anchors`.
 
+- **Self-hosted findings-history dashboard (`pipeline_check
+  history`).** New CLI subcommand that reads a directory of
+  timestamped scan-output JSON files (default
+  ``.pipeline-check-history/``) and renders a single self-
+  contained HTML page with trend graphs (per-severity failed
+  findings over time, score over time) and a top-N firing-rules
+  burn-down table. Inline CSS + inline SVG charts; no
+  JavaScript, no CDN, no web server. The output is one ``.html``
+  file the user can open locally, email, or commit to a posture-
+  history branch — closes the "do we even have visibility?"
+  roadmap gap without dragging in a SaaS dashboard or a database.
+  Timestamps are extracted from the filename
+  (``scan-YYYYMMDD-HHMMSS.json`` or ``YYYY-MM-DD.json``) with a
+  fallback to file mtime, so the existing CI convention
+  (``--output json --output-file scan-$(date +%Y%m%d-%H%M%S).json``)
+  works as-is. Malformed JSON files surface as warnings and are
+  skipped without breaking the render. Eighteen new tests in
+  ``tests/test_history.py`` exercise the timestamp parser,
+  loader (chronological sort, mtime fallback, malformed-skip,
+  non-dict top-level skip, rule-counts extraction, missing-
+  directory error path) and renderer (empty-state placeholder,
+  chart polylines, warnings surfaced, top-N clamp), plus a CLI
+  integration test via ``CliRunner``. A FastAPI live-reload
+  variant is a phase-2 follow-up; the static HTML is the more-
+  useful primitive (serve it from anywhere) and the FastAPI
+  wrapper just adds auto-refresh on top.
+
 - **Gradle (build.gradle / build.gradle.kts) parser via
   PomFile synthesis.** Closes the third deferred dependency-
   registry format in this cycle. ``build.gradle`` and

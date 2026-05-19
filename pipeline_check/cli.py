@@ -3549,6 +3549,72 @@ def fp_stats_cmd(fp_path: str | None) -> None:
         click.echo(f"  {cid:<{width}}  {count} {suffix}")
 
 
+# ────────────────────────────────────────────────────────────────────────────
+# `history` subcommand, render a static-HTML findings-history dashboard.
+# ────────────────────────────────────────────────────────────────────────────
+
+
+@click.command(name="history")
+@click.option(
+    "--dir",
+    "history_dir",
+    default=".pipeline-check-history",
+    metavar="PATH",
+    show_default=True,
+    help=(
+        "Directory of timestamped scan-output JSON files (each "
+        "produced by ``pipeline_check ... --output json "
+        "--output-file scan-YYYYMMDD-HHMMSS.json``)."
+    ),
+)
+@click.option(
+    "--output",
+    "output_path",
+    default="pipeline-check-history.html",
+    metavar="PATH",
+    show_default=True,
+    help="Destination for the rendered HTML dashboard.",
+)
+@click.option(
+    "--top-rules",
+    "top_n",
+    default=15,
+    show_default=True,
+    type=click.IntRange(1, 100),
+    help=(
+        "Number of rules to show in the burn-down table (ranked by "
+        "total failed findings across the history window)."
+    ),
+)
+def history_cmd(history_dir: str, output_path: str, top_n: int) -> None:
+    """Render a self-contained HTML dashboard from past scan outputs.
+
+    Reads every ``*.json`` under ``--dir`` (default
+    ``.pipeline-check-history/``), extracts a timestamp from each
+    filename (``YYYYMMDD-HHMMSS`` or ``YYYY-MM-DD``; falls back to
+    mtime), and writes one static HTML page with trend graphs and a
+    top-N firing-rules burn-down. No JavaScript, no CDN, no web
+    server — just a file the user can open locally, email, or commit.
+    """
+    from pathlib import Path
+
+    from .core.history import load_history, render_html
+
+    try:
+        report = load_history(history_dir)
+    except ValueError as exc:
+        raise click.UsageError(str(exc)) from exc
+    html = render_html(report, top_n=top_n)
+    out = Path(output_path)
+    out.write_text(html, encoding="utf-8")
+    click.echo(
+        f"[history] {len(report.snapshots)} snapshot(s) -> {out} "
+        f"({len(report.warnings)} warning(s))"
+    )
+    for w in report.warnings:
+        click.echo(f"  warn: {w}", err=True)
+
+
 def main() -> None:
     """Console entry point: dispatches between ``scan`` and subcommands.
 
@@ -3568,5 +3634,9 @@ def main() -> None:
     if len(sys.argv) >= 2 and sys.argv[1] == "fp-stats":
         sys.argv.pop(1)
         fp_stats_cmd()
+        return
+    if len(sys.argv) >= 2 and sys.argv[1] == "history":
+        sys.argv.pop(1)
+        history_cmd()
         return
     scan()
