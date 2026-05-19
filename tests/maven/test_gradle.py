@@ -220,7 +220,12 @@ def test_build_gradle_mvn003_fires_on_http_repository(
     findings = list(MavenChecks(ctx).run())
     mvn003 = [f for f in findings if f.check_id == "MVN-003"]
     assert mvn003 and not mvn003[0].passed
-    assert "internal.example.com" in mvn003[0].description
+    # Assert the full URL (not just a host substring) so CodeQL's
+    # py/incomplete-url-substring-sanitization rule doesn't flag this
+    # as a sanitization bypass pattern — the test is verifying the
+    # finding's prose mentions the offending repo, no sanitization
+    # is happening here.
+    assert "http://internal.example.com/m2" in mvn003[0].description
 
 
 def test_build_gradle_mvn006_flags_compromised_version(
