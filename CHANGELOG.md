@@ -186,6 +186,37 @@ release commit collapses this section into `## [X.Y.Z] - <date>`.
   `GL-032` ∩ `GL-020` share a job. `GHA-019`, `GHA-036`, `GL-032`,
   `GL-020` all gained `Finding.job_anchors`.
 
+- **Gradle (build.gradle / build.gradle.kts) parser via
+  PomFile synthesis.** Closes the third deferred dependency-
+  registry format in this cycle. ``build.gradle`` and
+  ``build.gradle.kts`` join ``pom.xml`` / ``settings.xml`` in the
+  maven provider's recognized inputs; the loader detects the
+  filename and routes through a new ``_parse_gradle`` regex-based
+  extractor that emits the same :class:`PomFile` shape from
+  ``"group:artifact:version"`` coordinate strings, ``group:`` /
+  ``name:`` / ``version:`` map-form deps (Groovy ``,`` separator
+  and Kotlin DSL ``=`` separator both handled), and ``maven { url
+  ... }`` / ``maven { url = uri(...) }`` / ``maven("...")``
+  repository blocks. Built-in shorthand
+  (``mavenCentral()`` / ``google()``) is omitted because the rule
+  pack doesn't flag those and their URLs are well-known. Trailing
+  ``:classifier`` / ``@type`` (sources / javadoc / war) is
+  consumed but discarded so the version literal stays clean. The
+  ``build/`` and ``.gradle/`` output directories are excluded
+  from the loader's rglob so cached / generated copies don't
+  double-count. MVN-001 / MVN-002 / MVN-003 / MVN-006 fire on
+  Gradle projects without per-rule changes. Variable substitution
+  (``${junitVersion}``) stays unresolved for this pass — the
+  rule layer then sees the literal ``${...}`` and treats it as
+  a dynamic version (MVN-001 fires accordingly); a follow-up can
+  walk ``ext { }`` / Kotlin ``val`` declarations to resolve.
+  Version catalogs (``libs.versions.toml``) and BOM imports are
+  also follow-ups. Sixteen new tests in ``tests/maven/test_gradle.py``
+  exercise the parser (Groovy / Kotlin / map-form / classifier
+  stripping / dedup / repos / variable carry-through), the
+  ``build/`` exclusion, and end-to-end firing through
+  ``MavenChecks``.
+
 - **Pipfile.lock parser via requirements-file synthesis.**
   ``Pipfile.lock`` joins ``poetry.lock`` / ``requirements*.txt`` /
   ``*.in`` in the pypi provider's recognized inputs; the loader
