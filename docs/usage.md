@@ -529,23 +529,17 @@ pipeline_check -q       # suppress all output, rely on the exit code
 ## Editor integration
 
 A VS Code extension drives the same rule registry as the CLI and
-surfaces findings inline as you edit workflow files.
+surfaces findings inline as you edit workflow files. Gutter
+diagnostics, a Findings activity-bar panel, a status-bar tally, a
+per-file CodeLens summary, and `Alt+F8` navigation all hang off the
+same engine, so what you see in the editor matches what the gate will
+report in CI. Full reference: [vscode.md](vscode.md).
 
 - VS Code Marketplace: <https://marketplace.visualstudio.com/items?itemName=greylag-ci.pipeline-check>
 - Open VSX (VSCodium, Cursor, Windsurf): <https://open-vsx.org/extension/greylag-ci/pipeline-check>
 - Source: <https://github.com/greylag-ci/pipeline-check-vscode>
 
-Under the hood, the extension spawns `python -m pipeline_check.lsp`
-(the Language Server in this repo, gated behind the optional `[lsp]`
-extra) and exchanges LSP messages over stdio. Diagnostics carry the
-rule ID, severity, the dynamic recommendation, and a `codeDescription`
-link to the per-rule docs page. Glob patterns the LSP listens on:
-`.github/workflows/`, `.gitlab-ci.yml`, `azure-pipelines.yml`,
-`bitbucket-pipelines.yml`, `.circleci/`, `cloudbuild.yaml`,
-`.buildkite/`, `.drone.yml`, `Jenkinsfile`, and `Dockerfile`.
-
-To run the LSP standalone (e.g. for a non-VS Code editor that speaks
-LSP):
+To run the LSP standalone (for a non-VS Code editor that speaks LSP):
 
 ```bash
 pip install 'pipeline-check[lsp]'

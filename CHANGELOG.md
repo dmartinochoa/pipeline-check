@@ -12,6 +12,21 @@ release commit collapses this section into `## [X.Y.Z] - <date>`.
 
 ### Added
 
+- **Dedicated `docs/vscode.md` reference page for the VS Code
+  extension.** Promotes editor coverage from a two-paragraph
+  subsection of `usage.md` to a top-level docs page with install
+  recipes (Marketplace + Open VSX + CLI), the pilot-coverage trigger
+  table for all 10 single-file providers, feature reference
+  (inline diagnostics, Findings activity-bar panel, status-bar tally,
+  per-file CodeLens, `Alt+F8` keyboard nav, `severityThreshold` /
+  `disabledProviders` quieting), the full `pipelineCheck.*` settings
+  table, commands, workspace-trust posture, an architecture diagram
+  of the TypeScript client ↔ `pipeline_check.lsp` server link, a
+  non-VS Code editor section (Cursor, Windsurf, VSCodium, Neovim,
+  Helix), a CLI-vs-extension feature matrix, and a troubleshooting
+  block. Added to the mkdocs nav after MCP; the homepage feature
+  card and the trimmed `usage.md` blurb now link to it.
+
 - **`[lsp]` optional install extra surfaces the Language Server.**
   ``pip install pipeline-check[lsp]`` pulls ``pygls>=2.1.0`` and
   ``lsprotocol>=2025.0.0``, the floor versions the

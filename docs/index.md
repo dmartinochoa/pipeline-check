@@ -153,7 +153,7 @@ surfaced as you edit workflow files. Install from the
 <a href="https://marketplace.visualstudio.com/items?itemName=greylag-ci.pipeline-check">VS Code Marketplace</a>
 or <a href="https://open-vsx.org/extension/greylag-ci/pipeline-check">Open VSX</a>;
 source lives at <a href="https://github.com/greylag-ci/pipeline-check-vscode">greylag-ci/pipeline-check-vscode</a>.
-<a class="pg-feature__link" href="usage/#editor-integration">Editor integration</a>
+<a class="pg-feature__link" href="vscode/">VS Code extension</a>
 </div>
 
 </div>
