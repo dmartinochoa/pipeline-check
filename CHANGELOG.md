@@ -12,6 +12,24 @@ release commit collapses this section into `## [X.Y.Z] - <date>`.
 
 ### Added
 
+- **Gradle `gradle.properties` cross-file resolution.** Extends the
+  in-file ``${propName}`` resolution shipped earlier this cycle to
+  the sibling ``gradle.properties`` file. ``MavenContext.from_path``
+  walks upward from each ``build.gradle`` / ``build.gradle.kts``
+  file toward the scan root and merges every ``gradle.properties``
+  it finds along the way (closest-to-the-script wins on conflict,
+  matching Gradle's subproject-overrides-root semantics); in-file
+  ``ext { ... }`` / ``def`` / ``val`` declarations override the
+  cross-file map. The walk deliberately stops at the scan root so
+  ``~/.gradle/gradle.properties`` and other out-of-tree ancestors
+  are never read — pipeline-check stays a hermetic, repo-only
+  scanner. MVN-001 (floating-range) and MVN-008 (cooldown) now see
+  the literal version on Gradle multi-project layouts where the
+  versions live in the root ``gradle.properties``, the standard
+  setup in real-world projects. The remaining gap is the
+  ``libs.versions.toml`` version-catalog DSL (``libs.X.Y``
+  references in build scripts); that's the next follow-up.
+
 - **`pyproject.toml` parser for the pypi provider.** Brings the
   existing PYPI-004 (VCS mutable ref) and PYPI-006 (compromised
   package) rules to bear on modern Python repos that hold their

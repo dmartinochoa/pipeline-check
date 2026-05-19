@@ -17,7 +17,9 @@ from pathlib import Path
 
 from pipeline_check.core.checks.maven.base import (
     MavenContext,
+    _discover_gradle_cross_file_properties,
     _parse_gradle,
+    _parse_gradle_properties,
 )
 from pipeline_check.core.checks.maven.pipelines import MavenChecks
 
@@ -439,6 +441,152 @@ def test_build_gradle_kts_picked_up_by_loader(tmp_path: Path) -> None:
     pf = ctx.files[0]
     assert pf.dependencies[0].artifact_id == "commons-text"
     assert pf.repositories[0].url == "https://example.com/repo"
+
+
+# ── gradle.properties cross-file resolution ───────────────────────────
+
+
+class TestParseGradleProperties:
+    def test_basic_key_value(self) -> None:
+        body = textwrap.dedent(
+            """\
+            # Top-level comment
+            log4jVersion=2.17.1
+            springVersion = 5.3.20
+            """
+        )
+        props = _parse_gradle_properties(body)
+        assert props == {
+            "log4jVersion": "2.17.1",
+            "springVersion": "5.3.20",
+        }
+
+    def test_colon_separator_accepted(self) -> None:
+        body = "foo : 1.0\n"
+        assert _parse_gradle_properties(body) == {"foo": "1.0"}
+
+    def test_skips_blank_and_comment_lines(self) -> None:
+        body = textwrap.dedent(
+            """\
+
+            # comment
+            ! bang-comment
+            log4jVersion=2.17.1
+
+            """
+        )
+        assert _parse_gradle_properties(body) == {"log4jVersion": "2.17.1"}
+
+    def test_skips_lines_without_separator(self) -> None:
+        body = "junk-line\nfoo=bar\n"
+        assert _parse_gradle_properties(body) == {"foo": "bar"}
+
+
+def test_gradle_properties_in_same_dir_resolves(tmp_path: Path) -> None:
+    (tmp_path / "gradle.properties").write_text(
+        "log4jVersion=2.17.1\n", encoding="utf-8",
+    )
+    (tmp_path / "build.gradle").write_text(
+        textwrap.dedent(
+            """\
+            dependencies {
+                implementation "org.apache.logging.log4j:log4j-core:$log4jVersion"
+            }
+            """
+        ),
+        encoding="utf-8",
+    )
+    ctx = MavenContext.from_path(tmp_path)
+    pf = ctx.files[0]
+    assert pf.dependencies[0].version == "2.17.1"
+
+
+def test_in_file_property_overrides_gradle_properties(tmp_path: Path) -> None:
+    # ``ext { ... }`` declarations win against ``gradle.properties``
+    # because in-script ext wins at Gradle runtime.
+    (tmp_path / "gradle.properties").write_text(
+        "log4jVersion=1.0.0\n", encoding="utf-8",
+    )
+    (tmp_path / "build.gradle").write_text(
+        textwrap.dedent(
+            """\
+            ext {
+                log4jVersion = '2.17.1'
+            }
+            dependencies {
+                implementation "org.apache.logging.log4j:log4j-core:$log4jVersion"
+            }
+            """
+        ),
+        encoding="utf-8",
+    )
+    ctx = MavenContext.from_path(tmp_path)
+    assert ctx.files[0].dependencies[0].version == "2.17.1"
+
+
+def test_parent_gradle_properties_resolves_in_subproject(tmp_path: Path) -> None:
+    # Multi-project Gradle layout: ``gradle.properties`` sits at the
+    # root, the build script lives under a subproject directory.
+    # Walking upward from the build file finds the root file.
+    (tmp_path / "gradle.properties").write_text(
+        "log4jVersion=2.17.1\n", encoding="utf-8",
+    )
+    (tmp_path / "app").mkdir()
+    (tmp_path / "app" / "build.gradle").write_text(
+        textwrap.dedent(
+            """\
+            dependencies {
+                implementation "org.apache.logging.log4j:log4j-core:$log4jVersion"
+            }
+            """
+        ),
+        encoding="utf-8",
+    )
+    ctx = MavenContext.from_path(tmp_path)
+    pf = ctx.files[0]
+    assert pf.dependencies[0].version == "2.17.1"
+
+
+def test_subproject_gradle_properties_overrides_root(tmp_path: Path) -> None:
+    # If both root and subproject carry the same key,
+    # the subproject's file (closer to the build script) wins.
+    (tmp_path / "gradle.properties").write_text(
+        "log4jVersion=1.0.0\n", encoding="utf-8",
+    )
+    (tmp_path / "app").mkdir()
+    (tmp_path / "app" / "gradle.properties").write_text(
+        "log4jVersion=2.17.1\n", encoding="utf-8",
+    )
+    (tmp_path / "app" / "build.gradle").write_text(
+        textwrap.dedent(
+            """\
+            dependencies {
+                implementation "org.apache.logging.log4j:log4j-core:$log4jVersion"
+            }
+            """
+        ),
+        encoding="utf-8",
+    )
+    ctx = MavenContext.from_path(tmp_path)
+    assert ctx.files[0].dependencies[0].version == "2.17.1"
+
+
+def test_discover_walk_stops_at_scan_root(tmp_path: Path) -> None:
+    # A ``gradle.properties`` outside the scan root should NOT be
+    # read; the discovery walks upward only until it hits scan_root.
+    (tmp_path / "outside").mkdir()
+    (tmp_path / "outside" / "gradle.properties").write_text(
+        "leakedVersion=99.99.99\n", encoding="utf-8",
+    )
+    (tmp_path / "outside" / "project").mkdir()
+    project = tmp_path / "outside" / "project"
+    (project / "build.gradle").write_text(
+        "dependencies { implementation 'x:y:1' }", encoding="utf-8",
+    )
+    props = _discover_gradle_cross_file_properties(
+        project / "build.gradle", scan_root=project,
+    )
+    assert "leakedVersion" not in props
 
 
 def test_build_gradle_skipped_under_build_dir(tmp_path: Path) -> None:

@@ -187,7 +187,12 @@ class MavenContext:
                 skipped += 1
                 continue
             if f.name in GRADLE_NAMES:
-                pf = _parse_gradle(str(f), text)
+                cross_file = _discover_gradle_cross_file_properties(
+                    f, root if root.is_dir() else root.parent,
+                )
+                pf = _parse_gradle(
+                    str(f), text, extra_properties=cross_file,
+                )
             else:
                 pf = _parse_pom(str(f), text)
                 if not pf.parsed_ok:
@@ -583,6 +588,94 @@ def _extract_gradle_properties(text: str) -> dict[str, str]:
     return out
 
 
+def _parse_gradle_properties(text: str) -> dict[str, str]:
+    """Parse a Java-properties body (``gradle.properties``).
+
+    Supports the ``key=value`` and ``key = value`` forms. Skips
+    blank lines, ``#`` / ``!`` comments, and line-continuation
+    backslashes (those are rare in real ``gradle.properties`` and
+    folding them precisely matches the Java spec, which would
+    require buffering. The simpler line-at-a-time parser handles
+    the overwhelming majority of real-world files).
+    """
+    out: dict[str, str] = {}
+    for raw in text.splitlines():
+        line = raw.strip()
+        if not line or line.startswith(("#", "!")):
+            continue
+        if "=" not in line and ":" not in line:
+            continue
+        # Java-properties accepts both ``=`` and ``:`` as separators
+        # (with optional whitespace). Pick whichever appears first.
+        eq = line.find("=")
+        colon = line.find(":")
+        if eq < 0:
+            idx = colon
+        elif colon < 0:
+            idx = eq
+        else:
+            idx = min(eq, colon)
+        key = line[:idx].strip()
+        value = line[idx + 1:].strip()
+        if key:
+            out[key] = value
+    return out
+
+
+def _discover_gradle_cross_file_properties(
+    gradle_path: Path, scan_root: Path,
+) -> dict[str, str]:
+    """Walk upward from *gradle_path*'s parent looking for sibling
+    ``gradle.properties`` files; return the merged property map.
+
+    Closest-to-the-script file wins on conflict (subproject overrides
+    root). Walk stops at *scan_root* so a scan rooted in a subdir
+    doesn't accidentally read ``~/.gradle/gradle.properties`` or
+    other ancestors outside the scanned tree.
+
+    The user-home ``~/.gradle/gradle.properties`` (Gradle's
+    well-known global override location) is deliberately NOT read;
+    pipeline-check stays a hermetic, repo-only scanner.
+    """
+    out: dict[str, str] = {}
+    try:
+        scan_resolved = scan_root.resolve()
+        cur = gradle_path.resolve().parent
+    except OSError:
+        return out
+    seen_dirs: set[Path] = set()
+    # Walk in farthest-ancestor-first order so closer files (later
+    # in the loop) overwrite farther ones, matching Gradle's
+    # subproject-overrides-root semantics.
+    chain: list[Path] = []
+    while True:
+        if cur in seen_dirs:
+            break
+        seen_dirs.add(cur)
+        chain.append(cur)
+        if cur == scan_resolved:
+            break
+        parent = cur.parent
+        if parent == cur:
+            break
+        # Stop walking once we'd leave the scan root.
+        try:
+            cur.relative_to(scan_resolved)
+        except ValueError:
+            break
+        cur = parent
+    for d in reversed(chain):
+        props_file = d / "gradle.properties"
+        if not props_file.is_file():
+            continue
+        try:
+            text = props_file.read_text(encoding="utf-8")
+        except (OSError, UnicodeDecodeError):
+            continue
+        out.update(_parse_gradle_properties(text))
+    return out
+
+
 def _resolve_gradle_version(version: str, properties: dict[str, str]) -> str:
     """Substitute ``$prop`` / ``${prop}`` references in *version*.
 
@@ -608,7 +701,11 @@ def _line_at(text: str, offset: int) -> int:
     return text[:offset].count("\n") + 1
 
 
-def _parse_gradle(path: str, text: str) -> PomFile:
+def _parse_gradle(
+    path: str,
+    text: str,
+    extra_properties: dict[str, str] | None = None,
+) -> PomFile:
     """Parse a ``build.gradle`` / ``build.gradle.kts`` body.
 
     Returns a :class:`PomFile` whose ``dependencies`` carry every
@@ -621,6 +718,12 @@ def _parse_gradle(path: str, text: str) -> PomFile:
     is omitted from ``repositories`` because the rule pack doesn't
     flag them and their URLs are well-known.
 
+    *extra_properties* feeds cross-file values (sibling
+    ``gradle.properties``) into the substitution pass. In-file
+    declarations override the cross-file map because Gradle's
+    in-script extensions win against ``gradle.properties`` at
+    runtime; the merge order here matches that semantic.
+
     ``parsed_ok`` is always True: the regex extractor never fails,
     a file with no matches simply returns an empty PomFile.
     """
@@ -628,7 +731,8 @@ def _parse_gradle(path: str, text: str) -> PomFile:
     repositories: list[MavenRepository] = []
     seen_coords: set[tuple[str, str, str | None]] = set()
     seen_urls: set[str] = set()
-    properties = _extract_gradle_properties(text)
+    properties = dict(extra_properties) if extra_properties else {}
+    properties.update(_extract_gradle_properties(text))
 
     for m in _GRADLE_COORD_RE.finditer(text):
         version = _resolve_gradle_version(m.group("version"), properties)

@@ -133,14 +133,21 @@ plumbing and so are deferred:
   the existing PYPI-004 / PYPI-006 rules; PYPI-007 (``pip install
   --require-hashes`` missing from CI) shipped across the three CI
   providers as GHA-060 / GL-035 / BB-031.
-- **Gradle version-catalog + cross-file property resolution.**
-  In-file ``${propName}`` resolution against ``ext { ... }`` /
-  ``ext.foo`` / ``def`` / Kotlin ``val`` declarations now ships.
-  The remaining gaps are cross-file: ``gradle.properties``
-  lookup, ``libs.versions.toml`` Gradle version catalogs, and
-  ``rootProject.ext.X`` indirection. Closing them lifts MVN-001 /
-  MVN-008 hit rate to full Maven parity on projects that keep
-  versions in a shared catalog.
+- **Gradle version-catalog resolution.** In-file ``${propName}``
+  resolution and sibling ``gradle.properties`` cross-file lookup
+  both ship. The remaining gap is the ``libs.versions.toml``
+  Gradle version catalog: build scripts reference catalog
+  entries via the generated ``libs.X.Y`` DSL rather than a Maven
+  coordinate literal, so resolving them needs (1) a TOML walker
+  for ``[versions]`` + ``[libraries]`` + ``[plugins]`` and (2) a
+  new regex for ``libs.<dot.path>`` references in build scripts
+  that synthesizes the coordinate from the catalog entry. Closing
+  it lifts MVN-001 / MVN-008 hit rate to full Maven parity on
+  modern Gradle projects that keep versions in the catalog.
+  ``rootProject.ext.X`` cross-project indirection stays out of
+  scope until pipeline-check learns ``settings.gradle``
+  multi-project resolution; it's rarer in practice than the
+  catalog idiom.
 
 Architecture: extends the existing ``pipeline_check/core/checks/
 npm/``, ``pypi/``, and ``maven/`` packages; ``--resolve-remote``
