@@ -435,6 +435,7 @@ STANDARD = Standard(
         "GHA-057":  ["4.4.3"],                     # secret-scanner output → egress
         "GHA-058":  ["4.4.5"],                     # agentic CLI permission-bypass
         "GHA-059":  ["4.1.5"],                     # npm install without audit signatures
+        "GHA-060":  ["4.1.5"],                     # pip install without --require-hashes
         # ── GitLab CI container-touching extras ──────────────────
         "GL-015":  ["4.4.5"],                      # no timeout
         "GL-020":  ["4.1.4"],                      # CI_JOB_TOKEN persisted
@@ -442,12 +443,14 @@ STANDARD = Standard(
         "GL-032":  ["4.4.5"],                      # tags untrusted variable
         "GL-033":  ["4.4.5"],                      # global before_script taint
         "GL-034":  ["4.1.5"],                      # npm install without audit signatures
+        "GL-035":  ["4.1.5"],                      # pip install without --require-hashes
         # ── Bitbucket Pipelines container-touching extras ────────
         "BB-005":  ["4.1.2", "4.4.4"],             # privileged container (in pipe)
         "BB-017":  ["4.1.4"],                      # repo token persisted
         "BB-022":  ["4.1.5"],                      # dep-update bypasses lockfile pins
         "BB-029":  ["4.1.5"],                      # step+service image not pinned
         "BB-030":  ["4.1.5"],                      # npm install without audit signatures
+        "BB-031":  ["4.1.5"],                      # pip install without --require-hashes
         # ── Azure DevOps Pipelines container-touching extras ─────
         "ADO-015": ["4.4.5"],                      # no timeoutInMinutes
         "ADO-022": ["4.1.5"],                      # dep-update bypasses lockfile pins

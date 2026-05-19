@@ -16,7 +16,7 @@ pipeline_check --pipeline gitlab --gitlab-path ci/
 
 ## What it covers
 
-36 checks · 12 have an autofix patch (``--fix``).
+37 checks · 12 have an autofix patch (``--fix``).
 
 | Check | Title | Severity | Fix |
 |-------|-------|----------|-----|
@@ -54,6 +54,7 @@ pipeline_check --pipeline gitlab --gitlab-path ci/
 | [GL-032](#gl-032) | tags: interpolates untrusted CI variable | <span class="pg-sev pg-sev--high">HIGH</span> | <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> |
 | [GL-033](#gl-033) | Global before_script / after_script propagates taint to every job | <span class="pg-sev pg-sev--high">HIGH</span> |  |
 | [GL-034](#gl-034) | npm install without registry-signature verification step | <span class="pg-sev pg-sev--medium">MEDIUM</span> |  |
+| [GL-035](#gl-035) | pip install without `--require-hashes` verification | <span class="pg-sev pg-sev--medium">MEDIUM</span> |  |
 | [TAINT-004](#taint-004) | Untrusted input flows across jobs via dotenv artifact | <span class="pg-sev pg-sev--high">HIGH</span> |  |
 | [TAINT-008](#taint-008) | Untrusted input flows via GitLab ``extends:`` template inheritance | <span class="pg-sev pg-sev--high">HIGH</span> |  |
 
@@ -785,6 +786,39 @@ Yarn / Bun-only pipelines pass silently because the ``audit signatures`` primiti
 **Recommended action**
 
 Add an ``npm audit signatures`` step (or ``pnpm audit signatures``) after the install. Lockfile pinning only guarantees the bytes installed match what the lockfile recorded; ``audit signatures`` is what verifies those bytes were signed by the maintainer the registry recognizes as the package's trusted publisher. Run it as a separate script line after ``npm ci`` and before any code from ``node_modules/`` executes.
+
+</div>
+
+</div>
+
+<div class="pg-rule pg-rule--medium" markdown>
+
+## GL-035: pip install without `--require-hashes` verification { #gl-035 }
+
+<div class="pg-rule__tags">
+<span class="pg-sev pg-sev--medium">MEDIUM</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-3</span> <span class="pg-tag pg-tag--esf">ESF-S-VERIFY-DEPS</span> <span class="pg-tag pg-tag--cwe">CWE-345</span>
+</div>
+
+Fires once per pipeline file when:
+
+1. Some job's ``before_script:`` / ``script:`` / ``after_script:`` runs a real ``pip install`` (``pip install``, ``pip3 install``, ``python -m pip install``) that isn't a tooling-bootstrap exempted by the allowlist;
+2. No job uses ``--require-hashes`` AND no job uses a hash-pinning manager (``uv sync`` / ``uv pip install``, ``poetry install``, ``pipenv install --deploy``).
+
+Tooling-bootstrap allowlist (same as GHA-060).
+
+**Known false-positive modes**
+
+- Pipelines that build against a private index without SHA-256 hash records (legacy DevPI, self-hosted simple indexes without per-file hashes) cannot run ``--require-hashes`` meaningfully. Suppress on the specific pipeline with a rationale that names the private index.
+
+**Seen in the wild**
+
+- PyPI maintainer-account compromises (ctx 2022, requests-darwin-lite 2023) shipped malicious sdists / wheels under existing version pins; ``--require-hashes`` would have refused the swap.
+
+<div class="pg-rule__rec" markdown>
+
+**Recommended action**
+
+Pin every dependency with a SHA-256 hash and install with ``pip install -r requirements.txt --require-hashes``, or migrate to a manager that hash-pins by default: ``uv sync``, ``poetry install``, ``pipenv install --deploy``. Hash-pinned install is the PyPI equivalent of npm's lockfile-integrity guarantee: it refuses to install any tarball whose SHA-256 doesn't match a recorded entry.
 
 </div>
 

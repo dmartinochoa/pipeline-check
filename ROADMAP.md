@@ -125,7 +125,9 @@ plumbing and so are deferred:
 
 - **PYPI extensions.** ``pyproject.toml`` (PEP 621 / Poetry)
   parser (``Pipfile.lock`` and ``poetry.lock`` already ship).
-  PYPI-007 publish-time hash verification step missing from CI.
+  PYPI-007 (``pip install --require-hashes`` missing from CI) is
+  now shipped across the three CI providers as
+  GHA-060 / GL-035 / BB-031.
 - **Gradle property resolution.** ``build.gradle(.kts)`` parsing
   already ships under the maven provider (coordinate-string and
   map-form deps + ``maven { url ... }`` repositories), but

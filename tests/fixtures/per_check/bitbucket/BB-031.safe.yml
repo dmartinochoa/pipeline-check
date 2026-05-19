@@ -1,0 +1,7 @@
+pipelines:
+  default:
+    - step:
+        image: python:3.12@sha256:0000000000000000000000000000000000000000000000000000000000000000
+        script:
+          - pip install -r requirements.txt --require-hashes
+          - pytest

@@ -203,6 +203,7 @@ STANDARD = Standard(
         "GHA-057":  ["PS.1.1"],                        # secret-scanner output → egress
         "GHA-058":  ["PW.6.1", "PW.9.1"],              # agentic CLI permission-bypass
         "GHA-059":  ["PW.4.4"],                        # npm install without audit signatures
+        "GHA-060":  ["PW.4.4"],                        # pip install without --require-hashes
         # GitLab CI
         "GL-001":   ["PW.4.1", "PW.4.4"],
         "GL-002":   ["PW.6.1", "PW.9.1"],
@@ -238,6 +239,7 @@ STANDARD = Standard(
         "GL-032":   ["PW.6.1", "PW.9.1"],              # tags interpolates untrusted
         "GL-033":   ["PO.5.1", "PW.9.1"],              # global before_script taint
         "GL-034":   ["PW.4.4"],                        # npm install without audit signatures
+        "GL-035":   ["PW.4.4"],                        # pip install without --require-hashes
         # Bitbucket Pipelines
         "BB-001":   ["PW.4.1", "PW.4.4"],
         "BB-002":   ["PW.6.1", "PW.9.1"],
@@ -269,6 +271,7 @@ STANDARD = Standard(
         "BB-028":   ["PO.5.1", "PS.1.1"],              # OIDC step w/o env-gated deployment
         "BB-029":   ["PW.4.1", "PW.4.4"],              # step + service image not pinned
         "BB-030":   ["PW.4.4"],                        # npm install without audit signatures
+        "BB-031":   ["PW.4.4"],                        # pip install without --require-hashes
         # Azure DevOps Pipelines
         "ADO-001":  ["PW.4.1", "PW.4.4"],
         "ADO-002":  ["PW.6.1", "PW.9.1"],

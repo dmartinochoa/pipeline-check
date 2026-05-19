@@ -142,6 +142,7 @@ STANDARD = Standard(
         "GHA-057":  ["Build.L3.Isolated"],                         # secret-scanner output → egress
         "GHA-058":  ["Build.L3.Isolated"],                         # agentic CLI permission-bypass
         "GHA-059":  ["Build.L3.NonFalsifiable"],                   # npm install without audit signatures
+        "GHA-060":  ["Build.L3.NonFalsifiable"],                   # pip install without --require-hashes
         # ── GitLab CI ─────────────────────────────────────────────
         "GL-001":   ["Build.L3.NonFalsifiable"],                   # floating image tag
         "GL-002":   ["Build.L3.Isolated"],                         # script injection
@@ -177,6 +178,7 @@ STANDARD = Standard(
         "GL-032":   ["Build.L3.Isolated"],                         # tags interpolates untrusted variable
         "GL-033":   ["Build.L3.Isolated"],                         # global before_script taint
         "GL-034":   ["Build.L3.NonFalsifiable"],                   # npm install without audit signatures
+        "GL-035":   ["Build.L3.NonFalsifiable"],                   # pip install without --require-hashes
         # ── Bitbucket Pipelines ───────────────────────────────────
         "BB-001":   ["Build.L3.NonFalsifiable"],                   # unpinned pipe
         "BB-002":   ["Build.L3.Isolated"],                         # script injection
@@ -207,6 +209,7 @@ STANDARD = Standard(
         "BB-028":   ["Build.L3.NonFalsifiable"],                   # OIDC step w/o env-gated deployment
         "BB-029":   ["Build.L3.NonFalsifiable"],                   # step + service image not digest-pinned
         "BB-030":   ["Build.L3.NonFalsifiable"],                   # npm install without audit signatures
+        "BB-031":   ["Build.L3.NonFalsifiable"],                   # pip install without --require-hashes
         # ── Azure DevOps Pipelines ────────────────────────────────
         "ADO-001":  ["Build.L3.NonFalsifiable"],                   # unpinned task
         "ADO-002":  ["Build.L3.Isolated"],                         # script injection

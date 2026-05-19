@@ -416,6 +416,7 @@ STANDARD = Standard(
         "GHA-057":  ["CC6.1", "CC6.6"],     # secret-scanner output → egress
         "GHA-058":  ["CC6.8"],              # agentic CLI permission-bypass
         "GHA-059":  ["CC8.1"],              # npm install without audit signatures
+        "GHA-060":  ["CC8.1"],              # pip install without --require-hashes
         # ── GitLab CI ─────────────────────────────────────────────
         "GL-006":   ["CC8.1"],              # unsigned artifacts
         "GL-007":   ["CC8.1"],              # no SBOM
@@ -434,6 +435,7 @@ STANDARD = Standard(
         "GL-032":   ["CC6.8"],              # tags interpolates untrusted
         "GL-033":   ["CC6.8"],              # global before_script taint
         "GL-034":   ["CC8.1"],              # npm install without audit signatures
+        "GL-035":   ["CC8.1"],              # pip install without --require-hashes
         # ── Bitbucket Pipelines ──────────────────────────────────
         "BB-005":   ["CC6.1", "CC6.8"],     # privileged container
         "BB-006":   ["CC8.1"],              # unsigned artifacts
@@ -450,6 +452,7 @@ STANDARD = Standard(
         "BB-028":   ["CC6.1", "CC8.1"],     # OIDC step w/o env gate
         "BB-029":   ["CC8.1"],              # step + service image not pinned
         "BB-030":   ["CC8.1"],              # npm install without audit signatures
+        "BB-031":   ["CC8.1"],              # pip install without --require-hashes
         # ── Azure DevOps Pipelines ───────────────────────────────
         "ADO-005":  ["CC8.1"],              # unpinned container
         "ADO-006":  ["CC8.1"],              # unsigned artifacts

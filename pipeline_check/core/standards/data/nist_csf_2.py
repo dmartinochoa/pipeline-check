@@ -489,6 +489,7 @@ STANDARD = Standard(
         "GHA-057":  ["PR.DS-01", "DE.CM-06"],   # secret-scanner output → egress
         "GHA-058":  ["PR.PS-05"],               # agentic CLI permission-bypass
         "GHA-059":  ["GV.SC-05"],               # npm install without audit signatures
+        "GHA-060":  ["GV.SC-05"],               # pip install without --require-hashes
         # ── GitLab CI ─────────────────────────────────────────────
         "GL-004":  ["PR.PS-06"],                # manual deploy allow_failure
         "GL-029":  ["PR.PS-06"],                # manual deploy allow_failure (variant)
@@ -496,11 +497,13 @@ STANDARD = Standard(
         "GL-032":  ["PR.PS-05"],                # tags interpolates untrusted
         "GL-033":  ["PR.PS-05"],                # global before_script taint
         "GL-034":  ["GV.SC-05"],                # npm install without audit signatures
+        "GL-035":  ["GV.SC-05"],                # pip install without --require-hashes
         # ── Bitbucket Pipelines ──────────────────────────────────
         "BB-004":  ["PR.PS-06"],                # deploy step missing environment
         "BB-028":  ["PR.AA-05"],                # OIDC step w/o env gate
         "BB-029":  ["GV.SC-05"],                # step+service image not pinned
         "BB-030":  ["GV.SC-05"],                # npm install without audit signatures
+        "BB-031":  ["GV.SC-05"],                # pip install without --require-hashes
         # ── Azure DevOps Pipelines ───────────────────────────────
         "ADO-004": ["PR.PS-06"],                # deploy missing environment
         "ADO-029": ["PR.PS-06"],                # service-conn job w/o env gate

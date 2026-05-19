@@ -12,6 +12,36 @@ release commit collapses this section into `## [X.Y.Z] - <date>`.
 
 ### Added
 
+- **GHA-060 + GL-035 + BB-031: pip install without
+  ``--require-hashes``.** Closes the PYPI-007 slot from the
+  dependency-supply-chain roadmap, mirroring the NPM-010 trilogy
+  (GHA-059 + GL-034 + BB-030) on the PyPI side. Fires MEDIUM once
+  per pipeline file when:
+
+  1. The pipeline runs a real ``pip install`` invocation (``pip
+     install``, ``pip3 install``, ``python -m pip install``) that
+     isn't a tooling-bootstrap on the allowlist;
+  2. No step in the pipeline passes ``--require-hashes`` AND no
+     step uses a hash-pinning manager (``uv sync`` / ``uv pip
+     install``, ``poetry install``, ``pipenv install --deploy``).
+
+  Tooling-bootstrap allowlist (silent-passes): ``pip install
+  --upgrade pip / setuptools / wheel / virtualenv / pip-tools``,
+  ``pip install pipx / pip-audit / cyclonedx-bom / semgrep`` and
+  the package-manager bootstraps themselves (``poetry``, ``uv``,
+  ``pipenv``, ``hatch``, ``build``, ``twine``).
+
+  Hash-pinned install is the PyPI equivalent of npm's
+  lockfile-integrity guarantee: it refuses to install any tarball
+  whose SHA-256 doesn't match a recorded entry. PyPI
+  maintainer-account compromises (ctx 2022,
+  requests-darwin-lite 2023) shipped malicious sdists / wheels
+  under existing version pins; ``--require-hashes`` would have
+  refused the swap.
+
+  Mapped across 13 standards (same set as the NPM-010 trilogy).
+  Brings the GHA pack to 63 rules, GitLab to 37, Bitbucket to 31.
+
 - **Yarn 2+ / Berry lockfile parser.** Closes the Berry gap on the
   npm provider. ``NpmContext`` now sniffs the ``__metadata:`` block
   inside ``yarn.lock`` and routes Berry bodies through
