@@ -35,7 +35,6 @@ from pipeline_check.core.checks.npm.rules.npm009_new_transitive_dep import (
     _name_from_install_path,
 )
 
-
 # ── _name_from_install_path ─────────────────────────────────────────
 
 
