@@ -86,6 +86,40 @@ class TestGHA011CacheKey:
         f = run_check(wf, "GHA-011")
         assert f.passed
 
+    def test_ecr_anchors_scoped_to_offending_job_only(self):
+        # Job A has the poisonable cache step; Job B (unrelated)
+        # pushes to a different ECR repo. ECR anchors must come
+        # only from Job A's sub-tree so AC-017 doesn't compose the
+        # cache primitive in A with a push from B that has no
+        # dataflow relationship to it.
+        wf = """
+        name: ci
+        on: pull_request
+        permissions: { contents: read }
+        jobs:
+          build:
+            runs-on: ubuntu-latest
+            timeout-minutes: 30
+            steps:
+              - uses: actions/cache@1bd1e32a3bdc45362d1e726936510720a7c30a57
+                with:
+                  path: ~/.cache/pip
+                  key: pip-${{ github.head_ref }}
+              - run: docker push 111111111111.dkr.ecr.us-east-1.amazonaws.com/build:latest
+          deploy:
+            runs-on: ubuntu-latest
+            timeout-minutes: 30
+            steps:
+              - run: docker push 222222222222.dkr.ecr.us-east-1.amazonaws.com/prod:latest
+        """
+        f = run_check(wf, "GHA-011")
+        assert not f.passed
+        identities = {a.identity for a in f.resource_anchors}
+        # Build job's ECR repo is present (same job as the
+        # offending cache step); deploy job's repo is excluded.
+        assert "111111111111.dkr.ecr.us-east-1.amazonaws.com/build" in identities
+        assert "222222222222.dkr.ecr.us-east-1.amazonaws.com/prod" not in identities
+
 
 # ── GHA-031 retired set-output / save-state ────────────────────────
 

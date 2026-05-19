@@ -1,7 +1,8 @@
 """ECR-002. ECR repository has mutable image tags."""
 from __future__ import annotations
 
-from ...base import Finding, Severity
+from ..._primitives.anchors import ecr_repo
+from ...base import Finding, ResourceAnchor, Severity
 from ...rule import Rule
 from .._catalog import ResourceCatalog
 
@@ -42,9 +43,23 @@ def check(catalog: ResourceCatalog) -> list[Finding]:
                 "allowing a malicious or accidental image swap to affect deployments "
                 "that pull by tag without verifying a digest."
             )
+        # ResourceAnchor phase 1: emit the canonical ECR registry URI
+        # (e.g. ``123456789012.dkr.ecr.us-east-1.amazonaws.com/myapp``)
+        # so AC-017 can intersect with workflow-side push targets, and
+        # any future cross-provider chain keyed on ``ecr_repo`` lands
+        # on the same canonical identity. boto3's
+        # describe_repositories already returns ``repositoryUri`` in
+        # the full registry-URI shape.
+        anchors: tuple[ResourceAnchor, ...] = ()
+        uri = repo.get("repositoryUri")
+        if isinstance(uri, str):
+            built = ecr_repo(uri)
+            if built is not None:
+                anchors = (built,)
         findings.append(Finding(
             check_id=RULE.id, title=RULE.title, severity=RULE.severity,
             resource=name, description=desc,
             recommendation=RULE.recommendation, passed=passed,
+            resource_anchors=anchors,
         ))
     return findings

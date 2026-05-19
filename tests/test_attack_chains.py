@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import json
 
+import pytest
 from click.testing import CliRunner
 
 from pipeline_check.cli import scan
@@ -316,6 +317,124 @@ class TestChainAC005:
         out = chains_pkg.evaluate([_f("CP-001", "arn:aws:codepipeline:.../x")])
         assert not any(c.chain_id == "AC-005" for c in out)
 
+    def test_reachability_confirmed_when_image_anchor_matches(self):
+        # GHA-006 emits the image its build pushes; GHA-014 emits the
+        # image its deploy references. Same canonical identity ⇒
+        # confirmed chain at HIGH with the image as the resource.
+        img = ResourceAnchor(
+            kind="oci_image", identity="ghcr.io/acme/app",
+        )
+        out = chains_pkg.evaluate([
+            _f(
+                "GHA-006", ".github/workflows/build.yml",
+                resource_anchors=(img,),
+            ),
+            _f(
+                "GHA-014", ".github/workflows/deploy.yml",
+                resource_anchors=(img,),
+                confidence=Confidence.MEDIUM,
+            ),
+        ])
+        ac5 = [c for c in out if c.chain_id == "AC-005"]
+        assert len(ac5) == 1
+        chain = ac5[0]
+        assert chain.confirmed_reachable is True
+        assert "ghcr.io/acme/app" in chain.reachability_note
+        assert chain.resources == ["ghcr.io/acme/app"]
+        assert chain.confidence is Confidence.HIGH
+
+    def test_falls_back_when_image_anchors_disjoint(self):
+        # Build pushes app-a; deploy references app-b. Co-occurrence
+        # fallback preserves the multi-provider signal.
+        a = ResourceAnchor(kind="oci_image", identity="ghcr.io/acme/app-a")
+        b = ResourceAnchor(kind="oci_image", identity="ghcr.io/acme/app-b")
+        out = chains_pkg.evaluate([
+            _f(
+                "GHA-006", ".github/workflows/build.yml",
+                resource_anchors=(a,),
+            ),
+            _f(
+                "GHA-014", ".github/workflows/deploy.yml",
+                resource_anchors=(b,),
+                confidence=Confidence.MEDIUM,
+            ),
+        ])
+        ac5 = [c for c in out if c.chain_id == "AC-005"]
+        assert len(ac5) == 1
+        chain = ac5[0]
+        assert chain.confirmed_reachable is False
+        assert chain.reachability_note == ""
+        assert chain.confidence is Confidence.MEDIUM
+
+    def test_one_confirmed_chain_per_image_identity(self):
+        # Two build workflows push two different images; two deploy
+        # workflows reference each. Expect two confirmed chains, one
+        # per shared image.
+        app_a = ResourceAnchor(kind="oci_image", identity="ghcr.io/acme/app-a")
+        app_b = ResourceAnchor(kind="oci_image", identity="ghcr.io/acme/app-b")
+        out = chains_pkg.evaluate([
+            _f(
+                "GHA-006", ".github/workflows/build-a.yml",
+                resource_anchors=(app_a,),
+            ),
+            _f(
+                "GHA-006", ".github/workflows/build-b.yml",
+                resource_anchors=(app_b,),
+            ),
+            _f(
+                "GHA-014", ".github/workflows/deploy-a.yml",
+                resource_anchors=(app_a,),
+            ),
+            _f(
+                "GHA-014", ".github/workflows/deploy-b.yml",
+                resource_anchors=(app_b,),
+            ),
+        ])
+        ac5 = [c for c in out if c.chain_id == "AC-005"]
+        confirmed = [c for c in ac5 if c.confirmed_reachable]
+        assert len(confirmed) == 2
+        assert {c.resources[0] for c in confirmed} == {
+            app_a.identity, app_b.identity,
+        }
+
+    @pytest.mark.parametrize(
+        "build_id,build_path,deploy_id,deploy_path",
+        [
+            # Cross-provider confirmed pairs: build in one provider,
+            # deploy in another, but the same image identity flows
+            # between them via the oci_image anchor.
+            ("GL-006",  ".gitlab-ci.yml",            "GHA-014", ".github/workflows/deploy.yml"),
+            ("BB-006",  "bitbucket-pipelines.yml",   "GHA-014", ".github/workflows/deploy.yml"),
+            ("ADO-006", "azure-pipelines.yml",       "GHA-014", ".github/workflows/deploy.yml"),
+            ("CC-006",  ".circleci/config.yml",      "GHA-014", ".github/workflows/deploy.yml"),
+            ("GCB-009", "cloudbuild.yaml",           "GHA-014", ".github/workflows/deploy.yml"),
+            ("JF-006",  "Jenkinsfile",               "GHA-014", ".github/workflows/deploy.yml"),
+            # Same shape with the deploy on each non-GHA provider too.
+            ("GHA-006", ".github/workflows/build.yml", "GL-004",  ".gitlab-ci.yml"),
+            ("GHA-006", ".github/workflows/build.yml", "BB-004",  "bitbucket-pipelines.yml"),
+            ("GHA-006", ".github/workflows/build.yml", "ADO-004", "azure-pipelines.yml"),
+            ("GHA-006", ".github/workflows/build.yml", "CC-009",  ".circleci/config.yml"),
+            ("GHA-006", ".github/workflows/build.yml", "JF-005",  "Jenkinsfile"),
+        ],
+    )
+    def test_reachability_confirmed_across_providers_via_oci_image(
+        self, build_id, build_path, deploy_id, deploy_path,
+    ):
+        # Once every provider's leg rule emits oci_image anchors, the
+        # cross-provider build → deploy pairing should confirm through
+        # group_by_anchor for any (build_id, deploy_id) combination
+        # AC-005 covers.
+        img = ResourceAnchor(kind="oci_image", identity="ghcr.io/acme/app")
+        out = chains_pkg.evaluate([
+            _f(build_id, build_path, resource_anchors=(img,)),
+            _f(deploy_id, deploy_path, resource_anchors=(img,)),
+        ])
+        ac5 = [c for c in out if c.chain_id == "AC-005"]
+        confirmed = [c for c in ac5 if c.confirmed_reachable]
+        assert len(confirmed) == 1
+        assert confirmed[0].resources == ["ghcr.io/acme/app"]
+        assert confirmed[0].confidence is Confidence.HIGH
+
 
 class TestChainAC002:
     """AC-002 — Script Injection to Unprotected Deploy."""
@@ -588,10 +707,13 @@ class TestChainAC008:
 class TestChainAC007:
     """AC-007 — IAM PrivEsc via CodeBuild (AWS-specific, multi-resource)."""
 
+    PROJECT = "arn:aws:codebuild:.../proj"
+    ROLE = "arn:aws:iam::123456789012:role/build"
+
     def test_fires_with_cb002_plus_iam002(self):
         out = chains_pkg.evaluate([
-            _f("CB-002", "arn:aws:codebuild:.../proj"),
-            _f("IAM-002", "arn:aws:iam::1:role/build"),
+            _f("CB-002", self.PROJECT),
+            _f("IAM-002", self.ROLE),
         ])
         ac7 = [c for c in out if c.chain_id == "AC-007"]
         assert len(ac7) == 1
@@ -599,14 +721,95 @@ class TestChainAC007:
 
     def test_fires_with_cb002_plus_iam004(self):
         out = chains_pkg.evaluate([
-            _f("CB-002", "arn:aws:codebuild:.../proj"),
-            _f("IAM-004", "arn:aws:iam::1:role/build"),
+            _f("CB-002", self.PROJECT),
+            _f("IAM-004", self.ROLE),
         ])
         assert any(c.chain_id == "AC-007" for c in out)
 
     def test_does_not_fire_without_iam_leg(self):
-        out = chains_pkg.evaluate([_f("CB-002", "arn:aws:codebuild:.../proj")])
+        out = chains_pkg.evaluate([_f("CB-002", self.PROJECT)])
         assert not any(c.chain_id == "AC-007" for c in out)
+
+    def test_reachability_confirmed_when_service_role_matches_iam002(self):
+        # The privileged CodeBuild project runs AS the wildcard role.
+        role_anchor = ResourceAnchor(kind="iam_role", identity=self.ROLE)
+        out = chains_pkg.evaluate([
+            _f("CB-002", "my-project", resource_anchors=(role_anchor,)),
+            _f(
+                "IAM-002", "build",
+                resource_anchors=(role_anchor,),
+                confidence=Confidence.MEDIUM,
+            ),
+        ])
+        ac7 = [c for c in out if c.chain_id == "AC-007"]
+        assert len(ac7) == 1
+        chain = ac7[0]
+        assert chain.confirmed_reachable is True
+        assert self.ROLE in chain.reachability_note
+        assert chain.resources == [self.ROLE]
+        assert chain.confidence is Confidence.HIGH
+
+    def test_reachability_confirmed_unions_iam002_and_iam004_on_same_role(self):
+        # When ONE role triggers BOTH IAM-002 and IAM-004, the chain
+        # emits a single confirmed chain carrying both IAM legs (not
+        # two separate chains for the same role).
+        role_anchor = ResourceAnchor(kind="iam_role", identity=self.ROLE)
+        out = chains_pkg.evaluate([
+            _f("CB-002", "my-project", resource_anchors=(role_anchor,)),
+            _f("IAM-002", "build", resource_anchors=(role_anchor,)),
+            _f("IAM-004", "build", resource_anchors=(role_anchor,)),
+        ])
+        ac7 = [c for c in out if c.chain_id == "AC-007"]
+        assert len(ac7) == 1
+        chain = ac7[0]
+        assert chain.confirmed_reachable is True
+        assert set(chain.triggering_check_ids) == {"CB-002", "IAM-002", "IAM-004"}
+
+    def test_falls_back_when_service_role_differs_from_bad_role(self):
+        # Privileged project runs as role-A; IAM-002 fires on role-B.
+        a = ResourceAnchor(
+            kind="iam_role",
+            identity="arn:aws:iam::123456789012:role/role-A",
+        )
+        b = ResourceAnchor(
+            kind="iam_role",
+            identity="arn:aws:iam::123456789012:role/role-B",
+        )
+        out = chains_pkg.evaluate([
+            _f("CB-002", "my-project", resource_anchors=(a,)),
+            _f(
+                "IAM-002", "role-B",
+                resource_anchors=(b,),
+                confidence=Confidence.MEDIUM,
+            ),
+        ])
+        ac7 = [c for c in out if c.chain_id == "AC-007"]
+        assert len(ac7) == 1
+        chain = ac7[0]
+        assert chain.confirmed_reachable is False
+        assert chain.reachability_note == ""
+        assert chain.confidence is Confidence.MEDIUM
+
+    def test_confirmed_chain_includes_all_cb002_projects_on_same_role(self):
+        # Two CodeBuild projects share the same service role that
+        # IAM-002 flagged. One confirmed chain emits, but its
+        # triggering_findings must include BOTH CB-002 findings so
+        # the blast radius isn't understated.
+        role_anchor = ResourceAnchor(kind="iam_role", identity=self.ROLE)
+        cb_a = _f(
+            "CB-002", "project-a", resource_anchors=(role_anchor,),
+        )
+        cb_b = _f(
+            "CB-002", "project-b", resource_anchors=(role_anchor,),
+        )
+        iam = _f("IAM-002", "build", resource_anchors=(role_anchor,))
+        out = chains_pkg.evaluate([cb_a, cb_b, iam])
+        ac7 = [c for c in out if c.chain_id == "AC-007"]
+        assert len(ac7) == 1
+        triggers = ac7[0].triggering_findings
+        cb_triggers = [t for t in triggers if t.check_id == "CB-002"]
+        assert len(cb_triggers) == 2
+        assert {t.resource for t in cb_triggers} == {"project-a", "project-b"}
 
 
 class TestChainAC009:
@@ -796,6 +999,47 @@ class TestChainAC011:
             _f("K8S-020", self.K8S_RESOURCE, passed=True),
         ])
         assert not any(c.chain_id == "AC-011" for c in out)
+
+    def test_reachability_confirmed_when_pod_sa_matches_binding_subject(self):
+        # The hostPath pod runs as the same SA the cluster-admin
+        # binding targets — one execution context for node escape +
+        # API takeover.
+        sa = ResourceAnchor(kind="k8s_sa", identity="prod/build-runner")
+        out = chains_pkg.evaluate([
+            _f("K8S-013", self.K8S_RESOURCE, resource_anchors=(sa,)),
+            _f(
+                "K8S-020", self.K8S_RESOURCE,
+                resource_anchors=(sa,),
+                confidence=Confidence.MEDIUM,
+            ),
+        ])
+        ac11 = [c for c in out if c.chain_id == "AC-011"]
+        assert len(ac11) == 1
+        chain = ac11[0]
+        assert chain.confirmed_reachable is True
+        assert "prod/build-runner" in chain.reachability_note
+        assert chain.resources == ["prod/build-runner"]
+        assert chain.confidence is Confidence.HIGH
+
+    def test_falls_back_when_pod_sa_differs_from_binding_subject(self):
+        # hostPath pod runs as ``prod/app``; cluster-admin binding
+        # targets ``ops/admin``. Disjoint anchors → fallback.
+        a = ResourceAnchor(kind="k8s_sa", identity="prod/app")
+        b = ResourceAnchor(kind="k8s_sa", identity="ops/admin")
+        out = chains_pkg.evaluate([
+            _f("K8S-013", self.K8S_RESOURCE, resource_anchors=(a,)),
+            _f(
+                "K8S-020", self.K8S_RESOURCE,
+                resource_anchors=(b,),
+                confidence=Confidence.MEDIUM,
+            ),
+        ])
+        ac11 = [c for c in out if c.chain_id == "AC-011"]
+        assert len(ac11) == 1
+        chain = ac11[0]
+        assert chain.confirmed_reachable is False
+        assert chain.reachability_note == ""
+        assert chain.confidence is Confidence.MEDIUM
 
 
 class TestChainAC012:
@@ -1171,6 +1415,111 @@ class TestChainAC016:
         assert "credential-access" in chain.kill_chain_phase
         assert "privilege-escalation" in chain.kill_chain_phase
 
+    def test_reachability_confirmed_when_role_anchor_matches(self):
+        # ResourceAnchor phase 1 pilot: the workflow's
+        # ``role-to-assume`` resolves to the same ARN IAM-002 flagged
+        # for wildcard authority. Confirmed chain cites the role ARN
+        # as the resource and promotes confidence.
+        role_anchor = ResourceAnchor(kind="iam_role", identity=self.ROLE)
+        out = chains_pkg.evaluate([
+            _f("GHA-030", self.WF, resource_anchors=(role_anchor,)),
+            _f(
+                "IAM-002",
+                "ci-deploy",
+                resource_anchors=(role_anchor,),
+                confidence=Confidence.MEDIUM,
+            ),
+        ])
+        ac16 = [c for c in out if c.chain_id == "AC-016"]
+        assert len(ac16) == 1
+        chain = ac16[0]
+        assert chain.confirmed_reachable is True
+        assert self.ROLE in chain.reachability_note
+        assert chain.resources == [self.ROLE]
+        assert chain.confidence is Confidence.HIGH
+
+    def test_falls_back_to_cooccurrence_when_anchors_disjoint(self):
+        # GHA-030 names ``role-A``; IAM-002 fires on ``role-B``.
+        # No role-anchor intersection, so the chain falls back to
+        # the scan-level co-occurrence signal at min-confidence.
+        a = ResourceAnchor(
+            kind="iam_role",
+            identity="arn:aws:iam::123456789012:role/ci-A",
+        )
+        b = ResourceAnchor(
+            kind="iam_role",
+            identity="arn:aws:iam::123456789012:role/ci-B",
+        )
+        out = chains_pkg.evaluate([
+            _f("GHA-030", self.WF, resource_anchors=(a,)),
+            _f(
+                "IAM-002",
+                "ci-B",
+                resource_anchors=(b,),
+                confidence=Confidence.MEDIUM,
+            ),
+        ])
+        ac16 = [c for c in out if c.chain_id == "AC-016"]
+        assert len(ac16) == 1
+        chain = ac16[0]
+        assert chain.confirmed_reachable is False
+        assert chain.reachability_note == ""
+        assert chain.confidence is Confidence.MEDIUM
+
+    def test_one_confirmed_chain_per_matched_role(self):
+        # Two workflows each name a different wildcard role; IAM-002
+        # fires on both. Expect two confirmed chains, one per role.
+        role_a = ResourceAnchor(
+            kind="iam_role",
+            identity="arn:aws:iam::123456789012:role/ci-A",
+        )
+        role_b = ResourceAnchor(
+            kind="iam_role",
+            identity="arn:aws:iam::123456789012:role/ci-B",
+        )
+        out = chains_pkg.evaluate([
+            _f(
+                "GHA-030", ".github/workflows/a.yml",
+                resource_anchors=(role_a,),
+            ),
+            _f(
+                "GHA-030", ".github/workflows/b.yml",
+                resource_anchors=(role_b,),
+            ),
+            _f("IAM-002", "ci-A", resource_anchors=(role_a,)),
+            _f("IAM-002", "ci-B", resource_anchors=(role_b,)),
+        ])
+        ac16 = [c for c in out if c.chain_id == "AC-016"]
+        assert len(ac16) == 2
+        confirmed = [c for c in ac16 if c.confirmed_reachable]
+        assert len(confirmed) == 2
+        assert {c.resources[0] for c in confirmed} == {
+            role_a.identity, role_b.identity,
+        }
+
+    def test_fallback_fans_out_one_chain_per_unmatched_pair(self):
+        # Two GHA-030 workflows and three IAM-002 roles, none of which
+        # share role-ARN anchors → six fallback chains (one per pair),
+        # not one composite merging unrelated legs. Each chain's
+        # triggering_findings names exactly the (workflow, role) pair
+        # that composed it.
+        out = chains_pkg.evaluate([
+            _f("GHA-030", ".github/workflows/a.yml"),
+            _f("GHA-030", ".github/workflows/b.yml"),
+            _f("IAM-002", "role-1"),
+            _f("IAM-002", "role-2"),
+            _f("IAM-002", "role-3"),
+        ])
+        ac16 = [c for c in out if c.chain_id == "AC-016"]
+        # 2 workflows × 3 roles = 6 unmatched-pair chains.
+        assert len(ac16) == 6
+        assert all(not c.confirmed_reachable for c in ac16)
+        # Each chain carries exactly two triggering findings (its pair).
+        assert all(len(c.triggering_findings) == 2 for c in ac16)
+        # Every (workflow, role) cell is covered exactly once.
+        pairs = {tuple(sorted(c.resources)) for c in ac16}
+        assert len(pairs) == 6
+
 
 class TestChainAC017:
     """AC-017 — Build cache poisoning that lands on a mutable ECR tag."""
@@ -1213,6 +1562,54 @@ class TestChainAC017:
             _f("ECR-002", self.REPO, confidence=Confidence.MEDIUM),
         ])
         chain = next(c for c in out if c.chain_id == "AC-017")
+        assert chain.confidence is Confidence.MEDIUM
+
+    def test_reachability_confirmed_when_repo_uri_matches(self):
+        # The workflow text references the same ECR repo URI that
+        # ECR-002 flagged as mutable. Tight reachability claim.
+        uri = "123456789012.dkr.ecr.us-east-1.amazonaws.com/myapp"
+        repo_anchor = ResourceAnchor(kind="ecr_repo", identity=uri)
+        out = chains_pkg.evaluate([
+            _f("GHA-011", self.WF, resource_anchors=(repo_anchor,)),
+            _f(
+                "ECR-002", self.REPO,
+                resource_anchors=(repo_anchor,),
+                confidence=Confidence.MEDIUM,
+            ),
+        ])
+        ac17 = [c for c in out if c.chain_id == "AC-017"]
+        assert len(ac17) == 1
+        chain = ac17[0]
+        assert chain.confirmed_reachable is True
+        assert uri in chain.reachability_note
+        assert chain.resources == [uri]
+        assert chain.confidence is Confidence.HIGH
+
+    def test_falls_back_to_cooccurrence_when_repos_disjoint(self):
+        # Workflow pushes to repo-A; ECR-002 flagged repo-B as
+        # mutable. Co-occurrence fallback preserves the legacy
+        # "cache poisoning + mutable tag somewhere" signal.
+        a = ResourceAnchor(
+            kind="ecr_repo",
+            identity="123456789012.dkr.ecr.us-east-1.amazonaws.com/repo-A",
+        )
+        b = ResourceAnchor(
+            kind="ecr_repo",
+            identity="123456789012.dkr.ecr.us-east-1.amazonaws.com/repo-B",
+        )
+        out = chains_pkg.evaluate([
+            _f("GHA-011", self.WF, resource_anchors=(a,)),
+            _f(
+                "ECR-002", "repo-B",
+                resource_anchors=(b,),
+                confidence=Confidence.MEDIUM,
+            ),
+        ])
+        ac17 = [c for c in out if c.chain_id == "AC-017"]
+        assert len(ac17) == 1
+        chain = ac17[0]
+        assert chain.confirmed_reachable is False
+        assert chain.reachability_note == ""
         assert chain.confidence is Confidence.MEDIUM
 
 
@@ -1354,6 +1751,64 @@ class TestChainAC019:
         chain = next(c for c in out if c.chain_id == "AC-019")
         assert chain.confidence is Confidence.LOW
 
+    def test_same_role_emits_role_specific_narrative_but_stays_unconfirmed(self):
+        # The LMB-003 Lambda's execution role IS the IAM-004
+        # wildcard-PassRole role. Same-role tightening produces a
+        # per-role chain whose narrative cites the role-equality,
+        # but ``confirmed_reachable`` stays False and confidence
+        # stays at min_leg: LMB-003 only proves a credential-shaped
+        # literal is in the env vars, not that the leaked value is
+        # an AWS credential for THIS role.
+        role_anchor = ResourceAnchor(kind="iam_role", identity=self.ROLE)
+        fn_anchor = ResourceAnchor(kind="lambda_fn", identity=self.LAMBDA)
+        out = chains_pkg.evaluate([
+            _f(
+                "LMB-003", "my-fn",
+                resource_anchors=(fn_anchor, role_anchor),
+            ),
+            _f(
+                "IAM-004", "ci-deploy",
+                resource_anchors=(role_anchor,),
+                confidence=Confidence.MEDIUM,
+            ),
+        ])
+        ac19 = [c for c in out if c.chain_id == "AC-019"]
+        assert len(ac19) == 1
+        chain = ac19[0]
+        assert chain.confirmed_reachable is False
+        assert self.ROLE in chain.reachability_note
+        assert "role-equality only" in chain.reachability_note
+        assert chain.resources == [self.ROLE]
+        # Weakest-leg confidence propagates; HIGH would overclaim.
+        assert chain.confidence is Confidence.MEDIUM
+
+    def test_falls_back_when_execution_role_differs_from_passrole(self):
+        # The Lambda runs as ``role-A``; the PassRole-* role is
+        # ``role-B``. Co-occurrence fallback at min confidence.
+        a = ResourceAnchor(
+            kind="iam_role",
+            identity="arn:aws:iam::123456789012:role/role-A",
+        )
+        b = ResourceAnchor(
+            kind="iam_role",
+            identity="arn:aws:iam::123456789012:role/role-B",
+        )
+        fn = ResourceAnchor(kind="lambda_fn", identity=self.LAMBDA)
+        out = chains_pkg.evaluate([
+            _f("LMB-003", "my-fn", resource_anchors=(fn, a)),
+            _f(
+                "IAM-004", "ci-deploy",
+                resource_anchors=(b,),
+                confidence=Confidence.MEDIUM,
+            ),
+        ])
+        ac19 = [c for c in out if c.chain_id == "AC-019"]
+        assert len(ac19) == 1
+        chain = ac19[0]
+        assert chain.confirmed_reachable is False
+        assert chain.reachability_note == ""
+        assert chain.confidence is Confidence.MEDIUM
+
 
 class TestChainAC020:
     """AC-020 — Tekton hostPath build workload meets cluster-admin RBAC."""
@@ -1405,6 +1860,42 @@ class TestChainAC020:
         assert set(chain.resources) == {self.TASK, self.BINDING}
         assert len(chain.resources) == len(set(chain.resources))
 
+    def test_reachability_confirmed_when_task_sa_matches_binding_subject(self):
+        # Task pins podTemplate.serviceAccountName to the same SA the
+        # cluster-admin binding targets.
+        sa = ResourceAnchor(kind="k8s_sa", identity="build/build-runner")
+        out = chains_pkg.evaluate([
+            _f("TKN-004", self.TASK, resource_anchors=(sa,)),
+            _f(
+                "K8S-020", self.BINDING,
+                resource_anchors=(sa,),
+                confidence=Confidence.MEDIUM,
+            ),
+        ])
+        ac20 = [c for c in out if c.chain_id == "AC-020"]
+        assert len(ac20) == 1
+        chain = ac20[0]
+        assert chain.confirmed_reachable is True
+        assert "build/build-runner" in chain.reachability_note
+        assert chain.confidence is Confidence.HIGH
+
+    def test_falls_back_when_task_has_no_pinned_sa(self):
+        # TKN-004 emits no anchors when the Task doesn't pin its SA
+        # (the common case). Co-occurrence fallback applies.
+        out = chains_pkg.evaluate([
+            _f("TKN-004", self.TASK),  # no resource_anchors
+            _f(
+                "K8S-020", self.BINDING,
+                confidence=Confidence.MEDIUM,
+            ),
+        ])
+        ac20 = [c for c in out if c.chain_id == "AC-020"]
+        assert len(ac20) == 1
+        chain = ac20[0]
+        assert chain.confirmed_reachable is False
+        assert chain.reachability_note == ""
+        assert chain.confidence is Confidence.MEDIUM
+
 
 class TestChainAC021:
     """AC-021 — Argo default-SA workflow lands on a default-SA RoleBinding."""
@@ -1454,6 +1945,45 @@ class TestChainAC021:
         ])
         chain = next(c for c in out if c.chain_id == "AC-021")
         assert chain.confidence is Confidence.LOW
+
+    def test_reachability_confirmed_when_workflow_ns_matches_binding_ns(self):
+        # Workflow runs as ``prod/default`` and the binding grants to
+        # ``prod/default`` — single-namespace single-step privesc.
+        sa = ResourceAnchor(kind="k8s_sa", identity="prod/default")
+        out = chains_pkg.evaluate([
+            _f("ARGO-003", self.WF, resource_anchors=(sa,)),
+            _f(
+                "K8S-029", self.BINDING,
+                resource_anchors=(sa,),
+                confidence=Confidence.MEDIUM,
+            ),
+        ])
+        ac21 = [c for c in out if c.chain_id == "AC-021"]
+        assert len(ac21) == 1
+        chain = ac21[0]
+        assert chain.confirmed_reachable is True
+        assert "prod/default" in chain.reachability_note
+        assert chain.confidence is Confidence.HIGH
+
+    def test_falls_back_when_workflow_and_binding_in_different_namespaces(self):
+        # ARGO-003 in ``prod``, K8S-029 in ``ops`` — chain remains a
+        # hygiene prompt at the lower confidence.
+        a = ResourceAnchor(kind="k8s_sa", identity="prod/default")
+        b = ResourceAnchor(kind="k8s_sa", identity="ops/default")
+        out = chains_pkg.evaluate([
+            _f("ARGO-003", self.WF, resource_anchors=(a,)),
+            _f(
+                "K8S-029", self.BINDING,
+                resource_anchors=(b,),
+                confidence=Confidence.MEDIUM,
+            ),
+        ])
+        ac21 = [c for c in out if c.chain_id == "AC-021"]
+        assert len(ac21) == 1
+        chain = ac21[0]
+        assert chain.confirmed_reachable is False
+        assert chain.reachability_note == ""
+        assert chain.confidence is Confidence.MEDIUM
 
 
 class TestChainAC022:
@@ -2150,6 +2680,110 @@ class TestChainAC027:
         assert len(ac27) == 2
         assert {c.resources[0] for c in ac27} == {self.DF, self.OTHER_DF}
 
+
+class TestChainAC029:
+    """AC-029 — Untrusted trigger reaches a long-lived publish credential."""
+
+    WF = ".github/workflows/release.yml"
+
+    def test_fires_with_trigger_credential_integrity_on_same_workflow(self):
+        out = chains_pkg.evaluate([
+            _f("GHA-002", self.WF),
+            _f("GHA-050", self.WF),
+            _f("GHA-021", self.WF),
+        ])
+        ac29 = [c for c in out if c.chain_id == "AC-029"]
+        assert len(ac29) == 1
+        assert ac29[0].severity is Severity.CRITICAL
+        assert "T1195.002" in ac29[0].mitre_attack
+        assert "T1606" in ac29[0].mitre_attack
+
+    def test_fires_with_any_of_each_leg(self):
+        # GHA-013 (issue_comment) + GHA-005 (long-lived AWS key) +
+        # GHA-029 (integrity bypass) is a different combination of
+        # the same three-leg shape; the chain should still fire.
+        out = chains_pkg.evaluate([
+            _f("GHA-013", self.WF),
+            _f("GHA-005", self.WF),
+            _f("GHA-029", self.WF),
+        ])
+        assert any(c.chain_id == "AC-029" for c in out)
+
+    def test_does_not_fire_with_only_two_legs(self):
+        # Trigger + credential without the integrity leg is bad but
+        # not the AC-029 lane.
+        out = chains_pkg.evaluate([
+            _f("GHA-002", self.WF),
+            _f("GHA-050", self.WF),
+        ])
+        assert not any(c.chain_id == "AC-029" for c in out)
+
+    def test_does_not_fire_when_legs_on_different_workflows(self):
+        out = chains_pkg.evaluate([
+            _f("GHA-002", ".github/workflows/a.yml"),
+            _f("GHA-050", ".github/workflows/b.yml"),
+            _f("GHA-021", ".github/workflows/c.yml"),
+        ])
+        assert not any(c.chain_id == "AC-029" for c in out)
+
+    def test_reachability_confirmed_when_anchor_jobs_intersect(self):
+        # One job carries all three legs — the precise Ultralytics /
+        # s1ngularity execution context.
+        out = chains_pkg.evaluate([
+            _f("GHA-002", self.WF, job_anchors=("release",)),
+            _f("GHA-050", self.WF, job_anchors=("release",)),
+            _f(
+                "GHA-021",
+                self.WF,
+                job_anchors=("release",),
+                confidence=Confidence.MEDIUM,
+            ),
+        ])
+        ac29 = next(c for c in out if c.chain_id == "AC-029")
+        assert ac29.confirmed_reachable is True
+        assert "release" in ac29.reachability_note
+        assert ac29.confidence is Confidence.HIGH
+
+    def test_reachability_unconfirmed_when_jobs_disjoint(self):
+        # PR-head checkout in ``test``, publish credential in ``release``,
+        # lockfile miss in ``build`` — three real findings on one
+        # workflow but no shared execution context for the worm shape.
+        out = chains_pkg.evaluate([
+            _f("GHA-002", self.WF, job_anchors=("test",)),
+            _f("GHA-050", self.WF, job_anchors=("release",)),
+            _f(
+                "GHA-021",
+                self.WF,
+                job_anchors=("build",),
+                confidence=Confidence.MEDIUM,
+            ),
+        ])
+        ac29 = next(c for c in out if c.chain_id == "AC-029")
+        assert ac29.confirmed_reachable is False
+        assert ac29.reachability_note == ""
+        assert ac29.confidence is Confidence.MEDIUM
+
+    def test_anchors_unioned_across_duplicate_findings_per_check(self):
+        # Two distinct GHA-013 findings on the same workflow file,
+        # each anchored to a different job. The previous dedup-by-
+        # check_id code kept only the first and missed ``release``,
+        # so the three-leg intersection couldn't confirm. Unioning
+        # across duplicate findings recovers the shared job.
+        out = chains_pkg.evaluate([
+            _f("GHA-013", self.WF, job_anchors=("test",)),
+            _f("GHA-013", self.WF, job_anchors=("release",)),
+            _f("GHA-050", self.WF, job_anchors=("release",)),
+            _f("GHA-021", self.WF, job_anchors=("release",)),
+        ])
+        ac29 = next(c for c in out if c.chain_id == "AC-029")
+        assert ac29.confirmed_reachable is True
+        assert "release" in ac29.reachability_note
+        # Every per-check finding should appear in the chain's
+        # triggering_findings (both GHA-013 entries, not just one).
+        gha013_triggers = [
+            t for t in ac29.triggering_findings if t.check_id == "GHA-013"
+        ]
+        assert len(gha013_triggers) == 2
 
 
 # ── Gate integration ─────────────────────────────────────────────────

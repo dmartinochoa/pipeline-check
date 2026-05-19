@@ -1,8 +1,9 @@
 """DF-001, `FROM` not pinned to ``@sha256:<digest>``."""
 from __future__ import annotations
 
+from ..._primitives.anchors import oci_image
 from ..._primitives.image_pinning import PinKind, classify
-from ...base import Finding, Location, Severity
+from ...base import Finding, Location, ResourceAnchor, Severity
 from ...rule import Rule
 from ..base import Dockerfile, from_refs
 
@@ -50,6 +51,8 @@ RULE = Rule(
 def check(df: Dockerfile) -> Finding:
     unpinned: list[str] = []
     locations: list[Location] = []
+    anchors: list[ResourceAnchor] = []
+    seen_identities: set[str] = set()
     for line_no, ref in from_refs(df):
         kind = classify(ref)
         if kind is PinKind.DIGEST:
@@ -58,6 +61,13 @@ def check(df: Dockerfile) -> Finding:
         locations.append(Location(
             path=df.path, start_line=line_no, end_line=line_no,
         ))
+        # ResourceAnchor phase 1: XPC-002 intersects DF-001 and
+        # K8S-001 on the canonical ``oci_image`` identity to confirm
+        # the same image flows from build base to runtime workload.
+        anchor = oci_image(ref)
+        if anchor is not None and anchor.identity not in seen_identities:
+            seen_identities.add(anchor.identity)
+            anchors.append(anchor)
     passed = not unpinned
     desc = (
         "Every ``FROM`` reference is pinned by sha256 digest."
@@ -71,4 +81,5 @@ def check(df: Dockerfile) -> Finding:
         resource=df.path, description=desc,
         recommendation=RULE.recommendation, passed=passed,
         locations=locations,
+        resource_anchors=tuple(anchors) if not passed else (),
     )

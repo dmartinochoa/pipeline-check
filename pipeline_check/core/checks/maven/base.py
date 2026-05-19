@@ -1,14 +1,25 @@
 """Maven context and base check.
 
-Loads ``pom.xml`` documents from disk and exposes parsed
+Loads ``pom.xml`` / ``settings.xml`` / ``build.gradle`` /
+``build.gradle.kts`` documents from disk and exposes parsed
 :class:`PomFile` objects to per-rule modules. Rule modules subclass-
 free: each rule's ``check()`` takes a ``PomFile`` and returns a
 ``Finding``; the orchestrator runs every rule against every loaded
 file.
 
-Parser scope
-------------
-The parser handles the four shapes the rule pack reasons about:
+Gradle files are read by a regex-based extractor
+(:func:`_parse_gradle`) that emits the same ``PomFile`` shape from
+``"group:artifact:version"`` coordinate strings, ``group:`` /
+``name:`` / ``version:`` map-form deps, and ``maven { url ... }``
+repository blocks. Existing ``MVN-NNN`` rules apply to Gradle
+projects without per-rule changes. Variable substitution
+(``${junitVersion}``) is left unresolved for the first cut — this
+matches the limitation Gradle-scanning tools commonly accept and
+keeps the parser deterministic without a full DSL evaluation.
+
+Parser scope (POM)
+------------------
+The XML parser handles the four shapes the rule pack reasons about:
 
 * ``<dependencies><dependency>...</dependency></dependencies>``,
   including ``<dependencyManagement>``.
@@ -36,6 +47,14 @@ from ..base import BaseCheck
 #: config that carries ``<mirrors>`` and ``<servers>`` entries.
 MANIFEST_NAMES: frozenset[str] = frozenset({"pom.xml"})
 SETTINGS_NAMES: frozenset[str] = frozenset({"settings.xml"})
+#: Gradle build script filenames. Both the Groovy DSL
+#: (``build.gradle``) and Kotlin DSL (``build.gradle.kts``) are
+#: recognized; the same regex-based extractor handles both because
+#: the coordinate-string and ``maven {}`` shapes are syntactically
+#: identical between the two dialects.
+GRADLE_NAMES: frozenset[str] = frozenset({
+    "build.gradle", "build.gradle.kts",
+})
 
 #: Default Maven 4 POM namespace. Stripped during parsing so rule code
 #: can match unprefixed tag names.
@@ -138,7 +157,7 @@ class MavenContext:
         if root.is_file():
             candidates = [root]
         else:
-            names = MANIFEST_NAMES | SETTINGS_NAMES
+            names = MANIFEST_NAMES | SETTINGS_NAMES | GRADLE_NAMES
             candidates = sorted(
                 p for p in root.rglob("*")
                 if p.is_file()
@@ -146,6 +165,8 @@ class MavenContext:
                 # Skip vendored copies / build outputs.
                 and "target" not in p.parts
                 and ".m2" not in p.parts
+                and "build" not in p.parts
+                and ".gradle" not in p.parts
             )
         files: list[PomFile] = []
         warnings: list[str] = []
@@ -157,11 +178,14 @@ class MavenContext:
                 warnings.append(f"{f}: read error: {exc}")
                 skipped += 1
                 continue
-            pf = _parse_pom(str(f), text)
-            if not pf.parsed_ok:
-                warnings.append(f"{f}: XML parse error")
-                skipped += 1
-                continue
+            if f.name in GRADLE_NAMES:
+                pf = _parse_gradle(str(f), text)
+            else:
+                pf = _parse_pom(str(f), text)
+                if not pf.parsed_ok:
+                    warnings.append(f"{f}: XML parse error")
+                    skipped += 1
+                    continue
             files.append(pf)
         ctx = cls(files)
         ctx.files_skipped = skipped
@@ -371,6 +395,183 @@ def _parse_mirror(elem: ET.Element, text: str) -> MavenMirror:
     )
 
 
+# ── Gradle parser ──────────────────────────────────────────────────────
+
+
+# A Maven coordinate inside a quoted string:
+#   "org.apache.commons:commons-text:1.10.0"
+#   'org.apache.logging.log4j:log4j-core:2.14.1'
+# Captures group:artifact:version. Trailing ``:classifier`` /
+# ``@type`` (sources, javadoc, war) is consumed but discarded so the
+# version stays clean. The version body accepts letters, digits,
+# dots, hyphens, underscores, plus ``+`` and ``[``/``]``/``(``/``)``
+# / ``,`` so MVN-001 still sees the floating-range shape and flags
+# it; ``${prop}`` is similarly preserved.
+_GRADLE_COORD_RE = re.compile(
+    r"""(?P<q>['"])
+        (?P<group>[\w.+-]+)
+        :
+        (?P<artifact>[\w.+-]+)
+        :
+        (?P<version>[\w.+\-${}\[\](),]+)
+        (?:[:@][\w-]+)?
+        (?P=q)
+    """,
+    re.VERBOSE,
+)
+
+# Map-form dep declaration:
+#   group: 'X', name: 'Y', version: 'Z'
+#   group = "X", name = "Y", version = "Z"   (Kotlin DSL)
+# All three fields are required; order-insensitive within the
+# matched window. Captures group / artifact / version separately.
+_GRADLE_MAP_DEP_RE = re.compile(
+    r"""group\s*[:=]\s*(?P<gq>['"])(?P<group>[\w.+-]+)(?P=gq)
+        \s*,?\s*
+        name\s*[:=]\s*(?P<aq>['"])(?P<artifact>[\w.+-]+)(?P=aq)
+        \s*,?\s*
+        version\s*[:=]\s*(?P<vq>['"])(?P<version>[\w.+\-${}\[\](),]+)(?P=vq)
+    """,
+    re.VERBOSE,
+)
+
+# Maven repository URL inside a ``maven { ... }`` block. Three real-
+# world shapes:
+#   maven { url 'http://example.com/repo' }              (Groovy)
+#   maven { url = 'http://example.com/repo' }
+#   maven { url = uri("http://example.com/repo") }       (Kotlin DSL)
+#   maven { setUrl("http://example.com/repo") }
+# We match ``url[\s=]+(uri\()?(['"])URL\2\)?`` inside a ``maven``
+# block; the trailing optional ``)`` from the ``uri(...)`` wrapper
+# is allowed but not required.
+_GRADLE_MAVEN_URL_RE = re.compile(
+    r"""maven\s*[({]
+        [^}]*?
+        (?:url\s*=?\s*|setUrl\s*\(\s*)
+        (?:uri\s*\(\s*)?
+        (?P<q>['"])
+        (?P<url>[^\s'"]+)
+        (?P=q)
+    """,
+    re.VERBOSE | re.DOTALL,
+)
+
+# Single-arg ``maven("URL")`` shorthand. Some Gradle Kotlin scripts
+# pass the URL directly as the function argument instead of inside a
+# block.
+_GRADLE_MAVEN_SHORT_RE = re.compile(
+    r"""maven\s*\(\s*
+        (?P<q>['"])
+        (?P<url>[^\s'"]+)
+        (?P=q)
+        \s*\)
+    """,
+    re.VERBOSE,
+)
+
+
+def _line_at(text: str, offset: int) -> int:
+    """1-based line number for a byte offset into *text*."""
+    if offset < 0:
+        return 1
+    return text[:offset].count("\n") + 1
+
+
+def _parse_gradle(path: str, text: str) -> PomFile:
+    """Parse a ``build.gradle`` / ``build.gradle.kts`` body.
+
+    Returns a :class:`PomFile` whose ``dependencies`` carry every
+    matched coordinate + map-form dep (all marked ``managed=False``
+    since Gradle has no direct analog of Maven's
+    ``<dependencyManagement>`` lift-out — version catalogs / BOMs
+    are a follow-up), and whose ``repositories`` carry every
+    ``maven { url ... }`` URL found in the file. Built-in repo
+    shorthand (``mavenCentral()``, ``google()``, ``gradlePluginPortal()``)
+    is omitted from ``repositories`` because the rule pack doesn't
+    flag them and their URLs are well-known.
+
+    ``parsed_ok`` is always True: the regex extractor never fails,
+    a file with no matches simply returns an empty PomFile.
+    """
+    dependencies: list[MavenDependency] = []
+    repositories: list[MavenRepository] = []
+    seen_coords: set[tuple[str, str, str | None]] = set()
+    seen_urls: set[str] = set()
+
+    for m in _GRADLE_COORD_RE.finditer(text):
+        coord = (
+            m.group("group"), m.group("artifact"), m.group("version"),
+        )
+        if coord in seen_coords:
+            continue
+        seen_coords.add(coord)
+        dependencies.append(MavenDependency(
+            group_id=coord[0],
+            artifact_id=coord[1],
+            version=coord[2],
+            scope="compile",
+            managed=False,
+            line_no=_line_at(text, m.start()),
+        ))
+
+    for m in _GRADLE_MAP_DEP_RE.finditer(text):
+        coord = (
+            m.group("group"), m.group("artifact"), m.group("version"),
+        )
+        if coord in seen_coords:
+            continue
+        seen_coords.add(coord)
+        dependencies.append(MavenDependency(
+            group_id=coord[0],
+            artifact_id=coord[1],
+            version=coord[2],
+            scope="compile",
+            managed=False,
+            line_no=_line_at(text, m.start()),
+        ))
+
+    for m in _GRADLE_MAVEN_URL_RE.finditer(text):
+        url = m.group("url")
+        if url in seen_urls:
+            continue
+        seen_urls.add(url)
+        repositories.append(MavenRepository(
+            id="",
+            url=url,
+            releases_enabled=True,
+            snapshots_enabled=False,
+            checksum_policy=None,
+            section="repositories",
+            line_no=_line_at(text, m.start()),
+        ))
+
+    for m in _GRADLE_MAVEN_SHORT_RE.finditer(text):
+        url = m.group("url")
+        if url in seen_urls:
+            continue
+        seen_urls.add(url)
+        repositories.append(MavenRepository(
+            id="",
+            url=url,
+            releases_enabled=True,
+            snapshots_enabled=False,
+            checksum_policy=None,
+            section="repositories",
+            line_no=_line_at(text, m.start()),
+        ))
+
+    return PomFile(
+        path=path,
+        text=text,
+        is_settings=False,
+        dependencies=tuple(dependencies),
+        repositories=tuple(repositories),
+        mirrors=(),
+        properties={},
+        parsed_ok=True,
+    )
+
+
 # ── Helpers shared by multiple rule modules ────────────────────────────
 
 
@@ -396,6 +597,7 @@ def iter_real_dependencies(pom: PomFile) -> list[MavenDependency]:
 
 
 __all__ = [
+    "GRADLE_NAMES",
     "MANIFEST_NAMES",
     "MavenBaseCheck",
     "MavenContext",

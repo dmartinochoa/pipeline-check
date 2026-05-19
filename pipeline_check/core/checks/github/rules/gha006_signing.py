@@ -3,6 +3,7 @@ from __future__ import annotations
 
 from typing import Any
 
+from ..._primitives.oci_refs import extract_image_anchors_from_workflow
 from ...base import Finding, Severity, has_signing, produces_artifacts
 from ...rule import Rule
 from ..base import iter_jobs, iter_steps
@@ -85,8 +86,19 @@ def check(path: str, doc: dict[str, Any]) -> Finding:
         "notation). Unsigned artifacts cannot be verified downstream, "
         "so a tampered build is indistinguishable from a legitimate one."
     )
+    # ResourceAnchor phase 1: emit oci_image anchors for every image
+    # this workflow tags / pushes (docker/build-push-action ``tags:``,
+    # ``docker push`` / ``docker tag`` commands in ``run:`` blocks).
+    # AC-005 intersects these with deploy-side image references on
+    # the canonical ``oci_image`` kind, confirming the unsigned build
+    # IS the image that lands in production. Only emit on a failing
+    # finding — a workflow that DOES sign carries no chain risk.
+    anchors = (
+        extract_image_anchors_from_workflow(doc) if not passed else ()
+    )
     return Finding(
         check_id=RULE.id, title=RULE.title, severity=RULE.severity,
         resource=path, description=desc,
         recommendation=RULE.recommendation, passed=passed,
+        resource_anchors=anchors,
     )

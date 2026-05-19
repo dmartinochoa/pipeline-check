@@ -4,7 +4,8 @@ from __future__ import annotations
 import re
 from typing import Any
 
-from ...base import Finding, Severity
+from ..._primitives.oci_refs import extract_image_anchors_from_strings
+from ...base import Finding, ResourceAnchor, Severity
 from ...rule import Rule
 from ..base import iter_jobs, iter_steps
 
@@ -66,6 +67,7 @@ def _job_has_deploy_commands(job: dict[str, Any]) -> bool:
 
 def check(path: str, doc: dict[str, Any]) -> Finding:
     ungated: list[str] = []
+    ungated_jobs: list[dict[str, Any]] = []
     for job_loc, job in iter_jobs(doc):
         is_deploy = isinstance(job.get("deployment"), str)
         if not is_deploy:
@@ -79,6 +81,7 @@ def check(path: str, doc: dict[str, Any]) -> Finding:
             continue
         if not job.get("environment"):
             ungated.append(job_loc)
+            ungated_jobs.append(job)
     passed = not ungated
     desc = (
         "Every deployment job binds an `environment`."
@@ -86,8 +89,21 @@ def check(path: str, doc: dict[str, Any]) -> Finding:
         f"{len(ungated)} deployment job(s) have no `environment:` "
         f"binding: {', '.join(ungated)}."
     )
+    # ResourceAnchor phase 1 (AC-005): emit oci_image anchors for
+    # images the UNGATED deployment jobs reference. Scoping to
+    # ungated jobs only so a gated job's image in the same
+    # pipeline doesn't lend its identity to an AC-005
+    # confirmation. Only on failing finding.
+    anchors: tuple[ResourceAnchor, ...] = ()
+    if not passed:
+        seen: dict[str, ResourceAnchor] = {}
+        for job in ungated_jobs:
+            for a in extract_image_anchors_from_strings(job):
+                seen.setdefault(a.identity, a)
+        anchors = tuple(seen.values())
     return Finding(
         check_id=RULE.id, title=RULE.title, severity=RULE.severity,
         resource=path, description=desc,
         recommendation=RULE.recommendation, passed=passed,
+        resource_anchors=anchors,
     )

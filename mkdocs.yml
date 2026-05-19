@@ -194,6 +194,7 @@ nav:
   - Threat model: threatmodel.md
   - Attack chains: attack_chains.md
   - MCP: mcp.md
+  - VS Code extension: vscode.md
   - Contributing:
       - Architecture: architecture.md
       - Adding a rule: writing_a_rule.md

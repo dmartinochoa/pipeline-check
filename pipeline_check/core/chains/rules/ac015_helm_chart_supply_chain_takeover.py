@@ -34,6 +34,13 @@ The chain mirrors AC-009 ("Supply Chain Repo Poisoning" for GitHub
 Actions) and AC-011 ("Kubernetes Cluster Takeover via hostPath +
 cluster-admin") in shape: each leg is independently bad; the chain
 captures the combination's removed-every-defense character.
+
+Reachability-model note: this chain stays on chart-file
+co-occurrence (the legs all fire on the same Chart.yaml /
+requirements.yaml). There's no per-job or per-step structure
+within a Helm chart to anchor on; file-level co-location IS the
+reachability claim, so the ``job_anchors`` intersection pattern
+does not apply.
 """
 from __future__ import annotations
 

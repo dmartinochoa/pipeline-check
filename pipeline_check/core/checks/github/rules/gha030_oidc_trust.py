@@ -3,7 +3,8 @@ from __future__ import annotations
 
 from typing import Any
 
-from ...base import Finding, Severity
+from ..._primitives.anchors import iam_role, iam_role_name
+from ...base import Finding, ResourceAnchor, Severity
 from ...rule import Rule
 from ..base import iter_jobs, iter_steps
 
@@ -51,6 +52,45 @@ def _job_invokes_oidc_step(job: dict[str, Any]) -> bool:
     return False
 
 
+def _job_aws_role_anchors(job: dict[str, Any]) -> list[ResourceAnchor]:
+    """Extract canonical IAM role anchors from this job's AWS OIDC step(s).
+
+    Walks every ``aws-actions/configure-aws-credentials`` step in the
+    job and reads its ``with.role-to-assume``. Full ARNs become
+    ``iam_role`` anchors that cross-provider chains (AC-016) can
+    intersect with IAM-002's role-ARN anchors; bare role names emit
+    the looser ``iam_role_name`` kind, which won't fuzzy-match into
+    ``iam_role`` (canonicalizer carve-out) and falls back to
+    co-occurrence in the chain engine. Templated values
+    (``${{ secrets.ROLE_ARN }}``, ``${{ vars.* }}``) can't be
+    resolved at scan time, so they produce no anchor — better to
+    emit nothing than a placeholder that silently misses.
+    """
+    anchors: list[ResourceAnchor] = []
+    for step in iter_steps(job):
+        uses = step.get("uses")
+        if not isinstance(uses, str):
+            continue
+        action = uses.split("@", 1)[0]
+        if not action.startswith("aws-actions/configure-aws-credentials"):
+            continue
+        with_block = step.get("with") or {}
+        if not isinstance(with_block, dict):
+            continue
+        raw = with_block.get("role-to-assume")
+        if not isinstance(raw, str):
+            continue
+        raw = raw.strip()
+        if not raw or "${{" in raw:
+            # Templated reference; the live value is only known at
+            # runtime, so we can't canonicalize it.
+            continue
+        built = iam_role(raw) or iam_role_name(raw)
+        if built is not None:
+            anchors.append(built)
+    return anchors
+
+
 RULE = Rule(
     id="GHA-030",
     title="OIDC token requested without environment-protected job",
@@ -76,6 +116,11 @@ RULE = Rule(
 
 def check(path: str, doc: dict[str, Any]) -> Finding:
     offenders: list[str] = []
+    # ResourceAnchor phase 1: collect the IAM role ARNs the offending
+    # jobs assume so AC-016 can intersect with IAM-002's role anchors.
+    # Order-preserving dict de-dupes when multiple offending jobs
+    # name the same role.
+    role_anchors: dict[str, ResourceAnchor] = {}
     for job_id, job in iter_jobs(doc):
         if not _job_has_id_token(job, doc):
             continue
@@ -84,6 +129,8 @@ def check(path: str, doc: dict[str, Any]) -> Finding:
         if "environment" in job:
             continue
         offenders.append(job_id)
+        for anchor in _job_aws_role_anchors(job):
+            role_anchors[anchor.identity] = anchor
     passed = not offenders
     desc = (
         "Every job that requests an OIDC token to assume a cloud role "
@@ -100,4 +147,5 @@ def check(path: str, doc: dict[str, Any]) -> Finding:
         check_id=RULE.id, title=RULE.title, severity=RULE.severity,
         resource=path, description=desc,
         recommendation=RULE.recommendation, passed=passed,
+        resource_anchors=tuple(role_anchors.values()),
     )

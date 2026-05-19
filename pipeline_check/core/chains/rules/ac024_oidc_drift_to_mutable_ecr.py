@@ -36,6 +36,20 @@ repository, repository-to-workflow attribution lives across two
 different planes (CI config + AWS state), and an attacker only
 needs *some* CI workflow with the trust drift and *some* mutable
 ECR repo whose image is consumed in production.
+
+Reachability-model note: this chain stays on scan-level
+co-occurrence by design. The deliberate scope above (no
+workflow-to-repository attribution required) is the point: a
+tighter "this workflow pushes to this repo" claim would
+under-report — every workflow that drifts is a risk against
+every mutable repo whose image is consumed in production, not
+just the ones it currently happens to push to. The
+``ResourceAnchor`` phase 1 ``ecr_repo`` foundation is now wired
+(ECR-002 emits canonical repo URIs), and the per-pair confirmed
+variant lives in AC-017 (cache-poisoning + mutable tag), which
+is the right shape for that tighter claim. AC-024 stays
+aggregate so the broader "drift × any mutable repo" signal
+survives.
 """
 from __future__ import annotations
 

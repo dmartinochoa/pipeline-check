@@ -3,7 +3,8 @@ from __future__ import annotations
 
 import re
 
-from ...base import Finding, Severity
+from ..._primitives.oci_refs import extract_image_anchors_from_strings
+from ...base import Finding, ResourceAnchor, Severity
 from ...rule import Rule
 from ..base import Jenkinsfile
 from ._helpers import DEPLOY_RE
@@ -33,6 +34,7 @@ RULE = Rule(
 
 def check(jf: Jenkinsfile) -> Finding:
     ungated: list[str] = []
+    ungated_bodies: list[str] = []
     for name, body in jf.stages:
         if not DEPLOY_RE.search(name):
             continue
@@ -42,6 +44,7 @@ def check(jf: Jenkinsfile) -> Finding:
         )
         if not has_input:
             ungated.append(name)
+            ungated_bodies.append(body)
     passed = not ungated
     desc = (
         "All deploy-like stages declare a manual `input` approval gate."
@@ -49,8 +52,21 @@ def check(jf: Jenkinsfile) -> Finding:
         f"{len(ungated)} deploy-like stage(s) run without a manual "
         f"`input` gate: {', '.join(ungated)}."
     )
+    # ResourceAnchor phase 1 (AC-005): emit oci_image anchors only
+    # for the UNGATED deploy stages' bodies. Walking the whole
+    # Jenkinsfile text would attach images from gated stages
+    # (and non-executable comment text) to the ungated finding and
+    # over-confirm AC-005 chains. Only on failing finding.
+    anchors: tuple[ResourceAnchor, ...] = ()
+    if not passed:
+        seen: dict[str, ResourceAnchor] = {}
+        for body in ungated_bodies:
+            for a in extract_image_anchors_from_strings(body):
+                seen.setdefault(a.identity, a)
+        anchors = tuple(seen.values())
     return Finding(
         check_id=RULE.id, title=RULE.title, severity=RULE.severity,
         resource=jf.path, description=desc,
         recommendation=RULE.recommendation, passed=passed,
+        resource_anchors=anchors,
     )

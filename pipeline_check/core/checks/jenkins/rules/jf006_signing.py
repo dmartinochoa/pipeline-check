@@ -1,6 +1,7 @@
 """JF-006, artifact signing."""
 from __future__ import annotations
 
+from ..._primitives.oci_refs import extract_image_anchors_from_strings
 from ...base import _ARTIFACT_TOKENS, SIGN_TOKENS, Finding, Severity
 from ...rule import Rule
 from ..base import Jenkinsfile
@@ -42,8 +43,20 @@ def check(jf: Jenkinsfile) -> Finding:
         "signing tool. Unsigned artifacts cannot be verified "
         "downstream."
     )
+    # ResourceAnchor phase 1 (AC-005): emit oci_image anchors for
+    # images this Jenkinsfile tags / pushes. Jenkins source is a
+    # flat Groovy string — the generic scanner pulls image refs
+    # out of ``sh 'docker push …'`` and similar blocks. Use the
+    # comment-stripped text so a commented-out ``// docker push
+    # …`` doesn't leak a phantom anchor into AC-005. Only on
+    # failing finding.
+    anchors = (
+        extract_image_anchors_from_strings(jf.text_no_comments)
+        if not passed else ()
+    )
     return Finding(
         check_id=RULE.id, title=RULE.title, severity=RULE.severity,
         resource=jf.path, description=desc,
         recommendation=RULE.recommendation, passed=passed,
+        resource_anchors=anchors,
     )

@@ -7,7 +7,7 @@ from typing import Any
 from ..._yaml_lines import line_of as _line_of
 from ...base import Finding, Location, Severity
 from ...rule import Rule
-from ..base import workflow_triggers
+from ..base import iter_jobs, workflow_triggers
 
 RULE = Rule(
     id="GHA-013",
@@ -100,9 +100,19 @@ def check(path: str, doc: dict[str, Any]) -> Finding:
         anchor: Any = on_block if isinstance(on_block, dict) else doc
         line = _line_of(anchor)
         locations.append(Location(path=path, start_line=line, end_line=line))
+    # ``issue_comment`` is a workflow-level trigger: any unguarded
+    # comment fires every job in the file. AC-029 intersects this
+    # with credential / integrity legs that DO anchor per-job, so
+    # fan the workflow-level anchor out to every job here so
+    # reachability lands on any one of them.
+    anchor_jobs = (
+        tuple(job_id for job_id, _ in iter_jobs(doc))
+        if not passed else ()
+    )
     return Finding(
         check_id=RULE.id, title=RULE.title, severity=RULE.severity,
         resource=path, description=desc,
         recommendation=RULE.recommendation, passed=passed,
         locations=locations,
+        job_anchors=anchor_jobs,
     )

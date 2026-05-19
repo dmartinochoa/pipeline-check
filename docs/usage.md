@@ -526,6 +526,26 @@ pipeline_check -v       # debug logs to stderr (per-check timing, API calls)
 pipeline_check -q       # suppress all output, rely on the exit code
 ```
 
+## Editor integration
+
+A VS Code extension drives the same rule registry as the CLI and
+surfaces findings inline as you edit workflow files. Gutter
+diagnostics, a Findings activity-bar panel, a status-bar tally, a
+per-file CodeLens summary, and `Alt+F8` navigation all hang off the
+same engine, so what you see in the editor matches what the gate will
+report in CI. Full reference: [vscode.md](vscode.md).
+
+- VS Code Marketplace: <https://marketplace.visualstudio.com/items?itemName=greylag-ci.pipeline-check>
+- Open VSX (VSCodium, Cursor, Windsurf): <https://open-vsx.org/extension/greylag-ci/pipeline-check>
+- Source: <https://github.com/greylag-ci/pipeline-check-vscode>
+
+To run the LSP standalone (for a non-VS Code editor that speaks LSP):
+
+```bash
+pip install 'pipeline-check[lsp]'
+python -m pipeline_check.lsp
+```
+
 ## See also
 
 - [providers/](providers/README.md): per-provider check reference

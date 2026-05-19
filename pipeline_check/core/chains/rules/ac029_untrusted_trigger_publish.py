@@ -30,7 +30,7 @@ from __future__ import annotations
 
 from collections import defaultdict
 
-from ...checks.base import Finding, Severity
+from ...checks.base import Confidence, Finding, Severity
 from ..base import Chain, ChainRule, min_confidence
 
 RULE = ChainRule(
@@ -84,14 +84,37 @@ _CREDENTIAL_LEG = ("GHA-050", "GHA-005")
 _INTEGRITY_LEG = ("GHA-021", "GHA-029")
 
 
+def _union_anchors(findings: list[Finding]) -> set[str]:
+    """Union all ``job_anchors`` across the given leg findings.
+
+    The leg is an any-of: GHA-002 anchors the jobs that check out
+    PR-head code; GHA-009 anchors jobs that ingest a workflow_run
+    artifact unverified; GHA-013 fans out to every job in the
+    workflow (issue_comment fires every job). For reachability the
+    leg-side anchor set is the union of all the active variants.
+    """
+    out: set[str] = set()
+    for f in findings:
+        out.update(f.job_anchors)
+    return out
+
+
 def match(findings: list[Finding]) -> list[Chain]:
-    by_resource: dict[str, dict[str, Finding]] = defaultdict(dict)
+    # Per-resource bucket; each (resource, check_id) cell holds
+    # EVERY matching finding, not just the first. Deduping the way
+    # the prior implementation did would have hidden duplicate
+    # GHA-013 findings (one per issue_comment-triggered job in the
+    # workflow) and lost their ``job_anchors``, so the three-leg
+    # intersection couldn't see a shared job that only one of the
+    # duplicates was anchored to.
+    by_resource: dict[str, dict[str, list[Finding]]] = defaultdict(
+        lambda: defaultdict(list),
+    )
     interesting = set(_TRIGGER_LEG) | set(_CREDENTIAL_LEG) | set(_INTEGRITY_LEG)
     for f in findings:
         if f.passed or f.check_id not in interesting:
             continue
-        if f.check_id not in by_resource[f.resource]:
-            by_resource[f.resource][f.check_id] = f
+        by_resource[f.resource][f.check_id].append(f)
     out: list[Chain] = []
     for resource, ck_map in by_resource.items():
         trig_hits = [c for c in _TRIGGER_LEG if c in ck_map]
@@ -99,9 +122,50 @@ def match(findings: list[Finding]) -> list[Chain]:
         intg_hits = [c for c in _INTEGRITY_LEG if c in ck_map]
         if not (trig_hits and cred_hits and intg_hits):
             continue
-        triggers = [
-            ck_map[c] for c in trig_hits + cred_hits + intg_hits
-        ]
+        trig_findings = [f for c in trig_hits for f in ck_map[c]]
+        cred_findings = [f for c in cred_hits for f in ck_map[c]]
+        intg_findings = [f for c in intg_hits for f in ck_map[c]]
+        triggers = [*trig_findings, *cred_findings, *intg_findings]
+
+        # Reachability: union anchors WITHIN each leg (any-of), then
+        # intersect ACROSS the three legs (all-of). A shared job
+        # means one execution context carries: an attacker-landed
+        # input, the credential it can exfiltrate, and the
+        # integrity-bypass install that lets a poisoned payload
+        # piggyback on the publish. That's the Ultralytics /
+        # s1ngularity exfil pattern compressed into one job.
+        # Unioning across every finding per leg (not just the first
+        # of each check_id) keeps anchors from duplicate findings.
+        trig_jobs = _union_anchors(trig_findings)
+        cred_jobs = _union_anchors(cred_findings)
+        intg_jobs = _union_anchors(intg_findings)
+        shared = sorted(trig_jobs & cred_jobs & intg_jobs)
+        confirmed = bool(shared)
+        if confirmed:
+            shared_repr = ", ".join(f"`{j}`" for j in shared)
+            reach_note = (
+                f"Trigger, credential, and integrity legs share "
+                f"job {shared_repr}"
+            )
+            reach_narrative = (
+                f"  5. Reachability confirmed: the same job(s) "
+                f"({shared_repr}) carry all three legs — an "
+                f"attacker-landed input lands in a job that holds "
+                f"the long-lived publish credential AND runs the "
+                f"unguarded install. One PR / comment / workflow_run "
+                f"hands the attacker the publish identity in one "
+                f"execution context."
+            )
+        else:
+            reach_note = ""
+            reach_narrative = (
+                "  5. Reachability unconfirmed: the three legs fire "
+                "on the same workflow file but no single job "
+                "carries all three. Each leg is still bad and the "
+                "credential rotation / OIDC migration applies "
+                "regardless; treat as a co-occurrence signal."
+            )
+
         narrative = (
             f"In `{resource}`:\n"
             f"  1. Untrusted-trigger leg ({', '.join(trig_hits)}): an "
@@ -121,13 +185,17 @@ def match(findings: list[Finding]) -> list[Chain]:
             "from the same poisoned job) and the Nx s1ngularity "
             "compromise (PR-title injection on a stale branch + npm "
             "publish with a long-lived token) both used this exact "
-            "three-leg shape."
+            "three-leg shape.\n"
+            f"{reach_narrative}"
         )
+
+        chain_confidence = Confidence.HIGH if confirmed else min_confidence(triggers)
+
         out.append(Chain(
             chain_id=RULE.id,
             title=RULE.title,
             severity=RULE.severity,
-            confidence=min_confidence(triggers),
+            confidence=chain_confidence,
             summary=RULE.summary,
             narrative=narrative,
             mitre_attack=list(RULE.mitre_attack),
@@ -137,5 +205,7 @@ def match(findings: list[Finding]) -> list[Chain]:
             resources=[resource],
             references=list(RULE.references),
             recommendation=RULE.recommendation,
+            confirmed_reachable=confirmed,
+            reachability_note=reach_note,
         ))
     return out

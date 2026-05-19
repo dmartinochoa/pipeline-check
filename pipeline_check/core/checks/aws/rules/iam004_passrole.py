@@ -2,7 +2,8 @@
 from __future__ import annotations
 
 from ..._iam_policy import passrole_wildcard
-from ...base import Finding, Severity
+from ..._primitives.anchors import iam_role
+from ...base import Finding, ResourceAnchor, Severity
 from ...rule import Rule
 from .._catalog import ResourceCatalog
 
@@ -80,9 +81,20 @@ def check(catalog: ResourceCatalog) -> list[Finding]:
             )
         else:
             desc = f"No policy on '{role_name}' grants iam:PassRole with Resource: '*'."
+        # ResourceAnchor phase 1: emit the role's full ARN so AC-019
+        # can intersect against LMB-003's execution-role anchor —
+        # confirming the case where the Lambda that leaks credentials
+        # is itself running as the wildcard-PassRole role.
+        anchors: tuple[ResourceAnchor, ...] = ()
+        arn = role.get("Arn")
+        if isinstance(arn, str):
+            built = iam_role(arn)
+            if built is not None:
+                anchors = (built,)
         findings.append(Finding(
             check_id=RULE.id, title=RULE.title, severity=RULE.severity,
             resource=role_name, description=desc,
             recommendation=RULE.recommendation, passed=passed,
+            resource_anchors=anchors,
         ))
     return findings

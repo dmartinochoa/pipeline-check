@@ -210,6 +210,11 @@ def _step_uses_long_lived_secret(step: dict[str, Any]) -> bool:
 def check(path: str, doc: dict[str, Any]) -> Finding:
     offenders: list[str] = []
     locations = []
+    # AC-029 intersects this with the trigger / integrity legs to
+    # confirm the publish-with-long-lived-token job is also the one
+    # an attacker can land code in. Order-preserving dict for
+    # reproducibility.
+    anchor_jobs: dict[str, None] = {}
     for job_id, job in iter_jobs(doc):
         # A protected environment compensates for a static token; a
         # raw string (``environment: production``) and the dict form
@@ -226,6 +231,7 @@ def check(path: str, doc: dict[str, Any]) -> Finding:
             name = step.get("name") or step.get("id") or f"steps[{idx}]"
             offenders.append(f"{job_id}.{name} ({label})")
             locations.append(step_location(path, step))
+            anchor_jobs[job_id] = None
     passed = not offenders
     desc = (
         "Every package-publish step either runs from an environment-"
@@ -243,4 +249,5 @@ def check(path: str, doc: dict[str, Any]) -> Finding:
         resource=path, description=desc,
         recommendation=RULE.recommendation, passed=passed,
         locations=locations,
+        job_anchors=tuple(anchor_jobs),
     )

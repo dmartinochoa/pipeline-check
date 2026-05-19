@@ -21,11 +21,27 @@ against.
 The chain fires when a scan turns up both legs in the same
 session: GHA-011 on the workflow that produces the artifact, and
 ECR-002 on the registry the workflow pushes to.
+
+ResourceAnchor phase 1: prefers a confirmed pairing when the
+GHA-011 workflow text references the same canonical ECR URI
+that ECR-002 flagged as mutable. GHA-011 scans every string in
+the workflow doc for ``<acct>.dkr.ecr.<region>.amazonaws.com/<repo>``
+shapes and emits one ``ecr_repo`` anchor per match (covers
+``docker push``, ``docker/build-push-action`` ``tags:`` inputs,
+and ``aws ecr`` invocations alike); ECR-002 emits the canonical
+URI from the boto3 ``describe_repositories`` payload. Each
+matched repo composes ONE confirmed chain with
+``confirmed_reachable=True``, ``Confidence.HIGH``, and the repo
+URI as the chain resource. Falls back to scan-level co-occurrence
+when no anchor matches (templated tags, indirect pushes through
+intermediate registries, or the workflow references a different
+repo than the one ECR-002 flagged) so the legacy "cache poisoning
++ mutable tag somewhere" signal survives.
 """
 from __future__ import annotations
 
-from ...checks.base import Finding, Severity
-from ..base import Chain, ChainRule, has_failing, min_confidence
+from ...checks.base import Confidence, Finding, Severity
+from ..base import Chain, ChainRule, group_by_anchor, has_failing, min_confidence
 
 RULE = ChainRule(
     id="AC-017",
@@ -68,18 +84,8 @@ RULE = ChainRule(
 )
 
 
-def match(findings: list[Finding]) -> list[Chain]:
-    if not has_failing(findings, "GHA-011"):
-        return []
-    if not has_failing(findings, "ECR-002"):
-        return []
-    triggers = [
-        f for f in findings
-        if (not f.passed) and f.check_id in {"GHA-011", "ECR-002"}
-    ]
-    resources = sorted({f.resource for f in triggers})
-    narrative = (
-        "In this scan:\n"
+def _base_narrative() -> str:
+    return (
         "  1. A GitHub Actions workflow keys its ``actions/cache`` "
         "entry on attacker-controllable input (GHA-011), the "
         "PR head SHA, ``github.head_ref``, an issue or comment "
@@ -91,27 +97,101 @@ def match(findings: list[Finding]) -> list[Chain]:
         "tags (ECR-002). Without ``imageTagMutability=IMMUTABLE``, "
         "the same tag (``:latest``, ``:stable``, ``:v1.0``) can be "
         "re-pushed with different image content silently.\n"
-        "  3. If the cache-poisoned build's output is what gets "
-        "pushed to that ECR repo under a mutable tag, the "
-        "substituted content propagates to every consumer that "
-        "pulls the tag, k8s ``Deployment``, Lambda image, ECS "
-        "task definition, ``docker pull`` from a developer's "
-        "laptop. None of those consumers can detect the "
-        "substitution from the tag alone, since mutable tags "
-        "don't carry a digest reference."
     )
-    return [Chain(
-        chain_id=RULE.id,
-        title=RULE.title,
-        severity=RULE.severity,
-        confidence=min_confidence(triggers),
-        summary=RULE.summary,
-        narrative=narrative,
-        mitre_attack=list(RULE.mitre_attack),
-        kill_chain_phase=RULE.kill_chain_phase,
-        triggering_check_ids=["GHA-011", "ECR-002"],
-        triggering_findings=triggers,
-        resources=resources,
-        references=list(RULE.references),
-        recommendation=RULE.recommendation,
-    )]
+
+
+def match(findings: list[Finding]) -> list[Chain]:
+    # ResourceAnchor phase 1: confirmed pairing when the GHA-011
+    # workflow text mentions the same ECR repo URI that ECR-002
+    # flagged. GHA-011 scans every string in the workflow for ECR
+    # URI shapes; ECR-002 emits its canonical URI from
+    # describe_repositories. Same identity ⇒ the cache-poisonable
+    # build pushes to the mutable repo from one workflow.
+    by_repo = group_by_anchor(findings, ["GHA-011", "ECR-002"], "ecr_repo")
+    out: list[Chain] = []
+    matched_findings: set[int] = set()
+    for repo_uri, ck_map in by_repo.items():
+        gha011 = ck_map["GHA-011"]
+        ecr002 = ck_map["ECR-002"]
+        triggers = [gha011, ecr002]
+        matched_findings.add(id(gha011))
+        matched_findings.add(id(ecr002))
+        narrative = (
+            f"For ECR repo `{repo_uri}`:\n"
+            + _base_narrative()
+            + f"  3. Reachability confirmed: the cache-poisonable "
+            f"workflow (`{gha011.resource}`) references "
+            f"`{repo_uri}` in its push pipeline, and `{repo_uri}` "
+            f"is the same repo ECR-002 flagged for mutable tags. "
+            f"A fork PR's poisoned cache restored into a "
+            f"default-branch build pushes substituted image content "
+            f"into a tag that downstream consumers pull by name, "
+            f"with no digest to detect the swap."
+        )
+        out.append(Chain(
+            chain_id=RULE.id,
+            title=RULE.title,
+            severity=RULE.severity,
+            confidence=Confidence.HIGH,
+            summary=RULE.summary,
+            narrative=narrative,
+            mitre_attack=list(RULE.mitre_attack),
+            kill_chain_phase=RULE.kill_chain_phase,
+            triggering_check_ids=["GHA-011", "ECR-002"],
+            triggering_findings=triggers,
+            resources=[repo_uri],
+            references=list(RULE.references),
+            recommendation=RULE.recommendation,
+            confirmed_reachable=True,
+            reachability_note=(
+                f"GHA-011 workflow references ECR-002 repo `{repo_uri}`"
+            ),
+        ))
+
+    # Co-occurrence fallback: both legs fire but no shared ECR repo
+    # URI matched (templated tag, indirect push through an
+    # intermediate registry, GHA-011 fired on a workflow that doesn't
+    # touch ECR at all, or the workflow pushes to a different
+    # account's repo). Preserves the legacy "cache poisoning +
+    # mutable tag somewhere" prompt.
+    if has_failing(findings, "GHA-011") and has_failing(findings, "ECR-002"):
+        unmatched = [
+            f for f in findings
+            if (not f.passed)
+            and f.check_id in {"GHA-011", "ECR-002"}
+            and id(f) not in matched_findings
+        ]
+        unmatched_legs = {f.check_id for f in unmatched}
+        if "GHA-011" in unmatched_legs and "ECR-002" in unmatched_legs:
+            triggers = unmatched
+            resources = sorted({f.resource for f in triggers})
+            narrative = (
+                "In this scan:\n"
+                + _base_narrative()
+                + "  3. Reachability unconfirmed: no GHA-011 "
+                "workflow text references the specific ECR repo URI "
+                "ECR-002 flagged (templated tag, indirect push, or "
+                "the cache-poisonable workflow doesn't touch ECR at "
+                "all). Treat as a co-occurrence signal — the "
+                "mutable-tag repo is still a substitution surface "
+                "for any privileged push, and the cache-poisoning "
+                "leg remains an independent supply-chain risk."
+            )
+            out.append(Chain(
+                chain_id=RULE.id,
+                title=RULE.title,
+                severity=RULE.severity,
+                confidence=min_confidence(triggers),
+                summary=RULE.summary,
+                narrative=narrative,
+                mitre_attack=list(RULE.mitre_attack),
+                kill_chain_phase=RULE.kill_chain_phase,
+                triggering_check_ids=["GHA-011", "ECR-002"],
+                triggering_findings=triggers,
+                resources=resources,
+                references=list(RULE.references),
+                recommendation=RULE.recommendation,
+                confirmed_reachable=False,
+                reachability_note="",
+            ))
+    return out

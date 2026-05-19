@@ -12,6 +12,21 @@ release commit collapses this section into `## [X.Y.Z] - <date>`.
 
 ### Added
 
+- **Dedicated `docs/vscode.md` reference page for the VS Code
+  extension.** Promotes editor coverage from a two-paragraph
+  subsection of `usage.md` to a top-level docs page with install
+  recipes (Marketplace + Open VSX + CLI), the pilot-coverage trigger
+  table for all 10 single-file providers, feature reference
+  (inline diagnostics, Findings activity-bar panel, status-bar tally,
+  per-file CodeLens, `Alt+F8` keyboard nav, `severityThreshold` /
+  `disabledProviders` quieting), the full `pipelineCheck.*` settings
+  table, commands, workspace-trust posture, an architecture diagram
+  of the TypeScript client ↔ `pipeline_check.lsp` server link, a
+  non-VS Code editor section (Cursor, Windsurf, VSCodium, Neovim,
+  Helix), a CLI-vs-extension feature matrix, and a troubleshooting
+  block. Added to the mkdocs nav after MCP; the homepage feature
+  card and the trimmed `usage.md` blurb now link to it.
+
 - **`[lsp]` optional install extra surfaces the Language Server.**
   ``pip install pipeline-check[lsp]`` pulls ``pygls>=2.1.0`` and
   ``lsprotocol>=2025.0.0``, the floor versions the
@@ -185,6 +200,393 @@ release commit collapses this section into `## [X.Y.Z] - <date>`.
   when `GHA-036` ∩ `GHA-019` share a job; AC-014 confirms when
   `GL-032` ∩ `GL-020` share a job. `GHA-019`, `GHA-036`, `GL-032`,
   `GL-020` all gained `Finding.job_anchors`.
+
+- **Self-hosted findings-history dashboard (`pipeline_check
+  history`).** New CLI subcommand that reads a directory of
+  timestamped scan-output JSON files (default
+  ``.pipeline-check-history/``) and renders a single self-
+  contained HTML page with trend graphs (per-severity failed
+  findings over time, score over time) and a top-N firing-rules
+  burn-down table. Inline CSS + inline SVG charts; no
+  JavaScript, no CDN, no web server. The output is one ``.html``
+  file the user can open locally, email, or commit to a posture-
+  history branch — closes the "do we even have visibility?"
+  roadmap gap without dragging in a SaaS dashboard or a database.
+  Timestamps are extracted from the filename
+  (``scan-YYYYMMDD-HHMMSS.json`` or ``YYYY-MM-DD.json``) with a
+  fallback to file mtime, so the existing CI convention
+  (``--output json --output-file scan-$(date +%Y%m%d-%H%M%S).json``)
+  works as-is. Malformed JSON files surface as warnings and are
+  skipped without breaking the render. Eighteen new tests in
+  ``tests/test_history.py`` exercise the timestamp parser,
+  loader (chronological sort, mtime fallback, malformed-skip,
+  non-dict top-level skip, rule-counts extraction, missing-
+  directory error path) and renderer (empty-state placeholder,
+  chart polylines, warnings surfaced, top-N clamp), plus a CLI
+  integration test via ``CliRunner``. A FastAPI live-reload
+  variant is a phase-2 follow-up; the static HTML is the more-
+  useful primitive (serve it from anywhere) and the FastAPI
+  wrapper just adds auto-refresh on top.
+
+- **Gradle (build.gradle / build.gradle.kts) parser via
+  PomFile synthesis.** Closes the third deferred dependency-
+  registry format in this cycle. ``build.gradle`` and
+  ``build.gradle.kts`` join ``pom.xml`` / ``settings.xml`` in the
+  maven provider's recognized inputs; the loader detects the
+  filename and routes through a new ``_parse_gradle`` regex-based
+  extractor that emits the same :class:`PomFile` shape from
+  ``"group:artifact:version"`` coordinate strings, ``group:`` /
+  ``name:`` / ``version:`` map-form deps (Groovy ``,`` separator
+  and Kotlin DSL ``=`` separator both handled), and ``maven { url
+  ... }`` / ``maven { url = uri(...) }`` / ``maven("...")``
+  repository blocks. Built-in shorthand
+  (``mavenCentral()`` / ``google()``) is omitted because the rule
+  pack doesn't flag those and their URLs are well-known. Trailing
+  ``:classifier`` / ``@type`` (sources / javadoc / war) is
+  consumed but discarded so the version literal stays clean. The
+  ``build/`` and ``.gradle/`` output directories are excluded
+  from the loader's rglob so cached / generated copies don't
+  double-count. MVN-001 / MVN-002 / MVN-003 / MVN-006 fire on
+  Gradle projects without per-rule changes. Variable substitution
+  (``${junitVersion}``) stays unresolved for this pass — the
+  rule layer then sees the literal ``${...}`` and treats it as
+  a dynamic version (MVN-001 fires accordingly); a follow-up can
+  walk ``ext { }`` / Kotlin ``val`` declarations to resolve.
+  Version catalogs (``libs.versions.toml``) and BOM imports are
+  also follow-ups. Sixteen new tests in ``tests/maven/test_gradle.py``
+  exercise the parser (Groovy / Kotlin / map-form / classifier
+  stripping / dedup / repos / variable carry-through), the
+  ``build/`` exclusion, and end-to-end firing through
+  ``MavenChecks``.
+
+- **Pipfile.lock parser via requirements-file synthesis.**
+  ``Pipfile.lock`` joins ``poetry.lock`` / ``requirements*.txt`` /
+  ``*.in`` in the pypi provider's recognized inputs; the loader
+  detects the filename and routes through a new
+  ``_parse_pipfile_lock`` helper that parses JSON via stdlib
+  ``json`` and walks both top-level buckets (``default``,
+  ``develop``). Registry entries become ``<name>==<version>``
+  bodies after stripping the leading ``==`` operator Pipfile.lock
+  bakes into the ``version`` field; git entries become PEP 508
+  direct URLs (``<name> @ git+<url>@<ref>``); per-entry
+  ``hashes`` flow through as ``--hash=sha256:...`` flags. The
+  file-level ``--require-hashes`` matches Pipenv's install-time
+  enforcement contract so PYPI-002 doesn't false-positive on a
+  Pipenv-locked project. PYPI-001 / PYPI-002 / PYPI-004 / PYPI-
+  006 fire without per-rule changes. Thirteen new tests in
+  ``tests/pypi/test_pipfile_lock.py`` exercise the parser
+  (default + develop walking, version normalization, git with /
+  without ref, malformed entries) and end-to-end firing through
+  ``PypiChecks`` on a real Pipfile.lock.
+
+- **poetry.lock parser via requirements-file synthesis.**
+  ``poetry.lock`` joins ``requirements*.txt`` / ``*.in`` in the
+  pypi provider's recognized inputs; the loader detects the
+  filename and routes through a new ``_parse_poetry_lock`` helper
+  that parses TOML via stdlib ``tomllib`` and projects each
+  ``[[package]]`` entry onto a :class:`RequirementLine`. Registry-
+  resolved packages get a ``<name>==<version>`` body; git-sourced
+  packages (``[package.source]`` ``type = "git"``) get a PEP 508
+  direct URL body (``<name> @ git+<url>@<sha>``) preferring
+  ``resolved_reference`` over the branch / tag in ``reference``
+  so a Poetry lockfile that pinned to ``main`` upstream still
+  passes PYPI-004 once the install materialized the SHA. Each
+  package's file hashes (lock-version 2.x inline ``files`` field,
+  lock-version 1.x ``[metadata.files]`` map) become per-line
+  ``--hash=sha256:...`` flags, and ``--require-hashes`` is set at
+  the file level since Poetry enforces hashes at install time —
+  PYPI-001 / PYPI-002 / PYPI-004 / PYPI-006 then apply to
+  Poetry-locked projects without per-rule changes. ``pyproject.toml``
+  (PEP 621 / Poetry deps) and ``Pipfile.lock`` stay deferred —
+  each warrants its own parser. Twelve new tests in
+  ``tests/pypi/test_poetry_lock.py`` exercise the parser (lock-
+  version 1 + 2 file shapes, git sources with / without
+  resolved_reference, packages missing files, empty lockfile)
+  and end-to-end firing through ``PypiChecks`` on a real
+  poetry.lock.
+
+- **yarn.lock (yarn 1 / Classic) parser via npm-lock-shape
+  synthesis.** ``yarn.lock`` joins ``package-lock.json`` /
+  ``npm-shrinkwrap.json`` / ``pnpm-lock.yaml`` in
+  ``NpmContext.LOCKFILE_NAMES``; the loader detects the filename
+  and routes through new ``_parse_yarn_lock`` +
+  ``_synthesize_yarn_lock`` helpers. The yarn 1 parser handles
+  multi-pattern headers (``"@babel/code-frame@^7.0.0",
+  "@babel/code-frame@^7.16.0":``), scoped names, comments,
+  blank lines, and the nested ``dependencies:`` sub-block (which
+  is skipped — the existing NPM-* rules don't need transitive
+  metadata). The synthesizer projects each entry to an npm-7+
+  record (``name`` / ``version`` / ``resolved`` / ``integrity``)
+  keyed by ``node_modules/<name>`` with the same ``+<version>``
+  disambiguation pnpm uses for multi-version installs. NPM-002 /
+  NPM-003 / NPM-006 now fire on yarn-locked projects without
+  per-rule changes. Yarn 2+ / Berry (which ships ``__metadata:``
+  plus ``checksum`` instead of ``integrity``) stays out of scope
+  for this pass — same template, different field names, deferred
+  to a follow-up. Nineteen new tests in
+  ``tests/npm/test_yarn_lock.py`` exercise the pattern splitter,
+  parser (multi-pattern / sub-block / comments), synthesizer
+  (scoped / multi-version / missing-resolved), and end-to-end
+  firing through ``NpmChecks`` on a real yarn.lock.
+
+- **pnpm-lock.yaml parser closes the npm-side lockfile gap.**
+  ``pnpm-lock.yaml`` joins ``package-lock.json`` /
+  ``npm-shrinkwrap.json`` in ``NpmContext.LOCKFILE_NAMES``; the
+  loader detects the YAML extension, parses via the project's
+  ``safe_load_yaml``, and routes the result through a new
+  ``_synthesize_pnpm_lock`` helper that projects pnpm's
+  ``packages:`` block onto the npm-7+ lockfile shape every existing
+  rule already reads. The synthesizer handles every pnpm key form
+  shipped to date (v5 ``/<name>/<ver>``, v6 ``/<name>@<ver>``, v9
+  ``<name>@<ver>``, scoped names, peer-dep ``(react@18)`` suffix),
+  populates ``integrity`` from ``resolution.integrity`` for
+  registry tarballs, synthesizes the canonical
+  ``https://registry.npmjs.org/<name>/-/<unscoped>-<ver>.tgz`` URL
+  so NPM-003 sees the same source shape it sees in a real npm
+  lockfile, threads ``resolution.tarball`` URLs through for
+  non-registry sources (so NPM-003's HTTP / git+ssh classifier
+  fires correctly), and translates ``resolution: {type: git, repo,
+  commit}`` into ``git+<repo>#<sha>`` for NPM-003. NPM-002 / NPM-
+  003 / NPM-006 now apply to pnpm-locked projects without per-rule
+  changes; ``yarn.lock`` stays out of scope (its bespoke
+  YAML-flavored format warrants its own parser, deferred).
+  Twenty new tests in ``tests/npm/test_pnpm_lock.py`` exercise the
+  synthesizer's key parsing, resolved/integrity normalization, and
+  end-to-end firing through ``NpmChecks`` on a real pnpm-lock.yaml.
+
+- **ResourceAnchor phase 1: XPC-002 (oci_image, base image →
+  runtime workload).** Closes one of the two phase-0 ResourceAnchor
+  follow-ups called out in the CHANGELOG ("XPC-002, XPC-003"). Both
+  legs now emit ``oci_image`` anchors via the phase-0
+  ``_primitives/anchors.oci_image()`` canonicalizer: ``DF-001``
+  walks each unpinned ``FROM`` ref and ``K8S-001`` walks every
+  unpinned workload container ``image:`` field. ``XPC-002.match()``
+  intersects the two legs on the shared image identity through
+  ``group_by_anchor`` — each matched image emits ONE confirmed
+  chain (``confirmed_reachable=True``, ``Confidence.HIGH``, image
+  identity as the chain resource, narrative cites the shared
+  image). Findings that didn't contribute to a confirmed pair feed
+  the legacy per-pair cross-product fallback so the original triage
+  prompt ("here are the (dockerfile, manifest) pairs to
+  investigate") still surfaces when build and runtime reference
+  different images. Four new TestXPC002 cases (confirmed pair,
+  disjoint fallback, fan-out one chain per image, partial-match
+  mix). Existing per-pair tests preserved via the fallback path.
+
+- **AC-005 oci_image extraction extended to every cross-provider
+  leg pair.** Cross-provider extension of the GHA-only AC-005
+  pilot (see entry below). Eleven more leg rules now emit
+  ``oci_image`` anchors via ``_primitives/oci_refs.py``:
+  - **Build-side**: GL-006, BB-006, ADO-006, CC-006, JF-006,
+    GCB-009 (Cloud Build also walks its structured top-level
+    ``images:`` list directly before the publisher-only text
+    scan).
+  - **Deploy-side**: GL-004, BB-004, ADO-004, CC-009, JF-005.
+
+  Jenkins legs use ``jf.text_no_comments`` to skip commented
+  shell mentions; YAML providers hand the ungated job / step
+  sub-tree to the extractor rather than the whole document so a
+  gated job's image doesn't lend its identity to an AC-005
+  confirmation about an ungated leg. All eleven gate on a failing
+  finding.
+
+  SIGN-001 / CP-001 / CP-005 are deliberately not wired: they
+  operate on the live AWS API surface where the API responses
+  don't name artifact image references. Those legs stay on the
+  scan-level co-occurrence fallback AC-005 already preserves.
+
+  Eleven new parametrized ``TestChainAC005`` cases (one per
+  cross-provider leg pair) assert one confirmed chain at HIGH
+  confidence per matched ``oci_image`` identity.
+
+- **ResourceAnchor phase 1: AC-005 (oci_image, build → deploy) —
+  GHA pilot.** Original pilot for the cross-provider unsigned-
+  artifact-to-prod chain. New ``_primitives/oci_refs.py`` helper
+  extracts image references from GHA workflows via two
+  complementary passes: (1) structured — walks every
+  ``docker/build-push-action`` / ``docker/metadata-action`` step's
+  ``with.tags`` input; (2) text scan — pulls image-shaped tokens
+  out of deploy-shaped shell commands in ``run:`` blocks
+  (``docker push`` / ``docker tag`` / ``kubectl set image`` /
+  ``helm upgrade --set image=`` / ``gcloud run deploy`` /
+  ``az containerapp`` / ``aws ecs update-service``). Every
+  candidate runs through the phase 0 ``oci_image()`` canonicalizer.
+
+  **GHA-006** (artifact signing) and **GHA-014** (deploy
+  environment) emit ``oci_image`` anchors for every image they
+  reference, only on failure.
+
+  **AC-005** iterates the cross-product of build / deploy leg
+  IDs through ``group_by_anchor`` on ``oci_image``. Each matched
+  image identity emits one confirmed chain
+  (``confirmed_reachable=True``, ``Confidence.HIGH``, narrative
+  cites the shared image, resource is the image identity). Falls
+  back to scan-level co-occurrence when no image matches.
+
+  Cross-provider extension to ``GL-*`` / ``BB-*`` / ``ADO-*`` /
+  ``CC-*`` / ``GCB-*`` / ``JF-*`` legs lands in the follow-up
+  entry above.
+
+- **ResourceAnchor phase 1: AC-011 / AC-020 / AC-021 (k8s_sa
+  intersection across Kubernetes / Tekton / Argo).** Closes the
+  K8s-side phase 1 set. Five leg rules now emit ``k8s_sa`` anchors
+  (canonical identity ``<namespace>/<name>``):
+  - **K8S-013** anchors each hostPath-mounting workload on its
+    effective ``serviceAccountName`` (falls back to the namespace's
+    ``default``, matching kubelet semantics).
+  - **K8S-020** anchors each cluster-admin ClusterRoleBinding on its
+    ServiceAccount subject(s); Group / User subjects don't map to
+    ``k8s_sa`` and skip silently.
+  - **K8S-029** anchors each default-SA RoleBinding on the
+    ``(namespace, default)`` pair it grants to (de-duped across
+    multiple offenders in the same namespace).
+  - **ARGO-003** anchors each offending Workflow on its
+    ``(namespace, default)`` pair — the SA the workflow runs as when
+    ``serviceAccountName`` is missing or explicitly ``default``.
+  - **TKN-004** anchors only when the Task pins
+    ``spec.podTemplate.serviceAccountName`` explicitly. The runtime
+    SA is normally TaskRun-determined and not visible in the manifest;
+    guessing ``default`` would over-confirm AC-020, so unanchored
+    Tasks fall through to the co-occurrence fallback.
+
+  Chain migrations:
+  - **AC-011** (K8S-013 ∩ K8S-020): confirmed when the
+    hostPath-mounting pod runs as a cluster-admin-bound SA — node
+    escape and API takeover in one execution context, no separate
+    token-theft step.
+  - **AC-020** (TKN-004 ∩ K8S-020): confirmed when the Task pins
+    its SA to a cluster-admin binding subject. Common case (Task
+    doesn't pin an SA) falls through to co-occurrence.
+  - **AC-021** (ARGO-003 ∩ K8S-029): confirmed when the Workflow's
+    namespace+default SA matches one of K8S-029's default-SA
+    binding subjects — single-namespace single-step privesc.
+
+  Six new TestChainAC{011,020,021} cases (confirmed-pair +
+  fallback-disjoint per chain). All previous tests preserved via
+  the co-occurrence fallback path. Full suite: 6279 passed,
+  11 skipped.
+
+- **ResourceAnchor phase 1: AC-007 (IAM PrivEsc via CodeBuild).**
+  `AC-007` now uses ``group_by_anchor`` on ``iam_role`` against
+  both IAM-side legs. CB-002 emits ``iam_role`` from the project's
+  ``serviceRole`` ARN (boto3 ``BatchGetProjects`` payload). When
+  the privileged CodeBuild project's service role IS the IAM-002
+  wildcard role and/or the IAM-004 PassRole-* role, the chain
+  emits ONE confirmed chain carrying both IAM legs (a single
+  role triggering both isn't two separate chains). Confirmed →
+  ``confirmed_reachable=True``, ``Confidence.HIGH``, narrative
+  cites the shared role ARN, resource is that ARN. Falls back to
+  scan-level co-occurrence when the project's service role and
+  the IAM-flagged role differ (the cross-principal pivot still
+  applies but isn't visible from a single execution context).
+  Closes the IAM-leg side of the cross-provider phase 1 set
+  (AC-007 / AC-016 / AC-019 all on ``iam_role``;
+  AC-017 / AC-024 on ``ecr_repo``).
+
+- **ResourceAnchor phase 1: AC-017 (cache poisoning + mutable ECR
+  tag).** `AC-017` now uses ``group_by_anchor`` on ``ecr_repo``.
+  ECR-002 emits the canonical registry URI from boto3's
+  ``describe_repositories.repositoryUri``; GHA-011 scans every
+  string in its workflow doc for the ``<acct>.dkr.ecr.<region>
+  .amazonaws.com/<repo>`` shape (covers ``docker push``,
+  ``docker/build-push-action`` ``tags:`` inputs, and ``aws ecr``
+  invocations alike) and emits one ``ecr_repo`` anchor per match.
+  Each matched repo URI composes ONE confirmed chain with
+  ``confirmed_reachable=True``, ``Confidence.HIGH``, narrative
+  citing the URI, and that URI as the chain's resource. Falls
+  back to scan-level co-occurrence when no anchor matches
+  (templated tags, indirect push through an intermediate
+  registry, or the workflow doesn't touch ECR) so the legacy
+  "cache poisoning + mutable tag somewhere" signal survives.
+  AC-024 (OIDC drift + mutable ECR) stays on aggregate
+  co-occurrence by design — its threat model is explicitly the
+  cross-product, not a per-pair claim; the carve-out docstring
+  now notes that AC-017 is the per-pair variant for callers who
+  want the tighter signal.
+
+- **ResourceAnchor phase 1: AC-019 (Lambda env-secret + PassRole
+  *).** `AC-019` now uses ``group_by_anchor`` on ``iam_role``.
+  LMB-003 emits two anchors per finding — ``lambda_fn`` for the
+  function ARN and ``iam_role`` for the function's *execution*
+  role ARN (boto3's ``Role`` field); IAM-004 emits ``iam_role``
+  for its own role's ARN. A shared identity confirms the tight
+  pairing: the secret-leaking Lambda is itself running as the
+  wildcard-PassRole role, so anyone who exfils the env var
+  inherits the role-hop primitive in one execution context with
+  no separate principal-reach step. Confirmed → confidence
+  promoted to HIGH, narrative cites the shared role, resource is
+  the role ARN. Falls back to scan-level co-occurrence when the
+  Lambda's execution role and the PassRole-* role differ — the
+  original "account-wide leak + account-wide PassRole wildcard"
+  signal is still worth surfacing because the cross-principal
+  attack remains viable.
+
+- **ResourceAnchor phase 1: AC-016 pilot (OIDC role drift).**
+  First cross-provider chain to consume the phase 0 `ResourceAnchor`
+  foundation. **IAM-002** now emits an ``iam_role`` anchor from the
+  role's full ARN (already in the boto3 ``list_roles`` payload), and
+  **GHA-030** parses ``with.role-to-assume`` out of every offending
+  job's ``aws-actions/configure-aws-credentials`` step. Full ARNs
+  become ``iam_role`` anchors that intersect cleanly with IAM-002's;
+  bare role names emit the looser ``iam_role_name`` kind (which
+  doesn't fuzzy-match into ``iam_role``, by canonicalizer carve-out);
+  templated refs (``${{ secrets.ROLE_ARN }}``) produce no anchor.
+  AC-016 now does the intersection first via ``group_by_anchor``:
+  each matched role ARN emits ONE confirmed chain with
+  ``confirmed_reachable=True``, ``Confidence.HIGH``, narrative
+  citing the role ARN, and that ARN as the chain's resource. When
+  no anchor matches (template refs, bare names, unrelated roles),
+  the chain falls back to a single scan-level co-occurrence chain
+  at ``min_confidence(legs)`` so the legacy "any drift × any
+  wildcard" signal survives. Three new ``TestChainAC016`` cases
+  cover the confirmed pairing, the disjoint-anchor fallback, and
+  fan-out to one confirmed chain per matched ARN. The pilot
+  validates the foundation end-to-end: same ARN canonicalization
+  on both sides of the provider boundary, ``group_by_anchor``
+  ranks ahead of the legacy co-occurrence helper, and existing
+  synthetic tests (no anchors on the input) still produce the
+  prior single-chain output via the fallback path.
+
+- **Reachability-aware AC-029 (untrusted-trigger publish lane).**
+  `AC-029` (Ultralytics / s1ngularity class) now uses the
+  3-leg-set ``job_anchors`` intersection model. Each leg is an
+  any-of: trigger ∈ {GHA-002, GHA-009, GHA-013}; credential ∈
+  {GHA-005, GHA-050}; integrity ∈ {GHA-021, GHA-029}. The chain
+  unions anchors *within* each leg (any of the variants
+  fires), then intersects *across* the three legs. Confirmed
+  reachable when one job carries all three at once — the precise
+  Ultralytics / s1ngularity execution context (an attacker-landed
+  input lands in the same job that holds the publish credential
+  AND runs the unguarded install). Backfilled three leg rules in
+  the same pass: GHA-009 anchors on the jobs that download an
+  upstream artifact unverified; GHA-013 anchors workflow-wide
+  (issue_comment fires every job, so fan out to all of them);
+  GHA-050 anchors on the publish jobs that hold the long-lived
+  registry token. GHA-009 carries a known-limitation note about
+  the workflow-level ``verified`` flag: a workflow where one job
+  downloads-without-verifying and a different job runs a
+  cosign / attestation check still reads as passed, so anchors
+  stay empty and AC-029 can't confirm reachability on that
+  shape — tightening to per-job verification belongs in a
+  GHA-009 reshape, not this chain pass. New TestChainAC029
+  class covers the new behavior plus the prior chain-level
+  contracts (no test existed before).
+
+- **Remaining AC chains carve out the reachability model.** The
+  ``job_anchors`` intersection pattern doesn't apply to every
+  chain shape; rather than silently leave half the catalog
+  inconsistent, each remaining chain now carries a one-paragraph
+  docstring note explaining the carve-out. File-resource OK
+  (file/manifest co-location IS the reachability claim, no
+  per-job structure to anchor on): AC-015 (Helm chart), AC-027
+  (Dockerfile credential + EXPOSE). AC-028 (npm worm) carves
+  out for a different reason — covered in its own entry below.
+  AC-024 stays scan-aggregate by design — covered in its own
+  entry below. Every other AC chain (AC-005, AC-007, AC-011,
+  AC-016, AC-017, AC-019, AC-020, AC-021, plus the ``job_anchors``
+  pilots) migrates to an intersection model over the course of
+  this release. Wraps the migration arc with each chain's model
+  decision documented in-source.
 
 - **Reachability-aware AC-009 (3-leg supply-chain repo poisoning).**
   `AC-009` (GHA-001 unpinned action + GHA-002 injection sink +
