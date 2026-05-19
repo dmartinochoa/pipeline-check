@@ -3,8 +3,9 @@ from __future__ import annotations
 
 from typing import Any
 
-from ...base import PKG_NO_LOCKFILE_RE, Finding, Severity, blob_lower
+from ...base import PKG_NO_LOCKFILE_RE, Finding, Severity
 from ...rule import Rule
+from ..base import iter_jobs, iter_steps
 
 RULE = Rule(
     id="GHA-021",
@@ -28,8 +29,21 @@ RULE = Rule(
 )
 
 def check(path: str, doc: dict[str, Any]) -> Finding:
-    blob = blob_lower(doc)
-    matches = PKG_NO_LOCKFILE_RE.findall(blob)
+    matches: list[str] = []
+    # Preserve insertion order so the anchor set is reproducible across
+    # runs; a job with multiple offending install lines contributes
+    # once. AC-008 intersects this with GHA-029's anchors to confirm
+    # the install AND the integrity bypass land in the same job (the
+    # dependency-confusion / typosquatting window).
+    anchor_jobs: dict[str, None] = {}
+    for job_id, job in iter_jobs(doc):
+        for step in iter_steps(job):
+            run = step.get("run")
+            if not isinstance(run, str):
+                continue
+            for m in PKG_NO_LOCKFILE_RE.findall(run.lower()):
+                matches.append(m)
+                anchor_jobs[job_id] = None
     passed = not matches
     desc = (
         "All package install commands enforce lockfile integrity."
@@ -41,4 +55,5 @@ def check(path: str, doc: dict[str, Any]) -> Finding:
         check_id=RULE.id, title=RULE.title, severity=RULE.severity,
         resource=path, description=desc,
         recommendation=RULE.recommendation, passed=passed,
+        job_anchors=tuple(anchor_jobs),
     )

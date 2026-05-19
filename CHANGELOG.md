@@ -186,6 +186,25 @@ release commit collapses this section into `## [X.Y.Z] - <date>`.
   `GL-032` ∩ `GL-020` share a job. `GHA-019`, `GHA-036`, `GL-032`,
   `GL-020` all gained `Finding.job_anchors`.
 
+- **Reachability-aware AC-008 (dependency confusion window).**
+  `AC-008` (lockfile miss + integrity-bypass install) now uses the
+  same `job_anchors` intersection model as the rest of the GHA
+  chain pack. `GHA-021` and `GHA-029` were both blob scans against
+  the whole workflow with no per-job attribution; they now walk
+  each job's ``steps[].run`` and anchor on the job IDs where the
+  offending install command was found. When the lockfile-skipping
+  install AND the integrity-bypass install land in the same job,
+  the chain emits with `confirmed_reachable=True`, confidence
+  promoted to `HIGH`, and a `reachability_note` citing the shared
+  job(s) — the tightest dependency-confusion / typosquatting
+  window where one execution context exposes both detection legs.
+  Disjoint anchors fall back to the legacy co-occurrence signal
+  (each install path is individually exploitable). Side effect of
+  the leg-rule migration: GHA-021 / GHA-029 now ignore non-`run:`
+  surfaces (step names, env values, action `with:` blocks) that
+  the prior blob scan was nominally scanning but where a shell
+  install command would be a false positive.
+
 ### Changed
 
 - **Image-reference parsing consolidated into one primitive.** New

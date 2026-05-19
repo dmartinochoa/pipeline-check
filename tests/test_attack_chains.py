@@ -541,12 +541,48 @@ class TestChainAC006:
 class TestChainAC008:
     """AC-008 — Dependency Confusion Window."""
 
+    WF = ".github/workflows/release.yml"
+
     def test_fires_with_no_lockfile_and_integrity_bypass(self):
-        wf = ".github/workflows/release.yml"
-        out = chains_pkg.evaluate([_f("GHA-021", wf), _f("GHA-029", wf)])
+        out = chains_pkg.evaluate([_f("GHA-021", self.WF), _f("GHA-029", self.WF)])
         ac8 = [c for c in out if c.chain_id == "AC-008"]
         assert len(ac8) == 1
         assert "T1195.001" in ac8[0].mitre_attack
+
+    def test_reachability_confirmed_when_anchor_jobs_intersect(self):
+        # Same job both skips the lockfile AND installs from an
+        # integrity-bypass source: the tightest dep-confusion window.
+        out = chains_pkg.evaluate([
+            _f("GHA-021", self.WF, job_anchors=("build",)),
+            _f(
+                "GHA-029",
+                self.WF,
+                job_anchors=("build",),
+                confidence=Confidence.MEDIUM,
+            ),
+        ])
+        ac8 = next(c for c in out if c.chain_id == "AC-008")
+        assert ac8.confirmed_reachable is True
+        assert "build" in ac8.reachability_note
+        assert ac8.confidence is Confidence.HIGH
+
+    def test_reachability_unconfirmed_when_jobs_disjoint(self):
+        # Lockfile miss in ``test``, integrity bypass in ``deploy`` —
+        # both still real findings but the chain stays at the
+        # weaker co-occurrence signal.
+        out = chains_pkg.evaluate([
+            _f("GHA-021", self.WF, job_anchors=("test",)),
+            _f(
+                "GHA-029",
+                self.WF,
+                job_anchors=("deploy",),
+                confidence=Confidence.MEDIUM,
+            ),
+        ])
+        ac8 = next(c for c in out if c.chain_id == "AC-008")
+        assert ac8.confirmed_reachable is False
+        assert ac8.reachability_note == ""
+        assert ac8.confidence is Confidence.MEDIUM
 
 
 class TestChainAC007:

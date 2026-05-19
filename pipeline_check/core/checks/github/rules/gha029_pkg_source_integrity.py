@@ -12,8 +12,9 @@ from __future__ import annotations
 from typing import Any
 
 from ..._primitives import lockfile_integrity
-from ...base import Finding, Severity, blob_lower
+from ...base import Finding, Severity
 from ...rule import Rule
+from ..base import iter_jobs, iter_steps
 
 RULE = Rule(
     id="GHA-029",
@@ -43,8 +44,21 @@ RULE = Rule(
 
 
 def check(path: str, doc: dict[str, Any]) -> Finding:
-    blob = blob_lower(doc)
-    hits = lockfile_integrity.scan(blob)
+    hits: list[lockfile_integrity.LockfileIssue] = []
+    # Preserve insertion order so the anchor set is reproducible across
+    # runs. AC-008 intersects this with GHA-021's anchors to confirm
+    # the integrity bypass AND the lockfile miss share a job, the
+    # tight dependency-confusion / typosquatting reachability.
+    anchor_jobs: dict[str, None] = {}
+    for job_id, job in iter_jobs(doc):
+        for step in iter_steps(job):
+            run = step.get("run")
+            if not isinstance(run, str):
+                continue
+            found = lockfile_integrity.scan(run.lower())
+            if found:
+                hits.extend(found)
+                anchor_jobs[job_id] = None
     passed = not hits
     kinds = sorted({h.kind for h in hits})
     desc = (
@@ -59,4 +73,5 @@ def check(path: str, doc: dict[str, Any]) -> Finding:
         check_id=RULE.id, title=RULE.title, severity=RULE.severity,
         resource=path, description=desc,
         recommendation=RULE.recommendation, passed=passed,
+        job_anchors=tuple(anchor_jobs),
     )
