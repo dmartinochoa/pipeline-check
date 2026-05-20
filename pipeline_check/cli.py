@@ -134,7 +134,11 @@ def _tolerate_unencodable_stdio() -> None:
             pass
 
 
-_tolerate_unencodable_stdio()
+# NOTE: ``_tolerate_unencodable_stdio()`` runs from ``main()`` below,
+# not at import time. MCP / LSP callers import this module to access
+# the Scanner / Finding / chain helpers but never enter ``main()``
+# (their stdio is JSON-RPC, not human-readable text); deferring keeps
+# their streams untouched.
 
 
 class _GroupedCommand(click.Command):
@@ -398,7 +402,7 @@ def _list_checks_for_pipeline(pipeline: str) -> None:
             f"[list-checks] no checks registered for --pipeline {pipeline}.",
             err=True,
         )
-        sys.exit(3)
+        raise click.exceptions.Exit(3)
 
     # Deduplicate (rule-based + class-based overlap on IDs like CB-001)
     # and sort so ``GHA-001`` < ``GHA-010`` reads naturally.
@@ -1990,7 +1994,7 @@ def scan(
         # a non-zero exit on misuse.
         click.echo(_manual.render(man_topic), nl=False)
         if requested and requested != "index" and requested not in known:
-            sys.exit(3)
+            raise click.exceptions.Exit(3)
         return
 
     if list_standards:
@@ -2012,12 +2016,12 @@ def scan(
                 "Install with ``pip install 'pipeline-check[mcp]'``.",
                 err=True,
             )
-            sys.exit(3)
+            raise click.exceptions.Exit(3) from exc
         try:
             run_stdio()
         except RuntimeError as exc:
             click.echo(f"[error] {exc}", err=True)
-            sys.exit(3)
+            raise click.exceptions.Exit(3) from exc
         except KeyboardInterrupt:
             pass
         return
@@ -2055,10 +2059,10 @@ def scan(
         return
 
     if list_chains:
-        sys.exit(_eager_print_list_chains())
+        raise click.exceptions.Exit(_eager_print_list_chains())
 
     if explain_chain_id:
-        sys.exit(_eager_print_explain_chain(explain_chain_id))
+        raise click.exceptions.Exit(_eager_print_explain_chain(explain_chain_id))
 
     if explain_id and ai_explain_id:
         # ``--ai-explain`` already runs the deterministic body before
@@ -2074,10 +2078,10 @@ def scan(
 
     if explain_id:
         from .core.explain import print_explain
-        sys.exit(print_explain(explain_id))
+        raise click.exceptions.Exit(print_explain(explain_id))
 
     if ai_explain_id:
-        sys.exit(_run_ai_explain(
+        raise click.exceptions.Exit(_run_ai_explain(
             ai_explain_id,
             model_spec=ai_model_spec,
             context_file=ai_context_file,
@@ -2096,7 +2100,7 @@ def scan(
         for source, key, reason in dropped:
             click.echo(f"[config] {source}: {key!r}, {reason}", err=True)
         click.echo(f"[config] {len(dropped)} unknown key(s) detected.", err=True)
-        sys.exit(3)
+        raise click.exceptions.Exit(3)
 
     if apply_fixes and not fix:
         raise click.UsageError("--apply requires --fix.")
@@ -2547,7 +2551,7 @@ def scan(
             import traceback
             click.echo(f"[error] Scan failed: {exc}", err=True)
             click.echo(traceback.format_exc(), err=True, nl=False)
-            sys.exit(2)
+            raise click.exceptions.Exit(2) from exc
 
     # External SARIF ingest. ``--ingest`` (repeatable) loads each
     # SARIF file, converts every result to a Finding, and merges
@@ -2834,7 +2838,7 @@ def scan(
         )
 
     if not gate.passed:
-        sys.exit(1)
+        raise click.exceptions.Exit(1)
 
 
 def _run_ai_explain(
@@ -3514,7 +3518,7 @@ def explain_cmd(check_id: str | None) -> None:
             "missing CHECK_ID. Example: pipeline_check explain GHA-001"
         )
     from .core.explain import print_explain
-    sys.exit(print_explain(check_id))
+    raise click.exceptions.Exit(print_explain(check_id))
 
 
 # ────────────────────────────────────────────────────────────────────────────
@@ -3721,7 +3725,12 @@ def main() -> None:
     compatibility, every documented ``pipeline_check --flag ...``
     invocation keeps working. Subcommands are opt-in via a bare
     argv[1] match, so adding more later is cheap.
+
+    Stdio reconfiguration runs here (not at import time) so MCP / LSP
+    callers that pull names out of this module don't inherit the
+    Windows console workarounds when their stdio is JSON-RPC.
     """
+    _tolerate_unencodable_stdio()
     if len(sys.argv) >= 2 and sys.argv[1] == "init":
         sys.argv.pop(1)
         init_cmd()
