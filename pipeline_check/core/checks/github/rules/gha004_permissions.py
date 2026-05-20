@@ -52,6 +52,7 @@ _OIDC_ACTION_PREFIXES: tuple[str, ...] = (
     "actions/attest",                    # generic attestation action
     "slsa-framework/slsa-",              # SLSA generators
     "slsa-github-generator",             # SLSA generators (alt path)
+    "ossf/scorecard-action",             # publishes results to Scorecard API via OIDC
 )
 
 
@@ -59,15 +60,24 @@ def _is_oidc_step(step: dict[str, Any]) -> bool:
     """True when the step is a known OIDC-consuming action.
 
     AWS' ``configure-aws-credentials`` is recognized when paired with a
-    ``role-to-assume`` input (the OIDC mode flag); other OIDC actions
-    are matched on their action path alone since they always consume
-    the id-token when invoked.
+    ``role-to-assume`` input (the OIDC mode flag);
+    ``docker/build-push-action`` is recognized when paired with
+    ``provenance:`` or ``sbom:`` (both signed via Sigstore using the
+    workflow's id-token); other OIDC actions are matched on their
+    action path alone since they always consume the id-token when
+    invoked.
     """
     uses = step.get("uses")
     if not isinstance(uses, str):
         return False
-    if "configure-aws-credentials" in uses and "role-to-assume" in (step.get("with") or {}):
+    with_block = step.get("with") or {}
+    if "configure-aws-credentials" in uses and "role-to-assume" in with_block:
         return True
+    if "docker/build-push-action" in uses:
+        prov = with_block.get("provenance")
+        sbom = with_block.get("sbom")
+        if prov not in (None, False, "false") or sbom not in (None, False, "false"):
+            return True
     return any(prefix in uses for prefix in _OIDC_ACTION_PREFIXES)
 
 
