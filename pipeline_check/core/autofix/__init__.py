@@ -103,7 +103,7 @@ def _roundtrip_safe(before: str, after: str) -> bool:
     # Each structured before-doc must keep its top-level Python type
     # in the corresponding after-doc, with ``None`` (fully commented
     # out) as a permitted compatibility shape.
-    for b, a in zip(before_docs, after_docs):
+    for b, a in zip(before_docs, after_docs, strict=False):
         if isinstance(b, (dict, list)) and a is not None and type(a) is not type(b):
             _log.warning(
                 "autofix output changed top-level YAML type "

@@ -12,6 +12,7 @@ from __future__ import annotations
 import re
 from typing import Any
 
+from ..._primitives.sha_ref import SHA_RE as _SHA_RE
 from ...base import Finding, Severity
 from ...rule import Rule
 
@@ -37,8 +38,6 @@ RULE = Rule(
         "changes what your pipeline runs on the next invocation."
     ),
 )
-
-from ..._primitives.sha_ref import SHA_RE as _SHA_RE
 
 _TEMPLATE_AT_RE = re.compile(r"@([A-Za-z_][\w-]*)\s*$")
 

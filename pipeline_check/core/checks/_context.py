@@ -115,7 +115,7 @@ def looks_like_example(blob: str, match_start: int, window: int = 200) -> bool:
     index = _key_index(blob)
     cutoff = bisect.bisect_left(index, (line_start,))
     keys_by_indent: dict[int, str] = {}
-    for pos, indent, name in index[:cutoff]:
+    for _pos, indent, name in index[:cutoff]:
         if indent < match_indent:
             keys_by_indent[indent] = name
     for name in keys_by_indent.values():

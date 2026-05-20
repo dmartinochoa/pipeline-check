@@ -20,7 +20,6 @@ from pipeline_check.core.chains.engine import evaluate
 from pipeline_check.core.checks.base import (
     Confidence,
     Finding,
-    Severity,
 )
 
 from ._chain_helpers import (

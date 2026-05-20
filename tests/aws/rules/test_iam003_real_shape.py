@@ -30,7 +30,6 @@ from pipeline_check.core.checks.aws.rules import (
     iam003_permission_boundary as rule,
 )
 
-
 _CB_TRUST = (
     '{"Version":"2012-10-17","Statement":[{"Effect":"Allow",'
     '"Principal":{"Service":"codebuild.amazonaws.com"},'

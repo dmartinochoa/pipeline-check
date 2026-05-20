@@ -221,6 +221,7 @@ class TestEngine:
         # invisible. Inject one through the same cache the engine
         # populates after ``_discover()`` first runs.
         import logging
+
         from pipeline_check.core.chains import engine
         from pipeline_check.core.chains.base import ChainRule
 
@@ -240,7 +241,7 @@ class TestEngine:
         engine._RULES_CACHE.append((bogus_rule, _explode))
         try:
             with caplog.at_level(logging.WARNING, logger="pipeline_check.core.chains.engine"):
-                out = chains_pkg.evaluate([
+                chains_pkg.evaluate([
                     _f("GHA-002", ".github/workflows/x.yml"),
                 ])
             # Engine kept going (legitimate AC-001 / AC-003 chains still
