@@ -18,6 +18,11 @@
       "resource": ".github\\workflows\\release.yaml"
     },
     {
+      "check_id": "GHA-057",
+      "severity": "CRITICAL",
+      "resource": ".github\\workflows\\release.yaml"
+    },
+    {
       "check_id": "JF-003",
       "severity": "MEDIUM",
       "resource": "gitea\\repositories\\caterpillar\\Jenkinsfile"

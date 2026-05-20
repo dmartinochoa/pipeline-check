@@ -72,7 +72,7 @@ Resolution rules:
 
 ## What it covers
 
-63 checks · 17 have an autofix patch (``--fix``).
+64 checks · 17 have an autofix patch (``--fix``).
 
 | Check | Title | Severity | Fix |
 |-------|-------|----------|-----|
@@ -136,6 +136,7 @@ Resolution rules:
 | [GHA-058](#gha-058) | Agentic CLI invoked with permission-bypass flags | <span class="pg-sev pg-sev--high">HIGH</span> |  |
 | [GHA-059](#gha-059) | npm install without registry-signature verification step | <span class="pg-sev pg-sev--medium">MEDIUM</span> |  |
 | [GHA-060](#gha-060) | pip install without `--require-hashes` verification | <span class="pg-sev pg-sev--medium">MEDIUM</span> |  |
+| [GHA-061](#gha-061) | GitHub App token minted without a `permissions:` filter | <span class="pg-sev pg-sev--medium">MEDIUM</span> |  |
 | [TAINT-001](#taint-001) | Untrusted input flows across step boundaries via step outputs | <span class="pg-sev pg-sev--high">HIGH</span> |  |
 | [TAINT-002](#taint-002) | Untrusted input flows across jobs via ``jobs.<id>.outputs:`` | <span class="pg-sev pg-sev--high">HIGH</span> |  |
 | [TAINT-003](#taint-003) | Untrusted input forwarded into reusable workflow ``with:`` | <span class="pg-sev pg-sev--high">HIGH</span> |  |
@@ -320,6 +321,8 @@ Add an SBOM generation step, `anchore/sbom-action`, `syft . -o cyclonedx-json`, 
 
 Every string in the workflow is scanned against a set of credential patterns (AWS access keys, GitHub tokens, Slack tokens, JWTs, Stripe, Google, Anthropic, etc., see `--man secrets` for the full catalog). A match means a secret was pasted into YAML, the value is visible in every fork and every build log and must be treated as compromised.
 
+A second key-context pass also fires on a 40-character lowercase-hex value bound to a credential-named YAML key (``API_TOKEN: deadbeef...0ddf00d``). Covers the legacy unprefixed-vendor-token family (Datadog, GitLab v1 PATs, Codecov v3, AppVeyor, CircleCI v1, pre-``ghp_`` GitHub PATs) where the bare hex shape carries no vendor prefix. The credential-key gate keeps commit SHAs and SHA-256 digests out of the false-positive bucket: a 40-hex value in ``deploy_commit:`` doesn't fire.
+
 **Known false-positive modes**
 
 - Test fixtures and documentation blobs sometimes embed credential-shaped strings (JWT samples, AKIAI... examples). The AWS canonical example ``AKIAIOSFODNN7EXAMPLE`` is deliberately NOT suppressed, if it appears in a real workflow it almost always means a copy-paste from docs was never substituted. Defaults to LOW confidence.
@@ -499,7 +502,10 @@ Add `timeout-minutes:` to each job, sized to the 95th percentile of historical r
 <span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-fix pg-fix--rule" title="`--fix` will patch this rule">🔧 autofix</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-3</span> <span class="pg-tag pg-tag--esf">ESF-S-VERIFY-DEPS</span> <span class="pg-tag pg-tag--cwe">CWE-494</span>
 </div>
 
-Detects `curl | bash`, `wget | sh`, and similar patterns that pipe remote content directly into a shell interpreter inside a workflow. An attacker who controls the remote endpoint (or poisons DNS / CDN) gains arbitrary code execution in the CI runner.
+Two shapes fire:
+
+1. **Curl-pipe.** ``curl | bash``, ``wget | sh``, and the shell-subshell / python-inline / download-exec / PowerShell variants documented in ``_primitives/remote_script_exec``. An attacker who controls the remote endpoint (or poisons DNS / CDN) gains arbitrary code execution in the CI runner.
+2. **Trusted-installer (Codecov 2021 shape).** A job downloads an executable from a non-vendor host (``curl -o``, ``wget -O``, ``curl > file``) AND any subsequent step in the same job runs that file (``./file`` invocation or ``chmod +x`` setup). Fires even when the body verifies a SHA256 checksum or GPG signature, because the original Codecov compromise modified the uploader BEFORE the publisher's CI signed it. The carve-out is an upstream-attested provenance reference in the same job: ``slsa-verifier``, ``gh attestation verify``, or ``cosign verify-attestation``. Vendor-allowlisted hosts (``rustup.rs``, ``get.docker.com``, etc.) are skipped here the same way the curl-pipe pass skips them.
 
 **Known false-positive modes**
 
@@ -514,7 +520,7 @@ Detects `curl | bash`, `wget | sh`, and similar patterns that pipe remote conten
 
 **Recommended action**
 
-Download the script to a file, verify its checksum, then execute it. Or vendor the script into the repository.
+Download the script to a file, verify its checksum, then execute it. Or vendor the script into the repository. For third-party installers (Codecov / similar), a SHA256 check + GPG signature is NOT enough on its own — the Codecov 2021 incident shipped a malicious uploader that was signed by the publisher's own (compromised) CI pipeline. Pin the binary to an upstream-attested provenance reference (``slsa-verifier verify-artifact``, ``gh attestation verify``, ``cosign verify-attestation``) or pin a specific release digest, not just any signature.
 
 </div>
 
@@ -550,6 +556,8 @@ Remove --privileged and --cap-add flags. Use minimal volume mounts. Prefer rootl
 
 Detects package-manager invocations that use plain HTTP registries (`--index-url http://`, `--registry=http://`) or disable TLS verification (`--trusted-host`, `--no-verify`) in a workflow. These patterns allow man-in-the-middle injection of malicious packages.
 
+Carve-out: third-party binary installers that download over HTTPS (no insecure registry, no TLS bypass) are GHA-016's trusted-installer shape, not GHA-018's. ``greylag-ci/cicd-goat`` scenario 19 fetches a Codecov-style uploader from a non-vendor HTTPS endpoint, verifies a SHA256 checksum and GPG signature, and runs the binary; GHA-018 deliberately doesn't fire (the source is HTTPS), GHA-016 does (the Codecov-2021 lesson).
+
 <div class="pg-rule__rec" markdown>
 
 **Recommended action**
@@ -568,7 +576,12 @@ Use HTTPS registry URLs. Remove --trusted-host and --no-verify flags. Pin to a p
 <span class="pg-sev pg-sev--critical">CRITICAL</span> <span class="pg-fix pg-fix--rule" title="`--fix` will patch this rule">🔧 autofix</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-6</span> <span class="pg-tag pg-tag--esf">ESF-D-SECRETS</span> <span class="pg-tag pg-tag--cwe">CWE-522</span>
 </div>
 
-Detects patterns where `GITHUB_TOKEN` is written to files, environment files (`$GITHUB_ENV`), or piped through `tee`. Persisted tokens survive the step boundary and can be exfiltrated by later steps, uploaded artifacts, or cache entries, turning a scoped credential into a long-lived one.
+Two shapes are flagged:
+
+1. **Direct.** ``run:`` body writes ``GITHUB_TOKEN`` (or any ``${{ secrets.* }}`` value) to a file, ``$GITHUB_ENV``, ``$GITHUB_OUTPUT``, or ``$GITHUB_STATE``, or pipes it through ``tee``.
+2. **ArtiPACKED (Palo Alto Unit 42, 2024).** Pairs ``actions/checkout`` (default ``persist-credentials: true``, or explicitly set to true) with a downstream ``actions/upload-artifact`` whose ``path:`` covers the repo root (``.``, ``./``, ``${{ github.workspace }}``, or an explicit ``.git/`` reference). The checkout writes the runtime ``GITHUB_TOKEN`` into ``.git/config`` via ``extraheader``; the upload step bundles the whole working directory including ``.git/``, so anyone with read access to the run can ``gh run download`` the artifact and read the token out of ``.git/config``. The rule fires once per offending job; the per-finding location points at the upload step.
+
+Carve-out: secrets leaked to the workflow log (via ``set -x`` shell trace, ``echo $TOKEN``, or URL-embedded credentials that a process tool logs) are GHA-033's domain, not GHA-019's. ``greylag-ci/cicd-goat`` scenario 27 fires GHA-033 only — the secret leaks to log via ``set -x`` but no token persists to file / ``$GITHUB_ENV`` / artifact, which is the persistence shape GHA-019 covers.
 
 <div class="pg-rule__rec" markdown>
 
@@ -865,7 +878,13 @@ Either don't run the script under an untrusted trigger, or split the workflow: k
 <span class="pg-sev pg-sev--critical">CRITICAL</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-6</span> <span class="pg-tag pg-tag--esf">ESF-D-SECRETS</span> <span class="pg-tag pg-tag--cwe">CWE-532</span> <span class="pg-tag pg-tag--cwe">CWE-200</span>
 </div>
 
-Two distinct shapes are flagged: (1) printing a secret context expression directly, e.g. ``echo "${{ secrets.X }}"`` or ``cat <<<${{ secrets.X }}``; (2) printing an env var whose value comes from a secret, when the surrounding step's ``env:`` declares it as ``X: ${{ secrets.X }}``. The first is the obvious foot-gun; the second is the indirect form that slips past lint passes that only scan for ``${{ secrets...}}`` literals.
+Three shapes are flagged:
+
+1. **Direct.** A printed argument references a secret context expression, e.g. ``echo "${{ secrets.X }}"`` or ``cat <<<${{ secrets.X }}``.
+2. **Indirect env var.** A step ``env:`` block resolves a secret into the env (``X: ${{ secrets.X }}``) and the same step's ``run:`` echoes the env var (``echo "$X"``). Catches the lint-evading form where no ``${{ secrets...}}`` literal appears in the run body.
+3. **Shell trace.** The step enables ``set -x`` / ``set -o xtrace`` AND references a secret-bound env var anywhere in the body. Shell trace mode dumps every command with arguments expanded before execution, so a ``curl -H "Bearer $TOKEN"`` line that would normally stay out of the log lands in the log verbatim. The rule fires once per step even though many lines may leak.
+
+Out of scope (deliberate carve-out): inline secret references in a command's *arguments* without shell trace enabled. ``curl --header "Authorization: Bearer ${{ secrets.X }}"`` doesn't echo the header to stdout — the value goes to the network, not the log. That class of leak is covered by GHA-008 (literal credential in YAML) and the network-egress shape of GHA-057, not GHA-033. ``greylag-ci/cicd-goat`` scenario 15 sits squarely in this carve-out: a literal hex token in workflow ``env:`` plus a GET ``curl`` carrying the credential in an ``Authorization:`` header. GHA-008 fires on the literal; GHA-033 deliberately does not.
 
 <div class="pg-rule__rec" markdown>
 
@@ -1555,10 +1574,11 @@ Treat this workflow as already-compromised, not at-risk. A literal worm IOC in t
 <span class="pg-sev pg-sev--critical">CRITICAL</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-4</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-6</span> <span class="pg-tag pg-tag--esf">ESF-D-CODE-INTEGRITY</span> <span class="pg-tag pg-tag--esf">ESF-D-INJECTION</span> <span class="pg-tag pg-tag--cwe">CWE-200</span> <span class="pg-tag pg-tag--cwe">CWE-552</span>
 </div>
 
-Two shapes fire:
+Three shapes fire:
 
 1. ``trufflehog`` / ``gitleaks`` invocation in a ``run:`` block whose stdout pipes to ``curl`` / ``wget`` / ``nc`` / ``gh api -X POST`` — this is the harvest leg of the Shai-Hulud worm postinstall and any similar credential-stealer primitive.
 2. ``trufflehog`` / ``gitleaks`` invoked unconditionally on a workflow whose triggers include ``pull_request_target``, ``issue_comment``, or ``workflow_run`` — the scanner is running with privileged secrets on an attacker-influenced trigger, so even if the output isn't piped to egress today, the next person editing the workflow can land that change via a PR comment.
+3. ``curl`` / ``wget`` / ``httpie`` POST/PUT/PATCH (or ``--data`` upload) to a non-GitHub host whose payload references ``${{ secrets.* }}``, a credential-named env var (``$GITHUB_TOKEN``, ``$NPM_TOKEN``, ``$AWS_*`` keys, etc.), or dumps the runner env (``$(env)``, ``$(printenv)``, ``env > ...``). Catches the third-party-webhook exfil shape where the scanner doesn't run at all — the workflow simply POSTs a build-telemetry payload to an external service that, if the domain lapses or the service is breached, leaks every downstream build's env (which includes ``GITHUB_TOKEN`` always, plus any mapped ``${{ secrets.* }}``). GitHub-owned hosts are allow-listed (``github.com``, ``api.github.com``, ``*.githubusercontent.com``, ``codecov.io`` for the canonical upload path).
 
 Legitimate uses pass: scanner output written to ``${{ github.workspace }}`` or a file under the repo, output uploaded via ``github/codeql-action/upload-sarif`` (CodeQL API, not raw HTTP), and any invocation gated by a ``push``-to-default-branch ``if:`` predicate.
 
@@ -1682,6 +1702,51 @@ Pairs with the per-file PYPI-002 rule (lockfile hash pin presence) on the packag
 **Recommended action**
 
 Pin every dependency with a SHA-256 hash and install with ``pip install -r requirements.txt --require-hashes``. The hash-pinned mode refuses to install any package whose downloaded tarball doesn't match a recorded SHA-256, which is the equivalent of npm's lockfile-integrity guarantee for PyPI. Generate the hashes with ``pip-compile --generate-hashes`` (from ``pip-tools``) or migrate to a package manager that hash-pins by default: ``uv sync`` (reads ``uv.lock``), ``poetry install`` (reads ``poetry.lock``), or ``pipenv install --deploy`` (reads ``Pipfile.lock``). The rule silent-passes when any of those managers runs in the same workflow.
+
+</div>
+
+</div>
+
+<div class="pg-rule pg-rule--medium" markdown>
+
+## GHA-061: GitHub App token minted without a `permissions:` filter { #gha-061 }
+
+<div class="pg-rule__tags">
+<span class="pg-sev pg-sev--medium">MEDIUM</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-5</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-2</span> <span class="pg-tag pg-tag--esf">ESF-C-LEAST-PRIV</span> <span class="pg-tag pg-tag--esf">ESF-D-TOKEN-HYGIENE</span> <span class="pg-tag pg-tag--cwe">CWE-250</span> <span class="pg-tag pg-tag--cwe">CWE-732</span>
+</div>
+
+Fires when a step uses one of the known App-token minting actions without a ``with.permissions`` input:
+
+- ``actions/create-github-app-token`` (the official action; the canonical pattern documented on the GitHub Apps + Actions page).
+- ``tibdex/github-app-token`` (the older community action that the official one replaced; many workflows still pin it).
+- ``peter-murray/workflow-application-token-action`` (similar shape, older.)
+
+The rule is shape-only and doesn't inspect what the App is actually installed with. That's intentional: the scanner can't see the org-side install record, so the right contract is 'always declare the scopes you need at mint time'. Pairs with GHA-050 (publish without OIDC) on the long-lived-credential axis: GHA-050 covers static registry tokens minted by the operator, GHA-061 covers short-lived App tokens that nonetheless carry org-wide scope.
+
+**Known false-positive modes**
+
+- A workflow that genuinely needs every scope the App carries (rare; usually a release-orchestrator job that writes ``contents`` + ``packages`` + ``deployments`` + ``actions``). The right response is still to list those scopes explicitly so the breadth is documented, not to suppress the rule.
+- First-publish bootstrap on a brand-new App install where the available scopes haven't been finalized yet. Suppress on the specific step until the App install settles.
+
+**Seen in the wild**
+
+- zizmor's ``github-app`` audit (2025) flagged this shape after multiple incident reviews showed Apps installed with broad scopes minting full-scope tokens for jobs that only needed ``contents: write``. The runtime cost of one missing ``permissions:`` line is the same as a PAT with all those scopes leaked into the runner.
+
+<div class="pg-rule__rec" markdown>
+
+**Recommended action**
+
+Pass an explicit ``permissions:`` filter when minting a GitHub App installation token. The minted token will then carry only the requested scopes even if the App's install grants more. Example:
+
+    - id: app-token
+      uses: actions/create-github-app-token@<sha>
+      with:
+        app-id: ${{ secrets.RELEASE_APP_ID }}
+        private-key: ${{ secrets.RELEASE_APP_KEY }}
+        permissions: >-
+          {"contents":"write"}
+
+List every scope the consuming steps actually need; a future reader (and an attacker who lands a step in this job) can then see exactly what the token can do. Apps are commonly installed with broad org-wide scopes (``contents: write, packages: write, actions: write, pull-requests: write, ...``) because granular per-install permissions are tedious; without the filter the runner token inherits every one of them.
 
 </div>
 

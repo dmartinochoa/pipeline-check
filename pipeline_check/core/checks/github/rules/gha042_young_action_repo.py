@@ -147,6 +147,18 @@ def _scan_value(
         matches.append((f"{ref.owner}/{ref.repo}", age_days))
 
 
+def _now() -> datetime:
+    """Indirection so tests can freeze wall-clock time.
+
+    Calling ``datetime.now`` inline left a sub-second race between the
+    test's "now" and the rule's "now" — the GHA-042 test had to
+    subtract an extra second from its synthesized ``created_at`` to
+    dodge the drift. Routing every reading of the clock through this
+    helper lets ``monkeypatch.setattr`` freeze it instead.
+    """
+    return datetime.now(tz=UTC)
+
+
 def _age_days(iso8601: str) -> int | None:
     """Return the integer number of days between ``iso8601`` (the
     repo's ``created_at``) and the current UTC time. Returns ``None``
@@ -168,5 +180,5 @@ def _age_days(iso8601: str) -> int | None:
         return None
     if created.tzinfo is None:
         created = created.replace(tzinfo=UTC)
-    delta = datetime.now(tz=UTC) - created
+    delta = _now() - created
     return delta.days

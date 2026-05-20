@@ -519,6 +519,7 @@ STANDARD = Standard(
         "GHA-058":  ["ESF-D-INJECTION"],            # agentic CLI permission-bypass
         "GHA-059":  ["ESF-S-VERIFY-DEPS"],          # npm install without audit signatures
         "GHA-060":  ["ESF-S-VERIFY-DEPS"],          # pip install without --require-hashes
+        "GHA-061":  ["ESF-C-LEAST-PRIV", "ESF-D-TOKEN-HYGIENE"],  # App token without permissions filter
         # ── GitLab CI extras ─────────────────────────────────────
         "GL-028":   ["ESF-S-PIN-DEPS", "ESF-S-VERIFY-DEPS"],   # services: image not pinned
         "GL-029":   ["ESF-C-APPROVAL"],             # manual deploy allow_failure

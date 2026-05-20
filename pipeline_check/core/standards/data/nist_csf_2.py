@@ -490,6 +490,7 @@ STANDARD = Standard(
         "GHA-058":  ["PR.PS-05"],               # agentic CLI permission-bypass
         "GHA-059":  ["GV.SC-05"],               # npm install without audit signatures
         "GHA-060":  ["GV.SC-05"],               # pip install without --require-hashes
+        "GHA-061":  ["PR.AA-05"],               # App token minted without permissions filter
         # ── GitLab CI ─────────────────────────────────────────────
         "GL-004":  ["PR.PS-06"],                # manual deploy allow_failure
         "GL-029":  ["PR.PS-06"],                # manual deploy allow_failure (variant)

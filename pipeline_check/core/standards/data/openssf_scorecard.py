@@ -242,6 +242,7 @@ STANDARD = Standard(
         "GHA-058":  ["Dangerous-Workflow"],                            # agentic CLI permission-bypass
         "GHA-059":  ["Signed-Releases", "Pinned-Dependencies"],        # npm install without audit signatures
         "GHA-060":  ["Pinned-Dependencies"],                           # pip install without --require-hashes
+        "GHA-061":  ["Token-Permissions"],                             # App token minted without permissions filter
         # Cross-pipeline / cross-project artifact ingestion = same
         # source-poisoning shape as the GHA workflow_run rule
         "ADO-010":  ["Dangerous-Workflow"],                            # cross-pipeline download

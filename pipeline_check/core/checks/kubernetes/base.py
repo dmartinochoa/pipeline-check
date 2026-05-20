@@ -28,6 +28,7 @@ from typing import Any
 
 import yaml
 
+from .._yaml_files import load_yaml_files
 from ..base import BaseCheck
 
 #: Workload kinds whose pod spec lives at ``spec.template.spec``.
@@ -96,26 +97,11 @@ class KubernetesContext:
                 p for p in root.rglob("*")
                 if p.is_file() and p.suffix.lower() in {".yml", ".yaml"}
             )
+        loaded, warnings, skipped = load_yaml_files(files, multi_doc=True)
         manifests: list[Manifest] = []
-        warnings: list[str] = []
-        skipped = 0
-        for f in files:
-            try:
-                text = f.read_text(encoding="utf-8")
-            except (OSError, UnicodeDecodeError) as exc:
-                warnings.append(f"{f}: read error: {exc}")
-                skipped += 1
-                continue
-            try:
-                from .._yaml_lines import safe_load_all_with_lines
-                docs_with_lines = list(safe_load_all_with_lines(text))
-            except yaml.YAMLError as exc:
-                first_line = str(exc).split("\n", 1)[0]
-                warnings.append(f"{f}: YAML parse error: {first_line}")
-                skipped += 1
-                continue
-            for idx, (_doc_start_line, doc) in enumerate(docs_with_lines):
-                m = _to_manifest(str(f), idx, doc)
+        for entry in loaded:
+            for idx, doc in enumerate(entry.docs):
+                m = _to_manifest(str(entry.path), idx, doc)
                 if m is not None:
                     manifests.append(m)
         ctx = cls(manifests)

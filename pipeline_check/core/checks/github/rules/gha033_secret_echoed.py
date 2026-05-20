@@ -26,14 +26,33 @@ RULE = Rule(
         "the value itself."
     ),
     docs_note=(
-        "Two distinct shapes are flagged: (1) printing a secret "
-        "context expression directly, e.g. ``echo \"${{ secrets.X }}\"`` "
-        "or ``cat <<<${{ secrets.X }}``; (2) printing an env var "
-        "whose value comes from a secret, when the surrounding step's "
-        "``env:`` declares it as ``X: ${{ secrets.X }}``. The first "
-        "is the obvious foot-gun; the second is the indirect form "
-        "that slips past lint passes that only scan for ``${{ "
-        "secrets...}}`` literals."
+        "Three shapes are flagged:\n\n"
+        "1. **Direct.** A printed argument references a secret context "
+        "expression, e.g. ``echo \"${{ secrets.X }}\"`` or "
+        "``cat <<<${{ secrets.X }}``.\n"
+        "2. **Indirect env var.** A step ``env:`` block resolves a "
+        "secret into the env (``X: ${{ secrets.X }}``) and the same "
+        "step's ``run:`` echoes the env var (``echo \"$X\"``). Catches "
+        "the lint-evading form where no ``${{ secrets...}}`` literal "
+        "appears in the run body.\n"
+        "3. **Shell trace.** The step enables ``set -x`` / "
+        "``set -o xtrace`` AND references a secret-bound env var "
+        "anywhere in the body. Shell trace mode dumps every command "
+        "with arguments expanded before execution, so a ``curl -H "
+        "\"Bearer $TOKEN\"`` line that would normally stay out of the "
+        "log lands in the log verbatim. The rule fires once per step "
+        "even though many lines may leak.\n\n"
+        "Out of scope (deliberate carve-out): inline secret references "
+        "in a command's *arguments* without shell trace enabled. "
+        "``curl --header \"Authorization: Bearer ${{ secrets.X }}\"`` "
+        "doesn't echo the header to stdout — the value goes to the "
+        "network, not the log. That class of leak is covered by "
+        "GHA-008 (literal credential in YAML) and the network-egress "
+        "shape of GHA-057, not GHA-033. ``greylag-ci/cicd-goat`` "
+        "scenario 15 sits squarely in this carve-out: a literal hex "
+        "token in workflow ``env:`` plus a GET ``curl`` carrying the "
+        "credential in an ``Authorization:`` header. GHA-008 fires "
+        "on the literal; GHA-033 deliberately does not."
     ),
 )
 
@@ -50,6 +69,17 @@ _PRINT_HEAD_RE = re.compile(
 #: directly in a printed argument. Uses double-brace markers literal.
 _PRINTED_SECRET_CTX_RE = re.compile(
     r"\$\{\{\s*secrets\.\w+\s*\}\}",
+)
+
+#: Shell trace toggles that turn every subsequent command into a log
+#: leak when secret-bound env vars are in scope. Matches either
+#: ``set -x`` (possibly bundled with other ``-e`` / ``-o pipefail``
+#: flags) or the long form ``set -o xtrace``. The trailing word
+#: boundary keeps ``set -xtr`` (not a real shell flag) from matching.
+_SHELL_TRACE_RE = re.compile(
+    r"(?:^|;|&&|\|\|)\s*set\s+"
+    r"(?:[-+][a-zA-Z]*x[a-zA-Z]*\b|-o\s+xtrace\b)",
+    re.MULTILINE,
 )
 
 
@@ -105,6 +135,29 @@ def _scan_for_printed_secret(run: str, secret_env_names: set[str]) -> bool:
     return False
 
 
+def _shell_trace_with_secret_ref(
+    run: str, secret_env_names: set[str],
+) -> bool:
+    """Return True when *run* enables shell trace AND references any
+    secret-bound env var.
+
+    Shell trace (``set -x`` / ``set -o xtrace``) dumps each command
+    with arguments expanded before execution. A secret-bound variable
+    referenced anywhere in the body after the trace toggle lands in
+    the log verbatim. The toggle position within the script doesn't
+    affect detection here, the rule is concerned with the LEAK not
+    with proving order of execution.
+    """
+    if not secret_env_names:
+        return False
+    if not _SHELL_TRACE_RE.search(run):
+        return False
+    for name in secret_env_names:
+        if re.search(rf"\${{{name}\b|\${re.escape(name)}\b", run):
+            return True
+    return False
+
+
 def check(path: str, doc: dict[str, Any]) -> Finding:
     offenders: list[str] = []
     for job_id, job in iter_jobs(doc):
@@ -115,6 +168,9 @@ def check(path: str, doc: dict[str, Any]) -> Finding:
             secret_env = _step_secret_env_vars(step)
             if _scan_for_printed_secret(run, secret_env):
                 offenders.append(f"{job_id}[{idx}]")
+                continue
+            if _shell_trace_with_secret_ref(run, secret_env):
+                offenders.append(f"{job_id}[{idx}] (set -x + secret env)")
     passed = not offenders
     desc = (
         "No ``run:`` block prints a secret value to the build log."

@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import importlib
+import logging
 import pkgutil
 from collections.abc import Callable
 
@@ -9,6 +10,8 @@ from ..checks.base import Finding
 from .base import Chain, ChainRule
 
 _RULES_CACHE: list[tuple[ChainRule, Callable[[list[Finding]], list[Chain]]]] | None = None
+
+_log = logging.getLogger(__name__)
 
 
 def _discover() -> list[tuple[ChainRule, Callable[[list[Finding]], list[Chain]]]]:
@@ -73,9 +76,15 @@ def evaluate(
         try:
             matches = match(findings) or []
         except Exception:  # pragma: no cover - defensive
-            # A buggy chain rule must not abort evaluation of the others.
-            # Silent continue is intentional: chains are an additive
-            # signal, never a gate by themselves.
+            # A buggy chain rule must not abort evaluation of the others
+            # (chains are an additive signal, never a gate by
+            # themselves), but a silent swallow makes broken rules
+            # invisible. Log at WARNING so the breadcrumb shows up in
+            # ``--verbose`` runs while the scan stays green.
+            _log.warning(
+                "chain rule %s raised during evaluation; skipping",
+                rule.id, exc_info=True,
+            )
             continue
         out.extend(matches)
     out.sort(key=lambda c: (c.chain_id, c.severity.value, ",".join(c.resources)))

@@ -3,7 +3,8 @@ from __future__ import annotations
 
 from typing import Any
 
-from ...base import TLS_BYPASS_RE, Finding, Severity
+from ..._primitives import tls_bypass
+from ...base import Finding, Severity
 from ...rule import Rule
 from ..base import iter_command_steps, step_commands, step_label
 
@@ -24,9 +25,11 @@ RULE = Rule(
         "with every fetch the step performs."
     ),
     docs_note=(
-        "Detection fires on the canonical bypass flags across curl, "
-        "wget, git, npm, pip, gcloud, and openssl. The check is "
-        "deliberately conservative, partial-word matches "
+        "Uses the cross-provider ``_primitives.tls_bypass`` detector "
+        "so detection stays aligned with GHA-027 / GL-023 / JF-022 / "
+        "ADO-026 / CC-024 / GCB-011 / DR-006. Covers curl / wget / "
+        "git / npm / yarn / pip / helm / kubectl / ssh / docker / "
+        "maven / gradle / aws bypasses. Partial-word matches "
         "(``--insecure-protocols``) are excluded."
     ),
 )
@@ -36,10 +39,10 @@ def check(path: str, doc: dict[str, Any]) -> Finding:
     offenders: list[str] = []
     for idx, step in iter_command_steps(doc):
         for cmd in step_commands(step):
-            m = TLS_BYPASS_RE.search(cmd)
-            if m:
+            hits = tls_bypass.scan(cmd)
+            if hits:
                 offenders.append(
-                    f"{step_label(step, idx)}: {m.group(0)}"
+                    f"{step_label(step, idx)}: {hits[0].snippet}"
                 )
                 break
     passed = not offenders

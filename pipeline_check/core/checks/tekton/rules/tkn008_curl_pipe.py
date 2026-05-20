@@ -1,7 +1,8 @@
 """TKN-008, ``curl ... | sh`` and TLS bypass in step scripts."""
 from __future__ import annotations
 
-from ...base import CURL_PIPE_RE, TLS_BYPASS_RE, Finding, Severity
+from ..._primitives import remote_script_exec, tls_bypass
+from ...base import Finding, Severity
 from ...rule import Rule
 from ..base import TektonContext, iter_step_scripts
 
@@ -21,9 +22,12 @@ RULE = Rule(
         "the step runs."
     ),
     docs_note=(
-        "Uses the cross-provider ``CURL_PIPE_RE`` and ``TLS_BYPASS_RE`` "
-        "regexes so detection is consistent with the GHA / GitLab / "
-        "CircleCI / Cloud Build providers."
+        "Uses the cross-provider ``_primitives.remote_script_exec`` "
+        "and ``_primitives.tls_bypass`` detectors so detection is "
+        "consistent with the GHA / GitLab / CircleCI / Cloud Build "
+        "providers (covering helm / kubectl / ssh / docker / maven / "
+        "gradle / aws bypasses in addition to the curl / wget / git / "
+        "npm / pip baseline)."
     ),
     known_fp=(
         "Tasks running entirely against an internal mirror "
@@ -48,12 +52,12 @@ def check(ctx: TektonContext) -> Finding:
             continue
         examined += 1
         for sname, script in iter_step_scripts(doc):
-            if CURL_PIPE_RE.search(script):
+            if remote_script_exec.scan(script):
                 offenders.append(
                     f"{doc.kind}/{doc.name} {sname}: curl-pipe-shell"
                 )
                 continue
-            if TLS_BYPASS_RE.search(script):
+            if tls_bypass.scan(script):
                 offenders.append(
                     f"{doc.kind}/{doc.name} {sname}: TLS bypass"
                 )

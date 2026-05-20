@@ -31,8 +31,13 @@ RULE = Rule(
 _MAX_AGE_DAYS = 90
 
 
+def _now() -> datetime:
+    """Indirection so tests can freeze wall-clock time via monkeypatch."""
+    return datetime.now(tz=UTC)
+
+
 def check(catalog: ResourceCatalog) -> list[Finding]:
-    now = datetime.now(tz=UTC)
+    now = _now()
     threshold = timedelta(days=_MAX_AGE_DAYS)
     findings: list[Finding] = []
     for user in catalog.iam_users():

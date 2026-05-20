@@ -3,7 +3,8 @@ from __future__ import annotations
 
 from typing import Any
 
-from ...base import CURL_PIPE_RE, TLS_BYPASS_RE, Finding, Severity
+from ..._primitives import remote_script_exec, tls_bypass
+from ...base import Finding, Severity
 from ...rule import Rule
 from ..base import ArgoContext, iter_containers, iter_templates, template_name
 
@@ -24,8 +25,10 @@ RULE = Rule(
     ),
     docs_note=(
         "Walks ``script.source`` and joined ``container.args`` text "
-        "with the cross-provider ``CURL_PIPE_RE`` and "
-        "``TLS_BYPASS_RE`` regexes."
+        "with the cross-provider ``_primitives.remote_script_exec`` "
+        "and ``_primitives.tls_bypass`` detectors. Coverage stays "
+        "aligned with GHA-016 / GHA-027 / BK-004 / BK-008 / TKN-008 "
+        "/ GCB-010 / GCB-011 / DF-004."
     ),
 )
 
@@ -52,13 +55,13 @@ def check(ctx: ArgoContext) -> Finding:
                 blob = _container_text(container)
                 if not blob:
                     continue
-                if CURL_PIPE_RE.search(blob):
+                if remote_script_exec.scan(blob):
                     offenders.append(
                         f"{doc.kind}/{doc.name} "
                         f"{template_name(tmpl, idx)}: curl-pipe-shell"
                     )
                     continue
-                if TLS_BYPASS_RE.search(blob):
+                if tls_bypass.scan(blob):
                     offenders.append(
                         f"{doc.kind}/{doc.name} "
                         f"{template_name(tmpl, idx)}: TLS bypass"

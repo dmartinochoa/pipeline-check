@@ -27,7 +27,16 @@ RULE = Rule(
         "tokens, JWTs, Stripe, Google, Anthropic, etc., see "
         "`--man secrets` for the full catalog). A match means a "
         "secret was pasted into YAML, the value is visible in every "
-        "fork and every build log and must be treated as compromised."
+        "fork and every build log and must be treated as compromised.\n\n"
+        "A second key-context pass also fires on a 40-character "
+        "lowercase-hex value bound to a credential-named YAML key "
+        "(``API_TOKEN: deadbeef...0ddf00d``). Covers the legacy "
+        "unprefixed-vendor-token family (Datadog, GitLab v1 PATs, "
+        "Codecov v3, AppVeyor, CircleCI v1, pre-``ghp_`` GitHub "
+        "PATs) where the bare hex shape carries no vendor prefix. "
+        "The credential-key gate keeps commit SHAs and SHA-256 "
+        "digests out of the false-positive bucket: a 40-hex value "
+        "in ``deploy_commit:`` doesn't fire."
     ),
     known_fp=(
         "Test fixtures and documentation blobs sometimes embed "

@@ -7,19 +7,18 @@ from __future__ import annotations
 
 import pytest
 
+from pipeline_check.core.checks._primitives import remote_script_exec, tls_bypass
 from pipeline_check.core.checks.base import (
-    CURL_PIPE_RE,
     DOCKER_INSECURE_RE,
     PKG_NO_LOCKFILE_RE,
-    TLS_BYPASS_RE,
 )
 
 # ────────────────────────────────────────────────────────────────────────
-# TLS_BYPASS_RE — MITM injection via disabled certificate verification
+# _primitives.tls_bypass — MITM injection via disabled cert verification
 # ────────────────────────────────────────────────────────────────────────
 
 
-class TestTLSBypassRE:
+class TestTLSBypassPrimitive:
     """Every TLS bypass pattern must be caught regardless of position."""
 
     @pytest.mark.parametrize("cmd", [
@@ -30,21 +29,21 @@ class TestTLSBypassRE:
         "curl -o out.tar.gz -k https://mirror.io/file",
     ])
     def test_curl_insecure_flag(self, cmd):
-        assert TLS_BYPASS_RE.search(cmd.lower()), f"missed: {cmd}"
+        assert tls_bypass.scan(cmd), f"missed: {cmd}"
 
     @pytest.mark.parametrize("cmd", [
         "curl https://example.com",
         "curl -v -o file https://safe.io/archive.tar.gz",
     ])
     def test_curl_safe_not_flagged(self, cmd):
-        assert not TLS_BYPASS_RE.search(cmd.lower()), f"false positive: {cmd}"
+        assert not tls_bypass.scan(cmd), f"false positive: {cmd}"
 
     @pytest.mark.parametrize("cmd", [
         "git config http.sslVerify false",
         "git config --global http.sslverify false",
     ])
     def test_git_ssl_verify(self, cmd):
-        assert TLS_BYPASS_RE.search(cmd.lower()), f"missed: {cmd}"
+        assert tls_bypass.scan(cmd), f"missed: {cmd}"
 
     @pytest.mark.parametrize("cmd", [
         "NODE_TLS_REJECT_UNAUTHORIZED=0",
@@ -56,15 +55,15 @@ class TestTLSBypassRE:
         "GOINSECURE=example.com",
     ])
     def test_env_var_bypass(self, cmd):
-        assert TLS_BYPASS_RE.search(cmd.lower()), f"missed: {cmd}"
+        assert tls_bypass.scan(cmd), f"missed: {cmd}"
 
 
 # ────────────────────────────────────────────────────────────────────────
-# CURL_PIPE_RE — remote code execution via pipe to interpreter
+# _primitives.remote_script_exec — RCE via pipe to interpreter
 # ────────────────────────────────────────────────────────────────────────
 
 
-class TestCurlPipeRE:
+class TestRemoteScriptExecPrimitive:
 
     @pytest.mark.parametrize("cmd", [
         "curl https://example.com | bash",
@@ -79,7 +78,7 @@ class TestCurlPipeRE:
         "irm https://example.com | iex",
     ])
     def test_pipe_to_interpreter(self, cmd):
-        assert CURL_PIPE_RE.search(cmd.lower()), f"missed: {cmd}"
+        assert remote_script_exec.scan(cmd), f"missed: {cmd}"
 
     @pytest.mark.parametrize("cmd", [
         "curl https://example.com -o file.tar.gz",
@@ -87,7 +86,7 @@ class TestCurlPipeRE:
         "python3 -m pytest",
     ])
     def test_safe_not_flagged(self, cmd):
-        assert not CURL_PIPE_RE.search(cmd.lower()), f"false positive: {cmd}"
+        assert not remote_script_exec.scan(cmd), f"false positive: {cmd}"
 
 
 # ────────────────────────────────────────────────────────────────────────

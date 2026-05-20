@@ -9,8 +9,15 @@ from __future__ import annotations
 
 import re
 
-# A 40-character lowercase hex string, a git commit SHA.
-SHA_RE = re.compile(r"^[0-9a-f]{40}$")
+from ..._primitives.sha_ref import SHA_RE  # re-exported for callers
+
+__all__ = [
+    "SHA_RE",
+    "UNTRUSTED_CONTEXT_RE",
+    "PR_HEAD_REF_RE",
+    "CACHE_TAINT_RE",
+    "UNTRUSTED_TRIGGERS",
+]
 
 # Untrusted attacker-controllable context expressions inside `run:`
 # bodies. Catalog assembled from StepSecurity / GitHub Security Lab

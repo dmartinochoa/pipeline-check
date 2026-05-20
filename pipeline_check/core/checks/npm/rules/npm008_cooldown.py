@@ -79,6 +79,11 @@ RULE = Rule(
 _EXACT_SPEC_RE = re.compile(r"^(?:=|v)?(\d+\.\d+\.\d+(?:-[\w.+-]+)?)$")
 
 
+def _now() -> _dt.datetime:
+    """Indirection so tests can freeze wall-clock time via monkeypatch."""
+    return _dt.datetime.now(_dt.UTC)
+
+
 def _exact_version_from_spec(spec: str) -> str | None:
     """Return the exact version literal if *spec* names one, else None.
 
@@ -138,7 +143,7 @@ def check(manifest: NpmManifest, ctx: NpmContext | None = None) -> Finding:
             recommendation=RULE.recommendation, passed=True,
         )
 
-    now = _dt.datetime.now(_dt.UTC)
+    now = _now()
     offenders: list[str] = []
     locations: list[Location] = []
     for section, name, spec in iter_manifest_dependencies(manifest):

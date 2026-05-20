@@ -11,10 +11,8 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
-import yaml
-
+from .._yaml_files import load_yaml_files
 from .._yaml_lines import line_of as _line_of
-from .._yaml_lines import safe_load_yaml_lines
 from ..base import BaseCheck, Location
 
 if TYPE_CHECKING:
@@ -98,26 +96,13 @@ class GitHubContext:
                 p for p in root.rglob("*")
                 if p.is_file() and p.suffix.lower() in {".yml", ".yaml"}
             )
+        loaded, warnings, skipped = load_yaml_files(files)
         workflows: list[Workflow] = []
-        warnings: list[str] = []
-        skipped = 0
-        for f in files:
-            try:
-                text = f.read_text(encoding="utf-8")
-            except (OSError, UnicodeDecodeError) as exc:
-                warnings.append(f"{f}: read error: {exc}")
-                skipped += 1
-                continue
-            try:
-                data = safe_load_yaml_lines(text)
-            except yaml.YAMLError as exc:
-                first_line = str(exc).split("\n", 1)[0]
-                warnings.append(f"{f}: YAML parse error: {first_line}")
-                skipped += 1
-                continue
+        for entry in loaded:
+            data = entry.docs[0]
             if not isinstance(data, dict):
                 continue
-            workflows.append(Workflow(path=str(f), data=data))
+            workflows.append(Workflow(path=str(entry.path), data=data))
         ctx = cls(workflows)
         ctx.files_skipped = skipped
         ctx.warnings = warnings

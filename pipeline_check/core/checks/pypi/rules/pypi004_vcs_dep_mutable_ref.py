@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import re
 
+from ..._primitives.sha_ref import SHA_RE_IGNORECASE as _SHA_RE
 from ...base import Finding, Location, Severity
 from ...rule import Rule
 from ..base import RequirementsFile, iter_specs
@@ -41,7 +42,6 @@ RULE = Rule(
 _VCS_SCHEMES: tuple[str, ...] = (
     "git+", "hg+", "svn+", "bzr+",
 )
-_SHA_RE = re.compile(r"^[0-9a-f]{40}$", re.IGNORECASE)
 # Match ``...@<ref>`` where ``<ref>`` is what follows the *last* ``@``
 # in the URL portion (so ``user:pass@host.com/path@ref`` still parses).
 _REF_RE = re.compile(r"@([^@/#?\s]+)(?=[#?\s]|$)")

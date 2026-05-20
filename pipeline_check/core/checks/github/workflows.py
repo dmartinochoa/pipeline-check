@@ -29,7 +29,7 @@ import inspect
 from collections.abc import Callable
 
 from ..base import Finding
-from ..rule import Rule, discover_rules
+from ..rule import Rule, apply_rule_metadata, discover_rules
 from .base import GitHubBaseCheck, GitHubContext
 
 
@@ -88,10 +88,6 @@ class WorkflowChecks(GitHubBaseCheck):
                     finding = check_fn(wf.path, wf.data, wf)
                 else:
                     finding = check_fn(wf.path, wf.data)
-                finding.cwe = list(rule.cwe)
-                if not finding.incident_refs:
-                    finding.incident_refs = list(rule.incident_refs)
-                if finding.exploit_example is None:
-                    finding.exploit_example = rule.exploit_example
+                apply_rule_metadata(finding, rule)
                 findings.append(finding)
         return findings

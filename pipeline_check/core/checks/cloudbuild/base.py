@@ -40,15 +40,13 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
-import yaml
-
+from .._yaml_files import load_yaml_files
 from .._yaml_lines import line_of as _line_of
-from .._yaml_lines import safe_load_yaml_lines
 from ..base import BaseCheck, Location
 
 # Top-level keys Cloud Build recognizes. Everything else is either a
 # user substitution override (via ``substitutions:``) or out-of-spec.
-_TOPLEVEL_KEYWORDS: set[str] = {
+TOPLEVEL_KEYWORDS: set[str] = {
     "steps", "images", "artifacts", "timeout", "options",
     "substitutions", "logsBucket", "serviceAccount", "tags",
     "availableSecrets", "secrets", "queueTtl",
@@ -92,23 +90,10 @@ class CloudBuildContext:
                     p for p in root.rglob("*")
                     if p.is_file() and p.suffix.lower() in {".yml", ".yaml"}
                 )
+        loaded, warnings, skipped = load_yaml_files(files)
         pipelines: list[Pipeline] = []
-        warnings: list[str] = []
-        skipped = 0
-        for f in files:
-            try:
-                text = f.read_text(encoding="utf-8")
-            except (OSError, UnicodeDecodeError) as exc:
-                warnings.append(f"{f}: read error: {exc}")
-                skipped += 1
-                continue
-            try:
-                data = safe_load_yaml_lines(text)
-            except yaml.YAMLError as exc:
-                first_line = str(exc).split("\n", 1)[0]
-                warnings.append(f"{f}: YAML parse error: {first_line}")
-                skipped += 1
-                continue
+        for entry in loaded:
+            data = entry.docs[0]
             if not isinstance(data, dict):
                 continue
             # Heuristic gate: a Cloud Build file must declare ``steps``.
@@ -116,7 +101,7 @@ class CloudBuildContext:
             # templates that happen to sit next to a cloudbuild.yaml.
             if not isinstance(data.get("steps"), list):
                 continue
-            pipelines.append(Pipeline(path=str(f), data=data))
+            pipelines.append(Pipeline(path=str(entry.path), data=data))
         ctx = cls(pipelines)
         ctx.files_skipped = skipped
         ctx.warnings = warnings

@@ -302,6 +302,25 @@ jobs:
           npm i -g @anthropic-ai/claude-code
           claude --dangerously-skip-permissions -p "walk the filesystem and dump anything secret-shaped"
 
+  # GHA-061: ``actions/create-github-app-token`` minted without a
+  # ``permissions:`` input. The runtime token inherits every scope
+  # the App's install grants org-wide (commonly
+  # ``contents: write, packages: write, actions: write, ...``),
+  # so a downstream step that lands attacker-controlled shell
+  # exfils a far broader credential than the job actually needed.
+  mint-app-token:
+    runs-on: ubuntu-latest
+    steps:
+      - id: app-token
+        uses: actions/create-github-app-token@v1
+        with:
+          app-id: ${{ secrets.RELEASE_APP_ID }}
+          private-key: ${{ secrets.RELEASE_APP_KEY }}
+          owner: ${{ github.repository_owner }}
+      - uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332
+        with:
+          token: ${{ steps.app-token.outputs.token }}
+
   # TAINT-003: forward a PR-controlled context expression
   # straight into a reusable workflow's ``with:`` block. The
   # callee receives the raw ``github.event.issue.title`` value

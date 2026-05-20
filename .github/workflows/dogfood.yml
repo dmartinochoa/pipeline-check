@@ -16,13 +16,6 @@ on:
 
 permissions:
   contents: read
-  # Needed by ``github/codeql-action/upload-sarif`` in the
-  # ``Upload SARIF`` step below. Previously this lived under
-  # ``concurrency:`` where it had no effect, so the SARIF upload
-  # ran without the scope it needed and the dogfood findings
-  # never reached the GitHub code-scanning UI. CodeRabbit caught
-  # it on PR #93.
-  security-events: write
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -32,6 +25,16 @@ jobs:
   scan-self:
     runs-on: ubuntu-latest
     timeout-minutes: 10
+    permissions:
+      contents: read
+      # Needed by ``github/codeql-action/upload-sarif`` in the
+      # ``Upload SARIF`` step below. Scoped per-job so the elevated
+      # write grant doesn't bleed across the workflow. Previously
+      # this lived under ``concurrency:`` where it had no effect, so
+      # the SARIF upload ran without the scope it needed and the
+      # dogfood findings never reached the GitHub code-scanning UI.
+      # CodeRabbit caught it on PR #93.
+      security-events: write
 
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6.0.2
@@ -104,6 +107,12 @@ jobs:
     if: github.event_name == 'push'
     runs-on: ubuntu-latest
     timeout-minutes: 10
+    permissions:
+      contents: read
+      # SARIF upload below needs ``security-events: write``. Scoped
+      # per-job so the elevated grant doesn't bleed across the
+      # workflow.
+      security-events: write
 
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6.0.2

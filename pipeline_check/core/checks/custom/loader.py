@@ -113,7 +113,18 @@ def load_custom_rules(
     seen_ids: dict[str, str] = {}  # id -> source file (for collision msg)
     for raw in paths:
         for file_path in _iter_rule_files(raw):
-            text = file_path.read_text(encoding="utf-8")
+            try:
+                text = file_path.read_text(encoding="utf-8")
+            except (OSError, UnicodeDecodeError) as exc:
+                # Wrap into the loader's own error type so callers
+                # get the same "fail-fast with a file-pointing message"
+                # contract that the YAML / validation errors below
+                # already obey. The bare ``OSError`` /
+                # ``UnicodeDecodeError`` used to escape raw, which made
+                # the cause hard to triage from the operator's POV.
+                raise CustomRuleError(
+                    f"{file_path}: read error: {exc}"
+                ) from exc
             try:
                 data = safe_load_strict(text)
             except yaml.YAMLError as exc:

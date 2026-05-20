@@ -30,8 +30,8 @@ Three vectors:
 This primitive is intentionally conservative: it requires an
 explicit install verb (``pip install``, ``npm install``, …) before
 scanning arguments, so a curl-pipe to a tarball URL that happens
-to live in the same line won't false-positive on CURL_PIPE_RE's
-territory.
+to live in the same line won't false-positive on
+``_primitives.remote_script_exec``'s territory.
 """
 from __future__ import annotations
 

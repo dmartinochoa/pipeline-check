@@ -53,7 +53,7 @@ from collections.abc import Callable
 from dataclasses import dataclass
 from typing import Any
 
-from .jsonpath import CompiledPath, compile_path
+from .jsonpath import CompiledPath, JsonPathError, compile_path
 
 
 class PredicateError(ValueError):
@@ -457,7 +457,11 @@ def compile_template(text: str) -> CompiledTemplate:
                     path = CompiledPath(expression=expr, steps=path.steps)
             else:
                 path = None
-        except Exception:
+        # ``compile_path`` raises ``JsonPathError`` (a ``ValueError``
+        # subclass) for malformed expressions; the renderer falls back
+        # to a literal in that case. Anything else escaping from here
+        # is a parser bug, not a user-input shape, so let it propagate.
+        except JsonPathError:
             path = None
         parts.append((before, path))
         pos = match.end()

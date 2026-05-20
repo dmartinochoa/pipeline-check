@@ -215,6 +215,41 @@ class TestEngine:
         ids = [c.chain_id for c in out]
         assert ids == sorted(ids)
 
+    def test_broken_rule_logs_breadcrumb_and_keeps_running(self, caplog):
+        # A buggy chain rule that raises must not abort the engine, but
+        # it should leave a WARNING breadcrumb so the failure isn't
+        # invisible. Inject one through the same cache the engine
+        # populates after ``_discover()`` first runs.
+        import logging
+
+        from pipeline_check.core.chains import engine
+        from pipeline_check.core.chains.base import ChainRule
+
+        chains_pkg.evaluate([])  # populate cache
+        bogus_rule = ChainRule(
+            id="ZZ-BROKEN",
+            title="raises on purpose",
+            severity=Severity.HIGH,
+            summary="x",
+            triggering_check_ids=("GHA-002",),
+        )
+
+        def _explode(_findings):
+            raise RuntimeError("intentional test failure")
+
+        assert engine._RULES_CACHE is not None
+        engine._RULES_CACHE.append((bogus_rule, _explode))
+        try:
+            with caplog.at_level(logging.WARNING, logger="pipeline_check.core.chains.engine"):
+                chains_pkg.evaluate([
+                    _f("GHA-002", ".github/workflows/x.yml"),
+                ])
+            # Engine kept going (legitimate AC-001 / AC-003 chains still
+            # fire on the GHA-002 input), and the breadcrumb landed.
+            assert any("ZZ-BROKEN" in r.message for r in caplog.records)
+        finally:
+            engine._RULES_CACHE.pop()
+
     def test_chain_to_dict_round_trip_is_json_serialisable(self):
         wf = ".github/workflows/x.yml"
         findings = [_f("GHA-002", wf), _f("GHA-005", wf)]

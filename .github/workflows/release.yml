@@ -119,9 +119,17 @@ jobs:
         # publish step's ``twine check`` doesn't choke on a
         # non-distribution file (gh-action-pypi-publish refuses to
         # upload anything in ``dist/`` that isn't a wheel or sdist).
+        #
+        # Install ordering: deps come from the hash-locked
+        # ``requirements.txt`` (``--require-hashes`` rejects any tarball
+        # whose SHA-256 doesn't match), then the freshly built wheel
+        # lands on top with ``--no-deps`` so pip doesn't reach back to
+        # PyPI for unverified transitives. Project-side hash pinning
+        # is what GHA-060 asks for on every workflow.
         run: |
           python -m pip install --upgrade cyclonedx-bom
-          python -m pip install dist/*.whl
+          python -m pip install --require-hashes -r requirements.txt
+          python -m pip install --no-deps dist/*.whl
           mkdir -p sbom
           cyclonedx-py environment --output-file sbom/sbom.cdx.json
           ls sbom/

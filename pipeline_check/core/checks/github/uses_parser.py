@@ -24,7 +24,7 @@ import re
 from dataclasses import dataclass
 from typing import Any, Literal
 
-_SHA_RE = re.compile(r"^[0-9a-f]{40}$")
+from .._primitives.sha_ref import SHA_RE as _SHA_RE
 
 # A workflow reference always ends in ``.yml`` or ``.yaml`` and lives
 # under ``.github/workflows/`` in the called repo.

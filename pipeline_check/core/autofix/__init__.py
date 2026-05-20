@@ -34,13 +34,18 @@ module fails loudly at import time, not silently as a missing fixer.)
 from __future__ import annotations
 
 import difflib
+import logging
 from collections.abc import Callable
+
+import yaml
 
 from ..checks.base import Finding
 
 Fixer = Callable[[str, Finding], "str | None"]
 
 _FIXERS: dict[str, Fixer] = {}
+
+_log = logging.getLogger(__name__)
 
 
 def register(check_id: str) -> Callable[[Fixer], Fixer]:
@@ -55,11 +60,67 @@ def available_fixers() -> list[str]:
     return sorted(_FIXERS.keys())
 
 
+def _roundtrip_safe(before: str, after: str) -> bool:
+    """Reject patches that broke a YAML file or rewrote its top-level shape.
+
+    Fixers rewrite text via regex; on flow mappings, block scalars, or
+    multi-doc streams a misfire can produce something that no longer
+    parses or that swapped a mapping for a list. Bail out before the
+    operator sees the diff so the worst case is "no patch", not "patch
+    that mangles the file".
+
+    Returns ``True`` when:
+
+    1. *before* didn't parse cleanly as a YAML mapping or list. The
+       file is a Dockerfile, an odd-shape document, or empty; no
+       structural invariant to check, let the fixer's output through.
+    2. *after* parses, has the same top-level Python type as *before*,
+       and (for multi-doc streams) the same number of documents.
+    """
+    try:
+        before_docs = list(yaml.safe_load_all(before))
+    except yaml.YAMLError:
+        return True
+    # Dockerfile / scalar / empty input: ``safe_load_all`` returned
+    # nothing structural to check, let the fixer's output through.
+    if not any(isinstance(d, (dict, list)) for d in before_docs):
+        return True
+    try:
+        after_docs = list(yaml.safe_load_all(after))
+    except yaml.YAMLError:
+        _log.warning("autofix output failed to parse as YAML; bailing")
+        return False
+    # True multi-doc stream (Kubernetes manifest with several
+    # ``---``-separated docs): the fixer must preserve the doc count.
+    # Single-doc inputs whose ``after_docs`` drops to zero are the
+    # "fully commented out" case; that's permitted below.
+    if len(before_docs) > 1 and len(before_docs) != len(after_docs):
+        _log.warning(
+            "autofix output changed multi-doc count (%d -> %d); bailing",
+            len(before_docs), len(after_docs),
+        )
+        return False
+    # Each structured before-doc must keep its top-level Python type
+    # in the corresponding after-doc, with ``None`` (fully commented
+    # out) as a permitted compatibility shape.
+    for b, a in zip(before_docs, after_docs, strict=False):
+        if isinstance(b, (dict, list)) and a is not None and type(a) is not type(b):
+            _log.warning(
+                "autofix output changed top-level YAML type "
+                "(%s -> %s); bailing",
+                type(b).__name__, type(a).__name__,
+            )
+            return False
+    return True
+
+
 def generate_fix(finding: Finding, content: str) -> str | None:
     """Run the registered fixer for ``finding.check_id`` against ``content``.
 
-    Returns the edited text, or ``None`` if no fixer is registered or
-    the fixer decided the content already satisfies the check.
+    Returns the edited text, or ``None`` if no fixer is registered, the
+    fixer decided the content already satisfies the check, or the
+    generated patch would no longer parse as the same shape of YAML
+    document.
 
     Fixer exceptions propagate . the CLI catches at the call site so a
     single broken fixer doesn't abort a batch run, but a bug in a
@@ -70,6 +131,8 @@ def generate_fix(finding: Finding, content: str) -> str | None:
         return None
     out = fn(content, finding)
     if out is None or out == content:
+        return None
+    if not _roundtrip_safe(content, out):
         return None
     return out
 

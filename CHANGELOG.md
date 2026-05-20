@@ -10,6 +10,272 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 PRs landing on `dev` between releases append entries below. The
 release commit collapses this section into `## [X.Y.Z] - <date>`.
 
+### Added
+
+- **GHA-016 trusted-installer (Codecov 2021) shape.** Widens the
+  rule from ``curl | bash`` plus its in-primitive variants
+  (shell-subshell, python-inline, download-exec, PowerShell) to also
+  fire when a job downloads an executable from a non-vendor host
+  (``curl -o``, ``wget -O``, ``curl > file``) AND any subsequent
+  step in the same job runs that file (``./file``, ``chmod +x``,
+  ``bash file.sh``). The shape fires even when the body verifies a
+  SHA256 checksum or GPG signature; the original Codecov compromise
+  shipped a malicious uploader signed by the publisher's own
+  (compromised) CI. The carve-out is an upstream-attested
+  provenance reference in the same job
+  (``slsa-verifier verify-artifact``, ``gh attestation verify``,
+  ``cosign verify-attestation``, ``in-toto-verify``). The existing
+  vendor allowlist (``rustup.rs`` / ``get.docker.com`` / etc.) still
+  exempts those installers. Closes the ``greylag-ci/cicd-goat``
+  scenario 19 gap.
+- **GHA-019 ArtiPACKED shape.** Widens the rule from
+  "GITHUB_TOKEN written to a file / ``$GITHUB_ENV`` / ``tee``" to
+  also pair ``actions/checkout`` (default
+  ``persist-credentials: true``) with a downstream
+  ``actions/upload-artifact`` whose ``path:`` covers the repo root
+  (``.``, ``./``, ``${{ github.workspace }}``, or an explicit
+  ``.git/`` reference). The checkout writes the runtime
+  ``GITHUB_TOKEN`` into ``.git/config`` via ``extraheader``; the
+  upload bundles ``.git/`` into the artifact, so anyone with read
+  access to the run can ``gh run download`` and grep the token out.
+  The ordering requirement (checkout must precede upload) keeps a
+  preexisting upload of an unrelated tree from firing the rule.
+  Closes the ``greylag-ci/cicd-goat`` scenario 17 gap — the
+  Palo Alto Unit 42 ArtiPACKED pattern.
+- **GHA-033 shell-trace shape.** Widens the rule from
+  "echo / printf / cat / tee / print of a secret context expression
+  or secret-bound env var" to also fire when the step enables
+  ``set -x`` / ``set -o xtrace`` (or any ``set`` bundle with the
+  ``x`` flag, e.g. ``set -euxo pipefail``) AND references a
+  secret-bound env var anywhere in the body. Shell trace mode
+  dumps each command with arguments expanded before execution, so a
+  ``curl -H "Bearer $TOKEN"`` line that would normally stay out of
+  the log lands verbatim. Closes the ``greylag-ci/cicd-goat``
+  scenario 27 gap. The carve-out for inline ``${{ secrets.* }}`` in
+  curl arguments without shell trace stands (curl doesn't echo its
+  args; that's GHA-057's domain).
+- **GHA-008 keyed-hex detector.** A second, always-on pass in
+  ``_secrets.py`` fires on a 40-char lowercase-hex value bound to a
+  credential-named YAML key (``LEGACY_API_TOKEN: deadbeef...0ddf00d``).
+  Covers the legacy-unprefixed-vendor-token family (Datadog, GitLab v1
+  PATs, Codecov v3, AppVeyor, CircleCI v1, pre-``ghp_`` GitHub PATs)
+  where the bare hex shape carries no vendor prefix. The
+  credential-key gate keeps commit SHAs and SHA-256 digests out: a
+  40-hex in ``deploy_commit:`` doesn't fire. Closes the
+  ``greylag-ci/cicd-goat`` scenario 15 gap (KICS catches that shape;
+  pipeline-check previously didn't).
+- **GHA-057 third-party-webhook exfil shape.** Widens the rule from
+  "secret-scanner output piped to egress" to also fire on
+  ``curl`` / ``wget`` / ``httpie`` POST/PUT/PATCH (or
+  ``--data`` upload) to a non-GitHub host whose payload references
+  ``${{ secrets.* }}``, a credential-named env var
+  (``$GITHUB_TOKEN``, ``$NPM_TOKEN``, ``$AWS_*``, etc.), or dumps the
+  runner env (``$(env)``, ``$(printenv)``). GitHub-owned hosts plus
+  Codecov / npm / PyPI allowlisted. Closes the
+  ``greylag-ci/cicd-goat`` scenario 24 gap, where a build-telemetry
+  ``curl POST`` exfils ``$(env | base64)`` to a third-party tracker
+  domain that, if it lapses or gets breached, leaks every downstream
+  build's runtime env.
+- **GHA-061 — GitHub App token minted without a ``permissions:``
+  filter.** ``actions/create-github-app-token``,
+  ``tibdex/github-app-token``, and
+  ``peter-murray/workflow-application-token-action`` accept a
+  ``permissions:`` input that scopes the minted installation
+  token. When the input is missing the runtime token inherits
+  every permission the App's install grants on the org, which is
+  commonly broader than the consuming job needs (``contents: write,
+  packages: write, actions: write, pull-requests: write, ...``).
+  The new rule fires on any minting step whose ``with:`` block
+  has no non-empty ``permissions`` entry. Closes scenario 26 of
+  the ``greylag-ci/cicd-goat`` matrix (GHA-050 was previously
+  declared on that scenario by mistake; GHA-050 covers publish
+  steps, not App-token mints).
+
+### Changed
+
+- **GHA-004 OIDC allowlist widened.** ``ossf/scorecard-action``
+  consumes ``id-token: write`` when ``publish_results: true`` posts
+  the score to the OpenSSF Scorecard API, and
+  ``docker/build-push-action`` consumes it when ``provenance:`` or
+  ``sbom:`` is set (both signed via Sigstore). Both are now
+  recognized so the rule stops flagging the surrounding job as
+  "id-token: write with no OIDC step". Brings the dogfood ``scorecard.yml``
+  and ``docker-publish.yml`` workflows down to zero false positives.
+- **Legacy ``CURL_PIPE_RE`` / ``TLS_BYPASS_RE`` constants removed.**
+  ``BK-004``, ``BK-008``, ``DR-006``, ``ARGO-008``, and ``TKN-008``
+  migrated from the combined regexes in ``checks/base.py`` to the
+  cross-provider ``_primitives.remote_script_exec`` /
+  ``_primitives.tls_bypass`` detectors. The holdouts now cover the
+  full helm / kubectl / ssh / docker / maven / gradle / aws bypass
+  catalog the rest of the rule pack already saw, and the legacy
+  constants are gone from the public ``pipeline_check.core.checks.base``
+  surface. The ``_comment_tls_bypass`` autofixer routes per-line text
+  through the primitive so its recall stays aligned with detection.
+- **Shared ``SHA_RE`` primitive.** ``_primitives/sha_ref.py`` exports
+  one canonical 40-char lowercase-hex pattern (and a case-insensitive
+  variant for npm / pypi git refs); six near-identical local
+  ``re.compile`` lines across the rule pack and the autofix engine
+  now route through it.
+- **Dogfood workflow hardening.** ``release.yml`` and ``docs.yml``
+  install with ``pip install --require-hashes`` against
+  ``requirements.txt`` / ``requirements-docs.txt`` (the latter
+  regenerated with ``pip-compile --generate-hashes`` from a new
+  ``requirements-docs.in``). Top-level ``security-events: write`` /
+  ``packages: write`` / ``id-token: write`` grants on ``dogfood.yml``
+  / ``docker-publish.yml`` / ``codeql.yml`` moved into per-job
+  ``permissions:`` blocks; the workflow top-level holds
+  ``contents: read``. Closes five entries from the dogfood
+  code-scanning audit in ROADMAP.md.
+- **Autofix roundtrip safety net.** ``generate_fix`` parses the
+  generated patch through ``yaml.safe_load_all`` and bails (returns
+  ``None``) when the result no longer parses, when the top-level
+  Python type swapped (mapping → list, list → mapping), or when the
+  multi-doc count changed in a true multi-doc Kubernetes manifest.
+  ``None``-after (everything commented out) and Dockerfile / scalar
+  inputs are deliberately permitted. A ``WARNING`` log breadcrumb
+  fires on each bailout so a broken fixer is visible in ``--verbose``
+  runs.
+- **Autofix de-dupes provider keyword sets.** GitLab top-level
+  keywords and Cloud Build top-level keywords are now imported
+  from ``gitlab/base.py`` and ``cloudbuild/base.py`` directly; the
+  two hand-coded copies in ``autofix/_impl.py`` are gone, so a new
+  top-level key in either provider can't drift between the canonical
+  set and the fixer.
+- **Chain-engine breadcrumb on rule errors.** A chain rule that
+  raises during ``evaluate`` no longer disappears into a silent
+  ``continue``. The engine logs the chain id and traceback at
+  ``WARNING`` and keeps evaluating the rest of the rules (chains
+  stay additive); ``--verbose`` runs now surface broken rules
+  instead of hiding them.
+- **Clock-sensitive rules use a ``_now()`` indirection.** GHA-042
+  (young action repo), GHA-047 (fresh action ref), NPM-008, PYPI-008,
+  MVN-008, and IAM-007 each ship a module-level ``_now()`` that
+  tests can ``monkeypatch.setattr`` to a frozen ``datetime`` instead
+  of subtracting an extra second from the synthesized timestamp to
+  dodge wall-clock drift. The GHA-042 boundary test drops the
+  ``seconds=1`` workaround.
+- **Narrower test-skip excepts on MCP / Helm.** Importing the MCP
+  harness layer now skips on ``ImportError`` / ``ModuleNotFoundError``
+  only (a scanner-side ``TypeError`` / ``AttributeError`` raises
+  loudly). The Helm end-to-end smoke test skips only when
+  ``HelmRenderError.__cause__`` is an ``OSError`` or
+  ``subprocess.TimeoutExpired`` — broken charts, ``--helm-set``
+  validation failures, and non-zero helm exits propagate.
+- **Shared rule-orchestrator helpers.** ``wants_ctx_kwarg`` and
+  ``apply_rule_metadata`` are promoted out of the npm / pypi /
+  maven ``pipelines.py`` clones into ``checks/rule.py`` so every
+  orchestrator picks up new ``Rule`` fields without per-provider
+  edits.
+- **``looks_like_example`` quadratic slice eliminated.** The hot-path
+  YAML-ancestor walk used to re-scan ``blob[:line_start]`` on every
+  candidate match (50 matches in a 5 KB blob = 50 full-prefix regex
+  passes). The ``(line_start, indent, name)`` index is now built
+  once per blob, cached on ``id(blob)`` like ``blob_lower``, and
+  each call bisects into it. ``clear_blob_cache()`` drops both
+  caches together so test isolation stays automatic.
+- **Standards auto-register via ``pkgutil``.** Dropping a new module
+  under ``core/standards/data/`` is enough — ``standards/__init__.py``
+  walks the subpackage at import time and registers every
+  ``STANDARD``. The hand-maintained 15-line ``register(_FOO)`` block
+  is gone, mirroring the ``chains/engine.py:_discover()`` pattern
+  the rest of the project already uses.
+- **Non-circular guard on the standards docs.**
+  ``test_generated_doc_in_sync`` re-runs the generator and diffs
+  output — a generator bug matches both sides. The new
+  ``test_standards_doc_references_every_control`` reads each
+  ``docs/standards/<name>.md`` off disk and asserts every control id
+  + title from the live registry appears verbatim, with no
+  generator in the path. Mirrors the analogous guard
+  ``test_rule_framework.py`` already carries for provider docs.
+- **Narrower bare excepts in ``custom/``.** ``evaluator.py`` catches
+  only ``JsonPathError`` when compiling a template's JSONPath
+  fragment (other exceptions surface as bugs instead of silently
+  setting ``path=None``); ``loader.py`` wraps ``OSError`` /
+  ``UnicodeDecodeError`` on file read into ``CustomRuleError`` so
+  the loader's fail-fast contract covers read failures the same
+  way it already covers YAML and validation failures.
+- **Branch coverage to 100% on argo004 + k8s017.** Two of the
+  lowest-covered single-rule modules (argo's host-namespace
+  podSpecPatch parser and k8s017's env-credential ``_looks_literal``
+  helper) picked up the missing positive + negative tests; both
+  modules are now at 100% line coverage.
+- **XPC chain test boilerplate de-duped.** The nine
+  ``tests/test_chain_xpcNNN.py`` modules used to carry their own
+  ``_failing`` / ``_passing`` factories plus four mechanical-test
+  methods verbatim (silent-on-single-leg, silent-on-neither,
+  engine dispatch, confidence inheritance). The factories moved to
+  ``tests/_chain_helpers.py``; the mechanical assertions live once
+  in ``tests/test_chain_xpc_mechanical.py``, parametrized off a
+  ``MECHANICAL_CONTRACTS`` list. Adding a new XPC chain is now one
+  contract row instead of 100 lines of clone. Total surface
+  shrank by ~25% (1387 → 1034 + 163 helper).
+- **Session-scoped cwd / env-var pollution guard.** ``tests/conftest.py``
+  now snapshots ``os.getcwd()`` + the ``PIPELINE_CHECK_*`` env
+  set before every test and re-asserts at teardown. A test that
+  leaks an ``os.chdir`` or an unrestored ``os.environ`` assignment
+  fails fast with a pointer at the offender instead of letting
+  later subprocess-based tests (e.g. ``TestExitCodeContract``)
+  flake on inherited state.
+- **CLI exit-code paths converge on ``click.exceptions.Exit``.**
+  Every previously-direct ``sys.exit(N)`` in ``cli.py`` (list-checks
+  empty-rows, ``--man`` typo, MCP harness unavailable, eager
+  ``--list-chains`` / ``--explain`` / ``--ai-explain`` printers,
+  ``--config-check`` fail, scan-failure traceback, gate failure,
+  ``explain`` subcommand) now routes through
+  ``raise click.exceptions.Exit(N)`` so programmatic callers see a
+  uniform exit path and click's pre-exit callbacks still run.
+  ``_tolerate_unencodable_stdio()`` also moved out of import-time
+  side effects into ``main()`` so MCP / LSP callers that import
+  the module without entering ``main()`` no longer inherit the
+  Windows console stream reconfiguration.
+- **Unmocked end-to-end CLI flag-marshalling tests.** Five new tests
+  in ``tests/test_cli.py::TestFlagMarshallingEndToEnd`` exercise
+  ``--output-file`` (json + sarif), ``--baseline`` (gate-relative
+  filtering + missing-path error), and ``--diff-base`` (leading-dash
+  rejection) against the real Scanner / reporter / gate path. The
+  previously-mocked ``TestExitCodes`` / ``TestFlagWiring`` tests
+  patched ``pipeline_check.cli.Scanner`` and so couldn't catch
+  marshalling regressions; the new tests close that gap.
+- **Real-shape boto3 fixture for IAM-003.** Four new tests in
+  ``tests/aws/rules/test_iam003_real_shape.py`` use
+  ``botocore.stub.Stubber`` to drive ``list_roles`` against an
+  actual ``boto3.client("iam")`` with paginated responses that
+  carry ``PermissionsBoundary``, exercising the field path
+  LocalStack drops and the synthetic-dict tests can't authenticate.
+- **Shared ``load_yaml_files`` helper.** ``checks/_yaml_files.py``
+  owns the read + parse + warning-accumulation loop. Eleven
+  workflow providers (``github``, ``gitlab``, ``bitbucket``,
+  ``azure``, ``cloudbuild``, ``kubernetes``, ``buildkite``,
+  ``drone``, ``tekton``, ``argo``, ``circleci``) now delegate
+  discovery to the helper and keep only the per-doc filtering
+  (e.g. ``kind: pipeline`` for Drone, ``apiVersion: tekton.dev/*``
+  for Tekton). ``jenkins`` stays on its custom loop since it parses
+  Groovy, not YAML.
+- **Promoted ``apply_rule_metadata`` to every orchestrator.**
+  The 4-line ``finding.cwe = list(rule.cwe); ...`` block was
+  duplicated in ~17 class-based orchestrators (github, gitlab,
+  bitbucket, azure, jenkins, circleci, cloudbuild, buildkite,
+  drone, tekton, argo, dockerfile, helm, kubernetes, oci, scm,
+  terraform, cloudformation, aws). Each now calls
+  ``apply_rule_metadata(finding, rule)`` from
+  ``checks/rule.py``. Three guarded sites (terraform, cloudformation,
+  aws) had wrapped the ``cwe`` assignment in ``if not finding.cwe:``
+  — switching to the unconditional shape matches the rest of the
+  rule pack, where the rule's ``cwe`` is the canonical source.
+- **Shared ``_primitives.registry_fetcher`` core.** The ~280
+  lines of identical ``FileSystemCache`` + ``HttpGetFetcher`` +
+  dedup-fetch-parse-loop machinery lived three times across
+  ``npm/registry_fetcher.py``, ``pypi/registry_fetcher.py``, and
+  ``maven/registry_fetcher.py``. The shared primitive owns the
+  cache, transport, and loop; each per-ecosystem adapter is now a
+  ~170-line wrapper around the URL builder, cache-key normalizer,
+  and JSON parser specific to that registry. The public surface
+  (``FileSystemCache``, ``HttpRegistryFetcher``,
+  ``RegistryMetadataFetcher``, ``fetch_publish_times``,
+  ``default_cache_dir``) is preserved verbatim so ``core/providers/{npm,pypi,maven}.py``
+  needed no import changes. Adding a fourth ecosystem (Go modules,
+  RubyGems) now costs ~60 lines of adapter instead of ~280.
+
 ## [1.2.0] - 2026-05-20
 
 ### Added

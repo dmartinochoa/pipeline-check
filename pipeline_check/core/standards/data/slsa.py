@@ -143,6 +143,7 @@ STANDARD = Standard(
         "GHA-058":  ["Build.L3.Isolated"],                         # agentic CLI permission-bypass
         "GHA-059":  ["Build.L3.NonFalsifiable"],                   # npm install without audit signatures
         "GHA-060":  ["Build.L3.NonFalsifiable"],                   # pip install without --require-hashes
+        "GHA-061":  ["Build.L3.NonFalsifiable"],                   # App token minted without permissions filter
         # ── GitLab CI ─────────────────────────────────────────────
         "GL-001":   ["Build.L3.NonFalsifiable"],                   # floating image tag
         "GL-002":   ["Build.L3.Isolated"],                         # script injection

@@ -14,7 +14,10 @@ from __future__ import annotations
 
 import re
 
+from ..checks._primitives.sha_ref import SHA_RE as _SHA_RE
 from ..checks.base import Finding
+from ..checks.cloudbuild.base import TOPLEVEL_KEYWORDS as _GCB_TOPLEVEL_KEYWORDS
+from ..checks.gitlab.base import TOPLEVEL_KEYWORDS as _GL_META
 from . import _FIXERS, register
 
 # Used by helpers below that bind their callable into ``_FIXERS`` for
@@ -263,13 +266,9 @@ def _fix_yaml_timeout(
     *top_key* is an optional ``jobs:`` equivalent (Azure uses it);
     GitLab jobs live at the root alongside non-job keys, so *top_key*
     is ``None`` for that provider — we treat every root-level mapping
-    key that isn't a known GitLab meta key as a job.
+    key that isn't on the canonical GitLab top-level keyword list
+    (imported from ``gitlab/base.py``) as a job.
     """
-    _GL_META = {
-        "default", "include", "stages", "variables", "workflow",
-        "image", "services", "cache", "before_script", "after_script",
-        "pages",
-    }
     lines = content.splitlines(keepends=True)
     result: list[str] = []
     changed = False
@@ -662,7 +661,6 @@ _TODO_PIN_IMG = "TODO(pipeline-check): pin to digest"
 def _fix_gha001(content: str, finding: Finding) -> str | None:
     """Add TODO comment next to unpinned action uses: references."""
     _USES_RE = re.compile(r"^(\s*-?\s*uses:\s*)(\S+@)([^#\s]+)(.*)$")
-    _SHA_RE = re.compile(r"^[0-9a-f]{40}$")
     out: list[str] = []
     changed = False
     for line in content.splitlines(keepends=True):
@@ -1087,15 +1085,13 @@ _TODO_TLS = "TODO(pipeline-check): remove TLS/SSL verification bypass"
 def _comment_tls_bypass(content: str, finding: Finding) -> str | None:
     """Comment out TLS verification bypass lines.
 
-    ``TLS_BYPASS_RE`` is the same case-sensitive lowercase pattern the
-    detection rules use against ``blob_lower(doc)``. Matching the raw
-    line directly used to skip uppercase env-var assignments
-    (``NODE_TLS_REJECT_UNAUTHORIZED=0``, ``GIT_SSL_NO_VERIFY=1``);
-    lowercase the search input so the fixer's recall matches what
-    detection saw, while still emitting the operator's original case
-    in the commented-out output.
+    Routes per-line text through the cross-provider
+    ``_primitives.tls_bypass.scan`` detector that the rule pack uses.
+    The primitive's patterns are case-insensitive via ``re.IGNORECASE``,
+    so the operator's original case is preserved in the commented-out
+    line.
     """
-    from ..checks.base import TLS_BYPASS_RE
+    from ..checks._primitives import tls_bypass
     out: list[str] = []
     changed = False
     for line in content.splitlines(keepends=True):
@@ -1103,7 +1099,7 @@ def _comment_tls_bypass(content: str, finding: Finding) -> str | None:
         if _TODO_TLS in line or stripped.startswith("#") or stripped.startswith("//"):
             out.append(line)
             continue
-        if TLS_BYPASS_RE.search(line.lower()):
+        if tls_bypass.scan(line):
             indent = line[: len(line) - len(line.lstrip())]
             out.append(f"{indent}# {_TODO_TLS}\n")
             out.append(f"{indent}# {stripped}")
@@ -1482,9 +1478,15 @@ def _fix_gha034_secrets_inherit(content: str, finding: Finding) -> str | None:
 
 
 _GCB_TIMEOUT_RE = re.compile(r"^timeout\s*:", re.MULTILINE)
+# Canonical set from ``cloudbuild/base.py`` minus ``timeout`` (the
+# fixer inserts the ``timeout:`` line, so it needs an anchor on the
+# first *other* top-level key). Built at import time so adding a new
+# top-level key to the canonical set automatically widens the anchor
+# recognized by the fixer.
 _GCB_FIRST_TOPLEVEL_RE = re.compile(
-    r"^(?:steps|substitutions|options|images|artifacts|tags|"
-    r"availableSecrets|serviceAccount|logsBucket)\s*:",
+    r"^(?:" + "|".join(
+        re.escape(k) for k in sorted(_GCB_TOPLEVEL_KEYWORDS - {"timeout"})
+    ) + r")\s*:",
     re.MULTILINE,
 )
 
