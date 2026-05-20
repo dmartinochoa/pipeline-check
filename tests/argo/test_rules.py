@@ -180,6 +180,126 @@ class TestARGO004HostNamespace:
         f = run_check(cfg, "ARGO-004")
         assert f.passed
 
+    def test_fails_when_podspecpatch_json_sets_host_network(self):
+        # podSpecPatch as a JSON-merge-patch string. The dict branch
+        # of _scan_pod_spec_patch parses it and trips on the truthy
+        # ``hostNetwork`` key.
+        cfg = """
+        apiVersion: argoproj.io/v1alpha1
+        kind: Workflow
+        metadata:
+          name: w
+        spec:
+          entrypoint: main
+          serviceAccountName: ci
+          podSpecPatch: '{"hostNetwork": true, "hostPID": true}'
+          templates:
+            - name: main
+              container: {image: alpine:3}
+        """
+        f = run_check(cfg, "ARGO-004")
+        assert not f.passed
+        assert "hostNetwork" in f.description
+        assert "hostPID" in f.description
+
+    def test_fails_when_podspecpatch_json_carries_hostpath(self):
+        cfg = """
+        apiVersion: argoproj.io/v1alpha1
+        kind: Workflow
+        metadata:
+          name: w
+        spec:
+          entrypoint: main
+          serviceAccountName: ci
+          podSpecPatch: '{"hostPath": {"path": "/"}}'
+          templates:
+            - name: main
+              container: {image: alpine:3}
+        """
+        f = run_check(cfg, "ARGO-004")
+        assert not f.passed
+        assert "hostPath" in f.description
+
+    def test_fails_when_podspecpatch_regex_catches_host_namespace(self):
+        # YAML-flavored podSpecPatch that doesn't parse as JSON falls
+        # through to the regex branch. ``hostIPC: true`` must still fire.
+        cfg = """
+        apiVersion: argoproj.io/v1alpha1
+        kind: Workflow
+        metadata:
+          name: w
+        spec:
+          entrypoint: main
+          serviceAccountName: ci
+          podSpecPatch: |
+            hostIPC: true
+            containers:
+              - name: side
+                image: alpine:3
+          templates:
+            - name: main
+              container: {image: alpine:3}
+        """
+        f = run_check(cfg, "ARGO-004")
+        assert not f.passed
+        assert "hostIPC" in f.description
+
+    def test_fails_when_podspecpatch_regex_catches_hostpath(self):
+        cfg = """
+        apiVersion: argoproj.io/v1alpha1
+        kind: Workflow
+        metadata:
+          name: w
+        spec:
+          entrypoint: main
+          serviceAccountName: ci
+          podSpecPatch: |
+            volumes:
+              - name: root
+                hostPath:
+                  path: /
+          templates:
+            - name: main
+              container: {image: alpine:3}
+        """
+        f = run_check(cfg, "ARGO-004")
+        assert not f.passed
+        assert "hostPath" in f.description
+
+    def test_passes_when_podspecpatch_is_benign(self):
+        # podSpecPatch that doesn't mention any host-* keys must not
+        # FP via the regex fallback.
+        cfg = """
+        apiVersion: argoproj.io/v1alpha1
+        kind: Workflow
+        metadata:
+          name: w
+        spec:
+          entrypoint: main
+          serviceAccountName: ci
+          podSpecPatch: |
+            containers:
+              - name: side
+                image: alpine:3
+                resources:
+                  limits: {memory: 256Mi}
+          templates:
+            - name: main
+              container: {image: alpine:3}
+        """
+        f = run_check(cfg, "ARGO-004")
+        assert f.passed
+
+    def test_passes_with_no_argo_documents(self):
+        # ARGO-004 silent-passes when the context loader didn't find
+        # any Argo documents (the no-docs early-return at line 89).
+        from pipeline_check.core.checks.argo.base import ArgoContext
+        from pipeline_check.core.checks.argo.rules.argo004_host_namespace import (
+            check,
+        )
+        f = check(ArgoContext(docs=[]))
+        assert f.passed
+
 
 # ── ARGO-005 param injection ───────────────────────────────────────────
 

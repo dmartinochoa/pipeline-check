@@ -79,3 +79,58 @@ def test_generated_doc_in_sync(script: str, fix_hint: str) -> None:
         f"--- stdout ---\n{result.stdout}"
         f"--- stderr ---\n{result.stderr}"
     )
+
+
+# ──────────────────────────────────────────────────────────────────────
+# Non-circular guard for the standards docs
+# ──────────────────────────────────────────────────────────────────────
+#
+# ``test_generated_doc_in_sync`` above re-runs the generator and diffs
+# its output against the on-disk doc, so a bug inside the generator
+# matches both sides and the drift test stays green. The provider-doc
+# side has ``test_rule_framework.py::test_generated_doc_references_every_rule``
+# as a non-circular guard (it asserts each rule's id + title appears
+# in the rendered output independently of the generator). This block
+# is the equivalent guard for the standards docs.
+
+
+def _registered_standards():
+    """Return every Standard registered in the live package."""
+    from pipeline_check.core.standards import resolve
+    return resolve()
+
+
+@pytest.mark.parametrize(
+    "standard",
+    _registered_standards(),
+    ids=lambda s: s.name,
+)
+def test_standards_doc_references_every_control(standard) -> None:
+    """Every control id (and title) in the live registry must appear
+    verbatim in the rendered ``docs/standards/<name>.md``.
+
+    Bypasses the generator entirely: reads the doc straight off disk
+    and ``in``-checks each ``control_id`` + ``control_title``. If the
+    standards registry grows a control, this test reds without
+    re-running the generator, breaking the circularity that
+    ``test_generated_doc_in_sync`` carries on its own.
+    """
+    doc_path = REPO / "docs" / "standards" / f"{standard.name}.md"
+    assert doc_path.exists(), (
+        f"{doc_path.relative_to(REPO)} missing — re-run "
+        f"`python scripts/gen_standards_docs.py {standard.name}` "
+        f"to generate it."
+    )
+    doc = doc_path.read_text(encoding="utf-8")
+    for ctrl_id, ctrl_title in standard.controls.items():
+        assert ctrl_id in doc, (
+            f"control {ctrl_id} missing from "
+            f"{doc_path.relative_to(REPO)} — did you regenerate the "
+            f"standards docs after editing the registry?"
+        )
+        if ctrl_title:
+            assert ctrl_title in doc, (
+                f"control {ctrl_id}'s title is out of sync with the "
+                f"generated doc. Regenerate with "
+                f"gen_standards_docs.py."
+            )

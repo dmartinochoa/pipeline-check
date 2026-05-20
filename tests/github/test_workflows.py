@@ -311,6 +311,88 @@ class TestGHA004Permissions:
         )
         assert f.passed
 
+    def test_docker_build_push_action_with_provenance_passes(self):
+        # docker/build-push-action requests an OIDC token when
+        # ``provenance: true`` or ``sbom: true`` is set, both of which
+        # are signed via Sigstore. GHA-004 must not flag the surrounding
+        # job as "id-token: write with no OIDC step".
+        f = _run(
+            """
+            on: push
+            permissions:
+              contents: read
+            jobs:
+              publish:
+                runs-on: ubuntu-latest
+                permissions:
+                  id-token: write
+                  packages: write
+                  contents: read
+                steps:
+                  - uses: actions/checkout@v4
+                  - uses: docker/build-push-action@v7
+                    with:
+                      push: true
+                      provenance: true
+                      sbom: true
+            """,
+            "GHA-004",
+        )
+        assert f.passed
+
+    def test_docker_build_push_action_without_provenance_fails(self):
+        # build-push-action without ``provenance:`` / ``sbom:`` doesn't
+        # consume the id-token; granting ``id-token: write`` here is
+        # still unjustified.
+        f = _run(
+            """
+            on: push
+            permissions:
+              contents: read
+            jobs:
+              publish:
+                runs-on: ubuntu-latest
+                permissions:
+                  id-token: write
+                  packages: write
+                  contents: read
+                steps:
+                  - uses: actions/checkout@v4
+                  - uses: docker/build-push-action@v7
+                    with:
+                      push: true
+            """,
+            "GHA-004",
+        )
+        assert not f.passed
+
+    def test_scorecard_action_id_token_write_passes(self):
+        # ossf/scorecard-action consumes id-token: write when
+        # publish_results=true (the OpenSSF Scorecard API auths the
+        # publish call via OIDC). GHA-004 must not FP on it.
+        f = _run(
+            """
+            on: push
+            permissions:
+              contents: read
+            jobs:
+              analysis:
+                permissions:
+                  security-events: write
+                  id-token: write
+                  contents: read
+                  actions: read
+                runs-on: ubuntu-latest
+                steps:
+                  - uses: actions/checkout@v4
+                  - uses: ossf/scorecard-action@v2.4.3
+                    with:
+                      publish_results: true
+            """,
+            "GHA-004",
+        )
+        assert f.passed
+
 
 class TestGHA005AwsCredentials:
     def test_static_access_keys_in_with_fails(self):

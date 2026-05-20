@@ -28,12 +28,19 @@ from pipeline_check.mcp_server import tools as _tools
 # ``TestServerRegistration``. Importing it conditionally lets the
 # bulk of this file (the tools-layer tests, ten classes) run on a
 # bare install that doesn't carry the optional ``[mcp]`` extra.
+#
+# ImportError / ModuleNotFoundError is the only legitimate skip
+# trigger (extra not installed). Any other exception coming out of
+# ``pipeline_check.mcp_server.server`` (TypeError on a decorator
+# signature change, AttributeError on a renamed symbol, etc.) is a
+# real scanner-side bug; letting it raise here surfaces the bug
+# instead of hiding it behind a quiet skip.
 try:
     import mcp.types as mcp_types  # noqa: E402
 
     from pipeline_check.mcp_server.server import server_app  # noqa: E402
     _HAS_MCP = True
-except Exception:  # pragma: no cover - environment-dependent
+except (ImportError, ModuleNotFoundError):  # pragma: no cover - environment-dependent
     _HAS_MCP = False
     mcp_types = None  # type: ignore[assignment]
     server_app = None  # type: ignore[assignment]

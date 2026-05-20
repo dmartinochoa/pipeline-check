@@ -101,6 +101,84 @@ class TestK8S017EnvCredentialLiteral:
         f = run_check(pod(), "K8S-017")
         assert f.passed
 
+    def test_fails_when_secretish_name_has_literal_value(self):
+        # SECRETISH_KEY_RE catches credential-shaped names (here:
+        # ``API_KEY``); the value is a plain literal so the rule
+        # offends.
+        f = run_check(pod(containers=[{
+            "name": "c",
+            "image": _BASE_IMAGE,
+            "env": [
+                {"name": "API_KEY", "value": "live-key-not-a-ref"},
+            ],
+        }]), "K8S-017")
+        assert not f.passed
+        assert "API_KEY" in f.description
+
+    def test_passes_when_secretish_name_uses_downward_api(self):
+        # ``$(VAR)`` is K8s downward-API substitution, not a literal.
+        # ``_looks_literal`` must reject it so the rule passes.
+        f = run_check(pod(containers=[{
+            "name": "c",
+            "image": _BASE_IMAGE,
+            "env": [
+                {"name": "API_KEY", "value": "$(POD_NAME)"},
+            ],
+        }]), "K8S-017")
+        assert f.passed
+
+    def test_passes_when_secretish_name_has_empty_value(self):
+        # An empty string is structurally distinct from a literal —
+        # ``_looks_literal`` rejects it so the rule passes (the env
+        # entry is effectively a placeholder, not a real credential).
+        f = run_check(pod(containers=[{
+            "name": "c",
+            "image": _BASE_IMAGE,
+            "env": [
+                {"name": "API_KEY", "value": ""},
+            ],
+        }]), "K8S-017")
+        assert f.passed
+
+    def test_passes_when_env_entry_lacks_name(self):
+        # Defensive against malformed manifests: an env entry with no
+        # ``name`` is skipped without firing.
+        f = run_check(pod(containers=[{
+            "name": "c",
+            "image": _BASE_IMAGE,
+            "env": [
+                {"value": "AKIAIOSFODNN7EXAMPLE"},  # no name key
+            ],
+        }]), "K8S-017")
+        assert f.passed
+
+    def test_passes_when_env_list_carries_non_dict_entry(self):
+        # K8s rejects this manifest itself, but the rule mustn't
+        # crash on it. The non-dict entry is skipped.
+        f = run_check(pod(containers=[{
+            "name": "c",
+            "image": _BASE_IMAGE,
+            "env": [
+                "not-a-dict",
+                {"name": "SAFE", "value": "x"},
+            ],
+        }]), "K8S-017")
+        assert f.passed
+
+    def test_passes_when_secretish_name_has_non_string_value(self):
+        # K8s typically coerces, but a manifest fragment may carry an
+        # int / list under ``value``. ``_looks_literal`` rejects
+        # non-strings so the rule passes (the offender path needs a
+        # string to compare).
+        f = run_check(pod(containers=[{
+            "name": "c",
+            "image": _BASE_IMAGE,
+            "env": [
+                {"name": "API_KEY", "value": 42},
+            ],
+        }]), "K8S-017")
+        assert f.passed
+
 
 # ── K8S-018 Secret carries plaintext credential ─────────────────────
 

@@ -219,7 +219,7 @@ class TestAutoDetect:
         payload = json.loads(result.stdout)
         emitted = {f["check_id"] for f in payload["findings"]}
         assert emitted == (
-            {f"GHA-{i:03d}" for i in range(1, 61)}
+            {f"GHA-{i:03d}" for i in range(1, 62)}
             | {"TAINT-001", "TAINT-002", "TAINT-003"}
         )
 
@@ -232,3 +232,152 @@ class TestAutoDetect:
         result = CliRunner().invoke(scan, ["--pipeline", "gitlab", "--output", "json"])
         assert result.exit_code != 0
         assert "gitlab-path" in result.output.lower()
+
+
+class TestFlagMarshallingEndToEnd:
+    """Unmocked CLI runs that exercise the click → Scanner → reporter
+    path for the flag-marshalling surfaces the mocked tests above bypass.
+
+    The ``TestExitCodes`` / ``TestFlagWiring`` classes patch
+    ``pipeline_check.cli.Scanner`` to return canned findings, so the
+    real loader / rule / reporter / baseline path never runs. A
+    regression in the way ``--output-file``, ``--baseline``, or
+    ``--diff-base`` get marshalled into the Scanner can only be
+    caught by an end-to-end test that goes through the whole pipeline.
+    """
+
+    def _gitlab_fixture(self, tmp_path):
+        """Drop a minimal GitLab CI file that auto-detect picks up."""
+        (tmp_path / ".gitlab-ci.yml").write_text(
+            "build: {script: [make]}\n",
+            encoding="utf-8",
+        )
+
+    def test_output_file_writes_json_report_to_disk(self, tmp_path, monkeypatch):
+        # ``--output json --output-file PATH`` should write the JSON
+        # payload to ``PATH`` instead of stdout. Confirms the
+        # ``output_file`` parameter reaches the writer branch in
+        # cli.py:2685 (which patched Scanner tests never exercise).
+        monkeypatch.chdir(tmp_path)
+        self._gitlab_fixture(tmp_path)
+        out_path = tmp_path / "report.json"
+        result = CliRunner().invoke(
+            scan,
+            [
+                "--pipeline", "gitlab",
+                "--output", "json",
+                "--output-file", str(out_path),
+            ],
+        )
+        assert result.exit_code in (0, 1), result.output
+        assert out_path.is_file(), f"--output-file did not produce {out_path}"
+        payload = json.loads(out_path.read_text(encoding="utf-8"))
+        assert "findings" in payload
+        assert "score" in payload
+        # Status message lands on stderr (mixed with stdout under
+        # CliRunner) so the operator sees the file was written.
+        assert "JSON report written to" in result.output
+
+    def test_output_file_writes_sarif_report_to_disk(self, tmp_path, monkeypatch):
+        # ``--output sarif --output-file PATH`` follows the SARIF
+        # writer branch (cli.py:2703-2706); proves the same
+        # marshalling works for the non-JSON format too.
+        monkeypatch.chdir(tmp_path)
+        self._gitlab_fixture(tmp_path)
+        out_path = tmp_path / "report.sarif"
+        result = CliRunner().invoke(
+            scan,
+            [
+                "--pipeline", "gitlab",
+                "--output", "sarif",
+                "--output-file", str(out_path),
+            ],
+        )
+        assert result.exit_code in (0, 1), result.output
+        assert out_path.is_file()
+        sarif = json.loads(out_path.read_text(encoding="utf-8"))
+        # SARIF 2.1.0 has a ``version`` field at the top.
+        assert sarif.get("version") == "2.1.0"
+        assert "runs" in sarif
+
+    def test_baseline_filters_known_findings(self, tmp_path, monkeypatch):
+        # Generate a baseline from a first scan, then pass it via
+        # ``--baseline`` to a second scan. The follow-up should report
+        # zero new findings even though the on-disk pipeline didn't
+        # change. Exercises the ``baseline=`` parameter all the way
+        # through to the gate.
+        monkeypatch.chdir(tmp_path)
+        self._gitlab_fixture(tmp_path)
+        baseline_path = tmp_path / "baseline.json"
+
+        # First scan: capture every finding as the baseline.
+        first = CliRunner().invoke(
+            scan,
+            [
+                "--pipeline", "gitlab",
+                "--output", "json",
+                "--output-file", str(baseline_path),
+            ],
+        )
+        assert first.exit_code in (0, 1), first.output
+        assert baseline_path.is_file()
+
+        # Second scan with the baseline: ``new_findings`` count must
+        # drop to 0 because nothing changed since the snapshot.
+        second_out = tmp_path / "second.json"
+        second = CliRunner().invoke(
+            scan,
+            [
+                "--pipeline", "gitlab",
+                "--output", "json",
+                "--output-file", str(second_out),
+                "--baseline", str(baseline_path),
+            ],
+        )
+        assert second.exit_code in (0, 1), second.output
+        payload = json.loads(second_out.read_text(encoding="utf-8"))
+        # Gate diagnostics carry the baseline-aware delta. Different
+        # release lines name the key slightly differently; accept either
+        # location so the test doesn't lock to a specific report shape.
+        gate = payload.get("gate") or {}
+        new_count = gate.get("new_findings_count")
+        if new_count is None:
+            new_count = payload.get("new_findings_count", 0)
+        assert new_count == 0, (
+            f"--baseline didn't filter known findings; new_findings_count={new_count}"
+        )
+
+    def test_baseline_missing_path_raises_usage_error(self, tmp_path, monkeypatch):
+        # The path-validation arm of --baseline (cli.py:2136) is
+        # ``raise click.UsageError(...)``; the mocked tests can't hit
+        # it because they bypass the loader entirely.
+        monkeypatch.chdir(tmp_path)
+        self._gitlab_fixture(tmp_path)
+        result = CliRunner().invoke(
+            scan,
+            [
+                "--pipeline", "gitlab",
+                "--output", "json",
+                "--baseline", str(tmp_path / "does-not-exist.json"),
+            ],
+        )
+        assert result.exit_code == 2, result.output
+        assert "--baseline file not found" in result.output
+
+    def test_diff_base_rejects_leading_dash(self, tmp_path, monkeypatch):
+        # cli.py:2414 enforces "--diff-base must not start with '-'"
+        # so an operator can't fool the git-show invocation into
+        # treating the ref as a flag. Real end-to-end check that the
+        # validation fires before any work happens.
+        monkeypatch.chdir(tmp_path)
+        self._gitlab_fixture(tmp_path)
+        result = CliRunner().invoke(
+            scan,
+            [
+                "--pipeline", "gitlab",
+                "--output", "json",
+                "--diff-base", "--malicious",
+            ],
+        )
+        assert result.exit_code != 0
+        assert "--diff-base" in result.output

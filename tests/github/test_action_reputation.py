@@ -321,18 +321,13 @@ class TestGHA042:
         f = _run(_ctx_with_metadata(wf, {k: m}), "GHA-042")
         assert not f.passed
 
-    def test_boundary_threshold_exact_age_passes(self):
+    def test_boundary_threshold_exact_age_passes(self, monkeypatch):
         """A repo whose age in days equals ``MIN_AGE_DAYS`` passes
         (rule uses ``< MIN_AGE_DAYS``, not ``<=``).
 
-        Subtract an extra second so the seconds-truncated
-        ``created_at`` timestamp is unambiguously older than the
-        threshold even after a few milliseconds of test execution
-        time. Without the nudge, the assertion is flaky around
-        midnight-UTC clock boundaries: ``datetime.now`` advances
-        between the ``_iso_days_ago`` call and the rule's own
-        ``datetime.now`` lookup, occasionally tipping the age
-        computation below the threshold.
+        Freezes the rule's clock via ``_now()`` so the boundary day
+        count is unambiguous instead of riding on a wall-clock race
+        between the test's ``datetime.now`` and the rule's.
         """
         from pipeline_check.core.checks.github.rules import (
             gha042_young_action_repo,
@@ -346,13 +341,14 @@ class TestGHA042:
             steps:
               - uses: borderline/action@v1
         """
-        dt = datetime.now(tz=UTC) - timedelta(
+        frozen_now = datetime(2026, 1, 1, 12, 0, 0, tzinfo=UTC)
+        monkeypatch.setattr(
+            gha042_young_action_repo, "_now", lambda: frozen_now,
+        )
+        created = frozen_now - timedelta(
             days=gha042_young_action_repo.MIN_AGE_DAYS,
-            seconds=1,
         )
-        ts = dt.replace(microsecond=0).isoformat().replace(
-            "+00:00", "Z",
-        )
+        ts = created.isoformat().replace("+00:00", "Z")
         k, m = _meta("borderline", "action", created_at=ts)
         f = _run(_ctx_with_metadata(wf, {k: m}), "GHA-042")
         assert f.passed

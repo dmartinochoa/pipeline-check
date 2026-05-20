@@ -16,6 +16,7 @@ Two layers:
 """
 from __future__ import annotations
 
+import subprocess
 from pathlib import Path
 
 import pytest
@@ -179,15 +180,18 @@ class TestEndToEnd:
         # GitHub-hosted Windows runners ship a chocolatey-shimmed
         # helm.exe whose ``version`` probe periodically hangs (seen
         # at 30s+ in CI) for reasons unrelated to scanner logic.
-        # Treat any probe / render failure as "helm not usable here"
-        # and skip rather than red the whole suite over a runner
-        # quirk. The pure-Python tests above still cover the parser
-        # and the K8s-rule reuse, which is what this provider's
-        # behavior actually depends on.
+        # Skip only on the failure modes that actually indicate the
+        # helm binary is unusable here (OSError / FileNotFoundError /
+        # TimeoutExpired bubbled up as ``HelmRenderError.__cause__``).
+        # A broken chart, a malformed --helm-set entry, or a helm
+        # exit-non-zero is a real scanner-side bug and must propagate
+        # so the suite reds on it.
         try:
             result = render_chart(FIXTURE_CHART)
         except HelmRenderError as exc:
-            pytest.skip(f"helm not usable on this runner: {exc}")
+            if isinstance(exc.__cause__, (OSError, subprocess.TimeoutExpired)):
+                pytest.skip(f"helm not usable on this runner: {exc}")
+            raise
         assert result.yaml.strip(), "helm produced empty output"
         assert any(
             s and s.endswith("templates/deployment.yaml")

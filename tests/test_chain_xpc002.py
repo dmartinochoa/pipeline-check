@@ -1,60 +1,31 @@
 """XPC-002 cross-provider chain tests.
 
-Same shape as the XPC-001 test module: a synthetic findings list
-exercises every branch of the chain rule's ``match()`` so the
-composite path stays predictable across registry refactors.
+Chain-specific cases only; the mechanical-contract assertions live
+in ``tests/test_chain_xpc_mechanical.py``. Tests here cover the
+reachability-anchor logic that XPC-002 layers on top of the basic
+cross-product (matching ``oci_image`` ResourceAnchors collapse the
+file-pair fallback into a single confirmed chain keyed on the image
+identity).
 """
 from __future__ import annotations
 
-from pipeline_check.core.chains.engine import evaluate
 from pipeline_check.core.chains.rules import (
     xpc002_floating_tag_continuity as r,
 )
 from pipeline_check.core.checks.base import (
     Confidence,
-    Finding,
     ResourceAnchor,
     Severity,
 )
 
-
-def _failing(
-    check_id: str,
-    resource: str,
-    *,
-    resource_anchors: tuple[ResourceAnchor, ...] = (),
-) -> Finding:
-    return Finding(
-        check_id=check_id,
-        title="synthetic",
-        severity=Severity.HIGH,
-        resource=resource,
-        description="synthetic test fixture",
-        recommendation="",
-        passed=False,
-        confidence=Confidence.HIGH,
-        resource_anchors=resource_anchors,
-    )
-
-
-def _passing(check_id: str, resource: str) -> Finding:
-    return Finding(
-        check_id=check_id,
-        title="synthetic",
-        severity=Severity.HIGH,
-        resource=resource,
-        description="synthetic test fixture",
-        recommendation="",
-        passed=True,
-        confidence=Confidence.HIGH,
-    )
+from ._chain_helpers import make_failing
 
 
 class TestXPC002:
     def test_fires_on_combined_df_k8s_failures(self) -> None:
         findings = [
-            _failing("DF-001", "Dockerfile"),
-            _failing("K8S-001", "deploy.yaml"),
+            make_failing("DF-001", "Dockerfile"),
+            make_failing("K8S-001", "deploy.yaml"),
         ]
         chains = r.match(findings)
         assert len(chains) == 1
@@ -66,77 +37,29 @@ class TestXPC002:
         assert "DF-001" in c.triggering_check_ids
         assert "K8S-001" in c.triggering_check_ids
 
-    def test_silent_when_only_dockerfile_fires(self) -> None:
-        findings = [
-            _failing("DF-001", "Dockerfile"),
-            _passing("K8S-001", "deploy.yaml"),
-        ]
-        assert r.match(findings) == []
-
-    def test_silent_when_only_k8s_fires(self) -> None:
-        findings = [
-            _passing("DF-001", "Dockerfile"),
-            _failing("K8S-001", "deploy.yaml"),
-        ]
-        assert r.match(findings) == []
-
-    def test_silent_when_neither_fires(self) -> None:
-        findings = [
-            _passing("DF-001", "Dockerfile"),
-            _passing("K8S-001", "deploy.yaml"),
-        ]
-        assert r.match(findings) == []
-
     def test_emits_one_chain_per_pair(self) -> None:
         # Two Dockerfiles + three manifests -> six pairs.
         findings = [
-            _failing("DF-001", "api/Dockerfile"),
-            _failing("DF-001", "worker/Dockerfile"),
-            _failing("K8S-001", "k8s/api.yaml"),
-            _failing("K8S-001", "k8s/worker.yaml"),
-            _failing("K8S-001", "k8s/cron.yaml"),
+            make_failing("DF-001", "api/Dockerfile"),
+            make_failing("DF-001", "worker/Dockerfile"),
+            make_failing("K8S-001", "k8s/api.yaml"),
+            make_failing("K8S-001", "k8s/worker.yaml"),
+            make_failing("K8S-001", "k8s/cron.yaml"),
         ]
         chains = r.match(findings)
         assert len(chains) == 6
         pairs = {tuple(sorted(c.resources)) for c in chains}
         assert len(pairs) == 6
 
-    def test_engine_dispatch_picks_up_xpc002(self) -> None:
-        findings = [
-            _failing("DF-001", "Dockerfile"),
-            _failing("K8S-001", "deploy.yaml"),
-        ]
-        chains = evaluate(findings)
-        ids = {c.chain_id for c in chains}
-        assert "XPC-002" in ids
-
-    def test_confidence_inherits_from_weakest_finding(self) -> None:
-        findings = [
-            Finding(
-                check_id="DF-001", title="x", severity=Severity.HIGH,
-                resource="Dockerfile", description="", recommendation="",
-                passed=False, confidence=Confidence.MEDIUM,
-            ),
-            Finding(
-                check_id="K8S-001", title="x", severity=Severity.HIGH,
-                resource="deploy.yaml", description="", recommendation="",
-                passed=False, confidence=Confidence.HIGH,
-            ),
-        ]
-        chains = r.match(findings)
-        assert len(chains) == 1
-        # MEDIUM (the weaker of the two legs) propagates.
-        assert chains[0].confidence == Confidence.MEDIUM
-
     def test_reachability_confirmed_when_image_anchor_matches(self) -> None:
         img = ResourceAnchor(
             kind="oci_image", identity="docker.io/library/redis",
         )
         chains = r.match([
-            _failing(
+            make_failing(
                 "DF-001", "Dockerfile", resource_anchors=(img,),
             ),
-            _failing(
+            make_failing(
                 "K8S-001", "k8s/redis.yaml", resource_anchors=(img,),
             ),
         ])
@@ -155,10 +78,10 @@ class TestXPC002:
             kind="oci_image", identity="docker.io/acme/app",
         )
         chains = r.match([
-            _failing(
+            make_failing(
                 "DF-001", "Dockerfile", resource_anchors=(build,),
             ),
-            _failing(
+            make_failing(
                 "K8S-001", "k8s/app.yaml", resource_anchors=(runtime,),
             ),
         ])
@@ -182,18 +105,18 @@ class TestXPC002:
             kind="oci_image", identity="ghcr.io/acme/api",
         )
         chains = r.match([
-            _failing(
+            make_failing(
                 "DF-001", "nginx/Dockerfile",
                 resource_anchors=(img_a,),
             ),
-            _failing(
+            make_failing(
                 "DF-001", "api/Dockerfile", resource_anchors=(img_b,),
             ),
-            _failing(
+            make_failing(
                 "K8S-001", "k8s/nginx.yaml",
                 resource_anchors=(img_a,),
             ),
-            _failing(
+            make_failing(
                 "K8S-001", "k8s/api.yaml", resource_anchors=(img_b,),
             ),
         ])
@@ -215,16 +138,16 @@ class TestXPC002:
             kind="oci_image", identity="docker.io/library/redis",
         )
         chains = r.match([
-            _failing(
+            make_failing(
                 "DF-001", "redis/Dockerfile",
                 resource_anchors=(shared,),
             ),
-            _failing("DF-001", "worker/Dockerfile"),
-            _failing(
+            make_failing("DF-001", "worker/Dockerfile"),
+            make_failing(
                 "K8S-001", "k8s/redis.yaml",
                 resource_anchors=(shared,),
             ),
-            _failing("K8S-001", "k8s/worker.yaml"),
+            make_failing("K8S-001", "k8s/worker.yaml"),
         ])
         confirmed = [c for c in chains if c.confirmed_reachable]
         unconfirmed = [c for c in chains if not c.confirmed_reachable]
@@ -256,11 +179,11 @@ class TestXPC002:
             kind="oci_image", identity="docker.io/library/redis",
         )
         chains = r.match([
-            _failing(
+            make_failing(
                 "DF-001", "Dockerfile",
                 resource_anchors=(python, alpine),
             ),
-            _failing(
+            make_failing(
                 "K8S-001", "k8s/app.yaml",
                 resource_anchors=(python, redis),
             ),

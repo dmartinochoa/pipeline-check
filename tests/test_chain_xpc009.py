@@ -11,37 +11,17 @@ from pipeline_check.core.chains.engine import evaluate
 from pipeline_check.core.chains.rules import (
     xpc009_ingested_cve_plus_floating_image as r,
 )
-from pipeline_check.core.checks.base import (
-    Confidence,
-    Finding,
-    Severity,
-)
+from pipeline_check.core.checks.base import Confidence, Severity
+
+from ._chain_helpers import make_failing as _shared_failing
+from ._chain_helpers import make_passing as _passing
 
 
-def _failing(check_id: str, resource: str) -> Finding:
-    return Finding(
-        check_id=check_id,
-        title="synthetic",
-        severity=Severity.HIGH,
-        resource=resource,
-        description="synthetic test fixture",
-        recommendation="",
-        passed=False,
-        confidence=Confidence.MEDIUM,
-    )
-
-
-def _passing(check_id: str, resource: str) -> Finding:
-    return Finding(
-        check_id=check_id,
-        title="synthetic",
-        severity=Severity.HIGH,
-        resource=resource,
-        description="synthetic test fixture",
-        recommendation="",
-        passed=True,
-        confidence=Confidence.HIGH,
-    )
+# XPC-009 leans on MEDIUM-confidence ingested findings rather than
+# the HIGH default the mechanical contract uses; bind a thin local
+# wrapper so the per-leg tests stay readable.
+def _failing(check_id: str, resource: str):
+    return _shared_failing(check_id, resource, confidence=Confidence.MEDIUM)
 
 
 class TestXPC009:

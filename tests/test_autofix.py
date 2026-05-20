@@ -581,7 +581,7 @@ class TestGCB011TLSBypass:
     def test_reuses_shared_tls_bypass_fixer(self):
         # GCB-011 piggybacks on the same _comment_tls_bypass logic the
         # CI providers use. Use a curl -k command on its own line so
-        # the shared TLS_BYPASS_RE matches.
+        # the shared _primitives.tls_bypass detector matches.
         cb = (
             "steps:\n"
             "  - name: bash\n"
@@ -1514,3 +1514,58 @@ class TestArgoFixers:
             "          npm ci && npm run build\n"
         )
         assert autofix.generate_fix(_finding("ARGO-008"), manifest) is None
+
+
+# ── Roundtrip safety net ──────────────────────────────────────────────
+
+
+class TestRoundtripSafety:
+    """``generate_fix`` bails when a fixer produces broken YAML."""
+
+    def test_bails_when_after_does_not_parse(self, monkeypatch):
+        from pipeline_check.core import autofix as af
+
+        @af.register("ZZ-PARSE-BREAK")
+        def _break(content, finding):
+            return "key: : invalid\n  - lol\n"  # not valid YAML
+
+        wf = "key: value\nother: thing\n"
+        assert af.generate_fix(_finding("ZZ-PARSE-BREAK"), wf) is None
+        # Re-registering wipes the bogus entry once the test exits.
+        af._FIXERS.pop("ZZ-PARSE-BREAK", None)
+
+    def test_bails_when_top_level_type_changes(self):
+        from pipeline_check.core import autofix as af
+
+        @af.register("ZZ-TYPE-SWAP")
+        def _swap(content, finding):
+            return "- a\n- b\n"  # list, was a mapping
+
+        wf = "key: value\nother: thing\n"
+        assert af.generate_fix(_finding("ZZ-TYPE-SWAP"), wf) is None
+        af._FIXERS.pop("ZZ-TYPE-SWAP", None)
+
+    def test_bails_when_multidoc_count_changes(self):
+        from pipeline_check.core import autofix as af
+
+        @af.register("ZZ-DOC-DROP")
+        def _drop(content, finding):
+            # Strip the second document from a two-doc stream.
+            return content.split("---", 1)[0]
+
+        wf = (
+            "kind: Deployment\nmetadata:\n  name: a\n"
+            "---\n"
+            "kind: Service\nmetadata:\n  name: b\n"
+        )
+        assert af.generate_fix(_finding("ZZ-DOC-DROP"), wf) is None
+        af._FIXERS.pop("ZZ-DOC-DROP", None)
+
+    def test_allows_dockerfile_unchanged_shape(self):
+        # Dockerfiles parse as scalar strings via ``yaml.safe_load``,
+        # so the safety net treats them as opaque and lets the fixer
+        # output through unmolested.
+        df = "FROM python:3.12-slim\nRUN echo hi\n"
+        after = autofix.generate_fix(_finding("DF-001"), df)
+        assert after is not None
+        assert "TODO(pipeline-check DF-001)" in after
