@@ -19,7 +19,7 @@ Kubernetes, …) when an audit asks for that framework's vocabulary.
 
 - **Controls in this standard:** 10
 - **Controls evidenced by at least one check:** 10 / 10
-- **Distinct checks evidencing this standard:** 558
+- **Distinct checks evidencing this standard:** 559
 - **Of those, autofixable with `--fix`:** 111
 
 _Severity levels (`CRITICAL` / `HIGH` / `MEDIUM` / `LOW` / `INFO`) follow the same scale across every provider and standard. See [How to read severity](README.md#how-to-read-severity) on the standards overview for the definitions._
@@ -31,10 +31,10 @@ Click a control ID to jump to the per-control section with the full check list. 
 | Control | Title | Checks | Severity mix |
 |---------|-------|-------:|--------------|
 | [`CICD-SEC-1`](#ctrl-cicd-sec-1) | Insufficient Flow Control Mechanisms | 69 | 4C · 28H · 29M · 8L |
-| [`CICD-SEC-2`](#ctrl-cicd-sec-2) | Inadequate Identity and Access Management | 36 | 3C · 22H · 10M · 1L |
+| [`CICD-SEC-2`](#ctrl-cicd-sec-2) | Inadequate Identity and Access Management | 37 | 3C · 22H · 11M · 1L |
 | [`CICD-SEC-3`](#ctrl-cicd-sec-3) | Dependency Chain Abuse | 158 | 3C · 75H · 64M · 16L |
 | [`CICD-SEC-4`](#ctrl-cicd-sec-4) | Poisoned Pipeline Execution | 87 | 23C · 45H · 14M · 5L |
-| [`CICD-SEC-5`](#ctrl-cicd-sec-5) | Insufficient PBAC | 29 | 4C · 18H · 7M |
+| [`CICD-SEC-5`](#ctrl-cicd-sec-5) | Insufficient PBAC | 30 | 4C · 18H · 8M |
 | [`CICD-SEC-6`](#ctrl-cicd-sec-6) | Insufficient Credential Hygiene | 67 | 27C · 25H · 15M |
 | [`CICD-SEC-7`](#ctrl-cicd-sec-7) | Insecure System Configuration | 97 | 22C · 35H · 33M · 7L |
 | [`CICD-SEC-8`](#ctrl-cicd-sec-8) | Ungoverned Usage of 3rd-Party Services | 24 | 6C · 10H · 8M |
@@ -140,7 +140,7 @@ Reviews, approvals, branch protection, and deployment gates are the brakes on th
 
 Long-lived static credentials, shared service accounts, and human identities reused for automation collapse the blast radius of a single compromise to the whole pipeline.
 
-**Evidenced by 36 checks** across 13 providers (AWS, Argo Workflows, Azure DevOps, Bitbucket, Buildkite, CircleCI, Cloud Build, GitHub Actions, GitLab CI, Kubernetes, OCI manifest, SCM, Tekton).
+**Evidenced by 37 checks** across 13 providers (AWS, Argo Workflows, Azure DevOps, Bitbucket, Buildkite, CircleCI, Cloud Build, GitHub Actions, GitLab CI, Kubernetes, OCI manifest, SCM, Tekton).
 
 | Check | Title | Severity | Provider | Fix |
 |-------|-------|----------|----------|-----|
@@ -157,6 +157,7 @@ Long-lived static credentials, shared service accounts, and human identities reu
 | [`GHA-030`](#detail-gha-030) | OIDC token requested without environment-protected job | <span class="pg-sev pg-sev--high">HIGH</span> | [GitHub Actions](../providers/github.md) |  |
 | [`GHA-034`](#detail-gha-034) | Reusable workflow called with secrets: inherit | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [GitHub Actions](../providers/github.md) | <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> |
 | [`GHA-050`](#detail-gha-050) | Publish step relies on long-lived registry token | <span class="pg-sev pg-sev--high">HIGH</span> | [GitHub Actions](../providers/github.md) |  |
+| [`GHA-061`](#detail-gha-061) | GitHub App token minted without a `permissions:` filter | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [GitHub Actions](../providers/github.md) |  |
 | [`GL-031`](#detail-gl-031) | id_tokens: missing audience pin or environment binding | <span class="pg-sev pg-sev--high">HIGH</span> | [GitLab CI](../providers/gitlab.md) |  |
 | [`IAM-001`](#detail-iam-001) | CI/CD role has AdministratorAccess policy attached | <span class="pg-sev pg-sev--critical">CRITICAL</span> | [AWS](../providers/aws.md) |  |
 | [`IAM-002`](#detail-iam-002) | CI/CD role has wildcard Action in attached policy | <span class="pg-sev pg-sev--high">HIGH</span> | [AWS](../providers/aws.md) |  |
@@ -448,7 +449,7 @@ An attacker who can influence what a build runs, via a PR, an issue comment, or 
 
 Build steps with deploy-class permissions, jobs sharing a single broad role, and missing environment gates each let a routine compromise escalate from build to production.
 
-**Evidenced by 29 checks** across 10 providers (AWS, Argo Workflows, Buildkite, CircleCI, Drone CI, GitHub Actions, Jenkins, Kubernetes, SCM, Tekton).
+**Evidenced by 30 checks** across 10 providers (AWS, Argo Workflows, Buildkite, CircleCI, Drone CI, GitHub Actions, Jenkins, Kubernetes, SCM, Tekton).
 
 | Check | Title | Severity | Provider | Fix |
 |-------|-------|----------|----------|-----|
@@ -460,6 +461,7 @@ Build steps with deploy-class permissions, jobs sharing a single broad role, and
 | [`DR-007`](#detail-dr-007) | Step mounts a sensitive host path | <span class="pg-sev pg-sev--high">HIGH</span> | [Drone CI](../providers/drone.md) |  |
 | [`GHA-004`](#detail-gha-004) | Workflow has no explicit permissions block | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [GitHub Actions](../providers/github.md) | <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> |
 | [`GHA-043`](#detail-gha-043) | Low-star action runs with sensitive permissions | <span class="pg-sev pg-sev--high">HIGH</span> | [GitHub Actions](../providers/github.md) |  |
+| [`GHA-061`](#detail-gha-061) | GitHub App token minted without a `permissions:` filter | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [GitHub Actions](../providers/github.md) |  |
 | [`JF-003`](#detail-jf-003) | Pipeline uses `agent any` (no executor isolation) | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [Jenkins](../providers/jenkins.md) |  |
 | [`K8S-020`](#detail-k8s-020) | ClusterRoleBinding grants cluster-admin or system:masters | <span class="pg-sev pg-sev--critical">CRITICAL</span> | [Kubernetes](../providers/kubernetes.md) | <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> |
 | [`K8S-021`](#detail-k8s-021) | Role or ClusterRole grants wildcard verbs+resources | <span class="pg-sev pg-sev--high">HIGH</span> | [Kubernetes](../providers/kubernetes.md) |  |
@@ -1430,7 +1432,7 @@ spec:
 
 **Evidences:** [`CICD-SEC-3`](#ctrl-cicd-sec-3) Dependency Chain Abuse.
 
-**How this is detected.** Walks ``script.source`` and joined ``container.args`` text with the cross-provider ``CURL_PIPE_RE`` and ``TLS_BYPASS_RE`` regexes.
+**How this is detected.** Walks ``script.source`` and joined ``container.args`` text with the cross-provider ``_primitives.remote_script_exec`` and ``_primitives.tls_bypass`` detectors. Coverage stays aligned with GHA-016 / GHA-027 / BK-004 / BK-008 / TKN-008 / GCB-010 / GCB-011 / DF-004.
 
 **Recommendation.** Replace ``curl ... | sh`` with a download-then-verify-then-execute pattern. Drop TLS-bypass flags (``curl -k``, ``git config http.sslverify false``); install the missing CA into the template image instead. Both forms let an attacker controlling DNS / a transparent proxy substitute the script the workflow runs.
 
@@ -2291,7 +2293,7 @@ Yarn / Bun-only pipelines pass silently because the ``audit signatures`` primiti
 
 **Evidences:** [`CICD-SEC-1`](#ctrl-cicd-sec-1) Insufficient Flow Control Mechanisms, [`CICD-SEC-3`](#ctrl-cicd-sec-3) Dependency Chain Abuse.
 
-**How this is detected.** The detection fires on ``curl|bash``, ``curl|sh``, ``wget|bash``, ``iex (iwr ...)``, and the corresponding ``Invoke-WebRequest|Invoke-Expression`` PowerShell forms. Use ``curl -fsSLO <url>; sha256sum -c install.sh.sha256; bash install.sh`` instead.
+**How this is detected.** Uses the cross-provider ``_primitives.remote_script_exec`` detector shared with GHA-016 / GL-016 / GCB-010 / DF-004 / ARGO-008 / TKN-008. Catches ``curl|bash``, ``curl|sh``, ``wget|bash``, ``bash -c "$(curl …)"``, ``python -c urllib.urlopen``, ``curl > x.sh && bash x.sh``, and the PowerShell ``irm | iex`` variants. Use ``curl -fsSLO <url>; sha256sum -c install.sh.sha256; bash install.sh`` instead.
 
 **Recommendation.** Download the installer to disk, verify a checksum or signature, then execute it. ``curl ... | sh`` lets the remote host change what runs in your pipeline at any time, and any TLS / DNS error during download silently feeds a partial script to the shell.
 
@@ -2343,7 +2345,7 @@ Yarn / Bun-only pipelines pass silently because the ``audit signatures`` primiti
 
 **Evidences:** [`CICD-SEC-3`](#ctrl-cicd-sec-3) Dependency Chain Abuse.
 
-**How this is detected.** Detection fires on the canonical bypass flags across curl, wget, git, npm, pip, gcloud, and openssl. The check is deliberately conservative, partial-word matches (``--insecure-protocols``) are excluded.
+**How this is detected.** Uses the cross-provider ``_primitives.tls_bypass`` detector so detection stays aligned with GHA-027 / GL-023 / JF-022 / ADO-026 / CC-024 / GCB-011 / DR-006. Covers curl / wget / git / npm / yarn / pip / helm / kubectl / ssh / docker / maven / gradle / aws bypasses. Partial-word matches (``--insecure-protocols``) are excluded.
 
 **Recommendation.** Drop ``curl -k`` / ``--insecure``, ``wget --no-check-certificate``, ``git -c http.sslVerify=false``, and ``pip install --trusted-host``. If a CA isn't trusted, install it into the agent's trust store (``update-ca-certificates``) rather than disabling validation pipeline-wide. A compromised intermediate that strips TLS gets a free hand with every fetch the step performs.
 
@@ -3847,7 +3849,7 @@ The rule only fires on **unquoted** uses inside a command body. Quoted (``"${DRO
 
 **Evidences:** [`CICD-SEC-1`](#ctrl-cicd-sec-1) Insufficient Flow Control Mechanisms, [`CICD-SEC-3`](#ctrl-cicd-sec-3) Dependency Chain Abuse.
 
-**How this is detected.** Detection is the same blob-regex used by GHA-027, BK-008, JF-022, ADO-026, CC-024, and the CFN/Terraform rule packs. Matches: ``curl --insecure`` / ``-k``, ``wget --no-check-certificate``, ``pip config set global.trusted-host``, ``npm config set strict-ssl false``, ``yarn config set strict-ssl false``, ``git config http.sslverify false``, ``GIT_SSL_NO_VERIFY=1``, ``NODE_TLS_REJECT_UNAUTHORIZED=0``, ``PYTHONHTTPSVERIFY=0``, and ``GOINSECURE=...``. The rule scans every ``commands:`` entry on every step.
+**How this is detected.** Uses the cross-provider ``_primitives.tls_bypass`` detector shared with GHA-027, BK-008, JF-022, ADO-026, CC-024, GCB-011, and the CFN / Terraform rule packs. Covers curl / wget / git / npm / yarn / pip / helm / kubectl / ssh / docker / maven / gradle / aws bypasses. The rule scans every ``commands:`` entry on every step.
 
 **Recommendation.** Remove TLS-bypass flags from build commands. The most common offenders are ``curl --insecure`` / ``-k`` / ``wget --no-check-certificate``, ``pip config set global.trusted-host``, ``npm config set strict-ssl false``, and ``git -c http.sslverify=false``. Each exposes the build to TLS-MITM injection of a registry-served payload, which is a textbook supply-chain attack vector. If a registry's certificate is genuinely broken, fix the registry rather than permanently disabling verification, the bypass tends to outlive the broken cert and become a permanent weakness.
 
@@ -4584,6 +4586,8 @@ jobs:
 **Evidences:** [`CICD-SEC-6`](#ctrl-cicd-sec-6) Insufficient Credential Hygiene.
 
 **How this is detected.** Every string in the workflow is scanned against a set of credential patterns (AWS access keys, GitHub tokens, Slack tokens, JWTs, Stripe, Google, Anthropic, etc., see `--man secrets` for the full catalog). A match means a secret was pasted into YAML, the value is visible in every fork and every build log and must be treated as compromised.
+
+A second key-context pass also fires on a 40-character lowercase-hex value bound to a credential-named YAML key (``API_TOKEN: deadbeef...0ddf00d``). Covers the legacy unprefixed-vendor-token family (Datadog, GitLab v1 PATs, Codecov v3, AppVeyor, CircleCI v1, pre-``ghp_`` GitHub PATs) where the bare hex shape carries no vendor prefix. The credential-key gate keeps commit SHAs and SHA-256 digests out of the false-positive bucket: a 40-hex value in ``deploy_commit:`` doesn't fire.
 
 **Recommendation.** Rotate the exposed credential immediately. Move the value to an encrypted repository or environment secret and reference it via `${{ secrets.NAME }}`. For cloud access, prefer OIDC federation over long-lived keys.
 
@@ -5960,10 +5964,11 @@ jobs:
 
 **Evidences:** [`CICD-SEC-4`](#ctrl-cicd-sec-4) Poisoned Pipeline Execution, [`CICD-SEC-6`](#ctrl-cicd-sec-6) Insufficient Credential Hygiene.
 
-**How this is detected.** Two shapes fire:
+**How this is detected.** Three shapes fire:
 
 1. ``trufflehog`` / ``gitleaks`` invocation in a ``run:`` block whose stdout pipes to ``curl`` / ``wget`` / ``nc`` / ``gh api -X POST`` — this is the harvest leg of the Shai-Hulud worm postinstall and any similar credential-stealer primitive.
 2. ``trufflehog`` / ``gitleaks`` invoked unconditionally on a workflow whose triggers include ``pull_request_target``, ``issue_comment``, or ``workflow_run`` — the scanner is running with privileged secrets on an attacker-influenced trigger, so even if the output isn't piped to egress today, the next person editing the workflow can land that change via a PR comment.
+3. ``curl`` / ``wget`` / ``httpie`` POST/PUT/PATCH (or ``--data`` upload) to a non-GitHub host whose payload references ``${{ secrets.* }}``, a credential-named env var (``$GITHUB_TOKEN``, ``$NPM_TOKEN``, ``$AWS_*`` keys, etc.), or dumps the runner env (``$(env)``, ``$(printenv)``, ``env > ...``). Catches the third-party-webhook exfil shape where the scanner doesn't run at all — the workflow simply POSTs a build-telemetry payload to an external service that, if the domain lapses or the service is breached, leaks every downstream build's env (which includes ``GITHUB_TOKEN`` always, plus any mapped ``${{ secrets.* }}``). GitHub-owned hosts are allow-listed (``github.com``, ``api.github.com``, ``*.githubusercontent.com``, ``codecov.io`` for the canonical upload path).
 
 Legitimate uses pass: scanner output written to ``${{ github.workspace }}`` or a file under the repo, output uploaded via ``github/codeql-action/upload-sarif`` (CodeQL API, not raw HTTP), and any invocation gated by a ``push``-to-default-branch ``if:`` predicate.
 
@@ -6113,6 +6118,86 @@ Pairs with the per-file PYPI-002 rule (lockfile hash pin presence) on the packag
 - PyPI maintainer-account compromises (ctx 2022, requests-darwin-lite 2024) shipped malicious sdists / wheels under existing version pins. ``--require-hashes`` would have refused the swapped artifact because the recorded SHA-256 wouldn't match the malicious tarball.
 
 **Source:** [`GHA-060`](../providers/github.md#gha-060) in the [GitHub Actions provider](../providers/github.md).
+
+### `GHA-061`: GitHub App token minted without a `permissions:` filter <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-gha-061 }
+
+**Evidences:** [`CICD-SEC-2`](#ctrl-cicd-sec-2) Inadequate Identity and Access Management, [`CICD-SEC-5`](#ctrl-cicd-sec-5) Insufficient PBAC.
+
+**How this is detected.** Fires when a step uses one of the known App-token minting actions without a ``with.permissions`` input:
+
+- ``actions/create-github-app-token`` (the official action; the canonical pattern documented on the GitHub Apps + Actions page).
+- ``tibdex/github-app-token`` (the older community action that the official one replaced; many workflows still pin it).
+- ``peter-murray/workflow-application-token-action`` (similar shape, older.)
+
+The rule is shape-only and doesn't inspect what the App is actually installed with. That's intentional: the scanner can't see the org-side install record, so the right contract is 'always declare the scopes you need at mint time'. Pairs with GHA-050 (publish without OIDC) on the long-lived-credential axis: GHA-050 covers static registry tokens minted by the operator, GHA-061 covers short-lived App tokens that nonetheless carry org-wide scope.
+
+**Recommendation.** Pass an explicit ``permissions:`` filter when minting a GitHub App installation token. The minted token will then carry only the requested scopes even if the App's install grants more. Example:
+
+    - id: app-token
+      uses: actions/create-github-app-token@<sha>
+      with:
+        app-id: ${{ secrets.RELEASE_APP_ID }}
+        private-key: ${{ secrets.RELEASE_APP_KEY }}
+        permissions: >-
+          {"contents":"write"}
+
+List every scope the consuming steps actually need; a future reader (and an attacker who lands a step in this job) can then see exactly what the token can do. Apps are commonly installed with broad org-wide scopes (``contents: write, packages: write, actions: write, pull-requests: write, ...``) because granular per-install permissions are tedious; without the filter the runner token inherits every one of them.
+
+**Known false positives.**
+
+- A workflow that genuinely needs every scope the App carries (rare; usually a release-orchestrator job that writes ``contents`` + ``packages`` + ``deployments`` + ``actions``). The right response is still to list those scopes explicitly so the breadth is documented, not to suppress the rule.
+- First-publish bootstrap on a brand-new App install where the available scopes haven't been finalized yet. Suppress on the specific step until the App install settles.
+
+**Seen in the wild.**
+
+- zizmor's ``github-app`` audit (2025) flagged this shape after multiple incident reviews showed Apps installed with broad scopes minting full-scope tokens for jobs that only needed ``contents: write``. The runtime cost of one missing ``permissions:`` line is the same as a PAT with all those scopes leaked into the runner.
+
+**Proof of exploit.**
+
+```
+# Vulnerable: token inherits every permission the App
+# install grants on the org (commonly contents: write,
+# packages: write, actions: write, pull-requests: write,
+# deployments: write, ...). Any later step that lands
+# attacker-controlled shell exfils a token whose blast
+# radius is 'everything the App can do' rather than the
+# single scope this job actually needed.
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - id: app-token
+        uses: actions/create-github-app-token@<sha>
+        with:
+          app-id: ${{ secrets.RELEASE_APP_ID }}
+          private-key: ${{ secrets.RELEASE_APP_KEY }}
+          owner: ${{ github.repository_owner }}
+      - uses: actions/checkout@<sha>
+        with:
+          token: ${{ steps.app-token.outputs.token }}
+      - run: git push --follow-tags
+
+# Safe: explicit scope list. Token can push tags and
+# nothing else, even if the App install carries more.
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - id: app-token
+        uses: actions/create-github-app-token@<sha>
+        with:
+          app-id: ${{ secrets.RELEASE_APP_ID }}
+          private-key: ${{ secrets.RELEASE_APP_KEY }}
+          owner: ${{ github.repository_owner }}
+          permissions: >-
+            {"contents":"write"}
+      - uses: actions/checkout@<sha>
+        with:
+          token: ${{ steps.app-token.outputs.token }}
+      - run: git push --follow-tags
+```
+
+**Source:** [`GHA-061`](../providers/github.md#gha-061) in the [GitHub Actions provider](../providers/github.md).
 
 ### `GL-001`: Image not pinned to specific version or digest <span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> { #detail-gl-001 }
 
@@ -9530,7 +9615,7 @@ v1 limitations: ``include:`` cross-pipeline file inclusion isn't tracked yet (wo
 
 **Evidences:** [`CICD-SEC-3`](#ctrl-cicd-sec-3) Dependency Chain Abuse.
 
-**How this is detected.** Uses the cross-provider ``CURL_PIPE_RE`` and ``TLS_BYPASS_RE`` regexes so detection is consistent with the GHA / GitLab / CircleCI / Cloud Build providers.
+**How this is detected.** Uses the cross-provider ``_primitives.remote_script_exec`` and ``_primitives.tls_bypass`` detectors so detection is consistent with the GHA / GitLab / CircleCI / Cloud Build providers (covering helm / kubectl / ssh / docker / maven / gradle / aws bypasses in addition to the curl / wget / git / npm / pip baseline).
 
 **Recommendation.** Replace ``curl ... | sh`` with a download-then-verify-then-execute pattern. Drop TLS-bypass flags (``curl -k``, ``git config http.sslverify false``); install the missing CA into the step image instead. Both forms let an attacker controlling DNS / a transparent proxy substitute the script the step runs.
 

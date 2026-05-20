@@ -132,7 +132,7 @@ Don't interpolate ``$BUILDKITE_BRANCH``, ``$BUILDKITE_TAG``, ``$BUILDKITE_MESSAG
 <span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-fix pg-fix--rule" title="`--fix` will patch this rule">🔧 autofix</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-3</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-1</span> <span class="pg-tag pg-tag--esf">ESF-S-VERIFY-DEPS</span> <span class="pg-tag pg-tag--cwe">CWE-494</span> <span class="pg-tag pg-tag--cwe">CWE-829</span>
 </div>
 
-The detection fires on ``curl|bash``, ``curl|sh``, ``wget|bash``, ``iex (iwr ...)``, and the corresponding ``Invoke-WebRequest|Invoke-Expression`` PowerShell forms. Use ``curl -fsSLO <url>; sha256sum -c install.sh.sha256; bash install.sh`` instead.
+Uses the cross-provider ``_primitives.remote_script_exec`` detector shared with GHA-016 / GL-016 / GCB-010 / DF-004 / ARGO-008 / TKN-008. Catches ``curl|bash``, ``curl|sh``, ``wget|bash``, ``bash -c "$(curl …)"``, ``python -c urllib.urlopen``, ``curl > x.sh && bash x.sh``, and the PowerShell ``irm | iex`` variants. Use ``curl -fsSLO <url>; sha256sum -c install.sh.sha256; bash install.sh`` instead.
 
 <div class="pg-rule__rec" markdown>
 
@@ -220,7 +220,7 @@ Insert a ``- block: "Deploy?"`` (or ``- input:`` step) in front of every deploy 
 <span class="pg-sev pg-sev--medium">MEDIUM</span> <span class="pg-fix pg-fix--rule" title="`--fix` will patch this rule">🔧 autofix</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-3</span> <span class="pg-tag pg-tag--esf">ESF-D-COMMS-INTEGRITY</span> <span class="pg-tag pg-tag--cwe">CWE-295</span>
 </div>
 
-Detection fires on the canonical bypass flags across curl, wget, git, npm, pip, gcloud, and openssl. The check is deliberately conservative, partial-word matches (``--insecure-protocols``) are excluded.
+Uses the cross-provider ``_primitives.tls_bypass`` detector so detection stays aligned with GHA-027 / GL-023 / JF-022 / ADO-026 / CC-024 / GCB-011 / DR-006. Covers curl / wget / git / npm / yarn / pip / helm / kubectl / ssh / docker / maven / gradle / aws bypasses. Partial-word matches (``--insecure-protocols``) are excluded.
 
 <div class="pg-rule__rec" markdown>
 

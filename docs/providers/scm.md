@@ -72,6 +72,158 @@ pipeline_check --pipeline scm --scm-platform github \
 All other flags (`--output`, `--severity-threshold`, `--checks`,
 `--standard`, …) behave the same as with the other providers.
 
+### Token permissions per scan
+
+Token requirements split into three tiers per platform: **none /
+public** runs the universal rule subset against public repos only
+and gets rate-limited; **read** gets the full branch-protection
+and CODEOWNERS coverage; **admin** unlocks the
+``security_and_analysis`` block, Actions / environments / deploy
+keys / webhooks / outside collaborators / rulesets endpoints. Rules
+whose endpoint comes back 401 / 403 / 404 pass silently with a
+"data unavailable" note, so a lower-privilege token degrades
+gracefully (it does not crash the scan), but the rules listed
+under ``admin`` below report no signal.
+
+#### GitHub
+
+Pass the token via ``--gh-token`` or ``$GITHUB_TOKEN``. Classic PAT
+scopes and fine-grained PAT permissions are listed side-by-side; on
+GitHub Enterprise Cloud the fine-grained permissions also map to
+the same names on a GitHub App installation token.
+
+| Tier | Classic PAT scope | Fine-grained PAT / GitHub App | Rules unlocked |
+|------|-------------------|-------------------------------|----------------|
+| public (no token) | — | — | SCM-001, -002, -006, -007, -008, -009, -017 on public repos; rate-limited to 60 req/hr |
+| read (public + private) | ``repo`` (or ``public_repo`` for public-only) | ``Metadata: read`` + ``Contents: read`` | adds private-repo coverage for the universal rules; raises rate limit to 5000 req/hr |
+| admin | ``repo`` + ``admin:repo_hook`` + ``read:org`` | ``Administration: read`` + ``Webhooks: read`` + ``Members: read`` + ``Environments: read`` + ``Code scanning alerts: read`` | adds SCM-003, -004, -005, -010..016, -018, -019, -020, -021, -022, -023, -024, -025, -026, -027, -028, -029..047 |
+
+Per-rule scope notes (admin-tier rules only; the universal rules
+work at read tier):
+
+  * **SCM-003 / SCM-004 / SCM-005 / SCM-015 / SCM-016** read
+    ``security_and_analysis.<feature>.status`` from the repo
+    metadata payload. GitHub omits the entire
+    ``security_and_analysis`` block unless the token has admin
+    scope on the repo, so without it the rules cannot tell
+    ``disabled`` from ``unknown`` and pass with an unavailability
+    note.
+  * **SCM-010 / SCM-011 / SCM-012 / SCM-013 / SCM-014 / SCM-018 /
+    SCM-019** read GitHub-only protection-payload knobs
+    (``enforce_admins``, ``require_code_owner_reviews``,
+    ``dismiss_stale_reviews``, ``required_conversation_resolution``,
+    ``require_last_push_approval``,
+    ``bypass_pull_request_allowances``, ``restrictions``). The
+    branch-protection endpoint returns these only when the token
+    has at least ``Administration: read`` (fine-grained) / ``repo``
+    scope (classic).
+  * **SCM-020 / SCM-021 / SCM-022** hit
+    ``/actions/permissions`` and ``/actions/permissions/workflow``.
+    Both require ``Administration: read``.
+  * **SCM-023 / SCM-024** walk ``/environments``. Requires
+    ``Environments: read``.
+  * **SCM-025** reads ``/keys`` (deploy keys). Requires
+    ``Administration: read``.
+  * **SCM-026** reads ``/hooks`` (webhooks). Requires
+    ``Webhooks: read``.
+  * **SCM-027** reads ``/collaborators?affiliation=outside``.
+    Requires ``Members: read`` on the org; ``Administration: read``
+    on the repo is the per-repo equivalent.
+  * **SCM-028** reads ``private`` and ``allow_forking`` from the
+    repo metadata. Available at read tier (no admin needed).
+  * **SCM-029, SCM-030, SCM-032..SCM-042** walk ``/rulesets`` and
+    the per-ruleset detail endpoint. Both require
+    ``Administration: read``.
+  * **SCM-043 / SCM-044** read tag-targeted rulesets / branch
+    protection ``required_signatures`` + ``enforce_admins``.
+    Requires ``Administration: read``.
+  * **SCM-045 / SCM-046 / SCM-047** read the code-scanning
+    default-setup endpoint and the languages endpoint. Requires
+    ``Code scanning alerts: read``; the languages endpoint is
+    available at read tier.
+
+GitHub Apps: the same fine-grained permission names apply to App
+installation tokens. The App needs to be installed on the target
+repo (or org); installation-only access is enough for repo-scoped
+endpoints. ``Members: read`` is org-level; install the App on the
+org to enumerate outside collaborators.
+
+#### GitLab
+
+Pass the token via ``--gh-token`` (the flag is shared across
+platforms) or ``$GITLAB_TOKEN``.
+
+| Tier | GitLab token scope | Rules unlocked |
+|------|--------------------|----------------|
+| public (no token) | — | SCM-001, -002, -006, -007, -008, -009, -017 on public projects only |
+| read | ``read_api`` | full universal-rule coverage on private projects (and the rate-limit raise) |
+| maintainer-equivalent | ``read_api`` issued by a project Maintainer (or higher) | adds SCM-006's ``push_rules.reject_unsigned_commits`` signal (the push-rules endpoint is gated on Maintainer access to the project) |
+
+Notes:
+
+  * SCM-001 / -007 / -009 read
+    ``/projects/:id/protected_branches``. Available to any project
+    member with ``read_api``.
+  * SCM-002 reads ``approvals_before_merge`` from
+    ``/projects/:id``. Available at read tier.
+  * SCM-006 reads ``push_rules.reject_unsigned_commits`` from
+    ``/projects/:id/push_rule``. The push-rules endpoint is a
+    GitLab Premium feature and additionally requires Maintainer
+    access to the project to read; lower-privilege tokens get a
+    silent pass because the rule treats endpoint absence the same
+    as "feature disabled".
+  * SCM-008 reads
+    ``only_allow_merge_if_pipeline_succeeds`` from
+    ``/projects/:id``. Available at read tier.
+  * SCM-017 probes ``/projects/:id/repository/files/<path>`` for
+    the three CODEOWNERS locations. Available at read tier.
+
+Self-hosted GitLab: ``--scm-platform gitlab`` accepts a custom
+host via the fetcher's ``host=`` constructor argument. Self-hosted
+tokens use the same scope name.
+
+#### Bitbucket Cloud
+
+Pass the credential as ``user:app_password`` via ``--gh-token`` (or
+``$BITBUCKET_TOKEN``). Bitbucket Server is a different surface and
+not currently in scope.
+
+| Tier | App-password permissions | Rules unlocked |
+|------|--------------------------|----------------|
+| public (no credential) | — | SCM-001, -002, -007, -008, -009, -017 on public repos only |
+| read | ``repositories:read`` | full universal-rule coverage on private repos |
+
+Notes:
+
+  * SCM-001 / -007 / -009 read
+    ``/repositories/{workspace}/{repo}/branch-restrictions``
+    (``push`` / ``force`` / ``delete`` restriction kinds).
+    Available at ``repositories:read``.
+  * SCM-002 / SCM-008 read ``require_approvals_to_merge`` and
+    ``require_passing_builds_to_merge`` from the same endpoint.
+    Available at ``repositories:read``.
+  * **SCM-006 has no Bitbucket Cloud equivalent** — Bitbucket
+    Cloud has no per-branch signed-commit enforcement (GPG
+    signing is a personal-account UI setting, not a protection
+    rule). The rule always fires on Bitbucket snapshots; suppress
+    per repo with a rationale if the team enforces signing via a
+    different mechanism.
+  * SCM-017 probes
+    ``/repositories/{workspace}/{repo}/src/<branch>/<path>?format=meta``
+    for the three CODEOWNERS locations. Available at
+    ``repositories:read``.
+
+#### Offline / fixture mode
+
+``--scm-fixture-dir DIR`` reads JSON responses from disk instead of
+hitting the network on every platform. No token is required and no
+HTTP traffic leaves the host. Useful for CI runs, air-gapped
+evaluation, and reproducing a customer's posture against a captured
+fixture set. Endpoint paths map to
+``<endpoint-with-slashes-as-underscores>.json`` under DIR; a
+missing file is treated as a 404 (the rule passes silently with an
+unavailability note, same as when a real call fails).
+
 ### What the rules expect
 
 The provider hits three endpoints per repo:

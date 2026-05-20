@@ -463,7 +463,7 @@ pipeline_check/
         ├── aws/rules/         # 71 rule-based checks (CB, CP, CD, ECR, IAM, PBAC, S3, CT, CWL, SM, CA, CCM, LMB, KMS, SSM, EB, SIGN, CW)
         ├── terraform/         # AWS-parity checks against plan JSON
         ├── cloudformation/    # AWS-parity checks against CFN templates (YAML/JSON)
-        ├── github/rules/      # GHA-001 .. GHA-060 + TAINT-001..003
+        ├── github/rules/      # GHA-001 .. GHA-061 + TAINT-001..003
         ├── gitlab/rules/      # GL-001 .. GL-035 + TAINT-004 / TAINT-008
         ├── bitbucket/rules/   # BB-001 .. BB-031
         ├── azure/rules/       # ADO-001 .. ADO-030
