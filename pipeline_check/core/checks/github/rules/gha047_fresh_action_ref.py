@@ -211,6 +211,11 @@ def _scan_value(
         matches.append((f"{ref.owner}/{ref.repo}@{ref.ref}", age_days))
 
 
+def _now() -> datetime:
+    """Indirection so tests can freeze wall-clock time via monkeypatch."""
+    return datetime.now(tz=UTC)
+
+
 def _age_days(iso8601: str) -> int | None:
     """Days between *iso8601* and now, or ``None`` when unparseable.
 
@@ -228,5 +233,5 @@ def _age_days(iso8601: str) -> int | None:
         return None
     if committed.tzinfo is None:
         committed = committed.replace(tzinfo=UTC)
-    delta = datetime.now(tz=UTC) - committed
+    delta = _now() - committed
     return delta.days

@@ -89,6 +89,11 @@ _RANGE_CHARS = ("[", "]", "(", ")", ",")
 _RANGE_LITERALS = ("LATEST", "RELEASE")
 
 
+def _now() -> _dt.datetime:
+    """Indirection so tests can freeze wall-clock time via monkeypatch."""
+    return _dt.datetime.now(_dt.UTC)
+
+
 def _is_concrete_release(version: str) -> bool:
     v = version.strip()
     if not v:
@@ -149,7 +154,7 @@ def check(
             recommendation=RULE.recommendation, passed=True,
         )
 
-    now = _dt.datetime.now(_dt.UTC)
+    now = _now()
     offenders: list[str] = []
     locations: list[Location] = []
     for dep in iter_real_dependencies(pom):

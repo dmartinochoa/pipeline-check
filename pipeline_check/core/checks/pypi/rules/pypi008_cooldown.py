@@ -86,6 +86,11 @@ _NAME_VERSION_RE = re.compile(
 )
 
 
+def _now() -> _dt.datetime:
+    """Indirection so tests can freeze wall-clock time via monkeypatch."""
+    return _dt.datetime.now(_dt.UTC)
+
+
 def _exact_spec(body: str) -> tuple[str, str] | None:
     m = _NAME_VERSION_RE.match(body)
     if m is None:
@@ -128,7 +133,7 @@ def check(
             recommendation=RULE.recommendation, passed=True,
         )
 
-    now = _dt.datetime.now(_dt.UTC)
+    now = _now()
     offenders: list[str] = []
     locations: list[Location] = []
     for line in iter_specs(rf):
