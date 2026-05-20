@@ -1,9 +1,13 @@
-"""GL-035. pip install without `--require-hashes` (PYPI-007 from the roadmap)."""
+"""GL-035. pip install without `--require-hashes`."""
 from __future__ import annotations
 
-import re
 from typing import Any
 
+from ..._primitives.dep_verification import (
+    has_hash_pinning_manager,
+    has_require_hashes,
+    is_real_pip_install_line,
+)
 from ...base import Finding, Severity
 from ...rule import Rule
 from ..base import iter_jobs, job_scripts
@@ -31,8 +35,9 @@ RULE = Rule(
         "install``, ``pip3 install``, ``python -m pip install``) "
         "that isn't a tooling-bootstrap exempted by the allowlist;\n"
         "2. No job uses ``--require-hashes`` AND no job uses a "
-        "hash-pinning manager (``uv sync`` / ``uv pip install``, "
-        "``poetry install``, ``pipenv install --deploy``).\n\n"
+        "lockfile-consuming manager (``uv sync`` / ``uv pip sync``, "
+        "``poetry install``, ``pipenv install --deploy`` / ``pipenv "
+        "sync``).\n\n"
         "Tooling-bootstrap allowlist (same as GHA-060)."
     ),
     known_fp=(
@@ -44,56 +49,29 @@ RULE = Rule(
     ),
     incident_refs=(
         "PyPI maintainer-account compromises (ctx 2022, "
-        "requests-darwin-lite 2023) shipped malicious sdists / "
+        "requests-darwin-lite 2024) shipped malicious sdists / "
         "wheels under existing version pins; ``--require-hashes`` "
         "would have refused the swap.",
     ),
 )
 
 
-_PIP_INSTALL_RE = re.compile(
-    r"\b(?:pip3?|python3?\s+-m\s+pip)\s+install\b",
-    re.IGNORECASE,
-)
-_TOOLING_INSTALL_RE = re.compile(
-    r"\b(?:pip3?|python3?\s+-m\s+pip)\s+install\s+"
-    r"(?:--upgrade\s+|-U\s+|--user\s+|-q\s+|--quiet\s+)*"
-    r"(?:pip(?:\s|$)|setuptools(?:\s|$)|wheel(?:\s|$)|virtualenv(?:\s|$)"
-    r"|pip-tools(?:\s|$)|pipx(?:\s|$)|pip-audit(?:\s|$)"
-    r"|cyclonedx-bom(?:\s|$)|semgrep(?:\s|$)|poetry(?:\s|$)|uv(?:\s|$)"
-    r"|pipenv(?:\s|$)|hatch(?:\s|$)|build(?:\s|$)|twine(?:\s|$))",
-    re.IGNORECASE,
-)
-_REQUIRE_HASHES_RE = re.compile(r"--require-hashes\b", re.IGNORECASE)
-_HASH_PINNING_MANAGER_RE = re.compile(
-    r"\b(?:"
-    r"uv\s+(?:sync|pip\s+install|pip\s+sync|run|tool\s+install)"
-    r"|poetry\s+install"
-    r"|pipenv\s+install\s+--deploy"
-    r"|pipenv\s+sync"
-    r"|hatch\s+env\s+create"
-    r")\b",
-    re.IGNORECASE,
-)
-
-
-def _is_real_pip_install(line: str) -> bool:
-    return bool(
-        _PIP_INSTALL_RE.search(line) and not _TOOLING_INSTALL_RE.search(line)
-    )
-
-
 def _global_script_lines(doc: dict[str, Any]) -> list[str]:
-    """Top-level ``before_script:`` / ``after_script:`` lines."""
+    """Top-level + ``default:`` ``before_script:`` / ``after_script:`` lines."""
     out: list[str] = []
-    for key in ("before_script", "after_script"):
-        v = doc.get(key)
-        if isinstance(v, list):
-            for item in v:
-                if isinstance(item, str):
-                    out.append(item)
-        elif isinstance(v, str):
-            out.append(v)
+    sources: list[dict[str, Any]] = [doc]
+    default = doc.get("default")
+    if isinstance(default, dict):
+        sources.append(default)
+    for src in sources:
+        for key in ("before_script", "after_script"):
+            v = src.get(key)
+            if isinstance(v, list):
+                for item in v:
+                    if isinstance(item, str):
+                        out.append(item)
+            elif isinstance(v, str):
+                out.append(v)
     return out
 
 
@@ -102,19 +80,19 @@ def check(path: str, doc: dict[str, Any]) -> Finding:
     require_hashes_seen = False
     hash_manager_seen = False
     for line in _global_script_lines(doc):
-        if _REQUIRE_HASHES_RE.search(line):
+        if has_require_hashes(line):
             require_hashes_seen = True
-        if _HASH_PINNING_MANAGER_RE.search(line):
+        if has_hash_pinning_manager(line):
             hash_manager_seen = True
-        if _is_real_pip_install(line):
+        if is_real_pip_install_line(line):
             offenders.append(f"<top-level>: {line.strip()[:60]}")
     for job_name, job in iter_jobs(doc):
         for line in job_scripts(job):
-            if _REQUIRE_HASHES_RE.search(line):
+            if has_require_hashes(line):
                 require_hashes_seen = True
-            if _HASH_PINNING_MANAGER_RE.search(line):
+            if has_hash_pinning_manager(line):
                 hash_manager_seen = True
-            if _is_real_pip_install(line):
+            if is_real_pip_install_line(line):
                 offenders.append(f"{job_name}: {line.strip()[:60]}")
     if not offenders or require_hashes_seen or hash_manager_seen:
         desc = (

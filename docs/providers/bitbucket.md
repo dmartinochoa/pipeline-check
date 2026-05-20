@@ -715,7 +715,7 @@ Fires once per ``bitbucket-pipelines.yml`` when some step's ``script:`` runs a r
 
 **Seen in the wild**
 
-- PyPI maintainer-account compromises (ctx 2022, requests-darwin-lite 2023) shipped malicious sdists / wheels under existing version pins.
+- PyPI maintainer-account compromises (ctx 2022, requests-darwin-lite 2024) shipped malicious sdists / wheels under existing version pins.
 
 <div class="pg-rule__rec" markdown>
 

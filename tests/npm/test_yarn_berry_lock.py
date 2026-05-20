@@ -248,8 +248,9 @@ def test_berry_lock_npm003_fires_on_git_resolution(tmp_path: Path) -> None:
     ctx = NpmContext.from_path(tmp_path)
     findings = list(NpmChecks(ctx).run())
     npm003 = [f for f in findings if f.check_id == "NPM-003"]
-    assert npm003 and not npm003[0].passed
-    assert "ssh" in npm003[0].description.lower()
+    failed = [f for f in npm003 if not f.passed]
+    assert failed
+    assert any("ssh" in f.description.lower() for f in failed)
 
 
 def test_berry_lock_npm006_flags_compromised_version(tmp_path: Path) -> None:
@@ -257,8 +258,9 @@ def test_berry_lock_npm006_flags_compromised_version(tmp_path: Path) -> None:
     ctx = NpmContext.from_path(tmp_path)
     findings = list(NpmChecks(ctx).run())
     npm006 = [f for f in findings if f.check_id == "NPM-006"]
-    assert npm006 and not npm006[0].passed
-    assert "ua-parser-js" in npm006[0].description
+    failed = [f for f in npm006 if not f.passed]
+    assert failed
+    assert any("ua-parser-js" in f.description for f in failed)
 
 
 def test_berry_lock_dispatcher_routes_by_metadata_header(tmp_path: Path) -> None:

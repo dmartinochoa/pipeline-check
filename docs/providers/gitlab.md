@@ -802,7 +802,7 @@ Add an ``npm audit signatures`` step (or ``pnpm audit signatures``) after the in
 Fires once per pipeline file when:
 
 1. Some job's ``before_script:`` / ``script:`` / ``after_script:`` runs a real ``pip install`` (``pip install``, ``pip3 install``, ``python -m pip install``) that isn't a tooling-bootstrap exempted by the allowlist;
-2. No job uses ``--require-hashes`` AND no job uses a hash-pinning manager (``uv sync`` / ``uv pip install``, ``poetry install``, ``pipenv install --deploy``).
+2. No job uses ``--require-hashes`` AND no job uses a lockfile-consuming manager (``uv sync`` / ``uv pip sync``, ``poetry install``, ``pipenv install --deploy`` / ``pipenv sync``).
 
 Tooling-bootstrap allowlist (same as GHA-060).
 
@@ -812,7 +812,7 @@ Tooling-bootstrap allowlist (same as GHA-060).
 
 **Seen in the wild**
 
-- PyPI maintainer-account compromises (ctx 2022, requests-darwin-lite 2023) shipped malicious sdists / wheels under existing version pins; ``--require-hashes`` would have refused the swap.
+- PyPI maintainer-account compromises (ctx 2022, requests-darwin-lite 2024) shipped malicious sdists / wheels under existing version pins; ``--require-hashes`` would have refused the swap.
 
 <div class="pg-rule__rec" markdown>
 

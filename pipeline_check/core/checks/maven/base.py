@@ -526,13 +526,7 @@ _GRADLE_MAVEN_SHORT_RE = re.compile(
 # Inside the ``ext { ... }`` block Groovy accepts both ``logVer = '2'``
 # and the bare ``logVer '2'`` (script-config DSL) shape; the regex
 # covers the leading-``=`` form which is by far the common one.
-_GRADLE_EXT_BLOCK_RE = re.compile(
-    r"""\bext\s*\{
-        (?P<body>[^{}]*)
-        \}
-    """,
-    re.VERBOSE | re.DOTALL,
-)
+_GRADLE_EXT_OPEN_RE = re.compile(r"\bext\s*\{")
 _GRADLE_PROP_ASSIGN_RE = re.compile(
     r"""(?P<name>[A-Za-z_][\w.]*)
         \s*=\s*
@@ -600,6 +594,36 @@ _GRADLE_CATALOG_LINE_RE = re.compile(
 )
 
 
+def _ext_block_bodies(text: str) -> list[str]:
+    """Yield the body of each ``ext { ... }`` block, brace-aware.
+
+    A regex with ``[^{}]*`` for the body fails the moment the block
+    contains a nested brace (closures, conditional sub-blocks, map /
+    list literals with ``{}``). Walk the source counting braces so
+    bodies with arbitrary nesting are extracted intact. Naive about
+    strings (a ``"}"`` literal inside a value would terminate the
+    block early), but Gradle scripts almost never embed braces in
+    quoted property values, so the false-positive rate is negligible
+    vs. the false-negative caused by the regex shape.
+    """
+    out: list[str] = []
+    for opener in _GRADLE_EXT_OPEN_RE.finditer(text):
+        depth = 1
+        i = opener.end()
+        body_start = i
+        n = len(text)
+        while i < n and depth > 0:
+            ch = text[i]
+            if ch == "{":
+                depth += 1
+            elif ch == "}":
+                depth -= 1
+            i += 1
+        if depth == 0:
+            out.append(text[body_start:i - 1])
+    return out
+
+
 def _extract_gradle_properties(text: str) -> dict[str, str]:
     """Return ``{name: value}`` for every in-file user-declared property.
 
@@ -612,8 +636,7 @@ def _extract_gradle_properties(text: str) -> dict[str, str]:
     out: dict[str, str] = {}
     # ``ext { ... }`` blocks first so a later same-named ``ext.foo``
     # outside the block still wins.
-    for m in _GRADLE_EXT_BLOCK_RE.finditer(text):
-        body = m.group("body")
+    for body in _ext_block_bodies(text):
         for am in _GRADLE_PROP_ASSIGN_RE.finditer(body):
             out[am.group("name")] = am.group("value")
     for m in _GRADLE_EXT_DOT_RE.finditer(text):
@@ -724,10 +747,12 @@ def _parse_versions_catalog(text: str) -> VersionCatalog:
         version = _catalog_version(entry, versions)
         if not version:
             continue
-        # Normalize the catalog entry name to the DSL accessor:
-        # Gradle replaces ``-`` with ``.`` so ``junit-jupiter``
-        # becomes ``libs.junit.jupiter`` in the build script.
-        dsl_name = name.replace("-", ".")
+        # Normalize the catalog entry name to the DSL accessor.
+        # Gradle converts any of ``-``, ``_`` to ``.`` so the catalog
+        # aliases ``junit-jupiter``, ``junit_jupiter``, and the
+        # already-dotted ``junit.jupiter`` all become the same DSL
+        # accessor ``libs.junit.jupiter``.
+        dsl_name = name.replace("-", ".").replace("_", ".")
         out[dsl_name] = (group, artifact, version)
     return out
 
@@ -1002,7 +1027,15 @@ def _parse_gradle(
     # ``libs.bundles.*`` / ``libs.plugins.*`` namespaces) are
     # skipped so we don't materialize phantom deps.
     if version_catalog:
-        for line in text.splitlines():
+        # Track each line's start offset as we iterate so duplicate
+        # catalog-reference lines (the common case in monorepos where
+        # multiple subprojects share an identical ``testImplementation
+        # libs.junit`` declaration) get their actual line number,
+        # not the first occurrence's.
+        offset = 0
+        for line in text.splitlines(keepends=True):
+            line_offset = offset
+            offset += len(line)
             if not _GRADLE_CATALOG_LINE_RE.search(line):
                 continue
             for cm in _GRADLE_CATALOG_REF_RE.finditer(line):
@@ -1035,7 +1068,7 @@ def _parse_gradle(
                     version=version,
                     scope="compile",
                     managed=False,
-                    line_no=_line_at(text, text.find(line)),
+                    line_no=_line_at(text, line_offset),
                 ))
 
     return PomFile(

@@ -57,9 +57,7 @@ release commit collapses this section into `## [X.Y.Z] - <date>`.
   scanner. MVN-001 (floating-range) and MVN-008 (cooldown) now see
   the literal version on Gradle multi-project layouts where the
   versions live in the root ``gradle.properties``, the standard
-  setup in real-world projects. The remaining gap is the
-  ``libs.versions.toml`` version-catalog DSL (``libs.X.Y``
-  references in build scripts); that's the next follow-up.
+  setup in real-world projects.
 
 - **`pyproject.toml` parser for the pypi provider.** Brings the
   existing PYPI-004 (VCS mutable ref) and PYPI-006 (compromised
@@ -104,9 +102,9 @@ release commit collapses this section into `## [X.Y.Z] - <date>`.
   are preserved verbatim so the rule still flags the dynamic-
   version case as it did before. Cross-file resolution
   (``gradle.properties``, ``libs.versions.toml`` version
-  catalogs, ``rootProject.ext.X`` indirection) stays out of scope
-  for this pass; the version-catalog leg is the next obvious
-  follow-up.
+  catalogs) is covered by the dedicated entries above;
+  ``rootProject.ext.X`` indirection remains intentionally out of
+  scope for this pass.
 
 - **GHA-060 + GL-035 + BB-031: pip install without
   ``--require-hashes``.** Closes the PYPI-007 slot from the

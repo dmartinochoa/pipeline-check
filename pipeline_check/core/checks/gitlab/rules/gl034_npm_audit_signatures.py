@@ -1,9 +1,12 @@
 """GL-034. npm/pnpm install without `npm audit signatures` verification step."""
 from __future__ import annotations
 
-import re
 from typing import Any
 
+from ..._primitives.dep_verification import (
+    has_npm_audit_signatures,
+    has_npm_install,
+)
 from ...base import Finding, Severity
 from ...rule import Rule
 from ..base import iter_jobs, job_scripts
@@ -58,53 +61,48 @@ RULE = Rule(
 )
 
 
-_INSTALL_RE = re.compile(
-    r"\b(?:npm|pnpm)\s+(?:ci|install|i)\b",
-    re.IGNORECASE,
-)
-_AUDIT_SIGNATURES_RE = re.compile(
-    r"\b(?:npm|pnpm)\s+audit\s+signatures\b",
-    re.IGNORECASE,
-)
-
-
 def _global_script_lines(doc: dict[str, Any]) -> list[str]:
-    """Top-level ``before_script:`` / ``after_script:`` lines.
+    """Top-level + ``default:`` ``before_script:`` / ``after_script:`` lines.
 
     GitLab's top-level scripts apply to every job that doesn't
-    override them; either an install or an audit-signatures line up
-    there contributes to the same workflow-wide decision the rule
-    makes.
+    override them; the modern equivalent lives under ``default:``.
+    Either form contributes to the same pipeline-wide decision the
+    rule makes (install seen, verification seen).
     """
     out: list[str] = []
-    for key in ("before_script", "after_script"):
-        v = doc.get(key)
-        if isinstance(v, list):
-            for item in v:
-                if isinstance(item, str):
-                    out.append(item)
-        elif isinstance(v, str):
-            out.append(v)
+    sources: list[dict[str, Any]] = [doc]
+    default = doc.get("default")
+    if isinstance(default, dict):
+        sources.append(default)
+    for src in sources:
+        for key in ("before_script", "after_script"):
+            v = src.get(key)
+            if isinstance(v, list):
+                for item in v:
+                    if isinstance(item, str):
+                        out.append(item)
+            elif isinstance(v, str):
+                out.append(v)
     return out
 
 
 def check(path: str, doc: dict[str, Any]) -> Finding:
     offenders: list[str] = []
     audit_seen = False
-    # Scan top-level scripts plus every job's scripts. We collect
-    # install hits per-job for offender labeling, and a global
-    # audit-seen flag because verification anywhere in the pipeline
-    # is sufficient.
+    # Scan top-level + default: scripts plus every job's scripts. We
+    # collect install hits per-job for offender labeling, and a
+    # global audit-seen flag because verification anywhere in the
+    # pipeline is sufficient.
     for line in _global_script_lines(doc):
-        if _AUDIT_SIGNATURES_RE.search(line):
+        if has_npm_audit_signatures(line):
             audit_seen = True
-        if _INSTALL_RE.search(line):
+        if has_npm_install(line):
             offenders.append(f"<top-level>: {line.strip()[:60]}")
     for job_name, job in iter_jobs(doc):
         for line in job_scripts(job):
-            if _AUDIT_SIGNATURES_RE.search(line):
+            if has_npm_audit_signatures(line):
                 audit_seen = True
-            if _INSTALL_RE.search(line):
+            if has_npm_install(line):
                 offenders.append(f"{job_name}: {line.strip()[:60]}")
     if not offenders or audit_seen:
         desc = (
