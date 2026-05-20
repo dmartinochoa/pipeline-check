@@ -473,6 +473,12 @@ KNOWN_UNCOVERED: frozenset[str] = frozenset({
     # ``_PROVIDER_BY_PREFIX`` (GHA / GL / BB / ADO / JF / CC) so
     # they never enter ``expected_ids`` and don't need a
     # KNOWN_UNCOVERED entry.
+    # GHA-062 walks the workflow's repo for sidecar IaC files
+    # (``trust-policy.json`` / ``*.tf``) that the per-check
+    # safe/unsafe-pair harness can't model (the rule needs disk
+    # state alongside the YAML, not just YAML). Covered by
+    # tests/github/test_gha062.py with per-case tmpdir trees.
+    "GHA-062",
 })
 
 

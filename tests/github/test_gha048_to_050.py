@@ -177,6 +177,78 @@ class TestGHA049CrossRepoPush:
         f = run_check(wf, "GHA-049")
         assert f.passed
 
+    def test_fails_on_cicd_goat_scenario_23_actions_bot_bypass(self):
+        # Body lifted from cicd-goat scenario 23. The combination
+        # of ``git config user.name "github-actions[bot]"`` + ``git
+        # push origin HEAD:main`` is the branch-protection
+        # bypass-allowance abuse shape, even though origin is the
+        # canonical remote.
+        wf = """
+        name: scenario-23-actions-bot-branch-protection-bypass
+        on:
+          push:
+            branches: [main]
+        permissions:
+          contents: write
+        jobs:
+          auto-format:
+            if: false
+            runs-on: ubuntu-latest
+            steps:
+              - uses: actions/checkout@v4
+              - run: |
+                  set -euo pipefail
+                  npm install
+                  npm run format
+                  git config user.name "github-actions[bot]"
+                  git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+                  git add -A
+                  if ! git diff --cached --quiet; then
+                    git commit -m "chore: auto-format"
+                    git push origin HEAD:main
+                  fi
+        """
+        f = run_check(wf, "GHA-049")
+        assert not f.passed
+        assert "github-actions[bot]" in f.description
+
+    def test_passes_on_actions_bot_identity_without_push(self):
+        # Bot identity is sometimes set just for the commit message
+        # ledger; without a push, no bypass-abuse shape exists.
+        wf = """
+        name: ci
+        on: push
+        jobs:
+          tag:
+            runs-on: ubuntu-latest
+            steps:
+              - uses: actions/checkout@v4
+              - run: |
+                  git config user.name "github-actions[bot]"
+                  git tag v1.0.0
+        """
+        f = run_check(wf, "GHA-049")
+        assert f.passed
+
+    def test_passes_on_push_without_bot_identity(self):
+        # Plain ``git push origin`` without assuming the bot identity
+        # stays in the existing carve-out (release jobs, mirror
+        # syncs, etc. that run as the workflow's default actor).
+        wf = """
+        name: ci
+        on: push
+        jobs:
+          release:
+            runs-on: ubuntu-latest
+            steps:
+              - uses: actions/checkout@v4
+              - run: |
+                  git tag v1.0.0
+                  git push origin v1.0.0
+        """
+        f = run_check(wf, "GHA-049")
+        assert f.passed
+
 
 # ── GHA-050 publish without OIDC / environment gate ──────────────────
 

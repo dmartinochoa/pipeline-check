@@ -144,6 +144,7 @@ STANDARD = Standard(
         "GHA-059":  ["Build.L3.NonFalsifiable"],                   # npm install without audit signatures
         "GHA-060":  ["Build.L3.NonFalsifiable"],                   # pip install without --require-hashes
         "GHA-061":  ["Build.L3.NonFalsifiable"],                   # App token minted without permissions filter
+        "GHA-062":  ["Build.L3.NonFalsifiable"],                   # OIDC trust subject in sibling IaC is overly broad
         # ── GitLab CI ─────────────────────────────────────────────
         "GL-001":   ["Build.L3.NonFalsifiable"],                   # floating image tag
         "GL-002":   ["Build.L3.Isolated"],                         # script injection

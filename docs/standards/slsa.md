@@ -20,7 +20,7 @@ the source-control side of the chain.
 
 - **Controls in this standard:** 7
 - **Controls evidenced by at least one check:** 6 / 7
-- **Distinct checks evidencing this standard:** 406
+- **Distinct checks evidencing this standard:** 407
 - **Of those, autofixable with `--fix`:** 92
 
 _Severity levels (`CRITICAL` / `HIGH` / `MEDIUM` / `LOW` / `INFO`) follow the same scale across every provider and standard. See [How to read severity](README.md#how-to-read-severity) on the standards overview for the definitions._
@@ -37,7 +37,7 @@ Click a control ID to jump to the per-control section with the full check list. 
 | [`Build.L2.Signed`](#ctrl-build-l2-signed) | Build L2: Provenance is authenticated and cannot be forged by tenants | 35 | 6H · 28M · 1L |
 | [`Build.L3.Isolated`](#ctrl-build-l3-isolated) | Build L3: Build runs in an isolated environment not influenced by other builds | 148 | 24C · 91H · 31M · 2L |
 | [`Build.L3.Ephemeral`](#ctrl-build-l3-ephemeral) | Build L3: Build environment is ephemeral and provisioned fresh for each run | 19 | 14M · 5L |
-| [`Build.L3.NonFalsifiable`](#ctrl-build-l3-nonfalsifiable) | Build L3: Provenance cannot be falsified by the build's own tenant | 223 | 36C · 98H · 78M · 11L |
+| [`Build.L3.NonFalsifiable`](#ctrl-build-l3-nonfalsifiable) | Build L3: Provenance cannot be falsified by the build's own tenant | 224 | 36C · 99H · 78M · 11L |
 
 ## Filter at runtime
 
@@ -359,7 +359,7 @@ Build environments are provisioned per run and torn down after, so a compromised
 
 The build platform's provenance signature is bound to inputs the tenant cannot influence (e.g. a backend-controlled identity), so a tenant-controlled compromise cannot mint forged provenance.
 
-**Evidenced by 223 checks** across 19 providers (AWS, Argo Workflows, Azure DevOps, Bitbucket, Buildkite, CircleCI, Cloud Build, CloudFormation, Dockerfile, Drone CI, GitHub Actions, GitLab CI, Helm, Jenkins, OCI manifest, SCM, Tekton, Terraform, maven).
+**Evidenced by 224 checks** across 19 providers (AWS, Argo Workflows, Azure DevOps, Bitbucket, Buildkite, CircleCI, Cloud Build, CloudFormation, Dockerfile, Drone CI, GitHub Actions, GitLab CI, Helm, Jenkins, OCI manifest, SCM, Tekton, Terraform, maven).
 
 | Check | Title | Severity | Provider | Fix |
 |-------|-------|----------|----------|-----|
@@ -494,7 +494,7 @@ The build platform's provenance signature is bound to inputs the tenant cannot i
 | [`GHA-043`](#detail-gha-043) | Low-star action runs with sensitive permissions | <span class="pg-sev pg-sev--high">HIGH</span> | [GitHub Actions](../providers/github.md) |  |
 | [`GHA-047`](#detail-gha-047) | Action ref resolves to a recently committed tag or SHA | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [GitHub Actions](../providers/github.md) |  |
 | [`GHA-048`](#detail-gha-048) | Workflow step writes a file under .github/workflows/ | <span class="pg-sev pg-sev--critical">CRITICAL</span> | [GitHub Actions](../providers/github.md) |  |
-| [`GHA-049`](#detail-gha-049) | Workflow step pushes to a repo outside the current owner | <span class="pg-sev pg-sev--high">HIGH</span> | [GitHub Actions](../providers/github.md) |  |
+| [`GHA-049`](#detail-gha-049) | Workflow step makes a privileged git write (cross-repo or actions[bot] bypass) | <span class="pg-sev pg-sev--high">HIGH</span> | [GitHub Actions](../providers/github.md) |  |
 | [`GHA-051`](#detail-gha-051) | services / container image is not pinned by digest | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [GitHub Actions](../providers/github.md) |  |
 | [`GHA-054`](#detail-gha-054) | actions/checkout with ssh-key persists SSH credential in repo | <span class="pg-sev pg-sev--high">HIGH</span> | [GitHub Actions](../providers/github.md) |  |
 | [`GHA-055`](#detail-gha-055) | Reusable workflow outputs derive a secret or caller-input value | <span class="pg-sev pg-sev--high">HIGH</span> | [GitHub Actions](../providers/github.md) |  |
@@ -502,6 +502,7 @@ The build platform's provenance signature is bound to inputs the tenant cannot i
 | [`GHA-059`](#detail-gha-059) | npm install without registry-signature verification step | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [GitHub Actions](../providers/github.md) |  |
 | [`GHA-060`](#detail-gha-060) | pip install without `--require-hashes` verification | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [GitHub Actions](../providers/github.md) |  |
 | [`GHA-061`](#detail-gha-061) | GitHub App token minted without a `permissions:` filter | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [GitHub Actions](../providers/github.md) |  |
+| [`GHA-062`](#detail-gha-062) | OIDC subject claim in sibling IaC grants overly broad scope | <span class="pg-sev pg-sev--high">HIGH</span> | [GitHub Actions](../providers/github.md) |  |
 | [`GL-001`](#detail-gl-001) | Image not pinned to specific version or digest | <span class="pg-sev pg-sev--high">HIGH</span> | [GitLab CI](../providers/gitlab.md) | <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> |
 | [`GL-003`](#detail-gl-003) | Variables contain literal secret values | <span class="pg-sev pg-sev--critical">CRITICAL</span> | [GitLab CI](../providers/gitlab.md) |  |
 | [`GL-004`](#detail-gl-004) | Deploy job lacks manual approval or environment gate | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [GitLab CI](../providers/gitlab.md) |  |
@@ -4892,15 +4893,16 @@ jobs:
 
 **Source:** [`GHA-048`](../providers/github.md#gha-048) in the [GitHub Actions provider](../providers/github.md).
 
-### `GHA-049`: Workflow step pushes to a repo outside the current owner <span class="pg-sev pg-sev--high">HIGH</span> { #detail-gha-049 }
+### `GHA-049`: Workflow step makes a privileged git write (cross-repo or actions[bot] bypass) <span class="pg-sev pg-sev--high">HIGH</span> { #detail-gha-049 }
 
 **Evidences:** [`Build.L3.NonFalsifiable`](#ctrl-build-l3-nonfalsifiable) Build L3: Provenance cannot be falsified by the build's own tenant.
 
-**How this is detected.** Three shapes are detected in ``run:`` bodies:
+**How this is detected.** Four shapes are detected in ``run:`` bodies:
 
 1. ``git push`` to a remote whose URL is interpolated from an expression (``${{ ... }}``), an env var (``$VAR``), or is not the canonical ``origin`` / ``upstream``;
 2. ``gh repo create`` / ``gh repo edit`` / ``gh repo transfer`` / ``gh api /repos/...`` whose target owner is parameterized;
-3. ``gh release create`` / ``gh release upload`` against a repo specified via ``-R <owner>/<repo>`` where the value is parameterized rather than a literal allow-list entry.
+3. ``gh release create`` / ``gh release upload`` against a repo specified via ``-R <owner>/<repo>`` where the value is parameterized rather than a literal allow-list entry;
+4. ``git config user.name 'github-actions[bot]'`` (or ``actions-user`` / ``41898282+github-actions[bot]``) co-occurring with any ``git push`` in the same job. The combination is the canonical branch-protection bypass-abuse shape: GitHub's documented operational convenience is to list ``github-actions[bot]`` in ``Allow specified actors to bypass required pull requests`` on the default branch, after which any workflow that assumes that identity can push to ``main`` without review. The SCM provider's SCM-018 catches the branch-protection side; this leg catches the workflow that's pre-positioned to exploit it.
 
 Pairs with GHA-048 (self-mutation, which catches the *write* into ``.github/workflows/`` of a sibling workflow): GHA-049 catches the *push* primitive that lets a worm leave the current repo. Together they cover both halves of the Shai-Hulud propagation step.
 
@@ -5402,6 +5404,49 @@ jobs:
 ```
 
 **Source:** [`GHA-061`](../providers/github.md#gha-061) in the [GitHub Actions provider](../providers/github.md).
+
+### `GHA-062`: OIDC subject claim in sibling IaC grants overly broad scope <span class="pg-sev pg-sev--high">HIGH</span> { #detail-gha-062 }
+
+**Evidences:** [`Build.L3.NonFalsifiable`](#ctrl-build-l3-nonfalsifiable) Build L3: Provenance cannot be falsified by the build's own tenant.
+
+**How this is detected.** Walks the workflow's containing repo (depth-bounded, skipping ``node_modules`` / ``vendor`` / ``.git`` / build dirs) for two sidecar IaC file shapes when the workflow uses an OIDC cloud-credentials action:
+
+1. **AWS trust policy.** Any ``*.json`` whose body parses to an IAM trust document that references ``token.actions.githubusercontent.com`` as a Federated principal AND whose ``Condition.StringLike`` ``...:sub`` value contains ``*`` in the ``repo:`` or ``repo:<org>/`` segment (``repo:*``, ``repo:<org>/*``, ``repo:<org>/*:*``). The branch / environment / ref segment may legitimately carry ``*``; only the org/repo segment is flagged.
+2. **GCP Workload Identity Federation.** Any ``*.tf`` containing a ``google_iam_workload_identity_pool_provider`` block whose ``attribute_condition`` is a ``startsWith`` or ``matches`` predicate against ``attribute.repository`` with a value that ends in a ``/`` slash (org prefix, no specific repo). Tighter conditions (``attribute.repository == 'myorg/myrepo'``) are skipped.
+
+Fires once per offending IaC file with a finding location pointing at the file. The walk is cached per scan so adding this rule doesn't compound the cost of GHA-030 / IAM-008. Pairs with GHA-030 (workflow-side environment binding) and IAM-008 (live AWS IAM audit); this leg covers the static IaC checked into the repo.
+
+**Recommendation.** Pin the OIDC subject claim to a specific repository (and ideally a specific branch / environment ref). For AWS IAM trust policies, replace ``StringLike`` ``token.actions.githubusercontent.com:sub`` values like ``repo:*`` or ``repo:<org>/*`` with ``repo:<org>/<repo>:ref:refs/heads/main`` (or ``:environment:<name>`` for environment-scoped tokens). For GCP Workload Identity Federation, replace ``attribute_condition`` predicates that only check the org prefix (``attribute.repository.startsWith('myorg/')``) with an equality on the exact ``<org>/<repo>`` plus branch / environment attributes.
+
+**Known false positives.**
+
+- Test fixtures and documentation samples that intentionally embed permissive trust policies (e.g. cicd-goat's ``scenarios/10-oidc-aws-wildcard-sub/trust-policy.json`` itself, when scanned in-place). Suppress with a path filter on the specific test directory. The rule is intentionally broad on file-name match so a renamed ``my-prod-trust-policy.json`` still surfaces.
+
+**Seen in the wild.**
+
+- Multiple post-disclosure writeups of GitHub-to-AWS OIDC misconfigurations (Cider Security 2022, Datadog 2023, AquaSec 2024) traced the issue to a ``repo:*`` or ``repo:org/*`` ``StringLike`` subject pattern that was kept as a stop-gap during initial onboarding and never tightened. Any fork PR or any newly-created org repo could mint a production-role token until the policy was edited.
+
+**Proof of exploit.**
+
+```
+# Vulnerable trust-policy.json (any repo can assume):
+{
+  "Statement": [{
+    "Effect": "Allow",
+    "Principal": {"Federated": "arn:aws:iam::123456789012:oidc-provider/token.actions.githubusercontent.com"},
+    "Action": "sts:AssumeRoleWithWebIdentity",
+    "Condition": {
+      "StringEquals": {"token.actions.githubusercontent.com:aud": "sts.amazonaws.com"},
+      "StringLike":   {"token.actions.githubusercontent.com:sub": "repo:*"}
+    }
+  }]
+}
+
+# Safe — pinned to one repo + main branch:
+"StringLike": {"token.actions.githubusercontent.com:sub": "repo:myorg/myrepo:ref:refs/heads/main"}
+```
+
+**Source:** [`GHA-062`](../providers/github.md#gha-062) in the [GitHub Actions provider](../providers/github.md).
 
 ### `GL-001`: Image not pinned to specific version or digest <span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> { #detail-gl-001 }
 
@@ -7083,6 +7128,11 @@ v1 limitations: only same-job step outputs are tracked; ``jobs.<id>.outputs.*`` 
 **Evidences:** [`Build.L3.Isolated`](#ctrl-build-l3-isolated) Build L3: Build runs in an isolated environment not influenced by other builds, [`Build.L3.NonFalsifiable`](#ctrl-build-l3-nonfalsifiable) Build L3: Provenance cannot be falsified by the build's own tenant.
 
 **How this is detected.** TAINT-001 catches step-output flow within a single job; TAINT-002 catches the cross-job transition. Engine shape: walk every job's ``outputs:`` mapping looking for values that interpolate either a tainted step output or a direct ``${{ github.event.* }}`` source. Tainted job outputs are matched against every ``${{ needs.<job>.outputs.<name> }}`` reference in any downstream job's ``run:`` / ``with:`` body. Each match emits a TAINT-002 finding with the full chain in the description.
+
+Two propagation hops the engine tracks beyond the obvious ``${{ ... }}`` interpolation:
+
+1. **Step env-var binding.** A producer step with ``env: { LABELS: "${{ toJSON(github.event.pull_request.labels.*.name) }}" }`` and a run body that writes ``echo "targets=$LABELS" >> $GITHUB_OUTPUT`` propagates taint from the env binding into the output, even though the run body's RHS doesn't contain a literal ``${{ ... }}`` token. Catches the indirect-env shape GHA-003 deliberately treats as safe (quoted shell) but that still flows into downstream sinks.
+2. **Matrix expansion via ``fromJSON``.** ``strategy.matrix.<axis>: ${{ fromJSON(needs.<job>.outputs.<name>) }}`` paired with ``${{ matrix.<axis> }}`` in a downstream ``run:`` body. Every matrix value the expansion produces lands in the consumer's shell template. This is the GitHub Security Lab matrix-expansion-injection writeup shape that closed several public bug bounties.
 
 Same-step interpolations (the producer's own use of ``${{ github.event.* }}`` inside its ``run:``) are still GHA-003's responsibility; TAINT-002's value is the cross-job hop the single-step rule can't see.
 

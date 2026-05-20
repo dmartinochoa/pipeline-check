@@ -419,6 +419,72 @@ jobs:
 """)
         assert t2.check("wf.yml", doc).passed
 
+    def test_fails_on_cicd_goat_scenario_21_matrix_expansion(self) -> None:
+        # Body lifted from cicd-goat scenario 21. PR labels enter via
+        # a step env binding, flow through the GITHUB_OUTPUT write
+        # (which TAINT-001/002 originally couldn't see because the
+        # value side is a shell var, not a context interpolation),
+        # become a job output, are matrix-expanded via fromJSON, and
+        # land in a downstream ``${{ matrix.target }}`` reference.
+        # The GitHub Security Lab matrix-expansion-injection writeup
+        # shape.
+        doc = _doc("""
+name: scenario-21-matrix-expansion-injection
+on:
+  pull_request:
+    types: [opened, synchronize, labeled]
+permissions:
+  contents: read
+jobs:
+  prepare:
+    runs-on: ubuntu-latest
+    outputs:
+      targets: ${{ steps.set.outputs.targets }}
+    steps:
+      - uses: actions/checkout@v4
+      - id: set
+        env:
+          LABELS: ${{ toJSON(github.event.pull_request.labels.*.name) }}
+        run: |
+          echo "targets=$LABELS" >> "$GITHUB_OUTPUT"
+  build:
+    needs: prepare
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        target: ${{ fromJSON(needs.prepare.outputs.targets) }}
+    steps:
+      - uses: actions/checkout@v4
+      - run: |
+          echo "Building for ${{ matrix.target }}"
+          make build TARGET="${{ matrix.target }}"
+""")
+        f = t2.check("wf.yml", doc)
+        assert not f.passed
+        assert "matrix.target" in f.description
+        assert "fromJSON" in f.description
+
+    def test_matrix_axis_silent_when_upstream_output_is_clean(self) -> None:
+        # Matrix axis fed from fromJSON of a CLEAN output stays
+        # silent — only tainted upstream outputs propagate.
+        doc = _doc("""
+on: push
+jobs:
+  prepare:
+    outputs:
+      targets: '["alpha","beta"]'
+    steps:
+      - run: echo noop
+  build:
+    needs: prepare
+    strategy:
+      matrix:
+        target: ${{ fromJSON(needs.prepare.outputs.targets) }}
+    steps:
+      - run: echo "${{ matrix.target }}"
+""")
+        assert t2.check("wf.yml", doc).passed
+
 
 # ── TAINT-003 rule wrapper ─────────────────────────────────────────
 

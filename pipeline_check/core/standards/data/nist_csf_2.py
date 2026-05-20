@@ -491,6 +491,7 @@ STANDARD = Standard(
         "GHA-059":  ["GV.SC-05"],               # npm install without audit signatures
         "GHA-060":  ["GV.SC-05"],               # pip install without --require-hashes
         "GHA-061":  ["PR.AA-05"],               # App token minted without permissions filter
+        "GHA-062":  ["PR.AA-05"],               # OIDC trust subject in sibling IaC is overly broad
         # ── GitLab CI ─────────────────────────────────────────────
         "GL-004":  ["PR.PS-06"],                # manual deploy allow_failure
         "GL-029":  ["PR.PS-06"],                # manual deploy allow_failure (variant)
