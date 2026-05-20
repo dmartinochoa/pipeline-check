@@ -302,3 +302,69 @@ def test_dedup_within_doc():
         "b": "AKIAIOSFODNN7EXAMPLE",
     })
     assert len(hits) == 1
+
+
+# ──────────────────────────────────────────────────────────────────────
+# Keyed 40-hex pass (always-on; narrow shape gated on credential key)
+# ──────────────────────────────────────────────────────────────────────
+
+
+class TestKeyedHex40:
+    HEX40 = "deadbeefcafef00dfeedfacebadc0ffee0ddf00d"
+
+    def test_fires_on_cicd_goat_scenario_15_shape(self):
+        """40-char lowercase hex in an ``API_TOKEN:`` env value —
+        the exact shape scenario 15 of ``greylag-ci/cicd-goat`` ships.
+        """
+        hits = secrets_mod.find_secret_values({
+            "env": {"LEGACY_API_TOKEN": self.HEX40},
+        })
+        assert any(h.startswith("hex40_keyed:") for h in hits)
+
+    def test_does_not_fire_on_commit_sha_field(self):
+        """Same 40-hex shape under ``deploy_commit:`` doesn't fire —
+        the key context filter keeps commit SHAs out of the bucket.
+        """
+        hits = secrets_mod.find_secret_values({
+            "env": {"DEPLOY_COMMIT": self.HEX40},
+        })
+        assert not any(h.startswith("hex40_keyed:") for h in hits)
+
+    def test_requires_exactly_40_hex(self):
+        """39, 41, mixed-case, or non-hex don't fire — the shape is
+        tight on purpose so the always-on detector stays narrow."""
+        cases = [
+            "deadbeef" * 4 + "cafe1",                     # 33
+            self.HEX40[:-1],                              # 39
+            self.HEX40 + "0",                             # 41
+            self.HEX40[:-1] + "G",                        # non-hex
+            self.HEX40.upper(),                           # mixed case rejected
+        ]
+        for v in cases:
+            hits = secrets_mod.find_secret_values(
+                {"env": {"API_TOKEN": v}},
+            )
+            assert not any(h.startswith("hex40_keyed:") for h in hits), v
+
+    def test_suppressed_when_placeholder_marker_in_value(self):
+        hits = secrets_mod.find_secret_values({
+            "env": {"API_TOKEN": "your-api-key-replaceme-here-deadbeefcafebabe"},
+        })
+        assert not any(h.startswith("hex40_keyed:") for h in hits)
+
+    def test_suppressed_when_existing_detector_matches(self):
+        """A prefixed vendor token of a different shape is caught by
+        the deterministic catalog instead — no double-emit."""
+        hits = secrets_mod.find_secret_values({
+            "env": {"API_TOKEN": "ghp_" + _FILLER[:40]},
+        })
+        # The 40-hex pass shouldn't add a label here; the github_token
+        # detector already does.
+        hex_hits = [h for h in hits if h.startswith("hex40_keyed:")]
+        assert not hex_hits
+
+    def test_skipped_for_pre_collected_string_list(self):
+        """The key-context pass needs a YAML document. Jenkins-style
+        flat string lists don't carry keys, so the pass is skipped."""
+        hits = secrets_mod.find_secret_values([f"API_TOKEN={self.HEX40}"])
+        assert not any(h.startswith("hex40_keyed:") for h in hits)

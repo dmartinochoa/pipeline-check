@@ -216,6 +216,7 @@ STANDARD = Standard(
         "GHA-058":  ["2.1.3"],                           # agentic CLI with permission-bypass flags
         "GHA-059":  ["1.4.1", "3.1.3"],                  # npm install without audit signatures
         "GHA-060":  ["1.4.1", "3.1.3"],                  # pip install without --require-hashes
+        "GHA-061":  ["1.3.4", "2.4.3"],                  # App token minted without permissions filter
         # GitLab CI
         "GL-001":   ["1.4.1", "3.1.5"],
         "GL-002":   ["2.1.3", "2.3.8"],

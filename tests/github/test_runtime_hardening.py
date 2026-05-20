@@ -46,6 +46,33 @@ class TestGHA008LiteralSecrets:
         f = run_check(wf, "GHA-008")
         assert not f.passed
 
+    def test_fails_on_cicd_goat_scenario_15_body(self):
+        # 40-char lowercase-hex token in a credential-named env value.
+        # The deterministic catalog had a gap on bare hex shapes
+        # before the keyed-hex pass landed in ``_secrets.py``.
+        wf = """
+        name: scenario-15-hardcoded-secret-env
+        on:
+          push:
+            branches: [main]
+        permissions:
+          contents: read
+        env:
+          LEGACY_API_TOKEN: "deadbeefcafef00dfeedfacebadc0ffee0ddf00d"
+          DB_PASSWORD: "P@ssw0rd-do-not-actually-do-this"
+        jobs:
+          build:
+            if: false
+            runs-on: ubuntu-latest
+            steps:
+              - uses: actions/checkout@v4
+              - run: |
+                  curl -H "Authorization: Bearer $LEGACY_API_TOKEN" https://api.example.com/build
+        """
+        f = run_check(wf, "GHA-008")
+        assert not f.passed
+        assert "hex40_keyed" in f.description
+
     def test_passes_when_secrets_referenced_via_secrets_context(self):
         wf = """
         name: ci

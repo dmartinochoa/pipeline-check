@@ -377,6 +377,7 @@ STANDARD = Standard(
         "GHA-058":  ["6.4.1", "6.5.1"],                  # agentic CLI permission-bypass
         "GHA-059":  ["6.3.3", "6.5.1"],                  # npm install without audit signatures
         "GHA-060":  ["6.3.3", "6.5.1"],                  # pip install without --require-hashes
+        "GHA-061":  ["7.2.5", "8.2.1"],                  # App token minted without permissions filter
         # ── GitLab CI ─────────────────────────────────────────────
         "GL-006":   ["6.5.1", "10.3.2"],                 # unsigned artifacts
         "GL-007":   ["6.5.1"],                           # no SBOM

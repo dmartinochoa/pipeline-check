@@ -417,6 +417,7 @@ STANDARD = Standard(
         "GHA-058":  ["CC6.8"],              # agentic CLI permission-bypass
         "GHA-059":  ["CC8.1"],              # npm install without audit signatures
         "GHA-060":  ["CC8.1"],              # pip install without --require-hashes
+        "GHA-061":  ["CC6.1", "CC6.3"],     # App token minted without permissions filter
         # ── GitLab CI ─────────────────────────────────────────────
         "GL-006":   ["CC8.1"],              # unsigned artifacts
         "GL-007":   ["CC8.1"],              # no SBOM

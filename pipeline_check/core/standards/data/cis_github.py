@@ -200,6 +200,7 @@ STANDARD = Standard(
         "GHA-058": ["1.5.2"],                                 # agentic CLI permission-bypass
         "GHA-059": ["1.5.2"],                                 # npm install without audit signatures
         "GHA-060": ["1.5.2"],                                 # pip install without --require-hashes
+        "GHA-061": ["1.5.2"],                                 # App token minted without permissions filter
         # TAINT family: cross-step / cross-job untrusted-data flow
         # into privileged sinks is the canonical pipeline-instruction
         # security failure the 1.5.2 scanner is meant to find.

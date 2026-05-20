@@ -260,6 +260,56 @@ def _walk_key_value_pairs(doc: Any) -> Iterator[tuple[str, str]]:
                 stack.append((parent_key, parent_dict, child))
 
 
+#: 40-char lowercase-hex shape. Covers legacy GitHub PATs (pre-``ghp_``
+#: migration), Datadog API keys, GitLab v1 PATs, Codecov v3 / AppVeyor /
+#: CircleCI v1 tokens, and several other CI vendor shapes that have no
+#: vendor-specific prefix. Wider hex shapes (32, 64) collide with commit
+#: SHAs / SHA-256 digests, so they stay out of the deterministic pass.
+_KEYED_HEX40_RE = re.compile(r"^[0-9a-f]{40}$")
+
+
+def _find_keyed_hex_hits(doc: Any) -> list[str]:
+    """Return ``hex40_keyed:<redacted>`` hits.
+
+    Fires when a 40-char lowercase-hex value is bound to a YAML key
+    whose name reads as a credential field (the same
+    :func:`_key_suggests_credential` filter the entropy pass uses).
+    Always on (unlike the opt-in entropy detector), because the
+    combination of "40 lowercase hex" + "credential-named key" is
+    narrow enough that natural-language and commit-SHA noise stays
+    out: the key context filters out ``deploy_commit``,
+    ``head_revision``, and any other non-credential 40-hex shape.
+
+    Catches the shape scenario 15 of the ``greylag-ci/cicd-goat``
+    matrix exercises and the 'legacy unprefixed vendor token' family
+    in general. KICS / GitGuardian flag this shape; the deterministic
+    catalog had a deliberate gap on bare hex tokens because the
+    pattern is generic, the key-context gate is what makes it
+    actionable.
+    """
+    hits: list[str] = []
+    seen: set[str] = set()
+    for key_name, raw_value in _walk_key_value_pairs(doc):
+        if not _key_suggests_credential(key_name):
+            continue
+        candidate = raw_value.strip().strip("\"'")
+        if not _KEYED_HEX40_RE.match(candidate):
+            continue
+        if PLACEHOLDER_MARKER_RE.search(candidate):
+            continue
+        # Don't double-emit if a deterministic detector already
+        # classifies this token (rare for a bare 40-hex — most vendor
+        # 40-hex shapes carry a prefix — but the guard keeps the
+        # contract consistent with the entropy pass).
+        if _classify(candidate) is not None:
+            continue
+        if candidate in seen:
+            continue
+        seen.add(candidate)
+        hits.append(f"hex40_keyed:{_redact(candidate)}")
+    return hits
+
+
 def _find_entropy_hits(doc: Any) -> list[str]:
     """Return ``entropy:<redacted>`` hits for high-entropy values
     appearing in credential-shaped YAML key contexts.
@@ -377,6 +427,11 @@ def find_secret_values(doc: Any) -> list[str]:
             seen_tokens.add(token)
             hits.append(f"{token_label}:{_redact(token)}")
 
+    # Keyed-hex pass: always on, narrow shape (40 lowercase hex) gated
+    # on a credential-named YAML key. Same key-context plumbing as
+    # the entropy pass, so it skips for pre-collected string lists.
+    if not pre_collected:
+        hits.extend(_find_keyed_hex_hits(doc))
     # Entropy pass: opt-in, additive, requires YAML key context (so
     # pre-collected string lists skip it — there's no key for those).
     if _ENTROPY_ENABLED and not pre_collected:

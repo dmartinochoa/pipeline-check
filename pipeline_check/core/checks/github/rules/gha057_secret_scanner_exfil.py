@@ -29,7 +29,7 @@ RULE = Rule(
         "protected environment."
     ),
     docs_note=(
-        "Two shapes fire:\n\n"
+        "Three shapes fire:\n\n"
         "1. ``trufflehog`` / ``gitleaks`` invocation in a ``run:`` "
         "block whose stdout pipes to ``curl`` / ``wget`` / ``nc`` / "
         "``gh api -X POST`` — this is the harvest leg of the Shai-"
@@ -41,7 +41,21 @@ RULE = Rule(
         "running with privileged secrets on an attacker-influenced "
         "trigger, so even if the output isn't piped to egress today, "
         "the next person editing the workflow can land that change "
-        "via a PR comment.\n\n"
+        "via a PR comment.\n"
+        "3. ``curl`` / ``wget`` / ``httpie`` POST/PUT/PATCH (or "
+        "``--data`` upload) to a non-GitHub host whose payload "
+        "references ``${{ secrets.* }}``, a credential-named env var "
+        "(``$GITHUB_TOKEN``, ``$NPM_TOKEN``, ``$AWS_*`` keys, etc.), "
+        "or dumps the runner env (``$(env)``, ``$(printenv)``, "
+        "``env > ...``). Catches the third-party-webhook exfil shape "
+        "where the scanner doesn't run at all — the workflow simply "
+        "POSTs a build-telemetry payload to an external service that, "
+        "if the domain lapses or the service is breached, leaks every "
+        "downstream build's env (which includes ``GITHUB_TOKEN`` "
+        "always, plus any mapped ``${{ secrets.* }}``). GitHub-owned "
+        "hosts are allow-listed (``github.com``, "
+        "``api.github.com``, ``*.githubusercontent.com``, "
+        "``codecov.io`` for the canonical upload path).\n\n"
         "Legitimate uses pass: scanner output written to "
         "``${{ github.workspace }}`` or a file under the repo, output "
         "uploaded via ``github/codeql-action/upload-sarif`` (CodeQL "
@@ -112,6 +126,77 @@ _EGRESS_RE = re.compile(
     re.IGNORECASE,
 )
 
+# HTTP-egress invocation with a write verb. Folds the four common
+# clients (curl / wget / httpie / http) and any of the canonical
+# write-verb shapes (``-X POST``, ``--method POST``, ``--data``,
+# ``-d``, ``--data-binary``, ``--data-raw``, ``--upload-file``).
+# ``wget --post-data`` is the wget-side analogue; ``http POST`` is
+# httpie's positional verb form.
+_HTTP_WRITE_RE = re.compile(
+    r"\b(?:"
+    r"curl\s+[^\n]*?(?:-X\s+(?:POST|PUT|PATCH)|--method\s+(?:POST|PUT|PATCH)|"
+    r"--data(?:-binary|-raw|-urlencode)?\s|-d\s|--upload-file\s)"
+    r"|wget\s+[^\n]*?(?:--post-data|--post-file|--method[= ](?:POST|PUT|PATCH))"
+    r"|httpie?\s+(?:POST|PUT|PATCH)\b"
+    r")",
+    re.IGNORECASE,
+)
+
+# Find the URL the egress command targets. Captures the first
+# ``https?://host[/path]`` token after the egress invocation; the
+# group 1 capture is the host (used for allowlist matching).
+_EGRESS_URL_RE = re.compile(
+    r"https?://(?P<host>[A-Za-z0-9.\-]+)(?:[/:?#\s]|$)",
+    re.IGNORECASE,
+)
+
+# GitHub-owned / GitHub-adjacent hosts that the rule allowlists. A
+# POST to one of these is not third-party exfil. Includes the API,
+# the raw-content host, the Actions artifact storage host, Codecov
+# (the canonical telemetry upload service that legitimately consumes
+# build-system env in its payload), and the npm/PyPI registries (so
+# ``npm publish`` / ``twine upload`` over their own HTTP client
+# doesn't trip the rule).
+_ALLOWLIST_HOST_SUFFIXES: tuple[str, ...] = (
+    "github.com",
+    "githubusercontent.com",
+    "githubapp.com",
+    "codecov.io",
+    "registry.npmjs.org",
+    "pypi.org",
+    "files.pythonhosted.org",
+)
+
+# Credential-shaped env-var names commonly bound to secrets. Match
+# inside ``$NAME`` / ``${NAME}`` / ``$ENV{NAME}`` and bare-word
+# references in the same ``run:`` body. The list mirrors the
+# credential-key tokens the secrets scanner uses, with the GitHub-
+# provided runtime tokens (``GITHUB_TOKEN``, ``GH_TOKEN``) added —
+# those land in env automatically on every run and an env-dump
+# carries them.
+_SECRET_ENV_REF_RE = re.compile(
+    r"\$(?:\{?(?P<a>"
+    r"GITHUB_TOKEN|GH_TOKEN|NPM_TOKEN|NODE_AUTH_TOKEN|PYPI_TOKEN|"
+    r"TWINE_PASSWORD|RUBYGEMS_API_KEY|CARGO_REGISTRY_TOKEN|"
+    r"AWS_ACCESS_KEY_ID|AWS_SECRET_ACCESS_KEY|AWS_SESSION_TOKEN|"
+    r"ANTHROPIC_API_KEY|OPENAI_API_KEY|HF_TOKEN|HUGGINGFACE_TOKEN|"
+    r"SLACK_TOKEN|STRIPE_SECRET_KEY|DOCKER_PASSWORD"
+    r")\}?)|"
+    # Generic shape: any ``$NAME`` whose name matches the
+    # credential-keyword regex used elsewhere in the pack.
+    r"\$\{?(?P<b>[A-Z][A-Z0-9_]*(?:TOKEN|SECRET|PASSWORD|API_KEY|PRIVATE_KEY|CREDENTIAL))\}?",
+)
+
+# Shell primitives that dump the whole runtime env into stdout. Even
+# without a literal ``secrets.*`` reference, an env dump fed to a
+# third-party POST exfils ``GITHUB_TOKEN`` and every mapped secret in
+# one shot.
+_ENV_DUMP_RE = re.compile(
+    r"\b(?:env|printenv)\b(?!\s*=)"   # env / printenv as a verb, not env= as assignment
+    r"|/proc/self/environ"
+    r"|/proc/\d+/environ",
+)
+
 # Triggers an attacker can influence by sending a PR, issue comment,
 # or by uploading a poisoned artifact that the privileged workflow_run
 # consumes.
@@ -173,6 +258,69 @@ def _if_restricts_to_trusted_event(expr: object) -> bool:
     return bool(_TRUSTED_EVENT_GUARD_RE.search(e))
 
 
+def _host_is_allowlisted(host: str) -> bool:
+    """True when *host* ends in one of the github-owned / known-safe
+    suffixes. Match is suffix-anchored on a dot boundary so
+    ``evil-github.com`` doesn't sneak past ``github.com``.
+    """
+    host = host.lower().strip(".")
+    for suffix in _ALLOWLIST_HOST_SUFFIXES:
+        if host == suffix or host.endswith("." + suffix):
+            return True
+    return False
+
+
+def _step_body_carries_secret_material(body: str) -> str | None:
+    """Return a short label for the secret-material shape present in
+    *body*, or ``None`` if none of the shapes match.
+
+    Three shapes count:
+    - explicit ``${{ secrets.* }}`` interpolation (the canonical GHA
+      expression for a stored secret);
+    - reference to a credential-named env var via ``$NAME`` /
+      ``${NAME}``;
+    - shell primitive that dumps the runtime env
+      (``env``, ``printenv``, ``/proc/self/environ``).
+    """
+    if "${{ secrets." in body or "${{secrets." in body:
+        return "secrets.* interpolated"
+    if _SECRET_ENV_REF_RE.search(body):
+        return "credential env var referenced"
+    if _ENV_DUMP_RE.search(body):
+        return "env dump captured"
+    return None
+
+
+def _third_party_egress_with_secrets(body: str) -> str | None:
+    """Return an offender label when *body* posts to a non-allowlisted
+    host with secret material on the command line. Otherwise ``None``.
+
+    The egress detector is line-scoped after backslash-continuation
+    folding, so a multi-line ``curl ... \\`` invocation followed by
+    its data block lands as one logical command.
+    """
+    if not _HTTP_WRITE_RE.search(body):
+        return None
+    urls = list(_EGRESS_URL_RE.finditer(body))
+    if not urls:
+        return None
+    if any(not _host_is_allowlisted(m.group("host")) for m in urls):
+        # At least one URL is third-party; now require secret material
+        # in the same body.
+        shape = _step_body_carries_secret_material(body)
+        if shape is None:
+            return None
+        offending_hosts = [
+            m.group("host") for m in urls
+            if not _host_is_allowlisted(m.group("host"))
+        ]
+        return (
+            f"HTTP POST to third-party host ({offending_hosts[0]}) "
+            f"carrying secret material ({shape})"
+        )
+    return None
+
+
 def _scanner_in_step(step: dict[str, Any]) -> bool:
     """True when a step's ``run:`` body or ``uses:`` references a
     secret-scanner CLI. Used to flag scanners invoked under an
@@ -203,6 +351,10 @@ def check(path: str, doc: dict[str, Any]) -> Finding:
                     if _scanner_piped_to_egress(line):
                         label = "scanner output piped to network egress"
                         break
+                if label is None:
+                    third_party = _third_party_egress_with_secrets(joined)
+                    if third_party is not None:
+                        label = third_party
             if label is None and untrusted_trigger and _scanner_in_step(step):
                 # Skip when the step or its parent job restricts execution
                 # to a trusted event (push / schedule / workflow_dispatch);
