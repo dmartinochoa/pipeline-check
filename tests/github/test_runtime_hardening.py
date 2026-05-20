@@ -171,23 +171,73 @@ class TestGHA016CurlPipe:
         f = run_check(wf, "GHA-016")
         assert not f.passed
 
-    def test_passes_with_checksum_verified_install(self):
+    def test_fails_on_codecov_style_sha_verified_third_party_install(self):
+        # Post-2021 contract: sha256 verification alone isn't enough
+        # for third-party installers. The Codecov compromise ships
+        # malicious bytes signed by the publisher's own (compromised)
+        # CI. Provenance attestation is the carve-out.
+        wf = """
+        name: scenario-19-codecov-style-installer
+        on: push
+        jobs:
+          upload-coverage:
+            runs-on: ubuntu-latest
+            steps:
+              - uses: actions/checkout@v4
+              - run: |
+                  set -euo pipefail
+                  curl -fLso codecov "https://uploader.coverage-provider.example/latest/linux/codecov"
+                  curl -fLso codecov.sha256sum "https://uploader.coverage-provider.example/latest/linux/codecov.SHA256SUM"
+                  curl -fLso codecov.sig "https://uploader.coverage-provider.example/latest/linux/codecov.SHA256SUM.sig"
+                  gpg --verify codecov.sig codecov.sha256sum
+                  sha256sum --check codecov.sha256sum
+                  chmod +x codecov
+              - run: ./codecov -t $TOK
+        """
+        f = run_check(wf, "GHA-016")
+        assert not f.passed
+        assert "Codecov" in f.description or "trusted-installer" in f.description.lower() or "provenance" in f.description.lower()
+
+    def test_passes_with_provenance_attested_install(self):
+        # Same shape as the Codecov scenario but with a SLSA
+        # verifier step. Provenance attestation defeats the
+        # Codecov-2021 attack (verifier checks the upstream build
+        # provenance, not just the publisher's static signature).
+        wf = """
+        name: ci
+        on: push
+        jobs:
+          install:
+            runs-on: ubuntu-latest
+            steps:
+              - run: |
+                  curl -fLso codecov "https://uploader.coverage-provider.example/latest/linux/codecov"
+                  slsa-verifier verify-artifact codecov \\
+                    --provenance-path codecov.intoto.jsonl \\
+                    --source-uri github.com/codecov/codecov
+                  chmod +x codecov
+              - run: ./codecov
+        """
+        f = run_check(wf, "GHA-016")
+        assert f.passed
+
+    def test_trusted_installer_passes_on_vendor_host(self):
+        # Vendor allowlist still applies: ``get.docker.com`` is the
+        # canonical idiomatic install path.
         wf = """
         name: ci
         on: push
         jobs:
           build:
             runs-on: ubuntu-latest
-            timeout-minutes: 30
             steps:
               - run: |
-                  curl -fsSL https://example.com/install.sh -o install.sh
-                  sha256sum -c install.sh.sha256
-                  bash install.sh
+                  curl -fsSL https://get.docker.com -o get-docker.sh
+                  sha256sum -c get-docker.sh.sha256
+                  bash get-docker.sh
         """
         f = run_check(wf, "GHA-016")
         assert f.passed
-
 
 # ── GHA-019 token persistence ───────────────────────────────────────
 
@@ -251,6 +301,125 @@ class TestGHA019TokenPersistence:
         """
         f = run_check(wf, "GHA-019")
         assert f.passed
+
+    def test_fails_on_cicd_goat_scenario_17_artipacked_body(self):
+        # Body lifted verbatim from cicd-goat scenario 17. The
+        # default-on persist-credentials writes GITHUB_TOKEN into
+        # .git/config; the upload-artifact step then bundles the
+        # whole workspace including .git/.
+        wf = """
+        name: scenario-17-artipacked-git-dir
+        on:
+          push:
+            branches: [main]
+        permissions:
+          contents: read
+        jobs:
+          build:
+            if: false
+            runs-on: ubuntu-latest
+            steps:
+              - uses: actions/checkout@v4
+              - run: make build
+              - name: Upload artifact for downstream jobs
+                uses: actions/upload-artifact@v4
+                with:
+                  name: workspace
+                  path: .
+        """
+        f = run_check(wf, "GHA-019")
+        assert not f.passed
+        assert "ArtiPACKED" in f.description
+
+    def test_artipacked_passes_when_persist_credentials_false(self):
+        wf = """
+        name: ci
+        on: push
+        jobs:
+          build:
+            runs-on: ubuntu-latest
+            steps:
+              - uses: actions/checkout@v4
+                with:
+                  persist-credentials: false
+              - uses: actions/upload-artifact@v4
+                with:
+                  name: workspace
+                  path: .
+        """
+        f = run_check(wf, "GHA-019")
+        assert f.passed
+
+    def test_artipacked_passes_when_upload_path_excludes_dot_git(self):
+        wf = """
+        name: ci
+        on: push
+        jobs:
+          build:
+            runs-on: ubuntu-latest
+            steps:
+              - uses: actions/checkout@v4
+              - uses: actions/upload-artifact@v4
+                with:
+                  name: build-output
+                  path: dist/
+        """
+        f = run_check(wf, "GHA-019")
+        assert f.passed
+
+    def test_artipacked_fires_on_explicit_git_path(self):
+        # Even when path is narrower than '.', an explicit .git/
+        # reference is unambiguously sketchy.
+        wf = """
+        name: ci
+        on: push
+        jobs:
+          build:
+            runs-on: ubuntu-latest
+            steps:
+              - uses: actions/checkout@v4
+              - uses: actions/upload-artifact@v4
+                with:
+                  name: gitstate
+                  path: .git/
+        """
+        f = run_check(wf, "GHA-019")
+        assert not f.passed
+
+    def test_artipacked_passes_when_upload_precedes_checkout(self):
+        # An upload before any checkout has no .git/config to leak.
+        wf = """
+        name: ci
+        on: push
+        jobs:
+          build:
+            runs-on: ubuntu-latest
+            steps:
+              - uses: actions/upload-artifact@v4
+                with:
+                  name: prepopulated
+                  path: .
+              - uses: actions/checkout@v4
+        """
+        f = run_check(wf, "GHA-019")
+        assert f.passed
+
+    def test_artipacked_fires_on_workspace_token_path(self):
+        wf = """
+        name: ci
+        on: push
+        jobs:
+          build:
+            runs-on: ubuntu-latest
+            steps:
+              - uses: actions/checkout@v4
+              - uses: actions/upload-artifact@v4
+                with:
+                  name: bundle
+                  path: ${{ github.workspace }}
+        """
+        f = run_check(wf, "GHA-019")
+        assert not f.passed
 
 
 # ── GHA-023 TLS bypass ──────────────────────────────────────────────

@@ -12,6 +12,36 @@ release commit collapses this section into `## [X.Y.Z] - <date>`.
 
 ### Added
 
+- **GHA-016 trusted-installer (Codecov 2021) shape.** Widens the
+  rule from ``curl | bash`` plus its in-primitive variants
+  (shell-subshell, python-inline, download-exec, PowerShell) to also
+  fire when a job downloads an executable from a non-vendor host
+  (``curl -o``, ``wget -O``, ``curl > file``) AND any subsequent
+  step in the same job runs that file (``./file``, ``chmod +x``,
+  ``bash file.sh``). The shape fires even when the body verifies a
+  SHA256 checksum or GPG signature; the original Codecov compromise
+  shipped a malicious uploader signed by the publisher's own
+  (compromised) CI. The carve-out is an upstream-attested
+  provenance reference in the same job
+  (``slsa-verifier verify-artifact``, ``gh attestation verify``,
+  ``cosign verify-attestation``, ``in-toto-verify``). The existing
+  vendor allowlist (``rustup.rs`` / ``get.docker.com`` / etc.) still
+  exempts those installers. Closes the ``greylag-ci/cicd-goat``
+  scenario 19 gap.
+- **GHA-019 ArtiPACKED shape.** Widens the rule from
+  "GITHUB_TOKEN written to a file / ``$GITHUB_ENV`` / ``tee``" to
+  also pair ``actions/checkout`` (default
+  ``persist-credentials: true``) with a downstream
+  ``actions/upload-artifact`` whose ``path:`` covers the repo root
+  (``.``, ``./``, ``${{ github.workspace }}``, or an explicit
+  ``.git/`` reference). The checkout writes the runtime
+  ``GITHUB_TOKEN`` into ``.git/config`` via ``extraheader``; the
+  upload bundles ``.git/`` into the artifact, so anyone with read
+  access to the run can ``gh run download`` and grep the token out.
+  The ordering requirement (checkout must precede upload) keeps a
+  preexisting upload of an unrelated tree from firing the rule.
+  Closes the ``greylag-ci/cicd-goat`` scenario 17 gap — the
+  Palo Alto Unit 42 ArtiPACKED pattern.
 - **GHA-033 shell-trace shape.** Widens the rule from
   "echo / printf / cat / tee / print of a secret context expression
   or secret-bound env var" to also fire when the step enables

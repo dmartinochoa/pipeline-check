@@ -22,7 +22,15 @@ RULE = Rule(
         "registries (`--index-url http://`, `--registry=http://`) or "
         "disable TLS verification (`--trusted-host`, `--no-verify`) "
         "in a workflow. These patterns allow man-in-the-middle "
-        "injection of malicious packages."
+        "injection of malicious packages.\n\n"
+        "Carve-out: third-party binary installers that download over "
+        "HTTPS (no insecure registry, no TLS bypass) are GHA-016's "
+        "trusted-installer shape, not GHA-018's. "
+        "``greylag-ci/cicd-goat`` scenario 19 fetches a Codecov-style "
+        "uploader from a non-vendor HTTPS endpoint, verifies a SHA256 "
+        "checksum and GPG signature, and runs the binary; GHA-018 "
+        "deliberately doesn't fire (the source is HTTPS), GHA-016 "
+        "does (the Codecov-2021 lesson)."
     ),
 )
 

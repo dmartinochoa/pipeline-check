@@ -4821,7 +4821,10 @@ steps:
 
 **Evidences:** [`CC6.1`](#ctrl-cc6-1) Logical access controls restrict entities to authorized system resources.
 
-**How this is detected.** Detects patterns where `GITHUB_TOKEN` is written to files, environment files (`$GITHUB_ENV`), or piped through `tee`. Persisted tokens survive the step boundary and can be exfiltrated by later steps, uploaded artifacts, or cache entries, turning a scoped credential into a long-lived one.
+**How this is detected.** Two shapes are flagged:
+
+1. **Direct.** ``run:`` body writes ``GITHUB_TOKEN`` (or any ``${{ secrets.* }}`` value) to a file, ``$GITHUB_ENV``, ``$GITHUB_OUTPUT``, or ``$GITHUB_STATE``, or pipes it through ``tee``.
+2. **ArtiPACKED (Palo Alto Unit 42, 2024).** Pairs ``actions/checkout`` (default ``persist-credentials: true``, or explicitly set to true) with a downstream ``actions/upload-artifact`` whose ``path:`` covers the repo root (``.``, ``./``, ``${{ github.workspace }}``, or an explicit ``.git/`` reference). The checkout writes the runtime ``GITHUB_TOKEN`` into ``.git/config`` via ``extraheader``; the upload step bundles the whole working directory including ``.git/``, so anyone with read access to the run can ``gh run download`` the artifact and read the token out of ``.git/config``. The rule fires once per offending job; the per-finding location points at the upload step.
 
 Carve-out: secrets leaked to the workflow log (via ``set -x`` shell trace, ``echo $TOKEN``, or URL-embedded credentials that a process tool logs) are GHA-033's domain, not GHA-019's. ``greylag-ci/cicd-goat`` scenario 27 fires GHA-033 only — the secret leaks to log via ``set -x`` but no token persists to file / ``$GITHUB_ENV`` / artifact, which is the persistence shape GHA-019 covers.
 

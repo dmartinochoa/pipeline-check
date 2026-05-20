@@ -6,7 +6,100 @@ from typing import Any
 
 from ...base import Finding, Severity
 from ...rule import Rule
-from ..base import Workflow, iter_jobs, iter_steps
+from ..base import Workflow, iter_jobs, iter_steps, step_location
+
+#: Upload-artifact ``path:`` values that bundle the entire working
+#: tree (and therefore the ``.git/`` directory). Match is a normalized
+#: comparison after stripping whitespace and trailing slashes. Pattern
+#: globs like ``**`` and ``*`` are NOT treated as workspace-root by
+#: default — ``actions/upload-artifact`` glob expansion follows
+#: ``@actions/glob`` semantics, which excludes hidden directories
+#: (``.git/`` among them) unless an explicit dotfile-matching glob is
+#: passed; only the literal-root forms reliably bundle ``.git/``.
+_REPO_ROOT_PATHS: frozenset[str] = frozenset({
+    ".", "./", "",
+    "${{ github.workspace }}", "${{github.workspace}}",
+})
+
+
+def _path_includes_git_dir(path_value: object) -> bool:
+    """True when *path_value* would bundle the ``.git/`` directory."""
+    if isinstance(path_value, str):
+        normalized = path_value.strip().rstrip("/")
+        if normalized in _REPO_ROOT_PATHS:
+            return True
+        if ".git/" in normalized or normalized.endswith(".git"):
+            return True
+        return False
+    if isinstance(path_value, list):
+        return any(_path_includes_git_dir(p) for p in path_value)
+    return False
+
+
+def _action_prefix(uses: object) -> str | None:
+    """Return the action name (``owner/repo``) from a ``uses:`` value,
+    lowercased. ``None`` for non-string / local-action / docker uses.
+    """
+    if not isinstance(uses, str):
+        return None
+    if uses.startswith("./") or uses.startswith("docker://"):
+        return None
+    return uses.split("@", 1)[0].strip().lower()
+
+
+def _checkout_persists_credentials(step: dict[str, Any]) -> bool:
+    """True when *step* is an ``actions/checkout`` invocation that
+    leaves ``persist-credentials`` at its default ``true`` (or sets it
+    to ``true`` explicitly)."""
+    if _action_prefix(step.get("uses")) != "actions/checkout":
+        return False
+    with_block = step.get("with")
+    if not isinstance(with_block, dict):
+        return True  # default is true
+    pc = with_block.get("persist-credentials")
+    if pc is None:
+        return True
+    # YAML can land this as a bool or a string. Treat any explicit
+    # falsy value as opt-out.
+    if pc is False:
+        return False
+    if isinstance(pc, str) and pc.strip().lower() in ("false", "no", "0"):
+        return False
+    return True
+
+
+def _upload_artifact_bundles_workspace(step: dict[str, Any]) -> bool:
+    """True when *step* uploads an artifact whose ``path:`` covers
+    the workspace root (and therefore ``.git/``)."""
+    if _action_prefix(step.get("uses")) != "actions/upload-artifact":
+        return False
+    with_block = step.get("with")
+    if not isinstance(with_block, dict):
+        return False
+    return _path_includes_git_dir(with_block.get("path"))
+
+
+def _find_artipacked_offender(
+    job_id: str, job: dict[str, Any],
+) -> tuple[str, dict[str, Any]] | None:
+    """Find an ArtiPACKED-shaped pair within one job.
+
+    Returns ``(label, upload_step)`` when the job has at least one
+    ``actions/checkout`` with persist-credentials defaulted-on AND a
+    subsequent ``actions/upload-artifact`` whose ``path:`` bundles
+    ``.git/``. The pair must appear in that order; an upload before
+    any checkout doesn't fire (no ``.git/config`` to leak yet).
+    """
+    seen_checkout = False
+    for step in iter_steps(job):
+        if _checkout_persists_credentials(step):
+            seen_checkout = True
+            continue
+        if seen_checkout and _upload_artifact_bundles_workspace(step):
+            name = step.get("name") or step.get("id") or "upload-artifact"
+            return (f"{job_id}.{name} (ArtiPACKED)", step)
+    return None
+
 
 _TOKEN_PERSIST_RE = re.compile(
     r"GITHUB_TOKEN.*(?:>>?\s|tee\s)"
@@ -30,11 +123,24 @@ RULE = Rule(
         "step that needs it."
     ),
     docs_note=(
-        "Detects patterns where `GITHUB_TOKEN` is written to files, "
-        "environment files (`$GITHUB_ENV`), or piped through `tee`. "
-        "Persisted tokens survive the step boundary and can be "
-        "exfiltrated by later steps, uploaded artifacts, or cache "
-        "entries, turning a scoped credential into a long-lived one.\n\n"
+        "Two shapes are flagged:\n\n"
+        "1. **Direct.** ``run:`` body writes ``GITHUB_TOKEN`` (or any "
+        "``${{ secrets.* }}`` value) to a file, ``$GITHUB_ENV``, "
+        "``$GITHUB_OUTPUT``, or ``$GITHUB_STATE``, or pipes it "
+        "through ``tee``.\n"
+        "2. **ArtiPACKED (Palo Alto Unit 42, 2024).** Pairs "
+        "``actions/checkout`` (default ``persist-credentials: true``, "
+        "or explicitly set to true) with a downstream "
+        "``actions/upload-artifact`` whose ``path:`` covers the repo "
+        "root (``.``, ``./``, ``${{ github.workspace }}``, or an "
+        "explicit ``.git/`` reference). The checkout writes the "
+        "runtime ``GITHUB_TOKEN`` into ``.git/config`` via "
+        "``extraheader``; the upload step bundles the whole working "
+        "directory including ``.git/``, so anyone with read access "
+        "to the run can ``gh run download`` the artifact and read the "
+        "token out of ``.git/config``. The rule fires once per "
+        "offending job; the per-finding location points at the "
+        "upload step.\n\n"
         "Carve-out: secrets leaked to the workflow log (via "
         "``set -x`` shell trace, ``echo $TOKEN``, or URL-embedded "
         "credentials that a process tool logs) are GHA-033's domain, "
@@ -87,6 +193,7 @@ RULE = Rule(
 
 def check(path: str, doc: dict[str, Any], wf: Workflow | None = None) -> Finding:
     offenders: list[str] = []
+    locations = []
     anchor_jobs: dict[str, None] = {}
     for job_id, job in iter_jobs(doc):
         for step in iter_steps(job):
@@ -96,7 +203,14 @@ def check(path: str, doc: dict[str, Any], wf: Workflow | None = None) -> Finding
             if _TOKEN_PERSIST_RE.search(run):
                 name = step.get("name") or step.get("id") or "unnamed"
                 offenders.append(f"{job_id}.{name}")
+                locations.append(step_location(path, step))
                 anchor_jobs[job_id] = None
+        artipacked = _find_artipacked_offender(job_id, job)
+        if artipacked is not None:
+            label, upload_step = artipacked
+            offenders.append(label)
+            locations.append(step_location(path, upload_step))
+            anchor_jobs[job_id] = None
     passed = not offenders
     # When this workflow is a resolved callee invoked with
     # ``secrets: inherit``, the persistence vector is strictly
@@ -119,6 +233,7 @@ def check(path: str, doc: dict[str, Any], wf: Workflow | None = None) -> Finding
         check_id=RULE.id, title=RULE.title, severity=RULE.severity,
         resource=path, description=desc,
         recommendation=RULE.recommendation, passed=passed,
+        locations=locations,
         # AC-010 / AC-013 / XPC-004 intersect these anchors with the
         # impact-side anchors (GHA-012, GHA-036, branch-protection).
         job_anchors=tuple(anchor_jobs),
