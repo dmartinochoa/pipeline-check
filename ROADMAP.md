@@ -5,7 +5,7 @@ What's planned, what's shipped, and what's deliberately out of scope.
 ## Shipped
 
 - v1.0.x — first production-stable release. Carries every v0.4 / v0.5
-  / v0.6 item below the "Landed" markers of those pre-1.0 cycles
+  / v0.6 item folded in from the pre-1.0 cycles
   (STRIDE threat model, MCP server, SCM provider, composite-action
   resolution, action-reputation pack, multi-scanner SARIF ingest,
   vulnerable-by-design `bench/`, taint engine spanning 8 rules
@@ -18,7 +18,7 @@ What's planned, what's shipped, and what's deliberately out of scope.
   publish without OIDC) closing the legs of the Shai-Hulud /
   TanStack / axios npm-worm pattern that pure lockfile / SHA
   pinning is blind to.
-- **npm + pypi dependency-supply-chain providers (post-1.0.4)** —
+- **npm + pypi dependency-supply-chain providers (v1.0.5)** —
   Two new hermetic providers for static manifest / lockfile
   analysis: ``--pipeline npm`` parses ``package.json`` +
   ``package-lock.json`` / ``npm-shrinkwrap.json`` (both schemas);
@@ -53,13 +53,31 @@ What's planned, what's shipped, and what's deliberately out of scope.
   consumption so version-management blocks don't fire consumption-
   side rules. Skips ``target/`` and ``.m2/``. Brings provider count
   to 22 and the Package-registries category to npm + PyPI + Maven.
-- **SCM GitLab + Bitbucket platform parity** — ``--scm-platform
-  gitlab`` and ``--scm-platform bitbucket`` ship a 7-rule
-  universal subset against the GitLab and Bitbucket APIs.
+- **SCM GitLab + Bitbucket platform parity (v1.0.1)** —
+  ``--scm-platform gitlab`` and ``--scm-platform bitbucket`` ship
+  a 7-rule universal subset against the GitLab and Bitbucket APIs.
   CODEOWNERS-file presence cross-check (SCM-017), PR-review
   bypass-allowance audit (SCM-018), and push-restriction
   allowlist audit (SCM-019) closed the remaining GitHub-side
   feature gaps in the same cycle.
+- **Container image distribution (v1.0.1)** —
+  ``ghcr.io/dmartinochoa/pipeline-check`` and
+  ``docker.io/dmartinochoa/pipeline-check`` publish on every
+  ``v*.*.*`` tag via ``.github/workflows/docker-publish.yml``,
+  multi-arch (linux/amd64 + linux/arm64), with Docker Scout
+  vuln-scan gating the promote-to-release-tag step and SLSA
+  provenance + SBOM attestations bound to the digest.
+  Quarantine-then-promote ensures a vulnerable image never escapes
+  a throwaway tag. Together with the marketplace ``action.yml``,
+  this covers every CI environment that can run a container.
+  A standalone binary (shiv / PyInstaller) was the other half of
+  the original "distribution beyond pip install" goal but was
+  deferred: the container already serves the no-Python use case;
+  a shiv ``.pyz`` still requires Python on the target so it adds
+  little over ``pip install``; PyInstaller's interaction with
+  boto3's dynamic service loading and pipeline-check's pkgutil-
+  based plugin discovery is a known-fragile combination. Revisit
+  if there's clear user demand for a no-Docker-no-Python path.
 - **SLSA Build L3 provenance on the wheel (v1.0.4).** Every
   tagged release runs the ``slsa-framework/slsa-github-generator``
   reusable workflow inside GitHub's isolated builder, signing the
@@ -74,6 +92,15 @@ What's planned, what's shipped, and what's deliberately out of scope.
   recipe end-to-end (find the build run, download the wheel +
   provenance, verify source URI + tag, install). The scanner that
   flags missing provenance ships its own attested wheel.
+- **LSP server (post-1.0.5)** — ``pipeline_check/lsp/`` is a
+  ``pygls`` 2.x server runnable via ``python -m pipeline_check.lsp``,
+  behind the ``pipeline-check[lsp]`` install extra so the base
+  install stays slim. Editor diagnostics match
+  ``pipeline_check --output json`` byte-for-byte modulo position
+  translation. The TypeScript VS Code extension that consumes it
+  lives in a separate repo (``pipeline-check-vscode``, mirroring
+  the ``astral-sh/ruff`` + ``astral-sh/ruff-vscode`` split) and is
+  tracked under Post-1.0 candidates.
 - **Real-world GOAT corpus benchmark (post-1.0.5)** —
   `bench/goats/` ships a pinned-clone benchmark complementing
   the existing synthetic `bench/cases/` set. The runner
@@ -101,60 +128,8 @@ What's planned, what's shipped, and what's deliberately out of scope.
 
 ## Post-1.0 candidates
 
-Larger items proposed after v1.0.4. Not yet scoped to a specific
+Larger items proposed after v1.1.0. Not yet scoped to a specific
 release; landing order is open.
-
-### Dependency-supply-chain provider follow-ups (npm v2 / pypi v2 / maven v2)
-
-*Shipped so far: NPM-001..009 + NPM-011, PYPI-001..006 + PYPI-008,
-MVN-001..008 — static manifest / lockfile / .npmrc / pom.xml /
-settings.xml / build.gradle(.kts) analysis plus the curated
-compromised-package registries (npm, PyPI, Maven Central), the
-``files``-field secret-leak detector, the three-registry cooldown
-trilogy (NPM-008 / PYPI-008 / MVN-008) behind ``--resolve-remote``,
-full lockfile + manifest-format coverage on the npm / pypi sides
-(``package-lock.json`` v1/v2/v3, ``npm-shrinkwrap.json``,
-``pnpm-lock.yaml`` v5/v6/v9, ``yarn.lock`` yarn-1 / Classic and
-yarn 2+ / Berry, ``poetry.lock``, ``Pipfile.lock``,
-``pyproject.toml`` PEP 621 + Poetry + PEP 518), the NPM-009
-new-transitive-dep diff gate behind ``--npm-base-ref``, the
-NPM-010 ``npm audit signatures``-missing detector ported across
-all three CI providers (GHA-059 / GL-034 / BB-030), the PYPI-007
-``pip install --require-hashes``-missing detector ported across
-the same three providers (GHA-060 / GL-035 / BB-031), Gradle
-``${propName}`` resolution against in-file ``ext {}`` /
-``ext.foo`` / Groovy ``def`` / Kotlin ``val`` declarations and
-sibling ``gradle.properties``, and ``libs.versions.toml``
-version-catalog resolution covering both the
-``module`` and ``group/name`` library shapes plus rich version
-constraints (``strictly`` / ``require`` / ``prefer``).*
-The follow-up rules below require either new infrastructure
-(lockfile diff against a base ref) or different ecosystem
-plumbing and so are deferred:
-
-- **PYPI extensions.** Both items shipped: the
-  ``pyproject.toml`` (PEP 621 / Poetry) manifest parser now feeds
-  the existing PYPI-004 / PYPI-006 rules; PYPI-007 (``pip install
-  --require-hashes`` missing from CI) shipped across the three CI
-  providers as GHA-060 / GL-035 / BB-031.
-- **Gradle multi-project indirection.** In-file ``${propName}``
-  resolution, sibling ``gradle.properties`` cross-file lookup, and
-  ``libs.versions.toml`` version-catalog resolution all ship. The
-  only remaining gap is ``rootProject.ext.X`` cross-project
-  indirection, which would need pipeline-check to learn
-  ``settings.gradle`` multi-project layout resolution. Rarer in
-  practice than the three shapes already shipped; deferred.
-
-Architecture: extends the existing ``pipeline_check/core/checks/
-npm/``, ``pypi/``, and ``maven/`` packages; ``--resolve-remote``
-reuses the ``ActionRepoMetadata`` fetcher pattern but targets the
-npm registry (``https://registry.npmjs.org/<pkg>``), PyPI JSON API
-(``https://pypi.org/pypi/<pkg>/json``), and Maven Central search
-API (``https://search.maven.org/solrsearch/select``); offline /
-fixture mode reads JSON from disk for hermetic CI. The XPC-NNN chain engine
-gains chains pairing NPM-008 cooldown-miss with DF-024 lifecycle-
-scripts-enabled so the composite escalates when both gates fail
-in the same scan.
 
 ### Self-hosted findings-history dashboard
 
@@ -206,24 +181,14 @@ Cross-repo XPC chains stay out of scope for v1; the chain engine
 already runs per-repo and "an attack chain spanning two repos in the
 same org" is a separate (interesting) problem worth its own design.
 
-### VS Code extension / LSP
+### VS Code extension
 
-Thin LSP wrapping the existing ``--explain`` output and per-rule
-findings. The ruff lesson is that an editor surface drives more
-adoption than any new rule pack. A few weeks of work to ship the
-MVP.
-
-Repo split (decided 2026-05-18): the LSP server lives in this repo
-as ``pipeline_check/lsp/`` (``pygls``-based, runnable via
-``python -m pipeline_check.lsp``) so ``Rule`` / ``Finding`` schema
-changes and the server consuming them land in the same diff. The
-VS Code extension itself lives in a separate repo
-(``pipeline-check-vscode``, TypeScript) and spawns the server over
-stdio JSON-RPC, mirroring the ``astral-sh/ruff`` +
-``astral-sh/ruff-vscode`` split. Trade-off accepted: the stdio
-schema becomes a stable contract between the two repos, in
-exchange for keeping the TS / ``vsce publish`` toolchain out of
-the Python project.
+The TypeScript half of the editor-surface push; the LSP server
+itself is shipped (see Shipped). Extension lives in
+``pipeline-check-vscode`` and spawns ``python -m pipeline_check.lsp``
+over stdio JSON-RPC. Trade-off accepted: the stdio schema becomes
+a stable contract between the two repos, in exchange for keeping
+the TS / ``vsce publish`` toolchain out of the Python project.
 
 ### Live Azure + GCP posture (parity with the 71-rule AWS pack)
 
@@ -233,47 +198,12 @@ multi-cloud asymmetry; closing it removes one of the most obvious
 "but does it cover us?" objections. Phased: ship 10 to 15 core
 rules per cloud first, expand.
 
-### Distribution beyond `pip install`
-
-The container image half shipped: ``ghcr.io/dmartinochoa/
-pipeline-check`` and ``docker.io/dmartinochoa/pipeline-check``
-publish on every ``v*.*.*`` tag via ``.github/workflows/docker-
-publish.yml``, multi-arch (linux/amd64 + linux/arm64), with Docker
-Scout vuln-scan gating the promote-to-release-tag step and SLSA
-provenance + SBOM attestations bound to the digest. Quarantine-
-then-promote ensures a vulnerable image never escapes a throwaway
-tag. Together with the marketplace ``action.yml``, this covers
-every CI environment that can run a container.
-
-A standalone binary (shiv / PyInstaller) was the other half of
-this item. Deferred with stated reasoning: the container image
-already serves the no-Python use case; a shiv ``.pyz`` still
-requires Python on the target so it adds little over ``pip
-install``; PyInstaller's interaction with boto3's dynamic service
-loading and pipeline-check's pkgutil-based plugin discovery is a
-known-fragile combination that would carry significant ongoing
-maintenance surface. Revisit if there's clear user demand for a
-no-Docker-no-Python distribution path.
-
-### Vulnerable-by-design benchmark — phase 2 (cross-scanner comparison)
-
-Phase 1 in-repo cases shipped with v1.0.x; phase 2 is the
-cross-scanner comparison matrix (vs Zizmor / Poutine / Checkov /
-KICS / Trivy). Tracked under ``bench/COMPARISON.md`` with the
-trade-offs that justify *not* shipping it yet — installing four
-other scanners in CI is its own surface, and the case selection has
-to stop being unilateral before the matrix earns credibility.
-Probably warrants extraction to a separate ``pipeline-check-bench``
-repo at that point; the in-repo phase 1 keeps the case fixtures
-co-located with the rules they exercise so case + rule changes land
-in the same PR.
-
 ### Cross-document taint resolver: GitLab `include:` chains
 
 GitLab ``extends:`` job-template inheritance and ``include:`` local
 files already resolved in v1.0.x. The remaining gap is ``include:``
 cross-pipeline file inclusion from remote URLs / projects /
-templates / components — would need cross-document machinery
+templates / components, which would need cross-document machinery
 similar to the GHA ``--resolve-remote`` flow. Closes the last
 known limitation in the TAINT-NNN engine's coverage.
 
@@ -292,21 +222,24 @@ avoided that plumbing change.
 ### Reachability-aware attack chains
 
 Phase 1 (shared-job intersection) shipped incrementally across the
-chain pack: 26 of the 40 chain rules now intersect their anchor
-findings' ``job_anchors`` sets, promote the chain confidence to
-HIGH when a shared job exists, and emit a "reachability
-unconfirmed, co-occurrence only" note when it doesn't. The
-remaining 14 chains have explicit "Reachability-model note" or
-"Reachability-model carve-out" comments documenting why
-shared-job reachability doesn't apply (cross-provider scope,
-chart-file co-occurrence, Dockerfile-level locality, repo-level
-worm topology). AC-001 is the canonical example.
+chain pack: roughly 20 of the 38 chain rules now intersect their
+anchor findings' ``job_anchors`` sets, promote the chain confidence
+to HIGH when a shared job exists, and emit a "reachability
+unconfirmed, co-occurrence only" note when it doesn't. Four chains
+(AC-015 / AC-024 / AC-027 / AC-028) carry explicit
+"Reachability-model note" or "Reachability-model carve-out"
+comments documenting why shared-job reachability doesn't apply
+(cross-provider scope, chart-file co-occurrence, Dockerfile-level
+locality, repo-level worm topology). The remaining chains don't
+yet carry an explicit reachability discussion; backfilling those
+notes is a follow-up. AC-001 is the canonical intersection
+example.
 
 Phase 2 is the dataflow-DAG variant: walk the TAINT engine's DAG
 between the two anchor findings and only fire when an executable
 connection exists. This is the right paradigm for the cross-
 provider chains (XPC-NNN and AC-024 / AC-016 class) where
-shared-job has no meaning — the anchors live in different
+shared-job has no meaning: the anchors live in different
 documents (CI workflow + AWS state, package.json + workflow,
 Helm chart + cluster RBAC). Requires extending TAINT findings to
 expose their source / sink coordinates on a cross-document
@@ -330,20 +263,75 @@ users with already-running local LLMs a high-leverage adoption
 hook, and stays out of the rule-engine path so a hallucinating
 model can't change a HIGH into a LOW.
 
-### Rolling proof-of-exploit backfill
+### Dependency-supply-chain provider follow-ups
 
-``exploit_example`` field landed in v1.0.x with a starter
-population. Continuing population is ongoing: every new HIGH /
-CRITICAL rule should ship one, and existing rules without an
-exploit example should be backfilled opportunistically. Not a
-discrete milestone, just a posture.
+The original npm / pypi / maven follow-up plan landed across
+v1.0.5 and v1.1.0: lockfile + manifest-format coverage
+(``package-lock.json`` / ``npm-shrinkwrap.json`` / ``pnpm-lock.yaml``
+/ ``yarn.lock`` / ``poetry.lock`` / ``Pipfile.lock`` /
+``pyproject.toml``), the three-registry cooldown trilogy
+(NPM-008 / PYPI-008 / MVN-008) behind ``--resolve-remote``, the
+NPM-009 new-transitive-dep diff gate, the ``npm audit signatures``
+and ``pip --require-hashes`` CI gates (GHA-059 / GL-034 / BB-030
+and GHA-060 / GL-035 / BB-031), and Gradle property + version-
+catalog resolution. See the Shipped section for the per-cycle
+trail.
 
-### Internal: rule-infrastructure consolidation
+One gap remains: ``rootProject.ext.X`` cross-project indirection
+on Gradle multi-project layouts. Would need pipeline-check to
+learn ``settings.gradle`` resolution. Rarer in practice than the
+three Gradle shapes already shipped; deferred.
 
-Code-quality findings from a 2026-05-20 sweep across the engine,
-parsers, and rule pack. Not user-facing, but compounds: every
-collapse here makes the next provider or rule cheaper to add.
-Landing order is open; each item stands alone.
+Next: the XPC-NNN chain engine gains chains pairing NPM-008
+cooldown-miss with DF-024 lifecycle-scripts-enabled so the
+composite escalates when both gates fail in the same scan.
+
+### Vulnerable-by-design benchmark: phase 2 (cross-scanner comparison)
+
+Phase 1 in-repo cases shipped with v1.0.x; phase 2 is the
+cross-scanner comparison matrix (vs Zizmor / Poutine / Checkov /
+KICS / Trivy). Tracked under ``bench/COMPARISON.md`` with the
+trade-offs that justify *not* shipping it yet: installing four
+other scanners in CI is its own surface, and the case selection has
+to stop being unilateral before the matrix earns credibility.
+Probably warrants extraction to a separate ``pipeline-check-bench``
+repo at that point; the in-repo phase 1 keeps the case fixtures
+co-located with the rules they exercise so case + rule changes land
+in the same PR.
+
+### Continuing posture: proof-of-exploit backfill
+
+Not a discrete milestone. The ``exploit_example`` field landed in
+v1.0.x with a starter population; the posture going forward is
+that every new HIGH / CRITICAL rule ships one, and existing rules
+without an exploit example get backfilled opportunistically.
+
+### Lower priority
+
+- **GitHub App.** PR-comment integration with diff-level finding
+  placement instead of the current SARIF-into-code-scanning flow.
+  SARIF already reaches the GitHub Code Scanning UI on every push,
+  so a separate App duplicates a path that mostly exists, takes on
+  ongoing review surface, and competes with native SARIF for
+  adoption attention. Revisit if SARIF feedback proves consistently
+  inadequate in practice or if multiple users explicitly ask for
+  inline diff comments.
+- **SaaS API.** Hosted scan endpoint with auth and history. Scope
+  is large (auth, multi-tenancy, history DB) and blurs OSS
+  positioning. Revisit if a clear paid-tier story emerges; until
+  then, the self-hosted dashboard above covers the same operator
+  pain at a fraction of the surface.
+
+## Internal cleanup
+
+Small targeted refactors and audit findings from the 2026-05-20
+sweep. Not user-facing, but each landing makes the next provider,
+rule, or test cheaper to add. Landing order is open; each
+subsection stands alone.
+
+### Rule-infrastructure consolidation
+
+Code-quality findings across the engine, parsers, and rule pack.
 
 - **Blob-rule factory to collapse the per-provider clone clusters.**
   Several rule families exist as near-verbatim wrappers around a
@@ -433,12 +421,11 @@ Landing order is open; each item stands alone.
   already demonstrates the `pkgutil.iter_modules` pattern; copy
   it over `standards/data/`.
 
-### Internal: test-suite tightening
+### Test-suite tightening
 
-Findings from a 2026-05-20 audit of the 6,700-test pytest suite
-(91.4% line coverage, full sweep clean on `dev`). The suite is
-healthy; these are tightening opportunities, not fires. Each item
-stands alone.
+From an audit of the 6,700-test pytest suite (91.4% line coverage,
+full sweep clean on `dev`). The suite is healthy; these are
+tightening opportunities, not fires.
 
 - **CLI tests over-mock the Scanner.** `tests/test_cli.py:45-77`
   (`TestExitCodes`) and `tests/test_cli_branches.py:108-204`
@@ -527,18 +514,12 @@ stands alone.
   file. Each is ~20 lines of unhit branches. Add one positive +
   negative test per missed branch.
 
-### Internal: dogfood code-scanning cleanup
+### Dogfood code-scanning cleanup
 
-Findings from a 2026-05-20 review of the repo's GitHub Code
-Scanning queue. Pipeline-Check's own rules and the OpenSSF
-Scorecard upload both flag real hardening gaps in the project's
-own workflows. Each item stands alone.
+From a review of the repo's GitHub Code Scanning queue.
+Pipeline-Check's own rules and the OpenSSF Scorecard upload both
+flag real hardening gaps in the project's own workflows.
 
-- **Pin the SLSA generator to a commit SHA** (`release.yml:167`,
-  GHA-025). The reusable workflow currently references
-  `slsa-framework/slsa-github-generator/.../v2.1.0` (tag). Switch
-  to the matching `@<sha>  # v2.1.0` form so the scanner that
-  fires this rule on user repos isn't itself in violation.
 - **Switch `pip install` to `--require-hashes`** in `release.yml`
   and `docs.yml` (GHA-060). These are the two project workflows
   still tripping the rule pipeline-check ships.
@@ -548,9 +529,13 @@ own workflows. Each item stands alone.
   `packages: write` from the workflow top-level down to the single
   job that needs them so the rest of the workflow runs with
   `contents: read`.
-- **Add an OIDC step to `scorecard.yml`** or drop its
-  `id-token: write` (GHA-004). The workflow declares the
-  permission but has no auth step that consumes it.
+- **GHA-004 false positive on `scorecard.yml`.** The rule flags
+  the analysis job's `id-token: write` as unconsumed, but
+  `ossf/scorecard-action` does consume it (the `publish_results:
+  true` path posts to the OpenSSF Scorecard API via OIDC). Add
+  `ossf/scorecard-action` to GHA-004's `_OIDC_ACTION_PREFIXES`
+  allowlist in
+  `pipeline_check/core/checks/github/rules/gha004_permissions.py`.
 - **Mark fixture Dockerfiles / workflows as Scorecard-exempt.**
   Roughly 15 `PinnedDependenciesID` errors hit
   `tests/fixtures/workflows/**` and `bench/cases/**` files that
@@ -567,22 +552,6 @@ Out of scope for this cleanup: the Scorecard zero-score alerts
 (`FuzzingID`, `CIIBestPracticesID`, `MaintainedID`,
 `CodeReviewID`) are policy noise on a young / solo-maintainer
 repo, not security gaps. Dismiss with reason rather than chase.
-
-### Lower priority
-
-- **GitHub App.** PR-comment integration with diff-level finding
-  placement instead of the current SARIF-into-code-scanning flow.
-  SARIF already reaches the GitHub Code Scanning UI on every push,
-  so a separate App duplicates a path that mostly exists, takes on
-  ongoing review surface, and competes with native SARIF for
-  adoption attention. Revisit if SARIF feedback proves consistently
-  inadequate in practice or if multiple users explicitly ask for
-  inline diff comments.
-- **SaaS API.** Hosted scan endpoint with auth and history. Scope
-  is large (auth, multi-tenancy, history DB) and blurs OSS
-  positioning. Revisit if a clear paid-tier story emerges; until
-  then, the self-hosted dashboard above covers the same operator
-  pain at a fraction of the surface.
 
 ## Non-goals
 
