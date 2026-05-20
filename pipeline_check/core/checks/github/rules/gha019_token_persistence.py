@@ -34,7 +34,14 @@ RULE = Rule(
         "environment files (`$GITHUB_ENV`), or piped through `tee`. "
         "Persisted tokens survive the step boundary and can be "
         "exfiltrated by later steps, uploaded artifacts, or cache "
-        "entries, turning a scoped credential into a long-lived one."
+        "entries, turning a scoped credential into a long-lived one.\n\n"
+        "Carve-out: secrets leaked to the workflow log (via "
+        "``set -x`` shell trace, ``echo $TOKEN``, or URL-embedded "
+        "credentials that a process tool logs) are GHA-033's domain, "
+        "not GHA-019's. ``greylag-ci/cicd-goat`` scenario 27 fires "
+        "GHA-033 only — the secret leaks to log via ``set -x`` but "
+        "no token persists to file / ``$GITHUB_ENV`` / artifact, "
+        "which is the persistence shape GHA-019 covers."
     ),
     exploit_example=(
         "# Vulnerable: token written to a file that survives the\n"

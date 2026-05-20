@@ -242,6 +242,110 @@ class TestGHA033SecretEchoed:
         f = run_check(wf, "GHA-033")
         assert f.passed
 
+    def test_fails_on_set_x_with_secret_env_var(self):
+        # Body lifted from cicd-goat scenario 27. ``set -x`` enables
+        # shell trace, so any later line that expands $API_KEY (curl
+        # URL, ${VAR:0:8} substring, $(... $VAR ...) command sub) ends
+        # up in the build log with the secret value visible.
+        wf = """
+        name: scenario-27-secret-leak-in-logs
+        on:
+          push:
+            branches: [main]
+        permissions:
+          contents: read
+        jobs:
+          deploy:
+            if: false
+            runs-on: ubuntu-latest
+            steps:
+              - uses: actions/checkout@v4
+              - name: Deploy
+                env:
+                  API_KEY: ${{ secrets.API_KEY }}
+                run: |
+                  set -x
+                  curl -fsS "https://api.example.com/deploy?key=${API_KEY}"
+                  partial="${API_KEY:0:8}"
+                  echo "deploying with key prefix ${partial}..."
+        """
+        f = run_check(wf, "GHA-033")
+        assert not f.passed
+        assert "set -x" in f.description or "deploy" in f.description
+
+    def test_fails_on_set_o_xtrace_long_form(self):
+        wf = """
+        name: ci
+        on: push
+        jobs:
+          deploy:
+            runs-on: ubuntu-latest
+            steps:
+              - env:
+                  TOKEN: ${{ secrets.TOKEN }}
+                run: |
+                  set -o xtrace
+                  curl -H "Authorization: Bearer $TOKEN" https://api.example.com
+        """
+        f = run_check(wf, "GHA-033")
+        assert not f.passed
+
+    def test_fails_on_set_euxo_pipefail_bundle(self):
+        # ``set -euxo pipefail`` is the idiomatic strict-mode prelude;
+        # the embedded ``x`` flag still enables shell tracing.
+        wf = """
+        name: ci
+        on: push
+        jobs:
+          deploy:
+            runs-on: ubuntu-latest
+            steps:
+              - env:
+                  TOKEN: ${{ secrets.TOKEN }}
+                run: |
+                  set -euxo pipefail
+                  curl -H "Authorization: Bearer $TOKEN" https://api.example.com
+        """
+        f = run_check(wf, "GHA-033")
+        assert not f.passed
+
+    def test_passes_on_set_x_without_secret_env_var(self):
+        # set -x is fine if no secret-bound env is in scope. The
+        # rule is about secret leakage, not shell hygiene.
+        wf = """
+        name: ci
+        on: push
+        jobs:
+          build:
+            runs-on: ubuntu-latest
+            steps:
+              - run: |
+                  set -x
+                  make test
+        """
+        f = run_check(wf, "GHA-033")
+        assert f.passed
+
+    def test_passes_on_curl_with_secret_header_no_shell_trace(self):
+        # Carve-out: an inline ``secrets.*`` interpolation in a curl
+        # ``-H`` header without ``set -x`` does NOT fire — curl
+        # doesn't echo its arguments to stdout, so the value lands on
+        # the network but not in the workflow log.
+        wf = """
+        name: ci
+        on: push
+        jobs:
+          deploy:
+            runs-on: ubuntu-latest
+            steps:
+              - env:
+                  TOKEN: ${{ secrets.TOKEN }}
+                run: |
+                  curl -H "Authorization: Bearer $TOKEN" https://api.example.com
+        """
+        f = run_check(wf, "GHA-033")
+        assert f.passed
+
 
 # ── GHA-039 services / container credentials literal ────────────────
 
