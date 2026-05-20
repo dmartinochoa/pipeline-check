@@ -38,7 +38,8 @@ RULE = Rule(
     ),
 )
 
-_SHA_RE = re.compile(r"^[0-9a-f]{40}$")
+from ..._primitives.sha_ref import SHA_RE as _SHA_RE
+
 _TEMPLATE_AT_RE = re.compile(r"@([A-Za-z_][\w-]*)\s*$")
 
 

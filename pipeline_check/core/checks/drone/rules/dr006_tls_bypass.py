@@ -1,7 +1,8 @@
 """DR-006. TLS verification disabled in step commands."""
 from __future__ import annotations
 
-from ...base import TLS_BYPASS_RE, Finding, Severity
+from ..._primitives import tls_bypass
+from ...base import Finding, Severity
 from ...rule import Rule
 from ..base import (
     Pipeline,
@@ -33,15 +34,11 @@ RULE = Rule(
         "weakness."
     ),
     docs_note=(
-        "Detection is the same blob-regex used by GHA-027, "
-        "BK-008, JF-022, ADO-026, CC-024, and the CFN/Terraform "
-        "rule packs. Matches: ``curl --insecure`` / ``-k``, "
-        "``wget --no-check-certificate``, ``pip config set "
-        "global.trusted-host``, ``npm config set strict-ssl "
-        "false``, ``yarn config set strict-ssl false``, ``git "
-        "config http.sslverify false``, ``GIT_SSL_NO_VERIFY=1``, "
-        "``NODE_TLS_REJECT_UNAUTHORIZED=0``, ``PYTHONHTTPSVERIFY=0``, "
-        "and ``GOINSECURE=...``. The rule scans every "
+        "Uses the cross-provider ``_primitives.tls_bypass`` detector "
+        "shared with GHA-027, BK-008, JF-022, ADO-026, CC-024, "
+        "GCB-011, and the CFN / Terraform rule packs. Covers curl / "
+        "wget / git / npm / yarn / pip / helm / kubectl / ssh / "
+        "docker / maven / gradle / aws bypasses. The rule scans every "
         "``commands:`` entry on every step."
     ),
 )
@@ -61,11 +58,11 @@ def check(pipeline: Pipeline) -> Finding:
     offenders: list[str] = []
     for idx, step in iter_steps(pipeline):
         for cmd in step_commands(step):
-            m = TLS_BYPASS_RE.search(cmd)
-            if m:
+            hits = tls_bypass.scan(cmd)
+            if hits:
                 offenders.append(
                     f"steps.{step_label(step, idx)}: "
-                    f"{m.group(0).strip()[:80]}"
+                    f"{hits[0].snippet[:80]}"
                 )
                 break
     passed = not offenders

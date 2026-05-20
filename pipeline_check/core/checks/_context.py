@@ -11,6 +11,7 @@ positive.
 """
 from __future__ import annotations
 
+import bisect
 import re
 from typing import Any
 
@@ -48,6 +49,34 @@ _EXAMPLE_INLINE_RE = re.compile(
 )
 
 
+_YAML_KEY_RE = re.compile(r"(?m)^(?P<ind> *)(?P<name>[A-Za-z_][\w-]*)\s*:")
+
+#: Per-blob cache of (line_start_position, indent, name) tuples, one
+#: entry for every ``^<indent>key:`` line in the blob. Keyed on
+#: ``id(blob)`` (matching the ``blob_lower`` convention) so a single
+#: workflow scanned by N rules pays for the regex walk once instead
+#: of once-per-match.
+_KEY_INDEX_CACHE: dict[int, list[tuple[int, int, str]]] = {}
+
+
+def _key_index(blob: str) -> list[tuple[int, int, str]]:
+    """Return the cached ``(line_start, indent, name)`` index for *blob*."""
+    key = id(blob)
+    cached = _KEY_INDEX_CACHE.get(key)
+    if cached is not None:
+        return cached
+    index: list[tuple[int, int, str]] = []
+    for m in _YAML_KEY_RE.finditer(blob):
+        index.append((m.start(), len(m.group("ind")), m.group("name")))
+    _KEY_INDEX_CACHE[key] = index
+    return index
+
+
+def clear_context_cache() -> None:
+    """Drop the per-blob key index. Test-only entry point."""
+    _KEY_INDEX_CACHE.clear()
+
+
 def looks_like_example(blob: str, match_start: int, window: int = 200) -> bool:
     """Return True when the match appears to live inside example/doc content.
 
@@ -64,6 +93,12 @@ def looks_like_example(blob: str, match_start: int, window: int = 200) -> bool:
     Bare occurrences of "example" in free text (e.g. ``example.com``
     as a lure hostname) do NOT trigger suppression, inline detection
     requires an explicit comment or assignment marker.
+
+    Hot-path: the YAML-ancestor walk used to rescan ``blob[:line_start]``
+    on every call. For a 5 KB blob with 50 candidate matches that
+    meant 50 fresh full-prefix regex scans. The index is now built
+    once per blob (cached on ``id(blob)`` like ``blob_lower``) and
+    each call bisects into it instead.
     """
     # Line containing the match.
     line_start = blob.rfind("\n", 0, match_start) + 1
@@ -77,14 +112,12 @@ def looks_like_example(blob: str, match_start: int, window: int = 200) -> bool:
     # less indent than the match line. The most recent at each indent
     # level is the effective ancestor (later same-indent keys are
     # siblings).
+    index = _key_index(blob)
+    cutoff = bisect.bisect_left(index, (line_start,))
     keys_by_indent: dict[int, str] = {}
-    for m in re.finditer(
-        r"(?m)^(?P<ind> *)(?P<name>[A-Za-z_][\w-]*)\s*:",
-        blob[:line_start],
-    ):
-        indent = len(m.group("ind"))
+    for pos, indent, name in index[:cutoff]:
         if indent < match_indent:
-            keys_by_indent[indent] = m.group("name")
+            keys_by_indent[indent] = name
     for name in keys_by_indent.values():
         if _EXAMPLE_KEY_RE.search(name):
             return True

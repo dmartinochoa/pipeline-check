@@ -3,7 +3,8 @@ from __future__ import annotations
 
 from typing import Any
 
-from ...base import CURL_PIPE_RE, Finding, Severity
+from ..._primitives import remote_script_exec
+from ...base import Finding, Severity
 from ...rule import Rule
 from ..base import iter_command_steps, step_commands, step_label
 
@@ -22,11 +23,14 @@ RULE = Rule(
         "partial script to the shell."
     ),
     docs_note=(
-        "The detection fires on ``curl|bash``, ``curl|sh``, ``wget|"
-        "bash``, ``iex (iwr ...)``, and the corresponding "
-        "``Invoke-WebRequest|Invoke-Expression`` PowerShell forms. "
-        "Use ``curl -fsSLO <url>; sha256sum -c install.sh.sha256; "
-        "bash install.sh`` instead."
+        "Uses the cross-provider ``_primitives.remote_script_exec`` "
+        "detector shared with GHA-016 / GL-016 / GCB-010 / DF-004 / "
+        "ARGO-008 / TKN-008. Catches ``curl|bash``, ``curl|sh``, "
+        "``wget|bash``, ``bash -c \"$(curl …)\"``, ``python -c "
+        "urllib.urlopen``, ``curl > x.sh && bash x.sh``, and the "
+        "PowerShell ``irm | iex`` variants. Use ``curl -fsSLO "
+        "<url>; sha256sum -c install.sh.sha256; bash install.sh`` "
+        "instead."
     ),
 )
 
@@ -35,11 +39,10 @@ def check(path: str, doc: dict[str, Any]) -> Finding:
     offenders: list[str] = []
     for idx, step in iter_command_steps(doc):
         for cmd in step_commands(step):
-            m = CURL_PIPE_RE.search(cmd)
-            if m:
-                snippet = cmd[max(0, m.start() - 10):m.end() + 20].strip()
+            hits = remote_script_exec.scan(cmd)
+            if hits:
                 offenders.append(
-                    f"{step_label(step, idx)}: {snippet[:80]}"
+                    f"{step_label(step, idx)}: {hits[0].snippet[:80]}"
                 )
                 break
     passed = not offenders

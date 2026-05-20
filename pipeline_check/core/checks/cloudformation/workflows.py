@@ -14,7 +14,7 @@ from __future__ import annotations
 from typing import cast
 
 from ..base import Finding
-from ..rule import discover_rules
+from ..rule import apply_rule_metadata, discover_rules
 from .base import CloudFormationBaseCheck, CloudFormationContext
 
 
@@ -38,12 +38,7 @@ class CloudFormationRuleChecks(CloudFormationBaseCheck):
             # at the call site so mypy understands the batch is iterable.
             batch = cast("list[Finding]", check_fn(self.ctx) or [])
             for finding in batch:
-                if not finding.cwe:
-                    finding.cwe = list(rule.cwe)
-                if not finding.incident_refs:
-                    finding.incident_refs = list(rule.incident_refs)
-                if finding.exploit_example is None:
-                    finding.exploit_example = rule.exploit_example
+                apply_rule_metadata(finding, rule)
             findings.extend(batch)
         return findings
 

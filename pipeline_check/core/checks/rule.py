@@ -36,6 +36,7 @@ template.
 from __future__ import annotations
 
 import importlib
+import inspect
 import pkgutil
 from collections.abc import Callable
 from dataclasses import dataclass
@@ -127,3 +128,34 @@ def discover_rules(package_fqn: str) -> list[tuple[Any, Callable[..., Finding]]]
             pairs.append((rule, check))
     _RULES_CACHE[package_fqn] = pairs
     return pairs
+
+
+def wants_ctx_kwarg(check_fn: Callable[..., Finding]) -> bool:
+    """Return ``True`` if *check_fn* declares a second positional parameter.
+
+    Used by the npm / pypi / maven orchestrators to opt-in cross-target
+    state (e.g. NPM-008 / PYPI-008 / MVN-008 reading the publish-time
+    table populated by ``--resolve-remote``): rules that need the
+    provider context declare a second parameter, the orchestrator
+    routes it through here, one-arg rules stay unaffected.
+    """
+    try:
+        params = list(inspect.signature(check_fn).parameters.values())
+    except (TypeError, ValueError):
+        return False
+    return len(params) >= 2
+
+
+def apply_rule_metadata(finding: Finding, rule: Rule) -> None:
+    """Copy rule-level metadata onto a finding the rule didn't set.
+
+    Every orchestrator runs the same three-field copy (``cwe`` /
+    ``incident_refs`` / ``exploit_example``) after invoking the rule's
+    ``check()`` callable. Centralizing the copy lets new ``Rule``
+    fields propagate without touching every orchestrator.
+    """
+    finding.cwe = list(rule.cwe)
+    if not finding.incident_refs:
+        finding.incident_refs = list(rule.incident_refs)
+    if finding.exploit_example is None:
+        finding.exploit_example = rule.exploit_example

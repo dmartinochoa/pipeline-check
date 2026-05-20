@@ -61,3 +61,9 @@ def blob_lower(doc: Any) -> str:
 
 def clear_blob_cache() -> None:
     _BLOB_CACHE.clear()
+    # ``looks_like_example`` keys its prefix-line index on ``id(blob)``
+    # the same way ``blob_lower`` does, so callers that already invoke
+    # ``clear_blob_cache`` between tests pick up the secondary cache
+    # for free.
+    from ._context import clear_context_cache
+    clear_context_cache()

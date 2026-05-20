@@ -50,13 +50,11 @@ __all__ = [
     "has_sbom",
     "has_vuln_scanning",
     # cross-provider script-safety patterns
-    "CURL_PIPE_RE",
     "DOCKER_INSECURE_RE",
     "PKG_INSECURE_RE",
     "PKG_NO_LOCKFILE_RE",
     "DEP_UPDATE_RE",
     "has_dep_update",
-    "TLS_BYPASS_RE",
     "is_quoted_assignment",
 ]
 
@@ -339,21 +337,13 @@ class BaseCheck(abc.ABC):
 import re as _re
 
 # ── Cross-provider script-safety regexes ──────────────────────────
-# Used by the curl-pipe, docker-privileged, and package-insecure
-# checks across all five workflow providers.
-
-#: ``curl … | bash`` or ``wget … | sh``, remote code execution via
-#: pipe to interpreter. Covers bash, sh, python, perl, ruby, PowerShell,
-#: and download-then-execute variants.
-CURL_PIPE_RE = _re.compile(
-    r"(?:curl|wget)\s+[^|]*\|\s*(?:sudo\s+)?(?:ba)?sh\b"           # curl | sudo bash
-    r"|(?:curl|wget)\s+[^|]*\|\s*(?:sudo\s+)?(?:python[23]?|perl|ruby)\b"  # curl | python3
-    r"|(?:ba)?sh\s+(?:-c\s+)?[\"']\$\((?:curl|wget)\b"             # bash -c "$(curl ...)"
-    r"|python[23]?\s+-c\s+[\"'].*(?:urllib|requests)\.get\("        # python -c "requests.get(..."
-    r"|(?:curl|wget)\s+[^;&]*>\s*\S+\.sh\s*[;&]+\s*(?:ba)?sh\s"    # curl > x.sh && bash x
-    r"|irm\s+[^|]*\|\s*iex"                                        # PowerShell: irm | iex
-    r"|Invoke-(?:WebRequest|RestMethod)\s+[^|]*\|\s*iex",           # PowerShell long form
-)
+# Used by the docker-privileged and package-insecure checks across
+# all workflow providers. The curl-pipe and TLS-bypass detectors
+# moved to ``_primitives/remote_script_exec.py`` and
+# ``_primitives/tls_bypass.py`` respectively. Every provider rule
+# now calls those primitives directly; the legacy combined
+# ``CURL_PIPE_RE`` / ``TLS_BYPASS_RE`` constants were removed once
+# the holdouts (BK-004, BK-008, DR-006, ARGO-008, TKN-008) migrated.
 
 #: ``docker run --privileged`` or ``-v /…:/…``, container escape via
 #: host mount, privileged mode, namespace sharing, or socket mount.
@@ -447,22 +437,6 @@ def has_dep_update(blob: str) -> bool:
         if not _DEP_UPDATE_TOOL_EXEMPT_RE.search(full_line):
             return True
     return False
-
-
-#: TLS / certificate-verification bypass, allows MITM injection.
-TLS_BYPASS_RE = _re.compile(
-    r"\bnpm\s+config\s+set\s+strict-ssl\s+false\b"
-    r"|\byarn\s+config\s+set\s+strict-ssl\s+false\b"
-    r"|\bpip3?\s+config\s+set\s+global\.trusted-host\b"
-    r"|\bgit\s+config\s+[^\n]*http\.sslverify\s+false\b"
-    r"|\bgit_ssl_no_verify\s*=\s*(?:true|1)\b"
-    r"|\bnode_tls_reject_unauthorized\s*=\s*['\"]?0['\"]?"
-    r"|\bpythonhttpsverify\s*=\s*['\"]?0['\"]?"
-    r"|\bcurl\b[^\n]*(?:\s-k\b|\s--insecure\b)"
-    r"|\bwget\s+[^\n]*--no-check-certificate\b"
-    r"|\bgoinsecure\s*=",
-    _re.MULTILINE,
-)
 
 
 # A shell *assignment* like ``VAR="$UNTRUSTED"`` captures the value

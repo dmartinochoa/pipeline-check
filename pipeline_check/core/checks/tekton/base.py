@@ -20,8 +20,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
-import yaml
-
+from .._yaml_files import load_yaml_files
 from ..base import BaseCheck
 
 #: Kinds we recognize as Tekton resources.
@@ -72,26 +71,11 @@ class TektonContext:
                 p for p in root.rglob("*")
                 if p.is_file() and p.suffix.lower() in {".yml", ".yaml"}
             )
+        loaded, warnings, skipped = load_yaml_files(files, multi_doc=True)
         docs: list[TektonDoc] = []
-        warnings: list[str] = []
-        skipped = 0
-        for f in files:
-            try:
-                text = f.read_text(encoding="utf-8")
-            except (OSError, UnicodeDecodeError) as exc:
-                warnings.append(f"{f}: read error: {exc}")
-                skipped += 1
-                continue
-            try:
-                from .._yaml_lines import safe_load_all_with_lines
-                parsed_with_lines = list(safe_load_all_with_lines(text))
-            except yaml.YAMLError as exc:
-                first_line = str(exc).split("\n", 1)[0]
-                warnings.append(f"{f}: YAML parse error: {first_line}")
-                skipped += 1
-                continue
-            for idx, (_doc_start_line, raw) in enumerate(parsed_with_lines):
-                d = _to_doc(str(f), idx, raw)
+        for entry in loaded:
+            for idx, raw in enumerate(entry.docs):
+                d = _to_doc(str(entry.path), idx, raw)
                 if d is not None:
                     docs.append(d)
         ctx = cls(docs)

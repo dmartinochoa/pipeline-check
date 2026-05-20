@@ -1,32 +1,22 @@
 """Maven Central registry metadata fetcher.
 
-Mirrors the npm / PyPI registry fetchers (Protocol + HTTP impl +
-disk cache + graceful failure) but targets the Maven Central
-search API
-(``https://search.maven.org/solrsearch/select``) to recover per-
-version publish timestamps for MVN-008 (cooldown gate).
+Thin adapter on top of :mod:`pipeline_check.core.checks._primitives.
+registry_fetcher`. Maven-specific bits:
 
-The search API exposes a per-coordinate ``gav`` core: a query like
-``q=g:org.apache.logging.log4j+AND+a:log4j-core&core=gav&rows=200``
-returns one document per version, each carrying a ``timestamp``
-field in millisecond Unix epoch (UTC). That's the moment Central
-ingested the artifact, which is what the cooldown should measure
-from.
+* the search-API URL builder
+  (``search.maven.org/solrsearch/select?q=g:GROUP+AND+a:ARTIFACT&core=gav``),
+* the ``(group, artifact)`` -> ``"group:artifact"`` cache key,
+* :func:`_parse_publish_times` over the ``response.docs`` array,
+  which carries one record per version with a millisecond-Unix-epoch
+  ``timestamp`` field.
 
-Architecture
-------------
+The shared primitive owns the disk cache, the HTTP transport, the
+dedup-fetch-parse loop, and the platform cache directory.
 
-* :class:`RegistryMetadataFetcher` is a Protocol. Any object with
-  a ``fetch(group, artifact) -> bytes | None`` works.
-* :class:`HttpRegistryFetcher` hits the Maven Central search API
-  via stdlib ``urllib``. Returns ``None`` on 404 / network error
-  so the caller records a warning but the scan keeps going.
-* :class:`FileSystemCache` caches per-coordinate JSON keyed by
-  ``group:artifact`` with a default 7-day TTL.
-* :func:`fetch_publish_times` walks a list of coordinates and
-  returns ``{"group:artifact": {version: timestamp_utc}}`` for
-  every successfully-resolved coordinate. Failures land in the
-  warnings.
+Public surface (``FileSystemCache``, ``HttpRegistryFetcher``,
+``RegistryMetadataFetcher``, ``fetch_publish_times``,
+``default_cache_dir``) is preserved verbatim so
+``core/providers/maven.py`` doesn't need any import changes.
 
 Threat-model note: this module issues HTTPS requests to
 ``search.maven.org``. It's opt-in via ``--resolve-remote`` at the
@@ -36,25 +26,26 @@ real implementation is passed in.
 from __future__ import annotations
 
 import datetime as _dt
-import hashlib
 import json
-import time
-import urllib.error
 import urllib.parse
-import urllib.request
 from collections.abc import Iterable
 from pathlib import Path
 from typing import Protocol
 
-_DEFAULT_TTL_SECONDS = 7 * 24 * 3600
-_DEFAULT_TIMEOUT = 10.0
+from .._primitives.registry_fetcher import (
+    FileSystemCache as _FileSystemCache,
+)
+from .._primitives.registry_fetcher import (
+    HttpGetFetcher as _HttpGetFetcher,
+)
+from .._primitives.registry_fetcher import (
+    default_cache_dir as _default_cache_dir,
+)
+from .._primitives.registry_fetcher import (
+    fetch_publish_times_generic,
+)
 
-#: Hard cap on response body size. A normal Maven Central ``gav``
-#: response for a single coordinate is ~10-100 KB; a maliciously
-#: large response shouldn't be allowed to balloon scanner memory.
-#: 10 MiB is generous for the very largest coordinates (Spring
-#: Boot starters with hundreds of releases approach 500 KB).
-_MAX_RESPONSE_BYTES = 10 * 1024 * 1024
+FileSystemCache = _FileSystemCache
 
 #: Maven Central caps ``rows=`` at 200 per request. Coordinates with
 #: more than 200 versions truncate to the most recent 200 (sorted by
@@ -63,7 +54,12 @@ _MAX_RESPONSE_BYTES = 10 * 1024 * 1024
 _DEFAULT_ROWS = 200
 
 
-# ── Fetcher protocol + implementations ────────────────────────────
+def default_cache_dir() -> Path:
+    """Platform cache root + ``maven-registry/``."""
+    return _default_cache_dir("maven-registry")
+
+
+# ── Fetcher protocol + HTTP impl ─────────────────────────────────
 
 
 class RegistryMetadataFetcher(Protocol):
@@ -85,11 +81,15 @@ class HttpRegistryFetcher:
 
     def __init__(
         self,
-        timeout: float = _DEFAULT_TIMEOUT,
+        timeout: float = 10.0,
         rows: int = _DEFAULT_ROWS,
     ) -> None:
         self.timeout = timeout
         self.rows = rows
+        self._http = _HttpGetFetcher(
+            user_agent="pipeline-check-maven-fetcher",
+            timeout=timeout,
+        )
 
     def fetch(self, group_id: str, artifact_id: str) -> bytes | None:
         query = f'g:"{group_id}" AND a:"{artifact_id}"'
@@ -99,110 +99,10 @@ class HttpRegistryFetcher:
             "rows": str(self.rows),
             "wt": "json",
         })
-        url = f"{self.BASE_URL}?{params}"
-        req = urllib.request.Request(url)  # noqa: S310, fixed scheme + host
-        req.add_header("User-Agent", "pipeline-check-maven-fetcher")
-        req.add_header("Accept", "application/json")
-        try:
-            with urllib.request.urlopen(  # noqa: S310
-                req, timeout=self.timeout,
-            ) as resp:
-                body: bytes = resp.read(_MAX_RESPONSE_BYTES + 1)
-                if len(body) > _MAX_RESPONSE_BYTES:
-                    return None
-                return body
-        except urllib.error.HTTPError:
-            return None
-        except (urllib.error.URLError, TimeoutError, OSError):
-            return None
+        return self._http.get(f"{self.BASE_URL}?{params}")
 
 
-# ── Cache ────────────────────────────────────────────────────────
-
-
-def _cache_key(group_id: str, artifact_id: str) -> str:
-    return f"{group_id}:{artifact_id}"
-
-
-def _cache_filename(key: str) -> str:
-    """Filename-safe key for a Maven coordinate.
-
-    Hashes the coordinate so any weird characters end up on disk as
-    a stable, short filename that survives Windows' 260-char limit
-    and case-folding.
-    """
-    h = hashlib.sha256(key.encode("utf-8")).hexdigest()[:16]
-    safe = key.replace(":", "_").replace("/", "_")[:64]
-    return f"{safe}__{h}.json"
-
-
-class FileSystemCache:
-    """Disk-backed cache for fetcher output.
-
-    Default TTL is 7 days; tune with ``ttl_seconds=0`` to disable
-    write-side caching while still allowing reads of unexpired
-    entries. Pass ``enabled=False`` to short-circuit both read and
-    write — the caller wires that up to ``--no-cache``.
-    """
-
-    def __init__(
-        self,
-        root: Path,
-        ttl_seconds: int = _DEFAULT_TTL_SECONDS,
-        enabled: bool = True,
-    ) -> None:
-        self.root = Path(root)
-        self.ttl_seconds = ttl_seconds
-        self.enabled = enabled
-
-    def _path_for(self, key: str) -> Path:
-        return self.root / _cache_filename(key)
-
-    def get(self, key: str) -> bytes | None:
-        if not self.enabled:
-            return None
-        cached = self._path_for(key)
-        if not cached.is_file():
-            return None
-        try:
-            mtime = cached.stat().st_mtime
-        except OSError:
-            return None
-        if self.ttl_seconds > 0 and time.time() - mtime > self.ttl_seconds:
-            return None
-        try:
-            return cached.read_bytes()
-        except OSError:
-            return None
-
-    def put(self, key: str, data: bytes) -> None:
-        if not self.enabled:
-            return
-        cached = self._path_for(key)
-        try:
-            cached.parent.mkdir(parents=True, exist_ok=True)
-            cached.write_bytes(data)
-        except OSError:
-            # Cache failures are never fatal — next scan will refetch.
-            pass
-
-
-def default_cache_dir() -> Path:
-    """Return the platform-appropriate cache root for Maven metadata.
-
-    Falls back to ``~/.cache/pipeline-check/maven-registry`` when
-    ``platformdirs`` is unavailable so we don't take a hard dep
-    just for one path.
-    """
-    try:
-        import platformdirs
-        base = Path(platformdirs.user_cache_dir("pipeline-check"))
-    except ImportError:
-        base = Path.home() / ".cache" / "pipeline-check"
-    return base / "maven-registry"
-
-
-# ── Top-level convenience ────────────────────────────────────────
+# ── Per-version timestamp parser ─────────────────────────────────
 
 
 def _parse_publish_times(blob: bytes) -> dict[str, _dt.datetime]:
@@ -262,6 +162,9 @@ def _parse_publish_times(blob: bytes) -> dict[str, _dt.datetime]:
     return out
 
 
+# ── Top-level convenience ────────────────────────────────────────
+
+
 def fetch_publish_times(
     coordinates: Iterable[tuple[str, str]],
     fetcher: RegistryMetadataFetcher,
@@ -269,46 +172,30 @@ def fetch_publish_times(
 ) -> tuple[dict[str, dict[str, _dt.datetime]], list[str]]:
     """Resolve publish timestamps for every coordinate in *coordinates*.
 
-    Returns ``({"group:artifact": {version: ts_utc}}, warnings)``. A
-    coordinate whose metadata can't be fetched lands as a warning
-    string and is omitted from the result dict — the rule reading
-    the output skips silently for unresolved coordinates so a
-    transient Central outage doesn't trip the cooldown gate on the
-    next CI run.
-
-    Deduplicates *coordinates* internally so the same ``group:artifact``
-    isn't fetched twice when the same dep appears in multiple POMs.
+    Deduplicates *coordinates* internally so the same
+    ``group:artifact`` isn't fetched twice when the same dep appears
+    in multiple POMs.
     """
-    seen: set[str] = set()
-    out: dict[str, dict[str, _dt.datetime]] = {}
-    warnings: list[str] = []
-    for coord in coordinates:
+    def _cache_key(coord: object) -> str | None:
         if not isinstance(coord, tuple) or len(coord) != 2:
-            continue
+            return None
         group_id, artifact_id = coord
         if not group_id or not artifact_id:
-            continue
-        key = _cache_key(group_id, artifact_id)
-        if key in seen:
-            continue
-        seen.add(key)
-        blob: bytes | None = (
-            cache.get(key) if cache is not None else None
-        )
-        if blob is None:
-            blob = fetcher.fetch(group_id, artifact_id)
-            if blob is None:
-                warnings.append(
-                    f"maven-registry: could not fetch metadata for "
-                    f"{key}"
-                )
-                continue
-            if cache is not None:
-                cache.put(key, blob)
-        per_version = _parse_publish_times(blob)
-        if per_version:
-            out[key] = per_version
-    return out, warnings
+            return None
+        return f"{group_id}:{artifact_id}"
+
+    def _fetch_blob(coord: object) -> bytes | None:
+        assert isinstance(coord, tuple) and len(coord) == 2
+        return fetcher.fetch(coord[0], coord[1])
+
+    return fetch_publish_times_generic(
+        coordinates,
+        cache_key=_cache_key,
+        fetch_blob=_fetch_blob,
+        parser=_parse_publish_times,
+        cache=cache,
+        ecosystem="maven",
+    )
 
 
 __all__ = [

@@ -9,7 +9,7 @@ when the manifest doesn't match.
 from __future__ import annotations
 
 from ..base import Finding
-from ..rule import discover_rules
+from ..rule import apply_rule_metadata, discover_rules
 from .base import KubernetesBaseCheck, KubernetesContext
 
 
@@ -31,10 +31,6 @@ class KubernetesManifestChecks(KubernetesBaseCheck):
         # are kind-scoped (K8S-018) likewise emit one summary Finding.
         for rule, check_fn in self._rules:
             finding = check_fn(self.ctx)
-            finding.cwe = list(rule.cwe)
-            if not finding.incident_refs:
-                finding.incident_refs = list(rule.incident_refs)
-            if finding.exploit_example is None:
-                finding.exploit_example = rule.exploit_example
+            apply_rule_metadata(finding, rule)
             findings.append(finding)
         return findings

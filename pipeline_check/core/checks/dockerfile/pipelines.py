@@ -7,7 +7,7 @@ loaded Dockerfile.
 from __future__ import annotations
 
 from ..base import Finding
-from ..rule import discover_rules
+from ..rule import apply_rule_metadata, discover_rules
 from .base import DockerfileBaseCheck, DockerfileContext
 
 
@@ -26,10 +26,6 @@ class DockerfileChecks(DockerfileBaseCheck):
         for df in self.ctx.dockerfiles:
             for rule, check_fn in self._rules:
                 finding = check_fn(df)
-                finding.cwe = list(rule.cwe)
-                if not finding.incident_refs:
-                    finding.incident_refs = list(rule.incident_refs)
-                if finding.exploit_example is None:
-                    finding.exploit_example = rule.exploit_example
+                apply_rule_metadata(finding, rule)
                 findings.append(finding)
         return findings

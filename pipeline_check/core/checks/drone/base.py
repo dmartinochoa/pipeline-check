@@ -23,10 +23,8 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
-import yaml
-
+from .._yaml_files import load_yaml_files
 from .._yaml_lines import line_of as _line_of
-from .._yaml_lines import safe_load_all_with_lines
 from ..base import BaseCheck, Location
 
 
@@ -65,24 +63,10 @@ class DroneContext:
                 p for p in root.rglob("*")
                 if p.is_file() and p.name in {".drone.yml", ".drone.yaml"}
             )
+        loaded, warnings, skipped = load_yaml_files(files, multi_doc=True)
         pipelines: list[Pipeline] = []
-        warnings: list[str] = []
-        skipped = 0
-        for f in files:
-            try:
-                text = f.read_text(encoding="utf-8")
-            except (OSError, UnicodeDecodeError) as exc:
-                warnings.append(f"{f}: read error: {exc}")
-                skipped += 1
-                continue
-            try:
-                doc_pairs = list(safe_load_all_with_lines(text))
-            except yaml.YAMLError as exc:
-                first_line = str(exc).split("\n", 1)[0]
-                warnings.append(f"{f}: YAML parse error: {first_line}")
-                skipped += 1
-                continue
-            for idx, (_line, data) in enumerate(doc_pairs):
+        for entry in loaded:
+            for idx, data in enumerate(entry.docs):
                 if not isinstance(data, dict):
                     continue
                 # Heuristic gate: Drone pipelines declare
@@ -92,7 +76,7 @@ class DroneContext:
                 if data.get("kind") != "pipeline":
                     continue
                 pipelines.append(Pipeline(
-                    path=str(f), doc_index=idx, data=data,
+                    path=str(entry.path), doc_index=idx, data=data,
                 ))
         ctx = cls(pipelines)
         # Count every file the loader actually inspected, not just

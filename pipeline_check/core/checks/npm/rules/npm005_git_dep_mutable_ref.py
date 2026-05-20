@@ -1,8 +1,7 @@
 """NPM-005, ``package.json`` git dependency uses a mutable ref."""
 from __future__ import annotations
 
-import re
-
+from ..._primitives.sha_ref import SHA_RE_IGNORECASE as _SHA_RE
 from ...base import Finding, Location, Severity
 from ...rule import Rule
 from ..base import NpmManifest, iter_manifest_dependencies
@@ -49,7 +48,6 @@ _GIT_PREFIXES: tuple[str, ...] = (
 _VCS_SHORTHANDS: tuple[str, ...] = (
     "github:", "gitlab:", "bitbucket:", "gist:",
 )
-_SHA_RE = re.compile(r"^[0-9a-f]{40}$", re.IGNORECASE)
 
 
 def _is_git_spec(spec: str) -> bool:

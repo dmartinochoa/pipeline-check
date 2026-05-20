@@ -16,7 +16,7 @@ from __future__ import annotations
 import boto3
 
 from ..base import Finding, Severity
-from ..rule import discover_rules
+from ..rule import apply_rule_metadata, discover_rules
 from ._catalog import ResourceCatalog
 from .base import AWSBaseCheck
 
@@ -151,12 +151,7 @@ class AWSRuleChecks(AWSBaseCheck):
                 catalog.errors.setdefault(svc, f"{type(exc).__name__}: {exc}")
                 continue
             for finding in batch:
-                if not finding.cwe:
-                    finding.cwe = list(rule.cwe)
-                if not finding.incident_refs:
-                    finding.incident_refs = list(rule.incident_refs)
-                if finding.exploit_example is None:
-                    finding.exploit_example = rule.exploit_example
+                apply_rule_metadata(finding, rule)
             pending.append((rule.id, batch))
 
         findings: list[Finding] = []

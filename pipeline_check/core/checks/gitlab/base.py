@@ -20,7 +20,8 @@ from typing import Any
 
 import yaml
 
-from .._yaml_lines import safe_load_yaml_lines
+from .._yaml_files import load_yaml_files
+from .._yaml_lines import safe_load_yaml_lines  # still used by the include resolver
 from ..base import BaseCheck
 
 #: Maximum ``include:`` resolution depth. GitLab itself caps at 100
@@ -32,7 +33,7 @@ _INCLUDE_MAX_DEPTH = 10
 
 # Top-level keys that are *not* jobs. Anything else at the root is a job.
 # https://docs.gitlab.com/ee/ci/yaml/
-_TOPLEVEL_KEYWORDS: set[str] = {
+TOPLEVEL_KEYWORDS: set[str] = {
     "default", "include", "stages", "variables", "workflow",
     "image", "services", "cache", "before_script", "after_script",
     "pages",
@@ -87,23 +88,10 @@ class GitLabContext:
         #      ``.gitlab-ci.yml`` in an untrusted repo can't make the
         #      scanner read ``../../../etc/passwd``).
         scan_root = (root if root.is_dir() else root.parent).resolve()
+        loaded, warnings, skipped = load_yaml_files(files)
         pipelines: list[Pipeline] = []
-        warnings: list[str] = []
-        skipped = 0
-        for f in files:
-            try:
-                text = f.read_text(encoding="utf-8")
-            except (OSError, UnicodeDecodeError) as exc:
-                warnings.append(f"{f}: read error: {exc}")
-                skipped += 1
-                continue
-            try:
-                data = safe_load_yaml_lines(text)
-            except yaml.YAMLError as exc:
-                first_line = str(exc).split("\n", 1)[0]
-                warnings.append(f"{f}: YAML parse error: {first_line}")
-                skipped += 1
-                continue
+        for entry in loaded:
+            data = entry.docs[0]
             if not isinstance(data, dict):
                 continue
             # Resolve local ``include:`` directives so cross-job rules
@@ -113,11 +101,11 @@ class GitLabContext:
             # see the original directive.
             data, include_warnings = _resolve_local_includes(
                 data,
-                base_dir=f.resolve().parent,
+                base_dir=entry.path.resolve().parent,
                 scan_root=scan_root,
             )
-            warnings.extend(f"{f}: {w}" for w in include_warnings)
-            pipelines.append(Pipeline(path=str(f), data=data))
+            warnings.extend(f"{entry.path}: {w}" for w in include_warnings)
+            pipelines.append(Pipeline(path=str(entry.path), data=data))
         ctx = cls(pipelines)
         ctx.files_skipped = skipped
         ctx.warnings = warnings
@@ -306,7 +294,7 @@ def iter_jobs(pipeline: dict[str, Any]) -> Iterator[tuple[str, dict[str, Any]]]:
     for name, value in pipeline.items():
         if not isinstance(name, str):
             continue
-        if name in _TOPLEVEL_KEYWORDS:
+        if name in TOPLEVEL_KEYWORDS:
             continue
         if name.startswith("."):  # hidden / template job
             continue

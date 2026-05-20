@@ -34,9 +34,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
-import yaml
-
-from .._yaml_lines import safe_load_yaml_lines
+from .._yaml_files import load_yaml_files
 from ..base import BaseCheck
 
 
@@ -74,26 +72,13 @@ class CircleCIContext:
                     "config.yml", "config.yaml",
                 }
             )
+        loaded, warnings, skipped = load_yaml_files(files)
         pipelines: list[CircleConfig] = []
-        warnings: list[str] = []
-        skipped = 0
-        for f in files:
-            try:
-                text = f.read_text(encoding="utf-8")
-            except (OSError, UnicodeDecodeError) as exc:
-                warnings.append(f"{f}: read error: {exc}")
-                skipped += 1
-                continue
-            try:
-                data = safe_load_yaml_lines(text)
-            except yaml.YAMLError as exc:
-                first_line = str(exc).split("\n", 1)[0]
-                warnings.append(f"{f}: YAML parse error: {first_line}")
-                skipped += 1
-                continue
+        for entry in loaded:
+            data = entry.docs[0]
             if not isinstance(data, dict):
                 continue
-            pipelines.append(CircleConfig(path=str(f), data=data))
+            pipelines.append(CircleConfig(path=str(entry.path), data=data))
         ctx = cls(pipelines)
         ctx.files_skipped = skipped
         ctx.warnings = warnings
