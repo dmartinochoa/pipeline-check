@@ -19,9 +19,6 @@ on:
 
 permissions:
   contents: read
-  packages: write         # GHCR push via the default GITHUB_TOKEN
-  id-token: write         # SLSA provenance / SBOM attestation OIDC
-  security-events: write  # upload Docker Scout SARIF to the Security tab
 
 # Serialize tag-driven image publishes so two near-simultaneous tag
 # pushes (or a workflow_dispatch racing a tag) don't both try to push
@@ -35,6 +32,11 @@ concurrency:
 jobs:
   publish:
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write         # GHCR push via the default GITHUB_TOKEN
+      id-token: write         # SLSA provenance / SBOM attestation OIDC
+      security-events: write  # upload Docker Scout SARIF to the Security tab
     # Environment binding gates the publish on the protection rules
     # configured under Settings -> Environments -> ``container-
     # registry`` (required reviewers, wait timer, branch policy). The
