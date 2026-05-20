@@ -4892,9 +4892,12 @@ jobs:
 
 **Evidences:** [`PR.PS-05`](#ctrl-pr-ps-05) Installation and execution of unauthorized software are prevented.
 
-**How this is detected.** Detects `curl | bash`, `wget | sh`, and similar patterns that pipe remote content directly into a shell interpreter inside a workflow. An attacker who controls the remote endpoint (or poisons DNS / CDN) gains arbitrary code execution in the CI runner.
+**How this is detected.** Two shapes fire:
 
-**Recommendation.** Download the script to a file, verify its checksum, then execute it. Or vendor the script into the repository.
+1. **Curl-pipe.** ``curl | bash``, ``wget | sh``, and the shell-subshell / python-inline / download-exec / PowerShell variants documented in ``_primitives/remote_script_exec``. An attacker who controls the remote endpoint (or poisons DNS / CDN) gains arbitrary code execution in the CI runner.
+2. **Trusted-installer (Codecov 2021 shape).** A job downloads an executable from a non-vendor host (``curl -o``, ``wget -O``, ``curl > file``) AND any subsequent step in the same job runs that file (``./file`` invocation or ``chmod +x`` setup). Fires even when the body verifies a SHA256 checksum or GPG signature, because the original Codecov compromise modified the uploader BEFORE the publisher's CI signed it. The carve-out is an upstream-attested provenance reference in the same job: ``slsa-verifier``, ``gh attestation verify``, or ``cosign verify-attestation``. Vendor-allowlisted hosts (``rustup.rs``, ``get.docker.com``, etc.) are skipped here the same way the curl-pipe pass skips them.
+
+**Recommendation.** Download the script to a file, verify its checksum, then execute it. Or vendor the script into the repository. For third-party installers (Codecov / similar), a SHA256 check + GPG signature is NOT enough on its own — the Codecov 2021 incident shipped a malicious uploader that was signed by the publisher's own (compromised) CI pipeline. Pin the binary to an upstream-attested provenance reference (``slsa-verifier verify-artifact``, ``gh attestation verify``, ``cosign verify-attestation``) or pin a specific release digest, not just any signature.
 
 **Autofix.** `pipeline_check --fix` will patch this finding automatically. Review the diff before committing; the fixer applies the conservative remediation pattern (e.g. swap a floating tag for the digest it currently resolves to), not the most aggressive one.
 
@@ -4954,6 +4957,8 @@ steps:
 **Evidences:** [`GV.SC-04`](#ctrl-gv-sc-04) Suppliers are known and prioritized by criticality.
 
 **How this is detected.** Detects package-manager invocations that use plain HTTP registries (`--index-url http://`, `--registry=http://`) or disable TLS verification (`--trusted-host`, `--no-verify`) in a workflow. These patterns allow man-in-the-middle injection of malicious packages.
+
+Carve-out: third-party binary installers that download over HTTPS (no insecure registry, no TLS bypass) are GHA-016's trusted-installer shape, not GHA-018's. ``greylag-ci/cicd-goat`` scenario 19 fetches a Codecov-style uploader from a non-vendor HTTPS endpoint, verifies a SHA256 checksum and GPG signature, and runs the binary; GHA-018 deliberately doesn't fire (the source is HTTPS), GHA-016 does (the Codecov-2021 lesson).
 
 **Recommendation.** Use HTTPS registry URLs. Remove --trusted-host and --no-verify flags. Pin to a private registry with TLS.
 
