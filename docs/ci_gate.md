@@ -286,6 +286,12 @@ everything in CI.
 - **`aws`**: rejected with a clear error. Live AWS resources aren't
   bound to git refs; narrow the scope with `--target NAME` instead.
 
+`--diff-base` answers "scan less" by trimming the file set on a
+single run. For the related "what *new* findings did this PR
+introduce vs. the base ref?" question, see
+[`--pr-diff`](pr_diff.md), which runs two scans (one per ref) and
+emits a Markdown delta report shaped for a PR-review comment.
+
 ## Baseline from a git ref: `--baseline-from-git REF:PATH`
 
 `--baseline` reads a JSON report from disk. When baselines are stored

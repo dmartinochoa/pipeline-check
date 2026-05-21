@@ -189,6 +189,7 @@ standards, so a single scan satisfies multiple audit frameworks.
 | **CI gate** | `--fail-on HIGH`, `--min-grade B`, `--max-failures 5`, `--fail-on-check GHA-002`. Any condition trips exit 1. |
 | **Baselines** | `--baseline prior.json` or `--baseline-from-git origin/main:report.json`. Only gate on *new* findings. |
 | **Diff-mode** | `--diff-base origin/main` scans only files changed by the branch. |
+| **PR diff** | `--pr-diff origin/main` re-scans both sides and emits a Markdown PR-comment summarizing which findings the branch introduced, resolved, or preserved. Multiset fingerprint on `(check_id, resource)` so line shifts on unchanged code don't surface as new. Combine with `--fail-on HIGH` to gate the PR on *introduced* findings only. See [docs/pr_diff.md](docs/pr_diff.md). |
 | **Suppressions** | `.pipelinecheckignore` (flat or YAML with `expires:` dates). |
 | **Custom secrets** | `--secret-pattern '^acme_[a-f0-9]{32}$'` extends the credential scanner. |
 | **Glob selection** | `--checks 'GHA-*'` or `--checks '*-008'` to scope checks. |
@@ -251,6 +252,9 @@ full surface.
 
 For PR review comments on the changed lines, see the companion
 [pipeline-check-pr action](.github/actions/pipeline-check-pr/README.md).
+For a single delta-shaped PR comment ("this branch added 3 HIGH
+findings, resolved 1, preserved 12"), use
+[`--pr-diff`](docs/pr_diff.md).
 
 For finer control, the manual three-step form still works:
 
