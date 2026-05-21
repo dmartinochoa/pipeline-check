@@ -996,6 +996,34 @@ CMD ["python", "main.py"]
 
 **Recommendation.** Enable imageScanningConfiguration.scanOnPush on the repository. Consider also enabling Amazon Inspector continuous scanning for ongoing CVE detection against images already in the registry.
 
+**Proof of exploit.**
+
+```
+# Vulnerable: ECR repo with ``imageScanningConfiguration.
+# scanOnPush: false``. Every pushed image lands without
+# a vulnerability scan; the registry's downstream consumers
+# pull whatever CVE-laden base layer the build produced.
+import boto3
+ecr = boto3.client('ecr')
+ecr.create_repository(
+    repositoryName='myapp',
+    imageScanningConfiguration={'scanOnPush': False},
+)
+
+# Safe: enable scan-on-push. Pair with Inspector v2
+# enhanced scanning (ECR-007) for continuous re-scans
+# against the latest CVE database. Block deploys on
+# scan failures via an Inspector finding -> EventBridge
+# -> CodePipeline gate.
+ecr.put_image_scanning_configuration(
+    repositoryName='myapp',
+    imageScanningConfiguration={'scanOnPush': True},
+)
+# Enable enhanced scanning org-wide:
+inspector = boto3.client('inspector2')
+inspector.enable(resourceTypes=['ECR'])
+```
+
 **Source:** [`ECR-001`](../providers/aws.md) in the [AWS provider](../providers/aws.md).
 
 ### `ECR-007`: Inspector v2 enhanced scanning disabled for ECR <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-ecr-007 }

@@ -25,6 +25,35 @@ RULE = Rule(
         "resource ARN, and means the rule fans out to a much "
         "larger set of consumers than the author meant."
     ),
+    exploit_example=(
+        "# Vulnerable: an EventBridge rule with a wildcard ARN\n"
+        "# target. The rule fires events at\n"
+        "# ``arn:aws:lambda:us-east-1:123456789012:function:*``\n"
+        "# — every Lambda in the account. A buggy event source\n"
+        "# (or a deliberately crafted EventBridge event) can\n"
+        "# now trigger arbitrary functions with whatever\n"
+        "# payload the event carries.\n"
+        "import boto3\n"
+        "eb = boto3.client('events')\n"
+        "eb.put_targets(\n"
+        "    Rule='on-codebuild-failure',\n"
+        "    Targets=[{\n"
+        "        'Id': '1',\n"
+        "        'Arn': 'arn:aws:lambda:us-east-1:123456789012:function:*',\n"
+        "    }]\n"
+        ")\n"
+        "\n"
+        "# Safe: target a specific Lambda by full ARN. The\n"
+        "# event reaches exactly the function it was meant for;\n"
+        "# unrelated functions stay unbothered.\n"
+        "eb.put_targets(\n"
+        "    Rule='on-codebuild-failure',\n"
+        "    Targets=[{\n"
+        "        'Id': '1',\n"
+        "        'Arn': 'arn:aws:lambda:us-east-1:123456789012:function:notify-oncall',\n"
+        "    }]\n"
+        ")"
+    ),
 )
 
 

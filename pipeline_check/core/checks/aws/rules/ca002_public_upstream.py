@@ -30,6 +30,34 @@ RULE = Rule(
         "with an allow-list is the same risk shape solved by an "
         "explicit allowlist."
     ),
+    exploit_example=(
+        "# Vulnerable: a CodeArtifact repository wired to a public\n"
+        "# upstream (npm.org / pypi.org / maven-central) without\n"
+        "# allow-listing. Internal package names harvested from\n"
+        "# repo manifests can be claimed on the public upstream\n"
+        "# with a higher version; CodeArtifact resolves them via\n"
+        "# the public upstream and ships attacker code to every\n"
+        "# consumer (Birsan dependency confusion).\n"
+        "import boto3\n"
+        "ca = boto3.client('codeartifact')\n"
+        "ca.create_repository(\n"
+        "    domain='myorg', repository='shared',\n"
+        "    upstreams=[{'repositoryName': 'public-pypi-store'}],\n"
+        "    externalConnections=['public:pypi']\n"
+        ")\n"
+        "\n"
+        "# Safe: drop the public external connection. Mirror only\n"
+        "# the packages your org actually needs into a curated\n"
+        "# internal upstream so an arbitrary public publisher\n"
+        "# can't poison resolution.\n"
+        "ca.delete_repository_permissions_policy(\n"
+        "    domain='myorg', repository='shared'\n"
+        ")\n"
+        "ca.disassociate_external_connection(\n"
+        "    domain='myorg', repository='shared',\n"
+        "    externalConnection='public:pypi'\n"
+        ")"
+    ),
 )
 
 _PUBLIC_PREFIXES = ("public:",)

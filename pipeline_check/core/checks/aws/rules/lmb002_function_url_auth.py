@@ -26,6 +26,31 @@ RULE = Rule(
         "function, the rule fires regardless because the IAM-side "
         "control isn't there."
     ),
+    exploit_example=(
+        "# Vulnerable: a Lambda Function URL with\n"
+        "# ``AuthType: NONE``. The URL is on the public internet\n"
+        "# and requires no authentication. Anyone who learns the\n"
+        "# URL can invoke the function (and any downstream\n"
+        "# service it can reach); functions that read from RDS\n"
+        "# or write to S3 become a free Internet -> AWS-internal\n"
+        "# bridge.\n"
+        "import boto3\n"
+        "lambdacli = boto3.client('lambda')\n"
+        "lambdacli.create_function_url_config(\n"
+        "    FunctionName='process-payment',\n"
+        "    AuthType='NONE',\n"
+        ")\n"
+        "\n"
+        "# Safe: ``AuthType: AWS_IAM`` requires the caller to\n"
+        "# sign the request with IAM credentials. The URL is\n"
+        "# still reachable from the internet, but only IAM\n"
+        "# principals with ``lambda:InvokeFunctionUrl`` on the\n"
+        "# function can call it.\n"
+        "lambdacli.update_function_url_config(\n"
+        "    FunctionName='process-payment',\n"
+        "    AuthType='AWS_IAM',\n"
+        ")"
+    ),
 )
 
 

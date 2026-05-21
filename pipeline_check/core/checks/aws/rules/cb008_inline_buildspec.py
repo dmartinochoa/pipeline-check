@@ -24,6 +24,34 @@ RULE = Rule(
         "touching the repository, no PR review, no branch protection, no audit "
         "of what changed. Store buildspec.yml in the repo instead."
     ),
+    exploit_example=(
+        "# Vulnerable: ``buildspec`` is inline JSON on the\n"
+        "# project, not sourced from a protected repo. Anyone\n"
+        "# with ``codebuild:UpdateProject`` (or who can call the\n"
+        "# console UI) can rewrite the build steps without a\n"
+        "# code-review trail. CodeBuild then runs the rewritten\n"
+        "# spec with the project's role.\n"
+        "import boto3, json\n"
+        "cb = boto3.client('codebuild')\n"
+        "cb.update_project(\n"
+        "    name='my-build',\n"
+        "    source={'type': 'NO_SOURCE',\n"
+        "            'buildspec': json.dumps({'phases': {'build': {'commands': ['malicious']}}})}\n"
+        ")\n"
+        "\n"
+        "# Safe: source ``buildspec.yml`` from a protected repo\n"
+        "# branch. Changes to the build then route through PR\n"
+        "# review on the SCM side, and the AWS-side ``UpdateProject``\n"
+        "# call no longer carries the build's logic.\n"
+        "cb.update_project(\n"
+        "    name='my-build',\n"
+        "    source={\n"
+        "        'type': 'GITHUB',\n"
+        "        'location': 'https://github.com/myorg/myrepo.git',\n"
+        "        'buildspec': 'ci/buildspec.yml'   # path in the repo\n"
+        "    }\n"
+        ")"
+    ),
 )
 
 

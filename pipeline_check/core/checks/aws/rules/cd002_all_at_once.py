@@ -32,6 +32,30 @@ RULE = Rule(
         "shift-then-watch shape that lets monitors catch a "
         "regression before it's universal."
     ),
+    exploit_example=(
+        "# Vulnerable: ``CodeDeployDefault.AllAtOnce``. Every\n"
+        "# deploy ships to every instance simultaneously. A bad\n"
+        "# build (or a malicious one) takes the entire fleet down\n"
+        "# at once; there's no canary window in which a regression\n"
+        "# could be caught before customer-facing impact.\n"
+        "import boto3\n"
+        "cd = boto3.client('codedeploy')\n"
+        "cd.create_deployment_group(\n"
+        "    applicationName='my-app',\n"
+        "    deploymentGroupName='prod',\n"
+        "    deploymentConfigName='CodeDeployDefault.AllAtOnce',\n"
+        "    # ...\n"
+        ")\n"
+        "\n"
+        "# Safe: a canary / linear / blue-green config. Bad\n"
+        "# deploys are caught before they reach the full fleet.\n"
+        "cd.update_deployment_group(\n"
+        "    applicationName='my-app',\n"
+        "    currentDeploymentGroupName='prod',\n"
+        "    deploymentConfigName='CodeDeployDefault.LambdaCanary10Percent5Minutes',\n"
+        "    # or 'CodeDeployDefault.HalfAtATime' / 'CodeDeployDefault.OneAtATime'\n"
+        ")"
+    ),
 )
 
 

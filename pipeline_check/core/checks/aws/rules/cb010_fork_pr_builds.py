@@ -27,6 +27,35 @@ RULE = Rule(
         "arbitrary code with CI privileges and exfiltrate secrets. Restrict "
         "to known contributors with an ``ACTOR_ACCOUNT_ID`` pattern group."
     ),
+    exploit_example=(
+        "# Vulnerable: the CodeBuild webhook filter accepts\n"
+        "# ``PULL_REQUEST_CREATED`` / ``PULL_REQUEST_UPDATED``\n"
+        "# events from any actor. A fork PR triggers the build\n"
+        "# with the project's full role attached — including\n"
+        "# any production secrets the role can read.\n"
+        "import boto3\n"
+        "cb = boto3.client('codebuild')\n"
+        "cb.create_webhook(\n"
+        "    projectName='my-build',\n"
+        "    filterGroups=[[\n"
+        "        {'type': 'EVENT', 'pattern': 'PULL_REQUEST_CREATED'},\n"
+        "        # no ACTOR_ACCOUNT_ID filter\n"
+        "    ]]\n"
+        ")\n"
+        "\n"
+        "# Safe: add an ``ACTOR_ACCOUNT_ID`` filter that allow-\n"
+        "# lists only internal accounts (and / or a\n"
+        "# ``FILE_PATH`` filter that excludes paths an attacker\n"
+        "# can modify in a fork PR).\n"
+        "cb.update_webhook(\n"
+        "    projectName='my-build',\n"
+        "    filterGroups=[[\n"
+        "        {'type': 'EVENT', 'pattern': 'PULL_REQUEST_CREATED'},\n"
+        "        {'type': 'ACTOR_ACCOUNT_ID',\n"
+        "         'pattern': '12345678|23456789|34567890'}\n"
+        "    ]]\n"
+        ")"
+    ),
 )
 
 _PR_EVENTS = {

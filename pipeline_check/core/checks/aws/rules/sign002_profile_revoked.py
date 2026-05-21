@@ -27,6 +27,36 @@ RULE = Rule(
         "Warn``, deploy with a CloudWatch warning the operator "
         "rarely reads)."
     ),
+    exploit_example=(
+        "# Vulnerable: AWS Signer profile is revoked or\n"
+        "# inactive. Code-signing pipelines that route through\n"
+        "# this profile silently fail (or fall back to\n"
+        "# unsigned artifacts if the gate is permissive); the\n"
+        "# unsigned artifacts then deploy without integrity\n"
+        "# verification.\n"
+        "import boto3\n"
+        "signer = boto3.client('signer')\n"
+        "signer.get_signing_profile(profileName='prod-lambda-signer')\n"
+        "# {'status': 'Revoked', 'statusReason': 'compromise suspected'}\n"
+        "\n"
+        "# Safe: investigate the revocation, rotate to a new\n"
+        "# profile if compromise is confirmed, or restore the\n"
+        "# original if revoked in error. Either way, the\n"
+        "# downstream pipeline reference (CodeSigningConfig on\n"
+        "# Lambdas) must be updated to point at the active\n"
+        "# profile so signed deploys resume.\n"
+        "new_prof = signer.put_signing_profile(\n"
+        "    profileName='prod-lambda-signer-v2',\n"
+        "    platformId='AWSLambda-SHA384-ECDSA',\n"
+        ")\n"
+        "lambdacli = boto3.client('lambda')\n"
+        "lambdacli.update_code_signing_config(\n"
+        "    CodeSigningConfigArn='arn:aws:lambda:us-east-1:123:code-signing-config:csc-...',\n"
+        "    AllowedPublishers={\n"
+        "        'SigningProfileVersionArns': [new_prof['profileVersionArn']]\n"
+        "    },\n"
+        ")"
+    ),
 )
 
 

@@ -35,6 +35,36 @@ RULE = Rule(
         "CodeConnections (CodeStar) is the AWS-managed alternative "
         "with token refresh and revocation."
     ),
+    exploit_example=(
+        "# Vulnerable: CodeBuild source auth uses a stored\n"
+        "# long-lived token (``OAUTH`` / ``PERSONAL_ACCESS_TOKEN``\n"
+        "# / ``BASIC_AUTH``). The credential lives on the account\n"
+        "# indefinitely, never rotates, and isn't revocable from\n"
+        "# the AWS side. Leak = persistent SCM access.\n"
+        "import boto3\n"
+        "cb = boto3.client('codebuild')\n"
+        "cb.import_source_credentials(\n"
+        "    authType='PERSONAL_ACCESS_TOKEN',\n"
+        "    serverType='GITHUB',\n"
+        "    token='ghp_long_lived_pat_abc123...'   # never expires\n"
+        ")\n"
+        "\n"
+        "# Safe: use a CodeConnections (formerly CodeStar\n"
+        "# Connections) ARN as the source. The GitHub user can\n"
+        "# revoke the connection without AWS-side coordination;\n"
+        "# AWS refreshes the underlying token automatically.\n"
+        "cb.update_project(\n"
+        "    name='my-build',\n"
+        "    source={\n"
+        "        'type': 'GITHUB',\n"
+        "        'location': 'https://github.com/myorg/myrepo.git',\n"
+        "        'auth': {\n"
+        "            'type': 'CODECONNECTIONS',\n"
+        "            'resource': 'arn:aws:codeconnections:us-east-1:123:connection/abc-...'\n"
+        "        }\n"
+        "    }\n"
+        ")"
+    ),
 )
 
 

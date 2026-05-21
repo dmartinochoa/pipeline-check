@@ -32,6 +32,38 @@ RULE = Rule(
         "data-plane subset (``Decrypt`` / ``GenerateDataKey`` / "
         "``Encrypt``)."
     ),
+    exploit_example=(
+        "# Vulnerable: a KMS key policy with ``Action: kms:*``\n"
+        "# (or ``Action: '*'``) on ``Resource: '*'`` granted to\n"
+        "# an IAM principal. The principal can ScheduleKeyDeletion\n"
+        "# (effective key destruction in 7 days minimum) and\n"
+        "# PutKeyPolicy (rewrite the trust on the key itself).\n"
+        "# A compromise of that principal collapses every secret\n"
+        "# encrypted with the key.\n"
+        "{\n"
+        "  \"Effect\": \"Allow\",\n"
+        "  \"Principal\": {\"AWS\": \"arn:aws:iam::123:role/CI\"},\n"
+        "  \"Action\": \"kms:*\",\n"
+        "  \"Resource\": \"*\"\n"
+        "}\n"
+        "\n"
+        "# Safe: enumerate the verbs the workload actually needs\n"
+        "# (typically Encrypt / Decrypt / GenerateDataKey for\n"
+        "# app workloads; CreateGrant if needed). Key-admin verbs\n"
+        "# (PutKeyPolicy, ScheduleKeyDeletion) stay scoped to a\n"
+        "# separate, narrowly-bound admin role.\n"
+        "{\n"
+        "  \"Effect\": \"Allow\",\n"
+        "  \"Principal\": {\"AWS\": \"arn:aws:iam::123:role/CI\"},\n"
+        "  \"Action\": [\n"
+        "    \"kms:Encrypt\",\n"
+        "    \"kms:Decrypt\",\n"
+        "    \"kms:GenerateDataKey\",\n"
+        "    \"kms:DescribeKey\"\n"
+        "  ],\n"
+        "  \"Resource\": \"*\"\n"
+        "}"
+    ),
 )
 
 
