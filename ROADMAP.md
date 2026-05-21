@@ -4,6 +4,47 @@ What's planned, what's shipped, and what's deliberately out of scope.
 
 ## Shipped
 
+- **GitHub Actions cicd-goat coverage push (v1.3.0)** —
+  Two new rules and one widened taint hop, plus five existing-rule
+  widenings, close eleven ``greylag-ci/cicd-goat`` scenarios in one
+  cycle (10 / 15 / 17 / 19 / 20 / 21 / 22 / 23 / 24 / 26 / 27).
+  GHA-062 walks the workflow's containing repo for sibling IaC
+  (``*trust-polic*.json`` whose ``StringLike :sub`` matches more
+  than one repo, ``*.tf`` with a ``google_iam_workload_identity_
+  pool_provider`` ``startsWith('<org>/')`` predicate). GHA-061
+  fires when an App-token mint step
+  (``actions/create-github-app-token`` and siblings) omits a
+  ``permissions:`` filter on the token's scope. GHA-008 picks up a
+  keyed-hex secret shape (40-char lowercase hex bound to a
+  credential-named YAML key) for legacy-unprefixed vendor tokens.
+  TAINT-002 widens to propagate through ``env: { LABELS: "${{ ... }}" }``
+  shell-var indirection AND ``strategy.matrix.<axis>:
+  ${{ fromJSON(needs.<job>.outputs.<name>) }}`` matrix-axis
+  expansion (the GitHub Security Lab matrix-injection writeup
+  shape). Five existing rules widened: GHA-016 trusted-installer
+  (Codecov 2021), GHA-019 ArtiPACKED (.git-in-artifact upload),
+  GHA-033 shell-trace + secret-env, GHA-049 github-actions[bot]
+  identity assumption + ``git push``, GHA-057 third-party-webhook
+  exfil POST. The CLI also gained a one-line stderr hint when
+  ``--pipeline github`` is run alone in a repo that also ships
+  ``package.json`` files (depth-bounded cwd walk, skips
+  ``node_modules`` / build / vendor), since the npm provider
+  catches dependency-confusion / lockfile-integrity issues the
+  github pipeline can't see.
+- **Auto-publish GitHub Release on tag push (v1.3.0)** —
+  ``release.yml`` gained a ``publish-github-release`` job that
+  extracts the matching ``## [X.Y.Z]`` section from
+  ``CHANGELOG.md`` (literal awk field-equality match, not regex,
+  since ``[X.Y.Z]`` brackets would be a character class) and runs
+  ``gh release create $TAG --notes-file ... --verify-tag --latest``.
+  The Marketplace tile for the bundled composite action follows
+  the latest *published Release*, not the latest tag — v1.1.0 and
+  v1.2.0 both shipped to PyPI on tag push without manually
+  created Releases, which stranded the Marketplace tile on
+  v1.0.5 for two cycles. The new job ``needs: [publish-pypi]`` so
+  the Release only fires after the wheel is on PyPI, and is
+  tag-push-gated so workflow re-runs against an existing tag
+  don't race. Idempotent via ``gh release view ... || create``.
 - v1.0.x — first production-stable release. Carries every v0.4 / v0.5
   / v0.6 item folded in from the pre-1.0 cycles
   (STRIDE threat model, MCP server, SCM provider, composite-action
