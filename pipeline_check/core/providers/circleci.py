@@ -30,7 +30,7 @@ class CircleCIProvider(BaseProvider):
         return CircleCIContext.from_path(circleci_path)
 
     @property
-    def check_classes(self) -> list[type[BaseCheck]]:
+    def check_classes(self) -> list[type[BaseCheck[Any]]]:
         return [CircleCIPipelineChecks]
 
     def inventory(self, context: CircleCIContext) -> list[Component]:

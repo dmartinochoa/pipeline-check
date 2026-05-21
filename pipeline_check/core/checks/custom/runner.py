@@ -40,7 +40,7 @@ _YAML_PROVIDERS_DOC_LIST_ATTR: dict[str, str] = {
 def make_custom_rules_check(
     provider_name: str,
     loaded: LoadedCustomRules,
-) -> type[BaseCheck]:
+) -> type[BaseCheck[Any]]:
     """Return a BaseCheck subclass that runs every custom rule for *provider_name*.
 
     The returned class captures *provider_name* and the rules list in
@@ -53,7 +53,7 @@ def make_custom_rules_check(
     )
     doc_attr: str | None = _YAML_PROVIDERS_DOC_LIST_ATTR.get(provider_name)
 
-    class CustomRulesCheck(BaseCheck):
+    class CustomRulesCheck(BaseCheck[Any]):
         """Run every loaded custom rule for one provider."""
 
         # Class name surfaces in the verbose log line ("running

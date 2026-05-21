@@ -17,6 +17,7 @@ from __future__ import annotations
 import re
 from dataclasses import dataclass
 
+from .._primitives.compromised import match_version
 from ..base import Severity
 
 
@@ -31,11 +32,11 @@ class CompromisedPackage:
     version_pattern: re.Pattern[str] | None = None
 
     def matches(self, version: str) -> bool:
-        if any(version == bad for bad in self.malicious_versions):
-            return True
-        if self.version_pattern is not None and self.version_pattern.search(version):
-            return True
-        return False
+        return match_version(
+            version,
+            malicious_versions=self.malicious_versions,
+            version_pattern=self.version_pattern,
+        )
 
 
 _PEP503_RE = re.compile(r"[-_.]+")

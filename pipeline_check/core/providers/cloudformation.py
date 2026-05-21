@@ -38,7 +38,7 @@ class CloudFormationProvider(BaseProvider):
         return CloudFormationContext.from_path(cfn_template)
 
     @property
-    def check_classes(self) -> list[type[BaseCheck]]:
+    def check_classes(self) -> list[type[BaseCheck[Any]]]:
         # Single orchestrator that auto-discovers every rule under
         # ``pipeline_check.core.checks.cloudformation.rules``. The
         # legacy per-service check classes still exist for the

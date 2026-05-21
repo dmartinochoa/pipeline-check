@@ -67,6 +67,18 @@ _PROVIDER_PACKAGES: tuple[tuple[str, str, str], ...] = (
     ("helm",       "pipeline_check.core.checks.helm.rules",       "Helm"),
     ("oci",        "pipeline_check.core.checks.oci.rules",        "OCI manifest"),
     ("scm",        "pipeline_check.core.checks.scm.rules",        "SCM"),
+    # cloudformation, terraform, npm, pypi each ship a rule-based
+    # ``rules/`` package now. Listing them BEFORE aws preserves the
+    # historical "AWS wins for shared IDs (IAM-001, S3-001, ...)"
+    # behavior in the flat ``check_id -> _CheckRow`` index, while
+    # exposing the CFN/TF/npm/pypi-only IDs (CF-001..003, TF-001..003,
+    # NPM-NNN, PYPI-NNN) so their per-rule prose surfaces in the
+    # standards docs instead of falling through to the stale
+    # _FALLBACK stubs.
+    ("cloudformation", "pipeline_check.core.checks.cloudformation.rules", "CloudFormation"),
+    ("terraform",  "pipeline_check.core.checks.terraform.rules",  "Terraform"),
+    ("npm",        "pipeline_check.core.checks.npm.rules",        "npm"),
+    ("pypi",       "pipeline_check.core.checks.pypi.rules",       "PyPI"),
     ("aws",        "pipeline_check.core.checks.aws.rules",        "AWS"),
     ("maven",      "pipeline_check.core.checks.maven.rules",      "maven"),
 )
@@ -117,16 +129,13 @@ _FALLBACK: dict[str, tuple[str, str, str, str]] = {
     "S3-000":   ("S3 API access failed", "INFO", "aws", "AWS"),
     "SM-000":   ("Secrets Manager API access failed", "INFO", "aws", "AWS"),
     "SSM-000":  ("SSM Parameter Store API access failed", "INFO", "aws", "AWS"),
-    # Legacy class-based Terraform / CloudFormation checks
-    "TF-001":   ("aws_iam_access_key declares a long-lived access key", "CRITICAL", "terraform", "Terraform"),
-    "TF-002":   ("Resource attribute carries a hard-coded secret shape", "CRITICAL", "terraform", "Terraform"),
-    "TF-003":   ("CodeBuild VPC shares its VPC with a public subnet", "HIGH", "terraform", "Terraform"),
-    "CF-001":   ("Inline credential parameter on a CloudFormation resource",
-                 "HIGH", "cloudformation", "CloudFormation"),
-    "CF-002":   ("CloudFormation parameter declares a default secret value",
-                 "HIGH", "cloudformation", "CloudFormation"),
-    "CF-003":   ("CloudFormation resource opens a 0.0.0.0/0 ingress",
-                 "HIGH", "cloudformation", "CloudFormation"),
+    # NB: TF-001..003 and CF-001..003 used to live here as legacy
+    # class-based stubs (e.g. ``"Inline credential parameter on a
+    # CloudFormation resource"``) that pre-dated the rule-based
+    # rewrite. They're now sourced from the
+    # ``terraform.rules`` / ``cloudformation.rules`` registries via
+    # ``_PROVIDER_PACKAGES`` so the standards docs render the real
+    # rule titles + prose instead of stale stubs.
 }
 
 
@@ -138,10 +147,10 @@ class _CheckRow:
     The prose fields (``docs_note``, ``recommendation``, ``known_fp``,
     ``incident_refs``, ``exploit_example``) are taken straight from the
     Rule registry and rendered verbatim in the details block. For
-    ``_FALLBACK`` entries (AWS degraded-mode synthesized findings and
-    the legacy class-based Terraform / CloudFormation checks), the
-    prose fields are empty — the details block falls back to a short
-    auto-generated stub pointing at the provider page.
+    ``_FALLBACK`` entries (the AWS degraded-mode synthesized findings,
+    e.g. ``IAM-000`` "IAM API access failed"), the prose fields are
+    empty — the details block falls back to a short auto-generated
+    stub pointing at the provider page.
     """
 
     check_id: str

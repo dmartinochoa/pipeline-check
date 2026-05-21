@@ -41,7 +41,7 @@ class BaseProvider(abc.ABC):
 
     @property
     @abc.abstractmethod
-    def check_classes(self) -> list[type[BaseCheck]]:
+    def check_classes(self) -> list[type[BaseCheck[Any]]]:
         """Return the ordered list of check classes for this provider.
 
         Adding a new check to an existing provider only requires updating this

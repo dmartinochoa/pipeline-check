@@ -34,7 +34,7 @@ class DroneProvider(BaseProvider):
         return DroneContext.from_path(drone_path)
 
     @property
-    def check_classes(self) -> list[type[BaseCheck]]:
+    def check_classes(self) -> list[type[BaseCheck[Any]]]:
         return [DronePipelineChecks]
 
     def inventory(self, context: DroneContext) -> list[Component]:

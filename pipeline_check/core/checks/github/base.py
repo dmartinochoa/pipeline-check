@@ -109,7 +109,7 @@ class GitHubContext:
         return ctx
 
 
-class GitHubBaseCheck(BaseCheck):
+class GitHubBaseCheck(BaseCheck[GitHubContext]):
     """Base class for GitHub Actions workflow checks."""
 
     PROVIDER = "github"

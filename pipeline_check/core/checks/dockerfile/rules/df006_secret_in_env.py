@@ -27,6 +27,31 @@ RULE = Rule(
         "credential-named keys (``API_KEY``, ``DB_PASSWORD``, "
         "``SECRET_TOKEN``) when the value is a non-empty literal."
     ),
+    exploit_example=(
+        "# Vulnerable: ``API_KEY=sk_live_...`` lands in the image's\n"
+        "# layer history. ``docker history --no-trunc <image>`` (any\n"
+        "# user who can pull the image) prints the literal value\n"
+        "# even when a later layer overwrites or unsets it. Public\n"
+        "# images on Docker Hub are pulled and inspected en masse by\n"
+        "# secret scanners; private images leak the same way to\n"
+        "# anyone who exfils the registry credentials.\n"
+        "FROM node:20-alpine@sha256:abc123...\n"
+        "ENV API_KEY=sk_live_abc123def456ghi789\n"
+        "COPY . /app\n"
+        "RUN cd /app && npm ci\n"
+        "\n"
+        "# Safe: keep the secret out of the image entirely. Use\n"
+        "# BuildKit's ``--mount=type=secret`` for build-time access\n"
+        "# (the secret never lands in any layer), and runtime\n"
+        "# injection (``docker run -e API_KEY=$VAULT_API_KEY``) for\n"
+        "# the running container. The Dockerfile only references\n"
+        "# the secret by mount path or env-var name.\n"
+        "# syntax=docker/dockerfile:1.7\n"
+        "FROM node:20-alpine@sha256:abc123...\n"
+        "COPY . /app\n"
+        "RUN --mount=type=secret,id=api_key \\\n"
+        "    cd /app && API_KEY=$(cat /run/secrets/api_key) npm ci"
+    ),
 )
 
 

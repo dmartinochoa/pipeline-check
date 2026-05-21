@@ -35,7 +35,7 @@ class BuildkiteProvider(BaseProvider):
         return BuildkiteContext.from_path(buildkite_path)
 
     @property
-    def check_classes(self) -> list[type[BaseCheck]]:
+    def check_classes(self) -> list[type[BaseCheck[Any]]]:
         return [BuildkitePipelineChecks]
 
     def inventory(self, context: BuildkiteContext) -> list[Component]:

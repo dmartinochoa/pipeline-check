@@ -45,6 +45,31 @@ RULE = Rule(
         "build than before. Digest pinning would have surfaced the "
         "change as a checksum mismatch instead of a silent swap.",
     ),
+    exploit_example=(
+        "# Vulnerable: ``python:3.12-slim`` is a tag, and tags on\n"
+        "# Docker Hub are mutable. Python's publishers can (and do)\n"
+        "# repoint the same tag at a new image on every point\n"
+        "# release, and namespace takeovers / hijacked publisher\n"
+        "# accounts can silently swap a malicious image under the\n"
+        "# existing tag. The next rebuild picks up whatever's there\n"
+        "# now, with no signal to the consumer that the base\n"
+        "# changed.\n"
+        "FROM python:3.12-slim\n"
+        "COPY . /app\n"
+        "RUN pip install --require-hashes -r /app/requirements.txt\n"
+        "CMD [\"python\", \"/app/main.py\"]\n"
+        "\n"
+        "# Safe: pin to the immutable sha256 digest. The leading\n"
+        "# comment documents which tag the digest corresponds to.\n"
+        "# Renovate / Dependabot's Docker ecosystem updaters resolve\n"
+        "# and bump these on a schedule so the pin doesn't drift\n"
+        "# behind security patches.\n"
+        "# python:3.12.1-slim (refreshed YYYY-MM-DD)\n"
+        "FROM python:3.12-slim@sha256:abc123...\n"
+        "COPY . /app\n"
+        "RUN pip install --require-hashes -r /app/requirements.txt\n"
+        "CMD [\"python\", \"/app/main.py\"]"
+    ),
 )
 
 

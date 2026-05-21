@@ -134,3 +134,87 @@ def test_standards_doc_references_every_control(standard) -> None:
                 f"generated doc. Regenerate with "
                 f"gen_standards_docs.py."
             )
+
+
+# ──────────────────────────────────────────────────────────────────────
+# _PROVIDER_PACKAGES coverage guard
+# ──────────────────────────────────────────────────────────────────────
+#
+# ``gen_standards_docs.py`` carries a hand-curated ``_PROVIDER_PACKAGES``
+# tuple that enumerates which provider rule packages feed the standards-
+# doc rendering. A provider that adds a ``rules/`` package on disk but
+# isn't appended here silently disappears from the standards docs:
+# nothing crashes, the script still renders, the existing drift guards
+# still pass, but the new provider's per-rule prose just doesn't appear.
+# That's exactly the bug 8766da7 fixed (cloudformation / terraform /
+# npm / pypi were missing).
+#
+# This guard walks ``pipeline_check/core/checks/<provider>/rules/`` and
+# asserts each one has a matching entry in ``_PROVIDER_PACKAGES``. The
+# import side-loads the script module without executing main(), so the
+# tuple is read directly.
+
+
+def _provider_packages_from_script() -> set[str]:
+    """Return the set of package FQNs registered in ``_PROVIDER_PACKAGES``.
+
+    Extracts via regex rather than importing the module, since
+    ``gen_standards_docs.py`` defines a ``@dataclass`` at import time
+    and loading it under a synthetic module name via
+    ``importlib.util.spec_from_file_location`` confuses
+    ``dataclasses.dataclass`` (it looks up the class's module in
+    ``sys.modules`` and doesn't find it). The regex is anchored on
+    the unique ``pipeline_check.core.checks.<X>.rules`` shape so it
+    can't pick up unrelated strings.
+    """
+    import re
+
+    text = (REPO / "scripts" / "gen_standards_docs.py").read_text(
+        encoding="utf-8",
+    )
+    pattern = re.compile(
+        r'"(pipeline_check\.core\.checks\.[A-Za-z_]+\.rules)"',
+    )
+    return set(pattern.findall(text))
+
+
+def _provider_packages_on_disk() -> set[str]:
+    """Return every package FQN that ships a ``rules/`` subdirectory."""
+    checks_root = REPO / "pipeline_check" / "core" / "checks"
+    found: set[str] = set()
+    for rules_dir in checks_root.glob("*/rules"):
+        if not rules_dir.is_dir():
+            continue
+        # Skip if the directory contains no rule modules (only ``__init__``
+        # plus underscore-prefixed helpers).
+        rule_files = [
+            p for p in rules_dir.glob("*.py")
+            if p.stem != "__init__" and not p.stem.startswith("_")
+        ]
+        if not rule_files:
+            continue
+        provider = rules_dir.parent.name
+        found.add(f"pipeline_check.core.checks.{provider}.rules")
+    return found
+
+
+def test_gen_standards_docs_covers_every_provider_with_rules() -> None:
+    """Every provider that ships a ``rules/`` package must appear in
+    ``gen_standards_docs.py:_PROVIDER_PACKAGES``.
+
+    Otherwise the provider's rule-based check modules silently drop
+    out of the standards-doc rendering — the script still renders
+    cleanly, the drift guard above still passes, but the per-rule
+    prose simply doesn't appear. 8766da7 fixed exactly this gap for
+    cloudformation / terraform / npm / pypi.
+    """
+    registered = _provider_packages_from_script()
+    on_disk = _provider_packages_on_disk()
+    missing = sorted(on_disk - registered)
+    assert not missing, (
+        "Provider(s) ship a rules/ package but aren't in "
+        "scripts/gen_standards_docs.py:_PROVIDER_PACKAGES, so their "
+        "rule-based check modules won't surface in the standards "
+        f"docs: {missing}. Append the (slug, pkg_fqn, title) tuple "
+        "for each missing provider."
+    )

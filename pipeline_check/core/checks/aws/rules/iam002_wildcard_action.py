@@ -21,6 +21,44 @@ RULE = Rule(
         "absorbs every new IAM action AWS adds, so the role's "
         "authority grows without any local change."
     ),
+    exploit_example=(
+        "# Vulnerable: the role can do literally anything in S3.\n"
+        "# Any compromise of any pipeline that assumes this role\n"
+        "# (poisoned action, leaked credential, malicious build\n"
+        "# step) can read, write, or delete every object in every\n"
+        "# bucket the account owns. Privilege escalation also hides\n"
+        "# inside the wildcard: ``s3:PutBucketPolicy`` is part of\n"
+        "# ``s3:*``, so the attacker can open the bucket to the\n"
+        "# public after the initial foothold.\n"
+        "{\n"
+        '  "Version": "2012-10-17",\n'
+        '  "Statement": [{\n'
+        '    "Effect": "Allow",\n'
+        '    "Action": "s3:*",\n'
+        '    "Resource": "*"\n'
+        "  }]\n"
+        "}\n"
+        "\n"
+        "# Safe: enumerate the actions the pipeline actually needs\n"
+        "# and scope ``Resource`` to the specific bucket. A new\n"
+        "# requirement then triggers a policy review instead of\n"
+        "# silently widening authority.\n"
+        "{\n"
+        '  "Version": "2012-10-17",\n'
+        '  "Statement": [{\n'
+        '    "Effect": "Allow",\n'
+        '    "Action": [\n'
+        '      "s3:GetObject",\n'
+        '      "s3:PutObject",\n'
+        '      "s3:ListBucket"\n'
+        "    ],\n"
+        '    "Resource": [\n'
+        '      "arn:aws:s3:::my-build-artifacts",\n'
+        '      "arn:aws:s3:::my-build-artifacts/*"\n'
+        "    ]\n"
+        "  }]\n"
+        "}"
+    ),
 )
 
 

@@ -48,7 +48,7 @@ class GitHubProvider(BaseProvider):
         return GitHubContext.from_path(gha_path)
 
     @property
-    def check_classes(self) -> list[type[BaseCheck]]:
+    def check_classes(self) -> list[type[BaseCheck[Any]]]:
         return [WorkflowChecks]
 
     def post_filter(

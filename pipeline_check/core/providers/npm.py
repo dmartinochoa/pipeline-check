@@ -48,7 +48,7 @@ class NpmProvider(BaseProvider):
         return NpmContext.from_path(npm_path)
 
     @property
-    def check_classes(self) -> list[type[BaseCheck]]:
+    def check_classes(self) -> list[type[BaseCheck[Any]]]:
         return [NpmChecks]
 
     def post_filter(

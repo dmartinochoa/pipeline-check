@@ -85,7 +85,7 @@ class CircleCIContext:
         return ctx
 
 
-class CircleCIBaseCheck(BaseCheck):
+class CircleCIBaseCheck(BaseCheck[CircleCIContext]):
     """Base class for CircleCI config checks."""
 
     PROVIDER = "circleci"

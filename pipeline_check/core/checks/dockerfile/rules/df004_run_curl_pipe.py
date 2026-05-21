@@ -26,6 +26,28 @@ RULE = Rule(
         "vocabulary matches the equivalent CI-side rules (GHA-016, "
         "GL-016, BB-012, ADO-016, CC-016, JF-016)."
     ),
+    exploit_example=(
+        "# Vulnerable: curl-pipe to bash trusts both the network\n"
+        "# (any MITM substitutes the script in flight) and the host\n"
+        "# (a compromised installer endpoint silently serves attacker\n"
+        "# code). The script then runs as root inside the build\n"
+        "# context, so anything it writes lands in the final image.\n"
+        "FROM ubuntu:24.04@sha256:abc123...\n"
+        "RUN apt-get update && apt-get install -y --no-install-recommends curl ca-certificates\n"
+        "RUN curl -fsSL https://example-installer.example/install.sh | bash\n"
+        "\n"
+        "# Safe: download to a file, verify a sha256 digest from a\n"
+        "# trusted source (the project's signing key, the vendor's\n"
+        "# release manifest), then execute. If the upstream content\n"
+        "# changes the digest stops matching and the build fails\n"
+        "# before the malicious code runs.\n"
+        "FROM ubuntu:24.04@sha256:abc123...\n"
+        "RUN apt-get update && apt-get install -y --no-install-recommends curl ca-certificates\n"
+        "RUN curl -fsSL https://example-installer.example/install.sh -o /tmp/install.sh \\\n"
+        "    && echo 'a1b2c3d4...  /tmp/install.sh' | sha256sum -c - \\\n"
+        "    && bash /tmp/install.sh \\\n"
+        "    && rm /tmp/install.sh"
+    ),
 )
 
 

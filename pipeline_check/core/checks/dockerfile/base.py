@@ -184,7 +184,7 @@ class DockerfileContext:
         return ctx
 
 
-class DockerfileBaseCheck(BaseCheck):
+class DockerfileBaseCheck(BaseCheck[DockerfileContext]):
     """Base class for Dockerfile rule modules."""
 
     PROVIDER = "dockerfile"

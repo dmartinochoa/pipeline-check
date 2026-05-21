@@ -145,7 +145,7 @@ class SCMProvider(BaseProvider):
         return bitbucket_context_for_repo(workspace, slug, fetcher)
 
     @property
-    def check_classes(self) -> list[type[BaseCheck]]:
+    def check_classes(self) -> list[type[BaseCheck[Any]]]:
         return [SCMPostureChecks]
 
     def inventory(self, context: SCMContext) -> list[Component]:

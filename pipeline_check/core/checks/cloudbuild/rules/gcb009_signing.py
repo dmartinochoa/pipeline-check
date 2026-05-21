@@ -15,7 +15,7 @@ from typing import Any
 
 from ..._primitives.anchors import oci_image
 from ..._primitives.oci_refs import extract_publisher_anchors_from_strings
-from ...base import Finding, ResourceAnchor, Severity, has_signing, produces_artifacts
+from ...base import NO_ARTIFACT_DESC, Finding, ResourceAnchor, Severity, has_signing, produces_artifacts
 from ...rule import Rule
 from ..base import pipeline_publishes
 
@@ -54,7 +54,7 @@ def check(path: str, doc: dict[str, Any]) -> Finding:
         return Finding(
             check_id=RULE.id, title=RULE.title, severity=RULE.severity,
             resource=path,
-            description="No artifact production detected, check not applicable.",
+            description=NO_ARTIFACT_DESC,
             recommendation=RULE.recommendation, passed=True,
         )
     desc = (

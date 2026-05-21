@@ -162,7 +162,7 @@ class PypiContext:
         return ctx
 
 
-class PypiBaseCheck(BaseCheck):
+class PypiBaseCheck(BaseCheck[PypiContext]):
     """Base class for pypi rule modules."""
 
     PROVIDER = "pypi"

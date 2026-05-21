@@ -30,7 +30,7 @@ class AzureProvider(BaseProvider):
         return AzureContext.from_path(azure_path)
 
     @property
-    def check_classes(self) -> list[type[BaseCheck]]:
+    def check_classes(self) -> list[type[BaseCheck[Any]]]:
         return [AzurePipelineChecks]
 
     def inventory(self, context: AzureContext) -> list[Component]:

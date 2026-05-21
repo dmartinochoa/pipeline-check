@@ -11,7 +11,7 @@ from __future__ import annotations
 
 from typing import Any
 
-from ...base import Finding, Severity, has_sbom, produces_artifacts
+from ...base import NO_ARTIFACT_DESC, Finding, Severity, has_sbom, produces_artifacts
 from ...rule import Rule
 from ..base import pipeline_publishes
 
@@ -46,7 +46,7 @@ def check(path: str, doc: dict[str, Any]) -> Finding:
         return Finding(
             check_id=RULE.id, title=RULE.title, severity=RULE.severity,
             resource=path,
-            description="No artifact production detected, check not applicable.",
+            description=NO_ARTIFACT_DESC,
             recommendation=RULE.recommendation, passed=True,
         )
     desc = (

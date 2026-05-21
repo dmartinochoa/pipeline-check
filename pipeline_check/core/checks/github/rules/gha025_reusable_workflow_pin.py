@@ -36,6 +36,28 @@ RULE = Rule(
         "This is the same threat model as unpinned step actions "
         "(GHA-001) but over a different ``uses:`` surface."
     ),
+    exploit_example=(
+        "# Vulnerable: a tag reference can be silently repointed by\n"
+        "# whoever controls the callee repo. If\n"
+        "# ``org/release-tools/.github/workflows/release.yml@v1`` is\n"
+        "# later force-pushed (or the ``v1`` tag deleted and re-\n"
+        "# created against a different commit), every caller that\n"
+        "# inherits secrets runs the new code with their own token\n"
+        "# and secret set in scope on the next workflow run.\n"
+        "jobs:\n"
+        "  release:\n"
+        "    uses: org/release-tools/.github/workflows/release.yml@v1\n"
+        "    secrets: inherit\n"
+        "\n"
+        "# Safe: pin to a 40-char commit SHA. The trailing comment\n"
+        "# documents which tag / version the SHA was at so version\n"
+        "# bumps stay reviewable. Dependabot's ``github-actions``\n"
+        "# ecosystem updates these in PRs like any other dep.\n"
+        "jobs:\n"
+        "  release:\n"
+        "    uses: org/release-tools/.github/workflows/release.yml@0123456789abcdef0123456789abcdef01234567  # v1.4.2\n"
+        "    secrets: inherit"
+    ),
 )
 
 

@@ -97,7 +97,7 @@ class JenkinsContext:
         return ctx
 
 
-class JenkinsBaseCheck(BaseCheck):
+class JenkinsBaseCheck(BaseCheck[JenkinsContext]):
     """Base class for Jenkins pipeline checks."""
 
     PROVIDER = "jenkins"

@@ -115,7 +115,7 @@ def _to_doc(path: str, idx: int, doc: Any) -> ArgoDoc | None:
     )
 
 
-class ArgoBaseCheck(BaseCheck):
+class ArgoBaseCheck(BaseCheck[ArgoContext]):
     """Base class for Argo Workflows rule modules."""
 
     PROVIDER = "argo"

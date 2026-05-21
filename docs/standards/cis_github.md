@@ -56,7 +56,7 @@ Click a control ID to jump to the per-control section with the full check list. 
 | [`1.4.1`](#ctrl-1-4-1) | Ensure administrator approval is required for every installed application | 2 | 1H · 1M |
 | [`1.4.3`](#ctrl-1-4-3) | Ensure the access granted to each installed application is limited | 2 | 1H · 1M |
 | [`1.4.4`](#ctrl-1-4-4) | Ensure only secured webhooks are used | 1 | 1H |
-| [`1.5.1`](#ctrl-1-5-1) | Ensure scanners are in place to identify and prevent sensitive data in code | 16 | 7C · 7H · 1M · 1L |
+| [`1.5.1`](#ctrl-1-5-1) | Ensure scanners are in place to identify and prevent sensitive data in code | 16 | 8C · 6H · 1M · 1L |
 | [`1.5.2`](#ctrl-1-5-2) | Ensure scanners are in place to secure CI/CD pipeline instructions | 49 | 11C · 27H · 10M · 1L |
 | [`1.5.3`](#ctrl-1-5-3) | Ensure scanners are in place to secure IaC instructions | 25 | 6C · 19H |
 | [`1.5.4`](#ctrl-1-5-4) | Ensure scanners are in place to identify and confirm presence of vulnerabilities | 8 | 1H · 6M · 1L |
@@ -314,7 +314,7 @@ pipeline_check --pipeline aws --standard cis_github --standard owasp_cicd_top_10
 
 | Check | Title | Severity | Provider | Fix |
 |-------|-------|----------|----------|-----|
-| [`CF-002`](#detail-cf-002) | CloudFormation parameter declares a default secret value | <span class="pg-sev pg-sev--high">HIGH</span> | [CloudFormation](../providers/cloudformation.md) |  |
+| [`CF-002`](#detail-cf-002) | Stateful data-store resource carries a plaintext secret | <span class="pg-sev pg-sev--critical">CRITICAL</span> | [CloudFormation](../providers/cloudformation.md) |  |
 | [`DF-006`](#detail-df-006) | ENV or ARG carries a credential-shaped literal value | <span class="pg-sev pg-sev--critical">CRITICAL</span> | [Dockerfile](../providers/dockerfile.md) |  |
 | [`DF-019`](#detail-df-019) | COPY/ADD source path looks like a credential file | <span class="pg-sev pg-sev--high">HIGH</span> | [Dockerfile](../providers/dockerfile.md) | <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> |
 | [`DF-020`](#detail-df-020) | ARG declares a credential-named build argument | <span class="pg-sev pg-sev--high">HIGH</span> | [Dockerfile](../providers/dockerfile.md) | <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> |
@@ -329,7 +329,7 @@ pipeline_check --pipeline aws --standard cis_github --standard owasp_cicd_top_10
 | [`SCM-004`](#detail-scm-004) | GitHub secret scanning is not enabled | <span class="pg-sev pg-sev--high">HIGH</span> | [SCM](../providers/scm.md) |  |
 | [`SCM-015`](#detail-scm-015) | Secret scanning push protection is not enabled | <span class="pg-sev pg-sev--high">HIGH</span> | [SCM](../providers/scm.md) |  |
 | [`SCM-016`](#detail-scm-016) | Private vulnerability reporting is not enabled | <span class="pg-sev pg-sev--low">LOW</span> | [SCM](../providers/scm.md) |  |
-| [`TF-002`](#detail-tf-002) | Resource attribute carries a hard-coded secret shape | <span class="pg-sev pg-sev--critical">CRITICAL</span> | [Terraform](../providers/terraform.md) |  |
+| [`TF-002`](#detail-tf-002) | Stateful data-store resource carries a plaintext secret | <span class="pg-sev pg-sev--critical">CRITICAL</span> | [Terraform](../providers/terraform.md) |  |
 
 ### 1.5.2: Ensure scanners are in place to secure CI/CD pipeline instructions { #ctrl-1-5-2 }
 
@@ -393,9 +393,9 @@ pipeline_check --pipeline aws --standard cis_github --standard owasp_cicd_top_10
 
 | Check | Title | Severity | Provider | Fix |
 |-------|-------|----------|----------|-----|
-| [`CF-001`](#detail-cf-001) | Inline credential parameter on a CloudFormation resource | <span class="pg-sev pg-sev--high">HIGH</span> | [CloudFormation](../providers/cloudformation.md) |  |
-| [`CF-002`](#detail-cf-002) | CloudFormation parameter declares a default secret value | <span class="pg-sev pg-sev--high">HIGH</span> | [CloudFormation](../providers/cloudformation.md) |  |
-| [`CF-003`](#detail-cf-003) | CloudFormation resource opens a 0.0.0.0/0 ingress | <span class="pg-sev pg-sev--high">HIGH</span> | [CloudFormation](../providers/cloudformation.md) |  |
+| [`CF-001`](#detail-cf-001) | Template declares AWS::IAM::AccessKey (long-lived credential) | <span class="pg-sev pg-sev--high">HIGH</span> | [CloudFormation](../providers/cloudformation.md) |  |
+| [`CF-002`](#detail-cf-002) | Stateful data-store resource carries a plaintext secret | <span class="pg-sev pg-sev--critical">CRITICAL</span> | [CloudFormation](../providers/cloudformation.md) |  |
+| [`CF-003`](#detail-cf-003) | CodeBuild VPC config references a public subnet | <span class="pg-sev pg-sev--high">HIGH</span> | [CloudFormation](../providers/cloudformation.md) |  |
 | [`DF-001`](#detail-df-001) | FROM image not pinned to sha256 digest | <span class="pg-sev pg-sev--high">HIGH</span> | [Dockerfile](../providers/dockerfile.md) | <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> |
 | [`DF-005`](#detail-df-005) | RUN uses shell-eval (eval / sh -c on a variable / backticks) | <span class="pg-sev pg-sev--high">HIGH</span> | [Dockerfile](../providers/dockerfile.md) |  |
 | [`DF-006`](#detail-df-006) | ENV or ARG carries a credential-shaped literal value | <span class="pg-sev pg-sev--critical">CRITICAL</span> | [Dockerfile](../providers/dockerfile.md) |  |
@@ -415,9 +415,9 @@ pipeline_check --pipeline aws --standard cis_github --standard owasp_cicd_top_10
 | [`K8S-017`](#detail-k8s-017) | Container env value carries a credential-shaped literal | <span class="pg-sev pg-sev--critical">CRITICAL</span> | [Kubernetes](../providers/kubernetes.md) |  |
 | [`K8S-018`](#detail-k8s-018) | Secret stringData/data carries a credential-shaped literal | <span class="pg-sev pg-sev--critical">CRITICAL</span> | [Kubernetes](../providers/kubernetes.md) |  |
 | [`K8S-037`](#detail-k8s-037) | ConfigMap data carries a credential-shaped literal | <span class="pg-sev pg-sev--high">HIGH</span> | [Kubernetes](../providers/kubernetes.md) |  |
-| [`TF-001`](#detail-tf-001) | aws_iam_access_key declares a long-lived access key | <span class="pg-sev pg-sev--critical">CRITICAL</span> | [Terraform](../providers/terraform.md) |  |
-| [`TF-002`](#detail-tf-002) | Resource attribute carries a hard-coded secret shape | <span class="pg-sev pg-sev--critical">CRITICAL</span> | [Terraform](../providers/terraform.md) |  |
-| [`TF-003`](#detail-tf-003) | CodeBuild VPC shares its VPC with a public subnet | <span class="pg-sev pg-sev--high">HIGH</span> | [Terraform](../providers/terraform.md) |  |
+| [`TF-001`](#detail-tf-001) | Plan declares aws_iam_access_key (long-lived credential) | <span class="pg-sev pg-sev--high">HIGH</span> | [Terraform](../providers/terraform.md) |  |
+| [`TF-002`](#detail-tf-002) | Stateful data-store resource carries a plaintext secret | <span class="pg-sev pg-sev--critical">CRITICAL</span> | [Terraform](../providers/terraform.md) |  |
+| [`TF-003`](#detail-tf-003) | CodeBuild VPC config references a public subnet | <span class="pg-sev pg-sev--high">HIGH</span> | [Terraform](../providers/terraform.md) |  |
 
 ### 1.5.4: Ensure scanners are in place to identify and confirm presence of vulnerabilities { #ctrl-1-5-4 }
 
@@ -438,33 +438,77 @@ pipeline_check --pipeline aws --standard cis_github --standard owasp_cicd_top_10
 
 Every check that evidences this standard, rendered once with its detection mechanism, recommendation, and any known false-positive modes or real-world incident references. The per-control tables above link to the matching block here.
 
-### `CF-001`: Inline credential parameter on a CloudFormation resource <span class="pg-sev pg-sev--high">HIGH</span> { #detail-cf-001 }
+### `CF-001`: Template declares AWS::IAM::AccessKey (long-lived credential) <span class="pg-sev pg-sev--high">HIGH</span> { #detail-cf-001 }
 
 **Evidences:** [`1.5.3`](#ctrl-1-5-3) Ensure scanners are in place to secure IaC instructions.
 
-**How this is detected.** See [`CloudFormation` provider documentation](../providers/cloudformation.md) for the rule's detection mechanism.
+**How this is detected.** Fires on every ``AWS::IAM::AccessKey`` in the template. CloudFormation writes the resulting ``SecretAccessKey`` to stack outputs — the secret is now in every stack update log and every ``DescribeStacks`` response.
 
-**Recommendation.** See [`CloudFormation` provider documentation](../providers/cloudformation.md) for the recommended remediation.
+**Recommendation.** Replace static keys with role-based access: an ``AWS::IAM::Role`` plus an ``AWS::IAM::OIDCProvider`` for CI, or an IAM role for service-to-service auth. Static keys live forever in stack outputs and any tool that ever read them.
+
+**Proof of exploit.**
+
+```
+# Vulnerable: every stack-create writes a fresh access key
+# and stores the ``SecretAccessKey`` literal in the stack's
+# Outputs. Any IAM principal that can call
+# ``cloudformation:DescribeStacks`` on this stack reads the
+# secret. The key never rotates and only goes away when the
+# stack is torn down.
+Resources:
+  CiUser:
+    Type: AWS::IAM::User
+  CiAccessKey:
+    Type: AWS::IAM::AccessKey
+    Properties:
+      UserName: !Ref CiUser
+Outputs:
+  AccessKeyId:
+    Value: !Ref CiAccessKey
+  SecretAccessKey:
+    Value: !GetAtt CiAccessKey.SecretAccessKey
+
+# Safe: declare an IAM role with a short-lived assume-role
+# trust policy. For CI/CD, federate via GitHub OIDC
+# (``token.actions.githubusercontent.com``) so tokens expire
+# minutes after the workflow run. No long-lived secret ever
+# exists, and the trust policy enforces ``sub`` / ``aud``
+# claim equality on a single repo + ref.
+Resources:
+  CiRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Statement:
+          - Effect: Allow
+            Principal:
+              Federated: arn:aws:iam::123456789012:oidc-provider/token.actions.githubusercontent.com
+            Action: sts:AssumeRoleWithWebIdentity
+            Condition:
+              StringEquals:
+                token.actions.githubusercontent.com:sub:
+                  repo:myorg/myrepo:ref:refs/heads/main
+```
 
 **Source:** [`CF-001`](../providers/cloudformation.md) in the [CloudFormation provider](../providers/cloudformation.md).
 
-### `CF-002`: CloudFormation parameter declares a default secret value <span class="pg-sev pg-sev--high">HIGH</span> { #detail-cf-002 }
+### `CF-002`: Stateful data-store resource carries a plaintext secret <span class="pg-sev pg-sev--critical">CRITICAL</span> { #detail-cf-002 }
 
 **Evidences:** [`1.5.1`](#ctrl-1-5-1) Ensure scanners are in place to identify and prevent sensitive data in code, [`1.5.3`](#ctrl-1-5-3) Ensure scanners are in place to secure IaC instructions.
 
-**How this is detected.** See [`CloudFormation` provider documentation](../providers/cloudformation.md) for the rule's detection mechanism.
+**How this is detected.** Walks every string value of the stateful data-store resources (``AWS::RDS::DBInstance``, ``AWS::RDS::DBCluster``, ``AWS::Redshift::Cluster``, ``AWS::ElastiCache::ReplicationGroup``, ``AWS::DocDB::DBCluster``, ``AWS::Neptune::DBCluster``, ``AWS::OpenSearchService::Domain``, ``AWS::MemoryDB::Cluster``). Fires when a string leaf matches a credential shape OR when a secret-named attribute (``*Password``, ``*Token``, …) carries a non-placeholder literal.
 
-**Recommendation.** See [`CloudFormation` provider documentation](../providers/cloudformation.md) for the recommended remediation.
+**Recommendation.** Move the secret into Secrets Manager (or SSM Parameter Store SecureString) and reference it via ``'{{resolve:secretsmanager:…}}'`` at deploy time. Never literal-string a credential into a stateful resource — the value lives in the template, the stack history, and any drift detection report.
 
 **Source:** [`CF-002`](../providers/cloudformation.md) in the [CloudFormation provider](../providers/cloudformation.md).
 
-### `CF-003`: CloudFormation resource opens a 0.0.0.0/0 ingress <span class="pg-sev pg-sev--high">HIGH</span> { #detail-cf-003 }
+### `CF-003`: CodeBuild VPC config references a public subnet <span class="pg-sev pg-sev--high">HIGH</span> { #detail-cf-003 }
 
 **Evidences:** [`1.5.3`](#ctrl-1-5-3) Ensure scanners are in place to secure IaC instructions.
 
-**How this is detected.** See [`CloudFormation` provider documentation](../providers/cloudformation.md) for the rule's detection mechanism.
+**How this is detected.** When ``AWS::CodeBuild::Project.Properties.VpcConfig.VpcId`` resolves to a concrete reference, walks every ``AWS::EC2::Subnet`` in the same VPC and fires if any has ``MapPublicIpOnLaunch: true``.
 
-**Recommendation.** See [`CloudFormation` provider documentation](../providers/cloudformation.md) for the recommended remediation.
+**Recommendation.** Place CodeBuild projects in private subnets (``MapPublicIpOnLaunch: false``) with egress routed through a NAT gateway or VPC interface endpoints. Public subnets put the build host on a public IP for the duration of the build.
 
 **Source:** [`CF-003`](../providers/cloudformation.md) in the [CloudFormation provider](../providers/cloudformation.md).
 
@@ -482,6 +526,34 @@ Every check that evidences this standard, rendered once with its detection mecha
 
 - Docker Hub typosquatting / namespace-takeover incidents (2017 onward): docker-library Sysdig and Aqua research documented thousands of malicious images uploaded under near-miss names (``alpine`` vs ``alphine``, etc.) and occasional namespace recoveries shipping crypto-miners downstream. Digest-pinned consumers are immune; tag-pinned consumers pull whatever sits under the name today.
 - Codecov ``codecov/codecov-action`` tag-mutation incident (post-Codecov-Bash-uploader compromise): the upstream rotated the action's ``@v3`` tag during the fallout, and consumers pinning to the tag silently re-ran a different build than before. Digest pinning would have surfaced the change as a checksum mismatch instead of a silent swap.
+
+**Proof of exploit.**
+
+```
+# Vulnerable: ``python:3.12-slim`` is a tag, and tags on
+# Docker Hub are mutable. Python's publishers can (and do)
+# repoint the same tag at a new image on every point
+# release, and namespace takeovers / hijacked publisher
+# accounts can silently swap a malicious image under the
+# existing tag. The next rebuild picks up whatever's there
+# now, with no signal to the consumer that the base
+# changed.
+FROM python:3.12-slim
+COPY . /app
+RUN pip install --require-hashes -r /app/requirements.txt
+CMD ["python", "/app/main.py"]
+
+# Safe: pin to the immutable sha256 digest. The leading
+# comment documents which tag the digest corresponds to.
+# Renovate / Dependabot's Docker ecosystem updaters resolve
+# and bump these on a schedule so the pin doesn't drift
+# behind security patches.
+# python:3.12.1-slim (refreshed YYYY-MM-DD)
+FROM python:3.12-slim@sha256:abc123...
+COPY . /app
+RUN pip install --require-hashes -r /app/requirements.txt
+CMD ["python", "/app/main.py"]
+```
 
 **Source:** [`DF-001`](../providers/dockerfile.md#df-001) in the [Dockerfile provider](../providers/dockerfile.md).
 
@@ -502,6 +574,34 @@ Every check that evidences this standard, rendered once with its detection mecha
 **How this is detected.** Reuses ``_primitives/secret_shapes``, flags AKIA-prefixed AWS keys outright (the literal AWS access-key shape) and credential-named keys (``API_KEY``, ``DB_PASSWORD``, ``SECRET_TOKEN``) when the value is a non-empty literal.
 
 **Recommendation.** Never hard-code credentials in a Dockerfile. ``ENV`` values are baked into the image layer history, even if the value is later overwritten, ``docker history --no-trunc`` reads the original. Use ``RUN --mount=type=secret`` for build-time secrets or runtime env injection (``docker run -e SECRET=…``) for runtime ones. Rotate any secret already exposed.
+
+**Proof of exploit.**
+
+```
+# Vulnerable: ``API_KEY=sk_live_...`` lands in the image's
+# layer history. ``docker history --no-trunc <image>`` (any
+# user who can pull the image) prints the literal value
+# even when a later layer overwrites or unsets it. Public
+# images on Docker Hub are pulled and inspected en masse by
+# secret scanners; private images leak the same way to
+# anyone who exfils the registry credentials.
+FROM node:20-alpine@sha256:abc123...
+ENV API_KEY=sk_live_abc123def456ghi789
+COPY . /app
+RUN cd /app && npm ci
+
+# Safe: keep the secret out of the image entirely. Use
+# BuildKit's ``--mount=type=secret`` for build-time access
+# (the secret never lands in any layer), and runtime
+# injection (``docker run -e API_KEY=$VAULT_API_KEY``) for
+# the running container. The Dockerfile only references
+# the secret by mount path or env-var name.
+# syntax=docker/dockerfile:1.7
+FROM node:20-alpine@sha256:abc123...
+COPY . /app
+RUN --mount=type=secret,id=api_key \
+    cd /app && API_KEY=$(cat /run/secrets/api_key) npm ci
+```
 
 **Source:** [`DF-006`](../providers/dockerfile.md#df-006) in the [Dockerfile provider](../providers/dockerfile.md).
 
@@ -2130,6 +2230,51 @@ Fires once per offending IaC file with a finding location pointing at the file. 
 
 **Autofix.** `pipeline_check --fix` will patch this finding automatically. Review the diff before committing; the fixer applies the conservative remediation pattern (e.g. swap a floating tag for the digest it currently resolves to), not the most aggressive one.
 
+**Proof of exploit.**
+
+```
+# Vulnerable: ``privileged: true`` gives the container the
+# equivalent of root on the node — full ``/dev`` access,
+# every Linux capability, and the ability to bypass
+# namespace isolation. A workload compromise (poisoned
+# image, RCE in app code, malicious chart) becomes a
+# node-level shell, and from there pivots to every other
+# pod on the node via the kubelet's credentials.
+apiVersion: apps/v1
+kind: Deployment
+metadata: { name: app }
+spec:
+  template:
+    spec:
+      containers:
+        - name: app
+          image: app:1.2.3
+          securityContext:
+            privileged: true
+
+# Safe: drop all caps; if the app genuinely needs ONE
+# capability (e.g. ``NET_BIND_SERVICE`` to listen on port
+# 80), add it back explicitly. ``runAsNonRoot`` +
+# ``readOnlyRootFilesystem`` close the remaining escape
+# routes that ``privileged: false`` alone doesn't.
+apiVersion: apps/v1
+kind: Deployment
+metadata: { name: app }
+spec:
+  template:
+    spec:
+      containers:
+        - name: app
+          image: app@sha256:abc123...
+          securityContext:
+            privileged: false
+            allowPrivilegeEscalation: false
+            runAsNonRoot: true
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop: ["ALL"]
+```
+
 **Source:** [`K8S-005`](../providers/kubernetes.md#k8s-005) in the [Kubernetes provider](../providers/kubernetes.md).
 
 ### `K8S-013`: Pod uses a hostPath volume <span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> { #detail-k8s-013 }
@@ -3229,33 +3374,164 @@ v1 limitations: ``include:`` cross-pipeline file inclusion isn't tracked yet (wo
 
 **Source:** [`TAINT-008`](../providers/gitlab.md#taint-008) in the [GitLab CI provider](../providers/gitlab.md).
 
-### `TF-001`: aws_iam_access_key declares a long-lived access key <span class="pg-sev pg-sev--critical">CRITICAL</span> { #detail-tf-001 }
+### `TF-001`: Plan declares aws_iam_access_key (long-lived credential) <span class="pg-sev pg-sev--high">HIGH</span> { #detail-tf-001 }
 
 **Evidences:** [`1.5.3`](#ctrl-1-5-3) Ensure scanners are in place to secure IaC instructions.
 
-**How this is detected.** See [`Terraform` provider documentation](../providers/terraform.md) for the rule's detection mechanism.
+**How this is detected.** Fires on every ``aws_iam_access_key`` in the plan. Terraform writes the resulting ``secret`` to state, even on remote backends, the secret is now in every state-file backup, every CI run, and anywhere ``terraform output`` ran.
 
-**Recommendation.** See [`Terraform` provider documentation](../providers/terraform.md) for the recommended remediation.
+**Recommendation.** Replace static keys with role-based access: an ``aws_iam_role`` plus an OIDC ``aws_iam_openid_connect_provider`` for CI, or ``aws_iam_role`` for service-to-service auth. Static keys live forever in state, in backups, in every machine that ever ran ``terraform plan``.
+
+**Proof of exploit.**
+
+```
+# Vulnerable: every ``terraform apply`` provisions a long-
+# lived access key and lands the literal
+# ``aws_iam_access_key.ci.secret`` in the state file. Remote
+# backends (S3) store the state plaintext by default; every
+# CI run that loads state reads the secret. The key only
+# goes away on ``terraform destroy``.
+resource "aws_iam_user" "ci" {
+  name = "ci-bot"
+}
+
+resource "aws_iam_access_key" "ci" {
+  user = aws_iam_user.ci.name
+}
+
+output "ci_secret" {
+  value     = aws_iam_access_key.ci.secret
+  sensitive = true   # masks console output but state stays plaintext
+}
+
+# Safe: federate via GitHub Actions OIDC so tokens last
+# minutes per workflow run, not forever. The role's trust
+# policy pins ``sub`` to one repo + ref, so the federation
+# can't be assumed by an unrelated workflow even on the
+# same account.
+resource "aws_iam_openid_connect_provider" "github" {
+  url             = "https://token.actions.githubusercontent.com"
+  client_id_list  = ["sts.amazonaws.com"]
+  thumbprint_list = ["6938fd4d98bab03faadb97b34396831e3780aea1"]
+}
+
+resource "aws_iam_role" "ci" {
+  name = "ci-bot"
+  assume_role_policy = jsonencode({
+    Statement = [{
+      Effect    = "Allow"
+      Principal = { Federated = aws_iam_openid_connect_provider.github.arn }
+      Action    = "sts:AssumeRoleWithWebIdentity"
+      Condition = {
+        StringEquals = {
+          "token.actions.githubusercontent.com:sub" = "repo:myorg/myrepo:ref:refs/heads/main"
+          "token.actions.githubusercontent.com:aud" = "sts.amazonaws.com"
+        }
+      }
+    }]
+  })
+}
+```
 
 **Source:** [`TF-001`](../providers/terraform.md) in the [Terraform provider](../providers/terraform.md).
 
-### `TF-002`: Resource attribute carries a hard-coded secret shape <span class="pg-sev pg-sev--critical">CRITICAL</span> { #detail-tf-002 }
+### `TF-002`: Stateful data-store resource carries a plaintext secret <span class="pg-sev pg-sev--critical">CRITICAL</span> { #detail-tf-002 }
 
 **Evidences:** [`1.5.1`](#ctrl-1-5-1) Ensure scanners are in place to identify and prevent sensitive data in code, [`1.5.3`](#ctrl-1-5-3) Ensure scanners are in place to secure IaC instructions.
 
-**How this is detected.** See [`Terraform` provider documentation](../providers/terraform.md) for the rule's detection mechanism.
+**How this is detected.** Walks every value of the stateful data-store resources (``aws_db_instance``, ``aws_rds_cluster``, ``aws_redshift_cluster``, ``aws_elasticache_replication_group``, ``aws_docdb_cluster``, ``aws_neptune_cluster``, ``aws_opensearch_domain``, ``aws_memorydb_cluster``). Fires when a string leaf matches a credential shape (AKIA/ASIA, ``ghp_``, JWT, …) OR when a secret-named attribute (``*password``, ``*token``, …) carries a non-placeholder literal.
 
-**Recommendation.** See [`Terraform` provider documentation](../providers/terraform.md) for the recommended remediation.
+**Recommendation.** Move the secret into Secrets Manager (or SSM Parameter Store SecureString) and reference it via ``data.aws_secretsmanager_secret_version.…`` at apply time. Never literal-string a credential into a stateful resource — the value lives in state forever.
+
+**Proof of exploit.**
+
+```
+# Vulnerable: the password literal lands in the Terraform
+# state file on every apply. Remote S3 backends store state
+# in plaintext unless explicitly encrypted; CI runs that
+# load state print the value when ``-json`` or ``output``
+# touches it. The credential rotates only on the next
+# ``aws_db_instance`` replacement.
+resource "aws_db_instance" "prod" {
+  identifier        = "app-prod"
+  engine            = "postgres"
+  instance_class    = "db.t3.medium"
+  allocated_storage = 100
+  username          = "appuser"
+  password          = "hunter2-prod-master-pw"
+}
+
+# Safe: pull the password from Secrets Manager at apply time.
+# State carries the secret's ARN reference, not the value.
+# Rotation runs via Secrets Manager without a Terraform
+# state change. The data source is read-only, so the value
+# never appears in ``terraform plan`` output either.
+data "aws_secretsmanager_secret_version" "db_master" {
+  secret_id = "prod/app/db_master"
+}
+
+resource "aws_db_instance" "prod" {
+  identifier        = "app-prod"
+  engine            = "postgres"
+  instance_class    = "db.t3.medium"
+  allocated_storage = 100
+  username          = "appuser"
+  password          = data.aws_secretsmanager_secret_version.db_master.secret_string
+}
+```
 
 **Source:** [`TF-002`](../providers/terraform.md) in the [Terraform provider](../providers/terraform.md).
 
-### `TF-003`: CodeBuild VPC shares its VPC with a public subnet <span class="pg-sev pg-sev--high">HIGH</span> { #detail-tf-003 }
+### `TF-003`: CodeBuild VPC config references a public subnet <span class="pg-sev pg-sev--high">HIGH</span> { #detail-tf-003 }
 
 **Evidences:** [`1.5.3`](#ctrl-1-5-3) Ensure scanners are in place to secure IaC instructions.
 
-**How this is detected.** See [`Terraform` provider documentation](../providers/terraform.md) for the rule's detection mechanism.
+**How this is detected.** When ``aws_codebuild_project.vpc_config[0].vpc_id`` resolves to a concrete string, walks every ``aws_subnet`` in the same VPC and fires if any has ``map_public_ip_on_launch = true``. Silent when ``vpc_id`` is unresolved (``known after apply``).
 
-**Recommendation.** See [`Terraform` provider documentation](../providers/terraform.md) for the recommended remediation.
+**Recommendation.** Place CodeBuild projects in private subnets (``map_public_ip_on_launch = false``) with egress routed through a NAT gateway or VPC interface endpoints. Public subnets put the build host on a public IP for the duration of the build.
+
+**Proof of exploit.**
+
+```
+# Vulnerable: ``map_public_ip_on_launch = true`` on the
+# subnet means CodeBuild containers get a public IP for the
+# duration of the build. The build host is now reachable
+# inbound from the internet (modulo the security group),
+# and outbound traffic uses that public IP rather than
+# being NATed. Build-time RCE escalates straight to a
+# direct internet-facing host.
+resource "aws_subnet" "build" {
+  vpc_id                  = aws_vpc.main.id
+  cidr_block              = "10.0.1.0/24"
+  map_public_ip_on_launch = true
+}
+
+resource "aws_codebuild_project" "app" {
+  name = "app-build"
+  vpc_config {
+    vpc_id             = aws_vpc.main.id
+    subnets            = [aws_subnet.build.id]
+    security_group_ids = [aws_security_group.build.id]
+  }
+  # ... source / artifacts / environment elided
+}
+
+# Safe: private subnet routed to a NAT for outbound egress.
+# No public IP on the build host; inbound from the internet
+# is impossible regardless of the security group. Build-
+# time RCE has to chain a separate primitive (kubelet, IMDS,
+# another in-VPC service) before reaching the internet.
+resource "aws_subnet" "build" {
+  vpc_id                  = aws_vpc.main.id
+  cidr_block              = "10.0.10.0/24"
+  map_public_ip_on_launch = false
+}
+
+resource "aws_route_table_association" "build" {
+  subnet_id      = aws_subnet.build.id
+  route_table_id = aws_route_table.private_nat.id
+}
+```
 
 **Source:** [`TF-003`](../providers/terraform.md) in the [Terraform provider](../providers/terraform.md).
 

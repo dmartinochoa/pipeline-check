@@ -4,7 +4,7 @@ from __future__ import annotations
 from typing import Any
 
 from ..._primitives.oci_refs import extract_image_anchors_from_workflow
-from ...base import Finding, Severity, has_signing, produces_artifacts
+from ...base import NO_ARTIFACT_DESC, Finding, Severity, has_signing, produces_artifacts
 from ...rule import Rule
 from ..base import iter_jobs, iter_steps
 
@@ -74,7 +74,7 @@ def check(path: str, doc: dict[str, Any]) -> Finding:
         return Finding(
             check_id=RULE.id, title=RULE.title, severity=RULE.severity,
             resource=path,
-            description="No artifact production detected, check not applicable.",
+            description=NO_ARTIFACT_DESC,
             recommendation=RULE.recommendation, passed=True,
         )
     desc = (

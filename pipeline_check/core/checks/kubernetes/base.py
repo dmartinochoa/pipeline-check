@@ -194,7 +194,7 @@ def _to_manifest(
     )
 
 
-class KubernetesBaseCheck(BaseCheck):
+class KubernetesBaseCheck(BaseCheck[KubernetesContext]):
     """Base class for Kubernetes manifest rule modules."""
 
     PROVIDER = "kubernetes"

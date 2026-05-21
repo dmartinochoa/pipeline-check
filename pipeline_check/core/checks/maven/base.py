@@ -213,7 +213,7 @@ class MavenContext:
         return ctx
 
 
-class MavenBaseCheck(BaseCheck):
+class MavenBaseCheck(BaseCheck[MavenContext]):
     """Base class for maven rule modules."""
 
     PROVIDER = "maven"

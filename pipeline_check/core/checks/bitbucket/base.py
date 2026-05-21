@@ -62,7 +62,7 @@ class BitbucketContext:
         return ctx
 
 
-class BitbucketBaseCheck(BaseCheck):
+class BitbucketBaseCheck(BaseCheck[BitbucketContext]):
     """Base class for Bitbucket Pipelines checks."""
 
     PROVIDER = "bitbucket"

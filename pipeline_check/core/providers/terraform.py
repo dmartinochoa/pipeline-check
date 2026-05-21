@@ -93,7 +93,7 @@ class TerraformProvider(BaseProvider):
         return TerraformContext.from_path(tf_plan)
 
     @property
-    def check_classes(self) -> list[type[BaseCheck]]:
+    def check_classes(self) -> list[type[BaseCheck[Any]]]:
         # Single orchestrator that auto-discovers every rule under
         # ``pipeline_check.core.checks.terraform.rules``. The legacy
         # per-service check classes (CodeBuildChecks, IAMChecks, …)

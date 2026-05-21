@@ -385,18 +385,24 @@ Code-quality findings across the engine, parsers, and rule pack.
   (GHA-017), or Jenkinsfile text input (JF-017 / JF-018 / JF-022 /
   JF-023 / JF-029) keep their bespoke check bodies. The
   ``malicious_activity`` fail prose moved to a shared
-  ``_malicious.summarize_malicious_hits`` helper. The "No artifact
-  production detected, check not applicable" string repeated across
-  the signing / vuln-scanning rule pack is a separate prose-constant
-  deduplication still open.
-- **Lift provider context loaders + base classes.** Load-loop
-  consolidation done: `checks/_yaml_files.py:load_yaml_files`
-  hosts the read + parse + warning loop, and 11 providers
-  (github, gitlab, bitbucket, azure, cloudbuild, kubernetes,
-  buildkite, drone, tekton, argo, circleci) route through it.
-  ``jenkins`` parses Groovy, not YAML, and stays on its custom
-  loader. The ``BaseCheck`` generic-on-context change is still
-  open as a separate refactor.
+  ``_malicious.summarize_malicious_hits`` helper. Follow-up:
+  ``checks/base.py`` now exports ``NO_ARTIFACT_DESC`` so the "No
+  artifact production detected, check not applicable." string
+  routes through one constant across 28 signing / SBOM /
+  vuln-scanning / provenance rule modules instead of repeating
+  inline.
+- ~~**Lift provider context loaders + base classes.**~~ Both
+  halves landed. Load-loop consolidation: `checks/_yaml_files.py:
+  load_yaml_files` hosts the read + parse + warning loop, and 11
+  providers (github, gitlab, bitbucket, azure, cloudbuild,
+  kubernetes, buildkite, drone, tekton, argo, circleci) route
+  through it. ``jenkins`` parses Groovy, not YAML, and stays on
+  its custom loader. ``BaseCheck`` generic-on-context: ``BaseCheck``
+  is now ``Generic[_ContextT]`` and each provider's subclass
+  parameterizes it (``GitHubBaseCheck(BaseCheck[GitHubContext])``,
+  ``AWSBaseCheck(BaseCheck[boto3.Session])``, ...), so
+  ``self.context`` carries the concrete type and the per-subclass
+  ``self.ctx`` alias is now redundant for type-narrowing purposes.
 - ~~**Legacy `TLS_BYPASS_RE` / `CURL_PIPE_RE` migration.**~~ Landed
   in the post-1.2.0 cycle. `bk008`, `dr006`, `argo008`, `tkn008`,
   `bk004` now route through `_primitives/tls_bypass.py` and
@@ -405,17 +411,19 @@ Code-quality findings across the engine, parsers, and rule pack.
   `_comment_tls_bypass` autofixer scans per-line through the
   primitive, and the legacy combined constants are gone from
   `checks/base.py`.
-- **Triplicated dependency-supply-chain plumbing.** Registry-fetcher
-  side landed: `_primitives/registry_fetcher.py` owns the
+- ~~**Triplicated dependency-supply-chain plumbing.**~~ Landed.
+  Registry-fetcher side: `_primitives/registry_fetcher.py` owns the
   ``FileSystemCache`` + ``HttpGetFetcher`` transport + dedup-fetch-
   parse loop; ``npm`` / ``pypi`` / ``maven`` are now thin ~170-line
   adapters supplying the per-ecosystem URL builder, cache-key
   normalizer, and JSON parser. Public surface preserved verbatim
   so ``core/providers/{npm,pypi,maven}.py`` needed no import
-  changes. The ``CompromisedPackage`` dataclass + lookup helpers
-  triplication is a separate follow-up (similar shape; lower
-  payoff since the curated tables themselves are
-  ecosystem-specific).
+  changes. ``CompromisedPackage`` side: each provider's dataclass
+  keeps its ecosystem-specific identifier fields (``name`` for
+  npm/pypi, ``group_id`` + ``artifact_id`` for maven) but the
+  triplicated ``matches(version)`` method now delegates to
+  ``_primitives/compromised.py:match_version`` so a future
+  extension (semver-range support, e.g.) lands in one place.
 - ~~**Autofix roundtrip safety.**~~ Landed. ``generate_fix`` parses
   the patched text through ``yaml.safe_load_all`` and bails when the
   result no longer parses, the top-level Python type swapped, or the

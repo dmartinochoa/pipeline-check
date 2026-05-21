@@ -114,7 +114,7 @@ def _to_doc(path: str, idx: int, doc: Any) -> TektonDoc | None:
     )
 
 
-class TektonBaseCheck(BaseCheck):
+class TektonBaseCheck(BaseCheck[TektonContext]):
     """Base class for Tekton rule modules."""
 
     PROVIDER = "tekton"
