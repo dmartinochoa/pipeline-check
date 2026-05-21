@@ -35,6 +35,19 @@ class TestPYPI001:
         f = run_check(text, "PYPI-001")
         assert f.passed
 
+    def test_passes_on_exact_pin_with_whitespace(self):
+        # PEP 440 permits whitespace between the operator and the
+        # version (``pkg == 1.2.3``). The regex must consume it.
+        text = "requests == 2.31.0\ndjango ==4.2.7\n"
+        f = run_check(text, "PYPI-001")
+        assert f.passed
+
+    def test_passes_on_arbitrary_equality(self):
+        # ``===`` is PEP 440 "arbitrary equality" — still a pin.
+        text = "requests===2.31.0+local\n"
+        f = run_check(text, "PYPI-001")
+        assert f.passed
+
     def test_skips_vcs_url(self):
         text = "git+https://github.com/o/r.git@deadbeef\n"
         f = run_check(text, "PYPI-001")

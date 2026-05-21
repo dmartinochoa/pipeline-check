@@ -26,9 +26,12 @@ RULE = Rule(
         "World-writable directories under ``/`` are an established "
         "container-escape vector: any compromised process running as "
         "non-root can drop a payload that root-owned daemons later "
-        "execute. The rule fires on the literal ``777``, ``a+w``, "
-        "and ``a+rwx`` modes; the more conservative ``775`` and "
-        "``ugo+x`` are not flagged."
+        "execute. The rule fires on octal ``777`` / ``0777`` and on "
+        "any ``chmod`` ``+`` operator whose who-set is empty or "
+        "contains ``a`` / ``o`` and whose mode flags include ``w`` "
+        "(so ``a+w``, ``a+wx``, ``a+rwx``, ``o+w``, ``ugo+w``, "
+        "``go+rw``, ``+w``, ``+rwx`` all flag). ``u+w`` and ``g+w`` "
+        "are not flagged, neither grants the world-writable bit."
     ),
     known_fp=(
         "Test fixtures or scratch builds that intentionally share a "
@@ -40,17 +43,19 @@ RULE = Rule(
 
 
 # Match ``chmod`` followed by a world-writable mode. Octal forms:
-# 777, 0777. Symbolic: ``a+w``, ``a+rwx``, ``+w`` (which is shorthand
-# for ``a+w``). Anchored to a word boundary so the false-positive of
+# 777, 0777. Symbolic: any ``+`` operator whose ``who`` set is empty
+# (bare ``+w`` shorthand) or includes ``a`` (all) / ``o`` (others), and
+# whose mode flags include ``w``. So ``a+w``, ``a+rwx``, ``a+wx``,
+# ``o+w``, ``ugo+w``, ``go+rw``, ``+w``, ``+rwx`` all match; ``u+w``
+# and ``g+w`` (which don't grant the world-writable bit) do not.
+# Anchored to a word boundary so the false-positive of
 # ``--chmod=755`` in ``COPY`` (different directive entirely) doesn't
 # matter, ``run_bodies`` only feeds RUN args to the regex.
 _CHMOD_WORLDWRITE_RE = re.compile(
     r"\bchmod\b[^\n]*?"
     r"(?:"
-    r"\s0?777\b"               # octal 777 / 0777
-    r"|\sa\+(?:w|rwx)\b"       # symbolic all+write
-    r"|\s\+w(?:rx)?\b"         # bare +w (shorthand for a+w)
-    r"|\sugo\+w\b"             # alternate spelling for a+w
+    r"\s0?777\b"                                             # octal 777
+    r"|\s(?:[ug]*[ao][ugoa]*)?\+[rwxXst]*w[rwxXst]*\b"       # symbolic +w
     r")",
 )
 
