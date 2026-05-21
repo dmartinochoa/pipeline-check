@@ -2486,6 +2486,20 @@ def scan(
                 "--diff-base scopes the scan to changed files only, "
                 "which would leave the base side empty by construction."
             )
+        # ``--pr-diff`` always emits Markdown to stdout (or
+        # ``--output-file``). The other formats don't fit the
+        # "delta of failures" shape we ship today, and silently
+        # honoring ``--output json`` while emitting Markdown was a
+        # surprising mismatch. Accept the default (``terminal``)
+        # since it's what every invocation without an explicit
+        # ``--output`` carries; accept ``markdown`` for an
+        # explicit-intent invocation; reject everything else.
+        if output not in ("terminal", "markdown"):
+            raise click.UsageError(
+                f"--pr-diff produces a Markdown delta report; "
+                f"--output {output!r} is not supported. Drop "
+                f"``--output`` or pass ``--output markdown``."
+            )
 
     threshold = Severity(severity_threshold.upper())
     confidence_threshold = Confidence(min_confidence.upper())

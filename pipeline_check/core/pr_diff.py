@@ -247,6 +247,35 @@ def compute_delta(
 # ────────────────────────────────────────────────────────────────────────────
 
 
+def _is_shallow_repo(cwd: str | Path = ".") -> bool:
+    """Return ``True`` when the repo at *cwd* is a shallow clone.
+
+    Shallow clones are the default in CI: ``actions/checkout@v4`` and
+    GitLab's ``GIT_DEPTH=20`` both fetch a truncated history. A user
+    pointing ``--pr-diff`` at a base ref that wasn't in the fetched
+    slice gets "could not resolve base ref", and the actionable fix
+    (``fetch-depth: 0`` or an explicit ``git fetch``) isn't obvious
+    unless we name it. This helper drives the hint in the warning.
+
+    Returns ``False`` on any git failure: when we can't tell, we
+    don't speculate, and the generic warning still surfaces.
+    """
+    try:
+        result = subprocess.run(
+            ["git", "rev-parse", "--is-shallow-repository"],
+            cwd=str(cwd),
+            capture_output=True,
+            text=True,
+            timeout=10,
+            check=False,
+        )
+    except (FileNotFoundError, subprocess.TimeoutExpired):
+        return False
+    if result.returncode != 0:
+        return False
+    return result.stdout.strip().lower() == "true"
+
+
 def _resolve_commit(ref: str, cwd: str | Path = ".") -> str | None:
     """Return the 7-char short SHA of ``ref`` or ``None`` on failure.
 
@@ -464,11 +493,26 @@ def run_pr_diff(
 
     base_commit = _resolve_commit(base_ref, cwd=cwd)
     if base_commit is None:
-        warnings.append(
-            f"could not resolve base ref {base_ref!r} "
-            f"(fetch it or pass a different ref); "
-            f"treating every HEAD finding as new."
-        )
+        # Tailor the actionable hint to the most common cause: a CI
+        # shallow checkout that never fetched the base. Outside CI
+        # the message stays generic since "fetch it" is what they
+        # need to do regardless.
+        if _is_shallow_repo(cwd=cwd):
+            hint = (
+                f"could not resolve base ref {base_ref!r}: this repo "
+                f"is a shallow clone. In GitHub Actions add "
+                f"``with: fetch-depth: 0`` to ``actions/checkout``; "
+                f"in GitLab CI set ``GIT_DEPTH: 0``; locally run "
+                f"``git fetch --unshallow``. Treating every HEAD "
+                f"finding as new."
+            )
+        else:
+            hint = (
+                f"could not resolve base ref {base_ref!r} "
+                f"(fetch it or pass a different ref); "
+                f"treating every HEAD finding as new."
+            )
+        warnings.append(hint)
         return DeltaReport(
             base_ref=base_ref,
             base_commit=None,

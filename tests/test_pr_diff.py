@@ -438,6 +438,252 @@ def test_resolve_commit_returns_short_sha_against_real_repo(tmp_path):
     assert len(sha) >= 7
 
 
+# ──────────────────────────────────────────────────────────────────────
+# Reporter caps and prose
+# ──────────────────────────────────────────────────────────────────────
+
+
+def test_reporter_caps_preserved_at_max():
+    """A delta with more preserved findings than the renderer cap
+    should emit only the cap-many findings plus a single "+N more"
+    footer inside the same details block. Total count in the summary
+    line stays accurate (it's a count, not a render)."""
+    from pipeline_check.core import pr_diff_reporter as rep_mod
+    big = [
+        _f(check_id=f"GHA-{i:03d}", resource=f"f{i}.yml", severity="MEDIUM")
+        for i in range(rep_mod._MAX_PRESERVED_RENDERED + 10)
+    ]
+    delta = DeltaReport(
+        base_ref="origin/main",
+        base_commit=None,
+        head_commit=None,
+        preserved=big,
+    )
+    out = report_pr_diff(delta)
+    assert f"Preserved findings ({len(big)})" in out  # total count visible
+    assert "+10 more preserved finding(s) not shown" in out
+    # Sanity: the rendered subset is the cap, not all of them.
+    # We assert against the *first finding past the cap* not being
+    # present in the body. Sorted by severity-desc then check_id-asc,
+    # all entries share the same severity here, so check_id order
+    # decides what's first vs last.
+    sorted_ids = sorted(f"GHA-{i:03d}" for i in range(len(big)))
+    cutoff_id = sorted_ids[rep_mod._MAX_PRESERVED_RENDERED]
+    assert cutoff_id not in out
+
+
+def test_reporter_preserved_summary_avoids_em_dash():
+    """CLAUDE.md style: no em-dashes as dramatic pauses in shipped
+    prose. The Preserved-findings summary previously used one."""
+    delta = DeltaReport(
+        base_ref="origin/main",
+        base_commit=None,
+        head_commit=None,
+        preserved=[_f()],
+    )
+    out = report_pr_diff(delta)
+    assert "—" not in out  # em-dash codepoint
+    assert "present in both base and HEAD" in out
+
+
+# ──────────────────────────────────────────────────────────────────────
+# Shallow-clone CI hint
+# ──────────────────────────────────────────────────────────────────────
+
+
+def test_run_pr_diff_shallow_clone_emits_fetch_depth_hint(
+    tmp_path, monkeypatch,
+):
+    """When the repo is a shallow clone AND the base ref can't be
+    resolved, the warning should name the CI fix (fetch-depth: 0)
+    instead of the generic "fetch it" line. Catches the common
+    actions/checkout@v4 default-depth gotcha."""
+    head_raw = [{
+        "check_id": "GHA-001", "resource": "a.yml", "passed": False,
+        "severity": "HIGH", "title": "t", "description": "d",
+        "recommendation": "r",
+    }]
+    monkeypatch.setattr(pr_diff_mod, "_resolve_commit", lambda *a, **kw: None)
+    monkeypatch.setattr(pr_diff_mod, "_is_shallow_repo", lambda *a, **kw: True)
+    delta = pr_diff_mod.run_pr_diff(
+        "origin/main", head_raw, forwarded_argv=[], cwd=tmp_path,
+    )
+    assert delta.warnings
+    text = " ".join(delta.warnings)
+    assert "shallow clone" in text
+    assert "fetch-depth: 0" in text
+
+
+def test_run_pr_diff_non_shallow_uses_generic_hint(tmp_path, monkeypatch):
+    """When the base ref is unresolvable but the repo is *not*
+    shallow, the warning should fall back to the generic message
+    (no `fetch-depth` mention) so we don't misdirect users whose
+    real problem is a typo in the ref."""
+    head_raw = [{
+        "check_id": "GHA-001", "resource": "a.yml", "passed": False,
+        "severity": "HIGH", "title": "t", "description": "d",
+        "recommendation": "r",
+    }]
+    monkeypatch.setattr(pr_diff_mod, "_resolve_commit", lambda *a, **kw: None)
+    monkeypatch.setattr(pr_diff_mod, "_is_shallow_repo", lambda *a, **kw: False)
+    delta = pr_diff_mod.run_pr_diff(
+        "origin/typo", head_raw, forwarded_argv=[], cwd=tmp_path,
+    )
+    assert delta.warnings
+    text = " ".join(delta.warnings)
+    assert "fetch-depth" not in text
+    assert "fetch it" in text
+
+
+# ──────────────────────────────────────────────────────────────────────
+# CLI surface: incompatible --output rejection
+# ──────────────────────────────────────────────────────────────────────
+
+
+def test_cli_rejects_incompatible_output_with_pr_diff(tmp_path, monkeypatch):
+    """``--pr-diff X --output json`` used to silently print Markdown;
+    we now reject it with a usage error so the user has a clear
+    signal that their flag was incompatible.
+
+    Uses click.testing.CliRunner — doesn't spawn a subprocess, so
+    no real scan runs. We create ``.github/workflows`` in cwd so
+    the provider-path resolver doesn't intercept with its own
+    UsageError before our mutex check fires."""
+    from click.testing import CliRunner
+
+    from pipeline_check.cli import scan
+
+    (tmp_path / ".github" / "workflows").mkdir(parents=True)
+    monkeypatch.chdir(tmp_path)
+    runner = CliRunner()
+    result = runner.invoke(
+        scan,
+        ["--pipeline", "github", "--pr-diff", "HEAD~1", "--output", "json"],
+    )
+    # Click usage errors exit 2.
+    assert result.exit_code == 2
+    assert "--pr-diff produces a Markdown delta report" in result.output
+    assert "not supported" in result.output
+
+
+def test_cli_accepts_explicit_markdown_output_with_pr_diff(
+    tmp_path, monkeypatch,
+):
+    """``--output markdown`` is the explicit-intent form and should
+    pass the mutex check. We stop the test before the actual
+    diff runs (no git repo at tmp_path), just confirm the validation
+    gate doesn't reject the invocation before the scan kicks off."""
+    from click.testing import CliRunner
+
+    from pipeline_check.cli import scan
+
+    (tmp_path / ".github" / "workflows").mkdir(parents=True)
+    monkeypatch.chdir(tmp_path)
+    runner = CliRunner()
+    result = runner.invoke(
+        scan,
+        ["--pipeline", "github", "--pr-diff", "HEAD~1",
+         "--output", "markdown"],
+    )
+    # If the mutex check rejected us, the message would be in output.
+    # Anything else (path resolver, git failure, etc.) is fine.
+    assert "--pr-diff produces a Markdown delta report" not in result.output
+
+
+# ──────────────────────────────────────────────────────────────────────
+# End-to-end CLI smoke: real subprocess against a tmp git repo
+# ──────────────────────────────────────────────────────────────────────
+
+
+_WORKFLOW_BASE = """\
+name: ci
+on: push
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: echo hi
+"""
+
+_WORKFLOW_HEAD = """\
+name: ci
+on:
+  pull_request_target:
+    types: [opened]
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+      - run: echo hi
+"""
+
+
+@requires_git
+def test_cli_pr_diff_end_to_end_against_real_repo(tmp_path):
+    """Spawn ``python -m pipeline_check --pr-diff HEAD~1`` in a tmp
+    git repo whose two commits sandwich a workflow that gains a
+    ``pull_request_target`` trigger. The smoke test asserts the
+    markdown headline lands on stdout and the dispatch produced
+    the +N counter. Slower than the unit tests but catches the
+    actual wiring (argv forwarding, dispatch, worktree subprocess)
+    that the pure-layer tests can't reach.
+
+    Marked ``requires_git`` so anyone without git on PATH still
+    sees the rest of the file pass."""
+    import sys as _sys
+
+    workflows = tmp_path / ".github" / "workflows"
+    workflows.mkdir(parents=True)
+
+    _git(["init", "--initial-branch=main"], cwd=tmp_path)
+    (workflows / "ci.yml").write_text(_WORKFLOW_BASE)
+    _git(["add", "."], cwd=tmp_path)
+    _git(["commit", "-m", "base"], cwd=tmp_path)
+
+    # Second commit changes the workflow to introduce GHA-002
+    # (pull_request_target abuse) — the canonical "new finding".
+    (workflows / "ci.yml").write_text(_WORKFLOW_HEAD)
+    _git(["add", "."], cwd=tmp_path)
+    _git(["commit", "-m", "head"], cwd=tmp_path)
+
+    # Spawn the CLI. We pass `--no-chains` implicitly because the
+    # diff layer disables them on the subprocess side anyway; the
+    # parent run still computes them but they don't affect the
+    # markdown delta.
+    import os as _os
+    env = _os.environ.copy()
+    env.setdefault("PYTHONIOENCODING", "utf-8")
+    result = subprocess.run(
+        [
+            _sys.executable, "-m", "pipeline_check",
+            "--pipeline", "github",
+            "--gha-path", ".github/workflows",
+            "--pr-diff", "HEAD~1",
+        ],
+        cwd=str(tmp_path),
+        capture_output=True,
+        text=True,
+        timeout=120,
+        env=env,
+    )
+    # Without --fail-on, --pr-diff is informational and exits 0
+    # regardless of the delta. A non-zero exit here would mean the
+    # dispatch broke before producing the report.
+    assert result.returncode == 0, (
+        f"exit={result.returncode}\n--- stdout ---\n{result.stdout}"
+        f"\n--- stderr ---\n{result.stderr}"
+    )
+    # Headline and counter must be on stdout (the markdown report).
+    assert "Pipeline-Check diff vs `HEAD~1`" in result.stdout
+    assert " introduced" in result.stdout
+    # The second commit should have introduced GHA-002 specifically.
+    assert "GHA-002" in result.stdout
+
+
 @requires_git
 def test_worktree_add_and_remove_round_trip(tmp_path):
     """Plumbing test: worktree add against a real ref should succeed,
