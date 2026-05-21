@@ -736,6 +736,55 @@ All other flags (`--output`, `--severity-threshold`, `--checks`,
   `default`.
 """,
     ),
+    "argocd": (
+        "Argo CD",
+        "pipeline_check.core.checks.argocd.rules",
+        _REPO_ROOT / "docs" / "providers" / "argocd.md",
+        """\
+# Argo CD provider
+
+Parses Argo CD documents from `.yaml` / `.yml` files on disk, text-
+only static analysis, no `argocd` binary, no cluster access.
+Recognized kinds: `Application`, `ApplicationSet`, `AppProject`
+(all under `apiVersion: argoproj.io/v1alpha1`), plus the core `v1
+ConfigMap` documents named `argocd-cm` or `argocd-rbac-cm` where
+Argo CD's instance-wide config lives. Other documents (including
+Argo Workflows CRDs, which belong to the `argo` provider) are
+silently skipped.
+
+## Producer workflow
+
+```bash
+pipeline_check --pipeline argocd --argocd-path applications/
+
+# A single Application file works too.
+pipeline_check --pipeline argocd --argocd-path applications/payments.yaml
+
+# Argo CD + Argo Workflows together; each provider's kind filter
+# is disjoint so pointing both at the same dir produces disjoint
+# findings, not duplicates.
+pipeline_check --pipelines argo,argocd --argo-path ci/ --argocd-path ci/
+```
+
+All other flags (`--output`, `--severity-threshold`, `--checks`,
+`--standard`, …) behave the same as with the other providers.
+
+### Argo CD-specific checks
+
+- **ARGOCD-004** walks `data.policy.csv` (and any `data.policy.<role>.csv`)
+  on the `argocd-rbac-cm` ConfigMap line by line, ignoring comments
+  and explicit denies. The unintuitive bit: `argocd-rbac-cm` is a
+  plain `kind: ConfigMap`, not an `argoproj.io` CRD, so this rule
+  fires off Kubernetes ConfigMap docs that have to be passed in
+  alongside the Application manifests.
+- **ARGOCD-007** flags Helm `valueFiles` / `parameters` that
+  interpolate generator placeholders (`{{branch}}`, `{{repo}}`)
+  without the ApplicationSet setting `spec.goTemplate: true`. Argo
+  CD's default fasttemplate substitution is a literal string-splice
+  and a generator-controlled value containing YAML structural
+  characters lands verbatim in the rendered values.
+""",
+    ),
     "drone": (
         "Drone CI",
         "pipeline_check.core.checks.drone.rules",
@@ -1963,6 +2012,11 @@ _FOOTER_CONFIG: dict[str, dict[str, str]] = {
         "prefix": "ARGO", "prefix_lc": "argo", "pkg": "argo",
         "signature": "check(ctx: ArgoContext) -> Finding",
         "arg_kind": "``ArgoContext``",
+    },
+    "argocd":    {
+        "prefix": "ARGOCD", "prefix_lc": "argocd", "pkg": "argocd",
+        "signature": "check(ctx: ArgoCDContext) -> Finding",
+        "arg_kind": "``ArgoCDContext``",
     },
     "dockerfile": {"prefix": "DF",  "prefix_lc": "df",  "pkg": "dockerfile"},
     "kubernetes": {"prefix": "K8S", "prefix_lc": "k8s", "pkg": "kubernetes"},

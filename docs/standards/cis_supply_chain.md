@@ -18506,6 +18506,20 @@ spec:
 
 **Source:** [`TKN-015`](../providers/tekton.md#tkn-015) in the [Tekton provider](../providers/tekton.md).
 
+## Mapped check IDs not found in the rule registry
+
+The standards data references check IDs the scanner does not ship. The mapping is preserved for forward-compat; once the rule lands the row will fill in automatically.
+
+- `ARGOCD-001`
+- `ARGOCD-002`
+- `ARGOCD-003`
+- `ARGOCD-004`
+- `ARGOCD-005`
+- `ARGOCD-006`
+- `ARGOCD-007`
+- `ARGOCD-008`
+- `ARGOCD-009`
+
 ---
 
 _This page is generated. Edit `pipeline_check/core/standards/data/cis_supply_chain.py` (mappings) or `scripts/gen_standards_docs.py` (intro / per-control prose) and run `python scripts/gen_standards_docs.py cis_supply_chain`._

@@ -13,6 +13,7 @@ without any changes to Scanner or the CLI.
 from __future__ import annotations
 
 from .argo import ArgoProvider
+from .argocd import ArgoCDProvider
 from .aws import AWSProvider
 from .azure import AzureProvider
 from .base import BaseProvider
@@ -70,6 +71,7 @@ register(CloudBuildProvider())
 register(BuildkiteProvider())
 register(TektonProvider())
 register(ArgoProvider())
+register(ArgoCDProvider())
 register(DockerfileProvider())
 register(KubernetesProvider())
 register(HelmProvider())

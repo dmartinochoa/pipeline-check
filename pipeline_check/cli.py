@@ -158,6 +158,7 @@ class _GroupedCommand(click.Command):
             "--circleci-path", "--cfn-template", "--cloudbuild-path",
             "--dockerfile-path", "--k8s-path", "--helm-path",
             "--buildkite-path", "--tekton-path", "--argo-path",
+            "--argocd-path",
             "--helm-values", "--helm-set", "--oci-manifest",
             "--drone-path", "--npm-path", "--pypi-path",
             "--maven-path",
@@ -945,7 +946,7 @@ def _install_completion_callback(
         "--bitbucket-path, --azure-path, --jenkinsfile-path, "
         "--circleci-path, --cloudbuild-path, --dockerfile-path, "
         "--k8s-path, --helm-path, --buildkite-path, --tekton-path, "
-        "--argo-path, --oci-manifest, --drone-path, --npm-path, "
+        "--argo-path, --argocd-path, --oci-manifest, --drone-path, --npm-path, "
         "--pypi-path, --maven-path); "
         "AWS scans the live account via boto3. For multi-provider "
         "scans (so cross-provider attack chains like XPC-001 fire) "
@@ -1241,6 +1242,18 @@ def _install_completion_callback(
         "Path to an Argo Workflow YAML file or a directory "
         "containing one (required when --pipeline argo). Documents "
         "are filtered to ``apiVersion: argoproj.io/*``."
+    ),
+)
+@click.option(
+    "--argocd-path",
+    default=None,
+    metavar="PATH",
+    help=(
+        "Path to an Argo CD YAML file (Application / ApplicationSet "
+        "/ AppProject, or the argocd-cm / argocd-rbac-cm "
+        "ConfigMaps) or a directory containing one (required when "
+        "--pipeline argocd). Documents that aren't Argo CD CRDs or "
+        "named config ConfigMaps are silently skipped."
     ),
 )
 @click.option(
@@ -1906,6 +1919,7 @@ def scan(
     buildkite_path: str | None,
     tekton_path: str | None,
     argo_path: str | None,
+    argocd_path: str | None,
     dockerfile_path: str | None,
     k8s_path: str | None,
     helm_path: str | None,
@@ -2320,6 +2334,10 @@ def scan(
             argo_path = _resolve_provider_path(
                 "argo", flag="argo-path", value=argo_path,
             )
+        elif pipeline_lc == "argocd":
+            argocd_path = _resolve_provider_path(
+                "argocd", flag="argocd-path", value=argocd_path,
+            )
         elif pipeline_lc == "dockerfile":
             dockerfile_path = _resolve_provider_path(
                 "dockerfile", flag="dockerfile-path", value=dockerfile_path,
@@ -2476,6 +2494,7 @@ def scan(
         buildkite_path=buildkite_path,
         tekton_path=tekton_path,
         argo_path=argo_path,
+        argocd_path=argocd_path,
         resolve_remote=resolve_remote,
         gh_token=gh_token,
         no_cache=no_cache,

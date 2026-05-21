@@ -552,6 +552,16 @@ STANDARD = Standard(
         "ARGO-013": ["CICD-SEC-2", "CICD-SEC-7"],  # SA token automount
         "ARGO-014": ["CICD-SEC-3"],   # unpinned package install
         "ARGO-015": ["CICD-SEC-3", "CICD-SEC-9"],  # insecure artifact URL
+        # Argo CD
+        "ARGOCD-001": ["CICD-SEC-5", "CICD-SEC-1"],  # AppProject sourceRepos wildcard
+        "ARGOCD-002": ["CICD-SEC-5"],                # AppProject destinations wildcard
+        "ARGOCD-003": ["CICD-SEC-7"],                # auto-sync prune without selfHeal
+        "ARGOCD-004": ["CICD-SEC-2"],                # RBAC wildcard policy
+        "ARGOCD-005": ["CICD-SEC-6"],                # repo plaintext credentials
+        "ARGOCD-006": ["CICD-SEC-1", "CICD-SEC-4"],  # ApplicationSet PR/SCM no allowlist
+        "ARGOCD-007": ["CICD-SEC-4", "CICD-SEC-1"],  # Helm generator interpolation
+        "ARGOCD-008": ["CICD-SEC-3", "CICD-SEC-4"],  # CMP plugin invocation
+        "ARGOCD-009": ["CICD-SEC-2"],                # anonymous access enabled
         # Cross-cutting dataflow / taint engine (provider-spanning,
         # currently GHA-only in v1)
         "TAINT-001": ["CICD-SEC-4", "CICD-SEC-1"],  # cross-step taint via $GITHUB_OUTPUT

@@ -20,7 +20,7 @@
 
 Pipeline-Check is a security scanner for GitHub Actions, GitLab CI, Jenkins, CircleCI, Azure DevOps, Bitbucket Pipelines, Buildkite, Drone, Tekton, Argo Workflows, and Google Cloud Build, plus Terraform, CloudFormation, Kubernetes, Helm, Dockerfile, OCI image manifests, and live AWS accounts. It maps every finding to the [OWASP Top 10 CI/CD Security Risks](https://owasp.org/www-project-top-10-ci-cd-security-risks/), SLSA, NIST SSDF, PCI DSS, SOC 2, the CIS GitHub Benchmark, and nine other frameworks, and scores each scan A through D so you can gate merges on the result.
 
-**810+ checks** across **22 providers**, mapped to **15 compliance standards**, with **111 autofixers**, plus **38 attack chains** correlating findings into MITRE ATT&CK-mapped kill chains. A dataflow taint engine catches multi-step and cross-job propagation that single-rule scanners miss.
+**820+ checks** across **23 providers**, mapped to **15 compliance standards**, with **111 autofixers**, plus **38 attack chains** correlating findings into MITRE ATT&CK-mapped kill chains. A dataflow taint engine catches multi-step and cross-job propagation that single-rule scanners miss.
 
 [Quick start](#quick-start) |
 [Usage guide](docs/usage.md) |
@@ -128,6 +128,7 @@ for inputs, idempotency, and fork-PR fallback behavior.
 | **Drone CI** | `.drone.yml` / `.drone.yaml` | `--drone-path` | 11 checks (`DR-001`--`011`): image / plugin pinning, privileged steps, ${DRONE_*} injection, literal secrets, TLS bypass, sensitive host-path mount, `pull: never` policy, tainted cache key, unpinned package install, runner-targeting node map |
 | **Tekton** | `Task` / `Pipeline` / `*Run` YAML | `--tekton-path` | 16 checks (`TKN-001`--`015`, plus `TAINT-006`) |
 | **Argo Workflows** | `Workflow` / `WorkflowTemplate` YAML | `--argo-path` | 16 checks (`ARGO-001`--`015`, plus `TAINT-007`) |
+| **Argo CD** | `Application` / `ApplicationSet` / `AppProject` YAML + `argocd-cm` / `argocd-rbac-cm` ConfigMaps | `--argocd-path` | 9 checks (`ARGOCD-001`--`009`) — AppProject sourceRepo / destination wildcards, auto-sync prune without selfHeal, RBAC wildcard policies, repo plaintext credentials, ApplicationSet PR/SCM generators without project allowlist, Helm generator interpolation without `goTemplate`, CMP plugin invocations, anonymous access |
 | **Dockerfile** | `Dockerfile` / `Containerfile` | `--dockerfile-path` | 30 checks (`DF-001`--`030`). `DF-021`/`DF-024`/`DF-025` cover the lifecycle-scripts / npmrc-token / pip-TLS-bypass primitives the npm-worm pack relies on. `DF-026`..`030` extend DF-023's loader-hijack detection to the language-runtime TLS bypass surface (Node `NODE_TLS_REJECT_UNAUTHORIZED`, Python `PYTHONHTTPSVERIFY` / `REQUESTS_CA_BUNDLE`, Git `GIT_SSL_NO_VERIFY`) plus `NODE_OPTIONS` preload / debugger flags. |
 | **Kubernetes** | Manifest YAML (`Deployment`, `Pod`, …) | `--k8s-path` | 43 checks (`K8S-001`--`043`) |
 | **Helm** | Chart directory (`Chart.yaml`) or `.tgz` | `--helm-path` | Renders via `helm template`, runs the 43 K8S-* rules on the result, plus 10 chart-supply-chain rules (`HELM-001`--`010`) read straight off `Chart.yaml` / `Chart.lock`. Requires `helm` (Helm 3) on PATH. |
@@ -156,7 +157,7 @@ for the full per-check reference.
 
 ```
                  +-----------+
-  Config files   |  Scanner  |   810+ checks across 22 providers
+  Config files   |  Scanner  |   820+ checks across 23 providers
   or live APIs ---->         +---> Findings (check_id, severity, resource)
                  +-----------+
                        |
@@ -474,6 +475,7 @@ pipeline_check/
         ├── drone/rules/       # DR-001 .. DR-011
         ├── tekton/rules/      # TKN-001 .. TKN-015 + TAINT-006
         ├── argo/rules/        # ARGO-001 .. ARGO-015 + TAINT-007
+        ├── argocd/rules/      # ARGOCD-001 .. ARGOCD-009
         ├── oci/rules/         # OCI-001 .. OCI-008 + ATTEST-001..007
         ├── dockerfile/rules/  # DF-001 .. DF-030
         ├── kubernetes/rules/  # K8S-001 .. K8S-043

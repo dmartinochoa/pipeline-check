@@ -554,6 +554,16 @@ STANDARD = Standard(
         "TKN-015":  ["ESF-D-INJECTION"],            # workspace subPath param injection
         "ARGO-014": ["ESF-S-PIN-DEPS", "ESF-S-VERIFY-DEPS"],   # unpinned package install
         "ARGO-015": ["ESF-S-TRUSTED-REG"],          # insecure (non-HTTPS) artifact URL
+        # ── Argo CD ──────────────────────────────────────────────
+        "ARGOCD-001": ["ESF-C-LEAST-PRIV"],                          # AppProject sourceRepos wildcard
+        "ARGOCD-002": ["ESF-C-LEAST-PRIV", "ESF-C-ENV-SEP"],         # AppProject destinations wildcard
+        "ARGOCD-003": ["ESF-C-APPROVAL"],                            # auto-prune without selfHeal
+        "ARGOCD-004": ["ESF-C-LEAST-PRIV"],                          # RBAC wildcard policy
+        "ARGOCD-005": ["ESF-D-SECRETS"],                             # repo plaintext credentials
+        "ARGOCD-006": ["ESF-D-CODE-REVIEW", "ESF-C-LEAST-PRIV"],     # ApplicationSet PR/SCM no allowlist
+        "ARGOCD-007": ["ESF-D-INJECTION"],                           # Helm generator interpolation
+        "ARGOCD-008": ["ESF-S-VERIFY-DEPS"],                         # CMP plugin invocation
+        "ARGOCD-009": ["ESF-C-LEAST-PRIV"],                          # anonymous access enabled
         # ── Drone CI ─────────────────────────────────────────────
         "DR-001":   ["ESF-S-PIN-DEPS", "ESF-S-IMMUTABLE"],     # step image not digest-pinned
         "DR-002":   ["ESF-D-PRIV-BUILD"],           # privileged step

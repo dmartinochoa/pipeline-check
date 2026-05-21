@@ -397,6 +397,16 @@ STANDARD = Standard(
         "ARGO-013": ["2.4.3"],                     # SA token automount default
         "ARGO-014": ["1.4.1", "3.1.5"],            # unpinned package install
         "ARGO-015": ["1.4.1", "4.1.1"],            # insecure (non-HTTPS) artifact URL
+        # ── Argo CD ───────────────────────────────────────────────
+        "ARGOCD-001": ["2.4.3"],                   # AppProject sourceRepos wildcard
+        "ARGOCD-002": ["2.4.3", "5.2.1"],          # AppProject destinations wildcard
+        "ARGOCD-003": ["5.1.4"],                   # auto-prune without selfHeal
+        "ARGOCD-004": ["2.4.3"],                   # RBAC wildcard policy
+        "ARGOCD-005": ["1.5.1"],                   # repo plaintext credentials
+        "ARGOCD-006": ["2.4.3", "5.1.4"],          # ApplicationSet PR/SCM no allowlist
+        "ARGOCD-007": ["2.4.3", "5.1.4"],          # Helm generator interpolation
+        "ARGOCD-008": ["2.3.8"],                   # CMP plugin invocation
+        "ARGOCD-009": ["2.4.3"],                   # anonymous access enabled
         # ── Helm chart-supply-chain ───────────────────────────────
         # Chart packaging metadata sits at the artifact / build-deps
         # boundary. HELM-002's missing-digest is the exact "signed
