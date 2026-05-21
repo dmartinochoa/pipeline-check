@@ -33,6 +33,27 @@ RULE = Rule(
         "container runtime / orchestrator's exec path covers every "
         "operational use case sshd traditionally served."
     ),
+    exploit_example=(
+        "# Vulnerable: ``EXPOSE 22`` advertises an SSH port on the\n"
+        "# image. Even if no sshd is actually running, the metadata\n"
+        "# signals to operators that SSH is part of the contract,\n"
+        "# encouraging port-forward / publish patterns that put\n"
+        "# the container's SSH on the network. Container SSH\n"
+        "# bypasses the cluster's audit and identity layers.\n"
+        "FROM ubuntu@sha256:abc123...\n"
+        "RUN apt-get update && apt-get install -y openssh-server\n"
+        "EXPOSE 22\n"
+        "CMD [\"/usr/sbin/sshd\", \"-D\"]\n"
+        "\n"
+        "# Safe: drop the SSH server. Use ``kubectl exec`` (or\n"
+        "# ``docker exec``) for interactive debugging — both go\n"
+        "# through the cluster's RBAC / audit pipeline, with no\n"
+        "# network-exposed SSH surface.\n"
+        "FROM ubuntu@sha256:abc123...\n"
+        "RUN apt-get update && apt-get install -y --no-install-recommends app\n"
+        "EXPOSE 8080\n"
+        "CMD [\"/usr/local/bin/app\"]"
+    ),
 )
 
 #: Ports that signal a remote-access daemon. Comments record the

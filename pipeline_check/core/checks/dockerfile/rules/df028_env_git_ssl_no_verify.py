@@ -41,6 +41,24 @@ RULE = Rule(
         "and DF-029 (Python requests TLS) for the env-var-"
         "based TLS-bypass surface."
     ),
+    exploit_example=(
+        "# Vulnerable: ``ENV GIT_SSL_NO_VERIFY=1`` disables git's\n"
+        "# certificate verification for every clone / fetch. A\n"
+        "# MITM substitutes the remote's contents on the next\n"
+        "# git operation.\n"
+        "FROM alpine/git@sha256:abc123...\n"
+        "ENV GIT_SSL_NO_VERIFY=1\n"
+        "RUN git clone https://internal.example.com/repo.git /src\n"
+        "\n"
+        "# Safe: install the missing CA, keep git's SSL\n"
+        "# verification on. ``GIT_SSL_CAPATH`` / ``GIT_SSL_CAINFO``\n"
+        "# can also be used to point git at a specific CA bundle\n"
+        "# if updating the system trust store isn't an option.\n"
+        "FROM alpine/git@sha256:abc123...\n"
+        "COPY ci/internal-ca.crt /usr/local/share/ca-certificates/\n"
+        "RUN update-ca-certificates && \\\n"
+        "    git clone https://internal.example.com/repo.git /src"
+    ),
 )
 
 

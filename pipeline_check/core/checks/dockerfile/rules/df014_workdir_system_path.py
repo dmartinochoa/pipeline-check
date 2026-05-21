@@ -30,6 +30,26 @@ RULE = Rule(
         "container-escape primitive that lets a compromised step "
         "manipulate cgroups, devices, or kernel config."
     ),
+    exploit_example=(
+        "# Vulnerable: ``WORKDIR /proc`` (or ``/sys`` / ``/etc``)\n"
+        "# sets the runtime working directory to a kernel-managed\n"
+        "# filesystem. Relative file writes from the app then\n"
+        "# attempt to write into kernel sysfs / procfs; at best\n"
+        "# the writes fail silently, at worst they cause runtime\n"
+        "# misbehavior on shared host kernel resources.\n"
+        "FROM alpine@sha256:abc123...\n"
+        "WORKDIR /proc\n"
+        "COPY app /usr/local/bin/app\n"
+        "CMD [\"app\"]\n"
+        "\n"
+        "# Safe: a normal application directory under ``/app`` or\n"
+        "# ``/srv``. The app writes its own files in an isolated\n"
+        "# location.\n"
+        "FROM alpine@sha256:abc123...\n"
+        "WORKDIR /app\n"
+        "COPY app /usr/local/bin/app\n"
+        "CMD [\"app\"]"
+    ),
 )
 
 #: Path prefixes that should never be the active ``WORKDIR``. The

@@ -41,6 +41,27 @@ RULE = Rule(
         "Together the three cover the same primitive shape "
         "across pip-flag, Node-env, and Python-env surfaces."
     ),
+    exploit_example=(
+        "# Vulnerable: ``ENV PYTHONHTTPSVERIFY=0`` disables TLS\n"
+        "# verification for every Python process in the\n"
+        "# container. pip, requests-via-urllib3, every API call\n"
+        "# now ignores certificate validity.\n"
+        "FROM python@sha256:abc123...\n"
+        "ENV PYTHONHTTPSVERIFY=0\n"
+        "COPY . /app\n"
+        "WORKDIR /app\n"
+        "CMD [\"python\", \"main.py\"]\n"
+        "\n"
+        "# Safe: install the missing CA, keep PYTHONHTTPSVERIFY\n"
+        "# at the safe default. Python's ``ssl`` module reads\n"
+        "# from the system CA store.\n"
+        "FROM python@sha256:abc123...\n"
+        "COPY ci/internal-ca.crt /usr/local/share/ca-certificates/\n"
+        "RUN update-ca-certificates\n"
+        "COPY . /app\n"
+        "WORKDIR /app\n"
+        "CMD [\"python\", \"main.py\"]"
+    ),
 )
 
 

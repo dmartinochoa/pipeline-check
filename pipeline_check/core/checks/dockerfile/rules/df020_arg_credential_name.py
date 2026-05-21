@@ -38,6 +38,29 @@ RULE = Rule(
         "Rare; rename or suppress the finding with a brief "
         "rationale.",
     ),
+    exploit_example=(
+        "# Vulnerable: ``ARG NPM_TOKEN`` declares a build argument\n"
+        "# whose name signals it carries a credential. Build args\n"
+        "# are visible in ``docker history``, so the value (passed\n"
+        "# via ``--build-arg NPM_TOKEN=...``) lands in image\n"
+        "# metadata and leaks the same way as a literal ENV.\n"
+        "FROM node@sha256:abc123...\n"
+        "ARG NPM_TOKEN\n"
+        "RUN npm config set //registry.npmjs.org/:_authToken \"$NPM_TOKEN\" \\\n"
+        "    && npm ci\n"
+        "\n"
+        "# Safe: use BuildKit secret mounts. The token is read\n"
+        "# from a file at RUN time only; nothing about the token\n"
+        "# (not even its existence as a build arg) lands in\n"
+        "# ``docker history``.\n"
+        "# syntax=docker/dockerfile:1.7\n"
+        "FROM node@sha256:abc123...\n"
+        "RUN --mount=type=secret,id=npm_token \\\n"
+        "    NPM_TOKEN=$(cat /run/secrets/npm_token) && \\\n"
+        "    npm config set //registry.npmjs.org/:_authToken \"$NPM_TOKEN\" && \\\n"
+        "    npm ci && \\\n"
+        "    npm config delete //registry.npmjs.org/:_authToken"
+    ),
 )
 
 

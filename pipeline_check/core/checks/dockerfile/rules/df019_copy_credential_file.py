@@ -75,6 +75,30 @@ RULE = Rule(
         "brief ``.pipelinecheckignore`` rationale and prefer an "
         "explicit non-secret name (``.env.example``).",
     ),
+    exploit_example=(
+        "# Vulnerable: ``COPY .npmrc`` (or ``.aws/credentials`` /\n"
+        "# ``.kube/config`` / ``.netrc``) bakes the host's local\n"
+        "# credential file into the image. Anyone who pulls the\n"
+        "# image extracts the credential via\n"
+        "# ``docker save | tar xf -``; the secret rides the image\n"
+        "# everywhere it's distributed.\n"
+        "FROM node@sha256:abc123...\n"
+        "WORKDIR /app\n"
+        "COPY . .\n"
+        "COPY .npmrc /root/.npmrc    # carries auth token into layer\n"
+        "RUN npm ci && npm run build\n"
+        "\n"
+        "# Safe: use BuildKit's ``--mount=type=secret`` so the\n"
+        "# credential file is mounted only for the RUN that needs\n"
+        "# it. The secret never lands in any layer; ``docker save``\n"
+        "# returns an image with no trace.\n"
+        "# syntax=docker/dockerfile:1.7\n"
+        "FROM node@sha256:abc123...\n"
+        "WORKDIR /app\n"
+        "COPY . .\n"
+        "RUN --mount=type=secret,id=npmrc,target=/root/.npmrc \\\n"
+        "    npm ci && npm run build"
+    ),
 )
 
 

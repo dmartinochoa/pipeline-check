@@ -2125,6 +2125,30 @@ CMD ["python", "/app/main.py"]
 
 - ``ADD`` of an internal URL served from an immutable, build-time-frozen object store (a private artifact registry under your control, GCS with object-versioning and uniform bucket-level access) is materially less risky than a public-internet fetch, but the rule still fires because no on-line check can distinguish trusted from untrusted hosts. Prefer the explicit ``--checksum=sha256:<hex>`` form (BuildKit native, doesn't trigger) or move to a ``COPY`` from a builder stage; suppress per-Dockerfile if the deployment target guarantees the URL host can't be substituted.
 
+**Proof of exploit.**
+
+```
+# Vulnerable: ``ADD <url>`` pulls a remote blob into the
+# image at build time with no integrity check. A MITM
+# (compromised proxy, BGP hijack on the mirror) or a
+# host compromise substitutes the file; the build commits
+# the substituted bytes into a layer.
+FROM ubuntu@sha256:abc123...
+ADD https://internal-mirror.example.com/installer.tar.gz /tmp/
+RUN tar -xzf /tmp/installer.tar.gz && /tmp/install.sh
+
+# Safe: ``RUN curl`` to a tempfile, ``sha256sum -c`` against
+# a known-good digest, then extract / execute. The verify
+# step fails loud if the bytes don't match.
+FROM ubuntu@sha256:abc123...
+RUN curl -fsSL https://internal-mirror.example.com/installer.tar.gz \
+      -o /tmp/installer.tar.gz \
+    && echo 'a1b2c3d4...  /tmp/installer.tar.gz' | sha256sum -c - \
+    && tar -xzf /tmp/installer.tar.gz \
+    && /tmp/install.sh \
+    && rm /tmp/installer.tar.gz
+```
+
 **Source:** [`DF-003`](../providers/dockerfile.md#df-003) in the [Dockerfile provider](../providers/dockerfile.md).
 
 ### `DF-004`: RUN executes a remote script via curl-pipe / wget-pipe <span class="pg-sev pg-sev--high">HIGH</span> { #detail-df-004 }
@@ -2208,6 +2232,31 @@ RUN curl -fsSL https://example-installer.example/install.sh -o /tmp/install.sh \
 
 - An internal index served over plain HTTP on a private network (no internet path) is the typical justification for the flag. Fix the index (terminate TLS at a reverse proxy, or install the internal CA into the image) rather than leaving the bypass in the Dockerfile.
 
+**Proof of exploit.**
+
+```
+# Vulnerable: pip resolves and downloads packages over
+# plaintext HTTP, so any network attacker between the
+# build and the registry can substitute a wheel. The
+# ``--trusted-host`` flag silences pip's hash
+# verification for the named host too.
+FROM python@sha256:abc123...
+RUN pip install \
+      --index-url http://internal-pypi.example.com/simple \
+      --trusted-host internal-pypi.example.com \
+      -r requirements.txt
+
+# Safe: HTTPS with the index's certificate validated.
+# Internal CA installed into the image's trust store;
+# ``--require-hashes`` enforces hash pinning.
+FROM python@sha256:abc123...
+COPY ci/internal-ca.crt /usr/local/share/ca-certificates/
+RUN update-ca-certificates && \
+    pip install \
+      --index-url https://internal-pypi.example.com/simple \
+      --require-hashes -r requirements.txt
+```
+
 **Source:** [`DF-021`](../providers/dockerfile.md#df-021) in the [Dockerfile provider](../providers/dockerfile.md).
 
 ### `DF-022`: RUN uses npm install instead of npm ci <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-df-022 }
@@ -2283,6 +2332,30 @@ If the internal registry / API genuinely has a self-signed cert, install the CA 
 
 - Test-only images that interact with a local mock server using a throwaway self-signed cert sometimes set this intentionally. Keep the bypass scoped to a separate ``test`` build stage and DON'T copy it into the final image; the production stage should never carry the variable. Suppress on the test-stage Dockerfile with a rationale that names the mock server.
 
+**Proof of exploit.**
+
+```
+# Vulnerable: ``ENV NODE_TLS_REJECT_UNAUTHORIZED=0``
+# disables TLS verification for every Node.js process
+# in the container. Any HTTPS call (npm install at
+# runtime, internal API call, vendor SDK) is MITM-able.
+FROM node@sha256:abc123...
+ENV NODE_TLS_REJECT_UNAUTHORIZED=0
+COPY . /app
+WORKDIR /app
+CMD ["npm", "start"]
+
+# Safe: install the missing CA into the image trust
+# store and leave ``NODE_TLS_REJECT_UNAUTHORIZED`` at
+# its safe default. Node honors the system CA bundle.
+FROM node@sha256:abc123...
+COPY ci/internal-ca.crt /usr/local/share/ca-certificates/
+RUN update-ca-certificates
+COPY . /app
+WORKDIR /app
+CMD ["npm", "start"]
+```
+
 **Source:** [`DF-026`](../providers/dockerfile.md#df-026) in the [Dockerfile provider](../providers/dockerfile.md).
 
 ### `DF-027`: ENV disables Python HTTPS certificate verification <span class="pg-sev pg-sev--high">HIGH</span> { #detail-df-027 }
@@ -2296,6 +2369,30 @@ Complements DF-021 (``pip install`` TLS bypass via flags) and DF-026 (Node TLS b
 **Recommendation.** Remove the ``ENV PYTHONHTTPSVERIFY=0`` instruction. The variable tells Python's stdlib ``urllib`` and any library that delegates to it (most of them) to accept any TLS certificate. The bypass applies to every subsequent process — ``pip install``, runtime API calls, postinstall scripts — for the rest of the image's life. The same primitive in flag form (``pip install --trusted-host``) is DF-021's surface; DF-027 catches the env-var form that affects every Python invocation, not just pip.
 
 If the internal index has a self-signed cert, install the CA into the image's truststore (``REQUESTS_CA_BUNDLE`` pointing at a real CA bundle, or ``update-ca-certificates`` for the system bundle) rather than blanket-disabling verification.
+
+**Proof of exploit.**
+
+```
+# Vulnerable: ``ENV PYTHONHTTPSVERIFY=0`` disables TLS
+# verification for every Python process in the
+# container. pip, requests-via-urllib3, every API call
+# now ignores certificate validity.
+FROM python@sha256:abc123...
+ENV PYTHONHTTPSVERIFY=0
+COPY . /app
+WORKDIR /app
+CMD ["python", "main.py"]
+
+# Safe: install the missing CA, keep PYTHONHTTPSVERIFY
+# at the safe default. Python's ``ssl`` module reads
+# from the system CA store.
+FROM python@sha256:abc123...
+COPY ci/internal-ca.crt /usr/local/share/ca-certificates/
+RUN update-ca-certificates
+COPY . /app
+WORKDIR /app
+CMD ["python", "main.py"]
+```
 
 **Source:** [`DF-027`](../providers/dockerfile.md#df-027) in the [Dockerfile provider](../providers/dockerfile.md).
 
@@ -2315,6 +2412,27 @@ Pairs with DF-026 (Node TLS), DF-027 (Python TLS), and DF-029 (Python requests T
 
 If you need to clone from an internal Git server with a self-signed cert, install the CA into the image's truststore — same fix as DF-026 / DF-027. The TLS-bypass primitive doesn't need to be image-wide for any legitimate use case.
 
+**Proof of exploit.**
+
+```
+# Vulnerable: ``ENV GIT_SSL_NO_VERIFY=1`` disables git's
+# certificate verification for every clone / fetch. A
+# MITM substitutes the remote's contents on the next
+# git operation.
+FROM alpine/git@sha256:abc123...
+ENV GIT_SSL_NO_VERIFY=1
+RUN git clone https://internal.example.com/repo.git /src
+
+# Safe: install the missing CA, keep git's SSL
+# verification on. ``GIT_SSL_CAPATH`` / ``GIT_SSL_CAINFO``
+# can also be used to point git at a specific CA bundle
+# if updating the system trust store isn't an option.
+FROM alpine/git@sha256:abc123...
+COPY ci/internal-ca.crt /usr/local/share/ca-certificates/
+RUN update-ca-certificates && \
+    git clone https://internal.example.com/repo.git /src
+```
+
 **Source:** [`DF-028`](../providers/dockerfile.md#df-028) in the [Dockerfile provider](../providers/dockerfile.md).
 
 ### `DF-029`: ENV neuters Python requests CA bundle <span class="pg-sev pg-sev--high">HIGH</span> { #detail-df-029 }
@@ -2332,6 +2450,33 @@ A path to a real file (``/etc/ssl/certs/...``, ``/usr/local/share/ca-certificate
 **Recommendation.** Set ``ENV REQUESTS_CA_BUNDLE`` to the path of a real CA bundle (typically ``/etc/ssl/certs/ca-certificates.crt`` on Debian or ``/etc/ssl/cert.pem`` on Alpine), or unset it entirely so the ``requests`` library falls back to ``certifi``. Pointing the variable at ``/dev/null`` or an empty string is a documented anti-pattern: ``requests`` treats the empty / missing bundle as 'verify against nothing,' which silently accepts every certificate.
 
 The same shape as DF-027 (``PYTHONHTTPSVERIFY=0``) but narrower in surface — ``REQUESTS_CA_BUNDLE`` only affects ``requests`` and its descendants, not the stdlib ``urllib``. Still a real bypass because most Python network clients (pip, AWS CLI, Anchore, Trivy, every Django app) flow through ``requests``.
+
+**Proof of exploit.**
+
+```
+# Vulnerable: ``ENV REQUESTS_CA_BUNDLE=/dev/null`` (or
+# the empty string, or a non-existent path) neuters the
+# CA bundle Python's requests library consults. Every
+# HTTPS call requests makes silently fails verification
+# or accepts any cert.
+FROM python@sha256:abc123...
+ENV REQUESTS_CA_BUNDLE=/dev/null
+COPY . /app
+WORKDIR /app
+CMD ["python", "main.py"]
+
+# Safe: point ``REQUESTS_CA_BUNDLE`` at the system trust
+# store (or leave it unset, in which case requests uses
+# certifi). Install internal CAs into the system store
+# rather than papering over with a null bundle.
+FROM python@sha256:abc123...
+COPY ci/internal-ca.crt /usr/local/share/ca-certificates/
+RUN update-ca-certificates
+ENV REQUESTS_CA_BUNDLE=/etc/ssl/certs/ca-certificates.crt
+COPY . /app
+WORKDIR /app
+CMD ["python", "main.py"]
+```
 
 **Source:** [`DF-029`](../providers/dockerfile.md#df-029) in the [Dockerfile provider](../providers/dockerfile.md).
 
