@@ -6179,6 +6179,47 @@ resource "aws_iam_role_policy" "codebuild_least_priv" {
 
 **Recommendation.** Replace wildcard actions with specific IAM actions.
 
+**Proof of exploit.**
+
+```
+# Vulnerable: the role can do literally anything in S3.
+# Any compromise of any pipeline that assumes this role
+# (poisoned action, leaked credential, malicious build
+# step) can read, write, or delete every object in every
+# bucket the account owns. Privilege escalation also hides
+# inside the wildcard: ``s3:PutBucketPolicy`` is part of
+# ``s3:*``, so the attacker can open the bucket to the
+# public after the initial foothold.
+{
+  "Version": "2012-10-17",
+  "Statement": [{
+    "Effect": "Allow",
+    "Action": "s3:*",
+    "Resource": "*"
+  }]
+}
+
+# Safe: enumerate the actions the pipeline actually needs
+# and scope ``Resource`` to the specific bucket. A new
+# requirement then triggers a policy review instead of
+# silently widening authority.
+{
+  "Version": "2012-10-17",
+  "Statement": [{
+    "Effect": "Allow",
+    "Action": [
+      "s3:GetObject",
+      "s3:PutObject",
+      "s3:ListBucket"
+    ],
+    "Resource": [
+      "arn:aws:s3:::my-build-artifacts",
+      "arn:aws:s3:::my-build-artifacts/*"
+    ]
+  }]
+}
+```
+
 **Source:** [`IAM-002`](../providers/aws.md) in the [AWS provider](../providers/aws.md).
 
 ### `IAM-003`: CI/CD role has no permission boundary <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-iam-003 }

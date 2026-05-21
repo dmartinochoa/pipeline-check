@@ -6139,6 +6139,47 @@ resource "aws_iam_role_policy" "codebuild_least_priv" {
 
 **Recommendation.** Replace wildcard actions with specific IAM actions.
 
+**Proof of exploit.**
+
+```
+# Vulnerable: the role can do literally anything in S3.
+# Any compromise of any pipeline that assumes this role
+# (poisoned action, leaked credential, malicious build
+# step) can read, write, or delete every object in every
+# bucket the account owns. Privilege escalation also hides
+# inside the wildcard: ``s3:PutBucketPolicy`` is part of
+# ``s3:*``, so the attacker can open the bucket to the
+# public after the initial foothold.
+{
+  "Version": "2012-10-17",
+  "Statement": [{
+    "Effect": "Allow",
+    "Action": "s3:*",
+    "Resource": "*"
+  }]
+}
+
+# Safe: enumerate the actions the pipeline actually needs
+# and scope ``Resource`` to the specific bucket. A new
+# requirement then triggers a policy review instead of
+# silently widening authority.
+{
+  "Version": "2012-10-17",
+  "Statement": [{
+    "Effect": "Allow",
+    "Action": [
+      "s3:GetObject",
+      "s3:PutObject",
+      "s3:ListBucket"
+    ],
+    "Resource": [
+      "arn:aws:s3:::my-build-artifacts",
+      "arn:aws:s3:::my-build-artifacts/*"
+    ]
+  }]
+}
+```
+
 **Source:** [`IAM-002`](../providers/aws.md) in the [AWS provider](../providers/aws.md).
 
 ### `IAM-003`: CI/CD role has no permission boundary <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-iam-003 }
@@ -6670,6 +6711,45 @@ resource "aws_iam_role_policy" "codebuild_least_priv" {
 **How this is detected.** A wildcard-principal Allow on a Lambda function resource policy lets anyone invoke. The legitimate case is a service principal (API Gateway, S3 events) where AWS fills in the SourceArn/SourceAccount at invoke time, without those conditions, any account using that service can invoke.
 
 **Recommendation.** Remove Allow statements with ``Principal: '*'`` from every Lambda function resource policy, or scope them with a ``SourceArn`` / ``SourceAccount`` condition. Service principals (e.g. ``apigateway.amazonaws.com``) are the common legitimate case, ensure they carry a condition.
+
+**Proof of exploit.**
+
+```
+# Vulnerable: any AWS account on the internet can invoke
+# this function. If the function reads from S3, writes to
+# DynamoDB, or calls a downstream service, the attacker
+# gets that downstream authority at whatever rate they're
+# willing to pay for the invocations.
+{
+  "Version": "2012-10-17",
+  "Statement": [{
+    "Sid": "AllowAnyoneToInvoke",
+    "Effect": "Allow",
+    "Principal": "*",
+    "Action": "lambda:InvokeFunction",
+    "Resource": "arn:aws:lambda:us-east-1:123456789012:function:my-fn"
+  }]
+}
+
+# Safe: keep the service-principal binding (API Gateway,
+# S3 events, etc.) but pair it with a SourceArn or
+# SourceAccount Condition so AWS rejects invokes that
+# don't originate from the expected upstream.
+{
+  "Version": "2012-10-17",
+  "Statement": [{
+    "Effect": "Allow",
+    "Principal": {"Service": "apigateway.amazonaws.com"},
+    "Action": "lambda:InvokeFunction",
+    "Resource": "arn:aws:lambda:us-east-1:123456789012:function:my-fn",
+    "Condition": {
+      "ArnLike": {
+        "AWS:SourceArn": "arn:aws:execute-api:us-east-1:123456789012:abc123/*"
+      }
+    }
+  }]
+}
+```
 
 **Source:** [`LMB-004`](../providers/aws.md) in the [AWS provider](../providers/aws.md).
 
