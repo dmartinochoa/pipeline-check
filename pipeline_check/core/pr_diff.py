@@ -51,7 +51,6 @@ from typing import Any
 
 from .diff import _reject_dash_prefix
 
-
 #: How long the BASE subprocess scan is allowed to run before we kill
 #: it. The HEAD scan has no timeout because the caller's main scan
 #: path doesn't impose one either; the BASE scan does because a hung

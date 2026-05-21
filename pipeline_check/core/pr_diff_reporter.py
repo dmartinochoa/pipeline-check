@@ -16,7 +16,6 @@ from collections import defaultdict
 
 from .pr_diff import DeltaReport, FindingRef
 
-
 _SEVERITY_BADGE: dict[str, str] = {
     "CRITICAL": "🔴 CRITICAL",
     "HIGH": "🟠 HIGH",
