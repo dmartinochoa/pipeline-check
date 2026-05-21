@@ -12,7 +12,7 @@ the scanner evidences controls that surface in CI/CD configuration.
 
 - **Controls in this standard:** 24
 - **Controls evidenced by at least one check:** 24 / 24
-- **Distinct checks evidencing this standard:** 573
+- **Distinct checks evidencing this standard:** 582
 - **Of those, autofixable with `--fix`:** 111
 
 _Severity levels (`CRITICAL` / `HIGH` / `MEDIUM` / `LOW` / `INFO`) follow the same scale across every provider and standard. See [How to read severity](README.md#how-to-read-severity) on the standards overview for the definitions._
@@ -26,26 +26,26 @@ Click a control ID to jump to the per-control section with the full check list. 
 | [`ESF-D-BUILD-ENV`](#ctrl-esf-d-build-env) | Harden the build environment (isolated, minimal, ephemeral workers) | 50 | 9C · 18H · 17M · 6L |
 | [`ESF-D-BUILD-LOGS`](#ctrl-esf-d-build-logs) | Generate and preserve build audit logs | 5 | 1H · 2M · 2L |
 | [`ESF-D-BUILD-TIMEOUT`](#ctrl-esf-d-build-timeout) | Enforce bounded build execution (single-use, time-limited) | 12 | 8M · 4L |
-| [`ESF-D-SECRETS`](#ctrl-esf-d-secrets) | Protect secrets used during build; no secrets in source or env | 45 | 26C · 16H · 2M · 1L |
+| [`ESF-D-SECRETS`](#ctrl-esf-d-secrets) | Protect secrets used during build; no secrets in source or env | 46 | 27C · 16H · 2M · 1L |
 | [`ESF-D-PRIV-BUILD`](#ctrl-esf-d-priv-build) | Avoid privileged / host-networked build workers | 41 | 6C · 20H · 14M · 1L |
 | [`ESF-D-SIGN-ARTIFACTS`](#ctrl-esf-d-sign-artifacts) | Sign build artifacts and verify signatures before release | 28 | 5H · 23M |
 | [`ESF-D-SBOM`](#ctrl-esf-d-sbom) | Produce SBOM / provenance metadata with every build | 26 | 1H · 20M · 5L |
-| [`ESF-D-CODE-REVIEW`](#ctrl-esf-d-code-review) | Require peer review of source and pipeline configuration | 35 | 14H · 13M · 8L |
+| [`ESF-D-CODE-REVIEW`](#ctrl-esf-d-code-review) | Require peer review of source and pipeline configuration | 36 | 15H · 13M · 8L |
 | [`ESF-D-TOKEN-HYGIENE`](#ctrl-esf-d-token-hygiene) | Use short-lived, federated credentials (OIDC), not long-lived tokens | 27 | 19H · 8M |
-| [`ESF-D-INJECTION`](#ctrl-esf-d-injection) | Prevent script / template injection from untrusted pipeline context | 71 | 20C · 44H · 6M · 1L |
+| [`ESF-D-INJECTION`](#ctrl-esf-d-injection) | Prevent script / template injection from untrusted pipeline context | 72 | 20C · 45H · 6M · 1L |
 | [`ESF-D-TAMPER`](#ctrl-esf-d-tamper) | Protect build artifacts from tampering and detect unauthorized modification | 6 | 1C · 4M · 1L |
-| [`ESF-S-VERIFY-DEPS`](#ctrl-esf-s-verify-deps) | Verify third-party and open-source dependencies before use | 103 | 17C · 50H · 32M · 4L |
+| [`ESF-S-VERIFY-DEPS`](#ctrl-esf-s-verify-deps) | Verify third-party and open-source dependencies before use | 104 | 17C · 50H · 33M · 4L |
 | [`ESF-S-PIN-DEPS`](#ctrl-esf-s-pin-deps) | Pin dependencies / actions / images to immutable digests | 78 | 1C · 33H · 38M · 6L |
 | [`ESF-S-TRUSTED-REG`](#ctrl-esf-s-trusted-reg) | Use only trusted, authenticated package and image registries | 28 | 1C · 21H · 5M · 1L |
 | [`ESF-S-VULN-MGMT`](#ctrl-esf-s-vuln-mgmt) | Scan inbound artifacts (images, packages) for known vulnerabilities | 23 | 5C · 1H · 14M · 3L |
 | [`ESF-S-IMMUTABLE`](#ctrl-esf-s-immutable) | Enforce artifact / tag immutability to preserve provenance | 12 | 8H · 1M · 3L |
 | [`ESF-S-PROVENANCE`](#ctrl-esf-s-provenance) | Generate and verify provenance metadata (SLSA / in-toto) for produced artifacts | 9 | 4H · 5M |
-| [`ESF-C-APPROVAL`](#ctrl-esf-c-approval) | Require explicit approval before production deployment | 22 | 8H · 13M · 1L |
+| [`ESF-C-APPROVAL`](#ctrl-esf-c-approval) | Require explicit approval before production deployment | 23 | 8H · 14M · 1L |
 | [`ESF-C-ROLLBACK`](#ctrl-esf-c-rollback) | Automated rollback on deployment failure or alarm | 4 | 2H · 2M |
 | [`ESF-C-DEPLOY-MON`](#ctrl-esf-c-deploy-mon) | Monitor deployments with alarms / health checks | 5 | 3M · 2L |
-| [`ESF-C-ENV-SEP`](#ctrl-esf-c-env-sep) | Separate deployment environments (dev / staging / prod) | 10 | 1H · 7M · 2L |
+| [`ESF-C-ENV-SEP`](#ctrl-esf-c-env-sep) | Separate deployment environments (dev / staging / prod) | 11 | 2H · 7M · 2L |
 | [`ESF-C-ARTIFACT-AUTHZ`](#ctrl-esf-c-artifact-authz) | Restrict access to artifact storage and deployment pipelines | 14 | 4C · 2H · 8M |
-| [`ESF-C-LEAST-PRIV`](#ctrl-esf-c-least-priv) | Apply least-privilege to CI/CD service roles and pipelines | 30 | 4C · 14H · 12M |
+| [`ESF-C-LEAST-PRIV`](#ctrl-esf-c-least-priv) | Apply least-privilege to CI/CD service roles and pipelines | 35 | 6C · 17H · 12M |
 | [`ESF-C-AUDIT`](#ctrl-esf-c-audit) | Audit deployment / pipeline activity and retain logs | 25 | 1H · 4M · 4L · 16I |
 
 ## Filter at runtime
@@ -155,13 +155,14 @@ pipeline_check --pipeline aws --standard esf_supply_chain --standard owasp_cicd_
 
 ### ESF-D-SECRETS: Protect secrets used during build; no secrets in source or env { #ctrl-esf-d-secrets }
 
-**Evidenced by 45 checks** across 18 providers (AWS, Argo Workflows, Azure DevOps, Bitbucket, Buildkite, CircleCI, Cloud Build, CloudFormation, Dockerfile, Drone CI, GitHub Actions, GitLab CI, Jenkins, Kubernetes, SCM, Tekton, Terraform, npm).
+**Evidenced by 46 checks** across 19 providers (AWS, Argo CD, Argo Workflows, Azure DevOps, Bitbucket, Buildkite, CircleCI, Cloud Build, CloudFormation, Dockerfile, Drone CI, GitHub Actions, GitLab CI, Jenkins, Kubernetes, SCM, Tekton, Terraform, npm).
 
 | Check | Title | Severity | Provider | Fix |
 |-------|-------|----------|----------|-----|
 | [`ADO-003`](#detail-ado-003) | Variables contain literal secret values | <span class="pg-sev pg-sev--critical">CRITICAL</span> | [Azure DevOps](../providers/azure.md) |  |
 | [`ADO-008`](#detail-ado-008) | Credential-shaped literal in pipeline body | <span class="pg-sev pg-sev--critical">CRITICAL</span> | [Azure DevOps](../providers/azure.md) | <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> |
 | [`ARGO-006`](#detail-argo-006) | Literal secret value in Argo template env or parameter default | <span class="pg-sev pg-sev--critical">CRITICAL</span> | [Argo Workflows](../providers/argo.md) | <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> |
+| [`ARGOCD-005`](#detail-argocd-005) | Argo CD repository entry stores plaintext credentials | <span class="pg-sev pg-sev--critical">CRITICAL</span> | [Argo CD](../providers/argocd.md) |  |
 | [`BB-003`](#detail-bb-003) | Variables contain literal secret values | <span class="pg-sev pg-sev--critical">CRITICAL</span> | [Bitbucket](../providers/bitbucket.md) |  |
 | [`BB-008`](#detail-bb-008) | Credential-shaped literal in pipeline body | <span class="pg-sev pg-sev--critical">CRITICAL</span> | [Bitbucket](../providers/bitbucket.md) | <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> |
 | [`BB-017`](#detail-bb-017) | Repository token written to persistent storage | <span class="pg-sev pg-sev--critical">CRITICAL</span> | [Bitbucket](../providers/bitbucket.md) | <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> |
@@ -323,10 +324,11 @@ pipeline_check --pipeline aws --standard esf_supply_chain --standard owasp_cicd_
 
 ### ESF-D-CODE-REVIEW: Require peer review of source and pipeline configuration { #ctrl-esf-d-code-review }
 
-**Evidenced by 35 checks** across 3 providers (AWS, Helm, SCM).
+**Evidenced by 36 checks** across 4 providers (AWS, Argo CD, Helm, SCM).
 
 | Check | Title | Severity | Provider | Fix |
 |-------|-------|----------|----------|-----|
+| [`ARGOCD-006`](#detail-argocd-006) | Argo CD ApplicationSet PR/SCM generator without project allowlist | <span class="pg-sev pg-sev--high">HIGH</span> | [Argo CD](../providers/argocd.md) |  |
 | [`CB-007`](#detail-cb-007) | CodeBuild webhook has no filter group | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [AWS](../providers/aws.md) |  |
 | [`CB-008`](#detail-cb-008) | CodeBuild buildspec is inline (not sourced from a protected repo) | <span class="pg-sev pg-sev--high">HIGH</span> | [AWS](../providers/aws.md) |  |
 | [`CB-010`](#detail-cb-010) | CodeBuild webhook allows fork-PR builds without actor filtering | <span class="pg-sev pg-sev--high">HIGH</span> | [AWS](../providers/aws.md) |  |
@@ -399,7 +401,7 @@ pipeline_check --pipeline aws --standard esf_supply_chain --standard owasp_cicd_
 
 ### ESF-D-INJECTION: Prevent script / template injection from untrusted pipeline context { #ctrl-esf-d-injection }
 
-**Evidenced by 71 checks** across 13 providers (AWS, Argo Workflows, Azure DevOps, Bitbucket, Buildkite, CircleCI, Cloud Build, Dockerfile, Drone CI, GitHub Actions, GitLab CI, Jenkins, Tekton).
+**Evidenced by 72 checks** across 14 providers (AWS, Argo CD, Argo Workflows, Azure DevOps, Bitbucket, Buildkite, CircleCI, Cloud Build, Dockerfile, Drone CI, GitHub Actions, GitLab CI, Jenkins, Tekton).
 
 | Check | Title | Severity | Provider | Fix |
 |-------|-------|----------|----------|-----|
@@ -412,6 +414,7 @@ pipeline_check --pipeline aws --standard esf_supply_chain --standard owasp_cicd_
 | [`ADO-027`](#detail-ado-027) | Dangerous shell idiom (eval, sh -c variable, backtick exec) | <span class="pg-sev pg-sev--high">HIGH</span> | [Azure DevOps](../providers/azure.md) |  |
 | [`ADO-030`](#detail-ado-030) | pool interpolates attacker-controllable value | <span class="pg-sev pg-sev--high">HIGH</span> | [Azure DevOps](../providers/azure.md) | <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> |
 | [`ARGO-005`](#detail-argo-005) | Argo input parameter interpolated unsafely in script / args | <span class="pg-sev pg-sev--critical">CRITICAL</span> | [Argo Workflows](../providers/argo.md) |  |
+| [`ARGOCD-007`](#detail-argocd-007) | Argo CD Helm parameters interpolate generator output without goTemplate | <span class="pg-sev pg-sev--high">HIGH</span> | [Argo CD](../providers/argocd.md) |  |
 | [`BB-002`](#detail-bb-002) | Script injection via attacker-controllable context | <span class="pg-sev pg-sev--high">HIGH</span> | [Bitbucket](../providers/bitbucket.md) |  |
 | [`BB-010`](#detail-bb-010) | Deploy step ingests pull-request artifact unverified | <span class="pg-sev pg-sev--critical">CRITICAL</span> | [Bitbucket](../providers/bitbucket.md) |  |
 | [`BB-018`](#detail-bb-018) | Cache key derives from attacker-controllable input | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [Bitbucket](../providers/bitbucket.md) |  |
@@ -490,7 +493,7 @@ pipeline_check --pipeline aws --standard esf_supply_chain --standard owasp_cicd_
 
 ### ESF-S-VERIFY-DEPS: Verify third-party and open-source dependencies before use { #ctrl-esf-s-verify-deps }
 
-**Evidenced by 103 checks** across 20 providers (AWS, Argo Workflows, Azure DevOps, Bitbucket, Buildkite, CircleCI, Cloud Build, Dockerfile, Drone CI, GitHub Actions, GitLab CI, Helm, Jenkins, Kubernetes, OCI manifest, PyPI, SCM, Tekton, maven, npm).
+**Evidenced by 104 checks** across 21 providers (AWS, Argo CD, Argo Workflows, Azure DevOps, Bitbucket, Buildkite, CircleCI, Cloud Build, Dockerfile, Drone CI, GitHub Actions, GitLab CI, Helm, Jenkins, Kubernetes, OCI manifest, PyPI, SCM, Tekton, maven, npm).
 
 | Check | Title | Severity | Provider | Fix |
 |-------|-------|----------|----------|-----|
@@ -505,6 +508,7 @@ pipeline_check --pipeline aws --standard esf_supply_chain --standard owasp_cicd_
 | [`ADO-028`](#detail-ado-028) | Package install bypasses registry integrity (git / path / tarball source) | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [Azure DevOps](../providers/azure.md) |  |
 | [`ARGO-008`](#detail-argo-008) | Argo script source pipes remote install or disables TLS | <span class="pg-sev pg-sev--high">HIGH</span> | [Argo Workflows](../providers/argo.md) | <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> |
 | [`ARGO-014`](#detail-argo-014) | Argo template script runs unpinned package install | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [Argo Workflows](../providers/argo.md) |  |
+| [`ARGOCD-008`](#detail-argocd-008) | Argo CD Application invokes a config-management plugin | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [Argo CD](../providers/argocd.md) |  |
 | [`BB-001`](#detail-bb-001) | pipe: action not pinned to exact version | <span class="pg-sev pg-sev--high">HIGH</span> | [Bitbucket](../providers/bitbucket.md) | <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> |
 | [`BB-010`](#detail-bb-010) | Deploy step ingests pull-request artifact unverified | <span class="pg-sev pg-sev--critical">CRITICAL</span> | [Bitbucket](../providers/bitbucket.md) |  |
 | [`BB-012`](#detail-bb-012) | Remote script piped to shell interpreter | <span class="pg-sev pg-sev--high">HIGH</span> | [Bitbucket](../providers/bitbucket.md) | <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> |
@@ -785,12 +789,13 @@ pipeline_check --pipeline aws --standard esf_supply_chain --standard owasp_cicd_
 
 ### ESF-C-APPROVAL: Require explicit approval before production deployment { #ctrl-esf-c-approval }
 
-**Evidenced by 22 checks** across 9 providers (AWS, Azure DevOps, Bitbucket, Buildkite, CircleCI, GitHub Actions, GitLab CI, Jenkins, SCM).
+**Evidenced by 23 checks** across 10 providers (AWS, Argo CD, Azure DevOps, Bitbucket, Buildkite, CircleCI, GitHub Actions, GitLab CI, Jenkins, SCM).
 
 | Check | Title | Severity | Provider | Fix |
 |-------|-------|----------|----------|-----|
 | [`ADO-004`](#detail-ado-004) | Deployment job missing environment binding | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [Azure DevOps](../providers/azure.md) |  |
 | [`ADO-029`](#detail-ado-029) | Service-connection-using job without environment or branch gate | <span class="pg-sev pg-sev--high">HIGH</span> | [Azure DevOps](../providers/azure.md) |  |
+| [`ARGOCD-003`](#detail-argocd-003) | Argo CD Application auto-sync prunes without selfHeal guardrail | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [Argo CD](../providers/argocd.md) |  |
 | [`BB-004`](#detail-bb-004) | Deploy step missing `deployment:` environment gate | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [Bitbucket](../providers/bitbucket.md) |  |
 | [`BB-028`](#detail-bb-028) | OIDC step without deployment-gated environment | <span class="pg-sev pg-sev--high">HIGH</span> | [Bitbucket](../providers/bitbucket.md) |  |
 | [`BK-007`](#detail-bk-007) | Deploy step not gated by a manual block / input | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [Buildkite](../providers/buildkite.md) |  |
@@ -837,11 +842,12 @@ pipeline_check --pipeline aws --standard esf_supply_chain --standard owasp_cicd_
 
 ### ESF-C-ENV-SEP: Separate deployment environments (dev / staging / prod) { #ctrl-esf-c-env-sep }
 
-**Evidenced by 10 checks** across 9 providers (AWS, Azure DevOps, Bitbucket, Buildkite, CircleCI, GitHub Actions, GitLab CI, Kubernetes, SCM).
+**Evidenced by 11 checks** across 10 providers (AWS, Argo CD, Azure DevOps, Bitbucket, Buildkite, CircleCI, GitHub Actions, GitLab CI, Kubernetes, SCM).
 
 | Check | Title | Severity | Provider | Fix |
 |-------|-------|----------|----------|-----|
 | [`ADO-004`](#detail-ado-004) | Deployment job missing environment binding | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [Azure DevOps](../providers/azure.md) |  |
+| [`ARGOCD-002`](#detail-argocd-002) | Argo CD AppProject permits any destination cluster or namespace | <span class="pg-sev pg-sev--high">HIGH</span> | [Argo CD](../providers/argocd.md) |  |
 | [`BB-004`](#detail-bb-004) | Deploy step missing `deployment:` environment gate | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [Bitbucket](../providers/bitbucket.md) |  |
 | [`BK-013`](#detail-bk-013) | Deploy step has no branches: filter | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [Buildkite](../providers/buildkite.md) |  |
 | [`CC-009`](#detail-cc-009) | Deploy job missing manual approval gate | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [CircleCI](../providers/circleci.md) |  |
@@ -875,12 +881,17 @@ pipeline_check --pipeline aws --standard esf_supply_chain --standard owasp_cicd_
 
 ### ESF-C-LEAST-PRIV: Apply least-privilege to CI/CD service roles and pipelines { #ctrl-esf-c-least-priv }
 
-**Evidenced by 30 checks** across 6 providers (AWS, Argo Workflows, GitHub Actions, Kubernetes, SCM, Tekton).
+**Evidenced by 35 checks** across 7 providers (AWS, Argo CD, Argo Workflows, GitHub Actions, Kubernetes, SCM, Tekton).
 
 | Check | Title | Severity | Provider | Fix |
 |-------|-------|----------|----------|-----|
 | [`ARGO-003`](#detail-argo-003) | Argo workflow uses the default ServiceAccount | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [Argo Workflows](../providers/argo.md) |  |
 | [`ARGO-013`](#detail-argo-013) | Argo workflow does not opt out of SA token automount | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [Argo Workflows](../providers/argo.md) |  |
+| [`ARGOCD-001`](#detail-argocd-001) | Argo CD AppProject permits any source repository | <span class="pg-sev pg-sev--high">HIGH</span> | [Argo CD](../providers/argocd.md) |  |
+| [`ARGOCD-002`](#detail-argocd-002) | Argo CD AppProject permits any destination cluster or namespace | <span class="pg-sev pg-sev--high">HIGH</span> | [Argo CD](../providers/argocd.md) |  |
+| [`ARGOCD-004`](#detail-argocd-004) | Argo CD RBAC policy grants wildcard authority | <span class="pg-sev pg-sev--critical">CRITICAL</span> | [Argo CD](../providers/argocd.md) |  |
+| [`ARGOCD-006`](#detail-argocd-006) | Argo CD ApplicationSet PR/SCM generator without project allowlist | <span class="pg-sev pg-sev--high">HIGH</span> | [Argo CD](../providers/argocd.md) |  |
+| [`ARGOCD-009`](#detail-argocd-009) | Argo CD anonymous access enabled | <span class="pg-sev pg-sev--critical">CRITICAL</span> | [Argo CD](../providers/argocd.md) |  |
 | [`EB-002`](#detail-eb-002) | EventBridge rule has a wildcard target ARN | <span class="pg-sev pg-sev--high">HIGH</span> | [AWS](../providers/aws.md) |  |
 | [`GHA-004`](#detail-gha-004) | Workflow has no explicit permissions block | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [GitHub Actions](../providers/github.md) | <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> |
 | [`GHA-034`](#detail-gha-034) | Reusable workflow called with secrets: inherit | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [GitHub Actions](../providers/github.md) | <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> |
@@ -2243,6 +2254,290 @@ spec:
 ```
 
 **Source:** [`ARGO-015`](../providers/argo.md#argo-015) in the [Argo Workflows provider](../providers/argo.md).
+
+### `ARGOCD-001`: Argo CD AppProject permits any source repository <span class="pg-sev pg-sev--high">HIGH</span> { #detail-argocd-001 }
+
+**Evidences:** [`ESF-C-LEAST-PRIV`](#ctrl-esf-c-least-priv) Apply least-privilege to CI/CD service roles and pipelines.
+
+**How this is detected.** Fires when ``spec.sourceRepos`` contains ``"*"`` (case-sensitive). Also fires when the field is missing or empty, matching Argo CD's pre-2.5 default-allow behavior.
+
+**Recommendation.** Replace ``sourceRepos: ['*']`` with the explicit list of Git remotes the project is allowed to deploy from. A wildcard means any user who can create an Application under this project can point it at any repo Argo CD's service account has credentials for, including private internal repos with secrets in their manifests.
+
+**Proof of exploit.**
+
+```
+# Vulnerable: any Application under this project can point
+# at any repo.
+apiVersion: argoproj.io/v1alpha1
+kind: AppProject
+metadata: { name: default, namespace: argocd }
+spec:
+  sourceRepos: ['*']
+  destinations: [{ server: '*', namespace: '*' }]
+
+# Safe: explicit allowlist of trusted remotes.
+apiVersion: argoproj.io/v1alpha1
+kind: AppProject
+metadata: { name: payments, namespace: argocd }
+spec:
+  sourceRepos:
+    - https://github.com/example-corp/payments-manifests
+    - https://github.com/example-corp/payments-charts
+```
+
+**Source:** [`ARGOCD-001`](../providers/argocd.md) in the [Argo CD provider](../providers/argocd.md).
+
+### `ARGOCD-002`: Argo CD AppProject permits any destination cluster or namespace <span class="pg-sev pg-sev--high">HIGH</span> { #detail-argocd-002 }
+
+**Evidences:** [`ESF-C-ENV-SEP`](#ctrl-esf-c-env-sep) Separate deployment environments (dev / staging / prod), [`ESF-C-LEAST-PRIV`](#ctrl-esf-c-least-priv) Apply least-privilege to CI/CD service roles and pipelines.
+
+**How this is detected.** Walks ``spec.destinations[]``. Fires when any entry sets ``server`` or ``name`` to ``"*"`` or sets ``namespace`` to ``"*"``. Both axes evaluated independently; either wildcarded fails the check.
+
+**Recommendation.** Replace ``server: '*'`` / ``namespace: '*'`` in ``spec.destinations[]`` with explicit cluster URLs and namespace lists. A wildcard destination lets any Application under the project deploy to kube-system on the management cluster, which converts an Application-create permission into cluster-admin.
+
+**Proof of exploit.**
+
+```
+# Vulnerable: the project can deploy anywhere on any cluster.
+apiVersion: argoproj.io/v1alpha1
+kind: AppProject
+metadata: { name: default, namespace: argocd }
+spec:
+  sourceRepos:
+    - https://github.com/example-corp/payments-manifests
+  destinations:
+    - { server: '*', namespace: '*' }
+
+# Safe: explicit cluster + namespace allowlist.
+spec:
+  destinations:
+    - server: https://kubernetes.default.svc
+      namespace: payments-prod
+    - server: https://kubernetes.default.svc
+      namespace: payments-staging
+```
+
+**Source:** [`ARGOCD-002`](../providers/argocd.md) in the [Argo CD provider](../providers/argocd.md).
+
+### `ARGOCD-003`: Argo CD Application auto-sync prunes without selfHeal guardrail <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-argocd-003 }
+
+**Evidences:** [`ESF-C-APPROVAL`](#ctrl-esf-c-approval) Require explicit approval before production deployment.
+
+**How this is detected.** Walks ``spec.syncPolicy.automated`` on every Application. Fires when ``prune: true`` is set and ``selfHeal`` is either missing or explicitly ``false``. Auto-sync without prune is ignored, the failure mode this rule tracks is the prune-without-detect combination.
+
+**Recommendation.** If you enable ``syncPolicy.automated.prune: true`` (auto-deletes resources that disappear from git), enable ``selfHeal: true`` alongside it so any out-of-band hotfix is detected and reconciled rather than silently kept. The common failure mode is an oncall hand-applies a fix in a fire, then Argo CD prunes it on the next auto-sync because the change isn't in git, recreating the incident.
+
+**Proof of exploit.**
+
+```
+# Risky: an out-of-band hotfix gets silently pruned on the
+# next sync because no selfHeal flags the drift.
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata: { name: payments, namespace: argocd }
+spec:
+  syncPolicy:
+    automated:
+      prune: true
+      # no selfHeal
+
+# Safer: selfHeal forces the controller to detect and
+# reconcile any out-of-band changes so the prune behavior is
+# at least visible in the sync history before it bites.
+spec:
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+```
+
+**Source:** [`ARGOCD-003`](../providers/argocd.md) in the [Argo CD provider](../providers/argocd.md).
+
+### `ARGOCD-004`: Argo CD RBAC policy grants wildcard authority <span class="pg-sev pg-sev--critical">CRITICAL</span> { #detail-argocd-004 }
+
+**Evidences:** [`ESF-C-LEAST-PRIV`](#ctrl-esf-c-least-priv) Apply least-privilege to CI/CD service roles and pipelines.
+
+**How this is detected.** Parses the ``policy.csv`` (and any ``policy.<role>.csv``) key on ``data:`` in the ``argocd-rbac-cm`` ConfigMap. Fires on lines tokenizing to ``p, <role>, *, *, *, allow``, ``p, <role>, applications, *, */*, allow``, or ``g, <subject>, role:admin``. Comment lines (``#``) and explicit denies (``..., deny``) are ignored.
+
+**Recommendation.** Scope each ``p, <role>, <resource>, <action>, <object>, allow`` line in ``argocd-rbac-cm`` ``policy.csv`` to a specific resource / action / object. Replace ``*, *, *, *, allow`` and ``applications, *, */*, allow`` patterns with explicit per-project grants (``applications, get, payments/*, allow``). Restrict ``g, …, role:admin`` bindings to a single named SSO group.
+
+**Proof of exploit.**
+
+```
+# Vulnerable: the policy.csv embedded in the ConfigMap
+# grants every authenticated user full admin.
+apiVersion: v1
+kind: ConfigMap
+metadata: { name: argocd-rbac-cm, namespace: argocd }
+data:
+  policy.csv: |
+    p, role:org-admin, *, *, *, allow
+    g, my-org:everyone, role:org-admin
+
+# Safer: explicit per-project, per-action grants.
+data:
+  policy.csv: |
+    p, role:payments-deployer, applications, sync, payments/*, allow
+    p, role:payments-deployer, applications, get, payments/*, allow
+    g, my-org:payments-oncall, role:payments-deployer
+```
+
+**Source:** [`ARGOCD-004`](../providers/argocd.md) in the [Argo CD provider](../providers/argocd.md).
+
+### `ARGOCD-005`: Argo CD repository entry stores plaintext credentials <span class="pg-sev pg-sev--critical">CRITICAL</span> { #detail-argocd-005 }
+
+**Evidences:** [`ESF-D-SECRETS`](#ctrl-esf-d-secrets) Protect secrets used during build; no secrets in source or env.
+
+**How this is detected.** Parses ``data.repositories`` (and the legacy ``repository.credentials`` key) on ``argocd-cm`` as YAML. For each entry, fires when a ``password``, ``sshPrivateKey``, ``tlsClientCertKey``, or ``githubAppPrivateKey`` field is a literal non-empty string. Entries using the documented ``passwordSecret`` / ``sshPrivateKeySecret`` indirection pass.
+
+**Recommendation.** Don't write ``password`` / ``sshPrivateKey`` / ``tlsClientCertKey`` values directly into the ``repositories`` block of ``argocd-cm``. Move the entry to a separate Kubernetes ``Secret`` carrying the credential (plus the ``argocd.argoproj.io/secret-type: repository`` label) and reference it; or move the whole repo block to a ``Secret`` of type ``repo-creds``. ConfigMap data is world-readable to every namespace member with ``configmaps: get``.
+
+**Proof of exploit.**
+
+```
+# Vulnerable: the repo password is a literal value in a
+# ConfigMap any cluster reader can fetch.
+apiVersion: v1
+kind: ConfigMap
+metadata: { name: argocd-cm, namespace: argocd }
+data:
+  repositories: |
+    - url: https://github.com/example/private-manifests
+      type: git
+      username: deploy-bot
+      password: ghp_examplePATvaluehere
+
+# Safe: reference a Secret instead.
+data:
+  repositories: |
+    - url: https://github.com/example/private-manifests
+      type: git
+      usernameSecret: { name: repo-creds, key: username }
+      passwordSecret: { name: repo-creds, key: password }
+```
+
+**Source:** [`ARGOCD-005`](../providers/argocd.md) in the [Argo CD provider](../providers/argocd.md).
+
+### `ARGOCD-006`: Argo CD ApplicationSet PR/SCM generator without project allowlist <span class="pg-sev pg-sev--high">HIGH</span> { #detail-argocd-006 }
+
+**Evidences:** [`ESF-D-CODE-REVIEW`](#ctrl-esf-d-code-review) Require peer review of source and pipeline configuration, [`ESF-C-LEAST-PRIV`](#ctrl-esf-c-least-priv) Apply least-privilege to CI/CD service roles and pipelines.
+
+**How this is detected.** Walks ``spec.generators[]``. Fires when a generator entry carries a ``pullRequest`` or ``scmProvider`` key (or a ``git`` generator with ``directories`` / ``files``) AND ``spec.template.spec.project`` is either the literal ``default`` or contains a generator-template placeholder like ``{{repo}}`` / ``{{branch}}`` / ``{{path[0]}}``. Static project + filtered generator passes.
+
+**Recommendation.** When using ``pullRequest`` or ``scmProvider`` generators, pin ``template.spec.project`` to a single static project name (not a generator-interpolated placeholder) and constrain the generator with a ``filters:`` branchMatch / labels block. Otherwise an attacker who opens a PR (or creates a repo in the matched org) materializes a new Argo CD Application under whatever project the placeholder resolves to.
+
+**Proof of exploit.**
+
+```
+# Vulnerable: any PR opened against any repo whose name
+# matches the org filter spawns a fresh Application under
+# the 'default' project, which typically has wildcarded
+# sourceRepos + destinations.
+apiVersion: argoproj.io/v1alpha1
+kind: ApplicationSet
+metadata: { name: pr-previews, namespace: argocd }
+spec:
+  generators:
+    - pullRequest:
+        github:
+          owner: example-corp
+          # no labels / branchMatch filter
+  template:
+    spec:
+      project: default
+      source: { repoURL: '{{repo}}', targetRevision: '{{branch}}', path: . }
+      destination: { server: https://kubernetes.default.svc, namespace: '{{branch}}' }
+
+# Safer: scoped generator with branch / label filter and a
+# tightly-scoped project.
+spec:
+  generators:
+    - pullRequest:
+        github:
+          owner: example-corp
+          labels: ['preview']
+        requeueAfterSeconds: 300
+  template:
+    spec:
+      project: previews
+```
+
+**Source:** [`ARGOCD-006`](../providers/argocd.md) in the [Argo CD provider](../providers/argocd.md).
+
+### `ARGOCD-007`: Argo CD Helm parameters interpolate generator output without goTemplate <span class="pg-sev pg-sev--high">HIGH</span> { #detail-argocd-007 }
+
+**Evidences:** [`ESF-D-INJECTION`](#ctrl-esf-d-injection) Prevent script / template injection from untrusted pipeline context.
+
+**How this is detected.** Walks ``spec.template.spec.source.helm.valueFiles[]`` and ``parameters[].value`` on ApplicationSets, plus the single-Application equivalent. Fires when the value contains a ``{{...}}`` placeholder and the enclosing ApplicationSet doesn't set ``spec.goTemplate: true``. Single-Application Helm sources are checked too: a placeholder there always indicates an upstream ApplicationSet so the same flag must be set.
+
+**Recommendation.** Set ``spec.goTemplate: true`` on the ApplicationSet (with ``goTemplateOptions: ['missingkey=error']``) so generator placeholders go through Go's template engine, which respects YAML quoting. Without it, Argo CD's default ``fasttemplate`` substitution is a literal string-splice, so a generator-controlled value containing newlines, shell metacharacters, or YAML structural characters lands verbatim in the rendered Helm values.
+
+**Proof of exploit.**
+
+```
+# Vulnerable: branch name flows verbatim into valueFiles.
+apiVersion: argoproj.io/v1alpha1
+kind: ApplicationSet
+metadata: { name: previews, namespace: argocd }
+spec:
+  # no goTemplate: true
+  generators:
+    - pullRequest: { github: { owner: example-corp, repo: app } }
+  template:
+    spec:
+      source:
+        helm:
+          valueFiles:
+            - values-{{branch}}.yaml
+          parameters:
+            - { name: image.tag, value: '{{branch}}' }
+
+# Safer: goTemplate true makes the templating engine YAML-
+# aware and respects per-field quoting.
+spec:
+  goTemplate: true
+  goTemplateOptions: ['missingkey=error']
+```
+
+**Source:** [`ARGOCD-007`](../providers/argocd.md) in the [Argo CD provider](../providers/argocd.md).
+
+### `ARGOCD-008`: Argo CD Application invokes a config-management plugin <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-argocd-008 }
+
+**Evidences:** [`ESF-S-VERIFY-DEPS`](#ctrl-esf-s-verify-deps) Verify third-party and open-source dependencies before use.
+
+**How this is detected.** Walks ``spec.source.plugin`` on every Application and ApplicationSet template. Fires whenever the field is set with a non-empty ``name``. Helm and Kustomize sources are ignored (they're separately covered by ARGOCD-007 / future Kustomize rules). This is a deliberate noisy-but-correct v1, suppress per-Application once you've reviewed the CMP.
+
+**Recommendation.** CMPs are arbitrary code: Argo CD execs ``generate.command`` inside the repo-server pod at every sync, with whatever manifest content the source repo ships. Audit the CMP's ``discover.find.command`` allowlist, confirm ``generate.command`` doesn't shell out to user-controlled input, and treat each plugin invocation as a build-step review item, not a Kustomize / Helm equivalent.
+
+**Source:** [`ARGOCD-008`](../providers/argocd.md) in the [Argo CD provider](../providers/argocd.md).
+
+### `ARGOCD-009`: Argo CD anonymous access enabled <span class="pg-sev pg-sev--critical">CRITICAL</span> { #detail-argocd-009 }
+
+**Evidences:** [`ESF-C-LEAST-PRIV`](#ctrl-esf-c-least-priv) Apply least-privilege to CI/CD service roles and pipelines.
+
+**How this is detected.** Reads ``data.users.anonymous.enabled`` on the ``argocd-cm`` ConfigMap. ConfigMap data values are always stringified by Kubernetes, but the YAML loader can hand us either ``"true"`` or boolean ``true`` depending on how the manifest was written, so both forms fail the check.
+
+**Recommendation.** Remove the ``users.anonymous.enabled: "true"`` entry from ``argocd-cm`` (or set it to ``"false"``). With anonymous access on, the Argo CD UI / API answers requests carrying no token, and whatever permissions ``role:readonly`` (or the default policy) grants are reachable without authentication.
+
+**Proof of exploit.**
+
+```
+# Vulnerable: anyone on the network reaching the Argo CD
+# API server gets ``role:readonly`` (or whatever default
+# policy.default grants).
+apiVersion: v1
+kind: ConfigMap
+metadata: { name: argocd-cm, namespace: argocd }
+data:
+  users.anonymous.enabled: "true"
+
+# Safe: drop the key entirely (the default is off) or set
+# false explicitly.
+data:
+  users.anonymous.enabled: "false"
+```
+
+**Source:** [`ARGOCD-009`](../providers/argocd.md) in the [Argo CD provider](../providers/argocd.md).
 
 ### `ATTEST-001`: SLSA provenance attests an untrusted builder identity <span class="pg-sev pg-sev--high">HIGH</span> { #detail-attest-001 }
 
@@ -18345,20 +18640,6 @@ spec:
 ```
 
 **Source:** [`TKN-015`](../providers/tekton.md#tkn-015) in the [Tekton provider](../providers/tekton.md).
-
-## Mapped check IDs not found in the rule registry
-
-The standards data references check IDs the scanner does not ship. The mapping is preserved for forward-compat; once the rule lands the row will fill in automatically.
-
-- `ARGOCD-001`
-- `ARGOCD-002`
-- `ARGOCD-003`
-- `ARGOCD-004`
-- `ARGOCD-005`
-- `ARGOCD-006`
-- `ARGOCD-007`
-- `ARGOCD-008`
-- `ARGOCD-009`
 
 ---
 
