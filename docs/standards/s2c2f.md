@@ -4496,6 +4496,35 @@ ctx==0.2.2
 
 **Recommendation.** Pin every step image to a content-addressable digest (``gcr.io/tekton-releases/git-init@sha256:<digest>``). Tag-only references (``alpine:3.18``) and rolling tags (``alpine:latest``) let a compromised registry update redirect the step at the next pull, with no audit trail in the Task manifest.
 
+**Proof of exploit.**
+
+```
+# Vulnerable: ``ubuntu:22.04`` is a mutable tag. Whoever
+# controls the registry can repoint it on the next 22.04.x
+# refresh; the next TaskRun pulls the swap silently.
+apiVersion: tekton.dev/v1
+kind: Task
+metadata: { name: build }
+spec:
+  steps:
+    - name: compile
+      image: ubuntu:22.04
+      script: |
+        make build
+
+# Safe: pin to the immutable sha256 digest. The leading
+# comment documents which tag the digest corresponds to.
+apiVersion: tekton.dev/v1
+kind: Task
+metadata: { name: build }
+spec:
+  steps:
+    - name: compile
+      image: ubuntu@sha256:abc123...  # ubuntu:22.04, refreshed YYYY-MM-DD
+      script: |
+        make build
+```
+
 **Source:** [`TKN-001`](../providers/tekton.md#tkn-001) in the [Tekton provider](../providers/tekton.md).
 
 ### `TKN-008`: Tekton step script pipes remote install or disables TLS <span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> { #detail-tkn-008 }
@@ -4511,6 +4540,39 @@ ctx==0.2.2
 **Known false positives.**
 
 - Tasks running entirely against an internal mirror (``curl https://internal-mirror/install.sh | sh`` where the mirror is the same supply chain as the task image itself) carry less marginal risk than a public-internet fetch, but the rule still fires because the curl-pipe primitive is the structural signal. ``curl -k`` to a TLS endpoint with a known self-signed CA likewise triggers; the canonical fix is to install the CA into the step image and drop ``-k``, but per-task suppression via ``--ignore-file`` is the escape hatch.
+
+**Proof of exploit.**
+
+```
+# Vulnerable: ``curl | bash`` trusts the network path AND
+# the installer host. A MITM (compromised proxy, malicious
+# DNS) or a publisher compromise ships malicious code into
+# the step's shell with the step's full credential set
+# in scope (TaskRun ServiceAccount, mounted Secrets).
+apiVersion: tekton.dev/v1
+kind: Task
+spec:
+  steps:
+    - name: install-cli
+      image: alpine@sha256:abc123...
+      script: |
+        curl -fsSL https://installer.example.com/cli.sh | bash
+
+# Safe: download, verify against a known-good sha256, then
+# execute. If the upstream content changes, the digest
+# stops matching and the step fails loud.
+apiVersion: tekton.dev/v1
+kind: Task
+spec:
+  steps:
+    - name: install-cli
+      image: alpine@sha256:abc123...
+      script: |
+        set -e
+        curl -fsSL https://installer.example.com/cli.sh -o /tmp/cli.sh
+        echo 'a1b2c3d4...  /tmp/cli.sh' | sha256sum -c -
+        bash /tmp/cli.sh
+```
 
 **Source:** [`TKN-008`](../providers/tekton.md#tkn-008) in the [Tekton provider](../providers/tekton.md).
 

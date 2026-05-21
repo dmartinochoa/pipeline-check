@@ -41,6 +41,36 @@ RULE = Rule(
         "the step image and drop ``-k``, but per-task "
         "suppression via ``--ignore-file`` is the escape hatch.",
     ),
+    exploit_example=(
+        "# Vulnerable: ``curl | bash`` trusts the network path AND\n"
+        "# the installer host. A MITM (compromised proxy, malicious\n"
+        "# DNS) or a publisher compromise ships malicious code into\n"
+        "# the step's shell with the step's full credential set\n"
+        "# in scope (TaskRun ServiceAccount, mounted Secrets).\n"
+        "apiVersion: tekton.dev/v1\n"
+        "kind: Task\n"
+        "spec:\n"
+        "  steps:\n"
+        "    - name: install-cli\n"
+        "      image: alpine@sha256:abc123...\n"
+        "      script: |\n"
+        "        curl -fsSL https://installer.example.com/cli.sh | bash\n"
+        "\n"
+        "# Safe: download, verify against a known-good sha256, then\n"
+        "# execute. If the upstream content changes, the digest\n"
+        "# stops matching and the step fails loud.\n"
+        "apiVersion: tekton.dev/v1\n"
+        "kind: Task\n"
+        "spec:\n"
+        "  steps:\n"
+        "    - name: install-cli\n"
+        "      image: alpine@sha256:abc123...\n"
+        "      script: |\n"
+        "        set -e\n"
+        "        curl -fsSL https://installer.example.com/cli.sh -o /tmp/cli.sh\n"
+        "        echo 'a1b2c3d4...  /tmp/cli.sh' | sha256sum -c -\n"
+        "        bash /tmp/cli.sh"
+    ),
 )
 
 

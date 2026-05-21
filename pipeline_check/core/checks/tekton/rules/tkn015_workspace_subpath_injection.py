@@ -52,6 +52,43 @@ RULE = Rule(
         "see that pre-check; suppress on the specific step name "
         "when this is the deliberate shape.",
     ),
+    exploit_example=(
+        "# Vulnerable: ``$(params.target)`` is substituted into\n"
+        "# the workspace ``subPath`` literally. A PipelineRun with\n"
+        "# ``target: ../../../etc/secrets`` (or similar traversal)\n"
+        "# escapes the intended workspace directory and reads /\n"
+        "# writes outside it.\n"
+        "apiVersion: tekton.dev/v1\n"
+        "kind: Task\n"
+        "spec:\n"
+        "  params:\n"
+        "    - name: target\n"
+        "  workspaces:\n"
+        "    - name: shared\n"
+        "      subPath: $(params.target)\n"
+        "  steps:\n"
+        "    - name: write\n"
+        "      image: alpine@sha256:abc123...\n"
+        "      script: |\n"
+        "        echo data > /workspace/shared/out\n"
+        "\n"
+        "# Safe: pin the subPath to a static literal or validate\n"
+        "# the param shape upstream (in the Pipeline) against an\n"
+        "# allowlist of expected names. Tekton has no built-in\n"
+        "# path-canonicalisation for subPath, so the gate is on\n"
+        "# the producer of the param.\n"
+        "apiVersion: tekton.dev/v1\n"
+        "kind: Task\n"
+        "spec:\n"
+        "  workspaces:\n"
+        "    - name: shared\n"
+        "      subPath: artifacts\n"
+        "  steps:\n"
+        "    - name: write\n"
+        "      image: alpine@sha256:abc123...\n"
+        "      script: |\n"
+        "        echo data > /workspace/shared/out"
+    ),
 )
 
 

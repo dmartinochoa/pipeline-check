@@ -1128,6 +1128,42 @@ roleRef:
 
 **Recommendation.** Set ``securityContext.privileged: false``, ``runAsNonRoot: true``, and ``allowPrivilegeEscalation: false`` on every step. A privileged step shares the node's kernel namespaces; a malicious or compromised step image then has root on the build node, breaking the boundary between build and cluster.
 
+**Proof of exploit.**
+
+```
+# Vulnerable: ``securityContext.privileged: true`` gives
+# the step container full kernel-namespace access on the
+# node. A workload compromise becomes a node-level shell
+# with reach into every other pod on the node.
+apiVersion: tekton.dev/v1
+kind: Task
+spec:
+  steps:
+    - name: build
+      image: builder@sha256:abc123...
+      securityContext:
+        privileged: true
+
+# Safe: explicit non-root + privilege-escalation off,
+# all caps dropped, read-only root filesystem. The step
+# cannot bind a privileged port or modify its own image
+# layer at runtime.
+apiVersion: tekton.dev/v1
+kind: Task
+spec:
+  steps:
+    - name: build
+      image: builder@sha256:abc123...
+      securityContext:
+        privileged: false
+        allowPrivilegeEscalation: false
+        runAsNonRoot: true
+        runAsUser: 10001
+        readOnlyRootFilesystem: true
+        capabilities:
+          drop: ["ALL"]
+```
+
 **Source:** [`TKN-002`](../providers/tekton.md#tkn-002) in the [Tekton provider](../providers/tekton.md).
 
 ### `TKN-004`: Tekton Task mounts hostPath or shares host namespaces <span class="pg-sev pg-sev--critical">CRITICAL</span> { #detail-tkn-004 }
@@ -1137,6 +1173,44 @@ roleRef:
 **How this is detected.** Checks ``spec.volumes[].hostPath`` (legacy v1beta1 form), ``spec.workspaces[].volumeClaimTemplate.spec.storageClassName == 'hostpath'``, and ``spec.podTemplate`` host-namespace flags.
 
 **Recommendation.** Use Tekton ``workspaces:`` backed by ``emptyDir`` or ``persistentVolumeClaim`` instead of ``hostPath``. Drop ``hostNetwork: true`` / ``hostPID: true`` / ``hostIPC: true`` on the Task's ``podTemplate``. A hostPath mount of ``/var/run/docker.sock`` or ``/`` lets the build break out of the pod and act as the underlying node.
+
+**Proof of exploit.**
+
+```
+# Vulnerable: mounting ``/var/run/docker.sock`` into a
+# step gives the Task root access to the node's Docker
+# API. ``docker run --privileged -v /:/host`` from inside
+# the step then owns the entire node — kubelet creds,
+# every other pod's filesystem.
+apiVersion: tekton.dev/v1
+kind: Task
+metadata: { name: build-image }
+spec:
+  volumes:
+    - name: docker-sock
+      hostPath: { path: /var/run/docker.sock }
+  steps:
+    - name: build
+      image: docker:24
+      volumeMounts:
+        - { name: docker-sock, mountPath: /var/run/docker.sock }
+      script: |
+        docker build -t app .
+
+# Safe: Kaniko sandboxed build in an emptyDir workspace.
+# No node-level access, no host-path mount.
+apiVersion: tekton.dev/v1
+kind: Task
+metadata: { name: build-image }
+spec:
+  volumes:
+    - name: scratch
+      emptyDir: {}
+  steps:
+    - name: build
+      image: gcr.io/kaniko-project/executor@sha256:abc123...
+      args: [--context=., --destination=registry/app:tag]
+```
 
 **Source:** [`TKN-004`](../providers/tekton.md#tkn-004) in the [Tekton provider](../providers/tekton.md).
 
@@ -1161,6 +1235,39 @@ roleRef:
 **Known false positives.**
 
 - Tasks that genuinely need ``docker:dind`` as a sidecar, e.g. building images inside the cluster without giving the step itself host-Docker access. The replacement pattern is Kaniko or BuildKit running as the step itself, with no privileged sidecar; if neither is viable, ignore TKN-013 in ``.pipeline-check-ignore.yml`` for the affected Task.
+
+**Proof of exploit.**
+
+```
+# Vulnerable: a sidecar runs alongside every step in the
+# Task and shares the pod's volumes / network. A
+# privileged sidecar can escape to the node the same way
+# a privileged step does, with the added attack surface
+# of being long-lived for the Task's whole duration.
+apiVersion: tekton.dev/v1
+kind: Task
+spec:
+  sidecars:
+    - name: docker-daemon
+      image: docker:24-dind
+      securityContext:
+        privileged: true
+  steps:
+    - name: build
+      image: docker:24
+      script: docker build -t app .
+
+# Safe: drop the privileged sidecar and use a rootless
+# builder in the step. Kaniko / BuildKit rootless
+# eliminates the need for the dind sidecar entirely.
+apiVersion: tekton.dev/v1
+kind: Task
+spec:
+  steps:
+    - name: build
+      image: gcr.io/kaniko-project/executor@sha256:abc123...
+      args: [--context=., --destination=registry/app:tag]
+```
 
 **Source:** [`TKN-013`](../providers/tekton.md#tkn-013) in the [Tekton provider](../providers/tekton.md).
 
