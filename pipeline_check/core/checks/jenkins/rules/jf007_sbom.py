@@ -1,7 +1,7 @@
 """JF-007, pipeline should produce an SBOM."""
 from __future__ import annotations
 
-from ...base import _ARTIFACT_TOKENS, SBOM_DIRECT_TOKENS, Finding, Severity
+from ...base import _ARTIFACT_TOKENS, NO_ARTIFACT_DESC, SBOM_DIRECT_TOKENS, Finding, Severity
 from ...rule import Rule
 from ..base import Jenkinsfile
 
@@ -36,7 +36,7 @@ def check(jf: Jenkinsfile) -> Finding:
         return Finding(
             check_id=RULE.id, title=RULE.title, severity=RULE.severity,
             resource=jf.path,
-            description="No artifact production detected, check not applicable.",
+            description=NO_ARTIFACT_DESC,
             recommendation=RULE.recommendation, passed=True,
         )
     desc = (

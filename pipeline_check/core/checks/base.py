@@ -56,7 +56,16 @@ __all__ = [
     "DEP_UPDATE_RE",
     "has_dep_update",
     "is_quoted_assignment",
+    "NO_ARTIFACT_DESC",
 ]
+
+#: Standard ``description`` for an artifact-pack rule (signing, SBOM,
+#: vuln-scanning, SLSA provenance) that short-circuits to passed=True
+#: because the pipeline doesn't produce build artifacts in the first
+#: place. Imported by every rule in the GHA-006/007 family across the
+#: provider pack so the wording stays consistent and a future reword
+#: lands in one place.
+NO_ARTIFACT_DESC: str = "No artifact production detected, check not applicable."
 
 # Use the C-accelerated YAML loader when available (libyaml bindings).
 # CSafeLoader is functionally identical to SafeLoader but ~30-50x faster,

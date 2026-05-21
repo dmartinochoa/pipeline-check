@@ -2,7 +2,7 @@
 from __future__ import annotations
 
 from ..._primitives.oci_refs import extract_image_anchors_from_strings
-from ...base import _ARTIFACT_TOKENS, SIGN_TOKENS, Finding, Severity
+from ...base import _ARTIFACT_TOKENS, NO_ARTIFACT_DESC, SIGN_TOKENS, Finding, Severity
 from ...rule import Rule
 from ..base import Jenkinsfile
 
@@ -33,7 +33,7 @@ def check(jf: Jenkinsfile) -> Finding:
         return Finding(
             check_id=RULE.id, title=RULE.title, severity=RULE.severity,
             resource=jf.path,
-            description="No artifact production detected, check not applicable.",
+            description=NO_ARTIFACT_DESC,
             recommendation=RULE.recommendation, passed=True,
         )
     desc = (

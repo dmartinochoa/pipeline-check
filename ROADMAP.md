@@ -385,10 +385,12 @@ Code-quality findings across the engine, parsers, and rule pack.
   (GHA-017), or Jenkinsfile text input (JF-017 / JF-018 / JF-022 /
   JF-023 / JF-029) keep their bespoke check bodies. The
   ``malicious_activity`` fail prose moved to a shared
-  ``_malicious.summarize_malicious_hits`` helper. The "No artifact
-  production detected, check not applicable" string repeated across
-  the signing / vuln-scanning rule pack is a separate prose-constant
-  deduplication still open.
+  ``_malicious.summarize_malicious_hits`` helper. Follow-up:
+  ``checks/base.py`` now exports ``NO_ARTIFACT_DESC`` so the "No
+  artifact production detected, check not applicable." string
+  routes through one constant across 28 signing / SBOM /
+  vuln-scanning / provenance rule modules instead of repeating
+  inline.
 - **Lift provider context loaders + base classes.** Load-loop
   consolidation done: `checks/_yaml_files.py:load_yaml_files`
   hosts the read + parse + warning loop, and 11 providers

@@ -1,7 +1,7 @@
 """TKN-009. Tekton Task should sign produced artifacts."""
 from __future__ import annotations
 
-from ...base import Finding, Severity, has_signing, produces_artifacts
+from ...base import NO_ARTIFACT_DESC, Finding, Severity, has_signing, produces_artifacts
 from ...rule import Rule
 from ..base import TektonContext
 
@@ -53,7 +53,7 @@ def check(ctx: TektonContext) -> Finding:
         return Finding(
             check_id=RULE.id, title=RULE.title, severity=RULE.severity,
             resource="tekton",
-            description="No artifact production detected, check not applicable.",
+            description=NO_ARTIFACT_DESC,
             recommendation=RULE.recommendation, passed=True,
         )
     unsigned = [d for d in artifact_producers if not has_signing(d.data)]
