@@ -407,17 +407,19 @@ Code-quality findings across the engine, parsers, and rule pack.
   `_comment_tls_bypass` autofixer scans per-line through the
   primitive, and the legacy combined constants are gone from
   `checks/base.py`.
-- **Triplicated dependency-supply-chain plumbing.** Registry-fetcher
-  side landed: `_primitives/registry_fetcher.py` owns the
+- ~~**Triplicated dependency-supply-chain plumbing.**~~ Landed.
+  Registry-fetcher side: `_primitives/registry_fetcher.py` owns the
   ``FileSystemCache`` + ``HttpGetFetcher`` transport + dedup-fetch-
   parse loop; ``npm`` / ``pypi`` / ``maven`` are now thin ~170-line
   adapters supplying the per-ecosystem URL builder, cache-key
   normalizer, and JSON parser. Public surface preserved verbatim
   so ``core/providers/{npm,pypi,maven}.py`` needed no import
-  changes. The ``CompromisedPackage`` dataclass + lookup helpers
-  triplication is a separate follow-up (similar shape; lower
-  payoff since the curated tables themselves are
-  ecosystem-specific).
+  changes. ``CompromisedPackage`` side: each provider's dataclass
+  keeps its ecosystem-specific identifier fields (``name`` for
+  npm/pypi, ``group_id`` + ``artifact_id`` for maven) but the
+  triplicated ``matches(version)`` method now delegates to
+  ``_primitives/compromised.py:match_version`` so a future
+  extension (semver-range support, e.g.) lands in one place.
 - ~~**Autofix roundtrip safety.**~~ Landed. ``generate_fix`` parses
   the patched text through ``yaml.safe_load_all`` and bails when the
   result no longer parses, the top-level Python type swapped, or the
