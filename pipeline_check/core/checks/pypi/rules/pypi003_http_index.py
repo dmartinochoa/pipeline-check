@@ -34,6 +34,29 @@ RULE = Rule(
         "PYPI-002 — pip silently skips hash checking for the "
         "trusted host even when ``--require-hashes`` is set."
     ),
+    exploit_example=(
+        "# Vulnerable: pip resolves every package against a\n"
+        "# plaintext-HTTP index. Any network attacker between the\n"
+        "# build runner and the index (compromised corporate proxy,\n"
+        "# malicious VPN exit, BGP hijack on the internal mirror)\n"
+        "# swaps the wheel in flight. ``--trusted-host`` is worse:\n"
+        "# pip then SKIPS hash verification for that host, so even\n"
+        "# a ``--require-hashes`` file installs unverified bytes.\n"
+        "# requirements.txt\n"
+        "--index-url http://internal-pypi.example.com/simple\n"
+        "--trusted-host internal-pypi.example.com\n"
+        "requests==2.31.0\n"
+        "\n"
+        "# Safe: HTTPS with the index's certificate validated. For\n"
+        "# an internal index on a private CA, install the CA into\n"
+        "# the agent trust store or pass ``PIP_CERT=/path/to/ca.pem``\n"
+        "# — never ``--trusted-host``. Hashes stay enforced.\n"
+        "# requirements.txt\n"
+        "--index-url https://internal-pypi.example.com/simple\n"
+        "--require-hashes\n"
+        "requests==2.31.0 \\\n"
+        "    --hash=sha256:942c5a758f98d790eaed1a29cb6eefc7ffb0d1cf7af05c3d2791656dbd6ad1e1"
+    ),
 )
 
 

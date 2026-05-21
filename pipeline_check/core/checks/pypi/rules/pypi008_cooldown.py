@@ -70,6 +70,32 @@ RULE = Rule(
         "the Geneva malware framework. The malicious version was "
         "live for less than 48 hours before disclosure and yank.",
     ),
+    exploit_example=(
+        "# Vulnerable: pinning to ``shiny-lib==17.0.99`` 2 hours\n"
+        "# after its publication is exactly the window in which\n"
+        "# publisher-account compromises live. PyPI yanks malicious\n"
+        "# versions within hours-to-days once flagged; ``ctx``,\n"
+        "# ``requests-darwin-lite``, and ``ultralytics`` all\n"
+        "# followed this shape. The next ``pip install`` after the\n"
+        "# malicious publish installs the wheel before the takedown.\n"
+        "# requirements.txt\n"
+        "--require-hashes\n"
+        "shiny-lib==17.0.99 \\\n"
+        "    --hash=sha256:bad1234bad1234bad1234bad1234bad1234bad1234bad1234bad1234bad1234b\n"
+        "# ``17.0.99`` was published 2 hours ago\n"
+        "\n"
+        "# Safe: pin to the most recent release that's older than\n"
+        "# the cooldown window. ``pipeline_check --pipeline pypi\n"
+        "# --resolve-remote`` queries the PyPI JSON API for\n"
+        "# publish timestamps and surfaces anything inside the 7-\n"
+        "# day window. Hold the bump until the cooldown elapses,\n"
+        "# or skip the freshly-pushed version entirely.\n"
+        "# requirements.txt\n"
+        "--require-hashes\n"
+        "shiny-lib==17.0.98 \\\n"
+        "    --hash=sha256:c0ffeec0ffeec0ffeec0ffeec0ffeec0ffeec0ffeec0ffeec0ffeec0ffeec0ff\n"
+        "# ``17.0.98`` was published 3 weeks ago"
+    ),
 )
 
 

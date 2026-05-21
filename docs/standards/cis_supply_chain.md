@@ -9729,6 +9729,37 @@ When ``--require-hashes`` is present, pip enforces hash pinning for every requir
 
 - PyTorch dependency confusion (December 2022): the ``torchtriton`` name on PyPI was claimed by a malicious publisher and pulled in via a nightly build, exfiltrating SSH keys and ``/etc/passwd``. Hash pinning would have rejected the unexpected artifact regardless of which registry resolved the name.
 
+**Proof of exploit.**
+
+```
+# Vulnerable: requirements.txt pins the version literal
+# but doesn't pin the artifact bytes. A registry that
+# silently re-publishes ``requests-2.31.0`` with a
+# backdoored wheel (publisher takeover, mirror compromise,
+# MITM on an internal proxy) ships unverified code on the
+# next ``pip install``. Even ``--require-hashes`` doesn't
+# fire because the file doesn't declare it.
+# requirements.txt
+requests==2.31.0
+urllib3==2.0.7
+certifi==2024.2.2
+
+# Safe: regenerate with ``pip-compile --generate-hashes``
+# (pip-tools). Every line carries a ``--hash=sha256:...``
+# for the wheel and the sdist; ``--require-hashes`` at
+# the top makes pip refuse the install on any mismatch
+# or unhashed line.
+# requirements.txt
+--require-hashes
+requests==2.31.0 \
+    --hash=sha256:942c5a758f98d790eaed1a29cb6eefc7ffb0d1cf7af05c3d2791656dbd6ad1e1 \
+    --hash=sha256:58cd2187c01e70e6e26505bca751777aa9f2ee0b7f4300988b709f44e013003f
+urllib3==2.0.7 \
+    --hash=sha256:c97dfde1f7bd43a71c8d2a58e369e9b2bf692d1334ea9f9cae55add7d0dd0f84
+certifi==2024.2.2 \
+    --hash=sha256:0569859f95fc761b18b45ef421b1290a0f65f147e92a1e5eb3e635f9a5e4e66f
+```
+
 **Source:** [`PYPI-002`](../providers/pypi.md) in the [PyPI provider](../providers/pypi.md).
 
 ### `PYPI-003`: requirements.txt uses an HTTP index or disables TLS verification <span class="pg-sev pg-sev--high">HIGH</span> { #detail-pypi-003 }
@@ -9745,6 +9776,32 @@ Complements DF-021 (Dockerfile ``RUN pip install ``-i http://...``); PYPI-003 ca
 
 **Recommendation.** Switch ``--index-url`` and ``--extra-index-url`` to ``https://`` and remove ``--trusted-host``. If your internal index has a self-signed certificate, install the CA into the build environment's truststore (or pass ``PIP_CERT=/path/to/ca.pem``) instead of telling pip to skip verification. ``--trusted-host`` disables TLS verification *and* hash verification for the named host, so anyone on the network path can swap the wheel.
 
+**Proof of exploit.**
+
+```
+# Vulnerable: pip resolves every package against a
+# plaintext-HTTP index. Any network attacker between the
+# build runner and the index (compromised corporate proxy,
+# malicious VPN exit, BGP hijack on the internal mirror)
+# swaps the wheel in flight. ``--trusted-host`` is worse:
+# pip then SKIPS hash verification for that host, so even
+# a ``--require-hashes`` file installs unverified bytes.
+# requirements.txt
+--index-url http://internal-pypi.example.com/simple
+--trusted-host internal-pypi.example.com
+requests==2.31.0
+
+# Safe: HTTPS with the index's certificate validated. For
+# an internal index on a private CA, install the CA into
+# the agent trust store or pass ``PIP_CERT=/path/to/ca.pem``
+# — never ``--trusted-host``. Hashes stay enforced.
+# requirements.txt
+--index-url https://internal-pypi.example.com/simple
+--require-hashes
+requests==2.31.0 \
+    --hash=sha256:942c5a758f98d790eaed1a29cb6eefc7ffb0d1cf7af05c3d2791656dbd6ad1e1
+```
+
 **Source:** [`PYPI-003`](../providers/pypi.md) in the [PyPI provider](../providers/pypi.md).
 
 ### `PYPI-004`: requirements.txt VCS dependency uses a mutable ref <span class="pg-sev pg-sev--high">HIGH</span> { #detail-pypi-004 }
@@ -9754,6 +9811,29 @@ Complements DF-021 (Dockerfile ``RUN pip install ``-i http://...``); PYPI-003 ca
 **How this is detected.** Fires on requirement lines whose URL is a VCS scheme (``git+https://``, ``git+ssh://``, ``hg+``, ``svn+``, ``bzr+``) and whose ``@<ref>`` segment is not a 40-character SHA. A line with no ``@<ref>`` at all also fires — that resolves to the default branch HEAD, the most mutable form. Note: ``foo @ git+https://...`` (PEP 508 direct URL) and ``-e git+https://...#egg=foo`` (legacy editable install) are both detected.
 
 **Recommendation.** Pin VCS requirements to a 40-character commit SHA: ``foo @ git+https://github.com/owner/repo.git@<sha>`` (or the legacy ``-e git+...@<sha>#egg=foo`` form). Branch and tag refs (``@main``, ``@v1.2.3``) are mutable, anyone with push access to the upstream repo can swap the contents of what your build pulls without changing the requirement line. A 40-char SHA is immutable. If the upstream isn't yours, prefer vendoring a fork into a private index and pinning by version + hash (PYPI-001 / PYPI-002).
+
+**Proof of exploit.**
+
+```
+# Vulnerable: every ``pip install -r requirements.txt``
+# resolves ``@main`` against the upstream repo. Whoever
+# can push to ``main`` (legitimate co-maintainer, leaked
+# PAT, account compromise on the upstream owner) ships
+# code into your build silently. Tag refs like ``@v1.2.3``
+# are barely better — git tags are mutable on the upstream
+# side and can be force-pushed at any time.
+# requirements.txt
+shared-utils @ git+https://github.com/myorg/shared-utils.git@main
+-e git+https://github.com/myorg/legacy.git@v1.2.3#egg=legacy
+
+# Safe: pin to a 40-character commit SHA. The git object
+# is immutable — a re-push under the same SHA fails the
+# hash check on fetch. Renovate / Dependabot's pip-vcs
+# ecosystem updaters bump these in reviewable PRs.
+# requirements.txt
+shared-utils @ git+https://github.com/myorg/shared-utils.git@0123456789abcdef0123456789abcdef01234567
+-e git+https://github.com/myorg/legacy.git@fedcba9876543210fedcba9876543210fedcba98#egg=legacy
+```
 
 **Source:** [`PYPI-004`](../providers/pypi.md) in the [PyPI provider](../providers/pypi.md).
 
@@ -9771,6 +9851,34 @@ If the extra index is a hash-locked internal proxy that serves *both* internal a
 
 - Alex Birsan, "Dependency Confusion: How I Hacked Into Apple, Microsoft and Dozens of Other Companies" (2021): internal package names harvested from public-facing manifests were registered on public PyPI / npm with higher version numbers; victim builds that declared the public index as an extra automatically pulled the attacker's package on the next install.
 - PyTorch ``torchtriton`` (December 2022): a typosquat name on PyPI's public index was preferred over the internal nightly build, exfiltrating SSH keys via a postinstall step. Single-index installations were unaffected.
+
+**Proof of exploit.**
+
+```
+# Vulnerable: pip queries BOTH indexes for every package
+# name and picks the highest version. ``acme-internal`` is
+# an internal-only package the org publishes to the
+# private index. An attacker registers ``acme-internal``
+# on public PyPI with version ``99.0.0``; the next ``pip
+# install`` resolves to the attacker's wheel because
+# 99.0.0 > 1.2.3. This is the Birsan dependency-confusion
+# class — Apple / Microsoft / Yelp / Tesla / Uber all paid
+# Birsan a bounty for this exact shape.
+# requirements.txt
+--index-url https://internal-pypi.example.com/simple
+--extra-index-url https://pypi.org/simple
+acme-internal==1.2.3
+requests==2.31.0
+
+# Safe: single index. Configure the internal proxy to
+# transparently mirror PyPI for any name not published
+# internally; pip then resolves every package against ONE
+# source whose name allow-list the operator controls.
+# requirements.txt
+--index-url https://internal-pypi.example.com/simple
+acme-internal==1.2.3
+requests==2.31.0
+```
 
 **Source:** [`PYPI-005`](../providers/pypi.md) in the [PyPI provider](../providers/pypi.md).
 

@@ -36,6 +36,26 @@ RULE = Rule(
         "``-e git+https://...#egg=foo`` (legacy editable install) "
         "are both detected."
     ),
+    exploit_example=(
+        "# Vulnerable: every ``pip install -r requirements.txt``\n"
+        "# resolves ``@main`` against the upstream repo. Whoever\n"
+        "# can push to ``main`` (legitimate co-maintainer, leaked\n"
+        "# PAT, account compromise on the upstream owner) ships\n"
+        "# code into your build silently. Tag refs like ``@v1.2.3``\n"
+        "# are barely better — git tags are mutable on the upstream\n"
+        "# side and can be force-pushed at any time.\n"
+        "# requirements.txt\n"
+        "shared-utils @ git+https://github.com/myorg/shared-utils.git@main\n"
+        "-e git+https://github.com/myorg/legacy.git@v1.2.3#egg=legacy\n"
+        "\n"
+        "# Safe: pin to a 40-character commit SHA. The git object\n"
+        "# is immutable — a re-push under the same SHA fails the\n"
+        "# hash check on fetch. Renovate / Dependabot's pip-vcs\n"
+        "# ecosystem updaters bump these in reviewable PRs.\n"
+        "# requirements.txt\n"
+        "shared-utils @ git+https://github.com/myorg/shared-utils.git@0123456789abcdef0123456789abcdef01234567\n"
+        "-e git+https://github.com/myorg/legacy.git@fedcba9876543210fedcba9876543210fedcba98#egg=legacy"
+    ),
 )
 
 

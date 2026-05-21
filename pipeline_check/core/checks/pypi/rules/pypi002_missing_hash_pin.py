@@ -57,6 +57,34 @@ RULE = Rule(
         "rejected the unexpected artifact regardless of which "
         "registry resolved the name.",
     ),
+    exploit_example=(
+        "# Vulnerable: requirements.txt pins the version literal\n"
+        "# but doesn't pin the artifact bytes. A registry that\n"
+        "# silently re-publishes ``requests-2.31.0`` with a\n"
+        "# backdoored wheel (publisher takeover, mirror compromise,\n"
+        "# MITM on an internal proxy) ships unverified code on the\n"
+        "# next ``pip install``. Even ``--require-hashes`` doesn't\n"
+        "# fire because the file doesn't declare it.\n"
+        "# requirements.txt\n"
+        "requests==2.31.0\n"
+        "urllib3==2.0.7\n"
+        "certifi==2024.2.2\n"
+        "\n"
+        "# Safe: regenerate with ``pip-compile --generate-hashes``\n"
+        "# (pip-tools). Every line carries a ``--hash=sha256:...``\n"
+        "# for the wheel and the sdist; ``--require-hashes`` at\n"
+        "# the top makes pip refuse the install on any mismatch\n"
+        "# or unhashed line.\n"
+        "# requirements.txt\n"
+        "--require-hashes\n"
+        "requests==2.31.0 \\\n"
+        "    --hash=sha256:942c5a758f98d790eaed1a29cb6eefc7ffb0d1cf7af05c3d2791656dbd6ad1e1 \\\n"
+        "    --hash=sha256:58cd2187c01e70e6e26505bca751777aa9f2ee0b7f4300988b709f44e013003f\n"
+        "urllib3==2.0.7 \\\n"
+        "    --hash=sha256:c97dfde1f7bd43a71c8d2a58e369e9b2bf692d1334ea9f9cae55add7d0dd0f84\n"
+        "certifi==2024.2.2 \\\n"
+        "    --hash=sha256:0569859f95fc761b18b45ef421b1290a0f65f147e92a1e5eb3e635f9a5e4e66f"
+    ),
 )
 
 
