@@ -573,6 +573,173 @@ def test_subproject_gradle_properties_overrides_root(tmp_path: Path) -> None:
     assert ctx.files[0].dependencies[0].version == "2.17.1"
 
 
+# ── rootProject.ext.X cross-project resolution ────────────────────────
+
+
+def _write_multi_project_layout(
+    tmp_path: Path,
+    *,
+    root_build_body: str = (
+        "ext {\n"
+        "    log4jVersion = '2.17.1'\n"
+        "    springVersion = '6.1.0'\n"
+        "}\n"
+    ),
+    subproject_build_body: str,
+    settings_filename: str = "settings.gradle",
+    subproject_filename: str = "build.gradle",
+) -> Path:
+    """Create a Gradle multi-project layout under *tmp_path*.
+
+    Returns the subproject's build script path so tests can call
+    ``MavenContext.from_path(tmp_path)`` and assert on the parsed
+    subproject's dependencies. The default *root_build_body* declares
+    ``log4jVersion`` and ``springVersion`` via the ``ext { ... }``
+    block; tests override it for other shapes.
+    """
+    (tmp_path / settings_filename).write_text(
+        "rootProject.name = 'root'\ninclude 'app'\n",
+        encoding="utf-8",
+    )
+    (tmp_path / "build.gradle").write_text(
+        root_build_body, encoding="utf-8",
+    )
+    (tmp_path / "app").mkdir()
+    sub = tmp_path / "app" / subproject_filename
+    sub.write_text(subproject_build_body, encoding="utf-8")
+    return sub
+
+
+def test_rootproject_ext_resolves_in_subproject(tmp_path: Path) -> None:
+    """A subproject's ``${rootProject.ext.X}`` reference resolves
+    against the root's ``ext { X = ... }`` block."""
+    _write_multi_project_layout(
+        tmp_path,
+        subproject_build_body=textwrap.dedent(
+            """\
+            dependencies {
+                implementation "org.apache.logging.log4j:log4j-core:${rootProject.ext.log4jVersion}"
+            }
+            """
+        ),
+    )
+    ctx = MavenContext.from_path(tmp_path)
+    assert ctx.files[0].dependencies[0].version == "2.17.1"
+
+
+def test_rootproject_shortened_form_resolves_in_subproject(
+    tmp_path: Path,
+) -> None:
+    """``${rootProject.X}`` (the shortened form Gradle exposes once
+    ``ext.X`` is defined) also resolves."""
+    _write_multi_project_layout(
+        tmp_path,
+        subproject_build_body=textwrap.dedent(
+            """\
+            dependencies {
+                implementation "org.springframework:spring-core:${rootProject.springVersion}"
+            }
+            """
+        ),
+    )
+    ctx = MavenContext.from_path(tmp_path)
+    assert ctx.files[0].dependencies[0].version == "6.1.0"
+
+
+def test_rootproject_ext_kotlin_dsl_resolves(tmp_path: Path) -> None:
+    """Kotlin DSL ``settings.gradle.kts`` is honored too; root
+    properties from ``build.gradle.kts`` still expose through the
+    ``rootProject.ext.X`` accessor."""
+    _write_multi_project_layout(
+        tmp_path,
+        settings_filename="settings.gradle.kts",
+        root_build_body=(
+            'val log4jVersion = "2.17.1"\n'
+        ),
+        subproject_filename="build.gradle.kts",
+        subproject_build_body=textwrap.dedent(
+            """\
+            dependencies {
+                implementation("org.apache.logging.log4j:log4j-core:${rootProject.ext.log4jVersion}")
+            }
+            """
+        ),
+    )
+    # Remove the Groovy-DSL build.gradle the helper writes by default
+    # so only the Kotlin file is in scope (avoids parsing two
+    # build scripts for the same root).
+    (tmp_path / "build.gradle").unlink()
+    (tmp_path / "build.gradle.kts").write_text(
+        'val log4jVersion = "2.17.1"\n', encoding="utf-8",
+    )
+    ctx = MavenContext.from_path(tmp_path)
+    # Find the subproject file (loader walks the tree).
+    sub = next(f for f in ctx.files if f.path.endswith("build.gradle.kts")
+               and "app" in f.path)
+    assert sub.dependencies[0].version == "2.17.1"
+
+
+def test_rootproject_ext_does_not_apply_to_root_itself(
+    tmp_path: Path,
+) -> None:
+    """The root's own build.gradle resolves via in-file extraction,
+    not via the rootProject.* alias path. This guards against a
+    double-application of the helper that would re-add the same
+    properties under two keys and could mask a real drift."""
+    _write_multi_project_layout(
+        tmp_path,
+        subproject_build_body="dependencies { implementation 'x:y:1' }\n",
+    )
+    # Add a dep in the root's own build script that consumes
+    # log4jVersion via the BARE name (the in-file extraction path).
+    (tmp_path / "build.gradle").write_text(
+        textwrap.dedent(
+            """\
+            ext {
+                log4jVersion = '2.17.1'
+            }
+            dependencies {
+                implementation "org.apache.logging.log4j:log4j-core:$log4jVersion"
+            }
+            """
+        ),
+        encoding="utf-8",
+    )
+    ctx = MavenContext.from_path(tmp_path)
+    root = next(f for f in ctx.files
+                if f.path.endswith("build.gradle") and "app" not in f.path)
+    assert root.dependencies[0].version == "2.17.1"
+
+
+def test_rootproject_ext_silent_pass_without_settings_gradle(
+    tmp_path: Path,
+) -> None:
+    """Without a ``settings.gradle`` marker the layout isn't a
+    multi-project build, the subproject's ``${rootProject.ext.X}``
+    reference passes through unresolved (the existing silent-pass
+    behavior the rule pack already relies on)."""
+    # Same layout, no settings.gradle.
+    (tmp_path / "build.gradle").write_text(
+        "ext {\n    log4jVersion = '2.17.1'\n}\n", encoding="utf-8",
+    )
+    (tmp_path / "app").mkdir()
+    (tmp_path / "app" / "build.gradle").write_text(
+        textwrap.dedent(
+            """\
+            dependencies {
+                implementation "org.apache.logging.log4j:log4j-core:${rootProject.ext.log4jVersion}"
+            }
+            """
+        ),
+        encoding="utf-8",
+    )
+    ctx = MavenContext.from_path(tmp_path)
+    sub = next(f for f in ctx.files
+               if f.path.endswith("build.gradle") and "app" in f.path)
+    # The version stays as the unresolved placeholder text.
+    assert "rootProject" in sub.dependencies[0].version
+
+
 def test_discover_walk_stops_at_scan_root(tmp_path: Path) -> None:
     # A ``gradle.properties`` outside the scan root should NOT be
     # read; the discovery walks upward only until it hits scan_root.

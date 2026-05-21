@@ -4,6 +4,22 @@ What's planned, what's shipped, and what's deliberately out of scope.
 
 ## Shipped
 
+- **Gradle multi-project ``rootProject.ext.X`` resolution
+  (post-1.3.0)** — Closes the last remaining gap in the dependency-
+  supply-chain provider follow-ups. The maven provider's Gradle path
+  now walks upward from each ``build.gradle`` looking for
+  ``settings.gradle`` / ``settings.gradle.kts`` to identify the
+  multi-project root, reads the root's ``build.gradle*`` for
+  ``ext { X = ... }`` / ``ext.X = ...`` / ``def X`` / ``val X``
+  declarations, and exposes each value under both
+  ``rootProject.ext.X`` and ``rootProject.X`` keys so a subproject's
+  ``"${rootProject.ext.log4jVersion}"`` (and the shortened
+  ``"${rootProject.springVersion}"``) version-spec resolves before
+  the MVN-NNN rules see it. Five new tests in
+  ``tests/maven/test_gradle.py`` cover the Groovy and Kotlin DSLs,
+  the shortened accessor, the root-itself carve-out, and the
+  silent-pass behavior on layouts without a ``settings.gradle``
+  marker.
 - **AC-031 attack chain: Argo CD PR generator x wildcard sourceRepos
   (post-1.3.0)** — Second Argo CD chain. CRITICAL severity,
   single-provider (``argocd``). Pairs ARGOCD-006 (ApplicationSet
@@ -374,10 +390,17 @@ and GHA-060 / GL-035 / BB-031), and Gradle property + version-
 catalog resolution. See the Shipped section for the per-cycle
 trail.
 
-One gap remains: ``rootProject.ext.X`` cross-project indirection
+~~One gap remains: ``rootProject.ext.X`` cross-project indirection
 on Gradle multi-project layouts. Would need pipeline-check to
 learn ``settings.gradle`` resolution. Rarer in practice than the
-three Gradle shapes already shipped; deferred.
+three Gradle shapes already shipped; deferred.~~ Landed
+post-1.3.0: the maven provider now walks upward from each
+``build.gradle`` looking for ``settings.gradle`` /
+``settings.gradle.kts`` to identify the multi-project root, reads
+that root's build script for ``ext { X = ... }`` declarations, and
+exposes them through both ``rootProject.ext.X`` and
+``rootProject.X`` accessor keys so a subproject's version-spec
+interpolation resolves. See Shipped.
 
 ~~Next: the XPC-NNN chain engine gains chains pairing NPM-008
 cooldown-miss with DF-024 lifecycle-scripts-enabled so the

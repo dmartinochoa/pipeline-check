@@ -12,6 +12,23 @@ release commit collapses this section into `## [X.Y.Z] - <date>`.
 
 ### Added
 
+- **Gradle multi-project ``rootProject.ext.X`` resolution.** The
+  maven provider's Gradle path now resolves cross-project property
+  references. ``MavenContext.from_path`` walks upward from each
+  ``build.gradle`` / ``build.gradle.kts`` looking for a
+  ``settings.gradle`` / ``settings.gradle.kts`` marker to identify
+  the multi-project root, reads the root's build script for
+  ``ext { X = ... }`` / ``ext.X = ...`` / ``def X`` / ``val X``
+  declarations, and exposes each value under both
+  ``rootProject.ext.X`` and ``rootProject.X`` accessor keys.
+  Subproject version specs like ``"org.apache.logging.log4j:log4j-
+  core:${rootProject.ext.log4jVersion}"`` now resolve before the
+  MVN-NNN rules see them, closing the last remaining gap in the
+  Dependency-supply-chain provider follow-ups noted in ROADMAP.md.
+  Single-project layouts (no settings file) keep their existing
+  silent-pass behavior; the root's own build script continues to
+  resolve via in-file extraction, so the ``rootProject.*`` alias
+  path doesn't double-apply.
 - **AC-031 attack chain — Argo CD untrusted PR generator meets
   wildcard source repos.** New CRITICAL-severity chain pairing
   ARGOCD-006 (ApplicationSet ``pullRequest`` / ``scmProvider``
