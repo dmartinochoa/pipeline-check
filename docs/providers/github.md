@@ -72,7 +72,7 @@ Resolution rules:
 
 ## What it covers
 
-64 checks · 17 have an autofix patch (``--fix``).
+65 checks · 17 have an autofix patch (``--fix``).
 
 | Check | Title | Severity | Fix |
 |-------|-------|----------|-----|
@@ -124,7 +124,7 @@ Resolution rules:
 | [GHA-046](#gha-046) | Manual PR-head fetch on untrusted-trigger workflow | <span class="pg-sev pg-sev--critical">CRITICAL</span> |  |
 | [GHA-047](#gha-047) | Action ref resolves to a recently committed tag or SHA | <span class="pg-sev pg-sev--medium">MEDIUM</span> |  |
 | [GHA-048](#gha-048) | Workflow step writes a file under .github/workflows/ | <span class="pg-sev pg-sev--critical">CRITICAL</span> |  |
-| [GHA-049](#gha-049) | Workflow step pushes to a repo outside the current owner | <span class="pg-sev pg-sev--high">HIGH</span> |  |
+| [GHA-049](#gha-049) | Workflow step makes a privileged git write (cross-repo or actions[bot] bypass) | <span class="pg-sev pg-sev--high">HIGH</span> |  |
 | [GHA-050](#gha-050) | Publish step relies on long-lived registry token | <span class="pg-sev pg-sev--high">HIGH</span> |  |
 | [GHA-051](#gha-051) | services / container image is not pinned by digest | <span class="pg-sev pg-sev--medium">MEDIUM</span> |  |
 | [GHA-052](#gha-052) | actions/cache key includes untrusted PR-controllable input | <span class="pg-sev pg-sev--high">HIGH</span> |  |
@@ -137,6 +137,7 @@ Resolution rules:
 | [GHA-059](#gha-059) | npm install without registry-signature verification step | <span class="pg-sev pg-sev--medium">MEDIUM</span> |  |
 | [GHA-060](#gha-060) | pip install without `--require-hashes` verification | <span class="pg-sev pg-sev--medium">MEDIUM</span> |  |
 | [GHA-061](#gha-061) | GitHub App token minted without a `permissions:` filter | <span class="pg-sev pg-sev--medium">MEDIUM</span> |  |
+| [GHA-062](#gha-062) | OIDC subject claim in sibling IaC grants overly broad scope | <span class="pg-sev pg-sev--high">HIGH</span> |  |
 | [TAINT-001](#taint-001) | Untrusted input flows across step boundaries via step outputs | <span class="pg-sev pg-sev--high">HIGH</span> |  |
 | [TAINT-002](#taint-002) | Untrusted input flows across jobs via ``jobs.<id>.outputs:`` | <span class="pg-sev pg-sev--high">HIGH</span> |  |
 | [TAINT-003](#taint-003) | Untrusted input forwarded into reusable workflow ``with:`` | <span class="pg-sev pg-sev--high">HIGH</span> |  |
@@ -1307,17 +1308,18 @@ Remove the step that writes into ``.github/workflows/``. A workflow that authors
 
 <div class="pg-rule pg-rule--high" markdown>
 
-## GHA-049: Workflow step pushes to a repo outside the current owner { #gha-049 }
+## GHA-049: Workflow step makes a privileged git write (cross-repo or actions[bot] bypass) { #gha-049 }
 
 <div class="pg-rule__tags">
 <span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-1</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-4</span> <span class="pg-tag pg-tag--esf">ESF-D-CODE-INTEGRITY</span> <span class="pg-tag pg-tag--cwe">CWE-913</span> <span class="pg-tag pg-tag--cwe">CWE-284</span>
 </div>
 
-Three shapes are detected in ``run:`` bodies:
+Four shapes are detected in ``run:`` bodies:
 
 1. ``git push`` to a remote whose URL is interpolated from an expression (``${{ ... }}``), an env var (``$VAR``), or is not the canonical ``origin`` / ``upstream``;
 2. ``gh repo create`` / ``gh repo edit`` / ``gh repo transfer`` / ``gh api /repos/...`` whose target owner is parameterized;
-3. ``gh release create`` / ``gh release upload`` against a repo specified via ``-R <owner>/<repo>`` where the value is parameterized rather than a literal allow-list entry.
+3. ``gh release create`` / ``gh release upload`` against a repo specified via ``-R <owner>/<repo>`` where the value is parameterized rather than a literal allow-list entry;
+4. ``git config user.name 'github-actions[bot]'`` (or ``actions-user`` / ``41898282+github-actions[bot]``) co-occurring with any ``git push`` in the same job. The combination is the canonical branch-protection bypass-abuse shape: GitHub's documented operational convenience is to list ``github-actions[bot]`` in ``Allow specified actors to bypass required pull requests`` on the default branch, after which any workflow that assumes that identity can push to ``main`` without review. The SCM provider's SCM-018 catches the branch-protection side; this leg catches the workflow that's pre-positioned to exploit it.
 
 Pairs with GHA-048 (self-mutation, which catches the *write* into ``.github/workflows/`` of a sibling workflow): GHA-049 catches the *push* primitive that lets a worm leave the current repo. Together they cover both halves of the Shai-Hulud propagation step.
 
@@ -1754,6 +1756,39 @@ List every scope the consuming steps actually need; a future reader (and an atta
 
 <div class="pg-rule pg-rule--high" markdown>
 
+## GHA-062: OIDC subject claim in sibling IaC grants overly broad scope { #gha-062 }
+
+<div class="pg-rule__tags">
+<span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-2</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-7</span> <span class="pg-tag pg-tag--esf">ESF-C-LEAST-PRIV</span> <span class="pg-tag pg-tag--cwe">CWE-284</span> <span class="pg-tag pg-tag--cwe">CWE-269</span>
+</div>
+
+Walks the workflow's containing repo (depth-bounded, skipping ``node_modules`` / ``vendor`` / ``.git`` / build dirs) for two sidecar IaC file shapes when the workflow uses an OIDC cloud-credentials action:
+
+1. **AWS trust policy.** Any ``*.json`` whose body parses to an IAM trust document that references ``token.actions.githubusercontent.com`` as a Federated principal AND whose ``Condition.StringLike`` ``...:sub`` value contains ``*`` in the ``repo:`` or ``repo:<org>/`` segment (``repo:*``, ``repo:<org>/*``, ``repo:<org>/*:*``). The branch / environment / ref segment may legitimately carry ``*``; only the org/repo segment is flagged.
+2. **GCP Workload Identity Federation.** Any ``*.tf`` containing a ``google_iam_workload_identity_pool_provider`` block whose ``attribute_condition`` is a ``startsWith`` or ``matches`` predicate against ``attribute.repository`` with a value that ends in a ``/`` slash (org prefix, no specific repo). Tighter conditions (``attribute.repository == 'myorg/myrepo'``) are skipped.
+
+Fires once per offending IaC file with a finding location pointing at the file. The walk is cached per scan so adding this rule doesn't compound the cost of GHA-030 / IAM-008. Pairs with GHA-030 (workflow-side environment binding) and IAM-008 (live AWS IAM audit); this leg covers the static IaC checked into the repo.
+
+**Known false-positive modes**
+
+- Test fixtures and documentation samples that intentionally embed permissive trust policies (e.g. cicd-goat's ``scenarios/10-oidc-aws-wildcard-sub/trust-policy.json`` itself, when scanned in-place). Suppress with a path filter on the specific test directory. The rule is intentionally broad on file-name match so a renamed ``my-prod-trust-policy.json`` still surfaces.
+
+**Seen in the wild**
+
+- Multiple post-disclosure writeups of GitHub-to-AWS OIDC misconfigurations (Cider Security 2022, Datadog 2023, AquaSec 2024) traced the issue to a ``repo:*`` or ``repo:org/*`` ``StringLike`` subject pattern that was kept as a stop-gap during initial onboarding and never tightened. Any fork PR or any newly-created org repo could mint a production-role token until the policy was edited.
+
+<div class="pg-rule__rec" markdown>
+
+**Recommended action**
+
+Pin the OIDC subject claim to a specific repository (and ideally a specific branch / environment ref). For AWS IAM trust policies, replace ``StringLike`` ``token.actions.githubusercontent.com:sub`` values like ``repo:*`` or ``repo:<org>/*`` with ``repo:<org>/<repo>:ref:refs/heads/main`` (or ``:environment:<name>`` for environment-scoped tokens). For GCP Workload Identity Federation, replace ``attribute_condition`` predicates that only check the org prefix (``attribute.repository.startsWith('myorg/')``) with an equality on the exact ``<org>/<repo>`` plus branch / environment attributes.
+
+</div>
+
+</div>
+
+<div class="pg-rule pg-rule--high" markdown>
+
 ## TAINT-001: Untrusted input flows across step boundaries via step outputs { #taint-001 }
 
 <div class="pg-rule__tags">
@@ -1787,6 +1822,11 @@ Sanitise the value at the step that *writes* the ``$GITHUB_OUTPUT`` entry. The c
 </div>
 
 TAINT-001 catches step-output flow within a single job; TAINT-002 catches the cross-job transition. Engine shape: walk every job's ``outputs:`` mapping looking for values that interpolate either a tainted step output or a direct ``${{ github.event.* }}`` source. Tainted job outputs are matched against every ``${{ needs.<job>.outputs.<name> }}`` reference in any downstream job's ``run:`` / ``with:`` body. Each match emits a TAINT-002 finding with the full chain in the description.
+
+Two propagation hops the engine tracks beyond the obvious ``${{ ... }}`` interpolation:
+
+1. **Step env-var binding.** A producer step with ``env: { LABELS: "${{ toJSON(github.event.pull_request.labels.*.name) }}" }`` and a run body that writes ``echo "targets=$LABELS" >> $GITHUB_OUTPUT`` propagates taint from the env binding into the output, even though the run body's RHS doesn't contain a literal ``${{ ... }}`` token. Catches the indirect-env shape GHA-003 deliberately treats as safe (quoted shell) but that still flows into downstream sinks.
+2. **Matrix expansion via ``fromJSON``.** ``strategy.matrix.<axis>: ${{ fromJSON(needs.<job>.outputs.<name>) }}`` paired with ``${{ matrix.<axis> }}`` in a downstream ``run:`` body. Every matrix value the expansion produces lands in the consumer's shell template. This is the GitHub Security Lab matrix-expansion-injection writeup shape that closed several public bug bounties.
 
 Same-step interpolations (the producer's own use of ``${{ github.event.* }}`` inside its ``run:``) are still GHA-003's responsibility; TAINT-002's value is the cross-job hop the single-step rule can't see.
 

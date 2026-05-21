@@ -543,3 +543,22 @@ def find_malicious_patterns(
                 excerpt = excerpt[:117] + "..."
             hits.append((p.category, p.name, excerpt))
     return hits
+
+
+def summarize_malicious_hits(hits: list[tuple[str, str, str]]) -> str:
+    """Format the rule-side description shared by every malicious-activity rule.
+
+    ADO-026 / BB-025 / CC-026 / GHA-027 / GL-025 (and the Jenkins
+    JF-029 variant) all assemble the same "N indicator(s)
+    (categories). Examples: …" string from a non-empty hit list.
+    Centralized here so the prose stays consistent across providers.
+    """
+    categories = sorted({c for c, _n, _e in hits})
+    summary = "; ".join(
+        f"{name} ({excerpt!r})" for _cat, name, excerpt in hits[:3]
+    )
+    return (
+        f"{len(hits)} indicator(s) of malicious activity "
+        f"({', '.join(categories)}). Examples: {summary}"
+        f"{'...' if len(hits) > 3 else ''}."
+    )

@@ -217,6 +217,7 @@ STANDARD = Standard(
         "GHA-059":  ["1.4.1", "3.1.3"],                  # npm install without audit signatures
         "GHA-060":  ["1.4.1", "3.1.3"],                  # pip install without --require-hashes
         "GHA-061":  ["1.3.4", "2.4.3"],                  # App token minted without permissions filter
+        "GHA-062":  ["1.3.4", "2.4.3"],                  # OIDC trust subject in sibling IaC is overly broad
         # GitLab CI
         "GL-001":   ["1.4.1", "3.1.5"],
         "GL-002":   ["2.1.3", "2.3.8"],

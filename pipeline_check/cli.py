@@ -2599,6 +2599,7 @@ def scan(
     if not quiet:
         _emit_scan_summary(scanner.metadata)
         _maybe_emit_wrong_provider_hint(pipeline_lc, findings)
+        _maybe_emit_npm_alongside_github_hint(pipelines_to_resolve, findings)
         _maybe_emit_degraded_scan_warning(findings)
 
     # Confidence filter applies BEFORE scoring + gate so scores reflect
@@ -3042,6 +3043,88 @@ def _apply_fix_patches(findings: list[Any]) -> None:
         except OSError as exc:
             click.echo(f"[autofix] could not write {path}: {exc}", err=True)
     click.echo(f"[autofix] {len(dirty)} file(s) modified.", err=True)
+
+
+def _find_sibling_package_jsons(root: str, max_depth: int = 3) -> list[str]:
+    """Return up to a handful of ``package.json`` paths under *root*.
+
+    Bounded by ``max_depth`` and skipping the usual heavy directories
+    (``node_modules`` chief among them — a single transitive install
+    can land tens of thousands of nested ``package.json`` files, and
+    none of them belong to the consuming repo). Used by the
+    npm-alongside-github hint so the scanner can nudge users who
+    invoke ``--pipeline github`` alone in a repo that also ships
+    JavaScript code.
+    """
+    skip_dirs: frozenset[str] = frozenset({
+        "node_modules", ".git", "vendor", "dist", "build",
+        ".venv", "venv", "__pycache__", ".tox", ".mypy_cache",
+        ".pytest_cache", "target",
+    })
+    hits: list[str] = []
+    root_abs = os.path.abspath(root)
+    root_depth = root_abs.rstrip(os.sep).count(os.sep)
+    for dirpath, dirnames, filenames in os.walk(root_abs):
+        dirnames[:] = [d for d in dirnames if d not in skip_dirs]
+        if dirpath.count(os.sep) - root_depth > max_depth:
+            dirnames[:] = []
+            continue
+        if "package.json" in filenames:
+            hits.append(os.path.join(dirpath, "package.json"))
+            if len(hits) >= 5:
+                break
+    return hits
+
+
+def _maybe_emit_npm_alongside_github_hint(
+    pipelines_resolved: list[str],
+    findings: list[Any],
+) -> None:
+    """Nudge the user when ``--pipeline github`` scanned a tree that
+    also ships ``package.json`` files.
+
+    The npm provider catches dependency-confusion / floating-range /
+    lockfile-integrity issues that the github pipeline can't see (it
+    only inspects workflow YAML, not the consumed manifests). Fires
+    only on single-provider ``--pipeline github`` invocations where
+    a quick depth-bounded walk of cwd finds a ``package.json``
+    outside ``node_modules`` / build / vendor directories. Off when
+    the user explicitly multi-provider-ran ``github,npm`` (the npm
+    coverage is already in scope).
+    """
+    if pipelines_resolved != ["github"]:
+        return
+    pjs = _find_sibling_package_jsons(".")
+    if not pjs:
+        return
+    sample = ", ".join(os.path.relpath(p) for p in pjs[:3])
+    more = "" if len(pjs) <= 3 else f" (+{len(pjs) - 3} more)"
+    # One ``package.json`` at the repo root resolves via the npm
+    # provider's own cwd auto-detection (``pipeline_check --pipeline
+    # npm`` without ``--npm-path``); multiple or nested manifests need
+    # an explicit ``--npm-path <dir>`` per manifest, so the hint
+    # surfaces the directory the user would point at.
+    pj_dirs = sorted({
+        os.path.relpath(os.path.dirname(p)) or "." for p in pjs
+    })
+    if len(pj_dirs) == 1 and pj_dirs[0] in (".", ""):
+        suggestion = (
+            "rerun with ``--pipelines github,npm`` to also scan the "
+            "manifest"
+        )
+    else:
+        dir_sample = ", ".join(pj_dirs[:3])
+        suggestion = (
+            f"rerun with ``--pipeline npm --npm-path <dir>`` for each "
+            f"({dir_sample})"
+        )
+    click.echo(
+        f"[hint] this repo also ships package.json files ({sample}"
+        f"{more}). ``--pipeline github`` only inspects workflow "
+        f"YAML; {suggestion} for dependency-confusion / "
+        f"lockfile-integrity / floating-range coverage.",
+        err=True,
+    )
 
 
 def _maybe_emit_wrong_provider_hint(pipeline_lc: str, findings: list[Any]) -> None:

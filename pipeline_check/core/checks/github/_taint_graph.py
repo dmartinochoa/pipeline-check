@@ -171,6 +171,67 @@ def _iter_needs_output_refs(text: str) -> Iterator[tuple[str, str]]:
         yield m.group("job"), m.group("output")
 
 
+# Match ``${{ fromJSON(needs.<job>.outputs.<name>) }}`` — the
+# canonical matrix-expansion source. Whitespace inside the call is
+# tolerated; the capture pulls the upstream job + output name.
+_MATRIX_FROM_NEEDS_RE = re.compile(
+    r"\$\{\{\s*fromJSON\s*\(\s*"
+    r"needs\.(?P<job>[A-Za-z_][A-Za-z0-9_-]*)"
+    r"\.outputs\.(?P<output>[A-Za-z_][A-Za-z0-9_-]*)"
+    r"\s*\)\s*\}\}"
+)
+
+
+# Match ``${{ matrix.<axis> }}`` references in run / with bodies.
+_MATRIX_AXIS_REF_RE = re.compile(
+    r"\$\{\{\s*matrix\.(?P<axis>[A-Za-z_][A-Za-z0-9_-]*)\s*\}\}"
+)
+
+
+def _iter_matrix_axis_refs(text: str) -> Iterator[str]:
+    """Yield each ``matrix.<axis>`` consumed in *text*."""
+    for m in _MATRIX_AXIS_REF_RE.finditer(text):
+        yield m.group("axis")
+
+
+# Shell reference to an env var (``$NAME`` / ``${NAME}``). Used by
+# pass 1's env-bound-taint propagation: when an output write's RHS
+# references a tainted env var, the output inherits the env var's
+# original taint source.
+_ENV_SHELL_REF_RE = re.compile(
+    r"\$\{?(?P<name>[A-Z_][A-Z0-9_]*)\}?"
+)
+
+
+def _shell_referenced_env_vars(text: str) -> set[str]:
+    """Names of ``$NAME`` / ``${NAME}`` references in *text*."""
+    return {m.group("name") for m in _ENV_SHELL_REF_RE.finditer(text)}
+
+
+def _tainted_env_vars(env_block: Any) -> dict[str, list[str]]:
+    """Return ``{env_var_name: [tainted_source_expr, ...]}`` for an
+    ``env:`` block whose values reference untrusted context.
+
+    The mapping preserves the original ``${{ ... }}`` expression text
+    (with braces stripped) so the path renderer can show the
+    workflow author the original source. An env var bound to a value
+    that doesn't match the untrusted catalog is omitted.
+    """
+    out: dict[str, list[str]] = {}
+    if not isinstance(env_block, dict):
+        return out
+    for name, value in env_block.items():
+        if not (isinstance(name, str) and isinstance(value, str)):
+            continue
+        sources = [
+            _strip_braces(m.group(0))
+            for m in UNTRUSTED_CONTEXT_RE.finditer(value)
+        ]
+        if sources:
+            out[name] = sources
+    return out
+
+
 @dataclass
 class _GraphState:
     """Per-workflow taint graph.
@@ -200,6 +261,14 @@ class _GraphState:
     tainted_job_outputs: dict[str, dict[str, list[TaintSource]]] = (
         field(default_factory=dict)
     )
+    # ``job_id -> axis_name -> (upstream_job, upstream_output,
+    #                           tainted_sources)`` — set once when
+    # ``strategy.matrix.<axis> = fromJSON(needs.<job>.outputs.<name>)``
+    # AND that upstream output is in ``tainted_job_outputs``. Consumed
+    # by pass 3c.
+    tainted_matrix_axes: dict[
+        str, dict[str, tuple[str, str, list[TaintSource]]],
+    ] = field(default_factory=dict)
 
     def record_output(
         self, job_id: str, step_id: str, name: str, source: TaintSource,
@@ -228,6 +297,20 @@ class _GraphState:
         self, job_id: str, name: str,
     ) -> list[TaintSource]:
         return self.tainted_job_outputs.get(job_id, {}).get(name, [])
+
+    def record_matrix_axis(
+        self, job_id: str, axis: str,
+        upstream_job: str, upstream_output: str,
+        sources: list[TaintSource],
+    ) -> None:
+        self.tainted_matrix_axes.setdefault(job_id, {})[axis] = (
+            upstream_job, upstream_output, list(sources),
+        )
+
+    def lookup_matrix_axis(
+        self, job_id: str, axis: str,
+    ) -> tuple[str, str, list[TaintSource]] | None:
+        return self.tainted_matrix_axes.get(job_id, {}).get(axis)
 
 
 # ── Public API ─────────────────────────────────────────────────────────
@@ -280,9 +363,20 @@ def analyze_workflow(
     paths: list[TaintPath] = []
 
     # ── Pass 1: collect tainted step outputs. ─────────────────────
+    # Taint enters the output write two ways:
+    #  (a) direct: the RHS interpolates ``${{ github.event.* }}``.
+    #  (b) indirect: the RHS references a shell env var
+    #      (``$LABELS`` / ``${LABELS}``) whose step env binds it to
+    #      an untrusted source. The matrix-injection shape
+    #      (GitHub Security Lab) always takes this indirect route
+    #      via the ``env:`` block.
+    # Workflow-level env taint also propagates: jobs inherit it.
+    wf_env_taint = _tainted_env_vars(doc.get("env"))
     for job_id, job in jobs.items():
         if not isinstance(job, dict):
             continue
+        job_env_taint = dict(wf_env_taint)
+        job_env_taint.update(_tainted_env_vars(job.get("env")))
         steps = job.get("steps") or []
         if not isinstance(steps, list):
             continue
@@ -295,7 +389,10 @@ def analyze_workflow(
             run = step.get("run")
             if not isinstance(run, str) or not run.strip():
                 continue
+            step_env_taint = dict(job_env_taint)
+            step_env_taint.update(_tainted_env_vars(step.get("env")))
             for name, value in _extract_output_writes(run):
+                # (a) Direct context interpolation in the RHS.
                 for m in UNTRUSTED_CONTEXT_RE.finditer(value):
                     src = TaintSource(
                         expr=_strip_braces(m.group(0)),
@@ -304,6 +401,18 @@ def analyze_workflow(
                     state.record_output(
                         str(job_id), step_id, name, src,
                     )
+                # (b) Shell env-var reference in the RHS that points
+                # at a tainted env binding.
+                referenced = _shell_referenced_env_vars(value)
+                for env_name in referenced & step_env_taint.keys():
+                    for src_expr in step_env_taint[env_name]:
+                        src = TaintSource(
+                            expr=src_expr,
+                            location=f"{job_id}[{idx}].env.{env_name}",
+                        )
+                        state.record_output(
+                            str(job_id), step_id, name, src,
+                        )
 
     # ── Pass 2: collect tainted job-level outputs. ────────────────
     # ``jobs.<id>.outputs:`` is the canonical channel for surfacing
@@ -341,6 +450,43 @@ def analyze_workflow(
                 state.record_job_output(
                     str(job_id), output_name, propagated,
                 )
+
+    # ── Pass 2.5: matrix axes fed by ``fromJSON(needs.<job>.outputs.<name>)``.
+    # The matrix expansion shape is:
+    #   strategy:
+    #     matrix:
+    #       <axis>: ${{ fromJSON(needs.<job>.outputs.<name>) }}
+    # When the upstream job output is tainted (from pass 2), every
+    # ``${{ matrix.<axis> }}`` reference in this job's steps becomes a
+    # taint sink — the matrix value substitutes attacker-controlled
+    # text into the consuming run body. The shape is the GitHub
+    # Security Lab "matrix expansion injection" writeup.
+    for job_id, job in jobs.items():
+        if not isinstance(job, dict):
+            continue
+        strategy = job.get("strategy")
+        if not isinstance(strategy, dict):
+            continue
+        matrix = strategy.get("matrix")
+        if not isinstance(matrix, dict):
+            continue
+        for axis_name, axis_value in matrix.items():
+            if not (
+                isinstance(axis_name, str) and isinstance(axis_value, str)
+            ):
+                continue
+            axis_match = _MATRIX_FROM_NEEDS_RE.search(axis_value)
+            if axis_match is None:
+                continue
+            upstream_job = axis_match.group("job")
+            upstream_output = axis_match.group("output")
+            sources = state.lookup_job_output(upstream_job, upstream_output)
+            if not sources:
+                continue
+            state.record_matrix_axis(
+                str(job_id), axis_name,
+                upstream_job, upstream_output, sources,
+            )
 
     # ── Pass 3: detect downstream consumers (single + cross-job). ──
     for job_id, job in jobs.items():
@@ -396,6 +542,29 @@ def analyze_workflow(
                             sink_consumer=(
                                 f"needs.{ref_job}.outputs.{ref_output}"
                             ),
+                        ))
+                # 3c. ``${{ matrix.<axis> }}`` consumer where the
+                # axis was tainted in pass 2.5. The hops chain shows
+                # the full producer -> job output -> fromJSON ->
+                # matrix axis -> sink path so the reader sees the
+                # whole expansion.
+                for axis_ref in _iter_matrix_axis_refs(body):
+                    bound = state.lookup_matrix_axis(str(job_id), axis_ref)
+                    if bound is None:
+                        continue
+                    upstream_job, upstream_output, sources = bound
+                    for src in sources:
+                        paths.append(TaintPath(
+                            source=src,
+                            hops=(
+                                f"steps.<producer>.outputs.{upstream_output}",
+                                f"jobs.{upstream_job}.outputs.{upstream_output}",
+                                f"strategy.matrix.{axis_ref} = "
+                                f"fromJSON(needs.{upstream_job}."
+                                f"outputs.{upstream_output})",
+                            ),
+                            sink_location=f"{job_id}[{idx}]",
+                            sink_consumer=f"matrix.{axis_ref}",
                         ))
 
     # ── Pass 4: detect tainted ``with:`` forward into reusable

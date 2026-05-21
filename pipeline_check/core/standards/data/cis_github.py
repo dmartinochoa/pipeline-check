@@ -201,6 +201,7 @@ STANDARD = Standard(
         "GHA-059": ["1.5.2"],                                 # npm install without audit signatures
         "GHA-060": ["1.5.2"],                                 # pip install without --require-hashes
         "GHA-061": ["1.5.2"],                                 # App token minted without permissions filter
+        "GHA-062": ["1.5.2"],                                 # OIDC trust subject in sibling IaC is overly broad
         # TAINT family: cross-step / cross-job untrusted-data flow
         # into privileged sinks is the canonical pipeline-instruction
         # security failure the 1.5.2 scanner is meant to find.

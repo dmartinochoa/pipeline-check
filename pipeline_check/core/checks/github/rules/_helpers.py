@@ -33,24 +33,37 @@ __all__ = [
 #      Caller-controlled; safe ONLY when the trigger is restricted to
 #      privileged actors, which the workflow YAML can't enforce.
 UNTRUSTED_CONTEXT_RE = re.compile(
-    r"\$\{\{\s*(?:"
+    r"\$\{\{\s*"
+    # Optional function wrappers around the untrusted context. Common
+    # shapes: ``toJSON(...)``, ``fromJSON(...)``, ``format(...)``.
+    # Nested calls (``fromJSON(toJSON(...))``) are matched up to two
+    # levels deep, which covers every shape seen in the wild.
+    r"(?:(?:toJSON|fromJSON|format)\s*\(\s*){0,2}"
+    r"(?:"
     r"github\.event\.(?:"
     r"issue\.(?:title|body)"
-    r"|pull_request\.(?:title|body|head\.ref|head\.label)"
+    r"|pull_request\.(?:title|body|head\.ref|head\.label"
+    # ``labels.*.name`` (and ``.description``) lets a PR author or any
+    # labeler land arbitrary text in a list a downstream job iterates.
+    # Targets the GitHub Security Lab matrix-injection writeup shape.
+    r"|labels(?:\[\d+\])?\.\*?\.(?:name|description))"
     r"|comment\.body"
     r"|review\.body"
     r"|pages(?:\[\d+\])?\.\w+"
     r"|head_commit\.(?:message|author\.(?:name|email))"
     r"|discussion\.(?:title|body)"
     r"|release\.(?:name|body|tag_name)"
-    r"|deployment\.payload\.[^\}]*"
+    r"|deployment\.payload\.[^\})]*"
     r"|workflow_run\.(?:head_branch|display_title|head_commit\.message)"
     r")"
     r"|github\.(?:head_ref|ref_name|actor)"
     r"|github\.event\.pull_request\.base\.ref"
-    r"|github\.event\.client_payload\.[^\}]*"
+    r"|github\.event\.client_payload\.[^\})]*"
     r"|inputs\.[A-Za-z_][A-Za-z0-9_]*"
-    r")\s*\}\}"
+    r")"
+    # Closing parens for any function wrappers, then optional
+    # ``,<anything>`` for the format() second argument.
+    r"(?:[^\}]*)?\s*\}\}"
 )
 
 # A ``ref:`` value pointing at the PR head, used by GHA-002.

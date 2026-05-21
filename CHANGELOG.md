@@ -10,8 +10,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 PRs landing on `dev` between releases append entries below. The
 release commit collapses this section into `## [X.Y.Z] - <date>`.
 
+## [1.3.0] - 2026-05-21
+
 ### Added
 
+- **CLI hint — npm provider not covered alongside github.** When
+  ``--pipeline github`` is invoked alone in a repo that also ships
+  one or more ``package.json`` files outside ``node_modules`` /
+  ``vendor`` / ``dist`` / build directories, the CLI now emits a
+  ``[hint]`` line on stderr nudging the user to add an
+  ``--pipeline npm --npm-path <dir>`` invocation per manifest (or
+  ``--pipelines github,npm`` when a manifest sits at cwd).
+  Dependency-confusion / floating-range / lockfile-integrity issues
+  live in the manifest, not the workflow YAML, and the github
+  pipeline only inspects the latter. Closes the
+  ``greylag-ci/cicd-goat`` scenario 20 visibility gap. Walk is
+  depth-bounded (3 levels) and skips the usual heavy directories so
+  the check costs no perceptible time on real repos.
 - **GHA-016 trusted-installer (Codecov 2021) shape.** Widens the
   rule from ``curl | bash`` plus its in-primitive variants
   (shell-subshell, python-inline, download-exec, PowerShell) to also
@@ -28,6 +43,52 @@ release commit collapses this section into `## [X.Y.Z] - <date>`.
   vendor allowlist (``rustup.rs`` / ``get.docker.com`` / etc.) still
   exempts those installers. Closes the ``greylag-ci/cicd-goat``
   scenario 19 gap.
+- **TAINT-002 matrix-expansion injection.** Extends the GitHub
+  taint graph with two new propagation hops, both motivated by the
+  GitHub Security Lab matrix-expansion-injection writeup:
+
+  1. **Step env-var binding.** A producer step with
+     ``env: { LABELS: "${{ toJSON(github.event.pull_request.labels.*"
+     ".name) }}" }`` and a run body that writes
+     ``echo "targets=$LABELS" >> $GITHUB_OUTPUT`` propagates taint
+     from the env binding into the output — even though the run
+     body's RHS doesn't contain a literal ``${{ ... }}`` token. This
+     is the indirect-env shape GHA-003 deliberately treats as safe
+     (quoted shell) but that still flows into downstream sinks.
+  2. **Matrix expansion via ``fromJSON``.** When
+     ``strategy.matrix.<axis>: ${{ fromJSON(needs.<job>.outputs.<name>) }}``
+     feeds a tainted upstream output, every
+     ``${{ matrix.<axis> }}`` reference in the consuming job's run /
+     with body is treated as a taint sink. The path renderer shows
+     the full chain (source -> env binding -> step output -> job
+     output -> fromJSON matrix axis -> sink) so the reviewer sees the
+     whole expansion at once.
+
+  ``UNTRUSTED_CONTEXT_RE`` also widened to accept
+  ``toJSON(...)`` / ``fromJSON(...)`` / ``format(...)`` wrappers
+  around the untrusted context expression, and to recognize
+  ``github.event.pull_request.labels.*.name`` /
+  ``.description`` as untrusted (labels are PR-author or
+  labeler-controlled). Closes the ``greylag-ci/cicd-goat``
+  scenario 21 gap.
+- **GHA-049 actions-bot-bypass shape.** Widens the rule from
+  "cross-repo push from CI" (parameterized destinations only) to
+  also fire when a workflow's run body assumes the
+  ``github-actions[bot]`` identity (``git config user.name
+  "github-actions[bot]"`` / the noreply email / the legacy
+  ``actions-user`` spelling) AND issues any ``git push`` in the
+  same job. The combination is the canonical
+  branch-protection-bypass-allowance abuse shape: GitHub's
+  documented operational convenience is to list
+  ``github-actions[bot]`` in
+  ``Allow specified actors to bypass required pull requests`` on
+  the default branch, after which any workflow that adopts that
+  identity can push to ``main`` without review. The full
+  branch-protection-side audit lives in SCM-018 / SCM-019 (run via
+  ``--scm-platform github``); this leg flags the workflow that's
+  pre-positioned to exploit the SCM gap. Title updated to reflect
+  the broader scope. Closes the ``greylag-ci/cicd-goat`` scenario
+  23 gap.
 - **GHA-019 ArtiPACKED shape.** Widens the rule from
   "GITHUB_TOKEN written to a file / ``$GITHUB_ENV`` / ``tee``" to
   also pair ``actions/checkout`` (default
@@ -76,6 +137,29 @@ release commit collapses this section into `## [X.Y.Z] - <date>`.
   ``curl POST`` exfils ``$(env | base64)`` to a third-party tracker
   domain that, if it lapses or gets breached, leaks every downstream
   build's runtime env.
+- **GHA-062 — sibling IaC pins an over-broad OIDC subject claim.**
+  When a workflow uses ``aws-actions/configure-aws-credentials`` or
+  ``google-github-actions/auth``, GHA-062 walks the containing repo
+  (depth-bounded, skipping ``node_modules`` / ``vendor`` / build
+  dirs) for two sidecar IaC shapes:
+
+  - ``*trust-polic*.json`` files referencing
+    ``token.actions.githubusercontent.com`` as a Federated principal
+    whose ``Condition.StringLike :sub`` is ``repo:*`` or
+    ``repo:<org>/*`` (matches more than one repo);
+  - ``*.tf`` files containing a
+    ``google_iam_workload_identity_pool_provider`` block whose
+    ``attribute_condition`` is
+    ``attribute.repository.startsWith('<org>/')`` (whole-org WIF
+    binding).
+
+  GHA-030 already covers the workflow-side environment binding;
+  this leg covers the IaC subject claim that actually accepts the
+  OIDC token. Closes the ``greylag-ci/cicd-goat`` scenarios 10 (AWS
+  wildcard sub) and 22 (GCP over-broad WIF) gaps — the workflow
+  itself is environment-bound in both scenarios, so GHA-030
+  correctly stays silent; the bug lives in the sibling IaC, and
+  GHA-062 finds it.
 - **GHA-061 — GitHub App token minted without a ``permissions:``
   filter.** ``actions/create-github-app-token``,
   ``tibdex/github-app-token``, and
@@ -93,6 +177,22 @@ release commit collapses this section into `## [X.Y.Z] - <date>`.
 
 ### Changed
 
+- **Blob-rule factory collapses per-provider clone clusters.**
+  ``_primitives/blob_rule.py`` ships a ``yaml_blob_check`` factory
+  that takes a ``Rule``, a blob ``scanner``, and pass/fail prose, and
+  returns the ``check(path, doc)`` callable the orchestrator
+  consumes. Four cross-provider rule families (``dep_update``,
+  ``tls_bypass``, ``pkg_insecure``, ``docker_insecure``) and the
+  ``malicious_activity`` cluster migrate onto the factory, shrinking
+  25 rule modules by ~190 lines net and removing the
+  per-provider boilerplate that previously had to be re-pasted for
+  every new "applies to every CI provider" rule. Provider-specific
+  shapes that need step iteration (BK-008, DR-006), step-level
+  ``Location`` anchors (GHA-017), or Jenkinsfile text input
+  (JF-017 / JF-018 / JF-022 / JF-023 / JF-029) keep their bespoke
+  check bodies. ``_malicious.summarize_malicious_hits`` centralizes
+  the shared "N indicator(s) (categories). Examples: ..." prose so
+  it can't drift between providers.
 - **GHA-004 OIDC allowlist widened.** ``ossf/scorecard-action``
   consumes ``id-token: write`` when ``publish_results: true`` posts
   the score to the OpenSSF Scorecard API, and

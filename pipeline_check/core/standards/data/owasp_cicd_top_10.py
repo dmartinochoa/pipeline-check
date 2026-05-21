@@ -195,6 +195,7 @@ STANDARD = Standard(
         "GHA-059":  ["CICD-SEC-3"],                # npm install without audit signatures
         "GHA-060":  ["CICD-SEC-3"],                # pip install without --require-hashes
         "GHA-061":  ["CICD-SEC-5", "CICD-SEC-2"],  # App token minted without permissions filter
+        "GHA-062":  ["CICD-SEC-2", "CICD-SEC-7"],  # OIDC trust subject in sibling IaC is overly broad
         # GitLab CI
         "GL-001":   ["CICD-SEC-3"],
         "GL-002":   ["CICD-SEC-4"],

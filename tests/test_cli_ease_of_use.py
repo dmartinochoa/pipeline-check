@@ -394,3 +394,77 @@ class TestHints:
             MS.return_value.metadata = _mock_meta()
             result = runner.invoke(scan, ["--pipeline", "aws"])
         assert "[hint]" not in result.stderr
+
+    def test_npm_alongside_github_hint_fires_on_sibling_package_json(
+        self, runner, tmp_path, monkeypatch,
+    ):
+        # Mimic the cicd-goat scenario 20 layout: a github workflow
+        # tree plus a sibling package.json that the npm provider would
+        # catch if the user also ran ``--pipelines github,npm``.
+        monkeypatch.chdir(tmp_path)
+        (tmp_path / ".github" / "workflows").mkdir(parents=True)
+        (tmp_path / ".github" / "workflows" / "ci.yml").write_text(
+            "name: ci\non: push\njobs:\n  b:\n    runs-on: ubuntu-latest\n    steps: [{run: echo}]\n",
+            encoding="utf-8",
+        )
+        (tmp_path / "scenarios" / "20-dep").mkdir(parents=True)
+        (tmp_path / "scenarios" / "20-dep" / "package.json").write_text(
+            '{"name": "x", "dependencies": {"lodash": "^4"}}\n',
+            encoding="utf-8",
+        )
+        result = runner.invoke(scan, ["--pipeline", "github"])
+        assert "[hint]" in result.stderr
+        assert "package.json" in result.stderr
+        assert "--pipeline npm" in result.stderr or "--pipelines github,npm" in result.stderr
+
+    def test_npm_hint_silent_when_no_package_json(
+        self, runner, tmp_path, monkeypatch,
+    ):
+        monkeypatch.chdir(tmp_path)
+        (tmp_path / ".github" / "workflows").mkdir(parents=True)
+        (tmp_path / ".github" / "workflows" / "ci.yml").write_text(
+            "name: ci\non: push\njobs:\n  b:\n    runs-on: ubuntu-latest\n    steps: [{run: echo}]\n",
+            encoding="utf-8",
+        )
+        result = runner.invoke(scan, ["--pipeline", "github"])
+        assert "package.json" not in (result.stderr or "")
+
+    def test_npm_hint_silent_in_multi_pipeline_github_npm(
+        self, runner, tmp_path, monkeypatch,
+    ):
+        # User already opted into npm coverage; no nudge needed.
+        monkeypatch.chdir(tmp_path)
+        (tmp_path / ".github" / "workflows").mkdir(parents=True)
+        (tmp_path / ".github" / "workflows" / "ci.yml").write_text(
+            "name: ci\non: push\njobs:\n  b:\n    runs-on: ubuntu-latest\n    steps: [{run: echo}]\n",
+            encoding="utf-8",
+        )
+        (tmp_path / "package.json").write_text(
+            '{"name": "x", "dependencies": {}}\n',
+            encoding="utf-8",
+        )
+        result = runner.invoke(scan, ["--pipelines", "github,npm"])
+        # Hint about npm coverage being missing must NOT appear when
+        # npm is already in the resolved pipeline list.
+        assert "rerun with" not in (result.stderr or "")
+        assert "[hint] this repo also ships package.json" not in (result.stderr or "")
+
+    def test_npm_hint_skips_node_modules(
+        self, runner, tmp_path, monkeypatch,
+    ):
+        # node_modules forests produce tens of thousands of nested
+        # package.json files; the hint walker must not surface those.
+        monkeypatch.chdir(tmp_path)
+        (tmp_path / ".github" / "workflows").mkdir(parents=True)
+        (tmp_path / ".github" / "workflows" / "ci.yml").write_text(
+            "name: ci\non: push\njobs:\n  b:\n    runs-on: ubuntu-latest\n    steps: [{run: echo}]\n",
+            encoding="utf-8",
+        )
+        (tmp_path / "node_modules" / "lodash").mkdir(parents=True)
+        (tmp_path / "node_modules" / "lodash" / "package.json").write_text(
+            '{"name": "lodash"}\n', encoding="utf-8",
+        )
+        result = runner.invoke(scan, ["--pipeline", "github"])
+        # No first-party package.json elsewhere in the tree; hint
+        # should NOT fire on node_modules/ alone.
+        assert "package.json" not in (result.stderr or "")
