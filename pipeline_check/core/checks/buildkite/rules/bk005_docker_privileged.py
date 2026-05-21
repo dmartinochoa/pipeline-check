@@ -28,6 +28,34 @@ RULE = Rule(
         "explicit mounts of the host Docker socket "
         "(``/var/run/docker.sock``)."
     ),
+    exploit_example=(
+        "# Vulnerable: ``--privileged`` plus the host Docker socket\n"
+        "# gives the build container full access to the agent's\n"
+        "# kernel and the runtime that started it. A compromise\n"
+        "# (poisoned base image, RCE in app code) escapes to the\n"
+        "# agent and from there to every other build sharing the\n"
+        "# agent.\n"
+        "steps:\n"
+        "  - command: ./integration-test.sh\n"
+        "    plugins:\n"
+        "      - docker#v5.10.0:\n"
+        "          image: app@sha256:abc123...\n"
+        "          privileged: true\n"
+        "          volumes:\n"
+        "            - /var/run/docker.sock:/var/run/docker.sock\n"
+        "\n"
+        "# Safe: drop ``privileged`` and the socket mount. If the\n"
+        "# build genuinely needs to build images, use a rootless\n"
+        "# sandbox (Kaniko, BuildKit rootless, buildah\n"
+        "# ``--isolation=chroot``) that produces images without\n"
+        "# host-runtime access.\n"
+        "steps:\n"
+        "  - command: ./integration-test.sh\n"
+        "    plugins:\n"
+        "      - docker#v5.10.0:\n"
+        "          image: app@sha256:abc123...\n"
+        "          privileged: false"
+    ),
 )
 
 

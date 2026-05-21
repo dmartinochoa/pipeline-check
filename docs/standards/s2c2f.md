@@ -1241,6 +1241,30 @@ Yarn / Bun-only pipelines pass silently because the ``audit signatures`` primiti
 
 **Recommendation.** Pin every plugin reference to an exact tag (``docker-compose#v4.13.0``) or a 40-char commit SHA. Bare references (``docker-compose``), branch refs (``#main`` / ``#master``), and major-only floats (``#v4``) resolve to whatever is current at agent start time, which lets a compromised plugin release execute inside the pipeline.
 
+**Proof of exploit.**
+
+```
+# Vulnerable: ``docker-compose#main`` resolves at agent
+# boot to whatever sits at the plugin repo's main branch.
+# A push to the plugin repo (legitimate maintainer commit,
+# leaked token, takeover) ships code into every Buildkite
+# job that uses the plugin.
+steps:
+  - label: ":docker: build"
+    plugins:
+      - docker-compose#main:
+          run: app
+
+# Safe: pin to a release tag (or a 40-char commit SHA).
+# Renovate / Dependabot's buildkite-plugin ecosystem bumps
+# these in reviewable PRs so the pin doesn't drift.
+steps:
+  - label: ":docker: build"
+    plugins:
+      - docker-compose#v4.13.0:
+          run: app
+```
+
 **Source:** [`BK-001`](../providers/buildkite.md#bk-001) in the [Buildkite provider](../providers/buildkite.md).
 
 ### `BK-004`: Remote script piped into shell interpreter <span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> { #detail-bk-004 }
@@ -1252,6 +1276,32 @@ Yarn / Bun-only pipelines pass silently because the ``audit signatures`` primiti
 **Recommendation.** Download the installer to disk, verify a checksum or signature, then execute it. ``curl ... | sh`` lets the remote host change what runs in your pipeline at any time, and any TLS / DNS error during download silently feeds a partial script to the shell.
 
 **Autofix.** `pipeline_check --fix` will patch this finding automatically. Review the diff before committing; the fixer applies the conservative remediation pattern (e.g. swap a floating tag for the digest it currently resolves to), not the most aggressive one.
+
+**Proof of exploit.**
+
+```
+# Vulnerable: ``curl | bash`` trusts both the network path
+# (any MITM substitutes the script) and the host (a
+# compromised installer endpoint silently serves attacker
+# code). The script runs in the build's shell context.
+steps:
+  - label: ":hammer: install tools"
+    command: |
+      curl -fsSL https://installer.example.com/cli.sh | bash
+      ./cli build
+
+# Safe: download to a file, verify a sha256 digest from a
+# trusted source, then execute. If the upstream content
+# changes the digest stops matching and the build fails
+# before the malicious code runs.
+steps:
+  - label: ":hammer: install tools"
+    command: |
+      curl -fsSL https://installer.example.com/cli.sh -o /tmp/cli.sh
+      echo 'a1b2c3d4...  /tmp/cli.sh' | sha256sum -c -
+      bash /tmp/cli.sh
+      ./cli build
+```
 
 **Source:** [`BK-004`](../providers/buildkite.md#bk-004) in the [Buildkite provider](../providers/buildkite.md).
 
