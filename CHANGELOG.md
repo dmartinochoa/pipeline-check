@@ -10,6 +10,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 PRs landing on `dev` between releases append entries below. The
 release commit collapses this section into `## [X.Y.Z] - <date>`.
 
+## [1.3.0] - 2026-05-21
+
 ### Added
 
 - **CLI hint — npm provider not covered alongside github.** When
