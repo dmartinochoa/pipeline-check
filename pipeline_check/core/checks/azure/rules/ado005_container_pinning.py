@@ -24,6 +24,33 @@ RULE = Rule(
         "image` or `job.container` (string or `{image:}`). Floating / "
         "untagged refs let the publisher swap the image contents."
     ),
+    exploit_example=(
+        "# Vulnerable: a container resource pinned to a mutable\n"
+        "# tag. The publisher (or anyone with publish access)\n"
+        "# repoints the tag on the next refresh; every pipeline\n"
+        "# run pulls the swap silently.\n"
+        "resources:\n"
+        "  containers:\n"
+        "    - container: build-env\n"
+        "      image: myorg/build-env:latest\n"
+        "jobs:\n"
+        "  - job: build\n"
+        "    container: build-env\n"
+        "    steps:\n"
+        "      - script: make build\n"
+        "\n"
+        "# Safe: pin to the content-addressable digest. Renovate /\n"
+        "# Dependabot's docker ecosystem bump the digest in PRs.\n"
+        "resources:\n"
+        "  containers:\n"
+        "    - container: build-env\n"
+        "      image: myorg/build-env@sha256:abc123...\n"
+        "jobs:\n"
+        "  - job: build\n"
+        "    container: build-env\n"
+        "    steps:\n"
+        "      - script: make build"
+    ),
 )
 
 

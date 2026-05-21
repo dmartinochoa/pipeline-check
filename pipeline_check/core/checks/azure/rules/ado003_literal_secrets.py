@@ -27,6 +27,26 @@ RULE = Rule(
         "supports. AWS keys are detected by value shape regardless "
         "of variable name."
     ),
+    exploit_example=(
+        "# Vulnerable: the AWS access key literal lives in the\n"
+        "# pipeline ``variables:`` block. The YAML is committed\n"
+        "# to git, printed in build logs when the step echoes\n"
+        "# its environment, and visible to anyone with repo read.\n"
+        "variables:\n"
+        "  AWS_ACCESS_KEY_ID: AKIAIOSFODNN7EXAMPLE\n"
+        "  AWS_SECRET_ACCESS_KEY: wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY\n"
+        "steps:\n"
+        "  - script: aws s3 cp ./build s3://bucket/\n"
+        "\n"
+        "# Safe: store credentials in a variable group linked to\n"
+        "# Azure Key Vault. The pipeline references the group;\n"
+        "# the actual values stay in Key Vault, rotate there\n"
+        "# without a pipeline-file change, and are masked in logs.\n"
+        "variables:\n"
+        "  - group: aws-deploy   # backed by Key Vault\n"
+        "steps:\n"
+        "  - script: aws s3 cp ./build s3://bucket/"
+    ),
 )
 
 

