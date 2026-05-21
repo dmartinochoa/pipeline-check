@@ -64,6 +64,7 @@ references, recommendation).
 | [`AC-028`](#ac-028) | npm worm propagation primitive co-located | <span class="pg-sev pg-sev--critical">CRITICAL</span> | github / npm | [`NPM-004`](providers/npm.md#npm-004) + ([`GHA-048`](providers/github.md#gha-048) or [`GHA-049`](providers/github.md#gha-049)) |
 | [`AC-029`](#ac-029) | Untrusted trigger reaches a long-lived publish credential | <span class="pg-sev pg-sev--critical">CRITICAL</span> | github | ([`GHA-002`](providers/github.md#gha-002) or [`GHA-009`](providers/github.md#gha-009) or [`GHA-013`](providers/github.md#gha-013)) + ([`GHA-050`](providers/github.md#gha-050) or [`GHA-005`](providers/github.md#gha-005)) + ([`GHA-021`](providers/github.md#gha-021) or [`GHA-029`](providers/github.md#gha-029)) |
 | [`AC-030`](#ac-030) | Argo CD anonymous access meets wildcard RBAC | <span class="pg-sev pg-sev--critical">CRITICAL</span> | argocd | [`ARGOCD-009`](providers/argocd.md#argocd-009) + [`ARGOCD-004`](providers/argocd.md#argocd-004) |
+| [`AC-031`](#ac-031) | Argo CD untrusted PR generator meets wildcard source repos | <span class="pg-sev pg-sev--critical">CRITICAL</span> | argocd | [`ARGOCD-006`](providers/argocd.md#argocd-006) + [`ARGOCD-001`](providers/argocd.md#argocd-001) |
 
 ### Cross-provider chains (`XPC-NNN`)
 
@@ -1013,6 +1014,35 @@ Break either leg, both is best:
   1. Disable anonymous access (ARGOCD-009). Remove the ``users.anonymous.enabled`` key from ``argocd-cm`` or set it to ``"false"``. With anonymous off, any wildcard grant in ``argocd-rbac-cm`` still requires an authenticated subject before it can be exercised.
   2. Scope the RBAC policy (ARGOCD-004). Replace ``p, <role>, *, *, *, allow`` and ``g, <subject>, role:admin`` with explicit per-resource per-project grants tied to a named SSO group. Set ``policy.default`` to a deny / least-privilege role rather than leaving it implicit.
 If anonymous access is a deliberate design choice (e.g. a read-only public dashboard), the RBAC matrix MUST hold no wildcard / admin grants and ``policy.default`` must be the narrowest role the dashboard's use case allows.
+
+</div>
+
+</div>
+
+<div class="pg-rule pg-rule--critical" markdown>
+
+### AC-031: Argo CD untrusted PR generator meets wildcard source repos { #ac-031 }
+
+<div class="pg-rule__tags">
+<span class="pg-sev pg-sev--critical">CRITICAL</span> <span class="pg-tag" title="MITRE ATT&CK technique">MITRE T1195.002</span> <span class="pg-tag" title="MITRE ATT&CK technique">MITRE T1199</span> <span class="pg-tag" title="MITRE ATT&CK technique">MITRE T1078.004</span> <span class="pg-tag" title="kill-chain phase">initial-access (fork / contributor PR) -> execution (manifest render) -> impact</span> <span class="pg-tag pg-tag--owasp">argocd</span>
+</div>
+
+An ApplicationSet uses a ``pullRequest`` / ``scmProvider`` generator without a project allowlist (ARGOCD-006) AND at least one AppProject has ``sourceRepos: ['*']`` (ARGOCD-001). Any PR in the matched organization materializes a fresh ``Application`` that inherits the wildcard source-repo allowlist; the attacker's manifests render into the cluster on the next sync. The default out-of-the-box AppProject ships with ``sourceRepos: ['*']``, so the chain fires on most unconfigured Argo CD installs where a PR generator is introduced without a tightened project.
+
+**References**
+
+- <https://argo-cd.readthedocs.io/en/stable/operator-manual/applicationset/Generators-Pull-Request/>
+- <https://argo-cd.readthedocs.io/en/stable/user-guide/projects/>
+- <https://owasp.org/www-project-top-10-ci-cd-security-risks/CICD-SEC-04-Poisoned-Pipeline-Execution-PPE>
+
+<div class="pg-rule__rec" markdown>
+
+**Recommended action**
+
+Break either leg, both is best:
+  1. Tighten the AppProject's ``sourceRepos`` (ARGOCD-001). Replace ``['*']`` with the explicit list of repository URLs the project is allowed to render. Set ``spec.sourceRepos: ['https://github.com/org/payments-*']`` and keep ``sourceNamespaces`` / ``destinations`` similarly scoped.
+  2. Scope the ApplicationSet generator (ARGOCD-006). Pin ``template.spec.project`` to a single static project name (not ``default``, not a ``{{...}}`` placeholder) and constrain the generator with ``filters:`` / ``labels: ['preview']`` / ``branchMatch:`` so PRs from untrusted authors do not synthesize Applications.
+If PR-driven preview environments are a deliberate design, the AppProject the PR-driven Applications resolve to MUST carry an explicit ``sourceRepos`` allowlist and a narrow destination, the chain's premise is unbounded authority, not the PR-preview pattern itself.
 
 </div>
 

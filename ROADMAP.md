@@ -4,6 +4,18 @@ What's planned, what's shipped, and what's deliberately out of scope.
 
 ## Shipped
 
+- **AC-031 attack chain: Argo CD PR generator x wildcard sourceRepos
+  (post-1.3.0)** — Second Argo CD chain. CRITICAL severity,
+  single-provider (``argocd``). Pairs ARGOCD-006 (ApplicationSet
+  PR/SCM generator without a project allowlist) with ARGOCD-001
+  (AppProject ``sourceRepos: ['*']``). Composite: a contributor PR
+  in the matched org materializes a fresh ``Application`` under a
+  wildcard-source-repos project; the controller renders attacker-
+  supplied manifests into the cluster on the next sync. The
+  default out-of-the-box AppProject ships with the wildcard, so
+  the chain fires on most Argo CD installs where a PR generator is
+  introduced without tightening the project. MITRE T1195.002 /
+  T1199 / T1078.004.
 - **AC-030 attack chain: Argo CD anonymous access x wildcard RBAC
   (post-1.3.0)** — First attack-chain pairing the v1.3.0 Argo CD
   provider's rules. CRITICAL severity, single-provider (``argocd``).

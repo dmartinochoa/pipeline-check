@@ -188,7 +188,7 @@ class TestEngine:
             "AC-017", "AC-018", "AC-019", "AC-020",
             "AC-021", "AC-022", "AC-023", "AC-024",
             "AC-025", "AC-026", "AC-027", "AC-028", "AC-029",
-            "AC-030",
+            "AC-030", "AC-031",
             "XPC-001", "XPC-002", "XPC-003", "XPC-004", "XPC-005",
             "XPC-006", "XPC-007", "XPC-008", "XPC-009", "XPC-010",
         }
@@ -2878,6 +2878,65 @@ class TestChainAC030:
         ])
         chain = next(c for c in out if c.chain_id == "AC-030")
         assert chain.confidence is Confidence.MEDIUM
+
+
+class TestChainAC031:
+    """AC-031 — Argo CD untrusted PR generator meets wildcard source repos."""
+
+    RESOURCE = "argocd"
+
+    def test_fires_when_both_legs_fail_on_same_instance(self):
+        out = chains_pkg.evaluate([
+            _f("ARGOCD-006", self.RESOURCE, severity=Severity.HIGH),
+            _f("ARGOCD-001", self.RESOURCE, severity=Severity.HIGH),
+        ])
+        ac31 = [c for c in out if c.chain_id == "AC-031"]
+        assert len(ac31) == 1
+        chain = ac31[0]
+        assert chain.severity is Severity.CRITICAL
+        assert set(chain.triggering_check_ids) == {"ARGOCD-006", "ARGOCD-001"}
+        assert "T1195.002" in chain.mitre_attack
+        assert "T1199" in chain.mitre_attack
+        assert "T1078.004" in chain.mitre_attack
+        assert "initial-access" in chain.kill_chain_phase
+        assert "impact" in chain.kill_chain_phase
+
+    def test_does_not_fire_without_argocd006(self):
+        out = chains_pkg.evaluate([
+            _f("ARGOCD-001", self.RESOURCE),
+        ])
+        assert not any(c.chain_id == "AC-031" for c in out)
+
+    def test_does_not_fire_without_argocd001(self):
+        out = chains_pkg.evaluate([
+            _f("ARGOCD-006", self.RESOURCE),
+        ])
+        assert not any(c.chain_id == "AC-031" for c in out)
+
+    def test_does_not_fire_when_legs_passed(self):
+        out = chains_pkg.evaluate([
+            _f("ARGOCD-006", self.RESOURCE, passed=True),
+            _f("ARGOCD-001", self.RESOURCE, passed=True),
+        ])
+        assert not any(c.chain_id == "AC-031" for c in out)
+
+    def test_narrative_names_pull_request_generator_and_source_repos(self):
+        out = chains_pkg.evaluate([
+            _f("ARGOCD-006", self.RESOURCE),
+            _f("ARGOCD-001", self.RESOURCE),
+        ])
+        chain = next(c for c in out if c.chain_id == "AC-031")
+        assert "pullRequest" in chain.narrative
+        assert "sourceRepos" in chain.narrative
+
+    def test_recommendation_names_both_fixes(self):
+        out = chains_pkg.evaluate([
+            _f("ARGOCD-006", self.RESOURCE),
+            _f("ARGOCD-001", self.RESOURCE),
+        ])
+        chain = next(c for c in out if c.chain_id == "AC-031")
+        assert "sourceRepos" in chain.recommendation
+        assert "filters:" in chain.recommendation or "branchMatch" in chain.recommendation
 
 
 # ── Gate integration ─────────────────────────────────────────────────

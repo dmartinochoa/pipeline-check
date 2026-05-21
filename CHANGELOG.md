@@ -12,6 +12,20 @@ release commit collapses this section into `## [X.Y.Z] - <date>`.
 
 ### Added
 
+- **AC-031 attack chain — Argo CD untrusted PR generator meets
+  wildcard source repos.** New CRITICAL-severity chain pairing
+  ARGOCD-006 (ApplicationSet ``pullRequest`` / ``scmProvider``
+  generator without a project allowlist or
+  ``filters:`` / ``labels:`` constraint) with ARGOCD-001
+  (AppProject ``sourceRepos: ['*']``). Composite: a contributor PR
+  in the matched org materializes a fresh ``Application`` under a
+  project whose source-repo allowlist is unbounded, the controller
+  renders the attacker-supplied manifests into the cluster on the
+  next sync. The default out-of-the-box AppProject ships with
+  ``sourceRepos: ['*']``, so the chain fires on most Argo CD
+  installs where a PR generator is introduced without a tightened
+  project. MITRE T1195.002 / T1199 / T1078.004. Chain count
+  40 -> 41.
 - **AC-030 attack chain — Argo CD anonymous access meets wildcard
   RBAC.** New CRITICAL-severity chain pairing ARGOCD-009
   (``argocd-cm`` sets ``users.anonymous.enabled: "true"``) with
