@@ -550,6 +550,105 @@ def test_readme_architecture_rule_ranges_match_registry():
 
 
 # ──────────────────────────────────────────────────────────────────
+# README 'Supported providers' table per-cell drift guard.
+#
+# The table cells declare per-provider rule counts in the fourth
+# column ("71 checks", "65 checks", ...). The architecture-block
+# range test above covers the tree-listing, but the provider table is
+# the first surface a README reader sees and used to silently drift
+# whenever a provider gained a rule but the table cell wasn't bumped.
+# ──────────────────────────────────────────────────────────────────
+
+# Maps the bolded row label in the README provider table to the rule
+# directory slug. Argo CD added 2026-05-21 as the 23rd provider.
+_README_PROVIDER_TABLE_ROWS: dict[str, str] = {
+    "AWS": "aws",
+    "GitHub Actions": "github",
+    "GitLab CI": "gitlab",
+    "Bitbucket Pipelines": "bitbucket",
+    "Azure DevOps": "azure",
+    "Jenkins": "jenkins",
+    "CircleCI": "circleci",
+    "Google Cloud Build": "cloudbuild",
+    "Buildkite": "buildkite",
+    "Drone CI": "drone",
+    "Tekton": "tekton",
+    "Argo Workflows": "argo",
+    "Argo CD": "argocd",
+    "Dockerfile": "dockerfile",
+    "Kubernetes": "kubernetes",
+    "OCI image manifest": "oci",
+}
+
+
+def test_readme_provider_table_per_row_rule_counts_match_registry():
+    """Every row in the README's Supported-providers table must
+    declare a leading ``<N> checks`` figure that equals the number of
+    rule files under that provider's ``rules/`` directory.
+
+    Helm is a deliberate exception, the cell carries a composite
+    "43 K8S-* + 10 HELM-*" claim because rendered Helm reuses the
+    Kubernetes pack; covered by a dedicated assertion below.
+    """
+    text = (REPO / "README.md").read_text(encoding="utf-8")
+    drift: list[str] = []
+
+    for row_name, slug in _README_PROVIDER_TABLE_ROWS.items():
+        # Match ``| **<Name>** | <input> | <flag> | <N> checks`` —
+        # bold row label, anything up to the fourth column, then the
+        # leading "<N> checks" we want to verify.
+        pat = re.compile(
+            rf"\|\s*\*\*{re.escape(row_name)}\*\*[^|]*\|"
+            rf"[^|]*\|[^|]*\|\s*(\d+)\s+checks?",
+        )
+        m = pat.search(text)
+        if not m:
+            drift.append(
+                f"README provider-table row '{row_name}': not found "
+                f"or its fourth column doesn't lead with '<N> checks'"
+            )
+            continue
+        claimed = int(m.group(1))
+        actual = _count_rules_in(slug)
+        if claimed != actual:
+            drift.append(
+                f"README provider-table row '{row_name}' ({slug}): "
+                f"claims {claimed} checks, registry has {actual}"
+            )
+
+    assert not drift, (
+        "README provider-table drift:\n  " + "\n  ".join(drift)
+    )
+
+
+def test_readme_helm_row_carries_correct_composite_claim():
+    """The Helm row says "<N> K8S-* rules ... plus <M> chart-supply-
+    chain rules (HELM-001..N)". N must equal the kubernetes rule
+    count and M must equal the helm rule count."""
+    text = (REPO / "README.md").read_text(encoding="utf-8")
+    pat = re.compile(
+        r"\|\s*\*\*Helm\*\*[^|]*\|[^|]*\|[^|]*\|[^|]*?"
+        r"(\d+)\s+K8S-\*\s+rules[^|]*?plus\s+(\d+)\s+chart-supply-chain",
+    )
+    m = pat.search(text)
+    assert m, (
+        "README.md Helm row missing or its cell no longer carries "
+        "the '<N> K8S-* rules ... plus <M> chart-supply-chain' shape"
+    )
+    k8s_claimed, helm_claimed = int(m.group(1)), int(m.group(2))
+    k8s_actual = _count_rules_in("kubernetes")
+    helm_actual = _count_rules_in("helm")
+    assert k8s_claimed == k8s_actual, (
+        f"README Helm row claims {k8s_claimed} K8S-* rules; registry "
+        f"has {k8s_actual}"
+    )
+    assert helm_claimed == helm_actual, (
+        f"README Helm row claims {helm_claimed} chart-supply-chain "
+        f"rules; registry has {helm_actual}"
+    )
+
+
+# ──────────────────────────────────────────────────────────────────
 # Comparison-page per-row drift guard.
 #
 # ``docs/comparison.md`` has a feature matrix whose Pipeline-Check

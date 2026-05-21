@@ -77,6 +77,17 @@ release commit collapses this section into `## [X.Y.Z] - <date>`.
 
 ### Changed
 
+- **README provider-table per-row drift guard.**
+  ``tests/test_doc_claims.py`` now verifies every row in the
+  README's Supported-providers table declares a leading
+  ``<N> checks`` figure equal to the rule-file count under that
+  provider's ``rules/`` directory. The Helm row is covered by a
+  dedicated assertion since its cell carries a composite "<N>
+  K8S-* + <M> HELM-*" claim. Mirrors the existing
+  ``test_comparison_per_row_rule_counts_match_registry`` guard
+  for ``docs/comparison.md``. Catches the drift that bit the
+  v1.3.0 cycle on multiple PRs, contributor adds rules to a
+  provider but forgets to bump the README table cell.
 - **Doc-claim drift guard extended to CONTRIBUTING.md + Docker Hub
   README.** ``tests/test_doc_claims.py`` now scans
   ``CONTRIBUTING.md`` and ``.github/DOCKERHUB.md`` alongside the
