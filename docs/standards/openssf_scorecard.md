@@ -4706,6 +4706,37 @@ Resources:
 
 **Recommendation.** Move the secret into Secrets Manager (or SSM Parameter Store SecureString) and reference it via ``'{{resolve:secretsmanager:…}}'`` at deploy time. Never literal-string a credential into a stateful resource — the value lives in the template, the stack history, and any drift detection report.
 
+**Proof of exploit.**
+
+```
+# Vulnerable: a stateful resource carries a plaintext
+# secret literal. The template is committed to git;
+# CloudFormation stores the secret in stack drift / events
+# / parameter overrides — visible to anyone with
+# ``cloudformation:DescribeStack*``.
+Resources:
+  Db:
+    Type: AWS::RDS::DBInstance
+    Properties:
+      DBInstanceClass: db.t3.medium
+      Engine: postgres
+      MasterUsername: appuser
+      MasterUserPassword: hunter2-prod-master-pw
+
+# Safe: reference a Secrets Manager dynamic reference.
+# CloudFormation resolves the secret at stack-update
+# time; the template carries only the ARN.
+Resources:
+  Db:
+    Type: AWS::RDS::DBInstance
+    Properties:
+      DBInstanceClass: db.t3.medium
+      Engine: postgres
+      MasterUsername: appuser
+      MasterUserPassword:
+        '{{resolve:secretsmanager:prod/db/master:SecretString:password}}'
+```
+
 **Source:** [`CF-002`](../providers/cloudformation.md) in the [CloudFormation provider](../providers/cloudformation.md).
 
 ### `CP-001`: No approval action before deploy stages <span class="pg-sev pg-sev--high">HIGH</span> { #detail-cp-001 }
@@ -14268,7 +14299,7 @@ When the callee body is loaded into the same scan (local ``./.github/workflows/<
 **Proof of exploit.**
 
 ```
-# Vulnerable: the caller workflow forwards an untrusted
+# Vulnerable: the caller workflow passes an untrusted
 # value into a reusable workflow's ``with:`` inputs. The
 # reusable workflow inlines the input into a shell
 # command without quoting; the injection lands in the

@@ -120,7 +120,7 @@ RULE = Rule(
         "default for unverifiable cross-repo flow.",
     ),
     exploit_example=(
-        "# Vulnerable: the caller workflow forwards an untrusted\n"
+        "# Vulnerable: the caller workflow passes an untrusted\n"
         "# value into a reusable workflow's ``with:`` inputs. The\n"
         "# reusable workflow inlines the input into a shell\n"
         "# command without quoting; the injection lands in the\n"

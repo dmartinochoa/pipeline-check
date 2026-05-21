@@ -5243,6 +5243,37 @@ Resources:
 
 **Recommendation.** Move the secret into Secrets Manager (or SSM Parameter Store SecureString) and reference it via ``'{{resolve:secretsmanager:…}}'`` at deploy time. Never literal-string a credential into a stateful resource — the value lives in the template, the stack history, and any drift detection report.
 
+**Proof of exploit.**
+
+```
+# Vulnerable: a stateful resource carries a plaintext
+# secret literal. The template is committed to git;
+# CloudFormation stores the secret in stack drift / events
+# / parameter overrides — visible to anyone with
+# ``cloudformation:DescribeStack*``.
+Resources:
+  Db:
+    Type: AWS::RDS::DBInstance
+    Properties:
+      DBInstanceClass: db.t3.medium
+      Engine: postgres
+      MasterUsername: appuser
+      MasterUserPassword: hunter2-prod-master-pw
+
+# Safe: reference a Secrets Manager dynamic reference.
+# CloudFormation resolves the secret at stack-update
+# time; the template carries only the ARN.
+Resources:
+  Db:
+    Type: AWS::RDS::DBInstance
+    Properties:
+      DBInstanceClass: db.t3.medium
+      Engine: postgres
+      MasterUsername: appuser
+      MasterUserPassword:
+        '{{resolve:secretsmanager:prod/db/master:SecretString:password}}'
+```
+
 **Source:** [`CF-002`](../providers/cloudformation.md) in the [CloudFormation provider](../providers/cloudformation.md).
 
 ### `CF-003`: CodeBuild VPC config references a public subnet <span class="pg-sev pg-sev--high">HIGH</span> { #detail-cf-003 }
@@ -5252,6 +5283,46 @@ Resources:
 **How this is detected.** When ``AWS::CodeBuild::Project.Properties.VpcConfig.VpcId`` resolves to a concrete reference, walks every ``AWS::EC2::Subnet`` in the same VPC and fires if any has ``MapPublicIpOnLaunch: true``.
 
 **Recommendation.** Place CodeBuild projects in private subnets (``MapPublicIpOnLaunch: false``) with egress routed through a NAT gateway or VPC interface endpoints. Public subnets put the build host on a public IP for the duration of the build.
+
+**Proof of exploit.**
+
+```
+# Vulnerable: the CodeBuild project's VpcConfig points
+# at a subnet whose ``MapPublicIpOnLaunch: true``. The
+# build host gets a public IP for the duration of the
+# build; outbound traffic doesn't go through NAT, and
+# the host is reachable inbound (modulo SG rules).
+Resources:
+  Subnet:
+    Type: AWS::EC2::Subnet
+    Properties:
+      CidrBlock: 10.0.1.0/24
+      MapPublicIpOnLaunch: true
+  Build:
+    Type: AWS::CodeBuild::Project
+    Properties:
+      VpcConfig:
+        VpcId: !Ref VPC
+        Subnets: [!Ref Subnet]
+        SecurityGroupIds: [!Ref BuildSG]
+
+# Safe: route the project through a private subnet.
+# Egress goes via a NAT gateway; no public IP on the
+# build host.
+Resources:
+  PrivateSubnet:
+    Type: AWS::EC2::Subnet
+    Properties:
+      CidrBlock: 10.0.10.0/24
+      MapPublicIpOnLaunch: false
+  Build:
+    Type: AWS::CodeBuild::Project
+    Properties:
+      VpcConfig:
+        VpcId: !Ref VPC
+        Subnets: [!Ref PrivateSubnet]
+        SecurityGroupIds: [!Ref BuildSG]
+```
 
 **Source:** [`CF-003`](../providers/cloudformation.md) in the [CloudFormation provider](../providers/cloudformation.md).
 
@@ -17315,7 +17386,7 @@ When the callee body is loaded into the same scan (local ``./.github/workflows/<
 **Proof of exploit.**
 
 ```
-# Vulnerable: the caller workflow forwards an untrusted
+# Vulnerable: the caller workflow passes an untrusted
 # value into a reusable workflow's ``with:`` inputs. The
 # reusable workflow inlines the input into a shell
 # command without quoting; the injection lands in the
