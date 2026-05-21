@@ -23,6 +23,28 @@ RULE = Rule(
         "it, a freshly-pushed image goes straight into deployable "
         "storage with no known-CVE pass."
     ),
+    exploit_example=(
+        "# Vulnerable: ECR repo with ``ImageScanningConfiguration\n"
+        "# .ScanOnPush: false``. Every pushed image lands without\n"
+        "# a vulnerability scan; downstream consumers pull CVE-\n"
+        "# laden images.\n"
+        "Resources:\n"
+        "  Repo:\n"
+        "    Type: AWS::ECR::Repository\n"
+        "    Properties:\n"
+        "      RepositoryName: myapp\n"
+        "      ImageScanningConfiguration:\n"
+        "        ScanOnPush: false\n"
+        "\n"
+        "# Safe: enable scan-on-push.\n"
+        "Resources:\n"
+        "  Repo:\n"
+        "    Type: AWS::ECR::Repository\n"
+        "    Properties:\n"
+        "      RepositoryName: myapp\n"
+        "      ImageScanningConfiguration:\n"
+        "        ScanOnPush: true"
+    ),
 )
 
 

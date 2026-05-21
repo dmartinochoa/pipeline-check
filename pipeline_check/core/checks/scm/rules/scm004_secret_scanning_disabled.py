@@ -55,6 +55,33 @@ RULE = Rule(
         "minutes of the push, collapsing the exploitable window from "
         "days to minutes for the patterns it covers.",
     ),
+    exploit_example=(
+        "# Vulnerable: a developer pushes a commit that contains a\n"
+        "# leaked AWS access key in source code. Without secret\n"
+        "# scanning enabled, GitHub never surfaces an alert; the\n"
+        "# secret stays in the repo's git history forever and any\n"
+        "# repo reader (or future fork) extracts it. Public repos\n"
+        "# are crawled by attackers continuously for AKIA-prefixed\n"
+        "# strings.\n"
+        "# GET /repos/myorg/myrepo (vulnerable response):\n"
+        "{\n"
+        "  \"security_and_analysis\": {\n"
+        "    \"secret_scanning\": {\"status\": \"disabled\"}\n"
+        "  }\n"
+        "}\n"
+        "\n"
+        "# Safe: enable secret scanning. GitHub then scans every\n"
+        "# push and historical commit for known credential\n"
+        "# patterns and surfaces alerts; pair with push protection\n"
+        "# (SCM-015) so secrets are blocked at push time before\n"
+        "# they land in history.\n"
+        "# PATCH /repos/myorg/myrepo:\n"
+        "{\n"
+        "  \"security_and_analysis\": {\n"
+        "    \"secret_scanning\": {\"status\": \"enabled\"}\n"
+        "  }\n"
+        "}"
+    ),
 )
 
 

@@ -63,6 +63,30 @@ RULE = Rule(
         "GitLab-side workflow can't request a token without an "
         "audience claim or without a deployment gate."
     ),
+    exploit_example=(
+        "# Vulnerable: ``id_tokens:`` mints a JWT with no\n"
+        "# ``aud:`` pin and no environment binding. The token's\n"
+        "# subject claim accepts any ref / branch, so an MR\n"
+        "# pipeline can assume the prod IAM role if the cloud\n"
+        "# trust policy doesn't tighten ``sub`` itself.\n"
+        "deploy:\n"
+        "  id_tokens:\n"
+        "    AWS_TOKEN:\n"
+        "      # no aud:, no audience pin\n"
+        "  script: [aws sts assume-role-with-web-identity ...]\n"
+        "\n"
+        "# Safe: pin ``aud:`` to an issuer-specific value AND\n"
+        "# bind the job to a protected environment with manual\n"
+        "# approval. The cloud-side trust policy ALSO checks\n"
+        "# ``sub`` against the project + protected-ref shape.\n"
+        "deploy:\n"
+        "  environment:\n"
+        "    name: production   # protected, reviewer-gated\n"
+        "  id_tokens:\n"
+        "    AWS_TOKEN:\n"
+        "      aud: sts.amazonaws.com\n"
+        "  script: [aws sts assume-role-with-web-identity ...]"
+    ),
 )
 
 

@@ -43,6 +43,27 @@ RULE = Rule(
         "stage; suppress per-Dockerfile if the deployment target "
         "guarantees the URL host can't be substituted.",
     ),
+    exploit_example=(
+        "# Vulnerable: ``ADD <url>`` pulls a remote blob into the\n"
+        "# image at build time with no integrity check. A MITM\n"
+        "# (compromised proxy, BGP hijack on the mirror) or a\n"
+        "# host compromise substitutes the file; the build commits\n"
+        "# the substituted bytes into a layer.\n"
+        "FROM ubuntu@sha256:abc123...\n"
+        "ADD https://internal-mirror.example.com/installer.tar.gz /tmp/\n"
+        "RUN tar -xzf /tmp/installer.tar.gz && /tmp/install.sh\n"
+        "\n"
+        "# Safe: ``RUN curl`` to a tempfile, ``sha256sum -c`` against\n"
+        "# a known-good digest, then extract / execute. The verify\n"
+        "# step fails loud if the bytes don't match.\n"
+        "FROM ubuntu@sha256:abc123...\n"
+        "RUN curl -fsSL https://internal-mirror.example.com/installer.tar.gz \\\n"
+        "      -o /tmp/installer.tar.gz \\\n"
+        "    && echo 'a1b2c3d4...  /tmp/installer.tar.gz' | sha256sum -c - \\\n"
+        "    && tar -xzf /tmp/installer.tar.gz \\\n"
+        "    && /tmp/install.sh \\\n"
+        "    && rm /tmp/installer.tar.gz"
+    ),
 )
 
 _URL_RE = re.compile(r"\bhttps?://\S+", re.IGNORECASE)

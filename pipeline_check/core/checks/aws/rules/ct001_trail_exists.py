@@ -23,6 +23,29 @@ RULE = Rule(
         "responders: a pipeline compromise is invisible once the in-memory "
         "CloudWatch buffer rolls over."
     ),
+    exploit_example=(
+        "# Vulnerable: no active CloudTrail trail in the region.\n"
+        "# AWS API calls aren't audited; an intruder's actions\n"
+        "# leave no trace. Incident response can't tell what was\n"
+        "# read, what was changed, or how the attacker got in.\n"
+        "import boto3\n"
+        "ct = boto3.client('cloudtrail', region_name='us-east-1')\n"
+        "# Empty trail list:\n"
+        "ct.list_trails()  # -> {'Trails': []}\n"
+        "\n"
+        "# Safe: a multi-region trail that logs every API call\n"
+        "# to a versioned, log-file-validation-enabled S3 bucket\n"
+        "# with object-lock retention. Pair with CloudWatch\n"
+        "# alarms on common compromise signals.\n"
+        "ct.create_trail(\n"
+        "    Name='org-wide-trail',\n"
+        "    S3BucketName='org-cloudtrail-logs',\n"
+        "    IsMultiRegionTrail=True,\n"
+        "    IncludeGlobalServiceEvents=True,\n"
+        "    EnableLogFileValidation=True,\n"
+        ")\n"
+        "ct.start_logging(Name='org-wide-trail')"
+    ),
 )
 
 

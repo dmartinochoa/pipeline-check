@@ -31,6 +31,36 @@ RULE = Rule(
         "attacks. ``aws:PrincipalOrgID`` is the org-level rescue "
         "without enumerating accounts."
     ),
+    exploit_example=(
+        "# Vulnerable: CodeArtifact domain policy with\n"
+        "# ``Principal: '*'`` and no condition. Any AWS principal\n"
+        "# in any account can pull artifacts from the domain;\n"
+        "# private package names + versions are also discoverable.\n"
+        "{\n"
+        "  \"Version\": \"2012-10-17\",\n"
+        "  \"Statement\": [{\n"
+        "    \"Effect\": \"Allow\",\n"
+        "    \"Principal\": \"*\",\n"
+        "    \"Action\": [\"codeartifact:GetPackageVersion*\"],\n"
+        "    \"Resource\": \"*\"\n"
+        "  }]\n"
+        "}\n"
+        "\n"
+        "# Safe: scope ``Principal`` to your org's account IDs (or\n"
+        "# use the ``aws:PrincipalOrgID`` condition with your\n"
+        "# Organizations org ID). External access is denied by\n"
+        "# default unless explicitly granted.\n"
+        "{\n"
+        "  \"Version\": \"2012-10-17\",\n"
+        "  \"Statement\": [{\n"
+        "    \"Effect\": \"Allow\",\n"
+        "    \"Principal\": {\"AWS\": \"*\"},\n"
+        "    \"Action\": [\"codeartifact:GetPackageVersion*\"],\n"
+        "    \"Resource\": \"*\",\n"
+        "    \"Condition\": {\"StringEquals\": {\"aws:PrincipalOrgID\": \"o-abc123def4\"}}\n"
+        "  }]\n"
+        "}"
+    ),
 )
 
 

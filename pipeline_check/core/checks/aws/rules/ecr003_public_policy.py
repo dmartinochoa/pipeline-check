@@ -27,6 +27,36 @@ RULE = Rule(
         "rather than a private repo with a public policy. The "
         "default for build-output images should never be public."
     ),
+    exploit_example=(
+        "# Vulnerable: ECR repository policy with\n"
+        "# ``Principal: '*'``. Anyone on the internet can pull\n"
+        "# images from the repo (and discover internal app\n"
+        "# names + base-image versions). For repos that store\n"
+        "# private internal images, this is a direct supply-\n"
+        "# chain disclosure.\n"
+        "{\n"
+        "  \"Version\": \"2012-10-17\",\n"
+        "  \"Statement\": [{\n"
+        "    \"Effect\": \"Allow\",\n"
+        "    \"Principal\": \"*\",\n"
+        "    \"Action\": [\"ecr:BatchGetImage\", \"ecr:GetDownloadUrlForLayer\"]\n"
+        "  }]\n"
+        "}\n"
+        "\n"
+        "# Safe: scope to the account / org. If the image really\n"
+        "# is meant to be public, use ECR Public (a separate\n"
+        "# service for community-distributed images) rather than\n"
+        "# a wildcard policy on a private registry.\n"
+        "{\n"
+        "  \"Version\": \"2012-10-17\",\n"
+        "  \"Statement\": [{\n"
+        "    \"Effect\": \"Allow\",\n"
+        "    \"Principal\": {\"AWS\": \"*\"},\n"
+        "    \"Action\": [\"ecr:BatchGetImage\", \"ecr:GetDownloadUrlForLayer\"],\n"
+        "    \"Condition\": {\"StringEquals\": {\"aws:PrincipalOrgID\": \"o-abc123def4\"}}\n"
+        "  }]\n"
+        "}"
+    ),
 )
 
 

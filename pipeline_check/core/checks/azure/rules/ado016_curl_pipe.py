@@ -33,6 +33,24 @@ RULE = Rule(
         "with --min-confidence MEDIUM; the finding still surfaces so "
         "teams that want cryptographic verification can audit.",
     ),
+    exploit_example=(
+        "# Vulnerable: ``curl | bash`` in a script step trusts\n"
+        "# both the network path and the installer host. A MITM\n"
+        "# or compromised endpoint ships malicious code into the\n"
+        "# step shell with the job's full credential set.\n"
+        "steps:\n"
+        "  - bash: |\n"
+        "      curl -fsSL https://installer.example.com/cli.sh | bash\n"
+        "\n"
+        "# Safe: download, verify a sha256 digest from a trusted\n"
+        "# source, then execute.\n"
+        "steps:\n"
+        "  - bash: |\n"
+        "      set -e\n"
+        "      curl -fsSL https://installer.example.com/cli.sh -o /tmp/cli.sh\n"
+        "      echo 'a1b2c3d4...  /tmp/cli.sh' | sha256sum -c -\n"
+        "      bash /tmp/cli.sh"
+    ),
 )
 
 

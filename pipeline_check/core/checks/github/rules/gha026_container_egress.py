@@ -32,6 +32,32 @@ RULE = Rule(
         "maps the Docker socket) turns the job into an RCE on the "
         "runner VM."
     ),
+    exploit_example=(
+        "# Vulnerable: ``container.options`` adds ``--privileged``\n"
+        "# or ``--cap-add=SYS_ADMIN``. The container job runs\n"
+        "# inside the runner with elevated kernel access; a build\n"
+        "# RCE escapes the container boundary.\n"
+        "jobs:\n"
+        "  build:\n"
+        "    runs-on: ubuntu-latest\n"
+        "    container:\n"
+        "      image: alpine@sha256:abc123...\n"
+        "      options: --privileged --cap-add=SYS_ADMIN -v /var/run/docker.sock:/var/run/docker.sock\n"
+        "    steps:\n"
+        "      - run: ./build.sh\n"
+        "\n"
+        "# Safe: no ``options:`` override of the default isolation.\n"
+        "# Drop privileged-mode and the socket mount entirely; the\n"
+        "# container runs with default capabilities and a clean\n"
+        "# kernel-namespace boundary against the runner.\n"
+        "jobs:\n"
+        "  build:\n"
+        "    runs-on: ubuntu-latest\n"
+        "    container:\n"
+        "      image: alpine@sha256:abc123...\n"
+        "    steps:\n"
+        "      - run: ./build.sh"
+    ),
 )
 
 _BAD_OPTION_RE = re.compile(

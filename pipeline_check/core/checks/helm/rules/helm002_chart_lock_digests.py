@@ -58,6 +58,39 @@ RULE = Rule(
         "absent or empty) pass automatically. There is nothing to "
         "lock.",
     ),
+    exploit_example=(
+        "# Vulnerable: ``Chart.yaml`` declares a redis dependency by\n"
+        "# version range but ``Chart.lock`` is absent. ``helm\n"
+        "# dependency build`` resolves the range against whatever the\n"
+        "# chart repo serves at install time. A compromised repo (or\n"
+        "# a malicious chart cache) substitutes a backdoored redis-\n"
+        "# 17.x tarball; the consuming cluster runs it.\n"
+        "# Chart.yaml\n"
+        "apiVersion: v2\n"
+        "name: my-app\n"
+        "version: 1.0.0\n"
+        "dependencies:\n"
+        "  - name: redis\n"
+        "    version: ^17.0.0\n"
+        "    repository: https://charts.bitnami.com/bitnami\n"
+        "# Chart.lock missing entirely — no integrity gate on\n"
+        "# ``helm dependency build``\n"
+        "\n"
+        "# Safe: run ``helm dependency update`` and commit\n"
+        "# ``Chart.lock``. ``digest:`` is the sha256 of the resolved\n"
+        "# tarball; ``helm dependency build`` re-fetches and verifies\n"
+        "# the digest before unpacking. A swapped tarball changes the\n"
+        "# digest and the build fails loud instead of silently\n"
+        "# installing the substitute.\n"
+        "# Chart.lock\n"
+        "dependencies:\n"
+        "  - name: redis\n"
+        "    repository: https://charts.bitnami.com/bitnami\n"
+        "    version: 17.15.4\n"
+        "    digest: sha256:abc123def456abc123def456abc123def456abc123def456abc123def456abcd\n"
+        "digest: sha256:9876543210fedcba9876543210fedcba9876543210fedcba9876543210fedcba\n"
+        "generated: \"2026-01-15T10:30:00Z\""
+    ),
 )
 
 

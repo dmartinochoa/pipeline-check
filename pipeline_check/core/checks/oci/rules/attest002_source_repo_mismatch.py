@@ -79,6 +79,42 @@ RULE = Rule(
         "control SLSA L2+ requires specifically to detect this "
         "shape.",
     ),
+    exploit_example=(
+        "# Vulnerable: ``configSource.uri`` is empty (or 'unknown' /\n"
+        "# 'n/a' / a placeholder). The trusted builder produced and\n"
+        "# signed an attestation but the source-repo claim is\n"
+        "# missing, so a downstream verifier can confirm WHO built\n"
+        "# but not WHAT they built. The attestation is structurally\n"
+        "# valid yet semantically empty.\n"
+        "{\n"
+        "  \"predicateType\": \"https://slsa.dev/provenance/v0.2\",\n"
+        "  \"predicate\": {\n"
+        "    \"builder\": { \"id\": \"https://github.com/.../generator@v2.1.0\" },\n"
+        "    \"invocation\": {\n"
+        "      \"configSource\": {\n"
+        "        \"uri\": \"\",\n"
+        "        \"digest\": {}\n"
+        "      }\n"
+        "    }\n"
+        "  }\n"
+        "}\n"
+        "\n"
+        "# Safe: concrete source-repo URI plus a commit-level\n"
+        "# digest. Verifiers can now confirm the image was built\n"
+        "# from the expected repository at the expected commit.\n"
+        "{\n"
+        "  \"predicateType\": \"https://slsa.dev/provenance/v0.2\",\n"
+        "  \"predicate\": {\n"
+        "    \"builder\": { \"id\": \"https://github.com/.../generator@v2.1.0\" },\n"
+        "    \"invocation\": {\n"
+        "      \"configSource\": {\n"
+        "        \"uri\": \"git+https://github.com/myorg/myrepo@refs/tags/v1.4.2\",\n"
+        "        \"digest\": { \"sha1\": \"0123456789abcdef0123456789abcdef01234567\" }\n"
+        "      }\n"
+        "    }\n"
+        "  }\n"
+        "}"
+    ),
 )
 
 

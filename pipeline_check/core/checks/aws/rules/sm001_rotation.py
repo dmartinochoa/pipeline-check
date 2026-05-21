@@ -22,6 +22,27 @@ RULE = Rule(
         "used purely by application workloads are out of scope for a CI/CD "
         "scanner."
     ),
+    exploit_example=(
+        "# Vulnerable: a Secrets Manager secret with no rotation\n"
+        "# configured. The credential lives forever; any leak\n"
+        "# (log echo, accidental commit, .env file in an artifact)\n"
+        "# stays valid until manually rotated, which usually means\n"
+        "# until someone notices.\n"
+        "import boto3\n"
+        "sm = boto3.client('secretsmanager')\n"
+        "sm.describe_secret(SecretId='prod/db-master')\n"
+        "# {'RotationEnabled': False, ...}\n"
+        "\n"
+        "# Safe: enable rotation against a rotation Lambda. AWS\n"
+        "# provides templates for RDS / DocumentDB / Redshift\n"
+        "# rotation; custom secrets need a Lambda that knows how\n"
+        "# to rotate the credential.\n"
+        "sm.rotate_secret(\n"
+        "    SecretId='prod/db-master',\n"
+        "    RotationLambdaARN='arn:aws:lambda:us-east-1:123:function:rotate-rds',\n"
+        "    RotationRules={'AutomaticallyAfterDays': 30},\n"
+        ")"
+    ),
 )
 
 

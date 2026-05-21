@@ -54,6 +54,33 @@ RULE = Rule(
         "support requires GitHub Advanced Security on private repos; "
         "public repos get the GitHub-managed set free.",
     ),
+    exploit_example=(
+        "# Vulnerable: secret scanning is enabled but push\n"
+        "# protection is off. Secrets are surfaced AFTER they hit\n"
+        "# the remote — the credential is already in history,\n"
+        "# already mirrored to backups, already visible to anyone\n"
+        "# who fetched between push and rotation. Rotation is the\n"
+        "# only fix.\n"
+        "# GET /repos/myorg/myrepo (vulnerable response):\n"
+        "{\n"
+        "  \"security_and_analysis\": {\n"
+        "    \"secret_scanning\": {\"status\": \"enabled\"},\n"
+        "    \"secret_scanning_push_protection\": {\"status\": \"disabled\"}\n"
+        "  }\n"
+        "}\n"
+        "\n"
+        "# Safe: both on. Push protection refuses pushes that\n"
+        "# carry a recognized credential pattern; the developer\n"
+        "# sees the rejection at ``git push`` time and rotates\n"
+        "# BEFORE the secret enters history.\n"
+        "# PATCH /repos/myorg/myrepo:\n"
+        "{\n"
+        "  \"security_and_analysis\": {\n"
+        "    \"secret_scanning\": {\"status\": \"enabled\"},\n"
+        "    \"secret_scanning_push_protection\": {\"status\": \"enabled\"}\n"
+        "  }\n"
+        "}"
+    ),
 )
 
 

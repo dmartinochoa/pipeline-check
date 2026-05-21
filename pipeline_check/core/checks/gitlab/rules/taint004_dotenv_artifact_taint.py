@@ -85,6 +85,40 @@ RULE = Rule(
         "load-bearing and any future regression in it would "
         "re-expose the consumer.",
     ),
+    exploit_example=(
+        "# Vulnerable: an ``extract`` job writes an untrusted\n"
+        "# source (``$CI_COMMIT_MESSAGE``) into a dotenv report\n"
+        "# artifact. GitLab automatically loads dotenv reports\n"
+        "# as env vars in dependent jobs; the consumer job then\n"
+        "# inlines the value into a shell command unquoted, and\n"
+        "# any metacharacters in the source execute there.\n"
+        "extract:\n"
+        "  script:\n"
+        "    - echo \"MSG=$CI_COMMIT_MESSAGE\" > deploy.env\n"
+        "  artifacts:\n"
+        "    reports:\n"
+        "      dotenv: deploy.env\n"
+        "use:\n"
+        "  needs: [extract]\n"
+        "  script:\n"
+        "    - ./gen-notes --message $MSG\n"
+        "\n"
+        "# Safe: sanitise at the producer before writing the\n"
+        "# dotenv file, and quote at the consumer. The cleaned\n"
+        "# value is safe to inline; the consumer's env binding\n"
+        "# is properly quoted.\n"
+        "extract:\n"
+        "  script:\n"
+        "    - clean=$(echo \"$CI_COMMIT_MESSAGE\" | tr -dc 'a-zA-Z0-9 -')\n"
+        "    - echo \"MSG=$clean\" > deploy.env\n"
+        "  artifacts:\n"
+        "    reports:\n"
+        "      dotenv: deploy.env\n"
+        "use:\n"
+        "  needs: [extract]\n"
+        "  script:\n"
+        "    - ./gen-notes --message \"$MSG\""
+    ),
 )
 
 

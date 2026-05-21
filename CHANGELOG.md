@@ -10,6 +10,27 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 PRs landing on `dev` between releases append entries below. The
 release commit collapses this section into `## [X.Y.Z] - <date>`.
 
+### Added
+
+- **Argo CD provider with a 9-rule pack.** New ``--pipeline argocd``
+  parses ``Application`` / ``ApplicationSet`` / ``AppProject`` CRDs
+  plus the ``argocd-cm`` / ``argocd-rbac-cm`` ConfigMaps, distinct
+  from the existing ``argo`` (Argo Workflows) provider so
+  ``--pipelines argo,argocd`` against one directory produces
+  non-overlapping findings. ARGOCD-001 AppProject ``sourceRepos: '*'``;
+  ARGOCD-002 AppProject wildcard destinations; ARGOCD-003 auto-sync
+  ``prune: true`` without ``selfHeal``; ARGOCD-004 ``argocd-rbac-cm``
+  policies granting wildcard authority; ARGOCD-005 ``argocd-cm`` repo
+  entries storing plaintext credentials; ARGOCD-006 ApplicationSet
+  PR / SCM generators without a project allowlist; ARGOCD-007 Helm
+  ``valueFiles`` / parameters using generator placeholders without
+  ``spec.goTemplate: true``; ARGOCD-008 Application invoking a
+  config-management plugin (CMP); ARGOCD-009 ``argocd-cm`` with
+  anonymous access enabled. Standards mappings added in
+  ``owasp_cicd_top_10``, ``cis_supply_chain``, and
+  ``esf_supply_chain``. Provider count 22 -> 23; total-check claim
+  810+ -> 820+.
+
 ## [1.3.0] - 2026-05-21
 
 ### Added

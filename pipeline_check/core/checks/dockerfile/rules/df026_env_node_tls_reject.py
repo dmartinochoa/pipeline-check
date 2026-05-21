@@ -52,6 +52,27 @@ RULE = Rule(
         "variable. Suppress on the test-stage Dockerfile with "
         "a rationale that names the mock server.",
     ),
+    exploit_example=(
+        "# Vulnerable: ``ENV NODE_TLS_REJECT_UNAUTHORIZED=0``\n"
+        "# disables TLS verification for every Node.js process\n"
+        "# in the container. Any HTTPS call (npm install at\n"
+        "# runtime, internal API call, vendor SDK) is MITM-able.\n"
+        "FROM node@sha256:abc123...\n"
+        "ENV NODE_TLS_REJECT_UNAUTHORIZED=0\n"
+        "COPY . /app\n"
+        "WORKDIR /app\n"
+        "CMD [\"npm\", \"start\"]\n"
+        "\n"
+        "# Safe: install the missing CA into the image trust\n"
+        "# store and leave ``NODE_TLS_REJECT_UNAUTHORIZED`` at\n"
+        "# its safe default. Node honors the system CA bundle.\n"
+        "FROM node@sha256:abc123...\n"
+        "COPY ci/internal-ca.crt /usr/local/share/ca-certificates/\n"
+        "RUN update-ca-certificates\n"
+        "COPY . /app\n"
+        "WORKDIR /app\n"
+        "CMD [\"npm\", \"start\"]"
+    ),
 )
 
 

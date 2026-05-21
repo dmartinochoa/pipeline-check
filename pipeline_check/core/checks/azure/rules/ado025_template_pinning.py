@@ -37,6 +37,33 @@ RULE = Rule(
         "to the pipeline's default branch), a push to the callee repo "
         "changes what your pipeline runs on the next invocation."
     ),
+    exploit_example=(
+        "# Vulnerable: ``ref: refs/heads/main`` on a cross-repo\n"
+        "# template is mutable. Whoever can push to ``main`` on\n"
+        "# ``ci-templates`` ships code into every consumer's\n"
+        "# pipeline on the next run.\n"
+        "resources:\n"
+        "  repositories:\n"
+        "    - repository: templates\n"
+        "      type: git\n"
+        "      name: myorg/ci-templates\n"
+        "      ref: refs/heads/main\n"
+        "steps:\n"
+        "  - template: build.yml@templates\n"
+        "\n"
+        "# Safe: pin to a tag (immutable in Azure Repos when\n"
+        "# branch policies enforce tag-protect) or a 40-char\n"
+        "# commit SHA. Renovate's azure-pipelines updater bumps\n"
+        "# these in reviewable PRs.\n"
+        "resources:\n"
+        "  repositories:\n"
+        "    - repository: templates\n"
+        "      type: git\n"
+        "      name: myorg/ci-templates\n"
+        "      ref: 0123456789abcdef0123456789abcdef01234567   # v1.4.2\n"
+        "steps:\n"
+        "  - template: build.yml@templates"
+    ),
 )
 
 _TEMPLATE_AT_RE = re.compile(r"@([A-Za-z_][\w-]*)\s*$")

@@ -24,6 +24,34 @@ RULE = Rule(
         "grants the build container root-level access to the Docker "
         "daemon on the host."
     ),
+    exploit_example=(
+        "# Vulnerable: ``PrivilegedMode: true`` on a CodeBuild\n"
+        "# project gives the build container privileged Docker\n"
+        "# access on the host. A poisoned buildspec gets root on\n"
+        "# the host kernel; CodeBuild hosts are shared.\n"
+        "Resources:\n"
+        "  Build:\n"
+        "    Type: AWS::CodeBuild::Project\n"
+        "    Properties:\n"
+        "      Environment:\n"
+        "        Type: LINUX_CONTAINER\n"
+        "        Image: aws/codebuild/standard:7.0\n"
+        "        ComputeType: BUILD_GENERAL1_SMALL\n"
+        "        PrivilegedMode: true\n"
+        "\n"
+        "# Safe: ``PrivilegedMode: false`` (default). For image\n"
+        "# builds, use Kaniko inside the container so no host-\n"
+        "# runtime access is needed.\n"
+        "Resources:\n"
+        "  Build:\n"
+        "    Type: AWS::CodeBuild::Project\n"
+        "    Properties:\n"
+        "      Environment:\n"
+        "        Type: LINUX_CONTAINER\n"
+        "        Image: aws/codebuild/standard:7.0\n"
+        "        ComputeType: BUILD_GENERAL1_SMALL\n"
+        "        PrivilegedMode: false"
+    ),
 )
 
 

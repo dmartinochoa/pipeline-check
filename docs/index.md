@@ -22,8 +22,8 @@ hide:
 # Catch supply-chain risks <span class="accent">before they ship.</span>
 
 <p class="pg-hero__lede">
-A read-only scanner for 22 providers, graded against 15 compliance frameworks. 
-111 of the 810+ checks also emit a one-shot patch you can apply with <code>--fix</code>.
+A read-only scanner for 23 providers, graded against 15 compliance frameworks. 
+111 of the 820+ checks also emit a one-shot patch you can apply with <code>--fix</code>.
 </p>
 
 <div class="pg-hero__cta">
@@ -55,8 +55,8 @@ A read-only scanner for 22 providers, graded against 15 compliance frameworks.
 
 <section class="pg-stats">
 <div class="pg-stats__inner">
-  <div class="pg-stat"><div class="pg-stat__num">810+</div><div class="pg-stat__label">Checks</div></div>
-  <div class="pg-stat"><div class="pg-stat__num">22</div><div class="pg-stat__label">Providers</div></div>
+  <div class="pg-stat"><div class="pg-stat__num">820+</div><div class="pg-stat__label">Checks</div></div>
+  <div class="pg-stat"><div class="pg-stat__num">23</div><div class="pg-stat__label">Providers</div></div>
   <div class="pg-stat"><div class="pg-stat__num">15</div><div class="pg-stat__label">Compliance standards</div></div>
   <div class="pg-stat"><div class="pg-stat__num">111</div><div class="pg-stat__label">Autofixers</div></div>
 </div>
@@ -207,6 +207,7 @@ to force one. Counts reflect the current rule catalog.
   <a class="pg-provider" href="providers/drone/"><span class="pg-provider__name">Drone CI</span><span class="pg-provider__count">{{ providers.drone.checks }}</span></a>
   <a class="pg-provider" href="providers/tekton/"><span class="pg-provider__name">Tekton</span><span class="pg-provider__count">{{ providers.tekton.checks }}</span></a>
   <a class="pg-provider" href="providers/argo/"><span class="pg-provider__name">Argo Workflows</span><span class="pg-provider__count">{{ providers.argo.checks }}</span></a>
+  <a class="pg-provider" href="providers/argocd/"><span class="pg-provider__name">Argo CD</span><span class="pg-provider__count">{{ providers.argocd.checks }}</span></a>
   <a class="pg-provider" href="providers/dockerfile/"><span class="pg-provider__name">Dockerfile</span><span class="pg-provider__count">{{ providers.dockerfile.checks }}</span></a>
   <a class="pg-provider" href="providers/kubernetes/"><span class="pg-provider__name">Kubernetes</span><span class="pg-provider__count">{{ providers.kubernetes.checks }}</span></a>
   <a class="pg-provider" href="providers/helm/"><span class="pg-provider__name">Helm</span><span class="pg-provider__count">{{ providers.helm.checks }}</span></a>
@@ -263,8 +264,8 @@ flowchart LR
     G -->|fail| I([Block + report])
 
     click A "usage/" "Repo on disk or live AWS account: no API tokens, no SaaS"
-    click B "providers/" "22 supported. Auto-detected from cwd; override with --pipeline NAME"
-    click C "attack_chains/" "810+ checks emit findings with severity, location, fix"
+    click B "providers/" "23 supported. Auto-detected from cwd; override with --pipeline NAME"
+    click C "attack_chains/" "820+ checks emit findings with severity, location, fix"
     click D "standards/" "15 frameworks. OWASP, NIST SSDF, SLSA, CIS, …"
     click E "scoring_model/" "Severity-weighted 0–100 score, graded A / B / C / D"
     click F1 "output/#terminal" "Rich color table for humans"

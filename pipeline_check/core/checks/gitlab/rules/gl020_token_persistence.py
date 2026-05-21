@@ -39,6 +39,29 @@ RULE = Rule(
         "later stages, downloaded artifacts, or cache entries, turning "
         "a scoped credential into a long-lived one."
     ),
+    exploit_example=(
+        "# Vulnerable: ``CI_JOB_TOKEN`` is meant to live only for the\n"
+        "# duration of the current job — GitLab revokes it when the\n"
+        "# job ends. Persisting it into a file (especially a dotenv\n"
+        "# report that GitLab automatically loads into the next job)\n"
+        "# or an artifact downloadable from the pipeline page extends\n"
+        "# the credential's reach far beyond its intended scope.\n"
+        "leak-token:\n"
+        "  script:\n"
+        "    - echo \"TOKEN=$CI_JOB_TOKEN\" >> deploy.env\n"
+        "  artifacts:\n"
+        "    reports:\n"
+        "      dotenv: deploy.env    # propagates TOKEN into every dependent job\n"
+        "\n"
+        "# Safe: use the token inline in the one command that needs\n"
+        "# it. GitLab scopes the token to the job's lifetime and\n"
+        "# revokes it on exit; nothing downstream can replay it.\n"
+        "package:\n"
+        "  script:\n"
+        "    - curl --header \"JOB-TOKEN: $CI_JOB_TOKEN\"\n"
+        "        --upload-file build/output.tar.gz\n"
+        "        \"$CI_API_V4_URL/projects/$CI_PROJECT_ID/packages/generic/app/1.0/output.tar.gz\""
+    ),
 )
 
 

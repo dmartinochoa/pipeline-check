@@ -44,6 +44,28 @@ RULE = Rule(
         "or install the internal CA into the image) rather than "
         "leaving the bypass in the Dockerfile.",
     ),
+    exploit_example=(
+        "# Vulnerable: pip resolves and downloads packages over\n"
+        "# plaintext HTTP, so any network attacker between the\n"
+        "# build and the registry can substitute a wheel. The\n"
+        "# ``--trusted-host`` flag silences pip's hash\n"
+        "# verification for the named host too.\n"
+        "FROM python@sha256:abc123...\n"
+        "RUN pip install \\\n"
+        "      --index-url http://internal-pypi.example.com/simple \\\n"
+        "      --trusted-host internal-pypi.example.com \\\n"
+        "      -r requirements.txt\n"
+        "\n"
+        "# Safe: HTTPS with the index's certificate validated.\n"
+        "# Internal CA installed into the image's trust store;\n"
+        "# ``--require-hashes`` enforces hash pinning.\n"
+        "FROM python@sha256:abc123...\n"
+        "COPY ci/internal-ca.crt /usr/local/share/ca-certificates/\n"
+        "RUN update-ca-certificates && \\\n"
+        "    pip install \\\n"
+        "      --index-url https://internal-pypi.example.com/simple \\\n"
+        "      --require-hashes -r requirements.txt"
+    ),
 )
 
 # ``pip install`` may be invoked as ``pip``, ``pip3``, ``python -m pip``, or

@@ -25,6 +25,35 @@ RULE = Rule(
         "carries, which is the full attack surface a fork-PR "
         "compromise can reach."
     ),
+    exploit_example=(
+        "# Vulnerable: a CodePipeline v2 PR trigger with no\n"
+        "# branch filter accepts pull requests from every\n"
+        "# branch. A fork-PR (or any branch a non-trusted\n"
+        "# contributor can push to) triggers a build with the\n"
+        "# pipeline's full role and access to production\n"
+        "# artifacts.\n"
+        "# triggers section of a pipeline definition:\n"
+        "triggers:\n"
+        "  - providerType: CodeStarSourceConnection\n"
+        "    gitConfiguration:\n"
+        "      sourceActionName: SourceAction\n"
+        "      pullRequest:\n"
+        "        - events: [OPEN, UPDATED]\n"
+        "          # no branches filter\n"
+        "\n"
+        "# Safe: filter PR triggers to a specific branch (the\n"
+        "# release / hotfix branch) so only PRs targeting that\n"
+        "# branch fire the build. Fork PRs targeting feature\n"
+        "# branches no longer trigger.\n"
+        "triggers:\n"
+        "  - providerType: CodeStarSourceConnection\n"
+        "    gitConfiguration:\n"
+        "      sourceActionName: SourceAction\n"
+        "      pullRequest:\n"
+        "        - events: [OPEN, UPDATED]\n"
+        "          branches:\n"
+        "            includes: [main, release/*]"
+    ),
 )
 
 

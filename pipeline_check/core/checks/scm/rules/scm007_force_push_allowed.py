@@ -34,6 +34,28 @@ RULE = Rule(
         "attack class because force-push is the primitive every "
         "post-incident rewrite uses to clean up after itself."
     ),
+    exploit_example=(
+        "# Vulnerable: ``allow_force_pushes: true`` on the\n"
+        "# default branch's protection. A maintainer (or anyone\n"
+        "# with write access via a compromised token) can rewrite\n"
+        "# history on ``main``, erasing the audit trail of which\n"
+        "# commits shipped which behavior. Used to hide malicious\n"
+        "# commits after the fact.\n"
+        "# GET /repos/myorg/myrepo/branches/main/protection:\n"
+        "{\n"
+        "  \"allow_force_pushes\": {\"enabled\": true},\n"
+        "  \"allow_deletions\": {\"enabled\": false}\n"
+        "}\n"
+        "\n"
+        "# Safe: force pushes off. History on ``main`` is now\n"
+        "# append-only; rebasing or amending requires a PR with\n"
+        "# the explicit history change.\n"
+        "# PUT /repos/myorg/myrepo/branches/main/protection:\n"
+        "{\n"
+        "  \"allow_force_pushes\": {\"enabled\": false},\n"
+        "  \"allow_deletions\": {\"enabled\": false}\n"
+        "}"
+    ),
 )
 
 

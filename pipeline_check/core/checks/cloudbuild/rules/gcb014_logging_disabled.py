@@ -43,6 +43,27 @@ RULE = Rule(
         "insensitive) trips this rule. ``GCS_ONLY`` / ``LEGACY`` pass. "
         "They persist logs, just to a different destination."
     ),
+    exploit_example=(
+        "# Vulnerable: ``logging: NONE`` disables build log capture\n"
+        "# entirely. Failures, attacker activity, secret leaks —\n"
+        "# nothing is recorded. Forensics on a compromise is\n"
+        "# impossible because the build has no log trail.\n"
+        "options:\n"
+        "  logging: NONE\n"
+        "steps:\n"
+        "  - name: gcr.io/cloud-builders/docker@sha256:abc123...\n"
+        "    args: [build, -t, app, .]\n"
+        "\n"
+        "# Safe: leave logging at the default (``CLOUD_LOGGING_ONLY``)\n"
+        "# or explicitly send to a hardened Cloud Storage bucket\n"
+        "# with retention + IAM tied down. Logs are the audit trail\n"
+        "# for every other security control.\n"
+        "options:\n"
+        "  logging: CLOUD_LOGGING_ONLY\n"
+        "steps:\n"
+        "  - name: gcr.io/cloud-builders/docker@sha256:abc123...\n"
+        "    args: [build, -t, app, .]"
+    ),
 )
 
 

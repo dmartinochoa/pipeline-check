@@ -23,6 +23,31 @@ RULE = Rule(
         "scanner is free; ECR-007 covers the Inspector v2 enhanced "
         "scanner that adds language-ecosystem CVEs (npm, pip, gem)."
     ),
+    exploit_example=(
+        "# Vulnerable: ECR repo with ``imageScanningConfiguration.\n"
+        "# scanOnPush: false``. Every pushed image lands without\n"
+        "# a vulnerability scan; the registry's downstream consumers\n"
+        "# pull whatever CVE-laden base layer the build produced.\n"
+        "import boto3\n"
+        "ecr = boto3.client('ecr')\n"
+        "ecr.create_repository(\n"
+        "    repositoryName='myapp',\n"
+        "    imageScanningConfiguration={'scanOnPush': False},\n"
+        ")\n"
+        "\n"
+        "# Safe: enable scan-on-push. Pair with Inspector v2\n"
+        "# enhanced scanning (ECR-007) for continuous re-scans\n"
+        "# against the latest CVE database. Block deploys on\n"
+        "# scan failures via an Inspector finding -> EventBridge\n"
+        "# -> CodePipeline gate.\n"
+        "ecr.put_image_scanning_configuration(\n"
+        "    repositoryName='myapp',\n"
+        "    imageScanningConfiguration={'scanOnPush': True},\n"
+        ")\n"
+        "# Enable enhanced scanning org-wide:\n"
+        "inspector = boto3.client('inspector2')\n"
+        "inspector.enable(resourceTypes=['ECR'])"
+    ),
 )
 
 

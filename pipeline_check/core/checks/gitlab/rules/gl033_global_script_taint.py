@@ -63,6 +63,29 @@ RULE = Rule(
         "globally, the rule is checking propagation reach, not "
         "intent.",
     ),
+    exploit_example=(
+        "# Vulnerable: a global ``before_script:`` (or\n"
+        "# ``after_script:``) interpolates an untrusted CI\n"
+        "# variable. The injected metacharacters then execute\n"
+        "# in every job that inherits the global block, which\n"
+        "# usually means every job in the pipeline.\n"
+        "before_script:\n"
+        "  - echo \"Building $CI_COMMIT_MESSAGE\"   # message is attacker-controllable\n"
+        "build:\n"
+        "  script: [make build]\n"
+        "test:\n"
+        "  script: [make test]\n"
+        "\n"
+        "# Safe: assign the untrusted source to a local variable\n"
+        "# and quote on every use. Pulling the value into a\n"
+        "# variable AT MOST ONCE per job keeps the injection\n"
+        "# surface to a single quoted reference.\n"
+        "before_script:\n"
+        "  - MSG=\"$CI_COMMIT_MESSAGE\"\n"
+        "  - echo \"Building $MSG\"\n"
+        "build:\n"
+        "  script: [make build]"
+    ),
 )
 
 

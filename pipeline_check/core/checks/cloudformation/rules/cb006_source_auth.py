@@ -26,6 +26,35 @@ RULE = Rule(
         "(``GITHUB``, ``GITHUB_ENTERPRISE``, ``BITBUCKET``) is "
         "authenticated with a long-lived credential."
     ),
+    exploit_example=(
+        "# Vulnerable: CodeBuild source auth uses a stored long-\n"
+        "# lived token (``OAUTH`` / ``PERSONAL_ACCESS_TOKEN`` /\n"
+        "# ``BASIC_AUTH``). The credential never rotates and\n"
+        "# isn't revocable from the AWS side.\n"
+        "Resources:\n"
+        "  Build:\n"
+        "    Type: AWS::CodeBuild::Project\n"
+        "    Properties:\n"
+        "      Source:\n"
+        "        Type: GITHUB\n"
+        "        Location: https://github.com/myorg/myrepo.git\n"
+        "        Auth:\n"
+        "          Type: OAUTH   # long-lived stored token\n"
+        "\n"
+        "# Safe: use a CodeStar / CodeConnections ARN. The GitHub\n"
+        "# user can revoke the connection without AWS-side\n"
+        "# coordination; AWS refreshes the underlying token.\n"
+        "Resources:\n"
+        "  Build:\n"
+        "    Type: AWS::CodeBuild::Project\n"
+        "    Properties:\n"
+        "      Source:\n"
+        "        Type: GITHUB\n"
+        "        Location: https://github.com/myorg/myrepo.git\n"
+        "        Auth:\n"
+        "          Type: CODECONNECTIONS\n"
+        "          Resource: !Ref GitHubConnection"
+    ),
 )
 
 

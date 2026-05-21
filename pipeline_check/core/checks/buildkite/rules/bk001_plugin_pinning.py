@@ -34,6 +34,27 @@ RULE = Rule(
         "fires on bare names, branch keywords, and partial-semver pins "
         "(``v4``, ``v4.13``)."
     ),
+    exploit_example=(
+        "# Vulnerable: ``docker-compose#main`` resolves at agent\n"
+        "# boot to whatever sits at the plugin repo's main branch.\n"
+        "# A push to the plugin repo (legitimate maintainer commit,\n"
+        "# leaked token, takeover) ships code into every Buildkite\n"
+        "# job that uses the plugin.\n"
+        "steps:\n"
+        "  - label: \":docker: build\"\n"
+        "    plugins:\n"
+        "      - docker-compose#main:\n"
+        "          run: app\n"
+        "\n"
+        "# Safe: pin to a release tag (or a 40-char commit SHA).\n"
+        "# Renovate / Dependabot's buildkite-plugin ecosystem bumps\n"
+        "# these in reviewable PRs so the pin doesn't drift.\n"
+        "steps:\n"
+        "  - label: \":docker: build\"\n"
+        "    plugins:\n"
+        "      - docker-compose#v4.13.0:\n"
+        "          run: app"
+    ),
 )
 
 # A pinned ref ends in either an exact-semver suffix or a 40-char SHA.

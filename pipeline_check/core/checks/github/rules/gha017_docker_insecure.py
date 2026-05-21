@@ -24,6 +24,33 @@ RULE = Rule(
         "container full access to the runner, enabling container "
         "escape and lateral movement."
     ),
+    exploit_example=(
+        "# Vulnerable: ``docker run --privileged`` plus the host\n"
+        "# Docker socket runs inside a GitHub-hosted (or self-\n"
+        "# hosted) runner. The container escapes to the runner;\n"
+        "# on self-hosted runners that's persistent compromise.\n"
+        "name: integration\n"
+        "on: [push]\n"
+        "jobs:\n"
+        "  test:\n"
+        "    runs-on: ubuntu-latest\n"
+        "    steps:\n"
+        "      - uses: actions/checkout@<sha>\n"
+        "      - run: |\n"
+        "          docker run --privileged \\\n"
+        "            -v /var/run/docker.sock:/var/run/docker.sock \\\n"
+        "            myapp:test ./integration.sh\n"
+        "\n"
+        "# Safe: drop ``--privileged`` and the socket mount. Use\n"
+        "# a rootless builder (Kaniko, BuildKit rootless) if the\n"
+        "# job needs to build images. Pin the image to a digest.\n"
+        "jobs:\n"
+        "  test:\n"
+        "    runs-on: ubuntu-latest\n"
+        "    steps:\n"
+        "      - uses: actions/checkout@<sha>\n"
+        "      - run: docker run myapp@sha256:abc123... ./integration.sh"
+    ),
 )
 
 

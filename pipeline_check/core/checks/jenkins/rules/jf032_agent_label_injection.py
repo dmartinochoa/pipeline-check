@@ -48,6 +48,30 @@ RULE = Rule(
         "validator should suppress with ``.pipelinecheckignore`` and "
         "a rationale rather than disable the rule everywhere.",
     ),
+    exploit_example=(
+        "// Vulnerable: ``agent { label \"${env.LABEL_PARAM}\" }``\n"
+        "// or ``agent { label \"$JOB_BASE_NAME\" }`` lets the\n"
+        "// pusher pick which agent runs the job. A branch /\n"
+        "// PR named after a privileged label routes the build\n"
+        "// to an agent it was never meant to reach.\n"
+        "pipeline {\n"
+        "  agent { label \"${env.JOB_BASE_NAME}\" }\n"
+        "  stages {\n"
+        "    stage('deploy') { steps { sh './deploy.sh' } }\n"
+        "  }\n"
+        "}\n"
+        "\n"
+        "// Safe: pin the label to a static literal that\n"
+        "// matches your runner-targeting policy. Production\n"
+        "// agents should also enforce the label server-side\n"
+        "// via Jenkins node config.\n"
+        "pipeline {\n"
+        "  agent { label 'linux-amd64' }\n"
+        "  stages {\n"
+        "    stage('deploy') { steps { sh './deploy.sh' } }\n"
+        "  }\n"
+        "}"
+    ),
 )
 
 

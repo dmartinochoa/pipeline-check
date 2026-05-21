@@ -27,6 +27,34 @@ RULE = Rule(
         "this one fires at HIGH regardless of whether the tag is "
         "floating or immutable."
     ),
+    exploit_example=(
+        "// Vulnerable: ``image 'maven:3.9'`` is a mutable tag.\n"
+        "// Docker Hub's maven team rebuilds it on every Maven\n"
+        "// point release; a publisher takeover ships code into\n"
+        "// every Jenkins build using the tag.\n"
+        "pipeline {\n"
+        "  agent {\n"
+        "    docker { image 'maven:3.9' }\n"
+        "  }\n"
+        "  stages {\n"
+        "    stage('build') {\n"
+        "      steps { sh 'mvn -B verify' }\n"
+        "    }\n"
+        "  }\n"
+        "}\n"
+        "\n"
+        "// Safe: pin to the content-addressable digest.\n"
+        "pipeline {\n"
+        "  agent {\n"
+        "    docker { image 'maven@sha256:abc123...' }  // maven:3.9.5-eclipse-temurin-21\n"
+        "  }\n"
+        "  stages {\n"
+        "    stage('build') {\n"
+        "      steps { sh 'mvn -B verify' }\n"
+        "    }\n"
+        "  }\n"
+        "}"
+    ),
 )
 
 

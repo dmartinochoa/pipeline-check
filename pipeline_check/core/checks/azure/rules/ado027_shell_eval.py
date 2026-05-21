@@ -31,6 +31,29 @@ RULE = Rule(
         "intentionally NOT flagged, the substituted command is "
         "literal, only its output is eval'd.",
     ),
+    exploit_example=(
+        "# Vulnerable: ``eval \"$BUILD_CMD\"`` on a value that came\n"
+        "# from a variable group / runtime parameter gives the\n"
+        "# value full shell-grammar reach. ``sh -c $RAW`` on an\n"
+        "# unquoted variable is the same shape.\n"
+        "parameters:\n"
+        "  - name: cmd\n"
+        "    type: string\n"
+        "steps:\n"
+        "  - bash: |\n"
+        "      eval \"${{ parameters.cmd }}\"\n"
+        "\n"
+        "# Safe: replace dynamic shell evaluation with an explicit\n"
+        "# dispatcher over an allow-list, or invoke a script you\n"
+        "# own that does its own validation. Never eval values\n"
+        "# from runtime parameters.\n"
+        "parameters:\n"
+        "  - name: target\n"
+        "    type: string\n"
+        "    values: [staging, prod]\n"
+        "steps:\n"
+        "  - bash: ./scripts/deploy.sh \"${{ parameters.target }}\""
+    ),
 )
 
 

@@ -26,6 +26,33 @@ RULE = Rule(
         "the common compliance baseline; rotate sooner if the key is used "
         "from on-prem or an untrusted runner."
     ),
+    exploit_example=(
+        "# Vulnerable: an IAM user has an active access key older\n"
+        "# than 90 days. Long-lived keys accumulate exposure: any\n"
+        "# leak (laptop theft, .aws/credentials gitignore miss,\n"
+        "# accidental commit, log echo) yields a key still valid\n"
+        "# years later. AWS best practice is 90-day rotation.\n"
+        "import boto3, datetime\n"
+        "iam = boto3.client('iam')\n"
+        "keys = iam.list_access_keys(UserName='ci-bot')['AccessKeyMetadata']\n"
+        "for k in keys:\n"
+        "    age = (datetime.datetime.now(datetime.UTC) - k['CreateDate']).days\n"
+        "    print(k['AccessKeyId'], age, 'days')   # 412 days, still Active\n"
+        "\n"
+        "# Safe: rotate on a schedule. The strongest fix is to\n"
+        "# eliminate IAM users entirely for service identities\n"
+        "# (federate via OIDC / IAM Roles Anywhere / instance\n"
+        "# profiles). For human users, enforce rotation via\n"
+        "# IAM SCP and an automation that deactivates keys\n"
+        "# older than 90 days.\n"
+        "iam.update_access_key(\n"
+        "    UserName='ci-bot', AccessKeyId='AKIA...OLD',\n"
+        "    Status='Inactive'\n"
+        ")\n"
+        "iam.delete_access_key(\n"
+        "    UserName='ci-bot', AccessKeyId='AKIA...OLD'\n"
+        ")"
+    ),
 )
 
 _MAX_AGE_DAYS = 90

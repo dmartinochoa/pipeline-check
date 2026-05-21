@@ -59,6 +59,38 @@ RULE = Rule(
         "repos. Removing the install-time script primitive on the "
         "*publisher* side is the structural fix.",
     ),
+    exploit_example=(
+        "// Vulnerable: every consumer who runs ``npm install`` on\n"
+        "// this package executes ``setup.js`` with THEIR\n"
+        "// credentials (``GH_TOKEN``, ``NPM_TOKEN``, AWS env, SSH\n"
+        "// keys) silently — they didn't opt into anything beyond\n"
+        "// installing the dependency. This is the Shai-Hulud worm\n"
+        "// propagation primitive.\n"
+        "// package.json\n"
+        "{\n"
+        "  \"name\": \"my-lib\",\n"
+        "  \"version\": \"1.0.0\",\n"
+        "  \"scripts\": {\n"
+        "    \"postinstall\": \"node setup.js\"\n"
+        "  }\n"
+        "}\n"
+        "\n"
+        "// Safe: move the work into an explicit script and document\n"
+        "// the opt-in in the README. Consumers who need it run\n"
+        "// ``npm run build`` after the install; consumers who don't\n"
+        "// pay no cost. If you genuinely need native-module\n"
+        "// compilation, ``node-gyp`` triggers ``install`` from a\n"
+        "// ``binding.gyp`` without a ``scripts`` entry, so the\n"
+        "// scripts block can stay empty.\n"
+        "// package.json\n"
+        "{\n"
+        "  \"name\": \"my-lib\",\n"
+        "  \"version\": \"1.0.0\",\n"
+        "  \"scripts\": {\n"
+        "    \"build\": \"node setup.js\"\n"
+        "  }\n"
+        "}"
+    ),
 )
 
 

@@ -38,6 +38,30 @@ RULE = Rule(
         "intentionally NOT flagged, the substituted command is "
         "literal, only its output is eval'd.",
     ),
+    exploit_example=(
+        "# Vulnerable: ``eval`` on a value that came from a\n"
+        "# substitution (or anywhere outside the step body) gives\n"
+        "# the value full shell-grammar reach. ``sh -c`` on an\n"
+        "# unquoted variable is the same shape.\n"
+        "steps:\n"
+        "  - name: gcr.io/cloud-builders/bash@sha256:abc123...\n"
+        "    entrypoint: bash\n"
+        "    args:\n"
+        "      - -c\n"
+        "      - eval \"$BUILD_CMD\"\n"
+        "    env: [BUILD_CMD=${_USER_CMD}]\n"
+        "\n"
+        "# Safe: never eval untrusted input. Replace the dynamic\n"
+        "# command with an explicit dispatcher over an allow-list\n"
+        "# of safe actions, or invoke a script you own that does\n"
+        "# its own input validation.\n"
+        "steps:\n"
+        "  - name: gcr.io/cloud-builders/bash@sha256:abc123...\n"
+        "    entrypoint: bash\n"
+        "    args:\n"
+        "      - -c\n"
+        "      - ./scripts/dispatch.sh \"${_USER_CMD}\""
+    ),
 )
 
 

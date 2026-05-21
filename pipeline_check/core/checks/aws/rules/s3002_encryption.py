@@ -25,6 +25,36 @@ RULE = Rule(
         "Without it, individual objects can be uploaded without "
         "encryption (the client gets to choose)."
     ),
+    exploit_example=(
+        "# Vulnerable: artifact S3 bucket with no server-side\n"
+        "# encryption configured. Build artifacts (binaries,\n"
+        "# release tarballs, deploy plans) sit in plaintext;\n"
+        "# anyone with ``s3:GetObject`` (or anyone who exfils\n"
+        "# the bucket's backups) reads them.\n"
+        "import boto3\n"
+        "s3 = boto3.client('s3')\n"
+        "# Empty / missing encryption config:\n"
+        "try:\n"
+        "    s3.get_bucket_encryption(Bucket='myorg-build-artifacts')\n"
+        "except s3.exceptions.ClientError:\n"
+        "    pass   # ServerSideEncryptionConfigurationNotFoundError\n"
+        "\n"
+        "# Safe: enable bucket-default SSE — AES-256 (SSE-S3)\n"
+        "# is the minimum, SSE-KMS with a customer-managed key\n"
+        "# adds key-rotation + finer-grained access auditing.\n"
+        "s3.put_bucket_encryption(\n"
+        "    Bucket='myorg-build-artifacts',\n"
+        "    ServerSideEncryptionConfiguration={\n"
+        "        'Rules': [{\n"
+        "            'ApplyServerSideEncryptionByDefault': {\n"
+        "                'SSEAlgorithm': 'aws:kms',\n"
+        "                'KMSMasterKeyID': 'arn:aws:kms:us-east-1:123:key/abc-...'\n"
+        "            },\n"
+        "            'BucketKeyEnabled': True,\n"
+        "        }]\n"
+        "    }\n"
+        ")"
+    ),
 )
 
 

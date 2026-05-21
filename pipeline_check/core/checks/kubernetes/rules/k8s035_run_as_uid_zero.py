@@ -41,6 +41,37 @@ RULE = Rule(
         "this rule fires on the *effective* UID, walking pod-level "
         "first then per-container override."
     ),
+    exploit_example=(
+        "# Vulnerable: explicit ``runAsUser: 0`` runs the\n"
+        "# container as root inside its namespace. Combined\n"
+        "# with the kernel's user-namespace mapping (or its\n"
+        "# absence), a container escape lands on the node with\n"
+        "# UID 0 — same blast radius as if the image had\n"
+        "# ``USER root``.\n"
+        "apiVersion: v1\n"
+        "kind: Pod\n"
+        "metadata: { name: app }\n"
+        "spec:\n"
+        "  containers:\n"
+        "    - name: app\n"
+        "      image: app@sha256:abc123...\n"
+        "      securityContext:\n"
+        "        runAsUser: 0\n"
+        "\n"
+        "# Safe: any non-zero UID. Pair with ``runAsNonRoot:\n"
+        "# true`` so kubelet refuses to start the container\n"
+        "# even if the image's ENTRYPOINT later flips UID.\n"
+        "apiVersion: v1\n"
+        "kind: Pod\n"
+        "metadata: { name: app }\n"
+        "spec:\n"
+        "  containers:\n"
+        "    - name: app\n"
+        "      image: app@sha256:abc123...\n"
+        "      securityContext:\n"
+        "        runAsNonRoot: true\n"
+        "        runAsUser: 10001"
+    ),
 )
 
 

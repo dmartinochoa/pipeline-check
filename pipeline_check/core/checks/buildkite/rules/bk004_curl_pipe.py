@@ -32,6 +32,29 @@ RULE = Rule(
         "<url>; sha256sum -c install.sh.sha256; bash install.sh`` "
         "instead."
     ),
+    exploit_example=(
+        "# Vulnerable: ``curl | bash`` trusts both the network path\n"
+        "# (any MITM substitutes the script) and the host (a\n"
+        "# compromised installer endpoint silently serves attacker\n"
+        "# code). The script runs in the build's shell context.\n"
+        "steps:\n"
+        "  - label: \":hammer: install tools\"\n"
+        "    command: |\n"
+        "      curl -fsSL https://installer.example.com/cli.sh | bash\n"
+        "      ./cli build\n"
+        "\n"
+        "# Safe: download to a file, verify a sha256 digest from a\n"
+        "# trusted source, then execute. If the upstream content\n"
+        "# changes the digest stops matching and the build fails\n"
+        "# before the malicious code runs.\n"
+        "steps:\n"
+        "  - label: \":hammer: install tools\"\n"
+        "    command: |\n"
+        "      curl -fsSL https://installer.example.com/cli.sh -o /tmp/cli.sh\n"
+        "      echo 'a1b2c3d4...  /tmp/cli.sh' | sha256sum -c -\n"
+        "      bash /tmp/cli.sh\n"
+        "      ./cli build"
+    ),
 )
 
 

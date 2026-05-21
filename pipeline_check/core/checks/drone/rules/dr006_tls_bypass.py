@@ -41,6 +41,38 @@ RULE = Rule(
         "docker / maven / gradle / aws bypasses. The rule scans every "
         "``commands:`` entry on every step."
     ),
+    exploit_example=(
+        "# Vulnerable: every npm install in the build skips strict-\n"
+        "# ssl validation. An attacker on the network path (corp\n"
+        "# proxy, malicious mirror, BGP hijack) MITMs the registry\n"
+        "# and ships malicious tarballs that npm installs without\n"
+        "# any signal.\n"
+        "kind: pipeline\n"
+        "type: docker\n"
+        "name: build\n"
+        "steps:\n"
+        "  - name: install\n"
+        "    image: node:20@sha256:abc123...\n"
+        "    commands:\n"
+        "      - npm config set strict-ssl false\n"
+        "      - npm install\n"
+        "\n"
+        "# Safe: install the missing CA into the image (or use the\n"
+        "# default trust store). Never disable TLS verification\n"
+        "# pipeline-wide; if a registry's cert is broken, fix the\n"
+        "# registry rather than papering over with a bypass that\n"
+        "# outlives the broken cert.\n"
+        "kind: pipeline\n"
+        "type: docker\n"
+        "name: build\n"
+        "steps:\n"
+        "  - name: install\n"
+        "    image: node:20@sha256:abc123...\n"
+        "    commands:\n"
+        "      - cp /etc/ssl/internal-ca.crt /usr/local/share/ca-certificates/\n"
+        "      - update-ca-certificates\n"
+        "      - npm install"
+    ),
 )
 
 

@@ -39,6 +39,34 @@ RULE = Rule(
         "Skips entries already routed elsewhere: registry specs "
         "(NPM-001), ``file:`` / ``link:`` / ``workspace:`` (NPM-003)."
     ),
+    exploit_example=(
+        "// Vulnerable: every ``npm install`` re-resolves ``#main``\n"
+        "// against the upstream repo's HEAD. A push to ``main``\n"
+        "// (legitimate co-maintainer commit, leaked PAT, hijacked\n"
+        "// upstream account) ships into your build silently on the\n"
+        "// next install. ``github:`` shorthand without any ``#``\n"
+        "// is the same — resolves to default-branch HEAD.\n"
+        "// package.json\n"
+        "{\n"
+        "  \"dependencies\": {\n"
+        "    \"util-fork\": \"git+https://github.com/myorg/util-fork.git#main\",\n"
+        "    \"tiny-lib\": \"github:other-org/tiny-lib\"\n"
+        "  }\n"
+        "}\n"
+        "\n"
+        "// Safe: pin to a 40-character commit SHA. The git object\n"
+        "// is immutable — a re-push at the upstream side cannot\n"
+        "// retarget ``#<sha>`` to different content. Renovate /\n"
+        "// Dependabot's npm-vcs ecosystem updaters bump these in\n"
+        "// reviewable PRs.\n"
+        "// package.json\n"
+        "{\n"
+        "  \"dependencies\": {\n"
+        "    \"util-fork\": \"git+https://github.com/myorg/util-fork.git#0123456789abcdef0123456789abcdef01234567\",\n"
+        "    \"tiny-lib\": \"github:other-org/tiny-lib#fedcba9876543210fedcba9876543210fedcba98\"\n"
+        "  }\n"
+        "}"
+    ),
 )
 
 

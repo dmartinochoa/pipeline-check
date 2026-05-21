@@ -26,6 +26,34 @@ RULE = Rule(
         "principal, including the PR author themselves, without "
         "any second-pair-of-eyes gate."
     ),
+    exploit_example=(
+        "# Vulnerable: a CodeCommit repository with no approval\n"
+        "# rule template attached. Pull requests merge without\n"
+        "# any reviewer requirement; a single contributor with\n"
+        "# write access can ship code into the default branch\n"
+        "# without review.\n"
+        "import boto3\n"
+        "cc = boto3.client('codecommit')\n"
+        "# Empty list returned:\n"
+        "cc.list_associated_approval_rule_templates_for_repository(\n"
+        "    repositoryName='my-repo'\n"
+        ")  # -> {'approvalRuleTemplateNames': []}\n"
+        "\n"
+        "# Safe: create an approval rule template (at least one\n"
+        "# reviewer required) and attach it to the repository.\n"
+        "cc.create_approval_rule_template(\n"
+        "    approvalRuleTemplateName='require-1-reviewer',\n"
+        "    approvalRuleTemplateContent='''{\"Version\": \"2018-11-08\",\n"
+        "      \"DestinationReferences\": [\"refs/heads/main\"],\n"
+        "      \"Statements\": [{\"Type\": \"Approvers\",\n"
+        "        \"NumberOfApprovalsNeeded\": 1,\n"
+        "        \"ApprovalPoolMembers\": [\"arn:aws:sts::123:assumed-role/Developers/*\"]}]}'''\n"
+        ")\n"
+        "cc.associate_approval_rule_template_with_repository(\n"
+        "    approvalRuleTemplateName='require-1-reviewer',\n"
+        "    repositoryName='my-repo'\n"
+        ")"
+    ),
 )
 
 

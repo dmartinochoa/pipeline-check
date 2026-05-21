@@ -37,6 +37,22 @@ RULE = Rule(
         "``kubectl --insecure-skip-tls-verify``, and "
         "``ssh -o StrictHostKeyChecking=no``."
     ),
+    exploit_example=(
+        "# Vulnerable: ``curl -k`` disables certificate verification\n"
+        "# for the duration of the call. An attacker on the network\n"
+        "# path (compromised proxy, malicious VPN exit) MITMs the\n"
+        "# response and ships substituted bytes into the build.\n"
+        "steps:\n"
+        "  - name: gcr.io/cloud-builders/curl@sha256:abc123...\n"
+        "    args: [-k, -O, https://internal-mirror.example.com/artifact.tar.gz]\n"
+        "\n"
+        "# Safe: keep TLS verification on. If the internal mirror\n"
+        "# uses a private CA, install the CA into the step image's\n"
+        "# trust store rather than papering over with ``-k``.\n"
+        "steps:\n"
+        "  - name: gcr.io/cloud-builders/curl@sha256:abc123...\n"
+        "    args: [-O, https://internal-mirror.example.com/artifact.tar.gz]"
+    ),
 )
 
 

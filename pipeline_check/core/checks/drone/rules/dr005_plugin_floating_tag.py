@@ -51,6 +51,35 @@ RULE = Rule(
         "Suppress via ignore-file scoped to the specific step "
         "name when this is the deliberate shape.",
     ),
+    exploit_example=(
+        "# Vulnerable: ``plugins/docker:latest`` resolves at runner\n"
+        "# start to whatever Docker Hub currently serves under the\n"
+        "# ``latest`` tag. Whoever controls the plugin repo (or\n"
+        "# anyone with publisher access) ships code into every\n"
+        "# pipeline that uses the plugin.\n"
+        "kind: pipeline\n"
+        "type: docker\n"
+        "name: publish\n"
+        "steps:\n"
+        "  - name: push-image\n"
+        "    image: plugins/docker:latest\n"
+        "    settings:\n"
+        "      repo: myorg/app\n"
+        "      tags: latest\n"
+        "\n"
+        "# Safe: pin the plugin image to a content-addressable\n"
+        "# digest. The plugin can't be repointed without changing\n"
+        "# the pipeline file (and a reviewable PR with it).\n"
+        "kind: pipeline\n"
+        "type: docker\n"
+        "name: publish\n"
+        "steps:\n"
+        "  - name: push-image\n"
+        "    image: plugins/docker@sha256:abc123...\n"
+        "    settings:\n"
+        "      repo: myorg/app\n"
+        "      tags: ${DRONE_TAG}"
+    ),
 )
 
 

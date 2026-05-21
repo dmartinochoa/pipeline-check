@@ -23,6 +23,30 @@ RULE = Rule(
         "Properties.BucketEncryption.ServerSideEncryptionConfiguration"
         "[0].ServerSideEncryptionByDefault.SSEAlgorithm``."
     ),
+    exploit_example=(
+        "# Vulnerable: artifact bucket with no SSE configured.\n"
+        "# Build artifacts sit in plaintext at rest.\n"
+        "Resources:\n"
+        "  Bucket:\n"
+        "    Type: AWS::S3::Bucket\n"
+        "    Properties:\n"
+        "      BucketName: my-artifacts\n"
+        "      # no BucketEncryption block\n"
+        "\n"
+        "# Safe: SSE-KMS with a customer-managed key. Bucket key\n"
+        "# enabled for cost (fewer KMS API calls per object).\n"
+        "Resources:\n"
+        "  Bucket:\n"
+        "    Type: AWS::S3::Bucket\n"
+        "    Properties:\n"
+        "      BucketName: my-artifacts\n"
+        "      BucketEncryption:\n"
+        "        ServerSideEncryptionConfiguration:\n"
+        "          - ServerSideEncryptionByDefault:\n"
+        "              SSEAlgorithm: aws:kms\n"
+        "              KMSMasterKeyID: !Ref ArtifactsKey\n"
+        "            BucketKeyEnabled: true"
+    ),
 )
 
 

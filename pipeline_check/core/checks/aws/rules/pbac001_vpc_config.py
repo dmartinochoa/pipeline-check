@@ -26,6 +26,35 @@ RULE = Rule(
         "only practical way to limit a compromised build's "
         "exfiltration paths."
     ),
+    exploit_example=(
+        "# Vulnerable: a CodeBuild project with no VPC config.\n"
+        "# The build container runs in AWS's shared VPC with\n"
+        "# unrestricted outbound internet — exactly the egress\n"
+        "# path a compromised build uses to exfiltrate secrets\n"
+        "# or pull a second-stage payload. No VPC flow logs to\n"
+        "# correlate either.\n"
+        "import boto3\n"
+        "cb = boto3.client('codebuild')\n"
+        "cb.create_project(\n"
+        "    name='my-build',\n"
+        "    # no vpcConfig — runs in AWS's shared VPC\n"
+        "    environment={...},\n"
+        "    source={...},\n"
+        ")\n"
+        "\n"
+        "# Safe: attach the project to an org-controlled VPC.\n"
+        "# Egress goes through a NAT + VPC endpoints + (optional)\n"
+        "# egress firewall; VPC flow logs capture every outbound\n"
+        "# packet for incident response.\n"
+        "cb.update_project(\n"
+        "    name='my-build',\n"
+        "    vpcConfig={\n"
+        "        'vpcId': 'vpc-abc123',\n"
+        "        'subnets': ['subnet-private-1', 'subnet-private-2'],\n"
+        "        'securityGroupIds': ['sg-codebuild-egress'],\n"
+        "    },\n"
+        ")"
+    ),
 )
 
 

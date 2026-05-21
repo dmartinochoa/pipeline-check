@@ -25,6 +25,28 @@ RULE = Rule(
         "IMMUTABLE on the repo enforces the property registry-side "
         "so a forgotten digest reference doesn't drift."
     ),
+    exploit_example=(
+        "# Vulnerable: ECR repo with ``imageTagMutability:\n"
+        "# MUTABLE``. Anyone with ``ecr:PutImage`` (build role,\n"
+        "# CI/CD credential, leaked token) can push a different\n"
+        "# image under the same tag, silently swapping what\n"
+        "# downstream consumers pull next.\n"
+        "import boto3\n"
+        "ecr = boto3.client('ecr')\n"
+        "ecr.create_repository(\n"
+        "    repositoryName='myapp',\n"
+        "    imageTagMutability='MUTABLE',\n"
+        ")\n"
+        "\n"
+        "# Safe: ``IMMUTABLE``. Tags can only be pushed once;\n"
+        "# re-pushing the same tag fails. Updates ship as a new\n"
+        "# version tag (and the digest never collides), forcing\n"
+        "# downstream consumers to explicitly bump.\n"
+        "ecr.put_image_tag_mutability(\n"
+        "    repositoryName='myapp',\n"
+        "    imageTagMutability='IMMUTABLE',\n"
+        ")"
+    ),
 )
 
 

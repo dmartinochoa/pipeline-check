@@ -65,6 +65,30 @@ RULE = Rule(
         "when their workflows ran a compromised npm dep; ``write``-"
         "default repos handed the worm the keys.",
     ),
+    exploit_example=(
+        "# Vulnerable: ``default_workflow_permissions: write``\n"
+        "# means every workflow's ``GITHUB_TOKEN`` starts with\n"
+        "# repo-write authority. A typo'd ``run:`` (or an\n"
+        "# injection per GHA-003) can ``git push`` to any branch,\n"
+        "# open issues, comment on PRs, write packages — the\n"
+        "# attack surface of every action expands by default.\n"
+        "# GET /repos/myorg/myrepo/actions/permissions/workflow:\n"
+        "{\n"
+        "  \"default_workflow_permissions\": \"write\",\n"
+        "  \"can_approve_pull_request_reviews\": false\n"
+        "}\n"
+        "\n"
+        "# Safe: ``read`` default. Workflows that genuinely need\n"
+        "# elevated rights declare per-job ``permissions:`` blocks\n"
+        "# that scope the token to the specific verbs they need\n"
+        "# (``contents: write`` for a release publisher,\n"
+        "# ``packages: write`` for a registry push, etc.).\n"
+        "# PUT /repos/myorg/myrepo/actions/permissions/workflow:\n"
+        "{\n"
+        "  \"default_workflow_permissions\": \"read\",\n"
+        "  \"can_approve_pull_request_reviews\": false\n"
+        "}"
+    ),
 )
 
 

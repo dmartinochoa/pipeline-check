@@ -26,6 +26,26 @@ RULE = Rule(
         "``ECSAllAtOnce`` — these route every request to the new "
         "revision simultaneously."
     ),
+    exploit_example=(
+        "# Vulnerable: ``DeploymentConfigName: CodeDeployDefault\n"
+        "# .AllAtOnce``. Bad deploys take the entire fleet down\n"
+        "# in one go; no canary window to catch regressions.\n"
+        "Resources:\n"
+        "  DG:\n"
+        "    Type: AWS::CodeDeploy::DeploymentGroup\n"
+        "    Properties:\n"
+        "      ApplicationName: !Ref App\n"
+        "      DeploymentConfigName: CodeDeployDefault.AllAtOnce\n"
+        "\n"
+        "# Safe: canary / linear / half-at-a-time config so bad\n"
+        "# deploys are caught before they reach the full fleet.\n"
+        "Resources:\n"
+        "  DG:\n"
+        "    Type: AWS::CodeDeploy::DeploymentGroup\n"
+        "    Properties:\n"
+        "      ApplicationName: !Ref App\n"
+        "      DeploymentConfigName: CodeDeployDefault.HalfAtATime"
+    ),
 )
 
 

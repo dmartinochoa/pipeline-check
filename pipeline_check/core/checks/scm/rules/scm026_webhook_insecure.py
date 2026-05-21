@@ -83,6 +83,36 @@ RULE = Rule(
         "side breach where the URL alone was enough to inject "
         "forged events when no shared secret was configured.",
     ),
+    exploit_example=(
+        "# Vulnerable: the webhook ships events over plaintext\n"
+        "# HTTP and carries no shared secret. Any network attacker\n"
+        "# between GitHub and the receiver sniffs the event\n"
+        "# payload (PR titles, commit messages, sometimes file\n"
+        "# contents) and can also forge requests at the receiver\n"
+        "# since no HMAC validation is possible.\n"
+        "# GET /repos/myorg/myrepo/hooks/12345:\n"
+        "{\n"
+        "  \"config\": {\n"
+        "    \"url\": \"http://webhook.example.com/gh\",\n"
+        "    \"content_type\": \"json\",\n"
+        "    \"insecure_ssl\": \"1\",\n"
+        "    \"secret\": \"\"\n"
+        "  }\n"
+        "}\n"
+        "\n"
+        "# Safe: HTTPS endpoint, TLS verification on, and a\n"
+        "# shared HMAC secret the receiver validates against\n"
+        "# the ``X-Hub-Signature-256`` header on every delivery.\n"
+        "# PATCH /repos/myorg/myrepo/hooks/12345:\n"
+        "{\n"
+        "  \"config\": {\n"
+        "    \"url\": \"https://webhook.example.com/gh\",\n"
+        "    \"content_type\": \"json\",\n"
+        "    \"insecure_ssl\": \"0\",\n"
+        "    \"secret\": \"<32-byte-random>\"\n"
+        "  }\n"
+        "}"
+    ),
 )
 
 

@@ -32,6 +32,29 @@ RULE = Rule(
         "``sudo`` behavior that breaks under non-TTY ``docker build``. "
         "None of these cases benefit from keeping the directive."
     ),
+    exploit_example=(
+        "# Vulnerable: ``RUN sudo apt-get install -y curl`` requires\n"
+        "# the image to ship sudo (extra attack surface) AND runs\n"
+        "# as a non-root user that has sudo rights. A compromise\n"
+        "# at runtime can ``sudo`` to root inside the container,\n"
+        "# defeating the non-root-user posture.\n"
+        "FROM ubuntu@sha256:abc123...\n"
+        "RUN apt-get update && apt-get install -y sudo curl\n"
+        "RUN useradd -m app && adduser app sudo\n"
+        "USER app\n"
+        "RUN sudo apt-get install -y jq    # privilege escalation primitive in image\n"
+        "\n"
+        "# Safe: do every privileged step BEFORE the ``USER``\n"
+        "# directive, while still root. Drop sudo from the image\n"
+        "# entirely. The final ``USER app`` runs without any path\n"
+        "# back to root.\n"
+        "FROM ubuntu@sha256:abc123...\n"
+        "RUN apt-get update \\\n"
+        "    && apt-get install -y curl jq \\\n"
+        "    && useradd -m app \\\n"
+        "    && rm -rf /var/lib/apt/lists/*\n"
+        "USER app"
+    ),
 )
 
 # Word-boundary match so ``pseudo``, ``sudoers``, ``Sudokugame`` don't

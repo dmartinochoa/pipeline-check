@@ -44,6 +44,36 @@ RULE = Rule(
         "privileged sidecar; if neither is viable, ignore TKN-013 "
         "in ``.pipeline-check-ignore.yml`` for the affected Task.",
     ),
+    exploit_example=(
+        "# Vulnerable: a sidecar runs alongside every step in the\n"
+        "# Task and shares the pod's volumes / network. A\n"
+        "# privileged sidecar can escape to the node the same way\n"
+        "# a privileged step does, with the added attack surface\n"
+        "# of being long-lived for the Task's whole duration.\n"
+        "apiVersion: tekton.dev/v1\n"
+        "kind: Task\n"
+        "spec:\n"
+        "  sidecars:\n"
+        "    - name: docker-daemon\n"
+        "      image: docker:24-dind\n"
+        "      securityContext:\n"
+        "        privileged: true\n"
+        "  steps:\n"
+        "    - name: build\n"
+        "      image: docker:24\n"
+        "      script: docker build -t app .\n"
+        "\n"
+        "# Safe: drop the privileged sidecar and use a rootless\n"
+        "# builder in the step. Kaniko / BuildKit rootless\n"
+        "# eliminates the need for the dind sidecar entirely.\n"
+        "apiVersion: tekton.dev/v1\n"
+        "kind: Task\n"
+        "spec:\n"
+        "  steps:\n"
+        "    - name: build\n"
+        "      image: gcr.io/kaniko-project/executor@sha256:abc123...\n"
+        "      args: [--context=., --destination=registry/app:tag]"
+    ),
 )
 
 

@@ -26,6 +26,33 @@ RULE = Rule(
         "PAB flags left ``false`` (or missing) lets an ACL or bucket "
         "policy expose build artifacts."
     ),
+    exploit_example=(
+        "# Vulnerable: ``PublicAccessBlockConfiguration`` with\n"
+        "# any of the four toggles off. A future bucket policy\n"
+        "# / ACL change can re-expose the bucket.\n"
+        "Resources:\n"
+        "  Bucket:\n"
+        "    Type: AWS::S3::Bucket\n"
+        "    Properties:\n"
+        "      BucketName: my-artifacts\n"
+        "      PublicAccessBlockConfiguration:\n"
+        "        BlockPublicAcls: true\n"
+        "        IgnorePublicAcls: false      # missing\n"
+        "        BlockPublicPolicy: true\n"
+        "        RestrictPublicBuckets: false # missing\n"
+        "\n"
+        "# Safe: all four ON.\n"
+        "Resources:\n"
+        "  Bucket:\n"
+        "    Type: AWS::S3::Bucket\n"
+        "    Properties:\n"
+        "      BucketName: my-artifacts\n"
+        "      PublicAccessBlockConfiguration:\n"
+        "        BlockPublicAcls: true\n"
+        "        IgnorePublicAcls: true\n"
+        "        BlockPublicPolicy: true\n"
+        "        RestrictPublicBuckets: true"
+    ),
 )
 
 

@@ -62,6 +62,7 @@ _PROVIDER_PACKAGES: tuple[tuple[str, str, str], ...] = (
     ("drone",      "pipeline_check.core.checks.drone.rules",      "Drone CI"),
     ("tekton",     "pipeline_check.core.checks.tekton.rules",     "Tekton"),
     ("argo",       "pipeline_check.core.checks.argo.rules",       "Argo Workflows"),
+    ("argocd",     "pipeline_check.core.checks.argocd.rules",     "Argo CD"),
     ("dockerfile", "pipeline_check.core.checks.dockerfile.rules", "Dockerfile"),
     ("kubernetes", "pipeline_check.core.checks.kubernetes.rules", "Kubernetes"),
     ("helm",       "pipeline_check.core.checks.helm.rules",       "Helm"),

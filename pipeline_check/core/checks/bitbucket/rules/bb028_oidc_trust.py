@@ -39,6 +39,34 @@ RULE = Rule(
         "forks so OIDC under that branch is always an unbounded "
         "blast radius."
     ),
+    exploit_example=(
+        "# Vulnerable: an OIDC step (``oidc: true``) runs on every\n"
+        "# trigger, including pull-request builds. The OIDC role's\n"
+        "# trust policy accepts any token from the repo, so a\n"
+        "# fork-PR build assumes prod and runs whatever the role\n"
+        "# permits.\n"
+        "pipelines:\n"
+        "  default:\n"
+        "    - step:\n"
+        "        oidc: true\n"
+        "        script:\n"
+        "          - aws configure set role_arn arn:aws:iam::123:role/prod\n"
+        "          - aws deploy ...\n"
+        "\n"
+        "# Safe: route the OIDC step through a deployment-gated\n"
+        "# environment (Bitbucket Deployments) so reviewer\n"
+        "# approval is required before the token is minted, and\n"
+        "# restrict the trigger to the protected branch.\n"
+        "pipelines:\n"
+        "  branches:\n"
+        "    main:\n"
+        "      - step:\n"
+        "          oidc: true\n"
+        "          deployment: production   # reviewer-gated\n"
+        "          script:\n"
+        "            - aws configure set role_arn arn:aws:iam::123:role/prod\n"
+        "            - aws deploy ..."
+    ),
 )
 
 

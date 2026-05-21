@@ -24,6 +24,26 @@ RULE = Rule(
         "anyone with ``ecr:PutImage`` on the repo can overwrite "
         "release tags consumed by production deployments."
     ),
+    exploit_example=(
+        "# Vulnerable: ``ImageTagMutability: MUTABLE`` lets anyone\n"
+        "# with ``ecr:PutImage`` swap the image under an existing\n"
+        "# tag, silently changing what consumers pull next.\n"
+        "Resources:\n"
+        "  Repo:\n"
+        "    Type: AWS::ECR::Repository\n"
+        "    Properties:\n"
+        "      RepositoryName: myapp\n"
+        "      ImageTagMutability: MUTABLE\n"
+        "\n"
+        "# Safe: ``IMMUTABLE``. Tags can be pushed once; updates\n"
+        "# require a new version tag.\n"
+        "Resources:\n"
+        "  Repo:\n"
+        "    Type: AWS::ECR::Repository\n"
+        "    Properties:\n"
+        "      RepositoryName: myapp\n"
+        "      ImageTagMutability: IMMUTABLE"
+    ),
 )
 
 

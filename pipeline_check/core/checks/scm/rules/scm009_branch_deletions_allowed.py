@@ -34,6 +34,25 @@ RULE = Rule(
         "(force-push allowed) — the two flags together cover the "
         "complete rewrite-history attack class."
     ),
+    exploit_example=(
+        "# Vulnerable: ``allow_deletions: true`` lets anyone with\n"
+        "# write access delete the default branch entirely. A\n"
+        "# compromised token (leaked PAT, malicious workflow\n"
+        "# running with ``contents: write``) erases the branch\n"
+        "# along with the production deployment trail.\n"
+        "# GET /repos/myorg/myrepo/branches/main/protection:\n"
+        "{\n"
+        "  \"allow_deletions\": {\"enabled\": true}\n"
+        "}\n"
+        "\n"
+        "# Safe: branch deletion off. ``main`` cannot be deleted\n"
+        "# via API or UI without first removing the protection\n"
+        "# rule, which itself is an audited admin action.\n"
+        "# PUT /repos/myorg/myrepo/branches/main/protection:\n"
+        "{\n"
+        "  \"allow_deletions\": {\"enabled\": false}\n"
+        "}"
+    ),
 )
 
 

@@ -89,6 +89,36 @@ RULE = Rule(
         "amplifier that let the attacker push code back to the "
         "victim's default branch on the same workflow run.",
     ),
+    exploit_example=(
+        "# Vulnerable: ``uses: rando-user/single-maintainer-action``\n"
+        "# is a low-star action from a single-maintainer repo,\n"
+        "# AND the calling job grants ``contents: write`` /\n"
+        "# ``id-token: write`` / similar. A compromised maintainer\n"
+        "# (or a typosquat / namespace takeover) ships code into\n"
+        "# the runner with write access to the repo.\n"
+        "jobs:\n"
+        "  release:\n"
+        "    runs-on: ubuntu-latest\n"
+        "    permissions:\n"
+        "      contents: write\n"
+        "      id-token: write\n"
+        "    steps:\n"
+        "      - uses: rando-user/auto-release@<sha>   # 4 stars, 1 maintainer\n"
+        "\n"
+        "# Safe: vet the action's reputation before granting\n"
+        "# sensitive permissions. Prefer first-party / verified-\n"
+        "# creator actions for privileged jobs. If a niche action\n"
+        "# is truly required, fork it into your own org, vendor\n"
+        "# the maintained version, and pin to your fork's SHA.\n"
+        "jobs:\n"
+        "  release:\n"
+        "    runs-on: ubuntu-latest\n"
+        "    permissions:\n"
+        "      contents: write\n"
+        "      id-token: write\n"
+        "    steps:\n"
+        "      - uses: softprops/action-gh-release@<sha>   # verified-creator equivalent"
+    ),
 )
 
 

@@ -39,6 +39,23 @@ RULE = Rule(
         "intentionally NOT flagged, the substituted command is "
         "literal, only its output is eval'd.",
     ),
+    exploit_example=(
+        "# Vulnerable: ``eval`` on a CI variable or extends'd\n"
+        "# input gives that value full shell-grammar reach.\n"
+        "# A run-pipeline variable carrying metacharacters\n"
+        "# executes them.\n"
+        "deploy:\n"
+        "  script:\n"
+        "    - eval \"$DEPLOY_CMD\"\n"
+        "    - sh -c $RAW_HOOK\n"
+        "\n"
+        "# Safe: invoke a script you own with the value as a\n"
+        "# quoted argument; let the script validate against an\n"
+        "# allow-list. Never eval values from CI variables.\n"
+        "deploy:\n"
+        "  script:\n"
+        "    - ./scripts/dispatch.sh \"$DEPLOY_CMD\""
+    ),
 )
 
 

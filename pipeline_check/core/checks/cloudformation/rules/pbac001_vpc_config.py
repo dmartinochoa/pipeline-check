@@ -26,6 +26,30 @@ RULE = Rule(
         "run in AWS-managed infrastructure with unrestricted "
         "outbound internet."
     ),
+    exploit_example=(
+        "# Vulnerable: a CodeBuild project with no ``VpcConfig``.\n"
+        "# Runs in AWS's shared VPC with unrestricted egress;\n"
+        "# no VPC flow logs for incident response.\n"
+        "Resources:\n"
+        "  Build:\n"
+        "    Type: AWS::CodeBuild::Project\n"
+        "    Properties:\n"
+        "      Environment: {...}\n"
+        "      Source: {...}\n"
+        "      # no VpcConfig\n"
+        "\n"
+        "# Safe: attach to an org-controlled VPC. Egress goes\n"
+        "# via NAT + endpoints; VPC flow logs capture every\n"
+        "# outbound packet.\n"
+        "Resources:\n"
+        "  Build:\n"
+        "    Type: AWS::CodeBuild::Project\n"
+        "    Properties:\n"
+        "      VpcConfig:\n"
+        "        VpcId: !Ref VPC\n"
+        "        Subnets: [!Ref PrivateSubnetA, !Ref PrivateSubnetB]\n"
+        "        SecurityGroupIds: [!Ref BuildSG]"
+    ),
 )
 
 

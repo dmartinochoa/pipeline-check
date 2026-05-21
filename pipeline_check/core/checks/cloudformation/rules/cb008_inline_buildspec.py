@@ -25,6 +25,37 @@ RULE = Rule(
         "``codebuild:UpdateProject`` can rewrite without going "
         "through code review."
     ),
+    exploit_example=(
+        "# Vulnerable: ``Source.BuildSpec`` is an inline JSON\n"
+        "# string. Anyone with ``cloudformation:UpdateStack`` can\n"
+        "# rewrite the build steps without code review on the\n"
+        "# repo side.\n"
+        "Resources:\n"
+        "  Build:\n"
+        "    Type: AWS::CodeBuild::Project\n"
+        "    Properties:\n"
+        "      Source:\n"
+        "        Type: NO_SOURCE\n"
+        "        BuildSpec: |\n"
+        "          version: 0.2\n"
+        "          phases:\n"
+        "            build:\n"
+        "              commands:\n"
+        "                - inline; runs at will\n"
+        "\n"
+        "# Safe: source ``buildspec.yml`` from a protected repo.\n"
+        "# Changes to the build go through PR review on the SCM\n"
+        "# side; AWS-side ``UpdateStack`` no longer carries the\n"
+        "# build's logic.\n"
+        "Resources:\n"
+        "  Build:\n"
+        "    Type: AWS::CodeBuild::Project\n"
+        "    Properties:\n"
+        "      Source:\n"
+        "        Type: GITHUB\n"
+        "        Location: https://github.com/myorg/myrepo.git\n"
+        "        BuildSpec: ci/buildspec.yml"
+    ),
 )
 
 

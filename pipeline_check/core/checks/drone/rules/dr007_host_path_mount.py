@@ -65,6 +65,39 @@ RULE = Rule(
         "``trusted: true`` is set on the repo from the "
         "pipeline YAML alone.",
     ),
+    exploit_example=(
+        "# Vulnerable: mounting ``/var/run/docker.sock`` into the\n"
+        "# step gives the step's container the Docker API as root\n"
+        "# on the runner. ``docker run --privileged -v /:/host``\n"
+        "# from inside the step then owns the runner.\n"
+        "kind: pipeline\n"
+        "type: docker\n"
+        "name: build\n"
+        "steps:\n"
+        "  - name: build\n"
+        "    image: docker:24\n"
+        "    volumes:\n"
+        "      - name: dockersock\n"
+        "        path: /var/run/docker.sock\n"
+        "    commands:\n"
+        "      - docker build -t app .\n"
+        "volumes:\n"
+        "  - name: dockersock\n"
+        "    host:\n"
+        "      path: /var/run/docker.sock\n"
+        "\n"
+        "# Safe: use a rootless image builder (Kaniko / BuildKit\n"
+        "# rootless) that doesn't need the host runtime socket.\n"
+        "# An empty temp volume is enough for the build cache.\n"
+        "kind: pipeline\n"
+        "type: docker\n"
+        "name: build\n"
+        "steps:\n"
+        "  - name: build\n"
+        "    image: gcr.io/kaniko-project/executor@sha256:abc123...\n"
+        "    commands:\n"
+        "      - /kaniko/executor --context=. --destination=registry/app:tag"
+    ),
 )
 
 

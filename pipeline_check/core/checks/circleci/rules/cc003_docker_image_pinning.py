@@ -28,6 +28,28 @@ RULE = Rule(
         "references (`:latest`, `:18`) are mutable and can be replaced "
         "at any time by whoever controls the upstream registry."
     ),
+    exploit_example=(
+        "# Vulnerable: ``cimg/python:3.12`` is a mutable tag.\n"
+        "# CircleCI's image team rebuilds it on every Python\n"
+        "# point release; a publisher compromise ships code into\n"
+        "# every pipeline that uses the tag.\n"
+        "version: 2.1\n"
+        "jobs:\n"
+        "  test:\n"
+        "    docker:\n"
+        "      - image: cimg/python:3.12\n"
+        "    steps:\n"
+        "      - run: pytest\n"
+        "\n"
+        "# Safe: pin to the content-addressable digest.\n"
+        "version: 2.1\n"
+        "jobs:\n"
+        "  test:\n"
+        "    docker:\n"
+        "      - image: cimg/python@sha256:abc123...  # cimg/python:3.12.1\n"
+        "    steps:\n"
+        "      - run: pytest"
+    ),
 )
 
 

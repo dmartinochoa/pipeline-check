@@ -45,6 +45,31 @@ RULE = Rule(
         "this is intentional, real-world copies of those example "
         "literals usually mean a docs paste was never substituted.",
     ),
+    exploit_example=(
+        "# Vulnerable: the AWS access key literal lives in\n"
+        "# ``pipeline.yml``. The file is committed to git, visible\n"
+        "# to anyone with repo read access, and printed in build\n"
+        "# logs whenever a step echoes its environment.\n"
+        "env:\n"
+        "  AWS_ACCESS_KEY_ID: AKIAIOSFODNN7EXAMPLE\n"
+        "  AWS_SECRET_ACCESS_KEY: wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY\n"
+        "\n"
+        "steps:\n"
+        "  - command: aws s3 cp build/ s3://bucket/\n"
+        "\n"
+        "# Safe: fetch the credential from Secrets Manager at\n"
+        "# step-runtime via the ``aws-ssm`` plugin. The pipeline\n"
+        "# file references the secret by parameter name; the actual\n"
+        "# value lives in AWS Secrets Manager and rotates there\n"
+        "# without a pipeline change.\n"
+        "steps:\n"
+        "  - command: aws s3 cp build/ s3://bucket/\n"
+        "    plugins:\n"
+        "      - seek-oss/aws-sm#v2.3.0:\n"
+        "          env:\n"
+        "            AWS_ACCESS_KEY_ID: /ci/aws/access_key_id\n"
+        "            AWS_SECRET_ACCESS_KEY: /ci/aws/secret_access_key"
+    ),
 )
 
 # Strong patterns, high confidence that the literal is a credential.

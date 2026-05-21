@@ -50,6 +50,29 @@ RULE = Rule(
         "list, but if your team has its own conventions for "
         "trusted Buildkite vars, suppress on the specific step.",
     ),
+    exploit_example=(
+        "# Vulnerable: ``queue: $BUILDKITE_BRANCH`` lets the pusher\n"
+        "# decide which agent pool runs their step. A PR branch\n"
+        "# named ``production`` routes its build to the production\n"
+        "# queue, which typically has elevated permissions (deploy\n"
+        "# tokens, prod-only secrets) the PR was never meant to\n"
+        "# reach.\n"
+        "steps:\n"
+        "  - label: \":rocket: deploy\"\n"
+        "    command: ./deploy.sh\n"
+        "    agents:\n"
+        "      queue: $BUILDKITE_BRANCH\n"
+        "\n"
+        "# Safe: pin the queue to a static literal. Production\n"
+        "# agents should ALSO enforce the queue tag server-side\n"
+        "# (``buildkite-agent start --tags 'queue=production'``) so\n"
+        "# the rule is one layer of a defense-in-depth posture.\n"
+        "steps:\n"
+        "  - label: \":rocket: deploy\"\n"
+        "    command: ./deploy.sh\n"
+        "    agents:\n"
+        "      queue: production"
+    ),
 )
 
 

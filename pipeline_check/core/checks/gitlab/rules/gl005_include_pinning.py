@@ -23,6 +23,26 @@ RULE = Rule(
         "Branch-name refs (`main`/`master`/`develop`/`head`) are "
         "treated as unpinned; tag and SHA refs are considered safe."
     ),
+    exploit_example=(
+        "# Vulnerable: ``include:`` pulls a remote project without\n"
+        "# a pinned ref. ``ref:`` defaults to ``HEAD`` of the\n"
+        "# default branch; whoever can push to that branch on\n"
+        "# the templates project ships pipeline code into every\n"
+        "# consumer.\n"
+        "include:\n"
+        "  - project: 'ci/templates'\n"
+        "    file: '/build.yml'\n"
+        "    # no ref: — resolves to HEAD\n"
+        "\n"
+        "# Safe: pin ``ref:`` to a tag (with tag-protect enforced\n"
+        "# on the templates project) or a 40-char commit SHA.\n"
+        "# Renovate's gitlabci-include ecosystem updater bumps\n"
+        "# these in reviewable MRs.\n"
+        "include:\n"
+        "  - project: 'ci/templates'\n"
+        "    file: '/build.yml'\n"
+        "    ref: 0123456789abcdef0123456789abcdef01234567   # v1.4.2"
+    ),
 )
 
 

@@ -25,6 +25,38 @@ RULE = Rule(
         "accepts PR validation, the artifact may have been built by "
         "PR-controlled code."
     ),
+    exploit_example=(
+        "# Vulnerable: ``download:`` pulls artifacts from another\n"
+        "# pipeline in the same project. If that upstream pipeline\n"
+        "# accepts PR-validated builds, the artifact may have been\n"
+        "# built by attacker-controlled code; the consuming\n"
+        "# pipeline runs it.\n"
+        "resources:\n"
+        "  pipelines:\n"
+        "    - pipeline: build\n"
+        "      source: vendor-build\n"
+        "      trigger: true\n"
+        "steps:\n"
+        "  - download: build\n"
+        "    artifact: release\n"
+        "  - script: ./release/installer.sh\n"
+        "\n"
+        "# Safe: verify a producer-signed checksum or attestation\n"
+        "# before executing anything from the downloaded artifact.\n"
+        "# Restrict the upstream pipeline to non-PR builds if\n"
+        "# verification isn't feasible.\n"
+        "resources:\n"
+        "  pipelines:\n"
+        "    - pipeline: build\n"
+        "      source: vendor-build\n"
+        "      trigger: true\n"
+        "steps:\n"
+        "  - download: build\n"
+        "    artifact: release\n"
+        "  - script: |\n"
+        "      sha256sum -c $(Pipeline.Workspace)/build/release/manifest.sha256\n"
+        "  - script: ./release/installer.sh"
+    ),
 )
 
 

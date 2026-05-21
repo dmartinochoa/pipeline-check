@@ -27,6 +27,36 @@ RULE = Rule(
         "Without it, the role is vulnerable to the confused-deputy "
         "pattern."
     ),
+    exploit_example=(
+        "# Vulnerable: cross-account trust policy with no\n"
+        "# ``sts:ExternalId`` Condition. Confused-deputy class:\n"
+        "# the third-party SaaS the role trusts can be tricked\n"
+        "# into using it for the wrong customer.\n"
+        "Resources:\n"
+        "  Role:\n"
+        "    Type: AWS::IAM::Role\n"
+        "    Properties:\n"
+        "      AssumeRolePolicyDocument:\n"
+        "        Statement:\n"
+        "          - Effect: Allow\n"
+        "            Principal: { AWS: 'arn:aws:iam::999999999999:root' }\n"
+        "            Action: sts:AssumeRole\n"
+        "\n"
+        "# Safe: require ``sts:ExternalId`` matching a value the\n"
+        "# third-party SaaS shares only with your tenant.\n"
+        "Resources:\n"
+        "  Role:\n"
+        "    Type: AWS::IAM::Role\n"
+        "    Properties:\n"
+        "      AssumeRolePolicyDocument:\n"
+        "        Statement:\n"
+        "          - Effect: Allow\n"
+        "            Principal: { AWS: 'arn:aws:iam::999999999999:root' }\n"
+        "            Action: sts:AssumeRole\n"
+        "            Condition:\n"
+        "              StringEquals:\n"
+        "                sts:ExternalId: e7c1a0b3-abc-tenant-id"
+    ),
 )
 
 

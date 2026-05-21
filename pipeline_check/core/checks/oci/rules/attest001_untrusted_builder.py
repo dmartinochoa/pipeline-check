@@ -72,6 +72,40 @@ RULE = Rule(
         "``self-hosted`` URIs as untrusted regardless of the "
         "rest of the chain.",
     ),
+    exploit_example=(
+        "# Vulnerable: the SLSA provenance attestation names a\n"
+        "# self-hosted builder whose isolation cannot be audited\n"
+        "# publicly. The signed attestation only attests that *this*\n"
+        "# builder produced the artifact; it doesn't guarantee the\n"
+        "# build environment was hermetic. A compromised self-hosted\n"
+        "# runner produces signed provenance for malicious bytes.\n"
+        "{\n"
+        "  \"_type\": \"https://in-toto.io/Statement/v0.1\",\n"
+        "  \"predicateType\": \"https://slsa.dev/provenance/v0.2\",\n"
+        "  \"predicate\": {\n"
+        "    \"builder\": {\n"
+        "      \"id\": \"https://internal-jenkins.example.com/jobs/build\"\n"
+        "    },\n"
+        "    \"buildType\": \"https://example.com/build-script@v1\"\n"
+        "  }\n"
+        "}\n"
+        "\n"
+        "# Safe: rebuild via a recognized hosted CI builder that\n"
+        "# enforces hermetic isolation (slsa-github-generator on a\n"
+        "# GitHub-hosted runner, the canonical SLSA L3 producer).\n"
+        "# Downstream verifiers can validate the builder URI against\n"
+        "# a public allowlist and trust the isolation guarantee.\n"
+        "{\n"
+        "  \"_type\": \"https://in-toto.io/Statement/v0.1\",\n"
+        "  \"predicateType\": \"https://slsa.dev/provenance/v0.2\",\n"
+        "  \"predicate\": {\n"
+        "    \"builder\": {\n"
+        "      \"id\": \"https://github.com/slsa-framework/slsa-github-generator/.github/workflows/generator_container_slsa3.yml@refs/tags/v2.1.0\"\n"
+        "    },\n"
+        "    \"buildType\": \"https://github.com/slsa-framework/slsa-github-generator/container@v1\"\n"
+        "  }\n"
+        "}"
+    ),
 )
 
 

@@ -30,6 +30,25 @@ RULE = Rule(
         "it gives the build host's docker daemon a chance to escape, "
         "and any tampered base image can exploit the elevated build."
     ),
+    exploit_example=(
+        "# Vulnerable: ``RUN docker run --privileged`` (or\n"
+        "# ``--cap-add=SYS_ADMIN``) during image build requires\n"
+        "# privileged-mode on the BuildKit daemon AND grants the\n"
+        "# nested container full kernel access. A compromise of\n"
+        "# the inner build step escapes to the BuildKit host.\n"
+        "FROM ubuntu@sha256:abc123...\n"
+        "RUN docker run --privileged \\\n"
+        "      -v /var/run/docker.sock:/var/run/docker.sock \\\n"
+        "      myorg/inner-builder:latest ./inner-build.sh\n"
+        "\n"
+        "# Safe: don't nest privileged docker invocations inside\n"
+        "# RUN. Use a multi-stage build instead — each stage is\n"
+        "# its own root filesystem; no host-kernel access required.\n"
+        "FROM myorg/inner-builder@sha256:abc123... AS builder\n"
+        "RUN ./inner-build.sh\n"
+        "FROM ubuntu@sha256:abc123...\n"
+        "COPY --from=builder /out/ /app/"
+    ),
 )
 
 _PRIV_RE = re.compile(

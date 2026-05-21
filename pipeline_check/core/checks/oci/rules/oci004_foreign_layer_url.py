@@ -50,6 +50,43 @@ RULE = Rule(
         "Windows image is intentional, the rule has no way to "
         "distinguish a Microsoft-blessed URL from any other.",
     ),
+    exploit_example=(
+        "# Vulnerable: the manifest declares a layer with a\n"
+        "# ``urls:`` field. On pull, the client fetches the layer\n"
+        "# blob from that arbitrary URL, bypassing the registry's\n"
+        "# content-addressed store. An attacker controlling the URL\n"
+        "# (DNS, BGP, compromised host) substitutes the blob; the\n"
+        "# registry's integrity guarantee doesn't extend to foreign\n"
+        "# URLs.\n"
+        "{\n"
+        "  \"schemaVersion\": 2,\n"
+        "  \"mediaType\": \"application/vnd.oci.image.manifest.v1+json\",\n"
+        "  \"layers\": [\n"
+        "    {\n"
+        "      \"mediaType\": \"application/vnd.oci.image.layer.nondistributable.v1.tar+gzip\",\n"
+        "      \"digest\": \"sha256:layer-blob-digest...\",\n"
+        "      \"size\": 12345,\n"
+        "      \"urls\": [\"https://internal-mirror.example.com/blobs/foo.tgz\"]\n"
+        "    }\n"
+        "  ]\n"
+        "}\n"
+        "\n"
+        "# Safe: host the layer blob inside the same registry as\n"
+        "# the manifest. No ``urls:`` field — the client fetches\n"
+        "# the blob from the registry by digest, and the registry's\n"
+        "# content-addressed store guarantees the bytes match.\n"
+        "{\n"
+        "  \"schemaVersion\": 2,\n"
+        "  \"mediaType\": \"application/vnd.oci.image.manifest.v1+json\",\n"
+        "  \"layers\": [\n"
+        "    {\n"
+        "      \"mediaType\": \"application/vnd.oci.image.layer.v1.tar+gzip\",\n"
+        "      \"digest\": \"sha256:layer-blob-digest...\",\n"
+        "      \"size\": 12345\n"
+        "    }\n"
+        "  ]\n"
+        "}"
+    ),
 )
 
 

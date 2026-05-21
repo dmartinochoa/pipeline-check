@@ -4,6 +4,26 @@ What's planned, what's shipped, and what's deliberately out of scope.
 
 ## Shipped
 
+- **Argo CD provider (post-1.3.0)** — New CD-side provider, kept
+  disjoint from the existing ``argo`` (Argo Workflows) pack.
+  ``--pipeline argocd`` parses ``Application`` / ``ApplicationSet`` /
+  ``AppProject`` CRDs plus the ``argocd-cm`` / ``argocd-rbac-cm``
+  ConfigMaps. Nine rules cover AppProject ``sourceRepos: '*'``
+  (ARGOCD-001), wildcard destinations (ARGOCD-002), auto-sync
+  ``prune: true`` without ``selfHeal`` (ARGOCD-003), ``argocd-rbac-cm``
+  policies granting wildcard authority (ARGOCD-004), ``argocd-cm``
+  repo entries storing plaintext credentials (ARGOCD-005),
+  ApplicationSet PR / SCM generators without a project allowlist
+  (ARGOCD-006), Helm ``valueFiles`` / parameters using generator
+  placeholders without ``spec.goTemplate: true`` (ARGOCD-007),
+  Application invoking a config-management plugin (ARGOCD-008), and
+  ``argocd-cm`` with anonymous access enabled (ARGOCD-009). File
+  discovery is disjoint from the Workflows provider, so
+  ``--pipelines argo,argocd`` against a single directory produces
+  non-overlapping findings. Standards mappings added in
+  ``owasp_cicd_top_10``, ``cis_supply_chain``, and
+  ``esf_supply_chain``. Provider count 22 -> 23; total-check claim
+  810+ -> 820+. Twenty-two per-rule tests under ``tests/argocd/``.
 - **GitHub Actions cicd-goat coverage push (v1.3.0)** —
   Two new rules and one widened taint hop, plus five existing-rule
   widenings, close eleven ``greylag-ci/cicd-goat`` scenarios in one

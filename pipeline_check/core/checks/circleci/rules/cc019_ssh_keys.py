@@ -26,6 +26,35 @@ RULE = Rule(
         "does not need, increasing the blast radius if the job is "
         "compromised."
     ),
+    exploit_example=(
+        "# Vulnerable: ``add_ssh_keys`` with no ``fingerprints``\n"
+        "# filter loads every SSH key the project carries into\n"
+        "# the agent. Any job in the workflow then uses any key\n"
+        "# — a non-deploy job that runs on PR builds has the\n"
+        "# production deploy key in scope.\n"
+        "version: 2.1\n"
+        "jobs:\n"
+        "  build:\n"
+        "    docker:\n"
+        "      - image: cimg/base@sha256:abc123...\n"
+        "    steps:\n"
+        "      - add_ssh_keys\n"
+        "      - run: ./build.sh\n"
+        "\n"
+        "# Safe: pin ``fingerprints`` to the specific key this\n"
+        "# job needs. Deploy keys never leak into PR builds; a\n"
+        "# leaked PR-job token can't reach the deploy SSH key.\n"
+        "version: 2.1\n"
+        "jobs:\n"
+        "  deploy:\n"
+        "    docker:\n"
+        "      - image: cimg/base@sha256:abc123...\n"
+        "    steps:\n"
+        "      - add_ssh_keys:\n"
+        "          fingerprints:\n"
+        "            - \"01:23:45:67:89:ab:cd:ef:01:23:45:67:89:ab:cd:ef\"\n"
+        "      - run: ./deploy.sh"
+    ),
 )
 
 

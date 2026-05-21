@@ -40,6 +40,30 @@ RULE = Rule(
         "passes — the rule only flags the disable shapes. "
         "Pairs with DF-027 (Python TLS via env)."
     ),
+    exploit_example=(
+        "# Vulnerable: ``ENV REQUESTS_CA_BUNDLE=/dev/null`` (or\n"
+        "# the empty string, or a non-existent path) neuters the\n"
+        "# CA bundle Python's requests library consults. Every\n"
+        "# HTTPS call requests makes silently fails verification\n"
+        "# or accepts any cert.\n"
+        "FROM python@sha256:abc123...\n"
+        "ENV REQUESTS_CA_BUNDLE=/dev/null\n"
+        "COPY . /app\n"
+        "WORKDIR /app\n"
+        "CMD [\"python\", \"main.py\"]\n"
+        "\n"
+        "# Safe: point ``REQUESTS_CA_BUNDLE`` at the system trust\n"
+        "# store (or leave it unset, in which case requests uses\n"
+        "# certifi). Install internal CAs into the system store\n"
+        "# rather than papering over with a null bundle.\n"
+        "FROM python@sha256:abc123...\n"
+        "COPY ci/internal-ca.crt /usr/local/share/ca-certificates/\n"
+        "RUN update-ca-certificates\n"
+        "ENV REQUESTS_CA_BUNDLE=/etc/ssl/certs/ca-certificates.crt\n"
+        "COPY . /app\n"
+        "WORKDIR /app\n"
+        "CMD [\"python\", \"main.py\"]"
+    ),
 )
 
 

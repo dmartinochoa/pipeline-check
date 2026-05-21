@@ -53,6 +53,41 @@ RULE = Rule(
         "match still catches real leaks elsewhere in the "
         "pipeline.",
     ),
+    exploit_example=(
+        "# Vulnerable: the AWS access key literal is committed to\n"
+        "# the pipeline file. Any repo reader sees it; Drone's\n"
+        "# build logs print it whenever the step echoes its\n"
+        "# environment.\n"
+        "kind: pipeline\n"
+        "type: docker\n"
+        "name: deploy\n"
+        "steps:\n"
+        "  - name: upload\n"
+        "    image: aws-cli@sha256:abc123...\n"
+        "    environment:\n"
+        "      AWS_ACCESS_KEY_ID: AKIAIOSFODNN7EXAMPLE\n"
+        "      AWS_SECRET_ACCESS_KEY: wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY\n"
+        "    commands:\n"
+        "      - aws s3 cp build/ s3://bucket/\n"
+        "\n"
+        "# Safe: reference Drone secrets via ``from_secret``. The\n"
+        "# actual values live in Drone's secret store (per-repo or\n"
+        "# org-level), are masked in logs, and can rotate without\n"
+        "# a pipeline-file change.\n"
+        "kind: pipeline\n"
+        "type: docker\n"
+        "name: deploy\n"
+        "steps:\n"
+        "  - name: upload\n"
+        "    image: aws-cli@sha256:abc123...\n"
+        "    environment:\n"
+        "      AWS_ACCESS_KEY_ID:\n"
+        "        from_secret: aws_access_key_id\n"
+        "      AWS_SECRET_ACCESS_KEY:\n"
+        "        from_secret: aws_secret_access_key\n"
+        "    commands:\n"
+        "      - aws s3 cp build/ s3://bucket/"
+    ),
 )
 
 

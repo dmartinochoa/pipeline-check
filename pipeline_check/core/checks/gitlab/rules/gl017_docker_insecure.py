@@ -22,6 +22,28 @@ RULE = Rule(
         "container full access to the CI runner, enabling container "
         "escape and lateral movement."
     ),
+    exploit_example=(
+        "# Vulnerable: ``docker run --privileged`` plus the host\n"
+        "# Docker socket inside a GitLab Runner job gives the\n"
+        "# container full kernel access. A compromise escapes\n"
+        "# to the runner host and from there to every other job\n"
+        "# sharing it.\n"
+        "integration:\n"
+        "  image: docker:24\n"
+        "  services: [docker:24-dind]\n"
+        "  script:\n"
+        "    - docker run --privileged \\\n"
+        "        -v /var/run/docker.sock:/var/run/docker.sock \\\n"
+        "        myapp:test ./integration.sh\n"
+        "\n"
+        "# Safe: drop ``--privileged`` and the socket mount. If\n"
+        "# the job needs to build images, use Kaniko / BuildKit\n"
+        "# rootless. Run integration tests in a normal container.\n"
+        "integration:\n"
+        "  image: myapp@sha256:abc123...\n"
+        "  script:\n"
+        "    - ./integration.sh"
+    ),
 )
 
 

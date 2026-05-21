@@ -36,6 +36,30 @@ RULE = Rule(
         "branch-protection knob — without enforce_admins, those "
         "rules document intent rather than reality."
     ),
+    exploit_example=(
+        "# Vulnerable: ``enforce_admins: false`` (or its absence)\n"
+        "# lets repo admins push directly to ``main``, skip\n"
+        "# required reviews, and bypass status checks. An admin's\n"
+        "# token leak escalates straight to ``main``-write.\n"
+        "# GET /repos/myorg/myrepo/branches/main/protection:\n"
+        "{\n"
+        "  \"required_pull_request_reviews\": {\n"
+        "    \"required_approving_review_count\": 2\n"
+        "  },\n"
+        "  \"enforce_admins\": {\"enabled\": false}\n"
+        "}\n"
+        "\n"
+        "# Safe: ``enforce_admins: true`` so the protection\n"
+        "# applies to admins too. Reviews and status checks are\n"
+        "# no longer bypassable.\n"
+        "# PUT /repos/myorg/myrepo/branches/main/protection:\n"
+        "{\n"
+        "  \"required_pull_request_reviews\": {\n"
+        "    \"required_approving_review_count\": 2\n"
+        "  },\n"
+        "  \"enforce_admins\": {\"enabled\": true}\n"
+        "}"
+    ),
 )
 
 

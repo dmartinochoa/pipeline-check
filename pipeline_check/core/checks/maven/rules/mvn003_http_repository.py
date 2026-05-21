@@ -41,6 +41,37 @@ RULE = Rule(
         "MITM-tampering attacks against downstream consumers. "
         "https://blog.sonatype.com/central-repository-moving-to-https",
     ),
+    exploit_example=(
+        "<!-- Vulnerable: Maven fetches every dependency tarball\n"
+        "     and pom from this repository over plaintext HTTP. Any\n"
+        "     on-path attacker (compromised proxy, malicious VPN\n"
+        "     exit, internal mirror BGP hijack) substitutes a\n"
+        "     backdoored jar in flight. Maven's checksum verification\n"
+        "     only checks against checksums served by the SAME host,\n"
+        "     so the attacker swaps both the artifact and the\n"
+        "     adjacent .sha1 file. -->\n"
+        "<project>\n"
+        "  <repositories>\n"
+        "    <repository>\n"
+        "      <id>internal-mirror</id>\n"
+        "      <url>http://nexus.internal.example.com/repository/maven-public/</url>\n"
+        "    </repository>\n"
+        "  </repositories>\n"
+        "</project>\n"
+        "\n"
+        "<!-- Safe: HTTPS gives TLS for both jar and checksum fetch.\n"
+        "     For internal Nexus / Artifactory hosts on a private CA,\n"
+        "     install the CA in the build agent's truststore;\n"
+        "     never fall back to plaintext HTTP. -->\n"
+        "<project>\n"
+        "  <repositories>\n"
+        "    <repository>\n"
+        "      <id>internal-mirror</id>\n"
+        "      <url>https://nexus.internal.example.com/repository/maven-public/</url>\n"
+        "    </repository>\n"
+        "  </repositories>\n"
+        "</project>"
+    ),
 )
 
 

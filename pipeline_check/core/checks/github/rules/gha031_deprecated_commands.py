@@ -38,6 +38,33 @@ RULE = Rule(
         "commands also depend on a deprecation timer that GitHub has "
         "extended several times. They will eventually break."
     ),
+    exploit_example=(
+        "# Vulnerable: ``echo \"::set-output name=...\"`` (and\n"
+        "# ``::save-state``) are retired GitHub-Actions workflow\n"
+        "# commands. GitHub disabled them due to a command-\n"
+        "# injection class where an attacker-controlled string\n"
+        "# carrying ``%0A::set-output name=secret::pwned`` (or\n"
+        "# similar) injects fake workflow commands into the\n"
+        "# runner. The retired commands also stopped being\n"
+        "# supported, so this step silently no-ops at runtime.\n"
+        "jobs:\n"
+        "  extract:\n"
+        "    runs-on: ubuntu-latest\n"
+        "    steps:\n"
+        "      - run: echo \"::set-output name=tag::$VERSION\"\n"
+        "        id: x\n"
+        "\n"
+        "# Safe: use the file-based replacements (``$GITHUB_OUTPUT``\n"
+        "# and ``$GITHUB_STATE``). The new format isn't parsed by\n"
+        "# the runner from stdout, so command-injection through a\n"
+        "# variable value isn't possible.\n"
+        "jobs:\n"
+        "  extract:\n"
+        "    runs-on: ubuntu-latest\n"
+        "    steps:\n"
+        "      - run: echo \"tag=$VERSION\" >> \"$GITHUB_OUTPUT\"\n"
+        "        id: x"
+    ),
 )
 
 # Match either the bare workflow command or its echoed form. Both

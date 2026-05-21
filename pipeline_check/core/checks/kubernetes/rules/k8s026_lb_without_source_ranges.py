@@ -33,6 +33,36 @@ RULE = Rule(
         "firewall rules) are equivalent at the L4 level but invisible "
         "to a manifest scanner."
     ),
+    exploit_example=(
+        "# Vulnerable: a LoadBalancer Service has no\n"
+        "# ``loadBalancerSourceRanges``. The cloud provider\n"
+        "# provisions a LB with a public IP open to 0.0.0.0/0.\n"
+        "# An internal service that was never meant to be\n"
+        "# internet-facing (admin UI, debug endpoint, internal\n"
+        "# API) is exposed.\n"
+        "apiVersion: v1\n"
+        "kind: Service\n"
+        "metadata: { name: app, namespace: prod }\n"
+        "spec:\n"
+        "  type: LoadBalancer\n"
+        "  ports: [{ port: 8080, targetPort: 8080 }]\n"
+        "  selector: { app: app }\n"
+        "\n"
+        "# Safe: declare ``loadBalancerSourceRanges`` with the\n"
+        "# CIDR allow-list. The cloud provider configures the\n"
+        "# LB's security group / firewall to drop traffic from\n"
+        "# anywhere outside the allow-list.\n"
+        "apiVersion: v1\n"
+        "kind: Service\n"
+        "metadata: { name: app, namespace: prod }\n"
+        "spec:\n"
+        "  type: LoadBalancer\n"
+        "  loadBalancerSourceRanges:\n"
+        "    - 10.0.0.0/8        # internal corporate network\n"
+        "    - 192.168.0.0/16    # VPN range\n"
+        "  ports: [{ port: 8080, targetPort: 8080 }]\n"
+        "  selector: { app: app }"
+    ),
 )
 
 

@@ -26,6 +26,24 @@ RULE = Rule(
         "`@volatile`, or with only a major (`@1`) or major.minor (`@5.1`) "
         "version float and can silently pull in malicious updates."
     ),
+    exploit_example=(
+        "# Vulnerable: ``circleci/aws-cli@volatile`` (or any non-\n"
+        "# semver ref) resolves at config-process time to whatever\n"
+        "# the orb publisher last pushed. A compromised publisher\n"
+        "# ships malicious orb steps into every consumer's pipeline.\n"
+        "version: 2.1\n"
+        "orbs:\n"
+        "  aws-cli: circleci/aws-cli@volatile\n"
+        "  python: circleci/python@dev:alpha\n"
+        "\n"
+        "# Safe: pin to an exact semver (``X.Y.Z``). Renovate's\n"
+        "# circleci ecosystem updater bumps the pin in reviewable\n"
+        "# PRs; ``@volatile`` and ``@dev:*`` never reach prod.\n"
+        "version: 2.1\n"
+        "orbs:\n"
+        "  aws-cli: circleci/aws-cli@4.1.3\n"
+        "  python: circleci/python@2.1.1"
+    ),
 )
 
 

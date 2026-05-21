@@ -42,6 +42,24 @@ RULE = Rule(
         "pattern because the same shape is the standard "
         "loader-hijack escalation primitive.",
     ),
+    exploit_example=(
+        "# Vulnerable: ``ENV LD_PRELOAD=/tmp/lib.so`` (or\n"
+        "# ``LD_LIBRARY_PATH`` to a writable directory,\n"
+        "# ``PYTHONPATH``, ``CLASSPATH``) configures the dynamic\n"
+        "# loader to consult an attacker-influencable location\n"
+        "# at runtime. A write into ``/tmp`` then runs arbitrary\n"
+        "# code in every process the container starts.\n"
+        "FROM ubuntu@sha256:abc123...\n"
+        "ENV LD_PRELOAD=/tmp/libhook.so\n"
+        "CMD [\"/usr/local/bin/app\"]\n"
+        "\n"
+        "# Safe: no loader-hijack env vars in the image. If a\n"
+        "# library actually needs to override loader paths, do\n"
+        "# it inside the app's startup logic against a fixed,\n"
+        "# read-only path, not via process env.\n"
+        "FROM ubuntu@sha256:abc123...\n"
+        "CMD [\"/usr/local/bin/app\"]"
+    ),
 )
 
 #: ``ld.so`` honors each of these for dynamic linking. ``LD_AUDIT``

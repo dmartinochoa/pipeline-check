@@ -28,6 +28,32 @@ RULE = Rule(
         "update. Pass when every `task:` reference carries a two- or "
         "three-segment semver."
     ),
+    exploit_example=(
+        "# Vulnerable: ``AzureCLI@2`` resolves to whatever\n"
+        "# Microsoft ships as version 2 at job-start time. A\n"
+        "# Microsoft-pushed update silently changes the task body;\n"
+        "# more importantly, custom Marketplace tasks at floating\n"
+        "# major version are repointable by their publisher.\n"
+        "steps:\n"
+        "  - task: AzureCLI@2\n"
+        "    inputs:\n"
+        "      azureSubscription: prod-sub\n"
+        "      scriptType: bash\n"
+        "      scriptLocation: inlineScript\n"
+        "      inlineScript: az deploy ...\n"
+        "\n"
+        "# Safe: pin to a specific patch version (``AzureCLI@2.245.0``)\n"
+        "# or use ``AzureCLI@2.x`` only for first-party Microsoft\n"
+        "# tasks where Marketplace publish controls are stronger.\n"
+        "# Renovate's azure-pipelines updater bumps these.\n"
+        "steps:\n"
+        "  - task: AzureCLI@2.245.0\n"
+        "    inputs:\n"
+        "      azureSubscription: prod-sub\n"
+        "      scriptType: bash\n"
+        "      scriptLocation: inlineScript\n"
+        "      inlineScript: az deploy ..."
+    ),
 )
 
 

@@ -26,6 +26,28 @@ RULE = Rule(
         "the MR source branch, the MR author controls the included "
         "YAML content."
     ),
+    exploit_example=(
+        "# Vulnerable: the pipeline ``include:``s a local file\n"
+        "# that any MR can modify, on an MR-triggered pipeline.\n"
+        "# A merge request can rewrite ``ci/build.yml`` and\n"
+        "# run its own version of the build with the pipeline's\n"
+        "# full credential set in scope.\n"
+        "include:\n"
+        "  - local: 'ci/build.yml'\n"
+        "build:\n"
+        "  extends: .build_steps\n"
+        "  rules:\n"
+        "    - if: $CI_PIPELINE_SOURCE == 'merge_request_event'\n"
+        "\n"
+        "# Safe: route MR-triggered work through a separate\n"
+        "# remote-include from a SHA-pinned templates project.\n"
+        "# An MR can no longer rewrite the build's structure\n"
+        "# without a separate review on the templates repo.\n"
+        "include:\n"
+        "  - project: 'ci/templates'\n"
+        "    file: '/build.yml'\n"
+        "    ref: 0123456789abcdef0123456789abcdef01234567"
+    ),
 )
 
 

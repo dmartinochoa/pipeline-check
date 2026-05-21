@@ -32,6 +32,32 @@ RULE = Rule(
         "this rule targets the strict superset 'do anything to "
         "everything'."
     ),
+    exploit_example=(
+        "# Vulnerable: a Role / ClusterRole that grants verbs:\n"
+        "# [\"*\"] on resources: [\"*\"]. Equivalent to admin on\n"
+        "# the scope (namespace for Role, cluster for\n"
+        "# ClusterRole). Any compromise of a subject bound to\n"
+        "# this role becomes admin.\n"
+        "apiVersion: rbac.authorization.k8s.io/v1\n"
+        "kind: ClusterRole\n"
+        "metadata: { name: do-everything }\n"
+        "rules:\n"
+        "  - apiGroups: [\"*\"]\n"
+        "    resources: [\"*\"]\n"
+        "    verbs: [\"*\"]\n"
+        "\n"
+        "# Safe: enumerate the verbs + resources the workload\n"
+        "# actually needs. New requirements force a Role review.\n"
+        "apiVersion: rbac.authorization.k8s.io/v1\n"
+        "kind: Role\n"
+        "metadata:\n"
+        "  name: app-pod-reader\n"
+        "  namespace: app\n"
+        "rules:\n"
+        "  - apiGroups: [\"\"]\n"
+        "    resources: [\"pods\", \"pods/log\"]\n"
+        "    verbs: [\"get\", \"list\", \"watch\"]"
+    ),
 )
 
 

@@ -28,6 +28,32 @@ RULE = Rule(
         "contain ``@sha256:`` followed by a 64-char hex digest. Any "
         "tag-only reference, including ``:latest``, fails."
     ),
+    exploit_example=(
+        "# Vulnerable: ``ubuntu:22.04`` is a mutable tag. Whoever\n"
+        "# controls the registry can repoint it on the next 22.04.x\n"
+        "# refresh; the next TaskRun pulls the swap silently.\n"
+        "apiVersion: tekton.dev/v1\n"
+        "kind: Task\n"
+        "metadata: { name: build }\n"
+        "spec:\n"
+        "  steps:\n"
+        "    - name: compile\n"
+        "      image: ubuntu:22.04\n"
+        "      script: |\n"
+        "        make build\n"
+        "\n"
+        "# Safe: pin to the immutable sha256 digest. The leading\n"
+        "# comment documents which tag the digest corresponds to.\n"
+        "apiVersion: tekton.dev/v1\n"
+        "kind: Task\n"
+        "metadata: { name: build }\n"
+        "spec:\n"
+        "  steps:\n"
+        "    - name: compile\n"
+        "      image: ubuntu@sha256:abc123...  # ubuntu:22.04, refreshed YYYY-MM-DD\n"
+        "      script: |\n"
+        "        make build"
+    ),
 )
 
 _DIGEST_RE = re.compile(r"@sha256:[0-9a-f]{64}$")

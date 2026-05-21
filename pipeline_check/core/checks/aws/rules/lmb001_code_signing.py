@@ -28,6 +28,36 @@ RULE = Rule(
         "compromise, a misattached IAM policy, can replace the "
         "function's code with no chain-of-custody check."
     ),
+    exploit_example=(
+        "# Vulnerable: a Lambda function with no CodeSigningConfig\n"
+        "# attached. Anyone with ``lambda:UpdateFunctionCode`` can\n"
+        "# push arbitrary code without signature verification; a\n"
+        "# compromised deploy role ships malicious code into\n"
+        "# production with no signing gate.\n"
+        "import boto3\n"
+        "lambdacli = boto3.client('lambda')\n"
+        "lambdacli.get_function(FunctionName='process-payment')[\n"
+        "    'Configuration'\n"
+        "].get('CodeSigningConfigArn')  # -> None\n"
+        "\n"
+        "# Safe: create a Signing Profile + CodeSigningConfig\n"
+        "# and attach it. Only signed code packages (signed via\n"
+        "# AWS Signer) can be deployed; unsigned uploads are\n"
+        "# rejected by Lambda.\n"
+        "signer = boto3.client('signer')\n"
+        "prof = signer.put_signing_profile(\n"
+        "    profileName='prod-lambda-signer',\n"
+        "    platformId='AWSLambda-SHA384-ECDSA',\n"
+        ")\n"
+        "csc = lambdacli.create_code_signing_config(\n"
+        "    AllowedPublishers={'SigningProfileVersionArns': [prof['profileVersionArn']]},\n"
+        "    CodeSigningPolicies={'UntrustedArtifactOnDeployment': 'Enforce'},\n"
+        ")\n"
+        "lambdacli.update_function_configuration(\n"
+        "    FunctionName='process-payment',\n"
+        "    CodeSigningConfigArn=csc['CodeSigningConfig']['CodeSigningConfigArn'],\n"
+        ")"
+    ),
 )
 
 

@@ -62,6 +62,43 @@ RULE = Rule(
         "push step. Suppress with a rationale that names the "
         "single-job constraint.",
     ),
+    exploit_example=(
+        "# Vulnerable: ``actions/checkout`` with ``ssh-key:`` and\n"
+        "# ``persist-credentials: true`` writes the deploy SSH\n"
+        "# private key into ``.git/config`` (or the ssh-agent\n"
+        "# session) for the workflow's duration. A later step that\n"
+        "# uploads the workspace as an artifact leaks the key the\n"
+        "# same way ArtiPACKED leaks the GITHUB_TOKEN.\n"
+        "jobs:\n"
+        "  build:\n"
+        "    runs-on: ubuntu-latest\n"
+        "    steps:\n"
+        "      - uses: actions/checkout@<sha>\n"
+        "        with:\n"
+        "          ssh-key: ${{ secrets.DEPLOY_KEY }}\n"
+        "          # default persist-credentials: true\n"
+        "      - run: ./build.sh\n"
+        "      - uses: actions/upload-artifact@<sha>\n"
+        "        with:\n"
+        "          name: build\n"
+        "          path: .   # uploads .git/config + ssh setup\n"
+        "\n"
+        "# Safe: set ``persist-credentials: false`` and scope the\n"
+        "# artifact upload to ``dist/`` (not the repo root).\n"
+        "jobs:\n"
+        "  build:\n"
+        "    runs-on: ubuntu-latest\n"
+        "    steps:\n"
+        "      - uses: actions/checkout@<sha>\n"
+        "        with:\n"
+        "          ssh-key: ${{ secrets.DEPLOY_KEY }}\n"
+        "          persist-credentials: false\n"
+        "      - run: ./build.sh\n"
+        "      - uses: actions/upload-artifact@<sha>\n"
+        "        with:\n"
+        "          name: build\n"
+        "          path: dist/"
+    ),
 )
 
 

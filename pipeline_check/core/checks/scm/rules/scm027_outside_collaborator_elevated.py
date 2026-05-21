@@ -71,6 +71,30 @@ RULE = Rule(
         "commit that lands without review because the access "
         "level itself is the gate.",
     ),
+    exploit_example=(
+        "# Vulnerable: an outside collaborator (a contractor, a\n"
+        "# departed employee whose access wasn't fully revoked,\n"
+        "# a security-researcher allowed in for a one-off audit)\n"
+        "# carries ``write`` / ``maintain`` / ``admin`` on the\n"
+        "# repo. The blast radius of their account compromise\n"
+        "# is the same as an internal maintainer's.\n"
+        "# GET /repos/myorg/myrepo/collaborators?affiliation=outside:\n"
+        "[\n"
+        "  {\n"
+        "    \"login\": \"contractor-alice\",\n"
+        "    \"role_name\": \"write\"\n"
+        "  }\n"
+        "]\n"
+        "\n"
+        "# Safe: outside collaborators carry ``read`` or ``triage``\n"
+        "# only. If they need to land code, route through fork +\n"
+        "# PR + internal-reviewer approval. Re-run access reviews\n"
+        "# quarterly and revoke on engagement end.\n"
+        "# PUT /repos/myorg/myrepo/collaborators/contractor-alice:\n"
+        "{\n"
+        "  \"permission\": \"read\"\n"
+        "}"
+    ),
 )
 
 
