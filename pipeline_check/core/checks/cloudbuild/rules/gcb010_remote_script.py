@@ -38,6 +38,31 @@ RULE = Rule(
         "so dashboards can stratify known-vendor installers from arbitrary "
         "attacker URLs."
     ),
+    exploit_example=(
+        "# Vulnerable: ``curl | bash`` lets an attacker who\n"
+        "# controls DNS / the installer host substitute the script\n"
+        "# at install time. The injected code runs in the step's\n"
+        "# shell with the build's full credential set.\n"
+        "steps:\n"
+        "  - name: gcr.io/cloud-builders/bash@sha256:abc123...\n"
+        "    entrypoint: bash\n"
+        "    args:\n"
+        "      - -c\n"
+        "      - curl -fsSL https://installer.example.com/cli.sh | bash\n"
+        "\n"
+        "# Safe: download, verify a sha256 digest from a trusted\n"
+        "# source, then execute.\n"
+        "steps:\n"
+        "  - name: gcr.io/cloud-builders/bash@sha256:abc123...\n"
+        "    entrypoint: bash\n"
+        "    args:\n"
+        "      - -c\n"
+        "      - |\n"
+        "        set -e\n"
+        "        curl -fsSL https://installer.example.com/cli.sh -o /tmp/cli.sh\n"
+        "        echo 'a1b2c3d4...  /tmp/cli.sh' | sha256sum -c -\n"
+        "        bash /tmp/cli.sh"
+    ),
 )
 
 

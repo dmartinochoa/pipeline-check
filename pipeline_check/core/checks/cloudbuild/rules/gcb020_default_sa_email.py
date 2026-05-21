@@ -40,6 +40,26 @@ RULE = Rule(
         "anyway so the audit log stays unambiguous about which "
         "pipeline made each API call.",
     ),
+    exploit_example=(
+        "# Vulnerable: ``serviceAccount:`` is set but points at the\n"
+        "# legacy default Cloud Build SA. The default carries\n"
+        "# Project Editor (older projects) or whatever roles got\n"
+        "# attached over time; sharing it across pipelines collapses\n"
+        "# the blast radius of any one compromise to every pipeline.\n"
+        "serviceAccount: projects/myproj/serviceAccounts/123456789@cloudbuild.gserviceaccount.com\n"
+        "steps:\n"
+        "  - name: gcr.io/cloud-builders/gcloud@sha256:abc123...\n"
+        "    args: [deploy]\n"
+        "\n"
+        "# Safe: create a per-pipeline service account with only\n"
+        "# the roles this pipeline needs. The default SA stays out\n"
+        "# of any builds you author; if it lingers on a legacy\n"
+        "# trigger you don't control, audit and migrate.\n"
+        "serviceAccount: projects/myproj/serviceAccounts/cd-app@myproj.iam.gserviceaccount.com\n"
+        "steps:\n"
+        "  - name: gcr.io/cloud-builders/gcloud@sha256:abc123...\n"
+        "    args: [deploy]"
+    ),
 )
 
 # Match the default Cloud Build SA email shape, in either bare-email

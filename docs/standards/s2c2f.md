@@ -2115,6 +2115,25 @@ steps:
 
 **Autofix.** `pipeline_check --fix` will patch this finding automatically. Review the diff before committing; the fixer applies the conservative remediation pattern (e.g. swap a floating tag for the digest it currently resolves to), not the most aggressive one.
 
+**Proof of exploit.**
+
+```
+# Vulnerable: ``gcr.io/cloud-builders/gcloud`` resolves to
+# the registry's latest at build time. Google's update of
+# the underlying image is silently picked up; a namespace
+# / publisher takeover would ship malicious code into
+# every Cloud Build that uses the step.
+steps:
+  - name: gcr.io/cloud-builders/gcloud
+    args: [run, deploy, app, --image, us-central1-docker.pkg.dev/proj/repo/app]
+
+# Safe: pin to the content-addressable digest. Renovate /
+# Dependabot bump the digest in reviewable PRs.
+steps:
+  - name: gcr.io/cloud-builders/gcloud@sha256:abc123...
+    args: [run, deploy, app, --image, us-central1-docker.pkg.dev/proj/repo/app]
+```
+
 **Source:** [`GCB-001`](../providers/cloudbuild.md#gcb-001) in the [Cloud Build provider](../providers/cloudbuild.md).
 
 ### `GCB-008`: No vulnerability scanning step in Cloud Build pipeline <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-gcb-008 }
@@ -2146,6 +2165,25 @@ steps:
 **Recommendation.** Fix the underlying certificate issue, install the correct CA bundle into the step image, or point the tool at a mirror that presents a valid chain. Disabling verification trades a build error for a silent MITM window.
 
 **Autofix.** `pipeline_check --fix` will patch this finding automatically. Review the diff before committing; the fixer applies the conservative remediation pattern (e.g. swap a floating tag for the digest it currently resolves to), not the most aggressive one.
+
+**Proof of exploit.**
+
+```
+# Vulnerable: ``curl -k`` disables certificate verification
+# for the duration of the call. An attacker on the network
+# path (compromised proxy, malicious VPN exit) MITMs the
+# response and ships substituted bytes into the build.
+steps:
+  - name: gcr.io/cloud-builders/curl@sha256:abc123...
+    args: [-k, -O, https://internal-mirror.example.com/artifact.tar.gz]
+
+# Safe: keep TLS verification on. If the internal mirror
+# uses a private CA, install the CA into the step image's
+# trust store rather than papering over with ``-k``.
+steps:
+  - name: gcr.io/cloud-builders/curl@sha256:abc123...
+    args: [-O, https://internal-mirror.example.com/artifact.tar.gz]
+```
 
 **Source:** [`GCB-011`](../providers/cloudbuild.md#gcb-011) in the [Cloud Build provider](../providers/cloudbuild.md).
 

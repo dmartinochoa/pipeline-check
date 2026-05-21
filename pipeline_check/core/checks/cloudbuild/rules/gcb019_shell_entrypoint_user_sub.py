@@ -46,6 +46,31 @@ RULE = Rule(
         "ideally combined with ``options.substitutionOption: "
         "MUST_MATCH`` (GCB-022) to make the lock explicit.",
     ),
+    exploit_example=(
+        "# Vulnerable: ``entrypoint: bash`` plus a user substitution\n"
+        "# inside ``args:`` means the substitution's content is\n"
+        "# parsed by bash. A trigger substitution carrying shell\n"
+        "# metacharacters (``v1.0\";rm -rf /;\"``) executes as\n"
+        "# separate commands.\n"
+        "steps:\n"
+        "  - name: gcr.io/cloud-builders/bash@sha256:abc123...\n"
+        "    entrypoint: bash\n"
+        "    args:\n"
+        "      - -c\n"
+        "      - echo \"building ${_TAG}\" && ./build.sh --tag ${_TAG}\n"
+        "\n"
+        "# Safe: pass the substitution through an env var so the\n"
+        "# shell sees one argument. Quote on every use. The shell\n"
+        "# treats injected metacharacters as literal characters\n"
+        "# in the env value.\n"
+        "steps:\n"
+        "  - name: gcr.io/cloud-builders/bash@sha256:abc123...\n"
+        "    entrypoint: bash\n"
+        "    env: [TAG=${_TAG}]\n"
+        "    args:\n"
+        "      - -c\n"
+        "      - echo \"building $TAG\" && ./build.sh --tag \"$TAG\""
+    ),
 )
 
 _SHELL_ENTRYPOINTS = frozenset({

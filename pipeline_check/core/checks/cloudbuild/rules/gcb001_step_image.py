@@ -41,6 +41,22 @@ RULE = Rule(
         "(``:20``, ``:latest``) count as unpinned. Only ``@sha256:…`` "
         "suffixes pass."
     ),
+    exploit_example=(
+        "# Vulnerable: ``gcr.io/cloud-builders/gcloud`` resolves to\n"
+        "# the registry's latest at build time. Google's update of\n"
+        "# the underlying image is silently picked up; a namespace\n"
+        "# / publisher takeover would ship malicious code into\n"
+        "# every Cloud Build that uses the step.\n"
+        "steps:\n"
+        "  - name: gcr.io/cloud-builders/gcloud\n"
+        "    args: [run, deploy, app, --image, us-central1-docker.pkg.dev/proj/repo/app]\n"
+        "\n"
+        "# Safe: pin to the content-addressable digest. Renovate /\n"
+        "# Dependabot bump the digest in reviewable PRs.\n"
+        "steps:\n"
+        "  - name: gcr.io/cloud-builders/gcloud@sha256:abc123...\n"
+        "    args: [run, deploy, app, --image, us-central1-docker.pkg.dev/proj/repo/app]"
+    ),
 )
 
 

