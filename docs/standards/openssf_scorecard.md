@@ -3894,6 +3894,56 @@ steps:
 
 **Recommendation.** Add a verification step BEFORE consuming the artifact: `cosign verify-attestation --type slsaprovenance ...`, `gh attestation verify --owner $OWNER ./artifact`, or publish a checksum manifest from the trusted producer and `sha256sum -c` it. Treat any download from a fork as untrusted input.
 
+**Proof of exploit.**
+
+```
+# Vulnerable: the workflow_run trigger runs in the
+# privileged default-branch context (write GITHUB_TOKEN,
+# secrets accessible) but the artifact came from the
+# triggering workflow — on a fork PR that's attacker-
+# controlled. The fork's build job uploads anything it
+# wants as ``build-output``; the parent downloads and
+# executes it inside its own credential scope.
+name: deploy-on-success
+on:
+  workflow_run:
+    workflows: ["pr-build"]
+    types: [completed]
+jobs:
+  deploy:
+    if: github.event.workflow_run.conclusion == 'success'
+    runs-on: ubuntu-latest
+    permissions: { contents: write, id-token: write }
+    steps:
+      - uses: actions/download-artifact@<sha>
+        with:
+          name: build-output
+          run-id: ${{ github.event.workflow_run.id }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+      - run: ./build-output/release.sh    # attacker's code
+
+# Safe: verify a SLSA / Sigstore attestation produced by
+# the trusted upstream before consuming the artifact. The
+# verification step must come BEFORE any step that reads
+# or executes anything from the downloaded directory.
+jobs:
+  deploy:
+    if: github.event.workflow_run.conclusion == 'success'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      id-token: write
+      attestations: read
+    steps:
+      - uses: actions/download-artifact@<sha>
+        with:
+          name: build-output
+          run-id: ${{ github.event.workflow_run.id }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+      - run: gh attestation verify --owner ${{ github.repository_owner }} ./build-output/*
+      - run: ./build-output/release.sh
+```
+
 **Source:** [`GHA-009`](../providers/github.md#gha-009) in the [GitHub Actions provider](../providers/github.md).
 
 ### `GHA-010`: Local action (./path) on untrusted-trigger workflow <span class="pg-sev pg-sev--high">HIGH</span> { #detail-gha-010 }
@@ -4092,6 +4142,45 @@ Carve-out: third-party binary installers that download over HTTPS (no insecure r
 
 **Autofix.** `pipeline_check --fix` will patch this finding automatically. Review the diff before committing; the fixer applies the conservative remediation pattern (e.g. swap a floating tag for the digest it currently resolves to), not the most aggressive one.
 
+**Proof of exploit.**
+
+```
+# Vulnerable: pip resolves and downloads packages over
+# plaintext HTTP, so any network attacker between the
+# runner and the registry (compromised proxy, malicious
+# VPN exit, BGP hijack on an internal mirror) can swap a
+# wheel for a malicious one whose ``setup.py`` runs at
+# install time. ``--trusted-host`` then silences the very
+# error that would have caught the swap.
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@<sha>
+      - run: |
+          pip install \
+            --index-url http://internal-pypi.example.com/simple \
+            --trusted-host internal-pypi.example.com \
+            -r requirements.txt
+
+# Safe: HTTPS with the registry's certificate validated.
+# If the internal index uses a private CA, install the CA
+# into the runner trust store, never ``--trusted-host`` or
+# ``--no-verify``.
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@<sha>
+      - run: |
+          sudo cp ./ci/internal-ca.crt /usr/local/share/ca-certificates/
+          sudo update-ca-certificates
+      - run: |
+          pip install \
+            --index-url https://internal-pypi.example.com/simple \
+            --require-hashes -r requirements.txt
+```
+
 **Source:** [`GHA-018`](../providers/github.md#gha-018) in the [GitHub Actions provider](../providers/github.md).
 
 ### `GHA-019`: GITHUB_TOKEN written to persistent storage <span class="pg-sev pg-sev--critical">CRITICAL</span> <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> { #detail-gha-019 }
@@ -4254,6 +4343,31 @@ jobs:
 **How this is detected.** A reusable workflow runs with the caller's ``GITHUB_TOKEN`` and secrets by default. If ``uses: org/repo/.github/workflows/release.yml@v1`` resolves to an attacker-modified commit, their code executes with your repository's permissions. This is the same threat model as unpinned step actions (GHA-001) but over a different ``uses:`` surface.
 
 **Recommendation.** Pin every ``jobs.<id>.uses:`` reference to a 40-char commit SHA (``owner/repo/.github/workflows/foo.yml@<sha>``). Tag refs (``@v1``, ``@main``) can be silently repointed by whoever controls the callee repository.
+
+**Proof of exploit.**
+
+```
+# Vulnerable: a tag reference can be silently repointed by
+# whoever controls the callee repo. If
+# ``org/release-tools/.github/workflows/release.yml@v1`` is
+# later force-pushed (or the ``v1`` tag deleted and re-
+# created against a different commit), every caller that
+# inherits secrets runs the new code with their own token
+# and secret set in scope on the next workflow run.
+jobs:
+  release:
+    uses: org/release-tools/.github/workflows/release.yml@v1
+    secrets: inherit
+
+# Safe: pin to a 40-char commit SHA. The trailing comment
+# documents which tag / version the SHA was at so version
+# bumps stay reviewable. Dependabot's ``github-actions``
+# ecosystem updates these in PRs like any other dep.
+jobs:
+  release:
+    uses: org/release-tools/.github/workflows/release.yml@0123456789abcdef0123456789abcdef01234567  # v1.4.2
+    secrets: inherit
+```
 
 **Source:** [`GHA-025`](../providers/github.md#gha-025) in the [GitHub Actions provider](../providers/github.md).
 

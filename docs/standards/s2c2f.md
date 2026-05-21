@@ -1943,6 +1943,45 @@ Carve-out: third-party binary installers that download over HTTPS (no insecure r
 
 **Autofix.** `pipeline_check --fix` will patch this finding automatically. Review the diff before committing; the fixer applies the conservative remediation pattern (e.g. swap a floating tag for the digest it currently resolves to), not the most aggressive one.
 
+**Proof of exploit.**
+
+```
+# Vulnerable: pip resolves and downloads packages over
+# plaintext HTTP, so any network attacker between the
+# runner and the registry (compromised proxy, malicious
+# VPN exit, BGP hijack on an internal mirror) can swap a
+# wheel for a malicious one whose ``setup.py`` runs at
+# install time. ``--trusted-host`` then silences the very
+# error that would have caught the swap.
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@<sha>
+      - run: |
+          pip install \
+            --index-url http://internal-pypi.example.com/simple \
+            --trusted-host internal-pypi.example.com \
+            -r requirements.txt
+
+# Safe: HTTPS with the registry's certificate validated.
+# If the internal index uses a private CA, install the CA
+# into the runner trust store, never ``--trusted-host`` or
+# ``--no-verify``.
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@<sha>
+      - run: |
+          sudo cp ./ci/internal-ca.crt /usr/local/share/ca-certificates/
+          sudo update-ca-certificates
+      - run: |
+          pip install \
+            --index-url https://internal-pypi.example.com/simple \
+            --require-hashes -r requirements.txt
+```
+
 **Source:** [`GHA-018`](../providers/github.md#gha-018) in the [GitHub Actions provider](../providers/github.md).
 
 ### `GHA-020`: No vulnerability scanning step <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-gha-020 }
@@ -2046,6 +2085,31 @@ jobs:
 **How this is detected.** A reusable workflow runs with the caller's ``GITHUB_TOKEN`` and secrets by default. If ``uses: org/repo/.github/workflows/release.yml@v1`` resolves to an attacker-modified commit, their code executes with your repository's permissions. This is the same threat model as unpinned step actions (GHA-001) but over a different ``uses:`` surface.
 
 **Recommendation.** Pin every ``jobs.<id>.uses:`` reference to a 40-char commit SHA (``owner/repo/.github/workflows/foo.yml@<sha>``). Tag refs (``@v1``, ``@main``) can be silently repointed by whoever controls the callee repository.
+
+**Proof of exploit.**
+
+```
+# Vulnerable: a tag reference can be silently repointed by
+# whoever controls the callee repo. If
+# ``org/release-tools/.github/workflows/release.yml@v1`` is
+# later force-pushed (or the ``v1`` tag deleted and re-
+# created against a different commit), every caller that
+# inherits secrets runs the new code with their own token
+# and secret set in scope on the next workflow run.
+jobs:
+  release:
+    uses: org/release-tools/.github/workflows/release.yml@v1
+    secrets: inherit
+
+# Safe: pin to a 40-char commit SHA. The trailing comment
+# documents which tag / version the SHA was at so version
+# bumps stay reviewable. Dependabot's ``github-actions``
+# ecosystem updates these in PRs like any other dep.
+jobs:
+  release:
+    uses: org/release-tools/.github/workflows/release.yml@0123456789abcdef0123456789abcdef01234567  # v1.4.2
+    secrets: inherit
+```
 
 **Source:** [`GHA-025`](../providers/github.md#gha-025) in the [GitHub Actions provider](../providers/github.md).
 
