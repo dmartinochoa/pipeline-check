@@ -23,6 +23,23 @@ RULE = Rule(
         "in a pipeline. These patterns allow man-in-the-middle "
         "injection of malicious packages."
     ),
+    exploit_example=(
+        "# Vulnerable: pip uses a plaintext-HTTP index and\n"
+        "# ``--trusted-host`` silences hash verification.\n"
+        "install:\n"
+        "  image: python@sha256:abc123...\n"
+        "  script:\n"
+        "    - pip install --index-url http://internal-pypi.example.com/simple\n"
+        "        --trusted-host internal-pypi.example.com -r requirements.txt\n"
+        "\n"
+        "# Safe: HTTPS + ``--require-hashes``. Internal CA\n"
+        "# installed into the image's trust store.\n"
+        "install:\n"
+        "  image: python@sha256:abc123...\n"
+        "  script:\n"
+        "    - pip install --index-url https://internal-pypi.example.com/simple\n"
+        "        --require-hashes -r requirements.txt"
+    ),
 )
 
 

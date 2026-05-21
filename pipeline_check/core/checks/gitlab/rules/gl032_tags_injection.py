@@ -45,6 +45,26 @@ RULE = Rule(
         "(``$DEPLOY_FLEET`` defined inside the workflow file) are "
         "intentionally not flagged.",
     ),
+    exploit_example=(
+        "# Vulnerable: ``tags:`` interpolates a CI variable. A\n"
+        "# pusher controls ``$CI_COMMIT_REF_NAME`` (the branch\n"
+        "# name) and can name their MR branch after a privileged\n"
+        "# runner tag (e.g. ``shell-runner-prod``). The MR build\n"
+        "# routes to that runner pool and accesses tokens /\n"
+        "# secrets meant for protected pipelines only.\n"
+        "build:\n"
+        "  tags:\n"
+        "    - $CI_COMMIT_REF_NAME\n"
+        "  script: [./deploy.sh]\n"
+        "\n"
+        "# Safe: pin runner tags to static literals. Protected\n"
+        "# runners should additionally be configured as\n"
+        "# protected-only in GitLab Settings so MR pipelines\n"
+        "# can't reach them even if the YAML drifts.\n"
+        "build:\n"
+        "  tags: [linux-amd64]\n"
+        "  script: [./deploy.sh]"
+    ),
 )
 
 

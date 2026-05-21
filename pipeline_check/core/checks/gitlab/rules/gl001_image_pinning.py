@@ -26,6 +26,24 @@ RULE = Rule(
         "swapped under the job. Every `image:` reference should pin "
         "a specific version tag or digest."
     ),
+    exploit_example=(
+        "# Vulnerable: ``image: node:20`` is a mutable tag. Docker\n"
+        "# Hub's node team rebuilds it on every Node point\n"
+        "# release; a publisher takeover ships code into every\n"
+        "# GitLab pipeline using the tag.\n"
+        "build:\n"
+        "  image: node:20\n"
+        "  script:\n"
+        "    - npm ci\n"
+        "    - npm test\n"
+        "\n"
+        "# Safe: pin to the content-addressable digest.\n"
+        "build:\n"
+        "  image: node@sha256:abc123...   # node:20.11.1\n"
+        "  script:\n"
+        "    - npm ci\n"
+        "    - npm test"
+    ),
 )
 
 

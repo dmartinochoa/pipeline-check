@@ -26,6 +26,26 @@ RULE = Rule(
         "is a literal string (not a `$VAR` reference). AWS access "
         "keys are detected by value pattern regardless of key name."
     ),
+    exploit_example=(
+        "# Vulnerable: literal AWS access key in pipeline-level\n"
+        "# ``variables:``. The ``.gitlab-ci.yml`` is committed\n"
+        "# to git, printed in build logs whenever a job echoes\n"
+        "# its environment, visible to any repo reader.\n"
+        "variables:\n"
+        "  AWS_ACCESS_KEY_ID: AKIAIOSFODNN7EXAMPLE\n"
+        "  AWS_SECRET_ACCESS_KEY: wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY\n"
+        "deploy:\n"
+        "  script: [aws s3 cp ./build s3://bucket/]\n"
+        "\n"
+        "# Safe: store credentials as protected + masked CI/CD\n"
+        "# variables in GitLab Settings. The pipeline file\n"
+        "# references the env names; values resolve at runtime\n"
+        "# and are masked in logs.\n"
+        "deploy:\n"
+        "  script: [aws s3 cp ./build s3://bucket/]\n"
+        "  # AWS_ACCESS_KEY_ID / AWS_SECRET_ACCESS_KEY come from\n"
+        "  # project-level protected + masked CI/CD variables"
+    ),
 )
 
 

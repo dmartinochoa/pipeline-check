@@ -34,6 +34,25 @@ RULE = Rule(
         "pipeline it almost always means a copy-paste from docs was "
         "never substituted. Defaults to LOW confidence.",
     ),
+    exploit_example=(
+        "# Vulnerable: a credential-shaped literal in a job env\n"
+        "# / inline script / variables block. Same leak surface\n"
+        "# as GL-003 plus the additional gap that build-time\n"
+        "# logs may echo the value.\n"
+        "deploy:\n"
+        "  script:\n"
+        "    - curl -H \"Authorization: Bearer ghp_abcdef1234567890abcdef1234567890abcdef12\" \\\n"
+        "        https://api.github.com/repos/org/repo/issues\n"
+        "\n"
+        "# Safe: route the credential through a protected +\n"
+        "# masked CI/CD variable. The pipeline body carries the\n"
+        "# env name, never the value.\n"
+        "deploy:\n"
+        "  script:\n"
+        "    - curl -H \"Authorization: Bearer $GITHUB_TOKEN\" \\\n"
+        "        https://api.github.com/repos/org/repo/issues\n"
+        "  # GITHUB_TOKEN configured as protected + masked"
+    ),
 )
 
 
