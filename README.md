@@ -22,12 +22,12 @@ Pipeline-Check is a security scanner for GitHub Actions, GitLab CI, Jenkins, Cir
 
 **820+ checks** across **23 providers**, mapped to **15 compliance standards**, with **111 autofixers**, plus **41 attack chains** correlating findings into MITRE ATT&CK-mapped kill chains. A dataflow taint engine catches multi-step and cross-job propagation that single-rule scanners miss.
 
-[Quick start](#quick-start) |
+[Quick start](#-quick-start) |
 [Usage guide](docs/usage.md) |
-[Providers](#supported-providers) |
-[How it works](#how-it-works) |
-[CI integration](#ci-integration) |
-[Compliance](#compliance-standards) |
+[Providers](#-supported-providers) |
+[How it works](#-how-it-works) |
+[CI integration](#-ci-integration) |
+[Compliance](#-compliance-standards) |
 [vs. Checkov / KICS / Semgrep](docs/comparison.md) |
 [Docs](https://dmartinochoa.github.io/pipeline-check/)
 

@@ -2220,8 +2220,9 @@ release commit collapses this section into `## [X.Y.Z] - <date>`.
 
 - **`scripts/link_standards_check_ids.py` corrupted in-page anchor
   links.** Running the linker after `gen_standards_docs.py` would
-  nest the heading anchor `[`X-N`](#detail-x-n)` inside a second
-  markdown link, producing malformed `[[`X-N`](../providers/aws.md)](#detail-x-n)`
+  nest the heading anchor `` `[`X-N`](#detail-x-n)` `` inside a second
+  markdown link, producing malformed
+  `` `[[`X-N`](../providers/aws.md)](#detail-x-n)` ``
   tokens. Tightened the regex (reject `[` / `]` lookbehind and `]`
   lookahead) and scoped the linker to mapping-table rows only,
   matching its documented intent. The full doc-generation pipeline
