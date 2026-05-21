@@ -27,6 +27,32 @@ RULE = Rule(
         "VALUE is a literal string. AWS access keys are detected by "
         "value shape regardless of key name."
     ),
+    exploit_example=(
+        "# Vulnerable: literal AWS access key in pipeline-level\n"
+        "# ``variables:``. The ``bitbucket-pipelines.yml`` is\n"
+        "# committed to git; the build log echoes the value on\n"
+        "# any step that prints env vars.\n"
+        "variables:\n"
+        "  AWS_ACCESS_KEY_ID: AKIAIOSFODNN7EXAMPLE\n"
+        "  AWS_SECRET_ACCESS_KEY: wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY\n"
+        "pipelines:\n"
+        "  default:\n"
+        "    - step:\n"
+        "        script:\n"
+        "          - aws s3 cp ./build s3://bucket/\n"
+        "\n"
+        "# Safe: store the credentials as Repository / Workspace\n"
+        "# variables marked ``secured`` in Bitbucket Settings.\n"
+        "# The pipeline file references the env names; the values\n"
+        "# resolve at runtime and are masked in logs.\n"
+        "pipelines:\n"
+        "  default:\n"
+        "    - step:\n"
+        "        script:\n"
+        "          # AWS_ACCESS_KEY_ID / AWS_SECRET_ACCESS_KEY are\n"
+        "          # configured as Repository Variables (secured)\n"
+        "          - aws s3 cp ./build s3://bucket/"
+    ),
 )
 
 

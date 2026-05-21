@@ -26,6 +26,31 @@ RULE = Rule(
         "`GOINSECURE=`. Disabling TLS verification allows MITM injection "
         "of malicious packages, repositories, or build tools."
     ),
+    exploit_example=(
+        "# Vulnerable: ``npm config set strict-ssl false`` (or\n"
+        "# ``git config http.sslverify false`` / ``NODE_TLS_\n"
+        "# REJECT_UNAUTHORIZED=0``) disables certificate\n"
+        "# verification for the duration. A network attacker MITMs\n"
+        "# the registry and ships substituted tarballs.\n"
+        "pipelines:\n"
+        "  default:\n"
+        "    - step:\n"
+        "        image: node:20@sha256:abc123...\n"
+        "        script:\n"
+        "          - npm config set strict-ssl false\n"
+        "          - npm install\n"
+        "\n"
+        "# Safe: install the missing CA into the image's trust\n"
+        "# store; keep strict-ssl on.\n"
+        "pipelines:\n"
+        "  default:\n"
+        "    - step:\n"
+        "        image: node:20@sha256:abc123...\n"
+        "        script:\n"
+        "          - cp /etc/ssl/internal-ca.crt /usr/local/share/ca-certificates/\n"
+        "          - update-ca-certificates\n"
+        "          - npm install"
+    ),
 )
 
 

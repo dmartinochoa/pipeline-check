@@ -44,6 +44,28 @@ RULE = Rule(
         "the tag. Pin them too rather than suppressing the rule "
         "globally.",
     ),
+    exploit_example=(
+        "# Vulnerable: ``image: python:3.12-slim`` is a mutable\n"
+        "# tag. Docker Hub's image team rebuilds it on every\n"
+        "# Python point release; a publisher takeover ships code\n"
+        "# into every Bitbucket pipeline that uses the tag.\n"
+        "pipelines:\n"
+        "  default:\n"
+        "    - step:\n"
+        "        image: python:3.12-slim\n"
+        "        script:\n"
+        "          - pytest\n"
+        "\n"
+        "# Safe: pin to the content-addressable digest. The pin\n"
+        "# documents which version the digest corresponded to so\n"
+        "# bumps stay reviewable.\n"
+        "pipelines:\n"
+        "  default:\n"
+        "    - step:\n"
+        "        image: python@sha256:abc123...  # python:3.12.1-slim\n"
+        "        script:\n"
+        "          - pytest"
+    ),
 )
 
 

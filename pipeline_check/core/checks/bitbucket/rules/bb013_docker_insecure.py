@@ -22,6 +22,30 @@ RULE = Rule(
         "container full access to the build runner, enabling container "
         "escape and lateral movement."
     ),
+    exploit_example=(
+        "# Vulnerable: ``docker run --privileged`` plus the host\n"
+        "# Docker socket inside a Bitbucket step. The step is\n"
+        "# already a container; granting it privileged access\n"
+        "# and the runner's docker.sock collapses every isolation\n"
+        "# boundary the pipeline had.\n"
+        "pipelines:\n"
+        "  default:\n"
+        "    - step:\n"
+        "        services: [docker]\n"
+        "        script:\n"
+        "          - docker run --privileged -v /var/run/docker.sock:/var/run/docker.sock \\\n"
+        "              myapp:test ./integration.sh\n"
+        "\n"
+        "# Safe: drop ``--privileged`` and the socket mount. If\n"
+        "# the build needs to build an image, use Kaniko /\n"
+        "# BuildKit rootless instead.\n"
+        "pipelines:\n"
+        "  default:\n"
+        "    - step:\n"
+        "        services: [docker]\n"
+        "        script:\n"
+        "          - docker run myapp@sha256:abc123... ./integration.sh"
+    ),
 )
 
 

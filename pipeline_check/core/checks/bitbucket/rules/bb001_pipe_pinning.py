@@ -26,6 +26,30 @@ RULE = Rule(
         "(`:1`) or missing tags let Atlassian/the publisher swap the "
         "image contents. Full semver or sha256 digest is required."
     ),
+    exploit_example=(
+        "# Vulnerable: ``atlassian/aws-s3-deploy:1`` resolves to\n"
+        "# whatever the publisher's latest 1.x image is at job\n"
+        "# start. A publisher takeover (compromised Atlassian\n"
+        "# Marketplace account, leaked token) repoints the tag\n"
+        "# silently; every consumer's pipeline executes the new\n"
+        "# image on the next run.\n"
+        "pipelines:\n"
+        "  default:\n"
+        "    - step:\n"
+        "        script:\n"
+        "          - pipe: atlassian/aws-s3-deploy:1\n"
+        "            variables: { ... }\n"
+        "\n"
+        "# Safe: pin to an exact version (``X.Y.Z``). Renovate /\n"
+        "# Dependabot's bitbucket-pipe ecosystem bumps these in\n"
+        "# reviewable PRs.\n"
+        "pipelines:\n"
+        "  default:\n"
+        "    - step:\n"
+        "        script:\n"
+        "          - pipe: atlassian/aws-s3-deploy:1.7.0\n"
+        "            variables: { ... }"
+    ),
 )
 
 

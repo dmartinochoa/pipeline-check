@@ -31,6 +31,27 @@ RULE = Rule(
         "intentionally NOT flagged, the substituted command is "
         "literal, only its output is eval'd.",
     ),
+    exploit_example=(
+        "# Vulnerable: ``eval`` on a variable that came from a\n"
+        "# pipeline variable / deployment env gives that value\n"
+        "# full shell-grammar reach. ``sh -c $RAW`` on an\n"
+        "# unquoted variable is the same shape.\n"
+        "pipelines:\n"
+        "  default:\n"
+        "    - step:\n"
+        "        script:\n"
+        "          - eval \"$BUILD_CMD\"\n"
+        "          - sh -c $RAW_HOOK\n"
+        "\n"
+        "# Safe: invoke a script you own with the value as a\n"
+        "# quoted argument; let the script validate against an\n"
+        "# allow-list. Never eval values from outside the step.\n"
+        "pipelines:\n"
+        "  default:\n"
+        "    - step:\n"
+        "        script:\n"
+        "          - ./scripts/dispatch.sh \"$BUILD_CMD\""
+    ),
 )
 
 
