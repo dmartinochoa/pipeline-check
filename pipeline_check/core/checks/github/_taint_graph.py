@@ -475,11 +475,11 @@ def analyze_workflow(
                 isinstance(axis_name, str) and isinstance(axis_value, str)
             ):
                 continue
-            m = _MATRIX_FROM_NEEDS_RE.search(axis_value)
-            if m is None:
+            axis_match = _MATRIX_FROM_NEEDS_RE.search(axis_value)
+            if axis_match is None:
                 continue
-            upstream_job = m.group("job")
-            upstream_output = m.group("output")
+            upstream_job = axis_match.group("job")
+            upstream_output = axis_match.group("output")
             sources = state.lookup_job_output(upstream_job, upstream_output)
             if not sources:
                 continue

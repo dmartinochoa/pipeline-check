@@ -89,7 +89,8 @@ RULE = Rule(
         "{\n"
         '  "Statement": [{\n'
         '    "Effect": "Allow",\n'
-        '    "Principal": {"Federated": "arn:aws:iam::123456789012:oidc-provider/token.actions.githubusercontent.com"},\n'
+        '    "Principal": {"Federated":\n'
+        '      "arn:aws:iam::123456789012:oidc-provider/token.actions.githubusercontent.com"},\n'
         '    "Action": "sts:AssumeRoleWithWebIdentity",\n'
         '    "Condition": {\n'
         '      "StringEquals": {"token.actions.githubusercontent.com:aud": "sts.amazonaws.com"},\n'
@@ -231,8 +232,14 @@ def _trust_policy_findings(path: str) -> list[str]:
             federated_values.append(fed)
         elif isinstance(fed, list):
             federated_values.extend(v for v in fed if isinstance(v, str))
+        # IAM ``Federated`` is canonically
+        # ``arn:aws:iam::<account>:oidc-provider/token.actions.githubusercontent.com``.
+        # Anchor on the trailing host segment so a substring match on
+        # an attacker-controlled host (``evil.com/.../token.actions...``)
+        # can't trip the gate.
         if not any(
-            "token.actions.githubusercontent.com" in v
+            v.endswith("/token.actions.githubusercontent.com")
+            or v == "token.actions.githubusercontent.com"
             for v in federated_values
         ):
             continue
