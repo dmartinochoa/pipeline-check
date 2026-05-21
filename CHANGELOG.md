@@ -165,6 +165,22 @@ release commit collapses this section into `## [X.Y.Z] - <date>`.
 
 ### Changed
 
+- **Blob-rule factory collapses per-provider clone clusters.**
+  ``_primitives/blob_rule.py`` ships a ``yaml_blob_check`` factory
+  that takes a ``Rule``, a blob ``scanner``, and pass/fail prose, and
+  returns the ``check(path, doc)`` callable the orchestrator
+  consumes. Four cross-provider rule families (``dep_update``,
+  ``tls_bypass``, ``pkg_insecure``, ``docker_insecure``) and the
+  ``malicious_activity`` cluster migrate onto the factory, shrinking
+  25 rule modules by ~190 lines net and removing the
+  per-provider boilerplate that previously had to be re-pasted for
+  every new "applies to every CI provider" rule. Provider-specific
+  shapes that need step iteration (BK-008, DR-006), step-level
+  ``Location`` anchors (GHA-017), or Jenkinsfile text input
+  (JF-017 / JF-018 / JF-022 / JF-023 / JF-029) keep their bespoke
+  check bodies. ``_malicious.summarize_malicious_hits`` centralizes
+  the shared "N indicator(s) (categories). Examples: ..." prose so
+  it can't drift between providers.
 - **GHA-004 OIDC allowlist widened.** ``ossf/scorecard-action``
   consumes ``id-token: write`` when ``publish_results: true`` posts
   the score to the OpenSSF Scorecard API, and

@@ -1,10 +1,9 @@
 """ADO-023. TLS / certificate verification bypass."""
 from __future__ import annotations
 
-from typing import Any
-
 from ..._primitives import tls_bypass
-from ...base import Finding, Severity, blob_lower
+from ..._primitives.blob_rule import yaml_blob_check
+from ...base import Severity
 from ...rule import Rule
 
 RULE = Rule(
@@ -29,17 +28,13 @@ RULE = Rule(
     ),
 )
 
-def check(path: str, doc: dict[str, Any]) -> Finding:
-    hits = tls_bypass.scan(blob_lower(doc))
-    passed = not hits
-    desc = (
-        "No TLS verification bypass patterns detected."
-        if passed else
+
+check = yaml_blob_check(
+    RULE,
+    scanner=tls_bypass.scan,
+    pass_desc="No TLS verification bypass patterns detected.",
+    fail_desc=lambda hits: (
         f"TLS verification bypass detected: "
         f"{', '.join(h.snippet for h in hits[:3])}"
-    )
-    return Finding(
-        check_id=RULE.id, title=RULE.title, severity=RULE.severity,
-        resource=path, description=desc,
-        recommendation=RULE.recommendation, passed=passed,
-    )
+    ),
+)

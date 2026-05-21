@@ -1,9 +1,8 @@
 """ADO-022, dependency update command bypasses lockfile pins."""
 from __future__ import annotations
 
-from typing import Any
-
-from ...base import Finding, Severity, blob_lower, has_dep_update
+from ..._primitives.blob_rule import yaml_blob_check
+from ...base import Severity, has_dep_update
 from ...rule import Rule
 
 RULE = Rule(
@@ -39,17 +38,12 @@ RULE = Rule(
     ),
 )
 
-def check(path: str, doc: dict[str, Any]) -> Finding:
-    blob = blob_lower(doc)
-    found = has_dep_update(blob)
-    passed = not found
-    desc = (
-        "No dependency-update commands detected."
-        if passed else
+
+check = yaml_blob_check(
+    RULE,
+    scanner=has_dep_update,
+    pass_desc="No dependency-update commands detected.",
+    fail_desc=lambda _: (
         "Dependency-update commands detected that bypass lockfile pins."
-    )
-    return Finding(
-        check_id=RULE.id, title=RULE.title, severity=RULE.severity,
-        resource=path, description=desc,
-        recommendation=RULE.recommendation, passed=passed,
-    )
+    ),
+)

@@ -333,16 +333,21 @@ subsection stands alone.
 
 Code-quality findings across the engine, parsers, and rule pack.
 
-- **Blob-rule factory to collapse the per-provider clone clusters.**
-  Several rule families exist as near-verbatim wrappers around a
-  shared scanner: `dep_update` (5 providers), `tls_bypass` (7),
-  `pkg_insecure` + `docker_insecure` (6 each), `malicious_activity`
-  (6), plus the "No artifact production detected, check not
-  applicable" string repeated in 56 places. A
-  `_primitives/blob_rule.py` factory taking `(scanner, kind,
-  prose_suffix)` collapses each cluster into a 3-line module.
-  Removes roughly 300 lines of churn per new "applies to every CI
-  provider" rule the project ships in the future.
+- ~~**Blob-rule factory to collapse the per-provider clone
+  clusters.**~~ Landed. ``_primitives/blob_rule.py`` ships
+  ``yaml_blob_check(rule, *, scanner, pass_desc, fail_desc,
+  pass_recommendation=None)`` and 25 rule modules across
+  ``dep_update`` / ``tls_bypass`` / ``pkg_insecure`` /
+  ``docker_insecure`` / ``malicious_activity`` now thin through it
+  (~190 lines deleted net). Provider-specific shapes that need step
+  iteration (BK-008, DR-006), step-level ``Location`` anchors
+  (GHA-017), or Jenkinsfile text input (JF-017 / JF-018 / JF-022 /
+  JF-023 / JF-029) keep their bespoke check bodies. The
+  ``malicious_activity`` fail prose moved to a shared
+  ``_malicious.summarize_malicious_hits`` helper. The "No artifact
+  production detected, check not applicable" string repeated across
+  the signing / vuln-scanning rule pack is a separate prose-constant
+  deduplication still open.
 - **Lift provider context loaders + base classes.** Load-loop
   consolidation done: `checks/_yaml_files.py:load_yaml_files`
   hosts the read + parse + warning loop, and 11 providers
