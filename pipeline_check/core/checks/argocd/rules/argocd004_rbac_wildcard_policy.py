@@ -1,6 +1,8 @@
 """ARGOCD-004. argocd-rbac-cm grants wildcard authority."""
 from __future__ import annotations
 
+from typing import Any
+
 from ...base import Finding, Severity
 from ...rule import Rule
 from ..base import ArgoCDContext, argocd_rbac_cm
@@ -50,7 +52,7 @@ RULE = Rule(
 )
 
 
-def _iter_policy_lines(data: dict) -> list[tuple[str, str]]:
+def _iter_policy_lines(data: dict[str, Any]) -> list[tuple[str, str]]:
     """Yield ``(key, line)`` for every non-blank, non-comment line in
     every ``policy*.csv`` entry on the ConfigMap's data map."""
     out: list[tuple[str, str]] = []

@@ -1,6 +1,8 @@
 """ARGOCD-008. Application invokes a config-management plugin (CMP)."""
 from __future__ import annotations
 
+from typing import Any
+
 from ...base import Finding, Severity
 from ...rule import Rule
 from ..base import (
@@ -37,7 +39,7 @@ RULE = Rule(
 )
 
 
-def _scan_source(src: dict, app_label: str) -> list[str]:
+def _scan_source(src: dict[str, Any], app_label: str) -> list[str]:
     plugin = src.get("plugin")
     if not isinstance(plugin, dict):
         return []

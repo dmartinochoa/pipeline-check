@@ -1,9 +1,9 @@
 """Per-rule tests for every ARGOCD-* check."""
 from __future__ import annotations
 
-from .conftest import argocd_ctx, run_check
 from pipeline_check.core.checks.argocd.pipelines import ArgoCDChecks
 
+from .conftest import argocd_ctx, run_check
 
 # ── ARGOCD-001 AppProject sourceRepos wildcard ─────────────────────────
 

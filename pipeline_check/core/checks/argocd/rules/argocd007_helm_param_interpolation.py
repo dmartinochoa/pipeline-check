@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import re
+from typing import Any
 
 from ...base import Finding, Severity
 from ...rule import Rule
@@ -69,11 +70,11 @@ RULE = Rule(
 _PLACEHOLDER_RE = re.compile(r"\{\{[^}]+\}\}")
 
 
-def _go_template_on(appset_spec: dict) -> bool:
+def _go_template_on(appset_spec: dict[str, Any]) -> bool:
     return appset_spec.get("goTemplate") is True
 
 
-def _scan_source(src: dict) -> list[str]:
+def _scan_source(src: dict[str, Any]) -> list[str]:
     helm = src.get("helm") if isinstance(src, dict) else None
     if not isinstance(helm, dict):
         return []

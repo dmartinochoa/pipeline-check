@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import re
+from typing import Any
 
 from ...base import Finding, Severity
 from ...rule import Rule
@@ -73,7 +74,7 @@ _PLACEHOLDER_RE = re.compile(r"\{\{[^}]+\}\}")
 _RISKY_GENERATORS = ("pullRequest", "scmProvider")
 
 
-def _has_filter(gen_block: dict) -> bool:
+def _has_filter(gen_block: dict[str, Any]) -> bool:
     """Return True if the generator block carries a filter/constraint."""
     if not isinstance(gen_block, dict):
         return False
@@ -91,7 +92,7 @@ def _has_filter(gen_block: dict) -> bool:
     return False
 
 
-def _git_dir_or_files(gen_block: dict) -> bool:
+def _git_dir_or_files(gen_block: dict[str, Any]) -> bool:
     if not isinstance(gen_block, dict):
         return False
     return bool(gen_block.get("directories") or gen_block.get("files"))
