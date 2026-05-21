@@ -319,18 +319,18 @@ avoided that plumbing change.
 ### Reachability-aware attack chains
 
 Phase 1 (shared-job intersection) shipped incrementally across the
-chain pack: roughly 20 of the 38 chain rules now intersect their
-anchor findings' ``job_anchors`` sets, promote the chain confidence
-to HIGH when a shared job exists, and emit a "reachability
-unconfirmed, co-occurrence only" note when it doesn't. Four chains
-(AC-015 / AC-024 / AC-027 / AC-028) carry explicit
-"Reachability-model note" or "Reachability-model carve-out"
-comments documenting why shared-job reachability doesn't apply
-(cross-provider scope, chart-file co-occurrence, Dockerfile-level
-locality, repo-level worm topology). The remaining chains don't
-yet carry an explicit reachability discussion; backfilling those
-notes is a follow-up. AC-001 is the canonical intersection
-example.
+chain pack: roughly half of the chain rules intersect their anchor
+findings' ``job_anchors`` sets, promote the chain confidence to
+HIGH when a shared job exists, and emit a "reachability
+unconfirmed, co-occurrence only" note when it doesn't. The
+remaining chains (all cross-provider) now carry an explicit
+"Reachability-model carve-out" section in their module docstring
+documenting why shared-job reachability doesn't apply and what
+the actual reachability claim is (per-scan co-occurrence, repo-
+level co-occurrence, per-instance co-occurrence, Dockerfile-level
+locality, chart-file co-occurrence). AC-001 is the canonical
+intersection example; AC-028 / XPC-010 are the canonical carve-
+out examples.
 
 Phase 2 is the dataflow-DAG variant: walk the TAINT engine's DAG
 between the two anchor findings and only fire when an executable

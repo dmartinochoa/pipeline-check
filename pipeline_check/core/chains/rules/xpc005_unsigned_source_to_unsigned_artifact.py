@@ -21,6 +21,14 @@ through to consumers indistinguishable from a legitimate release.
 This chain currently activates when scanning ``--pipelines
 github,scm`` together; single-provider runs of either alone
 won't have both legs in the chain engine's input.
+
+Reachability-model carve-out: this chain does not migrate to the
+``job_anchors`` intersection model. The SCM finding lives on the
+repo's branch-protection signed-commits state, the GHA finding
+lives on a workflow file path, the two halves don't share a CI
+job. Per-scan co-occurrence is the reachability claim, the
+delivery pipeline lacks a cryptographic chain of custody from
+source to artifact when the same scan saw both gaps.
 """
 from __future__ import annotations
 

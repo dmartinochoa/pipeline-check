@@ -75,6 +75,20 @@ release commit collapses this section into `## [X.Y.Z] - <date>`.
   ``esf_supply_chain``. Provider count 22 -> 23; total-check claim
   810+ -> 820+.
 
+### Changed
+
+- **Reachability-model carve-out backfill on cross-provider chains.**
+  XPC-001 / XPC-003 / XPC-004 / XPC-005 / XPC-006 / XPC-007 /
+  XPC-008 / XPC-009 module docstrings now carry an explicit
+  "Reachability-model carve-out" section documenting why each
+  chain does not use the ``job_anchors`` intersection model and
+  what the actual reachability claim is (per-scan co-occurrence
+  for cross-document chains, with per-chain prose tied to the
+  specific resource shapes the two legs emit). Closes the
+  "backfilling those notes is a follow-up" item in the
+  Reachability-aware attack chains section of ROADMAP.md. No
+  behavior change, the carve-outs are documentation prose only.
+
 ## [1.3.0] - 2026-05-21
 
 ### Added

@@ -36,6 +36,16 @@ dockerfile`` (or any pipeline_check run with a Dockerfile in
 scope) together with ``--ingest <trivy.sarif>`` (or any
 container-scan SARIF that produces ``INGEST-<tool>-CVE-*``
 findings).
+
+Reachability-model carve-out: this chain does not migrate to the
+``job_anchors`` intersection model. The ingest finding lives on
+the SARIF feed's ``location.uri`` (typically an image-tag string
+the external scanner produced), the DF finding lives on a
+Dockerfile path, the two halves never share a CI job because the
+SARIF feed was produced by a different tool's run. Per-scan
+co-occurrence is the reachability claim, today's known
+vulnerability AND tomorrow's unbounded image content land in the
+same operator's queue.
 """
 from __future__ import annotations
 
