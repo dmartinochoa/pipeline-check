@@ -2862,6 +2862,13 @@ class TestChainAC030:
         ])
         assert not any(c.chain_id == "AC-030" for c in out)
 
+    def test_does_not_fire_when_legs_target_different_instances(self):
+        out = chains_pkg.evaluate([
+            _f("ARGOCD-009", "argocd-east"),
+            _f("ARGOCD-004", "argocd-west"),
+        ])
+        assert not any(c.chain_id == "AC-030" for c in out)
+
     def test_narrative_names_both_configmaps(self):
         out = chains_pkg.evaluate([
             _f("ARGOCD-009", self.RESOURCE),
@@ -2917,6 +2924,13 @@ class TestChainAC031:
         out = chains_pkg.evaluate([
             _f("ARGOCD-006", self.RESOURCE, passed=True),
             _f("ARGOCD-001", self.RESOURCE, passed=True),
+        ])
+        assert not any(c.chain_id == "AC-031" for c in out)
+
+    def test_does_not_fire_when_legs_target_different_instances(self):
+        out = chains_pkg.evaluate([
+            _f("ARGOCD-006", "argocd-east"),
+            _f("ARGOCD-001", "argocd-west"),
         ])
         assert not any(c.chain_id == "AC-031" for c in out)
 

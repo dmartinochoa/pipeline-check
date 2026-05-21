@@ -31,7 +31,7 @@ What's planned, what's shipped, and what's deliberately out of scope.
   default out-of-the-box AppProject ships with the wildcard, so
   the chain fires on most Argo CD installs where a PR generator is
   introduced without tightening the project. MITRE T1195.002 /
-  T1199 / T1078.004.
+  T1199 / T1078.004. Chain count 40 -> 41.
 - **AC-030 attack chain: Argo CD anonymous access x wildcard RBAC
   (post-1.3.0)** — First attack-chain pairing the v1.3.0 Argo CD
   provider's rules. CRITICAL severity, single-provider (``argocd``).
@@ -41,8 +41,9 @@ What's planned, what's shipped, and what's deliberately out of scope.
   anonymous principal resolves through the wildcard grant into
   unauthenticated control-plane authority, Argo CD's sync engine
   becomes a cluster-takeover primitive. MITRE T1190 / T1078.001 /
-  T1098.003. The ``docs/attack_chains.md`` hand-edited chain table
-  also picked up the missing AC-028 / AC-029 rows.
+  T1098.003. Chain count 39 -> 40. The ``docs/attack_chains.md``
+  hand-edited chain table also picked up the missing AC-028 /
+  AC-029 rows.
 - **XPC-010 attack chain: npm cooldown x Dockerfile lifecycle
   (post-1.3.0)** — Cross-provider chain pairing NPM-008 (manifest
   pinned an exact version published inside the cooldown window) and
