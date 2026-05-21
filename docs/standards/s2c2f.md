@@ -2912,6 +2912,47 @@ v1 charts (HELM-001) are skipped. They predate ``Chart.lock`` and use ``requirem
 
 **Recommendation.** Pin every `@Library('name@<ref>')` to a release tag (e.g. `@v1.4.2`) or a 40-char commit SHA. Configure the library in Jenkins with 'Allow default version to be overridden' disabled so a pipeline can't escape the pin.
 
+**Proof of exploit.**
+
+```
+// Vulnerable: every build resolves @main against the
+// shared-library repo. A push to main (legitimate update
+// from a teammate, a credential leak, a compromised
+// maintainer account) is silently picked up on the next
+// pipeline run with the build's full credential set in
+// scope (CI_JOB_TOKEN-equivalent, Jenkins credentials,
+// agent secrets).
+@Library('build-utils@main') _
+
+pipeline {
+  agent any
+  stages {
+    stage('deploy') {
+      steps {
+        deployToProd()  // sourced from the shared library
+      }
+    }
+  }
+}
+
+// Safe: pin to a release tag (or 40-char commit SHA) and
+// disable 'Allow default version to be overridden' on the
+// library config in Jenkins so a pipeline can't escape
+// the pin by re-declaring the @Library line.
+@Library('build-utils@v1.4.2') _
+
+pipeline {
+  agent any
+  stages {
+    stage('deploy') {
+      steps {
+        deployToProd()
+      }
+    }
+  }
+}
+```
+
 **Source:** [`JF-001`](../providers/jenkins.md#jf-001) in the [Jenkins provider](../providers/jenkins.md).
 
 ### `JF-005`: Deploy stage missing manual `input` approval <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-jf-005 }

