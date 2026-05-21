@@ -1569,3 +1569,156 @@ class TestRoundtripSafety:
         after = autofix.generate_fix(_finding("DF-001"), df)
         assert after is not None
         assert "TODO(pipeline-check DF-001)" in after
+
+
+# ── Known correctness gaps (currently failing) ────────────────────────
+#
+# Each class below pins a specific autofix bug surfaced during the
+# 2026-05 quality review. Tests are XFAIL until the fixer is repaired
+# so the failure mode is recorded in the suite, not lost in a notepad.
+
+
+class TestGHA015SkipsReusableWorkflowJobs:
+    """GHA-015 fixer must not add ``timeout-minutes`` to reusable-workflow
+    calls. The GitHub Actions schema rejects ``timeout-minutes`` on a job
+    whose body is a ``uses:`` invocation; the called workflow's own jobs
+    declare their own timeouts. The rule itself already skips these
+    jobs, the fixer should match."""
+
+    def test_uses_only_job_is_left_alone(self):
+        wf = (
+            "jobs:\n"
+            "  call:\n"
+            "    uses: ./.github/workflows/deploy.yml\n"
+        )
+        after = autofix.generate_fix(_finding("GHA-015"), wf)
+        # The only job is a reusable-workflow call, so there is nothing
+        # for the fixer to do.
+        assert after is None, (
+            "fixer inserted timeout-minutes into a uses: job, which "
+            "GitHub Actions rejects at runtime"
+        )
+
+    def test_mixed_file_leaves_uses_job_alone(self):
+        wf = (
+            "jobs:\n"
+            "  build:\n"
+            "    runs-on: ubuntu-latest\n"
+            "    steps:\n"
+            "      - run: echo hi\n"
+            "  call:\n"
+            "    uses: ./.github/workflows/deploy.yml\n"
+        )
+        after = autofix.generate_fix(_finding("GHA-015"), wf)
+        assert after is not None
+        # The normal job picks up a timeout, the reusable-workflow call
+        # does not.
+        assert "build:\n    timeout-minutes: 30" in after
+        assert "call:\n    timeout-minutes" not in after
+
+
+class TestNpmCiPreservesGlobalInstall:
+    """``_fix_npm_ci`` must not rewrite ``npm install --global <pkg>`` to
+    ``npm ci --global <pkg>``. ``npm ci`` rejects package arguments, so
+    the rewrite breaks the step. The GHA-021 rule already exempts
+    ``-g``/``--global`` from its match, the fixer should too."""
+
+    def test_global_install_is_left_alone(self):
+        wf = (
+            "jobs:\n"
+            "  build:\n"
+            "    runs-on: ubuntu-latest\n"
+            "    steps:\n"
+            "      - run: npm install --global typescript\n"
+        )
+        after = autofix.generate_fix(_finding("GHA-021"), wf)
+        # No bare ``npm install`` in the file, only a -g install that
+        # the rule itself would not have flagged. The fixer has
+        # nothing to do.
+        assert after is None, (
+            "fixer rewrote ``npm install --global`` to ``npm ci "
+            "--global``, which npm rejects"
+        )
+
+    def test_short_g_install_is_left_alone(self):
+        wf = "  - run: npm install -g typescript\n"
+        after = autofix.generate_fix(_finding("GHA-021"), wf)
+        assert after is None
+
+    def test_bare_npm_install_is_rewritten(self):
+        wf = "  - run: npm install\n"
+        after = autofix.generate_fix(_finding("GHA-021"), wf)
+        assert after is not None
+        assert "npm ci" in after
+        assert "npm install" not in after
+
+    def test_npm_install_chained_with_shell_separator_is_rewritten(self):
+        wf = "  - run: npm install && npm test\n"
+        after = autofix.generate_fix(_finding("GHA-021"), wf)
+        assert after is not None
+        assert "npm ci && npm test" in after
+
+    def test_npm_install_with_trailing_comment_is_rewritten(self):
+        wf = "  - run: npm install  # bootstrap deps\n"
+        after = autofix.generate_fix(_finding("GHA-021"), wf)
+        assert after is not None
+        assert "npm ci" in after
+
+
+class TestDockerFlagRemovalPreservesIndent:
+    """``_strip_docker_flags`` collapses runs of 2+ spaces anywhere on
+    the line, including the YAML leading indent. The current
+    implementation rewrites ``        - run: docker run --privileged x``
+    to ``  - run: docker run x`` (or further), which breaks the step
+    mapping; the safety net then bails and the user gets no patch."""
+
+    def test_preserves_eight_space_indent(self):
+        wf = (
+            "jobs:\n"
+            "  build:\n"
+            "    runs-on: ubuntu-latest\n"
+            "    steps:\n"
+            "      - name: launch\n"
+            "        run: docker run --privileged ubuntu:latest cmd\n"
+        )
+        after = autofix.generate_fix(_finding("GHA-017"), wf)
+        assert after is not None, (
+            "fixer produced no patch, likely because collapsed indent "
+            "tripped the YAML safety net"
+        )
+        assert "--privileged" not in after
+        # The ``docker run`` line keeps its 8-space indent. A bare
+        # substring check catches both the correct shape and any
+        # variant that leaves the prefix intact.
+        assert "        run: docker run" in after, (
+            "fixer mangled the leading indent on the ``run:`` line"
+        )
+
+
+class TestGHA003EnvBlockIndent:
+    """``_fix_gha003`` emits an ``env:`` block at the column where the
+    run command starts, not the column where the ``run:`` key lives.
+    For the common ``  - run: <cmd>`` shape that puts ``env:`` deeper
+    than its parent step mapping, producing invalid YAML; the safety
+    net bails and the user gets no patch."""
+
+    def test_list_item_run_produces_valid_env_block(self):
+        wf = (
+            "jobs:\n"
+            "  build:\n"
+            "    runs-on: ubuntu-latest\n"
+            "    steps:\n"
+            '      - run: echo "${{ github.event.pull_request.title }}"\n'
+        )
+        after = autofix.generate_fix(_finding("GHA-003"), wf)
+        assert after is not None, (
+            "fixer produced no patch, likely because the ``env:`` block "
+            "was over-indented and tripped the YAML safety net"
+        )
+        # ``env:`` must sit at the same column as ``run:``, which is 8
+        # (two for ``jobs:`` indent, two for ``build:``, two for
+        # ``steps:`` list, then the ``- `` list marker plus key).
+        assert "        env:" in after
+        # And it must NOT sit at the deeper column the current
+        # implementation chooses (column of the command start).
+        assert "              env:" not in after

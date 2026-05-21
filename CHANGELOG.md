@@ -155,6 +155,29 @@ release commit collapses this section into `## [X.Y.Z] - <date>`.
   Reachability-aware attack chains section of ROADMAP.md. No
   behavior change, the carve-outs are documentation prose only.
 
+### Fixed
+
+- **Autofix quality pass on four workflow-breaking fixers.**
+  (1) ``_fix_gha015`` no longer inserts ``timeout-minutes: 30``
+  into reusable-workflow caller jobs (``jobs.<id>.uses:``), GitHub
+  Actions rejects that key on those jobs at runtime, and the
+  GHA-015 rule already exempted them. (2) ``_fix_npm_ci`` now
+  rewrites only the bare/flag-less ``npm install`` form, leaving
+  ``npm install --global typescript`` / ``npm install <pkg>`` /
+  ``npm install -g foo`` alone, ``npm ci`` rejects package args
+  and the rule's ``PKG_NO_LOCKFILE_RE`` already exempted
+  ``-g``/``--global``. (3) ``_strip_docker_flags`` and
+  ``_strip_pkg_flags`` no longer collapse the YAML leading indent,
+  the post-strip space-compaction regex was matching runs of 2+
+  spaces anywhere on the line (including the indent) which made
+  the safety net bail on every multi-space-indented step;
+  switched to a ``(?<=\S)  +`` lookbehind so only internal
+  whitespace collapses. (4) ``_fix_gha003`` emits the ``env:``
+  block at the column of the ``run:`` key rather than the column
+  of the command body, fixing the common ``  - run: <cmd>``
+  shape where the previous indent put ``env:`` deeper than its
+  parent step and tripped the safety net.
+
 ## [1.3.0] - 2026-05-21
 
 ### Added
