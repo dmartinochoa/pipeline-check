@@ -566,6 +566,13 @@ class TestChainAC003:
 
     WF = ".github/workflows/release.yml"
 
+    def test_does_not_fire_when_legs_on_different_workflows(self):
+        out = chains_pkg.evaluate([
+            _f("GHA-001", ".github/workflows/a.yml"),
+            _f("GHA-005", ".github/workflows/b.yml"),
+        ])
+        assert not any(c.chain_id == "AC-003" for c in out)
+
     def test_reachability_confirmed_when_anchor_jobs_intersect(self):
         # GHA-001 fires in job ``release`` (an unpinned action lives
         # in a step there); GHA-005 anchors on ``release`` too,
@@ -618,6 +625,13 @@ class TestChainAC004:
         assert len(ac4) == 1
         assert "T1543" in ac4[0].mitre_attack
 
+    def test_does_not_fire_when_legs_on_different_workflows(self):
+        out = chains_pkg.evaluate([
+            _f("GHA-002", ".github/workflows/a.yml"),
+            _f("GHA-012", ".github/workflows/b.yml"),
+        ])
+        assert not any(c.chain_id == "AC-004" for c in out)
+
     def test_reachability_confirmed_when_anchor_jobs_intersect(self):
         out = chains_pkg.evaluate([
             _f("GHA-002", self.WF, job_anchors=("build",)),
@@ -659,6 +673,13 @@ class TestChainAC006:
         ac6 = [c for c in out if c.chain_id == "AC-006"]
         assert len(ac6) == 1
         assert ac6[0].severity is Severity.HIGH
+
+    def test_does_not_fire_when_legs_on_different_workflows(self):
+        out = chains_pkg.evaluate([
+            _f("GHA-002", ".github/workflows/a.yml"),
+            _f("GHA-011", ".github/workflows/b.yml"),
+        ])
+        assert not any(c.chain_id == "AC-006" for c in out)
 
     def test_reachability_confirmed_when_anchor_jobs_intersect(self):
         # Same job runs PR-head code AND has a poisonable cache key.
@@ -703,6 +724,13 @@ class TestChainAC008:
         ac8 = [c for c in out if c.chain_id == "AC-008"]
         assert len(ac8) == 1
         assert "T1195.001" in ac8[0].mitre_attack
+
+    def test_does_not_fire_when_legs_on_different_workflows(self):
+        out = chains_pkg.evaluate([
+            _f("GHA-021", ".github/workflows/a.yml"),
+            _f("GHA-029", ".github/workflows/b.yml"),
+        ])
+        assert not any(c.chain_id == "AC-008" for c in out)
 
     def test_reachability_confirmed_when_anchor_jobs_intersect(self):
         # Same job both skips the lockfile AND installs from an
@@ -934,6 +962,16 @@ class TestChainAC010:
         ac10 = [c for c in out if c.chain_id == "AC-010"]
         assert len(ac10) == 1
         assert ac10[0].severity is Severity.CRITICAL
+
+    def test_does_not_fire_when_legs_on_different_workflows(self):
+        # Self-hosted-runner workflow file is one repo; the curl-pipe
+        # leg fires on a separate workflow. The chain narrative is
+        # per-file, so neither AC-010 variant should match.
+        out = chains_pkg.evaluate([
+            _f("GHA-012", ".github/workflows/a.yml"),
+            _f("GHA-016", ".github/workflows/b.yml"),
+        ])
+        assert not any(c.chain_id == "AC-010" for c in out)
 
     def test_fires_with_self_hosted_plus_token_persistence(self):
         wf = ".github/workflows/release.yml"
