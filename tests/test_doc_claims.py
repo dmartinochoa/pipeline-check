@@ -1,8 +1,8 @@
 """Lock doc claims against the live code.
 
-Numerical claims in `README.md` and `docs/index.md` ("13 providers",
-"13 compliance standards", "68 autofixers", "8 attack chains",
-"370+ checks") are easy to lie about and easy to forget when adding
+Numerical claims in `README.md` and `docs/index.md` ("23 providers",
+"15 compliance standards", "111 autofixers", "41 attack chains",
+"820+ checks") are easy to lie about and easy to forget when adding
 a new provider, fixer, or standard. This test scans the doc set for
 those claims and asserts each one matches what the registries
 actually expose.

@@ -53,7 +53,7 @@ _TOKEN_RE = re.compile(
 #: pack is exact AWS-parity by design.
 _CLASS_BASED_LABELS = {
     "terraform": "AWS-parity",
-    "cloudformation": "~63 class-based",
+    "cloudformation": "~65 class-based",
 }
 
 
