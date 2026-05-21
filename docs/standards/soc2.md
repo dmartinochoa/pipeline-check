@@ -1746,6 +1746,43 @@ Triggering this rule means the bytes of the runtime image were produced by a bui
 - [SLSA threat-model v1.0](https://slsa.dev/spec/v1.0/threats): untrusted builder is the canonical Build-track Threat #2 ('Build the package from a modified source'). A tampered self-hosted runner can emit a syntactically-valid attestation for the wrong source.
 - [GitHub docs on self-hosted runner security](https://docs.github.com/en/actions/hosting-your-own-runners/managing-self-hosted-runners/about-self-hosted-runners#self-hosted-runner-security): non-ephemeral self-hosted runners default to persisted state between jobs; one compromised job gives the attacker arbitrary code execution that produces signed artifacts on every subsequent legitimate build on that runner. SLSA's isolation requirement (L2+) explicitly excludes this shape, which is why the rule treats ``self-hosted`` URIs as untrusted regardless of the rest of the chain.
 
+**Proof of exploit.**
+
+```
+# Vulnerable: the SLSA provenance attestation names a
+# self-hosted builder whose isolation cannot be audited
+# publicly. The signed attestation only attests that *this*
+# builder produced the artifact; it doesn't guarantee the
+# build environment was hermetic. A compromised self-hosted
+# runner produces signed provenance for malicious bytes.
+{
+  "_type": "https://in-toto.io/Statement/v0.1",
+  "predicateType": "https://slsa.dev/provenance/v0.2",
+  "predicate": {
+    "builder": {
+      "id": "https://internal-jenkins.example.com/jobs/build"
+    },
+    "buildType": "https://example.com/build-script@v1"
+  }
+}
+
+# Safe: rebuild via a recognized hosted CI builder that
+# enforces hermetic isolation (slsa-github-generator on a
+# GitHub-hosted runner, the canonical SLSA L3 producer).
+# Downstream verifiers can validate the builder URI against
+# a public allowlist and trust the isolation guarantee.
+{
+  "_type": "https://in-toto.io/Statement/v0.1",
+  "predicateType": "https://slsa.dev/provenance/v0.2",
+  "predicate": {
+    "builder": {
+      "id": "https://github.com/slsa-framework/slsa-github-generator/.github/workflows/generator_container_slsa3.yml@refs/tags/v2.1.0"
+    },
+    "buildType": "https://github.com/slsa-framework/slsa-github-generator/container@v1"
+  }
+}
+```
+
 **Source:** [`ATTEST-001`](../providers/oci.md#attest-001) in the [OCI manifest provider](../providers/oci.md).
 
 ### `ATTEST-002`: SLSA provenance source-repo claim is missing or unverifiable <span class="pg-sev pg-sev--high">HIGH</span> { #detail-attest-002 }
@@ -1774,6 +1811,45 @@ Fires when:
 
 - [SLSA v1.0 threat model](https://slsa.dev/spec/v1.0/threats) (Source-track threats): a builder pulling code from a fork or a different ref than the operator believes produces an attestation that signs the wrong bytes. The source-track threats catalog those source-substitution shapes that a pinned + verified source claim mitigates.
 - [SolarWinds Orion compromise](https://www.cisa.gov/news-events/cybersecurity-advisories/aa20-352a) (December 2020): the build system pulled tampered source from an unauthorized branch via SUNSPOT, producing 'authentic' signed builds for code the development team never wrote. A pinned, verified source-repo claim is the control SLSA L2+ requires specifically to detect this shape.
+
+**Proof of exploit.**
+
+```
+# Vulnerable: ``configSource.uri`` is empty (or 'unknown' /
+# 'n/a' / a placeholder). The trusted builder produced and
+# signed an attestation but the source-repo claim is
+# missing, so a downstream verifier can confirm WHO built
+# but not WHAT they built. The attestation is structurally
+# valid yet semantically empty.
+{
+  "predicateType": "https://slsa.dev/provenance/v0.2",
+  "predicate": {
+    "builder": { "id": "https://github.com/.../generator@v2.1.0" },
+    "invocation": {
+      "configSource": {
+        "uri": "",
+        "digest": {}
+      }
+    }
+  }
+}
+
+# Safe: concrete source-repo URI plus a commit-level
+# digest. Verifiers can now confirm the image was built
+# from the expected repository at the expected commit.
+{
+  "predicateType": "https://slsa.dev/provenance/v0.2",
+  "predicate": {
+    "builder": { "id": "https://github.com/.../generator@v2.1.0" },
+    "invocation": {
+      "configSource": {
+        "uri": "git+https://github.com/myorg/myrepo@refs/tags/v1.4.2",
+        "digest": { "sha1": "0123456789abcdef0123456789abcdef01234567" }
+      }
+    }
+  }
+}
+```
 
 **Source:** [`ATTEST-002`](../providers/oci.md#attest-002) in the [OCI manifest provider](../providers/oci.md).
 
@@ -9612,6 +9688,51 @@ Wildcard-broad entries (``*``, ``**``, ``./``) are NOT currently flagged — the
 - Intermediate / cache-only images pushed by CI for later-stage consumption may legitimately ship without attestations to keep build artifacts small. Suppress via ignore-file when this is the deliberate shape, the default expectation for any image that reaches a production registry is a full attestation set.
 - Some registries strip the attestation sub-manifests on pull (``docker pull`` of a single platform unwraps the index). If the JSON you're scanning came from ``docker manifest inspect`` rather than ``docker buildx imagetools inspect --raw``, attestations may be invisible even when present upstream.
 
+**Proof of exploit.**
+
+```
+# Vulnerable: the image index ships per-architecture
+# manifests but no ``attestation-manifest`` sibling. A
+# downstream verifier (cosign verify-attestation,
+# slsa-verifier, policy-controller) has nothing to check
+# against, so the deployment can't enforce "only run
+# images with a SLSA L3 build attestation".
+{
+  "schemaVersion": 2,
+  "mediaType": "application/vnd.oci.image.index.v1+json",
+  "manifests": [
+    { "digest": "sha256:linux-amd64...",
+      "platform": {"architecture": "amd64", "os": "linux"} },
+    { "digest": "sha256:linux-arm64...",
+      "platform": {"architecture": "arm64", "os": "linux"} }
+  ]
+}
+
+# Safe: build with ``docker buildx build
+# --attest=type=provenance,mode=max --attest=type=sbom``
+# so the index carries attestation-manifest siblings
+# linking SLSA provenance + SBOM to each per-platform
+# manifest by digest.
+{
+  "schemaVersion": 2,
+  "mediaType": "application/vnd.oci.image.index.v1+json",
+  "manifests": [
+    { "digest": "sha256:linux-amd64...",
+      "platform": {"architecture": "amd64", "os": "linux"} },
+    { "digest": "sha256:linux-arm64...",
+      "platform": {"architecture": "arm64", "os": "linux"} },
+    {
+      "digest": "sha256:attest-amd64...",
+      "platform": {"architecture": "unknown", "os": "unknown"},
+      "annotations": {
+        "vnd.docker.reference.type": "attestation-manifest",
+        "vnd.docker.reference.digest": "sha256:linux-amd64..."
+      }
+    }
+  ]
+}
+```
+
 **Source:** [`OCI-002`](../providers/oci.md#oci-002) in the [OCI manifest provider](../providers/oci.md).
 
 ### `OCI-003`: Image manifest is missing the ``image.created`` annotation <span class="pg-sev pg-sev--low">LOW</span> { #detail-oci-003 }
@@ -9639,6 +9760,46 @@ Wildcard-broad entries (``*``, ``**``, ``./``) are NOT currently flagged — the
 **Known false positives.**
 
 - Legacy Windows Server base images (pre-Windows 11 / Server 2022) ship layers from ``mcr.microsoft.com`` with this mechanism. Suppress via ignore-file when the Windows image is intentional, the rule has no way to distinguish a Microsoft-blessed URL from any other.
+
+**Proof of exploit.**
+
+```
+# Vulnerable: the manifest declares a layer with a
+# ``urls:`` field. On pull, the client fetches the layer
+# blob from that arbitrary URL, bypassing the registry's
+# content-addressed store. An attacker controlling the URL
+# (DNS, BGP, compromised host) substitutes the blob; the
+# registry's integrity guarantee doesn't extend to foreign
+# URLs.
+{
+  "schemaVersion": 2,
+  "mediaType": "application/vnd.oci.image.manifest.v1+json",
+  "layers": [
+    {
+      "mediaType": "application/vnd.oci.image.layer.nondistributable.v1.tar+gzip",
+      "digest": "sha256:layer-blob-digest...",
+      "size": 12345,
+      "urls": ["https://internal-mirror.example.com/blobs/foo.tgz"]
+    }
+  ]
+}
+
+# Safe: host the layer blob inside the same registry as
+# the manifest. No ``urls:`` field — the client fetches
+# the blob from the registry by digest, and the registry's
+# content-addressed store guarantees the bytes match.
+{
+  "schemaVersion": 2,
+  "mediaType": "application/vnd.oci.image.manifest.v1+json",
+  "layers": [
+    {
+      "mediaType": "application/vnd.oci.image.layer.v1.tar+gzip",
+      "digest": "sha256:layer-blob-digest...",
+      "size": 12345
+    }
+  ]
+}
+```
 
 **Source:** [`OCI-004`](../providers/oci.md#oci-004) in the [OCI manifest provider](../providers/oci.md).
 
@@ -9683,6 +9844,51 @@ Wildcard-broad entries (``*``, ``**``, ``./``) are NOT currently flagged — the
 
 - Some internal Harbor / Nexus deployments still proxy legacy Docker images that haven't been rebuilt; a pull succeeds because the proxy upgrades the manifest at request time, but the on-disk JSON if you saved it with ``inspect --raw`` may still report the original schemaVersion. If your registry is doing this in-flight promotion you can suppress; otherwise re-run the build.
 
+**Proof of exploit.**
+
+```
+# Vulnerable: ``schemaVersion: 1`` predates the digest-
+# pinned design. The client has no way to verify that the
+# pulled blobs match what the registry served; a swapped
+# blob is silently accepted. Modern registries refuse v1
+# pushes, but a pre-existing v1 image in a private
+# registry stays pullable and unverified.
+{
+  "schemaVersion": 1,
+  "name": "myorg/legacy-app",
+  "tag": "latest",
+  "architecture": "amd64",
+  "fsLayers": [
+    { "blobSum": "sha256:abc123..." }
+  ],
+  "history": [
+    { "v1Compatibility": "..." }
+  ]
+}
+
+# Safe: rebuild with a current builder (``docker buildx
+# build`` / ``buildah`` / ``ko``). The registry produces a
+# v2 manifest with content-addressed layer descriptors and
+# a ``config`` descriptor that pins the image config by
+# digest.
+{
+  "schemaVersion": 2,
+  "mediaType": "application/vnd.oci.image.manifest.v1+json",
+  "config": {
+    "mediaType": "application/vnd.oci.image.config.v1+json",
+    "digest": "sha256:config-digest...",
+    "size": 7023
+  },
+  "layers": [
+    {
+      "mediaType": "application/vnd.oci.image.layer.v1.tar+gzip",
+      "digest": "sha256:layer-digest...",
+      "size": 32654
+    }
+  ]
+}
+```
+
 **Source:** [`OCI-007`](../providers/oci.md#oci-007) in the [OCI manifest provider](../providers/oci.md).
 
 ### `OCI-008`: Manifest references digest using unsupported hash algorithm <span class="pg-sev pg-sev--high">HIGH</span> { #detail-oci-008 }
@@ -9698,6 +9904,54 @@ Detection scope: the config descriptor digest, every layer descriptor digest (si
 **Known false positives.**
 
 - Test fixtures and intentionally-corrupt CTF images sometimes use degraded hashes for pedagogical reasons. Suppress on the specific path with an ignore-file when this is the deliberate shape.
+
+**Proof of exploit.**
+
+```
+# Vulnerable: descriptors pin layers by ``sha1:`` digest.
+# sha1 has had practical collisions since SHAttered (2017).
+# An attacker who produces a colliding blob substitutes a
+# different tarball without changing the manifest; the
+# registry's content-addressing then ratifies the swap.
+{
+  "schemaVersion": 2,
+  "mediaType": "application/vnd.oci.image.manifest.v1+json",
+  "config": {
+    "mediaType": "application/vnd.oci.image.config.v1+json",
+    "digest": "sha1:abc1234567890abcdef1234567890abcdef12345",
+    "size": 7023
+  },
+  "layers": [
+    {
+      "mediaType": "application/vnd.oci.image.layer.v1.tar+gzip",
+      "digest": "sha1:def4567890abcdef1234567890abcdef123456",
+      "size": 32654
+    }
+  ]
+}
+
+# Safe: every descriptor uses ``sha256:`` (or ``sha512:``,
+# also OCI-permitted). The 256-bit hash space rules out
+# birthday-attack collisions at any plausibly-buildable
+# scale; a substituted blob cannot match the recorded
+# digest.
+{
+  "schemaVersion": 2,
+  "mediaType": "application/vnd.oci.image.manifest.v1+json",
+  "config": {
+    "mediaType": "application/vnd.oci.image.config.v1+json",
+    "digest": "sha256:abc123def456abc123def456abc123def456abc123def456abc123def456abc1",
+    "size": 7023
+  },
+  "layers": [
+    {
+      "mediaType": "application/vnd.oci.image.layer.v1.tar+gzip",
+      "digest": "sha256:def456abc123def456abc123def456abc123def456abc123def456abc123def4",
+      "size": 32654
+    }
+  ]
+}
+```
 
 **Source:** [`OCI-008`](../providers/oci.md#oci-008) in the [OCI manifest provider](../providers/oci.md).
 
