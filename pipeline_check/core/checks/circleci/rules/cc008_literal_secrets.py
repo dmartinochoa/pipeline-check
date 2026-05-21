@@ -35,6 +35,39 @@ RULE = Rule(
         "pipeline it almost always means a copy-paste from docs was "
         "never substituted. Defaults to LOW confidence.",
     ),
+    exploit_example=(
+        "# Vulnerable: the AWS access key literal lives in\n"
+        "# ``environment:``. The config file is committed to git\n"
+        "# and printed in build logs whenever the step echoes its\n"
+        "# environment.\n"
+        "version: 2.1\n"
+        "jobs:\n"
+        "  deploy:\n"
+        "    docker:\n"
+        "      - image: cimg/aws@sha256:abc123...\n"
+        "    environment:\n"
+        "      AWS_ACCESS_KEY_ID: AKIAIOSFODNN7EXAMPLE\n"
+        "      AWS_SECRET_ACCESS_KEY: wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY\n"
+        "    steps:\n"
+        "      - run: aws s3 cp build/ s3://bucket/\n"
+        "\n"
+        "# Safe: reference a project-level / org-level context\n"
+        "# variable. The actual credential lives in CircleCI's\n"
+        "# encrypted context store, masked in logs, rotatable\n"
+        "# without a config-file change.\n"
+        "version: 2.1\n"
+        "jobs:\n"
+        "  deploy:\n"
+        "    docker:\n"
+        "      - image: cimg/aws@sha256:abc123...\n"
+        "    steps:\n"
+        "      - run: aws s3 cp build/ s3://bucket/\n"
+        "workflows:\n"
+        "  ship:\n"
+        "    jobs:\n"
+        "      - deploy:\n"
+        "          context: aws-deploy   # AWS_* vars resolve at runtime"
+    ),
 )
 
 

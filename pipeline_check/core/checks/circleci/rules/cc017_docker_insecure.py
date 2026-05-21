@@ -22,6 +22,34 @@ RULE = Rule(
         "the container full access to the runner, enabling container "
         "escape and lateral movement."
     ),
+    exploit_example=(
+        "# Vulnerable: ``docker run --privileged`` plus the host\n"
+        "# Docker socket gives the build container full kernel\n"
+        "# access and the agent's Docker runtime. A compromise\n"
+        "# escapes to the agent and from there to every other\n"
+        "# build sharing it.\n"
+        "version: 2.1\n"
+        "jobs:\n"
+        "  integration:\n"
+        "    machine:\n"
+        "      image: ubuntu-2204:2024.01.1\n"
+        "    steps:\n"
+        "      - run: |\n"
+        "          docker run --privileged \\\n"
+        "            -v /var/run/docker.sock:/var/run/docker.sock \\\n"
+        "            myapp:test ./integration.sh\n"
+        "\n"
+        "# Safe: drop ``--privileged`` and the socket mount. If\n"
+        "# the build genuinely needs to build images, use a\n"
+        "# rootless sandbox (Kaniko, BuildKit rootless) instead.\n"
+        "version: 2.1\n"
+        "jobs:\n"
+        "  integration:\n"
+        "    docker:\n"
+        "      - image: myapp:test@sha256:abc123...\n"
+        "    steps:\n"
+        "      - run: ./integration.sh"
+    ),
 )
 
 

@@ -30,6 +30,32 @@ RULE = Rule(
         "one, reintroducing the same supply-chain risk Docker-image "
         "pinning is designed to eliminate."
     ),
+    exploit_example=(
+        "# Vulnerable: ``image: default`` resolves to whatever\n"
+        "# CircleCI ships as the current default machine image.\n"
+        "# Image updates rebuild the underlying OS / toolchain\n"
+        "# silently; a compromise of the image build pipeline\n"
+        "# ships malicious bytes into every machine-executor\n"
+        "# pipeline that uses the default.\n"
+        "version: 2.1\n"
+        "jobs:\n"
+        "  integration:\n"
+        "    machine:\n"
+        "      image: default\n"
+        "    steps:\n"
+        "      - run: docker compose run tests\n"
+        "\n"
+        "# Safe: pin to a specific image release. CircleCI's\n"
+        "# release notes document each tag; pin to the SHA-\n"
+        "# stamped tag rather than the rolling alias.\n"
+        "version: 2.1\n"
+        "jobs:\n"
+        "  integration:\n"
+        "    machine:\n"
+        "      image: ubuntu-2204:2024.01.1\n"
+        "    steps:\n"
+        "      - run: docker compose run tests"
+    ),
 )
 
 # Immutable image tags from CircleCI, dated release suffix, e.g.

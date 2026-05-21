@@ -31,6 +31,33 @@ RULE = Rule(
         "intentionally NOT flagged, the substituted command is "
         "literal, only its output is eval'd.",
     ),
+    exploit_example=(
+        "# Vulnerable: ``eval`` on a parameter value, or ``sh -c``\n"
+        "# on an unquoted variable, gives the value full shell-\n"
+        "# grammar reach. A pipeline parameter or upstream env\n"
+        "# var carrying metacharacters executes them.\n"
+        "version: 2.1\n"
+        "jobs:\n"
+        "  dispatch:\n"
+        "    docker:\n"
+        "      - image: alpine@sha256:abc123...\n"
+        "    steps:\n"
+        "      - run: |\n"
+        "          eval \"$BUILD_CMD\"\n"
+        "          sh -c $RAW_HOOK\n"
+        "\n"
+        "# Safe: replace dynamic shell evaluation with an\n"
+        "# explicit dispatcher over an allow-list, or invoke a\n"
+        "# script you own that does its own validation. Never\n"
+        "# eval values that came from outside the step body.\n"
+        "version: 2.1\n"
+        "jobs:\n"
+        "  dispatch:\n"
+        "    docker:\n"
+        "      - image: alpine@sha256:abc123...\n"
+        "    steps:\n"
+        "      - run: ./scripts/dispatch.sh \"$BUILD_CMD\""
+    ),
 )
 
 

