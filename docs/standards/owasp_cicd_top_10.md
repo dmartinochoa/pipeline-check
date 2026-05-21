@@ -8914,6 +8914,40 @@ Managed entries in ``<dependencyManagement>`` are NOT evaluated by this rule (th
 
 - Maven Central enforced HTTPS-only for the central repository in January 2020; the legacy ``http://repo1.maven.org`` endpoint was retired specifically because of MITM-tampering attacks against downstream consumers. https://blog.sonatype.com/central-repository-moving-to-https
 
+**Proof of exploit.**
+
+```
+<!-- Vulnerable: Maven fetches every dependency tarball
+     and pom from this repository over plaintext HTTP. Any
+     on-path attacker (compromised proxy, malicious VPN
+     exit, internal mirror BGP hijack) substitutes a
+     backdoored jar in flight. Maven's checksum verification
+     only checks against checksums served by the SAME host,
+     so the attacker swaps both the artifact and the
+     adjacent .sha1 file. -->
+<project>
+  <repositories>
+    <repository>
+      <id>internal-mirror</id>
+      <url>http://nexus.internal.example.com/repository/maven-public/</url>
+    </repository>
+  </repositories>
+</project>
+
+<!-- Safe: HTTPS gives TLS for both jar and checksum fetch.
+     For internal Nexus / Artifactory hosts on a private CA,
+     install the CA in the build agent's truststore;
+     never fall back to plaintext HTTP. -->
+<project>
+  <repositories>
+    <repository>
+      <id>internal-mirror</id>
+      <url>https://nexus.internal.example.com/repository/maven-public/</url>
+    </repository>
+  </repositories>
+</project>
+```
+
 **Source:** [`MVN-003`](../providers/maven.md#mvn-003) in the [maven provider](../providers/maven.md).
 
 ### `MVN-004`: pom.xml dependency omits an explicit ``<version>`` <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-mvn-004 }
@@ -9018,6 +9052,40 @@ Managed entries in ``<dependencyManagement>`` are NOT evaluated by this rule (th
 
 - Log4Shell, CVE-2021-44228 (December 2021): public disclosure on 2021-12-09 triggered Apache's emergency 2.15.0 release the same day; mass exploitation began within hours. Consumers who held even a 1-day cooldown on the affected versions would have caught the upstream advisory before bumping. https://nvd.nist.gov/vuln/detail/CVE-2021-44228
 - Sonatype Lift abuse / typosquat campaigns (2022-2024): periodic surfacing of typosquat coordinates (``org.apaache.*``) pushed to Central, typically yanked within 48 hours of report. A cooldown of any meaningful length would skip them.
+
+**Proof of exploit.**
+
+```
+<!-- Vulnerable: bumping the version to a freshly-
+     published release within hours of its appearance on
+     Maven Central is exactly the window in which a
+     publisher-compromise (stolen Sonatype token, hijacked
+     maintainer account) or an advisory-not-yet-filed
+     malicious release lives. Sonatype yanks malicious
+     coordinates within hours-to-days once flagged;
+     bumping straight to ``17.0.99`` on its release day
+     skips that window entirely. -->
+<dependency>
+  <groupId>com.example</groupId>
+  <artifactId>shiny-lib</artifactId>
+  <version>17.0.99</version>
+  <!-- ``17.0.99`` was published 2 hours ago -->
+</dependency>
+
+<!-- Safe: pin to the most recent release older than the
+     cooldown window. ``pipeline_check --pipeline maven
+     --resolve-remote`` queries Maven Central's search API
+     for per-coordinate publish timestamps and surfaces
+     anything inside the 7-day window. Hold the bump until
+     the cooldown elapses, or skip the freshly-pushed
+     version entirely. -->
+<dependency>
+  <groupId>com.example</groupId>
+  <artifactId>shiny-lib</artifactId>
+  <version>17.0.98</version>
+  <!-- ``17.0.98`` was published 3 weeks ago -->
+</dependency>
+```
 
 **Source:** [`MVN-008`](../providers/maven.md#mvn-008) in the [maven provider](../providers/maven.md).
 

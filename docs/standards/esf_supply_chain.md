@@ -8991,6 +8991,40 @@ Managed entries in ``<dependencyManagement>`` are NOT evaluated by this rule (th
 
 - Maven Central enforced HTTPS-only for the central repository in January 2020; the legacy ``http://repo1.maven.org`` endpoint was retired specifically because of MITM-tampering attacks against downstream consumers. https://blog.sonatype.com/central-repository-moving-to-https
 
+**Proof of exploit.**
+
+```
+<!-- Vulnerable: Maven fetches every dependency tarball
+     and pom from this repository over plaintext HTTP. Any
+     on-path attacker (compromised proxy, malicious VPN
+     exit, internal mirror BGP hijack) substitutes a
+     backdoored jar in flight. Maven's checksum verification
+     only checks against checksums served by the SAME host,
+     so the attacker swaps both the artifact and the
+     adjacent .sha1 file. -->
+<project>
+  <repositories>
+    <repository>
+      <id>internal-mirror</id>
+      <url>http://nexus.internal.example.com/repository/maven-public/</url>
+    </repository>
+  </repositories>
+</project>
+
+<!-- Safe: HTTPS gives TLS for both jar and checksum fetch.
+     For internal Nexus / Artifactory hosts on a private CA,
+     install the CA in the build agent's truststore;
+     never fall back to plaintext HTTP. -->
+<project>
+  <repositories>
+    <repository>
+      <id>internal-mirror</id>
+      <url>https://nexus.internal.example.com/repository/maven-public/</url>
+    </repository>
+  </repositories>
+</project>
+```
+
 **Source:** [`MVN-003`](../providers/maven.md#mvn-003) in the [maven provider](../providers/maven.md).
 
 ### `MVN-004`: pom.xml dependency omits an explicit ``<version>`` <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-mvn-004 }

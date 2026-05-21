@@ -78,6 +78,37 @@ RULE = Rule(
         "within 48 hours of report. A cooldown of any meaningful "
         "length would skip them.",
     ),
+    exploit_example=(
+        "<!-- Vulnerable: bumping the version to a freshly-\n"
+        "     published release within hours of its appearance on\n"
+        "     Maven Central is exactly the window in which a\n"
+        "     publisher-compromise (stolen Sonatype token, hijacked\n"
+        "     maintainer account) or an advisory-not-yet-filed\n"
+        "     malicious release lives. Sonatype yanks malicious\n"
+        "     coordinates within hours-to-days once flagged;\n"
+        "     bumping straight to ``17.0.99`` on its release day\n"
+        "     skips that window entirely. -->\n"
+        "<dependency>\n"
+        "  <groupId>com.example</groupId>\n"
+        "  <artifactId>shiny-lib</artifactId>\n"
+        "  <version>17.0.99</version>\n"
+        "  <!-- ``17.0.99`` was published 2 hours ago -->\n"
+        "</dependency>\n"
+        "\n"
+        "<!-- Safe: pin to the most recent release older than the\n"
+        "     cooldown window. ``pipeline_check --pipeline maven\n"
+        "     --resolve-remote`` queries Maven Central's search API\n"
+        "     for per-coordinate publish timestamps and surfaces\n"
+        "     anything inside the 7-day window. Hold the bump until\n"
+        "     the cooldown elapses, or skip the freshly-pushed\n"
+        "     version entirely. -->\n"
+        "<dependency>\n"
+        "  <groupId>com.example</groupId>\n"
+        "  <artifactId>shiny-lib</artifactId>\n"
+        "  <version>17.0.98</version>\n"
+        "  <!-- ``17.0.98`` was published 3 weeks ago -->\n"
+        "</dependency>"
+    ),
 )
 
 
