@@ -12,6 +12,29 @@ release commit collapses this section into `## [X.Y.Z] - <date>`.
 
 ### Added
 
+- **MCP server caught up with the v1.3 provider pack + PR-diff
+  mode.** The ``--serve`` MCP catalog now advertises every provider
+  the rule registry exposes (23, up from 18); ``argocd``, ``maven``,
+  ``npm``, ``pypi``, and ``scm`` were missing from
+  ``_PROVIDER_PATH_KW`` / ``_RULES_FQN`` and silently fell out of
+  every ``list_providers`` / ``list_checks`` / ``scan`` call.
+  ``aws``, ``cloudformation``, ``terraform``, and ``helm`` were also
+  missing from ``_RULES_FQN``, so ``list_checks(provider=<X>)``
+  raised "unknown provider" for them. Both maps are now aligned, and
+  ``tests/test_mcp_server.py`` locks the MCP catalog to
+  ``scripts/gen_provider_docs.py``'s ``SUPPORTED_PROVIDERS`` so the
+  next provider addition fails CI if the MCP wiring is missed. The
+  ``scm`` provider's path-less shape is surfaced as
+  ``scm_platform`` / ``scm_repo`` / ``scm_fixture_dir`` properties
+  on ``scan`` / ``inventory`` / ``threat_model`` / ``scan_markdown``.
+  A new ``scan_pr_diff`` tool wraps the ``--pr-diff REF`` flow end-
+  to-end (HEAD in-process, BASE in a throwaway ``git worktree``
+  subprocess, partition into introduced / resolved / preserved with
+  multiset semantics, return the structured delta plus the rendered
+  Markdown PR comment). ``scan`` also picked up a ``diff_base``
+  parameter mirroring the CLI's branch-scoped file filter. Live
+  providers (``aws`` / ``scm``) are rejected up front for
+  ``scan_pr_diff`` since neither has a meaningful local BASE ref.
 - **`--pr-diff REF` PR-time delta mode.** New CLI flag that
   re-scans both sides of a PR (HEAD in-process, REF in a throwaway
   ``git worktree`` subprocess) and emits a Markdown PR-comment
