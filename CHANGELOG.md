@@ -77,6 +77,19 @@ release commit collapses this section into `## [X.Y.Z] - <date>`.
 
 ### Changed
 
+- **Doc-claim drift guard extended to CONTRIBUTING.md + Docker Hub
+  README.** ``tests/test_doc_claims.py`` now scans
+  ``CONTRIBUTING.md`` and ``.github/DOCKERHUB.md`` alongside the
+  original README / docs/index / action.yml / pyproject /
+  mkdocs.yml surfaces. Surfaced two pre-existing drifts at landing
+  time, ``CONTRIBUTING.md`` claimed "22 providers" (current 23)
+  and the Docker Hub README claimed "19 providers" / "590+ checks"
+  (current 23 / 820+); both bumped. Docker Hub README also
+  reworded from "23 CI/CD and infrastructure providers" to "23
+  providers (CI/CD and infrastructure)" so the regex
+  (``\b\d+\s+(?:CI/CD\s+)?providers?\b``) actually matches the
+  claim, the original phrasing would have left a hole in
+  enforcement.
 - **Reachability-model carve-out backfill on cross-provider chains.**
   XPC-001 / XPC-003 / XPC-004 / XPC-005 / XPC-006 / XPC-007 /
   XPC-008 / XPC-009 module docstrings now carry an explicit

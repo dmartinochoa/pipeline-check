@@ -57,6 +57,13 @@ DOCS_WITH_CLAIMS = [
     REPO / "action.yml",
     REPO / "pyproject.toml",
     REPO / "mkdocs.yml",
+    # Contributor docs that recite the same headline counts (most often
+    # via "Counts in README and docs/index.md (...)" prose) but used to
+    # drift silently. The CONTRIBUTING.md / Docker Hub README are
+    # contributor- and consumer-facing surfaces, so stale numbers there
+    # are a real user-experience bug.
+    REPO / "CONTRIBUTING.md",
+    REPO / ".github" / "DOCKERHUB.md",
 ]
 
 
