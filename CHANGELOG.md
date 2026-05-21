@@ -12,6 +12,31 @@ release commit collapses this section into `## [X.Y.Z] - <date>`.
 
 ### Added
 
+- **`--pr-diff REF` PR-time delta mode.** New CLI flag that re-scans
+  both sides of a PR (HEAD in-process, REF in a throwaway
+  ``git worktree`` subprocess) and emits a Markdown PR-comment
+  summarizing which findings the branch introduced, resolved, or
+  preserved. The fingerprint matches the existing ``--baseline``
+  convention (``check_id`` + ``resource``, path-normalized) with
+  multiset semantics, so a PR that adds a second offender of the
+  same rule on a file that already had one correctly surfaces as
+  one introduced finding (not zero). Lines are deliberately
+  excluded from the fingerprint to stay immune to line shifts on
+  otherwise-unchanged code. Combine with ``--fail-on SEV`` to gate
+  the PR on introduced findings only; preserved findings explicitly
+  don't gate. The base subprocess inherits the parent's
+  ``--pipeline`` / path / filter / standard / ignore-file flags
+  through an explicit forwarder so each side runs the same rule set
+  against its own worktree. Mutually exclusive with
+  ``--inventory-only``, ``--fix``, ``--baseline*``, and
+  ``--diff-base`` (each carries a competing notion of "what to
+  compare"). The same CWE-88 leading-dash guard ``--diff-base``
+  carries protects the ``--pr-diff`` ref string before it flows
+  into ``git worktree add`` and ``git rev-parse``. Degraded modes
+  (unresolvable ref, worktree failure, subprocess JSON parse
+  failure) surface as a ``[!WARNING]`` callout in the comment
+  rather than aborting, so a CI lane behind a shallow fetch still
+  produces *some* visible diff output.
 - **Gradle multi-project ``rootProject.ext.X`` resolution.** The
   maven provider's Gradle path now resolves cross-project property
   references. ``MavenContext.from_path`` walks upward from each
