@@ -175,7 +175,7 @@ class _GroupedCommand(click.Command):
             "--fail-on", "--min-grade", "--max-failures",
             "--fail-on-check", "--baseline", "--baseline-from-git",
             "--write-baseline",
-            "--diff-base", "--ignore-file",
+            "--diff-base", "--pr-diff", "--ignore-file",
             "--fail-on-chain", "--fail-on-any-chain",
         })),
         ("Attack chains", frozenset({
@@ -1683,6 +1683,27 @@ def _install_completion_callback(
     ),
 )
 @click.option(
+    "--pr-diff",
+    "pr_diff",
+    default=None,
+    metavar="REF",
+    help=(
+        "Compare the current state of the worktree against REF and emit "
+        "a Markdown PR-comment summarizing which findings the branch "
+        "introduced, resolved, or preserved. Re-scans both sides: HEAD "
+        "in-process, REF in a throwaway ``git worktree`` so no state "
+        "from the parent leaks across. Fingerprint matches the existing "
+        "``--baseline`` convention (``check_id`` + ``resource``), so "
+        "line shifts on otherwise-unchanged code do not produce false "
+        "'introduced' rows. Mutually exclusive with --inventory-only, "
+        "--fix, --baseline*, and --diff-base (each carries a competing "
+        "notion of 'what to compare'). Combine with ``--fail-on SEV`` "
+        "to gate the PR on introduced findings only: the gate ignores "
+        "preserved findings entirely. ``--output-file PATH`` writes "
+        "the markdown to disk; without it, output goes to stdout."
+    ),
+)
+@click.option(
     "--baseline",
     default=None,
     metavar="PATH",
@@ -1962,6 +1983,7 @@ def scan(
     apply_fixes: bool,
     baseline_from_git: str | None,
     diff_base: str | None,
+    pr_diff: str | None,
     baseline: str | None,
     write_baseline: str | None,
     ignore_file: str | None,
@@ -2433,6 +2455,38 @@ def scan(
             "(would be parsed as a git flag, not a positional ref)"
         )
 
+    if pr_diff is not None:
+        if pr_diff.startswith("-"):
+            # Same argument-injection concern as ``--diff-base``: the
+            # ref string flows into ``git worktree add`` and ``git
+            # rev-parse``. The pr_diff module re-validates as a second
+            # line of defense.
+            raise click.UsageError(
+                "--pr-diff must not start with '-' "
+                "(would be parsed as a git flag, not a positional ref)"
+            )
+        if inventory_only:
+            raise click.UsageError(
+                "--pr-diff cannot be combined with --inventory-only "
+                "(inventory is a full-state snapshot, not a per-PR delta)."
+            )
+        if fix:
+            raise click.UsageError(
+                "--pr-diff cannot be combined with --fix "
+                "(diff mode reports the delta; it does not modify either side)."
+            )
+        if baseline or baseline_from_git:
+            raise click.UsageError(
+                "--pr-diff is mutually exclusive with --baseline / "
+                "--baseline-from-git (both define a comparison; pick one)."
+            )
+        if diff_base:
+            raise click.UsageError(
+                "--pr-diff is mutually exclusive with --diff-base. "
+                "--diff-base scopes the scan to changed files only, "
+                "which would leave the base side empty by construction."
+            )
+
     threshold = Severity(severity_threshold.upper())
     confidence_threshold = Confidence(min_confidence.upper())
 
@@ -2639,6 +2693,93 @@ def scan(
     n_passed = sum(1 for f in findings if f.passed)
     n_failed = sum(1 for f in findings if not f.passed)
     _debug(f"findings: {len(findings)} total ({n_failed} failed, {n_passed} passed)")
+
+    if pr_diff:
+        # Diff mode owns the rest of the flow: the HEAD findings we
+        # just produced become one half of the comparison; the BASE
+        # side runs in a worktree subprocess. The normal output /
+        # gate path is skipped; pr-diff has its own renderer and its
+        # own gate semantics (gate on *introduced* findings only).
+        from .core.pr_diff import any_at_or_above, run_pr_diff
+        from .core.pr_diff_reporter import report_pr_diff
+
+        forwarded_argv = _build_pr_diff_subprocess_argv(
+            pipeline_lc=pipeline_lc,
+            pipelines_list=pipelines_list,
+            checks=checks,
+            severity_threshold=severity_threshold,
+            min_confidence=min_confidence,
+            standards=standards,
+            custom_rules=custom_rules,
+            secret_patterns=secret_patterns,
+            detect_entropy=detect_entropy,
+            ignore_file=ignore_file,
+            fp_path=fp_path,
+            tf_plan=tf_plan,
+            gha_path=gha_path,
+            gitlab_path=gitlab_path,
+            bitbucket_path=bitbucket_path,
+            azure_path=azure_path,
+            jenkinsfile_path=jenkinsfile_path,
+            circleci_path=circleci_path,
+            cfn_template=cfn_template,
+            cloudbuild_path=cloudbuild_path,
+            buildkite_path=buildkite_path,
+            tekton_path=tekton_path,
+            argo_path=argo_path,
+            argocd_path=argocd_path,
+            dockerfile_path=dockerfile_path,
+            k8s_path=k8s_path,
+            helm_path=helm_path,
+            helm_values=helm_values,
+            helm_set=helm_set,
+            oci_manifest=oci_manifest,
+            drone_path=drone_path,
+            npm_path=npm_path,
+            pypi_path=pypi_path,
+            maven_path=maven_path,
+        )
+        _debug(f"--pr-diff: forwarded argv = {forwarded_argv}")
+        head_findings_raw = [f.to_dict() for f in findings]
+        delta = run_pr_diff(
+            pr_diff,
+            head_findings_raw,
+            forwarded_argv,
+            cwd=".",
+        )
+        markdown = report_pr_diff(delta, tool_version=__version__)
+        if output_file:
+            try:
+                with open(output_file, "w", encoding="utf-8") as fh:
+                    fh.write(markdown)
+                    fh.write("\n")
+            except OSError as exc:
+                raise click.UsageError(
+                    f"--output-file: could not write {output_file}: {exc}"
+                ) from exc
+            if not quiet:
+                click.echo(
+                    f"PR-diff report written to {output_file}", err=True,
+                )
+        else:
+            click.echo(markdown)
+        if not quiet:
+            for w in delta.warnings:
+                click.echo(f"[pr-diff] {w}", err=True)
+            click.echo(
+                f"[pr-diff] +{len(delta.introduced)} introduced, "
+                f"-{len(delta.resolved)} resolved, "
+                f"={len(delta.preserved)} preserved",
+                err=True,
+            )
+        # Gate: the diff gate applies ``--fail-on`` to *introduced*
+        # findings only. Preserved findings are explicitly not the
+        # PR's responsibility; resolved findings are good news.
+        # Without ``--fail-on``, pr-diff is informational (always exits 0).
+        if fail_on:
+            if any_at_or_above(delta.introduced, fail_on.upper()):
+                raise click.exceptions.Exit(1)
+        return
 
     score_result = score(findings)
 
@@ -2958,6 +3099,124 @@ def _run_ai_explain(
     click.echo("")
     click.echo(render_section(client.name, response))
     return 0
+
+
+def _build_pr_diff_subprocess_argv(
+    *,
+    pipeline_lc: str,
+    pipelines_list: list[str],
+    checks: tuple[str, ...],
+    severity_threshold: str,
+    min_confidence: str,
+    standards: tuple[str, ...],
+    custom_rules: tuple[str, ...],
+    secret_patterns: tuple[str, ...],
+    detect_entropy: bool,
+    ignore_file: str | None,
+    fp_path: str | None,
+    tf_plan: str | None,
+    gha_path: str | None,
+    gitlab_path: str | None,
+    bitbucket_path: str | None,
+    azure_path: str | None,
+    jenkinsfile_path: str | None,
+    circleci_path: str | None,
+    cfn_template: str | None,
+    cloudbuild_path: str | None,
+    buildkite_path: str | None,
+    tekton_path: str | None,
+    argo_path: str | None,
+    argocd_path: str | None,
+    dockerfile_path: str | None,
+    k8s_path: str | None,
+    helm_path: str | None,
+    helm_values: tuple[str, ...],
+    helm_set: tuple[str, ...],
+    oci_manifest: str | None,
+    drone_path: str | None,
+    npm_path: str | None,
+    pypi_path: str | None,
+    maven_path: str | None,
+) -> list[str]:
+    """Build the argv for the BASE-side ``pipeline_check`` subprocess.
+
+    Reconstructs flag form from already-parsed values rather than
+    re-splitting :data:`sys.argv`. The whitelist below is deliberate,
+    a flag the BASE scan shouldn't see ends up *not* in this list,
+    which is the safer default than "forward everything and remember
+    what to suppress". Anything that affects what the scanner *finds*
+    on the BASE side is in; gate / output / write-baseline / fix /
+    ai-explain / inventory / pr-diff itself are all out.
+
+    Chains are *always* disabled on the BASE side because the delta
+    layer doesn't compare chains yet (followup), and computing them
+    in the subprocess is wasted work.
+    """
+    argv: list[str] = []
+    if pipelines_list:
+        argv.extend(["--pipelines", ",".join(pipelines_list)])
+    else:
+        argv.extend(["--pipeline", pipeline_lc])
+    for c in checks:
+        argv.extend(["--checks", c])
+    argv.extend(["--severity-threshold", severity_threshold])
+    argv.extend(["--min-confidence", min_confidence])
+    for s in standards:
+        argv.extend(["--standard", s])
+    for cr in custom_rules:
+        argv.extend(["--custom-rules", cr])
+    for pat in secret_patterns:
+        argv.extend(["--secret-pattern", pat])
+    if detect_entropy:
+        argv.append("--detect-entropy")
+    if ignore_file:
+        argv.extend(["--ignore-file", ignore_file])
+    if fp_path:
+        argv.extend(["--fp-file", fp_path])
+
+    # Path flags: forward only the ones the user actually provided.
+    # Relative paths resolve against the worktree's cwd (the desired
+    # behavior); absolute paths point at the user's original location
+    # (rare but explicit user intent).
+    _path_pairs: tuple[tuple[str, str | None], ...] = (
+        ("--tf-plan", tf_plan),
+        ("--gha-path", gha_path),
+        ("--gitlab-path", gitlab_path),
+        ("--bitbucket-path", bitbucket_path),
+        ("--azure-path", azure_path),
+        ("--jenkinsfile-path", jenkinsfile_path),
+        ("--circleci-path", circleci_path),
+        ("--cfn-template", cfn_template),
+        ("--cloudbuild-path", cloudbuild_path),
+        ("--buildkite-path", buildkite_path),
+        ("--tekton-path", tekton_path),
+        ("--argo-path", argo_path),
+        ("--argocd-path", argocd_path),
+        ("--dockerfile-path", dockerfile_path),
+        ("--k8s-path", k8s_path),
+        ("--helm-path", helm_path),
+        ("--oci-manifest", oci_manifest),
+        ("--drone-path", drone_path),
+        ("--npm-path", npm_path),
+        ("--pypi-path", pypi_path),
+        ("--maven-path", maven_path),
+    )
+    for flag, value in _path_pairs:
+        if value:
+            argv.extend([flag, value])
+    for vf in helm_values:
+        argv.extend(["--helm-values", vf])
+    for hs in helm_set:
+        argv.extend(["--helm-set", hs])
+
+    # Chains aren't compared in the delta yet; suppressing them on
+    # the BASE side avoids spending subprocess time on output the
+    # delta layer ignores. ``--quiet`` is deliberately *not* set:
+    # that flag suppresses the JSON output we need to parse. The
+    # subprocess's stderr (which carries the scan summary) is
+    # captured separately and discarded by the orchestrator.
+    argv.append("--no-chains")
+    return argv
 
 
 def _emit_fix_patches(findings: list[Any], *, to_stderr: bool = False) -> None:

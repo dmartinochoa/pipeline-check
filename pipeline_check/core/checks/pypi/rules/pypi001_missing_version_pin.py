@@ -48,7 +48,10 @@ RULE = Rule(
 )
 
 
-_PIN_RE = re.compile(r"==[^=,;\s]+")
+# PEP 440 allows whitespace between the operator and the version
+# (``pkg == 1.2.3`` is valid). ``\s*`` consumes that gap so the
+# pin is recognized in either spacing.
+_PIN_RE = re.compile(r"==\s*[^=,;\s]+")
 _VCS_OR_URL_PREFIXES: tuple[str, ...] = (
     "git+", "hg+", "svn+", "bzr+",
     "http://", "https://", "ftp://", "file:",

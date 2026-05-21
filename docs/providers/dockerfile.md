@@ -385,7 +385,7 @@ Move ``WORKDIR`` to a dedicated app directory (``/app``, ``/srv/app``, ``/opt/<s
 <span class="pg-sev pg-sev--medium">MEDIUM</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-7</span> <span class="pg-tag pg-tag--esf">ESF-D-LEAST-PRIV</span> <span class="pg-tag pg-tag--cwe">CWE-732</span>
 </div>
 
-World-writable directories under ``/`` are an established container-escape vector: any compromised process running as non-root can drop a payload that root-owned daemons later execute. The rule fires on the literal ``777``, ``a+w``, and ``a+rwx`` modes; the more conservative ``775`` and ``ugo+x`` are not flagged.
+World-writable directories under ``/`` are an established container-escape vector: any compromised process running as non-root can drop a payload that root-owned daemons later execute. The rule fires on octal ``777`` / ``0777`` and on any ``chmod`` ``+`` operator whose who-set is empty or contains ``a`` / ``o`` and whose mode flags include ``w`` (so ``a+w``, ``a+wx``, ``a+rwx``, ``o+w``, ``ugo+w``, ``go+rw``, ``+w``, ``+rwx`` all flag). ``u+w`` and ``g+w`` are not flagged, neither grants the world-writable bit.
 
 **Known false-positive modes**
 

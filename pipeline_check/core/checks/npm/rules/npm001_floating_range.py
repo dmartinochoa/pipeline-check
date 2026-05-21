@@ -27,8 +27,9 @@ RULE = Rule(
     docs_note=(
         "Fires on every entry in ``dependencies`` / ``devDependencies`` "
         "/ ``optionalDependencies`` / ``peerDependencies`` whose value "
-        "starts with ``^``, ``~``, ``*``, ``>``, ``<``, ``||``, or is "
-        "the dist-tag ``latest`` / ``next`` / ``beta`` / ``alpha`` / "
+        "starts with ``^``, ``~``, ``*``, ``>``, ``<``, ``||``, carries "
+        "a wildcard token (``1.x``, ``1.2.X``, ``x``), or is the "
+        "dist-tag ``latest`` / ``next`` / ``beta`` / ``alpha`` / "
         "``canary`` / ``dev``. ``workspace:*`` (Yarn / pnpm workspace "
         "protocol), ``file:`` / ``link:`` (local checkouts), ``git+`` "
         "/ ``http(s)://`` (URL deps), and ``npm:`` (alias) are not "
@@ -68,6 +69,11 @@ _NON_RANGE_PREFIXES: tuple[str, ...] = (
 )
 
 _FLOATING_PREFIX_RE = re.compile(r"^[\^~*><]|^\|\|")
+# npm semver wildcard token: a bare ``x`` / ``X`` in one of the
+# version-number positions (``1.x``, ``1.2.X``, ``1.x.x``, or bare
+# ``x``). Equivalent to a caret range, so floating. Anchored at
+# ``.`` boundaries to avoid matching ``alpha.x`` pre-release tails.
+_FLOATING_WILDCARD_RE = re.compile(r"(?:^|\.)[xX](?:\.|$)")
 
 
 def _is_floating(spec: str) -> bool:
@@ -78,7 +84,9 @@ def _is_floating(spec: str) -> bool:
         return False
     if stripped.lower() in _MUTABLE_TAGS:
         return True
-    return bool(_FLOATING_PREFIX_RE.match(stripped))
+    if _FLOATING_PREFIX_RE.match(stripped):
+        return True
+    return bool(_FLOATING_WILDCARD_RE.search(stripped))
 
 
 def check(manifest: NpmManifest) -> Finding:

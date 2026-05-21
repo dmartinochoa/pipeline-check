@@ -39,6 +39,29 @@ class TestNPM001:
         f = run_check_manifest(data, "NPM-001")
         assert not f.passed
 
+    def test_fails_on_minor_wildcard(self):
+        # ``1.x`` is npm's wildcard form, equivalent to a caret range.
+        data = {"name": "x", "version": "1.0.0", "dependencies": {"react": "1.x"}}
+        f = run_check_manifest(data, "NPM-001")
+        assert not f.passed
+        assert "react" in f.description
+
+    def test_fails_on_patch_wildcard(self):
+        data = {"name": "x", "version": "1.0.0", "dependencies": {"react": "1.2.x"}}
+        f = run_check_manifest(data, "NPM-001")
+        assert not f.passed
+
+    def test_fails_on_uppercase_wildcard(self):
+        data = {"name": "x", "version": "1.0.0", "dependencies": {"react": "1.X"}}
+        f = run_check_manifest(data, "NPM-001")
+        assert not f.passed
+
+    def test_fails_on_bare_x(self):
+        # Bare ``x`` is shorthand for any version (equivalent to ``*``).
+        data = {"name": "x", "version": "1.0.0", "dependencies": {"react": "x"}}
+        f = run_check_manifest(data, "NPM-001")
+        assert not f.passed
+
     def test_passes_on_exact_pin(self):
         data = {
             "name": "x", "version": "1.0.0",
