@@ -2130,6 +2130,51 @@ Fires once per offending IaC file with a finding location pointing at the file. 
 
 **Autofix.** `pipeline_check --fix` will patch this finding automatically. Review the diff before committing; the fixer applies the conservative remediation pattern (e.g. swap a floating tag for the digest it currently resolves to), not the most aggressive one.
 
+**Proof of exploit.**
+
+```
+# Vulnerable: ``privileged: true`` gives the container the
+# equivalent of root on the node — full ``/dev`` access,
+# every Linux capability, and the ability to bypass
+# namespace isolation. A workload compromise (poisoned
+# image, RCE in app code, malicious chart) becomes a
+# node-level shell, and from there pivots to every other
+# pod on the node via the kubelet's credentials.
+apiVersion: apps/v1
+kind: Deployment
+metadata: { name: app }
+spec:
+  template:
+    spec:
+      containers:
+        - name: app
+          image: app:1.2.3
+          securityContext:
+            privileged: true
+
+# Safe: drop all caps; if the app genuinely needs ONE
+# capability (e.g. ``NET_BIND_SERVICE`` to listen on port
+# 80), add it back explicitly. ``runAsNonRoot`` +
+# ``readOnlyRootFilesystem`` close the remaining escape
+# routes that ``privileged: false`` alone doesn't.
+apiVersion: apps/v1
+kind: Deployment
+metadata: { name: app }
+spec:
+  template:
+    spec:
+      containers:
+        - name: app
+          image: app@sha256:abc123...
+          securityContext:
+            privileged: false
+            allowPrivilegeEscalation: false
+            runAsNonRoot: true
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop: ["ALL"]
+```
+
 **Source:** [`K8S-005`](../providers/kubernetes.md#k8s-005) in the [Kubernetes provider](../providers/kubernetes.md).
 
 ### `K8S-013`: Pod uses a hostPath volume <span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> { #detail-k8s-013 }

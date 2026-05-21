@@ -7749,6 +7749,51 @@ resource "aws_iam_role_policy" "codebuild_least_priv" {
 
 **Autofix.** `pipeline_check --fix` will patch this finding automatically. Review the diff before committing; the fixer applies the conservative remediation pattern (e.g. swap a floating tag for the digest it currently resolves to), not the most aggressive one.
 
+**Proof of exploit.**
+
+```
+# Vulnerable: ``privileged: true`` gives the container the
+# equivalent of root on the node — full ``/dev`` access,
+# every Linux capability, and the ability to bypass
+# namespace isolation. A workload compromise (poisoned
+# image, RCE in app code, malicious chart) becomes a
+# node-level shell, and from there pivots to every other
+# pod on the node via the kubelet's credentials.
+apiVersion: apps/v1
+kind: Deployment
+metadata: { name: app }
+spec:
+  template:
+    spec:
+      containers:
+        - name: app
+          image: app:1.2.3
+          securityContext:
+            privileged: true
+
+# Safe: drop all caps; if the app genuinely needs ONE
+# capability (e.g. ``NET_BIND_SERVICE`` to listen on port
+# 80), add it back explicitly. ``runAsNonRoot`` +
+# ``readOnlyRootFilesystem`` close the remaining escape
+# routes that ``privileged: false`` alone doesn't.
+apiVersion: apps/v1
+kind: Deployment
+metadata: { name: app }
+spec:
+  template:
+    spec:
+      containers:
+        - name: app
+          image: app@sha256:abc123...
+          securityContext:
+            privileged: false
+            allowPrivilegeEscalation: false
+            runAsNonRoot: true
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop: ["ALL"]
+```
+
 **Source:** [`K8S-005`](../providers/kubernetes.md#k8s-005) in the [Kubernetes provider](../providers/kubernetes.md).
 
 ### `K8S-006`: Container allowPrivilegeEscalation not explicitly false <span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> { #detail-k8s-006 }
@@ -7902,6 +7947,47 @@ spec:
 
 **Recommendation.** Never mount the container runtime socket (``/var/run/docker.sock``, ``containerd.sock``, ``crio.sock``), kubelet credentials (``/var/lib/kubelet``), the cluster config (``/etc/kubernetes``), the host root (``/``), or ``/proc`` / ``/sys`` / ``/etc`` into a workload container. Each of these is a one-line cluster takeover. If a container genuinely needs node-level metrics, use an exporter DaemonSet with a narrowly-scoped read-only mount.
 
+**Proof of exploit.**
+
+```
+# Vulnerable: ``/var/run/docker.sock`` mounted into the
+# container exposes the Docker API as root on the node.
+# A compromised pod (RCE in app, malicious image) runs
+# ``docker run -v /:/host --privileged`` and now owns the
+# entire node — kubelet credentials, every co-tenant pod's
+# filesystem, every secret mounted into a pod scheduled on
+# this node.
+apiVersion: v1
+kind: Pod
+metadata: { name: build }
+spec:
+  containers:
+    - name: builder
+      image: docker:latest
+      volumeMounts:
+        - name: docker-sock
+          mountPath: /var/run/docker.sock
+  volumes:
+    - name: docker-sock
+      hostPath:
+        path: /var/run/docker.sock
+
+# Safe: don't mount the runtime socket. Use a sandboxed
+# builder (Kaniko, BuildKit rootless, img) that produces
+# images from a Dockerfile without root access to the
+# node's container runtime.
+apiVersion: v1
+kind: Pod
+metadata: { name: build }
+spec:
+  containers:
+    - name: builder
+      image: gcr.io/kaniko-project/executor:v1.21.0
+      args:
+        - --context=git://github.com/myorg/myapp
+        - --destination=registry.example.com/myapp:tag
+```
+
 **Source:** [`K8S-014`](../providers/kubernetes.md#k8s-014) in the [Kubernetes provider](../providers/kubernetes.md).
 
 ### `K8S-015`: Container missing resources.limits.memory <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-k8s-015 }
@@ -7968,6 +8054,58 @@ spec:
 
 - [Tesla Kubernetes dashboard compromise](https://redlock.io/cloud-security-trends-october-2018) (RedLock, 2018): an unauthenticated Kubernetes dashboard exposed to the internet held tokens for service accounts bound to cluster-admin. Attackers used the dashboard credentials to deploy crypto-mining workloads with full cluster access. Least-privilege RBAC would have capped the blast radius even after dashboard exposure.
 - Argo CD [CVE-2022-24348](https://www.cve.org/CVERecord?id=CVE-2022-24348) (2022): a Helm path-traversal bug let a project member read other applications' YAML, exposing credentials. Combined with the default cluster-admin RBAC install, the recovered tokens were a direct cluster takeover. Argo's recommendation post-fix was to scope the controller's RBAC away from cluster-admin so a similar future bug couldn't escalate the same way.
+
+**Proof of exploit.**
+
+```
+# Vulnerable: any pod that uses the ``default`` ServiceAccount
+# in the ``app`` namespace gets cluster-admin. A compromised
+# pod (RCE, poisoned image, malicious sidecar) can list
+# every secret across every namespace, ``kubectl exec`` into
+# kube-system, and delete every workload. ServiceAccount
+# tokens auto-mount into pods by default, so the blast
+# radius is the union of every pod that runs as this SA.
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata: { name: default-cluster-admin }
+subjects:
+  - kind: ServiceAccount
+    name: default
+    namespace: app
+roleRef:
+  kind: ClusterRole
+  name: cluster-admin
+  apiGroup: rbac.authorization.k8s.io
+
+# Safe: namespace-scoped Role + RoleBinding granting only
+# the verbs the workload actually needs. Cluster-admin
+# bindings should be audit-reviewed and reduced to the
+# minimum set; the rule's intent is that the binding
+# disappear, not just narrow its subject.
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: app-pod-reader
+  namespace: app
+rules:
+  - apiGroups: [""]
+    resources: ["pods"]
+    verbs: ["get", "list"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: app-default-pod-reader
+  namespace: app
+subjects:
+  - kind: ServiceAccount
+    name: default
+    namespace: app
+roleRef:
+  kind: Role
+  name: app-pod-reader
+  apiGroup: rbac.authorization.k8s.io
+```
 
 **Source:** [`K8S-020`](../providers/kubernetes.md#k8s-020) in the [Kubernetes provider](../providers/kubernetes.md).
 
