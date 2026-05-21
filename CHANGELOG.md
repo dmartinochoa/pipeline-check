@@ -12,6 +12,21 @@ release commit collapses this section into `## [X.Y.Z] - <date>`.
 
 ### Added
 
+- **AC-030 attack chain — Argo CD anonymous access meets wildcard
+  RBAC.** New CRITICAL-severity chain pairing ARGOCD-009
+  (``argocd-cm`` sets ``users.anonymous.enabled: "true"``) with
+  ARGOCD-004 (``argocd-rbac-cm`` carries a wildcard ``p, <role>, *,
+  *, *, allow`` policy or a ``g, <subject>, role:admin`` binding).
+  Either leg alone is real; together they collapse to a zero-auth
+  control-plane takeover, an unauthenticated caller resolves through
+  the anonymous principal into the broad RBAC grant and drives Argo
+  CD's sync engine, the manifests it applies, and every credential
+  its application controllers can read. MITRE T1190 / T1078.001 /
+  T1098.003; closes the missing attack-chain coverage on the v1.3.0
+  Argo CD provider pack. The hand-edited table in
+  ``docs/attack_chains.md`` also picked up the missing AC-028 and
+  AC-029 rows the v1.3.0 cycle never backfilled. Chain count 39 ->
+  40.
 - **XPC-010 attack chain — npm cooldown miss meets Dockerfile
   lifecycle execution.** New cross-provider chain pairing NPM-008
   (a ``package.json`` pinned a direct dependency to an exact

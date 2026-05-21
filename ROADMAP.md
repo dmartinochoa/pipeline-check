@@ -4,6 +4,17 @@ What's planned, what's shipped, and what's deliberately out of scope.
 
 ## Shipped
 
+- **AC-030 attack chain: Argo CD anonymous access x wildcard RBAC
+  (post-1.3.0)** — First attack-chain pairing the v1.3.0 Argo CD
+  provider's rules. CRITICAL severity, single-provider (``argocd``).
+  Fires when ARGOCD-009 (anonymous access enabled in ``argocd-cm``)
+  and ARGOCD-004 (wildcard authority grant in ``argocd-rbac-cm``)
+  both fail against the same Argo CD instance. Composite: the
+  anonymous principal resolves through the wildcard grant into
+  unauthenticated control-plane authority, Argo CD's sync engine
+  becomes a cluster-takeover primitive. MITRE T1190 / T1078.001 /
+  T1098.003. The ``docs/attack_chains.md`` hand-edited chain table
+  also picked up the missing AC-028 / AC-029 rows.
 - **XPC-010 attack chain: npm cooldown x Dockerfile lifecycle
   (post-1.3.0)** — Cross-provider chain pairing NPM-008 (manifest
   pinned an exact version published inside the cooldown window) and

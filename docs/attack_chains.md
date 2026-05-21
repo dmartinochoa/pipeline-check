@@ -61,6 +61,9 @@ references, recommendation).
 | [`AC-025`](#ac-025) | Argo param injection lands in a privileged or root step | <span class="pg-sev pg-sev--critical">CRITICAL</span> | argo | [`ARGO-002`](providers/argo.md#argo-002) + [`ARGO-005`](providers/argo.md#argo-005) |
 | [`AC-026`](#ac-026) | Buildkite injection lands on auto-deploy step with no manual gate | <span class="pg-sev pg-sev--critical">CRITICAL</span> | buildkite | [`BK-003`](providers/buildkite.md#bk-003) + [`BK-007`](providers/buildkite.md#bk-007) |
 | [`AC-027`](#ac-027) | Image bakes a credential file AND exposes a remote-access port | <span class="pg-sev pg-sev--critical">CRITICAL</span> | dockerfile | [`DF-013`](providers/dockerfile.md#df-013) + [`DF-019`](providers/dockerfile.md#df-019) |
+| [`AC-028`](#ac-028) | npm worm propagation primitive co-located | <span class="pg-sev pg-sev--critical">CRITICAL</span> | github / npm | [`NPM-004`](providers/npm.md#npm-004) + ([`GHA-048`](providers/github.md#gha-048) or [`GHA-049`](providers/github.md#gha-049)) |
+| [`AC-029`](#ac-029) | Untrusted trigger reaches a long-lived publish credential | <span class="pg-sev pg-sev--critical">CRITICAL</span> | github | ([`GHA-002`](providers/github.md#gha-002) or [`GHA-009`](providers/github.md#gha-009) or [`GHA-013`](providers/github.md#gha-013)) + ([`GHA-050`](providers/github.md#gha-050) or [`GHA-005`](providers/github.md#gha-005)) + ([`GHA-021`](providers/github.md#gha-021) or [`GHA-029`](providers/github.md#gha-029)) |
+| [`AC-030`](#ac-030) | Argo CD anonymous access meets wildcard RBAC | <span class="pg-sev pg-sev--critical">CRITICAL</span> | argocd | [`ARGOCD-009`](providers/argocd.md#argocd-009) + [`ARGOCD-004`](providers/argocd.md#argocd-004) |
 
 ### Cross-provider chains (`XPC-NNN`)
 
@@ -981,6 +984,35 @@ A single workflow file combines an attacker-influenced trigger (GHA-002 / GHA-00
 **Recommended action**
 
 Break the lane at any one leg. Either: (a) re-trigger publish on tag-only / push-to-default-branch (drop ``pull_request_target`` / ``issue_comment`` / ``workflow_run`` from the publish workflow), (b) swap the long-lived token for OIDC Trusted Publishing (PyPI) / a federated identity (AWS) / GitHub's ``id-token: write`` flow, (c) enforce a committed lockfile and registry-integrity verification on the dep install. Doing all three is the long-term posture; doing any one breaks the chain.
+
+</div>
+
+</div>
+
+<div class="pg-rule pg-rule--critical" markdown>
+
+### AC-030: Argo CD anonymous access meets wildcard RBAC { #ac-030 }
+
+<div class="pg-rule__tags">
+<span class="pg-sev pg-sev--critical">CRITICAL</span> <span class="pg-tag" title="MITRE ATT&CK technique">MITRE T1190</span> <span class="pg-tag" title="MITRE ATT&CK technique">MITRE T1078.001</span> <span class="pg-tag" title="MITRE ATT&CK technique">MITRE T1098.003</span> <span class="pg-tag" title="kill-chain phase">initial-access -> privilege-escalation -> impact</span> <span class="pg-tag pg-tag--owasp">argocd</span>
+</div>
+
+``argocd-cm`` enables anonymous access (ARGOCD-009) AND ``argocd-rbac-cm`` carries at least one wildcard or ``role:admin`` grant (ARGOCD-004). The combination collapses to a zero-auth control-plane takeover, an unauthenticated caller routes through the anonymous principal into the broad RBAC grant and drives Argo CD's sync engine, the manifests it applies, and every credential its application controllers can read.
+
+**References**
+
+- <https://argo-cd.readthedocs.io/en/stable/operator-manual/rbac/>
+- <https://argo-cd.readthedocs.io/en/stable/operator-manual/security_considerations/>
+- <https://owasp.org/www-project-top-10-ci-cd-security-risks/CICD-SEC-02-Inadequate-Identity-and-Access-Management>
+
+<div class="pg-rule__rec" markdown>
+
+**Recommended action**
+
+Break either leg, both is best:
+  1. Disable anonymous access (ARGOCD-009). Remove the ``users.anonymous.enabled`` key from ``argocd-cm`` or set it to ``"false"``. With anonymous off, any wildcard grant in ``argocd-rbac-cm`` still requires an authenticated subject before it can be exercised.
+  2. Scope the RBAC policy (ARGOCD-004). Replace ``p, <role>, *, *, *, allow`` and ``g, <subject>, role:admin`` with explicit per-resource per-project grants tied to a named SSO group. Set ``policy.default`` to a deny / least-privilege role rather than leaving it implicit.
+If anonymous access is a deliberate design choice (e.g. a read-only public dashboard), the RBAC matrix MUST hold no wildcard / admin grants and ``policy.default`` must be the narrowest role the dashboard's use case allows.
 
 </div>
 

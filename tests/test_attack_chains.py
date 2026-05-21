@@ -188,6 +188,7 @@ class TestEngine:
             "AC-017", "AC-018", "AC-019", "AC-020",
             "AC-021", "AC-022", "AC-023", "AC-024",
             "AC-025", "AC-026", "AC-027", "AC-028", "AC-029",
+            "AC-030",
             "XPC-001", "XPC-002", "XPC-003", "XPC-004", "XPC-005",
             "XPC-006", "XPC-007", "XPC-008", "XPC-009", "XPC-010",
         }
@@ -2819,6 +2820,64 @@ class TestChainAC029:
             t for t in ac29.triggering_findings if t.check_id == "GHA-013"
         ]
         assert len(gha013_triggers) == 2
+
+
+class TestChainAC030:
+    """AC-030 — Argo CD anonymous access meets wildcard RBAC."""
+
+    RESOURCE = "argocd"
+
+    def test_fires_when_both_legs_fail_on_same_instance(self):
+        out = chains_pkg.evaluate([
+            _f("ARGOCD-009", self.RESOURCE, severity=Severity.CRITICAL),
+            _f("ARGOCD-004", self.RESOURCE, severity=Severity.CRITICAL),
+        ])
+        ac30 = [c for c in out if c.chain_id == "AC-030"]
+        assert len(ac30) == 1
+        chain = ac30[0]
+        assert chain.severity is Severity.CRITICAL
+        assert set(chain.triggering_check_ids) == {"ARGOCD-009", "ARGOCD-004"}
+        assert "T1190" in chain.mitre_attack
+        assert "T1078.001" in chain.mitre_attack
+        assert "T1098.003" in chain.mitre_attack
+        assert "initial-access" in chain.kill_chain_phase
+        assert "impact" in chain.kill_chain_phase
+
+    def test_does_not_fire_without_argocd009(self):
+        out = chains_pkg.evaluate([
+            _f("ARGOCD-004", self.RESOURCE),
+        ])
+        assert not any(c.chain_id == "AC-030" for c in out)
+
+    def test_does_not_fire_without_argocd004(self):
+        out = chains_pkg.evaluate([
+            _f("ARGOCD-009", self.RESOURCE),
+        ])
+        assert not any(c.chain_id == "AC-030" for c in out)
+
+    def test_does_not_fire_when_legs_passed(self):
+        out = chains_pkg.evaluate([
+            _f("ARGOCD-009", self.RESOURCE, passed=True),
+            _f("ARGOCD-004", self.RESOURCE, passed=True),
+        ])
+        assert not any(c.chain_id == "AC-030" for c in out)
+
+    def test_narrative_names_both_configmaps(self):
+        out = chains_pkg.evaluate([
+            _f("ARGOCD-009", self.RESOURCE),
+            _f("ARGOCD-004", self.RESOURCE),
+        ])
+        chain = next(c for c in out if c.chain_id == "AC-030")
+        assert "argocd-cm" in chain.narrative
+        assert "argocd-rbac-cm" in chain.narrative
+
+    def test_confidence_inherits_from_weakest_leg(self):
+        out = chains_pkg.evaluate([
+            _f("ARGOCD-009", self.RESOURCE, confidence=Confidence.HIGH),
+            _f("ARGOCD-004", self.RESOURCE, confidence=Confidence.MEDIUM),
+        ])
+        chain = next(c for c in out if c.chain_id == "AC-030")
+        assert chain.confidence is Confidence.MEDIUM
 
 
 # ── Gate integration ─────────────────────────────────────────────────
