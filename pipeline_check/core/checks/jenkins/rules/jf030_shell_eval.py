@@ -32,6 +32,42 @@ RULE = Rule(
         "intentionally NOT flagged, the substituted command is "
         "literal, only its output is eval'd.",
     ),
+    exploit_example=(
+        "// Vulnerable: ``eval`` on a value that came from a\n"
+        "// build parameter (or any non-step source) gives the\n"
+        "// value full shell-grammar reach. The same shape\n"
+        "// applies to ``sh -c`` on an unquoted variable.\n"
+        "pipeline {\n"
+        "  agent any\n"
+        "  parameters {\n"
+        "    string(name: 'CMD', defaultValue: 'echo hi')\n"
+        "  }\n"
+        "  stages {\n"
+        "    stage('dispatch') {\n"
+        "      steps {\n"
+        "        sh \"eval $CMD\"\n"
+        "      }\n"
+        "    }\n"
+        "  }\n"
+        "}\n"
+        "\n"
+        "// Safe: pass the parameter to a script you own as a\n"
+        "// quoted argument; let the script validate against\n"
+        "// an allow-list. Never eval values from parameters.\n"
+        "pipeline {\n"
+        "  agent any\n"
+        "  parameters {\n"
+        "    choice(name: 'TARGET', choices: ['staging', 'prod'])\n"
+        "  }\n"
+        "  stages {\n"
+        "    stage('dispatch') {\n"
+        "      steps {\n"
+        "        sh './scripts/dispatch.sh \"$TARGET\"'\n"
+        "      }\n"
+        "    }\n"
+        "  }\n"
+        "}"
+    ),
 )
 
 

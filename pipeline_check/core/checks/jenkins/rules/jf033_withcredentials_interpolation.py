@@ -46,6 +46,41 @@ RULE = Rule(
         "bound through ``withCredentials`` is a credential by "
         "definition.",
     ),
+    exploit_example=(
+        "// Vulnerable: Groovy interpolates ``${PASSWORD}`` INTO\n"
+        "// the sh body BEFORE the shell sees it. The actual\n"
+        "// secret value lands in the rendered script in plain\n"
+        "// view; the build log shows it verbatim because\n"
+        "// Jenkins' masking only watches the env-binding name.\n"
+        "pipeline {\n"
+        "  agent any\n"
+        "  stages {\n"
+        "    stage('deploy') {\n"
+        "      steps {\n"
+        "        withCredentials([string(credentialsId: 'api-token', variable: 'TOKEN')]) {\n"
+        "          sh \"curl -H 'Authorization: Bearer ${TOKEN}' https://api.example.com\"\n"
+        "        }\n"
+        "      }\n"
+        "    }\n"
+        "  }\n"
+        "}\n"
+        "\n"
+        "// Safe: single-quote the sh body so Groovy does NOT\n"
+        "// interpolate; the shell receives the literal ``$TOKEN``\n"
+        "// and the env-binding masking covers the output.\n"
+        "pipeline {\n"
+        "  agent any\n"
+        "  stages {\n"
+        "    stage('deploy') {\n"
+        "      steps {\n"
+        "        withCredentials([string(credentialsId: 'api-token', variable: 'TOKEN')]) {\n"
+        "          sh 'curl -H \"Authorization: Bearer $TOKEN\" https://api.example.com'\n"
+        "        }\n"
+        "      }\n"
+        "    }\n"
+        "  }\n"
+        "}"
+    ),
 )
 
 
