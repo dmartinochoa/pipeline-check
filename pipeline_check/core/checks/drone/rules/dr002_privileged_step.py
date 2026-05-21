@@ -41,6 +41,34 @@ RULE = Rule(
         "accidentally-trusted repo) so a ``privileged: true`` "
         "in source is always a finding."
     ),
+    exploit_example=(
+        "# Vulnerable: ``privileged: true`` grants the step\n"
+        "# container access to the host kernel's namespaces and\n"
+        "# /dev. A workload compromise (poisoned image, build-\n"
+        "# script RCE) escapes to the runner host and from there\n"
+        "# to every other build sharing the runner.\n"
+        "kind: pipeline\n"
+        "type: docker\n"
+        "name: build\n"
+        "steps:\n"
+        "  - name: dind-build\n"
+        "    image: docker:24\n"
+        "    privileged: true\n"
+        "    commands:\n"
+        "      - docker build -t app .\n"
+        "\n"
+        "# Safe: use a rootless image builder (Kaniko, BuildKit\n"
+        "# rootless) that produces images without privileged host\n"
+        "# access. Drop ``privileged`` entirely.\n"
+        "kind: pipeline\n"
+        "type: docker\n"
+        "name: build\n"
+        "steps:\n"
+        "  - name: kaniko-build\n"
+        "    image: gcr.io/kaniko-project/executor@sha256:abc123...\n"
+        "    commands:\n"
+        "      - /kaniko/executor --context=. --destination=registry/app:tag"
+    ),
 )
 
 

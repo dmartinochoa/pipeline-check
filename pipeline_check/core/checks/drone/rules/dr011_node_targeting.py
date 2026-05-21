@@ -55,6 +55,40 @@ RULE = Rule(
         "conventions for trusted Drone vars, suppress on the "
         "specific pipeline name.",
     ),
+    exploit_example=(
+        "# Vulnerable: ``node.queue: ${DRONE_BRANCH}`` lets a PR\n"
+        "# author route their build to any runner pool by naming\n"
+        "# their branch after it. A branch named ``production``\n"
+        "# routes the PR build to the production-only runner with\n"
+        "# elevated permissions, which were never meant to be\n"
+        "# reachable from a PR.\n"
+        "kind: pipeline\n"
+        "type: docker\n"
+        "name: build\n"
+        "node:\n"
+        "  queue: ${DRONE_BRANCH}\n"
+        "steps:\n"
+        "  - name: deploy\n"
+        "    image: deploy-cli@sha256:abc123...\n"
+        "    commands:\n"
+        "      - ./deploy.sh\n"
+        "\n"
+        "# Safe: pin the runner label to a static literal that\n"
+        "# matches your targeting policy. Production runners\n"
+        "# should ALSO enforce the label server-side (Drone\n"
+        "# agent's ``--labels`` flag) so the rule is one layer\n"
+        "# of defense-in-depth.\n"
+        "kind: pipeline\n"
+        "type: docker\n"
+        "name: build\n"
+        "node:\n"
+        "  queue: production\n"
+        "steps:\n"
+        "  - name: deploy\n"
+        "    image: deploy-cli@sha256:abc123...\n"
+        "    commands:\n"
+        "      - ./deploy.sh"
+    ),
 )
 
 

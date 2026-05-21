@@ -1920,6 +1920,34 @@ The same shape as DF-027 (``PYTHONHTTPSVERIFY=0``) but narrower in surface — `
 
 - Local-build images (``image: my-org/build-tools:dev`` produced upstream in the same pipeline) sometimes can't be digest-pinned because the digest depends on the build. Suppress via ignore-file scoped to the specific step name when this is the deliberate shape; the floating-tag risk still applies to every public-registry pull.
 
+**Proof of exploit.**
+
+```
+# Vulnerable: ``golang:1.21`` is a mutable tag. Docker Hub
+# (or any compromise of the publisher's account) repoints
+# the tag at a new image on the next 1.21.x patch release
+# and the next pipeline run pulls the swap silently.
+kind: pipeline
+type: docker
+name: build
+steps:
+  - name: test
+    image: golang:1.21
+    commands:
+      - go test ./...
+
+# Safe: pin to the content-addressable digest. Renovate /
+# Dependabot bump the digest in reviewable PRs.
+kind: pipeline
+type: docker
+name: build
+steps:
+  - name: test
+    image: golang@sha256:abc123...
+    commands:
+      - go test ./...
+```
+
 **Source:** [`DR-001`](../providers/drone.md#dr-001) in the [Drone CI provider](../providers/drone.md).
 
 ### `DR-005`: Plugin step uses a floating image tag <span class="pg-sev pg-sev--high">HIGH</span> { #detail-dr-005 }
@@ -1934,6 +1962,38 @@ The same shape as DF-027 (``PYTHONHTTPSVERIFY=0``) but narrower in surface — `
 
 - Internal-registry plugins built and pushed by the same pipeline (``image: my-org/internal-plugin:dev`` produced upstream) sometimes can't be exact-pinned. Suppress via ignore-file scoped to the specific step name when this is the deliberate shape.
 
+**Proof of exploit.**
+
+```
+# Vulnerable: ``plugins/docker:latest`` resolves at runner
+# start to whatever Docker Hub currently serves under the
+# ``latest`` tag. Whoever controls the plugin repo (or
+# anyone with publisher access) ships code into every
+# pipeline that uses the plugin.
+kind: pipeline
+type: docker
+name: publish
+steps:
+  - name: push-image
+    image: plugins/docker:latest
+    settings:
+      repo: myorg/app
+      tags: latest
+
+# Safe: pin the plugin image to a content-addressable
+# digest. The plugin can't be repointed without changing
+# the pipeline file (and a reviewable PR with it).
+kind: pipeline
+type: docker
+name: publish
+steps:
+  - name: push-image
+    image: plugins/docker@sha256:abc123...
+    settings:
+      repo: myorg/app
+      tags: ${DRONE_TAG}
+```
+
 **Source:** [`DR-005`](../providers/drone.md#dr-005) in the [Drone CI provider](../providers/drone.md).
 
 ### `DR-006`: TLS verification disabled in step commands <span class="pg-sev pg-sev--high">HIGH</span> { #detail-dr-006 }
@@ -1943,6 +2003,41 @@ The same shape as DF-027 (``PYTHONHTTPSVERIFY=0``) but narrower in surface — `
 **How this is detected.** Uses the cross-provider ``_primitives.tls_bypass`` detector shared with GHA-027, BK-008, JF-022, ADO-026, CC-024, GCB-011, and the CFN / Terraform rule packs. Covers curl / wget / git / npm / yarn / pip / helm / kubectl / ssh / docker / maven / gradle / aws bypasses. The rule scans every ``commands:`` entry on every step.
 
 **Recommendation.** Remove TLS-bypass flags from build commands. The most common offenders are ``curl --insecure`` / ``-k`` / ``wget --no-check-certificate``, ``pip config set global.trusted-host``, ``npm config set strict-ssl false``, and ``git -c http.sslverify=false``. Each exposes the build to TLS-MITM injection of a registry-served payload, which is a textbook supply-chain attack vector. If a registry's certificate is genuinely broken, fix the registry rather than permanently disabling verification, the bypass tends to outlive the broken cert and become a permanent weakness.
+
+**Proof of exploit.**
+
+```
+# Vulnerable: every npm install in the build skips strict-
+# ssl validation. An attacker on the network path (corp
+# proxy, malicious mirror, BGP hijack) MITMs the registry
+# and ships malicious tarballs that npm installs without
+# any signal.
+kind: pipeline
+type: docker
+name: build
+steps:
+  - name: install
+    image: node:20@sha256:abc123...
+    commands:
+      - npm config set strict-ssl false
+      - npm install
+
+# Safe: install the missing CA into the image (or use the
+# default trust store). Never disable TLS verification
+# pipeline-wide; if a registry's cert is broken, fix the
+# registry rather than papering over with a bypass that
+# outlives the broken cert.
+kind: pipeline
+type: docker
+name: build
+steps:
+  - name: install
+    image: node:20@sha256:abc123...
+    commands:
+      - cp /etc/ssl/internal-ca.crt /usr/local/share/ca-certificates/
+      - update-ca-certificates
+      - npm install
+```
 
 **Source:** [`DR-006`](../providers/drone.md#dr-006) in the [Drone CI provider](../providers/drone.md).
 
