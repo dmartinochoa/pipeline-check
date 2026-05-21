@@ -7171,6 +7171,42 @@ v1 charts (HELM-001) are skipped. They predate ``Chart.lock`` and use ``requirem
 
 - Charts with no dependencies (the ``dependencies:`` key is absent or empty) pass automatically. There is nothing to lock.
 
+**Proof of exploit.**
+
+```
+# Vulnerable: ``Chart.yaml`` declares a redis dependency by
+# version range but ``Chart.lock`` is absent. ``helm
+# dependency build`` resolves the range against whatever the
+# chart repo serves at install time. A compromised repo (or
+# a malicious chart cache) substitutes a backdoored redis-
+# 17.x tarball; the consuming cluster runs it.
+# Chart.yaml
+apiVersion: v2
+name: my-app
+version: 1.0.0
+dependencies:
+  - name: redis
+    version: ^17.0.0
+    repository: https://charts.bitnami.com/bitnami
+# Chart.lock missing entirely — no integrity gate on
+# ``helm dependency build``
+
+# Safe: run ``helm dependency update`` and commit
+# ``Chart.lock``. ``digest:`` is the sha256 of the resolved
+# tarball; ``helm dependency build`` re-fetches and verifies
+# the digest before unpacking. A swapped tarball changes the
+# digest and the build fails loud instead of silently
+# installing the substitute.
+# Chart.lock
+dependencies:
+  - name: redis
+    repository: https://charts.bitnami.com/bitnami
+    version: 17.15.4
+    digest: sha256:abc123def456abc123def456abc123def456abc123def456abc123def456abcd
+digest: sha256:9876543210fedcba9876543210fedcba9876543210fedcba9876543210fedcba
+generated: "2026-01-15T10:30:00Z"
+```
+
 **Source:** [`HELM-002`](../providers/helm.md) in the [Helm provider](../providers/helm.md).
 
 ### `HELM-003`: Chart dependency declared on a non-HTTPS repository <span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> { #detail-helm-003 }
@@ -7187,6 +7223,44 @@ v1 charts (HELM-001) are skipped. They predate ``Chart.lock`` and use ``requirem
 **Recommendation.** Switch each ``dependencies[].repository`` value to an ``https://`` chart repo URL, an ``oci://`` registry reference, or a ``file://`` path for in-repo charts. Plaintext ``http://`` (and other non-TLS schemes like ``git://``) lets any on-path attacker substitute the dependency tarball during ``helm dependency build``; ``Chart.lock``'s digest check (HELM-002) only catches that on the *next* update, not the compromised pull itself.
 
 **Autofix.** `pipeline_check --fix` will patch this finding automatically. Review the diff before committing; the fixer applies the conservative remediation pattern (e.g. swap a floating tag for the digest it currently resolves to), not the most aggressive one.
+
+**Proof of exploit.**
+
+```
+# Vulnerable: ``helm dependency build`` fetches the redis
+# tarball over plaintext HTTP. Any on-path attacker
+# (compromised proxy, malicious WiFi, BGP hijack on the
+# internal mirror) substitutes a backdoored tarball; the
+# consuming cluster unpacks it into the umbrella chart.
+# ``Chart.lock``'s digest check (HELM-002) only catches
+# this on the *next* update, not the compromised pull
+# itself.
+apiVersion: v2
+name: my-app
+version: 1.0.0
+dependencies:
+  - name: redis
+    version: 17.15.4
+    repository: http://internal-charts.example.com
+
+# Safe: HTTPS gives TLS for the fetch; an OCI registry
+# reference (``oci://``) goes through the registry's TLS
+# config; a ``file://`` reference reads from disk inside
+# the same repo, so there's no network surface at all.
+apiVersion: v2
+name: my-app
+version: 1.0.0
+dependencies:
+  - name: redis
+    version: 17.15.4
+    repository: https://charts.bitnami.com/bitnami
+  - name: postgres
+    version: 12.1.0
+    repository: oci://registry.example.com/charts
+  - name: my-sidecar
+    version: 0.1.0
+    repository: file://../sidecar
+```
 
 **Source:** [`HELM-003`](../providers/helm.md) in the [Helm provider](../providers/helm.md).
 
