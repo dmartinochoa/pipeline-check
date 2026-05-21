@@ -483,6 +483,34 @@ Every check that evidences this standard, rendered once with its detection mecha
 - Docker Hub typosquatting / namespace-takeover incidents (2017 onward): docker-library Sysdig and Aqua research documented thousands of malicious images uploaded under near-miss names (``alpine`` vs ``alphine``, etc.) and occasional namespace recoveries shipping crypto-miners downstream. Digest-pinned consumers are immune; tag-pinned consumers pull whatever sits under the name today.
 - Codecov ``codecov/codecov-action`` tag-mutation incident (post-Codecov-Bash-uploader compromise): the upstream rotated the action's ``@v3`` tag during the fallout, and consumers pinning to the tag silently re-ran a different build than before. Digest pinning would have surfaced the change as a checksum mismatch instead of a silent swap.
 
+**Proof of exploit.**
+
+```
+# Vulnerable: ``python:3.12-slim`` is a tag, and tags on
+# Docker Hub are mutable. Python's publishers can (and do)
+# repoint the same tag at a new image on every point
+# release, and namespace takeovers / hijacked publisher
+# accounts can silently swap a malicious image under the
+# existing tag. The next rebuild picks up whatever's there
+# now, with no signal to the consumer that the base
+# changed.
+FROM python:3.12-slim
+COPY . /app
+RUN pip install --require-hashes -r /app/requirements.txt
+CMD ["python", "/app/main.py"]
+
+# Safe: pin to the immutable sha256 digest. The leading
+# comment documents which tag the digest corresponds to.
+# Renovate / Dependabot's Docker ecosystem updaters resolve
+# and bump these on a schedule so the pin doesn't drift
+# behind security patches.
+# python:3.12.1-slim (refreshed YYYY-MM-DD)
+FROM python:3.12-slim@sha256:abc123...
+COPY . /app
+RUN pip install --require-hashes -r /app/requirements.txt
+CMD ["python", "/app/main.py"]
+```
+
 **Source:** [`DF-001`](../providers/dockerfile.md#df-001) in the [Dockerfile provider](../providers/dockerfile.md).
 
 ### `DF-005`: RUN uses shell-eval (eval / sh -c on a variable / backticks) <span class="pg-sev pg-sev--high">HIGH</span> { #detail-df-005 }
@@ -502,6 +530,34 @@ Every check that evidences this standard, rendered once with its detection mecha
 **How this is detected.** Reuses ``_primitives/secret_shapes``, flags AKIA-prefixed AWS keys outright (the literal AWS access-key shape) and credential-named keys (``API_KEY``, ``DB_PASSWORD``, ``SECRET_TOKEN``) when the value is a non-empty literal.
 
 **Recommendation.** Never hard-code credentials in a Dockerfile. ``ENV`` values are baked into the image layer history, even if the value is later overwritten, ``docker history --no-trunc`` reads the original. Use ``RUN --mount=type=secret`` for build-time secrets or runtime env injection (``docker run -e SECRET=…``) for runtime ones. Rotate any secret already exposed.
+
+**Proof of exploit.**
+
+```
+# Vulnerable: ``API_KEY=sk_live_...`` lands in the image's
+# layer history. ``docker history --no-trunc <image>`` (any
+# user who can pull the image) prints the literal value
+# even when a later layer overwrites or unsets it. Public
+# images on Docker Hub are pulled and inspected en masse by
+# secret scanners; private images leak the same way to
+# anyone who exfils the registry credentials.
+FROM node:20-alpine@sha256:abc123...
+ENV API_KEY=sk_live_abc123def456ghi789
+COPY . /app
+RUN cd /app && npm ci
+
+# Safe: keep the secret out of the image entirely. Use
+# BuildKit's ``--mount=type=secret`` for build-time access
+# (the secret never lands in any layer), and runtime
+# injection (``docker run -e API_KEY=$VAULT_API_KEY``) for
+# the running container. The Dockerfile only references
+# the secret by mount path or env-var name.
+# syntax=docker/dockerfile:1.7
+FROM node:20-alpine@sha256:abc123...
+COPY . /app
+RUN --mount=type=secret,id=api_key \
+    cd /app && API_KEY=$(cat /run/secrets/api_key) npm ci
+```
 
 **Source:** [`DF-006`](../providers/dockerfile.md#df-006) in the [Dockerfile provider](../providers/dockerfile.md).
 

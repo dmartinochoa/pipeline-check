@@ -1445,6 +1445,34 @@ Yarn / Bun-only pipelines pass silently because the ``audit signatures`` primiti
 - Docker Hub typosquatting / namespace-takeover incidents (2017 onward): docker-library Sysdig and Aqua research documented thousands of malicious images uploaded under near-miss names (``alpine`` vs ``alphine``, etc.) and occasional namespace recoveries shipping crypto-miners downstream. Digest-pinned consumers are immune; tag-pinned consumers pull whatever sits under the name today.
 - Codecov ``codecov/codecov-action`` tag-mutation incident (post-Codecov-Bash-uploader compromise): the upstream rotated the action's ``@v3`` tag during the fallout, and consumers pinning to the tag silently re-ran a different build than before. Digest pinning would have surfaced the change as a checksum mismatch instead of a silent swap.
 
+**Proof of exploit.**
+
+```
+# Vulnerable: ``python:3.12-slim`` is a tag, and tags on
+# Docker Hub are mutable. Python's publishers can (and do)
+# repoint the same tag at a new image on every point
+# release, and namespace takeovers / hijacked publisher
+# accounts can silently swap a malicious image under the
+# existing tag. The next rebuild picks up whatever's there
+# now, with no signal to the consumer that the base
+# changed.
+FROM python:3.12-slim
+COPY . /app
+RUN pip install --require-hashes -r /app/requirements.txt
+CMD ["python", "/app/main.py"]
+
+# Safe: pin to the immutable sha256 digest. The leading
+# comment documents which tag the digest corresponds to.
+# Renovate / Dependabot's Docker ecosystem updaters resolve
+# and bump these on a schedule so the pin doesn't drift
+# behind security patches.
+# python:3.12.1-slim (refreshed YYYY-MM-DD)
+FROM python:3.12-slim@sha256:abc123...
+COPY . /app
+RUN pip install --require-hashes -r /app/requirements.txt
+CMD ["python", "/app/main.py"]
+```
+
 **Source:** [`DF-001`](../providers/dockerfile.md#df-001) in the [Dockerfile provider](../providers/dockerfile.md).
 
 ### `DF-003`: ADD pulls remote URL without integrity verification <span class="pg-sev pg-sev--high">HIGH</span> { #detail-df-003 }
@@ -1468,6 +1496,31 @@ Yarn / Bun-only pipelines pass silently because the ``audit signatures`` primiti
 **How this is detected.** Reuses ``_primitives/remote_script_exec.scan`` so the vocabulary matches the equivalent CI-side rules (GHA-016, GL-016, BB-012, ADO-016, CC-016, JF-016).
 
 **Recommendation.** Download to a file, verify checksum or signature, then execute. ``curl -fsSL <url> -o /tmp/x.sh && sha256sum -c <(echo '<digest>  /tmp/x.sh') && bash /tmp/x.sh``. Vendor installers from well-known hosts (rustup.rs, get.docker.com, ...) are reported with vendor_trusted=true so reviewers can calibrate.
+
+**Proof of exploit.**
+
+```
+# Vulnerable: curl-pipe to bash trusts both the network
+# (any MITM substitutes the script in flight) and the host
+# (a compromised installer endpoint silently serves attacker
+# code). The script then runs as root inside the build
+# context, so anything it writes lands in the final image.
+FROM ubuntu:24.04@sha256:abc123...
+RUN apt-get update && apt-get install -y --no-install-recommends curl ca-certificates
+RUN curl -fsSL https://example-installer.example/install.sh | bash
+
+# Safe: download to a file, verify a sha256 digest from a
+# trusted source (the project's signing key, the vendor's
+# release manifest), then execute. If the upstream content
+# changes the digest stops matching and the build fails
+# before the malicious code runs.
+FROM ubuntu:24.04@sha256:abc123...
+RUN apt-get update && apt-get install -y --no-install-recommends curl ca-certificates
+RUN curl -fsSL https://example-installer.example/install.sh -o /tmp/install.sh \
+    && echo 'a1b2c3d4...  /tmp/install.sh' | sha256sum -c - \
+    && bash /tmp/install.sh \
+    && rm /tmp/install.sh
+```
 
 **Source:** [`DF-004`](../providers/dockerfile.md#df-004) in the [Dockerfile provider](../providers/dockerfile.md).
 
