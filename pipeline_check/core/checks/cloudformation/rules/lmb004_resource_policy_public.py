@@ -24,6 +24,31 @@ RULE = Rule(
         "A wildcard invoker exposes the function — and the role it "
         "executes with — to the whole internet."
     ),
+    exploit_example=(
+        "# Vulnerable: a Lambda permission grants ``Principal:\n"
+        "# '*'``. Any AWS account on the internet can invoke\n"
+        "# the function.\n"
+        "Resources:\n"
+        "  PublicPerm:\n"
+        "    Type: AWS::Lambda::Permission\n"
+        "    Properties:\n"
+        "      FunctionName: !Ref Fn\n"
+        "      Action: lambda:InvokeFunction\n"
+        "      Principal: '*'\n"
+        "\n"
+        "# Safe: keep the wildcard ONLY when paired with a\n"
+        "# service principal AND a SourceArn / SourceAccount\n"
+        "# condition that proves the call originated from the\n"
+        "# expected upstream.\n"
+        "Resources:\n"
+        "  ApiGwPerm:\n"
+        "    Type: AWS::Lambda::Permission\n"
+        "    Properties:\n"
+        "      FunctionName: !Ref Fn\n"
+        "      Action: lambda:InvokeFunction\n"
+        "      Principal: apigateway.amazonaws.com\n"
+        "      SourceArn: !Sub 'arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:abc123/*'"
+    ),
 )
 
 

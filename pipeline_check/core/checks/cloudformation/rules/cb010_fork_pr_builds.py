@@ -23,6 +23,35 @@ RULE = Rule(
         "covers a ``PULL_REQUEST_*`` event, fires when no sibling "
         "``ACTOR_ACCOUNT_ID`` filter constrains the PR author."
     ),
+    exploit_example=(
+        "# Vulnerable: ``Triggers.FilterGroups`` accepts\n"
+        "# ``PULL_REQUEST_CREATED`` / ``PULL_REQUEST_UPDATED``\n"
+        "# events with no ``ACTOR_ACCOUNT_ID`` filter. A fork PR\n"
+        "# triggers the build with the project's role.\n"
+        "Resources:\n"
+        "  Build:\n"
+        "    Type: AWS::CodeBuild::Project\n"
+        "    Properties:\n"
+        "      Triggers:\n"
+        "        Webhook: true\n"
+        "        FilterGroups:\n"
+        "          - - Type: EVENT\n"
+        "              Pattern: PULL_REQUEST_CREATED\n"
+        "\n"
+        "# Safe: add an ``ACTOR_ACCOUNT_ID`` filter restricting\n"
+        "# to internal accounts. Fork PRs no longer trigger.\n"
+        "Resources:\n"
+        "  Build:\n"
+        "    Type: AWS::CodeBuild::Project\n"
+        "    Properties:\n"
+        "      Triggers:\n"
+        "        Webhook: true\n"
+        "        FilterGroups:\n"
+        "          - - Type: EVENT\n"
+        "              Pattern: PULL_REQUEST_CREATED\n"
+        "            - Type: ACTOR_ACCOUNT_ID\n"
+        "              Pattern: '12345678|23456789'"
+    ),
 )
 
 

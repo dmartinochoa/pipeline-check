@@ -23,6 +23,24 @@ RULE = Rule(
         "``NONE`` setting exposes the function over a public HTTPS "
         "endpoint with no authentication."
     ),
+    exploit_example=(
+        "# Vulnerable: a Function URL with ``AuthType: NONE`` is\n"
+        "# on the public internet without auth.\n"
+        "Resources:\n"
+        "  Url:\n"
+        "    Type: AWS::Lambda::Url\n"
+        "    Properties:\n"
+        "      TargetFunctionArn: !GetAtt Fn.Arn\n"
+        "      AuthType: NONE\n"
+        "\n"
+        "# Safe: ``AWS_IAM`` requires IAM-signed requests.\n"
+        "Resources:\n"
+        "  Url:\n"
+        "    Type: AWS::Lambda::Url\n"
+        "    Properties:\n"
+        "      TargetFunctionArn: !GetAtt Fn.Arn\n"
+        "      AuthType: AWS_IAM"
+    ),
 )
 
 

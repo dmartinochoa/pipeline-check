@@ -23,6 +23,38 @@ RULE = Rule(
         "statement that names a wildcard principal — wildcard there "
         "lets every AWS account in the world pull the image."
     ),
+    exploit_example=(
+        "# Vulnerable: ECR repository policy with ``Principal:\n"
+        "# '*'``. Anyone on the internet can pull images and\n"
+        "# enumerate internal app names + base-image versions.\n"
+        "Resources:\n"
+        "  Repo:\n"
+        "    Type: AWS::ECR::Repository\n"
+        "    Properties:\n"
+        "      RepositoryName: myapp\n"
+        "      RepositoryPolicyText:\n"
+        "        Version: '2012-10-17'\n"
+        "        Statement:\n"
+        "          - Effect: Allow\n"
+        "            Principal: '*'\n"
+        "            Action: [ecr:BatchGetImage, ecr:GetDownloadUrlForLayer]\n"
+        "\n"
+        "# Safe: scope to the account / org. Use ECR Public for\n"
+        "# truly public images.\n"
+        "Resources:\n"
+        "  Repo:\n"
+        "    Type: AWS::ECR::Repository\n"
+        "    Properties:\n"
+        "      RepositoryName: myapp\n"
+        "      RepositoryPolicyText:\n"
+        "        Version: '2012-10-17'\n"
+        "        Statement:\n"
+        "          - Effect: Allow\n"
+        "            Principal: { AWS: '*' }\n"
+        "            Action: [ecr:BatchGetImage, ecr:GetDownloadUrlForLayer]\n"
+        "            Condition:\n"
+        "              StringEquals: { aws:PrincipalOrgID: o-abc123def4 }"
+    ),
 )
 
 

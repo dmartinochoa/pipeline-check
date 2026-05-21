@@ -32,6 +32,34 @@ RULE = Rule(
         "attribute (``*Password``, ``*Token``, …) carries a "
         "non-placeholder literal."
     ),
+    exploit_example=(
+        "# Vulnerable: a stateful resource carries a plaintext\n"
+        "# secret literal. The template is committed to git;\n"
+        "# CloudFormation stores the secret in stack drift / events\n"
+        "# / parameter overrides — visible to anyone with\n"
+        "# ``cloudformation:DescribeStack*``.\n"
+        "Resources:\n"
+        "  Db:\n"
+        "    Type: AWS::RDS::DBInstance\n"
+        "    Properties:\n"
+        "      DBInstanceClass: db.t3.medium\n"
+        "      Engine: postgres\n"
+        "      MasterUsername: appuser\n"
+        "      MasterUserPassword: hunter2-prod-master-pw\n"
+        "\n"
+        "# Safe: reference a Secrets Manager dynamic reference.\n"
+        "# CloudFormation resolves the secret at stack-update\n"
+        "# time; the template carries only the ARN.\n"
+        "Resources:\n"
+        "  Db:\n"
+        "    Type: AWS::RDS::DBInstance\n"
+        "    Properties:\n"
+        "      DBInstanceClass: db.t3.medium\n"
+        "      Engine: postgres\n"
+        "      MasterUsername: appuser\n"
+        "      MasterUserPassword:\n"
+        "        '{{resolve:secretsmanager:prod/db/master:SecretString:password}}'"
+    ),
 )
 
 

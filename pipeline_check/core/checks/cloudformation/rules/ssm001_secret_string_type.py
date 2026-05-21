@@ -25,6 +25,33 @@ RULE = Rule(
         "not creatable via CFN, see AWS docs), the value is in "
         "plaintext."
     ),
+    exploit_example=(
+        "# Vulnerable: an SSM parameter with a secret-like name\n"
+        "# (``DB_PASSWORD`` / ``API_TOKEN`` / etc.) stored as\n"
+        "# ``Type: String`` (not ``SecureString``). The value is\n"
+        "# in plaintext at rest in SSM and visible to anyone\n"
+        "# with ``ssm:GetParameter``.\n"
+        "Resources:\n"
+        "  Param:\n"
+        "    Type: AWS::SSM::Parameter\n"
+        "    Properties:\n"
+        "      Name: /prod/db-password\n"
+        "      Type: String\n"
+        "      Value: hunter2-prod-pw\n"
+        "\n"
+        "# Safe: ``SecureString`` encrypts the value with KMS at\n"
+        "# rest. Note: ``Type: SecureString`` can't be created\n"
+        "# directly via CloudFormation (CFN limitation) — create\n"
+        "# via API + ``Tier: Standard`` / ``Advanced`` and\n"
+        "# reference the secret by ARN, or use Secrets Manager\n"
+        "# for new secrets.\n"
+        "Resources:\n"
+        "  # Preferred: Secrets Manager (rotation, native CFN support)\n"
+        "  Secret:\n"
+        "    Type: AWS::SecretsManager::Secret\n"
+        "    Properties:\n"
+        "      Name: /prod/db-password"
+    ),
 )
 
 

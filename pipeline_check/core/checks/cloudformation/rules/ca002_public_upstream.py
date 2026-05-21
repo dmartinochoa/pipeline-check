@@ -24,6 +24,32 @@ RULE = Rule(
         "(e.g. ``public:npmjs``) fetches packages directly from the "
         "public ecosystem with no intermediate scrub."
     ),
+    exploit_example=(
+        "# Vulnerable: a CodeArtifact repository wired to a public\n"
+        "# external connection. Internal package names that show\n"
+        "# up in your repo manifests can be claimed on the public\n"
+        "# upstream with a higher version; consumers resolve via\n"
+        "# the connection and pull attacker code.\n"
+        "Resources:\n"
+        "  SharedRepo:\n"
+        "    Type: AWS::CodeArtifact::Repository\n"
+        "    Properties:\n"
+        "      DomainName: myorg\n"
+        "      RepositoryName: shared\n"
+        "      ExternalConnections: [public:pypi]   # public upstream\n"
+        "\n"
+        "# Safe: drop the public external connection. Use a\n"
+        "# curated internal upstream (or another internal\n"
+        "# CodeArtifact repo) that only mirrors known-good\n"
+        "# packages.\n"
+        "Resources:\n"
+        "  SharedRepo:\n"
+        "    Type: AWS::CodeArtifact::Repository\n"
+        "    Properties:\n"
+        "      DomainName: myorg\n"
+        "      RepositoryName: shared\n"
+        "      Upstreams: [public-pypi-cache]   # internal-only upstream"
+    ),
 )
 
 

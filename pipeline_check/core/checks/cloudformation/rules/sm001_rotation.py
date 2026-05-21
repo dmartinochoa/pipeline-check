@@ -26,6 +26,35 @@ RULE = Rule(
         "secret lives forever in any backup or snapshot taken since "
         "the leak."
     ),
+    exploit_example=(
+        "# Vulnerable: a Secrets Manager secret with no rotation\n"
+        "# (no ``AWS::SecretsManager::RotationSchedule`` resource\n"
+        "# referencing it). The credential lives forever; any\n"
+        "# leak stays valid until manual rotation.\n"
+        "Resources:\n"
+        "  Secret:\n"
+        "    Type: AWS::SecretsManager::Secret\n"
+        "    Properties:\n"
+        "      Name: prod/db-master\n"
+        "      Description: prod DB password\n"
+        "      # no rotation schedule\n"
+        "\n"
+        "# Safe: pair the secret with a rotation Lambda + 30-day\n"
+        "# schedule. AWS provides templates for RDS / DocumentDB\n"
+        "# / Redshift; custom secrets need a custom Lambda.\n"
+        "Resources:\n"
+        "  Secret:\n"
+        "    Type: AWS::SecretsManager::Secret\n"
+        "    Properties:\n"
+        "      Name: prod/db-master\n"
+        "  Rotation:\n"
+        "    Type: AWS::SecretsManager::RotationSchedule\n"
+        "    Properties:\n"
+        "      SecretId: !Ref Secret\n"
+        "      RotationLambdaARN: !GetAtt RotateDbFn.Arn\n"
+        "      RotationRules:\n"
+        "        AutomaticallyAfterDays: 30"
+    ),
 )
 
 

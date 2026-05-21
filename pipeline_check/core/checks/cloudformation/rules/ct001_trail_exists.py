@@ -23,6 +23,28 @@ RULE = Rule(
         "trail (declared here or out-of-band), management-plane "
         "activity has no durable audit record."
     ),
+    exploit_example=(
+        "# Vulnerable: no ``AWS::CloudTrail::Trail`` resource in\n"
+        "# the template covering this region. API calls aren't\n"
+        "# audited; incident response can't reconstruct an\n"
+        "# attacker's actions.\n"
+        "Resources:\n"
+        "  # ... no CloudTrail::Trail anywhere\n"
+        "\n"
+        "# Safe: a multi-region trail logging to a versioned S3\n"
+        "# bucket with log-file validation enabled. Pair with\n"
+        "# CloudWatch alarms on common compromise signals.\n"
+        "Resources:\n"
+        "  Trail:\n"
+        "    Type: AWS::CloudTrail::Trail\n"
+        "    Properties:\n"
+        "      TrailName: org-wide-trail\n"
+        "      S3BucketName: !Ref CloudTrailLogsBucket\n"
+        "      IsMultiRegionTrail: true\n"
+        "      IncludeGlobalServiceEvents: true\n"
+        "      EnableLogFileValidation: true\n"
+        "      IsLogging: true"
+    ),
 )
 
 
