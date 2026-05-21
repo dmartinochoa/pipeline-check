@@ -2677,7 +2677,7 @@ def scan(
                 # downstream readers (terminal report, JSON, gate)
                 # see chains over the merged findings list.
                 scanner.chains = _chains.evaluate(findings)
-            except Exception as exc:  # noqa: BLE001
+            except Exception as exc:
                 click.echo(
                     f"[ingest] chain re-evaluation failed: {exc}",
                     err=True,
@@ -2805,7 +2805,7 @@ def scan(
             components = scanner.inventory(
                 type_patterns=list(inventory_types) if inventory_types else None,
             )
-        except Exception as exc:  # noqa: BLE001
+        except Exception as exc:
             click.echo(f"[inventory] failed: {exc}", err=True)
             components = []
 
@@ -3033,7 +3033,7 @@ def _run_ai_explain(
     # deterministic path already exits 3 with a near-match suggestion;
     # the AI side never gets called for an unknown ID.
     from .core.explain import (
-        _build_index,  # noqa: PLC2701 (intentional)
+        _build_index,
         print_explain,
     )
     body_code = print_explain(check_id)
@@ -3787,7 +3787,7 @@ def init_cmd(
     try:
         scanner = Scanner(pipeline=detected, **scanner_kwargs)
         findings = scanner.run()
-    except Exception as exc:  # noqa: BLE001
+    except Exception as exc:
         click.echo(
             f"[init] scan failed ({exc}); writing a static scaffold instead. "
             f"Rerun with --no-scan to skip the scan permanently.",

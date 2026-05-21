@@ -69,13 +69,13 @@ class HttpGitLabSCMFetcher:
 
     def fetch(self, path: str) -> dict[str, Any] | list[Any] | None:
         url = f"{self.base_url}/{path.lstrip('/')}"
-        req = urllib.request.Request(url)  # noqa: S310, fixed scheme + host
+        req = urllib.request.Request(url)
         req.add_header("Accept", "application/json")
         req.add_header("User-Agent", "pipeline-check-scm")
         if self.token:
             req.add_header("PRIVATE-TOKEN", self.token)
         try:
-            with urllib.request.urlopen(  # noqa: S310, fixed scheme + host
+            with urllib.request.urlopen(
                 req, timeout=self.timeout,
             ) as resp:
                 body = resp.read(_MAX_RESPONSE_BYTES + 1)
@@ -304,7 +304,7 @@ class HttpBitbucketSCMFetcher:
 
     def fetch(self, path: str) -> dict[str, Any] | list[Any] | None:
         url = f"{self.BASE_URL}/{path.lstrip('/')}"
-        req = urllib.request.Request(url)  # noqa: S310, fixed scheme + host
+        req = urllib.request.Request(url)
         req.add_header("Accept", "application/json")
         req.add_header("User-Agent", "pipeline-check-scm")
         if self.token:
@@ -320,7 +320,7 @@ class HttpBitbucketSCMFetcher:
                 ).decode("ascii")
                 req.add_header("Authorization", f"Basic {encoded}")
         try:
-            with urllib.request.urlopen(  # noqa: S310, fixed scheme + host
+            with urllib.request.urlopen(
                 req, timeout=self.timeout,
             ) as resp:
                 body = resp.read(_MAX_RESPONSE_BYTES + 1)

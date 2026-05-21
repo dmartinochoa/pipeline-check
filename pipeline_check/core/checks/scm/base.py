@@ -64,14 +64,14 @@ class HttpSCMFetcher:
 
     def fetch(self, path: str) -> dict[str, Any] | list[Any] | None:
         url = f"{self.BASE_URL}/{path.lstrip('/')}"
-        req = urllib.request.Request(url)  # noqa: S310, fixed scheme + host
+        req = urllib.request.Request(url)
         req.add_header("Accept", "application/vnd.github+json")
         req.add_header("X-GitHub-Api-Version", "2022-11-28")
         req.add_header("User-Agent", "pipeline-check-scm")
         if self.token:
             req.add_header("Authorization", f"Bearer {self.token}")
         try:
-            with urllib.request.urlopen(  # noqa: S310, fixed scheme + host
+            with urllib.request.urlopen(
                 req, timeout=self.timeout,
             ) as resp:
                 body = resp.read(_MAX_RESPONSE_BYTES + 1)

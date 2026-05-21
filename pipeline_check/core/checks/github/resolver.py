@@ -159,14 +159,14 @@ class HttpFetcher:
         self, owner: str, repo: str, ref: str, path: str,
     ) -> bytes | None:
         url = f"{self.BASE_URL}/{owner}/{repo}/{ref}/{path}"
-        req = urllib.request.Request(url)  # noqa: S310, fixed scheme, fixed host
+        req = urllib.request.Request(url)
         if self.token:
             req.add_header("Authorization", f"token {self.token}")
         # Identify ourselves so a server-side rate-limit log can tell
         # pipeline-check apart from a generic ``urllib`` consumer.
         req.add_header("User-Agent", "pipeline-check-resolver")
         try:
-            with urllib.request.urlopen(req, timeout=self.timeout) as resp:  # noqa: S310
+            with urllib.request.urlopen(req, timeout=self.timeout) as resp:
                 # Cap reads at ``_MAX_RESPONSE_BYTES + 1``; any extra
                 # byte indicates the body is over the cap, in which
                 # case we treat the fetch as a failure rather than

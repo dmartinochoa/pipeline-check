@@ -8,14 +8,14 @@ pytest.importorskip(
     reason="LSP server is an optional install: `pip install pipeline-check[lsp]`",
 )
 
-from lsprotocol import types as lsp  # noqa: E402
+from lsprotocol import types as lsp
 
-from pipeline_check.core.checks.base import (  # noqa: E402
+from pipeline_check.core.checks.base import (
     Finding,
     Location,
     Severity,
 )
-from pipeline_check.lsp.diagnostics import (  # noqa: E402
+from pipeline_check.lsp.diagnostics import (
     finding_to_diagnostic,
     findings_to_diagnostics,
 )

@@ -61,7 +61,7 @@ class FakeProcess:
         self.responses = responses or []
         self.calls: list[list[str]] = []
 
-    def __call__(self, argv, **kwargs):  # noqa: D401, mimics subprocess.run
+    def __call__(self, argv, **kwargs):
         self.calls.append(list(argv))
         joined = " ".join(str(a) for a in argv)
         for matcher, (rc, out, err) in self.responses:

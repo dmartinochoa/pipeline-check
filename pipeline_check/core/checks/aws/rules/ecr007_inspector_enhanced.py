@@ -34,7 +34,7 @@ RULE = Rule(
 def check(catalog: ResourceCatalog) -> list[Finding]:
     try:
         client = catalog.client("inspector2")
-    except Exception:  # noqa: BLE001
+    except Exception:
         return []
     try:
         resp = client.batch_get_account_status(accountIds=[])

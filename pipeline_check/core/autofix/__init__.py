@@ -155,5 +155,5 @@ def render_patch(path: str, before: str, after: str) -> str:
 # import is "package init crashes loudly", not "fixer silently absent".
 # Provider-keyed sibling modules import the shared ``_insert_comment_above``
 # helper from ``_impl``, so ``_impl`` must come first.
-from . import _impl as _impl  # noqa: F401, E402
-from . import helm as helm  # noqa: F401, E402
+from . import _impl as _impl  # noqa: E402
+from . import helm as helm  # noqa: E402

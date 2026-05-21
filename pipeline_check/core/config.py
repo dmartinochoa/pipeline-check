@@ -33,7 +33,7 @@ from typing import Any
 
 import yaml
 
-from ._yaml_strict import safe_load_strict as _safe_load_strict  # noqa: F401
+from ._yaml_strict import safe_load_strict as _safe_load_strict
 
 # Keys that are allowed in a config file (and map directly to click option names).
 _TOPLEVEL_KEYS: frozenset[str] = frozenset({

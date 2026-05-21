@@ -36,9 +36,9 @@ from pipeline_check.mcp_server import tools as _tools
 # real scanner-side bug; letting it raise here surfaces the bug
 # instead of hiding it behind a quiet skip.
 try:
-    import mcp.types as mcp_types  # noqa: E402
+    import mcp.types as mcp_types
 
-    from pipeline_check.mcp_server.server import server_app  # noqa: E402
+    from pipeline_check.mcp_server.server import server_app
     _HAS_MCP = True
 except (ImportError, ModuleNotFoundError):  # pragma: no cover - environment-dependent
     _HAS_MCP = False

@@ -95,7 +95,7 @@ def test_changed_files_uses_end_of_options(monkeypatch, tmp_path):
     smuggle a flag past git's positional-arg cutoff."""
     captured: list[list[str]] = []
 
-    def _capture(cmd, **_kw):  # noqa: ANN001
+    def _capture(cmd, **_kw):
         captured.append(list(cmd))
 
         class _R:
