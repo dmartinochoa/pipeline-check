@@ -22,6 +22,16 @@ higher than either singleton's.
 This chain currently activates when scanning ``--pipelines
 github,scm`` together; single-provider runs of either alone won't
 have both legs in the chain engine's input.
+
+Reachability-model carve-out: this chain does not migrate to the
+``job_anchors`` intersection model. The SCM finding lives on the
+repo's branch-protection state (queried via REST API), the GHA
+finding lives on a workflow file path, the two halves don't share
+a CI job. A future Phase 2 could intersect on an
+``scm_repo`` ``ResourceAnchor`` identity (the workflow's
+containing repo matches the SCM finding's repo) for multi-repo
+scans; today's typical single-repo scan treats per-scan
+co-occurrence as the reachability claim.
 """
 from __future__ import annotations
 

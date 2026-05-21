@@ -4,6 +4,59 @@ What's planned, what's shipped, and what's deliberately out of scope.
 
 ## Shipped
 
+- **Gradle multi-project ``rootProject.ext.X`` resolution
+  (post-1.3.0)** — Closes the last remaining gap in the dependency-
+  supply-chain provider follow-ups. The maven provider's Gradle path
+  now walks upward from each ``build.gradle`` looking for
+  ``settings.gradle`` / ``settings.gradle.kts`` to identify the
+  multi-project root, reads the root's ``build.gradle*`` for
+  ``ext { X = ... }`` / ``ext.X = ...`` / ``def X`` / ``val X``
+  declarations, and exposes each value under both
+  ``rootProject.ext.X`` and ``rootProject.X`` keys so a subproject's
+  ``"${rootProject.ext.log4jVersion}"`` (and the shortened
+  ``"${rootProject.springVersion}"``) version-spec resolves before
+  the MVN-NNN rules see it. Five new tests in
+  ``tests/maven/test_gradle.py`` cover the Groovy and Kotlin DSLs,
+  the shortened accessor, the root-itself carve-out, and the
+  silent-pass behavior on layouts without a ``settings.gradle``
+  marker.
+- **AC-031 attack chain: Argo CD PR generator x wildcard sourceRepos
+  (post-1.3.0)** — Second Argo CD chain. CRITICAL severity,
+  single-provider (``argocd``). Pairs ARGOCD-006 (ApplicationSet
+  PR/SCM generator without a project allowlist) with ARGOCD-001
+  (AppProject ``sourceRepos: ['*']``). Composite: a contributor PR
+  in the matched org materializes a fresh ``Application`` under a
+  wildcard-source-repos project; the controller renders attacker-
+  supplied manifests into the cluster on the next sync. The
+  default out-of-the-box AppProject ships with the wildcard, so
+  the chain fires on most Argo CD installs where a PR generator is
+  introduced without tightening the project. MITRE T1195.002 /
+  T1199 / T1078.004. Chain count 40 -> 41.
+- **AC-030 attack chain: Argo CD anonymous access x wildcard RBAC
+  (post-1.3.0)** — First attack-chain pairing the v1.3.0 Argo CD
+  provider's rules. CRITICAL severity, single-provider (``argocd``).
+  Fires when ARGOCD-009 (anonymous access enabled in ``argocd-cm``)
+  and ARGOCD-004 (wildcard authority grant in ``argocd-rbac-cm``)
+  both fail against the same Argo CD instance. Composite: the
+  anonymous principal resolves through the wildcard grant into
+  unauthenticated control-plane authority, Argo CD's sync engine
+  becomes a cluster-takeover primitive. MITRE T1190 / T1078.001 /
+  T1098.003. Chain count 39 -> 40. The ``docs/attack_chains.md``
+  hand-edited chain table also picked up the missing AC-028 /
+  AC-029 rows.
+- **XPC-010 attack chain: npm cooldown x Dockerfile lifecycle
+  (post-1.3.0)** — Cross-provider chain pairing NPM-008 (manifest
+  pinned an exact version published inside the cooldown window) and
+  DF-024 (Dockerfile install runs lifecycle scripts). Either leg
+  alone is bounded; together they are the consumer-side Shai-Hulud
+  topology, the next ``npm ci`` inside the build container resolves
+  a freshly published version AND runs its ``postinstall`` with the
+  builder's NPM_TOKEN / GH_TOKEN / AWS_* in scope. Closes the
+  "Next" item under Dependency-supply-chain provider follow-ups.
+  Severity HIGH, MITRE T1195.002 / T1078.004 / T1546. Chain count
+  38 -> 39. Activates on ``--pipelines npm,dockerfile`` (or any
+  multi-provider run carrying both legs) with ``--resolve-remote``
+  on for NPM-008's publish-time metadata.
 - **Argo CD provider (post-1.3.0)** — New CD-side provider, kept
   disjoint from the existing ``argo`` (Argo Workflows) pack.
   ``--pipeline argocd`` parses ``Application`` / ``ApplicationSet`` /
@@ -283,18 +336,18 @@ avoided that plumbing change.
 ### Reachability-aware attack chains
 
 Phase 1 (shared-job intersection) shipped incrementally across the
-chain pack: roughly 20 of the 38 chain rules now intersect their
-anchor findings' ``job_anchors`` sets, promote the chain confidence
-to HIGH when a shared job exists, and emit a "reachability
-unconfirmed, co-occurrence only" note when it doesn't. Four chains
-(AC-015 / AC-024 / AC-027 / AC-028) carry explicit
-"Reachability-model note" or "Reachability-model carve-out"
-comments documenting why shared-job reachability doesn't apply
-(cross-provider scope, chart-file co-occurrence, Dockerfile-level
-locality, repo-level worm topology). The remaining chains don't
-yet carry an explicit reachability discussion; backfilling those
-notes is a follow-up. AC-001 is the canonical intersection
-example.
+chain pack: roughly half of the chain rules intersect their anchor
+findings' ``job_anchors`` sets, promote the chain confidence to
+HIGH when a shared job exists, and emit a "reachability
+unconfirmed, co-occurrence only" note when it doesn't. The
+remaining chains (all cross-provider) now carry an explicit
+"Reachability-model carve-out" section in their module docstring
+documenting why shared-job reachability doesn't apply and what
+the actual reachability claim is (per-scan co-occurrence, repo-
+level co-occurrence, per-instance co-occurrence, Dockerfile-level
+locality, chart-file co-occurrence). AC-001 is the canonical
+intersection example; AC-028 / XPC-010 are the canonical carve-
+out examples.
 
 Phase 2 is the dataflow-DAG variant: walk the TAINT engine's DAG
 between the two anchor findings and only fire when an executable
@@ -338,14 +391,22 @@ and GHA-060 / GL-035 / BB-031), and Gradle property + version-
 catalog resolution. See the Shipped section for the per-cycle
 trail.
 
-One gap remains: ``rootProject.ext.X`` cross-project indirection
+~~One gap remains: ``rootProject.ext.X`` cross-project indirection
 on Gradle multi-project layouts. Would need pipeline-check to
 learn ``settings.gradle`` resolution. Rarer in practice than the
-three Gradle shapes already shipped; deferred.
+three Gradle shapes already shipped; deferred.~~ Landed
+post-1.3.0: the maven provider now walks upward from each
+``build.gradle`` looking for ``settings.gradle`` /
+``settings.gradle.kts`` to identify the multi-project root, reads
+that root's build script for ``ext { X = ... }`` declarations, and
+exposes them through both ``rootProject.ext.X`` and
+``rootProject.X`` accessor keys so a subproject's version-spec
+interpolation resolves. See Shipped.
 
-Next: the XPC-NNN chain engine gains chains pairing NPM-008
+~~Next: the XPC-NNN chain engine gains chains pairing NPM-008
 cooldown-miss with DF-024 lifecycle-scripts-enabled so the
-composite escalates when both gates fail in the same scan.
+composite escalates when both gates fail in the same scan.~~
+Landed as XPC-010 (see Shipped).
 
 ### Vulnerable-by-design benchmark: phase 2 (cross-scanner comparison)
 

@@ -25,6 +25,14 @@ The chain currently activates only when scanning Helm + OCI in
 the same multi-provider invocation
 (``--pipelines helm,oci``); single-provider runs of either alone
 won't have both legs in the chain engine's input.
+
+Reachability-model carve-out: this chain does not migrate to the
+``job_anchors`` intersection model. The HELM finding lives on a
+``Chart.lock``, the OCI finding lives on an image-manifest JSON,
+the two halves never share a CI job and the resource strings never
+collide. Per-scan co-occurrence is the reachability claim, the
+consumer's verification surface is unsigned on both the chart side
+and the image side when the same scan saw both gaps.
 """
 from __future__ import annotations
 

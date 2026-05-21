@@ -2696,6 +2696,45 @@ spec:
 
 **Recommendation.** CMPs are arbitrary code: Argo CD execs ``generate.command`` inside the repo-server pod at every sync, with whatever manifest content the source repo ships. Audit the CMP's ``discover.find.command`` allowlist, confirm ``generate.command`` doesn't shell out to user-controlled input, and treat each plugin invocation as a build-step review item, not a Kustomize / Helm equivalent.
 
+**Proof of exploit.**
+
+```
+# Vulnerable: the Application names a CMP plugin Argo CD
+# will exec inside the repo-server pod at every sync. The
+# plugin's `generate.command` runs with the repo-server's
+# identity (typically broad RBAC on the destination cluster)
+# and whatever the source repo currently ships, an attacker
+# who can push to that repo, or modify the plugin's manifest
+# template, lands code execution in the controller pod.
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata: { name: payments, namespace: argocd }
+spec:
+  project: default
+  source:
+    repoURL: https://github.com/example/payments
+    targetRevision: main
+    path: ./manifests
+    plugin:
+      name: my-templator
+      env:
+        - name: VERSION
+          value: '{{branch}}'   # generator-interpolated
+  destination: { namespace: payments, server: https://kubernetes.default.svc }
+
+# Safer: drop the plugin block and use one of Argo CD's
+# first-class source kinds (Helm, Kustomize, plain YAML).
+# Each is sandboxed and exercises a much narrower attack
+# surface than an arbitrary CMP command.
+spec:
+  source:
+    repoURL: https://github.com/example/payments
+    targetRevision: v1.2.3@sha256:<digest>
+    path: ./charts/payments
+    helm:
+      valueFiles: [values-prod.yaml]
+```
+
 **Source:** [`ARGOCD-008`](../providers/argocd.md) in the [Argo CD provider](../providers/argocd.md).
 
 ### `ARGOCD-009`: Argo CD anonymous access enabled <span class="pg-sev pg-sev--critical">CRITICAL</span> { #detail-argocd-009 }

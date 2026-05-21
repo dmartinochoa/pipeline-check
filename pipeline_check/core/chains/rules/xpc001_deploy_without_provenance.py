@@ -22,6 +22,16 @@ reports through the existing chain engine). The single-provider
 runs that ``Scanner`` does today won't trigger XPC-001 because
 findings from a different provider aren't in the result set. The
 multi-provider scan mode is roadmapped under v0.6.0 vision.
+
+Reachability-model carve-out: this chain does not migrate to the
+``job_anchors`` intersection model. The GHA finding lives on a
+workflow file path, the OCI finding lives on an image-manifest
+JSON path, and they're never the same resource string nor share a
+CI-job identity. The two halves are reachable to each other
+through the real-world build-then-publish handoff, not through one
+shared CI job. Per-scan co-occurrence is the reachability claim,
+the producer-verifier loop is unclosed when the same scan saw a
+provenance-skipping workflow AND an attestation-less image.
 """
 from __future__ import annotations
 

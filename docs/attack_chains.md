@@ -61,6 +61,10 @@ references, recommendation).
 | [`AC-025`](#ac-025) | Argo param injection lands in a privileged or root step | <span class="pg-sev pg-sev--critical">CRITICAL</span> | argo | [`ARGO-002`](providers/argo.md#argo-002) + [`ARGO-005`](providers/argo.md#argo-005) |
 | [`AC-026`](#ac-026) | Buildkite injection lands on auto-deploy step with no manual gate | <span class="pg-sev pg-sev--critical">CRITICAL</span> | buildkite | [`BK-003`](providers/buildkite.md#bk-003) + [`BK-007`](providers/buildkite.md#bk-007) |
 | [`AC-027`](#ac-027) | Image bakes a credential file AND exposes a remote-access port | <span class="pg-sev pg-sev--critical">CRITICAL</span> | dockerfile | [`DF-013`](providers/dockerfile.md#df-013) + [`DF-019`](providers/dockerfile.md#df-019) |
+| [`AC-028`](#ac-028) | npm worm propagation primitive co-located | <span class="pg-sev pg-sev--critical">CRITICAL</span> | github / npm | [`NPM-004`](providers/npm.md#npm-004) + ([`GHA-048`](providers/github.md#gha-048) or [`GHA-049`](providers/github.md#gha-049)) |
+| [`AC-029`](#ac-029) | Untrusted trigger reaches a long-lived publish credential | <span class="pg-sev pg-sev--critical">CRITICAL</span> | github | ([`GHA-002`](providers/github.md#gha-002) or [`GHA-009`](providers/github.md#gha-009) or [`GHA-013`](providers/github.md#gha-013)) + ([`GHA-050`](providers/github.md#gha-050) or [`GHA-005`](providers/github.md#gha-005)) + ([`GHA-021`](providers/github.md#gha-021) or [`GHA-029`](providers/github.md#gha-029)) |
+| [`AC-030`](#ac-030) | Argo CD anonymous access meets wildcard RBAC | <span class="pg-sev pg-sev--critical">CRITICAL</span> | argocd | [`ARGOCD-009`](providers/argocd.md#argocd-009) + [`ARGOCD-004`](providers/argocd.md#argocd-004) |
+| [`AC-031`](#ac-031) | Argo CD untrusted PR generator meets wildcard source repos | <span class="pg-sev pg-sev--critical">CRITICAL</span> | argocd | [`ARGOCD-006`](providers/argocd.md#argocd-006) + [`ARGOCD-001`](providers/argocd.md#argocd-001) |
 
 ### Cross-provider chains (`XPC-NNN`)
 
@@ -79,6 +83,7 @@ one scan.
 | [`XPC-007`](#xpc-007) | Unpinned actions with no automated remediation | <span class="pg-sev pg-sev--high">HIGH</span> | scm / github | [`SCM-005`](providers/scm.md#scm-005) + [`GHA-001`](providers/github.md#gha-001) |
 | [`XPC-008`](#xpc-008) | Unreviewed source ships a mutable runtime image | <span class="pg-sev pg-sev--high">HIGH</span> | scm / dockerfile | (`SCM-001` &or; `SCM-007`) + [`DF-001`](providers/dockerfile.md#df-001) |
 | [`XPC-009`](#xpc-009) | Ingested CVE finding plus mutable runtime image reference | <span class="pg-sev pg-sev--high">HIGH</span> | ingest / dockerfile | `INGEST-trivy-*` / `INGEST-grype-*` / `INGEST-snyk-*` + [`DF-001`](providers/dockerfile.md#df-001) |
+| [`XPC-010`](#xpc-010) | npm cooldown miss meets Dockerfile lifecycle execution | <span class="pg-sev pg-sev--high">HIGH</span> | npm / dockerfile | [`NPM-008`](providers/npm.md#npm-008) + [`DF-024`](providers/dockerfile.md#df-024) |
 
 ## How chains surface in output
 
@@ -985,6 +990,64 @@ Break the lane at any one leg. Either: (a) re-trigger publish on tag-only / push
 
 </div>
 
+<div class="pg-rule pg-rule--critical" markdown>
+
+### AC-030: Argo CD anonymous access meets wildcard RBAC { #ac-030 }
+
+<div class="pg-rule__tags">
+<span class="pg-sev pg-sev--critical">CRITICAL</span> <span class="pg-tag" title="MITRE ATT&CK technique">MITRE T1190</span> <span class="pg-tag" title="MITRE ATT&CK technique">MITRE T1078.001</span> <span class="pg-tag" title="MITRE ATT&CK technique">MITRE T1098.003</span> <span class="pg-tag" title="kill-chain phase">initial-access -> privilege-escalation -> impact</span> <span class="pg-tag pg-tag--owasp">argocd</span>
+</div>
+
+``argocd-cm`` enables anonymous access (ARGOCD-009) AND ``argocd-rbac-cm`` carries at least one wildcard or ``role:admin`` grant (ARGOCD-004). The combination collapses to a zero-auth control-plane takeover, an unauthenticated caller routes through the anonymous principal into the broad RBAC grant and drives Argo CD's sync engine, the manifests it applies, and every credential its application controllers can read.
+
+**References**
+
+- <https://argo-cd.readthedocs.io/en/stable/operator-manual/rbac/>
+- <https://argo-cd.readthedocs.io/en/stable/operator-manual/security_considerations/>
+- <https://owasp.org/www-project-top-10-ci-cd-security-risks/CICD-SEC-02-Inadequate-Identity-and-Access-Management>
+
+<div class="pg-rule__rec" markdown>
+
+**Recommended action**
+
+Break either leg, both is best:
+  1. Disable anonymous access (ARGOCD-009). Remove the ``users.anonymous.enabled`` key from ``argocd-cm`` or set it to ``"false"``. With anonymous off, any wildcard grant in ``argocd-rbac-cm`` still requires an authenticated subject before it can be exercised.
+  2. Scope the RBAC policy (ARGOCD-004). Replace ``p, <role>, *, *, *, allow`` and ``g, <subject>, role:admin`` with explicit per-resource per-project grants tied to a named SSO group. Set ``policy.default`` to a deny / least-privilege role rather than leaving it implicit.
+If anonymous access is a deliberate design choice (e.g. a read-only public dashboard), the RBAC matrix MUST hold no wildcard / admin grants and ``policy.default`` must be the narrowest role the dashboard's use case allows.
+
+</div>
+
+</div>
+
+<div class="pg-rule pg-rule--critical" markdown>
+
+### AC-031: Argo CD untrusted PR generator meets wildcard source repos { #ac-031 }
+
+<div class="pg-rule__tags">
+<span class="pg-sev pg-sev--critical">CRITICAL</span> <span class="pg-tag" title="MITRE ATT&CK technique">MITRE T1195.002</span> <span class="pg-tag" title="MITRE ATT&CK technique">MITRE T1199</span> <span class="pg-tag" title="MITRE ATT&CK technique">MITRE T1078.004</span> <span class="pg-tag" title="kill-chain phase">initial-access (fork / contributor PR) -> execution (manifest render) -> impact</span> <span class="pg-tag pg-tag--owasp">argocd</span>
+</div>
+
+An ApplicationSet uses a ``pullRequest`` / ``scmProvider`` generator without a project allowlist (ARGOCD-006) AND at least one AppProject has ``sourceRepos: ['*']`` (ARGOCD-001). Any PR in the matched organization materializes a fresh ``Application`` that inherits the wildcard source-repo allowlist; the attacker's manifests render into the cluster on the next sync. The default out-of-the-box AppProject ships with ``sourceRepos: ['*']``, so the chain fires on most unconfigured Argo CD installs where a PR generator is introduced without a tightened project.
+
+**References**
+
+- <https://argo-cd.readthedocs.io/en/stable/operator-manual/applicationset/Generators-Pull-Request/>
+- <https://argo-cd.readthedocs.io/en/stable/user-guide/projects/>
+- <https://owasp.org/www-project-top-10-ci-cd-security-risks/CICD-SEC-04-Poisoned-Pipeline-Execution-PPE>
+
+<div class="pg-rule__rec" markdown>
+
+**Recommended action**
+
+Break either leg, both is best:
+  1. Tighten the AppProject's ``sourceRepos`` (ARGOCD-001). Replace ``['*']`` with the explicit list of repository URLs the project is allowed to render. Set ``spec.sourceRepos: ['https://github.com/org/payments-*']`` and keep ``sourceNamespaces`` / ``destinations`` similarly scoped.
+  2. Scope the ApplicationSet generator (ARGOCD-006). Pin ``template.spec.project`` to a single static project name (not ``default``, not a ``{{...}}`` placeholder) and constrain the generator with ``filters:`` / ``labels: ['preview']`` / ``branchMatch:`` so PRs from untrusted authors do not synthesize Applications.
+If PR-driven preview environments are a deliberate design, the AppProject the PR-driven Applications resolve to MUST carry an explicit ``sourceRepos`` allowlist and a narrow destination, the chain's premise is unbounded authority, not the PR-preview pattern itself.
+
+</div>
+
+</div>
+
 <div class="pg-rule pg-rule--high" markdown>
 
 ### XPC-001: Deploy without verifiable provenance (workflow + image) { #xpc-001 }
@@ -1226,6 +1289,34 @@ Two fixes; both are needed to close the chain:
   1. Pin the Dockerfile's ``FROM`` to a digest (``FROM python:3.12@sha256:<hex>``) (DF-001). The build then uses the exact bytes the digest names; no upstream tag-rewrite changes the vulnerability set.
   2. Update the digest to a known-clean upstream version the SARIF scanner clears. Capture the digest with ``crane digest`` or ``docker buildx imagetools inspect`` and update the ``FROM`` line in version control. The next build then uses the patched image AND keeps the snapshot consistent across subsequent runs.
 Optional but valuable: wire Dependabot or Renovate to auto-PR the digest update when a new clean version publishes (SCM-005 + this chain together close the loop).
+
+</div>
+
+</div>
+
+<div class="pg-rule pg-rule--high" markdown>
+
+### XPC-010: npm cooldown miss meets Dockerfile lifecycle execution { #xpc-010 }
+
+<div class="pg-rule__tags">
+<span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-tag" title="MITRE ATT&CK technique">MITRE T1195.002</span> <span class="pg-tag" title="MITRE ATT&CK technique">MITRE T1078.004</span> <span class="pg-tag" title="MITRE ATT&CK technique">MITRE T1546</span> <span class="pg-tag" title="kill-chain phase">supply-chain (fresh upstream release) -> execution (lifecycle script in build container)</span> <span class="pg-tag pg-tag--owasp">npm</span> <span class="pg-tag pg-tag--owasp">dockerfile</span>
+</div>
+
+A ``package.json`` pinned a freshly published exact dependency version (NPM-008) AND the Dockerfile's install step runs lifecycle scripts (DF-024). The next image build executes the new release's ``postinstall`` with the builder's NPM_TOKEN / GH_TOKEN / AWS_* in scope, the consumer-side Shai-Hulud / TanStack blast radius. Either leg alone is hygiene debt; together they are the execution primitive lined up with a time window the registry has not yet had a chance to close.
+
+**References**
+
+- <https://www.wiz.io/blog/shai-hulud-npm-supply-chain-attack>
+- <https://owasp.org/www-project-top-10-ci-cd-security-risks/CICD-SEC-03-Dependency-Chain-Abuse>
+
+<div class="pg-rule__rec" markdown>
+
+**Recommended action**
+
+Two fixes; either alone narrows the chain, both close it:
+  1. Hold back the bump, pin the dependency to the most recent release older than the cooldown window (NPM-008). ``pipeline_check --pipeline npm --resolve-remote`` will surface the publish dates so the team can choose a safe anchor.
+  2. Disable lifecycle scripts in the Dockerfile install (DF-024). Pass ``--ignore-scripts`` on every ``npm`` / ``yarn`` / ``pnpm install`` line, or set ``ENV NPM_CONFIG_IGNORE_SCRIPTS=true`` / ``ENV YARN_ENABLE_SCRIPTS=false`` before the install. Re-enable per package via a scoped ``RUN npm rebuild <pkg>`` line only when a native-module build genuinely needs it.
+Best to fix both, the cooldown gate is a default-safe policy applied at bump time, and ``--ignore-scripts`` is the durable execution-primitive control that protects every other dep too.
 
 </div>
 

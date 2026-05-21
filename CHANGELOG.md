@@ -12,6 +12,67 @@ release commit collapses this section into `## [X.Y.Z] - <date>`.
 
 ### Added
 
+- **Gradle multi-project ``rootProject.ext.X`` resolution.** The
+  maven provider's Gradle path now resolves cross-project property
+  references. ``MavenContext.from_path`` walks upward from each
+  ``build.gradle`` / ``build.gradle.kts`` looking for a
+  ``settings.gradle`` / ``settings.gradle.kts`` marker to identify
+  the multi-project root, reads the root's build script for
+  ``ext { X = ... }`` / ``ext.X = ...`` / ``def X`` / ``val X``
+  declarations, and exposes each value under both
+  ``rootProject.ext.X`` and ``rootProject.X`` accessor keys.
+  Subproject version specs like ``"org.apache.logging.log4j:log4j-
+  core:${rootProject.ext.log4jVersion}"`` now resolve before the
+  MVN-NNN rules see them, closing the last remaining gap in the
+  Dependency-supply-chain provider follow-ups noted in ROADMAP.md.
+  Single-project layouts (no settings file) keep their existing
+  silent-pass behavior; the root's own build script continues to
+  resolve via in-file extraction, so the ``rootProject.*`` alias
+  path doesn't double-apply.
+- **AC-031 attack chain — Argo CD untrusted PR generator meets
+  wildcard source repos.** New CRITICAL-severity chain pairing
+  ARGOCD-006 (ApplicationSet ``pullRequest`` / ``scmProvider``
+  generator without a project allowlist or
+  ``filters:`` / ``labels:`` constraint) with ARGOCD-001
+  (AppProject ``sourceRepos: ['*']``). Composite: a contributor PR
+  in the matched org materializes a fresh ``Application`` under a
+  project whose source-repo allowlist is unbounded, the controller
+  renders the attacker-supplied manifests into the cluster on the
+  next sync. The default out-of-the-box AppProject ships with
+  ``sourceRepos: ['*']``, so the chain fires on most Argo CD
+  installs where a PR generator is introduced without a tightened
+  project. MITRE T1195.002 / T1199 / T1078.004. Chain count
+  40 -> 41.
+- **AC-030 attack chain — Argo CD anonymous access meets wildcard
+  RBAC.** New CRITICAL-severity chain pairing ARGOCD-009
+  (``argocd-cm`` sets ``users.anonymous.enabled: "true"``) with
+  ARGOCD-004 (``argocd-rbac-cm`` carries a wildcard ``p, <role>, *,
+  *, *, allow`` policy or a ``g, <subject>, role:admin`` binding).
+  Either leg alone is real; together they collapse to a zero-auth
+  control-plane takeover, an unauthenticated caller resolves through
+  the anonymous principal into the broad RBAC grant and drives Argo
+  CD's sync engine, the manifests it applies, and every credential
+  its application controllers can read. MITRE T1190 / T1078.001 /
+  T1098.003; closes the missing attack-chain coverage on the v1.3.0
+  Argo CD provider pack. The hand-edited table in
+  ``docs/attack_chains.md`` also picked up the missing AC-028 and
+  AC-029 rows the v1.3.0 cycle never backfilled. Chain count 39 ->
+  40.
+- **XPC-010 attack chain — npm cooldown miss meets Dockerfile
+  lifecycle execution.** New cross-provider chain pairing NPM-008
+  (a ``package.json`` pinned a direct dependency to an exact
+  version published inside the cooldown window) with DF-024 (the
+  Dockerfile's ``npm`` / ``yarn`` / ``pnpm install`` line runs
+  lifecycle scripts). Either leg alone is bounded, NPM-008 is a
+  time-window signal, DF-024 is an execution-primitive signal,
+  together they are the consumer-side Shai-Hulud / TanStack
+  topology, the next ``npm ci`` inside the build container
+  resolves a freshly published version AND executes its
+  ``postinstall`` with ``NPM_TOKEN`` / ``GH_TOKEN`` / ``AWS_*``
+  in scope. Severity HIGH, MITRE T1195.002 / T1078.004 / T1546.
+  Fires on ``--pipelines npm,dockerfile`` (or any multi-provider
+  run that includes both legs) with ``--resolve-remote`` enabled
+  for NPM-008's publish-time metadata. Chain count 38 -> 39.
 - **Argo CD provider with a 9-rule pack.** New ``--pipeline argocd``
   parses ``Application`` / ``ApplicationSet`` / ``AppProject`` CRDs
   plus the ``argocd-cm`` / ``argocd-rbac-cm`` ConfigMaps, distinct
@@ -30,6 +91,44 @@ release commit collapses this section into `## [X.Y.Z] - <date>`.
   ``owasp_cicd_top_10``, ``cis_supply_chain``, and
   ``esf_supply_chain``. Provider count 22 -> 23; total-check claim
   810+ -> 820+.
+
+### Changed
+
+- **README provider-table per-row drift guard.**
+  ``tests/test_doc_claims.py`` now verifies every row in the
+  README's Supported-providers table declares a leading
+  ``<N> checks`` figure equal to the rule-file count under that
+  provider's ``rules/`` directory. The Helm row is covered by a
+  dedicated assertion since its cell carries a composite
+  ``<N> K8S-* + <M> HELM-*`` claim. Mirrors the existing
+  ``test_comparison_per_row_rule_counts_match_registry`` guard
+  for ``docs/comparison.md``. Catches the drift that bit the
+  v1.3.0 cycle on multiple PRs, contributor adds rules to a
+  provider but forgets to bump the README table cell.
+- **Doc-claim drift guard extended to CONTRIBUTING.md + Docker Hub
+  README.** ``tests/test_doc_claims.py`` now scans
+  ``CONTRIBUTING.md`` and ``.github/DOCKERHUB.md`` alongside the
+  original README / docs/index / action.yml / pyproject /
+  mkdocs.yml surfaces. Surfaced two pre-existing drifts at landing
+  time, ``CONTRIBUTING.md`` claimed "22 providers" (current 23)
+  and the Docker Hub README claimed "19 providers" / "590+ checks"
+  (current 23 / 820+); both bumped. Docker Hub README also
+  reworded from "23 CI/CD and infrastructure providers" to "23
+  providers (CI/CD and infrastructure)" so the regex
+  (``\b\d+\s+(?:CI/CD\s+)?providers?\b``) actually matches the
+  claim, the original phrasing would have left a hole in
+  enforcement.
+- **Reachability-model carve-out backfill on cross-provider chains.**
+  XPC-001 / XPC-003 / XPC-004 / XPC-005 / XPC-006 / XPC-007 /
+  XPC-008 / XPC-009 module docstrings now carry an explicit
+  "Reachability-model carve-out" section documenting why each
+  chain does not use the ``job_anchors`` intersection model and
+  what the actual reachability claim is (per-scan co-occurrence
+  for cross-document chains, with per-chain prose tied to the
+  specific resource shapes the two legs emit). Closes the
+  "backfilling those notes is a follow-up" item in the
+  Reachability-aware attack chains section of ROADMAP.md. No
+  behavior change, the carve-outs are documentation prose only.
 
 ## [1.3.0] - 2026-05-21
 

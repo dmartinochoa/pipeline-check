@@ -24,6 +24,15 @@ have any visibility into.
 This chain currently activates when scanning ``--pipelines
 dockerfile,scm`` together; single-provider runs of either alone
 won't have both legs in the chain engine's input.
+
+Reachability-model carve-out: this chain does not migrate to the
+``job_anchors`` intersection model. The SCM finding lives on the
+repo's branch-protection state, the DF finding lives on a
+Dockerfile path, the two halves don't share a CI job. Per-scan
+co-occurrence is the reachability claim, an insider can land
+tampered ``FROM`` changes through the unguarded review surface
+AND the upstream registry's bytes drift freely under the floating
+tag the Dockerfile names.
 """
 from __future__ import annotations
 

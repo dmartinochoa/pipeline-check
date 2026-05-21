@@ -193,6 +193,14 @@ class MavenContext:
                 cross_file = _discover_gradle_cross_file_properties(
                     f, scan_dir,
                 )
+                # rootProject.ext.X / rootProject.X accessors used by
+                # subprojects in a multi-project layout. Keys are
+                # disjoint from the bare-name space gradle.properties
+                # populates, so the merge order is irrelevant here,
+                # both maps contribute non-overlapping namespaces.
+                cross_file.update(
+                    _discover_gradle_root_project_properties(f, scan_dir),
+                )
                 catalog = _discover_gradle_version_catalog(f, scan_dir)
                 pf = _parse_gradle(
                     str(f),
@@ -891,6 +899,100 @@ def _discover_gradle_cross_file_properties(
         except (OSError, UnicodeDecodeError):
             continue
         out.update(_parse_gradle_properties(text))
+    return out
+
+
+#: Settings-script filenames Gradle uses to mark the root of a
+#: multi-project build. Their presence alone identifies the root dir,
+#: subprojects never carry a settings script of their own.
+_SETTINGS_GRADLE_NAMES: tuple[str, ...] = (
+    "settings.gradle", "settings.gradle.kts",
+)
+
+
+def _find_gradle_root_dir(
+    gradle_path: Path, scan_root: Path,
+) -> Path | None:
+    """Walk upward from *gradle_path*'s parent to *scan_root* looking
+    for a ``settings.gradle`` / ``settings.gradle.kts`` file. The
+    closest ancestor (or self) that contains one is the multi-project
+    root directory in Gradle's sense.
+
+    Returns ``None`` when no settings script is found within the
+    scanned tree, the project is single-project or the scan root is
+    inside a subproject and the settings file lives outside it.
+    """
+    try:
+        scan_resolved = scan_root.resolve()
+        cur = gradle_path.resolve().parent
+    except OSError:
+        return None
+    seen: set[Path] = set()
+    while True:
+        if cur in seen:
+            return None
+        seen.add(cur)
+        if any((cur / name).is_file() for name in _SETTINGS_GRADLE_NAMES):
+            return cur
+        if cur == scan_resolved:
+            return None
+        parent = cur.parent
+        if parent == cur:
+            return None
+        try:
+            cur.relative_to(scan_resolved)
+        except ValueError:
+            return None
+        cur = parent
+
+
+def _discover_gradle_root_project_properties(
+    gradle_path: Path, scan_root: Path,
+) -> dict[str, str]:
+    """Extract ``ext.X`` properties from the multi-project root's
+    ``build.gradle`` / ``build.gradle.kts`` and return them keyed
+    under both ``rootProject.ext.<X>`` and ``rootProject.<X>``.
+
+    A Gradle subproject reads root-defined properties through the
+    ``rootProject`` accessor. The two key shapes are both common
+    in the wild, ``${rootProject.ext.foo}`` is the spec-compliant
+    Groovy/Kotlin form, ``${rootProject.foo}`` is the shortened form
+    Gradle exposes once an ``ext`` property is defined. We populate
+    both so a subproject's version-spec interpolation resolves
+    regardless of which accessor the author wrote.
+
+    Returns an empty dict when:
+      * no settings.gradle* is found upward from *gradle_path*
+        (single-project layout, or scan rooted inside a subproject),
+      * the root's directory carries no build.gradle*,
+      * the root's build script declares no ext properties, or
+      * *gradle_path* itself IS the root's build script — in that
+        case ``_parse_gradle``'s in-file extraction already covers
+        the same properties under their bare names, and adding the
+        ``rootProject.*`` aliases would just shadow them with the
+        same value.
+    """
+    root_dir = _find_gradle_root_dir(gradle_path, scan_root)
+    if root_dir is None:
+        return {}
+    try:
+        gradle_dir = gradle_path.resolve().parent
+    except OSError:
+        return {}
+    if gradle_dir == root_dir:
+        return {}
+    out: dict[str, str] = {}
+    for name in ("build.gradle", "build.gradle.kts"):
+        root_build = root_dir / name
+        if not root_build.is_file():
+            continue
+        try:
+            text = root_build.read_text(encoding="utf-8")
+        except (OSError, UnicodeDecodeError):
+            continue
+        for prop_name, value in _extract_gradle_properties(text).items():
+            out[f"rootProject.ext.{prop_name}"] = value
+            out[f"rootProject.{prop_name}"] = value
     return out
 
 

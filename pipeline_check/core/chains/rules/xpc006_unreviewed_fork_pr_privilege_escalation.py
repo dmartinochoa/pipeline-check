@@ -32,6 +32,14 @@ contributor for as long as the workflow lives.
 This chain currently activates when scanning ``--pipelines
 github,scm`` together; single-provider runs of either alone won't
 have both legs in the chain engine's input.
+
+Reachability-model carve-out: this chain does not migrate to the
+``job_anchors`` intersection model. The SCM finding lives on the
+repo's branch-protection review-requirement state, the GHA finding
+lives on a workflow file path, the two halves don't share a CI
+job. Per-scan co-occurrence is the reachability claim, the
+combination means a fork PR can land code execution on a workflow
+that holds the caller-repo's secrets without a human review gate.
 """
 from __future__ import annotations
 

@@ -188,8 +188,9 @@ class TestEngine:
             "AC-017", "AC-018", "AC-019", "AC-020",
             "AC-021", "AC-022", "AC-023", "AC-024",
             "AC-025", "AC-026", "AC-027", "AC-028", "AC-029",
+            "AC-030", "AC-031",
             "XPC-001", "XPC-002", "XPC-003", "XPC-004", "XPC-005",
-            "XPC-006", "XPC-007", "XPC-008", "XPC-009",
+            "XPC-006", "XPC-007", "XPC-008", "XPC-009", "XPC-010",
         }
 
     def test_evaluate_empty_findings_returns_empty(self):
@@ -565,6 +566,13 @@ class TestChainAC003:
 
     WF = ".github/workflows/release.yml"
 
+    def test_does_not_fire_when_legs_on_different_workflows(self):
+        out = chains_pkg.evaluate([
+            _f("GHA-001", ".github/workflows/a.yml"),
+            _f("GHA-005", ".github/workflows/b.yml"),
+        ])
+        assert not any(c.chain_id == "AC-003" for c in out)
+
     def test_reachability_confirmed_when_anchor_jobs_intersect(self):
         # GHA-001 fires in job ``release`` (an unpinned action lives
         # in a step there); GHA-005 anchors on ``release`` too,
@@ -617,6 +625,13 @@ class TestChainAC004:
         assert len(ac4) == 1
         assert "T1543" in ac4[0].mitre_attack
 
+    def test_does_not_fire_when_legs_on_different_workflows(self):
+        out = chains_pkg.evaluate([
+            _f("GHA-002", ".github/workflows/a.yml"),
+            _f("GHA-012", ".github/workflows/b.yml"),
+        ])
+        assert not any(c.chain_id == "AC-004" for c in out)
+
     def test_reachability_confirmed_when_anchor_jobs_intersect(self):
         out = chains_pkg.evaluate([
             _f("GHA-002", self.WF, job_anchors=("build",)),
@@ -658,6 +673,13 @@ class TestChainAC006:
         ac6 = [c for c in out if c.chain_id == "AC-006"]
         assert len(ac6) == 1
         assert ac6[0].severity is Severity.HIGH
+
+    def test_does_not_fire_when_legs_on_different_workflows(self):
+        out = chains_pkg.evaluate([
+            _f("GHA-002", ".github/workflows/a.yml"),
+            _f("GHA-011", ".github/workflows/b.yml"),
+        ])
+        assert not any(c.chain_id == "AC-006" for c in out)
 
     def test_reachability_confirmed_when_anchor_jobs_intersect(self):
         # Same job runs PR-head code AND has a poisonable cache key.
@@ -702,6 +724,13 @@ class TestChainAC008:
         ac8 = [c for c in out if c.chain_id == "AC-008"]
         assert len(ac8) == 1
         assert "T1195.001" in ac8[0].mitre_attack
+
+    def test_does_not_fire_when_legs_on_different_workflows(self):
+        out = chains_pkg.evaluate([
+            _f("GHA-021", ".github/workflows/a.yml"),
+            _f("GHA-029", ".github/workflows/b.yml"),
+        ])
+        assert not any(c.chain_id == "AC-008" for c in out)
 
     def test_reachability_confirmed_when_anchor_jobs_intersect(self):
         # Same job both skips the lockfile AND installs from an
@@ -933,6 +962,16 @@ class TestChainAC010:
         ac10 = [c for c in out if c.chain_id == "AC-010"]
         assert len(ac10) == 1
         assert ac10[0].severity is Severity.CRITICAL
+
+    def test_does_not_fire_when_legs_on_different_workflows(self):
+        # Self-hosted-runner workflow file is one repo; the curl-pipe
+        # leg fires on a separate workflow. The chain narrative is
+        # per-file, so neither AC-010 variant should match.
+        out = chains_pkg.evaluate([
+            _f("GHA-012", ".github/workflows/a.yml"),
+            _f("GHA-016", ".github/workflows/b.yml"),
+        ])
+        assert not any(c.chain_id == "AC-010" for c in out)
 
     def test_fires_with_self_hosted_plus_token_persistence(self):
         wf = ".github/workflows/release.yml"
@@ -2819,6 +2858,137 @@ class TestChainAC029:
             t for t in ac29.triggering_findings if t.check_id == "GHA-013"
         ]
         assert len(gha013_triggers) == 2
+
+
+class TestChainAC030:
+    """AC-030 — Argo CD anonymous access meets wildcard RBAC."""
+
+    RESOURCE = "argocd"
+
+    def test_fires_when_both_legs_fail_on_same_instance(self):
+        out = chains_pkg.evaluate([
+            _f("ARGOCD-009", self.RESOURCE, severity=Severity.CRITICAL),
+            _f("ARGOCD-004", self.RESOURCE, severity=Severity.CRITICAL),
+        ])
+        ac30 = [c for c in out if c.chain_id == "AC-030"]
+        assert len(ac30) == 1
+        chain = ac30[0]
+        assert chain.severity is Severity.CRITICAL
+        assert set(chain.triggering_check_ids) == {"ARGOCD-009", "ARGOCD-004"}
+        assert "T1190" in chain.mitre_attack
+        assert "T1078.001" in chain.mitre_attack
+        assert "T1098.003" in chain.mitre_attack
+        assert "initial-access" in chain.kill_chain_phase
+        assert "impact" in chain.kill_chain_phase
+
+    def test_does_not_fire_without_argocd009(self):
+        out = chains_pkg.evaluate([
+            _f("ARGOCD-004", self.RESOURCE),
+        ])
+        assert not any(c.chain_id == "AC-030" for c in out)
+
+    def test_does_not_fire_without_argocd004(self):
+        out = chains_pkg.evaluate([
+            _f("ARGOCD-009", self.RESOURCE),
+        ])
+        assert not any(c.chain_id == "AC-030" for c in out)
+
+    def test_does_not_fire_when_legs_passed(self):
+        out = chains_pkg.evaluate([
+            _f("ARGOCD-009", self.RESOURCE, passed=True),
+            _f("ARGOCD-004", self.RESOURCE, passed=True),
+        ])
+        assert not any(c.chain_id == "AC-030" for c in out)
+
+    def test_does_not_fire_when_legs_target_different_instances(self):
+        out = chains_pkg.evaluate([
+            _f("ARGOCD-009", "argocd-east"),
+            _f("ARGOCD-004", "argocd-west"),
+        ])
+        assert not any(c.chain_id == "AC-030" for c in out)
+
+    def test_narrative_names_both_configmaps(self):
+        out = chains_pkg.evaluate([
+            _f("ARGOCD-009", self.RESOURCE),
+            _f("ARGOCD-004", self.RESOURCE),
+        ])
+        chain = next(c for c in out if c.chain_id == "AC-030")
+        assert "argocd-cm" in chain.narrative
+        assert "argocd-rbac-cm" in chain.narrative
+
+    def test_confidence_inherits_from_weakest_leg(self):
+        out = chains_pkg.evaluate([
+            _f("ARGOCD-009", self.RESOURCE, confidence=Confidence.HIGH),
+            _f("ARGOCD-004", self.RESOURCE, confidence=Confidence.MEDIUM),
+        ])
+        chain = next(c for c in out if c.chain_id == "AC-030")
+        assert chain.confidence is Confidence.MEDIUM
+
+
+class TestChainAC031:
+    """AC-031 — Argo CD untrusted PR generator meets wildcard source repos."""
+
+    RESOURCE = "argocd"
+
+    def test_fires_when_both_legs_fail_on_same_instance(self):
+        out = chains_pkg.evaluate([
+            _f("ARGOCD-006", self.RESOURCE, severity=Severity.HIGH),
+            _f("ARGOCD-001", self.RESOURCE, severity=Severity.HIGH),
+        ])
+        ac31 = [c for c in out if c.chain_id == "AC-031"]
+        assert len(ac31) == 1
+        chain = ac31[0]
+        assert chain.severity is Severity.CRITICAL
+        assert set(chain.triggering_check_ids) == {"ARGOCD-006", "ARGOCD-001"}
+        assert "T1195.002" in chain.mitre_attack
+        assert "T1199" in chain.mitre_attack
+        assert "T1078.004" in chain.mitre_attack
+        assert "initial-access" in chain.kill_chain_phase
+        assert "impact" in chain.kill_chain_phase
+
+    def test_does_not_fire_without_argocd006(self):
+        out = chains_pkg.evaluate([
+            _f("ARGOCD-001", self.RESOURCE),
+        ])
+        assert not any(c.chain_id == "AC-031" for c in out)
+
+    def test_does_not_fire_without_argocd001(self):
+        out = chains_pkg.evaluate([
+            _f("ARGOCD-006", self.RESOURCE),
+        ])
+        assert not any(c.chain_id == "AC-031" for c in out)
+
+    def test_does_not_fire_when_legs_passed(self):
+        out = chains_pkg.evaluate([
+            _f("ARGOCD-006", self.RESOURCE, passed=True),
+            _f("ARGOCD-001", self.RESOURCE, passed=True),
+        ])
+        assert not any(c.chain_id == "AC-031" for c in out)
+
+    def test_does_not_fire_when_legs_target_different_instances(self):
+        out = chains_pkg.evaluate([
+            _f("ARGOCD-006", "argocd-east"),
+            _f("ARGOCD-001", "argocd-west"),
+        ])
+        assert not any(c.chain_id == "AC-031" for c in out)
+
+    def test_narrative_names_pull_request_generator_and_source_repos(self):
+        out = chains_pkg.evaluate([
+            _f("ARGOCD-006", self.RESOURCE),
+            _f("ARGOCD-001", self.RESOURCE),
+        ])
+        chain = next(c for c in out if c.chain_id == "AC-031")
+        assert "pullRequest" in chain.narrative
+        assert "sourceRepos" in chain.narrative
+
+    def test_recommendation_names_both_fixes(self):
+        out = chains_pkg.evaluate([
+            _f("ARGOCD-006", self.RESOURCE),
+            _f("ARGOCD-001", self.RESOURCE),
+        ])
+        chain = next(c for c in out if c.chain_id == "AC-031")
+        assert "sourceRepos" in chain.recommendation
+        assert "filters:" in chain.recommendation or "branchMatch" in chain.recommendation
 
 
 # ── Gate integration ─────────────────────────────────────────────────
