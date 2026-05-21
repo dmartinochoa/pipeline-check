@@ -189,7 +189,7 @@ class TestEngine:
             "AC-021", "AC-022", "AC-023", "AC-024",
             "AC-025", "AC-026", "AC-027", "AC-028", "AC-029",
             "XPC-001", "XPC-002", "XPC-003", "XPC-004", "XPC-005",
-            "XPC-006", "XPC-007", "XPC-008", "XPC-009",
+            "XPC-006", "XPC-007", "XPC-008", "XPC-009", "XPC-010",
         }
 
     def test_evaluate_empty_findings_returns_empty(self):

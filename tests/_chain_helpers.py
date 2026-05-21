@@ -160,4 +160,12 @@ MECHANICAL_CONTRACTS: tuple[XpcContract, ...] = (
         leg_b_checks=("DF-001",),
         leg_b_resource="Dockerfile",
     ),
+    XpcContract(
+        rule_module_path="xpc010_npm_cooldown_dockerfile_lifecycle",
+        chain_id="XPC-010",
+        leg_a_checks=("NPM-008",),
+        leg_a_resource="package.json",
+        leg_b_checks=("DF-024",),
+        leg_b_resource="Dockerfile",
+    ),
 )

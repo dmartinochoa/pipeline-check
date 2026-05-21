@@ -12,6 +12,21 @@ release commit collapses this section into `## [X.Y.Z] - <date>`.
 
 ### Added
 
+- **XPC-010 attack chain — npm cooldown miss meets Dockerfile
+  lifecycle execution.** New cross-provider chain pairing NPM-008
+  (a ``package.json`` pinned a direct dependency to an exact
+  version published inside the cooldown window) with DF-024 (the
+  Dockerfile's ``npm`` / ``yarn`` / ``pnpm install`` line runs
+  lifecycle scripts). Either leg alone is bounded, NPM-008 is a
+  time-window signal, DF-024 is an execution-primitive signal,
+  together they are the consumer-side Shai-Hulud / TanStack
+  topology, the next ``npm ci`` inside the build container
+  resolves a freshly published version AND executes its
+  ``postinstall`` with ``NPM_TOKEN`` / ``GH_TOKEN`` / ``AWS_*``
+  in scope. Severity HIGH, MITRE T1195.002 / T1078.004 / T1546.
+  Fires on ``--pipelines npm,dockerfile`` (or any multi-provider
+  run that includes both legs) with ``--resolve-remote`` enabled
+  for NPM-008's publish-time metadata. Chain count 38 -> 39.
 - **Argo CD provider with a 9-rule pack.** New ``--pipeline argocd``
   parses ``Application`` / ``ApplicationSet`` / ``AppProject`` CRDs
   plus the ``argocd-cm`` / ``argocd-rbac-cm`` ConfigMaps, distinct

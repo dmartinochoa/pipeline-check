@@ -79,6 +79,7 @@ one scan.
 | [`XPC-007`](#xpc-007) | Unpinned actions with no automated remediation | <span class="pg-sev pg-sev--high">HIGH</span> | scm / github | [`SCM-005`](providers/scm.md#scm-005) + [`GHA-001`](providers/github.md#gha-001) |
 | [`XPC-008`](#xpc-008) | Unreviewed source ships a mutable runtime image | <span class="pg-sev pg-sev--high">HIGH</span> | scm / dockerfile | (`SCM-001` &or; `SCM-007`) + [`DF-001`](providers/dockerfile.md#df-001) |
 | [`XPC-009`](#xpc-009) | Ingested CVE finding plus mutable runtime image reference | <span class="pg-sev pg-sev--high">HIGH</span> | ingest / dockerfile | `INGEST-trivy-*` / `INGEST-grype-*` / `INGEST-snyk-*` + [`DF-001`](providers/dockerfile.md#df-001) |
+| [`XPC-010`](#xpc-010) | npm cooldown miss meets Dockerfile lifecycle execution | <span class="pg-sev pg-sev--high">HIGH</span> | npm / dockerfile | [`NPM-008`](providers/npm.md#npm-008) + [`DF-024`](providers/dockerfile.md#df-024) |
 
 ## How chains surface in output
 
@@ -1226,6 +1227,34 @@ Two fixes; both are needed to close the chain:
   1. Pin the Dockerfile's ``FROM`` to a digest (``FROM python:3.12@sha256:<hex>``) (DF-001). The build then uses the exact bytes the digest names; no upstream tag-rewrite changes the vulnerability set.
   2. Update the digest to a known-clean upstream version the SARIF scanner clears. Capture the digest with ``crane digest`` or ``docker buildx imagetools inspect`` and update the ``FROM`` line in version control. The next build then uses the patched image AND keeps the snapshot consistent across subsequent runs.
 Optional but valuable: wire Dependabot or Renovate to auto-PR the digest update when a new clean version publishes (SCM-005 + this chain together close the loop).
+
+</div>
+
+</div>
+
+<div class="pg-rule pg-rule--high" markdown>
+
+### XPC-010: npm cooldown miss meets Dockerfile lifecycle execution { #xpc-010 }
+
+<div class="pg-rule__tags">
+<span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-tag" title="MITRE ATT&CK technique">MITRE T1195.002</span> <span class="pg-tag" title="MITRE ATT&CK technique">MITRE T1078.004</span> <span class="pg-tag" title="MITRE ATT&CK technique">MITRE T1546</span> <span class="pg-tag" title="kill-chain phase">supply-chain (fresh upstream release) -> execution (lifecycle script in build container)</span> <span class="pg-tag pg-tag--owasp">npm</span> <span class="pg-tag pg-tag--owasp">dockerfile</span>
+</div>
+
+A ``package.json`` pinned a freshly published exact dependency version (NPM-008) AND the Dockerfile's install step runs lifecycle scripts (DF-024). The next image build executes the new release's ``postinstall`` with the builder's NPM_TOKEN / GH_TOKEN / AWS_* in scope, the consumer-side Shai-Hulud / TanStack blast radius. Either leg alone is hygiene debt; together they are the execution primitive lined up with a time window the registry has not yet had a chance to close.
+
+**References**
+
+- <https://www.wiz.io/blog/shai-hulud-npm-supply-chain-attack>
+- <https://owasp.org/www-project-top-10-ci-cd-security-risks/CICD-SEC-03-Dependency-Chain-Abuse>
+
+<div class="pg-rule__rec" markdown>
+
+**Recommended action**
+
+Two fixes; either alone narrows the chain, both close it:
+  1. Hold back the bump, pin the dependency to the most recent release older than the cooldown window (NPM-008). ``pipeline_check --pipeline npm --resolve-remote`` will surface the publish dates so the team can choose a safe anchor.
+  2. Disable lifecycle scripts in the Dockerfile install (DF-024). Pass ``--ignore-scripts`` on every ``npm`` / ``yarn`` / ``pnpm install`` line, or set ``ENV NPM_CONFIG_IGNORE_SCRIPTS=true`` / ``ENV YARN_ENABLE_SCRIPTS=false`` before the install. Re-enable per package via a scoped ``RUN npm rebuild <pkg>`` line only when a native-module build genuinely needs it.
+Best to fix both, the cooldown gate is a default-safe policy applied at bump time, and ``--ignore-scripts`` is the durable execution-primitive control that protects every other dep too.
 
 </div>
 

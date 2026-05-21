@@ -4,6 +4,19 @@ What's planned, what's shipped, and what's deliberately out of scope.
 
 ## Shipped
 
+- **XPC-010 attack chain: npm cooldown x Dockerfile lifecycle
+  (post-1.3.0)** — Cross-provider chain pairing NPM-008 (manifest
+  pinned an exact version published inside the cooldown window) and
+  DF-024 (Dockerfile install runs lifecycle scripts). Either leg
+  alone is bounded; together they are the consumer-side Shai-Hulud
+  topology, the next ``npm ci`` inside the build container resolves
+  a freshly published version AND runs its ``postinstall`` with the
+  builder's NPM_TOKEN / GH_TOKEN / AWS_* in scope. Closes the
+  "Next" item under Dependency-supply-chain provider follow-ups.
+  Severity HIGH, MITRE T1195.002 / T1078.004 / T1546. Chain count
+  38 -> 39. Activates on ``--pipelines npm,dockerfile`` (or any
+  multi-provider run carrying both legs) with ``--resolve-remote``
+  on for NPM-008's publish-time metadata.
 - **Argo CD provider (post-1.3.0)** — New CD-side provider, kept
   disjoint from the existing ``argo`` (Argo Workflows) pack.
   ``--pipeline argocd`` parses ``Application`` / ``ApplicationSet`` /
@@ -343,9 +356,10 @@ on Gradle multi-project layouts. Would need pipeline-check to
 learn ``settings.gradle`` resolution. Rarer in practice than the
 three Gradle shapes already shipped; deferred.
 
-Next: the XPC-NNN chain engine gains chains pairing NPM-008
+~~Next: the XPC-NNN chain engine gains chains pairing NPM-008
 cooldown-miss with DF-024 lifecycle-scripts-enabled so the
-composite escalates when both gates fail in the same scan.
+composite escalates when both gates fail in the same scan.~~
+Landed as XPC-010 (see Shipped).
 
 ### Vulnerable-by-design benchmark: phase 2 (cross-scanner comparison)
 
