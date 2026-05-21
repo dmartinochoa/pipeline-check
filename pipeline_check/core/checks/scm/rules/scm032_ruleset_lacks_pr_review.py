@@ -73,6 +73,42 @@ RULE = Rule(
         "PR-review channel (separate ruleset or legacy branch "
         "protection).",
     ),
+    exploit_example=(
+        "# Vulnerable: the ruleset is enforced (governance theater\n"
+        "# checks pass) but doesn't include a ``pull_request``\n"
+        "# rule. Pushes to ``main`` still require a PR (via\n"
+        "# ``deletion`` / ``non_fast_forward`` rules), but the PR\n"
+        "# itself doesn't need any review. A single author\n"
+        "# self-merges into production.\n"
+        "# GET /repos/myorg/myrepo/rulesets/123:\n"
+        "{\n"
+        "  \"name\": \"main-protection\",\n"
+        "  \"enforcement\": \"active\",\n"
+        "  \"rules\": [\n"
+        "    {\"type\": \"deletion\"},\n"
+        "    {\"type\": \"non_fast_forward\"}\n"
+        "  ]\n"
+        "}\n"
+        "\n"
+        "# Safe: add a ``pull_request`` rule with at least one\n"
+        "# required reviewer. Pair with ``dismiss_stale_reviews_\n"
+        "# on_push: true`` so a re-push invalidates the approval\n"
+        "# and forces a fresh review.\n"
+        "# PUT /repos/myorg/myrepo/rulesets/123:\n"
+        "{\n"
+        "  \"name\": \"main-protection\",\n"
+        "  \"enforcement\": \"active\",\n"
+        "  \"rules\": [\n"
+        "    {\"type\": \"deletion\"},\n"
+        "    {\"type\": \"non_fast_forward\"},\n"
+        "    {\"type\": \"pull_request\",\n"
+        "     \"parameters\": {\n"
+        "       \"required_approving_review_count\": 1,\n"
+        "       \"dismiss_stale_reviews_on_push\": true\n"
+        "     }}\n"
+        "  ]\n"
+        "}"
+    ),
 )
 
 

@@ -11221,6 +11221,36 @@ s3.put_public_access_block(
 
 - GitGuardian's annual State of Secrets Sprawl reports find millions of fresh credential leaks per year across public GitHub commits, with the median time-to-revocation measured in days. Native secret scanning alerts the maintainer within minutes of the push, collapsing the exploitable window from days to minutes for the patterns it covers.
 
+**Proof of exploit.**
+
+```
+# Vulnerable: a developer pushes a commit that contains a
+# leaked AWS access key in source code. Without secret
+# scanning enabled, GitHub never surfaces an alert; the
+# secret stays in the repo's git history forever and any
+# repo reader (or future fork) extracts it. Public repos
+# are crawled by attackers continuously for AKIA-prefixed
+# strings.
+# GET /repos/myorg/myrepo (vulnerable response):
+{
+  "security_and_analysis": {
+    "secret_scanning": {"status": "disabled"}
+  }
+}
+
+# Safe: enable secret scanning. GitHub then scans every
+# push and historical commit for known credential
+# patterns and surfaces alerts; pair with push protection
+# (SCM-015) so secrets are blocked at push time before
+# they land in history.
+# PATCH /repos/myorg/myrepo:
+{
+  "security_and_analysis": {
+    "secret_scanning": {"status": "enabled"}
+  }
+}
+```
+
 **Source:** [`SCM-004`](../providers/scm.md#scm-004) in the [SCM provider](../providers/scm.md).
 
 ### `SCM-005`: Dependabot security updates are not enabled <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-scm-005 }
@@ -11256,6 +11286,31 @@ s3.put_public_access_block(
 
 **Recommendation.** In the default-branch protection rule, set ``Allow force pushes`` to ``Disabled``. Force-pushes overwrite the audit trail; an attacker who lands a malicious commit can erase evidence of it after the fact. Also set ``Allow deletions`` to ``Disabled`` so the branch itself can't be wiped.
 
+**Proof of exploit.**
+
+```
+# Vulnerable: ``allow_force_pushes: true`` on the
+# default branch's protection. A maintainer (or anyone
+# with write access via a compromised token) can rewrite
+# history on ``main``, erasing the audit trail of which
+# commits shipped which behavior. Used to hide malicious
+# commits after the fact.
+# GET /repos/myorg/myrepo/branches/main/protection:
+{
+  "allow_force_pushes": {"enabled": true},
+  "allow_deletions": {"enabled": false}
+}
+
+# Safe: force pushes off. History on ``main`` is now
+# append-only; rebasing or amending requires a PR with
+# the explicit history change.
+# PUT /repos/myorg/myrepo/branches/main/protection:
+{
+  "allow_force_pushes": {"enabled": false},
+  "allow_deletions": {"enabled": false}
+}
+```
+
 **Source:** [`SCM-007`](../providers/scm.md#scm-007) in the [SCM provider](../providers/scm.md).
 
 ### `SCM-008`: Default branch protection does not require status checks <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-scm-008 }
@@ -11281,6 +11336,28 @@ s3.put_public_access_block(
 
 **Recommendation.** In the default-branch protection rule, set ``Allow deletions`` to ``Disabled``. A deleted default branch wipes every protection rule attached to it; an attacker with write access can delete the branch, recreate it from a tampered commit, and re-apply protection in a way that looks identical from the UI.
 
+**Proof of exploit.**
+
+```
+# Vulnerable: ``allow_deletions: true`` lets anyone with
+# write access delete the default branch entirely. A
+# compromised token (leaked PAT, malicious workflow
+# running with ``contents: write``) erases the branch
+# along with the production deployment trail.
+# GET /repos/myorg/myrepo/branches/main/protection:
+{
+  "allow_deletions": {"enabled": true}
+}
+
+# Safe: branch deletion off. ``main`` cannot be deleted
+# via API or UI without first removing the protection
+# rule, which itself is an audited admin action.
+# PUT /repos/myorg/myrepo/branches/main/protection:
+{
+  "allow_deletions": {"enabled": false}
+}
+```
+
 **Source:** [`SCM-009`](../providers/scm.md#scm-009) in the [SCM provider](../providers/scm.md).
 
 ### `SCM-010`: Branch protection allows administrators to bypass <span class="pg-sev pg-sev--high">HIGH</span> { #detail-scm-010 }
@@ -11290,6 +11367,33 @@ s3.put_public_access_block(
 **How this is detected.** Reads ``enforce_admins.enabled`` from the branch protection payload. Fires when the value is False or the field is missing. Pairs with every other SCM-NNN rule that reads a branch-protection knob — without enforce_admins, those rules document intent rather than reality.
 
 **Recommendation.** In the default-branch protection rule, enable ``Do not allow bypassing the above settings`` (a.k.a. ``Include administrators``). Otherwise every other knob you set (required reviews, status checks, signed commits) becomes advisory rather than enforced. A compromised admin account is also a much shorter path to a tampered release than a compromised contributor account, so admins are exactly the identity the gate needs to apply to.
+
+**Proof of exploit.**
+
+```
+# Vulnerable: ``enforce_admins: false`` (or its absence)
+# lets repo admins push directly to ``main``, skip
+# required reviews, and bypass status checks. An admin's
+# token leak escalates straight to ``main``-write.
+# GET /repos/myorg/myrepo/branches/main/protection:
+{
+  "required_pull_request_reviews": {
+    "required_approving_review_count": 2
+  },
+  "enforce_admins": {"enabled": false}
+}
+
+# Safe: ``enforce_admins: true`` so the protection
+# applies to admins too. Reviews and status checks are
+# no longer bypassable.
+# PUT /repos/myorg/myrepo/branches/main/protection:
+{
+  "required_pull_request_reviews": {
+    "required_approving_review_count": 2
+  },
+  "enforce_admins": {"enabled": true}
+}
+```
 
 **Source:** [`SCM-010`](../providers/scm.md#scm-010) in the [SCM provider](../providers/scm.md).
 
@@ -11349,6 +11453,36 @@ s3.put_public_access_block(
 
 - When the scanning token lacks ``admin`` scope on the repo, the ``security_and_analysis`` block is omitted from the API response and this rule cannot tell ``disabled`` from ``unknown``. Re-run with admin scope to confirm.
 - Push protection covers the GitHub-managed pattern set (~200 token patterns from major providers). Custom-pattern support requires GitHub Advanced Security on private repos; public repos get the GitHub-managed set free.
+
+**Proof of exploit.**
+
+```
+# Vulnerable: secret scanning is enabled but push
+# protection is off. Secrets are surfaced AFTER they hit
+# the remote — the credential is already in history,
+# already mirrored to backups, already visible to anyone
+# who fetched between push and rotation. Rotation is the
+# only fix.
+# GET /repos/myorg/myrepo (vulnerable response):
+{
+  "security_and_analysis": {
+    "secret_scanning": {"status": "enabled"},
+    "secret_scanning_push_protection": {"status": "disabled"}
+  }
+}
+
+# Safe: both on. Push protection refuses pushes that
+# carry a recognized credential pattern; the developer
+# sees the rejection at ``git push`` time and rotates
+# BEFORE the secret enters history.
+# PATCH /repos/myorg/myrepo:
+{
+  "security_and_analysis": {
+    "secret_scanning": {"status": "enabled"},
+    "secret_scanning_push_protection": {"status": "enabled"}
+  }
+}
+```
 
 **Source:** [`SCM-015`](../providers/scm.md#scm-015) in the [SCM provider](../providers/scm.md).
 
@@ -11425,6 +11559,33 @@ s3.put_public_access_block(
 
 - Shai-Hulud npm worm (2026): the worm's propagation primitive was a stolen ``GITHUB_TOKEN`` with ``contents: write`` and ``workflows: write``. Repos whose default workflow permissions were ``read`` were unaffected even when their workflows ran a compromised npm dep; ``write``-default repos handed the worm the keys.
 
+**Proof of exploit.**
+
+```
+# Vulnerable: ``default_workflow_permissions: write``
+# means every workflow's ``GITHUB_TOKEN`` starts with
+# repo-write authority. A typo'd ``run:`` (or an
+# injection per GHA-003) can ``git push`` to any branch,
+# open issues, comment on PRs, write packages — the
+# attack surface of every action expands by default.
+# GET /repos/myorg/myrepo/actions/permissions/workflow:
+{
+  "default_workflow_permissions": "write",
+  "can_approve_pull_request_reviews": false
+}
+
+# Safe: ``read`` default. Workflows that genuinely need
+# elevated rights declare per-job ``permissions:`` blocks
+# that scope the token to the specific verbs they need
+# (``contents: write`` for a release publisher,
+# ``packages: write`` for a registry push, etc.).
+# PUT /repos/myorg/myrepo/actions/permissions/workflow:
+{
+  "default_workflow_permissions": "read",
+  "can_approve_pull_request_reviews": false
+}
+```
+
 **Source:** [`SCM-020`](../providers/scm.md#scm-020) in the [SCM provider](../providers/scm.md).
 
 ### `SCM-021`: Actions can approve pull requests (self-approval bypass) <span class="pg-sev pg-sev--high">HIGH</span> { #detail-scm-021 }
@@ -11438,6 +11599,30 @@ s3.put_public_access_block(
 **Known false positives.**
 
 - Some orgs allow Actions self-approval as part of a tightly-scoped automation flow (e.g., a code-formatter bot that opens-and-merges its own PRs). The safer pattern is to grant the bot a dedicated PAT scoped to PR-create-and-approve, not the repo-wide GITHUB_TOKEN. Suppress only when the trade-off has been documented.
+
+**Proof of exploit.**
+
+```
+# Vulnerable: ``can_approve_pull_request_reviews: true``
+# means a workflow's ``GITHUB_TOKEN`` (or an installation
+# token) can approve a pull request. Combined with the
+# required-reviews protection, a malicious workflow self-
+# approves its own PR and lands code into ``main`` without
+# a human reviewer.
+# GET /repos/myorg/myrepo/actions/permissions/workflow:
+{
+  "can_approve_pull_request_reviews": true
+}
+
+# Safe: actions cannot approve PRs. Human approval is
+# the gating signal; automation can comment / label /
+# trigger checks but cannot satisfy the review
+# requirement.
+# PUT /repos/myorg/myrepo/actions/permissions/workflow:
+{
+  "can_approve_pull_request_reviews": false
+}
+```
 
 **Source:** [`SCM-021`](../providers/scm.md#scm-021) in the [SCM provider](../providers/scm.md).
 
@@ -11466,6 +11651,35 @@ s3.put_public_access_block(
 **Known false positives.**
 
 - Non-production environments (``preview``, ``staging-ephemeral``) that legitimately auto-deploy without human gate are flagged by this rule, since GitHub doesn't distinguish environment severity. Suppress on those specific environment names with a rationale rather than disabling the rule for the whole repo.
+
+**Proof of exploit.**
+
+```
+# Vulnerable: the ``production`` environment has no
+# required reviewers configured. Any workflow that
+# references ``environment: production`` runs without
+# human approval, even when the trigger is a fork PR
+# (with the protections workflow_run is supposed to add).
+# Deploy keys / production secrets bound to the env are
+# accessible to the workflow without a gating human.
+# GET /repos/myorg/myrepo/environments/production:
+{
+  "name": "production",
+  "protection_rules": []
+}
+
+# Safe: required reviewers + a wait timer. The deploy
+# workflow pauses for human approval before the
+# production secrets become resolvable.
+# PUT /repos/myorg/myrepo/environments/production:
+{
+  "name": "production",
+  "reviewers": [
+    {"type": "Team", "id": 1234567}
+  ],
+  "wait_timer": 5
+}
+```
 
 **Source:** [`SCM-023`](../providers/scm.md#scm-023) in the [SCM provider](../providers/scm.md).
 
@@ -11562,6 +11776,39 @@ If the receiving service genuinely cannot handle HTTPS or shared secrets, termin
 
 - Long-running pattern of webhook payloads leaking via plain-HTTP receivers (Zapier, IFTTT, custom legacy endpoints) — the GitHub repo's commit-diff content, pull-request body, and secret-scanning alert payloads all land on the wire unencrypted. Public catalogs of compromised internal webhooks document the receiver-side breach where the URL alone was enough to inject forged events when no shared secret was configured.
 
+**Proof of exploit.**
+
+```
+# Vulnerable: the webhook ships events over plaintext
+# HTTP and carries no shared secret. Any network attacker
+# between GitHub and the receiver sniffs the event
+# payload (PR titles, commit messages, sometimes file
+# contents) and can also forge requests at the receiver
+# since no HMAC validation is possible.
+# GET /repos/myorg/myrepo/hooks/12345:
+{
+  "config": {
+    "url": "http://webhook.example.com/gh",
+    "content_type": "json",
+    "insecure_ssl": "1",
+    "secret": ""
+  }
+}
+
+# Safe: HTTPS endpoint, TLS verification on, and a
+# shared HMAC secret the receiver validates against
+# the ``X-Hub-Signature-256`` header on every delivery.
+# PATCH /repos/myorg/myrepo/hooks/12345:
+{
+  "config": {
+    "url": "https://webhook.example.com/gh",
+    "content_type": "json",
+    "insecure_ssl": "0",
+    "secret": "<32-byte-random>"
+  }
+}
+```
+
 **Source:** [`SCM-026`](../providers/scm.md#scm-026) in the [SCM provider](../providers/scm.md).
 
 ### `SCM-027`: Outside collaborator holds write / maintain / admin access <span class="pg-sev pg-sev--high">HIGH</span> { #detail-scm-027 }
@@ -11581,6 +11828,33 @@ Requires admin scope on the repo to enumerate the outside-collaborator list; wit
 **Seen in the wild.**
 
 - Long-running pattern across compromise postmortems: a former contributor's outside-collaborator entry retains ``push`` access years after the engagement ended. The account is then taken over (often by credential stuffing or a leaked PAT), and the attacker pushes a tampered commit that lands without review because the access level itself is the gate.
+
+**Proof of exploit.**
+
+```
+# Vulnerable: an outside collaborator (a contractor, a
+# departed employee whose access wasn't fully revoked,
+# a security-researcher allowed in for a one-off audit)
+# carries ``write`` / ``maintain`` / ``admin`` on the
+# repo. The blast radius of their account compromise
+# is the same as an internal maintainer's.
+# GET /repos/myorg/myrepo/collaborators?affiliation=outside:
+[
+  {
+    "login": "contractor-alice",
+    "role_name": "write"
+  }
+]
+
+# Safe: outside collaborators carry ``read`` or ``triage``
+# only. If they need to land code, route through fork +
+# PR + internal-reviewer approval. Re-run access reviews
+# quarterly and revoke on engagement end.
+# PUT /repos/myorg/myrepo/collaborators/contractor-alice:
+{
+  "permission": "read"
+}
+```
 
 **Source:** [`SCM-027`](../providers/scm.md#scm-027) in the [SCM provider](../providers/scm.md).
 
@@ -11635,6 +11909,37 @@ Rulesets in non-active enforcement modes are skipped — SCM-029 owns the not-en
 
 - Some orgs grant ``always`` bypass to a tightly-scoped automation team for after-hours emergency response. The right pattern is a GitHub App with auditable triggering (PagerDuty, Slack); ``always`` bypass for a human team leaves no record of the override. Suppress on the specific ruleset id with a calendar-bound rationale that names the audit channel and the next promotion review.
 
+**Proof of exploit.**
+
+```
+# Vulnerable: the repo ruleset names a bypass actor with
+# ``bypass_mode: always``. That actor (typically the
+# ``github-actions[bot]`` or an internal automation
+# account) skips every rule the ruleset enforces, on
+# every push, without any audit signal. A compromised
+# bot identity lands any change into ``main``.
+# GET /repos/myorg/myrepo/rulesets/123:
+{
+  "name": "main-protection",
+  "bypass_actors": [
+    {"actor_id": 5, "actor_type": "Integration",
+     "bypass_mode": "always"}
+  ]
+}
+
+# Safe: ``bypass_mode: pull_request`` (the bot can open
+# its own bypass-eligible PR but must still pass review)
+# or remove the bypass actor entirely.
+# PUT /repos/myorg/myrepo/rulesets/123:
+{
+  "name": "main-protection",
+  "bypass_actors": [
+    {"actor_id": 5, "actor_type": "Integration",
+     "bypass_mode": "pull_request"}
+  ]
+}
+```
+
 **Source:** [`SCM-030`](../providers/scm.md#scm-030) in the [SCM provider](../providers/scm.md).
 
 ### `SCM-031`: Repo allows auto-merge (no human-timing gate) <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-scm-031 }
@@ -11668,6 +11973,45 @@ SCM-032 evaluates rulesets in isolation: it does not consult legacy branch-prote
 **Known false positives.**
 
 - Some rulesets are deliberately scoped to enforce only non-PR-review controls (e.g., a ``commit_message_pattern`` ruleset for changelog compliance, or a ``tag_name_pattern`` ruleset for release tagging). The right pattern is to ALSO have a separate ruleset that enforces PR reviews on the same refs; SCM-032 fires when the *combination* leaves a gap. Suppress on the specific ruleset id with a rationale that names the PR-review channel (separate ruleset or legacy branch protection).
+
+**Proof of exploit.**
+
+```
+# Vulnerable: the ruleset is enforced (governance theater
+# checks pass) but doesn't include a ``pull_request``
+# rule. Pushes to ``main`` still require a PR (via
+# ``deletion`` / ``non_fast_forward`` rules), but the PR
+# itself doesn't need any review. A single author
+# self-merges into production.
+# GET /repos/myorg/myrepo/rulesets/123:
+{
+  "name": "main-protection",
+  "enforcement": "active",
+  "rules": [
+    {"type": "deletion"},
+    {"type": "non_fast_forward"}
+  ]
+}
+
+# Safe: add a ``pull_request`` rule with at least one
+# required reviewer. Pair with ``dismiss_stale_reviews_
+# on_push: true`` so a re-push invalidates the approval
+# and forces a fresh review.
+# PUT /repos/myorg/myrepo/rulesets/123:
+{
+  "name": "main-protection",
+  "enforcement": "active",
+  "rules": [
+    {"type": "deletion"},
+    {"type": "non_fast_forward"},
+    {"type": "pull_request",
+     "parameters": {
+       "required_approving_review_count": 1,
+       "dismiss_stale_reviews_on_push": true
+     }}
+  ]
+}
+```
 
 **Source:** [`SCM-032`](../providers/scm.md#scm-032) in the [SCM provider](../providers/scm.md).
 

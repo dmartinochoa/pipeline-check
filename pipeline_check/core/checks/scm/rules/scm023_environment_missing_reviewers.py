@@ -53,6 +53,32 @@ RULE = Rule(
         "those specific environment names with a rationale "
         "rather than disabling the rule for the whole repo.",
     ),
+    exploit_example=(
+        "# Vulnerable: the ``production`` environment has no\n"
+        "# required reviewers configured. Any workflow that\n"
+        "# references ``environment: production`` runs without\n"
+        "# human approval, even when the trigger is a fork PR\n"
+        "# (with the protections workflow_run is supposed to add).\n"
+        "# Deploy keys / production secrets bound to the env are\n"
+        "# accessible to the workflow without a gating human.\n"
+        "# GET /repos/myorg/myrepo/environments/production:\n"
+        "{\n"
+        "  \"name\": \"production\",\n"
+        "  \"protection_rules\": []\n"
+        "}\n"
+        "\n"
+        "# Safe: required reviewers + a wait timer. The deploy\n"
+        "# workflow pauses for human approval before the\n"
+        "# production secrets become resolvable.\n"
+        "# PUT /repos/myorg/myrepo/environments/production:\n"
+        "{\n"
+        "  \"name\": \"production\",\n"
+        "  \"reviewers\": [\n"
+        "    {\"type\": \"Team\", \"id\": 1234567}\n"
+        "  ],\n"
+        "  \"wait_timer\": 5\n"
+        "}"
+    ),
 )
 
 

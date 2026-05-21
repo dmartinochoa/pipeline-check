@@ -64,6 +64,34 @@ RULE = Rule(
         "specific ruleset id with a calendar-bound rationale that "
         "names the audit channel and the next promotion review.",
     ),
+    exploit_example=(
+        "# Vulnerable: the repo ruleset names a bypass actor with\n"
+        "# ``bypass_mode: always``. That actor (typically the\n"
+        "# ``github-actions[bot]`` or an internal automation\n"
+        "# account) skips every rule the ruleset enforces, on\n"
+        "# every push, without any audit signal. A compromised\n"
+        "# bot identity lands any change into ``main``.\n"
+        "# GET /repos/myorg/myrepo/rulesets/123:\n"
+        "{\n"
+        "  \"name\": \"main-protection\",\n"
+        "  \"bypass_actors\": [\n"
+        "    {\"actor_id\": 5, \"actor_type\": \"Integration\",\n"
+        "     \"bypass_mode\": \"always\"}\n"
+        "  ]\n"
+        "}\n"
+        "\n"
+        "# Safe: ``bypass_mode: pull_request`` (the bot can open\n"
+        "# its own bypass-eligible PR but must still pass review)\n"
+        "# or remove the bypass actor entirely.\n"
+        "# PUT /repos/myorg/myrepo/rulesets/123:\n"
+        "{\n"
+        "  \"name\": \"main-protection\",\n"
+        "  \"bypass_actors\": [\n"
+        "    {\"actor_id\": 5, \"actor_type\": \"Integration\",\n"
+        "     \"bypass_mode\": \"pull_request\"}\n"
+        "  ]\n"
+        "}"
+    ),
 )
 
 

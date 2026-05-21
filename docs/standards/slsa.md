@@ -9350,6 +9350,31 @@ ctx==0.2.2
 
 **Recommendation.** In the default-branch protection rule, set ``Allow force pushes`` to ``Disabled``. Force-pushes overwrite the audit trail; an attacker who lands a malicious commit can erase evidence of it after the fact. Also set ``Allow deletions`` to ``Disabled`` so the branch itself can't be wiped.
 
+**Proof of exploit.**
+
+```
+# Vulnerable: ``allow_force_pushes: true`` on the
+# default branch's protection. A maintainer (or anyone
+# with write access via a compromised token) can rewrite
+# history on ``main``, erasing the audit trail of which
+# commits shipped which behavior. Used to hide malicious
+# commits after the fact.
+# GET /repos/myorg/myrepo/branches/main/protection:
+{
+  "allow_force_pushes": {"enabled": true},
+  "allow_deletions": {"enabled": false}
+}
+
+# Safe: force pushes off. History on ``main`` is now
+# append-only; rebasing or amending requires a PR with
+# the explicit history change.
+# PUT /repos/myorg/myrepo/branches/main/protection:
+{
+  "allow_force_pushes": {"enabled": false},
+  "allow_deletions": {"enabled": false}
+}
+```
+
 **Source:** [`SCM-007`](../providers/scm.md#scm-007) in the [SCM provider](../providers/scm.md).
 
 ### `SCM-008`: Default branch protection does not require status checks <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-scm-008 }
@@ -9374,6 +9399,28 @@ ctx==0.2.2
 **How this is detected.** Reads ``allow_deletions.enabled`` from the branch protection payload. Fires when the value is True. Pairs with SCM-007 (force-push allowed) — the two flags together cover the complete rewrite-history attack class.
 
 **Recommendation.** In the default-branch protection rule, set ``Allow deletions`` to ``Disabled``. A deleted default branch wipes every protection rule attached to it; an attacker with write access can delete the branch, recreate it from a tampered commit, and re-apply protection in a way that looks identical from the UI.
+
+**Proof of exploit.**
+
+```
+# Vulnerable: ``allow_deletions: true`` lets anyone with
+# write access delete the default branch entirely. A
+# compromised token (leaked PAT, malicious workflow
+# running with ``contents: write``) erases the branch
+# along with the production deployment trail.
+# GET /repos/myorg/myrepo/branches/main/protection:
+{
+  "allow_deletions": {"enabled": true}
+}
+
+# Safe: branch deletion off. ``main`` cannot be deleted
+# via API or UI without first removing the protection
+# rule, which itself is an audited admin action.
+# PUT /repos/myorg/myrepo/branches/main/protection:
+{
+  "allow_deletions": {"enabled": false}
+}
+```
 
 **Source:** [`SCM-009`](../providers/scm.md#scm-009) in the [SCM provider](../providers/scm.md).
 
@@ -9425,6 +9472,37 @@ Rulesets in non-active enforcement modes are skipped — SCM-029 owns the not-en
 **Known false positives.**
 
 - Some orgs grant ``always`` bypass to a tightly-scoped automation team for after-hours emergency response. The right pattern is a GitHub App with auditable triggering (PagerDuty, Slack); ``always`` bypass for a human team leaves no record of the override. Suppress on the specific ruleset id with a calendar-bound rationale that names the audit channel and the next promotion review.
+
+**Proof of exploit.**
+
+```
+# Vulnerable: the repo ruleset names a bypass actor with
+# ``bypass_mode: always``. That actor (typically the
+# ``github-actions[bot]`` or an internal automation
+# account) skips every rule the ruleset enforces, on
+# every push, without any audit signal. A compromised
+# bot identity lands any change into ``main``.
+# GET /repos/myorg/myrepo/rulesets/123:
+{
+  "name": "main-protection",
+  "bypass_actors": [
+    {"actor_id": 5, "actor_type": "Integration",
+     "bypass_mode": "always"}
+  ]
+}
+
+# Safe: ``bypass_mode: pull_request`` (the bot can open
+# its own bypass-eligible PR but must still pass review)
+# or remove the bypass actor entirely.
+# PUT /repos/myorg/myrepo/rulesets/123:
+{
+  "name": "main-protection",
+  "bypass_actors": [
+    {"actor_id": 5, "actor_type": "Integration",
+     "bypass_mode": "pull_request"}
+  ]
+}
+```
 
 **Source:** [`SCM-030`](../providers/scm.md#scm-030) in the [SCM provider](../providers/scm.md).
 
