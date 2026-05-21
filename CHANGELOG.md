@@ -43,21 +43,26 @@ release commit collapses this section into `## [X.Y.Z] - <date>`.
   scenario 19 gap.
 - **TAINT-002 matrix-expansion injection.** Extends the GitHub
   taint graph with two new propagation hops, both motivated by the
-  GitHub Security Lab matrix-expansion-injection writeup:\n\n  1. **Step env-var binding.** A producer step with
-  ``env: { LABELS: "${{ toJSON(github.event.pull_request.labels.*"
-  ".name) }}" }`` and a run body that writes
-  ``echo "targets=$LABELS" >> $GITHUB_OUTPUT`` propagates taint
-  from the env binding into the output — even though the run
-  body's RHS doesn't contain a literal ``${{ ... }}`` token. This
-  is the indirect-env shape GHA-003 deliberately treats as safe
-  (quoted shell) but that still flows into downstream sinks.\n  2. **Matrix expansion via ``fromJSON``.** When
-  ``strategy.matrix.<axis>: ${{ fromJSON(needs.<job>.outputs.<name>) }}``
-  feeds a tainted upstream output, every
-  ``${{ matrix.<axis> }}`` reference in the consuming job's run /
-  with body is treated as a taint sink. The path renderer shows
-  the full chain (source -> env binding -> step output -> job
-  output -> fromJSON matrix axis -> sink) so the reviewer sees the
-  whole expansion at once.\n\n  ``UNTRUSTED_CONTEXT_RE`` also widened to accept
+  GitHub Security Lab matrix-expansion-injection writeup:
+
+  1. **Step env-var binding.** A producer step with
+     ``env: { LABELS: "${{ toJSON(github.event.pull_request.labels.*"
+     ".name) }}" }`` and a run body that writes
+     ``echo "targets=$LABELS" >> $GITHUB_OUTPUT`` propagates taint
+     from the env binding into the output — even though the run
+     body's RHS doesn't contain a literal ``${{ ... }}`` token. This
+     is the indirect-env shape GHA-003 deliberately treats as safe
+     (quoted shell) but that still flows into downstream sinks.
+  2. **Matrix expansion via ``fromJSON``.** When
+     ``strategy.matrix.<axis>: ${{ fromJSON(needs.<job>.outputs.<name>) }}``
+     feeds a tainted upstream output, every
+     ``${{ matrix.<axis> }}`` reference in the consuming job's run /
+     with body is treated as a taint sink. The path renderer shows
+     the full chain (source -> env binding -> step output -> job
+     output -> fromJSON matrix axis -> sink) so the reviewer sees the
+     whole expansion at once.
+
+  ``UNTRUSTED_CONTEXT_RE`` also widened to accept
   ``toJSON(...)`` / ``fromJSON(...)`` / ``format(...)`` wrappers
   around the untrusted context expression, and to recognize
   ``github.event.pull_request.labels.*.name`` /
@@ -134,14 +139,19 @@ release commit collapses this section into `## [X.Y.Z] - <date>`.
   When a workflow uses ``aws-actions/configure-aws-credentials`` or
   ``google-github-actions/auth``, GHA-062 walks the containing repo
   (depth-bounded, skipping ``node_modules`` / ``vendor`` / build
-  dirs) for two sidecar IaC shapes:\n\n  - ``*trust-polic*.json`` files referencing
-  ``token.actions.githubusercontent.com`` as a Federated principal
-  whose ``Condition.StringLike :sub`` is ``repo:*`` or
-  ``repo:<org>/*`` (matches more than one repo);\n  - ``*.tf`` files containing a
-  ``google_iam_workload_identity_pool_provider`` block whose
-  ``attribute_condition`` is
-  ``attribute.repository.startsWith('<org>/')`` (whole-org WIF
-  binding).\n\n  GHA-030 already covers the workflow-side environment binding;
+  dirs) for two sidecar IaC shapes:
+
+  - ``*trust-polic*.json`` files referencing
+    ``token.actions.githubusercontent.com`` as a Federated principal
+    whose ``Condition.StringLike :sub`` is ``repo:*`` or
+    ``repo:<org>/*`` (matches more than one repo);
+  - ``*.tf`` files containing a
+    ``google_iam_workload_identity_pool_provider`` block whose
+    ``attribute_condition`` is
+    ``attribute.repository.startsWith('<org>/')`` (whole-org WIF
+    binding).
+
+  GHA-030 already covers the workflow-side environment binding;
   this leg covers the IaC subject claim that actually accepts the
   OIDC token. Closes the ``greylag-ci/cicd-goat`` scenarios 10 (AWS
   wildcard sub) and 22 (GCP over-broad WIF) gaps — the workflow
