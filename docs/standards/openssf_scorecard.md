@@ -1074,6 +1074,38 @@ jobs:
 
 **Recommendation.** Pin every container / script template image to a content-addressable digest (``alpine@sha256:<digest>``). Tag-only references (``alpine:3.18``) and rolling tags (``alpine:latest``) let a compromised registry update redirect the workflow's containers at the next pull, with no audit trail in the WorkflowTemplate.
 
+**Proof of exploit.**
+
+```
+# Vulnerable: ``alpine:3.18`` is a mutable tag. The Alpine
+# maintainers (or a registry compromise / namespace hijack)
+# repoint the tag on the next 3.18.x point release; every
+# Workflow run after that pulls the new image without any
+# audit trail in the manifest.
+apiVersion: argoproj.io/v1alpha1
+kind: WorkflowTemplate
+metadata: { name: build }
+spec:
+  templates:
+    - name: build
+      container:
+        image: alpine:3.18
+        command: [./build.sh]
+
+# Safe: pin to the content-addressable digest. Renovate's
+# docker-tag ecosystem bumps the digest in reviewable PRs
+# so the pin doesn't drift behind security patches.
+apiVersion: argoproj.io/v1alpha1
+kind: WorkflowTemplate
+metadata: { name: build }
+spec:
+  templates:
+    - name: build
+      container:
+        image: alpine@sha256:abc123...
+        command: [./build.sh]
+```
+
 **Source:** [`ARGO-001`](../providers/argo.md#argo-001) in the [Argo Workflows provider](../providers/argo.md).
 
 ### `ARGO-002`: Argo template container runs privileged or as root <span class="pg-sev pg-sev--high">HIGH</span> { #detail-argo-002 }
@@ -1083,6 +1115,43 @@ jobs:
 **How this is detected.** Detection fires on ``securityContext.privileged: true``, ``runAsUser: 0``, ``runAsNonRoot: false``, ``allowPrivilegeEscalation: true``, or no ``securityContext`` block at all. Also walks ``spec.podSpecPatch`` (raw YAML) for an explicit ``privileged: true`` token.
 
 **Recommendation.** Set ``securityContext.privileged: false``, ``runAsNonRoot: true``, and ``allowPrivilegeEscalation: false`` on every template container / script. A privileged container shares the node's kernel namespaces; a malicious image then has root on the build node and breaks the boundary between workflow and cluster.
+
+**Proof of exploit.**
+
+```
+# Vulnerable: ``privileged: true`` gives the container full
+# access to the node's devices and capabilities. A workload
+# compromise (poisoned image, build-script RCE) becomes a
+# node-level shell with access to every other pod scheduled
+# on the same node.
+apiVersion: argoproj.io/v1alpha1
+kind: WorkflowTemplate
+spec:
+  templates:
+    - name: build
+      container:
+        image: builder@sha256:abc123...
+        securityContext:
+          privileged: true
+
+# Safe: explicit non-root with privilege-escalation off.
+# Drop all capabilities; add back only the ones the
+# workload genuinely needs (rare for build templates).
+apiVersion: argoproj.io/v1alpha1
+kind: WorkflowTemplate
+spec:
+  templates:
+    - name: build
+      container:
+        image: builder@sha256:abc123...
+        securityContext:
+          privileged: false
+          allowPrivilegeEscalation: false
+          runAsNonRoot: true
+          runAsUser: 10001
+          capabilities:
+            drop: ["ALL"]
+```
 
 **Source:** [`ARGO-002`](../providers/argo.md#argo-002) in the [Argo Workflows provider](../providers/argo.md).
 
@@ -1103,6 +1172,47 @@ jobs:
 **How this is detected.** Walks ``spec.volumes[].hostPath`` and the raw ``spec.podSpecPatch`` string for ``hostNetwork``, ``hostPID``, ``hostIPC``, and ``hostPath``.
 
 **Recommendation.** Use ``emptyDir`` or PVC-backed volumes instead of ``hostPath``. Drop ``hostNetwork: true`` / ``hostPID: true`` / ``hostIPC: true`` from any inline ``podSpecPatch``. A hostPath mount of ``/var/run/docker.sock`` or ``/`` lets the workflow break out of the pod and act as the underlying node.
+
+**Proof of exploit.**
+
+```
+# Vulnerable: ``hostPath: /var/run/docker.sock`` mounts the
+# Docker socket into the template's container. The workflow
+# can then ``docker run --privileged -v /:/host ...`` and
+# own the entire node — kubelet credentials, every other
+# pod's filesystem, every secret mounted on the node.
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+spec:
+  volumes:
+    - name: docker-sock
+      hostPath:
+        path: /var/run/docker.sock
+  templates:
+    - name: build
+      container:
+        image: docker:latest
+        volumeMounts:
+          - { name: docker-sock, mountPath: /var/run/docker.sock }
+
+# Safe: use a sandboxed builder (Kaniko, BuildKit rootless)
+# in a PVC-backed workspace. The template never needs node-
+# level access to the container runtime, just a writable
+# scratch volume scoped to the workflow run.
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+spec:
+  volumes:
+    - name: scratch
+      emptyDir: {}
+  templates:
+    - name: build
+      container:
+        image: gcr.io/kaniko-project/executor:v1.21.0
+        args: [--context=git://..., --destination=registry/app:tag]
+        volumeMounts:
+          - { name: scratch, mountPath: /workspace }
+```
 
 **Source:** [`ARGO-004`](../providers/argo.md#argo-004) in the [Argo Workflows provider](../providers/argo.md).
 
@@ -1176,6 +1286,48 @@ spec:
 
 **Autofix.** `pipeline_check --fix` will patch this finding automatically. Review the diff before committing; the fixer applies the conservative remediation pattern (e.g. swap a floating tag for the digest it currently resolves to), not the most aggressive one.
 
+**Proof of exploit.**
+
+```
+# Vulnerable: the AWS access key literal lives in the
+# WorkflowTemplate manifest, committed to git and readable
+# by every namespace member with workflowtemplates: get on
+# it. ``argo logs`` echoes the value when the container
+# prints its environment; ``argo get -o yaml`` exposes it
+# directly.
+apiVersion: argoproj.io/v1alpha1
+kind: WorkflowTemplate
+spec:
+  templates:
+    - name: upload
+      container:
+        image: aws-cli@sha256:abc123...
+        env:
+          - name: AWS_ACCESS_KEY_ID
+            value: AKIAIOSFODNN7EXAMPLE
+          - name: AWS_SECRET_ACCESS_KEY
+            value: wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY
+
+# Safe: mount the secret via ``valueFrom.secretKeyRef``.
+# The actual value lives in a Kubernetes Secret resource;
+# the template references it by name, so the manifest
+# carries no secret material.
+apiVersion: argoproj.io/v1alpha1
+kind: WorkflowTemplate
+spec:
+  templates:
+    - name: upload
+      container:
+        image: aws-cli@sha256:abc123...
+        env:
+          - name: AWS_ACCESS_KEY_ID
+            valueFrom:
+              secretKeyRef: { name: aws-uploader, key: access_key_id }
+          - name: AWS_SECRET_ACCESS_KEY
+            valueFrom:
+              secretKeyRef: { name: aws-uploader, key: secret_access_key }
+```
+
 **Source:** [`ARGO-006`](../providers/argo.md#argo-006) in the [Argo Workflows provider](../providers/argo.md).
 
 ### `ARGO-008`: Argo script source pipes remote install or disables TLS <span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> { #detail-argo-008 }
@@ -1187,6 +1339,44 @@ spec:
 **Recommendation.** Replace ``curl ... | sh`` with a download-then-verify-then-execute pattern. Drop TLS-bypass flags (``curl -k``, ``git config http.sslverify false``); install the missing CA into the template image instead. Both forms let an attacker controlling DNS / a transparent proxy substitute the script the workflow runs.
 
 **Autofix.** `pipeline_check --fix` will patch this finding automatically. Review the diff before committing; the fixer applies the conservative remediation pattern (e.g. swap a floating tag for the digest it currently resolves to), not the most aggressive one.
+
+**Proof of exploit.**
+
+```
+# Vulnerable: ``curl | bash`` trusts both the network path
+# (any MITM substitutes the script) and the host (an
+# attacker-compromised installer endpoint silently serves
+# attacker code). The script runs as the workflow's pod,
+# inheriting every secret mounted into the container.
+apiVersion: argoproj.io/v1alpha1
+kind: WorkflowTemplate
+spec:
+  templates:
+    - name: install-cli
+      script:
+        image: alpine@sha256:abc123...
+        command: [sh]
+        source: |
+          curl -fsSL https://installer.example.com/cli.sh | bash
+
+# Safe: download to a file, verify a sha256 digest from a
+# trusted source, then execute. If the upstream content
+# changes the digest stops matching and the build fails
+# before the malicious code runs.
+apiVersion: argoproj.io/v1alpha1
+kind: WorkflowTemplate
+spec:
+  templates:
+    - name: install-cli
+      script:
+        image: alpine@sha256:abc123...
+        command: [sh]
+        source: |
+          set -e
+          curl -fsSL https://installer.example.com/cli.sh -o /tmp/cli.sh
+          echo 'a1b2c3d4...  /tmp/cli.sh' | sha256sum -c -
+          bash /tmp/cli.sh
+```
 
 **Source:** [`ARGO-008`](../providers/argo.md#argo-008) in the [Argo Workflows provider](../providers/argo.md).
 
@@ -1277,6 +1467,44 @@ Other artifact sources are skipped, an OCI / S3 / GCS pull carries its own integ
 **Known false positives.**
 
 - Local-mirror development workflows occasionally use ``http://`` against an internal registry that's only reachable from a private network. The integrity guarantee still relies on network isolation rather than transport encryption; suppress on the specific template name when this is the deliberate shape.
+
+**Proof of exploit.**
+
+```
+# Vulnerable: ``http://`` artifact URL means Argo fetches
+# the input over plaintext. Any on-path attacker (compromised
+# corporate proxy, malicious VPN, BGP hijack on the internal
+# mirror) substitutes the dataset; Argo executes whatever
+# bytes arrive. ``git://`` is the same shape — legacy
+# unauthenticated git with no integrity check.
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+spec:
+  templates:
+    - name: process
+      inputs:
+        artifacts:
+          - name: dataset
+            path: /input/dataset.tar.gz
+            http:
+              url: http://internal-mirror.example.com/datasets/v1.tar.gz
+
+# Safe: HTTPS for the fetch. For high-value artifacts, also
+# verify a producer-signed checksum after download (the
+# artifact source providing an integrity guarantee, e.g.
+# S3 + ETag or an OCI artifact + content digest).
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+spec:
+  templates:
+    - name: process
+      inputs:
+        artifacts:
+          - name: dataset
+            path: /input/dataset.tar.gz
+            http:
+              url: https://internal-mirror.example.com/datasets/v1.tar.gz
+```
 
 **Source:** [`ARGO-015`](../providers/argo.md#argo-015) in the [Argo Workflows provider](../providers/argo.md).
 

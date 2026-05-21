@@ -50,6 +50,41 @@ RULE = Rule(
         "encryption; suppress on the specific template name when "
         "this is the deliberate shape.",
     ),
+    exploit_example=(
+        "# Vulnerable: ``http://`` artifact URL means Argo fetches\n"
+        "# the input over plaintext. Any on-path attacker (compromised\n"
+        "# corporate proxy, malicious VPN, BGP hijack on the internal\n"
+        "# mirror) substitutes the dataset; Argo executes whatever\n"
+        "# bytes arrive. ``git://`` is the same shape — legacy\n"
+        "# unauthenticated git with no integrity check.\n"
+        "apiVersion: argoproj.io/v1alpha1\n"
+        "kind: Workflow\n"
+        "spec:\n"
+        "  templates:\n"
+        "    - name: process\n"
+        "      inputs:\n"
+        "        artifacts:\n"
+        "          - name: dataset\n"
+        "            path: /input/dataset.tar.gz\n"
+        "            http:\n"
+        "              url: http://internal-mirror.example.com/datasets/v1.tar.gz\n"
+        "\n"
+        "# Safe: HTTPS for the fetch. For high-value artifacts, also\n"
+        "# verify a producer-signed checksum after download (the\n"
+        "# artifact source providing an integrity guarantee, e.g.\n"
+        "# S3 + ETag or an OCI artifact + content digest).\n"
+        "apiVersion: argoproj.io/v1alpha1\n"
+        "kind: Workflow\n"
+        "spec:\n"
+        "  templates:\n"
+        "    - name: process\n"
+        "      inputs:\n"
+        "        artifacts:\n"
+        "          - name: dataset\n"
+        "            path: /input/dataset.tar.gz\n"
+        "            http:\n"
+        "              url: https://internal-mirror.example.com/datasets/v1.tar.gz"
+    ),
 )
 
 

@@ -534,6 +534,38 @@ Every check that evidences this standard, rendered once with its detection mecha
 
 **Recommendation.** Pin every container / script template image to a content-addressable digest (``alpine@sha256:<digest>``). Tag-only references (``alpine:3.18``) and rolling tags (``alpine:latest``) let a compromised registry update redirect the workflow's containers at the next pull, with no audit trail in the WorkflowTemplate.
 
+**Proof of exploit.**
+
+```
+# Vulnerable: ``alpine:3.18`` is a mutable tag. The Alpine
+# maintainers (or a registry compromise / namespace hijack)
+# repoint the tag on the next 3.18.x point release; every
+# Workflow run after that pulls the new image without any
+# audit trail in the manifest.
+apiVersion: argoproj.io/v1alpha1
+kind: WorkflowTemplate
+metadata: { name: build }
+spec:
+  templates:
+    - name: build
+      container:
+        image: alpine:3.18
+        command: [./build.sh]
+
+# Safe: pin to the content-addressable digest. Renovate's
+# docker-tag ecosystem bumps the digest in reviewable PRs
+# so the pin doesn't drift behind security patches.
+apiVersion: argoproj.io/v1alpha1
+kind: WorkflowTemplate
+metadata: { name: build }
+spec:
+  templates:
+    - name: build
+      container:
+        image: alpine@sha256:abc123...
+        command: [./build.sh]
+```
+
 **Source:** [`ARGO-001`](../providers/argo.md#argo-001) in the [Argo Workflows provider](../providers/argo.md).
 
 ### `ARGO-008`: Argo script source pipes remote install or disables TLS <span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> { #detail-argo-008 }
@@ -545,6 +577,44 @@ Every check that evidences this standard, rendered once with its detection mecha
 **Recommendation.** Replace ``curl ... | sh`` with a download-then-verify-then-execute pattern. Drop TLS-bypass flags (``curl -k``, ``git config http.sslverify false``); install the missing CA into the template image instead. Both forms let an attacker controlling DNS / a transparent proxy substitute the script the workflow runs.
 
 **Autofix.** `pipeline_check --fix` will patch this finding automatically. Review the diff before committing; the fixer applies the conservative remediation pattern (e.g. swap a floating tag for the digest it currently resolves to), not the most aggressive one.
+
+**Proof of exploit.**
+
+```
+# Vulnerable: ``curl | bash`` trusts both the network path
+# (any MITM substitutes the script) and the host (an
+# attacker-compromised installer endpoint silently serves
+# attacker code). The script runs as the workflow's pod,
+# inheriting every secret mounted into the container.
+apiVersion: argoproj.io/v1alpha1
+kind: WorkflowTemplate
+spec:
+  templates:
+    - name: install-cli
+      script:
+        image: alpine@sha256:abc123...
+        command: [sh]
+        source: |
+          curl -fsSL https://installer.example.com/cli.sh | bash
+
+# Safe: download to a file, verify a sha256 digest from a
+# trusted source, then execute. If the upstream content
+# changes the digest stops matching and the build fails
+# before the malicious code runs.
+apiVersion: argoproj.io/v1alpha1
+kind: WorkflowTemplate
+spec:
+  templates:
+    - name: install-cli
+      script:
+        image: alpine@sha256:abc123...
+        command: [sh]
+        source: |
+          set -e
+          curl -fsSL https://installer.example.com/cli.sh -o /tmp/cli.sh
+          echo 'a1b2c3d4...  /tmp/cli.sh' | sha256sum -c -
+          bash /tmp/cli.sh
+```
 
 **Source:** [`ARGO-008`](../providers/argo.md#argo-008) in the [Argo Workflows provider](../providers/argo.md).
 

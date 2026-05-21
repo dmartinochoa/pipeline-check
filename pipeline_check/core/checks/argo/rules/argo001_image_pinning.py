@@ -29,6 +29,35 @@ RULE = Rule(
         "``spec.templates[].containerSet.containers[]``. The image "
         "must contain ``@sha256:`` followed by a 64-char hex digest."
     ),
+    exploit_example=(
+        "# Vulnerable: ``alpine:3.18`` is a mutable tag. The Alpine\n"
+        "# maintainers (or a registry compromise / namespace hijack)\n"
+        "# repoint the tag on the next 3.18.x point release; every\n"
+        "# Workflow run after that pulls the new image without any\n"
+        "# audit trail in the manifest.\n"
+        "apiVersion: argoproj.io/v1alpha1\n"
+        "kind: WorkflowTemplate\n"
+        "metadata: { name: build }\n"
+        "spec:\n"
+        "  templates:\n"
+        "    - name: build\n"
+        "      container:\n"
+        "        image: alpine:3.18\n"
+        "        command: [./build.sh]\n"
+        "\n"
+        "# Safe: pin to the content-addressable digest. Renovate's\n"
+        "# docker-tag ecosystem bumps the digest in reviewable PRs\n"
+        "# so the pin doesn't drift behind security patches.\n"
+        "apiVersion: argoproj.io/v1alpha1\n"
+        "kind: WorkflowTemplate\n"
+        "metadata: { name: build }\n"
+        "spec:\n"
+        "  templates:\n"
+        "    - name: build\n"
+        "      container:\n"
+        "        image: alpine@sha256:abc123...\n"
+        "        command: [./build.sh]"
+    ),
 )
 
 _DIGEST_RE = re.compile(r"@sha256:[0-9a-f]{64}\b")

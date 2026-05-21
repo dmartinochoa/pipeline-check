@@ -325,6 +325,43 @@ Every check that evidences this standard, rendered once with its detection mecha
 
 **Recommendation.** Set ``securityContext.privileged: false``, ``runAsNonRoot: true``, and ``allowPrivilegeEscalation: false`` on every template container / script. A privileged container shares the node's kernel namespaces; a malicious image then has root on the build node and breaks the boundary between workflow and cluster.
 
+**Proof of exploit.**
+
+```
+# Vulnerable: ``privileged: true`` gives the container full
+# access to the node's devices and capabilities. A workload
+# compromise (poisoned image, build-script RCE) becomes a
+# node-level shell with access to every other pod scheduled
+# on the same node.
+apiVersion: argoproj.io/v1alpha1
+kind: WorkflowTemplate
+spec:
+  templates:
+    - name: build
+      container:
+        image: builder@sha256:abc123...
+        securityContext:
+          privileged: true
+
+# Safe: explicit non-root with privilege-escalation off.
+# Drop all capabilities; add back only the ones the
+# workload genuinely needs (rare for build templates).
+apiVersion: argoproj.io/v1alpha1
+kind: WorkflowTemplate
+spec:
+  templates:
+    - name: build
+      container:
+        image: builder@sha256:abc123...
+        securityContext:
+          privileged: false
+          allowPrivilegeEscalation: false
+          runAsNonRoot: true
+          runAsUser: 10001
+          capabilities:
+            drop: ["ALL"]
+```
+
 **Source:** [`ARGO-002`](../providers/argo.md#argo-002) in the [Argo Workflows provider](../providers/argo.md).
 
 ### `ARGO-003`: Argo workflow uses the default ServiceAccount <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-argo-003 }
@@ -345,6 +382,47 @@ Every check that evidences this standard, rendered once with its detection mecha
 
 **Recommendation.** Use ``emptyDir`` or PVC-backed volumes instead of ``hostPath``. Drop ``hostNetwork: true`` / ``hostPID: true`` / ``hostIPC: true`` from any inline ``podSpecPatch``. A hostPath mount of ``/var/run/docker.sock`` or ``/`` lets the workflow break out of the pod and act as the underlying node.
 
+**Proof of exploit.**
+
+```
+# Vulnerable: ``hostPath: /var/run/docker.sock`` mounts the
+# Docker socket into the template's container. The workflow
+# can then ``docker run --privileged -v /:/host ...`` and
+# own the entire node — kubelet credentials, every other
+# pod's filesystem, every secret mounted on the node.
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+spec:
+  volumes:
+    - name: docker-sock
+      hostPath:
+        path: /var/run/docker.sock
+  templates:
+    - name: build
+      container:
+        image: docker:latest
+        volumeMounts:
+          - { name: docker-sock, mountPath: /var/run/docker.sock }
+
+# Safe: use a sandboxed builder (Kaniko, BuildKit rootless)
+# in a PVC-backed workspace. The template never needs node-
+# level access to the container runtime, just a writable
+# scratch volume scoped to the workflow run.
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+spec:
+  volumes:
+    - name: scratch
+      emptyDir: {}
+  templates:
+    - name: build
+      container:
+        image: gcr.io/kaniko-project/executor:v1.21.0
+        args: [--context=git://..., --destination=registry/app:tag]
+        volumeMounts:
+          - { name: scratch, mountPath: /workspace }
+```
+
 **Source:** [`ARGO-004`](../providers/argo.md#argo-004) in the [Argo Workflows provider](../providers/argo.md).
 
 ### `ARGO-006`: Literal secret value in Argo template env or parameter default <span class="pg-sev pg-sev--critical">CRITICAL</span> <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> { #detail-argo-006 }
@@ -356,6 +434,48 @@ Every check that evidences this standard, rendered once with its detection mecha
 **Recommendation.** Mount secrets via ``env.valueFrom.secretKeyRef`` (or a ``volumes:`` Secret mount) instead of writing the value into ``env.value`` or ``arguments.parameters[].value``. Workflow manifests are committed to git and cluster-readable; literal values leak through normal access paths.
 
 **Autofix.** `pipeline_check --fix` will patch this finding automatically. Review the diff before committing; the fixer applies the conservative remediation pattern (e.g. swap a floating tag for the digest it currently resolves to), not the most aggressive one.
+
+**Proof of exploit.**
+
+```
+# Vulnerable: the AWS access key literal lives in the
+# WorkflowTemplate manifest, committed to git and readable
+# by every namespace member with workflowtemplates: get on
+# it. ``argo logs`` echoes the value when the container
+# prints its environment; ``argo get -o yaml`` exposes it
+# directly.
+apiVersion: argoproj.io/v1alpha1
+kind: WorkflowTemplate
+spec:
+  templates:
+    - name: upload
+      container:
+        image: aws-cli@sha256:abc123...
+        env:
+          - name: AWS_ACCESS_KEY_ID
+            value: AKIAIOSFODNN7EXAMPLE
+          - name: AWS_SECRET_ACCESS_KEY
+            value: wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY
+
+# Safe: mount the secret via ``valueFrom.secretKeyRef``.
+# The actual value lives in a Kubernetes Secret resource;
+# the template references it by name, so the manifest
+# carries no secret material.
+apiVersion: argoproj.io/v1alpha1
+kind: WorkflowTemplate
+spec:
+  templates:
+    - name: upload
+      container:
+        image: aws-cli@sha256:abc123...
+        env:
+          - name: AWS_ACCESS_KEY_ID
+            valueFrom:
+              secretKeyRef: { name: aws-uploader, key: access_key_id }
+          - name: AWS_SECRET_ACCESS_KEY
+            valueFrom:
+              secretKeyRef: { name: aws-uploader, key: secret_access_key }
+```
 
 **Source:** [`ARGO-006`](../providers/argo.md#argo-006) in the [Argo Workflows provider](../providers/argo.md).
 
