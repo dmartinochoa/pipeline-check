@@ -65,6 +65,41 @@ RULE = Rule(
         "in the output value; suppress when the value is "
         "provably a one-way transform.",
     ),
+    exploit_example=(
+        "# Vulnerable: a reusable workflow exposes a secret (or a\n"
+        "# caller-input value) via ``outputs:``. Outputs from a\n"
+        "# reusable workflow flow back to the caller's workflow\n"
+        "# in plain text; the secret leaks even though the\n"
+        "# reusable workflow itself runs in a sandboxed context.\n"
+        "# .github/workflows/reusable.yml\n"
+        "on:\n"
+        "  workflow_call:\n"
+        "    secrets:\n"
+        "      api_token:\n"
+        "        required: true\n"
+        "    outputs:\n"
+        "      effective-token:\n"
+        "        description: \"token used\"\n"
+        "        value: ${{ secrets.api_token }}\n"
+        "jobs:\n"
+        "  fetch:\n"
+        "    runs-on: ubuntu-latest\n"
+        "    steps: [{ run: curl --header \"Authorization: Bearer ${{ secrets.api_token }}\" ... }]\n"
+        "\n"
+        "# Safe: don't surface secrets through reusable-workflow\n"
+        "# outputs. Outputs should carry computed non-secret\n"
+        "# values (a release tag, a status flag, the digest of an\n"
+        "# uploaded artifact) the caller might key off.\n"
+        "# .github/workflows/reusable.yml\n"
+        "on:\n"
+        "  workflow_call:\n"
+        "    secrets:\n"
+        "      api_token: { required: true }\n"
+        "    outputs:\n"
+        "      release-tag:\n"
+        "        description: \"tag produced\"\n"
+        "        value: ${{ jobs.fetch.outputs.tag }}"
+    ),
 )
 
 

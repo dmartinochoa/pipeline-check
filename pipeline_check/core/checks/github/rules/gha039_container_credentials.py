@@ -58,6 +58,37 @@ RULE = Rule(
         "specific job/service in the ignore-file rather than "
         "the rule globally.",
     ),
+    exploit_example=(
+        "# Vulnerable: literal username/password embedded in a\n"
+        "# ``container.credentials`` block (or in a service's\n"
+        "# credentials). The workflow file is committed to git\n"
+        "# and visible to every repo reader; the build log also\n"
+        "# carries the literal once the runner pulls the image.\n"
+        "jobs:\n"
+        "  build:\n"
+        "    runs-on: ubuntu-latest\n"
+        "    container:\n"
+        "      image: registry.example.com/myorg/build@sha256:abc123...\n"
+        "      credentials:\n"
+        "        username: build-bot\n"
+        "        password: hunter2-prod-registry-token\n"
+        "    steps:\n"
+        "      - run: make build\n"
+        "\n"
+        "# Safe: reference a repo / org secret. The actual value\n"
+        "# resolves at runtime, is masked in logs, and rotates in\n"
+        "# the secrets store without a workflow change.\n"
+        "jobs:\n"
+        "  build:\n"
+        "    runs-on: ubuntu-latest\n"
+        "    container:\n"
+        "      image: registry.example.com/myorg/build@sha256:abc123...\n"
+        "      credentials:\n"
+        "        username: ${{ secrets.REGISTRY_USERNAME }}\n"
+        "        password: ${{ secrets.REGISTRY_PASSWORD }}\n"
+        "    steps:\n"
+        "      - run: make build"
+    ),
 )
 
 

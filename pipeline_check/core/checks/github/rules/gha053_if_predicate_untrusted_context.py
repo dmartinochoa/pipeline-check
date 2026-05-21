@@ -71,6 +71,42 @@ RULE = Rule(
         "the specific job/step when the trigger channel itself "
         "enforces the trust boundary.",
     ),
+    exploit_example=(
+        "# Vulnerable: ``if: ${{ contains(github.event.issue.title,\n"
+        "# 'deploy') }}`` evaluates an attacker-controllable string\n"
+        "# in the expression language. The expression engine\n"
+        "# parses certain inputs (``${{ ... }}`` nested) before\n"
+        "# the contains() check, so a crafted title can corrupt\n"
+        "# the predicate's evaluation.\n"
+        "on:\n"
+        "  issue_comment:\n"
+        "    types: [created]\n"
+        "jobs:\n"
+        "  ondemand-deploy:\n"
+        "    if: ${{ contains(github.event.comment.body, '/deploy') }}\n"
+        "    runs-on: ubuntu-latest\n"
+        "    permissions: { contents: write }\n"
+        "    steps:\n"
+        "      - run: ./deploy.sh\n"
+        "\n"
+        "# Safe: route the untrusted value through an intermediate\n"
+        "# step that pulls the value into an env var, then evaluate\n"
+        "# the predicate against a guaranteed-safe shape (issue\n"
+        "# author is a maintainer, label exists, etc.) computed\n"
+        "# from authenticated sources.\n"
+        "on:\n"
+        "  issue_comment:\n"
+        "    types: [created]\n"
+        "jobs:\n"
+        "  ondemand-deploy:\n"
+        "    if: |\n"
+        "      github.event.comment.author_association == 'OWNER' &&\n"
+        "      startsWith(github.event.comment.body, '/deploy')\n"
+        "    runs-on: ubuntu-latest\n"
+        "    permissions: { contents: write }\n"
+        "    steps:\n"
+        "      - run: ./deploy.sh"
+    ),
 )
 
 

