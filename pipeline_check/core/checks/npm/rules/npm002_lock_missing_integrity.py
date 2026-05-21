@@ -42,6 +42,40 @@ RULE = Rule(
         "regenerate with a current npm version against a hash-"
         "providing registry.",
     ),
+    exploit_example=(
+        "// Vulnerable: ``resolved`` URL is present but ``integrity``\n"
+        "// is missing. npm has nothing to compare against at install\n"
+        "// time, so a registry that swaps the tarball mid-flight\n"
+        "// (cache poisoning, MITM, malicious mirror, account\n"
+        "// republish) ships arbitrary code without any signal.\n"
+        "// package-lock.json\n"
+        "{\n"
+        "  \"lockfileVersion\": 3,\n"
+        "  \"packages\": {\n"
+        "    \"node_modules/lodash\": {\n"
+        "      \"version\": \"4.17.21\",\n"
+        "      \"resolved\": \"https://registry.npmjs.org/lodash/-/lodash-4.17.21.tgz\"\n"
+        "      // no \"integrity\" field\n"
+        "    }\n"
+        "  }\n"
+        "}\n"
+        "\n"
+        "// Safe: regenerate with ``npm install`` against the default\n"
+        "// registry. Every fetched-tarball entry carries an SRI\n"
+        "// ``integrity: sha512-...`` field. npm refuses installs\n"
+        "// whose tarball bytes don't hash to that value.\n"
+        "// package-lock.json\n"
+        "{\n"
+        "  \"lockfileVersion\": 3,\n"
+        "  \"packages\": {\n"
+        "    \"node_modules/lodash\": {\n"
+        "      \"version\": \"4.17.21\",\n"
+        "      \"resolved\": \"https://registry.npmjs.org/lodash/-/lodash-4.17.21.tgz\",\n"
+        "      \"integrity\": \"sha512-v2kDEe57lecTulaDIuNTPy3Ry...AJv8XZ1tvj5FvSg==\"\n"
+        "    }\n"
+        "  }\n"
+        "}"
+    ),
 )
 
 

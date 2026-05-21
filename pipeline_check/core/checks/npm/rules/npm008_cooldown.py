@@ -65,6 +65,34 @@ RULE = Rule(
         "GitHub Advisory and npm coordinated removal. Cooldown "
         "of any meaningful length would have skipped them.",
     ),
+    exploit_example=(
+        "// Vulnerable: bumping ``shiny-lib`` to ``4.2.1`` 90\n"
+        "// minutes after publication is exactly the window in\n"
+        "// which Shai-Hulud-class compromises live. npm yanks\n"
+        "// malicious versions within hours-to-days once flagged;\n"
+        "// the next ``npm install`` after publish pulls the wheel\n"
+        "// before the takedown.\n"
+        "// package.json\n"
+        "{\n"
+        "  \"dependencies\": {\n"
+        "    \"shiny-lib\": \"4.2.1\"\n"
+        "    // ``4.2.1`` was published 90 minutes ago\n"
+        "  }\n"
+        "}\n"
+        "\n"
+        "// Safe: pin to the most recent release older than the\n"
+        "// cooldown window. ``pipeline_check --pipeline npm\n"
+        "// --resolve-remote`` queries the registry for per-version\n"
+        "// publish timestamps and surfaces anything inside the 7-\n"
+        "// day window. Hold the bump or skip the fresh release.\n"
+        "// package.json\n"
+        "{\n"
+        "  \"dependencies\": {\n"
+        "    \"shiny-lib\": \"4.2.0\"\n"
+        "    // ``4.2.0`` was published 2 weeks ago\n"
+        "  }\n"
+        "}"
+    ),
 )
 
 

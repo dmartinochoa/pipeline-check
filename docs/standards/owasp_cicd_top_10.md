@@ -9119,6 +9119,43 @@ Managed entries in ``<dependencyManagement>`` are NOT evaluated by this rule (th
 
 - Lockfiles produced by old npm versions (npm < 5) wrote ``sha1-...`` integrity strings that some downstream tools regenerate as missing. The fix is the same in both cases: regenerate with a current npm version against a hash-providing registry.
 
+**Proof of exploit.**
+
+```
+// Vulnerable: ``resolved`` URL is present but ``integrity``
+// is missing. npm has nothing to compare against at install
+// time, so a registry that swaps the tarball mid-flight
+// (cache poisoning, MITM, malicious mirror, account
+// republish) ships arbitrary code without any signal.
+// package-lock.json
+{
+  "lockfileVersion": 3,
+  "packages": {
+    "node_modules/lodash": {
+      "version": "4.17.21",
+      "resolved": "https://registry.npmjs.org/lodash/-/lodash-4.17.21.tgz"
+      // no "integrity" field
+    }
+  }
+}
+
+// Safe: regenerate with ``npm install`` against the default
+// registry. Every fetched-tarball entry carries an SRI
+// ``integrity: sha512-...`` field. npm refuses installs
+// whose tarball bytes don't hash to that value.
+// package-lock.json
+{
+  "lockfileVersion": 3,
+  "packages": {
+    "node_modules/lodash": {
+      "version": "4.17.21",
+      "resolved": "https://registry.npmjs.org/lodash/-/lodash-4.17.21.tgz",
+      "integrity": "sha512-v2kDEe57lecTulaDIuNTPy3Ry...AJv8XZ1tvj5FvSg=="
+    }
+  }
+}
+```
+
 **Source:** [`NPM-002`](../providers/npm.md) in the [npm provider](../providers/npm.md).
 
 ### `NPM-003`: package-lock.json entry resolves from a non-registry source <span class="pg-sev pg-sev--high">HIGH</span> { #detail-npm-003 }
@@ -9134,6 +9171,40 @@ Managed entries in ``<dependencyManagement>`` are NOT evaluated by this rule (th
 Standard ``https://registry.npmjs.org`` and other registered registries (GitHub Packages, Verdaccio, internal proxies) pass. A ``git+https://`` URL with a 40-character SHA also passes — that's the documented escape hatch for forks not yet published to a registry. Complements NPM-002 (missing integrity hash); NPM-003 catches the *source* shape, NPM-002 catches the *verification* shape.
 
 **Recommendation.** Move the dependency to a hash-verifiable registry source. If you genuinely need a fork that's not on npm, pin it via ``git+https://host/owner/repo.git#<40-char-sha>`` (exact commit, not a branch or tag) and document the audit trail. ``git+ssh://`` URLs are unreviewable by anyone without access to the same private SSH endpoint; ``http://`` URLs are MITM-able; bare ``file:`` paths bind the build to a developer-machine layout. The default-safe shape is ``https://registry.npmjs.org/...`` with ``integrity: sha512-...``, anything else needs a one-line rationale.
+
+**Proof of exploit.**
+
+```
+// Vulnerable: ``resolved`` URL is git+ssh — a fork pulled
+// from an upstream the team can't audit publicly. The
+// branch ``@main`` is mutable; whoever can push to the
+// upstream ships code into every consumer's build.
+// package-lock.json
+{
+  "packages": {
+    "node_modules/internal-fork": {
+      "version": "1.0.0",
+      "resolved": "git+ssh://git@github.com/myorg/upstream-fork.git#main"
+    }
+  }
+}
+
+// Safe: publish the fork to a registry you control (GitHub
+// Packages, Verdaccio, npm scoped package) and pin via
+// version + integrity. If the upstream truly can't move,
+// pin via ``git+https://...#<40-char-sha>`` so the git
+// object is immutable.
+// package-lock.json
+{
+  "packages": {
+    "node_modules/internal-fork": {
+      "version": "1.0.0",
+      "resolved": "https://npm.pkg.github.com/myorg/internal-fork/-/internal-fork-1.0.0.tgz",
+      "integrity": "sha512-abc123...=="
+    }
+  }
+}
+```
 
 **Source:** [`NPM-003`](../providers/npm.md) in the [npm provider](../providers/npm.md).
 
@@ -9160,6 +9231,41 @@ This rule guards the *package you're publishing*. To stop *consumed* dependencie
 
 - Shai-Hulud npm worm (2026): the postinstall in compromised packages scraped ``GH_TOKEN`` / ``NPM_TOKEN`` / AWS env, used the stolen tokens to publish more compromised packages and push malicious workflow files into victim repos. Removing the install-time script primitive on the *publisher* side is the structural fix.
 
+**Proof of exploit.**
+
+```
+// Vulnerable: every consumer who runs ``npm install`` on
+// this package executes ``setup.js`` with THEIR
+// credentials (``GH_TOKEN``, ``NPM_TOKEN``, AWS env, SSH
+// keys) silently — they didn't opt into anything beyond
+// installing the dependency. This is the Shai-Hulud worm
+// propagation primitive.
+// package.json
+{
+  "name": "my-lib",
+  "version": "1.0.0",
+  "scripts": {
+    "postinstall": "node setup.js"
+  }
+}
+
+// Safe: move the work into an explicit script and document
+// the opt-in in the README. Consumers who need it run
+// ``npm run build`` after the install; consumers who don't
+// pay no cost. If you genuinely need native-module
+// compilation, ``node-gyp`` triggers ``install`` from a
+// ``binding.gyp`` without a ``scripts`` entry, so the
+// scripts block can stay empty.
+// package.json
+{
+  "name": "my-lib",
+  "version": "1.0.0",
+  "scripts": {
+    "build": "node setup.js"
+  }
+}
+```
+
 **Source:** [`NPM-004`](../providers/npm.md) in the [npm provider](../providers/npm.md).
 
 ### `NPM-005`: package.json git dependency uses a mutable ref <span class="pg-sev pg-sev--high">HIGH</span> { #detail-npm-005 }
@@ -9176,6 +9282,37 @@ This rule guards the *package you're publishing*. To stop *consumed* dependencie
 Skips entries already routed elsewhere: registry specs (NPM-001), ``file:`` / ``link:`` / ``workspace:`` (NPM-003).
 
 **Recommendation.** Pin the git dependency to a 40-character commit SHA: ``"foo": "git+https://github.com/owner/repo.git#<sha>"``. Branch refs (``#main``, ``#master``) and tag refs (``#v1.2.3``) are mutable, anyone with push access to the upstream repo can swap the contents of what your build pulls without changing the dependency string. A commit SHA is immutable; a tampered upstream cannot redirect ``#<sha>`` to different content. If the upstream isn't yours, vendor the fork into a registry you control (GitHub Packages, internal Verdaccio) and pin via registry version instead.
+
+**Proof of exploit.**
+
+```
+// Vulnerable: every ``npm install`` re-resolves ``#main``
+// against the upstream repo's HEAD. A push to ``main``
+// (legitimate co-maintainer commit, leaked PAT, hijacked
+// upstream account) ships into your build silently on the
+// next install. ``github:`` shorthand without any ``#``
+// is the same — resolves to default-branch HEAD.
+// package.json
+{
+  "dependencies": {
+    "util-fork": "git+https://github.com/myorg/util-fork.git#main",
+    "tiny-lib": "github:other-org/tiny-lib"
+  }
+}
+
+// Safe: pin to a 40-character commit SHA. The git object
+// is immutable — a re-push at the upstream side cannot
+// retarget ``#<sha>`` to different content. Renovate /
+// Dependabot's npm-vcs ecosystem updaters bump these in
+// reviewable PRs.
+// package.json
+{
+  "dependencies": {
+    "util-fork": "git+https://github.com/myorg/util-fork.git#0123456789abcdef0123456789abcdef01234567",
+    "tiny-lib": "github:other-org/tiny-lib#fedcba9876543210fedcba9876543210fedcba98"
+  }
+}
+```
 
 **Source:** [`NPM-005`](../providers/npm.md) in the [npm provider](../providers/npm.md).
 
@@ -9296,6 +9433,37 @@ ignore-scripts=true
 - Shai-Hulud-class npm worm (Sep 2025): malicious versions published, detected, and yanked within 48h on multiple packages. Consumers who held a 7-day cooldown caught the takedown before the version hit their lockfile.
 - @ctrl/tinycolor maintainer-account takeover (May 2024): the malicious versions stayed live for ~36 hours before GitHub Advisory and npm coordinated removal. Cooldown of any meaningful length would have skipped them.
 
+**Proof of exploit.**
+
+```
+// Vulnerable: bumping ``shiny-lib`` to ``4.2.1`` 90
+// minutes after publication is exactly the window in
+// which Shai-Hulud-class compromises live. npm yanks
+// malicious versions within hours-to-days once flagged;
+// the next ``npm install`` after publish pulls the wheel
+// before the takedown.
+// package.json
+{
+  "dependencies": {
+    "shiny-lib": "4.2.1"
+    // ``4.2.1`` was published 90 minutes ago
+  }
+}
+
+// Safe: pin to the most recent release older than the
+// cooldown window. ``pipeline_check --pipeline npm
+// --resolve-remote`` queries the registry for per-version
+// publish timestamps and surfaces anything inside the 7-
+// day window. Hold the bump or skip the fresh release.
+// package.json
+{
+  "dependencies": {
+    "shiny-lib": "4.2.0"
+    // ``4.2.0`` was published 2 weeks ago
+  }
+}
+```
+
 **Source:** [`NPM-008`](../providers/npm.md) in the [npm provider](../providers/npm.md).
 
 ### `NPM-009`: New transitive dependency added since the base ref <span class="pg-sev pg-sev--high">HIGH</span> { #detail-npm-009 }
@@ -9315,6 +9483,40 @@ ignore-scripts=true
 
 - axios -> plain-crypto-js (March 2026): a malicious transitive was added in a patch release of axios. Consumers who diffed transitives against their previous lockfile saw the new package land before ``npm install`` executed the payload.
 - ua-parser-js (October 2021): a maintainer-account takeover published versions that quietly pulled in new transitives carrying a coinminer and credential stealer. Lockfile-pinning consumers who diffed transitives spotted the unexpected new packages before install.
+
+**Proof of exploit.**
+
+```
+// Vulnerable: a patch-level bump of ``axios`` quietly
+// brings in a new transitive that nobody on the team
+// audited. Lockfile pinning closes the bytes-swap window
+// for KNOWN transitives but is no defense when the
+// malicious code is the NEW transitive itself. The
+// axios -> plain-crypto-js compromise (Mar 2026) used
+// exactly this shape — a single new name in the lockfile
+// diff before ``npm install`` ran the payload.
+//
+// Lockfile delta visible at PR time:
+//   + node_modules/plain-crypto-js      (NEW transitive)
+//   ~ node_modules/axios                (1.6.0 -> 1.6.1)
+//
+// Without ``--npm-base-ref``, the diff is invisible to
+// the scanner and gets merged.
+
+// Safe: gate the lockfile in CI with
+// ``pipeline_check --pipeline npm --npm-base-ref origin/main``.
+// The rule materializes both lockfile states, subtracts
+// direct deps, and HIGH-fires on any new transitive name.
+// Reviewers either confirm the new transitive is intended
+// (read the parent's changelog and approve) or block the
+// merge until the compromised release is rotated off the
+// registry.
+// .github/workflows/audit.yml (caller of pipeline_check)
+- run: |
+    pipeline_check --pipeline npm \
+      --npm-base-ref origin/main \
+      --fail-on HIGH
+```
 
 **Source:** [`NPM-009`](../providers/npm.md) in the [npm provider](../providers/npm.md).
 

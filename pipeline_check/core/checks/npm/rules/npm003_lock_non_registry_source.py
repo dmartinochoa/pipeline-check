@@ -42,6 +42,37 @@ RULE = Rule(
         "integrity hash); NPM-003 catches the *source* shape, NPM-"
         "002 catches the *verification* shape."
     ),
+    exploit_example=(
+        "// Vulnerable: ``resolved`` URL is git+ssh — a fork pulled\n"
+        "// from an upstream the team can't audit publicly. The\n"
+        "// branch ``@main`` is mutable; whoever can push to the\n"
+        "// upstream ships code into every consumer's build.\n"
+        "// package-lock.json\n"
+        "{\n"
+        "  \"packages\": {\n"
+        "    \"node_modules/internal-fork\": {\n"
+        "      \"version\": \"1.0.0\",\n"
+        "      \"resolved\": \"git+ssh://git@github.com/myorg/upstream-fork.git#main\"\n"
+        "    }\n"
+        "  }\n"
+        "}\n"
+        "\n"
+        "// Safe: publish the fork to a registry you control (GitHub\n"
+        "// Packages, Verdaccio, npm scoped package) and pin via\n"
+        "// version + integrity. If the upstream truly can't move,\n"
+        "// pin via ``git+https://...#<40-char-sha>`` so the git\n"
+        "// object is immutable.\n"
+        "// package-lock.json\n"
+        "{\n"
+        "  \"packages\": {\n"
+        "    \"node_modules/internal-fork\": {\n"
+        "      \"version\": \"1.0.0\",\n"
+        "      \"resolved\": \"https://npm.pkg.github.com/myorg/internal-fork/-/internal-fork-1.0.0.tgz\",\n"
+        "      \"integrity\": \"sha512-abc123...==\"\n"
+        "    }\n"
+        "  }\n"
+        "}"
+    ),
 )
 
 

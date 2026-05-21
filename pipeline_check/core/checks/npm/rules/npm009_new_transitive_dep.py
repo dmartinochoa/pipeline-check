@@ -75,6 +75,37 @@ RULE = Rule(
         "Lockfile-pinning consumers who diffed transitives "
         "spotted the unexpected new packages before install.",
     ),
+    exploit_example=(
+        "// Vulnerable: a patch-level bump of ``axios`` quietly\n"
+        "// brings in a new transitive that nobody on the team\n"
+        "// audited. Lockfile pinning closes the bytes-swap window\n"
+        "// for KNOWN transitives but is no defense when the\n"
+        "// malicious code is the NEW transitive itself. The\n"
+        "// axios -> plain-crypto-js compromise (Mar 2026) used\n"
+        "// exactly this shape — a single new name in the lockfile\n"
+        "// diff before ``npm install`` ran the payload.\n"
+        "//\n"
+        "// Lockfile delta visible at PR time:\n"
+        "//   + node_modules/plain-crypto-js      (NEW transitive)\n"
+        "//   ~ node_modules/axios                (1.6.0 -> 1.6.1)\n"
+        "//\n"
+        "// Without ``--npm-base-ref``, the diff is invisible to\n"
+        "// the scanner and gets merged.\n"
+        "\n"
+        "// Safe: gate the lockfile in CI with\n"
+        "// ``pipeline_check --pipeline npm --npm-base-ref origin/main``.\n"
+        "// The rule materializes both lockfile states, subtracts\n"
+        "// direct deps, and HIGH-fires on any new transitive name.\n"
+        "// Reviewers either confirm the new transitive is intended\n"
+        "// (read the parent's changelog and approve) or block the\n"
+        "// merge until the compromised release is rotated off the\n"
+        "// registry.\n"
+        "// .github/workflows/audit.yml (caller of pipeline_check)\n"
+        "- run: |\n"
+        "    pipeline_check --pipeline npm \\\n"
+        "      --npm-base-ref origin/main \\\n"
+        "      --fail-on HIGH"
+    ),
 )
 
 
