@@ -35,6 +35,35 @@ RULE = Rule(
         "a tag is mutable on the registry side and Kubernetes will "
         "happily pull the new content on a node restart."
     ),
+    exploit_example=(
+        "# Vulnerable: ``image: nginx:1.25`` is a mutable tag.\n"
+        "# Docker Hub's nginx team rebuilds it on every point\n"
+        "# release; a publisher takeover repoints the tag\n"
+        "# silently and every Pod that uses it picks up the\n"
+        "# substituted image on the next scheduling decision.\n"
+        "apiVersion: apps/v1\n"
+        "kind: Deployment\n"
+        "metadata: { name: web }\n"
+        "spec:\n"
+        "  template:\n"
+        "    spec:\n"
+        "      containers:\n"
+        "        - name: nginx\n"
+        "          image: nginx:1.25\n"
+        "\n"
+        "# Safe: pin to the content-addressable digest. The\n"
+        "# kubelet refuses to start the Pod if the image's\n"
+        "# digest doesn't match the manifest.\n"
+        "apiVersion: apps/v1\n"
+        "kind: Deployment\n"
+        "metadata: { name: web }\n"
+        "spec:\n"
+        "  template:\n"
+        "    spec:\n"
+        "      containers:\n"
+        "        - name: nginx\n"
+        "          image: nginx@sha256:abc123...   # nginx:1.25.4"
+    ),
 )
 
 

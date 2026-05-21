@@ -2830,6 +2830,38 @@ Fires once per offending IaC file with a finding location pointing at the file. 
 
 **Autofix.** `pipeline_check --fix` will patch this finding automatically. Review the diff before committing; the fixer applies the conservative remediation pattern (e.g. swap a floating tag for the digest it currently resolves to), not the most aggressive one.
 
+**Proof of exploit.**
+
+```
+# Vulnerable: ``image: nginx:1.25`` is a mutable tag.
+# Docker Hub's nginx team rebuilds it on every point
+# release; a publisher takeover repoints the tag
+# silently and every Pod that uses it picks up the
+# substituted image on the next scheduling decision.
+apiVersion: apps/v1
+kind: Deployment
+metadata: { name: web }
+spec:
+  template:
+    spec:
+      containers:
+        - name: nginx
+          image: nginx:1.25
+
+# Safe: pin to the content-addressable digest. The
+# kubelet refuses to start the Pod if the image's
+# digest doesn't match the manifest.
+apiVersion: apps/v1
+kind: Deployment
+metadata: { name: web }
+spec:
+  template:
+    spec:
+      containers:
+        - name: nginx
+          image: nginx@sha256:abc123...   # nginx:1.25.4
+```
+
 **Source:** [`K8S-001`](../providers/kubernetes.md#k8s-001) in the [Kubernetes provider](../providers/kubernetes.md).
 
 ### `K8S-002`: Pod hostNetwork: true <span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> { #detail-k8s-002 }
@@ -2841,6 +2873,35 @@ Fires once per offending IaC file with a finding location pointing at the file. 
 **Recommendation.** Set ``spec.hostNetwork: false`` (the default) on every workload. ``hostNetwork: true`` puts the pod directly on the node's network namespace, exposing every host-bound listener to the container and bypassing CNI network policies.
 
 **Autofix.** `pipeline_check --fix` will patch this finding automatically. Review the diff before committing; the fixer applies the conservative remediation pattern (e.g. swap a floating tag for the digest it currently resolves to), not the most aggressive one.
+
+**Proof of exploit.**
+
+```
+# Vulnerable: ``hostNetwork: true`` makes the Pod share
+# the node's network namespace. The Pod can sniff every
+# other Pod's traffic on the node, bind privileged
+# ports, and (via raw sockets) MITM cluster-internal
+# traffic.
+apiVersion: v1
+kind: Pod
+metadata: { name: sniffer }
+spec:
+  hostNetwork: true
+  containers:
+    - name: app
+      image: app@sha256:abc123...
+
+# Safe: default Pod network namespace. The Pod gets a
+# CNI-managed IP and can only talk on the cluster
+# network through normal Service / Ingress paths.
+apiVersion: v1
+kind: Pod
+metadata: { name: app }
+spec:
+  containers:
+    - name: app
+      image: app@sha256:abc123...
+```
 
 **Source:** [`K8S-002`](../providers/kubernetes.md#k8s-002) in the [Kubernetes provider](../providers/kubernetes.md).
 
@@ -2969,6 +3030,47 @@ spec:
 
 **Recommendation.** Replace literal ``env[].value`` entries that hold credentials with ``env[].valueFrom.secretKeyRef`` or ``envFrom.secretRef``. A literal env value lives in the manifest YAML. It gets committed to git, surfaced by ``kubectl get pod -o yaml``, and embedded in audit logs. Externalising into a Secret (and ideally a SealedSecret / ExternalSecret / SOPS-encrypted source) keeps the value out of the manifest.
 
+**Proof of exploit.**
+
+```
+# Vulnerable: a literal credential value in a container
+# ``env`` block. The Pod manifest is in etcd; anyone
+# with ``pods/get`` on the namespace reads the value.
+# Logs that echo the env (``env``, ``printenv``,
+# ``env | curl ...``) further leak it.
+apiVersion: v1
+kind: Pod
+metadata: { name: app }
+spec:
+  containers:
+    - name: app
+      image: app@sha256:abc123...
+      env:
+        - name: AWS_ACCESS_KEY_ID
+          value: AKIAIOSFODNN7EXAMPLE
+        - name: AWS_SECRET_ACCESS_KEY
+          value: wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY
+
+# Safe: reference a Kubernetes Secret via
+# ``valueFrom.secretKeyRef``. The Pod manifest carries
+# the Secret's name only; the value resolves at
+# kubelet-runtime from the cluster's Secret store.
+apiVersion: v1
+kind: Pod
+metadata: { name: app }
+spec:
+  containers:
+    - name: app
+      image: app@sha256:abc123...
+      env:
+        - name: AWS_ACCESS_KEY_ID
+          valueFrom:
+            secretKeyRef: { name: aws-app, key: access_key_id }
+        - name: AWS_SECRET_ACCESS_KEY
+          valueFrom:
+            secretKeyRef: { name: aws-app, key: secret_access_key }
+```
+
 **Source:** [`K8S-017`](../providers/kubernetes.md#k8s-017) in the [Kubernetes provider](../providers/kubernetes.md).
 
 ### `K8S-018`: Secret stringData/data carries a credential-shaped literal <span class="pg-sev pg-sev--critical">CRITICAL</span> { #detail-k8s-018 }
@@ -2978,6 +3080,42 @@ spec:
 **How this is detected.** Walks both ``stringData`` (plain text) and ``data`` (base64). Base64-encoded values are decoded and checked for AKIA-shaped AWS keys. Credential-shaped key NAMES with any non-empty value are flagged regardless of encoding, even if the value is the literal placeholder ``REPLACE_ME``, having the name in the manifest is a maintenance footgun.
 
 **Recommendation.** A ``Kind: Secret`` manifest committed to git defeats every secret-management story Kubernetes claims to provide, the base64 encoding in ``data`` is *not* encryption. Replace with SealedSecrets (Bitnami), ExternalSecrets / ESO, SOPS-encrypted manifests, or HashiCorp Vault Agent injection. If the manifest must remain in git, the only acceptable contents are placeholders that are filled in by an operator at apply time.
+
+**Proof of exploit.**
+
+```
+# Vulnerable: a Kubernetes Secret with credential-shaped
+# literals in ``stringData`` (or base64'd in ``data``).
+# The Secret object is in etcd; ``kubectl get secret
+# -o yaml`` exposes the value to anyone with
+# ``secrets/get`` on the namespace. Worse, committing
+# this Secret YAML to git leaks the credential to
+# every repo reader plus history forever.
+apiVersion: v1
+kind: Secret
+metadata: { name: aws-app, namespace: prod }
+stringData:
+  access_key_id: AKIAIOSFODNN7EXAMPLE
+  secret_access_key: wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY
+
+# Safe: source the Secret from an external secrets
+# manager via External Secrets Operator (ESO) — the
+# YAML committed to git references the value by name
+# only; the actual material lives in AWS Secrets
+# Manager / Vault / GSM and rotates there.
+apiVersion: external-secrets.io/v1beta1
+kind: ExternalSecret
+metadata: { name: aws-app, namespace: prod }
+spec:
+  refreshInterval: 1h
+  secretStoreRef: { name: vault-backend, kind: ClusterSecretStore }
+  target: { name: aws-app, creationPolicy: Owner }
+  data:
+    - secretKey: access_key_id
+      remoteRef: { key: prod/aws-app, property: access_key_id }
+    - secretKey: secret_access_key
+      remoteRef: { key: prod/aws-app, property: secret_access_key }
+```
 
 **Source:** [`K8S-018`](../providers/kubernetes.md#k8s-018) in the [Kubernetes provider](../providers/kubernetes.md).
 
@@ -2992,6 +3130,44 @@ spec:
 **Known false positives.**
 
 - ConfigMaps that legitimately carry placeholder names (``DEBUG_TOKEN_FORMAT``, ``LICENSE_KEY_HEADER``) where the VALUE is a format hint rather than a credential. Rename the key to avoid the credential-shaped name.
+
+**Proof of exploit.**
+
+```
+# Vulnerable: a ConfigMap with a credential-shaped
+# value. ConfigMaps are NOT encrypted at rest in etcd
+# (Secrets are, when encryption-at-rest is configured);
+# anyone with ``configmaps/get`` reads the value.
+# ``kubectl get configmap -o yaml`` exposes it; the
+# YAML committed to git leaks it to every repo reader.
+apiVersion: v1
+kind: ConfigMap
+metadata: { name: app-config, namespace: prod }
+data:
+  database_url: postgres://app:hunter2-prod-pw@db.example.com/app
+  api_token: sk_live_abc123def456ghi789
+
+# Safe: store credentials in a Secret (encrypted at
+# rest if encryption-at-rest is enabled). Reference
+# the Secret from the Pod's env via
+# ``valueFrom.secretKeyRef``. The ConfigMap carries
+# only non-secret configuration (feature flags, log
+# levels, etc.).
+apiVersion: v1
+kind: ConfigMap
+metadata: { name: app-config, namespace: prod }
+data:
+  log_level: info
+  feature_flag_x: "true"
+---
+apiVersion: v1
+kind: Secret
+metadata: { name: app-creds, namespace: prod }
+type: Opaque
+stringData:
+  database_url: postgres://app:hunter2-prod-pw@db.example.com/app
+  api_token: sk_live_abc123def456ghi789
+```
 
 **Source:** [`K8S-037`](../providers/kubernetes.md#k8s-037) in the [Kubernetes provider](../providers/kubernetes.md).
 

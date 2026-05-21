@@ -35,6 +35,34 @@ RULE = Rule(
         "An explicit ``runAsUser: 0`` always fails, even if "
         "``runAsNonRoot`` is unset."
     ),
+    exploit_example=(
+        "# Vulnerable: ``runAsNonRoot`` not declared (or\n"
+        "# explicitly false) AND ``runAsUser`` not set lets the\n"
+        "# image's default user run the container — for most\n"
+        "# upstream images that's root. Any escape from the\n"
+        "# container starts with UID 0 on the node.\n"
+        "apiVersion: v1\n"
+        "kind: Pod\n"
+        "metadata: { name: app }\n"
+        "spec:\n"
+        "  containers:\n"
+        "    - name: app\n"
+        "      image: app@sha256:abc123...   # USER root in Dockerfile\n"
+        "\n"
+        "# Safe: explicit ``runAsNonRoot: true`` + a non-zero\n"
+        "# ``runAsUser``. The kubelet refuses to start the\n"
+        "# container if the image's ENTRYPOINT runs as UID 0.\n"
+        "apiVersion: v1\n"
+        "kind: Pod\n"
+        "metadata: { name: app }\n"
+        "spec:\n"
+        "  containers:\n"
+        "    - name: app\n"
+        "      image: app@sha256:abc123...\n"
+        "      securityContext:\n"
+        "        runAsNonRoot: true\n"
+        "        runAsUser: 10001"
+    ),
 )
 
 

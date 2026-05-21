@@ -57,6 +57,38 @@ RULE = Rule(
         "control plane outside kube-system is rare enough to warrant "
         "an explicit ``.pipelinecheckignore`` rationale.",
     ),
+    exploit_example=(
+        "# Vulnerable: a workload has a ``tolerations`` entry\n"
+        "# for ``node-role.kubernetes.io/control-plane`` AND\n"
+        "# the matching ``nodeSelector``. The Pod gets\n"
+        "# scheduled onto the control-plane node, sharing the\n"
+        "# kernel with kube-apiserver / etcd / kube-controller-\n"
+        "# manager. A container escape from the app reaches\n"
+        "# every API request and every Secret in etcd.\n"
+        "apiVersion: v1\n"
+        "kind: Pod\n"
+        "metadata: { name: app }\n"
+        "spec:\n"
+        "  nodeSelector:\n"
+        "    node-role.kubernetes.io/control-plane: \"\"\n"
+        "  tolerations:\n"
+        "    - key: node-role.kubernetes.io/control-plane\n"
+        "      operator: Exists\n"
+        "      effect: NoSchedule\n"
+        "  containers:\n"
+        "    - name: app\n"
+        "      image: app@sha256:abc123...\n"
+        "\n"
+        "# Safe: workloads schedule onto worker nodes. The\n"
+        "# control-plane stays isolated.\n"
+        "apiVersion: v1\n"
+        "kind: Pod\n"
+        "metadata: { name: app }\n"
+        "spec:\n"
+        "  containers:\n"
+        "    - name: app\n"
+        "      image: app@sha256:abc123..."
+    ),
 )
 
 

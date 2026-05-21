@@ -46,6 +46,34 @@ RULE = Rule(
         "(``containers``, ``initContainers``, ``ephemeralContainers``) "
         "explicitly sets ``procMount: Unmasked``."
     ),
+    exploit_example=(
+        "# Vulnerable: ``procMount: Unmasked`` removes the\n"
+        "# default kernel-managed masks on ``/proc``. The\n"
+        "# container can read kernel internals\n"
+        "# (``/proc/kallsyms``, ``/proc/kcore``) and write to\n"
+        "# ``/proc/sysrq-trigger`` to crash the node.\n"
+        "apiVersion: v1\n"
+        "kind: Pod\n"
+        "metadata: { name: debug-tool }\n"
+        "spec:\n"
+        "  containers:\n"
+        "    - name: app\n"
+        "      image: app@sha256:abc123...\n"
+        "      securityContext:\n"
+        "        procMount: Unmasked\n"
+        "\n"
+        "# Safe: default ``procMount: Default`` keeps the\n"
+        "# masks. Container processes see a sanitized /proc\n"
+        "# with kernel internals hidden.\n"
+        "apiVersion: v1\n"
+        "kind: Pod\n"
+        "metadata: { name: app }\n"
+        "spec:\n"
+        "  containers:\n"
+        "    - name: app\n"
+        "      image: app@sha256:abc123...\n"
+        "      # procMount: Default (implicit)"
+    ),
 )
 
 

@@ -23,6 +23,30 @@ RULE = Rule(
         "host IPC. Treat this flag as a strong red flag in code "
         "review unless paired with a documented system-level use case."
     ),
+    exploit_example=(
+        "# Vulnerable: ``hostIPC: true`` shares the node's IPC\n"
+        "# namespace. Pods on the node can read each other's\n"
+        "# POSIX shared memory, semaphores, and message queues —\n"
+        "# pulling secrets out of in-memory caches without\n"
+        "# needing kernel-namespace bypass.\n"
+        "apiVersion: v1\n"
+        "kind: Pod\n"
+        "metadata: { name: shared-memory-app }\n"
+        "spec:\n"
+        "  hostIPC: true\n"
+        "  containers:\n"
+        "    - name: app\n"
+        "      image: app@sha256:abc123...\n"
+        "\n"
+        "# Safe: default Pod IPC namespace.\n"
+        "apiVersion: v1\n"
+        "kind: Pod\n"
+        "metadata: { name: app }\n"
+        "spec:\n"
+        "  containers:\n"
+        "    - name: app\n"
+        "      image: app@sha256:abc123..."
+    ),
 )
 
 

@@ -46,6 +46,35 @@ RULE = Rule(
         "externalIPs design flaw. Kubernetes' upstream advisory "
         "recommends restricting externalIPs via admission control.",
     ),
+    exploit_example=(
+        "# Vulnerable: a Service with ``externalIPs`` lets the\n"
+        "# Service hijack traffic destined for those IPs on\n"
+        "# any node in the cluster. CVE-2020-8554: an attacker\n"
+        "# with ``services/create`` in any namespace creates a\n"
+        "# Service with ``externalIPs: [10.0.1.5]`` and now\n"
+        "# intercepts traffic meant for that internal address.\n"
+        "apiVersion: v1\n"
+        "kind: Service\n"
+        "metadata: { name: hijacker, namespace: app }\n"
+        "spec:\n"
+        "  type: ClusterIP\n"
+        "  externalIPs: [10.0.1.5]   # traffic to internal API server\n"
+        "  ports: [{ port: 443, targetPort: 9999 }]\n"
+        "  selector: { app: malicious }\n"
+        "\n"
+        "# Safe: don't use ``externalIPs`` for routing. Use\n"
+        "# LoadBalancer or Ingress for external traffic. To\n"
+        "# defend the cluster, install an admission controller\n"
+        "# (Kyverno / Gatekeeper) that rejects Services with\n"
+        "# non-empty ``externalIPs`` from non-system namespaces.\n"
+        "apiVersion: v1\n"
+        "kind: Service\n"
+        "metadata: { name: app, namespace: app }\n"
+        "spec:\n"
+        "  type: ClusterIP\n"
+        "  ports: [{ port: 443, targetPort: 8443 }]\n"
+        "  selector: { app: app }"
+    ),
 )
 
 

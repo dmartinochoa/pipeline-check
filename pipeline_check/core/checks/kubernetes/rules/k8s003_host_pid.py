@@ -24,6 +24,31 @@ RULE = Rule(
         "it, and those are typically deployed via a system DaemonSet "
         "with an explicit security review."
     ),
+    exploit_example=(
+        "# Vulnerable: ``hostPID: true`` lets the Pod see every\n"
+        "# process on the node. A compromise of the Pod can\n"
+        "# ``ps aux`` for credentials in other containers'\n"
+        "# command lines, attach a debugger to other processes,\n"
+        "# or use ``nsenter`` from the host PID namespace to\n"
+        "# escape into any other container.\n"
+        "apiVersion: v1\n"
+        "kind: Pod\n"
+        "metadata: { name: debugger }\n"
+        "spec:\n"
+        "  hostPID: true\n"
+        "  containers:\n"
+        "    - name: app\n"
+        "      image: app@sha256:abc123...\n"
+        "\n"
+        "# Safe: default Pod PID namespace.\n"
+        "apiVersion: v1\n"
+        "kind: Pod\n"
+        "metadata: { name: app }\n"
+        "spec:\n"
+        "  containers:\n"
+        "    - name: app\n"
+        "      image: app@sha256:abc123..."
+    ),
 )
 
 

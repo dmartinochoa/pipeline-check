@@ -24,6 +24,32 @@ RULE = Rule(
         "flag for system DaemonSets that genuinely require it (CNI "
         "agents, ingress data planes); applications never need it."
     ),
+    exploit_example=(
+        "# Vulnerable: ``hostNetwork: true`` makes the Pod share\n"
+        "# the node's network namespace. The Pod can sniff every\n"
+        "# other Pod's traffic on the node, bind privileged\n"
+        "# ports, and (via raw sockets) MITM cluster-internal\n"
+        "# traffic.\n"
+        "apiVersion: v1\n"
+        "kind: Pod\n"
+        "metadata: { name: sniffer }\n"
+        "spec:\n"
+        "  hostNetwork: true\n"
+        "  containers:\n"
+        "    - name: app\n"
+        "      image: app@sha256:abc123...\n"
+        "\n"
+        "# Safe: default Pod network namespace. The Pod gets a\n"
+        "# CNI-managed IP and can only talk on the cluster\n"
+        "# network through normal Service / Ingress paths.\n"
+        "apiVersion: v1\n"
+        "kind: Pod\n"
+        "metadata: { name: app }\n"
+        "spec:\n"
+        "  containers:\n"
+        "    - name: app\n"
+        "      image: app@sha256:abc123..."
+    ),
 )
 
 

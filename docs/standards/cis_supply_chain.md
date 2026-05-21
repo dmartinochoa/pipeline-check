@@ -12285,6 +12285,38 @@ pipeline {
 
 **Autofix.** `pipeline_check --fix` will patch this finding automatically. Review the diff before committing; the fixer applies the conservative remediation pattern (e.g. swap a floating tag for the digest it currently resolves to), not the most aggressive one.
 
+**Proof of exploit.**
+
+```
+# Vulnerable: ``image: nginx:1.25`` is a mutable tag.
+# Docker Hub's nginx team rebuilds it on every point
+# release; a publisher takeover repoints the tag
+# silently and every Pod that uses it picks up the
+# substituted image on the next scheduling decision.
+apiVersion: apps/v1
+kind: Deployment
+metadata: { name: web }
+spec:
+  template:
+    spec:
+      containers:
+        - name: nginx
+          image: nginx:1.25
+
+# Safe: pin to the content-addressable digest. The
+# kubelet refuses to start the Pod if the image's
+# digest doesn't match the manifest.
+apiVersion: apps/v1
+kind: Deployment
+metadata: { name: web }
+spec:
+  template:
+    spec:
+      containers:
+        - name: nginx
+          image: nginx@sha256:abc123...   # nginx:1.25.4
+```
+
 **Source:** [`K8S-001`](../providers/kubernetes.md#k8s-001) in the [Kubernetes provider](../providers/kubernetes.md).
 
 ### `K8S-002`: Pod hostNetwork: true <span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> { #detail-k8s-002 }
@@ -12296,6 +12328,35 @@ pipeline {
 **Recommendation.** Set ``spec.hostNetwork: false`` (the default) on every workload. ``hostNetwork: true`` puts the pod directly on the node's network namespace, exposing every host-bound listener to the container and bypassing CNI network policies.
 
 **Autofix.** `pipeline_check --fix` will patch this finding automatically. Review the diff before committing; the fixer applies the conservative remediation pattern (e.g. swap a floating tag for the digest it currently resolves to), not the most aggressive one.
+
+**Proof of exploit.**
+
+```
+# Vulnerable: ``hostNetwork: true`` makes the Pod share
+# the node's network namespace. The Pod can sniff every
+# other Pod's traffic on the node, bind privileged
+# ports, and (via raw sockets) MITM cluster-internal
+# traffic.
+apiVersion: v1
+kind: Pod
+metadata: { name: sniffer }
+spec:
+  hostNetwork: true
+  containers:
+    - name: app
+      image: app@sha256:abc123...
+
+# Safe: default Pod network namespace. The Pod gets a
+# CNI-managed IP and can only talk on the cluster
+# network through normal Service / Ingress paths.
+apiVersion: v1
+kind: Pod
+metadata: { name: app }
+spec:
+  containers:
+    - name: app
+      image: app@sha256:abc123...
+```
 
 **Source:** [`K8S-002`](../providers/kubernetes.md#k8s-002) in the [Kubernetes provider](../providers/kubernetes.md).
 
@@ -12309,6 +12370,34 @@ pipeline {
 
 **Autofix.** `pipeline_check --fix` will patch this finding automatically. Review the diff before committing; the fixer applies the conservative remediation pattern (e.g. swap a floating tag for the digest it currently resolves to), not the most aggressive one.
 
+**Proof of exploit.**
+
+```
+# Vulnerable: ``hostPID: true`` lets the Pod see every
+# process on the node. A compromise of the Pod can
+# ``ps aux`` for credentials in other containers'
+# command lines, attach a debugger to other processes,
+# or use ``nsenter`` from the host PID namespace to
+# escape into any other container.
+apiVersion: v1
+kind: Pod
+metadata: { name: debugger }
+spec:
+  hostPID: true
+  containers:
+    - name: app
+      image: app@sha256:abc123...
+
+# Safe: default Pod PID namespace.
+apiVersion: v1
+kind: Pod
+metadata: { name: app }
+spec:
+  containers:
+    - name: app
+      image: app@sha256:abc123...
+```
+
 **Source:** [`K8S-003`](../providers/kubernetes.md#k8s-003) in the [Kubernetes provider](../providers/kubernetes.md).
 
 ### `K8S-004`: Pod hostIPC: true <span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> { #detail-k8s-004 }
@@ -12320,6 +12409,33 @@ pipeline {
 **Recommendation.** Set ``spec.hostIPC: false`` (the default) on every workload. ``hostIPC: true`` lets the container read and write the host's shared-memory segments and POSIX message queues, exposing data exchanged by every other process on the node.
 
 **Autofix.** `pipeline_check --fix` will patch this finding automatically. Review the diff before committing; the fixer applies the conservative remediation pattern (e.g. swap a floating tag for the digest it currently resolves to), not the most aggressive one.
+
+**Proof of exploit.**
+
+```
+# Vulnerable: ``hostIPC: true`` shares the node's IPC
+# namespace. Pods on the node can read each other's
+# POSIX shared memory, semaphores, and message queues —
+# pulling secrets out of in-memory caches without
+# needing kernel-namespace bypass.
+apiVersion: v1
+kind: Pod
+metadata: { name: shared-memory-app }
+spec:
+  hostIPC: true
+  containers:
+    - name: app
+      image: app@sha256:abc123...
+
+# Safe: default Pod IPC namespace.
+apiVersion: v1
+kind: Pod
+metadata: { name: app }
+spec:
+  containers:
+    - name: app
+      image: app@sha256:abc123...
+```
 
 **Source:** [`K8S-004`](../providers/kubernetes.md#k8s-004) in the [Kubernetes provider](../providers/kubernetes.md).
 
@@ -12390,6 +12506,40 @@ spec:
 
 **Autofix.** `pipeline_check --fix` will patch this finding automatically. Review the diff before committing; the fixer applies the conservative remediation pattern (e.g. swap a floating tag for the digest it currently resolves to), not the most aggressive one.
 
+**Proof of exploit.**
+
+```
+# Vulnerable: ``allowPrivilegeEscalation`` defaults to
+# ``true``. A non-root process inside the container
+# can gain elevated capabilities through suid binaries
+# (or ``setcap`` files), defeating the
+# ``runAsNonRoot`` posture.
+apiVersion: v1
+kind: Pod
+metadata: { name: app }
+spec:
+  containers:
+    - name: app
+      image: app@sha256:abc123...
+      securityContext:
+        runAsNonRoot: true   # but no_new_privs not set
+
+# Safe: ``allowPrivilegeEscalation: false`` sets the
+# kernel's ``no_new_privs`` bit on the container's
+# processes. suid binaries no longer elevate; the
+# non-root posture is now load-bearing.
+apiVersion: v1
+kind: Pod
+metadata: { name: app }
+spec:
+  containers:
+    - name: app
+      image: app@sha256:abc123...
+      securityContext:
+        runAsNonRoot: true
+        allowPrivilegeEscalation: false
+```
+
 **Source:** [`K8S-006`](../providers/kubernetes.md#k8s-006) in the [Kubernetes provider](../providers/kubernetes.md).
 
 ### `K8S-007`: Container runAsNonRoot not true / runAsUser is 0 <span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> { #detail-k8s-007 }
@@ -12401,6 +12551,37 @@ spec:
 **Recommendation.** Set ``securityContext.runAsNonRoot: true`` and ``runAsUser: <non-zero UID>`` on every container, OR set the same fields at pod level so all containers inherit. Running as UID 0 inside a container makes container-escape exploits dramatically more dangerous, the attacker already has root inside the container, so any kernel CVE that matters becomes immediately exploitable.
 
 **Autofix.** `pipeline_check --fix` will patch this finding automatically. Review the diff before committing; the fixer applies the conservative remediation pattern (e.g. swap a floating tag for the digest it currently resolves to), not the most aggressive one.
+
+**Proof of exploit.**
+
+```
+# Vulnerable: ``runAsNonRoot`` not declared (or
+# explicitly false) AND ``runAsUser`` not set lets the
+# image's default user run the container — for most
+# upstream images that's root. Any escape from the
+# container starts with UID 0 on the node.
+apiVersion: v1
+kind: Pod
+metadata: { name: app }
+spec:
+  containers:
+    - name: app
+      image: app@sha256:abc123...   # USER root in Dockerfile
+
+# Safe: explicit ``runAsNonRoot: true`` + a non-zero
+# ``runAsUser``. The kubelet refuses to start the
+# container if the image's ENTRYPOINT runs as UID 0.
+apiVersion: v1
+kind: Pod
+metadata: { name: app }
+spec:
+  containers:
+    - name: app
+      image: app@sha256:abc123...
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 10001
+```
 
 **Source:** [`K8S-007`](../providers/kubernetes.md#k8s-007) in the [Kubernetes provider](../providers/kubernetes.md).
 
@@ -12430,6 +12611,42 @@ spec:
         add: ["NET_BIND_SERVICE"]   # only if binding <1024
 
 Most stateless services need no capabilities at all. Avoid ``SYS_ADMIN`` (effectively root), ``SYS_PTRACE`` (process snooping), ``NET_ADMIN`` (raw socket access), and ``SYS_MODULE`` (kernel module loading).
+
+**Proof of exploit.**
+
+```
+# Vulnerable: no ``capabilities`` block means the
+# container starts with the default Linux capability
+# set (NET_RAW, NET_BIND_SERVICE, etc.). Worse:
+# explicitly adding NET_ADMIN / SYS_ADMIN /
+# SYS_PTRACE gives the container nearly-root reach
+# into the kernel.
+apiVersion: v1
+kind: Pod
+metadata: { name: net-tool }
+spec:
+  containers:
+    - name: app
+      image: app@sha256:abc123...
+      securityContext:
+        capabilities:
+          add: ["NET_ADMIN", "SYS_ADMIN"]
+
+# Safe: drop ``ALL`` capabilities, then add back ONLY
+# what the workload genuinely needs (e.g.
+# ``NET_BIND_SERVICE`` to bind port 80 as non-root).
+apiVersion: v1
+kind: Pod
+metadata: { name: app }
+spec:
+  containers:
+    - name: app
+      image: app@sha256:abc123...
+      securityContext:
+        capabilities:
+          drop: ["ALL"]
+          add: ["NET_BIND_SERVICE"]
+```
 
 **Source:** [`K8S-009`](../providers/kubernetes.md#k8s-009) in the [Kubernetes provider](../providers/kubernetes.md).
 
@@ -12602,6 +12819,47 @@ spec:
 
 **Recommendation.** Replace literal ``env[].value`` entries that hold credentials with ``env[].valueFrom.secretKeyRef`` or ``envFrom.secretRef``. A literal env value lives in the manifest YAML. It gets committed to git, surfaced by ``kubectl get pod -o yaml``, and embedded in audit logs. Externalising into a Secret (and ideally a SealedSecret / ExternalSecret / SOPS-encrypted source) keeps the value out of the manifest.
 
+**Proof of exploit.**
+
+```
+# Vulnerable: a literal credential value in a container
+# ``env`` block. The Pod manifest is in etcd; anyone
+# with ``pods/get`` on the namespace reads the value.
+# Logs that echo the env (``env``, ``printenv``,
+# ``env | curl ...``) further leak it.
+apiVersion: v1
+kind: Pod
+metadata: { name: app }
+spec:
+  containers:
+    - name: app
+      image: app@sha256:abc123...
+      env:
+        - name: AWS_ACCESS_KEY_ID
+          value: AKIAIOSFODNN7EXAMPLE
+        - name: AWS_SECRET_ACCESS_KEY
+          value: wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY
+
+# Safe: reference a Kubernetes Secret via
+# ``valueFrom.secretKeyRef``. The Pod manifest carries
+# the Secret's name only; the value resolves at
+# kubelet-runtime from the cluster's Secret store.
+apiVersion: v1
+kind: Pod
+metadata: { name: app }
+spec:
+  containers:
+    - name: app
+      image: app@sha256:abc123...
+      env:
+        - name: AWS_ACCESS_KEY_ID
+          valueFrom:
+            secretKeyRef: { name: aws-app, key: access_key_id }
+        - name: AWS_SECRET_ACCESS_KEY
+          valueFrom:
+            secretKeyRef: { name: aws-app, key: secret_access_key }
+```
+
 **Source:** [`K8S-017`](../providers/kubernetes.md#k8s-017) in the [Kubernetes provider](../providers/kubernetes.md).
 
 ### `K8S-018`: Secret stringData/data carries a credential-shaped literal <span class="pg-sev pg-sev--critical">CRITICAL</span> { #detail-k8s-018 }
@@ -12611,6 +12869,42 @@ spec:
 **How this is detected.** Walks both ``stringData`` (plain text) and ``data`` (base64). Base64-encoded values are decoded and checked for AKIA-shaped AWS keys. Credential-shaped key NAMES with any non-empty value are flagged regardless of encoding, even if the value is the literal placeholder ``REPLACE_ME``, having the name in the manifest is a maintenance footgun.
 
 **Recommendation.** A ``Kind: Secret`` manifest committed to git defeats every secret-management story Kubernetes claims to provide, the base64 encoding in ``data`` is *not* encryption. Replace with SealedSecrets (Bitnami), ExternalSecrets / ESO, SOPS-encrypted manifests, or HashiCorp Vault Agent injection. If the manifest must remain in git, the only acceptable contents are placeholders that are filled in by an operator at apply time.
+
+**Proof of exploit.**
+
+```
+# Vulnerable: a Kubernetes Secret with credential-shaped
+# literals in ``stringData`` (or base64'd in ``data``).
+# The Secret object is in etcd; ``kubectl get secret
+# -o yaml`` exposes the value to anyone with
+# ``secrets/get`` on the namespace. Worse, committing
+# this Secret YAML to git leaks the credential to
+# every repo reader plus history forever.
+apiVersion: v1
+kind: Secret
+metadata: { name: aws-app, namespace: prod }
+stringData:
+  access_key_id: AKIAIOSFODNN7EXAMPLE
+  secret_access_key: wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY
+
+# Safe: source the Secret from an external secrets
+# manager via External Secrets Operator (ESO) — the
+# YAML committed to git references the value by name
+# only; the actual material lives in AWS Secrets
+# Manager / Vault / GSM and rotates there.
+apiVersion: external-secrets.io/v1beta1
+kind: ExternalSecret
+metadata: { name: aws-app, namespace: prod }
+spec:
+  refreshInterval: 1h
+  secretStoreRef: { name: vault-backend, kind: ClusterSecretStore }
+  target: { name: aws-app, creationPolicy: Owner }
+  data:
+    - secretKey: access_key_id
+      remoteRef: { key: prod/aws-app, property: access_key_id }
+    - secretKey: secret_access_key
+      remoteRef: { key: prod/aws-app, property: secret_access_key }
+```
 
 **Source:** [`K8S-018`](../providers/kubernetes.md#k8s-018) in the [Kubernetes provider](../providers/kubernetes.md).
 
@@ -12701,6 +12995,35 @@ roleRef:
 
 **Recommendation.** Replace ``verbs: ["*"]`` and ``resources: ["*"]`` with explicit lists. Wildcards bypass the principle of least privilege: today they grant `read pods` and tomorrow they grant `delete crds` because a new resource was registered in that apiGroup. Explicit verbs (``get``, ``list``, ``watch``) and explicit resources (``configmaps``, ``services``) keep grants stable across cluster upgrades.
 
+**Proof of exploit.**
+
+```
+# Vulnerable: a Role / ClusterRole that grants verbs:
+# ["*"] on resources: ["*"]. Equivalent to admin on
+# the scope (namespace for Role, cluster for
+# ClusterRole). Any compromise of a subject bound to
+# this role becomes admin.
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata: { name: do-everything }
+rules:
+  - apiGroups: ["*"]
+    resources: ["*"]
+    verbs: ["*"]
+
+# Safe: enumerate the verbs + resources the workload
+# actually needs. New requirements force a Role review.
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: app-pod-reader
+  namespace: app
+rules:
+  - apiGroups: [""]
+    resources: ["pods", "pods/log"]
+    verbs: ["get", "list", "watch"]
+```
+
 **Source:** [`K8S-021`](../providers/kubernetes.md#k8s-021) in the [Kubernetes provider](../providers/kubernetes.md).
 
 ### `K8S-022`: Service exposes SSH (port 22) <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-k8s-022 }
@@ -12725,6 +13048,34 @@ roleRef:
 
 - Single-tenant clusters running only operator-managed workloads may apply PSA via an admission webhook instead. The label-based check can't see that.
 
+**Proof of exploit.**
+
+```
+# Vulnerable: a namespace with no Pod Security Admission
+# label. Any Pod can land in it with no built-in
+# enforcement against privileged / hostPath / etc.
+# patterns. PSA replaced the deprecated PodSecurityPolicy
+# and is the default cluster-wide gate in Kubernetes
+# 1.25+.
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: app
+  # no pod-security.kubernetes.io/* labels
+
+# Safe: enforce at least the ``baseline`` PSA level
+# (no privileged Pods, no host namespaces, no
+# hostPath). ``restricted`` is stricter and matches
+# the v1.24+ default-deny stance.
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: app
+  labels:
+    pod-security.kubernetes.io/enforce: restricted
+    pod-security.kubernetes.io/enforce-version: latest
+```
+
 **Source:** [`K8S-023`](../providers/kubernetes.md#k8s-023) in the [Kubernetes provider](../providers/kubernetes.md).
 
 ### `K8S-024`: Container missing both livenessProbe and readinessProbe <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-k8s-024 }
@@ -12745,6 +13096,46 @@ roleRef:
 
 **Recommendation.** Reserve ``system-cluster-critical`` and ``system-node-critical`` priority classes for control-plane workloads in ``kube-system``. Application pods that adopt them gain the right to evict normal workloads under resource pressure, which is a quiet path to a cluster-wide outage if the application has a bug or the attacker has any control over its spec.
 
+**Proof of exploit.**
+
+```
+# Vulnerable: a non-system workload uses
+# ``priorityClassName: system-cluster-critical`` or
+# ``system-node-critical``. Those classes are reserved
+# for kube-system control-plane components; using them
+# on app workloads lets the app preempt critical
+# system Pods under resource pressure and degrade
+# the cluster control plane.
+apiVersion: apps/v1
+kind: Deployment
+metadata: { name: app, namespace: prod }
+spec:
+  template:
+    spec:
+      priorityClassName: system-cluster-critical
+      containers:
+        - name: app
+          image: app@sha256:abc123...
+
+# Safe: use a custom PriorityClass for app workloads
+# that need elevated priority. The class can preempt
+# best-effort workloads but never system Pods.
+apiVersion: scheduling.k8s.io/v1
+kind: PriorityClass
+metadata: { name: app-high }
+value: 100000
+globalDefault: false
+description: "High-priority app workloads"
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata: { name: app, namespace: prod }
+spec:
+  template:
+    spec:
+      priorityClassName: app-high
+```
+
 **Source:** [`K8S-025`](../providers/kubernetes.md#k8s-025) in the [Kubernetes provider](../providers/kubernetes.md).
 
 ### `K8S-026`: LoadBalancer Service has no loadBalancerSourceRanges <span class="pg-sev pg-sev--high">HIGH</span> { #detail-k8s-026 }
@@ -12754,6 +13145,39 @@ roleRef:
 **How this is detected.** Internal-only services should use ``type: ClusterIP`` (and an Ingress for HTTP) or set the cloud-provider-specific internal-LB annotation. ``loadBalancerSourceRanges`` is the Kubernetes-native, cloud-portable way to scope an external LB; cloud-specific firewalls (AWS security groups, GCP firewall rules) are equivalent at the L4 level but invisible to a manifest scanner.
 
 **Recommendation.** Restrict every ``Service`` of ``type: LoadBalancer`` with ``spec.loadBalancerSourceRanges``. The default behavior is to provision an internet-facing load balancer that accepts traffic from 0.0.0.0/0, which exposes whatever the Service fronts to the entire internet. A short list of CIDRs scoped to known clients (office IPs, a NAT gateway, peered VPCs) removes the pre-auth attack surface entirely.
+
+**Proof of exploit.**
+
+```
+# Vulnerable: a LoadBalancer Service has no
+# ``loadBalancerSourceRanges``. The cloud provider
+# provisions a LB with a public IP open to 0.0.0.0/0.
+# An internal service that was never meant to be
+# internet-facing (admin UI, debug endpoint, internal
+# API) is exposed.
+apiVersion: v1
+kind: Service
+metadata: { name: app, namespace: prod }
+spec:
+  type: LoadBalancer
+  ports: [{ port: 8080, targetPort: 8080 }]
+  selector: { app: app }
+
+# Safe: declare ``loadBalancerSourceRanges`` with the
+# CIDR allow-list. The cloud provider configures the
+# LB's security group / firewall to drop traffic from
+# anywhere outside the allow-list.
+apiVersion: v1
+kind: Service
+metadata: { name: app, namespace: prod }
+spec:
+  type: LoadBalancer
+  loadBalancerSourceRanges:
+    - 10.0.0.0/8        # internal corporate network
+    - 192.168.0.0/16    # VPN range
+  ports: [{ port: 8080, targetPort: 8080 }]
+  selector: { app: app }
+```
 
 **Source:** [`K8S-026`](../providers/kubernetes.md#k8s-026) in the [Kubernetes provider](../providers/kubernetes.md).
 
@@ -12793,6 +13217,48 @@ roleRef:
 
 - Charts that intentionally re-use the default SA in single-tenant namespaces. Consider creating a named SA anyway. It keeps the audit log unambiguous about which workload made an API call.
 
+**Proof of exploit.**
+
+```
+# Vulnerable: a RoleBinding (or ClusterRoleBinding)
+# grants permissions to the ``default`` ServiceAccount
+# in a namespace. Every Pod in that namespace that
+# doesn't override ``serviceAccountName`` runs with
+# the granted permissions — a permission boundary
+# that's invisible from the Pod manifests.
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata: { name: default-can-deploy, namespace: app }
+subjects:
+  - kind: ServiceAccount
+    name: default
+    namespace: app
+roleRef:
+  kind: Role
+  name: deployer
+  apiGroup: rbac.authorization.k8s.io
+
+# Safe: create a dedicated ServiceAccount per workload
+# and bind permissions to it. Each Pod that needs the
+# permission explicitly opts in via
+# ``serviceAccountName: app-deployer``.
+apiVersion: v1
+kind: ServiceAccount
+metadata: { name: app-deployer, namespace: app }
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata: { name: app-deployer-can-deploy, namespace: app }
+subjects:
+  - kind: ServiceAccount
+    name: app-deployer
+    namespace: app
+roleRef:
+  kind: Role
+  name: deployer
+  apiGroup: rbac.authorization.k8s.io
+```
+
 **Source:** [`K8S-029`](../providers/kubernetes.md#k8s-029) in the [Kubernetes provider](../providers/kubernetes.md).
 
 ### `K8S-030`: Workload schedules onto a control-plane node <span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> { #detail-k8s-030 }
@@ -12808,6 +13274,41 @@ roleRef:
 **Known false positives.**
 
 - Audit/log shippers and CNI agents in kube-system are exempt by namespace. A workload that legitimately needs to run on the control plane outside kube-system is rare enough to warrant an explicit ``.pipelinecheckignore`` rationale.
+
+**Proof of exploit.**
+
+```
+# Vulnerable: a workload has a ``tolerations`` entry
+# for ``node-role.kubernetes.io/control-plane`` AND
+# the matching ``nodeSelector``. The Pod gets
+# scheduled onto the control-plane node, sharing the
+# kernel with kube-apiserver / etcd / kube-controller-
+# manager. A container escape from the app reaches
+# every API request and every Secret in etcd.
+apiVersion: v1
+kind: Pod
+metadata: { name: app }
+spec:
+  nodeSelector:
+    node-role.kubernetes.io/control-plane: ""
+  tolerations:
+    - key: node-role.kubernetes.io/control-plane
+      operator: Exists
+      effect: NoSchedule
+  containers:
+    - name: app
+      image: app@sha256:abc123...
+
+# Safe: workloads schedule onto worker nodes. The
+# control-plane stays isolated.
+apiVersion: v1
+kind: Pod
+metadata: { name: app }
+spec:
+  containers:
+    - name: app
+      image: app@sha256:abc123...
+```
 
 **Source:** [`K8S-030`](../providers/kubernetes.md#k8s-030) in the [Kubernetes provider](../providers/kubernetes.md).
 
@@ -12872,6 +13373,40 @@ roleRef:
 
 **Recommendation.** Set ``securityContext.runAsUser`` to a non-zero UID (e.g. 1000 or any application-specific value) on every workload container. The corresponding ``runAsGroup`` and ``fsGroup`` should also be non-zero. Root inside a container is not isolation, a kernel CVE, a misconfigured mount, or a mis-applied capability collapses straight into the host.
 
+**Proof of exploit.**
+
+```
+# Vulnerable: explicit ``runAsUser: 0`` runs the
+# container as root inside its namespace. Combined
+# with the kernel's user-namespace mapping (or its
+# absence), a container escape lands on the node with
+# UID 0 — same blast radius as if the image had
+# ``USER root``.
+apiVersion: v1
+kind: Pod
+metadata: { name: app }
+spec:
+  containers:
+    - name: app
+      image: app@sha256:abc123...
+      securityContext:
+        runAsUser: 0
+
+# Safe: any non-zero UID. Pair with ``runAsNonRoot:
+# true`` so kubelet refuses to start the container
+# even if the image's ENTRYPOINT later flips UID.
+apiVersion: v1
+kind: Pod
+metadata: { name: app }
+spec:
+  containers:
+    - name: app
+      image: app@sha256:abc123...
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 10001
+```
+
 **Source:** [`K8S-035`](../providers/kubernetes.md#k8s-035) in the [Kubernetes provider](../providers/kubernetes.md).
 
 ### `K8S-036`: ServiceAccount imagePullSecrets references missing Secret <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-k8s-036 }
@@ -12899,6 +13434,44 @@ roleRef:
 **Known false positives.**
 
 - ConfigMaps that legitimately carry placeholder names (``DEBUG_TOKEN_FORMAT``, ``LICENSE_KEY_HEADER``) where the VALUE is a format hint rather than a credential. Rename the key to avoid the credential-shaped name.
+
+**Proof of exploit.**
+
+```
+# Vulnerable: a ConfigMap with a credential-shaped
+# value. ConfigMaps are NOT encrypted at rest in etcd
+# (Secrets are, when encryption-at-rest is configured);
+# anyone with ``configmaps/get`` reads the value.
+# ``kubectl get configmap -o yaml`` exposes it; the
+# YAML committed to git leaks it to every repo reader.
+apiVersion: v1
+kind: ConfigMap
+metadata: { name: app-config, namespace: prod }
+data:
+  database_url: postgres://app:hunter2-prod-pw@db.example.com/app
+  api_token: sk_live_abc123def456ghi789
+
+# Safe: store credentials in a Secret (encrypted at
+# rest if encryption-at-rest is enabled). Reference
+# the Secret from the Pod's env via
+# ``valueFrom.secretKeyRef``. The ConfigMap carries
+# only non-secret configuration (feature flags, log
+# levels, etc.).
+apiVersion: v1
+kind: ConfigMap
+metadata: { name: app-config, namespace: prod }
+data:
+  log_level: info
+  feature_flag_x: "true"
+---
+apiVersion: v1
+kind: Secret
+metadata: { name: app-creds, namespace: prod }
+type: Opaque
+stringData:
+  database_url: postgres://app:hunter2-prod-pw@db.example.com/app
+  api_token: sk_live_abc123def456ghi789
+```
 
 **Source:** [`K8S-037`](../providers/kubernetes.md#k8s-037) in the [Kubernetes provider](../providers/kubernetes.md).
 
@@ -12938,6 +13511,37 @@ roleRef:
 
 **Recommendation.** Remove ``securityContext.procMount: Unmasked`` (or set it explicitly to ``Default``). The default ``Default`` procMount type masks several kernel- and node-information paths under ``/proc`` (``/proc/asound``, ``/proc/acpi``, ``/proc/kcore``, ``/proc/keys``, ``/proc/latency_stats``, ``/proc/timer_list``, ``/proc/timer_stats``, ``/proc/sched_debug``, ``/proc/scsi``) and remounts ``/proc/sys`` as read-only. These maskings are what stop a container from reading the host's kernel structures or writing to ``/proc/sys`` and breaking the kernel out of namespace isolation. ``Unmasked`` undoes all of that.
 
+**Proof of exploit.**
+
+```
+# Vulnerable: ``procMount: Unmasked`` removes the
+# default kernel-managed masks on ``/proc``. The
+# container can read kernel internals
+# (``/proc/kallsyms``, ``/proc/kcore``) and write to
+# ``/proc/sysrq-trigger`` to crash the node.
+apiVersion: v1
+kind: Pod
+metadata: { name: debug-tool }
+spec:
+  containers:
+    - name: app
+      image: app@sha256:abc123...
+      securityContext:
+        procMount: Unmasked
+
+# Safe: default ``procMount: Default`` keeps the
+# masks. Container processes see a sanitized /proc
+# with kernel internals hidden.
+apiVersion: v1
+kind: Pod
+metadata: { name: app }
+spec:
+  containers:
+    - name: app
+      image: app@sha256:abc123...
+      # procMount: Default (implicit)
+```
+
 **Source:** [`K8S-040`](../providers/kubernetes.md#k8s-040) in the [Kubernetes provider](../providers/kubernetes.md).
 
 ### `K8S-041`: Service.externalIPs allows traffic interception (CVE-2020-8554) <span class="pg-sev pg-sev--high">HIGH</span> { #detail-k8s-041 }
@@ -12952,6 +13556,38 @@ roleRef:
 
 - CVE-2020-8554 (Kubernetes, 2020): documented MITM-via-externalIPs design flaw. Kubernetes' upstream advisory recommends restricting externalIPs via admission control.
 
+**Proof of exploit.**
+
+```
+# Vulnerable: a Service with ``externalIPs`` lets the
+# Service hijack traffic destined for those IPs on
+# any node in the cluster. CVE-2020-8554: an attacker
+# with ``services/create`` in any namespace creates a
+# Service with ``externalIPs: [10.0.1.5]`` and now
+# intercepts traffic meant for that internal address.
+apiVersion: v1
+kind: Service
+metadata: { name: hijacker, namespace: app }
+spec:
+  type: ClusterIP
+  externalIPs: [10.0.1.5]   # traffic to internal API server
+  ports: [{ port: 443, targetPort: 9999 }]
+  selector: { app: malicious }
+
+# Safe: don't use ``externalIPs`` for routing. Use
+# LoadBalancer or Ingress for external traffic. To
+# defend the cluster, install an admission controller
+# (Kyverno / Gatekeeper) that rejects Services with
+# non-empty ``externalIPs`` from non-system namespaces.
+apiVersion: v1
+kind: Service
+metadata: { name: app, namespace: app }
+spec:
+  type: ClusterIP
+  ports: [{ port: 443, targetPort: 8443 }]
+  selector: { app: app }
+```
+
 **Source:** [`K8S-041`](../providers/kubernetes.md#k8s-041) in the [Kubernetes provider](../providers/kubernetes.md).
 
 ### `K8S-042`: RoleBinding grants access to system:anonymous / system:unauthenticated <span class="pg-sev pg-sev--critical">CRITICAL</span> { #detail-k8s-042 }
@@ -12961,6 +13597,47 @@ roleRef:
 **How this is detected.** Kubernetes resolves authentication failures into the ``system:anonymous`` user (member of ``system:unauthenticated`` group) rather than rejecting the request outright, so any RBAC subject naming either of those values applies to requests with no Authorization header. The rule fires on both ``RoleBinding`` (namespace-scoped) and ``ClusterRoleBinding`` (cluster-scoped) subjects. Pairs with K8S-020: cluster-admin bound to a named SA is bad; cluster-admin bound to ``system:anonymous`` is cluster takeover by anyone with TCP/443 to the apiserver.
 
 **Recommendation.** Remove the binding's subject entry for ``system:anonymous`` or ``system:unauthenticated``. Anything bound to either subject is reachable without an authentication token, anyone who can hit the apiserver, including from inside an untrusted pod or from the public internet on an exposed apiserver, gets the bound verbs. If the workload genuinely needs unauthenticated read access (rare, usually only for OIDC discovery or the deprecated ``system:public-info-viewer`` shape), audit the bound ClusterRole's verbs+resources and confirm no write or secret-read verb is included.
+
+**Proof of exploit.**
+
+```
+# Vulnerable: a RoleBinding grants permissions to
+# ``system:anonymous`` (or the
+# ``system:unauthenticated`` group). Anyone who can
+# reach the API server — including unauthenticated
+# callers from outside the cluster if the API server
+# is exposed — uses these permissions. The Tesla 2018
+# Kubernetes dashboard breach was this shape.
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata: { name: anonymous-can-read }
+subjects:
+  - kind: User
+    name: system:anonymous
+    apiGroup: rbac.authorization.k8s.io
+roleRef:
+  kind: ClusterRole
+  name: view
+  apiGroup: rbac.authorization.k8s.io
+
+# Safe: no RoleBinding ever names ``system:anonymous``
+# or ``system:unauthenticated``. Anonymous auth on
+# the API server should be disabled too
+# (``--anonymous-auth=false`` on kube-apiserver).
+# Authenticated callers get specific identities;
+# bindings reference those identities by name.
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata: { name: dev-team-can-read }
+subjects:
+  - kind: Group
+    name: dev-team@example.com
+    apiGroup: rbac.authorization.k8s.io
+roleRef:
+  kind: ClusterRole
+  name: view
+  apiGroup: rbac.authorization.k8s.io
+```
 
 **Source:** [`K8S-042`](../providers/kubernetes.md#k8s-042) in the [Kubernetes provider](../providers/kubernetes.md).
 

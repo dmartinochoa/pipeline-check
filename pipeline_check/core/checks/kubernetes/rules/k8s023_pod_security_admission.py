@@ -34,6 +34,31 @@ RULE = Rule(
         "may apply PSA via an admission webhook instead. The label-based "
         "check can't see that.",
     ),
+    exploit_example=(
+        "# Vulnerable: a namespace with no Pod Security Admission\n"
+        "# label. Any Pod can land in it with no built-in\n"
+        "# enforcement against privileged / hostPath / etc.\n"
+        "# patterns. PSA replaced the deprecated PodSecurityPolicy\n"
+        "# and is the default cluster-wide gate in Kubernetes\n"
+        "# 1.25+.\n"
+        "apiVersion: v1\n"
+        "kind: Namespace\n"
+        "metadata:\n"
+        "  name: app\n"
+        "  # no pod-security.kubernetes.io/* labels\n"
+        "\n"
+        "# Safe: enforce at least the ``baseline`` PSA level\n"
+        "# (no privileged Pods, no host namespaces, no\n"
+        "# hostPath). ``restricted`` is stricter and matches\n"
+        "# the v1.24+ default-deny stance.\n"
+        "apiVersion: v1\n"
+        "kind: Namespace\n"
+        "metadata:\n"
+        "  name: app\n"
+        "  labels:\n"
+        "    pod-security.kubernetes.io/enforce: restricted\n"
+        "    pod-security.kubernetes.io/enforce-version: latest"
+    ),
 )
 
 

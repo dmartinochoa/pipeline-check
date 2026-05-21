@@ -44,6 +44,41 @@ RULE = Rule(
         "VALUE is a format hint rather than a credential. Rename "
         "the key to avoid the credential-shaped name.",
     ),
+    exploit_example=(
+        "# Vulnerable: a ConfigMap with a credential-shaped\n"
+        "# value. ConfigMaps are NOT encrypted at rest in etcd\n"
+        "# (Secrets are, when encryption-at-rest is configured);\n"
+        "# anyone with ``configmaps/get`` reads the value.\n"
+        "# ``kubectl get configmap -o yaml`` exposes it; the\n"
+        "# YAML committed to git leaks it to every repo reader.\n"
+        "apiVersion: v1\n"
+        "kind: ConfigMap\n"
+        "metadata: { name: app-config, namespace: prod }\n"
+        "data:\n"
+        "  database_url: postgres://app:hunter2-prod-pw@db.example.com/app\n"
+        "  api_token: sk_live_abc123def456ghi789\n"
+        "\n"
+        "# Safe: store credentials in a Secret (encrypted at\n"
+        "# rest if encryption-at-rest is enabled). Reference\n"
+        "# the Secret from the Pod's env via\n"
+        "# ``valueFrom.secretKeyRef``. The ConfigMap carries\n"
+        "# only non-secret configuration (feature flags, log\n"
+        "# levels, etc.).\n"
+        "apiVersion: v1\n"
+        "kind: ConfigMap\n"
+        "metadata: { name: app-config, namespace: prod }\n"
+        "data:\n"
+        "  log_level: info\n"
+        "  feature_flag_x: \"true\"\n"
+        "---\n"
+        "apiVersion: v1\n"
+        "kind: Secret\n"
+        "metadata: { name: app-creds, namespace: prod }\n"
+        "type: Opaque\n"
+        "stringData:\n"
+        "  database_url: postgres://app:hunter2-prod-pw@db.example.com/app\n"
+        "  api_token: sk_live_abc123def456ghi789"
+    ),
 )
 
 

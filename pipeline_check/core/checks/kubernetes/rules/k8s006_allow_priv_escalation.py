@@ -34,6 +34,37 @@ RULE = Rule(
         "an unset field as a deferral to the cluster admission "
         "controller, which may not enforce ``restricted``."
     ),
+    exploit_example=(
+        "# Vulnerable: ``allowPrivilegeEscalation`` defaults to\n"
+        "# ``true``. A non-root process inside the container\n"
+        "# can gain elevated capabilities through suid binaries\n"
+        "# (or ``setcap`` files), defeating the\n"
+        "# ``runAsNonRoot`` posture.\n"
+        "apiVersion: v1\n"
+        "kind: Pod\n"
+        "metadata: { name: app }\n"
+        "spec:\n"
+        "  containers:\n"
+        "    - name: app\n"
+        "      image: app@sha256:abc123...\n"
+        "      securityContext:\n"
+        "        runAsNonRoot: true   # but no_new_privs not set\n"
+        "\n"
+        "# Safe: ``allowPrivilegeEscalation: false`` sets the\n"
+        "# kernel's ``no_new_privs`` bit on the container's\n"
+        "# processes. suid binaries no longer elevate; the\n"
+        "# non-root posture is now load-bearing.\n"
+        "apiVersion: v1\n"
+        "kind: Pod\n"
+        "metadata: { name: app }\n"
+        "spec:\n"
+        "  containers:\n"
+        "    - name: app\n"
+        "      image: app@sha256:abc123...\n"
+        "      securityContext:\n"
+        "        runAsNonRoot: true\n"
+        "        allowPrivilegeEscalation: false"
+    ),
 )
 
 
