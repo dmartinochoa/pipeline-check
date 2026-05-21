@@ -8535,6 +8535,57 @@ v1 limitations: ``include:`` cross-pipeline file inclusion isn't tracked yet (wo
 
 **Recommendation.** Replace static keys with role-based access: an ``aws_iam_role`` plus an OIDC ``aws_iam_openid_connect_provider`` for CI, or ``aws_iam_role`` for service-to-service auth. Static keys live forever in state, in backups, in every machine that ever ran ``terraform plan``.
 
+**Proof of exploit.**
+
+```
+# Vulnerable: every ``terraform apply`` provisions a long-
+# lived access key and lands the literal
+# ``aws_iam_access_key.ci.secret`` in the state file. Remote
+# backends (S3) store the state plaintext by default; every
+# CI run that loads state reads the secret. The key only
+# goes away on ``terraform destroy``.
+resource "aws_iam_user" "ci" {
+  name = "ci-bot"
+}
+
+resource "aws_iam_access_key" "ci" {
+  user = aws_iam_user.ci.name
+}
+
+output "ci_secret" {
+  value     = aws_iam_access_key.ci.secret
+  sensitive = true   # masks console output but state stays plaintext
+}
+
+# Safe: federate via GitHub Actions OIDC so tokens last
+# minutes per workflow run, not forever. The role's trust
+# policy pins ``sub`` to one repo + ref, so the federation
+# can't be assumed by an unrelated workflow even on the
+# same account.
+resource "aws_iam_openid_connect_provider" "github" {
+  url             = "https://token.actions.githubusercontent.com"
+  client_id_list  = ["sts.amazonaws.com"]
+  thumbprint_list = ["6938fd4d98bab03faadb97b34396831e3780aea1"]
+}
+
+resource "aws_iam_role" "ci" {
+  name = "ci-bot"
+  assume_role_policy = jsonencode({
+    Statement = [{
+      Effect    = "Allow"
+      Principal = { Federated = aws_iam_openid_connect_provider.github.arn }
+      Action    = "sts:AssumeRoleWithWebIdentity"
+      Condition = {
+        StringEquals = {
+          "token.actions.githubusercontent.com:sub" = "repo:myorg/myrepo:ref:refs/heads/main"
+          "token.actions.githubusercontent.com:aud" = "sts.amazonaws.com"
+        }
+      }
+    }]
+  })
+}
+```
+
 **Source:** [`TF-001`](../providers/terraform.md) in the [Terraform provider](../providers/terraform.md).
 
 ### `TF-002`: Stateful data-store resource carries a plaintext secret <span class="pg-sev pg-sev--critical">CRITICAL</span> { #detail-tf-002 }
@@ -8544,6 +8595,43 @@ v1 limitations: ``include:`` cross-pipeline file inclusion isn't tracked yet (wo
 **How this is detected.** Walks every value of the stateful data-store resources (``aws_db_instance``, ``aws_rds_cluster``, ``aws_redshift_cluster``, ``aws_elasticache_replication_group``, ``aws_docdb_cluster``, ``aws_neptune_cluster``, ``aws_opensearch_domain``, ``aws_memorydb_cluster``). Fires when a string leaf matches a credential shape (AKIA/ASIA, ``ghp_``, JWT, …) OR when a secret-named attribute (``*password``, ``*token``, …) carries a non-placeholder literal.
 
 **Recommendation.** Move the secret into Secrets Manager (or SSM Parameter Store SecureString) and reference it via ``data.aws_secretsmanager_secret_version.…`` at apply time. Never literal-string a credential into a stateful resource — the value lives in state forever.
+
+**Proof of exploit.**
+
+```
+# Vulnerable: the password literal lands in the Terraform
+# state file on every apply. Remote S3 backends store state
+# in plaintext unless explicitly encrypted; CI runs that
+# load state print the value when ``-json`` or ``output``
+# touches it. The credential rotates only on the next
+# ``aws_db_instance`` replacement.
+resource "aws_db_instance" "prod" {
+  identifier        = "app-prod"
+  engine            = "postgres"
+  instance_class    = "db.t3.medium"
+  allocated_storage = 100
+  username          = "appuser"
+  password          = "hunter2-prod-master-pw"
+}
+
+# Safe: pull the password from Secrets Manager at apply time.
+# State carries the secret's ARN reference, not the value.
+# Rotation runs via Secrets Manager without a Terraform
+# state change. The data source is read-only, so the value
+# never appears in ``terraform plan`` output either.
+data "aws_secretsmanager_secret_version" "db_master" {
+  secret_id = "prod/app/db_master"
+}
+
+resource "aws_db_instance" "prod" {
+  identifier        = "app-prod"
+  engine            = "postgres"
+  instance_class    = "db.t3.medium"
+  allocated_storage = 100
+  username          = "appuser"
+  password          = data.aws_secretsmanager_secret_version.db_master.secret_string
+}
+```
 
 **Source:** [`TF-002`](../providers/terraform.md) in the [Terraform provider](../providers/terraform.md).
 

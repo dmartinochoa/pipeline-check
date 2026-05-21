@@ -10545,6 +10545,57 @@ v1 limitations: ``include:`` cross-pipeline file inclusion isn't tracked yet (wo
 
 **Recommendation.** Replace static keys with role-based access: an ``aws_iam_role`` plus an OIDC ``aws_iam_openid_connect_provider`` for CI, or ``aws_iam_role`` for service-to-service auth. Static keys live forever in state, in backups, in every machine that ever ran ``terraform plan``.
 
+**Proof of exploit.**
+
+```
+# Vulnerable: every ``terraform apply`` provisions a long-
+# lived access key and lands the literal
+# ``aws_iam_access_key.ci.secret`` in the state file. Remote
+# backends (S3) store the state plaintext by default; every
+# CI run that loads state reads the secret. The key only
+# goes away on ``terraform destroy``.
+resource "aws_iam_user" "ci" {
+  name = "ci-bot"
+}
+
+resource "aws_iam_access_key" "ci" {
+  user = aws_iam_user.ci.name
+}
+
+output "ci_secret" {
+  value     = aws_iam_access_key.ci.secret
+  sensitive = true   # masks console output but state stays plaintext
+}
+
+# Safe: federate via GitHub Actions OIDC so tokens last
+# minutes per workflow run, not forever. The role's trust
+# policy pins ``sub`` to one repo + ref, so the federation
+# can't be assumed by an unrelated workflow even on the
+# same account.
+resource "aws_iam_openid_connect_provider" "github" {
+  url             = "https://token.actions.githubusercontent.com"
+  client_id_list  = ["sts.amazonaws.com"]
+  thumbprint_list = ["6938fd4d98bab03faadb97b34396831e3780aea1"]
+}
+
+resource "aws_iam_role" "ci" {
+  name = "ci-bot"
+  assume_role_policy = jsonencode({
+    Statement = [{
+      Effect    = "Allow"
+      Principal = { Federated = aws_iam_openid_connect_provider.github.arn }
+      Action    = "sts:AssumeRoleWithWebIdentity"
+      Condition = {
+        StringEquals = {
+          "token.actions.githubusercontent.com:sub" = "repo:myorg/myrepo:ref:refs/heads/main"
+          "token.actions.githubusercontent.com:aud" = "sts.amazonaws.com"
+        }
+      }
+    }]
+  })
+}
+```
+
 **Source:** [`TF-001`](../providers/terraform.md) in the [Terraform provider](../providers/terraform.md).
 
 ### `TF-002`: Stateful data-store resource carries a plaintext secret <span class="pg-sev pg-sev--critical">CRITICAL</span> { #detail-tf-002 }
@@ -10555,6 +10606,43 @@ v1 limitations: ``include:`` cross-pipeline file inclusion isn't tracked yet (wo
 
 **Recommendation.** Move the secret into Secrets Manager (or SSM Parameter Store SecureString) and reference it via ``data.aws_secretsmanager_secret_version.…`` at apply time. Never literal-string a credential into a stateful resource — the value lives in state forever.
 
+**Proof of exploit.**
+
+```
+# Vulnerable: the password literal lands in the Terraform
+# state file on every apply. Remote S3 backends store state
+# in plaintext unless explicitly encrypted; CI runs that
+# load state print the value when ``-json`` or ``output``
+# touches it. The credential rotates only on the next
+# ``aws_db_instance`` replacement.
+resource "aws_db_instance" "prod" {
+  identifier        = "app-prod"
+  engine            = "postgres"
+  instance_class    = "db.t3.medium"
+  allocated_storage = 100
+  username          = "appuser"
+  password          = "hunter2-prod-master-pw"
+}
+
+# Safe: pull the password from Secrets Manager at apply time.
+# State carries the secret's ARN reference, not the value.
+# Rotation runs via Secrets Manager without a Terraform
+# state change. The data source is read-only, so the value
+# never appears in ``terraform plan`` output either.
+data "aws_secretsmanager_secret_version" "db_master" {
+  secret_id = "prod/app/db_master"
+}
+
+resource "aws_db_instance" "prod" {
+  identifier        = "app-prod"
+  engine            = "postgres"
+  instance_class    = "db.t3.medium"
+  allocated_storage = 100
+  username          = "appuser"
+  password          = data.aws_secretsmanager_secret_version.db_master.secret_string
+}
+```
+
 **Source:** [`TF-002`](../providers/terraform.md) in the [Terraform provider](../providers/terraform.md).
 
 ### `TF-003`: CodeBuild VPC config references a public subnet <span class="pg-sev pg-sev--high">HIGH</span> { #detail-tf-003 }
@@ -10564,6 +10652,49 @@ v1 limitations: ``include:`` cross-pipeline file inclusion isn't tracked yet (wo
 **How this is detected.** When ``aws_codebuild_project.vpc_config[0].vpc_id`` resolves to a concrete string, walks every ``aws_subnet`` in the same VPC and fires if any has ``map_public_ip_on_launch = true``. Silent when ``vpc_id`` is unresolved (``known after apply``).
 
 **Recommendation.** Place CodeBuild projects in private subnets (``map_public_ip_on_launch = false``) with egress routed through a NAT gateway or VPC interface endpoints. Public subnets put the build host on a public IP for the duration of the build.
+
+**Proof of exploit.**
+
+```
+# Vulnerable: ``map_public_ip_on_launch = true`` on the
+# subnet means CodeBuild containers get a public IP for the
+# duration of the build. The build host is now reachable
+# inbound from the internet (modulo the security group),
+# and outbound traffic uses that public IP rather than
+# being NATed. Build-time RCE escalates straight to a
+# direct internet-facing host.
+resource "aws_subnet" "build" {
+  vpc_id                  = aws_vpc.main.id
+  cidr_block              = "10.0.1.0/24"
+  map_public_ip_on_launch = true
+}
+
+resource "aws_codebuild_project" "app" {
+  name = "app-build"
+  vpc_config {
+    vpc_id             = aws_vpc.main.id
+    subnets            = [aws_subnet.build.id]
+    security_group_ids = [aws_security_group.build.id]
+  }
+  # ... source / artifacts / environment elided
+}
+
+# Safe: private subnet routed to a NAT for outbound egress.
+# No public IP on the build host; inbound from the internet
+# is impossible regardless of the security group. Build-
+# time RCE has to chain a separate primitive (kubelet, IMDS,
+# another in-VPC service) before reaching the internet.
+resource "aws_subnet" "build" {
+  vpc_id                  = aws_vpc.main.id
+  cidr_block              = "10.0.10.0/24"
+  map_public_ip_on_launch = false
+}
+
+resource "aws_route_table_association" "build" {
+  subnet_id      = aws_subnet.build.id
+  route_table_id = aws_route_table.private_nat.id
+}
+```
 
 **Source:** [`TF-003`](../providers/terraform.md) in the [Terraform provider](../providers/terraform.md).
 
