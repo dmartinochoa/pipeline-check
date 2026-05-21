@@ -561,7 +561,7 @@ def _parse_entries(raw_entries: Any) -> tuple[IndexEntry, ...]:
     return tuple(out)
 
 
-class OCIBaseCheck(BaseCheck):
+class OCIBaseCheck(BaseCheck[OCIContext]):
     """Base class for OCI-provider rule modules."""
 
     PROVIDER = "oci"

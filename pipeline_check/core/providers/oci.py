@@ -40,7 +40,7 @@ class OCIProvider(BaseProvider):
         return OCIContext.from_path(oci_manifest)
 
     @property
-    def check_classes(self) -> list[type[BaseCheck]]:
+    def check_classes(self) -> list[type[BaseCheck[Any]]]:
         return [OCIManifestChecks]
 
     def inventory(self, context: OCIContext) -> list[Component]:

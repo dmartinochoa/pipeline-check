@@ -37,7 +37,7 @@ class KubernetesProvider(BaseProvider):
         return KubernetesContext.from_path(k8s_path)
 
     @property
-    def check_classes(self) -> list[type[BaseCheck]]:
+    def check_classes(self) -> list[type[BaseCheck[Any]]]:
         return [KubernetesManifestChecks]
 
     def inventory(self, context: KubernetesContext) -> list[Component]:

@@ -112,7 +112,7 @@ class BuildkiteContext:
         return ctx
 
 
-class BuildkiteBaseCheck(BaseCheck):
+class BuildkiteBaseCheck(BaseCheck[BuildkiteContext]):
     """Base class for Buildkite rule modules."""
 
     PROVIDER = "buildkite"

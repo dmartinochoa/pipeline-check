@@ -77,7 +77,7 @@ class AzureContext:
         return ctx
 
 
-class AzureBaseCheck(BaseCheck):
+class AzureBaseCheck(BaseCheck[AzureContext]):
     """Base class for Azure DevOps Pipelines checks."""
 
     PROVIDER = "azure"

@@ -55,7 +55,7 @@ class HelmProvider(BaseProvider):
         )
 
     @property
-    def check_classes(self) -> list[type[BaseCheck]]:
+    def check_classes(self) -> list[type[BaseCheck[Any]]]:
         # Two passes over the same HelmContext, iterating disjoint
         # slices of it: K8S-* rules walk ``ctx.manifests`` (the
         # rendered output of ``helm template``), HELM-* rules walk

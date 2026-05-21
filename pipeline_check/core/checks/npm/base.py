@@ -305,7 +305,7 @@ def load_base_locks_via_git(
         ctx.base_locks.append(base_lock)
 
 
-class NpmBaseCheck(BaseCheck):
+class NpmBaseCheck(BaseCheck[NpmContext]):
     """Base class for npm rule modules."""
 
     PROVIDER = "npm"

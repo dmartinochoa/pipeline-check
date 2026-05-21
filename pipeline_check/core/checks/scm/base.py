@@ -440,7 +440,7 @@ class SCMContext:
         return ctx
 
 
-class SCMBaseCheck(BaseCheck):
+class SCMBaseCheck(BaseCheck[SCMContext]):
     """Base class for SCM posture checks. Mirrors the per-provider
     base classes (``OCIBaseCheck``, ``GitHubBaseCheck``)."""
 

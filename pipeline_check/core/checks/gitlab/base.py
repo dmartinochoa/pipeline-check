@@ -112,7 +112,7 @@ class GitLabContext:
         return ctx
 
 
-class GitLabBaseCheck(BaseCheck):
+class GitLabBaseCheck(BaseCheck[GitLabContext]):
     """Base class for GitLab CI checks."""
 
     PROVIDER = "gitlab"

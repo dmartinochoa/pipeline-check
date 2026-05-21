@@ -44,7 +44,7 @@ class MavenProvider(BaseProvider):
         return MavenContext.from_path(maven_path)
 
     @property
-    def check_classes(self) -> list[type[BaseCheck]]:
+    def check_classes(self) -> list[type[BaseCheck[Any]]]:
         return [MavenChecks]
 
     def post_filter(

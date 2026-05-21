@@ -1,7 +1,7 @@
 import abc
 from dataclasses import dataclass, field
 from enum import Enum
-from typing import Any
+from typing import Any, Generic, TypeVar
 
 import yaml as _yaml
 
@@ -315,20 +315,26 @@ class Finding:
         return out
 
 
-class BaseCheck(abc.ABC):
+_ContextT = TypeVar("_ContextT")
+
+
+class BaseCheck(abc.ABC, Generic[_ContextT]):
     """Provider-agnostic base for all check modules.
 
     Subclasses declare a PROVIDER class attribute so the Scanner can route
-    them to the correct pipeline environment, and accept whatever context
-    object their provider requires (e.g. a boto3 Session for AWS, a
-    google-auth credential for GCP, a token for GitHub).
+    them to the correct pipeline environment, and parameterize the generic
+    on whatever context object their provider requires (e.g.
+    ``BaseCheck[boto3.Session]`` for AWS, ``BaseCheck[GitHubContext]`` for
+    GitHub, ``BaseCheck[JenkinsContext]`` for Jenkins). The generic param
+    pins ``self.context`` to the concrete type so subclass methods reading
+    it get type-narrowing without needing to re-assert via a local cast.
     """
 
     #: Pipeline environment this check targets.  Override in subclasses.
     PROVIDER: str = ""
 
-    def __init__(self, context: Any, target: str | None = None) -> None:
-        self.context = context
+    def __init__(self, context: _ContextT, target: str | None = None) -> None:
+        self.context: _ContextT = context
         #: Optional resource name to scope the scan to (e.g. a pipeline name).
         self.target = target
         # NB: clearing per-instance guards against id() reuse, a doc

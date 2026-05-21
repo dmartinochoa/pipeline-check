@@ -36,7 +36,7 @@ class DockerfileProvider(BaseProvider):
         return DockerfileContext.from_path(dockerfile_path)
 
     @property
-    def check_classes(self) -> list[type[BaseCheck]]:
+    def check_classes(self) -> list[type[BaseCheck[Any]]]:
         return [DockerfileChecks]
 
     def inventory(self, context: DockerfileContext) -> list[Component]:

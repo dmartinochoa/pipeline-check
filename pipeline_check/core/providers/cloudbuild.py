@@ -36,7 +36,7 @@ class CloudBuildProvider(BaseProvider):
         return CloudBuildContext.from_path(cloudbuild_path)
 
     @property
-    def check_classes(self) -> list[type[BaseCheck]]:
+    def check_classes(self) -> list[type[BaseCheck[Any]]]:
         return [CloudBuildPipelineChecks]
 
     def inventory(self, context: CloudBuildContext) -> list[Component]:

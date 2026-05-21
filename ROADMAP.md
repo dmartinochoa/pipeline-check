@@ -391,14 +391,18 @@ Code-quality findings across the engine, parsers, and rule pack.
   routes through one constant across 28 signing / SBOM /
   vuln-scanning / provenance rule modules instead of repeating
   inline.
-- **Lift provider context loaders + base classes.** Load-loop
-  consolidation done: `checks/_yaml_files.py:load_yaml_files`
-  hosts the read + parse + warning loop, and 11 providers
-  (github, gitlab, bitbucket, azure, cloudbuild, kubernetes,
-  buildkite, drone, tekton, argo, circleci) route through it.
-  ``jenkins`` parses Groovy, not YAML, and stays on its custom
-  loader. The ``BaseCheck`` generic-on-context change is still
-  open as a separate refactor.
+- ~~**Lift provider context loaders + base classes.**~~ Both
+  halves landed. Load-loop consolidation: `checks/_yaml_files.py:
+  load_yaml_files` hosts the read + parse + warning loop, and 11
+  providers (github, gitlab, bitbucket, azure, cloudbuild,
+  kubernetes, buildkite, drone, tekton, argo, circleci) route
+  through it. ``jenkins`` parses Groovy, not YAML, and stays on
+  its custom loader. ``BaseCheck`` generic-on-context: ``BaseCheck``
+  is now ``Generic[_ContextT]`` and each provider's subclass
+  parameterizes it (``GitHubBaseCheck(BaseCheck[GitHubContext])``,
+  ``AWSBaseCheck(BaseCheck[boto3.Session])``, ...), so
+  ``self.context`` carries the concrete type and the per-subclass
+  ``self.ctx`` alias is now redundant for type-narrowing purposes.
 - ~~**Legacy `TLS_BYPASS_RE` / `CURL_PIPE_RE` migration.**~~ Landed
   in the post-1.2.0 cycle. `bk008`, `dr006`, `argo008`, `tkn008`,
   `bk004` now route through `_primitives/tls_bypass.py` and

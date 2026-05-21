@@ -30,7 +30,7 @@ class BitbucketProvider(BaseProvider):
         return BitbucketContext.from_path(bitbucket_path)
 
     @property
-    def check_classes(self) -> list[type[BaseCheck]]:
+    def check_classes(self) -> list[type[BaseCheck[Any]]]:
         return [BitbucketPipelineChecks]
 
     def inventory(self, context: BitbucketContext) -> list[Component]:

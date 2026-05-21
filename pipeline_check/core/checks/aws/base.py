@@ -30,7 +30,7 @@ _CLIENT_CACHE_ATTR = "_pc_client_cache"
 _RETRY_CONFIG = Config(retries={"mode": "adaptive", "max_attempts": 10})
 
 
-class AWSBaseCheck(BaseCheck):
+class AWSBaseCheck(BaseCheck["boto3.Session"]):
     """Base class for all AWS check modules."""
 
     PROVIDER = "aws"

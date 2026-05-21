@@ -129,7 +129,7 @@ class CloudFormationContext:
         return len(self._resources)
 
 
-class CloudFormationBaseCheck(BaseCheck):
+class CloudFormationBaseCheck(BaseCheck[CloudFormationContext]):
     """Base class for every CloudFormation check module."""
 
     PROVIDER = "cloudformation"

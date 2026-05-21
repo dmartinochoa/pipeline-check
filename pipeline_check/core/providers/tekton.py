@@ -29,7 +29,7 @@ class TektonProvider(BaseProvider):
         return TektonContext.from_path(tekton_path)
 
     @property
-    def check_classes(self) -> list[type[BaseCheck]]:
+    def check_classes(self) -> list[type[BaseCheck[Any]]]:
         return [TektonChecks]
 
     def inventory(self, context: TektonContext) -> list[Component]:

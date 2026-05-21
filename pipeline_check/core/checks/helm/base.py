@@ -138,7 +138,7 @@ def _discover_charts(root: Path) -> list[Path]:
     return out
 
 
-class HelmChartBaseCheck(BaseCheck):
+class HelmChartBaseCheck(BaseCheck[HelmContext]):
     """Base for HELM-* rule modules that operate on chart metadata.
 
     Distinct from :class:`KubernetesBaseCheck` because chart-level

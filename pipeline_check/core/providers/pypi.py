@@ -55,7 +55,7 @@ class PypiProvider(BaseProvider):
         return PypiContext.from_path(pypi_path)
 
     @property
-    def check_classes(self) -> list[type[BaseCheck]]:
+    def check_classes(self) -> list[type[BaseCheck[Any]]]:
         return [PypiChecks]
 
     def post_filter(

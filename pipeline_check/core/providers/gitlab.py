@@ -34,7 +34,7 @@ class GitLabProvider(BaseProvider):
         return GitLabContext.from_path(gitlab_path)
 
     @property
-    def check_classes(self) -> list[type[BaseCheck]]:
+    def check_classes(self) -> list[type[BaseCheck[Any]]]:
         return [GitLabPipelineChecks]
 
     def inventory(self, context: GitLabContext) -> list[Component]:

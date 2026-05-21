@@ -106,7 +106,7 @@ def _walk_module(
         yield from _walk_module(child)
 
 
-class TerraformBaseCheck(BaseCheck):
+class TerraformBaseCheck(BaseCheck[TerraformContext]):
     """Base class for every Terraform check module."""
 
     PROVIDER = "terraform"

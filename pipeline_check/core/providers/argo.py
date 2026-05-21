@@ -29,7 +29,7 @@ class ArgoProvider(BaseProvider):
         return ArgoContext.from_path(argo_path)
 
     @property
-    def check_classes(self) -> list[type[BaseCheck]]:
+    def check_classes(self) -> list[type[BaseCheck[Any]]]:
         return [ArgoChecks]
 
     def inventory(self, context: ArgoContext) -> list[Component]:

@@ -89,7 +89,7 @@ class DroneContext:
         return ctx
 
 
-class DroneBaseCheck(BaseCheck):
+class DroneBaseCheck(BaseCheck[DroneContext]):
     """Base class for Drone rule modules."""
 
     PROVIDER = "drone"

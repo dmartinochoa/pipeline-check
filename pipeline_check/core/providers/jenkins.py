@@ -31,7 +31,7 @@ class JenkinsProvider(BaseProvider):
         return JenkinsContext.from_path(jenkinsfile_path)
 
     @property
-    def check_classes(self) -> list[type[BaseCheck]]:
+    def check_classes(self) -> list[type[BaseCheck[Any]]]:
         return [JenkinsfileChecks]
 
     def inventory(self, context: JenkinsContext) -> list[Component]:
