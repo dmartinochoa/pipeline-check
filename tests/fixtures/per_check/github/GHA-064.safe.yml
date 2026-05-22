@@ -1,0 +1,10 @@
+name: sound-contains
+on: push
+jobs:
+  deploy:
+    if: contains(fromJSON('["main", "develop", "release"]'), github.ref_name)
+    runs-on: ubuntu-latest
+    environment: production
+    steps:
+      - uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332
+      - run: ./deploy.sh

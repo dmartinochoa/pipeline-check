@@ -32,7 +32,7 @@ RULE = Rule(
 def check(catalog: ResourceCatalog) -> list[Finding]:
     try:
         client = catalog.client("cloudwatch")
-    except Exception:  # noqa: BLE001
+    except Exception:
         return []
     try:
         resp = client.describe_alarms(AlarmTypes=["MetricAlarm"])

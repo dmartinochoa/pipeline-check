@@ -419,6 +419,19 @@ STANDARD = Standard(
         "GHA-060":  ["CC8.1"],              # pip install without --require-hashes
         "GHA-061":  ["CC6.1", "CC6.3"],     # App token minted without permissions filter
         "GHA-062":  ["CC6.1", "CC6.3"],     # OIDC trust subject in sibling IaC is overly broad
+        "GHA-063":  ["CC6.1"],              # spoofable bot-actor if-predicate
+        "GHA-064":  ["CC8.1"],              # unsound contains() with comma-string operand
+        "GHA-065":  ["CC8.1"],              # zero-width / bidi unicode in workflow body
+        "GHA-066":  ["CC6.1"],              # upload-artifact wildcard sweeps workspace
+        "GHA-067":  ["CC6.1"],              # cache step publishes credential-shaped paths
+        "GHA-068":  ["CC8.1"],              # runs-on targets a deprecated hosted runner
+        "GHA-069":  ["CC6.1"],              # orphan id-token: write scope
+        "GHA-070":  ["CC6.1"],              # ssh-keyscan / host-key check TOFU
+        "GHA-071":  ["CC8.1"],              # powershell on Linux / macOS step
+        "GHA-072":  ["CC6.1"],              # secret env: at wider scope than consumer
+        "GHA-073":  ["CC6.1"],              # unused workflow_call.secrets declaration
+        "GHA-086":  ["CC8.1"],              # wildcard branch trigger + environment binding
+        "GHA-087":  ["CC6.1"],              # derived-value of secret printed to log
         # ── GitLab CI ─────────────────────────────────────────────
         "GL-006":   ["CC8.1"],              # unsigned artifacts
         "GL-007":   ["CC8.1"],              # no SBOM

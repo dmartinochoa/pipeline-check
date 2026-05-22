@@ -521,6 +521,19 @@ STANDARD = Standard(
         "GHA-060":  ["ESF-S-VERIFY-DEPS"],          # pip install without --require-hashes
         "GHA-061":  ["ESF-C-LEAST-PRIV", "ESF-D-TOKEN-HYGIENE"],  # App token without permissions filter
         "GHA-062":  ["ESF-C-LEAST-PRIV"],            # OIDC trust subject in sibling IaC is overly broad
+        "GHA-063":  ["ESF-D-INJECTION"],             # spoofable bot-actor if-predicate
+        "GHA-064":  ["ESF-D-INJECTION"],             # unsound contains() with comma-string operand
+        "GHA-065":  ["ESF-D-INJECTION"],             # zero-width / bidi unicode in workflow body
+        "GHA-066":  ["ESF-D-SECRETS"],               # upload-artifact wildcard sweeps workspace
+        "GHA-067":  ["ESF-D-SECRETS"],               # cache step publishes credential-shaped paths
+        "GHA-068":  ["ESF-D-BUILD-ENV"],             # runs-on targets a deprecated hosted runner
+        "GHA-069":  ["ESF-C-LEAST-PRIV"],            # orphan id-token: write scope
+        "GHA-070":  ["ESF-S-VERIFY-DEPS"],           # ssh-keyscan / host-key check TOFU
+        "GHA-071":  ["ESF-D-INJECTION"],             # powershell on Linux / macOS step
+        "GHA-072":  ["ESF-D-SECRETS", "ESF-C-LEAST-PRIV"],  # secret env: at wider scope than consumer
+        "GHA-073":  ["ESF-D-SECRETS"],               # unused workflow_call.secrets declaration
+        "GHA-086":  ["ESF-C-APPROVAL", "ESF-C-ENV-SEP"],  # wildcard branch trigger gates env-bound deploy
+        "GHA-087":  ["ESF-D-SECRETS"],               # derived-value of secret printed to log
         # ── GitLab CI extras ─────────────────────────────────────
         "GL-028":   ["ESF-S-PIN-DEPS", "ESF-S-VERIFY-DEPS"],   # services: image not pinned
         "GL-029":   ["ESF-C-APPROVAL"],             # manual deploy allow_failure

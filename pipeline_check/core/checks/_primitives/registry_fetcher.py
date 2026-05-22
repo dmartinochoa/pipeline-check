@@ -94,11 +94,11 @@ class HttpGetFetcher:
         + host (the per-ecosystem adapter is the gate); this method
         only handles the transport layer.
         """
-        req = urllib.request.Request(url)  # noqa: S310, caller-fixed scheme + host
+        req = urllib.request.Request(url)
         req.add_header("User-Agent", self.user_agent)
         req.add_header("Accept", "application/json")
         try:
-            with urllib.request.urlopen(  # noqa: S310, caller-fixed scheme + host
+            with urllib.request.urlopen(
                 req, timeout=self.timeout,
             ) as resp:
                 body: bytes = resp.read(self.max_response_bytes + 1)

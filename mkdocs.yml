@@ -142,6 +142,7 @@ nav:
       - Usage: usage.md
       - Configuration: config.md
       - CI gate: ci_gate.md
+      - PR diff: pr_diff.md
       - Output: output.md
       - Stability: stability.md
   - Coverage:

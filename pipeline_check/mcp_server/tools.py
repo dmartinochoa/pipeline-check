@@ -68,9 +68,11 @@ def _allowed_scan_roots() -> list[Path]:
 
 
 # Each provider's path-flag name. ``None`` means the provider takes
-# no on-disk path (live AWS scans the account directly via boto3).
+# no on-disk path (live AWS scans the account directly via boto3;
+# scm fetches the repo over the wire via ``scm_platform`` + ``scm_repo``).
 # Keep aligned with ``cli.py``'s flag set; if a new provider lands,
-# add it here too.
+# add it here too. ``tests/test_mcp_server.py`` asserts parity with the
+# rule registry so drift fails CI on the next provider add.
 _PROVIDER_PATH_KW: dict[str, str | None] = {
     "github":         "gha_path",
     "gitlab":         "gitlab_path",
@@ -85,22 +87,37 @@ _PROVIDER_PATH_KW: dict[str, str | None] = {
     "drone":          "drone_path",
     "tekton":         "tekton_path",
     "argo":           "argo_path",
+    "argocd":         "argocd_path",
     "dockerfile":     "dockerfile_path",
     "kubernetes":     "k8s_path",
     "helm":           "helm_path",
     "oci":            "oci_manifest",
+    "npm":            "npm_path",
+    "pypi":           "pypi_path",
+    "maven":          "maven_path",
     "aws":            None,
+    "scm":            None,
 }
 
 PROVIDERS: tuple[str, ...] = tuple(sorted(_PROVIDER_PATH_KW))
 
 
-def _provider_kwarg(provider: str, path: str | None) -> dict[str, Any]:
+def _provider_kwarg(
+    provider: str,
+    path: str | None,
+    *,
+    scm_platform: str | None = None,
+    scm_repo: str | None = None,
+    scm_fixture_dir: str | None = None,
+) -> dict[str, Any]:
     """Return the kwargs dict to forward to ``Scanner(...)``.
 
     Validates the provider name and the path requirement for that
     provider. Raises ``ValueError`` with a message safe to surface
     to the MCP client (no stack traces).
+
+    The ``scm_*`` kwargs are only consumed when *provider* is ``scm``
+    (live remote-repo scan); other providers ignore them.
     """
     if provider not in _PROVIDER_PATH_KW:
         raise ValueError(
@@ -109,6 +126,39 @@ def _provider_kwarg(provider: str, path: str | None) -> dict[str, Any]:
         )
     flag = _PROVIDER_PATH_KW[provider]
     if flag is None:
+        # ``scm`` is path-less but needs platform + repo (and optionally
+        # a fixture dir for offline tests). ``aws`` and any other
+        # path-less provider get the empty-kwargs path.
+        if provider == "scm":
+            if not scm_platform:
+                raise ValueError(
+                    "provider 'scm' requires scm_platform "
+                    "(one of: github, gitlab, bitbucket)."
+                )
+            if not scm_repo or "/" not in scm_repo:
+                raise ValueError(
+                    "provider 'scm' requires scm_repo in 'owner/name' form."
+                )
+            out: dict[str, Any] = {
+                "scm_platform": scm_platform,
+                "scm_repo":     scm_repo,
+            }
+            if scm_fixture_dir:
+                resolved_fx = Path(scm_fixture_dir).expanduser().resolve()
+                roots = _allowed_scan_roots()
+                if not any(_is_within(resolved_fx, root) for root in roots):
+                    raise ValueError(
+                        f"scm_fixture_dir {resolved_fx} is outside the MCP "
+                        f"server's allowed scan roots ("
+                        + ", ".join(str(r) for r in roots)
+                        + f"). Set {_SCAN_ROOTS_ENV} to widen."
+                    )
+                if not resolved_fx.exists():
+                    raise ValueError(
+                        f"scm_fixture_dir does not exist: {resolved_fx}"
+                    )
+                out["scm_fixture_dir"] = str(resolved_fx)
+            return out
         # AWS: no path, but accept ``path`` silently when supplied
         # so an agent guessing the call shape doesn't trip over it.
         return {}
@@ -185,20 +235,29 @@ def list_providers() -> dict[str, Any]:
 # don't depend on the ``scripts/`` directory, which is excluded from
 # the pip distribution (``MANIFEST.in`` ``prune scripts``).
 _RULES_FQN: dict[str, str] = {
-    "github":     "pipeline_check.core.checks.github.rules",
-    "gitlab":     "pipeline_check.core.checks.gitlab.rules",
-    "bitbucket":  "pipeline_check.core.checks.bitbucket.rules",
-    "azure":      "pipeline_check.core.checks.azure.rules",
-    "jenkins":    "pipeline_check.core.checks.jenkins.rules",
-    "circleci":   "pipeline_check.core.checks.circleci.rules",
-    "cloudbuild": "pipeline_check.core.checks.cloudbuild.rules",
-    "kubernetes": "pipeline_check.core.checks.kubernetes.rules",
-    "buildkite":  "pipeline_check.core.checks.buildkite.rules",
-    "tekton":     "pipeline_check.core.checks.tekton.rules",
-    "argo":       "pipeline_check.core.checks.argo.rules",
-    "drone":      "pipeline_check.core.checks.drone.rules",
-    "oci":        "pipeline_check.core.checks.oci.rules",
-    "dockerfile": "pipeline_check.core.checks.dockerfile.rules",
+    "github":         "pipeline_check.core.checks.github.rules",
+    "gitlab":         "pipeline_check.core.checks.gitlab.rules",
+    "bitbucket":      "pipeline_check.core.checks.bitbucket.rules",
+    "azure":          "pipeline_check.core.checks.azure.rules",
+    "jenkins":        "pipeline_check.core.checks.jenkins.rules",
+    "circleci":       "pipeline_check.core.checks.circleci.rules",
+    "cloudbuild":     "pipeline_check.core.checks.cloudbuild.rules",
+    "kubernetes":     "pipeline_check.core.checks.kubernetes.rules",
+    "buildkite":      "pipeline_check.core.checks.buildkite.rules",
+    "tekton":         "pipeline_check.core.checks.tekton.rules",
+    "argo":           "pipeline_check.core.checks.argo.rules",
+    "argocd":         "pipeline_check.core.checks.argocd.rules",
+    "drone":          "pipeline_check.core.checks.drone.rules",
+    "oci":            "pipeline_check.core.checks.oci.rules",
+    "dockerfile":     "pipeline_check.core.checks.dockerfile.rules",
+    "helm":           "pipeline_check.core.checks.helm.rules",
+    "cloudformation": "pipeline_check.core.checks.cloudformation.rules",
+    "terraform":      "pipeline_check.core.checks.terraform.rules",
+    "aws":            "pipeline_check.core.checks.aws.rules",
+    "scm":            "pipeline_check.core.checks.scm.rules",
+    "npm":            "pipeline_check.core.checks.npm.rules",
+    "pypi":           "pipeline_check.core.checks.pypi.rules",
+    "maven":          "pipeline_check.core.checks.maven.rules",
 }
 
 
@@ -387,6 +446,10 @@ def _run_scan(
     standards: list[str] | None = None,
     min_confidence: str = "LOW",
     severity_threshold: str | None = None,
+    diff_base: str | None = None,
+    scm_platform: str | None = None,
+    scm_repo: str | None = None,
+    scm_fixture_dir: str | None = None,
 ) -> tuple[Scanner, list[Finding]]:
     """Build a Scanner, run it, apply CLI-equivalent filters.
 
@@ -395,7 +458,12 @@ def _run_scan(
     JSON and pass them through to the markdown / threat-model
     reporters without a serialize / re-hydrate round trip.
     """
-    kwargs = _provider_kwarg(provider, path)
+    kwargs = _provider_kwarg(
+        provider, path,
+        scm_platform=scm_platform,
+        scm_repo=scm_repo,
+        scm_fixture_dir=scm_fixture_dir,
+    )
     threshold_rank = _CONFIDENCE_ORDER[Confidence(min_confidence.upper())]
 
     scanner = Scanner(
@@ -403,6 +471,7 @@ def _run_scan(
         region=region,
         profile=profile,
         chains_enabled=chains_enabled,
+        diff_base=diff_base,
         **kwargs,
     )
     findings = scanner.run(
@@ -433,6 +502,10 @@ def scan(
     no_chains: bool = False,
     min_confidence: str = "low",
     severity_threshold: str | None = None,
+    diff_base: str | None = None,
+    scm_platform: str | None = None,
+    scm_repo: str | None = None,
+    scm_fixture_dir: str | None = None,
 ) -> dict[str, Any]:
     """Run a scan and return findings + score + chains.
 
@@ -440,6 +513,14 @@ def scan(
     same structure for both this MCP tool and a stand-alone CLI
     invocation. Confidence and severity filters are applied here so
     the agent sees the same trimmed set the CLI gate would.
+
+    ``diff_base`` mirrors the CLI ``--diff-base`` flag: only files
+    touched since that git ref are scanned. Pair it with a feature
+    branch to mimic a PR-time scan; use ``scan_pr_diff`` for the
+    full base-vs-HEAD finding delta.
+
+    ``scm_platform`` / ``scm_repo`` are only consumed when
+    ``provider`` is ``scm``.
     """
     scanner, findings = _run_scan(
         provider, path,
@@ -448,6 +529,10 @@ def scan(
         checks=checks, standards=standards,
         min_confidence=min_confidence,
         severity_threshold=severity_threshold,
+        diff_base=diff_base,
+        scm_platform=scm_platform,
+        scm_repo=scm_repo,
+        scm_fixture_dir=scm_fixture_dir,
     )
     score_result = score(findings)
     chains_out: list[dict[str, Any]] = []
@@ -494,9 +579,17 @@ def inventory(
     region: str = "us-east-1",
     profile: str | None = None,
     type_pattern: str | None = None,
+    scm_platform: str | None = None,
+    scm_repo: str | None = None,
+    scm_fixture_dir: str | None = None,
 ) -> dict[str, Any]:
     """Return the component inventory for *provider*."""
-    kwargs = _provider_kwarg(provider, path)
+    kwargs = _provider_kwarg(
+        provider, path,
+        scm_platform=scm_platform,
+        scm_repo=scm_repo,
+        scm_fixture_dir=scm_fixture_dir,
+    )
     scanner = Scanner(
         pipeline=provider,
         region=region,
@@ -533,6 +626,9 @@ def threat_model(
     region: str = "us-east-1",
     profile: str | None = None,
     standards: list[str] | None = None,
+    scm_platform: str | None = None,
+    scm_repo: str | None = None,
+    scm_fixture_dir: str | None = None,
 ) -> dict[str, Any]:
     """Run a scan and return the STRIDE threat-model markdown.
 
@@ -545,6 +641,9 @@ def threat_model(
         region=region, profile=profile,
         chains_enabled=True,
         standards=standards,
+        scm_platform=scm_platform,
+        scm_repo=scm_repo,
+        scm_fixture_dir=scm_fixture_dir,
     )
     score_result = score(findings)
     components = scanner.inventory()
@@ -575,6 +674,9 @@ def scan_markdown(
     *,
     region: str = "us-east-1",
     profile: str | None = None,
+    scm_platform: str | None = None,
+    scm_repo: str | None = None,
+    scm_fixture_dir: str | None = None,
 ) -> dict[str, Any]:
     """Run a scan and return the GitHub-Flavored Markdown report.
 
@@ -583,6 +685,9 @@ def scan_markdown(
     """
     scanner, findings = _run_scan(
         provider, path, region=region, profile=profile,
+        scm_platform=scm_platform,
+        scm_repo=scm_repo,
+        scm_fixture_dir=scm_fixture_dir,
     )
     score_result = score(findings)
     chains = list(getattr(scanner, "chains", []) or [])
@@ -596,6 +701,149 @@ def scan_markdown(
             "failed": sum(1 for f in findings if not f.passed),
             "passed": sum(1 for f in findings if f.passed),
         },
+    }
+
+
+# ── Tool: scan_pr_diff ──────────────────────────────────────────────
+
+
+def _build_pr_diff_argv(
+    *,
+    provider: str,
+    path: str | None,
+    checks: list[str] | None,
+    standards: list[str] | None,
+    severity_threshold: str | None,
+    min_confidence: str,
+) -> list[str]:
+    """Build the minimal argv the BASE subprocess scan needs.
+
+    Mirrors the flags ``cli.py``'s ``_build_pr_diff_subprocess_argv``
+    propagates, scoped to the parameters the MCP ``scan_pr_diff`` tool
+    accepts. Anything that would shift the BASE finding set has to be
+    here; gate / output / fix / inventory flags are deliberately out.
+    """
+    argv: list[str] = ["--pipeline", provider]
+    flag = _PROVIDER_PATH_KW.get(provider)
+    if path and flag:
+        argv.extend([f"--{flag.replace('_', '-')}", path])
+    for c in checks or ():
+        argv.extend(["--checks", c])
+    for s in standards or ():
+        argv.extend(["--standard", s])
+    if severity_threshold:
+        argv.extend(["--severity-threshold", severity_threshold.upper()])
+    argv.extend(["--min-confidence", min_confidence.upper()])
+    # Chains aren't compared by the delta layer yet; suppressing them
+    # mirrors the CLI subprocess (faster, no functional difference).
+    argv.append("--no-chains")
+    return argv
+
+
+def scan_pr_diff(
+    provider: str,
+    base_ref: str,
+    path: str | None = None,
+    *,
+    region: str = "us-east-1",
+    profile: str | None = None,
+    checks: list[str] | None = None,
+    standards: list[str] | None = None,
+    min_confidence: str = "LOW",
+    severity_threshold: str | None = None,
+) -> dict[str, Any]:
+    """Compute the PR-diff delta between *base_ref* and HEAD.
+
+    Mirrors the CLI ``--pr-diff REF`` flow: scan HEAD in-process,
+    materialize *base_ref* in a throwaway ``git worktree``, scan that
+    in a subprocess, then partition findings into introduced /
+    resolved / preserved. Returns both the structured delta and the
+    rendered Markdown an agent can paste into a PR comment.
+
+    Notes for callers:
+
+    * Live providers (``aws``, ``scm``) don't have a meaningful BASE
+      side and are rejected up front, the CLI rejects the same
+      combination.
+    * ``fail-on`` semantics aren't applied here; the agent can read
+      ``summary.introduced_by_severity`` and decide itself whether
+      to block the PR.
+    """
+    if provider in ("aws", "scm"):
+        raise ValueError(
+            f"provider {provider!r} has no local BASE ref to diff against; "
+            f"scan_pr_diff is only meaningful for file-based providers."
+        )
+    # Lazy import so a bare ``import pipeline_check.mcp_server.tools``
+    # doesn't pull in the pr_diff module's git/subprocess plumbing.
+    from .. import __version__ as _version
+    from ..core.pr_diff import (
+        any_at_or_above as _any_at_or_above,
+    )
+    from ..core.pr_diff import (
+        run_pr_diff,
+    )
+    from ..core.pr_diff import (
+        severity_counts as _severity_counts,
+    )
+    from ..core.pr_diff_reporter import report_pr_diff
+
+    _scanner, head_findings = _run_scan(
+        provider, path,
+        region=region, profile=profile,
+        chains_enabled=False,
+        checks=checks, standards=standards,
+        min_confidence=min_confidence,
+        severity_threshold=severity_threshold,
+    )
+    head_findings_raw = [f.to_dict() for f in head_findings]
+    forwarded_argv = _build_pr_diff_argv(
+        provider=provider,
+        path=path,
+        checks=checks,
+        standards=standards,
+        severity_threshold=severity_threshold,
+        min_confidence=min_confidence,
+    )
+    delta = run_pr_diff(
+        base_ref,
+        head_findings_raw,
+        forwarded_argv,
+        cwd=".",
+    )
+    markdown = report_pr_diff(delta, tool_version=_version)
+    return {
+        "provider":   provider,
+        "base_ref":   delta.base_ref,
+        "base_commit": delta.base_commit,
+        "head_commit": delta.head_commit,
+        "markdown":   markdown,
+        "introduced": [_finding_ref_to_dict(f) for f in delta.introduced],
+        "resolved":   [_finding_ref_to_dict(f) for f in delta.resolved],
+        "preserved":  [_finding_ref_to_dict(f) for f in delta.preserved],
+        "warnings":   list(delta.warnings),
+        "summary": {
+            "introduced": len(delta.introduced),
+            "resolved":   len(delta.resolved),
+            "preserved":  len(delta.preserved),
+            "introduced_by_severity": dict(_severity_counts(delta.introduced)),
+            "gate_high_or_above": _any_at_or_above(delta.introduced, "HIGH"),
+            "gate_critical":      _any_at_or_above(delta.introduced, "CRITICAL"),
+        },
+    }
+
+
+def _finding_ref_to_dict(f: Any) -> dict[str, Any]:
+    """Project a ``pr_diff.FindingRef`` onto a JSON-safe dict."""
+    return {
+        "check_id":       f.check_id,
+        "title":          f.title,
+        "severity":       f.severity,
+        "confidence":     f.confidence,
+        "resource":       f.resource,
+        "description":    f.description,
+        "recommendation": f.recommendation,
+        "location_line":  f.location_line,
     }
 
 
@@ -615,6 +863,36 @@ def _enum_severity() -> list[str]:
 
 def _enum_confidence() -> list[str]:
     return [c.value for c in Confidence]
+
+
+# Shared schema fragments. Inlined into each tool's ``input_schema``
+# at module-import time so the JSON-Schema view a client sees is
+# self-contained (no $ref indirection).
+_SCM_PROPS: dict[str, Any] = {
+    "scm_platform": {
+        "type": "string",
+        "enum": ["github", "gitlab", "bitbucket"],
+        "description": (
+            "Live SCM platform. Required when ``provider`` is "
+            "``scm``; ignored otherwise."
+        ),
+    },
+    "scm_repo": {
+        "type": "string",
+        "description": (
+            "``owner/name`` slug of the live SCM repo. Required "
+            "when ``provider`` is ``scm``."
+        ),
+    },
+    "scm_fixture_dir": {
+        "type": "string",
+        "description": (
+            "Optional local fixture directory used in place of "
+            "live SCM API calls (offline / replay testing). "
+            "Honored only when ``provider`` is ``scm``."
+        ),
+    },
+}
 
 
 TOOL_SPECS: list[dict[str, Any]] = [
@@ -744,7 +1022,9 @@ TOOL_SPECS: list[dict[str, Any]] = [
                     "description": (
                         "Path to the file or directory to scan. "
                         "Required for every provider except "
-                        "``aws`` (which scans the live account)."
+                        "``aws`` (live account scan) and ``scm`` "
+                        "(live SCM-repo scan via scm_platform / "
+                        "scm_repo)."
                     ),
                 },
                 "region": {"type": "string", "default": "us-east-1"},
@@ -777,6 +1057,17 @@ TOOL_SPECS: list[dict[str, Any]] = [
                         "the result."
                     ),
                 },
+                "diff_base": {
+                    "type": "string",
+                    "description": (
+                        "Optional git ref. When set, only files "
+                        "touched since this ref are scanned "
+                        "(mirrors --diff-base). For the full "
+                        "base-vs-HEAD finding delta use "
+                        "``scan_pr_diff`` instead."
+                    ),
+                },
+                **_SCM_PROPS,
             },
             "required": ["provider"],
             "additionalProperties": False,
@@ -807,6 +1098,7 @@ TOOL_SPECS: list[dict[str, Any]] = [
                         "component type field."
                     ),
                 },
+                **_SCM_PROPS,
             },
             "required": ["provider"],
             "additionalProperties": False,
@@ -834,6 +1126,7 @@ TOOL_SPECS: list[dict[str, Any]] = [
                     "type": "array",
                     "items": {"type": "string"},
                 },
+                **_SCM_PROPS,
             },
             "required": ["provider"],
             "additionalProperties": False,
@@ -856,11 +1149,82 @@ TOOL_SPECS: list[dict[str, Any]] = [
                 "path": {"type": "string"},
                 "region": {"type": "string", "default": "us-east-1"},
                 "profile": {"type": "string"},
+                **_SCM_PROPS,
             },
             "required": ["provider"],
             "additionalProperties": False,
         },
         "fn": lambda **kw: scan_markdown(**kw),
+    },
+    {
+        "name": "scan_pr_diff",
+        "description": (
+            "Compute the PR-time finding delta between a git base ref "
+            "and HEAD (mirrors --pr-diff). HEAD is scanned in-process; "
+            "BASE is scanned in a throwaway ``git worktree`` "
+            "subprocess. Returns structured introduced / resolved / "
+            "preserved lists plus the rendered Markdown PR comment. "
+            "Not supported for the ``aws`` or ``scm`` live providers."
+        ),
+        "input_schema": {
+            "type": "object",
+            "properties": {
+                "provider": {
+                    "type": "string",
+                    "enum": [
+                        p for p in _PROVIDER_ENUM
+                        if p not in ("aws", "scm")
+                    ],
+                },
+                "base_ref": {
+                    "type": "string",
+                    "description": (
+                        "Git ref to diff against (branch, tag, or "
+                        "commit). Common values: ``origin/main``, "
+                        "``HEAD~1``, the PR's merge-base."
+                    ),
+                },
+                "path": {
+                    "type": "string",
+                    "description": (
+                        "Path to scan on the HEAD side; the BASE "
+                        "scan re-uses the same path inside the "
+                        "worktree."
+                    ),
+                },
+                "region": {"type": "string", "default": "us-east-1"},
+                "profile": {"type": "string"},
+                "checks": {
+                    "type": "array",
+                    "items": {"type": "string"},
+                    "description": (
+                        "Optional list of check ids to run "
+                        "exclusively on both sides."
+                    ),
+                },
+                "standards": {
+                    "type": "array",
+                    "items": {"type": "string"},
+                    "description": "Optional standards filter.",
+                },
+                "min_confidence": {
+                    "type": "string",
+                    "enum": _enum_confidence(),
+                    "default": "LOW",
+                },
+                "severity_threshold": {
+                    "type": "string",
+                    "enum": _enum_severity(),
+                    "description": (
+                        "Optional minimum severity applied to "
+                        "both sides before delta computation."
+                    ),
+                },
+            },
+            "required": ["provider", "base_ref"],
+            "additionalProperties": False,
+        },
+        "fn": lambda **kw: scan_pr_diff(**kw),
     },
 ]
 

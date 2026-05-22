@@ -41,7 +41,7 @@ def check(catalog: ResourceCatalog) -> list[Finding]:
     try:
         sts = catalog.client("sts").get_caller_identity()
         self_account = sts.get("Account", "")
-    except Exception:  # noqa: BLE001
+    except Exception:
         self_account = ""
     for repo in catalog.codecommit_repositories():
         name = repo.get("repositoryName", "<unnamed>")

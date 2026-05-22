@@ -28,6 +28,14 @@ _SEVERITY_BADGE: dict[str, str] = {
 # renders first; an unknown severity is bucketed at the end.
 _SECTION_ORDER: tuple[str, ...] = ("CRITICAL", "HIGH", "MEDIUM", "LOW", "INFO")
 
+#: Hard cap on how many preserved findings render inside the
+#: ``<details>`` block. A long-lived branch can accumulate hundreds
+#: of preserved findings; embedding them all risks the GitHub
+#: comment-body 65k-character ceiling. Beyond the cap we emit a
+#: single "+N more" footer inside the same details block so the
+#: total count stays visible without bloating the comment.
+_MAX_PRESERVED_RENDERED = 50
+
 
 def _badge(severity: str) -> str:
     return _SEVERITY_BADGE.get(severity.upper(), severity.upper())
@@ -125,15 +133,25 @@ def _render_preserved_section(preserved: list[FindingRef]) -> list[str]:
     keeps the visible comment body short on long-running branches
     that accumulate many preserved findings, while still allowing
     expansion when someone wants the full picture.
+
+    Render is capped at :data:`_MAX_PRESERVED_RENDERED` items. Past
+    that point we emit a single "+N more" footer inside the same
+    details block so the total stays visible without bloating the
+    comment. The cap applies *after* the global severity sort done
+    by :func:`compute_delta`, so the rendered subset is the most
+    severe N findings, not an arbitrary slice.
     """
     if not preserved:
         return []
+    total = len(preserved)
+    truncated = total > _MAX_PRESERVED_RENDERED
+    visible = preserved[:_MAX_PRESERVED_RENDERED] if truncated else preserved
     out: list[str] = [
-        f"<details><summary>Preserved findings ({len(preserved)}) "
-        f"— present in both base and HEAD</summary>",
+        f"<details><summary>Preserved findings ({total}), "
+        f"present in both base and HEAD</summary>",
         "",
     ]
-    grouped = _group_by_severity(preserved)
+    grouped = _group_by_severity(visible)
     for sev in _SECTION_ORDER:
         items = grouped.get(sev) or []
         if not items:
@@ -152,6 +170,13 @@ def _render_preserved_section(preserved: list[FindingRef]) -> list[str]:
         for f in items:
             title = f.title or ""
             out.append(f"- **{f.check_id}** {title} {_location(f)}")
+        out.append("")
+    if truncated:
+        omitted = total - _MAX_PRESERVED_RENDERED
+        out.append(
+            f"_+{omitted} more preserved finding(s) not shown "
+            f"(rendered the {_MAX_PRESERVED_RENDERED} most severe)._"
+        )
         out.append("")
     out.append("</details>")
     out.append("")

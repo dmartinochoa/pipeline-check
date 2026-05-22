@@ -1,0 +1,17 @@
+name: scenario-27-fixed
+on:
+  push:
+    branches: [main]
+permissions:
+  contents: read
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332
+      - name: Deploy (boolean confirmation, no derived form)
+        env:
+          API_KEY: ${{ secrets.API_KEY }}
+        run: |
+          [ -n "$API_KEY" ] && echo "deploy key set" || echo "missing"
+          curl -fsS -H "Authorization: Bearer $API_KEY" https://api.example.com/deploy

@@ -195,6 +195,19 @@ STANDARD = Standard(
         "GHA-060":  ["SR-3", "SR-11", "SI-7"],            # pip install without --require-hashes
         "GHA-061":  ["AC-6", "IA-5"],                     # App token minted without permissions filter
         "GHA-062":  ["AC-3", "AC-6"],                     # OIDC trust subject in sibling IaC is overly broad
+        "GHA-063":  ["AC-3", "SI-7"],                     # spoofable bot-actor if-predicate
+        "GHA-064":  ["SA-10", "AC-3"],                    # unsound contains() with comma-string operand
+        "GHA-065":  ["SI-7", "SA-10"],                    # zero-width / bidi unicode in workflow body
+        "GHA-066":  ["AU-9", "IA-5"],                     # upload-artifact wildcard sweeps workspace
+        "GHA-067":  ["IA-5", "SC-28"],                    # cache step publishes credential-shaped paths
+        "GHA-068":  ["SI-2", "CM-2"],                     # runs-on targets a deprecated hosted runner
+        "GHA-069":  ["AC-6", "CM-7"],                     # orphan id-token: write scope
+        "GHA-070":  ["SC-8", "IA-5"],                     # ssh-keyscan / host-key check TOFU
+        "GHA-071":  ["SA-11"],                            # powershell on Linux / macOS step
+        "GHA-072":  ["IA-5", "AC-6"],                     # secret env: at wider scope than consumer
+        "GHA-073":  ["IA-5", "CM-7"],                     # unused workflow_call.secrets declaration
+        "GHA-086":  ["SA-10", "AC-3"],                    # wildcard branch trigger + environment binding
+        "GHA-087":  ["IA-5", "AU-9"],                     # derived-value of secret printed to log
         # GitLab CI
         "GL-001":   ["SR-3", "SR-11", "SI-2"],
         "GL-002":   ["SI-7", "SA-11", "CM-6"],

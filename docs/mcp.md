@@ -30,12 +30,20 @@ The server exposes the following tools. Schemas are advertised through `tools/li
 | `list_chains` | Every registered attack chain. |
 | `explain_chain` | Full reference for one attack chain id (MITRE ATT&CK techniques, kill-chain phase, references). |
 | `list_standards` | Every registered compliance standard with control counts. |
-| `scan` | Run a scan and return findings + score + chains. STRIDE codes attached to each finding. |
+| `scan` | Run a scan and return findings + score + chains. STRIDE codes attached to each finding. Honors `diff_base` for branch-scoped file filtering. |
 | `inventory` | Component inventory for a provider + path. |
 | `threat_model` | Run a scan and return the STRIDE-mapped Markdown threat-model document. See [threatmodel.md](threatmodel.md) for what's in the document. |
 | `scan_markdown` | Run a scan and return the GitHub-Flavored Markdown summary (PR-comment shape). |
+| `scan_pr_diff` | Compute the introduced / resolved / preserved finding delta between a git base ref and HEAD. Mirrors `--pr-diff`. Returns the structured delta plus the rendered Markdown PR comment. Not supported for `aws` or `scm` (no local BASE ref). |
 
 Every tool returns JSON-serializable data. Errors come back as `{"error": "..."}` payloads, never as raw stack traces.
+
+### Providers
+
+The catalog covers every provider pipeline-check ships, including the
+supply-chain providers (`npm`, `pypi`, `maven`), `argocd`, and the live
+remote-SCM provider (`scm`, scanned via `scm_platform` + `scm_repo`
+instead of a local path). `list_providers` is the source of truth.
 
 ## Claude Desktop config
 

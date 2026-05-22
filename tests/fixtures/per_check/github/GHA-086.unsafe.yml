@@ -1,0 +1,16 @@
+name: scenario-25-environment-branch-pattern-bypass
+on:
+  push:
+    branches: ['main*']
+permissions:
+  contents: read
+  id-token: write
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment:
+      name: production
+      url: https://prod.example.com
+    steps:
+      - uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332
+      - run: ./deploy.sh

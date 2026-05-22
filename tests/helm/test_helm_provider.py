@@ -139,7 +139,7 @@ class TestProviderReusesK8sRules:
         from pipeline_check.core.checks.helm import base as helm_base
         from pipeline_check.core.checks.helm.render import RenderResult
 
-        def fake_render(chart_path, **_):  # noqa: ARG001
+        def fake_render(chart_path, **_):
             return RenderResult(
                 yaml=RENDERED_SAMPLE,
                 source_templates=_extract_source_templates(RENDERED_SAMPLE),

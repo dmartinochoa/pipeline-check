@@ -63,7 +63,7 @@ class ResourceCatalog:
             svc = key.split(":", 1)[0]
             self.errors.setdefault(svc, str(exc))
             value = []
-        except Exception as exc:  # noqa: BLE001
+        except Exception as exc:
             # In restricted environments or tests where session.client()
             # rejects an unconfigured service (KeyError from a stubbed
             # side_effect), treat it the same as an API access failure:
@@ -587,7 +587,7 @@ class ResourceCatalog:
                 return client.describe_pull_through_cache_rules().get(
                     "pullThroughCacheRules", []
                 )
-            except Exception:  # noqa: BLE001
+            except Exception:
                 return []
         return self._memo("ecr:ptc", _load)
 

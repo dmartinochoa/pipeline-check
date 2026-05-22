@@ -63,7 +63,7 @@ RULE = Rule(
 def check(catalog: ResourceCatalog) -> list[Finding]:
     try:
         client = catalog.client("signer")
-    except Exception:  # noqa: BLE001
+    except Exception:
         return []
     try:
         resp = client.list_signing_profiles(includeCanceled=True)

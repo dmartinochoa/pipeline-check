@@ -1,0 +1,12 @@
+name: artipacked-wildcard
+on: push
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332
+      - run: ./build.sh
+      - uses: actions/upload-artifact@692973e3d937129bcbf40652eb9f2f61becf3332
+        with:
+          name: debug-bundle
+          path: .

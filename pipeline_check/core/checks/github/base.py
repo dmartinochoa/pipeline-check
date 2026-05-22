@@ -103,6 +103,22 @@ class GitHubContext:
             if not isinstance(data, dict):
                 continue
             workflows.append(Workflow(path=str(entry.path), data=data))
+        # Discover local composite actions referenced via
+        # ``uses: ./path`` and synthesize them as ``__composite__``
+        # job workflows so the rule pack runs against their bodies.
+        # On by default (no network needed); inference falls back to
+        # the directory's parent for ad-hoc test layouts.
+        from .local_actions import (
+            discover_local_composite_actions,
+            infer_repo_root,
+        )
+        repo_root = infer_repo_root(root)
+        if repo_root is not None:
+            synthesized, action_warnings = discover_local_composite_actions(
+                workflows, repo_root,
+            )
+            workflows.extend(synthesized)
+            warnings.extend(action_warnings)
         ctx = cls(workflows)
         ctx.files_skipped = skipped
         ctx.warnings = warnings

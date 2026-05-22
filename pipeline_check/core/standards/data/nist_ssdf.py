@@ -206,6 +206,19 @@ STANDARD = Standard(
         "GHA-060":  ["PW.4.4"],                        # pip install without --require-hashes
         "GHA-061":  ["PS.1.1"],                        # App token minted without permissions filter
         "GHA-062":  ["PO.5.1"],                        # OIDC trust subject in sibling IaC is overly broad
+        "GHA-063":  ["PO.5.1"],                        # spoofable bot-actor if-predicate
+        "GHA-064":  ["PO.5.1"],                        # unsound contains() with comma-string operand
+        "GHA-065":  ["PW.6.1"],                        # zero-width / bidi unicode in workflow body
+        "GHA-066":  ["PS.1.1"],                        # upload-artifact wildcard sweeps workspace
+        "GHA-067":  ["PS.1.1"],                        # cache step publishes credential-shaped paths
+        "GHA-068":  ["PW.4.1"],                        # runs-on targets a deprecated hosted runner
+        "GHA-069":  ["PO.5.1"],                        # orphan id-token: write scope
+        "GHA-070":  ["PW.4.4"],                        # ssh-keyscan / host-key check TOFU
+        "GHA-071":  ["PW.6.1"],                        # powershell on Linux / macOS step
+        "GHA-072":  ["PS.1.1"],                        # secret env: at wider scope than consumer
+        "GHA-073":  ["PS.1.1"],                        # unused workflow_call.secrets declaration
+        "GHA-086":  ["PO.5.1"],                        # wildcard branch trigger + environment binding
+        "GHA-087":  ["PS.1.1"],                        # derived-value of secret printed to log
         # GitLab CI
         "GL-001":   ["PW.4.1", "PW.4.4"],
         "GL-002":   ["PW.6.1", "PW.9.1"],

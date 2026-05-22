@@ -492,6 +492,19 @@ STANDARD = Standard(
         "GHA-060":  ["GV.SC-05"],               # pip install without --require-hashes
         "GHA-061":  ["PR.AA-05"],               # App token minted without permissions filter
         "GHA-062":  ["PR.AA-05"],               # OIDC trust subject in sibling IaC is overly broad
+        "GHA-063":  ["PR.AA-01"],               # spoofable bot-actor if-predicate
+        "GHA-064":  ["PR.PS-06"],               # unsound contains() with comma-string operand
+        "GHA-065":  ["PR.PS-05"],               # zero-width / bidi unicode in workflow body
+        "GHA-066":  ["PR.DS-01"],               # upload-artifact wildcard sweeps workspace
+        "GHA-067":  ["PR.DS-01"],               # cache step publishes credential-shaped paths
+        "GHA-068":  ["PR.PS-02"],               # runs-on targets a deprecated hosted runner
+        "GHA-069":  ["PR.AA-05"],               # orphan id-token: write scope
+        "GHA-070":  ["PR.DS-02"],               # ssh-keyscan / host-key check TOFU
+        "GHA-071":  ["PR.PS-05"],               # powershell on Linux / macOS step
+        "GHA-072":  ["PR.AA-01", "PR.DS-01"],   # secret env: at wider scope than consumer
+        "GHA-073":  ["PR.AA-01"],               # unused workflow_call.secrets declaration
+        "GHA-086":  ["PR.PS-06"],               # wildcard branch trigger + environment binding
+        "GHA-087":  ["PR.AA-01", "PR.DS-01"],   # derived-value of secret printed to log
         # ── GitLab CI ─────────────────────────────────────────────
         "GL-004":  ["PR.PS-06"],                # manual deploy allow_failure
         "GL-029":  ["PR.PS-06"],                # manual deploy allow_failure (variant)

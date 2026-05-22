@@ -223,7 +223,7 @@ class OllamaClient:
             method="POST",
         )
         try:
-            with urllib.request.urlopen(req, timeout=120) as resp:  # noqa: S310
+            with urllib.request.urlopen(req, timeout=120) as resp:
                 payload = json.load(resp)
         except urllib.error.URLError as exc:
             raise AIRequestError(

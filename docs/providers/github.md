@@ -72,14 +72,14 @@ Resolution rules:
 
 ## What it covers
 
-65 checks · 17 have an autofix patch (``--fix``).
+78 checks · 17 have an autofix patch (``--fix``).
 
 | Check | Title | Severity | Fix |
 |-------|-------|----------|-----|
 | [GHA-001](#gha-001) | Action not pinned to commit SHA | <span class="pg-sev pg-sev--high">HIGH</span> | <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> |
 | [GHA-002](#gha-002) | pull_request_target checks out PR head | <span class="pg-sev pg-sev--critical">CRITICAL</span> | <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> |
 | [GHA-003](#gha-003) | Script injection via untrusted context | <span class="pg-sev pg-sev--high">HIGH</span> | <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> |
-| [GHA-004](#gha-004) | Workflow has no explicit permissions block | <span class="pg-sev pg-sev--medium">MEDIUM</span> | <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> |
+| [GHA-004](#gha-004) | Workflow permissions block missing or overprovisioned | <span class="pg-sev pg-sev--medium">MEDIUM</span> | <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> |
 | [GHA-005](#gha-005) | AWS auth uses long-lived access keys | <span class="pg-sev pg-sev--medium">MEDIUM</span> | <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> |
 | [GHA-006](#gha-006) | Artifacts not signed (no cosign/sigstore step) | <span class="pg-sev pg-sev--medium">MEDIUM</span> |  |
 | [GHA-007](#gha-007) | SBOM not produced (no CycloneDX/syft/Trivy-SBOM step) | <span class="pg-sev pg-sev--medium">MEDIUM</span> |  |
@@ -138,6 +138,19 @@ Resolution rules:
 | [GHA-060](#gha-060) | pip install without `--require-hashes` verification | <span class="pg-sev pg-sev--medium">MEDIUM</span> |  |
 | [GHA-061](#gha-061) | GitHub App token minted without a `permissions:` filter | <span class="pg-sev pg-sev--medium">MEDIUM</span> |  |
 | [GHA-062](#gha-062) | OIDC subject claim in sibling IaC grants overly broad scope | <span class="pg-sev pg-sev--high">HIGH</span> |  |
+| [GHA-063](#gha-063) | ``if:`` predicate gates on a spoofable bot-actor comparison | <span class="pg-sev pg-sev--high">HIGH</span> |  |
+| [GHA-064](#gha-064) | ``contains()`` invoked with comma-delimited string operand | <span class="pg-sev pg-sev--high">HIGH</span> |  |
+| [GHA-065](#gha-065) | Workflow body contains zero-width or bidi Unicode characters | <span class="pg-sev pg-sev--critical">CRITICAL</span> |  |
+| [GHA-066](#gha-066) | ``actions/upload-artifact`` path is a workspace wildcard | <span class="pg-sev pg-sev--high">HIGH</span> |  |
+| [GHA-067](#gha-067) | ``actions/cache`` writes credential-shaped paths | <span class="pg-sev pg-sev--high">HIGH</span> |  |
+| [GHA-068](#gha-068) | ``runs-on:`` targets an end-of-life hosted-runner image | <span class="pg-sev pg-sev--medium">MEDIUM</span> |  |
+| [GHA-069](#gha-069) | ``id-token: write`` granted without an OIDC-consumer step | <span class="pg-sev pg-sev--medium">MEDIUM</span> |  |
+| [GHA-070](#gha-070) | ``ssh-keyscan`` / disabled host-key check trust-on-first-use | <span class="pg-sev pg-sev--high">HIGH</span> |  |
+| [GHA-071](#gha-071) | ``shell: pwsh`` / ``powershell`` on a Linux / macOS step | <span class="pg-sev pg-sev--low">LOW</span> |  |
+| [GHA-072](#gha-072) | Secret in env: at a wider scope than its consumer | <span class="pg-sev pg-sev--high">HIGH</span> |  |
+| [GHA-073](#gha-073) | Reusable workflow declares an unused ``workflow_call`` secret | <span class="pg-sev pg-sev--medium">MEDIUM</span> |  |
+| [GHA-086](#gha-086) | Wildcard branch trigger gates an environment-bound deploy | <span class="pg-sev pg-sev--medium">MEDIUM</span> |  |
+| [GHA-087](#gha-087) | Derived value of a secret printed to the build log | <span class="pg-sev pg-sev--high">HIGH</span> |  |
 | [TAINT-001](#taint-001) | Untrusted input flows across step boundaries via step outputs | <span class="pg-sev pg-sev--high">HIGH</span> |  |
 | [TAINT-002](#taint-002) | Untrusted input flows across jobs via ``jobs.<id>.outputs:`` | <span class="pg-sev pg-sev--high">HIGH</span> |  |
 | [TAINT-003](#taint-003) | Untrusted input forwarded into reusable workflow ``with:`` | <span class="pg-sev pg-sev--high">HIGH</span> |  |
@@ -221,7 +234,7 @@ Pass untrusted values through an intermediate `env:` variable and reference that
 
 <div class="pg-rule pg-rule--medium" markdown>
 
-## GHA-004: Workflow has no explicit permissions block { #gha-004 }
+## GHA-004: Workflow permissions block missing or overprovisioned { #gha-004 }
 
 <div class="pg-rule__tags">
 <span class="pg-sev pg-sev--medium">MEDIUM</span> <span class="pg-fix pg-fix--rule" title="`--fix` will patch this rule">🔧 autofix</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-5</span> <span class="pg-tag pg-tag--esf">ESF-C-LEAST-PRIV</span> <span class="pg-tag pg-tag--cwe">CWE-250</span>
@@ -229,15 +242,17 @@ Pass untrusted values through an intermediate `env:` variable and reference that
 
 Without an explicit `permissions:` block (either top-level or per-job), the GITHUB_TOKEN inherits the repository's default scope, typically `write`. A compromised step receives far more privilege than it needs.
 
+Beyond the missing-block case, the rule also flags over-grants: a job that declares ``packages: write`` but never runs ``docker push`` / ``npm publish`` / ``gh release upload``, a job that declares ``issues: write`` but never calls ``gh issue ...``, a job that declares ``security-events: write`` but never invokes a SARIF uploader, etc. Wildcard consumers (``actions/github-script``) suppress the flag because they can reach any scope through the GitHub API.
+
 **Known false-positive modes**
 
-- Read-only / lint-only workflows that do not call any write-scoped API often pass without an explicit block because the default token scope on public repos is read. The rule defaults to MEDIUM confidence to reflect this.
+- Read-only / lint-only workflows that do not call any write-scoped API often pass without an explicit block because the default token scope on public repos is read. The rule defaults to MEDIUM confidence to reflect this. For the overprovisioned-scope case, false positives can appear when a workflow consumes a scope through a third-party action this rule's consumer list doesn't recognize yet, file an issue to extend the catalog when discovered.
 
 <div class="pg-rule__rec" markdown>
 
 **Recommended action**
 
-Add a top-level `permissions:` block (start with `contents: read`) and grant additional scopes only on the specific jobs that need them.
+Add a top-level `permissions:` block (start with `contents: read`) and grant additional scopes only on the specific jobs that need them. For job-level blocks, prune any write scope no step in the job actually uses, the rule names the specific scopes the job's steps don't justify.
 
 </div>
 
@@ -891,7 +906,7 @@ Out of scope (deliberate carve-out): inline secret references in a command's *ar
 
 **Recommended action**
 
-Don't print secret values from a script. GitHub's log redaction is a best-effort string match. It doesn't catch base64 / urlencoded / partial substrings, and any caller that retrieves the raw log via the API gets the unredacted stream. If you need to confirm the secret exists, log a boolean (``[ -n "$X" ] && echo set || echo unset``) or a fingerprint (``echo "$X" | sha256sum | head -c8``), never the value itself.
+Don't print secret values from a script. GitHub's log redaction is a best-effort string match. It doesn't catch base64 / urlencoded / partial substrings, and any caller that retrieves the raw log via the API gets the unredacted stream. If you need to confirm the secret exists, log a boolean (``[ -n "$X" ] && echo set || echo unset``), never the value itself. Note: a SHA-256 fingerprint or a ``${X:0:N}`` prefix is not a safe substitute either, those shapes still slip past the masker and are flagged by GHA-087 separately.
 
 </div>
 
@@ -1782,6 +1797,455 @@ Fires once per offending IaC file with a finding location pointing at the file. 
 **Recommended action**
 
 Pin the OIDC subject claim to a specific repository (and ideally a specific branch / environment ref). For AWS IAM trust policies, replace ``StringLike`` ``token.actions.githubusercontent.com:sub`` values like ``repo:*`` or ``repo:<org>/*`` with ``repo:<org>/<repo>:ref:refs/heads/main`` (or ``:environment:<name>`` for environment-scoped tokens). For GCP Workload Identity Federation, replace ``attribute_condition`` predicates that only check the org prefix (``attribute.repository.startsWith('myorg/')``) with an equality on the exact ``<org>/<repo>`` plus branch / environment attributes.
+
+</div>
+
+</div>
+
+<div class="pg-rule pg-rule--high" markdown>
+
+## GHA-063: ``if:`` predicate gates on a spoofable bot-actor comparison { #gha-063 }
+
+<div class="pg-rule__tags">
+<span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-1</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-4</span> <span class="pg-tag pg-tag--esf">ESF-D-INJECTION</span> <span class="pg-tag pg-tag--cwe">CWE-290</span>
+</div>
+
+Fires when a job-level or step-level ``if:`` expression compares one of the three actor-side context fields (``github.actor``, ``github.triggering_actor``, ``github.event.sender.login``) to a bot login. Three spelling variations are detected:
+
+1. Equality against a literal ``*[bot]`` string:
+   ``github.actor == 'dependabot[bot]'``.
+2. ``contains(github.actor, 'bot')`` and the related ``endsWith(github.actor, '[bot]')`` shortcut.
+3. Inequality used as a gate (``!= 'dependabot[bot]'``) is also flagged because the inverted form has the same spoofability surface.
+
+Out of scope (deliberate carve-out): predicates that pair the actor check with ``github.event.pull_request.user.type == 'Bot'`` are not flagged. The ``type`` field is set by GitHub from the account's registration record, not from the trigger, and a re-run can't forge it. The rule fires only when the actor comparison stands alone.
+
+**Known false-positive modes**
+
+- A workflow that legitimately wants to display a different log message when re-run by the bot (e.g. for human-readable triage) and isn't using the predicate as a security gate. Suppress per-step via ignore-file. Note that ``${{ github.actor != 'dependabot[bot]' }}`` as a *display* condition is still flagged because the rule can't tell display from gate; in practice the same expression is reused for both.
+
+**Seen in the wild**
+
+- zizmor v1.25.2 ``bot-conditions`` audit: https://docs.zizmor.sh/audits/#bot-conditions
+
+<div class="pg-rule__rec" markdown>
+
+**Recommended action**
+
+Don't gate on ``github.actor`` / ``github.triggering_actor`` / ``github.event.sender.login``. Any maintainer with write access can re-run a workflow, which sets those fields to the re-runner's login, and on a PR they were merging the bot's side-effects can ride along. Use authenticated signals: ``github.event.pull_request.user.type == 'Bot'`` together with a specific ``login`` check, or a maintainer-controlled label / CODEOWNERS gate.
+
+</div>
+
+</div>
+
+<div class="pg-rule pg-rule--high" markdown>
+
+## GHA-064: ``contains()`` invoked with comma-delimited string operand { #gha-064 }
+
+<div class="pg-rule__tags">
+<span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-1</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-4</span> <span class="pg-tag pg-tag--esf">ESF-D-INJECTION</span> <span class="pg-tag pg-tag--cwe">CWE-697</span>
+</div>
+
+Fires when an ``if:`` expression invokes ``contains(<string-literal>, <expr>)`` where the string literal contains a comma. The comma is the author's tell, they meant the literal to be a list. Substring matches on a no-comma literal (``contains('refs/heads/release', github.ref)``) are not flagged, they're often intentional prefix / suffix checks. Both single and double quote styles are detected.
+
+Argument-order matters: ``contains(<haystack>, <needle>)``. Only the left operand (haystack) is checked; the right operand can be any expression.
+
+**Known false-positive modes**
+
+- A literal that happens to contain a comma but is genuinely meant as a single search string (a free-form PR title fragment, e.g. ``contains('feat:, fix:', github.event.pull_request.title)``). These are rare; almost every comma-in-literal is a list-confusion bug. Suppress per-step via ignore-file when audited.
+
+**Seen in the wild**
+
+- zizmor v1.25.2 ``unsound-contains`` audit: https://docs.zizmor.sh/audits/#unsound-contains
+
+<div class="pg-rule__rec" markdown>
+
+**Recommended action**
+
+Replace the string left operand with an explicit array. ``contains(fromJSON('["main", "develop"]'), github.ref_name)`` is the canonical fix. For very short lists, fan out: ``github.ref_name == 'main' || github.ref_name == 'develop'``. Avoid relying on the string form being substring-matched, both because it's rarely the intent and because a substring match across an attacker-controlled context (``github.head_ref`` etc.) is itself a foot-gun (see GHA-053).
+
+</div>
+
+</div>
+
+<div class="pg-rule pg-rule--critical" markdown>
+
+## GHA-065: Workflow body contains zero-width or bidi Unicode characters { #gha-065 }
+
+<div class="pg-rule__tags">
+<span class="pg-sev pg-sev--critical">CRITICAL</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-4</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-6</span> <span class="pg-tag pg-tag--esf">ESF-D-INJECTION</span> <span class="pg-tag pg-tag--cwe">CWE-1007</span>
+</div>
+
+Walks every string value in the parsed workflow document (``run:`` bodies, ``with:`` values, ``env:`` values, ``if:`` expressions, etc.) for any of the following Unicode codepoints:
+
+* **Zero-width:** ``U+200B`` (zero-width space), ``U+200C`` (zero-width non-joiner), ``U+200D`` (zero-width joiner), ``U+FEFF`` (zero-width no-break space / BOM).
+* **Bidi controls:** ``U+200E`` (LRM), ``U+200F`` (RLM), ``U+202A``-``U+202E`` (LRE / RLE / PDF / LRO / RLO), ``U+2066``-``U+2069`` (LRI / RLI / FSI / PDI).
+
+Any single occurrence fires the rule. Reports the containing key path and codepoint count so the offender can be located in a possibly-large body. The rule is deliberately strict: no carve-out for ``# UTF-8 BOM`` at the start of the file (a BOM in YAML is treated as an opaque character by every parser; reject it). No carve-out for ``zero-width joiner`` in a comment because comments aren't preserved through PyYAML parsing, the visible string values are.
+
+**Known false-positive modes**
+
+- Workflows that legitimately echo internationalized text in a release-notes pipeline. Audit each occurrence; almost every case is unintentional or actively malicious. Suppress per-step via ignore-file when the presence is documented and the surrounding code has been reviewed against the visual-vs-parsed shape question.
+
+**Seen in the wild**
+
+- Boucher & Anderson, ``Trojan Source: Invisible Vulnerabilities`` (2021): https://trojansource.codes/
+- zizmor proposal #914 (workflow-bidi-unicode audit): https://github.com/zizmorcore/zizmor/issues/914
+
+<div class="pg-rule__rec" markdown>
+
+**Recommended action**
+
+Strip zero-width and bidi characters from the workflow. Then enforce a PR check that rejects any newly-introduced occurrence: ``rg --no-pcre2 '[\x{200B}-\x{200F}\x{202A}-\x{202E}\x{2066}-\x{2069}\x{FEFF}]' .github/`` should match no files. CI workflows don't need any of these characters for legitimate purposes.
+
+</div>
+
+</div>
+
+<div class="pg-rule pg-rule--high" markdown>
+
+## GHA-066: ``actions/upload-artifact`` path is a workspace wildcard { #gha-066 }
+
+<div class="pg-rule__tags">
+<span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-6</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-9</span> <span class="pg-tag pg-tag--esf">ESF-D-SECRETS</span> <span class="pg-tag pg-tag--cwe">CWE-200</span> <span class="pg-tag pg-tag--cwe">CWE-538</span>
+</div>
+
+Fires when a step's ``uses:`` matches ``actions/upload-artifact`` (any major version) AND its ``with.path:`` value is one of:
+
+* ``**/*`` (recursive everything),
+* ``.`` (current directory),
+* ``/`` or ``./`` (root),
+* ``${{ github.workspace }}`` (the entire workspace),
+* ``${{ github.workspace }}/**`` and similar suffixes.
+
+Multi-line ``path:`` values (a YAML scalar block listing multiple paths) are scanned line by line; one wildcard line is enough to fire. The rule pairs with GHA-019 (the credential-persistence side: an unconstrained upload after an unconstrained checkout is the full ArtiPACKED chain).
+
+**Known false-positive modes**
+
+- A workflow that genuinely wants to archive the whole build output as a release artifact in a job whose GITHUB_TOKEN was already minimized (``persist-credentials: false`` on the checkout step, no ``id-token: write``) and where ``.git/`` isn't checked out (or was removed). Suppress per-step via ignore-file when the operator has audited that the archive doesn't carry credential-shaped files. Note that an ``id-token: write``-scoped workflow is never safe to wildcard-upload from.
+
+**Seen in the wild**
+
+- ArtiPACKED (Palo Alto Unit 42, 2024): https://unit42.paloaltonetworks.com/github-repo-artifacts-leak-tokens/
+- zizmor proposal #195 (artifact-poisoning audit): https://github.com/zizmorcore/zizmor/issues/195
+
+<div class="pg-rule__rec" markdown>
+
+**Recommended action**
+
+Replace the wildcard with a minimal allowlist of artifact paths. ``path: build/`` (or ``path: |\n  dist/\n  coverage.xml``) keeps the artifact bounded to the build output the downstream consumer actually needs. If you need a debug dump of the workspace, scope it to a temporary directory the workflow assembles, then upload that. Always explicitly exclude ``.git/`` and any ``node_modules`` / ``vendor`` trees from a wildcard upload.
+
+</div>
+
+</div>
+
+<div class="pg-rule pg-rule--high" markdown>
+
+## GHA-067: ``actions/cache`` writes credential-shaped paths { #gha-067 }
+
+<div class="pg-rule__tags">
+<span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-6</span> <span class="pg-tag pg-tag--esf">ESF-D-SECRETS</span> <span class="pg-tag pg-tag--cwe">CWE-200</span> <span class="pg-tag pg-tag--cwe">CWE-524</span>
+</div>
+
+Fires when an ``actions/cache`` step's ``path:`` value (single line, multi-line YAML scalar block, or YAML list) contains any of the following:
+
+* The full home directory (``~``, ``~/``, ``$HOME``, ``${HOME}``).
+* A credential-shaped dotfile or dotdir under the home directory: ``~/.npmrc``, ``~/.docker``, ``~/.aws``, ``~/.azure``, ``~/.gcloud``, ``~/.kube``, ``~/.ssh``, ``~/.gnupg``, ``~/.netrc``.
+* A build-tool config that carries credentials: ``~/.gradle/gradle.properties``, ``~/.m2/settings.xml``.
+
+Pairs with GHA-052 (cache key derives from PR input) and GHA-011 (cache key untrusted). The triple (``cache-sensitive-files`` + ``cache-untrusted-key`` + ``cache-poisoning-restore``) is the full cache-as-leak chain. Each rule fires independently so a workflow that carries any one leg gets the corresponding finding.
+
+**Known false-positive modes**
+
+- Self-hosted runners with carefully-scoped HOME directories where the credential-shaped paths are intentionally empty (initialized fresh per job). Suppress per-step via ignore-file when the runner provisioning model is documented. GitHub-hosted runners reset between jobs but the cache content persists across jobs / runs.
+
+**Seen in the wild**
+
+- zizmor proposal #723 (cache-sensitive-files audit): https://github.com/zizmorcore/zizmor/issues/723
+
+<div class="pg-rule__rec" markdown>
+
+**Recommended action**
+
+Cache only the build artifacts that are actually cacheable. Don't cache ``~`` (the whole home dir), don't cache credential-shaped dotfiles (``~/.npmrc``, ``~/.docker``, ``~/.aws``, ``~/.ssh``, ``~/.gnupg``, ``~/.netrc``, ``~/.gradle/gradle.properties``, ``~/.m2/settings.xml``). Scope ``path:`` to the package-cache subdirectory only (``~/.cache/pip``, ``~/.npm``, ``~/.cargo/registry``) and let credentials live in the workflow's secrets context, never on disk in a path the cache restorer touches.
+
+</div>
+
+</div>
+
+<div class="pg-rule pg-rule--medium" markdown>
+
+## GHA-068: ``runs-on:`` targets an end-of-life hosted-runner image { #gha-068 }
+
+<div class="pg-rule__tags">
+<span class="pg-sev pg-sev--medium">MEDIUM</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-7</span> <span class="pg-tag pg-tag--esf">ESF-D-BUILD-ENV</span> <span class="pg-tag pg-tag--cwe">CWE-1104</span>
+</div>
+
+Fires when a job's ``runs-on:`` (or any matrix-expanded value of it) names a retired or imminently-retired hosted runner image:
+
+* **Ubuntu retired:** ``ubuntu-18.04``, ``ubuntu-20.04``.
+* **macOS retired:** ``macos-10.15``, ``macos-11``, ``macos-12``.
+* **Windows retired:** ``windows-2016``, ``windows-2019``.
+
+Self-hosted labels (any value that doesn't match a hosted image label) are not flagged here, GHA-012 covers the self-hosted-runner risk separately. List-shaped ``runs-on:`` values (``[self-hosted, linux, x64]``) are treated as self-hosted and skipped.
+
+**Known false-positive modes**
+
+- A repository that intentionally pins to an older image for archive-build reproducibility (rare, but valid). Suppress per-job via ignore-file when the operator has documented the trade-off. Note that GitHub may stop serving the image entirely at some point; the suppression should be re-audited annually.
+
+**Seen in the wild**
+
+- GitHub Actions runner-images retirement schedule: https://github.com/actions/runner-images
+- zizmor proposal #260 / #827 (deprecated runner audit): https://github.com/zizmorcore/zizmor/issues/260
+
+<div class="pg-rule__rec" markdown>
+
+**Recommended action**
+
+Bump to a supported image label. ``ubuntu-latest`` /``ubuntu-24.04``, ``macos-latest`` / ``macos-14``, ``windows-latest`` / ``windows-2022``. Pin to a specific major when reproducibility matters (``ubuntu-24.04``); use ``-latest`` only when the workflow tolerates drift. GitHub publishes the retirement schedule at https://github.com/actions/runner-images?tab=readme-ov-file#available-images, audit the matrix periodically as new images deprecate.
+
+</div>
+
+</div>
+
+<div class="pg-rule pg-rule--medium" markdown>
+
+## GHA-069: ``id-token: write`` granted without an OIDC-consumer step { #gha-069 }
+
+<div class="pg-rule__tags">
+<span class="pg-sev pg-sev--medium">MEDIUM</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-5</span> <span class="pg-tag pg-tag--esf">ESF-C-LEAST-PRIV</span> <span class="pg-tag pg-tag--cwe">CWE-272</span> <span class="pg-tag pg-tag--cwe">CWE-269</span>
+</div>
+
+Fires when both conditions hold:
+
+1. The job has ``id-token: write`` (either declared on the job's own ``permissions:`` block, or inherited from a workflow-level block that the job didn't override).
+2. None of the job's steps invokes a known OIDC-token consumer (see ``_OIDC_CONSUMER_PREFIXES`` below).
+
+The consumer list covers the canonical cloud-credentials actions (``aws-actions/configure-aws-credentials``, ``azure/login``, ``google-github-actions/auth``), the trusted-publishing pack (``pypa/gh-action-pypi-publish``, ``rubygems/release-gem``, ``crates-io/publish-action``), and the Sigstore signing pack (``sigstore/cosign-installer``, ``sigstore/gh-action-sigstore-python``,
+``slsa-framework/slsa-github-generator``,
+``actions/attest-build-provenance``,
+``actions/attest-sbom``, and the
+``docker/build-push-action`` with ``provenance:`` /
+``sbom:`` / ``attestations:`` set). When a workflow adds a new consumer not in this list, file an issue so the rule can recognize it.
+
+**Known false-positive modes**
+
+- Composite actions whose body consumes the OIDC token but whose entry point is named in a workflow that wouldn't otherwise match the consumer list. The local composite-action discovery path (``GitHubContext.from_path``) synthesizes those bodies as ``__composite__`` jobs, so the rule sees the inner steps. Suppress per-job via ignore-file when a workflow consumes the OIDC token via a third-party action this rule's consumer list doesn't name yet.
+
+**Seen in the wild**
+
+- zizmor proposal #1968 (orphan-id-token audit): https://github.com/zizmorcore/zizmor/issues/1968
+
+<div class="pg-rule__rec" markdown>
+
+**Recommended action**
+
+Drop ``id-token: write`` from the job's ``permissions:`` block when no step exchanges the OIDC token for cloud credentials, signs an artifact, or publishes with attestation. If the workflow gains an OIDC consumer later (a new ``aws-actions/configure-aws-credentials`` step, a ``pypa/gh-action-pypi-publish`` upgrade), restore the scope at the job level rather than the workflow level. Job-level grants minimize the window in which the scope is in effect.
+
+</div>
+
+</div>
+
+<div class="pg-rule pg-rule--high" markdown>
+
+## GHA-070: ``ssh-keyscan`` / disabled host-key check trust-on-first-use { #gha-070 }
+
+<div class="pg-rule__tags">
+<span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-3</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-7</span> <span class="pg-tag pg-tag--esf">ESF-S-VERIFY-DEPS</span> <span class="pg-tag pg-tag--cwe">CWE-322</span>
+</div>
+
+Fires on any ``run:`` body containing one of:
+
+* ``ssh-keyscan ... >> <known_hosts>`` (or ``>`` for overwrite).
+* ``-o StrictHostKeyChecking=no`` (single or double quoted) on ``ssh`` / ``scp`` / ``rsync`` / ``sftp``.
+* ``-o UserKnownHostsFile=/dev/null`` (the inverse shape: don't persist any host key check).
+* ``-o StrictHostKeyChecking=accept-new`` (TOFU mode, accepts the first key seen).
+
+The rule pairs with GHA-023 (TLS / cert verify bypass) on the HTTPS side and with GHA-054 (checkout SSH-key persistence) on the credentials side. All three describe the same threat shape: turning off authentication primitives that defend against MITM on a runner whose network the workflow doesn't fully control.
+
+**Known false-positive modes**
+
+- First-time bootstrap of a self-hosted runner where the runner image's host-key store is intentionally empty and ssh-keyscan is the bootstrap step. Suppress per-step via ignore-file when the bootstrap step is bounded by a post-bootstrap key-validation check (compare the ingested key against a known-good fingerprint stored in a secret). Without that follow-up validation the suppression isn't safe.
+
+**Seen in the wild**
+
+- zizmor proposal #2012 (ssh-keyscan audit): https://github.com/zizmorcore/zizmor/issues/2012
+- GitHub Docs - SSH key fingerprints: https://docs.github.com/en/authentication/keeping-your-account-and-data-secure/githubs-ssh-key-fingerprints
+
+<div class="pg-rule__rec" markdown>
+
+**Recommended action**
+
+Pin the SSH host keys explicitly. For GitHub's ``github.com`` host, ship the published fingerprints (see ``github.com/.well-known/ssh-fingerprints``) in a ``known_hosts`` file that the workflow installs. Never call ``ssh-keyscan`` from a workflow, every invocation is trust-on-first-use against whatever the network returns. Same applies to ``StrictHostKeyChecking=no`` / ``UserKnownHostsFile=/dev/null`` on ``ssh`` / ``scp`` / ``rsync``, those flags accept any host key the first (and every subsequent) connection presents.
+
+</div>
+
+</div>
+
+<div class="pg-rule pg-rule--low" markdown>
+
+## GHA-071: ``shell: pwsh`` / ``powershell`` on a Linux / macOS step { #gha-071 }
+
+<div class="pg-rule__tags">
+<span class="pg-sev pg-sev--low">LOW</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-4</span> <span class="pg-tag pg-tag--esf">ESF-D-INJECTION</span> <span class="pg-tag pg-tag--cwe">CWE-704</span>
+</div>
+
+Fires when a ``run:`` step (job-level or workflow-level default) declares ``shell: pwsh`` / ``shell: powershell`` while the job's ``runs-on:`` is a Linux or macOS image. Three sources are considered:
+
+1. ``jobs.<id>.steps[].shell:`` (step-level override).
+2. ``jobs.<id>.defaults.run.shell:`` (job-level default).
+3. ``defaults.run.shell:`` (workflow-level default).
+
+Out of scope: ``shell: bash`` / ``shell: sh`` on a Windows runner. Bash is preinstalled on every GitHub-hosted Windows image and the cross-shell language drift goes in the other direction (Windows-only built-ins missing). The risk-asymmetry is intentional: pwsh on Linux is the canonical zizmor advisory; the inverse is covered by reviewer attention rather than a rule.
+
+**Known false-positive modes**
+
+- PowerShell-heavy organizations standardizing on pwsh across all OS targets for tooling consistency. Suppress per-step via ignore-file when the operator has audited the workflow's escaping conventions against the pwsh tokenizer. The rule is LOW severity and advisory, the FP rate is acceptable for a default-fire posture.
+
+**Seen in the wild**
+
+- zizmor proposal #288 (powershell-on-linux audit): https://github.com/zizmorcore/zizmor/issues/288
+
+<div class="pg-rule__rec" markdown>
+
+**Recommended action**
+
+Drop the explicit ``shell:`` on non-Windows runners so GitHub's default (``bash``) is used. If multiline PowerShell work is genuinely needed on Linux / macOS, isolate it in a separate job that pins ``runs-on:`` to a Windows image, OR name the shell explicitly per-step so the reviewer can confirm the language match. Mixing pwsh and bash semantics inside the same workflow is a low-impact-but-real source of escaping bugs.
+
+</div>
+
+</div>
+
+<div class="pg-rule pg-rule--high" markdown>
+
+## GHA-072: Secret in env: at a wider scope than its consumer { #gha-072 }
+
+<div class="pg-rule__tags">
+<span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-6</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-5</span> <span class="pg-tag pg-tag--esf">ESF-D-SECRETS</span> <span class="pg-tag pg-tag--esf">ESF-C-LEAST-PRIV</span> <span class="pg-tag pg-tag--cwe">CWE-200</span> <span class="pg-tag pg-tag--cwe">CWE-272</span>
+</div>
+
+Fires in two shapes:
+
+1. **Job-level over-provisioning.** A ``jobs.<id>.env`` entry's value references ``${{ secrets.* }}`` AND no more than one step in that job references the env var. The other steps inherit the secret in their process env without using it.
+2. **Workflow-level over-provisioning.** A workflow-level ``env:`` entry's value references ``${{ secrets.* }}`` AND no more than one job in the workflow references the env var. The other jobs' processes carry the secret without using it.
+
+A step's ``env:`` block at the step level is the safe default and stays silent. The rule is name-aware: a job that defines ``DEPLOY_TOKEN`` and ``BUILD_TOKEN`` at the job level, with only one step using each, fires twice (one finding per overprovisioned var).
+
+**Known false-positive modes**
+
+- Composite steps that consume the env var internally and would need ``env:`` block forwarding to see the value scoped at step level. The local composite-action discovery path synthesizes those bodies as ``__composite__`` jobs; the env-var reference shows up there. If it doesn't (a remote composite not loaded by ``--resolve-remote``), suppress per-step via ignore-file with a note pointing at the composite action.
+
+**Seen in the wild**
+
+- zizmor v1.25.2 ``overprovisioned-secrets`` audit: https://docs.zizmor.sh/audits/#overprovisioned-secrets
+
+<div class="pg-rule__rec" markdown>
+
+**Recommended action**
+
+Move the ``env:`` block carrying the secret to the step that consumes it. When two or more steps in the same job need the value, surface it on each step's ``env:`` (or compute it once via ``echo "name=..." >> $GITHUB_OUTPUT`` from a dedicated minimal step). Avoid workflow-level ``env:`` for secrets, every job in the workflow then inherits the value.
+
+</div>
+
+</div>
+
+<div class="pg-rule pg-rule--medium" markdown>
+
+## GHA-073: Reusable workflow declares an unused ``workflow_call`` secret { #gha-073 }
+
+<div class="pg-rule__tags">
+<span class="pg-sev pg-sev--medium">MEDIUM</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-6</span> <span class="pg-tag pg-tag--esf">ESF-D-SECRETS</span> <span class="pg-tag pg-tag--cwe">CWE-1100</span>
+</div>
+
+Fires on a workflow whose ``on.workflow_call.secrets`` block declares a name (``token`` / ``required: true`` / ``required: false`` / inline shorthand) that the body never references via ``${{ secrets.<name> }}`` interpolation. The body scan covers every string value in the parsed document (``run:`` bodies, ``env:`` entries, ``with:`` values, ``if:`` expressions, and the workflow's top-level ``env``).
+
+Out of scope (deliberate carve-out): secret names that appear only inside ``secrets:`` blocks on a nested ``jobs.<id>.uses:`` reusable-workflow call. Those are forward (the secret flows to a downstream callee that consumes it). Such forward references count as consumers for this rule, the leak surface is bounded by the downstream's declaration.
+
+**Known false-positive modes**
+
+- Workflows that declare a secret to enforce a contract across an organization's reusable-workflow library, even when the current body doesn't read the value. Suppress per-secret-name via ignore-file when the operator has documented the contract reason in a workflow-level comment.
+
+**Seen in the wild**
+
+- zizmor proposal #1044 (unused-secrets audit): https://github.com/zizmorcore/zizmor/issues/1044
+
+<div class="pg-rule__rec" markdown>
+
+**Recommended action**
+
+Drop the unused ``on.workflow_call.secrets.<name>:`` declaration. If the caller's pipeline relies on the name being forced (a contract enforcement), document that intent in a workflow-level comment so the next refactor doesn't delete it silently. When the secret actually does get consumed later, add the ``${{ secrets.<name> }}`` reference back.
+
+</div>
+
+</div>
+
+<div class="pg-rule pg-rule--medium" markdown>
+
+## GHA-086: Wildcard branch trigger gates an environment-bound deploy { #gha-086 }
+
+<div class="pg-rule__tags">
+<span class="pg-sev pg-sev--medium">MEDIUM</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-1</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-5</span> <span class="pg-tag pg-tag--esf">ESF-C-APPROVAL</span> <span class="pg-tag pg-tag--esf">ESF-C-ENV-SEP</span> <span class="pg-tag pg-tag--cwe">CWE-284</span> <span class="pg-tag pg-tag--cwe">CWE-863</span>
+</div>
+
+Fires when both conditions hold:
+
+1. The workflow's ``on: push: branches:`` filter contains at least one wildcard pattern (``*``, ``?``, ``+``, ``[...]``). ``branches: [main]`` is exact-match and stays silent; ``branches: ['main*']``, ``branches: ['release/*']``, and ``branches: ['*']`` all fire.
+2. At least one job in the workflow binds ``environment: <name>`` (either the short string form or the long ``environment: {name: <name>, url: ...}`` mapping).
+
+The combination is the canonical deployment-branches-rule-bypass topology: the trigger accepts every branch matching the pattern, the environment gate fires on the deployment, but the reviewer prompt does not surface the diff. A branch named ``main-anything`` matches and the reviewer is asked to approve a generic ``production`` deploy.
+
+Branch wildcards in ``branches-ignore:`` are not flagged (they restrict triggers rather than expand them). Tag filters (``tags:``) are not flagged because tag creation is generally a higher-privilege operation than branch creation.
+
+**Known false-positive modes**
+
+- Internal-only environments scoped to a release-branch convention (``release/*``) where the protection rule is intentionally configured to allow any branch matching the convention. The bypass surface is real but the operator has accepted it. Suppress per-workflow via ignore-file when the convention is documented and the environment's protection rule is audited.
+
+**Seen in the wild**
+
+- OWASP CICD-SEC-1 (Insufficient Flow Control Mechanisms): https://owasp.org/www-project-top-10-ci-cd-security-risks/CICD-SEC-01-Insufficient-Flow-Control-Mechanisms
+
+<div class="pg-rule__rec" markdown>
+
+**Recommended action**
+
+Pin ``on: push: branches:`` to the exact branch names that should be allowed to deploy (``branches: [main]``, not ``branches: ['main*']``). Configure the matching GitHub environment's ``Deployment branches and tags`` rule with ``Selected branches and tags`` -> exact match. For high-blast-radius environments, require deployment from a protected tag rather than a branch, tags are immutable in a way branches are not.
+
+</div>
+
+</div>
+
+<div class="pg-rule pg-rule--high" markdown>
+
+## GHA-087: Derived value of a secret printed to the build log { #gha-087 }
+
+<div class="pg-rule__tags">
+<span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-10</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-6</span> <span class="pg-tag pg-tag--esf">ESF-D-SECRETS</span> <span class="pg-tag pg-tag--cwe">CWE-532</span> <span class="pg-tag pg-tag--cwe">CWE-200</span>
+</div>
+
+Fires on a single ``run:`` line that combines all three of the following:
+
+1. A reference to a secret, either a ``${{ secrets.* }}`` context expression or a ``$NAME`` / ``${NAME}`` expansion of a step ``env:`` value bound to ``secrets.*``.
+2. A transform applied to that reference:
+   * **Hash:** ``sha256sum``, ``sha1sum``, ``md5sum``, ``sha512sum``, ``shasum``, ``openssl dgst``.
+   * **Encoding:** ``base64``, ``base32``.
+   * **Truncation:** ``cut -c<n>``, ``head -c<n>``.
+   * **Bash parameter expansion:** ``${VAR:0:N}``, ``${VAR::N}``, ``${VAR:N:M}`` (substring slice).
+3. A print sink on the same line: ``echo`` / ``printf`` / ``tee`` at the head, or a redirect to ``$GITHUB_OUTPUT`` / ``$GITHUB_STEP_SUMMARY`` / an ordinary file.
+
+Pairs with GHA-033 (which covers ``set -x`` shell-trace leaks and direct ``echo ${{ secrets.X }}`` shapes). The two rules are deliberately disjoint: a step that hits both shapes fires both findings rather than one. Out of scope (deliberate carve-out): multi-line shape where the transformation lands in an intermediate variable on one line and the variable is printed on another. Detecting that needs cross-line dataflow; the single-line scope captures the canonical foot-guns from the field without over-firing on legitimate verification-then-discard patterns.
+
+**Known false-positive modes**
+
+- Steps that explicitly want a non-reversible secret fingerprint for cross-run identification (rare; the rotation-status use case is the only legitimate one). Suppress per-step via ignore-file when the operator has audited that the entropy of the secret makes the fingerprint genuinely unguessable. A boolean ``set / unset`` print is always safer and is what the recommendation steers toward.
+
+**Seen in the wild**
+
+- OWASP CICD-SEC-10 (Insufficient Logging and Visibility): https://owasp.org/www-project-top-10-ci-cd-security-risks/CICD-SEC-10-Insufficient-Logging-and-Visibility
+
+<div class="pg-rule__rec" markdown>
+
+**Recommended action**
+
+Never print anything derived from a secret. Not the SHA-256, not the first eight characters, not the base64 wrapper, not the length. GitHub's log redaction only matches the exact registered secret value, every derived form lands in the (world-readable) log unmasked. If you genuinely need to compare secrets across runs, do the comparison inside a step and report a boolean (``[ -n "$X" ] && echo set || echo unset``). If you need to confirm rotation worked, run the downstream check against the secret rather than echo a fingerprint.
 
 </div>
 

@@ -36,9 +36,9 @@ from pipeline_check.mcp_server import tools as _tools
 # real scanner-side bug; letting it raise here surfaces the bug
 # instead of hiding it behind a quiet skip.
 try:
-    import mcp.types as mcp_types  # noqa: E402
+    import mcp.types as mcp_types
 
-    from pipeline_check.mcp_server.server import server_app  # noqa: E402
+    from pipeline_check.mcp_server.server import server_app
     _HAS_MCP = True
 except (ImportError, ModuleNotFoundError):  # pragma: no cover - environment-dependent
     _HAS_MCP = False
@@ -59,8 +59,9 @@ class TestToolListProviders:
         names = {p["name"] for p in out["providers"]}
         # Everything pipeline-check supports today.
         for required in (
-            "github", "gitlab", "drone", "argo", "tekton",
+            "github", "gitlab", "drone", "argo", "argocd", "tekton",
             "buildkite", "kubernetes", "aws", "oci",
+            "npm", "pypi", "maven", "scm",
         ):
             assert required in names
 
@@ -70,11 +71,52 @@ class TestToolListProviders:
         assert aws["requires_path"] is False
         assert aws["path_kwarg"] is None
 
+    def test_scm_has_no_path_kwarg(self):
+        # ``scm`` is the second path-less provider, the MCP wrapper
+        # translates the agent-supplied ``scm_platform`` / ``scm_repo``
+        # into Scanner kwargs internally.
+        out = _tools.list_providers()
+        scm = next(p for p in out["providers"] if p["name"] == "scm")
+        assert scm["requires_path"] is False
+        assert scm["path_kwarg"] is None
+
     def test_path_providers_advertise_correct_kwarg(self):
         out = _tools.list_providers()
         gha = next(p for p in out["providers"] if p["name"] == "github")
         assert gha["requires_path"] is True
         assert gha["path_kwarg"] == "gha_path"
+
+    def test_parity_with_rule_registry(self):
+        # Lock the MCP provider list to ``scripts/gen_provider_docs.py``'s
+        # ``SUPPORTED_PROVIDERS``, the canonical provider registry. Any
+        # provider added there must show up in the MCP catalog (and the
+        # ``_RULES_FQN`` lookup); the original test only checked a
+        # hand-picked subset, so argocd / maven / npm / pypi / scm could
+        # silently fall out of sync. This guard fails the moment a new
+        # provider lands without an MCP wiring.
+        from scripts.gen_provider_docs import SUPPORTED_PROVIDERS
+
+        expected = set(SUPPORTED_PROVIDERS.keys())
+        advertised = {p["name"] for p in _tools.list_providers()["providers"]}
+        missing = expected - advertised
+        extra = advertised - expected
+        assert not missing, (
+            f"MCP catalog missing providers from SUPPORTED_PROVIDERS: "
+            f"{sorted(missing)}. Add them to ``_PROVIDER_PATH_KW`` and "
+            f"``_RULES_FQN`` in pipeline_check/mcp_server/tools.py."
+        )
+        assert not extra, (
+            f"MCP advertises providers not in SUPPORTED_PROVIDERS: "
+            f"{sorted(extra)}. Either remove them from ``_PROVIDER_PATH_KW`` "
+            f"or wire them into scripts/gen_provider_docs.py."
+        )
+
+    def test_rules_fqn_parity_with_path_kw(self):
+        # ``_PROVIDER_PATH_KW`` (used by scan/inventory) and
+        # ``_RULES_FQN`` (used by list_checks/explain_check) must agree:
+        # a provider in one but not the other is a half-wired addition
+        # that fails the moment an agent asks ``list_checks(provider=X)``.
+        assert set(_tools._PROVIDER_PATH_KW) == set(_tools._RULES_FQN)
 
 
 class TestToolListChecks:
@@ -224,6 +266,57 @@ class TestToolScan:
         outside = tmp_path.parent / "elsewhere.yml"
         with pytest.raises(ValueError, match="outside the MCP server"):
             _tools.scan(provider="gitlab", path=str(outside))
+
+
+class TestToolScanSCM:
+    def test_scm_missing_platform_raises(self):
+        with pytest.raises(ValueError, match="requires scm_platform"):
+            _tools.scan(provider="scm")
+
+    def test_scm_missing_repo_raises(self):
+        with pytest.raises(ValueError, match="requires scm_repo"):
+            _tools.scan(provider="scm", scm_platform="github")
+
+    def test_scm_malformed_repo_raises(self):
+        with pytest.raises(ValueError, match="owner/name"):
+            _tools.scan(
+                provider="scm",
+                scm_platform="github",
+                scm_repo="just-a-name-no-slash",
+            )
+
+
+class TestToolScanPRDiff:
+    def test_aws_rejected(self):
+        with pytest.raises(ValueError, match="no local BASE ref"):
+            _tools.scan_pr_diff(provider="aws", base_ref="HEAD~1")
+
+    def test_scm_rejected(self):
+        with pytest.raises(ValueError, match="no local BASE ref"):
+            _tools.scan_pr_diff(provider="scm", base_ref="HEAD~1")
+
+    def test_unresolvable_ref_degrades_gracefully(self):
+        # An unresolvable base ref must produce *some* output (every
+        # HEAD finding shows up as ``introduced``) plus a warning,
+        # mirroring the CLI ``--pr-diff`` contract. We deliberately
+        # don't spin up a real git repo here, the goal is to verify
+        # the MCP wrapper preserves the degraded-mode contract from
+        # ``run_pr_diff`` rather than re-test pr_diff itself. The
+        # default scan root is cwd (the project root under pytest), so
+        # the GITLAB_FIXTURE under tests/ resolves cleanly.
+        out = _tools.scan_pr_diff(
+            provider="gitlab",
+            base_ref="refs/heads/nonexistent-base-ref-for-mcp-test",
+            path=str(GITLAB_FIXTURE),
+        )
+        assert out["provider"] == "gitlab"
+        # Markdown is always populated.
+        assert out["markdown"]
+        # The base ref didn't resolve, so every HEAD finding is
+        # introduced and there's at least one warning explaining why.
+        assert out["warnings"]
+        assert out["summary"]["resolved"] == 0
+        assert out["summary"]["preserved"] == 0
 
 
 class TestToolInventory:

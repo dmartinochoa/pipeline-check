@@ -226,8 +226,15 @@ def _fix_gha015(content: str, finding: Finding) -> str | None:
                 child_indent = job_indent + "  "
                 result.append(line)
                 i += 1
-                # Scan ahead to check if timeout-minutes already exists.
+                # Scan ahead to check if timeout-minutes already exists,
+                # or if the job body is a reusable-workflow ``uses:``
+                # call. GitHub's job schema rejects ``timeout-minutes``
+                # on the latter; the called workflow's own jobs declare
+                # their own bounds. The rule itself already exempts
+                # these jobs (see gha015_timeout.py).
                 has_timeout = False
+                is_reusable = False
+                child_col = len(job_indent) + 2
                 j = i
                 while j < len(lines):
                     next_line = lines[j]
@@ -236,11 +243,17 @@ def _fix_gha015(content: str, finding: Finding) -> str | None:
                         next_indent = len(next_line) - len(next_line.lstrip())
                         if next_indent <= len(job_indent):
                             break
+                        if (
+                            next_indent == child_col
+                            and re.match(r"uses\s*:\s*\S", next_line.lstrip())
+                        ):
+                            is_reusable = True
+                            break
                     if "timeout-minutes" in next_line:
                         has_timeout = True
                         break
                     j += 1
-                if not has_timeout:
+                if not has_timeout and not is_reusable:
                     result.append(f"{child_indent}timeout-minutes: 30\n")
                     changed = True
                 continue
@@ -452,8 +465,12 @@ def _strip_docker_flags(content: str, finding: Finding) -> str | None:
     for line in content.splitlines(keepends=True):
         if "docker" in line and _DOCKER_FLAG_RE.search(line):
             new_line = _DOCKER_FLAG_RE.sub("", line)
-            # Collapse multiple spaces left by removals.
-            new_line = re.sub(r"  +", " ", new_line)
+            # Collapse multi-space runs left by the strip, but only
+            # those preceded by a non-whitespace char. A bare ``  +``
+            # rule would also eat the YAML leading indent and break
+            # the surrounding mapping; the safety net catches that
+            # but the user gets no patch at all.
+            new_line = re.sub(r"(?<=\S)  +", " ", new_line)
             if new_line != line:
                 out.append(new_line)
                 changed = True
@@ -492,7 +509,10 @@ def _strip_pkg_flags(content: str, finding: Finding) -> str | None:
     for line in content.splitlines(keepends=True):
         if _PKG_UNSAFE_FLAG_RE.search(line):
             new_line = _PKG_UNSAFE_FLAG_RE.sub("", line)
-            new_line = re.sub(r"  +", " ", new_line)
+            # See ``_strip_docker_flags`` for why the lookbehind is
+            # required: a bare ``  +`` collapse eats the leading YAML
+            # indent and breaks the step mapping.
+            new_line = re.sub(r"(?<=\S)  +", " ", new_line)
             if new_line != line:
                 out.append(new_line)
                 changed = True
@@ -791,7 +811,13 @@ def _fix_gha003(content: str, finding: Finding) -> str | None:
             contexts = list(UNTRUSTED_CONTEXT_RE.finditer(run_body))
             if contexts:
                 prefix = m.group(2)
-                indent = " " * len(prefix)
+                # ``env:`` must sit at the column of the ``run:`` key,
+                # NOT at the column where the command body begins. For
+                # ``  - run: foo`` the prefix is ``"  - run: "`` (10
+                # chars) but ``run:`` lives at column 4; ``env:`` at
+                # column 10 would be deeper than its parent step and
+                # break the YAML mapping.
+                indent = " " * prefix.index("run:")
                 new_body = run_body
                 env_vars: list[tuple[str, str]] = []
                 for idx, ctx_m in enumerate(reversed(contexts)):
@@ -1027,7 +1053,16 @@ def _fix_gha014(content: str, finding: Finding) -> str | None:
 
 # ── *-021 npm install → npm ci ───────────────────────────────────────
 
-_NPM_INSTALL_RE = re.compile(r"\bnpm\s+install\b")
+# Only rewrite ``npm install`` when it carries no argument that ``npm
+# ci`` would reject: package names (``npm install react``), -g/--global
+# (``npm install --global typescript``), or any other flag. ``npm ci``
+# accepts no package args at all, so the rewrite is safe only for the
+# bare/lockfile form. Followed-by recognized: EOL, comment, shell
+# separator/pipe/redirect.
+_NPM_INSTALL_RE = re.compile(
+    r"\bnpm\s+install\b"
+    r"(?=[ \t]*(?:\n|$|#|&&|\|\||;|\||>|<))"
+)
 
 
 def _fix_npm_ci(content: str, finding: Finding) -> str | None:

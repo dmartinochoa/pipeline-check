@@ -214,7 +214,7 @@ def _parse_lock_text(
                 berry_entries = _parse_yarn_berry_lock(text)
             else:
                 entries = _parse_yarn_lock(text)
-        except Exception as exc:  # noqa: BLE001
+        except Exception as exc:
             flavor = "yarn berry" if is_berry else "yarn.lock"
             return None, f"{flavor} parse error: {exc}"
         if is_berry:
@@ -227,7 +227,7 @@ def _parse_lock_text(
     if filename == "pnpm-lock.yaml":
         try:
             raw = safe_load_yaml(text)
-        except Exception as exc:  # noqa: BLE001
+        except Exception as exc:
             return None, f"YAML decode error: {exc}"
         if not isinstance(raw, dict):
             return None, "top-level YAML is not a mapping"

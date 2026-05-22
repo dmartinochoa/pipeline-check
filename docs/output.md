@@ -14,6 +14,12 @@ format carries the same finding set, only the rendering differs.
 | `threatmodel` | stdout or `--output-file` | STRIDE-mapped Markdown threat-model document. Auto-runs `--inventory`. SOC 2 / PCI / NIST SSDF evidence packages, architecture-review docs |
 | `both`     | terminal → **stderr**, JSON → stdout | Pipe `jq` while still seeing a human report |
 
+`--pr-diff REF` is the diff-mode counterpart to the formats above: it
+runs two scans (HEAD + base) and emits Markdown shaped for a single
+PR-review comment, with introduced / resolved / preserved sections
+rather than the full failures table the `markdown` format renders.
+See [`pr_diff.md`](pr_diff.md) for the mechanism and recipes.
+
 ## JSON
 
 ```bash

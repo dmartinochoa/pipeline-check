@@ -20,7 +20,7 @@
 
 Pipeline-Check is a security scanner for GitHub Actions, GitLab CI, Jenkins, CircleCI, Azure DevOps, Bitbucket Pipelines, Buildkite, Drone, Tekton, Argo Workflows, and Google Cloud Build, plus Terraform, CloudFormation, Kubernetes, Helm, Dockerfile, OCI image manifests, and live AWS accounts. It maps every finding to the [OWASP Top 10 CI/CD Security Risks](https://owasp.org/www-project-top-10-ci-cd-security-risks/), SLSA, NIST SSDF, PCI DSS, SOC 2, the CIS GitHub Benchmark, and nine other frameworks, and scores each scan A through D so you can gate merges on the result.
 
-**820+ checks** across **23 providers**, mapped to **15 compliance standards**, with **111 autofixers**, plus **41 attack chains** correlating findings into MITRE ATT&CK-mapped kill chains. A dataflow taint engine catches multi-step and cross-job propagation that single-rule scanners miss.
+**840+ checks** across **23 providers**, mapped to **15 compliance standards**, with **111 autofixers**, plus **41 attack chains** correlating findings into MITRE ATT&CK-mapped kill chains. A dataflow taint engine catches multi-step and cross-job propagation that single-rule scanners miss.
 
 [Quick start](#-quick-start) |
 [Usage guide](docs/usage.md) |
@@ -117,7 +117,7 @@ for inputs, idempotency, and fork-PR fallback behavior.
 | **AWS** | Live account via boto3 | `--region` | 71 checks (CodeBuild, CodePipeline, CodeDeploy, ECR, IAM, PBAC, S3, CloudTrail, CloudWatch Logs, Secrets Manager, CodeArtifact, CodeCommit, Lambda, KMS, SSM, EventBridge, Signer) |
 | **Terraform** | `terraform show -json` plan | `--tf-plan` | AWS-parity shift-left checks, pre-provisioning |
 | **CloudFormation** | YAML or JSON template | `--cfn-template` | ~63 AWS-parity shift-left checks; handles `!Ref`/`!Sub`/`!GetAtt` intrinsics (treats unresolved values as strict) |
-| **GitHub Actions** | `.github/workflows/*.yml` | `--gha-path` | 65 checks (`GHA-001`--`062`, plus `TAINT-001..003`). `GHA-040` consults a curated registry of known-compromised action refs (CVE-2025-30066 et al.). `GHA-041..043` form the action-reputation pack: single-maintainer / very-young repo / low-star + sensitive-permission detection behind `--resolve-remote`. `GHA-044..046` catch build-tool lifecycle script execution (npm / yarn / pnpm / bun / deno install), caller-controlled `ref` into `actions/checkout`, and manual PR-head fetches on untrusted-trigger workflows. `GHA-047` flags action pins to refs committed within a cooldown window. `GHA-048..050` are the npm-worm propagation pack: workflow self-mutation, cross-repo push, and publish-without-OIDC. `GHA-051..055` cover advanced PPE / credential-leak surface: services/container image unpinned, `actions/cache` key from untrusted PR input, `if:` predicate evaluating untrusted context, `actions/checkout` SSH-key persistence, reusable workflow outputs leaking a secret. `GHA-056..058` are the worm-IOC pack: workflow body matches a curated Shai-Hulud / s1ngularity IOC registry (`_worm_indicators.py`), secret-scanner output (TruffleHog / gitleaks) piped to network egress on an untrusted trigger, and agentic CLI (`claude` / `gemini` / `q` / `cursor-agent` / `aider` / `openhands` / `goose`) invoked with permission-bypass flags (`--dangerously-skip-permissions`, `--yolo`, `--trust-all-tools`). `GHA-059` flags ``npm`` / ``pnpm`` install steps that don't pair with an ``npm audit signatures`` verification step, closing the lockfile-pinning-without-trusted-publisher gap the Shai-Hulud / TanStack / axios worms exploited. `GHA-060` is the PyPI analog: flags ``pip install`` invocations that don't use ``--require-hashes`` and aren't replaced by a hash-pinning manager (``uv sync`` / ``poetry install`` / ``pipenv install --deploy``). `GHA-061` flags App-token mint steps (``actions/create-github-app-token`` and siblings) that omit a ``permissions:`` scope filter. `GHA-062` walks the workflow's containing repo for sibling IaC (AWS trust policies, GCP WIF Terraform) and flags OIDC subject claims that match more than one repo. |
+| **GitHub Actions** | `.github/workflows/*.yml` | `--gha-path` | 78 checks (`GHA-001`--`073`, `GHA-086`, `GHA-087`, plus `TAINT-001..003`). `GHA-040` consults a curated registry of known-compromised action refs (CVE-2025-30066 et al.). `GHA-041..043` form the action-reputation pack: single-maintainer / very-young repo / low-star + sensitive-permission detection behind `--resolve-remote`. `GHA-044..046` catch build-tool lifecycle script execution (npm / yarn / pnpm / bun / deno install), caller-controlled `ref` into `actions/checkout`, and manual PR-head fetches on untrusted-trigger workflows. `GHA-047` flags action pins to refs committed within a cooldown window. `GHA-048..050` are the npm-worm propagation pack: workflow self-mutation, cross-repo push, and publish-without-OIDC. `GHA-051..055` cover advanced PPE / credential-leak surface: services/container image unpinned, `actions/cache` key from untrusted PR input, `if:` predicate evaluating untrusted context, `actions/checkout` SSH-key persistence, reusable workflow outputs leaking a secret. `GHA-056..058` are the worm-IOC pack: workflow body matches a curated Shai-Hulud / s1ngularity IOC registry (`_worm_indicators.py`), secret-scanner output (TruffleHog / gitleaks) piped to network egress on an untrusted trigger, and agentic CLI (`claude` / `gemini` / `q` / `cursor-agent` / `aider` / `openhands` / `goose`) invoked with permission-bypass flags (`--dangerously-skip-permissions`, `--yolo`, `--trust-all-tools`). `GHA-059` flags ``npm`` / ``pnpm`` install steps that don't pair with an ``npm audit signatures`` verification step, closing the lockfile-pinning-without-trusted-publisher gap the Shai-Hulud / TanStack / axios worms exploited. `GHA-060` is the PyPI analog: flags ``pip install`` invocations that don't use ``--require-hashes`` and aren't replaced by a hash-pinning manager (``uv sync`` / ``poetry install`` / ``pipenv install --deploy``). `GHA-061` flags App-token mint steps (``actions/create-github-app-token`` and siblings) that omit a ``permissions:`` scope filter. `GHA-062` walks the workflow's containing repo for sibling IaC (AWS trust policies, GCP WIF Terraform) and flags OIDC subject claims that match more than one repo. |
 | **GitLab CI** | `.gitlab-ci.yml` | `--gitlab-path` | 37 checks (`GL-001`--`035`, plus `TAINT-004` and `TAINT-008`) |
 | **Bitbucket Pipelines** | `bitbucket-pipelines.yml` | `--bitbucket-path` | 31 checks (`BB-001`--`031`) |
 | **Azure DevOps** | `azure-pipelines.yml` | `--azure-path` | 30 checks (`ADO-001`--`030`) |
@@ -157,7 +157,7 @@ for the full per-check reference.
 
 ```
                  +-----------+
-  Config files   |  Scanner  |   820+ checks across 23 providers
+  Config files   |  Scanner  |   840+ checks across 23 providers
   or live APIs ---->         +---> Findings (check_id, severity, resource)
                  +-----------+
                        |
@@ -189,9 +189,11 @@ standards, so a single scan satisfies multiple audit frameworks.
 | **CI gate** | `--fail-on HIGH`, `--min-grade B`, `--max-failures 5`, `--fail-on-check GHA-002`. Any condition trips exit 1. |
 | **Baselines** | `--baseline prior.json` or `--baseline-from-git origin/main:report.json`. Only gate on *new* findings. |
 | **Diff-mode** | `--diff-base origin/main` scans only files changed by the branch. |
+| **PR diff** | `--pr-diff origin/main` re-scans both sides and emits a Markdown PR-comment summarizing which findings the branch introduced, resolved, or preserved. Multiset fingerprint on `(check_id, resource)` so line shifts on unchanged code don't surface as new. Combine with `--fail-on HIGH` to gate the PR on *introduced* findings only. See [docs/pr_diff.md](docs/pr_diff.md). |
 | **Suppressions** | `.pipelinecheckignore` (flat or YAML with `expires:` dates). |
 | **Custom secrets** | `--secret-pattern '^acme_[a-f0-9]{32}$'` extends the credential scanner. |
 | **Glob selection** | `--checks 'GHA-*'` or `--checks '*-008'` to scope checks. |
+| **Incident-driven filter** | `--only-known-attacked` narrows the run to rules whose detection shape is anchored to a documented real-world incident, CVE, or vendor disclosure (77 rules today). Useful for burning down the incident-driven worklist on a fresh repo without the full pack noise. Composes with `--checks` as intersection. |
 | **Standard audit** | `--standard-report nist_ssdf` prints the control-to-check matrix and coverage gaps. |
 | **Custom rule DSL** | `--custom-rules PATH` loads YAML-defined rules that run alongside the built-in catalog. Supports GHA, GitLab, Bitbucket, Azure, CircleCI, Cloud Build, Kubernetes, and Helm. Rule shape: `for_each:` jsonpath + `assert:` predicate (`eq` / `regex` / `exists` / `len_gt` / `all_of` / `not` / …). Findings flow through the same scoring, gating, and SARIF as built-ins. See [docs/writing_a_custom_rule.md](docs/writing_a_custom_rule.md). |
 | **Component inventory** | `--inventory` emits the list of resources / workflows / templates the scanner discovered, with per-type metadata (encryption, runtime, tags, lifecycle policies). Filter with `--inventory-type 'AWS::IAM::*'`; skip checks entirely with `--inventory-only`. Feeds asset-register dashboards and drift detectors. |
@@ -251,6 +253,9 @@ full surface.
 
 For PR review comments on the changed lines, see the companion
 [pipeline-check-pr action](.github/actions/pipeline-check-pr/README.md).
+For a single delta-shaped PR comment ("this branch added 3 HIGH
+findings, resolved 1, preserved 12"), use
+[`--pr-diff`](docs/pr_diff.md).
 
 For finer control, the manual three-step form still works:
 
@@ -464,7 +469,7 @@ pipeline_check/
         ├── aws/rules/         # 71 rule-based checks (CB, CP, CD, ECR, IAM, PBAC, S3, CT, CWL, SM, CA, CCM, LMB, KMS, SSM, EB, SIGN, CW)
         ├── terraform/         # AWS-parity checks against plan JSON
         ├── cloudformation/    # AWS-parity checks against CFN templates (YAML/JSON)
-        ├── github/rules/      # GHA-001 .. GHA-062 + TAINT-001..003
+        ├── github/rules/      # GHA-001 .. GHA-073, GHA-086..087 + TAINT-001..003
         ├── gitlab/rules/      # GL-001 .. GL-035 + TAINT-004 / TAINT-008
         ├── bitbucket/rules/   # BB-001 .. BB-031
         ├── azure/rules/       # ADO-001 .. ADO-030

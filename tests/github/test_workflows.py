@@ -237,6 +237,69 @@ class TestGHA003ScriptInjection:
         )
         assert f.passed
 
+    def test_services_options_with_untrusted_context_fails(self):
+        # Widening, zizmor proposal #1128.
+        # services.<name>.options passes to docker create's argv;
+        # ``${{ ... }}`` interpolation of an untrusted context here
+        # is a shell-injection sink.
+        f = _run(
+            """
+            on: issues
+            jobs:
+              build:
+                runs-on: ubuntu-latest
+                services:
+                  db:
+                    image: postgres:15
+                    options: --hostname=${{ github.event.issue.title }}
+                steps:
+                  - run: echo build
+            """,
+            "GHA-003",
+        )
+        assert not f.passed
+        assert "services" in f.description
+
+    def test_services_env_with_untrusted_context_fails(self):
+        # services.<name>.env values become container env vars at
+        # ``docker create`` time; ``${{ ... }}`` interpolation reaches
+        # the docker argv.
+        f = _run(
+            """
+            on: pull_request
+            jobs:
+              build:
+                runs-on: ubuntu-latest
+                services:
+                  db:
+                    image: postgres:15
+                    env:
+                      FOO: ${{ github.event.pull_request.head.label }}
+                steps:
+                  - run: echo build
+            """,
+            "GHA-003",
+        )
+        assert not f.passed
+
+    def test_services_options_with_safe_string_passes(self):
+        f = _run(
+            """
+            on: push
+            jobs:
+              build:
+                runs-on: ubuntu-latest
+                services:
+                  db:
+                    image: postgres:15
+                    options: --health-cmd=pg_isready
+                steps:
+                  - run: echo build
+            """,
+            "GHA-003",
+        )
+        assert f.passed
+
 
 class TestGHA004Permissions:
     def test_missing_permissions_fails(self):

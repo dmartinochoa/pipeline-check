@@ -105,7 +105,7 @@ def _scan_uri(
         scan_path = tmp_path
     try:
         findings = scan_document(provider, scan_path)
-    except Exception as exc:  # noqa: BLE001 — surface every failure
+    except Exception as exc:
         ls.window_log_message(
             lsp.LogMessageParams(
                 type=lsp.MessageType.Warning,

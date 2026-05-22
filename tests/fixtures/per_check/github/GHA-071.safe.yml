@@ -1,0 +1,11 @@
+name: bash-on-linux
+on: push
+permissions:
+  contents: read
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332
+      - shell: bash
+        run: echo "Building on $RUNNER_OS"

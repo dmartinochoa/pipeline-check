@@ -127,7 +127,7 @@ class PypiContext:
             if f.name == "poetry.lock":
                 try:
                     lines, options = _parse_poetry_lock(text)
-                except Exception as exc:  # noqa: BLE001
+                except Exception as exc:
                     warnings.append(
                         f"{f}: poetry.lock parse error: {exc}"
                     )
@@ -136,7 +136,7 @@ class PypiContext:
             elif f.name == "Pipfile.lock":
                 try:
                     lines, options = _parse_pipfile_lock(text)
-                except Exception as exc:  # noqa: BLE001
+                except Exception as exc:
                     warnings.append(
                         f"{f}: Pipfile.lock parse error: {exc}"
                     )
@@ -145,7 +145,7 @@ class PypiContext:
             elif f.name == "pyproject.toml":
                 try:
                     lines, options = _parse_pyproject_toml(text)
-                except Exception as exc:  # noqa: BLE001
+                except Exception as exc:
                     warnings.append(
                         f"{f}: pyproject.toml parse error: {exc}"
                     )

@@ -144,6 +144,30 @@ _PUBLISH_ACTIONS: tuple[str, ...] = (
     "js-devtools/npm-publish",
 )
 
+# ``uses:`` of publishers whose ``with:`` block can explicitly opt out
+# of trusted-publishing's attestation surface. Each entry maps the
+# action prefix to the ``with:`` keys that, if set to a false-ish
+# value, disable the attestation path.
+#
+# - ``pypa/gh-action-pypi-publish`` ``attestations:`` defaults to true
+#   under PEP 740; explicit ``attestations: false`` turns it off.
+# - ``docker/build-push-action`` ``provenance`` / ``sbom`` /
+#   ``attestations`` default to true on push-actions >= v5; explicit
+#   ``false`` on any of them turns that signal off while leaving the
+#   ``push: true`` behavior intact.
+_ATTESTATION_PUBLISHERS: dict[str, tuple[str, ...]] = {
+    "pypa/gh-action-pypi-publish": ("attestations",),
+    "docker/build-push-action": ("provenance", "sbom", "attestations"),
+}
+
+# False-shaped values per the YAML 1.1 boolean lexicon plus the strict
+# 1.2 ``false`` literal. ``None`` is the action's default (not a
+# disable), so it's excluded.
+_FALSE_VALUES: frozenset[str | bool] = frozenset({
+    False, "false", "False", "FALSE", "no", "No", "NO",
+    "off", "Off", "OFF", "0",
+})
+
 # Long-lived registry secrets the heuristic looks for. Match is case-
 # insensitive; the ``${{ secrets.* }}`` form is the canonical shape
 # but a bare env reference is enough since the env block is where the
@@ -177,6 +201,43 @@ def _step_publishes(step: dict[str, Any]) -> tuple[bool, str]:
             if action.startswith(prefix):
                 return True, prefix
     return False, ""
+
+
+def _step_attestation_explicitly_disabled(
+    step: dict[str, Any],
+) -> str | None:
+    """Return a label naming the disabled key, or ``None``.
+
+    Detects the zizmor-proposal-#938 shape where a publish action's
+    ``with:`` block explicitly sets ``attestations: false`` /
+    ``provenance: false`` / ``sbom: false`` while staying under the
+    "publish step exists" radar of the long-lived-secret check.
+
+    ``docker/build-push-action`` requires ``push: true`` for the
+    disable to matter; ``push: false`` means no publish at all and
+    the rule stays silent.
+    """
+    uses = step.get("uses")
+    if not isinstance(uses, str):
+        return None
+    action = uses.split("@", 1)[0].lower()
+    with_block = step.get("with")
+    if not isinstance(with_block, dict):
+        return None
+    for prefix, keys in _ATTESTATION_PUBLISHERS.items():
+        if not action.startswith(prefix):
+            continue
+        if prefix == "docker/build-push-action":
+            push = with_block.get("push")
+            if push in _FALSE_VALUES or push is None:
+                return None
+        for key in keys:
+            if key not in with_block:
+                continue
+            value = with_block[key]
+            if value in _FALSE_VALUES:
+                return f"{prefix}: {key}: false"
+    return None
 
 
 def _step_uses_long_lived_secret(step: dict[str, Any]) -> bool:
@@ -223,13 +284,27 @@ def check(path: str, doc: dict[str, Any]) -> Finding:
         if env_field:
             continue
         for idx, step in enumerate(iter_steps(job)):
+            # Attestation-explicitly-disabled has its own publish-step
+            # detection (the docker-build-push case isn't in
+            # ``_PUBLISH_ACTIONS``). Check both shapes per step;
+            # one finding per step regardless of which conjunction
+            # fired (no double-finding for the same step).
+            attestation_disabled = (
+                _step_attestation_explicitly_disabled(step)
+            )
             is_pub, label = _step_publishes(step)
-            if not is_pub:
-                continue
-            if not _step_uses_long_lived_secret(step):
+            fail_reason: str | None = None
+            if is_pub and _step_uses_long_lived_secret(step):
+                fail_reason = f"long-lived token, no environment ({label})"
+            elif attestation_disabled is not None:
+                fail_reason = (
+                    f"attestation explicitly disabled "
+                    f"({attestation_disabled})"
+                )
+            if fail_reason is None:
                 continue
             name = step.get("name") or step.get("id") or f"steps[{idx}]"
-            offenders.append(f"{job_id}.{name} ({label})")
+            offenders.append(f"{job_id}.{name} ({fail_reason})")
             locations.append(step_location(path, step))
             anchor_jobs[job_id] = None
     passed = not offenders

@@ -145,7 +145,7 @@ class AWSRuleChecks(AWSBaseCheck):
         for rule, check_fn in self._rules:
             try:
                 batch = check_fn(catalog) or []
-            except Exception as exc:  # noqa: BLE001
+            except Exception as exc:
                 prefix = rule.id.split("-", 1)[0]
                 svc = _RULE_PREFIX_TO_SERVICE.get(prefix, prefix.lower())
                 catalog.errors.setdefault(svc, f"{type(exc).__name__}: {exc}")
