@@ -1,0 +1,17 @@
+name: scenario-27-secret-leak-in-logs-derived
+on:
+  push:
+    branches: [main]
+permissions:
+  contents: read
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332
+      - name: Deploy (DANGER, derived-value leak)
+        env:
+          API_KEY: ${{ secrets.API_KEY }}
+        run: |
+          echo "key prefix: ${API_KEY:0:8}"
+          echo "fp=$(echo $API_KEY | sha256sum | cut -c1-16)" >> "$GITHUB_OUTPUT"

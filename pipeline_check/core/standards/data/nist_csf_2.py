@@ -492,6 +492,11 @@ STANDARD = Standard(
         "GHA-060":  ["GV.SC-05"],               # pip install without --require-hashes
         "GHA-061":  ["PR.AA-05"],               # App token minted without permissions filter
         "GHA-062":  ["PR.AA-05"],               # OIDC trust subject in sibling IaC is overly broad
+        "GHA-063":  ["PR.AA-01"],               # spoofable bot-actor if-predicate
+        "GHA-064":  ["PR.PS-06"],               # unsound contains() with comma-string operand
+        "GHA-065":  ["PR.PS-05"],               # zero-width / bidi unicode in workflow body
+        "GHA-086":  ["PR.PS-06"],               # wildcard branch trigger + environment binding
+        "GHA-087":  ["PR.AA-01", "PR.DS-01"],   # derived-value of secret printed to log
         # ── GitLab CI ─────────────────────────────────────────────
         "GL-004":  ["PR.PS-06"],                # manual deploy allow_failure
         "GL-029":  ["PR.PS-06"],                # manual deploy allow_failure (variant)

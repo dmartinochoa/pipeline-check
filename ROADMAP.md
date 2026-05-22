@@ -245,6 +245,376 @@ What's planned, what's shipped, and what's deliberately out of scope.
 Larger items proposed after v1.1.0. Not yet scoped to a specific
 release; landing order is open.
 
+### Zizmor parity sweep (GHA-063 .. GHA-07x)
+
+Gap analysis against `zizmorcore/zizmor` v1.25.2 (37 audits at time of
+review, 2026-05-22). Pipeline-check's 65-rule GHA pack already covers
+the majority by direct or near equivalent (e.g., zizmor
+``template-injection`` -> GHA-003, ``unpinned-uses`` -> GHA-001,
+``hardcoded-container-credentials`` -> GHA-039, ``unpinned-images`` ->
+GHA-051, ``self-hosted-runner`` -> GHA-012, ``insecure-commands`` ->
+GHA-031 / GHA-038, ``secrets-inherit`` -> GHA-034,
+``use-trusted-publishing`` -> GHA-050, ``dangerous-triggers`` ->
+GHA-002 / GHA-009, ``github-env`` -> TAINT family, ``artipacked`` ->
+GHA-019 / GHA-037, ``github-app`` -> GHA-061).
+
+The items below are the genuine gaps worth chasing. Each lands as one
+new GHA-NNN rule (or a widening of an existing one). Pedantic /
+ergonomic zizmor audits (``anonymous-definition``,
+``undocumented-permissions``, ``concurrency-limits``, ``misfeature``,
+``superfluous-actions``) are excluded by design, they don't carry a
+real-world exploit shape and chasing them dilutes the
+exploit-evidenced posture the rule pack stands on. ``forbidden-uses``
+(config-driven allow/deny list of action references) maps to the
+existing custom-rule loader and doesn't need a new built-in rule.
+
+**ID-numbering note (2026-05-22).** The IDs in this section are
+placeholders, not reservations. The first sweep batch landed
+under sequential numbers (``GHA-063`` / ``GHA-064`` / ``GHA-065``)
+without matching the original placeholders in this section:
+
+* ``GHA-063`` landed as **bot-conditions** (originally placeholder
+  for ref-version-mismatch).
+* ``GHA-064`` landed as **unsound-contains** (originally placeholder
+  for impostor-commit).
+* ``GHA-065`` landed as **zero-width / bidi unicode** (originally
+  placeholder for typosquat-uses).
+
+The struck-through items below are now shipped at the IDs listed
+inline. Remaining items keep their original placeholder IDs and
+will be renumbered when they land.
+
+Suggested landing order, highest signal first:
+
+- **GHA-063: action SHA pin does not match its version comment.**
+  Mirrors zizmor's ``ref-version-mismatch``. A SHA pin commented as
+  ``# v4.1.1`` should actually resolve to the ``v4.1.1`` tag on the
+  upstream repo. Drift here is the canonical impostor-commit setup,
+  the SHA fetches *something*, the comment lies about what. Offline
+  via ``--resolve-remote`` when a sibling checkout is available; live
+  via the existing GHA resolver cache otherwise. HIGH severity.
+- **GHA-064: action ref points at a commit absent from the claimed
+  repository.** Mirrors zizmor's ``impostor-commit``. Detects the
+  attack shape where a fork's commit SHA is referenced in
+  ``uses: owner/repo@<sha>`` but the SHA exists only in the fork's
+  network, not the head repository. Requires the live-resolver path
+  (``--resolve-remote``) plus a ``GET /repos/{o}/{r}/commits/{sha}``
+  membership check. HIGH severity.
+- **GHA-065: action repository typosquats a high-traffic action.**
+  Mirrors zizmor's ``typosquat-uses``. Offline edit-distance check
+  against a curated top-actions list (the same shape NPM-007 uses
+  against the package-name table). Catches ``actions/check0ut``,
+  ``actons/checkout``, ``actions-checkout/checkout``, etc. HIGH
+  severity. Pairs with GHA-040 (compromised SHA / tag).
+- **GHA-066: action repository is archived or deleted upstream.**
+  Mirrors zizmor's ``archived-uses``. Online-only (the archived bit
+  lives on ``GET /repos/{o}/{r}``). Routes through the
+  ``--resolve-remote`` path so the offline default stays no-network.
+  MEDIUM severity, the dependency still works today but won't get
+  security patches.
+- ~~**GHA-067: bot-actor condition is spoofable.**~~ Landed as
+  **GHA-063**. Fires when a job-level or step-level ``if:``
+  expression compares ``github.actor`` /
+  ``github.triggering_actor`` / ``github.event.sender.login`` to
+  a literal ``*[bot]`` string, or invokes
+  ``contains(github.actor, 'bot')`` /
+  ``endsWith(github.actor, '[bot]')`` / swap-argument variants.
+  Paired ``github.event.*.user.type == 'Bot'`` predicates stay
+  silent (account type is set by GitHub and can't be spoofed by
+  a re-run). HIGH severity. 11 per-rule tests + safe/unsafe
+  fixture pair.
+- **GHA-068: job permissions are excessive for the work it performs.**
+  Widens GHA-004 from "missing permissions block" to "permissions
+  block grants more than the job uses." Heuristic: enumerate the
+  ``uses:`` / ``run:`` content per job, derive the minimal scopes
+  (``contents: read`` unless writes are observed, ``id-token: write``
+  only when an OIDC consumer fires, etc.), and flag the delta. MEDIUM
+  severity. Autofix candidate (downgrade to the inferred minimum).
+- **GHA-069: secrets context broader than the consuming step.**
+  Mirrors zizmor's ``overprovisioned-secrets``. A job that surfaces
+  ``${{ secrets.X }}`` only in one step but defines ``env:`` at the
+  job level (or worse, the workflow level) leaks the secret into
+  every other step's process environment. HIGH severity. Composable
+  with TAINT-001 (the cross-step taint engine already tracks env
+  visibility).
+- **GHA-070: workflow `uses:` reference is the latest commit on a
+  branch.** Mirrors zizmor's ``stale-action-refs`` from the opposite
+  angle: zizmor flags SHA pins that don't point at any tag (drift
+  indicator), pipeline-check additionally flags SHAs that point at
+  ``HEAD`` of a branch the maintainer just pushed minutes ago. Pairs
+  with GHA-047 (recently committed tag / SHA). MEDIUM severity.
+- ~~**GHA-071: contains() called with string-shaped left
+  operand.**~~ Landed as **GHA-064**. Fires when an ``if:``
+  expression invokes ``contains('<haystack-with-comma>',
+  <expr>)`` (either quote style). ``fromJSON('["main", ...]')``
+  array-literal forms and no-comma substring searches
+  (``contains('refs/heads/release', github.ref)``) stay silent.
+  HIGH severity. 8 per-rule tests + safe/unsafe fixture pair.
+- **GHA-072: agentic AI tool invoked after PR checkout.** Inspired by
+  zizmor proposal #1605 (``agentic-actions``) and zizmor proposal
+  #1607 (hijackable commands after checkout). Widens GHA-058 from
+  permission-bypass-flag detection to also flag the topology where
+  an agentic CLI runs in a job that previously checked out a PR head
+  with write-scope token in scope. HIGH severity. Pairs with GHA-046
+  (manual PR-head fetch) and GHA-045 (caller-controlled ref).
+- **GHA-073: actions/upload-artifact wildcard path uploads.** Mirrors
+  zizmor proposal #195 (``artifact-poisoning``) and #1208
+  (``if-no-files-found``). An ``upload-artifact`` with ``path: **/*``
+  or ``path: .`` will sweep the entire workspace including
+  ``.git/config`` (token-bearing after checkout), ``node_modules``
+  install-scripts output, and any other PR-staged tree. HIGH
+  severity. Pairs with GHA-019 (token persistence into artifact).
+- **GHA-074: workflow caches credential-shaped files.** Mirrors
+  zizmor proposal #723 (caching sensitive files). An
+  ``actions/cache`` step with ``path:`` covering ``~``,
+  ``~/.docker``, ``~/.npmrc``, ``~/.aws``, ``~/.ssh``, ``~/.gnupg``,
+  ``~/.gradle/gradle.properties``, etc. publishes those credentials
+  into the (PR-readable) cache namespace. HIGH severity. Pairs with
+  GHA-052 (untrusted cache key) and GHA-011 (cache key derives from
+  PR input).
+- **GHA-075: shell defaulted to powershell on a Linux / macOS step.**
+  Mirrors zizmor proposal #288. A ``run:`` step on
+  ``runs-on: ubuntu-latest`` without a ``shell:`` defaults to
+  ``bash``, but ``shell: pwsh`` or the workflow-level default
+  ``shell: powershell`` on a non-Windows runner silently flips
+  language and tokenization rules, an injection that's a no-op in
+  bash can be live in pwsh. LOW severity, advisory.
+- **GHA-076: runs-on uses a deprecated runner image.** Mirrors
+  zizmor proposal #260 / #827. ``ubuntu-18.04``, ``ubuntu-20.04``,
+  ``macos-11``, ``windows-2019``, etc. are end-of-life or imminently
+  so. MEDIUM severity. Pairs with GHA-051 (services image not
+  digest-pinned).
+- **GHA-077: known-vulnerable action ref via live GHSA feed.** Widens
+  GHA-040 from the curated compromised-SHA list to a live GHSA query
+  against the GitHub Advisory database (``GET /advisories?type=
+  reviewed&ecosystem=actions``). Curated list stays as the offline
+  default, GHSA layer is opt-in via ``--resolve-remote`` like the
+  cooldown family. Closes the freshness gap that zizmor's
+  ``known-vulnerable-actions`` already gets via the same feed. HIGH
+  severity.
+- ~~**GHA-078: workflow body contains zero-width / bidi
+  unicode.**~~ Landed as **GHA-065**. Walks every string value in
+  the parsed workflow document for any of 15 suspicious
+  codepoints (``U+200B``-``U+200F`` zero-width and bidi marks,
+  ``U+202A``-``U+202E`` LRE / RLE / PDF / LRO / RLO,
+  ``U+2066``-``U+2069`` LRI / RLI / FSI / PDI, ``U+FEFF`` BOM).
+  Any single occurrence fires. CRITICAL severity, the entire
+  signal is steganographic. 8 per-rule tests + safe/unsafe
+  fixture pair.
+
+Each entry is sized to land as a single PR with the rule module,
+per-rule tests, ``docs/providers/github.md`` regeneration, and a
+``CHANGELOG.md`` entry. Total provider claim moves from 65 -> 65 + N.
+No new attack chains in this sweep, the chain engine already covers
+the cross-rule compositions worth firing.
+
+Second pass, drawn from zizmor's open feature-request backlog
+(non-``new-audit`` issues with real attack shape):
+
+- **GHA-079: ssh-keyscan trust-on-first-use.** Inspired by zizmor
+  proposal #2012. ``ssh-keyscan github.com >> ~/.ssh/known_hosts``
+  inside a ``run:`` step accepts whatever host key the network
+  returns. A workflow-runner-resident attacker (or a poisoned DNS
+  answer on a self-hosted runner) gets a clean MITM on the next
+  ``git fetch`` / ``scp`` / ``rsync`` from the same job. Same shape
+  with ``StrictHostKeyChecking=no`` / ``UserKnownHostsFile=
+  /dev/null`` flags on ``ssh -o``. HIGH severity. Pairs with GHA-023
+  (TLS / cert verify bypass) and GHA-054 (checkout ssh-key
+  persistence).
+- **GHA-080: TOCTOU on PR head SHA between checkout and use.**
+  Inspired by zizmor proposal #935. A workflow that resolves the PR
+  head once (``HEAD_SHA=$(git rev-parse HEAD)``) and then runs
+  ``actions/checkout`` with ``ref: ${{ github.event.pull_request.
+  head.sha }}`` in a later step is racing the contributor, the PR
+  head can be force-pushed between the two reads and the second
+  checkout pulls code that bypassed the first step's review /
+  reviewer / labeler gate. HIGH severity. Pairs with GHA-045
+  (caller-controlled ref into checkout) and GHA-046 (manual
+  PR-head fetch).
+- **GHA-081: if predicate over an attacker-controlled PR label, title,
+  or body.** Inspired by zizmor proposal #635. ``if: contains(
+  github.event.pull_request.labels.*.name, 'safe-to-test')`` is the
+  canonical foot-gun, any contributor with ``triage`` (or higher) on
+  the repo can apply the label, and on some repo configurations the
+  label dialog is even open to first-time contributors. Same shape
+  with ``github.event.pull_request.title`` / ``.body`` /
+  ``.head.ref``. HIGH severity. Pairs with GHA-053 (if predicate
+  over untrusted context).
+- **GHA-082: action `uses:` points at a takeover-eligible org.**
+  Inspired by zizmor proposal #479 (repojacking). The owner of
+  ``uses: vendor/setup-foo@<sha>`` renamed or deleted the org, the
+  name is now claimable by anyone, and the next time a tag or
+  branch ref is resolved (``@v1`` / ``@main``) the workflow runs
+  attacker code. Live check (``GET /repos/{o}/{r}`` returns 404
+  while ``uses:`` still references it) gated on ``--resolve-remote``.
+  HIGH severity. Pairs with GHA-001 / GHA-040.
+- **GHA-083: Living-off-the-Pipeline indicators.** Inspired by zizmor
+  proposal #1948 (LOTP). Detection-evasion via built-in pipeline
+  primitives: ``GITHUB_STEP_SUMMARY`` used to exfiltrate secret
+  values into a (PR-readable) artifact, ``::warning::`` /
+  ``::notice::`` workflow commands carrying attacker-controlled
+  text into log lines that downstream tooling parses, ``echo "::add-
+  mask::$SECRET"`` followed by a print of the masked value (mask
+  applies post-printf, not pre-printf). HIGH severity. Pairs with
+  GHA-033 (secret echoed) and GHA-038 (allow-unsecure-commands).
+- **GHA-084: orphan `id-token: write` scope.** Inspired by zizmor
+  proposal #1968. A job that grants ``id-token: write`` without an
+  OIDC-consumer step (``aws-actions/configure-aws-credentials``,
+  ``google-github-actions/auth``, ``azure/login``, the publish-with-
+  provenance family) is minting OIDC tokens that no step uses, the
+  scope is permission surface with zero value, and any later step
+  that gets compromised can request that token. MEDIUM severity.
+  Pairs with GHA-030 (OIDC without env).
+- **GHA-085: workflow declares a secret it never references.**
+  Inspired by zizmor proposal #1044 (unused secrets). A
+  ``workflow_call.secrets.<name>: required: true`` without any
+  ``${{ secrets.<name> }}`` consumer in the workflow body is dead
+  surface, the caller is forced to pass the value, and any step that
+  reads ``secrets`` context (``secrets.NPM_TOKEN`` -> ``env:`` ->
+  ``echo``) gets it. MEDIUM severity. Pairs with GHA-069
+  (overprovisioned secrets context).
+
+Two existing-rule widenings worth bundling into the same sweep:
+
+- **Widen GHA-003 to ``services.*.options:`` and ``services.*.env:``.**
+  Inspired by zizmor proposal #1128. The script-injection sink set
+  currently misses two service-container injection points,
+  ``services.db.options: --hostname=${{ github.event.issue.title }}``
+  reaches ``docker run`` argv, and ``services.db.env: { FOO: "${{
+  github.event.pr.head.label }}" }`` reaches the container's env.
+  Same primitive, same fix, just two extra YAML paths in the sink
+  resolver.
+- **Widen GHA-050 to "attestation explicitly disabled."** Inspired by
+  zizmor proposal #938. ``pypa/gh-action-pypi-publish`` with
+  ``attestations: false``, ``docker/build-push-action`` with
+  ``provenance: false`` / ``sbom: false``, ``crates-io/publish`` with
+  the equivalent flag, all turn off the trusted-publishing path's
+  attestation generation while staying under the rule's
+  "publish step exists" radar. Flag the explicit-disable case the
+  same as the no-OIDC case.
+
+One CLI ergonomics item:
+
+- **``--only-known-attacked`` filter.** Inspired by zizmor proposal
+  #1135. Runs only rules carrying a ``cve``, ``cisa_kev``, or
+  ``seen_in_wild`` reference field, the rest stay off. Useful for
+  burning down the incident-driven worklist on a fresh repo without
+  the full pack noise. Routes through the existing rule-metadata
+  surface, ``rule.cve`` / ``rule.seen_in_wild`` are already populated
+  on the rules that have them.
+
+Out of scope from zizmor that we explicitly decline:
+
+- ``anonymous-definition`` / ``undocumented-permissions`` / pedantic
+  persona. Pipeline-check has no pedantic mode and isn't adding one,
+  the no-pedantic posture is part of why the false-positive rate
+  stays where it is.
+- ``concurrency-limits``. CI ergonomics, not security.
+- ``misfeature``. Too vague to map to a rule with a
+  ``recommendation`` line that survives review.
+- ``superfluous-actions``. Build-speed concern dressed as a security
+  rule, the runner pre-installing ``node`` doesn't change the threat
+  model when you ``setup-node`` to pin a version.
+- ``forbidden-uses``. Already expressible through the custom-rule
+  YAML loader, a built-in flavor would duplicate that surface.
+
+### cicd-goat scenario coverage push
+
+Gap analysis against `greylag-ci/cicd-goat`'s 29-scenario matrix
+(reviewed 2026-05-22). Pipeline-check leads the comparison at
+15 of 29 canonical bugs caught (+ 1 partial), with the
+``scanner-comparison`` job's per-row notes in ``tools/scenarios.yaml``
+documenting why each ❌ row reads the way it does. Most ❌ rows are
+already addressed by post-1.2.0 rules (GHA-008 keyed-hex, GHA-016
+trusted-installer, GHA-033 shell-trace, GHA-049 actions-bot-bypass,
+GHA-057 webhook-exfil, GHA-061 app-token-scope, GHA-062
+OIDC-IaC-subject, TAINT-002 matrix-expansion) and just need the
+comparison CI's per-scenario invocations to catch up.
+
+The items below are the genuine gaps that warrant new rules or
+engine work. Each lands as one PR, sized like the existing
+``GitHub Actions cicd-goat coverage push (v1.3.0)`` cycle entry.
+
+- ~~**Local composite-action scanning (scenario 18).**~~ Landed.
+  ``GitHubContext.from_path`` walks every loaded workflow for
+  ``uses: ./path`` (``parse_uses`` ``kind="local-action"``),
+  resolves ``<repo_root>/<path>/action.yml`` (or ``action.yaml``)
+  on disk via a new ``checks/github/local_actions.py`` module, and
+  synthesizes the body as a ``__composite__`` job that flows back
+  through the existing rule pack the same way remote composites do
+  under ``--resolve-remote``. On by default (no network call). Repo-
+  root inference handles the canonical ``.github/workflows`` layout
+  plus an ad-hoc-directory fallback; ``./../path`` traversal is
+  bounded against the resolved repo root; missing ``action.yml``
+  files dedup-warn; composite-of-composite chains recurse to depth
+  3 (hard ceiling 10). Closes cicd-goat scenario 18 (GHA-003 fires
+  on the composite step's ``${{ inputs.message }}`` -> ``run:``
+  splice). Side-effect: every existing ``runs.steps``-shaped rule
+  (GHA-001 / GHA-004 / GHA-039 / GHA-051 / ...) now applies to
+  composite bodies without per-rule changes. Twelve tests under
+  ``tests/github/test_local_composite_actions.py``.
+- ~~**TAINT-003: cross-``workflow_call`` source -> sink (scenario 28).**~~
+  Already shipped, missed in the initial roadmap analysis.
+  ``rules/taint003_reusable_workflow_taint.py`` walks every
+  ``jobs.<id>.uses: <callee>`` reference, finds tainted ``with:``
+  values that interpolate an attacker-controllable source, and
+  resolves the callee body when it's loaded into the same scan
+  (local ``./.github/workflows/<file>.yml`` references via
+  ``--gha-path``, or remote refs fetched via ``--resolve-remote``).
+  Paths whose callee actually consumes ``${{ inputs.<name> }}``
+  unquoted in a sink fire CONFIRMED with HIGH confidence; the rest
+  stay at MEDIUM. Verified end-to-end against cicd-goat scenario
+  28's exact shape (``github.event.pull_request.body`` -> ``with:
+  build-args:`` -> callee's ``./build.sh ${{ inputs.build-args }}``):
+  the rule fires CONFIRMED + HIGH confidence in one step. The
+  scenario-18 local-composite-action work above means the same
+  ``with:`` -> ``inputs.<name>`` -> ``run:`` boundary now also
+  applies to composite ``action.yml`` bodies discovered on disk.
+- ~~**GHA-NNN: wildcard branch trigger + environment binding
+  (scenario 25).**~~ Landed as **GHA-086**. Fires when the
+  workflow's ``on: push: branches:`` filter contains at least one
+  wildcard pattern (``*``, ``?``, ``+``, ``[...]``) AND at least
+  one job binds ``environment: <name>``. ``branches-ignore``
+  (restricts triggers) and ``tags:`` (higher-privilege creation)
+  are deliberately not flagged. MEDIUM severity. Skips into
+  ID 086 to leave GHA-063..085 available for the Zizmor parity
+  sweep above; the cicd-goat pack will fill back from 086 as
+  its remaining items land. 14 per-rule tests plus the standard
+  safe/unsafe fixture pair. Mapped to OWASP CICD-SEC-1 /
+  CICD-SEC-5; ESF-C-APPROVAL / ESF-C-ENV-SEP; CIS 5.1.4 / 5.2.1.
+- ~~**GHA-NNN: secret-derivation echo (scenario 27 derived-value
+  half).**~~ Landed as **GHA-087**. Fires on a single ``run:``
+  line that combines (1) a secret reference (``${{ secrets.* }}``
+  context, or ``$NAME``/``${NAME}`` expansion of a step ``env:``
+  bound to ``secrets.*``); (2) a transform on that reference
+  (hash / encode / truncate / bash slice); (3) a print sink on
+  the same line (``echo`` / ``printf`` / ``tee`` head, or
+  redirect to ``$GITHUB_OUTPUT`` / ``$GITHUB_STEP_SUMMARY`` / a
+  file). HIGH severity. GHA-033's recommendation was tightened
+  in the same cycle to drop the "log a fingerprint" suggestion
+  that GHA-087 now flags. 15 per-rule tests plus the standard
+  safe/unsafe fixture pair. Mapped to OWASP CICD-SEC-10 /
+  CICD-SEC-6; ESF-D-SECRETS; CIS 2.3.7; NIST 800-53 IA-5 / AU-9;
+  NIST CSF PR.AA-01 / PR.DS-01; SOC2 CC6.1; PCI-DSS v4 8.2.1 /
+  10.3.2.
+
+The matrix's other ❌ rows are accounted for elsewhere:
+
+- Scenarios 10 / 22 (AWS / GCP OIDC over-broad trust) -> GHA-062
+  shipped post-1.2.0; the CI just needs the sibling
+  ``trust-policy.json`` / ``workload-identity-pool.tf`` in the
+  scan scope.
+- Scenarios 11 / 20 / 29 (pip-no-hashes / dependency confusion /
+  npm lifecycle script) -> already covered by NPM-001 / NPM-004 /
+  GHA-060; the comparison CI needs the parallel ``--pipeline
+  npm,pypi`` invocation. Pipeline-check already emits a one-line
+  stderr hint nudging users to add the sibling provider; the
+  multi-pipeline auto-detect path in ``cli.py`` covers the
+  user-facing surface today.
+- Scenarios 17 (ArtiPACKED ⚠️) / 21 (matrix expansion) / 26
+  (app-token scope) -> partial / full coverage from GHA-019 /
+  TAINT-002 / GHA-061 respectively, all shipped post-1.2.0.
+
 ### Self-hosted findings-history dashboard
 
 Tiny FastAPI + static-HTML app that reads a local

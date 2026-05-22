@@ -21,9 +21,11 @@ RULE = Rule(
         "base64 / urlencoded / partial substrings, and any caller "
         "that retrieves the raw log via the API gets the unredacted "
         "stream. If you need to confirm the secret exists, log a "
-        "boolean (``[ -n \"$X\" ] && echo set || echo unset``) or a "
-        "fingerprint (``echo \"$X\" | sha256sum | head -c8``), never "
-        "the value itself."
+        "boolean (``[ -n \"$X\" ] && echo set || echo unset``), "
+        "never the value itself. Note: a SHA-256 fingerprint or a "
+        "``${X:0:N}`` prefix is not a safe substitute either, those "
+        "shapes still slip past the masker and are flagged by "
+        "GHA-087 separately."
     ),
     docs_note=(
         "Three shapes are flagged:\n\n"

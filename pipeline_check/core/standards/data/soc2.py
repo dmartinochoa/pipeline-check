@@ -419,6 +419,11 @@ STANDARD = Standard(
         "GHA-060":  ["CC8.1"],              # pip install without --require-hashes
         "GHA-061":  ["CC6.1", "CC6.3"],     # App token minted without permissions filter
         "GHA-062":  ["CC6.1", "CC6.3"],     # OIDC trust subject in sibling IaC is overly broad
+        "GHA-063":  ["CC6.1"],              # spoofable bot-actor if-predicate
+        "GHA-064":  ["CC8.1"],              # unsound contains() with comma-string operand
+        "GHA-065":  ["CC8.1"],              # zero-width / bidi unicode in workflow body
+        "GHA-086":  ["CC8.1"],              # wildcard branch trigger + environment binding
+        "GHA-087":  ["CC6.1"],              # derived-value of secret printed to log
         # ── GitLab CI ─────────────────────────────────────────────
         "GL-006":   ["CC8.1"],              # unsigned artifacts
         "GL-007":   ["CC8.1"],              # no SBOM

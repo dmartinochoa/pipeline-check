@@ -19,7 +19,7 @@ Kubernetes, …) when an audit asks for that framework's vocabulary.
 
 - **Controls in this standard:** 10
 - **Controls evidenced by at least one check:** 10 / 10
-- **Distinct checks evidencing this standard:** 586
+- **Distinct checks evidencing this standard:** 591
 - **Of those, autofixable with `--fix`:** 111
 
 _Severity levels (`CRITICAL` / `HIGH` / `MEDIUM` / `LOW` / `INFO`) follow the same scale across every provider and standard. See [How to read severity](README.md#how-to-read-severity) on the standards overview for the definitions._
@@ -30,16 +30,16 @@ Click a control ID to jump to the per-control section with the full check list. 
 
 | Control | Title | Checks | Severity mix |
 |---------|-------|-------:|--------------|
-| [`CICD-SEC-1`](#ctrl-cicd-sec-1) | Insufficient Flow Control Mechanisms | 72 | 4C · 31H · 29M · 8L |
+| [`CICD-SEC-1`](#ctrl-cicd-sec-1) | Insufficient Flow Control Mechanisms | 75 | 4C · 33H · 30M · 8L |
 | [`CICD-SEC-2`](#ctrl-cicd-sec-2) | Inadequate Identity and Access Management | 40 | 5C · 23H · 11M · 1L |
 | [`CICD-SEC-3`](#ctrl-cicd-sec-3) | Dependency Chain Abuse | 176 | 5C · 88H · 67M · 16L |
-| [`CICD-SEC-4`](#ctrl-cicd-sec-4) | Poisoned Pipeline Execution | 90 | 23C · 47H · 15M · 5L |
-| [`CICD-SEC-5`](#ctrl-cicd-sec-5) | Insufficient PBAC | 32 | 4C · 20H · 8M |
-| [`CICD-SEC-6`](#ctrl-cicd-sec-6) | Insufficient Credential Hygiene | 69 | 28C · 26H · 15M |
+| [`CICD-SEC-4`](#ctrl-cicd-sec-4) | Poisoned Pipeline Execution | 93 | 24C · 49H · 15M · 5L |
+| [`CICD-SEC-5`](#ctrl-cicd-sec-5) | Insufficient PBAC | 33 | 4C · 20H · 9M |
+| [`CICD-SEC-6`](#ctrl-cicd-sec-6) | Insufficient Credential Hygiene | 71 | 29C · 27H · 15M |
 | [`CICD-SEC-7`](#ctrl-cicd-sec-7) | Insecure System Configuration | 102 | 22C · 39H · 34M · 7L |
 | [`CICD-SEC-8`](#ctrl-cicd-sec-8) | Ungoverned Usage of 3rd-Party Services | 30 | 8C · 14H · 8M |
 | [`CICD-SEC-9`](#ctrl-cicd-sec-9) | Improper Artifact Integrity Validation | 72 | 1C · 17H · 47M · 7L |
-| [`CICD-SEC-10`](#ctrl-cicd-sec-10) | Insufficient Logging and Visibility | 47 | 4H · 14M · 13L · 16I |
+| [`CICD-SEC-10`](#ctrl-cicd-sec-10) | Insufficient Logging and Visibility | 48 | 5H · 14M · 13L · 16I |
 
 ## Filter at runtime
 
@@ -62,7 +62,7 @@ pipeline_check --pipeline aws --standard owasp_cicd_top_10 --standard nist_ssdf
 
 Reviews, approvals, branch protection, and deployment gates are the brakes on the pipeline. Missing them lets a single commit, or a single API call, ship straight to production.
 
-**Evidenced by 72 checks** across 13 providers (AWS, Argo CD, Argo Workflows, Azure DevOps, Bitbucket, Buildkite, CircleCI, Drone CI, GitHub Actions, GitLab CI, Jenkins, SCM, Tekton).
+**Evidenced by 75 checks** across 13 providers (AWS, Argo CD, Argo Workflows, Azure DevOps, Bitbucket, Buildkite, CircleCI, Drone CI, GitHub Actions, GitLab CI, Jenkins, SCM, Tekton).
 
 | Check | Title | Severity | Provider | Fix |
 |-------|-------|----------|----------|-----|
@@ -91,6 +91,9 @@ Reviews, approvals, branch protection, and deployment gates are the brakes on th
 | [`GHA-048`](#detail-gha-048) | Workflow step writes a file under .github/workflows/ | <span class="pg-sev pg-sev--critical">CRITICAL</span> | [GitHub Actions](../providers/github.md) |  |
 | [`GHA-049`](#detail-gha-049) | Workflow step makes a privileged git write (cross-repo or actions[bot] bypass) | <span class="pg-sev pg-sev--high">HIGH</span> | [GitHub Actions](../providers/github.md) |  |
 | [`GHA-056`](#detail-gha-056) | Workflow body contains a known supply-chain worm indicator | <span class="pg-sev pg-sev--critical">CRITICAL</span> | [GitHub Actions](../providers/github.md) |  |
+| [`GHA-063`](#detail-gha-063) | ``if:`` predicate gates on a spoofable bot-actor comparison | <span class="pg-sev pg-sev--high">HIGH</span> | [GitHub Actions](../providers/github.md) |  |
+| [`GHA-064`](#detail-gha-064) | ``contains()`` invoked with comma-delimited string operand | <span class="pg-sev pg-sev--high">HIGH</span> | [GitHub Actions](../providers/github.md) |  |
+| [`GHA-086`](#detail-gha-086) | Wildcard branch trigger gates an environment-bound deploy | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [GitHub Actions](../providers/github.md) |  |
 | [`GL-004`](#detail-gl-004) | Deploy job lacks manual approval or environment gate | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [GitLab CI](../providers/gitlab.md) |  |
 | [`GL-029`](#detail-gl-029) | Manual deploy job defaults to allow_failure: true | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [GitLab CI](../providers/gitlab.md) |  |
 | [`GL-033`](#detail-gl-033) | Global before_script / after_script propagates taint to every job | <span class="pg-sev pg-sev--high">HIGH</span> | [GitLab CI](../providers/gitlab.md) |  |
@@ -377,7 +380,7 @@ Floating tags, range constraints, and unverified registries let an upstream main
 
 An attacker who can influence what a build runs, via a PR, an issue comment, or a tainted environment variable, executes with the build's secrets and write-access to your artifacts.
 
-**Evidenced by 90 checks** across 15 providers (AWS, Argo CD, Argo Workflows, Azure DevOps, Bitbucket, Buildkite, CircleCI, Cloud Build, Dockerfile, Drone CI, GitHub Actions, GitLab CI, Jenkins, SCM, Tekton).
+**Evidenced by 93 checks** across 15 providers (AWS, Argo CD, Argo Workflows, Azure DevOps, Bitbucket, Buildkite, CircleCI, Cloud Build, Dockerfile, Drone CI, GitHub Actions, GitLab CI, Jenkins, SCM, Tekton).
 
 | Check | Title | Severity | Provider | Fix |
 |-------|-------|----------|----------|-----|
@@ -440,6 +443,9 @@ An attacker who can influence what a build runs, via a PR, an issue comment, or 
 | [`GHA-056`](#detail-gha-056) | Workflow body contains a known supply-chain worm indicator | <span class="pg-sev pg-sev--critical">CRITICAL</span> | [GitHub Actions](../providers/github.md) |  |
 | [`GHA-057`](#detail-gha-057) | Secret-scanner output sent to network egress | <span class="pg-sev pg-sev--critical">CRITICAL</span> | [GitHub Actions](../providers/github.md) |  |
 | [`GHA-058`](#detail-gha-058) | Agentic CLI invoked with permission-bypass flags | <span class="pg-sev pg-sev--high">HIGH</span> | [GitHub Actions](../providers/github.md) |  |
+| [`GHA-063`](#detail-gha-063) | ``if:`` predicate gates on a spoofable bot-actor comparison | <span class="pg-sev pg-sev--high">HIGH</span> | [GitHub Actions](../providers/github.md) |  |
+| [`GHA-064`](#detail-gha-064) | ``contains()`` invoked with comma-delimited string operand | <span class="pg-sev pg-sev--high">HIGH</span> | [GitHub Actions](../providers/github.md) |  |
+| [`GHA-065`](#detail-gha-065) | Workflow body contains zero-width or bidi Unicode characters | <span class="pg-sev pg-sev--critical">CRITICAL</span> | [GitHub Actions](../providers/github.md) |  |
 | [`GL-002`](#detail-gl-002) | Script injection via untrusted commit/MR context | <span class="pg-sev pg-sev--high">HIGH</span> | [GitLab CI](../providers/gitlab.md) |  |
 | [`GL-010`](#detail-gl-010) | Multi-project pipeline ingests upstream artifact unverified | <span class="pg-sev pg-sev--critical">CRITICAL</span> | [GitLab CI](../providers/gitlab.md) |  |
 | [`GL-011`](#detail-gl-011) | include: local file pulled in MR-triggered pipeline | <span class="pg-sev pg-sev--high">HIGH</span> | [GitLab CI](../providers/gitlab.md) |  |
@@ -476,7 +482,7 @@ An attacker who can influence what a build runs, via a PR, an issue comment, or 
 
 Build steps with deploy-class permissions, jobs sharing a single broad role, and missing environment gates each let a routine compromise escalate from build to production.
 
-**Evidenced by 32 checks** across 11 providers (AWS, Argo CD, Argo Workflows, Buildkite, CircleCI, Drone CI, GitHub Actions, Jenkins, Kubernetes, SCM, Tekton).
+**Evidenced by 33 checks** across 11 providers (AWS, Argo CD, Argo Workflows, Buildkite, CircleCI, Drone CI, GitHub Actions, Jenkins, Kubernetes, SCM, Tekton).
 
 | Check | Title | Severity | Provider | Fix |
 |-------|-------|----------|----------|-----|
@@ -491,6 +497,7 @@ Build steps with deploy-class permissions, jobs sharing a single broad role, and
 | [`GHA-004`](#detail-gha-004) | Workflow has no explicit permissions block | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [GitHub Actions](../providers/github.md) | <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> |
 | [`GHA-043`](#detail-gha-043) | Low-star action runs with sensitive permissions | <span class="pg-sev pg-sev--high">HIGH</span> | [GitHub Actions](../providers/github.md) |  |
 | [`GHA-061`](#detail-gha-061) | GitHub App token minted without a `permissions:` filter | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [GitHub Actions](../providers/github.md) |  |
+| [`GHA-086`](#detail-gha-086) | Wildcard branch trigger gates an environment-bound deploy | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [GitHub Actions](../providers/github.md) |  |
 | [`JF-003`](#detail-jf-003) | Pipeline uses `agent any` (no executor isolation) | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [Jenkins](../providers/jenkins.md) |  |
 | [`K8S-020`](#detail-k8s-020) | ClusterRoleBinding grants cluster-admin or system:masters | <span class="pg-sev pg-sev--critical">CRITICAL</span> | [Kubernetes](../providers/kubernetes.md) | <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> |
 | [`K8S-021`](#detail-k8s-021) | Role or ClusterRole grants wildcard verbs+resources | <span class="pg-sev pg-sev--high">HIGH</span> | [Kubernetes](../providers/kubernetes.md) |  |
@@ -517,7 +524,7 @@ Build steps with deploy-class permissions, jobs sharing a single broad role, and
 
 Plaintext secrets in YAML, env vars baked into image layers, or tokens echoed to logs all leak credentials before they're ever exploited; rotation only helps if the leak is detected.
 
-**Evidenced by 69 checks** across 19 providers (AWS, Argo CD, Argo Workflows, Azure DevOps, Bitbucket, Buildkite, CircleCI, Cloud Build, CloudFormation, Dockerfile, Drone CI, GitHub Actions, GitLab CI, Jenkins, Kubernetes, SCM, Tekton, Terraform, npm).
+**Evidenced by 71 checks** across 19 providers (AWS, Argo CD, Argo Workflows, Azure DevOps, Bitbucket, Buildkite, CircleCI, Cloud Build, CloudFormation, Dockerfile, Drone CI, GitHub Actions, GitLab CI, Jenkins, Kubernetes, SCM, Tekton, Terraform, npm).
 
 | Check | Title | Severity | Provider | Fix |
 |-------|-------|----------|----------|-----|
@@ -562,6 +569,8 @@ Plaintext secrets in YAML, env vars baked into image layers, or tokens echoed to
 | [`GHA-054`](#detail-gha-054) | actions/checkout with ssh-key persists SSH credential in repo | <span class="pg-sev pg-sev--high">HIGH</span> | [GitHub Actions](../providers/github.md) |  |
 | [`GHA-055`](#detail-gha-055) | Reusable workflow outputs derive a secret or caller-input value | <span class="pg-sev pg-sev--high">HIGH</span> | [GitHub Actions](../providers/github.md) |  |
 | [`GHA-057`](#detail-gha-057) | Secret-scanner output sent to network egress | <span class="pg-sev pg-sev--critical">CRITICAL</span> | [GitHub Actions](../providers/github.md) |  |
+| [`GHA-065`](#detail-gha-065) | Workflow body contains zero-width or bidi Unicode characters | <span class="pg-sev pg-sev--critical">CRITICAL</span> | [GitHub Actions](../providers/github.md) |  |
+| [`GHA-087`](#detail-gha-087) | Derived value of a secret printed to the build log | <span class="pg-sev pg-sev--high">HIGH</span> | [GitHub Actions](../providers/github.md) |  |
 | [`GL-003`](#detail-gl-003) | Variables contain literal secret values | <span class="pg-sev pg-sev--critical">CRITICAL</span> | [GitLab CI](../providers/gitlab.md) |  |
 | [`GL-008`](#detail-gl-008) | Credential-shaped literal in pipeline body | <span class="pg-sev pg-sev--critical">CRITICAL</span> | [GitLab CI](../providers/gitlab.md) | <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> |
 | [`GL-013`](#detail-gl-013) | AWS auth uses long-lived access keys | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [GitLab CI](../providers/gitlab.md) | <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> |
@@ -826,7 +835,7 @@ Without provenance, attestations, signatures, or SBOMs, consumers (including pro
 
 When the pipeline doesn't log its decisions, audits stall and incident response lacks the timeline needed to scope a compromise.
 
-**Evidenced by 47 checks** across 8 providers (AWS, CircleCI, Cloud Build, Dockerfile, Jenkins, Kubernetes, OCI manifest, SCM).
+**Evidenced by 48 checks** across 9 providers (AWS, CircleCI, Cloud Build, Dockerfile, GitHub Actions, Jenkins, Kubernetes, OCI manifest, SCM).
 
 | Check | Title | Severity | Provider | Fix |
 |-------|-------|----------|----------|-----|
@@ -855,6 +864,7 @@ When the pipeline doesn't log its decisions, audits stall and incident response 
 | [`GCB-014`](#detail-gcb-014) | Build logging disabled (options.logging: NONE) | <span class="pg-sev pg-sev--high">HIGH</span> | [Cloud Build](../providers/cloudbuild.md) | <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> |
 | [`GCB-017`](#detail-gcb-017) | Image-producing build does not request SLSA provenance | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [Cloud Build](../providers/cloudbuild.md) |  |
 | [`GCB-025`](#detail-gcb-025) | Build has no tags for audit / discoverability | <span class="pg-sev pg-sev--low">LOW</span> | [Cloud Build](../providers/cloudbuild.md) |  |
+| [`GHA-087`](#detail-gha-087) | Derived value of a secret printed to the build log | <span class="pg-sev pg-sev--high">HIGH</span> | [GitHub Actions](../providers/github.md) |  |
 | [`IAM-000`](#detail-iam-000) | IAM API access failed | <span class="pg-sev pg-sev--info">INFO</span> | [AWS](../providers/aws.md) |  |
 | [`JF-011`](#detail-jf-011) | Pipeline has no `buildDiscarder` retention policy | <span class="pg-sev pg-sev--low">LOW</span> | [Jenkins](../providers/jenkins.md) | <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> |
 | [`K8S-024`](#detail-k8s-024) | Container missing both livenessProbe and readinessProbe | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [Kubernetes](../providers/kubernetes.md) |  |
@@ -9214,7 +9224,7 @@ jobs:
 
 Out of scope (deliberate carve-out): inline secret references in a command's *arguments* without shell trace enabled. ``curl --header "Authorization: Bearer ${{ secrets.X }}"`` doesn't echo the header to stdout — the value goes to the network, not the log. That class of leak is covered by GHA-008 (literal credential in YAML) and the network-egress shape of GHA-057, not GHA-033. ``greylag-ci/cicd-goat`` scenario 15 sits squarely in this carve-out: a literal hex token in workflow ``env:`` plus a GET ``curl`` carrying the credential in an ``Authorization:`` header. GHA-008 fires on the literal; GHA-033 deliberately does not.
 
-**Recommendation.** Don't print secret values from a script. GitHub's log redaction is a best-effort string match. It doesn't catch base64 / urlencoded / partial substrings, and any caller that retrieves the raw log via the API gets the unredacted stream. If you need to confirm the secret exists, log a boolean (``[ -n "$X" ] && echo set || echo unset``) or a fingerprint (``echo "$X" | sha256sum | head -c8``), never the value itself.
+**Recommendation.** Don't print secret values from a script. GitHub's log redaction is a best-effort string match. It doesn't catch base64 / urlencoded / partial substrings, and any caller that retrieves the raw log via the API gets the unredacted stream. If you need to confirm the secret exists, log a boolean (``[ -n "$X" ] && echo set || echo unset``), never the value itself. Note: a SHA-256 fingerprint or a ``${X:0:N}`` prefix is not a safe substitute either, those shapes still slip past the masker and are flagged by GHA-087 separately.
 
 **Proof of exploit.**
 
@@ -10609,6 +10619,290 @@ Fires once per offending IaC file with a finding location pointing at the file. 
 ```
 
 **Source:** [`GHA-062`](../providers/github.md#gha-062) in the [GitHub Actions provider](../providers/github.md).
+
+### `GHA-063`: ``if:`` predicate gates on a spoofable bot-actor comparison <span class="pg-sev pg-sev--high">HIGH</span> { #detail-gha-063 }
+
+**Evidences:** [`CICD-SEC-1`](#ctrl-cicd-sec-1) Insufficient Flow Control Mechanisms, [`CICD-SEC-4`](#ctrl-cicd-sec-4) Poisoned Pipeline Execution.
+
+**How this is detected.** Fires when a job-level or step-level ``if:`` expression compares one of the three actor-side context fields (``github.actor``, ``github.triggering_actor``, ``github.event.sender.login``) to a bot login. Three spelling variations are detected:
+
+1. Equality against a literal ``*[bot]`` string:
+   ``github.actor == 'dependabot[bot]'``.
+2. ``contains(github.actor, 'bot')`` and the related ``endsWith(github.actor, '[bot]')`` shortcut.
+3. Inequality used as a gate (``!= 'dependabot[bot]'``) is also flagged because the inverted form has the same spoofability surface.
+
+Out of scope (deliberate carve-out): predicates that pair the actor check with ``github.event.pull_request.user.type == 'Bot'`` are not flagged. The ``type`` field is set by GitHub from the account's registration record, not from the trigger, and a re-run can't forge it. The rule fires only when the actor comparison stands alone.
+
+**Recommendation.** Don't gate on ``github.actor`` / ``github.triggering_actor`` / ``github.event.sender.login``. Any maintainer with write access can re-run a workflow, which sets those fields to the re-runner's login, and on a PR they were merging the bot's side-effects can ride along. Use authenticated signals: ``github.event.pull_request.user.type == 'Bot'`` together with a specific ``login`` check, or a maintainer-controlled label / CODEOWNERS gate.
+
+**Known false positives.**
+
+- A workflow that legitimately wants to display a different log message when re-run by the bot (e.g. for human-readable triage) and isn't using the predicate as a security gate. Suppress per-step via ignore-file. Note that ``${{ github.actor != 'dependabot[bot]' }}`` as a *display* condition is still flagged because the rule can't tell display from gate; in practice the same expression is reused for both.
+
+**Seen in the wild.**
+
+- zizmor v1.25.2 ``bot-conditions`` audit: https://docs.zizmor.sh/audits/#bot-conditions
+
+**Proof of exploit.**
+
+```
+# Vulnerable: a maintainer who re-runs the workflow under
+# their own login still sees this job fire because the
+# actor was Dependabot at original-trigger time. Worse,
+# the re-run executes with the re-runner's write-scope
+# token even though the predicate claims to gate on
+# ``dependabot[bot]`` (a read-scope identity).
+on: pull_request
+jobs:
+  auto-merge:
+    if: ${{ github.actor == 'dependabot[bot]' }}
+    runs-on: ubuntu-latest
+    permissions: { contents: write, pull-requests: write }
+    steps:
+      - run: gh pr merge --auto --squash "${{ github.event.pull_request.number }}"
+
+# Safe: pair the login check with the account-type field,
+# which is set by GitHub from the registration record and
+# cannot be spoofed by a re-run.
+on: pull_request
+jobs:
+  auto-merge:
+    if: |
+      github.event.pull_request.user.type == 'Bot' &&
+      github.event.pull_request.user.login == 'dependabot[bot]'
+    runs-on: ubuntu-latest
+    permissions: { contents: write, pull-requests: write }
+    steps:
+      - run: gh pr merge --auto --squash "${{ github.event.pull_request.number }}"
+```
+
+**Source:** [`GHA-063`](../providers/github.md#gha-063) in the [GitHub Actions provider](../providers/github.md).
+
+### `GHA-064`: ``contains()`` invoked with comma-delimited string operand <span class="pg-sev pg-sev--high">HIGH</span> { #detail-gha-064 }
+
+**Evidences:** [`CICD-SEC-1`](#ctrl-cicd-sec-1) Insufficient Flow Control Mechanisms, [`CICD-SEC-4`](#ctrl-cicd-sec-4) Poisoned Pipeline Execution.
+
+**How this is detected.** Fires when an ``if:`` expression invokes ``contains(<string-literal>, <expr>)`` where the string literal contains a comma. The comma is the author's tell, they meant the literal to be a list. Substring matches on a no-comma literal (``contains('refs/heads/release', github.ref)``) are not flagged, they're often intentional prefix / suffix checks. Both single and double quote styles are detected.
+
+Argument-order matters: ``contains(<haystack>, <needle>)``. Only the left operand (haystack) is checked; the right operand can be any expression.
+
+**Recommendation.** Replace the string left operand with an explicit array. ``contains(fromJSON('["main", "develop"]'), github.ref_name)`` is the canonical fix. For very short lists, fan out: ``github.ref_name == 'main' || github.ref_name == 'develop'``. Avoid relying on the string form being substring-matched, both because it's rarely the intent and because a substring match across an attacker-controlled context (``github.head_ref`` etc.) is itself a foot-gun (see GHA-053).
+
+**Known false positives.**
+
+- A literal that happens to contain a comma but is genuinely meant as a single search string (a free-form PR title fragment, e.g. ``contains('feat:, fix:', github.event.pull_request.title)``). These are rare; almost every comma-in-literal is a list-confusion bug. Suppress per-step via ignore-file when audited.
+
+**Seen in the wild.**
+
+- zizmor v1.25.2 ``unsound-contains`` audit: https://docs.zizmor.sh/audits/#unsound-contains
+
+**Proof of exploit.**
+
+```
+# Vulnerable: looks like "branch is one of main / develop /
+# release" but ``contains()`` on the string
+# ``'main, develop, release'`` matches every branch whose
+# name is a substring of that string. ``mai``, ``ele``,
+# ``main, devel`` all pass; so does any branch whose
+# name is part of a longer string the maintainer pushed.
+on: push
+jobs:
+  deploy:
+    if: contains('main, develop, release', github.ref_name)
+    runs-on: ubuntu-latest
+    environment: production
+    steps:
+      - run: ./deploy.sh
+
+# Safe: ``fromJSON`` materializes a real array, so
+# ``contains`` does a proper list-membership check.
+on: push
+jobs:
+  deploy:
+    if: contains(fromJSON('["main", "develop", "release"]'), github.ref_name)
+    runs-on: ubuntu-latest
+    environment: production
+    steps:
+      - run: ./deploy.sh
+```
+
+**Source:** [`GHA-064`](../providers/github.md#gha-064) in the [GitHub Actions provider](../providers/github.md).
+
+### `GHA-065`: Workflow body contains zero-width or bidi Unicode characters <span class="pg-sev pg-sev--critical">CRITICAL</span> { #detail-gha-065 }
+
+**Evidences:** [`CICD-SEC-4`](#ctrl-cicd-sec-4) Poisoned Pipeline Execution, [`CICD-SEC-6`](#ctrl-cicd-sec-6) Insufficient Credential Hygiene.
+
+**How this is detected.** Walks every string value in the parsed workflow document (``run:`` bodies, ``with:`` values, ``env:`` values, ``if:`` expressions, etc.) for any of the following Unicode codepoints:
+
+* **Zero-width:** ``U+200B`` (zero-width space), ``U+200C`` (zero-width non-joiner), ``U+200D`` (zero-width joiner), ``U+FEFF`` (zero-width no-break space / BOM).
+* **Bidi controls:** ``U+200E`` (LRM), ``U+200F`` (RLM), ``U+202A``-``U+202E`` (LRE / RLE / PDF / LRO / RLO), ``U+2066``-``U+2069`` (LRI / RLI / FSI / PDI).
+
+Any single occurrence fires the rule. Reports the containing key path and codepoint count so the offender can be located in a possibly-large body. The rule is deliberately strict: no carve-out for ``# UTF-8 BOM`` at the start of the file (a BOM in YAML is treated as an opaque character by every parser; reject it). No carve-out for ``zero-width joiner`` in a comment because comments aren't preserved through PyYAML parsing, the visible string values are.
+
+**Recommendation.** Strip zero-width and bidi characters from the workflow. Then enforce a PR check that rejects any newly-introduced occurrence: ``rg --no-pcre2 '[\x{200B}-\x{200F}\x{202A}-\x{202E}\x{2066}-\x{2069}\x{FEFF}]' .github/`` should match no files. CI workflows don't need any of these characters for legitimate purposes.
+
+**Known false positives.**
+
+- Workflows that legitimately echo internationalized text in a release-notes pipeline. Audit each occurrence; almost every case is unintentional or actively malicious. Suppress per-step via ignore-file when the presence is documented and the surrounding code has been reviewed against the visual-vs-parsed shape question.
+
+**Seen in the wild.**
+
+- Boucher & Anderson, ``Trojan Source: Invisible Vulnerabilities`` (2021): https://trojansource.codes/
+- zizmor proposal #914 (workflow-bidi-unicode audit): https://github.com/zizmorcore/zizmor/issues/914
+
+**Proof of exploit.**
+
+```
+# Vulnerable: the workflow body contains an invisible
+# right-to-left override (U+202E) and a first-strong
+# isolate (U+2066). A diff viewer renders the run line
+# as ``echo harmless`` but the YAML parser sees the
+# embedded bidi controls, and the shell receives a
+# different command after the controls reorder the
+# token stream during display.
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      # The string below holds U+202E and U+2066 between
+      # ``override`` and ``--harmless``. Render in a
+      # bidi-aware terminal to see the camouflage.
+      - run: bash override\u202E\u2066--harmless\u2069\u2066
+
+# Safe: the same workflow with the bidi controls
+# stripped. The visible characters now match what the
+# parser sees.
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - run: bash override --harmless
+```
+
+**Source:** [`GHA-065`](../providers/github.md#gha-065) in the [GitHub Actions provider](../providers/github.md).
+
+### `GHA-086`: Wildcard branch trigger gates an environment-bound deploy <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-gha-086 }
+
+**Evidences:** [`CICD-SEC-1`](#ctrl-cicd-sec-1) Insufficient Flow Control Mechanisms, [`CICD-SEC-5`](#ctrl-cicd-sec-5) Insufficient PBAC.
+
+**How this is detected.** Fires when both conditions hold:
+
+1. The workflow's ``on: push: branches:`` filter contains at least one wildcard pattern (``*``, ``?``, ``+``, ``[...]``). ``branches: [main]`` is exact-match and stays silent; ``branches: ['main*']``, ``branches: ['release/*']``, and ``branches: ['*']`` all fire.
+2. At least one job in the workflow binds ``environment: <name>`` (either the short string form or the long ``environment: {name: <name>, url: ...}`` mapping).
+
+The combination is the canonical deployment-branches-rule-bypass topology: the trigger accepts every branch matching the pattern, the environment gate fires on the deployment, but the reviewer prompt does not surface the diff. A branch named ``main-anything`` matches and the reviewer is asked to approve a generic ``production`` deploy.
+
+Branch wildcards in ``branches-ignore:`` are not flagged (they restrict triggers rather than expand them). Tag filters (``tags:``) are not flagged because tag creation is generally a higher-privilege operation than branch creation.
+
+**Recommendation.** Pin ``on: push: branches:`` to the exact branch names that should be allowed to deploy (``branches: [main]``, not ``branches: ['main*']``). Configure the matching GitHub environment's ``Deployment branches and tags`` rule with ``Selected branches and tags`` -> exact match. For high-blast-radius environments, require deployment from a protected tag rather than a branch, tags are immutable in a way branches are not.
+
+**Known false positives.**
+
+- Internal-only environments scoped to a release-branch convention (``release/*``) where the protection rule is intentionally configured to allow any branch matching the convention. The bypass surface is real but the operator has accepted it. Suppress per-workflow via ignore-file when the convention is documented and the environment's protection rule is audited.
+
+**Seen in the wild.**
+
+- OWASP CICD-SEC-1 (Insufficient Flow Control Mechanisms): https://owasp.org/www-project-top-10-ci-cd-security-risks/CICD-SEC-01-Insufficient-Flow-Control-Mechanisms
+
+**Proof of exploit.**
+
+```
+# Vulnerable: workflow triggers on any branch starting with
+# ``main``, then deploys to the ``production`` environment.
+# A user with push access creates branch ``main-evil``, the
+# environment's reviewer is prompted to approve a deploy
+# from a branch that looks innocuous in the dialog.
+on:
+  push:
+    branches: ['main*']
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment:
+      name: production
+      url: https://prod.example.com
+    steps:
+      - uses: actions/checkout@<sha>
+      - run: ./deploy.sh
+
+# Safe: branches filter pinned to the exact branch the
+# protection rule whitelists. No matching ``main-anything``
+# bypass.
+on:
+  push:
+    branches: [main]
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment:
+      name: production
+    steps:
+      - uses: actions/checkout@<sha>
+      - run: ./deploy.sh
+```
+
+**Source:** [`GHA-086`](../providers/github.md#gha-086) in the [GitHub Actions provider](../providers/github.md).
+
+### `GHA-087`: Derived value of a secret printed to the build log <span class="pg-sev pg-sev--high">HIGH</span> { #detail-gha-087 }
+
+**Evidences:** [`CICD-SEC-6`](#ctrl-cicd-sec-6) Insufficient Credential Hygiene, [`CICD-SEC-10`](#ctrl-cicd-sec-10) Insufficient Logging and Visibility.
+
+**How this is detected.** Fires on a single ``run:`` line that combines all three of the following:
+
+1. A reference to a secret, either a ``${{ secrets.* }}`` context expression or a ``$NAME`` / ``${NAME}`` expansion of a step ``env:`` value bound to ``secrets.*``.
+2. A transform applied to that reference:
+   * **Hash:** ``sha256sum``, ``sha1sum``, ``md5sum``, ``sha512sum``, ``shasum``, ``openssl dgst``.
+   * **Encoding:** ``base64``, ``base32``.
+   * **Truncation:** ``cut -c<n>``, ``head -c<n>``.
+   * **Bash parameter expansion:** ``${VAR:0:N}``, ``${VAR::N}``, ``${VAR:N:M}`` (substring slice).
+3. A print sink on the same line: ``echo`` / ``printf`` / ``tee`` at the head, or a redirect to ``$GITHUB_OUTPUT`` / ``$GITHUB_STEP_SUMMARY`` / an ordinary file.
+
+Pairs with GHA-033 (which covers ``set -x`` shell-trace leaks and direct ``echo ${{ secrets.X }}`` shapes). The two rules are deliberately disjoint: a step that hits both shapes fires both findings rather than one. Out of scope (deliberate carve-out): multi-line shape where the transformation lands in an intermediate variable on one line and the variable is printed on another. Detecting that needs cross-line dataflow; the single-line scope captures the canonical foot-guns from the field without over-firing on legitimate verification-then-discard patterns.
+
+**Recommendation.** Never print anything derived from a secret. Not the SHA-256, not the first eight characters, not the base64 wrapper, not the length. GitHub's log redaction only matches the exact registered secret value, every derived form lands in the (world-readable) log unmasked. If you genuinely need to compare secrets across runs, do the comparison inside a step and report a boolean (``[ -n "$X" ] && echo set || echo unset``). If you need to confirm rotation worked, run the downstream check against the secret rather than echo a fingerprint.
+
+**Known false positives.**
+
+- Steps that explicitly want a non-reversible secret fingerprint for cross-run identification (rare; the rotation-status use case is the only legitimate one). Suppress per-step via ignore-file when the operator has audited that the entropy of the secret makes the fingerprint genuinely unguessable. A boolean ``set / unset`` print is always safer and is what the recommendation steers toward.
+
+**Seen in the wild.**
+
+- OWASP CICD-SEC-10 (Insufficient Logging and Visibility): https://owasp.org/www-project-top-10-ci-cd-security-risks/CICD-SEC-10-Insufficient-Logging-and-Visibility
+
+**Proof of exploit.**
+
+```
+# Vulnerable: ``${TOKEN:0:8}`` is an 8-char prefix of the
+# secret. GitHub's masker registers ``TOKEN`` to redact
+# the *full* value; the truncated substring is a different
+# string and lands in the log verbatim. An 8-char prefix
+# of ``ghp_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx`` reveals
+# the issuer and is enough to fingerprint the org across
+# any leaked log.
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    env:
+      TOKEN: ${{ secrets.DEPLOY_KEY }}
+    steps:
+      - run: |
+          echo "token prefix: ${TOKEN:0:8}"
+          echo "fingerprint=$(echo $TOKEN | sha256sum | cut -c1-16)" >> "$GITHUB_OUTPUT"
+
+# Safe: report a boolean. The downstream step that needs
+# the secret can confirm it works against the live API
+# rather than the workflow echo'ing a derived form.
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    env:
+      TOKEN: ${{ secrets.DEPLOY_KEY }}
+    steps:
+      - run: |
+          [ -n "$TOKEN" ] && echo "deploy key set" || echo "deploy key missing"
+```
+
+**Source:** [`GHA-087`](../providers/github.md#gha-087) in the [GitHub Actions provider](../providers/github.md).
 
 ### `GL-001`: Image not pinned to specific version or digest <span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> { #detail-gl-001 }
 

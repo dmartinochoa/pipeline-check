@@ -12,6 +12,122 @@ release commit collapses this section into `## [X.Y.Z] - <date>`.
 
 ### Added
 
+- **Zizmor parity sweep: first batch (GHA-063 / GHA-064 / GHA-065).**
+  Three offline-only rules drawn from zizmor's audit pack:
+    * **GHA-063: ``if:`` predicate gates on a spoofable bot-actor
+      comparison.** HIGH severity. Fires when a job-level or step-
+      level ``if:`` compares ``github.actor`` /
+      ``github.triggering_actor`` / ``github.event.sender.login``
+      to a literal ``*[bot]`` string (equality or inequality), or
+      invokes ``contains(github.actor, 'bot')`` /
+      ``endsWith(github.actor, '[bot]')`` / swap-argument
+      variants. A maintainer who re-runs the workflow can set
+      those fields to any login, so the predicate is not a trust
+      gate. Carve-out: paired ``github.event.*.user.type == 'Bot'``
+      check on the same expression stays silent (account type is
+      set by GitHub and can't be spoofed by a re-run). Mirrors
+      zizmor v1.25.2 ``bot-conditions``.
+    * **GHA-064: ``contains()`` invoked with comma-delimited string
+      operand.** HIGH severity. Fires when an ``if:`` expression
+      invokes ``contains('<haystack-with-comma>', <expr>)`` (or
+      double-quoted variant). The author wrote what looks like a
+      list literal; ``contains()`` on a string is a substring
+      match, so ``mai`` and any branch whose name embeds the
+      literal pass the gate. ``fromJSON('["main", ...]')`` is the
+      canonical fix and stays silent. No-comma substring searches
+      (``contains('refs/heads/release', github.ref)``) are not
+      flagged. Mirrors zizmor v1.25.2 ``unsound-contains``.
+    * **GHA-065: workflow body contains zero-width or bidi
+      Unicode characters.** CRITICAL severity. Walks every string
+      value in the parsed workflow document for any of 15
+      suspicious codepoints (``U+200B``-``U+200F`` zero-width and
+      bidi marks, ``U+202A``-``U+202E`` LRE / RLE / PDF / LRO /
+      RLO, ``U+2066``-``U+2069`` LRI / RLI / FSI / PDI, ``U+FEFF``
+      BOM). Any single occurrence fires. The Trojan-Source class
+      (Boucher & Anderson, 2021): a diff viewer renders one
+      expression while the YAML parser sees another, the
+      characters carry no syntactic meaning in CI workflows and
+      have no legitimate use case. Mirrors zizmor proposal #914.
+  All three rules are pure-offline (no curated registry / no
+  network), bundled as the first Zizmor sweep batch. 27 per-rule
+  tests under ``tests/github/test_gha063.py`` /
+  ``test_gha064.py`` / ``test_gha065.py`` plus standard
+  safe/unsafe fixture pairs. Standards mappings landed for
+  OWASP / ESF / CIS / NIST 800-53 / NIST CSF / SOC2 / PCI-DSS
+  v4. Github provider check count 67 -> 70; total check-claim
+  floor 820+ -> 840+.
+- **GHA-087: derived value of a secret printed to the build log.**
+  New github-provider rule, HIGH severity. Fires on a single
+  ``run:`` line that combines: (1) a secret reference, either a
+  ``${{ secrets.* }}`` context or a ``$NAME``/``${NAME}`` expansion
+  of a step ``env:`` value bound to ``secrets.*``; (2) a transform
+  applied to that reference, either a fingerprint
+  (``sha256sum`` / ``sha1sum`` / ``md5sum`` / ``shasum`` /
+  ``openssl dgst``), an encoding (``base64`` / ``base32``), a
+  bash parameter-expansion slice (``${VAR:0:N}`` / ``${VAR::N}``
+  / ``${VAR:N:M}``), or a command-line truncation (``cut -c<n>`` /
+  ``head -c<n>``); (3) a print sink on the same line (``echo`` /
+  ``printf`` / ``tee`` at the head, or a redirect to
+  ``$GITHUB_OUTPUT`` / ``$GITHUB_STEP_SUMMARY`` / a file). Catches
+  cicd-goat scenario 27's derived-value half (the SHA-256 /
+  base64 / first-eight-chars shapes that slip past GitHub's
+  exact-match secret masker). Pairs with GHA-033 (which covers
+  ``set -x`` shell-trace leaks and direct
+  ``echo ${{ secrets.X }}`` shapes); the two rules are
+  deliberately disjoint so a step that hits both shapes fires
+  both findings. GHA-033's recommendation was tightened in the
+  same cycle to drop the "log a fingerprint" suggestion that
+  GHA-087 now flags. 15 per-rule tests under
+  ``tests/github/test_gha087.py`` plus the standard safe/unsafe
+  fixture pair (boolean ``[ -n "$X" ] && echo set || echo unset``
+  is the canonical safe form). OWASP CICD-SEC-10 / CICD-SEC-6;
+  ESF-D-SECRETS; CIS 2.3.7; NIST 800-53 IA-5 / AU-9; NIST CSF
+  PR.AA-01 / PR.DS-01; SOC2 CC6.1; PCI-DSS v4 8.2.1 / 10.3.2.
+  Github provider check count 66 -> 67.
+- **GHA-086: wildcard branch trigger gates an environment-bound
+  deploy.** New github-provider rule, MEDIUM severity. Fires when
+  the workflow's ``on: push: branches:`` filter contains at least
+  one wildcard pattern (``*``, ``?``, ``+``, ``[...]``) AND at least
+  one job binds ``environment: <name>``. Catches cicd-goat scenario
+  25 (deployment-branches-rule bypass): a contributor with push
+  access creates ``main-anything``, the ``branches: ['main*']``
+  pattern matches, the ``environment: production`` reviewer prompt
+  fires on a generic ``production`` deploy without surfacing the
+  diff. Workflow-side half of the bypass; the matching protection
+  rule lives in repo settings out of YAML reach but is meaningless
+  without the trigger half. Pairs with GHA-014 (deploy job missing
+  environment binding); together they cover both halves of the
+  deployment-gate surface. ``branches-ignore`` (restricting
+  triggers) and ``tags:`` (higher-privilege creation) are
+  deliberately not flagged. 14 per-rule tests under
+  ``tests/github/test_gha086.py`` plus the standard safe/unsafe
+  fixture pair. OWASP CICD-SEC-1 / CICD-SEC-5; ESF-C-APPROVAL /
+  ESF-C-ENV-SEP; CIS 5.1.4 / 5.2.1. Github provider check count
+  65 -> 66.
+- **Local composite-action scanning.** ``GitHubContext.from_path``
+  now walks each loaded workflow for ``uses: ./path`` references
+  (``parse_uses`` ``kind="local-action"``), resolves
+  ``<repo_root>/<path>/action.yml`` (or ``action.yaml``) on disk,
+  and synthesizes the body as a ``__composite__`` job so the full
+  GHA rule pack runs against the action's ``runs.steps``. Mirrors
+  what the ``--resolve-remote`` resolver path already does for
+  *remote* composite actions, but operates entirely on disk and is
+  on by default (no network, no opt-in). Repo-root inference handles
+  the canonical ``<root>/.github/workflows`` layout and falls back
+  to the directory's parent for ad-hoc test layouts; missing
+  ``action.yml`` files produce a dedup'd warning rather than a
+  scan failure; ``./../path`` traversal attempts are bounded against
+  the resolved repo root; composite-of-composite chains recurse to
+  depth 3 (hard ceiling 10). Closes cicd-goat scenario 18
+  (composite-action ``${{ inputs.* }}`` injection): GHA-003 fires on
+  the synthesized composite step whose ``run:`` interpolates
+  ``${{ inputs.<name> }}``. Twelve new tests under
+  ``tests/github/test_local_composite_actions.py`` cover the
+  positive shape, non-composite skip (``node20`` / ``docker``),
+  missing-file warning, path-traversal rejection,
+  composite-of-composite recursion, multi-caller dedup, both
+  ``action.yml`` / ``action.yaml`` extensions, and the three repo-
+  root inference layouts.
 - **MCP server caught up with the v1.3 provider pack + PR-diff
   mode.** The ``--serve`` MCP catalog now advertises every provider
   the rule registry exposes (23, up from 18); ``argocd``, ``maven``,

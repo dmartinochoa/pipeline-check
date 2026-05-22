@@ -196,6 +196,11 @@ STANDARD = Standard(
         "GHA-060":  ["CICD-SEC-3"],                # pip install without --require-hashes
         "GHA-061":  ["CICD-SEC-5", "CICD-SEC-2"],  # App token minted without permissions filter
         "GHA-062":  ["CICD-SEC-2", "CICD-SEC-7"],  # OIDC trust subject in sibling IaC is overly broad
+        "GHA-063":  ["CICD-SEC-1", "CICD-SEC-4"],  # spoofable bot-actor if-predicate
+        "GHA-064":  ["CICD-SEC-1", "CICD-SEC-4"],  # unsound contains() with comma-string operand
+        "GHA-065":  ["CICD-SEC-4", "CICD-SEC-6"],  # zero-width / bidi unicode in workflow body
+        "GHA-086":  ["CICD-SEC-1", "CICD-SEC-5"],  # wildcard branch trigger + environment binding
+        "GHA-087":  ["CICD-SEC-10", "CICD-SEC-6"],  # derived-value of secret printed to log
         # GitLab CI
         "GL-001":   ["CICD-SEC-3"],
         "GL-002":   ["CICD-SEC-4"],
