@@ -223,6 +223,7 @@ STANDARD = Standard(
         "GHA-089":  ["PW.4.1", "PW.4.4"],              # archived upstream repo
         "GHA-090":  ["PW.4.1", "PW.4.4", "RV.1.1"],    # impostor-commit: SHA absent from repo
         "GHA-091":  ["PW.4.1", "PW.4.4"],              # repojacking: action upstream missing
+        "GHA-092":  ["PO.5.1", "PW.9.1"],              # TOCTOU PR head SHA force-push race
         # GitLab CI
         "GL-001":   ["PW.4.1", "PW.4.4"],
         "GL-002":   ["PW.6.1", "PW.9.1"],

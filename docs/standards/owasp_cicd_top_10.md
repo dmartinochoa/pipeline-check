@@ -19,7 +19,7 @@ Kubernetes, …) when an audit asks for that framework's vocabulary.
 
 - **Controls in this standard:** 10
 - **Controls evidenced by at least one check:** 10 / 10
-- **Distinct checks evidencing this standard:** 603
+- **Distinct checks evidencing this standard:** 604
 - **Of those, autofixable with `--fix`:** 111
 
 _Severity levels (`CRITICAL` / `HIGH` / `MEDIUM` / `LOW` / `INFO`) follow the same scale across every provider and standard. See [How to read severity](README.md#how-to-read-severity) on the standards overview for the definitions._
@@ -30,13 +30,13 @@ Click a control ID to jump to the per-control section with the full check list. 
 
 | Control | Title | Checks | Severity mix |
 |---------|-------|-------:|--------------|
-| [`CICD-SEC-1`](#ctrl-cicd-sec-1) | Insufficient Flow Control Mechanisms | 75 | 4C · 33H · 30M · 8L |
+| [`CICD-SEC-1`](#ctrl-cicd-sec-1) | Insufficient Flow Control Mechanisms | 76 | 4C · 34H · 30M · 8L |
 | [`CICD-SEC-2`](#ctrl-cicd-sec-2) | Inadequate Identity and Access Management | 40 | 5C · 23H · 11M · 1L |
 | [`CICD-SEC-3`](#ctrl-cicd-sec-3) | Dependency Chain Abuse | 181 | 5C · 92H · 68M · 16L |
 | [`CICD-SEC-4`](#ctrl-cicd-sec-4) | Poisoned Pipeline Execution | 94 | 24C · 49H · 15M · 6L |
 | [`CICD-SEC-5`](#ctrl-cicd-sec-5) | Insufficient PBAC | 35 | 4C · 21H · 10M |
 | [`CICD-SEC-6`](#ctrl-cicd-sec-6) | Insufficient Credential Hygiene | 75 | 29C · 30H · 16M |
-| [`CICD-SEC-7`](#ctrl-cicd-sec-7) | Insecure System Configuration | 104 | 22C · 40H · 35M · 7L |
+| [`CICD-SEC-7`](#ctrl-cicd-sec-7) | Insecure System Configuration | 105 | 22C · 41H · 35M · 7L |
 | [`CICD-SEC-8`](#ctrl-cicd-sec-8) | Ungoverned Usage of 3rd-Party Services | 32 | 8C · 16H · 8M |
 | [`CICD-SEC-9`](#ctrl-cicd-sec-9) | Improper Artifact Integrity Validation | 73 | 1C · 18H · 47M · 7L |
 | [`CICD-SEC-10`](#ctrl-cicd-sec-10) | Insufficient Logging and Visibility | 48 | 5H · 14M · 13L · 16I |
@@ -62,7 +62,7 @@ pipeline_check --pipeline aws --standard owasp_cicd_top_10 --standard nist_ssdf
 
 Reviews, approvals, branch protection, and deployment gates are the brakes on the pipeline. Missing them lets a single commit, or a single API call, ship straight to production.
 
-**Evidenced by 75 checks** across 13 providers (AWS, Argo CD, Argo Workflows, Azure DevOps, Bitbucket, Buildkite, CircleCI, Drone CI, GitHub Actions, GitLab CI, Jenkins, SCM, Tekton).
+**Evidenced by 76 checks** across 13 providers (AWS, Argo CD, Argo Workflows, Azure DevOps, Bitbucket, Buildkite, CircleCI, Drone CI, GitHub Actions, GitLab CI, Jenkins, SCM, Tekton).
 
 | Check | Title | Severity | Provider | Fix |
 |-------|-------|----------|----------|-----|
@@ -94,6 +94,7 @@ Reviews, approvals, branch protection, and deployment gates are the brakes on th
 | [`GHA-063`](#detail-gha-063) | ``if:`` predicate gates on a spoofable bot-actor comparison | <span class="pg-sev pg-sev--high">HIGH</span> | [GitHub Actions](../providers/github.md) |  |
 | [`GHA-064`](#detail-gha-064) | ``contains()`` invoked with comma-delimited string operand | <span class="pg-sev pg-sev--high">HIGH</span> | [GitHub Actions](../providers/github.md) |  |
 | [`GHA-086`](#detail-gha-086) | Wildcard branch trigger gates an environment-bound deploy | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [GitHub Actions](../providers/github.md) |  |
+| [`GHA-092`](#detail-gha-092) | PR head SHA captured then re-fetched (force-push race) | <span class="pg-sev pg-sev--high">HIGH</span> | [GitHub Actions](../providers/github.md) |  |
 | [`GL-004`](#detail-gl-004) | Deploy job lacks manual approval or environment gate | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [GitLab CI](../providers/gitlab.md) |  |
 | [`GL-029`](#detail-gl-029) | Manual deploy job defaults to allow_failure: true | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [GitLab CI](../providers/gitlab.md) |  |
 | [`GL-033`](#detail-gl-033) | Global before_script / after_script propagates taint to every job | <span class="pg-sev pg-sev--high">HIGH</span> | [GitLab CI](../providers/gitlab.md) |  |
@@ -616,7 +617,7 @@ Plaintext secrets in YAML, env vars baked into image layers, or tokens echoed to
 
 Privileged containers, host mounts, root user, and disabled TLS turn a routine RCE in a build step into kernel-level access to the runner host.
 
-**Evidenced by 104 checks** across 19 providers (AWS, Argo CD, Argo Workflows, Azure DevOps, Bitbucket, Buildkite, CircleCI, Cloud Build, CloudFormation, Dockerfile, Drone CI, GitHub Actions, GitLab CI, Jenkins, Kubernetes, PyPI, Tekton, Terraform, npm).
+**Evidenced by 105 checks** across 19 providers (AWS, Argo CD, Argo Workflows, Azure DevOps, Bitbucket, Buildkite, CircleCI, Cloud Build, CloudFormation, Dockerfile, Drone CI, GitHub Actions, GitLab CI, Jenkins, Kubernetes, PyPI, Tekton, Terraform, npm).
 
 | Check | Title | Severity | Provider | Fix |
 |-------|-------|----------|----------|-----|
@@ -678,6 +679,7 @@ Privileged containers, host mounts, root user, and disabled TLS turn a routine R
 | [`GHA-062`](#detail-gha-062) | OIDC subject claim in sibling IaC grants overly broad scope | <span class="pg-sev pg-sev--high">HIGH</span> | [GitHub Actions](../providers/github.md) |  |
 | [`GHA-068`](#detail-gha-068) | ``runs-on:`` targets an end-of-life hosted-runner image | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [GitHub Actions](../providers/github.md) |  |
 | [`GHA-070`](#detail-gha-070) | ``ssh-keyscan`` / disabled host-key check trust-on-first-use | <span class="pg-sev pg-sev--high">HIGH</span> | [GitHub Actions](../providers/github.md) |  |
+| [`GHA-092`](#detail-gha-092) | PR head SHA captured then re-fetched (force-push race) | <span class="pg-sev pg-sev--high">HIGH</span> | [GitHub Actions](../providers/github.md) |  |
 | [`GL-014`](#detail-gl-014) | Self-managed runner without ephemeral tag | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [GitLab CI](../providers/gitlab.md) |  |
 | [`GL-015`](#detail-gl-015) | Job has no `timeout`, unbounded build | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [GitLab CI](../providers/gitlab.md) | <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> |
 | [`GL-017`](#detail-gl-017) | Docker run with insecure flags (privileged/host mount) | <span class="pg-sev pg-sev--critical">CRITICAL</span> | [GitLab CI](../providers/gitlab.md) | <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> |
@@ -12717,6 +12719,471 @@ jobs:
 ```
 
 **Source:** [`GHA-091`](../providers/github.md#gha-091) in the [GitHub Actions provider](../providers/github.md).
+
+### `GHA-092`: PR head SHA captured then re-fetched (force-push race) <span class="pg-sev pg-sev--high">HIGH</span> { #detail-gha-092 }
+
+**Evidences:** [`CICD-SEC-1`](#ctrl-cicd-sec-1) Insufficient Flow Control Mechanisms, [`CICD-SEC-7`](#ctrl-cicd-sec-7) Insecure System Configuration.
+
+**How this is detected.** Within a single job, step-order traversal looks for:
+
+1. A **capture** step, any step that reads ``github.event.pull_request.head.sha`` (either as a ``${{ }}`` interpolation in a ``run:`` body, in a step or job ``env:`` block, or via a ``run:`` body containing ``git rev-parse HEAD`` after an earlier checkout).
+2. A **fetch** step that follows it, an ``actions/checkout`` whose ``with.ref:`` contains the same ``${{ github.event.pull_request.head.sha }}`` expression.
+
+The fire condition is the *order*, capture-then-fetch with no intervening lock on the ref. Workflows that do the fetch FIRST (and only read the SHA after) are not TOCTOU-shaped because there's only one read; pipeline-check stays silent. Cross-job state isn't covered because GitHub-Actions doesn't share a filesystem between jobs by default; ``needs:`` data passing via ``outputs:`` is a separate shape (TAINT-002 territory).
+
+**Recommendation.** Read the PR head SHA once and reuse the captured value for the actual checkout. ``actions/checkout`` accepts a ``ref:`` the workflow already resolved (``ref: ${{ steps.snap.outputs.sha }}`` after a ``steps.snap`` that captures the SHA from the event payload), so the same atom drives both the gate decision and the fetch. If a re-read is genuinely needed (you want the latest commit, accepting the race), drop the gate logic that depends on the earlier snapshot, the two are not the same primitive.
+
+**Known false positives.**
+
+- I
+- f
+- 
+- t
+- h
+- e
+- 
+- w
+- o
+- r
+- k
+- f
+- l
+- o
+- w
+- 
+- g
+- e
+- n
+- u
+- i
+- n
+- e
+- l
+- y
+- 
+- w
+- a
+- n
+- t
+- s
+- 
+- t
+- o
+- 
+- t
+- r
+- a
+- c
+- k
+- 
+- H
+- E
+- A
+- D
+- -
+- o
+- f
+- -
+- P
+- R
+- 
+- o
+- v
+- e
+- r
+- 
+- t
+- i
+- m
+- e
+- 
+- (
+- e
+- .
+- g
+- .
+- ,
+- 
+- a
+- 
+- l
+- o
+- n
+- g
+- -
+- r
+- u
+- n
+- n
+- i
+- n
+- g
+- 
+- r
+- e
+- v
+- i
+- e
+- w
+- 
+- s
+- e
+- s
+- s
+- i
+- o
+- n
+- 
+- t
+- h
+- a
+- t
+- 
+- p
+- i
+- c
+- k
+- s
+- 
+- u
+- p
+- 
+- a
+- d
+- d
+- i
+- t
+- i
+- o
+- n
+- a
+- l
+- 
+- c
+- o
+- m
+- m
+- i
+- t
+- s
+- 
+- b
+- e
+- t
+- w
+- e
+- e
+- n
+- 
+- g
+- a
+- t
+- e
+- 
+- a
+- n
+- d
+- 
+- m
+- e
+- r
+- g
+- e
+- )
+- ,
+- 
+- t
+- h
+- e
+- 
+- T
+- O
+- C
+- T
+- O
+- U
+- 
+- s
+- h
+- a
+- p
+- e
+- 
+- i
+- s
+- n
+- '
+- t
+- 
+- t
+- h
+- e
+- 
+- b
+- u
+- g
+- ,
+- 
+- t
+- h
+- e
+- 
+- d
+- e
+- s
+- i
+- g
+- n
+- 
+- i
+- s
+- .
+- 
+- S
+- u
+- p
+- p
+- r
+- e
+- s
+- s
+- 
+- p
+- e
+- r
+- -
+- s
+- t
+- e
+- p
+- 
+- w
+- i
+- t
+- h
+- 
+- a
+- 
+- r
+- a
+- t
+- i
+- o
+- n
+- a
+- l
+- e
+- 
+- t
+- h
+- a
+- t
+- 
+- e
+- x
+- p
+- l
+- a
+- i
+- n
+- s
+- 
+- t
+- h
+- e
+- 
+- c
+- o
+- n
+- t
+- r
+- a
+- c
+- t
+- ;
+- 
+- p
+- a
+- i
+- r
+- 
+- w
+- i
+- t
+- h
+- 
+- a
+- 
+- b
+- r
+- a
+- n
+- c
+- h
+- -
+- p
+- r
+- o
+- t
+- e
+- c
+- t
+- i
+- o
+- n
+- 
+- r
+- u
+- l
+- e
+- 
+- o
+- n
+- 
+- t
+- h
+- e
+- 
+- c
+- o
+- n
+- t
+- r
+- i
+- b
+- u
+- t
+- o
+- r
+- 
+- s
+- i
+- d
+- e
+- 
+- t
+- h
+- a
+- t
+- 
+- b
+- l
+- o
+- c
+- k
+- s
+- 
+- f
+- o
+- r
+- c
+- e
+- -
+- p
+- u
+- s
+- h
+- e
+- s
+- 
+- t
+- o
+- 
+- P
+- R
+- 
+- b
+- r
+- a
+- n
+- c
+- h
+- e
+- s
+- 
+- s
+- o
+- 
+- t
+- h
+- e
+- 
+- r
+- a
+- c
+- e
+- 
+- w
+- i
+- n
+- d
+- o
+- w
+- 
+- s
+- t
+- a
+- y
+- s
+- 
+- c
+- l
+- o
+- s
+- e
+- d
+- 
+- i
+- n
+- 
+- p
+- r
+- a
+- c
+- t
+- i
+- c
+- e
+- .
+
+**Seen in the wild.**
+
+- GitHub Security Lab "checkout-after-rev-parse" research (2024) and zizmor proposal #935: red-team demonstrations of contributor force-pushes landing un-reviewed code between a workflow's two reads of the PR head SHA. The attack works against PR-review gates, labeler gates, and any approval-by-SHA workflow that uses the snapshot value for the decision and a live re-read for the build.
+
+**Proof of exploit.**
+
+```
+# Vulnerable: two reads of the PR head, with a gate in
+# between. A contributor force-push between the snapshot
+# and the second checkout lets unreviewed code run with
+# the gate's stamp of approval.
+jobs:
+  review-and-build:
+    runs-on: ubuntu-latest
+    steps:
+      - id: snap
+        run: echo "sha=${{ github.event.pull_request.head.sha }}" >> "$GITHUB_OUTPUT"
+      - run: ./review-gate.sh ${{ steps.snap.outputs.sha }}
+      - uses: actions/checkout@<sha>
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+
+# Safe: capture once, use the captured value for both the
+# gate and the fetch. ``checkout`` accepts the resolved
+# SHA as a ``ref:`` directly.
+jobs:
+  review-and-build:
+    runs-on: ubuntu-latest
+    steps:
+      - id: snap
+        run: echo "sha=${{ github.event.pull_request.head.sha }}" >> "$GITHUB_OUTPUT"
+      - run: ./review-gate.sh ${{ steps.snap.outputs.sha }}
+      - uses: actions/checkout@<sha>
+        with:
+          ref: ${{ steps.snap.outputs.sha }}
+```
+
+**Source:** [`GHA-092`](../providers/github.md#gha-092) in the [GitHub Actions provider](../providers/github.md).
 
 ### `GL-001`: Image not pinned to specific version or digest <span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> { #detail-gl-001 }
 

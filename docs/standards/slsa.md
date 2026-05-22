@@ -20,7 +20,7 @@ the source-control side of the chain.
 
 - **Controls in this standard:** 7
 - **Controls evidenced by at least one check:** 6 / 7
-- **Distinct checks evidencing this standard:** 425
+- **Distinct checks evidencing this standard:** 426
 - **Of those, autofixable with `--fix`:** 92
 
 _Severity levels (`CRITICAL` / `HIGH` / `MEDIUM` / `LOW` / `INFO`) follow the same scale across every provider and standard. See [How to read severity](README.md#how-to-read-severity) on the standards overview for the definitions._
@@ -35,7 +35,7 @@ Click a control ID to jump to the per-control section with the full check list. 
 | [`Build.L1.Provenance`](#ctrl-build-l1-provenance) | Build L1: Provenance describing how the artifact was produced is generated | 39 | 3H · 26M · 10L |
 | [`Build.L2.Hosted`](#ctrl-build-l2-hosted) | Build L2: Builds run on a hosted build platform (not a developer workstation) | 7 | 1H · 6M |
 | [`Build.L2.Signed`](#ctrl-build-l2-signed) | Build L2: Provenance is authenticated and cannot be forged by tenants | 35 | 6H · 28M · 1L |
-| [`Build.L3.Isolated`](#ctrl-build-l3-isolated) | Build L3: Build runs in an isolated environment not influenced by other builds | 150 | 24C · 93H · 31M · 2L |
+| [`Build.L3.Isolated`](#ctrl-build-l3-isolated) | Build L3: Build runs in an isolated environment not influenced by other builds | 151 | 24C · 94H · 31M · 2L |
 | [`Build.L3.Ephemeral`](#ctrl-build-l3-ephemeral) | Build L3: Build environment is ephemeral and provisioned fresh for each run | 19 | 14M · 5L |
 | [`Build.L3.NonFalsifiable`](#ctrl-build-l3-nonfalsifiable) | Build L3: Provenance cannot be falsified by the build's own tenant | 240 | 38C · 110H · 81M · 11L |
 
@@ -174,7 +174,7 @@ Provenance is cryptographically signed by the build platform; tenants of the pla
 
 Each build runs in a fresh environment without influence from concurrent or previous builds. No shared mutable state.
 
-**Evidenced by 150 checks** across 19 providers (AWS, Argo Workflows, Azure DevOps, Bitbucket, Buildkite, CircleCI, Cloud Build, CloudFormation, Dockerfile, Drone CI, GitHub Actions, GitLab CI, Helm, Jenkins, OCI manifest, SCM, Tekton, Terraform, npm).
+**Evidenced by 151 checks** across 19 providers (AWS, Argo Workflows, Azure DevOps, Bitbucket, Buildkite, CircleCI, Cloud Build, CloudFormation, Dockerfile, Drone CI, GitHub Actions, GitLab CI, Helm, Jenkins, OCI manifest, SCM, Tekton, Terraform, npm).
 
 | Check | Title | Severity | Provider | Fix |
 |-------|-------|----------|----------|-----|
@@ -280,6 +280,7 @@ Each build runs in a fresh environment without influence from concurrent or prev
 | [`GHA-053`](#detail-gha-053) | if: predicate evaluates attacker-controllable context as expression | <span class="pg-sev pg-sev--high">HIGH</span> | [GitHub Actions](../providers/github.md) |  |
 | [`GHA-057`](#detail-gha-057) | Secret-scanner output sent to network egress | <span class="pg-sev pg-sev--critical">CRITICAL</span> | [GitHub Actions](../providers/github.md) |  |
 | [`GHA-058`](#detail-gha-058) | Agentic CLI invoked with permission-bypass flags | <span class="pg-sev pg-sev--high">HIGH</span> | [GitHub Actions](../providers/github.md) |  |
+| [`GHA-092`](#detail-gha-092) | PR head SHA captured then re-fetched (force-push race) | <span class="pg-sev pg-sev--high">HIGH</span> | [GitHub Actions](../providers/github.md) |  |
 | [`GL-002`](#detail-gl-002) | Script injection via untrusted commit/MR context | <span class="pg-sev pg-sev--high">HIGH</span> | [GitLab CI](../providers/gitlab.md) |  |
 | [`GL-010`](#detail-gl-010) | Multi-project pipeline ingests upstream artifact unverified | <span class="pg-sev pg-sev--critical">CRITICAL</span> | [GitLab CI](../providers/gitlab.md) |  |
 | [`GL-011`](#detail-gl-011) | include: local file pulled in MR-triggered pipeline | <span class="pg-sev pg-sev--high">HIGH</span> | [GitLab CI](../providers/gitlab.md) |  |
@@ -10457,6 +10458,471 @@ jobs:
 ```
 
 **Source:** [`GHA-091`](../providers/github.md#gha-091) in the [GitHub Actions provider](../providers/github.md).
+
+### `GHA-092`: PR head SHA captured then re-fetched (force-push race) <span class="pg-sev pg-sev--high">HIGH</span> { #detail-gha-092 }
+
+**Evidences:** [`Build.L3.Isolated`](#ctrl-build-l3-isolated) Build L3: Build runs in an isolated environment not influenced by other builds.
+
+**How this is detected.** Within a single job, step-order traversal looks for:
+
+1. A **capture** step, any step that reads ``github.event.pull_request.head.sha`` (either as a ``${{ }}`` interpolation in a ``run:`` body, in a step or job ``env:`` block, or via a ``run:`` body containing ``git rev-parse HEAD`` after an earlier checkout).
+2. A **fetch** step that follows it, an ``actions/checkout`` whose ``with.ref:`` contains the same ``${{ github.event.pull_request.head.sha }}`` expression.
+
+The fire condition is the *order*, capture-then-fetch with no intervening lock on the ref. Workflows that do the fetch FIRST (and only read the SHA after) are not TOCTOU-shaped because there's only one read; pipeline-check stays silent. Cross-job state isn't covered because GitHub-Actions doesn't share a filesystem between jobs by default; ``needs:`` data passing via ``outputs:`` is a separate shape (TAINT-002 territory).
+
+**Recommendation.** Read the PR head SHA once and reuse the captured value for the actual checkout. ``actions/checkout`` accepts a ``ref:`` the workflow already resolved (``ref: ${{ steps.snap.outputs.sha }}`` after a ``steps.snap`` that captures the SHA from the event payload), so the same atom drives both the gate decision and the fetch. If a re-read is genuinely needed (you want the latest commit, accepting the race), drop the gate logic that depends on the earlier snapshot, the two are not the same primitive.
+
+**Known false positives.**
+
+- I
+- f
+- 
+- t
+- h
+- e
+- 
+- w
+- o
+- r
+- k
+- f
+- l
+- o
+- w
+- 
+- g
+- e
+- n
+- u
+- i
+- n
+- e
+- l
+- y
+- 
+- w
+- a
+- n
+- t
+- s
+- 
+- t
+- o
+- 
+- t
+- r
+- a
+- c
+- k
+- 
+- H
+- E
+- A
+- D
+- -
+- o
+- f
+- -
+- P
+- R
+- 
+- o
+- v
+- e
+- r
+- 
+- t
+- i
+- m
+- e
+- 
+- (
+- e
+- .
+- g
+- .
+- ,
+- 
+- a
+- 
+- l
+- o
+- n
+- g
+- -
+- r
+- u
+- n
+- n
+- i
+- n
+- g
+- 
+- r
+- e
+- v
+- i
+- e
+- w
+- 
+- s
+- e
+- s
+- s
+- i
+- o
+- n
+- 
+- t
+- h
+- a
+- t
+- 
+- p
+- i
+- c
+- k
+- s
+- 
+- u
+- p
+- 
+- a
+- d
+- d
+- i
+- t
+- i
+- o
+- n
+- a
+- l
+- 
+- c
+- o
+- m
+- m
+- i
+- t
+- s
+- 
+- b
+- e
+- t
+- w
+- e
+- e
+- n
+- 
+- g
+- a
+- t
+- e
+- 
+- a
+- n
+- d
+- 
+- m
+- e
+- r
+- g
+- e
+- )
+- ,
+- 
+- t
+- h
+- e
+- 
+- T
+- O
+- C
+- T
+- O
+- U
+- 
+- s
+- h
+- a
+- p
+- e
+- 
+- i
+- s
+- n
+- '
+- t
+- 
+- t
+- h
+- e
+- 
+- b
+- u
+- g
+- ,
+- 
+- t
+- h
+- e
+- 
+- d
+- e
+- s
+- i
+- g
+- n
+- 
+- i
+- s
+- .
+- 
+- S
+- u
+- p
+- p
+- r
+- e
+- s
+- s
+- 
+- p
+- e
+- r
+- -
+- s
+- t
+- e
+- p
+- 
+- w
+- i
+- t
+- h
+- 
+- a
+- 
+- r
+- a
+- t
+- i
+- o
+- n
+- a
+- l
+- e
+- 
+- t
+- h
+- a
+- t
+- 
+- e
+- x
+- p
+- l
+- a
+- i
+- n
+- s
+- 
+- t
+- h
+- e
+- 
+- c
+- o
+- n
+- t
+- r
+- a
+- c
+- t
+- ;
+- 
+- p
+- a
+- i
+- r
+- 
+- w
+- i
+- t
+- h
+- 
+- a
+- 
+- b
+- r
+- a
+- n
+- c
+- h
+- -
+- p
+- r
+- o
+- t
+- e
+- c
+- t
+- i
+- o
+- n
+- 
+- r
+- u
+- l
+- e
+- 
+- o
+- n
+- 
+- t
+- h
+- e
+- 
+- c
+- o
+- n
+- t
+- r
+- i
+- b
+- u
+- t
+- o
+- r
+- 
+- s
+- i
+- d
+- e
+- 
+- t
+- h
+- a
+- t
+- 
+- b
+- l
+- o
+- c
+- k
+- s
+- 
+- f
+- o
+- r
+- c
+- e
+- -
+- p
+- u
+- s
+- h
+- e
+- s
+- 
+- t
+- o
+- 
+- P
+- R
+- 
+- b
+- r
+- a
+- n
+- c
+- h
+- e
+- s
+- 
+- s
+- o
+- 
+- t
+- h
+- e
+- 
+- r
+- a
+- c
+- e
+- 
+- w
+- i
+- n
+- d
+- o
+- w
+- 
+- s
+- t
+- a
+- y
+- s
+- 
+- c
+- l
+- o
+- s
+- e
+- d
+- 
+- i
+- n
+- 
+- p
+- r
+- a
+- c
+- t
+- i
+- c
+- e
+- .
+
+**Seen in the wild.**
+
+- GitHub Security Lab "checkout-after-rev-parse" research (2024) and zizmor proposal #935: red-team demonstrations of contributor force-pushes landing un-reviewed code between a workflow's two reads of the PR head SHA. The attack works against PR-review gates, labeler gates, and any approval-by-SHA workflow that uses the snapshot value for the decision and a live re-read for the build.
+
+**Proof of exploit.**
+
+```
+# Vulnerable: two reads of the PR head, with a gate in
+# between. A contributor force-push between the snapshot
+# and the second checkout lets unreviewed code run with
+# the gate's stamp of approval.
+jobs:
+  review-and-build:
+    runs-on: ubuntu-latest
+    steps:
+      - id: snap
+        run: echo "sha=${{ github.event.pull_request.head.sha }}" >> "$GITHUB_OUTPUT"
+      - run: ./review-gate.sh ${{ steps.snap.outputs.sha }}
+      - uses: actions/checkout@<sha>
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+
+# Safe: capture once, use the captured value for both the
+# gate and the fetch. ``checkout`` accepts the resolved
+# SHA as a ``ref:`` directly.
+jobs:
+  review-and-build:
+    runs-on: ubuntu-latest
+    steps:
+      - id: snap
+        run: echo "sha=${{ github.event.pull_request.head.sha }}" >> "$GITHUB_OUTPUT"
+      - run: ./review-gate.sh ${{ steps.snap.outputs.sha }}
+      - uses: actions/checkout@<sha>
+        with:
+          ref: ${{ steps.snap.outputs.sha }}
+```
+
+**Source:** [`GHA-092`](../providers/github.md#gha-092) in the [GitHub Actions provider](../providers/github.md).
 
 ### `GL-001`: Image not pinned to specific version or digest <span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> { #detail-gl-001 }
 

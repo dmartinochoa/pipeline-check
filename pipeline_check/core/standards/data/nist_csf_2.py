@@ -509,6 +509,7 @@ STANDARD = Standard(
         "GHA-089":  ["GV.SC-05", "GV.SC-07"],   # archived upstream repo
         "GHA-090":  ["GV.SC-05", "GV.SC-07"],   # impostor-commit: SHA absent from repo
         "GHA-091":  ["GV.SC-05", "GV.SC-07"],   # repojacking: action upstream missing
+        "GHA-092":  ["PR.IR-01"],               # TOCTOU PR head SHA force-push race
         # ── GitLab CI ─────────────────────────────────────────────
         "GL-004":  ["PR.PS-06"],                # manual deploy allow_failure
         "GL-029":  ["PR.PS-06"],                # manual deploy allow_failure (variant)

@@ -63,6 +63,7 @@ STANDARD = Standard(
         "GHA-089":  ["Pinned-Dependencies"],                           # archived upstream
         "GHA-090":  ["Pinned-Dependencies"],                           # impostor-commit
         "GHA-091":  ["Pinned-Dependencies"],                           # repojacking
+        "GHA-092":  ["Dangerous-Workflow"],                            # TOCTOU PR head SHA
         "GL-001":   ["Pinned-Dependencies"],
         "GL-005":   ["Pinned-Dependencies"],
         "GL-009":   ["Pinned-Dependencies"],

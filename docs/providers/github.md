@@ -72,7 +72,7 @@ Resolution rules:
 
 ## What it covers
 
-82 checks · 17 have an autofix patch (``--fix``).
+83 checks · 17 have an autofix patch (``--fix``).
 
 | Check | Title | Severity | Fix |
 |-------|-------|----------|-----|
@@ -155,6 +155,7 @@ Resolution rules:
 | [GHA-089](#gha-089) | Action upstream repo is archived | <span class="pg-sev pg-sev--medium">MEDIUM</span> |  |
 | [GHA-090](#gha-090) | Action SHA pin references a commit absent from the claimed repo | <span class="pg-sev pg-sev--high">HIGH</span> |  |
 | [GHA-091](#gha-091) | Action upstream repo is missing (takeover-eligible namespace) | <span class="pg-sev pg-sev--high">HIGH</span> |  |
+| [GHA-092](#gha-092) | PR head SHA captured then re-fetched (force-push race) | <span class="pg-sev pg-sev--high">HIGH</span> |  |
 | [TAINT-001](#taint-001) | Untrusted input flows across step boundaries via step outputs | <span class="pg-sev pg-sev--high">HIGH</span> |  |
 | [TAINT-002](#taint-002) | Untrusted input flows across jobs via ``jobs.<id>.outputs:`` | <span class="pg-sev pg-sev--high">HIGH</span> |  |
 | [TAINT-003](#taint-003) | Untrusted input forwarded into reusable workflow ``with:`` | <span class="pg-sev pg-sev--high">HIGH</span> |  |
@@ -3547,6 +3548,448 @@ Reads from ``ctx.action_fetch_failures``, the set of ``owner/repo`` slugs whose 
 **Recommended action**
 
 Confirm the upstream namespace status. If the owner / repo was genuinely deleted (the resolver returns 404 while the workflow still references it), vendor the action under your org's control immediately, pin to your fork's SHA, and audit any prior workflow runs that used a non-SHA ref (``@v1`` / ``@main``). If the owner was renamed and the new name carries the canonical project, update the ``uses:`` slug. Pairs with the no-name-squatting posture, every external action your CI runs should resolve to a namespace your org controls or one the upstream maintainer still owns.
+
+</div>
+
+</div>
+
+<div class="pg-rule pg-rule--high" markdown>
+
+## GHA-092: PR head SHA captured then re-fetched (force-push race) { #gha-092 }
+
+<div class="pg-rule__tags">
+<span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-1</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-7</span> <span class="pg-tag pg-tag--esf">ESF-D-CODE-REVIEW</span> <span class="pg-tag pg-tag--cwe">CWE-367</span> <span class="pg-tag pg-tag--cwe">CWE-362</span>
+</div>
+
+Within a single job, step-order traversal looks for:
+
+1. A **capture** step, any step that reads ``github.event.pull_request.head.sha`` (either as a ``${{ }}`` interpolation in a ``run:`` body, in a step or job ``env:`` block, or via a ``run:`` body containing ``git rev-parse HEAD`` after an earlier checkout).
+2. A **fetch** step that follows it, an ``actions/checkout`` whose ``with.ref:`` contains the same ``${{ github.event.pull_request.head.sha }}`` expression.
+
+The fire condition is the *order*, capture-then-fetch with no intervening lock on the ref. Workflows that do the fetch FIRST (and only read the SHA after) are not TOCTOU-shaped because there's only one read; pipeline-check stays silent. Cross-job state isn't covered because GitHub-Actions doesn't share a filesystem between jobs by default; ``needs:`` data passing via ``outputs:`` is a separate shape (TAINT-002 territory).
+
+**Known false-positive modes**
+
+- I
+- f
+- 
+- t
+- h
+- e
+- 
+- w
+- o
+- r
+- k
+- f
+- l
+- o
+- w
+- 
+- g
+- e
+- n
+- u
+- i
+- n
+- e
+- l
+- y
+- 
+- w
+- a
+- n
+- t
+- s
+- 
+- t
+- o
+- 
+- t
+- r
+- a
+- c
+- k
+- 
+- H
+- E
+- A
+- D
+- -
+- o
+- f
+- -
+- P
+- R
+- 
+- o
+- v
+- e
+- r
+- 
+- t
+- i
+- m
+- e
+- 
+- (
+- e
+- .
+- g
+- .
+- ,
+- 
+- a
+- 
+- l
+- o
+- n
+- g
+- -
+- r
+- u
+- n
+- n
+- i
+- n
+- g
+- 
+- r
+- e
+- v
+- i
+- e
+- w
+- 
+- s
+- e
+- s
+- s
+- i
+- o
+- n
+- 
+- t
+- h
+- a
+- t
+- 
+- p
+- i
+- c
+- k
+- s
+- 
+- u
+- p
+- 
+- a
+- d
+- d
+- i
+- t
+- i
+- o
+- n
+- a
+- l
+- 
+- c
+- o
+- m
+- m
+- i
+- t
+- s
+- 
+- b
+- e
+- t
+- w
+- e
+- e
+- n
+- 
+- g
+- a
+- t
+- e
+- 
+- a
+- n
+- d
+- 
+- m
+- e
+- r
+- g
+- e
+- )
+- ,
+- 
+- t
+- h
+- e
+- 
+- T
+- O
+- C
+- T
+- O
+- U
+- 
+- s
+- h
+- a
+- p
+- e
+- 
+- i
+- s
+- n
+- '
+- t
+- 
+- t
+- h
+- e
+- 
+- b
+- u
+- g
+- ,
+- 
+- t
+- h
+- e
+- 
+- d
+- e
+- s
+- i
+- g
+- n
+- 
+- i
+- s
+- .
+- 
+- S
+- u
+- p
+- p
+- r
+- e
+- s
+- s
+- 
+- p
+- e
+- r
+- -
+- s
+- t
+- e
+- p
+- 
+- w
+- i
+- t
+- h
+- 
+- a
+- 
+- r
+- a
+- t
+- i
+- o
+- n
+- a
+- l
+- e
+- 
+- t
+- h
+- a
+- t
+- 
+- e
+- x
+- p
+- l
+- a
+- i
+- n
+- s
+- 
+- t
+- h
+- e
+- 
+- c
+- o
+- n
+- t
+- r
+- a
+- c
+- t
+- ;
+- 
+- p
+- a
+- i
+- r
+- 
+- w
+- i
+- t
+- h
+- 
+- a
+- 
+- b
+- r
+- a
+- n
+- c
+- h
+- -
+- p
+- r
+- o
+- t
+- e
+- c
+- t
+- i
+- o
+- n
+- 
+- r
+- u
+- l
+- e
+- 
+- o
+- n
+- 
+- t
+- h
+- e
+- 
+- c
+- o
+- n
+- t
+- r
+- i
+- b
+- u
+- t
+- o
+- r
+- 
+- s
+- i
+- d
+- e
+- 
+- t
+- h
+- a
+- t
+- 
+- b
+- l
+- o
+- c
+- k
+- s
+- 
+- f
+- o
+- r
+- c
+- e
+- -
+- p
+- u
+- s
+- h
+- e
+- s
+- 
+- t
+- o
+- 
+- P
+- R
+- 
+- b
+- r
+- a
+- n
+- c
+- h
+- e
+- s
+- 
+- s
+- o
+- 
+- t
+- h
+- e
+- 
+- r
+- a
+- c
+- e
+- 
+- w
+- i
+- n
+- d
+- o
+- w
+- 
+- s
+- t
+- a
+- y
+- s
+- 
+- c
+- l
+- o
+- s
+- e
+- d
+- 
+- i
+- n
+- 
+- p
+- r
+- a
+- c
+- t
+- i
+- c
+- e
+- .
+
+**Seen in the wild**
+
+- GitHub Security Lab "checkout-after-rev-parse" research (2024) and zizmor proposal #935: red-team demonstrations of contributor force-pushes landing un-reviewed code between a workflow's two reads of the PR head SHA. The attack works against PR-review gates, labeler gates, and any approval-by-SHA workflow that uses the snapshot value for the decision and a live re-read for the build.
+
+<div class="pg-rule__rec" markdown>
+
+**Recommended action**
+
+Read the PR head SHA once and reuse the captured value for the actual checkout. ``actions/checkout`` accepts a ``ref:`` the workflow already resolved (``ref: ${{ steps.snap.outputs.sha }}`` after a ``steps.snap`` that captures the SHA from the event payload), so the same atom drives both the gate decision and the fetch. If a re-read is genuinely needed (you want the latest commit, accepting the race), drop the gate logic that depends on the earlier snapshot, the two are not the same primitive.
 
 </div>
 

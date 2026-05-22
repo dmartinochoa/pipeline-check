@@ -436,6 +436,7 @@ STANDARD = Standard(
         "GHA-089":  ["CC6.8", "CC8.1"],     # archived upstream repo
         "GHA-090":  ["CC6.8", "CC8.1"],     # impostor-commit: SHA absent from repo
         "GHA-091":  ["CC6.8", "CC8.1"],     # repojacking: action upstream missing
+        "GHA-092":  ["CC6.8"],              # TOCTOU PR head SHA force-push race
         # ── GitLab CI ─────────────────────────────────────────────
         "GL-006":   ["CC8.1"],              # unsigned artifacts
         "GL-007":   ["CC8.1"],              # no SBOM

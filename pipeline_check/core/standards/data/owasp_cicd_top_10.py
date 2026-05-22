@@ -213,6 +213,7 @@ STANDARD = Standard(
         "GHA-089":  ["CICD-SEC-3"],                # archived upstream repo
         "GHA-090":  ["CICD-SEC-3", "CICD-SEC-8"],  # impostor-commit: SHA absent from repo
         "GHA-091":  ["CICD-SEC-3", "CICD-SEC-8"],  # repojacking: action upstream missing
+        "GHA-092":  ["CICD-SEC-1", "CICD-SEC-7"],  # TOCTOU PR head SHA force-push race
         # GitLab CI
         "GL-001":   ["CICD-SEC-3"],
         "GL-002":   ["CICD-SEC-4"],

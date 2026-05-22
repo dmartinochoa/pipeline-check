@@ -32,6 +32,23 @@ release commit collapses this section into `## [X.Y.Z] - <date>`.
 
 ### Added
 
+- **GHA-092 TOCTOU PR head SHA (closes #154).** Inspired by zizmor
+  proposal #935. Within a single job, fires when a step captures
+  the PR head SHA (a ``run:`` body or ``env:`` block interpolating
+  ``github.event.pull_request.head.sha``, or a ``run:`` containing
+  ``git rev-parse HEAD`` after an earlier checkout) AND a later
+  step runs ``actions/checkout`` with ``ref:`` containing the same
+  PR head SHA expression. A contributor force-push between the two
+  reads lets unreviewed code land with the gate's stamp of
+  approval. ``pull_request_target.head.sha`` variant covered. The
+  safe shape (capture once, reuse the captured value for both
+  gate and checkout) stays silent. Pairs with GHA-045 (caller-
+  controlled ref) and GHA-046 (manual PR-head fetch). HIGH
+  severity, OWASP CICD-SEC-1 / CICD-SEC-7, ESF-D-CODE-REVIEW,
+  CWE-367 / CWE-362. 12 per-rule tests under
+  ``tests/github/test_gha092.py`` plus a per-check fixture pair.
+  Brings GHA pack to 83 rules.
+
 - **GHA-091 repojacking (closes #155).** New rule that fires when
   an action's upstream repo is missing — the namespace is
   takeover-eligible by anyone. Reads a new

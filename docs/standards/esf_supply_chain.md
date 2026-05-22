@@ -12,7 +12,7 @@ the scanner evidences controls that surface in CI/CD configuration.
 
 - **Controls in this standard:** 24
 - **Controls evidenced by at least one check:** 24 / 24
-- **Distinct checks evidencing this standard:** 599
+- **Distinct checks evidencing this standard:** 600
 - **Of those, autofixable with `--fix`:** 111
 
 _Severity levels (`CRITICAL` / `HIGH` / `MEDIUM` / `LOW` / `INFO`) follow the same scale across every provider and standard. See [How to read severity](README.md#how-to-read-severity) on the standards overview for the definitions._
@@ -30,7 +30,7 @@ Click a control ID to jump to the per-control section with the full check list. 
 | [`ESF-D-PRIV-BUILD`](#ctrl-esf-d-priv-build) | Avoid privileged / host-networked build workers | 41 | 6C · 20H · 14M · 1L |
 | [`ESF-D-SIGN-ARTIFACTS`](#ctrl-esf-d-sign-artifacts) | Sign build artifacts and verify signatures before release | 28 | 5H · 23M |
 | [`ESF-D-SBOM`](#ctrl-esf-d-sbom) | Produce SBOM / provenance metadata with every build | 26 | 1H · 20M · 5L |
-| [`ESF-D-CODE-REVIEW`](#ctrl-esf-d-code-review) | Require peer review of source and pipeline configuration | 36 | 15H · 13M · 8L |
+| [`ESF-D-CODE-REVIEW`](#ctrl-esf-d-code-review) | Require peer review of source and pipeline configuration | 37 | 16H · 13M · 8L |
 | [`ESF-D-TOKEN-HYGIENE`](#ctrl-esf-d-token-hygiene) | Use short-lived, federated credentials (OIDC), not long-lived tokens | 27 | 19H · 8M |
 | [`ESF-D-INJECTION`](#ctrl-esf-d-injection) | Prevent script / template injection from untrusted pipeline context | 76 | 21C · 47H · 6M · 2L |
 | [`ESF-D-TAMPER`](#ctrl-esf-d-tamper) | Protect build artifacts from tampering and detect unauthorized modification | 6 | 1C · 4M · 1L |
@@ -330,7 +330,7 @@ pipeline_check --pipeline aws --standard esf_supply_chain --standard owasp_cicd_
 
 ### ESF-D-CODE-REVIEW: Require peer review of source and pipeline configuration { #ctrl-esf-d-code-review }
 
-**Evidenced by 36 checks** across 4 providers (AWS, Argo CD, Helm, SCM).
+**Evidenced by 37 checks** across 5 providers (AWS, Argo CD, GitHub Actions, Helm, SCM).
 
 | Check | Title | Severity | Provider | Fix |
 |-------|-------|----------|----------|-----|
@@ -342,6 +342,7 @@ pipeline_check --pipeline aws --standard esf_supply_chain --standard owasp_cicd_
 | [`CP-001`](#detail-cp-001) | No approval action before deploy stages | <span class="pg-sev pg-sev--high">HIGH</span> | [AWS](../providers/aws.md) |  |
 | [`CP-003`](#detail-cp-003) | Source stage using polling instead of event-driven trigger | <span class="pg-sev pg-sev--low">LOW</span> | [AWS](../providers/aws.md) |  |
 | [`CP-007`](#detail-cp-007) | CodePipeline v2 PR trigger accepts all branches | <span class="pg-sev pg-sev--high">HIGH</span> | [AWS](../providers/aws.md) |  |
+| [`GHA-092`](#detail-gha-092) | PR head SHA captured then re-fetched (force-push race) | <span class="pg-sev pg-sev--high">HIGH</span> | [GitHub Actions](../providers/github.md) |  |
 | [`HELM-006`](#detail-helm-006) | Chart.yaml does not declare a kubeVersion compatibility range | <span class="pg-sev pg-sev--low">LOW</span> | [Helm](../providers/helm.md) |  |
 | [`SCM-001`](#detail-scm-001) | Default branch has no protection rule | <span class="pg-sev pg-sev--high">HIGH</span> | [SCM](../providers/scm.md) |  |
 | [`SCM-002`](#detail-scm-002) | Default branch protection does not require pull request reviews | <span class="pg-sev pg-sev--high">HIGH</span> | [SCM](../providers/scm.md) |  |
@@ -12784,6 +12785,471 @@ jobs:
 ```
 
 **Source:** [`GHA-091`](../providers/github.md#gha-091) in the [GitHub Actions provider](../providers/github.md).
+
+### `GHA-092`: PR head SHA captured then re-fetched (force-push race) <span class="pg-sev pg-sev--high">HIGH</span> { #detail-gha-092 }
+
+**Evidences:** [`ESF-D-CODE-REVIEW`](#ctrl-esf-d-code-review) Require peer review of source and pipeline configuration.
+
+**How this is detected.** Within a single job, step-order traversal looks for:
+
+1. A **capture** step, any step that reads ``github.event.pull_request.head.sha`` (either as a ``${{ }}`` interpolation in a ``run:`` body, in a step or job ``env:`` block, or via a ``run:`` body containing ``git rev-parse HEAD`` after an earlier checkout).
+2. A **fetch** step that follows it, an ``actions/checkout`` whose ``with.ref:`` contains the same ``${{ github.event.pull_request.head.sha }}`` expression.
+
+The fire condition is the *order*, capture-then-fetch with no intervening lock on the ref. Workflows that do the fetch FIRST (and only read the SHA after) are not TOCTOU-shaped because there's only one read; pipeline-check stays silent. Cross-job state isn't covered because GitHub-Actions doesn't share a filesystem between jobs by default; ``needs:`` data passing via ``outputs:`` is a separate shape (TAINT-002 territory).
+
+**Recommendation.** Read the PR head SHA once and reuse the captured value for the actual checkout. ``actions/checkout`` accepts a ``ref:`` the workflow already resolved (``ref: ${{ steps.snap.outputs.sha }}`` after a ``steps.snap`` that captures the SHA from the event payload), so the same atom drives both the gate decision and the fetch. If a re-read is genuinely needed (you want the latest commit, accepting the race), drop the gate logic that depends on the earlier snapshot, the two are not the same primitive.
+
+**Known false positives.**
+
+- I
+- f
+- 
+- t
+- h
+- e
+- 
+- w
+- o
+- r
+- k
+- f
+- l
+- o
+- w
+- 
+- g
+- e
+- n
+- u
+- i
+- n
+- e
+- l
+- y
+- 
+- w
+- a
+- n
+- t
+- s
+- 
+- t
+- o
+- 
+- t
+- r
+- a
+- c
+- k
+- 
+- H
+- E
+- A
+- D
+- -
+- o
+- f
+- -
+- P
+- R
+- 
+- o
+- v
+- e
+- r
+- 
+- t
+- i
+- m
+- e
+- 
+- (
+- e
+- .
+- g
+- .
+- ,
+- 
+- a
+- 
+- l
+- o
+- n
+- g
+- -
+- r
+- u
+- n
+- n
+- i
+- n
+- g
+- 
+- r
+- e
+- v
+- i
+- e
+- w
+- 
+- s
+- e
+- s
+- s
+- i
+- o
+- n
+- 
+- t
+- h
+- a
+- t
+- 
+- p
+- i
+- c
+- k
+- s
+- 
+- u
+- p
+- 
+- a
+- d
+- d
+- i
+- t
+- i
+- o
+- n
+- a
+- l
+- 
+- c
+- o
+- m
+- m
+- i
+- t
+- s
+- 
+- b
+- e
+- t
+- w
+- e
+- e
+- n
+- 
+- g
+- a
+- t
+- e
+- 
+- a
+- n
+- d
+- 
+- m
+- e
+- r
+- g
+- e
+- )
+- ,
+- 
+- t
+- h
+- e
+- 
+- T
+- O
+- C
+- T
+- O
+- U
+- 
+- s
+- h
+- a
+- p
+- e
+- 
+- i
+- s
+- n
+- '
+- t
+- 
+- t
+- h
+- e
+- 
+- b
+- u
+- g
+- ,
+- 
+- t
+- h
+- e
+- 
+- d
+- e
+- s
+- i
+- g
+- n
+- 
+- i
+- s
+- .
+- 
+- S
+- u
+- p
+- p
+- r
+- e
+- s
+- s
+- 
+- p
+- e
+- r
+- -
+- s
+- t
+- e
+- p
+- 
+- w
+- i
+- t
+- h
+- 
+- a
+- 
+- r
+- a
+- t
+- i
+- o
+- n
+- a
+- l
+- e
+- 
+- t
+- h
+- a
+- t
+- 
+- e
+- x
+- p
+- l
+- a
+- i
+- n
+- s
+- 
+- t
+- h
+- e
+- 
+- c
+- o
+- n
+- t
+- r
+- a
+- c
+- t
+- ;
+- 
+- p
+- a
+- i
+- r
+- 
+- w
+- i
+- t
+- h
+- 
+- a
+- 
+- b
+- r
+- a
+- n
+- c
+- h
+- -
+- p
+- r
+- o
+- t
+- e
+- c
+- t
+- i
+- o
+- n
+- 
+- r
+- u
+- l
+- e
+- 
+- o
+- n
+- 
+- t
+- h
+- e
+- 
+- c
+- o
+- n
+- t
+- r
+- i
+- b
+- u
+- t
+- o
+- r
+- 
+- s
+- i
+- d
+- e
+- 
+- t
+- h
+- a
+- t
+- 
+- b
+- l
+- o
+- c
+- k
+- s
+- 
+- f
+- o
+- r
+- c
+- e
+- -
+- p
+- u
+- s
+- h
+- e
+- s
+- 
+- t
+- o
+- 
+- P
+- R
+- 
+- b
+- r
+- a
+- n
+- c
+- h
+- e
+- s
+- 
+- s
+- o
+- 
+- t
+- h
+- e
+- 
+- r
+- a
+- c
+- e
+- 
+- w
+- i
+- n
+- d
+- o
+- w
+- 
+- s
+- t
+- a
+- y
+- s
+- 
+- c
+- l
+- o
+- s
+- e
+- d
+- 
+- i
+- n
+- 
+- p
+- r
+- a
+- c
+- t
+- i
+- c
+- e
+- .
+
+**Seen in the wild.**
+
+- GitHub Security Lab "checkout-after-rev-parse" research (2024) and zizmor proposal #935: red-team demonstrations of contributor force-pushes landing un-reviewed code between a workflow's two reads of the PR head SHA. The attack works against PR-review gates, labeler gates, and any approval-by-SHA workflow that uses the snapshot value for the decision and a live re-read for the build.
+
+**Proof of exploit.**
+
+```
+# Vulnerable: two reads of the PR head, with a gate in
+# between. A contributor force-push between the snapshot
+# and the second checkout lets unreviewed code run with
+# the gate's stamp of approval.
+jobs:
+  review-and-build:
+    runs-on: ubuntu-latest
+    steps:
+      - id: snap
+        run: echo "sha=${{ github.event.pull_request.head.sha }}" >> "$GITHUB_OUTPUT"
+      - run: ./review-gate.sh ${{ steps.snap.outputs.sha }}
+      - uses: actions/checkout@<sha>
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+
+# Safe: capture once, use the captured value for both the
+# gate and the fetch. ``checkout`` accepts the resolved
+# SHA as a ``ref:`` directly.
+jobs:
+  review-and-build:
+    runs-on: ubuntu-latest
+    steps:
+      - id: snap
+        run: echo "sha=${{ github.event.pull_request.head.sha }}" >> "$GITHUB_OUTPUT"
+      - run: ./review-gate.sh ${{ steps.snap.outputs.sha }}
+      - uses: actions/checkout@<sha>
+        with:
+          ref: ${{ steps.snap.outputs.sha }}
+```
+
+**Source:** [`GHA-092`](../providers/github.md#gha-092) in the [GitHub Actions provider](../providers/github.md).
 
 ### `GL-001`: Image not pinned to specific version or digest <span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> { #detail-gl-001 }
 

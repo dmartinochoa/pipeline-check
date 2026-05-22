@@ -20,7 +20,7 @@ risk language.
 
 - **Controls in this standard:** 13
 - **Controls evidenced by at least one check:** 13 / 13
-- **Distinct checks evidencing this standard:** 589
+- **Distinct checks evidencing this standard:** 590
 - **Of those, autofixable with `--fix`:** 111
 
 _Severity levels (`CRITICAL` / `HIGH` / `MEDIUM` / `LOW` / `INFO`) follow the same scale across every provider and standard. See [How to read severity](README.md#how-to-read-severity) on the standards overview for the definitions._
@@ -33,7 +33,7 @@ Click a control ID to jump to the per-control section with the full check list. 
 |---------|-------|-------:|--------------|
 | [`PO.3.2`](#ctrl-po-3-2) | Implement and maintain supporting toolchains with security controls | 6 | 2H · 2M · 2L |
 | [`PO.3.3`](#ctrl-po-3-3) | Configure the toolchain to generate an audit trail of SDLC activities | 35 | 2H · 8M · 9L · 16I |
-| [`PO.5.1`](#ctrl-po-5-1) | Separate and protect each environment involved in software development | 150 | 26C · 78H · 43M · 3L |
+| [`PO.5.1`](#ctrl-po-5-1) | Separate and protect each environment involved in software development | 151 | 26C · 79H · 43M · 3L |
 | [`PO.5.2`](#ctrl-po-5-2) | Secure and harden endpoints used for software development | 19 | 1C · 14M · 4L |
 | [`PS.1.1`](#ctrl-ps-1-1) | Store all forms of code based on least-privilege and tamper-resistance | 129 | 31C · 54H · 35M · 9L |
 | [`PS.2.1`](#ctrl-ps-2-1) | Make software integrity verification information available to acquirers | 34 | 10H · 24M |
@@ -42,7 +42,7 @@ Click a control ID to jump to the per-control section with the full check list. 
 | [`PW.4.1`](#ctrl-pw-4-1) | Acquire and maintain well-secured 3rd-party software components | 98 | 5C · 54H · 33M · 6L |
 | [`PW.4.4`](#ctrl-pw-4-4) | Verify that acquired components are what is expected and behave as expected | 143 | 13C · 77H · 49M · 4L |
 | [`PW.6.1`](#ctrl-pw-6-1) | Use compiler, interpreter, and build tool features to improve security | 35 | 5C · 24H · 2M · 4L |
-| [`PW.9.1`](#ctrl-pw-9-1) | Configure software to have secure settings by default | 140 | 25C · 75H · 33M · 7L |
+| [`PW.9.1`](#ctrl-pw-9-1) | Configure software to have secure settings by default | 141 | 25C · 76H · 33M · 7L |
 | [`RV.1.1`](#ctrl-rv-1-1) | Gather information about potential vulnerabilities in released software | 36 | 12C · 3H · 16M · 5L |
 
 ## Filter at runtime
@@ -119,7 +119,7 @@ pipeline_check --pipeline aws --standard nist_ssdf --standard owasp_cicd_top_10
 
 ### PO.5.1: Separate and protect each environment involved in software development { #ctrl-po-5-1 }
 
-**Evidenced by 150 checks** across 19 providers (AWS, Argo Workflows, Azure DevOps, Bitbucket, Buildkite, CircleCI, Cloud Build, CloudFormation, Dockerfile, Drone CI, GitHub Actions, GitLab CI, Helm, Jenkins, Kubernetes, SCM, Tekton, Terraform, npm).
+**Evidenced by 151 checks** across 19 providers (AWS, Argo Workflows, Azure DevOps, Bitbucket, Buildkite, CircleCI, Cloud Build, CloudFormation, Dockerfile, Drone CI, GitHub Actions, GitLab CI, Helm, Jenkins, Kubernetes, SCM, Tekton, Terraform, npm).
 
 | Check | Title | Severity | Provider | Fix |
 |-------|-------|----------|----------|-----|
@@ -194,6 +194,7 @@ pipeline_check --pipeline aws --standard nist_ssdf --standard owasp_cicd_top_10
 | [`GHA-064`](#detail-gha-064) | ``contains()`` invoked with comma-delimited string operand | <span class="pg-sev pg-sev--high">HIGH</span> | [GitHub Actions](../providers/github.md) |  |
 | [`GHA-069`](#detail-gha-069) | ``id-token: write`` granted without an OIDC-consumer step | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [GitHub Actions](../providers/github.md) |  |
 | [`GHA-086`](#detail-gha-086) | Wildcard branch trigger gates an environment-bound deploy | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [GitHub Actions](../providers/github.md) |  |
+| [`GHA-092`](#detail-gha-092) | PR head SHA captured then re-fetched (force-push race) | <span class="pg-sev pg-sev--high">HIGH</span> | [GitHub Actions](../providers/github.md) |  |
 | [`GL-004`](#detail-gl-004) | Deploy job lacks manual approval or environment gate | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [GitLab CI](../providers/gitlab.md) |  |
 | [`GL-010`](#detail-gl-010) | Multi-project pipeline ingests upstream artifact unverified | <span class="pg-sev pg-sev--critical">CRITICAL</span> | [GitLab CI](../providers/gitlab.md) |  |
 | [`GL-011`](#detail-gl-011) | include: local file pulled in MR-triggered pipeline | <span class="pg-sev pg-sev--high">HIGH</span> | [GitLab CI](../providers/gitlab.md) |  |
@@ -850,7 +851,7 @@ pipeline_check --pipeline aws --standard nist_ssdf --standard owasp_cicd_top_10
 
 ### PW.9.1: Configure software to have secure settings by default { #ctrl-pw-9-1 }
 
-**Evidenced by 140 checks** across 15 providers (AWS, Argo Workflows, Azure DevOps, Bitbucket, Buildkite, CircleCI, Cloud Build, Dockerfile, Drone CI, GitHub Actions, GitLab CI, Jenkins, Kubernetes, Tekton, npm).
+**Evidenced by 141 checks** across 15 providers (AWS, Argo Workflows, Azure DevOps, Bitbucket, Buildkite, CircleCI, Cloud Build, Dockerfile, Drone CI, GitHub Actions, GitLab CI, Jenkins, Kubernetes, Tekton, npm).
 
 | Check | Title | Severity | Provider | Fix |
 |-------|-------|----------|----------|-----|
@@ -936,6 +937,7 @@ pipeline_check --pipeline aws --standard nist_ssdf --standard owasp_cicd_top_10
 | [`GHA-052`](#detail-gha-052) | actions/cache key includes untrusted PR-controllable input | <span class="pg-sev pg-sev--high">HIGH</span> | [GitHub Actions](../providers/github.md) |  |
 | [`GHA-053`](#detail-gha-053) | if: predicate evaluates attacker-controllable context as expression | <span class="pg-sev pg-sev--high">HIGH</span> | [GitHub Actions](../providers/github.md) |  |
 | [`GHA-058`](#detail-gha-058) | Agentic CLI invoked with permission-bypass flags | <span class="pg-sev pg-sev--high">HIGH</span> | [GitHub Actions](../providers/github.md) |  |
+| [`GHA-092`](#detail-gha-092) | PR head SHA captured then re-fetched (force-push race) | <span class="pg-sev pg-sev--high">HIGH</span> | [GitHub Actions](../providers/github.md) |  |
 | [`GL-002`](#detail-gl-002) | Script injection via untrusted commit/MR context | <span class="pg-sev pg-sev--high">HIGH</span> | [GitLab CI](../providers/gitlab.md) |  |
 | [`GL-010`](#detail-gl-010) | Multi-project pipeline ingests upstream artifact unverified | <span class="pg-sev pg-sev--critical">CRITICAL</span> | [GitLab CI](../providers/gitlab.md) |  |
 | [`GL-011`](#detail-gl-011) | include: local file pulled in MR-triggered pipeline | <span class="pg-sev pg-sev--high">HIGH</span> | [GitLab CI](../providers/gitlab.md) |  |
@@ -12527,6 +12529,471 @@ jobs:
 ```
 
 **Source:** [`GHA-091`](../providers/github.md#gha-091) in the [GitHub Actions provider](../providers/github.md).
+
+### `GHA-092`: PR head SHA captured then re-fetched (force-push race) <span class="pg-sev pg-sev--high">HIGH</span> { #detail-gha-092 }
+
+**Evidences:** [`PO.5.1`](#ctrl-po-5-1) Separate and protect each environment involved in software development, [`PW.9.1`](#ctrl-pw-9-1) Configure software to have secure settings by default.
+
+**How this is detected.** Within a single job, step-order traversal looks for:
+
+1. A **capture** step, any step that reads ``github.event.pull_request.head.sha`` (either as a ``${{ }}`` interpolation in a ``run:`` body, in a step or job ``env:`` block, or via a ``run:`` body containing ``git rev-parse HEAD`` after an earlier checkout).
+2. A **fetch** step that follows it, an ``actions/checkout`` whose ``with.ref:`` contains the same ``${{ github.event.pull_request.head.sha }}`` expression.
+
+The fire condition is the *order*, capture-then-fetch with no intervening lock on the ref. Workflows that do the fetch FIRST (and only read the SHA after) are not TOCTOU-shaped because there's only one read; pipeline-check stays silent. Cross-job state isn't covered because GitHub-Actions doesn't share a filesystem between jobs by default; ``needs:`` data passing via ``outputs:`` is a separate shape (TAINT-002 territory).
+
+**Recommendation.** Read the PR head SHA once and reuse the captured value for the actual checkout. ``actions/checkout`` accepts a ``ref:`` the workflow already resolved (``ref: ${{ steps.snap.outputs.sha }}`` after a ``steps.snap`` that captures the SHA from the event payload), so the same atom drives both the gate decision and the fetch. If a re-read is genuinely needed (you want the latest commit, accepting the race), drop the gate logic that depends on the earlier snapshot, the two are not the same primitive.
+
+**Known false positives.**
+
+- I
+- f
+- 
+- t
+- h
+- e
+- 
+- w
+- o
+- r
+- k
+- f
+- l
+- o
+- w
+- 
+- g
+- e
+- n
+- u
+- i
+- n
+- e
+- l
+- y
+- 
+- w
+- a
+- n
+- t
+- s
+- 
+- t
+- o
+- 
+- t
+- r
+- a
+- c
+- k
+- 
+- H
+- E
+- A
+- D
+- -
+- o
+- f
+- -
+- P
+- R
+- 
+- o
+- v
+- e
+- r
+- 
+- t
+- i
+- m
+- e
+- 
+- (
+- e
+- .
+- g
+- .
+- ,
+- 
+- a
+- 
+- l
+- o
+- n
+- g
+- -
+- r
+- u
+- n
+- n
+- i
+- n
+- g
+- 
+- r
+- e
+- v
+- i
+- e
+- w
+- 
+- s
+- e
+- s
+- s
+- i
+- o
+- n
+- 
+- t
+- h
+- a
+- t
+- 
+- p
+- i
+- c
+- k
+- s
+- 
+- u
+- p
+- 
+- a
+- d
+- d
+- i
+- t
+- i
+- o
+- n
+- a
+- l
+- 
+- c
+- o
+- m
+- m
+- i
+- t
+- s
+- 
+- b
+- e
+- t
+- w
+- e
+- e
+- n
+- 
+- g
+- a
+- t
+- e
+- 
+- a
+- n
+- d
+- 
+- m
+- e
+- r
+- g
+- e
+- )
+- ,
+- 
+- t
+- h
+- e
+- 
+- T
+- O
+- C
+- T
+- O
+- U
+- 
+- s
+- h
+- a
+- p
+- e
+- 
+- i
+- s
+- n
+- '
+- t
+- 
+- t
+- h
+- e
+- 
+- b
+- u
+- g
+- ,
+- 
+- t
+- h
+- e
+- 
+- d
+- e
+- s
+- i
+- g
+- n
+- 
+- i
+- s
+- .
+- 
+- S
+- u
+- p
+- p
+- r
+- e
+- s
+- s
+- 
+- p
+- e
+- r
+- -
+- s
+- t
+- e
+- p
+- 
+- w
+- i
+- t
+- h
+- 
+- a
+- 
+- r
+- a
+- t
+- i
+- o
+- n
+- a
+- l
+- e
+- 
+- t
+- h
+- a
+- t
+- 
+- e
+- x
+- p
+- l
+- a
+- i
+- n
+- s
+- 
+- t
+- h
+- e
+- 
+- c
+- o
+- n
+- t
+- r
+- a
+- c
+- t
+- ;
+- 
+- p
+- a
+- i
+- r
+- 
+- w
+- i
+- t
+- h
+- 
+- a
+- 
+- b
+- r
+- a
+- n
+- c
+- h
+- -
+- p
+- r
+- o
+- t
+- e
+- c
+- t
+- i
+- o
+- n
+- 
+- r
+- u
+- l
+- e
+- 
+- o
+- n
+- 
+- t
+- h
+- e
+- 
+- c
+- o
+- n
+- t
+- r
+- i
+- b
+- u
+- t
+- o
+- r
+- 
+- s
+- i
+- d
+- e
+- 
+- t
+- h
+- a
+- t
+- 
+- b
+- l
+- o
+- c
+- k
+- s
+- 
+- f
+- o
+- r
+- c
+- e
+- -
+- p
+- u
+- s
+- h
+- e
+- s
+- 
+- t
+- o
+- 
+- P
+- R
+- 
+- b
+- r
+- a
+- n
+- c
+- h
+- e
+- s
+- 
+- s
+- o
+- 
+- t
+- h
+- e
+- 
+- r
+- a
+- c
+- e
+- 
+- w
+- i
+- n
+- d
+- o
+- w
+- 
+- s
+- t
+- a
+- y
+- s
+- 
+- c
+- l
+- o
+- s
+- e
+- d
+- 
+- i
+- n
+- 
+- p
+- r
+- a
+- c
+- t
+- i
+- c
+- e
+- .
+
+**Seen in the wild.**
+
+- GitHub Security Lab "checkout-after-rev-parse" research (2024) and zizmor proposal #935: red-team demonstrations of contributor force-pushes landing un-reviewed code between a workflow's two reads of the PR head SHA. The attack works against PR-review gates, labeler gates, and any approval-by-SHA workflow that uses the snapshot value for the decision and a live re-read for the build.
+
+**Proof of exploit.**
+
+```
+# Vulnerable: two reads of the PR head, with a gate in
+# between. A contributor force-push between the snapshot
+# and the second checkout lets unreviewed code run with
+# the gate's stamp of approval.
+jobs:
+  review-and-build:
+    runs-on: ubuntu-latest
+    steps:
+      - id: snap
+        run: echo "sha=${{ github.event.pull_request.head.sha }}" >> "$GITHUB_OUTPUT"
+      - run: ./review-gate.sh ${{ steps.snap.outputs.sha }}
+      - uses: actions/checkout@<sha>
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+
+# Safe: capture once, use the captured value for both the
+# gate and the fetch. ``checkout`` accepts the resolved
+# SHA as a ``ref:`` directly.
+jobs:
+  review-and-build:
+    runs-on: ubuntu-latest
+    steps:
+      - id: snap
+        run: echo "sha=${{ github.event.pull_request.head.sha }}" >> "$GITHUB_OUTPUT"
+      - run: ./review-gate.sh ${{ steps.snap.outputs.sha }}
+      - uses: actions/checkout@<sha>
+        with:
+          ref: ${{ steps.snap.outputs.sha }}
+```
+
+**Source:** [`GHA-092`](../providers/github.md#gha-092) in the [GitHub Actions provider](../providers/github.md).
 
 ### `GL-001`: Image not pinned to specific version or digest <span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> { #detail-gl-001 }
 
