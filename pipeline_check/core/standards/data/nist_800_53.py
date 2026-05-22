@@ -208,6 +208,8 @@ STANDARD = Standard(
         "GHA-073":  ["IA-5", "CM-7"],                     # unused workflow_call.secrets declaration
         "GHA-086":  ["SA-10", "AC-3"],                    # wildcard branch trigger + environment binding
         "GHA-087":  ["IA-5", "AU-9"],                     # derived-value of secret printed to log
+        "GHA-088":  ["SR-3", "SR-11", "RA-5"],            # typosquat uses: near-edit of top action
+        "GHA-089":  ["SR-3", "SR-11", "RA-5"],            # archived upstream repo
         # GitLab CI
         "GL-001":   ["SR-3", "SR-11", "SI-2"],
         "GL-002":   ["SI-7", "SA-11", "CM-6"],

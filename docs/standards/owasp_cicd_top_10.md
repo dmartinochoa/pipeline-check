@@ -19,7 +19,7 @@ Kubernetes, …) when an audit asks for that framework's vocabulary.
 
 - **Controls in this standard:** 10
 - **Controls evidenced by at least one check:** 10 / 10
-- **Distinct checks evidencing this standard:** 600
+- **Distinct checks evidencing this standard:** 601
 - **Of those, autofixable with `--fix`:** 111
 
 _Severity levels (`CRITICAL` / `HIGH` / `MEDIUM` / `LOW` / `INFO`) follow the same scale across every provider and standard. See [How to read severity](README.md#how-to-read-severity) on the standards overview for the definitions._
@@ -32,7 +32,7 @@ Click a control ID to jump to the per-control section with the full check list. 
 |---------|-------|-------:|--------------|
 | [`CICD-SEC-1`](#ctrl-cicd-sec-1) | Insufficient Flow Control Mechanisms | 75 | 4C · 33H · 30M · 8L |
 | [`CICD-SEC-2`](#ctrl-cicd-sec-2) | Inadequate Identity and Access Management | 40 | 5C · 23H · 11M · 1L |
-| [`CICD-SEC-3`](#ctrl-cicd-sec-3) | Dependency Chain Abuse | 178 | 5C · 90H · 67M · 16L |
+| [`CICD-SEC-3`](#ctrl-cicd-sec-3) | Dependency Chain Abuse | 179 | 5C · 90H · 68M · 16L |
 | [`CICD-SEC-4`](#ctrl-cicd-sec-4) | Poisoned Pipeline Execution | 94 | 24C · 49H · 15M · 6L |
 | [`CICD-SEC-5`](#ctrl-cicd-sec-5) | Insufficient PBAC | 35 | 4C · 21H · 10M |
 | [`CICD-SEC-6`](#ctrl-cicd-sec-6) | Insufficient Credential Hygiene | 75 | 29C · 30H · 16M |
@@ -195,7 +195,7 @@ Long-lived static credentials, shared service accounts, and human identities reu
 
 Floating tags, range constraints, and unverified registries let an upstream maintainer compromise (or a typosquat) execute in your build the next time the dependency resolves.
 
-**Evidenced by 178 checks** across 21 providers (AWS, Argo CD, Argo Workflows, Azure DevOps, Bitbucket, Buildkite, CircleCI, Cloud Build, Dockerfile, Drone CI, GitHub Actions, GitLab CI, Helm, Jenkins, Kubernetes, OCI manifest, PyPI, SCM, Tekton, maven, npm).
+**Evidenced by 179 checks** across 21 providers (AWS, Argo CD, Argo Workflows, Azure DevOps, Bitbucket, Buildkite, CircleCI, Cloud Build, Dockerfile, Drone CI, GitHub Actions, GitLab CI, Helm, Jenkins, Kubernetes, OCI manifest, PyPI, SCM, Tekton, maven, npm).
 
 | Check | Title | Severity | Provider | Fix |
 |-------|-------|----------|----------|-----|
@@ -300,6 +300,7 @@ Floating tags, range constraints, and unverified registries let an upstream main
 | [`GHA-060`](#detail-gha-060) | pip install without `--require-hashes` verification | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [GitHub Actions](../providers/github.md) |  |
 | [`GHA-070`](#detail-gha-070) | ``ssh-keyscan`` / disabled host-key check trust-on-first-use | <span class="pg-sev pg-sev--high">HIGH</span> | [GitHub Actions](../providers/github.md) |  |
 | [`GHA-088`](#detail-gha-088) | Action ``uses:`` slug is a near-edit of a top-traffic action | <span class="pg-sev pg-sev--high">HIGH</span> | [GitHub Actions](../providers/github.md) |  |
+| [`GHA-089`](#detail-gha-089) | Action upstream repo is archived | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [GitHub Actions](../providers/github.md) |  |
 | [`GL-001`](#detail-gl-001) | Image not pinned to specific version or digest | <span class="pg-sev pg-sev--high">HIGH</span> | [GitLab CI](../providers/gitlab.md) | <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> |
 | [`GL-005`](#detail-gl-005) | include: pulls remote / project without pinned ref | <span class="pg-sev pg-sev--high">HIGH</span> | [GitLab CI](../providers/gitlab.md) |  |
 | [`GL-009`](#detail-gl-009) | Image pinned to version tag rather than sha256 digest | <span class="pg-sev pg-sev--low">LOW</span> | [GitLab CI](../providers/gitlab.md) |  |
@@ -11762,6 +11763,452 @@ jobs:
 ```
 
 **Source:** [`GHA-088`](../providers/github.md#gha-088) in the [GitHub Actions provider](../providers/github.md).
+
+### `GHA-089`: Action upstream repo is archived <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-gha-089 }
+
+**Evidences:** [`CICD-SEC-3`](#ctrl-cicd-sec-3) Dependency Chain Abuse.
+
+**How this is detected.** Reads the archived bit from ``ctx.action_metadata[owner/repo].archived`` (populated by ``--resolve-remote``; the same per-action repo fetch the GHA-041..043 reputation rules consume). When the metadata is empty (flag off, fetch failed, private repo with no token), the rule passes silently with a one-line nudge pointing at the flag. Covers both step-level ``uses:`` (action references) and job-level ``uses:`` (reusable workflow references); MEDIUM severity, the archived bit alone is not an exploit primitive but it is a documented precondition for the takeover shapes GHA-082 and GHA-040 catch.
+
+**Recommendation.** Migrate to an actively-maintained action covering the same surface. Archived upstreams stop receiving security patches the day the archive bit lands; vulnerabilities discovered afterward stay unpatched, and the namespace is eligible to be reclaimed by anyone once the original owner deletes or transfers the repo (the repojacking shape, see also GHA-082 when it ships). If a fork under your org's control is the only path forward, vendor the action and pin to your fork's SHA, so an upstream takeover can't reach your build runtime.
+
+**Known false positives.**
+
+- A
+- n
+- 
+- a
+- c
+- t
+- i
+- o
+- n
+- 
+- t
+- h
+- a
+- t
+- 
+- a
+- n
+- 
+- u
+- p
+- s
+- t
+- r
+- e
+- a
+- m
+- 
+- m
+- a
+- i
+- n
+- t
+- a
+- i
+- n
+- e
+- r
+- 
+- a
+- r
+- c
+- h
+- i
+- v
+- e
+- d
+- 
+- b
+- e
+- c
+- a
+- u
+- s
+- e
+- 
+- a
+- 
+- f
+- i
+- r
+- s
+- t
+- -
+- p
+- a
+- r
+- t
+- y
+- 
+- r
+- e
+- p
+- l
+- a
+- c
+- e
+- m
+- e
+- n
+- t
+- 
+- s
+- h
+- i
+- p
+- s
+- 
+- (
+- e
+- .
+- g
+- .
+- ,
+- 
+- a
+- 
+- l
+- e
+- g
+- a
+- c
+- y
+- 
+- m
+- i
+- g
+- r
+- a
+- t
+- i
+- o
+- n
+- 
+- h
+- e
+- l
+- p
+- e
+- r
+- 
+- d
+- e
+- p
+- r
+- e
+- c
+- a
+- t
+- e
+- d
+- 
+- i
+- n
+- 
+- f
+- a
+- v
+- o
+- r
+- 
+- o
+- f
+- 
+- a
+- 
+- b
+- u
+- i
+- l
+- t
+- -
+- i
+- n
+- 
+- f
+- e
+- a
+- t
+- u
+- r
+- e
+- )
+- 
+- i
+- s
+- 
+- a
+- r
+- c
+- h
+- i
+- v
+- e
+- d
+- 
+- f
+- o
+- r
+- 
+- l
+- e
+- g
+- i
+- t
+- i
+- m
+- a
+- t
+- e
+- 
+- r
+- e
+- a
+- s
+- o
+- n
+- s
+- ,
+- 
+- n
+- o
+- t
+- 
+- a
+- b
+- a
+- n
+- d
+- o
+- n
+- m
+- e
+- n
+- t
+- .
+- 
+- T
+- h
+- e
+- 
+- f
+- o
+- r
+- k
+- -
+- a
+- n
+- d
+- -
+- v
+- e
+- n
+- d
+- o
+- r
+- 
+- r
+- e
+- c
+- o
+- m
+- m
+- e
+- n
+- d
+- a
+- t
+- i
+- o
+- n
+- 
+- i
+- s
+- 
+- s
+- t
+- i
+- l
+- l
+- 
+- t
+- h
+- e
+- 
+- r
+- i
+- g
+- h
+- t
+- 
+- c
+- a
+- l
+- l
+- 
+- f
+- o
+- r
+- 
+- s
+- e
+- c
+- u
+- r
+- i
+- t
+- y
+- 
+- p
+- o
+- s
+- t
+- u
+- r
+- e
+- ,
+- 
+- b
+- u
+- t
+- 
+- s
+- u
+- p
+- p
+- r
+- e
+- s
+- s
+- 
+- p
+- e
+- r
+- -
+- f
+- i
+- n
+- d
+- i
+- n
+- g
+- 
+- w
+- i
+- t
+- h
+- 
+- a
+- 
+- r
+- a
+- t
+- i
+- o
+- n
+- a
+- l
+- e
+- 
+- o
+- n
+- c
+- e
+- 
+- t
+- h
+- e
+- 
+- o
+- p
+- e
+- r
+- a
+- t
+- o
+- r
+- 
+- h
+- a
+- s
+- 
+- c
+- o
+- n
+- f
+- i
+- r
+- m
+- e
+- d
+- 
+- t
+- h
+- e
+- 
+- m
+- i
+- g
+- r
+- a
+- t
+- i
+- o
+- n
+- 
+- p
+- a
+- t
+- h
+- 
+- i
+- s
+- 
+- o
+- n
+- 
+- a
+- 
+- r
+- o
+- a
+- d
+- m
+- a
+- p
+- .
+
+**Seen in the wild.**
+
+- tj-actions / reviewdog March 2025 (CVE-2025-30066 / CVE-2025-30154): both action namespaces were briefly archived during the compromise window; pinned consumers ran the malicious tag on the next sync. Archived state is one of the pre-conditions the post-incident timelines highlight.
+
+**Proof of exploit.**
+
+```
+# Vulnerable: archived upstream still in use. The next
+# discovered vulnerability in the action's runtime won't
+# get a fix; the namespace is eligible for repojacking
+# the moment the owner deletes the repo.
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: legacy-org/abandoned-action@v3
+      - run: ./build.sh
+
+# Safe: same surface, actively maintained replacement.
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@<sha>
+      - run: ./build.sh
+```
+
+**Source:** [`GHA-089`](../providers/github.md#gha-089) in the [GitHub Actions provider](../providers/github.md).
 
 ### `GL-001`: Image not pinned to specific version or digest <span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> { #detail-gl-001 }
 

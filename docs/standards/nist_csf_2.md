@@ -14,7 +14,7 @@ process telemetry the tool cannot witness.
 
 - **Controls in this standard:** 23
 - **Controls evidenced by at least one check:** 22 / 23
-- **Distinct checks evidencing this standard:** 586
+- **Distinct checks evidencing this standard:** 588
 - **Of those, autofixable with `--fix`:** 111
 
 _Severity levels (`CRITICAL` / `HIGH` / `MEDIUM` / `LOW` / `INFO`) follow the same scale across every provider and standard. See [How to read severity](README.md#how-to-read-severity) on the standards overview for the definitions._
@@ -27,8 +27,8 @@ Click a control ID to jump to the per-control section with the full check list. 
 |---------|-------|-------:|--------------|
 | [`GV.SC-03`](#ctrl-gv-sc-03) | Cybersecurity supply chain risk management is integrated into CS and ERM programs | 9 | 9M |
 | [`GV.SC-04`](#ctrl-gv-sc-04) | Suppliers are known and prioritized by criticality | 29 | 9H · 13M · 7L |
-| [`GV.SC-05`](#ctrl-gv-sc-05) | Requirements to address cybersecurity risks in supply chains are established, prioritized, and integrated into contracts | 111 | 4C · 54H · 46M · 7L |
-| [`GV.SC-07`](#ctrl-gv-sc-07) | Risks posed by suppliers, their products and services, are understood, recorded, prioritized, assessed, responded to, and monitored | 27 | 5C · 10H · 11M · 1L |
+| [`GV.SC-05`](#ctrl-gv-sc-05) | Requirements to address cybersecurity risks in supply chains are established, prioritized, and integrated into contracts | 113 | 4C · 55H · 47M · 7L |
+| [`GV.SC-07`](#ctrl-gv-sc-07) | Risks posed by suppliers, their products and services, are understood, recorded, prioritized, assessed, responded to, and monitored | 29 | 5C · 11H · 12M · 1L |
 | [`GV.SC-08`](#ctrl-gv-sc-08) | Relevant suppliers and other third parties are included in incident planning, response, and recovery activities | 0 | — |
 | [`PR.AA-01`](#ctrl-pr-aa-01) | Identities and credentials for authorized users, services, and hardware are managed | 68 | 26C · 28H · 14M |
 | [`PR.AA-03`](#ctrl-pr-aa-03) | Users, services, and hardware are authenticated | 6 | 3H · 3M |
@@ -120,7 +120,7 @@ pipeline_check --pipeline aws --standard nist_csf_2 --standard owasp_cicd_top_10
 
 ### GV.SC-05: Requirements to address cybersecurity risks in supply chains are established, prioritized, and integrated into contracts { #ctrl-gv-sc-05 }
 
-**Evidenced by 111 checks** across 20 providers (AWS, Argo Workflows, Azure DevOps, Bitbucket, Buildkite, CircleCI, Cloud Build, Dockerfile, Drone CI, GitHub Actions, GitLab CI, Helm, Jenkins, Kubernetes, OCI manifest, PyPI, SCM, Tekton, maven, npm).
+**Evidenced by 113 checks** across 20 providers (AWS, Argo Workflows, Azure DevOps, Bitbucket, Buildkite, CircleCI, Cloud Build, Dockerfile, Drone CI, GitHub Actions, GitLab CI, Helm, Jenkins, Kubernetes, OCI manifest, PyPI, SCM, Tekton, maven, npm).
 
 | Check | Title | Severity | Provider | Fix |
 |-------|-------|----------|----------|-----|
@@ -184,6 +184,8 @@ pipeline_check --pipeline aws --standard nist_csf_2 --standard owasp_cicd_top_10
 | [`GHA-051`](#detail-gha-051) | services / container image is not pinned by digest | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [GitHub Actions](../providers/github.md) |  |
 | [`GHA-059`](#detail-gha-059) | npm install without registry-signature verification step | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [GitHub Actions](../providers/github.md) |  |
 | [`GHA-060`](#detail-gha-060) | pip install without `--require-hashes` verification | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [GitHub Actions](../providers/github.md) |  |
+| [`GHA-088`](#detail-gha-088) | Action ``uses:`` slug is a near-edit of a top-traffic action | <span class="pg-sev pg-sev--high">HIGH</span> | [GitHub Actions](../providers/github.md) |  |
+| [`GHA-089`](#detail-gha-089) | Action upstream repo is archived | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [GitHub Actions](../providers/github.md) |  |
 | [`GL-001`](#detail-gl-001) | Image not pinned to specific version or digest | <span class="pg-sev pg-sev--high">HIGH</span> | [GitLab CI](../providers/gitlab.md) | <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> |
 | [`GL-005`](#detail-gl-005) | include: pulls remote / project without pinned ref | <span class="pg-sev pg-sev--high">HIGH</span> | [GitLab CI](../providers/gitlab.md) |  |
 | [`GL-009`](#detail-gl-009) | Image pinned to version tag rather than sha256 digest | <span class="pg-sev pg-sev--low">LOW</span> | [GitLab CI](../providers/gitlab.md) |  |
@@ -238,7 +240,7 @@ pipeline_check --pipeline aws --standard nist_csf_2 --standard owasp_cicd_top_10
 
 ### GV.SC-07: Risks posed by suppliers, their products and services, are understood, recorded, prioritized, assessed, responded to, and monitored { #ctrl-gv-sc-07 }
 
-**Evidenced by 27 checks** across 11 providers (AWS, Azure DevOps, Bitbucket, CircleCI, GitHub Actions, GitLab CI, Helm, Jenkins, PyPI, maven, npm).
+**Evidenced by 29 checks** across 11 providers (AWS, Azure DevOps, Bitbucket, CircleCI, GitHub Actions, GitLab CI, Helm, Jenkins, PyPI, maven, npm).
 
 | Check | Title | Severity | Provider | Fix |
 |-------|-------|----------|----------|-----|
@@ -259,6 +261,8 @@ pipeline_check --pipeline aws --standard nist_csf_2 --standard owasp_cicd_top_10
 | [`GHA-043`](#detail-gha-043) | Low-star action runs with sensitive permissions | <span class="pg-sev pg-sev--high">HIGH</span> | [GitHub Actions](../providers/github.md) |  |
 | [`GHA-047`](#detail-gha-047) | Action ref resolves to a recently committed tag or SHA | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [GitHub Actions](../providers/github.md) |  |
 | [`GHA-056`](#detail-gha-056) | Workflow body contains a known supply-chain worm indicator | <span class="pg-sev pg-sev--critical">CRITICAL</span> | [GitHub Actions](../providers/github.md) |  |
+| [`GHA-088`](#detail-gha-088) | Action ``uses:`` slug is a near-edit of a top-traffic action | <span class="pg-sev pg-sev--high">HIGH</span> | [GitHub Actions](../providers/github.md) |  |
+| [`GHA-089`](#detail-gha-089) | Action upstream repo is archived | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [GitHub Actions](../providers/github.md) |  |
 | [`GL-001`](#detail-gl-001) | Image not pinned to specific version or digest | <span class="pg-sev pg-sev--high">HIGH</span> | [GitLab CI](../providers/gitlab.md) | <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> |
 | [`GL-022`](#detail-gl-022) | Dependency update command bypasses lockfile pins | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [GitLab CI](../providers/gitlab.md) | <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> |
 | [`HELM-002`](#detail-helm-002) | Chart.lock missing per-dependency digests | <span class="pg-sev pg-sev--high">HIGH</span> | [Helm](../providers/helm.md) | <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> |
@@ -11099,6 +11103,851 @@ jobs:
 ```
 
 **Source:** [`GHA-087`](../providers/github.md#gha-087) in the [GitHub Actions provider](../providers/github.md).
+
+### `GHA-088`: Action ``uses:`` slug is a near-edit of a top-traffic action <span class="pg-sev pg-sev--high">HIGH</span> { #detail-gha-088 }
+
+**Evidences:** [`GV.SC-05`](#ctrl-gv-sc-05) Requirements to address cybersecurity risks in supply chains are established, prioritized, and integrated into contracts, [`GV.SC-07`](#ctrl-gv-sc-07) Risks posed by suppliers, their products and services, are understood, recorded, prioritized, assessed, responded to, and monitored.
+
+**How this is detected.** Edit-distance check over the parsed ``owner/repo`` slug of every ``uses:`` reference in the workflow, against the curated list in ``pipeline_check.core.checks._primitives.top_actions``. Both step-level ``uses:`` (action references) and job-level ``uses:`` (reusable workflow references) are covered, slug comparison is case-insensitive, and Damerau-Levenshtein (transposition counts as one edit) handles ``actions/cehckout`` alongside ``actions/check0ut``. Distance ceiling is 2 by design, distance-3 false-positives are common on legitimate forks. Exact matches against any list entry never fire, so the rule is silent on canonical references. Refresh the list by PR with a citing public-stats source. Local refs (``./.github/...``) and docker step refs (``docker://...``) are out of scope.
+
+**Recommendation.** Pin the intended action. If the ``uses:`` slug above is what you meant, ignore this finding with a rationale; if it isn't, replace it with the canonical owner / repo named in the description, then pin to a 40-char commit SHA (GHA-001 covers the pin) and confirm the SHA is not on the curated compromised list (GHA-040). Typosquat actions are usually long-lived clones with a single modification, the exfiltration step the attacker added; the file count and lineage tell you which workflow primitive was substituted.
+
+**Known false positives.**
+
+- L
+- e
+- g
+- i
+- t
+- i
+- m
+- a
+- t
+- e
+- 
+- f
+- o
+- r
+- k
+- s
+- 
+- o
+- r
+- 
+- c
+- o
+- m
+- m
+- u
+- n
+- i
+- t
+- y
+- 
+- v
+- a
+- r
+- i
+- a
+- n
+- t
+- s
+- 
+- t
+- h
+- a
+- t
+- 
+- i
+- n
+- t
+- e
+- n
+- t
+- i
+- o
+- n
+- a
+- l
+- l
+- y
+- 
+- c
+- a
+- r
+- r
+- y
+- 
+- a
+- 
+- n
+- e
+- a
+- r
+- -
+- m
+- i
+- s
+- s
+- 
+- n
+- a
+- m
+- e
+- 
+- (
+- e
+- .
+- g
+- .
+- ,
+- 
+- a
+- n
+- 
+- i
+- n
+- t
+- e
+- r
+- n
+- a
+- l
+- 
+- f
+- o
+- r
+- k
+- 
+- n
+- a
+- m
+- e
+- d
+- 
+- `
+- `
+- a
+- c
+- m
+- e
+- /
+- c
+- h
+- e
+- c
+- k
+- o
+- u
+- t
+- `
+- `
+- 
+- m
+- i
+- r
+- r
+- o
+- r
+- i
+- n
+- g
+- 
+- `
+- `
+- a
+- c
+- t
+- i
+- o
+- n
+- s
+- /
+- c
+- h
+- e
+- c
+- k
+- o
+- u
+- t
+- `
+- `
+- )
+- .
+- 
+- S
+- u
+- p
+- p
+- r
+- e
+- s
+- s
+- 
+- p
+- e
+- r
+- -
+- f
+- i
+- n
+- d
+- i
+- n
+- g
+- 
+- w
+- i
+- t
+- h
+- 
+- a
+- 
+- r
+- a
+- t
+- i
+- o
+- n
+- a
+- l
+- e
+- 
+- t
+- h
+- a
+- t
+- 
+- n
+- a
+- m
+- e
+- s
+- 
+- t
+- h
+- e
+- 
+- f
+- o
+- r
+- k
+- 
+- a
+- n
+- d
+- 
+- l
+- i
+- n
+- k
+- s
+- 
+- t
+- h
+- e
+- 
+- s
+- o
+- u
+- r
+- c
+- e
+- .
+- 
+- T
+- h
+- e
+- 
+- r
+- u
+- l
+- e
+- 
+- c
+- a
+- n
+- n
+- o
+- t
+- 
+- d
+- i
+- s
+- t
+- i
+- n
+- g
+- u
+- i
+- s
+- h
+- 
+- a
+- 
+- w
+- e
+- l
+- l
+- -
+- k
+- n
+- o
+- w
+- n
+- 
+- f
+- o
+- r
+- k
+- 
+- f
+- r
+- o
+- m
+- 
+- a
+- 
+- t
+- y
+- p
+- o
+- s
+- q
+- u
+- a
+- t
+- ;
+- 
+- i
+- n
+- t
+- e
+- n
+- t
+- i
+- o
+- n
+- a
+- l
+- 
+- n
+- a
+- m
+- i
+- n
+- g
+- 
+- c
+- o
+- l
+- l
+- i
+- s
+- i
+- o
+- n
+- s
+- 
+- a
+- r
+- e
+- 
+- t
+- h
+- e
+- 
+- o
+- p
+- e
+- r
+- a
+- t
+- o
+- r
+- '
+- s
+- 
+- c
+- a
+- l
+- l
+- .
+
+**Seen in the wild.**
+
+- OWASP CICD-SEC-3 (Dependency Chain Abuse) lists action-namespace squatting as a canonical attack shape; the curated industry examples (``actons/checkout``, ``actions/check0ut``) appear in red-team reports and honey-action research from Aikido, Wiz, and JFrog Security Research.
+
+**Proof of exploit.**
+
+```
+# Vulnerable: ``actons/checkout`` (missing ``i``) compiles
+# fine and pulls from a namespace that anyone could have
+# registered. Reviewer eyes skim past the typo.
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actons/checkout@v4
+      - run: ./build.sh
+
+# Safe: canonical action, SHA-pinned.
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@b4ffde65f4...        # v4.1.7
+      - run: ./build.sh
+```
+
+**Source:** [`GHA-088`](../providers/github.md#gha-088) in the [GitHub Actions provider](../providers/github.md).
+
+### `GHA-089`: Action upstream repo is archived <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-gha-089 }
+
+**Evidences:** [`GV.SC-05`](#ctrl-gv-sc-05) Requirements to address cybersecurity risks in supply chains are established, prioritized, and integrated into contracts, [`GV.SC-07`](#ctrl-gv-sc-07) Risks posed by suppliers, their products and services, are understood, recorded, prioritized, assessed, responded to, and monitored.
+
+**How this is detected.** Reads the archived bit from ``ctx.action_metadata[owner/repo].archived`` (populated by ``--resolve-remote``; the same per-action repo fetch the GHA-041..043 reputation rules consume). When the metadata is empty (flag off, fetch failed, private repo with no token), the rule passes silently with a one-line nudge pointing at the flag. Covers both step-level ``uses:`` (action references) and job-level ``uses:`` (reusable workflow references); MEDIUM severity, the archived bit alone is not an exploit primitive but it is a documented precondition for the takeover shapes GHA-082 and GHA-040 catch.
+
+**Recommendation.** Migrate to an actively-maintained action covering the same surface. Archived upstreams stop receiving security patches the day the archive bit lands; vulnerabilities discovered afterward stay unpatched, and the namespace is eligible to be reclaimed by anyone once the original owner deletes or transfers the repo (the repojacking shape, see also GHA-082 when it ships). If a fork under your org's control is the only path forward, vendor the action and pin to your fork's SHA, so an upstream takeover can't reach your build runtime.
+
+**Known false positives.**
+
+- A
+- n
+- 
+- a
+- c
+- t
+- i
+- o
+- n
+- 
+- t
+- h
+- a
+- t
+- 
+- a
+- n
+- 
+- u
+- p
+- s
+- t
+- r
+- e
+- a
+- m
+- 
+- m
+- a
+- i
+- n
+- t
+- a
+- i
+- n
+- e
+- r
+- 
+- a
+- r
+- c
+- h
+- i
+- v
+- e
+- d
+- 
+- b
+- e
+- c
+- a
+- u
+- s
+- e
+- 
+- a
+- 
+- f
+- i
+- r
+- s
+- t
+- -
+- p
+- a
+- r
+- t
+- y
+- 
+- r
+- e
+- p
+- l
+- a
+- c
+- e
+- m
+- e
+- n
+- t
+- 
+- s
+- h
+- i
+- p
+- s
+- 
+- (
+- e
+- .
+- g
+- .
+- ,
+- 
+- a
+- 
+- l
+- e
+- g
+- a
+- c
+- y
+- 
+- m
+- i
+- g
+- r
+- a
+- t
+- i
+- o
+- n
+- 
+- h
+- e
+- l
+- p
+- e
+- r
+- 
+- d
+- e
+- p
+- r
+- e
+- c
+- a
+- t
+- e
+- d
+- 
+- i
+- n
+- 
+- f
+- a
+- v
+- o
+- r
+- 
+- o
+- f
+- 
+- a
+- 
+- b
+- u
+- i
+- l
+- t
+- -
+- i
+- n
+- 
+- f
+- e
+- a
+- t
+- u
+- r
+- e
+- )
+- 
+- i
+- s
+- 
+- a
+- r
+- c
+- h
+- i
+- v
+- e
+- d
+- 
+- f
+- o
+- r
+- 
+- l
+- e
+- g
+- i
+- t
+- i
+- m
+- a
+- t
+- e
+- 
+- r
+- e
+- a
+- s
+- o
+- n
+- s
+- ,
+- 
+- n
+- o
+- t
+- 
+- a
+- b
+- a
+- n
+- d
+- o
+- n
+- m
+- e
+- n
+- t
+- .
+- 
+- T
+- h
+- e
+- 
+- f
+- o
+- r
+- k
+- -
+- a
+- n
+- d
+- -
+- v
+- e
+- n
+- d
+- o
+- r
+- 
+- r
+- e
+- c
+- o
+- m
+- m
+- e
+- n
+- d
+- a
+- t
+- i
+- o
+- n
+- 
+- i
+- s
+- 
+- s
+- t
+- i
+- l
+- l
+- 
+- t
+- h
+- e
+- 
+- r
+- i
+- g
+- h
+- t
+- 
+- c
+- a
+- l
+- l
+- 
+- f
+- o
+- r
+- 
+- s
+- e
+- c
+- u
+- r
+- i
+- t
+- y
+- 
+- p
+- o
+- s
+- t
+- u
+- r
+- e
+- ,
+- 
+- b
+- u
+- t
+- 
+- s
+- u
+- p
+- p
+- r
+- e
+- s
+- s
+- 
+- p
+- e
+- r
+- -
+- f
+- i
+- n
+- d
+- i
+- n
+- g
+- 
+- w
+- i
+- t
+- h
+- 
+- a
+- 
+- r
+- a
+- t
+- i
+- o
+- n
+- a
+- l
+- e
+- 
+- o
+- n
+- c
+- e
+- 
+- t
+- h
+- e
+- 
+- o
+- p
+- e
+- r
+- a
+- t
+- o
+- r
+- 
+- h
+- a
+- s
+- 
+- c
+- o
+- n
+- f
+- i
+- r
+- m
+- e
+- d
+- 
+- t
+- h
+- e
+- 
+- m
+- i
+- g
+- r
+- a
+- t
+- i
+- o
+- n
+- 
+- p
+- a
+- t
+- h
+- 
+- i
+- s
+- 
+- o
+- n
+- 
+- a
+- 
+- r
+- o
+- a
+- d
+- m
+- a
+- p
+- .
+
+**Seen in the wild.**
+
+- tj-actions / reviewdog March 2025 (CVE-2025-30066 / CVE-2025-30154): both action namespaces were briefly archived during the compromise window; pinned consumers ran the malicious tag on the next sync. Archived state is one of the pre-conditions the post-incident timelines highlight.
+
+**Proof of exploit.**
+
+```
+# Vulnerable: archived upstream still in use. The next
+# discovered vulnerability in the action's runtime won't
+# get a fix; the namespace is eligible for repojacking
+# the moment the owner deletes the repo.
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: legacy-org/abandoned-action@v3
+      - run: ./build.sh
+
+# Safe: same surface, actively maintained replacement.
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@<sha>
+      - run: ./build.sh
+```
+
+**Source:** [`GHA-089`](../providers/github.md#gha-089) in the [GitHub Actions provider](../providers/github.md).
 
 ### `GL-001`: Image not pinned to specific version or digest <span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> { #detail-gl-001 }
 

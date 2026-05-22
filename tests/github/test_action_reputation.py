@@ -588,6 +588,146 @@ class TestGHA043:
         assert "obscure/shared" in f.description
 
 
+# ── GHA-089: archived upstream repo ────────────────────────────────
+
+
+class TestGHA089:
+    def test_fires_when_action_repo_is_archived(self):
+        wf = """
+        name: ci
+        on: push
+        jobs:
+          build:
+            runs-on: ubuntu-latest
+            steps:
+              - uses: legacy/abandoned@v3
+        """
+        k, m = _meta("legacy", "abandoned", archived=True)
+        f = _run(_ctx_with_metadata(wf, {k: m}), "GHA-089")
+        assert not f.passed
+        assert f.severity == Severity.MEDIUM
+        assert "legacy/abandoned" in f.description
+
+    def test_passes_when_action_repo_not_archived(self):
+        wf = """
+        name: ci
+        on: push
+        jobs:
+          build:
+            runs-on: ubuntu-latest
+            steps:
+              - uses: actions/checkout@v4
+        """
+        k, m = _meta("actions", "checkout", archived=False)
+        f = _run(_ctx_with_metadata(wf, {k: m}), "GHA-089")
+        assert f.passed
+
+    def test_passes_silently_when_metadata_empty(self):
+        wf = """
+        name: ci
+        on: push
+        jobs:
+          build:
+            runs-on: ubuntu-latest
+            steps:
+              - uses: legacy/abandoned@v3
+        """
+        f = _run(_ctx_with_metadata(wf, {}), "GHA-089")
+        assert f.passed
+        assert "resolve-remote" in f.description
+
+    def test_local_action_silent(self):
+        wf = """
+        name: ci
+        on: push
+        jobs:
+          build:
+            runs-on: ubuntu-latest
+            steps:
+              - uses: ./.github/actions/local
+        """
+        # Local refs have no upstream; the rule doesn't even look at
+        # them, so even with no metadata the description should NOT
+        # mention an archived ref.
+        f = _run(_ctx_with_metadata(wf, {}), "GHA-089")
+        assert f.passed
+
+    def test_fires_on_reusable_workflow_uses(self):
+        # Job-level ``uses:`` (reusable workflow) is in scope: the
+        # archived bit applies to the upstream repo regardless of
+        # which file the consumer references inside it.
+        wf = """
+        name: ci
+        on: push
+        jobs:
+          call:
+            uses: legacy/abandoned/.github/workflows/build.yml@v3
+        """
+        k, m = _meta("legacy", "abandoned", archived=True)
+        f = _run(_ctx_with_metadata(wf, {k: m}), "GHA-089")
+        assert not f.passed
+        assert "legacy/abandoned" in f.description
+
+    def test_multiple_archived_actions_aggregated(self):
+        wf = """
+        name: ci
+        on: push
+        jobs:
+          build:
+            runs-on: ubuntu-latest
+            steps:
+              - uses: legacy/abandoned-a@v1
+              - uses: legacy/abandoned-b@v2
+              - uses: actions/checkout@v4
+        """
+        k1, m1 = _meta("legacy", "abandoned-a", archived=True)
+        k2, m2 = _meta("legacy", "abandoned-b", archived=True)
+        k3, m3 = _meta("actions", "checkout", archived=False)
+        f = _run(
+            _ctx_with_metadata(wf, {k1: m1, k2: m2, k3: m3}),
+            "GHA-089",
+        )
+        assert not f.passed
+        assert "2 action(s)" in f.description
+
+    def test_dedup_same_action_referenced_twice(self):
+        # The same archived action referenced by two jobs should
+        # appear once in the finding description.
+        wf = """
+        name: ci
+        on: push
+        jobs:
+          build:
+            runs-on: ubuntu-latest
+            steps:
+              - uses: legacy/abandoned@v3
+          test:
+            runs-on: ubuntu-latest
+            steps:
+              - uses: legacy/abandoned@v3
+        """
+        k, m = _meta("legacy", "abandoned", archived=True)
+        f = _run(_ctx_with_metadata(wf, {k: m}), "GHA-089")
+        assert not f.passed
+        assert "1 action(s)" in f.description
+
+    def test_case_insensitive_metadata_lookup(self):
+        # Upper-case in the workflow body still hits the lowercased
+        # metadata key.
+        wf = """
+        name: ci
+        on: push
+        jobs:
+          build:
+            runs-on: ubuntu-latest
+            steps:
+              - uses: LEGACY/Abandoned@v3
+        """
+        k, m = _meta("legacy", "abandoned", archived=True)
+        f = _run(_ctx_with_metadata(wf, {k: m}), "GHA-089")
+        assert not f.passed
+
+
 # ── GHA-047: freshly-committed referenced ref ──────────────────────
 
 

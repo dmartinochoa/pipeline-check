@@ -12,6 +12,21 @@ release commit collapses this section into `## [X.Y.Z] - <date>`.
 
 ### Added
 
+- **GHA-089 archived ``uses:`` (closes #149).** New rule that
+  fires when an action's upstream repo is archived. Reads the
+  ``archived`` bit already populated on
+  ``ctx.action_metadata[owner/repo]`` by ``--resolve-remote``, so
+  no new HTTP call lands; piggybacks on the same per-action repo
+  fetch the GHA-041..043 reputation rules consume. Passes
+  silently when the resolver is off, mirroring GHA-041's discover-
+  the-flag posture. Both step-level ``uses:`` and job-level
+  reusable-workflow ``uses:`` are covered, case-insensitive
+  metadata lookup. MEDIUM severity, OWASP CICD-SEC-3 /
+  ESF-S-VERIFY-DEPS / CIS 1.4.1 / NIST SR-3 / NIST CSF GV.SC-05.
+  8 per-rule tests under
+  ``tests/github/test_action_reputation.py::TestGHA089``. Brings
+  GHA pack to 80 rules.
+
 - **GHA-088 typosquat ``uses:`` (closes #148).** Offline edit-
   distance check against a curated top-actions list. Fires on
   one- or two-character edits to a canonical action slug,

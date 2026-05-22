@@ -471,7 +471,7 @@ KNOWN_UNCOVERED: frozenset[str] = frozenset({
     # because ``ctx.action_metadata`` is empty (only populated by
     # ``--resolve-remote``). Covered by ``test_workflow_fixtures.py``
     # which seeds the metadata synthetically.
-    "GHA-041", "GHA-042", "GHA-043", "GHA-047",
+    "GHA-041", "GHA-042", "GHA-043", "GHA-047", "GHA-089",
     # Cross-cutting taint engine — covered by tests/test_gha_taint.py
     # with inline workflow docs rather than the per-check fixture
     # pattern; the workflow shapes the rule cares about (multi-step

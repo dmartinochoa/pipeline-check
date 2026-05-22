@@ -72,7 +72,7 @@ Resolution rules:
 
 ## What it covers
 
-79 checks · 17 have an autofix patch (``--fix``).
+80 checks · 17 have an autofix patch (``--fix``).
 
 | Check | Title | Severity | Fix |
 |-------|-------|----------|-----|
@@ -152,6 +152,7 @@ Resolution rules:
 | [GHA-086](#gha-086) | Wildcard branch trigger gates an environment-bound deploy | <span class="pg-sev pg-sev--medium">MEDIUM</span> |  |
 | [GHA-087](#gha-087) | Derived value of a secret printed to the build log | <span class="pg-sev pg-sev--high">HIGH</span> |  |
 | [GHA-088](#gha-088) | Action ``uses:`` slug is a near-edit of a top-traffic action | <span class="pg-sev pg-sev--high">HIGH</span> |  |
+| [GHA-089](#gha-089) | Action upstream repo is archived | <span class="pg-sev pg-sev--medium">MEDIUM</span> |  |
 | [TAINT-001](#taint-001) | Untrusted input flows across step boundaries via step outputs | <span class="pg-sev pg-sev--high">HIGH</span> |  |
 | [TAINT-002](#taint-002) | Untrusted input flows across jobs via ``jobs.<id>.outputs:`` | <span class="pg-sev pg-sev--high">HIGH</span> |  |
 | [TAINT-003](#taint-003) | Untrusted input forwarded into reusable workflow ``with:`` | <span class="pg-sev pg-sev--high">HIGH</span> |  |
@@ -2634,6 +2635,439 @@ Edit-distance check over the parsed ``owner/repo`` slug of every ``uses:`` refer
 **Recommended action**
 
 Pin the intended action. If the ``uses:`` slug above is what you meant, ignore this finding with a rationale; if it isn't, replace it with the canonical owner / repo named in the description, then pin to a 40-char commit SHA (GHA-001 covers the pin) and confirm the SHA is not on the curated compromised list (GHA-040). Typosquat actions are usually long-lived clones with a single modification, the exfiltration step the attacker added; the file count and lineage tell you which workflow primitive was substituted.
+
+</div>
+
+</div>
+
+<div class="pg-rule pg-rule--medium" markdown>
+
+## GHA-089: Action upstream repo is archived { #gha-089 }
+
+<div class="pg-rule__tags">
+<span class="pg-sev pg-sev--medium">MEDIUM</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-3</span> <span class="pg-tag pg-tag--esf">ESF-S-VERIFY-DEPS</span> <span class="pg-tag pg-tag--cwe">CWE-1357</span>
+</div>
+
+Reads the archived bit from ``ctx.action_metadata[owner/repo].archived`` (populated by ``--resolve-remote``; the same per-action repo fetch the GHA-041..043 reputation rules consume). When the metadata is empty (flag off, fetch failed, private repo with no token), the rule passes silently with a one-line nudge pointing at the flag. Covers both step-level ``uses:`` (action references) and job-level ``uses:`` (reusable workflow references); MEDIUM severity, the archived bit alone is not an exploit primitive but it is a documented precondition for the takeover shapes GHA-082 and GHA-040 catch.
+
+**Known false-positive modes**
+
+- A
+- n
+- 
+- a
+- c
+- t
+- i
+- o
+- n
+- 
+- t
+- h
+- a
+- t
+- 
+- a
+- n
+- 
+- u
+- p
+- s
+- t
+- r
+- e
+- a
+- m
+- 
+- m
+- a
+- i
+- n
+- t
+- a
+- i
+- n
+- e
+- r
+- 
+- a
+- r
+- c
+- h
+- i
+- v
+- e
+- d
+- 
+- b
+- e
+- c
+- a
+- u
+- s
+- e
+- 
+- a
+- 
+- f
+- i
+- r
+- s
+- t
+- -
+- p
+- a
+- r
+- t
+- y
+- 
+- r
+- e
+- p
+- l
+- a
+- c
+- e
+- m
+- e
+- n
+- t
+- 
+- s
+- h
+- i
+- p
+- s
+- 
+- (
+- e
+- .
+- g
+- .
+- ,
+- 
+- a
+- 
+- l
+- e
+- g
+- a
+- c
+- y
+- 
+- m
+- i
+- g
+- r
+- a
+- t
+- i
+- o
+- n
+- 
+- h
+- e
+- l
+- p
+- e
+- r
+- 
+- d
+- e
+- p
+- r
+- e
+- c
+- a
+- t
+- e
+- d
+- 
+- i
+- n
+- 
+- f
+- a
+- v
+- o
+- r
+- 
+- o
+- f
+- 
+- a
+- 
+- b
+- u
+- i
+- l
+- t
+- -
+- i
+- n
+- 
+- f
+- e
+- a
+- t
+- u
+- r
+- e
+- )
+- 
+- i
+- s
+- 
+- a
+- r
+- c
+- h
+- i
+- v
+- e
+- d
+- 
+- f
+- o
+- r
+- 
+- l
+- e
+- g
+- i
+- t
+- i
+- m
+- a
+- t
+- e
+- 
+- r
+- e
+- a
+- s
+- o
+- n
+- s
+- ,
+- 
+- n
+- o
+- t
+- 
+- a
+- b
+- a
+- n
+- d
+- o
+- n
+- m
+- e
+- n
+- t
+- .
+- 
+- T
+- h
+- e
+- 
+- f
+- o
+- r
+- k
+- -
+- a
+- n
+- d
+- -
+- v
+- e
+- n
+- d
+- o
+- r
+- 
+- r
+- e
+- c
+- o
+- m
+- m
+- e
+- n
+- d
+- a
+- t
+- i
+- o
+- n
+- 
+- i
+- s
+- 
+- s
+- t
+- i
+- l
+- l
+- 
+- t
+- h
+- e
+- 
+- r
+- i
+- g
+- h
+- t
+- 
+- c
+- a
+- l
+- l
+- 
+- f
+- o
+- r
+- 
+- s
+- e
+- c
+- u
+- r
+- i
+- t
+- y
+- 
+- p
+- o
+- s
+- t
+- u
+- r
+- e
+- ,
+- 
+- b
+- u
+- t
+- 
+- s
+- u
+- p
+- p
+- r
+- e
+- s
+- s
+- 
+- p
+- e
+- r
+- -
+- f
+- i
+- n
+- d
+- i
+- n
+- g
+- 
+- w
+- i
+- t
+- h
+- 
+- a
+- 
+- r
+- a
+- t
+- i
+- o
+- n
+- a
+- l
+- e
+- 
+- o
+- n
+- c
+- e
+- 
+- t
+- h
+- e
+- 
+- o
+- p
+- e
+- r
+- a
+- t
+- o
+- r
+- 
+- h
+- a
+- s
+- 
+- c
+- o
+- n
+- f
+- i
+- r
+- m
+- e
+- d
+- 
+- t
+- h
+- e
+- 
+- m
+- i
+- g
+- r
+- a
+- t
+- i
+- o
+- n
+- 
+- p
+- a
+- t
+- h
+- 
+- i
+- s
+- 
+- o
+- n
+- 
+- a
+- 
+- r
+- o
+- a
+- d
+- m
+- a
+- p
+- .
+
+**Seen in the wild**
+
+- tj-actions / reviewdog March 2025 (CVE-2025-30066 / CVE-2025-30154): both action namespaces were briefly archived during the compromise window; pinned consumers ran the malicious tag on the next sync. Archived state is one of the pre-conditions the post-incident timelines highlight.
+
+<div class="pg-rule__rec" markdown>
+
+**Recommended action**
+
+Migrate to an actively-maintained action covering the same surface. Archived upstreams stop receiving security patches the day the archive bit lands; vulnerabilities discovered afterward stay unpatched, and the namespace is eligible to be reclaimed by anyone once the original owner deletes or transfers the repo (the repojacking shape, see also GHA-082 when it ships). If a fork under your org's control is the only path forward, vendor the action and pin to your fork's SHA, so an upstream takeover can't reach your build runtime.
 
 </div>
 

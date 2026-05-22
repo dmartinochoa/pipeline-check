@@ -210,6 +210,7 @@ STANDARD = Standard(
         "GHA-086":  ["CICD-SEC-1", "CICD-SEC-5"],  # wildcard branch trigger + environment binding
         "GHA-087":  ["CICD-SEC-10", "CICD-SEC-6"],  # derived-value of secret printed to log
         "GHA-088":  ["CICD-SEC-3"],                # typosquat uses: near-edit of top action
+        "GHA-089":  ["CICD-SEC-3"],                # archived upstream repo
         # GitLab CI
         "GL-001":   ["CICD-SEC-3"],
         "GL-002":   ["CICD-SEC-4"],

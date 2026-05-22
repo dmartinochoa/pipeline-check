@@ -505,6 +505,8 @@ STANDARD = Standard(
         "GHA-073":  ["PR.AA-01"],               # unused workflow_call.secrets declaration
         "GHA-086":  ["PR.PS-06"],               # wildcard branch trigger + environment binding
         "GHA-087":  ["PR.AA-01", "PR.DS-01"],   # derived-value of secret printed to log
+        "GHA-088":  ["GV.SC-05", "GV.SC-07"],   # typosquat uses: near-edit of top action
+        "GHA-089":  ["GV.SC-05", "GV.SC-07"],   # archived upstream repo
         # ── GitLab CI ─────────────────────────────────────────────
         "GL-004":  ["PR.PS-06"],                # manual deploy allow_failure
         "GL-029":  ["PR.PS-06"],                # manual deploy allow_failure (variant)

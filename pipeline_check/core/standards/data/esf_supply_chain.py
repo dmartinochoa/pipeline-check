@@ -535,6 +535,7 @@ STANDARD = Standard(
         "GHA-086":  ["ESF-C-APPROVAL", "ESF-C-ENV-SEP"],  # wildcard branch trigger gates env-bound deploy
         "GHA-087":  ["ESF-D-SECRETS"],               # derived-value of secret printed to log
         "GHA-088":  ["ESF-S-VERIFY-DEPS"],           # typosquat uses: near-edit of top action
+        "GHA-089":  ["ESF-S-VERIFY-DEPS"],           # archived upstream repo
         # ── GitLab CI extras ─────────────────────────────────────
         "GL-028":   ["ESF-S-PIN-DEPS", "ESF-S-VERIFY-DEPS"],   # services: image not pinned
         "GL-029":   ["ESF-C-APPROVAL"],             # manual deploy allow_failure

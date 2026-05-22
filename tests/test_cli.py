@@ -271,7 +271,7 @@ class TestAutoDetect:
         emitted = {f["check_id"] for f in payload["findings"]}
         assert emitted == (
             {f"GHA-{i:03d}" for i in range(1, 74)}
-            | {"GHA-086", "GHA-087", "GHA-088"}
+            | {"GHA-086", "GHA-087", "GHA-088", "GHA-089"}
             | {"TAINT-001", "TAINT-002", "TAINT-003"}
         )
 

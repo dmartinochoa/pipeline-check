@@ -432,6 +432,8 @@ STANDARD = Standard(
         "GHA-073":  ["CC6.1"],              # unused workflow_call.secrets declaration
         "GHA-086":  ["CC8.1"],              # wildcard branch trigger + environment binding
         "GHA-087":  ["CC6.1"],              # derived-value of secret printed to log
+        "GHA-088":  ["CC6.8", "CC8.1"],     # typosquat uses: near-edit of top action
+        "GHA-089":  ["CC6.8", "CC8.1"],     # archived upstream repo
         # ── GitLab CI ─────────────────────────────────────────────
         "GL-006":   ["CC8.1"],              # unsigned artifacts
         "GL-007":   ["CC8.1"],              # no SBOM

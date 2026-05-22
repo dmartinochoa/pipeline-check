@@ -231,6 +231,8 @@ STANDARD = Standard(
         "GHA-073":  ["2.3.7"],                           # unused workflow_call.secrets declaration
         "GHA-086":  ["5.1.4", "5.2.1"],                  # wildcard branch trigger + env binding (deploy bypass)
         "GHA-087":  ["2.3.7"],                           # derived-value of secret printed to log (audit-leak surface)
+        "GHA-088":  ["1.4.1", "3.1.3"],                  # typosquat uses: near-edit of top action
+        "GHA-089":  ["1.4.1", "3.1.3"],                  # archived upstream repo
         # GitLab CI
         "GL-001":   ["1.4.1", "3.1.5"],
         "GL-002":   ["2.1.3", "2.3.8"],

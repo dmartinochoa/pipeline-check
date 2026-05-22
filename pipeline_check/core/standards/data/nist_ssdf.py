@@ -219,6 +219,8 @@ STANDARD = Standard(
         "GHA-073":  ["PS.1.1"],                        # unused workflow_call.secrets declaration
         "GHA-086":  ["PO.5.1"],                        # wildcard branch trigger + environment binding
         "GHA-087":  ["PS.1.1"],                        # derived-value of secret printed to log
+        "GHA-088":  ["PW.4.1", "PW.4.4", "RV.1.1"],    # typosquat uses: near-edit of top action
+        "GHA-089":  ["PW.4.1", "PW.4.4"],              # archived upstream repo
         # GitLab CI
         "GL-001":   ["PW.4.1", "PW.4.4"],
         "GL-002":   ["PW.6.1", "PW.9.1"],
