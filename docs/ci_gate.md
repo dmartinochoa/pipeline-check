@@ -377,6 +377,32 @@ pipeline_check --pipeline gitlab --checks 'GL-00[12]'
 
 Exact IDs (`--checks GHA-001`) still work unchanged.
 
+## Selecting checks: incident-driven worklist
+
+`--only-known-attacked` filters the rule set to rules whose detection
+shape is anchored to a documented real-world incident, CVE, or vendor
+disclosure (`Rule.incident_refs` non-empty, 77 rules today). Useful for
+burning down the incident-driven worklist on a fresh repo without the
+full pack noise.
+
+```bash
+# Only run rules with documented incidents
+pipeline_check --pipeline github --only-known-attacked
+```
+
+Composes with `--checks`: if both are set, the intersection runs.
+
+```bash
+# Known-attacked GHA-only rules
+pipeline_check --pipeline github --only-known-attacked --checks 'GHA-*'
+
+# Known-attacked rules from the secret-scanning family
+pipeline_check --pipeline github --only-known-attacked --checks '*-008'
+```
+
+If the intersection is empty, a stderr warning surfaces the situation
+rather than the scan silently producing no findings.
+
 ## Custom secret patterns
 
 The secret-scanning checks (`GHA-008`, `GL-008`, `BB-008`, `ADO-008`,

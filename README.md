@@ -193,6 +193,7 @@ standards, so a single scan satisfies multiple audit frameworks.
 | **Suppressions** | `.pipelinecheckignore` (flat or YAML with `expires:` dates). |
 | **Custom secrets** | `--secret-pattern '^acme_[a-f0-9]{32}$'` extends the credential scanner. |
 | **Glob selection** | `--checks 'GHA-*'` or `--checks '*-008'` to scope checks. |
+| **Incident-driven filter** | `--only-known-attacked` narrows the run to rules whose detection shape is anchored to a documented real-world incident, CVE, or vendor disclosure (77 rules today). Useful for burning down the incident-driven worklist on a fresh repo without the full pack noise. Composes with `--checks` as intersection. |
 | **Standard audit** | `--standard-report nist_ssdf` prints the control-to-check matrix and coverage gaps. |
 | **Custom rule DSL** | `--custom-rules PATH` loads YAML-defined rules that run alongside the built-in catalog. Supports GHA, GitLab, Bitbucket, Azure, CircleCI, Cloud Build, Kubernetes, and Helm. Rule shape: `for_each:` jsonpath + `assert:` predicate (`eq` / `regex` / `exists` / `len_gt` / `all_of` / `not` / …). Findings flow through the same scoring, gating, and SARIF as built-ins. See [docs/writing_a_custom_rule.md](docs/writing_a_custom_rule.md). |
 | **Component inventory** | `--inventory` emits the list of resources / workflows / templates the scanner discovered, with per-type metadata (encryption, runtime, tags, lifecycle policies). Filter with `--inventory-type 'AWS::IAM::*'`; skip checks entirely with `--inventory-only`. Feeds asset-register dashboards and drift detectors. |
