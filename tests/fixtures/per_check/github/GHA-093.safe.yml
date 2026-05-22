@@ -1,0 +1,17 @@
+name: gha-093-safe
+on: push
+permissions:
+  contents: read
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - run: |
+          # Trusted-context interpolation only. Workflow commands
+          # carry build metadata, not PR-controlled text.
+          echo "::notice::Building commit ${{ github.sha }}"
+          # add-mask registers BEFORE the value could appear in a
+          # log line. Subsequent prints get redacted.
+          TOKEN=$(cat .token)
+          echo "::add-mask::$TOKEN"
+          curl -H "Authorization: Bearer $TOKEN" https://api.example.com/deploy

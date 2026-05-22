@@ -13,7 +13,7 @@ scanner can witness.
 
 - **Controls in this standard:** 13
 - **Controls evidenced by at least one check:** 13 / 13
-- **Distinct checks evidencing this standard:** 591
+- **Distinct checks evidencing this standard:** 592
 - **Of those, autofixable with `--fix`:** 111
 
 _Severity levels (`CRITICAL` / `HIGH` / `MEDIUM` / `LOW` / `INFO`) follow the same scale across every provider and standard. See [How to read severity](README.md#how-to-read-severity) on the standards overview for the definitions._
@@ -32,10 +32,10 @@ Click a control ID to jump to the per-control section with the full check list. 
 | [`7.2.1`](#ctrl-7-2-1) | Access control is defined per job role with least privilege | 19 | 3C · 12H · 3M · 1L |
 | [`7.2.2`](#ctrl-7-2-2) | Access is assigned based on job classification and function | 6 | 2H · 4M |
 | [`7.2.5`](#ctrl-7-2-5) | System and application accounts have least-privilege access | 49 | 7C · 23H · 19M |
-| [`8.2.1`](#ctrl-8-2-1) | Strong unique identifiers are assigned to each user and service account | 81 | 25C · 38H · 16M · 2L |
+| [`8.2.1`](#ctrl-8-2-1) | Strong unique identifiers are assigned to each user and service account | 82 | 25C · 39H · 16M · 2L |
 | [`8.2.2`](#ctrl-8-2-2) | Group, shared, or generic accounts are managed and justified | 9 | 1C · 4H · 4M |
 | [`10.2.1`](#ctrl-10-2-1) | Audit logs are enabled and active for all system components | 31 | 2H · 6M · 7L · 16I |
-| [`10.3.2`](#ctrl-10-3-2) | Audit logs are protected from unauthorized modifications | 50 | 4C · 12H · 33M · 1L |
+| [`10.3.2`](#ctrl-10-3-2) | Audit logs are protected from unauthorized modifications | 51 | 4C · 13H · 33M · 1L |
 | [`10.3.3`](#ctrl-10-3-3) | Audit logs are promptly backed up to a centralized log server | 4 | 1H · 1M · 2L |
 
 ## Filter at runtime
@@ -805,7 +805,7 @@ pipeline_check --pipeline aws --standard pci_dss_v4 --standard owasp_cicd_top_10
 
 ### 8.2.1: Strong unique identifiers are assigned to each user and service account { #ctrl-8-2-1 }
 
-**Evidenced by 81 checks** across 18 providers (AWS, Argo Workflows, Azure DevOps, Bitbucket, Buildkite, CircleCI, Cloud Build, CloudFormation, Dockerfile, Drone CI, GitHub Actions, GitLab CI, Jenkins, Kubernetes, SCM, Tekton, Terraform, npm).
+**Evidenced by 82 checks** across 18 providers (AWS, Argo Workflows, Azure DevOps, Bitbucket, Buildkite, CircleCI, Cloud Build, CloudFormation, Dockerfile, Drone CI, GitHub Actions, GitLab CI, Jenkins, Kubernetes, SCM, Tekton, Terraform, npm).
 
 | Check | Title | Severity | Provider | Fix |
 |-------|-------|----------|----------|-----|
@@ -861,6 +861,7 @@ pipeline_check --pipeline aws --standard pci_dss_v4 --standard owasp_cicd_top_10
 | [`GHA-072`](#detail-gha-072) | Secret in env: at a wider scope than its consumer | <span class="pg-sev pg-sev--high">HIGH</span> | [GitHub Actions](../providers/github.md) |  |
 | [`GHA-073`](#detail-gha-073) | Reusable workflow declares an unused ``workflow_call`` secret | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [GitHub Actions](../providers/github.md) |  |
 | [`GHA-087`](#detail-gha-087) | Derived value of a secret printed to the build log | <span class="pg-sev pg-sev--high">HIGH</span> | [GitHub Actions](../providers/github.md) |  |
+| [`GHA-093`](#detail-gha-093) | Living-off-the-Pipeline indicators (workflow-command abuse) | <span class="pg-sev pg-sev--high">HIGH</span> | [GitHub Actions](../providers/github.md) |  |
 | [`GL-003`](#detail-gl-003) | Variables contain literal secret values | <span class="pg-sev pg-sev--critical">CRITICAL</span> | [GitLab CI](../providers/gitlab.md) |  |
 | [`GL-008`](#detail-gl-008) | Credential-shaped literal in pipeline body | <span class="pg-sev pg-sev--critical">CRITICAL</span> | [GitLab CI](../providers/gitlab.md) | <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> |
 | [`GL-013`](#detail-gl-013) | AWS auth uses long-lived access keys | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [GitLab CI](../providers/gitlab.md) | <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> |
@@ -947,7 +948,7 @@ pipeline_check --pipeline aws --standard pci_dss_v4 --standard owasp_cicd_top_10
 
 ### 10.3.2: Audit logs are protected from unauthorized modifications { #ctrl-10-3-2 }
 
-**Evidenced by 50 checks** across 15 providers (AWS, Argo Workflows, Azure DevOps, Bitbucket, Buildkite, CircleCI, Cloud Build, Dockerfile, GitHub Actions, GitLab CI, Helm, Jenkins, OCI manifest, SCM, Tekton).
+**Evidenced by 51 checks** across 15 providers (AWS, Argo Workflows, Azure DevOps, Bitbucket, Buildkite, CircleCI, Cloud Build, Dockerfile, GitHub Actions, GitLab CI, Helm, Jenkins, OCI manifest, SCM, Tekton).
 
 | Check | Title | Severity | Provider | Fix |
 |-------|-------|----------|----------|-----|
@@ -984,6 +985,7 @@ pipeline_check --pipeline aws --standard pci_dss_v4 --standard owasp_cicd_top_10
 | [`GHA-066`](#detail-gha-066) | ``actions/upload-artifact`` path is a workspace wildcard | <span class="pg-sev pg-sev--high">HIGH</span> | [GitHub Actions](../providers/github.md) |  |
 | [`GHA-067`](#detail-gha-067) | ``actions/cache`` writes credential-shaped paths | <span class="pg-sev pg-sev--high">HIGH</span> | [GitHub Actions](../providers/github.md) |  |
 | [`GHA-087`](#detail-gha-087) | Derived value of a secret printed to the build log | <span class="pg-sev pg-sev--high">HIGH</span> | [GitHub Actions](../providers/github.md) |  |
+| [`GHA-093`](#detail-gha-093) | Living-off-the-Pipeline indicators (workflow-command abuse) | <span class="pg-sev pg-sev--high">HIGH</span> | [GitHub Actions](../providers/github.md) |  |
 | [`GL-006`](#detail-gl-006) | Artifacts not signed | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [GitLab CI](../providers/gitlab.md) |  |
 | [`GL-024`](#detail-gl-024) | No SLSA provenance attestation produced | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [GitLab CI](../providers/gitlab.md) |  |
 | [`HELM-002`](#detail-helm-002) | Chart.lock missing per-dependency digests | <span class="pg-sev pg-sev--high">HIGH</span> | [Helm](../providers/helm.md) | <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> |
@@ -12967,6 +12969,881 @@ jobs:
 ```
 
 **Source:** [`GHA-092`](../providers/github.md#gha-092) in the [GitHub Actions provider](../providers/github.md).
+
+### `GHA-093`: Living-off-the-Pipeline indicators (workflow-command abuse) <span class="pg-sev pg-sev--high">HIGH</span> { #detail-gha-093 }
+
+**Evidences:** [`8.2.1`](#ctrl-8-2-1) Strong unique identifiers are assigned to each user and service account, [`10.3.2`](#ctrl-10-3-2) Audit logs are protected from unauthorized modifications.
+
+**How this is detected.** Three independent failure shapes, the rule fires on any of them:
+
+1. **STEP_SUMMARY exfil.** A ``run:`` line that combines a secret reference (``${{ secrets.* }}`` context or a ``$NAME`` / ``${NAME}`` expansion of a step ``env:`` value bound to ``secrets.*``) with a redirect to ``$GITHUB_STEP_SUMMARY``. Disjoint from GHA-087: that rule fires on transform-then-sink; this one fires on the no-transform shape.
+2. **Workflow-command log injection.** A ``::warning::`` / ``::notice::`` / ``::error::`` directive whose message interpolates one of the attacker-controlled context expressions (PR title / body / labels / branch name, comment body, head_ref, etc.).
+3. **``::add-mask::`` after print.** Within the same ``run:`` block, a print of a variable (``echo $X`` / ``echo "$X"`` / ``printf`` / ``$X`` on its own line) preceded by no ``::add-mask::$X`` directive AND a later line that calls ``::add-mask::`` on the same variable. The directive applies to future log lines only; the earlier print already shipped to the log unmasked.
+
+Pairs with GHA-033 (secret echoed in shell trace) and GHA-087 (derived-value of a secret printed).
+
+**Recommendation.** Don't route secret-shaped values through the Summary tab and don't interpolate PR-controlled text into workflow commands. ``$GITHUB_STEP_SUMMARY`` is rendered to anyone with read access to the workflow run; treat it like a public-readable surface. ``::warning::`` / ``::notice::`` / ``::error::`` are typed log-line directives; interpolate only trusted values into them (or quote the untrusted value through an env var and let the shell escape it). Always ``::add-mask::`` *before* the first time the value could appear in a log line, the order matters.
+
+**Known false positives.**
+
+- S
+- T
+- E
+- P
+- _
+- S
+- U
+- M
+- M
+- A
+- R
+- Y
+- 
+- i
+- s
+- 
+- t
+- h
+- e
+- 
+- l
+- e
+- g
+- i
+- t
+- i
+- m
+- a
+- t
+- e
+- 
+- s
+- i
+- n
+- k
+- 
+- f
+- o
+- r
+- 
+- h
+- u
+- m
+- a
+- n
+- -
+- r
+- e
+- a
+- d
+- a
+- b
+- l
+- e
+- 
+- b
+- u
+- i
+- l
+- d
+- 
+- d
+- i
+- g
+- e
+- s
+- t
+- 
+- c
+- o
+- n
+- t
+- e
+- n
+- t
+- ;
+- 
+- t
+- h
+- e
+- 
+- r
+- u
+- l
+- e
+- 
+- o
+- n
+- l
+- y
+- 
+- f
+- l
+- a
+- g
+- s
+- 
+- s
+- e
+- c
+- r
+- e
+- t
+- -
+- s
+- h
+- a
+- p
+- e
+- d
+- 
+- r
+- e
+- f
+- e
+- r
+- e
+- n
+- c
+- e
+- s
+- 
+- w
+- r
+- i
+- t
+- t
+- e
+- n
+- 
+- t
+- h
+- e
+- r
+- e
+- .
+- 
+- I
+- f
+- 
+- y
+- o
+- u
+- 
+- n
+- e
+- e
+- d
+- 
+- t
+- o
+- 
+- s
+- u
+- r
+- f
+- a
+- c
+- e
+- 
+- a
+- 
+- n
+- o
+- n
+- -
+- s
+- e
+- c
+- r
+- e
+- t
+- 
+- v
+- a
+- l
+- u
+- e
+- 
+- t
+- h
+- a
+- t
+- 
+- h
+- a
+- p
+- p
+- e
+- n
+- s
+- 
+- t
+- o
+- 
+- s
+- h
+- a
+- r
+- e
+- 
+- a
+- 
+- n
+- a
+- m
+- e
+- 
+- w
+- i
+- t
+- h
+- 
+- a
+- 
+- s
+- e
+- c
+- r
+- e
+- t
+- -
+- b
+- o
+- u
+- n
+- d
+- 
+- e
+- n
+- v
+- 
+- v
+- a
+- r
+- ,
+- 
+- r
+- e
+- n
+- a
+- m
+- e
+- 
+- t
+- h
+- e
+- 
+- e
+- n
+- v
+- 
+- v
+- a
+- r
+- .
+- 
+- W
+- o
+- r
+- k
+- f
+- l
+- o
+- w
+- -
+- c
+- o
+- m
+- m
+- a
+- n
+- d
+- 
+- l
+- o
+- g
+- -
+- i
+- n
+- j
+- e
+- c
+- t
+- i
+- o
+- n
+- 
+- c
+- a
+- n
+- 
+- b
+- e
+- 
+- s
+- u
+- p
+- p
+- r
+- e
+- s
+- s
+- e
+- d
+- 
+- w
+- h
+- e
+- n
+- 
+- t
+- h
+- e
+- 
+- i
+- n
+- t
+- e
+- r
+- p
+- o
+- l
+- a
+- t
+- i
+- o
+- n
+- 
+- i
+- s
+- 
+- i
+- n
+- t
+- o
+- 
+- a
+- 
+- v
+- a
+- l
+- u
+- e
+- 
+- t
+- h
+- a
+- t
+- '
+- s
+- 
+- b
+- e
+- e
+- n
+- 
+- s
+- a
+- n
+- i
+- t
+- i
+- z
+- e
+- d
+- 
+- u
+- p
+- s
+- t
+- r
+- e
+- a
+- m
+- 
+- (
+- a
+- 
+- s
+- t
+- e
+- p
+- 
+- t
+- h
+- a
+- t
+- 
+- r
+- e
+- s
+- o
+- l
+- v
+- e
+- d
+- 
+- t
+- h
+- e
+- 
+- P
+- R
+- 
+- t
+- i
+- t
+- l
+- e
+- 
+- t
+- h
+- r
+- o
+- u
+- g
+- h
+- 
+- a
+- 
+- l
+- i
+- t
+- e
+- r
+- a
+- l
+- -
+- e
+- s
+- c
+- a
+- p
+- e
+- 
+- s
+- t
+- e
+- p
+- )
+- ,
+- 
+- w
+- i
+- t
+- h
+- 
+- a
+- 
+- r
+- a
+- t
+- i
+- o
+- n
+- a
+- l
+- e
+- 
+- t
+- h
+- a
+- t
+- 
+- n
+- a
+- m
+- e
+- s
+- 
+- t
+- h
+- e
+- 
+- s
+- a
+- n
+- i
+- t
+- i
+- z
+- e
+- r
+- .
+
+**Seen in the wild.**
+
+- L
+- O
+- T
+- P
+- 
+- (
+- L
+- i
+- v
+- i
+- n
+- g
+- -
+- o
+- f
+- f
+- -
+- t
+- h
+- e
+- -
+- P
+- i
+- p
+- e
+- l
+- i
+- n
+- e
+- )
+- 
+- r
+- e
+- s
+- e
+- a
+- r
+- c
+- h
+- :
+- 
+- c
+- o
+- l
+- l
+- e
+- c
+- t
+- e
+- d
+- 
+- f
+- r
+- o
+- m
+- 
+- r
+- e
+- d
+- -
+- t
+- e
+- a
+- m
+- 
+- w
+- r
+- i
+- t
+- e
+- -
+- u
+- p
+- s
+- 
+- d
+- e
+- m
+- o
+- n
+- s
+- t
+- r
+- a
+- t
+- i
+- n
+- g
+- 
+- t
+- h
+- a
+- t
+- 
+- b
+- u
+- i
+- l
+- t
+- -
+- i
+- n
+- 
+- w
+- o
+- r
+- k
+- f
+- l
+- o
+- w
+- 
+- p
+- r
+- i
+- m
+- i
+- t
+- i
+- v
+- e
+- s
+- 
+- c
+- a
+- n
+- 
+- a
+- c
+- t
+- 
+- a
+- s
+- 
+- u
+- n
+- t
+- r
+- a
+- c
+- e
+- d
+- 
+- e
+- x
+- f
+- i
+- l
+- 
+- c
+- h
+- a
+- n
+- n
+- e
+- l
+- s
+- 
+- (
+- T
+- r
+- a
+- i
+- l
+- 
+- o
+- f
+- 
+- B
+- i
+- t
+- s
+- 
+- 2
+- 0
+- 2
+- 4
+- 
+- L
+- O
+- T
+- P
+- 
+- s
+- e
+- r
+- i
+- e
+- s
+- ,
+- 
+- S
+- y
+- n
+- a
+- c
+- k
+- t
+- i
+- v
+- 
+- O
+- c
+- t
+- o
+- s
+- c
+- a
+- n
+- 
+- p
+- a
+- p
+- e
+- r
+- )
+- .
+- 
+- T
+- h
+- e
+- 
+- S
+- u
+- m
+- m
+- a
+- r
+- y
+- 
+- t
+- a
+- b
+- 
+- a
+- n
+- d
+- 
+- t
+- h
+- e
+- 
+- t
+- y
+- p
+- e
+- d
+- 
+- w
+- o
+- r
+- k
+- f
+- l
+- o
+- w
+- -
+- c
+- o
+- m
+- m
+- a
+- n
+- d
+- 
+- d
+- i
+- r
+- e
+- c
+- t
+- i
+- v
+- e
+- s
+- 
+- a
+- r
+- e
+- 
+- t
+- h
+- e
+- 
+- c
+- a
+- n
+- o
+- n
+- i
+- c
+- a
+- l
+- 
+- e
+- x
+- a
+- m
+- p
+- l
+- e
+- s
+- ;
+- 
+- t
+- h
+- e
+- 
+- a
+- d
+- d
+- -
+- m
+- a
+- s
+- k
+- 
+- o
+- r
+- d
+- e
+- r
+- i
+- n
+- g
+- 
+- b
+- u
+- g
+- 
+- a
+- p
+- p
+- e
+- a
+- r
+- s
+- 
+- i
+- n
+- 
+- G
+- i
+- t
+- H
+- u
+- b
+- '
+- s
+- 
+- o
+- w
+- n
+- 
+- f
+- i
+- e
+- l
+- d
+- 
+- r
+- e
+- p
+- o
+- r
+- t
+- s
+- .
+
+**Source:** [`GHA-093`](../providers/github.md#gha-093) in the [GitHub Actions provider](../providers/github.md).
 
 ### `GL-001`: Image not pinned to specific version or digest <span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> { #detail-gl-001 }
 

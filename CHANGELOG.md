@@ -32,6 +32,29 @@ release commit collapses this section into `## [X.Y.Z] - <date>`.
 
 ### Added
 
+- **GHA-093 Living-off-the-Pipeline indicators (closes #156).**
+  Inspired by zizmor proposal #1948 (LOTP). Three independent
+  failure shapes in one rule, any one fires:
+    1. **STEP_SUMMARY exfil.** A ``run:`` line that combines a
+       secret reference (``${{ secrets.* }}`` context or a
+       ``$NAME`` expansion of a step ``env:`` value bound to
+       ``secrets.*``) with a redirect to ``$GITHUB_STEP_SUMMARY``.
+       Disjoint from GHA-087, which fires on transform-then-sink;
+       this one covers the no-transform shape.
+    2. **Workflow-command log injection.** A ``::warning::`` /
+       ``::notice::`` / ``::error::`` directive whose message
+       interpolates an attacker-controlled context (PR title /
+       body / labels / branch name, head_ref, etc.).
+    3. **``::add-mask::`` after print.** Within the same ``run:``
+       block, an earlier print of a variable (``echo $X``) and a
+       later ``::add-mask::$X`` directive: the masker registers
+       too late, the earlier echo already shipped to the log
+       unmasked.
+  HIGH severity, OWASP CICD-SEC-10 / CICD-SEC-6,
+  ESF-D-SECRETS / ESF-D-INJECTION. 15 per-rule tests under
+  ``tests/github/test_gha093.py`` plus a per-check fixture pair.
+  Brings GHA pack to 84 rules.
+
 - **GHA-092 TOCTOU PR head SHA (closes #154).** Inspired by zizmor
   proposal #935. Within a single job, fires when a step captures
   the PR head SHA (a ``run:`` body or ``env:`` block interpolating

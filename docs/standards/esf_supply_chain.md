@@ -12,7 +12,7 @@ the scanner evidences controls that surface in CI/CD configuration.
 
 - **Controls in this standard:** 24
 - **Controls evidenced by at least one check:** 24 / 24
-- **Distinct checks evidencing this standard:** 600
+- **Distinct checks evidencing this standard:** 601
 - **Of those, autofixable with `--fix`:** 111
 
 _Severity levels (`CRITICAL` / `HIGH` / `MEDIUM` / `LOW` / `INFO`) follow the same scale across every provider and standard. See [How to read severity](README.md#how-to-read-severity) on the standards overview for the definitions._
@@ -26,13 +26,13 @@ Click a control ID to jump to the per-control section with the full check list. 
 | [`ESF-D-BUILD-ENV`](#ctrl-esf-d-build-env) | Harden the build environment (isolated, minimal, ephemeral workers) | 51 | 9C · 18H · 18M · 6L |
 | [`ESF-D-BUILD-LOGS`](#ctrl-esf-d-build-logs) | Generate and preserve build audit logs | 5 | 1H · 2M · 2L |
 | [`ESF-D-BUILD-TIMEOUT`](#ctrl-esf-d-build-timeout) | Enforce bounded build execution (single-use, time-limited) | 12 | 8M · 4L |
-| [`ESF-D-SECRETS`](#ctrl-esf-d-secrets) | Protect secrets used during build; no secrets in source or env | 51 | 27C · 20H · 3M · 1L |
+| [`ESF-D-SECRETS`](#ctrl-esf-d-secrets) | Protect secrets used during build; no secrets in source or env | 52 | 27C · 21H · 3M · 1L |
 | [`ESF-D-PRIV-BUILD`](#ctrl-esf-d-priv-build) | Avoid privileged / host-networked build workers | 41 | 6C · 20H · 14M · 1L |
 | [`ESF-D-SIGN-ARTIFACTS`](#ctrl-esf-d-sign-artifacts) | Sign build artifacts and verify signatures before release | 28 | 5H · 23M |
 | [`ESF-D-SBOM`](#ctrl-esf-d-sbom) | Produce SBOM / provenance metadata with every build | 26 | 1H · 20M · 5L |
 | [`ESF-D-CODE-REVIEW`](#ctrl-esf-d-code-review) | Require peer review of source and pipeline configuration | 37 | 16H · 13M · 8L |
 | [`ESF-D-TOKEN-HYGIENE`](#ctrl-esf-d-token-hygiene) | Use short-lived, federated credentials (OIDC), not long-lived tokens | 27 | 19H · 8M |
-| [`ESF-D-INJECTION`](#ctrl-esf-d-injection) | Prevent script / template injection from untrusted pipeline context | 76 | 21C · 47H · 6M · 2L |
+| [`ESF-D-INJECTION`](#ctrl-esf-d-injection) | Prevent script / template injection from untrusted pipeline context | 77 | 21C · 48H · 6M · 2L |
 | [`ESF-D-TAMPER`](#ctrl-esf-d-tamper) | Protect build artifacts from tampering and detect unauthorized modification | 6 | 1C · 4M · 1L |
 | [`ESF-S-VERIFY-DEPS`](#ctrl-esf-s-verify-deps) | Verify third-party and open-source dependencies before use | 109 | 17C · 54H · 34M · 4L |
 | [`ESF-S-PIN-DEPS`](#ctrl-esf-s-pin-deps) | Pin dependencies / actions / images to immutable digests | 78 | 1C · 33H · 38M · 6L |
@@ -156,7 +156,7 @@ pipeline_check --pipeline aws --standard esf_supply_chain --standard owasp_cicd_
 
 ### ESF-D-SECRETS: Protect secrets used during build; no secrets in source or env { #ctrl-esf-d-secrets }
 
-**Evidenced by 51 checks** across 19 providers (AWS, Argo CD, Argo Workflows, Azure DevOps, Bitbucket, Buildkite, CircleCI, Cloud Build, CloudFormation, Dockerfile, Drone CI, GitHub Actions, GitLab CI, Jenkins, Kubernetes, SCM, Tekton, Terraform, npm).
+**Evidenced by 52 checks** across 19 providers (AWS, Argo CD, Argo Workflows, Azure DevOps, Bitbucket, Buildkite, CircleCI, Cloud Build, CloudFormation, Dockerfile, Drone CI, GitHub Actions, GitLab CI, Jenkins, Kubernetes, SCM, Tekton, Terraform, npm).
 
 | Check | Title | Severity | Provider | Fix |
 |-------|-------|----------|----------|-----|
@@ -194,6 +194,7 @@ pipeline_check --pipeline aws --standard esf_supply_chain --standard owasp_cicd_
 | [`GHA-072`](#detail-gha-072) | Secret in env: at a wider scope than its consumer | <span class="pg-sev pg-sev--high">HIGH</span> | [GitHub Actions](../providers/github.md) |  |
 | [`GHA-073`](#detail-gha-073) | Reusable workflow declares an unused ``workflow_call`` secret | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [GitHub Actions](../providers/github.md) |  |
 | [`GHA-087`](#detail-gha-087) | Derived value of a secret printed to the build log | <span class="pg-sev pg-sev--high">HIGH</span> | [GitHub Actions](../providers/github.md) |  |
+| [`GHA-093`](#detail-gha-093) | Living-off-the-Pipeline indicators (workflow-command abuse) | <span class="pg-sev pg-sev--high">HIGH</span> | [GitHub Actions](../providers/github.md) |  |
 | [`GL-003`](#detail-gl-003) | Variables contain literal secret values | <span class="pg-sev pg-sev--critical">CRITICAL</span> | [GitLab CI](../providers/gitlab.md) |  |
 | [`GL-008`](#detail-gl-008) | Credential-shaped literal in pipeline body | <span class="pg-sev pg-sev--critical">CRITICAL</span> | [GitLab CI](../providers/gitlab.md) | <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> |
 | [`GL-020`](#detail-gl-020) | CI_JOB_TOKEN written to persistent storage | <span class="pg-sev pg-sev--critical">CRITICAL</span> | [GitLab CI](../providers/gitlab.md) | <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> |
@@ -408,7 +409,7 @@ pipeline_check --pipeline aws --standard esf_supply_chain --standard owasp_cicd_
 
 ### ESF-D-INJECTION: Prevent script / template injection from untrusted pipeline context { #ctrl-esf-d-injection }
 
-**Evidenced by 76 checks** across 14 providers (AWS, Argo CD, Argo Workflows, Azure DevOps, Bitbucket, Buildkite, CircleCI, Cloud Build, Dockerfile, Drone CI, GitHub Actions, GitLab CI, Jenkins, Tekton).
+**Evidenced by 77 checks** across 14 providers (AWS, Argo CD, Argo Workflows, Azure DevOps, Bitbucket, Buildkite, CircleCI, Cloud Build, Dockerfile, Drone CI, GitHub Actions, GitLab CI, Jenkins, Tekton).
 
 | Check | Title | Severity | Provider | Fix |
 |-------|-------|----------|----------|-----|
@@ -464,6 +465,7 @@ pipeline_check --pipeline aws --standard esf_supply_chain --standard owasp_cicd_
 | [`GHA-064`](#detail-gha-064) | ``contains()`` invoked with comma-delimited string operand | <span class="pg-sev pg-sev--high">HIGH</span> | [GitHub Actions](../providers/github.md) |  |
 | [`GHA-065`](#detail-gha-065) | Workflow body contains zero-width or bidi Unicode characters | <span class="pg-sev pg-sev--critical">CRITICAL</span> | [GitHub Actions](../providers/github.md) |  |
 | [`GHA-071`](#detail-gha-071) | ``shell: pwsh`` / ``powershell`` on a Linux / macOS step | <span class="pg-sev pg-sev--low">LOW</span> | [GitHub Actions](../providers/github.md) |  |
+| [`GHA-093`](#detail-gha-093) | Living-off-the-Pipeline indicators (workflow-command abuse) | <span class="pg-sev pg-sev--high">HIGH</span> | [GitHub Actions](../providers/github.md) |  |
 | [`GL-002`](#detail-gl-002) | Script injection via untrusted commit/MR context | <span class="pg-sev pg-sev--high">HIGH</span> | [GitLab CI](../providers/gitlab.md) |  |
 | [`GL-010`](#detail-gl-010) | Multi-project pipeline ingests upstream artifact unverified | <span class="pg-sev pg-sev--critical">CRITICAL</span> | [GitLab CI](../providers/gitlab.md) |  |
 | [`GL-011`](#detail-gl-011) | include: local file pulled in MR-triggered pipeline | <span class="pg-sev pg-sev--high">HIGH</span> | [GitLab CI](../providers/gitlab.md) |  |
@@ -13250,6 +13252,881 @@ jobs:
 ```
 
 **Source:** [`GHA-092`](../providers/github.md#gha-092) in the [GitHub Actions provider](../providers/github.md).
+
+### `GHA-093`: Living-off-the-Pipeline indicators (workflow-command abuse) <span class="pg-sev pg-sev--high">HIGH</span> { #detail-gha-093 }
+
+**Evidences:** [`ESF-D-SECRETS`](#ctrl-esf-d-secrets) Protect secrets used during build; no secrets in source or env, [`ESF-D-INJECTION`](#ctrl-esf-d-injection) Prevent script / template injection from untrusted pipeline context.
+
+**How this is detected.** Three independent failure shapes, the rule fires on any of them:
+
+1. **STEP_SUMMARY exfil.** A ``run:`` line that combines a secret reference (``${{ secrets.* }}`` context or a ``$NAME`` / ``${NAME}`` expansion of a step ``env:`` value bound to ``secrets.*``) with a redirect to ``$GITHUB_STEP_SUMMARY``. Disjoint from GHA-087: that rule fires on transform-then-sink; this one fires on the no-transform shape.
+2. **Workflow-command log injection.** A ``::warning::`` / ``::notice::`` / ``::error::`` directive whose message interpolates one of the attacker-controlled context expressions (PR title / body / labels / branch name, comment body, head_ref, etc.).
+3. **``::add-mask::`` after print.** Within the same ``run:`` block, a print of a variable (``echo $X`` / ``echo "$X"`` / ``printf`` / ``$X`` on its own line) preceded by no ``::add-mask::$X`` directive AND a later line that calls ``::add-mask::`` on the same variable. The directive applies to future log lines only; the earlier print already shipped to the log unmasked.
+
+Pairs with GHA-033 (secret echoed in shell trace) and GHA-087 (derived-value of a secret printed).
+
+**Recommendation.** Don't route secret-shaped values through the Summary tab and don't interpolate PR-controlled text into workflow commands. ``$GITHUB_STEP_SUMMARY`` is rendered to anyone with read access to the workflow run; treat it like a public-readable surface. ``::warning::`` / ``::notice::`` / ``::error::`` are typed log-line directives; interpolate only trusted values into them (or quote the untrusted value through an env var and let the shell escape it). Always ``::add-mask::`` *before* the first time the value could appear in a log line, the order matters.
+
+**Known false positives.**
+
+- S
+- T
+- E
+- P
+- _
+- S
+- U
+- M
+- M
+- A
+- R
+- Y
+- 
+- i
+- s
+- 
+- t
+- h
+- e
+- 
+- l
+- e
+- g
+- i
+- t
+- i
+- m
+- a
+- t
+- e
+- 
+- s
+- i
+- n
+- k
+- 
+- f
+- o
+- r
+- 
+- h
+- u
+- m
+- a
+- n
+- -
+- r
+- e
+- a
+- d
+- a
+- b
+- l
+- e
+- 
+- b
+- u
+- i
+- l
+- d
+- 
+- d
+- i
+- g
+- e
+- s
+- t
+- 
+- c
+- o
+- n
+- t
+- e
+- n
+- t
+- ;
+- 
+- t
+- h
+- e
+- 
+- r
+- u
+- l
+- e
+- 
+- o
+- n
+- l
+- y
+- 
+- f
+- l
+- a
+- g
+- s
+- 
+- s
+- e
+- c
+- r
+- e
+- t
+- -
+- s
+- h
+- a
+- p
+- e
+- d
+- 
+- r
+- e
+- f
+- e
+- r
+- e
+- n
+- c
+- e
+- s
+- 
+- w
+- r
+- i
+- t
+- t
+- e
+- n
+- 
+- t
+- h
+- e
+- r
+- e
+- .
+- 
+- I
+- f
+- 
+- y
+- o
+- u
+- 
+- n
+- e
+- e
+- d
+- 
+- t
+- o
+- 
+- s
+- u
+- r
+- f
+- a
+- c
+- e
+- 
+- a
+- 
+- n
+- o
+- n
+- -
+- s
+- e
+- c
+- r
+- e
+- t
+- 
+- v
+- a
+- l
+- u
+- e
+- 
+- t
+- h
+- a
+- t
+- 
+- h
+- a
+- p
+- p
+- e
+- n
+- s
+- 
+- t
+- o
+- 
+- s
+- h
+- a
+- r
+- e
+- 
+- a
+- 
+- n
+- a
+- m
+- e
+- 
+- w
+- i
+- t
+- h
+- 
+- a
+- 
+- s
+- e
+- c
+- r
+- e
+- t
+- -
+- b
+- o
+- u
+- n
+- d
+- 
+- e
+- n
+- v
+- 
+- v
+- a
+- r
+- ,
+- 
+- r
+- e
+- n
+- a
+- m
+- e
+- 
+- t
+- h
+- e
+- 
+- e
+- n
+- v
+- 
+- v
+- a
+- r
+- .
+- 
+- W
+- o
+- r
+- k
+- f
+- l
+- o
+- w
+- -
+- c
+- o
+- m
+- m
+- a
+- n
+- d
+- 
+- l
+- o
+- g
+- -
+- i
+- n
+- j
+- e
+- c
+- t
+- i
+- o
+- n
+- 
+- c
+- a
+- n
+- 
+- b
+- e
+- 
+- s
+- u
+- p
+- p
+- r
+- e
+- s
+- s
+- e
+- d
+- 
+- w
+- h
+- e
+- n
+- 
+- t
+- h
+- e
+- 
+- i
+- n
+- t
+- e
+- r
+- p
+- o
+- l
+- a
+- t
+- i
+- o
+- n
+- 
+- i
+- s
+- 
+- i
+- n
+- t
+- o
+- 
+- a
+- 
+- v
+- a
+- l
+- u
+- e
+- 
+- t
+- h
+- a
+- t
+- '
+- s
+- 
+- b
+- e
+- e
+- n
+- 
+- s
+- a
+- n
+- i
+- t
+- i
+- z
+- e
+- d
+- 
+- u
+- p
+- s
+- t
+- r
+- e
+- a
+- m
+- 
+- (
+- a
+- 
+- s
+- t
+- e
+- p
+- 
+- t
+- h
+- a
+- t
+- 
+- r
+- e
+- s
+- o
+- l
+- v
+- e
+- d
+- 
+- t
+- h
+- e
+- 
+- P
+- R
+- 
+- t
+- i
+- t
+- l
+- e
+- 
+- t
+- h
+- r
+- o
+- u
+- g
+- h
+- 
+- a
+- 
+- l
+- i
+- t
+- e
+- r
+- a
+- l
+- -
+- e
+- s
+- c
+- a
+- p
+- e
+- 
+- s
+- t
+- e
+- p
+- )
+- ,
+- 
+- w
+- i
+- t
+- h
+- 
+- a
+- 
+- r
+- a
+- t
+- i
+- o
+- n
+- a
+- l
+- e
+- 
+- t
+- h
+- a
+- t
+- 
+- n
+- a
+- m
+- e
+- s
+- 
+- t
+- h
+- e
+- 
+- s
+- a
+- n
+- i
+- t
+- i
+- z
+- e
+- r
+- .
+
+**Seen in the wild.**
+
+- L
+- O
+- T
+- P
+- 
+- (
+- L
+- i
+- v
+- i
+- n
+- g
+- -
+- o
+- f
+- f
+- -
+- t
+- h
+- e
+- -
+- P
+- i
+- p
+- e
+- l
+- i
+- n
+- e
+- )
+- 
+- r
+- e
+- s
+- e
+- a
+- r
+- c
+- h
+- :
+- 
+- c
+- o
+- l
+- l
+- e
+- c
+- t
+- e
+- d
+- 
+- f
+- r
+- o
+- m
+- 
+- r
+- e
+- d
+- -
+- t
+- e
+- a
+- m
+- 
+- w
+- r
+- i
+- t
+- e
+- -
+- u
+- p
+- s
+- 
+- d
+- e
+- m
+- o
+- n
+- s
+- t
+- r
+- a
+- t
+- i
+- n
+- g
+- 
+- t
+- h
+- a
+- t
+- 
+- b
+- u
+- i
+- l
+- t
+- -
+- i
+- n
+- 
+- w
+- o
+- r
+- k
+- f
+- l
+- o
+- w
+- 
+- p
+- r
+- i
+- m
+- i
+- t
+- i
+- v
+- e
+- s
+- 
+- c
+- a
+- n
+- 
+- a
+- c
+- t
+- 
+- a
+- s
+- 
+- u
+- n
+- t
+- r
+- a
+- c
+- e
+- d
+- 
+- e
+- x
+- f
+- i
+- l
+- 
+- c
+- h
+- a
+- n
+- n
+- e
+- l
+- s
+- 
+- (
+- T
+- r
+- a
+- i
+- l
+- 
+- o
+- f
+- 
+- B
+- i
+- t
+- s
+- 
+- 2
+- 0
+- 2
+- 4
+- 
+- L
+- O
+- T
+- P
+- 
+- s
+- e
+- r
+- i
+- e
+- s
+- ,
+- 
+- S
+- y
+- n
+- a
+- c
+- k
+- t
+- i
+- v
+- 
+- O
+- c
+- t
+- o
+- s
+- c
+- a
+- n
+- 
+- p
+- a
+- p
+- e
+- r
+- )
+- .
+- 
+- T
+- h
+- e
+- 
+- S
+- u
+- m
+- m
+- a
+- r
+- y
+- 
+- t
+- a
+- b
+- 
+- a
+- n
+- d
+- 
+- t
+- h
+- e
+- 
+- t
+- y
+- p
+- e
+- d
+- 
+- w
+- o
+- r
+- k
+- f
+- l
+- o
+- w
+- -
+- c
+- o
+- m
+- m
+- a
+- n
+- d
+- 
+- d
+- i
+- r
+- e
+- c
+- t
+- i
+- v
+- e
+- s
+- 
+- a
+- r
+- e
+- 
+- t
+- h
+- e
+- 
+- c
+- a
+- n
+- o
+- n
+- i
+- c
+- a
+- l
+- 
+- e
+- x
+- a
+- m
+- p
+- l
+- e
+- s
+- ;
+- 
+- t
+- h
+- e
+- 
+- a
+- d
+- d
+- -
+- m
+- a
+- s
+- k
+- 
+- o
+- r
+- d
+- e
+- r
+- i
+- n
+- g
+- 
+- b
+- u
+- g
+- 
+- a
+- p
+- p
+- e
+- a
+- r
+- s
+- 
+- i
+- n
+- 
+- G
+- i
+- t
+- H
+- u
+- b
+- '
+- s
+- 
+- o
+- w
+- n
+- 
+- f
+- i
+- e
+- l
+- d
+- 
+- r
+- e
+- p
+- o
+- r
+- t
+- s
+- .
+
+**Source:** [`GHA-093`](../providers/github.md#gha-093) in the [GitHub Actions provider](../providers/github.md).
 
 ### `GL-001`: Image not pinned to specific version or digest <span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> { #detail-gl-001 }
 

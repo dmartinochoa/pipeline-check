@@ -72,7 +72,7 @@ Resolution rules:
 
 ## What it covers
 
-83 checks · 17 have an autofix patch (``--fix``).
+84 checks · 17 have an autofix patch (``--fix``).
 
 | Check | Title | Severity | Fix |
 |-------|-------|----------|-----|
@@ -156,6 +156,7 @@ Resolution rules:
 | [GHA-090](#gha-090) | Action SHA pin references a commit absent from the claimed repo | <span class="pg-sev pg-sev--high">HIGH</span> |  |
 | [GHA-091](#gha-091) | Action upstream repo is missing (takeover-eligible namespace) | <span class="pg-sev pg-sev--high">HIGH</span> |  |
 | [GHA-092](#gha-092) | PR head SHA captured then re-fetched (force-push race) | <span class="pg-sev pg-sev--high">HIGH</span> |  |
+| [GHA-093](#gha-093) | Living-off-the-Pipeline indicators (workflow-command abuse) | <span class="pg-sev pg-sev--high">HIGH</span> |  |
 | [TAINT-001](#taint-001) | Untrusted input flows across step boundaries via step outputs | <span class="pg-sev pg-sev--high">HIGH</span> |  |
 | [TAINT-002](#taint-002) | Untrusted input flows across jobs via ``jobs.<id>.outputs:`` | <span class="pg-sev pg-sev--high">HIGH</span> |  |
 | [TAINT-003](#taint-003) | Untrusted input forwarded into reusable workflow ``with:`` | <span class="pg-sev pg-sev--high">HIGH</span> |  |
@@ -3990,6 +3991,891 @@ The fire condition is the *order*, capture-then-fetch with no intervening lock o
 **Recommended action**
 
 Read the PR head SHA once and reuse the captured value for the actual checkout. ``actions/checkout`` accepts a ``ref:`` the workflow already resolved (``ref: ${{ steps.snap.outputs.sha }}`` after a ``steps.snap`` that captures the SHA from the event payload), so the same atom drives both the gate decision and the fetch. If a re-read is genuinely needed (you want the latest commit, accepting the race), drop the gate logic that depends on the earlier snapshot, the two are not the same primitive.
+
+</div>
+
+</div>
+
+<div class="pg-rule pg-rule--high" markdown>
+
+## GHA-093: Living-off-the-Pipeline indicators (workflow-command abuse) { #gha-093 }
+
+<div class="pg-rule__tags">
+<span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-10</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-6</span> <span class="pg-tag pg-tag--esf">ESF-D-SECRETS</span> <span class="pg-tag pg-tag--esf">ESF-D-INJECTION</span> <span class="pg-tag pg-tag--cwe">CWE-532</span> <span class="pg-tag pg-tag--cwe">CWE-117</span> <span class="pg-tag pg-tag--cwe">CWE-200</span>
+</div>
+
+Three independent failure shapes, the rule fires on any of them:
+
+1. **STEP_SUMMARY exfil.** A ``run:`` line that combines a secret reference (``${{ secrets.* }}`` context or a ``$NAME`` / ``${NAME}`` expansion of a step ``env:`` value bound to ``secrets.*``) with a redirect to ``$GITHUB_STEP_SUMMARY``. Disjoint from GHA-087: that rule fires on transform-then-sink; this one fires on the no-transform shape.
+2. **Workflow-command log injection.** A ``::warning::`` / ``::notice::`` / ``::error::`` directive whose message interpolates one of the attacker-controlled context expressions (PR title / body / labels / branch name, comment body, head_ref, etc.).
+3. **``::add-mask::`` after print.** Within the same ``run:`` block, a print of a variable (``echo $X`` / ``echo "$X"`` / ``printf`` / ``$X`` on its own line) preceded by no ``::add-mask::$X`` directive AND a later line that calls ``::add-mask::`` on the same variable. The directive applies to future log lines only; the earlier print already shipped to the log unmasked.
+
+Pairs with GHA-033 (secret echoed in shell trace) and GHA-087 (derived-value of a secret printed).
+
+**Known false-positive modes**
+
+- S
+- T
+- E
+- P
+- _
+- S
+- U
+- M
+- M
+- A
+- R
+- Y
+- 
+- i
+- s
+- 
+- t
+- h
+- e
+- 
+- l
+- e
+- g
+- i
+- t
+- i
+- m
+- a
+- t
+- e
+- 
+- s
+- i
+- n
+- k
+- 
+- f
+- o
+- r
+- 
+- h
+- u
+- m
+- a
+- n
+- -
+- r
+- e
+- a
+- d
+- a
+- b
+- l
+- e
+- 
+- b
+- u
+- i
+- l
+- d
+- 
+- d
+- i
+- g
+- e
+- s
+- t
+- 
+- c
+- o
+- n
+- t
+- e
+- n
+- t
+- ;
+- 
+- t
+- h
+- e
+- 
+- r
+- u
+- l
+- e
+- 
+- o
+- n
+- l
+- y
+- 
+- f
+- l
+- a
+- g
+- s
+- 
+- s
+- e
+- c
+- r
+- e
+- t
+- -
+- s
+- h
+- a
+- p
+- e
+- d
+- 
+- r
+- e
+- f
+- e
+- r
+- e
+- n
+- c
+- e
+- s
+- 
+- w
+- r
+- i
+- t
+- t
+- e
+- n
+- 
+- t
+- h
+- e
+- r
+- e
+- .
+- 
+- I
+- f
+- 
+- y
+- o
+- u
+- 
+- n
+- e
+- e
+- d
+- 
+- t
+- o
+- 
+- s
+- u
+- r
+- f
+- a
+- c
+- e
+- 
+- a
+- 
+- n
+- o
+- n
+- -
+- s
+- e
+- c
+- r
+- e
+- t
+- 
+- v
+- a
+- l
+- u
+- e
+- 
+- t
+- h
+- a
+- t
+- 
+- h
+- a
+- p
+- p
+- e
+- n
+- s
+- 
+- t
+- o
+- 
+- s
+- h
+- a
+- r
+- e
+- 
+- a
+- 
+- n
+- a
+- m
+- e
+- 
+- w
+- i
+- t
+- h
+- 
+- a
+- 
+- s
+- e
+- c
+- r
+- e
+- t
+- -
+- b
+- o
+- u
+- n
+- d
+- 
+- e
+- n
+- v
+- 
+- v
+- a
+- r
+- ,
+- 
+- r
+- e
+- n
+- a
+- m
+- e
+- 
+- t
+- h
+- e
+- 
+- e
+- n
+- v
+- 
+- v
+- a
+- r
+- .
+- 
+- W
+- o
+- r
+- k
+- f
+- l
+- o
+- w
+- -
+- c
+- o
+- m
+- m
+- a
+- n
+- d
+- 
+- l
+- o
+- g
+- -
+- i
+- n
+- j
+- e
+- c
+- t
+- i
+- o
+- n
+- 
+- c
+- a
+- n
+- 
+- b
+- e
+- 
+- s
+- u
+- p
+- p
+- r
+- e
+- s
+- s
+- e
+- d
+- 
+- w
+- h
+- e
+- n
+- 
+- t
+- h
+- e
+- 
+- i
+- n
+- t
+- e
+- r
+- p
+- o
+- l
+- a
+- t
+- i
+- o
+- n
+- 
+- i
+- s
+- 
+- i
+- n
+- t
+- o
+- 
+- a
+- 
+- v
+- a
+- l
+- u
+- e
+- 
+- t
+- h
+- a
+- t
+- '
+- s
+- 
+- b
+- e
+- e
+- n
+- 
+- s
+- a
+- n
+- i
+- t
+- i
+- z
+- e
+- d
+- 
+- u
+- p
+- s
+- t
+- r
+- e
+- a
+- m
+- 
+- (
+- a
+- 
+- s
+- t
+- e
+- p
+- 
+- t
+- h
+- a
+- t
+- 
+- r
+- e
+- s
+- o
+- l
+- v
+- e
+- d
+- 
+- t
+- h
+- e
+- 
+- P
+- R
+- 
+- t
+- i
+- t
+- l
+- e
+- 
+- t
+- h
+- r
+- o
+- u
+- g
+- h
+- 
+- a
+- 
+- l
+- i
+- t
+- e
+- r
+- a
+- l
+- -
+- e
+- s
+- c
+- a
+- p
+- e
+- 
+- s
+- t
+- e
+- p
+- )
+- ,
+- 
+- w
+- i
+- t
+- h
+- 
+- a
+- 
+- r
+- a
+- t
+- i
+- o
+- n
+- a
+- l
+- e
+- 
+- t
+- h
+- a
+- t
+- 
+- n
+- a
+- m
+- e
+- s
+- 
+- t
+- h
+- e
+- 
+- s
+- a
+- n
+- i
+- t
+- i
+- z
+- e
+- r
+- .
+
+**Seen in the wild**
+
+- L
+- O
+- T
+- P
+- 
+- (
+- L
+- i
+- v
+- i
+- n
+- g
+- -
+- o
+- f
+- f
+- -
+- t
+- h
+- e
+- -
+- P
+- i
+- p
+- e
+- l
+- i
+- n
+- e
+- )
+- 
+- r
+- e
+- s
+- e
+- a
+- r
+- c
+- h
+- :
+- 
+- c
+- o
+- l
+- l
+- e
+- c
+- t
+- e
+- d
+- 
+- f
+- r
+- o
+- m
+- 
+- r
+- e
+- d
+- -
+- t
+- e
+- a
+- m
+- 
+- w
+- r
+- i
+- t
+- e
+- -
+- u
+- p
+- s
+- 
+- d
+- e
+- m
+- o
+- n
+- s
+- t
+- r
+- a
+- t
+- i
+- n
+- g
+- 
+- t
+- h
+- a
+- t
+- 
+- b
+- u
+- i
+- l
+- t
+- -
+- i
+- n
+- 
+- w
+- o
+- r
+- k
+- f
+- l
+- o
+- w
+- 
+- p
+- r
+- i
+- m
+- i
+- t
+- i
+- v
+- e
+- s
+- 
+- c
+- a
+- n
+- 
+- a
+- c
+- t
+- 
+- a
+- s
+- 
+- u
+- n
+- t
+- r
+- a
+- c
+- e
+- d
+- 
+- e
+- x
+- f
+- i
+- l
+- 
+- c
+- h
+- a
+- n
+- n
+- e
+- l
+- s
+- 
+- (
+- T
+- r
+- a
+- i
+- l
+- 
+- o
+- f
+- 
+- B
+- i
+- t
+- s
+- 
+- 2
+- 0
+- 2
+- 4
+- 
+- L
+- O
+- T
+- P
+- 
+- s
+- e
+- r
+- i
+- e
+- s
+- ,
+- 
+- S
+- y
+- n
+- a
+- c
+- k
+- t
+- i
+- v
+- 
+- O
+- c
+- t
+- o
+- s
+- c
+- a
+- n
+- 
+- p
+- a
+- p
+- e
+- r
+- )
+- .
+- 
+- T
+- h
+- e
+- 
+- S
+- u
+- m
+- m
+- a
+- r
+- y
+- 
+- t
+- a
+- b
+- 
+- a
+- n
+- d
+- 
+- t
+- h
+- e
+- 
+- t
+- y
+- p
+- e
+- d
+- 
+- w
+- o
+- r
+- k
+- f
+- l
+- o
+- w
+- -
+- c
+- o
+- m
+- m
+- a
+- n
+- d
+- 
+- d
+- i
+- r
+- e
+- c
+- t
+- i
+- v
+- e
+- s
+- 
+- a
+- r
+- e
+- 
+- t
+- h
+- e
+- 
+- c
+- a
+- n
+- o
+- n
+- i
+- c
+- a
+- l
+- 
+- e
+- x
+- a
+- m
+- p
+- l
+- e
+- s
+- ;
+- 
+- t
+- h
+- e
+- 
+- a
+- d
+- d
+- -
+- m
+- a
+- s
+- k
+- 
+- o
+- r
+- d
+- e
+- r
+- i
+- n
+- g
+- 
+- b
+- u
+- g
+- 
+- a
+- p
+- p
+- e
+- a
+- r
+- s
+- 
+- i
+- n
+- 
+- G
+- i
+- t
+- H
+- u
+- b
+- '
+- s
+- 
+- o
+- w
+- n
+- 
+- f
+- i
+- e
+- l
+- d
+- 
+- r
+- e
+- p
+- o
+- r
+- t
+- s
+- .
+
+<div class="pg-rule__rec" markdown>
+
+**Recommended action**
+
+Don't route secret-shaped values through the Summary tab and don't interpolate PR-controlled text into workflow commands. ``$GITHUB_STEP_SUMMARY`` is rendered to anyone with read access to the workflow run; treat it like a public-readable surface. ``::warning::`` / ``::notice::`` / ``::error::`` are typed log-line directives; interpolate only trusted values into them (or quote the untrusted value through an env var and let the shell escape it). Always ``::add-mask::`` *before* the first time the value could appear in a log line, the order matters.
 
 </div>
 

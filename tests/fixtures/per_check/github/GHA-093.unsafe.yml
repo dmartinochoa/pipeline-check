@@ -1,0 +1,21 @@
+name: gha-093-unsafe-lotp
+on: pull_request_target
+permissions:
+  contents: read
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    env:
+      API_KEY: ${{ secrets.API_KEY }}
+    steps:
+      # Shape 1: secret routed into the Summary tab (PR-readable).
+      # Shape 2: workflow command carrying an attacker-controlled
+      # PR title into a typed log directive downstream tooling parses.
+      # Shape 3: a print of $TOKEN before the ::add-mask:: line that
+      # registers TOKEN; the masker doesn't catch the earlier echo.
+      - run: |
+          echo "::warning::PR title is ${{ github.event.pull_request.title }}"
+          echo "build secret=$API_KEY" >> "$GITHUB_STEP_SUMMARY"
+          TOKEN=$(cat .token)
+          echo "$TOKEN"
+          echo "::add-mask::$TOKEN"
