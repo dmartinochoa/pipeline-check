@@ -12,6 +12,29 @@ release commit collapses this section into `## [X.Y.Z] - <date>`.
 
 ### Added
 
+- **GHA-004 widened: overprovisioned permissions detection
+  (zizmor parity, closes #150).** GHA-004 already flagged
+  "missing permissions block", `write-all`, `contents: write` on
+  PR triggers, and `id-token: write` without an OIDC step. The
+  rule now also flags any other write scope granted on a job
+  where no step justifies it.
+  - Per-scope consumer catalogs for `contents`, `pull-requests`,
+    `packages`, `issues`, `security-events`, `pages`, `checks`,
+    `deployments`, `statuses`, `actions`.
+  - Wildcard consumer: `actions/github-script` matches every
+    scope (it can mutate any scope through octokit).
+  - Special case: `docker/build-push-action` with `push: true`
+    counts as a `packages: write` consumer.
+  - Reusable-workflow callers (`jobs.<id>.uses:`) stay silent;
+    grants forward to the callee.
+  - Unknown scopes (`attestations`, `discussions`, `models`,
+    `repository-projects`) stay silent rather than guess at
+    consumers; documented as a known FP carve-out.
+  - Rule title bumped to "Workflow permissions block missing or
+    overprovisioned" to reflect both shapes.
+  - 22 new per-shape tests under
+    `tests/github/test_gha004_overprovisioned.py`; 7 existing
+    GHA-004 tests still pass unchanged.
 - **Zizmor parity sweep: fourth batch (GHA-072 / GHA-073 plus a
   GHA-053 widening).** Two more offline-only rules plus a small
   expansion of the existing untrusted-context list:
