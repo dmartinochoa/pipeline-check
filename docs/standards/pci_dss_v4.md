@@ -13,7 +13,7 @@ scanner can witness.
 
 - **Controls in this standard:** 13
 - **Controls evidenced by at least one check:** 13 / 13
-- **Distinct checks evidencing this standard:** 578
+- **Distinct checks evidencing this standard:** 581
 - **Of those, autofixable with `--fix`:** 111
 
 _Severity levels (`CRITICAL` / `HIGH` / `MEDIUM` / `LOW` / `INFO`) follow the same scale across every provider and standard. See [How to read severity](README.md#how-to-read-severity) on the standards overview for the definitions._
@@ -25,17 +25,17 @@ Click a control ID to jump to the per-control section with the full check list. 
 | Control | Title | Checks | Severity mix |
 |---------|-------|-------:|--------------|
 | [`6.3.1`](#ctrl-6-3-1) | Security vulnerabilities are identified and managed | 31 | 12C · 1H · 14M · 4L |
-| [`6.3.3`](#ctrl-6-3-3) | All system components protected from known vulnerabilities by installing applicable patches | 123 | 7C · 56H · 55M · 5L |
+| [`6.3.3`](#ctrl-6-3-3) | All system components protected from known vulnerabilities by installing applicable patches | 124 | 7C · 56H · 56M · 5L |
 | [`6.4.1`](#ctrl-6-4-1) | Public-facing web apps are protected against attacks (secure build/config) | 115 | 20C · 51H · 36M · 8L |
 | [`6.4.3`](#ctrl-6-4-3) | Changes to systems are managed via documented change control | 60 | 2C · 21H · 31M · 6L |
 | [`6.5.1`](#ctrl-6-5-1) | Changes to system components follow secure development procedures | 276 | 42C · 120H · 94M · 20L |
 | [`7.2.1`](#ctrl-7-2-1) | Access control is defined per job role with least privilege | 19 | 3C · 12H · 3M · 1L |
 | [`7.2.2`](#ctrl-7-2-2) | Access is assigned based on job classification and function | 6 | 2H · 4M |
 | [`7.2.5`](#ctrl-7-2-5) | System and application accounts have least-privilege access | 48 | 7C · 23H · 18M |
-| [`8.2.1`](#ctrl-8-2-1) | Strong unique identifiers are assigned to each user and service account | 76 | 25C · 34H · 15M · 2L |
+| [`8.2.1`](#ctrl-8-2-1) | Strong unique identifiers are assigned to each user and service account | 78 | 25C · 36H · 15M · 2L |
 | [`8.2.2`](#ctrl-8-2-2) | Group, shared, or generic accounts are managed and justified | 9 | 1C · 4H · 4M |
 | [`10.2.1`](#ctrl-10-2-1) | Audit logs are enabled and active for all system components | 31 | 2H · 6M · 7L · 16I |
-| [`10.3.2`](#ctrl-10-3-2) | Audit logs are protected from unauthorized modifications | 48 | 4C · 10H · 33M · 1L |
+| [`10.3.2`](#ctrl-10-3-2) | Audit logs are protected from unauthorized modifications | 50 | 4C · 12H · 33M · 1L |
 | [`10.3.3`](#ctrl-10-3-3) | Audit logs are promptly backed up to a centralized log server | 4 | 1H · 1M · 2L |
 
 ## Filter at runtime
@@ -95,7 +95,7 @@ pipeline_check --pipeline aws --standard pci_dss_v4 --standard owasp_cicd_top_10
 
 ### 6.3.3: All system components protected from known vulnerabilities by installing applicable patches { #ctrl-6-3-3 }
 
-**Evidenced by 123 checks** across 20 providers (AWS, Argo Workflows, Azure DevOps, Bitbucket, Buildkite, CircleCI, Cloud Build, Dockerfile, Drone CI, GitHub Actions, GitLab CI, Helm, Jenkins, Kubernetes, OCI manifest, PyPI, SCM, Tekton, maven, npm).
+**Evidenced by 124 checks** across 20 providers (AWS, Argo Workflows, Azure DevOps, Bitbucket, Buildkite, CircleCI, Cloud Build, Dockerfile, Drone CI, GitHub Actions, GitLab CI, Helm, Jenkins, Kubernetes, OCI manifest, PyPI, SCM, Tekton, maven, npm).
 
 | Check | Title | Severity | Provider | Fix |
 |-------|-------|----------|----------|-----|
@@ -168,6 +168,7 @@ pipeline_check --pipeline aws --standard pci_dss_v4 --standard owasp_cicd_top_10
 | [`GHA-051`](#detail-gha-051) | services / container image is not pinned by digest | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [GitHub Actions](../providers/github.md) |  |
 | [`GHA-059`](#detail-gha-059) | npm install without registry-signature verification step | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [GitHub Actions](../providers/github.md) |  |
 | [`GHA-060`](#detail-gha-060) | pip install without `--require-hashes` verification | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [GitHub Actions](../providers/github.md) |  |
+| [`GHA-068`](#detail-gha-068) | ``runs-on:`` targets an end-of-life hosted-runner image | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [GitHub Actions](../providers/github.md) |  |
 | [`GL-001`](#detail-gl-001) | Image not pinned to specific version or digest | <span class="pg-sev pg-sev--high">HIGH</span> | [GitLab CI](../providers/gitlab.md) | <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> |
 | [`GL-005`](#detail-gl-005) | include: pulls remote / project without pinned ref | <span class="pg-sev pg-sev--high">HIGH</span> | [GitLab CI](../providers/gitlab.md) |  |
 | [`GL-009`](#detail-gl-009) | Image pinned to version tag rather than sha256 digest | <span class="pg-sev pg-sev--low">LOW</span> | [GitLab CI](../providers/gitlab.md) |  |
@@ -791,7 +792,7 @@ pipeline_check --pipeline aws --standard pci_dss_v4 --standard owasp_cicd_top_10
 
 ### 8.2.1: Strong unique identifiers are assigned to each user and service account { #ctrl-8-2-1 }
 
-**Evidenced by 76 checks** across 18 providers (AWS, Argo Workflows, Azure DevOps, Bitbucket, Buildkite, CircleCI, Cloud Build, CloudFormation, Dockerfile, Drone CI, GitHub Actions, GitLab CI, Jenkins, Kubernetes, SCM, Tekton, Terraform, npm).
+**Evidenced by 78 checks** across 18 providers (AWS, Argo Workflows, Azure DevOps, Bitbucket, Buildkite, CircleCI, Cloud Build, CloudFormation, Dockerfile, Drone CI, GitHub Actions, GitLab CI, Jenkins, Kubernetes, SCM, Tekton, Terraform, npm).
 
 | Check | Title | Severity | Provider | Fix |
 |-------|-------|----------|----------|-----|
@@ -841,6 +842,8 @@ pipeline_check --pipeline aws --standard pci_dss_v4 --standard owasp_cicd_top_10
 | [`GHA-057`](#detail-gha-057) | Secret-scanner output sent to network egress | <span class="pg-sev pg-sev--critical">CRITICAL</span> | [GitHub Actions](../providers/github.md) |  |
 | [`GHA-061`](#detail-gha-061) | GitHub App token minted without a `permissions:` filter | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [GitHub Actions](../providers/github.md) |  |
 | [`GHA-063`](#detail-gha-063) | ``if:`` predicate gates on a spoofable bot-actor comparison | <span class="pg-sev pg-sev--high">HIGH</span> | [GitHub Actions](../providers/github.md) |  |
+| [`GHA-066`](#detail-gha-066) | ``actions/upload-artifact`` path is a workspace wildcard | <span class="pg-sev pg-sev--high">HIGH</span> | [GitHub Actions](../providers/github.md) |  |
+| [`GHA-067`](#detail-gha-067) | ``actions/cache`` writes credential-shaped paths | <span class="pg-sev pg-sev--high">HIGH</span> | [GitHub Actions](../providers/github.md) |  |
 | [`GHA-087`](#detail-gha-087) | Derived value of a secret printed to the build log | <span class="pg-sev pg-sev--high">HIGH</span> | [GitHub Actions](../providers/github.md) |  |
 | [`GL-003`](#detail-gl-003) | Variables contain literal secret values | <span class="pg-sev pg-sev--critical">CRITICAL</span> | [GitLab CI](../providers/gitlab.md) |  |
 | [`GL-008`](#detail-gl-008) | Credential-shaped literal in pipeline body | <span class="pg-sev pg-sev--critical">CRITICAL</span> | [GitLab CI](../providers/gitlab.md) | <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> |
@@ -928,7 +931,7 @@ pipeline_check --pipeline aws --standard pci_dss_v4 --standard owasp_cicd_top_10
 
 ### 10.3.2: Audit logs are protected from unauthorized modifications { #ctrl-10-3-2 }
 
-**Evidenced by 48 checks** across 15 providers (AWS, Argo Workflows, Azure DevOps, Bitbucket, Buildkite, CircleCI, Cloud Build, Dockerfile, GitHub Actions, GitLab CI, Helm, Jenkins, OCI manifest, SCM, Tekton).
+**Evidenced by 50 checks** across 15 providers (AWS, Argo Workflows, Azure DevOps, Bitbucket, Buildkite, CircleCI, Cloud Build, Dockerfile, GitHub Actions, GitLab CI, Helm, Jenkins, OCI manifest, SCM, Tekton).
 
 | Check | Title | Severity | Provider | Fix |
 |-------|-------|----------|----------|-----|
@@ -962,6 +965,8 @@ pipeline_check --pipeline aws --standard pci_dss_v4 --standard owasp_cicd_top_10
 | [`GHA-033`](#detail-gha-033) | Secret value echoed / printed in a run: block | <span class="pg-sev pg-sev--critical">CRITICAL</span> | [GitHub Actions](../providers/github.md) |  |
 | [`GHA-048`](#detail-gha-048) | Workflow step writes a file under .github/workflows/ | <span class="pg-sev pg-sev--critical">CRITICAL</span> | [GitHub Actions](../providers/github.md) |  |
 | [`GHA-057`](#detail-gha-057) | Secret-scanner output sent to network egress | <span class="pg-sev pg-sev--critical">CRITICAL</span> | [GitHub Actions](../providers/github.md) |  |
+| [`GHA-066`](#detail-gha-066) | ``actions/upload-artifact`` path is a workspace wildcard | <span class="pg-sev pg-sev--high">HIGH</span> | [GitHub Actions](../providers/github.md) |  |
+| [`GHA-067`](#detail-gha-067) | ``actions/cache`` writes credential-shaped paths | <span class="pg-sev pg-sev--high">HIGH</span> | [GitHub Actions](../providers/github.md) |  |
 | [`GHA-087`](#detail-gha-087) | Derived value of a secret printed to the build log | <span class="pg-sev pg-sev--high">HIGH</span> | [GitHub Actions](../providers/github.md) |  |
 | [`GL-006`](#detail-gl-006) | Artifacts not signed | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [GitLab CI](../providers/gitlab.md) |  |
 | [`GL-024`](#detail-gl-024) | No SLSA provenance attestation produced | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [GitLab CI](../providers/gitlab.md) |  |
@@ -10561,6 +10566,179 @@ jobs:
 ```
 
 **Source:** [`GHA-065`](../providers/github.md#gha-065) in the [GitHub Actions provider](../providers/github.md).
+
+### `GHA-066`: ``actions/upload-artifact`` path is a workspace wildcard <span class="pg-sev pg-sev--high">HIGH</span> { #detail-gha-066 }
+
+**Evidences:** [`8.2.1`](#ctrl-8-2-1) Strong unique identifiers are assigned to each user and service account, [`10.3.2`](#ctrl-10-3-2) Audit logs are protected from unauthorized modifications.
+
+**How this is detected.** Fires when a step's ``uses:`` matches ``actions/upload-artifact`` (any major version) AND its ``with.path:`` value is one of:
+
+* ``**/*`` (recursive everything),
+* ``.`` (current directory),
+* ``/`` or ``./`` (root),
+* ``${{ github.workspace }}`` (the entire workspace),
+* ``${{ github.workspace }}/**`` and similar suffixes.
+
+Multi-line ``path:`` values (a YAML scalar block listing multiple paths) are scanned line by line; one wildcard line is enough to fire. The rule pairs with GHA-019 (the credential-persistence side: an unconstrained upload after an unconstrained checkout is the full ArtiPACKED chain).
+
+**Recommendation.** Replace the wildcard with a minimal allowlist of artifact paths. ``path: build/`` (or ``path: |\n  dist/\n  coverage.xml``) keeps the artifact bounded to the build output the downstream consumer actually needs. If you need a debug dump of the workspace, scope it to a temporary directory the workflow assembles, then upload that. Always explicitly exclude ``.git/`` and any ``node_modules`` / ``vendor`` trees from a wildcard upload.
+
+**Known false positives.**
+
+- A workflow that genuinely wants to archive the whole build output as a release artifact in a job whose GITHUB_TOKEN was already minimized (``persist-credentials: false`` on the checkout step, no ``id-token: write``) and where ``.git/`` isn't checked out (or was removed). Suppress per-step via ignore-file when the operator has audited that the archive doesn't carry credential-shaped files. Note that an ``id-token: write``-scoped workflow is never safe to wildcard-upload from.
+
+**Seen in the wild.**
+
+- ArtiPACKED (Palo Alto Unit 42, 2024): https://unit42.paloaltonetworks.com/github-repo-artifacts-leak-tokens/
+- zizmor proposal #195 (artifact-poisoning audit): https://github.com/zizmorcore/zizmor/issues/195
+
+**Proof of exploit.**
+
+```
+# Vulnerable: ``path: '.'`` includes ``.git/config`` which
+# the checkout step seeded with a ``http.<host>.extraheader``
+# carrying the workflow's GITHUB_TOKEN. The uploaded
+# artifact is readable for the run's lifetime by any user
+# with the PR open, including fork-PR contributors.
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@<sha>
+      - run: ./build.sh
+      - uses: actions/upload-artifact@<sha>
+        with:
+          name: debug-bundle
+          path: .
+
+# Safe: scope to a freshly-staged dir.
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@<sha>
+        with: { persist-credentials: false }
+      - run: |
+          ./build.sh
+          mkdir _staged
+          cp -r dist/ coverage.xml _staged/
+      - uses: actions/upload-artifact@<sha>
+        with:
+          name: build-output
+          path: _staged/
+```
+
+**Source:** [`GHA-066`](../providers/github.md#gha-066) in the [GitHub Actions provider](../providers/github.md).
+
+### `GHA-067`: ``actions/cache`` writes credential-shaped paths <span class="pg-sev pg-sev--high">HIGH</span> { #detail-gha-067 }
+
+**Evidences:** [`8.2.1`](#ctrl-8-2-1) Strong unique identifiers are assigned to each user and service account, [`10.3.2`](#ctrl-10-3-2) Audit logs are protected from unauthorized modifications.
+
+**How this is detected.** Fires when an ``actions/cache`` step's ``path:`` value (single line, multi-line YAML scalar block, or YAML list) contains any of the following:
+
+* The full home directory (``~``, ``~/``, ``$HOME``, ``${HOME}``).
+* A credential-shaped dotfile or dotdir under the home directory: ``~/.npmrc``, ``~/.docker``, ``~/.aws``, ``~/.azure``, ``~/.gcloud``, ``~/.kube``, ``~/.ssh``, ``~/.gnupg``, ``~/.netrc``.
+* A build-tool config that carries credentials: ``~/.gradle/gradle.properties``, ``~/.m2/settings.xml``.
+
+Pairs with GHA-052 (cache key derives from PR input) and GHA-011 (cache key untrusted). The triple (``cache-sensitive-files`` + ``cache-untrusted-key`` + ``cache-poisoning-restore``) is the full cache-as-leak chain. Each rule fires independently so a workflow that carries any one leg gets the corresponding finding.
+
+**Recommendation.** Cache only the build artifacts that are actually cacheable. Don't cache ``~`` (the whole home dir), don't cache credential-shaped dotfiles (``~/.npmrc``, ``~/.docker``, ``~/.aws``, ``~/.ssh``, ``~/.gnupg``, ``~/.netrc``, ``~/.gradle/gradle.properties``, ``~/.m2/settings.xml``). Scope ``path:`` to the package-cache subdirectory only (``~/.cache/pip``, ``~/.npm``, ``~/.cargo/registry``) and let credentials live in the workflow's secrets context, never on disk in a path the cache restorer touches.
+
+**Known false positives.**
+
+- Self-hosted runners with carefully-scoped HOME directories where the credential-shaped paths are intentionally empty (initialized fresh per job). Suppress per-step via ignore-file when the runner provisioning model is documented. GitHub-hosted runners reset between jobs but the cache content persists across jobs / runs.
+
+**Seen in the wild.**
+
+- zizmor proposal #723 (cache-sensitive-files audit): https://github.com/zizmorcore/zizmor/issues/723
+
+**Proof of exploit.**
+
+```
+# Vulnerable: caches the whole home dir, which contains
+# the ``.npmrc`` the prior step seeded with the
+# publish token. Any contributor whose PR run hits the
+# same cache key restores the file.
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@<sha>
+      - run: |
+          echo "//registry.npmjs.org/:_authToken=${{ secrets.NPM_TOKEN }}" > ~/.npmrc
+          npm install
+      - uses: actions/cache@<sha>
+        with:
+          path: ~
+          key: home-${{ hashFiles('package-lock.json') }}
+
+# Safe: cache only the package metadata that's actually
+# reproducible from the lockfile, leave credentials out of
+# the cache namespace entirely.
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@<sha>
+      - run: |
+          npm config set //registry.npmjs.org/:_authToken "${{ secrets.NPM_TOKEN }}"
+          npm install
+      - uses: actions/cache@<sha>
+        with:
+          path: ~/.npm
+          key: npm-${{ hashFiles('package-lock.json') }}
+```
+
+**Source:** [`GHA-067`](../providers/github.md#gha-067) in the [GitHub Actions provider](../providers/github.md).
+
+### `GHA-068`: ``runs-on:`` targets an end-of-life hosted-runner image <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-gha-068 }
+
+**Evidences:** [`6.3.3`](#ctrl-6-3-3) All system components protected from known vulnerabilities by installing applicable patches.
+
+**How this is detected.** Fires when a job's ``runs-on:`` (or any matrix-expanded value of it) names a retired or imminently-retired hosted runner image:
+
+* **Ubuntu retired:** ``ubuntu-18.04``, ``ubuntu-20.04``.
+* **macOS retired:** ``macos-10.15``, ``macos-11``, ``macos-12``.
+* **Windows retired:** ``windows-2016``, ``windows-2019``.
+
+Self-hosted labels (any value that doesn't match a hosted image label) are not flagged here, GHA-012 covers the self-hosted-runner risk separately. List-shaped ``runs-on:`` values (``[self-hosted, linux, x64]``) are treated as self-hosted and skipped.
+
+**Recommendation.** Bump to a supported image label. ``ubuntu-latest`` /``ubuntu-24.04``, ``macos-latest`` / ``macos-14``, ``windows-latest`` / ``windows-2022``. Pin to a specific major when reproducibility matters (``ubuntu-24.04``); use ``-latest`` only when the workflow tolerates drift. GitHub publishes the retirement schedule at https://github.com/actions/runner-images?tab=readme-ov-file#available-images, audit the matrix periodically as new images deprecate.
+
+**Known false positives.**
+
+- A repository that intentionally pins to an older image for archive-build reproducibility (rare, but valid). Suppress per-job via ignore-file when the operator has documented the trade-off. Note that GitHub may stop serving the image entirely at some point; the suppression should be re-audited annually.
+
+**Seen in the wild.**
+
+- GitHub Actions runner-images retirement schedule: https://github.com/actions/runner-images
+- zizmor proposal #260 / #827 (deprecated runner audit): https://github.com/zizmorcore/zizmor/issues/260
+
+**Proof of exploit.**
+
+```
+# Vulnerable: ``ubuntu-18.04`` was retired 2023-04-01.
+# GitHub rerouted those jobs to a newer image and the
+# action.yml's PATH and pre-installed toolchain shifted
+# silently. Any workflow that depended on the retired
+# image's exact behavior now diverges.
+jobs:
+  build:
+    runs-on: ubuntu-18.04
+    steps:
+      - uses: actions/checkout@<sha>
+      - run: ./build.sh
+
+# Safe: pin to a supported image.
+jobs:
+  build:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@<sha>
+      - run: ./build.sh
+```
+
+**Source:** [`GHA-068`](../providers/github.md#gha-068) in the [GitHub Actions provider](../providers/github.md).
 
 ### `GHA-086`: Wildcard branch trigger gates an environment-bound deploy <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-gha-086 }
 

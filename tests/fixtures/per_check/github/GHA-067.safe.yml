@@ -1,0 +1,14 @@
+name: cache-metadata-only
+on: push
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332
+      - run: |
+          npm config set //registry.npmjs.org/:_authToken "${{ secrets.NPM_TOKEN }}"
+          npm install
+      - uses: actions/cache@692973e3d937129bcbf40652eb9f2f61becf3332
+        with:
+          path: ~/.npm
+          key: npm-${{ hashFiles('package-lock.json') }}

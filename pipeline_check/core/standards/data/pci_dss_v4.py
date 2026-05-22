@@ -382,6 +382,9 @@ STANDARD = Standard(
         "GHA-063":  ["7.2.5", "8.2.1"],                  # spoofable bot-actor if-predicate
         "GHA-064":  ["6.4.3"],                           # unsound contains() with comma-string operand
         "GHA-065":  ["6.4.3"],                           # zero-width / bidi unicode in workflow body
+        "GHA-066":  ["8.2.1", "10.3.2"],                 # upload-artifact wildcard sweeps workspace
+        "GHA-067":  ["8.2.1", "10.3.2"],                 # cache step publishes credential-shaped paths
+        "GHA-068":  ["6.3.3"],                           # runs-on targets a deprecated hosted runner
         "GHA-086":  ["6.4.3"],                           # wildcard branch trigger + environment binding
         "GHA-087":  ["8.2.1", "10.3.2"],                 # derived-value of secret printed to log
         # ── GitLab CI ─────────────────────────────────────────────

@@ -269,9 +269,9 @@ exploit-evidenced posture the rule pack stands on. ``forbidden-uses``
 existing custom-rule loader and doesn't need a new built-in rule.
 
 **ID-numbering note (2026-05-22).** The IDs in this section are
-placeholders, not reservations. The first sweep batch landed
-under sequential numbers (``GHA-063`` / ``GHA-064`` / ``GHA-065``)
-without matching the original placeholders in this section:
+placeholders, not reservations. The first two sweep batches landed
+under sequential numbers (``GHA-063`` through ``GHA-068``) without
+matching the original placeholders in this section:
 
 * ``GHA-063`` landed as **bot-conditions** (originally placeholder
   for ref-version-mismatch).
@@ -279,6 +279,12 @@ without matching the original placeholders in this section:
   for impostor-commit).
 * ``GHA-065`` landed as **zero-width / bidi unicode** (originally
   placeholder for typosquat-uses).
+* ``GHA-066`` landed as **upload-artifact wildcard** (originally
+  placeholder for archived-uses).
+* ``GHA-067`` landed as **cache-sensitive-files** (originally
+  placeholder for bot-conditions, now ``GHA-063``).
+* ``GHA-068`` landed as **deprecated-runner** (originally placeholder
+  for overprovisioned-permissions).
 
 The struck-through items below are now shipped at the IDs listed
 inline. Remaining items keep their original placeholder IDs and
@@ -357,21 +363,19 @@ Suggested landing order, highest signal first:
   an agentic CLI runs in a job that previously checked out a PR head
   with write-scope token in scope. HIGH severity. Pairs with GHA-046
   (manual PR-head fetch) and GHA-045 (caller-controlled ref).
-- **GHA-073: actions/upload-artifact wildcard path uploads.** Mirrors
-  zizmor proposal #195 (``artifact-poisoning``) and #1208
-  (``if-no-files-found``). An ``upload-artifact`` with ``path: **/*``
-  or ``path: .`` will sweep the entire workspace including
-  ``.git/config`` (token-bearing after checkout), ``node_modules``
-  install-scripts output, and any other PR-staged tree. HIGH
-  severity. Pairs with GHA-019 (token persistence into artifact).
-- **GHA-074: workflow caches credential-shaped files.** Mirrors
-  zizmor proposal #723 (caching sensitive files). An
-  ``actions/cache`` step with ``path:`` covering ``~``,
-  ``~/.docker``, ``~/.npmrc``, ``~/.aws``, ``~/.ssh``, ``~/.gnupg``,
-  ``~/.gradle/gradle.properties``, etc. publishes those credentials
-  into the (PR-readable) cache namespace. HIGH severity. Pairs with
-  GHA-052 (untrusted cache key) and GHA-011 (cache key derives from
-  PR input).
+- ~~**GHA-073: actions/upload-artifact wildcard path uploads.**~~
+  Landed as **GHA-066**. Fires on the ``**/*`` / ``.`` / ``./`` /
+  ``${{ github.workspace }}`` / ``${{ github.workspace }}/**``
+  ``path:`` shapes across string / list / multi-line block scalar
+  forms. HIGH severity. 10 per-rule tests + safe/unsafe fixture
+  pair.
+- ~~**GHA-074: workflow caches credential-shaped files.**~~ Landed
+  as **GHA-067**. Fires on ``actions/cache`` whose ``path:``
+  covers ``~`` (all spellings), ``~/.docker``, ``~/.npmrc``,
+  ``~/.aws``, ``~/.azure``, ``~/.gcloud``, ``~/.kube``, ``~/.ssh``,
+  ``~/.gnupg``, ``~/.netrc``, ``~/.gradle/gradle.properties``,
+  ``~/.m2/settings.xml``. HIGH severity. 12 per-rule tests +
+  safe/unsafe fixture pair.
 - **GHA-075: shell defaulted to powershell on a Linux / macOS step.**
   Mirrors zizmor proposal #288. A ``run:`` step on
   ``runs-on: ubuntu-latest`` without a ``shell:`` defaults to
@@ -379,11 +383,13 @@ Suggested landing order, highest signal first:
   ``shell: powershell`` on a non-Windows runner silently flips
   language and tokenization rules, an injection that's a no-op in
   bash can be live in pwsh. LOW severity, advisory.
-- **GHA-076: runs-on uses a deprecated runner image.** Mirrors
-  zizmor proposal #260 / #827. ``ubuntu-18.04``, ``ubuntu-20.04``,
-  ``macos-11``, ``windows-2019``, etc. are end-of-life or imminently
-  so. MEDIUM severity. Pairs with GHA-051 (services image not
-  digest-pinned).
+- ~~**GHA-076: runs-on uses a deprecated runner image.**~~ Landed
+  as **GHA-068**. Fires on ``ubuntu-18.04``, ``ubuntu-20.04``,
+  ``macos-10.15``, ``macos-11``, ``macos-12``, ``windows-2016``,
+  ``windows-2019`` across string / list / ``labels:`` shapes for
+  ``runs-on:``. Self-hosted labels stay silent (GHA-012's
+  territory). MEDIUM severity. 10 per-rule tests + safe/unsafe
+  fixture pair.
 - **GHA-077: known-vulnerable action ref via live GHSA feed.** Widens
   GHA-040 from the curated compromised-SHA list to a live GHSA query
   against the GitHub Advisory database (``GET /advisories?type=

@@ -495,6 +495,9 @@ STANDARD = Standard(
         "GHA-063":  ["PR.AA-01"],               # spoofable bot-actor if-predicate
         "GHA-064":  ["PR.PS-06"],               # unsound contains() with comma-string operand
         "GHA-065":  ["PR.PS-05"],               # zero-width / bidi unicode in workflow body
+        "GHA-066":  ["PR.DS-01"],               # upload-artifact wildcard sweeps workspace
+        "GHA-067":  ["PR.DS-01"],               # cache step publishes credential-shaped paths
+        "GHA-068":  ["PR.PS-02"],               # runs-on targets a deprecated hosted runner
         "GHA-086":  ["PR.PS-06"],               # wildcard branch trigger + environment binding
         "GHA-087":  ["PR.AA-01", "PR.DS-01"],   # derived-value of secret printed to log
         # ── GitLab CI ─────────────────────────────────────────────

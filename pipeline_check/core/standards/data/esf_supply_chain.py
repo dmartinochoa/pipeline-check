@@ -524,6 +524,9 @@ STANDARD = Standard(
         "GHA-063":  ["ESF-D-INJECTION"],             # spoofable bot-actor if-predicate
         "GHA-064":  ["ESF-D-INJECTION"],             # unsound contains() with comma-string operand
         "GHA-065":  ["ESF-D-INJECTION"],             # zero-width / bidi unicode in workflow body
+        "GHA-066":  ["ESF-D-SECRETS"],               # upload-artifact wildcard sweeps workspace
+        "GHA-067":  ["ESF-D-SECRETS"],               # cache step publishes credential-shaped paths
+        "GHA-068":  ["ESF-D-BUILD-ENV"],             # runs-on targets a deprecated hosted runner
         "GHA-086":  ["ESF-C-APPROVAL", "ESF-C-ENV-SEP"],  # wildcard branch trigger gates env-bound deploy
         "GHA-087":  ["ESF-D-SECRETS"],               # derived-value of secret printed to log
         # ── GitLab CI extras ─────────────────────────────────────

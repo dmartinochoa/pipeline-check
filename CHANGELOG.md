@@ -12,6 +12,41 @@ release commit collapses this section into `## [X.Y.Z] - <date>`.
 
 ### Added
 
+- **Zizmor parity sweep: second batch (GHA-066 / GHA-067 / GHA-068).**
+  Three more offline-only rules:
+    * **GHA-066: ``actions/upload-artifact`` path is a workspace
+      wildcard.** HIGH severity. Fires when an upload-artifact
+      step's ``with.path:`` is ``**/*`` / ``.`` / ``./`` / ``/`` /
+      ``${{ github.workspace }}`` / ``${{ github.workspace }}/**``
+      (single value, list, or multi-line YAML scalar block).
+      ArtiPACKED-class credential leakage: the archive sweeps
+      ``.git/config`` (token-bearing after checkout) and any
+      ``node_modules`` / ``vendor`` content. Mirrors zizmor
+      proposal #195.
+    * **GHA-067: ``actions/cache`` writes credential-shaped
+      paths.** HIGH severity. Fires when an ``actions/cache``
+      step's ``path:`` covers ``~`` (any spelling: quoted, ``~/``,
+      ``$HOME``, ``${HOME}``), ``~/.docker``, ``~/.aws``,
+      ``~/.azure``, ``~/.gcloud``, ``~/.kube``, ``~/.ssh``,
+      ``~/.gnupg``, ``~/.npmrc``, ``~/.netrc``,
+      ``~/.gradle/gradle.properties``, or ``~/.m2/settings.xml``.
+      The cache namespace is shared across PR builds; any
+      contributor's run can request a cache hit on the same key
+      and restore the cached credential. Mirrors zizmor proposal
+      #723.
+    * **GHA-068: ``runs-on:`` targets an end-of-life hosted-runner
+      image.** MEDIUM severity. Fires on retired or imminently-
+      retired images: ``ubuntu-18.04`` (retired 2023-04-01),
+      ``ubuntu-20.04`` (retiring 2025-04-15), ``macos-10.15`` /
+      ``macos-11`` / ``macos-12``, ``windows-2016`` /
+      ``windows-2019``. Handles string, list, and ``group:`` /
+      ``labels:`` dict shapes for ``runs-on:``. Self-hosted-style
+      label lists are skipped (GHA-012's territory). Mirrors
+      zizmor proposal #260 / #827.
+  32 per-rule tests + standard safe/unsafe fixture pairs.
+  Standards mappings landed for OWASP / ESF / CIS / NIST 800-53 /
+  NIST CSF / NIST SSDF / SOC2 / PCI-DSS v4. Github provider check
+  count 70 -> 73.
 - **Zizmor parity sweep: first batch (GHA-063 / GHA-064 / GHA-065).**
   Three offline-only rules drawn from zizmor's audit pack:
     * **GHA-063: ``if:`` predicate gates on a spoofable bot-actor

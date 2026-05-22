@@ -1,0 +1,17 @@
+name: scoped-upload
+on: push
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332
+        with:
+          persist-credentials: false
+      - run: |
+          ./build.sh
+          mkdir _staged
+          cp -r dist/ coverage.xml _staged/
+      - uses: actions/upload-artifact@692973e3d937129bcbf40652eb9f2f61becf3332
+        with:
+          name: build-output
+          path: _staged/
