@@ -10411,7 +10411,9 @@ jobs:
 
 **Evidences:** [`CICD-SEC-4`](#ctrl-cicd-sec-4) Poisoned Pipeline Execution, [`CICD-SEC-7`](#ctrl-cicd-sec-7) Insecure System Configuration.
 
-**How this is detected.** Fires on a ``run:`` body invoking any of the following CLIs with the matching permission-bypass flag:
+**How this is detected.** Two detections feed the rule. Either is enough for the finding to fire.
+
+**A. Bypass-flag shape.** A ``run:`` body invokes one of the following CLIs with the matching permission-bypass flag:
 
 * ``claude … --dangerously-skip-permissions``
 * ``gemini … --yolo``
@@ -10421,6 +10423,8 @@ jobs:
 * ``aider`` / ``openhands`` / ``goose`` with equivalent ``--auto`` / ``--no-confirm`` / ``--full-auto`` flags.
 
 Does NOT fire on a clearly-scoped invocation, e.g. ``claude --allowedTools 'Read,Grep'`` with a literal allow-list, or ``q chat --trust-tools 'fs_read'``.
+
+**B. PR-checkout topology** (zizmor proposal #1605 / #1607). Step-order traversal within a job. Fires when an agentic CLI (any of the names above) runs in a step *after* a step that checked out a PR head (``actions/checkout`` with ``ref:`` interpolating ``github.event.pull_request.head.*``, ``github.head_ref``, or a ``refs/pull/*/head`` literal) AND a write-scope token is in scope for the job (job-level ``permissions: write-all``, any token granted ``write``, ``id-token: write``, or no ``permissions:`` block declared anywhere, since the runtime default carries ``contents: write`` on most triggers). Pairs with GHA-045 (caller-controlled ref) and GHA-046 (manual PR-head fetch), the agentic-CLI primitive turns a contributor-controlled tree into a token-exfil tool, no bypass flag needed.
 
 **Recommendation.** Don't run an agentic CLI (claude / gemini / q / cursor-agent / aider / openhands / goose) with its safety flags disabled inside CI. The flags ``--dangerously-skip-permissions``, ``--yolo``, ``--trust-all-tools``, ``--allowedTools "*"`` let the agent shell out, read arbitrary files, and post to arbitrary HTTP endpoints with no per-action prompt — under the runner's identity. In CI that means it can read every ``${{ secrets.* }}`` value the workflow has access to and POST them anywhere. Either drop the bypass flag (and accept the manual confirmation prompts CI can't satisfy, so don't run it in CI at all), or gate the step behind a protected ``environment:`` and pre-vet the prompt that's being fed to the agent.
 

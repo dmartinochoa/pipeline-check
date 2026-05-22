@@ -10,6 +10,26 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 PRs landing on `dev` between releases append entries below. The
 release commit collapses this section into `## [X.Y.Z] - <date>`.
 
+### Changed
+
+- **GHA-058 widened with PR-checkout topology (closes #152).**
+  Adds a second detection shape inspired by zizmor proposals
+  #1605 (``agentic-actions``) and #1607 (hijackable commands after
+  checkout). Fires when an agentic CLI (claude / gemini / q /
+  cursor-agent / aider / openhands / goose) runs in a step *after*
+  a step that checked out a PR head (``actions/checkout`` with
+  ``ref:`` resolving to ``github.event.pull_request.head.*``,
+  ``github.head_ref``, or a ``refs/pull/*/head`` literal) AND a
+  write-scope token is in scope for the job (job-level
+  ``permissions: write-all``, any token granted ``write``,
+  ``id-token: write``, or no permissions block declared, since the
+  runtime default carries ``contents: write``). The flag itself is
+  not required, the topology IS the bug: an agent reading PR-
+  controlled prompt text from the checked-out tree gets the
+  runner's token as a side effect. Pairs with GHA-045 (caller-
+  controlled ref) and GHA-046 (manual PR-head fetch). 9 new tests
+  under ``TestGHA058PRCheckoutTopology``.
+
 ### Added
 
 - **GHA-090 impostor-commit (closes #147).** New rule that fires
