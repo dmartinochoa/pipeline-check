@@ -129,6 +129,57 @@ class TestFlagWiring:
             runner.invoke(scan, ["--output", "json"])
         MockScanner.return_value.run.assert_called_once_with(checks=None, target=None, standards=None)
 
+    def test_only_known_attacked_forwards_filtered_checks(self, runner):
+        # ``--only-known-attacked`` builds the list of rules whose
+        # ``Rule.incident_refs`` is non-empty and passes it as the
+        # ``checks=`` filter to the scanner. The exact size depends on
+        # the live rule pack, so assert non-empty + all entries map to
+        # rules whose incident_refs is populated.
+        from pipeline_check.cli import _known_attacked_check_ids
+        expected_ids = set(_known_attacked_check_ids())
+        assert expected_ids, "rule pack should have known-attacked rules"
+
+        with patch("pipeline_check.cli.Scanner") as MockScanner:
+            MockScanner.return_value.run.return_value = []
+            runner.invoke(scan, ["--only-known-attacked", "--output", "json"])
+        kwargs = MockScanner.return_value.run.call_args.kwargs
+        assert kwargs["target"] is None
+        assert kwargs["standards"] is None
+        assert kwargs["checks"] is not None
+        assert set(kwargs["checks"]) == expected_ids
+
+    def test_only_known_attacked_with_checks_intersects(self, runner):
+        # When both flags are set, the rules that run are the
+        # intersection. ``--checks GHA-001 --checks NONEXISTENT-999
+        # --only-known-attacked`` runs only GHA-001 (in the
+        # known-attacked set) because NONEXISTENT-999 isn't.
+        with patch("pipeline_check.cli.Scanner") as MockScanner:
+            MockScanner.return_value.run.return_value = []
+            runner.invoke(scan, [
+                "--only-known-attacked",
+                "--checks", "GHA-001",
+                "--checks", "NONEXISTENT-999",
+                "--output", "json",
+            ])
+        kwargs = MockScanner.return_value.run.call_args.kwargs
+        assert kwargs["checks"] == ["GHA-001"]
+
+    def test_only_known_attacked_empty_intersection_warns(self, runner):
+        # ``--only-known-attacked --checks NONEXISTENT-999`` reduces
+        # the active set to empty. The scanner still runs (with an
+        # empty list) but a stderr warning surfaces the situation.
+        with patch("pipeline_check.cli.Scanner") as MockScanner:
+            MockScanner.return_value.run.return_value = []
+            result = runner.invoke(scan, [
+                "--only-known-attacked",
+                "--checks", "NONEXISTENT-999",
+                "--output", "json",
+            ])
+        assert (
+            "--only-known-attacked filtered the rule set to zero checks"
+            in result.output
+        )
+
     def test_html_output_writes_file(self, runner, tmp_path):
         out = tmp_path / "report.html"
         with patch("pipeline_check.cli.Scanner") as MockScanner:

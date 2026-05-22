@@ -655,6 +655,43 @@ def _detect_all_pipelines_from_cwd() -> list[str]:
 
 
 _CHECK_IDS_CACHE: list[str] | None = None
+_KNOWN_ATTACKED_IDS_CACHE: list[str] | None = None
+
+
+def _known_attacked_check_ids() -> list[str]:
+    """Collect check IDs whose ``Rule.incident_refs`` is non-empty.
+
+    The ``--only-known-attacked`` filter (zizmor proposal #1135)
+    narrows the rule set to rules whose detection shape is anchored
+    to a documented real-world incident, CVE, or vendor disclosure.
+    Useful for burning down the incident-driven worklist on a fresh
+    repo without the full pack noise.
+
+    Cached after the first call. AWS / Terraform class-based checks
+    don't currently carry ``Rule.incident_refs`` (their metadata
+    lives in module docstrings); they're omitted from the filter
+    surface today.
+    """
+    global _KNOWN_ATTACKED_IDS_CACHE
+    if _KNOWN_ATTACKED_IDS_CACHE is not None:
+        return _KNOWN_ATTACKED_IDS_CACHE
+    ids: list[str] = []
+    from pathlib import Path
+    checks_root = Path(__file__).parent / "core" / "checks"
+    rule_pkgs = sorted(
+        f"pipeline_check.core.checks.{p.parent.parent.name}.rules"
+        for p in checks_root.glob("*/rules/__init__.py")
+    )
+    for pkg in rule_pkgs:
+        try:
+            from .core.checks.rule import discover_rules
+            for rule, _ in discover_rules(pkg):
+                if rule.incident_refs:
+                    ids.append(rule.id)
+        except Exception as exc:
+            _completion_debug(f"known-attacked-discover {pkg}", exc)
+    _KNOWN_ATTACKED_IDS_CACHE = ids
+    return ids
 
 
 def _all_check_ids() -> list[str]:
@@ -989,6 +1026,19 @@ def _install_completion_callback(
     help=(
         "Run only the specified check ID(s).  Repeat to include multiple "
         "(e.g. --checks CB-001 --checks CB-003).  Omit to run all checks."
+    ),
+)
+@click.option(
+    "--only-known-attacked",
+    is_flag=True,
+    default=False,
+    help=(
+        "Restrict the rule set to rules whose detection shape is "
+        "anchored to a documented real-world incident, CVE, or "
+        "vendor disclosure (Rule.incident_refs non-empty). Useful "
+        "for burning down the incident-driven worklist on a fresh "
+        "repo without the full pack noise. Composes with --checks: "
+        "if both are set, the intersection runs."
     ),
 )
 @click.option(
@@ -1926,6 +1976,7 @@ def scan(
     pipelines_csv: str,
     target: str | None,
     checks: tuple[str, ...],
+    only_known_attacked: bool,
     region: str,
     profile: str | None,
     tf_plan: str | None,
@@ -2623,11 +2674,38 @@ def scan(
         or output == "threatmodel"
     )
 
+    # ``--only-known-attacked`` narrows the rule set to rules whose
+    # ``Rule.incident_refs`` is non-empty. If ``--checks`` is also
+    # set, the intersection runs (rules that are BOTH explicitly
+    # requested AND known-attacked).
+    effective_checks: list[str] | None
+    if only_known_attacked:
+        known = set(_known_attacked_check_ids())
+        if checks:
+            effective_checks = sorted(set(checks) & known)
+        else:
+            effective_checks = sorted(known)
+        if verbose:
+            _debug(
+                f"--only-known-attacked: {len(effective_checks)} "
+                f"check(s) carry incident_refs"
+            )
+        if not effective_checks:
+            click.echo(
+                "[warn] --only-known-attacked filtered the rule set "
+                "to zero checks; no findings will be produced.",
+                err=True,
+            )
+    elif checks:
+        effective_checks = list(checks)
+    else:
+        effective_checks = None
+
     findings: list[Any] = []
     if not inventory_only:
         try:
             findings = scanner.run(
-                checks=list(checks) if checks else None,
+                checks=effective_checks,
                 target=target,
                 standards=list(standards) if standards else None,
             )
