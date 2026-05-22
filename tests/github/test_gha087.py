@@ -233,6 +233,40 @@ class TestGHA087SecretDerivationEcho:
         assert not f.passed
         assert "3 ``run:`` line(s)" in f.description
 
+    def test_fails_on_job_level_secret_env(self):
+        # The canonical pattern: secret bound at the job level, then
+        # truncated in a step's run body. Step-only secret-name lookup
+        # would miss this.
+        wf = """
+        on: push
+        jobs:
+          deploy:
+            runs-on: ubuntu-latest
+            env:
+              TOKEN: ${{ secrets.DEPLOY_KEY }}
+            steps:
+              - run: |
+                  echo "prefix: ${TOKEN:0:8}"
+        """
+        f = run_check(wf, "GHA-087")
+        assert not f.passed
+        assert "${TOKEN:0:8}" in f.description
+
+    def test_fails_on_workflow_level_secret_env(self):
+        # Same shape one level higher: ``env:`` at the workflow root.
+        wf = """
+        on: push
+        env:
+          TOKEN: ${{ secrets.DEPLOY_KEY }}
+        jobs:
+          deploy:
+            runs-on: ubuntu-latest
+            steps:
+              - run: |
+                  echo "prefix: ${TOKEN:0:8}"
+        """
+        assert not run_check(wf, "GHA-087").passed
+
     def test_param_expansion_range_slice(self):
         # ``${VAR:2:6}`` is a midstring slice, still derives from
         # the secret. Should fire.

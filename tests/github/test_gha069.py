@@ -142,6 +142,22 @@ class TestGHA069OrphanIdToken:
         """
         assert run_check(wf, "GHA-069").passed
 
+    def test_fails_when_consumer_is_lookalike_repo(self):
+        # The consumer prefix list is matched on owner/repo boundaries
+        # so a typo-squatted ``configure-aws-credentials-malicious``
+        # does not suppress the orphan-token finding.
+        wf = """
+        permissions:
+          id-token: write
+        jobs:
+          build:
+            runs-on: ubuntu-latest
+            steps:
+              - uses: aws-actions/configure-aws-credentials-malicious@v1
+              - run: ./build.sh
+        """
+        assert not run_check(wf, "GHA-069").passed
+
     def test_passes_on_sigstore_cosign(self):
         wf = """
         permissions:

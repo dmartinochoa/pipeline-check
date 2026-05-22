@@ -156,25 +156,26 @@ def _scan_expression(expr: str) -> list[str]:
     """Return offender labels for a single ``if:`` expression body.
 
     Empty list when the expression doesn't carry a spoofable
-    actor-vs-bot predicate, or when the bot comparison is paired
-    with a ``user.type == 'Bot'`` authenticated-source check on
-    the same logical line.
+    actor-vs-bot predicate, or when each OR-clause carrying a bot
+    comparison is paired with a ``user.type == 'Bot'`` authenticated
+    check inside the same clause. The carve-out is evaluated per
+    OR-clause so that ``A || (github.actor == 'dependabot[bot]')``
+    still flags the unauthenticated half.
     """
     if not isinstance(expr, str) or not expr:
         return []
-    if _USER_TYPE_BOT_RE.search(expr):
-        # Paired check carve-out: an authenticated source bounds
-        # the spoofable one.
-        return []
     out: list[str] = []
-    for m in _BOT_EQ_RE.finditer(expr):
-        out.append(
-            f"``{m.group('lhs')} {m.group('op')} '{m.group('bot')}'``"
-        )
-    # Function-call shape: ``contains(github.actor, 'bot')``. We
-    # don't extract a full label here, the canonical name is enough.
-    if _BOT_FN_RE.search(expr):
-        out.append("``contains/endsWith/startsWith(...bot...)``")
+    for clause in re.split(r"\|\|", expr):
+        if _USER_TYPE_BOT_RE.search(clause):
+            continue
+        for m in _BOT_EQ_RE.finditer(clause):
+            out.append(
+                f"``{m.group('lhs')} {m.group('op')} '{m.group('bot')}'``"
+            )
+        # Function-call shape: ``contains(github.actor, 'bot')``. We
+        # don't extract a full label here, the canonical name is enough.
+        if _BOT_FN_RE.search(clause):
+            out.append("``contains/endsWith/startsWith(...bot...)``")
     return out
 
 

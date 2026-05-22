@@ -132,7 +132,7 @@ _HOST_KEY_BYPASS_RE = re.compile(
 def _scan_run(run: str) -> list[str]:
     """Return offender substrings from *run* body."""
     out: list[str] = []
-    for m in _SSH_KEYSCAN_RE.finditer(run):
+    for _m in _SSH_KEYSCAN_RE.finditer(run):
         out.append("ssh-keyscan >> known_hosts")
         break  # one mention per run-body is enough; many TOFU lines collapse
     for m in _HOST_KEY_BYPASS_RE.finditer(run):

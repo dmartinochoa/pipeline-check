@@ -229,7 +229,7 @@ STANDARD = Standard(
         "GHA-071":  ["2.4.3"],                           # powershell on Linux / macOS step
         "GHA-072":  ["1.3.4", "2.3.7"],                  # secret env: at wider scope than consumer
         "GHA-073":  ["2.3.7"],                           # unused workflow_call.secrets declaration
-        "GHA-086":  ["5.1.4", "5.2.1"],                  # wildcard branch trigger + environment binding (deploy gate bypass)
+        "GHA-086":  ["5.1.4", "5.2.1"],                  # wildcard branch trigger + env binding (deploy bypass)
         "GHA-087":  ["2.3.7"],                           # derived-value of secret printed to log (audit-leak surface)
         # GitLab CI
         "GL-001":   ["1.4.1", "3.1.5"],

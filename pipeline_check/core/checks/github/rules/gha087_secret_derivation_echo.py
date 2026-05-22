@@ -170,16 +170,20 @@ _SINK_RE = re.compile(
 _SECRET_CTX_RE = re.compile(r"\$\{\{\s*secrets\.[A-Za-z_]\w*\s*\}\}")
 
 
-def _step_secret_env_vars(step: dict[str, Any]) -> set[str]:
-    """Names of step-level env vars whose value references ``secrets.*``."""
+def _secret_env_vars(env_block: Any) -> set[str]:
+    """Names of env vars whose value references ``${{ secrets.* }}``."""
     out: set[str] = set()
-    env = step.get("env")
-    if not isinstance(env, dict):
+    if not isinstance(env_block, dict):
         return out
-    for name, value in env.items():
+    for name, value in env_block.items():
         if isinstance(value, str) and "secrets." in value and "${{" in value:
             out.add(str(name))
     return out
+
+
+def _step_secret_env_vars(step: dict[str, Any]) -> set[str]:
+    """Names of step-level env vars whose value references ``secrets.*``."""
+    return _secret_env_vars(step.get("env"))
 
 
 def _line_has_secret_ref(line: str, secret_names: set[str]) -> bool:
@@ -248,12 +252,18 @@ def _scan_run_body(run: str, secret_names: set[str]) -> list[str]:
 
 def check(path: str, doc: dict[str, Any]) -> Finding:
     leaks: list[str] = []
+    workflow_secret_names = _secret_env_vars(doc.get("env"))
     for job_id, job in iter_jobs(doc):
+        job_secret_names = _secret_env_vars(job.get("env"))
         for idx, step in enumerate(iter_steps(job)):
             run = step.get("run")
             if not isinstance(run, str):
                 continue
-            secret_names = _step_secret_env_vars(step)
+            secret_names = (
+                workflow_secret_names
+                | job_secret_names
+                | _step_secret_env_vars(step)
+            )
             # Even with no env-bound secret, the body might splice
             # ``${{ secrets.* }}`` directly. ``_scan_run_body`` only
             # fires when a transform-on-secret + sink combination

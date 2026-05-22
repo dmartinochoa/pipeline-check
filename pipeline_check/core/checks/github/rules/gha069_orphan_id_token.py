@@ -178,6 +178,16 @@ def _job_has_id_token_write(
     return False
 
 
+def _action_matches(action_ref: str, prefix: str) -> bool:
+    """``action_ref`` is *prefix* or a path under it.
+
+    Bounded match (exact / trailing-slash) to keep lookalike repos
+    like ``aws-actions/configure-aws-credentials-malicious`` from
+    suppressing the finding.
+    """
+    return action_ref == prefix or action_ref.startswith(prefix + "/")
+
+
 def _step_consumes_id_token(step: dict[str, Any]) -> bool:
     """Return True when *step* legitimately consumes an OIDC token."""
     uses = step.get("uses")
@@ -185,12 +195,12 @@ def _step_consumes_id_token(step: dict[str, Any]) -> bool:
         return False
     action_ref = uses.split("@", 1)[0].strip().lower()
     if any(
-        action_ref.startswith(prefix.lower())
+        _action_matches(action_ref, prefix.lower())
         for prefix in _OIDC_CONSUMER_PREFIXES
     ):
         return True
     # ``docker/build-push-action`` is conditional on ``with:`` keys.
-    if action_ref.startswith("docker/build-push-action"):
+    if _action_matches(action_ref, "docker/build-push-action"):
         with_block = step.get("with")
         if isinstance(with_block, dict):
             for key in _DOCKER_OIDC_WITH_KEYS:

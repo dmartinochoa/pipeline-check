@@ -123,16 +123,22 @@ def _secret_env_at_level(env_block: Any) -> dict[str, str]:
 
 
 def _env_var_reference_count_in_text(name: str, text: str) -> int:
-    """Count references to ``$NAME`` / ``${NAME}`` in *text*.
+    """Count references to ``$NAME`` / ``${NAME}`` / ``${{ env.NAME }}``.
 
     Word-bounded to keep ``$TOKEN`` from matching ``$TOKEN_PATH``.
-    Returns the literal occurrence count (cap not necessary for a
-    rule that only cares whether the count is at most 1).
+    Both shell forms and the GitHub-Actions expression form
+    (``${{ env.NAME }}``) count, since either shape is a real
+    consumer of the env binding.
     """
-    pattern = re.compile(
-        rf"\$(?:\{{{re.escape(name)}\b|{re.escape(name)}\b)"
+    shell_pattern = re.compile(
+        rf"\$(?:\{{{re.escape(name)}\}}|{re.escape(name)}\b)"
     )
-    return len(pattern.findall(text))
+    expr_pattern = re.compile(
+        rf"\$\{{\{{\s*env\.{re.escape(name)}\s*\}}\}}"
+    )
+    return (
+        len(shell_pattern.findall(text)) + len(expr_pattern.findall(text))
+    )
 
 
 def _step_references_env_var(step: dict[str, Any], name: str) -> bool:
@@ -145,6 +151,11 @@ def _step_references_env_var(step: dict[str, Any], name: str) -> bool:
         for v in with_block.values():
             if isinstance(v, str) and _env_var_reference_count_in_text(name, v) > 0:
                 return True
+    # Step-level ``if:`` may carry ``${{ env.NAME }}`` to gate on the
+    # secret's presence; that's still a consumer reference.
+    if_expr = step.get("if")
+    if isinstance(if_expr, str) and _env_var_reference_count_in_text(name, if_expr) > 0:
+        return True
     # A step that re-binds the same var on its own ``env:`` is
     # treated as consumer (the operator is explicitly forwarding).
     step_env = step.get("env")

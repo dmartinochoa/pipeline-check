@@ -121,6 +121,24 @@ class TestGHA072OverprovisionedSecrets:
         """
         assert run_check(wf, "GHA-072").passed
 
+    def test_expression_env_reference_counts_as_consumer(self):
+        # ``${{ env.DEPLOY_TOKEN }}`` inside a ``with:`` value is the
+        # canonical expression-form consumer; it must count alongside
+        # the second ``$DEPLOY_TOKEN`` shell-form usage.
+        wf = """
+        jobs:
+          ship:
+            runs-on: ubuntu-latest
+            env:
+              DEPLOY_TOKEN: ${{ secrets.DEPLOY_TOKEN }}
+            steps:
+              - uses: actions/some-action@v1
+                with:
+                  token: ${{ env.DEPLOY_TOKEN }}
+              - run: 'curl -H "Bearer $DEPLOY_TOKEN" https://api.example.com'
+        """
+        assert run_check(wf, "GHA-072").passed
+
     def test_partial_name_not_matched(self):
         # ``$DEPLOY_TOKEN_PATH`` (different var) shouldn't match
         # ``DEPLOY_TOKEN``.

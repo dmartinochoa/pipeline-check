@@ -124,6 +124,25 @@ class TestGHA063BotConditions:
         """
         assert run_check(wf, "GHA-063").passed
 
+    def test_fails_when_only_one_or_clause_is_authenticated(self):
+        # The user.type=='Bot' check bounds its own clause, but the
+        # parallel OR clause is a raw actor comparison and must still
+        # fire. Whole-expression suppression would mask this.
+        wf = """
+        on: pull_request
+        jobs:
+          x:
+            if: |
+              (github.event.pull_request.user.type == 'Bot' &&
+               github.event.pull_request.user.login == 'dependabot[bot]') ||
+              github.actor == 'dependabot[bot]'
+            runs-on: ubuntu-latest
+            steps: [{run: echo}]
+        """
+        f = run_check(wf, "GHA-063")
+        assert not f.passed
+        assert "github.actor" in f.description
+
     def test_passes_on_codeowner_check(self):
         wf = """
         on: pull_request
