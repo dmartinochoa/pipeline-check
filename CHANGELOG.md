@@ -12,6 +12,45 @@ release commit collapses this section into `## [X.Y.Z] - <date>`.
 
 ### Added
 
+- **Zizmor parity sweep: third batch (GHA-069 / GHA-070 / GHA-071).**
+  Three more offline-only rules:
+    * **GHA-069: ``id-token: write`` granted without an OIDC-
+      consumer step.** MEDIUM severity. Fires when a job
+      effectively holds ``id-token: write`` (job-level or
+      inherited from the workflow, plus ``permissions: write-
+      all``) but no step invokes a known OIDC consumer:
+      ``aws-actions/configure-aws-credentials``, ``azure/login``,
+      ``google-github-actions/auth``, ``pypa/gh-action-pypi-
+      publish``, the Sigstore signing pack
+      (``sigstore/cosign-installer`` and friends, the
+      ``slsa-framework/slsa-github-generator`` reusable),
+      ``actions/attest-build-provenance`` / ``actions/attest-
+      sbom``, or ``docker/build-push-action`` with
+      ``provenance:`` / ``sbom:`` / ``attestations:`` set to a
+      truthy value. Mirrors zizmor proposal #1968.
+    * **GHA-070: ``ssh-keyscan`` / disabled host-key check trust-
+      on-first-use.** HIGH severity. Fires on any ``run:`` body
+      containing ``ssh-keyscan ... >> known_hosts``,
+      ``-o StrictHostKeyChecking=no``, ``-o
+      StrictHostKeyChecking=accept-new``, or
+      ``-o UserKnownHostsFile=/dev/null`` on ``ssh`` / ``scp`` /
+      ``rsync``. The runner's upstream network can MITM every
+      subsequent SSH connection from the same job. Mirrors
+      zizmor proposal #2012.
+    * **GHA-071: ``shell: pwsh`` / ``powershell`` on a Linux /
+      macOS step.** LOW (advisory) severity. Fires when a
+      ``run:`` step's effective shell (step override > job
+      defaults > workflow defaults) is ``pwsh`` or
+      ``powershell`` and the job's ``runs-on:`` is a Linux or
+      macOS image. Cross-shell language drift is a low-impact
+      source of escaping bugs (an injection that's a no-op in
+      bash can be live in pwsh and vice versa). Self-hosted
+      label lists stay silent (OS unidentifiable from labels
+      alone). Mirrors zizmor proposal #288.
+  29 per-rule tests + standard safe/unsafe fixture pairs.
+  Standards mappings landed for OWASP / ESF / CIS / NIST 800-53 /
+  NIST CSF / NIST SSDF / SOC2 / PCI-DSS v4. Github provider
+  check count 73 -> 76.
 - **Zizmor parity sweep: second batch (GHA-066 / GHA-067 / GHA-068).**
   Three more offline-only rules:
     * **GHA-066: ``actions/upload-artifact`` path is a workspace

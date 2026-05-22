@@ -20,7 +20,7 @@ risk language.
 
 - **Controls in this standard:** 13
 - **Controls evidenced by at least one check:** 13 / 13
-- **Distinct checks evidencing this standard:** 580
+- **Distinct checks evidencing this standard:** 583
 - **Of those, autofixable with `--fix`:** 111
 
 _Severity levels (`CRITICAL` / `HIGH` / `MEDIUM` / `LOW` / `INFO`) follow the same scale across every provider and standard. See [How to read severity](README.md#how-to-read-severity) on the standards overview for the definitions._
@@ -33,15 +33,15 @@ Click a control ID to jump to the per-control section with the full check list. 
 |---------|-------|-------:|--------------|
 | [`PO.3.2`](#ctrl-po-3-2) | Implement and maintain supporting toolchains with security controls | 6 | 2H · 2M · 2L |
 | [`PO.3.3`](#ctrl-po-3-3) | Configure the toolchain to generate an audit trail of SDLC activities | 35 | 2H · 8M · 9L · 16I |
-| [`PO.5.1`](#ctrl-po-5-1) | Separate and protect each environment involved in software development | 149 | 26C · 78H · 42M · 3L |
+| [`PO.5.1`](#ctrl-po-5-1) | Separate and protect each environment involved in software development | 150 | 26C · 78H · 43M · 3L |
 | [`PO.5.2`](#ctrl-po-5-2) | Secure and harden endpoints used for software development | 19 | 1C · 14M · 4L |
 | [`PS.1.1`](#ctrl-ps-1-1) | Store all forms of code based on least-privilege and tamper-resistance | 127 | 31C · 53H · 34M · 9L |
 | [`PS.2.1`](#ctrl-ps-2-1) | Make software integrity verification information available to acquirers | 34 | 10H · 24M |
 | [`PS.3.1`](#ctrl-ps-3-1) | Securely archive the necessary files and data for each software release | 6 | 2H · 4M |
 | [`PS.3.2`](#ctrl-ps-3-2) | Collect, safeguard, maintain, and share provenance data for releases | 54 | 10H · 37M · 7L |
 | [`PW.4.1`](#ctrl-pw-4-1) | Acquire and maintain well-secured 3rd-party software components | 94 | 5C · 51H · 32M · 6L |
-| [`PW.4.4`](#ctrl-pw-4-4) | Verify that acquired components are what is expected and behave as expected | 138 | 13C · 73H · 48M · 4L |
-| [`PW.6.1`](#ctrl-pw-6-1) | Use compiler, interpreter, and build tool features to improve security | 34 | 5C · 24H · 2M · 3L |
+| [`PW.4.4`](#ctrl-pw-4-4) | Verify that acquired components are what is expected and behave as expected | 139 | 13C · 74H · 48M · 4L |
+| [`PW.6.1`](#ctrl-pw-6-1) | Use compiler, interpreter, and build tool features to improve security | 35 | 5C · 24H · 2M · 4L |
 | [`PW.9.1`](#ctrl-pw-9-1) | Configure software to have secure settings by default | 140 | 25C · 75H · 33M · 7L |
 | [`RV.1.1`](#ctrl-rv-1-1) | Gather information about potential vulnerabilities in released software | 34 | 12C · 1H · 16M · 5L |
 
@@ -119,7 +119,7 @@ pipeline_check --pipeline aws --standard nist_ssdf --standard owasp_cicd_top_10
 
 ### PO.5.1: Separate and protect each environment involved in software development { #ctrl-po-5-1 }
 
-**Evidenced by 149 checks** across 19 providers (AWS, Argo Workflows, Azure DevOps, Bitbucket, Buildkite, CircleCI, Cloud Build, CloudFormation, Dockerfile, Drone CI, GitHub Actions, GitLab CI, Helm, Jenkins, Kubernetes, SCM, Tekton, Terraform, npm).
+**Evidenced by 150 checks** across 19 providers (AWS, Argo Workflows, Azure DevOps, Bitbucket, Buildkite, CircleCI, Cloud Build, CloudFormation, Dockerfile, Drone CI, GitHub Actions, GitLab CI, Helm, Jenkins, Kubernetes, SCM, Tekton, Terraform, npm).
 
 | Check | Title | Severity | Provider | Fix |
 |-------|-------|----------|----------|-----|
@@ -192,6 +192,7 @@ pipeline_check --pipeline aws --standard nist_ssdf --standard owasp_cicd_top_10
 | [`GHA-062`](#detail-gha-062) | OIDC subject claim in sibling IaC grants overly broad scope | <span class="pg-sev pg-sev--high">HIGH</span> | [GitHub Actions](../providers/github.md) |  |
 | [`GHA-063`](#detail-gha-063) | ``if:`` predicate gates on a spoofable bot-actor comparison | <span class="pg-sev pg-sev--high">HIGH</span> | [GitHub Actions](../providers/github.md) |  |
 | [`GHA-064`](#detail-gha-064) | ``contains()`` invoked with comma-delimited string operand | <span class="pg-sev pg-sev--high">HIGH</span> | [GitHub Actions](../providers/github.md) |  |
+| [`GHA-069`](#detail-gha-069) | ``id-token: write`` granted without an OIDC-consumer step | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [GitHub Actions](../providers/github.md) |  |
 | [`GHA-086`](#detail-gha-086) | Wildcard branch trigger gates an environment-bound deploy | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [GitHub Actions](../providers/github.md) |  |
 | [`GL-004`](#detail-gl-004) | Deploy job lacks manual approval or environment gate | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [GitLab CI](../providers/gitlab.md) |  |
 | [`GL-010`](#detail-gl-010) | Multi-project pipeline ingests upstream artifact unverified | <span class="pg-sev pg-sev--critical">CRITICAL</span> | [GitLab CI](../providers/gitlab.md) |  |
@@ -651,7 +652,7 @@ pipeline_check --pipeline aws --standard nist_ssdf --standard owasp_cicd_top_10
 
 ### PW.4.4: Verify that acquired components are what is expected and behave as expected { #ctrl-pw-4-4 }
 
-**Evidenced by 138 checks** across 20 providers (AWS, Argo Workflows, Azure DevOps, Bitbucket, Buildkite, CircleCI, Cloud Build, Dockerfile, Drone CI, GitHub Actions, GitLab CI, Helm, Jenkins, Kubernetes, OCI manifest, PyPI, SCM, Tekton, maven, npm).
+**Evidenced by 139 checks** across 20 providers (AWS, Argo Workflows, Azure DevOps, Bitbucket, Buildkite, CircleCI, Cloud Build, Dockerfile, Drone CI, GitHub Actions, GitLab CI, Helm, Jenkins, Kubernetes, OCI manifest, PyPI, SCM, Tekton, maven, npm).
 
 | Check | Title | Severity | Provider | Fix |
 |-------|-------|----------|----------|-----|
@@ -737,6 +738,7 @@ pipeline_check --pipeline aws --standard nist_ssdf --standard owasp_cicd_top_10
 | [`GHA-056`](#detail-gha-056) | Workflow body contains a known supply-chain worm indicator | <span class="pg-sev pg-sev--critical">CRITICAL</span> | [GitHub Actions](../providers/github.md) |  |
 | [`GHA-059`](#detail-gha-059) | npm install without registry-signature verification step | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [GitHub Actions](../providers/github.md) |  |
 | [`GHA-060`](#detail-gha-060) | pip install without `--require-hashes` verification | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [GitHub Actions](../providers/github.md) |  |
+| [`GHA-070`](#detail-gha-070) | ``ssh-keyscan`` / disabled host-key check trust-on-first-use | <span class="pg-sev pg-sev--high">HIGH</span> | [GitHub Actions](../providers/github.md) |  |
 | [`GL-001`](#detail-gl-001) | Image not pinned to specific version or digest | <span class="pg-sev pg-sev--high">HIGH</span> | [GitLab CI](../providers/gitlab.md) | <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> |
 | [`GL-005`](#detail-gl-005) | include: pulls remote / project without pinned ref | <span class="pg-sev pg-sev--high">HIGH</span> | [GitLab CI](../providers/gitlab.md) |  |
 | [`GL-009`](#detail-gl-009) | Image pinned to version tag rather than sha256 digest | <span class="pg-sev pg-sev--low">LOW</span> | [GitLab CI](../providers/gitlab.md) |  |
@@ -796,7 +798,7 @@ pipeline_check --pipeline aws --standard nist_ssdf --standard owasp_cicd_top_10
 
 ### PW.6.1: Use compiler, interpreter, and build tool features to improve security { #ctrl-pw-6-1 }
 
-**Evidenced by 34 checks** across 14 providers (Argo Workflows, Azure DevOps, Bitbucket, Buildkite, CircleCI, Cloud Build, Dockerfile, Drone CI, GitHub Actions, GitLab CI, Helm, Jenkins, SCM, Tekton).
+**Evidenced by 35 checks** across 14 providers (Argo Workflows, Azure DevOps, Bitbucket, Buildkite, CircleCI, Cloud Build, Dockerfile, Drone CI, GitHub Actions, GitLab CI, Helm, Jenkins, SCM, Tekton).
 
 | Check | Title | Severity | Provider | Fix |
 |-------|-------|----------|----------|-----|
@@ -825,6 +827,7 @@ pipeline_check --pipeline aws --standard nist_ssdf --standard owasp_cicd_top_10
 | [`GHA-038`](#detail-gha-038) | Workflow re-enables retired ::set-env / ::add-path commands | <span class="pg-sev pg-sev--critical">CRITICAL</span> | [GitHub Actions](../providers/github.md) |  |
 | [`GHA-058`](#detail-gha-058) | Agentic CLI invoked with permission-bypass flags | <span class="pg-sev pg-sev--high">HIGH</span> | [GitHub Actions](../providers/github.md) |  |
 | [`GHA-065`](#detail-gha-065) | Workflow body contains zero-width or bidi Unicode characters | <span class="pg-sev pg-sev--critical">CRITICAL</span> | [GitHub Actions](../providers/github.md) |  |
+| [`GHA-071`](#detail-gha-071) | ``shell: pwsh`` / ``powershell`` on a Linux / macOS step | <span class="pg-sev pg-sev--low">LOW</span> | [GitHub Actions](../providers/github.md) |  |
 | [`GL-002`](#detail-gl-002) | Script injection via untrusted commit/MR context | <span class="pg-sev pg-sev--high">HIGH</span> | [GitLab CI](../providers/gitlab.md) |  |
 | [`GL-026`](#detail-gl-026) | Dangerous shell idiom (eval, sh -c variable, backtick exec) | <span class="pg-sev pg-sev--high">HIGH</span> | [GitLab CI](../providers/gitlab.md) |  |
 | [`GL-032`](#detail-gl-032) | tags: interpolates untrusted CI variable | <span class="pg-sev pg-sev--high">HIGH</span> | [GitLab CI](../providers/gitlab.md) | <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> |
@@ -10765,6 +10768,170 @@ jobs:
 ```
 
 **Source:** [`GHA-068`](../providers/github.md#gha-068) in the [GitHub Actions provider](../providers/github.md).
+
+### `GHA-069`: ``id-token: write`` granted without an OIDC-consumer step <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-gha-069 }
+
+**Evidences:** [`PO.5.1`](#ctrl-po-5-1) Separate and protect each environment involved in software development.
+
+**How this is detected.** Fires when both conditions hold:
+
+1. The job has ``id-token: write`` (either declared on the job's own ``permissions:`` block, or inherited from a workflow-level block that the job didn't override).
+2. None of the job's steps invokes a known OIDC-token consumer (see ``_OIDC_CONSUMER_PREFIXES`` below).
+
+The consumer list covers the canonical cloud-credentials actions (``aws-actions/configure-aws-credentials``, ``azure/login``, ``google-github-actions/auth``), the trusted-publishing pack (``pypa/gh-action-pypi-publish``, ``rubygems/release-gem``, ``crates-io/publish-action``), and the Sigstore signing pack (``sigstore/cosign-installer``, ``sigstore/gh-action-sigstore-python``,
+``slsa-framework/slsa-github-generator``,
+``actions/attest-build-provenance``,
+``actions/attest-sbom``, and the
+``docker/build-push-action`` with ``provenance:`` /
+``sbom:`` / ``attestations:`` set). When a workflow adds a new consumer not in this list, file an issue so the rule can recognize it.
+
+**Recommendation.** Drop ``id-token: write`` from the job's ``permissions:`` block when no step exchanges the OIDC token for cloud credentials, signs an artifact, or publishes with attestation. If the workflow gains an OIDC consumer later (a new ``aws-actions/configure-aws-credentials`` step, a ``pypa/gh-action-pypi-publish`` upgrade), restore the scope at the job level rather than the workflow level. Job-level grants minimize the window in which the scope is in effect.
+
+**Known false positives.**
+
+- Composite actions whose body consumes the OIDC token but whose entry point is named in a workflow that wouldn't otherwise match the consumer list. The local composite-action discovery path (``GitHubContext.from_path``) synthesizes those bodies as ``__composite__`` jobs, so the rule sees the inner steps. Suppress per-job via ignore-file when a workflow consumes the OIDC token via a third-party action this rule's consumer list doesn't name yet.
+
+**Seen in the wild.**
+
+- zizmor proposal #1968 (orphan-id-token audit): https://github.com/zizmorcore/zizmor/issues/1968
+
+**Proof of exploit.**
+
+```
+# Vulnerable: ``id-token: write`` granted, no step
+# consumes the token. Any later step that's compromised
+# (action upstream takeover, run injection, cache
+# poisoning) can request an OIDC token and exchange it
+# through an attacker relay.
+permissions:
+  contents: read
+  id-token: write
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@<sha>
+      - run: ./build.sh
+
+# Safe: drop the unused scope. Restore it only when an
+# OIDC consumer step is added.
+permissions:
+  contents: read
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@<sha>
+      - run: ./build.sh
+```
+
+**Source:** [`GHA-069`](../providers/github.md#gha-069) in the [GitHub Actions provider](../providers/github.md).
+
+### `GHA-070`: ``ssh-keyscan`` / disabled host-key check trust-on-first-use <span class="pg-sev pg-sev--high">HIGH</span> { #detail-gha-070 }
+
+**Evidences:** [`PW.4.4`](#ctrl-pw-4-4) Verify that acquired components are what is expected and behave as expected.
+
+**How this is detected.** Fires on any ``run:`` body containing one of:
+
+* ``ssh-keyscan ... >> <known_hosts>`` (or ``>`` for overwrite).
+* ``-o StrictHostKeyChecking=no`` (single or double quoted) on ``ssh`` / ``scp`` / ``rsync`` / ``sftp``.
+* ``-o UserKnownHostsFile=/dev/null`` (the inverse shape: don't persist any host key check).
+* ``-o StrictHostKeyChecking=accept-new`` (TOFU mode, accepts the first key seen).
+
+The rule pairs with GHA-023 (TLS / cert verify bypass) on the HTTPS side and with GHA-054 (checkout SSH-key persistence) on the credentials side. All three describe the same threat shape: turning off authentication primitives that defend against MITM on a runner whose network the workflow doesn't fully control.
+
+**Recommendation.** Pin the SSH host keys explicitly. For GitHub's ``github.com`` host, ship the published fingerprints (see ``github.com/.well-known/ssh-fingerprints``) in a ``known_hosts`` file that the workflow installs. Never call ``ssh-keyscan`` from a workflow, every invocation is trust-on-first-use against whatever the network returns. Same applies to ``StrictHostKeyChecking=no`` / ``UserKnownHostsFile=/dev/null`` on ``ssh`` / ``scp`` / ``rsync``, those flags accept any host key the first (and every subsequent) connection presents.
+
+**Known false positives.**
+
+- First-time bootstrap of a self-hosted runner where the runner image's host-key store is intentionally empty and ssh-keyscan is the bootstrap step. Suppress per-step via ignore-file when the bootstrap step is bounded by a post-bootstrap key-validation check (compare the ingested key against a known-good fingerprint stored in a secret). Without that follow-up validation the suppression isn't safe.
+
+**Seen in the wild.**
+
+- zizmor proposal #2012 (ssh-keyscan audit): https://github.com/zizmorcore/zizmor/issues/2012
+- GitHub Docs - SSH key fingerprints: https://docs.github.com/en/authentication/keeping-your-account-and-data-secure/githubs-ssh-key-fingerprints
+
+**Proof of exploit.**
+
+```
+# Vulnerable: ssh-keyscan accepts whatever the network
+# returns. A self-hosted runner on a compromised LAN, or
+# a GitHub-hosted runner with a DNS-spoofed upstream,
+# silently mints a malicious host-key entry that every
+# later git/ssh/rsync call from the same job trusts.
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - run: |
+          mkdir -p ~/.ssh
+          ssh-keyscan github.com >> ~/.ssh/known_hosts
+          git fetch git@github.com:org/repo.git
+
+# Safe: ship a pinned known_hosts file with the workflow.
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@<sha>
+      - run: |
+          mkdir -p ~/.ssh
+          cp .github/ssh/github_known_hosts ~/.ssh/known_hosts
+          chmod 600 ~/.ssh/known_hosts
+          git fetch git@github.com:org/repo.git
+```
+
+**Source:** [`GHA-070`](../providers/github.md#gha-070) in the [GitHub Actions provider](../providers/github.md).
+
+### `GHA-071`: ``shell: pwsh`` / ``powershell`` on a Linux / macOS step <span class="pg-sev pg-sev--low">LOW</span> { #detail-gha-071 }
+
+**Evidences:** [`PW.6.1`](#ctrl-pw-6-1) Use compiler, interpreter, and build tool features to improve security.
+
+**How this is detected.** Fires when a ``run:`` step (job-level or workflow-level default) declares ``shell: pwsh`` / ``shell: powershell`` while the job's ``runs-on:`` is a Linux or macOS image. Three sources are considered:
+
+1. ``jobs.<id>.steps[].shell:`` (step-level override).
+2. ``jobs.<id>.defaults.run.shell:`` (job-level default).
+3. ``defaults.run.shell:`` (workflow-level default).
+
+Out of scope: ``shell: bash`` / ``shell: sh`` on a Windows runner. Bash is preinstalled on every GitHub-hosted Windows image and the cross-shell language drift goes in the other direction (Windows-only built-ins missing). The risk-asymmetry is intentional: pwsh on Linux is the canonical zizmor advisory; the inverse is covered by reviewer attention rather than a rule.
+
+**Recommendation.** Drop the explicit ``shell:`` on non-Windows runners so GitHub's default (``bash``) is used. If multiline PowerShell work is genuinely needed on Linux / macOS, isolate it in a separate job that pins ``runs-on:`` to a Windows image, OR name the shell explicitly per-step so the reviewer can confirm the language match. Mixing pwsh and bash semantics inside the same workflow is a low-impact-but-real source of escaping bugs.
+
+**Known false positives.**
+
+- PowerShell-heavy organizations standardizing on pwsh across all OS targets for tooling consistency. Suppress per-step via ignore-file when the operator has audited the workflow's escaping conventions against the pwsh tokenizer. The rule is LOW severity and advisory, the FP rate is acceptable for a default-fire posture.
+
+**Seen in the wild.**
+
+- zizmor proposal #288 (powershell-on-linux audit): https://github.com/zizmorcore/zizmor/issues/288
+
+**Proof of exploit.**
+
+```
+# Vulnerable: pwsh on Linux. A reviewer reads the
+# script with bash eyes, an injection in ``$INPUT``
+# might pass bash quoting but fire under pwsh parsing.
+jobs:
+  triage:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        shell: pwsh
+    steps:
+      - run: Write-Output "hello $env:INPUT"
+
+# Safe: name the shell explicitly per-step on the OS
+# that ships it as default. Reviewers see the language
+# match the runner.
+jobs:
+  triage:
+    runs-on: ubuntu-latest
+    steps:
+      - shell: bash
+        run: echo "hello $INPUT"
+```
+
+**Source:** [`GHA-071`](../providers/github.md#gha-071) in the [GitHub Actions provider](../providers/github.md).
 
 ### `GHA-086`: Wildcard branch trigger gates an environment-bound deploy <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-gha-086 }
 

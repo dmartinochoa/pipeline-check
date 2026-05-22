@@ -1,0 +1,14 @@
+name: ssh-pinned-known-hosts
+on: push
+permissions:
+  contents: read
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332
+      - run: |
+          mkdir -p ~/.ssh
+          cp .github/ssh/github_known_hosts ~/.ssh/known_hosts
+          chmod 600 ~/.ssh/known_hosts
+          git fetch git@github.com:org/repo.git

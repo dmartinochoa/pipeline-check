@@ -527,6 +527,9 @@ STANDARD = Standard(
         "GHA-066":  ["ESF-D-SECRETS"],               # upload-artifact wildcard sweeps workspace
         "GHA-067":  ["ESF-D-SECRETS"],               # cache step publishes credential-shaped paths
         "GHA-068":  ["ESF-D-BUILD-ENV"],             # runs-on targets a deprecated hosted runner
+        "GHA-069":  ["ESF-C-LEAST-PRIV"],            # orphan id-token: write scope
+        "GHA-070":  ["ESF-S-VERIFY-DEPS"],           # ssh-keyscan / host-key check TOFU
+        "GHA-071":  ["ESF-D-INJECTION"],             # powershell on Linux / macOS step
         "GHA-086":  ["ESF-C-APPROVAL", "ESF-C-ENV-SEP"],  # wildcard branch trigger gates env-bound deploy
         "GHA-087":  ["ESF-D-SECRETS"],               # derived-value of secret printed to log
         # ── GitLab CI extras ─────────────────────────────────────

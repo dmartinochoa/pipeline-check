@@ -72,7 +72,7 @@ Resolution rules:
 
 ## What it covers
 
-73 checks · 17 have an autofix patch (``--fix``).
+76 checks · 17 have an autofix patch (``--fix``).
 
 | Check | Title | Severity | Fix |
 |-------|-------|----------|-----|
@@ -144,6 +144,9 @@ Resolution rules:
 | [GHA-066](#gha-066) | ``actions/upload-artifact`` path is a workspace wildcard | <span class="pg-sev pg-sev--high">HIGH</span> |  |
 | [GHA-067](#gha-067) | ``actions/cache`` writes credential-shaped paths | <span class="pg-sev pg-sev--high">HIGH</span> |  |
 | [GHA-068](#gha-068) | ``runs-on:`` targets an end-of-life hosted-runner image | <span class="pg-sev pg-sev--medium">MEDIUM</span> |  |
+| [GHA-069](#gha-069) | ``id-token: write`` granted without an OIDC-consumer step | <span class="pg-sev pg-sev--medium">MEDIUM</span> |  |
+| [GHA-070](#gha-070) | ``ssh-keyscan`` / disabled host-key check trust-on-first-use | <span class="pg-sev pg-sev--high">HIGH</span> |  |
+| [GHA-071](#gha-071) | ``shell: pwsh`` / ``powershell`` on a Linux / macOS step | <span class="pg-sev pg-sev--low">LOW</span> |  |
 | [GHA-086](#gha-086) | Wildcard branch trigger gates an environment-bound deploy | <span class="pg-sev pg-sev--medium">MEDIUM</span> |  |
 | [GHA-087](#gha-087) | Derived value of a secret printed to the build log | <span class="pg-sev pg-sev--high">HIGH</span> |  |
 | [TAINT-001](#taint-001) | Untrusted input flows across step boundaries via step outputs | <span class="pg-sev pg-sev--high">HIGH</span> |  |
@@ -1995,6 +1998,114 @@ Self-hosted labels (any value that doesn't match a hosted image label) are not f
 **Recommended action**
 
 Bump to a supported image label. ``ubuntu-latest`` /``ubuntu-24.04``, ``macos-latest`` / ``macos-14``, ``windows-latest`` / ``windows-2022``. Pin to a specific major when reproducibility matters (``ubuntu-24.04``); use ``-latest`` only when the workflow tolerates drift. GitHub publishes the retirement schedule at https://github.com/actions/runner-images?tab=readme-ov-file#available-images, audit the matrix periodically as new images deprecate.
+
+</div>
+
+</div>
+
+<div class="pg-rule pg-rule--medium" markdown>
+
+## GHA-069: ``id-token: write`` granted without an OIDC-consumer step { #gha-069 }
+
+<div class="pg-rule__tags">
+<span class="pg-sev pg-sev--medium">MEDIUM</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-5</span> <span class="pg-tag pg-tag--esf">ESF-C-LEAST-PRIV</span> <span class="pg-tag pg-tag--cwe">CWE-272</span> <span class="pg-tag pg-tag--cwe">CWE-269</span>
+</div>
+
+Fires when both conditions hold:
+
+1. The job has ``id-token: write`` (either declared on the job's own ``permissions:`` block, or inherited from a workflow-level block that the job didn't override).
+2. None of the job's steps invokes a known OIDC-token consumer (see ``_OIDC_CONSUMER_PREFIXES`` below).
+
+The consumer list covers the canonical cloud-credentials actions (``aws-actions/configure-aws-credentials``, ``azure/login``, ``google-github-actions/auth``), the trusted-publishing pack (``pypa/gh-action-pypi-publish``, ``rubygems/release-gem``, ``crates-io/publish-action``), and the Sigstore signing pack (``sigstore/cosign-installer``, ``sigstore/gh-action-sigstore-python``,
+``slsa-framework/slsa-github-generator``,
+``actions/attest-build-provenance``,
+``actions/attest-sbom``, and the
+``docker/build-push-action`` with ``provenance:`` /
+``sbom:`` / ``attestations:`` set). When a workflow adds a new consumer not in this list, file an issue so the rule can recognize it.
+
+**Known false-positive modes**
+
+- Composite actions whose body consumes the OIDC token but whose entry point is named in a workflow that wouldn't otherwise match the consumer list. The local composite-action discovery path (``GitHubContext.from_path``) synthesizes those bodies as ``__composite__`` jobs, so the rule sees the inner steps. Suppress per-job via ignore-file when a workflow consumes the OIDC token via a third-party action this rule's consumer list doesn't name yet.
+
+**Seen in the wild**
+
+- zizmor proposal #1968 (orphan-id-token audit): https://github.com/zizmorcore/zizmor/issues/1968
+
+<div class="pg-rule__rec" markdown>
+
+**Recommended action**
+
+Drop ``id-token: write`` from the job's ``permissions:`` block when no step exchanges the OIDC token for cloud credentials, signs an artifact, or publishes with attestation. If the workflow gains an OIDC consumer later (a new ``aws-actions/configure-aws-credentials`` step, a ``pypa/gh-action-pypi-publish`` upgrade), restore the scope at the job level rather than the workflow level. Job-level grants minimize the window in which the scope is in effect.
+
+</div>
+
+</div>
+
+<div class="pg-rule pg-rule--high" markdown>
+
+## GHA-070: ``ssh-keyscan`` / disabled host-key check trust-on-first-use { #gha-070 }
+
+<div class="pg-rule__tags">
+<span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-3</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-7</span> <span class="pg-tag pg-tag--esf">ESF-S-VERIFY-DEPS</span> <span class="pg-tag pg-tag--cwe">CWE-322</span>
+</div>
+
+Fires on any ``run:`` body containing one of:
+
+* ``ssh-keyscan ... >> <known_hosts>`` (or ``>`` for overwrite).
+* ``-o StrictHostKeyChecking=no`` (single or double quoted) on ``ssh`` / ``scp`` / ``rsync`` / ``sftp``.
+* ``-o UserKnownHostsFile=/dev/null`` (the inverse shape: don't persist any host key check).
+* ``-o StrictHostKeyChecking=accept-new`` (TOFU mode, accepts the first key seen).
+
+The rule pairs with GHA-023 (TLS / cert verify bypass) on the HTTPS side and with GHA-054 (checkout SSH-key persistence) on the credentials side. All three describe the same threat shape: turning off authentication primitives that defend against MITM on a runner whose network the workflow doesn't fully control.
+
+**Known false-positive modes**
+
+- First-time bootstrap of a self-hosted runner where the runner image's host-key store is intentionally empty and ssh-keyscan is the bootstrap step. Suppress per-step via ignore-file when the bootstrap step is bounded by a post-bootstrap key-validation check (compare the ingested key against a known-good fingerprint stored in a secret). Without that follow-up validation the suppression isn't safe.
+
+**Seen in the wild**
+
+- zizmor proposal #2012 (ssh-keyscan audit): https://github.com/zizmorcore/zizmor/issues/2012
+- GitHub Docs - SSH key fingerprints: https://docs.github.com/en/authentication/keeping-your-account-and-data-secure/githubs-ssh-key-fingerprints
+
+<div class="pg-rule__rec" markdown>
+
+**Recommended action**
+
+Pin the SSH host keys explicitly. For GitHub's ``github.com`` host, ship the published fingerprints (see ``github.com/.well-known/ssh-fingerprints``) in a ``known_hosts`` file that the workflow installs. Never call ``ssh-keyscan`` from a workflow, every invocation is trust-on-first-use against whatever the network returns. Same applies to ``StrictHostKeyChecking=no`` / ``UserKnownHostsFile=/dev/null`` on ``ssh`` / ``scp`` / ``rsync``, those flags accept any host key the first (and every subsequent) connection presents.
+
+</div>
+
+</div>
+
+<div class="pg-rule pg-rule--low" markdown>
+
+## GHA-071: ``shell: pwsh`` / ``powershell`` on a Linux / macOS step { #gha-071 }
+
+<div class="pg-rule__tags">
+<span class="pg-sev pg-sev--low">LOW</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-4</span> <span class="pg-tag pg-tag--esf">ESF-D-INJECTION</span> <span class="pg-tag pg-tag--cwe">CWE-704</span>
+</div>
+
+Fires when a ``run:`` step (job-level or workflow-level default) declares ``shell: pwsh`` / ``shell: powershell`` while the job's ``runs-on:`` is a Linux or macOS image. Three sources are considered:
+
+1. ``jobs.<id>.steps[].shell:`` (step-level override).
+2. ``jobs.<id>.defaults.run.shell:`` (job-level default).
+3. ``defaults.run.shell:`` (workflow-level default).
+
+Out of scope: ``shell: bash`` / ``shell: sh`` on a Windows runner. Bash is preinstalled on every GitHub-hosted Windows image and the cross-shell language drift goes in the other direction (Windows-only built-ins missing). The risk-asymmetry is intentional: pwsh on Linux is the canonical zizmor advisory; the inverse is covered by reviewer attention rather than a rule.
+
+**Known false-positive modes**
+
+- PowerShell-heavy organizations standardizing on pwsh across all OS targets for tooling consistency. Suppress per-step via ignore-file when the operator has audited the workflow's escaping conventions against the pwsh tokenizer. The rule is LOW severity and advisory, the FP rate is acceptable for a default-fire posture.
+
+**Seen in the wild**
+
+- zizmor proposal #288 (powershell-on-linux audit): https://github.com/zizmorcore/zizmor/issues/288
+
+<div class="pg-rule__rec" markdown>
+
+**Recommended action**
+
+Drop the explicit ``shell:`` on non-Windows runners so GitHub's default (``bash``) is used. If multiline PowerShell work is genuinely needed on Linux / macOS, isolate it in a separate job that pins ``runs-on:`` to a Windows image, OR name the shell explicitly per-step so the reviewer can confirm the language match. Mixing pwsh and bash semantics inside the same workflow is a low-impact-but-real source of escaping bugs.
 
 </div>
 

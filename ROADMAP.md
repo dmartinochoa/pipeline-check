@@ -269,8 +269,8 @@ exploit-evidenced posture the rule pack stands on. ``forbidden-uses``
 existing custom-rule loader and doesn't need a new built-in rule.
 
 **ID-numbering note (2026-05-22).** The IDs in this section are
-placeholders, not reservations. The first two sweep batches landed
-under sequential numbers (``GHA-063`` through ``GHA-068``) without
+placeholders, not reservations. The first three sweep batches landed
+under sequential numbers (``GHA-063`` through ``GHA-071``) without
 matching the original placeholders in this section:
 
 * ``GHA-063`` landed as **bot-conditions** (originally placeholder
@@ -285,6 +285,12 @@ matching the original placeholders in this section:
   placeholder for bot-conditions, now ``GHA-063``).
 * ``GHA-068`` landed as **deprecated-runner** (originally placeholder
   for overprovisioned-permissions).
+* ``GHA-069`` landed as **orphan id-token: write** (originally
+  placeholder for overprovisioned-secrets).
+* ``GHA-070`` landed as **ssh-keyscan TOFU** (originally placeholder
+  for stale-action-refs).
+* ``GHA-071`` landed as **powershell-on-Linux** (originally
+  placeholder for unsound-contains, now ``GHA-064``).
 
 The struck-through items below are now shipped at the IDs listed
 inline. Remaining items keep their original placeholder IDs and
@@ -376,13 +382,13 @@ Suggested landing order, highest signal first:
   ``~/.gnupg``, ``~/.netrc``, ``~/.gradle/gradle.properties``,
   ``~/.m2/settings.xml``. HIGH severity. 12 per-rule tests +
   safe/unsafe fixture pair.
-- **GHA-075: shell defaulted to powershell on a Linux / macOS step.**
-  Mirrors zizmor proposal #288. A ``run:`` step on
-  ``runs-on: ubuntu-latest`` without a ``shell:`` defaults to
-  ``bash``, but ``shell: pwsh`` or the workflow-level default
-  ``shell: powershell`` on a non-Windows runner silently flips
-  language and tokenization rules, an injection that's a no-op in
-  bash can be live in pwsh. LOW severity, advisory.
+- ~~**GHA-075: shell defaulted to powershell on a Linux / macOS
+  step.**~~ Landed as **GHA-071**. Fires when the effective
+  shell for a ``run:`` step (step override > job defaults >
+  workflow defaults) is ``pwsh`` or ``powershell`` on a non-
+  Windows runner. Self-hosted label lists stay silent (OS
+  unidentifiable). LOW (advisory) severity. 9 per-rule tests +
+  safe/unsafe fixture pair.
 - ~~**GHA-076: runs-on uses a deprecated runner image.**~~ Landed
   as **GHA-068**. Fires on ``ubuntu-18.04``, ``ubuntu-20.04``,
   ``macos-10.15``, ``macos-11``, ``macos-12``, ``windows-2016``,
@@ -417,16 +423,13 @@ the cross-rule compositions worth firing.
 Second pass, drawn from zizmor's open feature-request backlog
 (non-``new-audit`` issues with real attack shape):
 
-- **GHA-079: ssh-keyscan trust-on-first-use.** Inspired by zizmor
-  proposal #2012. ``ssh-keyscan github.com >> ~/.ssh/known_hosts``
-  inside a ``run:`` step accepts whatever host key the network
-  returns. A workflow-runner-resident attacker (or a poisoned DNS
-  answer on a self-hosted runner) gets a clean MITM on the next
-  ``git fetch`` / ``scp`` / ``rsync`` from the same job. Same shape
-  with ``StrictHostKeyChecking=no`` / ``UserKnownHostsFile=
-  /dev/null`` flags on ``ssh -o``. HIGH severity. Pairs with GHA-023
-  (TLS / cert verify bypass) and GHA-054 (checkout ssh-key
-  persistence).
+- ~~**GHA-079: ssh-keyscan trust-on-first-use.**~~ Landed as
+  **GHA-070**. Fires on ``ssh-keyscan ... >> known_hosts``,
+  ``-o StrictHostKeyChecking=no``, ``-o
+  StrictHostKeyChecking=accept-new``, and ``-o
+  UserKnownHostsFile=/dev/null`` across ``ssh`` / ``scp`` /
+  ``rsync``. HIGH severity. 9 per-rule tests + safe/unsafe
+  fixture pair.
 - **GHA-080: TOCTOU on PR head SHA between checkout and use.**
   Inspired by zizmor proposal #935. A workflow that resolves the PR
   head once (``HEAD_SHA=$(git rev-parse HEAD)``) and then runs
@@ -463,14 +466,15 @@ Second pass, drawn from zizmor's open feature-request backlog
   mask::$SECRET"`` followed by a print of the masked value (mask
   applies post-printf, not pre-printf). HIGH severity. Pairs with
   GHA-033 (secret echoed) and GHA-038 (allow-unsecure-commands).
-- **GHA-084: orphan `id-token: write` scope.** Inspired by zizmor
-  proposal #1968. A job that grants ``id-token: write`` without an
-  OIDC-consumer step (``aws-actions/configure-aws-credentials``,
-  ``google-github-actions/auth``, ``azure/login``, the publish-with-
-  provenance family) is minting OIDC tokens that no step uses, the
-  scope is permission surface with zero value, and any later step
-  that gets compromised can request that token. MEDIUM severity.
-  Pairs with GHA-030 (OIDC without env).
+- ~~**GHA-084: orphan `id-token: write` scope.**~~ Landed as
+  **GHA-069**. Fires when a job effectively holds
+  ``id-token: write`` (job-level, workflow-inherited, or
+  ``permissions: write-all``) but no step invokes a known OIDC
+  consumer (curated list covering cloud-credentials, trusted-
+  publishing, and Sigstore signing actions; plus the conditional
+  ``docker/build-push-action`` with ``provenance:`` / ``sbom:`` /
+  ``attestations:`` truthy). MEDIUM severity. 11 per-rule tests +
+  safe/unsafe fixture pair.
 - **GHA-085: workflow declares a secret it never references.**
   Inspired by zizmor proposal #1044 (unused secrets). A
   ``workflow_call.secrets.<name>: required: true`` without any

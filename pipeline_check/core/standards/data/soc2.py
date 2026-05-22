@@ -425,6 +425,9 @@ STANDARD = Standard(
         "GHA-066":  ["CC6.1"],              # upload-artifact wildcard sweeps workspace
         "GHA-067":  ["CC6.1"],              # cache step publishes credential-shaped paths
         "GHA-068":  ["CC8.1"],              # runs-on targets a deprecated hosted runner
+        "GHA-069":  ["CC6.1"],              # orphan id-token: write scope
+        "GHA-070":  ["CC6.1"],              # ssh-keyscan / host-key check TOFU
+        "GHA-071":  ["CC8.1"],              # powershell on Linux / macOS step
         "GHA-086":  ["CC8.1"],              # wildcard branch trigger + environment binding
         "GHA-087":  ["CC6.1"],              # derived-value of secret printed to log
         # ── GitLab CI ─────────────────────────────────────────────

@@ -1,0 +1,15 @@
+name: id-token-consumed
+on: push
+permissions:
+  contents: read
+  id-token: write
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332
+      - uses: aws-actions/configure-aws-credentials@692973e3d937129bcbf40652eb9f2f61becf3332
+        with:
+          role-to-assume: arn:aws:iam::000000000000:role/example
+          aws-region: us-east-1
+      - run: aws sts get-caller-identity

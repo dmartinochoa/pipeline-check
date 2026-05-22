@@ -202,6 +202,9 @@ STANDARD = Standard(
         "GHA-066":  ["CICD-SEC-6", "CICD-SEC-9"],  # upload-artifact wildcard sweeps workspace
         "GHA-067":  ["CICD-SEC-6"],                # cache step publishes credential-shaped paths
         "GHA-068":  ["CICD-SEC-7"],                # runs-on targets a deprecated hosted runner
+        "GHA-069":  ["CICD-SEC-5"],                # orphan id-token: write scope
+        "GHA-070":  ["CICD-SEC-3", "CICD-SEC-7"],  # ssh-keyscan / host-key check TOFU
+        "GHA-071":  ["CICD-SEC-4"],                # powershell on Linux / macOS step
         "GHA-086":  ["CICD-SEC-1", "CICD-SEC-5"],  # wildcard branch trigger + environment binding
         "GHA-087":  ["CICD-SEC-10", "CICD-SEC-6"],  # derived-value of secret printed to log
         # GitLab CI
