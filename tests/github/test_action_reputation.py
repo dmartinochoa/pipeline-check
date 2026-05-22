@@ -905,6 +905,181 @@ class TestGHA090:
         assert "dangerous/fork" in f.description
 
 
+# ── GHA-091: repojacking (404 on /repos/{o}/{r}) ───────────────────
+
+
+class TestGHA091:
+    def test_fires_when_action_repo_is_missing(self):
+        wf = """
+        name: ci
+        on: push
+        jobs:
+          build:
+            runs-on: ubuntu-latest
+            steps:
+              - uses: legacy/abandoned@v3
+              - uses: actions/checkout@v4
+        """
+        ctx = _ctx_with_metadata(wf)
+        # Some succeeded, one failed -> the failure is a real signal.
+        ctx.action_fetch_failures = {"legacy/abandoned"}
+        k, m = _meta("actions", "checkout")
+        ctx.action_metadata = {k: m}
+        f = _run(ctx, "GHA-091")
+        assert not f.passed
+        assert f.severity == Severity.HIGH
+        assert "legacy/abandoned" in f.description
+
+    def test_passes_when_every_action_fetched_cleanly(self):
+        wf = """
+        name: ci
+        on: push
+        jobs:
+          build:
+            runs-on: ubuntu-latest
+            steps:
+              - uses: actions/checkout@v4
+        """
+        ctx = _ctx_with_metadata(wf)
+        k, m = _meta("actions", "checkout")
+        ctx.action_metadata = {k: m}
+        ctx.action_fetch_failures = set()
+        f = _run(ctx, "GHA-091")
+        assert f.passed
+
+    def test_passes_silently_when_resolver_off(self):
+        wf = """
+        name: ci
+        on: push
+        jobs:
+          build:
+            runs-on: ubuntu-latest
+            steps:
+              - uses: legacy/abandoned@v3
+        """
+        f = _run(_ctx_with_metadata(wf), "GHA-091")
+        assert f.passed
+        assert "resolve-remote" in f.description
+
+    def test_passes_silently_when_every_fetch_failed(self):
+        # Unanimous-failure shape is rate-limit / network noise.
+        wf = """
+        name: ci
+        on: push
+        jobs:
+          build:
+            runs-on: ubuntu-latest
+            steps:
+              - uses: actions/checkout@v4
+              - uses: actions/setup-node@v4
+        """
+        ctx = _ctx_with_metadata(wf)
+        ctx.action_metadata = {}
+        ctx.action_fetch_failures = {
+            "actions/checkout", "actions/setup-node",
+        }
+        f = _run(ctx, "GHA-091")
+        assert f.passed
+        assert "rate-limit" in f.description
+
+    def test_single_action_with_only_failure_still_fires(self):
+        # When only one action is referenced and it 404s, treat as
+        # real (the unanimous-failure heuristic only kicks in with
+        # >= 2 actions, since a peer is needed for "every" to mean
+        # anything).
+        wf = """
+        name: ci
+        on: push
+        jobs:
+          build:
+            runs-on: ubuntu-latest
+            steps:
+              - uses: legacy/abandoned@v3
+        """
+        ctx = _ctx_with_metadata(wf)
+        ctx.action_metadata = {}
+        ctx.action_fetch_failures = {"legacy/abandoned"}
+        f = _run(ctx, "GHA-091")
+        assert not f.passed
+        assert "legacy/abandoned" in f.description
+
+    def test_fires_on_reusable_workflow_uses(self):
+        wf = """
+        name: ci
+        on: push
+        jobs:
+          call:
+            uses: legacy/abandoned/.github/workflows/build.yml@v3
+        """
+        ctx = _ctx_with_metadata(wf)
+        ctx.action_fetch_failures = {"legacy/abandoned"}
+        # Add a successful peer so the unanimous heuristic doesn't
+        # bypass.
+        k, m = _meta("actions", "checkout")
+        ctx.action_metadata = {k: m}
+        f = _run(ctx, "GHA-091")
+        assert not f.passed
+        assert "legacy/abandoned" in f.description
+
+    def test_local_action_silent(self):
+        wf = """
+        name: ci
+        on: push
+        jobs:
+          build:
+            runs-on: ubuntu-latest
+            steps:
+              - uses: ./.github/actions/build
+        """
+        ctx = _ctx_with_metadata(wf)
+        # Even with an unrelated failure, the rule should not flag a
+        # local action.
+        ctx.action_metadata = {}
+        ctx.action_fetch_failures = {"some/other"}
+        f = _run(ctx, "GHA-091")
+        assert f.passed
+
+    def test_multiple_failures_aggregated(self):
+        wf = """
+        name: ci
+        on: push
+        jobs:
+          build:
+            runs-on: ubuntu-latest
+            steps:
+              - uses: legacy/abandoned-a@v1
+              - uses: legacy/abandoned-b@v2
+              - uses: actions/checkout@v4
+        """
+        ctx = _ctx_with_metadata(wf)
+        ctx.action_fetch_failures = {
+            "legacy/abandoned-a", "legacy/abandoned-b",
+        }
+        k, m = _meta("actions", "checkout")
+        ctx.action_metadata = {k: m}
+        f = _run(ctx, "GHA-091")
+        assert not f.passed
+        assert "2 action(s)" in f.description
+
+    def test_case_insensitive_lookup(self):
+        # Workflow body upper-cased; failure set lower-cased.
+        wf = """
+        name: ci
+        on: push
+        jobs:
+          build:
+            runs-on: ubuntu-latest
+            steps:
+              - uses: LEGACY/Abandoned@v3
+        """
+        ctx = _ctx_with_metadata(wf)
+        ctx.action_fetch_failures = {"legacy/abandoned"}
+        k, m = _meta("actions", "checkout")
+        ctx.action_metadata = {k: m}
+        f = _run(ctx, "GHA-091")
+        assert not f.passed
+
+
 # ── _action_reputation.fetch_sha_membership ────────────────────────
 
 

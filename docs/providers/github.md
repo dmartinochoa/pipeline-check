@@ -72,7 +72,7 @@ Resolution rules:
 
 ## What it covers
 
-81 checks · 17 have an autofix patch (``--fix``).
+82 checks · 17 have an autofix patch (``--fix``).
 
 | Check | Title | Severity | Fix |
 |-------|-------|----------|-----|
@@ -154,6 +154,7 @@ Resolution rules:
 | [GHA-088](#gha-088) | Action ``uses:`` slug is a near-edit of a top-traffic action | <span class="pg-sev pg-sev--high">HIGH</span> |  |
 | [GHA-089](#gha-089) | Action upstream repo is archived | <span class="pg-sev pg-sev--medium">MEDIUM</span> |  |
 | [GHA-090](#gha-090) | Action SHA pin references a commit absent from the claimed repo | <span class="pg-sev pg-sev--high">HIGH</span> |  |
+| [GHA-091](#gha-091) | Action upstream repo is missing (takeover-eligible namespace) | <span class="pg-sev pg-sev--high">HIGH</span> |  |
 | [TAINT-001](#taint-001) | Untrusted input flows across step boundaries via step outputs | <span class="pg-sev pg-sev--high">HIGH</span> |  |
 | [TAINT-002](#taint-002) | Untrusted input flows across jobs via ``jobs.<id>.outputs:`` | <span class="pg-sev pg-sev--high">HIGH</span> |  |
 | [TAINT-003](#taint-003) | Untrusted input forwarded into reusable workflow ``with:`` | <span class="pg-sev pg-sev--high">HIGH</span> |  |
@@ -3101,6 +3102,451 @@ Reads the per-SHA membership probe from ``ctx.action_metadata[owner/repo].sha_me
 **Recommended action**
 
 Verify the action's expected SHA via the upstream repo's release / tag history. If the SHA exists only in a fork, either pin to a canonical SHA on the head repository or fork the action under your org's control so the network you depend on is not the attacker's. The impostor-commit shape was popularized by red-team write-ups, the SHA pin passes review eyes because reviewers don't query the network for membership.
+
+</div>
+
+</div>
+
+<div class="pg-rule pg-rule--high" markdown>
+
+## GHA-091: Action upstream repo is missing (takeover-eligible namespace) { #gha-091 }
+
+<div class="pg-rule__tags">
+<span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-3</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-8</span> <span class="pg-tag pg-tag--esf">ESF-S-VERIFY-DEPS</span> <span class="pg-tag pg-tag--cwe">CWE-1357</span> <span class="pg-tag pg-tag--cwe">CWE-829</span>
+</div>
+
+Reads from ``ctx.action_fetch_failures``, the set of ``owner/repo`` slugs whose ``GET /repos/{o}/{r}`` fetch returned no payload during the ``--resolve-remote`` pass. Unanimous-failure shape (every referenced action's fetch failed) is treated as rate-limit / resolver noise rather than repojacking, the rule passes silently with a one-line nudge so the operator surfaces the network issue. Single-action failures are real signals because all the other actions in the same scan fetched fine, the infrastructure is up and the 404 is specifically this namespace. Both step-level and reusable-workflow ``uses:`` are covered. HIGH severity, the takeover-eligibility window opens the moment the namespace flips and stays open until the workflow no longer references the slug.
+
+**Known false-positive modes**
+
+- P
+- r
+- i
+- v
+- a
+- t
+- e
+- 
+- u
+- p
+- s
+- t
+- r
+- e
+- a
+- m
+- s
+- 
+- t
+- h
+- a
+- t
+- 
+- p
+- i
+- p
+- e
+- l
+- i
+- n
+- e
+- -
+- c
+- h
+- e
+- c
+- k
+- 
+- c
+- a
+- n
+- '
+- t
+- 
+- s
+- e
+- e
+- 
+- w
+- i
+- t
+- h
+- o
+- u
+- t
+- 
+- a
+- 
+- t
+- o
+- k
+- e
+- n
+- 
+- m
+- a
+- y
+- 
+- s
+- h
+- o
+- w
+- 
+- u
+- p
+- 
+- h
+- e
+- r
+- e
+- .
+- 
+- C
+- o
+- n
+- f
+- i
+- r
+- m
+- 
+- t
+- h
+- e
+- 
+- 4
+- 0
+- 4
+- 
+- b
+- y
+- 
+- h
+- i
+- t
+- t
+- i
+- n
+- g
+- 
+- t
+- h
+- e
+- 
+- U
+- R
+- L
+- 
+- f
+- r
+- o
+- m
+- 
+- a
+- 
+- b
+- r
+- o
+- w
+- s
+- e
+- r
+- 
+- w
+- i
+- t
+- h
+- 
+- t
+- h
+- e
+- 
+- a
+- p
+- p
+- r
+- o
+- p
+- r
+- i
+- a
+- t
+- e
+- 
+- a
+- u
+- t
+- h
+- ;
+- 
+- i
+- f
+- 
+- t
+- h
+- e
+- 
+- r
+- e
+- p
+- o
+- 
+- i
+- s
+- 
+- p
+- r
+- i
+- v
+- a
+- t
+- e
+- 
+- b
+- u
+- t
+- 
+- r
+- e
+- a
+- c
+- h
+- a
+- b
+- l
+- e
+- 
+- f
+- o
+- r
+- 
+- y
+- o
+- u
+- r
+- 
+- o
+- r
+- g
+- ,
+- 
+- t
+- h
+- e
+- 
+- r
+- e
+- s
+- o
+- l
+- v
+- e
+- r
+- '
+- s
+- 
+- u
+- n
+- a
+- u
+- t
+- h
+- e
+- n
+- t
+- i
+- c
+- a
+- t
+- e
+- d
+- 
+- p
+- r
+- o
+- b
+- e
+- 
+- i
+- s
+- 
+- t
+- h
+- e
+- 
+- f
+- a
+- l
+- s
+- e
+- 
+- p
+- o
+- s
+- i
+- t
+- i
+- v
+- e
+- 
+- a
+- n
+- d
+- 
+- `
+- `
+- -
+- -
+- g
+- h
+- -
+- t
+- o
+- k
+- e
+- n
+- `
+- `
+- 
+- f
+- i
+- x
+- e
+- s
+- 
+- i
+- t
+- .
+- 
+- P
+- e
+- r
+- s
+- i
+- s
+- t
+- e
+- n
+- t
+- 
+- /
+- 
+- b
+- y
+- -
+- d
+- e
+- s
+- i
+- g
+- n
+- 
+- p
+- r
+- i
+- v
+- a
+- t
+- e
+- 
+- a
+- c
+- t
+- i
+- o
+- n
+- s
+- 
+- s
+- h
+- o
+- u
+- l
+- d
+- 
+- b
+- e
+- 
+- s
+- u
+- p
+- p
+- r
+- e
+- s
+- s
+- e
+- d
+- 
+- p
+- e
+- r
+- -
+- f
+- i
+- n
+- d
+- i
+- n
+- g
+- 
+- w
+- i
+- t
+- h
+- 
+- a
+- 
+- r
+- a
+- t
+- i
+- o
+- n
+- a
+- l
+- e
+- 
+- t
+- h
+- a
+- t
+- 
+- n
+- a
+- m
+- e
+- s
+- 
+- t
+- h
+- e
+- 
+- a
+- c
+- c
+- e
+- s
+- s
+- 
+- b
+- o
+- u
+- n
+- d
+- a
+- r
+- y
+- .
+
+**Seen in the wild**
+
+- rentbcn / tj-actions namespace-deletion incidents (2024-2025): the upstream owner deleted the org and the name became registrable. Any workflow that re-resolved a non-SHA ref afterward ran the new owner's code. The shape is the canonical example for repojacking write-ups from Aikido, Wiz, and Snyk Research.
+
+<div class="pg-rule__rec" markdown>
+
+**Recommended action**
+
+Confirm the upstream namespace status. If the owner / repo was genuinely deleted (the resolver returns 404 while the workflow still references it), vendor the action under your org's control immediately, pin to your fork's SHA, and audit any prior workflow runs that used a non-SHA ref (``@v1`` / ``@main``). If the owner was renamed and the new name carries the canonical project, update the ``uses:`` slug. Pairs with the no-name-squatting posture, every external action your CI runs should resolve to a namespace your org controls or one the upstream maintainer still owns.
 
 </div>
 

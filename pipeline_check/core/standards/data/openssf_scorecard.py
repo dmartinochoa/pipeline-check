@@ -62,6 +62,7 @@ STANDARD = Standard(
         "GHA-088":  ["Pinned-Dependencies"],                           # typosquat uses
         "GHA-089":  ["Pinned-Dependencies"],                           # archived upstream
         "GHA-090":  ["Pinned-Dependencies"],                           # impostor-commit
+        "GHA-091":  ["Pinned-Dependencies"],                           # repojacking
         "GL-001":   ["Pinned-Dependencies"],
         "GL-005":   ["Pinned-Dependencies"],
         "GL-009":   ["Pinned-Dependencies"],

@@ -19,7 +19,7 @@ Kubernetes, …) when an audit asks for that framework's vocabulary.
 
 - **Controls in this standard:** 10
 - **Controls evidenced by at least one check:** 10 / 10
-- **Distinct checks evidencing this standard:** 602
+- **Distinct checks evidencing this standard:** 603
 - **Of those, autofixable with `--fix`:** 111
 
 _Severity levels (`CRITICAL` / `HIGH` / `MEDIUM` / `LOW` / `INFO`) follow the same scale across every provider and standard. See [How to read severity](README.md#how-to-read-severity) on the standards overview for the definitions._
@@ -32,12 +32,12 @@ Click a control ID to jump to the per-control section with the full check list. 
 |---------|-------|-------:|--------------|
 | [`CICD-SEC-1`](#ctrl-cicd-sec-1) | Insufficient Flow Control Mechanisms | 75 | 4C · 33H · 30M · 8L |
 | [`CICD-SEC-2`](#ctrl-cicd-sec-2) | Inadequate Identity and Access Management | 40 | 5C · 23H · 11M · 1L |
-| [`CICD-SEC-3`](#ctrl-cicd-sec-3) | Dependency Chain Abuse | 180 | 5C · 91H · 68M · 16L |
+| [`CICD-SEC-3`](#ctrl-cicd-sec-3) | Dependency Chain Abuse | 181 | 5C · 92H · 68M · 16L |
 | [`CICD-SEC-4`](#ctrl-cicd-sec-4) | Poisoned Pipeline Execution | 94 | 24C · 49H · 15M · 6L |
 | [`CICD-SEC-5`](#ctrl-cicd-sec-5) | Insufficient PBAC | 35 | 4C · 21H · 10M |
 | [`CICD-SEC-6`](#ctrl-cicd-sec-6) | Insufficient Credential Hygiene | 75 | 29C · 30H · 16M |
 | [`CICD-SEC-7`](#ctrl-cicd-sec-7) | Insecure System Configuration | 104 | 22C · 40H · 35M · 7L |
-| [`CICD-SEC-8`](#ctrl-cicd-sec-8) | Ungoverned Usage of 3rd-Party Services | 31 | 8C · 15H · 8M |
+| [`CICD-SEC-8`](#ctrl-cicd-sec-8) | Ungoverned Usage of 3rd-Party Services | 32 | 8C · 16H · 8M |
 | [`CICD-SEC-9`](#ctrl-cicd-sec-9) | Improper Artifact Integrity Validation | 73 | 1C · 18H · 47M · 7L |
 | [`CICD-SEC-10`](#ctrl-cicd-sec-10) | Insufficient Logging and Visibility | 48 | 5H · 14M · 13L · 16I |
 
@@ -195,7 +195,7 @@ Long-lived static credentials, shared service accounts, and human identities reu
 
 Floating tags, range constraints, and unverified registries let an upstream maintainer compromise (or a typosquat) execute in your build the next time the dependency resolves.
 
-**Evidenced by 180 checks** across 21 providers (AWS, Argo CD, Argo Workflows, Azure DevOps, Bitbucket, Buildkite, CircleCI, Cloud Build, Dockerfile, Drone CI, GitHub Actions, GitLab CI, Helm, Jenkins, Kubernetes, OCI manifest, PyPI, SCM, Tekton, maven, npm).
+**Evidenced by 181 checks** across 21 providers (AWS, Argo CD, Argo Workflows, Azure DevOps, Bitbucket, Buildkite, CircleCI, Cloud Build, Dockerfile, Drone CI, GitHub Actions, GitLab CI, Helm, Jenkins, Kubernetes, OCI manifest, PyPI, SCM, Tekton, maven, npm).
 
 | Check | Title | Severity | Provider | Fix |
 |-------|-------|----------|----------|-----|
@@ -302,6 +302,7 @@ Floating tags, range constraints, and unverified registries let an upstream main
 | [`GHA-088`](#detail-gha-088) | Action ``uses:`` slug is a near-edit of a top-traffic action | <span class="pg-sev pg-sev--high">HIGH</span> | [GitHub Actions](../providers/github.md) |  |
 | [`GHA-089`](#detail-gha-089) | Action upstream repo is archived | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [GitHub Actions](../providers/github.md) |  |
 | [`GHA-090`](#detail-gha-090) | Action SHA pin references a commit absent from the claimed repo | <span class="pg-sev pg-sev--high">HIGH</span> | [GitHub Actions](../providers/github.md) |  |
+| [`GHA-091`](#detail-gha-091) | Action upstream repo is missing (takeover-eligible namespace) | <span class="pg-sev pg-sev--high">HIGH</span> | [GitHub Actions](../providers/github.md) |  |
 | [`GL-001`](#detail-gl-001) | Image not pinned to specific version or digest | <span class="pg-sev pg-sev--high">HIGH</span> | [GitLab CI](../providers/gitlab.md) | <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> |
 | [`GL-005`](#detail-gl-005) | include: pulls remote / project without pinned ref | <span class="pg-sev pg-sev--high">HIGH</span> | [GitLab CI](../providers/gitlab.md) |  |
 | [`GL-009`](#detail-gl-009) | Image pinned to version tag rather than sha256 digest | <span class="pg-sev pg-sev--low">LOW</span> | [GitLab CI](../providers/gitlab.md) |  |
@@ -728,7 +729,7 @@ Privileged containers, host mounts, root user, and disabled TLS turn a routine R
 
 Calls to external services, SaaS integrations, marketplace actions, package registries, expand the trust perimeter of the pipeline beyond what was reviewed and approved.
 
-**Evidenced by 31 checks** across 9 providers (AWS, Azure DevOps, Bitbucket, CircleCI, GitHub Actions, PyPI, SCM, maven, npm).
+**Evidenced by 32 checks** across 9 providers (AWS, Azure DevOps, Bitbucket, CircleCI, GitHub Actions, PyPI, SCM, maven, npm).
 
 | Check | Title | Severity | Provider | Fix |
 |-------|-------|----------|----------|-----|
@@ -748,6 +749,7 @@ Calls to external services, SaaS integrations, marketplace actions, package regi
 | [`GHA-047`](#detail-gha-047) | Action ref resolves to a recently committed tag or SHA | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [GitHub Actions](../providers/github.md) |  |
 | [`GHA-051`](#detail-gha-051) | services / container image is not pinned by digest | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [GitHub Actions](../providers/github.md) |  |
 | [`GHA-090`](#detail-gha-090) | Action SHA pin references a commit absent from the claimed repo | <span class="pg-sev pg-sev--high">HIGH</span> | [GitHub Actions](../providers/github.md) |  |
+| [`GHA-091`](#detail-gha-091) | Action upstream repo is missing (takeover-eligible namespace) | <span class="pg-sev pg-sev--high">HIGH</span> | [GitHub Actions](../providers/github.md) |  |
 | [`LMB-002`](#detail-lmb-002) | Lambda function URL has AuthType=NONE | <span class="pg-sev pg-sev--high">HIGH</span> | [AWS](../providers/aws.md) |  |
 | [`LMB-004`](#detail-lmb-004) | Lambda resource policy allows wildcard principal | <span class="pg-sev pg-sev--critical">CRITICAL</span> | [AWS](../providers/aws.md) |  |
 | [`MVN-003`](#detail-mvn-003) | pom.xml declares a plaintext-HTTP Maven repository | <span class="pg-sev pg-sev--high">HIGH</span> | [maven](../providers/maven.md) |  |
@@ -12256,6 +12258,465 @@ jobs:
 ```
 
 **Source:** [`GHA-090`](../providers/github.md#gha-090) in the [GitHub Actions provider](../providers/github.md).
+
+### `GHA-091`: Action upstream repo is missing (takeover-eligible namespace) <span class="pg-sev pg-sev--high">HIGH</span> { #detail-gha-091 }
+
+**Evidences:** [`CICD-SEC-3`](#ctrl-cicd-sec-3) Dependency Chain Abuse, [`CICD-SEC-8`](#ctrl-cicd-sec-8) Ungoverned Usage of 3rd-Party Services.
+
+**How this is detected.** Reads from ``ctx.action_fetch_failures``, the set of ``owner/repo`` slugs whose ``GET /repos/{o}/{r}`` fetch returned no payload during the ``--resolve-remote`` pass. Unanimous-failure shape (every referenced action's fetch failed) is treated as rate-limit / resolver noise rather than repojacking, the rule passes silently with a one-line nudge so the operator surfaces the network issue. Single-action failures are real signals because all the other actions in the same scan fetched fine, the infrastructure is up and the 404 is specifically this namespace. Both step-level and reusable-workflow ``uses:`` are covered. HIGH severity, the takeover-eligibility window opens the moment the namespace flips and stays open until the workflow no longer references the slug.
+
+**Recommendation.** Confirm the upstream namespace status. If the owner / repo was genuinely deleted (the resolver returns 404 while the workflow still references it), vendor the action under your org's control immediately, pin to your fork's SHA, and audit any prior workflow runs that used a non-SHA ref (``@v1`` / ``@main``). If the owner was renamed and the new name carries the canonical project, update the ``uses:`` slug. Pairs with the no-name-squatting posture, every external action your CI runs should resolve to a namespace your org controls or one the upstream maintainer still owns.
+
+**Known false positives.**
+
+- P
+- r
+- i
+- v
+- a
+- t
+- e
+- 
+- u
+- p
+- s
+- t
+- r
+- e
+- a
+- m
+- s
+- 
+- t
+- h
+- a
+- t
+- 
+- p
+- i
+- p
+- e
+- l
+- i
+- n
+- e
+- -
+- c
+- h
+- e
+- c
+- k
+- 
+- c
+- a
+- n
+- '
+- t
+- 
+- s
+- e
+- e
+- 
+- w
+- i
+- t
+- h
+- o
+- u
+- t
+- 
+- a
+- 
+- t
+- o
+- k
+- e
+- n
+- 
+- m
+- a
+- y
+- 
+- s
+- h
+- o
+- w
+- 
+- u
+- p
+- 
+- h
+- e
+- r
+- e
+- .
+- 
+- C
+- o
+- n
+- f
+- i
+- r
+- m
+- 
+- t
+- h
+- e
+- 
+- 4
+- 0
+- 4
+- 
+- b
+- y
+- 
+- h
+- i
+- t
+- t
+- i
+- n
+- g
+- 
+- t
+- h
+- e
+- 
+- U
+- R
+- L
+- 
+- f
+- r
+- o
+- m
+- 
+- a
+- 
+- b
+- r
+- o
+- w
+- s
+- e
+- r
+- 
+- w
+- i
+- t
+- h
+- 
+- t
+- h
+- e
+- 
+- a
+- p
+- p
+- r
+- o
+- p
+- r
+- i
+- a
+- t
+- e
+- 
+- a
+- u
+- t
+- h
+- ;
+- 
+- i
+- f
+- 
+- t
+- h
+- e
+- 
+- r
+- e
+- p
+- o
+- 
+- i
+- s
+- 
+- p
+- r
+- i
+- v
+- a
+- t
+- e
+- 
+- b
+- u
+- t
+- 
+- r
+- e
+- a
+- c
+- h
+- a
+- b
+- l
+- e
+- 
+- f
+- o
+- r
+- 
+- y
+- o
+- u
+- r
+- 
+- o
+- r
+- g
+- ,
+- 
+- t
+- h
+- e
+- 
+- r
+- e
+- s
+- o
+- l
+- v
+- e
+- r
+- '
+- s
+- 
+- u
+- n
+- a
+- u
+- t
+- h
+- e
+- n
+- t
+- i
+- c
+- a
+- t
+- e
+- d
+- 
+- p
+- r
+- o
+- b
+- e
+- 
+- i
+- s
+- 
+- t
+- h
+- e
+- 
+- f
+- a
+- l
+- s
+- e
+- 
+- p
+- o
+- s
+- i
+- t
+- i
+- v
+- e
+- 
+- a
+- n
+- d
+- 
+- `
+- `
+- -
+- -
+- g
+- h
+- -
+- t
+- o
+- k
+- e
+- n
+- `
+- `
+- 
+- f
+- i
+- x
+- e
+- s
+- 
+- i
+- t
+- .
+- 
+- P
+- e
+- r
+- s
+- i
+- s
+- t
+- e
+- n
+- t
+- 
+- /
+- 
+- b
+- y
+- -
+- d
+- e
+- s
+- i
+- g
+- n
+- 
+- p
+- r
+- i
+- v
+- a
+- t
+- e
+- 
+- a
+- c
+- t
+- i
+- o
+- n
+- s
+- 
+- s
+- h
+- o
+- u
+- l
+- d
+- 
+- b
+- e
+- 
+- s
+- u
+- p
+- p
+- r
+- e
+- s
+- s
+- e
+- d
+- 
+- p
+- e
+- r
+- -
+- f
+- i
+- n
+- d
+- i
+- n
+- g
+- 
+- w
+- i
+- t
+- h
+- 
+- a
+- 
+- r
+- a
+- t
+- i
+- o
+- n
+- a
+- l
+- e
+- 
+- t
+- h
+- a
+- t
+- 
+- n
+- a
+- m
+- e
+- s
+- 
+- t
+- h
+- e
+- 
+- a
+- c
+- c
+- e
+- s
+- s
+- 
+- b
+- o
+- u
+- n
+- d
+- a
+- r
+- y
+- .
+
+**Seen in the wild.**
+
+- rentbcn / tj-actions namespace-deletion incidents (2024-2025): the upstream owner deleted the org and the name became registrable. Any workflow that re-resolved a non-SHA ref afterward ran the new owner's code. The shape is the canonical example for repojacking write-ups from Aikido, Wiz, and Snyk Research.
+
+**Proof of exploit.**
+
+```
+# Vulnerable: the upstream owner deleted the org.
+# pipeline-check's resolver got a 404 on /repos/legacy/
+# abandoned. The slug is now registrable by anyone, and a
+# subsequent re-pin to ``@v2`` (because v1 had a CVE)
+# pulls the attacker's first release.
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: legacy/abandoned@<sha>
+      - run: ./build.sh
+
+# Safe: vendored under your org's control.
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: yourorg/abandoned-fork@<sha>
+      - run: ./build.sh
+```
+
+**Source:** [`GHA-091`](../providers/github.md#gha-091) in the [GitHub Actions provider](../providers/github.md).
 
 ### `GL-001`: Image not pinned to specific version or digest <span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> { #detail-gl-001 }
 

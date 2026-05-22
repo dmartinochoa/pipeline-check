@@ -32,6 +32,24 @@ release commit collapses this section into `## [X.Y.Z] - <date>`.
 
 ### Added
 
+- **GHA-091 repojacking (closes #155).** New rule that fires when
+  an action's upstream repo is missing — the namespace is
+  takeover-eligible by anyone. Reads a new
+  ``ctx.action_fetch_failures`` set (lower-cased ``owner/repo``
+  slugs whose ``GET /repos/{o}/{r}`` came back empty during the
+  ``--resolve-remote`` pass). Same per-action repo fetch the
+  GHA-041..043 reputation rules ride on; no new HTTP call. Both
+  step-level and reusable-workflow ``uses:`` are covered. Apply
+  the same unanimous-failure heuristic as GHA-090: if every
+  referenced action's fetch failed and at least two were probed,
+  treat as rate-limit / resolver noise. HIGH severity, OWASP CICD-
+  SEC-3 / CICD-SEC-8, ESF-S-VERIFY-DEPS, NIST SR-3 / RA-5, CSF
+  GV.SC-05, SOC2 CC6.8 / CC8.1, PCI 6.3.1 / 6.3.3, CIS 1.4.1 /
+  3.1.3, OpenSSF Scorecard Pinned-Dependencies, SLSA Build.L3.
+  NonFalsifiable. 9 per-rule tests under
+  ``tests/github/test_action_reputation.py::TestGHA091``. Brings
+  GHA pack to 82 rules.
+
 - **GHA-090 impostor-commit (closes #147).** New rule that fires
   when a SHA-pinned ``uses:`` reference points at a commit absent
   from the claimed repo's commit graph (the "fork-network only"

@@ -537,6 +537,7 @@ STANDARD = Standard(
         "GHA-088":  ["ESF-S-VERIFY-DEPS"],           # typosquat uses: near-edit of top action
         "GHA-089":  ["ESF-S-VERIFY-DEPS"],           # archived upstream repo
         "GHA-090":  ["ESF-S-VERIFY-DEPS"],           # impostor-commit: SHA absent from repo
+        "GHA-091":  ["ESF-S-VERIFY-DEPS"],           # repojacking: action upstream missing
         # ── GitLab CI extras ─────────────────────────────────────
         "GL-028":   ["ESF-S-PIN-DEPS", "ESF-S-VERIFY-DEPS"],   # services: image not pinned
         "GL-029":   ["ESF-C-APPROVAL"],             # manual deploy allow_failure

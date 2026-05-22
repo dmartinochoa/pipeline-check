@@ -80,6 +80,13 @@ class GitHubContext:
         #: opt-in flag isn't set; the reputation rules pass silently
         #: in that case rather than firing on missing data.
         self.action_metadata: dict[str, ActionRepoMetadata] = {}
+        #: Action ``owner/repo`` slugs (lower-cased) whose repo-
+        #: metadata fetch ran and came back empty. Most commonly a
+        #: 404, the repojacking signal GHA-091 fires on. Populated by
+        #: the same ``--resolve-remote`` path that fills
+        #: :attr:`action_metadata`; an empty set means either the
+        #: flag is off or every referenced action's fetch succeeded.
+        self.action_fetch_failures: set[str] = set()
 
     @classmethod
     def from_path(cls, path: str | Path) -> GitHubContext:

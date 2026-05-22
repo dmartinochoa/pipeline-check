@@ -212,6 +212,7 @@ STANDARD = Standard(
         "GHA-088":  ["CICD-SEC-3"],                # typosquat uses: near-edit of top action
         "GHA-089":  ["CICD-SEC-3"],                # archived upstream repo
         "GHA-090":  ["CICD-SEC-3", "CICD-SEC-8"],  # impostor-commit: SHA absent from repo
+        "GHA-091":  ["CICD-SEC-3", "CICD-SEC-8"],  # repojacking: action upstream missing
         # GitLab CI
         "GL-001":   ["CICD-SEC-3"],
         "GL-002":   ["CICD-SEC-4"],

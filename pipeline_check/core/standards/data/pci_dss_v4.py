@@ -395,6 +395,7 @@ STANDARD = Standard(
         "GHA-088":  ["6.3.1", "6.3.3"],                  # typosquat uses: near-edit of top action
         "GHA-089":  ["6.3.1", "6.3.3"],                  # archived upstream repo
         "GHA-090":  ["6.3.1", "6.3.3"],                  # impostor-commit: SHA absent from repo
+        "GHA-091":  ["6.3.1", "6.3.3"],                  # repojacking: action upstream missing
         # ── GitLab CI ─────────────────────────────────────────────
         "GL-006":   ["6.5.1", "10.3.2"],                 # unsigned artifacts
         "GL-007":   ["6.5.1"],                           # no SBOM

@@ -13,7 +13,7 @@ scanner can witness.
 
 - **Controls in this standard:** 13
 - **Controls evidenced by at least one check:** 13 / 13
-- **Distinct checks evidencing this standard:** 589
+- **Distinct checks evidencing this standard:** 590
 - **Of those, autofixable with `--fix`:** 111
 
 _Severity levels (`CRITICAL` / `HIGH` / `MEDIUM` / `LOW` / `INFO`) follow the same scale across every provider and standard. See [How to read severity](README.md#how-to-read-severity) on the standards overview for the definitions._
@@ -24,8 +24,8 @@ Click a control ID to jump to the per-control section with the full check list. 
 
 | Control | Title | Checks | Severity mix |
 |---------|-------|-------:|--------------|
-| [`6.3.1`](#ctrl-6-3-1) | Security vulnerabilities are identified and managed | 34 | 12C · 3H · 15M · 4L |
-| [`6.3.3`](#ctrl-6-3-3) | All system components protected from known vulnerabilities by installing applicable patches | 128 | 7C · 59H · 57M · 5L |
+| [`6.3.1`](#ctrl-6-3-1) | Security vulnerabilities are identified and managed | 35 | 12C · 4H · 15M · 4L |
+| [`6.3.3`](#ctrl-6-3-3) | All system components protected from known vulnerabilities by installing applicable patches | 129 | 7C · 60H · 57M · 5L |
 | [`6.4.1`](#ctrl-6-4-1) | Public-facing web apps are protected against attacks (secure build/config) | 115 | 20C · 51H · 36M · 8L |
 | [`6.4.3`](#ctrl-6-4-3) | Changes to systems are managed via documented change control | 61 | 2C · 21H · 31M · 7L |
 | [`6.5.1`](#ctrl-6-5-1) | Changes to system components follow secure development procedures | 276 | 42C · 120H · 94M · 20L |
@@ -57,7 +57,7 @@ pipeline_check --pipeline aws --standard pci_dss_v4 --standard owasp_cicd_top_10
 
 ### 6.3.1: Security vulnerabilities are identified and managed { #ctrl-6-3-1 }
 
-**Evidenced by 34 checks** across 15 providers (AWS, Argo Workflows, Azure DevOps, Bitbucket, Buildkite, CircleCI, Cloud Build, GitHub Actions, GitLab CI, Jenkins, PyPI, SCM, Tekton, maven, npm).
+**Evidenced by 35 checks** across 15 providers (AWS, Argo Workflows, Azure DevOps, Bitbucket, Buildkite, CircleCI, Cloud Build, GitHub Actions, GitLab CI, Jenkins, PyPI, SCM, Tekton, maven, npm).
 
 | Check | Title | Severity | Provider | Fix |
 |-------|-------|----------|----------|-----|
@@ -79,6 +79,7 @@ pipeline_check --pipeline aws --standard pci_dss_v4 --standard owasp_cicd_top_10
 | [`GHA-088`](#detail-gha-088) | Action ``uses:`` slug is a near-edit of a top-traffic action | <span class="pg-sev pg-sev--high">HIGH</span> | [GitHub Actions](../providers/github.md) |  |
 | [`GHA-089`](#detail-gha-089) | Action upstream repo is archived | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [GitHub Actions](../providers/github.md) |  |
 | [`GHA-090`](#detail-gha-090) | Action SHA pin references a commit absent from the claimed repo | <span class="pg-sev pg-sev--high">HIGH</span> | [GitHub Actions](../providers/github.md) |  |
+| [`GHA-091`](#detail-gha-091) | Action upstream repo is missing (takeover-eligible namespace) | <span class="pg-sev pg-sev--high">HIGH</span> | [GitHub Actions](../providers/github.md) |  |
 | [`GL-019`](#detail-gl-019) | No vulnerability scanning step | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [GitLab CI](../providers/gitlab.md) |  |
 | [`GL-025`](#detail-gl-025) | Pipeline contains indicators of malicious activity | <span class="pg-sev pg-sev--critical">CRITICAL</span> | [GitLab CI](../providers/gitlab.md) |  |
 | [`JF-020`](#detail-jf-020) | No vulnerability scanning step | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [Jenkins](../providers/jenkins.md) |  |
@@ -98,7 +99,7 @@ pipeline_check --pipeline aws --standard pci_dss_v4 --standard owasp_cicd_top_10
 
 ### 6.3.3: All system components protected from known vulnerabilities by installing applicable patches { #ctrl-6-3-3 }
 
-**Evidenced by 128 checks** across 20 providers (AWS, Argo Workflows, Azure DevOps, Bitbucket, Buildkite, CircleCI, Cloud Build, Dockerfile, Drone CI, GitHub Actions, GitLab CI, Helm, Jenkins, Kubernetes, OCI manifest, PyPI, SCM, Tekton, maven, npm).
+**Evidenced by 129 checks** across 20 providers (AWS, Argo Workflows, Azure DevOps, Bitbucket, Buildkite, CircleCI, Cloud Build, Dockerfile, Drone CI, GitHub Actions, GitLab CI, Helm, Jenkins, Kubernetes, OCI manifest, PyPI, SCM, Tekton, maven, npm).
 
 | Check | Title | Severity | Provider | Fix |
 |-------|-------|----------|----------|-----|
@@ -176,6 +177,7 @@ pipeline_check --pipeline aws --standard pci_dss_v4 --standard owasp_cicd_top_10
 | [`GHA-088`](#detail-gha-088) | Action ``uses:`` slug is a near-edit of a top-traffic action | <span class="pg-sev pg-sev--high">HIGH</span> | [GitHub Actions](../providers/github.md) |  |
 | [`GHA-089`](#detail-gha-089) | Action upstream repo is archived | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [GitHub Actions](../providers/github.md) |  |
 | [`GHA-090`](#detail-gha-090) | Action SHA pin references a commit absent from the claimed repo | <span class="pg-sev pg-sev--high">HIGH</span> | [GitHub Actions](../providers/github.md) |  |
+| [`GHA-091`](#detail-gha-091) | Action upstream repo is missing (takeover-eligible namespace) | <span class="pg-sev pg-sev--high">HIGH</span> | [GitHub Actions](../providers/github.md) |  |
 | [`GL-001`](#detail-gl-001) | Image not pinned to specific version or digest | <span class="pg-sev pg-sev--high">HIGH</span> | [GitLab CI](../providers/gitlab.md) | <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> |
 | [`GL-005`](#detail-gl-005) | include: pulls remote / project without pinned ref | <span class="pg-sev pg-sev--high">HIGH</span> | [GitLab CI](../providers/gitlab.md) |  |
 | [`GL-009`](#detail-gl-009) | Image pinned to version tag rather than sha256 digest | <span class="pg-sev pg-sev--low">LOW</span> | [GitLab CI](../providers/gitlab.md) |  |
@@ -12039,6 +12041,465 @@ jobs:
 ```
 
 **Source:** [`GHA-090`](../providers/github.md#gha-090) in the [GitHub Actions provider](../providers/github.md).
+
+### `GHA-091`: Action upstream repo is missing (takeover-eligible namespace) <span class="pg-sev pg-sev--high">HIGH</span> { #detail-gha-091 }
+
+**Evidences:** [`6.3.1`](#ctrl-6-3-1) Security vulnerabilities are identified and managed, [`6.3.3`](#ctrl-6-3-3) All system components protected from known vulnerabilities by installing applicable patches.
+
+**How this is detected.** Reads from ``ctx.action_fetch_failures``, the set of ``owner/repo`` slugs whose ``GET /repos/{o}/{r}`` fetch returned no payload during the ``--resolve-remote`` pass. Unanimous-failure shape (every referenced action's fetch failed) is treated as rate-limit / resolver noise rather than repojacking, the rule passes silently with a one-line nudge so the operator surfaces the network issue. Single-action failures are real signals because all the other actions in the same scan fetched fine, the infrastructure is up and the 404 is specifically this namespace. Both step-level and reusable-workflow ``uses:`` are covered. HIGH severity, the takeover-eligibility window opens the moment the namespace flips and stays open until the workflow no longer references the slug.
+
+**Recommendation.** Confirm the upstream namespace status. If the owner / repo was genuinely deleted (the resolver returns 404 while the workflow still references it), vendor the action under your org's control immediately, pin to your fork's SHA, and audit any prior workflow runs that used a non-SHA ref (``@v1`` / ``@main``). If the owner was renamed and the new name carries the canonical project, update the ``uses:`` slug. Pairs with the no-name-squatting posture, every external action your CI runs should resolve to a namespace your org controls or one the upstream maintainer still owns.
+
+**Known false positives.**
+
+- P
+- r
+- i
+- v
+- a
+- t
+- e
+- 
+- u
+- p
+- s
+- t
+- r
+- e
+- a
+- m
+- s
+- 
+- t
+- h
+- a
+- t
+- 
+- p
+- i
+- p
+- e
+- l
+- i
+- n
+- e
+- -
+- c
+- h
+- e
+- c
+- k
+- 
+- c
+- a
+- n
+- '
+- t
+- 
+- s
+- e
+- e
+- 
+- w
+- i
+- t
+- h
+- o
+- u
+- t
+- 
+- a
+- 
+- t
+- o
+- k
+- e
+- n
+- 
+- m
+- a
+- y
+- 
+- s
+- h
+- o
+- w
+- 
+- u
+- p
+- 
+- h
+- e
+- r
+- e
+- .
+- 
+- C
+- o
+- n
+- f
+- i
+- r
+- m
+- 
+- t
+- h
+- e
+- 
+- 4
+- 0
+- 4
+- 
+- b
+- y
+- 
+- h
+- i
+- t
+- t
+- i
+- n
+- g
+- 
+- t
+- h
+- e
+- 
+- U
+- R
+- L
+- 
+- f
+- r
+- o
+- m
+- 
+- a
+- 
+- b
+- r
+- o
+- w
+- s
+- e
+- r
+- 
+- w
+- i
+- t
+- h
+- 
+- t
+- h
+- e
+- 
+- a
+- p
+- p
+- r
+- o
+- p
+- r
+- i
+- a
+- t
+- e
+- 
+- a
+- u
+- t
+- h
+- ;
+- 
+- i
+- f
+- 
+- t
+- h
+- e
+- 
+- r
+- e
+- p
+- o
+- 
+- i
+- s
+- 
+- p
+- r
+- i
+- v
+- a
+- t
+- e
+- 
+- b
+- u
+- t
+- 
+- r
+- e
+- a
+- c
+- h
+- a
+- b
+- l
+- e
+- 
+- f
+- o
+- r
+- 
+- y
+- o
+- u
+- r
+- 
+- o
+- r
+- g
+- ,
+- 
+- t
+- h
+- e
+- 
+- r
+- e
+- s
+- o
+- l
+- v
+- e
+- r
+- '
+- s
+- 
+- u
+- n
+- a
+- u
+- t
+- h
+- e
+- n
+- t
+- i
+- c
+- a
+- t
+- e
+- d
+- 
+- p
+- r
+- o
+- b
+- e
+- 
+- i
+- s
+- 
+- t
+- h
+- e
+- 
+- f
+- a
+- l
+- s
+- e
+- 
+- p
+- o
+- s
+- i
+- t
+- i
+- v
+- e
+- 
+- a
+- n
+- d
+- 
+- `
+- `
+- -
+- -
+- g
+- h
+- -
+- t
+- o
+- k
+- e
+- n
+- `
+- `
+- 
+- f
+- i
+- x
+- e
+- s
+- 
+- i
+- t
+- .
+- 
+- P
+- e
+- r
+- s
+- i
+- s
+- t
+- e
+- n
+- t
+- 
+- /
+- 
+- b
+- y
+- -
+- d
+- e
+- s
+- i
+- g
+- n
+- 
+- p
+- r
+- i
+- v
+- a
+- t
+- e
+- 
+- a
+- c
+- t
+- i
+- o
+- n
+- s
+- 
+- s
+- h
+- o
+- u
+- l
+- d
+- 
+- b
+- e
+- 
+- s
+- u
+- p
+- p
+- r
+- e
+- s
+- s
+- e
+- d
+- 
+- p
+- e
+- r
+- -
+- f
+- i
+- n
+- d
+- i
+- n
+- g
+- 
+- w
+- i
+- t
+- h
+- 
+- a
+- 
+- r
+- a
+- t
+- i
+- o
+- n
+- a
+- l
+- e
+- 
+- t
+- h
+- a
+- t
+- 
+- n
+- a
+- m
+- e
+- s
+- 
+- t
+- h
+- e
+- 
+- a
+- c
+- c
+- e
+- s
+- s
+- 
+- b
+- o
+- u
+- n
+- d
+- a
+- r
+- y
+- .
+
+**Seen in the wild.**
+
+- rentbcn / tj-actions namespace-deletion incidents (2024-2025): the upstream owner deleted the org and the name became registrable. Any workflow that re-resolved a non-SHA ref afterward ran the new owner's code. The shape is the canonical example for repojacking write-ups from Aikido, Wiz, and Snyk Research.
+
+**Proof of exploit.**
+
+```
+# Vulnerable: the upstream owner deleted the org.
+# pipeline-check's resolver got a 404 on /repos/legacy/
+# abandoned. The slug is now registrable by anyone, and a
+# subsequent re-pin to ``@v2`` (because v1 had a CVE)
+# pulls the attacker's first release.
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: legacy/abandoned@<sha>
+      - run: ./build.sh
+
+# Safe: vendored under your org's control.
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: yourorg/abandoned-fork@<sha>
+      - run: ./build.sh
+```
+
+**Source:** [`GHA-091`](../providers/github.md#gha-091) in the [GitHub Actions provider](../providers/github.md).
 
 ### `GL-001`: Image not pinned to specific version or digest <span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> { #detail-gl-001 }
 

@@ -234,6 +234,7 @@ STANDARD = Standard(
         "GHA-088":  ["1.4.1", "3.1.3"],                  # typosquat uses: near-edit of top action
         "GHA-089":  ["1.4.1", "3.1.3"],                  # archived upstream repo
         "GHA-090":  ["1.4.1", "3.1.3"],                  # impostor-commit: SHA absent from repo
+        "GHA-091":  ["1.4.1", "3.1.3"],                  # repojacking: action upstream missing
         # GitLab CI
         "GL-001":   ["1.4.1", "3.1.5"],
         "GL-002":   ["2.1.3", "2.3.8"],

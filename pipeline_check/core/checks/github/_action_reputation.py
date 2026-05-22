@@ -399,3 +399,8 @@ def populate_action_metadata(
             f"lift the unauthenticated rate-limit ceiling."
         )
     ctx.action_metadata = fetched
+    # Surface the failed-fetch set separately so GHA-091 (repojacking)
+    # can act on it. The set carries owner/repo slugs, lower-cased
+    # to match the action_metadata keying so a rule can do both
+    # lookups with one normalized form.
+    ctx.action_fetch_failures = {slug.lower() for slug in failed}
