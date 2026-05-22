@@ -671,9 +671,41 @@ Architecture: ``pipeline_check/cli.py`` gains a ``fleet`` subcommand;
 ``pipeline_check/core/fleet.py`` owns shallow-clone, per-repo
 orchestration, and digest emission. The repo-list YAML and
 ``--from-org`` parsing reuse the existing SCM platform helpers.
-Cross-repo XPC chains stay out of scope for v1; the chain engine
-already runs per-repo and "an attack chain spanning two repos in the
-same org" is a separate (interesting) problem worth its own design.
+Cross-repo XPC chains stay out of scope for v1 of fleet itself; the
+chain-engine widening that composes findings across the fleet corpus
+lives in its own subsection below (and issue #173).
+
+### Cross-repo XPC chains (org-spanning attack-chain composition)
+
+The chain engine today fires per-repo, every ``AC-NNN`` / ``XPC-NNN``
+rule reads one scan's findings and decides whether the composite
+topology is present. Many real exploit shapes span two repos in the
+same org with the anchors living in different scans (npm publish in
+repo A consumed by floating versions in repo B, Argo CD config in
+repo A pointing at app code in repo B, App-token mint in repo A
+whose installation reaches repo B, reusable-workflow producer in
+repo A called by consumer in repo B).
+
+Activates only on fleet scans (depends on the fleet subsection
+above), as a single pass after per-repo scans complete: index every
+finding by anchor predicate, intersect anchor sets across the
+corpus, emit ``CXPC-NNN`` findings scoped to the pair (or N-tuple)
+of repos that share the topology. Reachability v1 is co-occurrence
+across the corpus (MEDIUM confidence with a "cross-repo
+co-occurrence, reachability unconfirmed" note); v2 promotes to HIGH
+on identity-bound co-occurrence (same App-installation slug, same
+OIDC subject pattern, same package name); v3 plugs into the dataflow
+phase below for the cross-document DAG walk.
+
+Initial pack: CXPC-001 (npm publish-side + floating consume-side on
+the same package name), CXPC-002 (Argo CD wildcard ``sourceRepos`` +
+weakened app-repo CI gates), CXPC-003 (over-broad App-token scope +
+installation reaches partner repo), CXPC-004 (reusable-workflow
+producer + consumer when the producer has an unguarded TAINT source,
+widens TAINT-003 to the cross-repo split). Cross-org and
+cross-platform composition stay out of scope.
+
+Filed as #173.
 
 ### VS Code extension
 
