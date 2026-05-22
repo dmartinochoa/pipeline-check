@@ -12,7 +12,7 @@ the scanner evidences controls that surface in CI/CD configuration.
 
 - **Controls in this standard:** 24
 - **Controls evidenced by at least one check:** 24 / 24
-- **Distinct checks evidencing this standard:** 593
+- **Distinct checks evidencing this standard:** 595
 - **Of those, autofixable with `--fix`:** 111
 
 _Severity levels (`CRITICAL` / `HIGH` / `MEDIUM` / `LOW` / `INFO`) follow the same scale across every provider and standard. See [How to read severity](README.md#how-to-read-severity) on the standards overview for the definitions._
@@ -26,7 +26,7 @@ Click a control ID to jump to the per-control section with the full check list. 
 | [`ESF-D-BUILD-ENV`](#ctrl-esf-d-build-env) | Harden the build environment (isolated, minimal, ephemeral workers) | 51 | 9C · 18H · 18M · 6L |
 | [`ESF-D-BUILD-LOGS`](#ctrl-esf-d-build-logs) | Generate and preserve build audit logs | 5 | 1H · 2M · 2L |
 | [`ESF-D-BUILD-TIMEOUT`](#ctrl-esf-d-build-timeout) | Enforce bounded build execution (single-use, time-limited) | 12 | 8M · 4L |
-| [`ESF-D-SECRETS`](#ctrl-esf-d-secrets) | Protect secrets used during build; no secrets in source or env | 49 | 27C · 19H · 2M · 1L |
+| [`ESF-D-SECRETS`](#ctrl-esf-d-secrets) | Protect secrets used during build; no secrets in source or env | 51 | 27C · 20H · 3M · 1L |
 | [`ESF-D-PRIV-BUILD`](#ctrl-esf-d-priv-build) | Avoid privileged / host-networked build workers | 41 | 6C · 20H · 14M · 1L |
 | [`ESF-D-SIGN-ARTIFACTS`](#ctrl-esf-d-sign-artifacts) | Sign build artifacts and verify signatures before release | 28 | 5H · 23M |
 | [`ESF-D-SBOM`](#ctrl-esf-d-sbom) | Produce SBOM / provenance metadata with every build | 26 | 1H · 20M · 5L |
@@ -45,7 +45,7 @@ Click a control ID to jump to the per-control section with the full check list. 
 | [`ESF-C-DEPLOY-MON`](#ctrl-esf-c-deploy-mon) | Monitor deployments with alarms / health checks | 5 | 3M · 2L |
 | [`ESF-C-ENV-SEP`](#ctrl-esf-c-env-sep) | Separate deployment environments (dev / staging / prod) | 12 | 2H · 8M · 2L |
 | [`ESF-C-ARTIFACT-AUTHZ`](#ctrl-esf-c-artifact-authz) | Restrict access to artifact storage and deployment pipelines | 14 | 4C · 2H · 8M |
-| [`ESF-C-LEAST-PRIV`](#ctrl-esf-c-least-priv) | Apply least-privilege to CI/CD service roles and pipelines | 36 | 6C · 17H · 13M |
+| [`ESF-C-LEAST-PRIV`](#ctrl-esf-c-least-priv) | Apply least-privilege to CI/CD service roles and pipelines | 37 | 6C · 18H · 13M |
 | [`ESF-C-AUDIT`](#ctrl-esf-c-audit) | Audit deployment / pipeline activity and retain logs | 25 | 1H · 4M · 4L · 16I |
 
 ## Filter at runtime
@@ -156,7 +156,7 @@ pipeline_check --pipeline aws --standard esf_supply_chain --standard owasp_cicd_
 
 ### ESF-D-SECRETS: Protect secrets used during build; no secrets in source or env { #ctrl-esf-d-secrets }
 
-**Evidenced by 49 checks** across 19 providers (AWS, Argo CD, Argo Workflows, Azure DevOps, Bitbucket, Buildkite, CircleCI, Cloud Build, CloudFormation, Dockerfile, Drone CI, GitHub Actions, GitLab CI, Jenkins, Kubernetes, SCM, Tekton, Terraform, npm).
+**Evidenced by 51 checks** across 19 providers (AWS, Argo CD, Argo Workflows, Azure DevOps, Bitbucket, Buildkite, CircleCI, Cloud Build, CloudFormation, Dockerfile, Drone CI, GitHub Actions, GitLab CI, Jenkins, Kubernetes, SCM, Tekton, Terraform, npm).
 
 | Check | Title | Severity | Provider | Fix |
 |-------|-------|----------|----------|-----|
@@ -191,6 +191,8 @@ pipeline_check --pipeline aws --standard esf_supply_chain --standard owasp_cicd_
 | [`GHA-057`](#detail-gha-057) | Secret-scanner output sent to network egress | <span class="pg-sev pg-sev--critical">CRITICAL</span> | [GitHub Actions](../providers/github.md) |  |
 | [`GHA-066`](#detail-gha-066) | ``actions/upload-artifact`` path is a workspace wildcard | <span class="pg-sev pg-sev--high">HIGH</span> | [GitHub Actions](../providers/github.md) |  |
 | [`GHA-067`](#detail-gha-067) | ``actions/cache`` writes credential-shaped paths | <span class="pg-sev pg-sev--high">HIGH</span> | [GitHub Actions](../providers/github.md) |  |
+| [`GHA-072`](#detail-gha-072) | Secret in env: at a wider scope than its consumer | <span class="pg-sev pg-sev--high">HIGH</span> | [GitHub Actions](../providers/github.md) |  |
+| [`GHA-073`](#detail-gha-073) | Reusable workflow declares an unused ``workflow_call`` secret | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [GitHub Actions](../providers/github.md) |  |
 | [`GHA-087`](#detail-gha-087) | Derived value of a secret printed to the build log | <span class="pg-sev pg-sev--high">HIGH</span> | [GitHub Actions](../providers/github.md) |  |
 | [`GL-003`](#detail-gl-003) | Variables contain literal secret values | <span class="pg-sev pg-sev--critical">CRITICAL</span> | [GitLab CI](../providers/gitlab.md) |  |
 | [`GL-008`](#detail-gl-008) | Credential-shaped literal in pipeline body | <span class="pg-sev pg-sev--critical">CRITICAL</span> | [GitLab CI](../providers/gitlab.md) | <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> |
@@ -892,7 +894,7 @@ pipeline_check --pipeline aws --standard esf_supply_chain --standard owasp_cicd_
 
 ### ESF-C-LEAST-PRIV: Apply least-privilege to CI/CD service roles and pipelines { #ctrl-esf-c-least-priv }
 
-**Evidenced by 36 checks** across 7 providers (AWS, Argo CD, Argo Workflows, GitHub Actions, Kubernetes, SCM, Tekton).
+**Evidenced by 37 checks** across 7 providers (AWS, Argo CD, Argo Workflows, GitHub Actions, Kubernetes, SCM, Tekton).
 
 | Check | Title | Severity | Provider | Fix |
 |-------|-------|----------|----------|-----|
@@ -911,6 +913,7 @@ pipeline_check --pipeline aws --standard esf_supply_chain --standard owasp_cicd_
 | [`GHA-061`](#detail-gha-061) | GitHub App token minted without a `permissions:` filter | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [GitHub Actions](../providers/github.md) |  |
 | [`GHA-062`](#detail-gha-062) | OIDC subject claim in sibling IaC grants overly broad scope | <span class="pg-sev pg-sev--high">HIGH</span> | [GitHub Actions](../providers/github.md) |  |
 | [`GHA-069`](#detail-gha-069) | ``id-token: write`` granted without an OIDC-consumer step | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [GitHub Actions](../providers/github.md) |  |
+| [`GHA-072`](#detail-gha-072) | Secret in env: at a wider scope than its consumer | <span class="pg-sev pg-sev--high">HIGH</span> | [GitHub Actions](../providers/github.md) |  |
 | [`IAM-001`](#detail-iam-001) | CI/CD role has AdministratorAccess policy attached | <span class="pg-sev pg-sev--critical">CRITICAL</span> | [AWS](../providers/aws.md) |  |
 | [`IAM-002`](#detail-iam-002) | CI/CD role has wildcard Action in attached policy | <span class="pg-sev pg-sev--high">HIGH</span> | [AWS](../providers/aws.md) |  |
 | [`IAM-003`](#detail-iam-003) | CI/CD role has no permission boundary | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [AWS](../providers/aws.md) |  |
@@ -11194,6 +11197,115 @@ jobs:
 ```
 
 **Source:** [`GHA-071`](../providers/github.md#gha-071) in the [GitHub Actions provider](../providers/github.md).
+
+### `GHA-072`: Secret in env: at a wider scope than its consumer <span class="pg-sev pg-sev--high">HIGH</span> { #detail-gha-072 }
+
+**Evidences:** [`ESF-D-SECRETS`](#ctrl-esf-d-secrets) Protect secrets used during build; no secrets in source or env, [`ESF-C-LEAST-PRIV`](#ctrl-esf-c-least-priv) Apply least-privilege to CI/CD service roles and pipelines.
+
+**How this is detected.** Fires in two shapes:
+
+1. **Job-level over-provisioning.** A ``jobs.<id>.env`` entry's value references ``${{ secrets.* }}`` AND no more than one step in that job references the env var. The other steps inherit the secret in their process env without using it.
+2. **Workflow-level over-provisioning.** A workflow-level ``env:`` entry's value references ``${{ secrets.* }}`` AND no more than one job in the workflow references the env var. The other jobs' processes carry the secret without using it.
+
+A step's ``env:`` block at the step level is the safe default and stays silent. The rule is name-aware: a job that defines ``DEPLOY_TOKEN`` and ``BUILD_TOKEN`` at the job level, with only one step using each, fires twice (one finding per overprovisioned var).
+
+**Recommendation.** Move the ``env:`` block carrying the secret to the step that consumes it. When two or more steps in the same job need the value, surface it on each step's ``env:`` (or compute it once via ``echo "name=..." >> $GITHUB_OUTPUT`` from a dedicated minimal step). Avoid workflow-level ``env:`` for secrets, every job in the workflow then inherits the value.
+
+**Known false positives.**
+
+- Composite steps that consume the env var internally and would need ``env:`` block forwarding to see the value scoped at step level. The local composite-action discovery path synthesizes those bodies as ``__composite__`` jobs; the env-var reference shows up there. If it doesn't (a remote composite not loaded by ``--resolve-remote``), suppress per-step via ignore-file with a note pointing at the composite action.
+
+**Seen in the wild.**
+
+- zizmor v1.25.2 ``overprovisioned-secrets`` audit: https://docs.zizmor.sh/audits/#overprovisioned-secrets
+
+**Proof of exploit.**
+
+```
+# Vulnerable: ``DEPLOY_TOKEN`` is on the JOB ``env:``,
+# so every step's process inherits the secret. Only the
+# ``deploy`` step actually uses it; the ``checkout`` and
+# ``test`` steps carry the value but don't read it.
+# Any compromise of those steps can ``env | base64`` to
+# exfiltrate.
+jobs:
+  ship:
+    runs-on: ubuntu-latest
+    env:
+      DEPLOY_TOKEN: ${{ secrets.DEPLOY_TOKEN }}
+    steps:
+      - uses: actions/checkout@<sha>
+      - run: ./test.sh
+      - run: curl -X POST -H "Authorization: Bearer $DEPLOY_TOKEN" https://api.example.com/deploy
+
+# Safe: scope the ``env:`` block to the consuming step.
+jobs:
+  ship:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@<sha>
+      - run: ./test.sh
+      - env:
+          DEPLOY_TOKEN: ${{ secrets.DEPLOY_TOKEN }}
+        run: curl -X POST -H "Authorization: Bearer $DEPLOY_TOKEN" https://api.example.com/deploy
+```
+
+**Source:** [`GHA-072`](../providers/github.md#gha-072) in the [GitHub Actions provider](../providers/github.md).
+
+### `GHA-073`: Reusable workflow declares an unused ``workflow_call`` secret <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-gha-073 }
+
+**Evidences:** [`ESF-D-SECRETS`](#ctrl-esf-d-secrets) Protect secrets used during build; no secrets in source or env.
+
+**How this is detected.** Fires on a workflow whose ``on.workflow_call.secrets`` block declares a name (``token`` / ``required: true`` / ``required: false`` / inline shorthand) that the body never references via ``${{ secrets.<name> }}`` interpolation. The body scan covers every string value in the parsed document (``run:`` bodies, ``env:`` entries, ``with:`` values, ``if:`` expressions, and the workflow's top-level ``env``).
+
+Out of scope (deliberate carve-out): secret names that appear only inside ``secrets:`` blocks on a nested ``jobs.<id>.uses:`` reusable-workflow call. Those are forward (the secret flows to a downstream callee that consumes it). Such forward references count as consumers for this rule, the leak surface is bounded by the downstream's declaration.
+
+**Recommendation.** Drop the unused ``on.workflow_call.secrets.<name>:`` declaration. If the caller's pipeline relies on the name being forced (a contract enforcement), document that intent in a workflow-level comment so the next refactor doesn't delete it silently. When the secret actually does get consumed later, add the ``${{ secrets.<name> }}`` reference back.
+
+**Known false positives.**
+
+- Workflows that declare a secret to enforce a contract across an organization's reusable-workflow library, even when the current body doesn't read the value. Suppress per-secret-name via ignore-file when the operator has documented the contract reason in a workflow-level comment.
+
+**Seen in the wild.**
+
+- zizmor proposal #1044 (unused-secrets audit): https://github.com/zizmorcore/zizmor/issues/1044
+
+**Proof of exploit.**
+
+```
+# Vulnerable: the reusable declares ``DEPLOY_TOKEN`` as
+# required, but the body never references it. Every
+# caller forward a real secret value for no reason.
+on:
+  workflow_call:
+    secrets:
+      DEPLOY_TOKEN:
+        required: true
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@<sha>
+      - run: ./build.sh
+
+# Safe: the declared secret is referenced in the
+# consuming step's ``env:``.
+on:
+  workflow_call:
+    secrets:
+      DEPLOY_TOKEN:
+        required: true
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@<sha>
+      - env:
+          DEPLOY_TOKEN: ${{ secrets.DEPLOY_TOKEN }}
+        run: ./deploy.sh
+```
+
+**Source:** [`GHA-073`](../providers/github.md#gha-073) in the [GitHub Actions provider](../providers/github.md).
 
 ### `GHA-086`: Wildcard branch trigger gates an environment-bound deploy <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-gha-086 }
 

@@ -126,6 +126,19 @@ _UNTRUSTED_CONTEXTS: tuple[str, ...] = (
     # anything, including ``${{ secrets.X }}``); same risk shape as
     # ``github.event.pull_request.head.ref``, more common in the wild.
     "github.head_ref",
+    # PR metadata that any contributor with ``triage`` (or that any
+    # first-time contributor under certain repo configurations) can
+    # set. Gating an ``if:`` on ``contains(github.event.pull_request.
+    # labels.*.name, 'safe-to-test')`` was the canonical 2024
+    # supply-chain foot-gun. The milestone fields and the
+    # requested-reviewers list have the same shape: visible in YAML,
+    # settable by a low-privilege actor. Substring-match against
+    # the parent path catches every spelling of the nested access.
+    "github.event.pull_request.labels",
+    "github.event.pull_request.milestone.title",
+    "github.event.pull_request.milestone.description",
+    "github.event.pull_request.requested_reviewers",
+    "github.event.pull_request.assignees",
 )
 
 

@@ -72,7 +72,7 @@ Resolution rules:
 
 ## What it covers
 
-76 checks · 17 have an autofix patch (``--fix``).
+78 checks · 17 have an autofix patch (``--fix``).
 
 | Check | Title | Severity | Fix |
 |-------|-------|----------|-----|
@@ -147,6 +147,8 @@ Resolution rules:
 | [GHA-069](#gha-069) | ``id-token: write`` granted without an OIDC-consumer step | <span class="pg-sev pg-sev--medium">MEDIUM</span> |  |
 | [GHA-070](#gha-070) | ``ssh-keyscan`` / disabled host-key check trust-on-first-use | <span class="pg-sev pg-sev--high">HIGH</span> |  |
 | [GHA-071](#gha-071) | ``shell: pwsh`` / ``powershell`` on a Linux / macOS step | <span class="pg-sev pg-sev--low">LOW</span> |  |
+| [GHA-072](#gha-072) | Secret in env: at a wider scope than its consumer | <span class="pg-sev pg-sev--high">HIGH</span> |  |
+| [GHA-073](#gha-073) | Reusable workflow declares an unused ``workflow_call`` secret | <span class="pg-sev pg-sev--medium">MEDIUM</span> |  |
 | [GHA-086](#gha-086) | Wildcard branch trigger gates an environment-bound deploy | <span class="pg-sev pg-sev--medium">MEDIUM</span> |  |
 | [GHA-087](#gha-087) | Derived value of a secret printed to the build log | <span class="pg-sev pg-sev--high">HIGH</span> |  |
 | [TAINT-001](#taint-001) | Untrusted input flows across step boundaries via step outputs | <span class="pg-sev pg-sev--high">HIGH</span> |  |
@@ -2106,6 +2108,69 @@ Out of scope: ``shell: bash`` / ``shell: sh`` on a Windows runner. Bash is prein
 **Recommended action**
 
 Drop the explicit ``shell:`` on non-Windows runners so GitHub's default (``bash``) is used. If multiline PowerShell work is genuinely needed on Linux / macOS, isolate it in a separate job that pins ``runs-on:`` to a Windows image, OR name the shell explicitly per-step so the reviewer can confirm the language match. Mixing pwsh and bash semantics inside the same workflow is a low-impact-but-real source of escaping bugs.
+
+</div>
+
+</div>
+
+<div class="pg-rule pg-rule--high" markdown>
+
+## GHA-072: Secret in env: at a wider scope than its consumer { #gha-072 }
+
+<div class="pg-rule__tags">
+<span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-6</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-5</span> <span class="pg-tag pg-tag--esf">ESF-D-SECRETS</span> <span class="pg-tag pg-tag--esf">ESF-C-LEAST-PRIV</span> <span class="pg-tag pg-tag--cwe">CWE-200</span> <span class="pg-tag pg-tag--cwe">CWE-272</span>
+</div>
+
+Fires in two shapes:
+
+1. **Job-level over-provisioning.** A ``jobs.<id>.env`` entry's value references ``${{ secrets.* }}`` AND no more than one step in that job references the env var. The other steps inherit the secret in their process env without using it.
+2. **Workflow-level over-provisioning.** A workflow-level ``env:`` entry's value references ``${{ secrets.* }}`` AND no more than one job in the workflow references the env var. The other jobs' processes carry the secret without using it.
+
+A step's ``env:`` block at the step level is the safe default and stays silent. The rule is name-aware: a job that defines ``DEPLOY_TOKEN`` and ``BUILD_TOKEN`` at the job level, with only one step using each, fires twice (one finding per overprovisioned var).
+
+**Known false-positive modes**
+
+- Composite steps that consume the env var internally and would need ``env:`` block forwarding to see the value scoped at step level. The local composite-action discovery path synthesizes those bodies as ``__composite__`` jobs; the env-var reference shows up there. If it doesn't (a remote composite not loaded by ``--resolve-remote``), suppress per-step via ignore-file with a note pointing at the composite action.
+
+**Seen in the wild**
+
+- zizmor v1.25.2 ``overprovisioned-secrets`` audit: https://docs.zizmor.sh/audits/#overprovisioned-secrets
+
+<div class="pg-rule__rec" markdown>
+
+**Recommended action**
+
+Move the ``env:`` block carrying the secret to the step that consumes it. When two or more steps in the same job need the value, surface it on each step's ``env:`` (or compute it once via ``echo "name=..." >> $GITHUB_OUTPUT`` from a dedicated minimal step). Avoid workflow-level ``env:`` for secrets, every job in the workflow then inherits the value.
+
+</div>
+
+</div>
+
+<div class="pg-rule pg-rule--medium" markdown>
+
+## GHA-073: Reusable workflow declares an unused ``workflow_call`` secret { #gha-073 }
+
+<div class="pg-rule__tags">
+<span class="pg-sev pg-sev--medium">MEDIUM</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-6</span> <span class="pg-tag pg-tag--esf">ESF-D-SECRETS</span> <span class="pg-tag pg-tag--cwe">CWE-1100</span>
+</div>
+
+Fires on a workflow whose ``on.workflow_call.secrets`` block declares a name (``token`` / ``required: true`` / ``required: false`` / inline shorthand) that the body never references via ``${{ secrets.<name> }}`` interpolation. The body scan covers every string value in the parsed document (``run:`` bodies, ``env:`` entries, ``with:`` values, ``if:`` expressions, and the workflow's top-level ``env``).
+
+Out of scope (deliberate carve-out): secret names that appear only inside ``secrets:`` blocks on a nested ``jobs.<id>.uses:`` reusable-workflow call. Those are forward (the secret flows to a downstream callee that consumes it). Such forward references count as consumers for this rule, the leak surface is bounded by the downstream's declaration.
+
+**Known false-positive modes**
+
+- Workflows that declare a secret to enforce a contract across an organization's reusable-workflow library, even when the current body doesn't read the value. Suppress per-secret-name via ignore-file when the operator has documented the contract reason in a workflow-level comment.
+
+**Seen in the wild**
+
+- zizmor proposal #1044 (unused-secrets audit): https://github.com/zizmorcore/zizmor/issues/1044
+
+<div class="pg-rule__rec" markdown>
+
+**Recommended action**
+
+Drop the unused ``on.workflow_call.secrets.<name>:`` declaration. If the caller's pipeline relies on the name being forced (a contract enforcement), document that intent in a workflow-level comment so the next refactor doesn't delete it silently. When the secret actually does get consumed later, add the ``${{ secrets.<name> }}`` reference back.
 
 </div>
 

@@ -12,6 +12,40 @@ release commit collapses this section into `## [X.Y.Z] - <date>`.
 
 ### Added
 
+- **Zizmor parity sweep: fourth batch (GHA-072 / GHA-073 plus a
+  GHA-053 widening).** Two more offline-only rules plus a small
+  expansion of the existing untrusted-context list:
+    * **GHA-072: secret in env: at a wider scope than its
+      consumer.** HIGH severity. Fires when a job-level
+      ``env:`` entry binds ``${{ secrets.* }}`` and at most one
+      step in that job references the named variable, OR when a
+      workflow-level ``env:`` binds a secret and at most one job
+      consumes it. Step-level ``env:`` is the safe default. The
+      rule's consumer scan checks ``run:`` bodies, ``with:``
+      values, and ``env:`` re-bindings, with word-bounded
+      matching so ``$TOKEN_PATH`` doesn't masquerade as ``TOKEN``.
+      Mirrors zizmor ``overprovisioned-secrets``.
+    * **GHA-073: reusable workflow declares an unused
+      ``workflow_call`` secret.** MEDIUM severity. Fires when an
+      ``on.workflow_call.secrets.<name>`` declaration is never
+      referenced via ``${{ secrets.<name> }}`` anywhere in the
+      workflow body. Every caller is forced to forward a value
+      the body never reads; the secret namespace bloats with
+      stale declarations across refactors. Mirrors zizmor
+      proposal #1044.
+    * **GHA-053 widening (zizmor proposal #635).** Five new
+      attacker-controllable PR-metadata contexts join
+      ``_UNTRUSTED_CONTEXTS`` so ``if:`` predicates gating on
+      them get flagged: ``github.event.pull_request.labels``,
+      ``.milestone.title`` / ``.milestone.description``,
+      ``.requested_reviewers``, ``.assignees``. The canonical
+      ``contains(github.event.pull_request.labels.*.name,
+      'safe-to-test')`` foot-gun now fires GHA-053 (existing
+      rule, no new ID).
+  17 per-rule tests + standard safe/unsafe fixture pairs.
+  Standards mappings landed for OWASP / ESF / CIS / NIST 800-53 /
+  NIST CSF / NIST SSDF / SOC2 / PCI-DSS v4. Github provider
+  check count 76 -> 78.
 - **Zizmor parity sweep: third batch (GHA-069 / GHA-070 / GHA-071).**
   Three more offline-only rules:
     * **GHA-069: ``id-token: write`` granted without an OIDC-

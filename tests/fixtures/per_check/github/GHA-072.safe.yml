@@ -1,0 +1,13 @@
+name: step-scoped-secret
+on: push
+permissions:
+  contents: read
+jobs:
+  ship:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332
+      - run: './test.sh'
+      - env:
+          DEPLOY_TOKEN: ${{ secrets.DEPLOY_TOKEN }}
+        run: 'curl -fsS -H "Authorization: Bearer $DEPLOY_TOKEN" https://api.example.com/deploy'

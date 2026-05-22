@@ -12,7 +12,7 @@ opinion. Use this page to prepare CC6 / CC7 / CC8 evidence walks.
 
 - **Controls in this standard:** 11
 - **Controls evidenced by at least one check:** 11 / 11
-- **Distinct checks evidencing this standard:** 584
+- **Distinct checks evidencing this standard:** 586
 - **Of those, autofixable with `--fix`:** 111
 
 _Severity levels (`CRITICAL` / `HIGH` / `MEDIUM` / `LOW` / `INFO`) follow the same scale across every provider and standard. See [How to read severity](README.md#how-to-read-severity) on the standards overview for the definitions._
@@ -23,7 +23,7 @@ Click a control ID to jump to the per-control section with the full check list. 
 
 | Control | Title | Checks | Severity mix |
 |---------|-------|-------:|--------------|
-| [`CC6.1`](#ctrl-cc6-1) | Logical access controls restrict entities to authorized system resources | 110 | 21C · 55H · 30M · 4L |
+| [`CC6.1`](#ctrl-cc6-1) | Logical access controls restrict entities to authorized system resources | 112 | 21C · 56H · 31M · 4L |
 | [`CC6.2`](#ctrl-cc6-2) | New internal and external users are registered, authorized, and provisioned | 22 | 10C · 6H · 6M |
 | [`CC6.3`](#ctrl-cc6-3) | Access modifications (including revocation) are tracked and timely | 20 | 1C · 11H · 8M |
 | [`CC6.6`](#ctrl-cc6-6) | Boundary-protection measures restrict access from outside the system boundary | 83 | 21C · 28H · 28M · 6L |
@@ -54,7 +54,7 @@ pipeline_check --pipeline aws --standard soc2 --standard owasp_cicd_top_10
 
 ### CC6.1: Logical access controls restrict entities to authorized system resources { #ctrl-cc6-1 }
 
-**Evidenced by 110 checks** across 17 providers (AWS, Argo Workflows, Bitbucket, Buildkite, CircleCI, Cloud Build, CloudFormation, Dockerfile, Drone CI, GitHub Actions, GitLab CI, Jenkins, Kubernetes, SCM, Tekton, Terraform, npm).
+**Evidenced by 112 checks** across 17 providers (AWS, Argo Workflows, Bitbucket, Buildkite, CircleCI, Cloud Build, CloudFormation, Dockerfile, Drone CI, GitHub Actions, GitLab CI, Jenkins, Kubernetes, SCM, Tekton, Terraform, npm).
 
 | Check | Title | Severity | Provider | Fix |
 |-------|-------|----------|----------|-----|
@@ -116,6 +116,8 @@ pipeline_check --pipeline aws --standard soc2 --standard owasp_cicd_top_10
 | [`GHA-067`](#detail-gha-067) | ``actions/cache`` writes credential-shaped paths | <span class="pg-sev pg-sev--high">HIGH</span> | [GitHub Actions](../providers/github.md) |  |
 | [`GHA-069`](#detail-gha-069) | ``id-token: write`` granted without an OIDC-consumer step | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [GitHub Actions](../providers/github.md) |  |
 | [`GHA-070`](#detail-gha-070) | ``ssh-keyscan`` / disabled host-key check trust-on-first-use | <span class="pg-sev pg-sev--high">HIGH</span> | [GitHub Actions](../providers/github.md) |  |
+| [`GHA-072`](#detail-gha-072) | Secret in env: at a wider scope than its consumer | <span class="pg-sev pg-sev--high">HIGH</span> | [GitHub Actions](../providers/github.md) |  |
+| [`GHA-073`](#detail-gha-073) | Reusable workflow declares an unused ``workflow_call`` secret | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [GitHub Actions](../providers/github.md) |  |
 | [`GHA-087`](#detail-gha-087) | Derived value of a secret printed to the build log | <span class="pg-sev pg-sev--high">HIGH</span> | [GitHub Actions](../providers/github.md) |  |
 | [`GL-020`](#detail-gl-020) | CI_JOB_TOKEN written to persistent storage | <span class="pg-sev pg-sev--critical">CRITICAL</span> | [GitLab CI](../providers/gitlab.md) | <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> |
 | [`GL-031`](#detail-gl-031) | id_tokens: missing audience pin or environment binding | <span class="pg-sev pg-sev--high">HIGH</span> | [GitLab CI](../providers/gitlab.md) |  |
@@ -10717,6 +10719,115 @@ jobs:
 ```
 
 **Source:** [`GHA-071`](../providers/github.md#gha-071) in the [GitHub Actions provider](../providers/github.md).
+
+### `GHA-072`: Secret in env: at a wider scope than its consumer <span class="pg-sev pg-sev--high">HIGH</span> { #detail-gha-072 }
+
+**Evidences:** [`CC6.1`](#ctrl-cc6-1) Logical access controls restrict entities to authorized system resources.
+
+**How this is detected.** Fires in two shapes:
+
+1. **Job-level over-provisioning.** A ``jobs.<id>.env`` entry's value references ``${{ secrets.* }}`` AND no more than one step in that job references the env var. The other steps inherit the secret in their process env without using it.
+2. **Workflow-level over-provisioning.** A workflow-level ``env:`` entry's value references ``${{ secrets.* }}`` AND no more than one job in the workflow references the env var. The other jobs' processes carry the secret without using it.
+
+A step's ``env:`` block at the step level is the safe default and stays silent. The rule is name-aware: a job that defines ``DEPLOY_TOKEN`` and ``BUILD_TOKEN`` at the job level, with only one step using each, fires twice (one finding per overprovisioned var).
+
+**Recommendation.** Move the ``env:`` block carrying the secret to the step that consumes it. When two or more steps in the same job need the value, surface it on each step's ``env:`` (or compute it once via ``echo "name=..." >> $GITHUB_OUTPUT`` from a dedicated minimal step). Avoid workflow-level ``env:`` for secrets, every job in the workflow then inherits the value.
+
+**Known false positives.**
+
+- Composite steps that consume the env var internally and would need ``env:`` block forwarding to see the value scoped at step level. The local composite-action discovery path synthesizes those bodies as ``__composite__`` jobs; the env-var reference shows up there. If it doesn't (a remote composite not loaded by ``--resolve-remote``), suppress per-step via ignore-file with a note pointing at the composite action.
+
+**Seen in the wild.**
+
+- zizmor v1.25.2 ``overprovisioned-secrets`` audit: https://docs.zizmor.sh/audits/#overprovisioned-secrets
+
+**Proof of exploit.**
+
+```
+# Vulnerable: ``DEPLOY_TOKEN`` is on the JOB ``env:``,
+# so every step's process inherits the secret. Only the
+# ``deploy`` step actually uses it; the ``checkout`` and
+# ``test`` steps carry the value but don't read it.
+# Any compromise of those steps can ``env | base64`` to
+# exfiltrate.
+jobs:
+  ship:
+    runs-on: ubuntu-latest
+    env:
+      DEPLOY_TOKEN: ${{ secrets.DEPLOY_TOKEN }}
+    steps:
+      - uses: actions/checkout@<sha>
+      - run: ./test.sh
+      - run: curl -X POST -H "Authorization: Bearer $DEPLOY_TOKEN" https://api.example.com/deploy
+
+# Safe: scope the ``env:`` block to the consuming step.
+jobs:
+  ship:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@<sha>
+      - run: ./test.sh
+      - env:
+          DEPLOY_TOKEN: ${{ secrets.DEPLOY_TOKEN }}
+        run: curl -X POST -H "Authorization: Bearer $DEPLOY_TOKEN" https://api.example.com/deploy
+```
+
+**Source:** [`GHA-072`](../providers/github.md#gha-072) in the [GitHub Actions provider](../providers/github.md).
+
+### `GHA-073`: Reusable workflow declares an unused ``workflow_call`` secret <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-gha-073 }
+
+**Evidences:** [`CC6.1`](#ctrl-cc6-1) Logical access controls restrict entities to authorized system resources.
+
+**How this is detected.** Fires on a workflow whose ``on.workflow_call.secrets`` block declares a name (``token`` / ``required: true`` / ``required: false`` / inline shorthand) that the body never references via ``${{ secrets.<name> }}`` interpolation. The body scan covers every string value in the parsed document (``run:`` bodies, ``env:`` entries, ``with:`` values, ``if:`` expressions, and the workflow's top-level ``env``).
+
+Out of scope (deliberate carve-out): secret names that appear only inside ``secrets:`` blocks on a nested ``jobs.<id>.uses:`` reusable-workflow call. Those are forward (the secret flows to a downstream callee that consumes it). Such forward references count as consumers for this rule, the leak surface is bounded by the downstream's declaration.
+
+**Recommendation.** Drop the unused ``on.workflow_call.secrets.<name>:`` declaration. If the caller's pipeline relies on the name being forced (a contract enforcement), document that intent in a workflow-level comment so the next refactor doesn't delete it silently. When the secret actually does get consumed later, add the ``${{ secrets.<name> }}`` reference back.
+
+**Known false positives.**
+
+- Workflows that declare a secret to enforce a contract across an organization's reusable-workflow library, even when the current body doesn't read the value. Suppress per-secret-name via ignore-file when the operator has documented the contract reason in a workflow-level comment.
+
+**Seen in the wild.**
+
+- zizmor proposal #1044 (unused-secrets audit): https://github.com/zizmorcore/zizmor/issues/1044
+
+**Proof of exploit.**
+
+```
+# Vulnerable: the reusable declares ``DEPLOY_TOKEN`` as
+# required, but the body never references it. Every
+# caller forward a real secret value for no reason.
+on:
+  workflow_call:
+    secrets:
+      DEPLOY_TOKEN:
+        required: true
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@<sha>
+      - run: ./build.sh
+
+# Safe: the declared secret is referenced in the
+# consuming step's ``env:``.
+on:
+  workflow_call:
+    secrets:
+      DEPLOY_TOKEN:
+        required: true
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@<sha>
+      - env:
+          DEPLOY_TOKEN: ${{ secrets.DEPLOY_TOKEN }}
+        run: ./deploy.sh
+```
+
+**Source:** [`GHA-073`](../providers/github.md#gha-073) in the [GitHub Actions provider](../providers/github.md).
 
 ### `GHA-086`: Wildcard branch trigger gates an environment-bound deploy <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-gha-086 }
 

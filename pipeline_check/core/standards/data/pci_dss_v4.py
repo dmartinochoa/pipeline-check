@@ -388,6 +388,8 @@ STANDARD = Standard(
         "GHA-069":  ["7.2.5"],                           # orphan id-token: write scope
         "GHA-070":  ["6.3.3", "8.2.1"],                  # ssh-keyscan / host-key check TOFU
         "GHA-071":  ["6.4.3"],                           # powershell on Linux / macOS step
+        "GHA-072":  ["8.2.1"],                           # secret env: at wider scope than consumer
+        "GHA-073":  ["8.2.1"],                           # unused workflow_call.secrets declaration
         "GHA-086":  ["6.4.3"],                           # wildcard branch trigger + environment binding
         "GHA-087":  ["8.2.1", "10.3.2"],                 # derived-value of secret printed to log
         # ── GitLab CI ─────────────────────────────────────────────

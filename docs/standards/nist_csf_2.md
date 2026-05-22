@@ -14,7 +14,7 @@ process telemetry the tool cannot witness.
 
 - **Controls in this standard:** 23
 - **Controls evidenced by at least one check:** 22 / 23
-- **Distinct checks evidencing this standard:** 584
+- **Distinct checks evidencing this standard:** 586
 - **Of those, autofixable with `--fix`:** 111
 
 _Severity levels (`CRITICAL` / `HIGH` / `MEDIUM` / `LOW` / `INFO`) follow the same scale across every provider and standard. See [How to read severity](README.md#how-to-read-severity) on the standards overview for the definitions._
@@ -30,10 +30,10 @@ Click a control ID to jump to the per-control section with the full check list. 
 | [`GV.SC-05`](#ctrl-gv-sc-05) | Requirements to address cybersecurity risks in supply chains are established, prioritized, and integrated into contracts | 111 | 4C · 54H · 46M · 7L |
 | [`GV.SC-07`](#ctrl-gv-sc-07) | Risks posed by suppliers, their products and services, are understood, recorded, prioritized, assessed, responded to, and monitored | 27 | 5C · 10H · 11M · 1L |
 | [`GV.SC-08`](#ctrl-gv-sc-08) | Relevant suppliers and other third parties are included in incident planning, response, and recovery activities | 0 | — |
-| [`PR.AA-01`](#ctrl-pr-aa-01) | Identities and credentials for authorized users, services, and hardware are managed | 66 | 26C · 27H · 13M |
+| [`PR.AA-01`](#ctrl-pr-aa-01) | Identities and credentials for authorized users, services, and hardware are managed | 68 | 26C · 28H · 14M |
 | [`PR.AA-03`](#ctrl-pr-aa-03) | Users, services, and hardware are authenticated | 6 | 3H · 3M |
 | [`PR.AA-05`](#ctrl-pr-aa-05) | Access permissions, entitlements, and authorizations are defined in a policy, managed, enforced, and reviewed | 39 | 5C · 18H · 15M · 1L |
-| [`PR.DS-01`](#ctrl-pr-ds-01) | The confidentiality, integrity, and availability of data-at-rest are protected | 27 | 10C · 10H · 7M |
+| [`PR.DS-01`](#ctrl-pr-ds-01) | The confidentiality, integrity, and availability of data-at-rest are protected | 28 | 10C · 11H · 7M |
 | [`PR.DS-02`](#ctrl-pr-ds-02) | The confidentiality, integrity, and availability of data-in-transit are protected | 30 | 26H · 3M · 1L |
 | [`PR.PS-01`](#ctrl-pr-ps-01) | Configuration management practices are established and applied | 73 | 13C · 25H · 25M · 10L |
 | [`PR.PS-02`](#ctrl-pr-ps-02) | Software is maintained, replaced, and removed commensurate with risk | 25 | 3C · 5H · 14M · 3L |
@@ -276,7 +276,7 @@ _No checks in this scanner currently evidence this control. Open an issue if you
 
 ### PR.AA-01: Identities and credentials for authorized users, services, and hardware are managed { #ctrl-pr-aa-01 }
 
-**Evidenced by 66 checks** across 18 providers (AWS, Argo Workflows, Azure DevOps, Bitbucket, Buildkite, CircleCI, Cloud Build, CloudFormation, Dockerfile, Drone CI, GitHub Actions, GitLab CI, Jenkins, Kubernetes, SCM, Tekton, Terraform, npm).
+**Evidenced by 68 checks** across 18 providers (AWS, Argo Workflows, Azure DevOps, Bitbucket, Buildkite, CircleCI, Cloud Build, CloudFormation, Dockerfile, Drone CI, GitHub Actions, GitLab CI, Jenkins, Kubernetes, SCM, Tekton, Terraform, npm).
 
 | Check | Title | Severity | Provider | Fix |
 |-------|-------|----------|----------|-----|
@@ -320,6 +320,8 @@ _No checks in this scanner currently evidence this control. Open an issue if you
 | [`GHA-054`](#detail-gha-054) | actions/checkout with ssh-key persists SSH credential in repo | <span class="pg-sev pg-sev--high">HIGH</span> | [GitHub Actions](../providers/github.md) |  |
 | [`GHA-055`](#detail-gha-055) | Reusable workflow outputs derive a secret or caller-input value | <span class="pg-sev pg-sev--high">HIGH</span> | [GitHub Actions](../providers/github.md) |  |
 | [`GHA-063`](#detail-gha-063) | ``if:`` predicate gates on a spoofable bot-actor comparison | <span class="pg-sev pg-sev--high">HIGH</span> | [GitHub Actions](../providers/github.md) |  |
+| [`GHA-072`](#detail-gha-072) | Secret in env: at a wider scope than its consumer | <span class="pg-sev pg-sev--high">HIGH</span> | [GitHub Actions](../providers/github.md) |  |
+| [`GHA-073`](#detail-gha-073) | Reusable workflow declares an unused ``workflow_call`` secret | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [GitHub Actions](../providers/github.md) |  |
 | [`GHA-087`](#detail-gha-087) | Derived value of a secret printed to the build log | <span class="pg-sev pg-sev--high">HIGH</span> | [GitHub Actions](../providers/github.md) |  |
 | [`GL-003`](#detail-gl-003) | Variables contain literal secret values | <span class="pg-sev pg-sev--critical">CRITICAL</span> | [GitLab CI](../providers/gitlab.md) |  |
 | [`GL-008`](#detail-gl-008) | Credential-shaped literal in pipeline body | <span class="pg-sev pg-sev--critical">CRITICAL</span> | [GitLab CI](../providers/gitlab.md) | <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> |
@@ -408,7 +410,7 @@ _No checks in this scanner currently evidence this control. Open an issue if you
 
 ### PR.DS-01: The confidentiality, integrity, and availability of data-at-rest are protected { #ctrl-pr-ds-01 }
 
-**Evidenced by 27 checks** across 12 providers (AWS, Argo Workflows, Buildkite, CloudFormation, Dockerfile, GitHub Actions, Jenkins, Kubernetes, SCM, Tekton, Terraform, npm).
+**Evidenced by 28 checks** across 12 providers (AWS, Argo Workflows, Buildkite, CloudFormation, Dockerfile, GitHub Actions, Jenkins, Kubernetes, SCM, Tekton, Terraform, npm).
 
 | Check | Title | Severity | Provider | Fix |
 |-------|-------|----------|----------|-----|
@@ -424,6 +426,7 @@ _No checks in this scanner currently evidence this control. Open an issue if you
 | [`GHA-057`](#detail-gha-057) | Secret-scanner output sent to network egress | <span class="pg-sev pg-sev--critical">CRITICAL</span> | [GitHub Actions](../providers/github.md) |  |
 | [`GHA-066`](#detail-gha-066) | ``actions/upload-artifact`` path is a workspace wildcard | <span class="pg-sev pg-sev--high">HIGH</span> | [GitHub Actions](../providers/github.md) |  |
 | [`GHA-067`](#detail-gha-067) | ``actions/cache`` writes credential-shaped paths | <span class="pg-sev pg-sev--high">HIGH</span> | [GitHub Actions](../providers/github.md) |  |
+| [`GHA-072`](#detail-gha-072) | Secret in env: at a wider scope than its consumer | <span class="pg-sev pg-sev--high">HIGH</span> | [GitHub Actions](../providers/github.md) |  |
 | [`GHA-087`](#detail-gha-087) | Derived value of a secret printed to the build log | <span class="pg-sev pg-sev--high">HIGH</span> | [GitHub Actions](../providers/github.md) |  |
 | [`JF-033`](#detail-jf-033) | withCredentials secret leaked via Groovy ${...} interpolation in sh step | <span class="pg-sev pg-sev--high">HIGH</span> | [Jenkins](../providers/jenkins.md) |  |
 | [`K8S-017`](#detail-k8s-017) | Container env value carries a credential-shaped literal | <span class="pg-sev pg-sev--critical">CRITICAL</span> | [Kubernetes](../providers/kubernetes.md) |  |
@@ -10862,6 +10865,115 @@ jobs:
 ```
 
 **Source:** [`GHA-071`](../providers/github.md#gha-071) in the [GitHub Actions provider](../providers/github.md).
+
+### `GHA-072`: Secret in env: at a wider scope than its consumer <span class="pg-sev pg-sev--high">HIGH</span> { #detail-gha-072 }
+
+**Evidences:** [`PR.AA-01`](#ctrl-pr-aa-01) Identities and credentials for authorized users, services, and hardware are managed, [`PR.DS-01`](#ctrl-pr-ds-01) The confidentiality, integrity, and availability of data-at-rest are protected.
+
+**How this is detected.** Fires in two shapes:
+
+1. **Job-level over-provisioning.** A ``jobs.<id>.env`` entry's value references ``${{ secrets.* }}`` AND no more than one step in that job references the env var. The other steps inherit the secret in their process env without using it.
+2. **Workflow-level over-provisioning.** A workflow-level ``env:`` entry's value references ``${{ secrets.* }}`` AND no more than one job in the workflow references the env var. The other jobs' processes carry the secret without using it.
+
+A step's ``env:`` block at the step level is the safe default and stays silent. The rule is name-aware: a job that defines ``DEPLOY_TOKEN`` and ``BUILD_TOKEN`` at the job level, with only one step using each, fires twice (one finding per overprovisioned var).
+
+**Recommendation.** Move the ``env:`` block carrying the secret to the step that consumes it. When two or more steps in the same job need the value, surface it on each step's ``env:`` (or compute it once via ``echo "name=..." >> $GITHUB_OUTPUT`` from a dedicated minimal step). Avoid workflow-level ``env:`` for secrets, every job in the workflow then inherits the value.
+
+**Known false positives.**
+
+- Composite steps that consume the env var internally and would need ``env:`` block forwarding to see the value scoped at step level. The local composite-action discovery path synthesizes those bodies as ``__composite__`` jobs; the env-var reference shows up there. If it doesn't (a remote composite not loaded by ``--resolve-remote``), suppress per-step via ignore-file with a note pointing at the composite action.
+
+**Seen in the wild.**
+
+- zizmor v1.25.2 ``overprovisioned-secrets`` audit: https://docs.zizmor.sh/audits/#overprovisioned-secrets
+
+**Proof of exploit.**
+
+```
+# Vulnerable: ``DEPLOY_TOKEN`` is on the JOB ``env:``,
+# so every step's process inherits the secret. Only the
+# ``deploy`` step actually uses it; the ``checkout`` and
+# ``test`` steps carry the value but don't read it.
+# Any compromise of those steps can ``env | base64`` to
+# exfiltrate.
+jobs:
+  ship:
+    runs-on: ubuntu-latest
+    env:
+      DEPLOY_TOKEN: ${{ secrets.DEPLOY_TOKEN }}
+    steps:
+      - uses: actions/checkout@<sha>
+      - run: ./test.sh
+      - run: curl -X POST -H "Authorization: Bearer $DEPLOY_TOKEN" https://api.example.com/deploy
+
+# Safe: scope the ``env:`` block to the consuming step.
+jobs:
+  ship:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@<sha>
+      - run: ./test.sh
+      - env:
+          DEPLOY_TOKEN: ${{ secrets.DEPLOY_TOKEN }}
+        run: curl -X POST -H "Authorization: Bearer $DEPLOY_TOKEN" https://api.example.com/deploy
+```
+
+**Source:** [`GHA-072`](../providers/github.md#gha-072) in the [GitHub Actions provider](../providers/github.md).
+
+### `GHA-073`: Reusable workflow declares an unused ``workflow_call`` secret <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-gha-073 }
+
+**Evidences:** [`PR.AA-01`](#ctrl-pr-aa-01) Identities and credentials for authorized users, services, and hardware are managed.
+
+**How this is detected.** Fires on a workflow whose ``on.workflow_call.secrets`` block declares a name (``token`` / ``required: true`` / ``required: false`` / inline shorthand) that the body never references via ``${{ secrets.<name> }}`` interpolation. The body scan covers every string value in the parsed document (``run:`` bodies, ``env:`` entries, ``with:`` values, ``if:`` expressions, and the workflow's top-level ``env``).
+
+Out of scope (deliberate carve-out): secret names that appear only inside ``secrets:`` blocks on a nested ``jobs.<id>.uses:`` reusable-workflow call. Those are forward (the secret flows to a downstream callee that consumes it). Such forward references count as consumers for this rule, the leak surface is bounded by the downstream's declaration.
+
+**Recommendation.** Drop the unused ``on.workflow_call.secrets.<name>:`` declaration. If the caller's pipeline relies on the name being forced (a contract enforcement), document that intent in a workflow-level comment so the next refactor doesn't delete it silently. When the secret actually does get consumed later, add the ``${{ secrets.<name> }}`` reference back.
+
+**Known false positives.**
+
+- Workflows that declare a secret to enforce a contract across an organization's reusable-workflow library, even when the current body doesn't read the value. Suppress per-secret-name via ignore-file when the operator has documented the contract reason in a workflow-level comment.
+
+**Seen in the wild.**
+
+- zizmor proposal #1044 (unused-secrets audit): https://github.com/zizmorcore/zizmor/issues/1044
+
+**Proof of exploit.**
+
+```
+# Vulnerable: the reusable declares ``DEPLOY_TOKEN`` as
+# required, but the body never references it. Every
+# caller forward a real secret value for no reason.
+on:
+  workflow_call:
+    secrets:
+      DEPLOY_TOKEN:
+        required: true
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@<sha>
+      - run: ./build.sh
+
+# Safe: the declared secret is referenced in the
+# consuming step's ``env:``.
+on:
+  workflow_call:
+    secrets:
+      DEPLOY_TOKEN:
+        required: true
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@<sha>
+      - env:
+          DEPLOY_TOKEN: ${{ secrets.DEPLOY_TOKEN }}
+        run: ./deploy.sh
+```
+
+**Source:** [`GHA-073`](../providers/github.md#gha-073) in the [GitHub Actions provider](../providers/github.md).
 
 ### `GHA-086`: Wildcard branch trigger gates an environment-bound deploy <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-gha-086 }
 

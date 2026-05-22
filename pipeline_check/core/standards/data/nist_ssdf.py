@@ -215,6 +215,8 @@ STANDARD = Standard(
         "GHA-069":  ["PO.5.1"],                        # orphan id-token: write scope
         "GHA-070":  ["PW.4.4"],                        # ssh-keyscan / host-key check TOFU
         "GHA-071":  ["PW.6.1"],                        # powershell on Linux / macOS step
+        "GHA-072":  ["PS.1.1"],                        # secret env: at wider scope than consumer
+        "GHA-073":  ["PS.1.1"],                        # unused workflow_call.secrets declaration
         "GHA-086":  ["PO.5.1"],                        # wildcard branch trigger + environment binding
         "GHA-087":  ["PS.1.1"],                        # derived-value of secret printed to log
         # GitLab CI

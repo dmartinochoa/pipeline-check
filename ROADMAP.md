@@ -291,6 +291,11 @@ matching the original placeholders in this section:
   for stale-action-refs).
 * ``GHA-071`` landed as **powershell-on-Linux** (originally
   placeholder for unsound-contains, now ``GHA-064``).
+* ``GHA-072`` landed as **overprovisioned-secrets** (originally
+  placeholder for agentic-actions widening; that widening is
+  still open and will take a future ID).
+* ``GHA-073`` landed as **unused workflow_call.secrets** (originally
+  placeholder for upload-artifact wildcard, now ``GHA-066``).
 
 The struck-through items below are now shipped at the IDs listed
 inline. Remaining items keep their original placeholder IDs and
@@ -342,13 +347,12 @@ Suggested landing order, highest signal first:
   (``contents: read`` unless writes are observed, ``id-token: write``
   only when an OIDC consumer fires, etc.), and flag the delta. MEDIUM
   severity. Autofix candidate (downgrade to the inferred minimum).
-- **GHA-069: secrets context broader than the consuming step.**
-  Mirrors zizmor's ``overprovisioned-secrets``. A job that surfaces
-  ``${{ secrets.X }}`` only in one step but defines ``env:`` at the
-  job level (or worse, the workflow level) leaks the secret into
-  every other step's process environment. HIGH severity. Composable
-  with TAINT-001 (the cross-step taint engine already tracks env
-  visibility).
+- ~~**GHA-069: secrets context broader than the consuming step.**~~
+  Landed as **GHA-072**. Fires when a job-level ``env:`` entry
+  binds ``${{ secrets.* }}`` and at most one step references it,
+  OR when a workflow-level ``env:`` binds a secret and at most
+  one job references it. HIGH severity. 9 per-rule tests +
+  safe/unsafe fixture pair.
 - **GHA-070: workflow `uses:` reference is the latest commit on a
   branch.** Mirrors zizmor's ``stale-action-refs`` from the opposite
   angle: zizmor flags SHA pins that don't point at any tag (drift
@@ -440,15 +444,14 @@ Second pass, drawn from zizmor's open feature-request backlog
   reviewer / labeler gate. HIGH severity. Pairs with GHA-045
   (caller-controlled ref into checkout) and GHA-046 (manual
   PR-head fetch).
-- **GHA-081: if predicate over an attacker-controlled PR label, title,
-  or body.** Inspired by zizmor proposal #635. ``if: contains(
-  github.event.pull_request.labels.*.name, 'safe-to-test')`` is the
-  canonical foot-gun, any contributor with ``triage`` (or higher) on
-  the repo can apply the label, and on some repo configurations the
-  label dialog is even open to first-time contributors. Same shape
-  with ``github.event.pull_request.title`` / ``.body`` /
-  ``.head.ref``. HIGH severity. Pairs with GHA-053 (if predicate
-  over untrusted context).
+- ~~**GHA-081: if predicate over an attacker-controlled PR label,
+  title, or body.**~~ Landed as a widening of **GHA-053** (no new
+  ID). ``_UNTRUSTED_CONTEXTS`` picked up
+  ``github.event.pull_request.labels``,
+  ``.milestone.title`` / ``.description``,
+  ``.requested_reviewers``, ``.assignees``. The canonical
+  ``contains(github.event.pull_request.labels.*.name,
+  'safe-to-test')`` foot-gun now fires GHA-053 directly.
 - **GHA-082: action `uses:` points at a takeover-eligible org.**
   Inspired by zizmor proposal #479 (repojacking). The owner of
   ``uses: vendor/setup-foo@<sha>`` renamed or deleted the org, the
@@ -475,14 +478,11 @@ Second pass, drawn from zizmor's open feature-request backlog
   ``docker/build-push-action`` with ``provenance:`` / ``sbom:`` /
   ``attestations:`` truthy). MEDIUM severity. 11 per-rule tests +
   safe/unsafe fixture pair.
-- **GHA-085: workflow declares a secret it never references.**
-  Inspired by zizmor proposal #1044 (unused secrets). A
-  ``workflow_call.secrets.<name>: required: true`` without any
-  ``${{ secrets.<name> }}`` consumer in the workflow body is dead
-  surface, the caller is forced to pass the value, and any step that
-  reads ``secrets`` context (``secrets.NPM_TOKEN`` -> ``env:`` ->
-  ``echo``) gets it. MEDIUM severity. Pairs with GHA-069
-  (overprovisioned secrets context).
+- ~~**GHA-085: workflow declares a secret it never references.**~~
+  Landed as **GHA-073**. Fires when an ``on.workflow_call.
+  secrets.<name>`` declaration is never referenced via
+  ``${{ secrets.<name> }}`` anywhere in the workflow body. MEDIUM
+  severity. 8 per-rule tests + safe/unsafe fixture pair.
 
 Two existing-rule widenings worth bundling into the same sweep:
 
