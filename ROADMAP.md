@@ -707,6 +707,67 @@ cross-platform composition stay out of scope.
 
 Filed as #173.
 
+### Inline source-line ignore comments
+
+`# pipeline-check: ignore[RULE-ID]` annotations on the source line
+itself, mirroring zizmor's `# zizmor: ignore[...]`, ruff's `# noqa`,
+trufflehog's `# trufflehog:ignore`, and semgrep's `// nosemgrep`.
+Today suppression works via `--ignore-file` (flat-text or structured
+YAML); both are sidecar files, so a reviewer reading the diff cannot
+see that a line is suppressed. Pre-parse lexer pass picks the
+comment off the raw file content (YAML parsers drop standalone
+comments), joins to findings via the existing line-coordinate, and
+flows through the same `core/gate.py` plumbing as the file path.
+Includes `ignore-next-line` / `ignore-file[RULE]` /
+`ignore-rule[RULE] reason=...` variants. Filed as #174.
+
+### Live secret verification (verified / unverified / unknown)
+
+Per-detector live probe on every secret-shaped finding, gated on
+`--resolve-remote`. Verified findings get promoted to CRITICAL with
+the resolved identity attached; revoked / rotated keys get demoted
+toward LOW; unprobed detectors keep current severity. Detector
+verifiers under ``_primitives/secret_verifiers/`` one module per
+issuing service (AWS STS, GitHub `/user`, NPM `/-/whoami`, Slack
+`auth.test`, GCP IAM `signBlob`, Anthropic / OpenAI / Twilio /
+SendGrid / Stripe). Reuses the existing
+`_primitives/registry_fetcher.py` transport + cache; values SHA-256d
+before any cache write so plaintext never lands on disk. Inspiration:
+trufflehog `--only-verified`. Filed as #175.
+
+### Custom-rule entry point via OPA / Rego
+
+Rego frontend for custom rules alongside the existing YAML loader.
+Closes the "can we add an org-specific composite check without a
+Python PR?" gap that Checkov, poutine, Snyk IaC, and Trivy all
+already cover. Input document mirrors the rule-engine's parsed
+pipeline shape (workflows, dockerfiles, terraform, k8s, scm,
+plus `findings_so_far` so Rego packages can act as lightweight
+composite chains). `--rego-rules ./policies/` discovers `.rego`
+files; package path determines the synthesized rule id; the
+existing `--checks` / `--ignore-file` / `--baseline` / standards
+plumbing applies once the id is synthesized. Integration via
+shell-out to a user-provided `opa` binary on `$PATH` (documented as
+a soft dependency, fails cleanly when missing) keeps the wheel
+Python-only. Filed as #176.
+
+### Autofix safety tiers (`--fix=safe` default, `--fix=unsafe` opt-in)
+
+Split the ~100-autofixer pack into `safe` and `unsafe` tiers so the
+default `--fix` line stays conservative. `safe` = edit produces a
+semantically equivalent file once the rule's invariant holds (pin
+to digest, add missing default `permissions: {}`, comment-out an
+exact-match TLS-bypass token, append `--require-hashes`). `unsafe`
+= edit relies on inference that can be wrong (downgrade
+`permissions:` to inferred minimum, rewrite a multi-step install
+into a cached layer). Per-rule safety claim declared next to the
+fixer module; missing claims default to `unsafe` and are enforced
+by `tests/autofix/test_safety_claims.py`. CLI:
+`--fix` (safe only), `--fix=safe` (explicit), `--fix=unsafe`
+(safe + unsafe), `--fix=unsafe-only`. Inspiration: zizmor's
+`--fix=safe` / `--fix=unsafe-only`, ruff's `--unsafe-fixes`. Filed
+as #177.
+
 ### VS Code extension
 
 The TypeScript half of the editor-surface push; the LSP server
