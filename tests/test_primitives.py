@@ -1173,3 +1173,82 @@ class TestOciImageAnchor:
 
     def test_empty_string_rejected(self):
         assert anchors.oci_image("") is None
+
+
+# ──────────────────────────────────────────────────────────────────
+# top_actions (typosquat classifier)
+# ──────────────────────────────────────────────────────────────────
+
+
+from pipeline_check.core.checks._primitives import top_actions
+
+
+class TestTopActionsFindTyposquat:
+    def test_exact_match_returns_none(self):
+        # The canonical action is never a typosquat of itself.
+        assert top_actions.find_typosquat("actions/checkout") is None
+
+    def test_case_folded_exact_match_returns_none(self):
+        assert top_actions.find_typosquat("ACTIONS/Checkout") is None
+
+    def test_distance_one_zero_for_o(self):
+        # ``check0ut`` swaps ``o`` for ``0``.
+        assert (
+            top_actions.find_typosquat("actions/check0ut")
+            == "actions/checkout"
+        )
+
+    def test_distance_one_missing_letter(self):
+        assert (
+            top_actions.find_typosquat("actons/checkout")
+            == "actions/checkout"
+        )
+
+    def test_distance_one_extra_letter(self):
+        assert (
+            top_actions.find_typosquat("actions/checkouts")
+            == "actions/checkout"
+        )
+
+    def test_distance_one_transposition(self):
+        # Damerau handles single adjacent transpositions as one edit.
+        assert (
+            top_actions.find_typosquat("actions/cehckout")
+            == "actions/checkout"
+        )
+
+    def test_distance_two_fires(self):
+        # Two edits relative to ``actions/checkout``.
+        assert top_actions.find_typosquat("actins/checkoutt") is not None
+
+    def test_distance_three_silent(self):
+        # Three or more edits, outside the default ceiling of 2.
+        assert top_actions.find_typosquat("actoons/chekot") is None
+
+    def test_unknown_action_silent(self):
+        assert top_actions.find_typosquat("acme-corp/internal-deploy") is None
+
+    def test_empty_slug_silent(self):
+        assert top_actions.find_typosquat("") is None
+
+    def test_max_distance_override(self):
+        # max_distance=1 rejects the distance-2 squat.
+        assert top_actions.find_typosquat(
+            "actins/checkoutt", max_distance=1,
+        ) is None
+
+    def test_owner_swap_silent(self):
+        # ``actions-checkout/checkout`` vs ``actions/checkout``: owner
+        # rename, distance 9 on the full slug, outside the ceiling.
+        # This is repojacking territory (GHA-082 when it ships), not
+        # typosquat.
+        assert (
+            top_actions.find_typosquat("actions-checkout/checkout")
+            is None
+        )
+
+    def test_top_actions_list_is_sorted_case_insensitively(self):
+        # Lock the curated list's alphabetical ordering so future
+        # additions land in the right slot.
+        lowered = [a.lower() for a in top_actions.TOP_ACTIONS]
+        assert lowered == sorted(lowered)

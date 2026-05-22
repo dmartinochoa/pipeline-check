@@ -12,7 +12,7 @@ the scanner evidences controls that surface in CI/CD configuration.
 
 - **Controls in this standard:** 24
 - **Controls evidenced by at least one check:** 24 / 24
-- **Distinct checks evidencing this standard:** 595
+- **Distinct checks evidencing this standard:** 596
 - **Of those, autofixable with `--fix`:** 111
 
 _Severity levels (`CRITICAL` / `HIGH` / `MEDIUM` / `LOW` / `INFO`) follow the same scale across every provider and standard. See [How to read severity](README.md#how-to-read-severity) on the standards overview for the definitions._
@@ -34,7 +34,7 @@ Click a control ID to jump to the per-control section with the full check list. 
 | [`ESF-D-TOKEN-HYGIENE`](#ctrl-esf-d-token-hygiene) | Use short-lived, federated credentials (OIDC), not long-lived tokens | 27 | 19H · 8M |
 | [`ESF-D-INJECTION`](#ctrl-esf-d-injection) | Prevent script / template injection from untrusted pipeline context | 76 | 21C · 47H · 6M · 2L |
 | [`ESF-D-TAMPER`](#ctrl-esf-d-tamper) | Protect build artifacts from tampering and detect unauthorized modification | 6 | 1C · 4M · 1L |
-| [`ESF-S-VERIFY-DEPS`](#ctrl-esf-s-verify-deps) | Verify third-party and open-source dependencies before use | 105 | 17C · 51H · 33M · 4L |
+| [`ESF-S-VERIFY-DEPS`](#ctrl-esf-s-verify-deps) | Verify third-party and open-source dependencies before use | 106 | 17C · 52H · 33M · 4L |
 | [`ESF-S-PIN-DEPS`](#ctrl-esf-s-pin-deps) | Pin dependencies / actions / images to immutable digests | 78 | 1C · 33H · 38M · 6L |
 | [`ESF-S-TRUSTED-REG`](#ctrl-esf-s-trusted-reg) | Use only trusted, authenticated package and image registries | 28 | 1C · 21H · 5M · 1L |
 | [`ESF-S-VULN-MGMT`](#ctrl-esf-s-vuln-mgmt) | Scan inbound artifacts (images, packages) for known vulnerabilities | 23 | 5C · 1H · 14M · 3L |
@@ -503,7 +503,7 @@ pipeline_check --pipeline aws --standard esf_supply_chain --standard owasp_cicd_
 
 ### ESF-S-VERIFY-DEPS: Verify third-party and open-source dependencies before use { #ctrl-esf-s-verify-deps }
 
-**Evidenced by 105 checks** across 21 providers (AWS, Argo CD, Argo Workflows, Azure DevOps, Bitbucket, Buildkite, CircleCI, Cloud Build, Dockerfile, Drone CI, GitHub Actions, GitLab CI, Helm, Jenkins, Kubernetes, OCI manifest, PyPI, SCM, Tekton, maven, npm).
+**Evidenced by 106 checks** across 21 providers (AWS, Argo CD, Argo Workflows, Azure DevOps, Bitbucket, Buildkite, CircleCI, Cloud Build, Dockerfile, Drone CI, GitHub Actions, GitLab CI, Helm, Jenkins, Kubernetes, OCI manifest, PyPI, SCM, Tekton, maven, npm).
 
 | Check | Title | Severity | Provider | Fix |
 |-------|-------|----------|----------|-----|
@@ -575,6 +575,7 @@ pipeline_check --pipeline aws --standard esf_supply_chain --standard owasp_cicd_
 | [`GHA-059`](#detail-gha-059) | npm install without registry-signature verification step | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [GitHub Actions](../providers/github.md) |  |
 | [`GHA-060`](#detail-gha-060) | pip install without `--require-hashes` verification | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [GitHub Actions](../providers/github.md) |  |
 | [`GHA-070`](#detail-gha-070) | ``ssh-keyscan`` / disabled host-key check trust-on-first-use | <span class="pg-sev pg-sev--high">HIGH</span> | [GitHub Actions](../providers/github.md) |  |
+| [`GHA-088`](#detail-gha-088) | Action ``uses:`` slug is a near-edit of a top-traffic action | <span class="pg-sev pg-sev--high">HIGH</span> | [GitHub Actions](../providers/github.md) |  |
 | [`GL-001`](#detail-gl-001) | Image not pinned to specific version or digest | <span class="pg-sev pg-sev--high">HIGH</span> | [GitLab CI](../providers/gitlab.md) | <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> |
 | [`GL-010`](#detail-gl-010) | Multi-project pipeline ingests upstream artifact unverified | <span class="pg-sev pg-sev--critical">CRITICAL</span> | [GitLab CI](../providers/gitlab.md) |  |
 | [`GL-012`](#detail-gl-012) | Cache key derives from MR-controlled CI variable | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [GitLab CI](../providers/gitlab.md) |  |
@@ -11431,6 +11432,405 @@ jobs:
 ```
 
 **Source:** [`GHA-087`](../providers/github.md#gha-087) in the [GitHub Actions provider](../providers/github.md).
+
+### `GHA-088`: Action ``uses:`` slug is a near-edit of a top-traffic action <span class="pg-sev pg-sev--high">HIGH</span> { #detail-gha-088 }
+
+**Evidences:** [`ESF-S-VERIFY-DEPS`](#ctrl-esf-s-verify-deps) Verify third-party and open-source dependencies before use.
+
+**How this is detected.** Edit-distance check over the parsed ``owner/repo`` slug of every ``uses:`` reference in the workflow, against the curated list in ``pipeline_check.core.checks._primitives.top_actions``. Both step-level ``uses:`` (action references) and job-level ``uses:`` (reusable workflow references) are covered, slug comparison is case-insensitive, and Damerau-Levenshtein (transposition counts as one edit) handles ``actions/cehckout`` alongside ``actions/check0ut``. Distance ceiling is 2 by design, distance-3 false-positives are common on legitimate forks. Exact matches against any list entry never fire, so the rule is silent on canonical references. Refresh the list by PR with a citing public-stats source. Local refs (``./.github/...``) and docker step refs (``docker://...``) are out of scope.
+
+**Recommendation.** Pin the intended action. If the ``uses:`` slug above is what you meant, ignore this finding with a rationale; if it isn't, replace it with the canonical owner / repo named in the description, then pin to a 40-char commit SHA (GHA-001 covers the pin) and confirm the SHA is not on the curated compromised list (GHA-040). Typosquat actions are usually long-lived clones with a single modification, the exfiltration step the attacker added; the file count and lineage tell you which workflow primitive was substituted.
+
+**Known false positives.**
+
+- L
+- e
+- g
+- i
+- t
+- i
+- m
+- a
+- t
+- e
+- 
+- f
+- o
+- r
+- k
+- s
+- 
+- o
+- r
+- 
+- c
+- o
+- m
+- m
+- u
+- n
+- i
+- t
+- y
+- 
+- v
+- a
+- r
+- i
+- a
+- n
+- t
+- s
+- 
+- t
+- h
+- a
+- t
+- 
+- i
+- n
+- t
+- e
+- n
+- t
+- i
+- o
+- n
+- a
+- l
+- l
+- y
+- 
+- c
+- a
+- r
+- r
+- y
+- 
+- a
+- 
+- n
+- e
+- a
+- r
+- -
+- m
+- i
+- s
+- s
+- 
+- n
+- a
+- m
+- e
+- 
+- (
+- e
+- .
+- g
+- .
+- ,
+- 
+- a
+- n
+- 
+- i
+- n
+- t
+- e
+- r
+- n
+- a
+- l
+- 
+- f
+- o
+- r
+- k
+- 
+- n
+- a
+- m
+- e
+- d
+- 
+- `
+- `
+- a
+- c
+- m
+- e
+- /
+- c
+- h
+- e
+- c
+- k
+- o
+- u
+- t
+- `
+- `
+- 
+- m
+- i
+- r
+- r
+- o
+- r
+- i
+- n
+- g
+- 
+- `
+- `
+- a
+- c
+- t
+- i
+- o
+- n
+- s
+- /
+- c
+- h
+- e
+- c
+- k
+- o
+- u
+- t
+- `
+- `
+- )
+- .
+- 
+- S
+- u
+- p
+- p
+- r
+- e
+- s
+- s
+- 
+- p
+- e
+- r
+- -
+- f
+- i
+- n
+- d
+- i
+- n
+- g
+- 
+- w
+- i
+- t
+- h
+- 
+- a
+- 
+- r
+- a
+- t
+- i
+- o
+- n
+- a
+- l
+- e
+- 
+- t
+- h
+- a
+- t
+- 
+- n
+- a
+- m
+- e
+- s
+- 
+- t
+- h
+- e
+- 
+- f
+- o
+- r
+- k
+- 
+- a
+- n
+- d
+- 
+- l
+- i
+- n
+- k
+- s
+- 
+- t
+- h
+- e
+- 
+- s
+- o
+- u
+- r
+- c
+- e
+- .
+- 
+- T
+- h
+- e
+- 
+- r
+- u
+- l
+- e
+- 
+- c
+- a
+- n
+- n
+- o
+- t
+- 
+- d
+- i
+- s
+- t
+- i
+- n
+- g
+- u
+- i
+- s
+- h
+- 
+- a
+- 
+- w
+- e
+- l
+- l
+- -
+- k
+- n
+- o
+- w
+- n
+- 
+- f
+- o
+- r
+- k
+- 
+- f
+- r
+- o
+- m
+- 
+- a
+- 
+- t
+- y
+- p
+- o
+- s
+- q
+- u
+- a
+- t
+- ;
+- 
+- i
+- n
+- t
+- e
+- n
+- t
+- i
+- o
+- n
+- a
+- l
+- 
+- n
+- a
+- m
+- i
+- n
+- g
+- 
+- c
+- o
+- l
+- l
+- i
+- s
+- i
+- o
+- n
+- s
+- 
+- a
+- r
+- e
+- 
+- t
+- h
+- e
+- 
+- o
+- p
+- e
+- r
+- a
+- t
+- o
+- r
+- '
+- s
+- 
+- c
+- a
+- l
+- l
+- .
+
+**Seen in the wild.**
+
+- OWASP CICD-SEC-3 (Dependency Chain Abuse) lists action-namespace squatting as a canonical attack shape; the curated industry examples (``actons/checkout``, ``actions/check0ut``) appear in red-team reports and honey-action research from Aikido, Wiz, and JFrog Security Research.
+
+**Proof of exploit.**
+
+```
+# Vulnerable: ``actons/checkout`` (missing ``i``) compiles
+# fine and pulls from a namespace that anyone could have
+# registered. Reviewer eyes skim past the typo.
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actons/checkout@v4
+      - run: ./build.sh
+
+# Safe: canonical action, SHA-pinned.
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@b4ffde65f4...        # v4.1.7
+      - run: ./build.sh
+```
+
+**Source:** [`GHA-088`](../providers/github.md#gha-088) in the [GitHub Actions provider](../providers/github.md).
 
 ### `GL-001`: Image not pinned to specific version or digest <span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> { #detail-gl-001 }
 

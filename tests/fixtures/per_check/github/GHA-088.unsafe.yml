@@ -1,0 +1,15 @@
+name: typosquat-uses-unsafe
+on:
+  push:
+    branches: [main]
+permissions:
+  contents: read
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      # ``actons/checkout`` is one missing ``i`` away from
+      # ``actions/checkout``. The namespace is registrable by anyone
+      # and is the canonical typosquat shape that reviewer eyes miss.
+      - uses: actons/checkout@v4
+      - run: ./build.sh

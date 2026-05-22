@@ -72,7 +72,7 @@ Resolution rules:
 
 ## What it covers
 
-78 checks · 17 have an autofix patch (``--fix``).
+79 checks · 17 have an autofix patch (``--fix``).
 
 | Check | Title | Severity | Fix |
 |-------|-------|----------|-----|
@@ -151,6 +151,7 @@ Resolution rules:
 | [GHA-073](#gha-073) | Reusable workflow declares an unused ``workflow_call`` secret | <span class="pg-sev pg-sev--medium">MEDIUM</span> |  |
 | [GHA-086](#gha-086) | Wildcard branch trigger gates an environment-bound deploy | <span class="pg-sev pg-sev--medium">MEDIUM</span> |  |
 | [GHA-087](#gha-087) | Derived value of a secret printed to the build log | <span class="pg-sev pg-sev--high">HIGH</span> |  |
+| [GHA-088](#gha-088) | Action ``uses:`` slug is a near-edit of a top-traffic action | <span class="pg-sev pg-sev--high">HIGH</span> |  |
 | [TAINT-001](#taint-001) | Untrusted input flows across step boundaries via step outputs | <span class="pg-sev pg-sev--high">HIGH</span> |  |
 | [TAINT-002](#taint-002) | Untrusted input flows across jobs via ``jobs.<id>.outputs:`` | <span class="pg-sev pg-sev--high">HIGH</span> |  |
 | [TAINT-003](#taint-003) | Untrusted input forwarded into reusable workflow ``with:`` | <span class="pg-sev pg-sev--high">HIGH</span> |  |
@@ -2246,6 +2247,393 @@ Pairs with GHA-033 (which covers ``set -x`` shell-trace leaks and direct ``echo 
 **Recommended action**
 
 Never print anything derived from a secret. Not the SHA-256, not the first eight characters, not the base64 wrapper, not the length. GitHub's log redaction only matches the exact registered secret value, every derived form lands in the (world-readable) log unmasked. If you genuinely need to compare secrets across runs, do the comparison inside a step and report a boolean (``[ -n "$X" ] && echo set || echo unset``). If you need to confirm rotation worked, run the downstream check against the secret rather than echo a fingerprint.
+
+</div>
+
+</div>
+
+<div class="pg-rule pg-rule--high" markdown>
+
+## GHA-088: Action ``uses:`` slug is a near-edit of a top-traffic action { #gha-088 }
+
+<div class="pg-rule__tags">
+<span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-3</span> <span class="pg-tag pg-tag--esf">ESF-S-VERIFY-DEPS</span> <span class="pg-tag pg-tag--cwe">CWE-1357</span> <span class="pg-tag pg-tag--cwe">CWE-829</span>
+</div>
+
+Edit-distance check over the parsed ``owner/repo`` slug of every ``uses:`` reference in the workflow, against the curated list in ``pipeline_check.core.checks._primitives.top_actions``. Both step-level ``uses:`` (action references) and job-level ``uses:`` (reusable workflow references) are covered, slug comparison is case-insensitive, and Damerau-Levenshtein (transposition counts as one edit) handles ``actions/cehckout`` alongside ``actions/check0ut``. Distance ceiling is 2 by design, distance-3 false-positives are common on legitimate forks. Exact matches against any list entry never fire, so the rule is silent on canonical references. Refresh the list by PR with a citing public-stats source. Local refs (``./.github/...``) and docker step refs (``docker://...``) are out of scope.
+
+**Known false-positive modes**
+
+- L
+- e
+- g
+- i
+- t
+- i
+- m
+- a
+- t
+- e
+- 
+- f
+- o
+- r
+- k
+- s
+- 
+- o
+- r
+- 
+- c
+- o
+- m
+- m
+- u
+- n
+- i
+- t
+- y
+- 
+- v
+- a
+- r
+- i
+- a
+- n
+- t
+- s
+- 
+- t
+- h
+- a
+- t
+- 
+- i
+- n
+- t
+- e
+- n
+- t
+- i
+- o
+- n
+- a
+- l
+- l
+- y
+- 
+- c
+- a
+- r
+- r
+- y
+- 
+- a
+- 
+- n
+- e
+- a
+- r
+- -
+- m
+- i
+- s
+- s
+- 
+- n
+- a
+- m
+- e
+- 
+- (
+- e
+- .
+- g
+- .
+- ,
+- 
+- a
+- n
+- 
+- i
+- n
+- t
+- e
+- r
+- n
+- a
+- l
+- 
+- f
+- o
+- r
+- k
+- 
+- n
+- a
+- m
+- e
+- d
+- 
+- `
+- `
+- a
+- c
+- m
+- e
+- /
+- c
+- h
+- e
+- c
+- k
+- o
+- u
+- t
+- `
+- `
+- 
+- m
+- i
+- r
+- r
+- o
+- r
+- i
+- n
+- g
+- 
+- `
+- `
+- a
+- c
+- t
+- i
+- o
+- n
+- s
+- /
+- c
+- h
+- e
+- c
+- k
+- o
+- u
+- t
+- `
+- `
+- )
+- .
+- 
+- S
+- u
+- p
+- p
+- r
+- e
+- s
+- s
+- 
+- p
+- e
+- r
+- -
+- f
+- i
+- n
+- d
+- i
+- n
+- g
+- 
+- w
+- i
+- t
+- h
+- 
+- a
+- 
+- r
+- a
+- t
+- i
+- o
+- n
+- a
+- l
+- e
+- 
+- t
+- h
+- a
+- t
+- 
+- n
+- a
+- m
+- e
+- s
+- 
+- t
+- h
+- e
+- 
+- f
+- o
+- r
+- k
+- 
+- a
+- n
+- d
+- 
+- l
+- i
+- n
+- k
+- s
+- 
+- t
+- h
+- e
+- 
+- s
+- o
+- u
+- r
+- c
+- e
+- .
+- 
+- T
+- h
+- e
+- 
+- r
+- u
+- l
+- e
+- 
+- c
+- a
+- n
+- n
+- o
+- t
+- 
+- d
+- i
+- s
+- t
+- i
+- n
+- g
+- u
+- i
+- s
+- h
+- 
+- a
+- 
+- w
+- e
+- l
+- l
+- -
+- k
+- n
+- o
+- w
+- n
+- 
+- f
+- o
+- r
+- k
+- 
+- f
+- r
+- o
+- m
+- 
+- a
+- 
+- t
+- y
+- p
+- o
+- s
+- q
+- u
+- a
+- t
+- ;
+- 
+- i
+- n
+- t
+- e
+- n
+- t
+- i
+- o
+- n
+- a
+- l
+- 
+- n
+- a
+- m
+- i
+- n
+- g
+- 
+- c
+- o
+- l
+- l
+- i
+- s
+- i
+- o
+- n
+- s
+- 
+- a
+- r
+- e
+- 
+- t
+- h
+- e
+- 
+- o
+- p
+- e
+- r
+- a
+- t
+- o
+- r
+- '
+- s
+- 
+- c
+- a
+- l
+- l
+- .
+
+**Seen in the wild**
+
+- OWASP CICD-SEC-3 (Dependency Chain Abuse) lists action-namespace squatting as a canonical attack shape; the curated industry examples (``actons/checkout``, ``actions/check0ut``) appear in red-team reports and honey-action research from Aikido, Wiz, and JFrog Security Research.
+
+<div class="pg-rule__rec" markdown>
+
+**Recommended action**
+
+Pin the intended action. If the ``uses:`` slug above is what you meant, ignore this finding with a rationale; if it isn't, replace it with the canonical owner / repo named in the description, then pin to a 40-char commit SHA (GHA-001 covers the pin) and confirm the SHA is not on the curated compromised list (GHA-040). Typosquat actions are usually long-lived clones with a single modification, the exfiltration step the attacker added; the file count and lineage tell you which workflow primitive was substituted.
 
 </div>
 

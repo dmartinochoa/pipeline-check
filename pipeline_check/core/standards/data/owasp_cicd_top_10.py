@@ -209,6 +209,7 @@ STANDARD = Standard(
         "GHA-073":  ["CICD-SEC-6"],                # unused workflow_call.secrets declaration
         "GHA-086":  ["CICD-SEC-1", "CICD-SEC-5"],  # wildcard branch trigger + environment binding
         "GHA-087":  ["CICD-SEC-10", "CICD-SEC-6"],  # derived-value of secret printed to log
+        "GHA-088":  ["CICD-SEC-3"],                # typosquat uses: near-edit of top action
         # GitLab CI
         "GL-001":   ["CICD-SEC-3"],
         "GL-002":   ["CICD-SEC-4"],

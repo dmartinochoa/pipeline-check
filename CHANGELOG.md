@@ -10,6 +10,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 PRs landing on `dev` between releases append entries below. The
 release commit collapses this section into `## [X.Y.Z] - <date>`.
 
+### Added
+
+- **GHA-088 typosquat ``uses:`` (closes #148).** Offline edit-
+  distance check against a curated top-actions list. Fires on
+  one- or two-character edits to a canonical action slug,
+  ``actions/check0ut`` (digit zero), ``actons/checkout`` (missing
+  ``i``), ``actions/cehckout`` (transposition), ``actions/checkouts``
+  (trailing ``s``). Both step-level ``uses:`` and job-level
+  reusable-workflow ``uses:`` are covered, exact matches stay
+  silent, and Damerau-Levenshtein counts adjacent transposition as
+  one edit. The list lives at
+  ``pipeline_check.core.checks._primitives.top_actions`` and is
+  refreshable by PR. HIGH severity, OWASP CICD-SEC-3, ESF-S-VERIFY-
+  DEPS. 14 per-rule tests under ``tests/github/test_gha088.py``
+  plus 13 primitive-level tests under
+  ``TestTopActionsFindTyposquat``. Brings GHA pack to 79 rules
+  (provider count unchanged at 23).
+
 ## [1.4.0] - 2026-05-22
 
 ### Added

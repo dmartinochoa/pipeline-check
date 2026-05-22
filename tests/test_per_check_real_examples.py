@@ -378,6 +378,7 @@ CASES: list[CheckCase] = [
     CheckCase("GHA-073", "CICD-SEC-6", ("ESF-D-SECRETS",)),
     CheckCase("GHA-086", "CICD-SEC-1", ("ESF-C-APPROVAL", "ESF-C-ENV-SEP")),
     CheckCase("GHA-087", "CICD-SEC-10", ("ESF-D-SECRETS",)),
+    CheckCase("GHA-088", "CICD-SEC-3", ("ESF-S-VERIFY-DEPS",)),
     # ── GitLab CI backfill (GL-026..033) ─────────────────────────────
     CheckCase("GL-026", "CICD-SEC-4", ("ESF-D-INJECTION",)),
     CheckCase("GL-027", "CICD-SEC-3", ("ESF-S-PIN-DEPS", "ESF-S-VERIFY-DEPS")),
