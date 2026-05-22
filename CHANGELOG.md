@@ -12,6 +12,35 @@ release commit collapses this section into `## [X.Y.Z] - <date>`.
 
 ### Added
 
+- **Zizmor parity sweep: small-widening batch (closes #157, #158,
+  #159).** Three companion changes that complete the existing-
+  rule-widening portion of the Zizmor parity sweep:
+    * **GHA-003 widened to `services.*.options` and
+      `services.*.env` (closes #157).** Mirrors zizmor proposal
+      #1128. Both YAML paths reach `docker create` argv (the
+      service container's options + env); direct
+      `${{ untrusted_context }}` interpolation on either is a
+      shell-injection sink. Indirect taint via workflow env
+      doesn't apply (the runner doesn't expand `$NAME` in those
+      positions). 3 new tests under `TestGHA003ScriptInjection`.
+    * **GHA-050 widened to "attestation explicitly disabled"
+      (closes #158).** Mirrors zizmor proposal #938. Fires when
+      `pypa/gh-action-pypi-publish` sets `attestations: false`,
+      OR `docker/build-push-action` with `push: true` sets any
+      of `provenance: false` / `sbom: false` /
+      `attestations: false` while staying under the long-lived-
+      secret check's radar. Environment carve-out still applies.
+      7 new tests under
+      `TestGHA050AttestationExplicitlyDisabled`.
+    * **CLI flag `--only-known-attacked` (closes #159).** Mirrors
+      zizmor proposal #1135. New flag filters the rule set to
+      rules whose `Rule.incident_refs` is non-empty (77 rules
+      today). Composes with `--checks`: if both are set, the
+      intersection runs. Empty-intersection case emits a stderr
+      warning rather than silently producing no findings. Caches
+      the rule-discovery walk so repeated invocations don't
+      re-iterate the package tree. 3 new tests under
+      `tests/test_cli.py`.
 - **GHA-004 widened: overprovisioned permissions detection
   (zizmor parity, closes #150).** GHA-004 already flagged
   "missing permissions block", `write-all`, `contents: write` on
