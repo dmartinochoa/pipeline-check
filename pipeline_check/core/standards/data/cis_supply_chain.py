@@ -237,6 +237,7 @@ STANDARD = Standard(
         "GHA-091":  ["1.4.1", "3.1.3"],                  # repojacking: action upstream missing
         "GHA-092":  ["2.1.3", "2.3.8"],                  # TOCTOU PR head SHA force-push race
         "GHA-093":  ["2.3.7"],                           # LOTP indicators (audit-leak surface)
+        "GHA-094":  ["1.4.1", "3.1.5"],                  # stale-action-refs
         # GitLab CI
         "GL-001":   ["1.4.1", "3.1.5"],
         "GL-002":   ["2.1.3", "2.3.8"],

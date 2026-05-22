@@ -117,6 +117,7 @@ STANDARD = Standard(
         "GHA-090":  ["Build.L3.NonFalsifiable"],                   # impostor-commit
         "GHA-091":  ["Build.L3.NonFalsifiable"],                   # repojacking
         "GHA-092":  ["Build.L3.Isolated"],                         # TOCTOU PR head SHA
+        "GHA-094":  ["Build.L3.NonFalsifiable"],                   # stale-action-refs
         "GHA-048":  ["Build.L3.NonFalsifiable",
                      "Build.L3.Isolated"],                         # workflow self-mutation
         "GHA-049":  ["Build.L3.NonFalsifiable"],                   # cross-repo push

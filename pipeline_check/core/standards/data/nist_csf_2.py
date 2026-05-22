@@ -511,6 +511,7 @@ STANDARD = Standard(
         "GHA-091":  ["GV.SC-05", "GV.SC-07"],   # repojacking: action upstream missing
         "GHA-092":  ["PR.IR-01"],               # TOCTOU PR head SHA force-push race
         "GHA-093":  ["PR.AA-01", "PR.DS-01"],   # LOTP indicators
+        "GHA-094":  ["GV.SC-05", "GV.SC-07"],   # stale-action-refs
         # ── GitLab CI ─────────────────────────────────────────────
         "GL-004":  ["PR.PS-06"],                # manual deploy allow_failure
         "GL-029":  ["PR.PS-06"],                # manual deploy allow_failure (variant)

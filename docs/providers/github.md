@@ -72,7 +72,7 @@ Resolution rules:
 
 ## What it covers
 
-84 checks · 17 have an autofix patch (``--fix``).
+85 checks · 17 have an autofix patch (``--fix``).
 
 | Check | Title | Severity | Fix |
 |-------|-------|----------|-----|
@@ -157,6 +157,7 @@ Resolution rules:
 | [GHA-091](#gha-091) | Action upstream repo is missing (takeover-eligible namespace) | <span class="pg-sev pg-sev--high">HIGH</span> |  |
 | [GHA-092](#gha-092) | PR head SHA captured then re-fetched (force-push race) | <span class="pg-sev pg-sev--high">HIGH</span> |  |
 | [GHA-093](#gha-093) | Living-off-the-Pipeline indicators (workflow-command abuse) | <span class="pg-sev pg-sev--high">HIGH</span> |  |
+| [GHA-094](#gha-094) | Action SHA pin matches the current tip of an upstream branch | <span class="pg-sev pg-sev--medium">MEDIUM</span> |  |
 | [TAINT-001](#taint-001) | Untrusted input flows across step boundaries via step outputs | <span class="pg-sev pg-sev--high">HIGH</span> |  |
 | [TAINT-002](#taint-002) | Untrusted input flows across jobs via ``jobs.<id>.outputs:`` | <span class="pg-sev pg-sev--high">HIGH</span> |  |
 | [TAINT-003](#taint-003) | Untrusted input forwarded into reusable workflow ``with:`` | <span class="pg-sev pg-sev--high">HIGH</span> |  |
@@ -4876,6 +4877,796 @@ Pairs with GHA-033 (secret echoed in shell trace) and GHA-087 (derived-value of 
 **Recommended action**
 
 Don't route secret-shaped values through the Summary tab and don't interpolate PR-controlled text into workflow commands. ``$GITHUB_STEP_SUMMARY`` is rendered to anyone with read access to the workflow run; treat it like a public-readable surface. ``::warning::`` / ``::notice::`` / ``::error::`` are typed log-line directives; interpolate only trusted values into them (or quote the untrusted value through an env var and let the shell escape it). Always ``::add-mask::`` *before* the first time the value could appear in a log line, the order matters.
+
+</div>
+
+</div>
+
+<div class="pg-rule pg-rule--medium" markdown>
+
+## GHA-094: Action SHA pin matches the current tip of an upstream branch { #gha-094 }
+
+<div class="pg-rule__tags">
+<span class="pg-sev pg-sev--medium">MEDIUM</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-3</span> <span class="pg-tag pg-tag--esf">ESF-S-VERIFY-DEPS</span> <span class="pg-tag pg-tag--cwe">CWE-1357</span>
+</div>
+
+Reads the branch-tip set from ``ctx.action_metadata[owner/repo].branch_head_shas`` (populated by ``--resolve-remote``; one ``/branches?per_page=100`` call per action with at least one SHA-shaped ``uses: owner/repo@<sha>``). For each SHA pin, fires when ``<sha>`` is the tip of any branch in the snapshot. Repos with more than 100 branches are an edge case; the rule skips additional pages. Tag-pinned refs (``@v4``, ``@main``) are out of scope, they don't carry the in-network mutability surface this rule targets. Both step-level and reusable-workflow ``uses:`` are covered, case-insensitive matching against the lower-cased SHA snapshot. MEDIUM severity, the maintainer's ability to re-point the branch is a latent risk rather than an in-progress exploit; pair with GHA-047 to escalate when the branch tip is also freshly committed.
+
+**Known false-positive modes**
+
+- A
+- n
+- 
+- a
+- c
+- t
+- i
+- o
+- n
+- 
+- w
+- h
+- o
+- s
+- e
+- 
+- t
+- a
+- g
+- g
+- e
+- d
+- -
+- r
+- e
+- l
+- e
+- a
+- s
+- e
+- 
+- f
+- l
+- o
+- w
+- 
+- l
+- a
+- g
+- s
+- 
+- r
+- e
+- a
+- l
+- 
+- a
+- c
+- t
+- i
+- v
+- i
+- t
+- y
+- 
+- (
+- m
+- a
+- i
+- n
+- t
+- a
+- i
+- n
+- e
+- r
+- s
+- 
+- p
+- u
+- s
+- h
+- 
+- t
+- o
+- 
+- `
+- `
+- m
+- a
+- i
+- n
+- `
+- `
+- 
+- c
+- o
+- n
+- t
+- i
+- n
+- u
+- o
+- u
+- s
+- l
+- y
+- 
+- b
+- u
+- t
+- 
+- t
+- a
+- g
+- 
+- r
+- a
+- r
+- e
+- l
+- y
+- )
+- 
+- s
+- h
+- o
+- w
+- s
+- 
+- e
+- v
+- e
+- r
+- y
+- 
+- r
+- e
+- c
+- e
+- n
+- t
+- 
+- S
+- H
+- A
+- 
+- a
+- s
+- 
+- a
+- 
+- b
+- r
+- a
+- n
+- c
+- h
+- 
+- t
+- i
+- p
+- .
+- 
+- T
+- h
+- e
+- 
+- r
+- i
+- g
+- h
+- t
+- 
+- f
+- i
+- x
+- 
+- i
+- s
+- 
+- u
+- p
+- s
+- t
+- r
+- e
+- a
+- m
+- :
+- 
+- a
+- s
+- k
+- 
+- t
+- h
+- e
+- 
+- m
+- a
+- i
+- n
+- t
+- a
+- i
+- n
+- e
+- r
+- 
+- t
+- o
+- 
+- t
+- a
+- g
+- ,
+- 
+- o
+- r
+- 
+- p
+- i
+- n
+- 
+- t
+- o
+- 
+- a
+- 
+- t
+- a
+- g
+- g
+- e
+- d
+- 
+- a
+- n
+- c
+- e
+- s
+- t
+- o
+- r
+- 
+- S
+- H
+- A
+- .
+- 
+- I
+- f
+- 
+- s
+- u
+- p
+- p
+- r
+- e
+- s
+- s
+- i
+- o
+- n
+- 
+- i
+- s
+- 
+- t
+- h
+- e
+- 
+- o
+- n
+- l
+- y
+- 
+- p
+- a
+- t
+- h
+- ,
+- 
+- d
+- o
+- 
+- i
+- t
+- 
+- p
+- e
+- r
+- -
+- f
+- i
+- n
+- d
+- i
+- n
+- g
+- 
+- w
+- i
+- t
+- h
+- 
+- a
+- 
+- r
+- a
+- t
+- i
+- o
+- n
+- a
+- l
+- e
+- 
+- t
+- h
+- a
+- t
+- 
+- n
+- a
+- m
+- e
+- s
+- 
+- t
+- h
+- e
+- 
+- s
+- p
+- e
+- c
+- i
+- f
+- i
+- c
+- 
+- S
+- H
+- A
+- 
+- a
+- n
+- d
+- 
+- t
+- h
+- e
+- 
+- a
+- u
+- d
+- i
+- t
+- 
+- y
+- o
+- u
+- 
+- d
+- i
+- d
+- 
+- a
+- g
+- a
+- i
+- n
+- s
+- t
+- 
+- t
+- h
+- e
+- 
+- u
+- p
+- s
+- t
+- r
+- e
+- a
+- m
+- 
+- r
+- e
+- l
+- e
+- a
+- s
+- e
+- 
+- n
+- o
+- t
+- e
+- s
+- .
+
+**Seen in the wild**
+
+- G
+- i
+- t
+- H
+- u
+- b
+- 
+- S
+- e
+- c
+- u
+- r
+- i
+- t
+- y
+- 
+- L
+- a
+- b
+- 
+- +
+- 
+- B
+- o
+- o
+- s
+- t
+- 
+- S
+- e
+- c
+- u
+- r
+- i
+- t
+- y
+- 
+- "
+- u
+- n
+- s
+- i
+- g
+- n
+- e
+- d
+- -
+- t
+- a
+- g
+- "
+- 
+- r
+- e
+- s
+- e
+- a
+- r
+- c
+- h
+- 
+- (
+- 2
+- 0
+- 2
+- 4
+- -
+- 2
+- 0
+- 2
+- 5
+- )
+- 
+- d
+- o
+- c
+- u
+- m
+- e
+- n
+- t
+- i
+- n
+- g
+- 
+- t
+- h
+- e
+- 
+- r
+- e
+- -
+- p
+- o
+- i
+- n
+- t
+- e
+- d
+- -
+- b
+- r
+- a
+- n
+- c
+- h
+- 
+- s
+- h
+- a
+- p
+- e
+- ,
+- 
+- s
+- e
+- v
+- e
+- r
+- a
+- l
+- 
+- s
+- u
+- p
+- p
+- l
+- y
+- -
+- c
+- h
+- a
+- i
+- n
+- 
+- c
+- o
+- m
+- p
+- r
+- o
+- m
+- i
+- s
+- e
+- s
+- 
+- l
+- a
+- n
+- d
+- e
+- d
+- 
+- b
+- y
+- 
+- a
+- d
+- v
+- a
+- n
+- c
+- i
+- n
+- g
+- 
+- a
+- 
+- `
+- `
+- m
+- a
+- i
+- n
+- `
+- `
+- 
+- b
+- r
+- a
+- n
+- c
+- h
+- 
+- u
+- n
+- d
+- e
+- r
+- 
+- a
+- 
+- S
+- H
+- A
+- 
+- t
+- h
+- a
+- t
+- 
+- c
+- o
+- n
+- s
+- u
+- m
+- e
+- r
+- s
+- 
+- h
+- a
+- d
+- 
+- p
+- i
+- n
+- n
+- e
+- d
+- 
+- t
+- o
+- .
+- 
+- T
+- h
+- e
+- 
+- S
+- H
+- A
+- 
+- p
+- i
+- n
+- '
+- s
+- 
+- a
+- u
+- d
+- i
+- t
+- 
+- v
+- a
+- l
+- u
+- e
+- 
+- e
+- v
+- a
+- p
+- o
+- r
+- a
+- t
+- e
+- s
+- 
+- t
+- h
+- e
+- 
+- m
+- o
+- m
+- e
+- n
+- t
+- 
+- t
+- h
+- e
+- 
+- m
+- a
+- i
+- n
+- t
+- a
+- i
+- n
+- e
+- r
+- '
+- s
+- 
+- n
+- e
+- x
+- t
+- 
+- p
+- u
+- s
+- h
+- 
+- m
+- o
+- v
+- e
+- s
+- 
+- t
+- h
+- e
+- 
+- t
+- i
+- p
+- 
+- a
+- n
+- d
+- 
+- a
+- 
+- c
+- o
+- n
+- s
+- u
+- m
+- e
+- r
+- 
+- t
+- e
+- a
+- m
+- '
+- s
+- 
+- a
+- u
+- t
+- o
+- m
+- a
+- t
+- i
+- o
+- n
+- 
+- r
+- e
+- a
+- c
+- h
+- e
+- s
+- 
+- f
+- o
+- r
+- 
+- "
+- l
+- a
+- t
+- e
+- s
+- t
+- .
+- "
+
+<div class="pg-rule__rec" markdown>
+
+**Recommended action**
+
+Re-pin to a SHA that's tagged in the upstream repo (a release commit) rather than the current tip of an active branch. Branch HEADs are mutable, the maintainer's next push can move the tip even when your pin stays still, and anyone re-pinning to "latest" picks up unaudited code. A SHA that lives only at a tag (``v4.1.7`` -> commit X) is a stable target: re-tagging is a louder, more visible action than a normal push, and a release-flavored tag implies a review pass the maintainer staged. If the action has no tagged releases at all, vendor the action under your org's control or accept the inherent drift risk by suppressing this finding with a rationale.
 
 </div>
 

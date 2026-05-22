@@ -32,6 +32,25 @@ release commit collapses this section into `## [X.Y.Z] - <date>`.
 
 ### Added
 
+- **GHA-094 stale-action-refs: SHA = branch tip (closes #151).**
+  New rule that fires when a SHA-pinned ``uses:`` matches the
+  current tip of any branch in the upstream repo. A maintainer
+  who can push to a branch can re-point the HEAD; your pin stays
+  on the old commit but anyone re-pinning to "latest" picks up
+  unaudited code. Reads a new ``branch_head_shas`` field on
+  ``ActionRepoMetadata``, populated by a one-shot
+  ``GET /repos/{o}/{r}/branches?per_page=100`` only when at least
+  one SHA-shaped ``uses:`` references the action. Case-insensitive
+  matching against the lower-cased snapshot. Tag-pinned refs are
+  out of scope. Pairs with GHA-047 (fresh referenced ref) and
+  GHA-090 (impostor-commit, the cross-network sibling). MEDIUM
+  severity, OWASP CICD-SEC-3, ESF-S-VERIFY-DEPS, NIST SR-3 /
+  SR-11, CSF GV.SC-05, SOC 2 CC6.8 / CC8.1, PCI 6.3.3, CIS 1.4.1 /
+  3.1.5, OpenSSF Scorecard Pinned-Dependencies, SLSA Build.L3.
+  NonFalsifiable. 9 per-rule tests + 4 fetcher tests under
+  ``tests/github/test_action_reputation.py``. Brings GHA pack to
+  85 rules.
+
 - **GHA-093 Living-off-the-Pipeline indicators (closes #156).**
   Inspired by zizmor proposal #1948 (LOTP). Three independent
   failure shapes in one rule, any one fires:

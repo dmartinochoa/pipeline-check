@@ -540,6 +540,7 @@ STANDARD = Standard(
         "GHA-091":  ["ESF-S-VERIFY-DEPS"],           # repojacking: action upstream missing
         "GHA-092":  ["ESF-D-CODE-REVIEW"],            # TOCTOU PR head SHA force-push race
         "GHA-093":  ["ESF-D-SECRETS", "ESF-D-INJECTION"],  # LOTP indicators
+        "GHA-094":  ["ESF-S-VERIFY-DEPS"],            # stale-action-refs
         # ── GitLab CI extras ─────────────────────────────────────
         "GL-028":   ["ESF-S-PIN-DEPS", "ESF-S-VERIFY-DEPS"],   # services: image not pinned
         "GL-029":   ["ESF-C-APPROVAL"],             # manual deploy allow_failure

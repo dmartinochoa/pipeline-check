@@ -93,6 +93,15 @@ class ActionRepoMetadata:
     #: populated for refs that match a 40-char hex SHA shape; tag /
     #: branch refs don't carry the impostor-commit attack model.
     sha_membership: dict[str, bool] | None = None
+    #: Set of 40-char commit SHAs currently at the tip of some branch
+    #: in the upstream repo. Populated by a one-shot
+    #: ``GET /repos/{o}/{r}/branches?per_page=100`` when any
+    #: SHA-shaped ref is referenced for this action. A pinned SHA
+    #: that lands in this set is GHA-094 territory, the maintainer
+    #: can re-point the branch and the same pin starts fetching
+    #: different code. ``None`` for the whole slot means the lookup
+    #: didn't run (opt-in off, or no SHA-shaped refs referenced).
+    branch_head_shas: frozenset[str] | None = None
 
 
 class ActionMetadataFetcher:
@@ -153,6 +162,36 @@ class ActionMetadataFetcher:
             archived=archived,
             fork=fork,
         )
+
+    def fetch_branch_heads(
+        self, owner: str, repo: str,
+    ) -> frozenset[str] | None:
+        """Return the set of branch-tip SHAs for ``owner/repo``.
+
+        One call to ``/repos/{o}/{r}/branches?per_page=100``. Repos
+        with more than 100 branches are an edge case; the rule
+        consuming this accepts the ceiling and skips the bonus
+        signal on branches past the first page. Returns ``None``
+        when the API call fails so the rule can distinguish
+        "lookup ran, repo has no branches" (empty frozenset) from
+        "lookup didn't run" (``None``).
+        """
+        payload = self.raw.fetch(
+            f"repos/{owner}/{repo}/branches?per_page=100"
+        )
+        if not isinstance(payload, list):
+            return None
+        heads: set[str] = set()
+        for entry in payload:
+            if not isinstance(entry, dict):
+                continue
+            commit = entry.get("commit")
+            if not isinstance(commit, dict):
+                continue
+            sha = commit.get("sha")
+            if isinstance(sha, str) and len(sha) == 40:
+                heads.add(sha.lower())
+        return frozenset(heads)
 
     def fetch_sha_membership(
         self, owner: str, repo: str, sha_refs: set[str],
@@ -371,6 +410,13 @@ def populate_action_metadata(
             fetcher.fetch_sha_membership(owner, repo, sha_refs)
             if sha_refs else {}
         )
+        # Branch-heads probe rides on the SHA-refs presence test;
+        # tag/branch-pinned actions don't carry the GHA-094 attack
+        # model so we skip the call for them.
+        branch_head_shas = (
+            fetcher.fetch_branch_heads(owner, repo)
+            if sha_refs else None
+        )
         # Re-pack the metadata with the per-ref dates folded in.
         # ``ref_committed_at`` stays ``None`` (rather than ``{}``)
         # when the action had no resolvable refs, so GHA-047 can tell
@@ -386,6 +432,7 @@ def populate_action_metadata(
             fork=meta.fork,
             ref_committed_at=ref_dates if ref_dates else None,
             sha_membership=sha_membership if sha_membership else None,
+            branch_head_shas=branch_head_shas,
         )
         fetched[f"{owner}/{repo}"] = meta_with_refs
     if failed:

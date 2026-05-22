@@ -12,7 +12,7 @@ opinion. Use this page to prepare CC6 / CC7 / CC8 evidence walks.
 
 - **Controls in this standard:** 11
 - **Controls evidenced by at least one check:** 11 / 11
-- **Distinct checks evidencing this standard:** 592
+- **Distinct checks evidencing this standard:** 593
 - **Of those, autofixable with `--fix`:** 111
 
 _Severity levels (`CRITICAL` / `HIGH` / `MEDIUM` / `LOW` / `INFO`) follow the same scale across every provider and standard. See [How to read severity](README.md#how-to-read-severity) on the standards overview for the definitions._
@@ -28,12 +28,12 @@ Click a control ID to jump to the per-control section with the full check list. 
 | [`CC6.3`](#ctrl-cc6-3) | Access modifications (including revocation) are tracked and timely | 20 | 1C · 11H · 8M |
 | [`CC6.6`](#ctrl-cc6-6) | Boundary-protection measures restrict access from outside the system boundary | 83 | 21C · 28H · 28M · 6L |
 | [`CC6.7`](#ctrl-cc6-7) | Data in transit is protected from unauthorized disclosure | 30 | 25H · 4M · 1L |
-| [`CC6.8`](#ctrl-cc6-8) | Controls prevent or detect the introduction of malicious software | 133 | 31C · 75H · 26M · 1L |
+| [`CC6.8`](#ctrl-cc6-8) | Controls prevent or detect the introduction of malicious software | 134 | 31C · 75H · 27M · 1L |
 | [`CC7.1`](#ctrl-cc7-1) | Detection procedures identify configuration changes that introduce vulnerabilities | 20 | 3C · 2H · 9M · 6L |
 | [`CC7.2`](#ctrl-cc7-2) | System components are monitored for anomalies indicative of malicious acts or failures | 33 | 2H · 8M · 7L · 16I |
 | [`CC7.3`](#ctrl-cc7-3) | Security events are evaluated to determine if they require response | 7 | 1H · 4M · 2L |
 | [`CC7.4`](#ctrl-cc7-4) | Identified security incidents trigger a response process | 5 | 3M · 2L |
-| [`CC8.1`](#ctrl-cc8-1) | Changes to infrastructure, data, software, and procedures are authorized, designed, tested, approved, and implemented | 228 | 6C · 80H · 117M · 25L |
+| [`CC8.1`](#ctrl-cc8-1) | Changes to infrastructure, data, software, and procedures are authorized, designed, tested, approved, and implemented | 229 | 6C · 80H · 118M · 25L |
 
 ## Filter at runtime
 
@@ -357,7 +357,7 @@ pipeline_check --pipeline aws --standard soc2 --standard owasp_cicd_top_10
 
 ### CC6.8: Controls prevent or detect the introduction of malicious software { #ctrl-cc6-8 }
 
-**Evidenced by 133 checks** across 18 providers (AWS, Argo Workflows, Azure DevOps, Bitbucket, Buildkite, CircleCI, Cloud Build, Dockerfile, Drone CI, GitHub Actions, GitLab CI, Jenkins, Kubernetes, PyPI, SCM, Tekton, maven, npm).
+**Evidenced by 134 checks** across 18 providers (AWS, Argo Workflows, Azure DevOps, Bitbucket, Buildkite, CircleCI, Cloud Build, Dockerfile, Drone CI, GitHub Actions, GitLab CI, Jenkins, Kubernetes, PyPI, SCM, Tekton, maven, npm).
 
 | Check | Title | Severity | Provider | Fix |
 |-------|-------|----------|----------|-----|
@@ -444,6 +444,7 @@ pipeline_check --pipeline aws --standard soc2 --standard owasp_cicd_top_10
 | [`GHA-090`](#detail-gha-090) | Action SHA pin references a commit absent from the claimed repo | <span class="pg-sev pg-sev--high">HIGH</span> | [GitHub Actions](../providers/github.md) |  |
 | [`GHA-091`](#detail-gha-091) | Action upstream repo is missing (takeover-eligible namespace) | <span class="pg-sev pg-sev--high">HIGH</span> | [GitHub Actions](../providers/github.md) |  |
 | [`GHA-092`](#detail-gha-092) | PR head SHA captured then re-fetched (force-push race) | <span class="pg-sev pg-sev--high">HIGH</span> | [GitHub Actions](../providers/github.md) |  |
+| [`GHA-094`](#detail-gha-094) | Action SHA pin matches the current tip of an upstream branch | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [GitHub Actions](../providers/github.md) |  |
 | [`GL-002`](#detail-gl-002) | Script injection via untrusted commit/MR context | <span class="pg-sev pg-sev--high">HIGH</span> | [GitLab CI](../providers/gitlab.md) |  |
 | [`GL-010`](#detail-gl-010) | Multi-project pipeline ingests upstream artifact unverified | <span class="pg-sev pg-sev--critical">CRITICAL</span> | [GitLab CI](../providers/gitlab.md) |  |
 | [`GL-011`](#detail-gl-011) | include: local file pulled in MR-triggered pipeline | <span class="pg-sev pg-sev--high">HIGH</span> | [GitLab CI](../providers/gitlab.md) |  |
@@ -590,7 +591,7 @@ pipeline_check --pipeline aws --standard soc2 --standard owasp_cicd_top_10
 
 ### CC8.1: Changes to infrastructure, data, software, and procedures are authorized, designed, tested, approved, and implemented { #ctrl-cc8-1 }
 
-**Evidenced by 228 checks** across 20 providers (AWS, Argo Workflows, Azure DevOps, Bitbucket, Buildkite, CircleCI, Cloud Build, Dockerfile, Drone CI, GitHub Actions, GitLab CI, Helm, Jenkins, Kubernetes, OCI manifest, PyPI, SCM, Tekton, maven, npm).
+**Evidenced by 229 checks** across 20 providers (AWS, Argo Workflows, Azure DevOps, Bitbucket, Buildkite, CircleCI, Cloud Build, Dockerfile, Drone CI, GitHub Actions, GitLab CI, Helm, Jenkins, Kubernetes, OCI manifest, PyPI, SCM, Tekton, maven, npm).
 
 | Check | Title | Severity | Provider | Fix |
 |-------|-------|----------|----------|-----|
@@ -712,6 +713,7 @@ pipeline_check --pipeline aws --standard soc2 --standard owasp_cicd_top_10
 | [`GHA-089`](#detail-gha-089) | Action upstream repo is archived | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [GitHub Actions](../providers/github.md) |  |
 | [`GHA-090`](#detail-gha-090) | Action SHA pin references a commit absent from the claimed repo | <span class="pg-sev pg-sev--high">HIGH</span> | [GitHub Actions](../providers/github.md) |  |
 | [`GHA-091`](#detail-gha-091) | Action upstream repo is missing (takeover-eligible namespace) | <span class="pg-sev pg-sev--high">HIGH</span> | [GitHub Actions](../providers/github.md) |  |
+| [`GHA-094`](#detail-gha-094) | Action SHA pin matches the current tip of an upstream branch | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [GitHub Actions](../providers/github.md) |  |
 | [`GL-001`](#detail-gl-001) | Image not pinned to specific version or digest | <span class="pg-sev pg-sev--high">HIGH</span> | [GitLab CI](../providers/gitlab.md) | <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> |
 | [`GL-004`](#detail-gl-004) | Deploy job lacks manual approval or environment gate | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [GitLab CI](../providers/gitlab.md) |  |
 | [`GL-005`](#detail-gl-005) | include: pulls remote / project without pinned ref | <span class="pg-sev pg-sev--high">HIGH</span> | [GitLab CI](../providers/gitlab.md) |  |
@@ -13652,6 +13654,809 @@ Pairs with GHA-033 (secret echoed in shell trace) and GHA-087 (derived-value of 
 - .
 
 **Source:** [`GHA-093`](../providers/github.md#gha-093) in the [GitHub Actions provider](../providers/github.md).
+
+### `GHA-094`: Action SHA pin matches the current tip of an upstream branch <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-gha-094 }
+
+**Evidences:** [`CC6.8`](#ctrl-cc6-8) Controls prevent or detect the introduction of malicious software, [`CC8.1`](#ctrl-cc8-1) Changes to infrastructure, data, software, and procedures are authorized, designed, tested, approved, and implemented.
+
+**How this is detected.** Reads the branch-tip set from ``ctx.action_metadata[owner/repo].branch_head_shas`` (populated by ``--resolve-remote``; one ``/branches?per_page=100`` call per action with at least one SHA-shaped ``uses: owner/repo@<sha>``). For each SHA pin, fires when ``<sha>`` is the tip of any branch in the snapshot. Repos with more than 100 branches are an edge case; the rule skips additional pages. Tag-pinned refs (``@v4``, ``@main``) are out of scope, they don't carry the in-network mutability surface this rule targets. Both step-level and reusable-workflow ``uses:`` are covered, case-insensitive matching against the lower-cased SHA snapshot. MEDIUM severity, the maintainer's ability to re-point the branch is a latent risk rather than an in-progress exploit; pair with GHA-047 to escalate when the branch tip is also freshly committed.
+
+**Recommendation.** Re-pin to a SHA that's tagged in the upstream repo (a release commit) rather than the current tip of an active branch. Branch HEADs are mutable, the maintainer's next push can move the tip even when your pin stays still, and anyone re-pinning to "latest" picks up unaudited code. A SHA that lives only at a tag (``v4.1.7`` -> commit X) is a stable target: re-tagging is a louder, more visible action than a normal push, and a release-flavored tag implies a review pass the maintainer staged. If the action has no tagged releases at all, vendor the action under your org's control or accept the inherent drift risk by suppressing this finding with a rationale.
+
+**Known false positives.**
+
+- A
+- n
+- 
+- a
+- c
+- t
+- i
+- o
+- n
+- 
+- w
+- h
+- o
+- s
+- e
+- 
+- t
+- a
+- g
+- g
+- e
+- d
+- -
+- r
+- e
+- l
+- e
+- a
+- s
+- e
+- 
+- f
+- l
+- o
+- w
+- 
+- l
+- a
+- g
+- s
+- 
+- r
+- e
+- a
+- l
+- 
+- a
+- c
+- t
+- i
+- v
+- i
+- t
+- y
+- 
+- (
+- m
+- a
+- i
+- n
+- t
+- a
+- i
+- n
+- e
+- r
+- s
+- 
+- p
+- u
+- s
+- h
+- 
+- t
+- o
+- 
+- `
+- `
+- m
+- a
+- i
+- n
+- `
+- `
+- 
+- c
+- o
+- n
+- t
+- i
+- n
+- u
+- o
+- u
+- s
+- l
+- y
+- 
+- b
+- u
+- t
+- 
+- t
+- a
+- g
+- 
+- r
+- a
+- r
+- e
+- l
+- y
+- )
+- 
+- s
+- h
+- o
+- w
+- s
+- 
+- e
+- v
+- e
+- r
+- y
+- 
+- r
+- e
+- c
+- e
+- n
+- t
+- 
+- S
+- H
+- A
+- 
+- a
+- s
+- 
+- a
+- 
+- b
+- r
+- a
+- n
+- c
+- h
+- 
+- t
+- i
+- p
+- .
+- 
+- T
+- h
+- e
+- 
+- r
+- i
+- g
+- h
+- t
+- 
+- f
+- i
+- x
+- 
+- i
+- s
+- 
+- u
+- p
+- s
+- t
+- r
+- e
+- a
+- m
+- :
+- 
+- a
+- s
+- k
+- 
+- t
+- h
+- e
+- 
+- m
+- a
+- i
+- n
+- t
+- a
+- i
+- n
+- e
+- r
+- 
+- t
+- o
+- 
+- t
+- a
+- g
+- ,
+- 
+- o
+- r
+- 
+- p
+- i
+- n
+- 
+- t
+- o
+- 
+- a
+- 
+- t
+- a
+- g
+- g
+- e
+- d
+- 
+- a
+- n
+- c
+- e
+- s
+- t
+- o
+- r
+- 
+- S
+- H
+- A
+- .
+- 
+- I
+- f
+- 
+- s
+- u
+- p
+- p
+- r
+- e
+- s
+- s
+- i
+- o
+- n
+- 
+- i
+- s
+- 
+- t
+- h
+- e
+- 
+- o
+- n
+- l
+- y
+- 
+- p
+- a
+- t
+- h
+- ,
+- 
+- d
+- o
+- 
+- i
+- t
+- 
+- p
+- e
+- r
+- -
+- f
+- i
+- n
+- d
+- i
+- n
+- g
+- 
+- w
+- i
+- t
+- h
+- 
+- a
+- 
+- r
+- a
+- t
+- i
+- o
+- n
+- a
+- l
+- e
+- 
+- t
+- h
+- a
+- t
+- 
+- n
+- a
+- m
+- e
+- s
+- 
+- t
+- h
+- e
+- 
+- s
+- p
+- e
+- c
+- i
+- f
+- i
+- c
+- 
+- S
+- H
+- A
+- 
+- a
+- n
+- d
+- 
+- t
+- h
+- e
+- 
+- a
+- u
+- d
+- i
+- t
+- 
+- y
+- o
+- u
+- 
+- d
+- i
+- d
+- 
+- a
+- g
+- a
+- i
+- n
+- s
+- t
+- 
+- t
+- h
+- e
+- 
+- u
+- p
+- s
+- t
+- r
+- e
+- a
+- m
+- 
+- r
+- e
+- l
+- e
+- a
+- s
+- e
+- 
+- n
+- o
+- t
+- e
+- s
+- .
+
+**Seen in the wild.**
+
+- G
+- i
+- t
+- H
+- u
+- b
+- 
+- S
+- e
+- c
+- u
+- r
+- i
+- t
+- y
+- 
+- L
+- a
+- b
+- 
+- +
+- 
+- B
+- o
+- o
+- s
+- t
+- 
+- S
+- e
+- c
+- u
+- r
+- i
+- t
+- y
+- 
+- "
+- u
+- n
+- s
+- i
+- g
+- n
+- e
+- d
+- -
+- t
+- a
+- g
+- "
+- 
+- r
+- e
+- s
+- e
+- a
+- r
+- c
+- h
+- 
+- (
+- 2
+- 0
+- 2
+- 4
+- -
+- 2
+- 0
+- 2
+- 5
+- )
+- 
+- d
+- o
+- c
+- u
+- m
+- e
+- n
+- t
+- i
+- n
+- g
+- 
+- t
+- h
+- e
+- 
+- r
+- e
+- -
+- p
+- o
+- i
+- n
+- t
+- e
+- d
+- -
+- b
+- r
+- a
+- n
+- c
+- h
+- 
+- s
+- h
+- a
+- p
+- e
+- ,
+- 
+- s
+- e
+- v
+- e
+- r
+- a
+- l
+- 
+- s
+- u
+- p
+- p
+- l
+- y
+- -
+- c
+- h
+- a
+- i
+- n
+- 
+- c
+- o
+- m
+- p
+- r
+- o
+- m
+- i
+- s
+- e
+- s
+- 
+- l
+- a
+- n
+- d
+- e
+- d
+- 
+- b
+- y
+- 
+- a
+- d
+- v
+- a
+- n
+- c
+- i
+- n
+- g
+- 
+- a
+- 
+- `
+- `
+- m
+- a
+- i
+- n
+- `
+- `
+- 
+- b
+- r
+- a
+- n
+- c
+- h
+- 
+- u
+- n
+- d
+- e
+- r
+- 
+- a
+- 
+- S
+- H
+- A
+- 
+- t
+- h
+- a
+- t
+- 
+- c
+- o
+- n
+- s
+- u
+- m
+- e
+- r
+- s
+- 
+- h
+- a
+- d
+- 
+- p
+- i
+- n
+- n
+- e
+- d
+- 
+- t
+- o
+- .
+- 
+- T
+- h
+- e
+- 
+- S
+- H
+- A
+- 
+- p
+- i
+- n
+- '
+- s
+- 
+- a
+- u
+- d
+- i
+- t
+- 
+- v
+- a
+- l
+- u
+- e
+- 
+- e
+- v
+- a
+- p
+- o
+- r
+- a
+- t
+- e
+- s
+- 
+- t
+- h
+- e
+- 
+- m
+- o
+- m
+- e
+- n
+- t
+- 
+- t
+- h
+- e
+- 
+- m
+- a
+- i
+- n
+- t
+- a
+- i
+- n
+- e
+- r
+- '
+- s
+- 
+- n
+- e
+- x
+- t
+- 
+- p
+- u
+- s
+- h
+- 
+- m
+- o
+- v
+- e
+- s
+- 
+- t
+- h
+- e
+- 
+- t
+- i
+- p
+- 
+- a
+- n
+- d
+- 
+- a
+- 
+- c
+- o
+- n
+- s
+- u
+- m
+- e
+- r
+- 
+- t
+- e
+- a
+- m
+- '
+- s
+- 
+- a
+- u
+- t
+- o
+- m
+- a
+- t
+- i
+- o
+- n
+- 
+- r
+- e
+- a
+- c
+- h
+- e
+- s
+- 
+- f
+- o
+- r
+- 
+- "
+- l
+- a
+- t
+- e
+- s
+- t
+- .
+- "
+
+**Proof of exploit.**
+
+```
+# Vulnerable: the pinned SHA is the current ``main`` tip.
+# The maintainer's next push moves ``main`` forward; the
+# pin stays on the old commit but a Dependabot ``main``-
+# tracker bumps consumers to the new tip on the next run.
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: vendor/action@<branch-tip-sha>
+      - run: ./build.sh
+
+# Safe: pinned SHA is a tagged release commit.
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: vendor/action@<tagged-release-sha>   # v4.1.7
+      - run: ./build.sh
+```
+
+**Source:** [`GHA-094`](../providers/github.md#gha-094) in the [GitHub Actions provider](../providers/github.md).
 
 ### `GL-001`: Image not pinned to specific version or digest <span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> { #detail-gl-001 }
 

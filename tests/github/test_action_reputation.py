@@ -60,6 +60,7 @@ def _meta(
     fork: bool = False,
     ref_committed_at: dict[str, str | None] | None = None,
     sha_membership: dict[str, bool] | None = None,
+    branch_head_shas: frozenset[str] | None = None,
 ) -> tuple[str, ActionRepoMetadata]:
     return f"{owner.lower()}/{repo.lower()}", ActionRepoMetadata(
         owner=owner, repo=repo,
@@ -71,6 +72,7 @@ def _meta(
         fork=fork,
         ref_committed_at=ref_committed_at,
         sha_membership=sha_membership,
+        branch_head_shas=branch_head_shas,
     )
 
 
@@ -1078,6 +1080,243 @@ class TestGHA091:
         ctx.action_metadata = {k: m}
         f = _run(ctx, "GHA-091")
         assert not f.passed
+
+
+# ── GHA-094: stale-action-refs (SHA = branch tip) ──────────────────
+
+
+class TestGHA094:
+    def test_fires_when_sha_is_branch_tip(self):
+        wf = f"""
+        name: ci
+        on: push
+        jobs:
+          build:
+            runs-on: ubuntu-latest
+            steps:
+              - uses: vendor/action@{_SHA_A}
+        """
+        k, m = _meta(
+            "vendor", "action",
+            branch_head_shas=frozenset({_SHA_A}),
+        )
+        f = _run(_ctx_with_metadata(wf, {k: m}), "GHA-094")
+        assert not f.passed
+        assert f.severity == Severity.MEDIUM
+        assert "vendor/action" in f.description
+
+    def test_passes_when_sha_below_branch_tip(self):
+        wf = f"""
+        name: ci
+        on: push
+        jobs:
+          build:
+            runs-on: ubuntu-latest
+            steps:
+              - uses: vendor/action@{_SHA_A}
+        """
+        # Branch tip is a different SHA; pinned SHA is below it.
+        k, m = _meta(
+            "vendor", "action",
+            branch_head_shas=frozenset({_SHA_B}),
+        )
+        f = _run(_ctx_with_metadata(wf, {k: m}), "GHA-094")
+        assert f.passed
+
+    def test_silent_on_tag_refs(self):
+        wf = """
+        name: ci
+        on: push
+        jobs:
+          build:
+            runs-on: ubuntu-latest
+            steps:
+              - uses: vendor/action@v4
+        """
+        # Tag-pinned action. Even if branch_head_shas is populated
+        # with random SHAs, the rule shouldn't fire on @v4.
+        k, m = _meta(
+            "vendor", "action",
+            branch_head_shas=frozenset({_SHA_A, _SHA_B}),
+        )
+        f = _run(_ctx_with_metadata(wf, {k: m}), "GHA-094")
+        assert f.passed
+
+    def test_passes_silently_when_metadata_empty(self):
+        wf = f"""
+        name: ci
+        on: push
+        jobs:
+          build:
+            runs-on: ubuntu-latest
+            steps:
+              - uses: vendor/action@{_SHA_A}
+        """
+        f = _run(_ctx_with_metadata(wf, {}), "GHA-094")
+        assert f.passed
+        assert "resolve-remote" in f.description
+
+    def test_passes_silently_when_branch_head_shas_none(self):
+        # action_metadata has the action but branch_head_shas was not
+        # populated (e.g. no SHA-shaped refs at the time the fetch
+        # decided). Treat as "not probed."
+        wf = f"""
+        name: ci
+        on: push
+        jobs:
+          build:
+            runs-on: ubuntu-latest
+            steps:
+              - uses: vendor/action@{_SHA_A}
+        """
+        k, m = _meta(
+            "vendor", "action",
+            branch_head_shas=None,
+        )
+        f = _run(_ctx_with_metadata(wf, {k: m}), "GHA-094")
+        assert f.passed
+        assert "resolve-remote" in f.description
+
+    def test_case_insensitive_match(self):
+        # Workflow body has uppercase hex; the snapshot is lower-cased.
+        wf = f"""
+        name: ci
+        on: push
+        jobs:
+          build:
+            runs-on: ubuntu-latest
+            steps:
+              - uses: vendor/action@{_SHA_A.upper()}
+        """
+        k, m = _meta(
+            "vendor", "action",
+            branch_head_shas=frozenset({_SHA_A}),
+        )
+        f = _run(_ctx_with_metadata(wf, {k: m}), "GHA-094")
+        assert not f.passed
+
+    def test_fires_on_reusable_workflow_sha_pin(self):
+        wf = f"""
+        name: ci
+        on: push
+        jobs:
+          call:
+            uses: vendor/action/.github/workflows/build.yml@{_SHA_A}
+        """
+        k, m = _meta(
+            "vendor", "action",
+            branch_head_shas=frozenset({_SHA_A}),
+        )
+        f = _run(_ctx_with_metadata(wf, {k: m}), "GHA-094")
+        assert not f.passed
+
+    def test_dedups_same_sha_referenced_twice(self):
+        wf = f"""
+        name: ci
+        on: push
+        jobs:
+          a:
+            runs-on: ubuntu-latest
+            steps:
+              - uses: vendor/action@{_SHA_A}
+          b:
+            runs-on: ubuntu-latest
+            steps:
+              - uses: vendor/action@{_SHA_A}
+        """
+        k, m = _meta(
+            "vendor", "action",
+            branch_head_shas=frozenset({_SHA_A}),
+        )
+        f = _run(_ctx_with_metadata(wf, {k: m}), "GHA-094")
+        assert not f.passed
+        assert "1 SHA-pinned" in f.description
+
+    def test_empty_branch_head_set_passes(self):
+        # branch_head_shas is the empty frozenset means "lookup ran,
+        # repo has no branches" (rare but legal). The pinned SHA is
+        # by definition not a tip.
+        wf = f"""
+        name: ci
+        on: push
+        jobs:
+          build:
+            runs-on: ubuntu-latest
+            steps:
+              - uses: vendor/action@{_SHA_A}
+        """
+        k, m = _meta(
+            "vendor", "action",
+            branch_head_shas=frozenset(),
+        )
+        f = _run(_ctx_with_metadata(wf, {k: m}), "GHA-094")
+        # Even with no probes returning True, the rule needs the
+        # field populated (not None) to fire / pass meaningfully.
+        # Empty set means "no tips, no stale refs." Pass.
+        assert f.passed
+
+
+# ── _action_reputation.fetch_branch_heads ──────────────────────────
+
+
+class TestFetchBranchHeads:
+    def test_returns_set_of_tip_shas(self):
+        from pipeline_check.core.checks.github._action_reputation import (
+            ActionMetadataFetcher,
+        )
+
+        fetcher = ActionMetadataFetcher(
+            FakeRawFetcher({
+                "repos/o/r/branches?per_page=100": [
+                    {"name": "main", "commit": {"sha": _SHA_A}},
+                    {"name": "dev", "commit": {"sha": _SHA_B}},
+                ],
+            })
+        )
+        result = fetcher.fetch_branch_heads("o", "r")
+        assert result == frozenset({_SHA_A, _SHA_B})
+
+    def test_returns_none_when_fetch_fails(self):
+        from pipeline_check.core.checks.github._action_reputation import (
+            ActionMetadataFetcher,
+        )
+
+        fetcher = ActionMetadataFetcher(FakeRawFetcher({}))
+        result = fetcher.fetch_branch_heads("o", "r")
+        assert result is None
+
+    def test_skips_short_or_malformed_shas(self):
+        from pipeline_check.core.checks.github._action_reputation import (
+            ActionMetadataFetcher,
+        )
+
+        fetcher = ActionMetadataFetcher(
+            FakeRawFetcher({
+                "repos/o/r/branches?per_page=100": [
+                    {"name": "main", "commit": {"sha": _SHA_A}},
+                    {"name": "weird", "commit": {"sha": "short"}},
+                    {"name": "broken", "commit": "not-a-dict"},
+                    {"name": "missing-commit"},
+                ],
+            })
+        )
+        result = fetcher.fetch_branch_heads("o", "r")
+        assert result == frozenset({_SHA_A})
+
+    def test_lowercases_returned_shas(self):
+        from pipeline_check.core.checks.github._action_reputation import (
+            ActionMetadataFetcher,
+        )
+
+        fetcher = ActionMetadataFetcher(
+            FakeRawFetcher({
+                "repos/o/r/branches?per_page=100": [
+                    {"name": "main", "commit": {"sha": _SHA_A.upper()}},
+                ],
+            })
+        )
+        result = fetcher.fetch_branch_heads("o", "r")
+        assert result == frozenset({_SHA_A})
 
 
 # ── _action_reputation.fetch_sha_membership ────────────────────────

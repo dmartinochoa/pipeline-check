@@ -215,6 +215,7 @@ STANDARD = Standard(
         "GHA-091":  ["CICD-SEC-3", "CICD-SEC-8"],  # repojacking: action upstream missing
         "GHA-092":  ["CICD-SEC-1", "CICD-SEC-7"],  # TOCTOU PR head SHA force-push race
         "GHA-093":  ["CICD-SEC-10", "CICD-SEC-6"], # LOTP indicators (workflow-command abuse)
+        "GHA-094":  ["CICD-SEC-3"],                # stale-action-refs: SHA = branch tip
         # GitLab CI
         "GL-001":   ["CICD-SEC-3"],
         "GL-002":   ["CICD-SEC-4"],
