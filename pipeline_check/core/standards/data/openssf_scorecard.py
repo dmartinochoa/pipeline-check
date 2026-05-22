@@ -59,6 +59,9 @@ STANDARD = Standard(
         "GHA-040":  ["Pinned-Dependencies"],                           # known-compromised action ref
         "GHA-018":  ["Pinned-Dependencies"],                           # insecure package registry
         "GHA-025":  ["Pinned-Dependencies"],
+        "GHA-088":  ["Pinned-Dependencies"],                           # typosquat uses
+        "GHA-089":  ["Pinned-Dependencies"],                           # archived upstream
+        "GHA-090":  ["Pinned-Dependencies"],                           # impostor-commit
         "GL-001":   ["Pinned-Dependencies"],
         "GL-005":   ["Pinned-Dependencies"],
         "GL-009":   ["Pinned-Dependencies"],

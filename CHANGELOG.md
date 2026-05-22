@@ -12,6 +12,25 @@ release commit collapses this section into `## [X.Y.Z] - <date>`.
 
 ### Added
 
+- **GHA-090 impostor-commit (closes #147).** New rule that fires
+  when a SHA-pinned ``uses:`` reference points at a commit absent
+  from the claimed repo's commit graph (the "fork-network only"
+  attack shape). Reads a new ``sha_membership`` field on
+  ``ctx.action_metadata[owner/repo]``, populated by an additional
+  per-SHA ``GET /repos/{o}/{r}/commits/{sha}`` probe in the same
+  ``--resolve-remote`` metadata pass. The probe runs only on
+  refs that look like 40-char SHAs (tag / branch refs are out of
+  scope for this attack model). Unanimous-failure shape (every
+  probed SHA returns False) is treated as rate-limit / resolver
+  noise rather than impostor-commit and the rule passes silently
+  with a one-line nudge. Both step-level and reusable-workflow
+  SHA pins covered, duplicate SHAs de-duped. HIGH severity, OWASP
+  CICD-SEC-3 / CICD-SEC-8 / ESF-S-VERIFY-DEPS / NIST SR-3 / NIST
+  CSF GV.SC-05 / SOC2 CC6.8 / PCI 6.3.1. 8 per-rule tests + 4
+  fetcher-level tests under
+  ``tests/github/test_action_reputation.py``. Brings GHA pack to
+  81 rules.
+
 - **GHA-089 archived ``uses:`` (closes #149).** New rule that
   fires when an action's upstream repo is archived. Reads the
   ``archived`` bit already populated on

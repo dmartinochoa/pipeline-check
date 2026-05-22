@@ -59,6 +59,7 @@ def _meta(
     archived: bool = False,
     fork: bool = False,
     ref_committed_at: dict[str, str | None] | None = None,
+    sha_membership: dict[str, bool] | None = None,
 ) -> tuple[str, ActionRepoMetadata]:
     return f"{owner.lower()}/{repo.lower()}", ActionRepoMetadata(
         owner=owner, repo=repo,
@@ -69,6 +70,7 @@ def _meta(
         archived=archived,
         fork=fork,
         ref_committed_at=ref_committed_at,
+        sha_membership=sha_membership,
     )
 
 
@@ -726,6 +728,234 @@ class TestGHA089:
         k, m = _meta("legacy", "abandoned", archived=True)
         f = _run(_ctx_with_metadata(wf, {k: m}), "GHA-089")
         assert not f.passed
+
+
+# ── GHA-090: impostor-commit (SHA absent from claimed repo) ────────
+
+
+_SHA_A = "a" * 40
+_SHA_B = "b" * 40
+_SHA_C = "c" * 40
+
+
+class TestGHA090:
+    def test_fires_when_sha_absent_from_repo(self):
+        wf = f"""
+        name: ci
+        on: push
+        jobs:
+          build:
+            runs-on: ubuntu-latest
+            steps:
+              - uses: actions/checkout@{_SHA_A}
+        """
+        k, m = _meta(
+            "actions", "checkout",
+            sha_membership={_SHA_A: False},
+        )
+        f = _run(_ctx_with_metadata(wf, {k: m}), "GHA-090")
+        assert not f.passed
+        assert f.severity == Severity.HIGH
+        assert "actions/checkout" in f.description
+
+    def test_passes_when_sha_present_in_repo(self):
+        wf = f"""
+        name: ci
+        on: push
+        jobs:
+          build:
+            runs-on: ubuntu-latest
+            steps:
+              - uses: actions/checkout@{_SHA_A}
+        """
+        k, m = _meta(
+            "actions", "checkout",
+            sha_membership={_SHA_A: True},
+        )
+        f = _run(_ctx_with_metadata(wf, {k: m}), "GHA-090")
+        assert f.passed
+
+    def test_silent_on_tag_refs(self):
+        # Tag / branch refs are not in scope; the rule only applies
+        # to 40-char SHA pins.
+        wf = """
+        name: ci
+        on: push
+        jobs:
+          build:
+            runs-on: ubuntu-latest
+            steps:
+              - uses: actions/checkout@v4
+        """
+        k, m = _meta(
+            "actions", "checkout",
+            sha_membership=None,
+        )
+        f = _run(_ctx_with_metadata(wf, {k: m}), "GHA-090")
+        assert f.passed
+
+    def test_passes_silently_when_metadata_empty(self):
+        wf = f"""
+        name: ci
+        on: push
+        jobs:
+          build:
+            runs-on: ubuntu-latest
+            steps:
+              - uses: actions/checkout@{_SHA_A}
+        """
+        f = _run(_ctx_with_metadata(wf, {}), "GHA-090")
+        assert f.passed
+        assert "resolve-remote" in f.description
+
+    def test_passes_silently_when_every_probe_failed(self):
+        # All-False shape is rate-limit / network noise, not
+        # impostor-commit. Pass silently with a nudge.
+        wf = f"""
+        name: ci
+        on: push
+        jobs:
+          build:
+            runs-on: ubuntu-latest
+            steps:
+              - uses: actions/checkout@{_SHA_A}
+              - uses: actions/setup-node@{_SHA_B}
+        """
+        k1, m1 = _meta(
+            "actions", "checkout",
+            sha_membership={_SHA_A: False},
+        )
+        k2, m2 = _meta(
+            "actions", "setup-node",
+            sha_membership={_SHA_B: False},
+        )
+        f = _run(_ctx_with_metadata(wf, {k1: m1, k2: m2}), "GHA-090")
+        assert f.passed
+        assert "rate-limit" in f.description
+
+    def test_fires_when_some_probes_confirm_membership(self):
+        # One impostor among several confirmed SHAs is the actual
+        # attack shape and should fire.
+        wf = f"""
+        name: ci
+        on: push
+        jobs:
+          build:
+            runs-on: ubuntu-latest
+            steps:
+              - uses: actions/checkout@{_SHA_A}
+              - uses: actions/setup-node@{_SHA_B}
+        """
+        k1, m1 = _meta(
+            "actions", "checkout",
+            sha_membership={_SHA_A: False},
+        )
+        k2, m2 = _meta(
+            "actions", "setup-node",
+            sha_membership={_SHA_B: True},
+        )
+        f = _run(_ctx_with_metadata(wf, {k1: m1, k2: m2}), "GHA-090")
+        assert not f.passed
+        assert "actions/checkout" in f.description
+        assert "setup-node" not in f.description
+
+    def test_dedups_same_action_sha_referenced_twice(self):
+        # Same impostor SHA referenced from two jobs should appear
+        # once in the finding description.
+        wf = f"""
+        name: ci
+        on: push
+        jobs:
+          build:
+            runs-on: ubuntu-latest
+            steps:
+              - uses: actions/checkout@{_SHA_A}
+          test:
+            runs-on: ubuntu-latest
+            steps:
+              - uses: actions/checkout@{_SHA_A}
+              - uses: actions/setup-node@{_SHA_C}
+        """
+        k1, m1 = _meta(
+            "actions", "checkout",
+            sha_membership={_SHA_A: False},
+        )
+        k2, m2 = _meta(
+            "actions", "setup-node",
+            sha_membership={_SHA_C: True},
+        )
+        f = _run(_ctx_with_metadata(wf, {k1: m1, k2: m2}), "GHA-090")
+        assert not f.passed
+        assert "1 SHA-pinned" in f.description
+
+    def test_fires_on_reusable_workflow_sha_pin(self):
+        wf = f"""
+        name: ci
+        on: push
+        jobs:
+          call:
+            uses: dangerous/fork/.github/workflows/build.yml@{_SHA_A}
+        """
+        k, m = _meta(
+            "dangerous", "fork",
+            sha_membership={_SHA_A: False},
+        )
+        f = _run(_ctx_with_metadata(wf, {k: m}), "GHA-090")
+        assert not f.passed
+        assert "dangerous/fork" in f.description
+
+
+# ── _action_reputation.fetch_sha_membership ────────────────────────
+
+
+class TestFetchShaMembership:
+    def test_present_sha_returns_true(self):
+        from pipeline_check.core.checks.github._action_reputation import (
+            ActionMetadataFetcher,
+        )
+
+        fetcher = ActionMetadataFetcher(
+            FakeRawFetcher({
+                f"repos/o/r/commits/{_SHA_A}": {"sha": _SHA_A},
+            })
+        )
+        result = fetcher.fetch_sha_membership("o", "r", {_SHA_A})
+        assert result == {_SHA_A: True}
+
+    def test_absent_sha_returns_false(self):
+        from pipeline_check.core.checks.github._action_reputation import (
+            ActionMetadataFetcher,
+        )
+
+        # No mapping for the SHA -> FakeRawFetcher returns None ->
+        # the fetcher records the SHA as not-present.
+        fetcher = ActionMetadataFetcher(FakeRawFetcher({}))
+        result = fetcher.fetch_sha_membership("o", "r", {_SHA_A})
+        assert result == {_SHA_A: False}
+
+    def test_mixed_shas(self):
+        from pipeline_check.core.checks.github._action_reputation import (
+            ActionMetadataFetcher,
+        )
+
+        fetcher = ActionMetadataFetcher(
+            FakeRawFetcher({
+                f"repos/o/r/commits/{_SHA_A}": {"sha": _SHA_A},
+            })
+        )
+        result = fetcher.fetch_sha_membership(
+            "o", "r", {_SHA_A, _SHA_B},
+        )
+        assert result == {_SHA_A: True, _SHA_B: False}
+
+    def test_empty_set_returns_empty_dict(self):
+        from pipeline_check.core.checks.github._action_reputation import (
+            ActionMetadataFetcher,
+        )
+
+        fetcher = ActionMetadataFetcher(FakeRawFetcher({}))
+        result = fetcher.fetch_sha_membership("o", "r", set())
+        assert result == {}
 
 
 # ── GHA-047: freshly-committed referenced ref ──────────────────────

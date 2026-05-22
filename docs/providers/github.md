@@ -72,7 +72,7 @@ Resolution rules:
 
 ## What it covers
 
-80 checks · 17 have an autofix patch (``--fix``).
+81 checks · 17 have an autofix patch (``--fix``).
 
 | Check | Title | Severity | Fix |
 |-------|-------|----------|-----|
@@ -153,6 +153,7 @@ Resolution rules:
 | [GHA-087](#gha-087) | Derived value of a secret printed to the build log | <span class="pg-sev pg-sev--high">HIGH</span> |  |
 | [GHA-088](#gha-088) | Action ``uses:`` slug is a near-edit of a top-traffic action | <span class="pg-sev pg-sev--high">HIGH</span> |  |
 | [GHA-089](#gha-089) | Action upstream repo is archived | <span class="pg-sev pg-sev--medium">MEDIUM</span> |  |
+| [GHA-090](#gha-090) | Action SHA pin references a commit absent from the claimed repo | <span class="pg-sev pg-sev--high">HIGH</span> |  |
 | [TAINT-001](#taint-001) | Untrusted input flows across step boundaries via step outputs | <span class="pg-sev pg-sev--high">HIGH</span> |  |
 | [TAINT-002](#taint-002) | Untrusted input flows across jobs via ``jobs.<id>.outputs:`` | <span class="pg-sev pg-sev--high">HIGH</span> |  |
 | [TAINT-003](#taint-003) | Untrusted input forwarded into reusable workflow ``with:`` | <span class="pg-sev pg-sev--high">HIGH</span> |  |
@@ -3068,6 +3069,34 @@ Reads the archived bit from ``ctx.action_metadata[owner/repo].archived`` (popula
 **Recommended action**
 
 Migrate to an actively-maintained action covering the same surface. Archived upstreams stop receiving security patches the day the archive bit lands; vulnerabilities discovered afterward stay unpatched, and the namespace is eligible to be reclaimed by anyone once the original owner deletes or transfers the repo (the repojacking shape, see also GHA-082 when it ships). If a fork under your org's control is the only path forward, vendor the action and pin to your fork's SHA, so an upstream takeover can't reach your build runtime.
+
+</div>
+
+</div>
+
+<div class="pg-rule pg-rule--high" markdown>
+
+## GHA-090: Action SHA pin references a commit absent from the claimed repo { #gha-090 }
+
+<div class="pg-rule__tags">
+<span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-3</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-8</span> <span class="pg-tag pg-tag--esf">ESF-S-VERIFY-DEPS</span> <span class="pg-tag pg-tag--cwe">CWE-1357</span> <span class="pg-tag pg-tag--cwe">CWE-829</span> <span class="pg-tag pg-tag--cwe">CWE-506</span>
+</div>
+
+Reads the per-SHA membership probe from ``ctx.action_metadata[owner/repo].sha_membership`` (populated by ``--resolve-remote``; the same per-action metadata pass the GHA-041..043 reputation rules ride on). A False value means ``GET /repos/{o}/{r}/commits/{sha}`` ran and came back empty (most commonly a 404, the SHA is not in the repo's commit graph). When every SHA probed for an action came back False the rule treats that as rate-limit noise rather than impostor-commit and passes silently with a one-line nudge; an attacker has no way to make every legitimate pin fail at once, so unanimous failure is a configuration signal, not an attack.
+
+**Known false-positive modes**
+
+- Force-pushed branches whose old SHA you pinned at can drop out of the reachability set even though the SHA was once legitimate. Re-pin to a SHA that's currently reachable. Suppress per-finding only after confirming through git log / the upstream tag history that the SHA wasn't introduced by a fork.
+
+**Seen in the wild**
+
+- Synacktiv / Octoscan write-ups document impostor-commit as the next-step refinement after SHA pinning becomes table-stakes. The attack reuses the canonical PR-fork shape: a contributor fork has commit X that head doesn't, X gets referenced via ``uses: org/repo@X`` somewhere downstream, and runtime fetches X over GitHub's per-fork object pool.
+
+<div class="pg-rule__rec" markdown>
+
+**Recommended action**
+
+Verify the action's expected SHA via the upstream repo's release / tag history. If the SHA exists only in a fork, either pin to a canonical SHA on the head repository or fork the action under your org's control so the network you depend on is not the attacker's. The impostor-commit shape was popularized by red-team write-ups, the SHA pin passes review eyes because reviewers don't query the network for membership.
 
 </div>
 

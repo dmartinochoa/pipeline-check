@@ -221,6 +221,7 @@ STANDARD = Standard(
         "GHA-087":  ["PS.1.1"],                        # derived-value of secret printed to log
         "GHA-088":  ["PW.4.1", "PW.4.4", "RV.1.1"],    # typosquat uses: near-edit of top action
         "GHA-089":  ["PW.4.1", "PW.4.4"],              # archived upstream repo
+        "GHA-090":  ["PW.4.1", "PW.4.4", "RV.1.1"],    # impostor-commit: SHA absent from repo
         # GitLab CI
         "GL-001":   ["PW.4.1", "PW.4.4"],
         "GL-002":   ["PW.6.1", "PW.9.1"],

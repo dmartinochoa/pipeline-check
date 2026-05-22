@@ -19,7 +19,7 @@ Kubernetes, …) when an audit asks for that framework's vocabulary.
 
 - **Controls in this standard:** 10
 - **Controls evidenced by at least one check:** 10 / 10
-- **Distinct checks evidencing this standard:** 601
+- **Distinct checks evidencing this standard:** 602
 - **Of those, autofixable with `--fix`:** 111
 
 _Severity levels (`CRITICAL` / `HIGH` / `MEDIUM` / `LOW` / `INFO`) follow the same scale across every provider and standard. See [How to read severity](README.md#how-to-read-severity) on the standards overview for the definitions._
@@ -32,12 +32,12 @@ Click a control ID to jump to the per-control section with the full check list. 
 |---------|-------|-------:|--------------|
 | [`CICD-SEC-1`](#ctrl-cicd-sec-1) | Insufficient Flow Control Mechanisms | 75 | 4C · 33H · 30M · 8L |
 | [`CICD-SEC-2`](#ctrl-cicd-sec-2) | Inadequate Identity and Access Management | 40 | 5C · 23H · 11M · 1L |
-| [`CICD-SEC-3`](#ctrl-cicd-sec-3) | Dependency Chain Abuse | 179 | 5C · 90H · 68M · 16L |
+| [`CICD-SEC-3`](#ctrl-cicd-sec-3) | Dependency Chain Abuse | 180 | 5C · 91H · 68M · 16L |
 | [`CICD-SEC-4`](#ctrl-cicd-sec-4) | Poisoned Pipeline Execution | 94 | 24C · 49H · 15M · 6L |
 | [`CICD-SEC-5`](#ctrl-cicd-sec-5) | Insufficient PBAC | 35 | 4C · 21H · 10M |
 | [`CICD-SEC-6`](#ctrl-cicd-sec-6) | Insufficient Credential Hygiene | 75 | 29C · 30H · 16M |
 | [`CICD-SEC-7`](#ctrl-cicd-sec-7) | Insecure System Configuration | 104 | 22C · 40H · 35M · 7L |
-| [`CICD-SEC-8`](#ctrl-cicd-sec-8) | Ungoverned Usage of 3rd-Party Services | 30 | 8C · 14H · 8M |
+| [`CICD-SEC-8`](#ctrl-cicd-sec-8) | Ungoverned Usage of 3rd-Party Services | 31 | 8C · 15H · 8M |
 | [`CICD-SEC-9`](#ctrl-cicd-sec-9) | Improper Artifact Integrity Validation | 73 | 1C · 18H · 47M · 7L |
 | [`CICD-SEC-10`](#ctrl-cicd-sec-10) | Insufficient Logging and Visibility | 48 | 5H · 14M · 13L · 16I |
 
@@ -195,7 +195,7 @@ Long-lived static credentials, shared service accounts, and human identities reu
 
 Floating tags, range constraints, and unverified registries let an upstream maintainer compromise (or a typosquat) execute in your build the next time the dependency resolves.
 
-**Evidenced by 179 checks** across 21 providers (AWS, Argo CD, Argo Workflows, Azure DevOps, Bitbucket, Buildkite, CircleCI, Cloud Build, Dockerfile, Drone CI, GitHub Actions, GitLab CI, Helm, Jenkins, Kubernetes, OCI manifest, PyPI, SCM, Tekton, maven, npm).
+**Evidenced by 180 checks** across 21 providers (AWS, Argo CD, Argo Workflows, Azure DevOps, Bitbucket, Buildkite, CircleCI, Cloud Build, Dockerfile, Drone CI, GitHub Actions, GitLab CI, Helm, Jenkins, Kubernetes, OCI manifest, PyPI, SCM, Tekton, maven, npm).
 
 | Check | Title | Severity | Provider | Fix |
 |-------|-------|----------|----------|-----|
@@ -301,6 +301,7 @@ Floating tags, range constraints, and unverified registries let an upstream main
 | [`GHA-070`](#detail-gha-070) | ``ssh-keyscan`` / disabled host-key check trust-on-first-use | <span class="pg-sev pg-sev--high">HIGH</span> | [GitHub Actions](../providers/github.md) |  |
 | [`GHA-088`](#detail-gha-088) | Action ``uses:`` slug is a near-edit of a top-traffic action | <span class="pg-sev pg-sev--high">HIGH</span> | [GitHub Actions](../providers/github.md) |  |
 | [`GHA-089`](#detail-gha-089) | Action upstream repo is archived | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [GitHub Actions](../providers/github.md) |  |
+| [`GHA-090`](#detail-gha-090) | Action SHA pin references a commit absent from the claimed repo | <span class="pg-sev pg-sev--high">HIGH</span> | [GitHub Actions](../providers/github.md) |  |
 | [`GL-001`](#detail-gl-001) | Image not pinned to specific version or digest | <span class="pg-sev pg-sev--high">HIGH</span> | [GitLab CI](../providers/gitlab.md) | <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> |
 | [`GL-005`](#detail-gl-005) | include: pulls remote / project without pinned ref | <span class="pg-sev pg-sev--high">HIGH</span> | [GitLab CI](../providers/gitlab.md) |  |
 | [`GL-009`](#detail-gl-009) | Image pinned to version tag rather than sha256 digest | <span class="pg-sev pg-sev--low">LOW</span> | [GitLab CI](../providers/gitlab.md) |  |
@@ -727,7 +728,7 @@ Privileged containers, host mounts, root user, and disabled TLS turn a routine R
 
 Calls to external services, SaaS integrations, marketplace actions, package registries, expand the trust perimeter of the pipeline beyond what was reviewed and approved.
 
-**Evidenced by 30 checks** across 9 providers (AWS, Azure DevOps, Bitbucket, CircleCI, GitHub Actions, PyPI, SCM, maven, npm).
+**Evidenced by 31 checks** across 9 providers (AWS, Azure DevOps, Bitbucket, CircleCI, GitHub Actions, PyPI, SCM, maven, npm).
 
 | Check | Title | Severity | Provider | Fix |
 |-------|-------|----------|----------|-----|
@@ -746,6 +747,7 @@ Calls to external services, SaaS integrations, marketplace actions, package regi
 | [`GHA-043`](#detail-gha-043) | Low-star action runs with sensitive permissions | <span class="pg-sev pg-sev--high">HIGH</span> | [GitHub Actions](../providers/github.md) |  |
 | [`GHA-047`](#detail-gha-047) | Action ref resolves to a recently committed tag or SHA | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [GitHub Actions](../providers/github.md) |  |
 | [`GHA-051`](#detail-gha-051) | services / container image is not pinned by digest | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [GitHub Actions](../providers/github.md) |  |
+| [`GHA-090`](#detail-gha-090) | Action SHA pin references a commit absent from the claimed repo | <span class="pg-sev pg-sev--high">HIGH</span> | [GitHub Actions](../providers/github.md) |  |
 | [`LMB-002`](#detail-lmb-002) | Lambda function URL has AuthType=NONE | <span class="pg-sev pg-sev--high">HIGH</span> | [AWS](../providers/aws.md) |  |
 | [`LMB-004`](#detail-lmb-004) | Lambda resource policy allows wildcard principal | <span class="pg-sev pg-sev--critical">CRITICAL</span> | [AWS](../providers/aws.md) |  |
 | [`MVN-003`](#detail-mvn-003) | pom.xml declares a plaintext-HTTP Maven repository | <span class="pg-sev pg-sev--high">HIGH</span> | [maven](../providers/maven.md) |  |
@@ -12209,6 +12211,47 @@ jobs:
 ```
 
 **Source:** [`GHA-089`](../providers/github.md#gha-089) in the [GitHub Actions provider](../providers/github.md).
+
+### `GHA-090`: Action SHA pin references a commit absent from the claimed repo <span class="pg-sev pg-sev--high">HIGH</span> { #detail-gha-090 }
+
+**Evidences:** [`CICD-SEC-3`](#ctrl-cicd-sec-3) Dependency Chain Abuse, [`CICD-SEC-8`](#ctrl-cicd-sec-8) Ungoverned Usage of 3rd-Party Services.
+
+**How this is detected.** Reads the per-SHA membership probe from ``ctx.action_metadata[owner/repo].sha_membership`` (populated by ``--resolve-remote``; the same per-action metadata pass the GHA-041..043 reputation rules ride on). A False value means ``GET /repos/{o}/{r}/commits/{sha}`` ran and came back empty (most commonly a 404, the SHA is not in the repo's commit graph). When every SHA probed for an action came back False the rule treats that as rate-limit noise rather than impostor-commit and passes silently with a one-line nudge; an attacker has no way to make every legitimate pin fail at once, so unanimous failure is a configuration signal, not an attack.
+
+**Recommendation.** Verify the action's expected SHA via the upstream repo's release / tag history. If the SHA exists only in a fork, either pin to a canonical SHA on the head repository or fork the action under your org's control so the network you depend on is not the attacker's. The impostor-commit shape was popularized by red-team write-ups, the SHA pin passes review eyes because reviewers don't query the network for membership.
+
+**Known false positives.**
+
+- Force-pushed branches whose old SHA you pinned at can drop out of the reachability set even though the SHA was once legitimate. Re-pin to a SHA that's currently reachable. Suppress per-finding only after confirming through git log / the upstream tag history that the SHA wasn't introduced by a fork.
+
+**Seen in the wild.**
+
+- Synacktiv / Octoscan write-ups document impostor-commit as the next-step refinement after SHA pinning becomes table-stakes. The attack reuses the canonical PR-fork shape: a contributor fork has commit X that head doesn't, X gets referenced via ``uses: org/repo@X`` somewhere downstream, and runtime fetches X over GitHub's per-fork object pool.
+
+**Proof of exploit.**
+
+```
+# Vulnerable: the SHA below resolves only against a fork's
+# commit pool. ``actions/checkout`` itself never carried
+# this commit, but GitHub still serves it via the fork-
+# network when an authenticated workflow asks for it.
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@<fork-only-sha>
+      - run: ./build.sh
+
+# Safe: SHA that resolves on the head repo.
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@<canonical-sha>
+      - run: ./build.sh
+```
+
+**Source:** [`GHA-090`](../providers/github.md#gha-090) in the [GitHub Actions provider](../providers/github.md).
 
 ### `GL-001`: Image not pinned to specific version or digest <span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> { #detail-gl-001 }
 

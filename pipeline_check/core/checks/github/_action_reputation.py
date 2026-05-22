@@ -26,6 +26,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import TYPE_CHECKING, Any
 
+from .._primitives.sha_ref import SHA_RE as _SHA_RE
 from ..scm.base import SCMFetcher
 from .uses_parser import parse_uses
 
@@ -81,6 +82,17 @@ class ActionRepoMetadata:
     #: didn't carry a usable date; the consuming rule passes silently
     #: on that specific ref. Consumed by GHA-047.
     ref_committed_at: dict[str, str | None] | None = None
+    #: Per-SHA membership in the upstream repo's commit network. Keyed
+    #: by the 40-char SHA referenced in ``uses:``. ``True`` when the
+    #: ``/commits/{sha}`` lookup returned 200 (the commit exists in
+    #: this repo's reachability set); ``False`` when the lookup ran
+    #: but came back empty (most commonly a 404, the impostor-commit
+    #: signal GHA-090 fires on). ``None`` for the whole slot means the
+    #: rule should treat membership as unknown (typical when the opt-
+    #: in flag is off or no SHA-shaped refs were referenced). Only
+    #: populated for refs that match a 40-char hex SHA shape; tag /
+    #: branch refs don't carry the impostor-commit attack model.
+    sha_membership: dict[str, bool] | None = None
 
 
 class ActionMetadataFetcher:
@@ -141,6 +153,30 @@ class ActionMetadataFetcher:
             archived=archived,
             fork=fork,
         )
+
+    def fetch_sha_membership(
+        self, owner: str, repo: str, sha_refs: set[str],
+    ) -> dict[str, bool]:
+        """Probe whether each 40-char SHA in *sha_refs* is reachable
+        in ``owner/repo``'s commit network.
+
+        Returns ``{sha: True}`` when ``/repos/{o}/{r}/commits/{sha}``
+        returned a non-empty payload (the commit is in the repo's
+        reachability set) and ``{sha: False}`` when the lookup ran
+        but came back empty — typically a 404 from a SHA that exists
+        only in a fork's network, the impostor-commit attack shape.
+
+        Empty *sha_refs* returns an empty dict; callers map that to
+        ``None`` on :attr:`ActionRepoMetadata.sha_membership` so
+        consumers can distinguish "no data" from "every probe ran."
+        """
+        out: dict[str, bool] = {}
+        for sha in sha_refs:
+            if not sha:
+                continue
+            payload = self.raw.fetch(f"repos/{owner}/{repo}/commits/{sha}")
+            out[sha] = isinstance(payload, dict)
+        return out
 
     def fetch_ref_dates(
         self, owner: str, repo: str, refs: set[str],
@@ -321,6 +357,20 @@ def populate_action_metadata(
             continue
         refs = refs_by_action.get((owner, repo), set())
         ref_dates = fetcher.fetch_ref_dates(owner, repo, refs) if refs else {}
+        # SHA-shaped refs (40-char hex) get an additional membership
+        # probe so GHA-090 can fire on impostor-commit. Tag / branch
+        # refs are skipped, the impostor-commit attack model is
+        # specific to "SHA pin points at a commit absent from the
+        # claimed repo." Same /commits/{sha} endpoint as
+        # fetch_ref_dates, but we ask a yes/no question rather than
+        # a timestamp-extraction one.
+        sha_refs = {
+            r for r in refs if _SHA_RE.match(r)
+        }
+        sha_membership = (
+            fetcher.fetch_sha_membership(owner, repo, sha_refs)
+            if sha_refs else {}
+        )
         # Re-pack the metadata with the per-ref dates folded in.
         # ``ref_committed_at`` stays ``None`` (rather than ``{}``)
         # when the action had no resolvable refs, so GHA-047 can tell
@@ -335,6 +385,7 @@ def populate_action_metadata(
             archived=meta.archived,
             fork=meta.fork,
             ref_committed_at=ref_dates if ref_dates else None,
+            sha_membership=sha_membership if sha_membership else None,
         )
         fetched[f"{owner}/{repo}"] = meta_with_refs
     if failed:

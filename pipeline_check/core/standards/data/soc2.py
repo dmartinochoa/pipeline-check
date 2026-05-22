@@ -434,6 +434,7 @@ STANDARD = Standard(
         "GHA-087":  ["CC6.1"],              # derived-value of secret printed to log
         "GHA-088":  ["CC6.8", "CC8.1"],     # typosquat uses: near-edit of top action
         "GHA-089":  ["CC6.8", "CC8.1"],     # archived upstream repo
+        "GHA-090":  ["CC6.8", "CC8.1"],     # impostor-commit: SHA absent from repo
         # ── GitLab CI ─────────────────────────────────────────────
         "GL-006":   ["CC8.1"],              # unsigned artifacts
         "GL-007":   ["CC8.1"],              # no SBOM

@@ -112,6 +112,9 @@ STANDARD = Standard(
         "GHA-042":  ["Build.L3.NonFalsifiable"],                   # very-young action repo
         "GHA-043":  ["Build.L3.NonFalsifiable"],                   # low-star + sensitive perms
         "GHA-047":  ["Build.L3.NonFalsifiable"],                   # fresh-ref cooldown
+        "GHA-088":  ["Build.L3.NonFalsifiable"],                   # typosquat uses
+        "GHA-089":  ["Build.L3.NonFalsifiable"],                   # archived upstream
+        "GHA-090":  ["Build.L3.NonFalsifiable"],                   # impostor-commit
         "GHA-048":  ["Build.L3.NonFalsifiable",
                      "Build.L3.Isolated"],                         # workflow self-mutation
         "GHA-049":  ["Build.L3.NonFalsifiable"],                   # cross-repo push

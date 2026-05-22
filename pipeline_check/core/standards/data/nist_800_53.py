@@ -210,6 +210,7 @@ STANDARD = Standard(
         "GHA-087":  ["IA-5", "AU-9"],                     # derived-value of secret printed to log
         "GHA-088":  ["SR-3", "SR-11", "RA-5"],            # typosquat uses: near-edit of top action
         "GHA-089":  ["SR-3", "SR-11", "RA-5"],            # archived upstream repo
+        "GHA-090":  ["SR-3", "SR-11", "RA-5", "SI-7"],    # impostor-commit: SHA absent from repo
         # GitLab CI
         "GL-001":   ["SR-3", "SR-11", "SI-2"],
         "GL-002":   ["SI-7", "SA-11", "CM-6"],
