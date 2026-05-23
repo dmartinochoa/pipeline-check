@@ -303,13 +303,15 @@ will be renumbered when they land.
 
 Suggested landing order, highest signal first:
 
-- **GHA-063: action SHA pin does not match its version comment.**
-  Mirrors zizmor's ``ref-version-mismatch``. A SHA pin commented as
-  ``# v4.1.1`` should actually resolve to the ``v4.1.1`` tag on the
-  upstream repo. Drift here is the canonical impostor-commit setup,
-  the SHA fetches *something*, the comment lies about what. Offline
-  via ``--resolve-remote`` when a sibling checkout is available; live
-  via the existing GHA resolver cache otherwise. HIGH severity.
+- ~~**GHA-063: action SHA pin does not match its version comment.**~~
+  Landed as **GHA-095**. ``Workflow.raw_text`` captures the on-disk
+  text PyYAML strips comments from; a new
+  ``ActionMetadataFetcher.fetch_tag_shas`` resolves each comment-
+  mentioned tag via ``/commits/{tag}`` and folds the result into
+  ``ActionRepoMetadata.tag_shas``. ``v``-prefix swaps (``v4`` vs
+  ``4``) are tried both ways; unresolvable comment tags pass
+  silently. HIGH severity. 13 per-rule tests + 11 parser tests +
+  6 fetcher tests.
 - **GHA-064: action ref points at a commit absent from the claimed
   repository.** Mirrors zizmor's ``impostor-commit``. Detects the
   attack shape where a fork's commit SHA is referenced in

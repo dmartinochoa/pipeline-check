@@ -102,6 +102,17 @@ class ActionRepoMetadata:
     #: different code. ``None`` for the whole slot means the lookup
     #: didn't run (opt-in off, or no SHA-shaped refs referenced).
     branch_head_shas: frozenset[str] | None = None
+    #: Resolved tag -> SHA mapping for tags harvested from
+    #: ``uses: o/r@<sha>  # <tag>`` version comments in the workflow
+    #: bodies. Populated by
+    #: :meth:`ActionMetadataFetcher.fetch_tag_shas` (one
+    #: ``/commits/{tag}`` call per tag). ``None`` for the whole slot
+    #: means the lookup didn't run (no version comments referenced
+    #: this action). A ``None`` value for a specific key inside the
+    #: dict (e.g. ``{"v4": None}``) means the tag was looked up and
+    #: the API didn't carry a usable SHA. GHA-095 consumes this to
+    #: decide whether the SHA pin and the comment tag agree.
+    tag_shas: dict[str, str | None] | None = None
 
 
 class ActionMetadataFetcher:
@@ -217,6 +228,34 @@ class ActionMetadataFetcher:
             out[sha] = isinstance(payload, dict)
         return out
 
+    def fetch_tag_shas(
+        self, owner: str, repo: str, tags: set[str],
+    ) -> dict[str, str | None]:
+        """Resolve each tag in *tags* to its commit SHA.
+
+        Uses the same ``/repos/{o}/{r}/commits/{ref}`` endpoint as
+        :meth:`fetch_ref_dates`, the response carries both
+        ``commit.committer.date`` (date-extractor lives in the
+        sibling method) and the canonical ``sha`` (extracted here).
+        One API call per distinct tag; empty input set returns the
+        empty dict so callers can map that to ``None`` on
+        :attr:`ActionRepoMetadata.tag_shas` to distinguish "no tags
+        to resolve" from "every resolve ran."
+
+        Returns a mapping ``{tag: sha | None}``. A ``None`` value
+        means the lookup completed but the payload didn't carry a
+        usable ``sha`` (most commonly a 404 from a tag that doesn't
+        exist on the upstream repo, the cue GHA-095 uses to pass
+        silently rather than fire on an unverifiable comment).
+        """
+        out: dict[str, str | None] = {}
+        for tag in tags:
+            if not tag:
+                continue
+            payload = self.raw.fetch(f"repos/{owner}/{repo}/commits/{tag}")
+            out[tag] = _extract_commit_sha(payload)
+        return out
+
     def fetch_ref_dates(
         self, owner: str, repo: str, refs: set[str],
     ) -> dict[str, str | None]:
@@ -247,6 +286,22 @@ class ActionMetadataFetcher:
             payload = self.raw.fetch(f"repos/{owner}/{repo}/commits/{ref}")
             out[ref] = _extract_committer_date(payload)
         return out
+
+
+def _extract_commit_sha(payload: Any) -> str | None:
+    """Pull the canonical ``sha`` out of a ``/commits/{ref}`` body.
+
+    Returns ``None`` when the response is missing or wrong-typed.
+    Lower-cases the result so callers can compare against
+    ``uses:`` SHA pins without per-side case juggling — every other
+    SHA-handling path in the module already normalizes to lower-case.
+    """
+    if not isinstance(payload, dict):
+        return None
+    sha = payload.get("sha")
+    if not isinstance(sha, str) or len(sha) != 40:
+        return None
+    return sha.lower()
 
 
 def _extract_committer_date(payload: Any) -> str | None:
@@ -386,7 +441,15 @@ def populate_action_metadata(
     silently on the actions whose metadata fetch failed.
     """
     refs_by_action = collect_referenced_action_refs(ctx)
-    actions = sorted(refs_by_action.keys() | collect_referenced_actions(ctx))
+    from ._version_comments import (
+        collect_referenced_action_version_comments,
+    )
+    tags_by_action = collect_referenced_action_version_comments(ctx)
+    actions = sorted(
+        refs_by_action.keys()
+        | collect_referenced_actions(ctx)
+        | tags_by_action.keys()
+    )
     fetched: dict[str, ActionRepoMetadata] = {}
     failed: list[str] = []
     for owner, repo in actions:
@@ -417,6 +480,17 @@ def populate_action_metadata(
             fetcher.fetch_branch_heads(owner, repo)
             if sha_refs else None
         )
+        # Version-comment tags harvested from raw workflow text feed
+        # the GHA-095 (ref-version-mismatch) comparator. Each tag
+        # resolves through the same ``/commits/{ref}`` endpoint as
+        # the ref-date fetch above, but the projection extracts
+        # ``sha`` rather than ``commit.committer.date``. Skipped when
+        # the action carries no comment-pinned tags.
+        comment_tags = tags_by_action.get((owner, repo), set())
+        tag_shas = (
+            fetcher.fetch_tag_shas(owner, repo, comment_tags)
+            if comment_tags else {}
+        )
         # Re-pack the metadata with the per-ref dates folded in.
         # ``ref_committed_at`` stays ``None`` (rather than ``{}``)
         # when the action had no resolvable refs, so GHA-047 can tell
@@ -433,6 +507,7 @@ def populate_action_metadata(
             ref_committed_at=ref_dates if ref_dates else None,
             sha_membership=sha_membership if sha_membership else None,
             branch_head_shas=branch_head_shas,
+            tag_shas=tag_shas if tag_shas else None,
         )
         fetched[f"{owner}/{repo}"] = meta_with_refs
     if failed:

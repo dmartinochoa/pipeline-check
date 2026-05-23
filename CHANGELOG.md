@@ -32,6 +32,32 @@ release commit collapses this section into `## [X.Y.Z] - <date>`.
 
 ### Added
 
+- **GHA-095 ref-version-mismatch: SHA pin vs `# vX.Y.Z` comment
+  (closes #146).** New rule that fires when an action's SHA pin
+  doesn't resolve to the tag named in the adjacent
+  ``# vX.Y.Z`` comment. Drift between the SHA and the comment is
+  the canonical impostor-commit setup, the SHA fetches something,
+  the comment lies about what. A reviewer skimming the diff
+  anchors on the comment and trusts the SHA without re-querying
+  the network. Two new mechanisms feed the check:
+  ``Workflow.raw_text`` captures the on-disk text (PyYAML drops
+  comments during parsing) so the rule can locate
+  ``uses: o/r@<sha>  # <ver>`` lines; a new
+  ``ActionMetadataFetcher.fetch_tag_shas`` resolves each
+  comment-mentioned tag via ``/commits/{tag}`` and folds the
+  result into ``ActionRepoMetadata.tag_shas``. ``v``-prefix swaps
+  (``v4`` vs ``4``) are tried both ways before a tag is treated
+  as unresolvable; unresolvable tags pass silently so a comment
+  naming an internal alias doesn't false-fire. Network-dependent
+  (gated on ``--resolve-remote``); without the flag the rule
+  passes silently with a one-line nudge. HIGH severity. Pairs
+  with GHA-040 (compromised SHA / tag), GHA-090 (impostor-commit,
+  the cross-network sibling), and GHA-001 (unpinned ``uses:``).
+  OWASP CICD-SEC-3 / CICD-SEC-8, ESF-S-VERIFY-DEPS, CWE-1357 /
+  CWE-829 / CWE-345. 13 per-rule tests, 11 parser tests, and 6
+  fetcher tests under ``tests/github/test_action_reputation.py``.
+  Brings GHA pack to 86 rules.
+
 - **GHA-094 stale-action-refs: SHA = branch tip (closes #151).**
   New rule that fires when a SHA-pinned ``uses:`` matches the
   current tip of any branch in the upstream repo. A maintainer

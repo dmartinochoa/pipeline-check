@@ -19,7 +19,7 @@ Kubernetes, …) when an audit asks for that framework's vocabulary.
 
 - **Controls in this standard:** 10
 - **Controls evidenced by at least one check:** 10 / 10
-- **Distinct checks evidencing this standard:** 606
+- **Distinct checks evidencing this standard:** 607
 - **Of those, autofixable with `--fix`:** 111
 
 _Severity levels (`CRITICAL` / `HIGH` / `MEDIUM` / `LOW` / `INFO`) follow the same scale across every provider and standard. See [How to read severity](README.md#how-to-read-severity) on the standards overview for the definitions._
@@ -32,12 +32,12 @@ Click a control ID to jump to the per-control section with the full check list. 
 |---------|-------|-------:|--------------|
 | [`CICD-SEC-1`](#ctrl-cicd-sec-1) | Insufficient Flow Control Mechanisms | 76 | 4C · 34H · 30M · 8L |
 | [`CICD-SEC-2`](#ctrl-cicd-sec-2) | Inadequate Identity and Access Management | 40 | 5C · 23H · 11M · 1L |
-| [`CICD-SEC-3`](#ctrl-cicd-sec-3) | Dependency Chain Abuse | 182 | 5C · 92H · 69M · 16L |
+| [`CICD-SEC-3`](#ctrl-cicd-sec-3) | Dependency Chain Abuse | 183 | 5C · 93H · 69M · 16L |
 | [`CICD-SEC-4`](#ctrl-cicd-sec-4) | Poisoned Pipeline Execution | 94 | 24C · 49H · 15M · 6L |
 | [`CICD-SEC-5`](#ctrl-cicd-sec-5) | Insufficient PBAC | 35 | 4C · 21H · 10M |
 | [`CICD-SEC-6`](#ctrl-cicd-sec-6) | Insufficient Credential Hygiene | 76 | 29C · 31H · 16M |
 | [`CICD-SEC-7`](#ctrl-cicd-sec-7) | Insecure System Configuration | 105 | 22C · 41H · 35M · 7L |
-| [`CICD-SEC-8`](#ctrl-cicd-sec-8) | Ungoverned Usage of 3rd-Party Services | 32 | 8C · 16H · 8M |
+| [`CICD-SEC-8`](#ctrl-cicd-sec-8) | Ungoverned Usage of 3rd-Party Services | 33 | 8C · 17H · 8M |
 | [`CICD-SEC-9`](#ctrl-cicd-sec-9) | Improper Artifact Integrity Validation | 73 | 1C · 18H · 47M · 7L |
 | [`CICD-SEC-10`](#ctrl-cicd-sec-10) | Insufficient Logging and Visibility | 49 | 6H · 14M · 13L · 16I |
 
@@ -196,7 +196,7 @@ Long-lived static credentials, shared service accounts, and human identities reu
 
 Floating tags, range constraints, and unverified registries let an upstream maintainer compromise (or a typosquat) execute in your build the next time the dependency resolves.
 
-**Evidenced by 182 checks** across 21 providers (AWS, Argo CD, Argo Workflows, Azure DevOps, Bitbucket, Buildkite, CircleCI, Cloud Build, Dockerfile, Drone CI, GitHub Actions, GitLab CI, Helm, Jenkins, Kubernetes, OCI manifest, PyPI, SCM, Tekton, maven, npm).
+**Evidenced by 183 checks** across 21 providers (AWS, Argo CD, Argo Workflows, Azure DevOps, Bitbucket, Buildkite, CircleCI, Cloud Build, Dockerfile, Drone CI, GitHub Actions, GitLab CI, Helm, Jenkins, Kubernetes, OCI manifest, PyPI, SCM, Tekton, maven, npm).
 
 | Check | Title | Severity | Provider | Fix |
 |-------|-------|----------|----------|-----|
@@ -305,6 +305,7 @@ Floating tags, range constraints, and unverified registries let an upstream main
 | [`GHA-090`](#detail-gha-090) | Action SHA pin references a commit absent from the claimed repo | <span class="pg-sev pg-sev--high">HIGH</span> | [GitHub Actions](../providers/github.md) |  |
 | [`GHA-091`](#detail-gha-091) | Action upstream repo is missing (takeover-eligible namespace) | <span class="pg-sev pg-sev--high">HIGH</span> | [GitHub Actions](../providers/github.md) |  |
 | [`GHA-094`](#detail-gha-094) | Action SHA pin matches the current tip of an upstream branch | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [GitHub Actions](../providers/github.md) |  |
+| [`GHA-095`](#detail-gha-095) | Action SHA pin does not match its version comment | <span class="pg-sev pg-sev--high">HIGH</span> | [GitHub Actions](../providers/github.md) |  |
 | [`GL-001`](#detail-gl-001) | Image not pinned to specific version or digest | <span class="pg-sev pg-sev--high">HIGH</span> | [GitLab CI](../providers/gitlab.md) | <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> |
 | [`GL-005`](#detail-gl-005) | include: pulls remote / project without pinned ref | <span class="pg-sev pg-sev--high">HIGH</span> | [GitLab CI](../providers/gitlab.md) |  |
 | [`GL-009`](#detail-gl-009) | Image pinned to version tag rather than sha256 digest | <span class="pg-sev pg-sev--low">LOW</span> | [GitLab CI](../providers/gitlab.md) |  |
@@ -733,7 +734,7 @@ Privileged containers, host mounts, root user, and disabled TLS turn a routine R
 
 Calls to external services, SaaS integrations, marketplace actions, package registries, expand the trust perimeter of the pipeline beyond what was reviewed and approved.
 
-**Evidenced by 32 checks** across 9 providers (AWS, Azure DevOps, Bitbucket, CircleCI, GitHub Actions, PyPI, SCM, maven, npm).
+**Evidenced by 33 checks** across 9 providers (AWS, Azure DevOps, Bitbucket, CircleCI, GitHub Actions, PyPI, SCM, maven, npm).
 
 | Check | Title | Severity | Provider | Fix |
 |-------|-------|----------|----------|-----|
@@ -754,6 +755,7 @@ Calls to external services, SaaS integrations, marketplace actions, package regi
 | [`GHA-051`](#detail-gha-051) | services / container image is not pinned by digest | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [GitHub Actions](../providers/github.md) |  |
 | [`GHA-090`](#detail-gha-090) | Action SHA pin references a commit absent from the claimed repo | <span class="pg-sev pg-sev--high">HIGH</span> | [GitHub Actions](../providers/github.md) |  |
 | [`GHA-091`](#detail-gha-091) | Action upstream repo is missing (takeover-eligible namespace) | <span class="pg-sev pg-sev--high">HIGH</span> | [GitHub Actions](../providers/github.md) |  |
+| [`GHA-095`](#detail-gha-095) | Action SHA pin does not match its version comment | <span class="pg-sev pg-sev--high">HIGH</span> | [GitHub Actions](../providers/github.md) |  |
 | [`LMB-002`](#detail-lmb-002) | Lambda function URL has AuthType=NONE | <span class="pg-sev pg-sev--high">HIGH</span> | [AWS](../providers/aws.md) |  |
 | [`LMB-004`](#detail-lmb-004) | Lambda resource policy allows wildcard principal | <span class="pg-sev pg-sev--critical">CRITICAL</span> | [AWS](../providers/aws.md) |  |
 | [`MVN-003`](#detail-mvn-003) | pom.xml declares a plaintext-HTTP Maven repository | <span class="pg-sev pg-sev--high">HIGH</span> | [maven](../providers/maven.md) |  |
@@ -14865,6 +14867,48 @@ jobs:
 ```
 
 **Source:** [`GHA-094`](../providers/github.md#gha-094) in the [GitHub Actions provider](../providers/github.md).
+
+### `GHA-095`: Action SHA pin does not match its version comment <span class="pg-sev pg-sev--high">HIGH</span> { #detail-gha-095 }
+
+**Evidences:** [`CICD-SEC-3`](#ctrl-cicd-sec-3) Dependency Chain Abuse, [`CICD-SEC-8`](#ctrl-cicd-sec-8) Ungoverned Usage of 3rd-Party Services.
+
+**How this is detected.** Walks each workflow's raw text (``Workflow.raw_text``, populated by ``GitHubContext.from_path``) for lines of the shape ``uses: owner/repo@<40-hex-sha>  # <comment>`` and extracts a version-shaped token (``v4``, ``v4.1.1``, ``1.0-beta``) from the comment body. Looks the token up in ``ctx.action_metadata[owner/repo].tag_shas`` (populated by ``--resolve-remote``; one ``/commits/{tag}`` call per distinct comment-mentioned tag). Fires when the resolved tag SHA differs from the pin. Tags that don't resolve (404, deleted tag, internal alias the comment names that the upstream repo never published) pass silently — the rule treats unverifiable comments as benign rather than guessing. ``v``-prefix variants (``v4`` vs ``4``) are tried both ways so a comment convention swap doesn't false-fire.
+
+**Recommendation.** Re-resolve the comment-named tag against the upstream repo and update either the SHA pin or the comment so they agree. ``gh api repos/<owner>/<repo>/commits/<tag> --jq .sha`` returns the canonical SHA the comment claims; substitute it into the ``@`` slot, or fix the comment to name the tag the SHA actually belongs to. Pin-maintenance tools (Dependabot, Renovate) write both halves atomically; drift between them is either tool misconfiguration or an attacker hoping reviewers skim the human-readable side rather than the machine-readable one.
+
+**Known false positives.**
+
+- A comment that pins to a synthetic tag (``# internal-release-2024-Q4``) the upstream repo doesn't carry resolves to nothing and passes silently, no FP. Genuine false positives appear when the upstream maintainer re-points an existing tag (a force-push to the tag ref) to a different SHA after the consumer pinned, the consumer's pin is now correct and the comment is stale relative to the moved tag. Update the comment (or repin) once the audit establishes the tag-move was legitimate. Suppress per-finding only after that audit.
+
+**Seen in the wild.**
+
+- zizmor ``ref-version-mismatch`` audit (https://docs.zizmor.sh/audits/#ref-version-mismatch). Synacktiv / Octoscan supply-chain write-ups consistently highlight comment-vs-SHA drift as the cheapest cross-check to add once SHA pinning becomes table stakes — the SHA passes review eyes because reviewers anchor on the human-readable annotation.
+
+**Proof of exploit.**
+
+```
+# Vulnerable: the SHA below does not resolve to ``v4.1.1``
+# on actions/checkout. The comment lies about what the
+# runner will actually fetch; a reviewer who trusts the
+# comment never queries the SHA against the tag history.
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@<sha-that-is-not-v4.1.1>  # v4.1.1
+      - run: ./build.sh
+
+# Safe: SHA and comment agree, the runner fetches the
+# commit the comment names.
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@<canonical-sha-of-v4.1.1>  # v4.1.1
+      - run: ./build.sh
+```
+
+**Source:** [`GHA-095`](../providers/github.md#gha-095) in the [GitHub Actions provider](../providers/github.md).
 
 ### `GL-001`: Image not pinned to specific version or digest <span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> { #detail-gl-001 }
 

@@ -72,7 +72,7 @@ Resolution rules:
 
 ## What it covers
 
-85 checks · 17 have an autofix patch (``--fix``).
+86 checks · 17 have an autofix patch (``--fix``).
 
 | Check | Title | Severity | Fix |
 |-------|-------|----------|-----|
@@ -158,6 +158,7 @@ Resolution rules:
 | [GHA-092](#gha-092) | PR head SHA captured then re-fetched (force-push race) | <span class="pg-sev pg-sev--high">HIGH</span> |  |
 | [GHA-093](#gha-093) | Living-off-the-Pipeline indicators (workflow-command abuse) | <span class="pg-sev pg-sev--high">HIGH</span> |  |
 | [GHA-094](#gha-094) | Action SHA pin matches the current tip of an upstream branch | <span class="pg-sev pg-sev--medium">MEDIUM</span> |  |
+| [GHA-095](#gha-095) | Action SHA pin does not match its version comment | <span class="pg-sev pg-sev--high">HIGH</span> |  |
 | [TAINT-001](#taint-001) | Untrusted input flows across step boundaries via step outputs | <span class="pg-sev pg-sev--high">HIGH</span> |  |
 | [TAINT-002](#taint-002) | Untrusted input flows across jobs via ``jobs.<id>.outputs:`` | <span class="pg-sev pg-sev--high">HIGH</span> |  |
 | [TAINT-003](#taint-003) | Untrusted input forwarded into reusable workflow ``with:`` | <span class="pg-sev pg-sev--high">HIGH</span> |  |
@@ -5667,6 +5668,34 @@ Reads the branch-tip set from ``ctx.action_metadata[owner/repo].branch_head_shas
 **Recommended action**
 
 Re-pin to a SHA that's tagged in the upstream repo (a release commit) rather than the current tip of an active branch. Branch HEADs are mutable, the maintainer's next push can move the tip even when your pin stays still, and anyone re-pinning to "latest" picks up unaudited code. A SHA that lives only at a tag (``v4.1.7`` -> commit X) is a stable target: re-tagging is a louder, more visible action than a normal push, and a release-flavored tag implies a review pass the maintainer staged. If the action has no tagged releases at all, vendor the action under your org's control or accept the inherent drift risk by suppressing this finding with a rationale.
+
+</div>
+
+</div>
+
+<div class="pg-rule pg-rule--high" markdown>
+
+## GHA-095: Action SHA pin does not match its version comment { #gha-095 }
+
+<div class="pg-rule__tags">
+<span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-3</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-8</span> <span class="pg-tag pg-tag--esf">ESF-S-VERIFY-DEPS</span> <span class="pg-tag pg-tag--cwe">CWE-1357</span> <span class="pg-tag pg-tag--cwe">CWE-829</span> <span class="pg-tag pg-tag--cwe">CWE-345</span>
+</div>
+
+Walks each workflow's raw text (``Workflow.raw_text``, populated by ``GitHubContext.from_path``) for lines of the shape ``uses: owner/repo@<40-hex-sha>  # <comment>`` and extracts a version-shaped token (``v4``, ``v4.1.1``, ``1.0-beta``) from the comment body. Looks the token up in ``ctx.action_metadata[owner/repo].tag_shas`` (populated by ``--resolve-remote``; one ``/commits/{tag}`` call per distinct comment-mentioned tag). Fires when the resolved tag SHA differs from the pin. Tags that don't resolve (404, deleted tag, internal alias the comment names that the upstream repo never published) pass silently — the rule treats unverifiable comments as benign rather than guessing. ``v``-prefix variants (``v4`` vs ``4``) are tried both ways so a comment convention swap doesn't false-fire.
+
+**Known false-positive modes**
+
+- A comment that pins to a synthetic tag (``# internal-release-2024-Q4``) the upstream repo doesn't carry resolves to nothing and passes silently, no FP. Genuine false positives appear when the upstream maintainer re-points an existing tag (a force-push to the tag ref) to a different SHA after the consumer pinned, the consumer's pin is now correct and the comment is stale relative to the moved tag. Update the comment (or repin) once the audit establishes the tag-move was legitimate. Suppress per-finding only after that audit.
+
+**Seen in the wild**
+
+- zizmor ``ref-version-mismatch`` audit (https://docs.zizmor.sh/audits/#ref-version-mismatch). Synacktiv / Octoscan supply-chain write-ups consistently highlight comment-vs-SHA drift as the cheapest cross-check to add once SHA pinning becomes table stakes — the SHA passes review eyes because reviewers anchor on the human-readable annotation.
+
+<div class="pg-rule__rec" markdown>
+
+**Recommended action**
+
+Re-resolve the comment-named tag against the upstream repo and update either the SHA pin or the comment so they agree. ``gh api repos/<owner>/<repo>/commits/<tag> --jq .sha`` returns the canonical SHA the comment claims; substitute it into the ``@`` slot, or fix the comment to name the tag the SHA actually belongs to. Pin-maintenance tools (Dependabot, Renovate) write both halves atomically; drift between them is either tool misconfiguration or an attacker hoping reviewers skim the human-readable side rather than the machine-readable one.
 
 </div>
 
