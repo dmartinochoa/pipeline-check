@@ -64,6 +64,7 @@ STANDARD = Standard(
         "GHA-090":  ["Pinned-Dependencies"],                           # impostor-commit
         "GHA-091":  ["Pinned-Dependencies"],                           # repojacking
         "GHA-092":  ["Dangerous-Workflow"],                            # TOCTOU PR head SHA
+        "GHA-093":  ["Dangerous-Workflow"],                            # LOTP indicators (workflow-command abuse)
         "GHA-094":  ["Pinned-Dependencies"],                           # stale-action-refs
         "GL-001":   ["Pinned-Dependencies"],
         "GL-005":   ["Pinned-Dependencies"],

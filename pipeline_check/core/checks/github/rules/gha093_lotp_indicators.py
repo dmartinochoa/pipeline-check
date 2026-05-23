@@ -88,7 +88,7 @@ RULE = Rule(
         "interpolation is into a value that's been sanitized "
         "upstream (a step that resolved the PR title through a "
         "literal-escape step), with a rationale that names the "
-        "sanitizer."
+        "sanitizer.",
     ),
     incident_refs=(
         "LOTP (Living-off-the-Pipeline) research: collected from "
@@ -97,7 +97,7 @@ RULE = Rule(
         "Bits 2024 LOTP series, Synacktiv Octoscan paper). The "
         "Summary tab and the typed workflow-command directives "
         "are the canonical examples; the add-mask ordering bug "
-        "appears in GitHub's own field reports."
+        "appears in GitHub's own field reports.",
     ),
 )
 
@@ -149,6 +149,12 @@ _PRINT_VAR_RE = re.compile(
     r"\b(?:echo|printf|tee)\b[^\n]*?\$\{?(?P<name>[A-Za-z_]\w*)\}?",
 )
 
+#: A GitHub-Actions expression interpolation block (``${{ ... }}``).
+#: Captures the expression body so untrusted-context detection can
+#: scope the substring check to actual interpolations (not literal
+#: prose that happens to mention a context key).
+_INTERPOLATION_RE = re.compile(r"\$\{\{\s*(.*?)\s*\}\}", re.DOTALL)
+
 
 def _secret_env_vars(env_block: Any) -> set[str]:
     """Names of env vars whose value references ``${{ secrets.* }}``."""
@@ -174,10 +180,18 @@ def _line_has_secret_ref(line: str, secret_names: set[str]) -> bool:
 
 
 def _line_has_untrusted_ctx(line: str) -> bool:
-    """True when *line* interpolates an untrusted context expression."""
-    for ctx in _UNTRUSTED_CONTEXTS:
-        if ctx in line:
-            return True
+    """True when *line* interpolates an untrusted context expression.
+
+    Restricted to substrings inside ``${{ ... }}`` interpolation
+    blocks; literal prose mentioning a context key (e.g., a log
+    message that names ``github.event.pull_request.title``) is not
+    attacker-driven and must not fire the rule.
+    """
+    for match in _INTERPOLATION_RE.finditer(line):
+        body = match.group(1)
+        for ctx in _UNTRUSTED_CONTEXTS:
+            if ctx in body:
+                return True
     return False
 
 

@@ -28,7 +28,7 @@ from dataclasses import dataclass
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from .base import GitHubContext, Workflow
+    from .base import GitHubContext
 
 #: Matches a single-line ``uses:`` entry whose ref is a 40-char hex
 #: SHA followed by an inline comment. Captures owner, repo, sha, and

@@ -27,11 +27,12 @@ of this in-network risk).
 """
 from __future__ import annotations
 
+from collections.abc import Iterator
 from typing import Any
 
+from ..._primitives.sha_ref import SHA_RE_IGNORECASE as _SHA_RE
 from ...base import Finding, Severity
 from ...rule import Rule
-from ..._primitives.sha_ref import SHA_RE_IGNORECASE as _SHA_RE
 from ..base import GitHubContext, Workflow, iter_jobs, iter_steps
 from ..uses_parser import parse_uses
 
@@ -82,7 +83,7 @@ RULE = Rule(
         "pin to a tagged ancestor SHA. If suppression is the only "
         "path, do it per-finding with a rationale that names the "
         "specific SHA and the audit you did against the upstream "
-        "release notes."
+        "release notes.",
     ),
     incident_refs=(
         "GitHub Security Lab + Boost Security \"unsigned-tag\" "
@@ -91,7 +92,7 @@ RULE = Rule(
         "advancing a ``main`` branch under a SHA that consumers "
         "had pinned to. The SHA pin's audit value evaporates the "
         "moment the maintainer's next push moves the tip and a "
-        "consumer team's automation reaches for \"latest.\""
+        "consumer team's automation reaches for \"latest.\"",
     ),
     exploit_example=(
         "# Vulnerable: the pinned SHA is the current ``main`` tip.\n"
@@ -116,7 +117,9 @@ RULE = Rule(
 )
 
 
-def _iter_sha_uses(doc: dict[str, Any]):
+def _iter_sha_uses(
+    doc: dict[str, Any],
+) -> Iterator[tuple[str, str, str, str]]:
     """Yield ``(label, owner, repo, sha)`` for every ``uses:`` whose
     ref is a 40-char hex SHA."""
     for job_id, job in iter_jobs(doc):
@@ -134,10 +137,15 @@ def _iter_sha_uses(doc: dict[str, Any]):
 def check(
     path: str, doc: dict[str, Any], wf: Workflow, ctx: GitHubContext,
 ) -> Finding:
+    sha_uses = list(_iter_sha_uses(doc))
+    total_unique = len({
+        (owner.lower(), repo.lower(), sha.lower())
+        for _, owner, repo, sha in sha_uses
+    })
     stale_refs: list[str] = []
     seen: set[tuple[str, str, str]] = set()
-    any_probed = False
-    for label, owner, repo, sha in _iter_sha_uses(doc):
+    probed = 0
+    for label, owner, repo, sha in sha_uses:
         key = (owner.lower(), repo.lower(), sha.lower())
         if key in seen:
             continue
@@ -145,10 +153,10 @@ def check(
         meta = ctx.action_metadata.get(f"{owner.lower()}/{repo.lower()}")
         if meta is None or meta.branch_head_shas is None:
             continue
-        any_probed = True
+        probed += 1
         if sha.lower() in meta.branch_head_shas:
             stale_refs.append(f"{label}: {owner}/{repo}@{sha[:12]}…")
-    if not ctx.action_metadata or not any_probed:
+    if total_unique > 0 and (not ctx.action_metadata or probed == 0):
         return Finding(
             check_id=RULE.id, title=RULE.title, severity=RULE.severity,
             resource=path,
@@ -163,10 +171,19 @@ def check(
         )
     passed = not stale_refs
     if passed:
-        desc = (
-            "Every SHA-pinned action reference lives below an "
-            "upstream branch tip rather than at one."
-        )
+        if probed < total_unique:
+            # Partial coverage: name the gap so the pass description
+            # doesn't claim more audit than was actually performed.
+            desc = (
+                f"No stale SHA refs in probed actions "
+                f"({probed}/{total_unique} unique SHA refs checked); "
+                f"the remainder lacked branch-head metadata."
+            )
+        else:
+            desc = (
+                "Every SHA-pinned action reference lives below an "
+                "upstream branch tip rather than at one."
+            )
     else:
         sample = "; ".join(stale_refs[:3])
         if len(stale_refs) > 3:

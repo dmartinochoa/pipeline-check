@@ -76,7 +76,7 @@ RULE = Rule(
         "with a rationale that explains the contract; pair with a "
         "branch-protection rule on the contributor side that "
         "blocks force-pushes to PR branches so the race window "
-        "stays closed in practice."
+        "stays closed in practice.",
     ),
     incident_refs=(
         "GitHub Security Lab \"checkout-after-rev-parse\" research "
@@ -138,13 +138,18 @@ def _step_captures_pr_head(
     step: dict[str, Any],
     workflow_env_captures: bool,
     job_env_captures: bool,
+    saw_checkout: bool,
 ) -> bool:
     """True when *step* captures the PR head SHA (any of the shapes).
 
     ``workflow_env_captures`` / ``job_env_captures`` propagate the
     "the env block at a higher scope already binds the SHA" signal
     so any step that touches env names defined at that scope counts
-    as a capture by transitive reference.
+    as a capture by transitive reference. ``saw_checkout`` gates the
+    ``git rev-parse HEAD`` shape, that read is only meaningful after a
+    prior checkout has set HEAD to the PR ref; firing on it absent a
+    checkout produces false positives on workflows that just probe
+    runner SHAs unrelated to the PR.
     """
     if workflow_env_captures or job_env_captures:
         # Higher-scope env binds it; this step inherits. Treating
@@ -160,9 +165,17 @@ def _step_captures_pr_head(
     if isinstance(run, str):
         if _PR_HEAD_SHA_RE.search(run):
             return True
-        if _GIT_REV_PARSE_HEAD_RE.search(run):
+        if saw_checkout and _GIT_REV_PARSE_HEAD_RE.search(run):
             return True
     return False
+
+
+def _step_is_checkout(step: dict[str, Any]) -> bool:
+    """True when *step* invokes ``actions/checkout`` (any ref)."""
+    uses = step.get("uses")
+    return isinstance(uses, str) and uses.lower().startswith(
+        "actions/checkout@",
+    )
 
 
 def _step_checkout_pr_head_sha(step: dict[str, Any]) -> bool:
@@ -200,6 +213,7 @@ def check(path: str, doc: dict[str, Any]) -> Finding:
     for job_id, job in iter_jobs(doc):
         job_env_captures = _env_binds_pr_head(job.get("env"))
         captured_so_far = False
+        saw_checkout = False
         for idx, step in enumerate(iter_steps(job)):
             # Update capture state BEFORE the fetch check so a step
             # that both captures and fetches in the same body (the
@@ -210,11 +224,17 @@ def check(path: str, doc: dict[str, Any]) -> Finding:
                 name = step.get("name") or step.get("id") or f"steps[{idx}]"
                 offenders.append(f"{job_id}.{name}")
                 locations.append(step_location(path, step))
+                saw_checkout = True
                 continue
             if _step_captures_pr_head(
-                step, workflow_env_captures, job_env_captures,
+                step,
+                workflow_env_captures,
+                job_env_captures,
+                saw_checkout,
             ):
                 captured_so_far = True
+            if _step_is_checkout(step):
+                saw_checkout = True
     passed = not offenders
     desc = (
         "No step re-fetches the PR head SHA after a prior step "

@@ -24,6 +24,7 @@ from pipeline_check.core.checks._primitives import (
     shell_eval,
     tainted_variables,
     tls_bypass,
+    top_actions,
 )
 
 # ──────────────────────────────────────────────────────────────────
@@ -1178,9 +1179,6 @@ class TestOciImageAnchor:
 # ──────────────────────────────────────────────────────────────────
 # top_actions (typosquat classifier)
 # ──────────────────────────────────────────────────────────────────
-
-
-from pipeline_check.core.checks._primitives import top_actions
 
 
 class TestTopActionsFindTyposquat:

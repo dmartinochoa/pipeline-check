@@ -71,7 +71,7 @@ RULE = Rule(
         "unauthenticated probe is the false positive and "
         "``--gh-token`` fixes it. Persistent / by-design private "
         "actions should be suppressed per-finding with a rationale "
-        "that names the access boundary."
+        "that names the access boundary.",
     ),
     incident_refs=(
         "rentbcn / tj-actions namespace-deletion incidents "

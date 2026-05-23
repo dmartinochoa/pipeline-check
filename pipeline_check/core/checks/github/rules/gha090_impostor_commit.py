@@ -18,6 +18,7 @@ execution authority on the runner.
 """
 from __future__ import annotations
 
+from collections.abc import Iterator
 from typing import Any
 
 from ...base import Finding, Severity
@@ -96,7 +97,9 @@ RULE = Rule(
 )
 
 
-def _iter_sha_uses(doc: dict[str, Any]):
+def _iter_sha_uses(
+    doc: dict[str, Any],
+) -> Iterator[tuple[str, str, str, str]]:
     """Yield ``(label, owner, repo, sha)`` for every ``uses:`` whose
     ref is a 40-char hex SHA.
 
@@ -124,6 +127,7 @@ def check(
     impostors: list[str] = []
     any_probed = False
     any_confirmed = False
+    probed_count = 0
     seen: set[tuple[str, str, str]] = set()
     for label, owner, repo, sha in _iter_sha_uses(doc):
         key = (owner.lower(), repo.lower(), sha)
@@ -136,6 +140,7 @@ def check(
         if sha not in meta.sha_membership:
             continue
         any_probed = True
+        probed_count += 1
         if meta.sha_membership[sha]:
             any_confirmed = True
         else:
@@ -159,8 +164,9 @@ def check(
     # failure across multiple actions is a configuration signal.
     # Single-SHA all-False is still a real impostor candidate because
     # the per-repo metadata fetch already succeeded as a network
-    # canary upstream.
-    if len(seen) >= 2 and impostors and not any_confirmed:
+    # canary upstream. Gate on probed_count (not len(seen)) so SHA
+    # refs we never actually probed don't dilute the threshold.
+    if probed_count >= 2 and impostors and not any_confirmed:
         return Finding(
             check_id=RULE.id, title=RULE.title, severity=RULE.severity,
             resource=path,

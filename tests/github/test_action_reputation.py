@@ -1693,7 +1693,7 @@ class TestCollectReferencedActionVersionComments:
 class TestFetchTagShas:
     def test_extracts_sha_from_commits_payload(self):
         raw = FakeRawFetcher({
-            f"repos/acme/widget/commits/v4.1.1": {
+            "repos/acme/widget/commits/v4.1.1": {
                 "sha": _SHA_A,
                 "commit": {"committer": {"date": "2026-05-01T00:00:00Z"}},
             },

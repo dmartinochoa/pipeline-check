@@ -17,11 +17,12 @@ long tail produces false positives that drown the rule.
 """
 from __future__ import annotations
 
+from collections.abc import Iterator
 from typing import Any
 
+from ..._primitives.top_actions import find_typosquat
 from ...base import Finding, Location, Severity
 from ...rule import Rule
-from ..._primitives.top_actions import find_typosquat
 from ..base import iter_jobs, iter_steps, step_location
 from ..uses_parser import parse_uses
 
@@ -68,7 +69,7 @@ RULE = Rule(
         "Suppress per-finding with a rationale that names the fork "
         "and links the source. The rule cannot distinguish a "
         "well-known fork from a typosquat; intentional naming "
-        "collisions are the operator's call."
+        "collisions are the operator's call.",
     ),
     incident_refs=(
         "OWASP CICD-SEC-3 (Dependency Chain Abuse) lists action-"
@@ -100,7 +101,9 @@ RULE = Rule(
 )
 
 
-def _iter_uses_refs(doc: dict[str, Any]):
+def _iter_uses_refs(
+    doc: dict[str, Any],
+) -> Iterator[tuple[str, str, dict[str, Any] | None]]:
     """Yield ``(label, raw_uses, location_step)`` for every parseable
     remote ``uses:`` in *doc*.
 

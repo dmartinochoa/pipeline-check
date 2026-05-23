@@ -61,7 +61,7 @@ RULE = Rule(
         "fork-and-vendor recommendation is still the right call "
         "for security posture, but suppress per-finding with a "
         "rationale once the operator has confirmed the migration "
-        "path is on a roadmap."
+        "path is on a roadmap.",
     ),
     incident_refs=(
         "tj-actions / reviewdog March 2025 (CVE-2025-30066 / "
