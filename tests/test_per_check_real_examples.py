@@ -378,6 +378,9 @@ CASES: list[CheckCase] = [
     CheckCase("GHA-073", "CICD-SEC-6", ("ESF-D-SECRETS",)),
     CheckCase("GHA-086", "CICD-SEC-1", ("ESF-C-APPROVAL", "ESF-C-ENV-SEP")),
     CheckCase("GHA-087", "CICD-SEC-10", ("ESF-D-SECRETS",)),
+    CheckCase("GHA-088", "CICD-SEC-3", ("ESF-S-VERIFY-DEPS",)),
+    CheckCase("GHA-092", "CICD-SEC-1", ("ESF-D-CODE-REVIEW",)),
+    CheckCase("GHA-093", "CICD-SEC-10", ("ESF-D-SECRETS", "ESF-D-INJECTION")),
     # ── GitLab CI backfill (GL-026..033) ─────────────────────────────
     CheckCase("GL-026", "CICD-SEC-4", ("ESF-D-INJECTION",)),
     CheckCase("GL-027", "CICD-SEC-3", ("ESF-S-PIN-DEPS", "ESF-S-VERIFY-DEPS")),
@@ -470,7 +473,8 @@ KNOWN_UNCOVERED: frozenset[str] = frozenset({
     # because ``ctx.action_metadata`` is empty (only populated by
     # ``--resolve-remote``). Covered by ``test_workflow_fixtures.py``
     # which seeds the metadata synthetically.
-    "GHA-041", "GHA-042", "GHA-043", "GHA-047",
+    "GHA-041", "GHA-042", "GHA-043", "GHA-047", "GHA-089", "GHA-090", "GHA-091",
+    "GHA-094", "GHA-095",
     # Cross-cutting taint engine — covered by tests/test_gha_taint.py
     # with inline workflow docs rather than the per-check fixture
     # pattern; the workflow shapes the rule cares about (multi-step

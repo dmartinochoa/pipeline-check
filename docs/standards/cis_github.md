@@ -21,7 +21,7 @@ posture. Pair with [OpenSSF Scorecard](openssf_scorecard.md) and
 
 - **Controls in this standard:** 28
 - **Controls evidenced by at least one check:** 28 / 28
-- **Distinct checks evidencing this standard:** 122
+- **Distinct checks evidencing this standard:** 124
 - **Of those, autofixable with `--fix`:** 15
 
 _Severity levels (`CRITICAL` / `HIGH` / `MEDIUM` / `LOW` / `INFO`) follow the same scale across every provider and standard. See [How to read severity](README.md#how-to-read-severity) on the standards overview for the definitions._
@@ -57,7 +57,7 @@ Click a control ID to jump to the per-control section with the full check list. 
 | [`1.4.3`](#ctrl-1-4-3) | Ensure the access granted to each installed application is limited | 2 | 1H · 1M |
 | [`1.4.4`](#ctrl-1-4-4) | Ensure only secured webhooks are used | 1 | 1H |
 | [`1.5.1`](#ctrl-1-5-1) | Ensure scanners are in place to identify and prevent sensitive data in code | 16 | 8C · 6H · 1M · 1L |
-| [`1.5.2`](#ctrl-1-5-2) | Ensure scanners are in place to secure CI/CD pipeline instructions | 49 | 11C · 27H · 10M · 1L |
+| [`1.5.2`](#ctrl-1-5-2) | Ensure scanners are in place to secure CI/CD pipeline instructions | 51 | 11C · 29H · 10M · 1L |
 | [`1.5.3`](#ctrl-1-5-3) | Ensure scanners are in place to secure IaC instructions | 25 | 6C · 19H |
 | [`1.5.4`](#ctrl-1-5-4) | Ensure scanners are in place to identify and confirm presence of vulnerabilities | 8 | 1H · 6M · 1L |
 
@@ -333,7 +333,7 @@ pipeline_check --pipeline aws --standard cis_github --standard owasp_cicd_top_10
 
 ### 1.5.2: Ensure scanners are in place to secure CI/CD pipeline instructions { #ctrl-1-5-2 }
 
-**Evidenced by 49 checks** across 6 providers (Argo Workflows, Buildkite, GitHub Actions, GitLab CI, SCM, Tekton).
+**Evidenced by 51 checks** across 6 providers (Argo Workflows, Buildkite, GitHub Actions, GitLab CI, SCM, Tekton).
 
 | Check | Title | Severity | Provider | Fix |
 |-------|-------|----------|----------|-----|
@@ -376,6 +376,8 @@ pipeline_check --pipeline aws --standard cis_github --standard owasp_cicd_top_10
 | [`GHA-060`](#detail-gha-060) | pip install without `--require-hashes` verification | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [GitHub Actions](../providers/github.md) |  |
 | [`GHA-061`](#detail-gha-061) | GitHub App token minted without a `permissions:` filter | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [GitHub Actions](../providers/github.md) |  |
 | [`GHA-062`](#detail-gha-062) | OIDC subject claim in sibling IaC grants overly broad scope | <span class="pg-sev pg-sev--high">HIGH</span> | [GitHub Actions](../providers/github.md) |  |
+| [`GHA-092`](#detail-gha-092) | PR head SHA captured then re-fetched (force-push race) | <span class="pg-sev pg-sev--high">HIGH</span> | [GitHub Actions](../providers/github.md) |  |
+| [`GHA-093`](#detail-gha-093) | Living-off-the-Pipeline indicators (workflow-command abuse) | <span class="pg-sev pg-sev--high">HIGH</span> | [GitHub Actions](../providers/github.md) |  |
 | [`SCM-020`](#detail-scm-020) | Default workflow GITHUB_TOKEN has write permission | <span class="pg-sev pg-sev--high">HIGH</span> | [SCM](../providers/scm.md) |  |
 | [`SCM-041`](#detail-scm-041) | Active ruleset doesn't gate on a deployment environment | <span class="pg-sev pg-sev--low">LOW</span> | [SCM](../providers/scm.md) |  |
 | [`TAINT-001`](#detail-taint-001) | Untrusted input flows across step boundaries via step outputs | <span class="pg-sev pg-sev--high">HIGH</span> | [GitHub Actions](../providers/github.md) |  |
@@ -2695,7 +2697,9 @@ jobs:
 
 **Evidences:** [`1.5.2`](#ctrl-1-5-2) Ensure scanners are in place to secure CI/CD pipeline instructions.
 
-**How this is detected.** Fires on a ``run:`` body invoking any of the following CLIs with the matching permission-bypass flag:
+**How this is detected.** Two detections feed the rule. Either is enough for the finding to fire.
+
+**A. Bypass-flag shape.** A ``run:`` body invokes one of the following CLIs with the matching permission-bypass flag:
 
 * ``claude … --dangerously-skip-permissions``
 * ``gemini … --yolo``
@@ -2705,6 +2709,8 @@ jobs:
 * ``aider`` / ``openhands`` / ``goose`` with equivalent ``--auto`` / ``--no-confirm`` / ``--full-auto`` flags.
 
 Does NOT fire on a clearly-scoped invocation, e.g. ``claude --allowedTools 'Read,Grep'`` with a literal allow-list, or ``q chat --trust-tools 'fs_read'``.
+
+**B. PR-checkout topology** (zizmor proposal #1605 / #1607). Step-order traversal within a job. Fires when an agentic CLI (any of the names above) runs in a step *after* a step that checked out a PR head (``actions/checkout`` with ``ref:`` interpolating ``github.event.pull_request.head.*``, ``github.head_ref``, or a ``refs/pull/*/head`` literal) AND a write-scope token is in scope for the job (job-level ``permissions: write-all``, any token granted ``write``, ``id-token: write``, or no ``permissions:`` block declared anywhere, since the runtime default carries ``contents: write`` on most triggers). Pairs with GHA-045 (caller-controlled ref) and GHA-046 (manual PR-head fetch), the agentic-CLI primitive turns a contributor-controlled tree into a token-exfil tool, no bypass flag needed.
 
 **Recommendation.** Don't run an agentic CLI (claude / gemini / q / cursor-agent / aider / openhands / goose) with its safety flags disabled inside CI. The flags ``--dangerously-skip-permissions``, ``--yolo``, ``--trust-all-tools``, ``--allowedTools "*"`` let the agent shell out, read arbitrary files, and post to arbitrary HTTP endpoints with no per-action prompt — under the runner's identity. In CI that means it can read every ``${{ secrets.* }}`` value the workflow has access to and POST them anywhere. Either drop the bypass flag (and accept the manual confirmation prompts CI can't satisfy, so don't run it in CI at all), or gate the step behind a protected ``environment:`` and pre-vet the prompt that's being fed to the agent.
 
@@ -2920,6 +2926,86 @@ Fires once per offending IaC file with a finding location pointing at the file. 
 ```
 
 **Source:** [`GHA-062`](../providers/github.md#gha-062) in the [GitHub Actions provider](../providers/github.md).
+
+### `GHA-092`: PR head SHA captured then re-fetched (force-push race) <span class="pg-sev pg-sev--high">HIGH</span> { #detail-gha-092 }
+
+**Evidences:** [`1.5.2`](#ctrl-1-5-2) Ensure scanners are in place to secure CI/CD pipeline instructions.
+
+**How this is detected.** Within a single job, step-order traversal looks for:
+
+1. A **capture** step, any step that reads ``github.event.pull_request.head.sha`` (either as a ``${{ }}`` interpolation in a ``run:`` body, in a step or job ``env:`` block, or via a ``run:`` body containing ``git rev-parse HEAD`` after an earlier checkout).
+2. A **fetch** step that follows it, an ``actions/checkout`` whose ``with.ref:`` contains the same ``${{ github.event.pull_request.head.sha }}`` expression.
+
+The fire condition is the *order*, capture-then-fetch with no intervening lock on the ref. Workflows that do the fetch FIRST (and only read the SHA after) are not TOCTOU-shaped because there's only one read; pipeline-check stays silent. Cross-job state isn't covered because GitHub-Actions doesn't share a filesystem between jobs by default; ``needs:`` data passing via ``outputs:`` is a separate shape (TAINT-002 territory).
+
+**Recommendation.** Read the PR head SHA once and reuse the captured value for the actual checkout. ``actions/checkout`` accepts a ``ref:`` the workflow already resolved (``ref: ${{ steps.snap.outputs.sha }}`` after a ``steps.snap`` that captures the SHA from the event payload), so the same atom drives both the gate decision and the fetch. If a re-read is genuinely needed (you want the latest commit, accepting the race), drop the gate logic that depends on the earlier snapshot, the two are not the same primitive.
+
+**Known false positives.**
+
+- If the workflow genuinely wants to track HEAD-of-PR over time (e.g., a long-running review session that picks up additional commits between gate and merge), the TOCTOU shape isn't the bug, the design is. Suppress per-step with a rationale that explains the contract; pair with a branch-protection rule on the contributor side that blocks force-pushes to PR branches so the race window stays closed in practice.
+
+**Seen in the wild.**
+
+- GitHub Security Lab "checkout-after-rev-parse" research (2024) and zizmor proposal #935: red-team demonstrations of contributor force-pushes landing un-reviewed code between a workflow's two reads of the PR head SHA. The attack works against PR-review gates, labeler gates, and any approval-by-SHA workflow that uses the snapshot value for the decision and a live re-read for the build.
+
+**Proof of exploit.**
+
+```
+# Vulnerable: two reads of the PR head, with a gate in
+# between. A contributor force-push between the snapshot
+# and the second checkout lets unreviewed code run with
+# the gate's stamp of approval.
+jobs:
+  review-and-build:
+    runs-on: ubuntu-latest
+    steps:
+      - id: snap
+        run: echo "sha=${{ github.event.pull_request.head.sha }}" >> "$GITHUB_OUTPUT"
+      - run: ./review-gate.sh ${{ steps.snap.outputs.sha }}
+      - uses: actions/checkout@<sha>
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+
+# Safe: capture once, use the captured value for both the
+# gate and the fetch. ``checkout`` accepts the resolved
+# SHA as a ``ref:`` directly.
+jobs:
+  review-and-build:
+    runs-on: ubuntu-latest
+    steps:
+      - id: snap
+        run: echo "sha=${{ github.event.pull_request.head.sha }}" >> "$GITHUB_OUTPUT"
+      - run: ./review-gate.sh ${{ steps.snap.outputs.sha }}
+      - uses: actions/checkout@<sha>
+        with:
+          ref: ${{ steps.snap.outputs.sha }}
+```
+
+**Source:** [`GHA-092`](../providers/github.md#gha-092) in the [GitHub Actions provider](../providers/github.md).
+
+### `GHA-093`: Living-off-the-Pipeline indicators (workflow-command abuse) <span class="pg-sev pg-sev--high">HIGH</span> { #detail-gha-093 }
+
+**Evidences:** [`1.5.2`](#ctrl-1-5-2) Ensure scanners are in place to secure CI/CD pipeline instructions.
+
+**How this is detected.** Three independent failure shapes, the rule fires on any of them:
+
+1. **STEP_SUMMARY exfil.** A ``run:`` line that combines a secret reference (``${{ secrets.* }}`` context or a ``$NAME`` / ``${NAME}`` expansion of a step ``env:`` value bound to ``secrets.*``) with a redirect to ``$GITHUB_STEP_SUMMARY``. Disjoint from GHA-087: that rule fires on transform-then-sink; this one fires on the no-transform shape.
+2. **Workflow-command log injection.** A ``::warning::`` / ``::notice::`` / ``::error::`` directive whose message interpolates one of the attacker-controlled context expressions (PR title / body / labels / branch name, comment body, head_ref, etc.).
+3. **``::add-mask::`` after print.** Within the same ``run:`` block, a print of a variable (``echo $X`` / ``echo "$X"`` / ``printf`` / ``$X`` on its own line) preceded by no ``::add-mask::$X`` directive AND a later line that calls ``::add-mask::`` on the same variable. The directive applies to future log lines only; the earlier print already shipped to the log unmasked.
+
+Pairs with GHA-033 (secret echoed in shell trace) and GHA-087 (derived-value of a secret printed).
+
+**Recommendation.** Don't route secret-shaped values through the Summary tab and don't interpolate PR-controlled text into workflow commands. ``$GITHUB_STEP_SUMMARY`` is rendered to anyone with read access to the workflow run; treat it like a public-readable surface. ``::warning::`` / ``::notice::`` / ``::error::`` are typed log-line directives; interpolate only trusted values into them (or quote the untrusted value through an env var and let the shell escape it). Always ``::add-mask::`` *before* the first time the value could appear in a log line, the order matters.
+
+**Known false positives.**
+
+- STEP_SUMMARY is the legitimate sink for human-readable build digest content; the rule only flags secret-shaped references written there. If you need to surface a non-secret value that happens to share a name with a secret-bound env var, rename the env var. Workflow-command log-injection can be suppressed when the interpolation is into a value that's been sanitized upstream (a step that resolved the PR title through a literal-escape step), with a rationale that names the sanitizer.
+
+**Seen in the wild.**
+
+- LOTP (Living-off-the-Pipeline) research: collected from red-team write-ups demonstrating that built-in workflow primitives can act as untraced exfil channels (Trail of Bits 2024 LOTP series, Synacktiv Octoscan paper). The Summary tab and the typed workflow-command directives are the canonical examples; the add-mask ordering bug appears in GitHub's own field reports.
+
+**Source:** [`GHA-093`](../providers/github.md#gha-093) in the [GitHub Actions provider](../providers/github.md).
 
 ### `K8S-001`: Container image not pinned by sha256 digest <span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> { #detail-k8s-001 }
 

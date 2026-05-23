@@ -534,6 +534,13 @@ STANDARD = Standard(
         "GHA-073":  ["ESF-D-SECRETS"],               # unused workflow_call.secrets declaration
         "GHA-086":  ["ESF-C-APPROVAL", "ESF-C-ENV-SEP"],  # wildcard branch trigger gates env-bound deploy
         "GHA-087":  ["ESF-D-SECRETS"],               # derived-value of secret printed to log
+        "GHA-088":  ["ESF-S-VERIFY-DEPS"],           # typosquat uses: near-edit of top action
+        "GHA-089":  ["ESF-S-VERIFY-DEPS"],           # archived upstream repo
+        "GHA-090":  ["ESF-S-VERIFY-DEPS"],           # impostor-commit: SHA absent from repo
+        "GHA-091":  ["ESF-S-VERIFY-DEPS"],           # repojacking: action upstream missing
+        "GHA-092":  ["ESF-D-CODE-REVIEW"],            # TOCTOU PR head SHA force-push race
+        "GHA-093":  ["ESF-D-SECRETS", "ESF-D-INJECTION"],  # LOTP indicators
+        "GHA-094":  ["ESF-S-VERIFY-DEPS"],            # stale-action-refs
         # ── GitLab CI extras ─────────────────────────────────────
         "GL-028":   ["ESF-S-PIN-DEPS", "ESF-S-VERIFY-DEPS"],   # services: image not pinned
         "GL-029":   ["ESF-C-APPROVAL"],             # manual deploy allow_failure

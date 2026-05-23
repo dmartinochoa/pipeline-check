@@ -1,0 +1,20 @@
+name: gha-092-unsafe-toctou
+on: pull_request_target
+permissions:
+  contents: read
+jobs:
+  review-and-build:
+    runs-on: ubuntu-latest
+    steps:
+      # Snapshot of the head SHA at workflow-start time. Used by the
+      # downstream gate to decide whether to run.
+      - id: snap
+        run: echo "sha=${{ github.event.pull_request.head.sha }}" >> "$GITHUB_OUTPUT"
+      - name: Review gate
+        run: ./review-gate.sh "${{ steps.snap.outputs.sha }}"
+      # Race: a contributor force-push between the snapshot and this
+      # checkout lets the build run code that bypassed the gate.
+      - uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+      - run: ./build.sh

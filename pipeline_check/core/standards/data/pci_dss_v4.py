@@ -392,6 +392,13 @@ STANDARD = Standard(
         "GHA-073":  ["8.2.1"],                           # unused workflow_call.secrets declaration
         "GHA-086":  ["6.4.3"],                           # wildcard branch trigger + environment binding
         "GHA-087":  ["8.2.1", "10.3.2"],                 # derived-value of secret printed to log
+        "GHA-088":  ["6.3.1", "6.3.3"],                  # typosquat uses: near-edit of top action
+        "GHA-089":  ["6.3.1", "6.3.3"],                  # archived upstream repo
+        "GHA-090":  ["6.3.1", "6.3.3"],                  # impostor-commit: SHA absent from repo
+        "GHA-091":  ["6.3.1", "6.3.3"],                  # repojacking: action upstream missing
+        "GHA-092":  ["6.4.1", "6.5.1"],                  # TOCTOU PR head SHA force-push race
+        "GHA-093":  ["8.2.1", "10.3.2"],                 # LOTP indicators
+        "GHA-094":  ["6.3.3"],                           # stale-action-refs
         # ── GitLab CI ─────────────────────────────────────────────
         "GL-006":   ["6.5.1", "10.3.2"],                 # unsigned artifacts
         "GL-007":   ["6.5.1"],                           # no SBOM

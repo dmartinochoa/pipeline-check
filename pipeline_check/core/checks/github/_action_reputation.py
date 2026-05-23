@@ -26,6 +26,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import TYPE_CHECKING, Any
 
+from .._primitives.sha_ref import SHA_RE as _SHA_RE
 from ..scm.base import SCMFetcher
 from .uses_parser import parse_uses
 
@@ -81,6 +82,37 @@ class ActionRepoMetadata:
     #: didn't carry a usable date; the consuming rule passes silently
     #: on that specific ref. Consumed by GHA-047.
     ref_committed_at: dict[str, str | None] | None = None
+    #: Per-SHA membership in the upstream repo's commit network. Keyed
+    #: by the 40-char SHA referenced in ``uses:``. ``True`` when the
+    #: ``/commits/{sha}`` lookup returned 200 (the commit exists in
+    #: this repo's reachability set); ``False`` when the lookup ran
+    #: but came back empty (most commonly a 404, the impostor-commit
+    #: signal GHA-090 fires on). ``None`` for the whole slot means the
+    #: rule should treat membership as unknown (typical when the opt-
+    #: in flag is off or no SHA-shaped refs were referenced). Only
+    #: populated for refs that match a 40-char hex SHA shape; tag /
+    #: branch refs don't carry the impostor-commit attack model.
+    sha_membership: dict[str, bool] | None = None
+    #: Set of 40-char commit SHAs currently at the tip of some branch
+    #: in the upstream repo. Populated by a one-shot
+    #: ``GET /repos/{o}/{r}/branches?per_page=100`` when any
+    #: SHA-shaped ref is referenced for this action. A pinned SHA
+    #: that lands in this set is GHA-094 territory, the maintainer
+    #: can re-point the branch and the same pin starts fetching
+    #: different code. ``None`` for the whole slot means the lookup
+    #: didn't run (opt-in off, or no SHA-shaped refs referenced).
+    branch_head_shas: frozenset[str] | None = None
+    #: Resolved tag -> SHA mapping for tags harvested from
+    #: ``uses: o/r@<sha>  # <tag>`` version comments in the workflow
+    #: bodies. Populated by
+    #: :meth:`ActionMetadataFetcher.fetch_tag_shas` (one
+    #: ``/commits/{tag}`` call per tag). ``None`` for the whole slot
+    #: means the lookup didn't run (no version comments referenced
+    #: this action). A ``None`` value for a specific key inside the
+    #: dict (e.g. ``{"v4": None}``) means the tag was looked up and
+    #: the API didn't carry a usable SHA. GHA-095 consumes this to
+    #: decide whether the SHA pin and the comment tag agree.
+    tag_shas: dict[str, str | None] | None = None
 
 
 class ActionMetadataFetcher:
@@ -142,6 +174,88 @@ class ActionMetadataFetcher:
             fork=fork,
         )
 
+    def fetch_branch_heads(
+        self, owner: str, repo: str,
+    ) -> frozenset[str] | None:
+        """Return the set of branch-tip SHAs for ``owner/repo``.
+
+        One call to ``/repos/{o}/{r}/branches?per_page=100``. Repos
+        with more than 100 branches are an edge case; the rule
+        consuming this accepts the ceiling and skips the bonus
+        signal on branches past the first page. Returns ``None``
+        when the API call fails so the rule can distinguish
+        "lookup ran, repo has no branches" (empty frozenset) from
+        "lookup didn't run" (``None``).
+        """
+        payload = self.raw.fetch(
+            f"repos/{owner}/{repo}/branches?per_page=100"
+        )
+        if not isinstance(payload, list):
+            return None
+        heads: set[str] = set()
+        for entry in payload:
+            if not isinstance(entry, dict):
+                continue
+            commit = entry.get("commit")
+            if not isinstance(commit, dict):
+                continue
+            sha = commit.get("sha")
+            if isinstance(sha, str) and len(sha) == 40:
+                heads.add(sha.lower())
+        return frozenset(heads)
+
+    def fetch_sha_membership(
+        self, owner: str, repo: str, sha_refs: set[str],
+    ) -> dict[str, bool]:
+        """Probe whether each 40-char SHA in *sha_refs* is reachable
+        in ``owner/repo``'s commit network.
+
+        Returns ``{sha: True}`` when ``/repos/{o}/{r}/commits/{sha}``
+        returned a non-empty payload (the commit is in the repo's
+        reachability set) and ``{sha: False}`` when the lookup ran
+        but came back empty — typically a 404 from a SHA that exists
+        only in a fork's network, the impostor-commit attack shape.
+
+        Empty *sha_refs* returns an empty dict; callers map that to
+        ``None`` on :attr:`ActionRepoMetadata.sha_membership` so
+        consumers can distinguish "no data" from "every probe ran."
+        """
+        out: dict[str, bool] = {}
+        for sha in sha_refs:
+            if not sha:
+                continue
+            payload = self.raw.fetch(f"repos/{owner}/{repo}/commits/{sha}")
+            out[sha] = isinstance(payload, dict)
+        return out
+
+    def fetch_tag_shas(
+        self, owner: str, repo: str, tags: set[str],
+    ) -> dict[str, str | None]:
+        """Resolve each tag in *tags* to its commit SHA.
+
+        Uses the same ``/repos/{o}/{r}/commits/{ref}`` endpoint as
+        :meth:`fetch_ref_dates`, the response carries both
+        ``commit.committer.date`` (date-extractor lives in the
+        sibling method) and the canonical ``sha`` (extracted here).
+        One API call per distinct tag; empty input set returns the
+        empty dict so callers can map that to ``None`` on
+        :attr:`ActionRepoMetadata.tag_shas` to distinguish "no tags
+        to resolve" from "every resolve ran."
+
+        Returns a mapping ``{tag: sha | None}``. A ``None`` value
+        means the lookup completed but the payload didn't carry a
+        usable ``sha`` (most commonly a 404 from a tag that doesn't
+        exist on the upstream repo, the cue GHA-095 uses to pass
+        silently rather than fire on an unverifiable comment).
+        """
+        out: dict[str, str | None] = {}
+        for tag in tags:
+            if not tag:
+                continue
+            payload = self.raw.fetch(f"repos/{owner}/{repo}/commits/{tag}")
+            out[tag] = _extract_commit_sha(payload)
+        return out
+
     def fetch_ref_dates(
         self, owner: str, repo: str, refs: set[str],
     ) -> dict[str, str | None]:
@@ -172,6 +286,22 @@ class ActionMetadataFetcher:
             payload = self.raw.fetch(f"repos/{owner}/{repo}/commits/{ref}")
             out[ref] = _extract_committer_date(payload)
         return out
+
+
+def _extract_commit_sha(payload: Any) -> str | None:
+    """Pull the canonical ``sha`` out of a ``/commits/{ref}`` body.
+
+    Returns ``None`` when the response is missing or wrong-typed.
+    Lower-cases the result so callers can compare against
+    ``uses:`` SHA pins without per-side case juggling — every other
+    SHA-handling path in the module already normalizes to lower-case.
+    """
+    if not isinstance(payload, dict):
+        return None
+    sha = payload.get("sha")
+    if not isinstance(sha, str) or len(sha) != 40:
+        return None
+    return sha.lower()
 
 
 def _extract_committer_date(payload: Any) -> str | None:
@@ -311,7 +441,15 @@ def populate_action_metadata(
     silently on the actions whose metadata fetch failed.
     """
     refs_by_action = collect_referenced_action_refs(ctx)
-    actions = sorted(refs_by_action.keys() | collect_referenced_actions(ctx))
+    from ._version_comments import (
+        collect_referenced_action_version_comments,
+    )
+    tags_by_action = collect_referenced_action_version_comments(ctx)
+    actions = sorted(
+        refs_by_action.keys()
+        | collect_referenced_actions(ctx)
+        | tags_by_action.keys()
+    )
     fetched: dict[str, ActionRepoMetadata] = {}
     failed: list[str] = []
     for owner, repo in actions:
@@ -321,6 +459,38 @@ def populate_action_metadata(
             continue
         refs = refs_by_action.get((owner, repo), set())
         ref_dates = fetcher.fetch_ref_dates(owner, repo, refs) if refs else {}
+        # SHA-shaped refs (40-char hex) get an additional membership
+        # probe so GHA-090 can fire on impostor-commit. Tag / branch
+        # refs are skipped, the impostor-commit attack model is
+        # specific to "SHA pin points at a commit absent from the
+        # claimed repo." Same /commits/{sha} endpoint as
+        # fetch_ref_dates, but we ask a yes/no question rather than
+        # a timestamp-extraction one.
+        sha_refs = {
+            r for r in refs if _SHA_RE.match(r)
+        }
+        sha_membership = (
+            fetcher.fetch_sha_membership(owner, repo, sha_refs)
+            if sha_refs else {}
+        )
+        # Branch-heads probe rides on the SHA-refs presence test;
+        # tag/branch-pinned actions don't carry the GHA-094 attack
+        # model so we skip the call for them.
+        branch_head_shas = (
+            fetcher.fetch_branch_heads(owner, repo)
+            if sha_refs else None
+        )
+        # Version-comment tags harvested from raw workflow text feed
+        # the GHA-095 (ref-version-mismatch) comparator. Each tag
+        # resolves through the same ``/commits/{ref}`` endpoint as
+        # the ref-date fetch above, but the projection extracts
+        # ``sha`` rather than ``commit.committer.date``. Skipped when
+        # the action carries no comment-pinned tags.
+        comment_tags = tags_by_action.get((owner, repo), set())
+        tag_shas = (
+            fetcher.fetch_tag_shas(owner, repo, comment_tags)
+            if comment_tags else {}
+        )
         # Re-pack the metadata with the per-ref dates folded in.
         # ``ref_committed_at`` stays ``None`` (rather than ``{}``)
         # when the action had no resolvable refs, so GHA-047 can tell
@@ -335,6 +505,9 @@ def populate_action_metadata(
             archived=meta.archived,
             fork=meta.fork,
             ref_committed_at=ref_dates if ref_dates else None,
+            sha_membership=sha_membership if sha_membership else None,
+            branch_head_shas=branch_head_shas,
+            tag_shas=tag_shas if tag_shas else None,
         )
         fetched[f"{owner}/{repo}"] = meta_with_refs
     if failed:
@@ -348,3 +521,8 @@ def populate_action_metadata(
             f"lift the unauthenticated rate-limit ceiling."
         )
     ctx.action_metadata = fetched
+    # Surface the failed-fetch set separately so GHA-091 (repojacking)
+    # can act on it. The set carries owner/repo slugs, lower-cased
+    # to match the action_metadata keying so a rule can do both
+    # lookups with one normalized form.
+    ctx.action_fetch_failures = {slug.lower() for slug in failed}

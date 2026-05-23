@@ -446,3 +446,183 @@ class TestGHA058AICLIUnsafeFlags:
         """
         f = run_check(wf, "GHA-058")
         assert f.passed
+
+
+# ── GHA-058 PR-checkout topology widening (zizmor #1605 / #1607) ─────
+
+
+class TestGHA058PRCheckoutTopology:
+    """Step-order detection: agentic CLI runs in a job after a PR-head
+    checkout while a write-scope token is in scope. The bypass flag
+    itself is NOT required, the topology IS the bug.
+    """
+
+    def test_fires_after_pr_head_checkout_with_default_perms(self):
+        # No ``permissions:`` block means the runtime default carries
+        # ``contents: write``; the topology fires on the bare CLI
+        # invocation with no flag at all.
+        wf = """
+        name: pr-review
+        on: pull_request_target
+        jobs:
+          review:
+            runs-on: ubuntu-latest
+            steps:
+              - uses: actions/checkout@v4
+                with:
+                  ref: ${{ github.event.pull_request.head.sha }}
+              - run: claude -p "review this PR"
+        """
+        f = run_check(wf, "GHA-058")
+        assert not f.passed
+        assert "PR-head checkout" in f.description
+
+    def test_fires_when_job_permissions_write_all(self):
+        wf = """
+        name: pr-review
+        on: pull_request_target
+        jobs:
+          review:
+            runs-on: ubuntu-latest
+            permissions: write-all
+            steps:
+              - uses: actions/checkout@v4
+                with:
+                  ref: ${{ github.head_ref }}
+              - run: gemini -p "summarize this PR"
+        """
+        f = run_check(wf, "GHA-058")
+        assert not f.passed
+
+    def test_fires_on_refs_pull_head_literal(self):
+        wf = """
+        name: pr-review
+        on: pull_request_target
+        jobs:
+          review:
+            runs-on: ubuntu-latest
+            steps:
+              - uses: actions/checkout@v4
+                with:
+                  ref: refs/pull/123/head
+              - run: claude --allowedTools Read,Grep -p "review"
+        """
+        f = run_check(wf, "GHA-058")
+        assert not f.passed
+
+    def test_passes_with_no_pr_head_checkout(self):
+        # An agentic CLI in CI with no PR-head checkout in the same
+        # job is not the topology this widening targets.
+        wf = """
+        name: docs
+        on: push
+        jobs:
+          regen:
+            runs-on: ubuntu-latest
+            permissions: write-all
+            steps:
+              - uses: actions/checkout@v4
+              - run: claude --allowedTools Write -p "regen docs"
+        """
+        f = run_check(wf, "GHA-058")
+        assert f.passed
+
+    def test_passes_when_explicit_read_only_permissions(self):
+        # Read-only permissions block defangs the topology, the agent
+        # has no write-token to exfiltrate.
+        wf = """
+        name: pr-review
+        on: pull_request_target
+        jobs:
+          review:
+            runs-on: ubuntu-latest
+            permissions:
+              contents: read
+            steps:
+              - uses: actions/checkout@v4
+                with:
+                  ref: ${{ github.event.pull_request.head.sha }}
+              - run: claude --allowedTools Read -p "review"
+        """
+        f = run_check(wf, "GHA-058")
+        assert f.passed
+
+    def test_passes_when_agentic_step_precedes_checkout(self):
+        # Step order matters; an agent invoked BEFORE the PR-head
+        # checkout has no contributor-controlled tree on disk yet.
+        wf = """
+        name: pr-review
+        on: pull_request_target
+        jobs:
+          review:
+            runs-on: ubuntu-latest
+            steps:
+              - run: claude --allowedTools Read -p "preflight"
+              - uses: actions/checkout@v4
+                with:
+                  ref: ${{ github.event.pull_request.head.sha }}
+        """
+        f = run_check(wf, "GHA-058")
+        assert f.passed
+
+    def test_fires_id_token_write_only(self):
+        # ``id-token: write`` is a write-class token even when other
+        # scopes are read; the topology still applies.
+        wf = """
+        name: pr-review
+        on: pull_request_target
+        jobs:
+          review:
+            runs-on: ubuntu-latest
+            permissions:
+              contents: read
+              id-token: write
+            steps:
+              - uses: actions/checkout@v4
+                with:
+                  ref: ${{ github.event.pull_request.head.sha }}
+              - run: aider --auto -p "summarize"
+        """
+        f = run_check(wf, "GHA-058")
+        # aider --auto also matches the bypass-flag shape (--auto is
+        # in the bypass list). Either signal is enough; assert it
+        # fires.
+        assert not f.passed
+
+    def test_topology_fires_per_job_not_cross_job(self):
+        # PR-head checkout in job A should NOT make an agent in job B
+        # fire (different runner, no shared filesystem).
+        wf = """
+        name: pr-review
+        on: pull_request_target
+        jobs:
+          checkout-only:
+            runs-on: ubuntu-latest
+            steps:
+              - uses: actions/checkout@v4
+                with:
+                  ref: ${{ github.event.pull_request.head.sha }}
+          agent:
+            runs-on: ubuntu-latest
+            permissions: write-all
+            steps:
+              - run: claude --allowedTools Read -p "review"
+        """
+        f = run_check(wf, "GHA-058")
+        assert f.passed
+
+    def test_pull_request_target_head_ref_variant(self):
+        wf = """
+        name: pr-review
+        on: pull_request_target
+        jobs:
+          review:
+            runs-on: ubuntu-latest
+            steps:
+              - uses: actions/checkout@v4
+                with:
+                  ref: ${{ github.event.pull_request_target.head.sha }}
+              - run: q chat --trust-tools fs_read -p "review"
+        """
+        f = run_check(wf, "GHA-058")
+        assert not f.passed

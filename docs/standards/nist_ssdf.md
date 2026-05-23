@@ -20,7 +20,7 @@ risk language.
 
 - **Controls in this standard:** 13
 - **Controls evidenced by at least one check:** 13 / 13
-- **Distinct checks evidencing this standard:** 585
+- **Distinct checks evidencing this standard:** 592
 - **Of those, autofixable with `--fix`:** 111
 
 _Severity levels (`CRITICAL` / `HIGH` / `MEDIUM` / `LOW` / `INFO`) follow the same scale across every provider and standard. See [How to read severity](README.md#how-to-read-severity) on the standards overview for the definitions._
@@ -33,17 +33,17 @@ Click a control ID to jump to the per-control section with the full check list. 
 |---------|-------|-------:|--------------|
 | [`PO.3.2`](#ctrl-po-3-2) | Implement and maintain supporting toolchains with security controls | 6 | 2H · 2M · 2L |
 | [`PO.3.3`](#ctrl-po-3-3) | Configure the toolchain to generate an audit trail of SDLC activities | 35 | 2H · 8M · 9L · 16I |
-| [`PO.5.1`](#ctrl-po-5-1) | Separate and protect each environment involved in software development | 150 | 26C · 78H · 43M · 3L |
+| [`PO.5.1`](#ctrl-po-5-1) | Separate and protect each environment involved in software development | 151 | 26C · 79H · 43M · 3L |
 | [`PO.5.2`](#ctrl-po-5-2) | Secure and harden endpoints used for software development | 19 | 1C · 14M · 4L |
-| [`PS.1.1`](#ctrl-ps-1-1) | Store all forms of code based on least-privilege and tamper-resistance | 129 | 31C · 54H · 35M · 9L |
+| [`PS.1.1`](#ctrl-ps-1-1) | Store all forms of code based on least-privilege and tamper-resistance | 130 | 31C · 55H · 35M · 9L |
 | [`PS.2.1`](#ctrl-ps-2-1) | Make software integrity verification information available to acquirers | 34 | 10H · 24M |
 | [`PS.3.1`](#ctrl-ps-3-1) | Securely archive the necessary files and data for each software release | 6 | 2H · 4M |
 | [`PS.3.2`](#ctrl-ps-3-2) | Collect, safeguard, maintain, and share provenance data for releases | 54 | 10H · 37M · 7L |
-| [`PW.4.1`](#ctrl-pw-4-1) | Acquire and maintain well-secured 3rd-party software components | 94 | 5C · 51H · 32M · 6L |
-| [`PW.4.4`](#ctrl-pw-4-4) | Verify that acquired components are what is expected and behave as expected | 139 | 13C · 74H · 48M · 4L |
+| [`PW.4.1`](#ctrl-pw-4-1) | Acquire and maintain well-secured 3rd-party software components | 99 | 5C · 54H · 34M · 6L |
+| [`PW.4.4`](#ctrl-pw-4-4) | Verify that acquired components are what is expected and behave as expected | 144 | 13C · 77H · 50M · 4L |
 | [`PW.6.1`](#ctrl-pw-6-1) | Use compiler, interpreter, and build tool features to improve security | 35 | 5C · 24H · 2M · 4L |
-| [`PW.9.1`](#ctrl-pw-9-1) | Configure software to have secure settings by default | 140 | 25C · 75H · 33M · 7L |
-| [`RV.1.1`](#ctrl-rv-1-1) | Gather information about potential vulnerabilities in released software | 34 | 12C · 1H · 16M · 5L |
+| [`PW.9.1`](#ctrl-pw-9-1) | Configure software to have secure settings by default | 141 | 25C · 76H · 33M · 7L |
+| [`RV.1.1`](#ctrl-rv-1-1) | Gather information about potential vulnerabilities in released software | 36 | 12C · 3H · 16M · 5L |
 
 ## Filter at runtime
 
@@ -119,7 +119,7 @@ pipeline_check --pipeline aws --standard nist_ssdf --standard owasp_cicd_top_10
 
 ### PO.5.1: Separate and protect each environment involved in software development { #ctrl-po-5-1 }
 
-**Evidenced by 150 checks** across 19 providers (AWS, Argo Workflows, Azure DevOps, Bitbucket, Buildkite, CircleCI, Cloud Build, CloudFormation, Dockerfile, Drone CI, GitHub Actions, GitLab CI, Helm, Jenkins, Kubernetes, SCM, Tekton, Terraform, npm).
+**Evidenced by 151 checks** across 19 providers (AWS, Argo Workflows, Azure DevOps, Bitbucket, Buildkite, CircleCI, Cloud Build, CloudFormation, Dockerfile, Drone CI, GitHub Actions, GitLab CI, Helm, Jenkins, Kubernetes, SCM, Tekton, Terraform, npm).
 
 | Check | Title | Severity | Provider | Fix |
 |-------|-------|----------|----------|-----|
@@ -194,6 +194,7 @@ pipeline_check --pipeline aws --standard nist_ssdf --standard owasp_cicd_top_10
 | [`GHA-064`](#detail-gha-064) | ``contains()`` invoked with comma-delimited string operand | <span class="pg-sev pg-sev--high">HIGH</span> | [GitHub Actions](../providers/github.md) |  |
 | [`GHA-069`](#detail-gha-069) | ``id-token: write`` granted without an OIDC-consumer step | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [GitHub Actions](../providers/github.md) |  |
 | [`GHA-086`](#detail-gha-086) | Wildcard branch trigger gates an environment-bound deploy | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [GitHub Actions](../providers/github.md) |  |
+| [`GHA-092`](#detail-gha-092) | PR head SHA captured then re-fetched (force-push race) | <span class="pg-sev pg-sev--high">HIGH</span> | [GitHub Actions](../providers/github.md) |  |
 | [`GL-004`](#detail-gl-004) | Deploy job lacks manual approval or environment gate | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [GitLab CI](../providers/gitlab.md) |  |
 | [`GL-010`](#detail-gl-010) | Multi-project pipeline ingests upstream artifact unverified | <span class="pg-sev pg-sev--critical">CRITICAL</span> | [GitLab CI](../providers/gitlab.md) |  |
 | [`GL-011`](#detail-gl-011) | include: local file pulled in MR-triggered pipeline | <span class="pg-sev pg-sev--high">HIGH</span> | [GitLab CI](../providers/gitlab.md) |  |
@@ -302,7 +303,7 @@ pipeline_check --pipeline aws --standard nist_ssdf --standard owasp_cicd_top_10
 
 ### PS.1.1: Store all forms of code based on least-privilege and tamper-resistance { #ctrl-ps-1-1 }
 
-**Evidenced by 129 checks** across 18 providers (AWS, Argo Workflows, Azure DevOps, Bitbucket, Buildkite, CircleCI, Cloud Build, CloudFormation, Dockerfile, Drone CI, GitHub Actions, GitLab CI, Jenkins, Kubernetes, SCM, Tekton, Terraform, npm).
+**Evidenced by 130 checks** across 18 providers (AWS, Argo Workflows, Azure DevOps, Bitbucket, Buildkite, CircleCI, Cloud Build, CloudFormation, Dockerfile, Drone CI, GitHub Actions, GitLab CI, Jenkins, Kubernetes, SCM, Tekton, Terraform, npm).
 
 | Check | Title | Severity | Provider | Fix |
 |-------|-------|----------|----------|-----|
@@ -369,6 +370,7 @@ pipeline_check --pipeline aws --standard nist_ssdf --standard owasp_cicd_top_10
 | [`GHA-072`](#detail-gha-072) | Secret in env: at a wider scope than its consumer | <span class="pg-sev pg-sev--high">HIGH</span> | [GitHub Actions](../providers/github.md) |  |
 | [`GHA-073`](#detail-gha-073) | Reusable workflow declares an unused ``workflow_call`` secret | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [GitHub Actions](../providers/github.md) |  |
 | [`GHA-087`](#detail-gha-087) | Derived value of a secret printed to the build log | <span class="pg-sev pg-sev--high">HIGH</span> | [GitHub Actions](../providers/github.md) |  |
+| [`GHA-093`](#detail-gha-093) | Living-off-the-Pipeline indicators (workflow-command abuse) | <span class="pg-sev pg-sev--high">HIGH</span> | [GitHub Actions](../providers/github.md) |  |
 | [`GL-003`](#detail-gl-003) | Variables contain literal secret values | <span class="pg-sev pg-sev--critical">CRITICAL</span> | [GitLab CI](../providers/gitlab.md) |  |
 | [`GL-008`](#detail-gl-008) | Credential-shaped literal in pipeline body | <span class="pg-sev pg-sev--critical">CRITICAL</span> | [GitLab CI](../providers/gitlab.md) | <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> |
 | [`GL-013`](#detail-gl-013) | AWS auth uses long-lived access keys | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [GitLab CI](../providers/gitlab.md) | <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> |
@@ -553,7 +555,7 @@ pipeline_check --pipeline aws --standard nist_ssdf --standard owasp_cicd_top_10
 
 ### PW.4.1: Acquire and maintain well-secured 3rd-party software components { #ctrl-pw-4-1 }
 
-**Evidenced by 94 checks** across 19 providers (AWS, Argo Workflows, Azure DevOps, Bitbucket, Buildkite, CircleCI, Cloud Build, Dockerfile, Drone CI, GitHub Actions, GitLab CI, Helm, Jenkins, Kubernetes, PyPI, SCM, Tekton, maven, npm).
+**Evidenced by 99 checks** across 19 providers (AWS, Argo Workflows, Azure DevOps, Bitbucket, Buildkite, CircleCI, Cloud Build, Dockerfile, Drone CI, GitHub Actions, GitLab CI, Helm, Jenkins, Kubernetes, PyPI, SCM, Tekton, maven, npm).
 
 | Check | Title | Severity | Provider | Fix |
 |-------|-------|----------|----------|-----|
@@ -614,6 +616,11 @@ pipeline_check --pipeline aws --standard nist_ssdf --standard owasp_cicd_top_10
 | [`GHA-047`](#detail-gha-047) | Action ref resolves to a recently committed tag or SHA | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [GitHub Actions](../providers/github.md) |  |
 | [`GHA-051`](#detail-gha-051) | services / container image is not pinned by digest | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [GitHub Actions](../providers/github.md) |  |
 | [`GHA-068`](#detail-gha-068) | ``runs-on:`` targets an end-of-life hosted-runner image | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [GitHub Actions](../providers/github.md) |  |
+| [`GHA-088`](#detail-gha-088) | Action ``uses:`` slug is a near-edit of a top-traffic action | <span class="pg-sev pg-sev--high">HIGH</span> | [GitHub Actions](../providers/github.md) |  |
+| [`GHA-089`](#detail-gha-089) | Action upstream repo is archived | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [GitHub Actions](../providers/github.md) |  |
+| [`GHA-090`](#detail-gha-090) | Action SHA pin references a commit absent from the claimed repo | <span class="pg-sev pg-sev--high">HIGH</span> | [GitHub Actions](../providers/github.md) |  |
+| [`GHA-091`](#detail-gha-091) | Action upstream repo is missing (takeover-eligible namespace) | <span class="pg-sev pg-sev--high">HIGH</span> | [GitHub Actions](../providers/github.md) |  |
+| [`GHA-094`](#detail-gha-094) | Action SHA pin matches the current tip of an upstream branch | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [GitHub Actions](../providers/github.md) |  |
 | [`GL-001`](#detail-gl-001) | Image not pinned to specific version or digest | <span class="pg-sev pg-sev--high">HIGH</span> | [GitLab CI](../providers/gitlab.md) | <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> |
 | [`GL-005`](#detail-gl-005) | include: pulls remote / project without pinned ref | <span class="pg-sev pg-sev--high">HIGH</span> | [GitLab CI](../providers/gitlab.md) |  |
 | [`GL-009`](#detail-gl-009) | Image pinned to version tag rather than sha256 digest | <span class="pg-sev pg-sev--low">LOW</span> | [GitLab CI](../providers/gitlab.md) |  |
@@ -654,7 +661,7 @@ pipeline_check --pipeline aws --standard nist_ssdf --standard owasp_cicd_top_10
 
 ### PW.4.4: Verify that acquired components are what is expected and behave as expected { #ctrl-pw-4-4 }
 
-**Evidenced by 139 checks** across 20 providers (AWS, Argo Workflows, Azure DevOps, Bitbucket, Buildkite, CircleCI, Cloud Build, Dockerfile, Drone CI, GitHub Actions, GitLab CI, Helm, Jenkins, Kubernetes, OCI manifest, PyPI, SCM, Tekton, maven, npm).
+**Evidenced by 144 checks** across 20 providers (AWS, Argo Workflows, Azure DevOps, Bitbucket, Buildkite, CircleCI, Cloud Build, Dockerfile, Drone CI, GitHub Actions, GitLab CI, Helm, Jenkins, Kubernetes, OCI manifest, PyPI, SCM, Tekton, maven, npm).
 
 | Check | Title | Severity | Provider | Fix |
 |-------|-------|----------|----------|-----|
@@ -741,6 +748,11 @@ pipeline_check --pipeline aws --standard nist_ssdf --standard owasp_cicd_top_10
 | [`GHA-059`](#detail-gha-059) | npm install without registry-signature verification step | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [GitHub Actions](../providers/github.md) |  |
 | [`GHA-060`](#detail-gha-060) | pip install without `--require-hashes` verification | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [GitHub Actions](../providers/github.md) |  |
 | [`GHA-070`](#detail-gha-070) | ``ssh-keyscan`` / disabled host-key check trust-on-first-use | <span class="pg-sev pg-sev--high">HIGH</span> | [GitHub Actions](../providers/github.md) |  |
+| [`GHA-088`](#detail-gha-088) | Action ``uses:`` slug is a near-edit of a top-traffic action | <span class="pg-sev pg-sev--high">HIGH</span> | [GitHub Actions](../providers/github.md) |  |
+| [`GHA-089`](#detail-gha-089) | Action upstream repo is archived | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [GitHub Actions](../providers/github.md) |  |
+| [`GHA-090`](#detail-gha-090) | Action SHA pin references a commit absent from the claimed repo | <span class="pg-sev pg-sev--high">HIGH</span> | [GitHub Actions](../providers/github.md) |  |
+| [`GHA-091`](#detail-gha-091) | Action upstream repo is missing (takeover-eligible namespace) | <span class="pg-sev pg-sev--high">HIGH</span> | [GitHub Actions](../providers/github.md) |  |
+| [`GHA-094`](#detail-gha-094) | Action SHA pin matches the current tip of an upstream branch | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [GitHub Actions](../providers/github.md) |  |
 | [`GL-001`](#detail-gl-001) | Image not pinned to specific version or digest | <span class="pg-sev pg-sev--high">HIGH</span> | [GitLab CI](../providers/gitlab.md) | <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> |
 | [`GL-005`](#detail-gl-005) | include: pulls remote / project without pinned ref | <span class="pg-sev pg-sev--high">HIGH</span> | [GitLab CI](../providers/gitlab.md) |  |
 | [`GL-009`](#detail-gl-009) | Image pinned to version tag rather than sha256 digest | <span class="pg-sev pg-sev--low">LOW</span> | [GitLab CI](../providers/gitlab.md) |  |
@@ -842,7 +854,7 @@ pipeline_check --pipeline aws --standard nist_ssdf --standard owasp_cicd_top_10
 
 ### PW.9.1: Configure software to have secure settings by default { #ctrl-pw-9-1 }
 
-**Evidenced by 140 checks** across 15 providers (AWS, Argo Workflows, Azure DevOps, Bitbucket, Buildkite, CircleCI, Cloud Build, Dockerfile, Drone CI, GitHub Actions, GitLab CI, Jenkins, Kubernetes, Tekton, npm).
+**Evidenced by 141 checks** across 15 providers (AWS, Argo Workflows, Azure DevOps, Bitbucket, Buildkite, CircleCI, Cloud Build, Dockerfile, Drone CI, GitHub Actions, GitLab CI, Jenkins, Kubernetes, Tekton, npm).
 
 | Check | Title | Severity | Provider | Fix |
 |-------|-------|----------|----------|-----|
@@ -928,6 +940,7 @@ pipeline_check --pipeline aws --standard nist_ssdf --standard owasp_cicd_top_10
 | [`GHA-052`](#detail-gha-052) | actions/cache key includes untrusted PR-controllable input | <span class="pg-sev pg-sev--high">HIGH</span> | [GitHub Actions](../providers/github.md) |  |
 | [`GHA-053`](#detail-gha-053) | if: predicate evaluates attacker-controllable context as expression | <span class="pg-sev pg-sev--high">HIGH</span> | [GitHub Actions](../providers/github.md) |  |
 | [`GHA-058`](#detail-gha-058) | Agentic CLI invoked with permission-bypass flags | <span class="pg-sev pg-sev--high">HIGH</span> | [GitHub Actions](../providers/github.md) |  |
+| [`GHA-092`](#detail-gha-092) | PR head SHA captured then re-fetched (force-push race) | <span class="pg-sev pg-sev--high">HIGH</span> | [GitHub Actions](../providers/github.md) |  |
 | [`GL-002`](#detail-gl-002) | Script injection via untrusted commit/MR context | <span class="pg-sev pg-sev--high">HIGH</span> | [GitLab CI](../providers/gitlab.md) |  |
 | [`GL-010`](#detail-gl-010) | Multi-project pipeline ingests upstream artifact unverified | <span class="pg-sev pg-sev--critical">CRITICAL</span> | [GitLab CI](../providers/gitlab.md) |  |
 | [`GL-011`](#detail-gl-011) | include: local file pulled in MR-triggered pipeline | <span class="pg-sev pg-sev--high">HIGH</span> | [GitLab CI](../providers/gitlab.md) |  |
@@ -989,7 +1002,7 @@ pipeline_check --pipeline aws --standard nist_ssdf --standard owasp_cicd_top_10
 
 ### RV.1.1: Gather information about potential vulnerabilities in released software { #ctrl-rv-1-1 }
 
-**Evidenced by 34 checks** across 16 providers (AWS, Argo Workflows, Azure DevOps, Bitbucket, Buildkite, CircleCI, Cloud Build, Dockerfile, GitHub Actions, GitLab CI, Jenkins, PyPI, SCM, Tekton, maven, npm).
+**Evidenced by 36 checks** across 16 providers (AWS, Argo Workflows, Azure DevOps, Bitbucket, Buildkite, CircleCI, Cloud Build, Dockerfile, GitHub Actions, GitLab CI, Jenkins, PyPI, SCM, Tekton, maven, npm).
 
 | Check | Title | Severity | Provider | Fix |
 |-------|-------|----------|----------|-----|
@@ -1012,6 +1025,8 @@ pipeline_check --pipeline aws --standard nist_ssdf --standard owasp_cicd_top_10
 | [`GHA-020`](#detail-gha-020) | No vulnerability scanning step | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [GitHub Actions](../providers/github.md) |  |
 | [`GHA-040`](#detail-gha-040) | Action reference matches a known-compromised SHA or tag | <span class="pg-sev pg-sev--critical">CRITICAL</span> | [GitHub Actions](../providers/github.md) |  |
 | [`GHA-056`](#detail-gha-056) | Workflow body contains a known supply-chain worm indicator | <span class="pg-sev pg-sev--critical">CRITICAL</span> | [GitHub Actions](../providers/github.md) |  |
+| [`GHA-088`](#detail-gha-088) | Action ``uses:`` slug is a near-edit of a top-traffic action | <span class="pg-sev pg-sev--high">HIGH</span> | [GitHub Actions](../providers/github.md) |  |
+| [`GHA-090`](#detail-gha-090) | Action SHA pin references a commit absent from the claimed repo | <span class="pg-sev pg-sev--high">HIGH</span> | [GitHub Actions](../providers/github.md) |  |
 | [`GL-019`](#detail-gl-019) | No vulnerability scanning step | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [GitLab CI](../providers/gitlab.md) |  |
 | [`GL-025`](#detail-gl-025) | Pipeline contains indicators of malicious activity | <span class="pg-sev pg-sev--critical">CRITICAL</span> | [GitLab CI](../providers/gitlab.md) |  |
 | [`JF-020`](#detail-jf-020) | No vulnerability scanning step | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [Jenkins](../providers/jenkins.md) |  |
@@ -10213,7 +10228,9 @@ jobs:
 
 **Evidences:** [`PW.6.1`](#ctrl-pw-6-1) Use compiler, interpreter, and build tool features to improve security, [`PW.9.1`](#ctrl-pw-9-1) Configure software to have secure settings by default.
 
-**How this is detected.** Fires on a ``run:`` body invoking any of the following CLIs with the matching permission-bypass flag:
+**How this is detected.** Two detections feed the rule. Either is enough for the finding to fire.
+
+**A. Bypass-flag shape.** A ``run:`` body invokes one of the following CLIs with the matching permission-bypass flag:
 
 * ``claude … --dangerously-skip-permissions``
 * ``gemini … --yolo``
@@ -10223,6 +10240,8 @@ jobs:
 * ``aider`` / ``openhands`` / ``goose`` with equivalent ``--auto`` / ``--no-confirm`` / ``--full-auto`` flags.
 
 Does NOT fire on a clearly-scoped invocation, e.g. ``claude --allowedTools 'Read,Grep'`` with a literal allow-list, or ``q chat --trust-tools 'fs_read'``.
+
+**B. PR-checkout topology** (zizmor proposal #1605 / #1607). Step-order traversal within a job. Fires when an agentic CLI (any of the names above) runs in a step *after* a step that checked out a PR head (``actions/checkout`` with ``ref:`` interpolating ``github.event.pull_request.head.*``, ``github.head_ref``, or a ``refs/pull/*/head`` literal) AND a write-scope token is in scope for the job (job-level ``permissions: write-all``, any token granted ``write``, ``id-token: write``, or no ``permissions:`` block declared anywhere, since the runtime default carries ``contents: write`` on most triggers). Pairs with GHA-045 (caller-controlled ref) and GHA-046 (manual PR-head fetch), the agentic-CLI primitive turns a contributor-controlled tree into a token-exfil tool, no bypass flag needed.
 
 **Recommendation.** Don't run an agentic CLI (claude / gemini / q / cursor-agent / aider / openhands / goose) with its safety flags disabled inside CI. The flags ``--dangerously-skip-permissions``, ``--yolo``, ``--trust-all-tools``, ``--allowedTools "*"`` let the agent shell out, read arbitrary files, and post to arbitrary HTTP endpoints with no per-action prompt — under the runner's identity. In CI that means it can read every ``${{ secrets.* }}`` value the workflow has access to and POST them anywhere. Either drop the bypass flag (and accept the manual confirmation prompts CI can't satisfy, so don't run it in CI at all), or gate the step behind a protected ``environment:`` and pre-vet the prompt that's being fed to the agent.
 
@@ -11168,6 +11187,291 @@ jobs:
 ```
 
 **Source:** [`GHA-087`](../providers/github.md#gha-087) in the [GitHub Actions provider](../providers/github.md).
+
+### `GHA-088`: Action ``uses:`` slug is a near-edit of a top-traffic action <span class="pg-sev pg-sev--high">HIGH</span> { #detail-gha-088 }
+
+**Evidences:** [`PW.4.1`](#ctrl-pw-4-1) Acquire and maintain well-secured 3rd-party software components, [`PW.4.4`](#ctrl-pw-4-4) Verify that acquired components are what is expected and behave as expected, [`RV.1.1`](#ctrl-rv-1-1) Gather information about potential vulnerabilities in released software.
+
+**How this is detected.** Edit-distance check over the parsed ``owner/repo`` slug of every ``uses:`` reference in the workflow, against the curated list in ``pipeline_check.core.checks._primitives.top_actions``. Both step-level ``uses:`` (action references) and job-level ``uses:`` (reusable workflow references) are covered, slug comparison is case-insensitive, and Damerau-Levenshtein (transposition counts as one edit) handles ``actions/cehckout`` alongside ``actions/check0ut``. Distance ceiling is 2 by design, distance-3 false-positives are common on legitimate forks. Exact matches against any list entry never fire, so the rule is silent on canonical references. Refresh the list by PR with a citing public-stats source. Local refs (``./.github/...``) and docker step refs (``docker://...``) are out of scope.
+
+**Recommendation.** Pin the intended action. If the ``uses:`` slug above is what you meant, ignore this finding with a rationale; if it isn't, replace it with the canonical owner / repo named in the description, then pin to a 40-char commit SHA (GHA-001 covers the pin) and confirm the SHA is not on the curated compromised list (GHA-040). Typosquat actions are usually long-lived clones with a single modification, the exfiltration step the attacker added; the file count and lineage tell you which workflow primitive was substituted.
+
+**Known false positives.**
+
+- Legitimate forks or community variants that intentionally carry a near-miss name (e.g., an internal fork named ``acme/checkout`` mirroring ``actions/checkout``). Suppress per-finding with a rationale that names the fork and links the source. The rule cannot distinguish a well-known fork from a typosquat; intentional naming collisions are the operator's call.
+
+**Seen in the wild.**
+
+- OWASP CICD-SEC-3 (Dependency Chain Abuse) lists action-namespace squatting as a canonical attack shape; the curated industry examples (``actons/checkout``, ``actions/check0ut``) appear in red-team reports and honey-action research from Aikido, Wiz, and JFrog Security Research.
+
+**Proof of exploit.**
+
+```
+# Vulnerable: ``actons/checkout`` (missing ``i``) compiles
+# fine and pulls from a namespace that anyone could have
+# registered. Reviewer eyes skim past the typo.
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actons/checkout@v4
+      - run: ./build.sh
+
+# Safe: canonical action, SHA-pinned.
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@b4ffde65f4...        # v4.1.7
+      - run: ./build.sh
+```
+
+**Source:** [`GHA-088`](../providers/github.md#gha-088) in the [GitHub Actions provider](../providers/github.md).
+
+### `GHA-089`: Action upstream repo is archived <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-gha-089 }
+
+**Evidences:** [`PW.4.1`](#ctrl-pw-4-1) Acquire and maintain well-secured 3rd-party software components, [`PW.4.4`](#ctrl-pw-4-4) Verify that acquired components are what is expected and behave as expected.
+
+**How this is detected.** Reads the archived bit from ``ctx.action_metadata[owner/repo].archived`` (populated by ``--resolve-remote``; the same per-action repo fetch the GHA-041..043 reputation rules consume). When the metadata is empty (flag off, fetch failed, private repo with no token), the rule passes silently with a one-line nudge pointing at the flag. Covers both step-level ``uses:`` (action references) and job-level ``uses:`` (reusable workflow references); MEDIUM severity, the archived bit alone is not an exploit primitive but it is a documented precondition for the takeover shapes GHA-082 and GHA-040 catch.
+
+**Recommendation.** Migrate to an actively-maintained action covering the same surface. Archived upstreams stop receiving security patches the day the archive bit lands; vulnerabilities discovered afterward stay unpatched, and the namespace is eligible to be reclaimed by anyone once the original owner deletes or transfers the repo (the repojacking shape, see also GHA-082 when it ships). If a fork under your org's control is the only path forward, vendor the action and pin to your fork's SHA, so an upstream takeover can't reach your build runtime.
+
+**Known false positives.**
+
+- An action that an upstream maintainer archived because a first-party replacement ships (e.g., a legacy migration helper deprecated in favor of a built-in feature) is archived for legitimate reasons, not abandonment. The fork-and-vendor recommendation is still the right call for security posture, but suppress per-finding with a rationale once the operator has confirmed the migration path is on a roadmap.
+
+**Seen in the wild.**
+
+- tj-actions / reviewdog March 2025 (CVE-2025-30066 / CVE-2025-30154): both action namespaces were briefly archived during the compromise window; pinned consumers ran the malicious tag on the next sync. Archived state is one of the pre-conditions the post-incident timelines highlight.
+
+**Proof of exploit.**
+
+```
+# Vulnerable: archived upstream still in use. The next
+# discovered vulnerability in the action's runtime won't
+# get a fix; the namespace is eligible for repojacking
+# the moment the owner deletes the repo.
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: legacy-org/abandoned-action@v3
+      - run: ./build.sh
+
+# Safe: same surface, actively maintained replacement.
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@<sha>
+      - run: ./build.sh
+```
+
+**Source:** [`GHA-089`](../providers/github.md#gha-089) in the [GitHub Actions provider](../providers/github.md).
+
+### `GHA-090`: Action SHA pin references a commit absent from the claimed repo <span class="pg-sev pg-sev--high">HIGH</span> { #detail-gha-090 }
+
+**Evidences:** [`PW.4.1`](#ctrl-pw-4-1) Acquire and maintain well-secured 3rd-party software components, [`PW.4.4`](#ctrl-pw-4-4) Verify that acquired components are what is expected and behave as expected, [`RV.1.1`](#ctrl-rv-1-1) Gather information about potential vulnerabilities in released software.
+
+**How this is detected.** Reads the per-SHA membership probe from ``ctx.action_metadata[owner/repo].sha_membership`` (populated by ``--resolve-remote``; the same per-action metadata pass the GHA-041..043 reputation rules ride on). A False value means ``GET /repos/{o}/{r}/commits/{sha}`` ran and came back empty (most commonly a 404, the SHA is not in the repo's commit graph). When every SHA probed for an action came back False the rule treats that as rate-limit noise rather than impostor-commit and passes silently with a one-line nudge; an attacker has no way to make every legitimate pin fail at once, so unanimous failure is a configuration signal, not an attack.
+
+**Recommendation.** Verify the action's expected SHA via the upstream repo's release / tag history. If the SHA exists only in a fork, either pin to a canonical SHA on the head repository or fork the action under your org's control so the network you depend on is not the attacker's. The impostor-commit shape was popularized by red-team write-ups, the SHA pin passes review eyes because reviewers don't query the network for membership.
+
+**Known false positives.**
+
+- Force-pushed branches whose old SHA you pinned at can drop out of the reachability set even though the SHA was once legitimate. Re-pin to a SHA that's currently reachable. Suppress per-finding only after confirming through git log / the upstream tag history that the SHA wasn't introduced by a fork.
+
+**Seen in the wild.**
+
+- Synacktiv / Octoscan write-ups document impostor-commit as the next-step refinement after SHA pinning becomes table-stakes. The attack reuses the canonical PR-fork shape: a contributor fork has commit X that head doesn't, X gets referenced via ``uses: org/repo@X`` somewhere downstream, and runtime fetches X over GitHub's per-fork object pool.
+
+**Proof of exploit.**
+
+```
+# Vulnerable: the SHA below resolves only against a fork's
+# commit pool. ``actions/checkout`` itself never carried
+# this commit, but GitHub still serves it via the fork-
+# network when an authenticated workflow asks for it.
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@<fork-only-sha>
+      - run: ./build.sh
+
+# Safe: SHA that resolves on the head repo.
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@<canonical-sha>
+      - run: ./build.sh
+```
+
+**Source:** [`GHA-090`](../providers/github.md#gha-090) in the [GitHub Actions provider](../providers/github.md).
+
+### `GHA-091`: Action upstream repo is missing (takeover-eligible namespace) <span class="pg-sev pg-sev--high">HIGH</span> { #detail-gha-091 }
+
+**Evidences:** [`PW.4.1`](#ctrl-pw-4-1) Acquire and maintain well-secured 3rd-party software components, [`PW.4.4`](#ctrl-pw-4-4) Verify that acquired components are what is expected and behave as expected.
+
+**How this is detected.** Reads from ``ctx.action_fetch_failures``, the set of ``owner/repo`` slugs whose ``GET /repos/{o}/{r}`` fetch returned no payload during the ``--resolve-remote`` pass. Unanimous-failure shape (every referenced action's fetch failed) is treated as rate-limit / resolver noise rather than repojacking, the rule passes silently with a one-line nudge so the operator surfaces the network issue. Single-action failures are real signals because all the other actions in the same scan fetched fine, the infrastructure is up and the 404 is specifically this namespace. Both step-level and reusable-workflow ``uses:`` are covered. HIGH severity, the takeover-eligibility window opens the moment the namespace flips and stays open until the workflow no longer references the slug.
+
+**Recommendation.** Confirm the upstream namespace status. If the owner / repo was genuinely deleted (the resolver returns 404 while the workflow still references it), vendor the action under your org's control immediately, pin to your fork's SHA, and audit any prior workflow runs that used a non-SHA ref (``@v1`` / ``@main``). If the owner was renamed and the new name carries the canonical project, update the ``uses:`` slug. Pairs with the no-name-squatting posture, every external action your CI runs should resolve to a namespace your org controls or one the upstream maintainer still owns.
+
+**Known false positives.**
+
+- Private upstreams that pipeline-check can't see without a token may show up here. Confirm the 404 by hitting the URL from a browser with the appropriate auth; if the repo is private but reachable for your org, the resolver's unauthenticated probe is the false positive and ``--gh-token`` fixes it. Persistent / by-design private actions should be suppressed per-finding with a rationale that names the access boundary.
+
+**Seen in the wild.**
+
+- rentbcn / tj-actions namespace-deletion incidents (2024-2025): the upstream owner deleted the org and the name became registrable. Any workflow that re-resolved a non-SHA ref afterward ran the new owner's code. The shape is the canonical example for repojacking write-ups from Aikido, Wiz, and Snyk Research.
+
+**Proof of exploit.**
+
+```
+# Vulnerable: the upstream owner deleted the org.
+# pipeline-check's resolver got a 404 on /repos/legacy/
+# abandoned. The slug is now registrable by anyone, and a
+# subsequent re-pin to ``@v2`` (because v1 had a CVE)
+# pulls the attacker's first release.
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: legacy/abandoned@<sha>
+      - run: ./build.sh
+
+# Safe: vendored under your org's control.
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: yourorg/abandoned-fork@<sha>
+      - run: ./build.sh
+```
+
+**Source:** [`GHA-091`](../providers/github.md#gha-091) in the [GitHub Actions provider](../providers/github.md).
+
+### `GHA-092`: PR head SHA captured then re-fetched (force-push race) <span class="pg-sev pg-sev--high">HIGH</span> { #detail-gha-092 }
+
+**Evidences:** [`PO.5.1`](#ctrl-po-5-1) Separate and protect each environment involved in software development, [`PW.9.1`](#ctrl-pw-9-1) Configure software to have secure settings by default.
+
+**How this is detected.** Within a single job, step-order traversal looks for:
+
+1. A **capture** step, any step that reads ``github.event.pull_request.head.sha`` (either as a ``${{ }}`` interpolation in a ``run:`` body, in a step or job ``env:`` block, or via a ``run:`` body containing ``git rev-parse HEAD`` after an earlier checkout).
+2. A **fetch** step that follows it, an ``actions/checkout`` whose ``with.ref:`` contains the same ``${{ github.event.pull_request.head.sha }}`` expression.
+
+The fire condition is the *order*, capture-then-fetch with no intervening lock on the ref. Workflows that do the fetch FIRST (and only read the SHA after) are not TOCTOU-shaped because there's only one read; pipeline-check stays silent. Cross-job state isn't covered because GitHub-Actions doesn't share a filesystem between jobs by default; ``needs:`` data passing via ``outputs:`` is a separate shape (TAINT-002 territory).
+
+**Recommendation.** Read the PR head SHA once and reuse the captured value for the actual checkout. ``actions/checkout`` accepts a ``ref:`` the workflow already resolved (``ref: ${{ steps.snap.outputs.sha }}`` after a ``steps.snap`` that captures the SHA from the event payload), so the same atom drives both the gate decision and the fetch. If a re-read is genuinely needed (you want the latest commit, accepting the race), drop the gate logic that depends on the earlier snapshot, the two are not the same primitive.
+
+**Known false positives.**
+
+- If the workflow genuinely wants to track HEAD-of-PR over time (e.g., a long-running review session that picks up additional commits between gate and merge), the TOCTOU shape isn't the bug, the design is. Suppress per-step with a rationale that explains the contract; pair with a branch-protection rule on the contributor side that blocks force-pushes to PR branches so the race window stays closed in practice.
+
+**Seen in the wild.**
+
+- GitHub Security Lab "checkout-after-rev-parse" research (2024) and zizmor proposal #935: red-team demonstrations of contributor force-pushes landing un-reviewed code between a workflow's two reads of the PR head SHA. The attack works against PR-review gates, labeler gates, and any approval-by-SHA workflow that uses the snapshot value for the decision and a live re-read for the build.
+
+**Proof of exploit.**
+
+```
+# Vulnerable: two reads of the PR head, with a gate in
+# between. A contributor force-push between the snapshot
+# and the second checkout lets unreviewed code run with
+# the gate's stamp of approval.
+jobs:
+  review-and-build:
+    runs-on: ubuntu-latest
+    steps:
+      - id: snap
+        run: echo "sha=${{ github.event.pull_request.head.sha }}" >> "$GITHUB_OUTPUT"
+      - run: ./review-gate.sh ${{ steps.snap.outputs.sha }}
+      - uses: actions/checkout@<sha>
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+
+# Safe: capture once, use the captured value for both the
+# gate and the fetch. ``checkout`` accepts the resolved
+# SHA as a ``ref:`` directly.
+jobs:
+  review-and-build:
+    runs-on: ubuntu-latest
+    steps:
+      - id: snap
+        run: echo "sha=${{ github.event.pull_request.head.sha }}" >> "$GITHUB_OUTPUT"
+      - run: ./review-gate.sh ${{ steps.snap.outputs.sha }}
+      - uses: actions/checkout@<sha>
+        with:
+          ref: ${{ steps.snap.outputs.sha }}
+```
+
+**Source:** [`GHA-092`](../providers/github.md#gha-092) in the [GitHub Actions provider](../providers/github.md).
+
+### `GHA-093`: Living-off-the-Pipeline indicators (workflow-command abuse) <span class="pg-sev pg-sev--high">HIGH</span> { #detail-gha-093 }
+
+**Evidences:** [`PS.1.1`](#ctrl-ps-1-1) Store all forms of code based on least-privilege and tamper-resistance.
+
+**How this is detected.** Three independent failure shapes, the rule fires on any of them:
+
+1. **STEP_SUMMARY exfil.** A ``run:`` line that combines a secret reference (``${{ secrets.* }}`` context or a ``$NAME`` / ``${NAME}`` expansion of a step ``env:`` value bound to ``secrets.*``) with a redirect to ``$GITHUB_STEP_SUMMARY``. Disjoint from GHA-087: that rule fires on transform-then-sink; this one fires on the no-transform shape.
+2. **Workflow-command log injection.** A ``::warning::`` / ``::notice::`` / ``::error::`` directive whose message interpolates one of the attacker-controlled context expressions (PR title / body / labels / branch name, comment body, head_ref, etc.).
+3. **``::add-mask::`` after print.** Within the same ``run:`` block, a print of a variable (``echo $X`` / ``echo "$X"`` / ``printf`` / ``$X`` on its own line) preceded by no ``::add-mask::$X`` directive AND a later line that calls ``::add-mask::`` on the same variable. The directive applies to future log lines only; the earlier print already shipped to the log unmasked.
+
+Pairs with GHA-033 (secret echoed in shell trace) and GHA-087 (derived-value of a secret printed).
+
+**Recommendation.** Don't route secret-shaped values through the Summary tab and don't interpolate PR-controlled text into workflow commands. ``$GITHUB_STEP_SUMMARY`` is rendered to anyone with read access to the workflow run; treat it like a public-readable surface. ``::warning::`` / ``::notice::`` / ``::error::`` are typed log-line directives; interpolate only trusted values into them (or quote the untrusted value through an env var and let the shell escape it). Always ``::add-mask::`` *before* the first time the value could appear in a log line, the order matters.
+
+**Known false positives.**
+
+- STEP_SUMMARY is the legitimate sink for human-readable build digest content; the rule only flags secret-shaped references written there. If you need to surface a non-secret value that happens to share a name with a secret-bound env var, rename the env var. Workflow-command log-injection can be suppressed when the interpolation is into a value that's been sanitized upstream (a step that resolved the PR title through a literal-escape step), with a rationale that names the sanitizer.
+
+**Seen in the wild.**
+
+- LOTP (Living-off-the-Pipeline) research: collected from red-team write-ups demonstrating that built-in workflow primitives can act as untraced exfil channels (Trail of Bits 2024 LOTP series, Synacktiv Octoscan paper). The Summary tab and the typed workflow-command directives are the canonical examples; the add-mask ordering bug appears in GitHub's own field reports.
+
+**Source:** [`GHA-093`](../providers/github.md#gha-093) in the [GitHub Actions provider](../providers/github.md).
+
+### `GHA-094`: Action SHA pin matches the current tip of an upstream branch <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-gha-094 }
+
+**Evidences:** [`PW.4.1`](#ctrl-pw-4-1) Acquire and maintain well-secured 3rd-party software components, [`PW.4.4`](#ctrl-pw-4-4) Verify that acquired components are what is expected and behave as expected.
+
+**How this is detected.** Reads the branch-tip set from ``ctx.action_metadata[owner/repo].branch_head_shas`` (populated by ``--resolve-remote``; one ``/branches?per_page=100`` call per action with at least one SHA-shaped ``uses: owner/repo@<sha>``). For each SHA pin, fires when ``<sha>`` is the tip of any branch in the snapshot. Repos with more than 100 branches are an edge case; the rule skips additional pages. Tag-pinned refs (``@v4``, ``@main``) are out of scope, they don't carry the in-network mutability surface this rule targets. Both step-level and reusable-workflow ``uses:`` are covered, case-insensitive matching against the lower-cased SHA snapshot. MEDIUM severity, the maintainer's ability to re-point the branch is a latent risk rather than an in-progress exploit; pair with GHA-047 to escalate when the branch tip is also freshly committed.
+
+**Recommendation.** Re-pin to a SHA that's tagged in the upstream repo (a release commit) rather than the current tip of an active branch. Branch HEADs are mutable, the maintainer's next push can move the tip even when your pin stays still, and anyone re-pinning to "latest" picks up unaudited code. A SHA that lives only at a tag (``v4.1.7`` -> commit X) is a stable target: re-tagging is a louder, more visible action than a normal push, and a release-flavored tag implies a review pass the maintainer staged. If the action has no tagged releases at all, vendor the action under your org's control or accept the inherent drift risk by suppressing this finding with a rationale.
+
+**Known false positives.**
+
+- An action whose tagged-release flow lags real activity (maintainers push to ``main`` continuously but tag rarely) shows every recent SHA as a branch tip. The right fix is upstream: ask the maintainer to tag, or pin to a tagged ancestor SHA. If suppression is the only path, do it per-finding with a rationale that names the specific SHA and the audit you did against the upstream release notes.
+
+**Seen in the wild.**
+
+- GitHub Security Lab + Boost Security "unsigned-tag" research (2024-2025) documenting the re-pointed-branch shape, several supply-chain compromises landed by advancing a ``main`` branch under a SHA that consumers had pinned to. The SHA pin's audit value evaporates the moment the maintainer's next push moves the tip and a consumer team's automation reaches for "latest."
+
+**Proof of exploit.**
+
+```
+# Vulnerable: the pinned SHA is the current ``main`` tip.
+# The maintainer's next push moves ``main`` forward; the
+# pin stays on the old commit but a Dependabot ``main``-
+# tracker bumps consumers to the new tip on the next run.
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: vendor/action@<branch-tip-sha>
+      - run: ./build.sh
+
+# Safe: pinned SHA is a tagged release commit.
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: vendor/action@<tagged-release-sha>   # v4.1.7
+      - run: ./build.sh
+```
+
+**Source:** [`GHA-094`](../providers/github.md#gha-094) in the [GitHub Actions provider](../providers/github.md).
 
 ### `GL-001`: Image not pinned to specific version or digest <span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> { #detail-gl-001 }
 

@@ -436,6 +436,7 @@ STANDARD = Standard(
         "GHA-058":  ["4.4.5"],                     # agentic CLI permission-bypass
         "GHA-059":  ["4.1.5"],                     # npm install without audit signatures
         "GHA-060":  ["4.1.5"],                     # pip install without --require-hashes
+        "GHA-092":  ["4.4.5"],                     # TOCTOU PR head SHA force-push race
         # ── GitLab CI container-touching extras ──────────────────
         "GL-015":  ["4.4.5"],                      # no timeout
         "GL-020":  ["4.1.4"],                      # CI_JOB_TOKEN persisted

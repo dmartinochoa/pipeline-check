@@ -59,6 +59,13 @@ STANDARD = Standard(
         "GHA-040":  ["Pinned-Dependencies"],                           # known-compromised action ref
         "GHA-018":  ["Pinned-Dependencies"],                           # insecure package registry
         "GHA-025":  ["Pinned-Dependencies"],
+        "GHA-088":  ["Pinned-Dependencies"],                           # typosquat uses
+        "GHA-089":  ["Pinned-Dependencies"],                           # archived upstream
+        "GHA-090":  ["Pinned-Dependencies"],                           # impostor-commit
+        "GHA-091":  ["Pinned-Dependencies"],                           # repojacking
+        "GHA-092":  ["Dangerous-Workflow"],                            # TOCTOU PR head SHA
+        "GHA-093":  ["Dangerous-Workflow"],                            # LOTP indicators (workflow-command abuse)
+        "GHA-094":  ["Pinned-Dependencies"],                           # stale-action-refs
         "GL-001":   ["Pinned-Dependencies"],
         "GL-005":   ["Pinned-Dependencies"],
         "GL-009":   ["Pinned-Dependencies"],
