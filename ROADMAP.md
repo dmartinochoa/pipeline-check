@@ -796,6 +796,25 @@ templates / components, which would need cross-document machinery
 similar to the GHA ``--resolve-remote`` flow. Closes the last
 known limitation in the TAINT-NNN engine's coverage.
 
+### Direct-HCL Terraform parsing (no `--tf-plan` requirement)
+
+The terraform provider consumes ``terraform show -json`` plan output
+via ``--tf-plan``. The plan-step requirement is fine for the
+canonical CI flow but locks out three real use cases: pre-init scans
+(providers not downloaded yet), monorepo audits where running
+``terraform plan`` per module is prohibitive, and corpus benchmarks
+that ship raw HCL with no plan capture. Land a second parsing path
+that reads ``*.tf`` files directly (via the ``python-hcl2`` parser
+or a tree-sitter grammar) and synthesizes a partial resource graph
+good enough for the same TF-NNN rule pack to run against. Unresolved
+``var.<name>`` / ``module.X.output.Y`` / ``data.<x>.<y>`` references
+stay opaque, the rule emits a confidence-demoted finding rather than
+a false negative. The plan-JSON path stays canonical (it carries the
+fully-resolved attribute values raw HCL can't); ``--tf-source`` is
+the new flag, ``--tf-plan`` keeps its semantics. Closes the
+``terragoat`` skip in ``bench/goats/`` and unlocks the "scan a fresh
+checkout" UX that Checkov / KICS / tfsec all offer.
+
 ### Pipeline graph DAG v2 (step-level)
 
 Phase 1 (blast-radius heatmap) shipped in v1.0.x. Phase 2 lifts the
@@ -882,6 +901,45 @@ interpolation resolves. See Shipped.
 cooldown-miss with DF-024 lifecycle-scripts-enabled so the
 composite escalates when both gates fail in the same scan.~~
 Landed as XPC-010 (see Shipped).
+
+Next, paired:
+
+- **Live OSV / GHSA lookup for pinned dep versions (NPM-010 /
+  PYPI-009 / MVN-009).** Dep-manifest analog of the planned
+  GHA-077 widening: each provider's curated
+  ``CompromisedPackage`` registry stays as the offline default,
+  and behind ``--resolve-remote`` the same registry-fetcher
+  transport NPM-008 / PYPI-008 / MVN-008 ride on queries OSV
+  (``https://api.osv.dev/v1/query``) plus the GitHub Advisory
+  database for every exact ``name == version`` pair the manifest
+  carries. Fires CRITICAL on an advisory hit, MEDIUM on a YANKED
+  package, otherwise silent. Closes the freshness gap the
+  hand-seeded registry has against advisories filed between
+  releases (the registry tracks notable incidents; OSV catches
+  the long tail). Same no-network default as the cooldown
+  trilogy, so the scan still passes silently when the flag is
+  off.
+
+- **NuGet provider (``--pipeline nuget``).** Fifth dependency-
+  supply-chain provider after npm / pypi / maven. Parses
+  ``*.csproj`` ``<PackageReference>`` entries,
+  ``Directory.Packages.props`` (central package management),
+  ``packages.config`` (legacy), ``packages.lock.json``, and
+  ``project.assets.json`` (the lock the SDK writes during
+  restore). NUGET-001..007 cover floating ``[1.0,2.0)`` /
+  ``(1.0,)`` ranges, ``-*`` wildcard prereleases, missing
+  ``Version`` attributes (silently resolved by central
+  management), HTTP-only ``packageSources`` in ``NuGet.config``,
+  pins to known-compromised .NET versions, missing
+  ``packages.lock.json`` reproducibility, and missing
+  ``packageSourceMapping`` when more than one feed is
+  configured (the dependency-confusion shape that bit
+  Microsoft's first-party 2021 advisory). Hermetic on the base
+  path; a NUGET-008 cooldown rule rides the existing fetcher
+  transport against ``api.nuget.org/v3/registration5-semver1/``
+  for publish-time data. Closes the .NET ecosystem gap that
+  leaves Checkov / Snyk as the only static-analysis options for
+  ``*.csproj``.
 
 ### Vulnerable-by-design benchmark: phase 2 (cross-scanner comparison)
 
