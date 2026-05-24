@@ -31,10 +31,10 @@ from __future__ import annotations
 
 from typing import Any
 
+from ..._primitives.version_range import any_range_matches, parse_version
 from ...base import Confidence, Finding, Severity
 from ...rule import Rule
 from .._action_reputation import ActionAdvisory
-from ..._primitives.version_range import any_range_matches, parse_version
 from ..base import GitHubContext, Workflow, iter_jobs, iter_steps
 from ..uses_parser import parse_uses
 

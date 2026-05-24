@@ -10,7 +10,7 @@ triage," not full semver compliance.
 from __future__ import annotations
 
 import re
-from typing import Sequence
+from collections.abc import Sequence
 
 _VER_RE = re.compile(r"v?(\d+(?:\.\d+)*)")
 _CONSTRAINT_RE = re.compile(

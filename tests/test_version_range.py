@@ -1,8 +1,6 @@
 """Tests for the GHSA version range matcher primitive."""
 from __future__ import annotations
 
-import pytest
-
 from pipeline_check.core.checks._primitives.version_range import (
     any_range_matches,
     parse_version,
