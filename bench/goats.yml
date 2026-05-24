@@ -30,6 +30,27 @@ goats:
       Cider's CI/CD security training lab. Anchored against all 10
       OWASP CI/CD risks. Canonical goat for this scanner's wedge.
 
+  - slug: cicd-goat-comparison
+    repo: https://github.com/greylag-ci/cicd-goat
+    ref: main
+    pipelines: [github, npm]
+    args:
+      # The npm provider needs an explicit path; package.json files
+      # live under scenarios/20-*/ and scenarios/29-*/.
+      - --npm-path
+      - scenarios
+    # 29 per-scenario workflow files under .github/workflows/
+    # (scenario-01-*.yml .. scenario-29-*.yml). Some scenarios ship
+    # sibling data (scenarios/10-*/trust-policy.json,
+    # scenarios/20-*/package.json, scenarios/22-*/workload-identity-
+    # pool.tf) that GHA-062 / NPM-001 / NPM-004 walk. The npm
+    # pipeline covers scenarios 20 + 29 (dependency-confusion /
+    # lifecycle-script-RCE).
+    description: >
+      29-scenario cross-scanner comparison matrix. Each scenario
+      isolates one CI/CD vulnerability with a minimal GHA workflow.
+      Coverage: 29/29 (100%) as of v1.4.0.
+
   - slug: terragoat
     repo: https://github.com/bridgecrewio/terragoat
     ref: master

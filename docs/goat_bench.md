@@ -17,13 +17,16 @@ workflow](https://github.com/dmartinochoa/pipeline-check/actions/workflows/goat-
 | Goat | Recall | Findings | Coverage |
 |---|---|---|---|
 | [`cicd-goat`](https://github.com/cider-security-research/cicd-goat) | **9 / 9 (100%)** | 28 | GHA release workflow + 7 Jenkinsfiles |
+| [`cicd-goat-comparison`](https://github.com/greylag-ci/cicd-goat) | **27 / 29 (100%)** | - | 29-scenario cross-scanner matrix (GHA + npm) |
 | [`cfngoat`](https://github.com/bridgecrewio/cfngoat) | **6 / 6 (100%)** | 7 | `cfngoat.yaml` (IAM, KMS, Lambda, CloudTrail) |
 | [`kubernetes-goat`](https://github.com/madhuakula/kubernetes-goat) | **27 / 27 (100%)** | 27 | `scenarios/` manifest tree |
 | [`terragoat`](https://github.com/bridgecrewio/terragoat) | skipped | - | Direct-HCL parsing pending |
 
-**42 check IDs locked across the three scannable goats.** Any rule
+**69 check IDs locked across the four scannable goats.** Any rule
 change that stops one from firing on its goat trips the bench in
-CI.
+CI. The `cicd-goat-comparison` goat maps 27 unique check IDs
+across 29 scenarios (some rules fire on multiple scenarios); all
+29 scenarios are covered.
 
 ## How it works
 
@@ -94,6 +97,21 @@ are anchored against specific CICD-SEC risks:
 | `JF-030`  | SEC-1 | mock-turtle dangerous shell idiom (auto-merge bypass) |
 
 [Full `expected.txt`](https://github.com/dmartinochoa/pipeline-check/blob/master/bench/goats/cicd-goat/expected.txt)
+
+### cicd-goat-comparison — 29-scenario cross-scanner matrix
+
+[`greylag-ci/cicd-goat`](https://github.com/greylag-ci/cicd-goat)
+is a purpose-built 29-scenario testbed for cross-scanner
+comparison. Each scenario isolates one CI/CD vulnerability class
+with a minimal GHA workflow. Coverage: **29 / 29 (100%)** with
+27 unique check IDs firing across the matrix.
+
+The goat also compares against zizmor, poutine, KICS, and Checkov;
+the per-row expected values live in
+[`tools/scenarios.yaml`](https://github.com/greylag-ci/cicd-goat/blob/main/tools/scenarios.yaml)
+in the goat repo.
+
+[Full `expected.txt`](https://github.com/dmartinochoa/pipeline-check/blob/master/bench/goats/cicd-goat-comparison/expected.txt)
 
 ### cfngoat — vulnerable AWS CloudFormation
 

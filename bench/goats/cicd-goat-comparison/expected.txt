@@ -1,0 +1,96 @@
+# greylag-ci/cicd-goat expected check IDs (curated 2026-05-24
+# against main@HEAD). 29-scenario cross-scanner comparison matrix;
+# each scenario isolates one CI/CD vulnerability class with a
+# minimal GHA workflow under .github/workflows/scenario-NN-*.yml.
+# Mappings sourced from tools/scenarios.yaml in the goat repo.
+
+# ── Scenario 01: pull_request_target + fork-head checkout ──
+GHA-002   # Dangerous trigger (pull_request_target). CICD-SEC-4/5.
+GHA-044   # Checkout of PR head on untrusted trigger.
+
+# ── Scenario 02: Script injection via issue title ──
+GHA-003   # Template injection (${{ github.event.issue.title }}). CICD-SEC-4.
+
+# ── Scenario 03: Action pinned to mutable ref ──
+GHA-001   # Unpinned uses: (tag, not SHA). CICD-SEC-3.
+
+# ── Scenario 04: GITHUB_TOKEN write-all ──
+GHA-004   # Missing/excessive permissions block. CICD-SEC-5.
+
+# ── Scenario 05: Cache poisoning via PR title ──
+GHA-011   # PR-controlled cache key. CICD-SEC-4/9.
+GHA-052   # Cache key from untrusted PR input.
+
+# ── Scenario 06: Reusable workflow secrets: inherit ──
+GHA-034   # secrets: inherit on reusable workflow call. CICD-SEC-5/6.
+
+# ── Scenario 07: workflow_run artifact RCE ──
+GHA-009   # Dangerous trigger (workflow_run). CICD-SEC-4/9.
+GHA-032   # Artifact download on untrusted trigger.
+
+# ── Scenario 08: Self-hosted runner on public repo ──
+GHA-012   # Self-hosted runner label. CICD-SEC-7.
+
+# ── Scenario 09: Container image :latest ──
+GHA-051   # Unpinned container image. CICD-SEC-3/9.
+
+# ── Scenario 10: AWS OIDC wildcard sub ──
+GHA-062   # Sibling trust-policy.json with over-broad sub claim. CICD-SEC-2/7.
+
+# ── Scenario 11: pip install no hashes ──
+GHA-060   # pip install without --require-hashes. CICD-SEC-3.
+
+# ── Scenario 12: persist-credentials leak ──
+GHA-037   # actions/checkout persist-credentials not disabled. CICD-SEC-6/3.
+
+# ── Scenario 13: workflow_dispatch input injection ──
+# (GHA-003 fires again; same rule, different scenario.)
+
+# ── Scenario 14: $GITHUB_ENV poisoning ──
+# (GHA-003 fires again.)
+
+# ── Scenario 15: Hardcoded secret in env: ──
+GHA-008   # Keyed-hex secret shape in YAML. CICD-SEC-6.
+
+# ── Scenario 16: curl | sh install ──
+GHA-016   # Trusted-installer pattern (fetch+exec, no provenance). CICD-SEC-3.
+
+# ── Scenario 17: ArtiPACKED .git/ in artifact ──
+GHA-019   # .git directory uploaded in artifact. CICD-SEC-6/9.
+
+# ── Scenario 18: Composite action ${{ inputs.* }} injection ──
+# (GHA-003 fires on the synthesized composite body.)
+
+# ── Scenario 19: Codecov-style trusted-installer ──
+# (GHA-016 fires again; same rule, different scenario.)
+
+# ── Scenario 20: Dependency confusion (Birsan) ──
+NPM-001   # Floating version range on internal-looking package. CICD-SEC-3.
+NPM-004   # Package declares install lifecycle script. CICD-SEC-3.
+
+# ── Scenario 21: Matrix expansion injection ──
+TAINT-002 # Cross-job/axis taint: env -> output -> matrix -> sink. CICD-SEC-4.
+
+# ── Scenario 22: GCP OIDC over-broad WIF ──
+# (GHA-062 fires again on workload-identity-pool.tf.)
+
+# ── Scenario 23: actions-bot branch-protection bypass ──
+GHA-049   # github-actions[bot] identity + git push. CICD-SEC-1.
+
+# ── Scenario 24: Third-party webhook exfiltration ──
+GHA-057   # Secret-scanner output piped to network egress. CICD-SEC-8.
+
+# ── Scenario 25: Environment branch-pattern bypass ──
+GHA-086   # Wildcard branch trigger + environment binding. CICD-SEC-1/5.
+
+# ── Scenario 26: GitHub App token over-scope ──
+GHA-061   # App-token mint without permissions: filter. CICD-SEC-5.
+
+# ── Scenario 27: Secret leak in workflow logs ──
+GHA-033   # Shell trace leaks secret to log. CICD-SEC-10.
+
+# ── Scenario 28: Reusable workflow ${{ inputs.* }} injection ──
+TAINT-003 # Cross-workflow_call source -> sink taint. CICD-SEC-4.
+
+# ── Scenario 29: npm lifecycle-script RCE ──
+# (NPM-004 fires again on scenarios/29-*/package.json.)

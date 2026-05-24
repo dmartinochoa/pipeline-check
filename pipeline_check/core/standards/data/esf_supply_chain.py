@@ -541,6 +541,7 @@ STANDARD = Standard(
         "GHA-092":  ["ESF-D-CODE-REVIEW"],            # TOCTOU PR head SHA force-push race
         "GHA-093":  ["ESF-D-SECRETS", "ESF-D-INJECTION"],  # LOTP indicators
         "GHA-094":  ["ESF-S-VERIFY-DEPS"],            # stale-action-refs
+        "GHA-096":  ["ESF-S-VERIFY-DEPS", "ESF-S-VULN-MGMT"],   # known-vulnerable action ref (GHSA)
         # ── GitLab CI extras ─────────────────────────────────────
         "GL-028":   ["ESF-S-PIN-DEPS", "ESF-S-VERIFY-DEPS"],   # services: image not pinned
         "GL-029":   ["ESF-C-APPROVAL"],             # manual deploy allow_failure

@@ -10,7 +10,7 @@ check against a curated top-actions list in
   - ``actions/setup-nodejs`` (suffix swap from ``setup-node``)
 
 Pairs with GHA-040 (compromised SHA / tag), GHA-001 (unpinned
-``uses:``), and GHA-082 (repojacking, when it ships). Pure offline,
+``uses:``), and GHA-091 (repojacking). Pure offline,
 no network call. The list is hand-curated and intentionally biased
 toward first-party / heavily-trafficked actions, edit-distance on a
 long tail produces false positives that drown the rule.

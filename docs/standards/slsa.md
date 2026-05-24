@@ -20,7 +20,7 @@ the source-control side of the chain.
 
 - **Controls in this standard:** 7
 - **Controls evidenced by at least one check:** 6 / 7
-- **Distinct checks evidencing this standard:** 428
+- **Distinct checks evidencing this standard:** 429
 - **Of those, autofixable with `--fix`:** 92
 
 _Severity levels (`CRITICAL` / `HIGH` / `MEDIUM` / `LOW` / `INFO`) follow the same scale across every provider and standard. See [How to read severity](README.md#how-to-read-severity) on the standards overview for the definitions._
@@ -37,7 +37,7 @@ Click a control ID to jump to the per-control section with the full check list. 
 | [`Build.L2.Signed`](#ctrl-build-l2-signed) | Build L2: Provenance is authenticated and cannot be forged by tenants | 35 | 6H · 28M · 1L |
 | [`Build.L3.Isolated`](#ctrl-build-l3-isolated) | Build L3: Build runs in an isolated environment not influenced by other builds | 152 | 24C · 95H · 31M · 2L |
 | [`Build.L3.Ephemeral`](#ctrl-build-l3-ephemeral) | Build L3: Build environment is ephemeral and provisioned fresh for each run | 19 | 14M · 5L |
-| [`Build.L3.NonFalsifiable`](#ctrl-build-l3-nonfalsifiable) | Build L3: Provenance cannot be falsified by the build's own tenant | 241 | 38C · 110H · 82M · 11L |
+| [`Build.L3.NonFalsifiable`](#ctrl-build-l3-nonfalsifiable) | Build L3: Provenance cannot be falsified by the build's own tenant | 242 | 38C · 111H · 82M · 11L |
 
 ## Filter at runtime
 
@@ -363,7 +363,7 @@ Build environments are provisioned per run and torn down after, so a compromised
 
 The build platform's provenance signature is bound to inputs the tenant cannot influence (e.g. a backend-controlled identity), so a tenant-controlled compromise cannot mint forged provenance.
 
-**Evidenced by 241 checks** across 21 providers (AWS, Argo Workflows, Azure DevOps, Bitbucket, Buildkite, CircleCI, Cloud Build, CloudFormation, Dockerfile, Drone CI, GitHub Actions, GitLab CI, Helm, Jenkins, OCI manifest, PyPI, SCM, Tekton, Terraform, maven, npm).
+**Evidenced by 242 checks** across 21 providers (AWS, Argo Workflows, Azure DevOps, Bitbucket, Buildkite, CircleCI, Cloud Build, CloudFormation, Dockerfile, Drone CI, GitHub Actions, GitLab CI, Helm, Jenkins, OCI manifest, PyPI, SCM, Tekton, Terraform, maven, npm).
 
 | Check | Title | Severity | Provider | Fix |
 |-------|-------|----------|----------|-----|
@@ -512,6 +512,7 @@ The build platform's provenance signature is bound to inputs the tenant cannot i
 | [`GHA-090`](#detail-gha-090) | Action SHA pin references a commit absent from the claimed repo | <span class="pg-sev pg-sev--high">HIGH</span> | [GitHub Actions](../providers/github.md) |  |
 | [`GHA-091`](#detail-gha-091) | Action upstream repo is missing (takeover-eligible namespace) | <span class="pg-sev pg-sev--high">HIGH</span> | [GitHub Actions](../providers/github.md) |  |
 | [`GHA-094`](#detail-gha-094) | Action SHA pin matches the current tip of an upstream branch | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [GitHub Actions](../providers/github.md) |  |
+| [`GHA-096`](#detail-gha-096) | Action reference has a known GHSA vulnerability | <span class="pg-sev pg-sev--high">HIGH</span> | [GitHub Actions](../providers/github.md) |  |
 | [`GL-001`](#detail-gl-001) | Image not pinned to specific version or digest | <span class="pg-sev pg-sev--high">HIGH</span> | [GitLab CI](../providers/gitlab.md) | <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> |
 | [`GL-003`](#detail-gl-003) | Variables contain literal secret values | <span class="pg-sev pg-sev--critical">CRITICAL</span> | [GitLab CI](../providers/gitlab.md) |  |
 | [`GL-004`](#detail-gl-004) | Deploy job lacks manual approval or environment gate | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [GitLab CI](../providers/gitlab.md) |  |
@@ -9160,9 +9161,9 @@ jobs:
 
 **Evidences:** [`Build.L3.NonFalsifiable`](#ctrl-build-l3-nonfalsifiable) Build L3: Provenance cannot be falsified by the build's own tenant.
 
-**How this is detected.** Reads the archived bit from ``ctx.action_metadata[owner/repo].archived`` (populated by ``--resolve-remote``; the same per-action repo fetch the GHA-041..043 reputation rules consume). When the metadata is empty (flag off, fetch failed, private repo with no token), the rule passes silently with a one-line nudge pointing at the flag. Covers both step-level ``uses:`` (action references) and job-level ``uses:`` (reusable workflow references); MEDIUM severity, the archived bit alone is not an exploit primitive but it is a documented precondition for the takeover shapes GHA-082 and GHA-040 catch.
+**How this is detected.** Reads the archived bit from ``ctx.action_metadata[owner/repo].archived`` (populated by ``--resolve-remote``; the same per-action repo fetch the GHA-041..043 reputation rules consume). When the metadata is empty (flag off, fetch failed, private repo with no token), the rule passes silently with a one-line nudge pointing at the flag. Covers both step-level ``uses:`` (action references) and job-level ``uses:`` (reusable workflow references); MEDIUM severity, the archived bit alone is not an exploit primitive but it is a documented precondition for the takeover shapes GHA-091 and GHA-040 catch.
 
-**Recommendation.** Migrate to an actively-maintained action covering the same surface. Archived upstreams stop receiving security patches the day the archive bit lands; vulnerabilities discovered afterward stay unpatched, and the namespace is eligible to be reclaimed by anyone once the original owner deletes or transfers the repo (the repojacking shape, see also GHA-082 when it ships). If a fork under your org's control is the only path forward, vendor the action and pin to your fork's SHA, so an upstream takeover can't reach your build runtime.
+**Recommendation.** Migrate to an actively-maintained action covering the same surface. Archived upstreams stop receiving security patches the day the archive bit lands; vulnerabilities discovered afterward stay unpatched, and the namespace is eligible to be reclaimed by anyone once the original owner deletes or transfers the repo (the repojacking shape, see also GHA-091). If a fork under your org's control is the only path forward, vendor the action and pin to your fork's SHA, so an upstream takeover can't reach your build runtime.
 
 **Known false positives.**
 
@@ -9400,6 +9401,37 @@ jobs:
 ```
 
 **Source:** [`GHA-094`](../providers/github.md#gha-094) in the [GitHub Actions provider](../providers/github.md).
+
+### `GHA-096`: Action reference has a known GHSA vulnerability <span class="pg-sev pg-sev--high">HIGH</span> { #detail-gha-096 }
+
+**Evidences:** [`Build.L3.NonFalsifiable`](#ctrl-build-l3-nonfalsifiable) Build L3: Provenance cannot be falsified by the build's own tenant.
+
+**How this is detected.** Queries the GitHub Advisory Database (``GET /advisories?type=reviewed&ecosystem=actions``) for each action referenced by the loaded workflows. Gated on ``--resolve-remote``; the offline default stays no-network. Version matching compares the tag-extracted version against each advisory's ``vulnerable_version_range``. SHA-pinned or major-tag refs fire at MEDIUM confidence when the action has any advisory, since the exact version cannot be confirmed. Pairs with GHA-040 (curated compromised-SHA list, fires on active compromises rather than CVE-tracked vulnerabilities).
+
+**Recommendation.** Update the ``uses:`` reference to a version at or above the first patched version listed in the advisory. If no patch is available, evaluate whether the vulnerability is reachable in your workflow's context and consider vendoring a fork with the fix applied. Pin to the patched SHA so a tag rewrite can't walk you back into the vulnerable range.
+
+**Known false positives.**
+
+- Major-version tags (``@v4``) fire at MEDIUM confidence because the rule cannot resolve which patch level the tag currently points at. If the tag follows the latest release and the advisory is already patched, suppress per-finding with a rationale noting the tag is current. SHA pins with no version comment also fire conservatively; adding a ``# vX.Y.Z`` comment lets the rule match precisely.
+
+**Seen in the wild.**
+
+- actions/download-artifact path traversal ([CVE-2024-42471](https://www.cve.org/CVERecord?id=CVE-2024-42471), August 2024): versions < 4.1.7 allowed a malicious artifact to write files outside the intended directory, reachable via any workflow that downloads untrusted artifacts. Fixed in 4.1.7.
+
+**Proof of exploit.**
+
+```
+# Vulnerable: pinned to a version with a known advisory.
+- uses: actions/download-artifact@v4.1.6
+
+# Safe: updated past the patched version.
+- uses: actions/download-artifact@v4.1.7
+
+# Also safe: SHA-pinned to the patched commit.
+- uses: actions/download-artifact@<patched-sha>  # v4.1.7
+```
+
+**Source:** [`GHA-096`](../providers/github.md#gha-096) in the [GitHub Actions provider](../providers/github.md).
 
 ### `GL-001`: Image not pinned to specific version or digest <span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> { #detail-gl-001 }
 

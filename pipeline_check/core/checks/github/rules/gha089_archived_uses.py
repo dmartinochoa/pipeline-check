@@ -8,8 +8,7 @@ fetch carries the field.
 
 The dependency still works today but won't receive security patches;
 eventually a maintainer relinquishes the namespace and someone else
-can claim it (the repojacking shape pairs with this rule, tracked
-separately under GHA-082 / issue #155).
+can claim it (the repojacking shape GHA-091 fires on).
 """
 from __future__ import annotations
 
@@ -34,7 +33,7 @@ RULE = Rule(
         "discovered afterward stay unpatched, and the namespace is "
         "eligible to be reclaimed by anyone once the original "
         "owner deletes or transfers the repo (the repojacking "
-        "shape, see also GHA-082 when it ships). If a fork under "
+        "shape, see also GHA-091). If a fork under "
         "your org's control is the only path forward, vendor the "
         "action and pin to your fork's SHA, so an upstream takeover "
         "can't reach your build runtime."
@@ -51,7 +50,7 @@ RULE = Rule(
         "(reusable workflow references); MEDIUM severity, the "
         "archived bit alone is not an exploit primitive but it is "
         "a documented precondition for the takeover shapes "
-        "GHA-082 and GHA-040 catch."
+        "GHA-091 and GHA-040 catch."
     ),
     known_fp=(
         "An action that an upstream maintainer archived because a "

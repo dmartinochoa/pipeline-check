@@ -119,6 +119,7 @@ STANDARD = Standard(
         "GHA-092":  ["Build.L3.Isolated"],                         # TOCTOU PR head SHA
         "GHA-093":  ["Build.L3.Isolated"],                         # LOTP indicators (workflow-command abuse)
         "GHA-094":  ["Build.L3.NonFalsifiable"],                   # stale-action-refs
+        "GHA-096":  ["Build.L3.NonFalsifiable"],                   # known-vulnerable action ref (GHSA)
         "GHA-048":  ["Build.L3.NonFalsifiable",
                      "Build.L3.Isolated"],                         # workflow self-mutation
         "GHA-049":  ["Build.L3.NonFalsifiable"],                   # cross-repo push

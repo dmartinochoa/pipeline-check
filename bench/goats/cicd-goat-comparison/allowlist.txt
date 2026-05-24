@@ -1,0 +1,2 @@
+# No known false positives against greylag-ci/cicd-goat yet.
+# Each scenario is purpose-built to fire exactly the listed rules.

@@ -439,6 +439,7 @@ STANDARD = Standard(
         "GHA-092":  ["CC6.8"],              # TOCTOU PR head SHA force-push race
         "GHA-093":  ["CC6.1"],              # LOTP indicators
         "GHA-094":  ["CC6.8", "CC8.1"],     # stale-action-refs
+        "GHA-096":  ["CC6.8", "CC8.1"],     # known-vulnerable action ref (GHSA)
         # ── GitLab CI ─────────────────────────────────────────────
         "GL-006":   ["CC8.1"],              # unsigned artifacts
         "GL-007":   ["CC8.1"],              # no SBOM
