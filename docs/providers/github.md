@@ -72,7 +72,7 @@ Resolution rules:
 
 ## What it covers
 
-86 checks · 17 have an autofix patch (``--fix``).
+87 checks · 17 have an autofix patch (``--fix``).
 
 | Check | Title | Severity | Fix |
 |-------|-------|----------|-----|
@@ -159,6 +159,7 @@ Resolution rules:
 | [GHA-093](#gha-093) | Living-off-the-Pipeline indicators (workflow-command abuse) | <span class="pg-sev pg-sev--high">HIGH</span> |  |
 | [GHA-094](#gha-094) | Action SHA pin matches the current tip of an upstream branch | <span class="pg-sev pg-sev--medium">MEDIUM</span> |  |
 | [GHA-095](#gha-095) | Action SHA pin does not match its version comment | <span class="pg-sev pg-sev--high">HIGH</span> |  |
+| [GHA-096](#gha-096) | Action reference has a known GHSA vulnerability | <span class="pg-sev pg-sev--high">HIGH</span> |  |
 | [TAINT-001](#taint-001) | Untrusted input flows across step boundaries via step outputs | <span class="pg-sev pg-sev--high">HIGH</span> |  |
 | [TAINT-002](#taint-002) | Untrusted input flows across jobs via ``jobs.<id>.outputs:`` | <span class="pg-sev pg-sev--high">HIGH</span> |  |
 | [TAINT-003](#taint-003) | Untrusted input forwarded into reusable workflow ``with:`` | <span class="pg-sev pg-sev--high">HIGH</span> |  |
@@ -2493,6 +2494,34 @@ Walks each workflow's raw text (``Workflow.raw_text``, populated by ``GitHubCont
 **Recommended action**
 
 Re-resolve the comment-named tag against the upstream repo and update either the SHA pin or the comment so they agree. ``gh api repos/<owner>/<repo>/commits/<tag> --jq .sha`` returns the canonical SHA the comment claims; substitute it into the ``@`` slot, or fix the comment to name the tag the SHA actually belongs to. Pin-maintenance tools (Dependabot, Renovate) write both halves atomically; drift between them is either tool misconfiguration or an attacker hoping reviewers skim the human-readable side rather than the machine-readable one.
+
+</div>
+
+</div>
+
+<div class="pg-rule pg-rule--high" markdown>
+
+## GHA-096: Action reference has a known GHSA vulnerability { #gha-096 }
+
+<div class="pg-rule__tags">
+<span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-3</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-8</span> <span class="pg-tag pg-tag--esf">ESF-S-VERIFY-DEPS</span> <span class="pg-tag pg-tag--esf">ESF-S-PIN-DEPS</span> <span class="pg-tag pg-tag--cwe">CWE-1395</span> <span class="pg-tag pg-tag--cwe">CWE-829</span>
+</div>
+
+Queries the GitHub Advisory Database (``GET /advisories?type=reviewed&ecosystem=actions``) for each action referenced by the loaded workflows. Gated on ``--resolve-remote``; the offline default stays no-network. Version matching compares the tag-extracted version against each advisory's ``vulnerable_version_range``. SHA-pinned or major-tag refs fire at MEDIUM confidence when the action has any advisory, since the exact version cannot be confirmed. Pairs with GHA-040 (curated compromised-SHA list, fires on active compromises rather than CVE-tracked vulnerabilities).
+
+**Known false-positive modes**
+
+- Major-version tags (``@v4``) fire at MEDIUM confidence because the rule cannot resolve which patch level the tag currently points at. If the tag follows the latest release and the advisory is already patched, suppress per-finding with a rationale noting the tag is current. SHA pins with no version comment also fire conservatively; adding a ``# vX.Y.Z`` comment lets the rule match precisely.
+
+**Seen in the wild**
+
+- actions/download-artifact path traversal ([CVE-2024-42471](https://www.cve.org/CVERecord?id=CVE-2024-42471), August 2024): versions < 4.1.7 allowed a malicious artifact to write files outside the intended directory, reachable via any workflow that downloads untrusted artifacts. Fixed in 4.1.7.
+
+<div class="pg-rule__rec" markdown>
+
+**Recommended action**
+
+Update the ``uses:`` reference to a version at or above the first patched version listed in the advisory. If no patch is available, evaluate whether the vulnerability is reachable in your workflow's context and consider vendoring a fork with the fix applied. Pin to the patched SHA so a tag rewrite can't walk you back into the vulnerable range.
 
 </div>
 

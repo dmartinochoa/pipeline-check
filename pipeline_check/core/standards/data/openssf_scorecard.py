@@ -66,6 +66,7 @@ STANDARD = Standard(
         "GHA-092":  ["Dangerous-Workflow"],                            # TOCTOU PR head SHA
         "GHA-093":  ["Dangerous-Workflow"],                            # LOTP indicators (workflow-command abuse)
         "GHA-094":  ["Pinned-Dependencies"],                           # stale-action-refs
+        "GHA-096":  ["Pinned-Dependencies"],                           # known-vulnerable action ref (GHSA)
         "GL-001":   ["Pinned-Dependencies"],
         "GL-005":   ["Pinned-Dependencies"],
         "GL-009":   ["Pinned-Dependencies"],

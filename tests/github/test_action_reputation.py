@@ -19,6 +19,7 @@ import yaml
 
 from pipeline_check.core.checks.base import Severity
 from pipeline_check.core.checks.github._action_reputation import (
+    ActionAdvisory,
     ActionMetadataFetcher,
     ActionRepoMetadata,
     collect_referenced_action_refs,
@@ -66,6 +67,7 @@ def _meta(
     sha_membership: dict[str, bool] | None = None,
     branch_head_shas: frozenset[str] | None = None,
     tag_shas: dict[str, str | None] | None = None,
+    ghsa_advisories: tuple[ActionAdvisory, ...] | None = None,
 ) -> tuple[str, ActionRepoMetadata]:
     return f"{owner.lower()}/{repo.lower()}", ActionRepoMetadata(
         owner=owner, repo=repo,
@@ -79,6 +81,7 @@ def _meta(
         sha_membership=sha_membership,
         branch_head_shas=branch_head_shas,
         tag_shas=tag_shas,
+        ghsa_advisories=ghsa_advisories,
     )
 
 
@@ -2442,3 +2445,417 @@ class TestPopulateActionMetadata:
         populate_action_metadata(ctx, ActionMetadataFetcher(raw))
         meta = ctx.action_metadata["acme/widget"]
         assert meta.ref_committed_at == {"v1": None}
+
+
+# ── Helper for GHSA advisory construction ────────────────────────────
+
+def _advisory(
+    ghsa_id: str = "GHSA-test-test-test",
+    cve_id: str | None = "CVE-2024-99999",
+    summary: str = "Test advisory",
+    severity: str = "high",
+    vulnerable_ranges: tuple[str, ...] = ("< 4.1.7",),
+    patched_versions: tuple[str | None, ...] = ("4.1.7",),
+) -> ActionAdvisory:
+    return ActionAdvisory(
+        ghsa_id=ghsa_id,
+        cve_id=cve_id,
+        summary=summary,
+        severity=severity,
+        vulnerable_ranges=vulnerable_ranges,
+        patched_versions=patched_versions,
+    )
+
+
+# ── GHA-096: known-vulnerable action ref via GHSA ────────────────────
+
+
+class TestGHA096:
+    def test_fires_when_version_in_vulnerable_range(self):
+        wf = """
+        name: ci
+        on: push
+        jobs:
+          build:
+            runs-on: ubuntu-latest
+            steps:
+              - uses: actions/download-artifact@v4.1.6
+        """
+        k, m = _meta(
+            "actions", "download-artifact",
+            ghsa_advisories=(_advisory(vulnerable_ranges=("< 4.1.7",)),),
+        )
+        f = _run(_ctx_with_metadata(wf, {k: m}), "GHA-096")
+        assert not f.passed
+        assert f.severity == Severity.HIGH
+        assert "actions/download-artifact" in f.description
+        assert "CVE-2024-99999" in f.description
+
+    def test_passes_when_version_above_patched(self):
+        wf = """
+        name: ci
+        on: push
+        jobs:
+          build:
+            runs-on: ubuntu-latest
+            steps:
+              - uses: actions/download-artifact@v4.1.7
+        """
+        k, m = _meta(
+            "actions", "download-artifact",
+            ghsa_advisories=(_advisory(vulnerable_ranges=("< 4.1.7",)),),
+        )
+        f = _run(_ctx_with_metadata(wf, {k: m}), "GHA-096")
+        assert f.passed
+
+    def test_passes_when_no_advisories(self):
+        wf = """
+        name: ci
+        on: push
+        jobs:
+          build:
+            runs-on: ubuntu-latest
+            steps:
+              - uses: actions/checkout@v4.2.0
+        """
+        k, m = _meta("actions", "checkout", ghsa_advisories=())
+        f = _run(_ctx_with_metadata(wf, {k: m}), "GHA-096")
+        assert f.passed
+
+    def test_passes_silently_when_no_metadata(self):
+        wf = """
+        name: ci
+        on: push
+        jobs:
+          build:
+            runs-on: ubuntu-latest
+            steps:
+              - uses: actions/download-artifact@v4.1.6
+        """
+        f = _run(_ctx_with_metadata(wf, {}), "GHA-096")
+        assert f.passed
+        assert "resolve-remote" in f.description
+
+    def test_fires_medium_confidence_for_sha_pin(self):
+        wf = """
+        name: ci
+        on: push
+        jobs:
+          build:
+            runs-on: ubuntu-latest
+            steps:
+              - uses: actions/download-artifact@abcdef1234567890abcdef1234567890abcdef12
+        """
+        k, m = _meta(
+            "actions", "download-artifact",
+            ghsa_advisories=(_advisory(),),
+        )
+        f = _run(_ctx_with_metadata(wf, {k: m}), "GHA-096")
+        assert not f.passed
+        assert "version could not be verified" in f.description
+
+    def test_fires_medium_confidence_for_major_tag(self):
+        wf = """
+        name: ci
+        on: push
+        jobs:
+          build:
+            runs-on: ubuntu-latest
+            steps:
+              - uses: actions/download-artifact@v4
+        """
+        k, m = _meta(
+            "actions", "download-artifact",
+            ghsa_advisories=(_advisory(),),
+        )
+        f = _run(_ctx_with_metadata(wf, {k: m}), "GHA-096")
+        assert not f.passed
+        assert "version could not be verified" in f.description
+
+    def test_fires_on_reusable_workflow_uses(self):
+        wf = """
+        name: ci
+        on: push
+        jobs:
+          call:
+            uses: vuln-org/vuln-repo/.github/workflows/build.yml@v1.0.0
+        """
+        k, m = _meta(
+            "vuln-org", "vuln-repo",
+            ghsa_advisories=(_advisory(
+                vulnerable_ranges=(">= 1.0.0, < 1.0.5",),
+            ),),
+        )
+        f = _run(_ctx_with_metadata(wf, {k: m}), "GHA-096")
+        assert not f.passed
+        assert "vuln-org/vuln-repo" in f.description
+
+    def test_deduplicates_by_owner_repo(self):
+        wf = """
+        name: ci
+        on: push
+        jobs:
+          build:
+            runs-on: ubuntu-latest
+            steps:
+              - uses: actions/download-artifact@v4.1.5
+              - uses: actions/download-artifact@v4.1.5
+        """
+        k, m = _meta(
+            "actions", "download-artifact",
+            ghsa_advisories=(_advisory(vulnerable_ranges=("< 4.1.7",)),),
+        )
+        f = _run(_ctx_with_metadata(wf, {k: m}), "GHA-096")
+        assert not f.passed
+        assert f.description.count("actions/download-artifact") == 1
+
+    def test_version_in_bounded_range(self):
+        wf = """
+        name: ci
+        on: push
+        jobs:
+          build:
+            runs-on: ubuntu-latest
+            steps:
+              - uses: acme/tool@v3.2.0
+        """
+        k, m = _meta(
+            "acme", "tool",
+            ghsa_advisories=(_advisory(
+                vulnerable_ranges=(">= 3.0.0, < 3.5.1",),
+                patched_versions=("3.5.1",),
+            ),),
+        )
+        f = _run(_ctx_with_metadata(wf, {k: m}), "GHA-096")
+        assert not f.passed
+
+    def test_version_outside_bounded_range(self):
+        wf = """
+        name: ci
+        on: push
+        jobs:
+          build:
+            runs-on: ubuntu-latest
+            steps:
+              - uses: acme/tool@v3.5.1
+        """
+        k, m = _meta(
+            "acme", "tool",
+            ghsa_advisories=(_advisory(
+                vulnerable_ranges=(">= 3.0.0, < 3.5.1",),
+                patched_versions=("3.5.1",),
+            ),),
+        )
+        f = _run(_ctx_with_metadata(wf, {k: m}), "GHA-096")
+        assert f.passed
+
+    def test_multiple_advisories(self):
+        wf = """
+        name: ci
+        on: push
+        jobs:
+          build:
+            runs-on: ubuntu-latest
+            steps:
+              - uses: actions/download-artifact@v4.1.0
+        """
+        a1 = _advisory(
+            ghsa_id="GHSA-aaaa-aaaa-aaaa",
+            cve_id="CVE-2024-11111",
+            vulnerable_ranges=("< 4.0.5",),
+        )
+        a2 = _advisory(
+            ghsa_id="GHSA-bbbb-bbbb-bbbb",
+            cve_id="CVE-2024-22222",
+            vulnerable_ranges=("< 4.1.7",),
+        )
+        k, m = _meta(
+            "actions", "download-artifact",
+            ghsa_advisories=(a1, a2),
+        )
+        f = _run(_ctx_with_metadata(wf, {k: m}), "GHA-096")
+        assert not f.passed
+        assert "CVE-2024-22222" in f.description
+
+    def test_ghsa_advisories_none_means_lookup_didnt_run(self):
+        wf = """
+        name: ci
+        on: push
+        jobs:
+          build:
+            runs-on: ubuntu-latest
+            steps:
+              - uses: actions/download-artifact@v4.1.0
+        """
+        k, m = _meta("actions", "download-artifact", ghsa_advisories=None)
+        f = _run(_ctx_with_metadata(wf, {k: m}), "GHA-096")
+        assert f.passed
+
+
+# ── Advisory fetcher tests ───────────────────────────────────────────
+
+
+class TestFetchAdvisories:
+    def test_parses_valid_advisory_response(self):
+        raw = FakeRawFetcher({
+            "advisories?type=reviewed&ecosystem=actions"
+            "&affects=actions/download-artifact&per_page=100": [
+                {
+                    "ghsa_id": "GHSA-test-1234-5678",
+                    "cve_id": "CVE-2024-42471",
+                    "summary": "Path traversal in download-artifact",
+                    "severity": "high",
+                    "vulnerabilities": [
+                        {
+                            "package": {
+                                "ecosystem": "actions",
+                                "name": "actions/download-artifact",
+                            },
+                            "vulnerable_version_range": "< 4.1.7",
+                            "first_patched_version": {
+                                "identifier": "4.1.7",
+                            },
+                        },
+                    ],
+                },
+            ],
+        })
+        fetcher = ActionMetadataFetcher(raw)
+        result = fetcher.fetch_advisories("actions", "download-artifact")
+        assert result is not None
+        assert len(result) == 1
+        assert result[0].ghsa_id == "GHSA-test-1234-5678"
+        assert result[0].cve_id == "CVE-2024-42471"
+        assert result[0].vulnerable_ranges == ("< 4.1.7",)
+        assert result[0].patched_versions == ("4.1.7",)
+
+    def test_returns_none_on_fetch_failure(self):
+        raw = FakeRawFetcher({})
+        fetcher = ActionMetadataFetcher(raw)
+        result = fetcher.fetch_advisories("missing", "action")
+        assert result is None
+
+    def test_returns_empty_tuple_when_no_advisories(self):
+        raw = FakeRawFetcher({
+            "advisories?type=reviewed&ecosystem=actions"
+            "&affects=safe/action&per_page=100": [],
+        })
+        fetcher = ActionMetadataFetcher(raw)
+        result = fetcher.fetch_advisories("safe", "action")
+        assert result == ()
+
+    def test_skips_non_actions_ecosystem_vulns(self):
+        raw = FakeRawFetcher({
+            "advisories?type=reviewed&ecosystem=actions"
+            "&affects=acme/tool&per_page=100": [
+                {
+                    "ghsa_id": "GHSA-npm-only-0000",
+                    "cve_id": None,
+                    "summary": "npm vuln",
+                    "severity": "medium",
+                    "vulnerabilities": [
+                        {
+                            "package": {
+                                "ecosystem": "npm",
+                                "name": "acme-tool",
+                            },
+                            "vulnerable_version_range": "< 2.0.0",
+                            "first_patched_version": {
+                                "identifier": "2.0.0",
+                            },
+                        },
+                    ],
+                },
+            ],
+        })
+        fetcher = ActionMetadataFetcher(raw)
+        result = fetcher.fetch_advisories("acme", "tool")
+        assert result == ()
+
+    def test_multiple_vulnerabilities_in_one_advisory(self):
+        raw = FakeRawFetcher({
+            "advisories?type=reviewed&ecosystem=actions"
+            "&affects=acme/tool&per_page=100": [
+                {
+                    "ghsa_id": "GHSA-multi-rang-test",
+                    "cve_id": "CVE-2024-99999",
+                    "summary": "Multiple ranges",
+                    "severity": "critical",
+                    "vulnerabilities": [
+                        {
+                            "package": {
+                                "ecosystem": "actions",
+                                "name": "acme/tool",
+                            },
+                            "vulnerable_version_range": ">= 3.0.0, < 3.5.1",
+                            "first_patched_version": {
+                                "identifier": "3.5.1",
+                            },
+                        },
+                        {
+                            "package": {
+                                "ecosystem": "actions",
+                                "name": "acme/tool",
+                            },
+                            "vulnerable_version_range": ">= 4.0.0, < 4.1.7",
+                            "first_patched_version": {
+                                "identifier": "4.1.7",
+                            },
+                        },
+                    ],
+                },
+            ],
+        })
+        fetcher = ActionMetadataFetcher(raw)
+        result = fetcher.fetch_advisories("acme", "tool")
+        assert result is not None
+        assert len(result) == 1
+        assert len(result[0].vulnerable_ranges) == 2
+
+    def test_populate_wires_advisories_into_metadata(self):
+        wf = """
+        name: ci
+        on: push
+        jobs:
+          a:
+            runs-on: ubuntu-latest
+            steps:
+              - uses: acme/widget@v1
+        """
+        ctx = _ctx_with_metadata(wf)
+        raw = FakeRawFetcher({
+            "repos/acme/widget": {"stargazers_count": 100},
+            "repos/acme/widget/contributors?per_page=2&anon=false": [
+                {"login": "a"}, {"login": "b"},
+            ],
+            "repos/acme/widget/commits/v1": {
+                "sha": "a" * 40,
+                "commit": {"committer": {"date": "2024-01-01T00:00:00Z"}},
+            },
+            "advisories?type=reviewed&ecosystem=actions"
+            "&affects=acme/widget&per_page=100": [
+                {
+                    "ghsa_id": "GHSA-widg-vuln-0001",
+                    "cve_id": None,
+                    "summary": "Widget vuln",
+                    "severity": "medium",
+                    "vulnerabilities": [
+                        {
+                            "package": {
+                                "ecosystem": "actions",
+                                "name": "acme/widget",
+                            },
+                            "vulnerable_version_range": "< 2.0.0",
+                            "first_patched_version": {
+                                "identifier": "2.0.0",
+                            },
+                        },
+                    ],
+                },
+            ],
+        })
+        populate_action_metadata(ctx, ActionMetadataFetcher(raw))
+        meta = ctx.action_metadata["acme/widget"]
+        assert meta.ghsa_advisories is not None
+        assert len(meta.ghsa_advisories) == 1
+        assert meta.ghsa_advisories[0].ghsa_id == "GHSA-widg-vuln-0001"

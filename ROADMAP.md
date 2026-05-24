@@ -312,25 +312,19 @@ Suggested landing order, highest signal first:
   ``4``) are tried both ways; unresolvable comment tags pass
   silently. HIGH severity. 13 per-rule tests + 11 parser tests +
   6 fetcher tests.
-- **GHA-064: action ref points at a commit absent from the claimed
-  repository.** Mirrors zizmor's ``impostor-commit``. Detects the
-  attack shape where a fork's commit SHA is referenced in
-  ``uses: owner/repo@<sha>`` but the SHA exists only in the fork's
-  network, not the head repository. Requires the live-resolver path
-  (``--resolve-remote``) plus a ``GET /repos/{o}/{r}/commits/{sha}``
-  membership check. HIGH severity.
-- **GHA-065: action repository typosquats a high-traffic action.**
-  Mirrors zizmor's ``typosquat-uses``. Offline edit-distance check
-  against a curated top-actions list (the same shape NPM-007 uses
-  against the package-name table). Catches ``actions/check0ut``,
-  ``actons/checkout``, ``actions-checkout/checkout``, etc. HIGH
-  severity. Pairs with GHA-040 (compromised SHA / tag).
-- **GHA-066: action repository is archived or deleted upstream.**
-  Mirrors zizmor's ``archived-uses``. Online-only (the archived bit
-  lives on ``GET /repos/{o}/{r}``). Routes through the
-  ``--resolve-remote`` path so the offline default stays no-network.
-  MEDIUM severity, the dependency still works today but won't get
-  security patches.
+- ~~**GHA-064: action ref points at a commit absent from the claimed
+  repository.**~~ Landed as **GHA-090**. Mirrors zizmor's
+  ``impostor-commit``. SHA membership check via
+  ``/repos/{o}/{r}/commits/{sha}`` gated on ``--resolve-remote``.
+  HIGH severity. 8 per-rule tests + 4 fetcher tests.
+- ~~**GHA-065: action repository typosquats a high-traffic action.**~~
+  Landed as **GHA-088**. Offline Damerau-Levenshtein edit-distance
+  check against a curated top-actions list. HIGH severity.
+  14 per-rule tests + 13 primitive tests.
+- ~~**GHA-066: action repository is archived or deleted upstream.**~~
+  Landed as **GHA-089**. Reads the archived bit from the same
+  per-action repo fetch the reputation rules use. MEDIUM severity.
+  8 per-rule tests.
 - ~~**GHA-067: bot-actor condition is spoofable.**~~ Landed as
   **GHA-063**. Fires when a job-level or step-level ``if:``
   expression compares ``github.actor`` /
@@ -355,12 +349,10 @@ Suggested landing order, highest signal first:
   OR when a workflow-level ``env:`` binds a secret and at most
   one job references it. HIGH severity. 9 per-rule tests +
   safe/unsafe fixture pair.
-- **GHA-070: workflow `uses:` reference is the latest commit on a
-  branch.** Mirrors zizmor's ``stale-action-refs`` from the opposite
-  angle: zizmor flags SHA pins that don't point at any tag (drift
-  indicator), pipeline-check additionally flags SHAs that point at
-  ``HEAD`` of a branch the maintainer just pushed minutes ago. Pairs
-  with GHA-047 (recently committed tag / SHA). MEDIUM severity.
+- ~~**GHA-070: workflow `uses:` reference is the latest commit on a
+  branch.**~~ Landed as **GHA-094**. Fires when a SHA-pinned
+  ``uses:`` matches the current tip of a branch in the upstream
+  repo. MEDIUM severity. 9 per-rule tests + 4 fetcher tests.
 - ~~**GHA-071: contains() called with string-shaped left
   operand.**~~ Landed as **GHA-064**. Fires when an ``if:``
   expression invokes ``contains('<haystack-with-comma>',
@@ -368,13 +360,10 @@ Suggested landing order, highest signal first:
   array-literal forms and no-comma substring searches
   (``contains('refs/heads/release', github.ref)``) stay silent.
   HIGH severity. 8 per-rule tests + safe/unsafe fixture pair.
-- **GHA-072: agentic AI tool invoked after PR checkout.** Inspired by
-  zizmor proposal #1605 (``agentic-actions``) and zizmor proposal
-  #1607 (hijackable commands after checkout). Widens GHA-058 from
-  permission-bypass-flag detection to also flag the topology where
-  an agentic CLI runs in a job that previously checked out a PR head
-  with write-scope token in scope. HIGH severity. Pairs with GHA-046
-  (manual PR-head fetch) and GHA-045 (caller-controlled ref).
+- ~~**GHA-072: agentic AI tool invoked after PR checkout.**~~ Landed
+  as a widening of **GHA-058** (no new ID). Fires when an agentic
+  CLI runs after PR-head checkout with write-scope token in scope.
+  HIGH severity. 9 new tests under ``TestGHA058PRCheckoutTopology``.
 - ~~**GHA-073: actions/upload-artifact wildcard path uploads.**~~
   Landed as **GHA-066**. Fires on the ``**/*`` / ``.`` / ``./`` /
   ``${{ github.workspace }}`` / ``${{ github.workspace }}/**``
@@ -402,14 +391,14 @@ Suggested landing order, highest signal first:
   ``runs-on:``. Self-hosted labels stay silent (GHA-012's
   territory). MEDIUM severity. 10 per-rule tests + safe/unsafe
   fixture pair.
-- **GHA-077: known-vulnerable action ref via live GHSA feed.** Widens
-  GHA-040 from the curated compromised-SHA list to a live GHSA query
-  against the GitHub Advisory database (``GET /advisories?type=
-  reviewed&ecosystem=actions``). Curated list stays as the offline
-  default, GHSA layer is opt-in via ``--resolve-remote`` like the
-  cooldown family. Closes the freshness gap that zizmor's
-  ``known-vulnerable-actions`` already gets via the same feed. HIGH
-  severity.
+- ~~**GHA-077: known-vulnerable action ref via live GHSA feed.**~~
+  Landed as **GHA-096**. Queries the GitHub Advisory Database
+  (``GET /advisories?type=reviewed&ecosystem=actions&affects=o/r``)
+  for each referenced action. Version matching checks tag-extracted
+  versions against each advisory's ``vulnerable_version_range``;
+  SHA / major-tag refs fire at MEDIUM confidence. Gated on
+  ``--resolve-remote``. HIGH severity. 12 per-rule tests +
+  6 fetcher tests + 20 version-range primitive tests.
 - ~~**GHA-078: workflow body contains zero-width / bidi
   unicode.**~~ Landed as **GHA-065**. Walks every string value in
   the parsed workflow document for any of 15 suspicious
@@ -436,16 +425,10 @@ Second pass, drawn from zizmor's open feature-request backlog
   UserKnownHostsFile=/dev/null`` across ``ssh`` / ``scp`` /
   ``rsync``. HIGH severity. 9 per-rule tests + safe/unsafe
   fixture pair.
-- **GHA-080: TOCTOU on PR head SHA between checkout and use.**
-  Inspired by zizmor proposal #935. A workflow that resolves the PR
-  head once (``HEAD_SHA=$(git rev-parse HEAD)``) and then runs
-  ``actions/checkout`` with ``ref: ${{ github.event.pull_request.
-  head.sha }}`` in a later step is racing the contributor, the PR
-  head can be force-pushed between the two reads and the second
-  checkout pulls code that bypassed the first step's review /
-  reviewer / labeler gate. HIGH severity. Pairs with GHA-045
-  (caller-controlled ref into checkout) and GHA-046 (manual
-  PR-head fetch).
+- ~~**GHA-080: TOCTOU on PR head SHA between checkout and use.**~~
+  Landed as **GHA-092**. Fires when a job captures the PR head SHA
+  in one step and checks out the same expression in a later step
+  (the force-push race window). HIGH severity. 12 per-rule tests.
 - ~~**GHA-081: if predicate over an attacker-controlled PR label,
   title, or body.**~~ Landed as a widening of **GHA-053** (no new
   ID). ``_UNTRUSTED_CONTEXTS`` picked up
@@ -454,23 +437,15 @@ Second pass, drawn from zizmor's open feature-request backlog
   ``.requested_reviewers``, ``.assignees``. The canonical
   ``contains(github.event.pull_request.labels.*.name,
   'safe-to-test')`` foot-gun now fires GHA-053 directly.
-- **GHA-082: action `uses:` points at a takeover-eligible org.**
-  Inspired by zizmor proposal #479 (repojacking). The owner of
-  ``uses: vendor/setup-foo@<sha>`` renamed or deleted the org, the
-  name is now claimable by anyone, and the next time a tag or
-  branch ref is resolved (``@v1`` / ``@main``) the workflow runs
-  attacker code. Live check (``GET /repos/{o}/{r}`` returns 404
-  while ``uses:`` still references it) gated on ``--resolve-remote``.
-  HIGH severity. Pairs with GHA-001 / GHA-040.
-- **GHA-083: Living-off-the-Pipeline indicators.** Inspired by zizmor
-  proposal #1948 (LOTP). Detection-evasion via built-in pipeline
-  primitives: ``GITHUB_STEP_SUMMARY`` used to exfiltrate secret
-  values into a (PR-readable) artifact, ``::warning::`` /
-  ``::notice::`` workflow commands carrying attacker-controlled
-  text into log lines that downstream tooling parses, ``echo "::add-
-  mask::$SECRET"`` followed by a print of the masked value (mask
-  applies post-printf, not pre-printf). HIGH severity. Pairs with
-  GHA-033 (secret echoed) and GHA-038 (allow-unsecure-commands).
+- ~~**GHA-082: action `uses:` points at a takeover-eligible org.**~~
+  Landed as **GHA-091**. Reads from ``ctx.action_fetch_failures``
+  (the set of slugs whose repo fetch returned 404). Unanimous-
+  failure heuristic filters rate-limit noise. HIGH severity.
+  9 per-rule tests.
+- ~~**GHA-083: Living-off-the-Pipeline indicators.**~~ Landed as
+  **GHA-093**. Three shapes: STEP_SUMMARY secret exfil, workflow-
+  command log injection with attacker-controlled context, and
+  mask-after-print ordering. HIGH severity. 15 per-rule tests.
 - ~~**GHA-084: orphan `id-token: write` scope.**~~ Landed as
   **GHA-069**. Fires when a job effectively holds
   ``id-token: write`` (job-level, workflow-inherited, or
@@ -488,32 +463,20 @@ Second pass, drawn from zizmor's open feature-request backlog
 
 Two existing-rule widenings worth bundling into the same sweep:
 
-- **Widen GHA-003 to ``services.*.options:`` and ``services.*.env:``.**
-  Inspired by zizmor proposal #1128. The script-injection sink set
-  currently misses two service-container injection points,
-  ``services.db.options: --hostname=${{ github.event.issue.title }}``
-  reaches ``docker run`` argv, and ``services.db.env: { FOO: "${{
-  github.event.pr.head.label }}" }`` reaches the container's env.
-  Same primitive, same fix, just two extra YAML paths in the sink
-  resolver.
-- **Widen GHA-050 to "attestation explicitly disabled."** Inspired by
-  zizmor proposal #938. ``pypa/gh-action-pypi-publish`` with
-  ``attestations: false``, ``docker/build-push-action`` with
-  ``provenance: false`` / ``sbom: false``, ``crates-io/publish`` with
-  the equivalent flag, all turn off the trusted-publishing path's
-  attestation generation while staying under the rule's
-  "publish step exists" radar. Flag the explicit-disable case the
-  same as the no-OIDC case.
+- ~~**Widen GHA-003 to ``services.*.options:`` and
+  ``services.*.env:``.**~~ Landed in v1.4.0. Both YAML paths now
+  flagged for script-injection sinks. 3 new tests.
+- ~~**Widen GHA-050 to "attestation explicitly disabled."**~~ Landed
+  in v1.4.0. Fires on ``pypa/gh-action-pypi-publish`` with
+  ``attestations: false`` and ``docker/build-push-action`` with
+  ``provenance: false`` / ``sbom: false`` / ``attestations: false``.
+  5 new tests.
 
 One CLI ergonomics item:
 
-- **``--only-known-attacked`` filter.** Inspired by zizmor proposal
-  #1135. Runs only rules carrying a ``cve``, ``cisa_kev``, or
-  ``seen_in_wild`` reference field, the rest stay off. Useful for
-  burning down the incident-driven worklist on a fresh repo without
-  the full pack noise. Routes through the existing rule-metadata
-  surface, ``rule.cve`` / ``rule.seen_in_wild`` are already populated
-  on the rules that have them.
+- ~~**``--only-known-attacked`` filter.**~~ Landed in v1.4.0.
+  Filters rule set to rules with ``Rule.incident_refs`` non-empty.
+  Composes with ``--checks`` via intersection.
 
 Out of scope from zizmor that we explicitly decline:
 

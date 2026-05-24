@@ -12,7 +12,7 @@ opinion. Use this page to prepare CC6 / CC7 / CC8 evidence walks.
 
 - **Controls in this standard:** 11
 - **Controls evidenced by at least one check:** 11 / 11
-- **Distinct checks evidencing this standard:** 593
+- **Distinct checks evidencing this standard:** 594
 - **Of those, autofixable with `--fix`:** 111
 
 _Severity levels (`CRITICAL` / `HIGH` / `MEDIUM` / `LOW` / `INFO`) follow the same scale across every provider and standard. See [How to read severity](README.md#how-to-read-severity) on the standards overview for the definitions._
@@ -28,12 +28,12 @@ Click a control ID to jump to the per-control section with the full check list. 
 | [`CC6.3`](#ctrl-cc6-3) | Access modifications (including revocation) are tracked and timely | 20 | 1C · 11H · 8M |
 | [`CC6.6`](#ctrl-cc6-6) | Boundary-protection measures restrict access from outside the system boundary | 83 | 21C · 28H · 28M · 6L |
 | [`CC6.7`](#ctrl-cc6-7) | Data in transit is protected from unauthorized disclosure | 30 | 25H · 4M · 1L |
-| [`CC6.8`](#ctrl-cc6-8) | Controls prevent or detect the introduction of malicious software | 134 | 31C · 75H · 27M · 1L |
+| [`CC6.8`](#ctrl-cc6-8) | Controls prevent or detect the introduction of malicious software | 135 | 31C · 76H · 27M · 1L |
 | [`CC7.1`](#ctrl-cc7-1) | Detection procedures identify configuration changes that introduce vulnerabilities | 20 | 3C · 2H · 9M · 6L |
 | [`CC7.2`](#ctrl-cc7-2) | System components are monitored for anomalies indicative of malicious acts or failures | 33 | 2H · 8M · 7L · 16I |
 | [`CC7.3`](#ctrl-cc7-3) | Security events are evaluated to determine if they require response | 7 | 1H · 4M · 2L |
 | [`CC7.4`](#ctrl-cc7-4) | Identified security incidents trigger a response process | 5 | 3M · 2L |
-| [`CC8.1`](#ctrl-cc8-1) | Changes to infrastructure, data, software, and procedures are authorized, designed, tested, approved, and implemented | 229 | 6C · 80H · 118M · 25L |
+| [`CC8.1`](#ctrl-cc8-1) | Changes to infrastructure, data, software, and procedures are authorized, designed, tested, approved, and implemented | 230 | 6C · 81H · 118M · 25L |
 
 ## Filter at runtime
 
@@ -357,7 +357,7 @@ pipeline_check --pipeline aws --standard soc2 --standard owasp_cicd_top_10
 
 ### CC6.8: Controls prevent or detect the introduction of malicious software { #ctrl-cc6-8 }
 
-**Evidenced by 134 checks** across 18 providers (AWS, Argo Workflows, Azure DevOps, Bitbucket, Buildkite, CircleCI, Cloud Build, Dockerfile, Drone CI, GitHub Actions, GitLab CI, Jenkins, Kubernetes, PyPI, SCM, Tekton, maven, npm).
+**Evidenced by 135 checks** across 18 providers (AWS, Argo Workflows, Azure DevOps, Bitbucket, Buildkite, CircleCI, Cloud Build, Dockerfile, Drone CI, GitHub Actions, GitLab CI, Jenkins, Kubernetes, PyPI, SCM, Tekton, maven, npm).
 
 | Check | Title | Severity | Provider | Fix |
 |-------|-------|----------|----------|-----|
@@ -445,6 +445,7 @@ pipeline_check --pipeline aws --standard soc2 --standard owasp_cicd_top_10
 | [`GHA-091`](#detail-gha-091) | Action upstream repo is missing (takeover-eligible namespace) | <span class="pg-sev pg-sev--high">HIGH</span> | [GitHub Actions](../providers/github.md) |  |
 | [`GHA-092`](#detail-gha-092) | PR head SHA captured then re-fetched (force-push race) | <span class="pg-sev pg-sev--high">HIGH</span> | [GitHub Actions](../providers/github.md) |  |
 | [`GHA-094`](#detail-gha-094) | Action SHA pin matches the current tip of an upstream branch | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [GitHub Actions](../providers/github.md) |  |
+| [`GHA-096`](#detail-gha-096) | Action reference has a known GHSA vulnerability | <span class="pg-sev pg-sev--high">HIGH</span> | [GitHub Actions](../providers/github.md) |  |
 | [`GL-002`](#detail-gl-002) | Script injection via untrusted commit/MR context | <span class="pg-sev pg-sev--high">HIGH</span> | [GitLab CI](../providers/gitlab.md) |  |
 | [`GL-010`](#detail-gl-010) | Multi-project pipeline ingests upstream artifact unverified | <span class="pg-sev pg-sev--critical">CRITICAL</span> | [GitLab CI](../providers/gitlab.md) |  |
 | [`GL-011`](#detail-gl-011) | include: local file pulled in MR-triggered pipeline | <span class="pg-sev pg-sev--high">HIGH</span> | [GitLab CI](../providers/gitlab.md) |  |
@@ -591,7 +592,7 @@ pipeline_check --pipeline aws --standard soc2 --standard owasp_cicd_top_10
 
 ### CC8.1: Changes to infrastructure, data, software, and procedures are authorized, designed, tested, approved, and implemented { #ctrl-cc8-1 }
 
-**Evidenced by 229 checks** across 20 providers (AWS, Argo Workflows, Azure DevOps, Bitbucket, Buildkite, CircleCI, Cloud Build, Dockerfile, Drone CI, GitHub Actions, GitLab CI, Helm, Jenkins, Kubernetes, OCI manifest, PyPI, SCM, Tekton, maven, npm).
+**Evidenced by 230 checks** across 20 providers (AWS, Argo Workflows, Azure DevOps, Bitbucket, Buildkite, CircleCI, Cloud Build, Dockerfile, Drone CI, GitHub Actions, GitLab CI, Helm, Jenkins, Kubernetes, OCI manifest, PyPI, SCM, Tekton, maven, npm).
 
 | Check | Title | Severity | Provider | Fix |
 |-------|-------|----------|----------|-----|
@@ -714,6 +715,7 @@ pipeline_check --pipeline aws --standard soc2 --standard owasp_cicd_top_10
 | [`GHA-090`](#detail-gha-090) | Action SHA pin references a commit absent from the claimed repo | <span class="pg-sev pg-sev--high">HIGH</span> | [GitHub Actions](../providers/github.md) |  |
 | [`GHA-091`](#detail-gha-091) | Action upstream repo is missing (takeover-eligible namespace) | <span class="pg-sev pg-sev--high">HIGH</span> | [GitHub Actions](../providers/github.md) |  |
 | [`GHA-094`](#detail-gha-094) | Action SHA pin matches the current tip of an upstream branch | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [GitHub Actions](../providers/github.md) |  |
+| [`GHA-096`](#detail-gha-096) | Action reference has a known GHSA vulnerability | <span class="pg-sev pg-sev--high">HIGH</span> | [GitHub Actions](../providers/github.md) |  |
 | [`GL-001`](#detail-gl-001) | Image not pinned to specific version or digest | <span class="pg-sev pg-sev--high">HIGH</span> | [GitLab CI](../providers/gitlab.md) | <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> |
 | [`GL-004`](#detail-gl-004) | Deploy job lacks manual approval or environment gate | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [GitLab CI](../providers/gitlab.md) |  |
 | [`GL-005`](#detail-gl-005) | include: pulls remote / project without pinned ref | <span class="pg-sev pg-sev--high">HIGH</span> | [GitLab CI](../providers/gitlab.md) |  |
@@ -11254,6 +11256,37 @@ jobs:
 ```
 
 **Source:** [`GHA-094`](../providers/github.md#gha-094) in the [GitHub Actions provider](../providers/github.md).
+
+### `GHA-096`: Action reference has a known GHSA vulnerability <span class="pg-sev pg-sev--high">HIGH</span> { #detail-gha-096 }
+
+**Evidences:** [`CC6.8`](#ctrl-cc6-8) Controls prevent or detect the introduction of malicious software, [`CC8.1`](#ctrl-cc8-1) Changes to infrastructure, data, software, and procedures are authorized, designed, tested, approved, and implemented.
+
+**How this is detected.** Queries the GitHub Advisory Database (``GET /advisories?type=reviewed&ecosystem=actions``) for each action referenced by the loaded workflows. Gated on ``--resolve-remote``; the offline default stays no-network. Version matching compares the tag-extracted version against each advisory's ``vulnerable_version_range``. SHA-pinned or major-tag refs fire at MEDIUM confidence when the action has any advisory, since the exact version cannot be confirmed. Pairs with GHA-040 (curated compromised-SHA list, fires on active compromises rather than CVE-tracked vulnerabilities).
+
+**Recommendation.** Update the ``uses:`` reference to a version at or above the first patched version listed in the advisory. If no patch is available, evaluate whether the vulnerability is reachable in your workflow's context and consider vendoring a fork with the fix applied. Pin to the patched SHA so a tag rewrite can't walk you back into the vulnerable range.
+
+**Known false positives.**
+
+- Major-version tags (``@v4``) fire at MEDIUM confidence because the rule cannot resolve which patch level the tag currently points at. If the tag follows the latest release and the advisory is already patched, suppress per-finding with a rationale noting the tag is current. SHA pins with no version comment also fire conservatively; adding a ``# vX.Y.Z`` comment lets the rule match precisely.
+
+**Seen in the wild.**
+
+- actions/download-artifact path traversal ([CVE-2024-42471](https://www.cve.org/CVERecord?id=CVE-2024-42471), August 2024): versions < 4.1.7 allowed a malicious artifact to write files outside the intended directory, reachable via any workflow that downloads untrusted artifacts. Fixed in 4.1.7.
+
+**Proof of exploit.**
+
+```
+# Vulnerable: pinned to a version with a known advisory.
+- uses: actions/download-artifact@v4.1.6
+
+# Safe: updated past the patched version.
+- uses: actions/download-artifact@v4.1.7
+
+# Also safe: SHA-pinned to the patched commit.
+- uses: actions/download-artifact@<patched-sha>  # v4.1.7
+```
+
+**Source:** [`GHA-096`](../providers/github.md#gha-096) in the [GitHub Actions provider](../providers/github.md).
 
 ### `GL-001`: Image not pinned to specific version or digest <span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> { #detail-gl-001 }
 

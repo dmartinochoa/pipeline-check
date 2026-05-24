@@ -35,6 +35,18 @@ if TYPE_CHECKING:
 
 
 @dataclass(frozen=True, slots=True)
+class ActionAdvisory:
+    """One GitHub Security Advisory (GHSA) entry affecting an action."""
+
+    ghsa_id: str
+    cve_id: str | None
+    summary: str
+    severity: str
+    vulnerable_ranges: tuple[str, ...]
+    patched_versions: tuple[str | None, ...]
+
+
+@dataclass(frozen=True, slots=True)
 class ActionRepoMetadata:
     """Per-action GitHub repo snapshot.
 
@@ -113,6 +125,11 @@ class ActionRepoMetadata:
     #: the API didn't carry a usable SHA. GHA-095 consumes this to
     #: decide whether the SHA pin and the comment tag agree.
     tag_shas: dict[str, str | None] | None = None
+    #: GHSA advisories affecting this action, populated by
+    #: :meth:`ActionMetadataFetcher.fetch_advisories`. ``None`` when
+    #: the lookup didn't run (opt-in off). An empty tuple means the
+    #: lookup ran and no advisories were found. Consumed by GHA-096.
+    ghsa_advisories: tuple[ActionAdvisory, ...] | None = None
 
 
 class ActionMetadataFetcher:
@@ -255,6 +272,65 @@ class ActionMetadataFetcher:
             payload = self.raw.fetch(f"repos/{owner}/{repo}/commits/{tag}")
             out[tag] = _extract_commit_sha(payload)
         return out
+
+    def fetch_advisories(
+        self, owner: str, repo: str,
+    ) -> tuple[ActionAdvisory, ...] | None:
+        """Query the GitHub Advisory Database for advisories affecting
+        ``owner/repo`` in the ``actions`` ecosystem.
+
+        Returns a tuple of :class:`ActionAdvisory` entries, an empty
+        tuple when the query ran but found no advisories, or ``None``
+        when the API call failed.
+        """
+        payload = self.raw.fetch(
+            f"advisories?type=reviewed&ecosystem=actions"
+            f"&affects={owner}/{repo}&per_page=100"
+        )
+        if not isinstance(payload, list):
+            return None
+        out: list[ActionAdvisory] = []
+        for item in payload:
+            if not isinstance(item, dict):
+                continue
+            ghsa_id = item.get("ghsa_id")
+            if not isinstance(ghsa_id, str) or not ghsa_id:
+                continue
+            cve_id = item.get("cve_id")
+            summary = item.get("summary", "")
+            severity = item.get("severity", "unknown")
+            vulns = item.get("vulnerabilities")
+            if not isinstance(vulns, list):
+                continue
+            ranges: list[str] = []
+            patched: list[str | None] = []
+            for v in vulns:
+                if not isinstance(v, dict):
+                    continue
+                pkg = v.get("package")
+                if not isinstance(pkg, dict):
+                    continue
+                if pkg.get("ecosystem") != "actions":
+                    continue
+                vr = v.get("vulnerable_version_range")
+                if isinstance(vr, str):
+                    ranges.append(vr)
+                fv = v.get("first_patched_version")
+                if isinstance(fv, dict):
+                    patched.append(fv.get("identifier"))
+                else:
+                    patched.append(None)
+            if not ranges:
+                continue
+            out.append(ActionAdvisory(
+                ghsa_id=ghsa_id,
+                cve_id=cve_id if isinstance(cve_id, str) else None,
+                summary=summary if isinstance(summary, str) else "",
+                severity=severity if isinstance(severity, str) else "unknown",
+                vulnerable_ranges=tuple(ranges),
+                patched_versions=tuple(patched),
+            ))
+        return tuple(out)
 
     def fetch_ref_dates(
         self, owner: str, repo: str, refs: set[str],
@@ -491,6 +567,10 @@ def populate_action_metadata(
             fetcher.fetch_tag_shas(owner, repo, comment_tags)
             if comment_tags else {}
         )
+        # GHSA advisories feed GHA-096 (known-vulnerable action). One
+        # call per action against the global advisory database filtered
+        # by ``ecosystem=actions&affects=owner/repo``.
+        ghsa_advisories = fetcher.fetch_advisories(owner, repo)
         # Re-pack the metadata with the per-ref dates folded in.
         # ``ref_committed_at`` stays ``None`` (rather than ``{}``)
         # when the action had no resolvable refs, so GHA-047 can tell
@@ -508,6 +588,7 @@ def populate_action_metadata(
             sha_membership=sha_membership if sha_membership else None,
             branch_head_shas=branch_head_shas,
             tag_shas=tag_shas if tag_shas else None,
+            ghsa_advisories=ghsa_advisories,
         )
         fetched[f"{owner}/{repo}"] = meta_with_refs
     if failed:

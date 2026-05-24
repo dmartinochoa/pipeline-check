@@ -215,6 +215,7 @@ STANDARD = Standard(
         "GHA-092":  ["CM-6", "SA-11", "SI-7"],             # TOCTOU PR head SHA force-push race
         "GHA-093":  ["IA-5", "AU-9"],                      # LOTP indicators
         "GHA-094":  ["SR-3", "SR-11"],                     # stale-action-refs
+        "GHA-096":  ["SR-3", "SR-11", "RA-5"],           # known-vulnerable action ref (GHSA)
         # GitLab CI
         "GL-001":   ["SR-3", "SR-11", "SI-2"],
         "GL-002":   ["SI-7", "SA-11", "CM-6"],

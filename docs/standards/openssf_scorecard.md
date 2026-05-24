@@ -14,7 +14,7 @@ side that Scorecard also covers.
 
 - **Controls in this standard:** 10
 - **Controls evidenced by at least one check:** 10 / 10
-- **Distinct checks evidencing this standard:** 456
+- **Distinct checks evidencing this standard:** 457
 - **Of those, autofixable with `--fix`:** 86
 
 _Severity levels (`CRITICAL` / `HIGH` / `MEDIUM` / `LOW` / `INFO`) follow the same scale across every provider and standard. See [How to read severity](README.md#how-to-read-severity) on the standards overview for the definitions._
@@ -29,7 +29,7 @@ Click a control ID to jump to the per-control section with the full check list. 
 | [`Code-Review`](#ctrl-code-review) | Changes merged to the default branch require review | 31 | 12H · 18M · 1L |
 | [`Dangerous-Workflow`](#ctrl-dangerous-workflow) | No dangerous patterns in CI workflows (untrusted checkout, script injection) | 137 | 30C · 87H · 18M · 2L |
 | [`Dependency-Update-Tool`](#ctrl-dependency-update-tool) | Project uses an automated dependency-update tool (Dependabot / Renovate) | 7 | 7M |
-| [`Pinned-Dependencies`](#ctrl-pinned-dependencies) | Dependencies (actions, images, includes, packages) are pinned to immutable references from trusted sources | 118 | 5C · 65H · 43M · 5L |
+| [`Pinned-Dependencies`](#ctrl-pinned-dependencies) | Dependencies (actions, images, includes, packages) are pinned to immutable references from trusted sources | 119 | 5C · 66H · 43M · 5L |
 | [`SAST`](#ctrl-sast) | Project uses static analysis / vulnerability scanning | 17 | 1H · 14M · 2L |
 | [`SBOM`](#ctrl-sbom) | Releases publish a software bill of materials | 23 | 1H · 17M · 5L |
 | [`Signed-Releases`](#ctrl-signed-releases) | Release artifacts are cryptographically signed | 35 | 6H · 28M · 1L |
@@ -280,7 +280,7 @@ pipeline_check --pipeline aws --standard openssf_scorecard --standard owasp_cicd
 
 ### Pinned-Dependencies: Dependencies (actions, images, includes, packages) are pinned to immutable references from trusted sources { #ctrl-pinned-dependencies }
 
-**Evidenced by 118 checks** across 19 providers (AWS, Argo Workflows, Azure DevOps, Bitbucket, Buildkite, CircleCI, Cloud Build, Dockerfile, Drone CI, GitHub Actions, GitLab CI, Helm, Jenkins, OCI manifest, PyPI, SCM, Tekton, maven, npm).
+**Evidenced by 119 checks** across 19 providers (AWS, Argo Workflows, Azure DevOps, Bitbucket, Buildkite, CircleCI, Cloud Build, Dockerfile, Drone CI, GitHub Actions, GitLab CI, Helm, Jenkins, OCI manifest, PyPI, SCM, Tekton, maven, npm).
 
 | Check | Title | Severity | Provider | Fix |
 |-------|-------|----------|----------|-----|
@@ -356,6 +356,7 @@ pipeline_check --pipeline aws --standard openssf_scorecard --standard owasp_cicd
 | [`GHA-090`](#detail-gha-090) | Action SHA pin references a commit absent from the claimed repo | <span class="pg-sev pg-sev--high">HIGH</span> | [GitHub Actions](../providers/github.md) |  |
 | [`GHA-091`](#detail-gha-091) | Action upstream repo is missing (takeover-eligible namespace) | <span class="pg-sev pg-sev--high">HIGH</span> | [GitHub Actions](../providers/github.md) |  |
 | [`GHA-094`](#detail-gha-094) | Action SHA pin matches the current tip of an upstream branch | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [GitHub Actions](../providers/github.md) |  |
+| [`GHA-096`](#detail-gha-096) | Action reference has a known GHSA vulnerability | <span class="pg-sev pg-sev--high">HIGH</span> | [GitHub Actions](../providers/github.md) |  |
 | [`GL-001`](#detail-gl-001) | Image not pinned to specific version or digest | <span class="pg-sev pg-sev--high">HIGH</span> | [GitLab CI](../providers/gitlab.md) | <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> |
 | [`GL-005`](#detail-gl-005) | include: pulls remote / project without pinned ref | <span class="pg-sev pg-sev--high">HIGH</span> | [GitLab CI](../providers/gitlab.md) |  |
 | [`GL-009`](#detail-gl-009) | Image pinned to version tag rather than sha256 digest | <span class="pg-sev pg-sev--low">LOW</span> | [GitLab CI](../providers/gitlab.md) |  |
@@ -9571,6 +9572,37 @@ jobs:
 ```
 
 **Source:** [`GHA-094`](../providers/github.md#gha-094) in the [GitHub Actions provider](../providers/github.md).
+
+### `GHA-096`: Action reference has a known GHSA vulnerability <span class="pg-sev pg-sev--high">HIGH</span> { #detail-gha-096 }
+
+**Evidences:** [`Pinned-Dependencies`](#ctrl-pinned-dependencies) Dependencies (actions, images, includes, packages) are pinned to immutable references from trusted sources.
+
+**How this is detected.** Queries the GitHub Advisory Database (``GET /advisories?type=reviewed&ecosystem=actions``) for each action referenced by the loaded workflows. Gated on ``--resolve-remote``; the offline default stays no-network. Version matching compares the tag-extracted version against each advisory's ``vulnerable_version_range``. SHA-pinned or major-tag refs fire at MEDIUM confidence when the action has any advisory, since the exact version cannot be confirmed. Pairs with GHA-040 (curated compromised-SHA list, fires on active compromises rather than CVE-tracked vulnerabilities).
+
+**Recommendation.** Update the ``uses:`` reference to a version at or above the first patched version listed in the advisory. If no patch is available, evaluate whether the vulnerability is reachable in your workflow's context and consider vendoring a fork with the fix applied. Pin to the patched SHA so a tag rewrite can't walk you back into the vulnerable range.
+
+**Known false positives.**
+
+- Major-version tags (``@v4``) fire at MEDIUM confidence because the rule cannot resolve which patch level the tag currently points at. If the tag follows the latest release and the advisory is already patched, suppress per-finding with a rationale noting the tag is current. SHA pins with no version comment also fire conservatively; adding a ``# vX.Y.Z`` comment lets the rule match precisely.
+
+**Seen in the wild.**
+
+- actions/download-artifact path traversal ([CVE-2024-42471](https://www.cve.org/CVERecord?id=CVE-2024-42471), August 2024): versions < 4.1.7 allowed a malicious artifact to write files outside the intended directory, reachable via any workflow that downloads untrusted artifacts. Fixed in 4.1.7.
+
+**Proof of exploit.**
+
+```
+# Vulnerable: pinned to a version with a known advisory.
+- uses: actions/download-artifact@v4.1.6
+
+# Safe: updated past the patched version.
+- uses: actions/download-artifact@v4.1.7
+
+# Also safe: SHA-pinned to the patched commit.
+- uses: actions/download-artifact@<patched-sha>  # v4.1.7
+```
+
+**Source:** [`GHA-096`](../providers/github.md#gha-096) in the [GitHub Actions provider](../providers/github.md).
 
 ### `GL-001`: Image not pinned to specific version or digest <span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> { #detail-gl-001 }
 

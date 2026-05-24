@@ -32,6 +32,22 @@ release commit collapses this section into `## [X.Y.Z] - <date>`.
 
 ### Added
 
+- **GHA-096 known-vulnerable action ref via GHSA feed.** New rule
+  that queries the GitHub Advisory Database
+  (``GET /advisories?type=reviewed&ecosystem=actions``) for each
+  action referenced by the loaded workflows. Gated on
+  ``--resolve-remote``; the offline default stays no-network.
+  Version matching: when the ``uses:`` ref looks like a tag with a
+  parseable version (``v4.2.0``, ``4.2``), the rule checks each
+  advisory's ``vulnerable_version_range`` and only fires on a
+  match. SHA-pinned or major-tag refs fire at MEDIUM confidence
+  with a note that the version could not be verified. Widens
+  GHA-040 (curated compromised-SHA list) from static incidents to
+  the full CVE-tracked advisory corpus. HIGH severity, OWASP
+  CICD-SEC-3 / CICD-SEC-8, ESF-S-VERIFY-DEPS / ESF-S-PIN-DEPS,
+  CWE-1395 / CWE-829. 12 per-rule tests, 6 fetcher tests, and
+  20 version-range primitive tests. Brings GHA pack to 87 rules.
+
 - **GHA-095 ref-version-mismatch: SHA pin vs `# vX.Y.Z` comment
   (closes #146).** New rule that fires when an action's SHA pin
   doesn't resolve to the tag named in the adjacent

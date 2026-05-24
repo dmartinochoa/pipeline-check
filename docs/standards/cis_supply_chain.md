@@ -11,7 +11,7 @@ and artifact controls covering the full pipeline trust chain.
 
 - **Controls in this standard:** 25
 - **Controls evidenced by at least one check:** 25 / 25
-- **Distinct checks evidencing this standard:** 600
+- **Distinct checks evidencing this standard:** 601
 - **Of those, autofixable with `--fix`:** 110
 
 _Severity levels (`CRITICAL` / `HIGH` / `MEDIUM` / `LOW` / `INFO`) follow the same scale across every provider and standard. See [How to read severity](README.md#how-to-read-severity) on the standards overview for the definitions._
@@ -28,7 +28,7 @@ Click a control ID to jump to the per-control section with the full check list. 
 | [`1.1.8`](#ctrl-1-1-8) | Ensure scanners are in place to identify and confirm presence of vulnerabilities (SCA) | 12 | 1C · 10M · 1L |
 | [`1.1.17`](#ctrl-1-1-17) | Ensure default branches' commits are protected from being deleted/rewritten | 12 | 1C · 5H · 3M · 3L |
 | [`1.3.4`](#ctrl-1-3-4) | Ensure organization identity is required for contribution (no long-lived personal tokens) | 31 | 2C · 21H · 8M |
-| [`1.4.1`](#ctrl-1-4-1) | Ensure third-party artifacts and open-source libraries are verified | 152 | 19C · 69H · 56M · 8L |
+| [`1.4.1`](#ctrl-1-4-1) | Ensure third-party artifacts and open-source libraries are verified | 153 | 19C · 70H · 56M · 8L |
 | [`1.5.1`](#ctrl-1-5-1) | Ensure scanners are in place to identify and prevent sensitive data in code | 43 | 24C · 15H · 2M · 2L |
 | [`2.1.3`](#ctrl-2-1-3) | Ensure the build environment is hardened | 103 | 26C · 63H · 13M · 1L |
 | [`2.1.6`](#ctrl-2-1-6) | Ensure build workers have minimal network connectivity | 21 | 2C · 10H · 9M |
@@ -38,7 +38,7 @@ Click a control ID to jump to the per-control section with the full check list. 
 | [`2.3.8`](#ctrl-2-3-8) | Ensure pipeline configuration files are reviewed before execution | 56 | 12C · 30H · 11M · 3L |
 | [`2.4.2`](#ctrl-2-4-2) | Ensure pipeline integrity, artifacts are signed by the pipeline | 16 | 5H · 11M |
 | [`2.4.3`](#ctrl-2-4-3) | Ensure access to the pipeline execution environment is restricted | 55 | 13C · 25H · 16M · 1L |
-| [`3.1.3`](#ctrl-3-1-3) | Ensure signed metadata of dependencies is verified | 84 | 5C · 33H · 42M · 4L |
+| [`3.1.3`](#ctrl-3-1-3) | Ensure signed metadata of dependencies is verified | 85 | 5C · 34H · 42M · 4L |
 | [`3.1.5`](#ctrl-3-1-5) | Ensure only trusted package managers and repositories are used | 61 | 1C · 44H · 15M · 1L |
 | [`4.1.1`](#ctrl-4-1-1) | Ensure all artifacts on all releases are verified (signed, integrity-checked) | 32 | 12H · 20M |
 | [`4.2.1`](#ctrl-4-2-1) | Ensure access to artifacts is limited | 13 | 5C · 4H · 4M |
@@ -197,7 +197,7 @@ pipeline_check --pipeline aws --standard cis_supply_chain --standard owasp_cicd_
 
 ### 1.4.1: Ensure third-party artifacts and open-source libraries are verified { #ctrl-1-4-1 }
 
-**Evidenced by 152 checks** across 20 providers (AWS, Argo Workflows, Azure DevOps, Bitbucket, Buildkite, CircleCI, Cloud Build, Dockerfile, Drone CI, GitHub Actions, GitLab CI, Helm, Jenkins, Kubernetes, OCI manifest, PyPI, SCM, Tekton, maven, npm).
+**Evidenced by 153 checks** across 20 providers (AWS, Argo Workflows, Azure DevOps, Bitbucket, Buildkite, CircleCI, Cloud Build, Dockerfile, Drone CI, GitHub Actions, GitLab CI, Helm, Jenkins, Kubernetes, OCI manifest, PyPI, SCM, Tekton, maven, npm).
 
 | Check | Title | Severity | Provider | Fix |
 |-------|-------|----------|----------|-----|
@@ -297,6 +297,7 @@ pipeline_check --pipeline aws --standard cis_supply_chain --standard owasp_cicd_
 | [`GHA-090`](#detail-gha-090) | Action SHA pin references a commit absent from the claimed repo | <span class="pg-sev pg-sev--high">HIGH</span> | [GitHub Actions](../providers/github.md) |  |
 | [`GHA-091`](#detail-gha-091) | Action upstream repo is missing (takeover-eligible namespace) | <span class="pg-sev pg-sev--high">HIGH</span> | [GitHub Actions](../providers/github.md) |  |
 | [`GHA-094`](#detail-gha-094) | Action SHA pin matches the current tip of an upstream branch | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [GitHub Actions](../providers/github.md) |  |
+| [`GHA-096`](#detail-gha-096) | Action reference has a known GHSA vulnerability | <span class="pg-sev pg-sev--high">HIGH</span> | [GitHub Actions](../providers/github.md) |  |
 | [`GL-001`](#detail-gl-001) | Image not pinned to specific version or digest | <span class="pg-sev pg-sev--high">HIGH</span> | [GitLab CI](../providers/gitlab.md) | <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> |
 | [`GL-005`](#detail-gl-005) | include: pulls remote / project without pinned ref | <span class="pg-sev pg-sev--high">HIGH</span> | [GitLab CI](../providers/gitlab.md) |  |
 | [`GL-009`](#detail-gl-009) | Image pinned to version tag rather than sha256 digest | <span class="pg-sev pg-sev--low">LOW</span> | [GitLab CI](../providers/gitlab.md) |  |
@@ -794,7 +795,7 @@ pipeline_check --pipeline aws --standard cis_supply_chain --standard owasp_cicd_
 
 ### 3.1.3: Ensure signed metadata of dependencies is verified { #ctrl-3-1-3 }
 
-**Evidenced by 84 checks** across 19 providers (AWS, Argo Workflows, Azure DevOps, Bitbucket, Buildkite, CircleCI, Cloud Build, Dockerfile, Drone CI, GitHub Actions, GitLab CI, Helm, Jenkins, Kubernetes, OCI manifest, PyPI, Tekton, maven, npm).
+**Evidenced by 85 checks** across 19 providers (AWS, Argo Workflows, Azure DevOps, Bitbucket, Buildkite, CircleCI, Cloud Build, Dockerfile, Drone CI, GitHub Actions, GitLab CI, Helm, Jenkins, Kubernetes, OCI manifest, PyPI, Tekton, maven, npm).
 
 | Check | Title | Severity | Provider | Fix |
 |-------|-------|----------|----------|-----|
@@ -846,6 +847,7 @@ pipeline_check --pipeline aws --standard cis_supply_chain --standard owasp_cicd_
 | [`GHA-089`](#detail-gha-089) | Action upstream repo is archived | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [GitHub Actions](../providers/github.md) |  |
 | [`GHA-090`](#detail-gha-090) | Action SHA pin references a commit absent from the claimed repo | <span class="pg-sev pg-sev--high">HIGH</span> | [GitHub Actions](../providers/github.md) |  |
 | [`GHA-091`](#detail-gha-091) | Action upstream repo is missing (takeover-eligible namespace) | <span class="pg-sev pg-sev--high">HIGH</span> | [GitHub Actions](../providers/github.md) |  |
+| [`GHA-096`](#detail-gha-096) | Action reference has a known GHSA vulnerability | <span class="pg-sev pg-sev--high">HIGH</span> | [GitHub Actions](../providers/github.md) |  |
 | [`GL-005`](#detail-gl-005) | include: pulls remote / project without pinned ref | <span class="pg-sev pg-sev--high">HIGH</span> | [GitLab CI](../providers/gitlab.md) |  |
 | [`GL-009`](#detail-gl-009) | Image pinned to version tag rather than sha256 digest | <span class="pg-sev pg-sev--low">LOW</span> | [GitLab CI](../providers/gitlab.md) |  |
 | [`GL-021`](#detail-gl-021) | Package install without lockfile enforcement | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [GitLab CI](../providers/gitlab.md) | <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> |
@@ -11912,6 +11914,37 @@ jobs:
 ```
 
 **Source:** [`GHA-094`](../providers/github.md#gha-094) in the [GitHub Actions provider](../providers/github.md).
+
+### `GHA-096`: Action reference has a known GHSA vulnerability <span class="pg-sev pg-sev--high">HIGH</span> { #detail-gha-096 }
+
+**Evidences:** [`1.4.1`](#ctrl-1-4-1) Ensure third-party artifacts and open-source libraries are verified, [`3.1.3`](#ctrl-3-1-3) Ensure signed metadata of dependencies is verified.
+
+**How this is detected.** Queries the GitHub Advisory Database (``GET /advisories?type=reviewed&ecosystem=actions``) for each action referenced by the loaded workflows. Gated on ``--resolve-remote``; the offline default stays no-network. Version matching compares the tag-extracted version against each advisory's ``vulnerable_version_range``. SHA-pinned or major-tag refs fire at MEDIUM confidence when the action has any advisory, since the exact version cannot be confirmed. Pairs with GHA-040 (curated compromised-SHA list, fires on active compromises rather than CVE-tracked vulnerabilities).
+
+**Recommendation.** Update the ``uses:`` reference to a version at or above the first patched version listed in the advisory. If no patch is available, evaluate whether the vulnerability is reachable in your workflow's context and consider vendoring a fork with the fix applied. Pin to the patched SHA so a tag rewrite can't walk you back into the vulnerable range.
+
+**Known false positives.**
+
+- Major-version tags (``@v4``) fire at MEDIUM confidence because the rule cannot resolve which patch level the tag currently points at. If the tag follows the latest release and the advisory is already patched, suppress per-finding with a rationale noting the tag is current. SHA pins with no version comment also fire conservatively; adding a ``# vX.Y.Z`` comment lets the rule match precisely.
+
+**Seen in the wild.**
+
+- actions/download-artifact path traversal ([CVE-2024-42471](https://www.cve.org/CVERecord?id=CVE-2024-42471), August 2024): versions < 4.1.7 allowed a malicious artifact to write files outside the intended directory, reachable via any workflow that downloads untrusted artifacts. Fixed in 4.1.7.
+
+**Proof of exploit.**
+
+```
+# Vulnerable: pinned to a version with a known advisory.
+- uses: actions/download-artifact@v4.1.6
+
+# Safe: updated past the patched version.
+- uses: actions/download-artifact@v4.1.7
+
+# Also safe: SHA-pinned to the patched commit.
+- uses: actions/download-artifact@<patched-sha>  # v4.1.7
+```
+
+**Source:** [`GHA-096`](../providers/github.md#gha-096) in the [GitHub Actions provider](../providers/github.md).
 
 ### `GL-001`: Image not pinned to specific version or digest <span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> { #detail-gl-001 }
 
