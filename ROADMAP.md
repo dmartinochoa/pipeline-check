@@ -495,20 +495,15 @@ Out of scope from zizmor that we explicitly decline:
 
 ### cicd-goat scenario coverage push
 
-Gap analysis against `greylag-ci/cicd-goat`'s 29-scenario matrix
-(reviewed 2026-05-22). Pipeline-check leads the comparison at
-15 of 29 canonical bugs caught (+ 1 partial), with the
-``scanner-comparison`` job's per-row notes in ``tools/scenarios.yaml``
-documenting why each ❌ row reads the way it does. Most ❌ rows are
-already addressed by post-1.2.0 rules (GHA-008 keyed-hex, GHA-016
-trusted-installer, GHA-033 shell-trace, GHA-049 actions-bot-bypass,
-GHA-057 webhook-exfil, GHA-061 app-token-scope, GHA-062
-OIDC-IaC-subject, TAINT-002 matrix-expansion) and just need the
-comparison CI's per-scenario invocations to catch up.
+Gap analysis against `greylag-ci/cicd-goat`'s 29-scenario matrix.
+**Status: 29 of 29 (100%) coverage.** Every scenario in the matrix
+now has at least one pipeline-check rule mapped in
+``tools/scenarios.yaml``. The comparison shipped across v1.3.0
+through v1.4.0; the final gaps closed with GHA-086 (scenario 25),
+GHA-087 (scenario 27), and the multi-provider invocations for
+scenarios 11 / 20 / 29.
 
-The items below are the genuine gaps that warrant new rules or
-engine work. Each lands as one PR, sized like the existing
-``GitHub Actions cicd-goat coverage push (v1.3.0)`` cycle entry.
+The items below document the work that closed the gap (all shipped).
 
 - ~~**Local composite-action scanning (scenario 18).**~~ Landed.
   ``GitHubContext.from_path`` walks every loaded workflow for
@@ -573,22 +568,15 @@ engine work. Each lands as one PR, sized like the existing
   NIST CSF PR.AA-01 / PR.DS-01; SOC2 CC6.1; PCI-DSS v4 8.2.1 /
   10.3.2.
 
-The matrix's other ❌ rows are accounted for elsewhere:
+The remaining scenarios that were ❌ at time of review are now
+all resolved:
 
-- Scenarios 10 / 22 (AWS / GCP OIDC over-broad trust) -> GHA-062
-  shipped post-1.2.0; the CI just needs the sibling
-  ``trust-policy.json`` / ``workload-identity-pool.tf`` in the
-  scan scope.
+- Scenarios 10 / 22 (AWS / GCP OIDC over-broad trust) -> GHA-062.
 - Scenarios 11 / 20 / 29 (pip-no-hashes / dependency confusion /
-  npm lifecycle script) -> already covered by NPM-001 / NPM-004 /
-  GHA-060; the comparison CI needs the parallel ``--pipeline
-  npm,pypi`` invocation. Pipeline-check already emits a one-line
-  stderr hint nudging users to add the sibling provider; the
-  multi-pipeline auto-detect path in ``cli.py`` covers the
-  user-facing surface today.
-- Scenarios 17 (ArtiPACKED ⚠️) / 21 (matrix expansion) / 26
-  (app-token scope) -> partial / full coverage from GHA-019 /
-  TAINT-002 / GHA-061 respectively, all shipped post-1.2.0.
+  npm lifecycle script) -> GHA-060 / NPM-001 / NPM-004 via
+  multi-provider invocation (``--pipeline npm,pypi``).
+- Scenarios 17 / 21 / 26 (ArtiPACKED / matrix expansion /
+  app-token scope) -> GHA-019 + GHA-037 / TAINT-002 / GHA-061.
 
 ### Self-hosted findings-history dashboard
 
