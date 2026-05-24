@@ -34,6 +34,11 @@ goats:
     repo: https://github.com/greylag-ci/cicd-goat
     ref: main
     pipelines: [github, npm]
+    args:
+      # The npm provider needs an explicit path; package.json files
+      # live under scenarios/20-*/ and scenarios/29-*/.
+      - --npm-path
+      - scenarios
     # 29 per-scenario workflow files under .github/workflows/
     # (scenario-01-*.yml .. scenario-29-*.yml). Some scenarios ship
     # sibling data (scenarios/10-*/trust-policy.json,
