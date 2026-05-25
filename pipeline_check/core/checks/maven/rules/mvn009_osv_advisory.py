@@ -89,7 +89,6 @@ def check(
         )
 
     offenders: list[str] = []
-    advisory_ids: set[str] = set()
     locations: list[Location] = []
     for dep in iter_real_dependencies(pom):
         if dep.version is None:
@@ -105,11 +104,7 @@ def check(
         advisories = osv.get((key, resolved))
         if not advisories:
             continue
-        ids = [
-            a.get("id", "unknown") if isinstance(a, dict) else str(a)
-            for a in advisories
-        ]
-        advisory_ids.update(ids)
+        ids = [a.id if hasattr(a, "id") else str(a) for a in advisories]
         offenders.append(
             f"{key}:{resolved} ({', '.join(ids)})"
         )

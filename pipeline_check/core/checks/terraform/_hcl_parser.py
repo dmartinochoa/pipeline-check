@@ -233,7 +233,7 @@ def _synthesize_resources(
                 values = _clean_value(raw_values)
                 values = _substitute_refs(values, variables, locals_)
                 _collect_unresolved(values, unresolved)
-                address = f"{prefix}{rtype}.{rname}" if not prefix else f"{prefix}{rtype}.{rname}"
+                address = f"{rtype}.{rname}" if not prefix else f"{prefix}{rtype}.{rname}"
                 managed.append(TerraformResource(
                     address=address, type=rtype, name=rname, values=values,
                 ))
@@ -302,7 +302,7 @@ def _walk_child_modules(
             if not mod_dir.is_dir():
                 continue
             try:
-                mod_dir.relative_to(directory.resolve().parent)
+                mod_dir.relative_to(directory.resolve())
             except ValueError:
                 continue
             child_prefix = f"{prefix}module.{mod_name}."

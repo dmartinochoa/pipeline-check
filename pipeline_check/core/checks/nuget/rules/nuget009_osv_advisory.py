@@ -53,7 +53,6 @@ def check(
         )
 
     offenders: list[str] = []
-    advisory_ids: set[str] = set()
     locations: list[Location] = []
     for ref in project.package_refs:
         if ref.version is None:
@@ -61,11 +60,7 @@ def check(
         advisories = osv.get((ref.name.lower(), ref.version))
         if not advisories:
             continue
-        ids = [
-            a.get("id", "unknown") if isinstance(a, dict) else str(a)
-            for a in advisories
-        ]
-        advisory_ids.update(ids)
+        ids = [a.id if hasattr(a, "id") else str(a) for a in advisories]
         offenders.append(
             f"{ref.name}@{ref.version} ({', '.join(ids)})"
         )

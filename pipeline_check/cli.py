@@ -4302,12 +4302,52 @@ def history_cmd(history_dir: str, output_path: str, top_n: int) -> None:
 @click.option(
     "--repos",
     "repos_path",
-    required=True,
+    default=None,
     metavar="PATH",
     help=(
-        "YAML file with a list of 'owner/repo' coordinates "
-        "(GitHub-style, phase 1). Either a top-level list or a "
-        "mapping with a 'repos:' key holding the list."
+        "YAML file with repo coordinates. Entries can be bare "
+        "'owner/repo' (GitHub), prefixed 'gitlab:group/project', "
+        "or mappings with 'coord' + 'platform' keys."
+    ),
+)
+@click.option(
+    "--from-org",
+    "from_org",
+    default=None,
+    metavar="ORG",
+    help=(
+        "Enumerate repos from an org/group/workspace via the SCM "
+        "API. Requires a platform token in the environment "
+        "(GITHUB_TOKEN, GITLAB_TOKEN, or BITBUCKET_TOKEN). "
+        "Mutually exclusive with --repos."
+    ),
+)
+@click.option(
+    "--platform",
+    "platform",
+    default="github",
+    show_default=True,
+    type=click.Choice(["github", "gitlab", "bitbucket"]),
+    help="SCM platform for --from-org enumeration.",
+)
+@click.option(
+    "--include",
+    "include_patterns",
+    multiple=True,
+    metavar="GLOB",
+    help=(
+        "Include only repos whose name matches this glob "
+        "(repeatable, fnmatch syntax). Applied after repo discovery."
+    ),
+)
+@click.option(
+    "--exclude",
+    "exclude_patterns",
+    multiple=True,
+    metavar="GLOB",
+    help=(
+        "Exclude repos whose name matches this glob "
+        "(repeatable, fnmatch syntax). Applied after repo discovery."
     ),
 )
 @click.option(
@@ -4318,8 +4358,8 @@ def history_cmd(history_dir: str, output_path: str, top_n: int) -> None:
     metavar="PATH",
     help=(
         "Directory for the unified digest tree. Per-repo findings "
-        "land at <output-dir>/<owner>/<repo>/findings.json; the "
-        "aggregate is at <output-dir>/fleet.json + fleet.md."
+        "land at <output-dir>/<platform>/<owner>/<repo>/findings.json; "
+        "the aggregate is at <output-dir>/fleet.json + fleet.md."
     ),
 )
 @click.option(
@@ -4335,31 +4375,98 @@ def history_cmd(history_dir: str, output_path: str, top_n: int) -> None:
         "remaining repos."
     ),
 )
+@click.option(
+    "--jobs",
+    "jobs",
+    default=None,
+    type=click.IntRange(0, 32),
+    metavar="N",
+    help=(
+        "Number of repos to scan in parallel. "
+        "0 runs sequentially (useful for debugging). "
+        "Omit to auto-detect based on CPU count and repo count."
+    ),
+)
+@click.option(
+    "--scan-flags",
+    "scan_flags_str",
+    default=None,
+    metavar="FLAGS",
+    help=(
+        "Extra flags forwarded verbatim to each per-repo "
+        "pipeline_check subprocess, e.g. "
+        "'--standard owasp_cicd_top_10 --resolve-remote'. "
+        "Quote the whole value as a single string."
+    ),
+)
 def fleet_cmd(
-    repos_path: str, output_dir: str, timeout_sec: int,
+    repos_path: str | None,
+    from_org: str | None,
+    platform: str,
+    include_patterns: tuple[str, ...],
+    exclude_patterns: tuple[str, ...],
+    output_dir: str,
+    timeout_sec: int,
+    jobs: int | None,
+    scan_flags_str: str | None,
 ) -> None:
     """Scan a list of repositories and emit a unified posture digest.
 
-    Phase 1: GitHub-style ``owner/repo`` coordinates only. Each
-    coordinate is shallow-cloned to a tmpdir, scanned via a fresh
-    ``pipeline_check`` subprocess, and the per-repo findings plus
-    a fleet-wide digest land under ``--output-dir``. A single
+    Each coordinate is shallow-cloned to a tmpdir, scanned via a
+    fresh ``pipeline_check`` subprocess, and the per-repo findings
+    plus a fleet-wide digest land under ``--output-dir``. A single
     repo's clone / scan failure becomes a warning, not an abort.
     """
+    import shlex
     from pathlib import Path
 
-    from .core.fleet import load_repo_list, run_fleet
+    from .core.fleet import (
+        apply_filters,
+        default_worker_count,
+        enumerate_org_repos,
+        load_repo_list,
+        run_fleet,
+    )
 
-    try:
-        repos = load_repo_list(repos_path)
-    except ValueError as exc:
-        raise click.UsageError(str(exc)) from exc
-    if not repos:
+    if repos_path and from_org:
         raise click.UsageError(
-            f"[fleet] {repos_path} contains no repo coordinates."
+            "--repos and --from-org are mutually exclusive."
+        )
+    if not repos_path and not from_org:
+        raise click.UsageError(
+            "Provide either --repos or --from-org."
+        )
+    if from_org:
+        try:
+            repos = enumerate_org_repos(from_org, platform)
+        except ValueError as exc:
+            raise click.UsageError(str(exc)) from exc
+    else:
+        assert repos_path is not None
+        try:
+            repos = load_repo_list(repos_path)
+        except ValueError as exc:
+            raise click.UsageError(str(exc)) from exc
+    if include_patterns or exclude_patterns:
+        repos = apply_filters(
+            repos,
+            include=list(include_patterns) or None,
+            exclude=list(exclude_patterns) or None,
+        )
+    if not repos:
+        source = repos_path if repos_path else f"--from-org {from_org}"
+        raise click.UsageError(
+            f"[fleet] {source} yielded no repo coordinates."
         )
     out_dir = Path(output_dir)
-    digest = run_fleet(repos, out_dir, timeout_sec=timeout_sec)
+    scan_flags = shlex.split(scan_flags_str) if scan_flags_str else None
+    effective_jobs = jobs if jobs is not None else default_worker_count(len(repos))
+    digest = run_fleet(
+        repos, out_dir,
+        timeout_sec=timeout_sec,
+        jobs=effective_jobs,
+        scan_flags=scan_flags,
+    )
     ok = sum(1 for s in digest.snapshots if s.ok)
     click.echo(
         f"[fleet] scanned {len(digest.snapshots)} repo(s) "

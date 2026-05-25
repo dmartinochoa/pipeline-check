@@ -154,14 +154,14 @@ def check(
                 all_ranges.extend(adv.vulnerable_ranges)
             matched, _ = any_range_matches(version_str, all_ranges)
             if matched:
+                confirmed.append(
+                    f"{ref.owner}/{ref.repo}@{ref.ref}"
+                )
                 for adv in meta.ghsa_advisories:
                     hit, _ = any_range_matches(
                         version_str, list(adv.vulnerable_ranges),
                     )
                     if hit:
-                        confirmed.append(
-                            f"{ref.owner}/{ref.repo}@{ref.ref}"
-                        )
                         advisory_labels.add(_format_advisory(adv))
             # Version parsed and NOT in any range -> safe, skip.
         else:

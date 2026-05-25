@@ -72,6 +72,8 @@ def query_osv_batch(
                 f"[osv] batch query failed ({error}); "
                 f"{len(batch)} package(s) not checked"
             )
+        if error:
+            continue
         for i, (name, version, ecosystem) in enumerate(batch):
             vulns = batch_results.get(i, [])
             raw = json.dumps(vulns) if vulns else _EMPTY_SENTINEL
