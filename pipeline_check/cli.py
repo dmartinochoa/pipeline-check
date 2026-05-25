@@ -26,6 +26,7 @@ Examples
 
     # Scan a Terraform plan, no AWS credentials needed.
     pipeline_check --pipeline terraform --tf-plan plan.json
+    pipeline_check --pipeline terraform --tf-source ./infra/  # direct HCL
 
     # Annotate findings with a single standard, or list registered standards.
     pipeline_check --standard owasp_cicd_top_10

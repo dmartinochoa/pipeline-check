@@ -68,7 +68,7 @@ A read-only scanner for 23 providers, graded against 15 compliance frameworks.
 <h2 class="pg-section__title">One scanner. Every pipeline you ship through.</h2>
 <p class="pg-section__lede">
 Same severity model and report format whether you're scanning a Jenkinsfile,
-a Terraform plan, or a live AWS account. Findings carry control IDs for OWASP,
+Terraform (plan JSON or raw HCL), or a live AWS account. Findings carry control IDs for OWASP,
 NIST SSDF, SLSA, and the rest, so audit answers don't require leaving the tool.
 </p>
 </div>
@@ -90,7 +90,7 @@ the supported providers. New risks land here before they land in your pipeline.
 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
 </div>
 ### Live AWS + shift-left IaC
-Scan a running AWS account through boto3, *or* scan Terraform plans and
+Scan a running AWS account through boto3, *or* scan Terraform plans (or raw HCL source) and
 CloudFormation templates before provisioning. Same rule IDs, same severities.
 <a class="pg-feature__link" href="providers/aws/">AWS reference</a>
 </div>

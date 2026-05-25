@@ -13,7 +13,7 @@ requires editing `Scanner`, `Reporter`, or the CLI.
   </a>
   <a class="pg-doc-card" href="terraform/">
     <h3>Terraform</h3>
-    <p>Shift-left scan against a parsed <code>terraform show -json</code> plan. AWS-rule parity so findings match the live runtime.</p>
+    <p>Shift-left scan against a <code>terraform show -json</code> plan or raw <code>*.tf</code> source. AWS-rule parity so findings match the live runtime.</p>
     <span class="pg-doc-card__meta">{{ providers.terraform.checks }}</span>
   </a>
   <a class="pg-doc-card" href="cloudformation/">
