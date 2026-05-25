@@ -63,7 +63,7 @@ _DEFAULT_SCAN_TIMEOUT_SEC: int = 600
 _MAX_DEFAULT_WORKERS: int = 8
 
 
-def _default_worker_count(repo_count: int) -> int:
+def default_worker_count(repo_count: int) -> int:
     """Pick a sensible default parallelism level."""
     cpu = os.cpu_count() or 4
     return min(cpu, repo_count, _MAX_DEFAULT_WORKERS)
@@ -78,7 +78,7 @@ class RepoCoordinate:
     #: The HTTPS git clone URL we'll fetch from.
     clone_url: str
     #: Used for the on-disk layout key
-    #: (``<output-dir>/<owner>/<repo>/findings.json``).
+    #: (``<output-dir>/<platform>/<owner>/<repo>/findings.json``).
     owner: str
     repo: str
     #: SCM platform. Defaults to ``"github"`` for backward compat.
@@ -269,7 +269,7 @@ def load_repo_list(yaml_path: Path | str) -> list[RepoCoordinate]:
 # ── Org-wide repo enumeration ───────────────────────────────────────
 
 
-def _apply_filters(
+def apply_filters(
     coords: list[RepoCoordinate],
     include: list[str] | None = None,
     exclude: list[str] | None = None,
@@ -414,7 +414,7 @@ def _bitbucket_workspace_repos(
         if isinstance(next_url, str) and next_url:
             # The API returns a full URL; strip the base so
             # fetcher.fetch() doesn't double-prefix it.
-            base = f"https://api.bitbucket.org/2.0/"
+            base = "https://api.bitbucket.org/2.0/"
             path = (
                 next_url[len(base):]
                 if next_url.startswith(base)
@@ -428,31 +428,28 @@ def _bitbucket_workspace_repos(
 def enumerate_org_repos(
     org: str,
     platform: str = "github",
-    *,
-    include: list[str] | None = None,
-    exclude: list[str] | None = None,
 ) -> list[RepoCoordinate]:
     """Fetch all repos for an org/group/workspace from the SCM API.
 
     Requires the corresponding platform token in the environment
     (``GITHUB_TOKEN``, ``GITLAB_TOKEN``, ``BITBUCKET_TOKEN``).
+
+    Returns unfiltered coordinates. Use :func:`apply_filters` to
+    narrow the list by glob patterns.
     """
-    coords: list[RepoCoordinate]
     if platform == "github":
         from .checks.scm.base import HttpSCMFetcher
-        coords = _github_org_repos(HttpSCMFetcher(), org)
-    elif platform == "gitlab":
+        return _github_org_repos(HttpSCMFetcher(), org)
+    if platform == "gitlab":
         from .checks.scm._platforms import HttpGitLabSCMFetcher
-        coords = _gitlab_group_projects(HttpGitLabSCMFetcher(), org)
-    elif platform == "bitbucket":
+        return _gitlab_group_projects(HttpGitLabSCMFetcher(), org)
+    if platform == "bitbucket":
         from .checks.scm._platforms import HttpBitbucketSCMFetcher
-        coords = _bitbucket_workspace_repos(HttpBitbucketSCMFetcher(), org)
-    else:
-        raise ValueError(
-            f"Unknown platform {platform!r}. "
-            f"Accepted: {', '.join(sorted(_VALID_PLATFORMS))}."
-        )
-    return _apply_filters(coords, include=include, exclude=exclude)
+        return _bitbucket_workspace_repos(HttpBitbucketSCMFetcher(), org)
+    raise ValueError(
+        f"Unknown platform {platform!r}. "
+        f"Accepted: {', '.join(sorted(_VALID_PLATFORMS))}."
+    )
 
 
 def _clone_repo(
@@ -609,7 +606,7 @@ def _process_one_repo(
     results after all workers finish.
     """
     warnings: list[str] = []
-    per_repo_dir = output_dir / coord.owner / coord.repo
+    per_repo_dir = output_dir / coord.platform / coord.owner / coord.repo
     per_repo_dir.mkdir(parents=True, exist_ok=True)
     findings_path = per_repo_dir / "findings.json"
     stderr_path = per_repo_dir / "scan.stderr"
@@ -782,8 +779,8 @@ __all__ = [
     "FleetDigest",
     "FleetSnapshot",
     "RepoCoordinate",
-    "_apply_filters",
-    "_default_worker_count",
+    "apply_filters",
+    "default_worker_count",
     "enumerate_org_repos",
     "load_repo_list",
     "render_markdown",

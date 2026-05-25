@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import json
 import textwrap
+import threading
 from pathlib import Path
 from typing import Any
 from unittest.mock import patch
@@ -16,8 +17,10 @@ from pipeline_check.core.fleet import (
     FleetDigest,
     FleetSnapshot,
     RepoCoordinate,
-    _apply_filters,
-    _default_worker_count,
+    _parse_coord_string,
+    _resolve_coord,
+    apply_filters,
+    default_worker_count,
     enumerate_org_repos,
     load_repo_list,
     render_markdown,
@@ -75,12 +78,19 @@ def _make_scan(  # type: ignore[no-untyped-def]
 def _make_capturing_scan(  # type: ignore[no-untyped-def]
     captured: list[list[str] | None], score: int = 90,
 ):
-    """Fake ``_scan_repo`` that records *extra_flags* into *captured*."""
+    """Fake ``_scan_repo`` that records *extra_flags* into *captured*.
+
+    Thread-safe: appends are guarded by a lock so the list is safe
+    to read back after joining all workers.
+    """
+    lock = threading.Lock()
+
     def _scan(  # type: ignore[no-untyped-def]
         coord, src, findings_path, stderr_path, *, timeout_sec,
         extra_flags=None,
     ):
-        captured.append(extra_flags)
+        with lock:
+            captured.append(extra_flags)
         findings_path.write_text(
             json.dumps(_fake_findings_doc(score=score)),
             encoding="utf-8",
@@ -97,6 +107,62 @@ def _make_coord(name: str) -> RepoCoordinate:
         owner=owner,
         repo=repo,
     )
+
+
+# ── Coordinate parsing ───────────────────────────────────────────
+
+
+class TestParseCoordString:
+    def test_bare_coord_defaults_github(self) -> None:
+        assert _parse_coord_string("owner/repo") == ("github", "owner/repo")
+
+    def test_github_prefix(self) -> None:
+        assert _parse_coord_string("github:o/r") == ("github", "o/r")
+
+    def test_gitlab_prefix(self) -> None:
+        assert _parse_coord_string("gitlab:g/s/p") == ("gitlab", "g/s/p")
+
+    def test_bitbucket_prefix(self) -> None:
+        assert _parse_coord_string("bitbucket:ws/slug") == (
+            "bitbucket", "ws/slug",
+        )
+
+    def test_unknown_alpha_prefix_raises(self) -> None:
+        with pytest.raises(ValueError, match="Unknown platform"):
+            _parse_coord_string("foobar:owner/repo")
+
+    def test_non_alpha_prefix_passes_through(self) -> None:
+        platform, coord = _parse_coord_string("123:owner/repo")
+        assert platform == "github"
+        assert coord == "123:owner/repo"
+
+
+class TestResolveCoord:
+    def test_github_valid(self) -> None:
+        owner, repo, url = _resolve_coord("github", "acme/tool")
+        assert owner == "acme"
+        assert repo == "tool"
+        assert url == "https://github.com/acme/tool.git"
+
+    def test_gitlab_subgroup(self) -> None:
+        owner, repo, url = _resolve_coord("gitlab", "group/sub/proj")
+        assert owner == "group/sub"
+        assert repo == "proj"
+        assert url == "https://gitlab.com/group/sub/proj.git"
+
+    def test_bitbucket_valid(self) -> None:
+        owner, repo, url = _resolve_coord("bitbucket", "ws/slug")
+        assert owner == "ws"
+        assert repo == "slug"
+        assert url == "https://bitbucket.org/ws/slug.git"
+
+    def test_github_multi_slash_rejected(self) -> None:
+        with pytest.raises(ValueError, match="not a valid github"):
+            _resolve_coord("github", "a/b/c")
+
+    def test_unknown_platform_rejected(self) -> None:
+        with pytest.raises(ValueError, match="Unknown platform"):
+            _resolve_coord("nope", "owner/repo")
 
 
 # ── Repo-list parser ──────────────────────────────────────────────
@@ -337,8 +403,8 @@ class TestRunFleet:
         assert len(digest.snapshots) == 2
         assert all(s.ok for s in digest.snapshots)
         assert digest.warnings == []
-        assert (out_dir / "acme/alpha/findings.json").exists()
-        assert (out_dir / "acme/beta/findings.json").exists()
+        assert (out_dir / "github/acme/alpha/findings.json").exists()
+        assert (out_dir / "github/acme/beta/findings.json").exists()
         assert (out_dir / "fleet.json").exists()
         assert (out_dir / "fleet.md").exists()
         fleet_json = json.loads(
@@ -354,7 +420,7 @@ class TestRunFleet:
         def failing_clone(coord, dest, *, timeout_sec):  # type: ignore[no-untyped-def]
             return "git clone exit 128: Repository not found"
 
-        def unreachable_scan(*a: object, **kw: object) -> str:  # type: ignore[no-untyped-def]
+        def unreachable_scan(*a: object, **kw: object) -> str:
             raise AssertionError("scan should not run after clone failure")
 
         monkeypatch.setattr(fleet_mod, "_clone_repo", failing_clone)
@@ -438,7 +504,7 @@ class TestFleetCli:
         assert result.exit_code == 0, result.output
         assert "1 OK" in result.output
         assert (out_dir / "fleet.json").exists()
-        assert (out_dir / "acme/alpha/findings.json").exists()
+        assert (out_dir / "github/acme/alpha/findings.json").exists()
 
     def test_fleet_cli_errors_on_missing_repos_file(
         self, tmp_path: Path,
@@ -541,8 +607,8 @@ class TestParallelExecution:
         assert len(digest.snapshots) == 2
         assert all(s.ok for s in digest.snapshots)
         assert digest.warnings == []
-        assert (out_dir / "acme/alpha/findings.json").exists()
-        assert (out_dir / "acme/beta/findings.json").exists()
+        assert (out_dir / "github/acme/alpha/findings.json").exists()
+        assert (out_dir / "github/acme/beta/findings.json").exists()
         assert (out_dir / "fleet.json").exists()
 
     def test_parallel_preserves_order(
@@ -655,28 +721,28 @@ class TestFlagForwarding:
         assert all(f == flags for f in captured)
 
 
-# ── _default_worker_count ───────────────────────────────────────
+# ── default_worker_count ────────────────────────────────────────
 
 
 class TestDefaultWorkerCount:
     def test_single_repo(self) -> None:
-        assert _default_worker_count(1) == 1
+        assert default_worker_count(1) == 1
 
     def test_capped_at_max(self) -> None:
         with patch("pipeline_check.core.fleet.os.cpu_count", return_value=16):
-            assert _default_worker_count(100) == 8
+            assert default_worker_count(100) == 8
 
     def test_capped_at_repo_count(self) -> None:
         with patch("pipeline_check.core.fleet.os.cpu_count", return_value=8):
-            assert _default_worker_count(3) == 3
+            assert default_worker_count(3) == 3
 
     def test_capped_at_cpu_count(self) -> None:
         with patch("pipeline_check.core.fleet.os.cpu_count", return_value=2):
-            assert _default_worker_count(10) == 2
+            assert default_worker_count(10) == 2
 
     def test_none_cpu_count(self) -> None:
         with patch("pipeline_check.core.fleet.os.cpu_count", return_value=None):
-            assert _default_worker_count(10) == 4
+            assert default_worker_count(10) == 4
 
 
 # ── Org enumeration and filtering ───────────────────────────────
@@ -689,7 +755,7 @@ class TestApplyFilters:
             _make_coord("org/pipeline-deploy"),
             _make_coord("org/docs"),
         ]
-        result = _apply_filters(coords, include=["pipeline-*"])
+        result = apply_filters(coords, include=["pipeline-*"])
         assert [c.repo for c in result] == [
             "pipeline-check", "pipeline-deploy",
         ]
@@ -700,7 +766,7 @@ class TestApplyFilters:
             _make_coord("org/internal"),
             _make_coord("org/internal-tools"),
         ]
-        result = _apply_filters(coords, exclude=["internal*"])
+        result = apply_filters(coords, exclude=["internal*"])
         assert [c.repo for c in result] == ["public"]
 
     def test_include_and_exclude(self) -> None:
@@ -709,14 +775,14 @@ class TestApplyFilters:
             _make_coord("org/api-internal"),
             _make_coord("org/web"),
         ]
-        result = _apply_filters(
+        result = apply_filters(
             coords, include=["api*"], exclude=["*-internal"],
         )
         assert [c.repo for c in result] == ["api"]
 
     def test_no_filters_passes_all(self) -> None:
         coords = [_make_coord("org/a"), _make_coord("org/b")]
-        assert _apply_filters(coords) == coords
+        assert apply_filters(coords) == coords
 
 
 _FAKE_GITHUB_REPOS: list[dict[str, object]] = [
@@ -799,11 +865,10 @@ class TestEnumerateOrgRepos:
         from pipeline_check.core.checks.scm.base import HttpSCMFetcher
 
         monkeypatch.setattr(HttpSCMFetcher, "fetch", _fake_github_fetch)
-        coords = enumerate_org_repos(
-            "acme", "github", include=["alpha"],
-        )
-        assert len(coords) == 1
-        assert coords[0].repo == "alpha"
+        coords = enumerate_org_repos("acme", "github")
+        filtered = apply_filters(coords, include=["alpha"])
+        assert len(filtered) == 1
+        assert filtered[0].repo == "alpha"
 
     def test_exclude_filter_applied(
         self, monkeypatch: pytest.MonkeyPatch,
@@ -811,11 +876,10 @@ class TestEnumerateOrgRepos:
         from pipeline_check.core.checks.scm.base import HttpSCMFetcher
 
         monkeypatch.setattr(HttpSCMFetcher, "fetch", _fake_github_fetch)
-        coords = enumerate_org_repos(
-            "acme", "github", exclude=["beta"],
-        )
-        assert len(coords) == 1
-        assert coords[0].repo == "alpha"
+        coords = enumerate_org_repos("acme", "github")
+        filtered = apply_filters(coords, exclude=["beta"])
+        assert len(filtered) == 1
+        assert filtered[0].repo == "alpha"
 
     def test_gitlab_enumerate(
         self, monkeypatch: pytest.MonkeyPatch,

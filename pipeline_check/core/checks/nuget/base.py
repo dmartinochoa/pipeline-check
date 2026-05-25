@@ -52,8 +52,8 @@ class NuGetSource:
 
 @dataclass(frozen=True, slots=True)
 class NuGetSourceMapping:
-    pattern: str
-    sources: tuple[str, ...]
+    source: str
+    patterns: tuple[str, ...]
 
 
 @dataclass(frozen=True, slots=True)
@@ -120,7 +120,7 @@ class NuGetContext:
             for fname in filenames:
                 fpath = rel_dir / fname
                 try:
-                    rel = os.path.relpath(fpath, ".").replace("\\", "/")
+                    rel = os.path.relpath(fpath, root).replace("\\", "/")
                 except ValueError:
                     rel = str(fpath).replace("\\", "/")
                 flow = fname.lower()
@@ -234,8 +234,8 @@ def _parse_nuget_config(path: Path, rel: str) -> NuGetConfig:
                                 patterns.append(pat)
                     if src_key and patterns:
                         mappings.append(NuGetSourceMapping(
-                            pattern=src_key,
-                            sources=tuple(patterns),
+                            source=src_key,
+                            patterns=tuple(patterns),
                         ))
     return NuGetConfig(
         path=rel, sources=tuple(sources),

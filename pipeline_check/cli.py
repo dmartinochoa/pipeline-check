@@ -4337,7 +4337,7 @@ def history_cmd(history_dir: str, output_path: str, top_n: int) -> None:
     metavar="GLOB",
     help=(
         "Include only repos whose name matches this glob "
-        "(repeatable, fnmatch syntax). Applied after --from-org."
+        "(repeatable, fnmatch syntax). Applied after repo discovery."
     ),
 )
 @click.option(
@@ -4347,7 +4347,7 @@ def history_cmd(history_dir: str, output_path: str, top_n: int) -> None:
     metavar="GLOB",
     help=(
         "Exclude repos whose name matches this glob "
-        "(repeatable, fnmatch syntax). Applied after --from-org."
+        "(repeatable, fnmatch syntax). Applied after repo discovery."
     ),
 )
 @click.option(
@@ -4358,8 +4358,8 @@ def history_cmd(history_dir: str, output_path: str, top_n: int) -> None:
     metavar="PATH",
     help=(
         "Directory for the unified digest tree. Per-repo findings "
-        "land at <output-dir>/<owner>/<repo>/findings.json; the "
-        "aggregate is at <output-dir>/fleet.json + fleet.md."
+        "land at <output-dir>/<platform>/<owner>/<repo>/findings.json; "
+        "the aggregate is at <output-dir>/fleet.json + fleet.md."
     ),
 )
 @click.option(
@@ -4421,8 +4421,8 @@ def fleet_cmd(
     from pathlib import Path
 
     from .core.fleet import (
-        _apply_filters,
-        _default_worker_count,
+        apply_filters,
+        default_worker_count,
         enumerate_org_repos,
         load_repo_list,
         run_fleet,
@@ -4438,11 +4438,7 @@ def fleet_cmd(
         )
     if from_org:
         try:
-            repos = enumerate_org_repos(
-                from_org, platform,
-                include=list(include_patterns) or None,
-                exclude=list(exclude_patterns) or None,
-            )
+            repos = enumerate_org_repos(from_org, platform)
         except ValueError as exc:
             raise click.UsageError(str(exc)) from exc
     else:
@@ -4451,12 +4447,12 @@ def fleet_cmd(
             repos = load_repo_list(repos_path)
         except ValueError as exc:
             raise click.UsageError(str(exc)) from exc
-        if include_patterns or exclude_patterns:
-            repos = _apply_filters(
-                repos,
-                include=list(include_patterns) or None,
-                exclude=list(exclude_patterns) or None,
-            )
+    if include_patterns or exclude_patterns:
+        repos = apply_filters(
+            repos,
+            include=list(include_patterns) or None,
+            exclude=list(exclude_patterns) or None,
+        )
     if not repos:
         source = repos_path if repos_path else f"--from-org {from_org}"
         raise click.UsageError(
@@ -4464,7 +4460,7 @@ def fleet_cmd(
         )
     out_dir = Path(output_dir)
     scan_flags = shlex.split(scan_flags_str) if scan_flags_str else None
-    effective_jobs = jobs if jobs is not None else _default_worker_count(len(repos))
+    effective_jobs = jobs if jobs is not None else default_worker_count(len(repos))
     digest = run_fleet(
         repos, out_dir,
         timeout_sec=timeout_sec,

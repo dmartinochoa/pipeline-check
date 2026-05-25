@@ -1525,7 +1525,7 @@ class TestRoundtripSafety:
     def test_bails_when_after_does_not_parse(self, monkeypatch):
         from pipeline_check.core import autofix as af
 
-        @af.register("ZZ-PARSE-BREAK")
+        @af.register("ZZ-PARSE-BREAK", safety="safe")
         def _break(content, finding):
             return "key: : invalid\n  - lol\n"  # not valid YAML
 
@@ -1537,7 +1537,7 @@ class TestRoundtripSafety:
     def test_bails_when_top_level_type_changes(self):
         from pipeline_check.core import autofix as af
 
-        @af.register("ZZ-TYPE-SWAP")
+        @af.register("ZZ-TYPE-SWAP", safety="safe")
         def _swap(content, finding):
             return "- a\n- b\n"  # list, was a mapping
 
@@ -1548,7 +1548,7 @@ class TestRoundtripSafety:
     def test_bails_when_multidoc_count_changes(self):
         from pipeline_check.core import autofix as af
 
-        @af.register("ZZ-DOC-DROP")
+        @af.register("ZZ-DOC-DROP", safety="safe")
         def _drop(content, finding):
             # Strip the second document from a two-doc stream.
             return content.split("---", 1)[0]
