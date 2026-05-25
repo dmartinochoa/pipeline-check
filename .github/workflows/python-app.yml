@@ -151,5 +151,42 @@ jobs:
       - name: Test with pytest
         # --cov-fail-under gates the build on coverage regressions. Bump
         # this floor (never lower it) as the suite grows.
+        # test_fleet.py is excluded here and runs in its own job below
+        # because it spawns subprocesses and takes several minutes.
         run: |
-          pytest --cov=pipeline_check --cov-report=term-missing --cov-fail-under=90
+          pytest --ignore=tests/test_fleet.py --cov=pipeline_check --cov-report=term-missing --cov-fail-under=90
+
+  test-fleet:
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 15
+
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest]
+        python-version: ["3.12"]
+        include:
+          - os: windows-latest
+            python-version: "3.12"
+
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6.0.2
+        with:
+          persist-credentials: false
+
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405  # v6.2.0
+        with:
+          python-version: ${{ matrix.python-version }}
+          cache: "pip"
+          cache-dependency-path: requirements-dev.txt
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install --require-hashes -r requirements-dev.txt
+          pip install -e .
+
+      - name: Fleet tests
+        run: |
+          pytest tests/test_fleet.py -v
