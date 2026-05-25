@@ -12,6 +12,11 @@ release commit collapses this section into `## [X.Y.Z] - <date>`.
 
 ### Changed
 
+- **GHA-004 widened with top-level write-scope aggregation.** When a
+  workflow-level ``permissions:`` block grants a write scope that no
+  inheriting job consumes, the rule now flags the excess grant.
+  Completes the overprovisioned-permissions sweep (roadmap item
+  GHA-068). 8 new tests.
 - **GHA-058 widened with PR-checkout topology (closes #152).**
   Adds a second detection shape inspired by zizmor proposals
   #1605 (``agentic-actions``) and #1607 (hijackable commands after

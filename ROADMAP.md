@@ -292,8 +292,8 @@ matching the original placeholders in this section:
 * ``GHA-071`` landed as **powershell-on-Linux** (originally
   placeholder for unsound-contains, now ``GHA-064``).
 * ``GHA-072`` landed as **overprovisioned-secrets** (originally
-  placeholder for agentic-actions widening; that widening is
-  still open and will take a future ID).
+  placeholder for agentic-actions widening; that widening landed
+  as a widening of **GHA-058**, no new ID).
 * ``GHA-073`` landed as **unused workflow_call.secrets** (originally
   placeholder for upload-artifact wildcard, now ``GHA-066``).
 
@@ -336,13 +336,14 @@ Suggested landing order, highest signal first:
   silent (account type is set by GitHub and can't be spoofed by
   a re-run). HIGH severity. 11 per-rule tests + safe/unsafe
   fixture pair.
-- **GHA-068: job permissions are excessive for the work it performs.**
-  Widens GHA-004 from "missing permissions block" to "permissions
-  block grants more than the job uses." Heuristic: enumerate the
-  ``uses:`` / ``run:`` content per job, derive the minimal scopes
-  (``contents: read`` unless writes are observed, ``id-token: write``
-  only when an OIDC consumer fires, etc.), and flag the delta. MEDIUM
-  severity. Autofix candidate (downgrade to the inferred minimum).
+- ~~**GHA-068: job permissions are excessive for the work it performs.**~~
+  Landed as a widening of **GHA-004** (no new ID). Top-level write-scope
+  aggregation across inheriting jobs: when a workflow-level
+  ``permissions:`` block grants a write scope that no inheriting job
+  (no job-level override, not a reusable-workflow caller) consumes,
+  the rule now flags the excess grant. Per-job overprovisioning was
+  already condition 5; this closes the workflow-level gap. 8 new tests
+  under ``TestGHA004TopLevelAggregation``.
 - ~~**GHA-069: secrets context broader than the consuming step.**~~
   Landed as **GHA-072**. Fires when a job-level ``env:`` entry
   binds ``${{ secrets.* }}`` and at most one step references it,

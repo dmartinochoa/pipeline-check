@@ -1,6 +1,6 @@
 """GHA-004, workflow must declare an explicit `permissions:` block.
 
-Five firing conditions:
+Six firing conditions:
 
 1. **Missing block.** No top-level ``permissions:`` and at least one
    job without its own block.
@@ -14,6 +14,11 @@ Five firing conditions:
    ``_SCOPE_CONSUMERS_*`` maps, walk the job's steps for an action
    or ``run:`` shape that justifies the grant. Wildcard consumers
    (``actions/github-script``) treat every scope as consumed.
+6. **Top-level write scope not consumed by any inheriting job.**
+   Aggregates across all jobs that inherit the workflow-level
+   permissions (no job-level override, not a reusable-workflow
+   caller). A top-level write grant that no inheriting job
+   consumes is excess privilege on every job that inherits it.
 """
 from __future__ import annotations
 
@@ -51,7 +56,14 @@ RULE = Rule(
         "declares ``security-events: write`` but never invokes a "
         "SARIF uploader, etc. Wildcard consumers "
         "(``actions/github-script``) suppress the flag because "
-        "they can reach any scope through the GitHub API."
+        "they can reach any scope through the GitHub API.\n\n"
+        "The rule also aggregates at the workflow level: when a "
+        "top-level ``permissions:`` block grants a write scope "
+        "that no inheriting job (a job without its own permissions "
+        "override) actually consumes, the workflow is handing "
+        "every inheriting job more privilege than its steps need. "
+        "Move the scope to the specific job that needs it, or "
+        "drop it entirely."
     ),
     known_fp=(
         "Read-only / lint-only workflows that do not call any "
@@ -381,6 +393,32 @@ def check(path: str, doc: dict[str, Any], wf: Workflow | None = None) -> Finding
             f"{len(jobs_missing)} job(s) without permissions: "
             f"{', '.join(jobs_missing)}"
         )
+
+    # Top-level write-scope aggregation: a write scope at workflow
+    # level is excess when no job that inherits it consumes it.
+    if isinstance(top_perms, dict):
+        inheriting_jobs = [
+            (jid, j) for jid, j in iter_jobs(doc)
+            if j.get("permissions") is None
+            and not isinstance(j.get("uses"), str)
+        ]
+        if inheriting_jobs:
+            for scope, value in top_perms.items():
+                if not isinstance(scope, str) or scope == "id-token":
+                    continue
+                if value != "write":
+                    continue
+                if scope not in _SCOPES_WITH_CONSUMERS:
+                    continue
+                consumed = any(
+                    _job_consumes_scope(j, scope)
+                    for _, j in inheriting_jobs
+                )
+                if not consumed:
+                    issues.append(
+                        f"<workflow>: top-level `{scope}: write` "
+                        f"not consumed by any inheriting job"
+                    )
 
     passed = not issues
     if passed:
