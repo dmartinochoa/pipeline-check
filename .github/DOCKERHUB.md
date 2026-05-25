@@ -2,8 +2,8 @@
 
 **Find security risks in your CI/CD pipelines before attackers do.**
 
-A read-only scanner for **23 providers** (CI/CD and infrastructure),
-mapped to **15 compliance standards**, with **840+ checks** and
+A read-only scanner for **24 providers** (CI/CD and infrastructure),
+mapped to **15 compliance standards**, with **870+ checks** and
 **111 autofixers**.
 Every finding maps to the [OWASP Top 10 CI/CD Security Risks](https://owasp.org/www-project-top-10-ci-cd-security-risks/),
 SLSA, NIST SSDF, PCI DSS, SOC 2, the CIS GitHub Benchmark, and eight more frameworks. Each scan is

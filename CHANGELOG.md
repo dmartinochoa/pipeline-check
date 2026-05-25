@@ -12,6 +12,18 @@ release commit collapses this section into `## [X.Y.Z] - <date>`.
 
 ### Added
 
+- **NuGet provider (``--pipeline nuget``).** Fifth dependency-supply-chain
+  provider. Parses ``*.csproj``, ``Directory.Packages.props``,
+  ``packages.config``, ``NuGet.config``, and ``packages.lock.json``.
+  Nine rules (NUGET-001..009) covering floating ranges, wildcard
+  prereleases, missing versions, HTTP sources, compromised versions,
+  missing lockfile, dependency-confusion source mapping, cooldown
+  gate, and live OSV advisory lookup. Provider count 23 -> 24.
+- **Live OSV advisory lookup (NPM-010, PYPI-009, MVN-009, NUGET-009).**
+  Shared ``_primitives/osv_fetcher.py`` queries the OSV batch API for
+  every exact name+version pair behind ``--resolve-remote``. Fires
+  CRITICAL on advisory hit. Closes the freshness gap the curated
+  offline registries have against newly filed advisories.
 - **Inline source-line ignore comments (closes #174).** Three directives:
   ``# pipeline-check: ignore[RULE-ID]`` (same line),
   ``ignore-next-line[RULE-ID]`` (following line), and

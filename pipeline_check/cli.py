@@ -167,7 +167,7 @@ class _GroupedCommand(click.Command):
             "--argocd-path",
             "--helm-values", "--helm-set", "--oci-manifest",
             "--drone-path", "--npm-path", "--pypi-path",
-            "--maven-path",
+            "--maven-path", "--nuget-path",
         })),
         ("Filtering", frozenset({
             "--checks", "--severity-threshold", "--min-confidence",
@@ -600,6 +600,7 @@ _PROVIDER_DETECT_FILES: tuple[tuple[str, tuple[str, ...], tuple[str, ...]], ...]
     ("npm", ("package.json", "package-lock.json"), ()),
     ("pypi", ("requirements.txt",), ()),
     ("maven", ("pom.xml",), ()),
+    ("nuget", ("Directory.Packages.props",), ()),
     ("terraform", ("main.tf",), ()),
     (
         "cloudformation",
@@ -688,6 +689,7 @@ _INLINE_IGNORE_GLOBS: dict[str, tuple[str, ...]] = {
     "npm": ("package.json", "package-lock.json", ".npmrc"),
     "pypi": ("requirements*.txt", "*.in", "pyproject.toml"),
     "maven": ("pom.xml", "settings.xml"),
+    "nuget": ("*.csproj", "NuGet.config"),
 }
 
 #: Maps provider names to the kwarg name used for the provider path.
@@ -711,6 +713,7 @@ _PROVIDER_PATH_KWARG: dict[str, str] = {
     "npm": "npm_path",
     "pypi": "pypi_path",
     "maven": "maven_path",
+    "nuget": "nuget_path",
 }
 
 
@@ -1354,6 +1357,15 @@ def _install_completion_callback(
         "Path to a pom.xml / settings.xml or a directory containing "
         "one (required when --pipeline maven). Auto-detects "
         "./pom.xml."
+    ),
+)
+@click.option(
+    "--nuget-path",
+    default=None,
+    metavar="PATH",
+    help=(
+        "Path to a directory containing *.csproj, NuGet.config, or "
+        "packages.lock.json (required when --pipeline nuget)."
     ),
 )
 @click.option(
@@ -2112,6 +2124,7 @@ def scan(
     npm_base_ref: str | None,
     pypi_path: str | None,
     maven_path: str | None,
+    nuget_path: str | None,
     helm_values: tuple[str, ...],
     helm_set: tuple[str, ...],
     oci_manifest: str | None,
@@ -2606,6 +2619,12 @@ def scan(
                 candidates=("pom.xml",),
                 detect_label="pom.xml",
             )
+        elif pipeline_lc == "nuget":
+            nuget_path = _resolve_provider_path(
+                "nuget", flag="nuget-path", value=nuget_path,
+                candidates=("Directory.Packages.props",),
+                detect_label="Directory.Packages.props",
+            )
 
     if output == "html" and not output_file:
         raise click.UsageError(
@@ -2761,6 +2780,7 @@ def scan(
         npm_base_ref=npm_base_ref,
         pypi_path=pypi_path,
         maven_path=maven_path,
+        nuget_path=nuget_path,
         scm_platform=scm_platform,
         scm_repo=scm_repo,
         scm_fixture_dir=scm_fixture_dir,
@@ -2962,6 +2982,7 @@ def scan(
             npm_path=npm_path,
             pypi_path=pypi_path,
             maven_path=maven_path,
+            nuget_path=nuget_path,
         )
         _debug(f"--pr-diff: forwarded argv = {forwarded_argv}")
         head_findings_raw = [f.to_dict() for f in findings]
@@ -3211,6 +3232,7 @@ def scan(
             "npm_path": npm_path,
             "pypi_path": pypi_path,
             "maven_path": maven_path,
+            "nuget_path": nuget_path,
         }
         inline_index = _collect_inline_ignores(active_pipelines, path_kwargs)
 
@@ -3389,6 +3411,7 @@ def _build_pr_diff_subprocess_argv(
     npm_path: str | None,
     pypi_path: str | None,
     maven_path: str | None,
+    nuget_path: str | None,
 ) -> list[str]:
     """Build the argv for the BASE-side ``pipeline_check`` subprocess.
 
@@ -3453,6 +3476,7 @@ def _build_pr_diff_subprocess_argv(
         ("--npm-path", npm_path),
         ("--pypi-path", pypi_path),
         ("--maven-path", maven_path),
+        ("--nuget-path", nuget_path),
     )
     for flag, value in _path_pairs:
         if value:

@@ -47,7 +47,7 @@ covered.
 
 ## What it covers
 
-7 checks · 0 have an autofix patch (``--fix``).
+8 checks · 0 have an autofix patch (``--fix``).
 
 | Check | Title | Severity | Fix |
 |-------|-------|----------|-----|
@@ -58,6 +58,7 @@ covered.
 | [PYPI-005](#pypi-005) | requirements.txt declares --extra-index-url (dependency-confusion surface) | <span class="pg-sev pg-sev--high">HIGH</span> |  |
 | [PYPI-006](#pypi-006) | requirements.txt pins a known-compromised PyPI package version | <span class="pg-sev pg-sev--critical">CRITICAL</span> |  |
 | [PYPI-008](#pypi-008) | Direct dependency was published within the cooldown window | <span class="pg-sev pg-sev--high">HIGH</span> |  |
+| [PYPI-009](#pypi-009) | PyPI package has a known OSV advisory | <span class="pg-sev pg-sev--critical">CRITICAL</span> |  |
 
 ---
 
@@ -251,6 +252,26 @@ Network-dependent: needs ``--resolve-remote`` to populate the per-package publis
 **Recommended action**
 
 Either skip the just-published version (pin to the last release older than the cooldown window) or wait until the cooldown has elapsed before bumping the requirements file. Most publisher-account compromises on PyPI (``ctx`` 2022, ``requests-darwin-lite`` 2024, ``ultralytics`` 2024, the ``rspack`` / ``vant`` / ``nx`` / ``@ctrl/*`` campaigns) are detected and yanked from the index within hours-to-days of publication; holding back N days converts a publisher-compromise window into a vulnerability-disclosure window where either the maintainer rotates the malicious version off the index or the security community files an advisory that PYPI-006 can match against.
+
+</div>
+
+</div>
+
+<div class="pg-rule pg-rule--critical" markdown>
+
+## PYPI-009: PyPI package has a known OSV advisory { #pypi-009 }
+
+<div class="pg-rule__tags">
+<span class="pg-sev pg-sev--critical">CRITICAL</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-3</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-8</span> <span class="pg-tag pg-tag--esf">ESF-S-VERIFY-DEPS</span> <span class="pg-tag pg-tag--cwe">CWE-829</span> <span class="pg-tag pg-tag--cwe">CWE-506</span>
+</div>
+
+Network-dependent: needs ``--resolve-remote`` to query the OSV advisory database (``api.osv.dev``). Passes silently when the flag is off. Complements PYPI-006 (curated offline registry) with the full OSV/GHSA long-tail.
+
+<div class="pg-rule__rec" markdown>
+
+**Recommended action**
+
+Upgrade to a patched version or remove the affected package. Consult the advisory URL for remediation guidance.
 
 </div>
 

@@ -855,42 +855,25 @@ Landed as XPC-010 (see Shipped).
 
 Next, paired:
 
-- **Live OSV / GHSA lookup for pinned dep versions (NPM-010 /
-  PYPI-009 / MVN-009).** Dep-manifest analog of the planned
-  GHA-077 widening: each provider's curated
-  ``CompromisedPackage`` registry stays as the offline default,
-  and behind ``--resolve-remote`` the same registry-fetcher
-  transport NPM-008 / PYPI-008 / MVN-008 ride on queries OSV
-  (``https://api.osv.dev/v1/query``) plus the GitHub Advisory
-  database for every exact ``name == version`` pair the manifest
-  carries. Fires CRITICAL on an advisory hit, MEDIUM on a YANKED
-  package, otherwise silent. Closes the freshness gap the
-  hand-seeded registry has against advisories filed between
-  releases (the registry tracks notable incidents; OSV catches
-  the long tail). Same no-network default as the cooldown
-  trilogy, so the scan still passes silently when the flag is
-  off.
+- ~~**Live OSV / GHSA lookup for pinned dep versions (NPM-010 /
+  PYPI-009 / MVN-009 / NUGET-009).**~~ Landed. Shared
+  ``_primitives/osv_fetcher.py`` queries the OSV batch API
+  (``api.osv.dev/v1/querybatch``) for every exact name+version
+  pair behind ``--resolve-remote``. Results cached 24 hours via
+  ``FileSystemCache``. Four new rules: NPM-010, PYPI-009,
+  MVN-009, NUGET-009, all CRITICAL severity on advisory hit.
+  Batch size 1000 per request to handle large dependency trees.
 
-- **NuGet provider (``--pipeline nuget``).** Fifth dependency-
-  supply-chain provider after npm / pypi / maven. Parses
-  ``*.csproj`` ``<PackageReference>`` entries,
-  ``Directory.Packages.props`` (central package management),
-  ``packages.config`` (legacy), ``packages.lock.json``, and
-  ``project.assets.json`` (the lock the SDK writes during
-  restore). NUGET-001..007 cover floating ``[1.0,2.0)`` /
-  ``(1.0,)`` ranges, ``-*`` wildcard prereleases, missing
-  ``Version`` attributes (silently resolved by central
-  management), HTTP-only ``packageSources`` in ``NuGet.config``,
-  pins to known-compromised .NET versions, missing
-  ``packages.lock.json`` reproducibility, and missing
-  ``packageSourceMapping`` when more than one feed is
-  configured (the dependency-confusion shape that bit
-  Microsoft's first-party 2021 advisory). Hermetic on the base
-  path; a NUGET-008 cooldown rule rides the existing fetcher
-  transport against ``api.nuget.org/v3/registration5-semver1/``
-  for publish-time data. Closes the .NET ecosystem gap that
-  leaves Checkov / Snyk as the only static-analysis options for
-  ``*.csproj``.
+- ~~**NuGet provider (``--pipeline nuget``).**~~ Landed. Fifth
+  dependency-supply-chain provider. Parses ``*.csproj``
+  (``<PackageReference>``), ``Directory.Packages.props`` (central
+  package management), ``packages.config`` (legacy),
+  ``NuGet.config`` (sources + ``packageSourceMapping``), and
+  ``packages.lock.json``. Nine rules (NUGET-001..009): floating
+  ranges, wildcard prereleases, missing versions, HTTP sources,
+  compromised versions, missing lockfile, missing source mapping,
+  cooldown gate, and OSV advisory lookup. Provider count 23 -> 24.
+  22 tests under ``tests/nuget/``.
 
 ### Vulnerable-by-design benchmark: phase 2 (cross-scanner comparison)
 

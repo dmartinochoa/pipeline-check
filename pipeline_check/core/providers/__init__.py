@@ -31,6 +31,7 @@ from .jenkins import JenkinsProvider
 from .kubernetes import KubernetesProvider
 from .maven import MavenProvider
 from .npm import NpmProvider
+from .nuget import NuGetProvider
 from .oci import OCIProvider
 from .pypi import PypiProvider
 from .scm import SCMProvider
@@ -81,3 +82,4 @@ register(SCMProvider())
 register(NpmProvider())
 register(PypiProvider())
 register(MavenProvider())
+register(NuGetProvider())

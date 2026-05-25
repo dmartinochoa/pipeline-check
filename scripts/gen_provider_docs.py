@@ -1390,6 +1390,40 @@ left unresolved; deeply-recursive property graphs are rare in
 real-world POMs and out of scope for static analysis.
 """,
     ),
+    "nuget": (
+        "NuGet",
+        "pipeline_check.core.checks.nuget.rules",
+        _REPO_ROOT / "docs" / "providers" / "nuget.md",
+        """\
+# NuGet provider
+
+Parses .NET NuGet project files and configuration on disk. Text-only
+static analysis, no `dotnet restore`, no NuGet API access (offline
+rules). Behind `--resolve-remote`, NUGET-008 queries
+`api.nuget.org` for publish-time metadata and NUGET-009 queries the
+OSV advisory database.
+
+## Producer workflow
+
+```bash
+# --nuget-path is auto-detected when Directory.Packages.props exists.
+pipeline_check --pipeline nuget
+pipeline_check --pipeline nuget --nuget-path ./src/
+```
+
+## Supported file formats
+
+| File | Parse shape |
+|------|-------------|
+| `*.csproj` | `<PackageReference Include="..." Version="..." />` entries |
+| `Directory.Packages.props` | Central package management (`<PackageVersion>` entries) |
+| `packages.config` | Legacy format (`<package id="..." version="..." />`) |
+| `NuGet.config` | Package sources and `packageSourceMapping` sections |
+| `packages.lock.json` | SDK-generated lock file (resolved versions) |
+
+`bin/`, `obj/`, and `.nuget/` directories are skipped.
+""",
+    ),
     "cloudformation": (
         "CloudFormation",
         "pipeline_check.core.checks.cloudformation.rules",

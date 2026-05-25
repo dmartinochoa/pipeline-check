@@ -48,7 +48,7 @@ real-world POMs and out of scope for static analysis.
 
 ## What it covers
 
-8 checks · 0 have an autofix patch (``--fix``).
+9 checks · 0 have an autofix patch (``--fix``).
 
 | Check | Title | Severity | Fix |
 |-------|-------|----------|-----|
@@ -60,6 +60,7 @@ real-world POMs and out of scope for static analysis.
 | [MVN-006](#mvn-006) | pom.xml pins a known-compromised Maven Central artifact version | <span class="pg-sev pg-sev--critical">CRITICAL</span> |  |
 | [MVN-007](#mvn-007) | settings.xml mirror routes external traffic through one repo | <span class="pg-sev pg-sev--medium">MEDIUM</span> |  |
 | [MVN-008](#mvn-008) | Direct dependency was published within the cooldown window | <span class="pg-sev pg-sev--high">HIGH</span> |  |
+| [MVN-009](#mvn-009) | Maven artifact has a known OSV advisory | <span class="pg-sev pg-sev--critical">CRITICAL</span> |  |
 
 ---
 
@@ -271,6 +272,26 @@ Network-dependent: needs ``--resolve-remote`` to populate the per-coordinate pub
 **Recommended action**
 
 Either skip the just-published version (pin to the last release older than the cooldown window) or wait until the cooldown has elapsed before bumping the POM. Publisher- account compromises on Maven Central are rarer than on npm / PyPI, but the takedown window is the same shape: Sonatype yanks malicious artifacts within hours-to-days once an advisory lands; holding back N days converts a publisher-compromise window into a vulnerability- disclosure window where either the maintainer rotates the malicious release off Central or the security community files a CVE that MVN-006 can match against.
+
+</div>
+
+</div>
+
+<div class="pg-rule pg-rule--critical" markdown>
+
+## MVN-009: Maven artifact has a known OSV advisory { #mvn-009 }
+
+<div class="pg-rule__tags">
+<span class="pg-sev pg-sev--critical">CRITICAL</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-3</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-8</span> <span class="pg-tag pg-tag--esf">ESF-S-VERIFY-DEPS</span> <span class="pg-tag pg-tag--cwe">CWE-829</span> <span class="pg-tag pg-tag--cwe">CWE-506</span>
+</div>
+
+Network-dependent: needs ``--resolve-remote`` to query the OSV advisory database (``api.osv.dev``). Passes silently when the flag is off. Complements MVN-006 (curated offline registry) with the full OSV/GHSA long-tail.
+
+<div class="pg-rule__rec" markdown>
+
+**Recommended action**
+
+Upgrade to a patched version or remove the affected artifact. Consult the advisory URL for remediation guidance.
 
 </div>
 
