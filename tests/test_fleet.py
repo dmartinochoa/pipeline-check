@@ -807,7 +807,7 @@ _FAKE_GITHUB_REPOS: list[dict[str, object]] = [
 def _fake_github_fetch(
     self: object, path: str,
 ) -> list[dict[str, object]]:
-    if "page=1" in path:
+    if "&page=1&" in path:
         return _FAKE_GITHUB_REPOS
     return []
 
@@ -847,9 +847,9 @@ class TestEnumerateOrgRepos:
         ]
 
         def fake_fetch(self: object, path: str) -> list[dict[str, object]]:
-            if "page=1" in path:
+            if "&page=1&" in path:
                 return page1
-            if "page=2" in path:
+            if "&page=2&" in path:
                 return page2
             return []
 
@@ -895,7 +895,7 @@ class TestEnumerateOrgRepos:
         def fake_fetch(
             self: object, path: str,
         ) -> list[dict[str, object]] | None:
-            if "page=1" in path:
+            if "&page=1&" in path:
                 return fake_projects
             return []
 
