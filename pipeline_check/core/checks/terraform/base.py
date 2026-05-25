@@ -1,15 +1,19 @@
 """Terraform-specific base check and context.
 
 Check modules under this package subclass ``TerraformBaseCheck`` and read
-resources from ``self.ctx``, a :class:`TerraformContext` wrapping the
-parsed output of ``terraform show -json``. Checks never parse HCL; they
-operate on the resolved, typed plan representation Terraform emits.
+resources from ``self.ctx``, a :class:`TerraformContext` wrapping either
+the parsed output of ``terraform show -json`` (plan path) or directly
+parsed ``*.tf`` files (HCL source path).
 
-Typical producer workflow for the caller:
+Plan path (canonical, fully resolved attributes):
 
     terraform plan -out=tfplan
     terraform show -json tfplan > plan.json
     pipeline_check --pipeline terraform --tf-plan plan.json
+
+HCL source path (best-effort, partial variable resolution):
+
+    pipeline_check --pipeline terraform --tf-source ./infra/
 """
 from __future__ import annotations
 
@@ -33,14 +37,22 @@ class TerraformResource:
 
 
 class TerraformContext:
-    """Flattened, queryable view of a ``terraform show -json`` document.
+    """Flattened, queryable view of Terraform resources.
 
-    Resources in child modules are walked recursively so checks do not have
-    to care about module nesting.
+    Resources come from either a ``terraform show -json`` plan document
+    (``from_path``) or from direct HCL source parsing (``from_hcl_dir``).
+    Child modules are walked recursively so checks do not have to care
+    about module nesting.
     """
 
     def __init__(self, plan: dict[str, Any]) -> None:
         self._plan = plan
+        self.source_mode: str = "plan"
+        self.warnings: list[str] = []
+        self.unresolved_refs: set[str] = set()
+        self._resources_with_unresolved: set[str] = set()
+        self.files_scanned: int = 0
+        self.files_skipped: int = 0
         resources, data_sources = _split_resources(plan)
         self._resources: list[TerraformResource] = resources
         self._data_sources: list[TerraformResource] = data_sources
@@ -49,6 +61,34 @@ class TerraformContext:
     def from_path(cls, path: str | Path) -> TerraformContext:
         with open(path, encoding="utf-8") as fh:
             return cls(json.load(fh))
+
+    @classmethod
+    def from_hcl_dir(cls, path: str | Path) -> TerraformContext:
+        """Parse ``*.tf`` files in *path* and build a context from raw HCL.
+
+        Requires ``python-hcl2`` (``pip install pipeline-check[hcl]``).
+        """
+        from ._hcl_parser import parse_tf_directory
+
+        result = parse_tf_directory(Path(path))
+        ctx = cls.__new__(cls)
+        ctx._plan = {}
+        ctx.source_mode = "hcl"
+        ctx.warnings = result.warnings
+        ctx.unresolved_refs = result.unresolved_refs
+        ctx._resources_with_unresolved = result.resources_with_unresolved
+        ctx.files_scanned = result.files_scanned
+        ctx.files_skipped = 0
+        ctx._resources = result.resources
+        ctx._data_sources = result.data_sources
+        if result.unresolved_refs:
+            refs = ", ".join(sorted(result.unresolved_refs)[:10])
+            ctx.warnings.append(
+                f"[hcl] Best-effort parse: {len(result.unresolved_refs)} "
+                f"reference(s) could not be resolved ({refs}). "
+                f"Findings referencing these values may be imprecise."
+            )
+        return ctx
 
     def resources(self, resource_type: str | None = None) -> Iterator[TerraformResource]:
         """Yield **managed** resources, optionally filtered by Terraform *resource_type*."""

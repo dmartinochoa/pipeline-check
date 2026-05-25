@@ -68,6 +68,10 @@ lsp = [
     "pygls>=2.1.0",
     "lsprotocol>=2025.0.0",
 ]
+# Opt-in direct-HCL Terraform parsing (``--tf-source``). Lets the
+# scanner read raw *.tf files without requiring ``terraform plan``
+# + ``terraform show -json``. Variable resolution is best-effort.
+hcl = ["python-hcl2>=4.0"]
 
 [project.scripts]
 pipeline_check = "pipeline_check.cli:main"

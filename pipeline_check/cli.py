@@ -153,7 +153,7 @@ class _GroupedCommand(click.Command):
     _SECTIONS: tuple[tuple[str, frozenset[str]], ...] = (
         ("Target", frozenset({
             "--pipeline", "--target", "--region", "--profile",
-            "--tf-plan", "--gha-path", "--gitlab-path",
+            "--tf-plan", "--tf-source", "--gha-path", "--gitlab-path",
             "--bitbucket-path", "--azure-path", "--jenkinsfile-path",
             "--circleci-path", "--cfn-template", "--cloudbuild-path",
             "--dockerfile-path", "--k8s-path", "--helm-path",
@@ -594,6 +594,7 @@ _PROVIDER_DETECT_FILES: tuple[tuple[str, tuple[str, ...], tuple[str, ...]], ...]
     ("npm", ("package.json", "package-lock.json"), ()),
     ("pypi", ("requirements.txt",), ()),
     ("maven", ("pom.xml",), ()),
+    ("terraform", ("main.tf",), ()),
     (
         "cloudformation",
         (
@@ -979,7 +980,7 @@ def _install_completion_callback(
         "generic; pass ``--pipeline oci`` or ``--pipelines github,oci`` "
         "explicitly. Falls back to ``aws`` when nothing matches. "
         "Each provider has a companion path flag "
-        "(--tf-plan, --cfn-template, --gha-path, --gitlab-path, "
+        "(--tf-plan, --tf-source, --cfn-template, --gha-path, --gitlab-path, "
         "--bitbucket-path, --azure-path, --jenkinsfile-path, "
         "--circleci-path, --cloudbuild-path, --dockerfile-path, "
         "--k8s-path, --helm-path, --buildkite-path, --tekton-path, "
@@ -1059,7 +1060,18 @@ def _install_completion_callback(
     metavar="PATH",
     help=(
         "Path to the JSON output of `terraform show -json` "
-        "(Terraform provider only; required when --pipeline terraform)."
+        "(Terraform provider only; mutually exclusive with --tf-source)."
+    ),
+)
+@click.option(
+    "--tf-source",
+    default=None,
+    metavar="PATH",
+    help=(
+        "Path to a directory containing *.tf files. Parses HCL directly "
+        "without requiring `terraform plan` (best-effort variable "
+        "resolution). Requires `pip install pipeline-check[hcl]`. "
+        "Mutually exclusive with --tf-plan."
     ),
 )
 @click.option(
@@ -1980,6 +1992,7 @@ def scan(
     region: str,
     profile: str | None,
     tf_plan: str | None,
+    tf_source: str | None,
     gha_path: str | None,
     gitlab_path: str | None,
     bitbucket_path: str | None,
@@ -2307,10 +2320,26 @@ def scan(
     pipelines_to_resolve = pipelines_list or [pipeline_lc]
     for pipeline_lc in pipelines_to_resolve:
         if pipeline_lc == "terraform":
-            tf_plan = _resolve_provider_path(
-                "terraform", flag="tf-plan", value=tf_plan,
-                validate_kind="file", not_found_label="path",
-            )
+            if tf_plan and tf_source:
+                raise click.UsageError(
+                    "--tf-plan and --tf-source are mutually exclusive."
+                )
+            if tf_plan:
+                tf_plan = _resolve_provider_path(
+                    "terraform", flag="tf-plan", value=tf_plan,
+                    validate_kind="file", not_found_label="path",
+                )
+            elif tf_source:
+                tf_source = _resolve_provider_path(
+                    "terraform", flag="tf-source", value=tf_source,
+                    validate_kind="dir", not_found_label="directory",
+                )
+            elif os.path.isfile("main.tf"):
+                tf_source = "."
+                click.echo(
+                    "[auto] using --tf-source . (main.tf detected)",
+                    err=True,
+                )
         elif pipeline_lc == "github":
             gha_path = _resolve_provider_path(
                 "github", flag="gha-path", value=gha_path,
@@ -2602,6 +2631,7 @@ def scan(
         fp_annotations_path=fp_path,
         log=_debug if verbose else None,
         tf_plan=tf_plan,
+        tf_source=tf_source,
         gha_path=gha_path,
         gitlab_path=gitlab_path,
         bitbucket_path=bitbucket_path,
@@ -2808,6 +2838,7 @@ def scan(
             ignore_file=ignore_file,
             fp_path=fp_path,
             tf_plan=tf_plan,
+            tf_source=tf_source,
             gha_path=gha_path,
             gitlab_path=gitlab_path,
             bitbucket_path=bitbucket_path,
@@ -3207,6 +3238,7 @@ def _build_pr_diff_subprocess_argv(
     ignore_file: str | None,
     fp_path: str | None,
     tf_plan: str | None,
+    tf_source: str | None,
     gha_path: str | None,
     gitlab_path: str | None,
     bitbucket_path: str | None,
@@ -3272,6 +3304,7 @@ def _build_pr_diff_subprocess_argv(
     # (rare but explicit user intent).
     _path_pairs: tuple[tuple[str, str | None], ...] = (
         ("--tf-plan", tf_plan),
+        ("--tf-source", tf_source),
         ("--gha-path", gha_path),
         ("--gitlab-path", gitlab_path),
         ("--bitbucket-path", bitbucket_path),

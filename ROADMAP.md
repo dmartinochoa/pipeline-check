@@ -748,24 +748,24 @@ templates / components, which would need cross-document machinery
 similar to the GHA ``--resolve-remote`` flow. Closes the last
 known limitation in the TAINT-NNN engine's coverage.
 
-### Direct-HCL Terraform parsing (no `--tf-plan` requirement)
+### ~~Direct-HCL Terraform parsing (no `--tf-plan` requirement)~~
 
-The terraform provider consumes ``terraform show -json`` plan output
-via ``--tf-plan``. The plan-step requirement is fine for the
-canonical CI flow but locks out three real use cases: pre-init scans
-(providers not downloaded yet), monorepo audits where running
-``terraform plan`` per module is prohibitive, and corpus benchmarks
-that ship raw HCL with no plan capture. Land a second parsing path
-that reads ``*.tf`` files directly (via the ``python-hcl2`` parser
-or a tree-sitter grammar) and synthesizes a partial resource graph
-good enough for the same TF-NNN rule pack to run against. Unresolved
+Landed. ``--tf-source <dir>`` parses ``*.tf`` files directly via
+``python-hcl2`` (behind the ``[hcl]`` install extra) and synthesizes
+the same ``TerraformResource`` objects the plan-JSON path produces,
+so all 58 existing TF-NNN rules run unchanged. Variable and local
+substitution is best-effort: ``variable`` blocks with a ``default``
+and ``locals`` blocks with literal values resolve; unresolvable
 ``var.<name>`` / ``module.X.output.Y`` / ``data.<x>.<y>`` references
-stay opaque, the rule emits a confidence-demoted finding rather than
-a false negative. The plan-JSON path stays canonical (it carries the
-fully-resolved attribute values raw HCL can't); ``--tf-source`` is
-the new flag, ``--tf-plan`` keeps its semantics. Closes the
-``terragoat`` skip in ``bench/goats/`` and unlocks the "scan a fresh
-checkout" UX that Checkov / KICS / tfsec all offer.
+stay as opaque ``${...}`` strings and findings on those resources get
+confidence-demoted one rung (HIGH -> MEDIUM, MEDIUM -> LOW). Local
+child modules (``source = "./..."`` / ``"../..."``) are walked
+recursively to depth 3; remote registry modules are skipped. The
+plan-JSON path stays canonical (``--tf-plan`` keeps its semantics);
+``main.tf`` presence auto-detects to ``--tf-source .`` when no
+``--tf-plan`` is provided. Closes the ``terragoat`` skip in
+``bench/goats/``. 23 new tests under
+``tests/terraform/test_hcl_parser.py``.
 
 ### Pipeline graph DAG v2 (step-level)
 

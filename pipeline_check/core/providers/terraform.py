@@ -1,18 +1,21 @@
-"""Terraform provider, scans a ``terraform show -json`` plan document.
+"""Terraform provider.
 
-The provider consumes the post-plan JSON output rather than parsing raw HCL,
-so every attribute is already resolved and typed. Producer workflow:
+Two input paths, same rule pack:
+
+Plan JSON (canonical, fully resolved attributes):
 
     terraform plan -out=tfplan
     terraform show -json tfplan > plan.json
     pipeline_check --pipeline terraform --tf-plan plan.json
 
-To add a new Terraform check module
-------------------------------------
-1. Create ``pipeline_check/core/checks/terraform/<service>.py`` subclassing
-   ``TerraformBaseCheck``.
-2. Import it here and append it to the ``check_classes`` property.
-3. Add unit tests under ``tests/terraform/``.
+HCL source (best-effort, no ``terraform`` binary required):
+
+    pipeline_check --pipeline terraform --tf-source ./infra/
+
+The plan path stays canonical: every attribute is already resolved and
+typed. The HCL path is best-effort, variable/local substitution is
+partial, and unresolvable references stay opaque. Both paths produce the
+same ``TerraformContext`` so the 58-rule pack runs unchanged.
 """
 from __future__ import annotations
 
@@ -80,17 +83,26 @@ def _tf_metadata(resource_type: str, values: dict[str, Any]) -> dict[str, Any]:
 
 
 class TerraformProvider(BaseProvider):
-    """Scans a parsed ``terraform show -json`` document."""
+    """Scans Terraform via plan JSON or direct HCL source."""
 
     NAME = "terraform"
 
-    def build_context(self, tf_plan: str | None = None, **_: Any) -> TerraformContext:
-        if not tf_plan:
-            raise ValueError(
-                "The terraform provider requires --tf-plan <path> pointing at "
-                "the JSON output of `terraform show -json`."
-            )
-        return TerraformContext.from_path(tf_plan)
+    def build_context(
+        self,
+        tf_plan: str | None = None,
+        tf_source: str | None = None,
+        **_: Any,
+    ) -> TerraformContext:
+        if tf_plan:
+            return TerraformContext.from_path(tf_plan)
+        if tf_source:
+            return TerraformContext.from_hcl_dir(tf_source)
+        raise ValueError(
+            "The terraform provider requires either "
+            "--tf-plan <path> (JSON output of `terraform show -json`) "
+            "or --tf-source <directory> (directory containing *.tf files, "
+            "requires `pip install pipeline-check[hcl]`)."
+        )
 
     @property
     def check_classes(self) -> list[type[BaseCheck[Any]]]:

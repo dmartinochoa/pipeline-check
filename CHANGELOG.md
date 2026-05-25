@@ -10,6 +10,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 PRs landing on `dev` between releases append entries below. The
 release commit collapses this section into `## [X.Y.Z] - <date>`.
 
+### Added
+
+- **Direct-HCL Terraform parsing (``--tf-source``).** ``--tf-source <dir>``
+  parses ``*.tf`` files via ``python-hcl2`` (behind ``[hcl]`` extra) and
+  synthesizes the same ``TerraformResource`` objects the plan-JSON path
+  produces, so all 58 TF-NNN rules run unchanged. Variable/local
+  substitution is best-effort; unresolvable references stay opaque and
+  findings get confidence-demoted. Auto-detects ``main.tf`` presence.
+  Unskips the ``terragoat`` benchmark. 23 new tests.
+
 ### Changed
 
 - **GHA-004 widened with top-level write-scope aggregation.** When a

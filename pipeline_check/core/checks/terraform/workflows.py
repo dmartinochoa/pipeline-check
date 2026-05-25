@@ -16,7 +16,7 @@ from __future__ import annotations
 
 from typing import cast
 
-from ..base import Finding
+from ..base import Confidence, Finding
 from ..rule import apply_rule_metadata, discover_rules
 from .base import TerraformBaseCheck, TerraformContext
 
@@ -49,6 +49,24 @@ class TerraformRuleChecks(TerraformBaseCheck):
                 # canonicalizes them from the Rule.
                 apply_rule_metadata(finding, rule)
             findings.extend(batch)
+
+        if (
+            self.ctx.source_mode == "hcl"
+            and self.ctx._resources_with_unresolved
+        ):
+            _demote = {
+                Confidence.HIGH: Confidence.MEDIUM,
+                Confidence.MEDIUM: Confidence.LOW,
+            }
+            for f in findings:
+                if (
+                    not f.passed
+                    and not f.confidence_locked
+                    and f.resource in self.ctx._resources_with_unresolved
+                ):
+                    if f.confidence in _demote:
+                        f.confidence = _demote[f.confidence]
+
         return findings
 
 
