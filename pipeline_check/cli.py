@@ -745,7 +745,10 @@ def _collect_inline_ignores(
                     text = open(filepath, encoding="utf-8").read()
                 except OSError:
                     continue
-                rel = os.path.relpath(filepath).replace("\\", "/")
+                try:
+                    rel = os.path.relpath(filepath).replace("\\", "/")
+                except ValueError:
+                    rel = filepath.replace("\\", "/")
                 all_rules.extend(extract_inline_ignores(rel, text))
     return build_inline_index(all_rules)
 
@@ -3657,7 +3660,13 @@ def _maybe_emit_npm_alongside_github_hint(
     pjs = _find_sibling_package_jsons(".")
     if not pjs:
         return
-    sample = ", ".join(os.path.relpath(p) for p in pjs[:3])
+    def _safe_relpath(p: str) -> str:
+        try:
+            return os.path.relpath(p)
+        except ValueError:
+            return p
+
+    sample = ", ".join(_safe_relpath(p) for p in pjs[:3])
     more = "" if len(pjs) <= 3 else f" (+{len(pjs) - 3} more)"
     # One ``package.json`` at the repo root resolves via the npm
     # provider's own cwd auto-detection (``pipeline_check --pipeline
@@ -3665,7 +3674,7 @@ def _maybe_emit_npm_alongside_github_hint(
     # an explicit ``--npm-path <dir>`` per manifest, so the hint
     # surfaces the directory the user would point at.
     pj_dirs = sorted({
-        os.path.relpath(os.path.dirname(p)) or "." for p in pjs
+        _safe_relpath(os.path.dirname(p)) or "." for p in pjs
     })
     if len(pj_dirs) == 1 and pj_dirs[0] in (".", ""):
         suggestion = (
