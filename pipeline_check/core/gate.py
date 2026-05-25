@@ -52,6 +52,7 @@ import yaml
 from ._yaml_strict import DupKeyLoader as _DupKeyIgnoreLoader
 from .chains import Chain
 from .checks.base import Finding, Severity, severity_rank
+from .inline_ignore import InlineIgnoreIndex
 from .scorer import ScoreResult
 
 # Grade ordering. A is best, D is worst. Kept inline rather than imported
@@ -116,6 +117,10 @@ class GateConfig:
     #: at the CLI layer; if both are set here, file wins.
     baseline_from_git: tuple[str, str] | None = None  # (ref, path)
     ignore_rules: list[IgnoreRule] = field(default_factory=list)
+    #: Inline ignore index built from ``# pipeline-check: ignore[...]``
+    #: comments in the scanned source files. ``None`` means inline
+    #: ignores are disabled (``--no-inline-ignore``).
+    inline_ignores: InlineIgnoreIndex | None = None
     #: Specific attack-chain IDs that should fail the gate when matched.
     #: Use ``{"AC-001", "AC-007"}`` to gate only on chains the team has
     #: explicitly opted in to.
@@ -369,7 +374,12 @@ def _norm_resource(s: str) -> str:
     return s.replace("\\", "/")
 
 
-def _is_ignored(f: Finding, rules: Iterable[IgnoreRule], today: _dt.date) -> bool:
+def _is_ignored(
+    f: Finding,
+    rules: Iterable[IgnoreRule],
+    today: _dt.date,
+    inline_ignores: InlineIgnoreIndex | None = None,
+) -> bool:
     norm_resource = _norm_resource(f.resource)
     for r in rules:
         if r.is_expired(today):
@@ -378,6 +388,10 @@ def _is_ignored(f: Finding, rules: Iterable[IgnoreRule], today: _dt.date) -> boo
             continue
         if r.resource is None or _norm_resource(r.resource) == norm_resource:
             return True
+    if inline_ignores and inline_ignores.matches(
+        f.check_id, f.resource, f.locations,
+    ):
+        return True
     return False
 
 
@@ -423,7 +437,7 @@ def evaluate_gate(
     suppressed: list[Finding] = []
     effective: list[Finding] = []
     for f in after_baseline:
-        if _is_ignored(f, config.ignore_rules, today):
+        if _is_ignored(f, config.ignore_rules, today, config.inline_ignores):
             suppressed.append(f)
         else:
             effective.append(f)

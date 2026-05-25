@@ -12,6 +12,13 @@ release commit collapses this section into `## [X.Y.Z] - <date>`.
 
 ### Added
 
+- **Inline source-line ignore comments (closes #174).** Three directives:
+  ``# pipeline-check: ignore[RULE-ID]`` (same line),
+  ``ignore-next-line[RULE-ID]`` (following line), and
+  ``ignore-file[RULE-ID]`` (entire file). Comma-separated IDs and
+  optional ``reason=<text>`` supported. Both ``#`` and ``//`` prefixes
+  recognized. Flows through the same ``core/gate.py`` plumbing as
+  ``--ignore-file``. Disabled via ``--no-inline-ignore``. 23 tests.
 - **Direct-HCL Terraform parsing (``--tf-source``).** ``--tf-source <dir>``
   parses ``*.tf`` files via ``python-hcl2`` (behind ``[hcl]`` extra) and
   synthesizes the same ``TerraformResource`` objects the plan-JSON path

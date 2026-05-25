@@ -60,6 +60,11 @@ from .core import standards as _standards
 from .core.checks.base import Confidence, Severity, confidence_rank
 from .core.config import load_config
 from .core.gate import GateConfig, evaluate_gate, load_ignore_file
+from .core.inline_ignore import (
+    InlineIgnoreIndex,
+    build_inline_index,
+    extract_inline_ignores,
+)
 from .core.html_reporter import report_html
 from .core.junit_reporter import report_junit
 from .core.markdown_reporter import report_markdown
@@ -176,7 +181,7 @@ class _GroupedCommand(click.Command):
             "--fail-on", "--min-grade", "--max-failures",
             "--fail-on-check", "--baseline", "--baseline-from-git",
             "--write-baseline",
-            "--diff-base", "--pr-diff", "--ignore-file",
+            "--diff-base", "--pr-diff", "--ignore-file", "--no-inline-ignore",
             "--fail-on-chain", "--fail-on-any-chain",
         })),
         ("Attack chains", frozenset({
@@ -654,6 +659,91 @@ def _detect_all_pipelines_from_cwd() -> list[str]:
     if "helm" in detected and "kubernetes" in detected:
         detected.remove("kubernetes")
     return detected
+
+
+# ── Inline ignore collection ─────────────────────────────────────────────
+
+#: Maps provider names to (glob_patterns, base_path_kwarg). When a
+#: provider is active, the glob patterns are expanded relative to the
+#: provider's resolved path (or cwd) to find files that may carry
+#: inline ``# pipeline-check: ignore[...]`` comments.
+_INLINE_IGNORE_GLOBS: dict[str, tuple[str, ...]] = {
+    "github": ("*.yml", "*.yaml"),
+    "gitlab": ("*.yml", "*.yaml"),
+    "bitbucket": ("*.yml", "*.yaml"),
+    "azure": ("*.yml", "*.yaml"),
+    "circleci": ("*.yml", "*.yaml"),
+    "cloudbuild": ("*.yml", "*.yaml"),
+    "buildkite": ("*.yml", "*.yaml"),
+    "drone": ("*.yml", "*.yaml"),
+    "tekton": ("*.yml", "*.yaml"),
+    "argo": ("*.yml", "*.yaml"),
+    "argocd": ("*.yml", "*.yaml"),
+    "kubernetes": ("*.yml", "*.yaml"),
+    "helm": ("*.yml", "*.yaml"),
+    "dockerfile": ("Dockerfile", "Containerfile", "*.Dockerfile"),
+    "jenkins": ("Jenkinsfile",),
+    "terraform": ("*.tf",),
+    "cloudformation": ("*.yml", "*.yaml", "*.json"),
+    "npm": ("package.json", "package-lock.json", ".npmrc"),
+    "pypi": ("requirements*.txt", "*.in", "pyproject.toml"),
+    "maven": ("pom.xml", "settings.xml"),
+}
+
+#: Maps provider names to the kwarg name used for the provider path.
+_PROVIDER_PATH_KWARG: dict[str, str] = {
+    "github": "gha_path",
+    "gitlab": "gitlab_path",
+    "bitbucket": "bitbucket_path",
+    "azure": "azure_path",
+    "jenkins": "jenkinsfile_path",
+    "circleci": "circleci_path",
+    "cloudbuild": "cloudbuild_path",
+    "buildkite": "buildkite_path",
+    "drone": "drone_path",
+    "tekton": "tekton_path",
+    "argo": "argo_path",
+    "argocd": "argocd_path",
+    "dockerfile": "dockerfile_path",
+    "kubernetes": "k8s_path",
+    "helm": "helm_path",
+    "terraform": "tf_source",
+    "npm": "npm_path",
+    "pypi": "pypi_path",
+    "maven": "maven_path",
+}
+
+
+def _collect_inline_ignores(
+    pipelines: list[str],
+    path_kwargs: dict[str, str | None],
+) -> InlineIgnoreIndex:
+    """Walk scanned files and extract inline ignore comments."""
+    import glob as _glob
+
+    all_rules: list = []
+    for provider in pipelines:
+        globs = _INLINE_IGNORE_GLOBS.get(provider)
+        if not globs:
+            continue
+        kwarg_name = _PROVIDER_PATH_KWARG.get(provider)
+        base = (path_kwargs.get(kwarg_name) if kwarg_name else None) or "."
+        if not os.path.isdir(base):
+            if os.path.isfile(base):
+                base = os.path.dirname(base) or "."
+            else:
+                continue
+        for pattern in globs:
+            for filepath in _glob.glob(os.path.join(base, pattern)):
+                if not os.path.isfile(filepath):
+                    continue
+                try:
+                    text = open(filepath, encoding="utf-8").read()
+                except OSError:
+                    continue
+                rel = os.path.relpath(filepath).replace("\\", "/")
+                all_rules.extend(extract_inline_ignores(rel, text))
+    return build_inline_index(all_rules)
 
 
 _CHECK_IDS_CACHE: list[str] | None = None
@@ -1799,6 +1889,15 @@ def _install_completion_callback(
     ),
 )
 @click.option(
+    "--no-inline-ignore",
+    is_flag=True,
+    default=False,
+    help=(
+        "Disable inline ``# pipeline-check: ignore[RULE-ID]`` comments. "
+        "When set, only the ignore file (--ignore-file) suppresses findings."
+    ),
+)
+@click.option(
     "--custom-rules",
     "custom_rules",
     multiple=True,
@@ -2052,6 +2151,7 @@ def scan(
     baseline: str | None,
     write_baseline: str | None,
     ignore_file: str | None,
+    no_inline_ignore: bool,
     custom_rules: tuple[str, ...],
     verbose: bool,
     quiet: bool,
@@ -3088,6 +3188,32 @@ def scan(
                 "(would be parsed as a git flag, not a positional argument)"
             )
         baseline_git_pair = (ref_part, path_part)
+    inline_index: InlineIgnoreIndex | None = None
+    if not no_inline_ignore:
+        active_pipelines = pipelines_list or [pipeline_lc]
+        path_kwargs: dict[str, str | None] = {
+            "gha_path": gha_path,
+            "gitlab_path": gitlab_path,
+            "bitbucket_path": bitbucket_path,
+            "azure_path": azure_path,
+            "jenkinsfile_path": jenkinsfile_path,
+            "circleci_path": circleci_path,
+            "cloudbuild_path": cloudbuild_path,
+            "buildkite_path": buildkite_path,
+            "drone_path": drone_path,
+            "tekton_path": tekton_path,
+            "argo_path": argo_path,
+            "argocd_path": argocd_path,
+            "dockerfile_path": dockerfile_path,
+            "k8s_path": k8s_path,
+            "helm_path": helm_path,
+            "tf_source": tf_source,
+            "npm_path": npm_path,
+            "pypi_path": pypi_path,
+            "maven_path": maven_path,
+        }
+        inline_index = _collect_inline_ignores(active_pipelines, path_kwargs)
+
     gate_config = GateConfig(
         fail_on=Severity(fail_on.upper()) if fail_on else None,
         min_grade=min_grade.upper() if min_grade else None,
@@ -3096,6 +3222,7 @@ def scan(
         baseline_path=baseline,
         baseline_from_git=baseline_git_pair,
         ignore_rules=load_ignore_file(ignore_path),
+        inline_ignores=inline_index,
         fail_on_chains={c.upper() for c in fail_on_chain_ids},
         fail_on_any_chain=fail_on_any_chain,
     )

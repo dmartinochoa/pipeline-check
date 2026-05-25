@@ -661,19 +661,18 @@ cross-platform composition stay out of scope.
 
 Filed as #173.
 
-### Inline source-line ignore comments
+### ~~Inline source-line ignore comments~~
 
-`# pipeline-check: ignore[RULE-ID]` annotations on the source line
-itself, mirroring zizmor's `# zizmor: ignore[...]`, ruff's `# noqa`,
-trufflehog's `# trufflehog:ignore`, and semgrep's `// nosemgrep`.
-Today suppression works via `--ignore-file` (flat-text or structured
-YAML); both are sidecar files, so a reviewer reading the diff cannot
-see that a line is suppressed. Pre-parse lexer pass picks the
-comment off the raw file content (YAML parsers drop standalone
-comments), joins to findings via the existing line-coordinate, and
-flows through the same `core/gate.py` plumbing as the file path.
-Includes `ignore-next-line` / `ignore-file[RULE]` /
-`ignore-rule[RULE] reason=...` variants. Filed as #174.
+Landed. Three directive variants: ``ignore[ID]`` (same line),
+``ignore-next-line[ID]`` (following line), and ``ignore-file[ID]``
+(entire file). Multiple IDs are comma-separated. An optional
+``reason=<text>`` suffix is captured for audit trails. Both ``#``
+and ``//`` comment prefixes are recognized (YAML, Dockerfile, HCL,
+Groovy). Pre-parse regex extraction runs on the raw file content
+before YAML parsers strip comments, then feeds through the same
+``core/gate.py`` plumbing as ``--ignore-file``. Disabled via
+``--no-inline-ignore``. 23 tests under
+``tests/test_inline_ignore.py``.
 
 ### Live secret verification (verified / unverified / unknown)
 
