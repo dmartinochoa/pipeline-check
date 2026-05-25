@@ -10,8 +10,46 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 PRs landing on `dev` between releases append entries below. The
 release commit collapses this section into `## [X.Y.Z] - <date>`.
 
+### Added
+
+- **Autofix safety tiers (closes #177).** ``--fix`` (bare flag) now runs
+  only safe fixers; ``--fix=unsafe`` runs all; ``--fix=unsafe-only`` runs
+  only inference-dependent fixers. 109 fixers labeled safe, 2 unsafe.
+  Enforced by ``tests/test_autofix_safety.py``.
+- **NuGet provider (``--pipeline nuget``).** Fifth dependency-supply-chain
+  provider. Parses ``*.csproj``, ``Directory.Packages.props``,
+  ``packages.config``, ``NuGet.config``, and ``packages.lock.json``.
+  Nine rules (NUGET-001..009) covering floating ranges, wildcard
+  prereleases, missing versions, HTTP sources, compromised versions,
+  missing lockfile, dependency-confusion source mapping, cooldown
+  gate, and live OSV advisory lookup. Provider count 23 -> 24.
+- **Live OSV advisory lookup (NPM-010, PYPI-009, MVN-009, NUGET-009).**
+  Shared ``_primitives/osv_fetcher.py`` queries the OSV batch API for
+  every exact name+version pair behind ``--resolve-remote``. Fires
+  CRITICAL on advisory hit. Closes the freshness gap the curated
+  offline registries have against newly filed advisories.
+- **Inline source-line ignore comments (closes #174).** Three directives:
+  ``# pipeline-check: ignore[RULE-ID]`` (same line),
+  ``ignore-next-line[RULE-ID]`` (following line), and
+  ``ignore-file[RULE-ID]`` (entire file). Comma-separated IDs and
+  optional ``reason=<text>`` supported. Both ``#`` and ``//`` prefixes
+  recognized. Flows through the same ``core/gate.py`` plumbing as
+  ``--ignore-file``. Disabled via ``--no-inline-ignore``. 23 tests.
+- **Direct-HCL Terraform parsing (``--tf-source``).** ``--tf-source <dir>``
+  parses ``*.tf`` files via ``python-hcl2`` (behind ``[hcl]`` extra) and
+  synthesizes the same ``TerraformResource`` objects the plan-JSON path
+  produces, so all 58 TF-NNN rules run unchanged. Variable/local
+  substitution is best-effort; unresolvable references stay opaque and
+  findings get confidence-demoted. Auto-detects ``main.tf`` presence.
+  Unskips the ``terragoat`` benchmark. 23 new tests.
+
 ### Changed
 
+- **GHA-004 widened with top-level write-scope aggregation.** When a
+  workflow-level ``permissions:`` block grants a write scope that no
+  inheriting job consumes, the rule now flags the excess grant.
+  Completes the overprovisioned-permissions sweep (roadmap item
+  GHA-068). 8 new tests.
 - **GHA-058 widened with PR-checkout topology (closes #152).**
   Adds a second detection shape inspired by zizmor proposals
   #1605 (``agentic-actions``) and #1607 (hijackable commands after

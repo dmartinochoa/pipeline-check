@@ -420,6 +420,23 @@ STANDARD = Standard(
         "MVN-005":  ["Build.L3.NonFalsifiable"],                   # lax checksumPolicy
         "MVN-006":  ["Build.L3.NonFalsifiable"],                   # compromised Maven version
         "MVN-007":  ["Build.L3.NonFalsifiable"],                   # settings.xml wildcard mirror
+        "MVN-008":  ["Build.L3.NonFalsifiable"],                   # cooldown gate (--resolve-remote)
+        "MVN-009":  ["Build.L3.NonFalsifiable"],                   # OSV advisory (--resolve-remote)
+        "NPM-008":  ["Build.L3.NonFalsifiable"],                   # cooldown gate (--resolve-remote)
+        "NPM-009":  ["Build.L3.NonFalsifiable"],                   # new-transitive-dep diff gate
+        "NPM-010":  ["Build.L3.NonFalsifiable"],                   # OSV advisory (--resolve-remote)
+        "PYPI-008": ["Build.L3.NonFalsifiable"],                   # cooldown gate (--resolve-remote)
+        "PYPI-009": ["Build.L3.NonFalsifiable"],                   # OSV advisory (--resolve-remote)
+        # ── nuget (dep supply-chain) ─────────────────────────────
+        "NUGET-001": ["Build.L3.NonFalsifiable"],                  # floating NuGet version range
+        "NUGET-002": ["Build.L3.NonFalsifiable"],                  # wildcard prerelease version
+        "NUGET-003": ["Build.L3.NonFalsifiable"],                  # missing explicit version
+        "NUGET-004": ["Build.L3.NonFalsifiable"],                  # HTTP-only package source
+        "NUGET-005": ["Build.L3.NonFalsifiable"],                  # known-compromised package version
+        "NUGET-006": ["Build.L3.NonFalsifiable"],                  # no lock file for reproducible restores
+        "NUGET-007": ["Build.L3.NonFalsifiable"],                  # multiple sources without packageSourceMapping
+        "NUGET-008": ["Build.L3.NonFalsifiable"],                  # cooldown gate (--resolve-remote)
+        "NUGET-009": ["Build.L3.NonFalsifiable"],                  # OSV advisory (--resolve-remote)
         # ── Helm chart-supply-chain ───────────────────────────────
         # The chart's own packaging metadata sits at the build-output
         # boundary. Chart.lock and Chart.yaml are the chart's

@@ -508,6 +508,7 @@ STANDARD = Standard(
         "NPM-007":  ["CICD-SEC-3", "CICD-SEC-7"],  # .npmrc ignore-scripts enforcement
         "NPM-008":  ["CICD-SEC-3", "CICD-SEC-8"],  # cooldown gate (--resolve-remote)
         "NPM-009":  ["CICD-SEC-3", "CICD-SEC-8"],  # new-transitive-dep diff gate
+        "NPM-010":  ["CICD-SEC-3", "CICD-SEC-8"],  # OSV advisory (--resolve-remote)
         "NPM-011":  ["CICD-SEC-6", "CICD-SEC-3"],  # secret-shaped paths in files field
         # pypi (requirements file static analysis)
         "PYPI-001": ["CICD-SEC-3"],   # requirements line lacks ==pin
@@ -517,6 +518,7 @@ STANDARD = Standard(
         "PYPI-005": ["CICD-SEC-3"],   # --extra-index-url (dep confusion)
         "PYPI-006": ["CICD-SEC-3", "CICD-SEC-8"],  # compromised-package registry
         "PYPI-008": ["CICD-SEC-3", "CICD-SEC-8"],  # cooldown gate (--resolve-remote)
+        "PYPI-009": ["CICD-SEC-3", "CICD-SEC-8"],  # OSV advisory (--resolve-remote)
         # maven (pom.xml + settings.xml static analysis)
         "MVN-001":  ["CICD-SEC-3"],                # floating Maven version range
         "MVN-002":  ["CICD-SEC-3"],                # mutable SNAPSHOT dependency
@@ -526,6 +528,17 @@ STANDARD = Standard(
         "MVN-006":  ["CICD-SEC-3", "CICD-SEC-8"],  # compromised-package registry
         "MVN-007":  ["CICD-SEC-8", "CICD-SEC-3"],  # settings.xml wildcard mirror
         "MVN-008":  ["CICD-SEC-3", "CICD-SEC-8"],  # cooldown gate (--resolve-remote)
+        "MVN-009":  ["CICD-SEC-3", "CICD-SEC-8"],  # OSV advisory (--resolve-remote)
+        # nuget (csproj + NuGet.config static analysis)
+        "NUGET-001": ["CICD-SEC-3"],                # floating NuGet version range
+        "NUGET-002": ["CICD-SEC-3"],                # wildcard prerelease version
+        "NUGET-003": ["CICD-SEC-3"],                # missing explicit version
+        "NUGET-004": ["CICD-SEC-3", "CICD-SEC-8"],  # HTTP-only package source
+        "NUGET-005": ["CICD-SEC-3", "CICD-SEC-8"],  # known-compromised package version
+        "NUGET-006": ["CICD-SEC-3", "CICD-SEC-9"],  # no lock file for reproducible restores
+        "NUGET-007": ["CICD-SEC-3"],                # multiple sources without packageSourceMapping
+        "NUGET-008": ["CICD-SEC-3", "CICD-SEC-8"],  # cooldown gate (--resolve-remote)
+        "NUGET-009": ["CICD-SEC-3", "CICD-SEC-8"],  # OSV advisory (--resolve-remote)
         # Buildkite
         "BK-001":   ["CICD-SEC-3"],   # plugin not pinned to exact version
         "BK-002":   ["CICD-SEC-6", "CICD-SEC-7"],  # literal secret in env

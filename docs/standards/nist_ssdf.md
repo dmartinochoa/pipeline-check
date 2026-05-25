@@ -20,7 +20,7 @@ risk language.
 
 - **Controls in this standard:** 13
 - **Controls evidenced by at least one check:** 13 / 13
-- **Distinct checks evidencing this standard:** 593
+- **Distinct checks evidencing this standard:** 609
 - **Of those, autofixable with `--fix`:** 111
 
 _Severity levels (`CRITICAL` / `HIGH` / `MEDIUM` / `LOW` / `INFO`) follow the same scale across every provider and standard. See [How to read severity](README.md#how-to-read-severity) on the standards overview for the definitions._
@@ -39,11 +39,11 @@ Click a control ID to jump to the per-control section with the full check list. 
 | [`PS.2.1`](#ctrl-ps-2-1) | Make software integrity verification information available to acquirers | 34 | 10H · 24M |
 | [`PS.3.1`](#ctrl-ps-3-1) | Securely archive the necessary files and data for each software release | 6 | 2H · 4M |
 | [`PS.3.2`](#ctrl-ps-3-2) | Collect, safeguard, maintain, and share provenance data for releases | 54 | 10H · 37M · 7L |
-| [`PW.4.1`](#ctrl-pw-4-1) | Acquire and maintain well-secured 3rd-party software components | 100 | 5C · 55H · 34M · 6L |
-| [`PW.4.4`](#ctrl-pw-4-4) | Verify that acquired components are what is expected and behave as expected | 145 | 13C · 78H · 50M · 4L |
+| [`PW.4.1`](#ctrl-pw-4-1) | Acquire and maintain well-secured 3rd-party software components | 115 | 10C · 62H · 37M · 6L |
+| [`PW.4.4`](#ctrl-pw-4-4) | Verify that acquired components are what is expected and behave as expected | 161 | 18C · 85H · 54M · 4L |
 | [`PW.6.1`](#ctrl-pw-6-1) | Use compiler, interpreter, and build tool features to improve security | 35 | 5C · 24H · 2M · 4L |
 | [`PW.9.1`](#ctrl-pw-9-1) | Configure software to have secure settings by default | 141 | 25C · 76H · 33M · 7L |
-| [`RV.1.1`](#ctrl-rv-1-1) | Gather information about potential vulnerabilities in released software | 37 | 12C · 4H · 16M · 5L |
+| [`RV.1.1`](#ctrl-rv-1-1) | Gather information about potential vulnerabilities in released software | 46 | 17C · 8H · 16M · 5L |
 
 ## Filter at runtime
 
@@ -555,7 +555,7 @@ pipeline_check --pipeline aws --standard nist_ssdf --standard owasp_cicd_top_10
 
 ### PW.4.1: Acquire and maintain well-secured 3rd-party software components { #ctrl-pw-4-1 }
 
-**Evidenced by 100 checks** across 19 providers (AWS, Argo Workflows, Azure DevOps, Bitbucket, Buildkite, CircleCI, Cloud Build, Dockerfile, Drone CI, GitHub Actions, GitLab CI, Helm, Jenkins, Kubernetes, PyPI, SCM, Tekton, maven, npm).
+**Evidenced by 115 checks** across 20 providers (AWS, Argo Workflows, Azure DevOps, Bitbucket, Buildkite, CircleCI, Cloud Build, Dockerfile, Drone CI, GitHub Actions, GitLab CI, Helm, Jenkins, Kubernetes, NuGet, PyPI, SCM, Tekton, maven, npm).
 
 | Check | Title | Severity | Provider | Fix |
 |-------|-------|----------|----------|-----|
@@ -646,15 +646,30 @@ pipeline_check --pipeline aws --standard nist_ssdf --standard owasp_cicd_top_10
 | [`MVN-004`](#detail-mvn-004) | pom.xml dependency omits an explicit ``<version>`` | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [maven](../providers/maven.md) |  |
 | [`MVN-006`](#detail-mvn-006) | pom.xml pins a known-compromised Maven Central artifact version | <span class="pg-sev pg-sev--critical">CRITICAL</span> | [maven](../providers/maven.md) |  |
 | [`MVN-007`](#detail-mvn-007) | settings.xml mirror routes external traffic through one repo | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [maven](../providers/maven.md) |  |
+| [`MVN-008`](#detail-mvn-008) | Direct dependency was published within the cooldown window | <span class="pg-sev pg-sev--high">HIGH</span> | [maven](../providers/maven.md) |  |
+| [`MVN-009`](#detail-mvn-009) | Maven artifact has a known OSV advisory | <span class="pg-sev pg-sev--critical">CRITICAL</span> | [maven](../providers/maven.md) |  |
 | [`NPM-001`](#detail-npm-001) | package.json dependency uses a floating version range | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [npm](../providers/npm.md) |  |
 | [`NPM-003`](#detail-npm-003) | package-lock.json entry resolves from a non-registry source | <span class="pg-sev pg-sev--high">HIGH</span> | [npm](../providers/npm.md) |  |
 | [`NPM-005`](#detail-npm-005) | package.json git dependency uses a mutable ref | <span class="pg-sev pg-sev--high">HIGH</span> | [npm](../providers/npm.md) |  |
 | [`NPM-006`](#detail-npm-006) | package-lock.json pins a known-compromised package version | <span class="pg-sev pg-sev--critical">CRITICAL</span> | [npm](../providers/npm.md) |  |
+| [`NPM-008`](#detail-npm-008) | Direct dependency was published within the cooldown window | <span class="pg-sev pg-sev--high">HIGH</span> | [npm](../providers/npm.md) |  |
+| [`NPM-009`](#detail-npm-009) | New transitive dependency added since the base ref | <span class="pg-sev pg-sev--high">HIGH</span> | [npm](../providers/npm.md) |  |
+| [`NPM-010`](#detail-npm-010) | npm package has a known OSV advisory | <span class="pg-sev pg-sev--critical">CRITICAL</span> | [npm](../providers/npm.md) |  |
+| [`NUGET-001`](#detail-nuget-001) | Floating NuGet version range | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [NuGet](../providers/nuget.md) |  |
+| [`NUGET-002`](#detail-nuget-002) | Wildcard prerelease NuGet version | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [NuGet](../providers/nuget.md) |  |
+| [`NUGET-003`](#detail-nuget-003) | PackageReference missing explicit version | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [NuGet](../providers/nuget.md) |  |
+| [`NUGET-004`](#detail-nuget-004) | HTTP-only NuGet package source | <span class="pg-sev pg-sev--high">HIGH</span> | [NuGet](../providers/nuget.md) |  |
+| [`NUGET-005`](#detail-nuget-005) | Known-compromised NuGet package version | <span class="pg-sev pg-sev--critical">CRITICAL</span> | [NuGet](../providers/nuget.md) |  |
+| [`NUGET-007`](#detail-nuget-007) | Multiple NuGet sources without packageSourceMapping | <span class="pg-sev pg-sev--high">HIGH</span> | [NuGet](../providers/nuget.md) |  |
+| [`NUGET-008`](#detail-nuget-008) | NuGet package published within the cooldown window | <span class="pg-sev pg-sev--high">HIGH</span> | [NuGet](../providers/nuget.md) |  |
+| [`NUGET-009`](#detail-nuget-009) | NuGet package has a known OSV advisory | <span class="pg-sev pg-sev--critical">CRITICAL</span> | [NuGet](../providers/nuget.md) |  |
 | [`PYPI-001`](#detail-pypi-001) | requirements.txt entry missing an exact version pin | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [PyPI](../providers/pypi.md) |  |
 | [`PYPI-003`](#detail-pypi-003) | requirements.txt uses an HTTP index or disables TLS verification | <span class="pg-sev pg-sev--high">HIGH</span> | [PyPI](../providers/pypi.md) |  |
 | [`PYPI-004`](#detail-pypi-004) | requirements.txt VCS dependency uses a mutable ref | <span class="pg-sev pg-sev--high">HIGH</span> | [PyPI](../providers/pypi.md) |  |
 | [`PYPI-005`](#detail-pypi-005) | requirements.txt declares --extra-index-url (dependency-confusion surface) | <span class="pg-sev pg-sev--high">HIGH</span> | [PyPI](../providers/pypi.md) |  |
 | [`PYPI-006`](#detail-pypi-006) | requirements.txt pins a known-compromised PyPI package version | <span class="pg-sev pg-sev--critical">CRITICAL</span> | [PyPI](../providers/pypi.md) |  |
+| [`PYPI-008`](#detail-pypi-008) | Direct dependency was published within the cooldown window | <span class="pg-sev pg-sev--high">HIGH</span> | [PyPI](../providers/pypi.md) |  |
+| [`PYPI-009`](#detail-pypi-009) | PyPI package has a known OSV advisory | <span class="pg-sev pg-sev--critical">CRITICAL</span> | [PyPI](../providers/pypi.md) |  |
 | [`SCM-022`](#detail-scm-022) | Repo Actions permissions allow any source (no allow-list) | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [SCM](../providers/scm.md) |  |
 | [`TKN-001`](#detail-tkn-001) | Tekton step image not pinned to a digest | <span class="pg-sev pg-sev--high">HIGH</span> | [Tekton](../providers/tekton.md) |  |
 | [`TKN-008`](#detail-tkn-008) | Tekton step script pipes remote install or disables TLS | <span class="pg-sev pg-sev--high">HIGH</span> | [Tekton](../providers/tekton.md) | <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> |
@@ -662,7 +677,7 @@ pipeline_check --pipeline aws --standard nist_ssdf --standard owasp_cicd_top_10
 
 ### PW.4.4: Verify that acquired components are what is expected and behave as expected { #ctrl-pw-4-4 }
 
-**Evidenced by 145 checks** across 20 providers (AWS, Argo Workflows, Azure DevOps, Bitbucket, Buildkite, CircleCI, Cloud Build, Dockerfile, Drone CI, GitHub Actions, GitLab CI, Helm, Jenkins, Kubernetes, OCI manifest, PyPI, SCM, Tekton, maven, npm).
+**Evidenced by 161 checks** across 21 providers (AWS, Argo Workflows, Azure DevOps, Bitbucket, Buildkite, CircleCI, Cloud Build, Dockerfile, Drone CI, GitHub Actions, GitLab CI, Helm, Jenkins, Kubernetes, NuGet, OCI manifest, PyPI, SCM, Tekton, maven, npm).
 
 | Check | Title | Severity | Provider | Fix |
 |-------|-------|----------|----------|-----|
@@ -792,11 +807,25 @@ pipeline_check --pipeline aws --standard nist_ssdf --standard owasp_cicd_top_10
 | [`MVN-005`](#detail-mvn-005) | Maven repository accepts artifacts without strict checksum gating | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [maven](../providers/maven.md) |  |
 | [`MVN-006`](#detail-mvn-006) | pom.xml pins a known-compromised Maven Central artifact version | <span class="pg-sev pg-sev--critical">CRITICAL</span> | [maven](../providers/maven.md) |  |
 | [`MVN-007`](#detail-mvn-007) | settings.xml mirror routes external traffic through one repo | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [maven](../providers/maven.md) |  |
+| [`MVN-008`](#detail-mvn-008) | Direct dependency was published within the cooldown window | <span class="pg-sev pg-sev--high">HIGH</span> | [maven](../providers/maven.md) |  |
+| [`MVN-009`](#detail-mvn-009) | Maven artifact has a known OSV advisory | <span class="pg-sev pg-sev--critical">CRITICAL</span> | [maven](../providers/maven.md) |  |
 | [`NPM-001`](#detail-npm-001) | package.json dependency uses a floating version range | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [npm](../providers/npm.md) |  |
 | [`NPM-002`](#detail-npm-002) | package-lock.json entry missing integrity hash | <span class="pg-sev pg-sev--high">HIGH</span> | [npm](../providers/npm.md) |  |
 | [`NPM-003`](#detail-npm-003) | package-lock.json entry resolves from a non-registry source | <span class="pg-sev pg-sev--high">HIGH</span> | [npm](../providers/npm.md) |  |
 | [`NPM-005`](#detail-npm-005) | package.json git dependency uses a mutable ref | <span class="pg-sev pg-sev--high">HIGH</span> | [npm](../providers/npm.md) |  |
 | [`NPM-006`](#detail-npm-006) | package-lock.json pins a known-compromised package version | <span class="pg-sev pg-sev--critical">CRITICAL</span> | [npm](../providers/npm.md) |  |
+| [`NPM-008`](#detail-npm-008) | Direct dependency was published within the cooldown window | <span class="pg-sev pg-sev--high">HIGH</span> | [npm](../providers/npm.md) |  |
+| [`NPM-009`](#detail-npm-009) | New transitive dependency added since the base ref | <span class="pg-sev pg-sev--high">HIGH</span> | [npm](../providers/npm.md) |  |
+| [`NPM-010`](#detail-npm-010) | npm package has a known OSV advisory | <span class="pg-sev pg-sev--critical">CRITICAL</span> | [npm](../providers/npm.md) |  |
+| [`NUGET-001`](#detail-nuget-001) | Floating NuGet version range | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [NuGet](../providers/nuget.md) |  |
+| [`NUGET-002`](#detail-nuget-002) | Wildcard prerelease NuGet version | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [NuGet](../providers/nuget.md) |  |
+| [`NUGET-003`](#detail-nuget-003) | PackageReference missing explicit version | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [NuGet](../providers/nuget.md) |  |
+| [`NUGET-004`](#detail-nuget-004) | HTTP-only NuGet package source | <span class="pg-sev pg-sev--high">HIGH</span> | [NuGet](../providers/nuget.md) |  |
+| [`NUGET-005`](#detail-nuget-005) | Known-compromised NuGet package version | <span class="pg-sev pg-sev--critical">CRITICAL</span> | [NuGet](../providers/nuget.md) |  |
+| [`NUGET-006`](#detail-nuget-006) | No NuGet lock file for reproducible restores | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [NuGet](../providers/nuget.md) |  |
+| [`NUGET-007`](#detail-nuget-007) | Multiple NuGet sources without packageSourceMapping | <span class="pg-sev pg-sev--high">HIGH</span> | [NuGet](../providers/nuget.md) |  |
+| [`NUGET-008`](#detail-nuget-008) | NuGet package published within the cooldown window | <span class="pg-sev pg-sev--high">HIGH</span> | [NuGet](../providers/nuget.md) |  |
+| [`NUGET-009`](#detail-nuget-009) | NuGet package has a known OSV advisory | <span class="pg-sev pg-sev--critical">CRITICAL</span> | [NuGet](../providers/nuget.md) |  |
 | [`OCI-004`](#detail-oci-004) | Image layer references an arbitrary URL (foreign layer) | <span class="pg-sev pg-sev--high">HIGH</span> | [OCI manifest](../providers/oci.md) |  |
 | [`OCI-007`](#detail-oci-007) | Image manifest uses legacy schemaVersion 1 (no content addressing) | <span class="pg-sev pg-sev--high">HIGH</span> | [OCI manifest](../providers/oci.md) |  |
 | [`OCI-008`](#detail-oci-008) | Manifest references digest using unsupported hash algorithm | <span class="pg-sev pg-sev--high">HIGH</span> | [OCI manifest](../providers/oci.md) |  |
@@ -806,6 +835,8 @@ pipeline_check --pipeline aws --standard nist_ssdf --standard owasp_cicd_top_10
 | [`PYPI-004`](#detail-pypi-004) | requirements.txt VCS dependency uses a mutable ref | <span class="pg-sev pg-sev--high">HIGH</span> | [PyPI](../providers/pypi.md) |  |
 | [`PYPI-005`](#detail-pypi-005) | requirements.txt declares --extra-index-url (dependency-confusion surface) | <span class="pg-sev pg-sev--high">HIGH</span> | [PyPI](../providers/pypi.md) |  |
 | [`PYPI-006`](#detail-pypi-006) | requirements.txt pins a known-compromised PyPI package version | <span class="pg-sev pg-sev--critical">CRITICAL</span> | [PyPI](../providers/pypi.md) |  |
+| [`PYPI-008`](#detail-pypi-008) | Direct dependency was published within the cooldown window | <span class="pg-sev pg-sev--high">HIGH</span> | [PyPI](../providers/pypi.md) |  |
+| [`PYPI-009`](#detail-pypi-009) | PyPI package has a known OSV advisory | <span class="pg-sev pg-sev--critical">CRITICAL</span> | [PyPI](../providers/pypi.md) |  |
 | [`SCM-005`](#detail-scm-005) | Dependabot security updates are not enabled | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [SCM](../providers/scm.md) |  |
 | [`SCM-022`](#detail-scm-022) | Repo Actions permissions allow any source (no allow-list) | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [SCM](../providers/scm.md) |  |
 | [`TKN-001`](#detail-tkn-001) | Tekton step image not pinned to a digest | <span class="pg-sev pg-sev--high">HIGH</span> | [Tekton](../providers/tekton.md) |  |
@@ -1004,7 +1035,7 @@ pipeline_check --pipeline aws --standard nist_ssdf --standard owasp_cicd_top_10
 
 ### RV.1.1: Gather information about potential vulnerabilities in released software { #ctrl-rv-1-1 }
 
-**Evidenced by 37 checks** across 16 providers (AWS, Argo Workflows, Azure DevOps, Bitbucket, Buildkite, CircleCI, Cloud Build, Dockerfile, GitHub Actions, GitLab CI, Jenkins, PyPI, SCM, Tekton, maven, npm).
+**Evidenced by 46 checks** across 17 providers (AWS, Argo Workflows, Azure DevOps, Bitbucket, Buildkite, CircleCI, Cloud Build, Dockerfile, GitHub Actions, GitLab CI, Jenkins, NuGet, PyPI, SCM, Tekton, maven, npm).
 
 | Check | Title | Severity | Provider | Fix |
 |-------|-------|----------|----------|-----|
@@ -1035,8 +1066,17 @@ pipeline_check --pipeline aws --standard nist_ssdf --standard owasp_cicd_top_10
 | [`JF-020`](#detail-jf-020) | No vulnerability scanning step | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [Jenkins](../providers/jenkins.md) |  |
 | [`JF-029`](#detail-jf-029) | Jenkinsfile contains indicators of malicious activity | <span class="pg-sev pg-sev--critical">CRITICAL</span> | [Jenkins](../providers/jenkins.md) |  |
 | [`MVN-006`](#detail-mvn-006) | pom.xml pins a known-compromised Maven Central artifact version | <span class="pg-sev pg-sev--critical">CRITICAL</span> | [maven](../providers/maven.md) |  |
+| [`MVN-008`](#detail-mvn-008) | Direct dependency was published within the cooldown window | <span class="pg-sev pg-sev--high">HIGH</span> | [maven](../providers/maven.md) |  |
+| [`MVN-009`](#detail-mvn-009) | Maven artifact has a known OSV advisory | <span class="pg-sev pg-sev--critical">CRITICAL</span> | [maven](../providers/maven.md) |  |
 | [`NPM-006`](#detail-npm-006) | package-lock.json pins a known-compromised package version | <span class="pg-sev pg-sev--critical">CRITICAL</span> | [npm](../providers/npm.md) |  |
+| [`NPM-008`](#detail-npm-008) | Direct dependency was published within the cooldown window | <span class="pg-sev pg-sev--high">HIGH</span> | [npm](../providers/npm.md) |  |
+| [`NPM-010`](#detail-npm-010) | npm package has a known OSV advisory | <span class="pg-sev pg-sev--critical">CRITICAL</span> | [npm](../providers/npm.md) |  |
+| [`NUGET-005`](#detail-nuget-005) | Known-compromised NuGet package version | <span class="pg-sev pg-sev--critical">CRITICAL</span> | [NuGet](../providers/nuget.md) |  |
+| [`NUGET-008`](#detail-nuget-008) | NuGet package published within the cooldown window | <span class="pg-sev pg-sev--high">HIGH</span> | [NuGet](../providers/nuget.md) |  |
+| [`NUGET-009`](#detail-nuget-009) | NuGet package has a known OSV advisory | <span class="pg-sev pg-sev--critical">CRITICAL</span> | [NuGet](../providers/nuget.md) |  |
 | [`PYPI-006`](#detail-pypi-006) | requirements.txt pins a known-compromised PyPI package version | <span class="pg-sev pg-sev--critical">CRITICAL</span> | [PyPI](../providers/pypi.md) |  |
+| [`PYPI-008`](#detail-pypi-008) | Direct dependency was published within the cooldown window | <span class="pg-sev pg-sev--high">HIGH</span> | [PyPI](../providers/pypi.md) |  |
+| [`PYPI-009`](#detail-pypi-009) | PyPI package has a known OSV advisory | <span class="pg-sev pg-sev--critical">CRITICAL</span> | [PyPI](../providers/pypi.md) |  |
 | [`SCM-003`](#detail-scm-003) | GitHub default code scanning is not enabled | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [SCM](../providers/scm.md) |  |
 | [`SCM-005`](#detail-scm-005) | Dependabot security updates are not enabled | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [SCM](../providers/scm.md) |  |
 | [`SCM-016`](#detail-scm-016) | Private vulnerability reporting is not enabled | <span class="pg-sev pg-sev--low">LOW</span> | [SCM](../providers/scm.md) |  |
@@ -8118,6 +8158,8 @@ jobs:
 **How this is detected.** Without an explicit `permissions:` block (either top-level or per-job), the GITHUB_TOKEN inherits the repository's default scope, typically `write`. A compromised step receives far more privilege than it needs.
 
 Beyond the missing-block case, the rule also flags over-grants: a job that declares ``packages: write`` but never runs ``docker push`` / ``npm publish`` / ``gh release upload``, a job that declares ``issues: write`` but never calls ``gh issue ...``, a job that declares ``security-events: write`` but never invokes a SARIF uploader, etc. Wildcard consumers (``actions/github-script``) suppress the flag because they can reach any scope through the GitHub API.
+
+The rule also aggregates at the workflow level: when a top-level ``permissions:`` block grants a write scope that no inheriting job (a job without its own permissions override) actually consumes, the workflow is handing every inheriting job more privilege than its steps need. Move the scope to the specific job that needs it, or drop it entirely.
 
 **Recommendation.** Add a top-level `permissions:` block (start with `contents: read`) and grant additional scopes only on the specific jobs that need them. For job-level blocks, prune any write scope no step in the job actually uses, the rule names the specific scopes the job's steps don't justify.
 
@@ -15857,6 +15899,70 @@ Managed entries in ``<dependencyManagement>`` are NOT evaluated by this rule (th
 
 **Source:** [`MVN-007`](../providers/maven.md#mvn-007) in the [maven provider](../providers/maven.md).
 
+### `MVN-008`: Direct dependency was published within the cooldown window <span class="pg-sev pg-sev--high">HIGH</span> { #detail-mvn-008 }
+
+**Evidences:** [`PW.4.1`](#ctrl-pw-4-1) Acquire and maintain well-secured 3rd-party software components, [`PW.4.4`](#ctrl-pw-4-4) Verify that acquired components are what is expected and behave as expected, [`RV.1.1`](#ctrl-rv-1-1) Gather information about potential vulnerabilities in released software.
+
+**How this is detected.** Network-dependent: needs ``--resolve-remote`` to populate the per-coordinate publish timestamps from the Maven Central search API (``https://search.maven.org/solrsearch/select``). Walks every non-managed ``<dependency>`` with an explicit ``<version>``; flags ones whose ingest timestamp on Central falls inside the cooldown window (default 7 days). ``<dependencyManagement>`` entries are skipped (those are version-management declarations, not real consumption). ``${prop}`` substitution against the POM's ``<properties>`` block is resolved before the lookup so ``${log4j.version}`` is checked against its resolved value. ``-SNAPSHOT`` and Maven version-range literals (``[1.0,2.0)``, ``LATEST``, ``RELEASE``) are out of scope — the cooldown applies to a specific released coordinate. When ``--resolve-remote`` is off or Central can't be reached, the rule passes silently so the absence of the network path doesn't trip CI.
+
+**Recommendation.** Either skip the just-published version (pin to the last release older than the cooldown window) or wait until the cooldown has elapsed before bumping the POM. Publisher- account compromises on Maven Central are rarer than on npm / PyPI, but the takedown window is the same shape: Sonatype yanks malicious artifacts within hours-to-days once an advisory lands; holding back N days converts a publisher-compromise window into a vulnerability- disclosure window where either the maintainer rotates the malicious release off Central or the security community files a CVE that MVN-006 can match against.
+
+**Known false positives.**
+
+- Internally-published artifacts hosted on a private Sonatype Nexus / JFrog Artifactory instance won't appear in Central's search API and are silently skipped. The cooldown gate is a Central-only signal; vendor- or org- internal release trains are out of scope and shouldn't be suppressed (they simply don't fire).
+- Same-day patch upgrades from a maintainer the team directly trusts (e.g. an internal fork republished to Central under a corporate group ID) are flagged. Suppress per-resource via ``--ignore-file`` — the cooldown is a default-safe gate, not a hard rule.
+
+**Seen in the wild.**
+
+- Log4Shell, CVE-2021-44228 (December 2021): public disclosure on 2021-12-09 triggered Apache's emergency 2.15.0 release the same day; mass exploitation began within hours. Consumers who held even a 1-day cooldown on the affected versions would have caught the upstream advisory before bumping. https://nvd.nist.gov/vuln/detail/CVE-2021-44228
+- Sonatype Lift abuse / typosquat campaigns (2022-2024): periodic surfacing of typosquat coordinates (``org.apaache.*``) pushed to Central, typically yanked within 48 hours of report. A cooldown of any meaningful length would skip them.
+
+**Proof of exploit.**
+
+```
+<!-- Vulnerable: bumping the version to a freshly-
+     published release within hours of its appearance on
+     Maven Central is exactly the window in which a
+     publisher-compromise (stolen Sonatype token, hijacked
+     maintainer account) or an advisory-not-yet-filed
+     malicious release lives. Sonatype yanks malicious
+     coordinates within hours-to-days once flagged;
+     bumping straight to ``17.0.99`` on its release day
+     skips that window entirely. -->
+<dependency>
+  <groupId>com.example</groupId>
+  <artifactId>shiny-lib</artifactId>
+  <version>17.0.99</version>
+  <!-- ``17.0.99`` was published 2 hours ago -->
+</dependency>
+
+<!-- Safe: pin to the most recent release older than the
+     cooldown window. ``pipeline_check --pipeline maven
+     --resolve-remote`` queries Maven Central's search API
+     for per-coordinate publish timestamps and surfaces
+     anything inside the 7-day window. Hold the bump until
+     the cooldown elapses, or skip the freshly-pushed
+     version entirely. -->
+<dependency>
+  <groupId>com.example</groupId>
+  <artifactId>shiny-lib</artifactId>
+  <version>17.0.98</version>
+  <!-- ``17.0.98`` was published 3 weeks ago -->
+</dependency>
+```
+
+**Source:** [`MVN-008`](../providers/maven.md#mvn-008) in the [maven provider](../providers/maven.md).
+
+### `MVN-009`: Maven artifact has a known OSV advisory <span class="pg-sev pg-sev--critical">CRITICAL</span> { #detail-mvn-009 }
+
+**Evidences:** [`PW.4.1`](#ctrl-pw-4-1) Acquire and maintain well-secured 3rd-party software components, [`PW.4.4`](#ctrl-pw-4-4) Verify that acquired components are what is expected and behave as expected, [`RV.1.1`](#ctrl-rv-1-1) Gather information about potential vulnerabilities in released software.
+
+**How this is detected.** Network-dependent: needs ``--resolve-remote`` to query the OSV advisory database (``api.osv.dev``). Passes silently when the flag is off. Complements MVN-006 (curated offline registry) with the full OSV/GHSA long-tail.
+
+**Recommendation.** Upgrade to a patched version or remove the affected artifact. Consult the advisory URL for remediation guidance.
+
+**Source:** [`MVN-009`](../providers/maven.md#mvn-009) in the [maven provider](../providers/maven.md).
+
 ### `NPM-001`: package.json dependency uses a floating version range <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-npm-001 }
 
 **Evidences:** [`PW.4.1`](#ctrl-pw-4-1) Acquire and maintain well-secured 3rd-party software components, [`PW.4.4`](#ctrl-pw-4-4) Verify that acquired components are what is expected and behave as expected.
@@ -16183,6 +16289,121 @@ ignore-scripts=true
 
 **Source:** [`NPM-007`](../providers/npm.md) in the [npm provider](../providers/npm.md).
 
+### `NPM-008`: Direct dependency was published within the cooldown window <span class="pg-sev pg-sev--high">HIGH</span> { #detail-npm-008 }
+
+**Evidences:** [`PW.4.1`](#ctrl-pw-4-1) Acquire and maintain well-secured 3rd-party software components, [`PW.4.4`](#ctrl-pw-4-4) Verify that acquired components are what is expected and behave as expected, [`RV.1.1`](#ctrl-rv-1-1) Gather information about potential vulnerabilities in released software.
+
+**How this is detected.** Network-dependent: needs ``--resolve-remote`` to populate the per-package publish timestamps from ``registry.npmjs.org``. Walks every direct dependency in ``dependencies`` / ``devDependencies`` / ``peerDependencies`` / ``optionalDependencies`` (transitive packages aren't covered, the cooldown applies to what *you* chose to bump). Lockfile entries are out of scope, the rule reasons about the manifest's pinned spec since that's what changes when a maintainer bumps a dep. When ``--resolve-remote`` is off or the registry can't be reached, the rule passes silently so the absence of the network path doesn't trip CI.
+
+**Recommendation.** Either skip the just-published version (pin to the last release older than the cooldown window) or wait until the cooldown has elapsed before bumping the lockfile. Most publisher-account compromises (Shai-Hulud / TanStack / axios -> plain-crypto-js) are detected and yanked from the registry within hours-to-days of publication; holding back N days converts a publisher-compromise window into a vulnerability-disclosure window where either the publisher rotates the malicious version off the registry or the security community files an advisory you can match against NPM-006. Tune the cooldown via ``--npm-cooldown-days`` (default 7).
+
+**Known false positives.**
+
+- Pre-release versions (``foo@1.0.0-rc.1``) are often freshly published; the cooldown applies to them too because pre-release tags have been used as carriers in real compromises (see the @ctrl/* / nx campaigns). Suppress per-resource via ``--ignore-file`` when a release-train workflow legitimately bumps to a same-day RC.
+- Same-day patch upgrades from a maintainer the team directly trusts (e.g. a vendored fork the team owns) are flagged. Suppress per-resource, the cooldown is a default-safe gate, not a hard rule.
+
+**Seen in the wild.**
+
+- Shai-Hulud-class npm worm (Sep 2025): malicious versions published, detected, and yanked within 48h on multiple packages. Consumers who held a 7-day cooldown caught the takedown before the version hit their lockfile.
+- @ctrl/tinycolor maintainer-account takeover (May 2024): the malicious versions stayed live for ~36 hours before GitHub Advisory and npm coordinated removal. Cooldown of any meaningful length would have skipped them.
+
+**Proof of exploit.**
+
+```
+// Vulnerable: bumping ``shiny-lib`` to ``4.2.1`` 90
+// minutes after publication is exactly the window in
+// which Shai-Hulud-class compromises live. npm yanks
+// malicious versions within hours-to-days once flagged;
+// the next ``npm install`` after publish pulls the wheel
+// before the takedown.
+// package.json
+{
+  "dependencies": {
+    "shiny-lib": "4.2.1"
+    // ``4.2.1`` was published 90 minutes ago
+  }
+}
+
+// Safe: pin to the most recent release older than the
+// cooldown window. ``pipeline_check --pipeline npm
+// --resolve-remote`` queries the registry for per-version
+// publish timestamps and surfaces anything inside the 7-
+// day window. Hold the bump or skip the fresh release.
+// package.json
+{
+  "dependencies": {
+    "shiny-lib": "4.2.0"
+    // ``4.2.0`` was published 2 weeks ago
+  }
+}
+```
+
+**Source:** [`NPM-008`](../providers/npm.md) in the [npm provider](../providers/npm.md).
+
+### `NPM-009`: New transitive dependency added since the base ref <span class="pg-sev pg-sev--high">HIGH</span> { #detail-npm-009 }
+
+**Evidences:** [`PW.4.1`](#ctrl-pw-4-1) Acquire and maintain well-secured 3rd-party software components, [`PW.4.4`](#ctrl-pw-4-4) Verify that acquired components are what is expected and behave as expected.
+
+**How this is detected.** Needs ``--npm-base-ref <ref>`` to materialize each lockfile's contents at the base ref via ``git show``. Compares the set of package names in the current vs. base lockfile and subtracts top-level direct dependencies (those are NPM-008's territory). Fires HIGH per lockfile when any name appears in the current set that isn't in the base set, after the direct-dep subtraction. Silent-passes when ``--npm-base-ref`` isn't set, the base ref can't be resolved by git, or the lockfile is brand new to this branch (no base counterpart). Diffs by package *name* only — version bumps of an existing transitive are out of scope (NPM-006 covers known-bad version pins; NPM-008 covers fresh-publication windows). Both ``package-lock.json`` (npm 7+) and ``pnpm-lock.yaml`` / ``yarn.lock`` are covered through the shared lockfile-shape synthesizers.
+
+**Recommendation.** Audit the new transitive dependency before letting it land. Confirm the maintainer of the parent direct dependency intentionally added it (read the changelog of the patch / minor bump that introduced it). The axios -> plain-crypto-js backdoor (March 2026) was a single new transitive sneaked into a patch release; lockfile pinning alone is no defense when the new transient *is* the malicious payload. If the new transitive is unexpected, pin the parent dep to the previous version, file a registry advisory, and rotate any secret a CI build with the lockfile had access to. Pair with NPM-006 (known-compromised package) and NPM-008 (cooldown gate) so the catch isn't reliant on a single signal.
+
+**Known false positives.**
+
+- A legitimate maintainer bump can introduce new transitives by design (a library splitting an internal helper into a separate package, an upstream switching from a vendored copy to a published dep). Suppress per-resource via ``--ignore-file`` once a human audits the new transitive and confirms it's expected.
+- Branches that delete a direct dep also delete its transitives from the lockfile; re-adding the direct dep later resurrects the transitives. The rule fires on the re-add because the names are 'new' relative to the base ref. Review by reading the diff, then suppress.
+
+**Seen in the wild.**
+
+- axios -> plain-crypto-js (March 2026): a malicious transitive was added in a patch release of axios. Consumers who diffed transitives against their previous lockfile saw the new package land before ``npm install`` executed the payload.
+- ua-parser-js (October 2021): a maintainer-account takeover published versions that quietly pulled in new transitives carrying a coinminer and credential stealer. Lockfile-pinning consumers who diffed transitives spotted the unexpected new packages before install.
+
+**Proof of exploit.**
+
+```
+// Vulnerable: a patch-level bump of ``axios`` quietly
+// brings in a new transitive that nobody on the team
+// audited. Lockfile pinning closes the bytes-swap window
+// for KNOWN transitives but is no defense when the
+// malicious code is the NEW transitive itself. The
+// axios -> plain-crypto-js compromise (Mar 2026) used
+// exactly this shape — a single new name in the lockfile
+// diff before ``npm install`` ran the payload.
+//
+// Lockfile delta visible at PR time:
+//   + node_modules/plain-crypto-js      (NEW transitive)
+//   ~ node_modules/axios                (1.6.0 -> 1.6.1)
+//
+// Without ``--npm-base-ref``, the diff is invisible to
+// the scanner and gets merged.
+
+// Safe: gate the lockfile in CI with
+// ``pipeline_check --pipeline npm --npm-base-ref origin/main``.
+// The rule materializes both lockfile states, subtracts
+// direct deps, and HIGH-fires on any new transitive name.
+// Reviewers either confirm the new transitive is intended
+// (read the parent's changelog and approve) or block the
+// merge until the compromised release is rotated off the
+// registry.
+// .github/workflows/audit.yml (caller of pipeline_check)
+- run: |
+    pipeline_check --pipeline npm \
+      --npm-base-ref origin/main \
+      --fail-on HIGH
+```
+
+**Source:** [`NPM-009`](../providers/npm.md) in the [npm provider](../providers/npm.md).
+
+### `NPM-010`: npm package has a known OSV advisory <span class="pg-sev pg-sev--critical">CRITICAL</span> { #detail-npm-010 }
+
+**Evidences:** [`PW.4.1`](#ctrl-pw-4-1) Acquire and maintain well-secured 3rd-party software components, [`PW.4.4`](#ctrl-pw-4-4) Verify that acquired components are what is expected and behave as expected, [`RV.1.1`](#ctrl-rv-1-1) Gather information about potential vulnerabilities in released software.
+
+**How this is detected.** Network-dependent: needs ``--resolve-remote`` to query the OSV advisory database (``api.osv.dev``). Passes silently when the flag is off. Complements NPM-006 (curated offline registry) with the full OSV/GHSA long-tail.
+
+**Recommendation.** Upgrade to a patched version or remove the affected package. Consult the advisory URL for remediation guidance.
+
+**Source:** [`NPM-010`](../providers/npm.md) in the [npm provider](../providers/npm.md).
+
 ### `NPM-011`: package.json files field includes secret-shaped paths <span class="pg-sev pg-sev--high">HIGH</span> { #detail-npm-011 }
 
 **Evidences:** [`PS.1.1`](#ctrl-ps-1-1) Store all forms of code based on least-privilege and tamper-resistance.
@@ -16243,6 +16464,96 @@ Wildcard-broad entries (``*``, ``**``, ``./``) are NOT currently flagged — the
 ```
 
 **Source:** [`NPM-011`](../providers/npm.md) in the [npm provider](../providers/npm.md).
+
+### `NUGET-001`: Floating NuGet version range <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-nuget-001 }
+
+**Evidences:** [`PW.4.1`](#ctrl-pw-4-1) Acquire and maintain well-secured 3rd-party software components, [`PW.4.4`](#ctrl-pw-4-4) Verify that acquired components are what is expected and behave as expected.
+
+**How this is detected.** Fires when a ``<PackageReference>`` Version attribute contains a NuGet range interval (``[1.0,2.0)``, ``(,2.0]``, etc.) or a bare ``*`` wildcard.
+
+**Recommendation.** Replace NuGet floating version ranges (``[1.0,)``, ``(,2.0)``, ``[1.0,2.0)``, ``*``) with an exact version pin (``<PackageReference Include="Newtonsoft.Json" Version="13.0.3" />``). Floating ranges let NuGet resolve any later version that fits the interval, so a compromised patch release reaches the build on the next restore without a project file change. Pair the pinned reference with a committed ``packages.lock.json`` (NUGET-006) for reproducible restores.
+
+**Source:** [`NUGET-001`](../providers/nuget.md#nuget-001) in the [NuGet provider](../providers/nuget.md).
+
+### `NUGET-002`: Wildcard prerelease NuGet version <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-nuget-002 }
+
+**Evidences:** [`PW.4.1`](#ctrl-pw-4-1) Acquire and maintain well-secured 3rd-party software components, [`PW.4.4`](#ctrl-pw-4-4) Verify that acquired components are what is expected and behave as expected.
+
+**How this is detected.** Fires when Version ends with ``-*`` or equals ``*-*``.
+
+**Recommendation.** Replace wildcard prerelease specifiers (``*-*``, ``1.0.0-*``) with an exact version pin including the prerelease tag (``1.0.0-beta.1``). The ``-*`` suffix tells NuGet to resolve the latest prerelease matching the prefix, so any newly published prerelease (including a malicious one) is pulled on the next restore. Prerelease packages are often less reviewed than stable releases, increasing the attack surface.
+
+**Source:** [`NUGET-002`](../providers/nuget.md#nuget-002) in the [NuGet provider](../providers/nuget.md).
+
+### `NUGET-003`: PackageReference missing explicit version <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-nuget-003 }
+
+**Evidences:** [`PW.4.1`](#ctrl-pw-4-1) Acquire and maintain well-secured 3rd-party software components, [`PW.4.4`](#ctrl-pw-4-4) Verify that acquired components are what is expected and behave as expected.
+
+**How this is detected.** Fires when a ``<PackageReference>`` omits the Version attribute and the project is not centrally managed.
+
+**Recommendation.** Add an explicit ``Version`` attribute to every ``<PackageReference>`` element (``<PackageReference Include="Newtonsoft.Json" Version="13.0.3" />``). Without one, NuGet resolves the latest available version at restore time, so a compromised release reaches the build unobserved. If your solution uses Central Package Management (``Directory.Packages.props``), this rule is skipped because versions are governed centrally.
+
+**Source:** [`NUGET-003`](../providers/nuget.md#nuget-003) in the [NuGet provider](../providers/nuget.md).
+
+### `NUGET-004`: HTTP-only NuGet package source <span class="pg-sev pg-sev--high">HIGH</span> { #detail-nuget-004 }
+
+**Evidences:** [`PW.4.1`](#ctrl-pw-4-1) Acquire and maintain well-secured 3rd-party software components, [`PW.4.4`](#ctrl-pw-4-4) Verify that acquired components are what is expected and behave as expected.
+
+**How this is detected.** Fires when a ``<packageSources>`` entry in NuGet.config uses an ``http://`` URL.
+
+**Recommendation.** Change every ``<add key="..." value="http://..." />`` package source in NuGet.config to ``https://``. Plaintext-HTTP sources let a network attacker swap downloaded packages in flight (the canonical supply-chain MITM). If your internal feed has a self-signed certificate, install the CA into the build agent's trust store instead of falling back to HTTP.
+
+**Source:** [`NUGET-004`](../providers/nuget.md#nuget-004) in the [NuGet provider](../providers/nuget.md).
+
+### `NUGET-005`: Known-compromised NuGet package version <span class="pg-sev pg-sev--critical">CRITICAL</span> { #detail-nuget-005 }
+
+**Evidences:** [`PW.4.1`](#ctrl-pw-4-1) Acquire and maintain well-secured 3rd-party software components, [`PW.4.4`](#ctrl-pw-4-4) Verify that acquired components are what is expected and behave as expected, [`RV.1.1`](#ctrl-rv-1-1) Gather information about potential vulnerabilities in released software.
+
+**How this is detected.** Fires when a PackageReference pins to a version in the curated compromised-package registry.
+
+**Recommendation.** Rotate every secret reachable to any process that ran ``dotnet restore`` against this project while the compromised version was installed. Bump the affected PackageReference to a post-incident clean version announced in the citing advisory, regenerate the lock file, and audit CI build logs for the exfiltration shape the advisory documents. Pair with NUGET-006 (lock file for reproducible restores) so a re-publish at the same version literal is caught by the content hash mismatch.
+
+**Source:** [`NUGET-005`](../providers/nuget.md#nuget-005) in the [NuGet provider](../providers/nuget.md).
+
+### `NUGET-006`: No NuGet lock file for reproducible restores <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-nuget-006 }
+
+**Evidences:** [`PW.4.4`](#ctrl-pw-4-4) Verify that acquired components are what is expected and behave as expected.
+
+**How this is detected.** Fires when a csproj project exists but no ``packages.lock.json`` was found.
+
+**Recommendation.** Enable NuGet lock files by setting ``<RestorePackagesWithLockFile>true</RestorePackagesWithLockFile>`` in the csproj (or ``Directory.Build.props`` for solution-wide coverage) and commit the generated ``packages.lock.json``. In CI, restore with ``dotnet restore --locked-mode`` so the build fails if the lock file disagrees with the project file. Without a lock file, ``dotnet restore`` silently upgrades transitive dependencies to whatever the feed currently serves.
+
+**Source:** [`NUGET-006`](../providers/nuget.md#nuget-006) in the [NuGet provider](../providers/nuget.md).
+
+### `NUGET-007`: Multiple NuGet sources without packageSourceMapping <span class="pg-sev pg-sev--high">HIGH</span> { #detail-nuget-007 }
+
+**Evidences:** [`PW.4.1`](#ctrl-pw-4-1) Acquire and maintain well-secured 3rd-party software components, [`PW.4.4`](#ctrl-pw-4-4) Verify that acquired components are what is expected and behave as expected.
+
+**How this is detected.** Fires when NuGet.config has more than one package source and no ``packageSourceMapping`` section.
+
+**Recommendation.** Add a ``<packageSourceMapping>`` section to NuGet.config that maps each package pattern to its intended source. Without source mapping, NuGet queries every configured source for every package and installs the highest version found across all of them, the exact shape exploited by dependency confusion attacks. Source mapping pins each package namespace to one feed so a malicious publication on a secondary feed is never considered.
+
+**Source:** [`NUGET-007`](../providers/nuget.md#nuget-007) in the [NuGet provider](../providers/nuget.md).
+
+### `NUGET-008`: NuGet package published within the cooldown window <span class="pg-sev pg-sev--high">HIGH</span> { #detail-nuget-008 }
+
+**Evidences:** [`PW.4.1`](#ctrl-pw-4-1) Acquire and maintain well-secured 3rd-party software components, [`PW.4.4`](#ctrl-pw-4-4) Verify that acquired components are what is expected and behave as expected, [`RV.1.1`](#ctrl-rv-1-1) Gather information about potential vulnerabilities in released software.
+
+**How this is detected.** Network-dependent: needs ``--resolve-remote`` to populate publish timestamps from ``api.nuget.org``. Passes silently when the flag is off.
+
+**Recommendation.** Pin to a version published before the cooldown window, or wait until the cooldown has elapsed. Most publisher-account compromises are detected within hours-to-days of publication.
+
+**Source:** [`NUGET-008`](../providers/nuget.md#nuget-008) in the [NuGet provider](../providers/nuget.md).
+
+### `NUGET-009`: NuGet package has a known OSV advisory <span class="pg-sev pg-sev--critical">CRITICAL</span> { #detail-nuget-009 }
+
+**Evidences:** [`PW.4.1`](#ctrl-pw-4-1) Acquire and maintain well-secured 3rd-party software components, [`PW.4.4`](#ctrl-pw-4-4) Verify that acquired components are what is expected and behave as expected, [`RV.1.1`](#ctrl-rv-1-1) Gather information about potential vulnerabilities in released software.
+
+**How this is detected.** Network-dependent: needs ``--resolve-remote`` to query the OSV advisory database. Passes silently when the flag is off.
+
+**Recommendation.** Upgrade to a patched version or remove the affected package. Consult the advisory URL for remediation guidance.
+
+**Source:** [`NUGET-009`](../providers/nuget.md#nuget-009) in the [NuGet provider](../providers/nuget.md).
 
 ### `OCI-001`: Image manifest is missing OCI provenance annotations <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-oci-001 }
 
@@ -16884,6 +17195,65 @@ ctx==0.2.2
 ```
 
 **Source:** [`PYPI-006`](../providers/pypi.md) in the [PyPI provider](../providers/pypi.md).
+
+### `PYPI-008`: Direct dependency was published within the cooldown window <span class="pg-sev pg-sev--high">HIGH</span> { #detail-pypi-008 }
+
+**Evidences:** [`PW.4.1`](#ctrl-pw-4-1) Acquire and maintain well-secured 3rd-party software components, [`PW.4.4`](#ctrl-pw-4-4) Verify that acquired components are what is expected and behave as expected, [`RV.1.1`](#ctrl-rv-1-1) Gather information about potential vulnerabilities in released software.
+
+**How this is detected.** Network-dependent: needs ``--resolve-remote`` to populate the per-package publish timestamps from the PyPI JSON API (``https://pypi.org/pypi/<name>/json``). Walks every exact-version requirement (``foo==1.2.3``) and flags ones whose newest file record landed within the cooldown window (default 7 days). Range specs (``foo>=1.2``, ``foo~=1.2``), unpinned specs, VCS / URL / editable lines, and dist-tag-style specs are out of scope — the cooldown applies to a specific version literal because that's what the maintainer chose to pin. When ``--resolve-remote`` is off or the registry can't be reached, the rule passes silently so the absence of the network path doesn't trip CI.
+
+**Recommendation.** Either skip the just-published version (pin to the last release older than the cooldown window) or wait until the cooldown has elapsed before bumping the requirements file. Most publisher-account compromises on PyPI (``ctx`` 2022, ``requests-darwin-lite`` 2024, ``ultralytics`` 2024, the ``rspack`` / ``vant`` / ``nx`` / ``@ctrl/*`` campaigns) are detected and yanked from the index within hours-to-days of publication; holding back N days converts a publisher-compromise window into a vulnerability-disclosure window where either the maintainer rotates the malicious version off the index or the security community files an advisory that PYPI-006 can match against.
+
+**Known false positives.**
+
+- Pre-release versions (``foo==1.0.0rc1``) are often freshly published; the cooldown applies to them too because pre-release tags have been used as carriers in real compromises. Suppress per-resource via ``--ignore-file`` when a release-train workflow legitimately pins to a same-day RC.
+- Same-day patch upgrades from a maintainer the team directly trusts (e.g. a vendored fork the team owns) are flagged. Suppress per-resource — the cooldown is a default-safe gate, not a hard rule.
+
+**Seen in the wild.**
+
+- ctx package compromise (May 2022): the abandoned ``ctx`` package was claimed by an attacker and republished with an env-var exfiltration payload. The malicious 0.2.x versions stayed live until PyPI yanked them ~24h later. Consumers who held a 7-day cooldown caught the takedown before installing.
+- requests-darwin-lite 2.27.1 ([GHSA-7gjg-3qcj-9jvg](https://github.com/advisories/GHSA-7gjg-3qcj-9jvg), May 2024): typosquat-flavored package whose wheel embedded the Geneva malware framework. The malicious version was live for less than 48 hours before disclosure and yank.
+
+**Proof of exploit.**
+
+```
+# Vulnerable: pinning to ``shiny-lib==17.0.99`` 2 hours
+# after its publication is exactly the window in which
+# publisher-account compromises live. PyPI yanks malicious
+# versions within hours-to-days once flagged; ``ctx``,
+# ``requests-darwin-lite``, and ``ultralytics`` all
+# followed this shape. The next ``pip install`` after the
+# malicious publish installs the wheel before the takedown.
+# requirements.txt
+--require-hashes
+shiny-lib==17.0.99 \
+    --hash=sha256:bad1234bad1234bad1234bad1234bad1234bad1234bad1234bad1234bad1234b
+# ``17.0.99`` was published 2 hours ago
+
+# Safe: pin to the most recent release that's older than
+# the cooldown window. ``pipeline_check --pipeline pypi
+# --resolve-remote`` queries the PyPI JSON API for
+# publish timestamps and surfaces anything inside the 7-
+# day window. Hold the bump until the cooldown elapses,
+# or skip the freshly-pushed version entirely.
+# requirements.txt
+--require-hashes
+shiny-lib==17.0.98 \
+    --hash=sha256:c0ffeec0ffeec0ffeec0ffeec0ffeec0ffeec0ffeec0ffeec0ffeec0ffeec0ff
+# ``17.0.98`` was published 3 weeks ago
+```
+
+**Source:** [`PYPI-008`](../providers/pypi.md) in the [PyPI provider](../providers/pypi.md).
+
+### `PYPI-009`: PyPI package has a known OSV advisory <span class="pg-sev pg-sev--critical">CRITICAL</span> { #detail-pypi-009 }
+
+**Evidences:** [`PW.4.1`](#ctrl-pw-4-1) Acquire and maintain well-secured 3rd-party software components, [`PW.4.4`](#ctrl-pw-4-4) Verify that acquired components are what is expected and behave as expected, [`RV.1.1`](#ctrl-rv-1-1) Gather information about potential vulnerabilities in released software.
+
+**How this is detected.** Network-dependent: needs ``--resolve-remote`` to query the OSV advisory database (``api.osv.dev``). Passes silently when the flag is off. Complements PYPI-006 (curated offline registry) with the full OSV/GHSA long-tail.
+
+**Recommendation.** Upgrade to a patched version or remove the affected package. Consult the advisory URL for remediation guidance.
+
+**Source:** [`PYPI-009`](../providers/pypi.md) in the [PyPI provider](../providers/pypi.md).
 
 ### `S3-000`: S3 API access failed <span class="pg-sev pg-sev--info">INFO</span> { #detail-s3-000 }
 

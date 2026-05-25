@@ -82,6 +82,8 @@ STANDARD = Standard(
         "PYPI-005": ["ING-1"],             # --extra-index-url (dep confusion)
         "MVN-003":  ["ING-1"],             # plaintext-HTTP repository
         "MVN-007":  ["ING-1"],             # settings.xml wildcard mirror
+        "NUGET-004": ["ING-1"],            # HTTP-only NuGet package source
+        "NUGET-007": ["ING-1"],            # multiple sources without packageSourceMapping
         # Dockerfile env-bypass pack disables the trusted-source channel
         # for any subsequent OSS install in the image.
         "DF-021":   ["ING-1"],             # pip install TLS bypass / http index
@@ -124,8 +126,17 @@ STANDARD = Standard(
         # capability), same shape as GHA-056 above.
         "GHA-040":  ["SCA-3", "ING-3"],     # known-compromised action ref
         "NPM-006":  ["SCA-3", "ING-3"],     # compromised npm version
+        "NPM-008":  ["SCA-3", "ING-3"],     # cooldown gate (--resolve-remote)
+        "NPM-010":  ["SCA-3", "ING-3"],     # OSV advisory (--resolve-remote)
         "PYPI-006": ["SCA-3", "ING-3"],     # compromised PyPI version
+        "PYPI-008": ["SCA-3", "ING-3"],     # cooldown gate (--resolve-remote)
+        "PYPI-009": ["SCA-3", "ING-3"],     # OSV advisory (--resolve-remote)
         "MVN-006":  ["SCA-3", "ING-3"],     # compromised Maven version
+        "MVN-008":  ["SCA-3", "ING-3"],     # cooldown gate (--resolve-remote)
+        "MVN-009":  ["SCA-3", "ING-3"],     # OSV advisory (--resolve-remote)
+        "NUGET-005": ["SCA-3", "ING-3"],    # known-compromised NuGet version
+        "NUGET-008": ["SCA-3", "ING-3"],    # cooldown gate (--resolve-remote)
+        "NUGET-009": ["SCA-3", "ING-3"],    # OSV advisory (--resolve-remote)
         # Reputation-class deny-list signals: not malware-confirmed,
         # but each finding is one entry on a curated deny-list of
         # references that should require human-in-the-loop review
@@ -187,6 +198,10 @@ STANDARD = Standard(
         "MVN-002":  ["UPD-1"],             # mutable SNAPSHOT dep
         "MVN-004":  ["UPD-1"],             # missing <version> element
         "MVN-005":  ["UPD-1"],             # lax repository checksumPolicy
+        "NUGET-001": ["UPD-1"],            # floating NuGet version range
+        "NUGET-002": ["UPD-1"],            # wildcard prerelease version
+        "NUGET-003": ["UPD-1"],            # missing explicit version
+        "NUGET-006": ["UPD-1"],            # no lock file for reproducible restores
         # OCI image manifest pinning
         "OCI-007":  ["UPD-1"],             # legacy schemaVersion 1 (no digest immutability)
         "OCI-008":  ["UPD-1"],             # weak digest algorithm

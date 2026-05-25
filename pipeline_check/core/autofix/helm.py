@@ -59,7 +59,7 @@ _HELM_API_V1_RE = re.compile(
 )
 
 
-@register("HELM-001")
+@register("HELM-001", safety="safe")
 def _fix_helm001_api_version(content: str, finding: Finding) -> str | None:
     """Insert a TODO above ``apiVersion: v1`` in Chart.yaml.
 
@@ -93,7 +93,7 @@ _HELM_DEPENDENCIES_RE = re.compile(
 )
 
 
-@register("HELM-002")
+@register("HELM-002", safety="safe")
 def _fix_helm002_dependencies_lock(content: str, finding: Finding) -> str | None:
     """Insert a TODO above the ``dependencies:`` key in Chart.yaml.
 
@@ -132,7 +132,7 @@ _HELM_PLAINTEXT_REPO_RE = re.compile(
 )
 
 
-@register("HELM-003")
+@register("HELM-003", safety="safe")
 def _fix_helm003_plaintext_repo(content: str, finding: Finding) -> str | None:
     """Insert a TODO above each ``repository: <plaintext-url>`` line.
 

@@ -292,8 +292,8 @@ matching the original placeholders in this section:
 * ``GHA-071`` landed as **powershell-on-Linux** (originally
   placeholder for unsound-contains, now ``GHA-064``).
 * ``GHA-072`` landed as **overprovisioned-secrets** (originally
-  placeholder for agentic-actions widening; that widening is
-  still open and will take a future ID).
+  placeholder for agentic-actions widening; that widening landed
+  as a widening of **GHA-058**, no new ID).
 * ``GHA-073`` landed as **unused workflow_call.secrets** (originally
   placeholder for upload-artifact wildcard, now ``GHA-066``).
 
@@ -336,13 +336,14 @@ Suggested landing order, highest signal first:
   silent (account type is set by GitHub and can't be spoofed by
   a re-run). HIGH severity. 11 per-rule tests + safe/unsafe
   fixture pair.
-- **GHA-068: job permissions are excessive for the work it performs.**
-  Widens GHA-004 from "missing permissions block" to "permissions
-  block grants more than the job uses." Heuristic: enumerate the
-  ``uses:`` / ``run:`` content per job, derive the minimal scopes
-  (``contents: read`` unless writes are observed, ``id-token: write``
-  only when an OIDC consumer fires, etc.), and flag the delta. MEDIUM
-  severity. Autofix candidate (downgrade to the inferred minimum).
+- ~~**GHA-068: job permissions are excessive for the work it performs.**~~
+  Landed as a widening of **GHA-004** (no new ID). Top-level write-scope
+  aggregation across inheriting jobs: when a workflow-level
+  ``permissions:`` block grants a write scope that no inheriting job
+  (no job-level override, not a reusable-workflow caller) consumes,
+  the rule now flags the excess grant. Per-job overprovisioning was
+  already condition 5; this closes the workflow-level gap. 8 new tests
+  under ``TestGHA004TopLevelAggregation``.
 - ~~**GHA-069: secrets context broader than the consuming step.**~~
   Landed as **GHA-072**. Fires when a job-level ``env:`` entry
   binds ``${{ secrets.* }}`` and at most one step references it,
@@ -660,19 +661,18 @@ cross-platform composition stay out of scope.
 
 Filed as #173.
 
-### Inline source-line ignore comments
+### ~~Inline source-line ignore comments~~
 
-`# pipeline-check: ignore[RULE-ID]` annotations on the source line
-itself, mirroring zizmor's `# zizmor: ignore[...]`, ruff's `# noqa`,
-trufflehog's `# trufflehog:ignore`, and semgrep's `// nosemgrep`.
-Today suppression works via `--ignore-file` (flat-text or structured
-YAML); both are sidecar files, so a reviewer reading the diff cannot
-see that a line is suppressed. Pre-parse lexer pass picks the
-comment off the raw file content (YAML parsers drop standalone
-comments), joins to findings via the existing line-coordinate, and
-flows through the same `core/gate.py` plumbing as the file path.
-Includes `ignore-next-line` / `ignore-file[RULE]` /
-`ignore-rule[RULE] reason=...` variants. Filed as #174.
+Landed. Three directive variants: ``ignore[ID]`` (same line),
+``ignore-next-line[ID]`` (following line), and ``ignore-file[ID]``
+(entire file). Multiple IDs are comma-separated. An optional
+``reason=<text>`` suffix is captured for audit trails. Both ``#``
+and ``//`` comment prefixes are recognized (YAML, Dockerfile, HCL,
+Groovy). Pre-parse regex extraction runs on the raw file content
+before YAML parsers strip comments, then feeds through the same
+``core/gate.py`` plumbing as ``--ignore-file``. Disabled via
+``--no-inline-ignore``. 23 tests under
+``tests/test_inline_ignore.py``.
 
 ### Live secret verification (verified / unverified / unknown)
 
@@ -704,22 +704,16 @@ shell-out to a user-provided `opa` binary on `$PATH` (documented as
 a soft dependency, fails cleanly when missing) keeps the wheel
 Python-only. Filed as #176.
 
-### Autofix safety tiers (`--fix=safe` default, `--fix=unsafe` opt-in)
+### ~~Autofix safety tiers (`--fix=safe` default, `--fix=unsafe` opt-in)~~
 
-Split the ~100-autofixer pack into `safe` and `unsafe` tiers so the
-default `--fix` line stays conservative. `safe` = edit produces a
-semantically equivalent file once the rule's invariant holds (pin
-to digest, add missing default `permissions: {}`, comment-out an
-exact-match TLS-bypass token, append `--require-hashes`). `unsafe`
-= edit relies on inference that can be wrong (downgrade
-`permissions:` to inferred minimum, rewrite a multi-step install
-into a cached layer). Per-rule safety claim declared next to the
-fixer module; missing claims default to `unsafe` and are enforced
-by `tests/autofix/test_safety_claims.py`. CLI:
-`--fix` (safe only), `--fix=safe` (explicit), `--fix=unsafe`
-(safe + unsafe), `--fix=unsafe-only`. Inspiration: zizmor's
-`--fix=safe` / `--fix=unsafe-only`, ruff's `--unsafe-fixes`. Filed
-as #177.
+Landed. Every ``@register()`` call carries ``safety="safe"`` or
+``safety="unsafe"``. ``--fix`` (bare flag) runs safe fixers only;
+``--fix=unsafe`` runs both; ``--fix=unsafe-only`` runs only unsafe.
+109 fixers labeled safe, 2 labeled unsafe (GHA-003 template-injection
+env-var extraction, GHA-034 secrets-inherit rewrite). Missing labels
+default to unsafe so new fixers without a label are conservative.
+``tests/test_autofix_safety.py`` enforces every fixer has an explicit
+label. 9 new tests.
 
 ### VS Code extension
 
@@ -747,24 +741,24 @@ templates / components, which would need cross-document machinery
 similar to the GHA ``--resolve-remote`` flow. Closes the last
 known limitation in the TAINT-NNN engine's coverage.
 
-### Direct-HCL Terraform parsing (no `--tf-plan` requirement)
+### ~~Direct-HCL Terraform parsing (no `--tf-plan` requirement)~~
 
-The terraform provider consumes ``terraform show -json`` plan output
-via ``--tf-plan``. The plan-step requirement is fine for the
-canonical CI flow but locks out three real use cases: pre-init scans
-(providers not downloaded yet), monorepo audits where running
-``terraform plan`` per module is prohibitive, and corpus benchmarks
-that ship raw HCL with no plan capture. Land a second parsing path
-that reads ``*.tf`` files directly (via the ``python-hcl2`` parser
-or a tree-sitter grammar) and synthesizes a partial resource graph
-good enough for the same TF-NNN rule pack to run against. Unresolved
+Landed. ``--tf-source <dir>`` parses ``*.tf`` files directly via
+``python-hcl2`` (behind the ``[hcl]`` install extra) and synthesizes
+the same ``TerraformResource`` objects the plan-JSON path produces,
+so all 58 existing TF-NNN rules run unchanged. Variable and local
+substitution is best-effort: ``variable`` blocks with a ``default``
+and ``locals`` blocks with literal values resolve; unresolvable
 ``var.<name>`` / ``module.X.output.Y`` / ``data.<x>.<y>`` references
-stay opaque, the rule emits a confidence-demoted finding rather than
-a false negative. The plan-JSON path stays canonical (it carries the
-fully-resolved attribute values raw HCL can't); ``--tf-source`` is
-the new flag, ``--tf-plan`` keeps its semantics. Closes the
-``terragoat`` skip in ``bench/goats/`` and unlocks the "scan a fresh
-checkout" UX that Checkov / KICS / tfsec all offer.
+stay as opaque ``${...}`` strings and findings on those resources get
+confidence-demoted one rung (HIGH -> MEDIUM, MEDIUM -> LOW). Local
+child modules (``source = "./..."`` / ``"../..."``) are walked
+recursively to depth 3; remote registry modules are skipped. The
+plan-JSON path stays canonical (``--tf-plan`` keeps its semantics);
+``main.tf`` presence auto-detects to ``--tf-source .`` when no
+``--tf-plan`` is provided. Closes the ``terragoat`` skip in
+``bench/goats/``. 23 new tests under
+``tests/terraform/test_hcl_parser.py``.
 
 ### Pipeline graph DAG v2 (step-level)
 
@@ -855,42 +849,25 @@ Landed as XPC-010 (see Shipped).
 
 Next, paired:
 
-- **Live OSV / GHSA lookup for pinned dep versions (NPM-010 /
-  PYPI-009 / MVN-009).** Dep-manifest analog of the planned
-  GHA-077 widening: each provider's curated
-  ``CompromisedPackage`` registry stays as the offline default,
-  and behind ``--resolve-remote`` the same registry-fetcher
-  transport NPM-008 / PYPI-008 / MVN-008 ride on queries OSV
-  (``https://api.osv.dev/v1/query``) plus the GitHub Advisory
-  database for every exact ``name == version`` pair the manifest
-  carries. Fires CRITICAL on an advisory hit, MEDIUM on a YANKED
-  package, otherwise silent. Closes the freshness gap the
-  hand-seeded registry has against advisories filed between
-  releases (the registry tracks notable incidents; OSV catches
-  the long tail). Same no-network default as the cooldown
-  trilogy, so the scan still passes silently when the flag is
-  off.
+- ~~**Live OSV / GHSA lookup for pinned dep versions (NPM-010 /
+  PYPI-009 / MVN-009 / NUGET-009).**~~ Landed. Shared
+  ``_primitives/osv_fetcher.py`` queries the OSV batch API
+  (``api.osv.dev/v1/querybatch``) for every exact name+version
+  pair behind ``--resolve-remote``. Results cached 24 hours via
+  ``FileSystemCache``. Four new rules: NPM-010, PYPI-009,
+  MVN-009, NUGET-009, all CRITICAL severity on advisory hit.
+  Batch size 1000 per request to handle large dependency trees.
 
-- **NuGet provider (``--pipeline nuget``).** Fifth dependency-
-  supply-chain provider after npm / pypi / maven. Parses
-  ``*.csproj`` ``<PackageReference>`` entries,
-  ``Directory.Packages.props`` (central package management),
-  ``packages.config`` (legacy), ``packages.lock.json``, and
-  ``project.assets.json`` (the lock the SDK writes during
-  restore). NUGET-001..007 cover floating ``[1.0,2.0)`` /
-  ``(1.0,)`` ranges, ``-*`` wildcard prereleases, missing
-  ``Version`` attributes (silently resolved by central
-  management), HTTP-only ``packageSources`` in ``NuGet.config``,
-  pins to known-compromised .NET versions, missing
-  ``packages.lock.json`` reproducibility, and missing
-  ``packageSourceMapping`` when more than one feed is
-  configured (the dependency-confusion shape that bit
-  Microsoft's first-party 2021 advisory). Hermetic on the base
-  path; a NUGET-008 cooldown rule rides the existing fetcher
-  transport against ``api.nuget.org/v3/registration5-semver1/``
-  for publish-time data. Closes the .NET ecosystem gap that
-  leaves Checkov / Snyk as the only static-analysis options for
-  ``*.csproj``.
+- ~~**NuGet provider (``--pipeline nuget``).**~~ Landed. Fifth
+  dependency-supply-chain provider. Parses ``*.csproj``
+  (``<PackageReference>``), ``Directory.Packages.props`` (central
+  package management), ``packages.config`` (legacy),
+  ``NuGet.config`` (sources + ``packageSourceMapping``), and
+  ``packages.lock.json``. Nine rules (NUGET-001..009): floating
+  ranges, wildcard prereleases, missing versions, HTTP sources,
+  compromised versions, missing lockfile, missing source mapping,
+  cooldown gate, and OSV advisory lookup. Provider count 23 -> 24.
+  22 tests under ``tests/nuget/``.
 
 ### Vulnerable-by-design benchmark: phase 2 (cross-scanner comparison)
 

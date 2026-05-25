@@ -55,13 +55,8 @@ goats:
     repo: https://github.com/bridgecrewio/terragoat
     ref: master
     pipelines: [terraform]
-    skip: true
-    skip_reason: >
-      pipeline-check's Terraform provider consumes ``terraform show
-      -json`` plan output, not raw HCL. terragoat ships .tf source
-      only. Unskip once direct-HCL parsing lands (tracked in
-      ROADMAP.md under post-1.0 candidates).
-    description: Vulnerable Terraform configurations.
+    args: ["--tf-source", "terraform/aws"]
+    description: Vulnerable Terraform configurations (HCL source path).
 
   - slug: cfngoat
     repo: https://github.com/bridgecrewio/cfngoat

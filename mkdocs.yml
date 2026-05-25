@@ -166,12 +166,14 @@ nav:
           - Kubernetes: providers/kubernetes.md
           - Helm: providers/helm.md
           - OCI image manifest: providers/oci.md
-          - SCM posture (GitHub / GitLab / Bitbucket): providers/scm.md
+          - SCM posture:
+              - SCM posture (GitHub / GitLab / Bitbucket): providers/scm.md
           - Package registries:
               - Overview: providers/registries.md
               - npm: providers/npm.md
               - PyPI: providers/pypi.md
               - Maven: providers/maven.md
+              - NuGet: providers/nuget.md
       - Standards:
           - Overview: standards/README.md
           - OWASP Top 10 CI/CD: standards/owasp_cicd_top_10.md

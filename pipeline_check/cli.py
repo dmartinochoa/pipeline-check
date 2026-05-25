@@ -26,6 +26,7 @@ Examples
 
     # Scan a Terraform plan, no AWS credentials needed.
     pipeline_check --pipeline terraform --tf-plan plan.json
+    pipeline_check --pipeline terraform --tf-source ./infra/  # direct HCL
 
     # Annotate findings with a single standard, or list registered standards.
     pipeline_check --standard owasp_cicd_top_10
@@ -60,6 +61,12 @@ from .core.checks.base import Confidence, Severity, confidence_rank
 from .core.config import load_config
 from .core.gate import GateConfig, evaluate_gate, load_ignore_file
 from .core.html_reporter import report_html
+from .core.inline_ignore import (
+    InlineIgnoreIndex,
+    InlineIgnoreRule,
+    build_inline_index,
+    extract_inline_ignores,
+)
 from .core.junit_reporter import report_junit
 from .core.markdown_reporter import report_markdown
 from .core.policies import (
@@ -153,7 +160,7 @@ class _GroupedCommand(click.Command):
     _SECTIONS: tuple[tuple[str, frozenset[str]], ...] = (
         ("Target", frozenset({
             "--pipeline", "--target", "--region", "--profile",
-            "--tf-plan", "--gha-path", "--gitlab-path",
+            "--tf-plan", "--tf-source", "--gha-path", "--gitlab-path",
             "--bitbucket-path", "--azure-path", "--jenkinsfile-path",
             "--circleci-path", "--cfn-template", "--cloudbuild-path",
             "--dockerfile-path", "--k8s-path", "--helm-path",
@@ -161,7 +168,7 @@ class _GroupedCommand(click.Command):
             "--argocd-path",
             "--helm-values", "--helm-set", "--oci-manifest",
             "--drone-path", "--npm-path", "--pypi-path",
-            "--maven-path",
+            "--maven-path", "--nuget-path",
         })),
         ("Filtering", frozenset({
             "--checks", "--severity-threshold", "--min-confidence",
@@ -175,7 +182,7 @@ class _GroupedCommand(click.Command):
             "--fail-on", "--min-grade", "--max-failures",
             "--fail-on-check", "--baseline", "--baseline-from-git",
             "--write-baseline",
-            "--diff-base", "--pr-diff", "--ignore-file",
+            "--diff-base", "--pr-diff", "--ignore-file", "--no-inline-ignore",
             "--fail-on-chain", "--fail-on-any-chain",
         })),
         ("Attack chains", frozenset({
@@ -594,6 +601,8 @@ _PROVIDER_DETECT_FILES: tuple[tuple[str, tuple[str, ...], tuple[str, ...]], ...]
     ("npm", ("package.json", "package-lock.json"), ()),
     ("pypi", ("requirements.txt",), ()),
     ("maven", ("pom.xml",), ()),
+    ("nuget", ("Directory.Packages.props",), ()),
+    ("terraform", ("main.tf",), ()),
     (
         "cloudformation",
         (
@@ -652,6 +661,96 @@ def _detect_all_pipelines_from_cwd() -> list[str]:
     if "helm" in detected and "kubernetes" in detected:
         detected.remove("kubernetes")
     return detected
+
+
+# ── Inline ignore collection ─────────────────────────────────────────────
+
+#: Maps provider names to (glob_patterns, base_path_kwarg). When a
+#: provider is active, the glob patterns are expanded relative to the
+#: provider's resolved path (or cwd) to find files that may carry
+#: inline ``# pipeline-check: ignore[...]`` comments.
+_INLINE_IGNORE_GLOBS: dict[str, tuple[str, ...]] = {
+    "github": ("*.yml", "*.yaml"),
+    "gitlab": ("*.yml", "*.yaml"),
+    "bitbucket": ("*.yml", "*.yaml"),
+    "azure": ("*.yml", "*.yaml"),
+    "circleci": ("*.yml", "*.yaml"),
+    "cloudbuild": ("*.yml", "*.yaml"),
+    "buildkite": ("*.yml", "*.yaml"),
+    "drone": ("*.yml", "*.yaml"),
+    "tekton": ("*.yml", "*.yaml"),
+    "argo": ("*.yml", "*.yaml"),
+    "argocd": ("*.yml", "*.yaml"),
+    "kubernetes": ("*.yml", "*.yaml"),
+    "helm": ("*.yml", "*.yaml"),
+    "dockerfile": ("Dockerfile", "Containerfile", "*.Dockerfile"),
+    "jenkins": ("Jenkinsfile",),
+    "terraform": ("*.tf",),
+    "cloudformation": ("*.yml", "*.yaml", "*.json"),
+    "npm": ("package.json", "package-lock.json", ".npmrc"),
+    "pypi": ("requirements*.txt", "*.in", "pyproject.toml"),
+    "maven": ("pom.xml", "settings.xml"),
+    "nuget": ("*.csproj", "NuGet.config"),
+}
+
+#: Maps provider names to the kwarg name used for the provider path.
+_PROVIDER_PATH_KWARG: dict[str, str] = {
+    "github": "gha_path",
+    "gitlab": "gitlab_path",
+    "bitbucket": "bitbucket_path",
+    "azure": "azure_path",
+    "jenkins": "jenkinsfile_path",
+    "circleci": "circleci_path",
+    "cloudbuild": "cloudbuild_path",
+    "buildkite": "buildkite_path",
+    "drone": "drone_path",
+    "tekton": "tekton_path",
+    "argo": "argo_path",
+    "argocd": "argocd_path",
+    "dockerfile": "dockerfile_path",
+    "kubernetes": "k8s_path",
+    "helm": "helm_path",
+    "terraform": "tf_source",
+    "npm": "npm_path",
+    "pypi": "pypi_path",
+    "maven": "maven_path",
+    "nuget": "nuget_path",
+}
+
+
+def _collect_inline_ignores(
+    pipelines: list[str],
+    path_kwargs: dict[str, str | None],
+) -> InlineIgnoreIndex:
+    """Walk scanned files and extract inline ignore comments."""
+    import glob as _glob
+
+    all_rules: list[InlineIgnoreRule] = []
+    for provider in pipelines:
+        globs = _INLINE_IGNORE_GLOBS.get(provider)
+        if not globs:
+            continue
+        kwarg_name = _PROVIDER_PATH_KWARG.get(provider)
+        base = (path_kwargs.get(kwarg_name) if kwarg_name else None) or "."
+        if not os.path.isdir(base):
+            if os.path.isfile(base):
+                base = os.path.dirname(base) or "."
+            else:
+                continue
+        for pattern in globs:
+            for filepath in _glob.glob(os.path.join(base, pattern)):
+                if not os.path.isfile(filepath):
+                    continue
+                try:
+                    text = open(filepath, encoding="utf-8").read()
+                except OSError:
+                    continue
+                try:
+                    rel = os.path.relpath(filepath).replace("\\", "/")
+                except ValueError:
+                    rel = filepath.replace("\\", "/")
+                all_rules.extend(extract_inline_ignores(rel, text))
+    return build_inline_index(all_rules)
 
 
 _CHECK_IDS_CACHE: list[str] | None = None
@@ -979,7 +1078,7 @@ def _install_completion_callback(
         "generic; pass ``--pipeline oci`` or ``--pipelines github,oci`` "
         "explicitly. Falls back to ``aws`` when nothing matches. "
         "Each provider has a companion path flag "
-        "(--tf-plan, --cfn-template, --gha-path, --gitlab-path, "
+        "(--tf-plan, --tf-source, --cfn-template, --gha-path, --gitlab-path, "
         "--bitbucket-path, --azure-path, --jenkinsfile-path, "
         "--circleci-path, --cloudbuild-path, --dockerfile-path, "
         "--k8s-path, --helm-path, --buildkite-path, --tekton-path, "
@@ -1059,7 +1158,18 @@ def _install_completion_callback(
     metavar="PATH",
     help=(
         "Path to the JSON output of `terraform show -json` "
-        "(Terraform provider only; required when --pipeline terraform)."
+        "(Terraform provider only; mutually exclusive with --tf-source)."
+    ),
+)
+@click.option(
+    "--tf-source",
+    default=None,
+    metavar="PATH",
+    help=(
+        "Path to a directory containing *.tf files. Parses HCL directly "
+        "without requiring `terraform plan` (best-effort variable "
+        "resolution). Requires `pip install pipeline-check[hcl]`. "
+        "Mutually exclusive with --tf-plan."
     ),
 )
 @click.option(
@@ -1251,6 +1361,15 @@ def _install_completion_callback(
         "Path to a pom.xml / settings.xml or a directory containing "
         "one (required when --pipeline maven). Auto-detects "
         "./pom.xml."
+    ),
+)
+@click.option(
+    "--nuget-path",
+    default=None,
+    metavar="PATH",
+    help=(
+        "Path to a directory containing *.csproj, NuGet.config, or "
+        "packages.lock.json (required when --pipeline nuget)."
     ),
 )
 @click.option(
@@ -1691,13 +1810,17 @@ def _install_completion_callback(
 )
 @click.option(
     "--fix",
-    is_flag=True,
-    default=False,
+    is_flag=False,
+    flag_value="safe",
+    default=None,
+    type=click.Choice(["safe", "unsafe", "unsafe-only"], case_sensitive=False),
     help=(
-        "Emit a unified-diff patch to stdout for every failing finding "
-        "that has a registered autofix. Does not modify files, pipe "
-        "the output into `git apply` to apply. Currently supports: "
-        + ", ".join(_autofix.available_fixers()) + "."
+        "Emit patches for failing findings with registered autofixes. "
+        "Tiers: 'safe' (default when bare --fix) runs only fixers that "
+        "produce semantically equivalent edits; 'unsafe' runs all fixers "
+        "(safe + inference-dependent); 'unsafe-only' runs only the "
+        "inference-dependent fixers. Does not modify files; pipe the "
+        "output into `git apply` or combine with --apply."
     ),
 )
 @click.option(
@@ -1783,6 +1906,15 @@ def _install_completion_callback(
     help=(
         "Path to an ignore file (one CHECK_ID or CHECK_ID:RESOURCE per line). "
         "Defaults to .pipelinecheckignore when present in the working dir."
+    ),
+)
+@click.option(
+    "--no-inline-ignore",
+    is_flag=True,
+    default=False,
+    help=(
+        "Disable inline ``# pipeline-check: ignore[RULE-ID]`` comments. "
+        "When set, only the ignore file (--ignore-file) suppresses findings."
     ),
 )
 @click.option(
@@ -1980,6 +2112,7 @@ def scan(
     region: str,
     profile: str | None,
     tf_plan: str | None,
+    tf_source: str | None,
     gha_path: str | None,
     gitlab_path: str | None,
     bitbucket_path: str | None,
@@ -1999,6 +2132,7 @@ def scan(
     npm_base_ref: str | None,
     pypi_path: str | None,
     maven_path: str | None,
+    nuget_path: str | None,
     helm_values: tuple[str, ...],
     helm_set: tuple[str, ...],
     oci_manifest: str | None,
@@ -2030,7 +2164,7 @@ def scan(
     fail_on_checks: tuple[str, ...],
     secret_patterns: tuple[str, ...],
     detect_entropy: bool,
-    fix: bool,
+    fix: str | None,
     apply_fixes: bool,
     baseline_from_git: str | None,
     diff_base: str | None,
@@ -2038,6 +2172,7 @@ def scan(
     baseline: str | None,
     write_baseline: str | None,
     ignore_file: str | None,
+    no_inline_ignore: bool,
     custom_rules: tuple[str, ...],
     verbose: bool,
     quiet: bool,
@@ -2307,10 +2442,26 @@ def scan(
     pipelines_to_resolve = pipelines_list or [pipeline_lc]
     for pipeline_lc in pipelines_to_resolve:
         if pipeline_lc == "terraform":
-            tf_plan = _resolve_provider_path(
-                "terraform", flag="tf-plan", value=tf_plan,
-                validate_kind="file", not_found_label="path",
-            )
+            if tf_plan and tf_source:
+                raise click.UsageError(
+                    "--tf-plan and --tf-source are mutually exclusive."
+                )
+            if tf_plan:
+                tf_plan = _resolve_provider_path(
+                    "terraform", flag="tf-plan", value=tf_plan,
+                    validate_kind="file", not_found_label="path",
+                )
+            elif tf_source:
+                tf_source = _resolve_provider_path(
+                    "terraform", flag="tf-source", value=tf_source,
+                    validate_kind="dir", not_found_label="directory",
+                )
+            elif os.path.isfile("main.tf"):
+                tf_source = "."
+                click.echo(
+                    "[auto] using --tf-source . (main.tf detected)",
+                    err=True,
+                )
         elif pipeline_lc == "github":
             gha_path = _resolve_provider_path(
                 "github", flag="gha-path", value=gha_path,
@@ -2476,6 +2627,12 @@ def scan(
                 candidates=("pom.xml",),
                 detect_label="pom.xml",
             )
+        elif pipeline_lc == "nuget":
+            nuget_path = _resolve_provider_path(
+                "nuget", flag="nuget-path", value=nuget_path,
+                candidates=("Directory.Packages.props",),
+                detect_label="Directory.Packages.props",
+            )
 
     if output == "html" and not output_file:
         raise click.UsageError(
@@ -2602,6 +2759,7 @@ def scan(
         fp_annotations_path=fp_path,
         log=_debug if verbose else None,
         tf_plan=tf_plan,
+        tf_source=tf_source,
         gha_path=gha_path,
         gitlab_path=gitlab_path,
         bitbucket_path=bitbucket_path,
@@ -2630,6 +2788,7 @@ def scan(
         npm_base_ref=npm_base_ref,
         pypi_path=pypi_path,
         maven_path=maven_path,
+        nuget_path=nuget_path,
         scm_platform=scm_platform,
         scm_repo=scm_repo,
         scm_fixture_dir=scm_fixture_dir,
@@ -2808,6 +2967,7 @@ def scan(
             ignore_file=ignore_file,
             fp_path=fp_path,
             tf_plan=tf_plan,
+            tf_source=tf_source,
             gha_path=gha_path,
             gitlab_path=gitlab_path,
             bitbucket_path=bitbucket_path,
@@ -2830,6 +2990,7 @@ def scan(
             npm_path=npm_path,
             pypi_path=pypi_path,
             maven_path=maven_path,
+            nuget_path=nuget_path,
         )
         _debug(f"--pr-diff: forwarded argv = {forwarded_argv}")
         head_findings_raw = [f.to_dict() for f in findings]
@@ -2997,14 +3158,14 @@ def scan(
 
         if fix:
             if apply_fixes:
-                _apply_fix_patches(findings)
+                _apply_fix_patches(findings, tier=fix)
             else:
                 # Route patches to stderr whenever stdout is carrying a machine-
                 # readable report, so `--output json --fix` doesn't produce
                 # "JSON...--- a/file" and break downstream parsers. The
                 # documented `pipeline_check --fix | git apply` recipe uses the
                 # default terminal output where stdout is free for the patch.
-                _emit_fix_patches(findings, to_stderr=output != "terminal")
+                _emit_fix_patches(findings, to_stderr=output != "terminal", tier=fix)
 
     # --write-baseline snapshots the current findings to disk before
     # gating so the next run can suppress them via --baseline PATH.
@@ -3056,6 +3217,33 @@ def scan(
                 "(would be parsed as a git flag, not a positional argument)"
             )
         baseline_git_pair = (ref_part, path_part)
+    inline_index: InlineIgnoreIndex | None = None
+    if not no_inline_ignore:
+        active_pipelines = pipelines_list or [pipeline_lc]
+        path_kwargs: dict[str, str | None] = {
+            "gha_path": gha_path,
+            "gitlab_path": gitlab_path,
+            "bitbucket_path": bitbucket_path,
+            "azure_path": azure_path,
+            "jenkinsfile_path": jenkinsfile_path,
+            "circleci_path": circleci_path,
+            "cloudbuild_path": cloudbuild_path,
+            "buildkite_path": buildkite_path,
+            "drone_path": drone_path,
+            "tekton_path": tekton_path,
+            "argo_path": argo_path,
+            "argocd_path": argocd_path,
+            "dockerfile_path": dockerfile_path,
+            "k8s_path": k8s_path,
+            "helm_path": helm_path,
+            "tf_source": tf_source,
+            "npm_path": npm_path,
+            "pypi_path": pypi_path,
+            "maven_path": maven_path,
+            "nuget_path": nuget_path,
+        }
+        inline_index = _collect_inline_ignores(active_pipelines, path_kwargs)
+
     gate_config = GateConfig(
         fail_on=Severity(fail_on.upper()) if fail_on else None,
         min_grade=min_grade.upper() if min_grade else None,
@@ -3064,6 +3252,7 @@ def scan(
         baseline_path=baseline,
         baseline_from_git=baseline_git_pair,
         ignore_rules=load_ignore_file(ignore_path),
+        inline_ignores=inline_index,
         fail_on_chains={c.upper() for c in fail_on_chain_ids},
         fail_on_any_chain=fail_on_any_chain,
     )
@@ -3207,6 +3396,7 @@ def _build_pr_diff_subprocess_argv(
     ignore_file: str | None,
     fp_path: str | None,
     tf_plan: str | None,
+    tf_source: str | None,
     gha_path: str | None,
     gitlab_path: str | None,
     bitbucket_path: str | None,
@@ -3229,6 +3419,7 @@ def _build_pr_diff_subprocess_argv(
     npm_path: str | None,
     pypi_path: str | None,
     maven_path: str | None,
+    nuget_path: str | None,
 ) -> list[str]:
     """Build the argv for the BASE-side ``pipeline_check`` subprocess.
 
@@ -3272,6 +3463,7 @@ def _build_pr_diff_subprocess_argv(
     # (rare but explicit user intent).
     _path_pairs: tuple[tuple[str, str | None], ...] = (
         ("--tf-plan", tf_plan),
+        ("--tf-source", tf_source),
         ("--gha-path", gha_path),
         ("--gitlab-path", gitlab_path),
         ("--bitbucket-path", bitbucket_path),
@@ -3292,6 +3484,7 @@ def _build_pr_diff_subprocess_argv(
         ("--npm-path", npm_path),
         ("--pypi-path", pypi_path),
         ("--maven-path", maven_path),
+        ("--nuget-path", nuget_path),
     )
     for flag, value in _path_pairs:
         if value:
@@ -3311,7 +3504,7 @@ def _build_pr_diff_subprocess_argv(
     return argv
 
 
-def _emit_fix_patches(findings: list[Any], *, to_stderr: bool = False) -> None:
+def _emit_fix_patches(findings: list[Any], *, to_stderr: bool = False, tier: str = "safe") -> None:
     """Emit one unified-diff patch per failing finding that has a fixer.
 
     Patches go to stdout by default so a user can pipe straight into
@@ -3344,7 +3537,7 @@ def _emit_fix_patches(findings: list[Any], *, to_stderr: bool = False) -> None:
                 continue
             cache[path] = before
         try:
-            after = _autofix.generate_fix(f, before)
+            after = _autofix.generate_fix(f, before, tier=tier)
         except Exception as exc:
             # One broken fixer must not abort the whole --fix run. Log
             # to stderr so the bug is still visible to whoever is
@@ -3371,7 +3564,7 @@ def _emit_fix_patches(findings: list[Any], *, to_stderr: bool = False) -> None:
         )
 
 
-def _apply_fix_patches(findings: list[Any]) -> None:
+def _apply_fix_patches(findings: list[Any], *, tier: str = "safe") -> None:
     """Apply autofixes in place; print an N-files-modified summary to stderr.
 
     Each fixer is idempotent, so it's safe to re-run after an apply —
@@ -3396,7 +3589,7 @@ def _apply_fix_patches(findings: list[Any]) -> None:
                 continue
             cache[path] = before
         try:
-            after = _autofix.generate_fix(f, before)
+            after = _autofix.generate_fix(f, before, tier=tier)
         except Exception as exc:
             click.echo(
                 f"[autofix] fixer for {f.check_id} raised {type(exc).__name__}: {exc}",
@@ -3467,7 +3660,13 @@ def _maybe_emit_npm_alongside_github_hint(
     pjs = _find_sibling_package_jsons(".")
     if not pjs:
         return
-    sample = ", ".join(os.path.relpath(p) for p in pjs[:3])
+    def _safe_relpath(p: str) -> str:
+        try:
+            return os.path.relpath(p)
+        except ValueError:
+            return p
+
+    sample = ", ".join(_safe_relpath(p) for p in pjs[:3])
     more = "" if len(pjs) <= 3 else f" (+{len(pjs) - 3} more)"
     # One ``package.json`` at the repo root resolves via the npm
     # provider's own cwd auto-detection (``pipeline_check --pipeline
@@ -3475,7 +3674,7 @@ def _maybe_emit_npm_alongside_github_hint(
     # an explicit ``--npm-path <dir>`` per manifest, so the hint
     # surfaces the directory the user would point at.
     pj_dirs = sorted({
-        os.path.relpath(os.path.dirname(p)) or "." for p in pjs
+        _safe_relpath(os.path.dirname(p)) or "." for p in pjs
     })
     if len(pj_dirs) == 1 and pj_dirs[0] in (".", ""):
         suggestion = (

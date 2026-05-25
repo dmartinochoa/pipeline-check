@@ -624,6 +624,23 @@ STANDARD = Standard(
         "MVN-005":  ["ESF-S-VERIFY-DEPS"],
         "MVN-006":  ["ESF-S-VERIFY-DEPS", "ESF-S-VULN-MGMT"],
         "MVN-007":  ["ESF-S-TRUSTED-REG"],
+        "MVN-008":  ["ESF-S-VERIFY-DEPS"],
+        "MVN-009":  ["ESF-S-VERIFY-DEPS"],
+        "NPM-008":  ["ESF-S-VERIFY-DEPS"],
+        "NPM-009":  ["ESF-S-VERIFY-DEPS"],
+        "NPM-010":  ["ESF-S-VERIFY-DEPS"],
+        "PYPI-008": ["ESF-S-VERIFY-DEPS"],
+        "PYPI-009": ["ESF-S-VERIFY-DEPS"],
+        # nuget (csproj + NuGet.config static analysis)
+        "NUGET-001": ["ESF-S-VERIFY-DEPS"],
+        "NUGET-002": ["ESF-S-VERIFY-DEPS"],
+        "NUGET-003": ["ESF-S-VERIFY-DEPS"],
+        "NUGET-004": ["ESF-S-VERIFY-DEPS"],
+        "NUGET-005": ["ESF-S-VERIFY-DEPS"],
+        "NUGET-006": ["ESF-S-VERIFY-DEPS"],
+        "NUGET-007": ["ESF-S-VERIFY-DEPS"],
+        "NUGET-008": ["ESF-S-VERIFY-DEPS"],
+        "NUGET-009": ["ESF-S-VERIFY-DEPS"],
         # ── OCI image manifest gaps ──────────────────────────────
         # Provenance metadata + integrity → ESF-S-PROVENANCE +
         # ESF-D-SBOM. Foreign-layer URL → ESF-S-TRUSTED-REG. Schema

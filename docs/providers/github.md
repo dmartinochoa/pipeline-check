@@ -253,6 +253,8 @@ Without an explicit `permissions:` block (either top-level or per-job), the GITH
 
 Beyond the missing-block case, the rule also flags over-grants: a job that declares ``packages: write`` but never runs ``docker push`` / ``npm publish`` / ``gh release upload``, a job that declares ``issues: write`` but never calls ``gh issue ...``, a job that declares ``security-events: write`` but never invokes a SARIF uploader, etc. Wildcard consumers (``actions/github-script``) suppress the flag because they can reach any scope through the GitHub API.
 
+The rule also aggregates at the workflow level: when a top-level ``permissions:`` block grants a write scope that no inheriting job (a job without its own permissions override) actually consumes, the workflow is handing every inheriting job more privilege than its steps need. Move the scope to the specific job that needs it, or drop it entirely.
+
 **Known false-positive modes**
 
 - Read-only / lint-only workflows that do not call any write-scoped API often pass without an explicit block because the default token scope on public repos is read. The rule defaults to MEDIUM confidence to reflect this. For the overprovisioned-scope case, false positives can appear when a workflow consumes a scope through a third-party action this rule's consumer list doesn't recognize yet, file an issue to extend the catalog when discovered.

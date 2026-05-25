@@ -95,6 +95,7 @@ _PROVIDER_PATH_KW: dict[str, str | None] = {
     "npm":            "npm_path",
     "pypi":           "pypi_path",
     "maven":          "maven_path",
+    "nuget":          "nuget_path",
     "aws":            None,
     "scm":            None,
 }
@@ -258,6 +259,7 @@ _RULES_FQN: dict[str, str] = {
     "npm":            "pipeline_check.core.checks.npm.rules",
     "pypi":           "pipeline_check.core.checks.pypi.rules",
     "maven":          "pipeline_check.core.checks.maven.rules",
+    "nuget":          "pipeline_check.core.checks.nuget.rules",
 }
 
 

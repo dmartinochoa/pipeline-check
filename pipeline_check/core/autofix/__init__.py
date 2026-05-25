@@ -43,21 +43,41 @@ from ..checks.base import Finding
 
 Fixer = Callable[[str, Finding], "str | None"]
 
-_FIXERS: dict[str, Fixer] = {}
+SAFE = "safe"
+UNSAFE = "unsafe"
+
+_FIXERS: dict[str, tuple[Fixer, str]] = {}
 
 _log = logging.getLogger(__name__)
 
 
-def register(check_id: str) -> Callable[[Fixer], Fixer]:
-    """Decorator used by fixers to register themselves under a check ID."""
+def register(
+    check_id: str, *, safety: str = UNSAFE,
+) -> Callable[[Fixer], Fixer]:
+    """Decorator used by fixers to register themselves under a check ID.
+
+    *safety* must be ``"safe"`` (edit is semantically equivalent or
+    strictly additive) or ``"unsafe"`` (edit relies on inference).
+    Missing labels default to ``"unsafe"`` so unlabeled fixers don't
+    run under the default ``--fix`` mode.
+    """
+    if safety not in (SAFE, UNSAFE):
+        raise ValueError(f"safety must be {SAFE!r} or {UNSAFE!r}, got {safety!r}")
+
     def _wrap(fn: Fixer) -> Fixer:
-        _FIXERS[check_id.upper()] = fn
+        _FIXERS[check_id.upper()] = (fn, safety)
         return fn
     return _wrap
 
 
 def available_fixers() -> list[str]:
     return sorted(_FIXERS.keys())
+
+
+def fixer_safety(check_id: str) -> str | None:
+    """Return the safety tier for *check_id*, or None if no fixer exists."""
+    entry = _FIXERS.get(check_id.upper())
+    return entry[1] if entry is not None else None
 
 
 def _roundtrip_safe(before: str, after: str) -> bool:
@@ -114,20 +134,29 @@ def _roundtrip_safe(before: str, after: str) -> bool:
     return True
 
 
-def generate_fix(finding: Finding, content: str) -> str | None:
+def generate_fix(
+    finding: Finding, content: str, *, tier: str = SAFE,
+) -> str | None:
     """Run the registered fixer for ``finding.check_id`` against ``content``.
 
-    Returns the edited text, or ``None`` if no fixer is registered, the
-    fixer decided the content already satisfies the check, or the
-    generated patch would no longer parse as the same shape of YAML
-    document.
+    *tier* controls which fixers are eligible:
 
-    Fixer exceptions propagate . the CLI catches at the call site so a
-    single broken fixer doesn't abort a batch run, but a bug in a
-    fixer surfaces instead of being silently swallowed.
+    - ``"safe"``: only run fixers registered as safe.
+    - ``"unsafe"``: run both safe and unsafe fixers.
+    - ``"unsafe-only"``: only run fixers registered as unsafe.
+
+    Returns the edited text, or ``None`` if no fixer is registered, the
+    fixer's safety doesn't match *tier*, the fixer decided the content
+    already satisfies the check, or the generated patch would no longer
+    parse as the same shape of YAML document.
     """
-    fn = _FIXERS.get(finding.check_id.upper())
-    if fn is None:
+    entry = _FIXERS.get(finding.check_id.upper())
+    if entry is None:
+        return None
+    fn, safety = entry
+    if tier == SAFE and safety != SAFE:
+        return None
+    if tier == "unsafe-only" and safety != UNSAFE:
         return None
     out = fn(content, finding)
     if out is None or out == content:

@@ -19,7 +19,7 @@ Kubernetes, …) when an audit asks for that framework's vocabulary.
 
 - **Controls in this standard:** 10
 - **Controls evidenced by at least one check:** 10 / 10
-- **Distinct checks evidencing this standard:** 608
+- **Distinct checks evidencing this standard:** 620
 - **Of those, autofixable with `--fix`:** 111
 
 _Severity levels (`CRITICAL` / `HIGH` / `MEDIUM` / `LOW` / `INFO`) follow the same scale across every provider and standard. See [How to read severity](README.md#how-to-read-severity) on the standards overview for the definitions._
@@ -32,13 +32,13 @@ Click a control ID to jump to the per-control section with the full check list. 
 |---------|-------|-------:|--------------|
 | [`CICD-SEC-1`](#ctrl-cicd-sec-1) | Insufficient Flow Control Mechanisms | 76 | 4C · 34H · 30M · 8L |
 | [`CICD-SEC-2`](#ctrl-cicd-sec-2) | Inadequate Identity and Access Management | 40 | 5C · 23H · 11M · 1L |
-| [`CICD-SEC-3`](#ctrl-cicd-sec-3) | Dependency Chain Abuse | 184 | 5C · 94H · 69M · 16L |
+| [`CICD-SEC-3`](#ctrl-cicd-sec-3) | Dependency Chain Abuse | 196 | 10C · 97H · 73M · 16L |
 | [`CICD-SEC-4`](#ctrl-cicd-sec-4) | Poisoned Pipeline Execution | 94 | 24C · 49H · 15M · 6L |
 | [`CICD-SEC-5`](#ctrl-cicd-sec-5) | Insufficient PBAC | 35 | 4C · 21H · 10M |
 | [`CICD-SEC-6`](#ctrl-cicd-sec-6) | Insufficient Credential Hygiene | 76 | 29C · 31H · 16M |
 | [`CICD-SEC-7`](#ctrl-cicd-sec-7) | Insecure System Configuration | 105 | 22C · 41H · 35M · 7L |
-| [`CICD-SEC-8`](#ctrl-cicd-sec-8) | Ungoverned Usage of 3rd-Party Services | 34 | 8C · 18H · 8M |
-| [`CICD-SEC-9`](#ctrl-cicd-sec-9) | Improper Artifact Integrity Validation | 73 | 1C · 18H · 47M · 7L |
+| [`CICD-SEC-8`](#ctrl-cicd-sec-8) | Ungoverned Usage of 3rd-Party Services | 41 | 13C · 20H · 8M |
+| [`CICD-SEC-9`](#ctrl-cicd-sec-9) | Improper Artifact Integrity Validation | 74 | 1C · 18H · 48M · 7L |
 | [`CICD-SEC-10`](#ctrl-cicd-sec-10) | Insufficient Logging and Visibility | 49 | 6H · 14M · 13L · 16I |
 
 ## Filter at runtime
@@ -196,7 +196,7 @@ Long-lived static credentials, shared service accounts, and human identities reu
 
 Floating tags, range constraints, and unverified registries let an upstream maintainer compromise (or a typosquat) execute in your build the next time the dependency resolves.
 
-**Evidenced by 184 checks** across 21 providers (AWS, Argo CD, Argo Workflows, Azure DevOps, Bitbucket, Buildkite, CircleCI, Cloud Build, Dockerfile, Drone CI, GitHub Actions, GitLab CI, Helm, Jenkins, Kubernetes, OCI manifest, PyPI, SCM, Tekton, maven, npm).
+**Evidenced by 196 checks** across 22 providers (AWS, Argo CD, Argo Workflows, Azure DevOps, Bitbucket, Buildkite, CircleCI, Cloud Build, Dockerfile, Drone CI, GitHub Actions, GitLab CI, Helm, Jenkins, Kubernetes, NuGet, OCI manifest, PyPI, SCM, Tekton, maven, npm).
 
 | Check | Title | Severity | Provider | Fix |
 |-------|-------|----------|----------|-----|
@@ -352,6 +352,7 @@ Floating tags, range constraints, and unverified registries let an upstream main
 | [`MVN-006`](#detail-mvn-006) | pom.xml pins a known-compromised Maven Central artifact version | <span class="pg-sev pg-sev--critical">CRITICAL</span> | [maven](../providers/maven.md) |  |
 | [`MVN-007`](#detail-mvn-007) | settings.xml mirror routes external traffic through one repo | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [maven](../providers/maven.md) |  |
 | [`MVN-008`](#detail-mvn-008) | Direct dependency was published within the cooldown window | <span class="pg-sev pg-sev--high">HIGH</span> | [maven](../providers/maven.md) |  |
+| [`MVN-009`](#detail-mvn-009) | Maven artifact has a known OSV advisory | <span class="pg-sev pg-sev--critical">CRITICAL</span> | [maven](../providers/maven.md) |  |
 | [`NPM-001`](#detail-npm-001) | package.json dependency uses a floating version range | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [npm](../providers/npm.md) |  |
 | [`NPM-002`](#detail-npm-002) | package-lock.json entry missing integrity hash | <span class="pg-sev pg-sev--high">HIGH</span> | [npm](../providers/npm.md) |  |
 | [`NPM-003`](#detail-npm-003) | package-lock.json entry resolves from a non-registry source | <span class="pg-sev pg-sev--high">HIGH</span> | [npm](../providers/npm.md) |  |
@@ -361,7 +362,17 @@ Floating tags, range constraints, and unverified registries let an upstream main
 | [`NPM-007`](#detail-npm-007) | .npmrc does not disable install-time lifecycle scripts | <span class="pg-sev pg-sev--high">HIGH</span> | [npm](../providers/npm.md) |  |
 | [`NPM-008`](#detail-npm-008) | Direct dependency was published within the cooldown window | <span class="pg-sev pg-sev--high">HIGH</span> | [npm](../providers/npm.md) |  |
 | [`NPM-009`](#detail-npm-009) | New transitive dependency added since the base ref | <span class="pg-sev pg-sev--high">HIGH</span> | [npm](../providers/npm.md) |  |
+| [`NPM-010`](#detail-npm-010) | npm package has a known OSV advisory | <span class="pg-sev pg-sev--critical">CRITICAL</span> | [npm](../providers/npm.md) |  |
 | [`NPM-011`](#detail-npm-011) | package.json files field includes secret-shaped paths | <span class="pg-sev pg-sev--high">HIGH</span> | [npm](../providers/npm.md) |  |
+| [`NUGET-001`](#detail-nuget-001) | Floating NuGet version range | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [NuGet](../providers/nuget.md) |  |
+| [`NUGET-002`](#detail-nuget-002) | Wildcard prerelease NuGet version | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [NuGet](../providers/nuget.md) |  |
+| [`NUGET-003`](#detail-nuget-003) | PackageReference missing explicit version | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [NuGet](../providers/nuget.md) |  |
+| [`NUGET-004`](#detail-nuget-004) | HTTP-only NuGet package source | <span class="pg-sev pg-sev--high">HIGH</span> | [NuGet](../providers/nuget.md) |  |
+| [`NUGET-005`](#detail-nuget-005) | Known-compromised NuGet package version | <span class="pg-sev pg-sev--critical">CRITICAL</span> | [NuGet](../providers/nuget.md) |  |
+| [`NUGET-006`](#detail-nuget-006) | No NuGet lock file for reproducible restores | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [NuGet](../providers/nuget.md) |  |
+| [`NUGET-007`](#detail-nuget-007) | Multiple NuGet sources without packageSourceMapping | <span class="pg-sev pg-sev--high">HIGH</span> | [NuGet](../providers/nuget.md) |  |
+| [`NUGET-008`](#detail-nuget-008) | NuGet package published within the cooldown window | <span class="pg-sev pg-sev--high">HIGH</span> | [NuGet](../providers/nuget.md) |  |
+| [`NUGET-009`](#detail-nuget-009) | NuGet package has a known OSV advisory | <span class="pg-sev pg-sev--critical">CRITICAL</span> | [NuGet](../providers/nuget.md) |  |
 | [`OCI-001`](#detail-oci-001) | Image manifest is missing OCI provenance annotations | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [OCI manifest](../providers/oci.md) |  |
 | [`OCI-002`](#detail-oci-002) | Image is missing a build attestation manifest | <span class="pg-sev pg-sev--high">HIGH</span> | [OCI manifest](../providers/oci.md) |  |
 | [`OCI-003`](#detail-oci-003) | Image manifest is missing the ``image.created`` annotation | <span class="pg-sev pg-sev--low">LOW</span> | [OCI manifest](../providers/oci.md) |  |
@@ -377,6 +388,7 @@ Floating tags, range constraints, and unverified registries let an upstream main
 | [`PYPI-005`](#detail-pypi-005) | requirements.txt declares --extra-index-url (dependency-confusion surface) | <span class="pg-sev pg-sev--high">HIGH</span> | [PyPI](../providers/pypi.md) |  |
 | [`PYPI-006`](#detail-pypi-006) | requirements.txt pins a known-compromised PyPI package version | <span class="pg-sev pg-sev--critical">CRITICAL</span> | [PyPI](../providers/pypi.md) |  |
 | [`PYPI-008`](#detail-pypi-008) | Direct dependency was published within the cooldown window | <span class="pg-sev pg-sev--high">HIGH</span> | [PyPI](../providers/pypi.md) |  |
+| [`PYPI-009`](#detail-pypi-009) | PyPI package has a known OSV advisory | <span class="pg-sev pg-sev--critical">CRITICAL</span> | [PyPI](../providers/pypi.md) |  |
 | [`SCM-005`](#detail-scm-005) | Dependabot security updates are not enabled | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [SCM](../providers/scm.md) |  |
 | [`SCM-022`](#detail-scm-022) | Repo Actions permissions allow any source (no allow-list) | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [SCM](../providers/scm.md) |  |
 | [`SCM-028`](#detail-scm-028) | Private repo allows forking | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [SCM](../providers/scm.md) |  |
@@ -735,7 +747,7 @@ Privileged containers, host mounts, root user, and disabled TLS turn a routine R
 
 Calls to external services, SaaS integrations, marketplace actions, package registries, expand the trust perimeter of the pipeline beyond what was reviewed and approved.
 
-**Evidenced by 34 checks** across 9 providers (AWS, Azure DevOps, Bitbucket, CircleCI, GitHub Actions, PyPI, SCM, maven, npm).
+**Evidenced by 41 checks** across 10 providers (AWS, Azure DevOps, Bitbucket, CircleCI, GitHub Actions, NuGet, PyPI, SCM, maven, npm).
 
 | Check | Title | Severity | Provider | Fix |
 |-------|-------|----------|----------|-----|
@@ -765,12 +777,19 @@ Calls to external services, SaaS integrations, marketplace actions, package regi
 | [`MVN-006`](#detail-mvn-006) | pom.xml pins a known-compromised Maven Central artifact version | <span class="pg-sev pg-sev--critical">CRITICAL</span> | [maven](../providers/maven.md) |  |
 | [`MVN-007`](#detail-mvn-007) | settings.xml mirror routes external traffic through one repo | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [maven](../providers/maven.md) |  |
 | [`MVN-008`](#detail-mvn-008) | Direct dependency was published within the cooldown window | <span class="pg-sev pg-sev--high">HIGH</span> | [maven](../providers/maven.md) |  |
+| [`MVN-009`](#detail-mvn-009) | Maven artifact has a known OSV advisory | <span class="pg-sev pg-sev--critical">CRITICAL</span> | [maven](../providers/maven.md) |  |
 | [`NPM-003`](#detail-npm-003) | package-lock.json entry resolves from a non-registry source | <span class="pg-sev pg-sev--high">HIGH</span> | [npm](../providers/npm.md) |  |
 | [`NPM-006`](#detail-npm-006) | package-lock.json pins a known-compromised package version | <span class="pg-sev pg-sev--critical">CRITICAL</span> | [npm](../providers/npm.md) |  |
 | [`NPM-008`](#detail-npm-008) | Direct dependency was published within the cooldown window | <span class="pg-sev pg-sev--high">HIGH</span> | [npm](../providers/npm.md) |  |
 | [`NPM-009`](#detail-npm-009) | New transitive dependency added since the base ref | <span class="pg-sev pg-sev--high">HIGH</span> | [npm](../providers/npm.md) |  |
+| [`NPM-010`](#detail-npm-010) | npm package has a known OSV advisory | <span class="pg-sev pg-sev--critical">CRITICAL</span> | [npm](../providers/npm.md) |  |
+| [`NUGET-004`](#detail-nuget-004) | HTTP-only NuGet package source | <span class="pg-sev pg-sev--high">HIGH</span> | [NuGet](../providers/nuget.md) |  |
+| [`NUGET-005`](#detail-nuget-005) | Known-compromised NuGet package version | <span class="pg-sev pg-sev--critical">CRITICAL</span> | [NuGet](../providers/nuget.md) |  |
+| [`NUGET-008`](#detail-nuget-008) | NuGet package published within the cooldown window | <span class="pg-sev pg-sev--high">HIGH</span> | [NuGet](../providers/nuget.md) |  |
+| [`NUGET-009`](#detail-nuget-009) | NuGet package has a known OSV advisory | <span class="pg-sev pg-sev--critical">CRITICAL</span> | [NuGet](../providers/nuget.md) |  |
 | [`PYPI-006`](#detail-pypi-006) | requirements.txt pins a known-compromised PyPI package version | <span class="pg-sev pg-sev--critical">CRITICAL</span> | [PyPI](../providers/pypi.md) |  |
 | [`PYPI-008`](#detail-pypi-008) | Direct dependency was published within the cooldown window | <span class="pg-sev pg-sev--high">HIGH</span> | [PyPI](../providers/pypi.md) |  |
+| [`PYPI-009`](#detail-pypi-009) | PyPI package has a known OSV advisory | <span class="pg-sev pg-sev--critical">CRITICAL</span> | [PyPI](../providers/pypi.md) |  |
 | [`SCM-022`](#detail-scm-022) | Repo Actions permissions allow any source (no allow-list) | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [SCM](../providers/scm.md) |  |
 | [`SM-002`](#detail-sm-002) | Secrets Manager resource policy allows wildcard principal | <span class="pg-sev pg-sev--critical">CRITICAL</span> | [AWS](../providers/aws.md) |  |
 
@@ -778,7 +797,7 @@ Calls to external services, SaaS integrations, marketplace actions, package regi
 
 Without provenance, attestations, signatures, or SBOMs, consumers (including production) cannot verify that the artifact running in production is the one the pipeline built.
 
-**Evidenced by 73 checks** across 16 providers (AWS, Argo Workflows, Azure DevOps, Bitbucket, Buildkite, CircleCI, Cloud Build, Dockerfile, GitHub Actions, GitLab CI, Jenkins, OCI manifest, PyPI, SCM, Tekton, npm).
+**Evidenced by 74 checks** across 17 providers (AWS, Argo Workflows, Azure DevOps, Bitbucket, Buildkite, CircleCI, Cloud Build, Dockerfile, GitHub Actions, GitLab CI, Jenkins, NuGet, OCI manifest, PyPI, SCM, Tekton, npm).
 
 | Check | Title | Severity | Provider | Fix |
 |-------|-------|----------|----------|-----|
@@ -835,6 +854,7 @@ Without provenance, attestations, signatures, or SBOMs, consumers (including pro
 | [`LMB-001`](#detail-lmb-001) | Lambda function has no code-signing config | <span class="pg-sev pg-sev--high">HIGH</span> | [AWS](../providers/aws.md) |  |
 | [`NPM-002`](#detail-npm-002) | package-lock.json entry missing integrity hash | <span class="pg-sev pg-sev--high">HIGH</span> | [npm](../providers/npm.md) |  |
 | [`NPM-005`](#detail-npm-005) | package.json git dependency uses a mutable ref | <span class="pg-sev pg-sev--high">HIGH</span> | [npm](../providers/npm.md) |  |
+| [`NUGET-006`](#detail-nuget-006) | No NuGet lock file for reproducible restores | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [NuGet](../providers/nuget.md) |  |
 | [`OCI-002`](#detail-oci-002) | Image is missing a build attestation manifest | <span class="pg-sev pg-sev--high">HIGH</span> | [OCI manifest](../providers/oci.md) |  |
 | [`OCI-004`](#detail-oci-004) | Image layer references an arbitrary URL (foreign layer) | <span class="pg-sev pg-sev--high">HIGH</span> | [OCI manifest](../providers/oci.md) |  |
 | [`OCI-007`](#detail-oci-007) | Image manifest uses legacy schemaVersion 1 (no content addressing) | <span class="pg-sev pg-sev--high">HIGH</span> | [OCI manifest](../providers/oci.md) |  |
@@ -8309,6 +8329,8 @@ jobs:
 **How this is detected.** Without an explicit `permissions:` block (either top-level or per-job), the GITHUB_TOKEN inherits the repository's default scope, typically `write`. A compromised step receives far more privilege than it needs.
 
 Beyond the missing-block case, the rule also flags over-grants: a job that declares ``packages: write`` but never runs ``docker push`` / ``npm publish`` / ``gh release upload``, a job that declares ``issues: write`` but never calls ``gh issue ...``, a job that declares ``security-events: write`` but never invokes a SARIF uploader, etc. Wildcard consumers (``actions/github-script``) suppress the flag because they can reach any scope through the GitHub API.
+
+The rule also aggregates at the workflow level: when a top-level ``permissions:`` block grants a write scope that no inheriting job (a job without its own permissions override) actually consumes, the workflow is handing every inheriting job more privilege than its steps need. Move the scope to the specific job that needs it, or drop it entirely.
 
 **Recommendation.** Add a top-level `permissions:` block (start with `contents: read`) and grant additional scopes only on the specific jobs that need them. For job-level blocks, prune any write scope no step in the job actually uses, the rule names the specific scopes the job's steps don't justify.
 
@@ -16144,6 +16166,16 @@ Managed entries in ``<dependencyManagement>`` are NOT evaluated by this rule (th
 
 **Source:** [`MVN-008`](../providers/maven.md#mvn-008) in the [maven provider](../providers/maven.md).
 
+### `MVN-009`: Maven artifact has a known OSV advisory <span class="pg-sev pg-sev--critical">CRITICAL</span> { #detail-mvn-009 }
+
+**Evidences:** [`CICD-SEC-3`](#ctrl-cicd-sec-3) Dependency Chain Abuse, [`CICD-SEC-8`](#ctrl-cicd-sec-8) Ungoverned Usage of 3rd-Party Services.
+
+**How this is detected.** Network-dependent: needs ``--resolve-remote`` to query the OSV advisory database (``api.osv.dev``). Passes silently when the flag is off. Complements MVN-006 (curated offline registry) with the full OSV/GHSA long-tail.
+
+**Recommendation.** Upgrade to a patched version or remove the affected artifact. Consult the advisory URL for remediation guidance.
+
+**Source:** [`MVN-009`](../providers/maven.md#mvn-009) in the [maven provider](../providers/maven.md).
+
 ### `NPM-001`: package.json dependency uses a floating version range <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-npm-001 }
 
 **Evidences:** [`CICD-SEC-3`](#ctrl-cicd-sec-3) Dependency Chain Abuse.
@@ -16575,6 +16607,16 @@ ignore-scripts=true
 
 **Source:** [`NPM-009`](../providers/npm.md) in the [npm provider](../providers/npm.md).
 
+### `NPM-010`: npm package has a known OSV advisory <span class="pg-sev pg-sev--critical">CRITICAL</span> { #detail-npm-010 }
+
+**Evidences:** [`CICD-SEC-3`](#ctrl-cicd-sec-3) Dependency Chain Abuse, [`CICD-SEC-8`](#ctrl-cicd-sec-8) Ungoverned Usage of 3rd-Party Services.
+
+**How this is detected.** Network-dependent: needs ``--resolve-remote`` to query the OSV advisory database (``api.osv.dev``). Passes silently when the flag is off. Complements NPM-006 (curated offline registry) with the full OSV/GHSA long-tail.
+
+**Recommendation.** Upgrade to a patched version or remove the affected package. Consult the advisory URL for remediation guidance.
+
+**Source:** [`NPM-010`](../providers/npm.md) in the [npm provider](../providers/npm.md).
+
 ### `NPM-011`: package.json files field includes secret-shaped paths <span class="pg-sev pg-sev--high">HIGH</span> { #detail-npm-011 }
 
 **Evidences:** [`CICD-SEC-3`](#ctrl-cicd-sec-3) Dependency Chain Abuse, [`CICD-SEC-6`](#ctrl-cicd-sec-6) Insufficient Credential Hygiene.
@@ -16635,6 +16677,96 @@ Wildcard-broad entries (``*``, ``**``, ``./``) are NOT currently flagged — the
 ```
 
 **Source:** [`NPM-011`](../providers/npm.md) in the [npm provider](../providers/npm.md).
+
+### `NUGET-001`: Floating NuGet version range <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-nuget-001 }
+
+**Evidences:** [`CICD-SEC-3`](#ctrl-cicd-sec-3) Dependency Chain Abuse.
+
+**How this is detected.** Fires when a ``<PackageReference>`` Version attribute contains a NuGet range interval (``[1.0,2.0)``, ``(,2.0]``, etc.) or a bare ``*`` wildcard.
+
+**Recommendation.** Replace NuGet floating version ranges (``[1.0,)``, ``(,2.0)``, ``[1.0,2.0)``, ``*``) with an exact version pin (``<PackageReference Include="Newtonsoft.Json" Version="13.0.3" />``). Floating ranges let NuGet resolve any later version that fits the interval, so a compromised patch release reaches the build on the next restore without a project file change. Pair the pinned reference with a committed ``packages.lock.json`` (NUGET-006) for reproducible restores.
+
+**Source:** [`NUGET-001`](../providers/nuget.md#nuget-001) in the [NuGet provider](../providers/nuget.md).
+
+### `NUGET-002`: Wildcard prerelease NuGet version <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-nuget-002 }
+
+**Evidences:** [`CICD-SEC-3`](#ctrl-cicd-sec-3) Dependency Chain Abuse.
+
+**How this is detected.** Fires when Version ends with ``-*`` or equals ``*-*``.
+
+**Recommendation.** Replace wildcard prerelease specifiers (``*-*``, ``1.0.0-*``) with an exact version pin including the prerelease tag (``1.0.0-beta.1``). The ``-*`` suffix tells NuGet to resolve the latest prerelease matching the prefix, so any newly published prerelease (including a malicious one) is pulled on the next restore. Prerelease packages are often less reviewed than stable releases, increasing the attack surface.
+
+**Source:** [`NUGET-002`](../providers/nuget.md#nuget-002) in the [NuGet provider](../providers/nuget.md).
+
+### `NUGET-003`: PackageReference missing explicit version <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-nuget-003 }
+
+**Evidences:** [`CICD-SEC-3`](#ctrl-cicd-sec-3) Dependency Chain Abuse.
+
+**How this is detected.** Fires when a ``<PackageReference>`` omits the Version attribute and the project is not centrally managed.
+
+**Recommendation.** Add an explicit ``Version`` attribute to every ``<PackageReference>`` element (``<PackageReference Include="Newtonsoft.Json" Version="13.0.3" />``). Without one, NuGet resolves the latest available version at restore time, so a compromised release reaches the build unobserved. If your solution uses Central Package Management (``Directory.Packages.props``), this rule is skipped because versions are governed centrally.
+
+**Source:** [`NUGET-003`](../providers/nuget.md#nuget-003) in the [NuGet provider](../providers/nuget.md).
+
+### `NUGET-004`: HTTP-only NuGet package source <span class="pg-sev pg-sev--high">HIGH</span> { #detail-nuget-004 }
+
+**Evidences:** [`CICD-SEC-3`](#ctrl-cicd-sec-3) Dependency Chain Abuse, [`CICD-SEC-8`](#ctrl-cicd-sec-8) Ungoverned Usage of 3rd-Party Services.
+
+**How this is detected.** Fires when a ``<packageSources>`` entry in NuGet.config uses an ``http://`` URL.
+
+**Recommendation.** Change every ``<add key="..." value="http://..." />`` package source in NuGet.config to ``https://``. Plaintext-HTTP sources let a network attacker swap downloaded packages in flight (the canonical supply-chain MITM). If your internal feed has a self-signed certificate, install the CA into the build agent's trust store instead of falling back to HTTP.
+
+**Source:** [`NUGET-004`](../providers/nuget.md#nuget-004) in the [NuGet provider](../providers/nuget.md).
+
+### `NUGET-005`: Known-compromised NuGet package version <span class="pg-sev pg-sev--critical">CRITICAL</span> { #detail-nuget-005 }
+
+**Evidences:** [`CICD-SEC-3`](#ctrl-cicd-sec-3) Dependency Chain Abuse, [`CICD-SEC-8`](#ctrl-cicd-sec-8) Ungoverned Usage of 3rd-Party Services.
+
+**How this is detected.** Fires when a PackageReference pins to a version in the curated compromised-package registry.
+
+**Recommendation.** Rotate every secret reachable to any process that ran ``dotnet restore`` against this project while the compromised version was installed. Bump the affected PackageReference to a post-incident clean version announced in the citing advisory, regenerate the lock file, and audit CI build logs for the exfiltration shape the advisory documents. Pair with NUGET-006 (lock file for reproducible restores) so a re-publish at the same version literal is caught by the content hash mismatch.
+
+**Source:** [`NUGET-005`](../providers/nuget.md#nuget-005) in the [NuGet provider](../providers/nuget.md).
+
+### `NUGET-006`: No NuGet lock file for reproducible restores <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-nuget-006 }
+
+**Evidences:** [`CICD-SEC-3`](#ctrl-cicd-sec-3) Dependency Chain Abuse, [`CICD-SEC-9`](#ctrl-cicd-sec-9) Improper Artifact Integrity Validation.
+
+**How this is detected.** Fires when a csproj project exists but no ``packages.lock.json`` was found.
+
+**Recommendation.** Enable NuGet lock files by setting ``<RestorePackagesWithLockFile>true</RestorePackagesWithLockFile>`` in the csproj (or ``Directory.Build.props`` for solution-wide coverage) and commit the generated ``packages.lock.json``. In CI, restore with ``dotnet restore --locked-mode`` so the build fails if the lock file disagrees with the project file. Without a lock file, ``dotnet restore`` silently upgrades transitive dependencies to whatever the feed currently serves.
+
+**Source:** [`NUGET-006`](../providers/nuget.md#nuget-006) in the [NuGet provider](../providers/nuget.md).
+
+### `NUGET-007`: Multiple NuGet sources without packageSourceMapping <span class="pg-sev pg-sev--high">HIGH</span> { #detail-nuget-007 }
+
+**Evidences:** [`CICD-SEC-3`](#ctrl-cicd-sec-3) Dependency Chain Abuse.
+
+**How this is detected.** Fires when NuGet.config has more than one package source and no ``packageSourceMapping`` section.
+
+**Recommendation.** Add a ``<packageSourceMapping>`` section to NuGet.config that maps each package pattern to its intended source. Without source mapping, NuGet queries every configured source for every package and installs the highest version found across all of them, the exact shape exploited by dependency confusion attacks. Source mapping pins each package namespace to one feed so a malicious publication on a secondary feed is never considered.
+
+**Source:** [`NUGET-007`](../providers/nuget.md#nuget-007) in the [NuGet provider](../providers/nuget.md).
+
+### `NUGET-008`: NuGet package published within the cooldown window <span class="pg-sev pg-sev--high">HIGH</span> { #detail-nuget-008 }
+
+**Evidences:** [`CICD-SEC-3`](#ctrl-cicd-sec-3) Dependency Chain Abuse, [`CICD-SEC-8`](#ctrl-cicd-sec-8) Ungoverned Usage of 3rd-Party Services.
+
+**How this is detected.** Network-dependent: needs ``--resolve-remote`` to populate publish timestamps from ``api.nuget.org``. Passes silently when the flag is off.
+
+**Recommendation.** Pin to a version published before the cooldown window, or wait until the cooldown has elapsed. Most publisher-account compromises are detected within hours-to-days of publication.
+
+**Source:** [`NUGET-008`](../providers/nuget.md#nuget-008) in the [NuGet provider](../providers/nuget.md).
+
+### `NUGET-009`: NuGet package has a known OSV advisory <span class="pg-sev pg-sev--critical">CRITICAL</span> { #detail-nuget-009 }
+
+**Evidences:** [`CICD-SEC-3`](#ctrl-cicd-sec-3) Dependency Chain Abuse, [`CICD-SEC-8`](#ctrl-cicd-sec-8) Ungoverned Usage of 3rd-Party Services.
+
+**How this is detected.** Network-dependent: needs ``--resolve-remote`` to query the OSV advisory database. Passes silently when the flag is off.
+
+**Recommendation.** Upgrade to a patched version or remove the affected package. Consult the advisory URL for remediation guidance.
+
+**Source:** [`NUGET-009`](../providers/nuget.md#nuget-009) in the [NuGet provider](../providers/nuget.md).
 
 ### `OCI-001`: Image manifest is missing OCI provenance annotations <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-oci-001 }
 
@@ -17339,6 +17471,16 @@ shiny-lib==17.0.98 \
 ```
 
 **Source:** [`PYPI-008`](../providers/pypi.md) in the [PyPI provider](../providers/pypi.md).
+
+### `PYPI-009`: PyPI package has a known OSV advisory <span class="pg-sev pg-sev--critical">CRITICAL</span> { #detail-pypi-009 }
+
+**Evidences:** [`CICD-SEC-3`](#ctrl-cicd-sec-3) Dependency Chain Abuse, [`CICD-SEC-8`](#ctrl-cicd-sec-8) Ungoverned Usage of 3rd-Party Services.
+
+**How this is detected.** Network-dependent: needs ``--resolve-remote`` to query the OSV advisory database (``api.osv.dev``). Passes silently when the flag is off. Complements PYPI-006 (curated offline registry) with the full OSV/GHSA long-tail.
+
+**Recommendation.** Upgrade to a patched version or remove the affected package. Consult the advisory URL for remediation guidance.
+
+**Source:** [`PYPI-009`](../providers/pypi.md) in the [PyPI provider](../providers/pypi.md).
 
 ### `S3-000`: S3 API access failed <span class="pg-sev pg-sev--info">INFO</span> { #detail-s3-000 }
 

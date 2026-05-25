@@ -613,6 +613,23 @@ STANDARD = Standard(
         "MVN-005":  ["CC8.1"],
         "MVN-006":  ["CC6.8", "CC7.1", "CC8.1"],
         "MVN-007":  ["CC8.1"],
+        "MVN-008":  ["CC6.8", "CC7.1", "CC8.1"],
+        "MVN-009":  ["CC6.8", "CC7.1", "CC8.1"],
+        "NPM-008":  ["CC6.8", "CC7.1", "CC8.1"],
+        "NPM-009":  ["CC8.1"],
+        "NPM-010":  ["CC6.8", "CC7.1", "CC8.1"],
+        "PYPI-008": ["CC6.8", "CC7.1", "CC8.1"],
+        "PYPI-009": ["CC6.8", "CC7.1", "CC8.1"],
+        # ── nuget (dep supply-chain) ─────────────────────────────
+        "NUGET-001": ["CC8.1"],
+        "NUGET-002": ["CC8.1"],
+        "NUGET-003": ["CC8.1"],
+        "NUGET-004": ["CC6.7", "CC8.1"],
+        "NUGET-005": ["CC6.8", "CC7.1", "CC8.1"],
+        "NUGET-006": ["CC8.1"],
+        "NUGET-007": ["CC8.1"],
+        "NUGET-008": ["CC6.8", "CC7.1", "CC8.1"],
+        "NUGET-009": ["CC6.8", "CC7.1", "CC8.1"],
         # ── OCI image manifest gaps ──────────────────────────────
         "OCI-001":  ["CC8.1"],              # provenance annotations missing
         "OCI-002":  ["CC8.1"],              # build attestation missing

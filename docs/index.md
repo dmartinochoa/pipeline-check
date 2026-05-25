@@ -22,8 +22,8 @@ hide:
 # Catch supply-chain risks <span class="accent">before they ship.</span>
 
 <p class="pg-hero__lede">
-A read-only scanner for 23 providers, graded against 15 compliance frameworks. 
-111 of the 840+ checks also emit a one-shot patch you can apply with <code>--fix</code>.
+A read-only scanner for 24 providers, graded against 15 compliance frameworks. 
+111 of the 870+ checks also emit a one-shot patch you can apply with <code>--fix</code>.
 </p>
 
 <div class="pg-hero__cta">
@@ -55,8 +55,8 @@ A read-only scanner for 23 providers, graded against 15 compliance frameworks.
 
 <section class="pg-stats">
 <div class="pg-stats__inner">
-  <div class="pg-stat"><div class="pg-stat__num">840+</div><div class="pg-stat__label">Checks</div></div>
-  <div class="pg-stat"><div class="pg-stat__num">23</div><div class="pg-stat__label">Providers</div></div>
+  <div class="pg-stat"><div class="pg-stat__num">870+</div><div class="pg-stat__label">Checks</div></div>
+  <div class="pg-stat"><div class="pg-stat__num">24</div><div class="pg-stat__label">Providers</div></div>
   <div class="pg-stat"><div class="pg-stat__num">15</div><div class="pg-stat__label">Compliance standards</div></div>
   <div class="pg-stat"><div class="pg-stat__num">111</div><div class="pg-stat__label">Autofixers</div></div>
 </div>
@@ -68,7 +68,7 @@ A read-only scanner for 23 providers, graded against 15 compliance frameworks.
 <h2 class="pg-section__title">One scanner. Every pipeline you ship through.</h2>
 <p class="pg-section__lede">
 Same severity model and report format whether you're scanning a Jenkinsfile,
-a Terraform plan, or a live AWS account. Findings carry control IDs for OWASP,
+Terraform (plan JSON or raw HCL), or a live AWS account. Findings carry control IDs for OWASP,
 NIST SSDF, SLSA, and the rest, so audit answers don't require leaving the tool.
 </p>
 </div>
@@ -90,7 +90,7 @@ the supported providers. New risks land here before they land in your pipeline.
 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
 </div>
 ### Live AWS + shift-left IaC
-Scan a running AWS account through boto3, *or* scan Terraform plans and
+Scan a running AWS account through boto3, *or* scan Terraform plans (or raw HCL source) and
 CloudFormation templates before provisioning. Same rule IDs, same severities.
 <a class="pg-feature__link" href="providers/aws/">AWS reference</a>
 </div>
@@ -213,7 +213,7 @@ to force one. Counts reflect the current rule catalog.
   <a class="pg-provider" href="providers/helm/"><span class="pg-provider__name">Helm</span><span class="pg-provider__count">{{ providers.helm.checks }}</span></a>
   <a class="pg-provider" href="providers/oci/"><span class="pg-provider__name">OCI manifest</span><span class="pg-provider__count">{{ providers.oci.checks }}</span></a>
   <a class="pg-provider" href="providers/scm/"><span class="pg-provider__name">SCM posture (GitHub / GitLab / Bitbucket)</span><span class="pg-provider__count">{{ providers.scm.checks }}</span></a>
-  <a class="pg-provider" href="providers/registries/"><span class="pg-provider__name">Package registries (npm / PyPI / Maven)</span><span class="pg-provider__count">{{ providers.registries.checks }}</span></a>
+  <a class="pg-provider" href="providers/registries/"><span class="pg-provider__name">Package registries (npm / PyPI / Maven / NuGet)</span><span class="pg-provider__count">{{ providers.registries.checks }}</span></a>
 </div>
 </section>
 
@@ -264,8 +264,8 @@ flowchart LR
     G -->|fail| I([Block + report])
 
     click A "usage/" "Repo on disk or live AWS account: no API tokens, no SaaS"
-    click B "providers/" "23 supported. Auto-detected from cwd; override with --pipeline NAME"
-    click C "attack_chains/" "840+ checks emit findings with severity, location, fix"
+    click B "providers/" "24 supported. Auto-detected from cwd; override with --pipeline NAME"
+    click C "attack_chains/" "870+ checks emit findings with severity, location, fix"
     click D "standards/" "15 frameworks. OWASP, NIST SSDF, SLSA, CIS, …"
     click E "scoring_model/" "Severity-weighted 0–100 score, graded A / B / C / D"
     click F1 "output/#terminal" "Rich color table for humans"

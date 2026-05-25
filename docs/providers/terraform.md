@@ -1,17 +1,21 @@
 # Terraform provider
 
-Scans a parsed **`terraform show -json`** plan document, no live AWS
-credentials required. The provider reads the resolved, typed resource
-representation Terraform emits post-`plan`, so checks never parse raw HCL.
+Two input paths, same rule pack:
+
+- **Plan JSON** (canonical): fully resolved attributes from
+  `terraform show -json`. Every value is typed, no ambiguity.
+- **HCL source** (best-effort): direct `*.tf` parsing via
+  `python-hcl2`. Variable/local substitution is partial;
+  unresolvable references stay opaque and findings on those
+  resources get confidence-demoted.
 
 Every AWS-mirrored check ID (CB-*, CP-*, CD-*, ECR-*, IAM-*, PBAC-*,
 S3-*, CT-*, CWL-*, SM-*, CA-*, CCM-*, LMB-*, KMS-*, SSM-*, EB-*,
 SIGN-*, CW-*) maps one-to-one to its AWS-provider counterpart. The
-semantics are identical, only the data source differs (plan JSON
-attributes instead of boto3 list/describe). TF-* rules are
+semantics are identical, only the data source differs. TF-* rules are
 Terraform-only and have no AWS-runtime analogue.
 
-## Producer workflow
+## Plan JSON workflow (canonical)
 
 ```bash
 terraform init
@@ -19,6 +23,21 @@ terraform plan -out=tfplan
 terraform show -json tfplan > plan.json
 pipeline_check --pipeline terraform --tf-plan plan.json
 ```
+
+## HCL source workflow (no `terraform` binary required)
+
+```bash
+pip install 'pipeline-check[hcl]'
+pipeline_check --pipeline terraform --tf-source ./infra/
+```
+
+When `main.tf` is present and no `--tf-plan` is given, `--tf-source .`
+is auto-detected. Variables with a `default` and `locals` with literal
+values resolve; `var.X` / `local.Y` references without defaults stay
+as opaque `${...}` strings. Terraform functions (`jsonencode`,
+`lookup`, `coalesce`) are not evaluated. Local child modules
+(`source = "./"`) are walked recursively; remote registry modules are
+skipped.
 
 All other flags (`--output`, `--severity-threshold`, `--checks`,
 `--standard`, …) behave the same as with the AWS provider.
