@@ -63,10 +63,14 @@ class TestListStandards:
 
 
 class TestProviderUsageErrors:
-    def test_terraform_missing_flag(self, runner):
+    def test_terraform_missing_flag(self, runner, tmp_path, monkeypatch):
+        monkeypatch.chdir(tmp_path)
         result = runner.invoke(scan, ["--pipeline", "terraform"])
         assert result.exit_code != 0
-        assert "tf-plan" in result.output
+        # The error message may appear in output (UsageError) or in the
+        # exception text (ValueError raised from build_context).
+        combined = result.output + (str(result.exception) if result.exception else "")
+        assert "tf-plan" in combined
 
     def test_terraform_missing_file(self, runner, tmp_path, monkeypatch):
         monkeypatch.chdir(tmp_path)

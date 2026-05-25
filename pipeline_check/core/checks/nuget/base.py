@@ -119,7 +119,10 @@ class NuGetContext:
             rel_dir = Path(dirpath)
             for fname in filenames:
                 fpath = rel_dir / fname
-                rel = os.path.relpath(fpath, ".").replace("\\", "/")
+                try:
+                    rel = os.path.relpath(fpath, ".").replace("\\", "/")
+                except ValueError:
+                    rel = str(fpath).replace("\\", "/")
                 flow = fname.lower()
                 try:
                     if flow.endswith(".csproj"):

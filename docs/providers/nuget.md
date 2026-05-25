@@ -52,6 +52,8 @@ pipeline_check --pipeline nuget --nuget-path ./src/
 <span class="pg-sev pg-sev--medium">MEDIUM</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-3</span> <span class="pg-tag pg-tag--esf">ESF-S-VERIFY-DEPS</span> <span class="pg-tag pg-tag--cwe">CWE-1357</span>
 </div>
 
+Fires when a ``<PackageReference>`` Version attribute contains a NuGet range interval (``[1.0,2.0)``, ``(,2.0]``, etc.) or a bare ``*`` wildcard.
+
 <div class="pg-rule__rec" markdown>
 
 **Recommended action**
@@ -69,6 +71,8 @@ Replace NuGet floating version ranges (``[1.0,)``, ``(,2.0)``, ``[1.0,2.0)``, ``
 <div class="pg-rule__tags">
 <span class="pg-sev pg-sev--medium">MEDIUM</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-3</span> <span class="pg-tag pg-tag--esf">ESF-S-VERIFY-DEPS</span> <span class="pg-tag pg-tag--cwe">CWE-1357</span>
 </div>
+
+Fires when Version ends with ``-*`` or equals ``*-*``.
 
 <div class="pg-rule__rec" markdown>
 
@@ -88,6 +92,8 @@ Replace wildcard prerelease specifiers (``*-*``, ``1.0.0-*``) with an exact vers
 <span class="pg-sev pg-sev--medium">MEDIUM</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-3</span> <span class="pg-tag pg-tag--esf">ESF-S-VERIFY-DEPS</span> <span class="pg-tag pg-tag--cwe">CWE-1357</span>
 </div>
 
+Fires when a ``<PackageReference>`` omits the Version attribute and the project is not centrally managed.
+
 <div class="pg-rule__rec" markdown>
 
 **Recommended action**
@@ -105,6 +111,8 @@ Add an explicit ``Version`` attribute to every ``<PackageReference>`` element (`
 <div class="pg-rule__tags">
 <span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-3</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-8</span> <span class="pg-tag pg-tag--esf">ESF-S-VERIFY-DEPS</span> <span class="pg-tag pg-tag--cwe">CWE-319</span> <span class="pg-tag pg-tag--cwe">CWE-494</span>
 </div>
+
+Fires when a ``<packageSources>`` entry in NuGet.config uses an ``http://`` URL.
 
 <div class="pg-rule__rec" markdown>
 
@@ -124,6 +132,8 @@ Change every ``<add key="..." value="http://..." />`` package source in NuGet.co
 <span class="pg-sev pg-sev--critical">CRITICAL</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-3</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-8</span> <span class="pg-tag pg-tag--esf">ESF-S-VERIFY-DEPS</span> <span class="pg-tag pg-tag--cwe">CWE-829</span> <span class="pg-tag pg-tag--cwe">CWE-506</span>
 </div>
 
+Fires when a PackageReference pins to a version in the curated compromised-package registry.
+
 <div class="pg-rule__rec" markdown>
 
 **Recommended action**
@@ -142,6 +152,8 @@ Rotate every secret reachable to any process that ran ``dotnet restore`` against
 <span class="pg-sev pg-sev--medium">MEDIUM</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-3</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-9</span> <span class="pg-tag pg-tag--esf">ESF-S-VERIFY-DEPS</span> <span class="pg-tag pg-tag--cwe">CWE-353</span>
 </div>
 
+Fires when a csproj project exists but no ``packages.lock.json`` was found.
+
 <div class="pg-rule__rec" markdown>
 
 **Recommended action**
@@ -159,6 +171,8 @@ Enable NuGet lock files by setting ``<RestorePackagesWithLockFile>true</RestoreP
 <div class="pg-rule__tags">
 <span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-3</span> <span class="pg-tag pg-tag--esf">ESF-S-VERIFY-DEPS</span> <span class="pg-tag pg-tag--cwe">CWE-829</span>
 </div>
+
+Fires when NuGet.config has more than one package source and no ``packageSourceMapping`` section.
 
 <div class="pg-rule__rec" markdown>
 

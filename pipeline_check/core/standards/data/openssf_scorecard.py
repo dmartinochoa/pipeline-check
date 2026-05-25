@@ -130,6 +130,23 @@ STANDARD = Standard(
         "MVN-005":  ["Pinned-Dependencies"],                           # lax checksumPolicy
         "MVN-006":  ["Pinned-Dependencies", "Vulnerabilities"],        # compromised Maven version
         "MVN-007":  ["Pinned-Dependencies"],                           # settings.xml wildcard mirror
+        "MVN-008":  ["Pinned-Dependencies", "Vulnerabilities"],        # cooldown gate (--resolve-remote)
+        "MVN-009":  ["Pinned-Dependencies", "Vulnerabilities"],        # OSV advisory (--resolve-remote)
+        "NPM-008":  ["Pinned-Dependencies", "Vulnerabilities"],        # cooldown gate (--resolve-remote)
+        "NPM-009":  ["Pinned-Dependencies"],                           # new-transitive-dep diff gate
+        "NPM-010":  ["Pinned-Dependencies", "Vulnerabilities"],        # OSV advisory (--resolve-remote)
+        "PYPI-008": ["Pinned-Dependencies", "Vulnerabilities"],        # cooldown gate (--resolve-remote)
+        "PYPI-009": ["Pinned-Dependencies", "Vulnerabilities"],        # OSV advisory (--resolve-remote)
+        # ── nuget (dep supply-chain) ─────────────────────────────
+        "NUGET-001": ["Pinned-Dependencies"],                          # floating NuGet version range
+        "NUGET-002": ["Pinned-Dependencies"],                          # wildcard prerelease version
+        "NUGET-003": ["Pinned-Dependencies"],                          # missing explicit version
+        "NUGET-004": ["Pinned-Dependencies"],                          # HTTP-only package source
+        "NUGET-005": ["Pinned-Dependencies", "Vulnerabilities"],       # known-compromised package version
+        "NUGET-006": ["Pinned-Dependencies"],                          # no lock file for reproducible restores
+        "NUGET-007": ["Pinned-Dependencies"],                          # multiple sources without packageSourceMapping
+        "NUGET-008": ["Pinned-Dependencies", "Vulnerabilities"],       # cooldown gate (--resolve-remote)
+        "NUGET-009": ["Pinned-Dependencies", "Vulnerabilities"],       # OSV advisory (--resolve-remote)
         # Reusable workflow / services-image / cross-step pinning
         "GHA-017":  ["Pinned-Dependencies"],                           # package install insecure source
         "GHA-051":  ["Pinned-Dependencies"],                           # services / container image unpinned
