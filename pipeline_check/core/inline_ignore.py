@@ -22,7 +22,7 @@ from dataclasses import dataclass, field
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from .checks.base import Finding, Location
+    from .checks.base import Location
 
 _INLINE_RE = re.compile(
     r"(?:#|//)\s*pipeline-check:\s*"

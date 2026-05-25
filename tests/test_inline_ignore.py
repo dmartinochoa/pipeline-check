@@ -3,11 +3,9 @@ from __future__ import annotations
 
 from pipeline_check.core.checks.base import Finding, Location, Severity
 from pipeline_check.core.inline_ignore import (
-    InlineIgnoreIndex,
     build_inline_index,
     extract_inline_ignores,
 )
-
 
 # ── Extraction ──────────────────────────────────────────────────────────
 

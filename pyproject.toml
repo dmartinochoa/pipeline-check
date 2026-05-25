@@ -124,6 +124,7 @@ ignore = [
 "scripts/gen_provider_docs.py" = ["E402", "E501"]  # sys.path setup + markdown-table template strings
 "scripts/gen_standards_docs.py" = ["E402"]         # sys.path setup before pipeline_check import
 "tests/**" = ["E501"]                               # test strings often exceed line length
+"tests/terraform/test_hcl_parser.py" = ["E402"]     # importorskip guard before project imports
 
 [tool.mypy]
 python_version = "3.11"

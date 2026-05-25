@@ -874,7 +874,7 @@ class TestGHA034SecretsInheritTODO:
             "    uses: octo/repo/.github/workflows/build.yml@v2\n"
             "    secrets: inherit\n"
         )
-        after = autofix.generate_fix(_finding("GHA-034"), wf)
+        after = autofix.generate_fix(_finding("GHA-034"), wf, tier="unsafe")
         assert after is not None
         assert "TODO(pipeline-check GHA-034)" in after
 
@@ -886,7 +886,7 @@ class TestGHA034SecretsInheritTODO:
             "    secrets:\n"
             "      NPM_TOKEN: ${{ secrets.NPM_TOKEN }}\n"
         )
-        assert autofix.generate_fix(_finding("GHA-034"), wf) is None
+        assert autofix.generate_fix(_finding("GHA-034"), wf, tier="unsafe") is None
 
     def test_idempotent(self):
         wf = (
@@ -895,9 +895,9 @@ class TestGHA034SecretsInheritTODO:
             "    uses: octo/repo/.github/workflows/build.yml@v2\n"
             "    secrets: inherit\n"
         )
-        once = autofix.generate_fix(_finding("GHA-034"), wf)
+        once = autofix.generate_fix(_finding("GHA-034"), wf, tier="unsafe")
         assert once is not None
-        assert autofix.generate_fix(_finding("GHA-034"), once) is None
+        assert autofix.generate_fix(_finding("GHA-034"), once, tier="unsafe") is None
 
 
 class TestGCB022SubstitutionOptionLooseDrop:
@@ -1710,7 +1710,7 @@ class TestGHA003EnvBlockIndent:
             "    steps:\n"
             '      - run: echo "${{ github.event.pull_request.title }}"\n'
         )
-        after = autofix.generate_fix(_finding("GHA-003"), wf)
+        after = autofix.generate_fix(_finding("GHA-003"), wf, tier="unsafe")
         assert after is not None, (
             "fixer produced no patch, likely because the ``env:`` block "
             "was over-indented and tripped the YAML safety net"

@@ -58,7 +58,7 @@ def query_osv_batch(
         if cache is not None:
             cached = cache.get(key)
             if cached is not None:
-                advisories = _parse_vulns(cached)
+                advisories = _parse_vulns(cached.decode("utf-8"))
                 if advisories:
                     results[(name, version)] = advisories
                 continue
@@ -76,7 +76,7 @@ def query_osv_batch(
             vulns = batch_results.get(i, [])
             raw = json.dumps(vulns) if vulns else _EMPTY_SENTINEL
             if cache is not None:
-                cache.put(_cache_key(name, version, ecosystem), raw)
+                cache.put(_cache_key(name, version, ecosystem), raw.encode("utf-8"))
             advisories = _parse_vulns(raw)
             if advisories:
                 results[(name, version)] = advisories

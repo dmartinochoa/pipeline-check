@@ -92,7 +92,7 @@ class NuGetContext:
         self.files_skipped = files_skipped
         self.warnings: list[str] = warnings or []
         self.publish_times: dict[str, dict[str, Any]] = {}
-        self.osv_advisories: dict[str, list[Any]] = {}
+        self.osv_advisories: dict[tuple[str, str], list[Any]] = {}
 
     @classmethod
     def from_path(cls, path: str | Path) -> NuGetContext:

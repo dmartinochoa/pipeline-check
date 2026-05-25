@@ -58,7 +58,7 @@ class NuGetProvider(BaseProvider):
                 default_cache_dir,
             )
             osv_cache = FileSystemCache(
-                default_cache_dir() / "osv", enabled=not no_cache,
+                default_cache_dir("nuget") / "osv", enabled=not no_cache,
             )
             context.osv_advisories = query_osv_batch(
                 osv_queries, cache=osv_cache,

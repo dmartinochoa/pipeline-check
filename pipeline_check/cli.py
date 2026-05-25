@@ -60,12 +60,13 @@ from .core import standards as _standards
 from .core.checks.base import Confidence, Severity, confidence_rank
 from .core.config import load_config
 from .core.gate import GateConfig, evaluate_gate, load_ignore_file
+from .core.html_reporter import report_html
 from .core.inline_ignore import (
     InlineIgnoreIndex,
+    InlineIgnoreRule,
     build_inline_index,
     extract_inline_ignores,
 )
-from .core.html_reporter import report_html
 from .core.junit_reporter import report_junit
 from .core.markdown_reporter import report_markdown
 from .core.policies import (
@@ -724,7 +725,7 @@ def _collect_inline_ignores(
     """Walk scanned files and extract inline ignore comments."""
     import glob as _glob
 
-    all_rules: list = []
+    all_rules: list[InlineIgnoreRule] = []
     for provider in pipelines:
         globs = _INLINE_IGNORE_GLOBS.get(provider)
         if not globs:

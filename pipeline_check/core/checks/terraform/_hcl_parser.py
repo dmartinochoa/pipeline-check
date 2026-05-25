@@ -20,7 +20,7 @@ from .base import TerraformResource
 try:
     import hcl2 as _hcl2
 except ImportError:
-    _hcl2 = None  # type: ignore[assignment]
+    _hcl2 = None
 
 _INTERP_RE = re.compile(r"\$\{(var|local)\.([a-zA-Z_][a-zA-Z0-9_]*)\}")
 _INTERP_FULL_RE = re.compile(
@@ -66,7 +66,7 @@ def _parse_module(
     variables = _resolve_variables(merged)
     locals_ = _resolve_locals(merged, variables)
 
-    unresolved = set()
+    unresolved: set[str] = set()
     managed, data = _synthesize_resources(
         merged, variables, locals_, prefix, unresolved,
     )

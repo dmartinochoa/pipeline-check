@@ -13,7 +13,6 @@ from pipeline_check.core.checks.nuget.base import (
 
 from .conftest import run_check
 
-
 # ── NUGET-001: floating range ──────────────────────────────────────────
 
 

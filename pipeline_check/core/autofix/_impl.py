@@ -445,7 +445,7 @@ for _cid in (
     # is provider-agnostic so the same comment-out fixer applies.
     "BK-004",
 ):
-    register(_cid)(_comment_curl_pipe)
+    register(_cid, safety="safe")(_comment_curl_pipe)
 
 
 # ── Docker --privileged removal ────────────────────────────────────────
@@ -488,7 +488,7 @@ for _cid in (
     # shared flag-stripping fixer.
     "BK-005",
 ):
-    register(_cid)(_strip_docker_flags)
+    register(_cid, safety="safe")(_strip_docker_flags)
 
 
 # ── Insecure package-install flag removal ──────────────────────────────
@@ -524,7 +524,7 @@ def _strip_pkg_flags(content: str, finding: Finding) -> str | None:
 
 
 for _cid in ("GHA-018", "GL-018", "ADO-018", "BB-014", "JF-018", "CC-018"):
-    register(_cid)(_strip_pkg_flags)
+    register(_cid, safety="safe")(_strip_pkg_flags)
 
 
 # ── Jenkins secret redaction (Groovy syntax) ───────────────────────────
@@ -960,7 +960,7 @@ def _comment_token_persist(content: str, finding: Finding) -> str | None:
 
 
 for _cid in ("GHA-019", "GL-020", "BB-017"):
-    register(_cid)(_comment_token_persist)
+    register(_cid, safety="safe")(_comment_token_persist)
 
 
 # ── *-005 AWS long-lived key comment-out ──────────────────────────────
@@ -996,7 +996,7 @@ def _comment_aws_keys(content: str, finding: Finding) -> str | None:
 
 
 for _cid in ("GHA-005", "GL-013", "BB-011", "ADO-014", "CC-005", "JF-004", "JF-010"):
-    register(_cid)(_comment_aws_keys)
+    register(_cid, safety="safe")(_comment_aws_keys)
 
 
 # ── Deploy environment stubs ─────────────────────────────────────────
@@ -1076,7 +1076,7 @@ def _fix_npm_ci(content: str, finding: Finding) -> str | None:
 
 
 for _cid in ("GHA-021", "GL-021", "ADO-021", "BB-021", "JF-021", "CC-021"):
-    register(_cid)(_fix_npm_ci)
+    register(_cid, safety="safe")(_fix_npm_ci)
 
 
 # ── *-022 dependency-update command comment-out ──────────────────────
@@ -1109,7 +1109,7 @@ def _comment_dep_update(content: str, finding: Finding) -> str | None:
 
 
 for _cid in ("GHA-022", "GL-022", "ADO-022", "BB-022", "JF-022", "CC-022"):
-    register(_cid)(_comment_dep_update)
+    register(_cid, safety="safe")(_comment_dep_update)
 
 
 # ── *-023 TLS bypass comment-out ─────────────────────────────────────
@@ -1153,11 +1153,11 @@ for _cid in (
     # Buildkite's TLS-bypass rule covers the same flags / env vars.
     "BK-008",
 ):
-    register(_cid)(_comment_tls_bypass)
+    register(_cid, safety="safe")(_comment_tls_bypass)
 
 
 # Cloud Build TLS bypass reuses the same heuristic as the CI providers.
-register("GCB-011")(_comment_tls_bypass)
+register("GCB-011", safety="safe")(_comment_tls_bypass)
 
 
 # ── Tekton / Argo combined curl-pipe + TLS-bypass fixer ──────────────
@@ -1184,7 +1184,7 @@ def _comment_curl_pipe_and_tls(
 
 
 for _cid in ("TKN-008", "ARGO-008"):
-    register(_cid)(_comment_curl_pipe_and_tls)
+    register(_cid, safety="safe")(_comment_curl_pipe_and_tls)
 
 
 # ── Kubernetes drop-line fixers (K8S-002/003/004/005) ────────────────
@@ -1223,7 +1223,7 @@ def _fix_k8s_drop_true_line(content: str, finding: Finding) -> str | None:
 
 
 for _cid in _K8S_DROP_TRUE_KEYS:
-    register(_cid)(_fix_k8s_drop_true_line)
+    register(_cid, safety="safe")(_fix_k8s_drop_true_line)
 
 
 # ── Kubernetes flip-value fixers (K8S-006/007/008) ───────────────────
@@ -1259,7 +1259,7 @@ def _fix_k8s_flip_value(content: str, finding: Finding) -> str | None:
 
 
 for _cid in _K8S_FLIP_VALUE:
-    register(_cid)(_fix_k8s_flip_value)
+    register(_cid, safety="safe")(_fix_k8s_flip_value)
 
 
 # ── Kubernetes comment-only TODO fixers (K8S-013, K8S-020) ───────────

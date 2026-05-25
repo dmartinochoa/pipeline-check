@@ -8,7 +8,6 @@ import pytest
 hcl2 = pytest.importorskip("hcl2", reason="python-hcl2 not installed")
 
 from pipeline_check.core.checks.terraform._hcl_parser import (
-    HclParseResult,
     parse_tf_directory,
 )
 from pipeline_check.core.checks.terraform.base import TerraformContext

@@ -30,7 +30,7 @@ class NuGetChecks(NuGetBaseCheck):
         for rule, check_fn in self._rules:
             kind = _input_kind(check_fn)
             if kind == "project":
-                targets: list = list(self.ctx.projects)
+                targets: list[NuGetProject | NuGetConfig | NuGetContext] = list(self.ctx.projects)
             elif kind == "config":
                 targets = list(self.ctx.configs)
             else:
