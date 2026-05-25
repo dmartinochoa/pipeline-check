@@ -52,7 +52,7 @@ _CHECKOUT_USES_RE = re.compile(
 )
 
 
-@register("GHA-004")
+@register("GHA-004", safety="safe")
 def _fix_gha004(content: str, finding: Finding) -> str | None:
     """Insert ``permissions: contents: read`` at the top of the workflow.
 
@@ -74,7 +74,7 @@ def _fix_gha004(content: str, finding: Finding) -> str | None:
     return content[:insert_at] + block + content[insert_at:]
 
 
-@register("GHA-002")
+@register("GHA-002", safety="safe")
 def _fix_gha002(content: str, finding: Finding) -> str | None:
     """Add ``persist-credentials: false`` under every actions/checkout step.
 
@@ -127,14 +127,14 @@ def _fix_gha002(content: str, finding: Finding) -> str | None:
     return out
 
 
-@register("GHA-008")
-@register("GL-008")
-@register("BB-008")
-@register("ADO-008")
-@register("CC-008")
-@register("BK-002")
-@register("TKN-005")
-@register("ARGO-006")
+@register("GHA-008", safety="safe")
+@register("GL-008", safety="safe")
+@register("BB-008", safety="safe")
+@register("ADO-008", safety="safe")
+@register("CC-008", safety="safe")
+@register("BK-002", safety="safe")
+@register("TKN-005", safety="safe")
+@register("ARGO-006", safety="safe")
 def _fix_gha008(content: str, finding: Finding) -> str | None:
     """Replace credential-shaped literals with ``<REDACTED>`` + TODO comment.
 
@@ -183,7 +183,7 @@ def _fix_gha008(content: str, finding: Finding) -> str | None:
 # ── Timeout fixer ──────────────────────────────────────────────────────
 
 
-@register("GHA-015")
+@register("GHA-015", safety="safe")
 def _fix_gha015(content: str, finding: Finding) -> str | None:
     """Insert ``timeout-minutes: 30`` into jobs that lack one.
 
@@ -367,12 +367,12 @@ def _scan_for_key(
     return False
 
 
-@register("GL-015")
+@register("GL-015", safety="safe")
 def _fix_gl015(content: str, finding: Finding) -> str | None:
     return _fix_yaml_timeout(content, "timeout", "30 minutes")
 
 
-@register("ADO-015")
+@register("ADO-015", safety="safe")
 def _fix_ado015(content: str, finding: Finding) -> str | None:
     """Insert ``timeoutInMinutes: 30`` into Azure ``- job:`` list items.
 
@@ -530,7 +530,7 @@ for _cid in ("GHA-018", "GL-018", "ADO-018", "BB-014", "JF-018", "CC-018"):
 # ── Jenkins secret redaction (Groovy syntax) ───────────────────────────
 
 
-@register("JF-008")
+@register("JF-008", safety="safe")
 def _fix_jf008(content: str, finding: Finding) -> str | None:
     """Redact credential-shaped literals in Groovy source.
 
@@ -566,7 +566,7 @@ def _fix_jf008(content: str, finding: Finding) -> str | None:
 # ── BB-005 Bitbucket timeout fixer ───────────────────────────────────
 
 
-@register("BB-005")
+@register("BB-005", safety="safe")
 def _fix_bb005(content: str, finding: Finding) -> str | None:
     """Insert ``max-time: 120`` into Bitbucket steps missing it.
 
@@ -602,7 +602,7 @@ def _fix_bb005(content: str, finding: Finding) -> str | None:
 # ── JF-015 Jenkins timeout fixer ─────────────────────────────────────
 
 
-@register("JF-015")
+@register("JF-015", safety="safe")
 def _fix_jf015(content: str, finding: Finding) -> str | None:
     """Insert a TODO comment for adding a timeout wrapper.
 
@@ -624,7 +624,7 @@ def _fix_jf015(content: str, finding: Finding) -> str | None:
 # ── JF-011 Jenkins buildDiscarder fixer ─────────────────────────────
 
 
-@register("JF-011")
+@register("JF-011", safety="safe")
 def _fix_jf011(content: str, finding: Finding) -> str | None:
     """Insert a ``buildDiscarder`` option into a declarative pipeline.
 
@@ -677,7 +677,7 @@ _TODO_PIN = "TODO(pipeline-check): pin to commit SHA"
 _TODO_PIN_IMG = "TODO(pipeline-check): pin to digest"
 
 
-@register("GHA-001")
+@register("GHA-001", safety="safe")
 def _fix_gha001(content: str, finding: Finding) -> str | None:
     """Add TODO comment next to unpinned action uses: references."""
     _USES_RE = re.compile(r"^(\s*-?\s*uses:\s*)(\S+@)([^#\s]+)(.*)$")
@@ -701,7 +701,7 @@ def _fix_gha001(content: str, finding: Finding) -> str | None:
     return "".join(out)
 
 
-@register("GL-001")
+@register("GL-001", safety="safe")
 def _fix_gl001(content: str, finding: Finding) -> str | None:
     """Add TODO comment next to unpinned image: references."""
     _IMAGE_RE = re.compile(r"^(\s*image:\s*)(\S+)(.*)$")
@@ -726,7 +726,7 @@ def _fix_gl001(content: str, finding: Finding) -> str | None:
     return "".join(out)
 
 
-@register("BB-001")
+@register("BB-001", safety="safe")
 def _fix_bb001(content: str, finding: Finding) -> str | None:
     """Add TODO comment next to unpinned pipe: references."""
     _PIPE_RE = re.compile(r"^(\s*(?:- )?pipe:\s*)(\S+)(.*)$")
@@ -748,7 +748,7 @@ def _fix_bb001(content: str, finding: Finding) -> str | None:
     return "".join(out)
 
 
-@register("ADO-001")
+@register("ADO-001", safety="safe")
 def _fix_ado001(content: str, finding: Finding) -> str | None:
     """Add TODO comment next to unpinned task: references."""
     _TASK_RE = re.compile(r"^(\s*-?\s*task:\s*)(\S+@\S+)(.*)$")
@@ -773,7 +773,7 @@ def _fix_ado001(content: str, finding: Finding) -> str | None:
 # ── GHA-003 Script injection — env-var indirection ──────────────────
 
 
-@register("GHA-003")
+@register("GHA-003", safety="unsafe")
 def _fix_gha003(content: str, finding: Finding) -> str | None:
     """Add env-var indirection for untrusted context expressions in run: blocks.
 
@@ -860,7 +860,7 @@ def _expr_to_env_name(expr: str) -> str:
 _TODO_ORB = "TODO(pipeline-check): pin to exact semver (e.g. @5.1.0)"
 
 
-@register("CC-001")
+@register("CC-001", safety="safe")
 def _fix_cc001(content: str, finding: Finding) -> str | None:
     """Add TODO comment next to unpinned orb references."""
     _ORB_RE = re.compile(r"^(\s*\w[\w-]*:\s*)(\S+@\S+)(.*)$")
@@ -894,7 +894,7 @@ def _fix_cc001(content: str, finding: Finding) -> str | None:
 # ── CC-015 CircleCI timeout fixer ───────────────────────────────────
 
 
-@register("CC-015")
+@register("CC-015", safety="safe")
 def _fix_cc015(content: str, finding: Finding) -> str | None:
     """Insert ``no_output_timeout: 30m`` into CircleCI run steps that lack it."""
     _RUN_KEY_RE = re.compile(r"^(\s*)- run:\s*$")
@@ -1005,7 +1005,7 @@ _TODO_ENV = "TODO(pipeline-check): configure deployment environment"
 _DEPLOY_NAME_RE = re.compile(r"(?i)(deploy|release|publish|promote)")
 
 
-@register("GHA-014")
+@register("GHA-014", safety="safe")
 def _fix_gha014(content: str, finding: Finding) -> str | None:
     """Insert ``environment:`` placeholder into deploy-named GHA jobs."""
     lines = content.splitlines(keepends=True)
@@ -1279,7 +1279,7 @@ _TODO_K8S_HOSTPATH = (
 _HOSTPATH_RE = re.compile(r"^(\s*)hostPath\s*:\s*$", re.MULTILINE)
 
 
-@register("K8S-013")
+@register("K8S-013", safety="safe")
 def _fix_k8s013_hostpath(content: str, finding: Finding) -> str | None:
     if _TODO_K8S_HOSTPATH in content:
         return None
@@ -1309,7 +1309,7 @@ _CLUSTER_ADMIN_NAME_RE = re.compile(
 )
 
 
-@register("K8S-020")
+@register("K8S-020", safety="safe")
 def _fix_k8s020_cluster_admin(content: str, finding: Finding) -> str | None:
     if _TODO_K8S_CLUSTER_ADMIN in content:
         return None
@@ -1348,7 +1348,7 @@ _K8S_IMAGE_RE = re.compile(
 )
 
 
-@register("K8S-001")
+@register("K8S-001", safety="safe")
 def _fix_k8s001_image_pin(content: str, finding: Finding) -> str | None:
     """Insert a TODO above each container ``image:`` line that lacks
     a sha256 digest.
@@ -1383,7 +1383,7 @@ _K8S_HOSTPORT_RE = re.compile(
 )
 
 
-@register("K8S-028")
+@register("K8S-028", safety="safe")
 def _fix_k8s028_host_port(content: str, finding: Finding) -> str | None:
     """Drop ``hostPort: <N>`` lines. The container's ``containerPort``
     is unaffected — only the node-IP binding is removed. Operators who
@@ -1412,7 +1412,7 @@ _K8S_DEFAULT_SA_NAME_RE = re.compile(
 )
 
 
-@register("K8S-029")
+@register("K8S-029", safety="safe")
 def _fix_k8s029_default_sa(content: str, finding: Finding) -> str | None:
     """Insert a TODO above each ``name: default`` line in a subjects
     block.
@@ -1451,7 +1451,7 @@ _K8S_CTRL_PLANE_TOLERATION_KEY_RE = re.compile(
 )
 
 
-@register("K8S-030")
+@register("K8S-030", safety="safe")
 def _fix_k8s030_control_plane(content: str, finding: Finding) -> str | None:
     """Insert a TODO above each control-plane targeting line.
 
@@ -1490,7 +1490,7 @@ _GHA_SECRETS_INHERIT_RE = re.compile(
 )
 
 
-@register("GHA-034")
+@register("GHA-034", safety="unsafe")
 def _fix_gha034_secrets_inherit(content: str, finding: Finding) -> str | None:
     """Insert a TODO above each ``secrets: inherit`` line.
 
@@ -1526,7 +1526,7 @@ _GCB_FIRST_TOPLEVEL_RE = re.compile(
 )
 
 
-@register("GCB-005")
+@register("GCB-005", safety="safe")
 def _fix_gcb005_timeout(content: str, finding: Finding) -> str | None:
     """Insert ``timeout: '600s'`` at the top of cloudbuild.yaml.
 
@@ -1550,7 +1550,7 @@ _GCB_LOGGING_NONE_RE = re.compile(
 )
 
 
-@register("GCB-014")
+@register("GCB-014", safety="safe")
 def _fix_gcb014_logging(content: str, finding: Finding) -> str | None:
     """Drop ``logging: NONE`` so Cloud Build falls back to logging
     enabled. The operator can re-pick a logging mode (``CLOUD_LOGGING_ONLY``,
@@ -1575,7 +1575,7 @@ _GCB_SUBOPT_LOOSE_RE = re.compile(
 )
 
 
-@register("GCB-022")
+@register("GCB-022", safety="safe")
 def _fix_gcb022_subopt_loose(content: str, finding: Finding) -> str | None:
     """Drop ``substitutionOption: ALLOW_LOOSE``.
 
@@ -1603,7 +1603,7 @@ _TODO_GCB_POOL = (
 _GCB_OPTIONS_RE = re.compile(r"^(\s*)options\s*:\s*$", re.MULTILINE)
 
 
-@register("GCB-021")
+@register("GCB-021", safety="safe")
 def _fix_gcb021_worker_pool(content: str, finding: Finding) -> str | None:
     """Insert a TODO above the ``options:`` block when no worker pool
     is configured.
@@ -1641,7 +1641,7 @@ _GCB_STEP_NAME_RE = re.compile(
 )
 
 
-@register("GCB-001")
+@register("GCB-001", safety="safe")
 def _fix_gcb001_pin_todo(content: str, finding: Finding) -> str | None:
     """Insert a TODO above each step image line that isn't pinned to
     a digest. Comment-only — pinning to a real digest needs an out-
@@ -1788,7 +1788,7 @@ def _insert_comment_above(content: str, edits: list[tuple[int, str]]) -> str:
     return out
 
 
-@register("DF-001")
+@register("DF-001", safety="safe")
 def _fix_df001_pin_todo(content: str, finding: Finding) -> str | None:
     """Insert a TODO above any FROM line that lacks a sha256 digest.
 
@@ -1810,7 +1810,7 @@ def _fix_df001_pin_todo(content: str, finding: Finding) -> str | None:
     return _insert_comment_above(content, edits)
 
 
-@register("DF-002")
+@register("DF-002", safety="safe")
 def _fix_df002_user_todo(content: str, finding: Finding) -> str | None:
     """Insert a TODO above the final CMD/ENTRYPOINT when no USER is set.
 
@@ -1835,7 +1835,7 @@ def _fix_df002_user_todo(content: str, finding: Finding) -> str | None:
     )
 
 
-@register("DF-007")
+@register("DF-007", safety="safe")
 def _fix_df007_healthcheck_todo(content: str, finding: Finding) -> str | None:
     """Insert a TODO above the final CMD/ENTRYPOINT when no HEALTHCHECK."""
     if _TODO_DF_HEALTHCHECK in content:
@@ -1854,7 +1854,7 @@ def _fix_df007_healthcheck_todo(content: str, finding: Finding) -> str | None:
     )
 
 
-@register("DF-013")
+@register("DF-013", safety="safe")
 def _fix_df013_expose_ssh_todo(content: str, finding: Finding) -> str | None:
     """Insert a TODO above any EXPOSE line publishing port 22."""
     if _TODO_DF_EXPOSE_SSH in content:
@@ -1868,7 +1868,7 @@ def _fix_df013_expose_ssh_todo(content: str, finding: Finding) -> str | None:
     return _insert_comment_above(content, edits)
 
 
-@register("DF-017")
+@register("DF-017", safety="safe")
 def _fix_df017_path_todo(content: str, finding: Finding) -> str | None:
     """Insert a TODO above any ``ENV PATH=`` whose value prepends a
     world-writable prefix ahead of ``$PATH``.
@@ -1904,7 +1904,7 @@ def _fix_df017_path_todo(content: str, finding: Finding) -> str | None:
     return _insert_comment_above(content, edits)
 
 
-@register("DF-019")
+@register("DF-019", safety="safe")
 def _fix_df019_copy_cred_todo(content: str, finding: Finding) -> str | None:
     """Insert a TODO above any ``COPY``/``ADD`` whose source basename
     matches a credential filename.
@@ -1925,7 +1925,7 @@ def _fix_df019_copy_cred_todo(content: str, finding: Finding) -> str | None:
     return _insert_comment_above(content, edits)
 
 
-@register("DF-020")
+@register("DF-020", safety="safe")
 def _fix_df020_arg_cred_todo(content: str, finding: Finding) -> str | None:
     """Insert a TODO above any ``ARG`` whose name looks credential-shaped.
 
@@ -1958,7 +1958,7 @@ _GCB_VERSION_LATEST_RE = re.compile(
 )
 
 
-@register("GCB-007")
+@register("GCB-007", safety="safe")
 def _fix_gcb007_latest_todo(content: str, finding: Finding) -> str | None:
     """Insert a TODO above each ``versions/latest`` reference."""
     if _TODO_GCB_LATEST in content:
@@ -2002,7 +2002,7 @@ _GHA_RUNS_ON_INJECTION_RE = re.compile(
 )
 
 
-@register("GHA-036")
+@register("GHA-036", safety="safe")
 def _fix_gha036_runs_on_todo(content: str, finding: Finding) -> str | None:
     """Insert a TODO above each ``runs-on:`` line that interpolates
     untrusted context.
@@ -2043,7 +2043,7 @@ _GL_TAGS_INJECTION_RE = re.compile(
 )
 
 
-@register("GL-032")
+@register("GL-032", safety="safe")
 def _fix_gl032_tags_todo(content: str, finding: Finding) -> str | None:
     """Insert a TODO above each ``tags:`` line that interpolates
     untrusted CI variables (inline list / scalar form)."""
@@ -2083,7 +2083,7 @@ _ADO_POOL_INJECTION_RE = re.compile(
 )
 
 
-@register("ADO-030")
+@register("ADO-030", safety="safe")
 def _fix_ado030_pool_todo(content: str, finding: Finding) -> str | None:
     """Insert a TODO above each ``pool:`` / ``name:`` / ``demands:``
     line that interpolates attacker-controllable input."""
@@ -2126,7 +2126,7 @@ _JF_AGENT_LABEL_INJECTION_RE = re.compile(
 )
 
 
-@register("JF-032")
+@register("JF-032", safety="safe")
 def _fix_jf032_label_todo(content: str, finding: Finding) -> str | None:
     """Insert a TODO above each Groovy ``label "..."`` line that
     interpolates an untrusted Groovy reference."""

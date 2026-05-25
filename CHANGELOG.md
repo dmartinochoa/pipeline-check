@@ -12,6 +12,10 @@ release commit collapses this section into `## [X.Y.Z] - <date>`.
 
 ### Added
 
+- **Autofix safety tiers (closes #177).** ``--fix`` (bare flag) now runs
+  only safe fixers; ``--fix=unsafe`` runs all; ``--fix=unsafe-only`` runs
+  only inference-dependent fixers. 109 fixers labeled safe, 2 unsafe.
+  Enforced by ``tests/test_autofix_safety.py``.
 - **NuGet provider (``--pipeline nuget``).** Fifth dependency-supply-chain
   provider. Parses ``*.csproj``, ``Directory.Packages.props``,
   ``packages.config``, ``NuGet.config``, and ``packages.lock.json``.

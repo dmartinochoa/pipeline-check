@@ -1806,13 +1806,17 @@ def _install_completion_callback(
 )
 @click.option(
     "--fix",
-    is_flag=True,
-    default=False,
+    is_flag=False,
+    flag_value="safe",
+    default=None,
+    type=click.Choice(["safe", "unsafe", "unsafe-only"], case_sensitive=False),
     help=(
-        "Emit a unified-diff patch to stdout for every failing finding "
-        "that has a registered autofix. Does not modify files, pipe "
-        "the output into `git apply` to apply. Currently supports: "
-        + ", ".join(_autofix.available_fixers()) + "."
+        "Emit patches for failing findings with registered autofixes. "
+        "Tiers: 'safe' (default when bare --fix) runs only fixers that "
+        "produce semantically equivalent edits; 'unsafe' runs all fixers "
+        "(safe + inference-dependent); 'unsafe-only' runs only the "
+        "inference-dependent fixers. Does not modify files; pipe the "
+        "output into `git apply` or combine with --apply."
     ),
 )
 @click.option(
@@ -2156,7 +2160,7 @@ def scan(
     fail_on_checks: tuple[str, ...],
     secret_patterns: tuple[str, ...],
     detect_entropy: bool,
-    fix: bool,
+    fix: str | None,
     apply_fixes: bool,
     baseline_from_git: str | None,
     diff_base: str | None,
@@ -3150,14 +3154,14 @@ def scan(
 
         if fix:
             if apply_fixes:
-                _apply_fix_patches(findings)
+                _apply_fix_patches(findings, tier=fix)
             else:
                 # Route patches to stderr whenever stdout is carrying a machine-
                 # readable report, so `--output json --fix` doesn't produce
                 # "JSON...--- a/file" and break downstream parsers. The
                 # documented `pipeline_check --fix | git apply` recipe uses the
                 # default terminal output where stdout is free for the patch.
-                _emit_fix_patches(findings, to_stderr=output != "terminal")
+                _emit_fix_patches(findings, to_stderr=output != "terminal", tier=fix)
 
     # --write-baseline snapshots the current findings to disk before
     # gating so the next run can suppress them via --baseline PATH.
@@ -3496,7 +3500,7 @@ def _build_pr_diff_subprocess_argv(
     return argv
 
 
-def _emit_fix_patches(findings: list[Any], *, to_stderr: bool = False) -> None:
+def _emit_fix_patches(findings: list[Any], *, to_stderr: bool = False, tier: str = "safe") -> None:
     """Emit one unified-diff patch per failing finding that has a fixer.
 
     Patches go to stdout by default so a user can pipe straight into
@@ -3529,7 +3533,7 @@ def _emit_fix_patches(findings: list[Any], *, to_stderr: bool = False) -> None:
                 continue
             cache[path] = before
         try:
-            after = _autofix.generate_fix(f, before)
+            after = _autofix.generate_fix(f, before, tier=tier)
         except Exception as exc:
             # One broken fixer must not abort the whole --fix run. Log
             # to stderr so the bug is still visible to whoever is
@@ -3556,7 +3560,7 @@ def _emit_fix_patches(findings: list[Any], *, to_stderr: bool = False) -> None:
         )
 
 
-def _apply_fix_patches(findings: list[Any]) -> None:
+def _apply_fix_patches(findings: list[Any], *, tier: str = "safe") -> None:
     """Apply autofixes in place; print an N-files-modified summary to stderr.
 
     Each fixer is idempotent, so it's safe to re-run after an apply —
@@ -3581,7 +3585,7 @@ def _apply_fix_patches(findings: list[Any]) -> None:
                 continue
             cache[path] = before
         try:
-            after = _autofix.generate_fix(f, before)
+            after = _autofix.generate_fix(f, before, tier=tier)
         except Exception as exc:
             click.echo(
                 f"[autofix] fixer for {f.check_id} raised {type(exc).__name__}: {exc}",

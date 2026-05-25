@@ -704,22 +704,16 @@ shell-out to a user-provided `opa` binary on `$PATH` (documented as
 a soft dependency, fails cleanly when missing) keeps the wheel
 Python-only. Filed as #176.
 
-### Autofix safety tiers (`--fix=safe` default, `--fix=unsafe` opt-in)
+### ~~Autofix safety tiers (`--fix=safe` default, `--fix=unsafe` opt-in)~~
 
-Split the ~100-autofixer pack into `safe` and `unsafe` tiers so the
-default `--fix` line stays conservative. `safe` = edit produces a
-semantically equivalent file once the rule's invariant holds (pin
-to digest, add missing default `permissions: {}`, comment-out an
-exact-match TLS-bypass token, append `--require-hashes`). `unsafe`
-= edit relies on inference that can be wrong (downgrade
-`permissions:` to inferred minimum, rewrite a multi-step install
-into a cached layer). Per-rule safety claim declared next to the
-fixer module; missing claims default to `unsafe` and are enforced
-by `tests/autofix/test_safety_claims.py`. CLI:
-`--fix` (safe only), `--fix=safe` (explicit), `--fix=unsafe`
-(safe + unsafe), `--fix=unsafe-only`. Inspiration: zizmor's
-`--fix=safe` / `--fix=unsafe-only`, ruff's `--unsafe-fixes`. Filed
-as #177.
+Landed. Every ``@register()`` call carries ``safety="safe"`` or
+``safety="unsafe"``. ``--fix`` (bare flag) runs safe fixers only;
+``--fix=unsafe`` runs both; ``--fix=unsafe-only`` runs only unsafe.
+109 fixers labeled safe, 2 labeled unsafe (GHA-003 template-injection
+env-var extraction, GHA-034 secrets-inherit rewrite). Missing labels
+default to unsafe so new fixers without a label are conservative.
+``tests/test_autofix_safety.py`` enforces every fixer has an explicit
+label. 9 new tests.
 
 ### VS Code extension
 
