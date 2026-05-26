@@ -59,6 +59,14 @@ STANDARD = Standard(
         "GHA-040":  ["Pinned-Dependencies"],                           # known-compromised action ref
         "GHA-018":  ["Pinned-Dependencies"],                           # insecure package registry
         "GHA-025":  ["Pinned-Dependencies"],
+        "GHA-088":  ["Pinned-Dependencies"],                           # typosquat uses
+        "GHA-089":  ["Pinned-Dependencies"],                           # archived upstream
+        "GHA-090":  ["Pinned-Dependencies"],                           # impostor-commit
+        "GHA-091":  ["Pinned-Dependencies"],                           # repojacking
+        "GHA-092":  ["Dangerous-Workflow"],                            # TOCTOU PR head SHA
+        "GHA-093":  ["Dangerous-Workflow"],                            # LOTP indicators (workflow-command abuse)
+        "GHA-094":  ["Pinned-Dependencies"],                           # stale-action-refs
+        "GHA-096":  ["Pinned-Dependencies"],                           # known-vulnerable action ref (GHSA)
         "GL-001":   ["Pinned-Dependencies"],
         "GL-005":   ["Pinned-Dependencies"],
         "GL-009":   ["Pinned-Dependencies"],
@@ -122,6 +130,23 @@ STANDARD = Standard(
         "MVN-005":  ["Pinned-Dependencies"],                           # lax checksumPolicy
         "MVN-006":  ["Pinned-Dependencies", "Vulnerabilities"],        # compromised Maven version
         "MVN-007":  ["Pinned-Dependencies"],                           # settings.xml wildcard mirror
+        "MVN-008":  ["Pinned-Dependencies", "Vulnerabilities"],        # cooldown gate (--resolve-remote)
+        "MVN-009":  ["Pinned-Dependencies", "Vulnerabilities"],        # OSV advisory (--resolve-remote)
+        "NPM-008":  ["Pinned-Dependencies", "Vulnerabilities"],        # cooldown gate (--resolve-remote)
+        "NPM-009":  ["Pinned-Dependencies"],                           # new-transitive-dep diff gate
+        "NPM-010":  ["Pinned-Dependencies", "Vulnerabilities"],        # OSV advisory (--resolve-remote)
+        "PYPI-008": ["Pinned-Dependencies", "Vulnerabilities"],        # cooldown gate (--resolve-remote)
+        "PYPI-009": ["Pinned-Dependencies", "Vulnerabilities"],        # OSV advisory (--resolve-remote)
+        # ── nuget (dep supply-chain) ─────────────────────────────
+        "NUGET-001": ["Pinned-Dependencies"],                          # floating NuGet version range
+        "NUGET-002": ["Pinned-Dependencies"],                          # wildcard prerelease version
+        "NUGET-003": ["Pinned-Dependencies"],                          # missing explicit version
+        "NUGET-004": ["Pinned-Dependencies"],                          # HTTP-only package source
+        "NUGET-005": ["Pinned-Dependencies", "Vulnerabilities"],       # known-compromised package version
+        "NUGET-006": ["Pinned-Dependencies"],                          # no lock file for reproducible restores
+        "NUGET-007": ["Pinned-Dependencies"],                          # multiple sources without packageSourceMapping
+        "NUGET-008": ["Pinned-Dependencies", "Vulnerabilities"],       # cooldown gate (--resolve-remote)
+        "NUGET-009": ["Pinned-Dependencies", "Vulnerabilities"],       # OSV advisory (--resolve-remote)
         # Reusable workflow / services-image / cross-step pinning
         "GHA-017":  ["Pinned-Dependencies"],                           # package install insecure source
         "GHA-051":  ["Pinned-Dependencies"],                           # services / container image unpinned

@@ -505,6 +505,14 @@ STANDARD = Standard(
         "GHA-073":  ["PR.AA-01"],               # unused workflow_call.secrets declaration
         "GHA-086":  ["PR.PS-06"],               # wildcard branch trigger + environment binding
         "GHA-087":  ["PR.AA-01", "PR.DS-01"],   # derived-value of secret printed to log
+        "GHA-088":  ["GV.SC-05", "GV.SC-07"],   # typosquat uses: near-edit of top action
+        "GHA-089":  ["GV.SC-05", "GV.SC-07"],   # archived upstream repo
+        "GHA-090":  ["GV.SC-05", "GV.SC-07"],   # impostor-commit: SHA absent from repo
+        "GHA-091":  ["GV.SC-05", "GV.SC-07"],   # repojacking: action upstream missing
+        "GHA-092":  ["PR.IR-01"],               # TOCTOU PR head SHA force-push race
+        "GHA-093":  ["PR.AA-01", "PR.DS-01"],   # LOTP indicators
+        "GHA-094":  ["GV.SC-05", "GV.SC-07"],   # stale-action-refs
+        "GHA-096":  ["GV.SC-05", "GV.SC-07"],   # known-vulnerable action ref (GHSA)
         # ── GitLab CI ─────────────────────────────────────────────
         "GL-004":  ["PR.PS-06"],                # manual deploy allow_failure
         "GL-029":  ["PR.PS-06"],                # manual deploy allow_failure (variant)
@@ -697,6 +705,23 @@ STANDARD = Standard(
         "MVN-005":  ["GV.SC-05"],               # lax checksumPolicy
         "MVN-006":  ["GV.SC-05", "GV.SC-07", "PR.PS-02"],  # compromised Maven version
         "MVN-007":  ["GV.SC-05"],               # settings.xml wildcard mirror
+        "MVN-008":  ["GV.SC-05", "GV.SC-07", "PR.PS-02"],  # cooldown gate (--resolve-remote)
+        "MVN-009":  ["GV.SC-05", "GV.SC-07", "PR.PS-02"],  # OSV advisory (--resolve-remote)
+        "NPM-008":  ["GV.SC-05", "GV.SC-07", "PR.PS-02"],  # cooldown gate (--resolve-remote)
+        "NPM-009":  ["GV.SC-05"],               # new-transitive-dep diff gate
+        "NPM-010":  ["GV.SC-05", "GV.SC-07", "PR.PS-02"],  # OSV advisory (--resolve-remote)
+        "PYPI-008": ["GV.SC-05", "GV.SC-07", "PR.PS-02"],  # cooldown gate (--resolve-remote)
+        "PYPI-009": ["GV.SC-05", "GV.SC-07", "PR.PS-02"],  # OSV advisory (--resolve-remote)
+        # ── nuget (dep supply-chain) ─────────────────────────────
+        "NUGET-001": ["GV.SC-05"],              # floating NuGet version range
+        "NUGET-002": ["GV.SC-05"],              # wildcard prerelease version
+        "NUGET-003": ["GV.SC-05"],              # missing explicit version
+        "NUGET-004": ["GV.SC-05", "PR.DS-02"],  # HTTP-only package source
+        "NUGET-005": ["GV.SC-05", "GV.SC-07", "PR.PS-02"],  # known-compromised package version
+        "NUGET-006": ["GV.SC-05"],              # no lock file for reproducible restores
+        "NUGET-007": ["GV.SC-05"],              # multiple sources without packageSourceMapping
+        "NUGET-008": ["GV.SC-05", "GV.SC-07", "PR.PS-02"],  # cooldown gate (--resolve-remote)
+        "NUGET-009": ["GV.SC-05", "GV.SC-07", "PR.PS-02"],  # OSV advisory (--resolve-remote)
         # ── OCI image manifest gaps ──────────────────────────────
         "OCI-001":  ["GV.SC-05"],               # provenance annotations missing
         "OCI-002":  ["PR.PS-06", "GV.SC-05"],   # build attestation missing

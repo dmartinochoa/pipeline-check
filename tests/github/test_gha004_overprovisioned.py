@@ -435,3 +435,146 @@ class TestGHA004MultipleExcessScopes:
         assert "packages: write" in f.description
         assert "issues: write" in f.description
         assert "security-events: write" in f.description
+
+
+class TestGHA004TopLevelAggregation:
+    """Top-level write-scope aggregation across inheriting jobs."""
+
+    def test_fails_top_level_packages_write_not_consumed(self):
+        wf = """
+        on: push
+        permissions:
+          contents: read
+          packages: write
+        jobs:
+          build:
+            runs-on: ubuntu-latest
+            steps:
+              - uses: actions/checkout@v4
+              - run: './build.sh'
+        """
+        f = run_check(wf, "GHA-004")
+        assert not f.passed
+        assert "top-level" in f.description
+        assert "packages: write" in f.description
+
+    def test_fails_multiple_excess_top_level_scopes(self):
+        wf = """
+        on: push
+        permissions:
+          contents: read
+          packages: write
+          issues: write
+        jobs:
+          lint:
+            runs-on: ubuntu-latest
+            steps:
+              - uses: actions/checkout@v4
+              - run: './lint.sh'
+        """
+        f = run_check(wf, "GHA-004")
+        assert not f.passed
+        assert "packages: write" in f.description
+        assert "issues: write" in f.description
+
+    def test_passes_top_level_contents_write_consumed_by_git_push(self):
+        wf = """
+        on: schedule
+        permissions:
+          contents: write
+        jobs:
+          autobump:
+            runs-on: ubuntu-latest
+            steps:
+              - uses: actions/checkout@v4
+              - run: |
+                  ./bump.sh
+                  git push origin main
+        """
+        assert run_check(wf, "GHA-004").passed
+
+    def test_passes_top_level_packages_write_consumed_by_docker_push(self):
+        wf = """
+        on: push
+        permissions:
+          contents: read
+          packages: write
+        jobs:
+          publish:
+            runs-on: ubuntu-latest
+            steps:
+              - uses: actions/checkout@v4
+              - uses: docker/build-push-action@v6
+                with:
+                  push: true
+                  tags: ghcr.io/example/image:latest
+        """
+        assert run_check(wf, "GHA-004").passed
+
+    def test_passes_all_jobs_override_permissions(self):
+        wf = """
+        on: push
+        permissions:
+          contents: read
+          packages: write
+        jobs:
+          build:
+            runs-on: ubuntu-latest
+            permissions:
+              contents: read
+            steps:
+              - uses: actions/checkout@v4
+              - run: './build.sh'
+        """
+        assert run_check(wf, "GHA-004").passed
+
+    def test_passes_wildcard_consumer_suppresses(self):
+        wf = """
+        on: push
+        permissions:
+          contents: read
+          packages: write
+        jobs:
+          script:
+            runs-on: ubuntu-latest
+            steps:
+              - uses: actions/github-script@v7
+                with:
+                  script: |
+                    // custom logic
+        """
+        assert run_check(wf, "GHA-004").passed
+
+    def test_passes_one_of_two_jobs_consumes(self):
+        wf = """
+        on: push
+        permissions:
+          contents: read
+          packages: write
+        jobs:
+          build:
+            runs-on: ubuntu-latest
+            steps:
+              - uses: actions/checkout@v4
+              - run: './build.sh'
+          publish:
+            runs-on: ubuntu-latest
+            steps:
+              - uses: actions/checkout@v4
+              - run: 'docker push ghcr.io/example/image:latest'
+        """
+        assert run_check(wf, "GHA-004").passed
+
+    def test_skips_reusable_workflow_caller(self):
+        wf = """
+        on: push
+        permissions:
+          contents: read
+          packages: write
+        jobs:
+          forward:
+            uses: my-org/shared/.github/workflows/publish.yml@v1
+            with:
+              x: 1
+        """
+        assert run_check(wf, "GHA-004").passed

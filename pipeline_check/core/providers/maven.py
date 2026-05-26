@@ -91,6 +91,25 @@ class MavenProvider(BaseProvider):
         context.publish_times = publish_times
         context.warnings.extend(warnings)
 
+        osv_queries: list[tuple[str, str, str]] = []
+        for pom in context.files:
+            if pom.is_settings:
+                continue
+            for group_id, artifact_id, version in iter_resolved_coordinates(pom):
+                if version and not version.endswith("-SNAPSHOT"):
+                    osv_queries.append((
+                        f"{group_id}:{artifact_id}", version, "Maven",
+                    ))
+        if osv_queries:
+            from ..checks._primitives.osv_fetcher import query_osv_batch
+            osv_cache = FileSystemCache(
+                default_cache_dir() / "osv", enabled=not no_cache,
+            )
+            context.osv_advisories = query_osv_batch(
+                osv_queries, cache=osv_cache,
+                warnings=context.warnings,
+            )
+
     def inventory(self, context: MavenContext) -> list[Component]:
         out: list[Component] = []
         for pom in context.files:

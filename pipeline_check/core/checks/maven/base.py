@@ -155,6 +155,7 @@ class MavenContext:
         #: dict is empty so the rule's absence isn't a CI failure
         #: for users on the default no-network path.
         self.publish_times: dict[str, dict[str, _dt.datetime]] = {}
+        self.osv_advisories: dict[tuple[str, str], list[Any]] = {}
 
     @classmethod
     def from_path(cls, path: str | Path) -> MavenContext:
@@ -279,7 +280,7 @@ def _parse_pom(path: str, text: str) -> PomFile:
     original source.
     """
     try:
-        root = ET.fromstring(text)
+        root = ET.fromstring(text)  # noqa: S314
     except ET.ParseError:
         return PomFile(path=path, text=text, parsed_ok=False)
 

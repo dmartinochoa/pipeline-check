@@ -125,6 +125,7 @@ pipeline_check --pipeline oci --oci-manifest index.json
 
 pipeline_check --pipeline cloudformation --cfn-template template.yml
 pipeline_check --pipeline terraform --tf-plan plan.json
+pipeline_check --pipeline terraform --tf-source ./infra/   # direct HCL, no terraform binary
 pipeline_check --pipeline aws --region eu-west-1 --profile prod
 
 # SCM posture (GitHub repo governance via the REST API).

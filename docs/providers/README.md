@@ -13,7 +13,7 @@ requires editing `Scanner`, `Reporter`, or the CLI.
   </a>
   <a class="pg-doc-card" href="terraform/">
     <h3>Terraform</h3>
-    <p>Shift-left scan against a parsed <code>terraform show -json</code> plan. AWS-rule parity so findings match the live runtime.</p>
+    <p>Shift-left scan against a <code>terraform show -json</code> plan or raw <code>*.tf</code> source. AWS-rule parity so findings match the live runtime.</p>
     <span class="pg-doc-card__meta">{{ providers.terraform.checks }}</span>
   </a>
   <a class="pg-doc-card" href="cloudformation/">
@@ -102,8 +102,8 @@ requires editing `Scanner`, `Reporter`, or the CLI.
     <span class="pg-doc-card__meta">{{ providers.scm.checks }}</span>
   </a>
   <a class="pg-doc-card" href="registries/">
-    <h3>Package registries (npm / PyPI / Maven)</h3>
-    <p>Static parse of <code>package.json</code> / <code>package-lock.json</code> / <code>.npmrc</code>, <code>requirements*.txt</code>, and <code>pom.xml</code> / <code>settings.xml</code>. Floating versions, missing integrity / hash anchoring, plaintext-HTTP indexes, lifecycle scripts, lax checksum policy, and curated known-compromised version registries (Shai-Hulud, ctx, Log4Shell). Per-platform deep-dive pages linked inside.</p>
+    <h3>Package registries (npm / PyPI / Maven / NuGet)</h3>
+    <p>Static parse of <code>package.json</code> / <code>package-lock.json</code> / <code>.npmrc</code>, <code>requirements*.txt</code>, <code>pom.xml</code> / <code>settings.xml</code>, and <code>*.csproj</code> / <code>NuGet.config</code>. Floating versions, missing integrity / hash anchoring, plaintext-HTTP indexes, lifecycle scripts, lax checksum policy, dependency-confusion source mapping, and curated known-compromised version registries. Live OSV advisory lookup behind <code>--resolve-remote</code>.</p>
     <span class="pg-doc-card__meta">{{ providers.registries.checks }}</span>
   </a>
 </div>

@@ -2,9 +2,10 @@
 
 A workflow combines three legs that, together, give a fork-PR
 attacker durable code execution against the repo's stored secrets:
-unpinned third-party actions (mutable supply chain), a script-
-injection sink (code execution from untrusted PR context), and
-literal secrets in the file (the prize, already in plaintext).
+unpinned third-party actions (mutable supply chain), a PR-head
+checkout under ``pull_request_target`` (code execution from the
+PR author in the privileged context), and literal secrets in the
+file (the prize, already in plaintext).
 
 Each leg is a HIGH-or-CRITICAL finding on its own. The chain
 captures that the *combination* is materially worse: even if the
@@ -23,7 +24,7 @@ RULE = ChainRule(
     severity=Severity.CRITICAL,
     summary=(
         "A workflow uses unpinned third-party actions (GHA-001), "
-        "checks out PR head on a ``pull_request_target`` trigger "
+        "checks out the PR head under a ``pull_request_target`` trigger "
         "(GHA-002), and carries literal secrets in the YAML (GHA-008). "
         "Any one of those is exploitable; the combination gives a "
         "fork-PR attacker two independent code-execution paths to the "
@@ -110,9 +111,9 @@ def match(findings: list[Finding]) -> list[Chain]:
             "compromises their account) can re-tag a malicious "
             "version and have it executed in this repo on the next "
             "run.\n"
-            "  2. The workflow checks out PR head on a "
-            "`pull_request_target` trigger (GHA-002). The checked-out "
-            "code runs with the target branch's privileges.\n"
+            "  2. The same workflow checks out the PR head under a "
+            "`pull_request_target` trigger (GHA-002). The PR author's "
+            "code runs with write-scope tokens and repository secrets.\n"
             "  3. The workflow file also carries literal credential-"
             "shaped values in plaintext (GHA-008). Either of the "
             "above two execution vectors can read them; the fork "

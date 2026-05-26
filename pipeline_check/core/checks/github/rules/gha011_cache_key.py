@@ -56,7 +56,11 @@ def check(path: str, doc: dict[str, Any]) -> Finding:
     for job_id, job in iter_jobs(doc):
         for idx, step in enumerate(iter_steps(job)):
             uses = step.get("uses") or ""
-            if not isinstance(uses, str) or "actions/cache@" not in uses:
+            if not isinstance(uses, str) or not (
+                "actions/cache@" in uses
+                or "actions/cache/restore@" in uses
+                or "actions/cache/save@" in uses
+            ):
                 continue
             with_block = step.get("with") or {}
             if not isinstance(with_block, dict):

@@ -61,6 +61,15 @@ class Workflow:
     #: ``inherited_secret_names`` being empty: an explicit empty map
     #: means no secrets crossed the boundary.
     inherits_secrets: bool = False
+    #: Raw on-disk text of the workflow file, populated by
+    #: :meth:`GitHubContext.from_path` so rules that need to read the
+    #: pre-parse layer (YAML comments, line whitespace) can do so
+    #: without re-opening the file. ``None`` for resolver-synthesized
+    #: workflows (composite-action bodies, remote callees) whose
+    #: source isn't a single on-disk file. Consumed by GHA-095
+    #: (ref-version-mismatch) for the ``uses: o/r@<sha>  # vX.Y.Z``
+    #: comment shape PyYAML strips during parsing.
+    raw_text: str | None = None
 
 
 class GitHubContext:
@@ -80,6 +89,13 @@ class GitHubContext:
         #: opt-in flag isn't set; the reputation rules pass silently
         #: in that case rather than firing on missing data.
         self.action_metadata: dict[str, ActionRepoMetadata] = {}
+        #: Action ``owner/repo`` slugs (lower-cased) whose repo-
+        #: metadata fetch ran and came back empty. Most commonly a
+        #: 404, the repojacking signal GHA-091 fires on. Populated by
+        #: the same ``--resolve-remote`` path that fills
+        #: :attr:`action_metadata`; an empty set means either the
+        #: flag is off or every referenced action's fetch succeeded.
+        self.action_fetch_failures: set[str] = set()
 
     @classmethod
     def from_path(cls, path: str | Path) -> GitHubContext:
@@ -102,7 +118,20 @@ class GitHubContext:
             data = entry.docs[0]
             if not isinstance(data, dict):
                 continue
-            workflows.append(Workflow(path=str(entry.path), data=data))
+            # Re-read the raw file text so rules that need to inspect
+            # the pre-parse layer (YAML comments, the literal line
+            # whitespace PyYAML strips on its way to a dict) have it
+            # without re-opening per-rule. The file is still in OS
+            # cache from ``load_yaml_files``; failures fall back to
+            # ``None`` and the consuming rule treats that as
+            # "raw layer unavailable" rather than raising.
+            try:
+                raw_text: str | None = entry.path.read_text(encoding="utf-8")
+            except (OSError, UnicodeDecodeError):
+                raw_text = None
+            workflows.append(
+                Workflow(path=str(entry.path), data=data, raw_text=raw_text),
+            )
         # Discover local composite actions referenced via
         # ``uses: ./path`` and synthesize them as ``__composite__``
         # job workflows so the rule pack runs against their bodies.

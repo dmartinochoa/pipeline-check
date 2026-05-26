@@ -97,6 +97,28 @@ class PypiProvider(BaseProvider):
         context.publish_times = publish_times
         context.warnings.extend(warnings)
 
+        osv_queries: list[tuple[str, str, str]] = []
+        for rf in context.files:
+            for line in iter_specs(rf):
+                m = _NAME_FROM_EXACT_PIN_RE.match(line.body)
+                if m is not None:
+                    parts = line.body.split("==", 1)
+                    if len(parts) == 2:
+                        version = parts[1].strip().split(";")[0].strip()
+                        if version:
+                            osv_queries.append((
+                                m.group(1).strip().lower(), version, "PyPI",
+                            ))
+        if osv_queries:
+            from ..checks._primitives.osv_fetcher import query_osv_batch
+            osv_cache = FileSystemCache(
+                default_cache_dir() / "osv", enabled=not no_cache,
+            )
+            context.osv_advisories = query_osv_batch(
+                osv_queries, cache=osv_cache,
+                warnings=context.warnings,
+            )
+
     def inventory(self, context: PypiContext) -> list[Component]:
         out: list[Component] = []
         for rf in context.files:

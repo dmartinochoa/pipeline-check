@@ -142,8 +142,6 @@ def produces_artifacts(doc: Any) -> bool:
     contribute.
     """
     blob = blob_lower(doc)
-    if "actions/deploy-pages" in blob:
-        return False
     for zone in _ARTIFACT_TOKEN_EXCLUDE_ZONES:
         blob = blob.replace(zone, "")
     return any(tok in blob for tok in _ARTIFACT_TOKENS)

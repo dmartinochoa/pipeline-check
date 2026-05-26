@@ -245,22 +245,339 @@ What's planned, what's shipped, and what's deliberately out of scope.
 Larger items proposed after v1.1.0. Not yet scoped to a specific
 release; landing order is open.
 
-### ~~Zizmor parity sweep (GHA-063 .. GHA-096)~~
+### Zizmor parity sweep (GHA-063 .. GHA-07x)
 
-Landed. Gap analysis against ``zizmorcore/zizmor`` v1.25.2 (37
-audits). 18 new rules (GHA-063..073, GHA-086..096), 3 existing-rule
-widenings (GHA-004, GHA-053, GHA-058), 2 rule widenings (GHA-003,
-GHA-050), and ``--only-known-attacked``. Pedantic / ergonomic audits
-(``anonymous-definition``, ``undocumented-permissions``,
-``concurrency-limits``, ``misfeature``, ``superfluous-actions``,
-``forbidden-uses``) remain explicitly out of scope.
+Gap analysis against `zizmorcore/zizmor` v1.25.2 (37 audits at time of
+review, 2026-05-22). Pipeline-check's 65-rule GHA pack already covers
+the majority by direct or near equivalent (e.g., zizmor
+``template-injection`` -> GHA-003, ``unpinned-uses`` -> GHA-001,
+``hardcoded-container-credentials`` -> GHA-039, ``unpinned-images`` ->
+GHA-051, ``self-hosted-runner`` -> GHA-012, ``insecure-commands`` ->
+GHA-031 / GHA-038, ``secrets-inherit`` -> GHA-034,
+``use-trusted-publishing`` -> GHA-050, ``dangerous-triggers`` ->
+GHA-002 / GHA-009, ``github-env`` -> TAINT family, ``artipacked`` ->
+GHA-019 / GHA-037, ``github-app`` -> GHA-061).
 
-### ~~cicd-goat scenario coverage push~~
+The items below are the genuine gaps worth chasing. Each lands as one
+new GHA-NNN rule (or a widening of an existing one). Pedantic /
+ergonomic zizmor audits (``anonymous-definition``,
+``undocumented-permissions``, ``concurrency-limits``, ``misfeature``,
+``superfluous-actions``) are excluded by design, they don't carry a
+real-world exploit shape and chasing them dilutes the
+exploit-evidenced posture the rule pack stands on. ``forbidden-uses``
+(config-driven allow/deny list of action references) maps to the
+existing custom-rule loader and doesn't need a new built-in rule.
 
-Landed. 29 of 29 scenarios covered. Key deliverables: local
-composite-action scanning, TAINT-003 cross-``workflow_call`` taint,
-GHA-086 wildcard-branch + environment, GHA-087 secret-derivation
-echo. Shipped across v1.3.0 through v1.4.0.
+**ID-numbering note (2026-05-22).** The IDs in this section are
+placeholders, not reservations. The first three sweep batches landed
+under sequential numbers (``GHA-063`` through ``GHA-071``) without
+matching the original placeholders in this section:
+
+* ``GHA-063`` landed as **bot-conditions** (originally placeholder
+  for ref-version-mismatch).
+* ``GHA-064`` landed as **unsound-contains** (originally placeholder
+  for impostor-commit).
+* ``GHA-065`` landed as **zero-width / bidi unicode** (originally
+  placeholder for typosquat-uses).
+* ``GHA-066`` landed as **upload-artifact wildcard** (originally
+  placeholder for archived-uses).
+* ``GHA-067`` landed as **cache-sensitive-files** (originally
+  placeholder for bot-conditions, now ``GHA-063``).
+* ``GHA-068`` landed as **deprecated-runner** (originally placeholder
+  for overprovisioned-permissions).
+* ``GHA-069`` landed as **orphan id-token: write** (originally
+  placeholder for overprovisioned-secrets).
+* ``GHA-070`` landed as **ssh-keyscan TOFU** (originally placeholder
+  for stale-action-refs).
+* ``GHA-071`` landed as **powershell-on-Linux** (originally
+  placeholder for unsound-contains, now ``GHA-064``).
+* ``GHA-072`` landed as **overprovisioned-secrets** (originally
+  placeholder for agentic-actions widening; that widening landed
+  as a widening of **GHA-058**, no new ID).
+* ``GHA-073`` landed as **unused workflow_call.secrets** (originally
+  placeholder for upload-artifact wildcard, now ``GHA-066``).
+
+The struck-through items below are now shipped at the IDs listed
+inline. Remaining items keep their original placeholder IDs and
+will be renumbered when they land.
+
+Suggested landing order, highest signal first:
+
+- ~~**GHA-063: action SHA pin does not match its version comment.**~~
+  Landed as **GHA-095**. ``Workflow.raw_text`` captures the on-disk
+  text PyYAML strips comments from; a new
+  ``ActionMetadataFetcher.fetch_tag_shas`` resolves each comment-
+  mentioned tag via ``/commits/{tag}`` and folds the result into
+  ``ActionRepoMetadata.tag_shas``. ``v``-prefix swaps (``v4`` vs
+  ``4``) are tried both ways; unresolvable comment tags pass
+  silently. HIGH severity. 13 per-rule tests + 11 parser tests +
+  6 fetcher tests.
+- ~~**GHA-064: action ref points at a commit absent from the claimed
+  repository.**~~ Landed as **GHA-090**. Mirrors zizmor's
+  ``impostor-commit``. SHA membership check via
+  ``/repos/{o}/{r}/commits/{sha}`` gated on ``--resolve-remote``.
+  HIGH severity. 8 per-rule tests + 4 fetcher tests.
+- ~~**GHA-065: action repository typosquats a high-traffic action.**~~
+  Landed as **GHA-088**. Offline Damerau-Levenshtein edit-distance
+  check against a curated top-actions list. HIGH severity.
+  14 per-rule tests + 13 primitive tests.
+- ~~**GHA-066: action repository is archived or deleted upstream.**~~
+  Landed as **GHA-089**. Reads the archived bit from the same
+  per-action repo fetch the reputation rules use. MEDIUM severity.
+  8 per-rule tests.
+- ~~**GHA-067: bot-actor condition is spoofable.**~~ Landed as
+  **GHA-063**. Fires when a job-level or step-level ``if:``
+  expression compares ``github.actor`` /
+  ``github.triggering_actor`` / ``github.event.sender.login`` to
+  a literal ``*[bot]`` string, or invokes
+  ``contains(github.actor, 'bot')`` /
+  ``endsWith(github.actor, '[bot]')`` / swap-argument variants.
+  Paired ``github.event.*.user.type == 'Bot'`` predicates stay
+  silent (account type is set by GitHub and can't be spoofed by
+  a re-run). HIGH severity. 11 per-rule tests + safe/unsafe
+  fixture pair.
+- ~~**GHA-068: job permissions are excessive for the work it performs.**~~
+  Landed as a widening of **GHA-004** (no new ID). Top-level write-scope
+  aggregation across inheriting jobs: when a workflow-level
+  ``permissions:`` block grants a write scope that no inheriting job
+  (no job-level override, not a reusable-workflow caller) consumes,
+  the rule now flags the excess grant. Per-job overprovisioning was
+  already condition 5; this closes the workflow-level gap. 8 new tests
+  under ``TestGHA004TopLevelAggregation``.
+- ~~**GHA-069: secrets context broader than the consuming step.**~~
+  Landed as **GHA-072**. Fires when a job-level ``env:`` entry
+  binds ``${{ secrets.* }}`` and at most one step references it,
+  OR when a workflow-level ``env:`` binds a secret and at most
+  one job references it. HIGH severity. 9 per-rule tests +
+  safe/unsafe fixture pair.
+- ~~**GHA-070: workflow `uses:` reference is the latest commit on a
+  branch.**~~ Landed as **GHA-094**. Fires when a SHA-pinned
+  ``uses:`` matches the current tip of a branch in the upstream
+  repo. MEDIUM severity. 9 per-rule tests + 4 fetcher tests.
+- ~~**GHA-071: contains() called with string-shaped left
+  operand.**~~ Landed as **GHA-064**. Fires when an ``if:``
+  expression invokes ``contains('<haystack-with-comma>',
+  <expr>)`` (either quote style). ``fromJSON('["main", ...]')``
+  array-literal forms and no-comma substring searches
+  (``contains('refs/heads/release', github.ref)``) stay silent.
+  HIGH severity. 8 per-rule tests + safe/unsafe fixture pair.
+- ~~**GHA-072: agentic AI tool invoked after PR checkout.**~~ Landed
+  as a widening of **GHA-058** (no new ID). Fires when an agentic
+  CLI runs after PR-head checkout with write-scope token in scope.
+  HIGH severity. 9 new tests under ``TestGHA058PRCheckoutTopology``.
+- ~~**GHA-073: actions/upload-artifact wildcard path uploads.**~~
+  Landed as **GHA-066**. Fires on the ``**/*`` / ``.`` / ``./`` /
+  ``${{ github.workspace }}`` / ``${{ github.workspace }}/**``
+  ``path:`` shapes across string / list / multi-line block scalar
+  forms. HIGH severity. 10 per-rule tests + safe/unsafe fixture
+  pair.
+- ~~**GHA-074: workflow caches credential-shaped files.**~~ Landed
+  as **GHA-067**. Fires on ``actions/cache`` whose ``path:``
+  covers ``~`` (all spellings), ``~/.docker``, ``~/.npmrc``,
+  ``~/.aws``, ``~/.azure``, ``~/.gcloud``, ``~/.kube``, ``~/.ssh``,
+  ``~/.gnupg``, ``~/.netrc``, ``~/.gradle/gradle.properties``,
+  ``~/.m2/settings.xml``. HIGH severity. 12 per-rule tests +
+  safe/unsafe fixture pair.
+- ~~**GHA-075: shell defaulted to powershell on a Linux / macOS
+  step.**~~ Landed as **GHA-071**. Fires when the effective
+  shell for a ``run:`` step (step override > job defaults >
+  workflow defaults) is ``pwsh`` or ``powershell`` on a non-
+  Windows runner. Self-hosted label lists stay silent (OS
+  unidentifiable). LOW (advisory) severity. 9 per-rule tests +
+  safe/unsafe fixture pair.
+- ~~**GHA-076: runs-on uses a deprecated runner image.**~~ Landed
+  as **GHA-068**. Fires on ``ubuntu-18.04``, ``ubuntu-20.04``,
+  ``macos-10.15``, ``macos-11``, ``macos-12``, ``windows-2016``,
+  ``windows-2019`` across string / list / ``labels:`` shapes for
+  ``runs-on:``. Self-hosted labels stay silent (GHA-012's
+  territory). MEDIUM severity. 10 per-rule tests + safe/unsafe
+  fixture pair.
+- ~~**GHA-077: known-vulnerable action ref via live GHSA feed.**~~
+  Landed as **GHA-096**. Queries the GitHub Advisory Database
+  (``GET /advisories?type=reviewed&ecosystem=actions&affects=o/r``)
+  for each referenced action. Version matching checks tag-extracted
+  versions against each advisory's ``vulnerable_version_range``;
+  SHA / major-tag refs fire at MEDIUM confidence. Gated on
+  ``--resolve-remote``. HIGH severity. 12 per-rule tests +
+  6 fetcher tests + 20 version-range primitive tests.
+- ~~**GHA-078: workflow body contains zero-width / bidi
+  unicode.**~~ Landed as **GHA-065**. Walks every string value in
+  the parsed workflow document for any of 15 suspicious
+  codepoints (``U+200B``-``U+200F`` zero-width and bidi marks,
+  ``U+202A``-``U+202E`` LRE / RLE / PDF / LRO / RLO,
+  ``U+2066``-``U+2069`` LRI / RLI / FSI / PDI, ``U+FEFF`` BOM).
+  Any single occurrence fires. CRITICAL severity, the entire
+  signal is steganographic. 8 per-rule tests + safe/unsafe
+  fixture pair.
+
+Each entry is sized to land as a single PR with the rule module,
+per-rule tests, ``docs/providers/github.md`` regeneration, and a
+``CHANGELOG.md`` entry. Total provider claim moves from 65 -> 65 + N.
+No new attack chains in this sweep, the chain engine already covers
+the cross-rule compositions worth firing.
+
+Second pass, drawn from zizmor's open feature-request backlog
+(non-``new-audit`` issues with real attack shape):
+
+- ~~**GHA-079: ssh-keyscan trust-on-first-use.**~~ Landed as
+  **GHA-070**. Fires on ``ssh-keyscan ... >> known_hosts``,
+  ``-o StrictHostKeyChecking=no``, ``-o
+  StrictHostKeyChecking=accept-new``, and ``-o
+  UserKnownHostsFile=/dev/null`` across ``ssh`` / ``scp`` /
+  ``rsync``. HIGH severity. 9 per-rule tests + safe/unsafe
+  fixture pair.
+- ~~**GHA-080: TOCTOU on PR head SHA between checkout and use.**~~
+  Landed as **GHA-092**. Fires when a job captures the PR head SHA
+  in one step and checks out the same expression in a later step
+  (the force-push race window). HIGH severity. 12 per-rule tests.
+- ~~**GHA-081: if predicate over an attacker-controlled PR label,
+  title, or body.**~~ Landed as a widening of **GHA-053** (no new
+  ID). ``_UNTRUSTED_CONTEXTS`` picked up
+  ``github.event.pull_request.labels``,
+  ``.milestone.title`` / ``.description``,
+  ``.requested_reviewers``, ``.assignees``. The canonical
+  ``contains(github.event.pull_request.labels.*.name,
+  'safe-to-test')`` foot-gun now fires GHA-053 directly.
+- ~~**GHA-082: action `uses:` points at a takeover-eligible org.**~~
+  Landed as **GHA-091**. Reads from ``ctx.action_fetch_failures``
+  (the set of slugs whose repo fetch returned 404). Unanimous-
+  failure heuristic filters rate-limit noise. HIGH severity.
+  9 per-rule tests.
+- ~~**GHA-083: Living-off-the-Pipeline indicators.**~~ Landed as
+  **GHA-093**. Three shapes: STEP_SUMMARY secret exfil, workflow-
+  command log injection with attacker-controlled context, and
+  mask-after-print ordering. HIGH severity. 15 per-rule tests.
+- ~~**GHA-084: orphan `id-token: write` scope.**~~ Landed as
+  **GHA-069**. Fires when a job effectively holds
+  ``id-token: write`` (job-level, workflow-inherited, or
+  ``permissions: write-all``) but no step invokes a known OIDC
+  consumer (curated list covering cloud-credentials, trusted-
+  publishing, and Sigstore signing actions; plus the conditional
+  ``docker/build-push-action`` with ``provenance:`` / ``sbom:`` /
+  ``attestations:`` truthy). MEDIUM severity. 11 per-rule tests +
+  safe/unsafe fixture pair.
+- ~~**GHA-085: workflow declares a secret it never references.**~~
+  Landed as **GHA-073**. Fires when an ``on.workflow_call.
+  secrets.<name>`` declaration is never referenced via
+  ``${{ secrets.<name> }}`` anywhere in the workflow body. MEDIUM
+  severity. 8 per-rule tests + safe/unsafe fixture pair.
+
+Two existing-rule widenings worth bundling into the same sweep:
+
+- ~~**Widen GHA-003 to ``services.*.options:`` and
+  ``services.*.env:``.**~~ Landed in v1.4.0. Both YAML paths now
+  flagged for script-injection sinks. 3 new tests.
+- ~~**Widen GHA-050 to "attestation explicitly disabled."**~~ Landed
+  in v1.4.0. Fires on ``pypa/gh-action-pypi-publish`` with
+  ``attestations: false`` and ``docker/build-push-action`` with
+  ``provenance: false`` / ``sbom: false`` / ``attestations: false``.
+  5 new tests.
+
+One CLI ergonomics item:
+
+- ~~**``--only-known-attacked`` filter.**~~ Landed in v1.4.0.
+  Filters rule set to rules with ``Rule.incident_refs`` non-empty.
+  Composes with ``--checks`` via intersection.
+
+Out of scope from zizmor that we explicitly decline:
+
+- ``anonymous-definition`` / ``undocumented-permissions`` / pedantic
+  persona. Pipeline-check has no pedantic mode and isn't adding one,
+  the no-pedantic posture is part of why the false-positive rate
+  stays where it is.
+- ``concurrency-limits``. CI ergonomics, not security.
+- ``misfeature``. Too vague to map to a rule with a
+  ``recommendation`` line that survives review.
+- ``superfluous-actions``. Build-speed concern dressed as a security
+  rule, the runner pre-installing ``node`` doesn't change the threat
+  model when you ``setup-node`` to pin a version.
+- ``forbidden-uses``. Already expressible through the custom-rule
+  YAML loader, a built-in flavor would duplicate that surface.
+
+### cicd-goat scenario coverage push
+
+Gap analysis against `greylag-ci/cicd-goat`'s 29-scenario matrix.
+**Status: 29 of 29 (100%) coverage.** Every scenario in the matrix
+now has at least one pipeline-check rule mapped in
+``tools/scenarios.yaml``. The comparison shipped across v1.3.0
+through v1.4.0; the final gaps closed with GHA-086 (scenario 25),
+GHA-087 (scenario 27), and the multi-provider invocations for
+scenarios 11 / 20 / 29.
+
+The items below document the work that closed the gap (all shipped).
+
+- ~~**Local composite-action scanning (scenario 18).**~~ Landed.
+  ``GitHubContext.from_path`` walks every loaded workflow for
+  ``uses: ./path`` (``parse_uses`` ``kind="local-action"``),
+  resolves ``<repo_root>/<path>/action.yml`` (or ``action.yaml``)
+  on disk via a new ``checks/github/local_actions.py`` module, and
+  synthesizes the body as a ``__composite__`` job that flows back
+  through the existing rule pack the same way remote composites do
+  under ``--resolve-remote``. On by default (no network call). Repo-
+  root inference handles the canonical ``.github/workflows`` layout
+  plus an ad-hoc-directory fallback; ``./../path`` traversal is
+  bounded against the resolved repo root; missing ``action.yml``
+  files dedup-warn; composite-of-composite chains recurse to depth
+  3 (hard ceiling 10). Closes cicd-goat scenario 18 (GHA-003 fires
+  on the composite step's ``${{ inputs.message }}`` -> ``run:``
+  splice). Side-effect: every existing ``runs.steps``-shaped rule
+  (GHA-001 / GHA-004 / GHA-039 / GHA-051 / ...) now applies to
+  composite bodies without per-rule changes. Twelve tests under
+  ``tests/github/test_local_composite_actions.py``.
+- ~~**TAINT-003: cross-``workflow_call`` source -> sink (scenario 28).**~~
+  Already shipped, missed in the initial roadmap analysis.
+  ``rules/taint003_reusable_workflow_taint.py`` walks every
+  ``jobs.<id>.uses: <callee>`` reference, finds tainted ``with:``
+  values that interpolate an attacker-controllable source, and
+  resolves the callee body when it's loaded into the same scan
+  (local ``./.github/workflows/<file>.yml`` references via
+  ``--gha-path``, or remote refs fetched via ``--resolve-remote``).
+  Paths whose callee actually consumes ``${{ inputs.<name> }}``
+  unquoted in a sink fire CONFIRMED with HIGH confidence; the rest
+  stay at MEDIUM. Verified end-to-end against cicd-goat scenario
+  28's exact shape (``github.event.pull_request.body`` -> ``with:
+  build-args:`` -> callee's ``./build.sh ${{ inputs.build-args }}``):
+  the rule fires CONFIRMED + HIGH confidence in one step. The
+  scenario-18 local-composite-action work above means the same
+  ``with:`` -> ``inputs.<name>`` -> ``run:`` boundary now also
+  applies to composite ``action.yml`` bodies discovered on disk.
+- ~~**GHA-NNN: wildcard branch trigger + environment binding
+  (scenario 25).**~~ Landed as **GHA-086**. Fires when the
+  workflow's ``on: push: branches:`` filter contains at least one
+  wildcard pattern (``*``, ``?``, ``+``, ``[...]``) AND at least
+  one job binds ``environment: <name>``. ``branches-ignore``
+  (restricts triggers) and ``tags:`` (higher-privilege creation)
+  are deliberately not flagged. MEDIUM severity. Skips into
+  ID 086 to leave GHA-063..085 available for the Zizmor parity
+  sweep above; the cicd-goat pack will fill back from 086 as
+  its remaining items land. 14 per-rule tests plus the standard
+  safe/unsafe fixture pair. Mapped to OWASP CICD-SEC-1 /
+  CICD-SEC-5; ESF-C-APPROVAL / ESF-C-ENV-SEP; CIS 5.1.4 / 5.2.1.
+- ~~**GHA-NNN: secret-derivation echo (scenario 27 derived-value
+  half).**~~ Landed as **GHA-087**. Fires on a single ``run:``
+  line that combines (1) a secret reference (``${{ secrets.* }}``
+  context, or ``$NAME``/``${NAME}`` expansion of a step ``env:``
+  bound to ``secrets.*``); (2) a transform on that reference
+  (hash / encode / truncate / bash slice); (3) a print sink on
+  the same line (``echo`` / ``printf`` / ``tee`` head, or
+  redirect to ``$GITHUB_OUTPUT`` / ``$GITHUB_STEP_SUMMARY`` / a
+  file). HIGH severity. GHA-033's recommendation was tightened
+  in the same cycle to drop the "log a fingerprint" suggestion
+  that GHA-087 now flags. 15 per-rule tests plus the standard
+  safe/unsafe fixture pair. Mapped to OWASP CICD-SEC-10 /
+  CICD-SEC-6; ESF-D-SECRETS; CIS 2.3.7; NIST 800-53 IA-5 / AU-9;
+  NIST CSF PR.AA-01 / PR.DS-01; SOC2 CC6.1; PCI-DSS v4 8.2.1 /
+  10.3.2.
+
+The remaining scenarios that were ❌ at time of review are now
+all resolved:
+
+- Scenarios 10 / 22 (AWS / GCP OIDC over-broad trust) -> GHA-062.
+- Scenarios 11 / 20 / 29 (pip-no-hashes / dependency confusion /
+  npm lifecycle script) -> GHA-060 / NPM-001 / NPM-004 via
+  multi-provider invocation (``--pipeline npm,pypi``).
+- Scenarios 17 / 21 / 26 (ArtiPACKED / matrix expansion /
+  app-token scope) -> GHA-019 + GHA-037 / TAINT-002 / GHA-061.
 
 ### Org-wide fleet scanning (``pipeline_check fleet``)
 
@@ -336,9 +653,16 @@ Filed as #173.
 
 ### ~~Inline source-line ignore comments~~
 
-Landed. ``ignore[ID]``, ``ignore-next-line[ID]``, ``ignore-file[ID]``
-directives in ``#`` and ``//`` comments. Disabled via
-``--no-inline-ignore``.
+Landed. Three directive variants: ``ignore[ID]`` (same line),
+``ignore-next-line[ID]`` (following line), and ``ignore-file[ID]``
+(entire file). Multiple IDs are comma-separated. An optional
+``reason=<text>`` suffix is captured for audit trails. Both ``#``
+and ``//`` comment prefixes are recognized (YAML, Dockerfile, HCL,
+Groovy). Pre-parse regex extraction runs on the raw file content
+before YAML parsers strip comments, then feeds through the same
+``core/gate.py`` plumbing as ``--ignore-file``. Disabled via
+``--no-inline-ignore``. 23 tests under
+``tests/test_inline_ignore.py``.
 
 ### Live secret verification (verified / unverified / unknown)
 
@@ -370,10 +694,16 @@ shell-out to a user-provided `opa` binary on `$PATH` (documented as
 a soft dependency, fails cleanly when missing) keeps the wheel
 Python-only. Filed as #176.
 
-### ~~Autofix safety tiers~~
+### ~~Autofix safety tiers (`--fix=safe` default, `--fix=unsafe` opt-in)~~
 
-Landed. ``--fix`` runs safe fixers only; ``--fix=unsafe`` adds
-unsafe ones. Every fixer carries an explicit ``safety`` label.
+Landed. Every ``@register()`` call carries ``safety="safe"`` or
+``safety="unsafe"``. ``--fix`` (bare flag) runs safe fixers only;
+``--fix=unsafe`` runs both; ``--fix=unsafe-only`` runs only unsafe.
+109 fixers labeled safe, 2 labeled unsafe (GHA-003 template-injection
+env-var extraction, GHA-034 secrets-inherit rewrite). Missing labels
+default to unsafe so new fixers without a label are conservative.
+``tests/test_autofix_safety.py`` enforces every fixer has an explicit
+label. 9 new tests.
 
 ### VS Code extension
 
@@ -401,11 +731,24 @@ templates / components, which would need cross-document machinery
 similar to the GHA ``--resolve-remote`` flow. Closes the last
 known limitation in the TAINT-NNN engine's coverage.
 
-### ~~Direct-HCL Terraform parsing~~
+### ~~Direct-HCL Terraform parsing (no `--tf-plan` requirement)~~
 
-Landed. ``--tf-source <dir>`` parses ``*.tf`` via ``python-hcl2``
-with best-effort variable/local substitution. All existing TF-NNN
-rules run unchanged; ``main.tf`` auto-detects.
+Landed. ``--tf-source <dir>`` parses ``*.tf`` files directly via
+``python-hcl2`` (behind the ``[hcl]`` install extra) and synthesizes
+the same ``TerraformResource`` objects the plan-JSON path produces,
+so all 58 existing TF-NNN rules run unchanged. Variable and local
+substitution is best-effort: ``variable`` blocks with a ``default``
+and ``locals`` blocks with literal values resolve; unresolvable
+``var.<name>`` / ``module.X.output.Y`` / ``data.<x>.<y>`` references
+stay as opaque ``${...}`` strings and findings on those resources get
+confidence-demoted one rung (HIGH -> MEDIUM, MEDIUM -> LOW). Local
+child modules (``source = "./..."`` / ``"../..."``) are walked
+recursively to depth 3; remote registry modules are skipped. The
+plan-JSON path stays canonical (``--tf-plan`` keeps its semantics);
+``main.tf`` presence auto-detects to ``--tf-source .`` when no
+``--tf-plan`` is provided. Closes the ``terragoat`` skip in
+``bench/goats/``. 23 new tests under
+``tests/terraform/test_hcl_parser.py``.
 
 ### Pipeline graph DAG v2 (step-level)
 
@@ -463,13 +806,58 @@ users with already-running local LLMs a high-leverage adoption
 hook, and stays out of the rule-engine path so a hallucinating
 model can't change a HIGH into a LOW.
 
-### ~~Dependency-supply-chain provider follow-ups~~
+### Dependency-supply-chain provider follow-ups
 
-Landed. Lockfile + manifest coverage for all five registry providers
-(npm, PyPI, Maven, NuGet, Gradle). Cooldown trilogy, OSV/GHSA batch
-lookup (NPM-010 / PYPI-009 / MVN-009 / NUGET-009), XPC-010 chain,
-``rootProject.ext.X`` resolution. See Shipped and CHANGELOG.
+The original npm / pypi / maven follow-up plan landed across
+v1.0.5 and v1.1.0: lockfile + manifest-format coverage
+(``package-lock.json`` / ``npm-shrinkwrap.json`` / ``pnpm-lock.yaml``
+/ ``yarn.lock`` / ``poetry.lock`` / ``Pipfile.lock`` /
+``pyproject.toml``), the three-registry cooldown trilogy
+(NPM-008 / PYPI-008 / MVN-008) behind ``--resolve-remote``, the
+NPM-009 new-transitive-dep diff gate, the ``npm audit signatures``
+and ``pip --require-hashes`` CI gates (GHA-059 / GL-034 / BB-030
+and GHA-060 / GL-035 / BB-031), and Gradle property + version-
+catalog resolution. See the Shipped section for the per-cycle
+trail.
 
+~~One gap remains: ``rootProject.ext.X`` cross-project indirection
+on Gradle multi-project layouts. Would need pipeline-check to
+learn ``settings.gradle`` resolution. Rarer in practice than the
+three Gradle shapes already shipped; deferred.~~ Landed
+post-1.3.0: the maven provider now walks upward from each
+``build.gradle`` looking for ``settings.gradle`` /
+``settings.gradle.kts`` to identify the multi-project root, reads
+that root's build script for ``ext { X = ... }`` declarations, and
+exposes them through both ``rootProject.ext.X`` and
+``rootProject.X`` accessor keys so a subproject's version-spec
+interpolation resolves. See Shipped.
+
+~~Next: the XPC-NNN chain engine gains chains pairing NPM-008
+cooldown-miss with DF-024 lifecycle-scripts-enabled so the
+composite escalates when both gates fail in the same scan.~~
+Landed as XPC-010 (see Shipped).
+
+Next, paired:
+
+- ~~**Live OSV / GHSA lookup for pinned dep versions (NPM-010 /
+  PYPI-009 / MVN-009 / NUGET-009).**~~ Landed. Shared
+  ``_primitives/osv_fetcher.py`` queries the OSV batch API
+  (``api.osv.dev/v1/querybatch``) for every exact name+version
+  pair behind ``--resolve-remote``. Results cached 24 hours via
+  ``FileSystemCache``. Four new rules: NPM-010, PYPI-009,
+  MVN-009, NUGET-009, all CRITICAL severity on advisory hit.
+  Batch size 1000 per request to handle large dependency trees.
+
+- ~~**NuGet provider (``--pipeline nuget``).**~~ Landed. Fifth
+  dependency-supply-chain provider. Parses ``*.csproj``
+  (``<PackageReference>``), ``Directory.Packages.props`` (central
+  package management), ``packages.config`` (legacy),
+  ``NuGet.config`` (sources + ``packageSourceMapping``), and
+  ``packages.lock.json``. Nine rules (NUGET-001..009): floating
+  ranges, wildcard prereleases, missing versions, HTTP sources,
+  compromised versions, missing lockfile, missing source mapping,
+  cooldown gate, and OSV advisory lookup. Provider count 23 -> 24.
+  22 tests under ``tests/nuget/``.
 
 ### Vulnerable-by-design benchmark: phase 2 (cross-scanner comparison)
 
@@ -787,40 +1175,211 @@ Each item is standalone and can land as its own commit.
 
 ## Internal cleanup
 
-Small targeted refactors and audit findings from 2026-05-20 through
-2026-05-26. Not user-facing, but each landing makes the next
-provider, rule, or test cheaper to add. All subsections below have
-landed.
+Small targeted refactors and audit findings from the 2026-05-20
+sweep. Not user-facing, but each landing makes the next provider,
+rule, or test cheaper to add. Landing order is open; each
+subsection stands alone.
 
-### ~~Rule-infrastructure consolidation~~
+### Rule-infrastructure consolidation
 
-Landed. Blob-rule factory, provider context loaders + generic
-``BaseCheck[_ContextT]``, TLS/curl-pipe primitive migration,
-registry-fetcher dedup, autofix roundtrip safety, CLI exit-code
-convergence, chain-engine exception logging, hot-path
-``looks_like_example`` index, ``apply_rule_metadata`` helper,
-``SHA_RE`` primitive, ``pkgutil``-based standards registration.
+Code-quality findings across the engine, parsers, and rule pack.
 
-### ~~Rule and engine refinements (2026-05-26 audit)~~
+- ~~**Blob-rule factory to collapse the per-provider clone
+  clusters.**~~ Landed. ``_primitives/blob_rule.py`` ships
+  ``yaml_blob_check(rule, *, scanner, pass_desc, fail_desc,
+  pass_recommendation=None)`` and 25 rule modules across
+  ``dep_update`` / ``tls_bypass`` / ``pkg_insecure`` /
+  ``docker_insecure`` / ``malicious_activity`` now thin through it
+  (~190 lines deleted net). Provider-specific shapes that need step
+  iteration (BK-008, DR-006), step-level ``Location`` anchors
+  (GHA-017), or Jenkinsfile text input (JF-017 / JF-018 / JF-022 /
+  JF-023 / JF-029) keep their bespoke check bodies. The
+  ``malicious_activity`` fail prose moved to a shared
+  ``_malicious.summarize_malicious_hits`` helper. Follow-up:
+  ``checks/base.py`` now exports ``NO_ARTIFACT_DESC`` so the "No
+  artifact production detected, check not applicable." string
+  routes through one constant across 28 signing / SBOM /
+  vuln-scanning / provenance rule modules instead of repeating
+  inline.
+- ~~**Lift provider context loaders + base classes.**~~ Both
+  halves landed. Load-loop consolidation: `checks/_yaml_files.py:
+  load_yaml_files` hosts the read + parse + warning loop, and 11
+  providers (github, gitlab, bitbucket, azure, cloudbuild,
+  kubernetes, buildkite, drone, tekton, argo, circleci) route
+  through it. ``jenkins`` parses Groovy, not YAML, and stays on
+  its custom loader. ``BaseCheck`` generic-on-context: ``BaseCheck``
+  is now ``Generic[_ContextT]`` and each provider's subclass
+  parameterizes it (``GitHubBaseCheck(BaseCheck[GitHubContext])``,
+  ``AWSBaseCheck(BaseCheck[boto3.Session])``, ...), so
+  ``self.context`` carries the concrete type and the per-subclass
+  ``self.ctx`` alias is now redundant for type-narrowing purposes.
+- ~~**Legacy `TLS_BYPASS_RE` / `CURL_PIPE_RE` migration.**~~ Landed
+  in the post-1.2.0 cycle. `bk008`, `dr006`, `argo008`, `tkn008`,
+  `bk004` now route through `_primitives/tls_bypass.py` and
+  `_primitives/remote_script_exec.py` (closing the helm / kubectl /
+  ssh / docker / maven / gradle / aws coverage gap), the
+  `_comment_tls_bypass` autofixer scans per-line through the
+  primitive, and the legacy combined constants are gone from
+  `checks/base.py`.
+- ~~**Triplicated dependency-supply-chain plumbing.**~~ Landed.
+  Registry-fetcher side: `_primitives/registry_fetcher.py` owns the
+  ``FileSystemCache`` + ``HttpGetFetcher`` transport + dedup-fetch-
+  parse loop; ``npm`` / ``pypi`` / ``maven`` are now thin ~170-line
+  adapters supplying the per-ecosystem URL builder, cache-key
+  normalizer, and JSON parser. Public surface preserved verbatim
+  so ``core/providers/{npm,pypi,maven}.py`` needed no import
+  changes. ``CompromisedPackage`` side: each provider's dataclass
+  keeps its ecosystem-specific identifier fields (``name`` for
+  npm/pypi, ``group_id`` + ``artifact_id`` for maven) but the
+  triplicated ``matches(version)`` method now delegates to
+  ``_primitives/compromised.py:match_version`` so a future
+  extension (semver-range support, e.g.) lands in one place.
+- ~~**Autofix roundtrip safety.**~~ Landed. ``generate_fix`` parses
+  the patched text through ``yaml.safe_load_all`` and bails when the
+  result no longer parses, the top-level Python type swapped, or the
+  multi-doc count changed. ``None``-after / Dockerfile / scalar
+  inputs are permitted. Bailout logs a WARNING breadcrumb.
+- ~~**Autofix re-declares provider keyword sets.**~~ Landed. The
+  GitLab top-level keyword set and the Cloud Build first-toplevel
+  anchor regex both now import from the canonical
+  ``gitlab/base.py`` / ``cloudbuild/base.py`` ``TOPLEVEL_KEYWORDS``
+  (promoted from ``_TOPLEVEL_KEYWORDS``).
+- ~~**CLI exit-code convergence.**~~ Landed. Every previously-direct
+  ``sys.exit(N)`` in `cli.py` (list-checks empty-rows, ``--man``
+  typo, MCP unavailable, eager printer commands, ``--config-check``
+  fail, scan-failure traceback, gate failure, ``explain``) now
+  routes through ``raise click.exceptions.Exit(N)``.
+  ``_tolerate_unencodable_stdio()`` moved out of import-time side
+  effects into ``main()`` so MCP / LSP callers don't inherit the
+  Windows console stream reconfiguration.
+- ~~**Chain-engine and CLI swallowing exceptions silently.**~~
+  Landed for the chain engine. ``chains/engine.py`` now logs the
+  chain id + traceback at WARNING and keeps the additive semantics.
+  The cli.py call sites already echo to stderr (release of the
+  audit predates the routine).
+- ~~**Hot-path `looks_like_example` quadratic slice.**~~ Landed.
+  Per-blob `(line_start, indent, name)` index keyed on `id(blob)`
+  and bisected; `clear_blob_cache()` drops both caches together.
+- **Smaller cleanups bundled with the above.** ~~Rule-metadata copy
+  boilerplate (the 4-line `finding.cwe = list(rule.cwe); ...`
+  block in ~20 orchestrators; `npm/pipelines.py` already extracted
+  a private `_apply_rule_metadata` worth promoting)~~ — landed:
+  every class-based orchestrator (gha, gitlab, bitbucket, azure,
+  jenkins, circleci, cloudbuild, buildkite, drone, tekton, argo,
+  dockerfile, helm, kubernetes, oci, scm, terraform, cloudformation,
+  aws) now calls ``apply_rule_metadata(finding, rule)`` from
+  ``checks/rule.py``. ~~Triplicated
+  `_wants_ctx_kwarg` in `npm` / `pypi` / `maven` `pipelines.py`.~~
+  Done: now `checks/rule.py:wants_ctx_kwarg`. ~~`SHA_RE`
+  (`^[0-9a-f]{40}$`) compiled in 6+ rule files; export one from
+  `_primitives/`.~~ Done (`_primitives/sha_ref.py`).
+  ~~`custom/evaluator.py:460` bare `except Exception:` while
+  compiling user JSONPath silently setting `path=None`.~~ Narrowed
+  to `JsonPathError`. ~~`custom/loader.py:116` letting `OSError` /
+  `UnicodeDecodeError` propagate raw while every provider wraps
+  these into `warnings.append(...)`.~~ Wrapped in
+  `CustomRuleError` (the loader is fail-fast, not
+  warning-collecting). ~~Standards registration is a
+  hand-maintained 15-item list when `chains/engine.py:_discover()`
+  already demonstrates the `pkgutil.iter_modules` pattern; copy
+  it over `standards/data/`.~~ Done: `standards/__init__.py`
+  walks the subpackage at import time.
 
-Landed. DF-003 checksum regex case-insensitive, GL-005 / GL-030
-floating-ref denylist + ``trunk``, GHA-051 severity MEDIUM to HIGH,
-JF-001 ``PINNED_REF_RE`` tightened to require two version segments.
+### Test-suite tightening
 
-### ~~Test-suite tightening~~
+From an audit of the 6,700-test pytest suite (91.4% line coverage,
+full sweep clean on `dev`). The suite is healthy; these are
+tightening opportunities, not fires.
 
-Landed. CLI end-to-end tests, narrowed MCP/Helm skip excepts,
-test-isolation ``conftest.py`` guards, clock-freeze indirection
-for cooldown rules, XPC chain test factories, standards-doc drift
-test, IAM-003 real-shape boto3 coverage, argo004/k8s017 branch
-coverage.
+- ~~**CLI tests over-mock the Scanner.**~~ Landed. Five new tests
+  in ``tests/test_cli.py::TestFlagMarshallingEndToEnd`` exercise
+  ``--output-file`` (json + sarif), ``--baseline`` (gate-relative
+  filtering + missing-path error), and ``--diff-base`` (leading-dash
+  rejection) against the real Scanner / reporter / gate path. The
+  mocked ``TestExitCodes`` / ``TestFlagWiring`` tests stay as they
+  are — they cover exit-code wiring, which is what they were
+  always meant to verify.
+- ~~**MCP / Helm test-skip excepts are too broad.**~~ Landed. MCP
+  import-time except narrowed to ``(ImportError, ModuleNotFoundError)``;
+  the Helm e2e test only skips when
+  ``HelmRenderError.__cause__`` is ``OSError`` or
+  ``subprocess.TimeoutExpired``. Any other failure shape propagates.
+- ~~**Subprocess-based stability tests are order-sensitive.**~~
+  Landed. `tests/conftest.py` now snapshots ``os.getcwd()`` + the
+  ``PIPELINE_CHECK_*`` env set before every test and re-asserts at
+  teardown; a leak fails the offending test rather than the
+  subprocess-based stability test that consumed the inherited
+  state. Audit found no unrestored ``os.chdir`` callsites today,
+  but the guard prevents regressions.
+- ~~**Clock-sensitive GHA-042 reputation test.**~~ Landed. GHA-042
+  picked up a module-level ``_now()`` indirection; the boundary
+  test now freezes via ``monkeypatch.setattr`` and drops its
+  ``seconds=1`` workaround. The same indirection got backfilled
+  into NPM-008, PYPI-008, MVN-008, IAM-007, and GHA-047 so the
+  whole cooldown / key-age family is on the same fault-line-free
+  pattern.
+- ~~**XPC chain test boilerplate duplicates nine times.**~~ Landed.
+  Factories live in `tests/_chain_helpers.py`; mechanical
+  assertions live once in
+  `tests/test_chain_xpc_mechanical.py`, parametrized off a
+  `MECHANICAL_CONTRACTS` list. Adding XPC-N is now one row instead
+  of ~100 lines of clone.
+- ~~**Standards-doc drift test is partially circular.**~~ Landed.
+  `tests/test_generated_docs_in_sync.py::test_standards_doc_references_every_control`
+  reads each `docs/standards/<name>.md` off disk and asserts every
+  control id + title from the live registry appears verbatim,
+  with no generator in the path.
+- ~~**IAM-003 has no real-shape boto3 coverage.**~~ Landed. Four
+  new tests in ``tests/aws/rules/test_iam003_real_shape.py`` use
+  ``botocore.stub.Stubber`` to drive ``list_roles`` against a
+  real ``boto3.client("iam")`` with paginated responses that
+  carry ``PermissionsBoundary``. The shape that LocalStack drops
+  and the synthetic-dict tests can't authenticate now has
+  positive coverage (with-boundary / without / multi-page /
+  trust-policy filter). Same fixture pattern can backfill the
+  other pagination-dependent IAM rules when needed.
+- ~~**Branch coverage for argo004 and k8s017.**~~ Landed. Both
+  modules are at 100% line coverage after the
+  ``podSpecPatch`` JSON / regex branches on argo004 and the
+  ``_looks_literal`` / non-string-value / missing-name branches
+  on k8s017 picked up positive + negative tests.
 
-### ~~Dogfood code-scanning cleanup~~
+### Dogfood code-scanning cleanup
 
-Landed. ``--require-hashes`` in release/docs workflows, per-job
-``permissions:`` scoping, GHA-004 OIDC-consumer allowlist for
-Scorecard + Docker, fixture Scorecard exemption, ``master`` branch
-protection.
+From a review of the repo's GitHub Code Scanning queue.
+Pipeline-Check's own rules and the OpenSSF Scorecard upload both
+flag real hardening gaps in the project's own workflows.
+
+- ~~**Switch `pip install` to `--require-hashes`** in `release.yml`
+  and `docs.yml` (GHA-060).~~ Landed in the post-1.2.0 cycle.
+  `docs.yml` consumes the regenerated hash-locked
+  `requirements-docs.txt`; `release.yml`'s SBOM step installs deps
+  via `--require-hashes -r requirements.txt` and then drops the
+  freshly built wheel on top with `--no-deps` so no unpinned
+  registry resolution happens.
+- ~~**Tighten elevated top-level GITHUB_TOKEN scopes** on
+  `dogfood.yml`, `docker-publish.yml`, and `codeql.yml`.~~ Landed.
+  Every elevated `security-events: write` / `packages: write` /
+  `id-token: write` grant moved to a per-job `permissions:` block;
+  workflow top-levels now hold `contents: read`.
+- ~~**GHA-004 false positive on `scorecard.yml`.**~~ Landed.
+  `ossf/scorecard-action` (publish-results OIDC) and
+  `docker/build-push-action` with `provenance:` / `sbom:` (Sigstore
+  signing) both joined GHA-004's OIDC-consumer allowlist.
+- ~~**Mark fixture Dockerfiles / workflows as Scorecard-exempt.**~~
+  Landed. ``scorecard.yml`` gained a SARIF-filtering step that
+  strips results whose ``artifactLocation.uri`` starts with
+  ``tests/`` or ``bench/`` before upload, so negative test cases
+  no longer produce PinnedDependenciesID noise in the Security tab.
+- ~~**`master` branch protection** (Scorecard `BranchProtectionID`).~~
+  Landed. Required reviewers (1), required status checks
+  (``test (3.12)``, ``test (3.13)``), stale-review dismissal,
+  no force-push, no deletion.
+
+Out of scope for this cleanup: the Scorecard zero-score alerts
+(`FuzzingID`, `CIIBestPracticesID`, `MaintainedID`,
+`CodeReviewID`) are policy noise on a young / solo-maintainer
+repo, not security gaps. Dismiss with reason rather than chase.
 
 ## Non-goals
 

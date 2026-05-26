@@ -1,4 +1,18 @@
-"""GHA-058. Agentic CLI invoked with permission-bypass flags."""
+"""GHA-058. Agentic CLI invoked with permission-bypass flags.
+
+Two failure shapes:
+
+  1. **Bypass-flag shape** (original): a ``run:`` body invokes an
+     agentic CLI with a permission-bypass flag
+     (``--dangerously-skip-permissions`` / ``--yolo`` / ...).
+
+  2. **PR-checkout topology** (zizmor proposal #1605 / #1607): a
+     job checks out a PR head AND later invokes an agentic CLI
+     while a write-scope token is in scope. The flag itself does
+     not need to be set, the topology IS the bug, an agent reading
+     PR-controlled prompt text from the checked-out tree gets the
+     runner's token as a side effect.
+"""
 from __future__ import annotations
 
 import re
@@ -31,8 +45,10 @@ RULE = Rule(
         "the agent."
     ),
     docs_note=(
-        "Fires on a ``run:`` body invoking any of the following CLIs "
-        "with the matching permission-bypass flag:\n\n"
+        "Two detections feed the rule. Either is enough for the "
+        "finding to fire.\n\n"
+        "**A. Bypass-flag shape.** A ``run:`` body invokes one of the "
+        "following CLIs with the matching permission-bypass flag:\n\n"
         "* ``claude … --dangerously-skip-permissions``\n"
         "* ``gemini … --yolo``\n"
         "* ``q chat … --trust-all-tools``\n"
@@ -44,7 +60,21 @@ RULE = Rule(
         "``--auto`` / ``--no-confirm`` / ``--full-auto`` flags.\n\n"
         "Does NOT fire on a clearly-scoped invocation, e.g. ``claude "
         "--allowedTools 'Read,Grep'`` with a literal allow-list, or "
-        "``q chat --trust-tools 'fs_read'``."
+        "``q chat --trust-tools 'fs_read'``.\n\n"
+        "**B. PR-checkout topology** (zizmor proposal #1605 / #1607). "
+        "Step-order traversal within a job. Fires when an agentic CLI "
+        "(any of the names above) runs in a step *after* a step that "
+        "checked out a PR head (``actions/checkout`` with ``ref:`` "
+        "interpolating ``github.event.pull_request.head.*``, "
+        "``github.head_ref``, or a ``refs/pull/*/head`` literal) AND "
+        "a write-scope token is in scope for the job (job-level "
+        "``permissions: write-all``, any token granted ``write``, "
+        "``id-token: write``, or no ``permissions:`` block declared "
+        "anywhere, since the runtime default carries ``contents: "
+        "write`` on most triggers). Pairs with GHA-045 (caller-"
+        "controlled ref) and GHA-046 (manual PR-head fetch), the "
+        "agentic-CLI primitive turns a contributor-controlled tree "
+        "into a token-exfil tool, no bypass flag needed."
     ),
     known_fp=(
         "Internal tooling that legitimately runs an agentic CLI in "
@@ -150,29 +180,138 @@ def _line_windows(body: str) -> list[str]:
     return out
 
 
+#: PR-head ref interpolations on an ``actions/checkout`` ``with.ref``.
+#: ``github.event.pull_request.head.sha`` / ``.head.ref`` /
+#: ``.pull_request_target`` (same shape, more dangerous trigger) and
+#: ``github.head_ref`` all resolve to a PR-controlled commit.
+_PR_HEAD_REF_RE = re.compile(
+    r"\$\{\{\s*github\.(?:"
+    r"event\.pull_request(?:_target)?\.head\.(?:sha|ref)"
+    r"|head_ref"
+    r")\s*\}\}"
+    r"|refs/pull/[^/\s]+/head",
+    re.IGNORECASE,
+)
+
+
+def _step_checks_out_pr_head(step: dict[str, Any]) -> bool:
+    """True when *step* checks out a PR head via ``actions/checkout``.
+
+    Manual ``git fetch refs/pull/<n>/head`` shapes are covered by
+    GHA-046 and don't need to fire this companion rule, the agentic-
+    CLI topology only matters when the source tree is on disk where
+    the agent can read it. We focus on the canonical
+    ``actions/checkout`` path here.
+    """
+    uses = step.get("uses")
+    if not isinstance(uses, str):
+        return False
+    if not uses.lower().startswith("actions/checkout@"):
+        return False
+    with_block = step.get("with")
+    if not isinstance(with_block, dict):
+        return False
+    ref = with_block.get("ref")
+    if not isinstance(ref, str):
+        return False
+    return bool(_PR_HEAD_REF_RE.search(ref))
+
+
+def _step_invokes_any_agentic_cli(body: str) -> str | None:
+    """True when *body* invokes any agentic CLI (regardless of flags).
+
+    The topology check fires on the bare invocation, the bug is the
+    combination of PR-controlled tree + write-token + agent runtime,
+    not the flag.
+    """
+    m = _CLI_RE.search(body)
+    if m:
+        return m.group(0).lower()
+    return None
+
+
+def _effective_permissions(doc: dict[str, Any], job: dict[str, Any]) -> Any:
+    """Return the permissions block that governs *job*.
+
+    Job-level overrides workflow-level. ``None`` means no permissions
+    block was declared anywhere; the GitHub-Actions runtime default
+    is ``contents: write`` on most triggers, which counts as write-
+    scope for this rule's purposes.
+    """
+    if "permissions" in job:
+        return job.get("permissions")
+    return doc.get("permissions")
+
+
+def _job_has_write_scope_token(doc: dict[str, Any], job: dict[str, Any]) -> bool:
+    """True when *job* runs with any write-class token in scope."""
+    perms = _effective_permissions(doc, job)
+    if perms is None:
+        # Runtime default carries contents: write on push / PR / etc.
+        # The conservative call is "yes, write-scope is in scope."
+        return True
+    if isinstance(perms, str):
+        return perms.lower() == "write-all"
+    if not isinstance(perms, dict):
+        return False
+    for value in perms.values():
+        if isinstance(value, str) and value.lower() == "write":
+            return True
+    return False
+
+
 def check(path: str, doc: dict[str, Any]) -> Finding:
     offenders: list[str] = []
     locations = []
     for job_id, job in iter_jobs(doc):
+        # Track within-job state for the PR-checkout topology path.
+        # Reset per job: a checkout in one job doesn't reach into a
+        # different job's runtime.
+        pr_head_checkout_seen = False
+        write_scope = _job_has_write_scope_token(doc, job)
         for idx, step in enumerate(iter_steps(job)):
+            # Update the within-job state BEFORE evaluating the
+            # current step, the topology fires only on agentic steps
+            # that follow the checkout.
+            if _step_checks_out_pr_head(step):
+                pr_head_checkout_seen = True
             run = step.get("run")
             if not isinstance(run, str):
                 continue
+            # Bypass-flag shape (original).
             label = _step_invokes_unsafe_ai(run)
-            if label is None:
+            if label is not None:
+                name = step.get("name") or step.get("id") or f"steps[{idx}]"
+                offenders.append(f"{job_id}.{name}: {label}")
+                locations.append(step_location(path, step))
                 continue
-            name = step.get("name") or step.get("id") or f"steps[{idx}]"
-            offenders.append(f"{job_id}.{name}: {label}")
-            locations.append(step_location(path, step))
+            # PR-checkout topology shape (widening).
+            if pr_head_checkout_seen and write_scope:
+                cli = _step_invokes_any_agentic_cli(run)
+                if cli is not None:
+                    name = (
+                        step.get("name") or step.get("id")
+                        or f"steps[{idx}]"
+                    )
+                    offenders.append(
+                        f"{job_id}.{name}: {cli} runs after a "
+                        f"PR-head checkout with write-scope token in "
+                        f"scope"
+                    )
+                    locations.append(step_location(path, step))
     passed = not offenders
     desc = (
-        "No agentic CLI invoked with permission-bypass flags."
+        "No agentic CLI invoked with permission-bypass flags, and "
+        "no agentic CLI runs in a job after a PR-head checkout with "
+        "write-scope tokens in scope."
         if passed else
-        f"{len(offenders)} step(s) run an agentic CLI with safety "
-        f"flags disabled: {', '.join(offenders[:5])}"
+        f"{len(offenders)} step(s) run an agentic CLI in an unsafe "
+        f"shape: {', '.join(offenders[:5])}"
         f"{'…' if len(offenders) > 5 else ''}. The Nx s1ngularity worm "
-        f"used this exact primitive to convert installed AI CLIs into "
-        f"filesystem-walking secret harvesters."
+        f"used the bypass-flag primitive to convert installed AI CLIs "
+        f"into filesystem-walking secret harvesters; the PR-checkout "
+        f"topology achieves the same outcome by feeding the agent "
+        f"contributor-controlled prompt text from the checked-out tree."
     )
     return Finding(
         check_id=RULE.id, title=RULE.title, severity=RULE.severity,

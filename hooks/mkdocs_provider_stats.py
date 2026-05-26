@@ -109,17 +109,18 @@ def _build_index() -> dict[str, dict[str, str]]:
             "checks": f"{helm + k8s} checks ({k8s} K8S + {helm} HELM)"
         }
 
-    # Synthetic "registries" slug: npm + pypi + maven combined so the
-    # home page can show one Package-registries category tile in line
-    # with the SCM tile (one category, multiple platforms inside).
+    # Synthetic "registries" slug: npm + pypi + maven + nuget combined
+    # so the home page can show one Package-registries category tile in
+    # line with the SCM tile (one category, multiple platforms inside).
     npm = _count_rule_files("npm")
     pypi = _count_rule_files("pypi")
     maven = _count_rule_files("maven")
-    if npm and pypi and maven:
+    nuget = _count_rule_files("nuget")
+    if npm and pypi and maven and nuget:
         out["registries"] = {
             "checks": (
-                f"{npm + pypi + maven} checks "
-                f"(npm {npm} + PyPI {pypi} + Maven {maven})"
+                f"{npm + pypi + maven + nuget} checks "
+                f"(npm {npm} + PyPI {pypi} + Maven {maven} + NuGet {nuget})"
             )
         }
 

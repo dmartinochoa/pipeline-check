@@ -10,6 +10,235 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 PRs landing on `dev` between releases append entries below. The
 release commit collapses this section into `## [X.Y.Z] - <date>`.
 
+### Added
+
+- **Autofix safety tiers (closes #177).** ``--fix`` (bare flag) now runs
+  only safe fixers; ``--fix=unsafe`` runs all; ``--fix=unsafe-only`` runs
+  only inference-dependent fixers. 109 fixers labeled safe, 2 unsafe.
+  Enforced by ``tests/test_autofix_safety.py``.
+- **NuGet provider (``--pipeline nuget``).** Fifth dependency-supply-chain
+  provider. Parses ``*.csproj``, ``Directory.Packages.props``,
+  ``packages.config``, ``NuGet.config``, and ``packages.lock.json``.
+  Nine rules (NUGET-001..009) covering floating ranges, wildcard
+  prereleases, missing versions, HTTP sources, compromised versions,
+  missing lockfile, dependency-confusion source mapping, cooldown
+  gate, and live OSV advisory lookup. Provider count 23 -> 24.
+- **Live OSV advisory lookup (NPM-010, PYPI-009, MVN-009, NUGET-009).**
+  Shared ``_primitives/osv_fetcher.py`` queries the OSV batch API for
+  every exact name+version pair behind ``--resolve-remote``. Fires
+  CRITICAL on advisory hit. Closes the freshness gap the curated
+  offline registries have against newly filed advisories.
+- **Inline source-line ignore comments (closes #174).** Three directives:
+  ``# pipeline-check: ignore[RULE-ID]`` (same line),
+  ``ignore-next-line[RULE-ID]`` (following line), and
+  ``ignore-file[RULE-ID]`` (entire file). Comma-separated IDs and
+  optional ``reason=<text>`` supported. Both ``#`` and ``//`` prefixes
+  recognized. Flows through the same ``core/gate.py`` plumbing as
+  ``--ignore-file``. Disabled via ``--no-inline-ignore``. 23 tests.
+- **Direct-HCL Terraform parsing (``--tf-source``).** ``--tf-source <dir>``
+  parses ``*.tf`` files via ``python-hcl2`` (behind ``[hcl]`` extra) and
+  synthesizes the same ``TerraformResource`` objects the plan-JSON path
+  produces, so all 58 TF-NNN rules run unchanged. Variable/local
+  substitution is best-effort; unresolvable references stay opaque and
+  findings get confidence-demoted. Auto-detects ``main.tf`` presence.
+  Unskips the ``terragoat`` benchmark. 23 new tests.
+
+### Changed
+
+- **GHA-004 widened with top-level write-scope aggregation.** When a
+  workflow-level ``permissions:`` block grants a write scope that no
+  inheriting job consumes, the rule now flags the excess grant.
+  Completes the overprovisioned-permissions sweep (roadmap item
+  GHA-068). 8 new tests.
+- **GHA-058 widened with PR-checkout topology (closes #152).**
+  Adds a second detection shape inspired by zizmor proposals
+  #1605 (``agentic-actions``) and #1607 (hijackable commands after
+  checkout). Fires when an agentic CLI (claude / gemini / q /
+  cursor-agent / aider / openhands / goose) runs in a step *after*
+  a step that checked out a PR head (``actions/checkout`` with
+  ``ref:`` resolving to ``github.event.pull_request.head.*``,
+  ``github.head_ref``, or a ``refs/pull/*/head`` literal) AND a
+  write-scope token is in scope for the job (job-level
+  ``permissions: write-all``, any token granted ``write``,
+  ``id-token: write``, or no permissions block declared, since the
+  runtime default carries ``contents: write``). The flag itself is
+  not required, the topology IS the bug: an agent reading PR-
+  controlled prompt text from the checked-out tree gets the
+  runner's token as a side effect. Pairs with GHA-045 (caller-
+  controlled ref) and GHA-046 (manual PR-head fetch). 9 new tests
+  under ``TestGHA058PRCheckoutTopology``.
+
+### Added
+
+- **GHA-096 known-vulnerable action ref via GHSA feed.** New rule
+  that queries the GitHub Advisory Database
+  (``GET /advisories?type=reviewed&ecosystem=actions``) for each
+  action referenced by the loaded workflows. Gated on
+  ``--resolve-remote``; the offline default stays no-network.
+  Version matching: when the ``uses:`` ref looks like a tag with a
+  parseable version (``v4.2.0``, ``4.2``), the rule checks each
+  advisory's ``vulnerable_version_range`` and only fires on a
+  match. SHA-pinned or major-tag refs fire at MEDIUM confidence
+  with a note that the version could not be verified. Widens
+  GHA-040 (curated compromised-SHA list) from static incidents to
+  the full CVE-tracked advisory corpus. HIGH severity, OWASP
+  CICD-SEC-3 / CICD-SEC-8, ESF-S-VERIFY-DEPS / ESF-S-PIN-DEPS,
+  CWE-1395 / CWE-829. 12 per-rule tests, 6 fetcher tests, and
+  20 version-range primitive tests. Brings GHA pack to 87 rules.
+
+- **GHA-095 ref-version-mismatch: SHA pin vs `# vX.Y.Z` comment
+  (closes #146).** New rule that fires when an action's SHA pin
+  doesn't resolve to the tag named in the adjacent
+  ``# vX.Y.Z`` comment. Drift between the SHA and the comment is
+  the canonical impostor-commit setup, the SHA fetches something,
+  the comment lies about what. A reviewer skimming the diff
+  anchors on the comment and trusts the SHA without re-querying
+  the network. Two new mechanisms feed the check:
+  ``Workflow.raw_text`` captures the on-disk text (PyYAML drops
+  comments during parsing) so the rule can locate
+  ``uses: o/r@<sha>  # <ver>`` lines; a new
+  ``ActionMetadataFetcher.fetch_tag_shas`` resolves each
+  comment-mentioned tag via ``/commits/{tag}`` and folds the
+  result into ``ActionRepoMetadata.tag_shas``. ``v``-prefix swaps
+  (``v4`` vs ``4``) are tried both ways before a tag is treated
+  as unresolvable; unresolvable tags pass silently so a comment
+  naming an internal alias doesn't false-fire. Network-dependent
+  (gated on ``--resolve-remote``); without the flag the rule
+  passes silently with a one-line nudge. HIGH severity. Pairs
+  with GHA-040 (compromised SHA / tag), GHA-090 (impostor-commit,
+  the cross-network sibling), and GHA-001 (unpinned ``uses:``).
+  OWASP CICD-SEC-3 / CICD-SEC-8, ESF-S-VERIFY-DEPS, CWE-1357 /
+  CWE-829 / CWE-345. 13 per-rule tests, 11 parser tests, and 6
+  fetcher tests under ``tests/github/test_action_reputation.py``.
+  Brings GHA pack to 86 rules.
+
+- **GHA-094 stale-action-refs: SHA = branch tip (closes #151).**
+  New rule that fires when a SHA-pinned ``uses:`` matches the
+  current tip of any branch in the upstream repo. A maintainer
+  who can push to a branch can re-point the HEAD; your pin stays
+  on the old commit but anyone re-pinning to "latest" picks up
+  unaudited code. Reads a new ``branch_head_shas`` field on
+  ``ActionRepoMetadata``, populated by a one-shot
+  ``GET /repos/{o}/{r}/branches?per_page=100`` only when at least
+  one SHA-shaped ``uses:`` references the action. Case-insensitive
+  matching against the lower-cased snapshot. Tag-pinned refs are
+  out of scope. Pairs with GHA-047 (fresh referenced ref) and
+  GHA-090 (impostor-commit, the cross-network sibling). MEDIUM
+  severity, OWASP CICD-SEC-3, ESF-S-VERIFY-DEPS, NIST SR-3 /
+  SR-11, CSF GV.SC-05, SOC 2 CC6.8 / CC8.1, PCI 6.3.3, CIS 1.4.1 /
+  3.1.5, OpenSSF Scorecard Pinned-Dependencies, SLSA Build.L3.
+  NonFalsifiable. 9 per-rule tests + 4 fetcher tests under
+  ``tests/github/test_action_reputation.py``. Brings GHA pack to
+  85 rules.
+
+- **GHA-093 Living-off-the-Pipeline indicators (closes #156).**
+  Inspired by zizmor proposal #1948 (LOTP). Three independent
+  failure shapes in one rule, any one fires:
+    1. **STEP_SUMMARY exfil.** A ``run:`` line that combines a
+       secret reference (``${{ secrets.* }}`` context or a
+       ``$NAME`` expansion of a step ``env:`` value bound to
+       ``secrets.*``) with a redirect to ``$GITHUB_STEP_SUMMARY``.
+       Disjoint from GHA-087, which fires on transform-then-sink;
+       this one covers the no-transform shape.
+    2. **Workflow-command log injection.** A ``::warning::`` /
+       ``::notice::`` / ``::error::`` directive whose message
+       interpolates an attacker-controlled context (PR title /
+       body / labels / branch name, head_ref, etc.).
+    3. **``::add-mask::`` after print.** Within the same ``run:``
+       block, an earlier print of a variable (``echo $X``) and a
+       later ``::add-mask::$X`` directive: the masker registers
+       too late, the earlier echo already shipped to the log
+       unmasked.
+  HIGH severity, OWASP CICD-SEC-10 / CICD-SEC-6,
+  ESF-D-SECRETS / ESF-D-INJECTION. 15 per-rule tests under
+  ``tests/github/test_gha093.py`` plus a per-check fixture pair.
+  Brings GHA pack to 84 rules.
+
+- **GHA-092 TOCTOU PR head SHA (closes #154).** Inspired by zizmor
+  proposal #935. Within a single job, fires when a step captures
+  the PR head SHA (a ``run:`` body or ``env:`` block interpolating
+  ``github.event.pull_request.head.sha``, or a ``run:`` containing
+  ``git rev-parse HEAD`` after an earlier checkout) AND a later
+  step runs ``actions/checkout`` with ``ref:`` containing the same
+  PR head SHA expression. A contributor force-push between the two
+  reads lets unreviewed code land with the gate's stamp of
+  approval. ``pull_request_target.head.sha`` variant covered. The
+  safe shape (capture once, reuse the captured value for both
+  gate and checkout) stays silent. Pairs with GHA-045 (caller-
+  controlled ref) and GHA-046 (manual PR-head fetch). HIGH
+  severity, OWASP CICD-SEC-1 / CICD-SEC-7, ESF-D-CODE-REVIEW,
+  CWE-367 / CWE-362. 12 per-rule tests under
+  ``tests/github/test_gha092.py`` plus a per-check fixture pair.
+  Brings GHA pack to 83 rules.
+
+- **GHA-091 repojacking (closes #155).** New rule that fires when
+  an action's upstream repo is missing — the namespace is
+  takeover-eligible by anyone. Reads a new
+  ``ctx.action_fetch_failures`` set (lower-cased ``owner/repo``
+  slugs whose ``GET /repos/{o}/{r}`` came back empty during the
+  ``--resolve-remote`` pass). Same per-action repo fetch the
+  GHA-041..043 reputation rules ride on; no new HTTP call. Both
+  step-level and reusable-workflow ``uses:`` are covered. Apply
+  the same unanimous-failure heuristic as GHA-090: if every
+  referenced action's fetch failed and at least two were probed,
+  treat as rate-limit / resolver noise. HIGH severity, OWASP CICD-
+  SEC-3 / CICD-SEC-8, ESF-S-VERIFY-DEPS, NIST SR-3 / RA-5, CSF
+  GV.SC-05, SOC2 CC6.8 / CC8.1, PCI 6.3.1 / 6.3.3, CIS 1.4.1 /
+  3.1.3, OpenSSF Scorecard Pinned-Dependencies, SLSA Build.L3.
+  NonFalsifiable. 9 per-rule tests under
+  ``tests/github/test_action_reputation.py::TestGHA091``. Brings
+  GHA pack to 82 rules.
+
+- **GHA-090 impostor-commit (closes #147).** New rule that fires
+  when a SHA-pinned ``uses:`` reference points at a commit absent
+  from the claimed repo's commit graph (the "fork-network only"
+  attack shape). Reads a new ``sha_membership`` field on
+  ``ctx.action_metadata[owner/repo]``, populated by an additional
+  per-SHA ``GET /repos/{o}/{r}/commits/{sha}`` probe in the same
+  ``--resolve-remote`` metadata pass. The probe runs only on
+  refs that look like 40-char SHAs (tag / branch refs are out of
+  scope for this attack model). Unanimous-failure shape (every
+  probed SHA returns False) is treated as rate-limit / resolver
+  noise rather than impostor-commit and the rule passes silently
+  with a one-line nudge. Both step-level and reusable-workflow
+  SHA pins covered, duplicate SHAs de-duped. HIGH severity, OWASP
+  CICD-SEC-3 / CICD-SEC-8 / ESF-S-VERIFY-DEPS / NIST SR-3 / NIST
+  CSF GV.SC-05 / SOC2 CC6.8 / PCI 6.3.1. 8 per-rule tests + 4
+  fetcher-level tests under
+  ``tests/github/test_action_reputation.py``. Brings GHA pack to
+  81 rules.
+
+- **GHA-089 archived ``uses:`` (closes #149).** New rule that
+  fires when an action's upstream repo is archived. Reads the
+  ``archived`` bit already populated on
+  ``ctx.action_metadata[owner/repo]`` by ``--resolve-remote``, so
+  no new HTTP call lands; piggybacks on the same per-action repo
+  fetch the GHA-041..043 reputation rules consume. Passes
+  silently when the resolver is off, mirroring GHA-041's discover-
+  the-flag posture. Both step-level ``uses:`` and job-level
+  reusable-workflow ``uses:`` are covered, case-insensitive
+  metadata lookup. MEDIUM severity, OWASP CICD-SEC-3 /
+  ESF-S-VERIFY-DEPS / CIS 1.4.1 / NIST SR-3 / NIST CSF GV.SC-05.
+  8 per-rule tests under
+  ``tests/github/test_action_reputation.py::TestGHA089``. Brings
+  GHA pack to 80 rules.
+
+- **GHA-088 typosquat ``uses:`` (closes #148).** Offline edit-
+  distance check against a curated top-actions list. Fires on
+  one- or two-character edits to a canonical action slug,
+  ``actions/check0ut`` (digit zero), ``actons/checkout`` (missing
+  ``i``), ``actions/cehckout`` (transposition), ``actions/checkouts``
+  (trailing ``s``). Both step-level ``uses:`` and job-level
+  reusable-workflow ``uses:`` are covered, exact matches stay
+  silent, and Damerau-Levenshtein counts adjacent transposition as
+  one edit. The list lives at
+  ``pipeline_check.core.checks._primitives.top_actions`` and is
+  refreshable by PR. HIGH severity, OWASP CICD-SEC-3, ESF-S-VERIFY-
+  DEPS. 14 per-rule tests under ``tests/github/test_gha088.py``
+  plus 13 primitive-level tests under
+  ``TestTopActionsFindTyposquat``. Brings GHA pack to 79 rules
+  (provider count unchanged at 23).
+
 ## [1.4.0] - 2026-05-22
 
 ### Added

@@ -208,6 +208,14 @@ STANDARD = Standard(
         "GHA-073":  ["IA-5", "CM-7"],                     # unused workflow_call.secrets declaration
         "GHA-086":  ["SA-10", "AC-3"],                    # wildcard branch trigger + environment binding
         "GHA-087":  ["IA-5", "AU-9"],                     # derived-value of secret printed to log
+        "GHA-088":  ["SR-3", "SR-11", "RA-5"],            # typosquat uses: near-edit of top action
+        "GHA-089":  ["SR-3", "SR-11", "RA-5"],            # archived upstream repo
+        "GHA-090":  ["SR-3", "SR-11", "RA-5", "SI-7"],    # impostor-commit: SHA absent from repo
+        "GHA-091":  ["SR-3", "SR-11", "RA-5"],             # repojacking: action upstream missing
+        "GHA-092":  ["CM-6", "SA-11", "SI-7"],             # TOCTOU PR head SHA force-push race
+        "GHA-093":  ["IA-5", "AU-9"],                      # LOTP indicators
+        "GHA-094":  ["SR-3", "SR-11"],                     # stale-action-refs
+        "GHA-096":  ["SR-3", "SR-11", "RA-5"],           # known-vulnerable action ref (GHSA)
         # GitLab CI
         "GL-001":   ["SR-3", "SR-11", "SI-2"],
         "GL-002":   ["SI-7", "SA-11", "CM-6"],
@@ -613,6 +621,23 @@ STANDARD = Standard(
         "MVN-005":  ["SR-3", "SR-11", "SI-7"],           # lax checksumPolicy
         "MVN-006":  ["SR-3", "SR-11", "RA-5"],           # compromised Maven version
         "MVN-007":  ["SR-3", "SR-11"],                   # settings.xml wildcard mirror
+        "MVN-008":  ["SR-3", "SR-11", "RA-5"],           # cooldown gate (--resolve-remote)
+        "MVN-009":  ["SR-3", "SR-11", "RA-5"],           # OSV advisory (--resolve-remote)
+        "NPM-008":  ["SR-3", "SR-11", "RA-5"],           # cooldown gate (--resolve-remote)
+        "NPM-009":  ["SR-3", "SR-11"],                   # new-transitive-dep diff gate
+        "NPM-010":  ["SR-3", "SR-11", "RA-5"],           # OSV advisory (--resolve-remote)
+        "PYPI-008": ["SR-3", "SR-11", "RA-5"],           # cooldown gate (--resolve-remote)
+        "PYPI-009": ["SR-3", "SR-11", "RA-5"],           # OSV advisory (--resolve-remote)
+        # ── nuget (dep supply-chain) ─────────────────────────────
+        "NUGET-001": ["SR-3", "SR-11", "SI-2"],          # floating NuGet version range
+        "NUGET-002": ["SR-3", "SR-11", "SI-2"],          # wildcard prerelease version
+        "NUGET-003": ["SR-3", "SR-11"],                  # missing explicit version
+        "NUGET-004": ["SR-3", "SR-11", "SC-8"],          # HTTP-only package source
+        "NUGET-005": ["SR-3", "SR-11", "RA-5"],          # known-compromised package version
+        "NUGET-006": ["SR-3", "SR-11", "SI-7"],          # no lock file for reproducible restores
+        "NUGET-007": ["SR-3", "SR-11"],                  # multiple sources without packageSourceMapping
+        "NUGET-008": ["SR-3", "SR-11", "RA-5"],          # cooldown gate (--resolve-remote)
+        "NUGET-009": ["SR-3", "SR-11", "RA-5"],          # OSV advisory (--resolve-remote)
         # ── OCI image manifest gaps ──────────────────────────────
         "OCI-001":  ["SR-4", "CM-8"],                    # provenance annotations missing
         "OCI-002":  ["SI-7", "SR-4"],                    # build attestation missing

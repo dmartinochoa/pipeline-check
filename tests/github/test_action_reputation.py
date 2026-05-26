@@ -19,6 +19,7 @@ import yaml
 
 from pipeline_check.core.checks.base import Severity
 from pipeline_check.core.checks.github._action_reputation import (
+    ActionAdvisory,
     ActionMetadataFetcher,
     ActionRepoMetadata,
     collect_referenced_action_refs,
@@ -34,10 +35,14 @@ def _ctx_with_metadata(
     metadata: dict[str, ActionRepoMetadata] | None = None,
     path: str = "wf.yml",
 ) -> GitHubContext:
-    data = yaml.safe_load(textwrap.dedent(yaml_text))
+    text = textwrap.dedent(yaml_text)
+    data = yaml.safe_load(text)
     if data is None:
         data = {}
-    ctx = GitHubContext([Workflow(path=path, data=data)])
+    # Carry the raw text on the synthesized Workflow so rules that
+    # inspect the pre-parse layer (currently just GHA-095) operate
+    # the same way they do against on-disk workflow files.
+    ctx = GitHubContext([Workflow(path=path, data=data, raw_text=text)])
     if metadata:
         ctx.action_metadata = dict(metadata)
     return ctx
@@ -59,6 +64,10 @@ def _meta(
     archived: bool = False,
     fork: bool = False,
     ref_committed_at: dict[str, str | None] | None = None,
+    sha_membership: dict[str, bool] | None = None,
+    branch_head_shas: frozenset[str] | None = None,
+    tag_shas: dict[str, str | None] | None = None,
+    ghsa_advisories: tuple[ActionAdvisory, ...] | None = None,
 ) -> tuple[str, ActionRepoMetadata]:
     return f"{owner.lower()}/{repo.lower()}", ActionRepoMetadata(
         owner=owner, repo=repo,
@@ -69,6 +78,10 @@ def _meta(
         archived=archived,
         fork=fork,
         ref_committed_at=ref_committed_at,
+        sha_membership=sha_membership,
+        branch_head_shas=branch_head_shas,
+        tag_shas=tag_shas,
+        ghsa_advisories=ghsa_advisories,
     )
 
 
@@ -586,6 +599,1269 @@ class TestGHA043:
         f = _run(_ctx_with_metadata(wf, {k: m}), "GHA-043")
         assert not f.passed
         assert "obscure/shared" in f.description
+
+
+# ── GHA-089: archived upstream repo ────────────────────────────────
+
+
+class TestGHA089:
+    def test_fires_when_action_repo_is_archived(self):
+        wf = """
+        name: ci
+        on: push
+        jobs:
+          build:
+            runs-on: ubuntu-latest
+            steps:
+              - uses: legacy/abandoned@v3
+        """
+        k, m = _meta("legacy", "abandoned", archived=True)
+        f = _run(_ctx_with_metadata(wf, {k: m}), "GHA-089")
+        assert not f.passed
+        assert f.severity == Severity.MEDIUM
+        assert "legacy/abandoned" in f.description
+
+    def test_passes_when_action_repo_not_archived(self):
+        wf = """
+        name: ci
+        on: push
+        jobs:
+          build:
+            runs-on: ubuntu-latest
+            steps:
+              - uses: actions/checkout@v4
+        """
+        k, m = _meta("actions", "checkout", archived=False)
+        f = _run(_ctx_with_metadata(wf, {k: m}), "GHA-089")
+        assert f.passed
+
+    def test_passes_silently_when_metadata_empty(self):
+        wf = """
+        name: ci
+        on: push
+        jobs:
+          build:
+            runs-on: ubuntu-latest
+            steps:
+              - uses: legacy/abandoned@v3
+        """
+        f = _run(_ctx_with_metadata(wf, {}), "GHA-089")
+        assert f.passed
+        assert "resolve-remote" in f.description
+
+    def test_local_action_silent(self):
+        wf = """
+        name: ci
+        on: push
+        jobs:
+          build:
+            runs-on: ubuntu-latest
+            steps:
+              - uses: ./.github/actions/local
+        """
+        # Local refs have no upstream; the rule doesn't even look at
+        # them, so even with no metadata the description should NOT
+        # mention an archived ref.
+        f = _run(_ctx_with_metadata(wf, {}), "GHA-089")
+        assert f.passed
+
+    def test_fires_on_reusable_workflow_uses(self):
+        # Job-level ``uses:`` (reusable workflow) is in scope: the
+        # archived bit applies to the upstream repo regardless of
+        # which file the consumer references inside it.
+        wf = """
+        name: ci
+        on: push
+        jobs:
+          call:
+            uses: legacy/abandoned/.github/workflows/build.yml@v3
+        """
+        k, m = _meta("legacy", "abandoned", archived=True)
+        f = _run(_ctx_with_metadata(wf, {k: m}), "GHA-089")
+        assert not f.passed
+        assert "legacy/abandoned" in f.description
+
+    def test_multiple_archived_actions_aggregated(self):
+        wf = """
+        name: ci
+        on: push
+        jobs:
+          build:
+            runs-on: ubuntu-latest
+            steps:
+              - uses: legacy/abandoned-a@v1
+              - uses: legacy/abandoned-b@v2
+              - uses: actions/checkout@v4
+        """
+        k1, m1 = _meta("legacy", "abandoned-a", archived=True)
+        k2, m2 = _meta("legacy", "abandoned-b", archived=True)
+        k3, m3 = _meta("actions", "checkout", archived=False)
+        f = _run(
+            _ctx_with_metadata(wf, {k1: m1, k2: m2, k3: m3}),
+            "GHA-089",
+        )
+        assert not f.passed
+        assert "2 action(s)" in f.description
+
+    def test_dedup_same_action_referenced_twice(self):
+        # The same archived action referenced by two jobs should
+        # appear once in the finding description.
+        wf = """
+        name: ci
+        on: push
+        jobs:
+          build:
+            runs-on: ubuntu-latest
+            steps:
+              - uses: legacy/abandoned@v3
+          test:
+            runs-on: ubuntu-latest
+            steps:
+              - uses: legacy/abandoned@v3
+        """
+        k, m = _meta("legacy", "abandoned", archived=True)
+        f = _run(_ctx_with_metadata(wf, {k: m}), "GHA-089")
+        assert not f.passed
+        assert "1 action(s)" in f.description
+
+    def test_case_insensitive_metadata_lookup(self):
+        # Upper-case in the workflow body still hits the lowercased
+        # metadata key.
+        wf = """
+        name: ci
+        on: push
+        jobs:
+          build:
+            runs-on: ubuntu-latest
+            steps:
+              - uses: LEGACY/Abandoned@v3
+        """
+        k, m = _meta("legacy", "abandoned", archived=True)
+        f = _run(_ctx_with_metadata(wf, {k: m}), "GHA-089")
+        assert not f.passed
+
+
+# ── GHA-090: impostor-commit (SHA absent from claimed repo) ────────
+
+
+_SHA_A = "a" * 40
+_SHA_B = "b" * 40
+_SHA_C = "c" * 40
+
+
+class TestGHA090:
+    def test_fires_when_sha_absent_from_repo(self):
+        wf = f"""
+        name: ci
+        on: push
+        jobs:
+          build:
+            runs-on: ubuntu-latest
+            steps:
+              - uses: actions/checkout@{_SHA_A}
+        """
+        k, m = _meta(
+            "actions", "checkout",
+            sha_membership={_SHA_A: False},
+        )
+        f = _run(_ctx_with_metadata(wf, {k: m}), "GHA-090")
+        assert not f.passed
+        assert f.severity == Severity.HIGH
+        assert "actions/checkout" in f.description
+
+    def test_passes_when_sha_present_in_repo(self):
+        wf = f"""
+        name: ci
+        on: push
+        jobs:
+          build:
+            runs-on: ubuntu-latest
+            steps:
+              - uses: actions/checkout@{_SHA_A}
+        """
+        k, m = _meta(
+            "actions", "checkout",
+            sha_membership={_SHA_A: True},
+        )
+        f = _run(_ctx_with_metadata(wf, {k: m}), "GHA-090")
+        assert f.passed
+
+    def test_silent_on_tag_refs(self):
+        # Tag / branch refs are not in scope; the rule only applies
+        # to 40-char SHA pins.
+        wf = """
+        name: ci
+        on: push
+        jobs:
+          build:
+            runs-on: ubuntu-latest
+            steps:
+              - uses: actions/checkout@v4
+        """
+        k, m = _meta(
+            "actions", "checkout",
+            sha_membership=None,
+        )
+        f = _run(_ctx_with_metadata(wf, {k: m}), "GHA-090")
+        assert f.passed
+
+    def test_passes_silently_when_metadata_empty(self):
+        wf = f"""
+        name: ci
+        on: push
+        jobs:
+          build:
+            runs-on: ubuntu-latest
+            steps:
+              - uses: actions/checkout@{_SHA_A}
+        """
+        f = _run(_ctx_with_metadata(wf, {}), "GHA-090")
+        assert f.passed
+        assert "resolve-remote" in f.description
+
+    def test_passes_silently_when_every_probe_failed(self):
+        # All-False shape is rate-limit / network noise, not
+        # impostor-commit. Pass silently with a nudge.
+        wf = f"""
+        name: ci
+        on: push
+        jobs:
+          build:
+            runs-on: ubuntu-latest
+            steps:
+              - uses: actions/checkout@{_SHA_A}
+              - uses: actions/setup-node@{_SHA_B}
+        """
+        k1, m1 = _meta(
+            "actions", "checkout",
+            sha_membership={_SHA_A: False},
+        )
+        k2, m2 = _meta(
+            "actions", "setup-node",
+            sha_membership={_SHA_B: False},
+        )
+        f = _run(_ctx_with_metadata(wf, {k1: m1, k2: m2}), "GHA-090")
+        assert f.passed
+        assert "rate-limit" in f.description
+
+    def test_fires_when_some_probes_confirm_membership(self):
+        # One impostor among several confirmed SHAs is the actual
+        # attack shape and should fire.
+        wf = f"""
+        name: ci
+        on: push
+        jobs:
+          build:
+            runs-on: ubuntu-latest
+            steps:
+              - uses: actions/checkout@{_SHA_A}
+              - uses: actions/setup-node@{_SHA_B}
+        """
+        k1, m1 = _meta(
+            "actions", "checkout",
+            sha_membership={_SHA_A: False},
+        )
+        k2, m2 = _meta(
+            "actions", "setup-node",
+            sha_membership={_SHA_B: True},
+        )
+        f = _run(_ctx_with_metadata(wf, {k1: m1, k2: m2}), "GHA-090")
+        assert not f.passed
+        assert "actions/checkout" in f.description
+        assert "setup-node" not in f.description
+
+    def test_dedups_same_action_sha_referenced_twice(self):
+        # Same impostor SHA referenced from two jobs should appear
+        # once in the finding description.
+        wf = f"""
+        name: ci
+        on: push
+        jobs:
+          build:
+            runs-on: ubuntu-latest
+            steps:
+              - uses: actions/checkout@{_SHA_A}
+          test:
+            runs-on: ubuntu-latest
+            steps:
+              - uses: actions/checkout@{_SHA_A}
+              - uses: actions/setup-node@{_SHA_C}
+        """
+        k1, m1 = _meta(
+            "actions", "checkout",
+            sha_membership={_SHA_A: False},
+        )
+        k2, m2 = _meta(
+            "actions", "setup-node",
+            sha_membership={_SHA_C: True},
+        )
+        f = _run(_ctx_with_metadata(wf, {k1: m1, k2: m2}), "GHA-090")
+        assert not f.passed
+        assert "1 SHA-pinned" in f.description
+
+    def test_fires_on_reusable_workflow_sha_pin(self):
+        wf = f"""
+        name: ci
+        on: push
+        jobs:
+          call:
+            uses: dangerous/fork/.github/workflows/build.yml@{_SHA_A}
+        """
+        k, m = _meta(
+            "dangerous", "fork",
+            sha_membership={_SHA_A: False},
+        )
+        f = _run(_ctx_with_metadata(wf, {k: m}), "GHA-090")
+        assert not f.passed
+        assert "dangerous/fork" in f.description
+
+
+# ── GHA-091: repojacking (404 on /repos/{o}/{r}) ───────────────────
+
+
+class TestGHA091:
+    def test_fires_when_action_repo_is_missing(self):
+        wf = """
+        name: ci
+        on: push
+        jobs:
+          build:
+            runs-on: ubuntu-latest
+            steps:
+              - uses: legacy/abandoned@v3
+              - uses: actions/checkout@v4
+        """
+        ctx = _ctx_with_metadata(wf)
+        # Some succeeded, one failed -> the failure is a real signal.
+        ctx.action_fetch_failures = {"legacy/abandoned"}
+        k, m = _meta("actions", "checkout")
+        ctx.action_metadata = {k: m}
+        f = _run(ctx, "GHA-091")
+        assert not f.passed
+        assert f.severity == Severity.HIGH
+        assert "legacy/abandoned" in f.description
+
+    def test_passes_when_every_action_fetched_cleanly(self):
+        wf = """
+        name: ci
+        on: push
+        jobs:
+          build:
+            runs-on: ubuntu-latest
+            steps:
+              - uses: actions/checkout@v4
+        """
+        ctx = _ctx_with_metadata(wf)
+        k, m = _meta("actions", "checkout")
+        ctx.action_metadata = {k: m}
+        ctx.action_fetch_failures = set()
+        f = _run(ctx, "GHA-091")
+        assert f.passed
+
+    def test_passes_silently_when_resolver_off(self):
+        wf = """
+        name: ci
+        on: push
+        jobs:
+          build:
+            runs-on: ubuntu-latest
+            steps:
+              - uses: legacy/abandoned@v3
+        """
+        f = _run(_ctx_with_metadata(wf), "GHA-091")
+        assert f.passed
+        assert "resolve-remote" in f.description
+
+    def test_passes_silently_when_every_fetch_failed(self):
+        # Unanimous-failure shape is rate-limit / network noise.
+        wf = """
+        name: ci
+        on: push
+        jobs:
+          build:
+            runs-on: ubuntu-latest
+            steps:
+              - uses: actions/checkout@v4
+              - uses: actions/setup-node@v4
+        """
+        ctx = _ctx_with_metadata(wf)
+        ctx.action_metadata = {}
+        ctx.action_fetch_failures = {
+            "actions/checkout", "actions/setup-node",
+        }
+        f = _run(ctx, "GHA-091")
+        assert f.passed
+        assert "rate-limit" in f.description
+
+    def test_single_action_with_only_failure_still_fires(self):
+        # When only one action is referenced and it 404s, treat as
+        # real (the unanimous-failure heuristic only kicks in with
+        # >= 2 actions, since a peer is needed for "every" to mean
+        # anything).
+        wf = """
+        name: ci
+        on: push
+        jobs:
+          build:
+            runs-on: ubuntu-latest
+            steps:
+              - uses: legacy/abandoned@v3
+        """
+        ctx = _ctx_with_metadata(wf)
+        ctx.action_metadata = {}
+        ctx.action_fetch_failures = {"legacy/abandoned"}
+        f = _run(ctx, "GHA-091")
+        assert not f.passed
+        assert "legacy/abandoned" in f.description
+
+    def test_fires_on_reusable_workflow_uses(self):
+        wf = """
+        name: ci
+        on: push
+        jobs:
+          call:
+            uses: legacy/abandoned/.github/workflows/build.yml@v3
+        """
+        ctx = _ctx_with_metadata(wf)
+        ctx.action_fetch_failures = {"legacy/abandoned"}
+        # Add a successful peer so the unanimous heuristic doesn't
+        # bypass.
+        k, m = _meta("actions", "checkout")
+        ctx.action_metadata = {k: m}
+        f = _run(ctx, "GHA-091")
+        assert not f.passed
+        assert "legacy/abandoned" in f.description
+
+    def test_local_action_silent(self):
+        wf = """
+        name: ci
+        on: push
+        jobs:
+          build:
+            runs-on: ubuntu-latest
+            steps:
+              - uses: ./.github/actions/build
+        """
+        ctx = _ctx_with_metadata(wf)
+        # Even with an unrelated failure, the rule should not flag a
+        # local action.
+        ctx.action_metadata = {}
+        ctx.action_fetch_failures = {"some/other"}
+        f = _run(ctx, "GHA-091")
+        assert f.passed
+
+    def test_multiple_failures_aggregated(self):
+        wf = """
+        name: ci
+        on: push
+        jobs:
+          build:
+            runs-on: ubuntu-latest
+            steps:
+              - uses: legacy/abandoned-a@v1
+              - uses: legacy/abandoned-b@v2
+              - uses: actions/checkout@v4
+        """
+        ctx = _ctx_with_metadata(wf)
+        ctx.action_fetch_failures = {
+            "legacy/abandoned-a", "legacy/abandoned-b",
+        }
+        k, m = _meta("actions", "checkout")
+        ctx.action_metadata = {k: m}
+        f = _run(ctx, "GHA-091")
+        assert not f.passed
+        assert "2 action(s)" in f.description
+
+    def test_case_insensitive_lookup(self):
+        # Workflow body upper-cased; failure set lower-cased.
+        wf = """
+        name: ci
+        on: push
+        jobs:
+          build:
+            runs-on: ubuntu-latest
+            steps:
+              - uses: LEGACY/Abandoned@v3
+        """
+        ctx = _ctx_with_metadata(wf)
+        ctx.action_fetch_failures = {"legacy/abandoned"}
+        k, m = _meta("actions", "checkout")
+        ctx.action_metadata = {k: m}
+        f = _run(ctx, "GHA-091")
+        assert not f.passed
+
+
+# ── GHA-094: stale-action-refs (SHA = branch tip) ──────────────────
+
+
+class TestGHA094:
+    def test_fires_when_sha_is_branch_tip(self):
+        wf = f"""
+        name: ci
+        on: push
+        jobs:
+          build:
+            runs-on: ubuntu-latest
+            steps:
+              - uses: vendor/action@{_SHA_A}
+        """
+        k, m = _meta(
+            "vendor", "action",
+            branch_head_shas=frozenset({_SHA_A}),
+        )
+        f = _run(_ctx_with_metadata(wf, {k: m}), "GHA-094")
+        assert not f.passed
+        assert f.severity == Severity.MEDIUM
+        assert "vendor/action" in f.description
+
+    def test_passes_when_sha_below_branch_tip(self):
+        wf = f"""
+        name: ci
+        on: push
+        jobs:
+          build:
+            runs-on: ubuntu-latest
+            steps:
+              - uses: vendor/action@{_SHA_A}
+        """
+        # Branch tip is a different SHA; pinned SHA is below it.
+        k, m = _meta(
+            "vendor", "action",
+            branch_head_shas=frozenset({_SHA_B}),
+        )
+        f = _run(_ctx_with_metadata(wf, {k: m}), "GHA-094")
+        assert f.passed
+
+    def test_silent_on_tag_refs(self):
+        wf = """
+        name: ci
+        on: push
+        jobs:
+          build:
+            runs-on: ubuntu-latest
+            steps:
+              - uses: vendor/action@v4
+        """
+        # Tag-pinned action. Even if branch_head_shas is populated
+        # with random SHAs, the rule shouldn't fire on @v4.
+        k, m = _meta(
+            "vendor", "action",
+            branch_head_shas=frozenset({_SHA_A, _SHA_B}),
+        )
+        f = _run(_ctx_with_metadata(wf, {k: m}), "GHA-094")
+        assert f.passed
+
+    def test_passes_silently_when_metadata_empty(self):
+        wf = f"""
+        name: ci
+        on: push
+        jobs:
+          build:
+            runs-on: ubuntu-latest
+            steps:
+              - uses: vendor/action@{_SHA_A}
+        """
+        f = _run(_ctx_with_metadata(wf, {}), "GHA-094")
+        assert f.passed
+        assert "resolve-remote" in f.description
+
+    def test_passes_silently_when_branch_head_shas_none(self):
+        # action_metadata has the action but branch_head_shas was not
+        # populated (e.g. no SHA-shaped refs at the time the fetch
+        # decided). Treat as "not probed."
+        wf = f"""
+        name: ci
+        on: push
+        jobs:
+          build:
+            runs-on: ubuntu-latest
+            steps:
+              - uses: vendor/action@{_SHA_A}
+        """
+        k, m = _meta(
+            "vendor", "action",
+            branch_head_shas=None,
+        )
+        f = _run(_ctx_with_metadata(wf, {k: m}), "GHA-094")
+        assert f.passed
+        assert "resolve-remote" in f.description
+
+    def test_case_insensitive_match(self):
+        # Workflow body has uppercase hex; the snapshot is lower-cased.
+        wf = f"""
+        name: ci
+        on: push
+        jobs:
+          build:
+            runs-on: ubuntu-latest
+            steps:
+              - uses: vendor/action@{_SHA_A.upper()}
+        """
+        k, m = _meta(
+            "vendor", "action",
+            branch_head_shas=frozenset({_SHA_A}),
+        )
+        f = _run(_ctx_with_metadata(wf, {k: m}), "GHA-094")
+        assert not f.passed
+
+    def test_fires_on_reusable_workflow_sha_pin(self):
+        wf = f"""
+        name: ci
+        on: push
+        jobs:
+          call:
+            uses: vendor/action/.github/workflows/build.yml@{_SHA_A}
+        """
+        k, m = _meta(
+            "vendor", "action",
+            branch_head_shas=frozenset({_SHA_A}),
+        )
+        f = _run(_ctx_with_metadata(wf, {k: m}), "GHA-094")
+        assert not f.passed
+
+    def test_dedups_same_sha_referenced_twice(self):
+        wf = f"""
+        name: ci
+        on: push
+        jobs:
+          a:
+            runs-on: ubuntu-latest
+            steps:
+              - uses: vendor/action@{_SHA_A}
+          b:
+            runs-on: ubuntu-latest
+            steps:
+              - uses: vendor/action@{_SHA_A}
+        """
+        k, m = _meta(
+            "vendor", "action",
+            branch_head_shas=frozenset({_SHA_A}),
+        )
+        f = _run(_ctx_with_metadata(wf, {k: m}), "GHA-094")
+        assert not f.passed
+        assert "1 SHA-pinned" in f.description
+
+    def test_empty_branch_head_set_passes(self):
+        # branch_head_shas is the empty frozenset means "lookup ran,
+        # repo has no branches" (rare but legal). The pinned SHA is
+        # by definition not a tip.
+        wf = f"""
+        name: ci
+        on: push
+        jobs:
+          build:
+            runs-on: ubuntu-latest
+            steps:
+              - uses: vendor/action@{_SHA_A}
+        """
+        k, m = _meta(
+            "vendor", "action",
+            branch_head_shas=frozenset(),
+        )
+        f = _run(_ctx_with_metadata(wf, {k: m}), "GHA-094")
+        # Even with no probes returning True, the rule needs the
+        # field populated (not None) to fire / pass meaningfully.
+        # Empty set means "no tips, no stale refs." Pass.
+        assert f.passed
+
+
+# ── GHA-095: ref-version-mismatch (SHA pin vs # vX.Y.Z comment) ────
+
+
+class TestGHA095:
+    def test_fires_when_sha_does_not_match_comment_tag(self):
+        wf = f"""
+        name: ci
+        on: push
+        jobs:
+          build:
+            runs-on: ubuntu-latest
+            steps:
+              - uses: actions/checkout@{_SHA_A}  # v4.1.1
+        """
+        # Comment claims v4.1.1; tag actually resolves to _SHA_B.
+        k, m = _meta(
+            "actions", "checkout",
+            tag_shas={"v4.1.1": _SHA_B},
+        )
+        f = _run(_ctx_with_metadata(wf, {k: m}), "GHA-095")
+        assert not f.passed
+        assert f.severity == Severity.HIGH
+        assert "actions/checkout" in f.description
+        assert "v4.1.1" in f.description
+
+    def test_passes_when_sha_matches_comment_tag(self):
+        wf = f"""
+        name: ci
+        on: push
+        jobs:
+          build:
+            runs-on: ubuntu-latest
+            steps:
+              - uses: actions/checkout@{_SHA_A}  # v4.1.1
+        """
+        k, m = _meta(
+            "actions", "checkout",
+            tag_shas={"v4.1.1": _SHA_A},
+        )
+        f = _run(_ctx_with_metadata(wf, {k: m}), "GHA-095")
+        assert f.passed
+
+    def test_passes_silently_when_tag_does_not_resolve(self):
+        """A comment naming a tag the upstream repo doesn't carry
+        (deleted tag, internal alias, 404) should pass — the rule
+        treats unverifiable comments as benign, not as an FP source."""
+        wf = f"""
+        name: ci
+        on: push
+        jobs:
+          build:
+            runs-on: ubuntu-latest
+            steps:
+              - uses: actions/checkout@{_SHA_A}  # internal-alias-q4
+        """
+        k, m = _meta(
+            "actions", "checkout",
+            tag_shas={"v4.1.1": _SHA_A},  # Different tag, not the comment's.
+        )
+        f = _run(_ctx_with_metadata(wf, {k: m}), "GHA-095")
+        assert f.passed
+        assert "resolve-remote" in f.description
+
+    def test_passes_silently_when_no_action_metadata(self):
+        wf = f"""
+        name: ci
+        on: push
+        jobs:
+          build:
+            runs-on: ubuntu-latest
+            steps:
+              - uses: actions/checkout@{_SHA_A}  # v4.1.1
+        """
+        f = _run(_ctx_with_metadata(wf, {}), "GHA-095")
+        assert f.passed
+        assert "resolve-remote" in f.description
+
+    def test_passes_silently_when_tag_shas_none(self):
+        # action_metadata has the entry but tag_shas wasn't populated
+        # (no version comments at the time the fetch decided).
+        wf = f"""
+        name: ci
+        on: push
+        jobs:
+          build:
+            runs-on: ubuntu-latest
+            steps:
+              - uses: actions/checkout@{_SHA_A}  # v4.1.1
+        """
+        k, m = _meta("actions", "checkout", tag_shas=None)
+        f = _run(_ctx_with_metadata(wf, {k: m}), "GHA-095")
+        assert f.passed
+        assert "resolve-remote" in f.description
+
+    def test_normalizes_v_prefix_swap(self):
+        """A comment ``# 4.1.1`` should match against an upstream
+        ``v4.1.1`` tag and vice versa."""
+        wf = f"""
+        name: ci
+        on: push
+        jobs:
+          build:
+            runs-on: ubuntu-latest
+            steps:
+              - uses: actions/checkout@{_SHA_A}  # 4.1.1
+        """
+        # Upstream tag is the v-prefixed form; lookup should swap.
+        k, m = _meta(
+            "actions", "checkout",
+            tag_shas={"v4.1.1": _SHA_A},
+        )
+        f = _run(_ctx_with_metadata(wf, {k: m}), "GHA-095")
+        assert f.passed
+
+    def test_normalizes_v_prefix_swap_drift_fires(self):
+        # Same prefix-swap path but the SHA still drifts; mismatch
+        # should fire after the alternate lookup.
+        wf = f"""
+        name: ci
+        on: push
+        jobs:
+          build:
+            runs-on: ubuntu-latest
+            steps:
+              - uses: actions/checkout@{_SHA_A}  # v4
+        """
+        k, m = _meta(
+            "actions", "checkout",
+            tag_shas={"4": _SHA_B},  # comment is v4, upstream key is 4
+        )
+        f = _run(_ctx_with_metadata(wf, {k: m}), "GHA-095")
+        assert not f.passed
+
+    def test_silent_on_tag_pinned_uses(self):
+        # No SHA pin -> the rule's parser yields nothing. Even if
+        # tag_shas is populated, no findings fire.
+        wf = """
+        name: ci
+        on: push
+        jobs:
+          build:
+            runs-on: ubuntu-latest
+            steps:
+              - uses: actions/checkout@v4  # v4.1.1
+        """
+        k, m = _meta(
+            "actions", "checkout",
+            tag_shas={"v4.1.1": _SHA_B},
+        )
+        f = _run(_ctx_with_metadata(wf, {k: m}), "GHA-095")
+        # Passes silently — no SHA-pin + comment site for the rule
+        # to probe.
+        assert f.passed
+
+    def test_silent_when_comment_has_no_version_token(self):
+        # Comment is generic prose, no version-shaped token. The
+        # parser skips the line, rule passes silently.
+        wf = f"""
+        name: ci
+        on: push
+        jobs:
+          build:
+            runs-on: ubuntu-latest
+            steps:
+              - uses: actions/checkout@{_SHA_A}  # pinned by security team
+        """
+        k, m = _meta(
+            "actions", "checkout",
+            tag_shas={"v4.1.1": _SHA_B},
+        )
+        f = _run(_ctx_with_metadata(wf, {k: m}), "GHA-095")
+        assert f.passed
+
+    def test_silent_when_workflow_has_no_raw_text(self):
+        # Resolver-synthesized workflows carry no raw text; the rule
+        # should pass without firing on them.
+        ctx = GitHubContext([
+            Workflow(
+                path="composite:foo/bar@deadbeef",
+                data={"jobs": {}},
+                source_ref="composite:foo/bar@deadbeef",
+                raw_text=None,
+            ),
+        ])
+        ctx.action_metadata = {
+            "foo/bar": ActionRepoMetadata(
+                owner="foo", repo="bar",
+                tag_shas={"v1": _SHA_A},
+            ),
+        }
+        f = _run(ctx, "GHA-095")
+        assert f.passed
+        assert "synthesized" in f.description
+
+    def test_fires_on_reusable_workflow_with_comment(self):
+        # Job-level ``uses:`` to a reusable workflow with a SHA pin
+        # and version comment. Parser handles the subpath syntax.
+        wf = f"""
+        name: ci
+        on: push
+        jobs:
+          call:
+            uses: org/repo/.github/workflows/build.yml@{_SHA_A}  # v2.0.0
+        """
+        k, m = _meta(
+            "org", "repo",
+            tag_shas={"v2.0.0": _SHA_B},
+        )
+        f = _run(_ctx_with_metadata(wf, {k: m}), "GHA-095")
+        assert not f.passed
+        assert "org/repo" in f.description
+
+    def test_case_insensitive_sha_match(self):
+        # Workflow body has uppercase hex; tag_shas snapshot is
+        # lower-cased. Match should still detect agreement.
+        wf = f"""
+        name: ci
+        on: push
+        jobs:
+          build:
+            runs-on: ubuntu-latest
+            steps:
+              - uses: actions/checkout@{_SHA_A.upper()}  # v4.1.1
+        """
+        k, m = _meta(
+            "actions", "checkout",
+            tag_shas={"v4.1.1": _SHA_A},  # lower-case match
+        )
+        f = _run(_ctx_with_metadata(wf, {k: m}), "GHA-095")
+        assert f.passed
+
+    def test_dedups_same_sha_referenced_twice(self):
+        wf = f"""
+        name: ci
+        on: push
+        jobs:
+          a:
+            runs-on: ubuntu-latest
+            steps:
+              - uses: actions/checkout@{_SHA_A}  # v4.1.1
+          b:
+            runs-on: ubuntu-latest
+            steps:
+              - uses: actions/checkout@{_SHA_A}  # v4.1.1
+        """
+        k, m = _meta(
+            "actions", "checkout",
+            tag_shas={"v4.1.1": _SHA_B},
+        )
+        f = _run(_ctx_with_metadata(wf, {k: m}), "GHA-095")
+        assert not f.passed
+        assert "1 SHA-pinned" in f.description
+
+
+# ── _version_comments.iter_version_comment_refs ────────────────────
+
+
+class TestIterVersionCommentRefs:
+    def test_picks_up_plain_v_prefixed_tag(self):
+        from pipeline_check.core.checks.github._version_comments import (
+            iter_version_comment_refs,
+        )
+        text = (
+            "      - uses: actions/checkout@"
+            f"{_SHA_A}  # v4.1.1\n"
+        )
+        refs = list(iter_version_comment_refs(text))
+        assert len(refs) == 1
+        assert refs[0].owner == "actions"
+        assert refs[0].repo == "checkout"
+        assert refs[0].sha == _SHA_A
+        assert refs[0].comment_tag == "v4.1.1"
+
+    def test_picks_up_unprefixed_tag(self):
+        from pipeline_check.core.checks.github._version_comments import (
+            iter_version_comment_refs,
+        )
+        text = (
+            "      - uses: vendor/widget@"
+            f"{_SHA_B}  # 1.2.3\n"
+        )
+        refs = list(iter_version_comment_refs(text))
+        assert refs[0].comment_tag == "1.2.3"
+
+    def test_picks_up_tag_inside_richer_comment(self):
+        from pipeline_check.core.checks.github._version_comments import (
+            iter_version_comment_refs,
+        )
+        text = (
+            "      - uses: vendor/widget@"
+            f"{_SHA_B}  # pin v4 (Renovate)\n"
+        )
+        refs = list(iter_version_comment_refs(text))
+        assert refs[0].comment_tag == "v4"
+
+    def test_picks_up_prerelease_tag(self):
+        from pipeline_check.core.checks.github._version_comments import (
+            iter_version_comment_refs,
+        )
+        text = (
+            "      - uses: vendor/widget@"
+            f"{_SHA_B}  # v1.0.0-beta.2\n"
+        )
+        refs = list(iter_version_comment_refs(text))
+        assert refs[0].comment_tag == "v1.0.0-beta.2"
+
+    def test_skips_line_without_version_token(self):
+        from pipeline_check.core.checks.github._version_comments import (
+            iter_version_comment_refs,
+        )
+        text = (
+            "      - uses: vendor/widget@"
+            f"{_SHA_A}  # pinned by security team\n"
+        )
+        refs = list(iter_version_comment_refs(text))
+        assert refs == []
+
+    def test_skips_line_without_sha_pin(self):
+        from pipeline_check.core.checks.github._version_comments import (
+            iter_version_comment_refs,
+        )
+        text = "      - uses: vendor/widget@v4  # v4.1.1\n"
+        refs = list(iter_version_comment_refs(text))
+        assert refs == []
+
+    def test_skips_local_and_docker_uses(self):
+        from pipeline_check.core.checks.github._version_comments import (
+            iter_version_comment_refs,
+        )
+        text = (
+            "      - uses: ./.github/actions/build  # v1\n"
+            "      - uses: docker://node:18  # latest\n"
+        )
+        assert list(iter_version_comment_refs(text)) == []
+
+    def test_handles_reusable_workflow_subpath(self):
+        from pipeline_check.core.checks.github._version_comments import (
+            iter_version_comment_refs,
+        )
+        text = (
+            "      uses: org/repo/.github/workflows/build.yml@"
+            f"{_SHA_A}  # v2\n"
+        )
+        refs = list(iter_version_comment_refs(text))
+        assert len(refs) == 1
+        assert refs[0].owner == "org"
+        assert refs[0].repo == "repo"
+        assert refs[0].comment_tag == "v2"
+
+    def test_handles_quoted_uses_value(self):
+        from pipeline_check.core.checks.github._version_comments import (
+            iter_version_comment_refs,
+        )
+        text = (
+            "      - uses: \"actions/checkout@"
+            f"{_SHA_A}\"  # v4.1.1\n"
+        )
+        refs = list(iter_version_comment_refs(text))
+        assert len(refs) == 1
+        assert refs[0].comment_tag == "v4.1.1"
+
+    def test_extracts_against_word_boundary(self):
+        # The extractor is anchored on left side so ``av4`` doesn't
+        # produce ``v4``. Trailing characters are absorbed into the
+        # pre-release group, which is fine — a spurious tag lookup
+        # just returns ``None`` from the API and the rule passes
+        # silently, no FP source.
+        from pipeline_check.core.checks.github._version_comments import (
+            _extract_version_token,
+        )
+        # Left-boundary protected: ``av4`` carries no version token.
+        assert _extract_version_token("av4") is None
+        # Pre-release absorption is by design; documented permissive.
+        assert _extract_version_token("branch-v4-fix") == "v4-fix"
+
+    def test_tag_alternates_v_prefix(self):
+        from pipeline_check.core.checks.github._version_comments import (
+            tag_alternates,
+        )
+        assert list(tag_alternates("v4")) == ["v4", "4"]
+        assert list(tag_alternates("4.1")) == ["4.1", "v4.1"]
+        # Tag that isn't strictly version-shaped (no alternative).
+        assert list(tag_alternates("nightly")) == ["nightly"]
+
+
+# ── _version_comments.collect_referenced_action_version_comments ───
+
+
+class TestCollectReferencedActionVersionComments:
+    def test_aggregates_across_workflows(self):
+        from pipeline_check.core.checks.github._version_comments import (
+            collect_referenced_action_version_comments,
+        )
+        wf_a = Workflow(
+            path="a.yml", data={},
+            raw_text=(
+                "      - uses: actions/checkout@"
+                f"{_SHA_A}  # v4.1.1\n"
+                "      - uses: actions/setup-node@"
+                f"{_SHA_B}  # v3\n"
+            ),
+        )
+        wf_b = Workflow(
+            path="b.yml", data={},
+            raw_text=(
+                "      - uses: actions/checkout@"
+                f"{_SHA_C}  # v4.1.2\n"
+            ),
+        )
+        ctx = GitHubContext([wf_a, wf_b])
+        out = collect_referenced_action_version_comments(ctx)
+        assert out == {
+            ("actions", "checkout"): {"v4.1.1", "v4.1.2"},
+            ("actions", "setup-node"): {"v3"},
+        }
+
+    def test_skips_workflow_without_raw_text(self):
+        from pipeline_check.core.checks.github._version_comments import (
+            collect_referenced_action_version_comments,
+        )
+        wf = Workflow(path="composite:x", data={}, raw_text=None)
+        ctx = GitHubContext([wf])
+        assert collect_referenced_action_version_comments(ctx) == {}
+
+
+# ── _action_reputation.fetch_tag_shas ──────────────────────────────
+
+
+class TestFetchTagShas:
+    def test_extracts_sha_from_commits_payload(self):
+        raw = FakeRawFetcher({
+            "repos/acme/widget/commits/v4.1.1": {
+                "sha": _SHA_A,
+                "commit": {"committer": {"date": "2026-05-01T00:00:00Z"}},
+            },
+        })
+        out = ActionMetadataFetcher(raw).fetch_tag_shas(
+            "acme", "widget", {"v4.1.1"},
+        )
+        assert out == {"v4.1.1": _SHA_A}
+
+    def test_missing_payload_yields_none(self):
+        raw = FakeRawFetcher({})
+        out = ActionMetadataFetcher(raw).fetch_tag_shas(
+            "acme", "widget", {"v4.1.1"},
+        )
+        assert out == {"v4.1.1": None}
+
+    def test_handles_malformed_payload(self):
+        raw = FakeRawFetcher({
+            "repos/acme/widget/commits/v4.1.1": "not-a-dict",
+        })
+        out = ActionMetadataFetcher(raw).fetch_tag_shas(
+            "acme", "widget", {"v4.1.1"},
+        )
+        assert out == {"v4.1.1": None}
+
+    def test_empty_set_returns_empty_dict(self):
+        raw = FakeRawFetcher({})
+        out = ActionMetadataFetcher(raw).fetch_tag_shas(
+            "acme", "widget", set(),
+        )
+        assert out == {}
+        assert raw.calls == []
+
+    def test_lowercases_returned_sha(self):
+        raw = FakeRawFetcher({
+            "repos/acme/widget/commits/v1": {"sha": _SHA_A.upper()},
+        })
+        out = ActionMetadataFetcher(raw).fetch_tag_shas(
+            "acme", "widget", {"v1"},
+        )
+        assert out == {"v1": _SHA_A}
+
+    def test_skips_empty_string_tags(self):
+        raw = FakeRawFetcher({})
+        out = ActionMetadataFetcher(raw).fetch_tag_shas(
+            "acme", "widget", {""},
+        )
+        assert out == {}
+        assert raw.calls == []
+
+
+# ── _action_reputation.fetch_branch_heads ──────────────────────────
+
+
+class TestFetchBranchHeads:
+    def test_returns_set_of_tip_shas(self):
+        from pipeline_check.core.checks.github._action_reputation import (
+            ActionMetadataFetcher,
+        )
+
+        fetcher = ActionMetadataFetcher(
+            FakeRawFetcher({
+                "repos/o/r/branches?per_page=100": [
+                    {"name": "main", "commit": {"sha": _SHA_A}},
+                    {"name": "dev", "commit": {"sha": _SHA_B}},
+                ],
+            })
+        )
+        result = fetcher.fetch_branch_heads("o", "r")
+        assert result == frozenset({_SHA_A, _SHA_B})
+
+    def test_returns_none_when_fetch_fails(self):
+        from pipeline_check.core.checks.github._action_reputation import (
+            ActionMetadataFetcher,
+        )
+
+        fetcher = ActionMetadataFetcher(FakeRawFetcher({}))
+        result = fetcher.fetch_branch_heads("o", "r")
+        assert result is None
+
+    def test_skips_short_or_malformed_shas(self):
+        from pipeline_check.core.checks.github._action_reputation import (
+            ActionMetadataFetcher,
+        )
+
+        fetcher = ActionMetadataFetcher(
+            FakeRawFetcher({
+                "repos/o/r/branches?per_page=100": [
+                    {"name": "main", "commit": {"sha": _SHA_A}},
+                    {"name": "weird", "commit": {"sha": "short"}},
+                    {"name": "broken", "commit": "not-a-dict"},
+                    {"name": "missing-commit"},
+                ],
+            })
+        )
+        result = fetcher.fetch_branch_heads("o", "r")
+        assert result == frozenset({_SHA_A})
+
+    def test_lowercases_returned_shas(self):
+        from pipeline_check.core.checks.github._action_reputation import (
+            ActionMetadataFetcher,
+        )
+
+        fetcher = ActionMetadataFetcher(
+            FakeRawFetcher({
+                "repos/o/r/branches?per_page=100": [
+                    {"name": "main", "commit": {"sha": _SHA_A.upper()}},
+                ],
+            })
+        )
+        result = fetcher.fetch_branch_heads("o", "r")
+        assert result == frozenset({_SHA_A})
+
+
+# ── _action_reputation.fetch_sha_membership ────────────────────────
+
+
+class TestFetchShaMembership:
+    def test_present_sha_returns_true(self):
+        from pipeline_check.core.checks.github._action_reputation import (
+            ActionMetadataFetcher,
+        )
+
+        fetcher = ActionMetadataFetcher(
+            FakeRawFetcher({
+                f"repos/o/r/commits/{_SHA_A}": {"sha": _SHA_A},
+            })
+        )
+        result = fetcher.fetch_sha_membership("o", "r", {_SHA_A})
+        assert result == {_SHA_A: True}
+
+    def test_absent_sha_returns_false(self):
+        from pipeline_check.core.checks.github._action_reputation import (
+            ActionMetadataFetcher,
+        )
+
+        # No mapping for the SHA -> FakeRawFetcher returns None ->
+        # the fetcher records the SHA as not-present.
+        fetcher = ActionMetadataFetcher(FakeRawFetcher({}))
+        result = fetcher.fetch_sha_membership("o", "r", {_SHA_A})
+        assert result == {_SHA_A: False}
+
+    def test_mixed_shas(self):
+        from pipeline_check.core.checks.github._action_reputation import (
+            ActionMetadataFetcher,
+        )
+
+        fetcher = ActionMetadataFetcher(
+            FakeRawFetcher({
+                f"repos/o/r/commits/{_SHA_A}": {"sha": _SHA_A},
+            })
+        )
+        result = fetcher.fetch_sha_membership(
+            "o", "r", {_SHA_A, _SHA_B},
+        )
+        assert result == {_SHA_A: True, _SHA_B: False}
+
+    def test_empty_set_returns_empty_dict(self):
+        from pipeline_check.core.checks.github._action_reputation import (
+            ActionMetadataFetcher,
+        )
+
+        fetcher = ActionMetadataFetcher(FakeRawFetcher({}))
+        result = fetcher.fetch_sha_membership("o", "r", set())
+        assert result == {}
 
 
 # ── GHA-047: freshly-committed referenced ref ──────────────────────
@@ -1169,3 +2445,417 @@ class TestPopulateActionMetadata:
         populate_action_metadata(ctx, ActionMetadataFetcher(raw))
         meta = ctx.action_metadata["acme/widget"]
         assert meta.ref_committed_at == {"v1": None}
+
+
+# ── Helper for GHSA advisory construction ────────────────────────────
+
+def _advisory(
+    ghsa_id: str = "GHSA-test-test-test",
+    cve_id: str | None = "CVE-2024-99999",
+    summary: str = "Test advisory",
+    severity: str = "high",
+    vulnerable_ranges: tuple[str, ...] = ("< 4.1.7",),
+    patched_versions: tuple[str | None, ...] = ("4.1.7",),
+) -> ActionAdvisory:
+    return ActionAdvisory(
+        ghsa_id=ghsa_id,
+        cve_id=cve_id,
+        summary=summary,
+        severity=severity,
+        vulnerable_ranges=vulnerable_ranges,
+        patched_versions=patched_versions,
+    )
+
+
+# ── GHA-096: known-vulnerable action ref via GHSA ────────────────────
+
+
+class TestGHA096:
+    def test_fires_when_version_in_vulnerable_range(self):
+        wf = """
+        name: ci
+        on: push
+        jobs:
+          build:
+            runs-on: ubuntu-latest
+            steps:
+              - uses: actions/download-artifact@v4.1.6
+        """
+        k, m = _meta(
+            "actions", "download-artifact",
+            ghsa_advisories=(_advisory(vulnerable_ranges=("< 4.1.7",)),),
+        )
+        f = _run(_ctx_with_metadata(wf, {k: m}), "GHA-096")
+        assert not f.passed
+        assert f.severity == Severity.HIGH
+        assert "actions/download-artifact" in f.description
+        assert "CVE-2024-99999" in f.description
+
+    def test_passes_when_version_above_patched(self):
+        wf = """
+        name: ci
+        on: push
+        jobs:
+          build:
+            runs-on: ubuntu-latest
+            steps:
+              - uses: actions/download-artifact@v4.1.7
+        """
+        k, m = _meta(
+            "actions", "download-artifact",
+            ghsa_advisories=(_advisory(vulnerable_ranges=("< 4.1.7",)),),
+        )
+        f = _run(_ctx_with_metadata(wf, {k: m}), "GHA-096")
+        assert f.passed
+
+    def test_passes_when_no_advisories(self):
+        wf = """
+        name: ci
+        on: push
+        jobs:
+          build:
+            runs-on: ubuntu-latest
+            steps:
+              - uses: actions/checkout@v4.2.0
+        """
+        k, m = _meta("actions", "checkout", ghsa_advisories=())
+        f = _run(_ctx_with_metadata(wf, {k: m}), "GHA-096")
+        assert f.passed
+
+    def test_passes_silently_when_no_metadata(self):
+        wf = """
+        name: ci
+        on: push
+        jobs:
+          build:
+            runs-on: ubuntu-latest
+            steps:
+              - uses: actions/download-artifact@v4.1.6
+        """
+        f = _run(_ctx_with_metadata(wf, {}), "GHA-096")
+        assert f.passed
+        assert "resolve-remote" in f.description
+
+    def test_fires_medium_confidence_for_sha_pin(self):
+        wf = """
+        name: ci
+        on: push
+        jobs:
+          build:
+            runs-on: ubuntu-latest
+            steps:
+              - uses: actions/download-artifact@abcdef1234567890abcdef1234567890abcdef12
+        """
+        k, m = _meta(
+            "actions", "download-artifact",
+            ghsa_advisories=(_advisory(),),
+        )
+        f = _run(_ctx_with_metadata(wf, {k: m}), "GHA-096")
+        assert not f.passed
+        assert "version could not be verified" in f.description
+
+    def test_fires_medium_confidence_for_major_tag(self):
+        wf = """
+        name: ci
+        on: push
+        jobs:
+          build:
+            runs-on: ubuntu-latest
+            steps:
+              - uses: actions/download-artifact@v4
+        """
+        k, m = _meta(
+            "actions", "download-artifact",
+            ghsa_advisories=(_advisory(),),
+        )
+        f = _run(_ctx_with_metadata(wf, {k: m}), "GHA-096")
+        assert not f.passed
+        assert "version could not be verified" in f.description
+
+    def test_fires_on_reusable_workflow_uses(self):
+        wf = """
+        name: ci
+        on: push
+        jobs:
+          call:
+            uses: vuln-org/vuln-repo/.github/workflows/build.yml@v1.0.0
+        """
+        k, m = _meta(
+            "vuln-org", "vuln-repo",
+            ghsa_advisories=(_advisory(
+                vulnerable_ranges=(">= 1.0.0, < 1.0.5",),
+            ),),
+        )
+        f = _run(_ctx_with_metadata(wf, {k: m}), "GHA-096")
+        assert not f.passed
+        assert "vuln-org/vuln-repo" in f.description
+
+    def test_deduplicates_by_owner_repo(self):
+        wf = """
+        name: ci
+        on: push
+        jobs:
+          build:
+            runs-on: ubuntu-latest
+            steps:
+              - uses: actions/download-artifact@v4.1.5
+              - uses: actions/download-artifact@v4.1.5
+        """
+        k, m = _meta(
+            "actions", "download-artifact",
+            ghsa_advisories=(_advisory(vulnerable_ranges=("< 4.1.7",)),),
+        )
+        f = _run(_ctx_with_metadata(wf, {k: m}), "GHA-096")
+        assert not f.passed
+        assert f.description.count("actions/download-artifact") == 1
+
+    def test_version_in_bounded_range(self):
+        wf = """
+        name: ci
+        on: push
+        jobs:
+          build:
+            runs-on: ubuntu-latest
+            steps:
+              - uses: acme/tool@v3.2.0
+        """
+        k, m = _meta(
+            "acme", "tool",
+            ghsa_advisories=(_advisory(
+                vulnerable_ranges=(">= 3.0.0, < 3.5.1",),
+                patched_versions=("3.5.1",),
+            ),),
+        )
+        f = _run(_ctx_with_metadata(wf, {k: m}), "GHA-096")
+        assert not f.passed
+
+    def test_version_outside_bounded_range(self):
+        wf = """
+        name: ci
+        on: push
+        jobs:
+          build:
+            runs-on: ubuntu-latest
+            steps:
+              - uses: acme/tool@v3.5.1
+        """
+        k, m = _meta(
+            "acme", "tool",
+            ghsa_advisories=(_advisory(
+                vulnerable_ranges=(">= 3.0.0, < 3.5.1",),
+                patched_versions=("3.5.1",),
+            ),),
+        )
+        f = _run(_ctx_with_metadata(wf, {k: m}), "GHA-096")
+        assert f.passed
+
+    def test_multiple_advisories(self):
+        wf = """
+        name: ci
+        on: push
+        jobs:
+          build:
+            runs-on: ubuntu-latest
+            steps:
+              - uses: actions/download-artifact@v4.1.0
+        """
+        a1 = _advisory(
+            ghsa_id="GHSA-aaaa-aaaa-aaaa",
+            cve_id="CVE-2024-11111",
+            vulnerable_ranges=("< 4.0.5",),
+        )
+        a2 = _advisory(
+            ghsa_id="GHSA-bbbb-bbbb-bbbb",
+            cve_id="CVE-2024-22222",
+            vulnerable_ranges=("< 4.1.7",),
+        )
+        k, m = _meta(
+            "actions", "download-artifact",
+            ghsa_advisories=(a1, a2),
+        )
+        f = _run(_ctx_with_metadata(wf, {k: m}), "GHA-096")
+        assert not f.passed
+        assert "CVE-2024-22222" in f.description
+
+    def test_ghsa_advisories_none_means_lookup_didnt_run(self):
+        wf = """
+        name: ci
+        on: push
+        jobs:
+          build:
+            runs-on: ubuntu-latest
+            steps:
+              - uses: actions/download-artifact@v4.1.0
+        """
+        k, m = _meta("actions", "download-artifact", ghsa_advisories=None)
+        f = _run(_ctx_with_metadata(wf, {k: m}), "GHA-096")
+        assert f.passed
+
+
+# ── Advisory fetcher tests ───────────────────────────────────────────
+
+
+class TestFetchAdvisories:
+    def test_parses_valid_advisory_response(self):
+        raw = FakeRawFetcher({
+            "advisories?type=reviewed&ecosystem=actions"
+            "&affects=actions/download-artifact&per_page=100": [
+                {
+                    "ghsa_id": "GHSA-test-1234-5678",
+                    "cve_id": "CVE-2024-42471",
+                    "summary": "Path traversal in download-artifact",
+                    "severity": "high",
+                    "vulnerabilities": [
+                        {
+                            "package": {
+                                "ecosystem": "actions",
+                                "name": "actions/download-artifact",
+                            },
+                            "vulnerable_version_range": "< 4.1.7",
+                            "first_patched_version": {
+                                "identifier": "4.1.7",
+                            },
+                        },
+                    ],
+                },
+            ],
+        })
+        fetcher = ActionMetadataFetcher(raw)
+        result = fetcher.fetch_advisories("actions", "download-artifact")
+        assert result is not None
+        assert len(result) == 1
+        assert result[0].ghsa_id == "GHSA-test-1234-5678"
+        assert result[0].cve_id == "CVE-2024-42471"
+        assert result[0].vulnerable_ranges == ("< 4.1.7",)
+        assert result[0].patched_versions == ("4.1.7",)
+
+    def test_returns_none_on_fetch_failure(self):
+        raw = FakeRawFetcher({})
+        fetcher = ActionMetadataFetcher(raw)
+        result = fetcher.fetch_advisories("missing", "action")
+        assert result is None
+
+    def test_returns_empty_tuple_when_no_advisories(self):
+        raw = FakeRawFetcher({
+            "advisories?type=reviewed&ecosystem=actions"
+            "&affects=safe/action&per_page=100": [],
+        })
+        fetcher = ActionMetadataFetcher(raw)
+        result = fetcher.fetch_advisories("safe", "action")
+        assert result == ()
+
+    def test_skips_non_actions_ecosystem_vulns(self):
+        raw = FakeRawFetcher({
+            "advisories?type=reviewed&ecosystem=actions"
+            "&affects=acme/tool&per_page=100": [
+                {
+                    "ghsa_id": "GHSA-npm-only-0000",
+                    "cve_id": None,
+                    "summary": "npm vuln",
+                    "severity": "medium",
+                    "vulnerabilities": [
+                        {
+                            "package": {
+                                "ecosystem": "npm",
+                                "name": "acme-tool",
+                            },
+                            "vulnerable_version_range": "< 2.0.0",
+                            "first_patched_version": {
+                                "identifier": "2.0.0",
+                            },
+                        },
+                    ],
+                },
+            ],
+        })
+        fetcher = ActionMetadataFetcher(raw)
+        result = fetcher.fetch_advisories("acme", "tool")
+        assert result == ()
+
+    def test_multiple_vulnerabilities_in_one_advisory(self):
+        raw = FakeRawFetcher({
+            "advisories?type=reviewed&ecosystem=actions"
+            "&affects=acme/tool&per_page=100": [
+                {
+                    "ghsa_id": "GHSA-multi-rang-test",
+                    "cve_id": "CVE-2024-99999",
+                    "summary": "Multiple ranges",
+                    "severity": "critical",
+                    "vulnerabilities": [
+                        {
+                            "package": {
+                                "ecosystem": "actions",
+                                "name": "acme/tool",
+                            },
+                            "vulnerable_version_range": ">= 3.0.0, < 3.5.1",
+                            "first_patched_version": {
+                                "identifier": "3.5.1",
+                            },
+                        },
+                        {
+                            "package": {
+                                "ecosystem": "actions",
+                                "name": "acme/tool",
+                            },
+                            "vulnerable_version_range": ">= 4.0.0, < 4.1.7",
+                            "first_patched_version": {
+                                "identifier": "4.1.7",
+                            },
+                        },
+                    ],
+                },
+            ],
+        })
+        fetcher = ActionMetadataFetcher(raw)
+        result = fetcher.fetch_advisories("acme", "tool")
+        assert result is not None
+        assert len(result) == 1
+        assert len(result[0].vulnerable_ranges) == 2
+
+    def test_populate_wires_advisories_into_metadata(self):
+        wf = """
+        name: ci
+        on: push
+        jobs:
+          a:
+            runs-on: ubuntu-latest
+            steps:
+              - uses: acme/widget@v1
+        """
+        ctx = _ctx_with_metadata(wf)
+        raw = FakeRawFetcher({
+            "repos/acme/widget": {"stargazers_count": 100},
+            "repos/acme/widget/contributors?per_page=2&anon=false": [
+                {"login": "a"}, {"login": "b"},
+            ],
+            "repos/acme/widget/commits/v1": {
+                "sha": "a" * 40,
+                "commit": {"committer": {"date": "2024-01-01T00:00:00Z"}},
+            },
+            "advisories?type=reviewed&ecosystem=actions"
+            "&affects=acme/widget&per_page=100": [
+                {
+                    "ghsa_id": "GHSA-widg-vuln-0001",
+                    "cve_id": None,
+                    "summary": "Widget vuln",
+                    "severity": "medium",
+                    "vulnerabilities": [
+                        {
+                            "package": {
+                                "ecosystem": "actions",
+                                "name": "acme/widget",
+                            },
+                            "vulnerable_version_range": "< 2.0.0",
+                            "first_patched_version": {
+                                "identifier": "2.0.0",
+                            },
+                        },
+                    ],
+                },
+            ],
+        })
+        populate_action_metadata(ctx, ActionMetadataFetcher(raw))
+        meta = ctx.action_metadata["acme/widget"]
+        assert meta.ghsa_advisories is not None
+        assert len(meta.ghsa_advisories) == 1
+        assert meta.ghsa_advisories[0].ghsa_id == "GHSA-widg-vuln-0001"

@@ -82,6 +82,7 @@ _PROVIDER_PACKAGES: tuple[tuple[str, str, str], ...] = (
     ("pypi",       "pipeline_check.core.checks.pypi.rules",       "PyPI"),
     ("aws",        "pipeline_check.core.checks.aws.rules",        "AWS"),
     ("maven",      "pipeline_check.core.checks.maven.rules",      "maven"),
+    ("nuget",      "pipeline_check.core.checks.nuget.rules",      "NuGet"),
 )
 
 # --------------------------------------------------------------------------- #
@@ -94,7 +95,7 @@ _PROVIDER_PACKAGES: tuple[tuple[str, str, str], ...] = (
 _ANCHORED_PROVIDERS: frozenset[str] = frozenset({
     "github", "gitlab", "bitbucket", "azure", "jenkins", "circleci",
     "cloudbuild", "buildkite", "drone", "tekton", "argo", "dockerfile",
-    "kubernetes", "scm", "oci", "maven",
+    "kubernetes", "scm", "oci", "maven", "nuget",
     # AWS provider doc carries hand-written ``### CB-001: …`` headers
     # that mkdocs slugifies to anchors of shape
     # ``cb-001-secrets-in-plaintext-environment-variables``. Linking with

@@ -231,6 +231,14 @@ STANDARD = Standard(
         "GHA-073":  ["2.3.7"],                           # unused workflow_call.secrets declaration
         "GHA-086":  ["5.1.4", "5.2.1"],                  # wildcard branch trigger + env binding (deploy bypass)
         "GHA-087":  ["2.3.7"],                           # derived-value of secret printed to log (audit-leak surface)
+        "GHA-088":  ["1.4.1", "3.1.3"],                  # typosquat uses: near-edit of top action
+        "GHA-089":  ["1.4.1", "3.1.3"],                  # archived upstream repo
+        "GHA-090":  ["1.4.1", "3.1.3"],                  # impostor-commit: SHA absent from repo
+        "GHA-091":  ["1.4.1", "3.1.3"],                  # repojacking: action upstream missing
+        "GHA-092":  ["2.1.3", "2.3.8"],                  # TOCTOU PR head SHA force-push race
+        "GHA-093":  ["2.3.7"],                           # LOTP indicators (audit-leak surface)
+        "GHA-094":  ["1.4.1", "3.1.5"],                  # stale-action-refs
+        "GHA-096":  ["1.4.1", "3.1.3"],                  # known-vulnerable action ref (GHSA)
         # GitLab CI
         "GL-001":   ["1.4.1", "3.1.5"],
         "GL-002":   ["2.1.3", "2.3.8"],
@@ -593,7 +601,24 @@ STANDARD = Standard(
         "MVN-005":  ["3.1.3"],                     # lax repository checksumPolicy
         "MVN-006":  ["1.4.1", "3.1.3"],            # compromised-package registry
         "MVN-007":  ["3.1.5", "1.4.1"],            # settings.xml wildcard mirror
-        # ── Cross-cutting dataflow / taint engine ─────────────────
+        "MVN-008":  ["1.4.1", "3.1.3"],            # cooldown gate (--resolve-remote)
+        "MVN-009":  ["1.4.1", "3.1.3"],            # OSV advisory (--resolve-remote)
+        "NPM-008":  ["1.4.1", "3.1.3"],            # cooldown gate (--resolve-remote)
+        "NPM-009":  ["1.4.1", "3.1.3"],            # new-transitive-dep diff gate
+        "NPM-010":  ["1.4.1", "3.1.3"],            # OSV advisory (--resolve-remote)
+        "PYPI-008": ["1.4.1", "3.1.3"],            # cooldown gate (--resolve-remote)
+        "PYPI-009": ["1.4.1", "3.1.3"],            # OSV advisory (--resolve-remote)
+        # ── nuget (dep supply-chain) ───────��──────────────────────
+        "NUGET-001": ["1.4.1", "3.1.3"],           # floating NuGet version range
+        "NUGET-002": ["1.4.1", "3.1.3"],           # wildcard prerelease version
+        "NUGET-003": ["1.4.1", "3.1.3"],           # missing explicit version
+        "NUGET-004": ["3.1.5", "1.4.1"],           # HTTP-only package source
+        "NUGET-005": ["1.4.1", "3.1.3"],           # known-compromised package version
+        "NUGET-006": ["3.1.3", "4.1.1"],           # no lock file for reproducible restores
+        "NUGET-007": ["3.1.5", "1.4.1"],           # multiple sources without packageSourceMapping
+        "NUGET-008": ["1.4.1", "3.1.3"],           # cooldown gate (--resolve-remote)
+        "NUGET-009": ["1.4.1", "3.1.3"],           # OSV advisory (--resolve-remote)
+        # ── Cross-cutting dataflow / taint engine ───────��─────────
         # The taint family flags cross-step / cross-job flows where
         # untrusted input reaches a privileged sink. That's the
         # textbook 2.3.8 (pipeline configuration reviewed before

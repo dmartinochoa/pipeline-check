@@ -28,6 +28,22 @@ from ..checks.npm.registry_fetcher import (
 from ..inventory import Component
 from .base import BaseProvider
 
+_EXACT_VERSION_RE = __import__("re").compile(
+    r"^=?v?(\d+\.\d+\.\d+(?:[\w.+-]*)?)$"
+)
+
+
+def _collect_osv_queries_npm(
+    context: NpmContext,
+) -> list[tuple[str, str, str]]:
+    queries: list[tuple[str, str, str]] = []
+    for manifest in context.manifests:
+        for _section, name, spec in iter_manifest_dependencies(manifest):
+            m = _EXACT_VERSION_RE.match(spec.strip())
+            if m:
+                queries.append((name, m.group(1), "npm"))
+    return queries
+
 
 class NpmProvider(BaseProvider):
     """npm provider, parses package.json + package-lock.json documents."""
@@ -104,6 +120,17 @@ class NpmProvider(BaseProvider):
         )
         context.publish_times = publish_times
         context.warnings.extend(warnings)
+
+        osv_queries = _collect_osv_queries_npm(context)
+        if osv_queries:
+            from ..checks._primitives.osv_fetcher import query_osv_batch
+            osv_cache = FileSystemCache(
+                default_cache_dir() / "osv", enabled=not no_cache,
+            )
+            context.osv_advisories = query_osv_batch(
+                osv_queries, cache=osv_cache,
+                warnings=context.warnings,
+            )
 
     def inventory(self, context: NpmContext) -> list[Component]:
         out: list[Component] = []

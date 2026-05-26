@@ -348,6 +348,23 @@ STANDARD = Standard(
         "MVN-005":  ["4.1.5"],                     # lax checksumPolicy
         "MVN-006":  ["4.1.3"],                     # compromised Maven version
         "MVN-007":  ["4.2.1"],                     # settings.xml wildcard mirror
+        "MVN-008":  ["4.1.3"],                     # cooldown gate (--resolve-remote)
+        "MVN-009":  ["4.1.3"],                     # OSV advisory (--resolve-remote)
+        "NPM-008":  ["4.1.3"],                     # cooldown gate (--resolve-remote)
+        "NPM-009":  ["4.1.5"],                     # new-transitive-dep diff gate
+        "NPM-010":  ["4.1.3"],                     # OSV advisory (--resolve-remote)
+        "PYPI-008": ["4.1.3"],                     # cooldown gate (--resolve-remote)
+        "PYPI-009": ["4.1.3"],                     # OSV advisory (--resolve-remote)
+        # ── nuget (dep supply-chain) ─────────────────────────────
+        "NUGET-001": ["4.1.5"],                    # floating NuGet version range
+        "NUGET-002": ["4.1.5"],                    # wildcard prerelease version
+        "NUGET-003": ["4.1.5"],                    # missing explicit version
+        "NUGET-004": ["4.2.1"],                    # HTTP-only package source
+        "NUGET-005": ["4.1.3"],                    # known-compromised package version
+        "NUGET-006": ["4.1.5"],                    # no lock file for reproducible restores
+        "NUGET-007": ["4.2.1"],                    # multiple sources without packageSourceMapping
+        "NUGET-008": ["4.1.3"],                    # cooldown gate (--resolve-remote)
+        "NUGET-009": ["4.1.3"],                    # OSV advisory (--resolve-remote)
         # ── OCI image manifest gaps ──────────────────────────────
         # OCI-001..003/005 are image-provenance metadata gaps —
         # untrusted-image surface (4.1.5). OCI-004 foreign-layer
@@ -436,6 +453,7 @@ STANDARD = Standard(
         "GHA-058":  ["4.4.5"],                     # agentic CLI permission-bypass
         "GHA-059":  ["4.1.5"],                     # npm install without audit signatures
         "GHA-060":  ["4.1.5"],                     # pip install without --require-hashes
+        "GHA-092":  ["4.4.5"],                     # TOCTOU PR head SHA force-push race
         # ── GitLab CI container-touching extras ──────────────────
         "GL-015":  ["4.4.5"],                      # no timeout
         "GL-020":  ["4.1.4"],                      # CI_JOB_TOKEN persisted

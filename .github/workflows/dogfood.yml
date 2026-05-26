@@ -3,23 +3,14 @@ name: Dogfood
 on:
   push:
     branches: ["master"]
-  pull_request:
-    branches: ["master", "dev"]
-    # Skip dogfood on PRs that don't touch the scanner, the workflows,
-    # or the dogfood job itself. A docs / bench / README PR can't move
-    # the SARIF output, so the run is pure wait.
-    paths-ignore:
-      - "docs/**"
-      - "bench/**"
-      - "**/*.md"
-      - "mkdocs.yml"
+  workflow_dispatch:
 
 permissions:
   contents: read
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+  cancel-in-progress: false
 
 jobs:
   scan-self:
@@ -77,7 +68,7 @@ jobs:
 
       - name: Upload SARIF to GitHub code scanning
         if: always()
-        uses: github/codeql-action/upload-sarif@9e0d7b8d25671d64c341c19c0152d693099fb5ba  # v4.35.5
+        uses: github/codeql-action/upload-sarif@7211b7c8077ea37d8641b6271f6a365a22a5fbfa  # v4.36.0
         with:
           sarif_file: pipeline-check.sarif
           category: pipeline-check-dogfood
@@ -128,7 +119,7 @@ jobs:
         # be pinned to a full-length commit SHA" policy refuses to
         # run. Bump this back to a release tag once a v1.0.2+ (or
         # whatever cuts after) is published.
-        uses: dmartinochoa/pipeline-check@da927585a2c7898a85aba95a80bfc52221e1c6cc  # post-v1.0.1 SHA-pin fix
+        uses: dmartinochoa/pipeline-check@6cb412d13d8150fcff1d65a4c1cc639f95f19a54  # post-v1.0.1 SHA-pin fix
         with:
           pipeline: github
           path: .github/workflows
@@ -137,7 +128,7 @@ jobs:
 
       - name: Upload SARIF to GitHub code scanning
         if: always()
-        uses: github/codeql-action/upload-sarif@9e0d7b8d25671d64c341c19c0152d693099fb5ba  # v4.35.5
+        uses: github/codeql-action/upload-sarif@7211b7c8077ea37d8641b6271f6a365a22a5fbfa  # v4.36.0
         with:
           sarif_file: pipeline-check.sarif
           category: pipeline-check-dogfood-published

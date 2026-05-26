@@ -124,6 +124,7 @@ class NpmContext:
         #: the dict is empty so the rule's absence isn't a CI
         #: failure for users on the default no-network path.
         self.publish_times: dict[str, dict[str, _dt.datetime]] = {}
+        self.osv_advisories: dict[tuple[str, str], list[Any]] = {}
         #: Base-ref counterparts of ``locks``, populated by the npm
         #: provider's ``post_filter`` when ``--npm-base-ref`` is set.
         #: Each base lock carries the same repo-relative path (under

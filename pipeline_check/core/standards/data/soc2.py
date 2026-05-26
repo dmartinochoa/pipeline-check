@@ -432,6 +432,14 @@ STANDARD = Standard(
         "GHA-073":  ["CC6.1"],              # unused workflow_call.secrets declaration
         "GHA-086":  ["CC8.1"],              # wildcard branch trigger + environment binding
         "GHA-087":  ["CC6.1"],              # derived-value of secret printed to log
+        "GHA-088":  ["CC6.8", "CC8.1"],     # typosquat uses: near-edit of top action
+        "GHA-089":  ["CC6.8", "CC8.1"],     # archived upstream repo
+        "GHA-090":  ["CC6.8", "CC8.1"],     # impostor-commit: SHA absent from repo
+        "GHA-091":  ["CC6.8", "CC8.1"],     # repojacking: action upstream missing
+        "GHA-092":  ["CC6.8"],              # TOCTOU PR head SHA force-push race
+        "GHA-093":  ["CC6.1"],              # LOTP indicators
+        "GHA-094":  ["CC6.8", "CC8.1"],     # stale-action-refs
+        "GHA-096":  ["CC6.8", "CC8.1"],     # known-vulnerable action ref (GHSA)
         # ── GitLab CI ─────────────────────────────────────────────
         "GL-006":   ["CC8.1"],              # unsigned artifacts
         "GL-007":   ["CC8.1"],              # no SBOM
@@ -605,6 +613,23 @@ STANDARD = Standard(
         "MVN-005":  ["CC8.1"],
         "MVN-006":  ["CC6.8", "CC7.1", "CC8.1"],
         "MVN-007":  ["CC8.1"],
+        "MVN-008":  ["CC6.8", "CC7.1", "CC8.1"],
+        "MVN-009":  ["CC6.8", "CC7.1", "CC8.1"],
+        "NPM-008":  ["CC6.8", "CC7.1", "CC8.1"],
+        "NPM-009":  ["CC8.1"],
+        "NPM-010":  ["CC6.8", "CC7.1", "CC8.1"],
+        "PYPI-008": ["CC6.8", "CC7.1", "CC8.1"],
+        "PYPI-009": ["CC6.8", "CC7.1", "CC8.1"],
+        # ── nuget (dep supply-chain) ─────────────────────────────
+        "NUGET-001": ["CC8.1"],
+        "NUGET-002": ["CC8.1"],
+        "NUGET-003": ["CC8.1"],
+        "NUGET-004": ["CC6.7", "CC8.1"],
+        "NUGET-005": ["CC6.8", "CC7.1", "CC8.1"],
+        "NUGET-006": ["CC8.1"],
+        "NUGET-007": ["CC8.1"],
+        "NUGET-008": ["CC6.8", "CC7.1", "CC8.1"],
+        "NUGET-009": ["CC6.8", "CC7.1", "CC8.1"],
         # ── OCI image manifest gaps ──────────────────────────────
         "OCI-001":  ["CC8.1"],              # provenance annotations missing
         "OCI-002":  ["CC8.1"],              # build attestation missing

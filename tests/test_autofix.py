@@ -874,7 +874,7 @@ class TestGHA034SecretsInheritTODO:
             "    uses: octo/repo/.github/workflows/build.yml@v2\n"
             "    secrets: inherit\n"
         )
-        after = autofix.generate_fix(_finding("GHA-034"), wf)
+        after = autofix.generate_fix(_finding("GHA-034"), wf, tier="unsafe")
         assert after is not None
         assert "TODO(pipeline-check GHA-034)" in after
 
@@ -886,7 +886,7 @@ class TestGHA034SecretsInheritTODO:
             "    secrets:\n"
             "      NPM_TOKEN: ${{ secrets.NPM_TOKEN }}\n"
         )
-        assert autofix.generate_fix(_finding("GHA-034"), wf) is None
+        assert autofix.generate_fix(_finding("GHA-034"), wf, tier="unsafe") is None
 
     def test_idempotent(self):
         wf = (
@@ -895,9 +895,9 @@ class TestGHA034SecretsInheritTODO:
             "    uses: octo/repo/.github/workflows/build.yml@v2\n"
             "    secrets: inherit\n"
         )
-        once = autofix.generate_fix(_finding("GHA-034"), wf)
+        once = autofix.generate_fix(_finding("GHA-034"), wf, tier="unsafe")
         assert once is not None
-        assert autofix.generate_fix(_finding("GHA-034"), once) is None
+        assert autofix.generate_fix(_finding("GHA-034"), once, tier="unsafe") is None
 
 
 class TestGCB022SubstitutionOptionLooseDrop:
@@ -1525,7 +1525,7 @@ class TestRoundtripSafety:
     def test_bails_when_after_does_not_parse(self, monkeypatch):
         from pipeline_check.core import autofix as af
 
-        @af.register("ZZ-PARSE-BREAK")
+        @af.register("ZZ-PARSE-BREAK", safety="safe")
         def _break(content, finding):
             return "key: : invalid\n  - lol\n"  # not valid YAML
 
@@ -1537,7 +1537,7 @@ class TestRoundtripSafety:
     def test_bails_when_top_level_type_changes(self):
         from pipeline_check.core import autofix as af
 
-        @af.register("ZZ-TYPE-SWAP")
+        @af.register("ZZ-TYPE-SWAP", safety="safe")
         def _swap(content, finding):
             return "- a\n- b\n"  # list, was a mapping
 
@@ -1548,7 +1548,7 @@ class TestRoundtripSafety:
     def test_bails_when_multidoc_count_changes(self):
         from pipeline_check.core import autofix as af
 
-        @af.register("ZZ-DOC-DROP")
+        @af.register("ZZ-DOC-DROP", safety="safe")
         def _drop(content, finding):
             # Strip the second document from a two-doc stream.
             return content.split("---", 1)[0]
@@ -1710,7 +1710,7 @@ class TestGHA003EnvBlockIndent:
             "    steps:\n"
             '      - run: echo "${{ github.event.pull_request.title }}"\n'
         )
-        after = autofix.generate_fix(_finding("GHA-003"), wf)
+        after = autofix.generate_fix(_finding("GHA-003"), wf, tier="unsafe")
         assert after is not None, (
             "fixer produced no patch, likely because the ``env:`` block "
             "was over-indented and tripped the YAML safety net"
