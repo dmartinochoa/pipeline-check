@@ -3,6 +3,13 @@ name: CodeQL
 on:
   push:
     branches: ["master"]
+  pull_request:
+    branches: ["master"]
+    paths-ignore:
+      - "docs/**"
+      - "bench/**"
+      - "**/*.md"
+      - "mkdocs.yml"
   schedule:
     - cron: "27 4 * * 1"
   workflow_dispatch:
@@ -12,7 +19,7 @@ permissions:
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: false
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
   analyze:
