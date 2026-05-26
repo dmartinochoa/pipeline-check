@@ -6,7 +6,6 @@ build_dependencies() returns the expected components.
 from __future__ import annotations
 
 from pathlib import Path
-from typing import Any
 
 from pipeline_check.core.scanner import Scanner
 
