@@ -105,37 +105,53 @@ _REGISTRY: tuple[WormIndicator, ...] = (
         ),
     ),
 
-    # Megalodon campaign (May 2026). Over 5,500 GitHub repos were
-    # poisoned via automated commits injecting malicious GitHub Actions
-    # workflows. All 5,718 commits landed in a single six-hour window.
-    # The injected workflows exfiltrated secrets from the runner.
+    # Megalodon campaign (May 18, 2026). 5,718 automated commits
+    # across 5,561 repos in a six-hour window (11:36-17:48 UTC).
+    # Injected workflows named "SysDiag" or "Optimize-Build" with
+    # base64-encoded bash payloads exfiltrating secrets to
+    # 216.126.225.129:8443/collect. Throwaway accounts used 8-char
+    # random usernames. Source: StepSecurity, SafeDep, SecurityWeek.
     WormIndicator(
-        category="pattern",
-        name="Megalodon injected workflow",
+        category="literal",
+        name="Megalodon SysDiag workflow name",
         pattern=re.compile(
-            r"\bmegalodon[-_]?(?:workflow|action|ci)\.ya?ml\b",
-            re.IGNORECASE,
+            r"\bSysDiag\b",
         ),
         advisory=(
             "Megalodon mass-injection campaign (May 2026). 5,718 "
-            "automated commits across 5,500+ repos injected malicious "
-            "GitHub Actions workflows in a six-hour window. "
-            "https://www.securityweek.com/over-5500-github-repositories-"
-            "infected-in-megalodon-supply-chain-attack/"
+            "commits across 5,500+ repos injected workflows named "
+            "'SysDiag' that exfiltrated runner secrets. "
+            "https://www.stepsecurity.io/blog/megalodon-mass-github-"
+            "actions-secret-exfiltration-across-5-500-public-repositories"
+        ),
+    ),
+    WormIndicator(
+        category="literal",
+        name="Megalodon C2 endpoint",
+        pattern=re.compile(
+            r"\b216\.126\.225\.129\b",
+        ),
+        advisory=(
+            "Megalodon mass-injection campaign (May 2026). The C2 "
+            "server at 216.126.225.129:8443 received gzip-compressed "
+            "secret archives from compromised runners. "
+            "https://safedep.io/megalodon-mass-github-repo-backdooring-"
+            "ci-workflows/"
         ),
     ),
     WormIndicator(
         category="pattern",
-        name="Megalodon exfil endpoint",
+        name="Megalodon forged commit author",
         pattern=re.compile(
-            r"\bmegalodon[-_]?(?:collect|exfil|harvest)",
+            r"\b(?:build-bot@github-ci\.com|build-system@noreply\.dev|"
+            r"ci-bot@automated\.dev|ci-pipeline@actions-bot\.com)\b",
             re.IGNORECASE,
         ),
         advisory=(
-            "Megalodon mass-injection campaign (May 2026). Pattern "
-            "matching the campaign's exfiltration endpoint names. "
-            "https://www.securityweek.com/over-5500-github-repositories-"
-            "infected-in-megalodon-supply-chain-attack/"
+            "Megalodon mass-injection campaign (May 2026). Forged "
+            "commit author emails used by throwaway accounts. "
+            "https://safedep.io/megalodon-mass-github-repo-backdooring-"
+            "ci-workflows/"
         ),
     ),
 

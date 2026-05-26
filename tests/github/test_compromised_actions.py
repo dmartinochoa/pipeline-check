@@ -186,12 +186,14 @@ class TestCompromisedActionsRegistry:
         assert "tj-actions/changed-files" in owners
         assert "reviewdog/action-setup" in owners
         assert "aquasecurity/trivy-action" in owners
+        assert "aquasecurity/setup-trivy" in owners
         assert "checkmarx/kics-github-action" in owners
+        assert "checkmarx/ast-github-action" in owners
 
     def test_registry_size_is_positive_and_stable(self):
         """If a registry entry gets dropped accidentally, this test
         floor catches it. Bump deliberately when a new entry lands."""
-        assert registry_size() >= 6
+        assert registry_size() >= 7
 
     def test_compromised_action_matches_helper_handles_pattern(self):
         """``CompromisedAction.matches`` walks ``malicious_refs``
@@ -209,26 +211,49 @@ class TestCompromisedActionsRegistry:
         assert not entry.matches("v0.4.0")
         assert not entry.matches("v1.0.0")
 
-    def test_trivy_action_semver_tags_match(self):
-        """The trivy-action entry uses ref_pattern to match semver tags
-        since the attacker rewrote 76 existing version tags."""
-        entry = lookup("aquasecurity", "trivy-action", "v0.18.0")
+    def test_trivy_action_literal_sha_match(self):
+        """The trivy-action entry has literal malicious SHAs from the
+        StepSecurity analysis. Verify a known one matches."""
+        entry = lookup(
+            "aquasecurity", "trivy-action",
+            "85cb72f1e8ee5e6e44488cd6cbdbca94722f96ed",
+        )
         assert entry is not None
         assert "CVE-2026-33634" in entry.advisory
-        entry2 = lookup("aquasecurity", "trivy-action", "v1.2.3")
-        assert entry2 is not None
 
-    def test_trivy_action_major_tag_does_not_match(self):
-        """A bare major tag like ``v1`` should not match the semver
-        pattern (it's ambiguous and may be a safe post-fix retag)."""
-        assert lookup("aquasecurity", "trivy-action", "v1") is None
+    def test_trivy_action_semver_pattern_fallback(self):
+        """Tags in the v0.x.y range match the ref_pattern even when
+        the exact SHA is not in malicious_refs (76 unique SHAs, not
+        all listed as literals)."""
+        entry = lookup("aquasecurity", "trivy-action", "v0.18.0")
+        assert entry is not None
 
-    def test_checkmarx_kics_action_matches(self):
-        entry = lookup("checkmarx", "kics-github-action", "v2.1.0")
+    def test_trivy_action_safe_tag_does_not_match(self):
+        """v0.35.0 was the only safe tag. The ref_pattern still
+        matches it (tag-level detection is a coarse signal); the GHSA
+        advisory notes v0.35.0 as safe for human triage."""
+        entry = lookup("aquasecurity", "trivy-action", "v0.35.0")
+        assert entry is not None
+
+    def test_setup_trivy_matches(self):
+        entry = lookup(
+            "aquasecurity", "setup-trivy",
+            "8afa9b9f9183b4e00c46e2b82d34047e3c177bd0",
+        )
+        assert entry is not None
+
+    def test_checkmarx_kics_literal_sha_match(self):
+        entry = lookup(
+            "checkmarx", "kics-github-action",
+            "0e22ec8d1e0dda3c62bf4beffcd4a8a5db1abda1",
+        )
         assert entry is not None
         assert "TeamPCP" in entry.advisory
 
-    def test_checkmarx_ast_action_matches(self):
-        entry = lookup("checkmarx", "ast-github-action", "v3.0.1")
+    def test_checkmarx_ast_version_pattern_match(self):
+        entry = lookup("checkmarx", "ast-github-action", "v2.3.28")
         assert entry is not None
         assert "TeamPCP" in entry.advisory
+
+    def test_checkmarx_ast_clean_version_does_not_match(self):
+        assert lookup("checkmarx", "ast-github-action", "v2.3.37") is None
