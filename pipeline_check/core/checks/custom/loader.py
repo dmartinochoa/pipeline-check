@@ -419,5 +419,6 @@ __all__ = [
     "LoadedRegoRules",
     "RegoRuleMetadata",
     "load_custom_rules",
+    "make_kubernetes_check",
     "make_yaml_provider_check",
 ]

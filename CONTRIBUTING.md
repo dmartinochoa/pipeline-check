@@ -72,7 +72,7 @@ regenerated pages are committed.
 
 ## Numerical claims in docs
 
-Counts in README and `docs/index.md` ("24 providers", "15 standards",
+Counts in README and `docs/index.md` ("24 providers", "16 standards",
 "111 autofixers", "45 attack chains", "870+ checks") are pinned to
 the live registries by `tests/test_doc_claims.py`. Adding a new
 provider or rule will bump the expected count automatically. If

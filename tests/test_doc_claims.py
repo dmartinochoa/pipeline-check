@@ -1,7 +1,7 @@
 """Lock doc claims against the live code.
 
 Numerical claims in `README.md` and `docs/index.md` ("23 providers",
-"15 compliance standards", "111 autofixers", "41 attack chains",
+"16 compliance standards", "111 autofixers", "45 attack chains",
 "820+ checks") are easy to lie about and easy to forget when adding
 a new provider, fixer, or standard. This test scans the doc set for
 those claims and asserts each one matches what the registries
@@ -175,7 +175,9 @@ _STANDARD_CLAIM = re.compile(
 _AUTOFIXER_CLAIM = re.compile(
     r"\b(\d+)\s+(?:autofixer|fixer)s?\b", re.IGNORECASE
 )
-_CHAIN_CLAIM = re.compile(r"\b(\d+)\s+attack\s+chains?\b", re.IGNORECASE)
+_CHAIN_CLAIM = re.compile(
+    r"\b(\d+)\s+(?:attack|multi-finding)\s+chains?\b", re.IGNORECASE,
+)
 # "430+ checks". The trailing ``+`` is mandatory so per-provider rows
 # in the README provider table ("71 checks") aren't read as total-
 # catalog claims. Total-catalog claims always carry the ``+``.
