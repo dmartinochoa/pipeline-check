@@ -7,22 +7,30 @@ and iterate ``self.ctx.pipelines``.
 Local ``include:`` directives are resolved at load time so cross-job
 rules (TAINT-008 ``extends:`` taint, GL-002 script injection across
 hidden template jobs) see jobs and variables defined in included
-files. Resolution is local-only (no network); ``include: { remote:
-}`` / ``project:`` / ``template:`` directives are surfaced as
+files. When ``--resolve-remote`` is on, the provider's ``post_filter``
+also fetches ``remote:`` / ``project:`` / ``template:`` /
+``component:`` includes via the GitLab API and merges them into the
+pipeline document. When off, those directives are surfaced as
 warnings so the operator knows their scan was incomplete.
 """
 from __future__ import annotations
 
+import logging
 from collections.abc import Iterator
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 import yaml
 
 from .._yaml_files import load_yaml_files
 from .._yaml_lines import safe_load_yaml_lines  # still used by the include resolver
 from ..base import BaseCheck
+
+if TYPE_CHECKING:
+    from .resolver import GitLabIncludeFetcher
+
+logger = logging.getLogger(__name__)
 
 #: Maximum ``include:`` resolution depth. GitLab itself caps at 100
 #: but in practice CI repos rarely exceed 3-4 levels; keeping the cap
@@ -46,6 +54,7 @@ class Pipeline:
 
     path: str
     data: dict[str, Any]
+    resolved_includes: tuple[str, ...] = ()
 
 
 class GitLabContext:
@@ -287,6 +296,140 @@ def _resolve_local_includes(
                 data[key] = value
 
     return data, warnings
+
+
+def _resolve_remote_includes(
+    data: dict[str, Any],
+    *,
+    fetcher: GitLabIncludeFetcher,
+    scan_root: Path | None = None,
+    visited_remote: frozenset[str] = frozenset(),
+    depth: int = 0,
+) -> tuple[dict[str, Any], list[str]]:
+    """Fetch and merge remote ``include:`` directives into *data*.
+
+    Called from ``GitLabProvider.post_filter()`` when
+    ``--resolve-remote`` is on. Handles ``project:``, ``remote:``,
+    ``template:``, and ``component:`` include types. Local includes are
+    already resolved at this point so they are skipped.
+
+    Merge semantics match ``_resolve_local_includes()``: parent keys win
+    on conflict, the ``include:`` block is preserved for pinning rules.
+
+    Fetched documents are recursively resolved for their own remote
+    includes (up to :data:`_INCLUDE_MAX_DEPTH`) and for local includes
+    when *scan_root* is provided.
+    """
+    warnings: list[str] = []
+    if depth > _INCLUDE_MAX_DEPTH:
+        warnings.append(
+            f"remote include depth limit {_INCLUDE_MAX_DEPTH} exceeded"
+        )
+        return data, warnings
+
+    include_block = data.get("include")
+    if include_block is None:
+        return data, warnings
+
+    items = (
+        include_block if isinstance(include_block, list) else [include_block]
+    )
+    resolved_keys: list[str] = []
+
+    for item in items:
+        if isinstance(item, str):
+            continue
+        if not isinstance(item, dict):
+            continue
+        if item.get("local") is not None:
+            continue
+
+        kind = next(
+            (k for k in ("project", "remote", "template", "component")
+             if k in item),
+            None,
+        )
+        if kind is None:
+            continue
+
+        canonical = _canonical_include_id(kind, item)
+        if canonical in visited_remote:
+            warnings.append(f"remote include cycle detected: {canonical}")
+            continue
+
+        raw = fetcher.fetch(kind, item)
+        if raw is None:
+            warnings.append(
+                f"remote include fetch failed: {kind}:"
+                f"{item.get(kind, '?')}"
+            )
+            continue
+
+        if isinstance(raw, bytes):
+            text = raw.decode("utf-8", errors="replace")
+        else:
+            text = str(raw)
+
+        try:
+            included = safe_load_yaml_lines(text)
+        except yaml.YAMLError as exc:
+            first_line = str(exc).split("\n", 1)[0]
+            warnings.append(
+                f"remote include parse error ({kind}:"
+                f"{item.get(kind, '?')}): {first_line}"
+            )
+            continue
+        if not isinstance(included, dict):
+            continue
+
+        next_visited = visited_remote | {canonical}
+
+        # Recurse: the fetched document may itself have remote includes.
+        included, sub_warnings = _resolve_remote_includes(
+            included,
+            fetcher=fetcher,
+            scan_root=scan_root,
+            visited_remote=next_visited,
+            depth=depth + 1,
+        )
+        warnings.extend(sub_warnings)
+
+        # If the fetched doc has local includes and we have a scan root,
+        # resolve those too.
+        if scan_root is not None and included.get("include"):
+            included, local_warnings = _resolve_local_includes(
+                included,
+                base_dir=scan_root,
+                scan_root=scan_root,
+                depth=depth + 1,
+            )
+            warnings.extend(local_warnings)
+
+        resolved_keys.append(canonical)
+
+        for key, value in included.items():
+            if key == "include":
+                continue
+            if key not in data:
+                data[key] = value
+
+    return data, warnings
+
+
+def _canonical_include_id(kind: str, spec: dict[str, Any]) -> str:
+    """Stable identifier for cycle detection across remote includes."""
+    if kind == "project":
+        return (
+            f"project:{spec.get('project', '')}:"
+            f"{spec.get('file', '')}@{spec.get('ref', 'HEAD')}"
+        )
+    if kind == "remote":
+        return f"remote:{spec.get('remote', '')}"
+    if kind == "template":
+        return f"template:{spec.get('template', '')}"
+    if kind == "component":
+        return f"component:{spec.get('component', '')}"
+    return f"{kind}:{spec}"
 
 
 def iter_jobs(pipeline: dict[str, Any]) -> Iterator[tuple[str, dict[str, Any]]]:

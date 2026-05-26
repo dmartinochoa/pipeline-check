@@ -1188,12 +1188,13 @@ def _install_completion_callback(
     default=False,
     show_default=True,
     help=(
-        "Follow ``jobs.<id>.uses: owner/repo/.github/workflows/x.yml@<sha>`` "
-        "to the called workflow body and run the GHA rule pack against "
-        "it with the caller's permissions context. Default off, the "
-        "scanner stays read-from-disk-only by default. When off and a "
-        "remote ref is encountered, a one-line stderr warning lists "
-        "the count so users know what they're missing."
+        "Enable network-dependent resolution. GitHub Actions: follow "
+        "reusable workflow and composite action refs to the called body. "
+        "GitLab CI: fetch include: { project/remote/template/component } "
+        "directives and merge them into the pipeline document. Also "
+        "enables live advisory lookups (OSV, GHSA) and secret "
+        "verification. Default off, the scanner stays read-from-disk-only "
+        "by default."
     ),
 )
 @click.option(
@@ -1208,13 +1209,37 @@ def _install_completion_callback(
     ),
 )
 @click.option(
+    "--gitlab-token",
+    "gitlab_token",
+    default=None,
+    metavar="TOKEN",
+    help=(
+        "GitLab token used by --resolve-remote when fetching "
+        "include: { project/template/component } directives. "
+        "Falls back to $GITLAB_TOKEN. Only required for private "
+        "projects."
+    ),
+)
+@click.option(
+    "--gitlab-url",
+    "gitlab_url",
+    default="https://gitlab.com",
+    show_default=True,
+    metavar="URL",
+    help=(
+        "GitLab instance URL for API calls when resolving remote "
+        "includes. Set to your self-hosted instance URL if not "
+        "using gitlab.com."
+    ),
+)
+@click.option(
     "--no-cache",
     "no_cache",
     is_flag=True,
     default=False,
     help=(
         "Bypass the on-disk resolver cache "
-        "(~/.cache/pipeline-check/gha-resolver) for this scan. "
+        "(~/.cache/pipeline-check/) for this scan. "
         "Useful when a tag was force-pushed to a different SHA "
         "and you want the new bytes."
     ),
@@ -2216,6 +2241,8 @@ def scan(
     serve: bool = False,
     resolve_remote: bool = False,
     gh_token: str | None = None,
+    gitlab_token: str | None = None,
+    gitlab_url: str = "https://gitlab.com",
     no_cache: bool = False,
     verify_secrets: bool = False,
     verify_secrets_show_identity: bool = False,
@@ -2811,6 +2838,8 @@ def scan(
         argocd_path=argocd_path,
         resolve_remote=resolve_remote,
         gh_token=gh_token,
+        gitlab_token=gitlab_token,
+        gitlab_url=gitlab_url,
         no_cache=no_cache,
         verify_secrets=verify_secrets,
         verify_secrets_show_identity=verify_secrets_show_identity,

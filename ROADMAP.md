@@ -4,6 +4,21 @@ What's planned, what's shipped, and what's deliberately out of scope.
 
 ## Shipped
 
+- **GitLab remote ``include:`` resolver (post-1.4.0, closes #164)** —
+  Cross-document taint resolution for GitLab CI. When
+  ``--resolve-remote`` is on, the provider fetches
+  ``include: { project/remote/template/component }`` directives via
+  the GitLab API and merges them into the pipeline document before
+  rules run. TAINT-004 (dotenv artifact flow) and TAINT-008
+  (extends-chain inheritance) now see jobs and templates from remote
+  includes. Four include types: ``project:`` (file API with
+  ``PRIVATE-TOKEN``), ``remote:`` (HTTPS-only direct fetch),
+  ``template:`` (templates API), ``component:`` (URI-parsed to project
+  file fetch). Recursive resolution with depth limit and cycle
+  detection. Disk cache at
+  ``~/.cache/pipeline-check/gitlab-resolver/``. New CLI options:
+  ``--gitlab-token``, ``--gitlab-url``. Closes the last known gap in
+  the TAINT engine's coverage.
 - **Supply-chain posture rule pack (post-1.4.0)** — Six rules
   informed by ``6mile/gimmepatz``, ``6mile/tvpo``,
   ``SecureStackCo/visualizing-software-supply-chain``, and the
@@ -16,7 +31,7 @@ What's planned, what's shipped, and what's deliberately out of scope.
   publish token lacking ``npm_`` granular-token restrictions).
   All six mapped to OWASP, OSC&R, and all 16 standards.  Rule
   counts: GHA 87 -> 90, SCM 47 -> 49, npm 11 -> 12.
-- **OSC&R standard mapping (post-1.4.0)** — 17th standards mapping.
+- **OSC&R standard mapping (post-1.4.0)** — 16th standards mapping.
   OSC&R (Open Software Supply Chain Attack Reference,
   ``pbom-dev/OSCAR``) is a MITRE ATT&CK-style matrix for software
   supply chain attacks: 12 tactics, 86 techniques.  610 checks
@@ -28,6 +43,54 @@ What's planned, what's shipped, and what's deliberately out of scope.
   standards plumbing.  Generated docs page at
   ``docs/standards/oscr.md``.  Standards count 15 -> 16.
   Informed by ReversingLabs OSC&R glossary.
+- **Live secret verification (post-1.4.0, closes #175)** —
+  ``--resolve-remote --verify-secrets`` probes every credential-shaped
+  finding against its issuing API. Three buckets: VERIFIED (active
+  token, promotes to CRITICAL with the resolved identity attached),
+  UNVERIFIED (revoked or rotated, demotes to LOW), UNKNOWN (no
+  verifier or probe inconclusive, severity unchanged). Initial
+  verifier pack: GitHub PAT, GitLab PAT, NPM token, Slack token,
+  Anthropic, OpenAI, Hugging Face, Stripe, and SendGrid API keys.
+  ``--verify-secrets-show-identity`` opts into full identity strings
+  in output. Raw secret values are never persisted; cache keys are
+  SHA-256 digests. Stderr nudge printed when secrets found without
+  verification enabled. Inspired by trufflehog ``--only-verified``.
+  Verifier modules under ``_primitives/secret_verifiers/``, one per
+  issuing service.
+- **Org-wide fleet scanning (v1.3.0 phase 1, post-1.4.0 phase 2,
+  closes #161)** — ``pipeline_check fleet`` scans N repos with one
+  command. Phase 1 (v1.3.0): ``--repos repos.yml`` reads a YAML list
+  of ``owner/repo`` coordinates, shallow-clones each into a tmpdir,
+  runs the scan in a subprocess, and writes
+  ``<output-dir>/<owner>/<repo>/findings.json`` per repo plus a
+  top-level ``fleet.json`` aggregate and ``fleet.md`` digest (severity
+  totals, per-repo posture table ranked worst to best, warnings).
+  Per-repo timeout via ``--per-repo-timeout``. Phase 2 (post-1.4.0):
+  ``--from-org ORG`` enumerates repos from the SCM API (GitHub, GitLab,
+  Bitbucket backends with pagination, archived repos excluded).
+  ``--include`` / ``--exclude`` glob filters on repo name.
+  ``--jobs N`` for parallel clones and scans (auto-detected worker
+  count by default). ``--scan-flags`` forward arbitrary flags to each
+  per-repo subprocess via ``shlex.split``. Multi-platform YAML
+  coordinates (``gitlab:group/sub/project``,
+  ``bitbucket:workspace/slug``). Cross-repo CXPC chain evaluation runs
+  automatically after all per-repo scans complete. Still deferred:
+  ``--baseline-dir`` regression diffing, per-repo SARIF output,
+  per-repo ``threats.md``.
+- **Cross-repo XPC chains (post-1.4.0, closes #173)** — Four
+  ``CXPC-NNN`` chains that fire only during fleet scans, composing
+  findings across repo boundaries. CXPC-001: npm publish-side cooldown
+  (NPM-008) + floating consumer in a partner repo (NPM-001/NPM-002),
+  HIGH, T1195.002 / T1078.004. CXPC-002: Argo CD wildcard
+  ``sourceRepos`` (ARGOCD-001) + weakened CI gate in a partner repo
+  (GHA-002/TAINT-001/TAINT-002), CRITICAL, T1195.002 / T1199 /
+  T1078.004. CXPC-003: unscoped App-token mint (GHA-061) + credential
+  exposure in a partner repo (GHA-005/GHA-008), HIGH, T1078.004 /
+  T1098.001. CXPC-004: tainted reusable-workflow producer
+  (TAINT-001/002/003) + any GHA consumer finding in a partner repo,
+  HIGH, T1195.002 / T1199. All four use v1 co-occurrence reachability
+  at MEDIUM confidence. Chain engine gained
+  ``evaluate_cross_repo(findings_by_repo)``. Chain count 41 -> 45.
 - **Gradle multi-project ``rootProject.ext.X`` resolution
   (post-1.3.0)** — Closes the last remaining gap in the dependency-
   supply-chain provider follow-ups. The maven provider's Gradle path
@@ -315,90 +378,6 @@ What's planned, what's shipped, and what's deliberately out of scope.
 Larger items proposed after v1.1.0. Not yet scoped to a specific
 release; landing order is open.
 
-### Org-wide fleet scanning (``pipeline_check fleet``)
-
-One command, N repos, one rolled-up posture digest. ``pipeline_check
-fleet --repos repos.yml`` reads a list of repo coordinates
-(``owner/name`` for GitHub, ``group/subgroup/project`` for GitLab,
-``workspace/repo_slug`` for Bitbucket), shallow-clones each into a
-per-repo tmpdir, runs the auto-detect scan against it, and emits a
-unified digest covering every repo in one place.
-``--from-org dmartinochoa`` skips the YAML and pulls the repo list
-from the SCM provider's REST API (``$GITHUB_TOKEN`` /
-``$GITLAB_TOKEN`` / ``$BITBUCKET_TOKEN`` per platform).
-``--include`` / ``--exclude`` globs scope the set.
-
-Output is a directory tree: each repo gets its own
-``<repo>/findings.json``, ``<repo>/scan.sarif``, and optional
-``<repo>/threats.md``, plus a top-level ``fleet.json`` roll-up and
-``fleet.md`` digest. The digest groups findings by repo and severity,
-ranks repos by score, and surfaces the org-wide A/B/C/D distribution
-at the top. ``--baseline-dir`` reads a prior fleet run's per-repo
-``findings.json`` baselines so the gate only fires on new regressions
-across the org. Every existing scan flag (``--fail-on``, ``--min-grade``,
-``--standard``, ``--checks``, ``--resolve-remote``) is forwarded
-unchanged to each sub-scan, so a fleet run is just the existing
-scanner running N times with results stitched.
-
-Closes the "do we even have visibility?" gap that pushes security
-teams from CLIs into SaaS posture-management tools. The fleet command
-stays no-SaaS, no-telemetry, no DB; just a directory of files
-the user can grep, version, and feed into their existing reporting.
-
-Architecture: ``pipeline_check/cli.py`` gains a ``fleet`` subcommand;
-``pipeline_check/core/fleet.py`` owns shallow-clone, per-repo
-orchestration, and digest emission. The repo-list YAML and
-``--from-org`` parsing reuse the existing SCM platform helpers.
-Cross-repo XPC chains stay out of scope for v1 of fleet itself; the
-chain-engine widening that composes findings across the fleet corpus
-lives in its own subsection below (and issue #173).
-
-### Cross-repo XPC chains (org-spanning attack-chain composition)
-
-The chain engine today fires per-repo, every ``AC-NNN`` / ``XPC-NNN``
-rule reads one scan's findings and decides whether the composite
-topology is present. Many real exploit shapes span two repos in the
-same org with the anchors living in different scans (npm publish in
-repo A consumed by floating versions in repo B, Argo CD config in
-repo A pointing at app code in repo B, App-token mint in repo A
-whose installation reaches repo B, reusable-workflow producer in
-repo A called by consumer in repo B).
-
-Activates only on fleet scans (depends on the fleet subsection
-above), as a single pass after per-repo scans complete: index every
-finding by anchor predicate, intersect anchor sets across the
-corpus, emit ``CXPC-NNN`` findings scoped to the pair (or N-tuple)
-of repos that share the topology. Reachability v1 is co-occurrence
-across the corpus (MEDIUM confidence with a "cross-repo
-co-occurrence, reachability unconfirmed" note); v2 promotes to HIGH
-on identity-bound co-occurrence (same App-installation slug, same
-OIDC subject pattern, same package name); v3 plugs into the dataflow
-phase below for the cross-document DAG walk.
-
-Initial pack: CXPC-001 (npm publish-side + floating consume-side on
-the same package name), CXPC-002 (Argo CD wildcard ``sourceRepos`` +
-weakened app-repo CI gates), CXPC-003 (over-broad App-token scope +
-installation reaches partner repo), CXPC-004 (reusable-workflow
-producer + consumer when the producer has an unguarded TAINT source,
-widens TAINT-003 to the cross-repo split). Cross-org and
-cross-platform composition stay out of scope.
-
-Filed as #173.
-
-### Live secret verification (verified / unverified / unknown)
-
-Per-detector live probe on every secret-shaped finding, gated on
-`--resolve-remote`. Verified findings get promoted to CRITICAL with
-the resolved identity attached; revoked / rotated keys get demoted
-toward LOW; unprobed detectors keep current severity. Detector
-verifiers under ``_primitives/secret_verifiers/`` one module per
-issuing service (AWS STS, GitHub `/user`, NPM `/-/whoami`, Slack
-`auth.test`, GCP IAM `signBlob`, Anthropic / OpenAI / Twilio /
-SendGrid / Stripe). Reuses the existing
-`_primitives/registry_fetcher.py` transport + cache; values SHA-256d
-before any cache write so plaintext never lands on disk. Inspiration:
-trufflehog `--only-verified`. Filed as #175.
-
 ### Custom-rule entry point via OPA / Rego
 
 Rego frontend for custom rules alongside the existing YAML loader.
@@ -423,15 +402,6 @@ itself is shipped (see Shipped). Extension lives in
 over stdio JSON-RPC. Trade-off accepted: the stdio schema becomes
 a stable contract between the two repos, in exchange for keeping
 the TS / ``vsce publish`` toolchain out of the Python project.
-
-### Cross-document taint resolver: GitLab `include:` chains
-
-GitLab ``extends:`` job-template inheritance and ``include:`` local
-files already resolved in v1.0.x. The remaining gap is ``include:``
-cross-pipeline file inclusion from remote URLs / projects /
-templates / components, which would need cross-document machinery
-similar to the GHA ``--resolve-remote`` flow. Closes the last
-known limitation in the TAINT-NNN engine's coverage.
 
 ### Pipeline graph DAG v2 (step-level)
 
@@ -509,16 +479,42 @@ v1.0.x with a starter population; the posture going forward is
 that every new HIGH / CRITICAL rule ships one, and existing rules
 without an exploit example get backfilled opportunistically.
 
+### Live Azure + GCP cloud-posture parity
+
+The AWS provider ships 71 rules covering IAM, networking, storage,
+and compute posture via plan-JSON / CFN / direct-HCL paths. Azure
+and GCP have provider directories (``azure/``, ``cloudbuild/``) but
+only a handful of rules each. A parity push would bring each to
+roughly 50+ rules covering the same control families (identity,
+network, storage, compute, logging) against their native resource
+types (ARM templates, Bicep, GCP Deployment Manager, Terraform
+``azurerm_*`` / ``google_*`` resources). Standards mappings for CIS
+Azure Foundations and CIS GCP Foundations would land as new standards
+entries. Filed as #163.
+
+### Self-hosted findings-history dashboard
+
+A static-HTML dashboard that reads a directory of ``fleet.json`` or
+``findings.json`` snapshots and renders posture trends over time.
+The existing ``pipeline_check history`` command produces a single
+comparison; the dashboard extends this to N snapshots with
+time-series charts (severity distribution, grade trend, top-regressor
+repos). No server, no database: one HTML + JS bundle that reads
+local JSON files via ``file://`` or a trivial static-file server.
+Closes the "how are we trending?" gap without dragging in a SaaS
+tool. Filed as #160.
+
 ### Lower priority
 
-- **GitHub App.** PR-comment integration with diff-level finding
-  placement instead of the current SARIF-into-code-scanning flow.
-  SARIF already reaches the GitHub Code Scanning UI on every push,
-  so a separate App duplicates a path that mostly exists, takes on
-  ongoing review surface, and competes with native SARIF for
-  adoption attention. Revisit if SARIF feedback proves consistently
-  inadequate in practice or if multiple users explicitly ask for
-  inline diff comments.
+- **GitHub App.** Installable GitHub App with persistent webhook-
+  driven scanning and a first-class checks-API integration. The
+  top-level ``action.yml`` now ships inline PR review comments
+  (diff-level placement for in-diff findings, summary comment for
+  off-diff findings), which covers the single-repo PR feedback loop.
+  The App adds persistent config, auto-scan on push without workflow
+  changes, and cross-repo fleet-style dashboards. Revisit if the
+  action-based PR-comment flow proves insufficient or if multiple
+  users request always-on scanning without workflow setup.
 - **SaaS API.** Hosted scan endpoint with auth and history. Scope
   is large (auth, multi-tenancy, history DB) and blurs OSS
   positioning. Revisit if a clear paid-tier story emerges; until
