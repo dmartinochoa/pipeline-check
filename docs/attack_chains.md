@@ -14,7 +14,7 @@ attack paths. Fix any one leg and the chain breaks.
 
 ## Registered chains
 
-Two families:
+Three families:
 
 - **`AC-NNN`** chains are single-provider correlations. They fire on
   a normal `--pipeline <name>` scan.
@@ -24,6 +24,9 @@ Two families:
   `--pipelines github,oci` (plural, comma-separated) instead of
   single-valued `--pipeline`. A single-provider run never sees both
   legs, so the `XPC-*` rules stay quiet there.
+- **`CXPC-NNN`** chains are cross-repo correlations. They fire only
+  during fleet scans (`pipeline_check fleet`), composing findings
+  from different repos in the same fleet corpus.
 
 Run `pipeline_check --list-chains` to see the current set at any
 time. Run `pipeline_check --explain-chain AC-001` for the full

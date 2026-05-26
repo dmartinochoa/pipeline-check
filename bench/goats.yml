@@ -39,17 +39,17 @@ goats:
       # live under scenarios/20-*/ and scenarios/29-*/.
       - --npm-path
       - scenarios
-    # 29 per-scenario workflow files under .github/workflows/
-    # (scenario-01-*.yml .. scenario-29-*.yml). Some scenarios ship
+    # 38 per-scenario workflow files under .github/workflows/
+    # (scenario-01-*.yml .. scenario-38-*.yml). Some scenarios ship
     # sibling data (scenarios/10-*/trust-policy.json,
     # scenarios/20-*/package.json, scenarios/22-*/workload-identity-
     # pool.tf) that GHA-062 / NPM-001 / NPM-004 walk. The npm
     # pipeline covers scenarios 20 + 29 (dependency-confusion /
     # lifecycle-script-RCE).
     description: >
-      29-scenario cross-scanner comparison matrix. Each scenario
+      38-scenario cross-scanner comparison matrix. Each scenario
       isolates one CI/CD vulnerability with a minimal GHA workflow.
-      Coverage: 29/29 (100%) as of v1.4.0.
+      Coverage: 31/38 as of v1.4.0; 38/38 push tracked in ROADMAP.md.
 
   - slug: terragoat
     repo: https://github.com/bridgecrewio/terragoat

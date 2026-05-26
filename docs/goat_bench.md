@@ -17,16 +17,17 @@ workflow](https://github.com/dmartinochoa/pipeline-check/actions/workflows/goat-
 | Goat | Recall | Findings | Coverage |
 |---|---|---|---|
 | [`cicd-goat`](https://github.com/cider-security-research/cicd-goat) | **9 / 9 (100%)** | 28 | GHA release workflow + 7 Jenkinsfiles |
-| [`cicd-goat-comparison`](https://github.com/greylag-ci/cicd-goat) | **27 / 29 (100%)** | - | 29-scenario cross-scanner matrix (GHA + npm) |
+| [`cicd-goat-comparison`](https://github.com/greylag-ci/cicd-goat) | **31 / 38** | - | 38-scenario cross-scanner matrix (GHA + npm) |
 | [`cfngoat`](https://github.com/bridgecrewio/cfngoat) | **6 / 6 (100%)** | 7 | `cfngoat.yaml` (IAM, KMS, Lambda, CloudTrail) |
 | [`kubernetes-goat`](https://github.com/madhuakula/kubernetes-goat) | **27 / 27 (100%)** | 27 | `scenarios/` manifest tree |
-| [`terragoat`](https://github.com/bridgecrewio/terragoat) | skipped | - | Direct-HCL parsing pending |
+| [`terragoat`](https://github.com/bridgecrewio/terragoat) | pending curation | - | Direct-HCL parsing shipped; `expected.txt` awaiting population |
 
-**69 check IDs locked across the four scannable goats.** Any rule
+**69 check IDs locked across the three fully curated goats.** Any rule
 change that stops one from firing on its goat trips the bench in
 CI. The `cicd-goat-comparison` goat maps 27 unique check IDs
-across 29 scenarios (some rules fire on multiple scenarios); all
-29 scenarios are covered.
+across its curated expected set; the upstream corpus expanded to
+38 scenarios and a coverage push to 38/38 is tracked in
+[ROADMAP.md](https://github.com/dmartinochoa/pipeline-check/blob/master/ROADMAP.md).
 
 ## How it works
 
@@ -98,16 +99,18 @@ are anchored against specific CICD-SEC risks:
 
 [Full `expected.txt`](https://github.com/dmartinochoa/pipeline-check/blob/master/bench/goats/cicd-goat/expected.txt)
 
-### cicd-goat-comparison — 29-scenario cross-scanner matrix
+### cicd-goat-comparison — 38-scenario cross-scanner matrix
 
 [`greylag-ci/cicd-goat`](https://github.com/greylag-ci/cicd-goat)
-is a purpose-built 29-scenario testbed for cross-scanner
+is a purpose-built 38-scenario testbed for cross-scanner
 comparison. Each scenario isolates one CI/CD vulnerability class
-with a minimal GHA workflow. Coverage: **29 / 29 (100%)** with
-27 unique check IDs firing across the matrix.
+with a minimal GHA workflow. Pipeline-check leads the leaderboard
+at **31 / 38**, with 27 unique check IDs in the bench's curated
+expected set. A coverage push to 38/38 (three new rules + config
+fixes) is tracked in ROADMAP.md.
 
-The goat also compares against zizmor, poutine, KICS, and Checkov;
-the per-row expected values live in
+The goat also compares against zizmor, poutine, octoscan, KICS,
+Checkov, and actionlint; the per-row expected values live in
 [`tools/scenarios.yaml`](https://github.com/greylag-ci/cicd-goat/blob/main/tools/scenarios.yaml)
 in the goat repo.
 
@@ -159,14 +162,13 @@ explicitly demonstrating:
 ## terragoat status
 
 [`bridgecrewio/terragoat`](https://github.com/bridgecrewio/terragoat)
-is in the corpus but currently flagged `skip: true` in
-[`bench/goats.yml`](https://github.com/dmartinochoa/pipeline-check/blob/master/bench/goats.yml).
-Pipeline-check's Terraform provider consumes `terraform show -json`
-plan output, not raw HCL; terragoat ships `.tf` source only. The
-slot stays in the manifest as an explicit visible signal that
-direct-HCL parsing is the biggest open coverage gap. Tracked in
-[ROADMAP.md](https://github.com/dmartinochoa/pipeline-check/blob/master/ROADMAP.md)
-under post-1.0 candidates.
+is in the corpus and scans via `--tf-source terraform/aws`
+(direct-HCL parsing shipped post-1.3.0). The goat entry in
+[`bench/goats.yml`](https://github.com/dmartinochoa/pipeline-check/blob/master/bench/goats.yml)
+is active but `expected.txt` has not yet been curated. The next
+step is to run `python bench/goat_runner.py --goat terragoat
+--suggest` and hand-curate the expected set against terragoat's
+documented misconfigurations.
 
 ## Adding a goat
 
