@@ -8,9 +8,9 @@
 [![GOAT bench](https://github.com/dmartinochoa/pipeline-check/actions/workflows/goat-bench.yml/badge.svg)](https://github.com/dmartinochoa/pipeline-check/actions/workflows/goat-bench.yml)
 [![PyPI](https://img.shields.io/pypi/v/pipeline-check?logo=pypi&logoColor=white&label=pypi)](https://pypi.org/project/pipeline-check/)
 [![Docker Hub](https://img.shields.io/docker/v/dmartinochoa/pipeline-check?logo=docker&logoColor=white&label=docker&sort=semver)](https://hub.docker.com/r/dmartinochoa/pipeline-check)
-[![Python](https://img.shields.io/badge/python-3.11%20%7C%203.12%20%7C%203.13-blue)](pyproject.toml)
+[![Python](https://img.shields.io/badge/python-3.11%20%7C%203.12%20%7C%203.13%20%7C%203.14-blue)](pyproject.toml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE) ![CodeRabbit Pull Request Reviews](https://img.shields.io/coderabbit/prs/github/dmartinochoa/pipeline-check?utm_source=oss&utm_medium=github&utm_campaign=dmartinochoa%2Fpipeline-check&labelColor=171717&color=FF570A&link=https%3A%2F%2Fcoderabbit.ai&label=CodeRabbit+Reviews)
-[![Socket Badge](https://badge.socket.dev/pypi/package/pipeline-check/1.0.1?artifact_id=tar-gz)](https://badge.socket.dev/pypi/package/pipeline-check/1.0.1?artifact_id=tar-gz)
+[![Socket Badge](https://badge.socket.dev/pypi/package/pipeline-check/1.4.0?artifact_id=tar-gz)](https://badge.socket.dev/pypi/package/pipeline-check/1.4.0?artifact_id=tar-gz)
 [![SLSA Build L3](https://img.shields.io/badge/SLSA-Build_L3-22c55e?logo=slsa)](#-verifying-a-release)
 [![Sigstore signed](https://img.shields.io/badge/Sigstore-signed-orange?logo=sigstore)](#-verifying-a-release)
 

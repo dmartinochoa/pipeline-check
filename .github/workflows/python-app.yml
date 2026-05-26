@@ -116,12 +116,15 @@ jobs:
         include:
           # Full version matrix only on master merges. PRs run 3.12
           # only (with xdist parallelism) so feedback arrives fast.
-          # The master push still covers 3.11 and 3.13 for compat.
+          # The master push still covers 3.11, 3.13, and 3.14 for compat.
           - os: ubuntu-latest
             python-version: "3.11"
             master-only: true
           - os: ubuntu-latest
             python-version: "3.13"
+            master-only: true
+          - os: ubuntu-latest
+            python-version: "3.14"
             master-only: true
           # Windows smoke check on the version most dev laptops run.
           - os: windows-latest
