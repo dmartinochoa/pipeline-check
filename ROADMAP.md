@@ -4,6 +4,16 @@ What's planned, what's shipped, and what's deliberately out of scope.
 
 ## Shipped
 
+- **Build-time dependency SBOM generation (post-1.4.0)** —
+  ``--output cyclonedx`` emits a CycloneDX 1.6 JSON BOM of every
+  build-time dependency the pipeline consumes. V1 ships extractors
+  for GitHub Actions (action refs, reusable workflows, docker steps),
+  Dockerfile (FROM base images), npm (package.json deps), and PyPI
+  (requirements.txt entries). Each component carries a PURL
+  identifier. ``BaseProvider.build_dependencies()`` is the extension
+  point; providers not yet covered return an empty list. Deferred
+  to v2: GitLab include refs, Helm chart deps, Maven, NuGet, OCI,
+  SPDX output format. 49 tests.
 - **OPA/Rego custom rule engine (post-1.4.0, closes #176)** —
   ``--rego-rules ./policies/`` discovers ``.rego`` files, extracts
   metadata via ``opa inspect --annotations``, evaluates policies via
@@ -532,19 +542,6 @@ This is what commercial ASPM tools (Cycode, Legit Security, Apiiro)
 sell as "pipeline topology" or "SDLC visibility." Even a basic
 version would be a landmark open-source differentiator.  Builds on
 the fleet phase 2 infrastructure.
-
-### Build-time dependency SBOM generation
-
-Emit a CycloneDX or SPDX SBOM of everything the pipeline consumes:
-actions (with SHAs), Docker base images (with digests), reusable
-workflows, orbs, templates, and package-manager lockfile entries.
-Poutine already generates a build-dependency SBOM; pipeline-check's
-24-provider coverage would produce a more complete bill of materials.
-
-Enables downstream use cases: SBOM-to-pipeline provenance
-verification (does the SBOM match what the pipeline actually built?),
-VEX statement correlation, and policy enforcement on build-time
-dependencies.
 
 ### AI agent pipeline risk rules
 

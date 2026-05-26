@@ -23,6 +23,7 @@ from ..checks.pypi.registry_fetcher import (
     fetch_publish_times,
 )
 from ..inventory import Component
+from ..sbom import BuildDependency, make_pypi_purl, parse_requirement_line
 from .base import BaseProvider
 
 # Matches ``name==version`` (with optional ``[extras]``) — the
@@ -118,6 +119,27 @@ class PypiProvider(BaseProvider):
                 osv_queries, cache=osv_cache,
                 warnings=context.warnings,
             )
+
+    def build_dependencies(
+        self, context: PypiContext,
+    ) -> list[BuildDependency]:
+        deps: list[BuildDependency] = []
+        for rf in context.files:
+            for rl in rf.lines:
+                parsed = parse_requirement_line(rl.body)
+                if parsed is None:
+                    continue
+                name, version = parsed
+                deps.append(BuildDependency(
+                    name=name,
+                    version=version,
+                    dep_type="pypi",
+                    purl=make_pypi_purl(name, version),
+                    provider=self.NAME,
+                    source=rf.path,
+                    pinned="==" in rl.body,
+                ))
+        return deps
 
     def inventory(self, context: PypiContext) -> list[Component]:
         out: list[Component] = []

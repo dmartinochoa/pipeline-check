@@ -26,6 +26,7 @@ from ..checks.npm.registry_fetcher import (
     fetch_publish_times,
 )
 from ..inventory import Component
+from ..sbom import BuildDependency, make_npm_purl
 from .base import BaseProvider
 
 _EXACT_VERSION_RE = __import__("re").compile(
@@ -131,6 +132,34 @@ class NpmProvider(BaseProvider):
                 osv_queries, cache=osv_cache,
                 warnings=context.warnings,
             )
+
+    def build_dependencies(
+        self, context: NpmContext,
+    ) -> list[BuildDependency]:
+        deps: list[BuildDependency] = []
+        for m in context.manifests:
+            for section in ("dependencies", "devDependencies"):
+                raw = m.data.get(section)
+                if not isinstance(raw, dict):
+                    continue
+                for name, version_spec in raw.items():
+                    if not isinstance(name, str) or not isinstance(version_spec, str):
+                        continue
+                    version = version_spec.lstrip("^~>=<! ")
+                    if not version:
+                        continue
+                    deps.append(BuildDependency(
+                        name=name,
+                        version=version,
+                        dep_type="npm",
+                        purl=make_npm_purl(name, version),
+                        provider=self.NAME,
+                        source=m.path,
+                        pinned=not any(
+                            c in version_spec for c in "^~><=*x"
+                        ),
+                    ))
+        return deps
 
     def inventory(self, context: NpmContext) -> list[Component]:
         out: list[Component] = []
