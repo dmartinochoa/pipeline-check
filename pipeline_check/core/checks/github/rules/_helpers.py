@@ -49,6 +49,8 @@ UNTRUSTED_CONTEXT_RE = re.compile(
     r"|labels(?:\[\d+\])?\.\*?\.(?:name|description))"
     r"|comment\.body"
     r"|review\.body"
+    r"|review_comment\.body"
+    r"|commits(?:\[\d+\])?\.(?:message|author\.(?:name|email))"
     r"|pages(?:\[\d+\])?\.\w+"
     r"|head_commit\.(?:message|author\.(?:name|email))"
     r"|discussion\.(?:title|body)"
@@ -75,7 +77,7 @@ PR_HEAD_REF_RE = re.compile(
 CACHE_TAINT_RE = re.compile(
     r"\$\{\{\s*(?:"
     r"github\.event\.(?:pull_request|issue|comment|release|deployment|"
-    r"head_commit|workflow_run|discussion|review|page)\."
+    r"head_commit|workflow_run|discussion|review|pages)\."
     r"|github\.head_ref"
     r"|inputs\."
     r")[^\}]*\}\}"

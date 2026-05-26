@@ -432,10 +432,13 @@ DEP_UPDATE_RE = _re.compile(
 #:     pin churn is irrelevant to the supply chain because their
 #:     output never lands in the wheel.
 _DEP_UPDATE_TOOL_EXEMPT_RE = _re.compile(
-    r"\bpip3?\s+install\s+(?:--upgrade|-U)\s+(?:"
-    r"pip|setuptools|wheel|virtualenv|build"
-    r"|pip-audit|cyclonedx-bom|cyclonedx-py|safety|bandit|semgrep|ruff|mypy"
-    r")\b"
+    r"\bpip3?\s+install\s+(?:"
+    r"(?:--upgrade|-U)\s+(?:pip|setuptools|wheel|virtualenv|build"
+    r"|pip-audit|cyclonedx-bom|cyclonedx-py|safety|bandit|semgrep|ruff|mypy)\b"
+    r"|(?:pip|setuptools|wheel|virtualenv|build"
+    r"|pip-audit|cyclonedx-bom|cyclonedx-py|safety|bandit|semgrep|ruff|mypy)"
+    r"\s+(?:--upgrade|-U)\b"
+    r")"
 )
 
 

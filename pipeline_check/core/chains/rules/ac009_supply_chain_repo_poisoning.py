@@ -23,7 +23,7 @@ RULE = ChainRule(
     severity=Severity.CRITICAL,
     summary=(
         "A workflow uses unpinned third-party actions (GHA-001), "
-        "interpolates untrusted PR context into a shell ``run:`` block "
+        "checks out PR head on a ``pull_request_target`` trigger "
         "(GHA-002), and carries literal secrets in the YAML (GHA-008). "
         "Any one of those is exploitable; the combination gives a "
         "fork-PR attacker two independent code-execution paths to the "
@@ -110,9 +110,9 @@ def match(findings: list[Finding]) -> list[Chain]:
             "compromises their account) can re-tag a malicious "
             "version and have it executed in this repo on the next "
             "run.\n"
-            "  2. The same workflow interpolates PR-controlled context "
-            "into a `run:` block (GHA-002). Anyone opening a PR can "
-            "execute arbitrary shell with the workflow's privileges.\n"
+            "  2. The workflow checks out PR head on a "
+            "`pull_request_target` trigger (GHA-002). The checked-out "
+            "code runs with the target branch's privileges.\n"
             "  3. The workflow file also carries literal credential-"
             "shaped values in plaintext (GHA-008). Either of the "
             "above two execution vectors can read them; the fork "

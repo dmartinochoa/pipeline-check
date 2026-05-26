@@ -102,12 +102,12 @@ class TaintPath:
 _GITHUB_OUTPUT_WRITE_RE = re.compile(
     r"""
     (?:
-        echo\s+
+        echo\s+(?:-[neE]+\s+)*
         ["']?(?P<name1>[A-Za-z_][A-Za-z0-9_-]*)=(?P<val1>[^\n]*?)["']?\s*
-        >>\s*
+        >>?\s*
         (?:"?\$\{?GITHUB_OUTPUT\}?"?)
     |
-        echo\s+
+        echo\s+(?:-[neE]+\s+)*
         ["']?
         ::set-output\s+name=(?P<name2>[A-Za-z_][A-Za-z0-9_-]*)::
         (?P<val2>[^\n"']*)
