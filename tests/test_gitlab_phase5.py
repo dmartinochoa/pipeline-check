@@ -191,6 +191,18 @@ trig:
         assert f.passed is False
         assert "remote" in f.description
 
+    def test_trunk_ref_fails(self):
+        doc = _doc("""
+trig:
+  trigger:
+    include:
+      - project: 'team/pipelines'
+        ref: trunk
+""")
+        f = gl030_trigger_include_pinning.check("<t>", doc)
+        assert f.passed is False
+        assert "team/pipelines" in f.description
+
     def test_no_trigger_include_silent_pass(self):
         doc = _doc("""
 build:

@@ -29,6 +29,7 @@ class TestGHA051:
         f = run_check(wf, "GHA-051")
         assert not f.passed
         assert "postgres:16" in f.description
+        assert f.severity.value == "HIGH"
 
     def test_fails_on_latest_service(self):
         wf = """

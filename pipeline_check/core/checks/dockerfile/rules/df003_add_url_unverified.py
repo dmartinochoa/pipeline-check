@@ -69,7 +69,9 @@ RULE = Rule(
 _URL_RE = re.compile(r"\bhttps?://\S+", re.IGNORECASE)
 # An ADD line that looks like ``ADD --checksum=sha256:<hex> URL DEST``
 # is OK, the ``--checksum`` flag is BuildKit's native integrity check.
-_CHECKSUM_FLAG_RE = re.compile(r"--checksum\s*=\s*sha256:[0-9a-f]{64}")
+_CHECKSUM_FLAG_RE = re.compile(
+    r"--checksum\s*=\s*sha256:[0-9a-f]{64}", re.IGNORECASE,
+)
 
 
 def check(df: Dockerfile) -> Finding:

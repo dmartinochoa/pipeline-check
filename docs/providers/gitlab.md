@@ -148,7 +148,7 @@ Add `when: manual` (optionally with `rules:` for protected branches) or bind the
 <span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-3</span> <span class="pg-tag pg-tag--esf">ESF-S-PIN-DEPS</span> <span class="pg-tag pg-tag--esf">ESF-S-TRUSTED-REG</span> <span class="pg-tag pg-tag--cwe">CWE-829</span>
 </div>
 
-Cross-project and remote includes can be silently re-pointed. Branch-name refs (`main`/`master`/`develop`/`head`) are treated as unpinned; tag and SHA refs are considered safe.
+Cross-project and remote includes can be silently re-pointed. Branch-name refs (`main`/`master`/`develop`/`head`/`trunk`) are treated as unpinned; tag and SHA refs are considered safe.
 
 <div class="pg-rule__rec" markdown>
 
@@ -669,7 +669,7 @@ Add ``allow_failure: false`` to every deploy-like ``when: manual`` job. GitLab d
 <span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-3</span> <span class="pg-tag pg-tag--esf">ESF-S-PIN-DEPS</span> <span class="pg-tag pg-tag--esf">ESF-S-TRUSTED-REG</span> <span class="pg-tag pg-tag--cwe">CWE-829</span>
 </div>
 
-GL-005 only audits top-level ``include:``. Parent-child and multi-project pipelines that load YAML via the job-level ``trigger: include:`` slot slip through. Branch refs (``main``/``master``/``develop``/``head``) count as unpinned.
+GL-005 only audits top-level ``include:``. Parent-child and multi-project pipelines that load YAML via the job-level ``trigger: include:`` slot slip through. Branch refs (``main``/``master``/``develop``/``head``/``trunk``) count as unpinned.
 
 <div class="pg-rule__rec" markdown>
 

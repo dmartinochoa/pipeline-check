@@ -32,6 +32,15 @@ class TestDF003AddUrlUnverified:
         f = run_check(text, "DF-003")
         assert f.passed
 
+    def test_passes_on_add_url_with_uppercase_checksum(self):
+        text = (
+            _FROM
+            + "ADD --checksum=SHA256:AABBCCDD00112233445566778899AABBCCDD00112233445566778899AABBCCDD \\\n"
+            + "    https://example.com/installer.tar.gz /opt/\n"
+        )
+        f = run_check(text, "DF-003")
+        assert f.passed
+
 
 # ── DF-004 curl-pipe in RUN ─────────────────────────────────────────
 

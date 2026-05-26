@@ -11,7 +11,7 @@ from ..base import iter_jobs
 RULE = Rule(
     id="GHA-051",
     title="services / container image is not pinned by digest",
-    severity=Severity.MEDIUM,
+    severity=Severity.HIGH,
     owasp=("CICD-SEC-3", "CICD-SEC-8"),
     esf=("ESF-S-PIN-DEPS",),
     cwe=("CWE-829", "CWE-1357"),
