@@ -734,5 +734,12 @@ STANDARD = Standard(
         "CF-001":   ["IA-5"],                           # AWS::IAM::AccessKey declared as code
         "CF-002":   ["IA-5"],                           # hard-coded secret in resource property
         "CF-003":   ["SC-7"],                           # CodeBuild VPC shares public subnet
+        # supply-chain posture pack
+        "GHA-097":  ["CM-6", "SA-11"],                     # recursive PR auto-merge loop
+        "GHA-098":  ["SA-10", "RA-5"],                     # deploy without security scan gate
+        "GHA-099":  ["IA-5", "SC-28"],                     # deploy env plaintext secret
+        "SCM-048":  ["AC-6", "IA-5"],                      # org codespace secrets scoped to all repos
+        "SCM-049":  ["AC-6", "IA-5"],                      # classic PAT used where fine-grained suffices
+        "NPM-012":  ["IA-5", "SR-3"],                      # publish token missing restrictions
     },
 )

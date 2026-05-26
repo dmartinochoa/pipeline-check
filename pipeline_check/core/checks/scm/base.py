@@ -242,6 +242,22 @@ class SCMRepoSnapshot:
     #: from default scanning. ``None`` when the endpoint failed;
     #: empty dict when the repo has no detectable source.
     repo_languages: dict[str, int] | None = None
+    #: ``GET /orgs/{owner}/codespaces/secrets``. List of org-level
+    #: codespace secrets, each ``{"name", "visibility",
+    #: "selected_repositories_url", ...}``. SCM-048 flags secrets
+    #: whose ``visibility`` is ``"all"`` (exposed to every repo in
+    #: the org). ``None`` when the endpoint failed (token lacks
+    #: ``admin:org`` scope, owner is a user not an org, etc.);
+    #: empty list ``[]`` when no org codespace secrets are configured.
+    codespace_secrets: list[dict[str, Any]] | None = None
+    #: Token type used for API authentication, inferred from the
+    #: token prefix. ``"classic"`` for ``ghp_`` classic PATs,
+    #: ``"fine-grained"`` for ``github_pat_`` fine-grained PATs,
+    #: ``"oauth"`` for ``gho_`` OAuth tokens, ``"app"`` for
+    #: ``ghs_`` / ``ghr_`` GitHub App tokens, ``"unknown"`` when
+    #: the prefix doesn't match a known pattern, ``None`` when no
+    #: token was provided. SCM-049 reads this slot.
+    token_type: str | None = None
 
 
 @dataclass(slots=True)
@@ -418,6 +434,43 @@ class SCMContext:
                     k: v for k, v in raw_languages.items()
                     if isinstance(k, str) and isinstance(v, int)
                 }
+        # Infer the token type from its prefix so SCM-049 can
+        # recommend fine-grained tokens over classic PATs.
+        token_type: str | None = None
+        token_value: str | None = None
+        if isinstance(fetcher, HttpSCMFetcher):
+            token_value = fetcher.token
+        if token_value:
+            if token_value.startswith("ghp_"):
+                token_type = "classic"
+            elif token_value.startswith("github_pat_"):
+                token_type = "fine-grained"
+            elif token_value.startswith("gho_"):
+                token_type = "oauth"
+            elif token_value.startswith(("ghs_", "ghr_")):
+                token_type = "app"
+            else:
+                token_type = "unknown"
+        # Org-level codespace secrets. The endpoint is org-scoped
+        # (``/orgs/{owner}/...``), not repo-scoped; it returns 404
+        # for user-owned repos and 403 without ``admin:org`` scope.
+        # Both failures land as ``None`` so the SCM-048 rule passes
+        # silently with an "unavailable" note.
+        codespace_secrets: list[dict[str, Any]] | None = None
+        if isinstance(repo_meta, dict):
+            raw_cs_secrets = fetcher.fetch(
+                f"orgs/{owner}/codespaces/secrets?per_page=100"
+            )
+            if isinstance(raw_cs_secrets, dict):
+                secrets_list = raw_cs_secrets.get("secrets")
+                if isinstance(secrets_list, list):
+                    codespace_secrets = [
+                        s for s in secrets_list if isinstance(s, dict)
+                    ]
+            elif isinstance(raw_cs_secrets, list):
+                codespace_secrets = [
+                    s for s in raw_cs_secrets if isinstance(s, dict)
+                ]
         snapshot = SCMRepoSnapshot(
             owner=owner,
             name=name,
@@ -433,6 +486,8 @@ class SCMContext:
             outside_collaborators=outside_collaborators,
             rulesets=rulesets,
             repo_languages=repo_languages,
+            codespace_secrets=codespace_secrets,
+            token_type=token_type,
         )
         ctx = cls(repos=[snapshot])
         ctx.files_scanned = 1

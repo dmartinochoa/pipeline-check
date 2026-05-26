@@ -234,6 +234,47 @@ def test_canonical_docs_carry_provider_claim(doc: Path):
     )
 
 
+# Canonical surfaces that must carry a standards count and a total-
+# check count so the corresponding drift guards have values to enforce.
+# action.yml is excluded from these because it carries a single-line
+# description where fitting all five claim types is impractical.
+DOCS_REQUIRING_STANDARDS_CLAIM = [
+    REPO / "README.md",
+    REPO / "docs" / "index.md",
+]
+
+DOCS_REQUIRING_CHECK_CLAIM = [
+    REPO / "README.md",
+    REPO / "docs" / "index.md",
+]
+
+
+@pytest.mark.parametrize("doc", DOCS_REQUIRING_STANDARDS_CLAIM)
+def test_canonical_docs_carry_standards_claim(doc: Path):
+    """README and docs home must advertise a standards/frameworks
+    count. Without the claim the drift guard has nothing to enforce
+    and the number can silently disappear during a rewrite."""
+    text = doc.read_text(encoding="utf-8")
+    found = _findall(_STANDARD_CLAIM, text)
+    assert found, (
+        f"{doc.relative_to(REPO)}: no '<N> standards/frameworks' "
+        f"claim found. Add the count so the drift guard can enforce it."
+    )
+
+
+@pytest.mark.parametrize("doc", DOCS_REQUIRING_CHECK_CLAIM)
+def test_canonical_docs_carry_check_claim(doc: Path):
+    """README and docs home must advertise a total-check floor
+    (``<N>+ checks``). Without the claim the drift guard has nothing
+    to enforce."""
+    text = doc.read_text(encoding="utf-8")
+    found = _findall(_CHECK_CLAIM, text)
+    assert found, (
+        f"{doc.relative_to(REPO)}: no '<N>+ checks' claim found. "
+        f"Add the count so the drift guard can enforce it."
+    )
+
+
 @pytest.mark.parametrize("doc", DOCS_WITH_CLAIMS)
 def test_standards_count_matches_registry(doc: Path):
     expected = _count_standards()

@@ -781,5 +781,12 @@ STANDARD = Standard(
         "SM-000":   ["PR.PS-04", "DE.CM-09"],
         "SSM-000":  ["PR.PS-04", "DE.CM-09"],
         "S3-000":   ["PR.PS-04", "DE.CM-09"],
+        # supply-chain posture pack
+        "GHA-097":  ["PR.PS-01"],                # recursive PR auto-merge loop
+        "GHA-098":  ["PR.PS-06", "PR.PS-02"],    # deploy without security scan gate
+        "GHA-099":  ["PR.AA-01", "PR.DS-01"],    # deploy env plaintext secret
+        "SCM-048":  ["PR.AA-05"],                # org codespace secrets scoped to all repos
+        "SCM-049":  ["PR.AA-01", "PR.AA-05"],    # classic PAT used where fine-grained suffices
+        "NPM-012":  ["PR.AA-01", "GV.SC-05"],   # publish token missing restrictions
     },
 )

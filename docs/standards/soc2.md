@@ -12,7 +12,7 @@ opinion. Use this page to prepare CC6 / CC7 / CC8 evidence walks.
 
 - **Controls in this standard:** 11
 - **Controls evidenced by at least one check:** 11 / 11
-- **Distinct checks evidencing this standard:** 610
+- **Distinct checks evidencing this standard:** 616
 - **Of those, autofixable with `--fix`:** 111
 
 _Severity levels (`CRITICAL` / `HIGH` / `MEDIUM` / `LOW` / `INFO`) follow the same scale across every provider and standard. See [How to read severity](README.md#how-to-read-severity) on the standards overview for the definitions._
@@ -23,17 +23,17 @@ Click a control ID to jump to the per-control section with the full check list. 
 
 | Control | Title | Checks | Severity mix |
 |---------|-------|-------:|--------------|
-| [`CC6.1`](#ctrl-cc6-1) | Logical access controls restrict entities to authorized system resources | 113 | 21C · 57H · 31M · 4L |
+| [`CC6.1`](#ctrl-cc6-1) | Logical access controls restrict entities to authorized system resources | 117 | 22C · 59H · 32M · 4L |
 | [`CC6.2`](#ctrl-cc6-2) | New internal and external users are registered, authorized, and provisioned | 22 | 10C · 6H · 6M |
-| [`CC6.3`](#ctrl-cc6-3) | Access modifications (including revocation) are tracked and timely | 20 | 1C · 11H · 8M |
+| [`CC6.3`](#ctrl-cc6-3) | Access modifications (including revocation) are tracked and timely | 21 | 1C · 11H · 9M |
 | [`CC6.6`](#ctrl-cc6-6) | Boundary-protection measures restrict access from outside the system boundary | 83 | 21C · 28H · 28M · 6L |
 | [`CC6.7`](#ctrl-cc6-7) | Data in transit is protected from unauthorized disclosure | 31 | 26H · 4M · 1L |
-| [`CC6.8`](#ctrl-cc6-8) | Controls prevent or detect the introduction of malicious software | 144 | 36C · 80H · 27M · 1L |
+| [`CC6.8`](#ctrl-cc6-8) | Controls prevent or detect the introduction of malicious software | 145 | 36C · 80H · 28M · 1L |
 | [`CC7.1`](#ctrl-cc7-1) | Detection procedures identify configuration changes that introduce vulnerabilities | 29 | 8C · 6H · 9M · 6L |
 | [`CC7.2`](#ctrl-cc7-2) | System components are monitored for anomalies indicative of malicious acts or failures | 33 | 2H · 8M · 7L · 16I |
 | [`CC7.3`](#ctrl-cc7-3) | Security events are evaluated to determine if they require response | 7 | 1H · 4M · 2L |
 | [`CC7.4`](#ctrl-cc7-4) | Identified security incidents trigger a response process | 5 | 3M · 2L |
-| [`CC8.1`](#ctrl-cc8-1) | Changes to infrastructure, data, software, and procedures are authorized, designed, tested, approved, and implemented | 246 | 11C · 89H · 121M · 25L |
+| [`CC8.1`](#ctrl-cc8-1) | Changes to infrastructure, data, software, and procedures are authorized, designed, tested, approved, and implemented | 249 | 11C · 91H · 122M · 25L |
 
 ## Filter at runtime
 
@@ -54,7 +54,7 @@ pipeline_check --pipeline aws --standard soc2 --standard owasp_cicd_top_10
 
 ### CC6.1: Logical access controls restrict entities to authorized system resources { #ctrl-cc6-1 }
 
-**Evidenced by 113 checks** across 17 providers (AWS, Argo Workflows, Bitbucket, Buildkite, CircleCI, Cloud Build, CloudFormation, Dockerfile, Drone CI, GitHub Actions, GitLab CI, Jenkins, Kubernetes, SCM, Tekton, Terraform, npm).
+**Evidenced by 117 checks** across 17 providers (AWS, Argo Workflows, Bitbucket, Buildkite, CircleCI, Cloud Build, CloudFormation, Dockerfile, Drone CI, GitHub Actions, GitLab CI, Jenkins, Kubernetes, SCM, Tekton, Terraform, npm).
 
 | Check | Title | Severity | Provider | Fix |
 |-------|-------|----------|----------|-----|
@@ -120,6 +120,7 @@ pipeline_check --pipeline aws --standard soc2 --standard owasp_cicd_top_10
 | [`GHA-073`](#detail-gha-073) | Reusable workflow declares an unused ``workflow_call`` secret | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [GitHub Actions](../providers/github.md) |  |
 | [`GHA-087`](#detail-gha-087) | Derived value of a secret printed to the build log | <span class="pg-sev pg-sev--high">HIGH</span> | [GitHub Actions](../providers/github.md) |  |
 | [`GHA-093`](#detail-gha-093) | Living-off-the-Pipeline indicators (workflow-command abuse) | <span class="pg-sev pg-sev--high">HIGH</span> | [GitHub Actions](../providers/github.md) |  |
+| [`GHA-099`](#detail-gha-099) | Deployment job has a secret-shaped plaintext env var | <span class="pg-sev pg-sev--critical">CRITICAL</span> | [GitHub Actions](../providers/github.md) |  |
 | [`GL-020`](#detail-gl-020) | CI_JOB_TOKEN written to persistent storage | <span class="pg-sev pg-sev--critical">CRITICAL</span> | [GitLab CI](../providers/gitlab.md) | <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> |
 | [`GL-031`](#detail-gl-031) | id_tokens: missing audience pin or environment binding | <span class="pg-sev pg-sev--high">HIGH</span> | [GitLab CI](../providers/gitlab.md) |  |
 | [`IAM-001`](#detail-iam-001) | CI/CD role has AdministratorAccess policy attached | <span class="pg-sev pg-sev--critical">CRITICAL</span> | [AWS](../providers/aws.md) |  |
@@ -146,6 +147,7 @@ pipeline_check --pipeline aws --standard soc2 --standard owasp_cicd_top_10
 | [`KMS-002`](#detail-kms-002) | KMS key policy grants wildcard KMS actions | <span class="pg-sev pg-sev--high">HIGH</span> | [AWS](../providers/aws.md) |  |
 | [`LMB-003`](#detail-lmb-003) | Lambda function env vars may contain plaintext secrets | <span class="pg-sev pg-sev--high">HIGH</span> | [AWS](../providers/aws.md) |  |
 | [`NPM-011`](#detail-npm-011) | package.json files field includes secret-shaped paths | <span class="pg-sev pg-sev--high">HIGH</span> | [npm](../providers/npm.md) |  |
+| [`NPM-012`](#detail-npm-012) | .npmrc publish token lacks IP or readonly restriction | <span class="pg-sev pg-sev--high">HIGH</span> | [npm](../providers/npm.md) |  |
 | [`PBAC-001`](#detail-pbac-001) | CodeBuild project has no VPC configuration | <span class="pg-sev pg-sev--high">HIGH</span> | [AWS](../providers/aws.md) |  |
 | [`PBAC-002`](#detail-pbac-002) | CodeBuild service role shared across multiple projects | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [AWS](../providers/aws.md) |  |
 | [`PBAC-003`](#detail-pbac-003) | CodeBuild security group allows 0.0.0.0/0 all-port egress | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [AWS](../providers/aws.md) |  |
@@ -163,6 +165,8 @@ pipeline_check --pipeline aws --standard soc2 --standard owasp_cicd_top_10
 | [`SCM-036`](#detail-scm-036) | Active ruleset doesn't require signed commits | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [SCM](../providers/scm.md) |  |
 | [`SCM-043`](#detail-scm-043) | Tag-targeted ruleset doesn't require signed commits | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [SCM](../providers/scm.md) |  |
 | [`SCM-044`](#detail-scm-044) | Default-branch signed-commits requirement bypassed for admins | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [SCM](../providers/scm.md) |  |
+| [`SCM-048`](#detail-scm-048) | Org codespace secret scoped to all repos | <span class="pg-sev pg-sev--high">HIGH</span> | [SCM](../providers/scm.md) |  |
+| [`SCM-049`](#detail-scm-049) | Classic PAT used where a fine-grained token suffices | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [SCM](../providers/scm.md) |  |
 | [`SSM-001`](#detail-ssm-001) | SSM Parameter with secret-like name is not a SecureString | <span class="pg-sev pg-sev--high">HIGH</span> | [AWS](../providers/aws.md) |  |
 | [`SSM-002`](#detail-ssm-002) | SSM SecureString uses the default AWS-managed key | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [AWS](../providers/aws.md) |  |
 | [`TF-001`](#detail-tf-001) | Plan declares aws_iam_access_key (long-lived credential) | <span class="pg-sev pg-sev--high">HIGH</span> | [Terraform](../providers/terraform.md) |  |
@@ -203,7 +207,7 @@ pipeline_check --pipeline aws --standard soc2 --standard owasp_cicd_top_10
 
 ### CC6.3: Access modifications (including revocation) are tracked and timely { #ctrl-cc6-3 }
 
-**Evidenced by 20 checks** across 12 providers (AWS, Azure DevOps, Bitbucket, CircleCI, Cloud Build, CloudFormation, GitHub Actions, GitLab CI, Jenkins, Kubernetes, SCM, Terraform).
+**Evidenced by 21 checks** across 12 providers (AWS, Azure DevOps, Bitbucket, CircleCI, Cloud Build, CloudFormation, GitHub Actions, GitLab CI, Jenkins, Kubernetes, SCM, Terraform).
 
 | Check | Title | Severity | Provider | Fix |
 |-------|-------|----------|----------|-----|
@@ -225,6 +229,7 @@ pipeline_check --pipeline aws --standard soc2 --standard owasp_cicd_top_10
 | [`JF-004`](#detail-jf-004) | AWS auth uses long-lived access keys via withCredentials | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [Jenkins](../providers/jenkins.md) | <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> |
 | [`K8S-042`](#detail-k8s-042) | RoleBinding grants access to system:anonymous / system:unauthenticated | <span class="pg-sev pg-sev--critical">CRITICAL</span> | [Kubernetes](../providers/kubernetes.md) |  |
 | [`SCM-025`](#detail-scm-025) | Repo has write-enabled deploy keys (push backdoor) | <span class="pg-sev pg-sev--high">HIGH</span> | [SCM](../providers/scm.md) |  |
+| [`SCM-049`](#detail-scm-049) | Classic PAT used where a fine-grained token suffices | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [SCM](../providers/scm.md) |  |
 | [`SM-001`](#detail-sm-001) | Secrets Manager secret has no rotation configured | <span class="pg-sev pg-sev--high">HIGH</span> | [AWS](../providers/aws.md) |  |
 | [`TF-001`](#detail-tf-001) | Plan declares aws_iam_access_key (long-lived credential) | <span class="pg-sev pg-sev--high">HIGH</span> | [Terraform](../providers/terraform.md) |  |
 
@@ -358,7 +363,7 @@ pipeline_check --pipeline aws --standard soc2 --standard owasp_cicd_top_10
 
 ### CC6.8: Controls prevent or detect the introduction of malicious software { #ctrl-cc6-8 }
 
-**Evidenced by 144 checks** across 19 providers (AWS, Argo Workflows, Azure DevOps, Bitbucket, Buildkite, CircleCI, Cloud Build, Dockerfile, Drone CI, GitHub Actions, GitLab CI, Jenkins, Kubernetes, NuGet, PyPI, SCM, Tekton, maven, npm).
+**Evidenced by 145 checks** across 19 providers (AWS, Argo Workflows, Azure DevOps, Bitbucket, Buildkite, CircleCI, Cloud Build, Dockerfile, Drone CI, GitHub Actions, GitLab CI, Jenkins, Kubernetes, NuGet, PyPI, SCM, Tekton, maven, npm).
 
 | Check | Title | Severity | Provider | Fix |
 |-------|-------|----------|----------|-----|
@@ -447,6 +452,7 @@ pipeline_check --pipeline aws --standard soc2 --standard owasp_cicd_top_10
 | [`GHA-092`](#detail-gha-092) | PR head SHA captured then re-fetched (force-push race) | <span class="pg-sev pg-sev--high">HIGH</span> | [GitHub Actions](../providers/github.md) |  |
 | [`GHA-094`](#detail-gha-094) | Action SHA pin matches the current tip of an upstream branch | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [GitHub Actions](../providers/github.md) |  |
 | [`GHA-096`](#detail-gha-096) | Action reference has a known GHSA vulnerability | <span class="pg-sev pg-sev--high">HIGH</span> | [GitHub Actions](../providers/github.md) |  |
+| [`GHA-098`](#detail-gha-098) | Pipeline deploys without a security scan gate | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [GitHub Actions](../providers/github.md) |  |
 | [`GL-002`](#detail-gl-002) | Script injection via untrusted commit/MR context | <span class="pg-sev pg-sev--high">HIGH</span> | [GitLab CI](../providers/gitlab.md) |  |
 | [`GL-010`](#detail-gl-010) | Multi-project pipeline ingests upstream artifact unverified | <span class="pg-sev pg-sev--critical">CRITICAL</span> | [GitLab CI](../providers/gitlab.md) |  |
 | [`GL-011`](#detail-gl-011) | include: local file pulled in MR-triggered pipeline | <span class="pg-sev pg-sev--high">HIGH</span> | [GitLab CI](../providers/gitlab.md) |  |
@@ -611,7 +617,7 @@ pipeline_check --pipeline aws --standard soc2 --standard owasp_cicd_top_10
 
 ### CC8.1: Changes to infrastructure, data, software, and procedures are authorized, designed, tested, approved, and implemented { #ctrl-cc8-1 }
 
-**Evidenced by 246 checks** across 21 providers (AWS, Argo Workflows, Azure DevOps, Bitbucket, Buildkite, CircleCI, Cloud Build, Dockerfile, Drone CI, GitHub Actions, GitLab CI, Helm, Jenkins, Kubernetes, NuGet, OCI manifest, PyPI, SCM, Tekton, maven, npm).
+**Evidenced by 249 checks** across 21 providers (AWS, Argo Workflows, Azure DevOps, Bitbucket, Buildkite, CircleCI, Cloud Build, Dockerfile, Drone CI, GitHub Actions, GitLab CI, Helm, Jenkins, Kubernetes, NuGet, OCI manifest, PyPI, SCM, Tekton, maven, npm).
 
 | Check | Title | Severity | Provider | Fix |
 |-------|-------|----------|----------|-----|
@@ -735,6 +741,8 @@ pipeline_check --pipeline aws --standard soc2 --standard owasp_cicd_top_10
 | [`GHA-091`](#detail-gha-091) | Action upstream repo is missing (takeover-eligible namespace) | <span class="pg-sev pg-sev--high">HIGH</span> | [GitHub Actions](../providers/github.md) |  |
 | [`GHA-094`](#detail-gha-094) | Action SHA pin matches the current tip of an upstream branch | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [GitHub Actions](../providers/github.md) |  |
 | [`GHA-096`](#detail-gha-096) | Action reference has a known GHSA vulnerability | <span class="pg-sev pg-sev--high">HIGH</span> | [GitHub Actions](../providers/github.md) |  |
+| [`GHA-097`](#detail-gha-097) | Recursive PR auto-merge loop | <span class="pg-sev pg-sev--high">HIGH</span> | [GitHub Actions](../providers/github.md) |  |
+| [`GHA-098`](#detail-gha-098) | Pipeline deploys without a security scan gate | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [GitHub Actions](../providers/github.md) |  |
 | [`GL-001`](#detail-gl-001) | Image not pinned to specific version or digest | <span class="pg-sev pg-sev--high">HIGH</span> | [GitLab CI](../providers/gitlab.md) | <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> |
 | [`GL-004`](#detail-gl-004) | Deploy job lacks manual approval or environment gate | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [GitLab CI](../providers/gitlab.md) |  |
 | [`GL-005`](#detail-gl-005) | include: pulls remote / project without pinned ref | <span class="pg-sev pg-sev--high">HIGH</span> | [GitLab CI](../providers/gitlab.md) |  |
@@ -795,6 +803,7 @@ pipeline_check --pipeline aws --standard soc2 --standard owasp_cicd_top_10
 | [`NPM-008`](#detail-npm-008) | Direct dependency was published within the cooldown window | <span class="pg-sev pg-sev--high">HIGH</span> | [npm](../providers/npm.md) |  |
 | [`NPM-009`](#detail-npm-009) | New transitive dependency added since the base ref | <span class="pg-sev pg-sev--high">HIGH</span> | [npm](../providers/npm.md) |  |
 | [`NPM-010`](#detail-npm-010) | npm package has a known OSV advisory | <span class="pg-sev pg-sev--critical">CRITICAL</span> | [npm](../providers/npm.md) |  |
+| [`NPM-012`](#detail-npm-012) | .npmrc publish token lacks IP or readonly restriction | <span class="pg-sev pg-sev--high">HIGH</span> | [npm](../providers/npm.md) |  |
 | [`NUGET-001`](#detail-nuget-001) | Floating NuGet version range | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [NuGet](../providers/nuget.md) |  |
 | [`NUGET-002`](#detail-nuget-002) | Wildcard prerelease NuGet version | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [NuGet](../providers/nuget.md) |  |
 | [`NUGET-003`](#detail-nuget-003) | PackageReference missing explicit version | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [NuGet](../providers/nuget.md) |  |
@@ -11325,6 +11334,105 @@ jobs:
 
 **Source:** [`GHA-096`](../providers/github.md#gha-096) in the [GitHub Actions provider](../providers/github.md).
 
+### `GHA-097`: Recursive PR auto-merge loop <span class="pg-sev pg-sev--high">HIGH</span> { #detail-gha-097 }
+
+**Evidences:** [`CC8.1`](#ctrl-cc8-1) Changes to infrastructure, data, software, and procedures are authorized, designed, tested, approved, and implemented.
+
+**How this is detected.** Fires when a workflow that triggers on ``pull_request`` or ``pull_request_target`` also contains a step that creates or updates a PR (``gh pr create``, ``peter-evans/create-pull-request``, or similar) AND a step that enables auto-merge (``gh pr merge --auto``, ``pascalgn/automerge-action``, or the repo-level ``auto_merge`` API call).
+
+The topology creates a persistence loop: the workflow's own PR triggers the workflow again on the next cycle, allowing an attacker who controls the PR content to maintain code injection across merges without further interaction. This is the OSC&R PER-1 (Recursive PR) attack pattern.
+
+**Recommendation.** Break the loop by removing the auto-merge call from the same workflow that creates the PR, or by gating the merge on a separate approval-required environment. If the automation genuinely needs both create and merge (e.g. a dependency-update bot), ensure the created PR targets a non-default branch that does not re-trigger the same workflow, and require at least one human reviewer before the merge completes.
+
+**Known false positives.**
+
+- Dependency-update bots (Renovate, Dependabot) sometimes create and auto-merge PRs in a single workflow. If the PR targets a non-default branch or requires human approval via an environment gate, the loop is broken and the rule is a false positive. Suppress with a rationale naming the gating mechanism.
+
+**Proof of exploit.**
+
+```
+# Vulnerable: workflow triggers on PR, creates a new PR,
+# and auto-merges it, creating a self-sustaining loop.
+on: pull_request
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@<sha>
+      - run: make generate-config
+      - uses: peter-evans/create-pull-request@<sha>
+        with:
+          title: 'chore: regenerate config'
+      - run: gh pr merge --auto --squash
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+# Safe: separate the create and merge into different
+# workflows with an environment approval gate between them.
+```
+
+**Source:** [`GHA-097`](../providers/github.md#gha-097) in the [GitHub Actions provider](../providers/github.md).
+
+### `GHA-098`: Pipeline deploys without a security scan gate <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-gha-098 }
+
+**Evidences:** [`CC6.8`](#ctrl-cc6-8) Controls prevent or detect the introduction of malicious software, [`CC8.1`](#ctrl-cc8-1) Changes to infrastructure, data, software, and procedures are authorized, designed, tested, approved, and implemented.
+
+**How this is detected.** Walks each workflow's job graph looking for jobs that contain deploy-shaped steps (``kubectl apply``, ``terraform apply``, ``docker push``, ``helm upgrade``, ``aws ecs update-service``, ``gcloud run deploy``, environment-gated jobs, or jobs whose name matches a deploy/release/publish pattern). For each deploy job, checks whether any predecessor in the ``needs:`` DAG or any earlier step in the same job invokes a recognized security scanner (SAST, SCA, container scan, or secret scan).
+
+Fires when a deploy job has zero security-scan predecessors. Severity is MEDIUM (advisory) because the scanner catalog is not exhaustive and some organizations run scans in separate pipelines.
+
+**Recommendation.** Add a security scanning step (SAST, SCA, container scan, or secret scan) upstream of every deploy job. Either add the scan as an earlier step in the same job, or run it in a separate job and add the scan job to the deploy job's ``needs:`` list. Recognized scanners include ``trivy``, ``grype``, ``snyk test``, ``semgrep``, ``bandit``, ``npm audit``, ``pip-audit``, ``gitleaks``, and their corresponding GitHub Actions.
+
+**Known false positives.**
+
+- Organizations that run security scans in a separate pipeline or CI system (e.g. a nightly scan job, a third-party SaaS scanner) will see this rule fire on deploy workflows that rely on external gating. Suppress with a rationale naming the external scanner.
+- Test/staging deploy jobs that target ephemeral environments may not warrant a scan gate. Suppress per-job.
+
+**Source:** [`GHA-098`](../providers/github.md#gha-098) in the [GitHub Actions provider](../providers/github.md).
+
+### `GHA-099`: Deployment job has a secret-shaped plaintext env var <span class="pg-sev pg-sev--critical">CRITICAL</span> { #detail-gha-099 }
+
+**Evidences:** [`CC6.1`](#ctrl-cc6-1) Logical access controls restrict entities to authorized system resources.
+
+**How this is detected.** Complements GHA-008 (credential-shaped literal anywhere in a workflow) by focusing on the deploy-job subset with an elevated severity rationale. GHA-008 fires on every credential literal; GHA-099 fires only when the literal appears in a job that also has an ``environment:`` binding or whose name / id matches a deploy / release / publish pattern. The overlap is intentional: the deploy context raises the blast radius from 'CI runner compromise' to 'production compromise', justifying a distinct finding in the report.
+
+Detection reuses the same credential-pattern catalog as GHA-008 (``find_secret_values``), scoped to the ``env:`` block of the deploy job and its steps.
+
+**Recommendation.** Move the credential to an encrypted repository or environment secret and reference it via ``${{ secrets.NAME }}``. For cloud access, prefer OIDC federation (``id-token: write`` + the provider's configure-credentials action) over any static key. A plaintext credential in a deploy job is doubly dangerous: it's visible in every fork and build log AND it has production-level blast radius.
+
+**Known false positives.**
+
+- Test fixtures with example credentials (``AKIAIOSFODNN7EXAMPLE``) in a deploy-named job will fire. Suppress with a rationale confirming the value is a non-functional example.
+
+**Proof of exploit.**
+
+```
+# Vulnerable: a deploy job carries a production AWS key
+# as a plaintext env var instead of a secrets reference.
+jobs:
+  deploy-prod:
+    environment: production
+    runs-on: ubuntu-latest
+    env:
+      AWS_ACCESS_KEY_ID: AKIAI44QH8DHBEXAMPLE
+      AWS_SECRET_ACCESS_KEY: wJalrXUt/K7MDENG/bPxRfiCYEXAMPLE
+    steps:
+      - run: aws ecs update-service --force-new-deployment
+
+# Safe: reference encrypted secrets; better still, use OIDC.
+jobs:
+  deploy-prod:
+    environment: production
+    permissions: { id-token: write }
+    steps:
+      - uses: aws-actions/configure-aws-credentials@<sha>
+        with:
+          role-to-assume: arn:aws:iam::123456789012:role/CIRole
+          aws-region: us-east-1
+```
+
+**Source:** [`GHA-099`](../providers/github.md#gha-099) in the [GitHub Actions provider](../providers/github.md).
+
 ### `GL-001`: Image not pinned to specific version or digest <span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> { #detail-gl-001 }
 
 **Evidences:** [`CC8.1`](#ctrl-cc8-1) Changes to infrastructure, data, software, and procedures are authorized, designed, tested, approved, and implemented.
@@ -16241,6 +16349,38 @@ Wildcard-broad entries (``*``, ``**``, ``./``) are NOT currently flagged — the
 
 **Source:** [`NPM-011`](../providers/npm.md) in the [npm provider](../providers/npm.md).
 
+### `NPM-012`: .npmrc publish token lacks IP or readonly restriction <span class="pg-sev pg-sev--high">HIGH</span> { #detail-npm-012 }
+
+**Evidences:** [`CC6.1`](#ctrl-cc6-1) Logical access controls restrict entities to authorized system resources, [`CC8.1`](#ctrl-cc8-1) Changes to infrastructure, data, software, and procedures are authorized, designed, tested, approved, and implemented.
+
+**How this is detected.** Fires when a ``.npmrc`` contains an ``_authToken`` entry (the standard npm registry auth mechanism) without any accompanying restriction. The rule checks for two indicators of restriction:
+
+1. An ``_authToken`` value that begins with ``npm_`` (granular access token, which carries server-side scope restrictions) vs. a legacy token (UUID-shaped or opaque hex, which has no scope boundary).
+2. Absence of a ``_password`` or ``always-auth`` key for the same registry scope (which would indicate a different auth mechanism).
+
+The rule cannot verify IP restrictions client-side (those are stored server-side on npmjs.com). It uses the token format as a proxy: granular tokens (``npm_`` prefix) support IP restrictions; legacy tokens do not.
+
+Complements NPM-011 (secret-shaped paths in ``files`` field) and the DF-025 rule (registry token baked into a Docker image layer).
+
+**Recommendation.** Restrict every npm auth token to the minimum required scope. For tokens used only in CI publish workflows:
+
+1. Generate an **automation** token (npmjs.com > Access Tokens > Generate New Token > Granular Access Token) with only the ``publish`` permission on the specific packages it needs to publish.
+2. Enable **IP address CIDR allowlisting** on the token to restrict usage to known CI runner IP ranges.
+3. For read-only CI installs (``npm ci``), use a **read-only** token that cannot publish at all.
+
+A leaked unrestricted publish token enables full package hijack: an attacker publishes a backdoored version under your package name.
+
+**Known false positives.**
+
+- Some organizations use a private registry (Verdaccio, GitHub Packages, GitLab Packages) whose tokens don't follow the npmjs.com format. The rule fires on any non-``npm_`` token, which may be a legitimate private-registry token. Suppress with a rationale naming the registry.
+
+**Seen in the wild.**
+
+- ESLint 2018: a maintainer's stolen npm token was used to publish ``eslint-scope@3.7.2`` and ``eslint-config-eslint@5.0.2`` containing credential-harvesting code. Granular tokens with publish-only scope on specific packages and IP restrictions would have blocked the attacker's publish from outside the maintainer's network.
+- ua-parser-js 2021: a hijacked npm token published three backdoored versions (0.7.29, 0.8.0, 1.0.0) in a single session. A restricted token would have limited the damage to the specific package and IP range.
+
+**Source:** [`NPM-012`](../providers/npm.md) in the [npm provider](../providers/npm.md).
+
 ### `NUGET-001`: Floating NuGet version range <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-nuget-001 }
 
 **Evidences:** [`CC8.1`](#ctrl-cc8-1) Changes to infrastructure, data, software, and procedures are authorized, designed, tested, approved, and implemented.
@@ -18307,6 +18447,40 @@ Pair with SCM-033 (required status checks). SCM-033 ensures CI passes BEFORE mer
 - Monorepos may intentionally exclude legacy subdirectories from CodeQL analysis (e.g. a vendored fork). Suppress per repo with a rationale that names the excluded path; the default-setup language toggle is repo-wide, so a per-path exclusion requires a hand-authored workflow.
 
 **Source:** [`SCM-047`](../providers/scm.md#scm-047) in the [SCM provider](../providers/scm.md).
+
+### `SCM-048`: Org codespace secret scoped to all repos <span class="pg-sev pg-sev--high">HIGH</span> { #detail-scm-048 }
+
+**Evidences:** [`CC6.1`](#ctrl-cc6-1) Logical access controls restrict entities to authorized system resources.
+
+**How this is detected.** Reads ``GET /orgs/{owner}/codespaces/secrets`` and flags every secret whose ``visibility`` field is ``"all"``. Requires ``admin:org`` scope on the token; without it GitHub returns 404 and the rule passes silently with an unavailability note.
+
+Secrets with ``visibility: "private"`` (all private repos) or ``visibility: "selected"`` (named repo list) are not flagged. The ``private`` tier is a middle ground some orgs accept; ``selected`` is the tightest scope GitHub offers.
+
+**Recommendation.** Scope each org-level codespace secret to only the repos that need it: Organization Settings > Codespaces > Secrets > edit the secret > change Visibility from 'All repositories' to 'Selected repositories' and pick the specific repos. A secret visible to every repo in the org means any developer who opens a codespace in any repo (including forks of public repos, if codespaces are enabled for those) can read the value via ``${{ secrets.NAME }}`` or the ``CODESPACE_*`` environment.
+
+**Known false positives.**
+
+- Organizations that genuinely need a secret in every repo (rare — examples include a shared telemetry token or an internal-CA certificate) should suppress with a rationale naming the secret and confirming the blast radius is accepted.
+
+**Source:** [`SCM-048`](../providers/scm.md#scm-048) in the [SCM provider](../providers/scm.md).
+
+### `SCM-049`: Classic PAT used where a fine-grained token suffices <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-scm-049 }
+
+**Evidences:** [`CC6.1`](#ctrl-cc6-1) Logical access controls restrict entities to authorized system resources, [`CC6.3`](#ctrl-cc6-3) Access modifications (including revocation) are tracked and timely.
+
+**How this is detected.** Inspects the prefix of the ``$GITHUB_TOKEN`` (or ``--scm-token``) used for the SCM scan. ``ghp_`` indicates a classic PAT; ``github_pat_`` indicates a fine-grained PAT. Classic tokens carry org-wide scope and cannot be restricted to individual repos, which violates the principle of least privilege.
+
+The rule passes silently when no token is provided or when the token is a GitHub App installation token (``ghs_`` / ``ghr_``), which already carries scoped permissions.
+
+**Recommendation.** Replace the classic personal access token (``ghp_`` prefix) with a fine-grained PAT (``github_pat_`` prefix). Fine-grained tokens restrict scope to named repos, carry per-permission grants, support expiration policies, and have a distinct audit-log shape. Classic PATs implicitly carry org-wide scope for every granted permission and cannot be restricted to individual repos.
+
+Generate a fine-grained token at ``github.com/settings/personal-access-tokens/new`` and select only the repos and permissions the scanner needs (typically ``repo`` read + ``admin:org`` read for SCM posture scans).
+
+**Known false positives.**
+
+- Some organizations have not yet adopted fine-grained PATs because of feature-parity gaps (e.g., some GraphQL endpoints require classic tokens). Suppress with a rationale documenting the specific API gap.
+
+**Source:** [`SCM-049`](../providers/scm.md#scm-049) in the [SCM provider](../providers/scm.md).
 
 ### `SIGN-001`: No AWS Signer profile defined for Lambda deploys <span class="pg-sev pg-sev--medium">MEDIUM</span> { #detail-sign-001 }
 

@@ -162,6 +162,7 @@ nav:
           - Drone CI: providers/drone.md
           - Tekton: providers/tekton.md
           - Argo Workflows: providers/argo.md
+          - Argo CD: providers/argocd.md
           - Dockerfile: providers/dockerfile.md
           - Kubernetes: providers/kubernetes.md
           - Helm: providers/helm.md
@@ -190,6 +191,7 @@ nav:
           - ESF Supply Chain: standards/esf_supply_chain.md
           - OpenSSF Scorecard: standards/openssf_scorecard.md
           - S2C2F: standards/s2c2f.md
+          - "OSC&R": standards/oscr.md
           - SOC 2: standards/soc2.md
       - Comparison: comparison.md
       - GOAT bench: goat_bench.md

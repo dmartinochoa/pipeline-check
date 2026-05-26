@@ -32,6 +32,7 @@ class TestRegistry:
             "soc2",
             "nist_csf_2",
             "nist_800_190",
+            "oscr",
         ):
             assert expected in names
 
@@ -76,6 +77,7 @@ class TestStandardIntegrity:
         "nist_csf_2",
         "nist_800_190",
         "esf_supply_chain",
+        "oscr",
     ])
     def test_every_mapped_control_is_defined(self, name):
         std = standards.get(name)
@@ -100,6 +102,7 @@ class TestStandardIntegrity:
         "nist_csf_2",
         "nist_800_190",
         "esf_supply_chain",
+        "oscr",
     ])
     def test_standard_has_metadata(self, name):
         std = standards.get(name)
@@ -126,6 +129,7 @@ class TestCheckIdIntegrity:
         "nist_csf_2",
         "nist_800_190",
         "esf_supply_chain",
+        "oscr",
     ])
     def test_check_ids_are_known(self, name):
         owasp = standards.get("owasp_cicd_top_10")
@@ -400,6 +404,7 @@ class TestPerFrameworkCoverageFloor:
         "s2c2f":                  31,   # current 33%, OSS-consumption-scoped
         "cis_aws_foundations":    17,   # current 19%, AWS-pack-only
         "cis_github":             15,   # current 17%, GitHub-platform-scoped
+        "oscr":                   55,   # current ~58%, supply-chain-attack-scoped
         "cis_kubernetes":          5,   # current 6%, K8s-manifest-scoped
     }
 

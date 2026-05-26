@@ -25,14 +25,23 @@ The four ``--check`` invocations are uniform: same script per
 generator, same expected exit. Subprocess (over importing main())
 keeps the test cheap-to-add and matches the precedent set by
 ``tests/test_attack_chains_doc.py``.
+
+Additional structural guards:
+
+  - mkdocs nav ↔ files on disk (orphan nav entries, unreachable pages)
+  - provider-doc generator coverage (SUPPORTED_PROVIDERS completeness)
+  - design-tokens CSS mirror drift (committed copy vs canonical source)
+  - provider-stats hook coverage (every provider with rules has an entry)
 """
 from __future__ import annotations
 
+import re
 import subprocess
 import sys
 from pathlib import Path
 
 import pytest
+import yaml
 
 REPO = Path(__file__).resolve().parent.parent
 
@@ -217,4 +226,243 @@ def test_gen_standards_docs_covers_every_provider_with_rules() -> None:
         "rule-based check modules won't surface in the standards "
         f"docs: {missing}. Append the (slug, pkg_fqn, title) tuple "
         "for each missing provider."
+    )
+
+
+# ──────────────────────────────────────────────────────────────────────
+# Provider-doc generator coverage guard
+# ──────────────────────────────────────────────────────────────────────
+#
+# Parallel to the standards-side ``_PROVIDER_PACKAGES`` guard above.
+# ``gen_provider_docs.py`` has a hand-curated ``SUPPORTED_PROVIDERS``
+# dict. A provider that ships a ``rules/`` directory but isn't listed
+# there silently gets no provider reference page. No crash, no diff,
+# no test failure — the page just doesn't exist and the docs site has
+# a dead link (or no link at all).
+
+
+def _supported_provider_slugs_from_script() -> set[str]:
+    """Return the set of provider slugs registered in
+    ``gen_provider_docs.py::SUPPORTED_PROVIDERS``."""
+    text = (REPO / "scripts" / "gen_provider_docs.py").read_text(
+        encoding="utf-8",
+    )
+    pattern = re.compile(
+        r'"(pipeline_check\.core\.checks\.([A-Za-z_]+)\.rules)"',
+    )
+    return {m.group(2) for m in pattern.finditer(text)}
+
+
+def test_gen_provider_docs_covers_every_provider_with_rules() -> None:
+    """Every provider that ships a ``rules/`` package must appear in
+    ``gen_provider_docs.py:SUPPORTED_PROVIDERS``.
+
+    Otherwise no provider reference page is generated and the docs
+    site either has a dead nav link or silently omits the provider.
+    """
+    on_disk = {
+        pkg.split(".")[-2]
+        for pkg in _provider_packages_on_disk()
+    }
+    registered = _supported_provider_slugs_from_script()
+    missing = sorted(on_disk - registered)
+    assert not missing, (
+        "Provider(s) ship a rules/ package but aren't in "
+        "scripts/gen_provider_docs.py:SUPPORTED_PROVIDERS, so no "
+        f"provider reference page is generated: {missing}. Add the "
+        "provider entry to SUPPORTED_PROVIDERS."
+    )
+
+
+# ──────────────────────────────────────────────────────────────────────
+# mkdocs.yml nav ↔ files on disk
+# ──────────────────────────────────────────────────────────────────────
+#
+# A nav entry that references a nonexistent file causes a build
+# warning (Material theme) or a broken link. A doc file that exists
+# but isn't in the nav is unreachable from the site chrome. Both are
+# drift classes worth catching in CI.
+
+
+def _extract_nav_paths(nav: list | dict | str, acc: list[str] | None = None) -> list[str]:
+    """Recursively extract every ``.md`` path from the mkdocs nav tree."""
+    if acc is None:
+        acc = []
+    if isinstance(nav, str):
+        if nav.endswith(".md"):
+            acc.append(nav)
+    elif isinstance(nav, dict):
+        for v in nav.values():
+            _extract_nav_paths(v, acc)
+    elif isinstance(nav, list):
+        for item in nav:
+            _extract_nav_paths(item, acc)
+    return acc
+
+
+class _PermissiveLoader(yaml.SafeLoader):
+    """SafeLoader that treats ``!!python/name:`` and other unknown tags
+    as plain strings instead of raising ConstructorError. mkdocs.yml
+    uses ``!!python/name:`` for emoji / superfences extensions; we
+    only need the ``nav:`` key, not the Python object references."""
+
+
+_PermissiveLoader.add_multi_constructor(
+    "tag:yaml.org,2002:python/",
+    lambda loader, suffix, node: loader.construct_scalar(node),
+)
+
+
+def _load_nav() -> list[str]:
+    """Parse mkdocs.yml and return every .md path from the nav tree."""
+    mkdocs_path = REPO / "mkdocs.yml"
+    config = yaml.load(
+        mkdocs_path.read_text(encoding="utf-8"),
+        Loader=_PermissiveLoader,
+    )
+    return _extract_nav_paths(config.get("nav", []))
+
+
+def test_mkdocs_nav_references_existing_files() -> None:
+    """Every .md path in the mkdocs.yml nav must exist under docs/.
+
+    An orphan nav entry produces a broken link on the live site (or a
+    build warning that scrolls past unnoticed in CI output).
+    """
+    nav_paths = _load_nav()
+    assert nav_paths, "mkdocs.yml nav is empty or unparseable"
+    missing = [
+        p for p in nav_paths
+        if not (REPO / "docs" / p).is_file()
+    ]
+    assert not missing, (
+        "mkdocs.yml nav references files that don't exist under "
+        f"docs/: {missing}"
+    )
+
+
+def test_every_provider_doc_in_mkdocs_nav() -> None:
+    """Every ``docs/providers/<name>.md`` must appear in the mkdocs nav.
+
+    A generated provider doc that isn't wired into the nav is
+    unreachable from the site chrome — it exists on disk but readers
+    can't navigate to it.
+    """
+    nav_paths = set(_load_nav())
+    provider_docs = {
+        f"providers/{p.name}"
+        for p in (REPO / "docs" / "providers").iterdir()
+        if p.suffix == ".md"
+    }
+    missing = sorted(provider_docs - nav_paths)
+    assert not missing, (
+        "Provider docs exist on disk but aren't in mkdocs.yml nav: "
+        f"{missing}. Add them to the Coverage > Providers section."
+    )
+
+
+def test_every_standards_doc_in_mkdocs_nav() -> None:
+    """Every ``docs/standards/<name>.md`` must appear in the mkdocs nav.
+
+    Same guard as provider docs: a generated standards page that
+    exists on disk but isn't in the nav is invisible to readers.
+    """
+    nav_paths = set(_load_nav())
+    standards_docs = {
+        f"standards/{p.name}"
+        for p in (REPO / "docs" / "standards").iterdir()
+        if p.suffix == ".md"
+    }
+    missing = sorted(standards_docs - nav_paths)
+    assert not missing, (
+        "Standards docs exist on disk but aren't in mkdocs.yml nav: "
+        f"{missing}. Add them to the Coverage > Standards section."
+    )
+
+
+# ──────────────────────────────────────────────────────────────────────
+# Design-tokens CSS mirror drift
+# ──────────────────────────────────────────────────────────────────────
+#
+# ``hooks/mkdocs_design_tokens.py`` copies
+# ``pipeline_check/core/_design_tokens.css`` into
+# ``docs/stylesheets/_design_tokens.css`` at build time. The committed
+# mirror must match the source so CI catches edits that skip the
+# build step.
+
+_DESIGN_TOKEN_HEADER = (
+    "/* DO NOT EDIT. Mirrored from pipeline_check/core/_design_tokens.css\n"
+    "   by hooks/mkdocs_design_tokens.py. Edit the package file and\n"
+    "   re-run ``mkdocs build`` (or rely on the docs CI to refresh). */\n"
+)
+
+
+def test_design_tokens_css_mirror_in_sync() -> None:
+    """The committed ``docs/stylesheets/_design_tokens.css`` must be
+    the canonical ``pipeline_check/core/_design_tokens.css`` prefixed
+    with the DO-NOT-EDIT header.
+
+    Catches the case where someone edits the package source but
+    doesn't run ``mkdocs build`` to refresh the mirror.
+    """
+    src = REPO / "pipeline_check" / "core" / "_design_tokens.css"
+    dst = REPO / "docs" / "stylesheets" / "_design_tokens.css"
+    if not src.is_file():
+        pytest.skip("_design_tokens.css not present")
+    if not dst.is_file():
+        pytest.fail(
+            "docs/stylesheets/_design_tokens.css missing — run "
+            "`mkdocs build` or `python -c "
+            '"import hooks.mkdocs_design_tokens"` to create it.'
+        )
+    want = _DESIGN_TOKEN_HEADER + src.read_text(encoding="utf-8")
+    have = dst.read_text(encoding="utf-8")
+    assert want == have, (
+        "docs/stylesheets/_design_tokens.css is out of sync with "
+        "pipeline_check/core/_design_tokens.css. Run `mkdocs build` "
+        "to refresh the mirror."
+    )
+
+
+# ──────────────────────────────────────────────────────────────────────
+# Provider-stats hook coverage
+# ──────────────────────────────────────────────────────────────────────
+#
+# ``hooks/mkdocs_provider_stats.py`` builds an ``_INDEX`` at import
+# time. Every provider directory that ships rule files must have an
+# entry so the home-page tile tokens resolve to a label. Without an
+# entry the token passes through unrendered and the live page shows
+# ``{{ providers.<slug>.checks }}`` verbatim.
+
+
+def test_provider_stats_hook_covers_every_provider_with_rules() -> None:
+    """The hook's ``_INDEX`` must have an entry for every provider
+    that has rule files on disk."""
+    sys.path.insert(0, str(REPO / "hooks"))
+    try:
+        from mkdocs_provider_stats import _INDEX
+    finally:
+        sys.path.pop(0)
+
+    checks_root = REPO / "pipeline_check" / "core" / "checks"
+    on_disk: set[str] = set()
+    for prov_dir in checks_root.iterdir():
+        if not prov_dir.is_dir() or prov_dir.name.startswith("_"):
+            continue
+        rules_dir = prov_dir / "rules"
+        if not rules_dir.is_dir():
+            continue
+        rule_files = [
+            p for p in rules_dir.glob("*.py")
+            if p.stem != "__init__" and not p.stem.startswith("_")
+        ]
+        if rule_files:
+            on_disk.add(prov_dir.name)
+
+    missing = sorted(on_disk - set(_INDEX.keys()))
+    assert not missing, (
+        "Provider(s) ship rule files but have no entry in "
+        "hooks/mkdocs_provider_stats.py _INDEX (via _build_index or "
+        f"_CLASS_BASED_LABELS): {missing}. The home-page tile token "
+        "will render as literal {{ providers.<slug>.checks }}."
     )

@@ -683,5 +683,13 @@ STANDARD = Standard(
         "SCM-045":  ["CICD-SEC-10"],               # default code scanning limited query suite
         "SCM-046":  ["CICD-SEC-10"],               # default code scanning configured but paused
         "SCM-047":  ["CICD-SEC-10"],               # repo language not covered by default scanning
+        "SCM-048":  ["CICD-SEC-2"],                # org codespace secret scoped to all repos
+        "SCM-049":  ["CICD-SEC-2"],                # classic PAT used where fine-grained suffices
+        # GHA supply-chain posture pack
+        "GHA-097":  ["CICD-SEC-1"],                # recursive PR auto-merge loop
+        "GHA-098":  ["CICD-SEC-7"],                # deploy without security scan gate
+        "GHA-099":  ["CICD-SEC-6", "CICD-SEC-2"],  # deploy env plaintext secret
+        # npm supply-chain posture
+        "NPM-012":  ["CICD-SEC-3", "CICD-SEC-6"],  # publish token missing restrictions
     },
 )

@@ -723,5 +723,12 @@ STANDARD = Standard(
         "K8S-043":  ["6.4.1"],                           # Ingress wildcard host
         # S3-000 visibility gap, same audit-log precedent
         "S3-000":   ["10.2.1"],
+        # supply-chain posture pack
+        "GHA-097":  ["6.4.3", "6.5.1"],                   # recursive PR auto-merge loop
+        "GHA-098":  ["6.3.1", "6.4.3"],                   # deploy without security scan gate
+        "GHA-099":  ["8.2.1", "6.5.1"],                   # deploy env plaintext secret
+        "SCM-048":  ["7.2.5", "8.2.1"],                   # org codespace secrets scoped to all repos
+        "SCM-049":  ["7.2.5", "8.2.1"],                   # classic PAT used where fine-grained suffices
+        "NPM-012":  ["8.2.1", "6.5.1"],                   # publish token missing restrictions
     },
 )

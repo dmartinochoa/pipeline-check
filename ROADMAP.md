@@ -4,6 +4,30 @@ What's planned, what's shipped, and what's deliberately out of scope.
 
 ## Shipped
 
+- **Supply-chain posture rule pack (post-1.4.0)** — Six rules
+  informed by ``6mile/gimmepatz``, ``6mile/tvpo``,
+  ``SecureStackCo/visualizing-software-supply-chain``, and the
+  OSC&R technique catalog.  GHA-097 (recursive PR auto-merge loop,
+  OSC&R PER-1), GHA-098 (deploy without security scan gate,
+  OSC&R DE-4), GHA-099 (deploy env plaintext secret, OSC&R CA-6),
+  SCM-048 (org codespace secrets scoped to all repos, new
+  ``/orgs/{owner}/codespaces/secrets`` API fetch), SCM-049 (classic
+  PAT detection via token-prefix inspection), NPM-012 (legacy
+  publish token lacking ``npm_`` granular-token restrictions).
+  All six mapped to OWASP, OSC&R, and all 16 standards.  Rule
+  counts: GHA 87 -> 90, SCM 47 -> 49, npm 11 -> 12.
+- **OSC&R standard mapping (post-1.4.0)** — 17th standards mapping.
+  OSC&R (Open Software Supply Chain Attack Reference,
+  ``pbom-dev/OSCAR``) is a MITRE ATT&CK-style matrix for software
+  supply chain attacks: 12 tactics, 86 techniques.  610 checks
+  mapped to 61 of 86 techniques; 25 attacker-side techniques
+  (reconnaissance, resource development, runtime exploitation) left
+  unmapped with documented gaps.  Control IDs use a
+  ``<tactic-abbreviation>-<sequence>`` scheme minted by this project
+  (not upstream).  ``--standard oscr`` inherits from existing
+  standards plumbing.  Generated docs page at
+  ``docs/standards/oscr.md``.  Standards count 15 -> 16.
+  Informed by ReversingLabs OSC&R glossary.
 - **Gradle multi-project ``rootProject.ext.X`` resolution
   (post-1.3.0)** — Closes the last remaining gap in the dependency-
   supply-chain provider follow-ups. The maven provider's Gradle path
@@ -484,99 +508,6 @@ Not a discrete milestone. The ``exploit_example`` field landed in
 v1.0.x with a starter population; the posture going forward is
 that every new HIGH / CRITICAL rule ships one, and existing rules
 without an exploit example get backfilled opportunistically.
-
-### OSC&R standard mapping
-
-Add ``pipeline_check/core/standards/data/oscr.py`` as the 17th
-standards mapping.  OSC&R (Open Software Supply Chain Attack Reference,
-``pbom-dev/OSCAR``) is a MITRE ATT&CK-style matrix purpose-built for
-software supply chain attacks: 12 tactics (Reconnaissance through
-Impact), roughly 87 techniques.  The matrix fills a gap between
-OWASP CI/CD Top 10 (which is CI/CD-specific but only 10 items) and
-NIST 800-53 / ESF (which are broad frameworks, not attack catalogs).
-
-Most existing rules already cover OSC&R techniques and need only the
-mapping annotation: secrets-in-logs maps to Credential Access, dependency
-confusion to Initial Access, injection to Execution, admin-bypass to
-Defense Evasion, etc.  The initial lift is a mapping exercise, not a
-rule-writing exercise.
-
-Deliverables: ``oscr.py`` data file with technique-to-check mappings,
-``docs/standards/oscr.md`` generated page, ``--standard oscr`` CLI
-support (inherits from the existing standards plumbing), and an optional
-``--oscr`` column in the findings table showing the matched OSC&R
-technique ID per finding.
-
-Informed by: ReversingLabs OSC&R glossary, ``pbom-dev/OSCAR`` repo.
-
-### Supply-chain posture rule pack (gimmepatz / TVPO / OSC&R informed)
-
-A themed rule pack closing gaps surfaced by cross-referencing
-``6mile/gimmepatz``, ``6mile/tvpo``, ``SecureStackCo/
-visualizing-software-supply-chain``, and the OSC&R technique list
-against the existing 820+ checks.  Six rules, all static (no network
-required unless noted).
-
-**SCM-0xx: Codespace secrets scoped to all repos.**  GitHub SCM API
-check.  Fires when an org-level codespace secret is visible to every
-repo in the org instead of scoped to a named repo set.  A single
-compromised codespace in any repo exposes the secret.  OSC&R
-Credential Access; OWASP CICD-SEC-2.
-
-**SCM-0xx: Classic PAT used where fine-grained token suffices.**
-Fires when a workflow authentication step or SCM integration references
-a classic PAT (``ghp_`` prefix) instead of a fine-grained token
-(``github_pat_`` prefix).  Classic tokens carry org-wide scope and
-cannot restrict to individual repos.  OSC&R Credential Access;
-OWASP CICD-SEC-2.
-
-**NPM-0xx: Publish token missing readonly or IP restriction.**
-Extends the npm provider.  Fires when a ``.npmrc`` auth token used
-in a publish workflow lacks ``//registry.npmjs.org/:_authToken``
-combined with a ``//registry.npmjs.org/:always-auth`` or CIDR-
-whitelisted configuration.  A leaked unrestricted publish token
-enables full package hijack.  OSC&R Initial Access (registry
-compromise); OWASP CICD-SEC-3.  Requires ``--resolve-remote`` for
-live ``.npmrc`` inspection in referenced configs.
-
-**GHA-0xx: Recursive PR auto-merge loop.**  Fires when a workflow
-(a) triggers on ``pull_request`` or ``pull_request_target``, (b)
-creates or updates a PR via ``gh pr create`` / ``peter-evans/
-create-pull-request`` / similar, and (c) the target branch has an
-auto-merge rule or the workflow itself calls ``gh pr merge --auto``.
-The topology creates a persistence vector: the workflow's own PR
-triggers itself on the next cycle, allowing an attacker to maintain
-code injection across merges.  OSC&R Persistence (Scheduled Task /
-Recursive PR); OWASP CICD-SEC-1.
-
-**GHA-0xx (multi-provider): Pipeline missing security scan gate
-before deploy.**  Meta-check firing at the workflow level.  Walks the
-job DAG for deploy-shaped steps (``aws deploy``, ``kubectl apply``,
-``helm upgrade``, publish-to-registry, environment-gated jobs) and
-checks whether any upstream job or step invokes a recognized security
-scanner (SAST, SCA, container scan, secret scan).  Recognized
-scanners drawn from the ``top_actions.py`` catalog plus common CLI
-invocations (``trivy``, ``grype``, ``semgrep``, ``bandit``,
-``snyk test``, ``npm audit``, ``pip-audit``, ``gitleaks``).
-Fires when a deploy step has zero security-scan predecessors in
-the DAG.  Severity MEDIUM (advisory, not blocking).  OSC&R Defense
-Evasion (bypass controls); OWASP CICD-SEC-7.  Extends to GitLab
-and Azure DevOps as a second pass.
-
-**GHA-0xx: Deployment secret passed as plaintext env var.**  Fires
-when a ``deploy``-tagged or environment-gated job sets an environment
-variable to a literal string matching a secret shape (AWS key,
-GCP service-account JSON, API token regex) instead of referencing
-``${{ secrets.NAME }}``.  Complements the existing ``gha033``
-(secret echoed) and ``gha087`` (secret derivation echo) by catching
-the inverse: a value that should be in the secrets store but isn't.
-OSC&R Credential Access; OWASP CICD-SEC-2.
-
-Informed by: ``6mile/gimmepatz`` (token scoping, PAT types, NPM
-token hygiene), ``6mile/tvpo`` (SAST/SCA gate presence, credential
-exposure), ``SecureStackCo/visualizing-software-supply-chain``
-(build environment integrity, security-stage presence), OSC&R
-technique catalog (recursive PR, defense evasion via missing gates).
 
 ### Lower priority
 

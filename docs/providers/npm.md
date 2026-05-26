@@ -41,7 +41,7 @@ parsers and are queued for a follow-up.
 
 ## What it covers
 
-11 checks · 0 have an autofix patch (``--fix``).
+12 checks · 0 have an autofix patch (``--fix``).
 
 | Check | Title | Severity | Fix |
 |-------|-------|----------|-----|
@@ -56,6 +56,7 @@ parsers and are queued for a follow-up.
 | [NPM-009](#npm-009) | New transitive dependency added since the base ref | <span class="pg-sev pg-sev--high">HIGH</span> |  |
 | [NPM-010](#npm-010) | npm package has a known OSV advisory | <span class="pg-sev pg-sev--critical">CRITICAL</span> |  |
 | [NPM-011](#npm-011) | package.json files field includes secret-shaped paths | <span class="pg-sev pg-sev--high">HIGH</span> |  |
+| [NPM-012](#npm-012) | .npmrc publish token lacks IP or readonly restriction | <span class="pg-sev pg-sev--high">HIGH</span> |  |
 
 ---
 
@@ -376,6 +377,48 @@ Wildcard-broad entries (``*``, ``**``, ``./``) are NOT currently flagged — the
 **Recommended action**
 
 Remove the secret-shaped entry from ``package.json`` ``files``. If the entry is intentional (e.g., a ``.env.example`` template that ships intentionally),  rename it to a clearly-not-a-secret form (``env.example``) before shipping. Then run ``npm pack --dry-run`` and inspect the printed contents before the next ``npm publish``; the dry-run output is the ground truth for what the registry will receive. Any tarball that includes ``.env``, ``.npmrc`` with an ``_authToken`` line, an SSH private key, or an AWS credentials file effectively publishes those credentials to every consumer of the package.
+
+</div>
+
+</div>
+
+<div class="pg-rule pg-rule--high" markdown>
+
+## NPM-012: .npmrc publish token lacks IP or readonly restriction { #npm-012 }
+
+<div class="pg-rule__tags">
+<span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-3</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-6</span> <span class="pg-tag pg-tag--esf">ESF-D-SECRETS</span> <span class="pg-tag pg-tag--cwe">CWE-269</span> <span class="pg-tag pg-tag--cwe">CWE-522</span>
+</div>
+
+Fires when a ``.npmrc`` contains an ``_authToken`` entry (the standard npm registry auth mechanism) without any accompanying restriction. The rule checks for two indicators of restriction:
+
+1. An ``_authToken`` value that begins with ``npm_`` (granular access token, which carries server-side scope restrictions) vs. a legacy token (UUID-shaped or opaque hex, which has no scope boundary).
+2. Absence of a ``_password`` or ``always-auth`` key for the same registry scope (which would indicate a different auth mechanism).
+
+The rule cannot verify IP restrictions client-side (those are stored server-side on npmjs.com). It uses the token format as a proxy: granular tokens (``npm_`` prefix) support IP restrictions; legacy tokens do not.
+
+Complements NPM-011 (secret-shaped paths in ``files`` field) and the DF-025 rule (registry token baked into a Docker image layer).
+
+**Known false-positive modes**
+
+- Some organizations use a private registry (Verdaccio, GitHub Packages, GitLab Packages) whose tokens don't follow the npmjs.com format. The rule fires on any non-``npm_`` token, which may be a legitimate private-registry token. Suppress with a rationale naming the registry.
+
+**Seen in the wild**
+
+- ESLint 2018: a maintainer's stolen npm token was used to publish ``eslint-scope@3.7.2`` and ``eslint-config-eslint@5.0.2`` containing credential-harvesting code. Granular tokens with publish-only scope on specific packages and IP restrictions would have blocked the attacker's publish from outside the maintainer's network.
+- ua-parser-js 2021: a hijacked npm token published three backdoored versions (0.7.29, 0.8.0, 1.0.0) in a single session. A restricted token would have limited the damage to the specific package and IP range.
+
+<div class="pg-rule__rec" markdown>
+
+**Recommended action**
+
+Restrict every npm auth token to the minimum required scope. For tokens used only in CI publish workflows:
+
+1. Generate an **automation** token (npmjs.com > Access Tokens > Generate New Token > Granular Access Token) with only the ``publish`` permission on the specific packages it needs to publish.
+2. Enable **IP address CIDR allowlisting** on the token to restrict usage to known CI runner IP ranges.
+3. For read-only CI installs (``npm ci``), use a **read-only** token that cannot publish at all.
+
+A leaked unrestricted publish token enables full package hijack: an attacker publishes a backdoored version under your package name.
 
 </div>
 

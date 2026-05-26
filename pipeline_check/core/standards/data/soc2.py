@@ -694,6 +694,13 @@ STANDARD = Standard(
         "SM-000":   ["CC7.2"],
         "SSM-000":  ["CC7.2"],
         "S3-000":   ["CC7.2"],
+        # supply-chain posture pack
+        "GHA-097":  ["CC8.1"],                   # recursive PR auto-merge loop
+        "GHA-098":  ["CC8.1", "CC6.8"],          # deploy without security scan gate
+        "GHA-099":  ["CC6.1"],                   # deploy env plaintext secret
+        "SCM-048":  ["CC6.1"],                   # org codespace secrets scoped to all repos
+        "SCM-049":  ["CC6.1", "CC6.3"],          # classic PAT used where fine-grained suffices
+        "NPM-012":  ["CC6.1", "CC8.1"],          # publish token missing restrictions
         # ── SCM posture (governance via the platform REST API) ──────
         # Branch protection / review controls map to CC8.1 (Change
         # Management) since the SOC 2 framing of source-code review

@@ -754,5 +754,12 @@ STANDARD = Standard(
         # ── Dockerfile runtime-hygiene rule that lacks a CIS SSCS
         # fit (HEALTHCHECK is post-build observability, not supply
         # chain). Keep DF-007 unmapped per existing carve-out.
+        # supply-chain posture pack
+        "GHA-097":  ["2.3.8", "2.1.3"],                 # recursive PR auto-merge loop
+        "GHA-098":  ["1.1.8", "1.4.1"],                 # deploy without security scan gate
+        "GHA-099":  ["1.5.1", "2.3.4"],                 # deploy env plaintext secret
+        "SCM-048":  ["2.4.3"],                           # org codespace secrets scoped to all repos
+        "SCM-049":  ["1.3.4"],                           # classic PAT where fine-grained suffices
+        "NPM-012":  ["1.3.4", "4.3.3"],                 # publish token missing restrictions
     },
 )

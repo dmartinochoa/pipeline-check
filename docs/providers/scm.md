@@ -325,7 +325,7 @@ compose SCM findings with workflow / Dockerfile findings:
 
 ## What it covers
 
-47 checks · 0 have an autofix patch (``--fix``).
+49 checks · 0 have an autofix patch (``--fix``).
 
 | Check | Title | Severity | Fix |
 |-------|-------|----------|-----|
@@ -376,6 +376,8 @@ compose SCM findings with workflow / Dockerfile findings:
 | [SCM-045](#scm-045) | Default code scanning uses the limited query suite | <span class="pg-sev pg-sev--low">LOW</span> |  |
 | [SCM-046](#scm-046) | Default code scanning is configured but paused | <span class="pg-sev pg-sev--medium">MEDIUM</span> |  |
 | [SCM-047](#scm-047) | Repo language excluded from default code-scanning coverage | <span class="pg-sev pg-sev--medium">MEDIUM</span> |  |
+| [SCM-048](#scm-048) | Org codespace secret scoped to all repos | <span class="pg-sev pg-sev--high">HIGH</span> |  |
+| [SCM-049](#scm-049) | Classic PAT used where a fine-grained token suffices | <span class="pg-sev pg-sev--medium">MEDIUM</span> |  |
 
 ---
 
@@ -1544,6 +1546,60 @@ Cross-references the linguist ``languages`` endpoint against the default-setup `
 **Recommended action**
 
 Open the default code-scanning setup configuration (``Settings → Code security → Code scanning → Default setup → Edit configuration``) and add the missing languages to the analyzed set. If a language isn't CodeQL-supported (e.g. Shell, Lua), set up a third-party SAST workflow that uploads SARIF for that subset — default setup's auto-detect doesn't cover every language.
+
+</div>
+
+</div>
+
+<div class="pg-rule pg-rule--high" markdown>
+
+## SCM-048: Org codespace secret scoped to all repos { #scm-048 }
+
+<div class="pg-rule__tags">
+<span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-2</span> <span class="pg-tag pg-tag--esf">ESF-D-SECRETS</span> <span class="pg-tag pg-tag--cwe">CWE-269</span> <span class="pg-tag pg-tag--cwe">CWE-732</span>
+</div>
+
+Reads ``GET /orgs/{owner}/codespaces/secrets`` and flags every secret whose ``visibility`` field is ``"all"``. Requires ``admin:org`` scope on the token; without it GitHub returns 404 and the rule passes silently with an unavailability note.
+
+Secrets with ``visibility: "private"`` (all private repos) or ``visibility: "selected"`` (named repo list) are not flagged. The ``private`` tier is a middle ground some orgs accept; ``selected`` is the tightest scope GitHub offers.
+
+**Known false-positive modes**
+
+- Organizations that genuinely need a secret in every repo (rare — examples include a shared telemetry token or an internal-CA certificate) should suppress with a rationale naming the secret and confirming the blast radius is accepted.
+
+<div class="pg-rule__rec" markdown>
+
+**Recommended action**
+
+Scope each org-level codespace secret to only the repos that need it: Organization Settings > Codespaces > Secrets > edit the secret > change Visibility from 'All repositories' to 'Selected repositories' and pick the specific repos. A secret visible to every repo in the org means any developer who opens a codespace in any repo (including forks of public repos, if codespaces are enabled for those) can read the value via ``${{ secrets.NAME }}`` or the ``CODESPACE_*`` environment.
+
+</div>
+
+</div>
+
+<div class="pg-rule pg-rule--medium" markdown>
+
+## SCM-049: Classic PAT used where a fine-grained token suffices { #scm-049 }
+
+<div class="pg-rule__tags">
+<span class="pg-sev pg-sev--medium">MEDIUM</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-2</span> <span class="pg-tag pg-tag--esf">ESF-D-SECRETS</span> <span class="pg-tag pg-tag--cwe">CWE-269</span>
+</div>
+
+Inspects the prefix of the ``$GITHUB_TOKEN`` (or ``--scm-token``) used for the SCM scan. ``ghp_`` indicates a classic PAT; ``github_pat_`` indicates a fine-grained PAT. Classic tokens carry org-wide scope and cannot be restricted to individual repos, which violates the principle of least privilege.
+
+The rule passes silently when no token is provided or when the token is a GitHub App installation token (``ghs_`` / ``ghr_``), which already carries scoped permissions.
+
+**Known false-positive modes**
+
+- Some organizations have not yet adopted fine-grained PATs because of feature-parity gaps (e.g., some GraphQL endpoints require classic tokens). Suppress with a rationale documenting the specific API gap.
+
+<div class="pg-rule__rec" markdown>
+
+**Recommended action**
+
+Replace the classic personal access token (``ghp_`` prefix) with a fine-grained PAT (``github_pat_`` prefix). Fine-grained tokens restrict scope to named repos, carry per-permission grants, support expiration policies, and have a distinct audit-log shape. Classic PATs implicitly carry org-wide scope for every granted permission and cannot be restricted to individual repos.
+
+Generate a fine-grained token at ``github.com/settings/personal-access-tokens/new`` and select only the repos and permissions the scanner needs (typically ``repo`` read + ``admin:org`` read for SCM posture scans).
 
 </div>
 
