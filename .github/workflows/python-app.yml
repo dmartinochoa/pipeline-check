@@ -152,7 +152,7 @@ jobs:
       - if: ${{ !matrix.master-only || github.event_name == 'push' }}
         name: Test with pytest
         run: |
-          pytest -n auto --dist worksteal --ignore=tests/test_fleet.py --cov=pipeline_check --cov-report=term-missing --cov-fail-under=90
+          pytest -n auto --dist worksteal --ignore=tests/test_fleet.py --cov=pipeline_check --cov-report=term-missing --cov-fail-under=90 --cov-config=.github/coveragerc-no-fleet
 
   test-fleet:
     runs-on: ${{ matrix.os }}

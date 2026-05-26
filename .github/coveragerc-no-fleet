@@ -1,0 +1,2 @@
+[run]
+omit = pipeline_check/core/fleet.py
