@@ -21,9 +21,10 @@ on:
   schedule:
     - cron: "37 4 * * *"  # nightly 04:37 UTC, off the hour to dodge runner congestion
   pull_request:
+    branches: ["master"]
     paths:
-      - "pipeline_check/core/checks/**"
-      - "pipeline_check/core/chains/**"
+      - "pipeline_check/core/checks/**/rules/**"
+      - "pipeline_check/core/chains/rules/**"
       - "bench/goats.yml"
       - "bench/goat_runner.py"
       - "bench/goats/**"

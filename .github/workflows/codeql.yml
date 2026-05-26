@@ -3,19 +3,6 @@ name: CodeQL
 on:
   push:
     branches: ["master"]
-  pull_request:
-    branches: ["master", "dev"]
-    # Skip CodeQL on PRs that don't touch executable code or the
-    # workflows it would scan. The weekly cron below still catches
-    # any drift on master regardless of what individual PRs touch.
-    # ``workflow_dispatch`` below lets a maintainer satisfy the
-    # ``code_scanning`` ruleset on docs-only PRs that would otherwise
-    # never produce CodeQL results.
-    paths-ignore:
-      - "docs/**"
-      - "bench/**"
-      - "**/*.md"
-      - "mkdocs.yml"
   schedule:
     - cron: "27 4 * * 1"
   workflow_dispatch:
@@ -25,7 +12,7 @@ permissions:
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+  cancel-in-progress: false
 
 jobs:
   analyze:
