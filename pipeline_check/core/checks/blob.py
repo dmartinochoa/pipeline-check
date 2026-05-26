@@ -67,3 +67,8 @@ def clear_blob_cache() -> None:
     # for free.
     from ._context import clear_context_cache
     clear_context_cache()
+    # GHA-062's IaC sidecar walk is keyed on the repo-root path string,
+    # not on ``id(doc)``, so it must be cleared explicitly to avoid
+    # stale results in long-lived processes.
+    from .github.rules.gha062_oidc_iac_subject import clear_iac_scan_cache
+    clear_iac_scan_cache()

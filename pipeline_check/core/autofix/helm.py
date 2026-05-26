@@ -23,25 +23,7 @@ import re
 
 from ..checks.base import Finding
 from . import register
-from ._impl import _insert_comment_above
-
-
-def _todo_already_above(content: str, match_start: int, marker: str) -> bool:
-    """True when the line immediately above ``match_start`` already
-    carries ``marker``. Per-match dedup so a partial state (one TODO
-    landed by hand, others still missing) doesn't suppress the
-    remaining annotations."""
-    if match_start == 0:
-        return False
-    # Regex matches are anchored at ``^`` in MULTILINE mode, so the
-    # newline at content[match_start - 1] separates the previous line
-    # from the matched one. Find that previous line's bounds.
-    prev_line_end = match_start - 1
-    if prev_line_end < 0 or content[prev_line_end] != "\n":
-        return False
-    prev_line_start = content.rfind("\n", 0, prev_line_end) + 1
-    return marker in content[prev_line_start:prev_line_end]
-
+from ._impl import _insert_comment_above, _todo_already_above
 
 _TODO_HELM_001 = (
     "TODO(pipeline-check HELM-001): bump to ``apiVersion: v2`` and "

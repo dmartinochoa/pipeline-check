@@ -134,7 +134,7 @@ def _matches_untrusted(value: Any) -> list[str]:
         return []
     hits: list[str] = []
     for token in _UNTRUSTED_CONTEXTS:
-        if token in value:
+        if re.search(r"(?<!\w)" + re.escape(token) + r"(?!\w)", value):
             hits.append(token)
     return hits
 

@@ -472,7 +472,7 @@ def _references_unquoted_var(text: str, var_name: str) -> bool:
 _NON_JOB_KEYS: frozenset[str] = frozenset({
     "variables", "default", "stages", "include", "workflow",
     "image", "services", "before_script", "after_script",
-    "script", "cache",
+    "cache", "pages",
 })
 
 

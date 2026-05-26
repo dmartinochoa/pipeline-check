@@ -20,6 +20,6 @@ engine auto-discovers it.
 from __future__ import annotations
 
 from .base import Chain, ChainRule
-from .engine import evaluate, list_rules
+from .engine import evaluate, evaluate_cross_repo, list_rules
 
-__all__ = ["Chain", "ChainRule", "evaluate", "list_rules"]
+__all__ = ["Chain", "ChainRule", "evaluate", "evaluate_cross_repo", "list_rules"]

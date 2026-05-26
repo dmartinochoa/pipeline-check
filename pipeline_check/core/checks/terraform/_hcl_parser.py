@@ -47,11 +47,12 @@ def parse_tf_directory(path: Path) -> HclParseResult:
             "The --tf-source flag requires the 'python-hcl2' package. "
             "Install it with: pip install 'pipeline-check[hcl]'"
         )
-    return _parse_module(path, prefix="", depth=0)
+    return _parse_module(path, prefix="", depth=0, root=path.resolve())
 
 
 def _parse_module(
     directory: Path, prefix: str, depth: int,
+    *, root: Path | None = None,
 ) -> HclParseResult:
     result = HclParseResult()
     tf_files = sorted(directory.glob("*.tf"))
@@ -80,7 +81,8 @@ def _parse_module(
 
     if depth < _MODULE_DEPTH_LIMIT:
         _walk_child_modules(directory, merged, variables, locals_,
-                            prefix, depth, result)
+                            prefix, depth, result,
+                            root=root or directory.resolve())
 
     return result
 
@@ -283,6 +285,8 @@ def _walk_child_modules(
     prefix: str,
     depth: int,
     result: HclParseResult,
+    *,
+    root: Path,
 ) -> None:
     for block in merged.get("module", []):
         if not isinstance(block, dict):
@@ -302,11 +306,16 @@ def _walk_child_modules(
             if not mod_dir.is_dir():
                 continue
             try:
-                mod_dir.relative_to(directory.resolve())
+                mod_dir.relative_to(root)
             except ValueError:
+                result.warnings.append(
+                    f"module.{mod_name}: source {source!r} resolves "
+                    f"outside the scan root, skipped"
+                )
                 continue
             child_prefix = f"{prefix}module.{mod_name}."
-            child = _parse_module(mod_dir, child_prefix, depth + 1)
+            child = _parse_module(mod_dir, child_prefix, depth + 1,
+                                  root=root)
             result.resources.extend(child.resources)
             result.data_sources.extend(child.data_sources)
             result.unresolved_refs.update(child.unresolved_refs)

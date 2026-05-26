@@ -37,6 +37,8 @@ import yaml
 
 from ._yaml_lines import safe_load_all_with_lines, safe_load_yaml_lines
 
+_MAX_YAML_BYTES = 5 * 1024 * 1024  # 5 MB guard against alias-expansion bombs
+
 
 @dataclass(frozen=True, slots=True)
 class LoadedYamlFile:
@@ -94,6 +96,17 @@ def load_yaml_files(
     warnings: list[str] = []
     skipped = 0
     for f in files:
+        try:
+            size = f.stat().st_size
+        except OSError:
+            size = 0
+        if size > _MAX_YAML_BYTES:
+            warnings.append(
+                f"{f}: skipped (file size {size:,} bytes exceeds "
+                f"{_MAX_YAML_BYTES:,} byte limit)"
+            )
+            skipped += 1
+            continue
         try:
             text = f.read_text(encoding="utf-8")
         except (OSError, UnicodeDecodeError) as exc:

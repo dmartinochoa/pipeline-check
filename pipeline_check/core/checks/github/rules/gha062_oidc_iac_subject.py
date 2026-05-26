@@ -166,6 +166,16 @@ def _scan_root(workflow_path: str) -> str:
 _IAC_SCAN_CACHE: dict[str, list[tuple[str, str]]] = {}
 
 
+def clear_iac_scan_cache() -> None:
+    """Drop the per-repo-root IaC walk cache.
+
+    Called from :func:`~pipeline_check.core.checks.blob.clear_blob_cache`
+    so long-lived processes (LSP server, Lambda container) don't serve
+    stale results after the repo tree changes between scans.
+    """
+    _IAC_SCAN_CACHE.clear()
+
+
 def _iac_candidates(root: str, max_depth: int = 6) -> list[tuple[str, str]]:
     """Return ``(absolute_path, kind)`` for candidate IaC files.
 

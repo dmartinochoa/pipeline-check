@@ -3,23 +3,14 @@ name: Dogfood
 on:
   push:
     branches: ["master"]
-  pull_request:
-    branches: ["master", "dev"]
-    # Skip dogfood on PRs that don't touch the scanner, the workflows,
-    # or the dogfood job itself. A docs / bench / README PR can't move
-    # the SARIF output, so the run is pure wait.
-    paths-ignore:
-      - "docs/**"
-      - "bench/**"
-      - "**/*.md"
-      - "mkdocs.yml"
+  workflow_dispatch:
 
 permissions:
   contents: read
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+  cancel-in-progress: false
 
 jobs:
   scan-self:

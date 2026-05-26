@@ -280,7 +280,7 @@ def _parse_pom(path: str, text: str) -> PomFile:
     original source.
     """
     try:
-        root = ET.fromstring(text)
+        root = ET.fromstring(text)  # noqa: S314
     except ET.ParseError:
         return PomFile(path=path, text=text, parsed_ok=False)
 

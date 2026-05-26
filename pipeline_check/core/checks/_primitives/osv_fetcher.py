@@ -149,24 +149,37 @@ def _parse_vulns(raw: str) -> list[OsvAdvisory]:
 def _extract_severity(vuln: dict[str, Any]) -> str:
     for sev in vuln.get("severity", []):
         if isinstance(sev, dict) and sev.get("type") == "CVSS_V3":
-            score_str = sev.get("score", "")
-            if isinstance(score_str, str) and "/" in score_str:
-                try:
-                    base = float(score_str.split("/")[0].split(":")[-1])
-                    if base >= 9.0:
-                        return "CRITICAL"
-                    if base >= 7.0:
-                        return "HIGH"
-                    if base >= 4.0:
-                        return "MEDIUM"
-                    return "LOW"
-                except (ValueError, IndexError):
-                    pass
+            score_val = sev.get("score", "")
+            if isinstance(score_val, (int, float)):
+                return _cvss_rating(float(score_val))
+            if isinstance(score_val, str):
+                # OSV stores the CVSS vector string (e.g.
+                # "CVSS:3.1/AV:N/AC:L/..."), not a numeric score.
+                # The version prefix ("3.1") is NOT the base score.
+                # Try to parse a plain float first (some feeds use
+                # a numeric string); otherwise fall through.
+                if "/" not in score_val:
+                    try:
+                        return _cvss_rating(float(score_val))
+                    except ValueError:
+                        pass
     db_sev = vuln.get("database_specific", {})
     if isinstance(db_sev, dict):
         raw = db_sev.get("severity")
-        if isinstance(raw, str) and raw.upper() in (
-            "CRITICAL", "HIGH", "MEDIUM", "LOW",
-        ):
-            return raw.upper()
+        if isinstance(raw, str):
+            normalized = raw.upper()
+            if normalized in ("CRITICAL", "HIGH", "MEDIUM", "LOW"):
+                return normalized
+            if normalized == "MODERATE":
+                return "MEDIUM"
     return "HIGH"
+
+
+def _cvss_rating(base: float) -> str:
+    if base >= 9.0:
+        return "CRITICAL"
+    if base >= 7.0:
+        return "HIGH"
+    if base >= 4.0:
+        return "MEDIUM"
+    return "LOW"

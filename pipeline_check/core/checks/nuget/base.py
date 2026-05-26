@@ -22,9 +22,18 @@ _SKIP_DIRS = frozenset({"bin", "obj", ".nuget", "node_modules", ".git"})
 
 _MSBUILD_NS = re.compile(r"^\{[^}]+\}")
 
+_MAX_XML_BYTES = 10 * 1024 * 1024  # 10 MB — reject oversized files
+
 
 def _strip_ns(tag: str) -> str:
     return _MSBUILD_NS.sub("", tag)
+
+
+def _safe_parse_xml(path: Path) -> ET.ElementTree:
+    """Parse XML with a size guard against oversized files."""
+    if path.stat().st_size > _MAX_XML_BYTES:
+        raise ValueError(f"file exceeds {_MAX_XML_BYTES} byte limit")
+    return ET.parse(path)  # type: ignore[return-value]  # noqa: S314
 
 
 # ── Dataclasses ─────────────────────────────────────────────────────────
@@ -163,7 +172,7 @@ def _find_central_props(root: Path) -> Path | None:
 
 
 def _parse_central_props(path: Path) -> dict[str, str]:
-    tree = ET.parse(path)  # noqa: S314
+    tree = _safe_parse_xml(path)
     versions: dict[str, str] = {}
     for elem in tree.iter():
         tag = _strip_ns(elem.tag)
@@ -178,7 +187,7 @@ def _parse_central_props(path: Path) -> dict[str, str]:
 def _parse_csproj(
     path: Path, rel: str, central_versions: dict[str, str],
 ) -> NuGetProject:
-    tree = ET.parse(path)  # noqa: S314
+    tree = _safe_parse_xml(path)
     refs: list[NuGetPackageRef] = []
     for elem in tree.iter():
         tag = _strip_ns(elem.tag)
@@ -197,7 +206,7 @@ def _parse_csproj(
 
 
 def _parse_packages_config(path: Path, rel: str) -> NuGetProject:
-    tree = ET.parse(path)  # noqa: S314
+    tree = _safe_parse_xml(path)
     refs: list[NuGetPackageRef] = []
     for elem in tree.iter():
         tag = _strip_ns(elem.tag)
@@ -210,7 +219,7 @@ def _parse_packages_config(path: Path, rel: str) -> NuGetProject:
 
 
 def _parse_nuget_config(path: Path, rel: str) -> NuGetConfig:
-    tree = ET.parse(path)  # noqa: S314
+    tree = _safe_parse_xml(path)
     sources: list[NuGetSource] = []
     mappings: list[NuGetSourceMapping] = []
     for elem in tree.iter():
@@ -246,6 +255,8 @@ def _parse_nuget_config(path: Path, rel: str) -> NuGetConfig:
 def _parse_lock_json(path: Path, rel: str) -> NuGetLock:
     with open(path, encoding="utf-8") as fh:
         data = json.load(fh)
+    if not isinstance(data, dict):
+        return NuGetLock(path=rel, packages={})
     packages: dict[str, str] = {}
     deps = data.get("dependencies", {})
     for _framework, framework_deps in deps.items():

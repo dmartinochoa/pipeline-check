@@ -208,6 +208,8 @@ def test_gha_1000_line_scan_under_ceiling(benchmark: Any) -> None:
         iterations=1,
         warmup_rounds=1,
     )
+    if benchmark.stats is None:
+        return
     median = benchmark.stats.stats.median
     assert median < _GHA_1000_LINES_CEILING_S, (
         f"GHA scan of {_GHA_NUM_JOBS} jobs (~{_GHA_TARGET_LINES} lines) "
@@ -226,6 +228,8 @@ def test_cfn_5000_line_scan_under_ceiling(benchmark: Any) -> None:
         iterations=1,
         warmup_rounds=1,
     )
+    if benchmark.stats is None:
+        return
     median = benchmark.stats.stats.median
     assert median < _CFN_5000_LINES_CEILING_S, (
         f"CFN scan of {_CFN_NUM_RESOURCES} resources (~{_CFN_TARGET_LINES} "

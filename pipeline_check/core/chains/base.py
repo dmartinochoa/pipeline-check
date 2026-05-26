@@ -218,6 +218,20 @@ def group_by_anchor(
     }
 
 
+def group_cross_repo(
+    findings_by_repo: dict[str, list[Finding]],
+    check_ids: list[str],
+) -> list[tuple[str, Finding]]:
+    """Return ``(repo_coord, finding)`` pairs for failing findings matching *check_ids*."""
+    wanted = set(check_ids)
+    out: list[tuple[str, Finding]] = []
+    for repo, findings in findings_by_repo.items():
+        for f in findings:
+            if (not f.passed) and f.check_id in wanted:
+                out.append((repo, f))
+    return out
+
+
 def min_confidence(findings: list[Finding]) -> Confidence:
     """Return the lowest confidence among *findings* (LOW > MEDIUM > HIGH).
 

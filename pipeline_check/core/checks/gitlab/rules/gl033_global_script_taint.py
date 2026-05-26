@@ -129,7 +129,7 @@ def check(path: str, doc: dict[str, Any]) -> Finding:
         hits = _scan_block(block, breadcrumb=key)
         if hits:
             offenders.extend(hits)
-            line = _line_of(block) if isinstance(block, dict) else 1
+            line = _line_of(block) or 1
             locations.append(Location(
                 path=path, start_line=line, end_line=line,
             ))
@@ -141,7 +141,7 @@ def check(path: str, doc: dict[str, Any]) -> Finding:
             hits = _scan_block(block, breadcrumb=f"default.{key}")
             if hits:
                 offenders.extend(hits)
-                line = _line_of(default)
+                line = _line_of(default) or 1
                 locations.append(Location(
                     path=path, start_line=line, end_line=line,
                 ))

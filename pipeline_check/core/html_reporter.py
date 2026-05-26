@@ -813,6 +813,12 @@ _PROVIDER_PREFIXES = {
     # finding in one filter slice regardless of which provider's
     # propagation channel surfaced it.
     "TAINT": "taint",
+    # ArgoCD (distinct from Argo Workflows).
+    "ARGOCD": "argocd",
+    # Supply-chain package managers.
+    "NPM": "npm", "PYPI": "pypi", "MAVEN": "maven", "NUGET": "nuget",
+    # Attack chains and cross-provider chains.
+    "AC": "chain", "XPC": "chain",
     # External SARIF ingest from any conformant scanner (Trivy,
     # Checkov, Snyk, KICS, CodeQL, …). Every ``--ingest`` finding
     # carries an ``INGEST-<tool>-<rule>`` check_id, so the prefix

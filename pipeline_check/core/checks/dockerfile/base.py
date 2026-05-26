@@ -151,10 +151,10 @@ class DockerfileContext:
             files = sorted(
                 p for p in root.rglob("*")
                 if p.is_file() and (
-                    p.name in {"Dockerfile", "Containerfile"}
-                    or p.name.startswith("Dockerfile.")
-                    or p.name.endswith(".Dockerfile")
-                    or p.name.startswith("Containerfile.")
+                    p.name.lower() in {"dockerfile", "containerfile"}
+                    or p.name.lower().startswith("dockerfile.")
+                    or p.name.lower().endswith(".dockerfile")
+                    or p.name.lower().startswith("containerfile.")
                 )
             )
         dockerfiles: list[Dockerfile] = []
