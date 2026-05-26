@@ -31,6 +31,7 @@ from .checks._primitives.secret_verifiers import (
 )
 from .checks.base import Confidence, Finding, Severity, clear_blob_cache
 from .checks.custom.loader import LoadedCustomRules, load_custom_rules
+from .checks.custom.rego_loader import load_rego_rules
 from .checks.custom.runner import make_custom_rules_check
 from .fp_annotations import (
     annotation_index,
@@ -81,6 +82,7 @@ class Scanner:
         chains_enabled: bool = True,
         overrides: dict[str, dict[str, str]] | None = None,
         custom_rules: list[str] | tuple[str, ...] | None = None,
+        rego_rules: list[str] | tuple[str, ...] | None = None,
         fp_annotations_path: str | None = None,
         verify_secrets: bool = False,
         verify_secrets_show_identity: bool = False,
@@ -124,10 +126,12 @@ class Scanner:
         # place. Loading defers ID-collision checks to the loader,
         # which uses the union of every built-in registry.
         self._custom_rules: LoadedCustomRules = self._load_custom_rules(
-            custom_rules,
+            custom_rules, rego_rules,
         )
         check_classes = list(provider.check_classes)
-        if self._custom_rules.by_provider.get(self.pipeline):
+        has_yaml = bool(self._custom_rules.by_provider.get(self.pipeline))
+        has_rego = bool(self._custom_rules.rego_by_provider.get(self.pipeline))
+        if has_yaml or has_rego:
             check_classes.append(
                 make_custom_rules_check(self.pipeline, self._custom_rules),
             )
@@ -206,24 +210,19 @@ class Scanner:
     @staticmethod
     def _load_custom_rules(
         paths: list[str] | tuple[str, ...] | None,
+        rego_paths: list[str] | tuple[str, ...] | None = None,
     ) -> LoadedCustomRules:
         """Load custom rules and reject IDs that collide with built-ins.
 
         Built-in IDs come from the union of every provider's rule
-        registry. We deliberately don't filter by the active pipeline
-       , a custom rule with id ``GHA-001`` is rejected even when the
+        registry. We deliberately don't filter by the active pipeline;
+        a custom rule with id ``GHA-001`` is rejected even when the
         current scan is ``--pipeline kubernetes``, because the same
         rule file should round-trip across providers without surprise.
         """
-        if not paths:
+        if not paths and not rego_paths:
             return LoadedCustomRules()
         builtin_ids: set[str] = set()
-        # Discover rule packages from the filesystem. Adding a new
-        # provider under ``pipeline_check/core/checks/<name>/rules/``
-        # automatically participates in collision detection, no
-        # registry edit required. The same import is also used by the
-        # CLI's ``--list-checks`` / completion path, so the source of
-        # truth stays singular.
         from pathlib import Path as _Path
 
         from .checks.rule import discover_rules
@@ -237,13 +236,17 @@ class Scanner:
                 for rule, _ in discover_rules(pkg):
                     builtin_ids.add(rule.id)
             except (ImportError, AttributeError):
-                # A misconfigured package shouldn't block custom-rule
-                # loading. Worst case: a built-in ID isn't in the
-                # collision set and a clashing custom rule loads;
-                # the collision will still surface as duplicate
-                # findings at scan time.
                 continue
-        return load_custom_rules(paths, builtin_ids=builtin_ids)
+        loaded = load_custom_rules(paths, builtin_ids=builtin_ids)
+        if rego_paths:
+            yaml_custom_ids = {r.id for r in loaded.rules}
+            rego = load_rego_rules(
+                list(rego_paths),
+                builtin_ids=builtin_ids,
+                yaml_custom_ids=yaml_custom_ids,
+            )
+            loaded.merge_rego(rego)
+        return loaded
 
     def inventory(
         self,

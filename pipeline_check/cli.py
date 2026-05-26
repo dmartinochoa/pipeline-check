@@ -173,6 +173,7 @@ class _GroupedCommand(click.Command):
         ("Filtering", frozenset({
             "--checks", "--severity-threshold", "--min-confidence",
             "--secret-pattern", "--detect-entropy", "--custom-rules",
+            "--rego-rules",
         })),
         ("Output", frozenset({
             "--output", "--output-file", "--standard",
@@ -1982,6 +1983,19 @@ def _install_completion_callback(
     ),
 )
 @click.option(
+    "--rego-rules",
+    "rego_rules",
+    multiple=True,
+    metavar="PATH",
+    help=(
+        "Directory of OPA Rego policy files (.rego) to evaluate alongside "
+        "the built-in catalog. Repeat for multiple paths. Requires the "
+        "'opa' binary on PATH (https://openpolicyagent.org). Each .rego "
+        "file must declare rule metadata via OPA METADATA annotations. "
+        "See docs/writing_a_rego_rule.md for the policy convention."
+    ),
+)
+@click.option(
     "--verbose",
     "-v",
     is_flag=True,
@@ -2225,6 +2239,7 @@ def scan(
     ignore_file: str | None,
     no_inline_ignore: bool,
     custom_rules: tuple[str, ...],
+    rego_rules: tuple[str, ...],
     verbose: bool,
     quiet: bool,
     show_controls: bool,
@@ -2715,6 +2730,10 @@ def scan(
         if not os.path.exists(crp):
             raise click.UsageError(f"--custom-rules not found: {crp}")
 
+    for rrp in rego_rules:
+        if not os.path.exists(rrp):
+            raise click.UsageError(f"--rego-rules not found: {rrp}")
+
     if diff_base is not None and diff_base.startswith("-"):
         # ``diff_base`` is composed into ``git diff --name-only
         # <base>...HEAD``. A leading ``-`` makes git parse the value
@@ -2820,6 +2839,7 @@ def scan(
         detect_entropy=detect_entropy,
         overrides=cli_overrides or None,
         custom_rules=list(custom_rules) or None,
+        rego_rules=list(rego_rules) or None,
         fp_annotations_path=fp_path,
         log=_debug if verbose else None,
         tf_plan=tf_plan,
@@ -3046,6 +3066,7 @@ def scan(
             min_confidence=min_confidence,
             standards=standards,
             custom_rules=custom_rules,
+            rego_rules=rego_rules,
             secret_patterns=secret_patterns,
             detect_entropy=detect_entropy,
             ignore_file=ignore_file,
@@ -3467,6 +3488,7 @@ def _build_pr_diff_subprocess_argv(
     min_confidence: str,
     standards: tuple[str, ...],
     custom_rules: tuple[str, ...],
+    rego_rules: tuple[str, ...],
     secret_patterns: tuple[str, ...],
     detect_entropy: bool,
     ignore_file: str | None,
@@ -3524,6 +3546,8 @@ def _build_pr_diff_subprocess_argv(
         argv.extend(["--standard", s])
     for cr in custom_rules:
         argv.extend(["--custom-rules", cr])
+    for rr in rego_rules:
+        argv.extend(["--rego-rules", rr])
     for pat in secret_patterns:
         argv.extend(["--secret-pattern", pat])
     if detect_entropy:
