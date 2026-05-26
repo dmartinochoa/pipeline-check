@@ -7,7 +7,6 @@ import urllib.request
 from dataclasses import dataclass
 from typing import Any
 
-
 _PROBE_TIMEOUT = 10.0
 _MAX_RESPONSE = 64 * 1024
 _USER_AGENT = "pipeline-check-secret-verifier"

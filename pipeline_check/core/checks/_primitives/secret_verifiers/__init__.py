@@ -27,6 +27,7 @@ Security invariants:
 from __future__ import annotations
 
 import hashlib
+import json
 import logging
 import time
 from dataclasses import dataclass
@@ -109,16 +110,16 @@ def _register_builtins() -> None:
     _REGISTRY_LOADED = True
 
     from .github import GitHubTokenVerifier
+    from .gitlab import GitLabTokenVerifier
     from .npm import NpmTokenVerifier
-    from .slack import SlackTokenVerifier
     from .saas_api_keys import (
         AnthropicKeyVerifier,
-        OpenAIKeyVerifier,
         HuggingFaceTokenVerifier,
+        OpenAIKeyVerifier,
         SendGridKeyVerifier,
         StripeKeyVerifier,
     )
-    from .gitlab import GitLabTokenVerifier
+    from .slack import SlackTokenVerifier
 
     _REGISTRY["github_token"] = GitHubTokenVerifier()
     _REGISTRY["npm_token"] = NpmTokenVerifier()
@@ -175,7 +176,6 @@ def verify_token(
         ck = _cache_key_for_secret(detector, raw_value)
         cached = cache.get(ck)
         if cached is not None:
-            import json
             try:
                 d = json.loads(cached)
                 return VerifyResult(
@@ -189,7 +189,6 @@ def verify_token(
     result = verifier.verify(raw_value)
 
     if cache is not None:
-        import json
         ck = _cache_key_for_secret(detector, raw_value)
         payload = json.dumps({
             "outcome": result.outcome.value,

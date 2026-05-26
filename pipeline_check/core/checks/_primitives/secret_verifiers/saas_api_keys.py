@@ -11,7 +11,6 @@ import base64
 from . import SecretVerifier, VerifyOutcome, VerifyResult
 from ._http import bearer_probe, http_probe
 
-
 # ── Anthropic ───────────────────────────────────────────────────────
 
 
@@ -142,7 +141,7 @@ class StripeKeyVerifier(SecretVerifier):
     def probe(self, secret_value: str) -> VerifyResult:
         # Stripe uses HTTP Basic Auth with the API key as the username.
         cred = base64.b64encode(
-            f"{secret_value}:".encode("utf-8"),
+            f"{secret_value}:".encode(),
         ).decode("ascii")
         resp = http_probe(
             self._ENDPOINT,
