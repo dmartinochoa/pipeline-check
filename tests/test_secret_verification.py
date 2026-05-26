@@ -8,11 +8,8 @@ import json
 from typing import Any
 from unittest.mock import MagicMock, patch
 
-import pytest
-
 from pipeline_check.core.checks._primitives.secret_verifiers import (
     VerifyOutcome,
-    VerifyResult,
     get_verifier,
     has_verifier,
     redact_identity,
@@ -22,7 +19,6 @@ from pipeline_check.core.checks._primitives.secret_verifiers._http import (
     ProbeResponse,
 )
 from pipeline_check.core.checks._secrets import classify_tokens_raw
-
 
 # ── classify_tokens_raw ─────────────────────────────────────────────
 
@@ -262,7 +258,6 @@ class TestScannerVerification:
         self, check_id: str, resource: str, passed: bool,
     ) -> Any:
         from pipeline_check.core.checks.base import (
-            Confidence,
             Finding,
             Severity,
         )

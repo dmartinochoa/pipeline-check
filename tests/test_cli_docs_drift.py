@@ -352,8 +352,6 @@ def _extract_provider_names_from_prose(text: str) -> set[str]:
     Matches only the provider names the project uses; not a generic
     NLP parser.
     """
-    from pipeline_check.core.providers import available
-    all_providers = set(available())
     # Build a mapping of common display names to provider slugs.
     display_to_slug: dict[str, str] = {
         "aws": "aws",
@@ -398,6 +396,7 @@ def test_pyproject_description_provider_names_are_registered() -> None:
     old name.
     """
     import tomllib
+
     from pipeline_check.core.providers import available
 
     with (REPO / "pyproject.toml").open("rb") as fh:

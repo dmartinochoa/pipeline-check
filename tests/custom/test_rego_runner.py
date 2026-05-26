@@ -8,12 +8,12 @@ from typing import Any
 import pytest
 
 from pipeline_check.core.checks.base import Severity
+from pipeline_check.core.checks.custom.rego_loader import (
+    load_rego_rules,
+)
 from pipeline_check.core.checks.custom.rego_runner import (
     evaluate_rego_rules,
     make_passing_findings,
-)
-from pipeline_check.core.checks.custom.rego_loader import (
-    load_rego_rules,
 )
 
 _FIXTURES = Path(__file__).parent / "fixtures" / "rego"

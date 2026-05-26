@@ -22,7 +22,6 @@ from typing import Any
 from .._primitives.registry_fetcher import (
     FileSystemCache,
     HttpGetFetcher,
-    default_cache_dir,
 )
 
 logger = logging.getLogger(__name__)
