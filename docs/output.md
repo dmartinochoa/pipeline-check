@@ -12,6 +12,7 @@ format carries the same finding set, only the rendering differs.
 | `markdown` | stdout or `--output-file`    | PR comments / Slack-style consumers; Attack Chains H2 sits between summary and the Failures table |
 | `junit`    | stdout or `--output-file`    | Test-runner UIs (Jenkins, Bamboo, GitLab pipelines) that natively render JUnit XML |
 | `threatmodel` | stdout or `--output-file` | STRIDE-mapped Markdown threat-model document. Auto-runs `--inventory`. SOC 2 / PCI / NIST SSDF evidence packages, architecture-review docs |
+| `cyclonedx` | stdout or `--output-file`  | CycloneDX 1.6 JSON SBOM of build-time dependencies (actions, base images, packages). PURL identifiers on every component |
 | `both`     | terminal → **stderr**, JSON → stdout | Pipe `jq` while still seeing a human report |
 
 `--pr-diff REF` is the diff-mode counterpart to the formats above: it
@@ -250,6 +251,29 @@ pure-function swap, no rule registry changes.
 - **Quarterly posture review**: regenerate against the latest
   scan, diff against the prior quarter to see which STRIDE
   buckets gained / lost open risks.
+
+## CycloneDX 1.6
+
+```bash
+pipeline_check --pipeline github --gha-path .github/workflows \
+    --output cyclonedx --output-file sbom.json
+```
+
+Emits a CycloneDX 1.6 JSON BOM of every build-time dependency the
+pipeline consumes. Each component carries a
+[Package URL](https://github.com/package-url/purl-spec) and
+``pipeline-check:`` namespaced properties (provider, kind, source
+file, pinned status).
+
+V1 extracts dependencies from four providers: GitHub Actions (action
+refs, reusable workflows, docker steps), Dockerfile (``FROM`` base
+images), npm (``package.json`` dependencies), and PyPI
+(``requirements.txt`` entries). Providers without a
+``build_dependencies()`` override contribute no components.
+
+The BOM format follows the
+[CycloneDX 1.6 specification](https://cyclonedx.org/docs/1.6/json/).
+No external library is required; the JSON is emitted directly.
 
 ## Exit codes are independent of format
 
