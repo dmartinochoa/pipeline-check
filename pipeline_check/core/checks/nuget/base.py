@@ -33,7 +33,7 @@ def _safe_parse_xml(path: Path) -> ET.ElementTree:
     """Parse XML with a size guard against oversized files."""
     if path.stat().st_size > _MAX_XML_BYTES:
         raise ValueError(f"file exceeds {_MAX_XML_BYTES} byte limit")
-    return ET.parse(path)  # noqa: S314
+    return ET.parse(path)  # type: ignore[return-value]  # noqa: S314
 
 
 # ── Dataclasses ─────────────────────────────────────────────────────────

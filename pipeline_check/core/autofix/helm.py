@@ -25,7 +25,6 @@ from ..checks.base import Finding
 from . import register
 from ._impl import _insert_comment_above, _todo_already_above
 
-
 _TODO_HELM_001 = (
     "TODO(pipeline-check HELM-001): bump to ``apiVersion: v2`` and "
     "migrate any sibling ``requirements.yaml`` entries into the "

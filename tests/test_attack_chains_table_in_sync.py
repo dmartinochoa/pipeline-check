@@ -45,7 +45,7 @@ DOC_PATH = REPO / "docs" / "attack_chains.md"
 # inner-cell references to a chain id elsewhere in the same line don't
 # pollute the count.
 _ROW_LEADING_ID = re.compile(
-    r"^\|\s*\[`((?:AC|XPC)-\d+)`\]",
+    r"^\|\s*\[`((?:AC|XPC|CXPC)-\d+)`\]",
     re.MULTILINE,
 )
 

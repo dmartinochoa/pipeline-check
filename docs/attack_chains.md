@@ -85,6 +85,19 @@ one scan.
 | [`XPC-009`](#xpc-009) | Ingested CVE finding plus mutable runtime image reference | <span class="pg-sev pg-sev--high">HIGH</span> | ingest / dockerfile | `INGEST-trivy-*` / `INGEST-grype-*` / `INGEST-snyk-*` + [`DF-001`](providers/dockerfile.md#df-001) |
 | [`XPC-010`](#xpc-010) | npm cooldown miss meets Dockerfile lifecycle execution | <span class="pg-sev pg-sev--high">HIGH</span> | npm / dockerfile | [`NPM-008`](providers/npm.md#npm-008) + [`DF-024`](providers/dockerfile.md#df-024) |
 
+### Cross-repo chains (`CXPC-NNN`)
+
+These fire only during fleet scans when findings from multiple repos
+are correlated. Each chain pairs a finding in one repo with a finding
+in a different repo in the same fleet corpus.
+
+| ID | Title | Severity | Providers | Triggering checks |
+|----|-------|----------|-----------|-------------------|
+| [`CXPC-001`](#cxpc-001) | npm publish-side cooldown + floating consumer in partner repo | <span class="pg-sev pg-sev--high">HIGH</span> | npm | [`NPM-008`](providers/npm.md#npm-008) + [`NPM-001`](providers/npm.md#npm-001) / [`NPM-002`](providers/npm.md#npm-002) |
+| [`CXPC-002`](#cxpc-002) | Argo CD wildcard sourceRepos + weakened CI gate in partner repo | <span class="pg-sev pg-sev--critical">CRITICAL</span> | argocd / github | [`ARGOCD-001`](providers/argocd.md#argocd-001) + [`GHA-002`](providers/github.md#gha-002) / `TAINT-001` / `TAINT-002` |
+| [`CXPC-003`](#cxpc-003) | Unscoped App token + credential exposure in partner repo | <span class="pg-sev pg-sev--high">HIGH</span> | github | [`GHA-061`](providers/github.md#gha-061) + [`GHA-005`](providers/github.md#gha-005) / [`GHA-008`](providers/github.md#gha-008) |
+| [`CXPC-004`](#cxpc-004) | Tainted reusable workflow producer + consumer in partner repo | <span class="pg-sev pg-sev--high">HIGH</span> | github | `TAINT-001` / `TAINT-002` / `TAINT-003` + `GHA-*` |
+
 ## How chains surface in output
 
 - **Terminal**: a panel per chain after the findings table, with a
@@ -1043,6 +1056,104 @@ Break either leg, both is best:
   1. Tighten the AppProject's ``sourceRepos`` (ARGOCD-001). Replace ``['*']`` with the explicit list of repository URLs the project is allowed to render. Set ``spec.sourceRepos: ['https://github.com/org/payments-*']`` and keep ``sourceNamespaces`` / ``destinations`` similarly scoped.
   2. Scope the ApplicationSet generator (ARGOCD-006). Pin ``template.spec.project`` to a single static project name (not ``default``, not a ``{{...}}`` placeholder) and constrain the generator with ``filters:`` / ``labels: ['preview']`` / ``branchMatch:`` so PRs from untrusted authors do not synthesize Applications.
 If PR-driven preview environments are a deliberate design, the AppProject the PR-driven Applications resolve to MUST carry an explicit ``sourceRepos`` allowlist and a narrow destination, the chain's premise is unbounded authority, not the PR-preview pattern itself.
+
+</div>
+
+</div>
+
+<div class="pg-rule pg-rule--high" markdown>
+
+### CXPC-001: npm publish-side cooldown + floating consumer in partner repo { #cxpc-001 }
+
+<div class="pg-rule__tags">
+<span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-tag" title="MITRE ATT&CK technique">MITRE T1195.002</span> <span class="pg-tag" title="MITRE ATT&CK technique">MITRE T1078.004</span> <span class="pg-tag" title="kill-chain phase">initial-access -> lateral-movement</span> <span class="pg-tag pg-tag--owasp">npm</span>
+</div>
+
+One repo recently published an npm package (NPM-008) and another repo in the fleet consumes npm packages with a floating version range (NPM-001) or without integrity hashes (NPM-002). If the publish-side repo is compromised, the floating consumer pulls the poisoned version on the next install.
+
+**References**
+
+- <https://docs.npmjs.com/cli/v10/configuring-npm/package-lock-json>
+
+<div class="pg-rule__rec" markdown>
+
+**Recommended action**
+
+Pin exact versions in the consumer repo's package.json and commit a lock file with integrity hashes (NPM-002). On the publish side, enforce 2FA-on-publish and review the cooldown window flagged by NPM-008.
+
+</div>
+
+</div>
+
+<div class="pg-rule pg-rule--critical" markdown>
+
+### CXPC-002: Argo CD wildcard sourceRepos + weakened CI gate in partner repo { #cxpc-002 }
+
+<div class="pg-rule__tags">
+<span class="pg-sev pg-sev--critical">CRITICAL</span> <span class="pg-tag" title="MITRE ATT&CK technique">MITRE T1195.002</span> <span class="pg-tag" title="MITRE ATT&CK technique">MITRE T1199</span> <span class="pg-tag" title="MITRE ATT&CK technique">MITRE T1078.004</span> <span class="pg-tag" title="kill-chain phase">initial-access -> execution -> persistence</span> <span class="pg-tag pg-tag--owasp">argocd</span> <span class="pg-tag pg-tag--owasp">github</span>
+</div>
+
+An Argo CD AppProject accepts any source repo (ARGOCD-001) and a partner repo has a weakened CI gate (GHA-002 / TAINT-001 / TAINT-002) that allows PR-level code injection. An attacker's PR in the weakened repo lands code that Argo CD's wildcard trust deploys into the cluster.
+
+**References**
+
+- <https://argo-cd.readthedocs.io/en/stable/user-guide/projects/>
+- <https://securitylab.github.com/resources/github-actions-preventing-pwn-requests/>
+
+<div class="pg-rule__rec" markdown>
+
+**Recommended action**
+
+Restrict the AppProject's ``sourceRepos`` to an explicit allowlist of trusted repositories. In the partner repo, fix the CI gate: avoid checking out PR-head code in ``pull_request_target`` workflows (GHA-002) and remediate tainted dataflows (TAINT-001 / TAINT-002).
+
+</div>
+
+</div>
+
+<div class="pg-rule pg-rule--high" markdown>
+
+### CXPC-003: Unscoped App token + credential exposure in partner repo { #cxpc-003 }
+
+<div class="pg-rule__tags">
+<span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-tag" title="MITRE ATT&CK technique">MITRE T1078.004</span> <span class="pg-tag" title="MITRE ATT&CK technique">MITRE T1098.001</span> <span class="pg-tag" title="kill-chain phase">credential-access -> lateral-movement</span> <span class="pg-tag pg-tag--owasp">github</span>
+</div>
+
+One repo mints an unscoped GitHub App token (GHA-061) whose installation likely covers other repos in the same org. A partner repo exposes credentials (GHA-005 / GHA-008). The App token from the first repo can reach the second; credential exposure in the second gives the attacker a lateral-movement foothold.
+
+**References**
+
+- <https://docs.github.com/en/apps/creating-github-apps/authenticating-with-a-github-app/generating-an-installation-access-token-for-a-github-app>
+
+<div class="pg-rule__rec" markdown>
+
+**Recommended action**
+
+Scope the App token in repo A by passing an explicit ``permissions`` map to the token-mint action (GHA-061). In repo B, rotate and remove plaintext credentials (GHA-005) and hardcoded secrets (GHA-008), replacing them with GitHub Actions secrets or OIDC federation.
+
+</div>
+
+</div>
+
+<div class="pg-rule pg-rule--high" markdown>
+
+### CXPC-004: Tainted reusable workflow producer + GitHub Actions consumer in partner repo { #cxpc-004 }
+
+<div class="pg-rule__tags">
+<span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-tag" title="MITRE ATT&CK technique">MITRE T1195.002</span> <span class="pg-tag" title="MITRE ATT&CK technique">MITRE T1199</span> <span class="pg-tag" title="kill-chain phase">initial-access -> execution</span> <span class="pg-tag pg-tag--owasp">github</span>
+</div>
+
+One repo has a workflow with an exploitable taint path (TAINT-001 / TAINT-002 / TAINT-003) and another repo in the fleet uses GitHub Actions. If the consumer calls the producer's reusable workflows, it inherits the taint. The cross-repo split means the consumer's maintainers may not see the vulnerability.
+
+**References**
+
+- <https://docs.github.com/en/actions/sharing-automations/reusing-workflows>
+- <https://securitylab.github.com/resources/github-actions-preventing-pwn-requests/>
+
+<div class="pg-rule__rec" markdown>
+
+**Recommended action**
+
+Remediate the taint path in the producer repo's workflow (TAINT-001 / TAINT-002 / TAINT-003). Consumer repos should pin reusable workflow references to a specific commit SHA and review the producer's workflow for untrusted-input interpolation before calling it.
 
 </div>
 

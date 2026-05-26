@@ -29,6 +29,7 @@ from __future__ import annotations
 import concurrent.futures
 import fnmatch as _fnmatch
 import json
+import logging
 import os
 import re
 import subprocess
@@ -39,9 +40,15 @@ import urllib.parse
 from collections import Counter
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 import yaml
+
+if TYPE_CHECKING:
+    from .chains.base import Chain
+    from .checks.base import Finding
+
+_log = logging.getLogger(__name__)
 
 _GITHUB_COORD_RE = re.compile(r"^[A-Za-z0-9._-]+/[A-Za-z0-9._-]+$")
 _GITLAB_COORD_RE = re.compile(
@@ -107,9 +114,10 @@ class FleetDigest:
 
     snapshots: list[FleetSnapshot] = field(default_factory=list)
     warnings: list[str] = field(default_factory=list)
+    cxpc_chains: list[Chain] = field(default_factory=list)
 
     def to_dict(self) -> dict[str, Any]:
-        return {
+        out: dict[str, Any] = {
             "snapshots": [
                 {
                     "coord": s.coord,
@@ -123,6 +131,9 @@ class FleetDigest:
             ],
             "warnings": list(self.warnings),
         }
+        if self.cxpc_chains:
+            out["cxpc_chains"] = [c.to_dict() for c in self.cxpc_chains]
+        return out
 
 
 _CLONE_URL_TEMPLATES: dict[str, str] = {
@@ -589,6 +600,83 @@ def _error_snapshot(coord: str, error: str) -> FleetSnapshot:
     )
 
 
+def _load_repo_findings(
+    output_dir: Path,
+    repos: list[RepoCoordinate],
+) -> dict[str, list[Finding]]:
+    """Load per-repo findings from disk after all scans complete.
+
+    Returns ``{repo_coord: [Finding, ...]}`` with minimal Finding
+    reconstruction (only the fields chain rules inspect).
+    """
+    from .checks.base import Confidence, Finding, ResourceAnchor, Severity
+
+    result: dict[str, list[Finding]] = {}
+    for coord in repos:
+        fpath = (
+            output_dir
+            / coord.platform
+            / coord.owner.lower()
+            / coord.repo.lower()
+            / "findings.json"
+        )
+        if not fpath.exists():
+            continue
+        try:
+            doc = json.loads(fpath.read_text(encoding="utf-8"))
+        except (OSError, json.JSONDecodeError):
+            _log.warning(
+                "could not parse %s for cross-repo chain evaluation",
+                fpath,
+            )
+            continue
+        if not isinstance(doc, dict):
+            continue
+        raw_findings = doc.get("findings")
+        if not isinstance(raw_findings, list):
+            continue
+
+        parsed: list[Finding] = []
+        for fd in raw_findings:
+            if not isinstance(fd, dict):
+                continue
+            try:
+                sev = Severity(fd.get("severity", "INFO"))
+            except ValueError:
+                sev = Severity.INFO
+            try:
+                conf = Confidence(fd.get("confidence", "HIGH"))
+            except ValueError:
+                conf = Confidence.HIGH
+            anchors: tuple[ResourceAnchor, ...] = ()
+            raw_anchors = fd.get("resource_anchors")
+            if isinstance(raw_anchors, list):
+                anchors = tuple(
+                    ResourceAnchor(kind=a["kind"], identity=a["identity"])
+                    for a in raw_anchors
+                    if isinstance(a, dict) and "kind" in a and "identity" in a
+                )
+            job_anch: tuple[str, ...] = ()
+            raw_ja = fd.get("job_anchors")
+            if isinstance(raw_ja, list):
+                job_anch = tuple(str(j) for j in raw_ja)
+
+            parsed.append(Finding(
+                check_id=str(fd.get("check_id", "")),
+                passed=bool(fd.get("passed", True)),
+                resource=str(fd.get("resource", "")),
+                severity=sev,
+                confidence=conf,
+                title="",
+                description="",
+                recommendation="",
+                job_anchors=job_anch,
+                resource_anchors=anchors,
+            ))
+        result[coord.coord] = parsed
+    return result
+
+
 def _process_one_repo(
     coord: RepoCoordinate,
     output_dir: Path,
@@ -708,6 +796,17 @@ def run_fleet(
             digest.snapshots.append(snap)
             digest.warnings.extend(warns)
 
+    try:
+        from .chains.engine import evaluate_cross_repo
+        fbr = _load_repo_findings(output_dir, repos)
+        if fbr:
+            digest.cxpc_chains = evaluate_cross_repo(fbr)
+    except Exception:
+        _log.warning(
+            "cross-repo chain evaluation failed; skipping",
+            exc_info=True,
+        )
+
     _write_digest(output_dir, digest)
     return digest
 
@@ -764,6 +863,23 @@ def render_markdown(digest: FleetDigest) -> str:
             f"| {s.coord} | {s.grade} | {s.score} | "
             f"{s.total_failed} | {status} |"
         )
+    if digest.cxpc_chains:
+        lines.append("")
+        lines.append("## Cross-repo attack chains")
+        lines.append("")
+        lines.append(
+            f"**{len(digest.cxpc_chains)}** cross-repo chain(s) detected."
+        )
+        lines.append("")
+        lines.append("| Chain | Severity | Confidence | Resources |")
+        lines.append("|---|---|---|---|")
+        for c in digest.cxpc_chains:
+            resources = ", ".join(c.resources) if c.resources else "-"
+            lines.append(
+                f"| {c.chain_id}: {c.title} "
+                f"| {c.severity.value} | {c.confidence.value} "
+                f"| {resources} |"
+            )
     if digest.warnings:
         lines.append("")
         lines.append("## Warnings")

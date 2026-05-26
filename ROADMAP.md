@@ -579,16 +579,6 @@ all resolved:
 - Scenarios 17 / 21 / 26 (ArtiPACKED / matrix expansion /
   app-token scope) -> GHA-019 + GHA-037 / TAINT-002 / GHA-061.
 
-### Self-hosted findings-history dashboard
-
-Tiny FastAPI + static-HTML app that reads a local
-``.pipeline-check-history/`` directory of past scan JSON outputs and
-renders trend graphs, per-rule burn-down, and resource-level heatmap
-progression. Stays no-SaaS / no-telemetry but gives teams the
-visibility they currently leave the scanner to get from a SaaS
-competitor. No DB; just a directory of timestamped JSON files the
-user already produces from CI.
-
 ### Org-wide fleet scanning (``pipeline_check fleet``)
 
 One command, N repos, one rolled-up posture digest. ``pipeline_check
