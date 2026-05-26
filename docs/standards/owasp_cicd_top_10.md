@@ -8,7 +8,7 @@ The OWASP CI/CD Top 10 is the canonical risk taxonomy this scanner
 organizes around. Every other compliance standard's check set is a
 subset of OWASP's; the cross-standard integrity test in
 `tests/test_standards.py` enforces it. If a check fails, it is
-because at least one OWASP risk fires, the other 14 frameworks layer
+because at least one OWASP risk fires, the other 15 frameworks layer
 their own labels on top of the same evidence.
 
 Use this page when you want full coverage of the canonical CI/CD
