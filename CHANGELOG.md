@@ -12,6 +12,50 @@ release commit collapses this section into `## [X.Y.Z] - <date>`.
 
 ### Added
 
+- **TeamPCP + Megalodon compromise entries.** Four new entries in the
+  ``_compromised_actions`` registry: ``aquasecurity/trivy-action``
+  (CVE-2026-33634, CVSS 9.4, 76 malicious SHAs from StepSecurity
+  analysis), ``aquasecurity/setup-trivy`` (7 tags), ``checkmarx/
+  kics-github-action`` (35 tags, SHAs from Wiz analysis), and
+  ``checkmarx/ast-github-action`` (ref_pattern for v2.3.28-v2.3.36).
+  Three Megalodon IOC entries in ``_worm_indicators``: "SysDiag"
+  workflow name, C2 IP 216.126.225.129, and forged commit-author
+  email patterns from the May 2026 mass-injection campaign. GHA-040
+  and GHA-056 detect all of these automatically. Registry floors
+  bumped 3 -> 7 (compromised) and 4 -> 7 (worm). 8 new tests.
+- **OPA/Rego custom rule engine (``--rego-rules``, closes #176).** Users
+  can now write custom rules in OPA Rego alongside the existing YAML
+  custom-rule DSL. ``--rego-rules ./policies/`` discovers ``.rego``
+  files, extracts metadata via ``opa inspect --annotations``, evaluates
+  policies via ``opa eval``, and funnels results through the existing
+  Finding/scoring/gating/SARIF pipeline with zero special-casing. Rego
+  rules can target all 24 providers (not just the 7 the YAML DSL
+  supports) because Rego handles any JSON input shape. Each ``.rego``
+  file declares its rule ID, severity, and provider via OPA's built-in
+  ``# METADATA`` annotation block. The ``opa`` binary is a soft
+  dependency that fails cleanly with install instructions when missing.
+  Config-file support via ``rego_rules:`` in ``.pipeline-check.yml``
+  and ``pyproject.toml``. 22 tests across loader, runner, and
+  end-to-end integration. See ``docs/writing_a_rego_rule.md``.
+- **Live secret verification (``--verify-secrets``, closes #175).** Opt-in
+  live probes on every credential-shaped finding. Behind
+  ``--resolve-remote --verify-secrets``, each detected token is probed
+  against its issuing API: VERIFIED (active, promotes to CRITICAL with
+  identity), UNVERIFIED (revoked/rotated, demotes to LOW), or UNKNOWN
+  (no change). Initial verifier pack: GitHub PAT, NPM token, Slack
+  token, GitLab PAT, Anthropic, OpenAI, Hugging Face, Stripe, and
+  SendGrid API keys. ``--verify-secrets-show-identity`` opts into full
+  identity strings in output. Stderr nudge printed when secrets found
+  without verification enabled. Raw secret values are never persisted;
+  cache keys are SHA-256 digests.
+- **Integrated PR review comments into the top-level GitHub Action
+  (closes #171).** The `pr-comment` input (default `true` on
+  `pull_request` events) posts inline review comments on the PR diff
+  and a summary comment for off-diff findings. Reuses the JSON
+  sidecar from the scan step so no extra scan is needed. The nested
+  `pipeline-check-pr` action remains available standalone but the
+  top-level action is now the recommended single-step setup for SARIF
+  upload + PR comments.
 - **Autofix safety tiers (closes #177).** ``--fix`` (bare flag) now runs
   only safe fixers; ``--fix=unsafe`` runs all; ``--fix=unsafe-only`` runs
   only inference-dependent fixers. 109 fixers labeled safe, 2 unsafe.
@@ -42,6 +86,76 @@ release commit collapses this section into `## [X.Y.Z] - <date>`.
   substitution is best-effort; unresolvable references stay opaque and
   findings get confidence-demoted. Auto-detects ``main.tf`` presence.
   Unskips the ``terragoat`` benchmark. 23 new tests.
+- **Cross-repo XPC chains (CXPC-001..004, closes #173).** Four
+  ``CXPC-NNN`` attack chains that fire only during fleet scans,
+  composing findings across repo boundaries.
+  CXPC-001: npm publish-side cooldown (NPM-008) paired with a floating
+  consumer in a partner repo (NPM-001/NPM-002), HIGH, T1195.002 /
+  T1078.004. CXPC-002: Argo CD wildcard ``sourceRepos`` (ARGOCD-001)
+  paired with a weakened CI gate in a partner repo
+  (GHA-002/TAINT-001/TAINT-002), CRITICAL, T1195.002 / T1199 /
+  T1078.004. CXPC-003: unscoped App-token mint (GHA-061) paired with
+  credential exposure in a partner repo (GHA-005/GHA-008), HIGH,
+  T1078.004 / T1098.001. CXPC-004: tainted reusable-workflow producer
+  (TAINT-001/002/003) paired with any GHA consumer finding in a
+  partner repo, HIGH, T1195.002 / T1199. All four use v1 co-occurrence
+  reachability at MEDIUM confidence. Chain engine gained
+  ``evaluate_cross_repo(findings_by_repo)`` entry point; fleet
+  orchestrator invokes CXPC evaluation after all per-repo scans
+  complete. Chain count 41 -> 45.
+- **Fleet phase 2: ``--from-org``, ``--jobs``, ``--scan-flags``,
+  ``--include`` / ``--exclude``, multi-platform coordinates.**
+  ``--from-org ORG`` enumerates repos from the SCM API with paginated
+  backends for GitHub (``/orgs/{org}/repos``), GitLab
+  (``/groups/{id}/projects``), and Bitbucket
+  (``/repositories/{workspace}``); archived repos excluded
+  automatically. ``--jobs N`` runs parallel clones and scans via
+  ``ThreadPoolExecutor`` (auto-detected worker count when omitted).
+  ``--scan-flags`` forward arbitrary CLI flags to each per-repo
+  subprocess via ``shlex.split``. ``--include`` / ``--exclude`` glob
+  filters on repo name via ``fnmatch``. Multi-platform YAML
+  coordinates (``gitlab:group/sub/project``,
+  ``bitbucket:workspace/slug``) now accepted. ``--platform`` selects
+  the SCM backend for ``--from-org``. Still deferred:
+  ``--baseline-dir`` regression diffing, per-repo SARIF, per-repo
+  ``threats.md``.
+- **Supply-chain posture rule pack.** Six rules informed by
+  ``6mile/gimmepatz``, ``6mile/tvpo``,
+  ``SecureStackCo/visualizing-software-supply-chain``, and the OSC&R
+  technique catalog. GHA-097 (recursive PR auto-merge loop, OSC&R
+  PER-1), GHA-098 (deploy without security scan gate, OSC&R DE-4),
+  GHA-099 (deploy env plaintext secret, OSC&R CA-6), SCM-048 (org
+  codespace secrets scoped to all repos), SCM-049 (classic PAT
+  detection via token-prefix inspection), NPM-012 (legacy publish
+  token lacking ``npm_`` granular-token restrictions). All six mapped
+  to OWASP, OSC&R, and all 16 standards. Rule counts: GHA 87 -> 90,
+  SCM 47 -> 49, npm 11 -> 12.
+- **OSC&R standard mapping.** 16th standards mapping. OSC&R (Open
+  Software Supply Chain Attack Reference, ``pbom-dev/OSCAR``) is a
+  MITRE ATT&CK-style matrix for software supply chain attacks:
+  12 tactics, 86 techniques. 610 checks mapped to 61 of 86
+  techniques; 25 attacker-side techniques (reconnaissance, resource
+  development, runtime exploitation) left unmapped with documented
+  gaps. ``--standard oscr`` inherits from existing standards plumbing.
+  Standards count 15 -> 16.
+- **GitLab remote ``include:`` resolver (closes #164).** When
+  ``--resolve-remote`` is on, the GitLab provider fetches
+  ``include: { project/remote/template/component }`` directives via
+  the GitLab API and merges them into the pipeline document before
+  rules run. TAINT-004 (dotenv artifact flow) and TAINT-008
+  (extends-chain inheritance) now see jobs and templates from remote
+  includes. Four include types supported: ``project:`` (file API with
+  ``PRIVATE-TOKEN``), ``remote:`` (HTTPS-only direct fetch),
+  ``template:`` (templates API with JSON content extraction),
+  ``component:`` (URI-parsed to project file fetch). Recursive
+  resolution with depth limit and cycle detection. Disk cache at
+  ``~/.cache/pipeline-check/gitlab-resolver/`` (7-day TTL, disable
+  with ``--no-cache``). New CLI options: ``--gitlab-token`` (falls
+  back to ``$GITLAB_TOKEN``), ``--gitlab-url`` (self-hosted instance
+  support, defaults to ``https://gitlab.com``). Graceful degradation:
+  fetch failures land in warnings, the rest of the scan completes.
+  When ``--resolve-remote`` is off, a nudge warning lists the count
+  of unresolved remote includes. 33 new tests.
 
 ### Changed
 
@@ -67,6 +181,20 @@ release commit collapses this section into `## [X.Y.Z] - <date>`.
   runner's token as a side effect. Pairs with GHA-045 (caller-
   controlled ref) and GHA-046 (manual PR-head fetch). 9 new tests
   under ``TestGHA058PRCheckoutTopology``.
+
+### Fixed
+
+- **Stale standards count across 7 doc surfaces.** The OSC&R standard
+  (16th) shipped in post-1.4.0 but ``action.yml``, ``pyproject.toml``,
+  ``mkdocs.yml``, ``CONTRIBUTING.md``, ``.github/DOCKERHUB.md``,
+  ``docs/index.md`` hero text, and the ``gen_standards_docs.py`` OWASP
+  intro still said 14 or 15. All bumped to 16 (or "15 other" where
+  OWASP is counted separately).
+- **Stale chain count in ``docs/index.md``.** The feature prose said
+  "38 multi-finding chains" but the registry has 45.
+  ``test_doc_claims.py``'s chain-claim regex now also matches
+  "multi-finding chains" (not just "attack chains") so this class
+  of drift is guarded going forward.
 
 ### Added
 

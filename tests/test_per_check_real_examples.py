@@ -474,7 +474,7 @@ KNOWN_UNCOVERED: frozenset[str] = frozenset({
     # ``--resolve-remote``). Covered by ``test_workflow_fixtures.py``
     # which seeds the metadata synthetically.
     "GHA-041", "GHA-042", "GHA-043", "GHA-047", "GHA-089", "GHA-090", "GHA-091",
-    "GHA-094", "GHA-095", "GHA-096",
+    "GHA-094", "GHA-095", "GHA-096", "GHA-097", "GHA-098", "GHA-099",
     # Cross-cutting taint engine — covered by tests/test_gha_taint.py
     # with inline workflow docs rather than the per-check fixture
     # pattern; the workflow shapes the rule cares about (multi-step

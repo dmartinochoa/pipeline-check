@@ -733,5 +733,12 @@ STANDARD = Standard(
         # S3-000 (discovery failure) — visibility gap, same precedent
         # as the other -000 family entries above.
         "S3-000":   ["PO.3.3"],
+        # supply-chain posture pack
+        "GHA-097":  ["PO.5.1", "PW.9.1"],              # recursive PR auto-merge loop
+        "GHA-098":  ["RV.1.1"],                        # deploy without security scan gate
+        "GHA-099":  ["PS.1.1"],                        # deploy env plaintext secret
+        "SCM-048":  ["PO.5.1"],                        # org codespace secrets scoped to all repos
+        "SCM-049":  ["PS.1.1"],                        # classic PAT where fine-grained suffices
+        "NPM-012":  ["PS.1.1"],                        # publish token missing restrictions
     },
 )

@@ -87,6 +87,24 @@ def _build_scan_argv() -> list[str]:
 
 
 def _run_scanner() -> dict[str, Any]:
+    # If a pre-built JSON report was passed (e.g. from the top-level
+    # action's stats sidecar), read it directly instead of re-scanning.
+    report_path = _env("PIPELINE_CHECK_REPORT")
+    if report_path and os.path.isfile(report_path):
+        print(
+            f"[pipeline-check-pr] reading pre-built report: {report_path}",
+            file=sys.stderr,
+        )
+        try:
+            with open(report_path, encoding="utf-8") as fh:
+                return json.load(fh)
+        except (OSError, json.JSONDecodeError) as exc:
+            print(
+                f"[pipeline-check-pr] could not read {report_path}: {exc}; "
+                f"falling back to live scan.",
+                file=sys.stderr,
+            )
+
     argv = _build_scan_argv()
     print(f"[pipeline-check-pr] running: {' '.join(argv)}", file=sys.stderr)
     try:

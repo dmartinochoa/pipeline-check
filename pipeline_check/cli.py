@@ -173,6 +173,7 @@ class _GroupedCommand(click.Command):
         ("Filtering", frozenset({
             "--checks", "--severity-threshold", "--min-confidence",
             "--secret-pattern", "--detect-entropy", "--custom-rules",
+            "--rego-rules",
         })),
         ("Output", frozenset({
             "--output", "--output-file", "--standard",
@@ -1188,12 +1189,13 @@ def _install_completion_callback(
     default=False,
     show_default=True,
     help=(
-        "Follow ``jobs.<id>.uses: owner/repo/.github/workflows/x.yml@<sha>`` "
-        "to the called workflow body and run the GHA rule pack against "
-        "it with the caller's permissions context. Default off, the "
-        "scanner stays read-from-disk-only by default. When off and a "
-        "remote ref is encountered, a one-line stderr warning lists "
-        "the count so users know what they're missing."
+        "Enable network-dependent resolution. GitHub Actions: follow "
+        "reusable workflow and composite action refs to the called body. "
+        "GitLab CI: fetch include: { project/remote/template/component } "
+        "directives and merge them into the pipeline document. Also "
+        "enables live advisory lookups (OSV, GHSA) and secret "
+        "verification. Default off, the scanner stays read-from-disk-only "
+        "by default."
     ),
 )
 @click.option(
@@ -1208,15 +1210,64 @@ def _install_completion_callback(
     ),
 )
 @click.option(
+    "--gitlab-token",
+    "gitlab_token",
+    default=None,
+    metavar="TOKEN",
+    help=(
+        "GitLab token used by --resolve-remote when fetching "
+        "include: { project/template/component } directives. "
+        "Falls back to $GITLAB_TOKEN. Only required for private "
+        "projects."
+    ),
+)
+@click.option(
+    "--gitlab-url",
+    "gitlab_url",
+    default="https://gitlab.com",
+    show_default=True,
+    metavar="URL",
+    help=(
+        "GitLab instance URL for API calls when resolving remote "
+        "includes. Set to your self-hosted instance URL if not "
+        "using gitlab.com."
+    ),
+)
+@click.option(
     "--no-cache",
     "no_cache",
     is_flag=True,
     default=False,
     help=(
         "Bypass the on-disk resolver cache "
-        "(~/.cache/pipeline-check/gha-resolver) for this scan. "
+        "(~/.cache/pipeline-check/) for this scan. "
         "Useful when a tag was force-pushed to a different SHA "
         "and you want the new bytes."
+    ),
+)
+@click.option(
+    "--verify-secrets",
+    "verify_secrets",
+    is_flag=True,
+    default=False,
+    help=(
+        "Probe every credential-shaped finding against its issuing "
+        "API to determine whether the credential is currently active. "
+        "Results: VERIFIED (active, promote to CRITICAL), UNVERIFIED "
+        "(revoked/rotated, demote to LOW), or UNKNOWN (ambiguous). "
+        "Requires --resolve-remote (no network calls without it)."
+    ),
+)
+@click.option(
+    "--verify-secrets-show-identity",
+    "verify_secrets_show_identity",
+    is_flag=True,
+    default=False,
+    help=(
+        "Include the full identity string (e.g., GitHub login, NPM "
+        "username) returned by verified credentials in the finding "
+        "description. Off by default to avoid leaking identity info "
+        "into CI logs."
     ),
 )
 @click.option(
@@ -1932,6 +1983,19 @@ def _install_completion_callback(
     ),
 )
 @click.option(
+    "--rego-rules",
+    "rego_rules",
+    multiple=True,
+    metavar="PATH",
+    help=(
+        "Directory of OPA Rego policy files (.rego) to evaluate alongside "
+        "the built-in catalog. Repeat for multiple paths. Requires the "
+        "'opa' binary on PATH (https://openpolicyagent.org). Each .rego "
+        "file must declare rule metadata via OPA METADATA annotations. "
+        "See docs/writing_a_rego_rule.md for the policy convention."
+    ),
+)
+@click.option(
     "--verbose",
     "-v",
     is_flag=True,
@@ -2175,6 +2239,7 @@ def scan(
     ignore_file: str | None,
     no_inline_ignore: bool,
     custom_rules: tuple[str, ...],
+    rego_rules: tuple[str, ...],
     verbose: bool,
     quiet: bool,
     show_controls: bool,
@@ -2191,7 +2256,11 @@ def scan(
     serve: bool = False,
     resolve_remote: bool = False,
     gh_token: str | None = None,
+    gitlab_token: str | None = None,
+    gitlab_url: str = "https://gitlab.com",
     no_cache: bool = False,
+    verify_secrets: bool = False,
+    verify_secrets_show_identity: bool = False,
     gha_search_paths: tuple[str, ...] = (),
     gha_resolve_depth: int = 3,
 ) -> None:
@@ -2202,6 +2271,15 @@ def scan(
     """
     # --quiet wins over --verbose.
     verbose = verbose and not quiet
+
+    # --verify-secrets requires --resolve-remote (no-network default).
+    if verify_secrets and not resolve_remote:
+        click.echo(
+            "Error: --verify-secrets requires --resolve-remote "
+            "(secret verification makes network calls).",
+            err=True,
+        )
+        raise SystemExit(2)
 
     def _debug(msg: str) -> None:
         if verbose:
@@ -2652,6 +2730,10 @@ def scan(
         if not os.path.exists(crp):
             raise click.UsageError(f"--custom-rules not found: {crp}")
 
+    for rrp in rego_rules:
+        if not os.path.exists(rrp):
+            raise click.UsageError(f"--rego-rules not found: {rrp}")
+
     if diff_base is not None and diff_base.startswith("-"):
         # ``diff_base`` is composed into ``git diff --name-only
         # <base>...HEAD``. A leading ``-`` makes git parse the value
@@ -2757,6 +2839,7 @@ def scan(
         detect_entropy=detect_entropy,
         overrides=cli_overrides or None,
         custom_rules=list(custom_rules) or None,
+        rego_rules=list(rego_rules) or None,
         fp_annotations_path=fp_path,
         log=_debug if verbose else None,
         tf_plan=tf_plan,
@@ -2775,7 +2858,11 @@ def scan(
         argocd_path=argocd_path,
         resolve_remote=resolve_remote,
         gh_token=gh_token,
+        gitlab_token=gitlab_token,
+        gitlab_url=gitlab_url,
         no_cache=no_cache,
+        verify_secrets=verify_secrets,
+        verify_secrets_show_identity=verify_secrets_show_identity,
         gha_search_paths=list(gha_search_paths),
         gha_resolve_depth=gha_resolve_depth,
         dockerfile_path=dockerfile_path,
@@ -2878,6 +2965,22 @@ def scan(
             click.echo(traceback.format_exc(), err=True, nl=False)
             raise click.exceptions.Exit(2) from exc
 
+    # Stderr nudge: when secret-shaped findings were found but live
+    # verification wasn't enabled, print a one-liner so the operator
+    # knows the option exists.
+    if not verify_secrets and not quiet:
+        from .core.scanner import _SECRET_CHECK_IDS
+        secret_hits = [
+            f for f in findings
+            if f.check_id in _SECRET_CHECK_IDS and not f.passed
+        ]
+        if secret_hits:
+            click.echo(
+                f"hint: {len(secret_hits)} credential-shaped finding(s) "
+                f"found. Verify with --resolve-remote --verify-secrets",
+                err=True,
+            )
+
     # External SARIF ingest. ``--ingest`` (repeatable) loads each
     # SARIF file, converts every result to a Finding, and merges
     # the union into the scan output. The chain engine then
@@ -2963,6 +3066,7 @@ def scan(
             min_confidence=min_confidence,
             standards=standards,
             custom_rules=custom_rules,
+            rego_rules=rego_rules,
             secret_patterns=secret_patterns,
             detect_entropy=detect_entropy,
             ignore_file=ignore_file,
@@ -3384,6 +3488,7 @@ def _build_pr_diff_subprocess_argv(
     min_confidence: str,
     standards: tuple[str, ...],
     custom_rules: tuple[str, ...],
+    rego_rules: tuple[str, ...],
     secret_patterns: tuple[str, ...],
     detect_entropy: bool,
     ignore_file: str | None,
@@ -3441,6 +3546,8 @@ def _build_pr_diff_subprocess_argv(
         argv.extend(["--standard", s])
     for cr in custom_rules:
         argv.extend(["--custom-rules", cr])
+    for rr in rego_rules:
+        argv.extend(["--rego-rules", rr])
     for pat in secret_patterns:
         argv.extend(["--secret-pattern", pat])
     if detect_entropy:

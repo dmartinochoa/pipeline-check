@@ -273,7 +273,7 @@ class TestAutoDetect:
             {f"GHA-{i:03d}" for i in range(1, 74)}
             | {"GHA-086", "GHA-087", "GHA-088", "GHA-089", "GHA-090",
                "GHA-091", "GHA-092", "GHA-093", "GHA-094", "GHA-095",
-               "GHA-096"}
+               "GHA-096", "GHA-097", "GHA-098", "GHA-099"}
             | {"TAINT-001", "TAINT-002", "TAINT-003"}
         )
 

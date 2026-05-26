@@ -1,5 +1,5 @@
 site_name: Pipeline-Check
-site_description: CI/CD Security Posture Scanner — scores AWS, Terraform, CloudFormation, GitHub Actions, GitLab CI, Azure DevOps, Bitbucket Pipelines, Jenkins, CircleCI, Cloud Build, Buildkite, Drone CI, Tekton, Argo Workflows, Dockerfile, Kubernetes manifests, Helm charts, OCI image manifests, SCM repo posture, npm and pypi dependency files against the OWASP Top 10 CI/CD Risks plus 14 other compliance frameworks.
+site_description: CI/CD Security Posture Scanner — scores AWS, Terraform, CloudFormation, GitHub Actions, GitLab CI, Azure DevOps, Bitbucket Pipelines, Jenkins, CircleCI, Cloud Build, Buildkite, Drone CI, Tekton, Argo Workflows, Dockerfile, Kubernetes manifests, Helm charts, OCI image manifests, SCM repo posture, npm and pypi dependency files against the OWASP Top 10 CI/CD Risks plus 15 other compliance frameworks.
 site_url: https://dmartinochoa.github.io/pipeline-check/
 repo_url: https://github.com/dmartinochoa/pipeline-check
 repo_name: dmartinochoa/pipeline-check
@@ -162,6 +162,7 @@ nav:
           - Drone CI: providers/drone.md
           - Tekton: providers/tekton.md
           - Argo Workflows: providers/argo.md
+          - Argo CD: providers/argocd.md
           - Dockerfile: providers/dockerfile.md
           - Kubernetes: providers/kubernetes.md
           - Helm: providers/helm.md
@@ -190,6 +191,7 @@ nav:
           - ESF Supply Chain: standards/esf_supply_chain.md
           - OpenSSF Scorecard: standards/openssf_scorecard.md
           - S2C2F: standards/s2c2f.md
+          - "OSC&R": standards/oscr.md
           - SOC 2: standards/soc2.md
       - Comparison: comparison.md
       - GOAT bench: goat_bench.md

@@ -72,7 +72,7 @@ Resolution rules:
 
 ## What it covers
 
-87 checks · 17 have an autofix patch (``--fix``).
+90 checks · 17 have an autofix patch (``--fix``).
 
 | Check | Title | Severity | Fix |
 |-------|-------|----------|-----|
@@ -160,6 +160,9 @@ Resolution rules:
 | [GHA-094](#gha-094) | Action SHA pin matches the current tip of an upstream branch | <span class="pg-sev pg-sev--medium">MEDIUM</span> |  |
 | [GHA-095](#gha-095) | Action SHA pin does not match its version comment | <span class="pg-sev pg-sev--high">HIGH</span> |  |
 | [GHA-096](#gha-096) | Action reference has a known GHSA vulnerability | <span class="pg-sev pg-sev--high">HIGH</span> |  |
+| [GHA-097](#gha-097) | Recursive PR auto-merge loop | <span class="pg-sev pg-sev--high">HIGH</span> |  |
+| [GHA-098](#gha-098) | Pipeline deploys without a security scan gate | <span class="pg-sev pg-sev--medium">MEDIUM</span> |  |
+| [GHA-099](#gha-099) | Deployment job has a secret-shaped plaintext env var | <span class="pg-sev pg-sev--critical">CRITICAL</span> |  |
 | [TAINT-001](#taint-001) | Untrusted input flows across step boundaries via step outputs | <span class="pg-sev pg-sev--high">HIGH</span> |  |
 | [TAINT-002](#taint-002) | Untrusted input flows across jobs via ``jobs.<id>.outputs:`` | <span class="pg-sev pg-sev--high">HIGH</span> |  |
 | [TAINT-003](#taint-003) | Untrusted input forwarded into reusable workflow ``with:`` | <span class="pg-sev pg-sev--high">HIGH</span> |  |
@@ -2524,6 +2527,85 @@ Queries the GitHub Advisory Database (``GET /advisories?type=reviewed&ecosystem=
 **Recommended action**
 
 Update the ``uses:`` reference to a version at or above the first patched version listed in the advisory. If no patch is available, evaluate whether the vulnerability is reachable in your workflow's context and consider vendoring a fork with the fix applied. Pin to the patched SHA so a tag rewrite can't walk you back into the vulnerable range.
+
+</div>
+
+</div>
+
+<div class="pg-rule pg-rule--high" markdown>
+
+## GHA-097: Recursive PR auto-merge loop { #gha-097 }
+
+<div class="pg-rule__tags">
+<span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-1</span> <span class="pg-tag pg-tag--esf">ESF-D-CODE-INTEGRITY</span> <span class="pg-tag pg-tag--cwe">CWE-674</span>
+</div>
+
+Fires when a workflow that triggers on ``pull_request`` or ``pull_request_target`` also contains a step that creates or updates a PR (``gh pr create``, ``peter-evans/create-pull-request``, or similar) AND a step that enables auto-merge (``gh pr merge --auto``, ``pascalgn/automerge-action``, or the repo-level ``auto_merge`` API call).
+
+The topology creates a persistence loop: the workflow's own PR triggers the workflow again on the next cycle, allowing an attacker who controls the PR content to maintain code injection across merges without further interaction. This is the OSC&R PER-1 (Recursive PR) attack pattern.
+
+**Known false-positive modes**
+
+- Dependency-update bots (Renovate, Dependabot) sometimes create and auto-merge PRs in a single workflow. If the PR targets a non-default branch or requires human approval via an environment gate, the loop is broken and the rule is a false positive. Suppress with a rationale naming the gating mechanism.
+
+<div class="pg-rule__rec" markdown>
+
+**Recommended action**
+
+Break the loop by removing the auto-merge call from the same workflow that creates the PR, or by gating the merge on a separate approval-required environment. If the automation genuinely needs both create and merge (e.g. a dependency-update bot), ensure the created PR targets a non-default branch that does not re-trigger the same workflow, and require at least one human reviewer before the merge completes.
+
+</div>
+
+</div>
+
+<div class="pg-rule pg-rule--medium" markdown>
+
+## GHA-098: Pipeline deploys without a security scan gate { #gha-098 }
+
+<div class="pg-rule__tags">
+<span class="pg-sev pg-sev--medium">MEDIUM</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-7</span> <span class="pg-tag pg-tag--esf">ESF-D-CODE-INTEGRITY</span> <span class="pg-tag pg-tag--cwe">CWE-693</span>
+</div>
+
+Walks each workflow's job graph looking for jobs that contain deploy-shaped steps (``kubectl apply``, ``terraform apply``, ``docker push``, ``helm upgrade``, ``aws ecs update-service``, ``gcloud run deploy``, environment-gated jobs, or jobs whose name matches a deploy/release/publish pattern). For each deploy job, checks whether any predecessor in the ``needs:`` DAG or any earlier step in the same job invokes a recognized security scanner (SAST, SCA, container scan, or secret scan).
+
+Fires when a deploy job has zero security-scan predecessors. Severity is MEDIUM (advisory) because the scanner catalog is not exhaustive and some organizations run scans in separate pipelines.
+
+**Known false-positive modes**
+
+- Organizations that run security scans in a separate pipeline or CI system (e.g. a nightly scan job, a third-party SaaS scanner) will see this rule fire on deploy workflows that rely on external gating. Suppress with a rationale naming the external scanner.
+- Test/staging deploy jobs that target ephemeral environments may not warrant a scan gate. Suppress per-job.
+
+<div class="pg-rule__rec" markdown>
+
+**Recommended action**
+
+Add a security scanning step (SAST, SCA, container scan, or secret scan) upstream of every deploy job. Either add the scan as an earlier step in the same job, or run it in a separate job and add the scan job to the deploy job's ``needs:`` list. Recognized scanners include ``trivy``, ``grype``, ``snyk test``, ``semgrep``, ``bandit``, ``npm audit``, ``pip-audit``, ``gitleaks``, and their corresponding GitHub Actions.
+
+</div>
+
+</div>
+
+<div class="pg-rule pg-rule--critical" markdown>
+
+## GHA-099: Deployment job has a secret-shaped plaintext env var { #gha-099 }
+
+<div class="pg-rule__tags">
+<span class="pg-sev pg-sev--critical">CRITICAL</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-6</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-2</span> <span class="pg-tag pg-tag--esf">ESF-D-SECRETS</span> <span class="pg-tag pg-tag--cwe">CWE-798</span>
+</div>
+
+Complements GHA-008 (credential-shaped literal anywhere in a workflow) by focusing on the deploy-job subset with an elevated severity rationale. GHA-008 fires on every credential literal; GHA-099 fires only when the literal appears in a job that also has an ``environment:`` binding or whose name / id matches a deploy / release / publish pattern. The overlap is intentional: the deploy context raises the blast radius from 'CI runner compromise' to 'production compromise', justifying a distinct finding in the report.
+
+Detection reuses the same credential-pattern catalog as GHA-008 (``find_secret_values``), scoped to the ``env:`` block of the deploy job and its steps.
+
+**Known false-positive modes**
+
+- Test fixtures with example credentials (``AKIAIOSFODNN7EXAMPLE``) in a deploy-named job will fire. Suppress with a rationale confirming the value is a non-functional example.
+
+<div class="pg-rule__rec" markdown>
+
+**Recommended action**
+
+Move the credential to an encrypted repository or environment secret and reference it via ``${{ secrets.NAME }}``. For cloud access, prefer OIDC federation (``id-token: write`` + the provider's configure-credentials action) over any static key. A plaintext credential in a deploy job is doubly dangerous: it's visible in every fork and build log AND it has production-level blast radius.
 
 </div>
 

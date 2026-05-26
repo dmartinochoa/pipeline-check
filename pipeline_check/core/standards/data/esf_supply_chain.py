@@ -753,5 +753,12 @@ STANDARD = Standard(
         "K8S-043":  ["ESF-D-BUILD-ENV"],            # Ingress wildcard host
         # S3-000 is already mapped above (line 60) as part of the
         # original ``-000`` block at the top of the dict.
+        # supply-chain posture pack
+        "GHA-097":  ["ESF-D-CODE-REVIEW"],           # recursive PR auto-merge loop
+        "GHA-098":  ["ESF-D-BUILD-ENV"],            # deploy without security scan gate
+        "GHA-099":  ["ESF-D-SECRETS"],             # deploy env plaintext secret
+        "SCM-048":  ["ESF-D-SECRETS"],             # org codespace secret scoped to all repos
+        "SCM-049":  ["ESF-D-SECRETS"],             # classic PAT where fine-grained suffices
+        "NPM-012":  ["ESF-D-SECRETS", "ESF-S-VERIFY-DEPS"],  # publish token lacking restrictions
     },
 )

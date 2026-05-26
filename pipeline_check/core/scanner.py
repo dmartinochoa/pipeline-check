@@ -22,8 +22,16 @@ from . import standards as _standards
 from .chains import Chain
 from .checks import _secrets as _secret_registry
 from .checks._confidence import confidence_for
-from .checks.base import Finding, Severity, clear_blob_cache
+from .checks._primitives.secret_verifiers import (
+    VerifyOutcome,
+    VerifyResult,
+    has_verifier,
+    redact_identity,
+    verify_token,
+)
+from .checks.base import Confidence, Finding, Severity, clear_blob_cache
 from .checks.custom.loader import LoadedCustomRules, load_custom_rules
+from .checks.custom.rego_loader import load_rego_rules
 from .checks.custom.runner import make_custom_rules_check
 from .fp_annotations import (
     annotation_index,
@@ -74,12 +82,17 @@ class Scanner:
         chains_enabled: bool = True,
         overrides: dict[str, dict[str, str]] | None = None,
         custom_rules: list[str] | tuple[str, ...] | None = None,
+        rego_rules: list[str] | tuple[str, ...] | None = None,
         fp_annotations_path: str | None = None,
+        verify_secrets: bool = False,
+        verify_secrets_show_identity: bool = False,
         log: Any = None,
         **provider_kwargs: Any,
     ) -> None:
         self._log = log
         self._chains_enabled = chains_enabled
+        self._verify_secrets = verify_secrets
+        self._verify_secrets_show_identity = verify_secrets_show_identity
         # Per-repo false-positive annotation store. ``None`` means
         # "use the default path if it exists at cwd". The Scanner
         # reads this once per run() and demotes matching findings'
@@ -113,10 +126,12 @@ class Scanner:
         # place. Loading defers ID-collision checks to the loader,
         # which uses the union of every built-in registry.
         self._custom_rules: LoadedCustomRules = self._load_custom_rules(
-            custom_rules,
+            custom_rules, rego_rules,
         )
         check_classes = list(provider.check_classes)
-        if self._custom_rules.by_provider.get(self.pipeline):
+        has_yaml = bool(self._custom_rules.by_provider.get(self.pipeline))
+        has_rego = bool(self._custom_rules.rego_by_provider.get(self.pipeline))
+        if has_yaml or has_rego:
             check_classes.append(
                 make_custom_rules_check(self.pipeline, self._custom_rules),
             )
@@ -195,24 +210,19 @@ class Scanner:
     @staticmethod
     def _load_custom_rules(
         paths: list[str] | tuple[str, ...] | None,
+        rego_paths: list[str] | tuple[str, ...] | None = None,
     ) -> LoadedCustomRules:
         """Load custom rules and reject IDs that collide with built-ins.
 
         Built-in IDs come from the union of every provider's rule
-        registry. We deliberately don't filter by the active pipeline
-       , a custom rule with id ``GHA-001`` is rejected even when the
+        registry. We deliberately don't filter by the active pipeline;
+        a custom rule with id ``GHA-001`` is rejected even when the
         current scan is ``--pipeline kubernetes``, because the same
         rule file should round-trip across providers without surprise.
         """
-        if not paths:
+        if not paths and not rego_paths:
             return LoadedCustomRules()
         builtin_ids: set[str] = set()
-        # Discover rule packages from the filesystem. Adding a new
-        # provider under ``pipeline_check/core/checks/<name>/rules/``
-        # automatically participates in collision detection, no
-        # registry edit required. The same import is also used by the
-        # CLI's ``--list-checks`` / completion path, so the source of
-        # truth stays singular.
         from pathlib import Path as _Path
 
         from .checks.rule import discover_rules
@@ -226,13 +236,17 @@ class Scanner:
                 for rule, _ in discover_rules(pkg):
                     builtin_ids.add(rule.id)
             except (ImportError, AttributeError):
-                # A misconfigured package shouldn't block custom-rule
-                # loading. Worst case: a built-in ID isn't in the
-                # collision set and a clashing custom rule loads;
-                # the collision will still surface as duplicate
-                # findings at scan time.
                 continue
-        return load_custom_rules(paths, builtin_ids=builtin_ids)
+        loaded = load_custom_rules(paths, builtin_ids=builtin_ids)
+        if rego_paths:
+            yaml_custom_ids = {r.id for r in loaded.rules}
+            rego = load_rego_rules(
+                list(rego_paths),
+                builtin_ids=builtin_ids,
+                yaml_custom_ids=yaml_custom_ids,
+            )
+            loaded.merge_rego(rego)
+        return loaded
 
     def inventory(
         self,
@@ -325,6 +339,19 @@ class Scanner:
                 f for f in findings
                 if any(fnmatch.fnmatchcase(f.check_id.upper(), p) for p in patterns)
             ]
+
+        # Live-verify secret findings when opted in. Runs before the
+        # confidence/override pass so verified findings lock their own
+        # confidence and overrides can still override the result.
+        if getattr(self, "_verify_secrets", False):
+            _verify_and_enrich_findings(
+                findings,
+                self._context,
+                show_identity=getattr(
+                    self, "_verify_secrets_show_identity", False,
+                ),
+                log=log,
+            )
 
         # Build the FP-annotation index once per scan; the lookup is
         # ``O(1)`` per finding. ``getattr`` guards against callers that
@@ -563,6 +590,146 @@ class MultiScanner:
             warnings=warnings,
             elapsed_seconds=elapsed,
         )
+
+
+# ── Secret verification helpers ─────────────────────────────────────
+
+
+#: Check IDs whose findings carry raw secret hits from
+#: :func:`~pipeline_check.core.checks._secrets.find_secret_values`.
+_SECRET_CHECK_IDS: frozenset[str] = frozenset({
+    "GHA-008", "GL-008", "BB-008", "ADO-008",
+    "CC-008", "JF-008", "GCB-012",
+})
+
+
+def _build_doc_map(context: Any) -> dict[str, Any]:
+    """Map resource paths to their parsed YAML documents (or text lists).
+
+    Works across every provider context type via duck-typed attribute
+    access: GitHub exposes ``.workflows`` (each with ``.path`` /
+    ``.data``), other YAML providers expose ``.pipelines``, and
+    Jenkins exposes ``.files`` (with ``.path`` / ``.text``).
+    """
+    docs: dict[str, Any] = {}
+    for attr in ("workflows", "pipelines"):
+        items = getattr(context, attr, None)
+        if not isinstance(items, list):
+            continue
+        for item in items:
+            path = getattr(item, "path", None)
+            data = getattr(item, "data", None)
+            if path and data is not None:
+                docs[path] = data
+    files = getattr(context, "files", None)
+    if isinstance(files, list):
+        for item in files:
+            path = getattr(item, "path", None)
+            text = getattr(item, "text", None)
+            if path and text is not None:
+                docs[path] = [text]
+    return docs
+
+
+def _verify_and_enrich_findings(
+    findings: list[Finding],
+    context: Any,
+    *,
+    show_identity: bool = False,
+    log: Any = None,
+) -> None:
+    """Run live probes on secret findings and mutate severity/description.
+
+    Operates in place. Only touches findings from the known
+    secret-detection check IDs whose ``passed`` is False (i.e.,
+    credential-shaped literals were found).
+    """
+    secret_findings = [
+        f for f in findings
+        if f.check_id in _SECRET_CHECK_IDS and not f.passed
+    ]
+    if not secret_findings:
+        return
+
+    doc_map = _build_doc_map(context)
+    if not doc_map:
+        return
+
+    verified_count = 0
+    unverified_count = 0
+
+    # Cache verification results so each unique (detector, token) is
+    # probed at most once across all findings in the scan.
+    probe_cache: dict[tuple[str, str], VerifyResult] = {}
+
+    for finding in secret_findings:
+        doc = doc_map.get(finding.resource)
+        if doc is None:
+            continue
+
+        raw_tokens = _secret_registry.classify_tokens_raw(doc)
+        if not raw_tokens:
+            continue
+
+        finding_verified: list[tuple[str, str | None]] = []
+        finding_unverified: list[str] = []
+        finding_unknown: list[str] = []
+
+        for detector, raw_value in raw_tokens:
+            if not has_verifier(detector):
+                finding_unknown.append(detector)
+                continue
+
+            cache_key = (detector, raw_value)
+            if cache_key in probe_cache:
+                result = probe_cache[cache_key]
+            else:
+                if log:
+                    log(f"verifying {detector} token...")
+                result = verify_token(detector, raw_value)
+                probe_cache[cache_key] = result
+
+            if result.outcome == VerifyOutcome.VERIFIED:
+                identity_display = (
+                    result.identity if show_identity
+                    else redact_identity(result.identity)
+                )
+                finding_verified.append((detector, identity_display))
+            elif result.outcome == VerifyOutcome.UNVERIFIED:
+                finding_unverified.append(detector)
+            else:
+                finding_unknown.append(detector)
+
+        if finding_verified:
+            verified_count += 1
+            finding.severity = Severity.CRITICAL
+            finding.confidence = Confidence.HIGH
+            finding.confidence_locked = True
+            identities = [
+                f"{det} ({ident})" if ident else det
+                for det, ident in finding_verified
+            ]
+            finding.description += (
+                f" VERIFIED ACTIVE: {', '.join(identities)}. "
+                f"The credential was confirmed active via live probe. "
+                f"Rotate immediately."
+            )
+        elif finding_unverified and not finding_unknown:
+            unverified_count += 1
+            finding.severity = Severity.LOW
+            finding.confidence = Confidence.LOW
+            finding.confidence_locked = True
+            finding.description += (
+                " Verification probe returned auth failure for all "
+                "tokens, the credential(s) appear revoked or rotated."
+            )
+
+    if log:
+        if verified_count or unverified_count:
+            log(
+                f"secret verification: {verified_count} verified, "
+                f"{unverified_count} unverified"
+            )
 
 
 def _filter_context_by_diff(context: Any, base_ref: str, provider: str) -> None:

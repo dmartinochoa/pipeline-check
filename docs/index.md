@@ -22,7 +22,7 @@ hide:
 # Catch supply-chain risks <span class="accent">before they ship.</span>
 
 <p class="pg-hero__lede">
-A read-only scanner for 24 providers, graded against 15 compliance frameworks. 
+A read-only scanner for 24 providers, graded against 16 compliance frameworks. 
 111 of the 870+ checks also emit a one-shot patch you can apply with <code>--fix</code>.
 </p>
 
@@ -57,7 +57,7 @@ A read-only scanner for 24 providers, graded against 15 compliance frameworks.
 <div class="pg-stats__inner">
   <div class="pg-stat"><div class="pg-stat__num">870+</div><div class="pg-stat__label">Checks</div></div>
   <div class="pg-stat"><div class="pg-stat__num">24</div><div class="pg-stat__label">Providers</div></div>
-  <div class="pg-stat"><div class="pg-stat__num">15</div><div class="pg-stat__label">Compliance standards</div></div>
+  <div class="pg-stat"><div class="pg-stat__num">16</div><div class="pg-stat__label">Compliance standards</div></div>
   <div class="pg-stat"><div class="pg-stat__num">111</div><div class="pg-stat__label">Autofixers</div></div>
 </div>
 </section>
@@ -111,7 +111,7 @@ the default; turning it off is opt-in.
 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
 </div>
 ### Attack-chain correlation
-38 multi-finding chains mapped to MITRE ATT&CK, including the cross-provider
+45 multi-finding chains mapped to MITRE ATT&CK, including the cross-provider
 `XPC-NNN` family that fires when GitHub Actions, Dockerfile, Helm, and OCI
 findings line up in one scan. The `TAINT-NNN` dataflow engine follows
 attacker-controllable input across cross-step boundaries on five providers
@@ -266,7 +266,7 @@ flowchart LR
     click A "usage/" "Repo on disk or live AWS account: no API tokens, no SaaS"
     click B "providers/" "24 supported. Auto-detected from cwd; override with --pipeline NAME"
     click C "attack_chains/" "870+ checks emit findings with severity, location, fix"
-    click D "standards/" "15 frameworks. OWASP, NIST SSDF, SLSA, CIS, …"
+    click D "standards/" "16 frameworks. OWASP, NIST SSDF, SLSA, CIS, …"
     click E "scoring_model/" "Severity-weighted 0–100 score, graded A / B / C / D"
     click F1 "output/#terminal" "Rich color table for humans"
     click F2 "output/#json" "Machine-parseable JSON for scripts"

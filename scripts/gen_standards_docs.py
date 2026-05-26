@@ -326,7 +326,7 @@ The OWASP CI/CD Top 10 is the canonical risk taxonomy this scanner
 organizes around. Every other compliance standard's check set is a
 subset of OWASP's; the cross-standard integrity test in
 `tests/test_standards.py` enforces it. If a check fails, it is
-because at least one OWASP risk fires, the other 14 frameworks layer
+because at least one OWASP risk fires, the other 15 frameworks layer
 their own labels on top of the same evidence.
 
 Use this page when you want full coverage of the canonical CI/CD
@@ -542,6 +542,59 @@ scanner can witness.
 Microsoft / OpenSSF Secure Supply Chain Consumption Framework.
 Ingest, inventory, scan, rebuild, fix, the consumer-side controls
 for taking a third-party dependency safely.
+""",
+    ),
+    "oscr": _StandardConfig(
+        intro="""\
+- **Version:** 2024
+- **URL:** <https://pbom.dev/>
+- **Source of truth:** `pipeline_check/core/standards/data/oscr.py`
+
+OSC&R (Open Software Supply Chain Attack Reference) is an open
+framework that mirrors the MITRE ATT&CK matrix structure for software
+supply chain attacks. Twelve tactics (Reconnaissance through Impact),
+86 techniques. The matrix is maintained at
+[pbom-dev/OSCAR](https://github.com/pbom-dev/OSCAR).
+
+OSC&R fills a gap between the OWASP CI/CD Top 10 (CI/CD-specific but
+only 10 items) and broader frameworks like NIST 800-53 (comprehensive
+but not attack-centric). Use this page when you want to map pipeline
+posture findings to a supply-chain attack taxonomy, showing which
+attacker techniques your current configuration would or would not
+resist.
+
+Pair with [OWASP CI/CD Top 10](owasp_cicd_top_10.md) for the
+canonical risk vocabulary and [SLSA](slsa.md) for the build-integrity
+axis.
+""",
+        footer="""\
+## Not covered
+
+Several OSC&R techniques describe attacker-side actions that a CI/CD
+configuration scanner cannot detect:
+
+- **Reconnaissance** (REC-1, REC-3, REC-4, REC-5, REC-7, REC-8, REC-9):
+  discovering naming conventions, technology stacks, coding flaws,
+  and internal artifact names are attacker-side information gathering.
+- **Resource Development** (RD-2, RD-6): creating registry accounts
+  and advertising malicious artifacts are attacker-side prep.
+- **Initial Access** (IA-2, IA-12, IA-14, IA-15): malicious IDE
+  extensions, exposed internal APIs, compromised developer workstations,
+  and exposed databases require runtime or network telemetry.
+- **Execution** (EX-2, EX-3, EX-4, EX-5, EX-7, EX-8, EX-10):
+  runtime logic bombs, IDE execution, runtime backdoors, package-manager
+  exploitation, SQL injection, XSS, and cloud workload abuse are
+  application-security or runtime concerns.
+- **Persistence** (PER-5, PER-7): untagged cloud resources and zombie
+  instances require cloud-inventory introspection.
+- **Credential Access** (CA-1, CA-7): application-level password
+  logging and runtime credential leakage require runtime telemetry.
+- **Defense Evasion** (DE-2, DE-5): SaaS sprawl and malicious
+  compilers require asset-inventory and build-tool-chain introspection.
+- **Exfiltration** (EXF-1): outbound traffic bypass requires network
+  telemetry.
+- **Impact** (IMP-1 partial): repository deletion is partially
+  covered via SCM branch-protection rules.
 """,
     ),
     "soc2": _StandardConfig(

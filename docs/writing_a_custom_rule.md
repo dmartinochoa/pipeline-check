@@ -1,11 +1,15 @@
 # Writing a custom rule
 
-Pipeline-Check ships with an 810+ rule built-in catalog, but every
+Pipeline-Check ships with an 870+ rule built-in catalog, but every
 org has policies the catalog can't anticipate: an internal-only
 container registry, a banned dependency, a forbidden runner label.
 Custom rules fill that gap. Drop a YAML file under `--custom-rules
 PATH`, and your rule appears in findings, scoring, gating, SARIF,
 and `--explain` exactly like a built-in.
+
+For rules that need conditional logic, cross-field correlation, or
+helper functions beyond the YAML DSL, see
+[Writing a Rego rule](writing_a_rego_rule.md).
 
 ## Where rules live
 

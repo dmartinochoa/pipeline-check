@@ -1,5 +1,5 @@
 name: 'pipeline-check'
-description: 'CI/CD pipeline security scanner. 870+ checks across 24 providers, 15 compliance standards. SARIF output for code scanning.'
+description: 'CI/CD pipeline security scanner. 870+ checks across 24 providers, 16 compliance standards. SARIF output for code scanning.'
 author: 'Pipeline-Check'
 branding:
   icon: 'shield'
@@ -126,6 +126,27 @@ inputs:
       similar flags not represented above. Quoted as a single string.
     required: false
     default: ''
+  pr-comment:
+    description: >
+      Post inline review comments on the PR diff. ``true`` enables on
+      pull_request events; ``false`` disables. Requires
+      ``pull-requests: write`` permission. Findings outside the diff
+      fall back to a single PR-level summary comment.
+    required: false
+    default: 'true'
+  comment-mode:
+    description: >
+      ``per-finding`` posts one review comment per finding location;
+      ``summary`` posts a single PR-level comment listing every finding.
+    required: false
+    default: 'per-finding'
+  gh-token:
+    description: >
+      Token used to post PR review comments. Defaults to the runner-
+      provided ``GITHUB_TOKEN``. Only needed when ``pr-comment`` is
+      enabled.
+    required: false
+    default: ${{ github.token }}
 
 outputs:
   exit-code:
@@ -217,10 +238,15 @@ runs:
             drone)          args+=(--drone-path      "$WORKSPACE_PATH") ;;
             tekton)         args+=(--tekton-path     "$WORKSPACE_PATH") ;;
             argo)           args+=(--argo-path       "$WORKSPACE_PATH") ;;
+            argocd)         args+=(--argocd-path     "$WORKSPACE_PATH") ;;
             dockerfile)     args+=(--dockerfile-path "$WORKSPACE_PATH") ;;
             kubernetes)     args+=(--k8s-path        "$WORKSPACE_PATH") ;;
             helm)           args+=(--helm-path       "$WORKSPACE_PATH") ;;
             oci)            args+=(--oci-manifest    "$WORKSPACE_PATH") ;;
+            npm)            args+=(--npm-path        "$WORKSPACE_PATH") ;;
+            pypi)           args+=(--pypi-path       "$WORKSPACE_PATH") ;;
+            maven)          args+=(--maven-path      "$WORKSPACE_PATH") ;;
+            nuget)          args+=(--nuget-path      "$WORKSPACE_PATH") ;;
             auto|"")        cd "$WORKSPACE_PATH" || exit 3 ;;
             aws)            : ;;  # AWS scans the live account, no path
             *,*)            : ;;  # multi-pipeline, leave each provider on auto-detect
@@ -267,14 +293,16 @@ runs:
         echo "exit-code=$ec" >> "$GITHUB_OUTPUT"
         echo "sarif-file=$OUTPUT_FILE" >> "$GITHUB_OUTPUT"
 
-        if [ "$OUTPUT_FORMAT" = "sarif" ] && [ -f "$OUTPUT_FILE" ]; then
-          # Re-scan with ``--output json`` to extract score / grade /
-          # finding counts as action outputs. Cheaper than parsing
-          # SARIF + computing severity rollups by hand. Build the
-          # stats invocation by stripping any output / output-file /
-          # gate flags from the original args, then add the json
-          # output explicitly.
-          stats="$(mktemp)"
+        # Produce a JSON sidecar at a known path. Used for: (a) action
+        # outputs (score, grade, counts) and (b) the PR-comment step.
+        # When the primary output is already JSON, just copy it.
+        # Otherwise re-scan with ``--output json``.
+        stats="$RUNNER_TEMP/pipeline-check-report.json"
+        if [ "$OUTPUT_FORMAT" = "json" ] && [ -f "$OUTPUT_FILE" ]; then
+          cp "$OUTPUT_FILE" "$stats"
+        fi
+
+        if [ ! -s "$stats" ]; then
           stats_args=()
           skip_next=0
           for tok in "${args[@]}"; do
@@ -290,8 +318,10 @@ runs:
           done
           stats_args+=(--output json --output-file "$stats")
           pipeline_check "${stats_args[@]}" >/dev/null 2>&1 || true
-          if [ -s "$stats" ]; then
-            python - "$stats" <<'PY' >> "$GITHUB_OUTPUT"
+        fi
+
+        if [ -s "$stats" ]; then
+          python - "$stats" <<'PY' >> "$GITHUB_OUTPUT"
         import json, sys
         with open(sys.argv[1]) as fh:
             data = json.load(fh)
@@ -305,7 +335,6 @@ runs:
         print(f"score={score.get('score', '')}")
         print(f"grade={score.get('grade', '')}")
         PY
-          fi
         fi
 
         # Re-raise the original exit code so the job reflects the gate.
@@ -316,3 +345,24 @@ runs:
       uses: github/codeql-action/upload-sarif@7211b7c8077ea37d8641b6271f6a365a22a5fbfa  # v4.36.0
       with:
         sarif_file: ${{ inputs.output-file }}
+
+    - name: Post PR review comments
+      if: >-
+        ${{
+          inputs.pr-comment == 'true'
+          && github.event_name == 'pull_request'
+          && always()
+        }}
+      shell: bash
+      env:
+        GH_TOKEN: ${{ inputs.gh-token }}
+        PIPELINE_CHECK_REPORT: ${{ runner.temp }}/pipeline-check-report.json
+        PIPELINE_CHECK_PIPELINE: ${{ inputs.pipeline }}
+        PIPELINE_CHECK_PATH: ${{ inputs.path }}
+        PIPELINE_CHECK_SEVERITY: ${{ inputs.severity-threshold }}
+        PIPELINE_CHECK_RESOLVE_REMOTE: ${{ inputs.resolve-remote }}
+        PIPELINE_CHECK_COMMENT_MODE: ${{ inputs.comment-mode }}
+        GITHUB_REPOSITORY: ${{ github.repository }}
+        GITHUB_PR_NUMBER: ${{ github.event.pull_request.number }}
+        GITHUB_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+      run: python "$GITHUB_ACTION_PATH/.github/actions/pipeline-check-pr/entrypoint.py"

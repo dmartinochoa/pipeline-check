@@ -595,5 +595,12 @@ STANDARD = Standard(
         "CF-001":   ["Build.L3.NonFalsifiable"],    # AWS::IAM::AccessKey declared as code
         "CF-002":   ["Build.L3.NonFalsifiable"],    # hard-coded secret in resource property
         "CF-003":   ["Build.L3.Isolated"],          # CodeBuild VPC shares public subnet
+        # supply-chain posture pack
+        "GHA-097":  ["Build.L3.Isolated"],                         # recursive PR auto-merge loop
+        "GHA-098":  ["Build.L3.NonFalsifiable"],                   # deploy without security scan gate
+        "GHA-099":  ["Build.L3.NonFalsifiable"],                   # deploy env plaintext secret
+        "SCM-048":  ["Build.L3.NonFalsifiable"],                   # org codespace secrets scoped to all repos
+        "SCM-049":  ["Build.L3.NonFalsifiable"],                   # classic PAT where fine-grained suffices
+        "NPM-012":  ["Build.L2.Signed"],                           # publish token missing restrictions
     },
 )
