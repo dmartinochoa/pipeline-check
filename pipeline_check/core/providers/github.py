@@ -19,13 +19,6 @@ from ..checks.github._action_reputation import (
     populate_action_metadata,
 )
 from ..checks.github.base import GitHubContext
-from ..checks.github.uses_parser import parse_uses
-from ..sbom import (
-    BuildDependency,
-    make_docker_purl,
-    make_github_purl,
-    parse_docker_ref,
-)
 from ..checks.github.resolver import (
     CompositeFetcher,
     DiskFetcher,
@@ -38,6 +31,12 @@ from ..checks.github.uses_parser import parse_uses
 from ..checks.github.workflows import WorkflowChecks
 from ..checks.scm.base import HttpSCMFetcher
 from ..inventory import Component
+from ..sbom import (
+    BuildDependency,
+    make_docker_purl,
+    make_github_purl,
+    parse_docker_ref,
+)
 from .base import BaseProvider
 
 
