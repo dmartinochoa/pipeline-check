@@ -39,6 +39,7 @@ from .fp_annotations import (
     load_annotations,
 )
 from .inventory import Component
+from .sbom import BuildDependency
 
 logger = logging.getLogger(__name__)
 
@@ -287,6 +288,15 @@ class Scanner:
                 if any(fnmatch.fnmatchcase(c.type, p) for p in type_patterns)
             ]
         return components
+
+    def sbom(self) -> list[BuildDependency]:
+        """Return the build-time dependencies the active provider found."""
+        provider = getattr(self, "_provider", None)
+        if provider is None:
+            provider = _providers.get(self.pipeline)
+        if provider is None:
+            return []
+        return provider.build_dependencies(self._context)
 
     def run(
         self,
@@ -546,6 +556,13 @@ class MultiScanner:
         out: list[Component] = []
         for scanner in self._scanners:
             out.extend(scanner.inventory(type_patterns=type_patterns))
+        return out
+
+    def sbom(self) -> list[BuildDependency]:
+        """Aggregate build dependencies across every sub-scanner."""
+        out: list[BuildDependency] = []
+        for scanner in self._scanners:
+            out.extend(scanner.sbom())
         return out
 
     @property

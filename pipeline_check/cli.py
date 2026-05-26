@@ -1635,7 +1635,7 @@ def _install_completion_callback(
     type=click.Choice(
         [
             "terminal", "json", "html", "sarif", "junit",
-            "markdown", "threatmodel", "both",
+            "markdown", "threatmodel", "cyclonedx", "both",
         ],
         case_sensitive=False,
     ),
@@ -3239,6 +3239,24 @@ def scan(
                 click.echo(f"Markdown report written to {output_file}", err=True)
         elif not quiet:
             click.echo(md_text)
+
+    if output == "cyclonedx":
+        from pipeline_check.core.cyclonedx_reporter import report_cyclonedx
+        sbom_deps = scanner.sbom()
+        cdx_text = report_cyclonedx(
+            sbom_deps,
+            tool_version=__version__,
+            scanned_path=target or ".",
+        )
+        if output_file:
+            with open(output_file, "w", encoding="utf-8") as fh:
+                fh.write(cdx_text)
+            if not quiet:
+                click.echo(
+                    f"CycloneDX SBOM written to {output_file}", err=True,
+                )
+        elif not quiet:
+            click.echo(cdx_text)
 
     if output == "threatmodel":
         tm_text = report_threatmodel(

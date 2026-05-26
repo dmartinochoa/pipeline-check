@@ -11,9 +11,10 @@ from __future__ import annotations
 from typing import Any
 
 from ..checks.base import BaseCheck
-from ..checks.dockerfile.base import DockerfileContext
+from ..checks.dockerfile.base import DockerfileContext, from_refs
 from ..checks.dockerfile.pipelines import DockerfileChecks
 from ..inventory import Component
+from ..sbom import BuildDependency, make_docker_purl, parse_docker_ref
 from .base import BaseProvider
 
 
@@ -38,6 +39,27 @@ class DockerfileProvider(BaseProvider):
     @property
     def check_classes(self) -> list[type[BaseCheck[Any]]]:
         return [DockerfileChecks]
+
+    def build_dependencies(
+        self, context: DockerfileContext,
+    ) -> list[BuildDependency]:
+        deps: list[BuildDependency] = []
+        for df in context.dockerfiles:
+            for _line_no, ref_str in from_refs(df):
+                if ref_str.lower() == "scratch":
+                    continue
+                image, tag, digest = parse_docker_ref(ref_str)
+                deps.append(BuildDependency(
+                    name=image,
+                    version=tag or digest or "latest",
+                    dep_type="container",
+                    purl=make_docker_purl(image, tag, digest),
+                    provider=self.NAME,
+                    source=df.path,
+                    pinned=bool(digest),
+                    digest=digest,
+                ))
+        return deps
 
     def inventory(self, context: DockerfileContext) -> list[Component]:
         out: list[Component] = []

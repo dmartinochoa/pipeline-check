@@ -19,6 +19,7 @@ from typing import Any
 
 from ..checks.base import BaseCheck
 from ..inventory import Component
+from ..sbom import BuildDependency
 
 
 class BaseProvider(abc.ABC):
@@ -55,6 +56,16 @@ class BaseProvider(abc.ABC):
         expose an asset view still satisfy the contract. Override to
         surface the resources / files / workflows the context is
         built from, the Scanner's ``inventory()`` delegates here.
+        """
+        return []
+
+    def build_dependencies(self, context: Any) -> list[BuildDependency]:
+        """Return the build-time dependencies the pipeline consumes.
+
+        Default implementation returns ``[]``. Override to extract
+        action references, Docker base images, package-manager
+        dependencies, etc. The Scanner's ``sbom()`` delegates here;
+        the CycloneDX reporter formats the result.
         """
         return []
 

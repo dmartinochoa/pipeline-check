@@ -12,6 +12,17 @@ release commit collapses this section into `## [X.Y.Z] - <date>`.
 
 ### Added
 
+- **Build-time dependency SBOM generation (``--output cyclonedx``).** New
+  CycloneDX 1.6 JSON output format. ``--output cyclonedx`` emits a
+  standards-compliant BOM of every build-time dependency the pipeline
+  consumes: GitHub Actions (with SHA-pinning detection), Docker base
+  images, npm packages, and PyPI requirements. Each component carries a
+  PURL identifier and ``pipeline-check:`` namespaced properties
+  (provider, kind, source file, pinned status). No new library
+  dependency; the CycloneDX JSON structure is emitted directly.
+  ``BaseProvider`` gains a ``build_dependencies()`` method; v1 ships
+  extractors for 4 providers (GitHub, Dockerfile, npm, PyPI). 49 tests
+  across unit, reporter, and end-to-end integration.
 - **TeamPCP + Megalodon compromise entries.** Four new entries in the
   ``_compromised_actions`` registry: ``aquasecurity/trivy-action``
   (CVE-2026-33634, CVSS 9.4, 76 malicious SHAs from StepSecurity

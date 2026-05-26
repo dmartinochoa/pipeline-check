@@ -19,6 +19,13 @@ from ..checks.github._action_reputation import (
     populate_action_metadata,
 )
 from ..checks.github.base import GitHubContext
+from ..checks.github.uses_parser import parse_uses
+from ..sbom import (
+    BuildDependency,
+    make_docker_purl,
+    make_github_purl,
+    parse_docker_ref,
+)
 from ..checks.github.resolver import (
     CompositeFetcher,
     DiskFetcher,
@@ -146,6 +153,57 @@ class GitHubProvider(BaseProvider):
                 f"[gha] {' and '.join(parts)} reference remote refs; "
                 f"rerun with --resolve-remote to scan their bodies."
             )
+
+    def build_dependencies(
+        self, context: GitHubContext,
+    ) -> list[BuildDependency]:
+        deps: list[BuildDependency] = []
+        for wf in context.workflows:
+            data = wf.data if isinstance(wf.data, dict) else {}
+            jobs = data.get("jobs")
+            if not isinstance(jobs, dict):
+                continue
+            for job in jobs.values():
+                if not isinstance(job, dict):
+                    continue
+                steps = job.get("steps")
+                if not isinstance(steps, list):
+                    continue
+                for step in steps:
+                    if not isinstance(step, dict):
+                        continue
+                    uses_raw = step.get("uses")
+                    ref = parse_uses(uses_raw)
+                    if ref is None:
+                        continue
+                    if ref.kind == "docker":
+                        img, tag, digest = parse_docker_ref(
+                            ref.raw.removeprefix("docker://"),
+                        )
+                        deps.append(BuildDependency(
+                            name=img,
+                            version=tag or digest or "latest",
+                            dep_type="container",
+                            purl=make_docker_purl(img, tag, digest),
+                            provider=self.NAME,
+                            source=wf.path,
+                            pinned=bool(digest),
+                            digest=digest,
+                        ))
+                    elif ref.kind in ("remote-action", "remote-workflow"):
+                        pinned = ref.is_pinned_to_sha
+                        deps.append(BuildDependency(
+                            name=f"{ref.owner}/{ref.repo}",
+                            version=ref.ref,
+                            dep_type="action" if ref.kind == "remote-action" else "workflow",
+                            purl=make_github_purl(
+                                ref.owner, ref.repo, ref.ref, ref.path,
+                            ),
+                            provider=self.NAME,
+                            source=wf.path,
+                            pinned=pinned,
+                        ))
+        return deps
 
     def inventory(self, context: GitHubContext) -> list[Component]:
         out: list[Component] = []
