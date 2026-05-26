@@ -55,6 +55,26 @@ jobs:
           # because the API silently no-ops for un-enrolled repos.
           publish_results: true
 
+      - name: Filter test-fixture false positives
+        run: |
+          python3 -c "
+          import json, sys
+          sarif = json.load(open('scorecard-results.sarif'))
+          EXCLUDE = ('tests/', 'bench/')
+          for run in sarif.get('runs', []):
+              run['results'] = [
+                  r for r in run.get('results', [])
+                  if not any(
+                      loc.get('physicalLocation', {})
+                         .get('artifactLocation', {})
+                         .get('uri', '').startswith(prefix)
+                      for loc in r.get('locations', [])
+                      for prefix in EXCLUDE
+                  )
+              ]
+          json.dump(sarif, open('scorecard-results.sarif', 'w'))
+          "
+
       - name: Upload SARIF to code scanning
         uses: github/codeql-action/upload-sarif@9e0d7b8d25671d64c341c19c0152d693099fb5ba  # v4.35.5
         with:

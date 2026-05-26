@@ -1376,17 +1376,15 @@ flag real hardening gaps in the project's own workflows.
   `ossf/scorecard-action` (publish-results OIDC) and
   `docker/build-push-action` with `provenance:` / `sbom:` (Sigstore
   signing) both joined GHA-004's OIDC-consumer allowlist.
-- **Mark fixture Dockerfiles / workflows as Scorecard-exempt.**
-  Roughly 15 `PinnedDependenciesID` errors hit
-  `tests/fixtures/workflows/**` and `bench/cases/**` files that
-  exist because they're insecure (they're negative test cases
-  for the project's own rules). Either dismiss via the API with
-  reason "used as a negative test case", or add path excludes to
-  `.github/workflows/scorecard.yml`.
-- **`master` branch protection** (Scorecard `BranchProtectionID`).
-  Real gaps: no required reviewers, no required status checks,
-  allow-deletion enabled. Tightening this also lifts the
-  Scorecard score on the next run.
+- ~~**Mark fixture Dockerfiles / workflows as Scorecard-exempt.**~~
+  Landed. ``scorecard.yml`` gained a SARIF-filtering step that
+  strips results whose ``artifactLocation.uri`` starts with
+  ``tests/`` or ``bench/`` before upload, so negative test cases
+  no longer produce PinnedDependenciesID noise in the Security tab.
+- ~~**`master` branch protection** (Scorecard `BranchProtectionID`).~~
+  Landed. Required reviewers (1), required status checks
+  (``test (3.12)``, ``test (3.13)``), stale-review dismissal,
+  no force-push, no deletion.
 
 Out of scope for this cleanup: the Scorecard zero-score alerts
 (`FuzzingID`, `CIIBestPracticesID`, `MaintainedID`,
