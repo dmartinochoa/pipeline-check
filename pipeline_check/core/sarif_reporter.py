@@ -42,6 +42,7 @@ import hashlib
 import json
 import os
 import re
+import urllib.parse
 from typing import Any
 
 from .chains import Chain
@@ -200,8 +201,7 @@ def _normalize_path(path: str) -> str:
     the scan.
     """
     norm = path.replace("\\", "/")
-    if os.name == "nt":
-        norm = norm.lower()
+    norm = norm.lower()
     return norm
 
 
@@ -420,7 +420,7 @@ def _build_rules(findings: list[Finding]) -> list[dict[str, Any]]:
             "shortDescription": {"text": f.title},
             "fullDescription": {"text": f.recommendation or f.title},
             "help": {
-                "text": f.recommendation,
+                "text": f.recommendation or f.title,
                 "markdown": help_md,
             },
             "defaultConfiguration": {"level": level},
@@ -488,15 +488,19 @@ def _finding_to_result(f: Finding, rule_index: dict[str, int]) -> dict[str, Any]
             "logicalLocations": [logical_location],
         })
 
+    # SARIF ``rank`` (0–100 float) lets GitHub/GitLab Code Scanning
+    # sort results by how much the scanner trusts them, orthogonal
+    # to severity. HIGH-confidence findings surface first; LOW are
+    # de-ranked so noisy rules don't drown out the signal.
+    # SARIF 2.1.0 defines ``rank`` on ``reportingDescriptor``, not on
+    # ``result`` (which sets ``additionalProperties: false``). Carry it
+    # in ``properties`` so strict validators accept the output.
+    properties["rank"] = _CONFIDENCE_RANK.get(f.confidence, 100.0)
+
     result: dict[str, Any] = {
         "ruleId": f.check_id,
         "ruleIndex": rule_index.get(f.check_id, 0),
         "level": level,
-        # SARIF ``rank`` (0–100 float) lets GitHub/GitLab Code Scanning
-        # sort results by how much the scanner trusts them, orthogonal
-        # to severity. HIGH-confidence findings surface first; LOW are
-        # de-ranked so noisy rules don't drown out the signal.
-        "rank": _CONFIDENCE_RANK.get(f.confidence, 100.0),
         "message": {"text": f.description},
         "locations": locations,
         # ``partialFingerprints`` lets GHCS / GitLab / Azure DevOps
@@ -649,12 +653,20 @@ def _artifact_uri(resource: str) -> str:
     """
     if not resource:
         return "unknown"
-    # Heuristic: anything that contains a path separator, starts with a
-    # drive letter, or ends in .yml/.yaml/.tf/.json is probably a file.
     lowered = resource.lower()
     if (
         "/" in resource or "\\" in resource
-        or lowered.endswith((".yml", ".yaml", ".tf", ".json"))
+        or lowered.endswith((
+            ".yml", ".yaml", ".tf", ".json", ".xml", ".toml",
+            ".txt", ".cfg", ".config", ".csproj", ".props",
+            ".lock", ".npmrc",
+        ))
+        or lowered in {
+            "dockerfile", "containerfile", "jenkinsfile",
+            "makefile", "gemfile", "rakefile", "vagrantfile",
+        }
+        or lowered.startswith("dockerfile")
+        or lowered.startswith("containerfile")
     ):
-        return resource.replace("\\", "/")
+        return urllib.parse.quote(resource.replace("\\", "/"), safe="/")
     return f"resource:///{resource}"

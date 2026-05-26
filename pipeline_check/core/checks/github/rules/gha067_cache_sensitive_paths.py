@@ -132,7 +132,7 @@ _SENSITIVE_PATHS: frozenset[str] = frozenset({
     "~",
     "$HOME",
     "${HOME}",
-    # Credential-shaped dotdirs
+    # Credential-shaped dotdirs (tilde prefix)
     "~/.docker",
     "~/.aws",
     "~/.azure",
@@ -140,12 +140,36 @@ _SENSITIVE_PATHS: frozenset[str] = frozenset({
     "~/.kube",
     "~/.ssh",
     "~/.gnupg",
+    # Credential-shaped dotdirs ($HOME prefix)
+    "$HOME/.docker",
+    "$HOME/.aws",
+    "$HOME/.azure",
+    "$HOME/.gcloud",
+    "$HOME/.kube",
+    "$HOME/.ssh",
+    "$HOME/.gnupg",
+    # Credential-shaped dotdirs (${HOME} prefix)
+    "${HOME}/.docker",
+    "${HOME}/.aws",
+    "${HOME}/.azure",
+    "${HOME}/.gcloud",
+    "${HOME}/.kube",
+    "${HOME}/.ssh",
+    "${HOME}/.gnupg",
     # Credential-shaped dotfiles
     "~/.npmrc",
     "~/.netrc",
+    "$HOME/.npmrc",
+    "$HOME/.netrc",
+    "${HOME}/.npmrc",
+    "${HOME}/.netrc",
     # Build-tool credential stores
     "~/.gradle/gradle.properties",
     "~/.m2/settings.xml",
+    "$HOME/.gradle/gradle.properties",
+    "$HOME/.m2/settings.xml",
+    "${HOME}/.gradle/gradle.properties",
+    "${HOME}/.m2/settings.xml",
 })
 
 

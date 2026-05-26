@@ -102,12 +102,12 @@ class TaintPath:
 _GITHUB_OUTPUT_WRITE_RE = re.compile(
     r"""
     (?:
-        echo\s+
+        echo\s+(?:-[neE]+\s+)?
         ["']?(?P<name1>[A-Za-z_][A-Za-z0-9_-]*)=(?P<val1>[^\n]*?)["']?\s*
-        >>\s*
+        >>?\s*
         (?:"?\$\{?GITHUB_OUTPUT\}?"?)
     |
-        echo\s+
+        echo\s+(?:-[neE]+\s+)?
         ["']?
         ::set-output\s+name=(?P<name2>[A-Za-z_][A-Za-z0-9_-]*)::
         (?P<val2>[^\n"']*)
@@ -143,7 +143,7 @@ def _extract_output_writes(run_body: str) -> list[tuple[str, str]]:
 # name for taint resolution.
 _STEP_OUTPUT_REF_RE = re.compile(
     r"\$\{\{\s*steps\.(?P<step>[A-Za-z_][A-Za-z0-9_-]*)"
-    r"\.outputs\.(?P<output>[A-Za-z_][A-Za-z0-9_-]*)\s*\}\}"
+    r"\.outputs\.(?P<output>[A-Za-z_][A-Za-z0-9_-]*)[^}]*\}\}"
 )
 
 
@@ -161,7 +161,7 @@ def _iter_step_output_refs(text: str) -> Iterator[tuple[str, str]]:
 # capture shape.
 _NEEDS_OUTPUT_REF_RE = re.compile(
     r"\$\{\{\s*needs\.(?P<job>[A-Za-z_][A-Za-z0-9_-]*)"
-    r"\.outputs\.(?P<output>[A-Za-z_][A-Za-z0-9_-]*)\s*\}\}"
+    r"\.outputs\.(?P<output>[A-Za-z_][A-Za-z0-9_-]*)[^}]*\}\}"
 )
 
 
@@ -184,7 +184,7 @@ _MATRIX_FROM_NEEDS_RE = re.compile(
 
 # Match ``${{ matrix.<axis> }}`` references in run / with bodies.
 _MATRIX_AXIS_REF_RE = re.compile(
-    r"\$\{\{\s*matrix\.(?P<axis>[A-Za-z_][A-Za-z0-9_-]*)\s*\}\}"
+    r"\$\{\{\s*matrix\.(?P<axis>[A-Za-z_][A-Za-z0-9_-]*)[^}]*\}\}"
 )
 
 
@@ -199,7 +199,7 @@ def _iter_matrix_axis_refs(text: str) -> Iterator[str]:
 # references a tainted env var, the output inherits the env var's
 # original taint source.
 _ENV_SHELL_REF_RE = re.compile(
-    r"\$\{?(?P<name>[A-Z_][A-Z0-9_]*)\}?"
+    r"\$\{?(?P<name>[A-Za-z_][A-Za-z0-9_]*)\}?"
 )
 
 

@@ -1,6 +1,7 @@
 """GHA-053. ``if:`` predicate evaluates attacker-controllable context."""
 from __future__ import annotations
 
+import re
 from typing import Any
 
 from ...base import Finding, Severity
@@ -145,7 +146,11 @@ _UNTRUSTED_CONTEXTS: tuple[str, ...] = (
 def _matches_untrusted(value: Any) -> list[str]:
     if not isinstance(value, str):
         return []
-    return [token for token in _UNTRUSTED_CONTEXTS if token in value]
+    return [
+        token
+        for token in _UNTRUSTED_CONTEXTS
+        if re.search(r"(?<!\w)" + re.escape(token) + r"(?!\w)", value)
+    ]
 
 
 def check(path: str, doc: dict[str, Any]) -> Finding:

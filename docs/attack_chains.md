@@ -451,7 +451,7 @@ Use lockfile-enforcing install commands (`npm ci`, `pip install -r requirements.
 <span class="pg-sev pg-sev--critical">CRITICAL</span> <span class="pg-tag" title="MITRE ATT&CK technique">MITRE T1195.002</span> <span class="pg-tag" title="MITRE ATT&CK technique">MITRE T1078.004</span> <span class="pg-tag" title="kill-chain phase">initial-access -> credential-access</span> <span class="pg-tag pg-tag--owasp">github</span>
 </div>
 
-A workflow uses unpinned third-party actions (GHA-001), interpolates untrusted PR context into a shell ``run:`` block (GHA-002), and carries literal secrets in the YAML (GHA-008). Any one of those is exploitable; the combination gives a fork-PR attacker two independent code-execution paths to the same plaintext credentials.
+A workflow uses unpinned third-party actions (GHA-001), checks out the PR head under a ``pull_request_target`` trigger (GHA-002), and carries literal secrets in the YAML (GHA-008). Any one of those is exploitable; the combination gives a fork-PR attacker two independent code-execution paths to the same plaintext credentials.
 
 **References**
 

@@ -503,7 +503,6 @@ def _scan_repo(
         sys.executable, "-m", "pipeline_check",
         "--output", "json",
         "--output-file", str(findings_path),
-        "--no-color",
     ]
     if extra_flags:
         cmd.extend(extra_flags)
@@ -606,7 +605,7 @@ def _process_one_repo(
     results after all workers finish.
     """
     warnings: list[str] = []
-    per_repo_dir = output_dir / coord.platform / coord.owner / coord.repo
+    per_repo_dir = output_dir / coord.platform / coord.owner.lower() / coord.repo.lower()
     per_repo_dir.mkdir(parents=True, exist_ok=True)
     findings_path = per_repo_dir / "findings.json"
     stderr_path = per_repo_dir / "scan.stderr"

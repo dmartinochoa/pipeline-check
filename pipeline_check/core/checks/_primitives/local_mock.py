@@ -90,6 +90,8 @@ def env_has_localstack_sentinel(env: Any) -> bool:
         return False
     for key in ("AWS_ACCESS_KEY_ID", "AWS_SECRET_ACCESS_KEY"):
         v = env.get(key)
-        if isinstance(v, str) and v.strip().lower() not in _LOCALSTACK_SENTINEL_VALUES:
+        if not isinstance(v, str):
+            return False
+        if v.strip().lower() not in _LOCALSTACK_SENTINEL_VALUES:
             return False
     return True

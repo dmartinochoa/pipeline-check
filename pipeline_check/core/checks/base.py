@@ -432,10 +432,12 @@ DEP_UPDATE_RE = _re.compile(
 #:     pin churn is irrelevant to the supply chain because their
 #:     output never lands in the wheel.
 _DEP_UPDATE_TOOL_EXEMPT_RE = _re.compile(
-    r"\bpip3?\s+install\s+(?:--upgrade|-U)\s+(?:"
-    r"pip|setuptools|wheel|virtualenv|build"
-    r"|pip-audit|cyclonedx-bom|cyclonedx-py|safety|bandit|semgrep|ruff|mypy"
-    r")\b"
+    r"\bpip3?\s+install\s+(?:"
+    r"(?:--upgrade|-U)\s+(?:pip|setuptools|wheel|virtualenv|build"
+    r"|pip-audit|cyclonedx-bom|cyclonedx-py|safety|bandit|semgrep|ruff|mypy)\b"
+    r"|(?:pip|setuptools|wheel|virtualenv|build"
+    r"|pip-audit|cyclonedx-bom|cyclonedx-py|safety|bandit|semgrep|ruff|mypy)"
+    r"\s+(?:--upgrade|-U))"
 )
 
 
@@ -466,7 +468,7 @@ def has_dep_update(blob: str) -> bool:
 _QUOTED_ASSIGNMENT_RE = _re.compile(
     r'\s*\w+="[^"]*'
     r'(?:'
-    r'\$\{\{[^}]*\}\}'     # GitHub ${{ ... }}
+    r'\$\{\{(?:[^}]|\}(?!\}))*\}\}'  # GitHub ${{ ... }}
     r'|\$\{?\w+\}?'        # shell ${VAR} / $VAR
     r'|\$\([^)]+\)'        # ADO $(VAR)
     r')'
@@ -487,10 +489,16 @@ def is_quoted_assignment(line: str) -> bool:
     """
     if not _QUOTED_ASSIGNMENT_RE.match(line):
         return False
-    # Extract the RHS after the first '=' and strip the surrounding quotes.
-    rhs = line.split("=", 1)[1].strip().strip('"')
+    # Extract the RHS after the first '=' and strip exactly one
+    # surrounding quote pair.
+    rhs = line.split("=", 1)[1].strip()
+    if rhs.startswith('"') and rhs.endswith('"'):
+        rhs = rhs[1:-1]
     # If the RHS contains $(...) that itself embeds an untrusted
     # interpolation (${{ ... }}, ${VAR}, or bare $VAR), it is NOT safe.
     if _re.search(r"\$\(.*(?:\$\{\{|\$\{?\w|\$\()", rhs):
+        return False
+    # Backtick command substitution is equally dangerous.
+    if _re.search(r"`.*(?:\$\{\{|\$\{?\w|\$\()", rhs):
         return False
     return True

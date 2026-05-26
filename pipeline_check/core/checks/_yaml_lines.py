@@ -48,6 +48,7 @@ opens without one).
 """
 from __future__ import annotations
 
+import warnings as _warnings
 from collections.abc import Iterator
 from typing import Any
 
@@ -101,6 +102,7 @@ class _LineLoader(yaml.SafeLoader):
                 f"expected a mapping node, but found {node.id}",
                 node.start_mark,
             )
+        self.flatten_mapping(node)
         mapping: LineDict = LineDict()
         for key_node, value_node in node.value:
             key = self.construct_object(key_node, deep=deep)
@@ -111,6 +113,13 @@ class _LineLoader(yaml.SafeLoader):
                     "while constructing a mapping", node.start_mark,
                     f"found unhashable key ({exc})", key_node.start_mark,
                 ) from exc
+            if key in mapping:
+                mark = key_node.start_mark
+                _warnings.warn(
+                    f"duplicate YAML key {key!r} at line "
+                    f"{mark.line + 1}, column {mark.column + 1}",
+                    stacklevel=1,
+                )
             value = self.construct_object(value_node, deep=deep)
             mapping[key] = value
         mapping._line = node.start_mark.line + 1  # 1-based

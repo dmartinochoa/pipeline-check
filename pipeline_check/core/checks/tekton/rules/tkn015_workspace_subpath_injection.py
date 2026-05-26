@@ -113,6 +113,25 @@ def check(ctx: TektonContext) -> Finding:
         if doc.kind not in ("Task", "ClusterTask"):
             continue
         examined += 1
+        spec = doc.data.get("spec") or {}
+        if isinstance(spec, dict):
+            task_ws = spec.get("workspaces")
+            if isinstance(task_ws, list):
+                for ws in task_ws:
+                    if not isinstance(ws, dict):
+                        continue
+                    sub = ws.get("subPath")
+                    if not isinstance(sub, str):
+                        continue
+                    refs = sorted(
+                        {m.group(1) for m in _PARAM_RE.finditer(sub)},
+                    )
+                    if refs:
+                        offenders.append(
+                            f"{doc.kind}/{doc.name} "
+                            f"workspace.{ws.get('name', '?')}.subPath: "
+                            f"params.{', params.'.join(refs[:3])}"
+                        )
         for idx, step in enumerate(task_steps(doc)):
             for ws in _step_workspaces(step):
                 sub = ws.get("subPath")

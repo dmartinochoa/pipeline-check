@@ -6,7 +6,7 @@ import logging
 import pkgutil
 from collections.abc import Callable
 
-from ..checks.base import Finding
+from ..checks.base import Finding, severity_rank
 from .base import Chain, ChainRule
 
 _RULES_CACHE: list[tuple[ChainRule, Callable[[list[Finding]], list[Chain]]]] | None = None
@@ -87,7 +87,7 @@ def evaluate(
             )
             continue
         out.extend(matches)
-    out.sort(key=lambda c: (c.chain_id, c.severity.value, ",".join(c.resources)))
+    out.sort(key=lambda c: (c.chain_id, severity_rank(c.severity), ",".join(c.resources)))
     return out
 
 

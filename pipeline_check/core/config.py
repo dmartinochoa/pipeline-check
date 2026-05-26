@@ -38,16 +38,19 @@ from ._yaml_strict import safe_load_strict as _safe_load_strict
 # Keys that are allowed in a config file (and map directly to click option names).
 _TOPLEVEL_KEYS: frozenset[str] = frozenset({
     "pipeline", "target", "checks", "region", "profile",
-    "tf_plan", "gha_path", "gitlab_path", "bitbucket_path", "azure_path",
+    "tf_plan", "tf_source",
+    "gha_path", "gitlab_path", "bitbucket_path", "azure_path",
     "circleci_path", "jenkinsfile_path", "cfn_template",
     "cloudbuild_path", "dockerfile_path", "k8s_path",
-    "buildkite_path", "tekton_path", "argo_path",
+    "buildkite_path", "tekton_path", "argo_path", "argocd_path",
+    "helm_path", "helm_values", "helm_set", "oci_manifest",
+    "drone_path", "npm_path", "pypi_path", "maven_path", "nuget_path",
     # GHA reusable-workflow remote-ref resolver.
     "resolve_remote", "gh_token", "no_cache",
     "gha_search_path", "gha_resolve_depth",
     "output", "output_file",
-    "standards", "severity_threshold",
-    "secret_patterns",
+    "standards", "severity_threshold", "min_confidence",
+    "secret_patterns", "detect_entropy",
     # Custom rule files, paths to YAML rule definitions.
     "custom_rules",
     # Per-rule severity overrides, see ``_parse_overrides``.
@@ -349,7 +352,8 @@ def _load_from_env() -> dict[str, Any]:
 
 def _coerce_env(key: str, raw: str) -> Any:
     """Env vars arrive as strings; split the multi-value ones on commas."""
-    if key in ("checks", "standards", "fail_on_checks", "secret_patterns", "custom_rules"):
+    if key in ("checks", "standards", "fail_on_checks", "secret_patterns", "custom_rules",
+                "helm_values", "helm_set", "gha_search_path"):
         return tuple(v.strip() for v in raw.split(",") if v.strip())
     if key == "max_failures":
         try:

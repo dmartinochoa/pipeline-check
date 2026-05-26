@@ -185,16 +185,28 @@ def _find_top_level(
     return None
 
 
+_MAX_TAR_MEMBER_BYTES = 10 * 1024 * 1024  # 10 MB decompression-bomb guard
+
+
 def _yaml_from_tar(
     tar: tarfile.TarFile,
     member: tarfile.TarInfo,
     warnings: list[str],
 ) -> dict[str, Any] | None:
+    if member.size > _MAX_TAR_MEMBER_BYTES:
+        warnings.append(
+            f"{member.name}: skipped (uncompressed size "
+            f"{member.size:,} exceeds {_MAX_TAR_MEMBER_BYTES:,} byte limit)"
+        )
+        return None
     try:
         fobj = tar.extractfile(member)
         if fobj is None:
             return None
-        raw = fobj.read()
+        raw = fobj.read(_MAX_TAR_MEMBER_BYTES + 1)
+        if len(raw) > _MAX_TAR_MEMBER_BYTES:
+            warnings.append(f"{member.name}: decompressed size exceeds limit")
+            return None
     except (KeyError, OSError) as exc:
         warnings.append(f"{member.name}: read error: {exc}")
         return None

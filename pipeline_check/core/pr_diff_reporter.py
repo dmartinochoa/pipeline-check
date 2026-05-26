@@ -45,13 +45,13 @@ def _location(f: FindingRef) -> str:
     """Render the ``resource[:line]`` suffix for one finding.
 
     Resources without a usable line number (AWS ARNs, SCM resources)
-    just render the resource. Backticks are escaped only if they
-    appear inside the resource string itself; the surrounding pair
-    is consumed literally by GitHub's parser.
+    just render the resource. Backticks inside the resource string
+    are escaped so the Markdown inline code span isn't broken.
     """
+    escaped = f.resource.replace("`", r"\`")
     if f.location_line is not None and f.location_line > 0:
-        return f"`{f.resource}:{f.location_line}`"
-    return f"`{f.resource}`"
+        return f"`{escaped}:{f.location_line}`"
+    return f"`{escaped}`"
 
 
 def _group_by_severity(refs: list[FindingRef]) -> dict[str, list[FindingRef]]:

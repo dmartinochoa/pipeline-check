@@ -905,6 +905,284 @@ without an exploit example get backfilled opportunistically.
   then, the self-hosted dashboard above covers the same operator
   pain at a fraction of the surface.
 
+## Bug backlog (2026-05-25 audit)
+
+Confirmed bugs from a full-codebase review. Ordered by severity
+(crash first, then wrong-result by blast radius, then minor).
+Each item is standalone and can land as its own commit.
+
+### Crash
+
+- **CFN `resolve_literal` infinite recursion on circular `Ref`.**
+  `cloudformation/base.py:resolve_literal` recursively resolves
+  `{"Ref": "ParamName"}` against `params[inner]`. A malformed
+  template with `Parameters: { A: { Default: { Ref: A } } }` (or
+  a two-step chain) triggers unbounded recursion and a
+  `RecursionError` that propagates to the scanner. Callers in
+  `phase4.py` do not catch it. Fix: add a `seen` set and bail on
+  cycles.
+
+- **Fleet scanner passes non-existent `--no-color` flag.**
+  `fleet.py:_scan_repo` (line 506) includes `"--no-color"` in the
+  subprocess command but the CLI's `scan` command has no such
+  option. Click rejects it immediately, so every fleet sub-scan
+  fails with a usage error and no `findings.json` is produced.
+  Fix: remove the flag or add the corresponding Click option.
+
+### Wrong result (high impact)
+
+- **`--quiet` suppresses file output, autofix, and all reporters.**
+  `cli.py` (line 3070) gates the entire report-output block
+  behind `if not quiet:`. When `--quiet` is active,
+  `--output sarif --output-file results.sarif` writes no file,
+  `--output json --output-file results.json` writes no file, and
+  `--fix --apply` does not apply fixes. A CI lane relying on
+  `--quiet --output sarif --output-file` silently produces no
+  artifact. Fix: move file-write and autofix logic outside the
+  `if not quiet:` guard; only suppress terminal/stderr output.
+
+- **CC-031 OIDC parameter names use underscores, real configs use
+  hyphens.** `cc031_oidc_trust.py:_OIDC_ROLE_PARAMS` lists
+  `role_arn`, `aws_role_arn`, etc. but CircleCI orbs use
+  `role-arn`, `aws-role-arn` (the rule's own `exploit_example`
+  shows the hyphenated form). `_has_oidc_role_param` does
+  `p in job_cfg` against a dict whose keys use hyphens, so the
+  match never succeeds and the rule never fires on real configs.
+  Fix: change the param set to use hyphens.
+
+- **OSV `_extract_severity` does not recognize `"MODERATE"`.**
+  `osv_fetcher.py:_extract_severity` accepts `CRITICAL`, `HIGH`,
+  `MEDIUM`, `LOW` from `database_specific.severity` but GitHub
+  Advisory Database uses `"MODERATE"` (not `"MEDIUM"`). When
+  the advisory has `"severity": "MODERATE"`, the match fails and
+  the function defaults to `"HIGH"`. Fix: map `"MODERATE"` to
+  `"MEDIUM"`.
+
+- **GL-012 misses `cache:` in list form.** `gl012_cache_key.py`
+  `_scan_cache` starts with `if not isinstance(cache, dict):
+  return`, so it only handles the dict form. Since GitLab CI
+  v14.2, `cache:` can be a list of cache configs. When cache is
+  a list, the function returns early without scanning any entry.
+  Fix: iterate list elements, scanning each as a dict.
+
+- **GL-012 misses `default.cache:`.**  The rule scans
+  `doc.get("cache")` (top-level) and per-job `job.get("cache")`
+  but not `default: { cache: { key: ... } }`, which is valid
+  GitLab CI syntax for setting a default cache across all jobs.
+  Fix: scan `doc.get("default", {}).get("cache")`.
+
+### Wrong result (medium impact)
+
+- **GHA-053 / GHA-052 substring matching causes false positives.**
+  Both `_matches_untrusted` functions use Python's `in` operator.
+  Untrusted strings like `"github.event.pull_request.labels"` are
+  substrings of safe fields like `labels_url` and `assignees_url`.
+  Fix: match on word boundaries or use a regex.
+
+- **`CACHE_TAINT_RE` uses `page` instead of `pages` in GHA
+  helpers.** `_helpers.py` line 78 uses singular `page\.` in the
+  event-type alternation, but the GitHub webhook field is `pages`
+  (plural, used by `page_build` events). A cache key containing
+  `${{ github.event.pages[0].title }}` is missed. Fix: change
+  `page` to `pages` in the regex.
+
+- **`_DEP_UPDATE_TOOL_EXEMPT_RE` does not handle reversed argument
+  order.** `base.py` exemption regex
+  `\bpip3?\s+install\s+(?:--upgrade|-U)\s+(?:pip|setuptools|...)`
+  requires `--upgrade` before the package name. But pip accepts
+  both orders (`pip install pip --upgrade`). The reversed form
+  is caught by `DEP_UPDATE_RE` but missed by the exemption,
+  producing a false positive. Fix: add an alternation for the
+  reversed order.
+
+- **TKN-003 false positive on non-first `$(params.X)` in quoted
+  strings.** `tkn003_param_injection.py` regex
+  `(?<!")$(params.[A-Za-z0-9_-]+)` uses a single-char negative
+  lookbehind. In `echo "$(params.a) $(params.b)"`, only the first
+  ref is suppressed; the second fires even though it's equally safe
+  (inside double quotes). Fix: use a more robust quoting analysis.
+
+- **`_coerce_env` does not split multi-value env vars for
+  `helm_values`, `helm_set`, `gha_search_path`.** `config.py`
+  `_coerce_env` splits comma-separated values for `checks`,
+  `standards`, etc. but not for `helm_values`, `helm_set`, or
+  `gha_search_path` (all `multiple=True` click options). Setting
+  `PIPELINE_CHECK_HELM_VALUES=a.yaml,b.yaml` produces one string
+  instead of a tuple of two paths. Fix: add these keys to the
+  split logic.
+
+- **`_yaml_lines.py` `_LineLoader` missing `flatten_mapping`.**
+  The line-tracking loader's `construct_mapping` omits
+  `self.flatten_mapping(node)`, so YAML merge keys (`<<:
+  *anchor`) trigger a `ConstructorError`. All callers catch
+  `yaml.YAMLError` and skip the file, so entire files using merge
+  keys (common in GitLab CI, Drone, Kubernetes) are silently
+  dropped from the scan. Fix: add `self.flatten_mapping(node)`
+  before the key iteration loop.
+
+### Wrong result (minor)
+
+- **`is_quoted_assignment` regex fails on nested `}` in GitHub
+  expressions.** `base.py:_QUOTED_ASSIGNMENT_RE` uses `[^}]*` to
+  match `${{ ... }}` expressions, stopping at the first `}`. An
+  expression like `${{ format('{0}', github.ref) }}` is not
+  recognized as a quoted assignment, causing false positives. Minor
+  because `format()` inside variable assignments is uncommon.
+
+- **GitLab `_NON_JOB_KEYS` includes `"script"`, missing
+  `"pages"`.** `gitlab/_taint_graph.py` `_NON_JOB_KEYS` lists
+  `"script"` (not a valid GitLab CI top-level keyword) and
+  omits `"pages"` (a reserved top-level keyword). A job named
+  `script` would be excluded from taint analysis; a `pages:`
+  block could be incorrectly included.
+
+- **GL-033 line number always defaults to 1.**
+  `gl033_global_script_taint.py` uses `_line_of(block) if
+  isinstance(block, dict) else 1`, but `before_script` /
+  `after_script` values are always lists, never dicts. The
+  condition is always False, so line is always 1 instead of the
+  actual source line. Fix: call `_line_of(block)` unconditionally,
+  falling back to 1 if it returns None.
+
+- **NuGet `_parse_lock_json` crashes on non-dict JSON.**
+  `nuget/base.py:_parse_lock_json` calls `data.get(...)` without
+  checking that `data` is a dict. A lock file containing `null`,
+  `[]`, or a scalar causes an `AttributeError`. Caught by the
+  broad `except Exception` in `NuGetContext.from_path`, so no
+  tool crash, but error message is misleading. Fix: guard with
+  `isinstance(data, dict)`.
+
+- **AC-009 narrative prose mislabels GHA-002 as script injection.**
+  `ac009_supply_chain_repo_poisoning.py` lines 27 and 114 describe
+  GHA-003's behavior ("interpolates PR-controlled context into a
+  `run:` block") but attribute it to GHA-002. The match logic is
+  correct; the user-facing narrative is factually wrong about what
+  GHA-002 detects. Fix: update the prose to describe GHA-002
+  accurately (PR-head checkout on `pull_request_target`).
+
+- **Chain engine sort uses alphabetical severity ordering.**
+  `chains/engine.py` line 90 sorts by `c.severity.value` (a string),
+  producing alphabetical order (CRITICAL < HIGH < INFO < LOW <
+  MEDIUM) instead of rank order. Latent: currently all instances of
+  a chain share the same severity, so the bug doesn't manifest. Fix:
+  sort by a numeric rank.
+
+- **SARIF `rank` field placed on `result` object (spec violation).**
+  `sarif_reporter.py` line 499 puts `"rank"` directly on the SARIF
+  `result` object. SARIF 2.1.0 defines `rank` on
+  `reportingDescriptor` (rule), not `result`. The schema sets
+  `additionalProperties: false` on `result`, so strict validators
+  reject the output. Fix: move into `result.properties` bag.
+
+- **SARIF `help.text` can be empty string (spec violation).**
+  `sarif_reporter.py` line 423 emits `f.recommendation` as
+  `help.text`. Custom rules that omit `recommendation` produce
+  `""`, violating the spec (section 3.12.3 requires non-empty
+  `multiformatMessageString.text`). Fix: fall back to `f.title`
+  when recommendation is empty.
+
+- **SARIF fingerprint instability across platforms.**
+  `sarif_reporter.py` `_normalize_path` lowercases paths on Windows
+  but not on Linux/macOS. A mixed-case workflow file produces
+  different fingerprint hashes on each platform. Teams running CI
+  on Linux and local dev on Windows see findings flip-flop as
+  distinct alerts. Fix: always lowercase (or never).
+
+- **SARIF `_artifact_uri` does not percent-encode spaces.**
+  `sarif_reporter.py` line 667 does `resource.replace("\\", "/")`
+  but does not URI-encode spaces or reserved characters (`#`, `?`).
+  Files with spaces in the name produce invalid URI-references.
+  Fix: use `urllib.parse.quote(..., safe="/")`.
+
+- **PR diff reporter does not escape backticks in resource names.**
+  `pr_diff_reporter.py` line 52 wraps the resource in backticks
+  without escaping embedded backticks. A resource containing `` ` ``
+  breaks the Markdown inline code span. Minor/cosmetic.
+
+- **GHA-002 fixer creates duplicate `with:` key.** `autofix/_impl.py`
+  line 87: when any key sits between `uses:` and `with:` (e.g.,
+  `if:`, `env:`), the regex misses the existing `with:` block and
+  inserts a new one, creating duplicate YAML keys. The
+  `_roundtrip_safe` check does not catch this. Fix: scan forward
+  past intervening keys to find existing `with:`.
+
+- **GHA-003 fixer creates duplicate `env:` key.** `autofix/_impl.py`
+  line 837: env-var indirection inserts a new `env:` block without
+  checking if the step already has one. Same duplicate-key issue as
+  GHA-002; the injected env var is silently lost by YAML parsers.
+  Fix: detect existing `env:` and merge into it.
+
+- **File-wide idempotency markers suppress unfixed occurrences.**
+  Multiple comment-only fixers (K8S-001, DF-001, GHA-034, etc.)
+  use `if MARKER in content: return None` for the entire file. If
+  one occurrence is already annotated, the fixer skips the rest.
+  Fix: use per-match dedup (the `_todo_already_above` pattern from
+  `helm.py`).
+
+- **`_scan_for_key` matches keyword at any nesting depth.**
+  `autofix/_impl.py` line 354: scans all lines deeper than
+  `parent_indent` for the keyword. A deeply nested key (e.g.,
+  `timeoutInMinutes` inside a step's `inputs:`) is incorrectly
+  treated as job-level, causing the fixer to skip insertion. Fix:
+  constrain to lines at exactly `parent_indent + 2` (direct
+  children).
+
+- **GHA-067 misses `$HOME/` prefix variants for sensitive paths.**
+  `gha067_cache_sensitive_paths.py` line 130: `_SENSITIVE_PATHS`
+  includes `~/.aws`, `~/.docker`, etc. and standalone `$HOME` /
+  `${HOME}` but not the combined `$HOME/.aws`, `${HOME}/.docker`
+  forms. A cache `path: "$HOME/.ssh"` escapes detection. Fix: add
+  `$HOME/` and `${HOME}/` prefixed variants for each sensitive
+  subdirectory.
+
+- **GHA-062 module-level `_IAC_SCAN_CACHE` never cleared.**
+  `gha062_oidc_iac_subject.py` line 166: the dict persists across
+  invocations in long-running processes (LSP server). If files
+  change between scans within the same process, stale results are
+  returned. Not a problem for CLI mode. Fix: add a
+  `clear_iac_scan_cache()` call in the scanner teardown path, or
+  use a bounded LRU with mtime checks.
+
+### Taint engine detection gaps
+
+- **Step/needs output refs with `||` operator missed.** Taint graph
+  `_STEP_OUTPUT_REF_RE` and `_NEEDS_OUTPUT_REF_RE` (lines 144,
+  162) require `\s*}}` immediately after the output name. Refs
+  using `${{ steps.x.outputs.y || '' }}` (common defensive
+  pattern) are invisible to the consumer pass. Fix: allow
+  `[^}]*\}\}` or stop at the output name boundary.
+
+- **Matrix axis refs with operators missed.** Same issue as above:
+  `_MATRIX_AXIS_REF_RE` (line 186) requires `\s*}}` immediately
+  after the axis name. `${{ matrix.target || 'staging' }}` and
+  `${{ format('{0}', matrix.target) }}` escape detection.
+
+- **`UNTRUSTED_CONTEXT_RE` missing `review_comment.body`.**
+  `_helpers.py` line 51 covers `review.body` but not
+  `review_comment.body` (separate webhook payload field, equally
+  attacker-controllable). GHA-053 correctly includes it in its own
+  tuple, creating an inconsistency: GHA-003 and the taint engine
+  miss this source. Fix: add `review_comment` to the regex.
+
+- **`_GITHUB_OUTPUT_WRITE_RE` misses `echo` with flags.**
+  `_taint_graph.py` line 102: regex expects `echo\s+["']?<name>=`
+  immediately. `echo -n "title=..."` (suppress newline, common
+  idiom) is not matched; tainted output writes go undetected.
+  Fix: allow optional flags `(?:-[neE]+\s+)*` after `echo`.
+
+- **`_GITHUB_OUTPUT_WRITE_RE` only matches `>>` (append).**
+  `_taint_graph.py` line 107: requires `>>` but a single `>`
+  redirect to `$GITHUB_OUTPUT` also works. Minor since `>` is
+  rare (documentation always shows `>>`). Fix: change to `>>?`.
+
+- **`UNTRUSTED_CONTEXT_RE` missing `github.event.commits[*]`.**
+  `_helpers.py` covers `head_commit.message` / `.author.name` /
+  `.email` but not the `commits[]` array on push events. Every
+  commit in the array has attacker-controllable `message`,
+  `author.name`, and `author.email` fields. Fix: add
+  `commits(?:\[\d+\])?\.(?:message|author\.(?:name|email))` to
+  the regex.
+
 ## Internal cleanup
 
 Small targeted refactors and audit findings from the 2026-05-20
