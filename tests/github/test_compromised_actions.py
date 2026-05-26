@@ -185,17 +185,18 @@ class TestCompromisedActionsRegistry:
         owners = known_owners()
         assert "tj-actions/changed-files" in owners
         assert "reviewdog/action-setup" in owners
+        assert "aquasecurity/trivy-action" in owners
+        assert "checkmarx/kics-github-action" in owners
 
     def test_registry_size_is_positive_and_stable(self):
         """If a registry entry gets dropped accidentally, this test
         floor catches it. Bump deliberately when a new entry lands."""
-        assert registry_size() >= 3
+        assert registry_size() >= 6
 
     def test_compromised_action_matches_helper_handles_pattern(self):
         """``CompromisedAction.matches`` walks ``malicious_refs``
         first, then ``ref_pattern``. Verify the pattern path with a
-        synthetic instance (the production registry doesn't use it
-        yet)."""
+        synthetic instance."""
         import re
         entry = CompromisedAction(
             owner="acme", repo="evil-action",
@@ -207,3 +208,27 @@ class TestCompromisedActionsRegistry:
         assert entry.matches("v0.3.0")
         assert not entry.matches("v0.4.0")
         assert not entry.matches("v1.0.0")
+
+    def test_trivy_action_semver_tags_match(self):
+        """The trivy-action entry uses ref_pattern to match semver tags
+        since the attacker rewrote 76 existing version tags."""
+        entry = lookup("aquasecurity", "trivy-action", "v0.18.0")
+        assert entry is not None
+        assert "CVE-2026-33634" in entry.advisory
+        entry2 = lookup("aquasecurity", "trivy-action", "v1.2.3")
+        assert entry2 is not None
+
+    def test_trivy_action_major_tag_does_not_match(self):
+        """A bare major tag like ``v1`` should not match the semver
+        pattern (it's ambiguous and may be a safe post-fix retag)."""
+        assert lookup("aquasecurity", "trivy-action", "v1") is None
+
+    def test_checkmarx_kics_action_matches(self):
+        entry = lookup("checkmarx", "kics-github-action", "v2.1.0")
+        assert entry is not None
+        assert "TeamPCP" in entry.advisory
+
+    def test_checkmarx_ast_action_matches(self):
+        entry = lookup("checkmarx", "ast-github-action", "v3.0.1")
+        assert entry is not None
+        assert "TeamPCP" in entry.advisory

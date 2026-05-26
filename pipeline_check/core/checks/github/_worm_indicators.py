@@ -105,6 +105,40 @@ _REGISTRY: tuple[WormIndicator, ...] = (
         ),
     ),
 
+    # Megalodon campaign (May 2026). Over 5,500 GitHub repos were
+    # poisoned via automated commits injecting malicious GitHub Actions
+    # workflows. All 5,718 commits landed in a single six-hour window.
+    # The injected workflows exfiltrated secrets from the runner.
+    WormIndicator(
+        category="pattern",
+        name="Megalodon injected workflow",
+        pattern=re.compile(
+            r"\bmegalodon[-_]?(?:workflow|action|ci)\.ya?ml\b",
+            re.IGNORECASE,
+        ),
+        advisory=(
+            "Megalodon mass-injection campaign (May 2026). 5,718 "
+            "automated commits across 5,500+ repos injected malicious "
+            "GitHub Actions workflows in a six-hour window. "
+            "https://www.securityweek.com/over-5500-github-repositories-"
+            "infected-in-megalodon-supply-chain-attack/"
+        ),
+    ),
+    WormIndicator(
+        category="pattern",
+        name="Megalodon exfil endpoint",
+        pattern=re.compile(
+            r"\bmegalodon[-_]?(?:collect|exfil|harvest)",
+            re.IGNORECASE,
+        ),
+        advisory=(
+            "Megalodon mass-injection campaign (May 2026). Pattern "
+            "matching the campaign's exfiltration endpoint names. "
+            "https://www.securityweek.com/over-5500-github-repositories-"
+            "infected-in-megalodon-supply-chain-attack/"
+        ),
+    ),
+
     # s1ngularity / nx (Aug 2025). The malicious postinstall walked
     # the filesystem with the help of AI CLIs (claude / gemini / q)
     # and pushed harvested secrets to new public

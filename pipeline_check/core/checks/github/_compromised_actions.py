@@ -141,6 +141,67 @@ _REGISTRY: tuple[CompromisedAction, ...] = (
         ),
         severity=Severity.HIGH,
     ),
+
+    # aquasecurity/trivy-action compromise (CVE-2026-33634, CVSS 9.4,
+    # March 2026). The TeamPCP threat actor compromised 76 of 77
+    # version tags, pointing them at a trojanized Trivy binary that
+    # harvested environment variables, cloud tokens, SSH keys, and
+    # CI/CD secrets from the runner. The only safe tag was the
+    # unpublished latest-HEAD branch tip.
+    CompromisedAction(
+        owner="aquasecurity",
+        repo="trivy-action",
+        malicious_refs=(),
+        # The attacker rewrote 76 existing tags to point at a
+        # trojanized commit. Rather than listing every tag, a pattern
+        # matches any semver tag in the affected range. The safe
+        # post-incident reference is the commit after the maintainer
+        # force-pushed clean content.
+        ref_pattern=re.compile(
+            r"^v?0\.\d+\.\d+$|^v?1\.\d+\.\d+$",
+        ),
+        advisory=(
+            "CVE-2026-33634 / GHSA (CVSS 9.4): aquasecurity/trivy-action "
+            "compromise (March 2026). TeamPCP rewrote 76 of 77 version "
+            "tags to a trojanized binary that exfiltrated runner secrets. "
+            "https://www.securityweek.com/trivy-action-supply-chain-attack/"
+        ),
+    ),
+
+    # checkmarx/ast-github-action compromise (March 2026). Same
+    # TeamPCP group pivoted using stolen credentials from the Trivy
+    # incident to compromise Checkmarx's AST and KICS actions.
+    CompromisedAction(
+        owner="checkmarx",
+        repo="ast-github-action",
+        malicious_refs=(),
+        ref_pattern=re.compile(
+            r"^v?\d+\.\d+\.\d+$",
+        ),
+        advisory=(
+            "Checkmarx ast-github-action compromise (March 2026). "
+            "TeamPCP pivoted from the trivy-action compromise to inject "
+            "credential-stealing malware via stolen maintainer credentials. "
+            "https://www.securityweek.com/checkmarx-kics-github-action-compromise/"
+        ),
+    ),
+
+    # checkmarx/kics-github-action compromise (March 2026). Same
+    # incident as ast-github-action above.
+    CompromisedAction(
+        owner="checkmarx",
+        repo="kics-github-action",
+        malicious_refs=(),
+        ref_pattern=re.compile(
+            r"^v?\d+\.\d+\.\d+$",
+        ),
+        advisory=(
+            "Checkmarx kics-github-action compromise (March 2026). "
+            "Same TeamPCP campaign as the trivy-action and ast-github-action "
+            "compromises. "
+            "https://www.securityweek.com/checkmarx-kics-github-action-compromise/"
+        ),
+    ),
 )
 
 

@@ -12,6 +12,16 @@ release commit collapses this section into `## [X.Y.Z] - <date>`.
 
 ### Added
 
+- **Trivy/KICS/Megalodon compromise entries.** Three new entries in the
+  ``_compromised_actions`` registry: ``aquasecurity/trivy-action``
+  (CVE-2026-33634, CVSS 9.4, March 2026 TeamPCP campaign),
+  ``checkmarx/ast-github-action``, and ``checkmarx/kics-github-action``
+  (same TeamPCP pivot). Semver-tag ref_pattern matching covers the 76
+  rewritten tags without enumerating every SHA. Two Megalodon IOC
+  entries added to the ``_worm_indicators`` registry for the May 2026
+  mass-injection campaign (5,500+ repos, 5,718 commits in six hours).
+  GHA-040 and GHA-056 detect these automatically, no new rule needed.
+  5 new tests, registry floor bumped 3 -> 6.
 - **OPA/Rego custom rule engine (``--rego-rules``, closes #176).** Users
   can now write custom rules in OPA Rego alongside the existing YAML
   custom-rule DSL. ``--rego-rules ./policies/`` discovers ``.rego``

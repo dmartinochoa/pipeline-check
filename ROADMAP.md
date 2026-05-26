@@ -500,6 +500,94 @@ local JSON files via ``file://`` or a trivial static-file server.
 Closes the "how are we trending?" gap without dragging in a SaaS
 tool. Filed as #160.
 
+### GitHub Actions dependency locking support
+
+GitHub's 2026 Actions security roadmap introduces a ``dependencies:``
+YAML section that locks all direct and transitive action dependencies
+by commit SHA (analogous to Go's ``go.sum``). Public preview is
+expected within 3-6 months.  When the feature ships, add:
+
+- A GHA rule that flags workflows missing a ``dependencies:`` section
+  (once the feature is GA or widely adopted).
+- A GHA rule that checks consistency between ``uses:`` references and
+  their ``dependencies:`` lock entries (SHA mismatch, missing entry).
+- Parser support for the ``dependencies:`` section in the workflow
+  document model.
+
+First-mover advantage: no scanner currently validates this section.
+
+### SDLC posture graph from fleet data
+
+The fleet scanner and CXPC chain engine already compute cross-repo
+relationships (which repos consume which reusable workflows, which
+share org-level secrets, which deploy to overlapping environments).
+Expose the implied graph as:
+
+- A JSON graph (nodes = repos, edges = workflow consumption /
+  secret sharing / deployment overlap).
+- A lightweight HTML visualization (force-directed or hierarchical
+  layout) bundled in the fleet report.
+
+This is what commercial ASPM tools (Cycode, Legit Security, Apiiro)
+sell as "pipeline topology" or "SDLC visibility." Even a basic
+version would be a landmark open-source differentiator.  Builds on
+the fleet phase 2 infrastructure.
+
+### Build-time dependency SBOM generation
+
+Emit a CycloneDX or SPDX SBOM of everything the pipeline consumes:
+actions (with SHAs), Docker base images (with digests), reusable
+workflows, orbs, templates, and package-manager lockfile entries.
+Poutine already generates a build-dependency SBOM; pipeline-check's
+24-provider coverage would produce a more complete bill of materials.
+
+Enables downstream use cases: SBOM-to-pipeline provenance
+verification (does the SBOM match what the pipeline actually built?),
+VEX statement correlation, and policy enforcement on build-time
+dependencies.
+
+### AI agent pipeline risk rules
+
+The HackerBot-Claw campaign (February 2026) demonstrated AI prompt
+injection against Claude-based code reviewers in CI.  GHA-058
+(agentic AI tool after PR checkout) is a start.  Expand the
+detection surface:
+
+- Overly permissive AI agent tokens (broad ``permissions:`` on jobs
+  that invoke agentic CLIs).
+- AI-generated workflow changes committed without human review
+  (bot-authored ``.github/workflows/`` commits on unprotected
+  branches).
+- Unvetted AI bot commits triggering privileged workflows
+  (``pull_request_target`` + bot actor).
+
+Emerging category with no scanner covering it deeply.
+
+### Gitea / Forgejo provider
+
+Gitea and Forgejo are gaining adoption as self-hosted CI/CD
+platforms (Codeberg runs Forgejo).  Their workflow format is
+modeled after GitHub Actions with provider-specific quirks.
+
+A lightweight provider that reuses the GHA rule logic with
+Gitea-specific adaptations (different trigger event names,
+different runner model, Woodpecker CI integration) would capture
+the self-hosted sovereignty segment.  Low incremental effort
+given the GHA rule pack's maturity.
+
+### Secret verifier expansion
+
+The initial verifier pack covers 9 services (GitHub PAT, GitLab
+PAT, NPM token, Slack token, Anthropic, OpenAI, Hugging Face,
+Stripe, SendGrid).  High-value additions:
+
+- AWS (STS ``GetCallerIdentity``), GCP (tokeninfo endpoint),
+  Azure (Microsoft Graph ``/me``), Docker Hub, JFrog, Datadog,
+  PagerDuty, Twilio.
+- Generic entropy-based detection for tokens from services without
+  a dedicated verifier.
+- JWT token detection in pipeline configs (surprisingly common).
+
 ### Lower priority
 
 - **GitHub App.** Installable GitHub App with persistent webhook-
