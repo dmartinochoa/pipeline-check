@@ -3,7 +3,13 @@
 Composite GitHub Action that runs `pipeline_check` on a pull request
 and posts review comments on the changed lines.
 
-## Usage
+> **Prefer the top-level action.** PR review comments are built into
+> the main `dmartinochoa/pipeline-check` action via the `pr-comment`
+> input (enabled by default on `pull_request` events). This nested
+> action exists for users who want *only* PR comments without SARIF
+> upload or severity gating.
+
+## Usage (standalone)
 
 ```yaml
 name: pipeline-check
@@ -25,6 +31,29 @@ jobs:
           pipeline: auto
           severity-threshold: MEDIUM
           comment-mode: per-finding
+```
+
+## Usage (via top-level action, recommended)
+
+```yaml
+name: pipeline-check
+on:
+  pull_request:
+
+permissions:
+  contents: read
+  pull-requests: write
+  security-events: write  # for SARIF upload
+
+jobs:
+  scan:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dmartinochoa/pipeline-check@v1
+        with:
+          pr-comment: 'true'          # default on pull_request events
+          comment-mode: per-finding   # or 'summary'
 ```
 
 ## What it does

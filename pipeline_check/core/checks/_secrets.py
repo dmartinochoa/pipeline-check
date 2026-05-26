@@ -363,6 +363,43 @@ def _find_entropy_hits(doc: Any) -> list[str]:
     return hits
 
 
+def classify_tokens_raw(doc: Any) -> list[tuple[str, str]]:
+    """Return ``(detector_name, raw_value)`` pairs for every classified token.
+
+    Unlike :func:`find_secret_values`, the raw value is NOT redacted.
+    This function exists solely for the live-verification pipeline
+    (``--verify-secrets``), which needs the actual credential value to
+    probe the upstream API. Callers must never persist, log, or surface
+    the raw values in output.
+
+    Only the deterministic prefix-shape catalog participates; PEM
+    blocks, keyed-hex, and entropy hits are excluded because they
+    don't have corresponding verifier endpoints.
+    """
+    from .base import walk_strings
+
+    results: list[tuple[str, str]] = []
+    seen: set[str] = set()
+    pre_collected = isinstance(doc, list) and doc and isinstance(doc[0], str)
+    strings: Iterable[str] = doc if pre_collected else walk_strings(doc)
+
+    for s in strings:
+        candidate = s.strip()
+        if not candidate:
+            continue
+        for token in _tokenize(candidate):
+            if token in seen:
+                continue
+            if PLACEHOLDER_MARKER_RE.search(token):
+                continue
+            label = _classify(token)
+            if label is None:
+                continue
+            seen.add(token)
+            results.append((label, token))
+    return results
+
+
 def find_secret_values(doc: Any) -> list[str]:
     """Return labeled credential hits found anywhere in ``doc``.
 
@@ -553,6 +590,7 @@ __all__ = [
     "MIN_ENTROPY_LENGTH",
     "SECRET_DETECTORS",
     "SECRET_VALUE_RE",
+    "classify_tokens_raw",
     "enable_entropy_detection",
     "find_secret_values",
     "register_pattern",

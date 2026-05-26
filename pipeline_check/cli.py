@@ -1220,6 +1220,31 @@ def _install_completion_callback(
     ),
 )
 @click.option(
+    "--verify-secrets",
+    "verify_secrets",
+    is_flag=True,
+    default=False,
+    help=(
+        "Probe every credential-shaped finding against its issuing "
+        "API to determine whether the credential is currently active. "
+        "Results: VERIFIED (active, promote to CRITICAL), UNVERIFIED "
+        "(revoked/rotated, demote to LOW), or UNKNOWN (ambiguous). "
+        "Requires --resolve-remote (no network calls without it)."
+    ),
+)
+@click.option(
+    "--verify-secrets-show-identity",
+    "verify_secrets_show_identity",
+    is_flag=True,
+    default=False,
+    help=(
+        "Include the full identity string (e.g., GitHub login, NPM "
+        "username) returned by verified credentials in the finding "
+        "description. Off by default to avoid leaking identity info "
+        "into CI logs."
+    ),
+)
+@click.option(
     "--gha-search-path",
     "gha_search_paths",
     multiple=True,
@@ -2192,6 +2217,8 @@ def scan(
     resolve_remote: bool = False,
     gh_token: str | None = None,
     no_cache: bool = False,
+    verify_secrets: bool = False,
+    verify_secrets_show_identity: bool = False,
     gha_search_paths: tuple[str, ...] = (),
     gha_resolve_depth: int = 3,
 ) -> None:
@@ -2202,6 +2229,15 @@ def scan(
     """
     # --quiet wins over --verbose.
     verbose = verbose and not quiet
+
+    # --verify-secrets requires --resolve-remote (no-network default).
+    if verify_secrets and not resolve_remote:
+        click.echo(
+            "Error: --verify-secrets requires --resolve-remote "
+            "(secret verification makes network calls).",
+            err=True,
+        )
+        raise SystemExit(2)
 
     def _debug(msg: str) -> None:
         if verbose:
@@ -2776,6 +2812,8 @@ def scan(
         resolve_remote=resolve_remote,
         gh_token=gh_token,
         no_cache=no_cache,
+        verify_secrets=verify_secrets,
+        verify_secrets_show_identity=verify_secrets_show_identity,
         gha_search_paths=list(gha_search_paths),
         gha_resolve_depth=gha_resolve_depth,
         dockerfile_path=dockerfile_path,
@@ -2877,6 +2915,22 @@ def scan(
             click.echo(f"[error] Scan failed: {exc}", err=True)
             click.echo(traceback.format_exc(), err=True, nl=False)
             raise click.exceptions.Exit(2) from exc
+
+    # Stderr nudge: when secret-shaped findings were found but live
+    # verification wasn't enabled, print a one-liner so the operator
+    # knows the option exists.
+    if not verify_secrets and not quiet:
+        from .core.scanner import _SECRET_CHECK_IDS
+        secret_hits = [
+            f for f in findings
+            if f.check_id in _SECRET_CHECK_IDS and not f.passed
+        ]
+        if secret_hits:
+            click.echo(
+                f"hint: {len(secret_hits)} credential-shaped finding(s) "
+                f"found. Verify with --resolve-remote --verify-secrets",
+                err=True,
+            )
 
     # External SARIF ingest. ``--ingest`` (repeatable) loads each
     # SARIF file, converts every result to a Finding, and merges

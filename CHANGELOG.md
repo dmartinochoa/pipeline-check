@@ -12,6 +12,25 @@ release commit collapses this section into `## [X.Y.Z] - <date>`.
 
 ### Added
 
+- **Live secret verification (``--verify-secrets``, closes #175).** Opt-in
+  live probes on every credential-shaped finding. Behind
+  ``--resolve-remote --verify-secrets``, each detected token is probed
+  against its issuing API: VERIFIED (active, promotes to CRITICAL with
+  identity), UNVERIFIED (revoked/rotated, demotes to LOW), or UNKNOWN
+  (no change). Initial verifier pack: GitHub PAT, NPM token, Slack
+  token, GitLab PAT, Anthropic, OpenAI, Hugging Face, Stripe, and
+  SendGrid API keys. ``--verify-secrets-show-identity`` opts into full
+  identity strings in output. Stderr nudge printed when secrets found
+  without verification enabled. Raw secret values are never persisted;
+  cache keys are SHA-256 digests.
+- **Integrated PR review comments into the top-level GitHub Action
+  (closes #171).** The `pr-comment` input (default `true` on
+  `pull_request` events) posts inline review comments on the PR diff
+  and a summary comment for off-diff findings. Reuses the JSON
+  sidecar from the scan step so no extra scan is needed. The nested
+  `pipeline-check-pr` action remains available standalone but the
+  top-level action is now the recommended single-step setup for SARIF
+  upload + PR comments.
 - **Autofix safety tiers (closes #177).** ``--fix`` (bare flag) now runs
   only safe fixers; ``--fix=unsafe`` runs all; ``--fix=unsafe-only`` runs
   only inference-dependent fixers. 109 fixers labeled safe, 2 unsafe.
