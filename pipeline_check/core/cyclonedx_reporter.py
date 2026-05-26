@@ -7,7 +7,7 @@ required fields are emitted directly.
 from __future__ import annotations
 
 import json
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from typing import Any
 
 from .sbom import BuildDependency, deduplicate
@@ -63,7 +63,7 @@ def report_cyclonedx(
         "specVersion": _SPEC_VERSION,
         "version": 1,
         "metadata": {
-            "timestamp": datetime.now(timezone.utc).strftime(
+            "timestamp": datetime.now(UTC).strftime(
                 "%Y-%m-%dT%H:%M:%SZ",
             ),
             "tools": {

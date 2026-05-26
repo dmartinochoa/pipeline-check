@@ -283,6 +283,7 @@ pipeline_check --output sarif -O scan.sarif        # GitHub/GitLab SAST
 pipeline_check --output markdown                   # PR comments
 pipeline_check --output junit -O junit.xml         # test-runner UIs
 pipeline_check --output threatmodel -O tm.json     # MITRE ATT&CK threat model
+pipeline_check --output cyclonedx -O sbom.json     # CycloneDX 1.6 build SBOM
 pipeline_check --output both                       # terminal→stderr, JSON→stdout
 ```
 
