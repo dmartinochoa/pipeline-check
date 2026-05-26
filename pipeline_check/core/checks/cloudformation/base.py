@@ -52,8 +52,16 @@ class CloudFormationResource:
 class CloudFormationContext:
     """Flattened, queryable view of one (or many) CFN templates."""
 
-    def __init__(self, templates: list[tuple[str, dict[str, Any]]]) -> None:
+    def __init__(
+        self,
+        templates: list[tuple[str, dict[str, Any]]],
+        *,
+        _warnings: list[str] | None = None,
+        _files_skipped: int = 0,
+    ) -> None:
         self._templates = templates
+        self._warnings_list: list[str] = _warnings or []
+        self._files_skipped = _files_skipped
         self._resources: list[CloudFormationResource] = list(_iter_resources(templates))
         #: Merged ``Parameters[name].Default`` values across every template.
         #: Used by :func:`resolve_literal` to substitute ``Ref`` / ``Fn::Sub``
@@ -91,13 +99,20 @@ class CloudFormationContext:
                 if p.is_file() and p.suffix.lower() in {".yml", ".yaml", ".json", ".template"}
             )
         templates: list[tuple[str, dict[str, Any]]] = []
+        warnings: list[str] = []
+        skipped = 0
         for p in paths:
             try:
                 text = p.read_text(encoding="utf-8")
-            except (OSError, UnicodeDecodeError):
+            except (OSError, UnicodeDecodeError) as exc:
+                warnings.append(f"{p}: read error: {exc}")
+                skipped += 1
                 continue
             doc = _parse_template(text)
             if not isinstance(doc, dict):
+                if text.strip():
+                    warnings.append(f"{p}: YAML/JSON parse error or not a mapping")
+                    skipped += 1
                 continue
             # Heuristic: a CFN template must have a ``Resources`` top-level
             # mapping. Anything else (cfn-lint config, SAM policies file,
@@ -105,7 +120,7 @@ class CloudFormationContext:
             if not isinstance(doc.get("Resources"), dict):
                 continue
             templates.append((str(p), doc))
-        return cls(templates)
+        return cls(templates, _warnings=warnings, _files_skipped=skipped)
 
     def resources(self, resource_type: str | None = None) -> Iterator[CloudFormationResource]:
         """Yield resources, optionally filtered by CFN ``Type``."""
@@ -118,12 +133,12 @@ class CloudFormationContext:
         return len(self._templates)
 
     @property
-    def files_skipped(self) -> int:  # kept for ScanMetadata compatibility
-        return 0
+    def files_skipped(self) -> int:
+        return self._files_skipped
 
     @property
     def warnings(self) -> list[str]:
-        return []
+        return list(self._warnings_list)
 
     def __len__(self) -> int:
         return len(self._resources)
@@ -307,7 +322,8 @@ _SUB_VAR_RE = __import__("re").compile(r"\$\{([A-Za-z0-9:._-]+)\}")
 def resolve_literal(
     value: Any,
     parameters: dict[str, Any] | None = None,
-    _seen: frozenset[str] = frozenset(),
+    *,
+    _seen: frozenset[str] | None = None,
 ) -> str | None:
     """Attempt to reduce *value* to a literal string.
 
@@ -329,6 +345,7 @@ def resolve_literal(
     same way they would treat an intrinsic today: skip, don't guess.
     """
     params = parameters or {}
+    seen = _seen or frozenset()
     if isinstance(value, str):
         return value
     if isinstance(value, bool):
@@ -342,19 +359,19 @@ def resolve_literal(
     (key, inner), = value.items()
     if key == "Ref":
         if isinstance(inner, str) and inner in params:
-            if inner in _seen:
+            if inner in seen:
                 return None
-            return resolve_literal(params[inner], params, _seen | {inner})
+            return resolve_literal(params[inner], params, _seen=seen | {inner})
         return None
     if key == "Fn::Sub":
-        return _resolve_sub(inner, params, _seen)
+        return _resolve_sub(inner, params, seen)
     if key == "Fn::Join":
-        return _resolve_join(inner, params, _seen)
+        return _resolve_join(inner, params, seen)
     # Fn::GetAtt, Fn::ImportValue, Fn::If, etc. are runtime-dependent.
     return None
 
 
-def _resolve_sub(inner: Any, params: dict[str, Any], _seen: frozenset[str] = frozenset()) -> str | None:
+def _resolve_sub(inner: Any, params: dict[str, Any], seen: frozenset[str]) -> str | None:
     """Resolve ``Fn::Sub`` in either string or [template, map] form."""
     if isinstance(inner, str):
         template, extra_vars = inner, {}
@@ -366,7 +383,7 @@ def _resolve_sub(inner: Any, params: dict[str, Any], _seen: frozenset[str] = fro
     # Pre-resolve every variable in the extra-var map; bail if any fails.
     resolved_extras: dict[str, str] = {}
     for k, v in extra_vars.items():
-        r = resolve_literal(v, params, _seen)
+        r = resolve_literal(v, params, _seen=seen)
         if r is None:
             return None
         resolved_extras[k] = r
@@ -378,9 +395,10 @@ def _resolve_sub(inner: Any, params: dict[str, Any], _seen: frozenset[str] = fro
         if name in resolved_extras:
             return resolved_extras[name]
         if name in params:
-            r = resolve_literal(params[name], params, _seen)
-            if r is not None:
-                return r
+            if name not in seen:
+                r = resolve_literal(params[name], params, _seen=seen | {name})
+                if r is not None:
+                    return r
         missing.append(name)
         return match.group(0)
 
@@ -393,7 +411,7 @@ def _resolve_sub(inner: Any, params: dict[str, Any], _seen: frozenset[str] = fro
     return out
 
 
-def _resolve_join(inner: Any, params: dict[str, Any], _seen: frozenset[str] = frozenset()) -> str | None:
+def _resolve_join(inner: Any, params: dict[str, Any], seen: frozenset[str]) -> str | None:
     """Resolve ``Fn::Join`` when both delimiter and list are literals."""
     if not isinstance(inner, list) or len(inner) != 2:
         return None
@@ -402,7 +420,7 @@ def _resolve_join(inner: Any, params: dict[str, Any], _seen: frozenset[str] = fr
         return None
     parts: list[str] = []
     for item in items:
-        part = resolve_literal(item, params, _seen)
+        part = resolve_literal(item, params, _seen=seen)
         if part is None:
             return None
         parts.append(part)
