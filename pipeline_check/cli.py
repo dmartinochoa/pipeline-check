@@ -4108,12 +4108,23 @@ def history_cmd(history_dir: str, output_path: str, top_n: int) -> None:
 @click.option(
     "--repos",
     "repos_path",
-    required=True,
+    default=None,
     metavar="PATH",
     help=(
         "YAML file with a list of 'owner/repo' coordinates "
         "(GitHub-style, phase 1). Either a top-level list or a "
         "mapping with a 'repos:' key holding the list."
+    ),
+)
+@click.option(
+    "--from-org",
+    "from_org",
+    default=None,
+    metavar="ORG",
+    help=(
+        "Fetch the repo list from the SCM provider's API for the "
+        "given org/owner. Requires $GITHUB_TOKEN / $GITLAB_TOKEN / "
+        "$BITBUCKET_TOKEN. Mutually exclusive with --repos."
     ),
 )
 @click.option(
@@ -4141,23 +4152,64 @@ def history_cmd(history_dir: str, output_path: str, top_n: int) -> None:
         "remaining repos."
     ),
 )
+@click.option(
+    "--jobs",
+    "jobs",
+    default=0,
+    show_default=True,
+    type=int,
+    help=(
+        "Number of parallel threads for clone+scan. 0 runs "
+        "sequentially (default, useful for debugging)."
+    ),
+)
+@click.option(
+    "--scan-flags",
+    "scan_flags",
+    default=None,
+    metavar="FLAGS",
+    help=(
+        "Extra flags forwarded to each per-repo pipeline_check scan "
+        "(e.g. '--standard owasp_cicd_top_10 --resolve-remote')."
+    ),
+)
 def fleet_cmd(
-    repos_path: str, output_dir: str, timeout_sec: int,
+    repos_path: str | None,
+    from_org: str | None,
+    output_dir: str,
+    timeout_sec: int,
+    jobs: int,
+    scan_flags: str | None,
 ) -> None:
     """Scan a list of repositories and emit a unified posture digest.
 
-    Phase 1: GitHub-style ``owner/repo`` coordinates only. Each
-    coordinate is shallow-cloned to a tmpdir, scanned via a fresh
-    ``pipeline_check`` subprocess, and the per-repo findings plus
-    a fleet-wide digest land under ``--output-dir``. A single
-    repo's clone / scan failure becomes a warning, not an abort.
+    Provide either ``--repos PATH`` (a YAML file of coordinates) or
+    ``--from-org ORG`` (fetch from the SCM API). Each coordinate is
+    shallow-cloned to a tmpdir, scanned via a fresh ``pipeline_check``
+    subprocess, and the per-repo findings plus a fleet-wide digest
+    land under ``--output-dir``. A single repo's clone / scan failure
+    becomes a warning, not an abort.
     """
     from pathlib import Path
 
     from .core.fleet import load_repo_list, run_fleet
 
+    if repos_path and from_org:
+        raise click.UsageError(
+            "--repos and --from-org are mutually exclusive."
+        )
+    if not repos_path and not from_org:
+        raise click.UsageError(
+            "Provide either --repos PATH or --from-org ORG."
+        )
+    if from_org:
+        raise click.UsageError(
+            "--from-org is not yet implemented. Use --repos with a "
+            "YAML file of coordinates."
+        )
+
     try:
-        repos = load_repo_list(repos_path)
+        repos = load_repo_list(repos_path)  # type: ignore[arg-type]
     except ValueError as exc:
         raise click.UsageError(str(exc)) from exc
     if not repos:
@@ -4165,7 +4217,11 @@ def fleet_cmd(
             f"[fleet] {repos_path} contains no repo coordinates."
         )
     out_dir = Path(output_dir)
-    digest = run_fleet(repos, out_dir, timeout_sec=timeout_sec)
+    extra_flags = scan_flags.split() if scan_flags else None
+    digest = run_fleet(
+        repos, out_dir, timeout_sec=timeout_sec,
+        jobs=jobs, scan_flags=extra_flags,
+    )
     ok = sum(1 for s in digest.snapshots if s.ok)
     click.echo(
         f"[fleet] scanned {len(digest.snapshots)} repo(s) "
