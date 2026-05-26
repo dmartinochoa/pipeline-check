@@ -4,6 +4,18 @@ What's planned, what's shipped, and what's deliberately out of scope.
 
 ## Shipped
 
+- **OPA/Rego custom rule engine (post-1.4.0, closes #176)** —
+  ``--rego-rules ./policies/`` discovers ``.rego`` files, extracts
+  metadata via ``opa inspect --annotations``, evaluates policies via
+  ``opa eval``, and funnels results through the existing
+  Finding/scoring/gating/SARIF pipeline. Each ``.rego`` file declares
+  rule ID, severity, and provider via OPA's ``# METADATA`` annotation
+  block. Rego rules can target all 24 providers (the YAML DSL is
+  limited to 7). The ``opa`` binary is a soft dependency (shell-out,
+  documented install, clean error when missing). Config-file support
+  via ``rego_rules:`` in ``.pipeline-check.yml`` / ``pyproject.toml``.
+  ``findings_so_far`` input deferred to v2. 22 tests. See
+  ``docs/writing_a_rego_rule.md``.
 - **GitLab remote ``include:`` resolver (post-1.4.0, closes #164)** —
   Cross-document taint resolution for GitLab CI. When
   ``--resolve-remote`` is on, the provider fetches
@@ -377,22 +389,6 @@ What's planned, what's shipped, and what's deliberately out of scope.
 
 Larger items proposed after v1.1.0. Not yet scoped to a specific
 release; landing order is open.
-
-### Custom-rule entry point via OPA / Rego
-
-Rego frontend for custom rules alongside the existing YAML loader.
-Closes the "can we add an org-specific composite check without a
-Python PR?" gap that Checkov, poutine, Snyk IaC, and Trivy all
-already cover. Input document mirrors the rule-engine's parsed
-pipeline shape (workflows, dockerfiles, terraform, k8s, scm,
-plus `findings_so_far` so Rego packages can act as lightweight
-composite chains). `--rego-rules ./policies/` discovers `.rego`
-files; package path determines the synthesized rule id; the
-existing `--checks` / `--ignore-file` / `--baseline` / standards
-plumbing applies once the id is synthesized. Integration via
-shell-out to a user-provided `opa` binary on `$PATH` (documented as
-a soft dependency, fails cleanly when missing) keeps the wheel
-Python-only. Filed as #176.
 
 ### VS Code extension
 
