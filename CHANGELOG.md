@@ -12,6 +12,20 @@ release commit collapses this section into `## [X.Y.Z] - <date>`.
 
 ### Added
 
+- **OPA/Rego custom rule engine (``--rego-rules``, closes #176).** Users
+  can now write custom rules in OPA Rego alongside the existing YAML
+  custom-rule DSL. ``--rego-rules ./policies/`` discovers ``.rego``
+  files, extracts metadata via ``opa inspect --annotations``, evaluates
+  policies via ``opa eval``, and funnels results through the existing
+  Finding/scoring/gating/SARIF pipeline with zero special-casing. Rego
+  rules can target all 24 providers (not just the 7 the YAML DSL
+  supports) because Rego handles any JSON input shape. Each ``.rego``
+  file declares its rule ID, severity, and provider via OPA's built-in
+  ``# METADATA`` annotation block. The ``opa`` binary is a soft
+  dependency that fails cleanly with install instructions when missing.
+  Config-file support via ``rego_rules:`` in ``.pipeline-check.yml``
+  and ``pyproject.toml``. 22 tests across loader, runner, and
+  end-to-end integration. See ``docs/writing_a_rego_rule.md``.
 - **Live secret verification (``--verify-secrets``, closes #175).** Opt-in
   live probes on every credential-shaped finding. Behind
   ``--resolve-remote --verify-secrets``, each detected token is probed
