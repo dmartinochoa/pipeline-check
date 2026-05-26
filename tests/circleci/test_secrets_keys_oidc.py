@@ -160,7 +160,7 @@ class TestCC031OIDCTrust:
             jobs:
               - deploy:
                   context: aws-prod
-                  role_arn: arn:aws:iam::1:role/deploy
+                  role-arn: arn:aws:iam::1:role/deploy
         """
         f = run_check(cfg, "CC-031")
         assert not f.passed
@@ -186,7 +186,7 @@ class TestCC031OIDCTrust:
               - deploy:
                   requires: [hold]
                   context: aws-prod
-                  role_arn: arn:aws:iam::1:role/deploy
+                  role-arn: arn:aws:iam::1:role/deploy
                   filters:
                     branches:
                       only: main

@@ -42,7 +42,6 @@ import hashlib
 import json
 import os
 import re
-import urllib.parse
 from typing import Any
 
 from .chains import Chain
@@ -200,8 +199,7 @@ def _normalize_path(path: str) -> str:
     same checkout produce the same string regardless of which OS ran
     the scan.
     """
-    norm = path.replace("\\", "/")
-    norm = norm.lower()
+    norm = path.replace("\\", "/").lower()
     return norm
 
 
@@ -441,6 +439,7 @@ def _finding_to_result(f: Finding, rule_index: dict[str, int]) -> dict[str, Any]
     properties: dict[str, Any] = {
         "severity": f.severity.value,
         "confidence": f.confidence.value,
+        "rank": _CONFIDENCE_RANK.get(f.confidence, 100.0),
         "controls": [c.to_dict() for c in f.controls],
     }
     if f.cwe:
@@ -487,15 +486,6 @@ def _finding_to_result(f: Finding, rule_index: dict[str, int]) -> dict[str, Any]
             "physicalLocation": physical_location,
             "logicalLocations": [logical_location],
         })
-
-    # SARIF ``rank`` (0–100 float) lets GitHub/GitLab Code Scanning
-    # sort results by how much the scanner trusts them, orthogonal
-    # to severity. HIGH-confidence findings surface first; LOW are
-    # de-ranked so noisy rules don't drown out the signal.
-    # SARIF 2.1.0 defines ``rank`` on ``reportingDescriptor``, not on
-    # ``result`` (which sets ``additionalProperties: false``). Carry it
-    # in ``properties`` so strict validators accept the output.
-    properties["rank"] = _CONFIDENCE_RANK.get(f.confidence, 100.0)
 
     result: dict[str, Any] = {
         "ruleId": f.check_id,
@@ -653,20 +643,13 @@ def _artifact_uri(resource: str) -> str:
     """
     if not resource:
         return "unknown"
+    # Heuristic: anything that contains a path separator, starts with a
+    # drive letter, or ends in .yml/.yaml/.tf/.json is probably a file.
     lowered = resource.lower()
     if (
         "/" in resource or "\\" in resource
-        or lowered.endswith((
-            ".yml", ".yaml", ".tf", ".json", ".xml", ".toml",
-            ".txt", ".cfg", ".config", ".csproj", ".props",
-            ".lock", ".npmrc",
-        ))
-        or lowered in {
-            "dockerfile", "containerfile", "jenkinsfile",
-            "makefile", "gemfile", "rakefile", "vagrantfile",
-        }
-        or lowered.startswith("dockerfile")
-        or lowered.startswith("containerfile")
+        or lowered.endswith((".yml", ".yaml", ".tf", ".json"))
     ):
-        return urllib.parse.quote(resource.replace("\\", "/"), safe="/")
+        from urllib.parse import quote
+        return quote(resource.replace("\\", "/"), safe="/:")
     return f"resource:///{resource}"

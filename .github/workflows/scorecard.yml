@@ -34,7 +34,6 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 10
     permissions:
-      security-events: write
       id-token: write
       contents: read
       actions: read
@@ -49,16 +48,32 @@ jobs:
         with:
           results_file: scorecard-results.sarif
           results_format: sarif
-          # ``publish_results`` posts the score to the public
-          # Scorecard API so the badge in README can resolve. Set to
-          # ``true`` once the repo is enrolled; left ``true`` here
-          # because the API silently no-ops for un-enrolled repos.
           publish_results: true
+
+      - name: Upload raw SARIF
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a  # v7.0.1
+        with:
+          name: scorecard-sarif
+          path: scorecard-results.sarif
+          retention-days: 14
+
+  upload:
+    needs: analysis
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      security-events: write
+
+    steps:
+      - name: Download SARIF
+        uses: actions/download-artifact@fa0a91b85d4f404e444e00e005971372dc801d16  # v4.1.8
+        with:
+          name: scorecard-sarif
 
       - name: Filter test-fixture false positives
         run: |
           python3 -c "
-          import json, sys
+          import json
           sarif = json.load(open('scorecard-results.sarif'))
           EXCLUDE = ('tests/', 'bench/')
           for run in sarif.get('runs', []):
@@ -80,10 +95,3 @@ jobs:
         with:
           sarif_file: scorecard-results.sarif
           category: scorecard
-
-      - name: Upload SARIF as run artifact
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a  # v7.0.1
-        with:
-          name: scorecard-sarif
-          path: scorecard-results.sarif
-          retention-days: 14

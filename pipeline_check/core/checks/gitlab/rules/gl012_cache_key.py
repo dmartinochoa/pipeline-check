@@ -47,8 +47,8 @@ def check(path: str, doc: dict[str, Any]) -> Finding:
 
     def _scan_cache(cache: Any, where: str) -> None:
         if isinstance(cache, list):
-            for entry in cache:
-                _scan_cache_entry(entry, where)
+            for i, entry in enumerate(cache):
+                _scan_cache_entry(entry, f"{where}[{i}]")
         else:
             _scan_cache_entry(cache, where)
 

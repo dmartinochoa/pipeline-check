@@ -157,10 +157,10 @@ workflows:
             - build
       - integration
       # CC-031: AWS-OIDC role-assumption job exposed on every push.
-      # The ``role_arn`` parameter lets the orb assume an IAM role
+      # The ``role-arn`` parameter lets the orb assume an IAM role
       # via OIDC; without a branch filter or approval predecessor,
       # any push to any branch drives the assumption.
       - aws-cli/setup-and-deploy:
-          role_arn: arn:aws:iam::123456789012:role/circleci-deploy
+          role-arn: arn:aws:iam::123456789012:role/circleci-deploy
           requires:
             - build

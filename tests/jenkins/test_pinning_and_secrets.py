@@ -59,6 +59,22 @@ class TestJF001LibraryPinning:
         f = run_check(groovy, "JF-001")
         assert not f.passed
 
+    def test_fails_when_library_pinned_to_single_segment_version(self):
+        groovy = """
+        @Library('shared@1') _
+        pipeline { agent any; stages { stage('x') { steps {} } } }
+        """
+        f = run_check(groovy, "JF-001")
+        assert not f.passed
+
+    def test_passes_when_library_pinned_to_two_segment_version(self):
+        groovy = """
+        @Library('shared@1.0') _
+        pipeline { agent any; stages { stage('x') { steps {} } } }
+        """
+        f = run_check(groovy, "JF-001")
+        assert f.passed
+
     def test_passes_when_no_libraries_referenced(self):
         groovy = """
         pipeline {

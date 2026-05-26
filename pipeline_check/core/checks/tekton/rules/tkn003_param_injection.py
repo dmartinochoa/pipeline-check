@@ -71,37 +71,14 @@ RULE = Rule(
     ),
 )
 
-_PARAM_TOKEN_RE = re.compile(
+_PARAM_RE = re.compile(
     r"\$\(params\.[A-Za-z0-9_-]+\)"
     r"|\$\(workspaces\.[A-Za-z0-9_-]+\.path\)"
 )
 
 
-def _is_quoted(line: str, pos: int) -> bool:
-    """True when *pos* falls inside a double-quoted context on *line*.
-
-    Counts unescaped double quotes before *pos*; an odd count means
-    the position is inside quotes. Handles escaped quotes (``\\\"``).
-    """
-    count = 0
-    i = 0
-    while i < pos:
-        if line[i] == "\\" and i + 1 < pos:
-            i += 2
-            continue
-        if line[i] == '"':
-            count += 1
-        i += 1
-    return count % 2 == 1
-
-
-def _unsafe_param_match(script: str) -> re.Match[str] | None:
-    """Return the first unquoted param interpolation in *script*."""
-    for line in script.splitlines():
-        for m in _PARAM_TOKEN_RE.finditer(line):
-            if not _is_quoted(line, m.start()):
-                return m
-    return None
+def _is_inside_double_quotes(text: str, pos: int) -> bool:
+    return text[:pos].count('"') % 2 == 1
 # ``eval`` (and other shell-eval contexts) re-parses its argument as
 # shell, so even quoted ``"$(params.X)"`` is unsafe inside eval. Match
 # eval invocations regardless of quoting around the substitution.
@@ -124,7 +101,12 @@ def check(ctx: TektonContext) -> Finding:
             continue
         examined += 1
         for sname, script in iter_step_scripts(doc):
-            m = _unsafe_param_match(script) or _EVAL_PARAM_RE.search(script)
+            m = _EVAL_PARAM_RE.search(script)
+            if m is None:
+                for pm in _PARAM_RE.finditer(script):
+                    if not _is_inside_double_quotes(script, pm.start()):
+                        m = pm
+                        break
             if m is not None:
                 offenders.append(
                     f"{doc.kind}/{doc.name} {sname}: {m.group(0)}"

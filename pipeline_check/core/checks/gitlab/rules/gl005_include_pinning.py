@@ -20,7 +20,7 @@ RULE = Rule(
     ),
     docs_note=(
         "Cross-project and remote includes can be silently re-pointed. "
-        "Branch-name refs (`main`/`master`/`develop`/`head`) are "
+        "Branch-name refs (`main`/`master`/`develop`/`head`/`trunk`) are "
         "treated as unpinned; tag and SHA refs are considered safe."
     ),
     exploit_example=(
@@ -68,7 +68,7 @@ def check(path: str, doc: dict[str, Any]) -> Finding:
             unpinned.append(f"project: {entry.get('project')} (no ref)")
         elif "project" in entry:
             ref = str(entry.get("ref"))
-            if ref.lower() in {"main", "master", "develop", "head"}:
+            if ref.lower() in {"main", "master", "develop", "head", "trunk"}:
                 unpinned.append(f"project: {entry.get('project')} @{ref}")
         if "remote" in entry:
             unpinned.append(f"remote: {entry.get('remote')}")

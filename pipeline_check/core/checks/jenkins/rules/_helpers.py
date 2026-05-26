@@ -45,7 +45,7 @@ def strip_groovy_comments(text: str) -> str:
         return re.sub(r"[^\n]", " ", s)
     return _GROOVY_TOKEN_RE.sub(_replace, text)
 
-PINNED_REF_RE = re.compile(r"^(?:v?\d+(?:\.\d+){0,2}|[0-9a-f]{40})$")
+PINNED_REF_RE = re.compile(r"^(?:v?\d+(?:\.\d+){1,2}|[0-9a-f]{40})$")
 FLOATING_REFS = frozenset({"main", "master", "develop", "head", "trunk", "latest"})
 
 UNTRUSTED_ENV_RE = re.compile(

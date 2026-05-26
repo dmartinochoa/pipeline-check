@@ -18,17 +18,12 @@ from ..base import iter_workflow_jobs
 #: Parameter names that pass a cloud-role ARN into an orb job at the
 #: workflow-binding layer. Detection signal is intentionally name-
 #: based, every common AWS / Azure / GCP CircleCI orb uses one of
-#: these conventions and the parameter shape is stable. CircleCI orbs
-#: use hyphenated parameter names in YAML.
+#: these conventions and the parameter shape is stable.
 _OIDC_ROLE_PARAMS = (
     "role-arn",
     "aws-role-arn",
     "oidc-role-arn",
     "aws-oidc-role-arn",
-    "role_arn",
-    "aws_role_arn",
-    "oidc_role_arn",
-    "aws_oidc_role_arn",
 )
 
 

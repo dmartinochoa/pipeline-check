@@ -1,4 +1,4 @@
-"""Org-wide fleet scanner.
+﻿"""Org-wide fleet scanner.
 
 Reads a YAML list of repository coordinates, shallow-clones each
 into a per-repo tmpdir, runs the existing ``pipeline_check`` scan

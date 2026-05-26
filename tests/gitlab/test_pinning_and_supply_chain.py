@@ -129,6 +129,22 @@ class TestGL005IncludePinning:
         f = run_check(cfg, "GL-005")
         assert f.passed
 
+    def test_fails_when_include_pinned_to_trunk(self):
+        cfg = """
+        include:
+          - project: 'group/templates'
+            file: '/build.yml'
+            ref: trunk
+        stages: [build]
+        build_job:
+          stage: build
+          script: [pytest]
+          timeout: 30 minutes
+        """
+        f = run_check(cfg, "GL-005")
+        assert not f.passed
+        assert "trunk" in f.description
+
     def test_passes_when_no_include_block(self):
         cfg = """
         stages: [build]

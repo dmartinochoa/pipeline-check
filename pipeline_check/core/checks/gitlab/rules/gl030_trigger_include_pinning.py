@@ -32,7 +32,7 @@ RULE = Rule(
         "GL-005 only audits top-level ``include:``. Parent-child and "
         "multi-project pipelines that load YAML via the job-level "
         "``trigger: include:`` slot slip through. Branch refs "
-        "(``main``/``master``/``develop``/``head``) count as unpinned."
+        "(``main``/``master``/``develop``/``head``/``trunk``) count as unpinned."
     ),
     exploit_example=(
         "# Vulnerable: ``trigger:`` ``include:`` pulls a child\n"
@@ -59,7 +59,7 @@ RULE = Rule(
     ),
 )
 
-_FLOATING_REFS = {"main", "master", "develop", "head"}
+_FLOATING_REFS = {"main", "master", "develop", "head", "trunk"}
 
 
 def _inspect_include(includes: Any, where: str, offenders: list[str]) -> None:

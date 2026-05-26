@@ -1,4 +1,4 @@
-"""CLI entry point.
+﻿"""CLI entry point.
 
 Usage
 -----

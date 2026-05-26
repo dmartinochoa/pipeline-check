@@ -143,14 +143,16 @@ _UNTRUSTED_CONTEXTS: tuple[str, ...] = (
 )
 
 
+_UNTRUSTED_BOUNDARY_RE = {
+    token: re.compile(re.escape(token) + r"(?![A-Za-z0-9_])")
+    for token in _UNTRUSTED_CONTEXTS
+}
+
+
 def _matches_untrusted(value: Any) -> list[str]:
     if not isinstance(value, str):
         return []
-    return [
-        token
-        for token in _UNTRUSTED_CONTEXTS
-        if re.search(r"(?<!\w)" + re.escape(token) + r"(?!\w)", value)
-    ]
+    return [token for token, pat in _UNTRUSTED_BOUNDARY_RE.items() if pat.search(value)]
 
 
 def check(path: str, doc: dict[str, Any]) -> Finding:

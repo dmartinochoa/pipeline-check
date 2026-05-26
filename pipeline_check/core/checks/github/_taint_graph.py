@@ -102,12 +102,12 @@ class TaintPath:
 _GITHUB_OUTPUT_WRITE_RE = re.compile(
     r"""
     (?:
-        echo\s+(?:-[neE]+\s+)?
+        echo\s+(?:-[neE]+\s+)*
         ["']?(?P<name1>[A-Za-z_][A-Za-z0-9_-]*)=(?P<val1>[^\n]*?)["']?\s*
         >>?\s*
         (?:"?\$\{?GITHUB_OUTPUT\}?"?)
     |
-        echo\s+(?:-[neE]+\s+)?
+        echo\s+(?:-[neE]+\s+)*
         ["']?
         ::set-output\s+name=(?P<name2>[A-Za-z_][A-Za-z0-9_-]*)::
         (?P<val2>[^\n"']*)
@@ -199,7 +199,7 @@ def _iter_matrix_axis_refs(text: str) -> Iterator[str]:
 # references a tainted env var, the output inherits the env var's
 # original taint source.
 _ENV_SHELL_REF_RE = re.compile(
-    r"\$\{?(?P<name>[A-Za-z_][A-Za-z0-9_]*)\}?"
+    r"\$\{?(?P<name>[A-Z_][A-Z0-9_]*)\}?"
 )
 
 
