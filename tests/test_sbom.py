@@ -71,7 +71,7 @@ class TestDockerPurl:
 
     def test_registry_image(self) -> None:
         purl = make_docker_purl("ghcr.io/owner/app", "latest")
-        assert "ghcr.io" in purl
+        assert purl.startswith("pkg:docker/ghcr.io")
 
     def test_digest(self) -> None:
         purl = make_docker_purl("python", "", "sha256:abc123")
