@@ -241,7 +241,8 @@ def _coerce(key: str, value: Any) -> Any:
       Scanner can convert to ``Severity`` without re-validating.
     - Everything else passes through as-is; click handles type conversion.
     """
-    if key in ("checks", "standards", "fail_on_checks", "secret_patterns", "custom_rules", "rego_rules") and isinstance(value, list):
+    list_keys = ("checks", "standards", "fail_on_checks", "secret_patterns", "custom_rules", "rego_rules")
+    if key in list_keys and isinstance(value, list):
         return tuple(str(v) for v in value)
     if key == "overrides":
         return _parse_overrides(value)

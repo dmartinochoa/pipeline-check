@@ -12,8 +12,6 @@ from pathlib import Path
 from typing import Any
 from unittest.mock import MagicMock, patch
 
-import pytest
-
 from pipeline_check.core.checks.gitlab.base import (
     GitLabContext,
     Pipeline,
