@@ -33,7 +33,7 @@ RULE = Rule(
 def check(path: str, doc: dict[str, Any]) -> Finding:
     offenders: list[str] = []
 
-    def _scan_cache(cache: Any, where: str) -> None:
+    def _scan_cache_entry(cache: Any, where: str) -> None:
         if not isinstance(cache, dict):
             return
         key = cache.get("key")
@@ -45,7 +45,17 @@ def check(path: str, doc: dict[str, Any]) -> Finding:
             if isinstance(prefix, str) and CACHE_TAINT_RE.search(prefix):
                 offenders.append(f"{where}.cache.key.prefix")
 
+    def _scan_cache(cache: Any, where: str) -> None:
+        if isinstance(cache, list):
+            for i, entry in enumerate(cache):
+                _scan_cache_entry(entry, f"{where}[{i}]")
+        else:
+            _scan_cache_entry(cache, where)
+
     _scan_cache(doc.get("cache"), "<top>")
+    default = doc.get("default")
+    if isinstance(default, dict):
+        _scan_cache(default.get("cache"), "<default>")
     for name, job in iter_jobs(doc):
         _scan_cache(job.get("cache"), name)
     passed = not offenders

@@ -12,7 +12,7 @@ workflows:
   main:
     jobs:
       - deploy:
-          role_arn: arn:aws:iam::123456789012:role/ci-deploy
+          role-arn: arn:aws:iam::123456789012:role/ci-deploy
           filters:
             branches:
               only: [main]

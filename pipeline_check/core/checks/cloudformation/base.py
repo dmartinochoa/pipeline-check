@@ -304,7 +304,11 @@ def as_str(value: Any) -> str:
 _SUB_VAR_RE = __import__("re").compile(r"\$\{([A-Za-z0-9:._-]+)\}")
 
 
-def resolve_literal(value: Any, parameters: dict[str, Any] | None = None) -> str | None:
+def resolve_literal(
+    value: Any,
+    parameters: dict[str, Any] | None = None,
+    _seen: frozenset[str] = frozenset(),
+) -> str | None:
     """Attempt to reduce *value* to a literal string.
 
     Handles the trivially-resolvable intrinsics that a static scanner
@@ -338,17 +342,19 @@ def resolve_literal(value: Any, parameters: dict[str, Any] | None = None) -> str
     (key, inner), = value.items()
     if key == "Ref":
         if isinstance(inner, str) and inner in params:
-            return resolve_literal(params[inner], params)
+            if inner in _seen:
+                return None
+            return resolve_literal(params[inner], params, _seen | {inner})
         return None
     if key == "Fn::Sub":
-        return _resolve_sub(inner, params)
+        return _resolve_sub(inner, params, _seen)
     if key == "Fn::Join":
-        return _resolve_join(inner, params)
+        return _resolve_join(inner, params, _seen)
     # Fn::GetAtt, Fn::ImportValue, Fn::If, etc. are runtime-dependent.
     return None
 
 
-def _resolve_sub(inner: Any, params: dict[str, Any]) -> str | None:
+def _resolve_sub(inner: Any, params: dict[str, Any], _seen: frozenset[str] = frozenset()) -> str | None:
     """Resolve ``Fn::Sub`` in either string or [template, map] form."""
     if isinstance(inner, str):
         template, extra_vars = inner, {}
@@ -360,7 +366,7 @@ def _resolve_sub(inner: Any, params: dict[str, Any]) -> str | None:
     # Pre-resolve every variable in the extra-var map; bail if any fails.
     resolved_extras: dict[str, str] = {}
     for k, v in extra_vars.items():
-        r = resolve_literal(v, params)
+        r = resolve_literal(v, params, _seen)
         if r is None:
             return None
         resolved_extras[k] = r
@@ -372,7 +378,7 @@ def _resolve_sub(inner: Any, params: dict[str, Any]) -> str | None:
         if name in resolved_extras:
             return resolved_extras[name]
         if name in params:
-            r = resolve_literal(params[name], params)
+            r = resolve_literal(params[name], params, _seen)
             if r is not None:
                 return r
         missing.append(name)
@@ -387,7 +393,7 @@ def _resolve_sub(inner: Any, params: dict[str, Any]) -> str | None:
     return out
 
 
-def _resolve_join(inner: Any, params: dict[str, Any]) -> str | None:
+def _resolve_join(inner: Any, params: dict[str, Any], _seen: frozenset[str] = frozenset()) -> str | None:
     """Resolve ``Fn::Join`` when both delimiter and list are literals."""
     if not isinstance(inner, list) or len(inner) != 2:
         return None
@@ -396,7 +402,7 @@ def _resolve_join(inner: Any, params: dict[str, Any]) -> str | None:
         return None
     parts: list[str] = []
     for item in items:
-        part = resolve_literal(item, params)
+        part = resolve_literal(item, params, _seen)
         if part is None:
             return None
         parts.append(part)

@@ -248,7 +248,6 @@ def _scan_repo(
                 sys.executable, "-m", "pipeline_check",
                 "--output", "json",
                 "--output-file", str(findings_path),
-                "--no-color",
             ],
             cwd=src,
             check=False,

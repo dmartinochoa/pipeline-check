@@ -2905,106 +2905,111 @@ def scan(
                 f"{before - len(chains)} unreachable chain(s)"
             )
 
-    if not quiet:
-        if output in ("terminal", "both"):
-            # When emitting both terminal and JSON, send the human-readable report to
-            # stderr so the JSON on stdout remains clean and machine-parseable.
-            from rich.console import Console as _Console  # local import, only needed here
-            console = _Console(stderr=(output == "both"))
-            report_terminal(
-                findings, score_result,
-                severity_threshold=threshold, console=console,
-                show_controls=show_controls,
-                show_passed=show_passed,
-                group_similar=not no_group,
-            )
-            if chains:
-                report_chains_terminal(chains, console=console)
-            if components is not None:
-                report_inventory_terminal(components, console=console)
+    if not quiet and output in ("terminal", "both"):
+        # When emitting both terminal and JSON, send the human-readable report to
+        # stderr so the JSON on stdout remains clean and machine-parseable.
+        from rich.console import Console as _Console  # local import, only needed here
+        console = _Console(stderr=(output == "both"))
+        report_terminal(
+            findings, score_result,
+            severity_threshold=threshold, console=console,
+            show_controls=show_controls,
+            show_passed=show_passed,
+            group_similar=not no_group,
+        )
+        if chains:
+            report_chains_terminal(chains, console=console)
+        if components is not None:
+            report_inventory_terminal(components, console=console)
 
-        if output in ("json", "both"):
-            json_text = report_json(
-                findings, score_result, tool_version=__version__,
-                inventory=components,
-                chains=chains if not no_chains else None,
-            )
-            # ``--output-file`` is honored for every other format and
-            # the help text doesn't carve json out; respect it here too
-            # so CI integrations that redirect to a path actually
-            # produce a file instead of silently dumping to stdout.
-            # ``--output both`` still goes to stdout, since the point
-            # of ``both`` is the side-by-side terminal+JSON stream.
-            if output == "json" and output_file:
-                with open(output_file, "w", encoding="utf-8") as fh:
-                    fh.write(json_text)
+    if output in ("json", "both"):
+        json_text = report_json(
+            findings, score_result, tool_version=__version__,
+            inventory=components,
+            chains=chains if not no_chains else None,
+        )
+        # ``--output-file`` is honored for every other format and
+        # the help text doesn't carve json out; respect it here too
+        # so CI integrations that redirect to a path actually
+        # produce a file instead of silently dumping to stdout.
+        # ``--output both`` still goes to stdout, since the point
+        # of ``both`` is the side-by-side terminal+JSON stream.
+        if output == "json" and output_file:
+            with open(output_file, "w", encoding="utf-8") as fh:
+                fh.write(json_text)
+            if not quiet:
                 click.echo(f"JSON report written to {output_file}", err=True)
-            else:
-                click.echo(json_text)
+        elif not quiet:
+            click.echo(json_text)
 
-        if output == "html":
-            report_html(
-                findings, score_result, region=region, target=target or "",
-                output_path=output_file, chains=chains,
-            )
+    if output == "html":
+        report_html(
+            findings, score_result, region=region, target=target or "",
+            output_path=output_file, chains=chains,
+        )
+        if not quiet:
             click.echo(f"HTML report written to {output_file}", err=True)
 
-        if output == "sarif":
-            sarif_text = report_sarif(
-                findings, score_result, tool_version=__version__, chains=chains,
-            )
-            if output_file:
-                with open(output_file, "w", encoding="utf-8") as fh:
-                    fh.write(sarif_text)
+    if output == "sarif":
+        sarif_text = report_sarif(
+            findings, score_result, tool_version=__version__, chains=chains,
+        )
+        if output_file:
+            with open(output_file, "w", encoding="utf-8") as fh:
+                fh.write(sarif_text)
+            if not quiet:
                 click.echo(f"SARIF report written to {output_file}", err=True)
-            else:
-                click.echo(sarif_text)
+        elif not quiet:
+            click.echo(sarif_text)
 
-        if output == "junit":
-            junit_text = report_junit(findings, score_result)
-            if output_file:
-                with open(output_file, "w", encoding="utf-8") as fh:
-                    fh.write(junit_text)
+    if output == "junit":
+        junit_text = report_junit(findings, score_result)
+        if output_file:
+            with open(output_file, "w", encoding="utf-8") as fh:
+                fh.write(junit_text)
+            if not quiet:
                 click.echo(f"JUnit report written to {output_file}", err=True)
-            else:
-                click.echo(junit_text)
+        elif not quiet:
+            click.echo(junit_text)
 
-        if output == "markdown":
-            md_text = report_markdown(findings, score_result, chains=chains)
-            if output_file:
-                with open(output_file, "w", encoding="utf-8") as fh:
-                    fh.write(md_text)
+    if output == "markdown":
+        md_text = report_markdown(findings, score_result, chains=chains)
+        if output_file:
+            with open(output_file, "w", encoding="utf-8") as fh:
+                fh.write(md_text)
+            if not quiet:
                 click.echo(f"Markdown report written to {output_file}", err=True)
-            else:
-                click.echo(md_text)
+        elif not quiet:
+            click.echo(md_text)
 
-        if output == "threatmodel":
-            tm_text = report_threatmodel(
-                findings, score_result,
-                inventory=components, chains=chains,
-                tool_version=__version__,
-                region=region or "", target=target or "",
-            )
-            if output_file:
-                with open(output_file, "w", encoding="utf-8") as fh:
-                    fh.write(tm_text)
+    if output == "threatmodel":
+        tm_text = report_threatmodel(
+            findings, score_result,
+            inventory=components, chains=chains,
+            tool_version=__version__,
+            region=region or "", target=target or "",
+        )
+        if output_file:
+            with open(output_file, "w", encoding="utf-8") as fh:
+                fh.write(tm_text)
+            if not quiet:
                 click.echo(
                     f"Threat-model report written to {output_file}",
                     err=True,
                 )
-            else:
-                click.echo(tm_text)
+        elif not quiet:
+            click.echo(tm_text)
 
-        if fix:
-            if apply_fixes:
-                _apply_fix_patches(findings)
-            else:
-                # Route patches to stderr whenever stdout is carrying a machine-
-                # readable report, so `--output json --fix` doesn't produce
-                # "JSON...--- a/file" and break downstream parsers. The
-                # documented `pipeline_check --fix | git apply` recipe uses the
-                # default terminal output where stdout is free for the patch.
-                _emit_fix_patches(findings, to_stderr=output != "terminal")
+    if fix:
+        if apply_fixes:
+            _apply_fix_patches(findings)
+        else:
+            # Route patches to stderr whenever stdout is carrying a machine-
+            # readable report, so `--output json --fix` doesn't produce
+            # "JSON...--- a/file" and break downstream parsers. The
+            # documented `pipeline_check --fix | git apply` recipe uses the
+            # default terminal output where stdout is free for the patch.
+            _emit_fix_patches(findings, to_stderr=output != "terminal")
 
     # --write-baseline snapshots the current findings to disk before
     # gating so the next run can suppress them via --baseline PATH.

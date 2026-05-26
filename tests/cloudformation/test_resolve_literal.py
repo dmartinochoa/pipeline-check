@@ -71,6 +71,16 @@ def test_join_with_unresolvable_part_unresolved():
     ) is None
 
 
+def test_circular_ref_returns_none():
+    params = {"A": {"Ref": "A"}}
+    assert resolve_literal({"Ref": "A"}, params) is None
+
+
+def test_mutual_circular_ref_returns_none():
+    params = {"A": {"Ref": "B"}, "B": {"Ref": "A"}}
+    assert resolve_literal({"Ref": "A"}, params) is None
+
+
 def test_unknown_intrinsic_unresolved():
     assert resolve_literal({"Fn::GetAtt": ["X", "Arn"]}) is None
     assert resolve_literal({"Fn::If": ["Cond", "a", "b"]}) is None

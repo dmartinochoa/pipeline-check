@@ -118,6 +118,39 @@ class TestGL012CacheKey:
         f = run_check(cfg, "GL-012")
         assert f.passed
 
+    def test_fails_when_cache_is_list_with_tainted_key(self):
+        cfg = """
+        stages: [build]
+        build_job:
+          stage: build
+          image: python:3.12.1-slim
+          cache:
+            - key: pip-$CI_MERGE_REQUEST_IID
+              paths: [.cache/pip]
+            - key: safe-key
+              paths: [.cache/other]
+          script: [make]
+          timeout: 30 minutes
+        """
+        f = run_check(cfg, "GL-012")
+        assert not f.passed
+
+    def test_fails_when_default_cache_key_is_tainted(self):
+        cfg = """
+        stages: [build]
+        default:
+          cache:
+            key: pip-$CI_COMMIT_BRANCH
+            paths: [.cache/pip]
+        build_job:
+          stage: build
+          image: python:3.12.1-slim
+          script: [make]
+          timeout: 30 minutes
+        """
+        f = run_check(cfg, "GL-012")
+        assert not f.passed
+
 
 # ── GL-024 SLSA provenance attestation ──────────────────────────────
 

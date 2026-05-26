@@ -20,10 +20,10 @@ from ..base import iter_workflow_jobs
 #: based, every common AWS / Azure / GCP CircleCI orb uses one of
 #: these conventions and the parameter shape is stable.
 _OIDC_ROLE_PARAMS = (
-    "role_arn",
-    "aws_role_arn",
-    "oidc_role_arn",
-    "aws_oidc_role_arn",
+    "role-arn",
+    "aws-role-arn",
+    "oidc-role-arn",
+    "aws-oidc-role-arn",
 )
 
 
