@@ -128,15 +128,17 @@ def _uses_cache(uses: Any) -> bool:
     return bool(_CACHE_USES_RE.match(uses.strip()))
 
 
+_UNTRUSTED_BOUNDARY_RE = {
+    token: re.compile(re.escape(token) + r"(?![A-Za-z0-9_])")
+    for token in _UNTRUSTED_CONTEXTS
+}
+
+
 def _matches_untrusted(value: Any) -> list[str]:
     """Return the list of untrusted-context tokens in *value*."""
     if not isinstance(value, str):
         return []
-    hits: list[str] = []
-    for token in _UNTRUSTED_CONTEXTS:
-        if re.search(r"(?<!\w)" + re.escape(token) + r"(?!\w)", value):
-            hits.append(token)
-    return hits
+    return [token for token, pat in _UNTRUSTED_BOUNDARY_RE.items() if pat.search(value)]
 
 
 def check(path: str, doc: dict[str, Any]) -> Finding:

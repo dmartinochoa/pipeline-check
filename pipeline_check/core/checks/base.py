@@ -469,7 +469,7 @@ def has_dep_update(blob: str) -> bool:
 _QUOTED_ASSIGNMENT_RE = _re.compile(
     r'\s*\w+="[^"]*'
     r'(?:'
-    r'\$\{\{[^}]*\}\}'     # GitHub ${{ ... }}
+    r'\$\{\{.+?\}\}'       # GitHub ${{ ... }}
     r'|\$\{?\w+\}?'        # shell ${VAR} / $VAR
     r'|\$\([^)]+\)'        # ADO $(VAR)
     r')'

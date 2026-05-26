@@ -143,7 +143,7 @@ def _extract_output_writes(run_body: str) -> list[tuple[str, str]]:
 # name for taint resolution.
 _STEP_OUTPUT_REF_RE = re.compile(
     r"\$\{\{\s*steps\.(?P<step>[A-Za-z_][A-Za-z0-9_-]*)"
-    r"\.outputs\.(?P<output>[A-Za-z_][A-Za-z0-9_-]*)\s*\}\}"
+    r"\.outputs\.(?P<output>[A-Za-z_][A-Za-z0-9_-]*)[^}]*\}\}"
 )
 
 
@@ -161,7 +161,7 @@ def _iter_step_output_refs(text: str) -> Iterator[tuple[str, str]]:
 # capture shape.
 _NEEDS_OUTPUT_REF_RE = re.compile(
     r"\$\{\{\s*needs\.(?P<job>[A-Za-z_][A-Za-z0-9_-]*)"
-    r"\.outputs\.(?P<output>[A-Za-z_][A-Za-z0-9_-]*)\s*\}\}"
+    r"\.outputs\.(?P<output>[A-Za-z_][A-Za-z0-9_-]*)[^}]*\}\}"
 )
 
 
@@ -184,7 +184,7 @@ _MATRIX_FROM_NEEDS_RE = re.compile(
 
 # Match ``${{ matrix.<axis> }}`` references in run / with bodies.
 _MATRIX_AXIS_REF_RE = re.compile(
-    r"\$\{\{\s*matrix\.(?P<axis>[A-Za-z_][A-Za-z0-9_-]*)\s*\}\}"
+    r"\$\{\{\s*matrix\.(?P<axis>[A-Za-z_][A-Za-z0-9_-]*)[^}]*\}\}"
 )
 
 
