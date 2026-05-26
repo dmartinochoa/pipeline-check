@@ -53,6 +53,8 @@ _TOPLEVEL_KEYS: frozenset[str] = frozenset({
     "secret_patterns", "detect_entropy",
     # Custom rule files, paths to YAML rule definitions.
     "custom_rules",
+    # OPA Rego rule directories.
+    "rego_rules",
     # Per-rule severity overrides, see ``_parse_overrides``.
     "overrides",
 })
@@ -239,7 +241,7 @@ def _coerce(key: str, value: Any) -> Any:
       Scanner can convert to ``Severity`` without re-validating.
     - Everything else passes through as-is; click handles type conversion.
     """
-    if key in ("checks", "standards", "fail_on_checks", "secret_patterns", "custom_rules") and isinstance(value, list):
+    if key in ("checks", "standards", "fail_on_checks", "secret_patterns", "custom_rules", "rego_rules") and isinstance(value, list):
         return tuple(str(v) for v in value)
     if key == "overrides":
         return _parse_overrides(value)
@@ -353,7 +355,7 @@ def _load_from_env() -> dict[str, Any]:
 def _coerce_env(key: str, raw: str) -> Any:
     """Env vars arrive as strings; split the multi-value ones on commas."""
     if key in ("checks", "standards", "fail_on_checks", "secret_patterns", "custom_rules",
-                "helm_values", "helm_set", "gha_search_path"):
+                "rego_rules", "helm_values", "helm_set", "gha_search_path"):
         return tuple(v.strip() for v in raw.split(",") if v.strip())
     if key == "max_failures":
         try:
