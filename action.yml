@@ -238,10 +238,15 @@ runs:
             drone)          args+=(--drone-path      "$WORKSPACE_PATH") ;;
             tekton)         args+=(--tekton-path     "$WORKSPACE_PATH") ;;
             argo)           args+=(--argo-path       "$WORKSPACE_PATH") ;;
+            argocd)         args+=(--argocd-path     "$WORKSPACE_PATH") ;;
             dockerfile)     args+=(--dockerfile-path "$WORKSPACE_PATH") ;;
             kubernetes)     args+=(--k8s-path        "$WORKSPACE_PATH") ;;
             helm)           args+=(--helm-path       "$WORKSPACE_PATH") ;;
             oci)            args+=(--oci-manifest    "$WORKSPACE_PATH") ;;
+            npm)            args+=(--npm-path        "$WORKSPACE_PATH") ;;
+            pypi)           args+=(--pypi-path       "$WORKSPACE_PATH") ;;
+            maven)          args+=(--maven-path      "$WORKSPACE_PATH") ;;
+            nuget)          args+=(--nuget-path      "$WORKSPACE_PATH") ;;
             auto|"")        cd "$WORKSPACE_PATH" || exit 3 ;;
             aws)            : ;;  # AWS scans the live account, no path
             *,*)            : ;;  # multi-pipeline, leave each provider on auto-detect

@@ -466,3 +466,89 @@ def test_provider_stats_hook_covers_every_provider_with_rules() -> None:
         f"_CLASS_BASED_LABELS): {missing}. The home-page tile token "
         "will render as literal {{ providers.<slug>.checks }}."
     )
+
+
+# ──────────────────────────────────────────────────────────────────────
+# Version consistency
+# ──────────────────────────────────────────────────────────────────────
+#
+# The package version is declared in two places:
+#   - ``pyproject.toml``  (``[project] version``)
+#   - ``pipeline_check/__init__.py``  (``__version__``)
+#
+# The release script bumps both, but a manual edit to one file without
+# the other produces a mismatch: PyPI sees one version, ``--version``
+# prints another, and the docs site (which reads from pyproject.toml
+# via the mkdocs hook) shows a third.
+
+
+def test_version_in_pyproject_matches_init() -> None:
+    """``pyproject.toml [project] version`` must equal
+    ``pipeline_check.__version__``.
+    """
+    import tomllib
+    with (REPO / "pyproject.toml").open("rb") as fh:
+        pyproject_version = tomllib.load(fh)["project"]["version"]
+
+    from pipeline_check import __version__
+
+    assert pyproject_version == __version__, (
+        f"Version mismatch: pyproject.toml says {pyproject_version!r}, "
+        f"pipeline_check.__version__ says {__version__!r}. Bump both "
+        "in the same commit."
+    )
+
+
+def test_mkdocs_version_hook_reads_version() -> None:
+    """``hooks/mkdocs_version.py`` must read a non-fallback version
+    from ``pyproject.toml``.
+
+    The hook's fallback is ``"0.0.0"``, which silently activates when
+    ``pyproject.toml`` is malformed. If readers see "0.0.0" on the
+    docs site, the hook is broken.
+    """
+    sys.path.insert(0, str(REPO / "hooks"))
+    try:
+        from mkdocs_version import _VERSION
+    finally:
+        sys.path.pop(0)
+
+    assert _VERSION != "0.0.0", (
+        "mkdocs_version.py fell back to '0.0.0' — check that "
+        "pyproject.toml has a [project] version = '...' entry."
+    )
+    from pipeline_check import __version__
+    assert _VERSION == __version__, (
+        f"mkdocs_version.py reads {_VERSION!r} from pyproject.toml "
+        f"but pipeline_check.__version__ is {__version__!r}."
+    )
+
+
+# ──────────────────────────────────────────────────────────────────────
+# docs/config.md key coverage
+# ──────────────────────────────────────────────────────────────────────
+#
+# ``docs/config.md`` documents the config-file schema with TOML and
+# YAML examples. The accepted keys are defined by ``_TOPLEVEL_KEYS``
+# and ``_GATE_KEYS`` in ``pipeline_check/core/config.py``. Adding a
+# key to the code without mentioning it in the doc means users can't
+# discover the key from the docs page.
+
+
+def test_config_md_mentions_every_gate_key() -> None:
+    """Every key in ``_GATE_KEYS`` must appear verbatim in
+    ``docs/config.md``.
+
+    Gate keys are the most user-facing config keys (fail_on, min_grade,
+    baseline, etc.) — if the docs don't show them, users won't know
+    they exist.
+    """
+    from pipeline_check.core.config import _GATE_KEYS
+
+    text = (REPO / "docs" / "config.md").read_text(encoding="utf-8")
+    missing = sorted(k for k in _GATE_KEYS if k not in text)
+    assert not missing, (
+        "Gate key(s) accepted by the config parser but not mentioned "
+        f"in docs/config.md: {missing}. Add them to the TOML/YAML "
+        "examples or the prose."
+    )

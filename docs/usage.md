@@ -116,12 +116,18 @@ pipeline_check --pipeline cloudbuild --cloudbuild-path cloudbuild.yaml
 pipeline_check --pipeline buildkite --buildkite-path .buildkite/pipeline.yml
 pipeline_check --pipeline tekton --tekton-path tekton/
 pipeline_check --pipeline argo --argo-path workflows/
+pipeline_check --pipeline argocd --argocd-path argocd/
 pipeline_check --pipeline dockerfile --dockerfile-path Dockerfile
 pipeline_check --pipeline kubernetes --k8s-path manifests/
 pipeline_check --pipeline helm --helm-path charts/myapp/
 
 pipeline_check --pipeline drone --drone-path .drone.yml
 pipeline_check --pipeline oci --oci-manifest index.json
+
+pipeline_check --pipeline npm --npm-path ./
+pipeline_check --pipeline pypi --pypi-path ./
+pipeline_check --pipeline maven --maven-path ./
+pipeline_check --pipeline nuget --nuget-path ./
 
 pipeline_check --pipeline cloudformation --cfn-template template.yml
 pipeline_check --pipeline terraform --tf-plan plan.json
@@ -276,6 +282,7 @@ pipeline_check --output html -O report.html        # self-contained file
 pipeline_check --output sarif -O scan.sarif        # GitHub/GitLab SAST
 pipeline_check --output markdown                   # PR comments
 pipeline_check --output junit -O junit.xml         # test-runner UIs
+pipeline_check --output threatmodel -O tm.json     # MITRE ATT&CK threat model
 pipeline_check --output both                       # terminal→stderr, JSON→stdout
 ```
 

@@ -64,6 +64,7 @@ DOCS_WITH_CLAIMS = [
     # are a real user-experience bug.
     REPO / "CONTRIBUTING.md",
     REPO / ".github" / "DOCKERHUB.md",
+    REPO / "docs" / "usage.md",
 ]
 
 
