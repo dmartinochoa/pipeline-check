@@ -171,6 +171,20 @@ release commit collapses this section into `## [X.Y.Z] - <date>`.
   controlled ref) and GHA-046 (manual PR-head fetch). 9 new tests
   under ``TestGHA058PRCheckoutTopology``.
 
+### Fixed
+
+- **Stale standards count across 7 doc surfaces.** The OSC&R standard
+  (16th) shipped in post-1.4.0 but ``action.yml``, ``pyproject.toml``,
+  ``mkdocs.yml``, ``CONTRIBUTING.md``, ``.github/DOCKERHUB.md``,
+  ``docs/index.md`` hero text, and the ``gen_standards_docs.py`` OWASP
+  intro still said 14 or 15. All bumped to 16 (or "15 other" where
+  OWASP is counted separately).
+- **Stale chain count in ``docs/index.md``.** The feature prose said
+  "38 multi-finding chains" but the registry has 45.
+  ``test_doc_claims.py``'s chain-claim regex now also matches
+  "multi-finding chains" (not just "attack chains") so this class
+  of drift is guarded going forward.
+
 ### Added
 
 - **GHA-096 known-vulnerable action ref via GHSA feed.** New rule
