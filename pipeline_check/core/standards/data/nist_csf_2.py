@@ -791,5 +791,37 @@ STANDARD = Standard(
         "SCM-048":  ["PR.AA-05"],                # org codespace secrets scoped to all repos
         "SCM-049":  ["PR.AA-01", "PR.AA-05"],    # classic PAT used where fine-grained suffices
         "NPM-012":  ["PR.AA-01", "GV.SC-05"],   # publish token missing restrictions
+        # ── Azure Cloud (Entra ID / Storage / Key Vault / ACR / Monitor) ──
+        "ENTRA-001": ["PR.AA-05"],               # SP assigned Global Administrator
+        "ENTRA-002": ["PR.AA-01"],               # app credential beyond 180 days
+        "ENTRA-003": ["PR.AA-01"],               # SP uses password credential
+        "AZST-001":  ["PR.IR-01"],               # public blob access
+        "AZST-002":  ["PR.DS-02"],               # non-HTTPS traffic
+        "AZST-003":  ["PR.DS-01"],               # no CMK encryption
+        "AKV-001":   ["PR.DS-01", "PR.IR-03"],   # soft delete not enabled
+        "AKV-002":   ["PR.DS-01", "PR.IR-03"],   # purge protection not enabled
+        "AKV-003":   ["PR.IR-01"],               # network ACLs allow all
+        "ACR-001":   ["PR.AA-05"],               # admin user enabled
+        "ACR-002":   ["PR.IR-01"],               # public network access
+        "ACR-003":   ["GV.SC-05", "PR.PS-06"],   # content trust not enabled
+        "AZMON-001": ["PR.PS-04", "DE.CM-09"],   # no diagnostic setting
+        "AZMON-002": ["PR.PS-04"],               # log retention < 365 days
+        "AZMON-003": ["DE.CM-09", "RS.MA-01"],   # no alert rule
+        # ── GCP (IAM / GCS / KMS / Artifact Registry / Cloud Logging) ────
+        "GCIAM-001": ["PR.AA-05"],               # SA has Owner/Editor role
+        "GCIAM-002": ["PR.AA-01"],               # user-managed SA key
+        "GCIAM-003": ["PR.AA-05"],               # token creator without condition
+        "GCS-001":   ["PR.IR-01"],               # public bucket
+        "GCS-002":   ["PR.AA-05"],               # no uniform access
+        "GCS-003":   ["PR.DS-01", "PR.IR-03"],   # versioning not enabled
+        "GCKMS-001": ["PR.DS-01"],               # key rotation > 365 days
+        "GCKMS-002": ["PR.AA-05", "PR.DS-01"],   # public KMS key access
+        "GCKMS-003": ["PR.DS-01"],               # no HSM protection
+        "GAR-001":   ["PR.PS-02"],               # no vulnerability scanning
+        "GAR-002":   ["PR.IR-01"],               # publicly readable repo
+        "GAR-003":   ["PR.PS-02"],               # no cleanup policy
+        "GCLOG-001": ["PR.PS-04", "DE.CM-09"],   # audit logs not enabled
+        "GCLOG-002": ["PR.PS-04", "DE.CM-09"],   # no log sink
+        "GCLOG-003": ["PR.PS-04"],               # log retention < 365 days
     },
 )

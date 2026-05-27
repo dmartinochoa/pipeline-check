@@ -1841,6 +1841,64 @@ analogue in other providers:
   CRITICAL.
 """,
     ),
+    "azure_cloud": (
+        "Azure Cloud",
+        "pipeline_check.core.checks.azure_cloud.rules",
+        _REPO_ROOT / "docs" / "providers" / "azure_cloud.md",
+        """\
+# Azure Cloud provider
+
+Scans a live Azure subscription via the ``azure-mgmt-*`` management
+SDKs. Requires ``pip install pipeline-check[azure-cloud]`` and Azure
+CLI authentication (``az login``).
+
+## Producer workflow
+
+```bash
+pipeline_check --pipeline azure_cloud --subscription-id 00000000-0000-0000-0000-000000000000
+pipeline_check --pipeline azure_cloud --subscription-id $AZURE_SUBSCRIPTION_ID --azure-tenant-id $AZURE_TENANT_ID
+```
+
+## Covered services
+
+| Service | Prefix | Rules |
+|---------|--------|-------|
+| Entra ID (identity) | ENTRA- | Service principal roles, app credentials, password vs certificate |
+| Storage | AZST- | Public access, HTTPS enforcement, CMK encryption |
+| Key Vault | AKV- | Soft delete, purge protection, network ACLs |
+| Container Registry | ACR- | Admin user, public access, content trust |
+| Monitor | AZMON- | Diagnostic settings, log retention, alert rules |
+""",
+    ),
+    "gcp": (
+        "GCP",
+        "pipeline_check.core.checks.gcp.rules",
+        _REPO_ROOT / "docs" / "providers" / "gcp.md",
+        """\
+# GCP provider
+
+Scans a live GCP project via the ``google-cloud-*`` client libraries.
+Requires ``pip install pipeline-check[gcp]`` and Application Default
+Credentials (``gcloud auth application-default login``).
+
+## Producer workflow
+
+```bash
+pipeline_check --pipeline gcp --gcp-project my-project-id
+pipeline_check --pipeline gcp --gcp-project $GCP_PROJECT
+```
+
+## Covered services
+
+| Service | Prefix | Rules |
+|---------|--------|-------|
+| IAM | GCIAM- | Service account admin roles, user-managed keys, impersonation |
+| Cloud Storage | GCS- | Public buckets, uniform access, versioning |
+| Cloud KMS | GCKMS- | Key rotation, public access, HSM protection |
+| Artifact Registry | GAR- | Vulnerability scanning, public repos, cleanup policies |
+| Cloud Logging | GCLOG- | Audit log config, log sinks, retention |
+""",
+    ),
 }
 
 

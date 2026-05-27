@@ -160,6 +160,7 @@ class _GroupedCommand(click.Command):
     _SECTIONS: tuple[tuple[str, frozenset[str]], ...] = (
         ("Target", frozenset({
             "--pipeline", "--target", "--region", "--profile",
+            "--subscription-id", "--azure-tenant-id", "--gcp-project",
             "--tf-plan", "--tf-source", "--gha-path", "--gitlab-path",
             "--bitbucket-path", "--azure-path", "--jenkinsfile-path",
             "--circleci-path", "--cfn-template", "--cloudbuild-path",
@@ -1153,6 +1154,21 @@ def _install_completion_callback(
     "--profile",
     default=None,
     help="AWS CLI named profile (AWS only; defaults to the environment default).",
+)
+@click.option(
+    "--subscription-id",
+    default=None,
+    help="Azure subscription ID (azure_cloud only).",
+)
+@click.option(
+    "--azure-tenant-id",
+    default=None,
+    help="Azure tenant ID override for multi-tenant scenarios (azure_cloud only).",
+)
+@click.option(
+    "--gcp-project",
+    default=None,
+    help="GCP project ID (gcp only).",
 )
 @click.option(
     "--tf-plan",
@@ -2176,6 +2192,9 @@ def scan(
     only_known_attacked: bool,
     region: str,
     profile: str | None,
+    subscription_id: str | None,
+    azure_tenant_id: str | None,
+    gcp_project: str | None,
     tf_plan: str | None,
     tf_source: str | None,
     gha_path: str | None,
@@ -2834,6 +2853,9 @@ def scan(
     _scanner_kwargs: dict[str, Any] = dict(
         region=region,
         profile=profile,
+        subscription_id=subscription_id,
+        azure_tenant_id=azure_tenant_id,
+        gcp_project=gcp_project,
         diff_base=diff_base,
         secret_patterns=secret_patterns or None,
         detect_entropy=detect_entropy,
@@ -4040,7 +4062,7 @@ _INIT_SCANNER_KWARGS: dict[str, tuple[str, tuple[str, ...]]] = {
 #: cloud credentials, registry pulls, GitHub admin tokens). For these,
 #: the CLI writes a static scaffold and skips the scan instead of
 #: surfacing a confusing "scan failed" exception in stderr.
-_INIT_SKIP_PROVIDERS: frozenset[str] = frozenset({"aws", "oci", "scm"})
+_INIT_SKIP_PROVIDERS: frozenset[str] = frozenset({"aws", "azure_cloud", "gcp", "oci", "scm"})
 
 
 def _init_scanner_kwargs_for(detected: str) -> dict[str, Any]:

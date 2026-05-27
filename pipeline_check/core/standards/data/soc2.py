@@ -759,5 +759,37 @@ STANDARD = Standard(
         "SCM-045": ["CC7.1"],               # default code scanning limited query suite
         "SCM-046": ["CC7.1"],               # default code scanning configured but paused
         "SCM-047": ["CC7.1"],               # repo language not covered
+        # ── Azure Cloud (Entra ID / Storage / Key Vault / ACR / Monitor) ──
+        "ENTRA-001": ["CC6.1"],                  # SP assigned Global Administrator
+        "ENTRA-002": ["CC6.3"],                  # app credential beyond 180 days
+        "ENTRA-003": ["CC6.1", "CC6.2"],         # SP uses password credential
+        "AZST-001":  ["CC6.6"],                  # public blob access
+        "AZST-002":  ["CC6.7"],                  # non-HTTPS traffic
+        "AZST-003":  ["CC6.1"],                  # no CMK encryption
+        "AKV-001":   ["CC6.1"],                  # soft delete not enabled
+        "AKV-002":   ["CC6.1"],                  # purge protection not enabled
+        "AKV-003":   ["CC6.6"],                  # network ACLs allow all
+        "ACR-001":   ["CC6.1", "CC6.2"],         # admin user enabled
+        "ACR-002":   ["CC6.6"],                  # public network access
+        "ACR-003":   ["CC8.1"],                  # content trust not enabled
+        "AZMON-001": ["CC7.2"],                  # no diagnostic setting
+        "AZMON-002": ["CC7.2"],                  # log retention < 365 days
+        "AZMON-003": ["CC7.2", "CC7.3", "CC7.4"],  # no alert rule
+        # ── GCP (IAM / GCS / KMS / Artifact Registry / Cloud Logging) ────
+        "GCIAM-001": ["CC6.1"],                  # SA has Owner/Editor role
+        "GCIAM-002": ["CC6.1", "CC6.3"],         # user-managed SA key
+        "GCIAM-003": ["CC6.1"],                  # token creator without condition
+        "GCS-001":   ["CC6.6"],                  # public bucket
+        "GCS-002":   ["CC6.1"],                  # no uniform access
+        "GCS-003":   ["CC7.2"],                  # versioning not enabled
+        "GCKMS-001": ["CC6.1"],                  # key rotation > 365 days
+        "GCKMS-002": ["CC6.1", "CC6.6"],         # public KMS key access
+        "GCKMS-003": ["CC6.1"],                  # no HSM protection
+        "GAR-001":   ["CC6.8"],                  # no vulnerability scanning
+        "GAR-002":   ["CC6.6"],                  # publicly readable repo
+        "GAR-003":   ["CC7.1"],                  # no cleanup policy
+        "GCLOG-001": ["CC7.2"],                  # audit logs not enabled
+        "GCLOG-002": ["CC7.2"],                  # no log sink
+        "GCLOG-003": ["CC7.2"],                  # log retention < 365 days
     },
 )

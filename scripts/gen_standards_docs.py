@@ -80,9 +80,11 @@ _PROVIDER_PACKAGES: tuple[tuple[str, str, str], ...] = (
     ("terraform",  "pipeline_check.core.checks.terraform.rules",  "Terraform"),
     ("npm",        "pipeline_check.core.checks.npm.rules",        "npm"),
     ("pypi",       "pipeline_check.core.checks.pypi.rules",       "PyPI"),
-    ("aws",        "pipeline_check.core.checks.aws.rules",        "AWS"),
-    ("maven",      "pipeline_check.core.checks.maven.rules",      "maven"),
-    ("nuget",      "pipeline_check.core.checks.nuget.rules",      "NuGet"),
+    ("aws",          "pipeline_check.core.checks.aws.rules",          "AWS"),
+    ("azure_cloud",  "pipeline_check.core.checks.azure_cloud.rules", "Azure Cloud"),
+    ("gcp",          "pipeline_check.core.checks.gcp.rules",          "GCP"),
+    ("maven",        "pipeline_check.core.checks.maven.rules",        "maven"),
+    ("nuget",        "pipeline_check.core.checks.nuget.rules",        "NuGet"),
 )
 
 # --------------------------------------------------------------------------- #
@@ -581,6 +583,27 @@ configuration scanner cannot detect:
 SOC 2 Trust Services Criteria, CI/CD-relevant subset. Findings
 evidence control gaps; they are not a substitute for an auditor's
 opinion. Use this page to prepare CC6 / CC7 / CC8 evidence walks.
+""",
+    ),
+    "cis_azure_foundations": _StandardConfig(
+        intro="""\
+- **Version:** 2.1.0
+- **URL:** <https://www.cisecurity.org/benchmark/azure>
+- **Source of truth:** `pipeline_check/core/standards/data/cis_azure_foundations.py`
+
+CIS Microsoft Azure Foundations Benchmark, CI/CD-relevant subset.
+Covers identity (Entra ID), storage accounts, Key Vault, container
+registry, and monitoring controls.
+""",
+    ),
+    "cis_gcp_foundations": _StandardConfig(
+        intro="""\
+- **Version:** 3.0.0
+- **URL:** <https://www.cisecurity.org/benchmark/google_cloud_computing_platform>
+- **Source of truth:** `pipeline_check/core/standards/data/cis_gcp_foundations.py`
+
+CIS Google Cloud Platform Foundations Benchmark, CI/CD-relevant subset.
+Covers IAM, Cloud Storage, Cloud KMS, and Cloud Logging controls.
 """,
     ),
 }

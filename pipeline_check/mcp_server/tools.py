@@ -97,6 +97,8 @@ _PROVIDER_PATH_KW: dict[str, str | None] = {
     "maven":          "maven_path",
     "nuget":          "nuget_path",
     "aws":            None,
+    "azure_cloud":    None,
+    "gcp":            None,
     "scm":            None,
 }
 
@@ -255,6 +257,8 @@ _RULES_FQN: dict[str, str] = {
     "cloudformation": "pipeline_check.core.checks.cloudformation.rules",
     "terraform":      "pipeline_check.core.checks.terraform.rules",
     "aws":            "pipeline_check.core.checks.aws.rules",
+    "azure_cloud":    "pipeline_check.core.checks.azure_cloud.rules",
+    "gcp":            "pipeline_check.core.checks.gcp.rules",
     "scm":            "pipeline_check.core.checks.scm.rules",
     "npm":            "pipeline_check.core.checks.npm.rules",
     "pypi":           "pipeline_check.core.checks.pypi.rules",

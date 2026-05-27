@@ -605,5 +605,38 @@ STANDARD = Standard(
         "SCM-048":  ["Build.L3.NonFalsifiable"],                   # org codespace secrets scoped to all repos
         "SCM-049":  ["Build.L3.NonFalsifiable"],                   # classic PAT where fine-grained suffices
         "NPM-012":  ["Build.L2.Signed"],                           # publish token missing restrictions
+        # ── Azure Cloud (Entra ID / Storage / Key Vault / ACR / Monitor) ──
+        "ENTRA-001": ["Build.L3.NonFalsifiable"],                  # SP assigned Global Administrator
+        "ENTRA-002": ["Build.L3.NonFalsifiable"],                  # app credential beyond 180 days
+        "ENTRA-003": ["Build.L3.NonFalsifiable"],                  # SP uses password credential
+        "AZST-001":  ["Build.L3.NonFalsifiable"],                  # public blob access
+        "AZST-002":  ["Build.L3.Isolated",
+                      "Build.L3.NonFalsifiable"],                  # non-HTTPS traffic
+        "AZST-003":  ["Build.L2.Signed"],                          # no CMK encryption
+        "AKV-001":   ["Build.L3.NonFalsifiable"],                  # soft delete not enabled
+        "AKV-002":   ["Build.L3.NonFalsifiable"],                  # purge protection not enabled
+        "AKV-003":   ["Build.L3.NonFalsifiable"],                  # network ACLs allow all
+        "ACR-001":   ["Build.L3.NonFalsifiable"],                  # admin user enabled
+        "ACR-002":   ["Build.L3.NonFalsifiable"],                  # public network access
+        "ACR-003":   ["Build.L2.Signed"],                          # content trust not enabled
+        "AZMON-001": ["Build.L3.NonFalsifiable"],                  # no diagnostic setting
+        "AZMON-002": ["Build.L3.NonFalsifiable"],                  # log retention < 365 days
+        "AZMON-003": ["Build.L3.NonFalsifiable"],                  # no alert rule
+        # ── GCP (IAM / GCS / KMS / Artifact Registry / Cloud Logging) ────
+        "GCIAM-001": ["Build.L3.NonFalsifiable"],                  # SA has Owner/Editor role
+        "GCIAM-002": ["Build.L3.NonFalsifiable"],                  # user-managed SA key
+        "GCIAM-003": ["Build.L3.NonFalsifiable"],                  # token creator without condition
+        "GCS-001":   ["Build.L3.NonFalsifiable"],                  # public bucket
+        "GCS-002":   ["Build.L3.NonFalsifiable"],                  # no uniform access
+        "GCS-003":   ["Build.L3.NonFalsifiable"],                  # versioning not enabled
+        "GCKMS-001": ["Build.L3.NonFalsifiable"],                  # key rotation > 365 days
+        "GCKMS-002": ["Build.L3.NonFalsifiable"],                  # public KMS key access
+        "GCKMS-003": ["Build.L2.Signed"],                          # no HSM protection
+        "GAR-001":   ["Build.L3.NonFalsifiable"],                  # no vulnerability scanning
+        "GAR-002":   ["Build.L3.NonFalsifiable"],                  # publicly readable repo
+        "GAR-003":   ["Build.L3.NonFalsifiable"],                  # no cleanup policy
+        "GCLOG-001": ["Build.L3.NonFalsifiable"],                  # audit logs not enabled
+        "GCLOG-002": ["Build.L3.NonFalsifiable"],                  # no log sink
+        "GCLOG-003": ["Build.L3.NonFalsifiable"],                  # log retention < 365 days
     },
 )

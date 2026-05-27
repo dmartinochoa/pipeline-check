@@ -5,7 +5,7 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "pipeline-check"
 version = "1.5.0"
-description = "CI/CD Security Posture Scanner — scores AWS, Terraform, CloudFormation, GitHub Actions, GitLab CI, Azure DevOps, Bitbucket Pipelines, Jenkins, CircleCI, Google Cloud Build, Buildkite, Drone CI, Tekton, Argo Workflows, Dockerfile, Kubernetes manifests, Helm charts, OCI image manifests, SCM repo posture (GitHub / GitLab / Bitbucket), npm and pypi dependency files against OWASP Top 10 CI/CD Risks and 15 other compliance frameworks"
+description = "CI/CD Security Posture Scanner — scores AWS, Azure Cloud, GCP, Terraform, CloudFormation, GitHub Actions, GitLab CI, Azure DevOps, Bitbucket Pipelines, Jenkins, CircleCI, Google Cloud Build, Buildkite, Drone CI, Tekton, Argo Workflows, Dockerfile, Kubernetes manifests, Helm charts, OCI image manifests, SCM repo posture (GitHub / GitLab / Bitbucket), npm and pypi dependency files against OWASP Top 10 CI/CD Risks and 17 other compliance frameworks"
 readme = "README.md"
 license = "MIT"
 requires-python = ">=3.11"
@@ -73,6 +73,29 @@ lsp = [
 # scanner read raw *.tf files without requiring ``terraform plan``
 # + ``terraform show -json``. Variable resolution is best-effort.
 hcl = ["python-hcl2>=4.0"]
+# Opt-in Azure Cloud posture scanning (``--pipeline azure_cloud``).
+# Requires an Azure subscription and ``az login`` authentication.
+azure-cloud = [
+    "azure-identity>=1.17.0",
+    "azure-mgmt-authorization>=4.0.0",
+    "azure-mgmt-containerregistry>=10.0.0",
+    "azure-mgmt-keyvault>=10.0.0",
+    "azure-mgmt-monitor>=6.0.0",
+    "azure-mgmt-resource>=23.0.0",
+    "azure-mgmt-storage>=21.0.0",
+    "requests>=2.31.0",
+]
+# Opt-in GCP cloud posture scanning (``--pipeline gcp``). Requires
+# a GCP project and ``gcloud auth application-default login``.
+gcp = [
+    "google-auth>=2.29.0",
+    "google-cloud-artifact-registry>=1.11.0",
+    "google-cloud-iam>=2.15.0",
+    "google-cloud-kms>=2.21.0",
+    "google-cloud-logging>=3.10.0",
+    "google-cloud-resource-manager>=1.12.0",
+    "google-cloud-storage>=2.16.0",
+]
 
 [project.scripts]
 pipeline_check = "pipeline_check.cli:main"
@@ -95,6 +118,8 @@ include = ["pipeline_check*"]
 [tool.setuptools.package-data]
 "pipeline_check.core" = ["*.css"]
 "pipeline_check.core.checks.aws.rules" = ["*.yml"]
+"pipeline_check.core.checks.azure_cloud.rules" = ["*.yml"]
+"pipeline_check.core.checks.gcp.rules" = ["*.yml"]
 
 [tool.ruff]
 target-version = "py311"
@@ -217,5 +242,27 @@ module = [
     "pipeline_check.core.checks.aws.workflows",
     "pipeline_check.core.checks.aws.base",
     "pipeline_check.core.providers.aws",
+]
+disable_error_code = ["no-any-return", "call-overload", "var-annotated", "union-attr", "arg-type", "type-arg"]
+
+# Azure Cloud provider: same situation as AWS — azure-mgmt-* SDKs
+# return untyped model objects.
+[[tool.mypy.overrides]]
+module = [
+    "pipeline_check.core.checks.azure_cloud._catalog",
+    "pipeline_check.core.checks.azure_cloud.workflows",
+    "pipeline_check.core.checks.azure_cloud.base",
+    "pipeline_check.core.providers.azure_cloud",
+]
+disable_error_code = ["no-any-return", "call-overload", "var-annotated", "union-attr", "arg-type", "type-arg"]
+
+# GCP provider: same situation — google-cloud-* SDKs return protobuf
+# objects that resolve to Any.
+[[tool.mypy.overrides]]
+module = [
+    "pipeline_check.core.checks.gcp._catalog",
+    "pipeline_check.core.checks.gcp.workflows",
+    "pipeline_check.core.checks.gcp.base",
+    "pipeline_check.core.providers.gcp",
 ]
 disable_error_code = ["no-any-return", "call-overload", "var-annotated", "union-attr", "arg-type", "type-arg"]
