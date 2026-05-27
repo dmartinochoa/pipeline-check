@@ -98,7 +98,7 @@ def _merge_parsed_files(
         try:
             with open(tf_file, encoding="utf-8") as fh:
                 parsed = _hcl2.load(fh)
-        except Exception as exc:  # noqa: BLE001
+        except Exception as exc:
             result.warnings.append(f"{tf_file}: HCL parse error: {exc}")
             continue
         for key, blocks in parsed.items():
@@ -300,7 +300,7 @@ def _walk_child_modules(
                 source = _strip_quotes(source)
             if not isinstance(source, str):
                 continue
-            if not (source.startswith("./") or source.startswith("../")):
+            if not (source.startswith(("./", "../"))):
                 continue
             mod_dir = (directory / source).resolve()
             if not mod_dir.is_dir():

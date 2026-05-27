@@ -392,7 +392,7 @@ class TestHELM007:
 # ──────────────────────────────────────────────────────────────────
 
 
-from datetime import UTC, datetime, timedelta  # noqa: E402
+from datetime import UTC, datetime, timedelta
 
 
 class TestHELM008:

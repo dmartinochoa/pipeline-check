@@ -145,7 +145,7 @@ def _snapshot_from_json(
     score = score_block.get("score") if isinstance(score_block, dict) else None
     grade = score_block.get("grade") if isinstance(score_block, dict) else None
     summary = score_block.get("summary") if isinstance(score_block, dict) else None
-    failed: dict[str, int] = {sev: 0 for sev in _SEVERITIES}
+    failed: dict[str, int] = dict.fromkeys(_SEVERITIES, 0)
     if isinstance(summary, dict):
         for sev in _SEVERITIES:
             entry = summary.get(sev)

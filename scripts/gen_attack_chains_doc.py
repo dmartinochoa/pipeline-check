@@ -30,7 +30,7 @@ from pathlib import Path
 REPO_ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(REPO_ROOT))
 
-from pipeline_check.core.chains import engine  # noqa: E402
+from pipeline_check.core.chains import engine
 
 DOC_PATH = REPO_ROOT / "docs" / "attack_chains.md"
 START = "<!-- chain-catalog:start -->"

@@ -54,7 +54,7 @@ def _is_safe_url(url: str) -> bool:
     if not s:
         return True  # empty -> nothing to flag
     lower = s.lower()
-    return lower.startswith("https://") or lower.startswith("git+ssh://")
+    return lower.startswith(("https://", "git+ssh://"))
 
 
 def _iter_offenders(chart_yaml: dict[str, Any]) -> list[str]:

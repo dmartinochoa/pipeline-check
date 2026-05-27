@@ -85,6 +85,6 @@ def confidence_for(check_id: str) -> Confidence:
 def demotion_map() -> dict[str, Confidence]:
     """Full demotion table for documentation / introspection."""
     return {
-        **{cid: Confidence.MEDIUM for cid in _MEDIUM},
-        **{cid: Confidence.LOW for cid in _LOW},
+        **dict.fromkeys(_MEDIUM, Confidence.MEDIUM),
+        **dict.fromkeys(_LOW, Confidence.LOW),
     }

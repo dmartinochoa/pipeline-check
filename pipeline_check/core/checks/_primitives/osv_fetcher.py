@@ -111,9 +111,9 @@ def _fetch_batch(
         method="POST",
     )
     try:
-        with urllib.request.urlopen(req, timeout=_TIMEOUT_S) as resp:  # noqa: S310
+        with urllib.request.urlopen(req, timeout=_TIMEOUT_S) as resp:
             body = json.loads(resp.read(10 * 1024 * 1024))
-    except Exception as exc:  # noqa: BLE001
+    except Exception as exc:
         return {}, str(exc)
 
     results: dict[int, list[dict[str, Any]]] = {}

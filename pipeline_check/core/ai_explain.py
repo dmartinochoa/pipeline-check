@@ -115,7 +115,7 @@ class AnthropicClient:
 
     def __init__(self, model: str) -> None:
         try:
-            import anthropic  # noqa: F401
+            import anthropic
         except ImportError as exc:
             raise AIDependencyError(
                 "Anthropic provider requires the ``anthropic`` SDK. "
@@ -157,7 +157,7 @@ class OpenAIClient:
 
     def __init__(self, model: str) -> None:
         try:
-            import openai  # noqa: F401
+            import openai
         except ImportError as exc:
             raise AIDependencyError(
                 "OpenAI provider requires the ``openai`` SDK. "

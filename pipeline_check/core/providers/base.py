@@ -85,4 +85,4 @@ class BaseProvider(abc.ABC):
         ``context.warnings`` rather than raised, the rest of the
         scan should still complete.
         """
-        return None
+        return

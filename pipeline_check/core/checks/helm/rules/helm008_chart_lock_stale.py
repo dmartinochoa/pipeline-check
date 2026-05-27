@@ -77,7 +77,7 @@ def _parse_generated(value: object) -> datetime | None:
     # ``Z`` -> ``+00:00`` for fromisoformat. 3.11+ parses ``Z``
     # natively, but the normalization is idempotent and keeps the
     # branch ordering obvious.
-    if s.endswith("Z") or s.endswith("z"):
+    if s.endswith(("Z", "z")):
         s = s[:-1] + "+00:00"
     try:
         dt = datetime.fromisoformat(s)

@@ -462,7 +462,7 @@ def _comment_curl_pipe(content: str, finding: Finding) -> str | None:
     for line in content.splitlines(keepends=True):
         stripped = line.lstrip()
         # Skip lines that are already comments or already have our marker.
-        if _TODO_CURL in line or stripped.startswith("#") or stripped.startswith("//"):
+        if _TODO_CURL in line or stripped.startswith(("#", "//")):
             out.append(line)
             continue
         if _CURL_PIPE_LINE_RE.search(line):
@@ -1019,7 +1019,7 @@ def _comment_token_persist(content: str, finding: Finding) -> str | None:
     changed = False
     for line in content.splitlines(keepends=True):
         stripped = line.lstrip()
-        if _TODO_TOKEN in line or stripped.startswith("#") or stripped.startswith("//"):
+        if _TODO_TOKEN in line or stripped.startswith(("#", "//")):
             out.append(line)
             continue
         if pattern.search(line):
@@ -1054,7 +1054,7 @@ def _comment_aws_keys(content: str, finding: Finding) -> str | None:
     changed = False
     for line in content.splitlines(keepends=True):
         stripped = line.lstrip()
-        if _TODO_AWS in line or stripped.startswith("#") or stripped.startswith("//"):
+        if _TODO_AWS in line or stripped.startswith(("#", "//")):
             out.append(line)
             continue
         if _AWS_KEY_LINE_RE.search(line):
@@ -1168,7 +1168,7 @@ def _comment_dep_update(content: str, finding: Finding) -> str | None:
     changed = False
     for line in content.splitlines(keepends=True):
         stripped = line.lstrip()
-        if _TODO_DEP_UPDATE in line or stripped.startswith("#") or stripped.startswith("//"):
+        if _TODO_DEP_UPDATE in line or stripped.startswith(("#", "//")):
             out.append(line)
             continue
         if DEP_UPDATE_RE.search(line) and not _DEP_UPDATE_TOOL_EXEMPT_RE.search(line):
@@ -1208,7 +1208,7 @@ def _comment_tls_bypass(content: str, finding: Finding) -> str | None:
     changed = False
     for line in content.splitlines(keepends=True):
         stripped = line.lstrip()
-        if _TODO_TLS in line or stripped.startswith("#") or stripped.startswith("//"):
+        if _TODO_TLS in line or stripped.startswith(("#", "//")):
             out.append(line)
             continue
         if tls_bypass.scan(line):

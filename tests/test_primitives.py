@@ -813,7 +813,7 @@ class TestSecretShapes:
 # Provider-shaped untrusted-context regex. Constructed once and reused
 # across the test cases below; mirrors the regex shape that GitLab and
 # Bitbucket helpers ship.
-import re as _re  # noqa: E402
+import re as _re
 
 _UNTRUSTED_RE = _re.compile(r"\$\{?(?:CI_COMMIT_MESSAGE|BITBUCKET_BRANCH)\}?")
 

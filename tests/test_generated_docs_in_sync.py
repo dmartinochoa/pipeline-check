@@ -518,7 +518,7 @@ def test_mkdocs_version_hook_reads_version() -> None:
         "pyproject.toml has a [project] version = '...' entry."
     )
     from pipeline_check import __version__
-    assert _VERSION == __version__, (
+    assert __version__ == _VERSION, (
         f"mkdocs_version.py reads {_VERSION!r} from pyproject.toml "
         f"but pipeline_check.__version__ is {__version__!r}."
     )

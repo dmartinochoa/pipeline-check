@@ -352,9 +352,7 @@ class TestRenderMarkdown:
         digest = FleetDigest(snapshots=[
             FleetSnapshot(
                 coord="o/r", grade="?", score=0,
-                failed_by_severity={s: 0 for s in (
-                    "CRITICAL", "HIGH", "MEDIUM", "LOW",
-                )},
+                failed_by_severity=dict.fromkeys(("CRITICAL", "HIGH", "MEDIUM", "LOW"), 0),
                 total_failed=0,
                 error=long,
             ),

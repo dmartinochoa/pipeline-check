@@ -560,14 +560,14 @@ def _snapshot_from_findings(
     except (OSError, json.JSONDecodeError) as exc:
         return FleetSnapshot(
             coord=coord.coord, grade="?", score=0,
-            failed_by_severity={s: 0 for s in _SEVERITIES},
+            failed_by_severity=dict.fromkeys(_SEVERITIES, 0),
             total_failed=0,
             error=f"findings.json parse error: {exc}",
         )
     if not isinstance(doc, dict):
         return FleetSnapshot(
             coord=coord.coord, grade="?", score=0,
-            failed_by_severity={s: 0 for s in _SEVERITIES},
+            failed_by_severity=dict.fromkeys(_SEVERITIES, 0),
             total_failed=0,
             error="findings.json top-level is not an object",
         )
@@ -575,7 +575,7 @@ def _snapshot_from_findings(
     score = score_block.get("score") if isinstance(score_block, dict) else None
     grade = score_block.get("grade") if isinstance(score_block, dict) else None
     summary = score_block.get("summary") if isinstance(score_block, dict) else None
-    failed: dict[str, int] = {sev: 0 for sev in _SEVERITIES}
+    failed: dict[str, int] = dict.fromkeys(_SEVERITIES, 0)
     if isinstance(summary, dict):
         for sev in _SEVERITIES:
             entry = summary.get(sev)
@@ -594,7 +594,7 @@ def _error_snapshot(coord: str, error: str) -> FleetSnapshot:
     """Build a snapshot for a repo that failed to clone or scan."""
     return FleetSnapshot(
         coord=coord, grade="?", score=0,
-        failed_by_severity={s: 0 for s in _SEVERITIES},
+        failed_by_severity=dict.fromkeys(_SEVERITIES, 0),
         total_failed=0,
         error=error,
     )

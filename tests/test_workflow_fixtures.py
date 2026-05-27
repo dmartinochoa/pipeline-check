@@ -117,7 +117,7 @@ class TestGitHubFixtures:
         meta: dict[str, ActionRepoMetadata] = {}
         for owner, repo in collect_referenced_actions(ctx):
             refs = refs_by_action.get((owner, repo), set())
-            ref_dates = {r: ref_iso for r in refs} if refs else None
+            ref_dates = dict.fromkeys(refs, ref_iso) if refs else None
             meta[f"{owner}/{repo}"] = ActionRepoMetadata(
                 owner=owner, repo=repo,
                 contributor_count=template.contributor_count,

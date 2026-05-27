@@ -248,7 +248,7 @@ def _step_uses_long_lived_secret(step: dict[str, Any]) -> bool:
             if isinstance(value, str) and _LONG_LIVED_RE.search(value):
                 return True
             # Also match the bare key form (``NPM_TOKEN: ${{ secrets.X }}``)
-        for key in env.keys():
+        for key in env:
             if isinstance(key, str) and _LONG_LIVED_RE.search(key):
                 return True
     with_block = step.get("with")

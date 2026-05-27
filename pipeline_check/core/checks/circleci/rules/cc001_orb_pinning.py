@@ -61,11 +61,7 @@ def check(path: str, doc: dict[str, Any]) -> Finding:
         if not isinstance(ref, str):
             # Inline orb definitions (dict) are local, skip.
             continue
-        if "@" not in ref:
-            unpinned.append(ref)
-        elif VOLATILE_ORB_RE.search(ref):
-            unpinned.append(ref)
-        elif not PINNED_ORB_RE.search(ref):
+        if "@" not in ref or VOLATILE_ORB_RE.search(ref) or not PINNED_ORB_RE.search(ref):
             unpinned.append(ref)
     passed = not unpinned
     desc = (
