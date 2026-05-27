@@ -42,7 +42,7 @@ def check(catalog: ResourceCatalog) -> list[Finding]:
                 resource=name,
                 description=(
                     f"Bucket '{name}' has access logging enabled "
-                    f"(log bucket: {logging_cfg['log_bucket']})."
+                    f"(log bucket: {logging_cfg.get('log_bucket') if logging_cfg else 'unknown'})."
                 ),
                 recommendation=RULE.recommendation,
                 passed=True,

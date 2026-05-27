@@ -41,7 +41,8 @@ def _allows_dangerous_port(allowed_list: list[dict[str, object]]) -> list[str]:
         protocol = str(entry.get("protocol", "")).lower()
         if protocol not in ("tcp", "all"):
             continue
-        ports = entry.get("ports", [])
+        raw_ports = entry.get("ports")
+        ports: list[object] = list(raw_ports) if isinstance(raw_ports, (list, tuple)) else []
         if not ports and protocol == "all":
             found.extend(sorted(_DANGEROUS_PORTS))
             continue

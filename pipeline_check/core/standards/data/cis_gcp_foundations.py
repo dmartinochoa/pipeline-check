@@ -37,7 +37,7 @@ STANDARD = Standard(
         "3.10": "Ensure firewall rules logging is enabled",
         # Compute
         "4.1": "Ensure that instances are not configured to use default service accounts",
-        "4.2": "Ensure that instances are not configured to use default service accounts with full access to all Cloud APIs",
+        "4.2": "Ensure instances are not configured to use default SA with full Cloud API access",
         "4.3": "Ensure 'Block Project-wide SSH keys' is enabled for VM instances",
         "4.4": "Ensure oslogin is enabled for a project",
         "4.5": "Ensure 'Enable connecting to serial ports' is not enabled for a VM instance",

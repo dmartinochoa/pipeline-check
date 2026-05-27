@@ -41,7 +41,7 @@ Click a control ID to jump to the per-control section with the full check list. 
 | [`3.9`](#ctrl-3-9) | Ensure no HTTPS or SSL proxy load balancers permit SSL policies with weak cipher suites | 1 | 1M |
 | [`3.10`](#ctrl-3-10) | Ensure firewall rules logging is enabled | 1 | 1M |
 | [`4.1`](#ctrl-4-1) | Ensure that instances are not configured to use default service accounts | 3 | 2H · 1L |
-| [`4.2`](#ctrl-4-2) | Ensure that instances are not configured to use default service accounts with full access to all Cloud APIs | 1 | 1H |
+| [`4.2`](#ctrl-4-2) | Ensure instances are not configured to use default SA with full Cloud API access | 1 | 1H |
 | [`4.3`](#ctrl-4-3) | Ensure 'Block Project-wide SSH keys' is enabled for VM instances | 1 | 1M |
 | [`4.4`](#ctrl-4-4) | Ensure oslogin is enabled for a project | 1 | 1M |
 | [`4.5`](#ctrl-4-5) | Ensure 'Enable connecting to serial ports' is not enabled for a VM instance | 1 | 1M |
@@ -246,7 +246,7 @@ pipeline_check --pipeline aws --standard cis_gcp_foundations --standard owasp_ci
 | [`GCRUN-002`](../providers/gcp.md) | Cloud Run service or function uses default compute SA | <span class="pg-sev pg-sev--high">HIGH</span> | [GCP](../providers/gcp.md) |  |
 | [`GCRUN-003`](../providers/gcp.md) | Cloud Run service has zero minimum instances | <span class="pg-sev pg-sev--low">LOW</span> | [GCP](../providers/gcp.md) |  |
 
-### 4.2: Ensure that instances are not configured to use default service accounts with full access to all Cloud APIs { #ctrl-4-2 }
+### 4.2: Ensure instances are not configured to use default SA with full Cloud API access { #ctrl-4-2 }
 
 **Evidenced by 1 check** across GCP.
 
