@@ -10,6 +10,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 PRs landing on `dev` between releases append entries below. The
 release commit collapses this section into `## [X.Y.Z] - <date>`.
 
+## [1.5.0] - 2026-05-27
+
 ### Added
 
 - **Secret verifier expansion (phase 1).** Four new live-verification
@@ -240,6 +242,15 @@ release commit collapses this section into `## [X.Y.Z] - <date>`.
 
 ### Fixed
 
+- **TAINT-009 substring false positive.** The consumer-job reference
+  check used substring ``in`` to match ``needs.X.outputs.token``,
+  which also matched ``needs.X.outputs.tokenized``. Replaced with
+  regex + negative lookahead for exact output-name boundaries.
+- **Vendor example-key false positives.** New
+  ``VENDOR_EXAMPLE_TOKENS`` allowlist suppresses well-known
+  documentation tokens (AWS ``AKIAIOSFODNN7EXAMPLE``, Stripe
+  ``sk_test_`` docs keys, Twilio/SendGrid docs examples) across all
+  ``*008`` literal-secret rules.
 - **Stale standards count across 7 doc surfaces.** The OSC&R standard
   (16th) shipped in post-1.4.0 but ``action.yml``, ``pyproject.toml``,
   ``mkdocs.yml``, ``CONTRIBUTING.md``, ``.github/DOCKERHUB.md``,
