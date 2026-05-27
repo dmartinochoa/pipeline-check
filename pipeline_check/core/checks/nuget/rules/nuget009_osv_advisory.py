@@ -22,6 +22,17 @@ RULE = Rule(
         "Network-dependent: needs ``--resolve-remote`` to query the "
         "OSV advisory database. Passes silently when the flag is off."
     ),
+    exploit_example=(
+        "# Vulnerable: pinning a version with a known advisory.\n"
+        "# GHSA-xxxx flags a deserialization RCE in\n"
+        "# Newtonsoft.Json < 13.0.1; dotnet restore pulls\n"
+        "# the vulnerable version into every CI build.\n"
+        "<!-- app.csproj -->\n"
+        '<PackageReference Include="Newtonsoft.Json" Version="12.0.3" />\n'
+        "\n"
+        "# Safe: upgrade to the patched version.\n"
+        '<PackageReference Include="Newtonsoft.Json" Version="13.0.3" />'
+    ),
 )
 
 

@@ -24,6 +24,34 @@ RULE = Rule(
         "principal. The secret content is readable by every AWS "
         "account in the world until the policy is fixed."
     ),
+    exploit_example=(
+        "# Vulnerable: wildcard principal lets any AWS account\n"
+        "# read the secret value (e.g. a production DB password).\n"
+        'resource "aws_secretsmanager_secret_policy" "open" {\n'
+        "  secret_arn = aws_secretsmanager_secret.db_pass.arn\n"
+        "  policy     = jsonencode({\n"
+        "    Statement = [{\n"
+        '      Effect    = "Allow"\n'
+        '      Principal = "*"\n'
+        '      Action    = "secretsmanager:GetSecretValue"\n'
+        '      Resource  = "*"\n'
+        "    }]\n"
+        "  })\n"
+        "}\n"
+        "\n"
+        "# Safe: name the specific account and add an org condition.\n"
+        'resource "aws_secretsmanager_secret_policy" "scoped" {\n'
+        "  secret_arn = aws_secretsmanager_secret.db_pass.arn\n"
+        "  policy     = jsonencode({\n"
+        "    Statement = [{\n"
+        '      Effect    = "Allow"\n'
+        '      Principal = { AWS = "arn:aws:iam::123456789012:role/CIRole" }\n'
+        '      Action    = "secretsmanager:GetSecretValue"\n'
+        '      Resource  = "*"\n'
+        "    }]\n"
+        "  })\n"
+        "}"
+    ),
 )
 
 

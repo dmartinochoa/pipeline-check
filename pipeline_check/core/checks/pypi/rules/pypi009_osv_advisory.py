@@ -25,6 +25,16 @@ RULE = Rule(
         "when the flag is off. Complements PYPI-006 (curated offline "
         "registry) with the full OSV/GHSA long-tail."
     ),
+    exploit_example=(
+        "# Vulnerable: pinning a version with a known advisory.\n"
+        "# GHSA-xxxx flags an SSRF in urllib3 < 2.0.6; every\n"
+        "# pip install in CI runs the vulnerable HTTP stack.\n"
+        "# requirements.txt\n"
+        "urllib3==2.0.4\n"
+        "\n"
+        "# Safe: upgrade to the patched version.\n"
+        "urllib3==2.0.7"
+    ),
 )
 
 # Match an exact-version PyPI requirement: ``name==version`` with

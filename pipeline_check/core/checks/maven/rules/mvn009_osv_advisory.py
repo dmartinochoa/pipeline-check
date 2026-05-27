@@ -29,6 +29,24 @@ RULE = Rule(
         "when the flag is off. Complements MVN-006 (curated offline "
         "registry) with the full OSV/GHSA long-tail."
     ),
+    exploit_example=(
+        "# Vulnerable: pinning a version with a known advisory.\n"
+        "# CVE-2021-44228 (Log4Shell) affects log4j-core < 2.17.1;\n"
+        "# any build that resolves this coordinate pulls the RCE.\n"
+        "<!-- pom.xml -->\n"
+        "<dependency>\n"
+        "  <groupId>org.apache.logging.log4j</groupId>\n"
+        "  <artifactId>log4j-core</artifactId>\n"
+        "  <version>2.14.1</version>\n"
+        "</dependency>\n"
+        "\n"
+        "# Safe: upgrade to the patched version.\n"
+        "<dependency>\n"
+        "  <groupId>org.apache.logging.log4j</groupId>\n"
+        "  <artifactId>log4j-core</artifactId>\n"
+        "  <version>2.17.1</version>\n"
+        "</dependency>"
+    ),
 )
 
 # Version shapes that are out of scope for the advisory lookup:

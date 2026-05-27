@@ -28,6 +28,18 @@ RULE = Rule(
         "Fires when a PackageReference pins to a version in the "
         "curated compromised-package registry."
     ),
+    exploit_example=(
+        "# Vulnerable: a PackageReference pins a version flagged\n"
+        "# in the curated compromised-package registry. Every\n"
+        "# dotnet restore pulls the backdoored assembly.\n"
+        "<!-- app.csproj -->\n"
+        '<PackageReference Include="SomeMaliciousPackage" Version="1.0.3" />\n'
+        "\n"
+        "# Safe: bump to the post-incident clean version, rotate\n"
+        "# every secret the CI runner could reach, and regenerate\n"
+        "# packages.lock.json so the content hash updates.\n"
+        '<PackageReference Include="SomeMaliciousPackage" Version="1.0.5" />'
+    ),
 )
 
 

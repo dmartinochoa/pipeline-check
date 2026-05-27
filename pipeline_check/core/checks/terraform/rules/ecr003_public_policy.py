@@ -24,6 +24,32 @@ RULE = Rule(
         "names a wildcard principal — a wildcard there lets every AWS "
         "account in the world pull the image."
     ),
+    exploit_example=(
+        "# Vulnerable: wildcard principal lets any AWS account\n"
+        "# pull container images from this private ECR repo.\n"
+        'resource "aws_ecr_repository_policy" "open" {\n'
+        "  repository = aws_ecr_repository.app.name\n"
+        "  policy     = jsonencode({\n"
+        "    Statement = [{\n"
+        '      Effect    = "Allow"\n'
+        '      Principal = "*"\n'
+        '      Action    = ["ecr:GetDownloadUrlForLayer", "ecr:BatchGetImage"]\n'
+        "    }]\n"
+        "  })\n"
+        "}\n"
+        "\n"
+        "# Safe: scope to a specific account.\n"
+        'resource "aws_ecr_repository_policy" "scoped" {\n'
+        "  repository = aws_ecr_repository.app.name\n"
+        "  policy     = jsonencode({\n"
+        "    Statement = [{\n"
+        '      Effect    = "Allow"\n'
+        '      Principal = { AWS = "arn:aws:iam::123456789012:root" }\n'
+        '      Action    = ["ecr:GetDownloadUrlForLayer", "ecr:BatchGetImage"]\n'
+        "    }]\n"
+        "  })\n"
+        "}"
+    ),
 )
 
 
