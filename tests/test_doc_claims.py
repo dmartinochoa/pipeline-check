@@ -419,9 +419,8 @@ def _existing_ids_for_prefix(provider: str, prefix: str) -> set[int]:
 # token wiring is intact and that the hook has a label for every
 # slug referenced on the home page.
 _PROVIDER_TILE_RE = re.compile(
-    r'href="providers/(?P<name>[^/"]+)/"'
+    r'class="pg-provider"\s+href="providers/(?P<name>[^/"]+)/"'
     r'.*?<span class="pg-provider__count">(?P<count>[^<]+)</span>',
-    re.DOTALL,
 )
 _PROVIDER_TOKEN_RE = re.compile(
     r"\{\{\s*providers\.(?P<slug>[a-z0-9_]+)\.checks\s*\}\}"
