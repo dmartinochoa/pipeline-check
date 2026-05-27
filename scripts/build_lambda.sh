@@ -16,7 +16,7 @@ rm -rf "$PKG" "$OUTPUT"
 mkdir -p "$PKG"
 
 echo "Installing dependencies into package directory..."
-pip install -r requirements.txt --target "$PKG" --quiet --upgrade
+pip install --require-hashes -r requirements.txt --target "$PKG" --quiet
 
 echo "Copying pipeline-check source..."
 cp -r pipeline_check "$PKG/"

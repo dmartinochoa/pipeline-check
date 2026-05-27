@@ -906,98 +906,48 @@ authoring-time gaps that don't survive into the manifest.
 """,
     ),
     "scm": (
-        "SCM (GitHub / GitLab / Bitbucket) posture",
+        "SCM posture (GitHub)",
         "pipeline_check.core.checks.scm.rules",
-        _REPO_ROOT / "docs" / "providers" / "scm.md",
+        _REPO_ROOT / "docs" / "providers" / "scm_github.md",
         """\
-# SCM (source control management) posture provider
+# SCM posture: GitHub
 
-Scans repository governance via the platform's REST API: branch
+Scans GitHub repository governance via the REST API: branch
 protection, required reviews, code scanning, secret scanning,
-Dependabot, signed commits, and the rest of the controls that
+Dependabot, signed commits, rulesets, environments, deploy keys,
+webhooks, outside collaborators, and the rest of the controls that
 live at the repo / org settings layer rather than in workflow YAML.
-Maps each rule to the OpenSSF Scorecard check it evidences and to
-the CIS Software Supply Chain Security Guide section it satisfies.
 
-Three platforms today: **GitHub** (full 42-rule pack), **GitLab**
-and **Bitbucket Cloud** (universal subset of seven rules:
-``SCM-001``, ``SCM-002``, ``SCM-006``, ``SCM-007``, ``SCM-008``,
-``SCM-009``, ``SCM-017``). GitHub-only rules pass on the other
-platforms with a "not applicable on PLATFORM" note in the
-description so the operator sees the deliberate skip rather than
-a silent absence.
-
-Closes the gap between this scanner and Legitify / OpenSSF
-Scorecard, neither of which scan pipeline-config files. Together
-with the GitHub Actions provider, the posture coverage spans both
-the repo settings and the workflows the repo runs.
+GitHub runs the full SCM rule pack (49 rules). The seven universal
+rules shared with [GitLab](scm_gitlab.md) and
+[Bitbucket](scm_bitbucket.md) are: ``SCM-001``, ``SCM-002``,
+``SCM-006``, ``SCM-007``, ``SCM-008``, ``SCM-009``, ``SCM-017``.
+All other rules are GitHub-only. GitHub-only rules pass on the
+other platforms with a "not applicable on PLATFORM" note so the
+operator sees the deliberate skip rather than a silent absence.
 
 ## Producer workflow
 
 ```bash
-# GitHub. Token comes from --gh-token or $GITHUB_TOKEN. Without
-# admin scope on the repo, security_and_analysis features
-# (SCM-004 / SCM-005 / SCM-015 / SCM-016) cannot distinguish
-# "really disabled" from "I lacked visibility" — re-run with
-# admin scope to confirm those rules' verdicts.
+# Token comes from --gh-token or $GITHUB_TOKEN. Without admin
+# scope on the repo, security_and_analysis features (SCM-004 /
+# SCM-005 / SCM-015 / SCM-016) cannot distinguish "really
+# disabled" from "I lacked visibility" — re-run with admin scope
+# to confirm those rules' verdicts.
 pipeline_check --pipeline scm --scm-platform github \\
     --scm-repo octocat/hello-world
 
-# GitLab. Token comes from --gh-token (the flag is shared across
-# platforms) or $GITLAB_TOKEN; needs the ``read_api`` scope. Repo
-# spec is the full project path (nested subgroups allowed).
-pipeline_check --pipeline scm --scm-platform gitlab \\
-    --scm-repo group/subgroup/project
-
-# Bitbucket Cloud. Token is ``user:app_password`` or the existing
-# ``Basic <b64>`` Authorization value; falls back to
-# $BITBUCKET_TOKEN. Repo spec is ``workspace/repo_slug``.
-pipeline_check --pipeline scm --scm-platform bitbucket \\
-    --scm-repo acme/widget
-
 # Offline / CI mode: read JSON responses from disk instead of
-# hitting the network. Each endpoint maps to
-# <endpoint-with-slashes-as-underscores>.json under DIR. Works on
-# every platform.
+# hitting the network.
 pipeline_check --pipeline scm --scm-platform github \\
     --scm-repo octocat/hello-world \\
     --scm-fixture-dir ./scm-fixtures/
 ```
 
-### Per-platform rule coverage
-
-| Rule | GitHub | GitLab | Bitbucket | Notes |
-|------|--------|--------|-----------|-------|
-| SCM-001 (branch protection presence) | yes | yes | yes | Universal |
-| SCM-002 (required reviews) | yes | yes | yes | GitLab: ``approvals_before_merge``; Bitbucket: ``require_approvals_to_merge`` |
-| SCM-003 (default code scanning) | yes | skip | skip | GitHub-only |
-| SCM-004 (secret scanning) | yes | skip | skip | GitHub-only |
-| SCM-005 (Dependabot updates) | yes | skip | skip | GitHub-only |
-| SCM-006 (signed commits required) | yes | yes | yes | GitLab: ``push_rules.reject_unsigned_commits``; Bitbucket: no enforcement, always fires |
-| SCM-007 (force push allowed) | yes | yes | yes | Universal |
-| SCM-008 (required status checks) | yes | yes | yes | GitLab: pipeline-must-succeed; Bitbucket: ``require_passing_builds_to_merge`` |
-| SCM-009 (branch deletion allowed) | yes | yes | yes | GitLab protected branches block deletion implicitly; Bitbucket ``delete`` restriction |
-| SCM-010..SCM-016 | yes | skip | skip | GitHub-only protection knobs / security features |
-| SCM-017 (CODEOWNERS file present) | yes | yes | yes | GitLab also probes ``.gitlab/CODEOWNERS``; Bitbucket probes ``.bitbucket/CODEOWNERS`` |
-| SCM-018, SCM-019 | yes | skip | skip | GitHub-only protection-payload shape |
-
 All other flags (`--output`, `--severity-threshold`, `--checks`,
 `--standard`, …) behave the same as with the other providers.
 
-### Token permissions per scan
-
-Token requirements split into three tiers per platform: **none /
-public** runs the universal rule subset against public repos only
-and gets rate-limited; **read** gets the full branch-protection
-and CODEOWNERS coverage; **admin** unlocks the
-``security_and_analysis`` block, Actions / environments / deploy
-keys / webhooks / outside collaborators / rulesets endpoints. Rules
-whose endpoint comes back 401 / 403 / 404 pass silently with a
-"data unavailable" note, so a lower-privilege token degrades
-gracefully (it does not crash the scan), but the rules listed
-under ``admin`` below report no signal.
-
-#### GitHub
+## Token permissions
 
 Pass the token via ``--gh-token`` or ``$GITHUB_TOKEN``. Classic PAT
 scopes and fine-grained PAT permissions are listed side-by-side; on
@@ -1010,8 +960,9 @@ the same names on a GitHub App installation token.
 | read (public + private) | ``repo`` (or ``public_repo`` for public-only) | ``Metadata: read`` + ``Contents: read`` | adds private-repo coverage for the universal rules; raises rate limit to 5000 req/hr |
 | admin | ``repo`` + ``admin:repo_hook`` + ``read:org`` | ``Administration: read`` + ``Webhooks: read`` + ``Members: read`` + ``Environments: read`` + ``Code scanning alerts: read`` | adds SCM-003, -004, -005, -010..016, -018, -019, -020, -021, -022, -023, -024, -025, -026, -027, -028, -029..047 |
 
-Per-rule scope notes (admin-tier rules only; the universal rules
-work at read tier):
+### Per-rule scope notes
+
+Admin-tier rules only; the universal rules work at read tier.
 
   * **SCM-003 / SCM-004 / SCM-005 / SCM-015 / SCM-016** read
     ``security_and_analysis.<feature>.status`` from the repo
@@ -1060,85 +1011,9 @@ repo (or org); installation-only access is enough for repo-scoped
 endpoints. ``Members: read`` is org-level; install the App on the
 org to enumerate outside collaborators.
 
-#### GitLab
+## What the rules expect
 
-Pass the token via ``--gh-token`` (the flag is shared across
-platforms) or ``$GITLAB_TOKEN``.
-
-| Tier | GitLab token scope | Rules unlocked |
-|------|--------------------|----------------|
-| public (no token) | — | SCM-001, -002, -006, -007, -008, -009, -017 on public projects only |
-| read | ``read_api`` | full universal-rule coverage on private projects (and the rate-limit raise) |
-| maintainer-equivalent | ``read_api`` issued by a project Maintainer (or higher) | adds SCM-006's ``push_rules.reject_unsigned_commits`` signal (the push-rules endpoint is gated on Maintainer access to the project) |
-
-Notes:
-
-  * SCM-001 / -007 / -009 read
-    ``/projects/:id/protected_branches``. Available to any project
-    member with ``read_api``.
-  * SCM-002 reads ``approvals_before_merge`` from
-    ``/projects/:id``. Available at read tier.
-  * SCM-006 reads ``push_rules.reject_unsigned_commits`` from
-    ``/projects/:id/push_rule``. The push-rules endpoint is a
-    GitLab Premium feature and additionally requires Maintainer
-    access to the project to read; lower-privilege tokens get a
-    silent pass because the rule treats endpoint absence the same
-    as "feature disabled".
-  * SCM-008 reads
-    ``only_allow_merge_if_pipeline_succeeds`` from
-    ``/projects/:id``. Available at read tier.
-  * SCM-017 probes ``/projects/:id/repository/files/<path>`` for
-    the three CODEOWNERS locations. Available at read tier.
-
-Self-hosted GitLab: ``--scm-platform gitlab`` accepts a custom
-host via the fetcher's ``host=`` constructor argument. Self-hosted
-tokens use the same scope name.
-
-#### Bitbucket Cloud
-
-Pass the credential as ``user:app_password`` via ``--gh-token`` (or
-``$BITBUCKET_TOKEN``). Bitbucket Server is a different surface and
-not currently in scope.
-
-| Tier | App-password permissions | Rules unlocked |
-|------|--------------------------|----------------|
-| public (no credential) | — | SCM-001, -002, -007, -008, -009, -017 on public repos only |
-| read | ``repositories:read`` | full universal-rule coverage on private repos |
-
-Notes:
-
-  * SCM-001 / -007 / -009 read
-    ``/repositories/{workspace}/{repo}/branch-restrictions``
-    (``push`` / ``force`` / ``delete`` restriction kinds).
-    Available at ``repositories:read``.
-  * SCM-002 / SCM-008 read ``require_approvals_to_merge`` and
-    ``require_passing_builds_to_merge`` from the same endpoint.
-    Available at ``repositories:read``.
-  * **SCM-006 has no Bitbucket Cloud equivalent** — Bitbucket
-    Cloud has no per-branch signed-commit enforcement (GPG
-    signing is a personal-account UI setting, not a protection
-    rule). The rule always fires on Bitbucket snapshots; suppress
-    per repo with a rationale if the team enforces signing via a
-    different mechanism.
-  * SCM-017 probes
-    ``/repositories/{workspace}/{repo}/src/<branch>/<path>?format=meta``
-    for the three CODEOWNERS locations. Available at
-    ``repositories:read``.
-
-#### Offline / fixture mode
-
-``--scm-fixture-dir DIR`` reads JSON responses from disk instead of
-hitting the network on every platform. No token is required and no
-HTTP traffic leaves the host. Useful for CI runs, air-gapped
-evaluation, and reproducing a customer's posture against a captured
-fixture set. Endpoint paths map to
-``<endpoint-with-slashes-as-underscores>.json`` under DIR; a
-missing file is treated as a 404 (the rule passes silently with an
-unavailability note, same as when a real call fails).
-
-### What the rules expect
-
-The provider hits three endpoints per repo:
+The provider hits these endpoints per repo:
 
   * ``GET /repos/{owner}/{repo}`` — repo metadata, default
     branch name, ``security_and_analysis`` feature states.
@@ -1156,7 +1031,7 @@ description):
     (e.g. private-repo Dependabot on a free org).
   * The repo metadata fetch itself failed.
 
-Three FP-prevention guards keep noise out of the report:
+### FP-prevention guards
 
   * **Empty repos** (``repo_meta.size == 0`` and no protection
     rule). SCM-001 passes with an "Empty repo" note rather than
@@ -1175,31 +1050,6 @@ Three FP-prevention guards keep noise out of the report:
     repo whose default branch is not literally ``main``).
     SCM-001 surfaces a "Repo metadata unavailable" finding so
     the gap is visible rather than silent.
-
-### SCM-specific checks
-
-- **SCM-001 / SCM-007 / SCM-009**, branch protection presence,
-  force-push denial, and deletion denial. Together they cover
-  the rewrite-history attack class — without them, every other
-  branch-protection knob the team configured can be erased
-  after the fact.
-- **SCM-002 / SCM-011 / SCM-012 / SCM-013 / SCM-014**, the review
-  side of branch protection. Required count, CODEOWNERS
-  routing, stale-review dismissal on force-push, conversation
-  resolution, last-push approval. SCM-014 is the one that blocks
-  the two-account collab review bypass.
-- **SCM-003 / SCM-004 / SCM-005 / SCM-015 / SCM-016**, the
-  ``security_and_analysis``-driven feature checks: code
-  scanning, secret scanning, Dependabot security updates, secret-
-  scanning push protection, private vulnerability reporting.
-  All five share the archived-repo skip behavior.
-- **SCM-006**, signed-commit enforcement on the default branch.
-  Pairs with GHA-006 in the **XPC-005** chain to flag end-to-end
-  provenance gaps (source unsigned + artifact unsigned = no
-  cryptographic chain of custody).
-- **SCM-010**, the meta-rule: branch protection enforces against
-  administrators. Without it, every other protection knob is
-  advisory rather than enforced.
 
 ### Cross-provider chains
 

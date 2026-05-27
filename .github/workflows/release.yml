@@ -70,7 +70,7 @@ jobs:
 
       - name: Build sdist + wheel
         run: |
-          python -m pip install --upgrade pip build
+          python -m pip install --require-hashes -r requirements-ci.txt
           python -m build
 
       - name: Verify tag matches package version
@@ -106,9 +106,7 @@ jobs:
         # lockfile (hash-locked, so a transitive bump shows up as a
         # diff in CI) rather than the wheel — pip-audit's wheel mode
         # only inspects direct deps in the metadata.
-        run: |
-          python -m pip install --upgrade pip-audit
-          pip-audit --requirement requirements.txt --strict
+        run: pip-audit --requirement requirements.txt --strict
 
       - name: Generate SBOM (CycloneDX)
         # Emits an SBOM next to the wheel. cyclonedx-py reads the
@@ -127,7 +125,6 @@ jobs:
         # PyPI for unverified transitives. Project-side hash pinning
         # is what GHA-060 asks for on every workflow.
         run: |
-          python -m pip install --upgrade cyclonedx-bom
           python -m pip install --require-hashes -r requirements.txt
           python -m pip install --no-deps dist/*.whl
           mkdir -p sbom
@@ -266,7 +263,7 @@ jobs:
   # wheel + PEP 740 attestations already live on PyPI.
   # ---------------------------------------------------------------------------
   publish-github-release:
-    needs: [publish-pypi]
+    needs: [publish-pypi, build]
     if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v')
     runs-on: ubuntu-latest
     timeout-minutes: 5

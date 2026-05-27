@@ -48,6 +48,7 @@ _PREFIX_TO_PROVIDER: dict[str, str] = {
     "JF": "jenkins", "CC": "circleci", "GCB": "cloudbuild",
     "DF": "dockerfile", "K8S": "kubernetes",
     "TF": "terraform", "CF": "cloudformation",
+    "SCM": "scm_github",
 }
 _ANCHORED_PROVIDERS = frozenset(_PREFIX_TO_PROVIDER.values())
 

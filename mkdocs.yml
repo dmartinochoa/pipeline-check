@@ -157,29 +157,36 @@ nav:
   - Coverage:
       - Providers:
           - Overview: providers/README.md
-          - AWS: providers/aws.md
-          - Azure Cloud: providers/azure_cloud.md
-          - GCP: providers/gcp.md
-          - Terraform: providers/terraform.md
-          - CloudFormation: providers/cloudformation.md
-          - GitHub Actions: providers/github.md
-          - GitLab CI: providers/gitlab.md
-          - Bitbucket Pipelines: providers/bitbucket.md
-          - Azure DevOps: providers/azure.md
-          - Jenkins: providers/jenkins.md
-          - CircleCI: providers/circleci.md
-          - Google Cloud Build: providers/cloudbuild.md
-          - Buildkite: providers/buildkite.md
-          - Drone CI: providers/drone.md
-          - Tekton: providers/tekton.md
-          - Argo Workflows: providers/argo.md
-          - Argo CD: providers/argocd.md
-          - Dockerfile: providers/dockerfile.md
-          - Kubernetes: providers/kubernetes.md
-          - Helm: providers/helm.md
-          - OCI image manifest: providers/oci.md
+          - CI/CD platforms:
+              - GitHub Actions: providers/github.md
+              - GitLab CI: providers/gitlab.md
+              - Bitbucket Pipelines: providers/bitbucket.md
+              - Azure DevOps: providers/azure.md
+              - Jenkins: providers/jenkins.md
+              - CircleCI: providers/circleci.md
+              - Google Cloud Build: providers/cloudbuild.md
+              - Buildkite: providers/buildkite.md
+              - Drone CI: providers/drone.md
+              - Tekton: providers/tekton.md
+              - Argo Workflows: providers/argo.md
+              - Gitea / Forgejo: providers/gitea.md
+          - Cloud & infrastructure as code:
+              - AWS: providers/aws.md
+              - Azure Cloud: providers/azure_cloud.md
+              - GCP: providers/gcp.md
+              - Terraform: providers/terraform.md
+              - CloudFormation: providers/cloudformation.md
+          - Containers & deployment:
+              - Dockerfile: providers/dockerfile.md
+              - Kubernetes: providers/kubernetes.md
+              - Helm: providers/helm.md
+              - Argo CD: providers/argocd.md
+              - OCI image manifest: providers/oci.md
           - SCM posture:
-              - SCM posture (GitHub / GitLab / Bitbucket): providers/scm.md
+              - Overview: providers/scm.md
+              - GitHub: providers/scm_github.md
+              - GitLab: providers/scm_gitlab.md
+              - Bitbucket Cloud: providers/scm_bitbucket.md
           - Package registries:
               - Overview: providers/registries.md
               - npm: providers/npm.md

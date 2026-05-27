@@ -38,6 +38,8 @@ PREFIX_TO_PROVIDER: dict[str, str] = {
     "GCB": "cloudbuild",
     "DF": "dockerfile",
     "K8S": "kubernetes",
+    # SCM posture (rules live in scm_github.md)
+    "SCM": "scm_github",
     # IaC providers
     "TF": "terraform",
     "CF": "cloudformation",
