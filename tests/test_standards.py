@@ -400,10 +400,10 @@ class TestPerFrameworkCoverageFloor:
         "nist_ssdf":              97,   # current 99%, OCI-006 carve-out
         "openssf_scorecard":      75,   # current 77%
         "slsa":                   67,   # current 69%
-        "nist_800_190":           58,   # current 60%, container-scoped
+        "nist_800_190":           54,   # current 56%, container-scoped
         "s2c2f":                  31,   # current 33%, OSS-consumption-scoped
-        "cis_aws_foundations":    17,   # current 19%, AWS-pack-only
-        "cis_github":             15,   # current 17%, GitHub-platform-scoped
+        "cis_aws_foundations":    14,   # current 15%, AWS-pack-only
+        "cis_github":             13,   # current 14%, GitHub-platform-scoped
         "oscr":                   55,   # current ~58%, supply-chain-attack-scoped
         "cis_kubernetes":          5,   # current 6%, K8s-manifest-scoped
     }

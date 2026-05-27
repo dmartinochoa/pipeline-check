@@ -143,3 +143,154 @@ class TestAkv003:
         catalog = make_catalog(**{"keyvault:vaults": []})
         findings = akv003.check(catalog)
         assert findings == []
+
+
+# -----------------------------------------------------------------------
+# AKV-004  Key Vault key has no expiration date
+# -----------------------------------------------------------------------
+
+from pipeline_check.core.checks.azure_cloud.rules import (
+    akv004_key_expiry as akv004,
+)
+
+
+class TestAkv004:
+    def test_key_without_expiry_fails(self, make_catalog):
+        vault = _key_vault()
+        catalog = make_catalog(**{
+            "keyvault:vaults": [vault],
+            "keyvault:keys:kv1": [
+                {"kid": "https://kv1.vault.azure.net/keys/mykey/abc123",
+                 "attributes": {"enabled": True, "exp": None}},
+            ],
+        })
+        findings = akv004.check(catalog)
+        assert len(findings) == 1
+        assert findings[0].passed is False
+        assert findings[0].check_id == "AKV-004"
+
+    def test_key_with_expiry_passes(self, make_catalog):
+        vault = _key_vault()
+        catalog = make_catalog(**{
+            "keyvault:vaults": [vault],
+            "keyvault:keys:kv1": [
+                {"kid": "https://kv1.vault.azure.net/keys/mykey/abc123",
+                 "attributes": {"enabled": True, "exp": 1735689600}},
+            ],
+        })
+        findings = akv004.check(catalog)
+        assert len(findings) == 1
+        assert findings[0].passed is True
+
+    def test_disabled_key_skipped(self, make_catalog):
+        vault = _key_vault()
+        catalog = make_catalog(**{
+            "keyvault:vaults": [vault],
+            "keyvault:keys:kv1": [
+                {"kid": "https://kv1.vault.azure.net/keys/mykey/abc123",
+                 "attributes": {"enabled": False, "exp": None}},
+            ],
+        })
+        findings = akv004.check(catalog)
+        assert findings == []
+
+    def test_empty_vaults(self, make_catalog):
+        catalog = make_catalog(**{"keyvault:vaults": []})
+        findings = akv004.check(catalog)
+        assert findings == []
+
+
+# -----------------------------------------------------------------------
+# AKV-005  Key Vault secret has no expiration date
+# -----------------------------------------------------------------------
+
+from pipeline_check.core.checks.azure_cloud.rules import (
+    akv005_secret_expiry as akv005,
+)
+
+
+class TestAkv005:
+    def test_secret_without_expiry_fails(self, make_catalog):
+        vault = _key_vault()
+        catalog = make_catalog(**{
+            "keyvault:vaults": [vault],
+            "keyvault:secrets:kv1": [
+                {"id": "https://kv1.vault.azure.net/secrets/mysecret",
+                 "attributes": {"enabled": True, "exp": None}},
+            ],
+        })
+        findings = akv005.check(catalog)
+        assert len(findings) == 1
+        assert findings[0].passed is False
+        assert findings[0].check_id == "AKV-005"
+
+    def test_secret_with_expiry_passes(self, make_catalog):
+        vault = _key_vault()
+        catalog = make_catalog(**{
+            "keyvault:vaults": [vault],
+            "keyvault:secrets:kv1": [
+                {"id": "https://kv1.vault.azure.net/secrets/mysecret",
+                 "attributes": {"enabled": True, "exp": 1735689600}},
+            ],
+        })
+        findings = akv005.check(catalog)
+        assert len(findings) == 1
+        assert findings[0].passed is True
+
+    def test_disabled_secret_skipped(self, make_catalog):
+        vault = _key_vault()
+        catalog = make_catalog(**{
+            "keyvault:vaults": [vault],
+            "keyvault:secrets:kv1": [
+                {"id": "https://kv1.vault.azure.net/secrets/mysecret",
+                 "attributes": {"enabled": False, "exp": None}},
+            ],
+        })
+        findings = akv005.check(catalog)
+        assert findings == []
+
+    def test_empty_vaults(self, make_catalog):
+        catalog = make_catalog(**{"keyvault:vaults": []})
+        findings = akv005.check(catalog)
+        assert findings == []
+
+
+# -----------------------------------------------------------------------
+# AKV-006  Key Vault uses vault access policies instead of RBAC
+# -----------------------------------------------------------------------
+
+from pipeline_check.core.checks.azure_cloud.rules import (
+    akv006_rbac_access as akv006,
+)
+
+
+class TestAkv006:
+    def test_rbac_disabled_fails(self, make_catalog):
+        vault = _key_vault()
+        vault.properties.enable_rbac_authorization = False
+        catalog = make_catalog(**{"keyvault:vaults": [vault]})
+        findings = akv006.check(catalog)
+        assert len(findings) == 1
+        assert findings[0].passed is False
+        assert findings[0].check_id == "AKV-006"
+
+    def test_rbac_enabled_passes(self, make_catalog):
+        vault = _key_vault()
+        vault.properties.enable_rbac_authorization = True
+        catalog = make_catalog(**{"keyvault:vaults": [vault]})
+        findings = akv006.check(catalog)
+        assert len(findings) == 1
+        assert findings[0].passed is True
+
+    def test_rbac_none_fails(self, make_catalog):
+        vault = _key_vault()
+        vault.properties.enable_rbac_authorization = None
+        catalog = make_catalog(**{"keyvault:vaults": [vault]})
+        findings = akv006.check(catalog)
+        assert len(findings) == 1
+        assert findings[0].passed is False
+
+    def test_empty_vaults(self, make_catalog):
+        catalog = make_catalog(**{"keyvault:vaults": []})
+        findings = akv006.check(catalog)
+        assert findings == []

@@ -726,5 +726,77 @@ STANDARD = Standard(
         "GCLOG-001": ["CICD-SEC-10"],               # audit logs not enabled
         "GCLOG-002": ["CICD-SEC-10"],               # no log sink
         "GCLOG-003": ["CICD-SEC-10"],               # log retention < 365 days
+        # ── Azure Cloud phase-2 (network / app service / SQL / compute) ──
+        "ENTRA-004": ["CICD-SEC-2"],                # cond access MFA
+        "ENTRA-005": ["CICD-SEC-2"],                # ext user restrict
+        "ENTRA-006": ["CICD-SEC-2"],                # risky signin
+        "AZST-004":  ["CICD-SEC-9"],                # min TLS
+        "AZST-005":  ["CICD-SEC-9"],                # lifecycle
+        "AZST-006":  ["CICD-SEC-6", "CICD-SEC-2"],    # key rotation
+        "AKV-004":   ["CICD-SEC-6", "CICD-SEC-9"],  # key expiry
+        "AKV-005":   ["CICD-SEC-6", "CICD-SEC-9"],  # secret expiry
+        "AKV-006":   ["CICD-SEC-2"],                # RBAC
+        "ACR-004":   ["CICD-SEC-10", "CICD-SEC-9"],   # defender scan
+        "ACR-005":   ["CICD-SEC-9"],                # tag immutability
+        "AZMON-004": ["CICD-SEC-10"],               # KV diagnostics
+        "AZMON-005": ["CICD-SEC-10"],               # NSG flow retention
+        "AZMON-006": ["CICD-SEC-10"],               # LAW retention
+        "AZMON-007": ["CICD-SEC-10"],               # svc health alert
+        "AZNW-001":  ["CICD-SEC-7", "CICD-SEC-9"],    # SSH/RDP internet (CRITICAL)
+        "AZNW-002":  ["CICD-SEC-10"],               # flow logs
+        "AZNW-003":  ["CICD-SEC-7", "CICD-SEC-9"],    # WAF
+        "AZNW-004":  ["CICD-SEC-7", "CICD-SEC-9"],  # deny-all
+        "AZNW-005":  ["CICD-SEC-7", "CICD-SEC-9"],  # public IP VM
+        "AZAPP-001": ["CICD-SEC-9"],                # HTTPS
+        "AZAPP-002": ["CICD-SEC-9"],                # TLS
+        "AZAPP-003": ["CICD-SEC-2"],                # managed identity
+        "AZAPP-004": ["CICD-SEC-7", "CICD-SEC-9"],    # remote debug
+        "AZAPP-005": ["CICD-SEC-7", "CICD-SEC-9"],  # FTP
+        "AZSQL-001": ["CICD-SEC-9"],                # TDE CMK
+        "AZSQL-002": ["CICD-SEC-10"],               # auditing
+        "AZSQL-003": ["CICD-SEC-7", "CICD-SEC-9"],    # public access
+        "AZSQL-004": ["CICD-SEC-2"],                # AAD admin
+        "AZSQL-005": ["CICD-SEC-10"],               # threat detect
+        "AZVM-001":  ["CICD-SEC-9"],                # disk encrypt
+        "AZVM-002":  ["CICD-SEC-7", "CICD-SEC-9"],    # public IP
+        "AZVM-003":  ["CICD-SEC-7", "CICD-SEC-9"],  # JIT
+        "AZVM-004":  ["CICD-SEC-9"],                # OS patch
+        "AZVM-005":  ["CICD-SEC-2"],                # managed identity
+        # ── GCP phase-2 (network / compute / SQL / Cloud Run / KMS) ──
+        "GCIAM-004": ["CICD-SEC-2"],                # default SA
+        "GCIAM-005": ["CICD-SEC-2"],                # domain restrict
+        "GCIAM-006": ["CICD-SEC-6", "CICD-SEC-2"],    # SA key age
+        "GCS-004":   ["CICD-SEC-9"],                # CMEK
+        "GCS-005":   ["CICD-SEC-10"],               # access logging
+        "GCLOG-004": ["CICD-SEC-10"],               # VPC flow logs
+        "GCLOG-005": ["CICD-SEC-10"],               # firewall logging
+        "GCLOG-006": ["CICD-SEC-10"],               # data access
+        "GCLOG-007": ["CICD-SEC-10"],               # metric filter IAM
+        "GCLOG-008": ["CICD-SEC-10"],               # metric filter firewall
+        "GCLOG-009": ["CICD-SEC-10"],               # metric filter route
+        "GCLOG-010": ["CICD-SEC-10"],               # metric filter SQL
+        "GCLOG-011": ["CICD-SEC-10"],               # metric filter custom role
+        "GCNET-001": ["CICD-SEC-7", "CICD-SEC-9"],    # default network
+        "GCNET-002": ["CICD-SEC-7", "CICD-SEC-9"],  # deny-all
+        "GCNET-003": ["CICD-SEC-7", "CICD-SEC-9"],  # SSH/RDP (CRITICAL)
+        "GCNET-004": ["CICD-SEC-7", "CICD-SEC-9"],  # private access
+        "GCNET-005": ["CICD-SEC-7", "CICD-SEC-9"],  # Cloud NAT
+        "GCCE-001":  ["CICD-SEC-9"],                # shielded VM
+        "GCCE-002":  ["CICD-SEC-2"],                # OS Login
+        "GCCE-003":  ["CICD-SEC-7", "CICD-SEC-9"],    # serial port
+        "GCCE-004":  ["CICD-SEC-7", "CICD-SEC-9"],  # public IP
+        "GCCE-005":  ["CICD-SEC-7", "CICD-SEC-2"],  # project SSH keys
+        "GCSQL-001": ["CICD-SEC-7", "CICD-SEC-9"],  # public IP
+        "GCSQL-002": ["CICD-SEC-9"],                # backups
+        "GCSQL-003": ["CICD-SEC-9"],                # SSL
+        "GCSQL-004": ["CICD-SEC-2"],                # IAM auth
+        "GCSQL-005": ["CICD-SEC-9"],                # PITR
+        "GCRUN-001": ["CICD-SEC-7", "CICD-SEC-9"],    # unauth
+        "GCRUN-002": ["CICD-SEC-2"],                # custom SA
+        "GCRUN-003": ["CICD-SEC-9"],                # min instances
+        "GCRUN-004": ["CICD-SEC-7", "CICD-SEC-9"],    # VPC connector
+        "GCKMS-004": ["CICD-SEC-2", "CICD-SEC-9"],  # keyring IAM
+        "GCKMS-005": ["CICD-SEC-9"],                # destroy sched
+        "GCKMS-006": ["CICD-SEC-9"],                # imported key
     },
 )

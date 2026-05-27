@@ -246,3 +246,196 @@ class TestEntra003:
         catalog = make_catalog(**{"entra:service_principals": []})
         findings = entra003.check(catalog)
         assert findings == []
+
+
+# -----------------------------------------------------------------------
+# ENTRA-004  No Conditional Access policy requiring MFA for admins
+# -----------------------------------------------------------------------
+
+from pipeline_check.core.checks.azure_cloud.rules import (
+    entra004_conditional_access_mfa as entra004,
+)
+
+
+class TestEntra004:
+    def test_mfa_policy_for_all_users_passes(self, make_catalog):
+        policy = {
+            "state": "enabled",
+            "grantControls": {"builtInControls": ["mfa"]},
+            "conditions": {"users": {"includeUsers": ["All"], "includeRoles": []}},
+        }
+        catalog = make_catalog(**{"entra:conditional_access": [policy]})
+        findings = entra004.check(catalog)
+        assert len(findings) == 1
+        assert findings[0].passed is True
+        assert findings[0].check_id == "ENTRA-004"
+
+    def test_mfa_policy_for_admin_role_passes(self, make_catalog):
+        policy = {
+            "state": "enabled",
+            "grantControls": {"builtInControls": ["mfa"]},
+            "conditions": {
+                "users": {
+                    "includeUsers": [],
+                    "includeRoles": [
+                        "62e90394-69f5-4237-9190-012177145e10",  # Global Admin
+                    ],
+                },
+            },
+        }
+        catalog = make_catalog(**{"entra:conditional_access": [policy]})
+        findings = entra004.check(catalog)
+        assert len(findings) == 1
+        assert findings[0].passed is True
+
+    def test_no_mfa_policy_fails(self, make_catalog):
+        catalog = make_catalog(**{"entra:conditional_access": []})
+        findings = entra004.check(catalog)
+        assert len(findings) == 1
+        assert findings[0].passed is False
+        assert findings[0].check_id == "ENTRA-004"
+
+    def test_disabled_policy_ignored(self, make_catalog):
+        policy = {
+            "state": "disabled",
+            "grantControls": {"builtInControls": ["mfa"]},
+            "conditions": {"users": {"includeUsers": ["All"]}},
+        }
+        catalog = make_catalog(**{"entra:conditional_access": [policy]})
+        findings = entra004.check(catalog)
+        assert len(findings) == 1
+        assert findings[0].passed is False
+
+    def test_policy_without_mfa_grant_fails(self, make_catalog):
+        policy = {
+            "state": "enabled",
+            "grantControls": {"builtInControls": ["block"]},
+            "conditions": {"users": {"includeUsers": ["All"]}},
+        }
+        catalog = make_catalog(**{"entra:conditional_access": [policy]})
+        findings = entra004.check(catalog)
+        assert len(findings) == 1
+        assert findings[0].passed is False
+
+
+# -----------------------------------------------------------------------
+# ENTRA-005  No Conditional Access policy restricting external users
+# -----------------------------------------------------------------------
+
+from pipeline_check.core.checks.azure_cloud.rules import (
+    entra005_external_user_restriction as entra005,
+)
+
+
+class TestEntra005:
+    def test_policy_targeting_guests_passes(self, make_catalog):
+        policy = {
+            "state": "enabled",
+            "conditions": {
+                "users": {
+                    "includeGuestsOrExternalUsers": {"guestOrExternalUserTypes": "b2bCollaboration"},
+                    "includeUsers": [],
+                },
+            },
+        }
+        catalog = make_catalog(**{"entra:conditional_access": [policy]})
+        findings = entra005.check(catalog)
+        assert len(findings) == 1
+        assert findings[0].passed is True
+        assert findings[0].check_id == "ENTRA-005"
+
+    def test_policy_with_guests_in_includeUsers_passes(self, make_catalog):
+        policy = {
+            "state": "enabled",
+            "conditions": {
+                "users": {
+                    "includeGuestsOrExternalUsers": None,
+                    "includeUsers": ["GuestsOrExternalUsers"],
+                },
+            },
+        }
+        catalog = make_catalog(**{"entra:conditional_access": [policy]})
+        findings = entra005.check(catalog)
+        assert len(findings) == 1
+        assert findings[0].passed is True
+
+    def test_no_guest_policy_fails(self, make_catalog):
+        catalog = make_catalog(**{"entra:conditional_access": []})
+        findings = entra005.check(catalog)
+        assert len(findings) == 1
+        assert findings[0].passed is False
+        assert findings[0].check_id == "ENTRA-005"
+
+    def test_disabled_guest_policy_ignored(self, make_catalog):
+        policy = {
+            "state": "disabled",
+            "conditions": {
+                "users": {
+                    "includeGuestsOrExternalUsers": {"guestOrExternalUserTypes": "b2b"},
+                    "includeUsers": [],
+                },
+            },
+        }
+        catalog = make_catalog(**{"entra:conditional_access": [policy]})
+        findings = entra005.check(catalog)
+        assert len(findings) == 1
+        assert findings[0].passed is False
+
+
+# -----------------------------------------------------------------------
+# ENTRA-006  No Conditional Access sign-in risk policy
+# -----------------------------------------------------------------------
+
+from pipeline_check.core.checks.azure_cloud.rules import (
+    entra006_risky_signin_policy as entra006,
+)
+
+
+class TestEntra006:
+    def test_risk_policy_with_high_passes(self, make_catalog):
+        policy = {
+            "state": "enabled",
+            "conditions": {"signInRiskLevels": ["high"]},
+        }
+        catalog = make_catalog(**{"entra:conditional_access": [policy]})
+        findings = entra006.check(catalog)
+        assert len(findings) == 1
+        assert findings[0].passed is True
+        assert findings[0].check_id == "ENTRA-006"
+
+    def test_risk_policy_with_medium_passes(self, make_catalog):
+        policy = {
+            "state": "enabled",
+            "conditions": {"signInRiskLevels": ["medium", "high"]},
+        }
+        catalog = make_catalog(**{"entra:conditional_access": [policy]})
+        findings = entra006.check(catalog)
+        assert len(findings) == 1
+        assert findings[0].passed is True
+
+    def test_no_risk_policy_fails(self, make_catalog):
+        catalog = make_catalog(**{"entra:conditional_access": []})
+        findings = entra006.check(catalog)
+        assert len(findings) == 1
+        assert findings[0].passed is False
+        assert findings[0].check_id == "ENTRA-006"
+
+    def test_disabled_risk_policy_ignored(self, make_catalog):
+        policy = {
+            "state": "disabled",
+            "conditions": {"signInRiskLevels": ["high"]},
+        }
+        catalog = make_catalog(**{"entra:conditional_access": [policy]})
+        findings = entra006.check(catalog)
+        assert len(findings) == 1
+        assert findings[0].passed is False
+
+    def test_no_sign_in_risk_levels_fails(self, make_catalog):
+        policy = {
+            "state": "enabled",
+            "conditions": {"signInRiskLevels": []},
+        }
+        catalog = make_catalog(**{"entra:conditional_access": [policy]})
+        findings = entra006.check(catalog)
+        assert len(findings) == 1
+        assert findings[0].passed is False

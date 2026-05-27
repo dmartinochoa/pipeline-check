@@ -190,3 +190,139 @@ class TestGCKMS003:
     def test_no_keys_returns_empty(self, make_catalog):
         cat = make_catalog(**{"kms:keys": []})
         assert gckms003_hsm.check(cat) == []
+
+
+# -----------------------------------------------------------------------
+# GCKMS-004: KMS key ring IAM has overly broad bindings
+# -----------------------------------------------------------------------
+
+from pipeline_check.core.checks.gcp.rules import gckms004_keyring_iam
+
+
+class TestGCKMS004:
+    def test_allUsers_binding_fails(self, make_catalog):
+        cat = make_catalog(**{
+            "kms:key_rings": [
+                {"name": "kr1", "iam_policy": [
+                    {"role": "roles/cloudkms.cryptoKeyDecrypter",
+                     "members": ["allUsers"]},
+                ]},
+            ],
+        })
+        findings = gckms004_keyring_iam.check(cat)
+        assert len(findings) == 1
+        assert findings[0].passed is False
+        assert findings[0].check_id == "GCKMS-004"
+
+    def test_allAuthenticatedUsers_fails(self, make_catalog):
+        cat = make_catalog(**{
+            "kms:key_rings": [
+                {"name": "kr2", "iam_policy": [
+                    {"role": "roles/cloudkms.admin",
+                     "members": ["allAuthenticatedUsers", "user:admin@co.com"]},
+                ]},
+            ],
+        })
+        findings = gckms004_keyring_iam.check(cat)
+        assert len(findings) == 1
+        assert findings[0].passed is False
+
+    def test_private_bindings_passes(self, make_catalog):
+        cat = make_catalog(**{
+            "kms:key_rings": [
+                {"name": "kr3", "iam_policy": [
+                    {"role": "roles/cloudkms.cryptoKeyDecrypter",
+                     "members": ["serviceAccount:sa@proj.iam.gserviceaccount.com"]},
+                ]},
+            ],
+        })
+        findings = gckms004_keyring_iam.check(cat)
+        assert len(findings) == 1
+        assert findings[0].passed is True
+
+    def test_no_key_rings_returns_empty(self, make_catalog):
+        cat = make_catalog(**{"kms:key_rings": []})
+        assert gckms004_keyring_iam.check(cat) == []
+
+
+# -----------------------------------------------------------------------
+# GCKMS-005: KMS key primary version scheduled for destruction
+# -----------------------------------------------------------------------
+
+from pipeline_check.core.checks.gcp.rules import gckms005_destroy_scheduled
+
+
+class TestGCKMS005:
+    def test_destroy_scheduled_fails(self, make_catalog):
+        cat = make_catalog(**{
+            "kms:keys": [_key(primary_state="DESTROY_SCHEDULED")],
+        })
+        findings = gckms005_destroy_scheduled.check(cat)
+        assert len(findings) == 1
+        assert findings[0].passed is False
+        assert findings[0].check_id == "GCKMS-005"
+
+    def test_enabled_state_passes(self, make_catalog):
+        cat = make_catalog(**{
+            "kms:keys": [_key(primary_state="ENABLED")],
+        })
+        findings = gckms005_destroy_scheduled.check(cat)
+        assert len(findings) == 1
+        assert findings[0].passed is True
+
+    def test_no_primary_state_skipped(self, make_catalog):
+        k = _key()
+        k["primary_state"] = None
+        cat = make_catalog(**{"kms:keys": [k]})
+        findings = gckms005_destroy_scheduled.check(cat)
+        assert findings == []
+
+    def test_no_keys_returns_empty(self, make_catalog):
+        cat = make_catalog(**{"kms:keys": []})
+        assert gckms005_destroy_scheduled.check(cat) == []
+
+
+# -----------------------------------------------------------------------
+# GCKMS-006: KMS key uses imported (external) key material
+# -----------------------------------------------------------------------
+
+from pipeline_check.core.checks.gcp.rules import gckms006_imported_key_material
+
+
+class TestGCKMS006:
+    def test_external_protection_fails(self, make_catalog):
+        cat = make_catalog(**{
+            "kms:keys": [_key(protection="EXTERNAL")],
+        })
+        findings = gckms006_imported_key_material.check(cat)
+        assert len(findings) == 1
+        assert findings[0].passed is False
+        assert findings[0].check_id == "GCKMS-006"
+
+    def test_external_vpc_fails(self, make_catalog):
+        cat = make_catalog(**{
+            "kms:keys": [_key(protection="EXTERNAL_VPC")],
+        })
+        findings = gckms006_imported_key_material.check(cat)
+        assert len(findings) == 1
+        assert findings[0].passed is False
+
+    def test_software_protection_passes(self, make_catalog):
+        cat = make_catalog(**{
+            "kms:keys": [_key(protection="SOFTWARE")],
+        })
+        findings = gckms006_imported_key_material.check(cat)
+        assert len(findings) == 1
+        assert findings[0].passed is True
+
+    def test_hsm_protection_passes(self, make_catalog):
+        cat = make_catalog(**{
+            "kms:keys": [_key(protection="HSM")],
+        })
+        findings = gckms006_imported_key_material.check(cat)
+        assert len(findings) == 1
+        assert findings[0].passed is True
+
+    def test_no_keys_returns_empty(self, make_catalog):
+        cat = make_catalog(**{"kms:keys": []})
+        assert gckms006_imported_key_material.check(cat) == []

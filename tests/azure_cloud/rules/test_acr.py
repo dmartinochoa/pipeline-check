@@ -138,3 +138,99 @@ class TestAcr003:
         catalog = make_catalog(**{"acr:registries": []})
         findings = acr003.check(catalog)
         assert findings == []
+
+
+# -----------------------------------------------------------------------
+# ACR-004  Container registry Defender scanning not enabled
+# -----------------------------------------------------------------------
+
+from pipeline_check.core.checks.azure_cloud.rules import (
+    acr004_defender_scanning as acr004,
+)
+
+
+class TestAcr004:
+    def test_premium_with_quarantine_passes(self, make_catalog):
+        reg = _registry()
+        reg.sku.name = "Premium"
+        reg.policies.quarantine_policy.status = "enabled"
+        catalog = make_catalog(**{"acr:registries": [reg]})
+        findings = acr004.check(catalog)
+        assert len(findings) == 1
+        assert findings[0].passed is True
+        assert findings[0].check_id == "ACR-004"
+
+    def test_premium_without_quarantine_fails(self, make_catalog):
+        reg = _registry()
+        reg.sku.name = "Premium"
+        reg.policies.quarantine_policy.status = "disabled"
+        catalog = make_catalog(**{"acr:registries": [reg]})
+        findings = acr004.check(catalog)
+        assert len(findings) == 1
+        assert findings[0].passed is False
+
+    def test_standard_sku_fails(self, make_catalog):
+        reg = _registry()
+        reg.sku.name = "Standard"
+        catalog = make_catalog(**{"acr:registries": [reg]})
+        findings = acr004.check(catalog)
+        assert len(findings) == 1
+        assert findings[0].passed is False
+
+    def test_empty_registries(self, make_catalog):
+        catalog = make_catalog(**{"acr:registries": []})
+        findings = acr004.check(catalog)
+        assert findings == []
+
+
+# -----------------------------------------------------------------------
+# ACR-005  Container registry does not enforce tag immutability
+# -----------------------------------------------------------------------
+
+from pipeline_check.core.checks.azure_cloud.rules import (
+    acr005_tag_immutability as acr005,
+)
+
+
+class TestAcr005:
+    def test_quarantine_enabled_passes(self, make_catalog):
+        reg = _registry()
+        reg.policies.quarantine_policy.status = "enabled"
+        reg.policies.export_policy.status = "enabled"
+        catalog = make_catalog(**{"acr:registries": [reg]})
+        findings = acr005.check(catalog)
+        assert len(findings) == 1
+        assert findings[0].passed is True
+        assert findings[0].check_id == "ACR-005"
+
+    def test_export_disabled_passes(self, make_catalog):
+        reg = _registry()
+        reg.policies.quarantine_policy.status = "disabled"
+        reg.policies.export_policy.status = "disabled"
+        catalog = make_catalog(**{"acr:registries": [reg]})
+        findings = acr005.check(catalog)
+        assert len(findings) == 1
+        assert findings[0].passed is True
+
+    def test_no_policies_fails(self, make_catalog):
+        reg = MagicMock()
+        reg.name = "bare-acr"
+        reg.policies = None
+        catalog = make_catalog(**{"acr:registries": [reg]})
+        findings = acr005.check(catalog)
+        assert len(findings) == 1
+        assert findings[0].passed is False
+
+    def test_all_disabled_fails(self, make_catalog):
+        reg = _registry()
+        reg.policies.quarantine_policy.status = "disabled"
+        reg.policies.export_policy.status = "enabled"
+        catalog = make_catalog(**{"acr:registries": [reg]})
+        findings = acr005.check(catalog)
+        assert len(findings) == 1
+        assert findings[0].passed is False
+
+    def test_empty_registries(self, make_catalog):
+        catalog = make_catalog(**{"acr:registries": []})
+        findings = acr005.check(catalog)
+        assert findings == []

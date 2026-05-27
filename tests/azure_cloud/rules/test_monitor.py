@@ -158,3 +158,177 @@ class TestAzmon003:
         assert len(findings) == 1
         assert findings[0].passed is True
         assert "3" in findings[0].description
+
+
+# -----------------------------------------------------------------------
+# AZMON-004  Key Vault has no diagnostic settings configured
+# -----------------------------------------------------------------------
+
+
+from pipeline_check.core.checks.azure_cloud.rules import (
+    azmon004_keyvault_diagnostics as azmon004,
+)
+
+
+class TestAzmon004:
+    def test_vault_without_diagnostics_fails(self, make_catalog):
+        """Without a real MonitorManagementClient, the try/except falls to no-diag."""
+        vault = MagicMock()
+        vault.name = "kv-no-diag"
+        vault.id = "/subscriptions/sub/resourceGroups/rg/providers/Microsoft.KeyVault/vaults/kv-no-diag"
+        catalog = make_catalog(**{"keyvault:vaults": [vault]})
+        findings = azmon004.check(catalog)
+        assert len(findings) == 1
+        assert findings[0].passed is False
+        assert findings[0].check_id == "AZMON-004"
+
+    def test_vault_without_id_fails(self, make_catalog):
+        vault = MagicMock()
+        vault.name = "kv-no-id"
+        vault.id = ""
+        catalog = make_catalog(**{"keyvault:vaults": [vault]})
+        findings = azmon004.check(catalog)
+        assert len(findings) == 1
+        assert findings[0].passed is False
+
+    def test_empty_vaults(self, make_catalog):
+        catalog = make_catalog(**{"keyvault:vaults": []})
+        findings = azmon004.check(catalog)
+        assert findings == []
+
+
+# -----------------------------------------------------------------------
+# AZMON-005  NSG flow log retention less than 90 days
+# -----------------------------------------------------------------------
+
+from pipeline_check.core.checks.azure_cloud.rules import (
+    azmon005_nsg_flow_retention as azmon005,
+)
+
+
+def _flow_log(name: str = "fl1", target_id: str = "",
+              retention_enabled: bool = True, retention_days: int = 90):
+    fl = MagicMock()
+    fl.name = name
+    fl.target_resource_id = target_id
+    fl.retention_policy.enabled = retention_enabled
+    fl.retention_policy.days = retention_days
+    return fl
+
+
+class TestAzmon005:
+    def test_short_retention_fails(self, make_catalog):
+        fl = _flow_log(retention_days=30)
+        catalog = make_catalog(**{"network:flow_logs": [fl]})
+        findings = azmon005.check(catalog)
+        assert len(findings) == 1
+        assert findings[0].passed is False
+        assert findings[0].check_id == "AZMON-005"
+
+    def test_sufficient_retention_passes(self, make_catalog):
+        fl = _flow_log(retention_days=90)
+        catalog = make_catalog(**{"network:flow_logs": [fl]})
+        findings = azmon005.check(catalog)
+        assert len(findings) == 1
+        assert findings[0].passed is True
+
+    def test_retention_not_enabled_fails(self, make_catalog):
+        fl = _flow_log(retention_enabled=False)
+        catalog = make_catalog(**{"network:flow_logs": [fl]})
+        findings = azmon005.check(catalog)
+        assert len(findings) == 1
+        assert findings[0].passed is False
+
+    def test_empty_flow_logs(self, make_catalog):
+        catalog = make_catalog(**{"network:flow_logs": []})
+        findings = azmon005.check(catalog)
+        assert findings == []
+
+
+# -----------------------------------------------------------------------
+# AZMON-006  Log Analytics workspace retention less than 365 days
+# -----------------------------------------------------------------------
+
+from pipeline_check.core.checks.azure_cloud.rules import (
+    azmon006_law_retention as azmon006,
+)
+
+
+class TestAzmon006:
+    def test_short_retention_fails(self, make_catalog):
+        ws = MagicMock()
+        ws.name = "la-short"
+        ws.retention_in_days = 30
+        catalog = make_catalog(**{"monitor:workspaces": [ws]})
+        findings = azmon006.check(catalog)
+        assert len(findings) == 1
+        assert findings[0].passed is False
+        assert findings[0].check_id == "AZMON-006"
+
+    def test_365_retention_passes(self, make_catalog):
+        ws = MagicMock()
+        ws.name = "la-compliant"
+        ws.retention_in_days = 365
+        catalog = make_catalog(**{"monitor:workspaces": [ws]})
+        findings = azmon006.check(catalog)
+        assert len(findings) == 1
+        assert findings[0].passed is True
+
+    def test_none_retention_defaults_to_30_fails(self, make_catalog):
+        ws = MagicMock()
+        ws.name = "la-none"
+        ws.retention_in_days = None
+        catalog = make_catalog(**{"monitor:workspaces": [ws]})
+        findings = azmon006.check(catalog)
+        assert len(findings) == 1
+        assert findings[0].passed is False
+
+    def test_empty_workspaces(self, make_catalog):
+        catalog = make_catalog(**{"monitor:workspaces": []})
+        findings = azmon006.check(catalog)
+        assert findings == []
+
+
+# -----------------------------------------------------------------------
+# AZMON-007  No service health alert rule configured
+# -----------------------------------------------------------------------
+
+from pipeline_check.core.checks.azure_cloud.rules import (
+    azmon007_service_health_alert as azmon007,
+)
+
+
+def _health_alert():
+    alert = MagicMock()
+    clause = MagicMock()
+    clause.field = "category"
+    clause.equals = "ServiceHealth"
+    alert.condition.all_of = [clause]
+    return alert
+
+
+class TestAzmon007:
+    def test_service_health_alert_passes(self, make_catalog):
+        alert = _health_alert()
+        catalog = make_catalog(**{"monitor:activity_log_alerts": [alert]})
+        findings = azmon007.check(catalog)
+        assert len(findings) == 1
+        assert findings[0].passed is True
+        assert findings[0].check_id == "AZMON-007"
+
+    def test_no_service_health_alert_fails(self, make_catalog):
+        catalog = make_catalog(**{"monitor:activity_log_alerts": []})
+        findings = azmon007.check(catalog)
+        assert len(findings) == 1
+        assert findings[0].passed is False
+
+    def test_non_health_alert_fails(self, make_catalog):
+        alert = MagicMock()
+        clause = MagicMock()
+        clause.field = "category"
+        clause.equals = "Administrative"
+        alert.condition.all_of = [clause]
+        catalog = make_catalog(**{"monitor:activity_log_alerts": [alert]})
+        findings = azmon007.check(catalog)
+        assert len(findings) == 1
+        assert findings[0].passed is False

@@ -562,5 +562,35 @@ STANDARD = Standard(
         "GAR-001":   ["4.1.1"],                    # no vulnerability scanning
         "GAR-002":   ["4.2.3"],                    # publicly readable repo
         "GAR-003":   ["4.2.2"],                    # no cleanup policy (stale images)
+        # ── Azure Cloud phase-2 (container-adjacent rules) ───────────
+        "AZST-004":  ["4.2.1"],                    # min TLS (insecure registry conn)
+        "ACR-004":   ["4.1.1"],                    # defender scan (image vulns)
+        "ACR-005":   ["4.1.5"],                    # tag immutability (untrusted images)
+        "AZNW-001":  ["4.4.3"],                    # SSH/RDP internet (unbounded net)
+        "AZNW-002":  ["4.4.3"],                    # flow logs
+        "AZNW-004":  ["4.4.3"],                    # deny-all
+        "AZNW-005":  ["4.4.3"],                    # public IP VM
+        "AZAPP-001": ["4.2.1"],                    # HTTPS (insecure conn)
+        "AZAPP-002": ["4.2.1"],                    # TLS
+        "AZSQL-003": ["4.4.3"],                    # public access
+        "AZVM-001":  ["4.1.4"],                    # disk encrypt (secret at rest)
+        "AZVM-002":  ["4.4.3"],                    # public IP
+        "AZVM-004":  ["4.1.1"],                    # OS patch (image vulns)
+        # ── GCP phase-2 (container-adjacent rules) ───────────────────
+        "GCNET-001": ["4.4.3"],                    # default network
+        "GCNET-002": ["4.4.3"],                    # deny-all
+        "GCNET-003": ["4.4.3"],                    # SSH/RDP (CRITICAL)
+        "GCNET-004": ["4.4.3"],                    # private access
+        "GCNET-005": ["4.4.3"],                    # Cloud NAT
+        "GCCE-001":  ["4.1.2"],                    # shielded VM (config defect)
+        "GCCE-002":  ["4.1.2"],                    # OS Login
+        "GCCE-003":  ["4.4.4"],                    # serial port (runtime config)
+        "GCCE-004":  ["4.4.3"],                    # public IP
+        "GCCE-005":  ["4.1.2"],                    # project SSH keys
+        "GCSQL-001": ["4.4.3"],                    # public IP
+        "GCSQL-003": ["4.2.1"],                    # SSL (insecure conn)
+        "GCRUN-001": ["4.2.3"],                    # unauth (registry auth)
+        "GCRUN-002": ["4.1.2"],                    # custom SA
+        "GCRUN-004": ["4.4.3"],                    # VPC connector
     },
 )

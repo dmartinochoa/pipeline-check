@@ -13,6 +13,10 @@ _RULE_PREFIX_TO_SERVICE: dict[str, str] = {
     "GCKMS": "kms",
     "GAR": "artifactregistry",
     "GCLOG": "logging",
+    "GCNET": "network",
+    "GCCE": "compute",
+    "GCSQL": "cloudsql",
+    "GCRUN": "cloudrun",
 }
 
 _DEGRADED: dict[str, tuple[str, str, str]] = {
@@ -45,6 +49,30 @@ _DEGRADED: dict[str, tuple[str, str, str]] = {
         "Cloud Logging",
         "Ensure the service account has logging.sinks.list and "
         "logging.buckets.list permissions.",
+    ),
+    "network": (
+        "GCNET-000",
+        "GCP Networking",
+        "Ensure the service account has compute.firewalls.list and "
+        "compute.networks.list permissions.",
+    ),
+    "compute": (
+        "GCCE-000",
+        "Compute Engine",
+        "Ensure the service account has compute.instances.list "
+        "permission.",
+    ),
+    "cloudsql": (
+        "GCSQL-000",
+        "Cloud SQL",
+        "Ensure the service account has cloudsql.instances.list "
+        "permission.",
+    ),
+    "cloudrun": (
+        "GCRUN-000",
+        "Cloud Run / Functions",
+        "Ensure the service account has run.services.list and "
+        "cloudfunctions.functions.list permissions.",
     ),
 }
 

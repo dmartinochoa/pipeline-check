@@ -635,5 +635,77 @@ STANDARD = Standard(
         "GCLOG-001": ["Branch-Protection"],                # audit logs not enabled
         "GCLOG-002": ["Branch-Protection"],                # no log sink
         "GCLOG-003": ["Branch-Protection"],                # log retention < 365 days
+        # ── Azure Cloud phase-2 ──────────────────────────────────────
+        "ENTRA-004": ["Token-Permissions"],                # cond access MFA
+        "ENTRA-005": ["Token-Permissions"],                # ext user restrict
+        "ENTRA-006": ["Branch-Protection"],                # risky signin
+        "AZST-004":  ["Pinned-Dependencies"],              # min TLS
+        "AZST-005":  ["Pinned-Dependencies"],              # lifecycle
+        "AZST-006":  ["Token-Permissions"],                # key rotation
+        "AKV-004":   ["Token-Permissions"],                # key expiry
+        "AKV-005":   ["Token-Permissions"],                # secret expiry
+        "AKV-006":   ["Token-Permissions"],                # RBAC
+        "ACR-004":   ["Vulnerabilities", "SAST"],          # defender scan
+        "ACR-005":   ["Signed-Releases"],                  # tag immutability
+        "AZMON-004": ["Branch-Protection"],                # KV diagnostics
+        "AZMON-005": ["Branch-Protection"],                # NSG flow retention
+        "AZMON-006": ["Branch-Protection"],                # LAW retention
+        "AZMON-007": ["Branch-Protection"],                # svc health alert
+        "AZNW-001":  ["Dangerous-Workflow"],               # SSH/RDP internet (CRITICAL)
+        "AZNW-002":  ["Branch-Protection"],                # flow logs
+        "AZNW-003":  ["Dangerous-Workflow"],               # WAF
+        "AZNW-004":  ["Dangerous-Workflow"],               # deny-all
+        "AZNW-005":  ["Dangerous-Workflow"],               # public IP VM
+        "AZAPP-001": ["Pinned-Dependencies"],              # HTTPS
+        "AZAPP-002": ["Pinned-Dependencies"],              # TLS
+        "AZAPP-003": ["Token-Permissions"],                # managed identity
+        "AZAPP-004": ["Dangerous-Workflow"],               # remote debug
+        "AZAPP-005": ["Dangerous-Workflow"],               # FTP
+        "AZSQL-001": ["Token-Permissions"],                # TDE CMK
+        "AZSQL-002": ["Branch-Protection"],                # auditing
+        "AZSQL-003": ["Dangerous-Workflow"],               # public access
+        "AZSQL-004": ["Token-Permissions"],                # AAD admin
+        "AZSQL-005": ["Vulnerabilities"],                  # threat detect
+        "AZVM-001":  ["Token-Permissions"],                # disk encrypt
+        "AZVM-002":  ["Dangerous-Workflow"],               # public IP
+        "AZVM-003":  ["Dangerous-Workflow"],               # JIT
+        "AZVM-004":  ["Vulnerabilities"],                  # OS patch
+        "AZVM-005":  ["Token-Permissions"],                # managed identity
+        # ── GCP phase-2 ──────────────────────────────────────────────
+        "GCIAM-004": ["Token-Permissions"],                # default SA
+        "GCIAM-005": ["Token-Permissions"],                # domain restrict
+        "GCIAM-006": ["Token-Permissions"],                # SA key age
+        "GCS-004":   ["Token-Permissions"],                # CMEK
+        "GCS-005":   ["Branch-Protection"],                # access logging
+        "GCLOG-004": ["Branch-Protection"],                # VPC flow logs
+        "GCLOG-005": ["Branch-Protection"],                # firewall logging
+        "GCLOG-006": ["Branch-Protection"],                # data access
+        "GCLOG-007": ["Branch-Protection"],                # metric filter IAM
+        "GCLOG-008": ["Branch-Protection"],                # metric filter firewall
+        "GCLOG-009": ["Branch-Protection"],                # metric filter route
+        "GCLOG-010": ["Branch-Protection"],                # metric filter SQL
+        "GCLOG-011": ["Branch-Protection"],                # metric filter custom role
+        "GCNET-001": ["Dangerous-Workflow"],               # default network
+        "GCNET-002": ["Dangerous-Workflow"],               # deny-all
+        "GCNET-003": ["Dangerous-Workflow"],               # SSH/RDP (CRITICAL)
+        "GCNET-004": ["Dangerous-Workflow"],               # private access
+        "GCNET-005": ["Dangerous-Workflow"],               # Cloud NAT
+        "GCCE-001":  ["Dangerous-Workflow"],               # shielded VM
+        "GCCE-002":  ["Token-Permissions"],                # OS Login
+        "GCCE-003":  ["Dangerous-Workflow"],               # serial port
+        "GCCE-004":  ["Dangerous-Workflow"],               # public IP
+        "GCCE-005":  ["Dangerous-Workflow"],               # project SSH keys
+        "GCSQL-001": ["Dangerous-Workflow"],               # public IP
+        "GCSQL-002": ["Pinned-Dependencies"],              # backups
+        "GCSQL-003": ["Pinned-Dependencies"],              # SSL
+        "GCSQL-004": ["Token-Permissions"],                # IAM auth
+        "GCSQL-005": ["Pinned-Dependencies"],              # PITR
+        "GCRUN-001": ["Dangerous-Workflow"],               # unauth
+        "GCRUN-002": ["Token-Permissions"],                # custom SA
+        "GCRUN-003": ["Pinned-Dependencies"],              # min instances
+        "GCRUN-004": ["Dangerous-Workflow"],               # VPC connector
+        "GCKMS-004": ["Token-Permissions"],                # keyring IAM
+        "GCKMS-005": ["Token-Permissions"],                # destroy sched
+        "GCKMS-006": ["Token-Permissions"],                # imported key
     },
 )

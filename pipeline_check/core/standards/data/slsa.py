@@ -638,5 +638,81 @@ STANDARD = Standard(
         "GCLOG-001": ["Build.L3.NonFalsifiable"],                  # audit logs not enabled
         "GCLOG-002": ["Build.L3.NonFalsifiable"],                  # no log sink
         "GCLOG-003": ["Build.L3.NonFalsifiable"],                  # log retention < 365 days
+        # ── Azure Cloud phase-2 ──────────────────────────────────────
+        "ENTRA-004": ["Build.L3.NonFalsifiable"],                  # cond access MFA
+        "ENTRA-005": ["Build.L3.NonFalsifiable"],                  # ext user restrict
+        "ENTRA-006": ["Build.L3.NonFalsifiable"],                  # risky signin
+        "AZST-004":  ["Build.L3.Isolated",
+                      "Build.L3.NonFalsifiable"],                  # min TLS
+        "AZST-005":  ["Build.L3.NonFalsifiable"],                  # lifecycle
+        "AZST-006":  ["Build.L3.NonFalsifiable"],                  # key rotation
+        "AKV-004":   ["Build.L3.NonFalsifiable"],                  # key expiry
+        "AKV-005":   ["Build.L3.NonFalsifiable"],                  # secret expiry
+        "AKV-006":   ["Build.L3.NonFalsifiable"],                  # RBAC
+        "ACR-004":   ["Build.L3.NonFalsifiable"],                  # defender scan
+        "ACR-005":   ["Build.L3.NonFalsifiable"],                  # tag immutability
+        "AZMON-004": ["Build.L3.NonFalsifiable"],                  # KV diagnostics
+        "AZMON-005": ["Build.L3.NonFalsifiable"],                  # NSG flow retention
+        "AZMON-006": ["Build.L3.NonFalsifiable"],                  # LAW retention
+        "AZMON-007": ["Build.L3.NonFalsifiable"],                  # svc health alert
+        "AZNW-001":  ["Build.L3.Isolated"],                        # SSH/RDP internet (CRITICAL)
+        "AZNW-002":  ["Build.L3.NonFalsifiable"],                  # flow logs
+        "AZNW-003":  ["Build.L3.Isolated"],                        # WAF
+        "AZNW-004":  ["Build.L3.Isolated"],                        # deny-all
+        "AZNW-005":  ["Build.L3.Isolated"],                        # public IP VM
+        "AZAPP-001": ["Build.L3.Isolated",
+                      "Build.L3.NonFalsifiable"],                  # HTTPS
+        "AZAPP-002": ["Build.L3.Isolated",
+                      "Build.L3.NonFalsifiable"],                  # TLS
+        "AZAPP-003": ["Build.L3.NonFalsifiable"],                  # managed identity
+        "AZAPP-004": ["Build.L3.Isolated"],                        # remote debug
+        "AZAPP-005": ["Build.L3.Isolated"],                        # FTP
+        "AZSQL-001": ["Build.L2.Signed"],                          # TDE CMK
+        "AZSQL-002": ["Build.L3.NonFalsifiable"],                  # auditing
+        "AZSQL-003": ["Build.L3.Isolated"],                        # public access
+        "AZSQL-004": ["Build.L3.NonFalsifiable"],                  # AAD admin
+        "AZSQL-005": ["Build.L3.NonFalsifiable"],                  # threat detect
+        "AZVM-001":  ["Build.L2.Signed"],                          # disk encrypt
+        "AZVM-002":  ["Build.L3.Isolated"],                        # public IP
+        "AZVM-003":  ["Build.L3.Isolated"],                        # JIT
+        "AZVM-004":  ["Build.L3.NonFalsifiable"],                  # OS patch
+        "AZVM-005":  ["Build.L3.NonFalsifiable"],                  # managed identity
+        # ── GCP phase-2 ──────────────────────────────────────────────
+        "GCIAM-004": ["Build.L3.NonFalsifiable"],                  # default SA
+        "GCIAM-005": ["Build.L3.NonFalsifiable"],                  # domain restrict
+        "GCIAM-006": ["Build.L3.NonFalsifiable"],                  # SA key age
+        "GCS-004":   ["Build.L2.Signed"],                          # CMEK
+        "GCS-005":   ["Build.L3.NonFalsifiable"],                  # access logging
+        "GCLOG-004": ["Build.L3.NonFalsifiable"],                  # VPC flow logs
+        "GCLOG-005": ["Build.L3.NonFalsifiable"],                  # firewall logging
+        "GCLOG-006": ["Build.L3.NonFalsifiable"],                  # data access
+        "GCLOG-007": ["Build.L3.NonFalsifiable"],                  # metric filter IAM
+        "GCLOG-008": ["Build.L3.NonFalsifiable"],                  # metric filter firewall
+        "GCLOG-009": ["Build.L3.NonFalsifiable"],                  # metric filter route
+        "GCLOG-010": ["Build.L3.NonFalsifiable"],                  # metric filter SQL
+        "GCLOG-011": ["Build.L3.NonFalsifiable"],                  # metric filter custom role
+        "GCNET-001": ["Build.L3.Isolated"],                        # default network
+        "GCNET-002": ["Build.L3.Isolated"],                        # deny-all
+        "GCNET-003": ["Build.L3.Isolated"],                        # SSH/RDP (CRITICAL)
+        "GCNET-004": ["Build.L3.Isolated"],                        # private access
+        "GCNET-005": ["Build.L3.Isolated"],                        # Cloud NAT
+        "GCCE-001":  ["Build.L3.NonFalsifiable"],                  # shielded VM
+        "GCCE-002":  ["Build.L3.NonFalsifiable"],                  # OS Login
+        "GCCE-003":  ["Build.L3.Isolated"],                        # serial port
+        "GCCE-004":  ["Build.L3.Isolated"],                        # public IP
+        "GCCE-005":  ["Build.L3.Isolated"],                        # project SSH keys
+        "GCSQL-001": ["Build.L3.Isolated"],                        # public IP
+        "GCSQL-002": ["Build.L3.NonFalsifiable"],                  # backups
+        "GCSQL-003": ["Build.L3.Isolated",
+                      "Build.L3.NonFalsifiable"],                  # SSL
+        "GCSQL-004": ["Build.L3.NonFalsifiable"],                  # IAM auth
+        "GCSQL-005": ["Build.L3.NonFalsifiable"],                  # PITR
+        "GCRUN-001": ["Build.L3.Isolated"],                        # unauth
+        "GCRUN-002": ["Build.L3.NonFalsifiable"],                  # custom SA
+        "GCRUN-003": ["Build.L3.NonFalsifiable"],                  # min instances
+        "GCRUN-004": ["Build.L3.Isolated"],                        # VPC connector
+        "GCKMS-004": ["Build.L3.NonFalsifiable"],                  # keyring IAM
+        "GCKMS-005": ["Build.L3.NonFalsifiable"],                  # destroy sched
+        "GCKMS-006": ["Build.L2.Signed"],                          # imported key
     },
 )
