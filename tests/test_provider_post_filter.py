@@ -102,7 +102,7 @@ def test_maven_post_filter_populates_publish_times_and_osv(tmp_path):
     )
     fake_times = {
         "org.apache.logging.log4j:log4j-core": {
-            "2.17.1": dt.datetime(2021, 12, 28, tzinfo=dt.timezone.utc),
+            "2.17.1": dt.datetime(2021, 12, 28, tzinfo=dt.UTC),
         },
     }
     fake_osv = {
@@ -137,7 +137,7 @@ def test_npm_post_filter_populates_publish_times_and_osv(tmp_path):
         '"dependencies":{"lodash":"4.17.21"}}'
     )
     fake_times = {
-        "lodash": {"4.17.21": dt.datetime(2021, 2, 20, tzinfo=dt.timezone.utc)},
+        "lodash": {"4.17.21": dt.datetime(2021, 2, 20, tzinfo=dt.UTC)},
     }
     fake_osv: dict[tuple[str, str], list[object]] = {}
     provider = _providers.get("npm")
@@ -164,7 +164,7 @@ def test_pypi_post_filter_populates_publish_times_and_osv(tmp_path):
     req = tmp_path / "requirements.txt"
     req.write_text("requests==2.31.0\nclick>=8.0\n")
     fake_times = {
-        "requests": {"2.31.0": dt.datetime(2023, 5, 22, tzinfo=dt.timezone.utc)},
+        "requests": {"2.31.0": dt.datetime(2023, 5, 22, tzinfo=dt.UTC)},
     }
     fake_osv: dict[tuple[str, str], list[object]] = {
         ("requests", "2.31.0"): [],
