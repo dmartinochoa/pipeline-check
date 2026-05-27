@@ -394,152 +394,36 @@ What's planned, what's shipped, and what's deliberately out of scope.
 - v0.2.x — Cloud Build, Jenkins, Terraform, CloudFormation, JUnit
   and Markdown reporters, 13-standard mapping, autofix engine, HTML
   report interactivity.
-
-## cicd-goat 38-scenario coverage push (31/38 -> 38/38)
-
-The ``greylag-ci/cicd-goat`` corpus expanded from 29 to 38 scenarios.
-Pipeline-check leads the leaderboard at 31/38, but seven scenarios
-remain uncovered in the comparison matrix. Three are cicd-goat
-config fixes (the rules already exist), one is a cicd-goat safety-model
-limitation, and three require new rules.
-
-### cicd-goat comparison config fixes (scenarios 20, 29, 34)
-
-These flip to green without any rule changes in pipeline-check.
-
-- **Scenario 20 (dependency confusion) + Scenario 29 (npm lifecycle-
-  script RCE)**: Pipeline-check catches both via the npm provider
-  (NPM-001/NPM-004), but the cicd-goat ``scanner-comparison.yml``
-  only runs ``--pipeline github``. Adding a parallel
-  ``--pipeline npm --npm-path scenarios/20-dependency-confusion``
-  (and the same for scenario 29) to the comparison workflow makes both
-  rows flip. The GHA provider already prints a ``[hint]`` nudging
-  users to add the npm leg.
-- **Scenario 34 (``ACTIONS_ALLOW_UNSECURE_COMMANDS`` re-enabled)**:
-  GHA-038 fires on the scenario's job-level ``env:`` block and is
-  visible in the SARIF. The ``scenarios.yaml`` ``expected`` list for
-  pipeline-check is empty (``[]``) because the rule landed after the
-  initial scoring was written. Fix: add ``[GHA-038]`` to
-  ``expected.pipeline-check`` in ``tools/scenarios.yaml``.
-
-### cicd-goat safety-model limitation (scenario 37)
-
-Scenario 37 (confused-deputy auto-merge via bot-identity gate) replaces
-the vulnerable ``if: github.actor == 'dependabot[bot]'`` with
-``if: false`` so the goat repo's Actions never actually run. This makes
-the unsafe pattern invisible to every scanner that inspects ``if:``
-predicates, including pipeline-check's GHA-063 (bot-conditions). On
-real workflows, GHA-063 already fires. Fixing this in cicd-goat
-requires restructuring the scenario (secondary file, non-``if``
-placement, or an AST-level workaround). Filed upstream.
-
-### New rule: cosign verify without identity binding (scenario 35)
-
-**GHA-100: ``cosign verify`` / ``cosign verify-blob`` missing
-``--certificate-identity`` and ``--certificate-oidc-issuer``.**
-
-A keyless ``cosign verify`` that omits identity binding accepts
-signatures from *any* Sigstore-authenticated signer, not just the
-expected build pipeline. An attacker who replaces the artifact on the
-CDN can mint their own valid signature from their own GitHub workflow.
-The check passes, and the runner executes attacker code.
-
-Rule shape: parse ``run:`` blocks for ``cosign verify`` /
-``cosign verify-blob`` invocations (including multi-line ``|`` blocks).
-Flag when *both* of ``--certificate-identity`` (or
-``--certificate-identity-regexp``) and ``--certificate-oidc-issuer``
-(or ``--certificate-oidc-issuer-regexp``) are absent. The invocation
-is detectable as a string pattern, no cross-file analysis needed.
-
-Severity HIGH. OWASP CICD-SEC-3 (Dependency Chain Abuse), CICD-SEC-9
-(Improper Artifact Integrity Validation). CWE-345 (Insufficient
-Verification of Data Authenticity). Every scanner in the comparison
-currently scores ❌ on this scenario, so it will be a solo catch.
-
-Sister rules in the signing family: GHA-006 (missing artifact signing),
-GHA-024 (missing SLSA provenance), ATTEST-005 (subject unpinned in
-attestation). GHA-100 covers the *consumer-side* verification gap that
-those rules leave open.
-
-### New rule: environment-secret flow bypasses protection rules (scenario 36)
-
-**TAINT-009 (or GHA-101): secret read inside ``environment:``-bound
-job flows via ``needs.<job>.outputs.*`` to a consumer job without
-``environment:``.**
-
-GitHub's environment protection rules (required reviewers, wait timer,
-deployment-branches, custom protection rules) only fire on the job
-that binds ``environment:``. If that job reads a protected secret and
-ships it through job outputs to a downstream job that has no
-``environment:`` binding, the downstream job operates with the secret
-but without any of the protection gates.
-
-Rule shape: extend the TAINT-002 cross-job output tracing to check
-whether the *source* job carries an ``environment:`` key. If it does,
-and any consumer job in the ``needs:`` graph does not carry its own
-``environment:`` binding, flag the consumer. This is a small extension
-of the existing cross-job dataflow engine, not a new engine.
-
-Severity HIGH. OWASP CICD-SEC-5 (Insufficient Pipeline-Based Access
-Controls), CICD-SEC-2 (Inadequate Identity and Access Management).
-CWE-863 (Incorrect Authorization). Every scanner currently scores ❌.
-
-### New rule: recursive submodule checkout from PR (scenario 38)
-
-**GHA-102: ``actions/checkout`` with ``submodules: true`` or
-``submodules: recursive`` on a PR trigger.**
-
-A contributor PR can modify ``.gitmodules`` to point a submodule at
-an attacker-controlled repository. With ``submodules: recursive``,
-the checkout action clones that repo into the workspace. Any build
-step that follows (``npm ci``, ``make``, ``cargo build``) executes
-attacker-controlled code, including lifecycle scripts, Makefiles, and
-build.rs files.
-
-Rule shape: on workflows triggered by ``pull_request`` or
-``pull_request_target``, find ``actions/checkout`` steps where
-``with.submodules`` is ``true`` or ``recursive``. Flag if any
-subsequent step in the same job runs a build command or arbitrary
-shell. The pairing is the signal: ``submodules: recursive`` alone
-is a deliberate choice, but combined with a PR trigger it
-unconditionally trusts the PR author's ``.gitmodules``.
-
-Severity HIGH. OWASP CICD-SEC-3 (Dependency Chain Abuse), CICD-SEC-4
-(Poisoned Pipeline Execution). CWE-829 (Inclusion of Functionality
-from Untrusted Control Sphere). Every scanner currently scores ❌.
-
-### GHA-063 widening: confused-deputy auto-merge escalation
-
-Even though scenario 37 is blocked by the cicd-goat safety model,
-the underlying pattern warrants a GHA-063 widening. The current rule
-fires on any ``if:`` predicate that gates on a bot-actor comparison.
-Extend it to promote severity to CRITICAL when the same job also
-invokes ``gh pr review --approve``, ``gh pr merge``, or the
-``hmarr/auto-approve-action`` / ``peter-evans/enable-pull-request-
-automerge`` family. The combination of bot-identity gate + auto-merge
-action is the Synacktiv confused-deputy primitive, not just a style
-issue.
-
-### Attack chains unlocked by the new rules
-
-- **AC-032: cosign-signed-but-not-bound artifact to production deploy**
-  (GHA-100 + GHA-014 or GHA-098). The verify step accepts any signer;
-  the deploy step runs without a security-scan gate. An attacker who
-  replaces the CDN artifact with a self-signed payload reaches
-  production.
-- **AC-033: environment-secret laundering to unprotected job**
-  (TAINT-009 + GHA-098 or AC-002). The mint job passes review; the
-  deploy job that uses the secret doesn't.
-- **AC-034: submodule-poisoned PR to credential exfiltration**
-  (GHA-102 + GHA-037 or GHA-004). The submodule checkout pulls
-  attacker code; persist-credentials + write-all GITHUB_TOKEN
-  means the attacker's postinstall runs with repo write access.
-
-### Scoring target
-
-After all items ship and the cicd-goat config is updated:
-pipeline-check 38/38 (up from 31/38), extending the solo-catch
-lead over zizmor (16), poutine (12), and octoscan (12).
+- **cicd-goat 38-scenario coverage push (post-1.4.0)** —
+  Three new rules, one widening, three attack chains close every
+  pipeline-check-side gap in the expanded 38-scenario corpus.
+  GHA-100 (``cosign verify`` without ``--certificate-identity`` +
+  ``--certificate-oidc-issuer``, scenario 35, solo catch across all
+  scanners). TAINT-009 (environment-protected secret flows to
+  unprotected consumer job via ``needs.<job>.outputs``, scenario 36,
+  solo catch). GHA-102 (``actions/checkout`` with
+  ``submodules: recursive`` on a PR trigger, scenario 38, solo catch).
+  GHA-063 widened to promote severity to CRITICAL when the bot-actor
+  gate combines with ``gh pr merge --auto`` or the
+  ``hmarr/auto-approve-action`` family (Synacktiv confused-deputy
+  primitive). AC-032 (cosign-unbound artifact to deploy,
+  GHA-100 + GHA-098), AC-033 (environment-secret laundering,
+  TAINT-009 + GHA-098), AC-034 (submodule-poisoned PR to credential
+  exfiltration, GHA-102 + GHA-037/GHA-004). GHA rule count
+  90 -> 93; chain count 45 -> 48. 40 tests. Remaining gap:
+  scenarios 20, 29, 34 need cicd-goat comparison-config fixes
+  (upstream PRs, rules already fire); scenario 37 is blocked by
+  cicd-goat's ``if: false`` safety model (filed upstream).
+- **Secret verifier expansion phase 1 (post-1.4.0)** —
+  Four new live-verification probes: Docker Hub PAT
+  (``/v2/user`` bearer probe, identity extraction), PyPI upload
+  token (405-based auth confirmation against ``upload.pypi.org``),
+  Google Cloud API key (Generative Language API endpoint probe
+  with ``INVALID_ARGUMENT`` / ``API_KEY_INVALID`` classification),
+  JWT (issuer-based routing with Auth0 / Okta / Azure AD / Google
+  userinfo probes; GitHub OIDC tokens recognized with
+  ``sub``-extracted identity but not probed since they are
+  short-lived). Verifier count 9 -> 13. 18 new tests.
 
 ## Post-1.0 candidates
 
@@ -720,16 +604,24 @@ given the GHA rule pack's maturity.
 
 ### Secret verifier expansion
 
-The initial verifier pack covers 9 services (GitHub PAT, GitLab
-PAT, NPM token, Slack token, Anthropic, OpenAI, Hugging Face,
-Stripe, SendGrid).  High-value additions:
+Phase 1 shipped: Docker Hub PAT (``/v2/user`` bearer probe), PyPI
+upload token (405-based auth confirmation against ``upload.pypi.org``),
+Google Cloud API key (Generative Language API probe), and JWT
+(issuer-based routing with Auth0, Okta, Azure AD, Google userinfo
+probes; GitHub OIDC recognized but not probed). Verifier count
+9 -> 13.
 
-- AWS (STS ``GetCallerIdentity``), GCP (tokeninfo endpoint),
-  Azure (Microsoft Graph ``/me``), Docker Hub, JFrog, Datadog,
-  PagerDuty, Twilio.
+Remaining high-value additions:
+
+- AWS (STS ``GetCallerIdentity``) — needs paired access-key + secret;
+  the detector only captures the access-key ID.
+- Azure (Microsoft Graph ``/me``) — Azure tokens are opaque JWTs
+  without a stable prefix pattern; needs a detector first.
+- JFrog, Datadog, PagerDuty — need detector patterns.
+- Twilio — ``SK`` prefix detector exists but verification needs the
+  paired auth token (same paired-credential gap as AWS).
 - Generic entropy-based detection for tokens from services without
   a dedicated verifier.
-- JWT token detection in pipeline configs (surprisingly common).
 
 ### Lower priority
 
