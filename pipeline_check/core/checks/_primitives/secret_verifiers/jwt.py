@@ -8,7 +8,7 @@ from . import SecretVerifier, VerifyOutcome, VerifyResult
 from ._http import bearer_probe
 
 
-def _decode_jwt_payload(token: str) -> dict | None:
+def _decode_jwt_payload(token: str) -> dict[str, object] | None:
     """Decode the JWT payload (middle segment) without verifying."""
     parts = token.split(".")
     if len(parts) != 3:
@@ -16,7 +16,8 @@ def _decode_jwt_payload(token: str) -> dict | None:
     try:
         padded = parts[1] + "=" * (4 - len(parts[1]) % 4)
         payload = base64.urlsafe_b64decode(padded)
-        return json.loads(payload)
+        result: dict[str, object] = json.loads(payload)
+        return result
     except Exception:
         return None
 
