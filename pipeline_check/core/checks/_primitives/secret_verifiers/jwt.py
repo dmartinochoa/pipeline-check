@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import base64
 import json
+from urllib.parse import urlparse
 
 from . import SecretVerifier, VerifyOutcome, VerifyResult
 from ._http import bearer_probe
@@ -50,7 +51,10 @@ class JWTTokenVerifier(SecretVerifier):
 
         sub = payload.get("sub", "unknown")
 
-        if "token.actions.githubusercontent.com" in issuer:
+        host = urlparse(issuer).hostname or issuer
+
+        _gh_oidc = "token.actions.githubusercontent.com"
+        if host == _gh_oidc:
             return VerifyResult(
                 outcome=VerifyOutcome.UNKNOWN,
                 identity=f"github-oidc:{sub}",
@@ -61,7 +65,7 @@ class JWTTokenVerifier(SecretVerifier):
             )
 
         for domain, path in _ISSUER_PROBES:
-            if domain in issuer:
+            if host == domain or host.endswith("." + domain):
                 base = issuer.rstrip("/")
                 if not path:
                     return VerifyResult(
