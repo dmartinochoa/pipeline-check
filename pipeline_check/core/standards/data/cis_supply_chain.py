@@ -632,6 +632,7 @@ STANDARD = Standard(
         "TAINT-006": ["2.3.8", "2.1.3"],           # Tekton results cross-task taint flow
         "TAINT-007": ["2.3.8", "2.1.3"],           # Argo outputs.parameters cross-template
         "TAINT-008": ["2.3.8", "2.1.3"],           # GitLab extends-chain inheritance
+        "TAINT-009": ["2.4.3", "1.5.1"],           # env-protected secret flows to unprotected job
         # ── Terraform / CloudFormation (IaC-native gap-fill) ──────
         # Long-lived IAM access keys declared as code conflict with
         # 1.3.4 (no long-lived credentials) and also leak through
@@ -758,6 +759,8 @@ STANDARD = Standard(
         "GHA-097":  ["2.3.8", "2.1.3"],                 # recursive PR auto-merge loop
         "GHA-098":  ["1.1.8", "1.4.1"],                 # deploy without security scan gate
         "GHA-099":  ["1.5.1", "2.3.4"],                 # deploy env plaintext secret
+        "GHA-100":  ["4.1.1", "3.1.3"],                 # cosign verify no identity binding
+        "GHA-102":  ["2.1.3", "2.3.8"],                 # submodule checkout on PR trigger
         "SCM-048":  ["2.4.3"],                           # org codespace secrets scoped to all repos
         "SCM-049":  ["1.3.4"],                           # classic PAT where fine-grained suffices
         "NPM-012":  ["1.3.4", "4.3.3"],                 # publish token missing restrictions

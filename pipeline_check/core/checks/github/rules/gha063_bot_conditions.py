@@ -179,30 +179,76 @@ def _scan_expression(expr: str) -> list[str]:
     return out
 
 
+_AUTOMERGE_ACTIONS = (
+    "hmarr/auto-approve-action",
+    "peter-evans/enable-pull-request-automerge",
+    "pascalgn/automerge-action",
+    "reitermarkus/automerge",
+)
+
+_AUTOMERGE_CLI_RE = re.compile(
+    r"gh\s+pr\s+(?:merge(?:\s+.*--auto)?|review\s+.*--approve)\b"
+)
+
+
+def _job_has_automerge(job: dict[str, Any]) -> bool:
+    """True when the job contains an auto-approve or auto-merge step."""
+    for step in iter_steps(job):
+        uses = step.get("uses")
+        if isinstance(uses, str):
+            slug = uses.split("@", 1)[0].strip().lower()
+            if any(slug == a for a in _AUTOMERGE_ACTIONS):
+                return True
+        run = step.get("run")
+        if isinstance(run, str) and _AUTOMERGE_CLI_RE.search(run):
+            return True
+    return False
+
+
 def check(path: str, doc: dict[str, Any]) -> Finding:
     offenders: list[str] = []
+    has_confused_deputy = False
     for job_id, job in iter_jobs(doc):
+        job_has_bot_gate = False
         job_if = job.get("if")
         for label in _scan_expression(job_if if isinstance(job_if, str) else ""):
             offenders.append(f"jobs.{job_id}.if: {label}")
+            job_has_bot_gate = True
         for idx, step in enumerate(iter_steps(job)):
             step_if = step.get("if")
             for label in _scan_expression(
                 step_if if isinstance(step_if, str) else "",
             ):
                 offenders.append(f"jobs.{job_id}.steps[{idx}].if: {label}")
+                job_has_bot_gate = True
+        if job_has_bot_gate and _job_has_automerge(job):
+            has_confused_deputy = True
     passed = not offenders
-    desc = (
-        "No ``if:`` predicate gates on a spoofable bot-actor comparison."
-        if passed else
-        f"{len(offenders)} ``if:`` predicate(s) gate on a spoofable "
-        f"bot-actor comparison: {'; '.join(offenders[:3])}"
-        f"{'...' if len(offenders) > 3 else ''}. A maintainer "
-        f"re-running the workflow can set the actor to the bot "
-        f"login, bypassing the gate."
-    )
+    severity = Severity.CRITICAL if has_confused_deputy else RULE.severity
+    if passed:
+        desc = (
+            "No ``if:`` predicate gates on a spoofable bot-actor comparison."
+        )
+    elif has_confused_deputy:
+        desc = (
+            f"{len(offenders)} ``if:`` predicate(s) gate on a spoofable "
+            f"bot-actor comparison: {'; '.join(offenders[:3])}"
+            f"{'...' if len(offenders) > 3 else ''}. At least one of "
+            f"these jobs also invokes an auto-approve or auto-merge "
+            f"action, forming the Synacktiv confused-deputy primitive: "
+            f"a maintainer re-running the workflow can approve and "
+            f"merge arbitrary PRs under the bot's identity."
+        )
+    else:
+        desc = (
+            f"{len(offenders)} ``if:`` predicate(s) gate on a spoofable "
+            f"bot-actor comparison: {'; '.join(offenders[:3])}"
+            f"{'...' if len(offenders) > 3 else ''}. A maintainer "
+            f"re-running the workflow can set the actor to the bot "
+            f"login, bypassing the gate."
+        )
     return Finding(
-        check_id=RULE.id, title=RULE.title, severity=RULE.severity,
+        check_id=RULE.id, title=RULE.title, severity=severity,
         resource=path, description=desc,
         recommendation=RULE.recommendation, passed=passed,
     )

@@ -29,7 +29,7 @@ missing major surfaces or requires extra config. No = not in scope.
 | Capability | Pipeline-Check | Checkov | KICS | Semgrep | tfsec | Trivy |
 |---|---|---|---|---|---|---|
 | **CI/CD pipeline configs** | | | | | | |
-| GitHub Actions | Yes (90 rules) | Partial | Yes | Partial | No | No |
+| GitHub Actions | Yes (93 rules) | Partial | Yes | Partial | No | No |
 | GitLab CI | Yes (37) | No | Partial | No | No | No |
 | Jenkins (Declarative + Scripted) | Yes (35) | No | No | Partial | No | No |
 | CircleCI | Yes (31) | No | Partial | No | No | No |
@@ -56,7 +56,7 @@ missing major surfaces or requires extra config. No = not in scope.
 | Package registries (npm / PyPI / Maven / NuGet) | Yes (38 rules across 4 providers) | No | No | No | No | Partial |
 | **Analysis depth** | | | | | | |
 | Dataflow taint, multi-step / cross-job | Yes (TAINT-001..008 across 5 providers) | No | No | Rules-only | No | No |
-| Cross-provider attack chains (MITRE ATT&CK) | Yes (45 chains: 31 AC + 10 XPC + 4 CXPC cross-repo) | No | No | No | No | No |
+| Cross-provider attack chains (MITRE ATT&CK) | Yes (48 chains: 34 AC + 10 XPC + 4 CXPC cross-repo) | No | No | No | No | No |
 | Multi-scanner SARIF ingest + correlation | Yes (`--ingest`, `INGEST-<tool>-<rule>`, chain engine re-evaluates over the union) | No | No | No | No | No |
 | Vulnerable-by-design benchmark | Yes (`bench/`, 6 cases, current recall 6/6, CI-gated) | No | No | No | No | No |
 | Autofix patches (unified diff) | Yes (111 fixers) | Partial | No | Partial | No | No |

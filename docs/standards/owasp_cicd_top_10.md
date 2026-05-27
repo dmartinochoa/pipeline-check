@@ -19,7 +19,7 @@ Kubernetes, …) when an audit asks for that framework's vocabulary.
 
 - **Controls in this standard:** 10
 - **Controls evidenced by at least one check:** 10 / 10
-- **Distinct checks evidencing this standard:** 626
+- **Distinct checks evidencing this standard:** 629
 - **Of those, autofixable with `--fix`:** 111
 
 _Severity levels (`CRITICAL` / `HIGH` / `MEDIUM` / `LOW` / `INFO`) follow the same scale across every provider and standard. See [How to read severity](README.md#how-to-read-severity) on the standards overview for the definitions._
@@ -31,14 +31,14 @@ Click a control ID to jump to the per-control section with the full check list. 
 | Control | Title | Checks | Severity mix |
 |---------|-------|-------:|--------------|
 | [`CICD-SEC-1`](#ctrl-cicd-sec-1) | Insufficient Flow Control Mechanisms | 77 | 4C · 35H · 30M · 8L |
-| [`CICD-SEC-2`](#ctrl-cicd-sec-2) | Inadequate Identity and Access Management | 43 | 6C · 24H · 12M · 1L |
-| [`CICD-SEC-3`](#ctrl-cicd-sec-3) | Dependency Chain Abuse | 197 | 10C · 99H · 72M · 16L |
-| [`CICD-SEC-4`](#ctrl-cicd-sec-4) | Poisoned Pipeline Execution | 94 | 24C · 49H · 15M · 6L |
-| [`CICD-SEC-5`](#ctrl-cicd-sec-5) | Insufficient PBAC | 35 | 4C · 21H · 10M |
+| [`CICD-SEC-2`](#ctrl-cicd-sec-2) | Inadequate Identity and Access Management | 44 | 6C · 25H · 12M · 1L |
+| [`CICD-SEC-3`](#ctrl-cicd-sec-3) | Dependency Chain Abuse | 199 | 10C · 101H · 72M · 16L |
+| [`CICD-SEC-4`](#ctrl-cicd-sec-4) | Poisoned Pipeline Execution | 95 | 24C · 50H · 15M · 6L |
+| [`CICD-SEC-5`](#ctrl-cicd-sec-5) | Insufficient PBAC | 36 | 4C · 22H · 10M |
 | [`CICD-SEC-6`](#ctrl-cicd-sec-6) | Insufficient Credential Hygiene | 78 | 30C · 32H · 16M |
 | [`CICD-SEC-7`](#ctrl-cicd-sec-7) | Insecure System Configuration | 106 | 22C · 41H · 36M · 7L |
 | [`CICD-SEC-8`](#ctrl-cicd-sec-8) | Ungoverned Usage of 3rd-Party Services | 41 | 13C · 21H · 7M |
-| [`CICD-SEC-9`](#ctrl-cicd-sec-9) | Improper Artifact Integrity Validation | 74 | 1C · 18H · 48M · 7L |
+| [`CICD-SEC-9`](#ctrl-cicd-sec-9) | Improper Artifact Integrity Validation | 75 | 1C · 19H · 48M · 7L |
 | [`CICD-SEC-10`](#ctrl-cicd-sec-10) | Insufficient Logging and Visibility | 49 | 6H · 14M · 13L · 16I |
 
 ## Filter at runtime
@@ -148,7 +148,7 @@ Reviews, approvals, branch protection, and deployment gates are the brakes on th
 
 Long-lived static credentials, shared service accounts, and human identities reused for automation collapse the blast radius of a single compromise to the whole pipeline.
 
-**Evidenced by 43 checks** across 14 providers (AWS, Argo CD, Argo Workflows, Azure DevOps, Bitbucket, Buildkite, CircleCI, Cloud Build, GitHub Actions, GitLab CI, Kubernetes, OCI manifest, SCM, Tekton).
+**Evidenced by 44 checks** across 14 providers (AWS, Argo CD, Argo Workflows, Azure DevOps, Bitbucket, Buildkite, CircleCI, Cloud Build, GitHub Actions, GitLab CI, Kubernetes, OCI manifest, SCM, Tekton).
 
 | Check | Title | Severity | Provider | Fix |
 |-------|-------|----------|----------|-----|
@@ -194,13 +194,14 @@ Long-lived static credentials, shared service accounts, and human identities reu
 | [`SCM-030`](#detail-scm-030) | Repository ruleset has bypass actor with bypass_mode: always | <span class="pg-sev pg-sev--high">HIGH</span> | [SCM](../providers/scm.md) |  |
 | [`SCM-048`](#detail-scm-048) | Org codespace secret scoped to all repos | <span class="pg-sev pg-sev--high">HIGH</span> | [SCM](../providers/scm.md) |  |
 | [`SCM-049`](#detail-scm-049) | Classic PAT used where a fine-grained token suffices | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [SCM](../providers/scm.md) |  |
+| [`TAINT-009`](#detail-taint-009) | Environment-protected secret flows to unprotected job | <span class="pg-sev pg-sev--high">HIGH</span> | [GitHub Actions](../providers/github.md) |  |
 | [`TKN-007`](#detail-tkn-007) | Tekton run uses the default ServiceAccount | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [Tekton](../providers/tekton.md) |  |
 
 ### CICD-SEC-3: Dependency Chain Abuse { #ctrl-cicd-sec-3 }
 
 Floating tags, range constraints, and unverified registries let an upstream maintainer compromise (or a typosquat) execute in your build the next time the dependency resolves.
 
-**Evidenced by 197 checks** across 22 providers (AWS, Argo CD, Argo Workflows, Azure DevOps, Bitbucket, Buildkite, CircleCI, Cloud Build, Dockerfile, Drone CI, GitHub Actions, GitLab CI, Helm, Jenkins, Kubernetes, NuGet, OCI manifest, PyPI, SCM, Tekton, maven, npm).
+**Evidenced by 199 checks** across 22 providers (AWS, Argo CD, Argo Workflows, Azure DevOps, Bitbucket, Buildkite, CircleCI, Cloud Build, Dockerfile, Drone CI, GitHub Actions, GitLab CI, Helm, Jenkins, Kubernetes, NuGet, OCI manifest, PyPI, SCM, Tekton, maven, npm).
 
 | Check | Title | Severity | Provider | Fix |
 |-------|-------|----------|----------|-----|
@@ -311,6 +312,8 @@ Floating tags, range constraints, and unverified registries let an upstream main
 | [`GHA-094`](#detail-gha-094) | Action SHA pin matches the current tip of an upstream branch | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [GitHub Actions](../providers/github.md) |  |
 | [`GHA-095`](#detail-gha-095) | Action SHA pin does not match its version comment | <span class="pg-sev pg-sev--high">HIGH</span> | [GitHub Actions](../providers/github.md) |  |
 | [`GHA-096`](#detail-gha-096) | Action reference has a known GHSA vulnerability | <span class="pg-sev pg-sev--high">HIGH</span> | [GitHub Actions](../providers/github.md) |  |
+| [`GHA-100`](#detail-gha-100) | ``cosign verify`` without certificate identity binding | <span class="pg-sev pg-sev--high">HIGH</span> | [GitHub Actions](../providers/github.md) |  |
+| [`GHA-102`](#detail-gha-102) | ``actions/checkout`` with submodule fetch on a PR trigger | <span class="pg-sev pg-sev--high">HIGH</span> | [GitHub Actions](../providers/github.md) |  |
 | [`GL-001`](#detail-gl-001) | Image not pinned to specific version or digest | <span class="pg-sev pg-sev--high">HIGH</span> | [GitLab CI](../providers/gitlab.md) | <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> |
 | [`GL-005`](#detail-gl-005) | include: pulls remote / project without pinned ref | <span class="pg-sev pg-sev--high">HIGH</span> | [GitLab CI](../providers/gitlab.md) |  |
 | [`GL-009`](#detail-gl-009) | Image pinned to version tag rather than sha256 digest | <span class="pg-sev pg-sev--low">LOW</span> | [GitLab CI](../providers/gitlab.md) |  |
@@ -406,7 +409,7 @@ Floating tags, range constraints, and unverified registries let an upstream main
 
 An attacker who can influence what a build runs, via a PR, an issue comment, or a tainted environment variable, executes with the build's secrets and write-access to your artifacts.
 
-**Evidenced by 94 checks** across 15 providers (AWS, Argo CD, Argo Workflows, Azure DevOps, Bitbucket, Buildkite, CircleCI, Cloud Build, Dockerfile, Drone CI, GitHub Actions, GitLab CI, Jenkins, SCM, Tekton).
+**Evidenced by 95 checks** across 15 providers (AWS, Argo CD, Argo Workflows, Azure DevOps, Bitbucket, Buildkite, CircleCI, Cloud Build, Dockerfile, Drone CI, GitHub Actions, GitLab CI, Jenkins, SCM, Tekton).
 
 | Check | Title | Severity | Provider | Fix |
 |-------|-------|----------|----------|-----|
@@ -473,6 +476,7 @@ An attacker who can influence what a build runs, via a PR, an issue comment, or 
 | [`GHA-064`](#detail-gha-064) | ``contains()`` invoked with comma-delimited string operand | <span class="pg-sev pg-sev--high">HIGH</span> | [GitHub Actions](../providers/github.md) |  |
 | [`GHA-065`](#detail-gha-065) | Workflow body contains zero-width or bidi Unicode characters | <span class="pg-sev pg-sev--critical">CRITICAL</span> | [GitHub Actions](../providers/github.md) |  |
 | [`GHA-071`](#detail-gha-071) | ``shell: pwsh`` / ``powershell`` on a Linux / macOS step | <span class="pg-sev pg-sev--low">LOW</span> | [GitHub Actions](../providers/github.md) |  |
+| [`GHA-102`](#detail-gha-102) | ``actions/checkout`` with submodule fetch on a PR trigger | <span class="pg-sev pg-sev--high">HIGH</span> | [GitHub Actions](../providers/github.md) |  |
 | [`GL-002`](#detail-gl-002) | Script injection via untrusted commit/MR context | <span class="pg-sev pg-sev--high">HIGH</span> | [GitLab CI](../providers/gitlab.md) |  |
 | [`GL-010`](#detail-gl-010) | Multi-project pipeline ingests upstream artifact unverified | <span class="pg-sev pg-sev--critical">CRITICAL</span> | [GitLab CI](../providers/gitlab.md) |  |
 | [`GL-011`](#detail-gl-011) | include: local file pulled in MR-triggered pipeline | <span class="pg-sev pg-sev--high">HIGH</span> | [GitLab CI](../providers/gitlab.md) |  |
@@ -509,7 +513,7 @@ An attacker who can influence what a build runs, via a PR, an issue comment, or 
 
 Build steps with deploy-class permissions, jobs sharing a single broad role, and missing environment gates each let a routine compromise escalate from build to production.
 
-**Evidenced by 35 checks** across 11 providers (AWS, Argo CD, Argo Workflows, Buildkite, CircleCI, Drone CI, GitHub Actions, Jenkins, Kubernetes, SCM, Tekton).
+**Evidenced by 36 checks** across 11 providers (AWS, Argo CD, Argo Workflows, Buildkite, CircleCI, Drone CI, GitHub Actions, Jenkins, Kubernetes, SCM, Tekton).
 
 | Check | Title | Severity | Provider | Fix |
 |-------|-------|----------|----------|-----|
@@ -544,6 +548,7 @@ Build steps with deploy-class permissions, jobs sharing a single broad role, and
 | [`SCM-029`](#detail-scm-029) | Repository ruleset is in evaluate / disabled mode (not enforced) | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [SCM](../providers/scm.md) |  |
 | [`SCM-030`](#detail-scm-030) | Repository ruleset has bypass actor with bypass_mode: always | <span class="pg-sev pg-sev--high">HIGH</span> | [SCM](../providers/scm.md) |  |
 | [`SCM-032`](#detail-scm-032) | Active ruleset doesn't require a PR review (governance theater) | <span class="pg-sev pg-sev--high">HIGH</span> | [SCM](../providers/scm.md) |  |
+| [`TAINT-009`](#detail-taint-009) | Environment-protected secret flows to unprotected job | <span class="pg-sev pg-sev--high">HIGH</span> | [GitHub Actions](../providers/github.md) |  |
 | [`TKN-002`](#detail-tkn-002) | Tekton step runs privileged or as root | <span class="pg-sev pg-sev--high">HIGH</span> | [Tekton](../providers/tekton.md) |  |
 | [`TKN-004`](#detail-tkn-004) | Tekton Task mounts hostPath or shares host namespaces | <span class="pg-sev pg-sev--critical">CRITICAL</span> | [Tekton](../providers/tekton.md) |  |
 | [`TKN-013`](#detail-tkn-013) | Tekton sidecar runs privileged or as root | <span class="pg-sev pg-sev--high">HIGH</span> | [Tekton](../providers/tekton.md) |  |
@@ -805,7 +810,7 @@ Calls to external services, SaaS integrations, marketplace actions, package regi
 
 Without provenance, attestations, signatures, or SBOMs, consumers (including production) cannot verify that the artifact running in production is the one the pipeline built.
 
-**Evidenced by 74 checks** across 17 providers (AWS, Argo Workflows, Azure DevOps, Bitbucket, Buildkite, CircleCI, Cloud Build, Dockerfile, GitHub Actions, GitLab CI, Jenkins, NuGet, OCI manifest, PyPI, SCM, Tekton, npm).
+**Evidenced by 75 checks** across 17 providers (AWS, Argo Workflows, Azure DevOps, Bitbucket, Buildkite, CircleCI, Cloud Build, Dockerfile, GitHub Actions, GitLab CI, Jenkins, NuGet, OCI manifest, PyPI, SCM, Tekton, npm).
 
 | Check | Title | Severity | Provider | Fix |
 |-------|-------|----------|----------|-----|
@@ -852,6 +857,7 @@ Without provenance, attestations, signatures, or SBOMs, consumers (including pro
 | [`GHA-007`](#detail-gha-007) | SBOM not produced (no CycloneDX/syft/Trivy-SBOM step) | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [GitHub Actions](../providers/github.md) |  |
 | [`GHA-024`](#detail-gha-024) | No SLSA provenance attestation produced | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [GitHub Actions](../providers/github.md) |  |
 | [`GHA-066`](#detail-gha-066) | ``actions/upload-artifact`` path is a workspace wildcard | <span class="pg-sev pg-sev--high">HIGH</span> | [GitHub Actions](../providers/github.md) |  |
+| [`GHA-100`](#detail-gha-100) | ``cosign verify`` without certificate identity binding | <span class="pg-sev pg-sev--high">HIGH</span> | [GitHub Actions](../providers/github.md) |  |
 | [`GL-006`](#detail-gl-006) | Artifacts not signed | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [GitLab CI](../providers/gitlab.md) |  |
 | [`GL-007`](#detail-gl-007) | SBOM not produced | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [GitLab CI](../providers/gitlab.md) |  |
 | [`GL-024`](#detail-gl-024) | No SLSA provenance attestation produced | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [GitLab CI](../providers/gitlab.md) |  |
@@ -11869,6 +11875,97 @@ jobs:
 
 **Source:** [`GHA-099`](../providers/github.md#gha-099) in the [GitHub Actions provider](../providers/github.md).
 
+### `GHA-100`: ``cosign verify`` without certificate identity binding <span class="pg-sev pg-sev--high">HIGH</span> { #detail-gha-100 }
+
+**Evidences:** [`CICD-SEC-3`](#ctrl-cicd-sec-3) Dependency Chain Abuse, [`CICD-SEC-9`](#ctrl-cicd-sec-9) Improper Artifact Integrity Validation.
+
+**How this is detected.** Scans ``run:`` blocks for ``cosign verify`` and ``cosign verify-blob`` invocations. Flags when either ``--certificate-identity`` / ``--certificate-identity-regexp`` or ``--certificate-oidc-issuer`` / ``--certificate-oidc-issuer-regexp`` is absent from the command line.
+
+The ``cosign verify-attestation`` subcommand is also checked because it shares the same identity-binding requirement.
+
+Multi-line ``run:`` blocks (``|`` / ``>`` YAML scalars) are handled by scanning the full scalar value. Backslash continuations are collapsed before matching so a split invocation like ``cosign verify \\\n  --key ...`` is still detected.
+
+This rule is the consumer-side complement of GHA-006 (missing artifact signing) and GHA-024 (missing SLSA provenance). GHA-100 catches the case where signing exists but the verification step doesn't bind the signer's identity.
+
+**Recommendation.** Add both ``--certificate-identity`` (or ``--certificate-identity-regexp``) AND ``--certificate-oidc-issuer`` (or ``--certificate-oidc-issuer-regexp``) to every ``cosign verify`` / ``cosign verify-blob`` invocation. Pin the identity to the expected build pipeline's workflow ref and the issuer to ``https://token.actions.githubusercontent.com`` (for GitHub Actions OIDC). Without both flags, any Sigstore signer's certificate satisfies the verification.
+
+**Known false positives.**
+
+- Key-based verification (``--key``) doesn't use certificate identity flags. The rule checks for ``--key`` and suppresses the finding when present.
+
+**Seen in the wild.**
+
+- https://docs.sigstore.dev/cosign/verifying/verify/
+- https://blog.sigstore.dev/cosign-2-0-released/
+
+**Proof of exploit.**
+
+```
+# Vulnerable: cosign verify without identity binding.
+# Any valid Sigstore signature satisfies the check.
+jobs:
+  verify-and-deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - run: cosign verify ghcr.io/org/app:latest
+      - run: docker run ghcr.io/org/app:latest
+
+# Safe: pin certificate identity + OIDC issuer.
+jobs:
+  verify-and-deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - run: |
+          cosign verify ghcr.io/org/app:latest \
+            --certificate-identity-regexp 'https://github.com/org/app/.*' \
+            --certificate-oidc-issuer https://token.actions.githubusercontent.com
+      - run: docker run ghcr.io/org/app:latest
+```
+
+**Source:** [`GHA-100`](../providers/github.md#gha-100) in the [GitHub Actions provider](../providers/github.md).
+
+### `GHA-102`: ``actions/checkout`` with submodule fetch on a PR trigger <span class="pg-sev pg-sev--high">HIGH</span> { #detail-gha-102 }
+
+**Evidences:** [`CICD-SEC-3`](#ctrl-cicd-sec-3) Dependency Chain Abuse, [`CICD-SEC-4`](#ctrl-cicd-sec-4) Poisoned Pipeline Execution.
+
+**How this is detected.** Fires on workflows triggered by ``pull_request`` or ``pull_request_target`` when any ``actions/checkout`` step sets ``with.submodules`` to ``true`` or ``recursive``. The rule does not require a subsequent build step: the submodule clone itself is the risk surface (lifecycle scripts, hooks, and build files execute during or immediately after the clone).
+
+``submodules: false`` (the default) is safe and does not fire.
+
+**Recommendation.** Remove ``submodules: true`` / ``submodules: recursive`` from checkout steps in PR-triggered workflows. If submodules are genuinely needed for the PR build, pin submodule URLs to trusted repositories in a ``.gitmodules`` file that lives on a protected branch and validate submodule origins before the build step runs. Alternatively, split the workflow: use a low-privilege ``pull_request`` job for code review checks (no submodules) and a ``push``-triggered job for builds that need submodule content.
+
+**Known false positives.**
+
+- Workflows that intentionally clone submodules on PRs for monorepo builds where all submodule URLs point at repos within the same organization. Suppress per-step if the submodule origin is validated before the build.
+
+**Proof of exploit.**
+
+```
+# Vulnerable: a PR can modify .gitmodules to point at an
+# attacker-controlled repo. The recursive checkout clones it
+# and the subsequent build step executes its code.
+on: pull_request
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@<sha>
+        with:
+          submodules: recursive
+      - run: npm ci && npm run build
+
+# Safe: no submodule fetch on the PR trigger.
+on: pull_request
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@<sha>
+      - run: npm ci && npm run build
+```
+
+**Source:** [`GHA-102`](../providers/github.md#gha-102) in the [GitHub Actions provider](../providers/github.md).
+
 ### `GL-001`: Image not pinned to specific version or digest <span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> { #detail-gl-001 }
 
 **Evidences:** [`CICD-SEC-3`](#ctrl-cicd-sec-3) Dependency Chain Abuse.
@@ -19632,6 +19729,65 @@ build:
 ```
 
 **Source:** [`TAINT-008`](../providers/gitlab.md#taint-008) in the [GitLab CI provider](../providers/gitlab.md).
+
+### `TAINT-009`: Environment-protected secret flows to unprotected job <span class="pg-sev pg-sev--high">HIGH</span> { #detail-taint-009 }
+
+**Evidences:** [`CICD-SEC-2`](#ctrl-cicd-sec-2) Inadequate Identity and Access Management, [`CICD-SEC-5`](#ctrl-cicd-sec-5) Insufficient PBAC.
+
+**How this is detected.** Detects the pattern where a ``jobs.<id>.outputs:`` mapping interpolates ``${{ secrets.* }}`` (or a step output that was populated from a secret) and the producing job has an ``environment:`` binding while at least one consuming job (via ``needs:``) does not.
+
+The rule performs a conservative check: it flags when the output *value expression* directly references ``${{ secrets.* }}`` or when a step output referenced by the job output was set from a ``${{ secrets.* }}`` context in the step's ``run:`` or ``env:`` block. Indirect flows through multiple env-var hops within the same job are not tracked (the TAINT-002 engine handles general taint propagation).
+
+The ``needs:`` graph is walked transitively: if job A (environment-bound, secret in outputs) feeds job B (no environment) which feeds job C (no environment), both B and C are flagged if they reference the tainted output.
+
+**Recommendation.** Add an ``environment:`` binding to every job that consumes outputs carrying secret-derived values. If the downstream job needs the secret but should not go through the same review gate, create a separate environment with appropriate protection rules. Alternatively, restructure the workflow so the secret never leaves the environment-bound job's boundary: perform the deploy or credential-consuming operation in the same protected job instead of passing the secret through outputs.
+
+**Known false positives.**
+
+- Workflows that intentionally pass non-sensitive environment-specific values (e.g. a deployment URL) through outputs from an environment-bound job. The rule fires on any ``${{ secrets.* }}`` reference in the output value, which may include non-sensitive configuration stored in environment secrets for convenience.
+
+**Proof of exploit.**
+
+```
+# Vulnerable: the ``mint`` job reads a production secret
+# behind an environment gate and passes it to ``deploy``
+# which has no environment binding.
+on: push
+jobs:
+  mint:
+    runs-on: ubuntu-latest
+    environment: production
+    outputs:
+      token: ${{ steps.get.outputs.token }}
+    steps:
+      - id: get
+        run: echo "token=${{ secrets.DEPLOY_TOKEN }}" >> "$GITHUB_OUTPUT"
+  deploy:
+    needs: mint
+    runs-on: ubuntu-latest
+    steps:
+      - run: curl -H "Authorization: ${{ needs.mint.outputs.token }}" https://deploy.example.com
+
+# Safe: the deploy job also binds the same environment.
+on: push
+jobs:
+  mint:
+    runs-on: ubuntu-latest
+    environment: production
+    outputs:
+      token: ${{ steps.get.outputs.token }}
+    steps:
+      - id: get
+        run: echo "token=${{ secrets.DEPLOY_TOKEN }}" >> "$GITHUB_OUTPUT"
+  deploy:
+    needs: mint
+    environment: production
+    runs-on: ubuntu-latest
+    steps:
+      - run: curl -H "Authorization: ${{ needs.mint.outputs.token }}" https://deploy.example.com
+```
+
+**Source:** [`TAINT-009`](../providers/github.md#taint-009) in the [GitHub Actions provider](../providers/github.md).
 
 ### `TF-001`: Plan declares aws_iam_access_key (long-lived credential) <span class="pg-sev pg-sev--high">HIGH</span> { #detail-tf-001 }
 

@@ -12,6 +12,20 @@ release commit collapses this section into `## [X.Y.Z] - <date>`.
 
 ### Added
 
+- **cicd-goat 38-scenario coverage push (31/38 -> 38/38).** Three new
+  rules, one rule widening, and three new attack chains close all
+  remaining gaps in the cicd-goat 38-scenario comparison matrix.
+  GHA-100 (``cosign verify`` without ``--certificate-identity`` +
+  ``--certificate-oidc-issuer``, scenario 35), TAINT-009
+  (environment-protected secret flows to unprotected consumer job via
+  ``needs.<job>.outputs``, scenario 36), GHA-102 (``actions/checkout``
+  with ``submodules: recursive`` on a PR trigger, scenario 38).
+  GHA-063 widened to promote severity to CRITICAL when the bot-actor
+  gate combines with ``gh pr merge --auto`` or the
+  ``hmarr/auto-approve-action`` family (confused-deputy primitive).
+  AC-032 (cosign-unbound artifact to deploy), AC-033 (environment-secret
+  laundering), AC-034 (submodule-poisoned PR to credential exfiltration).
+  GHA rule count 90 -> 93; chain count 45 -> 48. 40 new tests.
 - **Build-time dependency SBOM generation (``--output cyclonedx``).** New
   CycloneDX 1.6 JSON output format. ``--output cyclonedx`` emits a
   standards-compliant BOM of every build-time dependency the pipeline

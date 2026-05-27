@@ -12,7 +12,7 @@ opinion. Use this page to prepare CC6 / CC7 / CC8 evidence walks.
 
 - **Controls in this standard:** 11
 - **Controls evidenced by at least one check:** 11 / 11
-- **Distinct checks evidencing this standard:** 616
+- **Distinct checks evidencing this standard:** 619
 - **Of those, autofixable with `--fix`:** 111
 
 _Severity levels (`CRITICAL` / `HIGH` / `MEDIUM` / `LOW` / `INFO`) follow the same scale across every provider and standard. See [How to read severity](README.md#how-to-read-severity) on the standards overview for the definitions._
@@ -23,17 +23,17 @@ Click a control ID to jump to the per-control section with the full check list. 
 
 | Control | Title | Checks | Severity mix |
 |---------|-------|-------:|--------------|
-| [`CC6.1`](#ctrl-cc6-1) | Logical access controls restrict entities to authorized system resources | 117 | 22C · 59H · 32M · 4L |
+| [`CC6.1`](#ctrl-cc6-1) | Logical access controls restrict entities to authorized system resources | 118 | 22C · 60H · 32M · 4L |
 | [`CC6.2`](#ctrl-cc6-2) | New internal and external users are registered, authorized, and provisioned | 22 | 10C · 6H · 6M |
 | [`CC6.3`](#ctrl-cc6-3) | Access modifications (including revocation) are tracked and timely | 21 | 1C · 11H · 9M |
 | [`CC6.6`](#ctrl-cc6-6) | Boundary-protection measures restrict access from outside the system boundary | 83 | 21C · 28H · 28M · 6L |
 | [`CC6.7`](#ctrl-cc6-7) | Data in transit is protected from unauthorized disclosure | 31 | 26H · 4M · 1L |
-| [`CC6.8`](#ctrl-cc6-8) | Controls prevent or detect the introduction of malicious software | 145 | 36C · 80H · 28M · 1L |
+| [`CC6.8`](#ctrl-cc6-8) | Controls prevent or detect the introduction of malicious software | 146 | 36C · 81H · 28M · 1L |
 | [`CC7.1`](#ctrl-cc7-1) | Detection procedures identify configuration changes that introduce vulnerabilities | 29 | 8C · 6H · 9M · 6L |
 | [`CC7.2`](#ctrl-cc7-2) | System components are monitored for anomalies indicative of malicious acts or failures | 33 | 2H · 8M · 7L · 16I |
 | [`CC7.3`](#ctrl-cc7-3) | Security events are evaluated to determine if they require response | 7 | 1H · 4M · 2L |
 | [`CC7.4`](#ctrl-cc7-4) | Identified security incidents trigger a response process | 5 | 3M · 2L |
-| [`CC8.1`](#ctrl-cc8-1) | Changes to infrastructure, data, software, and procedures are authorized, designed, tested, approved, and implemented | 249 | 11C · 91H · 122M · 25L |
+| [`CC8.1`](#ctrl-cc8-1) | Changes to infrastructure, data, software, and procedures are authorized, designed, tested, approved, and implemented | 250 | 11C · 92H · 122M · 25L |
 
 ## Filter at runtime
 
@@ -54,7 +54,7 @@ pipeline_check --pipeline aws --standard soc2 --standard owasp_cicd_top_10
 
 ### CC6.1: Logical access controls restrict entities to authorized system resources { #ctrl-cc6-1 }
 
-**Evidenced by 117 checks** across 17 providers (AWS, Argo Workflows, Bitbucket, Buildkite, CircleCI, Cloud Build, CloudFormation, Dockerfile, Drone CI, GitHub Actions, GitLab CI, Jenkins, Kubernetes, SCM, Tekton, Terraform, npm).
+**Evidenced by 118 checks** across 17 providers (AWS, Argo Workflows, Bitbucket, Buildkite, CircleCI, Cloud Build, CloudFormation, Dockerfile, Drone CI, GitHub Actions, GitLab CI, Jenkins, Kubernetes, SCM, Tekton, Terraform, npm).
 
 | Check | Title | Severity | Provider | Fix |
 |-------|-------|----------|----------|-----|
@@ -169,6 +169,7 @@ pipeline_check --pipeline aws --standard soc2 --standard owasp_cicd_top_10
 | [`SCM-049`](#detail-scm-049) | Classic PAT used where a fine-grained token suffices | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [SCM](../providers/scm.md) |  |
 | [`SSM-001`](#detail-ssm-001) | SSM Parameter with secret-like name is not a SecureString | <span class="pg-sev pg-sev--high">HIGH</span> | [AWS](../providers/aws.md) |  |
 | [`SSM-002`](#detail-ssm-002) | SSM SecureString uses the default AWS-managed key | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [AWS](../providers/aws.md) |  |
+| [`TAINT-009`](#detail-taint-009) | Environment-protected secret flows to unprotected job | <span class="pg-sev pg-sev--high">HIGH</span> | [GitHub Actions](../providers/github.md) |  |
 | [`TF-001`](#detail-tf-001) | Plan declares aws_iam_access_key (long-lived credential) | <span class="pg-sev pg-sev--high">HIGH</span> | [Terraform](../providers/terraform.md) |  |
 | [`TF-002`](#detail-tf-002) | Stateful data-store resource carries a plaintext secret | <span class="pg-sev pg-sev--critical">CRITICAL</span> | [Terraform](../providers/terraform.md) |  |
 | [`TKN-002`](#detail-tkn-002) | Tekton step runs privileged or as root | <span class="pg-sev pg-sev--high">HIGH</span> | [Tekton](../providers/tekton.md) |  |
@@ -363,7 +364,7 @@ pipeline_check --pipeline aws --standard soc2 --standard owasp_cicd_top_10
 
 ### CC6.8: Controls prevent or detect the introduction of malicious software { #ctrl-cc6-8 }
 
-**Evidenced by 145 checks** across 19 providers (AWS, Argo Workflows, Azure DevOps, Bitbucket, Buildkite, CircleCI, Cloud Build, Dockerfile, Drone CI, GitHub Actions, GitLab CI, Jenkins, Kubernetes, NuGet, PyPI, SCM, Tekton, maven, npm).
+**Evidenced by 146 checks** across 19 providers (AWS, Argo Workflows, Azure DevOps, Bitbucket, Buildkite, CircleCI, Cloud Build, Dockerfile, Drone CI, GitHub Actions, GitLab CI, Jenkins, Kubernetes, NuGet, PyPI, SCM, Tekton, maven, npm).
 
 | Check | Title | Severity | Provider | Fix |
 |-------|-------|----------|----------|-----|
@@ -453,6 +454,7 @@ pipeline_check --pipeline aws --standard soc2 --standard owasp_cicd_top_10
 | [`GHA-094`](#detail-gha-094) | Action SHA pin matches the current tip of an upstream branch | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [GitHub Actions](../providers/github.md) |  |
 | [`GHA-096`](#detail-gha-096) | Action reference has a known GHSA vulnerability | <span class="pg-sev pg-sev--high">HIGH</span> | [GitHub Actions](../providers/github.md) |  |
 | [`GHA-098`](#detail-gha-098) | Pipeline deploys without a security scan gate | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [GitHub Actions](../providers/github.md) |  |
+| [`GHA-102`](#detail-gha-102) | ``actions/checkout`` with submodule fetch on a PR trigger | <span class="pg-sev pg-sev--high">HIGH</span> | [GitHub Actions](../providers/github.md) |  |
 | [`GL-002`](#detail-gl-002) | Script injection via untrusted commit/MR context | <span class="pg-sev pg-sev--high">HIGH</span> | [GitLab CI](../providers/gitlab.md) |  |
 | [`GL-010`](#detail-gl-010) | Multi-project pipeline ingests upstream artifact unverified | <span class="pg-sev pg-sev--critical">CRITICAL</span> | [GitLab CI](../providers/gitlab.md) |  |
 | [`GL-011`](#detail-gl-011) | include: local file pulled in MR-triggered pipeline | <span class="pg-sev pg-sev--high">HIGH</span> | [GitLab CI](../providers/gitlab.md) |  |
@@ -617,7 +619,7 @@ pipeline_check --pipeline aws --standard soc2 --standard owasp_cicd_top_10
 
 ### CC8.1: Changes to infrastructure, data, software, and procedures are authorized, designed, tested, approved, and implemented { #ctrl-cc8-1 }
 
-**Evidenced by 249 checks** across 21 providers (AWS, Argo Workflows, Azure DevOps, Bitbucket, Buildkite, CircleCI, Cloud Build, Dockerfile, Drone CI, GitHub Actions, GitLab CI, Helm, Jenkins, Kubernetes, NuGet, OCI manifest, PyPI, SCM, Tekton, maven, npm).
+**Evidenced by 250 checks** across 21 providers (AWS, Argo Workflows, Azure DevOps, Bitbucket, Buildkite, CircleCI, Cloud Build, Dockerfile, Drone CI, GitHub Actions, GitLab CI, Helm, Jenkins, Kubernetes, NuGet, OCI manifest, PyPI, SCM, Tekton, maven, npm).
 
 | Check | Title | Severity | Provider | Fix |
 |-------|-------|----------|----------|-----|
@@ -743,6 +745,7 @@ pipeline_check --pipeline aws --standard soc2 --standard owasp_cicd_top_10
 | [`GHA-096`](#detail-gha-096) | Action reference has a known GHSA vulnerability | <span class="pg-sev pg-sev--high">HIGH</span> | [GitHub Actions](../providers/github.md) |  |
 | [`GHA-097`](#detail-gha-097) | Recursive PR auto-merge loop | <span class="pg-sev pg-sev--high">HIGH</span> | [GitHub Actions](../providers/github.md) |  |
 | [`GHA-098`](#detail-gha-098) | Pipeline deploys without a security scan gate | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [GitHub Actions](../providers/github.md) |  |
+| [`GHA-100`](#detail-gha-100) | ``cosign verify`` without certificate identity binding | <span class="pg-sev pg-sev--high">HIGH</span> | [GitHub Actions](../providers/github.md) |  |
 | [`GL-001`](#detail-gl-001) | Image not pinned to specific version or digest | <span class="pg-sev pg-sev--high">HIGH</span> | [GitLab CI](../providers/gitlab.md) | <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> |
 | [`GL-004`](#detail-gl-004) | Deploy job lacks manual approval or environment gate | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [GitLab CI](../providers/gitlab.md) |  |
 | [`GL-005`](#detail-gl-005) | include: pulls remote / project without pinned ref | <span class="pg-sev pg-sev--high">HIGH</span> | [GitLab CI](../providers/gitlab.md) |  |
@@ -11433,6 +11436,97 @@ jobs:
 
 **Source:** [`GHA-099`](../providers/github.md#gha-099) in the [GitHub Actions provider](../providers/github.md).
 
+### `GHA-100`: ``cosign verify`` without certificate identity binding <span class="pg-sev pg-sev--high">HIGH</span> { #detail-gha-100 }
+
+**Evidences:** [`CC8.1`](#ctrl-cc8-1) Changes to infrastructure, data, software, and procedures are authorized, designed, tested, approved, and implemented.
+
+**How this is detected.** Scans ``run:`` blocks for ``cosign verify`` and ``cosign verify-blob`` invocations. Flags when either ``--certificate-identity`` / ``--certificate-identity-regexp`` or ``--certificate-oidc-issuer`` / ``--certificate-oidc-issuer-regexp`` is absent from the command line.
+
+The ``cosign verify-attestation`` subcommand is also checked because it shares the same identity-binding requirement.
+
+Multi-line ``run:`` blocks (``|`` / ``>`` YAML scalars) are handled by scanning the full scalar value. Backslash continuations are collapsed before matching so a split invocation like ``cosign verify \\\n  --key ...`` is still detected.
+
+This rule is the consumer-side complement of GHA-006 (missing artifact signing) and GHA-024 (missing SLSA provenance). GHA-100 catches the case where signing exists but the verification step doesn't bind the signer's identity.
+
+**Recommendation.** Add both ``--certificate-identity`` (or ``--certificate-identity-regexp``) AND ``--certificate-oidc-issuer`` (or ``--certificate-oidc-issuer-regexp``) to every ``cosign verify`` / ``cosign verify-blob`` invocation. Pin the identity to the expected build pipeline's workflow ref and the issuer to ``https://token.actions.githubusercontent.com`` (for GitHub Actions OIDC). Without both flags, any Sigstore signer's certificate satisfies the verification.
+
+**Known false positives.**
+
+- Key-based verification (``--key``) doesn't use certificate identity flags. The rule checks for ``--key`` and suppresses the finding when present.
+
+**Seen in the wild.**
+
+- https://docs.sigstore.dev/cosign/verifying/verify/
+- https://blog.sigstore.dev/cosign-2-0-released/
+
+**Proof of exploit.**
+
+```
+# Vulnerable: cosign verify without identity binding.
+# Any valid Sigstore signature satisfies the check.
+jobs:
+  verify-and-deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - run: cosign verify ghcr.io/org/app:latest
+      - run: docker run ghcr.io/org/app:latest
+
+# Safe: pin certificate identity + OIDC issuer.
+jobs:
+  verify-and-deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - run: |
+          cosign verify ghcr.io/org/app:latest \
+            --certificate-identity-regexp 'https://github.com/org/app/.*' \
+            --certificate-oidc-issuer https://token.actions.githubusercontent.com
+      - run: docker run ghcr.io/org/app:latest
+```
+
+**Source:** [`GHA-100`](../providers/github.md#gha-100) in the [GitHub Actions provider](../providers/github.md).
+
+### `GHA-102`: ``actions/checkout`` with submodule fetch on a PR trigger <span class="pg-sev pg-sev--high">HIGH</span> { #detail-gha-102 }
+
+**Evidences:** [`CC6.8`](#ctrl-cc6-8) Controls prevent or detect the introduction of malicious software.
+
+**How this is detected.** Fires on workflows triggered by ``pull_request`` or ``pull_request_target`` when any ``actions/checkout`` step sets ``with.submodules`` to ``true`` or ``recursive``. The rule does not require a subsequent build step: the submodule clone itself is the risk surface (lifecycle scripts, hooks, and build files execute during or immediately after the clone).
+
+``submodules: false`` (the default) is safe and does not fire.
+
+**Recommendation.** Remove ``submodules: true`` / ``submodules: recursive`` from checkout steps in PR-triggered workflows. If submodules are genuinely needed for the PR build, pin submodule URLs to trusted repositories in a ``.gitmodules`` file that lives on a protected branch and validate submodule origins before the build step runs. Alternatively, split the workflow: use a low-privilege ``pull_request`` job for code review checks (no submodules) and a ``push``-triggered job for builds that need submodule content.
+
+**Known false positives.**
+
+- Workflows that intentionally clone submodules on PRs for monorepo builds where all submodule URLs point at repos within the same organization. Suppress per-step if the submodule origin is validated before the build.
+
+**Proof of exploit.**
+
+```
+# Vulnerable: a PR can modify .gitmodules to point at an
+# attacker-controlled repo. The recursive checkout clones it
+# and the subsequent build step executes its code.
+on: pull_request
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@<sha>
+        with:
+          submodules: recursive
+      - run: npm ci && npm run build
+
+# Safe: no submodule fetch on the PR trigger.
+on: pull_request
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@<sha>
+      - run: npm ci && npm run build
+```
+
+**Source:** [`GHA-102`](../providers/github.md#gha-102) in the [GitHub Actions provider](../providers/github.md).
+
 ### `GL-001`: Image not pinned to specific version or digest <span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> { #detail-gl-001 }
 
 **Evidences:** [`CC8.1`](#ctrl-cc8-1) Changes to infrastructure, data, software, and procedures are authorized, designed, tested, approved, and implemented.
@@ -19196,6 +19290,65 @@ build:
 ```
 
 **Source:** [`TAINT-008`](../providers/gitlab.md#taint-008) in the [GitLab CI provider](../providers/gitlab.md).
+
+### `TAINT-009`: Environment-protected secret flows to unprotected job <span class="pg-sev pg-sev--high">HIGH</span> { #detail-taint-009 }
+
+**Evidences:** [`CC6.1`](#ctrl-cc6-1) Logical access controls restrict entities to authorized system resources.
+
+**How this is detected.** Detects the pattern where a ``jobs.<id>.outputs:`` mapping interpolates ``${{ secrets.* }}`` (or a step output that was populated from a secret) and the producing job has an ``environment:`` binding while at least one consuming job (via ``needs:``) does not.
+
+The rule performs a conservative check: it flags when the output *value expression* directly references ``${{ secrets.* }}`` or when a step output referenced by the job output was set from a ``${{ secrets.* }}`` context in the step's ``run:`` or ``env:`` block. Indirect flows through multiple env-var hops within the same job are not tracked (the TAINT-002 engine handles general taint propagation).
+
+The ``needs:`` graph is walked transitively: if job A (environment-bound, secret in outputs) feeds job B (no environment) which feeds job C (no environment), both B and C are flagged if they reference the tainted output.
+
+**Recommendation.** Add an ``environment:`` binding to every job that consumes outputs carrying secret-derived values. If the downstream job needs the secret but should not go through the same review gate, create a separate environment with appropriate protection rules. Alternatively, restructure the workflow so the secret never leaves the environment-bound job's boundary: perform the deploy or credential-consuming operation in the same protected job instead of passing the secret through outputs.
+
+**Known false positives.**
+
+- Workflows that intentionally pass non-sensitive environment-specific values (e.g. a deployment URL) through outputs from an environment-bound job. The rule fires on any ``${{ secrets.* }}`` reference in the output value, which may include non-sensitive configuration stored in environment secrets for convenience.
+
+**Proof of exploit.**
+
+```
+# Vulnerable: the ``mint`` job reads a production secret
+# behind an environment gate and passes it to ``deploy``
+# which has no environment binding.
+on: push
+jobs:
+  mint:
+    runs-on: ubuntu-latest
+    environment: production
+    outputs:
+      token: ${{ steps.get.outputs.token }}
+    steps:
+      - id: get
+        run: echo "token=${{ secrets.DEPLOY_TOKEN }}" >> "$GITHUB_OUTPUT"
+  deploy:
+    needs: mint
+    runs-on: ubuntu-latest
+    steps:
+      - run: curl -H "Authorization: ${{ needs.mint.outputs.token }}" https://deploy.example.com
+
+# Safe: the deploy job also binds the same environment.
+on: push
+jobs:
+  mint:
+    runs-on: ubuntu-latest
+    environment: production
+    outputs:
+      token: ${{ steps.get.outputs.token }}
+    steps:
+      - id: get
+        run: echo "token=${{ secrets.DEPLOY_TOKEN }}" >> "$GITHUB_OUTPUT"
+  deploy:
+    needs: mint
+    environment: production
+    runs-on: ubuntu-latest
+    steps:
+      - run: curl -H "Authorization: ${{ needs.mint.outputs.token }}" https://deploy.example.com
+```
+
+**Source:** [`TAINT-009`](../providers/github.md#taint-009) in the [GitHub Actions provider](../providers/github.md).
 
 ### `TF-001`: Plan declares aws_iam_access_key (long-lived credential) <span class="pg-sev pg-sev--high">HIGH</span> { #detail-tf-001 }
 

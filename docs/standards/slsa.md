@@ -20,7 +20,7 @@ the source-control side of the chain.
 
 - **Controls in this standard:** 7
 - **Controls evidenced by at least one check:** 6 / 7
-- **Distinct checks evidencing this standard:** 451
+- **Distinct checks evidencing this standard:** 454
 - **Of those, autofixable with `--fix`:** 92
 
 _Severity levels (`CRITICAL` / `HIGH` / `MEDIUM` / `LOW` / `INFO`) follow the same scale across every provider and standard. See [How to read severity](README.md#how-to-read-severity) on the standards overview for the definitions._
@@ -35,9 +35,9 @@ Click a control ID to jump to the per-control section with the full check list. 
 | [`Build.L1.Provenance`](#ctrl-build-l1-provenance) | Build L1: Provenance describing how the artifact was produced is generated | 39 | 3H · 26M · 10L |
 | [`Build.L2.Hosted`](#ctrl-build-l2-hosted) | Build L2: Builds run on a hosted build platform (not a developer workstation) | 7 | 1H · 6M |
 | [`Build.L2.Signed`](#ctrl-build-l2-signed) | Build L2: Provenance is authenticated and cannot be forged by tenants | 36 | 7H · 28M · 1L |
-| [`Build.L3.Isolated`](#ctrl-build-l3-isolated) | Build L3: Build runs in an isolated environment not influenced by other builds | 153 | 24C · 96H · 31M · 2L |
+| [`Build.L3.Isolated`](#ctrl-build-l3-isolated) | Build L3: Build runs in an isolated environment not influenced by other builds | 154 | 24C · 97H · 31M · 2L |
 | [`Build.L3.Ephemeral`](#ctrl-build-l3-ephemeral) | Build L3: Build environment is ephemeral and provisioned fresh for each run | 19 | 14M · 5L |
-| [`Build.L3.NonFalsifiable`](#ctrl-build-l3-nonfalsifiable) | Build L3: Provenance cannot be falsified by the build's own tenant | 262 | 44C · 120H · 87M · 11L |
+| [`Build.L3.NonFalsifiable`](#ctrl-build-l3-nonfalsifiable) | Build L3: Provenance cannot be falsified by the build's own tenant | 264 | 44C · 122H · 87M · 11L |
 
 ## Filter at runtime
 
@@ -175,7 +175,7 @@ Provenance is cryptographically signed by the build platform; tenants of the pla
 
 Each build runs in a fresh environment without influence from concurrent or previous builds. No shared mutable state.
 
-**Evidenced by 153 checks** across 19 providers (AWS, Argo Workflows, Azure DevOps, Bitbucket, Buildkite, CircleCI, Cloud Build, CloudFormation, Dockerfile, Drone CI, GitHub Actions, GitLab CI, Helm, Jenkins, OCI manifest, SCM, Tekton, Terraform, npm).
+**Evidenced by 154 checks** across 19 providers (AWS, Argo Workflows, Azure DevOps, Bitbucket, Buildkite, CircleCI, Cloud Build, CloudFormation, Dockerfile, Drone CI, GitHub Actions, GitLab CI, Helm, Jenkins, OCI manifest, SCM, Tekton, Terraform, npm).
 
 | Check | Title | Severity | Provider | Fix |
 |-------|-------|----------|----------|-----|
@@ -284,6 +284,7 @@ Each build runs in a fresh environment without influence from concurrent or prev
 | [`GHA-092`](#detail-gha-092) | PR head SHA captured then re-fetched (force-push race) | <span class="pg-sev pg-sev--high">HIGH</span> | [GitHub Actions](../providers/github.md) |  |
 | [`GHA-093`](#detail-gha-093) | Living-off-the-Pipeline indicators (workflow-command abuse) | <span class="pg-sev pg-sev--high">HIGH</span> | [GitHub Actions](../providers/github.md) |  |
 | [`GHA-097`](#detail-gha-097) | Recursive PR auto-merge loop | <span class="pg-sev pg-sev--high">HIGH</span> | [GitHub Actions](../providers/github.md) |  |
+| [`GHA-102`](#detail-gha-102) | ``actions/checkout`` with submodule fetch on a PR trigger | <span class="pg-sev pg-sev--high">HIGH</span> | [GitHub Actions](../providers/github.md) |  |
 | [`GL-002`](#detail-gl-002) | Script injection via untrusted commit/MR context | <span class="pg-sev pg-sev--high">HIGH</span> | [GitLab CI](../providers/gitlab.md) |  |
 | [`GL-010`](#detail-gl-010) | Multi-project pipeline ingests upstream artifact unverified | <span class="pg-sev pg-sev--critical">CRITICAL</span> | [GitLab CI](../providers/gitlab.md) |  |
 | [`GL-011`](#detail-gl-011) | include: local file pulled in MR-triggered pipeline | <span class="pg-sev pg-sev--high">HIGH</span> | [GitLab CI](../providers/gitlab.md) |  |
@@ -365,7 +366,7 @@ Build environments are provisioned per run and torn down after, so a compromised
 
 The build platform's provenance signature is bound to inputs the tenant cannot influence (e.g. a backend-controlled identity), so a tenant-controlled compromise cannot mint forged provenance.
 
-**Evidenced by 262 checks** across 22 providers (AWS, Argo Workflows, Azure DevOps, Bitbucket, Buildkite, CircleCI, Cloud Build, CloudFormation, Dockerfile, Drone CI, GitHub Actions, GitLab CI, Helm, Jenkins, NuGet, OCI manifest, PyPI, SCM, Tekton, Terraform, maven, npm).
+**Evidenced by 264 checks** across 22 providers (AWS, Argo Workflows, Azure DevOps, Bitbucket, Buildkite, CircleCI, Cloud Build, CloudFormation, Dockerfile, Drone CI, GitHub Actions, GitLab CI, Helm, Jenkins, NuGet, OCI manifest, PyPI, SCM, Tekton, Terraform, maven, npm).
 
 | Check | Title | Severity | Provider | Fix |
 |-------|-------|----------|----------|-----|
@@ -517,6 +518,7 @@ The build platform's provenance signature is bound to inputs the tenant cannot i
 | [`GHA-096`](#detail-gha-096) | Action reference has a known GHSA vulnerability | <span class="pg-sev pg-sev--high">HIGH</span> | [GitHub Actions](../providers/github.md) |  |
 | [`GHA-098`](#detail-gha-098) | Pipeline deploys without a security scan gate | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [GitHub Actions](../providers/github.md) |  |
 | [`GHA-099`](#detail-gha-099) | Deployment job has a secret-shaped plaintext env var | <span class="pg-sev pg-sev--critical">CRITICAL</span> | [GitHub Actions](../providers/github.md) |  |
+| [`GHA-100`](#detail-gha-100) | ``cosign verify`` without certificate identity binding | <span class="pg-sev pg-sev--high">HIGH</span> | [GitHub Actions](../providers/github.md) |  |
 | [`GL-001`](#detail-gl-001) | Image not pinned to specific version or digest | <span class="pg-sev pg-sev--high">HIGH</span> | [GitLab CI](../providers/gitlab.md) | <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> |
 | [`GL-003`](#detail-gl-003) | Variables contain literal secret values | <span class="pg-sev pg-sev--critical">CRITICAL</span> | [GitLab CI](../providers/gitlab.md) |  |
 | [`GL-004`](#detail-gl-004) | Deploy job lacks manual approval or environment gate | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [GitLab CI](../providers/gitlab.md) |  |
@@ -624,6 +626,7 @@ The build platform's provenance signature is bound to inputs the tenant cannot i
 | [`TAINT-006`](#detail-taint-006) | Untrusted input flows across tasks via Tekton ``results`` | <span class="pg-sev pg-sev--high">HIGH</span> | [Tekton](../providers/tekton.md) |  |
 | [`TAINT-007`](#detail-taint-007) | Untrusted input flows across templates via Argo ``outputs.parameters`` | <span class="pg-sev pg-sev--high">HIGH</span> | [Argo Workflows](../providers/argo.md) |  |
 | [`TAINT-008`](#detail-taint-008) | Untrusted input flows via GitLab ``extends:`` template inheritance | <span class="pg-sev pg-sev--high">HIGH</span> | [GitLab CI](../providers/gitlab.md) |  |
+| [`TAINT-009`](#detail-taint-009) | Environment-protected secret flows to unprotected job | <span class="pg-sev pg-sev--high">HIGH</span> | [GitHub Actions](../providers/github.md) |  |
 | [`TF-001`](#detail-tf-001) | Plan declares aws_iam_access_key (long-lived credential) | <span class="pg-sev pg-sev--high">HIGH</span> | [Terraform](../providers/terraform.md) |  |
 | [`TF-002`](#detail-tf-002) | Stateful data-store resource carries a plaintext secret | <span class="pg-sev pg-sev--critical">CRITICAL</span> | [Terraform](../providers/terraform.md) |  |
 | [`TKN-001`](#detail-tkn-001) | Tekton step image not pinned to a digest | <span class="pg-sev pg-sev--high">HIGH</span> | [Tekton](../providers/tekton.md) |  |
@@ -9556,6 +9559,97 @@ jobs:
 
 **Source:** [`GHA-099`](../providers/github.md#gha-099) in the [GitHub Actions provider](../providers/github.md).
 
+### `GHA-100`: ``cosign verify`` without certificate identity binding <span class="pg-sev pg-sev--high">HIGH</span> { #detail-gha-100 }
+
+**Evidences:** [`Build.L3.NonFalsifiable`](#ctrl-build-l3-nonfalsifiable) Build L3: Provenance cannot be falsified by the build's own tenant.
+
+**How this is detected.** Scans ``run:`` blocks for ``cosign verify`` and ``cosign verify-blob`` invocations. Flags when either ``--certificate-identity`` / ``--certificate-identity-regexp`` or ``--certificate-oidc-issuer`` / ``--certificate-oidc-issuer-regexp`` is absent from the command line.
+
+The ``cosign verify-attestation`` subcommand is also checked because it shares the same identity-binding requirement.
+
+Multi-line ``run:`` blocks (``|`` / ``>`` YAML scalars) are handled by scanning the full scalar value. Backslash continuations are collapsed before matching so a split invocation like ``cosign verify \\\n  --key ...`` is still detected.
+
+This rule is the consumer-side complement of GHA-006 (missing artifact signing) and GHA-024 (missing SLSA provenance). GHA-100 catches the case where signing exists but the verification step doesn't bind the signer's identity.
+
+**Recommendation.** Add both ``--certificate-identity`` (or ``--certificate-identity-regexp``) AND ``--certificate-oidc-issuer`` (or ``--certificate-oidc-issuer-regexp``) to every ``cosign verify`` / ``cosign verify-blob`` invocation. Pin the identity to the expected build pipeline's workflow ref and the issuer to ``https://token.actions.githubusercontent.com`` (for GitHub Actions OIDC). Without both flags, any Sigstore signer's certificate satisfies the verification.
+
+**Known false positives.**
+
+- Key-based verification (``--key``) doesn't use certificate identity flags. The rule checks for ``--key`` and suppresses the finding when present.
+
+**Seen in the wild.**
+
+- https://docs.sigstore.dev/cosign/verifying/verify/
+- https://blog.sigstore.dev/cosign-2-0-released/
+
+**Proof of exploit.**
+
+```
+# Vulnerable: cosign verify without identity binding.
+# Any valid Sigstore signature satisfies the check.
+jobs:
+  verify-and-deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - run: cosign verify ghcr.io/org/app:latest
+      - run: docker run ghcr.io/org/app:latest
+
+# Safe: pin certificate identity + OIDC issuer.
+jobs:
+  verify-and-deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - run: |
+          cosign verify ghcr.io/org/app:latest \
+            --certificate-identity-regexp 'https://github.com/org/app/.*' \
+            --certificate-oidc-issuer https://token.actions.githubusercontent.com
+      - run: docker run ghcr.io/org/app:latest
+```
+
+**Source:** [`GHA-100`](../providers/github.md#gha-100) in the [GitHub Actions provider](../providers/github.md).
+
+### `GHA-102`: ``actions/checkout`` with submodule fetch on a PR trigger <span class="pg-sev pg-sev--high">HIGH</span> { #detail-gha-102 }
+
+**Evidences:** [`Build.L3.Isolated`](#ctrl-build-l3-isolated) Build L3: Build runs in an isolated environment not influenced by other builds.
+
+**How this is detected.** Fires on workflows triggered by ``pull_request`` or ``pull_request_target`` when any ``actions/checkout`` step sets ``with.submodules`` to ``true`` or ``recursive``. The rule does not require a subsequent build step: the submodule clone itself is the risk surface (lifecycle scripts, hooks, and build files execute during or immediately after the clone).
+
+``submodules: false`` (the default) is safe and does not fire.
+
+**Recommendation.** Remove ``submodules: true`` / ``submodules: recursive`` from checkout steps in PR-triggered workflows. If submodules are genuinely needed for the PR build, pin submodule URLs to trusted repositories in a ``.gitmodules`` file that lives on a protected branch and validate submodule origins before the build step runs. Alternatively, split the workflow: use a low-privilege ``pull_request`` job for code review checks (no submodules) and a ``push``-triggered job for builds that need submodule content.
+
+**Known false positives.**
+
+- Workflows that intentionally clone submodules on PRs for monorepo builds where all submodule URLs point at repos within the same organization. Suppress per-step if the submodule origin is validated before the build.
+
+**Proof of exploit.**
+
+```
+# Vulnerable: a PR can modify .gitmodules to point at an
+# attacker-controlled repo. The recursive checkout clones it
+# and the subsequent build step executes its code.
+on: pull_request
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@<sha>
+        with:
+          submodules: recursive
+      - run: npm ci && npm run build
+
+# Safe: no submodule fetch on the PR trigger.
+on: pull_request
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@<sha>
+      - run: npm ci && npm run build
+```
+
+**Source:** [`GHA-102`](../providers/github.md#gha-102) in the [GitHub Actions provider](../providers/github.md).
+
 ### `GL-001`: Image not pinned to specific version or digest <span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> { #detail-gl-001 }
 
 **Evidences:** [`Build.L3.NonFalsifiable`](#ctrl-build-l3-nonfalsifiable) Build L3: Provenance cannot be falsified by the build's own tenant.
@@ -14560,6 +14654,65 @@ build:
 ```
 
 **Source:** [`TAINT-008`](../providers/gitlab.md#taint-008) in the [GitLab CI provider](../providers/gitlab.md).
+
+### `TAINT-009`: Environment-protected secret flows to unprotected job <span class="pg-sev pg-sev--high">HIGH</span> { #detail-taint-009 }
+
+**Evidences:** [`Build.L3.NonFalsifiable`](#ctrl-build-l3-nonfalsifiable) Build L3: Provenance cannot be falsified by the build's own tenant.
+
+**How this is detected.** Detects the pattern where a ``jobs.<id>.outputs:`` mapping interpolates ``${{ secrets.* }}`` (or a step output that was populated from a secret) and the producing job has an ``environment:`` binding while at least one consuming job (via ``needs:``) does not.
+
+The rule performs a conservative check: it flags when the output *value expression* directly references ``${{ secrets.* }}`` or when a step output referenced by the job output was set from a ``${{ secrets.* }}`` context in the step's ``run:`` or ``env:`` block. Indirect flows through multiple env-var hops within the same job are not tracked (the TAINT-002 engine handles general taint propagation).
+
+The ``needs:`` graph is walked transitively: if job A (environment-bound, secret in outputs) feeds job B (no environment) which feeds job C (no environment), both B and C are flagged if they reference the tainted output.
+
+**Recommendation.** Add an ``environment:`` binding to every job that consumes outputs carrying secret-derived values. If the downstream job needs the secret but should not go through the same review gate, create a separate environment with appropriate protection rules. Alternatively, restructure the workflow so the secret never leaves the environment-bound job's boundary: perform the deploy or credential-consuming operation in the same protected job instead of passing the secret through outputs.
+
+**Known false positives.**
+
+- Workflows that intentionally pass non-sensitive environment-specific values (e.g. a deployment URL) through outputs from an environment-bound job. The rule fires on any ``${{ secrets.* }}`` reference in the output value, which may include non-sensitive configuration stored in environment secrets for convenience.
+
+**Proof of exploit.**
+
+```
+# Vulnerable: the ``mint`` job reads a production secret
+# behind an environment gate and passes it to ``deploy``
+# which has no environment binding.
+on: push
+jobs:
+  mint:
+    runs-on: ubuntu-latest
+    environment: production
+    outputs:
+      token: ${{ steps.get.outputs.token }}
+    steps:
+      - id: get
+        run: echo "token=${{ secrets.DEPLOY_TOKEN }}" >> "$GITHUB_OUTPUT"
+  deploy:
+    needs: mint
+    runs-on: ubuntu-latest
+    steps:
+      - run: curl -H "Authorization: ${{ needs.mint.outputs.token }}" https://deploy.example.com
+
+# Safe: the deploy job also binds the same environment.
+on: push
+jobs:
+  mint:
+    runs-on: ubuntu-latest
+    environment: production
+    outputs:
+      token: ${{ steps.get.outputs.token }}
+    steps:
+      - id: get
+        run: echo "token=${{ secrets.DEPLOY_TOKEN }}" >> "$GITHUB_OUTPUT"
+  deploy:
+    needs: mint
+    environment: production
+    runs-on: ubuntu-latest
+    steps:
+      - run: curl -H "Authorization: ${{ needs.mint.outputs.token }}" https://deploy.example.com
+```
+
+**Source:** [`TAINT-009`](../providers/github.md#taint-009) in the [GitHub Actions provider](../providers/github.md).
 
 ### `TF-001`: Plan declares aws_iam_access_key (long-lived credential) <span class="pg-sev pg-sev--high">HIGH</span> { #detail-tf-001 }
 

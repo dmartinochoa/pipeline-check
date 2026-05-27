@@ -68,6 +68,9 @@ references, recommendation).
 | [`AC-029`](#ac-029) | Untrusted trigger reaches a long-lived publish credential | <span class="pg-sev pg-sev--critical">CRITICAL</span> | github | ([`GHA-002`](providers/github.md#gha-002) or [`GHA-009`](providers/github.md#gha-009) or [`GHA-013`](providers/github.md#gha-013)) + ([`GHA-050`](providers/github.md#gha-050) or [`GHA-005`](providers/github.md#gha-005)) + ([`GHA-021`](providers/github.md#gha-021) or [`GHA-029`](providers/github.md#gha-029)) |
 | [`AC-030`](#ac-030) | Argo CD anonymous access meets wildcard RBAC | <span class="pg-sev pg-sev--critical">CRITICAL</span> | argocd | [`ARGOCD-009`](providers/argocd.md#argocd-009) + [`ARGOCD-004`](providers/argocd.md#argocd-004) |
 | [`AC-031`](#ac-031) | Argo CD untrusted PR generator meets wildcard source repos | <span class="pg-sev pg-sev--critical">CRITICAL</span> | argocd | [`ARGOCD-006`](providers/argocd.md#argocd-006) + [`ARGOCD-001`](providers/argocd.md#argocd-001) |
+| [`AC-032`](#ac-032) | Cosign-verified-but-not-bound artifact to production deploy | <span class="pg-sev pg-sev--critical">CRITICAL</span> | github | [`GHA-100`](providers/github.md#gha-100) + [`GHA-098`](providers/github.md#gha-098) |
+| [`AC-033`](#ac-033) | Environment-secret laundering to unprotected deploy job | <span class="pg-sev pg-sev--critical">CRITICAL</span> | github | [`TAINT-009`](providers/github.md#taint-009) + [`GHA-098`](providers/github.md#gha-098) |
+| [`AC-034`](#ac-034) | Submodule-poisoned PR to credential exfiltration | <span class="pg-sev pg-sev--critical">CRITICAL</span> | github | [`GHA-102`](providers/github.md#gha-102) + ([`GHA-037`](providers/github.md#gha-037) or [`GHA-004`](providers/github.md#gha-004)) |
 
 ### Cross-provider chains (`XPC-NNN`)
 
@@ -1059,6 +1062,89 @@ Break either leg, both is best:
   1. Tighten the AppProject's ``sourceRepos`` (ARGOCD-001). Replace ``['*']`` with the explicit list of repository URLs the project is allowed to render. Set ``spec.sourceRepos: ['https://github.com/org/payments-*']`` and keep ``sourceNamespaces`` / ``destinations`` similarly scoped.
   2. Scope the ApplicationSet generator (ARGOCD-006). Pin ``template.spec.project`` to a single static project name (not ``default``, not a ``{{...}}`` placeholder) and constrain the generator with ``filters:`` / ``labels: ['preview']`` / ``branchMatch:`` so PRs from untrusted authors do not synthesize Applications.
 If PR-driven preview environments are a deliberate design, the AppProject the PR-driven Applications resolve to MUST carry an explicit ``sourceRepos`` allowlist and a narrow destination, the chain's premise is unbounded authority, not the PR-preview pattern itself.
+
+</div>
+
+</div>
+
+<div class="pg-rule pg-rule--critical" markdown>
+
+### AC-032: Cosign-verified-but-not-bound artifact to production deploy { #ac-032 }
+
+<div class="pg-rule__tags">
+<span class="pg-sev pg-sev--critical">CRITICAL</span> <span class="pg-tag" title="MITRE ATT&CK technique">MITRE T1195.002</span> <span class="pg-tag" title="MITRE ATT&CK technique">MITRE T1036.005</span> <span class="pg-tag" title="kill-chain phase">initial-access (artifact replacement) -> defense-evasion (unbound cosign verify passes) -> impact (production deploy)</span> <span class="pg-tag pg-tag--owasp">github</span>
+</div>
+
+A ``cosign verify`` invocation lacks certificate identity binding (GHA-100) AND the same workflow deploys without a security-scan gate (GHA-098) or environment protection (GHA-014). An attacker who replaces the artifact can mint their own valid Sigstore signature, pass the unbound verification, and reach production through the unguarded deploy step.
+
+**References**
+
+- <https://docs.sigstore.dev/cosign/verifying/verify/>
+- <https://blog.sigstore.dev/cosign-2-0-released/>
+
+<div class="pg-rule__rec" markdown>
+
+**Recommended action**
+
+Break either leg:
+  1. Bind the ``cosign verify`` identity (GHA-100): add ``--certificate-identity(-regexp)`` AND ``--certificate-oidc-issuer(-regexp)`` pinned to the expected build workflow.
+  2. Gate the deploy step (GHA-098): require a security scan or manual approval environment before the deploy job runs.
+Both fixes together give defense-in-depth: even if a future signing key compromise occurs, the deploy gate catches unsigned or unexpected artifacts.
+
+</div>
+
+</div>
+
+<div class="pg-rule pg-rule--critical" markdown>
+
+### AC-033: Environment-secret laundering to unprotected deploy job { #ac-033 }
+
+<div class="pg-rule__tags">
+<span class="pg-sev pg-sev--critical">CRITICAL</span> <span class="pg-tag" title="MITRE ATT&CK technique">MITRE T1078.004</span> <span class="pg-tag" title="MITRE ATT&CK technique">MITRE T1548</span> <span class="pg-tag" title="kill-chain phase">privilege-escalation (environment gate bypass) -> lateral-movement (secret in unprotected job) -> impact (ungated deploy)</span> <span class="pg-tag pg-tag--owasp">github</span>
+</div>
+
+A protected environment secret flows through ``jobs.<id>.outputs:`` to a consumer job without ``environment:`` binding (TAINT-009) AND the workflow deploys without a security-scan gate (GHA-098). The environment's review gates are bypassed: the secret reaches an unprotected job that performs a production deploy.
+
+**References**
+
+- <https://docs.github.com/en/actions/deployment/targeting-different-environments/managing-environments-for-deployment>
+
+<div class="pg-rule__rec" markdown>
+
+**Recommended action**
+
+Break either leg:
+  1. Add an ``environment:`` binding to the consuming job (TAINT-009): every job that touches the secret must go through the same protection gate.
+  2. Add a security-scan gate before the deploy step (GHA-098): a scan dependency ensures the deploy job doesn't run without validation.
+Best: restructure the workflow so the secret never leaves the environment-bound job's boundary. Perform the deploy operation in the same protected job.
+
+</div>
+
+</div>
+
+<div class="pg-rule pg-rule--critical" markdown>
+
+### AC-034: Submodule-poisoned PR to credential exfiltration { #ac-034 }
+
+<div class="pg-rule__tags">
+<span class="pg-sev pg-sev--critical">CRITICAL</span> <span class="pg-tag" title="MITRE ATT&CK technique">MITRE T1195.002</span> <span class="pg-tag" title="MITRE ATT&CK technique">MITRE T1078.004</span> <span class="pg-tag" title="MITRE ATT&CK technique">MITRE T1059</span> <span class="pg-tag" title="kill-chain phase">initial-access (PR with modified .gitmodules) -> execution (submodule lifecycle scripts) -> credential-access (persisted GITHUB_TOKEN) -> impact (repo write / secret exfiltration)</span> <span class="pg-tag pg-tag--owasp">github</span>
+</div>
+
+A PR-triggered workflow clones submodules from an attacker-controllable ``.gitmodules`` (GHA-102) AND persists credentials or runs with overly broad permissions (GHA-037 / GHA-004). The attacker's submodule code executes with access to the GITHUB_TOKEN at write scope, enabling pushes to the base repo, release creation, or secret exfiltration.
+
+**References**
+
+- <https://github.com/nicksrandall/supply-chain-attack-demo>
+- <https://docs.github.com/en/actions/security-for-github-actions/security-guides/security-hardening-for-github-actions>
+
+<div class="pg-rule__rec" markdown>
+
+**Recommended action**
+
+Break either leg:
+  1. Remove ``submodules: recursive`` from PR-triggered checkout steps (GHA-102). If submodules are required, validate submodule origins before the build step.
+  2. Set ``persist-credentials: false`` on the checkout step (GHA-037) AND scope ``permissions:`` to the minimum needed (GHA-004). Without a persisted token or write scope, the attacker's code can't push or exfiltrate.
+Both fixes together are best: no submodule clone means no attacker code; no credentials means no blast radius.
 
 </div>
 

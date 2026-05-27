@@ -670,6 +670,7 @@ STANDARD = Standard(
         "TAINT-006": ["CM-6", "SA-11"],
         "TAINT-007": ["CM-6", "SA-11"],
         "TAINT-008": ["CM-6", "SA-11"],
+        "TAINT-009": ["IA-5", "AC-3"],                     # env-protected secret flows to unprotected job
         # ── SCM posture (governance via the platform REST API) ──────
         # Branch protection / review controls map primarily to SA-15
         # (Development Process, Standards, and Tools) — the developer-
@@ -738,6 +739,8 @@ STANDARD = Standard(
         "GHA-097":  ["CM-6", "SA-11"],                     # recursive PR auto-merge loop
         "GHA-098":  ["SA-10", "RA-5"],                     # deploy without security scan gate
         "GHA-099":  ["IA-5", "SC-28"],                     # deploy env plaintext secret
+        "GHA-100":  ["SI-7", "SR-11"],                     # cosign verify no identity binding
+        "GHA-102":  ["SI-7", "CM-6"],                      # submodule checkout on PR trigger
         "SCM-048":  ["AC-6", "IA-5"],                      # org codespace secrets scoped to all repos
         "SCM-049":  ["AC-6", "IA-5"],                      # classic PAT used where fine-grained suffices
         "NPM-012":  ["IA-5", "SR-3"],                      # publish token missing restrictions

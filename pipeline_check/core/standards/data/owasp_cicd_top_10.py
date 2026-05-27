@@ -607,6 +607,7 @@ STANDARD = Standard(
         "TAINT-006": ["CICD-SEC-4", "CICD-SEC-1"],  # Tekton results cross-task taint flow
         "TAINT-007": ["CICD-SEC-4", "CICD-SEC-1"],  # Argo outputs.parameters cross-template
         "TAINT-008": ["CICD-SEC-4", "CICD-SEC-1"],  # GitLab extends-chain inheritance
+        "TAINT-009": ["CICD-SEC-5", "CICD-SEC-2"],  # env-protected secret flows to unprotected job
         # Drone CI
         "DR-001":   ["CICD-SEC-3"],                 # step image not digest-pinned
         "DR-002":   ["CICD-SEC-5"],                 # step privileged
@@ -689,6 +690,8 @@ STANDARD = Standard(
         "GHA-097":  ["CICD-SEC-1"],                # recursive PR auto-merge loop
         "GHA-098":  ["CICD-SEC-7"],                # deploy without security scan gate
         "GHA-099":  ["CICD-SEC-6", "CICD-SEC-2"],  # deploy env plaintext secret
+        "GHA-100":  ["CICD-SEC-3", "CICD-SEC-9"],  # cosign verify no identity binding
+        "GHA-102":  ["CICD-SEC-3", "CICD-SEC-4"],  # submodule checkout on PR trigger
         # npm supply-chain posture
         "NPM-012":  ["CICD-SEC-3", "CICD-SEC-6"],  # publish token missing restrictions
     },
