@@ -1727,7 +1727,7 @@ class TestGHA003EnvBlockIndent:
 # ── Azure timeout fixer (ADO-015) ─────────────────────────────────────
 
 
-class TestADO015Timeout:
+class TestADO015TimeoutMultiJob:
     def test_inserts_timeout_in_job_missing_it(self):
         pipeline = (
             "trigger:\n"
