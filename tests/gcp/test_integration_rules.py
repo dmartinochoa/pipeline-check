@@ -76,10 +76,12 @@ def _insecure_cache() -> dict:
             {
                 "name": "key-1",
                 "key_type": "USER_MANAGED",
-                "valid_after": "2024-01-01",
-                "valid_before": "9999-01-01",
+                "valid_after": "2024-01-01T00:00:00Z",
+                "valid_before": "9999-01-01T00:00:00Z",
             },
         ],
+        # GCIAM-005: no domain-restricted sharing constraint
+        "iam:org_policies": [],
         # --- Storage ---
         "storage:buckets": [
             {
@@ -98,6 +100,8 @@ def _insecure_cache() -> dict:
                         "members": ["allUsers"],                 # GCS-001
                     },
                 ],
+                # GCS-004: no CMEK
+                # GCS-005: no access logging
             },
         ],
         # --- KMS ---
@@ -105,10 +109,17 @@ def _insecure_cache() -> dict:
             {
                 "name": "projects/p/locations/global/keyRings/kr/cryptoKeys/weak-key",
                 "purpose": "ENCRYPT_DECRYPT",
-                "protection_level": "SOFTWARE",                  # GCKMS-003
+                "protection_level": "EXTERNAL",                  # GCKMS-003 & GCKMS-006
                 "rotation_period_days": 500,                     # GCKMS-001
-                "primary_state": "ENABLED",
+                "primary_state": "DESTROY_SCHEDULED",            # GCKMS-005
             },
+        ],
+        # GCKMS-004: overly broad key ring IAM
+        "kms:key_rings": [
+            {"name": "kr-bad", "iam_policy": [
+                {"role": "roles/cloudkms.cryptoKeyDecrypter",
+                 "members": ["allUsers"]},
+            ]},
         ],
         # --- Artifact Registry ---
         "artifactregistry:repos": [
@@ -132,6 +143,86 @@ def _insecure_cache() -> dict:
             {"name": "_Default", "retention_days": 30, "locked": False,
              "lifecycle_state": "ACTIVE"},
         ],
+        # GCLOG-004: subnets without flow logs
+        "network:subnetworks": [
+            {"name": "sub-bad", "region": "us-central1",
+             "private_ip_google_access": False,
+             "log_config": {"enable": False}},
+        ],
+        # GCLOG-005 + GCNET-002 + GCNET-003: firewalls
+        "network:firewalls": [
+            {"name": "allow-ssh-all", "disabled": False,
+             "direction": "INGRESS",
+             "source_ranges": ["0.0.0.0/0"],
+             "allowed": [{"protocol": "tcp", "ports": ["22"]}],
+             "log_config": {"enable": False}},
+        ],
+        # GCLOG-007..011: no metric filters
+        "logging:metrics": [],
+        # --- Network ---
+        # GCNET-001: default network present
+        "network:networks": [
+            {"name": "default", "auto_create_subnetworks": True},
+        ],
+        # GCNET-005: no NAT
+        "network:routers": [],
+        # --- Compute ---
+        # GCIAM-004 + GCCE-001..005
+        "compute:instances": [
+            {
+                "name": "bad-vm",
+                "zone": "us-central1-a",
+                "status": "RUNNING",
+                "service_accounts": [
+                    "12345-compute@developer.gserviceaccount.com",
+                ],
+                "shielded_instance_config": None,
+                "metadata": {
+                    "enable-oslogin": "",
+                    "serial-port-enable": "true",
+                    "block-project-ssh-keys": "",
+                },
+                "network_interfaces": [
+                    {
+                        "name": "nic0",
+                        "network": "default",
+                        "access_configs": [
+                            {"nat_ip": "35.1.2.3", "type": "ONE_TO_ONE_NAT"},
+                        ],
+                    },
+                ],
+            },
+        ],
+        # --- Cloud SQL ---
+        "cloudsql:instances": [
+            {
+                "name": "bad-sql",
+                "settings": {
+                    "ipConfiguration": {
+                        "ipv4Enabled": True,
+                        "requireSsl": False,
+                    },
+                    "backupConfiguration": {
+                        "enabled": False,
+                        "pointInTimeRecoveryEnabled": False,
+                    },
+                    "databaseFlags": [],
+                },
+            },
+        ],
+        # --- Cloud Run ---
+        "cloudrun:services": [
+            {
+                "name": "bad-svc",
+                "ingress": "INGRESS_TRAFFIC_ALL",
+                "template": {
+                    "service_account": "",
+                    "scaling": {"min_instance_count": 0},
+                    "vpc_access": {"connector": ""},
+                },
+            },
+        ],
+        "cloudrun:functions": [],
     }
 
 
@@ -141,11 +232,22 @@ def _insecure_cache() -> dict:
 
 ALL_RULE_IDS = {
     "GCIAM-001", "GCIAM-002", "GCIAM-003",
+    "GCIAM-004", "GCIAM-005", "GCIAM-006",
     "GCS-001", "GCS-002", "GCS-003",
+    "GCS-004", "GCS-005",
     "GCKMS-001", "GCKMS-002", "GCKMS-003",
+    "GCKMS-004", "GCKMS-005", "GCKMS-006",
     "GAR-001", "GAR-002", "GAR-003",
     "GCLOG-001", "GCLOG-002", "GCLOG-003",
+    "GCLOG-004", "GCLOG-005", "GCLOG-006",
+    "GCLOG-007", "GCLOG-008", "GCLOG-009", "GCLOG-010", "GCLOG-011",
+    "GCNET-001", "GCNET-002", "GCNET-003", "GCNET-004", "GCNET-005",
+    "GCCE-001", "GCCE-002", "GCCE-003", "GCCE-004", "GCCE-005",
+    "GCSQL-001", "GCSQL-002", "GCSQL-003", "GCSQL-004", "GCSQL-005",
+    "GCRUN-001", "GCRUN-002", "GCRUN-003", "GCRUN-004",
 }
+
+assert len(ALL_RULE_IDS) == 50  # noqa: S101
 
 # GAR-002 always passes in the current implementation (no per-repo IAM
 # policy check yet), so it cannot appear in the "failed" set.
@@ -227,7 +329,7 @@ def _all_ids(findings) -> set[str]:
 class TestAllRulesFire:
     """Every rule ID should appear in findings."""
 
-    def test_all_15_rule_ids_present(self, _all_findings):
+    def test_all_50_rule_ids_present(self, _all_findings):
         present = _all_ids(_all_findings)
         missing = ALL_RULE_IDS - present
         assert not missing, f"Rules not present in findings: {sorted(missing)}"
@@ -260,7 +362,10 @@ class TestFindingMetadata:
 
     def test_prefixes_all_present(self, _all_findings):
         prefixes = {f.check_id.split("-")[0] for f in _all_findings}
-        required = {"GCIAM", "GCS", "GCKMS", "GAR", "GCLOG"}
+        required = {
+            "GCIAM", "GCS", "GCKMS", "GAR", "GCLOG",
+            "GCNET", "GCCE", "GCSQL", "GCRUN",
+        }
         missing = required - prefixes
         assert not missing, f"Missing prefixes: {sorted(missing)}"
 
@@ -280,9 +385,19 @@ def _degraded_findings():
         # Only populate non-errored services.
         catalog._cache.update({
             "kms:keys": [],
+            "kms:key_rings": [],
             "artifactregistry:repos": [],
             "logging:sinks": [],
             "logging:buckets": [],
+            "logging:metrics": [],
+            "network:firewalls": [],
+            "network:networks": [],
+            "network:subnetworks": [],
+            "network:routers": [],
+            "compute:instances": [],
+            "cloudsql:instances": [],
+            "cloudrun:services": [],
+            "cloudrun:functions": [],
         })
         # Inject errors for IAM and Storage.
         catalog.errors["iam"] = "PermissionDenied: caller lacks permission"

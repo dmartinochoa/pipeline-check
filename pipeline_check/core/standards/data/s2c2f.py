@@ -351,5 +351,77 @@ STANDARD = Standard(
         "GCLOG-001": ["ENF-2"],              # audit logs not enabled
         "GCLOG-002": ["ENF-2"],              # no log sink
         "GCLOG-003": ["ENF-2"],              # log retention < 365 days
+        # ── Azure Cloud phase-2 ──────────────────────────────────────
+        "ENTRA-004": ["ENF-1"],              # cond access MFA
+        "ENTRA-005": ["ENF-1"],              # ext user restrict
+        "ENTRA-006": ["ENF-2"],              # risky signin
+        "AZST-004":  ["ING-1"],              # min TLS
+        "AZST-005":  ["UPD-1"],              # lifecycle
+        "AZST-006":  ["UPD-1"],              # key rotation
+        "AKV-004":   ["UPD-1"],              # key expiry
+        "AKV-005":   ["UPD-1"],              # secret expiry
+        "AKV-006":   ["ENF-1"],              # RBAC
+        "ACR-004":   ["SCA-1"],              # defender scan
+        "ACR-005":   ["ENF-1"],              # tag immutability
+        "AZMON-004": ["ENF-2"],              # KV diagnostics
+        "AZMON-005": ["ENF-2"],              # NSG flow retention
+        "AZMON-006": ["ENF-2"],              # LAW retention
+        "AZMON-007": ["ENF-2"],              # svc health alert
+        "AZNW-001":  ["ENF-1"],              # SSH/RDP internet (CRITICAL)
+        "AZNW-002":  ["ENF-2"],              # flow logs
+        "AZNW-003":  ["ENF-1"],              # WAF
+        "AZNW-004":  ["ENF-1"],              # deny-all
+        "AZNW-005":  ["ENF-1"],              # public IP VM
+        "AZAPP-001": ["ING-1"],              # HTTPS
+        "AZAPP-002": ["ING-1"],              # TLS
+        "AZAPP-003": ["ENF-1"],              # managed identity
+        "AZAPP-004": ["ENF-1"],              # remote debug
+        "AZAPP-005": ["ENF-1"],              # FTP
+        "AZSQL-001": ["REB-2"],              # TDE CMK
+        "AZSQL-002": ["ENF-2"],              # auditing
+        "AZSQL-003": ["ENF-1"],              # public access
+        "AZSQL-004": ["ENF-1"],              # AAD admin
+        "AZSQL-005": ["SCA-1"],              # threat detect
+        "AZVM-001":  ["REB-2"],              # disk encrypt
+        "AZVM-002":  ["ENF-1"],              # public IP
+        "AZVM-003":  ["ENF-1"],              # JIT
+        "AZVM-004":  ["SCA-1"],              # OS patch
+        "AZVM-005":  ["ENF-1"],              # managed identity
+        # ── GCP phase-2 ──────────────────────────────────────────────
+        "GCIAM-004": ["ENF-1"],              # default SA
+        "GCIAM-005": ["ENF-1"],              # domain restrict
+        "GCIAM-006": ["UPD-1"],              # SA key age
+        "GCS-004":   ["REB-2"],              # CMEK
+        "GCS-005":   ["ENF-2"],              # access logging
+        "GCLOG-004": ["ENF-2"],              # VPC flow logs
+        "GCLOG-005": ["ENF-2"],              # firewall logging
+        "GCLOG-006": ["ENF-2"],              # data access
+        "GCLOG-007": ["ENF-2"],              # metric filter IAM
+        "GCLOG-008": ["ENF-2"],              # metric filter firewall
+        "GCLOG-009": ["ENF-2"],              # metric filter route
+        "GCLOG-010": ["ENF-2"],              # metric filter SQL
+        "GCLOG-011": ["ENF-2"],              # metric filter custom role
+        "GCNET-001": ["ENF-1"],              # default network
+        "GCNET-002": ["ENF-1"],              # deny-all
+        "GCNET-003": ["ENF-1"],              # SSH/RDP (CRITICAL)
+        "GCNET-004": ["ENF-1"],              # private access
+        "GCNET-005": ["ENF-1"],              # Cloud NAT
+        "GCCE-001":  ["ENF-1"],              # shielded VM
+        "GCCE-002":  ["ENF-1"],              # OS Login
+        "GCCE-003":  ["ENF-1"],              # serial port
+        "GCCE-004":  ["ENF-1"],              # public IP
+        "GCCE-005":  ["ENF-1"],              # project SSH keys
+        "GCSQL-001": ["ENF-1"],              # public IP
+        "GCSQL-002": ["ENF-1"],              # backups
+        "GCSQL-003": ["ING-1"],              # SSL
+        "GCSQL-004": ["ENF-1"],              # IAM auth
+        "GCSQL-005": ["ENF-1"],              # PITR
+        "GCRUN-001": ["ENF-1"],              # unauth
+        "GCRUN-002": ["ENF-1"],              # custom SA
+        "GCRUN-003": ["ENF-1"],              # min instances
+        "GCRUN-004": ["ENF-1"],              # VPC connector
+        "GCKMS-004": ["ENF-1"],              # keyring IAM
+        "GCKMS-005": ["ENF-1"],              # destroy sched
+        "GCKMS-006": ["REB-2"],              # imported key
     },
 )

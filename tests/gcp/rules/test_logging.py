@@ -216,3 +216,279 @@ class TestGCLOG003:
         passed_map = {f.resource: f.passed for f in findings}
         assert passed_map["_Default"] is False
         assert passed_map["long-term"] is True
+
+
+# -----------------------------------------------------------------------
+# GCLOG-004: VPC Flow Logs not enabled on subnet
+# -----------------------------------------------------------------------
+
+from pipeline_check.core.checks.gcp.rules import gclog004_vpc_flow_logs
+
+
+class TestGCLOG004:
+    def test_flow_logs_enabled_passes(self, make_catalog):
+        cat = make_catalog(**{
+            "network:subnetworks": [
+                {"name": "sub-1", "region": "us-central1",
+                 "log_config": {"enable": True}},
+            ],
+        })
+        findings = gclog004_vpc_flow_logs.check(cat)
+        assert len(findings) == 1
+        assert findings[0].passed is True
+        assert findings[0].check_id == "GCLOG-004"
+
+    def test_flow_logs_disabled_fails(self, make_catalog):
+        cat = make_catalog(**{
+            "network:subnetworks": [
+                {"name": "sub-2", "region": "us-east1",
+                 "log_config": {"enable": False}},
+            ],
+        })
+        findings = gclog004_vpc_flow_logs.check(cat)
+        assert len(findings) == 1
+        assert findings[0].passed is False
+
+    def test_no_subnets_returns_empty(self, make_catalog):
+        cat = make_catalog(**{"network:subnetworks": []})
+        assert gclog004_vpc_flow_logs.check(cat) == []
+
+
+# -----------------------------------------------------------------------
+# GCLOG-005: Firewall rule logging not enabled
+# -----------------------------------------------------------------------
+
+from pipeline_check.core.checks.gcp.rules import gclog005_firewall_logging
+
+
+class TestGCLOG005:
+    def test_logging_enabled_passes(self, make_catalog):
+        cat = make_catalog(**{
+            "network:firewalls": [
+                {"name": "fw-1", "disabled": False,
+                 "direction": "INGRESS", "source_ranges": [],
+                 "allowed": [], "log_config": {"enable": True}},
+            ],
+        })
+        findings = gclog005_firewall_logging.check(cat)
+        assert len(findings) == 1
+        assert findings[0].passed is True
+        assert findings[0].check_id == "GCLOG-005"
+
+    def test_logging_disabled_fails(self, make_catalog):
+        cat = make_catalog(**{
+            "network:firewalls": [
+                {"name": "fw-2", "disabled": False,
+                 "direction": "INGRESS", "source_ranges": [],
+                 "allowed": [], "log_config": {"enable": False}},
+            ],
+        })
+        findings = gclog005_firewall_logging.check(cat)
+        assert len(findings) == 1
+        assert findings[0].passed is False
+
+    def test_disabled_rule_skipped(self, make_catalog):
+        cat = make_catalog(**{
+            "network:firewalls": [
+                {"name": "fw-off", "disabled": True,
+                 "direction": "INGRESS", "source_ranges": [],
+                 "allowed": [], "log_config": {"enable": False}},
+            ],
+        })
+        findings = gclog005_firewall_logging.check(cat)
+        assert findings == []
+
+    def test_no_firewalls_returns_empty(self, make_catalog):
+        cat = make_catalog(**{"network:firewalls": []})
+        assert gclog005_firewall_logging.check(cat) == []
+
+
+# -----------------------------------------------------------------------
+# GCLOG-006: Critical service missing Data Access audit log types
+# -----------------------------------------------------------------------
+
+from pipeline_check.core.checks.gcp.rules import gclog006_data_access_specific
+
+
+class TestGCLOG006:
+    def test_all_types_for_all_services_passes(self, make_catalog):
+        cat = make_catalog(**{
+            "iam:project_policy": {
+                "bindings": [],
+                "audit_configs": [
+                    {"service": "allServices",
+                     "audit_log_configs": [
+                         {"log_type": 1}, {"log_type": 2}, {"log_type": 3},
+                     ]},
+                ],
+            },
+        })
+        findings = gclog006_data_access_specific.check(cat)
+        assert len(findings) == 3  # One per critical service
+        assert all(f.passed for f in findings)
+
+    def test_missing_type_for_service_fails(self, make_catalog):
+        cat = make_catalog(**{
+            "iam:project_policy": {
+                "bindings": [],
+                "audit_configs": [
+                    {"service": "storage.googleapis.com",
+                     "audit_log_configs": [{"log_type": 1}]},
+                ],
+            },
+        })
+        findings = gclog006_data_access_specific.check(cat)
+        # storage has types {1}, missing {2,3}; iam and compute have none
+        failed = [f for f in findings if not f.passed]
+        assert len(failed) == 3  # All 3 services missing something
+
+    def test_empty_policy_returns_empty(self, make_catalog):
+        cat = make_catalog(**{"iam:project_policy": {}})
+        assert gclog006_data_access_specific.check(cat) == []
+
+
+# -----------------------------------------------------------------------
+# GCLOG-007: No log metric filter for IAM policy changes
+# -----------------------------------------------------------------------
+
+from pipeline_check.core.checks.gcp.rules import gclog007_metric_filter_iam
+
+
+class TestGCLOG007:
+    def test_metric_with_setiam_passes(self, make_catalog):
+        cat = make_catalog(**{
+            "logging:metrics": [
+                {"name": "iam-changes", "filter": 'protoPayload.methodName="SetIamPolicy"',
+                 "description": ""},
+            ],
+        })
+        findings = gclog007_metric_filter_iam.check(cat)
+        assert len(findings) == 1
+        assert findings[0].passed is True
+        assert findings[0].check_id == "GCLOG-007"
+
+    def test_no_metric_fails(self, make_catalog):
+        cat = make_catalog(**{"logging:metrics": []})
+        findings = gclog007_metric_filter_iam.check(cat)
+        assert len(findings) == 1
+        assert findings[0].passed is False
+
+    def test_unrelated_metric_fails(self, make_catalog):
+        cat = make_catalog(**{
+            "logging:metrics": [
+                {"name": "other", "filter": "resource.type=gce_instance",
+                 "description": ""},
+            ],
+        })
+        findings = gclog007_metric_filter_iam.check(cat)
+        assert len(findings) == 1
+        assert findings[0].passed is False
+
+
+# -----------------------------------------------------------------------
+# GCLOG-008: No log metric filter for firewall rule changes
+# -----------------------------------------------------------------------
+
+from pipeline_check.core.checks.gcp.rules import gclog008_metric_filter_firewall
+
+
+class TestGCLOG008:
+    def test_metric_with_firewall_passes(self, make_catalog):
+        cat = make_catalog(**{
+            "logging:metrics": [
+                {"name": "fw-changes", "filter": 'resource.type="gce_firewall_rule"',
+                 "description": ""},
+            ],
+        })
+        findings = gclog008_metric_filter_firewall.check(cat)
+        assert len(findings) == 1
+        assert findings[0].passed is True
+        assert findings[0].check_id == "GCLOG-008"
+
+    def test_no_metric_fails(self, make_catalog):
+        cat = make_catalog(**{"logging:metrics": []})
+        findings = gclog008_metric_filter_firewall.check(cat)
+        assert len(findings) == 1
+        assert findings[0].passed is False
+
+
+# -----------------------------------------------------------------------
+# GCLOG-009: No log metric filter for route changes
+# -----------------------------------------------------------------------
+
+from pipeline_check.core.checks.gcp.rules import gclog009_metric_filter_route
+
+
+class TestGCLOG009:
+    def test_metric_with_route_passes(self, make_catalog):
+        cat = make_catalog(**{
+            "logging:metrics": [
+                {"name": "route-changes", "filter": 'resource.type="gce_route"',
+                 "description": ""},
+            ],
+        })
+        findings = gclog009_metric_filter_route.check(cat)
+        assert len(findings) == 1
+        assert findings[0].passed is True
+        assert findings[0].check_id == "GCLOG-009"
+
+    def test_no_metric_fails(self, make_catalog):
+        cat = make_catalog(**{"logging:metrics": []})
+        findings = gclog009_metric_filter_route.check(cat)
+        assert len(findings) == 1
+        assert findings[0].passed is False
+
+
+# -----------------------------------------------------------------------
+# GCLOG-010: No log metric filter for Cloud SQL config changes
+# -----------------------------------------------------------------------
+
+from pipeline_check.core.checks.gcp.rules import gclog010_metric_filter_sql
+
+
+class TestGCLOG010:
+    def test_metric_with_sql_passes(self, make_catalog):
+        cat = make_catalog(**{
+            "logging:metrics": [
+                {"name": "sql-changes",
+                 "filter": 'protoPayload.methodName="cloudsql.instances.update"',
+                 "description": ""},
+            ],
+        })
+        findings = gclog010_metric_filter_sql.check(cat)
+        assert len(findings) == 1
+        assert findings[0].passed is True
+        assert findings[0].check_id == "GCLOG-010"
+
+    def test_no_metric_fails(self, make_catalog):
+        cat = make_catalog(**{"logging:metrics": []})
+        findings = gclog010_metric_filter_sql.check(cat)
+        assert len(findings) == 1
+        assert findings[0].passed is False
+
+
+# -----------------------------------------------------------------------
+# GCLOG-011: No log metric filter for custom role changes
+# -----------------------------------------------------------------------
+
+from pipeline_check.core.checks.gcp.rules import gclog011_metric_filter_custom_role
+
+
+class TestGCLOG011:
+    def test_metric_with_iam_role_passes(self, make_catalog):
+        cat = make_catalog(**{
+            "logging:metrics": [
+                {"name": "role-changes", "filter": 'resource.type="iam_role"',
+                 "description": ""},
+            ],
+        })
+        findings = gclog011_metric_filter_custom_role.check(cat)
+        assert len(findings) == 1
+        assert findings[0].passed is True
+        assert findings[0].check_id == "GCLOG-011"
+
+    def test_no_metric_fails(self, make_catalog):
+        cat = make_catalog(**{"logging:metrics": []})
+        findings = gclog011_metric_filter_custom_role.check(cat)
+        assert len(findings) == 1
+        assert findings[0].passed is False

@@ -13,6 +13,10 @@ _RULE_PREFIX_TO_SERVICE: dict[str, str] = {
     "AKV": "keyvault",
     "ACR": "acr",
     "AZMON": "monitor",
+    "AZNW": "network",
+    "AZAPP": "appservice",
+    "AZSQL": "sql",
+    "AZVM": "compute",
 }
 
 _DEGRADED: dict[str, tuple[str, str, str]] = {
@@ -51,6 +55,30 @@ _DEGRADED: dict[str, tuple[str, str, str]] = {
         "Azure Authorization",
         "Ensure the credential has Reader role and "
         "Microsoft.Authorization/roleAssignments/read permission.",
+    ),
+    "network": (
+        "AZNW-000",
+        "Azure Network",
+        "Ensure the credential has Reader role and "
+        "Microsoft.Network/networkSecurityGroups/read permission.",
+    ),
+    "appservice": (
+        "AZAPP-000",
+        "Azure App Service",
+        "Ensure the credential has Reader role and "
+        "Microsoft.Web/sites/read permission.",
+    ),
+    "sql": (
+        "AZSQL-000",
+        "Azure SQL Database",
+        "Ensure the credential has Reader role and "
+        "Microsoft.Sql/servers/read permission.",
+    ),
+    "compute": (
+        "AZVM-000",
+        "Azure Compute",
+        "Ensure the credential has Reader role and "
+        "Microsoft.Compute/virtualMachines/read permission.",
     ),
 }
 

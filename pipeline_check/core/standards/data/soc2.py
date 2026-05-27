@@ -791,5 +791,77 @@ STANDARD = Standard(
         "GCLOG-001": ["CC7.2"],                  # audit logs not enabled
         "GCLOG-002": ["CC7.2"],                  # no log sink
         "GCLOG-003": ["CC7.2"],                  # log retention < 365 days
+        # ── Azure Cloud phase-2 ──────────────────────────────────────
+        "ENTRA-004": ["CC6.1"],                  # cond access MFA
+        "ENTRA-005": ["CC6.1", "CC6.2"],         # ext user restrict
+        "ENTRA-006": ["CC7.2", "CC7.3"],         # risky signin
+        "AZST-004":  ["CC6.7"],                  # min TLS
+        "AZST-005":  ["CC7.1"],                  # lifecycle
+        "AZST-006":  ["CC6.3"],                  # key rotation
+        "AKV-004":   ["CC6.3"],                  # key expiry
+        "AKV-005":   ["CC6.3"],                  # secret expiry
+        "AKV-006":   ["CC6.1"],                  # RBAC
+        "ACR-004":   ["CC6.8"],                  # defender scan
+        "ACR-005":   ["CC7.1"],                  # tag immutability
+        "AZMON-004": ["CC7.2"],                  # KV diagnostics
+        "AZMON-005": ["CC7.2"],                  # NSG flow retention
+        "AZMON-006": ["CC7.2"],                  # LAW retention
+        "AZMON-007": ["CC7.2", "CC7.3", "CC7.4"],  # svc health alert
+        "AZNW-001":  ["CC6.6"],                  # SSH/RDP internet (CRITICAL)
+        "AZNW-002":  ["CC7.2"],                  # flow logs
+        "AZNW-003":  ["CC6.6"],                  # WAF
+        "AZNW-004":  ["CC6.6"],                  # deny-all
+        "AZNW-005":  ["CC6.6"],                  # public IP VM
+        "AZAPP-001": ["CC6.7"],                  # HTTPS
+        "AZAPP-002": ["CC6.7"],                  # TLS
+        "AZAPP-003": ["CC6.1"],                  # managed identity
+        "AZAPP-004": ["CC6.6"],                  # remote debug
+        "AZAPP-005": ["CC6.6"],                  # FTP
+        "AZSQL-001": ["CC6.1"],                  # TDE CMK
+        "AZSQL-002": ["CC7.2"],                  # auditing
+        "AZSQL-003": ["CC6.6"],                  # public access
+        "AZSQL-004": ["CC6.1"],                  # AAD admin
+        "AZSQL-005": ["CC7.2", "CC7.3"],         # threat detect
+        "AZVM-001":  ["CC6.1"],                  # disk encrypt
+        "AZVM-002":  ["CC6.6"],                  # public IP
+        "AZVM-003":  ["CC6.6"],                  # JIT
+        "AZVM-004":  ["CC7.1"],                  # OS patch
+        "AZVM-005":  ["CC6.1"],                  # managed identity
+        # ── GCP phase-2 ──────────────────────────────────────────────
+        "GCIAM-004": ["CC6.1"],                  # default SA
+        "GCIAM-005": ["CC6.1"],                  # domain restrict
+        "GCIAM-006": ["CC6.3"],                  # SA key age
+        "GCS-004":   ["CC6.1"],                  # CMEK
+        "GCS-005":   ["CC7.2"],                  # access logging
+        "GCLOG-004": ["CC7.2"],                  # VPC flow logs
+        "GCLOG-005": ["CC7.2"],                  # firewall logging
+        "GCLOG-006": ["CC7.2"],                  # data access
+        "GCLOG-007": ["CC7.2", "CC7.3"],         # metric filter IAM
+        "GCLOG-008": ["CC7.2", "CC7.3"],         # metric filter firewall
+        "GCLOG-009": ["CC7.2", "CC7.3"],         # metric filter route
+        "GCLOG-010": ["CC7.2", "CC7.3"],         # metric filter SQL
+        "GCLOG-011": ["CC7.2", "CC7.3"],         # metric filter custom role
+        "GCNET-001": ["CC6.6"],                  # default network
+        "GCNET-002": ["CC6.6"],                  # deny-all
+        "GCNET-003": ["CC6.6"],                  # SSH/RDP (CRITICAL)
+        "GCNET-004": ["CC6.6"],                  # private access
+        "GCNET-005": ["CC6.6"],                  # Cloud NAT
+        "GCCE-001":  ["CC6.8"],                  # shielded VM
+        "GCCE-002":  ["CC6.1"],                  # OS Login
+        "GCCE-003":  ["CC6.6"],                  # serial port
+        "GCCE-004":  ["CC6.6"],                  # public IP
+        "GCCE-005":  ["CC6.6"],                  # project SSH keys
+        "GCSQL-001": ["CC6.6"],                  # public IP
+        "GCSQL-002": ["CC7.4"],                  # backups
+        "GCSQL-003": ["CC6.7"],                  # SSL
+        "GCSQL-004": ["CC6.1"],                  # IAM auth
+        "GCSQL-005": ["CC7.4"],                  # PITR
+        "GCRUN-001": ["CC6.6"],                  # unauth
+        "GCRUN-002": ["CC6.1"],                  # custom SA
+        "GCRUN-003": ["CC6.6"],                  # min instances
+        "GCRUN-004": ["CC6.6"],                  # VPC connector
+        "GCKMS-004": ["CC6.1"],                  # keyring IAM
+        "GCKMS-005": ["CC6.1"],                  # destroy sched
+        "GCKMS-006": ["CC6.1"],                  # imported key
     },
 )

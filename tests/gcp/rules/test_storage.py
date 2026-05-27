@@ -167,3 +167,71 @@ class TestGCS003:
     def test_no_buckets_returns_empty(self, make_catalog):
         cat = make_catalog(**{"storage:buckets": []})
         assert gcs003_versioning.check(cat) == []
+
+
+# -----------------------------------------------------------------------
+# GCS-004: bucket not encrypted with CMEK
+# -----------------------------------------------------------------------
+
+from pipeline_check.core.checks.gcp.rules import gcs004_cmek_encryption
+
+
+class TestGCS004:
+    def test_no_cmek_fails(self, make_catalog):
+        cat = make_catalog(**{
+            "storage:buckets": [_bucket()],
+        })
+        findings = gcs004_cmek_encryption.check(cat)
+        assert len(findings) == 1
+        assert findings[0].passed is False
+        assert findings[0].check_id == "GCS-004"
+
+    def test_cmek_passes(self, make_catalog):
+        b = _bucket()
+        b["default_kms_key_name"] = "projects/p/locations/us/keyRings/kr/cryptoKeys/k"
+        cat = make_catalog(**{"storage:buckets": [b]})
+        findings = gcs004_cmek_encryption.check(cat)
+        assert len(findings) == 1
+        assert findings[0].passed is True
+
+    def test_no_buckets_returns_empty(self, make_catalog):
+        cat = make_catalog(**{"storage:buckets": []})
+        assert gcs004_cmek_encryption.check(cat) == []
+
+
+# -----------------------------------------------------------------------
+# GCS-005: bucket access logging not enabled
+# -----------------------------------------------------------------------
+
+from pipeline_check.core.checks.gcp.rules import gcs005_access_logging
+
+
+class TestGCS005:
+    def test_no_logging_fails(self, make_catalog):
+        cat = make_catalog(**{
+            "storage:buckets": [_bucket()],
+        })
+        findings = gcs005_access_logging.check(cat)
+        assert len(findings) == 1
+        assert findings[0].passed is False
+        assert findings[0].check_id == "GCS-005"
+
+    def test_logging_enabled_passes(self, make_catalog):
+        b = _bucket()
+        b["logging"] = {"log_bucket": "log-bucket"}
+        cat = make_catalog(**{"storage:buckets": [b]})
+        findings = gcs005_access_logging.check(cat)
+        assert len(findings) == 1
+        assert findings[0].passed is True
+
+    def test_empty_log_bucket_fails(self, make_catalog):
+        b = _bucket()
+        b["logging"] = {"log_bucket": ""}
+        cat = make_catalog(**{"storage:buckets": [b]})
+        findings = gcs005_access_logging.check(cat)
+        assert len(findings) == 1
+        assert findings[0].passed is False
+
+    def test_no_buckets_returns_empty(self, make_catalog):
+        cat = make_catalog(**{"storage:buckets": []})
+        assert gcs005_access_logging.check(cat) == []

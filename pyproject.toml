@@ -77,12 +77,18 @@ hcl = ["python-hcl2>=4.0"]
 # Requires an Azure subscription and ``az login`` authentication.
 azure-cloud = [
     "azure-identity>=1.17.0",
+    "azure-keyvault-keys>=4.9.0",
+    "azure-keyvault-secrets>=4.8.0",
     "azure-mgmt-authorization>=4.0.0",
+    "azure-mgmt-compute>=31.0.0",
     "azure-mgmt-containerregistry>=10.0.0",
     "azure-mgmt-keyvault>=10.0.0",
     "azure-mgmt-monitor>=6.0.0",
+    "azure-mgmt-network>=25.0.0",
     "azure-mgmt-resource>=23.0.0",
+    "azure-mgmt-sql>=4.0.0",
     "azure-mgmt-storage>=21.0.0",
+    "azure-mgmt-web>=7.0.0",
     "requests>=2.31.0",
 ]
 # Opt-in GCP cloud posture scanning (``--pipeline gcp``). Requires
@@ -90,11 +96,16 @@ azure-cloud = [
 gcp = [
     "google-auth>=2.29.0",
     "google-cloud-artifact-registry>=1.11.0",
+    "google-cloud-compute>=1.19.0",
+    "google-cloud-functions>=1.16.0",
     "google-cloud-iam>=2.15.0",
     "google-cloud-kms>=2.21.0",
     "google-cloud-logging>=3.10.0",
+    "google-cloud-org-policy>=1.11.0",
     "google-cloud-resource-manager>=1.12.0",
+    "google-cloud-run>=0.10.0",
     "google-cloud-storage>=2.16.0",
+    "requests>=2.31.0",
 ]
 
 [project.scripts]
@@ -149,7 +160,7 @@ ignore = [
 "pipeline_check/core/checks/base.py" = ["E402"]    # deferred re import after dataclass
 "scripts/gen_provider_docs.py" = ["E402", "E501"]  # sys.path setup + markdown-table template strings
 "scripts/gen_standards_docs.py" = ["E402"]         # sys.path setup before pipeline_check import
-"tests/**" = ["E501"]                               # test strings often exceed line length
+"tests/**" = ["E501", "E402"]                        # test strings + mid-file imports for extended test classes
 "tests/terraform/test_hcl_parser.py" = ["E402"]     # importorskip guard before project imports
 
 [tool.mypy]

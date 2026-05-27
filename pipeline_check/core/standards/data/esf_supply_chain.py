@@ -795,5 +795,77 @@ STANDARD = Standard(
         "GCLOG-001": ["ESF-C-AUDIT"],                      # audit logs not enabled
         "GCLOG-002": ["ESF-C-AUDIT"],                      # no log sink
         "GCLOG-003": ["ESF-C-AUDIT"],                      # log retention < 365 days
+        # ── Azure Cloud phase-2 ──────────────────────────────────────
+        "ENTRA-004": ["ESF-D-TOKEN-HYGIENE"],              # cond access MFA
+        "ENTRA-005": ["ESF-C-LEAST-PRIV"],                 # ext user restrict
+        "ENTRA-006": ["ESF-C-AUDIT"],                      # risky signin
+        "AZST-004":  ["ESF-S-TRUSTED-REG"],                # min TLS
+        "AZST-005":  ["ESF-D-BUILD-ENV"],                  # lifecycle
+        "AZST-006":  ["ESF-D-TOKEN-HYGIENE"],              # key rotation
+        "AKV-004":   ["ESF-D-TOKEN-HYGIENE"],              # key expiry
+        "AKV-005":   ["ESF-D-TOKEN-HYGIENE"],              # secret expiry
+        "AKV-006":   ["ESF-C-LEAST-PRIV"],                 # RBAC
+        "ACR-004":   ["ESF-S-VULN-MGMT"],                  # defender scan
+        "ACR-005":   ["ESF-S-IMMUTABLE"],                   # tag immutability
+        "AZMON-004": ["ESF-C-AUDIT"],                      # KV diagnostics
+        "AZMON-005": ["ESF-C-AUDIT"],                      # NSG flow retention
+        "AZMON-006": ["ESF-C-AUDIT"],                      # LAW retention
+        "AZMON-007": ["ESF-C-DEPLOY-MON"],                 # svc health alert
+        "AZNW-001":  ["ESF-D-BUILD-ENV"],                  # SSH/RDP internet (CRITICAL)
+        "AZNW-002":  ["ESF-C-AUDIT"],                      # flow logs
+        "AZNW-003":  ["ESF-D-BUILD-ENV"],                  # WAF
+        "AZNW-004":  ["ESF-D-BUILD-ENV"],                  # deny-all
+        "AZNW-005":  ["ESF-D-BUILD-ENV"],                  # public IP VM
+        "AZAPP-001": ["ESF-S-TRUSTED-REG"],                # HTTPS
+        "AZAPP-002": ["ESF-S-TRUSTED-REG"],                # TLS
+        "AZAPP-003": ["ESF-D-TOKEN-HYGIENE"],              # managed identity
+        "AZAPP-004": ["ESF-D-BUILD-ENV"],                  # remote debug
+        "AZAPP-005": ["ESF-D-BUILD-ENV"],                  # FTP
+        "AZSQL-001": ["ESF-C-ARTIFACT-AUTHZ"],             # TDE CMK
+        "AZSQL-002": ["ESF-C-AUDIT"],                      # auditing
+        "AZSQL-003": ["ESF-D-BUILD-ENV"],                  # public access
+        "AZSQL-004": ["ESF-C-LEAST-PRIV"],                 # AAD admin
+        "AZSQL-005": ["ESF-S-VULN-MGMT"],                  # threat detect
+        "AZVM-001":  ["ESF-C-ARTIFACT-AUTHZ"],             # disk encrypt
+        "AZVM-002":  ["ESF-D-BUILD-ENV"],                  # public IP
+        "AZVM-003":  ["ESF-D-BUILD-ENV"],                  # JIT
+        "AZVM-004":  ["ESF-S-VULN-MGMT"],                  # OS patch
+        "AZVM-005":  ["ESF-D-TOKEN-HYGIENE"],              # managed identity
+        # ── GCP phase-2 ──────────────────────────────────────────────
+        "GCIAM-004": ["ESF-C-LEAST-PRIV"],                 # default SA
+        "GCIAM-005": ["ESF-C-LEAST-PRIV"],                 # domain restrict
+        "GCIAM-006": ["ESF-D-TOKEN-HYGIENE"],              # SA key age
+        "GCS-004":   ["ESF-C-ARTIFACT-AUTHZ"],             # CMEK
+        "GCS-005":   ["ESF-C-AUDIT"],                      # access logging
+        "GCLOG-004": ["ESF-C-AUDIT"],                      # VPC flow logs
+        "GCLOG-005": ["ESF-C-AUDIT"],                      # firewall logging
+        "GCLOG-006": ["ESF-C-AUDIT"],                      # data access
+        "GCLOG-007": ["ESF-C-AUDIT"],                      # metric filter IAM
+        "GCLOG-008": ["ESF-C-AUDIT"],                      # metric filter firewall
+        "GCLOG-009": ["ESF-C-AUDIT"],                      # metric filter route
+        "GCLOG-010": ["ESF-C-AUDIT"],                      # metric filter SQL
+        "GCLOG-011": ["ESF-C-AUDIT"],                      # metric filter custom role
+        "GCNET-001": ["ESF-D-BUILD-ENV"],                  # default network
+        "GCNET-002": ["ESF-D-BUILD-ENV"],                  # deny-all
+        "GCNET-003": ["ESF-D-BUILD-ENV"],                  # SSH/RDP (CRITICAL)
+        "GCNET-004": ["ESF-D-BUILD-ENV"],                  # private access
+        "GCNET-005": ["ESF-D-BUILD-ENV"],                  # Cloud NAT
+        "GCCE-001":  ["ESF-D-BUILD-ENV"],                  # shielded VM
+        "GCCE-002":  ["ESF-D-TOKEN-HYGIENE"],              # OS Login
+        "GCCE-003":  ["ESF-D-BUILD-ENV"],                  # serial port
+        "GCCE-004":  ["ESF-D-BUILD-ENV"],                  # public IP
+        "GCCE-005":  ["ESF-D-BUILD-ENV"],                  # project SSH keys
+        "GCSQL-001": ["ESF-D-BUILD-ENV"],                  # public IP
+        "GCSQL-002": ["ESF-C-ROLLBACK"],                   # backups
+        "GCSQL-003": ["ESF-S-TRUSTED-REG"],                # SSL
+        "GCSQL-004": ["ESF-C-LEAST-PRIV"],                 # IAM auth
+        "GCSQL-005": ["ESF-C-ROLLBACK"],                   # PITR
+        "GCRUN-001": ["ESF-D-BUILD-ENV"],                  # unauth
+        "GCRUN-002": ["ESF-C-LEAST-PRIV"],                 # custom SA
+        "GCRUN-003": ["ESF-C-DEPLOY-MON"],                 # min instances
+        "GCRUN-004": ["ESF-D-BUILD-ENV"],                  # VPC connector
+        "GCKMS-004": ["ESF-C-LEAST-PRIV"],                 # keyring IAM
+        "GCKMS-005": ["ESF-C-ARTIFACT-AUTHZ"],             # destroy sched
+        "GCKMS-006": ["ESF-C-ARTIFACT-AUTHZ"],             # imported key
     },
 )

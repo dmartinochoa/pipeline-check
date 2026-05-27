@@ -125,3 +125,123 @@ class TestAzst003:
         catalog = make_catalog(**{"storage:accounts": []})
         findings = azst003.check(catalog)
         assert findings == []
+
+
+# -----------------------------------------------------------------------
+# AZST-004  Storage account minimum TLS version below 1.2
+# -----------------------------------------------------------------------
+
+from pipeline_check.core.checks.azure_cloud.rules import (
+    azst004_min_tls as azst004,
+)
+
+
+class TestAzst004:
+    def test_tls10_fails(self, make_catalog):
+        acct = _storage_account()
+        acct.minimum_tls_version = "TLS1_0"
+        catalog = make_catalog(**{"storage:accounts": [acct]})
+        findings = azst004.check(catalog)
+        assert len(findings) == 1
+        assert findings[0].passed is False
+        assert findings[0].check_id == "AZST-004"
+
+    def test_tls12_passes(self, make_catalog):
+        acct = _storage_account()
+        acct.minimum_tls_version = "TLS1_2"
+        catalog = make_catalog(**{"storage:accounts": [acct]})
+        findings = azst004.check(catalog)
+        assert len(findings) == 1
+        assert findings[0].passed is True
+
+    def test_none_defaults_to_fail(self, make_catalog):
+        acct = _storage_account()
+        acct.minimum_tls_version = None
+        catalog = make_catalog(**{"storage:accounts": [acct]})
+        findings = azst004.check(catalog)
+        assert len(findings) == 1
+        assert findings[0].passed is False
+
+    def test_empty_accounts(self, make_catalog):
+        catalog = make_catalog(**{"storage:accounts": []})
+        findings = azst004.check(catalog)
+        assert findings == []
+
+
+# -----------------------------------------------------------------------
+# AZST-005  Storage account has no blob lifecycle management policy
+# -----------------------------------------------------------------------
+
+from pipeline_check.core.checks.azure_cloud.rules import (
+    azst005_blob_lifecycle as azst005,
+)
+
+
+class TestAzst005:
+    def test_blob_capable_account_fails(self, make_catalog):
+        acct = _storage_account()
+        acct.kind = "StorageV2"
+        catalog = make_catalog(**{"storage:accounts": [acct]})
+        findings = azst005.check(catalog)
+        assert len(findings) == 1
+        assert findings[0].passed is False
+        assert findings[0].check_id == "AZST-005"
+
+    def test_non_blob_kind_skipped(self, make_catalog):
+        acct = _storage_account()
+        acct.kind = "FileStorage"
+        catalog = make_catalog(**{"storage:accounts": [acct]})
+        findings = azst005.check(catalog)
+        assert findings == []
+
+    def test_empty_accounts(self, make_catalog):
+        catalog = make_catalog(**{"storage:accounts": []})
+        findings = azst005.check(catalog)
+        assert findings == []
+
+
+# -----------------------------------------------------------------------
+# AZST-006  Storage account access keys not rotated within 90 days
+# -----------------------------------------------------------------------
+
+from datetime import UTC, datetime, timedelta
+
+from pipeline_check.core.checks.azure_cloud.rules import (
+    azst006_key_rotation as azst006,
+)
+
+
+class TestAzst006:
+    def test_stale_keys_fail(self, make_catalog):
+        acct = _storage_account()
+        old = datetime.now(tz=UTC) - timedelta(days=120)
+        acct.key_creation_time.key1 = old
+        acct.key_creation_time.key2 = old
+        catalog = make_catalog(**{"storage:accounts": [acct]})
+        findings = azst006.check(catalog)
+        assert len(findings) == 1
+        assert findings[0].passed is False
+        assert findings[0].check_id == "AZST-006"
+
+    def test_fresh_keys_pass(self, make_catalog):
+        acct = _storage_account()
+        recent = datetime.now(tz=UTC) - timedelta(days=30)
+        acct.key_creation_time.key1 = recent
+        acct.key_creation_time.key2 = recent
+        catalog = make_catalog(**{"storage:accounts": [acct]})
+        findings = azst006.check(catalog)
+        assert len(findings) == 1
+        assert findings[0].passed is True
+
+    def test_no_key_creation_time_fails(self, make_catalog):
+        acct = _storage_account()
+        acct.key_creation_time = None
+        catalog = make_catalog(**{"storage:accounts": [acct]})
+        findings = azst006.check(catalog)
+        assert len(findings) == 1
+        assert findings[0].passed is False
+
+    def test_empty_accounts(self, make_catalog):
+        catalog = make_catalog(**{"storage:accounts": []})
+        findings = azst006.check(catalog)
+        assert findings == []

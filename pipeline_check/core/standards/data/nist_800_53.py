@@ -776,5 +776,77 @@ STANDARD = Standard(
         "GCLOG-001": ["AU-2", "AU-12"],                    # audit logs not enabled
         "GCLOG-002": ["AU-2", "AU-12", "AU-9"],            # no log sink
         "GCLOG-003": ["AU-11"],                            # log retention < 365 days
+        # ── Azure Cloud phase-2 ──────────────────────────────────────
+        "ENTRA-004": ["IA-5", "AC-3"],                     # cond access MFA
+        "ENTRA-005": ["AC-2", "AC-3"],                     # ext user restrict
+        "ENTRA-006": ["AU-2", "SI-2"],                     # risky signin
+        "AZST-004":  ["SC-8", "SC-13"],                    # min TLS
+        "AZST-005":  ["CM-2", "CM-8"],                     # lifecycle
+        "AZST-006":  ["SC-12", "SC-13"],                   # key rotation
+        "AKV-004":   ["SC-12", "IA-5"],                    # key expiry
+        "AKV-005":   ["SC-12", "IA-5"],                    # secret expiry
+        "AKV-006":   ["AC-3", "AC-6"],                     # RBAC
+        "ACR-004":   ["RA-5", "SI-2"],                     # defender scan
+        "ACR-005":   ["SI-7", "CM-6"],                     # tag immutability
+        "AZMON-004": ["AU-2", "AU-12"],                    # KV diagnostics
+        "AZMON-005": ["AU-2", "AU-11"],                    # NSG flow retention
+        "AZMON-006": ["AU-11"],                            # LAW retention
+        "AZMON-007": ["AU-2", "SI-2"],                     # svc health alert
+        "AZNW-001":  ["SC-7", "AC-3"],                     # SSH/RDP internet (CRITICAL)
+        "AZNW-002":  ["AU-2", "AU-12"],                    # flow logs
+        "AZNW-003":  ["SC-7", "SI-2"],                     # WAF
+        "AZNW-004":  ["SC-7", "AC-3"],                     # deny-all
+        "AZNW-005":  ["SC-7", "CM-7"],                     # public IP VM
+        "AZAPP-001": ["SC-8", "SC-13"],                    # HTTPS
+        "AZAPP-002": ["SC-8", "SC-13"],                    # TLS
+        "AZAPP-003": ["IA-5", "AC-2"],                     # managed identity
+        "AZAPP-004": ["CM-7", "SC-7"],                     # remote debug
+        "AZAPP-005": ["CM-7", "SC-8"],                     # FTP
+        "AZSQL-001": ["SC-12", "SC-28"],                   # TDE CMK
+        "AZSQL-002": ["AU-2", "AU-12"],                    # auditing
+        "AZSQL-003": ["SC-7", "AC-3"],                     # public access
+        "AZSQL-004": ["AC-2", "AC-3"],                     # AAD admin
+        "AZSQL-005": ["RA-5", "SI-2"],                     # threat detect
+        "AZVM-001":  ["SC-28", "SC-12"],                   # disk encrypt
+        "AZVM-002":  ["SC-7", "CM-7"],                     # public IP
+        "AZVM-003":  ["SC-7", "AC-3"],                     # JIT
+        "AZVM-004":  ["SI-2", "CM-6"],                     # OS patch
+        "AZVM-005":  ["IA-5", "AC-2"],                     # managed identity
+        # ── GCP phase-2 ──────────────────────────────────────────────
+        "GCIAM-004": ["AC-2", "AC-6"],                     # default SA
+        "GCIAM-005": ["AC-2", "AC-3"],                     # domain restrict
+        "GCIAM-006": ["IA-5", "SC-12"],                    # SA key age
+        "GCS-004":   ["SC-12", "SC-28"],                   # CMEK
+        "GCS-005":   ["AU-2", "AU-12"],                    # access logging
+        "GCLOG-004": ["AU-2", "AU-12"],                    # VPC flow logs
+        "GCLOG-005": ["AU-2", "AU-12"],                    # firewall logging
+        "GCLOG-006": ["AU-2", "AU-12"],                    # data access
+        "GCLOG-007": ["AU-2", "SI-2"],                     # metric filter IAM
+        "GCLOG-008": ["AU-2", "SI-2"],                     # metric filter firewall
+        "GCLOG-009": ["AU-2", "SI-2"],                     # metric filter route
+        "GCLOG-010": ["AU-2", "SI-2"],                     # metric filter SQL
+        "GCLOG-011": ["AU-2", "SI-2"],                     # metric filter custom role
+        "GCNET-001": ["SC-7", "CM-7"],                     # default network
+        "GCNET-002": ["SC-7", "AC-3"],                     # deny-all
+        "GCNET-003": ["SC-7", "AC-3"],                     # SSH/RDP (CRITICAL)
+        "GCNET-004": ["SC-7", "CM-7"],                     # private access
+        "GCNET-005": ["SC-7", "CM-7"],                     # Cloud NAT
+        "GCCE-001":  ["CM-6", "SI-7"],                     # shielded VM
+        "GCCE-002":  ["AC-2", "IA-5"],                     # OS Login
+        "GCCE-003":  ["CM-7", "SC-7"],                     # serial port
+        "GCCE-004":  ["SC-7", "CM-7"],                     # public IP
+        "GCCE-005":  ["CM-6", "AC-3"],                     # project SSH keys
+        "GCSQL-001": ["SC-7", "AC-3"],                     # public IP
+        "GCSQL-002": ["CM-6", "SI-2"],                     # backups
+        "GCSQL-003": ["SC-8", "SC-13"],                    # SSL
+        "GCSQL-004": ["AC-2", "AC-3"],                     # IAM auth
+        "GCSQL-005": ["CM-6", "SI-2"],                     # PITR
+        "GCRUN-001": ["SC-7", "AC-3"],                     # unauth
+        "GCRUN-002": ["AC-2", "AC-6"],                     # custom SA
+        "GCRUN-003": ["CM-6", "SI-2"],                     # min instances
+        "GCRUN-004": ["SC-7", "CM-7"],                     # VPC connector
+        "GCKMS-004": ["AC-3", "AC-6"],                     # keyring IAM
+        "GCKMS-005": ["SC-12", "CM-6"],                    # destroy sched
+        "GCKMS-006": ["SC-12", "SC-13"],                   # imported key
     },
 )

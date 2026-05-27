@@ -259,3 +259,147 @@ class TestGCIAM003:
         findings = gciam003_sa_impersonation.check(cat)
         assert len(findings) == 1
         assert findings[0].passed is False
+
+
+# -----------------------------------------------------------------------
+# GCIAM-004: Compute instance uses default service account
+# -----------------------------------------------------------------------
+
+from pipeline_check.core.checks.gcp.rules import gciam004_default_sa_instances
+
+
+class TestGCIAM004:
+    def test_default_sa_fails(self, make_catalog):
+        cat = make_catalog(**{
+            "compute:instances": [
+                {"name": "vm-1",
+                 "service_accounts": ["12345-compute@developer.gserviceaccount.com"]},
+            ],
+        })
+        findings = gciam004_default_sa_instances.check(cat)
+        assert len(findings) == 1
+        assert findings[0].passed is False
+        assert findings[0].check_id == "GCIAM-004"
+
+    def test_custom_sa_passes(self, make_catalog):
+        cat = make_catalog(**{
+            "compute:instances": [
+                {"name": "vm-2",
+                 "service_accounts": ["my-sa@my-project.iam.gserviceaccount.com"]},
+            ],
+        })
+        findings = gciam004_default_sa_instances.check(cat)
+        assert len(findings) == 1
+        assert findings[0].passed is True
+
+    def test_no_instances_returns_empty(self, make_catalog):
+        cat = make_catalog(**{"compute:instances": []})
+        assert gciam004_default_sa_instances.check(cat) == []
+
+
+# -----------------------------------------------------------------------
+# GCIAM-005: Domain-restricted sharing constraint not enforced
+# -----------------------------------------------------------------------
+
+from pipeline_check.core.checks.gcp.rules import gciam005_domain_restricted_sharing
+
+
+class TestGCIAM005:
+    def test_constraint_with_rules_passes(self, make_catalog):
+        cat = make_catalog(**{
+            "iam:org_policies": [
+                {"name": "projects/my-project/policies/iam.allowedPolicyMemberDomains",
+                 "spec": {"rules": [{"values": {"allowedValues": ["C12345"]}}]}},
+            ],
+        })
+        findings = gciam005_domain_restricted_sharing.check(cat)
+        assert len(findings) == 1
+        assert findings[0].passed is True
+        assert findings[0].check_id == "GCIAM-005"
+
+    def test_constraint_without_rules_fails(self, make_catalog):
+        cat = make_catalog(**{
+            "iam:org_policies": [
+                {"name": "projects/my-project/policies/iam.allowedPolicyMemberDomains",
+                 "spec": {"rules": []}},
+            ],
+        })
+        findings = gciam005_domain_restricted_sharing.check(cat)
+        assert len(findings) == 1
+        assert findings[0].passed is False
+
+    def test_no_constraint_fails(self, make_catalog):
+        cat = make_catalog(**{"iam:org_policies": []})
+        findings = gciam005_domain_restricted_sharing.check(cat)
+        assert len(findings) == 1
+        assert findings[0].passed is False
+
+
+# -----------------------------------------------------------------------
+# GCIAM-006: Service account key older than 90 days
+# -----------------------------------------------------------------------
+
+from pipeline_check.core.checks.gcp.rules import gciam006_sa_key_age
+
+
+class TestGCIAM006:
+    def test_old_key_fails(self, make_catalog):
+        cat = make_catalog(**{
+            "iam:service_accounts": [
+                {"email": "ci@proj.iam.gserviceaccount.com",
+                 "name": "n", "display_name": "", "disabled": False},
+            ],
+            "iam:sa_keys:ci@proj.iam.gserviceaccount.com": [
+                {"name": "old-key", "key_type": "USER_MANAGED",
+                 "valid_after": "2024-01-01T00:00:00Z", "valid_before": "9999-01-01"},
+            ],
+        })
+        findings = gciam006_sa_key_age.check(cat)
+        assert len(findings) == 1
+        assert findings[0].passed is False
+        assert findings[0].check_id == "GCIAM-006"
+
+    def test_fresh_key_passes(self, make_catalog):
+        from datetime import UTC, datetime, timedelta
+        recent = (datetime.now(tz=UTC) - timedelta(days=10)).isoformat()
+        cat = make_catalog(**{
+            "iam:service_accounts": [
+                {"email": "ci@proj.iam.gserviceaccount.com",
+                 "name": "n", "display_name": "", "disabled": False},
+            ],
+            "iam:sa_keys:ci@proj.iam.gserviceaccount.com": [
+                {"name": "new-key", "key_type": "USER_MANAGED",
+                 "valid_after": recent, "valid_before": "9999-01-01"},
+            ],
+        })
+        findings = gciam006_sa_key_age.check(cat)
+        assert len(findings) == 1
+        assert findings[0].passed is True
+
+    def test_system_managed_skipped(self, make_catalog):
+        cat = make_catalog(**{
+            "iam:service_accounts": [
+                {"email": "ci@proj.iam.gserviceaccount.com",
+                 "name": "n", "display_name": "", "disabled": False},
+            ],
+            "iam:sa_keys:ci@proj.iam.gserviceaccount.com": [
+                {"name": "sys-key", "key_type": "SYSTEM_MANAGED",
+                 "valid_after": "2024-01-01", "valid_before": "9999-01-01"},
+            ],
+        })
+        findings = gciam006_sa_key_age.check(cat)
+        assert findings == []
+
+    def test_disabled_sa_skipped(self, make_catalog):
+        cat = make_catalog(**{
+            "iam:service_accounts": [
+                {"email": "old@proj.iam.gserviceaccount.com",
+                 "name": "n", "display_name": "", "disabled": True},
+            ],
+            "iam:sa_keys:old@proj.iam.gserviceaccount.com": [
+                {"name": "old-key", "key_type": "USER_MANAGED",
+                 "valid_after": "2024-01-01T00:00:00Z", "valid_before": "9999-01-01"},
+            ],
+        })
+        findings = gciam006_sa_key_age.check(cat)
+        assert findings == []

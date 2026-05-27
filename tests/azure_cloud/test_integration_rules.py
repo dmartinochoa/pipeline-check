@@ -85,20 +85,143 @@ def _diagnostic_setting_short_retention(name: str = "diag1"):
 # Insecure cache: every service populated with at least one bad resource
 # ---------------------------------------------------------------------------
 
+def _nsg_flow_log(name: str = "fl-bad"):
+    fl = MagicMock()
+    fl.name = name
+    # Point at a DIFFERENT NSG so bad-nsg remains un-logged (AZNW-002 fails)
+    fl.target_resource_id = "/subscriptions/sub-test-123/resourceGroups/rg/providers/Microsoft.Network/networkSecurityGroups/other-nsg"
+    fl.retention_policy.enabled = True
+    fl.retention_policy.days = 30  # Below 90-day minimum -> AZMON-005 fails
+    return fl
+
+
+def _nsg(name: str = "bad-nsg"):
+    nsg = MagicMock()
+    nsg.name = name
+    nsg.id = f"/subscriptions/sub-test-123/resourceGroups/rg/providers/Microsoft.Network/networkSecurityGroups/{name}"
+    rule = MagicMock()
+    rule.direction = "Inbound"
+    rule.access = "Allow"
+    rule.source_address_prefix = "*"
+    rule.source_address_prefixes = []
+    rule.destination_port_range = "22"
+    rule.destination_port_ranges = []
+    nsg.security_rules = [rule]
+    return nsg
+
+
+def _app_gateway(name: str = "bad-gw"):
+    gw = MagicMock()
+    gw.name = name
+    gw.sku.tier = "Standard_v2"
+    gw.web_application_firewall_configuration = None
+    gw.firewall_policy = None
+    return gw
+
+
+def _public_ip_on_nic(name: str = "pip-vm"):
+    pip = MagicMock()
+    pip.name = name
+    pip.ip_configuration.id = (
+        "/subscriptions/sub-test-123/resourceGroups/rg/providers/"
+        "Microsoft.Network/networkInterfaces/nic1/ipConfigurations/ipconfig1"
+    )
+    return pip
+
+
+def _web_app(name: str = "bad-app"):
+    app = MagicMock()
+    app.name = name
+    app.https_only = False
+    app.identity = None
+    config = MagicMock()
+    config.min_tls_version = "1.0"
+    config.remote_debugging_enabled = True
+    config.ftp_state = "AllAllowed"
+    return {"app": app, "config": config}
+
+
+def _sql_entry(name: str = "bad-sql"):
+    server = MagicMock()
+    server.name = name
+    server.key_id = None
+    server.public_network_access = "Enabled"
+    auditing = MagicMock()
+    auditing.state = "Disabled"
+    threat = MagicMock()
+    threat.state = "Disabled"
+    return {"server": server, "auditing": auditing, "threat_detection": threat, "ad_admin": None}
+
+
+def _virtual_machine(name: str = "bad-vm"):
+    vm = MagicMock()
+    vm.name = name
+    vm.tags = {}
+    vm.security_profile = None
+    # Unencrypted OS disk
+    os_disk = MagicMock()
+    os_disk.managed_disk.disk_encryption_set = None
+    os_disk.encryption_settings = None
+    vm.storage_profile.os_disk = os_disk
+    vm.storage_profile.data_disks = []
+    # NIC with public IP
+    nic_ref = MagicMock()
+    nic_ref.id = "/subscriptions/sub-test-123/resourcegroups/rg/providers/microsoft.network/networkinterfaces/nic1"
+    vm.network_profile.network_interfaces = [nic_ref]
+    # No auto-patching
+    vm.os_profile.windows_configuration = None
+    vm.os_profile.linux_configuration = None
+    # No managed identity
+    vm.identity = None
+    return vm
+
+
+def _workspace(name: str = "bad-law"):
+    ws = MagicMock()
+    ws.name = name
+    ws.retention_in_days = 30
+    return ws
+
+
 def _insecure_cache() -> dict[str, object]:
     now = datetime.now(tz=UTC)
+    sa = _storage_account()
+    sa.minimum_tls_version = "TLS1_0"
+    sa.kind = "StorageV2"
+    sa.key_creation_time = None
+
+    kv = _key_vault()
+    kv.id = "/subscriptions/sub-test-123/resourceGroups/rg/providers/Microsoft.KeyVault/vaults/badkv"
+    kv.properties.enable_rbac_authorization = False
+
+    reg = _registry()
+    reg.sku.name = "Standard"
+    reg.policies.quarantine_policy.status = "disabled"
+    reg.policies.export_policy.status = "enabled"
+
     return {
-        # Storage -- AZST-001, AZST-002, AZST-003
-        "storage:accounts": [_storage_account()],
-        # Key Vault -- AKV-001, AKV-002, AKV-003
-        "keyvault:vaults": [_key_vault()],
-        # ACR -- ACR-001, ACR-002, ACR-003
-        "acr:registries": [_registry()],
+        # Storage -- AZST-001..006
+        "storage:accounts": [sa],
+        # Key Vault -- AKV-001..006
+        "keyvault:vaults": [kv],
+        "keyvault:keys:badkv": [
+            {"kid": "https://badkv.vault.azure.net/keys/k1/v1",
+             "attributes": {"enabled": True, "exp": None}},
+        ],
+        "keyvault:secrets:badkv": [
+            {"id": "https://badkv.vault.azure.net/secrets/s1",
+             "attributes": {"enabled": True, "exp": None}},
+        ],
+        # ACR -- ACR-001..005
+        "acr:registries": [reg],
         # Monitor -- AZMON-001 passes (settings exist), AZMON-002 fails
         # (short retention), AZMON-003 fails (no alerts)
         "monitor:diagnostic_settings": [_diagnostic_setting_short_retention()],
         "monitor:activity_log_alerts": [],
-        # Authorization + Entra -- ENTRA-001, ENTRA-002, ENTRA-003
+        # Monitor extended -- AZMON-005, AZMON-006, AZMON-007
+        "network:flow_logs": [_nsg_flow_log()],
+        "monitor:workspaces": [_workspace()],
+        # Authorization + Entra -- ENTRA-001..006
         "authorization:role_assignments": [
             _role_assignment("rd-ga", "sp-bad"),
         ],
@@ -121,6 +244,17 @@ def _insecure_cache() -> dict[str, object]:
             "passwordCredentials": [{"keyId": "k1"}],
             "keyCredentials": [],
         }],
+        "entra:conditional_access": [],  # ENTRA-004/005/006 fail (no policies)
+        # Network -- AZNW-001..005
+        "network:nsgs": [_nsg()],
+        "network:app_gateways": [_app_gateway()],
+        "network:public_ips": [_public_ip_on_nic()],
+        # App Service -- AZAPP-001..005
+        "appservice:web_apps": [_web_app()],
+        # SQL -- AZSQL-001..005
+        "sql:servers": [_sql_entry()],
+        # Compute -- AZVM-001..005
+        "compute:vms": [_virtual_machine()],
     }
 
 
@@ -206,15 +340,26 @@ def _all_ids(findings: list) -> set[str]:
 
 _ALL_RULE_IDS = {
     "ENTRA-001", "ENTRA-002", "ENTRA-003",
+    "ENTRA-004", "ENTRA-005", "ENTRA-006",
     "AZST-001", "AZST-002", "AZST-003",
+    "AZST-004", "AZST-005", "AZST-006",
     "AKV-001", "AKV-002", "AKV-003",
+    "AKV-004", "AKV-005", "AKV-006",
     "ACR-001", "ACR-002", "ACR-003",
+    "ACR-004", "ACR-005",
     "AZMON-001", "AZMON-002", "AZMON-003",
+    "AZMON-004", "AZMON-005", "AZMON-006", "AZMON-007",
+    "AZNW-001", "AZNW-002", "AZNW-003", "AZNW-004", "AZNW-005",
+    "AZAPP-001", "AZAPP-002", "AZAPP-003", "AZAPP-004", "AZAPP-005",
+    "AZSQL-001", "AZSQL-002", "AZSQL-003", "AZSQL-004", "AZSQL-005",
+    "AZVM-001", "AZVM-002", "AZVM-003", "AZVM-004", "AZVM-005",
 }
+
+assert len(_ALL_RULE_IDS) == 50  # noqa: S101
 
 
 class TestFullIntegration:
-    """All 15 Azure Cloud rules must produce a finding."""
+    """All 50 Azure Cloud rules must produce a finding."""
 
     @pytest.mark.parametrize("check_id", sorted(_ALL_RULE_IDS))
     def test_rule_present(self, _all_findings, check_id):
@@ -240,7 +385,10 @@ class TestFullIntegration:
 
     def test_all_prefixes_present(self, _all_findings):
         prefixes = {f.check_id.split("-")[0] for f in _all_findings}
-        required = {"ENTRA", "AZST", "AKV", "ACR", "AZMON"}
+        required = {
+            "ENTRA", "AZST", "AKV", "ACR", "AZMON",
+            "AZNW", "AZAPP", "AZSQL", "AZVM",
+        }
         missing = required - prefixes
         assert not missing, f"Missing prefixes: {missing}"
 
