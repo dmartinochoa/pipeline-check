@@ -34,7 +34,8 @@ def check(catalog: ResourceCatalog) -> list[Finding]:
         # The server object may expose encryption_protector or
         # we infer from the key_id property.
         key_id = getattr(server, "key_id", None)
-        passed = key_id is not None and "vault.azure.net" in str(key_id).lower()
+        key_str = str(key_id).lower() if key_id else ""
+        passed = key_str.startswith("https://") and key_str.split("/")[2].endswith(".vault.azure.net")
         if passed:
             desc = (
                 f"SQL Server '{name}' uses a customer-managed TDE key "
