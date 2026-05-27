@@ -25,9 +25,11 @@ from pipeline_check.core import providers as _providers
 
 @pytest.mark.parametrize("name,kw", [
     ("argo", {"argo_path": None}),
+    ("argocd", {"argocd_path": None}),
     ("tekton", {"tekton_path": None}),
     ("buildkite", {"buildkite_path": None}),
     ("cloudbuild", {"cloudbuild_path": None}),
+    ("cloudformation", {"cfn_template": None}),
     ("dockerfile", {"dockerfile_path": None}),
     ("npm", {"npm_path": None}),
     ("maven", {"maven_path": None}),
@@ -385,3 +387,312 @@ def test_pypi_inventory_requirements_counts(tmp_path):
     assert m["requirement_count"] == 3
     # --index-url + --extra-index-url = 2 option entries.
     assert m["option_count"] == 2
+
+
+# ── Argo CD inventory ─────────────────────────────────────────────
+
+
+def test_argocd_inventory_application(tmp_path):
+    app = tmp_path / "app.yaml"
+    app.write_text(
+        "apiVersion: argoproj.io/v1alpha1\n"
+        "kind: Application\n"
+        "metadata:\n"
+        "  name: guestbook\n"
+        "  namespace: argocd\n"
+        "spec:\n"
+        "  project: default\n"
+        "  source:\n"
+        "    repoURL: https://github.com/example/app\n"
+    )
+    provider = _providers.get("argocd")
+    inv = provider.inventory(provider.build_context(argocd_path=str(app)))
+    assert len(inv) == 1
+    c = inv[0]
+    assert c.type == "application"
+    assert c.identifier == "Application/guestbook"
+    assert c.metadata["namespace"] == "argocd"
+    assert c.metadata["project"] == "default"
+
+
+def test_argocd_inventory_appproject_counts_destinations(tmp_path):
+    proj = tmp_path / "proj.yaml"
+    proj.write_text(
+        "apiVersion: argoproj.io/v1alpha1\n"
+        "kind: AppProject\n"
+        "metadata:\n"
+        "  name: team-a\n"
+        "spec:\n"
+        "  destinations:\n"
+        "    - namespace: staging\n"
+        "      server: https://k8s.example.com\n"
+        "    - namespace: prod\n"
+        "      server: https://k8s.example.com\n"
+    )
+    provider = _providers.get("argocd")
+    inv = provider.inventory(provider.build_context(argocd_path=str(proj)))
+    assert inv[0].type == "appproject"
+    assert inv[0].metadata["destinations_count"] == 2
+
+
+def test_argocd_inventory_applicationset_generator_kinds(tmp_path):
+    appset = tmp_path / "appset.yaml"
+    appset.write_text(
+        "apiVersion: argoproj.io/v1alpha1\n"
+        "kind: ApplicationSet\n"
+        "metadata:\n"
+        "  name: cluster-addons\n"
+        "spec:\n"
+        "  generators:\n"
+        "    - clusters: {}\n"
+        "    - git:\n"
+        "        repoURL: https://github.com/example/infra\n"
+    )
+    provider = _providers.get("argocd")
+    inv = provider.inventory(provider.build_context(argocd_path=str(appset)))
+    assert inv[0].type == "applicationset"
+    assert inv[0].metadata["generator_kinds"] == ["clusters", "git"]
+
+
+def test_argocd_inventory_skips_configmap_docs(tmp_path):
+    multi = tmp_path / "mixed.yaml"
+    multi.write_text(
+        "apiVersion: v1\n"
+        "kind: ConfigMap\n"
+        "metadata:\n"
+        "  name: argocd-cm\n"
+        "data:\n"
+        "  url: https://argocd.example.com\n"
+        "---\n"
+        "apiVersion: argoproj.io/v1alpha1\n"
+        "kind: Application\n"
+        "metadata:\n"
+        "  name: web\n"
+        "spec:\n"
+        "  project: default\n"
+    )
+    provider = _providers.get("argocd")
+    inv = provider.inventory(provider.build_context(argocd_path=str(multi)))
+    assert len(inv) == 1
+    assert inv[0].identifier == "Application/web"
+
+
+def test_argocd_inventory_unnamed_uses_placeholder(tmp_path):
+    app = tmp_path / "unnamed.yaml"
+    app.write_text(
+        "apiVersion: argoproj.io/v1alpha1\n"
+        "kind: Application\n"
+        "metadata: {}\n"
+        "spec: {}\n"
+    )
+    provider = _providers.get("argocd")
+    inv = provider.inventory(provider.build_context(argocd_path=str(app)))
+    assert inv[0].identifier == "Application/<unnamed>"
+
+
+# ── CloudFormation inventory ──────────────────────────────────────
+
+
+def test_cfn_inventory_codebuild_metadata(tmp_path):
+    tpl = tmp_path / "template.yaml"
+    tpl.write_text(
+        "AWSTemplateFormatVersion: '2010-09-09'\n"
+        "Resources:\n"
+        "  CIBuild:\n"
+        "    Type: AWS::CodeBuild::Project\n"
+        "    DeletionPolicy: Retain\n"
+        "    Properties:\n"
+        "      Environment:\n"
+        "        Image: aws/codebuild/standard:7.0\n"
+        "        ComputeType: BUILD_GENERAL1_SMALL\n"
+        "        PrivilegedMode: true\n"
+        "      Source:\n"
+        "        Type: GITHUB\n"
+        "      TimeoutInMinutes: 30\n"
+    )
+    provider = _providers.get("cloudformation")
+    inv = provider.inventory(provider.build_context(cfn_template=str(tpl)))
+    assert len(inv) == 1
+    c = inv[0]
+    assert c.type == "AWS::CodeBuild::Project"
+    assert c.identifier == "CIBuild"
+    m = c.metadata
+    assert m["DeletionPolicy"] == "Retain"
+    assert m["image"] == "aws/codebuild/standard:7.0"
+    assert m["compute_type"] == "BUILD_GENERAL1_SMALL"
+    assert m["privileged_mode"] is True
+    assert m["source_type"] == "GITHUB"
+    assert m["timeout_minutes"] == 30
+
+
+def test_cfn_inventory_iam_role_metadata(tmp_path):
+    tpl = tmp_path / "template.yaml"
+    tpl.write_text(
+        "AWSTemplateFormatVersion: '2010-09-09'\n"
+        "Resources:\n"
+        "  CIRole:\n"
+        "    Type: AWS::IAM::Role\n"
+        "    Properties:\n"
+        "      AssumeRolePolicyDocument:\n"
+        "        Version: '2012-10-17'\n"
+        "        Statement:\n"
+        "          - Effect: Allow\n"
+        "            Principal:\n"
+        "              Service: codebuild.amazonaws.com\n"
+        "            Action: sts:AssumeRole\n"
+        "      ManagedPolicyArns:\n"
+        "        - arn:aws:iam::aws:policy/ReadOnlyAccess\n"
+        "        - arn:aws:iam::aws:policy/AmazonS3FullAccess\n"
+        "      Policies:\n"
+        "        - PolicyName: inline\n"
+        "          PolicyDocument:\n"
+        "            Statement: []\n"
+        "      PermissionsBoundary: arn:aws:iam::123:policy/Boundary\n"
+    )
+    provider = _providers.get("cloudformation")
+    inv = provider.inventory(provider.build_context(cfn_template=str(tpl)))
+    m = inv[0].metadata
+    assert m["permissions_boundary"] is True
+    assert m["managed_policy_count"] == 2
+    assert m["inline_policy_count"] == 1
+
+
+def test_cfn_inventory_s3_bucket_with_encryption(tmp_path):
+    tpl = tmp_path / "template.yaml"
+    tpl.write_text(
+        "AWSTemplateFormatVersion: '2010-09-09'\n"
+        "Resources:\n"
+        "  ArtifactBucket:\n"
+        "    Type: AWS::S3::Bucket\n"
+        "    Properties:\n"
+        "      BucketName: my-artifacts\n"
+        "      BucketEncryption:\n"
+        "        ServerSideEncryptionConfiguration:\n"
+        "          - ServerSideEncryptionByDefault:\n"
+        "              SSEAlgorithm: aws:kms\n"
+        "      Tags:\n"
+        "        - Key: Environment\n"
+        "          Value: prod\n"
+        "        - Key: Team\n"
+        "          Value: platform\n"
+    )
+    provider = _providers.get("cloudformation")
+    inv = provider.inventory(provider.build_context(cfn_template=str(tpl)))
+    m = inv[0].metadata
+    assert m["bucket_name"] == "my-artifacts"
+    assert m["sse_algorithm"] == "aws:kms"
+    assert m["tags"] == {"Environment": "prod", "Team": "platform"}
+
+
+def test_cfn_inventory_pipeline_stage_count(tmp_path):
+    tpl = tmp_path / "template.yaml"
+    tpl.write_text(
+        "AWSTemplateFormatVersion: '2010-09-09'\n"
+        "Resources:\n"
+        "  ReleasePipeline:\n"
+        "    Type: AWS::CodePipeline::Pipeline\n"
+        "    Properties:\n"
+        "      PipelineType: V2\n"
+        "      Stages:\n"
+        "        - Name: Source\n"
+        "          Actions: []\n"
+        "        - Name: Build\n"
+        "          Actions: []\n"
+        "        - Name: Deploy\n"
+        "          Actions: []\n"
+    )
+    provider = _providers.get("cloudformation")
+    inv = provider.inventory(provider.build_context(cfn_template=str(tpl)))
+    m = inv[0].metadata
+    assert m["stage_count"] == 3
+    assert m["pipeline_type"] == "V2"
+
+
+def test_cfn_inventory_ecr_lambda_kms_cloudtrail_metadata(tmp_path):
+    tpl = tmp_path / "template.yaml"
+    tpl.write_text(
+        "AWSTemplateFormatVersion: '2010-09-09'\n"
+        "Resources:\n"
+        "  Repo:\n"
+        "    Type: AWS::ECR::Repository\n"
+        "    Properties:\n"
+        "      ImageTagMutability: IMMUTABLE\n"
+        "      ImageScanningConfiguration:\n"
+        "        ScanOnPush: true\n"
+        "  Func:\n"
+        "    Type: AWS::Lambda::Function\n"
+        "    Properties:\n"
+        "      Runtime: python3.12\n"
+        "      Handler: index.handler\n"
+        "      CodeSigningConfigArn: arn:aws:lambda:us-east-1:123:code-signing-config:csc-abc\n"
+        "  Key:\n"
+        "    Type: AWS::KMS::Key\n"
+        "    Properties:\n"
+        "      EnableKeyRotation: true\n"
+        "      KeySpec: SYMMETRIC_DEFAULT\n"
+        "  Trail:\n"
+        "    Type: AWS::CloudTrail::Trail\n"
+        "    Properties:\n"
+        "      IsMultiRegionTrail: true\n"
+        "      EnableLogFileValidation: true\n"
+    )
+    provider = _providers.get("cloudformation")
+    inv = provider.inventory(provider.build_context(cfn_template=str(tpl)))
+    by_id = {c.identifier: c.metadata for c in inv}
+
+    assert by_id["Repo"]["tag_mutability"] == "IMMUTABLE"
+    assert by_id["Repo"]["scan_on_push"] is True
+
+    assert by_id["Func"]["runtime"] == "python3.12"
+    assert by_id["Func"]["handler"] == "index.handler"
+    assert "csc-abc" in by_id["Func"]["code_signing_config_arn"]
+
+    assert by_id["Key"]["key_rotation"] is True
+    assert by_id["Key"]["key_spec"] == "SYMMETRIC_DEFAULT"
+
+    assert by_id["Trail"]["multi_region"] is True
+    assert by_id["Trail"]["log_file_validation"] is True
+
+
+def test_cfn_inventory_secrets_and_ssm_metadata(tmp_path):
+    tpl = tmp_path / "template.yaml"
+    tpl.write_text(
+        "AWSTemplateFormatVersion: '2010-09-09'\n"
+        "Resources:\n"
+        "  DbSecret:\n"
+        "    Type: AWS::SecretsManager::Secret\n"
+        "    Properties:\n"
+        "      Name: prod/db-password\n"
+        "  ConfigParam:\n"
+        "    Type: AWS::SSM::Parameter\n"
+        "    Properties:\n"
+        "      Type: SecureString\n"
+        "      Value: dummy\n"
+    )
+    provider = _providers.get("cloudformation")
+    inv = provider.inventory(provider.build_context(cfn_template=str(tpl)))
+    by_id = {c.identifier: c.metadata for c in inv}
+    assert by_id["DbSecret"]["secret_name"] == "prod/db-password"
+    assert by_id["ConfigParam"]["parameter_type"] == "SecureString"
+
+
+def test_cfn_inventory_condition_and_update_replace_policy(tmp_path):
+    tpl = tmp_path / "template.yaml"
+    tpl.write_text(
+        "AWSTemplateFormatVersion: '2010-09-09'\n"
+        "Conditions:\n"
+        "  IsProd:\n"
+        "    !Equals [!Ref Env, prod]\n"
+        "Resources:\n"
+        "  Bucket:\n"
+        "    Type: AWS::S3::Bucket\n"
+        "    Condition: IsProd\n"
+        "    UpdateReplacePolicy: Retain\n"
+        "    Properties:\n"
+        "      BucketName: cond-bucket\n"
+    )
+    provider = _providers.get("cloudformation")
+    inv = provider.inventory(provider.build_context(cfn_template=str(tpl)))
+    m = inv[0].metadata
+    assert m["Condition"] == "IsProd"
+    assert m["UpdateReplacePolicy"] == "Retain"

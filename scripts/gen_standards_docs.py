@@ -96,12 +96,7 @@ _ANCHORED_PROVIDERS: frozenset[str] = frozenset({
     "github", "gitlab", "bitbucket", "azure", "jenkins", "circleci",
     "cloudbuild", "buildkite", "drone", "tekton", "argo", "dockerfile",
     "kubernetes", "scm", "oci", "maven", "nuget",
-    # AWS provider doc carries hand-written ``### CB-001: …`` headers
-    # that mkdocs slugifies to anchors of shape
-    # ``cb-001-secrets-in-plaintext-environment-variables``. Linking with
-    # just ``#cb-001`` won't land. Treat AWS as un-anchored so the link
-    # points at the page top, the per-rule sections are still alphabetised
-    # so the reader scrolls a screen at most.
+    "aws", "cloudformation", "terraform", "npm", "pypi", "helm", "argocd",
 })
 
 # --------------------------------------------------------------------------- #
@@ -143,17 +138,7 @@ _FALLBACK: dict[str, tuple[str, str, str, str]] = {
 
 @dataclass(frozen=True, slots=True)
 class _CheckRow:
-    """Flat per-check view used to render the per-control tables AND the
-    bottom-of-page check details section.
-
-    The prose fields (``docs_note``, ``recommendation``, ``known_fp``,
-    ``incident_refs``, ``exploit_example``) are taken straight from the
-    Rule registry and rendered verbatim in the details block. For
-    ``_FALLBACK`` entries (the AWS degraded-mode synthesized findings,
-    e.g. ``IAM-000`` "IAM API access failed"), the prose fields are
-    empty — the details block falls back to a short auto-generated
-    stub pointing at the provider page.
-    """
+    """Flat per-check view used to render the per-control tables."""
 
     check_id: str
     title: str
@@ -161,11 +146,6 @@ class _CheckRow:
     provider_slug: str
     provider_title: str
     autofix: bool
-    docs_note: str = ""
-    recommendation: str = ""
-    known_fp: tuple[str, ...] = ()
-    incident_refs: tuple[str, ...] = ()
-    exploit_example: str | None = None
 
 
 def _build_index() -> dict[str, _CheckRow]:
@@ -181,11 +161,6 @@ def _build_index() -> dict[str, _CheckRow]:
                 provider_slug=slug,
                 provider_title=title,
                 autofix=rule.id in autofixable,
-                docs_note=rule.docs_note,
-                recommendation=rule.recommendation,
-                known_fp=rule.known_fp,
-                incident_refs=rule.incident_refs,
-                exploit_example=rule.exploit_example,
             )
     for cid, (title, severity, slug, prov_title) in _FALLBACK.items():
         if cid in out:
@@ -615,28 +590,12 @@ opinion. Use this page to prepare CC6 / CC7 / CC8 evidence walks.
 # Rendering helpers
 # --------------------------------------------------------------------------- #
 def _check_link(row: _CheckRow) -> str:
-    """Markdown link for a check_id, anchored to the per-rule section if the
-    provider doc carries pinned anchors, otherwise to the page top.
-
-    Used in the bottom-of-page details block where the goal is to send the
-    reader to the canonical provider doc for the rule's source. The
-    in-page links from the per-control table go through
-    :func:`_check_detail_link` instead so the reader stays on the standards
-    page.
-    """
+    """Markdown link for a check_id pointing at the provider doc's per-rule
+    anchor."""
     if row.provider_slug in _ANCHORED_PROVIDERS:
         anchor = row.check_id.lower()
         return f"[`{row.check_id}`](../providers/{row.provider_slug}.md#{anchor})"
     return f"[`{row.check_id}`](../providers/{row.provider_slug}.md)"
-
-
-def _check_detail_link(row: _CheckRow) -> str:
-    """Markdown link from a per-control row down to the bottom-of-page
-    check details block. Keeps the reader on the standards page so they
-    can scan the mechanism, recommendation, and incidents without
-    bouncing through the provider doc."""
-    anchor = _check_detail_anchor(row.check_id)
-    return f"[`{row.check_id}`](#{anchor})"
 
 
 def _severity_chip(severity: str) -> str:
@@ -662,11 +621,7 @@ def _control_anchor(control_id: str) -> str:
     rejects ID values that begin with a digit. PCI DSS controls like
     ``6.5.1`` and NIST 800-190 controls like ``4.1.1`` would otherwise
     produce anchors starting with a digit, which ``attr_list`` silently
-    drops — links from the coverage-by-control table land at the page top
-    instead of the matching section. Prefixing with a literal letter dodges
-    the rejection entirely. Same shape as :func:`_check_detail_anchor` for
-    symmetry; the prefix also disambiguates them from the auto-generated
-    heading slugs the ``toc`` extension would otherwise emit.
+    drops. Prefixing with a literal letter dodges the rejection entirely.
     """
     return "ctrl-" + (
         control_id.lower()
@@ -674,16 +629,6 @@ def _control_anchor(control_id: str) -> str:
         .replace("/", "-")
         .replace(" ", "-")
     )
-
-
-def _check_detail_anchor(check_id: str) -> str:
-    """In-page anchor for the bottom-of-page check details block.
-
-    ``detail-`` prefix avoids collisions with control anchors (some control
-    IDs normalize into strings that look like check IDs) and dodges the
-    same ``attr_list`` digit-prefix rejection that affects numeric control
-    IDs."""
-    return "detail-" + check_id.lower()
 
 
 # Plain-English severity meanings. Identical wording across every standard
@@ -791,116 +736,6 @@ def _severity_breakdown(rows: list[_CheckRow]) -> str:
         if counts.get(sev):
             parts.append(f"{counts[sev]}{short[sev]}")
     return " · ".join(parts) or "—"
-
-
-def _render_check_detail(
-    row: _CheckRow, controls_evidenced: list[tuple[str, str]],
-) -> str:
-    """Markdown block for one check in the bottom-of-page details section.
-
-    *controls_evidenced* is the list of ``(control_id, control_title)``
-    pairs this check evidences within the standard being rendered. Used
-    to surface backlinks ("this check fires under CICD-SEC-3 and
-    CICD-SEC-8") so the reader can navigate the cross-control mesh
-    without reading the whole page.
-
-    Sections in render order:
-      * H4 with check ID + title + severity chip + autofix chip
-      * Backlinks to the evidenced controls
-      * "How this is detected" (``docs_note``)
-      * "Recommendation" (``recommendation``)
-      * "Known false positives" (``known_fp``, if any)
-      * "Seen in the wild" (``incident_refs``, if any)
-      * "Proof of exploit" (``exploit_example``, if any)
-      * Link to the provider doc for the raw rule source
-
-    Empty / missing fields are skipped so a Rule that doesn't carry an
-    ``incident_refs`` tuple doesn't render an empty section.
-    """
-    anchor = _check_detail_anchor(row.check_id)
-    parts: list[str] = []
-    parts.append(
-        f"### `{row.check_id}`: {row.title} "
-        f"{_severity_chip(row.severity)} "
-        f"{_autofix_chip(row.autofix)}".rstrip()
-        + f" {{ #{anchor} }}\n\n"
-    )
-
-    # Backlinks to the controls this check evidences within the standard.
-    if controls_evidenced:
-        backlinks = ", ".join(
-            f"[`{cid}`](#{_control_anchor(cid)}) {ctitle}"
-            for cid, ctitle in controls_evidenced
-        )
-        parts.append(f"**Evidences:** {backlinks}.\n\n")
-
-    # Mechanism. For fallback entries (degraded-mode AWS findings, legacy
-    # class-based checks) ``docs_note`` is empty; fall back to a short
-    # stub pointing at the provider doc.
-    parts.append("**How this is detected.** ")
-    if row.docs_note:
-        parts.append(row.docs_note.strip() + "\n\n")
-    else:
-        parts.append(
-            f"See [`{row.provider_title}` provider documentation]"
-            f"(../providers/{row.provider_slug}.md) for the rule's "
-            f"detection mechanism.\n\n"
-        )
-
-    # Recommendation. Same fallback shape.
-    parts.append("**Recommendation.** ")
-    if row.recommendation:
-        parts.append(row.recommendation.strip() + "\n\n")
-    else:
-        parts.append(
-            f"See [`{row.provider_title}` provider documentation]"
-            f"(../providers/{row.provider_slug}.md) for the recommended "
-            f"remediation.\n\n"
-        )
-
-    # Autofix nudge — separate from the chip because the chip alone
-    # doesn't explain what `--fix` will do, and readers landing here from
-    # an audit context want the concrete command.
-    if row.autofix:
-        parts.append(
-            "**Autofix.** "
-            "`pipeline_check --fix` will patch this finding "
-            "automatically. Review the diff before committing; the "
-            "fixer applies the conservative remediation pattern (e.g. "
-            "swap a floating tag for the digest it currently resolves "
-            "to), not the most aggressive one.\n\n"
-        )
-
-    if row.known_fp:
-        parts.append("**Known false positives.**\n\n")
-        for fp in row.known_fp:
-            parts.append(f"- {fp.strip()}\n")
-        parts.append("\n")
-
-    if row.incident_refs:
-        parts.append("**Seen in the wild.**\n\n")
-        for ref in row.incident_refs:
-            parts.append(f"- {ref.strip()}\n")
-        parts.append("\n")
-
-    if row.exploit_example:
-        # Wrap the raw example in a fenced code block so any
-        # ``# Vulnerable: ...`` / ``# Safe: ...`` comment lines render
-        # as code rather than getting parsed as Markdown headings
-        # (which trip MD019 / MD022 / MD024 and break section depth).
-        parts.append(
-            "**Proof of exploit.**\n\n"
-            "```yaml\n"
-            f"{row.exploit_example.rstrip()}\n"
-            "```\n\n"
-        )
-
-    parts.append(
-        f"**Source:** {_check_link(row)} in the "
-        f"[{row.provider_title} provider]"
-        f"(../providers/{row.provider_slug}.md).\n\n"
-    )
-    return "".join(parts)
 
 
 def _render(name: str, standard: Standard, cfg: _StandardConfig,
@@ -1015,38 +850,13 @@ def _render(name: str, standard: Standard, cfg: _StandardConfig,
         parts.append("| Check | Title | Severity | Provider | Fix |\n")
         parts.append("|-------|-------|----------|----------|-----|\n")
         for row in ctrl_rows:
-            # The check-id cell jumps to the on-page details block;
-            # the provider cell points at the provider doc for the
-            # raw rule source. Two routes, two different reading goals.
             parts.append(
-                f"| {_check_detail_link(row)} | {row.title} | "
+                f"| {_check_link(row)} | {row.title} | "
                 f"{_severity_chip(row.severity)} | "
                 f"[{row.provider_title}](../providers/{row.provider_slug}.md) | "
                 f"{_autofix_chip(row.autofix)} |\n"
             )
         parts.append("\n")
-
-    # ── Check details ───────────────────────────────────────────────────
-    # Reverse-index: for every distinct check that evidences a control on
-    # this page, list the controls it evidences. Drives the backlinks at
-    # the top of each check's detail block so the reader can navigate the
-    # check <-> control mesh without scrolling the whole page.
-    controls_by_check: dict[str, list[tuple[str, str]]] = {}
-    for cid, ctitle in standard.controls.items():
-        for row in by_control.get(cid, []):
-            controls_by_check.setdefault(row.check_id, []).append((cid, ctitle))
-    if controls_by_check:
-        parts.append("## Check details\n\n")
-        parts.append(
-            "Every check that evidences this standard, rendered once "
-            "with its detection mechanism, recommendation, and any "
-            "known false-positive modes or real-world incident "
-            "references. The per-control tables above link to the "
-            "matching block here.\n\n"
-        )
-        for cid in sorted(controls_by_check.keys()):
-            row = index[cid]
-            parts.append(_render_check_detail(row, controls_by_check[cid]))
 
     # ── Mappings to controls outside this standard's catalog ─────────────
     if unknown_controls:
