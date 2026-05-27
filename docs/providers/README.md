@@ -5,22 +5,9 @@ context (credentials, clients) and declares which check modules run against
 it. The scanner's core is provider-agnostic. Adding a new platform never
 requires editing `Scanner`, `Reporter`, or the CLI.
 
+### CI/CD platforms
+
 <div class="pg-doc-cards">
-  <a class="pg-doc-card" href="aws/">
-    <h3>AWS</h3>
-    <p>Live account scan via boto3. CodeBuild, CodePipeline, CodeDeploy, ECR, IAM, S3, CloudTrail, Lambda, KMS, and more.</p>
-    <span class="pg-doc-card__meta">{{ providers.aws.checks }}</span>
-  </a>
-  <a class="pg-doc-card" href="terraform/">
-    <h3>Terraform</h3>
-    <p>Shift-left scan against a <code>terraform show -json</code> plan or raw <code>*.tf</code> source. AWS-rule parity so findings match the live runtime.</p>
-    <span class="pg-doc-card__meta">{{ providers.terraform.checks }}</span>
-  </a>
-  <a class="pg-doc-card" href="cloudformation/">
-    <h3>CloudFormation</h3>
-    <p>Parses YAML or JSON templates with intrinsic-function resolution (<code>!Ref</code>, <code>!Sub</code>, <code>!GetAtt</code>).</p>
-    <span class="pg-doc-card__meta">{{ providers.cloudformation.checks }}</span>
-  </a>
   <a class="pg-doc-card" href="github/">
     <h3>GitHub Actions</h3>
     <p>Scans every workflow under <code>.github/workflows/</code>. Action pinning, OIDC trust, secret hygiene, runner posture.</p>
@@ -63,7 +50,7 @@ requires editing `Scanner`, `Reporter`, or the CLI.
   </a>
   <a class="pg-doc-card" href="drone/">
     <h3>Drone CI</h3>
-    <p>Parses <code>.drone.yml</code> / <code>.drone.yaml</code>. Image / plugin pinning, privileged steps, Drone-template-variable injection, literal secrets, TLS bypass.</p>
+    <p>Parses <code>.drone.yml</code> / <code>.drone.yaml</code>. Image and plugin pinning, privileged steps, template-variable injection, literal secrets, TLS bypass.</p>
     <span class="pg-doc-card__meta">{{ providers.drone.checks }}</span>
   </a>
   <a class="pg-doc-card" href="tekton/">
@@ -76,11 +63,31 @@ requires editing `Scanner`, `Reporter`, or the CLI.
     <p>Parses <code>Workflow</code> and <code>WorkflowTemplate</code> CRDs. Image pinning, parameter injection, container template posture.</p>
     <span class="pg-doc-card__meta">{{ providers.argo.checks }}</span>
   </a>
-  <a class="pg-doc-card" href="argocd/">
-    <h3>Argo CD</h3>
-    <p>Parses <code>Application</code>, <code>ApplicationSet</code>, and <code>AppProject</code> CRDs plus <code>argocd-cm</code> / <code>argocd-rbac-cm</code> ConfigMaps. Source repos, destinations, RBAC, auto-sync, PR generators.</p>
-    <span class="pg-doc-card__meta">{{ providers.argocd.checks }}</span>
+</div>
+
+### Cloud & infrastructure as code
+
+<div class="pg-doc-cards">
+  <a class="pg-doc-card" href="aws/">
+    <h3>AWS</h3>
+    <p>Live account scan via boto3. CodeBuild, CodePipeline, CodeDeploy, ECR, IAM, S3, CloudTrail, Lambda, KMS, and more.</p>
+    <span class="pg-doc-card__meta">{{ providers.aws.checks }}</span>
   </a>
+  <a class="pg-doc-card" href="terraform/">
+    <h3>Terraform</h3>
+    <p>Shift-left scan against a <code>terraform show -json</code> plan or raw <code>*.tf</code> source. AWS-rule parity so findings match the live runtime.</p>
+    <span class="pg-doc-card__meta">{{ providers.terraform.checks }}</span>
+  </a>
+  <a class="pg-doc-card" href="cloudformation/">
+    <h3>CloudFormation</h3>
+    <p>Parses YAML or JSON templates with intrinsic-function resolution (<code>!Ref</code>, <code>!Sub</code>, <code>!GetAtt</code>).</p>
+    <span class="pg-doc-card__meta">{{ providers.cloudformation.checks }}</span>
+  </a>
+</div>
+
+### Containers & deployment
+
+<div class="pg-doc-cards">
   <a class="pg-doc-card" href="dockerfile/">
     <h3>Dockerfile</h3>
     <p>Parses <code>Dockerfile</code> / <code>Containerfile</code>. Image pinning, USER hygiene, secret-in-env, RUN posture.</p>
@@ -96,19 +103,34 @@ requires editing `Scanner`, `Reporter`, or the CLI.
     <p>Renders charts via <code>helm template</code> and runs the full K8S-* rule pack on the result, plus a chart-supply-chain pack (<code>HELM-001..010</code>: legacy schema, unlocked dependencies, plaintext repos) that reads <code>Chart.yaml</code> straight off disk.</p>
     <span class="pg-doc-card__meta">{{ providers.helm.checks }}</span>
   </a>
+  <a class="pg-doc-card" href="argocd/">
+    <h3>Argo CD</h3>
+    <p>Parses <code>Application</code>, <code>ApplicationSet</code>, and <code>AppProject</code> CRDs plus <code>argocd-cm</code> / <code>argocd-rbac-cm</code> ConfigMaps. Source repos, destinations, RBAC, auto-sync, PR generators.</p>
+    <span class="pg-doc-card__meta">{{ providers.argocd.checks }}</span>
+  </a>
   <a class="pg-doc-card" href="oci/">
     <h3>OCI image manifest</h3>
     <p>Parses <code>docker buildx imagetools inspect --raw</code> JSON. Provenance annotations, build attestations (SLSA / SBOM), <code>image.created</code> timestamp.</p>
     <span class="pg-doc-card__meta">{{ providers.oci.checks }}</span>
   </a>
+</div>
+
+### SCM posture
+
+<div class="pg-doc-cards">
   <a class="pg-doc-card" href="scm/">
-    <h3>SCM posture (GitHub / GitLab / Bitbucket)</h3>
-    <p>Hits the GitHub, GitLab, or Bitbucket REST API for branch protection, required reviews, code scanning, secret scanning, Dependabot, signed commits, deploy keys, webhook security, ruleset enforcement. Full pack on GitHub, 7-rule universal subset on GitLab and Bitbucket. Closes the gap with Legitify and OpenSSF Scorecard.</p>
+    <h3>GitHub / GitLab / Bitbucket</h3>
+    <p>Hits the GitHub, GitLab, or Bitbucket REST API for branch protection, required reviews, code scanning, secret scanning, Dependabot, signed commits, deploy keys, webhook security, ruleset enforcement. Full pack on GitHub, 7-rule universal subset on GitLab and Bitbucket.</p>
     <span class="pg-doc-card__meta">{{ providers.scm.checks }}</span>
   </a>
+</div>
+
+### Package registries
+
+<div class="pg-doc-cards">
   <a class="pg-doc-card" href="registries/">
-    <h3>Package registries (npm / PyPI / Maven / NuGet)</h3>
-    <p>Static parse of <code>package.json</code> / <code>package-lock.json</code> / <code>.npmrc</code>, <code>requirements*.txt</code>, <code>pom.xml</code> / <code>settings.xml</code>, and <code>*.csproj</code> / <code>NuGet.config</code>. Floating versions, missing integrity / hash anchoring, plaintext-HTTP indexes, lifecycle scripts, lax checksum policy, dependency-confusion source mapping, and curated known-compromised version registries. Live OSV advisory lookup behind <code>--resolve-remote</code>.</p>
+    <h3>npm / PyPI / Maven / NuGet</h3>
+    <p>Static parse of <code>package.json</code>, <code>requirements*.txt</code>, <code>pom.xml</code>, and <code>*.csproj</code>. Floating versions, missing integrity hashes, plaintext-HTTP indexes, lifecycle scripts, dependency-confusion source mapping, and curated known-compromised version registries. Live OSV advisory lookup behind <code>--resolve-remote</code>.</p>
     <span class="pg-doc-card__meta">{{ providers.registries.checks }}</span>
   </a>
 </div>
