@@ -28,6 +28,30 @@ RULE = Rule(
         "GitHub tokens, Slack ``xox*`` tokens, JWTs). Plaintext values "
         "land in the AWS console, CloudTrail, and build logs."
     ),
+    exploit_example=(
+        "# Vulnerable: secret value is PLAINTEXT (the default).\n"
+        "# The key appears in the AWS console, CloudTrail API\n"
+        "# logs, and build output.\n"
+        'resource "aws_codebuild_project" "ci" {\n'
+        "  environment {\n"
+        "    environment_variable {\n"
+        '      name  = "DB_PASSWORD"\n'
+        '      value = "hunter2"\n'
+        "    }\n"
+        "  }\n"
+        "}\n"
+        "\n"
+        "# Safe: reference Secrets Manager.\n"
+        'resource "aws_codebuild_project" "ci" {\n'
+        "  environment {\n"
+        "    environment_variable {\n"
+        '      name  = "DB_PASSWORD"\n'
+        '      value = "arn:aws:secretsmanager:us-east-1:123456789012:secret:db-pass"\n'
+        '      type  = "SECRETS_MANAGER"\n'
+        "    }\n"
+        "  }\n"
+        "}"
+    ),
 )
 
 

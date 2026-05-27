@@ -26,6 +26,28 @@ RULE = Rule(
         "infrastructure with unrestricted outbound internet — every "
         "exfiltration path is open."
     ),
+    exploit_example=(
+        "# Vulnerable: CodeBuild project runs on the public\n"
+        "# internet. Build traffic (dependency fetches, artifact\n"
+        "# uploads) is not confined to a VPC.\n"
+        'resource "aws_codebuild_project" "ci" {\n'
+        '  name = "ci"\n'
+        "  environment {\n"
+        '    compute_type = "BUILD_GENERAL1_SMALL"\n'
+        '    image        = "aws/codebuild/standard:7.0"\n'
+        "  }\n"
+        "}\n"
+        "\n"
+        "# Safe: attach a VPC config.\n"
+        'resource "aws_codebuild_project" "ci" {\n'
+        '  name = "ci"\n'
+        "  vpc_config {\n"
+        "    vpc_id             = aws_vpc.build.id\n"
+        "    subnets            = aws_subnet.private[*].id\n"
+        "    security_group_ids = [aws_security_group.build.id]\n"
+        "  }\n"
+        "}"
+    ),
 )
 
 

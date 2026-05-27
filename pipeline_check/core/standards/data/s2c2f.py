@@ -319,5 +319,37 @@ STANDARD = Standard(
         "HELM-004": ["UPD-1"],           # version range
         "HELM-008": ["UPD-1"],           # stale Chart.lock
         "HELM-009": ["ING-1"],           # non-HTTPS home/sources
+        # ── Azure Cloud (Entra ID / Storage / Key Vault / ACR / Monitor) ──
+        "ENTRA-001": ["ENF-1"],              # SP assigned Global Administrator
+        "ENTRA-002": ["UPD-1"],              # app credential beyond 180 days
+        "ENTRA-003": ["UPD-1"],              # SP uses password credential
+        "AZST-001":  ["ENF-1"],              # public blob access
+        "AZST-002":  ["ING-1"],              # non-HTTPS traffic
+        "AZST-003":  ["REB-2"],              # no CMK encryption
+        "AKV-001":   ["ENF-1"],              # soft delete not enabled
+        "AKV-002":   ["ENF-1"],              # purge protection not enabled
+        "AKV-003":   ["ENF-1"],              # network ACLs allow all
+        "ACR-001":   ["ENF-1"],              # admin user enabled
+        "ACR-002":   ["ENF-1"],              # public network access
+        "ACR-003":   ["REB-2"],              # content trust not enabled
+        "AZMON-001": ["ENF-2"],              # no diagnostic setting
+        "AZMON-002": ["ENF-2"],              # log retention < 365 days
+        "AZMON-003": ["ENF-2"],              # no alert rule
+        # ── GCP (IAM / GCS / KMS / Artifact Registry / Cloud Logging) ────
+        "GCIAM-001": ["ENF-1"],              # SA has Owner/Editor role
+        "GCIAM-002": ["UPD-1"],              # user-managed SA key
+        "GCIAM-003": ["ENF-1"],              # token creator without condition
+        "GCS-001":   ["ENF-1"],              # public bucket
+        "GCS-002":   ["ENF-1"],              # no uniform access
+        "GCS-003":   ["UPD-1"],              # versioning not enabled
+        "GCKMS-001": ["UPD-1"],              # key rotation > 365 days
+        "GCKMS-002": ["ENF-1"],              # public KMS key access
+        "GCKMS-003": ["REB-2"],              # no HSM protection
+        "GAR-001":   ["SCA-1"],              # no vulnerability scanning
+        "GAR-002":   ["ENF-1"],              # publicly readable repo
+        "GAR-003":   ["UPD-1"],              # no cleanup policy
+        "GCLOG-001": ["ENF-2"],              # audit logs not enabled
+        "GCLOG-002": ["ENF-2"],              # no log sink
+        "GCLOG-003": ["ENF-2"],              # log retention < 365 days
     },
 )

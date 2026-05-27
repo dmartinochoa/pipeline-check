@@ -22,8 +22,8 @@ hide:
 # Catch supply-chain risks <span class="accent">before they ship.</span>
 
 <p class="pg-hero__lede">
-A read-only scanner for 24 providers, graded against 16 compliance frameworks. 
-111 of the 870+ checks also emit a one-shot patch you can apply with <code>--fix</code>.
+A read-only scanner for 26 providers, graded against 18 compliance frameworks. 
+111 of the 900+ checks also emit a one-shot patch you can apply with <code>--fix</code>.
 </p>
 
 <div class="pg-hero__cta">
@@ -53,16 +53,16 @@ A read-only scanner for 24 providers, graded against 16 compliance frameworks.
 </div>
 </section>
 
-<section class="pg-stats">
+<section class="pg-stats" data-reveal>
 <div class="pg-stats__inner">
-  <div class="pg-stat"><div class="pg-stat__num">870+</div><div class="pg-stat__label">Checks</div></div>
-  <div class="pg-stat"><div class="pg-stat__num">24</div><div class="pg-stat__label">Providers</div></div>
-  <div class="pg-stat"><div class="pg-stat__num">16</div><div class="pg-stat__label">Compliance standards</div></div>
-  <div class="pg-stat"><div class="pg-stat__num">111</div><div class="pg-stat__label">Autofixers</div></div>
+  <div class="pg-stat"><div class="pg-stat__num" data-count-to="900">900+</div><div class="pg-stat__label">Checks</div></div>
+  <div class="pg-stat"><div class="pg-stat__num" data-count-to="26">26</div><div class="pg-stat__label">Providers</div></div>
+  <div class="pg-stat"><div class="pg-stat__num" data-count-to="18">18</div><div class="pg-stat__label">Compliance standards</div></div>
+  <div class="pg-stat"><div class="pg-stat__num" data-count-to="111">111</div><div class="pg-stat__label">Autofixers</div></div>
 </div>
 </section>
 
-<section class="pg-section" markdown>
+<section class="pg-section" data-reveal markdown>
 <div class="pg-section__head" markdown>
 <div class="pg-section__eyebrow">// capabilities</div>
 <h2 class="pg-section__title">One scanner. Every pipeline you ship through.</h2>
@@ -73,7 +73,7 @@ NIST SSDF, SLSA, and the rest, so audit answers don't require leaving the tool.
 </p>
 </div>
 
-<div class="pg-features" markdown>
+<div class="pg-features" data-stagger markdown>
 
 <div class="pg-feature" markdown>
 <div class="pg-feature__icon">
@@ -182,7 +182,7 @@ stdio: no network egress, no telemetry, no API tokens.
 </div>
 </section>
 
-<section class="pg-section" markdown>
+<section class="pg-section" data-reveal markdown>
 <div class="pg-section__head" markdown>
 <div class="pg-section__eyebrow">// providers</div>
 <h2 class="pg-section__title">Wherever your builds run.</h2>
@@ -192,7 +192,7 @@ to force one. Counts reflect the current rule catalog.
 </p>
 </div>
 
-<div class="pg-providers">
+<div class="pg-providers" data-stagger>
   <a class="pg-provider" href="providers/aws/"><span class="pg-provider__name">AWS</span><span class="pg-provider__count">{{ providers.aws.checks }}</span></a>
   <a class="pg-provider" href="providers/terraform/"><span class="pg-provider__name">Terraform</span><span class="pg-provider__count">{{ providers.terraform.checks }}</span></a>
   <a class="pg-provider" href="providers/cloudformation/"><span class="pg-provider__name">CloudFormation</span><span class="pg-provider__count">{{ providers.cloudformation.checks }}</span></a>
@@ -212,104 +212,83 @@ to force one. Counts reflect the current rule catalog.
   <a class="pg-provider" href="providers/kubernetes/"><span class="pg-provider__name">Kubernetes</span><span class="pg-provider__count">{{ providers.kubernetes.checks }}</span></a>
   <a class="pg-provider" href="providers/helm/"><span class="pg-provider__name">Helm</span><span class="pg-provider__count">{{ providers.helm.checks }}</span></a>
   <a class="pg-provider" href="providers/oci/"><span class="pg-provider__name">OCI manifest</span><span class="pg-provider__count">{{ providers.oci.checks }}</span></a>
-  <a class="pg-provider" href="providers/scm/"><span class="pg-provider__name">SCM posture (GitHub / GitLab / Bitbucket)</span><span class="pg-provider__count">{{ providers.scm.checks }}</span></a>
-  <a class="pg-provider" href="providers/registries/"><span class="pg-provider__name">Package registries (npm / PyPI / Maven / NuGet)</span><span class="pg-provider__count">{{ providers.registries.checks }}</span></a>
+  <a class="pg-provider pg-provider--wide" href="providers/scm/"><span class="pg-provider__name">SCM posture (GitHub / GitLab / Bitbucket)</span><span class="pg-provider__count">{{ providers.scm.checks }}</span></a>
+  <a class="pg-provider pg-provider--wide" href="providers/registries/"><span class="pg-provider__name">Package registries (npm / PyPI / Maven / NuGet)</span><span class="pg-provider__count">{{ providers.registries.checks }}</span></a>
 </div>
 </section>
 
-<section class="pg-section" markdown>
+<section class="pg-section" data-reveal markdown>
 <div class="pg-section__head" markdown>
 <div class="pg-section__eyebrow">// flow</div>
 <h2 class="pg-section__title">Inputs in. Graded report out.</h2>
-<p class="pg-section__lede">Hover any step for a quick description; click to jump to its reference page.</p>
+<p class="pg-section__lede">Click any stage to jump to its reference page.</p>
 </div>
 
-<div class="pg-flowchart" markdown>
-
-```mermaid
-%%{init: {
-  "theme": "base",
-  "themeVariables": {
-    "fontFamily": "Mona Sans, Inter, system-ui, -apple-system, sans-serif",
-    "fontSize": "13px",
-    "primaryColor": "#0e1f30",
-    "primaryTextColor": "#e7eef5",
-    "primaryBorderColor": "#1ba3a9",
-    "lineColor": "#5a7b91",
-    "secondaryColor": "#0e1f30",
-    "tertiaryColor": "#0a1320",
-    "tertiaryTextColor": "#e7eef5",
-    "tertiaryBorderColor": "#1ba3a9",
-    "edgeLabelBackground": "transparent"
-  },
-  "flowchart": {
-    "curve": "basis",
-    "padding": 16,
-    "nodeSpacing": 50,
-    "rankSpacing": 70,
-    "useMaxWidth": true
-  }
-}}%%
-flowchart LR
-    A([Input]) -->|auto-detect| B[Adapter]
-    B --> C[Rule engine]
-    C --> D[Compliance map]
-    D --> E[Scorer]
-    E --> F1[Terminal]
-    E --> F2[JSON]
-    E --> F3[HTML report]
-    E --> F4[SARIF 2.1.0]
-    E --> G{{CI gate}}
-    G -->|pass| H([Merge])
-    G -->|fail| I([Block + report])
-
-    click A "usage/" "Repo on disk or live AWS account: no API tokens, no SaaS"
-    click B "providers/" "24 supported. Auto-detected from cwd; override with --pipeline NAME"
-    click C "attack_chains/" "870+ checks emit findings with severity, location, fix"
-    click D "standards/" "16 frameworks. OWASP, NIST SSDF, SLSA, CIS, …"
-    click E "scoring_model/" "Severity-weighted 0–100 score, graded A / B / C / D"
-    click F1 "output/#terminal" "Rich color table for humans"
-    click F2 "output/#json" "Machine-parseable JSON for scripts"
-    click F3 "output/#html" "HTML report with client-side filters"
-    click F4 "output/#sarif" "SARIF 2.1.0 for GitHub code scanning, Defender for DevOps"
-    click G "ci_gate/" "Severity caps, baseline diff, ignore file: pass/fail contract"
-    click H "ci_gate/" "Severity below thresholds, exit 0"
-    click I "ci_gate/" "Severity above threshold; non-zero exit + report (--fix patches the subset that has a fixer)"
-
-    classDef src      fill:#0a1320,stroke:#1ba3a9,stroke-width:1px,color:#e7eef5,rx:14,ry:14;
-    classDef step     fill:#0e1f30,stroke:#1ba3a9,stroke-width:1px,color:#e7eef5,rx:10,ry:10;
-    classDef out      fill:#1ba3a9,stroke:#33c4ca,stroke-width:1px,color:#050a12,rx:10,ry:10;
-    classDef gate     fill:#0a1320,stroke:#f4b942,stroke-width:1.5px,color:#f4b942;
-    classDef pass     fill:#2a9d8f,stroke:#2a9d8f,stroke-width:1px,color:#ffffff,rx:14,ry:14;
-    classDef fail     fill:#9d2755,stroke:#9d2755,stroke-width:1px,color:#ffffff,rx:14,ry:14;
-
-    class A src;
-    class B,C,D,E step;
-    class F1,F2,F3,F4 out;
-    class G gate;
-    class H pass;
-    class I fail;
-
-    linkStyle default stroke:#5a7b91,stroke-width:1.4px,stroke-dasharray:0,fill:none;
-```
-
+<div class="pg-pipeline" data-stagger>
+  <a class="pg-pipe pg-pipe--src" href="usage/">
+    <span class="pg-pipe__icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></span>
+    <span class="pg-pipe__label">Input</span>
+    <span class="pg-pipe__desc">Repo on disk or live cloud account</span>
+  </a>
+  <a class="pg-pipe" href="providers/">
+    <span class="pg-pipe__icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/><line x1="4" y1="22" x2="4" y2="15"/></svg></span>
+    <span class="pg-pipe__label">Adapter</span>
+    <span class="pg-pipe__desc">Auto-detect or <code>--pipeline</code></span>
+  </a>
+  <a class="pg-pipe" href="attack_chains/">
+    <span class="pg-pipe__icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg></span>
+    <span class="pg-pipe__label">Rule engine</span>
+    <span class="pg-pipe__desc">900+ checks with severity and fix</span>
+  </a>
+  <a class="pg-pipe" href="standards/">
+    <span class="pg-pipe__icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7l9-4 9 4-9 4-9-4z"/><path d="M3 12l9 4 9-4"/><path d="M3 17l9 4 9-4"/></svg></span>
+    <span class="pg-pipe__label">Compliance map</span>
+    <span class="pg-pipe__desc">18 frameworks (OWASP, NIST, SLSA, CIS)</span>
+  </a>
+  <a class="pg-pipe" href="scoring_model/">
+    <span class="pg-pipe__icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg></span>
+    <span class="pg-pipe__label">Scorer</span>
+    <span class="pg-pipe__desc">0 &ndash; 100 score, graded A / B / C / D</span>
+  </a>
 </div>
 
-<div class="pg-outputs">
-  <div class="pg-outputs__head">
-    <span class="pg-section__eyebrow">// outputs</span>
-    <p class="pg-outputs__lede">Same findings, four shapes.</p>
+<div class="pg-pipeline-out">
+  <div class="pg-pipeline-out__row" data-stagger>
+    <a class="pg-pipe-out" href="output/#terminal">
+      <span class="pg-pipe-out__name">Terminal</span>
+      <span class="pg-pipe-out__desc">Rich color table for humans</span>
+    </a>
+    <a class="pg-pipe-out" href="output/#json">
+      <span class="pg-pipe-out__name">JSON</span>
+      <span class="pg-pipe-out__desc">Machine-parseable for scripts</span>
+    </a>
+    <a class="pg-pipe-out" href="output/#html">
+      <span class="pg-pipe-out__name">HTML report</span>
+      <span class="pg-pipe-out__desc">Client-side filters, shareable</span>
+    </a>
+    <a class="pg-pipe-out" href="output/#sarif">
+      <span class="pg-pipe-out__name">SARIF 2.1.0</span>
+      <span class="pg-pipe-out__desc">GitHub code scanning, Defender</span>
+    </a>
   </div>
-  <ul class="pg-outputs__grid" role="list">
-    <li><a class="pg-output" href="output/#terminal"><strong>Terminal</strong><span>Rich color table for humans</span></a></li>
-    <li><a class="pg-output" href="output/#json"><strong>JSON</strong><span>Machine-parseable for scripts</span></a></li>
-    <li><a class="pg-output" href="output/#html"><strong>HTML report</strong><span>Client-side filters, shareable</span></a></li>
-    <li><a class="pg-output" href="output/#sarif"><strong>SARIF 2.1.0</strong><span>GitHub code scanning, Defender</span></a></li>
-  </ul>
+  <div class="pg-pipeline-gate" data-stagger>
+    <a class="pg-pipe-gate" href="ci_gate/">
+      <span class="pg-pipe-gate__icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg></span>
+      <span class="pg-pipe-gate__label">CI gate</span>
+    </a>
+    <span class="pg-pipe-result pg-pipe-result--pass">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+      Merge
+    </span>
+    <span class="pg-pipe-result pg-pipe-result--fail">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      Block
+    </span>
+  </div>
 </div>
 </section>
 
-<section class="pg-section" markdown>
+<section class="pg-section" data-reveal markdown>
 <div class="pg-section__head" markdown>
 <div class="pg-section__eyebrow">// the patrol</div>
 <h2 class="pg-section__title">Every commit walks the same rail.</h2>
@@ -320,7 +299,7 @@ flowchart LR
 </div>
 </section>
 
-<section class="pg-cta" markdown>
+<section class="pg-cta" data-reveal markdown>
 <div class="pg-cta__inner" markdown>
 ## Ship pipelines you trust.
 <p>Install in under 30 seconds. Scan your first repo in under a minute.</p>

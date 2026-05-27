@@ -25,6 +25,22 @@ RULE = Rule(
         "request to the new revision simultaneously, leaving no canary "
         "validation window."
     ),
+    exploit_example=(
+        "# Vulnerable: CodeDeploy group deploys to all instances\n"
+        "# at once. A bad deployment takes down the entire fleet.\n"
+        'resource "aws_codedeploy_deployment_group" "prod" {\n'
+        "  deployment_config_name = \"CodeDeployDefault.AllAtOnce\"\n"
+        "  app_name              = aws_codedeploy_app.app.name\n"
+        '  deployment_group_name = "prod"\n'
+        "}\n"
+        "\n"
+        "# Safe: use a rolling or blue/green strategy.\n"
+        'resource "aws_codedeploy_deployment_group" "prod" {\n'
+        "  deployment_config_name = \"CodeDeployDefault.OneAtATime\"\n"
+        "  app_name              = aws_codedeploy_app.app.name\n"
+        '  deployment_group_name = "prod"\n'
+        "}"
+    ),
 )
 
 

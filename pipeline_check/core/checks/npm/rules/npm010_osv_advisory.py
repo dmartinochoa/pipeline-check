@@ -25,6 +25,24 @@ RULE = Rule(
         "when the flag is off. Complements NPM-006 (curated offline "
         "registry) with the full OSV/GHSA long-tail."
     ),
+    exploit_example=(
+        "# Vulnerable: pinning a version with a known advisory.\n"
+        "// GHSA-xxxx flags an RCE in json5 < 2.2.2; the build's\n"
+        "// npm install runs the vulnerable parser on every CI run.\n"
+        "// package.json\n"
+        "{\n"
+        '  "dependencies": {\n'
+        '    "json5": "2.2.1"\n'
+        "  }\n"
+        "}\n"
+        "\n"
+        "# Safe: upgrade to the patched version.\n"
+        "{\n"
+        '  "dependencies": {\n'
+        '    "json5": "2.2.3"\n'
+        "  }\n"
+        "}"
+    ),
 )
 
 # Accept ``1.2.3``, ``=1.2.3``, ``v1.2.3`` but NOT ``^1.2.3``,

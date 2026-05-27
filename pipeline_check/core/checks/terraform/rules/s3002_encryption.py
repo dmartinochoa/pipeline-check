@@ -27,6 +27,25 @@ RULE = Rule(
         "``bucket``. Reads ``rule[0]."
         "apply_server_side_encryption_by_default[0].sse_algorithm``."
     ),
+    exploit_example=(
+        "# Vulnerable: artifact bucket has no server-side\n"
+        "# encryption. Build artifacts stored at rest are\n"
+        "# readable if the disk is accessed outside AWS.\n"
+        'resource "aws_s3_bucket" "artifacts" {\n'
+        '  bucket = "pipeline-artifacts"\n'
+        "}\n"
+        "# (no aws_s3_bucket_server_side_encryption_configuration)\n"
+        "\n"
+        "# Safe: enable default encryption.\n"
+        'resource "aws_s3_bucket_server_side_encryption_configuration" "enc" {\n'
+        "  bucket = aws_s3_bucket.artifacts.id\n"
+        "  rule {\n"
+        "    apply_server_side_encryption_by_default {\n"
+        '      sse_algorithm = "AES256"\n'
+        "    }\n"
+        "  }\n"
+        "}"
+    ),
 )
 
 

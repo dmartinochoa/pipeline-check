@@ -25,6 +25,20 @@ RULE = Rule(
         "activity has no durable audit record — every incident reply "
         "starts from scratch."
     ),
+    exploit_example=(
+        "# Vulnerable: no CloudTrail trail defined. Management-plane\n"
+        "# activity is invisible to incident response.\n"
+        "# (no aws_cloudtrail resource in the configuration)\n"
+        "\n"
+        "# Safe: declare a multi-region trail with log validation.\n"
+        'resource "aws_cloudtrail" "main" {\n'
+        '  name                          = "org-trail"\n'
+        "  s3_bucket_name                = aws_s3_bucket.trail.id\n"
+        "  is_multi_region_trail         = true\n"
+        "  enable_log_file_validation    = true\n"
+        "  include_global_service_events = true\n"
+        "}"
+    ),
 )
 
 

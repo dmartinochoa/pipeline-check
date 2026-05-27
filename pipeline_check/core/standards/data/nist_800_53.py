@@ -744,5 +744,37 @@ STANDARD = Standard(
         "SCM-048":  ["AC-6", "IA-5"],                      # org codespace secrets scoped to all repos
         "SCM-049":  ["AC-6", "IA-5"],                      # classic PAT used where fine-grained suffices
         "NPM-012":  ["IA-5", "SR-3"],                      # publish token missing restrictions
+        # ── Azure Cloud (Entra ID / Storage / Key Vault / ACR / Monitor) ──
+        "ENTRA-001": ["AC-3", "AC-6"],                     # SP assigned Global Administrator
+        "ENTRA-002": ["IA-5"],                             # app credential beyond 180 days
+        "ENTRA-003": ["IA-5"],                             # SP uses password credential
+        "AZST-001":  ["AC-3", "SC-7"],                     # public blob access
+        "AZST-002":  ["SC-8", "SC-13"],                    # non-HTTPS traffic
+        "AZST-003":  ["SC-12", "SC-13", "SC-28"],          # no CMK encryption
+        "AKV-001":   ["SC-28", "CM-6"],                    # soft delete not enabled
+        "AKV-002":   ["SC-28", "CM-6"],                    # purge protection not enabled
+        "AKV-003":   ["SC-7", "AC-3"],                     # network ACLs allow all
+        "ACR-001":   ["AC-2", "AC-6", "IA-5"],             # admin user enabled
+        "ACR-002":   ["SC-7", "AC-3"],                     # public network access
+        "ACR-003":   ["SI-7", "SR-4"],                     # content trust not enabled
+        "AZMON-001": ["AU-2", "AU-12"],                    # no diagnostic setting
+        "AZMON-002": ["AU-11"],                            # log retention < 365 days
+        "AZMON-003": ["AU-2", "SI-2"],                     # no alert rule
+        # ── GCP (IAM / GCS / KMS / Artifact Registry / Cloud Logging) ────
+        "GCIAM-001": ["AC-3", "AC-6"],                     # SA has Owner/Editor role
+        "GCIAM-002": ["IA-5"],                             # user-managed SA key
+        "GCIAM-003": ["AC-3", "AC-6"],                     # token creator without condition
+        "GCS-001":   ["AC-3", "SC-7"],                     # public bucket
+        "GCS-002":   ["AC-3", "CM-6"],                     # no uniform access
+        "GCS-003":   ["SI-7", "CM-6"],                     # versioning not enabled
+        "GCKMS-001": ["SC-12", "SC-13"],                   # key rotation > 365 days
+        "GCKMS-002": ["AC-3", "SC-12"],                    # public KMS key access
+        "GCKMS-003": ["SC-12", "SC-13"],                   # no HSM protection
+        "GAR-001":   ["RA-5", "SI-2"],                     # no vulnerability scanning
+        "GAR-002":   ["AC-3", "SC-7"],                     # publicly readable repo
+        "GAR-003":   ["CM-2", "CM-8"],                     # no cleanup policy
+        "GCLOG-001": ["AU-2", "AU-12"],                    # audit logs not enabled
+        "GCLOG-002": ["AU-2", "AU-12", "AU-9"],            # no log sink
+        "GCLOG-003": ["AU-11"],                            # log retention < 365 days
     },
 )

@@ -16,6 +16,7 @@ from .argo import ArgoProvider
 from .argocd import ArgoCDProvider
 from .aws import AWSProvider
 from .azure import AzureProvider
+from .azure_cloud import AzureCloudProvider
 from .base import BaseProvider
 from .bitbucket import BitbucketProvider
 from .buildkite import BuildkiteProvider
@@ -24,6 +25,7 @@ from .cloudbuild import CloudBuildProvider
 from .cloudformation import CloudFormationProvider
 from .dockerfile import DockerfileProvider
 from .drone import DroneProvider
+from .gcp import GCPProvider
 from .github import GitHubProvider
 from .gitlab import GitLabProvider
 from .helm import HelmProvider
@@ -66,6 +68,7 @@ register(GitHubProvider())
 register(GitLabProvider())
 register(BitbucketProvider())
 register(AzureProvider())
+register(AzureCloudProvider())
 register(JenkinsProvider())
 register(CircleCIProvider())
 register(CloudBuildProvider())
@@ -78,6 +81,7 @@ register(KubernetesProvider())
 register(HelmProvider())
 register(OCIProvider())
 register(DroneProvider())
+register(GCPProvider())
 register(SCMProvider())
 register(NpmProvider())
 register(PypiProvider())

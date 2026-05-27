@@ -28,6 +28,25 @@ RULE = Rule(
         "missing entirely) lets an ACL or bucket policy make build "
         "artifacts publicly readable."
     ),
+    exploit_example=(
+        "# Vulnerable: no public access block on the artifact\n"
+        "# bucket. A permissive bucket policy or ACL can make\n"
+        "# build artifacts (wheels, JARs, container layers)\n"
+        "# world-readable.\n"
+        'resource "aws_s3_bucket" "artifacts" {\n'
+        '  bucket = "my-pipeline-artifacts"\n'
+        "}\n"
+        "# (no aws_s3_bucket_public_access_block resource)\n"
+        "\n"
+        "# Safe: attach a full public access block.\n"
+        'resource "aws_s3_bucket_public_access_block" "artifacts" {\n'
+        "  bucket                  = aws_s3_bucket.artifacts.id\n"
+        "  block_public_acls       = true\n"
+        "  ignore_public_acls      = true\n"
+        "  block_public_policy     = true\n"
+        "  restrict_public_buckets = true\n"
+        "}"
+    ),
 )
 
 

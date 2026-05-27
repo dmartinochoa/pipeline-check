@@ -26,6 +26,21 @@ RULE = Rule(
         "the cache then proxies any image from an attacker-controlled "
         "domain into your registry."
     ),
+    exploit_example=(
+        "# Vulnerable: pull-through cache from docker.io without\n"
+        "# authentication. Anyone can push a typosquatted image.\n"
+        'resource "aws_ecr_pull_through_cache_rule" "dockerhub" {\n'
+        '  ecr_repository_prefix = "dockerhub"\n'
+        '  upstream_registry_url = "registry-1.docker.io"\n'
+        "}\n"
+        "\n"
+        "# Safe: add a credential ARN to authenticate the pull.\n"
+        'resource "aws_ecr_pull_through_cache_rule" "dockerhub" {\n'
+        '  ecr_repository_prefix = "dockerhub"\n'
+        '  upstream_registry_url = "registry-1.docker.io"\n'
+        "  credential_arn        = aws_secretsmanager_secret.dockerhub.arn\n"
+        "}"
+    ),
 )
 
 

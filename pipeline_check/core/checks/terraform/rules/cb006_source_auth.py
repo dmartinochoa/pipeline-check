@@ -26,6 +26,28 @@ RULE = Rule(
         "(``GITHUB``, ``GITHUB_ENTERPRISE``, ``BITBUCKET``) is "
         "authenticated with a long-lived OAuth/PAT/BASIC_AUTH credential."
     ),
+    exploit_example=(
+        "# Vulnerable: source auth uses PERSONAL_ACCESS_TOKEN\n"
+        "# stored in the project config. The token is visible\n"
+        "# in the Terraform state and CloudTrail.\n"
+        'resource "aws_codebuild_project" "ci" {\n'
+        "  source {\n"
+        '    type      = "GITHUB"\n'
+        '    location  = "https://github.com/org/repo.git"\n'
+        '    auth {\n'
+        '      type     = "PERSONAL_ACCESS_TOKEN"\n'
+        '      resource = "ghp_exampletoken123"\n'
+        "    }\n"
+        "  }\n"
+        "}\n"
+        "\n"
+        "# Safe: use a CodeStar connection (OAuth) instead.\n"
+        'resource "aws_codebuild_source_credential" "github" {\n'
+        '  auth_type   = "CODECONNECTIONS"\n'
+        '  server_type = "GITHUB"\n'
+        '  token       = "arn:aws:codeconnections:us-east-1:123:connection/abc"\n'
+        "}"
+    ),
 )
 
 

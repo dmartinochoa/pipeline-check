@@ -26,6 +26,35 @@ RULE = Rule(
         "principal — wildcard at the domain level grants the bearer "
         "access to every repo in the domain."
     ),
+    exploit_example=(
+        "# Vulnerable: wildcard principal grants every AWS account\n"
+        "# read access to every package in the domain.\n"
+        'resource "aws_codeartifact_domain_permissions_policy" "open" {\n'
+        "  domain          = aws_codeartifact_domain.internal.domain\n"
+        "  policy_document = jsonencode({\n"
+        "    Statement = [{\n"
+        '      Effect    = "Allow"\n'
+        '      Principal = "*"\n'
+        '      Action    = "codeartifact:ReadFromRepository"\n'
+        '      Resource  = "*"\n'
+        "    }]\n"
+        "  })\n"
+        "}\n"
+        "\n"
+        "# Safe: name the specific accounts and add an org condition.\n"
+        'resource "aws_codeartifact_domain_permissions_policy" "scoped" {\n'
+        "  domain          = aws_codeartifact_domain.internal.domain\n"
+        "  policy_document = jsonencode({\n"
+        "    Statement = [{\n"
+        '      Effect    = "Allow"\n'
+        '      Principal = { AWS = "arn:aws:iam::123456789012:root" }\n'
+        '      Action    = "codeartifact:ReadFromRepository"\n'
+        '      Resource  = "*"\n'
+        '      Condition = { StringEquals = { "aws:PrincipalOrgID" = "o-example" } }\n'
+        "    }]\n"
+        "  })\n"
+        "}"
+    ),
 )
 
 

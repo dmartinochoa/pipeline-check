@@ -763,5 +763,37 @@ STANDARD = Standard(
         "SCM-048":  ["ESF-D-SECRETS"],             # org codespace secret scoped to all repos
         "SCM-049":  ["ESF-D-SECRETS"],             # classic PAT where fine-grained suffices
         "NPM-012":  ["ESF-D-SECRETS", "ESF-S-VERIFY-DEPS"],  # publish token lacking restrictions
+        # ── Azure Cloud (Entra ID / Storage / Key Vault / ACR / Monitor) ──
+        "ENTRA-001": ["ESF-C-LEAST-PRIV"],                 # SP assigned Global Administrator
+        "ENTRA-002": ["ESF-D-TOKEN-HYGIENE"],              # app credential beyond 180 days
+        "ENTRA-003": ["ESF-D-TOKEN-HYGIENE"],              # SP uses password credential
+        "AZST-001":  ["ESF-C-ARTIFACT-AUTHZ"],             # public blob access
+        "AZST-002":  ["ESF-S-TRUSTED-REG"],                # non-HTTPS traffic
+        "AZST-003":  ["ESF-C-ARTIFACT-AUTHZ"],             # no CMK encryption
+        "AKV-001":   ["ESF-C-ARTIFACT-AUTHZ"],             # soft delete not enabled
+        "AKV-002":   ["ESF-C-ARTIFACT-AUTHZ"],             # purge protection not enabled
+        "AKV-003":   ["ESF-C-ARTIFACT-AUTHZ"],             # network ACLs allow all
+        "ACR-001":   ["ESF-C-LEAST-PRIV"],                 # admin user enabled
+        "ACR-002":   ["ESF-C-ARTIFACT-AUTHZ"],             # public network access
+        "ACR-003":   ["ESF-D-SIGN-ARTIFACTS"],             # content trust not enabled
+        "AZMON-001": ["ESF-C-AUDIT"],                      # no diagnostic setting
+        "AZMON-002": ["ESF-C-AUDIT"],                      # log retention < 365 days
+        "AZMON-003": ["ESF-C-DEPLOY-MON"],                 # no alert rule
+        # ── GCP (IAM / GCS / KMS / Artifact Registry / Cloud Logging) ────
+        "GCIAM-001": ["ESF-C-LEAST-PRIV"],                 # SA has Owner/Editor role
+        "GCIAM-002": ["ESF-D-TOKEN-HYGIENE"],              # user-managed SA key
+        "GCIAM-003": ["ESF-C-LEAST-PRIV"],                 # token creator without condition
+        "GCS-001":   ["ESF-C-ARTIFACT-AUTHZ"],             # public bucket
+        "GCS-002":   ["ESF-C-ARTIFACT-AUTHZ"],             # no uniform access
+        "GCS-003":   ["ESF-S-IMMUTABLE"],                  # versioning not enabled
+        "GCKMS-001": ["ESF-C-ARTIFACT-AUTHZ"],             # key rotation > 365 days
+        "GCKMS-002": ["ESF-C-LEAST-PRIV"],                 # public KMS key access
+        "GCKMS-003": ["ESF-C-ARTIFACT-AUTHZ"],             # no HSM protection
+        "GAR-001":   ["ESF-S-VULN-MGMT"],                  # no vulnerability scanning
+        "GAR-002":   ["ESF-C-ARTIFACT-AUTHZ"],             # publicly readable repo
+        "GAR-003":   ["ESF-D-BUILD-ENV"],                  # no cleanup policy
+        "GCLOG-001": ["ESF-C-AUDIT"],                      # audit logs not enabled
+        "GCLOG-002": ["ESF-C-AUDIT"],                      # no log sink
+        "GCLOG-003": ["ESF-C-AUDIT"],                      # log retention < 365 days
     },
 )

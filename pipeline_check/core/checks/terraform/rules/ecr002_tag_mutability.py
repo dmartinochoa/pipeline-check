@@ -24,6 +24,20 @@ RULE = Rule(
         "overwrite any existing tag, including release tags consumed "
         "by production deployments."
     ),
+    exploit_example=(
+        "# Vulnerable: image tags are mutable (the default).\n"
+        "# An attacker can overwrite :latest or a release tag.\n"
+        'resource "aws_ecr_repository" "app" {\n'
+        '  name                 = "app"\n'
+        '  image_tag_mutability = "MUTABLE"\n'
+        "}\n"
+        "\n"
+        "# Safe: make tags immutable.\n"
+        'resource "aws_ecr_repository" "app" {\n'
+        '  name                 = "app"\n'
+        '  image_tag_mutability = "IMMUTABLE"\n'
+        "}"
+    ),
 )
 
 

@@ -25,6 +25,37 @@ RULE = Rule(
         "stage runs with the same blast-radius — a compromise in any "
         "one action reaches the others' resources."
     ),
+    exploit_example=(
+        "# Vulnerable: both pipeline stages share one IAM role.\n"
+        "# A compromised build stage inherits the deploy stage's\n"
+        "# production-write permissions.\n"
+        'resource "aws_codepipeline" "release" {\n'
+        "  stage {\n"
+        '    name = "Build"\n'
+        "    action {\n"
+        "      role_arn = aws_iam_role.shared.arn\n"
+        "    }\n"
+        "  }\n"
+        "  stage {\n"
+        '    name = "Deploy"\n'
+        "    action {\n"
+        "      role_arn = aws_iam_role.shared.arn\n"
+        "    }\n"
+        "  }\n"
+        "}\n"
+        "\n"
+        "# Safe: use separate roles per stage.\n"
+        'resource "aws_codepipeline" "release" {\n'
+        "  stage {\n"
+        '    name = "Build"\n'
+        "    action { role_arn = aws_iam_role.build.arn }\n"
+        "  }\n"
+        "  stage {\n"
+        '    name = "Deploy"\n'
+        "    action { role_arn = aws_iam_role.deploy.arn }\n"
+        "  }\n"
+        "}"
+    ),
 )
 
 

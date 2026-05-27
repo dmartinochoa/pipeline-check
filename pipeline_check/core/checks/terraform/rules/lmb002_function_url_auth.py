@@ -25,6 +25,20 @@ RULE = Rule(
         "AWS_IAM with a scoped resource policy is almost always the "
         "right answer."
     ),
+    exploit_example=(
+        "# Vulnerable: function URL has no auth. Anyone on the\n"
+        "# internet can invoke the function.\n"
+        'resource "aws_lambda_function_url" "public" {\n'
+        "  function_name      = aws_lambda_function.api.function_name\n"
+        '  authorization_type = "NONE"\n'
+        "}\n"
+        "\n"
+        "# Safe: require AWS IAM auth.\n"
+        'resource "aws_lambda_function_url" "authed" {\n'
+        "  function_name      = aws_lambda_function.api.function_name\n"
+        '  authorization_type = "AWS_IAM"\n'
+        "}"
+    ),
 )
 
 

@@ -545,5 +545,22 @@ STANDARD = Standard(
         # being pulled into the pipeline). Other SCM rules cover
         # source-side governance, not container risk.
         "SCM-022": ["4.1.5"],
+        # ── Azure Cloud (container-adjacent rules) ────────────────────
+        "AZST-001":  ["4.2.3"],                    # public blob access (registry auth/authz)
+        "AZST-002":  ["4.2.1"],                    # non-HTTPS traffic (insecure registry conn)
+        "AZST-003":  ["4.2.3"],                    # no CMK encryption
+        "AKV-001":   ["4.1.4"],                    # soft delete off (secret recoverability)
+        "AKV-002":   ["4.1.4"],                    # purge protection off
+        "AKV-003":   ["4.2.3"],                    # network ACLs allow all
+        "ACR-001":   ["4.2.3"],                    # admin user enabled
+        "ACR-002":   ["4.2.3"],                    # public network access
+        "ACR-003":   ["4.1.5"],                    # content trust not enabled
+        # ── GCP (container-adjacent rules) ────────────────────────────
+        "GCS-001":   ["4.2.3"],                    # public bucket
+        "GCS-002":   ["4.2.3"],                    # no uniform access
+        "GCKMS-002": ["4.2.3"],                    # public KMS key access
+        "GAR-001":   ["4.1.1"],                    # no vulnerability scanning
+        "GAR-002":   ["4.2.3"],                    # publicly readable repo
+        "GAR-003":   ["4.2.2"],                    # no cleanup policy (stale images)
     },
 )

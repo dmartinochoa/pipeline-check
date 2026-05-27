@@ -69,6 +69,18 @@ RULE = Rule(
         "session. A restricted token would have limited the damage "
         "to the specific package and IP range.",
     ),
+    exploit_example=(
+        "# Vulnerable: legacy UUID-shaped token with no scope\n"
+        "# restrictions. A leak lets the attacker publish any\n"
+        "# version of any package the token's owner maintains.\n"
+        "# .npmrc\n"
+        "//registry.npmjs.org/:_authToken=<legacy-uuid-token>\n"
+        "\n"
+        "# Safe: granular access token with npm_ prefix (server-\n"
+        "# side scope and IP restrictions).\n"
+        "# .npmrc\n"
+        "//registry.npmjs.org/:_authToken=npm_<granular-token>"
+    ),
 )
 
 

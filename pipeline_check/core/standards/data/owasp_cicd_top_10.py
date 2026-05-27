@@ -694,5 +694,37 @@ STANDARD = Standard(
         "GHA-102":  ["CICD-SEC-3", "CICD-SEC-4"],  # submodule checkout on PR trigger
         # npm supply-chain posture
         "NPM-012":  ["CICD-SEC-3", "CICD-SEC-6"],  # publish token missing restrictions
+        # Azure Cloud posture
+        "ENTRA-001": ["CICD-SEC-2"],                # SP assigned Global Administrator
+        "ENTRA-002": ["CICD-SEC-2"],                # app credential beyond 180 days
+        "ENTRA-003": ["CICD-SEC-2"],                # SP uses password credential
+        "AZST-001":  ["CICD-SEC-9"],                # public blob access
+        "AZST-002":  ["CICD-SEC-9"],                # non-HTTPS traffic
+        "AZST-003":  ["CICD-SEC-9"],                # no CMK encryption
+        "AKV-001":   ["CICD-SEC-9"],                # soft delete not enabled
+        "AKV-002":   ["CICD-SEC-9"],                # purge protection not enabled
+        "AKV-003":   ["CICD-SEC-9"],                # network ACLs allow all
+        "ACR-001":   ["CICD-SEC-2"],                # admin user enabled
+        "ACR-002":   ["CICD-SEC-9"],                # public network access
+        "ACR-003":   ["CICD-SEC-9"],                # content trust not enabled
+        "AZMON-001": ["CICD-SEC-10"],               # no diagnostic setting
+        "AZMON-002": ["CICD-SEC-10"],               # log retention < 365 days
+        "AZMON-003": ["CICD-SEC-10"],               # no alert rule
+        # GCP cloud posture
+        "GCIAM-001": ["CICD-SEC-2"],                # SA has Owner/Editor role
+        "GCIAM-002": ["CICD-SEC-2"],                # user-managed SA key
+        "GCIAM-003": ["CICD-SEC-2"],                # token creator without condition
+        "GCS-001":   ["CICD-SEC-9"],                # public bucket
+        "GCS-002":   ["CICD-SEC-9"],                # no uniform access
+        "GCS-003":   ["CICD-SEC-9"],                # versioning not enabled
+        "GCKMS-001": ["CICD-SEC-9"],                # key rotation > 365 days
+        "GCKMS-002": ["CICD-SEC-9"],                # public KMS key access
+        "GCKMS-003": ["CICD-SEC-9"],                # no HSM protection
+        "GAR-001":   ["CICD-SEC-9"],                # no vulnerability scanning
+        "GAR-002":   ["CICD-SEC-9"],                # publicly readable repo
+        "GAR-003":   ["CICD-SEC-9"],                # no cleanup policy
+        "GCLOG-001": ["CICD-SEC-10"],               # audit logs not enabled
+        "GCLOG-002": ["CICD-SEC-10"],               # no log sink
+        "GCLOG-003": ["CICD-SEC-10"],               # log retention < 365 days
     },
 )

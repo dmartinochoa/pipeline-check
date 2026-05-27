@@ -25,6 +25,28 @@ RULE = Rule(
         "``xox*``, JWTs). Env vars are visible to anyone with "
         "``lambda:GetFunctionConfiguration``."
     ),
+    exploit_example=(
+        "# Vulnerable: secret stored as a plaintext Lambda env\n"
+        "# var. Visible in the AWS console and API responses.\n"
+        'resource "aws_lambda_function" "api" {\n'
+        "  function_name = \"api\"\n"
+        "  environment {\n"
+        "    variables = {\n"
+        '      DB_PASSWORD = "hunter2"\n'
+        "    }\n"
+        "  }\n"
+        "}\n"
+        "\n"
+        "# Safe: reference Secrets Manager at runtime.\n"
+        'resource "aws_lambda_function" "api" {\n'
+        "  function_name = \"api\"\n"
+        "  environment {\n"
+        "    variables = {\n"
+        "      DB_SECRET_ARN = aws_secretsmanager_secret.db.arn\n"
+        "    }\n"
+        "  }\n"
+        "}"
+    ),
 )
 
 

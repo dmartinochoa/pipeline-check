@@ -603,5 +603,37 @@ STANDARD = Standard(
         "TF-002":  ["Token-Permissions"],          # hard-coded secret in resource attr
         "CF-001":  ["Token-Permissions"],          # AWS::IAM::AccessKey declared as code
         "CF-002":  ["Token-Permissions"],          # hard-coded secret in resource property
+        # ── Azure Cloud (Entra ID / Storage / Key Vault / ACR / Monitor) ──
+        "ENTRA-001": ["Token-Permissions"],                # SP assigned Global Administrator
+        "ENTRA-002": ["Token-Permissions"],                # app credential beyond 180 days
+        "ENTRA-003": ["Token-Permissions"],                # SP uses password credential
+        "AZST-001":  ["Token-Permissions"],                # public blob access
+        "AZST-002":  ["Pinned-Dependencies"],              # non-HTTPS traffic
+        "AZST-003":  ["Token-Permissions"],                # no CMK encryption
+        "AKV-001":   ["Token-Permissions"],                # soft delete not enabled
+        "AKV-002":   ["Token-Permissions"],                # purge protection not enabled
+        "AKV-003":   ["Token-Permissions"],                # network ACLs allow all
+        "ACR-001":   ["Token-Permissions"],                # admin user enabled
+        "ACR-002":   ["Token-Permissions"],                # public network access
+        "ACR-003":   ["Signed-Releases"],                  # content trust not enabled
+        "AZMON-001": ["Branch-Protection"],                # no diagnostic setting
+        "AZMON-002": ["Branch-Protection"],                # log retention < 365 days
+        "AZMON-003": ["Branch-Protection"],                # no alert rule
+        # ── GCP (IAM / GCS / KMS / Artifact Registry / Cloud Logging) ────
+        "GCIAM-001": ["Token-Permissions"],                # SA has Owner/Editor role
+        "GCIAM-002": ["Token-Permissions"],                # user-managed SA key
+        "GCIAM-003": ["Token-Permissions"],                # token creator without condition
+        "GCS-001":   ["Token-Permissions"],                # public bucket
+        "GCS-002":   ["Token-Permissions"],                # no uniform access
+        "GCS-003":   ["Token-Permissions"],                # versioning not enabled
+        "GCKMS-001": ["Token-Permissions"],                # key rotation > 365 days
+        "GCKMS-002": ["Token-Permissions"],                # public KMS key access
+        "GCKMS-003": ["Token-Permissions"],                # no HSM protection
+        "GAR-001":   ["Vulnerabilities", "SAST"],          # no vulnerability scanning
+        "GAR-002":   ["Token-Permissions"],                # publicly readable repo
+        "GAR-003":   ["Pinned-Dependencies"],              # no cleanup policy
+        "GCLOG-001": ["Branch-Protection"],                # audit logs not enabled
+        "GCLOG-002": ["Branch-Protection"],                # no log sink
+        "GCLOG-003": ["Branch-Protection"],                # log retention < 365 days
     },
 )

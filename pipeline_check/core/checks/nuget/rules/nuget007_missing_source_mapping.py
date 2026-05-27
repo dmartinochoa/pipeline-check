@@ -26,6 +26,28 @@ RULE = Rule(
         "Fires when NuGet.config has more than one package source "
         "and no ``packageSourceMapping`` section."
     ),
+    exploit_example=(
+        "# Vulnerable: two sources, no mapping. NuGet queries both\n"
+        "# and installs the highest version found across them.\n"
+        "# An attacker publishes Contoso.Internal 99.0.0 on\n"
+        "# nuget.org; NuGet picks it over the real 2.1.0 from\n"
+        "# the private feed.\n"
+        "<!-- NuGet.config -->\n"
+        "<packageSources>\n"
+        '  <add key="nuget.org" value="https://api.nuget.org/v3/index.json" />\n'
+        '  <add key="internal" value="https://nuget.corp.local/v3/index.json" />\n'
+        "</packageSources>\n"
+        "\n"
+        "# Safe: add packageSourceMapping.\n"
+        "<packageSourceMapping>\n"
+        '  <packageSource key="nuget.org">\n'
+        '    <package pattern="*" />\n'
+        "  </packageSource>\n"
+        '  <packageSource key="internal">\n'
+        '    <package pattern="Contoso.*" />\n'
+        "  </packageSource>\n"
+        "</packageSourceMapping>"
+    ),
 )
 
 

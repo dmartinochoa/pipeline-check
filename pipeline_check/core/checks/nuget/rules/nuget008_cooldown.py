@@ -24,6 +24,19 @@ RULE = Rule(
         "publish timestamps from ``api.nuget.org``. Passes silently "
         "when the flag is off."
     ),
+    exploit_example=(
+        "# Vulnerable: consuming a version published 2 hours ago.\n"
+        "# Most account-takeover publishes are detected and yanked\n"
+        "# within hours-to-days; the next dotnet restore pulls the\n"
+        "# compromised package before the takedown.\n"
+        "<!-- app.csproj -->\n"
+        '<PackageReference Include="PopularLib" Version="5.3.1" />\n'
+        "<!-- 5.3.1 was published 2 hours ago -->\n"
+        "\n"
+        "# Safe: pin to a version published before the cooldown\n"
+        "# window, or wait until the cooldown elapses.\n"
+        '<PackageReference Include="PopularLib" Version="5.3.0" />'
+    ),
 )
 
 

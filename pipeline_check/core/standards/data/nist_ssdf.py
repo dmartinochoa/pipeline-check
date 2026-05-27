@@ -743,5 +743,37 @@ STANDARD = Standard(
         "SCM-048":  ["PO.5.1"],                        # org codespace secrets scoped to all repos
         "SCM-049":  ["PS.1.1"],                        # classic PAT where fine-grained suffices
         "NPM-012":  ["PS.1.1"],                        # publish token missing restrictions
+        # ── Azure Cloud (Entra ID / Storage / Key Vault / ACR / Monitor) ──
+        "ENTRA-001": ["PO.5.1"],                       # SP assigned Global Administrator
+        "ENTRA-002": ["PS.1.1"],                       # app credential beyond 180 days
+        "ENTRA-003": ["PS.1.1"],                       # SP uses password credential
+        "AZST-001":  ["PO.5.1", "PS.1.1"],             # public blob access
+        "AZST-002":  ["PW.4.4"],                       # non-HTTPS traffic
+        "AZST-003":  ["PS.1.1"],                       # no CMK encryption
+        "AKV-001":   ["PS.1.1", "PS.3.1"],             # soft delete not enabled
+        "AKV-002":   ["PS.1.1", "PS.3.1"],             # purge protection not enabled
+        "AKV-003":   ["PO.5.1", "PS.1.1"],             # network ACLs allow all
+        "ACR-001":   ["PO.5.1"],                       # admin user enabled
+        "ACR-002":   ["PO.5.1", "PS.1.1"],             # public network access
+        "ACR-003":   ["PS.2.1", "PS.3.2"],             # content trust not enabled
+        "AZMON-001": ["PO.3.3"],                       # no diagnostic setting
+        "AZMON-002": ["PO.3.3"],                       # log retention < 365 days
+        "AZMON-003": ["PO.3.3", "RV.1.1"],             # no alert rule
+        # ── GCP (IAM / GCS / KMS / Artifact Registry / Cloud Logging) ────
+        "GCIAM-001": ["PO.5.1"],                       # SA has Owner/Editor role
+        "GCIAM-002": ["PS.1.1"],                       # user-managed SA key
+        "GCIAM-003": ["PO.5.1"],                       # token creator without condition
+        "GCS-001":   ["PO.5.1", "PS.1.1"],             # public bucket
+        "GCS-002":   ["PO.5.1"],                       # no uniform access
+        "GCS-003":   ["PS.3.1"],                       # versioning not enabled
+        "GCKMS-001": ["PS.1.1"],                       # key rotation > 365 days
+        "GCKMS-002": ["PO.5.1", "PS.1.1"],             # public KMS key access
+        "GCKMS-003": ["PS.1.1"],                       # no HSM protection
+        "GAR-001":   ["RV.1.1"],                       # no vulnerability scanning
+        "GAR-002":   ["PO.5.1", "PS.1.1"],             # publicly readable repo
+        "GAR-003":   ["PO.3.2"],                       # no cleanup policy
+        "GCLOG-001": ["PO.3.3"],                       # audit logs not enabled
+        "GCLOG-002": ["PO.3.3"],                       # no log sink
+        "GCLOG-003": ["PO.3.3"],                       # log retention < 365 days
     },
 )

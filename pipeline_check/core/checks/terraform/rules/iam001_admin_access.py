@@ -28,6 +28,26 @@ RULE = Rule(
         "joined to the role, fires when "
         "``arn:aws:iam::aws:policy/AdministratorAccess`` appears."
     ),
+    exploit_example=(
+        "# Vulnerable: the CI role carries AdministratorAccess.\n"
+        "# A compromised build step can create IAM users, delete\n"
+        "# S3 buckets, or pivot to any service in the account.\n"
+        'resource "aws_iam_role" "ci" {\n'
+        '  name               = "codebuild-ci"\n'
+        "  assume_role_policy = data.aws_iam_policy_document.cb_trust.json\n"
+        '  managed_policy_arns = ["arn:aws:iam::aws:policy/AdministratorAccess"]\n'
+        "}\n"
+        "\n"
+        "# Safe: scope to only the actions the build needs.\n"
+        'resource "aws_iam_role" "ci" {\n'
+        '  name               = "codebuild-ci"\n'
+        "  assume_role_policy = data.aws_iam_policy_document.cb_trust.json\n"
+        "  managed_policy_arns = [\n"
+        '    "arn:aws:iam::aws:policy/AmazonS3ReadOnlyAccess",\n'
+        '    "arn:aws:iam::aws:policy/AmazonECRFullAccess",\n'
+        "  ]\n"
+        "}"
+    ),
 )
 
 

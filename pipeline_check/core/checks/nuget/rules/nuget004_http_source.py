@@ -25,6 +25,19 @@ RULE = Rule(
         "Fires when a ``<packageSources>`` entry in NuGet.config "
         "uses an ``http://`` URL."
     ),
+    exploit_example=(
+        "# Vulnerable: plaintext-HTTP source. A network attacker\n"
+        "# can swap packages in flight (MITM).\n"
+        "<!-- NuGet.config -->\n"
+        "<packageSources>\n"
+        '  <add key="internal" value="http://nuget.corp.local/v3/index.json" />\n'
+        "</packageSources>\n"
+        "\n"
+        "# Safe: use HTTPS.\n"
+        "<packageSources>\n"
+        '  <add key="internal" value="https://nuget.corp.local/v3/index.json" />\n'
+        "</packageSources>"
+    ),
 )
 
 
