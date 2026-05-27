@@ -192,28 +192,50 @@ to force one. Counts reflect the current rule catalog.
 </p>
 </div>
 
-<div class="pg-providers" data-stagger>
-  <a class="pg-provider" href="providers/aws/"><span class="pg-provider__name">AWS</span><span class="pg-provider__count">{{ providers.aws.checks }}</span></a>
-  <a class="pg-provider" href="providers/terraform/"><span class="pg-provider__name">Terraform</span><span class="pg-provider__count">{{ providers.terraform.checks }}</span></a>
-  <a class="pg-provider" href="providers/cloudformation/"><span class="pg-provider__name">CloudFormation</span><span class="pg-provider__count">{{ providers.cloudformation.checks }}</span></a>
+<div class="pg-provider-group" data-stagger>
+  <span class="pg-provider-group__label">CI/CD platforms</span>
   <a class="pg-provider" href="providers/github/"><span class="pg-provider__name">GitHub Actions</span><span class="pg-provider__count">{{ providers.github.checks }}</span></a>
   <a class="pg-provider" href="providers/gitlab/"><span class="pg-provider__name">GitLab CI</span><span class="pg-provider__count">{{ providers.gitlab.checks }}</span></a>
-  <a class="pg-provider" href="providers/bitbucket/"><span class="pg-provider__name">Bitbucket</span><span class="pg-provider__count">{{ providers.bitbucket.checks }}</span></a>
+  <a class="pg-provider" href="providers/bitbucket/"><span class="pg-provider__name">Bitbucket Pipelines</span><span class="pg-provider__count">{{ providers.bitbucket.checks }}</span></a>
   <a class="pg-provider" href="providers/azure/"><span class="pg-provider__name">Azure DevOps</span><span class="pg-provider__count">{{ providers.azure.checks }}</span></a>
   <a class="pg-provider" href="providers/jenkins/"><span class="pg-provider__name">Jenkins</span><span class="pg-provider__count">{{ providers.jenkins.checks }}</span></a>
   <a class="pg-provider" href="providers/circleci/"><span class="pg-provider__name">CircleCI</span><span class="pg-provider__count">{{ providers.circleci.checks }}</span></a>
-  <a class="pg-provider" href="providers/cloudbuild/"><span class="pg-provider__name">Cloud Build</span><span class="pg-provider__count">{{ providers.cloudbuild.checks }}</span></a>
+  <a class="pg-provider" href="providers/cloudbuild/"><span class="pg-provider__name">Google Cloud Build</span><span class="pg-provider__count">{{ providers.cloudbuild.checks }}</span></a>
   <a class="pg-provider" href="providers/buildkite/"><span class="pg-provider__name">Buildkite</span><span class="pg-provider__count">{{ providers.buildkite.checks }}</span></a>
   <a class="pg-provider" href="providers/drone/"><span class="pg-provider__name">Drone CI</span><span class="pg-provider__count">{{ providers.drone.checks }}</span></a>
   <a class="pg-provider" href="providers/tekton/"><span class="pg-provider__name">Tekton</span><span class="pg-provider__count">{{ providers.tekton.checks }}</span></a>
   <a class="pg-provider" href="providers/argo/"><span class="pg-provider__name">Argo Workflows</span><span class="pg-provider__count">{{ providers.argo.checks }}</span></a>
-  <a class="pg-provider" href="providers/argocd/"><span class="pg-provider__name">Argo CD</span><span class="pg-provider__count">{{ providers.argocd.checks }}</span></a>
+</div>
+
+<div class="pg-provider-group" data-stagger>
+  <span class="pg-provider-group__label">Cloud & infrastructure as code</span>
+  <a class="pg-provider" href="providers/aws/"><span class="pg-provider__name">AWS</span><span class="pg-provider__count">{{ providers.aws.checks }}</span></a>
+  <a class="pg-provider" href="providers/terraform/"><span class="pg-provider__name">Terraform</span><span class="pg-provider__count">{{ providers.terraform.checks }}</span></a>
+  <a class="pg-provider" href="providers/cloudformation/"><span class="pg-provider__name">CloudFormation</span><span class="pg-provider__count">{{ providers.cloudformation.checks }}</span></a>
+</div>
+
+<div class="pg-provider-group" data-stagger>
+  <span class="pg-provider-group__label">Containers & deployment</span>
   <a class="pg-provider" href="providers/dockerfile/"><span class="pg-provider__name">Dockerfile</span><span class="pg-provider__count">{{ providers.dockerfile.checks }}</span></a>
   <a class="pg-provider" href="providers/kubernetes/"><span class="pg-provider__name">Kubernetes</span><span class="pg-provider__count">{{ providers.kubernetes.checks }}</span></a>
   <a class="pg-provider" href="providers/helm/"><span class="pg-provider__name">Helm</span><span class="pg-provider__count">{{ providers.helm.checks }}</span></a>
+  <a class="pg-provider" href="providers/argocd/"><span class="pg-provider__name">Argo CD</span><span class="pg-provider__count">{{ providers.argocd.checks }}</span></a>
   <a class="pg-provider" href="providers/oci/"><span class="pg-provider__name">OCI manifest</span><span class="pg-provider__count">{{ providers.oci.checks }}</span></a>
-  <a class="pg-provider pg-provider--wide" href="providers/scm/"><span class="pg-provider__name">SCM posture (GitHub / GitLab / Bitbucket)</span><span class="pg-provider__count">{{ providers.scm.checks }}</span></a>
-  <a class="pg-provider pg-provider--wide" href="providers/registries/"><span class="pg-provider__name">Package registries (npm / PyPI / Maven / NuGet)</span><span class="pg-provider__count">{{ providers.registries.checks }}</span></a>
+</div>
+
+<div class="pg-provider-group" data-stagger>
+  <span class="pg-provider-group__label">SCM posture</span>
+  <a class="pg-provider" href="providers/scm/"><span class="pg-provider__name">GitHub</span><span class="pg-provider__count">{{ providers.scm.checks }}</span></a>
+  <a class="pg-provider" href="providers/scm/"><span class="pg-provider__name">GitLab</span><span class="pg-provider__count">{{ providers.scm.checks }}</span></a>
+  <a class="pg-provider" href="providers/scm/"><span class="pg-provider__name">Bitbucket</span><span class="pg-provider__count">{{ providers.scm.checks }}</span></a>
+</div>
+
+<div class="pg-provider-group" data-stagger>
+  <span class="pg-provider-group__label">Package registries</span>
+  <a class="pg-provider" href="providers/npm/"><span class="pg-provider__name">npm</span><span class="pg-provider__count">{{ providers.npm.checks }}</span></a>
+  <a class="pg-provider" href="providers/pypi/"><span class="pg-provider__name">PyPI</span><span class="pg-provider__count">{{ providers.pypi.checks }}</span></a>
+  <a class="pg-provider" href="providers/maven/"><span class="pg-provider__name">Maven</span><span class="pg-provider__count">{{ providers.maven.checks }}</span></a>
+  <a class="pg-provider" href="providers/nuget/"><span class="pg-provider__name">NuGet</span><span class="pg-provider__count">{{ providers.nuget.checks }}</span></a>
 </div>
 </section>
 
@@ -253,23 +275,30 @@ to force one. Counts reflect the current rule catalog.
 </div>
 
 <div class="pg-pipeline-out">
+  <div class="pg-pipeline-out__formats">
+  <div class="pg-pipeline-out__header">Output formats</div>
   <div class="pg-pipeline-out__row" data-stagger>
     <a class="pg-pipe-out" href="output/#terminal">
+      <span class="pg-pipe-out__icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="4 17 10 11 4 5"/><line x1="12" y1="19" x2="20" y2="19"/></svg></span>
       <span class="pg-pipe-out__name">Terminal</span>
       <span class="pg-pipe-out__desc">Rich color table for humans</span>
     </a>
     <a class="pg-pipe-out" href="output/#json">
+      <span class="pg-pipe-out__icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 3H7a2 2 0 0 0-2 2v5a2 2 0 0 1-2 2 2 2 0 0 1 2 2v5a2 2 0 0 0 2 2h1"/><path d="M16 3h1a2 2 0 0 1 2 2v5a2 2 0 0 0 2 2 2 2 0 0 0-2 2v5a2 2 0 0 1-2 2h-1"/></svg></span>
       <span class="pg-pipe-out__name">JSON</span>
       <span class="pg-pipe-out__desc">Machine-parseable for scripts</span>
     </a>
     <a class="pg-pipe-out" href="output/#html">
+      <span class="pg-pipe-out__icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg></span>
       <span class="pg-pipe-out__name">HTML report</span>
       <span class="pg-pipe-out__desc">Client-side filters, shareable</span>
     </a>
     <a class="pg-pipe-out" href="output/#sarif">
+      <span class="pg-pipe-out__icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><polyline points="9 12 11 14 15 10"/></svg></span>
       <span class="pg-pipe-out__name">SARIF 2.1.0</span>
       <span class="pg-pipe-out__desc">GitHub code scanning, Defender</span>
     </a>
+  </div>
   </div>
   <div class="pg-pipeline-gate" data-stagger>
     <a class="pg-pipe-gate" href="ci_gate/">
@@ -295,7 +324,7 @@ to force one. Counts reflect the current rule catalog.
 </div>
 
 <div class="pg-patrol">
-  <img class="pg-patrol__embed" src="patrol.svg" alt="Pipeline-Check goose patrolling a CI/CD pipeline rail: pauses at the SCAN node and stamps a build DENIED" loading="lazy">
+  <img class="pg-patrol__embed" src="patrol.svg" alt="Pipeline-Check goose patrolling a CI/CD pipeline rail: pauses at the SCAN node, stamps DENIED, and turns back" loading="lazy">
 </div>
 </section>
 
