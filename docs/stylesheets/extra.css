@@ -1729,28 +1729,49 @@ img.pg-hero__mark {
 }
 .pg-feature a.pg-feature__link:hover::after { transform: translateX(2px); }
 
-/* ----- Provider grid (compact, mono labels) ----------------
-   Min width 180px keeps the longest provider names — CloudFormation,
-   GitHub Actions, Azure DevOps — on a single line so card heights
-   stay uniform across the row. */
+/* ----- Provider grid ----------------------------------------
+   Fixed 4-column layout prevents orphan items on the last row
+   from stretching to fill available space. Drops to 3 → 2 → 1
+   columns at narrower viewports. The last two entries (SCM
+   posture, Package registries) have long names with parenthetical
+   lists; they span 2 columns so the text can breathe. */
 .pg-providers {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-  gap: 0.6rem;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 0.55rem;
+}
+
+@media (max-width: 960px) {
+  .pg-providers {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+@media (max-width: 640px) {
+  .pg-providers {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 400px) {
+  .pg-providers {
+    grid-template-columns: 1fr;
+  }
 }
 
 .pg-provider {
   background: var(--md-default-bg-color);
   border: 1px solid var(--md-default-fg-color--lightest);
   border-radius: 10px;
-  padding: 0.85rem 1rem;
+  padding: 0.7rem 0.9rem;
   text-align: left;
   text-decoration: none;
   color: var(--md-default-fg-color);
   transition: border-color 0.15s ease, color 0.15s ease, background 0.15s ease;
   display: flex;
-  flex-direction: column;
-  gap: 0.15rem;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.5rem;
 }
 
 .pg-provider:hover {
@@ -1767,8 +1788,12 @@ img.pg-hero__mark {
 
 .pg-provider__name {
   font-weight: 600;
-  font-size: 0.9rem;
+  font-size: 0.86rem;
   letter-spacing: -0.005em;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  min-width: 0;
 }
 
 .pg-provider__count {
@@ -1776,6 +1801,19 @@ img.pg-hero__mark {
   font-size: 0.72rem;
   color: var(--md-default-fg-color--light);
   letter-spacing: 0.04em;
+  flex-shrink: 0;
+  white-space: nowrap;
+}
+
+/* Wide entries: long parenthetical names span 2 columns */
+.pg-provider--wide {
+  grid-column: span 2;
+}
+
+@media (max-width: 400px) {
+  .pg-provider--wide {
+    grid-column: span 1;
+  }
 }
 
 /* ----- Mermaid container ----------------------------------- */
@@ -2038,69 +2076,316 @@ img.pg-hero__mark {
 .pg-flow__card a::after { content: ""; }
 
 /* ----- Output formats grid -------------------------------- */
-.pg-outputs {
-  margin-top: 4rem;
-  padding-top: 2.5rem;
-  border-top: 1px solid var(--md-default-fg-color--lightest);
+/* ============================================================
+   Pipeline visualization (custom HTML replacement for Mermaid)
+   ============================================================ */
+
+.pg-pipeline {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 0;
+  position: relative;
+  margin: 1.5rem 0 0;
 }
 
-.pg-outputs__head {
-  margin-bottom: 1.25rem;
+.pg-pipe {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  padding: 1.25rem 0.6rem 1rem;
+  text-decoration: none !important;
+  color: var(--md-default-fg-color);
+  border-radius: 12px;
+  transition: background 0.2s var(--ease-out), transform 0.2s var(--ease-out),
+              box-shadow 0.2s var(--ease-out);
 }
 
-.pg-outputs__lede {
-  font-size: 1.05rem;
-  font-weight: 600;
-  margin: 0.4rem 0 0;
+.pg-pipe:hover {
+  background: color-mix(in oklab, var(--md-default-bg-color) 88%, var(--pg-teal-500));
+  transform: translateY(-3px);
+  box-shadow: 0 12px 28px -14px color-mix(in oklab, var(--pg-teal-500) 50%, transparent);
+}
+
+/* Connecting arrows between pipeline stages */
+.pg-pipe:not(:last-child)::after {
+  content: "";
+  position: absolute;
+  right: -2px;
+  top: 50%;
+  width: 16px;
+  height: 2px;
+  background: var(--pg-teal-500);
+  opacity: 0.5;
+  z-index: 2;
+  transform: translateY(-50%);
+}
+
+.pg-pipe:not(:last-child)::before {
+  content: "";
+  position: absolute;
+  right: -6px;
+  top: 50%;
+  width: 6px;
+  height: 6px;
+  border-right: 2px solid var(--pg-teal-500);
+  border-bottom: 2px solid var(--pg-teal-500);
+  transform: translateY(-50%) rotate(-45deg);
+  opacity: 0.5;
+  z-index: 2;
+}
+
+.pg-pipe__icon {
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: color-mix(in oklab, var(--md-default-bg-color) 82%, var(--pg-teal-500));
+  color: var(--pg-teal-500);
+  margin-bottom: 0.65rem;
+  transition: background 0.2s var(--ease-out), color 0.2s var(--ease-out),
+              transform 0.2s var(--ease-out);
+}
+
+.pg-pipe__icon svg {
+  width: 20px;
+  height: 20px;
+}
+
+.pg-pipe:hover .pg-pipe__icon {
+  background: var(--pg-teal-500);
+  color: #fff;
+  transform: scale(1.1);
+}
+
+[data-md-color-scheme="slate"] .pg-pipe__icon {
+  background: color-mix(in oklab, var(--md-default-bg-color) 75%, var(--pg-teal-500));
+  color: var(--pg-teal-400);
+}
+
+[data-md-color-scheme="slate"] .pg-pipe:hover .pg-pipe__icon {
+  background: var(--pg-teal-500);
+  color: #fff;
+}
+
+.pg-pipe__label {
+  font-weight: var(--fw-card-h);
+  font-size: 0.88rem;
   letter-spacing: -0.015em;
   color: var(--md-default-fg-color);
+  margin-bottom: 0.2rem;
 }
 
-.pg-outputs__grid {
-  list-style: none;
-  margin: 0;
-  padding: 0;
+.pg-pipe:hover .pg-pipe__label {
+  color: var(--pg-teal-500);
+}
+
+[data-md-color-scheme="slate"] .pg-pipe:hover .pg-pipe__label {
+  color: var(--pg-teal-400);
+}
+
+.pg-pipe__desc {
+  font-size: 0.72rem;
+  color: var(--md-default-fg-color--lighter);
+  line-height: 1.4;
+  max-width: 14ch;
+}
+
+.pg-pipe__desc code {
+  font-size: 0.9em;
+  background: none !important;
+  border: none !important;
+  padding: 0 !important;
+  color: var(--pg-teal-500);
+}
+
+/* Source node — pill shape */
+.pg-pipe--src .pg-pipe__icon {
+  background: color-mix(in oklab, var(--pg-navy-900) 70%, var(--pg-teal-500));
+  border: 1px solid var(--pg-teal-500);
+}
+
+/* ── Pipeline output row + gate ───────────────────────────── */
+
+.pg-pipeline-out {
+  margin-top: 1.5rem;
+  display: flex;
+  gap: 1.25rem;
+  align-items: stretch;
+}
+
+.pg-pipeline-out__row {
+  flex: 1;
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-  gap: 0.65rem;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 0.55rem;
 }
 
-.pg-output {
+.pg-pipe-out {
   display: flex;
   flex-direction: column;
   gap: 0.2rem;
-  padding: 0.85rem 1rem;
-  background: var(--md-default-bg-color);
-  border: 1px solid var(--md-default-fg-color--lightest);
+  padding: 0.8rem 0.85rem;
+  background: color-mix(in oklab, var(--md-default-bg-color) 92%, var(--pg-teal-500));
+  border: 1px solid color-mix(in oklab, var(--pg-teal-500) 25%, var(--md-default-fg-color--lightest));
   border-radius: 10px;
   text-decoration: none !important;
   color: var(--md-default-fg-color);
-  transition: border-color 0.15s ease, color 0.15s ease, background 0.15s ease;
+  transition: border-color 0.18s ease, background 0.18s ease,
+              transform 0.2s var(--ease-out), box-shadow 0.2s var(--ease-out);
 }
 
-.pg-output:hover {
+.pg-pipe-out:hover {
   border-color: var(--pg-teal-500);
-  background: color-mix(in oklab, var(--md-default-bg-color) 96%, var(--pg-teal-500));
+  background: color-mix(in oklab, var(--md-default-bg-color) 86%, var(--pg-teal-500));
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px -12px color-mix(in oklab, var(--pg-teal-500) 40%, transparent);
 }
 
-.pg-output strong {
-  font-size: 0.88rem;
-  font-weight: 600;
-  color: var(--md-default-fg-color);
+.pg-pipe-out__name {
+  font-size: 0.84rem;
+  font-weight: var(--fw-semibold);
+  color: var(--pg-teal-500);
 }
 
-.pg-output span {
-  font-size: 0.78rem;
+[data-md-color-scheme="slate"] .pg-pipe-out__name {
+  color: var(--pg-teal-400);
+}
+
+.pg-pipe-out__desc {
+  font-size: 0.72rem;
   color: var(--md-default-fg-color--light);
-  font-family: "JetBrains Mono", ui-monospace, monospace;
-  letter-spacing: 0.01em;
+  line-height: 1.4;
 }
 
-.pg-output:hover strong { color: var(--pg-teal-500); }
+.pg-pipe-out::after { content: "" !important; }
 
-[data-md-color-scheme="slate"] .pg-output:hover strong { color: var(--pg-teal-400); }
+/* ── CI gate + results ────────────────────────────────────── */
 
-.pg-output::after { content: "" !important; }
+.pg-pipeline-gate {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.45rem;
+  flex-shrink: 0;
+  min-width: 100px;
+}
+
+.pg-pipe-gate {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.3rem;
+  padding: 0.6rem 0.8rem;
+  border: 1.5px solid var(--pg-warn-500);
+  border-radius: 10px;
+  background: color-mix(in oklab, var(--md-default-bg-color) 94%, var(--pg-warn-500));
+  text-decoration: none !important;
+  color: var(--pg-warn-500);
+  transition: border-color 0.18s ease, background 0.18s ease,
+              transform 0.2s var(--ease-out);
+}
+
+.pg-pipe-gate:hover {
+  transform: translateY(-2px);
+  background: color-mix(in oklab, var(--md-default-bg-color) 88%, var(--pg-warn-500));
+}
+
+.pg-pipe-gate__icon {
+  width: 20px;
+  height: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.pg-pipe-gate__icon svg {
+  width: 18px;
+  height: 18px;
+}
+
+.pg-pipe-gate__label {
+  font-size: 0.72rem;
+  font-weight: var(--fw-semibold);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.pg-pipe-result {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  font-size: 0.68rem;
+  font-weight: var(--fw-medium);
+  letter-spacing: 0.02em;
+  padding: 0.2rem 0.5rem;
+  border-radius: var(--radius-pill);
+}
+
+.pg-pipe-result svg {
+  width: 12px;
+  height: 12px;
+}
+
+.pg-pipe-result--pass {
+  color: var(--pg-success-500);
+  background: color-mix(in oklab, var(--md-default-bg-color) 88%, var(--pg-success-500));
+}
+
+.pg-pipe-result--fail {
+  color: var(--pg-crit-500);
+  background: color-mix(in oklab, var(--md-default-bg-color) 90%, var(--pg-crit-500));
+}
+
+/* ── Pipeline responsive ──────────────────────────────────── */
+
+@media (max-width: 760px) {
+  .pg-pipeline {
+    grid-template-columns: 1fr;
+    gap: 0;
+  }
+
+  .pg-pipe {
+    flex-direction: row;
+    text-align: left;
+    gap: 0.75rem;
+    padding: 0.75rem 0.5rem;
+    border-radius: 8px;
+  }
+
+  .pg-pipe__icon {
+    margin-bottom: 0;
+    flex-shrink: 0;
+  }
+
+  .pg-pipe__desc {
+    max-width: none;
+  }
+
+  .pg-pipe:not(:last-child)::after,
+  .pg-pipe:not(:last-child)::before {
+    display: none;
+  }
+
+  .pg-pipeline-out {
+    flex-direction: column;
+    gap: 0.75rem;
+  }
+
+  .pg-pipeline-out__row {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .pg-pipeline-gate {
+    flex-direction: row;
+    gap: 0.6rem;
+    min-width: 0;
+  }
+}
 
 /* ----- Closing CTA (lighter dark, no heavy gradient) ------- */
 .pg-cta {
@@ -2662,35 +2947,18 @@ th.pg-sortable:focus-visible {
 .pg-stat,
 .pg-provider,
 .pg-doc-card,
-.pg-output,
+.pg-pipe,
+.pg-pipe-out,
 .pg-flow__step,
 .pg-flow__node {
   min-width: 0;
   overflow-wrap: break-word;
 }
 
-/* Provider chips — long names ("Google Cloud Build") were clipping
-   when the column dropped below ~200px. Allow the secondary
-   "checks" count to wrap to its own line on narrow widths. */
+/* Provider chips — keep text-decoration suppressed and let the
+   base rule handle layout (horizontal name + count). */
 .pg-provider {
-  display: flex;
-  flex-direction: column;
-  gap: 0.15rem;
-  padding: 0.85rem 1rem;
   text-decoration: none !important;
-}
-
-.pg-provider__name {
-  font-weight: 600;
-  font-size: 0.92rem;
-  letter-spacing: -0.005em;
-  overflow-wrap: anywhere;
-}
-
-.pg-provider__count {
-  font-size: 0.78rem;
-  color: var(--md-default-fg-color--light);
-  font-family: "JetBrains Mono", ui-monospace, monospace;
 }
 
 /* Stat numbers — at very narrow widths the four-column grid drops
@@ -3058,6 +3326,282 @@ th.pg-sortable:focus-visible {
 }
 
 /* ============================================================
+   Primary nav sidebar — parent section vs child item hierarchy
+   ============================================================
+   Material renders parent section labels (Getting started,
+   Coverage, Concepts) at the same weight as their child links,
+   making the nav feel like a flat list. These rules lift parent
+   labels into eyebrow-style section headers with uppercase
+   tracking, teal accent color, and extra spacing so the
+   grouping is immediately scannable. */
+
+/* ── Desktop primary nav (>= 76.25em) ──────────────────────── */
+
+@media screen and (min-width: 76.25em) {
+
+  .md-sidebar--primary .md-nav__list {
+    padding: 0.3rem 0.45rem;
+  }
+
+  .md-sidebar--primary .md-nav__link {
+    padding: 0.4rem 0.7rem;
+    border-radius: 6px;
+    font-size: 0.78rem;
+    color: var(--md-default-fg-color--light);
+    transition: background 0.15s ease, color 0.15s ease;
+    position: relative;
+  }
+
+  .md-sidebar--primary .md-nav__link:hover {
+    background: color-mix(in oklab,
+      var(--md-default-bg-color) 88%, var(--pg-teal-500));
+    color: var(--md-default-fg-color);
+  }
+
+  /* Active page link — teal accent + left bar */
+  .md-sidebar--primary .md-nav__link--active,
+  .md-sidebar--primary .md-nav__link[data-md-state="current"] {
+    color: var(--pg-teal-500);
+    font-weight: var(--fw-semibold);
+    background: color-mix(in oklab,
+      var(--md-default-bg-color) 90%, var(--pg-teal-500));
+  }
+
+  [data-md-color-scheme="slate"] .md-sidebar--primary .md-nav__link--active,
+  [data-md-color-scheme="slate"] .md-sidebar--primary .md-nav__link[data-md-state="current"] {
+    color: var(--pg-teal-300);
+  }
+
+  .md-sidebar--primary .md-nav__link--active::before {
+    content: "";
+    position: absolute;
+    left: 0;
+    top: 0.35em;
+    bottom: 0.35em;
+    width: 3px;
+    border-radius: 2px;
+    background: var(--pg-teal-500);
+  }
+
+  [data-md-color-scheme="slate"] .md-sidebar--primary .md-nav__link--active::before {
+    background: var(--pg-teal-300);
+  }
+
+  /* ── Parent section labels (level-0 nested items) ──────────── */
+
+  .md-nav--lifted > .md-nav__list > .md-nav__item--nested {
+    margin-top: 0.6rem;
+  }
+
+  .md-nav--lifted > .md-nav__list > .md-nav__item--nested:first-child {
+    margin-top: 0.15rem;
+  }
+
+  .md-nav--lifted > .md-nav__list > .md-nav__item--nested > .md-nav__link {
+    font-family: var(--font-mono);
+    font-size: 0.66rem;
+    font-weight: 650;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--pg-teal-500);
+    padding: 0.55rem 0.7rem 0.3rem;
+    background: transparent;
+    border-radius: 0;
+    border-bottom: 1px solid var(--md-default-fg-color--lightest);
+    margin-bottom: 0.15rem;
+  }
+
+  [data-md-color-scheme="slate"]
+    .md-nav--lifted > .md-nav__list > .md-nav__item--nested > .md-nav__link {
+    color: var(--pg-teal-400);
+  }
+
+  .md-nav--lifted > .md-nav__list > .md-nav__item--nested > .md-nav__link:hover {
+    color: var(--pg-teal-400);
+    background: transparent;
+  }
+
+  /* The disclosure caret on parent labels — shrink and mute */
+  .md-nav--lifted > .md-nav__list > .md-nav__item--nested > .md-nav__link .md-nav__icon {
+    width: 0.9rem;
+    height: 0.9rem;
+    color: var(--pg-teal-500);
+    opacity: 0.6;
+  }
+
+  [data-md-color-scheme="slate"]
+    .md-nav--lifted > .md-nav__list > .md-nav__item--nested > .md-nav__link .md-nav__icon {
+    color: var(--pg-teal-400);
+  }
+
+  /* ── Second-level section labels (e.g. "Providers" inside Coverage) ── */
+
+  .md-nav--lifted .md-nav .md-nav .md-nav__title {
+    font-family: var(--font-mono);
+    font-size: 0.62rem;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--md-default-fg-color--lighter);
+    padding: 0.7rem 0.7rem 0.25rem;
+    background: transparent;
+  }
+
+  /* ── Nested child items indent ────────────────────────────── */
+
+  .md-nav--lifted .md-nav[data-md-level="1"] .md-nav__list {
+    padding-left: 0.25rem;
+    border-left: 1px solid var(--md-default-fg-color--lightest);
+    margin-left: 0.55rem;
+  }
+
+  /* Scroll polish */
+  .md-sidebar--primary .md-sidebar__scrollwrap {
+    scrollbar-width: thin;
+    scrollbar-color: var(--md-default-fg-color--lighter) transparent;
+  }
+
+  .md-sidebar--primary .md-sidebar__scrollwrap::-webkit-scrollbar {
+    width: 5px;
+  }
+
+  .md-sidebar--primary .md-sidebar__scrollwrap::-webkit-scrollbar-thumb {
+    background: var(--md-default-fg-color--lighter);
+    border-radius: 3px;
+  }
+}
+
+/* ============================================================
+   TOC sidebar — visual hierarchy for H2 vs H3 entries
+   ============================================================
+   Material renders all TOC links at nearly the same weight and
+   size, so H2 section headings and their H3 children blur into
+   a flat list. These rules turn H2-level items into visible
+   category headers with spacing, weight, and a left accent bar,
+   while H3 children stay quiet and indented. */
+
+.md-nav--secondary .md-nav__title {
+  font-family: var(--font-mono);
+  font-size: 0.64rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--pg-teal-500);
+  padding: 0.6rem 0.75rem 0.4rem;
+  font-weight: 600;
+}
+
+[data-md-color-scheme="slate"] .md-nav--secondary .md-nav__title {
+  color: var(--pg-teal-400);
+}
+
+/* Top-level TOC items (H2 headings) — section separators */
+.md-nav--secondary > .md-nav__list > .md-nav__item {
+  margin-top: 0.15rem;
+  position: relative;
+}
+
+.md-nav--secondary > .md-nav__list > .md-nav__item:not(:first-child) {
+  margin-top: 0.5rem;
+  padding-top: 0.5rem;
+  border-top: 1px solid var(--md-default-fg-color--lightest);
+}
+
+.md-nav--secondary > .md-nav__list > .md-nav__item > .md-nav__link {
+  font-weight: var(--fw-semibold);
+  font-size: 0.76rem;
+  letter-spacing: -0.01em;
+  color: var(--md-default-fg-color);
+  padding: 0.35rem 0.75rem;
+  border-radius: var(--radius-tiny);
+  transition: color 0.15s ease, background 0.15s ease;
+}
+
+.md-nav--secondary > .md-nav__list > .md-nav__item > .md-nav__link:hover {
+  color: var(--pg-teal-500);
+  background: color-mix(in oklab,
+    var(--md-default-bg-color) 90%, var(--pg-teal-500));
+}
+
+[data-md-color-scheme="slate"]
+  .md-nav--secondary > .md-nav__list > .md-nav__item > .md-nav__link:hover {
+  color: var(--pg-teal-400);
+}
+
+/* Active H2 — teal left bar + tinted background */
+.md-nav--secondary > .md-nav__list > .md-nav__item > .md-nav__link--active {
+  color: var(--pg-teal-500);
+  font-weight: var(--fw-card-h);
+  background: color-mix(in oklab,
+    var(--md-default-bg-color) 88%, var(--pg-teal-500));
+  position: relative;
+}
+
+.md-nav--secondary > .md-nav__list > .md-nav__item > .md-nav__link--active::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 0.3em;
+  bottom: 0.3em;
+  width: 3px;
+  border-radius: 2px;
+  background: var(--pg-teal-500);
+}
+
+[data-md-color-scheme="slate"]
+  .md-nav--secondary > .md-nav__list > .md-nav__item > .md-nav__link--active {
+  color: var(--pg-teal-300);
+  background: color-mix(in oklab,
+    var(--md-default-bg-color) 85%, var(--pg-teal-500));
+}
+
+[data-md-color-scheme="slate"]
+  .md-nav--secondary > .md-nav__list > .md-nav__item > .md-nav__link--active::before {
+  background: var(--pg-teal-300);
+}
+
+/* Nested TOC items (H3 headings) — quieter, indented */
+.md-nav--secondary .md-nav .md-nav .md-nav__list {
+  padding-left: 0.5rem;
+  margin-top: 0.15rem;
+  margin-bottom: 0.15rem;
+  border-left: 1px solid var(--md-default-fg-color--lightest);
+  margin-left: 0.75rem;
+}
+
+.md-nav--secondary .md-nav .md-nav .md-nav__link {
+  font-size: 0.72rem;
+  font-weight: var(--fw-regular);
+  color: var(--md-default-fg-color--light);
+  padding: 0.25rem 0.6rem;
+  border-radius: var(--radius-tiny);
+  transition: color 0.15s ease, background 0.15s ease;
+}
+
+.md-nav--secondary .md-nav .md-nav .md-nav__link:hover {
+  color: var(--pg-teal-500);
+  background: color-mix(in oklab,
+    var(--md-default-bg-color) 92%, var(--pg-teal-500));
+}
+
+[data-md-color-scheme="slate"]
+  .md-nav--secondary .md-nav .md-nav .md-nav__link:hover {
+  color: var(--pg-teal-400);
+}
+
+/* Active H3 — accent color, no bar (the parent H2 bar is enough) */
+.md-nav--secondary .md-nav .md-nav .md-nav__link--active {
+  color: var(--pg-teal-500);
+  font-weight: var(--fw-medium);
+  background: color-mix(in oklab,
+    var(--md-default-bg-color) 92%, var(--pg-teal-500));
+}
+
+[data-md-color-scheme="slate"]
+  .md-nav--secondary .md-nav .md-nav .md-nav__link--active {
+  color: var(--pg-teal-300);
+}
+
+/* ============================================================
    Refinement layer — typography, interaction, print
    ============================================================
    Additive polish that sits on top of the established design
@@ -3211,6 +3755,238 @@ body:has(.pg-home) .md-search__form:focus-within,
     var(--pg-teal-500));
 }
 
+/* ============================================================
+   Scroll-triggered reveal animations
+   ============================================================ */
+
+[data-reveal] {
+  opacity: 0;
+  transform: translateY(20px);
+}
+
+[data-reveal-light] {
+  transform: translateY(12px);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  [data-reveal],
+  [data-stagger] > * {
+    opacity: 1 !important;
+    transform: none !important;
+    transition: none !important;
+  }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  [data-reveal] {
+    transition: opacity 0.6s var(--ease-out),
+                transform 0.6s var(--ease-out);
+  }
+  [data-reveal-light] {
+    transition-duration: 0.4s;
+  }
+  [data-reveal].is-visible {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* JS-failure fallback: auto-reveal after 3s if JS never fires */
+@keyframes pg-reveal-fallback {
+  to { opacity: 1; transform: none; }
+}
+[data-reveal]:not(.is-visible) {
+  animation: pg-reveal-fallback 0s 3s forwards;
+}
+
+/* ============================================================
+   Stagger grid reveal
+   ============================================================ */
+
+@media (prefers-reduced-motion: no-preference) {
+  [data-stagger] > * {
+    opacity: 0;
+    transform: translateY(12px);
+    transition: opacity 0.4s var(--ease-out),
+                transform 0.4s var(--ease-out);
+    transition-delay: calc(var(--stagger-i, 0) * 60ms);
+  }
+  [data-stagger].is-visible > * {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* ============================================================
+   Pipeline connection line-draw animation
+   ============================================================ */
+
+@media (prefers-reduced-motion: no-preference) {
+  .pg-pipeline.is-visible .pg-pipe:not(:last-child)::after {
+    animation: pg-line-draw 0.4s var(--ease-out) forwards;
+    animation-delay: calc(var(--stagger-i, 0) * 60ms + 200ms);
+    transform-origin: left center;
+    transform: translateY(-50%) scaleX(0);
+  }
+
+  .pg-pipeline.is-visible .pg-pipe:not(:last-child)::before {
+    animation: pg-arrow-pop 0.2s var(--ease-out) forwards;
+    animation-delay: calc(var(--stagger-i, 0) * 60ms + 400ms);
+    opacity: 0;
+  }
+}
+
+@keyframes pg-line-draw {
+  to { transform: translateY(-50%) scaleX(1); opacity: 0.5; }
+}
+
+@keyframes pg-arrow-pop {
+  to { opacity: 0.5; }
+}
+
+/* ============================================================
+   Parallax hero
+   ============================================================ */
+
+@media (prefers-reduced-motion: no-preference) {
+  .pg-hero::before {
+    transform: translateY(var(--parallax-y, 0px));
+    will-change: transform;
+  }
+}
+
+/* ============================================================
+   Glassmorphism
+   ============================================================ */
+
+@supports (backdrop-filter: blur(1px)) {
+  .md-header[data-md-state="shadow"] {
+    background: rgba(4, 16, 26, 0.82) !important;
+    backdrop-filter: blur(12px) saturate(1.2);
+    -webkit-backdrop-filter: blur(12px) saturate(1.2);
+  }
+
+  body:has(.pg-home) .md-header[data-md-state="shadow"] {
+    background: rgba(4, 16, 26, 0.78) !important;
+  }
+
+  .md-search__form {
+    background: rgba(4, 16, 26, 0.85) !important;
+    backdrop-filter: blur(16px) saturate(1.3);
+    -webkit-backdrop-filter: blur(16px) saturate(1.3);
+  }
+
+  .md-search__output {
+    background: rgba(4, 16, 26, 0.9) !important;
+    backdrop-filter: blur(16px) saturate(1.3);
+    -webkit-backdrop-filter: blur(16px) saturate(1.3);
+  }
+
+  .pg-terminal {
+    background: rgba(4, 16, 26, 0.75);
+    backdrop-filter: blur(10px) saturate(1.1);
+    -webkit-backdrop-filter: blur(10px) saturate(1.1);
+  }
+}
+
+@supports (backdrop-filter: blur(1px)) {
+  @media (prefers-reduced-motion: no-preference) {
+    .pg-doc-card:hover {
+      background: rgba(4, 16, 26, 0.6);
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
+    }
+
+    .pg-feature:hover {
+      background: rgba(4, 16, 26, 0.55);
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
+    }
+  }
+}
+
+/* ============================================================
+   Page transition (site-wide)
+   ============================================================ */
+
+@media (prefers-reduced-motion: no-preference) {
+  .md-content {
+    animation: pg-content-enter 0.3s var(--ease-out);
+  }
+}
+
+@keyframes pg-content-enter {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+}
+
+/* ============================================================
+   CTA button glow
+   ============================================================ */
+
+@media (prefers-reduced-motion: no-preference) {
+  .pg-hero__cta .md-button--primary,
+  .pg-cta .md-button--primary {
+    position: relative;
+    overflow: visible;
+  }
+
+  .pg-hero__cta .md-button--primary::after,
+  .pg-cta .md-button--primary::after {
+    content: "";
+    position: absolute;
+    inset: -1px;
+    border-radius: inherit;
+    background: var(--pg-teal-400);
+    opacity: 0;
+    filter: blur(12px);
+    z-index: -1;
+    transition: opacity 0.32s var(--ease-out);
+    pointer-events: none;
+  }
+
+  .pg-hero__cta .md-button--primary:hover::after,
+  .pg-cta .md-button--primary:hover::after {
+    opacity: 0.35;
+  }
+}
+
+/* ============================================================
+   Enhanced hover micro-interactions
+   ============================================================ */
+
+@media (prefers-reduced-motion: no-preference) {
+  .pg-feature .pg-feature__icon svg {
+    transition: transform 0.3s var(--ease-out);
+  }
+
+  .pg-feature:hover .pg-feature__icon svg {
+    transform: scale(1.08);
+  }
+
+  .pg-provider {
+    transition: border-color 0.18s ease,
+                transform 0.22s var(--ease-out),
+                box-shadow 0.22s var(--ease-out),
+                background 0.18s ease;
+  }
+
+  .pg-provider:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 24px -12px color-mix(in oklab, var(--pg-teal-500) 45%, transparent);
+  }
+
+  .md-typeset .pg-hero__meta span {
+    transition: color 0.2s var(--ease-out);
+  }
+
+  .md-typeset .pg-hero__meta span:hover {
+    color: var(--pg-teal-400);
+  }
+}
+
 /* ── Print + save-as-PDF ──────────────────────────────────────
    Auditors save pages to PDF for evidence packets. Strip the
    chrome and force black-on-white prose so the printed page
@@ -3300,7 +4076,9 @@ body:has(.pg-home) .md-search__form:focus-within,
 
   .pg-terminal,
   .pg-patrol,
-  .pg-flowchart {
+  .pg-flowchart,
+  .pg-pipeline,
+  .pg-pipeline-out {
     display: none !important;
   }
 }

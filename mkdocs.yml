@@ -61,6 +61,9 @@ extra_javascript:
   # CDN call) so the docs site stays consistent with the no-telemetry
   # claim on the home page. Tables can opt out via class="no-sort".
   - javascripts/tablesort.js
+  # Scroll-triggered reveals, stagger grids, stat counters, terminal
+  # replay, and parallax hero. Zero dependencies, compositor-only.
+  - javascripts/animations.js
 
 extra:
   generator: false
@@ -149,6 +152,8 @@ nav:
       - Providers:
           - Overview: providers/README.md
           - AWS: providers/aws.md
+          - Azure Cloud: providers/azure_cloud.md
+          - GCP: providers/gcp.md
           - Terraform: providers/terraform.md
           - CloudFormation: providers/cloudformation.md
           - GitHub Actions: providers/github.md
@@ -179,6 +184,8 @@ nav:
           - Overview: standards/README.md
           - OWASP Top 10 CI/CD: standards/owasp_cicd_top_10.md
           - CIS AWS Foundations: standards/cis_aws_foundations.md
+          - CIS Azure Foundations: standards/cis_azure_foundations.md
+          - CIS GCP Foundations: standards/cis_gcp_foundations.md
           - CIS GitHub Benchmark: standards/cis_github.md
           - CIS Kubernetes Benchmark: standards/cis_kubernetes.md
           - CIS Supply Chain: standards/cis_supply_chain.md
