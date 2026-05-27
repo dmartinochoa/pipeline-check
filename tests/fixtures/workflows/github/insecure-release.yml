@@ -109,7 +109,7 @@ jobs:
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           # Pasted during a debugging session and never removed. Real key
           # shape — scanner must flag it.
-          DEBUG_AWS_KEY: AKIAIOSFODNN7EXAMPLE
+          DEBUG_AWS_KEY: AKIAZ3MHALF2TESTHIJK
         run: npm run deploy
 
   # GHA-014: deploy-named job without environment: binding.

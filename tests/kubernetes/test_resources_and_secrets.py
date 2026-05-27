@@ -79,7 +79,7 @@ class TestK8S017EnvCredentialLiteral:
             "name": "c",
             "image": _BASE_IMAGE,
             "env": [
-                {"name": "AWS_ACCESS_KEY_ID", "value": "AKIAIOSFODNN7EXAMPLE"},
+                {"name": "AWS_ACCESS_KEY_ID", "value": "AKIAZ3MHALF2TESTHIJK"},
             ],
         }]), "K8S-017")
         assert not f.passed
@@ -147,7 +147,7 @@ class TestK8S017EnvCredentialLiteral:
             "name": "c",
             "image": _BASE_IMAGE,
             "env": [
-                {"value": "AKIAIOSFODNN7EXAMPLE"},  # no name key
+                {"value": "AKIAZ3MHALF2TESTHIJK"},  # no name key
             ],
         }]), "K8S-017")
         assert f.passed
@@ -190,7 +190,7 @@ class TestK8S018SecretLiteral:
             "kind": "Secret",
             "metadata": {"name": "aws", "namespace": "default"},
             "type": "Opaque",
-            "stringData": {"AWS_ACCESS_KEY_ID": "AKIAIOSFODNN7EXAMPLE"},
+            "stringData": {"AWS_ACCESS_KEY_ID": "AKIAZ3MHALF2TESTHIJK"},
         }
         f = run_check(secret, "K8S-018")
         assert not f.passed

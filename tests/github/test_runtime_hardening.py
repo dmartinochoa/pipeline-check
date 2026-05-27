@@ -25,7 +25,7 @@ class TestGHA008LiteralSecrets:
             runs-on: ubuntu-latest
             timeout-minutes: 30
             env:
-              AWS_ACCESS_KEY_ID: AKIAIOSFODNN7EXAMPLE
+              AWS_ACCESS_KEY_ID: AKIAZ3MHALF2TESTHIJK
             steps: [{run: 'aws s3 ls'}]
         """
         f = run_check(wf, "GHA-008")

@@ -21,7 +21,7 @@ services:
   - postgres:latest
 
 variables:
-  AWS_ACCESS_KEY_ID: AKIAIOSFODNN7EXAMPLE
+  AWS_ACCESS_KEY_ID: AKIAZ3MHALF2TESTHIJK
   DATABASE_PASSWORD: hunter2
   DEPLOY_TARGET: production
 

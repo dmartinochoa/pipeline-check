@@ -1,4 +1,4 @@
 pipeline {
   agent { label 'build' }
-  environment { AWS_ACCESS_KEY_ID = "AKIAIOSFODNN7EXAMPLE" }
+  environment { AWS_ACCESS_KEY_ID = "AKIAZ3MHALF2TESTHIJK" }
 }

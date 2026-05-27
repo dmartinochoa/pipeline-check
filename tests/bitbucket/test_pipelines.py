@@ -140,7 +140,7 @@ class TestBB003LiteralSecrets:
             """
             definitions:
               variables:
-                MY_KEY: AKIAIOSFODNN7EXAMPLE
+                MY_KEY: AKIAZ3MHALF2TESTHIJK
             pipelines:
               default:
                 - step:

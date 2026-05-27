@@ -18,7 +18,7 @@ substitutions:
   _ARTIFACT_SUFFIX: latest
   # GCB-012: an AWS access key pasted into substitutions. The
   # ``AKIA`` shape is caught by the cross-provider secret catalog.
-  _AWS_KEY: AKIAIOSFODNN7EXAMPLE
+  _AWS_KEY: AKIAZ3MHALF2TESTHIJK
 
 # GCB-002: no serviceAccount set — build runs as the default Cloud
 # Build SA, which typically holds project-level editor.

@@ -22,7 +22,7 @@ _FROM = "FROM python@sha256:0000000000000000000000000000000000000000000000000000
 
 class TestDF006SecretInEnv:
     def test_fails_on_aws_key_in_env(self):
-        text = _FROM + "ENV AWS_ACCESS_KEY_ID=AKIAIOSFODNN7EXAMPLE\n"
+        text = _FROM + "ENV AWS_ACCESS_KEY_ID=AKIAZ3MHALF2TESTHIJK\n"
         f = run_check(text, "DF-006")
         assert not f.passed
 

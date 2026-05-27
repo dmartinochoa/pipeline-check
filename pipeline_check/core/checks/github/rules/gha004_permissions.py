@@ -388,6 +388,13 @@ def check(path: str, doc: dict[str, Any], wf: Workflow | None = None) -> Finding
         elif effective_top is None:
             jobs_missing.append(job_id)
 
+    # Track reusable-workflow callers whose permissions can't be
+    # verified without resolving the callee.
+    reusable_callers = [
+        jid for jid, j in iter_jobs(doc)
+        if isinstance(j.get("uses"), str)
+    ]
+
     if jobs_missing:
         issues.append(
             f"{len(jobs_missing)} job(s) without permissions: "
@@ -421,15 +428,34 @@ def check(path: str, doc: dict[str, Any], wf: Workflow | None = None) -> Finding
                     )
 
     passed = not issues
+
+    reusable_note = ""
+    if reusable_callers:
+        shown = ", ".join(reusable_callers[:3])
+        overflow = (
+            f" (+{len(reusable_callers) - 3} more)"
+            if len(reusable_callers) > 3
+            else ""
+        )
+        reusable_note = (
+            f" {len(reusable_callers)} job(s) call reusable workflows "
+            f"({shown}{overflow}) whose permissions could not be "
+            f"verified without ``--resolve-remote``."
+        )
+
     if passed:
         desc = (
             "Workflow declares a permissions block with no overly broad grants."
         )
+        if reusable_note:
+            desc += reusable_note
     else:
         desc = (
             f"Permissions issues detected: {'; '.join(issues)}. "
             f"The GITHUB_TOKEN may have more privilege than necessary."
         )
+        if reusable_note:
+            desc += reusable_note
     return Finding(
         check_id=RULE.id, title=RULE.title, severity=RULE.severity,
         resource=path, description=desc,

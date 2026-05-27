@@ -71,7 +71,7 @@ class TestADO008LiteralSecrets:
     def test_fails_on_aws_access_key_in_variables(self):
         cfg = """
         variables:
-          AWS_ACCESS_KEY_ID: AKIAIOSFODNN7EXAMPLE
+          AWS_ACCESS_KEY_ID: AKIAZ3MHALF2TESTHIJK
         pool: {vmImage: ubuntu-latest}
         steps:
           - script: aws s3 ls

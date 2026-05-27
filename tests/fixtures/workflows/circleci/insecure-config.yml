@@ -84,7 +84,7 @@ jobs:
       - run:
           name: Verify registry access
           command: |
-            echo "Checking registry with key AKIAIOSFODNN7EXAMPLE"
+            echo "Checking registry with key AKIAZ3MHALF2TESTHIJK"
             aws ecr get-login-password --region us-east-1
       # CC-022: Dependency update command bypasses lockfile pins.
       - run:

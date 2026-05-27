@@ -20,7 +20,7 @@ class TestGL008LiteralSecrets:
           stage: deploy
           image: amazon/aws-cli:2.15.0
           variables:
-            AWS_ACCESS_KEY_ID: AKIAIOSFODNN7EXAMPLE
+            AWS_ACCESS_KEY_ID: AKIAZ3MHALF2TESTHIJK
           script: [aws s3 ls]
           timeout: 30 minutes
         """

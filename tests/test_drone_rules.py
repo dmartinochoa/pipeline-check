@@ -271,7 +271,7 @@ class TestDR004LiteralSecret:
     def test_fails_on_aws_akia_key_regardless_of_key_name(self) -> None:
         p = _pipeline(steps=[
             {"name": "deploy", "image": f"x{_DIGEST}",
-             "environment": {"FOO": "AKIAIOSFODNN7EXAMPLE"}},
+             "environment": {"FOO": "AKIAZ3MHALF2TESTHIJK"}},
         ])
         f = r4.check(p)
         assert not f.passed

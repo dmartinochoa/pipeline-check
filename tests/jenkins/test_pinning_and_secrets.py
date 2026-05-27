@@ -95,7 +95,7 @@ class TestJF008LiteralSecrets:
         pipeline {
             agent any
             environment {
-                AWS_ACCESS_KEY_ID = 'AKIAIOSFODNN7EXAMPLE'
+                AWS_ACCESS_KEY_ID = 'AKIAZ3MHALF2TESTHIJK'
             }
             stages { stage('x') { steps { sh 'aws s3 ls' } } }
         }
@@ -135,6 +135,34 @@ class TestJF008LiteralSecrets:
         }
         """
         f = run_check(groovy, "JF-008")
+        assert f.passed
+
+    def test_fails_on_keyed_hex_in_environment_block(self):
+        groovy = """
+        pipeline {
+            agent any
+            environment {
+                API_KEY = 'deadbeefdeadbeefdeadbeefdeadbeefdeadbeef'
+            }
+            stages { stage('x') { steps { sh 'echo deploy' } } }
+        }
+        """
+        f = run_check(groovy, "JF-008")
+        assert not f.passed
+        assert "hex40_keyed" in f.description
+
+    def test_keyed_hex_passes_on_non_credential_key(self):
+        groovy = """
+        pipeline {
+            agent any
+            environment {
+                COMMIT_SHA = 'deadbeefdeadbeefdeadbeefdeadbeefdeadbeef'
+            }
+            stages { stage('x') { steps { sh 'echo deploy' } } }
+        }
+        """
+        f = run_check(groovy, "JF-008")
+        # COMMIT_SHA doesn't suggest a credential, so keyed-hex doesn't fire
         assert f.passed
 
     def test_passes_with_no_credential_shaped_strings(self):

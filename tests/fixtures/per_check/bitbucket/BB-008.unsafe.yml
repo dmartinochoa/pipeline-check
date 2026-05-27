@@ -3,4 +3,4 @@ pipelines:
     - step:
         max-time: 10
         script:
-          - echo "Deploying with AKIAIOSFODNN7EXAMPLE"
+          - echo "Deploying with AKIAZ3MHALF2TESTHIJK"

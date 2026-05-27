@@ -104,7 +104,7 @@ class TestGCB012:
     def test_aws_key_in_substitutions_fails(self):
         d = _doc("""
 substitutions:
-  _AWS_KEY: AKIAIOSFODNN7EXAMPLE
+  _AWS_KEY: AKIAZ3MHALF2TESTHIJK
 steps:
   - name: 'gcr.io/cloud-builders/gcloud@sha256:aa'
     args: ['echo', '$_AWS_KEY']

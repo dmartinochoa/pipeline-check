@@ -3,7 +3,7 @@ jobs:
   build:
     docker: [{ image: cimg/base:stable }]
     environment:
-      LEAKED_KEY: AKIAIOSFODNN7EXAMPLE
+      LEAKED_KEY: AKIAZ3MHALF2TESTHIJK
     steps:
       - checkout
 workflows:

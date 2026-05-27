@@ -139,7 +139,7 @@ class TestADO003LiteralSecrets:
         f = _run(
             """
             variables:
-              AWS_ACCESS_KEY_ID: AKIAIOSFODNN7EXAMPLE
+              AWS_ACCESS_KEY_ID: AKIAZ3MHALF2TESTHIJK
             steps:
               - script: make
             """,
@@ -153,7 +153,7 @@ class TestADO003LiteralSecrets:
             """
             variables:
               - name: AWS_ACCESS_KEY_ID
-                value: AKIAIOSFODNN7EXAMPLE
+                value: AKIAZ3MHALF2TESTHIJK
             steps:
               - script: make
             """,

@@ -1,1 +1,1 @@
-pipeline { agent any; environment { AWS_ACCESS_KEY_ID = "AKIAIOSFODNN7EXAMPLE" } }
+pipeline { agent any; environment { AWS_ACCESS_KEY_ID = "AKIAZ3MHALF2TESTHIJK" } }

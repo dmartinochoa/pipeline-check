@@ -3,5 +3,5 @@ pipelines:
     - step:
         name: deploy
         script:
-          - export AWS_ACCESS_KEY_ID=AKIAIOSFODNN7EXAMPLE
+          - export AWS_ACCESS_KEY_ID=AKIAZ3MHALF2TESTHIJK
           - aws s3 cp dist/ s3://my-bucket/

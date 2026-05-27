@@ -52,7 +52,7 @@ spec:
               hostPort: 8080
           env:
             - name: AWS_ACCESS_KEY_ID
-              value: AKIAIOSFODNN7EXAMPLE
+              value: AKIAZ3MHALF2TESTHIJK
           securityContext:
             privileged: true
             runAsUser: 0
@@ -278,7 +278,7 @@ metadata:
   namespace: insecure-apps
 data:
   app.endpoint: "https://api.example.com"
-  AWS_ACCESS_KEY_ID: "AKIAIOSFODNN7EXAMPLE"
+  AWS_ACCESS_KEY_ID: "AKIAZ3MHALF2TESTHIJK"
   api_key: "supersecret-key-please-rotate-me"
 ---
 # NetworkPolicy with allow-all ingress (empty `from:`) — exercises K8S-038.

@@ -1,7 +1,7 @@
 # Realistic insecure Bitbucket Pipelines config exhibiting every BB-* failure.
 definitions:
   variables:
-    AWS_ACCESS_KEY_ID: AKIAIOSFODNN7EXAMPLE
+    AWS_ACCESS_KEY_ID: AKIAZ3MHALF2TESTHIJK
     DATABASE_PASSWORD: hunter2
 
 pipelines:
@@ -22,7 +22,7 @@ pipelines:
     - step:
         name: Deploy to production
         script:
-          - export AWS_ACCESS_KEY_ID=AKIAIOSFODNN7EXAMPLE
+          - export AWS_ACCESS_KEY_ID=AKIAZ3MHALF2TESTHIJK
           - pipe: atlassian/aws-s3-deploy:1
             variables:
               AWS_ACCESS_KEY_ID: $AWS_ACCESS_KEY_ID

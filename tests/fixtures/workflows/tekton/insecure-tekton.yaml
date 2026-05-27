@@ -45,7 +45,7 @@ spec:
       # TKN-005 (secondary): literal-secret env value.
       env:
         - name: AWS_ACCESS_KEY_ID
-          value: "AKIAIOSFODNN7EXAMPLE"  # checkov:skip=CKV_SECRET_2 test fixture
+          value: "AKIAZ3MHALF2TESTHIJK"  # checkov:skip=CKV_SECRET_2 test fixture
       # TKN-003 + TKN-008: $(params.ref) inlined unquoted, plus
       # curl-pipe-shell in the same script body.
       # TKN-009 / TKN-010 / TKN-011 / TKN-012 also fire on this

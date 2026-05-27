@@ -26,7 +26,7 @@ def test_custom_pattern_flags_org_specific_token():
 
 def test_builtin_pattern_still_fires_after_register():
     secrets_mod.register_pattern(r"^acme_[a-f0-9]{32}$")
-    doc = {"env": {"KEY": "AKIAIOSFODNN7EXAMPLE"}}
+    doc = {"env": {"KEY": "AKIAZ3MHALF2TESTHIJK"}}
     assert secrets_mod.find_secret_values(doc)
 
 
@@ -46,4 +46,4 @@ def test_reset_clears_all_user_patterns():
     secrets_mod.reset_patterns()
     assert len(secrets_mod._PATTERNS) == 0
     # Built-in detectors still fire after reset.
-    assert secrets_mod.find_secret_values({"k": "AKIAIOSFODNN7EXAMPLE"})
+    assert secrets_mod.find_secret_values({"k": "AKIAZ3MHALF2TESTHIJK"})
