@@ -389,6 +389,41 @@ def test_pypi_inventory_requirements_counts(tmp_path):
     assert m["option_count"] == 2
 
 
+# ── NuGet inventory ───────────────────────────────────────────────
+
+
+def test_nuget_inventory_lists_package_refs(tmp_path):
+    csproj = tmp_path / "app.csproj"
+    csproj.write_text(
+        '<Project Sdk="Microsoft.NET.Sdk">\n'
+        "  <ItemGroup>\n"
+        '    <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />\n'
+        '    <PackageReference Include="Serilog" Version="3.1.0" />\n'
+        "  </ItemGroup>\n"
+        "</Project>\n"
+    )
+    provider = _providers.get("nuget")
+    inv = provider.inventory(provider.build_context(nuget_path=str(tmp_path)))
+    assert len(inv) == 2
+    by_id = {c.identifier: c for c in inv}
+    assert by_id["Newtonsoft.Json"].metadata["version"] == "13.0.3"
+    assert by_id["Serilog"].type == "nuget-package"
+
+
+def test_nuget_inventory_unmanaged_version(tmp_path):
+    csproj = tmp_path / "app.csproj"
+    csproj.write_text(
+        '<Project Sdk="Microsoft.NET.Sdk">\n'
+        "  <ItemGroup>\n"
+        '    <PackageReference Include="Managed.Pkg" />\n'
+        "  </ItemGroup>\n"
+        "</Project>\n"
+    )
+    provider = _providers.get("nuget")
+    inv = provider.inventory(provider.build_context(nuget_path=str(tmp_path)))
+    assert inv[0].metadata["version"] == "<unmanaged>"
+
+
 # ── Argo CD inventory ─────────────────────────────────────────────
 
 

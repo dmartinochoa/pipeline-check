@@ -1722,3 +1722,215 @@ class TestGHA003EnvBlockIndent:
         # And it must NOT sit at the deeper column the current
         # implementation chooses (column of the command start).
         assert "              env:" not in after
+
+
+# ── Azure timeout fixer (ADO-015) ─────────────────────────────────────
+
+
+class TestADO015Timeout:
+    def test_inserts_timeout_in_job_missing_it(self):
+        pipeline = (
+            "trigger:\n"
+            "  - main\n"
+            "jobs:\n"
+            "  - job: Build\n"
+            "    pool:\n"
+            "      vmImage: ubuntu-latest\n"
+            "    steps:\n"
+            "      - script: echo hi\n"
+        )
+        after = autofix.generate_fix(_finding("ADO-015"), pipeline)
+        assert after is not None
+        assert "timeoutInMinutes: 30" in after
+
+    def test_skips_job_that_already_has_timeout(self):
+        pipeline = (
+            "jobs:\n"
+            "  - job: Build\n"
+            "    timeoutInMinutes: 60\n"
+            "    steps:\n"
+            "      - script: echo hi\n"
+        )
+        assert autofix.generate_fix(_finding("ADO-015"), pipeline) is None
+
+    def test_inserts_only_in_missing_jobs(self):
+        pipeline = (
+            "jobs:\n"
+            "  - job: Build\n"
+            "    timeoutInMinutes: 60\n"
+            "    steps:\n"
+            "      - script: echo build\n"
+            "  - job: Test\n"
+            "    pool:\n"
+            "      vmImage: ubuntu-latest\n"
+            "    steps:\n"
+            "      - script: echo test\n"
+        )
+        after = autofix.generate_fix(_finding("ADO-015"), pipeline)
+        assert after is not None
+        assert after.count("timeoutInMinutes") == 2
+
+
+# ── Jenkins build discarder (JF-011) ─────────────────────────────────
+
+
+class TestJF011BuildDiscarder:
+    def test_inserts_into_existing_options_block(self):
+        jenkinsfile = (
+            "pipeline {\n"
+            "    agent any\n"
+            "    options {\n"
+            "        timestamps()\n"
+            "    }\n"
+            "    stages {\n"
+            "        stage('Build') {\n"
+            "            steps { echo 'hi' }\n"
+            "        }\n"
+            "    }\n"
+            "}\n"
+        )
+        after = autofix.generate_fix(
+            _finding("JF-011", resource="Jenkinsfile"), jenkinsfile,
+        )
+        assert after is not None
+        assert "buildDiscarder(logRotator(numToKeepStr: '30'))" in after
+        assert "timestamps()" in after
+
+    def test_creates_options_block_after_agent(self):
+        jenkinsfile = (
+            "pipeline {\n"
+            "    agent any\n"
+            "    stages {\n"
+            "        stage('Build') {\n"
+            "            steps { echo 'hi' }\n"
+            "        }\n"
+            "    }\n"
+            "}\n"
+        )
+        after = autofix.generate_fix(
+            _finding("JF-011", resource="Jenkinsfile"), jenkinsfile,
+        )
+        assert after is not None
+        assert "options {" in after
+        assert "buildDiscarder" in after
+
+    def test_idempotent_when_discarder_exists(self):
+        jenkinsfile = (
+            "pipeline {\n"
+            "    agent any\n"
+            "    options {\n"
+            "        buildDiscarder(logRotator(numToKeepStr: '10'))\n"
+            "    }\n"
+            "}\n"
+        )
+        assert autofix.generate_fix(
+            _finding("JF-011", resource="Jenkinsfile"), jenkinsfile,
+        ) is None
+
+    def test_returns_none_for_scripted_pipeline(self):
+        jenkinsfile = (
+            "node {\n"
+            "    stage('Build') {\n"
+            "        sh 'make'\n"
+            "    }\n"
+            "}\n"
+        )
+        assert autofix.generate_fix(
+            _finding("JF-011", resource="Jenkinsfile"), jenkinsfile,
+        ) is None
+
+    def test_handles_agent_block_form(self):
+        jenkinsfile = (
+            "pipeline {\n"
+            "    agent {\n"
+            "        docker { image 'node:18' }\n"
+            "    }\n"
+            "    stages {\n"
+            "        stage('Build') {\n"
+            "            steps { echo 'hi' }\n"
+            "        }\n"
+            "    }\n"
+            "}\n"
+        )
+        after = autofix.generate_fix(
+            _finding("JF-011", resource="Jenkinsfile"), jenkinsfile,
+        )
+        assert after is not None
+        assert "options {" in after
+        assert "buildDiscarder" in after
+
+
+# ── GitLab image pinning TODO (GL-001) ────────────────────────────────
+
+
+class TestGL001ImagePinning:
+    def test_adds_todo_to_unpinned_image(self):
+        ci = (
+            "build:\n"
+            "  image: node:18\n"
+            "  script:\n"
+            "    - npm test\n"
+        )
+        after = autofix.generate_fix(_finding("GL-001"), ci)
+        assert after is not None
+        assert "TODO(pipeline-check): pin to digest" in after
+
+    def test_skips_digest_pinned_image(self):
+        ci = (
+            "build:\n"
+            "  image: node@sha256:abcdef1234567890\n"
+            "  script:\n"
+            "    - npm test\n"
+        )
+        assert autofix.generate_fix(_finding("GL-001"), ci) is None
+
+
+# ── Bitbucket pipe pinning TODO (BB-001) ──────────────────────────────
+
+
+class TestBB001PipePinning:
+    def test_adds_todo_to_unpinned_pipe(self):
+        pipeline = (
+            "pipelines:\n"
+            "  default:\n"
+            "    - step:\n"
+            "        script:\n"
+            "          - echo hi\n"
+            "        - pipe: atlassian/aws-s3-deploy:1.0.0\n"
+        )
+        after = autofix.generate_fix(_finding("BB-001"), pipeline)
+        assert after is not None
+        assert "TODO(pipeline-check): pin to commit SHA" in after
+
+    def test_idempotent_when_todo_exists(self):
+        pipeline = (
+            "pipelines:\n"
+            "  default:\n"
+            "    - step:\n"
+            "        - pipe: atlassian/foo:1.0  # TODO(pipeline-check): pin to commit SHA\n"
+        )
+        after = autofix.generate_fix(_finding("BB-001"), pipeline)
+        assert after is None
+
+
+# ── Azure task pinning TODO (ADO-001) ─────────────────────────────────
+
+
+class TestADO001TaskPinning:
+    def test_adds_todo_to_unpinned_task(self):
+        pipeline = (
+            "steps:\n"
+            "  - task: DotNetCoreCLI@2\n"
+            "    inputs:\n"
+            "      command: build\n"
+        )
+        after = autofix.generate_fix(_finding("ADO-001"), pipeline)
+        assert after is not None
+        assert "TODO(pipeline-check): pin to commit SHA" in after
+
+    def test_idempotent_when_todo_exists(self):
+        pipeline = (
+            "steps:\n"
+            "  - task: DotNetCoreCLI@2  # TODO(pipeline-check): pin to commit SHA\n"
+        )
+        assert autofix.generate_fix(_finding("ADO-001"), pipeline) is None
