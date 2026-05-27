@@ -31,7 +31,7 @@ _BENCH = _REPO / "bench"
 if str(_BENCH) not in sys.path:
     sys.path.insert(0, str(_BENCH))
 
-import run as bench_run
+import run as bench_run  # noqa: E402
 
 CASES_DIR = _REPO / "bench" / "cases"
 

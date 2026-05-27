@@ -69,7 +69,11 @@ def check(path: str, doc: dict[str, Any]) -> Finding:
     # Detect PR trigger (same logic as ADO-011).
     pr = doc.get("pr")
     on_pr = False
-    if isinstance(pr, list) and pr or isinstance(pr, dict) or isinstance(pr, str) and pr.lower() not in ("none", "false"):
+    if (
+        isinstance(pr, list) and pr
+        or isinstance(pr, dict)
+        or isinstance(pr, str) and pr.lower() not in ("none", "false")
+    ):
         on_pr = True
 
     if not on_pr:

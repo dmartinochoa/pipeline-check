@@ -245,7 +245,7 @@ Every check that evidences this standard, rendered once with its detection mecha
 
 **Proof of exploit.**
 
-```
+```yaml
 # Vulnerable: CodeArtifact domain policy with
 # ``Principal: '*'`` and no condition. Any AWS principal
 # in any account can pull artifacts from the domain;
@@ -288,7 +288,7 @@ Every check that evidences this standard, rendered once with its detection mecha
 
 **Proof of exploit.**
 
-```
+```yaml
 # Vulnerable: ``codeartifact:*`` on ``Resource: *``. The
 # bound principal can DeleteRepository,
 # DisposePackageVersions, UpdatePackageVersionsStatus
@@ -347,7 +347,7 @@ Every check that evidences this standard, rendered once with its detection mecha
 
 **Proof of exploit.**
 
-```
+```yaml
 # Vulnerable: CodeBuild source auth uses a stored
 # long-lived token (``OAUTH`` / ``PERSONAL_ACCESS_TOKEN``
 # / ``BASIC_AUTH``). The credential lives on the account
@@ -460,7 +460,7 @@ cb.update_project(
 
 **Proof of exploit.**
 
-```
+```yaml
 # Vulnerable: a CodePipeline source action of type
 # ``ThirdParty`` / ``GitHub`` (v1). This is the legacy
 # integration that stores a long-lived OAuth token on
@@ -523,7 +523,7 @@ cp = boto3.client('codepipeline')
 
 **Proof of exploit.**
 
-```
+```yaml
 # Vulnerable: no active CloudTrail trail in the region.
 # AWS API calls aren't audited; an intruder's actions
 # leave no trace. Incident response can't tell what was
@@ -639,7 +639,7 @@ ct.start_logging(Name='org-wide-trail')
 
 **Proof of exploit.**
 
-```
+```yaml
 # Vulnerable: an EventBridge rule with a wildcard ARN
 # target. The rule fires events at
 # ``arn:aws:lambda:us-east-1:123456789012:function:*``
@@ -691,7 +691,7 @@ eb.put_targets(
 
 **Proof of exploit.**
 
-```
+```yaml
 # Vulnerable: ECR repo with ``imageScanningConfiguration.
 # scanOnPush: false``. Every pushed image lands without
 # a vulnerability scan; the registry's downstream consumers
@@ -729,7 +729,7 @@ inspector.enable(resourceTypes=['ECR'])
 
 **Proof of exploit.**
 
-```
+```yaml
 # Vulnerable: ECR repository policy with
 # ``Principal: '*'``. Anyone on the internet can pull
 # images from the repo (and discover internal app
@@ -802,7 +802,7 @@ inspector.enable(resourceTypes=['ECR'])
 
 **Proof of exploit.**
 
-```
+```yaml
 # Vulnerable: CodeBuild service role with AdministratorAccess.
 # (Terraform shown for clarity; the actual finding comes from
 # live ListAttachedRolePolicies on the role.)
@@ -849,7 +849,7 @@ resource "aws_iam_role_policy" "codebuild_least_priv" {
 
 **Proof of exploit.**
 
-```
+```yaml
 # Vulnerable: the role can do literally anything in S3.
 # Any compromise of any pipeline that assumes this role
 # (poisoned action, leaked credential, malicious build
@@ -910,7 +910,7 @@ resource "aws_iam_role_policy" "codebuild_least_priv" {
 
 **Proof of exploit.**
 
-```
+```yaml
 # Vulnerable: pipeline role grants PassRole with Resource: '*'.
 {
   "Version": "2012-10-17",
@@ -959,7 +959,7 @@ resource "aws_iam_role_policy" "codebuild_least_priv" {
 
 **Proof of exploit.**
 
-```
+```yaml
 # Vulnerable: a role with a cross-account trust policy
 # missing ``sts:ExternalId`` in its Condition. The
 # Confused Deputy problem: a third-party SaaS (or
@@ -1015,7 +1015,7 @@ resource "aws_iam_role_policy" "codebuild_least_priv" {
 
 **Proof of exploit.**
 
-```
+```yaml
 # Vulnerable: an IAM user has an active access key older
 # than 90 days. Long-lived keys accumulate exposure: any
 # leak (laptop theft, .aws/credentials gitignore miss,
@@ -1055,7 +1055,7 @@ iam.delete_access_key(
 
 **Proof of exploit.**
 
-```
+```yaml
 # Vulnerable: an OIDC-federated IAM role's trust policy
 # is missing either the audience (``:aud``) check or
 # the subject (``:sub``) pin. Any OIDC token from the
@@ -1125,7 +1125,7 @@ iam.delete_access_key(
 
 **Proof of exploit.**
 
-```
+```yaml
 # Vulnerable: a KMS key policy with ``Action: kms:*``
 # (or ``Action: '*'``) on ``Resource: '*'`` granted to
 # an IAM principal. The principal can ScheduleKeyDeletion
@@ -1180,7 +1180,7 @@ iam.delete_access_key(
 
 **Proof of exploit.**
 
-```
+```yaml
 # Vulnerable: a Lambda Function URL with
 # ``AuthType: NONE``. The URL is on the public internet
 # and requires no authentication. Anyone who learns the
@@ -1218,7 +1218,7 @@ lambdacli.update_function_url_config(
 
 **Proof of exploit.**
 
-```
+```yaml
 # Vulnerable: a Lambda function carries credentials in
 # its environment variables in plaintext. The values
 # are visible to anyone with ``lambda:GetFunction``
@@ -1259,7 +1259,7 @@ lambdacli.update_function_configuration(
 
 **Proof of exploit.**
 
-```
+```yaml
 # Vulnerable: any AWS account on the internet can invoke
 # this function. If the function reads from S3, writes to
 # DynamoDB, or calls a downstream service, the attacker
@@ -1328,7 +1328,7 @@ lambdacli.update_function_configuration(
 
 **Proof of exploit.**
 
-```
+```yaml
 # Vulnerable: every stage in the pipeline references
 # the pipeline's top-level role. A bad release lands
 # in the Source stage with the same authority as the
@@ -1393,7 +1393,7 @@ pipeline = {
 
 **Proof of exploit.**
 
-```
+```yaml
 # Vulnerable: any of the four toggles off means a later
 # bucket policy or ACL change can re-expose the bucket.
 # Real incidents (multiple Fortune-500 data spills) trace
@@ -1439,7 +1439,7 @@ s3.put_public_access_block(
 
 **Proof of exploit.**
 
-```
+```yaml
 # Vulnerable: artifact S3 bucket with no server-side
 # encryption configured. Build artifacts (binaries,
 # release tarballs, deploy plans) sit in plaintext;
@@ -1522,7 +1522,7 @@ s3.put_bucket_encryption(
 
 **Proof of exploit.**
 
-```
+```yaml
 # Vulnerable: a Secrets Manager secret with no rotation
 # configured. The credential lives forever; any leak
 # (log echo, accidental commit, .env file in an artifact)
@@ -1556,7 +1556,7 @@ sm.rotate_secret(
 
 **Proof of exploit.**
 
-```
+```yaml
 # Vulnerable: Secrets Manager resource policy with
 # ``Principal: '*'``. Anyone (no auth required) can
 # call GetSecretValue. Equivalent to publishing the
@@ -1605,7 +1605,7 @@ sm.delete_resource_policy(SecretId='prod/db-master')
 
 **Proof of exploit.**
 
-```
+```yaml
 # Vulnerable: secret-named parameter stored as plain ``String``.
 $ aws ssm put-parameter \
     --name /prod/api/GITHUB_TOKEN \

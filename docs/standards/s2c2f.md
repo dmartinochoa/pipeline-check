@@ -389,7 +389,7 @@ Every check that evidences this standard, rendered once with its detection mecha
 
 **Proof of exploit.**
 
-```
+```yaml
 # Vulnerable: ``AzureCLI@2`` resolves to whatever
 # Microsoft ships as version 2 at job-start time. A
 # Microsoft-pushed update silently changes the task body;
@@ -442,7 +442,7 @@ steps:
 
 **Proof of exploit.**
 
-```
+```yaml
 # Vulnerable: a container resource pinned to a mutable
 # tag. The publisher (or anyone with publish access)
 # repoints the tag on the next refresh; every pipeline
@@ -514,7 +514,7 @@ jobs:
 
 **Proof of exploit.**
 
-```
+```yaml
 # Vulnerable: pip resolves and downloads packages over
 # plaintext HTTP. ``--trusted-host`` silences hash
 # verification for the named host, so an attacker on the
@@ -587,7 +587,7 @@ steps:
 
 **Proof of exploit.**
 
-```
+```yaml
 # Vulnerable: ``npm config set strict-ssl false`` disables
 # certificate verification for every subsequent npm call.
 # A network attacker MITMs the registry and ships
@@ -628,7 +628,7 @@ steps:
 
 **Proof of exploit.**
 
-```
+```yaml
 # Vulnerable: ``ref: refs/heads/main`` on a cross-repo
 # template is mutable. Whoever can push to ``main`` on
 # ``ci-templates`` ships code into every consumer's
@@ -673,7 +673,7 @@ steps:
 
 **Proof of exploit.**
 
-```
+```yaml
 # Vulnerable: a step body executes a base64-decoded
 # payload, exfils to ``webhook.site``, or runs a
 # known miner binary. A malicious PR (or compromised
@@ -716,7 +716,7 @@ steps:
 
 **Proof of exploit.**
 
-```
+```yaml
 # Vulnerable: ``alpine:3.18`` is a mutable tag. The Alpine
 # maintainers (or a registry compromise / namespace hijack)
 # repoint the tag on the next 3.18.x point release; every
@@ -760,7 +760,7 @@ spec:
 
 **Proof of exploit.**
 
-```
+```yaml
 # Vulnerable: ``curl | bash`` trusts both the network path
 # (any MITM substitutes the script) and the host (an
 # attacker-compromised installer endpoint silently serves
@@ -860,7 +860,7 @@ Triggering this rule means the bytes of the runtime image were produced by a bui
 
 **Proof of exploit.**
 
-```
+```yaml
 # Vulnerable: the SLSA provenance attestation names a
 # self-hosted builder whose isolation cannot be audited
 # publicly. The signed attestation only attests that *this*
@@ -926,7 +926,7 @@ Fires when:
 
 **Proof of exploit.**
 
-```
+```yaml
 # Vulnerable: ``configSource.uri`` is empty (or 'unknown' /
 # 'n/a' / a placeholder). The trusted builder produced and
 # signed an attestation but the source-repo claim is
@@ -1009,7 +1009,7 @@ Pairs with ATTEST-003: ATTEST-003 verifies the SBOM covers package-level inputs,
 
 **Proof of exploit.**
 
-```
+```yaml
 # Vulnerable: a hand-rolled or older-Buildx provenance
 # emitter ships a Statement whose materials list is empty.
 # (Modern BuildKit ``--attest=type=provenance`` populates a
@@ -1081,7 +1081,7 @@ Hex validation is conservative: the value must consist entirely of ``0-9`` and `
 
 **Proof of exploit.**
 
-```
+```yaml
 # Vulnerable: a Statement signed by a trusted builder but
 # carrying an empty subject digest. The signature is valid;
 # the bind to the image bytes is not.
@@ -1145,7 +1145,7 @@ Doesn't validate that the URI is reachable or that the schema it names is one a 
 
 **Proof of exploit.**
 
-```
+```yaml
 # Vulnerable: a self-rolled SLSA generator that omits the
 # buildType field. The predicate carries every other
 # claim (builder, materials, configSource) but consumers
@@ -1221,7 +1221,7 @@ Severity LOW because the failure mode is downstream correlation friction rather 
 
 **Proof of exploit.**
 
-```
+```yaml
 # Vulnerable: ``atlassian/aws-s3-deploy:1`` resolves to
 # whatever the publisher's latest 1.x image is at job
 # start. A publisher takeover (compromised Atlassian
@@ -1300,7 +1300,7 @@ pipelines:
 
 **Proof of exploit.**
 
-```
+```yaml
 # Vulnerable: pip uses a plaintext-HTTP index and
 # ``--trusted-host`` silences hash verification on the
 # named host. A network attacker swaps wheels in flight.
@@ -1375,7 +1375,7 @@ pipelines:
 
 **Proof of exploit.**
 
-```
+```yaml
 # Vulnerable: ``npm config set strict-ssl false`` (or
 # ``git config http.sslverify false`` / ``NODE_TLS_
 # REJECT_UNAUTHORIZED=0``) disables certificate
@@ -1428,7 +1428,7 @@ pipelines:
 
 **Proof of exploit.**
 
-```
+```yaml
 # Vulnerable: a step body executes a base64-decoded
 # payload, exfils to a third-party webhook, or runs a
 # known miner binary. A malicious PR (or a compromised
@@ -1478,7 +1478,7 @@ pipelines:
 
 **Proof of exploit.**
 
-```
+```yaml
 # Vulnerable: ``image: python:3.12-slim`` is a mutable
 # tag. Docker Hub's image team rebuilds it on every
 # Python point release; a publisher takeover ships code
@@ -1554,7 +1554,7 @@ Yarn / Bun-only pipelines pass silently because the ``audit signatures`` primiti
 
 **Proof of exploit.**
 
-```
+```yaml
 # Vulnerable: ``docker-compose#main`` resolves at agent
 # boot to whatever sits at the plugin repo's main branch.
 # A push to the plugin repo (legitimate maintainer commit,
@@ -1590,7 +1590,7 @@ steps:
 
 **Proof of exploit.**
 
-```
+```yaml
 # Vulnerable: ``curl | bash`` trusts both the network path
 # (any MITM substitutes the script) and the host (a
 # compromised installer endpoint silently serves attacker
@@ -1716,7 +1716,7 @@ steps:
 
 **Proof of exploit.**
 
-```
+```yaml
 # Vulnerable: a CodeArtifact repository wired to a public
 # upstream (npm.org / pypi.org / maven-central) without
 # allow-listing. Internal package names harvested from
@@ -1771,7 +1771,7 @@ ca.disassociate_external_connection(
 
 **Proof of exploit.**
 
-```
+```yaml
 # Vulnerable: ``buildspec`` is inline JSON on the
 # project, not sourced from a protected repo. Anyone
 # with ``codebuild:UpdateProject`` (or who can call the
@@ -1827,7 +1827,7 @@ cb.update_project(
 
 **Proof of exploit.**
 
-```
+```yaml
 # Vulnerable: the project's buildspec carries indicators
 # of malicious activity — base64-decoded execution, exfil
 # to webhook.site, miner binaries. Either the buildspec
@@ -1866,7 +1866,7 @@ phases:
 
 **Proof of exploit.**
 
-```
+```yaml
 # Vulnerable: ``circleci/aws-cli@volatile`` (or any non-
 # semver ref) resolves at config-process time to whatever
 # the orb publisher last pushed. A compromised publisher
@@ -1897,7 +1897,7 @@ orbs:
 
 **Proof of exploit.**
 
-```
+```yaml
 # Vulnerable: ``cimg/python:3.12`` is a mutable tag.
 # CircleCI's image team rebuilds it on every Python
 # point release; a publisher compromise ships code into
@@ -1964,7 +1964,7 @@ jobs:
 
 **Proof of exploit.**
 
-```
+```yaml
 # Vulnerable: pip resolves and downloads packages over
 # plaintext HTTP, so a network attacker between the
 # runner and the registry can substitute the wheel.
@@ -2059,7 +2059,7 @@ jobs:
 
 **Proof of exploit.**
 
-```
+```yaml
 # Vulnerable: a step body contains ``curl /tmp/.miner |
 # bash`` or pipes a base64-decoded payload to ``sh``. A
 # malicious PR (or a compromised co-maintainer) plants
@@ -2112,7 +2112,7 @@ jobs:
 
 **Proof of exploit.**
 
-```
+```yaml
 # Vulnerable: ``image: default`` resolves to whatever
 # CircleCI ships as the current default machine image.
 # Image updates rebuild the underlying OS / toolchain
@@ -2151,7 +2151,7 @@ jobs:
 
 **Proof of exploit.**
 
-```
+```yaml
 # Vulnerable: ``CodeDeployDefault.AllAtOnce``. Every
 # deploy ships to every instance simultaneously. A bad
 # build (or a malicious one) takes the entire fleet down
@@ -2188,7 +2188,7 @@ cd.update_deployment_group(
 
 **Proof of exploit.**
 
-```
+```yaml
 # Vulnerable: a CodePipeline that goes Source -> Build
 # -> Deploy with no manual approval stage in between.
 # Every commit on the source branch reaches production
@@ -2269,7 +2269,7 @@ cp.update_pipeline(
 
 **Proof of exploit.**
 
-```
+```yaml
 # Vulnerable: ``python:3.12-slim`` is a tag, and tags on
 # Docker Hub are mutable. Python's publishers can (and do)
 # repoint the same tag at a new image on every point
@@ -2311,7 +2311,7 @@ CMD ["python", "/app/main.py"]
 
 **Proof of exploit.**
 
-```
+```yaml
 # Vulnerable: ``ADD <url>`` pulls a remote blob into the
 # image at build time with no integrity check. A MITM
 # (compromised proxy, BGP hijack on the mirror) or a
@@ -2345,7 +2345,7 @@ RUN curl -fsSL https://internal-mirror.example.com/installer.tar.gz \
 
 **Proof of exploit.**
 
-```
+```yaml
 # Vulnerable: curl-pipe to bash trusts both the network
 # (any MITM substitutes the script in flight) and the host
 # (a compromised installer endpoint silently serves attacker
@@ -2418,7 +2418,7 @@ RUN curl -fsSL https://example-installer.example/install.sh -o /tmp/install.sh \
 
 **Proof of exploit.**
 
-```
+```yaml
 # Vulnerable: pip resolves and downloads packages over
 # plaintext HTTP, so any network attacker between the
 # build and the registry can substitute a wheel. The
@@ -2477,7 +2477,7 @@ RUN update-ca-certificates && \
 
 **Proof of exploit.**
 
-```
+```yaml
 # Vulnerable: postinstall in a transitive dep runs with the
 # builder's environment (NPM_TOKEN, GH_TOKEN, AWS_*).
 FROM node:20@sha256:<digest>
@@ -2518,7 +2518,7 @@ If the internal registry / API genuinely has a self-signed cert, install the CA 
 
 **Proof of exploit.**
 
-```
+```yaml
 # Vulnerable: ``ENV NODE_TLS_REJECT_UNAUTHORIZED=0``
 # disables TLS verification for every Node.js process
 # in the container. Any HTTPS call (npm install at
@@ -2556,7 +2556,7 @@ If the internal index has a self-signed cert, install the CA into the image's tr
 
 **Proof of exploit.**
 
-```
+```yaml
 # Vulnerable: ``ENV PYTHONHTTPSVERIFY=0`` disables TLS
 # verification for every Python process in the
 # container. pip, requests-via-urllib3, every API call
@@ -2598,7 +2598,7 @@ If you need to clone from an internal Git server with a self-signed cert, instal
 
 **Proof of exploit.**
 
-```
+```yaml
 # Vulnerable: ``ENV GIT_SSL_NO_VERIFY=1`` disables git's
 # certificate verification for every clone / fetch. A
 # MITM substitutes the remote's contents on the next
@@ -2637,7 +2637,7 @@ The same shape as DF-027 (``PYTHONHTTPSVERIFY=0``) but narrower in surface — `
 
 **Proof of exploit.**
 
-```
+```yaml
 # Vulnerable: ``ENV REQUESTS_CA_BUNDLE=/dev/null`` (or
 # the empty string, or a non-existent path) neuters the
 # CA bundle Python's requests library consults. Every
@@ -2678,7 +2678,7 @@ CMD ["python", "main.py"]
 
 **Proof of exploit.**
 
-```
+```yaml
 # Vulnerable: ``golang:1.21`` is a mutable tag. Docker Hub
 # (or any compromise of the publisher's account) repoints
 # the tag at a new image on the next 1.21.x patch release
@@ -2720,7 +2720,7 @@ steps:
 
 **Proof of exploit.**
 
-```
+```yaml
 # Vulnerable: ``plugins/docker:latest`` resolves at runner
 # start to whatever Docker Hub currently serves under the
 # ``latest`` tag. Whoever controls the plugin repo (or
@@ -2762,7 +2762,7 @@ steps:
 
 **Proof of exploit.**
 
-```
+```yaml
 # Vulnerable: every npm install in the build skips strict-
 # ssl validation. An attacker on the network path (corp
 # proxy, malicious mirror, BGP hijack) MITMs the registry
@@ -2821,7 +2821,7 @@ steps:
 
 **Proof of exploit.**
 
-```
+```yaml
 # Vulnerable: ECR repo with ``imageScanningConfiguration.
 # scanOnPush: false``. Every pushed image lands without
 # a vulnerability scan; the registry's downstream consumers
@@ -2859,7 +2859,7 @@ inspector.enable(resourceTypes=['ECR'])
 
 **Proof of exploit.**
 
-```
+```yaml
 # Vulnerable: ECR repo with ``imageTagMutability:
 # MUTABLE``. Anyone with ``ecr:PutImage`` (build role,
 # CI/CD credential, leaked token) can push a different
@@ -2904,7 +2904,7 @@ ecr.put_image_tag_mutability(
 
 **Proof of exploit.**
 
-```
+```yaml
 # Vulnerable: an ECR pull-through cache rule with an
 # untrusted upstream registry. Untrusted = anything
 # other than AWS / k8s.io / Docker Hub Verified
@@ -2955,7 +2955,7 @@ ecr.create_pull_through_cache_rule(
 
 **Proof of exploit.**
 
-```
+```yaml
 # Vulnerable: ``gcr.io/cloud-builders/gcloud`` resolves to
 # the registry's latest at build time. Google's update of
 # the underlying image is silently picked up; a namespace
@@ -3006,7 +3006,7 @@ steps:
 
 **Proof of exploit.**
 
-```
+```yaml
 # Vulnerable: ``curl -k`` disables certificate verification
 # for the duration of the call. An attacker on the network
 # path (compromised proxy, malicious VPN exit) MITMs the
@@ -3042,7 +3042,7 @@ steps:
 
 **Proof of exploit.**
 
-```
+```yaml
 # Tag-pinned reference (vulnerable):
 - uses: tj-actions/changed-files@v45
 
@@ -3126,7 +3126,7 @@ steps:
 
 **Proof of exploit.**
 
-```
+```yaml
 # Vulnerable: install script piped straight to bash.
 steps:
   - run: curl -sL https://example.com/install.sh | bash
@@ -3166,7 +3166,7 @@ steps:
 
 **Proof of exploit.**
 
-```
+```yaml
 # Vulnerable: ``docker run --privileged`` plus the host
 # Docker socket runs inside a GitHub-hosted (or self-
 # hosted) runner. The container escapes to the runner;
@@ -3210,7 +3210,7 @@ Carve-out: third-party binary installers that download over HTTPS (no insecure r
 
 **Proof of exploit.**
 
-```
+```yaml
 # Vulnerable: pip resolves and downloads packages over
 # plaintext HTTP, so any network attacker between the
 # runner and the registry (compromised proxy, malicious
@@ -3275,7 +3275,7 @@ jobs:
 
 **Evidences:** [`UPD-2`](#ctrl-upd-2) L3: Enable automated OSS updates (Dependabot / Renovate).
 
-**How this is detected.** Detects `pip install --upgrade`, `npm update`, `yarn upgrade`, `bundle update`, `cargo update`, `go get -u`, and `composer update`. These commands bypass lockfile pins and pull whatever version is currently latest. Tooling upgrades (`pip install --upgrade pip`) are exempted.
+**How this is detected.** Detects `pip install --upgrade`, `npm update`, `yarn upgrade`, `bundle update`, `cargo update`, `go get -u`, and `composer update`. These commands bypass lockfile pins and pull whatever version is currently latest. Tooling upgrades (`pip install --upgrade pip`, `pip install -U poetry`, `pip install --upgrade black`, etc.) are exempted.
 
 **Recommendation.** Remove dependency-update commands from CI. Use lockfile-pinned install commands (`npm ci`, `pip install -r requirements.txt`) and update dependencies via a dedicated PR workflow (e.g. Dependabot, Renovate).
 
@@ -3283,7 +3283,7 @@ jobs:
 
 **Known false positives.**
 
-- Common build-tool bootstrapping idioms (``pip install --upgrade pip``, ``pip install --upgrade setuptools wheel virtualenv``) and security-tool installs (``pip install --upgrade pip-audit / cyclonedx-bom / semgrep``) are exempted by the ``DEP_UPDATE_RE`` tooling allowlist. Other tooling-upgrade idioms not yet on the list can still trip the rule. Defaults to MEDIUM confidence so CI gates can require ``--min-confidence HIGH`` to ignore.
+- Common build-tool bootstrapping idioms (``pip install --upgrade pip``, ``pip install --upgrade setuptools wheel virtualenv``), security-tool installs (``pip install --upgrade pip-audit / cyclonedx-bom / semgrep``), and quality-tool installs (``pip install --upgrade black / ruff / pytest / pre-commit``) are exempted by the tooling allowlist. Package-manager self-upgrades (``npm install -g npm``, ``corepack enable``) are also exempted. Other tooling-upgrade idioms not yet on the list can still trip the rule. Defaults to MEDIUM confidence so CI gates can require ``--min-confidence HIGH`` to ignore.
 
 **Source:** [`GHA-022`](../providers/github.md#gha-022) in the [GitHub Actions provider](../providers/github.md).
 
@@ -3299,7 +3299,7 @@ jobs:
 
 **Proof of exploit.**
 
-```
+```yaml
 # Vulnerable: every git fetch in the job ignores certificate
 # validity. An attacker on the same network (corporate proxy,
 # hostile WiFi at a remote-dev's home, compromised mirror)
@@ -3353,7 +3353,7 @@ jobs:
 
 **Proof of exploit.**
 
-```
+```yaml
 # Vulnerable: a tag reference can be silently repointed by
 # whoever controls the callee repo. If
 # ``org/release-tools/.github/workflows/release.yml@v1`` is
@@ -3393,7 +3393,7 @@ jobs:
 
 **Proof of exploit.**
 
-```
+```yaml
 # Vulnerable: a step body executes a base64-decoded
 # payload, exfils to ``webhook.site``, or runs a known
 # miner binary. A malicious PR (or compromised co-
@@ -3450,7 +3450,7 @@ jobs:
 
 **Proof of exploit.**
 
-```
+```yaml
 # Vulnerable: pinned to a SHA the attacker landed under @v45.
 # (Substitute the actual malicious-commit SHA from the CVE-2025-30066
 # advisory; the registry in _compromised_actions.py carries it.)
@@ -3531,7 +3531,7 @@ jobs:
 
 **Proof of exploit.**
 
-```
+```yaml
 # Vulnerable: ``uses: rando-user/single-maintainer-action``
 # is a low-star action from a single-maintainer repo,
 # AND the calling job grants ``contents: write`` /
@@ -3625,7 +3625,7 @@ The IOC list is curated and append-only, mirroring the shape of ``_compromised_a
 
 **Proof of exploit.**
 
-```
+```yaml
 # Vulnerable: the IOC strings below are literal Shai-Hulud /
 # s1ngularity indicators. A workflow containing any of them
 # is post-compromise evidence, not pre-compromise risk.
@@ -3673,7 +3673,7 @@ Legitimate uses pass: scanner output written to ``${{ github.workspace }}`` or a
 
 **Proof of exploit.**
 
-```
+```yaml
 # Vulnerable: the scanner harvests secrets, the pipe sends
 # them to a public collector. The Shai-Hulud postinstall
 # ran an in-line equivalent of this exact pipeline.
@@ -3733,7 +3733,7 @@ Does NOT fire on a clearly-scoped invocation, e.g. ``claude --allowedTools 'Read
 
 **Proof of exploit.**
 
-```
+```yaml
 # Vulnerable: the bypass flag turns the agent into an
 # unattended shell that can read ``${{ secrets.* }}`` and
 # POST anywhere on the internet. This is the s1ngularity
@@ -3824,7 +3824,7 @@ Pairs with the per-file PYPI-002 rule (lockfile hash pin presence) on the packag
 
 **Proof of exploit.**
 
-```
+```yaml
 # Vulnerable: ``image: node:20`` is a mutable tag. Docker
 # Hub's node team rebuilds it on every Node point
 # release; a publisher takeover ships code into every
@@ -3865,7 +3865,7 @@ build:
 
 **Proof of exploit.**
 
-```
+```yaml
 # Vulnerable: ``include:`` pulls a remote project without
 # a pinned ref. ``ref:`` defaults to ``HEAD`` of the
 # default branch; whoever can push to that branch on
@@ -3930,7 +3930,7 @@ include:
 
 **Proof of exploit.**
 
-```
+```yaml
 # Vulnerable: pip uses a plaintext-HTTP index and
 # ``--trusted-host`` silences hash verification.
 install:
@@ -4000,7 +4000,7 @@ install:
 
 **Proof of exploit.**
 
-```
+```yaml
 # Vulnerable: ``npm config set strict-ssl false`` (or
 # ``git config http.sslverify false`` /
 # ``NODE_TLS_REJECT_UNAUTHORIZED=0``) disables TLS for
@@ -4049,7 +4049,7 @@ install:
 
 **Proof of exploit.**
 
-```
+```yaml
 # Vulnerable: a job body executes a base64-decoded
 # payload, exfils to ``webhook.site``, or runs a known
 # miner binary. A malicious MR (or a compromised co-
@@ -4088,7 +4088,7 @@ build:
 
 **Proof of exploit.**
 
-```
+```yaml
 # Vulnerable: ``services:`` references mutable image
 # tags. A publisher repoint (or namespace takeover) on
 # the services image swaps the code that runs alongside
@@ -4131,7 +4131,7 @@ integration:
 
 **Proof of exploit.**
 
-```
+```yaml
 # Vulnerable: ``trigger:`` ``include:`` pulls a child
 # pipeline definition from a remote project without
 # pinning the ref. Whoever can push to that project's
@@ -4237,7 +4237,7 @@ v1 charts (HELM-001) are skipped. They predate ``Chart.lock`` and use ``requirem
 
 **Proof of exploit.**
 
-```
+```yaml
 # Vulnerable: ``Chart.yaml`` declares a redis dependency by
 # version range but ``Chart.lock`` is absent. ``helm
 # dependency build`` resolves the range against whatever the
@@ -4290,7 +4290,7 @@ generated: "2026-01-15T10:30:00Z"
 
 **Proof of exploit.**
 
-```
+```yaml
 # Vulnerable: ``helm dependency build`` fetches the redis
 # tarball over plaintext HTTP. Any on-path attacker
 # (compromised proxy, malicious WiFi, BGP hijack on the
@@ -4406,7 +4406,7 @@ dependencies:
 
 **Proof of exploit.**
 
-```
+```yaml
 // Vulnerable: every build resolves @main against the
 // shared-library repo. A push to main (legitimate update
 // from a teammate, a credential leak, a compromised
@@ -4487,7 +4487,7 @@ pipeline {
 
 **Proof of exploit.**
 
-```
+```yaml
 // Vulnerable: ``image 'maven:3.9'`` is a mutable tag.
 // Docker Hub's maven team rebuilds it on every Maven
 // point release; a publisher takeover ships code into
@@ -4530,7 +4530,7 @@ pipeline {
 
 **Proof of exploit.**
 
-```
+```yaml
 // Vulnerable: pip uses a plaintext-HTTP index and
 // ``--trusted-host`` silences hash verification.
 pipeline {
@@ -4616,7 +4616,7 @@ pipeline {
 
 **Proof of exploit.**
 
-```
+```yaml
 // Vulnerable: ``git -c http.sslverify=false clone``
 // (or ``npm config set strict-ssl false``,
 // ``NODE_TLS_REJECT_UNAUTHORIZED=0``) disables
@@ -4688,7 +4688,7 @@ pipeline {
 
 **Proof of exploit.**
 
-```
+```yaml
 // Vulnerable: a stage body executes a base64-decoded
 // payload, exfils to a third-party webhook, or runs a
 // known miner binary. A malicious PR (or a compromised
@@ -4741,7 +4741,7 @@ pipeline {
 
 **Proof of exploit.**
 
-```
+```yaml
 // Vulnerable: ``httpRequest`` with
 // ``ignoreSslErrors: true`` disables certificate
 // verification on the request. A MITM proxy or DNS
@@ -4787,7 +4787,7 @@ pipeline {
 
 **Proof of exploit.**
 
-```
+```yaml
 # Vulnerable: a Lambda function with no CodeSigningConfig
 # attached. Anyone with ``lambda:UpdateFunctionCode`` can
 # push arbitrary code without signature verification; a
@@ -4840,7 +4840,7 @@ Managed entries in ``<dependencyManagement>`` are NOT evaluated by this rule (th
 
 **Proof of exploit.**
 
-```
+```yaml
 <!-- Vulnerable: range admits a future patch version. -->
 <dependency>
   <groupId>org.example</groupId>
@@ -4896,7 +4896,7 @@ Managed entries in ``<dependencyManagement>`` are NOT evaluated by this rule (th
 
 **Proof of exploit.**
 
-```
+```yaml
 <!-- Vulnerable: Maven fetches every dependency tarball
      and pom from this repository over plaintext HTTP. Any
      on-path attacker (compromised proxy, malicious VPN
@@ -4977,7 +4977,7 @@ Managed entries in ``<dependencyManagement>`` are NOT evaluated by this rule (th
 
 **Proof of exploit.**
 
-```
+```yaml
 <!-- Vulnerable: pinned to a Log4Shell-affected version. -->
 <dependency>
   <groupId>org.apache.logging.log4j</groupId>
@@ -5035,7 +5035,7 @@ Managed entries in ``<dependencyManagement>`` are NOT evaluated by this rule (th
 
 **Proof of exploit.**
 
-```
+```yaml
 <!-- Vulnerable: bumping the version to a freshly-
      published release within hours of its appearance on
      Maven Central is exactly the window in which a
@@ -5111,7 +5111,7 @@ Managed entries in ``<dependencyManagement>`` are NOT evaluated by this rule (th
 
 **Proof of exploit.**
 
-```
+```yaml
 // Vulnerable: ``resolved`` URL is present but ``integrity``
 // is missing. npm has nothing to compare against at install
 // time, so a registry that swaps the tarball mid-flight
@@ -5164,7 +5164,7 @@ Standard ``https://registry.npmjs.org`` and other registered registries (GitHub 
 
 **Proof of exploit.**
 
-```
+```yaml
 // Vulnerable: ``resolved`` URL is git+ssh — a fork pulled
 // from an upstream the team can't audit publicly. The
 // branch ``@main`` is mutable; whoever can push to the
@@ -5223,7 +5223,7 @@ This rule guards the *package you're publishing*. To stop *consumed* dependencie
 
 **Proof of exploit.**
 
-```
+```yaml
 // Vulnerable: every consumer who runs ``npm install`` on
 // this package executes ``setup.js`` with THEIR
 // credentials (``GH_TOKEN``, ``NPM_TOKEN``, AWS env, SSH
@@ -5275,7 +5275,7 @@ Skips entries already routed elsewhere: registry specs (NPM-001), ``file:`` / ``
 
 **Proof of exploit.**
 
-```
+```yaml
 // Vulnerable: every ``npm install`` re-resolves ``#main``
 // against the upstream repo's HEAD. A push to ``main``
 // (legitimate co-maintainer commit, leaked PAT, hijacked
@@ -5326,7 +5326,7 @@ Skips entries already routed elsewhere: registry specs (NPM-001), ``file:`` / ``
 
 **Proof of exploit.**
 
-```
+```yaml
 # Vulnerable: package-lock.json carries a compromised
 # version. The current scan flags it because the registry
 # entry matches the (name, version) tuple.
@@ -5384,7 +5384,7 @@ Complements NPM-004 (``package.json`` declares its own install-time hook on the 
 
 **Proof of exploit.**
 
-```
+```yaml
 # Vulnerable: .npmrc carries the npm default (scripts run).
 # A transitive dep with a malicious postinstall (Shai-Hulud,
 # TanStack, ua-parser-js 2021) executes with the developer's
@@ -5425,7 +5425,7 @@ ignore-scripts=true
 
 **Proof of exploit.**
 
-```
+```yaml
 // Vulnerable: bumping ``shiny-lib`` to ``4.2.1`` 90
 // minutes after publication is exactly the window in
 // which Shai-Hulud-class compromises live. npm yanks
@@ -5585,7 +5585,7 @@ ignore-scripts=true
 
 **Proof of exploit.**
 
-```
+```yaml
 # Vulnerable: the image index ships per-architecture
 # manifests but no ``attestation-manifest`` sibling. A
 # downstream verifier (cosign verify-attestation,
@@ -5673,7 +5673,7 @@ ignore-scripts=true
 
 **Proof of exploit.**
 
-```
+```yaml
 # Vulnerable: ``schemaVersion: 1`` predates the digest-
 # pinned design. The client has no way to verify that the
 # pulled blobs match what the registry served; a swapped
@@ -5734,7 +5734,7 @@ Detection scope: the config descriptor digest, every layer descriptor digest (si
 
 **Proof of exploit.**
 
-```
+```yaml
 # Vulnerable: descriptors pin layers by ``sha1:`` digest.
 # sha1 has had practical collisions since SHAttered (2017).
 # An attacker who produces a colliding blob substitutes a
@@ -5825,7 +5825,7 @@ When ``--require-hashes`` is present, pip enforces hash pinning for every requir
 
 **Proof of exploit.**
 
-```
+```yaml
 # Vulnerable: requirements.txt pins the version literal
 # but doesn't pin the artifact bytes. A registry that
 # silently re-publishes ``requests-2.31.0`` with a
@@ -5872,7 +5872,7 @@ Complements DF-021 (Dockerfile ``RUN pip install ``-i http://...``); PYPI-003 ca
 
 **Proof of exploit.**
 
-```
+```yaml
 # Vulnerable: pip resolves every package against a
 # plaintext-HTTP index. Any network attacker between the
 # build runner and the index (compromised corporate proxy,
@@ -5908,7 +5908,7 @@ requests==2.31.0 \
 
 **Proof of exploit.**
 
-```
+```yaml
 # Vulnerable: every ``pip install -r requirements.txt``
 # resolves ``@main`` against the upstream repo. Whoever
 # can push to ``main`` (legitimate co-maintainer, leaked
@@ -5948,7 +5948,7 @@ If the extra index is a hash-locked internal proxy that serves *both* internal a
 
 **Proof of exploit.**
 
-```
+```yaml
 # Vulnerable: pip queries BOTH indexes for every package
 # name and picks the highest version. ``acme-internal`` is
 # an internal-only package the org publishes to the
@@ -5995,7 +5995,7 @@ requests==2.31.0
 
 **Proof of exploit.**
 
-```
+```yaml
 # Vulnerable: requirements.txt pins a compromised version.
 ctx==0.2.2
 
@@ -6036,7 +6036,7 @@ ctx==0.2.2
 
 **Proof of exploit.**
 
-```
+```yaml
 # Vulnerable: pinning to ``shiny-lib==17.0.99`` 2 hours
 # after its publication is exactly the window in which
 # publisher-account compromises live. PyPI yanks malicious
@@ -6095,7 +6095,7 @@ shiny-lib==17.0.98 \
 
 **Proof of exploit.**
 
-```
+```yaml
 # Vulnerable: AWS Signer profile is revoked or
 # inactive. Code-signing pipelines that route through
 # this profile silently fail (or fall back to
@@ -6138,7 +6138,7 @@ lambdacli.update_code_signing_config(
 
 **Proof of exploit.**
 
-```
+```yaml
 # Vulnerable: ``ubuntu:22.04`` is a mutable tag. Whoever
 # controls the registry can repoint it on the next 22.04.x
 # refresh; the next TaskRun pulls the swap silently.
@@ -6183,7 +6183,7 @@ spec:
 
 **Proof of exploit.**
 
-```
+```yaml
 # Vulnerable: ``curl | bash`` trusts the network path AND
 # the installer host. A MITM (compromised proxy, malicious
 # DNS) or a publisher compromise ships malicious code into

@@ -768,7 +768,7 @@ class TestSecretShapes:
     @pytest.mark.parametrize("text", [
         "AKIA" + "A" * 16,
         "AKIA1234567890123456",
-        "value: AKIAIOSFODNN7EXAMPLE",
+        "value: AKIAZ3MHALF2TESTHIJK",
     ])
     def test_aws_key_shape_matches(self, text):
         assert secret_shapes.AWS_KEY_RE.search(text) is not None
@@ -813,7 +813,7 @@ class TestSecretShapes:
 # Provider-shaped untrusted-context regex. Constructed once and reused
 # across the test cases below; mirrors the regex shape that GitLab and
 # Bitbucket helpers ship.
-import re as _re
+import re as _re  # noqa: E402
 
 _UNTRUSTED_RE = _re.compile(r"\$\{?(?:CI_COMMIT_MESSAGE|BITBUCKET_BRANCH)\}?")
 

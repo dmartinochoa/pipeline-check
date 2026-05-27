@@ -475,6 +475,10 @@ KNOWN_UNCOVERED: frozenset[str] = frozenset({
     # which seeds the metadata synthetically.
     "GHA-041", "GHA-042", "GHA-043", "GHA-047", "GHA-089", "GHA-090", "GHA-091",
     "GHA-094", "GHA-095", "GHA-096", "GHA-097", "GHA-098", "GHA-099",
+    # GHA-100 (cosign without identity/issuer) and GHA-102 (recursive
+    # submodule checkout on PR) need multi-step or network context the
+    # per-check harness can't model. Covered by tests/github/.
+    "GHA-100", "GHA-102",
     # Cross-cutting taint engine — covered by tests/test_gha_taint.py
     # with inline workflow docs rather than the per-check fixture
     # pattern; the workflow shapes the rule cares about (multi-step
@@ -485,6 +489,7 @@ KNOWN_UNCOVERED: frozenset[str] = frozenset({
     "TAINT-003",
     "TAINT-004",
     "TAINT-008",
+    "TAINT-009",
     # TAINT-005..007 live under buildkite.rules / tekton.rules /
     # argo.rules; the meta-test only tracks providers in
     # ``_PROVIDER_BY_PREFIX`` (GHA / GL / BB / ADO / JF / CC) so

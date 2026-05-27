@@ -890,7 +890,7 @@ def _render_check_detail(
         # (which trip MD019 / MD022 / MD024 and break section depth).
         parts.append(
             "**Proof of exploit.**\n\n"
-            "```\n"
+            "```yaml\n"
             f"{row.exploit_example.rstrip()}\n"
             "```\n\n"
         )

@@ -22,7 +22,7 @@ workflow](https://github.com/dmartinochoa/pipeline-check/actions/workflows/goat-
 | [`kubernetes-goat`](https://github.com/madhuakula/kubernetes-goat) | **27 / 27 (100%)** | 27 | `scenarios/` manifest tree |
 | [`terragoat`](https://github.com/bridgecrewio/terragoat) | pending curation | - | Direct-HCL parsing shipped; `expected.txt` awaiting population |
 
-**69 check IDs locked across the three fully curated goats.** Any rule
+**42 check IDs locked across the three fully curated goats.** Any rule
 change that stops one from firing on its goat trips the bench in
 CI. The `cicd-goat-comparison` goat maps 27 unique check IDs
 across its curated expected set; the upstream corpus expanded to

@@ -23,7 +23,7 @@ from typing import Any
 
 from ...base import Finding, Severity
 from ...rule import Rule
-from ..base import iter_jobs, job_location
+from ..base import job_location
 
 RULE = Rule(
     id="TAINT-009",
@@ -250,8 +250,13 @@ def check(path: str, doc: dict[str, Any]) -> Finding:
             secret_outputs = env_jobs_with_secret_outputs[needed_job]
             job_text = _job_as_text(job)
             for output_name in secret_outputs:
-                ref = f"needs.{needed_job}.outputs.{output_name}"
-                if ref in job_text:
+                ref_pattern = (
+                    r"needs\." + re.escape(needed_job)
+                    + r"\.outputs\." + re.escape(output_name)
+                    + r"(?![A-Za-z0-9_-])"
+                )
+                if re.search(ref_pattern, job_text):
+                    ref = f"needs.{needed_job}.outputs.{output_name}"
                     offenders.append(
                         f"{job_id} consumes ``{ref}`` from "
                         f"environment-bound job ``{needed_job}`` "

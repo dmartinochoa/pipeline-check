@@ -654,8 +654,20 @@ def _artifact_uri(resource: str) -> str:
     if not resource:
         return "unknown"
     lowered = resource.lower()
+    _file_exts = (
+        ".yml", ".yaml", ".tf", ".json", ".xml", ".toml", ".txt",
+        ".cfg", ".config", ".csproj", ".props", ".lock", ".npmrc",
+    )
+    _bare_names = {
+        "dockerfile", "containerfile", "jenkinsfile", "makefile",
+        "gemfile", "rakefile", "vagrantfile",
+    }
     if (
-        "/" in resource or "\\" in resource or lowered.endswith((".yml", ".yaml", ".tf", ".json", ".xml", ".toml", ".txt", ".cfg", ".config", ".csproj", ".props", ".lock", ".npmrc")) or lowered in {"dockerfile", "containerfile", "jenkinsfile", "makefile", "gemfile", "rakefile", "vagrantfile"} or lowered.startswith(("dockerfile", "containerfile"))
+        "/" in resource
+        or "\\" in resource
+        or lowered.endswith(_file_exts)
+        or lowered in _bare_names
+        or lowered.startswith(("dockerfile", "containerfile"))
     ):
         return urllib.parse.quote(resource.replace("\\", "/"), safe="/")
     return f"resource:///{resource}"

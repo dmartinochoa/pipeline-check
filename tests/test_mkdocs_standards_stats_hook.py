@@ -23,7 +23,7 @@ from pathlib import Path
 REPO = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(REPO))
 
-from hooks import mkdocs_standards_stats as hook
+from hooks import mkdocs_standards_stats as hook  # noqa: E402
 
 
 def test_index_covers_every_registered_standard():

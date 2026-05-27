@@ -280,7 +280,7 @@ class TestLspPackageGetattr:
     def test_unknown_attribute_raises(self) -> None:
         import pipeline_check.lsp as pkg
         with pytest.raises(AttributeError):
-            pkg.does_not_exist
+            pkg.does_not_exist  # noqa: B018
 
 
 # ── findings path-rewrite contract ─────────────────────────────────
