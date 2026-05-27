@@ -412,6 +412,7 @@ STANDARD = Standard(
         "TAINT-006": ["EX-6"],
         "TAINT-007": ["EX-6"],
         "TAINT-008": ["EX-6"],
+        "TAINT-009": ["CA-5"],                 # env-protected secret flows to unprotected job
         # EX-9: Malicious artifact execution
         "GHA-009":  ["EX-9"],
         "JF-013":   ["EX-9"],
@@ -917,6 +918,8 @@ STANDARD = Standard(
         "GHA-097":  ["PER-1"],                     # recursive PR auto-merge loop
         "GHA-098":  ["DE-4"],                      # deploy without security scan gate
         "GHA-099":  ["CA-6"],                      # deploy env plaintext secret
+        "GHA-100":  ["DE-4"],                      # cosign verify no identity binding
+        "GHA-102":  ["EX-12", "PE-1"],             # submodule checkout on PR trigger
         "SCM-048":  ["CA-5"],                      # org codespace secrets scoped to all repos
         "SCM-049":  ["IA-9"],                      # classic PAT where fine-grained suffices
         "NPM-012":  ["IA-9"],                      # publish token lacking restrictions

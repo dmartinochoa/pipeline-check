@@ -129,7 +129,7 @@ def _is_concrete_release(version: str) -> bool:
     v = version.strip()
     if not v:
         return False
-    if v.endswith("-SNAPSHOT") or v.endswith(".SNAPSHOT"):
+    if v.endswith(("-SNAPSHOT", ".SNAPSHOT")):
         return False
     if v in _RANGE_LITERALS:
         return False

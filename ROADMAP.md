@@ -394,6 +394,36 @@ What's planned, what's shipped, and what's deliberately out of scope.
 - v0.2.x — Cloud Build, Jenkins, Terraform, CloudFormation, JUnit
   and Markdown reporters, 13-standard mapping, autofix engine, HTML
   report interactivity.
+- **cicd-goat 38-scenario coverage push (post-1.4.0)** —
+  Three new rules, one widening, three attack chains close every
+  pipeline-check-side gap in the expanded 38-scenario corpus.
+  GHA-100 (``cosign verify`` without ``--certificate-identity`` +
+  ``--certificate-oidc-issuer``, scenario 35, solo catch across all
+  scanners). TAINT-009 (environment-protected secret flows to
+  unprotected consumer job via ``needs.<job>.outputs``, scenario 36,
+  solo catch). GHA-102 (``actions/checkout`` with
+  ``submodules: recursive`` on a PR trigger, scenario 38, solo catch).
+  GHA-063 widened to promote severity to CRITICAL when the bot-actor
+  gate combines with ``gh pr merge --auto`` or the
+  ``hmarr/auto-approve-action`` family (Synacktiv confused-deputy
+  primitive). AC-032 (cosign-unbound artifact to deploy,
+  GHA-100 + GHA-098), AC-033 (environment-secret laundering,
+  TAINT-009 + GHA-098), AC-034 (submodule-poisoned PR to credential
+  exfiltration, GHA-102 + GHA-037/GHA-004). GHA rule count
+  90 -> 93; chain count 45 -> 48. 40 tests. Remaining gap:
+  scenarios 20, 29, 34 need cicd-goat comparison-config fixes
+  (upstream PRs, rules already fire); scenario 37 is blocked by
+  cicd-goat's ``if: false`` safety model (filed upstream).
+- **Secret verifier expansion phase 1 (post-1.4.0)** —
+  Four new live-verification probes: Docker Hub PAT
+  (``/v2/user`` bearer probe, identity extraction), PyPI upload
+  token (405-based auth confirmation against ``upload.pypi.org``),
+  Google Cloud API key (Generative Language API endpoint probe
+  with ``INVALID_ARGUMENT`` / ``API_KEY_INVALID`` classification),
+  JWT (issuer-based routing with Auth0 / Okta / Azure AD / Google
+  userinfo probes; GitHub OIDC tokens recognized with
+  ``sub``-extracted identity but not probed since they are
+  short-lived). Verifier count 9 -> 13. 18 new tests.
 
 ## Post-1.0 candidates
 
@@ -574,16 +604,24 @@ given the GHA rule pack's maturity.
 
 ### Secret verifier expansion
 
-The initial verifier pack covers 9 services (GitHub PAT, GitLab
-PAT, NPM token, Slack token, Anthropic, OpenAI, Hugging Face,
-Stripe, SendGrid).  High-value additions:
+Phase 1 shipped: Docker Hub PAT (``/v2/user`` bearer probe), PyPI
+upload token (405-based auth confirmation against ``upload.pypi.org``),
+Google Cloud API key (Generative Language API probe), and JWT
+(issuer-based routing with Auth0, Okta, Azure AD, Google userinfo
+probes; GitHub OIDC recognized but not probed). Verifier count
+9 -> 13.
 
-- AWS (STS ``GetCallerIdentity``), GCP (tokeninfo endpoint),
-  Azure (Microsoft Graph ``/me``), Docker Hub, JFrog, Datadog,
-  PagerDuty, Twilio.
+Remaining high-value additions:
+
+- AWS (STS ``GetCallerIdentity``) — needs paired access-key + secret;
+  the detector only captures the access-key ID.
+- Azure (Microsoft Graph ``/me``) — Azure tokens are opaque JWTs
+  without a stable prefix pattern; needs a detector first.
+- JFrog, Datadog, PagerDuty — need detector patterns.
+- Twilio — ``SK`` prefix detector exists but verification needs the
+  paired auth token (same paired-credential gap as AWS).
 - Generic entropy-based detection for tokens from services without
   a dedicated verifier.
-- JWT token detection in pipeline configs (surprisingly common).
 
 ### Lower priority
 

@@ -78,7 +78,7 @@ class TestJF010EnvAwsKeys:
             agent { label 'linux-ephemeral' }
             options { timeout(time: 30, unit: 'MINUTES') }
             environment {
-                AWS_ACCESS_KEY_ID = 'AKIAIOSFODNN7EXAMPLE'
+                AWS_ACCESS_KEY_ID = 'AKIAZ3MHALF2TESTHIJK'
                 AWS_SECRET_ACCESS_KEY = 'wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY'
             }
             stages {

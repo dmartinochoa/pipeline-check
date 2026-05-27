@@ -15,9 +15,9 @@ pipeline {
     }
 
     environment {
-        DEBUG_AWS_KEY = "AKIAIOSFODNN7EXAMPLE"
+        DEBUG_AWS_KEY = "AKIAZ3MHALF2TESTHIJK"
         // JF-010 — long-lived AWS keys exposed via env block.
-        AWS_ACCESS_KEY_ID = "AKIAIOSFODNN7EXAMPLE"
+        AWS_ACCESS_KEY_ID = "AKIAZ3MHALF2TESTHIJK"
         AWS_SECRET_ACCESS_KEY = "wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY"
     }
 

@@ -3,7 +3,7 @@
 
 # BK-002: literal AWS access key + token-shaped values inline in env.
 env:
-  AWS_ACCESS_KEY_ID: "AKIAIOSFODNN7EXAMPLE"
+  AWS_ACCESS_KEY_ID: "AKIAZ3MHALF2TESTHIJK"
   GITHUB_TOKEN: "ghp_aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
   DEPLOY_API_KEY: "supersecret-prod-key-please-rotate-me"
 

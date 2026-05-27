@@ -188,7 +188,7 @@ class TestEngine:
             "AC-017", "AC-018", "AC-019", "AC-020",
             "AC-021", "AC-022", "AC-023", "AC-024",
             "AC-025", "AC-026", "AC-027", "AC-028", "AC-029",
-            "AC-030", "AC-031",
+            "AC-030", "AC-031", "AC-032", "AC-033", "AC-034",
             "XPC-001", "XPC-002", "XPC-003", "XPC-004", "XPC-005",
             "XPC-006", "XPC-007", "XPC-008", "XPC-009", "XPC-010",
             "CXPC-001", "CXPC-002", "CXPC-003", "CXPC-004",
@@ -3066,7 +3066,7 @@ class TestCLI:
             "  build:\n"
             "    runs-on: ubuntu-latest\n"
             "    env:\n"
-            "      AWS_ACCESS_KEY_ID: AKIAIOSFODNN7EXAMPLE\n"
+            "      AWS_ACCESS_KEY_ID: AKIAZ3MHALF2TESTHIJK\n"
             "      AWS_SECRET_ACCESS_KEY: notarealsecret/notarealsecret/notarealsecret\n"
             "    steps:\n"
             "      - uses: actions/checkout@v4\n"
@@ -3122,7 +3122,7 @@ class TestCLI:
             "  publish:\n"
             "    runs-on: ubuntu-latest\n"
             "    env:\n"
-            "      AWS_ACCESS_KEY_ID: AKIAIOSFODNN7EXAMPLE\n"
+            "      AWS_ACCESS_KEY_ID: AKIAZ3MHALF2TESTHIJK\n"
             "      AWS_SECRET_ACCESS_KEY: notarealsecret/notarealsecret/notarealsecret\n"
             "    steps:\n"
             "      - run: aws s3 cp build/ s3://prod/\n"
@@ -3167,3 +3167,131 @@ class TestCLI:
         chain_ids = {c["chain_id"] for c in payload.get("chains", [])}
         assert "AC-001" not in chain_ids
         assert "AC-002" in chain_ids
+
+
+class TestChainAC032:
+    """AC-032 — cosign-verified-but-not-bound artifact to production deploy."""
+
+    RESOURCE = "deploy.yml"
+
+    def test_fires_when_both_legs_fail_on_same_workflow(self):
+        out = chains_pkg.evaluate([
+            _f("GHA-100", self.RESOURCE),
+            _f("GHA-098", self.RESOURCE),
+        ])
+        ac32 = [c for c in out if c.chain_id == "AC-032"]
+        assert len(ac32) == 1
+        chain = ac32[0]
+        assert chain.severity is Severity.CRITICAL
+        assert set(chain.triggering_check_ids) == {"GHA-100", "GHA-098"}
+        assert "T1195.002" in chain.mitre_attack
+
+    def test_does_not_fire_without_gha100(self):
+        out = chains_pkg.evaluate([
+            _f("GHA-098", self.RESOURCE),
+        ])
+        assert not any(c.chain_id == "AC-032" for c in out)
+
+    def test_does_not_fire_without_gha098(self):
+        out = chains_pkg.evaluate([
+            _f("GHA-100", self.RESOURCE),
+        ])
+        assert not any(c.chain_id == "AC-032" for c in out)
+
+    def test_does_not_fire_on_different_workflows(self):
+        out = chains_pkg.evaluate([
+            _f("GHA-100", "verify.yml"),
+            _f("GHA-098", "deploy.yml"),
+        ])
+        assert not any(c.chain_id == "AC-032" for c in out)
+
+    def test_does_not_fire_when_legs_passed(self):
+        out = chains_pkg.evaluate([
+            _f("GHA-100", self.RESOURCE, passed=True),
+            _f("GHA-098", self.RESOURCE, passed=True),
+        ])
+        assert not any(c.chain_id == "AC-032" for c in out)
+
+
+class TestChainAC033:
+    """AC-033 — environment-secret laundering to unprotected deploy job."""
+
+    RESOURCE = "deploy.yml"
+
+    def test_fires_when_both_legs_fail_on_same_workflow(self):
+        out = chains_pkg.evaluate([
+            _f("TAINT-009", self.RESOURCE),
+            _f("GHA-098", self.RESOURCE),
+        ])
+        ac33 = [c for c in out if c.chain_id == "AC-033"]
+        assert len(ac33) == 1
+        chain = ac33[0]
+        assert chain.severity is Severity.CRITICAL
+        assert set(chain.triggering_check_ids) == {"TAINT-009", "GHA-098"}
+
+    def test_does_not_fire_without_taint009(self):
+        out = chains_pkg.evaluate([
+            _f("GHA-098", self.RESOURCE),
+        ])
+        assert not any(c.chain_id == "AC-033" for c in out)
+
+    def test_does_not_fire_without_gha098(self):
+        out = chains_pkg.evaluate([
+            _f("TAINT-009", self.RESOURCE),
+        ])
+        assert not any(c.chain_id == "AC-033" for c in out)
+
+    def test_does_not_fire_on_different_workflows(self):
+        out = chains_pkg.evaluate([
+            _f("TAINT-009", "auth.yml"),
+            _f("GHA-098", "deploy.yml"),
+        ])
+        assert not any(c.chain_id == "AC-033" for c in out)
+
+
+class TestChainAC034:
+    """AC-034 — submodule-poisoned PR to credential exfiltration."""
+
+    RESOURCE = "ci.yml"
+
+    def test_fires_with_gha037(self):
+        out = chains_pkg.evaluate([
+            _f("GHA-102", self.RESOURCE),
+            _f("GHA-037", self.RESOURCE),
+        ])
+        ac34 = [c for c in out if c.chain_id == "AC-034"]
+        assert len(ac34) == 1
+        chain = ac34[0]
+        assert chain.severity is Severity.CRITICAL
+        assert "GHA-102" in chain.triggering_check_ids
+
+    def test_fires_with_gha004(self):
+        out = chains_pkg.evaluate([
+            _f("GHA-102", self.RESOURCE),
+            _f("GHA-004", self.RESOURCE),
+        ])
+        ac34 = [c for c in out if c.chain_id == "AC-034"]
+        assert len(ac34) == 1
+
+    def test_does_not_fire_without_gha102(self):
+        out = chains_pkg.evaluate([
+            _f("GHA-037", self.RESOURCE),
+            _f("GHA-004", self.RESOURCE),
+        ])
+        assert not any(c.chain_id == "AC-034" for c in out)
+
+    def test_does_not_fire_on_different_workflows(self):
+        out = chains_pkg.evaluate([
+            _f("GHA-102", "pr.yml"),
+            _f("GHA-037", "ci.yml"),
+        ])
+        assert not any(c.chain_id == "AC-034" for c in out)
+
+    def test_deduplicates_when_both_credential_checks_fire(self):
+        out = chains_pkg.evaluate([
+            _f("GHA-102", self.RESOURCE),
+            _f("GHA-037", self.RESOURCE),
+            _f("GHA-004", self.RESOURCE),
+        ])
+        ac34 = [c for c in out if c.chain_id == "AC-034"]
+        assert len(ac34) == 1

@@ -629,6 +629,7 @@ STANDARD = Standard(
         "TAINT-006": ["6.4.1", "6.5.1"],
         "TAINT-007": ["6.4.1", "6.5.1"],
         "TAINT-008": ["6.4.1", "6.5.1"],
+        "TAINT-009": ["8.2.1", "6.5.1"],                  # env-protected secret flows to unprotected job
         # ── Dockerfile extras ───────────────────────────────────
         "DF-007":   ["10.2.1"],                          # no HEALTHCHECK
         "DF-009":   ["6.5.1"],                           # ADD where COPY suffices
@@ -727,6 +728,8 @@ STANDARD = Standard(
         "GHA-097":  ["6.4.3", "6.5.1"],                   # recursive PR auto-merge loop
         "GHA-098":  ["6.3.1", "6.4.3"],                   # deploy without security scan gate
         "GHA-099":  ["8.2.1", "6.5.1"],                   # deploy env plaintext secret
+        "GHA-100":  ["6.5.1", "6.3.3"],                   # cosign verify no identity binding
+        "GHA-102":  ["6.4.1", "6.5.1"],                   # submodule checkout on PR trigger
         "SCM-048":  ["7.2.5", "8.2.1"],                   # org codespace secrets scoped to all repos
         "SCM-049":  ["7.2.5", "8.2.1"],                   # classic PAT used where fine-grained suffices
         "NPM-012":  ["8.2.1", "6.5.1"],                   # publish token missing restrictions

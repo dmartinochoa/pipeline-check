@@ -29,7 +29,7 @@ missing major surfaces or requires extra config. No = not in scope.
 | Capability | Pipeline-Check | Checkov | KICS | Semgrep | tfsec | Trivy |
 |---|---|---|---|---|---|---|
 | **CI/CD pipeline configs** | | | | | | |
-| GitHub Actions | Yes (90 rules) | Partial | Yes | Partial | No | No |
+| GitHub Actions | Yes (93 rules) | Partial | Yes | Partial | No | No |
 | GitLab CI | Yes (37) | No | Partial | No | No | No |
 | Jenkins (Declarative + Scripted) | Yes (35) | No | No | Partial | No | No |
 | CircleCI | Yes (31) | No | Partial | No | No | No |
@@ -40,6 +40,7 @@ missing major surfaces or requires extra config. No = not in scope.
 | Drone CI | Yes (11) | No | No | No | No | No |
 | Tekton | Yes (16) | No | Partial | No | No | No |
 | Argo Workflows | Yes (16) | No | Partial | No | No | No |
+| Argo CD | Yes (9) | No | No | No | No | No |
 | **SCM posture (governance)** | | | | | | |
 | GitHub repo branch protection / secret scanning / Dependabot | Yes (49, `SCM-001..049`) | No | No | No | No | No |
 | **Infrastructure as code** | | | | | | |
@@ -51,13 +52,15 @@ missing major surfaces or requires extra config. No = not in scope.
 | **Cloud + supply-chain** | | | | | | |
 | Live AWS account scan | Yes (71 rules, boto3) | No | No | No | No | Partial |
 | OCI image manifests (provenance, SLSA) | Yes (15, incl. ATTEST-001..007 attestation content) | No | No | No | No | Partial |
+| **Dependency supply chain** | | | | | | |
+| Package registries (npm / PyPI / Maven / NuGet) | Yes (38 rules across 4 providers) | No | No | No | No | Partial |
 | **Analysis depth** | | | | | | |
 | Dataflow taint, multi-step / cross-job | Yes (TAINT-001..008 across 5 providers) | No | No | Rules-only | No | No |
-| Cross-provider attack chains (MITRE ATT&CK) | Yes (38 chains: 29 AC + 9 XPC) | No | No | No | No | No |
+| Cross-provider attack chains (MITRE ATT&CK) | Yes (48 chains: 34 AC + 10 XPC + 4 CXPC cross-repo) | No | No | No | No | No |
 | Multi-scanner SARIF ingest + correlation | Yes (`--ingest`, `INGEST-<tool>-<rule>`, chain engine re-evaluates over the union) | No | No | No | No | No |
 | Vulnerable-by-design benchmark | Yes (`bench/`, 6 cases, current recall 6/6, CI-gated) | No | No | No | No | No |
 | Autofix patches (unified diff) | Yes (111 fixers) | Partial | No | Partial | No | No |
-| Compliance frameworks (per-finding controls) | 14 (OWASP, SLSA, NIST SSDF, NIST 800-53, NIST 800-190, NIST CSF 2, CIS AWS, CIS Kubernetes, CIS Supply Chain, PCI DSS, SOC 2, ESF, OpenSSF, S2C2F) | Partial | Partial | Partial | No | Partial |
+| Compliance frameworks (per-finding controls) | 16 (OWASP, SLSA, NIST SSDF, NIST 800-53, NIST 800-190, NIST CSF 2, CIS AWS, CIS GitHub, CIS Kubernetes, CIS Supply Chain, PCI DSS, SOC 2, ESF, OpenSSF, S2C2F, OSC&R) | Partial | Partial | Partial | No | Partial |
 | Custom rule DSL | Yes (YAML) | No | Yes (Rego/JSON) | Yes (YAML) | No | Partial |
 | Baseline / new-findings-only | Yes | Partial | No | Yes | No | No |
 | Diff-mode (only changed files) | Yes | Partial | No | Partial | No | Partial |

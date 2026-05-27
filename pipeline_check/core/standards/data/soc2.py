@@ -659,6 +659,7 @@ STANDARD = Standard(
         "TAINT-006": ["CC6.6", "CC6.8"],
         "TAINT-007": ["CC6.6", "CC6.8"],
         "TAINT-008": ["CC6.6", "CC6.8"],
+        "TAINT-009": ["CC6.1"],                  # env-protected secret flows to unprotected job
         # ── Dockerfile extras ───────────────────────────────────
         "DF-009":   ["CC8.1"],              # ADD where COPY suffices
         "DF-011":   ["CC8.1"],              # apt cache not cleaned (drift)
@@ -698,6 +699,8 @@ STANDARD = Standard(
         "GHA-097":  ["CC8.1"],                   # recursive PR auto-merge loop
         "GHA-098":  ["CC8.1", "CC6.8"],          # deploy without security scan gate
         "GHA-099":  ["CC6.1"],                   # deploy env plaintext secret
+        "GHA-100":  ["CC8.1"],                   # cosign verify no identity binding
+        "GHA-102":  ["CC6.8"],                   # submodule checkout on PR trigger
         "SCM-048":  ["CC6.1"],                   # org codespace secrets scoped to all repos
         "SCM-049":  ["CC6.1", "CC6.3"],          # classic PAT used where fine-grained suffices
         "NPM-012":  ["CC6.1", "CC8.1"],          # publish token missing restrictions

@@ -327,7 +327,7 @@ Every check that evidences this standard, rendered once with its detection mecha
 
 **Proof of exploit.**
 
-```
+```yaml
 # Vulnerable: ``privileged: true`` gives the container full
 # access to the node's devices and capabilities. A workload
 # compromise (poisoned image, build-script RCE) becomes a
@@ -384,7 +384,7 @@ spec:
 
 **Proof of exploit.**
 
-```
+```yaml
 # Vulnerable: ``hostPath: /var/run/docker.sock`` mounts the
 # Docker socket into the template's container. The workflow
 # can then ``docker run --privileged -v /:/host ...`` and
@@ -437,7 +437,7 @@ spec:
 
 **Proof of exploit.**
 
-```
+```yaml
 # Vulnerable: the AWS access key literal lives in the
 # WorkflowTemplate manifest, committed to git and readable
 # by every namespace member with workflowtemplates: get on
@@ -519,7 +519,7 @@ spec:
 
 **Proof of exploit.**
 
-```
+```yaml
 # Vulnerable: ``hostNetwork: true`` makes the Pod share
 # the node's network namespace. The Pod can sniff every
 # other Pod's traffic on the node, bind privileged
@@ -560,7 +560,7 @@ spec:
 
 **Proof of exploit.**
 
-```
+```yaml
 # Vulnerable: ``hostPID: true`` lets the Pod see every
 # process on the node. A compromise of the Pod can
 # ``ps aux`` for credentials in other containers'
@@ -600,7 +600,7 @@ spec:
 
 **Proof of exploit.**
 
-```
+```yaml
 # Vulnerable: ``hostIPC: true`` shares the node's IPC
 # namespace. Pods on the node can read each other's
 # POSIX shared memory, semaphores, and message queues —
@@ -639,7 +639,7 @@ spec:
 
 **Proof of exploit.**
 
-```
+```yaml
 # Vulnerable: ``privileged: true`` gives the container the
 # equivalent of root on the node — full ``/dev`` access,
 # every Linux capability, and the ability to bypass
@@ -696,7 +696,7 @@ spec:
 
 **Proof of exploit.**
 
-```
+```yaml
 # Vulnerable: ``allowPrivilegeEscalation`` defaults to
 # ``true``. A non-root process inside the container
 # can gain elevated capabilities through suid binaries
@@ -742,7 +742,7 @@ spec:
 
 **Proof of exploit.**
 
-```
+```yaml
 # Vulnerable: ``runAsNonRoot`` not declared (or
 # explicitly false) AND ``runAsUser`` not set lets the
 # image's default user run the container — for most
@@ -802,7 +802,7 @@ Most stateless services need no capabilities at all. Avoid ``SYS_ADMIN`` (effect
 
 **Proof of exploit.**
 
-```
+```yaml
 # Vulnerable: no ``capabilities`` block means the
 # container starts with the default Linux capability
 # set (NET_RAW, NET_BIND_SERVICE, etc.). Worse:
@@ -885,7 +885,7 @@ spec:
 
 **Proof of exploit.**
 
-```
+```yaml
 # Vulnerable: pod mounts the host's root filesystem.
 apiVersion: v1
 kind: Pod
@@ -938,7 +938,7 @@ spec:
 
 **Proof of exploit.**
 
-```
+```yaml
 # Vulnerable: ``/var/run/docker.sock`` mounted into the
 # container exposes the Docker API as root on the node.
 # A compromised pod (RCE in app, malicious image) runs
@@ -989,7 +989,7 @@ spec:
 
 **Proof of exploit.**
 
-```
+```yaml
 # Vulnerable: a literal credential value in a container
 # ``env`` block. The Pod manifest is in etcd; anyone
 # with ``pods/get`` on the namespace reads the value.
@@ -1040,7 +1040,7 @@ spec:
 
 **Proof of exploit.**
 
-```
+```yaml
 # Vulnerable: a Kubernetes Secret with credential-shaped
 # literals in ``stringData`` (or base64'd in ``data``).
 # The Secret object is in etcd; ``kubectl get secret
@@ -1103,7 +1103,7 @@ spec:
 
 **Proof of exploit.**
 
-```
+```yaml
 # Vulnerable: any pod that uses the ``default`` ServiceAccount
 # in the ``app`` namespace gets cluster-admin. A compromised
 # pod (RCE, poisoned image, malicious sidecar) can list
@@ -1165,7 +1165,7 @@ roleRef:
 
 **Proof of exploit.**
 
-```
+```yaml
 # Vulnerable: a Role / ClusterRole that grants verbs:
 # ["*"] on resources: ["*"]. Equivalent to admin on
 # the scope (namespace for Role, cluster for
@@ -1218,7 +1218,7 @@ rules:
 
 **Proof of exploit.**
 
-```
+```yaml
 # Vulnerable: a namespace with no Pod Security Admission
 # label. Any Pod can land in it with no built-in
 # enforcement against privileged / hostPath / etc.
@@ -1256,7 +1256,7 @@ metadata:
 
 **Proof of exploit.**
 
-```
+```yaml
 # Vulnerable: a non-system workload uses
 # ``priorityClassName: system-cluster-critical`` or
 # ``system-node-critical``. Those classes are reserved
@@ -1324,7 +1324,7 @@ spec:
 
 **Proof of exploit.**
 
-```
+```yaml
 # Vulnerable: a RoleBinding (or ClusterRoleBinding)
 # grants permissions to the ``default`` ServiceAccount
 # in a namespace. Every Pod in that namespace that
@@ -1382,7 +1382,7 @@ roleRef:
 
 **Proof of exploit.**
 
-```
+```yaml
 # Vulnerable: a workload has a ``tolerations`` entry
 # for ``node-role.kubernetes.io/control-plane`` AND
 # the matching ``nodeSelector``. The Pod gets
@@ -1480,7 +1480,7 @@ spec:
 
 **Proof of exploit.**
 
-```
+```yaml
 # Vulnerable: explicit ``runAsUser: 0`` runs the
 # container as root inside its namespace. Combined
 # with the kernel's user-namespace mapping (or its
@@ -1542,7 +1542,7 @@ spec:
 
 **Proof of exploit.**
 
-```
+```yaml
 # Vulnerable: a ConfigMap with a credential-shaped
 # value. ConfigMaps are NOT encrypted at rest in etcd
 # (Secrets are, when encryption-at-rest is configured);
@@ -1618,7 +1618,7 @@ stringData:
 
 **Proof of exploit.**
 
-```
+```yaml
 # Vulnerable: ``procMount: Unmasked`` removes the
 # default kernel-managed masks on ``/proc``. The
 # container can read kernel internals
@@ -1659,7 +1659,7 @@ spec:
 
 **Proof of exploit.**
 
-```
+```yaml
 # Vulnerable: a RoleBinding grants permissions to
 # ``system:anonymous`` (or the
 # ``system:unauthenticated`` group). Anyone who can
@@ -1710,7 +1710,7 @@ roleRef:
 
 **Proof of exploit.**
 
-```
+```yaml
 # Vulnerable: ``securityContext.privileged: true`` gives
 # the step container full kernel-namespace access on the
 # node. A workload compromise becomes a node-level shell
@@ -1756,7 +1756,7 @@ spec:
 
 **Proof of exploit.**
 
-```
+```yaml
 # Vulnerable: mounting ``/var/run/docker.sock`` into a
 # step gives the Task root access to the node's Docker
 # API. ``docker run --privileged -v /:/host`` from inside
@@ -1818,7 +1818,7 @@ spec:
 
 **Proof of exploit.**
 
-```
+```yaml
 # Vulnerable: a sidecar runs alongside every step in the
 # Task and shares the pod's volumes / network. A
 # privileged sidecar can escape to the node the same way

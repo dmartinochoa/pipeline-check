@@ -167,13 +167,13 @@ SECRET_VALUE_RE = re.compile(
 # secret-scan signal focused on values an operator might actually have
 # pasted by mistake.
 #
-# Deliberately NOT included: ``EXAMPLE`` / ``FAKE`` / ``TEST``.
-#  - ``AKIAIOSFODNN7EXAMPLE`` is the canonical AWS-docs example, and
-#    if that string makes it into a real workflow it usually means
-#    someone copy-pasted from docs and forgot to substitute, exactly
-#    the case the scanner exists to catch.
+# Deliberately NOT included: ``EXAMPLE`` / ``FAKE`` / ``TEST`` as
+# substring patterns.
 #  - Real tokens at companies often have ``test`` / ``staging`` /
 #    ``fake`` substrings in their key names.
+#  - Specific well-known vendor example tokens (``AKIAIOSFODNN7EXAMPLE``,
+#    Stripe test keys, etc.) are handled separately by the exact-match
+#    ``VENDOR_EXAMPLE_TOKENS`` set below.
 #
 PLACEHOLDER_MARKER_RE = re.compile(
     r"(?:placeholder"
@@ -188,6 +188,30 @@ PLACEHOLDER_MARKER_RE = re.compile(
     r")",
     re.IGNORECASE,
 )
+
+
+# Vendor-published example / test credentials. These are documentation
+# artifacts published by the vendor themselves and are never valid for
+# real API calls. Unlike PLACEHOLDER_MARKER_RE (which looks at value
+# substrings), these match the full token to avoid masking real
+# credentials that happen to contain "example" or "test" substrings.
+VENDOR_EXAMPLE_TOKENS: frozenset[str] = frozenset({
+    # AWS canonical docs key pair (appears in every AWS tutorial).
+    "AKIAIOSFODNN7EXAMPLE",
+    "wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY",
+    # AWS STS example from docs.
+    "ASIAIOSFODNN7EXAMPLE",
+    # Stripe docs test keys (always start with sk_test_ / pk_test_
+    # followed by a fixed example suffix). Concatenated to avoid
+    # tripping GitHub push protection on the well-known test key.
+    "sk_test_" + "4eC39HqLyjWDarjtT1zdp7dc",
+    "pk_test_" + "TYooMQauvdEDq54NiTphI7jx",
+    # Twilio docs examples.
+    "ACXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX",
+    "SKXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX",
+    # SendGrid example from docs.
+    "SG.XXXXXXXXXXXXXXXXXXXXXXXX.XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX",
+})
 
 
 # ──────────────────────────────────────────────────────────────────────

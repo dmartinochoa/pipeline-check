@@ -50,6 +50,7 @@ from ._patterns import (
     PLACEHOLDER_MARKER_RE,
     SECRET_DETECTORS,
     SECRET_VALUE_RE,
+    VENDOR_EXAMPLE_TOKENS,
 )
 
 # Mutable registry, appended to by :func:`register_pattern` so users
@@ -395,6 +396,8 @@ def classify_tokens_raw(doc: Any) -> list[tuple[str, str]]:
             label = _classify(token)
             if label is None:
                 continue
+            if token in VENDOR_EXAMPLE_TOKENS:
+                continue
             seen.add(token)
             results.append((label, token))
     return results
@@ -460,6 +463,8 @@ def find_secret_values(doc: Any) -> list[str]:
             # the variable's inferred type to ``str | None``.
             token_label = _classify(token)
             if token_label is None:
+                continue
+            if token in VENDOR_EXAMPLE_TOKENS:
                 continue
             seen_tokens.add(token)
             hits.append(f"{token_label}:{_redact(token)}")

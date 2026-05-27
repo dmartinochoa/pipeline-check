@@ -1,4 +1,5 @@
-# Check IDs the terragoat is intended to demonstrate. Currently
-# skipped in goats.yml because pipeline-check's Terraform provider
-# consumes ``terraform show -json`` plan output and terragoat ships
-# .tf source only. Unskip + populate once direct-HCL parsing lands.
+# Check IDs the terragoat is intended to demonstrate. Direct-HCL
+# parsing shipped post-1.3.0 and goats.yml scans via --tf-source.
+# Populate by running:
+#   python bench/goat_runner.py --goat terragoat --suggest
+# then hand-curate against terragoat's documented misconfigurations.

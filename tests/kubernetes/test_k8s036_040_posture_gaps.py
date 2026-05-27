@@ -133,7 +133,7 @@ class TestK8S037:
 
     def test_fails_with_aws_key_value(self):
         ctx = k8s_ctx(_cm("config", {
-            "AWS_ACCESS_KEY_ID": "AKIAIOSFODNN7EXAMPLE",
+            "AWS_ACCESS_KEY_ID": "AKIAZ3MHALF2TESTHIJK",
         }))
         f = check_k8s037(ctx)
         assert not f.passed
@@ -157,7 +157,7 @@ class TestK8S037:
     def test_fails_with_binary_data_carrying_aws_key(self):
         # binaryData is base64-encoded; decode and detect.
         import base64
-        encoded = base64.b64encode(b"AKIAIOSFODNN7EXAMPLE").decode()
+        encoded = base64.b64encode(b"AKIAZ3MHALF2TESTHIJK").decode()
         doc = {
             "apiVersion": "v1",
             "kind": "ConfigMap",

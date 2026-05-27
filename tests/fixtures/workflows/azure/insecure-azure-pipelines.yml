@@ -9,7 +9,7 @@ pr:
 
 variables:
   - name: AWS_ACCESS_KEY_ID
-    value: AKIAIOSFODNN7EXAMPLE
+    value: AKIAZ3MHALF2TESTHIJK
   - name: DATABASE_PASSWORD
     value: hunter2
 

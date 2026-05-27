@@ -63,7 +63,7 @@ class ArgoCDProvider(BaseProvider):
                         kinds: list[str] = []
                         for g in gens:
                             if isinstance(g, dict):
-                                for k in g.keys():
+                                for k in g:
                                     if isinstance(k, str):
                                         kinds.append(k)
                         metadata["generator_kinds"] = kinds

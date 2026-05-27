@@ -751,6 +751,7 @@ STANDARD = Standard(
         "TAINT-006": ["PR.IR-01", "PR.PS-05"],
         "TAINT-007": ["PR.IR-01", "PR.PS-05"],
         "TAINT-008": ["PR.IR-01", "PR.PS-05"],
+        "TAINT-009": ["PR.AA-01", "PR.DS-01"],  # env-protected secret flows to unprotected job
         # ── Dockerfile extras ───────────────────────────────────
         "DF-009":   ["GV.SC-05"],               # ADD where COPY suffices
         "DF-024":   ["PR.PS-05"],               # npm install runs lifecycle scripts
@@ -785,6 +786,8 @@ STANDARD = Standard(
         "GHA-097":  ["PR.PS-01"],                # recursive PR auto-merge loop
         "GHA-098":  ["PR.PS-06", "PR.PS-02"],    # deploy without security scan gate
         "GHA-099":  ["PR.AA-01", "PR.DS-01"],    # deploy env plaintext secret
+        "GHA-100":  ["GV.SC-05", "PR.PS-06"],    # cosign verify no identity binding
+        "GHA-102":  ["PR.IR-01", "PR.PS-05"],    # submodule checkout on PR trigger
         "SCM-048":  ["PR.AA-05"],                # org codespace secrets scoped to all repos
         "SCM-049":  ["PR.AA-01", "PR.AA-05"],    # classic PAT used where fine-grained suffices
         "NPM-012":  ["PR.AA-01", "GV.SC-05"],   # publish token missing restrictions

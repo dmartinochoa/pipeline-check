@@ -208,7 +208,7 @@ class TestTKN005LiteralSecrets:
               image: alpine:3
               env:
                 - name: AWS_ACCESS_KEY_ID
-                  value: "AKIAIOSFODNN7EXAMPLE"
+                  value: "AKIAZ3MHALF2TESTHIJK"
               script: echo
         """
         f = run_check(cfg, "TKN-005")

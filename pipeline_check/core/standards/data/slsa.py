@@ -395,6 +395,7 @@ STANDARD = Standard(
         "TAINT-006": ["Build.L3.Isolated", "Build.L3.NonFalsifiable"],
         "TAINT-007": ["Build.L3.Isolated", "Build.L3.NonFalsifiable"],
         "TAINT-008": ["Build.L3.Isolated", "Build.L3.NonFalsifiable"],
+        "TAINT-009": ["Build.L3.NonFalsifiable"],                  # env-protected secret flows to unprotected job
         # ── NPM / PyPI / Maven dep supply-chain ──────────────────
         # Each unpinned / non-registry / compromised-version finding
         # is a tenant-substitutable input — the canonical
@@ -599,6 +600,8 @@ STANDARD = Standard(
         "GHA-097":  ["Build.L3.Isolated"],                         # recursive PR auto-merge loop
         "GHA-098":  ["Build.L3.NonFalsifiable"],                   # deploy without security scan gate
         "GHA-099":  ["Build.L3.NonFalsifiable"],                   # deploy env plaintext secret
+        "GHA-100":  ["Build.L3.NonFalsifiable"],                   # cosign verify no identity binding
+        "GHA-102":  ["Build.L3.Isolated"],                         # submodule checkout on PR trigger
         "SCM-048":  ["Build.L3.NonFalsifiable"],                   # org codespace secrets scoped to all repos
         "SCM-049":  ["Build.L3.NonFalsifiable"],                   # classic PAT where fine-grained suffices
         "NPM-012":  ["Build.L2.Signed"],                           # publish token missing restrictions

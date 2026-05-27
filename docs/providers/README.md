@@ -76,6 +76,11 @@ requires editing `Scanner`, `Reporter`, or the CLI.
     <p>Parses <code>Workflow</code> and <code>WorkflowTemplate</code> CRDs. Image pinning, parameter injection, container template posture.</p>
     <span class="pg-doc-card__meta">{{ providers.argo.checks }}</span>
   </a>
+  <a class="pg-doc-card" href="argocd/">
+    <h3>Argo CD</h3>
+    <p>Parses <code>Application</code>, <code>ApplicationSet</code>, and <code>AppProject</code> CRDs plus <code>argocd-cm</code> / <code>argocd-rbac-cm</code> ConfigMaps. Source repos, destinations, RBAC, auto-sync, PR generators.</p>
+    <span class="pg-doc-card__meta">{{ providers.argocd.checks }}</span>
+  </a>
   <a class="pg-doc-card" href="dockerfile/">
     <h3>Dockerfile</h3>
     <p>Parses <code>Dockerfile</code> / <code>Containerfile</code>. Image pinning, USER hygiene, secret-in-env, RUN posture.</p>

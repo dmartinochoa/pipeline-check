@@ -24,7 +24,7 @@ class TestCC005AWSLongLivedKeys:
             docker:
               - image: cimg/aws:2024.03
             environment:
-              AWS_ACCESS_KEY_ID: AKIAIOSFODNN7EXAMPLE
+              AWS_ACCESS_KEY_ID: AKIAZ3MHALF2TESTHIJK
               AWS_SECRET_ACCESS_KEY: wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY
             steps: [checkout]
         """
@@ -57,7 +57,7 @@ class TestCC008LiteralSecrets:
               - image: cimg/base@sha256:0000000000000000000000000000000000000000000000000000000000000001
             environment:
               # Literal AWS access key value pasted into YAML.
-              AWS_ACCESS_KEY_ID: AKIAIOSFODNN7EXAMPLE
+              AWS_ACCESS_KEY_ID: AKIAZ3MHALF2TESTHIJK
             steps: [checkout]
         """
         f = run_check(cfg, "CC-008")

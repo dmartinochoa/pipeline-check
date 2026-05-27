@@ -241,7 +241,7 @@ class TestSuppression:
         # An AKIA-shaped value has BOTH high entropy AND a known
         # prefix. Only the prefix label should fire, never both.
         enable_entropy_detection(True)
-        doc = {"AWS_ACCESS_KEY_ID": "AKIAIOSFODNN7EXAMPLE"}
+        doc = {"AWS_ACCESS_KEY_ID": "AKIAZ3MHALF2TESTHIJK"}
         hits = find_secret_values(doc)
         assert any(h.startswith("aws_access_key:") for h in hits)
         assert all(not h.startswith("entropy:") for h in hits), hits
@@ -288,7 +288,7 @@ class TestPreCollectedListShape:
         # it the test would still pass if list input silently
         # skipped every detector.
         enable_entropy_detection(True)
-        text = "AWS_ACCESS_KEY_ID=AKIAIOSFODNN7EXAMPLE\n"
+        text = "AWS_ACCESS_KEY_ID=AKIAZ3MHALF2TESTHIJK\n"
         hits = find_secret_values([text])
         assert any(h.startswith("aws_access_key:") for h in hits), hits
         assert all(not h.startswith("entropy:") for h in hits)

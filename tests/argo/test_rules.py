@@ -372,7 +372,7 @@ class TestARGO006LiteralSecrets:
                 image: alpine:3
                 env:
                   - name: AWS_ACCESS_KEY_ID
-                    value: "AKIAIOSFODNN7EXAMPLE"
+                    value: "AKIAZ3MHALF2TESTHIJK"
         """
         f = run_check(cfg, "ARGO-006")
         assert not f.passed

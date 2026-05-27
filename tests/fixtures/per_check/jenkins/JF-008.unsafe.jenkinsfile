@@ -1,4 +1,4 @@
 pipeline {
   agent { label 'build' }
-  environment { DEBUG = 'AKIAIOSFODNN7EXAMPLE' }
+  environment { DEBUG = 'AKIAZ3MHALF2TESTHIJK' }
 }

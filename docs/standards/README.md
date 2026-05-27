@@ -76,6 +76,11 @@ same check can evidence controls in multiple standards at once.
     <p>Secure Supply Chain Consumption Framework, ingest, inventory, scan, rebuild, fix.</p>
     <span class="pg-doc-card__meta">{{ standards.s2c2f.controls }} controls · {{ standards.s2c2f.checks }} checks evidenced</span>
   </a>
+  <a class="pg-doc-card" href="oscr/">
+    <h3>OSC&amp;R</h3>
+    <p>Open Software Supply Chain Attack Reference. MITRE ATT&amp;CK-style matrix for software supply chain attacks: 12 tactics, 86 techniques.</p>
+    <span class="pg-doc-card__meta">{{ standards.oscr.controls }} controls · {{ standards.oscr.checks }} checks evidenced</span>
+  </a>
   <a class="pg-doc-card" href="soc2/">
     <h3>SOC 2</h3>
     <p>Trust Services Criteria. Audit-friendly mappings for Security, Confidentiality, and Availability.</p>

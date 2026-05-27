@@ -421,23 +421,37 @@ DEP_UPDATE_RE = _re.compile(
 
 #: Tooling upgrades that are safe.
 #:
-#: Two categories:
+#: Three categories:
 #:
 #:   * Build-system tools, ``pip``, ``setuptools``, ``wheel``,
-#:     ``virtualenv``, ``build``. These are used to produce / install
-#:     the artifact, not to ship inside it.
-#:   * Security-tooling installs, ``pip-audit``, ``cyclonedx-bom``,
-#:     ``cyclonedx-py``, ``safety``, ``bandit``, ``semgrep``. These
-#:     are CI scanners that lint or attest the artifact; the version
-#:     pin churn is irrelevant to the supply chain because their
-#:     output never lands in the wheel.
+#:     ``virtualenv``, ``build``, ``poetry``, ``pipx``, ``uv``,
+#:     ``twine``, ``flit``, ``hatch``. These are used to produce /
+#:     install the artifact, not to ship inside it.
+#:   * Security and quality tooling installs, ``pip-audit``,
+#:     ``cyclonedx-bom``, ``safety``, ``bandit``, ``semgrep``, ``ruff``,
+#:     ``mypy``, ``black``, ``isort``, ``flake8``, ``pylint``,
+#:     ``pytest``, ``tox``, ``nox``, ``pre-commit``, ``commitizen``.
+#:     These are CI scanners/linters that lint or attest the artifact;
+#:     the version pin churn is irrelevant to the supply chain because
+#:     their output never lands in the wheel.
+#:   * Package-manager self-upgrades, ``npm install -g npm``,
+#:     ``npm install -g yarn/pnpm/corepack``, ``corepack enable``.
+#:     These upgrade the build toolchain, not the shipped artifact.
 _DEP_UPDATE_TOOL_EXEMPT_RE = _re.compile(
     r"\bpip3?\s+install\s+(?:"
     r"(?:--upgrade|-U)\s+(?:pip|setuptools|wheel|virtualenv|build"
-    r"|pip-audit|cyclonedx-bom|cyclonedx-py|safety|bandit|semgrep|ruff|mypy)\b"
+    r"|pip-audit|cyclonedx-bom|cyclonedx-py|safety|bandit|semgrep|ruff|mypy"
+    r"|poetry|pipx|uv|twine|flit|hatch|black|isort|flake8|pylint"
+    r"|pytest|tox|nox|pre-commit|commitizen)\b"
     r"|(?:pip|setuptools|wheel|virtualenv|build"
-    r"|pip-audit|cyclonedx-bom|cyclonedx-py|safety|bandit|semgrep|ruff|mypy)"
+    r"|pip-audit|cyclonedx-bom|cyclonedx-py|safety|bandit|semgrep|ruff|mypy"
+    r"|poetry|pipx|uv|twine|flit|hatch|black|isort|flake8|pylint"
+    r"|pytest|tox|nox|pre-commit|commitizen)"
     r"\s+(?:--upgrade|-U))"
+    # npm/yarn global installs of the package manager itself or CLI tools.
+    r"|\bnpm\s+(?:install|i)\s+(?:-g|--global)\s+npm\b"
+    r"|\bnpm\s+(?:install|i)\s+(?:-g|--global)\s+(?:yarn|pnpm|corepack)\b"
+    r"|\bcorepack\s+enable\b"
 )
 
 

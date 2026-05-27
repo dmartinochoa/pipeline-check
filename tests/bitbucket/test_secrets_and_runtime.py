@@ -22,7 +22,7 @@ class TestBB008LiteralSecrets:
             - step:
                 max-time: 30
                 script:
-                  - export AWS_KEY=AKIAIOSFODNN7EXAMPLE
+                  - export AWS_KEY=AKIAZ3MHALF2TESTHIJK
                   - aws s3 ls
         """
         f = run_check(cfg, "BB-008")
@@ -83,7 +83,7 @@ class TestBB011AWSLongLived:
                 max-time: 30
                 image: amazon/aws-cli:2.15.0
                 variables:
-                  AWS_KEY: AKIAIOSFODNN7EXAMPLE
+                  AWS_KEY: AKIAZ3MHALF2TESTHIJK
                 script:
                   - aws s3 ls
         """

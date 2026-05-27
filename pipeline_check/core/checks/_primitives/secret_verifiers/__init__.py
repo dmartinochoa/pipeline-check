@@ -109,9 +109,13 @@ def _register_builtins() -> None:
         return
     _REGISTRY_LOADED = True
 
+    from .docker_hub import DockerHubTokenVerifier
     from .github import GitHubTokenVerifier
     from .gitlab import GitLabTokenVerifier
+    from .google import GoogleAPIKeyVerifier
+    from .jwt import JWTTokenVerifier
     from .npm import NpmTokenVerifier
+    from .pypi import PyPITokenVerifier
     from .saas_api_keys import (
         AnthropicKeyVerifier,
         HuggingFaceTokenVerifier,
@@ -130,6 +134,10 @@ def _register_builtins() -> None:
     _REGISTRY["sendgrid"] = SendGridKeyVerifier()
     _REGISTRY["stripe_secret"] = StripeKeyVerifier()
     _REGISTRY["gitlab_pat"] = GitLabTokenVerifier()
+    _REGISTRY["docker_hub_pat"] = DockerHubTokenVerifier()
+    _REGISTRY["pypi_token"] = PyPITokenVerifier()
+    _REGISTRY["google_api_key"] = GoogleAPIKeyVerifier()
+    _REGISTRY["jwt"] = JWTTokenVerifier()
 
 
 def get_verifier(detector_name: str) -> SecretVerifier | None:

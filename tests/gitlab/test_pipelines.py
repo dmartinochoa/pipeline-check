@@ -175,7 +175,7 @@ class TestGL003LiteralSecrets:
         f = _run(
             """
             variables:
-              MY_KEY: AKIAIOSFODNN7EXAMPLE
+              MY_KEY: AKIAZ3MHALF2TESTHIJK
             build:
               script: [make]
             """,

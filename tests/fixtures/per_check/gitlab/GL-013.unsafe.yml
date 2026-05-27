@@ -1,5 +1,5 @@
 variables:
-  AWS_ACCESS_KEY_ID: AKIAIOSFODNN7EXAMPLE
+  AWS_ACCESS_KEY_ID: AKIAZ3MHALF2TESTHIJK
 deploy:
   script:
     - aws s3 sync dist/ s3://bucket/

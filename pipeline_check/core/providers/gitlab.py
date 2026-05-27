@@ -123,7 +123,7 @@ class GitLabProvider(BaseProvider):
         for pipe in context.pipelines:
             data = pipe.data if isinstance(pipe.data, dict) else {}
             jobs = sorted(
-                k for k in data.keys()
+                k for k in data
                 if isinstance(k, str) and k not in _GITLAB_TOPLEVEL_KEYWORDS
             )
             out.append(Component(

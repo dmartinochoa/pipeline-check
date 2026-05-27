@@ -33,7 +33,7 @@ def _safe_parse_xml(path: Path) -> ET.ElementTree:
     """Parse XML with a size guard against oversized files."""
     if path.stat().st_size > _MAX_XML_BYTES:
         raise ValueError(f"file exceeds {_MAX_XML_BYTES} byte limit")
-    return ET.parse(path)  # type: ignore[return-value]  # noqa: S314
+    return ET.parse(path)  # type: ignore[return-value]
 
 
 # ── Dataclasses ─────────────────────────────────────────────────────────
@@ -119,7 +119,7 @@ class NuGetContext:
             try:
                 central_versions = _parse_central_props(central_props)
                 scanned += 1
-            except Exception as exc:  # noqa: BLE001
+            except Exception as exc:
                 warnings.append(f"{central_props}: XML parse error: {exc}")
                 skipped += 1
 
@@ -148,7 +148,7 @@ class NuGetContext:
                     elif flow == "packages.lock.json":
                         locks.append(_parse_lock_json(fpath, rel))
                         scanned += 1
-                except Exception as exc:  # noqa: BLE001
+                except Exception as exc:
                     warnings.append(f"{rel}: parse error: {exc}")
                     skipped += 1
 

@@ -768,7 +768,7 @@ class TestSecretShapes:
     @pytest.mark.parametrize("text", [
         "AKIA" + "A" * 16,
         "AKIA1234567890123456",
-        "value: AKIAIOSFODNN7EXAMPLE",
+        "value: AKIAZ3MHALF2TESTHIJK",
     ])
     def test_aws_key_shape_matches(self, text):
         assert secret_shapes.AWS_KEY_RE.search(text) is not None

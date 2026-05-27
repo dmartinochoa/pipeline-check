@@ -35,8 +35,8 @@ def _clean_user_patterns():
 _FILLER = "0123456789abcdefghijABCDEFGHIJ" * 10  # plenty of variety
 
 DETECTORS: list[tuple[str, str]] = [
-    ("aws_access_key",        "AKIAIOSFODNN7EXAMPLE"),
-    ("aws_access_key",        "ASIAIOSFODNN7EXAMPLE"),
+    ("aws_access_key",        "AKIAZ3MHALF2TESTHIJK"),
+    ("aws_access_key",        "ASIAZ3MHALF2TESTHIJK"),
     ("github_token",          "ghp_" + _FILLER[:40]),
     ("github_token",          "gho_" + _FILLER[:36]),
     ("slack_token",           "xoxb-1234567890123-1234567890123"),
@@ -187,14 +187,28 @@ def test_placeholder_tokens_are_suppressed(token):
     )
 
 
-def test_aws_canonical_example_is_still_flagged():
-    """``AKIAIOSFODNN7EXAMPLE`` is the canonical AWS docs example. It
-    is DELIBERATELY left in the flag set — if it shows up in a real
-    workflow it almost certainly means someone copy-pasted from docs
-    and forgot to substitute. That's exactly the case the scanner
-    exists to catch."""
-    hits = secrets_mod.find_secret_values({"k": "AKIAIOSFODNN7EXAMPLE"})
-    assert hits and hits[0].startswith("aws_access_key:")
+def test_vendor_example_tokens_suppressed():
+    """Vendor-published example keys should not produce findings."""
+    stripe_key = "sk_test_" + "4eC39HqLyjWDarjtT1zdp7dc"
+    doc = {
+        "env": {
+            "AWS_KEY": "AKIAIOSFODNN7EXAMPLE",
+            "STRIPE": stripe_key,
+        }
+    }
+    hits = secrets_mod.find_secret_values(doc)
+    # Neither vendor example should fire.
+    for h in hits:
+        assert "AKIAIOSFODNN7EXAMPLE" not in h
+        assert stripe_key not in h
+
+
+def test_vendor_example_tokens_suppressed_in_classify_raw():
+    """The raw classifier used by --verify-secrets also skips vendor
+    example tokens so the verifier doesn't waste probes on them."""
+    doc = {"k": "AKIAIOSFODNN7EXAMPLE"}
+    results = secrets_mod.classify_tokens_raw(doc)
+    assert all(tok != "AKIAIOSFODNN7EXAMPLE" for _, tok in results)
 
 
 # ──────────────────────────────────────────────────────────────────────
@@ -273,13 +287,13 @@ def test_pem_body_does_not_emit_token_hits():
 def test_hit_label_format_is_detector_then_redacted():
     """Stable contract: ``<detector>:<redacted-value>``. Reports and
     ignore-rule tooling parse these by splitting on the first ``:``."""
-    hits = secrets_mod.find_secret_values({"k": "AKIAIOSFODNN7EXAMPLE"})
+    hits = secrets_mod.find_secret_values({"k": "AKIAZ3MHALF2TESTHIJK"})
     assert hits
     name, _, redacted = hits[0].partition(":")
     assert name == "aws_access_key"
     # Redaction shape: first 4 + ellipsis + last 2.
     assert redacted.startswith("AKIA")
-    assert redacted.endswith("LE")
+    assert redacted.endswith("JK")
     assert "…" in redacted
 
 
@@ -298,8 +312,8 @@ def test_user_pattern_uses_custom_label():
 def test_dedup_within_doc():
     """Repeated occurrences of the same token collapse to one hit."""
     hits = secrets_mod.find_secret_values({
-        "a": "AKIAIOSFODNN7EXAMPLE",
-        "b": "AKIAIOSFODNN7EXAMPLE",
+        "a": "AKIAZ3MHALF2TESTHIJK",
+        "b": "AKIAZ3MHALF2TESTHIJK",
     })
     assert len(hits) == 1
 

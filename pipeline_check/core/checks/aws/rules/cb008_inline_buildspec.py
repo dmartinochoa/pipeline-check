@@ -67,7 +67,7 @@ def _is_inline(buildspec: str) -> bool:
     if not buildspec:
         return False
     text = buildspec.strip()
-    if text.startswith("arn:aws:s3:::") or text.startswith("s3://"):
+    if text.startswith(("arn:aws:s3:::", "s3://")):
         return True
     # A single-line relative path never contains a newline, colon, or
     # pipe. Anything multi-line or containing a YAML block marker is

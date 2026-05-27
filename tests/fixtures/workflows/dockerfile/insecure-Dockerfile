@@ -11,7 +11,7 @@ FROM python:3.12-slim
 # credential-shaped KEY name + any non-empty literal value, so the
 # placeholder still triggers it the same way a real secret would.
 ENV API_KEY=EXAMPLE-FAKE-KEY-DO-NOT-USE
-ENV AWS_ACCESS_KEY_ID=AKIAIOSFODNN7EXAMPLE
+ENV AWS_ACCESS_KEY_ID=AKIAZ3MHALF2TESTHIJK
 ARG DATABASE_PASSWORD=EXAMPLE-FAKE-PASSWORD
 
 # DF-020: ARG declares a credential-named build arg without a default.

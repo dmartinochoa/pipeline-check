@@ -10,8 +10,28 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 PRs landing on `dev` between releases append entries below. The
 release commit collapses this section into `## [X.Y.Z] - <date>`.
 
+## [1.5.0] - 2026-05-27
+
 ### Added
 
+- **Secret verifier expansion (phase 1).** Four new live-verification
+  probes for ``--verify-secrets``: Docker Hub PAT, PyPI upload token,
+  Google Cloud API key, and JWT (issuer-based routing with Auth0, Okta,
+  Azure AD, Google userinfo probes). Verifier count 9 -> 13. 18 tests.
+- **cicd-goat 38-scenario coverage push (31/38 -> 38/38).** Three new
+  rules, one rule widening, and three new attack chains close all
+  remaining gaps in the cicd-goat 38-scenario comparison matrix.
+  GHA-100 (``cosign verify`` without ``--certificate-identity`` +
+  ``--certificate-oidc-issuer``, scenario 35), TAINT-009
+  (environment-protected secret flows to unprotected consumer job via
+  ``needs.<job>.outputs``, scenario 36), GHA-102 (``actions/checkout``
+  with ``submodules: recursive`` on a PR trigger, scenario 38).
+  GHA-063 widened to promote severity to CRITICAL when the bot-actor
+  gate combines with ``gh pr merge --auto`` or the
+  ``hmarr/auto-approve-action`` family (confused-deputy primitive).
+  AC-032 (cosign-unbound artifact to deploy), AC-033 (environment-secret
+  laundering), AC-034 (submodule-poisoned PR to credential exfiltration).
+  GHA rule count 90 -> 93; chain count 45 -> 48. 40 new tests.
 - **Build-time dependency SBOM generation (``--output cyclonedx``).** New
   CycloneDX 1.6 JSON output format. ``--output cyclonedx`` emits a
   standards-compliant BOM of every build-time dependency the pipeline
@@ -170,6 +190,33 @@ release commit collapses this section into `## [X.Y.Z] - <date>`.
 
 ### Changed
 
+- **FN/FP quality sweep.** Five improvements to reduce false negatives
+  and false positives across the check landscape:
+  1. **Jenkins keyed-hex + entropy gap closed (FN fix).** JF-008 now
+     extracts key-value pairs from Groovy ``environment {}`` blocks and
+     runs a second pass with dict input so the keyed-hex (40-char
+     lowercase hex bound to a credential-named key) and entropy
+     detectors fire on Jenkins pipelines. Previously these passes were
+     silently skipped because JF-008 passed a pre-collected string list.
+  2. **Vendor example-key allowlist (FP fix).** New
+     ``VENDOR_EXAMPLE_TOKENS`` frozenset in ``_patterns.py`` suppresses
+     well-known documentation tokens (AWS ``AKIAIOSFODNN7EXAMPLE``,
+     Stripe ``sk_test_`` docs keys, Twilio ``ACXX...`` / ``SKXX...``
+     placeholders, SendGrid docs example). All ``*008`` rules updated.
+  3. **Dep-update tooling exemptions expanded (FP fix).** 15 new tools
+     added to the ``_DEP_UPDATE_TOOL_EXEMPT_RE`` allowlist: ``poetry``,
+     ``pipx``, ``uv``, ``twine``, ``flit``, ``hatch``, ``black``,
+     ``isort``, ``flake8``, ``pylint``, ``pytest``, ``tox``, ``nox``,
+     ``pre-commit``, ``commitizen``. npm/corepack self-upgrade patterns
+     also added.
+  4. **GHA-004 reusable-workflow caller note (FN visibility).** When a
+     workflow contains reusable-workflow callers whose permissions
+     can't be verified without ``--resolve-remote``, the finding
+     description now names the unverifiable jobs and points at the flag.
+  5. **``--resolve-remote`` coverage delta documented.** New "What
+     ``--resolve-remote`` unlocks" section in ``docs/usage.md`` with
+     per-provider tables showing what checks degrade or go silent
+     without the flag.
 - **GHA-004 widened with top-level write-scope aggregation.** When a
   workflow-level ``permissions:`` block grants a write scope that no
   inheriting job consumes, the rule now flags the excess grant.
@@ -195,6 +242,15 @@ release commit collapses this section into `## [X.Y.Z] - <date>`.
 
 ### Fixed
 
+- **TAINT-009 substring false positive.** The consumer-job reference
+  check used substring ``in`` to match ``needs.X.outputs.token``,
+  which also matched ``needs.X.outputs.tokenized``. Replaced with
+  regex + negative lookahead for exact output-name boundaries.
+- **Vendor example-key false positives.** New
+  ``VENDOR_EXAMPLE_TOKENS`` allowlist suppresses well-known
+  documentation tokens (AWS ``AKIAIOSFODNN7EXAMPLE``, Stripe
+  ``sk_test_`` docs keys, Twilio/SendGrid docs examples) across all
+  ``*008`` literal-secret rules.
 - **Stale standards count across 7 doc surfaces.** The OSC&R standard
   (16th) shipped in post-1.4.0 but ``action.yml``, ``pyproject.toml``,
   ``mkdocs.yml``, ``CONTRIBUTING.md``, ``.github/DOCKERHUB.md``,

@@ -261,7 +261,7 @@ runs:
     - uses: actions/checkout@v3
     - run: curl -sL https://example.com/install.sh | bash
       shell: bash
-    - run: echo "AWS_ACCESS_KEY_ID=AKIAIOSFODNN7EXAMPLE" >> $GITHUB_ENV
+    - run: echo "AWS_ACCESS_KEY_ID=AKIAZ3MHALF2TESTHIJK" >> $GITHUB_ENV
       shell: bash
 """
 

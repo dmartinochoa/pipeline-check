@@ -54,21 +54,21 @@ _REPO = Path(__file__).resolve().parent.parent
 if str(_REPO) not in sys.path:
     sys.path.insert(0, str(_REPO))
 
-from pipeline_check.core import chains as _chains  # noqa: E402
-from pipeline_check.core.checks.base import Finding  # noqa: E402
-from pipeline_check.core.checks.dockerfile.base import DockerfileContext  # noqa: E402
-from pipeline_check.core.checks.dockerfile.pipelines import DockerfileChecks  # noqa: E402
-from pipeline_check.core.checks.github.base import GitHubContext  # noqa: E402
-from pipeline_check.core.checks.github.workflows import WorkflowChecks  # noqa: E402
-from pipeline_check.core.checks.kubernetes.base import KubernetesContext  # noqa: E402
-from pipeline_check.core.checks.kubernetes.manifests import (  # noqa: E402
+from pipeline_check.core import chains as _chains
+from pipeline_check.core.checks.base import Finding
+from pipeline_check.core.checks.dockerfile.base import DockerfileContext
+from pipeline_check.core.checks.dockerfile.pipelines import DockerfileChecks
+from pipeline_check.core.checks.github.base import GitHubContext
+from pipeline_check.core.checks.github.workflows import WorkflowChecks
+from pipeline_check.core.checks.kubernetes.base import KubernetesContext
+from pipeline_check.core.checks.kubernetes.manifests import (
     KubernetesManifestChecks,
 )
-from pipeline_check.core.checks.scm.base import (  # noqa: E402
+from pipeline_check.core.checks.scm.base import (
     DiskSCMFetcher,
     SCMContext,
 )
-from pipeline_check.core.checks.scm.posture import SCMPostureChecks  # noqa: E402
+from pipeline_check.core.checks.scm.posture import SCMPostureChecks
 
 CASES_DIR = Path(__file__).resolve().parent / "cases"
 
@@ -186,7 +186,7 @@ def _scan_case(case_dir: Path) -> list[str]:
     try:
         for chain in _chains.evaluate(findings):
             fired.add(chain.chain_id)
-    except Exception as exc:  # noqa: BLE001
+    except Exception as exc:
         # The chain engine should never raise on well-formed
         # findings. If a chain rule introduces a regression that
         # crashes evaluation, the bench gate has to fail loudly —

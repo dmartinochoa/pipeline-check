@@ -40,11 +40,11 @@ RULE = Rule(
     ),
     known_fp=(
         "Test fixtures and documentation blobs sometimes embed "
-        "credential-shaped strings (JWT samples, AKIAI... examples). "
-        "The AWS canonical example ``AKIAIOSFODNN7EXAMPLE`` is "
-        "deliberately NOT suppressed, if it appears in a real "
-        "workflow it almost always means a copy-paste from docs was "
-        "never substituted. Defaults to LOW confidence.",
+        "credential-shaped strings (JWT samples, vendor example keys). "
+        "Well-known vendor example tokens (``AKIAIOSFODNN7EXAMPLE``, "
+        "Stripe ``sk_test_`` docs keys) are suppressed via the "
+        "``VENDOR_EXAMPLE_TOKENS`` allowlist. Defaults to LOW "
+        "confidence.",
     ),
     incident_refs=(
         "Uber 2016 GitHub leak: an AWS access key embedded in a "

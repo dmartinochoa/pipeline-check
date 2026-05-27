@@ -124,7 +124,7 @@ def _workflow_call_secret_names(doc: dict[str, Any]) -> list[str]:
     secrets = wf_call.get("secrets")
     if not isinstance(secrets, dict):
         return []
-    return [str(name) for name in secrets.keys()]
+    return [str(name) for name in secrets]
 
 
 def _flatten_string_values(value: Any, out: list[str]) -> None:

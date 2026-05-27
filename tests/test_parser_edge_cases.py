@@ -207,7 +207,7 @@ class TestGitLabEdgeCases:
         ctx = _gitlab_ctx(
             "variables:\n"
             "  MY_KEY:\n"
-            "    value: AKIAIOSFODNN7EXAMPLE\n"
+            "    value: AKIAZ3MHALF2TESTHIJK\n"
             "    description: 'oops'\n"
             "build: {script: [make]}\n"
         )

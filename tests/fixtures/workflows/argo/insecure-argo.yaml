@@ -15,7 +15,7 @@ spec:
     parameters:
       # ARGO-006: literal AWS access key in workflow argument.
       - name: aws_access_key
-        value: "AKIAIOSFODNN7EXAMPLE"  # checkov:skip=CKV_SECRET_2 test fixture
+        value: "AKIAZ3MHALF2TESTHIJK"  # checkov:skip=CKV_SECRET_2 test fixture
       - name: ref
         value: "main"
   # ARGO-004: hostPath volume.

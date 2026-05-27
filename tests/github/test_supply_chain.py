@@ -321,6 +321,126 @@ class TestGHA022DepUpdate:
         f = run_check(wf, "GHA-022")
         assert f.passed
 
+    def test_exempt_pip_upgrade_pip(self):
+        wf = """
+        name: ci
+        on: push
+        permissions: { contents: read }
+        jobs:
+          build:
+            runs-on: ubuntu-latest
+            timeout-minutes: 30
+            steps:
+              - run: pip install --upgrade pip
+        """
+        f = run_check(wf, "GHA-022")
+        assert f.passed
+
+    def test_exempt_pip_upgrade_poetry(self):
+        wf = """
+        name: ci
+        on: push
+        permissions: { contents: read }
+        jobs:
+          build:
+            runs-on: ubuntu-latest
+            timeout-minutes: 30
+            steps:
+              - run: pip install --upgrade poetry
+        """
+        f = run_check(wf, "GHA-022")
+        assert f.passed
+
+    def test_exempt_pip_upgrade_black(self):
+        wf = """
+        name: ci
+        on: push
+        permissions: { contents: read }
+        jobs:
+          build:
+            runs-on: ubuntu-latest
+            timeout-minutes: 30
+            steps:
+              - run: pip3 install -U black
+        """
+        f = run_check(wf, "GHA-022")
+        assert f.passed
+
+    def test_exempt_pip_upgrade_pre_commit(self):
+        wf = """
+        name: ci
+        on: push
+        permissions: { contents: read }
+        jobs:
+          build:
+            runs-on: ubuntu-latest
+            timeout-minutes: 30
+            steps:
+              - run: pip install pre-commit --upgrade
+        """
+        f = run_check(wf, "GHA-022")
+        assert f.passed
+
+    def test_exempt_npm_global_self_upgrade(self):
+        wf = """
+        name: ci
+        on: push
+        permissions: { contents: read }
+        jobs:
+          build:
+            runs-on: ubuntu-latest
+            timeout-minutes: 30
+            steps:
+              - run: npm install -g npm
+        """
+        f = run_check(wf, "GHA-022")
+        assert f.passed
+
+    def test_exempt_npm_global_yarn_install(self):
+        wf = """
+        name: ci
+        on: push
+        permissions: { contents: read }
+        jobs:
+          build:
+            runs-on: ubuntu-latest
+            timeout-minutes: 30
+            steps:
+              - run: npm install -g yarn
+        """
+        f = run_check(wf, "GHA-022")
+        assert f.passed
+
+    def test_exempt_npm_global_pnpm_install(self):
+        wf = """
+        name: ci
+        on: push
+        permissions: { contents: read }
+        jobs:
+          build:
+            runs-on: ubuntu-latest
+            timeout-minutes: 30
+            steps:
+              - run: npm i --global pnpm
+        """
+        f = run_check(wf, "GHA-022")
+        assert f.passed
+
+    def test_exempt_corepack_enable(self):
+        wf = """
+        name: ci
+        on: push
+        permissions: { contents: read }
+        jobs:
+          build:
+            runs-on: ubuntu-latest
+            timeout-minutes: 30
+            steps:
+              - run: corepack enable
+        """
+        f = run_check(wf, "GHA-022")
+        assert f.passed
+
 
 # ── GHA-020 vulnerability scanning ──────────────────────────────────
 

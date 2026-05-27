@@ -37,7 +37,7 @@ class TestGL013AwsLongLived:
           stage: deploy
           image: amazon/aws-cli:2.15.0
           script:
-            - export AWS_ACCESS_KEY_ID=AKIAIOSFODNN7EXAMPLE
+            - export AWS_ACCESS_KEY_ID=AKIAZ3MHALF2TESTHIJK
             - aws s3 ls
           timeout: 30 minutes
         """

@@ -73,6 +73,8 @@ class TestVerifierRegistry:
             "github_token", "npm_token", "slack_token",
             "anthropic_api_key", "openai_api_key",
             "stripe_secret", "gitlab_pat",
+            "docker_hub_pat", "pypi_token",
+            "google_api_key", "jwt",
         ]:
             assert has_verifier(det), f"missing verifier for {det}"
 
@@ -391,3 +393,205 @@ class TestScannerVerification:
 
         _verify_and_enrich_findings([finding], ctx, show_identity=True)
         assert "octocat" in finding.description
+
+
+# ── Docker Hub verifier ────────────────────────────────────────────
+
+
+class TestDockerHubVerifier:
+    @patch(
+        "pipeline_check.core.checks._primitives.secret_verifiers"
+        ".docker_hub.bearer_probe",
+    )
+    def test_verified(self, mock_probe: MagicMock) -> None:
+        mock_probe.return_value = ProbeResponse(
+            status=200,
+            body=json.dumps({"username": "myuser"}).encode(),
+        )
+        v = get_verifier("docker_hub_pat")
+        assert v is not None
+        result = v.probe("dckr_pat_fake")
+        assert result.outcome == VerifyOutcome.VERIFIED
+        assert "myuser" in (result.identity or "")
+
+    @patch(
+        "pipeline_check.core.checks._primitives.secret_verifiers"
+        ".docker_hub.bearer_probe",
+    )
+    def test_unverified(self, mock_probe: MagicMock) -> None:
+        mock_probe.return_value = ProbeResponse(status=401, body=b"")
+        v = get_verifier("docker_hub_pat")
+        assert v is not None
+        result = v.probe("dckr_pat_fake")
+        assert result.outcome == VerifyOutcome.UNVERIFIED
+
+    @patch(
+        "pipeline_check.core.checks._primitives.secret_verifiers"
+        ".docker_hub.bearer_probe",
+    )
+    def test_unknown_on_server_error(self, mock_probe: MagicMock) -> None:
+        mock_probe.return_value = ProbeResponse(status=500, body=b"")
+        v = get_verifier("docker_hub_pat")
+        assert v is not None
+        result = v.probe("dckr_pat_fake")
+        assert result.outcome == VerifyOutcome.UNKNOWN
+
+
+# ── PyPI verifier ──────────────────────────────────────────────────
+
+
+class TestPyPIVerifier:
+    @patch(
+        "pipeline_check.core.checks._primitives.secret_verifiers"
+        ".pypi.bearer_probe",
+    )
+    def test_verified_via_405(self, mock_probe: MagicMock) -> None:
+        mock_probe.return_value = ProbeResponse(status=405, body=b"")
+        v = get_verifier("pypi_token")
+        assert v is not None
+        result = v.probe("pypi-AgEIcHlwaS5vcmcfake")
+        assert result.outcome == VerifyOutcome.VERIFIED
+
+    @patch(
+        "pipeline_check.core.checks._primitives.secret_verifiers"
+        ".pypi.bearer_probe",
+    )
+    def test_unverified(self, mock_probe: MagicMock) -> None:
+        mock_probe.return_value = ProbeResponse(status=403, body=b"")
+        v = get_verifier("pypi_token")
+        assert v is not None
+        result = v.probe("pypi-AgEIcHlwaS5vcmcfake")
+        assert result.outcome == VerifyOutcome.UNVERIFIED
+
+
+# ── Google API key verifier ────────────────────────────────────────
+
+
+class TestGoogleAPIKeyVerifier:
+    @patch(
+        "pipeline_check.core.checks._primitives.secret_verifiers"
+        ".google.http_probe",
+    )
+    def test_verified(self, mock_probe: MagicMock) -> None:
+        mock_probe.return_value = ProbeResponse(
+            status=200,
+            body=json.dumps({"models": []}).encode(),
+        )
+        v = get_verifier("google_api_key")
+        assert v is not None
+        result = v.probe("AIzaSyFake35CharacterKeyHereXX")
+        assert result.outcome == VerifyOutcome.VERIFIED
+
+    @patch(
+        "pipeline_check.core.checks._primitives.secret_verifiers"
+        ".google.http_probe",
+    )
+    def test_unverified_invalid_key(self, mock_probe: MagicMock) -> None:
+        mock_probe.return_value = ProbeResponse(
+            status=403,
+            body=json.dumps({
+                "error": {"status": "PERMISSION_DENIED",
+                          "message": "API_KEY_INVALID"},
+            }).encode(),
+        )
+        v = get_verifier("google_api_key")
+        assert v is not None
+        result = v.probe("AIzaSyFake35CharacterKeyHereXX")
+        assert result.outcome == VerifyOutcome.UNVERIFIED
+
+    @patch(
+        "pipeline_check.core.checks._primitives.secret_verifiers"
+        ".google.http_probe",
+    )
+    def test_unknown_on_server_error(self, mock_probe: MagicMock) -> None:
+        mock_probe.return_value = ProbeResponse(status=500, body=b"")
+        v = get_verifier("google_api_key")
+        assert v is not None
+        result = v.probe("AIzaSyFake35CharacterKeyHereXX")
+        assert result.outcome == VerifyOutcome.UNKNOWN
+
+
+# ── JWT verifier ───────────────────────────────────────────────────
+
+
+class TestJWTVerifier:
+    @staticmethod
+    def _make_jwt(payload: dict) -> str:
+        import base64 as b64
+        header = b64.urlsafe_b64encode(
+            json.dumps({"alg": "HS256", "typ": "JWT"}).encode(),
+        ).rstrip(b"=").decode()
+        body = b64.urlsafe_b64encode(
+            json.dumps(payload).encode(),
+        ).rstrip(b"=").decode()
+        return f"{header}.{body}.fakesignature"
+
+    @patch(
+        "pipeline_check.core.checks._primitives.secret_verifiers"
+        ".jwt.bearer_probe",
+    )
+    def test_verified_auth0(self, mock_probe: MagicMock) -> None:
+        mock_probe.return_value = ProbeResponse(
+            status=200,
+            body=json.dumps({"sub": "auth0|12345"}).encode(),
+        )
+        token = self._make_jwt({
+            "iss": "https://myapp.auth0.com/",
+            "sub": "auth0|12345",
+        })
+        v = get_verifier("jwt")
+        assert v is not None
+        result = v.probe(token)
+        assert result.outcome == VerifyOutcome.VERIFIED
+        assert "auth0" in (result.identity or "")
+
+    @patch(
+        "pipeline_check.core.checks._primitives.secret_verifiers"
+        ".jwt.bearer_probe",
+    )
+    def test_unverified_expired(self, mock_probe: MagicMock) -> None:
+        mock_probe.return_value = ProbeResponse(status=401, body=b"")
+        token = self._make_jwt({
+            "iss": "https://myapp.auth0.com/",
+            "sub": "auth0|12345",
+        })
+        v = get_verifier("jwt")
+        assert v is not None
+        result = v.probe(token)
+        assert result.outcome == VerifyOutcome.UNVERIFIED
+
+    def test_unknown_for_github_oidc(self) -> None:
+        token = self._make_jwt({
+            "iss": "https://token.actions.githubusercontent.com",
+            "sub": "repo:org/repo:ref:refs/heads/main",
+        })
+        v = get_verifier("jwt")
+        assert v is not None
+        result = v.probe(token)
+        assert result.outcome == VerifyOutcome.UNKNOWN
+        assert "github-oidc" in (result.identity or "")
+
+    def test_unknown_for_unrecognized_issuer(self) -> None:
+        token = self._make_jwt({
+            "iss": "https://custom-idp.example.com",
+            "sub": "user123",
+        })
+        v = get_verifier("jwt")
+        assert v is not None
+        result = v.probe(token)
+        assert result.outcome == VerifyOutcome.UNKNOWN
+        assert "custom-idp" in (result.reason or "")
+
+    def test_unknown_for_missing_issuer(self) -> None:
+        token = self._make_jwt({"sub": "user123"})
+        v = get_verifier("jwt")
+        assert v is not None
+        result = v.probe(token)
+        assert result.outcome == VerifyOutcome.UNKNOWN
+        assert "missing" in (result.reason or "").lower()
+
+    def test_unknown_for_invalid_jwt(self) -> None:
+        v = get_verifier("jwt")
+        assert v is not None
+        result = v.probe("not.a.valid-jwt")
+        assert result.outcome == VerifyOutcome.UNKNOWN

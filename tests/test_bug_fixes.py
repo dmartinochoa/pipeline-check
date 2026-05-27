@@ -205,7 +205,7 @@ def test_bug_d_terraform_filter_matches_module_dir_exactly(monkeypatch):
 # ────────────────────────────────────────────────────────────────────────
 
 def test_bug_e_gha008_preserves_existing_comment():
-    wf = 'env:\n  AWS_KEY: AKIAIOSFODNN7EXAMPLE  # tracked in INFRA-4123\n'
+    wf = 'env:\n  AWS_KEY: AKIAZ3MHALF2TESTHIJK  # tracked in INFRA-4123\n'
     out = autofix.generate_fix(_f("GHA-008"), wf)
     assert out is not None
     assert "AKIA" not in out
@@ -216,7 +216,7 @@ def test_bug_e_gha008_preserves_existing_comment():
 
 
 def test_bug_e_gha008_still_adds_todo_without_existing_comment():
-    wf = 'env:\n  AWS_KEY: AKIAIOSFODNN7EXAMPLE\n'
+    wf = 'env:\n  AWS_KEY: AKIAZ3MHALF2TESTHIJK\n'
     out = autofix.generate_fix(_f("GHA-008"), wf)
     assert out is not None
     assert "AKIA" not in out

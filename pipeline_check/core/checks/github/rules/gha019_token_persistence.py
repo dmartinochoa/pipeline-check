@@ -42,7 +42,7 @@ def _action_prefix(uses: object) -> str | None:
     """
     if not isinstance(uses, str):
         return None
-    if uses.startswith("./") or uses.startswith("docker://"):
+    if uses.startswith(("./", "docker://")):
         return None
     return uses.split("@", 1)[0].strip().lower()
 

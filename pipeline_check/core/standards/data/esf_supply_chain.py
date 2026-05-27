@@ -672,6 +672,7 @@ STANDARD = Standard(
         "TAINT-006": ["ESF-D-INJECTION"],
         "TAINT-007": ["ESF-D-INJECTION"],
         "TAINT-008": ["ESF-D-INJECTION"],
+        "TAINT-009": ["ESF-D-SECRETS"],            # env-protected secret flows to unprotected job
         # ── Dockerfile extras ───────────────────────────────────
         "DF-009":   ["ESF-S-PIN-DEPS", "ESF-S-VERIFY-DEPS"],   # ADD where COPY suffices
         "DF-011":   ["ESF-D-BUILD-ENV"],            # apt cache not cleaned
@@ -757,6 +758,8 @@ STANDARD = Standard(
         "GHA-097":  ["ESF-D-CODE-REVIEW"],           # recursive PR auto-merge loop
         "GHA-098":  ["ESF-D-BUILD-ENV"],            # deploy without security scan gate
         "GHA-099":  ["ESF-D-SECRETS"],             # deploy env plaintext secret
+        "GHA-100":  ["ESF-D-SIGN-ARTIFACTS"],     # cosign verify no identity binding
+        "GHA-102":  ["ESF-D-INJECTION"],           # submodule checkout on PR trigger
         "SCM-048":  ["ESF-D-SECRETS"],             # org codespace secret scoped to all repos
         "SCM-049":  ["ESF-D-SECRETS"],             # classic PAT where fine-grained suffices
         "NPM-012":  ["ESF-D-SECRETS", "ESF-S-VERIFY-DEPS"],  # publish token lacking restrictions

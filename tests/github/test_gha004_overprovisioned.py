@@ -578,3 +578,89 @@ class TestGHA004TopLevelAggregation:
               x: 1
         """
         assert run_check(wf, "GHA-004").passed
+
+
+class TestGHA004ReusableCallerNote:
+    """Reusable workflow callers should note unverified permissions."""
+
+    def test_passed_finding_includes_resolve_remote_note(self):
+        wf = """
+        on: push
+        permissions:
+          contents: read
+        jobs:
+          call-reusable:
+            uses: org/repo/.github/workflows/reusable.yml@main
+        """
+        f = run_check(wf, "GHA-004")
+        assert f.passed
+        assert "--resolve-remote" in f.description
+        assert "call-reusable" in f.description
+
+    def test_failed_finding_includes_resolve_remote_note(self):
+        wf = """
+        on: push
+        jobs:
+          build:
+            runs-on: ubuntu-latest
+            steps:
+              - uses: actions/checkout@v4
+          call-reusable:
+            uses: org/repo/.github/workflows/reusable.yml@main
+        """
+        f = run_check(wf, "GHA-004")
+        assert not f.passed
+        assert "--resolve-remote" in f.description
+        assert "call-reusable" in f.description
+
+    def test_no_note_without_reusable_callers(self):
+        wf = """
+        on: push
+        permissions:
+          contents: read
+        jobs:
+          build:
+            runs-on: ubuntu-latest
+            steps:
+              - uses: actions/checkout@v4
+        """
+        f = run_check(wf, "GHA-004")
+        assert f.passed
+        assert "--resolve-remote" not in f.description
+
+    def test_multiple_reusable_callers_listed(self):
+        wf = """
+        on: push
+        permissions:
+          contents: read
+        jobs:
+          deploy-staging:
+            uses: org/repo/.github/workflows/deploy.yml@main
+          deploy-prod:
+            uses: org/repo/.github/workflows/deploy.yml@main
+        """
+        f = run_check(wf, "GHA-004")
+        assert f.passed
+        assert "2 job(s)" in f.description
+        assert "deploy-staging" in f.description
+        assert "deploy-prod" in f.description
+
+    def test_overflow_indicator_with_more_than_three(self):
+        wf = """
+        on: push
+        permissions:
+          contents: read
+        jobs:
+          a:
+            uses: org/repo/.github/workflows/a.yml@main
+          b:
+            uses: org/repo/.github/workflows/b.yml@main
+          c:
+            uses: org/repo/.github/workflows/c.yml@main
+          d:
+            uses: org/repo/.github/workflows/d.yml@main
+        """
+        f = run_check(wf, "GHA-004")
+        assert f.passed
+        assert "4 job(s)" in f.description
+        assert "+1 more" in f.description

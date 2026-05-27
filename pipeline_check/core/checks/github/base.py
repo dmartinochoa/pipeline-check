@@ -240,5 +240,5 @@ def workflow_triggers(workflow: dict[str, Any]) -> list[str]:
     if isinstance(on, list):
         return [str(v) for v in on]
     if isinstance(on, dict):
-        return [str(k) for k in on.keys()]
+        return [str(k) for k in on]
     return []

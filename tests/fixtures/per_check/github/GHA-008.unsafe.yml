@@ -5,5 +5,5 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - env:
-          DEBUG_AWS_KEY: AKIAIOSFODNN7EXAMPLE
+          DEBUG_AWS_KEY: AKIAZ3MHALF2TESTHIJK
         run: ./deploy.sh

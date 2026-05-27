@@ -615,6 +615,7 @@ STANDARD = Standard(
         "TAINT-006": ["PO.5.1", "PW.9.1"],
         "TAINT-007": ["PO.5.1", "PW.9.1"],
         "TAINT-008": ["PO.5.1", "PW.9.1"],
+        "TAINT-009": ["PS.1.1"],                       # env-protected secret flows to unprotected job
         # ── SCM posture (governance via the platform REST API) ──────
         # The PS.1 family ("Protect all forms of code from
         # unauthorized access and tampering") is purpose-built for
@@ -737,6 +738,8 @@ STANDARD = Standard(
         "GHA-097":  ["PO.5.1", "PW.9.1"],              # recursive PR auto-merge loop
         "GHA-098":  ["RV.1.1"],                        # deploy without security scan gate
         "GHA-099":  ["PS.1.1"],                        # deploy env plaintext secret
+        "GHA-100":  ["PW.4.4", "PS.2.1"],              # cosign verify no identity binding
+        "GHA-102":  ["PO.5.1", "PW.9.1"],              # submodule checkout on PR trigger
         "SCM-048":  ["PO.5.1"],                        # org codespace secrets scoped to all repos
         "SCM-049":  ["PS.1.1"],                        # classic PAT where fine-grained suffices
         "NPM-012":  ["PS.1.1"],                        # publish token missing restrictions

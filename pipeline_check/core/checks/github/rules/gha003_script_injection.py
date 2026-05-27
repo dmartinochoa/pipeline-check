@@ -174,12 +174,7 @@ def check(path: str, doc: dict[str, Any]) -> Finding:
             # Step-level env inherits job + workflow taint.
             step_tainted = job_tainted | _tainted_env_vars(step.get("env"))
             # 1. Direct interpolation of untrusted context expressions.
-            if has_direct_taint(lines, UNTRUSTED_CONTEXT_RE):
-                offenders.append(f"{job_id}[{idx}]")
-                locations.append(step_location(path, step))
-                anchor_jobs[job_id] = None
-            # 2. Indirect: tainted env var referenced in run block.
-            elif step_tainted and has_unsafe_reference(
+            if has_direct_taint(lines, UNTRUSTED_CONTEXT_RE) or step_tainted and has_unsafe_reference(
                 lines, step_tainted, ref_pattern=_gha_ref_pattern
             ):
                 offenders.append(f"{job_id}[{idx}]")

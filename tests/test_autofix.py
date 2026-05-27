@@ -217,18 +217,18 @@ class TestPkgFlagRemoval:
 
 class TestJF008SecretRedaction:
     def test_redacts_aws_key(self):
-        jf = '  AWS_KEY = "AKIAIOSFODNN7EXAMPLE"\n'
+        jf = '  AWS_KEY = "AKIAZ3MHALF2TESTHIJK"\n'
         after = autofix.generate_fix(_finding("JF-008", "Jenkinsfile"), jf)
         assert after is not None
         assert "<REDACTED>" in after
-        assert "AKIAIOSFODNN7EXAMPLE" not in after
+        assert "AKIAZ3MHALF2TESTHIJK" not in after
 
     def test_preserves_non_secret(self):
         jf = '  SAFE = "hello"\n'
         assert autofix.generate_fix(_finding("JF-008", "Jenkinsfile"), jf) is None
 
     def test_idempotent(self):
-        jf = '  AWS_KEY = "AKIAIOSFODNN7EXAMPLE"\n'
+        jf = '  AWS_KEY = "AKIAZ3MHALF2TESTHIJK"\n'
         after = autofix.generate_fix(_finding("JF-008", "Jenkinsfile"), jf)
         assert autofix.generate_fix(_finding("JF-008", "Jenkinsfile"), after) is None
 
@@ -1380,11 +1380,11 @@ class TestBuildkiteFixers:
             "steps:\n"
             "  - command: echo hi\n"
             "    env:\n"
-            "      AWS_KEY: AKIAIOSFODNN7EXAMPLE\n"
+            "      AWS_KEY: AKIAZ3MHALF2TESTHIJK\n"
         )
         after = autofix.generate_fix(_finding("BK-002"), wf)
         assert after is not None
-        assert "AKIAIOSFODNN7EXAMPLE" not in after
+        assert "AKIAZ3MHALF2TESTHIJK" not in after
         assert "<REDACTED>" in after
         assert "TODO(pipeline-check)" in after
 
@@ -1470,11 +1470,11 @@ class TestArgoFixers:
             "      container:\n"
             "        env:\n"
             "          - name: API_KEY\n"
-            "            value: AKIAIOSFODNN7EXAMPLE\n"
+            "            value: AKIAZ3MHALF2TESTHIJK\n"
         )
         after = autofix.generate_fix(_finding("ARGO-006"), manifest)
         assert after is not None
-        assert "AKIAIOSFODNN7EXAMPLE" not in after
+        assert "AKIAZ3MHALF2TESTHIJK" not in after
         assert "<REDACTED>" in after
 
     def test_argo008_handles_curl_pipe(self):

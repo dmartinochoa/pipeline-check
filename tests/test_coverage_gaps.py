@@ -114,7 +114,7 @@ def test_best_effort_line_finds_gha008_secret(tmp_path):
     from pipeline_check.core.checks.base import Finding, Severity
     from pipeline_check.core.sarif_reporter import _best_effort_line
     wf = tmp_path / "ci.yml"
-    wf.write_text("jobs:\n  b:\n    env:\n      KEY: AKIAIOSFODNN7EXAMPLE\n")
+    wf.write_text("jobs:\n  b:\n    env:\n      KEY: AKIAZ3MHALF2TESTHIJK\n")
     f = Finding(
         check_id="GHA-008", title="t", severity=Severity.CRITICAL,
         resource=str(wf), description="", recommendation="", passed=False,

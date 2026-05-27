@@ -200,7 +200,7 @@ def test_gha002_fixer_idempotent_when_already_set():
 
 
 def test_gha008_fixer_redacts_literal_secret():
-    wf = 'env:\n  AWS_KEY: AKIAIOSFODNN7EXAMPLE\n'
+    wf = 'env:\n  AWS_KEY: AKIAZ3MHALF2TESTHIJK\n'
     out = autofix.generate_fix(_f("GHA-008", "x", Severity.CRITICAL), wf)
     assert out is not None
     assert "AKIA" not in out

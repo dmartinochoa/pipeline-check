@@ -153,3 +153,48 @@ class TestGHA063BotConditions:
             steps: [{run: echo}]
         """
         assert run_check(wf, "GHA-063").passed
+
+    def test_promotes_to_critical_with_automerge_cli(self):
+        wf = """
+        on: pull_request
+        jobs:
+          auto-merge:
+            if: ${{ github.actor == 'dependabot[bot]' }}
+            runs-on: ubuntu-latest
+            permissions: { contents: write, pull-requests: write }
+            steps:
+              - run: gh pr review --approve "${{ github.event.pull_request.number }}"
+              - run: gh pr merge --auto --squash "${{ github.event.pull_request.number }}"
+        """
+        f = run_check(wf, "GHA-063")
+        assert not f.passed
+        assert f.severity.value == "CRITICAL"
+        assert "confused-deputy" in f.description.lower()
+
+    def test_promotes_to_critical_with_autoapprove_action(self):
+        wf = """
+        on: pull_request
+        jobs:
+          auto-merge:
+            if: ${{ github.actor == 'dependabot[bot]' }}
+            runs-on: ubuntu-latest
+            steps:
+              - uses: hmarr/auto-approve-action@v3
+        """
+        f = run_check(wf, "GHA-063")
+        assert not f.passed
+        assert f.severity.value == "CRITICAL"
+
+    def test_stays_high_without_automerge(self):
+        wf = """
+        on: pull_request
+        jobs:
+          x:
+            if: ${{ github.actor == 'dependabot[bot]' }}
+            runs-on: ubuntu-latest
+            steps:
+              - run: echo "just logging"
+        """
+        f = run_check(wf, "GHA-063")
+        assert not f.passed
+        assert f.severity.value == "HIGH"

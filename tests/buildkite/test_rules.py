@@ -68,7 +68,7 @@ class TestBK002LiteralSecrets:
     def test_fails_with_aws_access_key_pattern(self):
         cfg = """
         env:
-          AWS_ACCESS_KEY_ID: "AKIAIOSFODNN7EXAMPLE"
+          AWS_ACCESS_KEY_ID: "AKIAZ3MHALF2TESTHIJK"
         steps:
           - command: build
         """

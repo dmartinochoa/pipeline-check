@@ -125,11 +125,7 @@ def check(path: str, doc: dict[str, Any]) -> Finding:
                 loc = f"{job_loc}.{step_loc}"
                 hit = False
                 # 1. Direct interpolation of untrusted ADO macros.
-                if has_direct_taint(lines, UNTRUSTED_VAR_RE):
-                    offenders.append(loc)
-                    hit = True
-                # 2. Indirect: tainted variable referenced unquoted.
-                elif job_tainted and has_unsafe_reference(
+                if has_direct_taint(lines, UNTRUSTED_VAR_RE) or job_tainted and has_unsafe_reference(
                     lines, job_tainted, ref_pattern=_ado_ref_pattern
                 ):
                     offenders.append(loc)

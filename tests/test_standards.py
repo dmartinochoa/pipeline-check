@@ -417,7 +417,7 @@ class TestPerFrameworkCoverageFloor:
                 rule_ids.append(rule.id)
         total = len(rule_ids)
 
-        per_std: dict[str, int] = {name: 0 for name in self.FLOORS}
+        per_std: dict[str, int] = dict.fromkeys(self.FLOORS, 0)
         for rid in rule_ids:
             stds = {x.standard for x in standards.resolve_for_check(rid)}
             for s in stds:

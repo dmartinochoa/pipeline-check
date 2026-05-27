@@ -385,6 +385,48 @@ TKN-003 / ARGO-005) and miss the actual injection sink one
 step (or one job, or one template) later. The TAINT family
 is what catches the cross-boundary flow.
 
+## What `--resolve-remote` unlocks
+
+`--resolve-remote` is off by default to keep scans network-free.
+Turning it on lets the scanner fetch external metadata and remote
+includes, enabling detection that static analysis alone cannot provide.
+The following checks are degraded or silent without it:
+
+**GitHub Actions:**
+
+| Area | Without flag | With flag |
+|------|-------------|-----------|
+| **Action reputation** (GHA-041, GHA-042, GHA-043) | Pass silently with a nudge | Fetch contributor count, repo age, star count from the GitHub API |
+| **Reusable workflow permissions** (GHA-004) | Reusable-workflow callers are skipped because their step list is empty | Callee resolved, permissions verified end-to-end |
+| **Known-vulnerable actions** (GHA-096) | GHSA advisory lookup skipped | Live GHSA check against referenced action versions |
+| **Impostor commit detection** (GHA-090) | Commit-SHA provenance check skipped | Verifies commit belongs to the claimed repository |
+| **Taint propagation** (TAINT-\*) | Same-document scope only | Follows cross-document `include:` references |
+
+**GitLab CI:**
+
+| Area | Without flag | With flag |
+|------|-------------|-----------|
+| **Remote includes** | `include: project/remote/template/component` directives not resolved | Fetches and merges remote includes before rules run |
+| **Taint propagation** (TAINT-004, TAINT-008) | Cannot see jobs/templates from remote includes | Full cross-document taint resolution |
+
+**Dependency providers (npm, PyPI, Maven, NuGet):**
+
+| Area | Without flag | With flag |
+|------|-------------|-----------|
+| **OSV advisories** (NPM-010, PYPI-009, MVN-009, NUGET-009) | Skipped | Live lookup against the OSV batch API |
+| **npm publish-time metadata** (NPM-008) | Cooldown check skipped | Fetches publish timestamps to detect recently-published versions |
+
+**Secret verification:**
+
+| Area | Without flag | With flag |
+|------|-------------|-----------|
+| **Live probes** (all `--verify-secrets` rules) | No verification | Probes leaked credentials against issuing APIs (GitHub, GitLab, npm, Slack, etc.) |
+
+For teams that want the broadest coverage, `--resolve-remote` is
+recommended. The tradeoff is scan speed (network calls add latency) and
+the need for API tokens (`--gh-token`, `--gitlab-token`) for higher rate
+limits.
+
 ## Dataflow secret detection
 
 `--detect-entropy` adds a Shannon-entropy pass to the secret detector.
