@@ -5,20 +5,17 @@
 # build toolchain, source tree, or pip cache lingers in the final
 # layer.
 #
-# Base ``python:3.12-slim`` is a tag (not a digest) so Dependabot /
-# Renovate can offer digest pins on a regular cadence. The
-# pipeline-check rule DF-001 flags floating tags in user Dockerfiles;
-# this repo's own image is acceptable here because the published
-# manifest is itself addressable by digest from each registry.
+# Base ``python:3.12-slim`` is pinned by digest. Dependabot /
+# Renovate will propose digest bumps on a regular cadence.
 
-FROM python:3.12-slim AS builder
+FROM python:3.12-slim@sha256:090ba77e2958f6af52a5341f788b50b032dd4ca28377d2893dcf1ecbdfdfe203 AS builder
 WORKDIR /build
 COPY pyproject.toml README.md ./
 COPY pipeline_check ./pipeline_check
 RUN pip install --no-cache-dir --upgrade pip build \
  && python -m build --wheel --outdir /wheels
 
-FROM python:3.12-slim AS runtime
+FROM python:3.12-slim@sha256:090ba77e2958f6af52a5341f788b50b032dd4ca28377d2893dcf1ecbdfdfe203 AS runtime
 # Pick up Debian security patches that the base image hasn't rebuilt
 # against yet. The python:slim tags trail trixie-security by days to
 # weeks, so glibc / openssl / zlib CVEs fixed upstream still show up

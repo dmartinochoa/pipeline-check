@@ -63,6 +63,11 @@ requires editing `Scanner`, `Reporter`, or the CLI.
     <p>Parses <code>Workflow</code> and <code>WorkflowTemplate</code> CRDs. Image pinning, parameter injection, container template posture.</p>
     <span class="pg-doc-card__meta">{{ providers.argo.checks }}</span>
   </a>
+  <a class="pg-doc-card" href="gitea/">
+    <h3>Gitea / Forgejo</h3>
+    <p>Scans <code>.gitea/workflows/</code> and <code>.forgejo/workflows/</code>. Reuses the full GitHub Actions rule pack (GHA-* IDs).</p>
+    <span class="pg-doc-card__meta">{{ providers.github.checks }}</span>
+  </a>
 </div>
 
 ### Cloud & infrastructure as code
@@ -118,10 +123,20 @@ requires editing `Scanner`, `Reporter`, or the CLI.
 ### SCM posture
 
 <div class="pg-doc-cards">
-  <a class="pg-doc-card" href="scm/">
-    <h3>GitHub / GitLab / Bitbucket</h3>
-    <p>Hits the GitHub, GitLab, or Bitbucket REST API for branch protection, required reviews, code scanning, secret scanning, Dependabot, signed commits, deploy keys, webhook security, ruleset enforcement. Full pack on GitHub, 7-rule universal subset on GitLab and Bitbucket.</p>
+  <a class="pg-doc-card" href="scm_github/">
+    <h3>GitHub</h3>
+    <p>Full 49-rule pack via REST API. Branch protection, rulesets, security features, environments, deploy keys, webhooks, outside collaborators, Actions permissions.</p>
     <span class="pg-doc-card__meta">{{ providers.scm.checks }}</span>
+  </a>
+  <a class="pg-doc-card" href="scm_gitlab/">
+    <h3>GitLab</h3>
+    <p>Seven universal rules via REST API: branch protection, required reviews, signed commits, force-push, status checks, branch deletion, CODEOWNERS.</p>
+    <span class="pg-doc-card__meta">7 checks (universal subset)</span>
+  </a>
+  <a class="pg-doc-card" href="scm_bitbucket/">
+    <h3>Bitbucket Cloud</h3>
+    <p>Seven universal rules via REST API: branch restrictions, required approvals, force-push, passing builds, branch deletion, CODEOWNERS.</p>
+    <span class="pg-doc-card__meta">7 checks (universal subset)</span>
   </a>
 </div>
 

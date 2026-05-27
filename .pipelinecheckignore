@@ -20,8 +20,8 @@ GHA-006:.github/workflows/localstack-test.yml
 GHA-007:.github/workflows/localstack-test.yml
 GHA-020:.github/workflows/localstack-test.yml
 GHA-024:.github/workflows/localstack-test.yml
-# Inline ``pip install pyyaml`` and ``pip install -e .`` in the test
-# setup install the package being tested. The hash-locked install
+# The ``pip install -e .`` in the test setup installs the package
+# being tested. The hash-locked install
 # (``pip install --require-hashes -r requirements-dev.txt``) runs
 # immediately before, covering the actual dependency surface.
 GHA-021:.github/workflows/localstack-test.yml

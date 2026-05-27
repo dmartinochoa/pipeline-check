@@ -101,6 +101,10 @@ _ANCHORED_PROVIDERS: frozenset[str] = frozenset({
     "aws", "cloudformation", "terraform", "npm", "pypi", "helm", "argocd",
 })
 
+_DOC_FILENAME_OVERRIDES: dict[str, str] = {
+    "scm": "scm_github",
+}
+
 # --------------------------------------------------------------------------- #
 # Fallback metadata for check_ids that have no Rule object in the registry:
 #   - ``*-000`` degraded-mode AWS findings (synthesised when an API call
@@ -615,10 +619,11 @@ Covers IAM, Cloud Storage, Cloud KMS, and Cloud Logging controls.
 def _check_link(row: _CheckRow) -> str:
     """Markdown link for a check_id pointing at the provider doc's per-rule
     anchor."""
+    doc_slug = _DOC_FILENAME_OVERRIDES.get(row.provider_slug, row.provider_slug)
     if row.provider_slug in _ANCHORED_PROVIDERS:
         anchor = row.check_id.lower()
-        return f"[`{row.check_id}`](../providers/{row.provider_slug}.md#{anchor})"
-    return f"[`{row.check_id}`](../providers/{row.provider_slug}.md)"
+        return f"[`{row.check_id}`](../providers/{doc_slug}.md#{anchor})"
+    return f"[`{row.check_id}`](../providers/{doc_slug}.md)"
 
 
 def _severity_chip(severity: str) -> str:
@@ -876,7 +881,8 @@ def _render(name: str, standard: Standard, cfg: _StandardConfig,
             parts.append(
                 f"| {_check_link(row)} | {row.title} | "
                 f"{_severity_chip(row.severity)} | "
-                f"[{row.provider_title}](../providers/{row.provider_slug}.md) | "
+                f"[{row.provider_title}](../providers/"
+                f"{_DOC_FILENAME_OVERRIDES.get(row.provider_slug, row.provider_slug)}.md) | "
                 f"{_autofix_chip(row.autofix)} |\n"
             )
         parts.append("\n")
