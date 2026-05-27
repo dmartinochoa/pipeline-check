@@ -701,6 +701,12 @@ STANDARD = Standard(
         "GHA-099":  ["CC6.1"],                   # deploy env plaintext secret
         "GHA-100":  ["CC8.1"],                   # cosign verify no identity binding
         "GHA-102":  ["CC6.8"],                   # submodule checkout on PR trigger
+        "GHA-103":  ["CC6.8"],              # AI review bot on untrusted trigger
+        "GHA-104":  ["CC6.8"],              # AI agent auto-push without PR review
+        "GL-036":   ["CC6.1"],              # secret echoed to GitLab CI log
+        "BB-032":   ["CC6.1"],              # secret echoed to Bitbucket log
+        "ADO-031":  ["CC6.1"],              # secret echoed to Azure DevOps log
+        "CC-032":   ["CC6.1"],              # secret echoed to CircleCI log
         "SCM-048":  ["CC6.1"],                   # org codespace secrets scoped to all repos
         "SCM-049":  ["CC6.1", "CC6.3"],          # classic PAT used where fine-grained suffices
         "NPM-012":  ["CC6.1", "CC8.1"],          # publish token missing restrictions

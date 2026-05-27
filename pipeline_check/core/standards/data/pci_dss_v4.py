@@ -730,6 +730,12 @@ STANDARD = Standard(
         "GHA-099":  ["8.2.1", "6.5.1"],                   # deploy env plaintext secret
         "GHA-100":  ["6.5.1", "6.3.3"],                   # cosign verify no identity binding
         "GHA-102":  ["6.4.1", "6.5.1"],                   # submodule checkout on PR trigger
+        "GHA-103":  ["6.4.1", "6.5.1"],                  # AI review bot on untrusted trigger
+        "GHA-104":  ["6.4.1", "6.5.1"],                  # AI agent auto-push without PR review
+        "GL-036":   ["8.2.1", "10.3.2"],                  # secret echoed to GitLab CI log
+        "BB-032":   ["8.2.1", "10.3.2"],                  # secret echoed to Bitbucket log
+        "ADO-031":  ["8.2.1", "10.3.2"],                  # secret echoed to Azure DevOps log
+        "CC-032":   ["8.2.1", "10.3.2"],                  # secret echoed to CircleCI log
         "SCM-048":  ["7.2.5", "8.2.1"],                   # org codespace secrets scoped to all repos
         "SCM-049":  ["7.2.5", "8.2.1"],                   # classic PAT used where fine-grained suffices
         "NPM-012":  ["8.2.1", "6.5.1"],                   # publish token missing restrictions

@@ -1,0 +1,5 @@
+pipelines:
+  default:
+    - step:
+        script:
+          - '[ -n "$API_KEY" ] && echo API_KEY is set'

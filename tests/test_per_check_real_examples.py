@@ -330,6 +330,7 @@ CASES: list[CheckCase] = [
     CheckCase("CC-029", "CICD-SEC-3"),
     CheckCase("CC-030", "CICD-SEC-6"),
     CheckCase("CC-031", "CICD-SEC-2"),
+    CheckCase("CC-032", "CICD-SEC-6", ("ESF-D-SECRETS",)),
     # ── GitHub Actions backfill (GHA-028..055) ───────────────────────
     # GHA-041 / 042 / 043 / 047 are network-dependent (need
     # ``--resolve-remote`` to populate ``ctx.action_metadata``); the
@@ -381,6 +382,8 @@ CASES: list[CheckCase] = [
     CheckCase("GHA-088", "CICD-SEC-3", ("ESF-S-VERIFY-DEPS",)),
     CheckCase("GHA-092", "CICD-SEC-1", ("ESF-D-CODE-REVIEW",)),
     CheckCase("GHA-093", "CICD-SEC-10", ("ESF-D-SECRETS", "ESF-D-INJECTION")),
+    CheckCase("GHA-103", "CICD-SEC-1", ("ESF-D-CODE-REVIEW", "ESF-D-INJECTION")),
+    CheckCase("GHA-104", "CICD-SEC-4", ("ESF-D-CODE-REVIEW",)),
     # ── GitLab CI backfill (GL-026..033) ─────────────────────────────
     CheckCase("GL-026", "CICD-SEC-4", ("ESF-D-INJECTION",)),
     CheckCase("GL-027", "CICD-SEC-3", ("ESF-S-PIN-DEPS", "ESF-S-VERIFY-DEPS")),
@@ -392,6 +395,7 @@ CASES: list[CheckCase] = [
     CheckCase("GL-033", "CICD-SEC-4"),
     CheckCase("GL-034", "CICD-SEC-3", ("ESF-S-VERIFY-DEPS",)),
     CheckCase("GL-035", "CICD-SEC-3", ("ESF-S-VERIFY-DEPS",)),
+    CheckCase("GL-036", "CICD-SEC-6", ("ESF-D-SECRETS",)),
     # ── Bitbucket Pipelines backfill (BB-026..029) ───────────────────
     CheckCase("BB-026", "CICD-SEC-4", ("ESF-D-INJECTION",)),
     CheckCase("BB-027", "CICD-SEC-3", ("ESF-S-PIN-DEPS", "ESF-S-VERIFY-DEPS")),
@@ -399,11 +403,13 @@ CASES: list[CheckCase] = [
     CheckCase("BB-029", "CICD-SEC-3"),
     CheckCase("BB-030", "CICD-SEC-3", ("ESF-S-VERIFY-DEPS",)),
     CheckCase("BB-031", "CICD-SEC-3", ("ESF-S-VERIFY-DEPS",)),
+    CheckCase("BB-032", "CICD-SEC-6", ("ESF-D-SECRETS",)),
     # ── Azure DevOps backfill (ADO-027..030) ─────────────────────────
     CheckCase("ADO-027", "CICD-SEC-4", ("ESF-D-INJECTION",)),
     CheckCase("ADO-028", "CICD-SEC-3", ("ESF-S-PIN-DEPS", "ESF-S-VERIFY-DEPS")),
     CheckCase("ADO-029", "CICD-SEC-2"),
     CheckCase("ADO-030", "CICD-SEC-7"),
+    CheckCase("ADO-031", "CICD-SEC-6", ("ESF-D-SECRETS",)),
     # ── Jenkins backfill (JF-030..035) ───────────────────────────────
     CheckCase("JF-030", "CICD-SEC-4", ("ESF-D-INJECTION",)),
     CheckCase("JF-031", "CICD-SEC-3", ("ESF-S-PIN-DEPS", "ESF-S-VERIFY-DEPS")),

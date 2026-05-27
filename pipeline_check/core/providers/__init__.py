@@ -26,6 +26,7 @@ from .cloudformation import CloudFormationProvider
 from .dockerfile import DockerfileProvider
 from .drone import DroneProvider
 from .gcp import GCPProvider
+from .gitea import GiteaProvider
 from .github import GitHubProvider
 from .gitlab import GitLabProvider
 from .helm import HelmProvider
@@ -82,6 +83,7 @@ register(HelmProvider())
 register(OCIProvider())
 register(DroneProvider())
 register(GCPProvider())
+register(GiteaProvider())
 register(SCMProvider())
 register(NpmProvider())
 register(PypiProvider())

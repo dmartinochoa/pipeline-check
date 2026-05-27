@@ -692,6 +692,13 @@ STANDARD = Standard(
         "GHA-099":  ["CICD-SEC-6", "CICD-SEC-2"],  # deploy env plaintext secret
         "GHA-100":  ["CICD-SEC-3", "CICD-SEC-9"],  # cosign verify no identity binding
         "GHA-102":  ["CICD-SEC-3", "CICD-SEC-4"],  # submodule checkout on PR trigger
+        "GHA-103":  ["CICD-SEC-1", "CICD-SEC-4"],  # AI review bot on untrusted trigger
+        "GHA-104":  ["CICD-SEC-4", "CICD-SEC-9"],  # AI agent auto-push without PR review
+        # Secrets-in-logs (cross-provider)
+        "GL-036":   ["CICD-SEC-6"],               # secret echoed to GitLab CI log
+        "BB-032":   ["CICD-SEC-6"],               # secret echoed to Bitbucket log
+        "ADO-031":  ["CICD-SEC-6"],               # secret echoed to Azure DevOps log
+        "CC-032":   ["CICD-SEC-6"],               # secret echoed to CircleCI log
         # npm supply-chain posture
         "NPM-012":  ["CICD-SEC-3", "CICD-SEC-6"],  # publish token missing restrictions
         # Azure Cloud posture

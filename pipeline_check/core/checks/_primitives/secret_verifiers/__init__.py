@@ -109,11 +109,28 @@ def _register_builtins() -> None:
         return
     _REGISTRY_LOADED = True
 
+    from .cloud_deploy_keys import (
+        DigitalOceanTokenVerifier,
+        NetlifyTokenVerifier,
+        TerraformCloudTokenVerifier,
+    )
+    from .devtools_keys import (
+        AsanaPATVerifier,
+        AtlassianTokenVerifier,
+        LinearAPIKeyVerifier,
+        NewRelicAPIKeyVerifier,
+    )
     from .docker_hub import DockerHubTokenVerifier
     from .github import GitHubTokenVerifier
     from .gitlab import GitLabTokenVerifier
     from .google import GoogleAPIKeyVerifier
     from .jwt import JWTTokenVerifier
+    from .more_saas_keys import (
+        CohereAPIKeyVerifier,
+        MailchimpAPIKeyVerifier,
+        ReplicateTokenVerifier,
+        SquareAccessTokenVerifier,
+    )
     from .npm import NpmTokenVerifier
     from .pypi import PyPITokenVerifier
     from .saas_api_keys import (
@@ -124,6 +141,7 @@ def _register_builtins() -> None:
         StripeKeyVerifier,
     )
     from .slack import SlackTokenVerifier
+    from .telegram import TelegramBotTokenVerifier
 
     _REGISTRY["github_token"] = GitHubTokenVerifier()
     _REGISTRY["npm_token"] = NpmTokenVerifier()
@@ -138,6 +156,18 @@ def _register_builtins() -> None:
     _REGISTRY["pypi_token"] = PyPITokenVerifier()
     _REGISTRY["google_api_key"] = GoogleAPIKeyVerifier()
     _REGISTRY["jwt"] = JWTTokenVerifier()
+    _REGISTRY["digitalocean_token"] = DigitalOceanTokenVerifier()
+    _REGISTRY["netlify_token"] = NetlifyTokenVerifier()
+    _REGISTRY["terraform_cloud_token"] = TerraformCloudTokenVerifier()
+    _REGISTRY["linear_api_key"] = LinearAPIKeyVerifier()
+    _REGISTRY["atlassian_api_token"] = AtlassianTokenVerifier()
+    _REGISTRY["asana_pat"] = AsanaPATVerifier()
+    _REGISTRY["new_relic_api_key"] = NewRelicAPIKeyVerifier()
+    _REGISTRY["telegram_bot_token"] = TelegramBotTokenVerifier()
+    _REGISTRY["replicate_token"] = ReplicateTokenVerifier()
+    _REGISTRY["cohere_api_key"] = CohereAPIKeyVerifier()
+    _REGISTRY["mailchimp_api_key"] = MailchimpAPIKeyVerifier()
+    _REGISTRY["square_access_token"] = SquareAccessTokenVerifier()
 
 
 def get_verifier(detector_name: str) -> SecretVerifier | None:

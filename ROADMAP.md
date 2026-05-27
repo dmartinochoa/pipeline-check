@@ -366,34 +366,97 @@ what commercial ASPM tools (Cycode, Legit Security, Apiiro) sell as
 ### AI agent pipeline risk rules
 
 The HackerBot-Claw campaign (February 2026) demonstrated AI prompt
-injection against Claude-based code reviewers in CI. GHA-058 is a
-start. Expand: overly permissive AI agent tokens, AI-generated
-workflow changes without human review, unvetted AI bot commits
-triggering privileged workflows. Emerging category with no scanner
-covering it deeply.
+injection against Claude-based code reviewers in CI. Current
+coverage: GHA-058 (agentic CLI with bypass flags / PR-checkout
+topology), GHA-103 (AI review bot on untrusted trigger without
+environment gate), GHA-104 (AI agent auto-push without PR review).
+Remaining gaps: overly permissive AI agent tokens (broader than
+GHA-061's App-token scope check), AI-generated IaC changes that
+modify security-sensitive resources, multi-step agent chains where
+the AI is both the reviewer and the committer.
 
-### Gitea / Forgejo provider
+### ~~Gitea / Forgejo provider~~ shipped
 
-Gitea and Forgejo are gaining adoption as self-hosted CI/CD
-platforms. A lightweight provider that reuses the GHA rule logic
-with Gitea-specific adaptations would capture the self-hosted
-sovereignty segment. Low incremental effort given the GHA rule
-pack's maturity.
+Shipped in the current unreleased cycle. ``--pipeline gitea``
+reuses :class:`GitHubContext` and the full GHA rule pack against
+``.gitea/workflows/`` and ``.forgejo/workflows/`` directories.
 
-### Secret verifier expansion (phase 2)
+### Secret verifier expansion (phase 3)
 
-Phase 1 shipped in v1.5.0 (Docker Hub, PyPI, Google, JWT). Remaining
-high-value additions:
+Phases 1 and 2 brought verifier count from 9 to 25. Remaining
+high-value additions that are blocked on detector or pairing gaps:
 
 - AWS (STS ``GetCallerIdentity``) — needs paired access-key + secret;
   the detector only captures the access-key ID.
 - Azure (Microsoft Graph ``/me``) — Azure tokens are opaque JWTs
   without a stable prefix pattern; needs a detector first.
-- JFrog, Datadog, PagerDuty — need detector patterns.
+- JFrog — Artifactory Cloud tokens lack a reliable prefix that
+  distinguishes them from generic base64; self-hosted instances
+  require a user-supplied URL.
+- Datadog, PagerDuty — API keys are 32-40 char hex without a
+  distinctive prefix; too generic for shape-only detection.
 - Twilio — ``SK`` prefix detector exists but verification needs the
   paired auth token (same paired-credential gap as AWS).
 - Generic entropy-based detection for tokens from services without
   a dedicated verifier.
+
+### Secrets-in-CI-logs detection
+
+Flag ``run:`` steps that leak secrets into build logs. Patterns:
+``echo ${{ secrets.* }}``, ``printf`` with secret interpolation,
+``cat`` / ``printenv`` dumping the environment, ``set -x`` with
+secret-carrying commands. No scanner currently catches this; it is
+a top-5 real-world incident vector. Pairs with GHA-008 (plaintext
+secret in workflow) by covering the "secret reaches stdout" surface
+that GHA-008's "secret in YAML" detection misses.
+
+### GitLab Code Quality output format
+
+``--output codequality`` emitting the Code Climate JSON format that
+GitLab CI natively renders as inline MR annotations. ~100 lines in
+``reporter.py``, zero new dependencies. Unlocks the same inline-
+annotation experience GitHub users get via SARIF, for GitLab users.
+
+### Auto-remediation PRs (``pipeline_check fix-pr``)
+
+A subcommand that runs the scan, applies safe fixers, and opens a
+PR via ``gh pr create`` / GitLab API. The scanner already computes
+unified diffs; this is plumbing. Closes the gap between "patch on
+disk" and "PR in your inbox" that drives adoption in orgs that scan
+in CI but never act on findings.
+
+### Fixer discoverability (``--list-fixers``)
+
+Surface the 111 autofixers via ``--list-fixers [--safety safe|unsafe
+|all]`` so users can discover which rules have fixers, which tier
+each belongs to, and why ``--fix`` didn't patch a specific finding.
+
+### Self-hosted runner security rules
+
+Detect workflows that run on ``self-hosted`` without environment
+gates, ``runs-on`` labels that accept any contributor's PR with no
+branch restriction, and persistent runner tokens without rotation.
+Complements GHA-068 (deprecated runner image). StepSecurity's
+``harden-runner`` is a runtime agent; these would be static rules.
+
+### Inline explain mode (``--explain``)
+
+When passed alongside a normal scan, inline the recommendation and
+exploit example directly under each failing finding in terminal
+output. Saves the ``pipeline_check explain GHA-037`` round-trip.
+
+### Suppression expiry warnings
+
+``--warn-expiring-suppressions 7d`` surfaces about-to-expire
+``.pipelinecheckignore`` entries in stderr before they silently flip
+from suppressed to CI-blocking.
+
+### Config-strict mode
+
+``--config-strict`` promotes unknown config keys in
+``.pipeline-check.yml`` / ``pyproject.toml`` to hard errors (like
+ruff ``--config-strict``). Catches typos in ``fail_on: HIGH``
+before they silently disable gating.
 
 ### Continuing posture: proof-of-exploit backfill
 

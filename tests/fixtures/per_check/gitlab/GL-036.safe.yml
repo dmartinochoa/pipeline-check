@@ -1,0 +1,4 @@
+deploy:
+  script:
+    - '[ -n "$DEPLOY_TOKEN" ] && echo DEPLOY_TOKEN is set'
+    - curl -H "Authorization: Bearer $DEPLOY_TOKEN" $URL

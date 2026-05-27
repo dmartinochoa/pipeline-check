@@ -107,6 +107,7 @@ already, so scanning both would double-count.
 pipeline_check -p github                        # short flag
 pipeline_check --pipeline github
 
+pipeline_check --pipeline gitea --gitea-path .gitea/workflows/
 pipeline_check --pipeline gitlab --gitlab-path path/to/.gitlab-ci.yml
 pipeline_check --pipeline azure  --azure-path  azure-pipelines.yml
 pipeline_check --pipeline jenkins --jenkinsfile-path Jenkinsfile

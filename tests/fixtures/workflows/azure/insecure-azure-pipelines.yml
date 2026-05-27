@@ -119,3 +119,5 @@ stages:
                   --resource-group rg-prod \
                   --name my-web-app \
                   --slot staging
+          # ADO-031 — secret echoed to log.
+          - bash: echo "Token is $(DEPLOY_TOKEN)"

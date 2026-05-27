@@ -129,6 +129,8 @@ jobs:
     steps:
       - checkout
       - run: echo "integration suite"
+      # CC-032: secret echoed to log.
+      - run: echo "Token is $DEPLOY_TOKEN"
 
 # CC-006: No signing tool (cosign/sigstore) present anywhere.
 # CC-007: No SBOM tool (syft/cyclonedx) present anywhere.
