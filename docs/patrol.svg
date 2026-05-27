@@ -14,35 +14,34 @@
      viewBox="0 0 800 350"
      preserveAspectRatio="xMidYMid meet"
      role="img"
-     aria-label="Pipeline-Check goose patrolling a CI/CD pipeline rail — pauses at the SCAN node and stamps a build DENIED">
+     aria-label="Pipeline-Check goose patrolling a CI/CD pipeline rail — pauses at the SCAN node, stamps DENIED, and turns back">
   <style>
-    /* Walk cycle: 14s loop with two pause beats so the goose feels
-       deliberate at TEST and SCAN rather than gliding past. World
-       coords: rail at y=240, stage nodes at x∈{80, 280, 480, 680}.
+    /* Walk cycle: 14s loop. The goose enters from the left, pauses
+       at TEST and SCAN, stamps DENIED at SCAN, flips around, and
+       walks back off-screen. World coords: rail at y=240, stage
+       nodes at x∈{80, 280, 480, 680}. The goose never reaches
+       DEPLOY — the whole point is the pipeline was blocked.
 
-       Per-keyframe ``animation-timing-function`` replaces a global
-       ease-in-out (which was easing every transition, including
-       pause→pause segments, and re-accelerating into each pause —
-       the source of the prior jank). Each travel segment now uses
-       its own curve: ease-out into a pause (decelerate to a stop),
-       linear across the pause itself (no motion to ease), ease-out
-       again on the next departure, ease-in on the final exit so
-       the goose accelerates off-screen rather than coasting out. */
+       Per-keyframe ``animation-timing-function`` gives each travel
+       segment its own curve: ease-out into a pause (decelerate to
+       a stop), linear across the pause itself, ease-in on the
+       return walk so the goose accelerates away after DENIED. */
     @keyframes patrol-walk {
-      0%   { transform: translate(60px, 240px);  animation-timing-function: ease-out; }
-      22%  { transform: translate(280px, 240px); animation-timing-function: linear;   }
-      32%  { transform: translate(280px, 240px); animation-timing-function: ease-out; }
-      50%  { transform: translate(480px, 240px); animation-timing-function: linear;   }
-      72%  { transform: translate(480px, 240px); animation-timing-function: ease-out; }
-      92%  { transform: translate(680px, 240px); animation-timing-function: ease-in;  }
-      100% { transform: translate(740px, 240px); }
+      0%   { transform: translate(-60px, 240px);  animation-timing-function: ease-out; }
+      22%  { transform: translate(280px, 240px);  animation-timing-function: linear;   }
+      32%  { transform: translate(280px, 240px);  animation-timing-function: ease-out; }
+      50%  { transform: translate(480px, 240px);  animation-timing-function: linear;   }
+      72%  { transform: translate(480px, 240px);  animation-timing-function: linear;   }
+      73%  { transform: translate(480px, 240px) scaleX(-1); animation-timing-function: ease-in; }
+      94%  { transform: translate(-60px, 240px) scaleX(-1); animation-timing-function: linear;  }
+      100% { transform: translate(-60px, 240px) scaleX(-1); }
     }
-    /* Body bob locked to the patrol timeline (14s) instead of running
-       on its own 0.6s cycle. The goose only bobs while walking — it
-       holds still at TEST and SCAN, which is what was reading as
-       "janky" before (bird oscillating in place during a pause). */
+    /* Body bob locked to the patrol timeline (14s). The goose only
+       bobs while walking — it holds still at TEST and SCAN. Three
+       bob segments: entrance→TEST, TEST→SCAN, and the return walk
+       after DENIED. */
     @keyframes patrol-bob {
-      /* BUILD → TEST: 0% – 22%, three steps */
+      /* entrance → TEST: 0% – 22%, three steps */
       0%   { transform: translateY(0); }
       4%   { transform: translateY(-2.5px); }
       9%   { transform: translateY(0); }
@@ -56,15 +55,16 @@
       41%  { transform: translateY(0); }
       46%  { transform: translateY(-2.5px); }
       50%  { transform: translateY(0); }
-      /* SCAN pause: 50% – 72% — body still while inspecting */
-      72%  { transform: translateY(0); }
-      /* SCAN → DEPLOY: 72% – 92%, two steps */
-      76%  { transform: translateY(-2.5px); }
-      82%  { transform: translateY(0); }
-      87%  { transform: translateY(-2.5px); }
-      92%  { transform: translateY(0); }
-      /* exit */
-      96%  { transform: translateY(-2.5px); }
+      /* SCAN pause + flip: 50% – 73% — body still while inspecting */
+      73%  { transform: translateY(0); }
+      /* Return walk: 73% – 94%, three steps */
+      77%  { transform: translateY(-2.5px); }
+      81%  { transform: translateY(0); }
+      85%  { transform: translateY(-2.5px); }
+      89%  { transform: translateY(0); }
+      93%  { transform: translateY(-2.5px); }
+      94%  { transform: translateY(0); }
+      /* off-screen */
       100% { transform: translateY(0); }
     }
     /* Scan ring — three rings overlap during the SCAN pause
@@ -87,8 +87,8 @@
     @keyframes patrol-denied-pop {
       0%, 64%   { opacity: 0; transform: translateY(-3px) scale(.6); }
       68%       { opacity: 1; transform: translateY(0)    scale(1);  }
-      74%       { opacity: 1; transform: translateY(0)    scale(1);  }
-      78%, 100% { opacity: 0; transform: translateY(-2px) scale(.9); }
+      82%       { opacity: 1; transform: translateY(0)    scale(1);  }
+      88%, 100% { opacity: 0; transform: translateY(-2px) scale(.9); }
     }
     @keyframes patrol-blink {
       0%, 92%, 100% { transform: scaleY(1); }

@@ -826,6 +826,10 @@ body:has(.pg-home) .md-tabs {
   border-bottom-color: rgba(255, 255, 255, 0.06);
 }
 
+body:has(.pg-home) .md-tabs {
+  border-bottom: none;
+}
+
 body:has(.pg-home) .md-header__title,
 body:has(.pg-home) .md-header__button,
 body:has(.pg-home) .md-tabs__link {
@@ -974,7 +978,8 @@ body:has(.pg-home) .md-search__input::placeholder {
 body:has(.pg-home) .md-main,
 body:has(.pg-home) .md-main__inner,
 body:has(.pg-home) .md-content,
-body:has(.pg-home) .md-content__inner {
+body:has(.pg-home) .md-content__inner,
+.pg-home {
   max-width: none !important;
   margin: 0 !important;
   padding: 0 !important;
@@ -1016,6 +1021,7 @@ body:has(.pg-home) {
 /* ----- Hero ------------------------------------------------- */
 .pg-hero {
   position: relative;
+  margin: 0 !important;
   /* Layered backgrounds, top → bottom:
      1. Inline SVG fractalNoise data-URL — ~3% opacity grain that
         keeps the navy from reading as a flat digital surface. No
@@ -1050,8 +1056,9 @@ body:has(.pg-home) {
   background-position: 0 0;
   z-index: -1;
   pointer-events: none;
-  mask-image: radial-gradient(ellipse at center, black 30%, transparent 78%);
-  -webkit-mask-image: radial-gradient(ellipse at center, black 30%, transparent 78%);
+  mask-image: radial-gradient(ellipse at 50% 65%, black 35%, transparent 80%);
+  -webkit-mask-image: radial-gradient(ellipse at 50% 65%, black 35%, transparent 80%);
+  animation: pg-grid-breathe 8s ease-in-out infinite;
 }
 
 /* Ambient gradient drift — slow low-frequency motion in the
@@ -1078,6 +1085,11 @@ body:has(.pg-home) {
   0%   { transform: translate(0, 0) scale(1); }
   50%  { transform: translate(2%, 1%) scale(1.04); }
   100% { transform: translate(-1%, -2%) scale(1.02); }
+}
+
+@keyframes pg-grid-breathe {
+  0%, 100% { opacity: 0.45; }
+  50%      { opacity: 1; }
 }
 
 .pg-hero__inner {
@@ -1168,6 +1180,10 @@ img.pg-hero__mark {
    needs the chrome the design-system preview wraps it in. World
    coords stay 800×350; we constrain by max-width and aspect-ratio
    so the scene scales gracefully on narrow viewports. */
+.pg-section:has(.pg-patrol) {
+  padding-bottom: 0;
+}
+
 .pg-patrol {
   position: relative;
   max-width: 64rem;
@@ -1190,6 +1206,7 @@ img.pg-hero__mark {
   -webkit-mask-image: radial-gradient(ellipse at 50% 60%, #000 50%, transparent 90%);
           mask-image: radial-gradient(ellipse at 50% 60%, #000 50%, transparent 90%);
   pointer-events: none;
+  animation: pg-grid-breathe 10s ease-in-out infinite;
 }
 /* The goose patrol is loaded as a standalone SVG via ``<img>`` so
    the file is portable (works in any embed context, not just inline
@@ -1816,6 +1833,42 @@ img.pg-hero__mark {
   }
 }
 
+/* Sub-groups: SCM posture, package registries */
+.pg-provider-group {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 0.55rem;
+  margin-top: 0.75rem;
+}
+
+.pg-provider-group__label {
+  grid-column: 1 / -1;
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  color: var(--md-default-fg-color--light);
+  padding: 0 0.15rem;
+}
+
+@media (max-width: 960px) {
+  .pg-provider-group {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+@media (max-width: 640px) {
+  .pg-provider-group {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 400px) {
+  .pg-provider-group {
+    grid-template-columns: 1fr;
+  }
+}
+
 /* ----- Mermaid container ----------------------------------- */
 .mermaid {
   background: var(--md-default-bg-color);
@@ -2217,8 +2270,20 @@ img.pg-hero__mark {
   align-items: stretch;
 }
 
-.pg-pipeline-out__row {
+.pg-pipeline-out__formats {
   flex: 1;
+}
+
+.pg-pipeline-out__header {
+  font-size: 0.72rem;
+  font-weight: var(--fw-refined);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--md-default-fg-color--light);
+  margin-bottom: 0.5rem;
+}
+
+.pg-pipeline-out__row {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
   gap: 0.55rem;
@@ -2227,8 +2292,10 @@ img.pg-hero__mark {
 .pg-pipe-out {
   display: flex;
   flex-direction: column;
-  gap: 0.2rem;
-  padding: 0.8rem 0.85rem;
+  align-items: center;
+  text-align: center;
+  gap: 0.3rem;
+  padding: 1.1rem 0.6rem 0.9rem;
   background: color-mix(in oklab, var(--md-default-bg-color) 92%, var(--pg-teal-500));
   border: 1px solid color-mix(in oklab, var(--pg-teal-500) 25%, var(--md-default-fg-color--lightest));
   border-radius: 10px;
@@ -2243,6 +2310,30 @@ img.pg-hero__mark {
   background: color-mix(in oklab, var(--md-default-bg-color) 86%, var(--pg-teal-500));
   transform: translateY(-2px);
   box-shadow: 0 8px 24px -12px color-mix(in oklab, var(--pg-teal-500) 40%, transparent);
+}
+
+.pg-pipe-out__icon {
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 0.15rem;
+  color: var(--pg-teal-500);
+  transition: color 0.18s ease, transform 0.2s var(--ease-out);
+}
+
+.pg-pipe-out__icon svg {
+  width: 24px;
+  height: 24px;
+}
+
+[data-md-color-scheme="slate"] .pg-pipe-out__icon {
+  color: var(--pg-teal-400);
+}
+
+.pg-pipe-out:hover .pg-pipe-out__icon {
+  transform: scale(1.12);
 }
 
 .pg-pipe-out__name {
@@ -3774,6 +3865,10 @@ body:has(.pg-home) .md-search__form:focus-within,
     opacity: 1 !important;
     transform: none !important;
     transition: none !important;
+  }
+  .pg-hero::before,
+  .pg-patrol::before {
+    animation: none !important;
   }
 }
 

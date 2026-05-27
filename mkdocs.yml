@@ -72,6 +72,12 @@ extra:
       link: https://github.com/dmartinochoa/pipeline-check
     - icon: fontawesome/brands/python
       link: https://pypi.org/project/pipeline-check/
+    - icon: fontawesome/solid/shield-halved
+      link: https://github.com/greylag-ci/cicd-goat
+    - icon: fontawesome/brands/docker
+      link: https://hub.docker.com/r/dmartinochoa/pipeline-check
+    - icon: material/microsoft-visual-studio-code
+      link: https://marketplace.visualstudio.com/items?itemName=greylag-ci.pipeline-check
 
 markdown_extensions:
   - admonition

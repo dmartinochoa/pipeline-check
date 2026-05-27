@@ -103,7 +103,7 @@ The signature varies by provider:
 
 | Provider                     | Signature                              |
 |------------------------------|----------------------------------------|
-| GitHub / GitLab / Bitbucket / Azure / CircleCI / Jenkins / CloudBuild | `check(path: str, doc: dict) -> Finding` |
+| GitHub Actions / GitLab CI / Bitbucket Pipelines / Azure DevOps / CircleCI / Jenkins / Google Cloud Build | `check(path: str, doc: dict) -> Finding` |
 | Dockerfile                   | `check(df: Dockerfile) -> Finding`     |
 | Kubernetes                   | `check(ctx: KubernetesContext) -> Finding` |
 | AWS / Terraform / CloudFormation | class-based, see existing modules. |
