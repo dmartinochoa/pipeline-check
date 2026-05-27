@@ -1,0 +1,2 @@
+steps:
+  - bash: '[ -n "$DEPLOY_TOKEN" ] && echo DEPLOY_TOKEN is configured'

@@ -602,6 +602,12 @@ STANDARD = Standard(
         "GHA-099":  ["Build.L3.NonFalsifiable"],                   # deploy env plaintext secret
         "GHA-100":  ["Build.L3.NonFalsifiable"],                   # cosign verify no identity binding
         "GHA-102":  ["Build.L3.Isolated"],                         # submodule checkout on PR trigger
+        "GHA-103":  ["Build.L3.Isolated"],                         # AI review bot on untrusted trigger
+        "GHA-104":  ["Build.L3.Isolated"],                         # AI agent auto-push without PR review
+        "GL-036":   ["Build.L3.NonFalsifiable"],                   # secret echoed to GitLab CI log
+        "BB-032":   ["Build.L3.NonFalsifiable"],                   # secret echoed to Bitbucket log
+        "ADO-031":  ["Build.L3.NonFalsifiable"],                   # secret echoed to Azure DevOps log
+        "CC-032":   ["Build.L3.NonFalsifiable"],                   # secret echoed to CircleCI log
         "SCM-048":  ["Build.L3.NonFalsifiable"],                   # org codespace secrets scoped to all repos
         "SCM-049":  ["Build.L3.NonFalsifiable"],                   # classic PAT where fine-grained suffices
         "NPM-012":  ["Build.L2.Signed"],                           # publish token missing restrictions

@@ -72,7 +72,7 @@ Resolution rules:
 
 ## What it covers
 
-93 checks · 17 have an autofix patch (``--fix``).
+95 checks · 17 have an autofix patch (``--fix``).
 
 | Check | Title | Severity | Fix |
 |-------|-------|----------|-----|
@@ -165,6 +165,8 @@ Resolution rules:
 | [GHA-099](#gha-099) | Deployment job has a secret-shaped plaintext env var | <span class="pg-sev pg-sev--critical">CRITICAL</span> |  |
 | [GHA-100](#gha-100) | ``cosign verify`` without certificate identity binding | <span class="pg-sev pg-sev--high">HIGH</span> |  |
 | [GHA-102](#gha-102) | ``actions/checkout`` with submodule fetch on a PR trigger | <span class="pg-sev pg-sev--high">HIGH</span> |  |
+| [GHA-103](#gha-103) | AI code-review bot on untrusted trigger without environment gate | <span class="pg-sev pg-sev--critical">CRITICAL</span> |  |
+| [GHA-104](#gha-104) | AI agent generates and pushes commits without PR review | <span class="pg-sev pg-sev--high">HIGH</span> |  |
 | [TAINT-001](#taint-001) | Untrusted input flows across step boundaries via step outputs | <span class="pg-sev pg-sev--high">HIGH</span> |  |
 | [TAINT-002](#taint-002) | Untrusted input flows across jobs via ``jobs.<id>.outputs:`` | <span class="pg-sev pg-sev--high">HIGH</span> |  |
 | [TAINT-003](#taint-003) | Untrusted input forwarded into reusable workflow ``with:`` | <span class="pg-sev pg-sev--high">HIGH</span> |  |
@@ -2670,6 +2672,76 @@ Fires on workflows triggered by ``pull_request`` or ``pull_request_target`` when
 **Recommended action**
 
 Remove ``submodules: true`` / ``submodules: recursive`` from checkout steps in PR-triggered workflows. If submodules are genuinely needed for the PR build, pin submodule URLs to trusted repositories in a ``.gitmodules`` file that lives on a protected branch and validate submodule origins before the build step runs. Alternatively, split the workflow: use a low-privilege ``pull_request`` job for code review checks (no submodules) and a ``push``-triggered job for builds that need submodule content.
+
+</div>
+
+</div>
+
+<div class="pg-rule pg-rule--critical" markdown>
+
+## GHA-103: AI code-review bot on untrusted trigger without environment gate { #gha-103 }
+
+<div class="pg-rule__tags">
+<span class="pg-sev pg-sev--critical">CRITICAL</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-1</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-4</span> <span class="pg-tag pg-tag--esf">ESF-D-CODE-INTEGRITY</span> <span class="pg-tag pg-tag--esf">ESF-D-INJECTION</span> <span class="pg-tag pg-tag--cwe">CWE-94</span> <span class="pg-tag pg-tag--cwe">CWE-269</span>
+</div>
+
+Detects AI code-review actions and CLIs running on ``pull_request_target`` or ``issue_comment`` triggers with write permissions and no ``environment:`` gate.
+
+**Known AI review actions** (owner/repo prefix match):
+``coderabbitai/ai-pr-reviewer``, ``codiumai/pr-agent``, ``sourcery-ai/action``, ``sturdy-dev/codeball-action``, ``github/copilot-*``, ``autofix-ci/*``.
+
+**CLI detection:** same agentic CLI list as GHA-058 (claude, gemini, q, cursor-agent, aider, openhands, goose) when invoked in a ``run:`` step.
+
+The rule does NOT fire when the job declares an ``environment:`` (the approval gate breaks the attack chain) or when the job's permissions are strictly read-only.
+
+**Known false-positive modes**
+
+- A workflow that triggers on ``pull_request_target`` solely to label or triage (not to review code) may use an AI bot with write permissions. If the bot's prompt never includes attacker-controlled content (diff, PR body, commit messages), suppress with a rationale explaining the prompt source.
+
+**Seen in the wild**
+
+- HackerBot-Claw campaign (February 2026): prompt injection via PR descriptions hijacked Claude-based code reviewers running on ``pull_request_target``. The injected prompt instructed the bot to approve the PR and post secrets in review comments.
+
+<div class="pg-rule__rec" markdown>
+
+**Recommended action**
+
+Gate AI code-review jobs behind a protected ``environment:`` that requires manual approval. This forces a human to verify the PR content before the AI bot processes it, blocking prompt-injection payloads embedded in diffs, PR descriptions, or commit messages. If the bot only needs read access, drop ``pull-requests: write`` and ``contents: write`` from the job's ``permissions:`` block. Consider moving to a ``pull_request`` trigger (which runs on the merge base, not the attacker's HEAD) when write permissions aren't needed.
+
+</div>
+
+</div>
+
+<div class="pg-rule pg-rule--high" markdown>
+
+## GHA-104: AI agent generates and pushes commits without PR review { #gha-104 }
+
+<div class="pg-rule__tags">
+<span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-4</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-9</span> <span class="pg-tag pg-tag--esf">ESF-D-CODE-INTEGRITY</span> <span class="pg-tag pg-tag--cwe">CWE-345</span> <span class="pg-tag pg-tag--cwe">CWE-269</span>
+</div>
+
+Detects the combination of an agentic CLI invocation followed by a direct push in the same job.
+
+**Push patterns detected:**
+* ``git push`` in a ``run:`` step
+* ``stefanzweifel/git-auto-commit-action``
+* ``EndBug/add-and-commit``
+* ``actions-js/push``
+* ``ad-m/github-push-action``
+
+**Excluded (safe):** ``peter-evans/create-pull-request`` and ``repo-sync/pull-request`` route changes through a PR review cycle and do not trigger this rule.
+
+The rule does NOT fire when the job has an ``environment:`` gate (human approval breaks the attack chain).
+
+**Known false-positive modes**
+
+- Auto-formatting bots that run an AI linter and push the result may trigger this rule. If the formatting changes are deterministic and the branch is protected with required reviews, suppress with a rationale naming the review gate.
+
+<div class="pg-rule__rec" markdown>
+
+**Recommended action**
+
+Route AI-generated changes through a pull request instead of pushing directly. Replace ``git push`` or auto-commit actions with ``peter-evans/create-pull-request`` (or equivalent) so a human reviewer sees the AI's output before it lands on a protected branch. If direct push is genuinely needed (e.g. auto-formatting), gate the job behind a protected ``environment:`` that requires manual approval.
 
 </div>
 

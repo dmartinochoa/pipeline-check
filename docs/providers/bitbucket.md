@@ -15,7 +15,7 @@ pipeline_check --pipeline bitbucket --bitbucket-path ci/
 
 ## What it covers
 
-31 checks · 11 have an autofix patch (``--fix``).
+32 checks · 11 have an autofix patch (``--fix``).
 
 | Check | Title | Severity | Fix |
 |-------|-------|----------|-----|
@@ -50,6 +50,7 @@ pipeline_check --pipeline bitbucket --bitbucket-path ci/
 | [BB-029](#bb-029) | image: (step or service) not pinned by sha256 digest | <span class="pg-sev pg-sev--high">HIGH</span> |  |
 | [BB-030](#bb-030) | npm install without registry-signature verification step | <span class="pg-sev pg-sev--medium">MEDIUM</span> |  |
 | [BB-031](#bb-031) | pip install without `--require-hashes` verification | <span class="pg-sev pg-sev--medium">MEDIUM</span> |  |
+| [BB-032](#bb-032) | Secret-named variable echoed / printed in a script block | <span class="pg-sev pg-sev--high">HIGH</span> |  |
 
 ---
 
@@ -722,6 +723,26 @@ Fires once per ``bitbucket-pipelines.yml`` when some step's ``script:`` runs a r
 **Recommended action**
 
 Pin every dependency with a SHA-256 hash and install with ``pip install -r requirements.txt --require-hashes``, or migrate to a manager that hash-pins by default: ``uv sync``, ``poetry install``, ``pipenv install --deploy``. Hash-pinned install is the PyPI equivalent of npm's lockfile-integrity guarantee.
+
+</div>
+
+</div>
+
+<div class="pg-rule pg-rule--high" markdown>
+
+## BB-032: Secret-named variable echoed / printed in a script block { #bb-032 }
+
+<div class="pg-rule__tags">
+<span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-6</span> <span class="pg-tag pg-tag--esf">ESF-D-SECRETS</span> <span class="pg-tag pg-tag--cwe">CWE-532</span> <span class="pg-tag pg-tag--cwe">CWE-200</span>
+</div>
+
+Scans every ``script:`` line across all pipeline steps. Variable names matching common secret patterns (PASSWORD, TOKEN, API_KEY, SECRET, CREDENTIAL) trigger the rule when they appear as arguments to ``echo``, ``printf``, ``cat``, or ``tee``. Also fires on ``printenv`` / ``env`` (full environment dump) and ``set -x`` with secret-named variables in scope.
+
+<div class="pg-rule__rec" markdown>
+
+**Recommended action**
+
+Don't print secret values in pipeline scripts. Bitbucket's log masking covers secured variables, but only when the full value appears as a contiguous string. Base64-encoded, URL-encoded, or partial substrings bypass the mask. Log a boolean instead (``[ -n "$X" ] && echo set || echo unset``). Avoid ``set -x`` when secret-bound variables are in scope.
 
 </div>
 

@@ -88,6 +88,9 @@ class HistorySnapshot:
     #: ``Counter`` of failed-finding ``check_id`` occurrences in this
     #: snapshot. Used to compute the top-N rules burn-down.
     rule_counts: Counter[str] = field(default_factory=Counter)
+    #: ``Counter`` of failed-finding ``resource`` occurrences. Used for
+    #: the resource-level heatmap.
+    resource_counts: Counter[str] = field(default_factory=Counter)
 
 
 @dataclass(frozen=True, slots=True)
@@ -154,6 +157,7 @@ def _snapshot_from_json(
                 if isinstance(f, int):
                     failed[sev] = f
     rule_counts: Counter[str] = Counter()
+    resource_counts: Counter[str] = Counter()
     findings = doc.get("findings")
     if isinstance(findings, list):
         for f in findings:
@@ -164,6 +168,9 @@ def _snapshot_from_json(
             check_id = f.get("check_id")
             if isinstance(check_id, str) and check_id:
                 rule_counts[check_id] += 1
+            resource = f.get("resource")
+            if isinstance(resource, str) and resource:
+                resource_counts[resource] += 1
     total = sum(failed.values())
     return HistorySnapshot(
         path=str(path),
@@ -173,6 +180,7 @@ def _snapshot_from_json(
         failed_by_severity=failed,
         total_failed=total,
         rule_counts=rule_counts,
+        resource_counts=resource_counts,
     )
 
 
@@ -199,7 +207,22 @@ def load_history(directory: Path | str) -> HistoryReport:
         )
     snapshots: list[HistorySnapshot] = []
     warnings: list[str] = []
-    for f in sorted(root.glob("*.json")):
+    # Support both flat directories (``*.json``) and fleet output
+    # directories (``**/findings.json``). When the root contains
+    # subdirectories with ``findings.json`` inside, include those
+    # alongside any top-level JSON files.
+    json_files = sorted(root.glob("*.json"))
+    fleet_files = sorted(root.glob("**/findings.json"))
+    seen: set[Path] = set()
+    for f in json_files:
+        seen.add(f.resolve())
+    for f in fleet_files:
+        resolved = f.resolve()
+        if resolved not in seen:
+            json_files.append(f)
+            seen.add(resolved)
+    json_files.sort(key=lambda p: p.name)
+    for f in json_files:
         # ``is_file()`` and ``read_text()`` both touch the
         # filesystem; either can raise OSError mid-iteration on a
         # rotation / deletion (Linux pathlib re-raises non-ENOENT
@@ -408,6 +431,46 @@ def _svg_line_chart(
     return "".join(parts)
 
 
+def _svg_sparkline(
+    values: list[int],
+    *,
+    width: int = 100,
+    height: int = 20,
+    color: str = "#38bdf8",
+) -> str:
+    """Render a tiny inline sparkline SVG for embedding in table cells."""
+    if not values or all(v == 0 for v in values):
+        return (
+            f'<svg width="{width}" height="{height}" '
+            f'viewBox="0 0 {width} {height}" '
+            f'style="vertical-align:middle"></svg>'
+        )
+    n = len(values)
+    max_val = max(values) or 1
+    pad = 2
+
+    def x_for(i: int) -> float:
+        if n == 1:
+            return width / 2
+        return pad + i * (width - 2 * pad) / (n - 1)
+
+    def y_for(v: float) -> float:
+        return pad + (height - 2 * pad) * (1 - v / max_val)
+
+    points = " ".join(
+        f"{x_for(i):.1f},{y_for(v):.1f}" for i, v in enumerate(values)
+    )
+    return (
+        f'<svg width="{width}" height="{height}" '
+        f'viewBox="0 0 {width} {height}" '
+        f'style="vertical-align:middle">'
+        f'<polyline fill="none" stroke="{color}" '
+        f'stroke-width="1.5" stroke-linejoin="round" '
+        f'stroke-linecap="round" points="{points}" />'
+        f'</svg>'
+    )
+
+
 def _format_time_range(snapshots: tuple[HistorySnapshot, ...]) -> str:
     if not snapshots:
         return ""
@@ -487,7 +550,7 @@ def render_html(report: HistoryReport, *, top_n: int = _TOP_RULES_DEFAULT) -> st
         'score (0–100)</span></div></div>'
     )
 
-    # Top-N firing rules across the window.
+    # Top-N firing rules across the window, with sparklines.
     combined: Counter[str] = Counter()
     for s in snapshots:
         combined.update(s.rule_counts)
@@ -500,6 +563,7 @@ def render_html(report: HistoryReport, *, top_n: int = _TOP_RULES_DEFAULT) -> st
         parts.append(
             '<thead><tr>'
             '<th>check_id</th>'
+            '<th>trend</th>'
             '<th style="text-align:right">total failed</th>'
             '<th style="text-align:right">snapshots present</th>'
             '</tr></thead><tbody>'
@@ -508,14 +572,55 @@ def render_html(report: HistoryReport, *, top_n: int = _TOP_RULES_DEFAULT) -> st
             present = sum(
                 1 for s in snapshots if s.rule_counts.get(check_id, 0) > 0
             )
+            trend_values = [
+                s.rule_counts.get(check_id, 0) for s in snapshots
+            ]
+            sparkline = _svg_sparkline(trend_values)
             parts.append(
                 f'<tr><td>{html.escape(check_id)}</td>'
+                f'<td>{sparkline}</td>'
                 f'<td style="text-align:right">{count}</td>'
                 f'<td style="text-align:right">{present}/{len(snapshots)}</td>'
                 f'</tr>'
             )
         parts.append('</tbody></table>')
     parts.append('</div>')
+
+    # Resource-level heatmap: which paths consistently fail.
+    combined_resources: Counter[str] = Counter()
+    resource_presence: Counter[str] = Counter()
+    for s in snapshots:
+        combined_resources.update(s.resource_counts)
+        for r in s.resource_counts:
+            resource_presence[r] += 1
+    if combined_resources:
+        parts.append(
+            f'<h2>Top {top_n} failing resources (across window)</h2>'
+        )
+        parts.append('<div class="panel"><table>')
+        parts.append(
+            '<thead><tr>'
+            '<th>resource</th>'
+            '<th>trend</th>'
+            '<th style="text-align:right">total failed</th>'
+            '<th style="text-align:right">snapshots present</th>'
+            '</tr></thead><tbody>'
+        )
+        for resource, count in combined_resources.most_common(top_n):
+            presence = resource_presence[resource]
+            trend_values = [
+                s.resource_counts.get(resource, 0) for s in snapshots
+            ]
+            sparkline = _svg_sparkline(trend_values, color="#ea580c")
+            parts.append(
+                f'<tr><td>{html.escape(resource)}</td>'
+                f'<td>{sparkline}</td>'
+                f'<td style="text-align:right">{count}</td>'
+                f'<td style="text-align:right">'
+                f'{presence}/{len(snapshots)}</td>'
+                f'</tr>'
+            )
+        parts.append('</tbody></table></div>')
 
     # Per-snapshot table for the raw audit trail.
     parts.append('<h2>Snapshots</h2>')

@@ -1,0 +1,11 @@
+name: ai-generate
+on: workflow_dispatch
+jobs:
+  generate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332
+      - run: claude -p "implement the feature described in issue.md"
+      - uses: stefanzweifel/git-auto-commit-action@v5
+        with:
+          commit_message: "feat: AI-generated implementation"

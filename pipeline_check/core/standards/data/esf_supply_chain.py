@@ -760,6 +760,13 @@ STANDARD = Standard(
         "GHA-099":  ["ESF-D-SECRETS"],             # deploy env plaintext secret
         "GHA-100":  ["ESF-D-SIGN-ARTIFACTS"],     # cosign verify no identity binding
         "GHA-102":  ["ESF-D-INJECTION"],           # submodule checkout on PR trigger
+        "GHA-103":  ["ESF-D-CODE-REVIEW", "ESF-D-INJECTION"],  # AI review bot on untrusted trigger
+        "GHA-104":  ["ESF-D-CODE-REVIEW"],        # AI agent auto-push without PR review
+        # Secrets-in-logs (cross-provider)
+        "GL-036":   ["ESF-D-SECRETS"],             # secret echoed to GitLab CI log
+        "BB-032":   ["ESF-D-SECRETS"],             # secret echoed to Bitbucket log
+        "ADO-031":  ["ESF-D-SECRETS"],             # secret echoed to Azure DevOps log
+        "CC-032":   ["ESF-D-SECRETS"],             # secret echoed to CircleCI log
         "SCM-048":  ["ESF-D-SECRETS"],             # org codespace secret scoped to all repos
         "SCM-049":  ["ESF-D-SECRETS"],             # classic PAT where fine-grained suffices
         "NPM-012":  ["ESF-D-SECRETS", "ESF-S-VERIFY-DEPS"],  # publish token lacking restrictions

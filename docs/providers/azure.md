@@ -30,7 +30,7 @@ The walker handles every layout ADO supports:
 
 ## What it covers
 
-30 checks · 11 have an autofix patch (``--fix``).
+31 checks · 11 have an autofix patch (``--fix``).
 
 | Check | Title | Severity | Fix |
 |-------|-------|----------|-----|
@@ -64,6 +64,7 @@ The walker handles every layout ADO supports:
 | [ADO-028](#ado-028) | Package install bypasses registry integrity (git / path / tarball source) | <span class="pg-sev pg-sev--medium">MEDIUM</span> |  |
 | [ADO-029](#ado-029) | Service-connection-using job without environment or branch gate | <span class="pg-sev pg-sev--high">HIGH</span> |  |
 | [ADO-030](#ado-030) | pool interpolates attacker-controllable value | <span class="pg-sev pg-sev--high">HIGH</span> | <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> |
+| [ADO-031](#ado-031) | Secret variable echoed / printed in a script step | <span class="pg-sev pg-sev--high">HIGH</span> |  |
 
 ---
 
@@ -695,6 +696,28 @@ ADO-013 catches self-hosted pools that aren't ephemeral; this rule catches the u
 **Recommended action**
 
 Hard-code ``pool:`` to a specific agent pool name (or ``vmImage:`` for Microsoft-hosted). If pool selection has to be parameterised, validate the candidate against an explicit allowlist before the job runs (e.g. a ``condition:`` guard against a vetted set), and never inline ``$(Build.*)`` / ``$(System.PullRequest.*)`` / ``${{ parameters.X }}`` values as the pool name or as a demand.
+
+</div>
+
+</div>
+
+<div class="pg-rule pg-rule--high" markdown>
+
+## ADO-031: Secret variable echoed / printed in a script step { #ado-031 }
+
+<div class="pg-rule__tags">
+<span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-6</span> <span class="pg-tag pg-tag--esf">ESF-D-SECRETS</span> <span class="pg-tag pg-tag--cwe">CWE-532</span> <span class="pg-tag pg-tag--cwe">CWE-200</span>
+</div>
+
+Scans ``script:``, ``bash:``, ``powershell:``, and ``pwsh:`` step bodies. Azure template expressions ``$(VAR)`` are matched alongside POSIX ``$VAR`` / ``${VAR}`` forms.
+
+Variables declared with ``issecret: true`` in the pipeline YAML are treated as known secrets (highest confidence). Variables whose names match common secret patterns (PASSWORD, TOKEN, API_KEY, etc.) are flagged heuristically.
+
+<div class="pg-rule__rec" markdown>
+
+**Recommended action**
+
+Don't print secret values in pipeline scripts. Azure Pipelines masks variables marked ``issecret=true`` in logs, but only exact-match substrings. Encoded, truncated, or derived forms bypass the mask, and raw API log downloads are not masked. Log a boolean instead. Avoid ``set -x`` when secret-bound variables are in scope.
 
 </div>
 

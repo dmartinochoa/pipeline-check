@@ -28,7 +28,7 @@ in other providers:
 
 ## What it covers
 
-31 checks · 10 have an autofix patch (``--fix``).
+32 checks · 10 have an autofix patch (``--fix``).
 
 | Check | Title | Severity | Fix |
 |-------|-------|----------|-----|
@@ -63,6 +63,7 @@ in other providers:
 | [CC-029](#cc-029) | Machine executor image not pinned | <span class="pg-sev pg-sev--high">HIGH</span> |  |
 | [CC-030](#cc-030) | Workflow job uses context without branch filter or approval gate | <span class="pg-sev pg-sev--medium">MEDIUM</span> |  |
 | [CC-031](#cc-031) | OIDC role assumption without branch filter or approval gate | <span class="pg-sev pg-sev--high">HIGH</span> |  |
+| [CC-032](#cc-032) | Secret-named variable echoed / printed in a run step | <span class="pg-sev pg-sev--high">HIGH</span> |  |
 
 ---
 
@@ -702,6 +703,26 @@ Pairs with IAM-008. IAM-008 verifies the cloud-side trust policy pins audience +
 **Recommended action**
 
 Restrict every workflow job that passes a cloud ``role_arn`` (or equivalent OIDC parameter) to a protected branch list, or require a ``type: approval`` predecessor. Without either gate, any push triggers a cloud-role assumption with the full blast radius of the IdP-side trust policy.
+
+</div>
+
+</div>
+
+<div class="pg-rule pg-rule--high" markdown>
+
+## CC-032: Secret-named variable echoed / printed in a run step { #cc-032 }
+
+<div class="pg-rule__tags">
+<span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-6</span> <span class="pg-tag pg-tag--esf">ESF-D-SECRETS</span> <span class="pg-tag pg-tag--cwe">CWE-532</span> <span class="pg-tag pg-tag--cwe">CWE-200</span>
+</div>
+
+Scans every ``run:`` command across all jobs. Variable names matching common secret patterns (PASSWORD, TOKEN, API_KEY, SECRET, CREDENTIAL) trigger the rule when they appear as arguments to ``echo``, ``printf``, ``cat``, or ``tee``. Also fires on ``printenv`` / ``env`` (full environment dump) and ``set -x`` with secret-named variables in scope.
+
+<div class="pg-rule__rec" markdown>
+
+**Recommended action**
+
+Don't print secret values in CI scripts. CircleCI masks context variables in logs, but only exact-match substrings. Encoded, truncated, or derived forms bypass the mask. Log a boolean instead (``[ -n "$X" ] && echo set || echo unset``). Avoid ``set -x`` when secret-bound variables are in scope.
 
 </div>
 

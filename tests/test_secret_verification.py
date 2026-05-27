@@ -75,6 +75,12 @@ class TestVerifierRegistry:
             "stripe_secret", "gitlab_pat",
             "docker_hub_pat", "pypi_token",
             "google_api_key", "jwt",
+            "digitalocean_token", "netlify_token",
+            "terraform_cloud_token", "linear_api_key",
+            "atlassian_api_token", "asana_pat",
+            "new_relic_api_key", "telegram_bot_token",
+            "replicate_token", "cohere_api_key",
+            "mailchimp_api_key", "square_access_token",
         ]:
             assert has_verifier(det), f"missing verifier for {det}"
 
@@ -595,3 +601,411 @@ class TestJWTVerifier:
         assert v is not None
         result = v.probe("not.a.valid-jwt")
         assert result.outcome == VerifyOutcome.UNKNOWN
+
+
+# -- DigitalOcean verifier -----------------------------------------------
+
+
+class TestDigitalOceanVerifier:
+    @patch(
+        "pipeline_check.core.checks._primitives.secret_verifiers"
+        ".cloud_deploy_keys.bearer_probe",
+    )
+    def test_verified(self, mock_probe: MagicMock) -> None:
+        mock_probe.return_value = ProbeResponse(
+            status=200,
+            body=json.dumps(
+                {"account": {"email": "user@example.com"}},
+            ).encode(),
+        )
+        v = get_verifier("digitalocean_token")
+        assert v is not None
+        result = v.probe("dop_v1_fake")
+        assert result.outcome == VerifyOutcome.VERIFIED
+        assert "user@example.com" in (result.identity or "")
+
+    @patch(
+        "pipeline_check.core.checks._primitives.secret_verifiers"
+        ".cloud_deploy_keys.bearer_probe",
+    )
+    def test_unverified(self, mock_probe: MagicMock) -> None:
+        mock_probe.return_value = ProbeResponse(status=401, body=b"")
+        v = get_verifier("digitalocean_token")
+        assert v is not None
+        result = v.probe("dop_v1_fake")
+        assert result.outcome == VerifyOutcome.UNVERIFIED
+
+    @patch(
+        "pipeline_check.core.checks._primitives.secret_verifiers"
+        ".cloud_deploy_keys.bearer_probe",
+    )
+    def test_unknown_on_server_error(self, mock_probe: MagicMock) -> None:
+        mock_probe.return_value = ProbeResponse(status=500, body=b"")
+        v = get_verifier("digitalocean_token")
+        assert v is not None
+        result = v.probe("dop_v1_fake")
+        assert result.outcome == VerifyOutcome.UNKNOWN
+
+
+# -- Netlify verifier ----------------------------------------------------
+
+
+class TestNetlifyVerifier:
+    @patch(
+        "pipeline_check.core.checks._primitives.secret_verifiers"
+        ".cloud_deploy_keys.bearer_probe",
+    )
+    def test_verified(self, mock_probe: MagicMock) -> None:
+        mock_probe.return_value = ProbeResponse(
+            status=200,
+            body=json.dumps({"email": "dev@example.com"}).encode(),
+        )
+        v = get_verifier("netlify_token")
+        assert v is not None
+        result = v.probe("nfp_fake")
+        assert result.outcome == VerifyOutcome.VERIFIED
+        assert "dev@example.com" in (result.identity or "")
+
+    @patch(
+        "pipeline_check.core.checks._primitives.secret_verifiers"
+        ".cloud_deploy_keys.bearer_probe",
+    )
+    def test_unverified(self, mock_probe: MagicMock) -> None:
+        mock_probe.return_value = ProbeResponse(status=401, body=b"")
+        v = get_verifier("netlify_token")
+        assert v is not None
+        result = v.probe("nfp_fake")
+        assert result.outcome == VerifyOutcome.UNVERIFIED
+
+
+# -- Terraform Cloud verifier -------------------------------------------
+
+
+class TestTerraformCloudVerifier:
+    @patch(
+        "pipeline_check.core.checks._primitives.secret_verifiers"
+        ".cloud_deploy_keys.http_probe",
+    )
+    def test_verified(self, mock_probe: MagicMock) -> None:
+        mock_probe.return_value = ProbeResponse(
+            status=200,
+            body=json.dumps({
+                "data": {"attributes": {"username": "terraform-user"}},
+            }).encode(),
+        )
+        v = get_verifier("terraform_cloud_token")
+        assert v is not None
+        result = v.probe("fake.atlasv1.faketoken")
+        assert result.outcome == VerifyOutcome.VERIFIED
+        assert "terraform-user" in (result.identity or "")
+
+    @patch(
+        "pipeline_check.core.checks._primitives.secret_verifiers"
+        ".cloud_deploy_keys.http_probe",
+    )
+    def test_unverified(self, mock_probe: MagicMock) -> None:
+        mock_probe.return_value = ProbeResponse(status=401, body=b"")
+        v = get_verifier("terraform_cloud_token")
+        assert v is not None
+        result = v.probe("fake.atlasv1.faketoken")
+        assert result.outcome == VerifyOutcome.UNVERIFIED
+
+
+# -- Linear verifier -----------------------------------------------------
+
+
+class TestLinearVerifier:
+    @patch(
+        "pipeline_check.core.checks._primitives.secret_verifiers"
+        ".devtools_keys.http_probe",
+    )
+    def test_verified(self, mock_probe: MagicMock) -> None:
+        mock_probe.return_value = ProbeResponse(
+            status=200,
+            body=json.dumps({
+                "data": {"viewer": {"name": "Jane", "email": "j@co.com"}},
+            }).encode(),
+        )
+        v = get_verifier("linear_api_key")
+        assert v is not None
+        result = v.probe("lin_api_fake")
+        assert result.outcome == VerifyOutcome.VERIFIED
+        assert "Jane" in (result.identity or "")
+
+    @patch(
+        "pipeline_check.core.checks._primitives.secret_verifiers"
+        ".devtools_keys.http_probe",
+    )
+    def test_unverified(self, mock_probe: MagicMock) -> None:
+        mock_probe.return_value = ProbeResponse(status=401, body=b"")
+        v = get_verifier("linear_api_key")
+        assert v is not None
+        result = v.probe("lin_api_fake")
+        assert result.outcome == VerifyOutcome.UNVERIFIED
+
+
+# -- Atlassian verifier --------------------------------------------------
+
+
+class TestAtlassianVerifier:
+    @patch(
+        "pipeline_check.core.checks._primitives.secret_verifiers"
+        ".devtools_keys.bearer_probe",
+    )
+    def test_verified(self, mock_probe: MagicMock) -> None:
+        mock_probe.return_value = ProbeResponse(
+            status=200,
+            body=json.dumps({"name": "Jira Admin"}).encode(),
+        )
+        v = get_verifier("atlassian_api_token")
+        assert v is not None
+        result = v.probe("ATATT3fake")
+        assert result.outcome == VerifyOutcome.VERIFIED
+        assert "Jira Admin" in (result.identity or "")
+
+    @patch(
+        "pipeline_check.core.checks._primitives.secret_verifiers"
+        ".devtools_keys.bearer_probe",
+    )
+    def test_unverified(self, mock_probe: MagicMock) -> None:
+        mock_probe.return_value = ProbeResponse(status=401, body=b"")
+        v = get_verifier("atlassian_api_token")
+        assert v is not None
+        result = v.probe("ATATT3fake")
+        assert result.outcome == VerifyOutcome.UNVERIFIED
+
+
+# -- Asana verifier ------------------------------------------------------
+
+
+class TestAsanaVerifier:
+    @patch(
+        "pipeline_check.core.checks._primitives.secret_verifiers"
+        ".devtools_keys.bearer_probe",
+    )
+    def test_verified(self, mock_probe: MagicMock) -> None:
+        mock_probe.return_value = ProbeResponse(
+            status=200,
+            body=json.dumps({"data": {"name": "Dev User"}}).encode(),
+        )
+        v = get_verifier("asana_pat")
+        assert v is not None
+        result = v.probe("0/0000000000000000:fake_not_a_real_asana_token_")
+        assert result.outcome == VerifyOutcome.VERIFIED
+        assert "Dev User" in (result.identity or "")
+
+    @patch(
+        "pipeline_check.core.checks._primitives.secret_verifiers"
+        ".devtools_keys.bearer_probe",
+    )
+    def test_unverified(self, mock_probe: MagicMock) -> None:
+        mock_probe.return_value = ProbeResponse(status=401, body=b"")
+        v = get_verifier("asana_pat")
+        assert v is not None
+        result = v.probe("0/0000000000000000:fake_not_a_real_asana_token_")
+        assert result.outcome == VerifyOutcome.UNVERIFIED
+
+
+# -- New Relic verifier --------------------------------------------------
+
+
+class TestNewRelicVerifier:
+    @patch(
+        "pipeline_check.core.checks._primitives.secret_verifiers"
+        ".devtools_keys.http_probe",
+    )
+    def test_verified(self, mock_probe: MagicMock) -> None:
+        mock_probe.return_value = ProbeResponse(
+            status=200,
+            body=json.dumps({
+                "data": {
+                    "actor": {
+                        "user": {"name": "SRE", "email": "sre@co.com"},
+                    },
+                },
+            }).encode(),
+        )
+        v = get_verifier("new_relic_api_key")
+        assert v is not None
+        result = v.probe("NRAK-fakefakefakefakefakefak")
+        assert result.outcome == VerifyOutcome.VERIFIED
+        assert "SRE" in (result.identity or "")
+
+    @patch(
+        "pipeline_check.core.checks._primitives.secret_verifiers"
+        ".devtools_keys.http_probe",
+    )
+    def test_unverified(self, mock_probe: MagicMock) -> None:
+        mock_probe.return_value = ProbeResponse(status=403, body=b"")
+        v = get_verifier("new_relic_api_key")
+        assert v is not None
+        result = v.probe("NRAK-fakefakefakefakefakefak")
+        assert result.outcome == VerifyOutcome.UNVERIFIED
+
+
+# -- Telegram Bot verifier -----------------------------------------------
+
+
+class TestTelegramBotVerifier:
+    @patch(
+        "pipeline_check.core.checks._primitives.secret_verifiers"
+        ".telegram.http_probe",
+    )
+    def test_verified(self, mock_probe: MagicMock) -> None:
+        mock_probe.return_value = ProbeResponse(
+            status=200,
+            body=json.dumps({
+                "ok": True,
+                "result": {"username": "my_bot", "id": 123456789},
+            }).encode(),
+        )
+        v = get_verifier("telegram_bot_token")
+        assert v is not None
+        result = v.probe("123456789:ABCdefGHIjklMNOpqrSTUvwxyz12345678_")
+        assert result.outcome == VerifyOutcome.VERIFIED
+        assert "my_bot" in (result.identity or "")
+
+    @patch(
+        "pipeline_check.core.checks._primitives.secret_verifiers"
+        ".telegram.http_probe",
+    )
+    def test_unverified(self, mock_probe: MagicMock) -> None:
+        mock_probe.return_value = ProbeResponse(status=401, body=b"")
+        v = get_verifier("telegram_bot_token")
+        assert v is not None
+        result = v.probe("123456789:ABCdefGHIjklMNOpqrSTUvwxyz12345678_")
+        assert result.outcome == VerifyOutcome.UNVERIFIED
+
+    @patch(
+        "pipeline_check.core.checks._primitives.secret_verifiers"
+        ".telegram.http_probe",
+    )
+    def test_unknown_on_server_error(self, mock_probe: MagicMock) -> None:
+        mock_probe.return_value = ProbeResponse(status=500, body=b"")
+        v = get_verifier("telegram_bot_token")
+        assert v is not None
+        result = v.probe("123456789:ABCdefGHIjklMNOpqrSTUvwxyz12345678_")
+        assert result.outcome == VerifyOutcome.UNKNOWN
+
+
+# -- Replicate verifier --------------------------------------------------
+
+
+class TestReplicateVerifier:
+    @patch(
+        "pipeline_check.core.checks._primitives.secret_verifiers"
+        ".more_saas_keys.http_probe",
+    )
+    def test_verified(self, mock_probe: MagicMock) -> None:
+        mock_probe.return_value = ProbeResponse(
+            status=200,
+            body=json.dumps({"username": "mluser"}).encode(),
+        )
+        v = get_verifier("replicate_token")
+        assert v is not None
+        result = v.probe("r8_fake")
+        assert result.outcome == VerifyOutcome.VERIFIED
+        assert "mluser" in (result.identity or "")
+
+    @patch(
+        "pipeline_check.core.checks._primitives.secret_verifiers"
+        ".more_saas_keys.http_probe",
+    )
+    def test_unverified(self, mock_probe: MagicMock) -> None:
+        mock_probe.return_value = ProbeResponse(status=401, body=b"")
+        v = get_verifier("replicate_token")
+        assert v is not None
+        result = v.probe("r8_fake")
+        assert result.outcome == VerifyOutcome.UNVERIFIED
+
+
+# -- Cohere verifier -----------------------------------------------------
+
+
+class TestCohereVerifier:
+    @patch(
+        "pipeline_check.core.checks._primitives.secret_verifiers"
+        ".more_saas_keys.bearer_probe",
+    )
+    def test_verified(self, mock_probe: MagicMock) -> None:
+        mock_probe.return_value = ProbeResponse(status=200, body=b"{}")
+        v = get_verifier("cohere_api_key")
+        assert v is not None
+        result = v.probe("co_pat_fake")
+        assert result.outcome == VerifyOutcome.VERIFIED
+
+    @patch(
+        "pipeline_check.core.checks._primitives.secret_verifiers"
+        ".more_saas_keys.bearer_probe",
+    )
+    def test_unverified(self, mock_probe: MagicMock) -> None:
+        mock_probe.return_value = ProbeResponse(status=401, body=b"")
+        v = get_verifier("cohere_api_key")
+        assert v is not None
+        result = v.probe("co_pat_fake")
+        assert result.outcome == VerifyOutcome.UNVERIFIED
+
+
+# -- Mailchimp verifier --------------------------------------------------
+
+
+class TestMailchimpVerifier:
+    @patch(
+        "pipeline_check.core.checks._primitives.secret_verifiers"
+        ".more_saas_keys.http_probe",
+    )
+    def test_verified(self, mock_probe: MagicMock) -> None:
+        mock_probe.return_value = ProbeResponse(
+            status=200,
+            body=json.dumps({"account_name": "MyCompany"}).encode(),
+        )
+        v = get_verifier("mailchimp_api_key")
+        assert v is not None
+        result = v.probe("xxxxxxxxxxtestxxxxxxxxxxxxxxxxxx-us6")
+        assert result.outcome == VerifyOutcome.VERIFIED
+        assert "MyCompany" in (result.identity or "")
+
+    @patch(
+        "pipeline_check.core.checks._primitives.secret_verifiers"
+        ".more_saas_keys.http_probe",
+    )
+    def test_unverified(self, mock_probe: MagicMock) -> None:
+        mock_probe.return_value = ProbeResponse(status=401, body=b"")
+        v = get_verifier("mailchimp_api_key")
+        assert v is not None
+        result = v.probe("xxxxxxxxxxtestxxxxxxxxxxxxxxxxxx-us6")
+        assert result.outcome == VerifyOutcome.UNVERIFIED
+
+    def test_unknown_without_datacenter(self) -> None:
+        v = get_verifier("mailchimp_api_key")
+        assert v is not None
+        result = v.probe("no_datacenter_suffix_here")
+        assert result.outcome == VerifyOutcome.UNKNOWN
+        assert "datacenter" in result.reason
+
+
+# -- Square verifier -----------------------------------------------------
+
+
+class TestSquareVerifier:
+    @patch(
+        "pipeline_check.core.checks._primitives.secret_verifiers"
+        ".more_saas_keys.bearer_probe",
+    )
+    def test_verified(self, mock_probe: MagicMock) -> None:
+        mock_probe.return_value = ProbeResponse(status=200, body=b"{}")
+        v = get_verifier("square_access_token")
+        assert v is not None
+        result = v.probe("sq0atp-fake")
+        assert result.outcome == VerifyOutcome.VERIFIED
+
+    @patch(
+        "pipeline_check.core.checks._primitives.secret_verifiers"
+        ".more_saas_keys.bearer_probe",
+    )
+    def test_unverified(self, mock_probe: MagicMock) -> None:
+        mock_probe.return_value = ProbeResponse(status=401, body=b"")
+        v = get_verifier("square_access_token")
+        assert v is not None
+        result = v.probe("sq0atp-fake")
+        assert result.outcome == VerifyOutcome.UNVERIFIED

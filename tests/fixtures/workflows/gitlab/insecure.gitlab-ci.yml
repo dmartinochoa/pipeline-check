@@ -162,3 +162,4 @@ deploy-from-extends:
   extends: .tainted-base
   script:
     - echo Deploying branch $BRANCH
+    - echo "Token is $DEPLOY_TOKEN"

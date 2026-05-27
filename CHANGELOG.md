@@ -10,6 +10,65 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 PRs landing on `dev` between releases append entries below. The
 release commit collapses this section into `## [X.Y.Z] - <date>`.
 
+### Added
+
+- **Secret verifier expansion (phase 2).** Twelve new live-verification
+  probes for ``--verify-secrets``: DigitalOcean (``/v2/account``),
+  Netlify (``/api/v1/user``), Terraform Cloud (``/api/v2/account/details``),
+  Linear (GraphQL ``viewer``), Atlassian (``/me``), Asana
+  (``/api/1.0/users/me``), New Relic (NerdGraph ``actor``), Telegram Bot
+  (``/getMe``), Replicate (``/v1/account``), Cohere (``/v2/models``),
+  Mailchimp (datacenter extracted from key suffix, Basic auth),
+  and Square (``/v2/locations``). All probes are read-only, rate-limited,
+  and identity-extracting where the API supports it. Verifier count
+  13 -> 25. 26 new tests.
+
+- **Secrets-in-CI-logs detection (cross-provider).** Four new rules
+  detecting ``echo`` / ``printf`` / ``cat`` of secret-named variables,
+  ``printenv`` / ``env`` environment dumps, and ``set -x`` shell trace
+  with secret-bound variables in scope: GL-036 (GitLab CI), BB-032
+  (Bitbucket Pipelines), ADO-031 (Azure DevOps), CC-032 (CircleCI).
+  Shared detection logic extracted to ``_primitives/log_leak.py``.
+  Extends the GHA-033 pattern (GitHub Actions, already shipped) to
+  every CI provider that supports inline scripts. Standards mappings
+  across all 10 frameworks.
+- **AI agent pipeline risk rules.** Two new rules expanding the
+  GHA-058 agentic-CLI category. GHA-103 (CRITICAL) detects AI
+  code-review bots (CodeRabbit, CodiumAI PR-Agent, Sourcery, Codeball,
+  GitHub Copilot) running on ``pull_request_target`` or ``issue_comment``
+  triggers with write permissions and no ``environment:`` gate, the
+  attack vector demonstrated by the HackerBot-Claw campaign (February
+  2026). GHA-104 (HIGH) detects workflows where an agentic CLI
+  generates code and pushes commits directly (via ``git push`` or
+  auto-commit actions like ``stefanzweifel/git-auto-commit-action``,
+  ``EndBug/add-and-commit``) without routing through a pull request
+  review cycle. Both rules pass when an ``environment:`` gate is
+  present. GHA rule count 93 -> 95.
+- **Gitea / Forgejo Actions provider.** ``--pipeline gitea`` reuses the
+  full GHA rule pack against ``.gitea/workflows/`` and
+  ``.forgejo/workflows/`` YAML files. Auto-detected when either
+  directory is present. Rules fire under their original ``GHA-NNN`` IDs
+  since Gitea Actions uses the same runner and syntax. GitHub-specific
+  reputation rules (GHA-041..043, GHA-089..091, GHA-096) pass silently
+  when ``--resolve-remote`` metadata is absent. Provider count
+  26 -> 27.
+- **History dashboard enhancements (closes #160).** The
+  ``pipeline_check history`` dashboard gains three features: per-rule
+  burn-down sparklines in the top-N firing rules table (inline SVG
+  trend lines showing each rule's count across snapshots), a
+  resource-level heatmap section showing which file paths consistently
+  fail, and fleet directory integration so the history loader can read
+  a fleet ``--output-dir`` directly (recursive ``**/findings.json``
+  discovery with deduplication). 9 new tests.
+
+### Changed
+
+- **Scorecard fixture exemption documented** in ``CONTRIBUTING.md``.
+  The Scorecard workflow's SARIF filter that strips ``tests/`` and
+  ``bench/`` results was already in place; the contributing guide now
+  explains the pattern so future fixture authors know no manual
+  exemption is needed.
+
 ## [1.5.0] - 2026-05-27
 
 ### Added

@@ -20,7 +20,7 @@
 
 Pipeline-Check is a security scanner for GitHub Actions, GitLab CI, Jenkins, CircleCI, Azure DevOps, Bitbucket Pipelines, Buildkite, Drone, Tekton, Argo Workflows, and Google Cloud Build, plus Terraform, CloudFormation, Kubernetes, Helm, Dockerfile, OCI image manifests, and live AWS accounts. It maps every finding to the [OWASP Top 10 CI/CD Security Risks](https://owasp.org/www-project-top-10-ci-cd-security-risks/), SLSA, NIST SSDF, PCI DSS, SOC 2, the CIS GitHub Benchmark, and nine other frameworks, and scores each scan A through D so you can gate merges on the result.
 
-**970+ checks** across **26 providers**, mapped to **18 compliance standards**, with **111 autofixers**, plus **48 attack chains** correlating findings into MITRE ATT&CK-mapped kill chains. A dataflow taint engine catches multi-step and cross-job propagation that single-rule scanners miss.
+**970+ checks** across **27 providers**, mapped to **18 compliance standards**, with **111 autofixers**, plus **48 attack chains** correlating findings into MITRE ATT&CK-mapped kill chains. A dataflow taint engine catches multi-step and cross-job propagation that single-rule scanners miss.
 
 [Quick start](#-quick-start) |
 [Usage guide](docs/usage.md) |
@@ -117,12 +117,13 @@ for inputs, idempotency, and fork-PR fallback behavior.
 | **AWS** | Live account via boto3 | `--region` | 71 checks (CodeBuild, CodePipeline, CodeDeploy, ECR, IAM, PBAC, S3, CloudTrail, CloudWatch Logs, Secrets Manager, CodeArtifact, CodeCommit, Lambda, KMS, SSM, EventBridge, Signer) |
 | **Terraform** | `terraform show -json` plan or raw `*.tf` source | `--tf-plan` / `--tf-source` | AWS-parity shift-left checks, pre-provisioning |
 | **CloudFormation** | YAML or JSON template | `--cfn-template` | ~63 AWS-parity shift-left checks; handles `!Ref`/`!Sub`/`!GetAtt` intrinsics (treats unresolved values as strict) |
-| **GitHub Actions** | `.github/workflows/*.yml` | `--gha-path` | 93 checks (`GHA-001`--`073`, `GHA-086`--`102`, plus `TAINT-001..003`, `TAINT-009`). `GHA-040` consults a curated registry of known-compromised action refs (CVE-2025-30066 et al.). `GHA-096` queries the GitHub Advisory Database for known-vulnerable action versions behind `--resolve-remote`. `GHA-041..043` form the action-reputation pack: single-maintainer / very-young repo / low-star + sensitive-permission detection behind `--resolve-remote`. `GHA-044..046` catch build-tool lifecycle script execution (npm / yarn / pnpm / bun / deno install), caller-controlled `ref` into `actions/checkout`, and manual PR-head fetches on untrusted-trigger workflows. `GHA-047` flags action pins to refs committed within a cooldown window. `GHA-048..050` are the npm-worm propagation pack: workflow self-mutation, cross-repo push, and publish-without-OIDC. `GHA-051..055` cover advanced PPE / credential-leak surface: services/container image unpinned, `actions/cache` key from untrusted PR input, `if:` predicate evaluating untrusted context, `actions/checkout` SSH-key persistence, reusable workflow outputs leaking a secret. `GHA-056..058` are the worm-IOC pack: workflow body matches a curated Shai-Hulud / s1ngularity IOC registry (`_worm_indicators.py`), secret-scanner output (TruffleHog / gitleaks) piped to network egress on an untrusted trigger, and agentic CLI (`claude` / `gemini` / `q` / `cursor-agent` / `aider` / `openhands` / `goose`) invoked with permission-bypass flags (`--dangerously-skip-permissions`, `--yolo`, `--trust-all-tools`). `GHA-059` flags ``npm`` / ``pnpm`` install steps that don't pair with an ``npm audit signatures`` verification step, closing the lockfile-pinning-without-trusted-publisher gap the Shai-Hulud / TanStack / axios worms exploited. `GHA-060` is the PyPI analog: flags ``pip install`` invocations that don't use ``--require-hashes`` and aren't replaced by a hash-pinning manager (``uv sync`` / ``poetry install`` / ``pipenv install --deploy``). `GHA-061` flags App-token mint steps (``actions/create-github-app-token`` and siblings) that omit a ``permissions:`` scope filter. `GHA-062` walks the workflow's containing repo for sibling IaC (AWS trust policies, GCP WIF Terraform) and flags OIDC subject claims that match more than one repo. |
-| **GitLab CI** | `.gitlab-ci.yml` | `--gitlab-path` | 37 checks (`GL-001`--`035`, plus `TAINT-004` and `TAINT-008`) |
-| **Bitbucket Pipelines** | `bitbucket-pipelines.yml` | `--bitbucket-path` | 31 checks (`BB-001`--`031`) |
-| **Azure DevOps** | `azure-pipelines.yml` | `--azure-path` | 30 checks (`ADO-001`--`030`) |
+| **GitHub Actions** | `.github/workflows/*.yml` | `--gha-path` | 95 checks (`GHA-001`--`073`, `GHA-086`--`104`, plus `TAINT-001..003`, `TAINT-009`). `GHA-040` consults a curated registry of known-compromised action refs (CVE-2025-30066 et al.). `GHA-096` queries the GitHub Advisory Database for known-vulnerable action versions behind `--resolve-remote`. `GHA-041..043` form the action-reputation pack: single-maintainer / very-young repo / low-star + sensitive-permission detection behind `--resolve-remote`. `GHA-044..046` catch build-tool lifecycle script execution (npm / yarn / pnpm / bun / deno install), caller-controlled `ref` into `actions/checkout`, and manual PR-head fetches on untrusted-trigger workflows. `GHA-047` flags action pins to refs committed within a cooldown window. `GHA-048..050` are the npm-worm propagation pack: workflow self-mutation, cross-repo push, and publish-without-OIDC. `GHA-051..055` cover advanced PPE / credential-leak surface: services/container image unpinned, `actions/cache` key from untrusted PR input, `if:` predicate evaluating untrusted context, `actions/checkout` SSH-key persistence, reusable workflow outputs leaking a secret. `GHA-056..058` are the worm-IOC pack: workflow body matches a curated Shai-Hulud / s1ngularity IOC registry (`_worm_indicators.py`), secret-scanner output (TruffleHog / gitleaks) piped to network egress on an untrusted trigger, and agentic CLI (`claude` / `gemini` / `q` / `cursor-agent` / `aider` / `openhands` / `goose`) invoked with permission-bypass flags (`--dangerously-skip-permissions`, `--yolo`, `--trust-all-tools`). `GHA-059` flags ``npm`` / ``pnpm`` install steps that don't pair with an ``npm audit signatures`` verification step, closing the lockfile-pinning-without-trusted-publisher gap the Shai-Hulud / TanStack / axios worms exploited. `GHA-060` is the PyPI analog: flags ``pip install`` invocations that don't use ``--require-hashes`` and aren't replaced by a hash-pinning manager (``uv sync`` / ``poetry install`` / ``pipenv install --deploy``). `GHA-061` flags App-token mint steps (``actions/create-github-app-token`` and siblings) that omit a ``permissions:`` scope filter. `GHA-062` walks the workflow's containing repo for sibling IaC (AWS trust policies, GCP WIF Terraform) and flags OIDC subject claims that match more than one repo. |
+| **Gitea / Forgejo Actions** | `.gitea/workflows/*.yml` or `.forgejo/workflows/*.yml` | `--gitea-path` | Reuses the full GHA rule pack (93 checks). Auto-detected when either directory is present. GitHub-specific reputation rules pass silently when `--resolve-remote` metadata is unavailable. |
+| **GitLab CI** | `.gitlab-ci.yml` | `--gitlab-path` | 38 checks (`GL-001`--`036`, plus `TAINT-004` and `TAINT-008`) |
+| **Bitbucket Pipelines** | `bitbucket-pipelines.yml` | `--bitbucket-path` | 32 checks (`BB-001`--`032`) |
+| **Azure DevOps** | `azure-pipelines.yml` | `--azure-path` | 31 checks (`ADO-001`--`031`) |
 | **Jenkins** | `Jenkinsfile` (Declarative/Scripted) | `--jenkinsfile-path` | 35 checks (`JF-001`--`035`) |
-| **CircleCI** | `.circleci/config.yml` | `--circleci-path` | 31 checks (`CC-001`--`031`) |
+| **CircleCI** | `.circleci/config.yml` | `--circleci-path` | 32 checks (`CC-001`--`032`) |
 | **Google Cloud Build** | `cloudbuild.yaml` | `--cloudbuild-path` | 26 checks (`GCB-001`--`026`) |
 | **Buildkite** | `.buildkite/pipeline.yml` | `--buildkite-path` | 16 checks (`BK-001`--`015`, plus `TAINT-005`) |
 | **Drone CI** | `.drone.yml` / `.drone.yaml` | `--drone-path` | 11 checks (`DR-001`--`011`): image / plugin pinning, privileged steps, ${DRONE_*} injection, literal secrets, TLS bypass, sensitive host-path mount, `pull: never` policy, tainted cache key, unpinned package install, runner-targeting node map |
@@ -158,7 +159,7 @@ for the full per-check reference.
 
 ```
                  +-----------+
-  Config files   |  Scanner  |   970+ checks across 26 providers
+  Config files   |  Scanner  |   970+ checks across 27 providers
   or live APIs ---->         +---> Findings (check_id, severity, resource)
                  +-----------+
                        |
@@ -471,12 +472,12 @@ pipeline_check/
         ├── aws/rules/         # 71 rule-based checks (CB, CP, CD, ECR, IAM, PBAC, S3, CT, CWL, SM, CA, CCM, LMB, KMS, SSM, EB, SIGN, CW)
         ├── terraform/         # AWS-parity checks against plan JSON or HCL source
         ├── cloudformation/    # AWS-parity checks against CFN templates (YAML/JSON)
-        ├── github/rules/      # GHA-001 .. GHA-073, GHA-086..102 + TAINT-001..003, TAINT-009
-        ├── gitlab/rules/      # GL-001 .. GL-035 + TAINT-004 / TAINT-008
-        ├── bitbucket/rules/   # BB-001 .. BB-031
-        ├── azure/rules/       # ADO-001 .. ADO-030
+        ├── github/rules/      # GHA-001 .. GHA-073, GHA-086..104 + TAINT-001..003, TAINT-009
+        ├── gitlab/rules/      # GL-001 .. GL-036 + TAINT-004 / TAINT-008
+        ├── bitbucket/rules/   # BB-001 .. BB-032
+        ├── azure/rules/       # ADO-001 .. ADO-031
         ├── jenkins/rules/     # JF-001 .. JF-035
-        ├── circleci/rules/    # CC-001 .. CC-031
+        ├── circleci/rules/    # CC-001 .. CC-032
         ├── cloudbuild/rules/  # GCB-001 .. GCB-026
         ├── buildkite/rules/   # BK-001 .. BK-015 + TAINT-005
         ├── drone/rules/       # DR-001 .. DR-011

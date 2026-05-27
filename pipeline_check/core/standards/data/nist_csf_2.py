@@ -788,6 +788,12 @@ STANDARD = Standard(
         "GHA-099":  ["PR.AA-01", "PR.DS-01"],    # deploy env plaintext secret
         "GHA-100":  ["GV.SC-05", "PR.PS-06"],    # cosign verify no identity binding
         "GHA-102":  ["PR.IR-01", "PR.PS-05"],    # submodule checkout on PR trigger
+        "GHA-103":  ["PR.PS-05"],               # AI review bot on untrusted trigger
+        "GHA-104":  ["PR.PS-05"],               # AI agent auto-push without PR review
+        "GL-036":   ["PR.AA-01", "PR.DS-01"],   # secret echoed to GitLab CI log
+        "BB-032":   ["PR.AA-01", "PR.DS-01"],   # secret echoed to Bitbucket log
+        "ADO-031":  ["PR.AA-01", "PR.DS-01"],   # secret echoed to Azure DevOps log
+        "CC-032":   ["PR.AA-01", "PR.DS-01"],   # secret echoed to CircleCI log
         "SCM-048":  ["PR.AA-05"],                # org codespace secrets scoped to all repos
         "SCM-049":  ["PR.AA-01", "PR.AA-05"],    # classic PAT used where fine-grained suffices
         "NPM-012":  ["PR.AA-01", "GV.SC-05"],   # publish token missing restrictions

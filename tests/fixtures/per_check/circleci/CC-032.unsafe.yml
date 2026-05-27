@@ -1,0 +1,7 @@
+version: 2.1
+jobs:
+  deploy:
+    docker:
+      - image: cimg/base:current
+    steps:
+      - run: echo "Token is $DEPLOY_TOKEN"

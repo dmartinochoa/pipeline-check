@@ -920,6 +920,12 @@ STANDARD = Standard(
         "GHA-099":  ["CA-6"],                      # deploy env plaintext secret
         "GHA-100":  ["DE-4"],                      # cosign verify no identity binding
         "GHA-102":  ["EX-12", "PE-1"],             # submodule checkout on PR trigger
+        "GHA-103":  ["EX-12"],                     # AI review bot on untrusted trigger
+        "GHA-104":  ["EX-12"],                     # AI agent auto-push without PR review
+        "GL-036":   ["CA-5", "CA-6"],              # secret echoed to GitLab CI log
+        "BB-032":   ["CA-5", "CA-6"],              # secret echoed to Bitbucket log
+        "ADO-031":  ["CA-5", "CA-6"],              # secret echoed to Azure DevOps log
+        "CC-032":   ["CA-5", "CA-6"],              # secret echoed to CircleCI log
         "SCM-048":  ["CA-5"],                      # org codespace secrets scoped to all repos
         "SCM-049":  ["IA-9"],                      # classic PAT where fine-grained suffices
         "NPM-012":  ["IA-9"],                      # publish token lacking restrictions

@@ -72,7 +72,7 @@ regenerated pages are committed.
 
 ## Numerical claims in docs
 
-Counts in README and `docs/index.md` ("26 providers", "18 standards",
+Counts in README and `docs/index.md` ("27 providers", "18 standards",
 "111 autofixers", "48 attack chains", "970+ checks") are pinned to
 the live registries by `tests/test_doc_claims.py`. Adding a new
 provider or rule will bump the expected count automatically. If
@@ -85,6 +85,19 @@ output, commit messages). `tests/test_english_variant.py` fails the
 suite on drift. The exhaustive avoid/use list lives in
 [CLAUDE.md](CLAUDE.md). After a large import, you can run
 `scripts/_apply_american_english.py` to convert in one pass.
+
+## Test fixtures and Scorecard
+
+Files under `tests/fixtures/` and `bench/cases/` are intentionally
+insecure: they exist as negative test cases for the project's own
+rules. OpenSSF Scorecard's `PinnedDependenciesID` check flags these
+as security findings.
+
+The Scorecard workflow (`.github/workflows/scorecard.yml`) strips
+any SARIF result whose `artifactLocation.uri` starts with `tests/`
+or `bench/` before uploading to code scanning. If you add a new
+vulnerable-by-design fixture under either tree, the filter covers
+it automatically. No manual exemption is needed.
 
 ## Adding a new rule
 

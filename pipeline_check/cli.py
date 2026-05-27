@@ -591,6 +591,7 @@ def _resolve_provider_path(
 _PROVIDER_DETECT_FILES: tuple[tuple[str, tuple[str, ...], tuple[str, ...]], ...] = (
     # (provider, files, directories)
     ("github", (), (".github/workflows",)),
+    ("gitea", (), (".gitea/workflows", ".forgejo/workflows")),
     ("gitlab", (".gitlab-ci.yml",), ()),
     ("circleci", (".circleci/config.yml",), ()),
     ("jenkins", ("Jenkinsfile",), ()),
@@ -673,6 +674,7 @@ def _detect_all_pipelines_from_cwd() -> list[str]:
 #: inline ``# pipeline-check: ignore[...]`` comments.
 _INLINE_IGNORE_GLOBS: dict[str, tuple[str, ...]] = {
     "github": ("*.yml", "*.yaml"),
+    "gitea": ("*.yml", "*.yaml"),
     "gitlab": ("*.yml", "*.yaml"),
     "bitbucket": ("*.yml", "*.yaml"),
     "azure": ("*.yml", "*.yaml"),
@@ -698,6 +700,7 @@ _INLINE_IGNORE_GLOBS: dict[str, tuple[str, ...]] = {
 #: Maps provider names to the kwarg name used for the provider path.
 _PROVIDER_PATH_KWARG: dict[str, str] = {
     "github": "gha_path",
+    "gitea": "gitea_path",
     "gitlab": "gitlab_path",
     "bitbucket": "bitbucket_path",
     "azure": "azure_path",
@@ -1197,6 +1200,16 @@ def _install_completion_callback(
     help=(
         "Path to the GitHub Actions workflows directory, typically "
         "`.github/workflows` (required when --pipeline github)."
+    ),
+)
+@click.option(
+    "--gitea-path",
+    default=None,
+    metavar="PATH",
+    help=(
+        "Path to the Gitea / Forgejo Actions workflows directory, "
+        "typically `.gitea/workflows` or `.forgejo/workflows` "
+        "(required when --pipeline gitea)."
     ),
 )
 @click.option(
@@ -2198,6 +2211,7 @@ def scan(
     tf_plan: str | None,
     tf_source: str | None,
     gha_path: str | None,
+    gitea_path: str | None,
     gitlab_path: str | None,
     bitbucket_path: str | None,
     azure_path: str | None,
@@ -2567,6 +2581,15 @@ def scan(
                 validate_kind="dir", detect_label=".github/workflows",
                 not_found_label="directory",
             )
+        elif pipeline_lc == "gitea":
+            gitea_path = _resolve_provider_path(
+                "gitea", flag="gitea-path", value=gitea_path,
+                candidates=(".gitea/workflows", ".forgejo/workflows"),
+                candidate_kind="dir",
+                validate_kind="dir",
+                detect_label=".gitea/workflows or .forgejo/workflows",
+                not_found_label="directory",
+            )
         elif pipeline_lc == "gitlab":
             gitlab_path = _resolve_provider_path(
                 "gitlab", flag="gitlab-path", value=gitlab_path,
@@ -2867,6 +2890,7 @@ def scan(
         tf_plan=tf_plan,
         tf_source=tf_source,
         gha_path=gha_path,
+        gitea_path=gitea_path,
         gitlab_path=gitlab_path,
         bitbucket_path=bitbucket_path,
         azure_path=azure_path,
@@ -3096,6 +3120,7 @@ def scan(
             tf_plan=tf_plan,
             tf_source=tf_source,
             gha_path=gha_path,
+            gitea_path=gitea_path,
             gitlab_path=gitlab_path,
             bitbucket_path=bitbucket_path,
             azure_path=azure_path,
@@ -3359,6 +3384,7 @@ def scan(
         active_pipelines = pipelines_list or [pipeline_lc]
         path_kwargs: dict[str, str | None] = {
             "gha_path": gha_path,
+            "gitea_path": gitea_path,
             "gitlab_path": gitlab_path,
             "bitbucket_path": bitbucket_path,
             "azure_path": azure_path,
@@ -3536,6 +3562,7 @@ def _build_pr_diff_subprocess_argv(
     tf_plan: str | None,
     tf_source: str | None,
     gha_path: str | None,
+    gitea_path: str | None,
     gitlab_path: str | None,
     bitbucket_path: str | None,
     azure_path: str | None,
@@ -3605,6 +3632,7 @@ def _build_pr_diff_subprocess_argv(
         ("--tf-plan", tf_plan),
         ("--tf-source", tf_source),
         ("--gha-path", gha_path),
+        ("--gitea-path", gitea_path),
         ("--gitlab-path", gitlab_path),
         ("--bitbucket-path", bitbucket_path),
         ("--azure-path", azure_path),
@@ -4031,6 +4059,7 @@ def _emit_gate_summary(
 #: :data:`_INIT_SKIP_PROVIDERS` instead and bypass the scan entirely.
 _INIT_SCANNER_KWARGS: dict[str, tuple[str, tuple[str, ...]]] = {
     "github": ("gha_path", (".github/workflows",)),
+    "gitea": ("gitea_path", (".gitea/workflows", ".forgejo/workflows")),
     "gitlab": ("gitlab_path", (".gitlab-ci.yml",)),
     "bitbucket": ("bitbucket_path", ("bitbucket-pipelines.yml",)),
     "azure": ("azure_path", ("azure-pipelines.yml",)),

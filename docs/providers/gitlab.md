@@ -16,7 +16,7 @@ pipeline_check --pipeline gitlab --gitlab-path ci/
 
 ## What it covers
 
-37 checks · 12 have an autofix patch (``--fix``).
+38 checks · 12 have an autofix patch (``--fix``).
 
 | Check | Title | Severity | Fix |
 |-------|-------|----------|-----|
@@ -55,6 +55,7 @@ pipeline_check --pipeline gitlab --gitlab-path ci/
 | [GL-033](#gl-033) | Global before_script / after_script propagates taint to every job | <span class="pg-sev pg-sev--high">HIGH</span> |  |
 | [GL-034](#gl-034) | npm install without registry-signature verification step | <span class="pg-sev pg-sev--medium">MEDIUM</span> |  |
 | [GL-035](#gl-035) | pip install without `--require-hashes` verification | <span class="pg-sev pg-sev--medium">MEDIUM</span> |  |
+| [GL-036](#gl-036) | Secret-named variable echoed / printed in a script block | <span class="pg-sev pg-sev--high">HIGH</span> |  |
 | [TAINT-004](#taint-004) | Untrusted input flows across jobs via dotenv artifact | <span class="pg-sev pg-sev--high">HIGH</span> |  |
 | [TAINT-008](#taint-008) | Untrusted input flows via GitLab ``extends:`` template inheritance | <span class="pg-sev pg-sev--high">HIGH</span> |  |
 
@@ -819,6 +820,30 @@ Tooling-bootstrap allowlist (same as GHA-060).
 **Recommended action**
 
 Pin every dependency with a SHA-256 hash and install with ``pip install -r requirements.txt --require-hashes``, or migrate to a manager that hash-pins by default: ``uv sync``, ``poetry install``, ``pipenv install --deploy``. Hash-pinned install is the PyPI equivalent of npm's lockfile-integrity guarantee: it refuses to install any tarball whose SHA-256 doesn't match a recorded entry.
+
+</div>
+
+</div>
+
+<div class="pg-rule pg-rule--high" markdown>
+
+## GL-036: Secret-named variable echoed / printed in a script block { #gl-036 }
+
+<div class="pg-rule__tags">
+<span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-6</span> <span class="pg-tag pg-tag--esf">ESF-D-SECRETS</span> <span class="pg-tag pg-tag--cwe">CWE-532</span> <span class="pg-tag pg-tag--cwe">CWE-200</span>
+</div>
+
+Detects three shapes in ``script:``, ``before_script:``, and ``after_script:`` blocks:
+
+1. ``echo`` / ``printf`` / ``cat`` / ``tee`` of a variable whose name matches common secret patterns (PASSWORD, TOKEN, API_KEY, SECRET, CREDENTIAL, etc.).
+2. ``printenv`` / ``env`` commands that dump the entire environment (which includes CI/CD variables that may hold secrets).
+3. ``set -x`` (shell trace) enabled alongside any reference to a secret-named variable.
+
+<div class="pg-rule__rec" markdown>
+
+**Recommended action**
+
+Don't print secret values in CI scripts. GitLab's log masking only covers variables explicitly marked as masked in the UI, and only when the full value appears as a contiguous string. Base64-encoded, URL-encoded, or partial substrings bypass the mask. Log a boolean instead (``[ -n "$X" ] && echo set || echo unset``). Avoid ``set -x`` when secret-bound variables are in scope.
 
 </div>
 

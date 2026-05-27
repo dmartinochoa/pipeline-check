@@ -15,6 +15,7 @@ from pipeline_check.core.history import (
     HistoryReport,
     HistorySnapshot,
     _parse_timestamp_from_name,
+    _svg_sparkline,
     load_history,
     render_html,
 )
@@ -344,3 +345,107 @@ class TestHistoryCli:
         )
         assert result.exit_code != 0
         assert "could not write" in result.output
+
+
+# -- Resource counts ─────────────────────────────────────────────────
+
+
+class TestResourceCounts:
+    def test_resource_counts_extracted(self, tmp_path: Path) -> None:
+        doc = _scan_doc(score=80, extra_findings=[
+            {"check_id": "GHA-001", "passed": False, "resource": "ci.yml"},
+            {"check_id": "GHA-002", "passed": False, "resource": "ci.yml"},
+            {"check_id": "GHA-003", "passed": False, "resource": "deploy.yml"},
+            {"check_id": "GHA-004", "passed": True, "resource": "ci.yml"},
+        ])
+        _write_scan(tmp_path, "20260519-120000.json", doc)
+        report = load_history(tmp_path)
+        rc = report.snapshots[0].resource_counts
+        assert rc["ci.yml"] == 2
+        assert rc["deploy.yml"] == 1
+
+    def test_resource_heatmap_rendered_in_html(
+        self, tmp_path: Path,
+    ) -> None:
+        doc = _scan_doc(score=60, extra_findings=[
+            {"check_id": "GHA-001", "passed": False, "resource": "ci.yml"},
+            {"check_id": "GHA-002", "passed": False, "resource": "ci.yml"},
+        ])
+        _write_scan(tmp_path, "20260519-120000.json", doc)
+        report = load_history(tmp_path)
+        out = render_html(report)
+        assert "Top 15 failing resources" in out
+        assert "ci.yml" in out
+
+
+# -- Sparklines ──────────────────────────────────────────────────────
+
+
+class TestSparklines:
+    def test_sparkline_renders_polyline(self) -> None:
+        svg = _svg_sparkline([1, 3, 2, 5])
+        assert "<polyline" in svg
+        assert "<svg" in svg
+
+    def test_sparkline_empty_values(self) -> None:
+        svg = _svg_sparkline([0, 0, 0])
+        assert "<polyline" not in svg
+
+    def test_sparkline_single_value(self) -> None:
+        svg = _svg_sparkline([4])
+        assert "<polyline" in svg
+
+    def test_top_rules_table_has_trend_column(
+        self, tmp_path: Path,
+    ) -> None:
+        _write_scan(
+            tmp_path, "scan-20260518-080000.json",
+            _scan_doc(score=80, grade="B", high=3),
+        )
+        _write_scan(
+            tmp_path, "scan-20260519-120000.json",
+            _scan_doc(score=90, grade="A", high=1),
+        )
+        report = load_history(tmp_path)
+        out = render_html(report)
+        assert "<th>trend</th>" in out
+        assert "<polyline" in out
+
+
+# -- Fleet directory integration ─────────────────────────────────────
+
+
+class TestFleetDirectoryIntegration:
+    def test_loads_findings_from_fleet_subdirs(
+        self, tmp_path: Path,
+    ) -> None:
+        # Simulate a fleet output directory with per-repo subdirs.
+        repo_a = tmp_path / "github" / "org" / "repo-a"
+        repo_a.mkdir(parents=True)
+        repo_b = tmp_path / "github" / "org" / "repo-b"
+        repo_b.mkdir(parents=True)
+        _write_scan(repo_a, "findings.json", _scan_doc(score=80, high=3))
+        _write_scan(repo_b, "findings.json", _scan_doc(score=60, high=7))
+        report = load_history(tmp_path)
+        assert len(report.snapshots) == 2
+
+    def test_deduplicates_top_level_and_subdir_json(
+        self, tmp_path: Path,
+    ) -> None:
+        # A findings.json directly in the root should not be loaded
+        # twice (once by *.json glob, once by **/findings.json glob).
+        _write_scan(tmp_path, "findings.json", _scan_doc(score=90))
+        report = load_history(tmp_path)
+        assert len(report.snapshots) == 1
+
+    def test_mixed_flat_and_fleet(self, tmp_path: Path) -> None:
+        # Flat timestamped scans alongside a fleet subdirectory.
+        _write_scan(
+            tmp_path, "scan-20260518-080000.json",
+            _scan_doc(score=80, high=2),
+        )
+        repo = tmp_path / "github" / "org" / "myrepo"
+        repo.mkdir(parents=True)
+        _write_scan(repo, "findings.json", _scan_doc(score=70, high=5))
+        report = load_history(tmp_path)
+        assert len(report.snapshots) == 2
