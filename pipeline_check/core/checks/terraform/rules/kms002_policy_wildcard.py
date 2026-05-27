@@ -24,6 +24,32 @@ RULE = Rule(
         "statement that pairs ``kms:*`` with a non-root IAM "
         "principal — that's the canonical key-compromise primitive."
     ),
+    exploit_example=(
+        "# Vulnerable: KMS key policy grants all actions to\n"
+        "# every AWS principal. Any account can decrypt data.\n"
+        'resource "aws_kms_key" "artifacts" {\n'
+        "  policy = jsonencode({\n"
+        "    Statement = [{\n"
+        '      Effect    = "Allow"\n'
+        '      Principal = "*"\n'
+        '      Action    = "kms:*"\n'
+        '      Resource  = "*"\n'
+        "    }]\n"
+        "  })\n"
+        "}\n"
+        "\n"
+        "# Safe: scope to the owning account.\n"
+        'resource "aws_kms_key" "artifacts" {\n'
+        "  policy = jsonencode({\n"
+        "    Statement = [{\n"
+        '      Effect    = "Allow"\n'
+        '      Principal = { AWS = "arn:aws:iam::123456789012:root" }\n'
+        '      Action    = "kms:*"\n'
+        '      Resource  = "*"\n'
+        "    }]\n"
+        "  })\n"
+        "}"
+    ),
 )
 
 

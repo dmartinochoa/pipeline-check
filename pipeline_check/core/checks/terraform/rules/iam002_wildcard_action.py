@@ -26,6 +26,32 @@ RULE = Rule(
         "``aws_iam_role_policy_attachment``. Fires when any ``Allow`` "
         "statement names ``\"*\"`` in ``Action``."
     ),
+    exploit_example=(
+        "# Vulnerable: inline policy grants Action: * on all\n"
+        "# resources. The CI role can do anything in the account.\n"
+        'resource "aws_iam_role_policy" "broad" {\n'
+        "  role   = aws_iam_role.ci.id\n"
+        "  policy = jsonencode({\n"
+        "    Statement = [{\n"
+        '      Effect   = "Allow"\n'
+        '      Action   = "*"\n'
+        '      Resource = "*"\n'
+        "    }]\n"
+        "  })\n"
+        "}\n"
+        "\n"
+        "# Safe: scope to the specific actions needed.\n"
+        'resource "aws_iam_role_policy" "scoped" {\n'
+        "  role   = aws_iam_role.ci.id\n"
+        "  policy = jsonencode({\n"
+        "    Statement = [{\n"
+        '      Effect   = "Allow"\n'
+        '      Action   = ["s3:GetObject", "ecr:GetDownloadUrlForLayer"]\n'
+        '      Resource = "arn:aws:s3:::my-artifacts/*"\n'
+        "    }]\n"
+        "  })\n"
+        "}"
+    ),
 )
 
 

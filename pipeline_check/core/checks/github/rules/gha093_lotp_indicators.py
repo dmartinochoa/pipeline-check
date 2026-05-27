@@ -99,6 +99,21 @@ RULE = Rule(
         "are the canonical examples; the add-mask ordering bug "
         "appears in GitHub's own field reports.",
     ),
+    exploit_example=(
+        "# Vulnerable: a secret value is written to the Summary\n"
+        "# tab before ::add-mask:: runs. Anyone with read access\n"
+        "# to the workflow run can see the value.\n"
+        "steps:\n"
+        '  - run: echo "token=${{ secrets.DEPLOY_KEY }}" >> $GITHUB_STEP_SUMMARY\n'
+        "\n"
+        "# Safe: mask the value first, and never route secrets\n"
+        "# through the Summary tab.\n"
+        "steps:\n"
+        '  - run: echo "::add-mask::${{ secrets.DEPLOY_KEY }}"\n'
+        "  - run: deploy --token $DEPLOY_KEY\n"
+        "    env:\n"
+        "      DEPLOY_KEY: ${{ secrets.DEPLOY_KEY }}"
+    ),
 )
 
 

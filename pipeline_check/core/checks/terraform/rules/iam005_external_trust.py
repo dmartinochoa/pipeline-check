@@ -27,6 +27,30 @@ RULE = Rule(
         "carries ``sts:ExternalId``. Without it the role is vulnerable "
         "to the confused-deputy pattern."
     ),
+    exploit_example=(
+        "# Vulnerable: CI role trusts an external AWS account.\n"
+        "# That account's administrators can assume your CI role.\n"
+        'data "aws_iam_policy_document" "trust" {\n'
+        "  statement {\n"
+        '    actions = ["sts:AssumeRole"]\n'
+        "    principals {\n"
+        '      type        = "AWS"\n'
+        '      identifiers = ["arn:aws:iam::999888777666:root"]\n'
+        "    }\n"
+        "  }\n"
+        "}\n"
+        "\n"
+        "# Safe: trust only same-account service principals.\n"
+        'data "aws_iam_policy_document" "trust" {\n'
+        "  statement {\n"
+        '    actions = ["sts:AssumeRole"]\n'
+        "    principals {\n"
+        '      type        = "Service"\n'
+        '      identifiers = ["codebuild.amazonaws.com"]\n'
+        "    }\n"
+        "  }\n"
+        "}"
+    ),
 )
 
 

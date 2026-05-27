@@ -24,6 +24,28 @@ RULE = Rule(
         "— there's no cryptographic check that the artifact came "
         "from the expected pipeline."
     ),
+    exploit_example=(
+        "# Vulnerable: no code signing config. A compromised\n"
+        "# deployment pipeline can push arbitrary code to the\n"
+        "# function without verification.\n"
+        'resource "aws_lambda_function" "deployer" {\n'
+        "  function_name = \"deployer\"\n"
+        '  runtime       = "python3.12"\n'
+        '  handler       = "index.handler"\n'
+        "  filename      = \"deployer.zip\"\n"
+        "  role          = aws_iam_role.lambda.arn\n"
+        "}\n"
+        "\n"
+        "# Safe: attach a code signing config.\n"
+        'resource "aws_lambda_function" "deployer" {\n'
+        "  function_name          = \"deployer\"\n"
+        '  runtime                = "python3.12"\n'
+        '  handler                = "index.handler"\n'
+        "  filename               = \"deployer.zip\"\n"
+        "  role                   = aws_iam_role.lambda.arn\n"
+        "  code_signing_config_arn = aws_lambda_code_signing_config.csc.arn\n"
+        "}"
+    ),
 )
 
 

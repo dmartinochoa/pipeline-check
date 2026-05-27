@@ -26,6 +26,32 @@ RULE = Rule(
         "when no sibling ``ACTOR_ACCOUNT_ID`` filter constrains the "
         "PR author."
     ),
+    exploit_example=(
+        "# Vulnerable: build runs on PULL_REQUEST_MERGED or\n"
+        "# PULL_REQUEST_CREATED from forks. A fork PR can inject\n"
+        "# arbitrary code that executes with the project's IAM role.\n"
+        'resource "aws_codebuild_project" "ci" {\n'
+        "  source {\n"
+        '    type     = "GITHUB"\n'
+        '    location = "https://github.com/org/repo.git"\n'
+        "  }\n"
+        "}\n"
+        'resource "aws_codebuild_webhook" "pr" {\n'
+        "  project_name = aws_codebuild_project.ci.name\n"
+        "  filter_group {\n"
+        '    filter { type = "EVENT" pattern = "PULL_REQUEST_CREATED" }\n'
+        "  }\n"
+        "}\n"
+        "\n"
+        "# Safe: restrict to PUSH events on the main branch.\n"
+        'resource "aws_codebuild_webhook" "push" {\n'
+        "  project_name = aws_codebuild_project.ci.name\n"
+        "  filter_group {\n"
+        '    filter { type = "EVENT"      pattern = "PUSH" }\n'
+        '    filter { type = "HEAD_REF"   pattern = "^refs/heads/main$" }\n'
+        "  }\n"
+        "}"
+    ),
 )
 
 

@@ -24,6 +24,27 @@ RULE = Rule(
         "fetches packages directly from the public ecosystem with no "
         "intermediate scrub."
     ),
+    exploit_example=(
+        "# Vulnerable: CodeArtifact repo has a public upstream\n"
+        "# (npmjs, PyPI, Maven Central). An attacker publishes a\n"
+        "# higher version of an internal package name on the\n"
+        "# public upstream; CodeArtifact fetches it automatically.\n"
+        'resource "aws_codeartifact_repository" "shared" {\n'
+        "  domain     = aws_codeartifact_domain.internal.domain\n"
+        '  repository = "shared"\n'
+        "  upstream {\n"
+        '    repository_name = "npmjs-store"\n'
+        "  }\n"
+        "}\n"
+        "\n"
+        "# Safe: remove the public upstream and mirror packages\n"
+        "# explicitly, or use package-origin controls to block\n"
+        "# upstream publishes of internal package names.\n"
+        'resource "aws_codeartifact_repository" "shared" {\n'
+        "  domain     = aws_codeartifact_domain.internal.domain\n"
+        '  repository = "shared"\n'
+        "}"
+    ),
 )
 
 

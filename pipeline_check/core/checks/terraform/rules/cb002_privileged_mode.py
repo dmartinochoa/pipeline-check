@@ -25,6 +25,28 @@ RULE = Rule(
         "the container, modify other in-flight builds on the same host, "
         "or steal credentials mounted on the instance."
     ),
+    exploit_example=(
+        "# Vulnerable: privileged mode gives the build container\n"
+        "# root-level access to the host. A compromised build\n"
+        "# step can escape the container.\n"
+        'resource "aws_codebuild_project" "ci" {\n'
+        "  environment {\n"
+        '    compute_type    = "BUILD_GENERAL1_SMALL"\n'
+        '    image           = "aws/codebuild/standard:7.0"\n'
+        "    privileged_mode = true\n"
+        "  }\n"
+        "}\n"
+        "\n"
+        "# Safe: disable privileged mode (the default). Only\n"
+        "# enable it if the build genuinely needs Docker-in-Docker.\n"
+        'resource "aws_codebuild_project" "ci" {\n'
+        "  environment {\n"
+        '    compute_type    = "BUILD_GENERAL1_SMALL"\n'
+        '    image           = "aws/codebuild/standard:7.0"\n'
+        "    privileged_mode = false\n"
+        "  }\n"
+        "}"
+    ),
 )
 
 

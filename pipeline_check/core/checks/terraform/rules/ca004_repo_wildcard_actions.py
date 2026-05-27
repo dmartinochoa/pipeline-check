@@ -26,6 +26,37 @@ RULE = Rule(
         "the principal publish, delete, and rewrite every package "
         "version in the repo."
     ),
+    exploit_example=(
+        "# Vulnerable: repo policy allows all actions (*) to any\n"
+        "# principal. Any authenticated caller can publish, delete,\n"
+        "# or overwrite packages.\n"
+        'resource "aws_codeartifact_repository_permissions_policy" "open" {\n'
+        "  domain     = aws_codeartifact_domain.internal.domain\n"
+        "  repository = aws_codeartifact_repository.shared.repository\n"
+        "  policy_document = jsonencode({\n"
+        "    Statement = [{\n"
+        '      Effect    = "Allow"\n'
+        '      Principal = "*"\n'
+        '      Action    = "codeartifact:*"\n'
+        '      Resource  = "*"\n'
+        "    }]\n"
+        "  })\n"
+        "}\n"
+        "\n"
+        "# Safe: scope to read-only for consumers.\n"
+        'resource "aws_codeartifact_repository_permissions_policy" "ro" {\n'
+        "  domain     = aws_codeartifact_domain.internal.domain\n"
+        "  repository = aws_codeartifact_repository.shared.repository\n"
+        "  policy_document = jsonencode({\n"
+        "    Statement = [{\n"
+        '      Effect    = "Allow"\n'
+        '      Principal = { AWS = "arn:aws:iam::123456789012:root" }\n'
+        '      Action    = ["codeartifact:ReadFromRepository", "codeartifact:GetRepositoryEndpoint"]\n'
+        '      Resource  = "*"\n'
+        "    }]\n"
+        "  })\n"
+        "}"
+    ),
 )
 
 

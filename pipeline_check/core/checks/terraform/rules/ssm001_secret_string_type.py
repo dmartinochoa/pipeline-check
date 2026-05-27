@@ -25,6 +25,23 @@ RULE = Rule(
         "the value is stored in plaintext, visible to anyone with "
         "``ssm:GetParameter``."
     ),
+    exploit_example=(
+        "# Vulnerable: secret stored as SSM String (plaintext).\n"
+        "# Readable by anyone with ssm:GetParameter; no\n"
+        "# encryption at rest beyond the default EBS key.\n"
+        'resource "aws_ssm_parameter" "token" {\n'
+        '  name  = "/ci/deploy-token"\n'
+        '  type  = "String"\n'
+        '  value = "ghp_exampletoken123456"\n'
+        "}\n"
+        "\n"
+        "# Safe: use SecureString (encrypted with KMS).\n"
+        'resource "aws_ssm_parameter" "token" {\n'
+        '  name  = "/ci/deploy-token"\n'
+        '  type  = "SecureString"\n'
+        '  value = "ghp_exampletoken123456"\n'
+        "}"
+    ),
 )
 
 

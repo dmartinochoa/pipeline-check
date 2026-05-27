@@ -22,6 +22,44 @@ RULE = Rule(
         "when any ``Deploy`` action is reachable from the source without "
         "an intervening ``Approval`` action upstream of it."
     ),
+    exploit_example=(
+        "# Vulnerable: pipeline goes straight from Source to Deploy\n"
+        "# with no approval gate. A compromised build artifact\n"
+        "# reaches production automatically.\n"
+        'resource "aws_codepipeline" "app" {\n'
+        '  name     = "app-pipeline"\n'
+        "  role_arn = aws_iam_role.pipeline.arn\n"
+        "  stage {\n"
+        '    name = "Source"\n'
+        "    action {\n"
+        '      name     = "Source"\n'
+        '      category = "Source"\n'
+        '      owner    = "AWS"\n'
+        '      provider = "CodeStarSourceConnection"\n'
+        "    }\n"
+        "  }\n"
+        "  stage {\n"
+        '    name = "Deploy"\n'
+        "    action {\n"
+        '      name     = "Deploy"\n'
+        '      category = "Deploy"\n'
+        '      owner    = "AWS"\n'
+        '      provider = "CodeDeploy"\n'
+        "    }\n"
+        "  }\n"
+        "}\n"
+        "\n"
+        "# Safe: add a manual approval stage before Deploy.\n"
+        "# stage {\n"
+        '#   name = "Approve"\n'
+        "#   action {\n"
+        '#     name     = "ManualApproval"\n'
+        '#     category = "Approval"\n'
+        '#     owner    = "AWS"\n'
+        '#     provider = "Manual"\n'
+        "#   }\n"
+        "# }"
+    ),
 )
 
 

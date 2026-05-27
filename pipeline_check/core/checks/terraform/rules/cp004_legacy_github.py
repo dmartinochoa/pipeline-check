@@ -28,6 +28,37 @@ RULE = Rule(
         "configuration, anyone with ``codepipeline:GetPipeline`` reads "
         "it."
     ),
+    exploit_example=(
+        "# Vulnerable: legacy GitHub v1 source action embeds an\n"
+        "# OAuth token in the pipeline configuration.\n"
+        'resource "aws_codepipeline" "app" {\n'
+        '  name     = "app-pipeline"\n'
+        "  role_arn = aws_iam_role.pipeline.arn\n"
+        "  stage {\n"
+        '    name = "Source"\n'
+        "    action {\n"
+        '      name     = "Source"\n'
+        '      category = "Source"\n'
+        '      owner    = "ThirdParty"\n'
+        '      provider = "GitHub"\n'
+        "      configuration = {\n"
+        '        OAuthToken = "ghp_exampletoken123"\n'
+        '        Owner      = "org"\n'
+        '        Repo       = "app"\n'
+        "      }\n"
+        "    }\n"
+        "  }\n"
+        "}\n"
+        "\n"
+        "# Safe: use CodeStarSourceConnection instead.\n"
+        "# action {\n"
+        '#   owner    = "AWS"\n'
+        '#   provider = "CodeStarSourceConnection"\n'
+        "#   configuration = {\n"
+        "#     ConnectionArn = aws_codestarconnections_connection.gh.arn\n"
+        "#   }\n"
+        "# }"
+    ),
 )
 
 

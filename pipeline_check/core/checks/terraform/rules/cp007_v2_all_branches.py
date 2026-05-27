@@ -25,6 +25,36 @@ RULE = Rule(
         "``pull_request`` block without ``branches.includes``. The "
         "trigger then matches every PR, fork-source PRs included."
     ),
+    exploit_example=(
+        "# Vulnerable: v2 pipeline triggers on all branches.\n"
+        "# Any branch push or fork PR kicks off the pipeline.\n"
+        'resource "aws_codepipeline" "app" {\n'
+        '  name          = "app-pipeline"\n'
+        '  pipeline_type = "V2"\n'
+        "  role_arn      = aws_iam_role.pipeline.arn\n"
+        "  trigger {\n"
+        "    git_configuration {\n"
+        "      source_action_name = \"Source\"\n"
+        "      pull_request {\n"
+        "        events = [\"OPEN\", \"UPDATED\"]\n"
+        "      }\n"
+        "    }\n"
+        "  }\n"
+        "}\n"
+        "\n"
+        "# Safe: restrict the trigger to the main branch.\n"
+        "# trigger {\n"
+        "#   git_configuration {\n"
+        "#     source_action_name = \"Source\"\n"
+        "#     pull_request {\n"
+        "#       events = [\"OPEN\", \"UPDATED\"]\n"
+        "#       branches {\n"
+        '#         includes = ["main"]\n'
+        "#       }\n"
+        "#     }\n"
+        "#   }\n"
+        "# }"
+    ),
 )
 
 

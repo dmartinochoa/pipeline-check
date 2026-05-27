@@ -23,6 +23,21 @@ RULE = Rule(
         "freshly-pushed image goes straight into deployable storage "
         "with no known-CVE pass."
     ),
+    exploit_example=(
+        "# Vulnerable: ECR repo has no scan-on-push. Pushed images\n"
+        "# are never checked for known CVEs.\n"
+        'resource "aws_ecr_repository" "app" {\n'
+        '  name = "app"\n'
+        "}\n"
+        "\n"
+        "# Safe: enable scan on push.\n"
+        'resource "aws_ecr_repository" "app" {\n'
+        '  name = "app"\n'
+        "  image_scanning_configuration {\n"
+        "    scan_on_push = true\n"
+        "  }\n"
+        "}"
+    ),
 )
 
 

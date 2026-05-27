@@ -27,6 +27,32 @@ RULE = Rule(
         "``Condition`` omits the audience or subject claim — without "
         "both, any repo under the IdP can assume the role."
     ),
+    exploit_example=(
+        "# Vulnerable: OIDC trust has no audience restriction.\n"
+        "# Any token from the IdP can assume the role, even\n"
+        "# tokens minted for a different application.\n"
+        'resource "aws_iam_role" "github_oidc" {\n'
+        "  assume_role_policy = jsonencode({\n"
+        "    Statement = [{\n"
+        '      Effect = "Allow"\n'
+        '      Principal = { Federated = aws_iam_openid_connect_provider.github.arn }\n'
+        '      Action = "sts:AssumeRoleWithWebIdentity"\n'
+        "    }]\n"
+        "  })\n"
+        "}\n"
+        "\n"
+        "# Safe: add a StringEquals condition on the audience.\n"
+        'resource "aws_iam_role" "github_oidc" {\n'
+        "  assume_role_policy = jsonencode({\n"
+        "    Statement = [{\n"
+        '      Effect = "Allow"\n'
+        '      Principal = { Federated = aws_iam_openid_connect_provider.github.arn }\n'
+        '      Action = "sts:AssumeRoleWithWebIdentity"\n'
+        '      Condition = { StringEquals = { "token.actions.githubusercontent.com:aud" = "sts.amazonaws.com" } }\n'
+        "    }]\n"
+        "  })\n"
+        "}"
+    ),
 )
 
 

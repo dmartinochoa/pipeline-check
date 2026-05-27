@@ -26,6 +26,32 @@ RULE = Rule(
         "wildcard resource is one of the canonical privilege-escalation "
         "primitives in AWS."
     ),
+    exploit_example=(
+        "# Vulnerable: CI role can pass any role to any service,\n"
+        "# enabling privilege escalation to admin.\n"
+        'resource "aws_iam_role_policy" "passrole" {\n'
+        "  role   = aws_iam_role.ci.id\n"
+        "  policy = jsonencode({\n"
+        "    Statement = [{\n"
+        '      Effect   = "Allow"\n'
+        '      Action   = "iam:PassRole"\n'
+        '      Resource = "*"\n'
+        "    }]\n"
+        "  })\n"
+        "}\n"
+        "\n"
+        "# Safe: scope PassRole to the specific target role.\n"
+        'resource "aws_iam_role_policy" "passrole" {\n'
+        "  role   = aws_iam_role.ci.id\n"
+        "  policy = jsonencode({\n"
+        "    Statement = [{\n"
+        '      Effect   = "Allow"\n'
+        '      Action   = "iam:PassRole"\n'
+        '      Resource = aws_iam_role.ecs_task.arn\n'
+        "    }]\n"
+        "  })\n"
+        "}"
+    ),
 )
 
 

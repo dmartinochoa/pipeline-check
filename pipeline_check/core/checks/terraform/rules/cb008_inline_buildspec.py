@@ -25,6 +25,31 @@ RULE = Rule(
         "``codebuild:UpdateProject`` can rewrite without going through "
         "code review."
     ),
+    exploit_example=(
+        "# Vulnerable: buildspec is inline in the Terraform config.\n"
+        "# Anyone with write access to the Terraform state can\n"
+        "# inject commands without a code review.\n"
+        'resource "aws_codebuild_project" "ci" {\n'
+        "  source {\n"
+        '    type      = "NO_SOURCE"\n'
+        "    buildspec = <<-SPEC\n"
+        "      version: 0.2\n"
+        "      phases:\n"
+        "        build:\n"
+        "          commands:\n"
+        "            - make all\n"
+        "    SPEC\n"
+        "  }\n"
+        "}\n"
+        "\n"
+        "# Safe: source the buildspec from the repo.\n"
+        'resource "aws_codebuild_project" "ci" {\n'
+        "  source {\n"
+        '    type     = "GITHUB"\n'
+        '    location = "https://github.com/org/repo.git"\n'
+        "  }\n"
+        "}"
+    ),
 )
 
 

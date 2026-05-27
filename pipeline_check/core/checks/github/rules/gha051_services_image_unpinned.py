@@ -57,6 +57,27 @@ RULE = Rule(
         "Suppress with a rationale that names the registry and "
         "the audit channel.",
     ),
+    exploit_example=(
+        "# Vulnerable: sidecar image pinned by tag. A registry\n"
+        "# compromise replaces the tag's content and the runner\n"
+        "# pulls the backdoored image next run.\n"
+        "jobs:\n"
+        "  test:\n"
+        "    runs-on: ubuntu-latest\n"
+        "    services:\n"
+        "      db:\n"
+        "        image: postgres:16\n"
+        "    steps:\n"
+        "      - run: pg_isready\n"
+        "\n"
+        "# Safe: pin by digest.\n"
+        "jobs:\n"
+        "  test:\n"
+        "    runs-on: ubuntu-latest\n"
+        "    services:\n"
+        "      db:\n"
+        "        image: postgres@sha256:abc123...  # from imagetools inspect"
+    ),
 )
 
 

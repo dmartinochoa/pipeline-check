@@ -45,6 +45,27 @@ RULE = Rule(
         "naming the secret and confirming the blast radius is "
         "accepted.",
     ),
+    exploit_example=(
+        "# Vulnerable (API response): org codespace secret visible\n"
+        "# to all repos. Any developer who opens a codespace in\n"
+        "# any repo (including forks) can read the value.\n"
+        "# GET /orgs/acme/codespaces/secrets\n"
+        "{\n"
+        '  "secrets": [{\n'
+        '    "name": "PROD_DB_PASSWORD",\n'
+        '    "visibility": "all"\n'
+        "  }]\n"
+        "}\n"
+        "\n"
+        "# Safe: scope to selected repos.\n"
+        "{\n"
+        '  "secrets": [{\n'
+        '    "name": "PROD_DB_PASSWORD",\n'
+        '    "visibility": "selected",\n'
+        '    "selected_repositories_url": "https://api.github.com/orgs/acme/codespaces/secrets/PROD_DB_PASSWORD/repositories"\n'
+        "  }]\n"
+        "}"
+    ),
 )
 
 

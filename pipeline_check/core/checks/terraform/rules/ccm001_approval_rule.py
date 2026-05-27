@@ -25,6 +25,27 @@ RULE = Rule(
         "approval rule, the merge gate every reviewer assumes exists "
         "doesn't."
     ),
+    exploit_example=(
+        "# Vulnerable: CodeCommit repo has no approval rule.\n"
+        "# A single developer can merge directly to the default\n"
+        "# branch without any review.\n"
+        'resource "aws_codecommit_repository" "backend" {\n'
+        '  repository_name = "backend"\n'
+        "}\n"
+        "# (no aws_codecommit_approval_rule_template_association)\n"
+        "\n"
+        "# Safe: require at least one approval.\n"
+        'resource "aws_codecommit_approval_rule_template" "one_approval" {\n'
+        '  name    = "require-one-approval"\n'
+        "  content = jsonencode({\n"
+        "    Version               = \"2018-11-08\"\n"
+        "    Statements = [{\n"
+        "      Type                = \"Approvers\"\n"
+        "      NumberOfApprovalsNeeded = 1\n"
+        "    }]\n"
+        "  })\n"
+        "}"
+    ),
 )
 
 
