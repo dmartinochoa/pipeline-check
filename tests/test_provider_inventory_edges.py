@@ -16,6 +16,8 @@ the optional ``inventory()`` default.
 """
 from __future__ import annotations
 
+from unittest.mock import MagicMock, patch
+
 import pytest
 
 from pipeline_check.core import providers as _providers
@@ -731,3 +733,269 @@ def test_cfn_inventory_condition_and_update_replace_policy(tmp_path):
     m = inv[0].metadata
     assert m["Condition"] == "IsProd"
     assert m["UpdateReplacePolicy"] == "Retain"
+
+
+# ── AWS inventory (mocked ResourceCatalog) ────────────────────────
+
+
+def _mock_catalog() -> MagicMock:
+    """Build a mock ResourceCatalog with representative resource data."""
+    cat = MagicMock()
+    cat.errors = {}
+    cat.codebuild_projects.return_value = [
+        {
+            "name": "my-build",
+            "arn": "arn:aws:codebuild:us-east-1:123:project/my-build",
+            "environment": {
+                "image": "aws/codebuild/standard:7.0",
+                "computeType": "BUILD_GENERAL1_SMALL",
+                "privilegedMode": True,
+            },
+            "timeoutInMinutes": 30,
+            "source": {"type": "GITHUB"},
+            "serviceRole": "arn:aws:iam::123:role/cb-role",
+        },
+    ]
+    cat.codepipeline_pipelines.return_value = [
+        {
+            "name": "release-pipe",
+            "pipelineType": "V2",
+            "stages": [{"name": "Source"}, {"name": "Build"}],
+            "roleArn": "arn:aws:iam::123:role/pipe-role",
+        },
+    ]
+    cat.cicd_roles.return_value = [
+        {
+            "RoleName": "cb-role",
+            "Arn": "arn:aws:iam::123:role/cb-role",
+            "PermissionsBoundary": {"PermissionsBoundaryArn": "arn:aws:iam::123:policy/B"},
+            "CreateDate": "2025-01-01T00:00:00Z",
+        },
+    ]
+    cat.cloudtrail_trails.return_value = [
+        {
+            "Name": "org-trail",
+            "TrailARN": "arn:aws:cloudtrail:us-east-1:123:trail/org-trail",
+            "IsMultiRegionTrail": True,
+            "LogFileValidationEnabled": True,
+            "_IsLogging": True,
+        },
+    ]
+    cat.secrets.return_value = [
+        {
+            "Name": "prod/db-password",
+            "ARN": "arn:aws:secretsmanager:us-east-1:123:secret:prod/db-password-abc",
+            "RotationEnabled": True,
+            "LastRotatedDate": "2025-06-01T00:00:00Z",
+        },
+    ]
+    cat.codeartifact_domains.return_value = [
+        {"name": "internal", "arn": "arn:aws:codeartifact:us-east-1:123:domain/internal",
+         "encryptionKey": "arn:aws:kms:us-east-1:123:key/abc"},
+    ]
+    cat.codeartifact_repositories.return_value = [
+        {"name": "shared", "arn": "arn:aws:codeartifact:us-east-1:123:repository/internal/shared",
+         "domainName": "internal"},
+    ]
+    cat.codecommit_repositories.return_value = [
+        {"repositoryName": "backend", "repositoryId": "r-123"},
+    ]
+    cat.lambda_functions.return_value = [
+        {
+            "FunctionName": "scanner",
+            "FunctionArn": "arn:aws:lambda:us-east-1:123:function:scanner",
+            "Runtime": "python3.12",
+            "Handler": "index.handler",
+            "MemorySize": 512,
+            "Timeout": 60,
+            "CodeSigningConfigArn": "arn:aws:lambda:us-east-1:123:code-signing-config:csc-1",
+            "Architectures": ["arm64"],
+        },
+    ]
+    cat.kms_keys.return_value = [
+        {"KeyId": "key-1", "Arn": "arn:aws:kms:us-east-1:123:key/key-1",
+         "KeySpec": "SYMMETRIC_DEFAULT", "KeyUsage": "ENCRYPT_DECRYPT",
+         "KeyState": "Enabled"},
+    ]
+    cat.log_groups.return_value = [
+        {"logGroupName": "/aws/codebuild/my-build",
+         "arn": "arn:aws:logs:us-east-1:123:log-group:/aws/codebuild/my-build",
+         "retentionInDays": 90, "storedBytes": 1024},
+    ]
+    cat.ssm_parameters.return_value = [
+        {"Name": "/ci/token", "ARN": "arn:aws:ssm:us-east-1:123:parameter/ci/token",
+         "Type": "SecureString", "Tier": "Standard"},
+    ]
+    cat.eventbridge_rules.return_value = [
+        {"Name": "nightly-build", "Arn": "arn:aws:events:us-east-1:123:rule/nightly-build",
+         "State": "ENABLED", "ScheduleExpression": "cron(0 2 * * ? *)"},
+    ]
+    cat.ecr_pull_through_cache_rules.return_value = [
+        {"ecrRepositoryPrefix": "ecr-public",
+         "upstreamRegistryUrl": "public.ecr.aws",
+         "credentialArn": "arn:aws:secretsmanager:us-east-1:123:secret:ecr-cred"},
+    ]
+    cat.ecr_repositories.return_value = [
+        {"repositoryName": "app",
+         "repositoryArn": "arn:aws:ecr:us-east-1:123:repository/app",
+         "imageTagMutability": "IMMUTABLE",
+         "encryptionConfiguration": {"encryptionType": "KMS"},
+         "imageScanningConfiguration": {"scanOnPush": True}},
+    ]
+    cat.s3_artifact_buckets.return_value = []
+    cat.iam_users.return_value = [
+        {"UserName": "ci-deployer", "Arn": "arn:aws:iam::123:user/ci-deployer",
+         "CreateDate": "2024-01-01T00:00:00Z"},
+    ]
+    cat.access_keys.return_value = [
+        {"AccessKeyId": "AKIA123", "Status": "Active"},
+        {"AccessKeyId": "AKIA456", "Status": "Inactive"},
+    ]
+    return cat
+
+
+def test_aws_inventory_all_resource_types():
+    mock_cat = _mock_catalog()
+    mock_session = MagicMock()
+    provider = _providers.get("aws")
+    with patch(
+        "pipeline_check.core.providers.aws.ResourceCatalog",
+        return_value=mock_cat,
+    ):
+        inv = provider.inventory(mock_session)
+    by_type = {}
+    for c in inv:
+        by_type.setdefault(c.type, []).append(c)
+
+    assert len(by_type["codebuild_project"]) == 1
+    cb = by_type["codebuild_project"][0]
+    assert cb.identifier == "my-build"
+    assert cb.metadata["image"] == "aws/codebuild/standard:7.0"
+    assert cb.metadata["privileged_mode"] is True
+    assert cb.metadata["timeout_minutes"] == 30
+
+    assert by_type["codepipeline"][0].metadata["stage_count"] == 2
+    assert by_type["codepipeline"][0].metadata["pipeline_type"] == "V2"
+
+    assert by_type["iam_role"][0].metadata["permissions_boundary"] is True
+
+    trail = by_type["cloudtrail_trail"][0]
+    assert trail.metadata["multi_region"] is True
+    assert trail.metadata["log_file_validation"] is True
+    assert trail.metadata["is_logging"] is True
+
+    assert by_type["secretsmanager_secret"][0].metadata["rotation_enabled"] is True
+
+    assert by_type["codeartifact_domain"][0].metadata["encryption_key"].endswith("/abc")
+    assert by_type["codeartifact_repository"][0].metadata["domain"] == "internal"
+    assert by_type["codecommit_repository"][0].identifier == "backend"
+
+    fn = by_type["lambda_function"][0]
+    assert fn.metadata["runtime"] == "python3.12"
+    assert fn.metadata["code_signing_config_arn"].endswith("csc-1")
+    assert fn.metadata["architectures"] == ["arm64"]
+
+    assert by_type["kms_key"][0].metadata["key_spec"] == "SYMMETRIC_DEFAULT"
+    assert by_type["cloudwatch_log_group"][0].metadata["retention_days"] == 90
+    assert by_type["ssm_parameter"][0].metadata["parameter_type"] == "SecureString"
+    assert by_type["eventbridge_rule"][0].metadata["schedule"] == "cron(0 2 * * ? *)"
+
+    ptc = by_type["ecr_pull_through_cache_rule"][0]
+    assert ptc.metadata["upstream"] == "public.ecr.aws"
+    assert ptc.metadata["has_credential"] is True
+
+    ecr = by_type["ecr_repository"][0]
+    assert ecr.metadata["tag_mutability"] == "IMMUTABLE"
+    assert ecr.metadata["scan_on_push"] is True
+
+    user = by_type["iam_user"][0]
+    assert user.identifier == "ci-deployer"
+    assert user.metadata["active_access_keys"] == 1
+
+
+def test_aws_inventory_s3_artifact_buckets():
+    mock_cat = _mock_catalog()
+    mock_cat.s3_artifact_buckets.return_value = ["my-artifacts"]
+    mock_session = MagicMock()
+    mock_s3 = MagicMock()
+    mock_s3.get_bucket_versioning.return_value = {"Status": "Enabled"}
+    mock_s3.get_public_access_block.return_value = {
+        "PublicAccessBlockConfiguration": {
+            "BlockPublicAcls": True,
+            "IgnorePublicAcls": True,
+            "BlockPublicPolicy": True,
+            "RestrictPublicBuckets": True,
+        },
+    }
+    mock_session.client.return_value = mock_s3
+    provider = _providers.get("aws")
+    with patch(
+        "pipeline_check.core.providers.aws.ResourceCatalog",
+        return_value=mock_cat,
+    ):
+        inv = provider.inventory(mock_session)
+    buckets = [c for c in inv if c.type == "s3_bucket"]
+    assert len(buckets) == 1
+    m = buckets[0].metadata
+    assert m["bucket_name"] == "my-artifacts"
+    assert m["versioning"] == "Enabled"
+    assert m["public_access_blocked"] is True
+
+
+def test_aws_inventory_degraded_service():
+    mock_cat = _mock_catalog()
+    mock_cat.errors = {"codedeploy": "AccessDenied: not authorized"}
+    mock_session = MagicMock()
+    provider = _providers.get("aws")
+    with patch(
+        "pipeline_check.core.providers.aws.ResourceCatalog",
+        return_value=mock_cat,
+    ):
+        inv = provider.inventory(mock_session)
+    degraded = [c for c in inv if c.type == "codedeploy_degraded"]
+    assert len(degraded) == 1
+    assert "AccessDenied" in degraded[0].metadata["error"]
+
+
+def test_aws_inventory_s3_bucket_with_errors():
+    from botocore.exceptions import ClientError
+    mock_cat = _mock_catalog()
+    mock_cat.s3_artifact_buckets.return_value = ["restricted-bucket"]
+    mock_session = MagicMock()
+    mock_s3 = MagicMock()
+    err_resp = {"Error": {"Code": "AccessDenied", "Message": "denied"}}
+    mock_s3.get_bucket_versioning.side_effect = ClientError(err_resp, "GetBucketVersioning")
+    mock_s3.get_public_access_block.side_effect = ClientError(err_resp, "GetPublicAccessBlock")
+    mock_session.client.return_value = mock_s3
+    provider = _providers.get("aws")
+    with patch(
+        "pipeline_check.core.providers.aws.ResourceCatalog",
+        return_value=mock_cat,
+    ):
+        inv = provider.inventory(mock_session)
+    buckets = [c for c in inv if c.type == "s3_bucket"]
+    assert len(buckets) == 1
+    assert buckets[0].metadata["public_access_blocked"] is False
+    assert "versioning" not in buckets[0].metadata
+
+
+def test_aws_inventory_empty_catalog():
+    mock_cat = MagicMock()
+    mock_cat.errors = {}
+    for method in (
+        "codebuild_projects", "codepipeline_pipelines", "cicd_roles",
+        "cloudtrail_trails", "secrets", "codeartifact_domains",
+        "codeartifact_repositories", "codecommit_repositories",
+        "lambda_functions", "kms_keys", "log_groups", "ssm_parameters",
+        "eventbridge_rules", "ecr_pull_through_cache_rules",
+        "ecr_repositories", "s3_artifact_buckets", "iam_users",
+    ):
+        getattr(mock_cat, method).return_value = []
+    mock_session = MagicMock()
+    provider = _providers.get("aws")
+    with patch(
+        "pipeline_check.core.providers.aws.ResourceCatalog",
+        return_value=mock_cat,
+    ):
+        inv = provider.inventory(mock_session)
+    assert inv == []
