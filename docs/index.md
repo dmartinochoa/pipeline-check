@@ -205,11 +205,14 @@ to force one. Counts reflect the current rule catalog.
   <a class="pg-provider" href="providers/drone/"><span class="pg-provider__name">Drone CI</span><span class="pg-provider__count">{{ providers.drone.checks }}</span></a>
   <a class="pg-provider" href="providers/tekton/"><span class="pg-provider__name">Tekton</span><span class="pg-provider__count">{{ providers.tekton.checks }}</span></a>
   <a class="pg-provider" href="providers/argo/"><span class="pg-provider__name">Argo Workflows</span><span class="pg-provider__count">{{ providers.argo.checks }}</span></a>
+  <a class="pg-provider" href="providers/gitea/"><span class="pg-provider__name">Gitea / Forgejo Actions</span><span class="pg-provider__count">{{ providers.gitea.checks }}</span></a>
 </div>
 
 <div class="pg-provider-group" data-stagger>
   <span class="pg-provider-group__label">Cloud & infrastructure as code</span>
   <a class="pg-provider" href="providers/aws/"><span class="pg-provider__name">AWS</span><span class="pg-provider__count">{{ providers.aws.checks }}</span></a>
+  <a class="pg-provider" href="providers/azure_cloud/"><span class="pg-provider__name">Azure Cloud</span><span class="pg-provider__count">{{ providers.azure_cloud.checks }}</span></a>
+  <a class="pg-provider" href="providers/gcp/"><span class="pg-provider__name">GCP</span><span class="pg-provider__count">{{ providers.gcp.checks }}</span></a>
   <a class="pg-provider" href="providers/terraform/"><span class="pg-provider__name">Terraform</span><span class="pg-provider__count">{{ providers.terraform.checks }}</span></a>
   <a class="pg-provider" href="providers/cloudformation/"><span class="pg-provider__name">CloudFormation</span><span class="pg-provider__count">{{ providers.cloudformation.checks }}</span></a>
 </div>

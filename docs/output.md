@@ -11,6 +11,7 @@ format carries the same finding set, only the rendering differs.
 | `sarif`    | stdout or `--output-file`    | GitHub code scanning, GitLab SAST, any SARIF UI      |
 | `markdown` | stdout or `--output-file`    | PR comments / Slack-style consumers; Attack Chains H2 sits between summary and the Failures table |
 | `junit`    | stdout or `--output-file`    | Test-runner UIs (Jenkins, Bamboo, GitLab pipelines) that natively render JUnit XML |
+| `codequality` | stdout or `--output-file` | GitLab Code Quality JSON. Annotates Merge Request diffs natively via the `codequality` artifact report |
 | `threatmodel` | stdout or `--output-file` | STRIDE-mapped Markdown threat-model document. Auto-runs `--inventory`. SOC 2 / PCI / NIST SSDF evidence packages, architecture-review docs |
 | `cyclonedx` | stdout or `--output-file`  | CycloneDX 1.6 JSON SBOM of build-time dependencies (actions, base images, packages). PURL identifiers on every component |
 | `both`     | terminal → **stderr**, JSON → stdout | Pipe `jq` while still seeing a human report |
@@ -20,6 +21,25 @@ runs two scans (HEAD + base) and emits Markdown shaped for a single
 PR-review comment, with introduced / resolved / preserved sections
 rather than the full failures table the `markdown` format renders.
 See [`pr_diff.md`](pr_diff.md) for the mechanism and recipes.
+
+## Terminal: inline exploit examples
+
+```bash
+pipeline_check --inline-explain
+```
+
+The default terminal view shows each failing finding with its title,
+severity, location, and recommendation. `--inline-explain` injects the
+rule's recorded `exploit_example` directly under the existing
+Recommendation block, so the operator can see a concrete attacker
+scenario without piping the check ID into `pipeline_check explain`.
+
+The flag is a no-op on `--output json` / `sarif` / `markdown` /
+`codequality` / `junit`. Those formats render the `exploit_example`
+field on demand (or in the case of `json`/`html`, expose it as a
+structured attribute that consumers can render themselves), so the
+flag has nothing to add. The terminal and `--explain` surfaces share
+the canonical label "Proof of exploit".
 
 ## JSON
 
@@ -251,6 +271,39 @@ pure-function swap, no rule registry changes.
 - **Quarterly posture review**: regenerate against the latest
   scan, diff against the prior quarter to see which STRIDE
   buckets gained / lost open risks.
+
+## GitLab Code Quality
+
+```bash
+pipeline_check --output codequality -O gl-code-quality-report.json
+```
+
+Emits a Code Climate `gl-code-quality-report` JSON array, the format
+GitLab CI renders inline against the Merge Request diff when uploaded
+as a `reports: codequality:` artifact:
+
+```yaml
+# .gitlab-ci.yml
+pipeline-check:
+  script:
+    - pipeline_check --pipeline gitlab --output codequality
+        --output-file gl-code-quality-report.json
+  artifacts:
+    when: always
+    reports:
+      codequality: gl-code-quality-report.json
+```
+
+Shape highlights:
+
+- One entry per `(failing finding, location)` pair. A single aggregate
+  finding that lists ten offending lines becomes ten MR annotations.
+- Severity maps as `CRITICAL -> blocker`, `HIGH -> critical`,
+  `MEDIUM -> major`, `LOW -> minor`, `INFO -> info`.
+- `fingerprint` is a SHA-1 over `(check_id, normalized_path, line)`,
+  deliberately *not* over the description, so cosmetic prose tweaks
+  across releases don't churn previously-dismissed MR threads.
+- Passing findings are skipped (the format has no "passed" concept).
 
 ## CycloneDX 1.6
 

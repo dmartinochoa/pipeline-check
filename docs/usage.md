@@ -291,6 +291,13 @@ pipeline_check --output cyclonedx -O sbom.json     # CycloneDX 1.6 build SBOM
 pipeline_check --output both                       # terminal→stderr, JSON→stdout
 ```
 
+For the default terminal view, `--inline-explain` injects each rule's
+recorded `exploit_example` directly under the Recommendation block, so
+operators see a concrete attack scenario without piping the check ID
+through `pipeline_check explain`. No-op on the structured formats
+(`json` / `sarif` / `markdown` / `codequality` / `junit`), which
+already surface the field via their schema.
+
 Format schemas: [output.md](output.md).
 
 ## Filter what gets scanned
@@ -611,5 +618,6 @@ python -m pipeline_check.lsp
 - [config.md](config.md): full config-file schema
 - [ci_gate.md](ci_gate.md): gate logic and baselines
 - [output.md](output.md): output format schemas
+- [history.md](history.md): findings-history HTML dashboard (`pipeline_check history`)
 - [attack_chains.md](attack_chains.md): chain detection
 - [scoring_model.md](scoring_model.md): how grades are computed

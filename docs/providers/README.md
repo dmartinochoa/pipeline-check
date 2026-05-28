@@ -78,6 +78,16 @@ requires editing `Scanner`, `Reporter`, or the CLI.
     <p>Live account scan via boto3. CodeBuild, CodePipeline, CodeDeploy, ECR, IAM, S3, CloudTrail, Lambda, KMS, and more.</p>
     <span class="pg-doc-card__meta">{{ providers.aws.checks }}</span>
   </a>
+  <a class="pg-doc-card" href="azure_cloud/">
+    <h3>Azure Cloud</h3>
+    <p>Live subscription scan via the <code>azure-mgmt-*</code> management SDKs. Entra ID, Storage, Key Vault, Container Registry, Monitor.</p>
+    <span class="pg-doc-card__meta">{{ providers.azure_cloud.checks }}</span>
+  </a>
+  <a class="pg-doc-card" href="gcp/">
+    <h3>GCP</h3>
+    <p>Live project scan via the <code>google-cloud-*</code> client libraries. IAM, Cloud Storage, Cloud KMS, Artifact Registry, Cloud Logging.</p>
+    <span class="pg-doc-card__meta">{{ providers.gcp.checks }}</span>
+  </a>
   <a class="pg-doc-card" href="terraform/">
     <h3>Terraform</h3>
     <p>Shift-left scan against a <code>terraform show -json</code> plan or raw <code>*.tf</code> source. AWS-rule parity so findings match the live runtime.</p>
