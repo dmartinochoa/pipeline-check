@@ -451,12 +451,15 @@ class TestPyPIVerifier:
         "pipeline_check.core.checks._primitives.secret_verifiers"
         ".pypi.bearer_probe",
     )
-    def test_verified_via_405(self, mock_probe: MagicMock) -> None:
+    def test_unknown_via_405(self, mock_probe: MagicMock) -> None:
+        # A GET to /legacy/ returns 405 regardless of the credential, so
+        # it is not proof the token is live; classify UNKNOWN rather than
+        # promoting a possibly-dead token to VERIFIED/CRITICAL.
         mock_probe.return_value = ProbeResponse(status=405, body=b"")
         v = get_verifier("pypi_token")
         assert v is not None
         result = v.probe("pypi-AgEIcHlwaS5vcmcfake")
-        assert result.outcome == VerifyOutcome.VERIFIED
+        assert result.outcome == VerifyOutcome.UNKNOWN
 
     @patch(
         "pipeline_check.core.checks._primitives.secret_verifiers"
@@ -498,6 +501,30 @@ class TestGoogleAPIKeyVerifier:
             body=json.dumps({
                 "error": {"status": "PERMISSION_DENIED",
                           "message": "API_KEY_INVALID"},
+            }).encode(),
+        )
+        v = get_verifier("google_api_key")
+        assert v is not None
+        result = v.probe("AIzaSyFake35CharacterKeyHereXX")
+        assert result.outcome == VerifyOutcome.UNVERIFIED
+
+    @patch(
+        "pipeline_check.core.checks._primitives.secret_verifiers"
+        ".google.http_probe",
+    )
+    def test_unverified_on_400_invalid_argument(
+        self, mock_probe: MagicMock,
+    ) -> None:
+        # The Generative Language API returns 400 INVALID_ARGUMENT with
+        # "API key not valid" for a *bad* key. This must NOT be read as
+        # VERIFIED (the old bug promoted dead keys to CRITICAL).
+        mock_probe.return_value = ProbeResponse(
+            status=400,
+            body=json.dumps({
+                "error": {
+                    "status": "INVALID_ARGUMENT",
+                    "message": "API key not valid. Please pass a valid API key.",
+                },
             }).encode(),
         )
         v = get_verifier("google_api_key")

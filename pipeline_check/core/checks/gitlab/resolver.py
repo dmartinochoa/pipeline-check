@@ -23,6 +23,7 @@ from .._primitives.registry_fetcher import (
     FileSystemCache,
     HttpGetFetcher,
 )
+from .._primitives.safe_http import urlopen_https_only
 
 logger = logging.getLogger(__name__)
 
@@ -81,6 +82,12 @@ class GitLabIncludeFetcher:
             self.stats.skipped += 1
             return None
         cache_key = self._cache_key(kind, spec)
+        if cache_key is not None:
+            # Scope the key to the GitLab host so the same project path
+            # on two different instances (``--gitlab-url``) can't collide
+            # on the shared on-disk cache and serve one host's bytes for
+            # the other.
+            cache_key = f"{self.gitlab_url}|{cache_key}"
         if self.cache and cache_key:
             hit = self.cache.get(cache_key)
             if hit is not None:
@@ -173,7 +180,7 @@ class GitLabIncludeFetcher:
         if self.token:
             req.add_header("PRIVATE-TOKEN", self.token)
         try:
-            with urllib.request.urlopen(req, timeout=_TIMEOUT) as resp:
+            with urlopen_https_only(req, timeout=_TIMEOUT) as resp:
                 body: bytes = resp.read(_MAX_RESPONSE_BYTES + 1)
                 if len(body) > _MAX_RESPONSE_BYTES:
                     return None
@@ -187,7 +194,7 @@ class GitLabIncludeFetcher:
         req = urllib.request.Request(url)
         req.add_header("User-Agent", "pipeline-check-gitlab-resolver")
         try:
-            with urllib.request.urlopen(req, timeout=_TIMEOUT) as resp:
+            with urlopen_https_only(req, timeout=_TIMEOUT) as resp:
                 body: bytes = resp.read(_MAX_RESPONSE_BYTES + 1)
                 if len(body) > _MAX_RESPONSE_BYTES:
                     return None

@@ -60,6 +60,7 @@ from typing import Any, Protocol
 
 import yaml
 
+from .._primitives.safe_http import urlopen_https_only
 from ..base import safe_load_yaml
 from .base import GitHubContext, Workflow
 from .uses_parser import UsesRef, parse_uses
@@ -166,7 +167,7 @@ class HttpFetcher:
         # pipeline-check apart from a generic ``urllib`` consumer.
         req.add_header("User-Agent", "pipeline-check-resolver")
         try:
-            with urllib.request.urlopen(req, timeout=self.timeout) as resp:
+            with urlopen_https_only(req, timeout=self.timeout) as resp:
                 # Cap reads at ``_MAX_RESPONSE_BYTES + 1``; any extra
                 # byte indicates the body is over the cap, in which
                 # case we treat the fetch as a failure rather than

@@ -340,6 +340,76 @@ What's planned, what's shipped, and what's deliberately out of scope.
   and Markdown reporters, 13-standard mapping, autofix engine, HTML
   report interactivity.
 
+## Known issues
+
+Bugs found in a full feature review (2026-05-29). Each was confirmed
+by reading the code path, not just inferred. File references are
+approximate line anchors at review time.
+
+The **high** and **medium** severity findings from this review are
+fixed on ``dev`` (see the ``### Fixed`` block in ``CHANGELOG.md``):
+the remote-resolve redirect SSRF, the PyPI / Google secret-verifier
+false-positives, the OSV truncated-batch caching, the host-blind
+GitLab include cache key, the cross-repo reverse-direction dedup, the
+terminal Rich-markup leak, the autofix line-ending flip on Windows,
+the docker / package flag fixers reclassified ``unsafe``, and the
+``history --dir`` fleet-aggregate ingestion. The **low** severity
+items below remain open.
+
+### Low
+
+- **JWT verifier uses wrong userinfo endpoints.** For Microsoft Entra
+  it builds ``{issuer}/openid/userinfo`` instead of the Graph
+  ``oidc/userinfo`` endpoint, and the Google entry points at a
+  deprecated host (``jwt.py:67``). Active tokens come back
+  UNKNOWN/UNVERIFIED (false negative, no false CRITICAL).
+- **``--diff-base`` under-scans from a repo subdirectory.**
+  ``changed_files`` (``diff.py:50``) treats git's repo-root-relative
+  output as cwd-relative. Launched from a subdir, the path intersection
+  misses real changes and ``_filter_context_by_diff`` drops files that
+  actually changed, the opposite of the module's stated over-scan
+  guarantee.
+- **Terraform diff filter drops renamed-module resources.**
+  ``_filter_terraform_by_diff`` (``scanner.py:796``) matches a module
+  call label against the changed file's parent directory name. When the
+  source directory differs from the call label (the common case,
+  ``module "vpc" { source = "./modules/networking" }``), changed
+  resources are dropped and never scanned.
+- **GitLab ``project:`` include with a list-valued ``file:`` fails.**
+  ``_fetch_project`` does ``str(file_path)`` (``gitlab/resolver.py:107``);
+  GitLab allows ``file:`` to be a list, so ``str([...])`` builds a bogus
+  URL that 404s and the includes are silently dropped.
+- **SARIF ingest under-grades a missing ``level``.** A result with no
+  ``level`` and no ``security-severity`` maps to INFO
+  (``sarif_ingest.py:119``); the SARIF 2.1.0 default is ``warning``, so
+  findings from tools that omit per-result level can be filtered out by
+  a severity gate.
+- **Fleet GitHub enumerator crashes on a null ``clone_url``.**
+  ``r.get("clone_url", default)`` (``fleet.py:325``) only fills the
+  default when the key is absent; a ``"clone_url": null`` value passes
+  ``None`` into ``git clone`` and raises ``TypeError`` mid-enumeration.
+  The GitLab and Bitbucket paths guard this with ``isinstance``; GitHub
+  does not.
+- **Rego/custom evaluator edge cases.** The regex haystack is truncated
+  to 100 KB before matching (``evaluator.py:271``), so a ``$``-anchored
+  pattern can match the truncation boundary instead of the real end;
+  and numeric / length operators treat ``bool`` as a number
+  (``evaluator.py:363``) since ``bool`` subclasses ``int``, so a YAML
+  ``true`` compares as ``1`` rather than failing the type check.
+- **Passing Rego findings drop metadata.** ``make_passing_findings``
+  (``rego_runner.py:222``) does not copy ``cwe`` / ``incident_refs`` /
+  ``exploit_example`` the way the YAML path and failing Rego findings
+  do, and K8s Rego violations default ``resource`` to ``<unknown>``
+  because ``input_data`` has no top-level ``path`` key
+  (``rego_runner.py:173``).
+- **Cosmetic.** ``history._svg_line_chart`` renders a real chart for an
+  all-zero dataset instead of the "no data" placeholder
+  (``history.py:362``); ``inline_ignore`` captures ``reason=`` with
+  ``\S+`` so multi-word reasons truncate at the first space
+  (``inline_ignore.py:31``); gate baseline matching does not normalize
+  path separators, so a baseline written on one OS can fail to suppress
+  on another (``gate.py:429``).
+
 ## Candidates
 
 Larger items not yet scoped to a specific release. Landing order

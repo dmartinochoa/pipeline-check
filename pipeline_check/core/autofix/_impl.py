@@ -529,7 +529,13 @@ for _cid in (
     # shared flag-stripping fixer.
     "BK-005",
 ):
-    register(_cid, safety="safe")(_strip_docker_flags)
+    # Unsafe: this is a whole-file strip and the triggering rule fires
+    # once if any insecure flag appears anywhere in the file, so a benign
+    # ``-v /data:/data`` bind or ``--cap-add`` on an unrelated command can
+    # be removed too, changing that job's runtime. The YAML round-trip
+    # net doesn't catch a behavior-only change, so gate it behind
+    # ``--fix=unsafe``.
+    register(_cid, safety="unsafe")(_strip_docker_flags)
 
 
 # ── Insecure package-install flag removal ──────────────────────────────
@@ -565,7 +571,10 @@ def _strip_pkg_flags(content: str, finding: Finding) -> str | None:
 
 
 for _cid in ("GHA-018", "GL-018", "ADO-018", "BB-014", "JF-018", "CC-018"):
-    register(_cid, safety="safe")(_strip_pkg_flags)
+    # Unsafe for the same reason as ``_strip_docker_flags``: a whole-file
+    # strip that can remove an install flag on a command other than the
+    # one the finding pointed at. Gate behind ``--fix=unsafe``.
+    register(_cid, safety="unsafe")(_strip_pkg_flags)
 
 
 # ── Jenkins secret redaction (Groovy syntax) ───────────────────────────
