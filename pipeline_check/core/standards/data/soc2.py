@@ -621,6 +621,12 @@ STANDARD = Standard(
         "NPM-010":  ["CC6.8", "CC7.1", "CC8.1"],
         "PYPI-008": ["CC6.8", "CC7.1", "CC8.1"],
         "PYPI-009": ["CC6.8", "CC7.1", "CC8.1"],
+        # ── PyPI extended pack ──
+        "PYPI-010": ["CC6.1"],                  # index URL embedded credentials
+        "PYPI-011": ["CC6.1"],                  # --trusted-host disables TLS
+        "PYPI-012": ["CC8.1"],                  # build-system requires floating
+        "PYPI-013": ["CC8.1"],                  # pyproject dynamic dependencies
+        "PYPI-014": ["CC6.1"],                  # custom source HTTP
         # ── nuget (dep supply-chain) ─────────────────────────────
         "NUGET-001": ["CC8.1"],
         "NUGET-002": ["CC8.1"],

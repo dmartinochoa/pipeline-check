@@ -632,6 +632,12 @@ STANDARD = Standard(
         "NPM-010":  ["ESF-S-VERIFY-DEPS"],
         "PYPI-008": ["ESF-S-VERIFY-DEPS"],
         "PYPI-009": ["ESF-S-VERIFY-DEPS"],
+        # ── PyPI extended pack ──
+        "PYPI-010": ["ESF-D-SECRETS"],
+        "PYPI-011": ["ESF-S-TRUSTED-REG", "ESF-S-VERIFY-DEPS"],
+        "PYPI-012": ["ESF-S-VERIFY-DEPS"],
+        "PYPI-013": ["ESF-S-VERIFY-DEPS"],
+        "PYPI-014": ["ESF-S-TRUSTED-REG"],
         # nuget (csproj + NuGet.config static analysis)
         "NUGET-001": ["ESF-S-VERIFY-DEPS"],
         "NUGET-002": ["ESF-S-VERIFY-DEPS"],

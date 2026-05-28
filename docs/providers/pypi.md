@@ -47,7 +47,7 @@ covered.
 
 ## What it covers
 
-8 checks · 0 have an autofix patch (``--fix``).
+13 checks · 0 have an autofix patch (``--fix``).
 
 | Check | Title | Severity | Fix |
 |-------|-------|----------|-----|
@@ -59,6 +59,11 @@ covered.
 | [PYPI-006](#pypi-006) | requirements.txt pins a known-compromised PyPI package version | <span class="pg-sev pg-sev--critical">CRITICAL</span> |  |
 | [PYPI-008](#pypi-008) | Direct dependency was published within the cooldown window | <span class="pg-sev pg-sev--high">HIGH</span> |  |
 | [PYPI-009](#pypi-009) | PyPI package has a known OSV advisory | <span class="pg-sev pg-sev--critical">CRITICAL</span> |  |
+| [PYPI-010](#pypi-010) | Requirements file carries an index URL with embedded credentials | <span class="pg-sev pg-sev--high">HIGH</span> |  |
+| [PYPI-011](#pypi-011) | Requirements file disables TLS verification via --trusted-host | <span class="pg-sev pg-sev--high">HIGH</span> |  |
+| [PYPI-012](#pypi-012) | pyproject.toml [build-system].requires uses floating versions | <span class="pg-sev pg-sev--high">HIGH</span> |  |
+| [PYPI-013](#pypi-013) | pyproject.toml defers dependency resolution via dynamic | <span class="pg-sev pg-sev--medium">MEDIUM</span> |  |
+| [PYPI-014](#pypi-014) | Custom package source in pyproject.toml uses plain HTTP | <span class="pg-sev pg-sev--medium">MEDIUM</span> |  |
 
 ---
 
@@ -272,6 +277,182 @@ Network-dependent: needs ``--resolve-remote`` to query the OSV advisory database
 **Recommended action**
 
 Upgrade to a patched version or remove the affected package. Consult the advisory URL for remediation guidance.
+
+</div>
+
+</div>
+
+<div class="pg-rule pg-rule--high" markdown>
+
+## PYPI-010: Requirements file carries an index URL with embedded credentials { #pypi-010 }
+
+<div class="pg-rule__tags">
+<span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-6</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-10</span> <span class="pg-tag pg-tag--esf">ESF-D-SECRETS</span> <span class="pg-tag pg-tag--cwe">CWE-798</span> <span class="pg-tag pg-tag--cwe">CWE-522</span>
+</div>
+
+Reads top-level ``--index-url`` / ``--extra-index-url`` / ``-i`` options from each requirements file and fires when the URL's authority component carries an ``<user>:<pass>@`` prefix. Empty-password forms (``https://user:@host``) and ``${VAR}`` placeholders are skipped — the former is operator-flagged as 'no credential intended' and the latter resolves at install time from the environment rather than the manifest text.
+
+Mirrors NPM-013-style risks for npm's ``.npmrc`` ``_authToken`` but adapted to pip's URL-embedded form. The npm rule has a dedicated registry-token slot; pip and poetry leak the credential at the URL level instead.
+
+**Known false-positive modes**
+
+- Internal templating tools that emit a placeholder credential form (``https://__TOKEN__:@my.org``) and substitute the real value at install time trip this rule by shape. Suppress per file when the template marker is stable; the rule's placeholder skip-list only recognizes ``${...}``.
+
+**Seen in the wild**
+
+- Long-running pattern of internal artifact-registry credentials leaking through requirements files committed to public mirrors. The credential's audit trail (last rotated, who has it) is lost the moment the file lands in a clone an attacker controls; the cost is rotation plus follow-up reviews of every system that used the leaked credential during the exposure window.
+
+<div class="pg-rule__rec" markdown>
+
+**Recommended action**
+
+Move the credential out of the URL and into the environment or a dedicated config file the host respects:
+
+* Set ``PIP_INDEX_URL=https://my.org/simple`` and pass the credentials via ``PIP_KEYRING_PROVIDER=subprocess`` plus ``~/.config/pip/pip.conf`` (which lives outside the repo).
+* For poetry, use ``poetry config http-basic.<repo-name> <user> <pass>`` so credentials land in the user's keyring rather than the manifest.
+* For CI runners, inject the credentials at install time via ``PIP_INDEX_URL=https://${TOKEN}@my.org/simple`` from a CI secret variable and never commit the resolved form.
+
+Credentials embedded in a committed ``--index-url`` flag lock the password into git history. The value persists in every clone, every CI cache, and every backup; rotation requires consumer-side updates *plus* history scrub before the leaked credential stops being useful to an attacker.
+
+</div>
+
+</div>
+
+<div class="pg-rule pg-rule--high" markdown>
+
+## PYPI-011: Requirements file disables TLS verification via --trusted-host { #pypi-011 }
+
+<div class="pg-rule__tags">
+<span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-3</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-6</span> <span class="pg-tag pg-tag--esf">ESF-S-TRUSTED-REG</span> <span class="pg-tag pg-tag--esf">ESF-S-VERIFY-DEPS</span> <span class="pg-tag pg-tag--cwe">CWE-295</span> <span class="pg-tag pg-tag--cwe">CWE-345</span>
+</div>
+
+Reads ``--trusted-host`` options from each requirements file and fires once per declared host. The flag's semantics are exactly the named-host TLS bypass: certificate validation is skipped, the certificate's expiry / signature / SAN are not consulted, and a MITM that intercepts the TCP connection to the named host can serve arbitrary wheel content without raising pip's verification.
+
+Distinct from PYPI-003 (HTTP index URL) and PYPI-005 (``--extra-index-url`` to a non-default registry): those rules catch the configuration shapes that *declare* an insecure source, this one catches the explicit-bypass shape that disables the verification that would otherwise gate the install.
+
+**Known false-positive modes**
+
+- A small number of internal mirrors that legitimately operate on HTTP within a strictly-firewalled network use ``--trusted-host`` as a deliberate posture. The rule still fires; suppress per host with a one-line rationale naming the network boundary that justifies skipping TLS.
+
+**Seen in the wild**
+
+- Long-running pattern in CI debugging sessions: a transient certificate problem on an internal mirror is worked around by adding ``--trusted-host`` to requirements.txt, the certificate is fixed days later, the flag is never removed. The bypass persists indefinitely; every subsequent ``pip install`` against that requirements file accepts unauthenticated wheel content.
+
+<div class="pg-rule__rec" markdown>
+
+**Recommended action**
+
+Remove every ``--trusted-host`` flag from the requirements file and fix the underlying TLS problem instead. The flag tells pip to skip certificate validation for the named host, which means any MITM along the install path can swap the wheel without detection. Three remediation patterns:
+
+* If the host is internal and has a valid certificate signed by a private CA, distribute the CA bundle to consumers (``REQUESTS_CA_BUNDLE`` / ``SSL_CERT_FILE``) and drop the flag.
+* If the host serves plain HTTP, switch to HTTPS — most internal artifact registries ship with a built-in self-signed certificate that's easy to swap for a real one.
+* If the host is genuinely external and the certificate is expired (common with abandoned mirrors), switch to the canonical PyPI URL or a maintained mirror.
+
+</div>
+
+</div>
+
+<div class="pg-rule pg-rule--high" markdown>
+
+## PYPI-012: pyproject.toml [build-system].requires uses floating versions { #pypi-012 }
+
+<div class="pg-rule__tags">
+<span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-3</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-7</span> <span class="pg-tag pg-tag--esf">ESF-S-VERIFY-DEPS</span> <span class="pg-tag pg-tag--cwe">CWE-1357</span> <span class="pg-tag pg-tag--cwe">CWE-829</span>
+</div>
+
+Re-parses each ``pyproject.toml`` (or ``pyproject.toml`` synthesized into the requirements view) and inspects ``[build-system].requires`` for entries without an exact ``==X.Y.Z`` pin. Caret (``^``), tilde (``~``), comparison (``>=`` / ``<``), wildcard (``*``), and unbounded (``setuptools``) all trip the rule.
+
+Distinct from PYPI-001 (general missing-pin), which audits every dependency table in the same view. This rule scopes to the build-system requires specifically because the build-time install hook surface is higher-risk than runtime deps: the latter at least have a chance to be caught by a sandboxed CI test before they ship; the former runs at ``pip install`` time, before any test ever executes.
+
+**Known false-positive modes**
+
+- Some library projects deliberately leave ``setuptools>=64`` unbounded so downstream consumers can pick a compatible patch automatically. The rule still fires; suppress per file with a one-line rationale naming the publish-time intent. Application repos (not libraries) should pin.
+
+**Seen in the wild**
+
+- Build-time compromise pattern: a popular ``setuptools`` patch release ships with a poisoned post-install hook that executes during every downstream ``pip install``. Floating build-system requires inherit the malicious version automatically; exact pins survive the incident until the consumer chooses to bump. The xz-utils style patch-release smuggle pattern works on every ecosystem with floating build-time deps, not just system packages.
+
+<div class="pg-rule__rec" markdown>
+
+**Recommended action**
+
+Pin every entry in ``[build-system].requires`` to an exact version (``setuptools==69.0.2``, ``wheel==0.42.0``). Build-system requirements differ from runtime dependencies in one critical way: they run during package installation — ``setup.py``, ``setup.cfg``, ``pyproject.toml``-driven build hooks — before any runtime sandbox is in place. A compromised ``setuptools`` patch release executes arbitrary Python in the install environment and inherits whatever privileges the install process has (CI runner write access, deploy keys, AWS credentials in the environment).
+
+After exact-pinning the build-system requires, audit the pins quarterly: subscribe to ``setuptools`` / ``wheel`` GHSA feeds, dependabot-style automated bumps, and consider running ``pip install --no-build-isolation`` against a pre-warmed wheel cache so the build environment is reproducible across runs.
+
+</div>
+
+</div>
+
+<div class="pg-rule pg-rule--medium" markdown>
+
+## PYPI-013: pyproject.toml defers dependency resolution via dynamic { #pypi-013 }
+
+<div class="pg-rule__tags">
+<span class="pg-sev pg-sev--medium">MEDIUM</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-3</span> <span class="pg-tag pg-tag--esf">ESF-S-VERIFY-DEPS</span> <span class="pg-tag pg-tag--cwe">CWE-1357</span>
+</div>
+
+Re-parses ``pyproject.toml`` and inspects ``[project].dynamic`` for entries that defer dependency resolution: ``"dependencies"`` and ``"optional-dependencies"`` specifically (other dynamic fields like ``"version"`` are also flagged but at informational priority — they don't affect supply-chain audit, just hygiene).
+
+The rule's value is closing a static-analysis blind spot: a project that lists no dependencies in ``[project].dependencies`` while declaring ``dynamic = ["dependencies"]`` looks dependency-free to PYPI-001 / PYPI-002 / PYPI-008, but ships with a full real-world dependency graph that was computed at build time.
+
+**Known false-positive modes**
+
+- Some libraries use ``dynamic = ["version"]`` with ``setuptools_scm`` legitimately so a single source of truth (a git tag) drives both the package version and the changelog. The version-only case is the lowest-impact form; suppress per file with a one-line rationale naming the scm-driven version policy. The ``dependencies`` / ``optional-dependencies`` cases should not be suppressed without static-analysis parity evidence.
+
+**Seen in the wild**
+
+- Static-analysis blind-spot class commonly surfaced in audits of libraries that ship pyproject.toml as a modern facade over a legacy setup.py: the manifest looks PEP 621-compliant but ``dynamic = ["dependencies"]`` punts the real list to ``setup.py``, which can do anything (read environment variables, fetch lists over the network, derive deps from a config file in the repo). Every supply-chain audit downstream has to know setup.py's dynamic behavior to be accurate.
+
+<div class="pg-rule__rec" markdown>
+
+**Recommended action**
+
+Move every entry out of ``[project].dynamic`` and into an explicit static field on ``[project]``. ``dynamic`` tells the build backend to compute the value at build time, typically by reading ``setup.py`` / ``setup.cfg`` / a vendor-specific extension. Static analysis can't see those values, which means every linter, IDE, SBOM-generator, and supply-chain scanner (this one included) is blind to the dependency set.
+
+The migration is mechanical:
+
+* ``dynamic = ["dependencies"]`` → move runtime deps into ``[project].dependencies`` as a static list.
+* ``dynamic = ["optional-dependencies"]`` → move into ``[project.optional-dependencies]``.
+* ``dynamic = ["version"]`` → if computed from ``__version__``, switch to a ``setuptools_scm``-style version-from-VCS configuration that's at least declared in the manifest, or commit to an explicit literal.
+
+After the migration, this rule passes and PYPI-001 takes over for the floating-spec audit of the now-visible dependency list.
+
+</div>
+
+</div>
+
+<div class="pg-rule pg-rule--medium" markdown>
+
+## PYPI-014: Custom package source in pyproject.toml uses plain HTTP { #pypi-014 }
+
+<div class="pg-rule__tags">
+<span class="pg-sev pg-sev--medium">MEDIUM</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-3</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-6</span> <span class="pg-tag pg-tag--esf">ESF-S-TRUSTED-REG</span> <span class="pg-tag pg-tag--cwe">CWE-319</span>
+</div>
+
+Re-parses ``pyproject.toml`` and walks every custom package-source table for an HTTP URL. The Poetry, uv, and PDM source-list shapes are all covered; each one emits a separate finding per offending URL.
+
+Pairs with PYPI-003 (HTTP index URL in requirements.txt) but at the modern-resolver layer. A project that's migrated off requirements.txt to pyproject.toml + a resolver-specific source list still needs the HTTPS audit; PYPI-003 doesn't see those entries because they live in a different table.
+
+**Known false-positive modes**
+
+- Local-development mirrors running on loopback HTTP (``http://localhost:8080``) are a common workaround for offline development. The rule still fires; suppress per file with a one-line rationale naming the dev-only use. Production / CI configurations should not be suppressed.
+
+**Seen in the wild**
+
+- Common MITM pattern: a CI runner installs from an internal Nexus declared in ``[[tool.poetry.source]]`` with an HTTP URL. The runner's network path is shared with other tenants (CI cluster, kubernetes namespace) that any of which can route traffic through a proxy that returns a tampered wheel. The HTTPS alternative would have caught the tampering at the TLS layer before pip ever saw the wheel content.
+
+<div class="pg-rule__rec" markdown>
+
+**Recommended action**
+
+Switch the source URL to HTTPS for every custom registry declared in ``pyproject.toml``. The two common shapes are:
+
+* Poetry: ``[[tool.poetry.source]]`` entries with a ``url = "http://..."`` value.
+* uv: ``[tool.uv.sources]`` entries with an ``index = "http://..."`` or ``url = "http://..."`` value.
+* PDM: ``[[tool.pdm.source]]`` entries with a ``url = "http://..."`` value.
+
+Internal artifact registries (Nexus, Artifactory, devpi, private mirrors) ship with built-in HTTPS support; the switch is usually a one-line config change. After the switch, drop any ``--trusted-host`` workarounds the HTTP endpoint was hiding (see PYPI-011).
 
 </div>
 

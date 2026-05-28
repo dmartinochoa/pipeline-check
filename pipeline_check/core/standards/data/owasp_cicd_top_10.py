@@ -519,6 +519,12 @@ STANDARD = Standard(
         "PYPI-006": ["CICD-SEC-3", "CICD-SEC-8"],  # compromised-package registry
         "PYPI-008": ["CICD-SEC-3", "CICD-SEC-8"],  # cooldown gate (--resolve-remote)
         "PYPI-009": ["CICD-SEC-3", "CICD-SEC-8"],  # OSV advisory (--resolve-remote)
+        # ── PyPI (PYPI-010..014) ──
+        "PYPI-010": ["CICD-SEC-6", "CICD-SEC-10"],  # index URL with embedded credentials
+        "PYPI-011": ["CICD-SEC-3", "CICD-SEC-6"],   # --trusted-host disables TLS
+        "PYPI-012": ["CICD-SEC-3", "CICD-SEC-7"],   # build-system requires floating
+        "PYPI-013": ["CICD-SEC-3"],                 # pyproject dynamic dependencies
+        "PYPI-014": ["CICD-SEC-3", "CICD-SEC-6"],   # custom source HTTP
         # maven (pom.xml + settings.xml static analysis)
         "MVN-001":  ["CICD-SEC-3"],                # floating Maven version range
         "MVN-002":  ["CICD-SEC-3"],                # mutable SNAPSHOT dependency

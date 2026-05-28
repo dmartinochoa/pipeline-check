@@ -558,6 +558,12 @@ STANDARD = Standard(
         "NPM-010":  ["PW.4.1", "PW.4.4", "RV.1.1"],    # OSV advisory (--resolve-remote)
         "PYPI-008": ["PW.4.1", "PW.4.4", "RV.1.1"],    # cooldown gate (--resolve-remote)
         "PYPI-009": ["PW.4.1", "PW.4.4", "RV.1.1"],    # OSV advisory (--resolve-remote)
+        # ── PyPI extended pack (PYPI-010..014) ──
+        "PYPI-010": ["PS.1.1"],                        # index URL with embedded credentials
+        "PYPI-011": ["PW.4.4"],                        # --trusted-host disables TLS
+        "PYPI-012": ["PW.4.4"],                        # build-system requires floating
+        "PYPI-013": ["PW.4.4"],                        # pyproject dynamic dependencies
+        "PYPI-014": ["PW.4.4"],                        # custom source HTTP
         # ── nuget (dep supply-chain) ─────────────────────────────
         "NUGET-001": ["PW.4.1", "PW.4.4"],             # floating NuGet version range
         "NUGET-002": ["PW.4.1", "PW.4.4"],             # wildcard prerelease version
