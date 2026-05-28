@@ -9,8 +9,8 @@ JSON array, one object per issue, with ``description``, ``check_name``,
 We emit one entry per ``(failing finding, location)`` pair, so a single
 aggregate finding that lists ten offending lines becomes ten MR
 annotations. Findings with no structured ``locations`` fall back to
-``resource`` and omit ``lines``. Passing findings are skipped, the
-format has no "passed" concept.
+``resource``. Passing findings are skipped, the format has no "passed"
+concept.
 
 Severity mapping pipeline_check -> Code Climate:
 
@@ -20,9 +20,10 @@ Severity mapping pipeline_check -> Code Climate:
 - LOW      -> ``minor``
 - INFO     -> ``info``
 
-The ``fingerprint`` is a SHA-1 over ``(check_id, path, line,
-description)`` so identical findings across runs collide and GitLab
-can hide already-flagged issues until they reappear.
+The ``fingerprint`` is a SHA-1 over ``(check_id, normalized_path, line)``.
+Description text is deliberately excluded so cosmetic prose tweaks across
+releases (or per-run mutations like ``--verify-secrets-show-identity``)
+don't churn previously-dismissed MR threads.
 """
 from __future__ import annotations
 
@@ -40,11 +41,30 @@ _SEVERITY_MAP: dict[Severity, str] = {
     Severity.INFO: "info",
 }
 
+# Sentinel path emitted when a finding has neither a structured location
+# nor a usable resource string. GitLab won't match it against the MR diff,
+# but the entry still surfaces in the Code Quality report rather than
+# being silently dropped at serialization time.
+_UNKNOWN_PATH = "unknown"
 
-def _fingerprint(check_id: str, path: str, line: int | None, desc: str) -> str:
-    """Stable SHA-1 over the bits that identify a unique finding."""
-    payload = f"{check_id}|{path}|{line if line is not None else ''}|{desc}"
-    return hashlib.sha1(payload.encode("utf-8")).hexdigest()
+
+def _normalize_path(path: str) -> str:
+    """Force forward-slash separators so GitLab can match against the MR diff
+    when the scanner ran on a Windows runner."""
+    return path.replace("\\", "/")
+
+
+def _fingerprint(check_id: str, path: str, line: int | None) -> str:
+    """Stable SHA-1 over the bits that identify a unique finding.
+
+    ``usedforsecurity=False`` lets the call run on FIPS-mode hosts; the
+    hash is dedupe identity, not a security primitive.
+    """
+    line_part = "" if line is None else str(line)
+    payload = f"{check_id}|{path}|{line_part}"
+    return hashlib.sha1(
+        payload.encode("utf-8"), usedforsecurity=False,
+    ).hexdigest()
 
 
 def _issue(
@@ -52,13 +72,14 @@ def _issue(
 ) -> dict[str, Any]:
     """Build one Code Climate issue dict for finding + location."""
     desc = (f.description or f.title).strip()
-    location: dict[str, Any] = {"path": path}
+    norm_path = _normalize_path(path) if path else _UNKNOWN_PATH
+    location: dict[str, Any] = {"path": norm_path}
     if line is not None:
         location["lines"] = {"begin": line}
     return {
         "description": desc,
         "check_name": f.check_id,
-        "fingerprint": _fingerprint(f.check_id, path, line, desc),
+        "fingerprint": _fingerprint(f.check_id, norm_path, line),
         "severity": _SEVERITY_MAP.get(f.severity, "info"),
         "location": location,
     }
@@ -79,5 +100,5 @@ def report_codequality(findings: list[Finding]) -> str:
             for loc in f.locations:
                 issues.append(_issue(f, loc.path, loc.start_line))
         else:
-            issues.append(_issue(f, f.resource or "", None))
-    return json.dumps(issues, indent=2, sort_keys=False) + "\n"
+            issues.append(_issue(f, f.resource, None))
+    return json.dumps(issues, indent=2) + "\n"

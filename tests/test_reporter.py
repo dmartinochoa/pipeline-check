@@ -287,19 +287,19 @@ class TestInlineExplain:
     def test_off_by_default_hides_exploit(self):
         f = self._finding("attacker pushes a tag move and gets RCE")
         out = self._render([f], inline_explain=False)
-        assert "Exploit:" not in out
+        assert "Proof of exploit:" not in out
         assert "attacker pushes a tag move" not in out
 
     def test_on_inlines_exploit_example(self):
         f = self._finding("attacker pushes a tag move and gets RCE")
         out = self._render([f], inline_explain=True)
-        assert "Exploit:" in out
+        assert "Proof of exploit:" in out
         assert "attacker pushes a tag move" in out
 
     def test_on_no_exploit_skips_block(self):
         f = self._finding(None)
         out = self._render([f], inline_explain=True)
-        assert "Exploit:" not in out
+        assert "Proof of exploit:" not in out
 
     def test_passing_findings_get_no_panel(self):
         # Passing findings render no per-finding panel at all, so
@@ -307,7 +307,7 @@ class TestInlineExplain:
         f = self._finding("would never run")
         f.passed = True
         out = self._render([f], inline_explain=True)
-        assert "Exploit:" not in out
+        assert "Proof of exploit:" not in out
         assert "would never run" not in out
 
     def test_recommendation_still_renders_with_exploit(self):
@@ -316,4 +316,20 @@ class TestInlineExplain:
         f = self._finding("attacker pushes a tag")
         out = self._render([f], inline_explain=True)
         assert "pin to a SHA" in out
-        assert "Exploit:" in out
+        assert "Proof of exploit:" in out
+
+    def test_bracketed_exploit_tokens_survive_panel_render(self):
+        # Real exploit_example bodies routinely contain literal ``[...]``
+        # tokens (YAML lists, Terraform list refs, K8s capabilities). The
+        # Rich Panel markup parser would interpret those as style tags and
+        # silently strip the bracketed segments unless the exploit text is
+        # routed through ``rich.markup.escape`` first.
+        f = self._finding(
+            "capabilities: { drop: [ALL] }\n"
+            "runAfter: [extract]\n"
+            "subnets = [aws_subnet.build.id]"
+        )
+        out = self._render([f], inline_explain=True)
+        assert "[ALL]" in out
+        assert "[extract]" in out
+        assert "[aws_subnet.build.id]" in out

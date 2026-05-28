@@ -67,27 +67,40 @@
       ".md-typeset h2",
       ".md-typeset .admonition",
       ".md-typeset details",
-      ".md-typeset table:not([class])",
+      ".md-typeset table:not(.highlighttable)",
       ".md-typeset .highlight",
       ".md-typeset .codehilite"
     ];
     var els = document.querySelectorAll(selectors.join(","));
     var cutoff = 600;
 
-    els.forEach(function (el) {
-      if (el.hasAttribute("data-reveal")) return;
-      var rect = el.getBoundingClientRect();
-      if (rect.top < cutoff) return;
-      el.setAttribute("data-reveal", "");
-      el.setAttribute("data-reveal-light", "");
-    });
-
+    // Two-pass to avoid layout thrash: collect all read results first
+    // (pure getBoundingClientRect calls, no attribute mutations), then
+    // apply attributes in a second pass. Interleaving reads with writes
+    // forces the browser to flush layout on every iteration, turning
+    // a long provider/standards page into O(N) reflows during pageload.
+    var pending = [];
+    for (var i = 0; i < els.length; i++) {
+      var el = els[i];
+      if (el.hasAttribute("data-reveal")) continue;
+      if (el.getBoundingClientRect().top < cutoff) continue;
+      pending.push(el);
+    }
     var cardGrids = document.querySelectorAll(".pg-doc-cards:not([data-stagger])");
-    cardGrids.forEach(function (grid) {
-      var rect = grid.getBoundingClientRect();
-      if (rect.top < cutoff) return;
-      grid.setAttribute("data-stagger", "");
-    });
+    var pendingGrids = [];
+    for (var g = 0; g < cardGrids.length; g++) {
+      if (cardGrids[g].getBoundingClientRect().top >= cutoff) {
+        pendingGrids.push(cardGrids[g]);
+      }
+    }
+
+    for (var j = 0; j < pending.length; j++) {
+      pending[j].setAttribute("data-reveal", "");
+      pending[j].setAttribute("data-reveal-light", "");
+    }
+    for (var k = 0; k < pendingGrids.length; k++) {
+      pendingGrids[k].setAttribute("data-stagger", "");
+    }
   }
 
   // ── Module 3: Stat Counter ───────────────────────────────────

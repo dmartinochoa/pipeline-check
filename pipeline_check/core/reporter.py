@@ -5,6 +5,7 @@ from typing import Any
 
 from rich import box
 from rich.console import Console
+from rich.markup import escape as rich_escape
 from rich.panel import Panel
 from rich.table import Table
 
@@ -333,12 +334,21 @@ def report_terminal(
         # ``--inline-explain`` surfaces the rule's ``exploit_example``
         # (when one is recorded) right under the recommendation so the
         # operator doesn't need a separate ``--explain CHECK_ID``
-        # round-trip. The example is dedented and printed verbatim;
-        # the panel renderer handles wrapping.
+        # round-trip. The example is escaped through ``rich.markup.escape``
+        # because real exploit snippets contain literal ``[...]`` tokens
+        # (YAML lists like ``types: [opened, edited]``, Terraform refs like
+        # ``subnets = [aws_subnet.foo.id]``, K8s capabilities ``[ALL]``) that
+        # the Panel renderer would otherwise parse as Rich style markup and
+        # silently strip from the output. Label matches ``--explain`` and the
+        # HTML report so the same field reads the same on every surface.
+        # TODO(altitude): move this gating to the Finding/data layer so SARIF,
+        # JUnit, markdown, and codequality reporters can honor --inline-explain
+        # too (currently only terminal and the unconditional JSON/HTML do).
         exploit_text = ""
         if inline_explain and f.exploit_example:
+            safe_exploit = rich_escape(f.exploit_example.rstrip())
             exploit_text = (
-                f"\n[bold]Exploit:[/bold]\n{f.exploit_example.rstrip()}"
+                f"\n[bold]Proof of exploit:[/bold]\n{safe_exploit}"
             )
         console.print(
             Panel(

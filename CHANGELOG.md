@@ -109,6 +109,102 @@ release commit collapses this section into `## [X.Y.Z] - <date>`.
 
 ### Fixed
 
+- **Code-review sweep on the post-v1.5 cycle.** Fifteen findings from
+  a high-effort review of the GitLab Code Quality reporter,
+  ``--inline-explain`` feature, docs-site fix, and action.yml
+  packaging:
+  1. **Rich markup leak in ``--inline-explain``.** Exploit examples
+     contain literal ``[...]`` tokens (YAML lists, Terraform list
+     refs, K8s capabilities); the Rich Panel parsed them as style
+     markup and silently stripped 59 rules' bracketed segments.
+     Escape the body through ``rich.markup.escape`` before
+     interpolation, rename the label to ``Proof of exploit`` so it
+     matches the ``--explain`` and HTML report surfaces, and pin
+     the behavior with a regression test that walks bracketed
+     fragments through the renderer.
+  2. **Misleading ``--inline-explain`` help text.** The flag claimed
+     SARIF, JUnit, and markdown outputs "already carry the field"
+     when only JSON and HTML do. Rewrite the help text to name the
+     surfaces that actually surface ``exploit_example`` and the
+     ones that don't.
+  3. **``action.yml`` ``output-file`` default ignored the chosen
+     format.** A consumer setting ``output: codequality`` without
+     overriding the filename got the JSON written to
+     ``pipeline-check.sarif``, invisible to GitLab's
+     ``artifacts.reports.codequality:`` slot. The composite action
+     now derives a per-format default (``gl-code-quality-report.json``
+     for codequality, ``pipeline-check.json`` for JSON,
+     ``pipeline-check.xml`` for JUnit, etc.) when the input is
+     blank, and ``upload-sarif`` reads the resolved path from the
+     run step's output rather than the raw input.
+  4. **Code Quality paths not normalized to forward slashes.** A
+     Windows-hosted GitLab Runner emitted backslash paths GitLab
+     couldn't match against the MR diff. Normalize before
+     serializing, matching the SARIF reporter's convention. Pinned
+     by tests covering both ``Location.path`` and the
+     ``Finding.resource`` fallback path.
+  5. **Code Quality fingerprint included description.** Description
+     text drifts between releases (and per-run with flags like
+     ``--verify-secrets-show-identity``), so the SHA-1 flipped and
+     GitLab treated previously-dismissed MR threads as brand-new.
+     Drop ``description`` from ``_fingerprint``; identity is now
+     ``(check_id, normalized_path, line)`` only. Added regression
+     tests covering description-drift and cross-OS-path stability.
+  6. **Empty ``location.path`` in Code Quality output.** Findings
+     with no structured location and an empty ``resource`` emitted
+     ``"path": ""`` which the Code Climate schema rejects. Fall
+     back to an ``"unknown"`` sentinel so the issue still surfaces.
+  7. **``hashlib.sha1`` without ``usedforsecurity=False``.**
+     Crashed on FIPS-mode hosts; trips Bandit B324. Added the
+     kwarg.
+  8. **``_SEVERITY_MAP`` silent fallback.** A future ``Severity``
+     enum addition would silently downgrade to ``info`` via the
+     dict-get default. New test asserts
+     ``set(_SEVERITY_MAP) == set(Severity)``.
+  9. **``.md-typeset table:not([class])`` selector fragility.** The
+     ``is-visible`` → ``data-revealed`` rename treated only today's
+     trigger; any future feature adding a class to a ``<table>``
+     would have re-broken the same 13 rules. Replaced all 13
+     selectors with ``table:not(.highlighttable)`` so the only
+     opt-out is the known Pygments line-numbered case.
+  10. **Eight hand-wired write-or-stdout branches in ``cli.py``.**
+      Extract a single ``_emit_report(text, output_file, label,
+      *, quiet)`` helper and route SARIF / JUnit / markdown /
+      codequality / cyclonedx / threatmodel / JSON through it.
+      Adding the next format is now one ``_emit_report(...)`` call
+      instead of 11 lines of copy-paste. HTML keeps its own write
+      path because the reporter bundles assets inside.
+  11. **``--inline-explain`` only honored by the terminal reporter.**
+      The flag's natural shape is a per-``Finding`` decision so
+      SARIF, JUnit, markdown, and codequality could honor it too.
+      Added a ROADMAP entry and a ``TODO(altitude)`` comment in
+      ``reporter.py`` flagging the lift. Help-text fix in #2 makes
+      the current carve-outs explicit in the interim.
+  12. **No pre-commit hook running the drift suites.** Recurring
+      ``fix(ci): ...`` commits (typing-extensions pin, codequality
+      import sort + doc drift) all came from drift tests that
+      passed locally but failed post-merge. Added
+      ``.pre-commit-config.yaml`` with ruff on commit and the four
+      drift suites (test_cli_docs_drift, test_doc_claims,
+      test_english_variant, test_rule_framework) on pre-push.
+      ``CONTRIBUTING.md`` documents ``pre-commit install --hook-
+      type pre-push``. This is distinct from the existing
+      ``.pre-commit-hooks.yaml`` which defines consumer-facing
+      hooks for downstream users.
+  13. **Divergent labels for ``exploit_example``.** ``explain.py``
+      and the HTML reporter rendered ``Proof of exploit``; the new
+      ``--inline-explain`` block used ``Exploit:``. Aligned all
+      three on the canonical label.
+  14. **Layout thrash in ``autoTagInnerPage``.** Interleaved
+      ``getBoundingClientRect`` reads with ``setAttribute`` writes
+      forced a layout reflow per iteration on long pages. Split
+      into a pure-read pass that collects pending elements and a
+      pure-write pass that applies the attributes.
+  15. **Redundant ``sort_keys=False`` and ``default=False``
+      kwargs.** Pure noise (both restate stdlib / Click defaults).
+      Dropped from ``codequality_reporter`` and the ``--inline-
+      explain`` Click option.
+
 - **Doc-site tables lose their outline after instant-nav revisit.**
   The scroll-reveal animation in ``docs/javascripts/animations.js``
   tagged ``.md-typeset table:not([class])`` elements with

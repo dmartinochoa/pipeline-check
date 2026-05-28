@@ -345,6 +345,20 @@ What's planned, what's shipped, and what's deliberately out of scope.
 Larger items not yet scoped to a specific release. Landing order
 is open.
 
+### ``--inline-explain`` across every reporter
+
+Today the flag affects only ``--output terminal`` (and ``both`` via
+the terminal half). JSON and HTML include ``exploit_example``
+unconditionally; SARIF, JUnit, markdown, and codequality drop the
+field entirely. Lift the gate from the terminal reporter into a
+``Finding``-layer decision (e.g. pre-filter or a render context
+shared by every reporter) so all formats can honor the flag
+uniformly. Includes wiring ``exploit_example`` into the SARIF
+``help.text``, the JUnit ``<failure>`` body, the markdown comment
+template, and the Code Quality ``description``. Help text in
+``cli.py`` already names the current carve-outs so users aren't
+misled in the interim.
+
 ### VS Code extension
 
 The TypeScript half of the editor-surface push; the LSP server

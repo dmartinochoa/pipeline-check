@@ -379,7 +379,7 @@ body {
 }
 
 /* ----- Tables --------------------------------------------- */
-.md-typeset table:not([class]) {
+.md-typeset table:not(.highlighttable) {
   display: table;
   width: 100%;
   border: 1px solid var(--md-default-fg-color--lightest);
@@ -391,7 +391,7 @@ body {
   border-spacing: 0;
 }
 
-.md-typeset table:not([class]) thead th {
+.md-typeset table:not(.highlighttable) thead th {
   background: color-mix(in oklab, var(--md-default-bg-color) 92%, var(--pg-navy-700));
   font-weight: var(--fw-card-h);
   letter-spacing: -0.005em;
@@ -402,29 +402,29 @@ body {
   text-transform: none;
 }
 
-[data-md-color-scheme="slate"] .md-typeset table:not([class]) thead th {
+[data-md-color-scheme="slate"] .md-typeset table:not(.highlighttable) thead th {
   background: color-mix(in oklab, var(--md-default-bg-color) 75%, var(--pg-navy-700));
 }
 
-.md-typeset table:not([class]) td {
+.md-typeset table:not(.highlighttable) td {
   padding: 0.65rem 0.95rem;
   border-bottom: 1px solid var(--md-default-fg-color--lightest);
   vertical-align: top;
 }
 
-.md-typeset table:not([class]) tbody tr:nth-child(even) td {
+.md-typeset table:not(.highlighttable) tbody tr:nth-child(even) td {
   background: color-mix(in oklab, var(--md-default-bg-color) 96%, var(--pg-navy-900));
 }
 
-[data-md-color-scheme="slate"] .md-typeset table:not([class]) tbody tr:nth-child(even) td {
+[data-md-color-scheme="slate"] .md-typeset table:not(.highlighttable) tbody tr:nth-child(even) td {
   background: color-mix(in oklab, var(--md-default-bg-color) 90%, var(--pg-navy-900));
 }
 
-.md-typeset table:not([class]) tbody tr:hover td {
+.md-typeset table:not(.highlighttable) tbody tr:hover td {
   background: color-mix(in oklab, var(--md-default-bg-color) 90%, var(--pg-teal-500));
 }
 
-.md-typeset table:not([class]) tbody tr:last-child td {
+.md-typeset table:not(.highlighttable) tbody tr:last-child td {
   border-bottom: none;
 }
 
@@ -2862,11 +2862,11 @@ th.pg-sortable:focus-visible {
      so the layout doesn't bust. */
   .md-typeset__scrollwrap,
   .md-typeset .pg-doc-cards,
-  .md-typeset table:not([class]) {
+  .md-typeset table:not(.highlighttable) {
     max-width: 100%;
   }
 
-  .md-typeset table:not([class]) {
+  .md-typeset table:not(.highlighttable) {
     display: block;
     overflow-x: auto;
     -webkit-overflow-scrolling: touch;
@@ -3373,7 +3373,7 @@ th.pg-sortable:focus-visible {
 
 /* Severity column in the summary table — let the chip hug its
    content rather than stretch to the column width. */
-.md-typeset table:not([class]) td .pg-sev {
+.md-typeset table:not(.highlighttable) td .pg-sev {
   font-size: 0.66rem;
 }
 
@@ -3780,7 +3780,7 @@ body:has(.pg-home) :where(a, button, input):focus-visible,
    tables all align numeric columns ("36 checks", "v0.4.2", line
    numbers). Lining + tabular figures lock each digit to the same
    advance width so columns stop drifting between rows. */
-.md-typeset table:not([class]) td {
+.md-typeset table:not(.highlighttable) td {
   font-variant-numeric: tabular-nums lining-nums;
 }
 
@@ -4146,7 +4146,7 @@ body:has(.pg-home) .md-search__form:focus-within,
     page-break-inside: avoid;
   }
 
-  .md-typeset table:not([class]) {
+  .md-typeset table:not(.highlighttable) {
     page-break-inside: avoid;
   }
 

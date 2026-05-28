@@ -1,0 +1,49 @@
+# Internal pre-commit hooks for pipeline-check contributors.
+#
+# These hooks gate local commits/pushes so the recurring
+# ``fix(ci): ...`` patches for drift-tests (test_cli_docs_drift,
+# test_doc_claims, test_english_variant, test_rule_framework) stop
+# landing on master. Install once with:
+#
+#     pre-commit install                     # ruff on every commit
+#     pre-commit install --hook-type pre-push  # drift tests on push
+#
+# This file is distinct from ``.pre-commit-hooks.yaml`` at the repo
+# root, which defines hooks pipeline-check publishes for *consumers*
+# to add to their own ``.pre-commit-config.yaml`` (i.e. running the
+# scanner over their workflows before commit). Two files, two
+# audiences.
+repos:
+  - repo: local
+    hooks:
+      - id: ruff
+        name: ruff (lint)
+        entry: python -m ruff check
+        language: system
+        types: [python]
+        require_serial: true
+        pass_filenames: true
+
+      - id: ruff-format
+        name: ruff (format check)
+        entry: python -m ruff format --check
+        language: system
+        types: [python]
+        require_serial: true
+        pass_filenames: true
+
+      - id: drift-suites
+        name: drift tests (docs <-> code)
+        # The four "code is the source of truth, docs follow" suites
+        # that have historically slipped through to CI. Cheap enough
+        # (a few seconds) to run on every push without slowing the
+        # commit loop. The full test suite still runs in CI.
+        entry: python -m pytest
+          tests/test_cli_docs_drift.py
+          tests/test_doc_claims.py
+          tests/test_english_variant.py
+          tests/test_rule_framework.py
+          -q --no-header
+        language: system
+        pass_filenames: false
+        stages: [pre-push]

@@ -264,6 +264,30 @@ class _FuzzyChoice(click.Choice[str]):
 
 
 # ────────────────────────────────────────────────────────────────────────────
+# Report emission helper
+# ────────────────────────────────────────────────────────────────────────────
+
+
+def _emit_report(
+    text: str, output_file: str | None, label: str, *, quiet: bool,
+) -> None:
+    """Write *text* to *output_file* or stdout; log destination to stderr.
+
+    Every text-shaped reporter (JSON, SARIF, JUnit, markdown, codequality,
+    cyclonedx, threatmodel) shares the same write-or-stdout-or-quiet
+    cascade. Centralizing it here turns each output branch into one line
+    so adding a new format only edits the dispatch site.
+    """
+    if output_file:
+        with open(output_file, "w", encoding="utf-8") as fh:
+            fh.write(text)
+        if not quiet:
+            click.echo(f"{label} written to {output_file}", err=True)
+    elif not quiet:
+        click.echo(text)
+
+
+# ────────────────────────────────────────────────────────────────────────────
 # Shell completion helpers
 # ────────────────────────────────────────────────────────────────────────────
 
@@ -2088,14 +2112,17 @@ def _install_completion_callback(
     "--inline-explain",
     "inline_explain",
     is_flag=True,
-    default=False,
     help=(
         "Inline the rule's ``exploit_example`` (when present) under "
         "each failing finding's terminal panel. Saves the "
         "``pipeline_check --explain CHECK_ID`` round-trip when you "
         "want the proof-of-exploit snippet alongside the description "
-        "and recommendation. No-op for JSON / SARIF / JUnit / "
-        "markdown / html outputs, which already carry the field."
+        "and recommendation. Affects ``--output terminal`` and "
+        "``--output both`` only. ``--output json`` and "
+        "``--output html`` already include ``exploit_example`` in "
+        "every payload regardless of this flag; ``--output sarif`` "
+        "/ ``junit`` / ``markdown`` / ``codequality`` do not surface "
+        "the field at all."
     ),
 )
 @click.option(
@@ -3256,15 +3283,18 @@ def scan(
             inventory=components,
             chains=chains if not no_chains else None,
         )
-        if output == "json" and output_file:
-            with open(output_file, "w", encoding="utf-8") as fh:
-                fh.write(json_text)
+        # ``both`` always streams JSON to stdout regardless of
+        # ``--output-file``; the file destination is only honored
+        # when JSON is the sole format the user asked for.
+        if output == "both":
             if not quiet:
-                click.echo(f"JSON report written to {output_file}", err=True)
-        elif not quiet:
-            click.echo(json_text)
+                click.echo(json_text)
+        else:
+            _emit_report(json_text, output_file, "JSON report", quiet=quiet)
 
     if output == "html":
+        # HTML reporter writes the file itself (it bundles assets), so
+        # we don't route it through ``_emit_report``.
         report_html(
             findings, score_result, region=region, target=target or "",
             output_path=output_file, chains=chains,
@@ -3276,45 +3306,21 @@ def scan(
         sarif_text = report_sarif(
             findings, score_result, tool_version=__version__, chains=chains,
         )
-        if output_file:
-            with open(output_file, "w", encoding="utf-8") as fh:
-                fh.write(sarif_text)
-            if not quiet:
-                click.echo(f"SARIF report written to {output_file}", err=True)
-        elif not quiet:
-            click.echo(sarif_text)
+        _emit_report(sarif_text, output_file, "SARIF report", quiet=quiet)
 
     if output == "junit":
         junit_text = report_junit(findings, score_result)
-        if output_file:
-            with open(output_file, "w", encoding="utf-8") as fh:
-                fh.write(junit_text)
-            if not quiet:
-                click.echo(f"JUnit report written to {output_file}", err=True)
-        elif not quiet:
-            click.echo(junit_text)
+        _emit_report(junit_text, output_file, "JUnit report", quiet=quiet)
 
     if output == "markdown":
         md_text = report_markdown(findings, score_result, chains=chains)
-        if output_file:
-            with open(output_file, "w", encoding="utf-8") as fh:
-                fh.write(md_text)
-            if not quiet:
-                click.echo(f"Markdown report written to {output_file}", err=True)
-        elif not quiet:
-            click.echo(md_text)
+        _emit_report(md_text, output_file, "Markdown report", quiet=quiet)
 
     if output == "codequality":
         cq_text = report_codequality(findings)
-        if output_file:
-            with open(output_file, "w", encoding="utf-8") as fh:
-                fh.write(cq_text)
-            if not quiet:
-                click.echo(
-                    f"Code Quality report written to {output_file}", err=True,
-                )
-        elif not quiet:
-            click.echo(cq_text)
+        _emit_report(
+            cq_text, output_file, "Code Quality report", quiet=quiet,
+        )
 
     if output == "cyclonedx":
         from pipeline_check.core.cyclonedx_reporter import report_cyclonedx
@@ -3324,15 +3330,7 @@ def scan(
             tool_version=__version__,
             scanned_path=target or ".",
         )
-        if output_file:
-            with open(output_file, "w", encoding="utf-8") as fh:
-                fh.write(cdx_text)
-            if not quiet:
-                click.echo(
-                    f"CycloneDX SBOM written to {output_file}", err=True,
-                )
-        elif not quiet:
-            click.echo(cdx_text)
+        _emit_report(cdx_text, output_file, "CycloneDX SBOM", quiet=quiet)
 
     if output == "threatmodel":
         tm_text = report_threatmodel(
@@ -3341,16 +3339,9 @@ def scan(
             tool_version=__version__,
             region=region or "", target=target or "",
         )
-        if output_file:
-            with open(output_file, "w", encoding="utf-8") as fh:
-                fh.write(tm_text)
-            if not quiet:
-                click.echo(
-                    f"Threat-model report written to {output_file}",
-                    err=True,
-                )
-        elif not quiet:
-            click.echo(tm_text)
+        _emit_report(
+            tm_text, output_file, "Threat-model report", quiet=quiet,
+        )
 
     if fix:
         if apply_fixes:
