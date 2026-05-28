@@ -539,6 +539,7 @@ STANDARD = Standard(
         "NUGET-007": ["CICD-SEC-3"],                # multiple sources without packageSourceMapping
         "NUGET-008": ["CICD-SEC-3", "CICD-SEC-8"],  # cooldown gate (--resolve-remote)
         "NUGET-009": ["CICD-SEC-3", "CICD-SEC-8"],  # OSV advisory (--resolve-remote)
+        "NUGET-010": ["CICD-SEC-6", "CICD-SEC-7"],  # NuGet.config cleartext feed credential
         # Buildkite
         "BK-001":   ["CICD-SEC-3"],   # plugin not pinned to exact version
         "BK-002":   ["CICD-SEC-6", "CICD-SEC-7"],  # literal secret in env
@@ -629,6 +630,7 @@ STANDARD = Standard(
         "OCI-006":  ["CICD-SEC-3"],                 # excessive layer count
         "OCI-007":  ["CICD-SEC-3", "CICD-SEC-9"],   # legacy schemaVersion 1
         "OCI-008":  ["CICD-SEC-3", "CICD-SEC-9"],   # weak digest algorithm
+        "OCI-009":  ["CICD-SEC-3", "CICD-SEC-10"],  # missing base-image annotations
         "ATTEST-001": ["CICD-SEC-2", "CICD-SEC-3", "CICD-SEC-9"],   # untrusted SLSA builder
         "ATTEST-002": ["CICD-SEC-3", "CICD-SEC-9"],                 # source-repo claim missing/unverifiable
         "ATTEST-003": ["CICD-SEC-3", "CICD-SEC-9", "CICD-SEC-10"],  # SBOM floating versions
@@ -701,6 +703,7 @@ STANDARD = Standard(
         "CC-032":   ["CICD-SEC-6"],               # secret echoed to CircleCI log
         # npm supply-chain posture
         "NPM-012":  ["CICD-SEC-3", "CICD-SEC-6"],  # publish token missing restrictions
+        "NPM-013":  ["CICD-SEC-6", "CICD-SEC-3"],  # broad files-field publishes everything
         # Azure Cloud posture
         "ENTRA-001": ["CICD-SEC-2"],                # SP assigned Global Administrator
         "ENTRA-002": ["CICD-SEC-2"],                # app credential beyond 180 days

@@ -66,10 +66,26 @@ class NuGetSourceMapping:
 
 
 @dataclass(frozen=True, slots=True)
+class NuGetSourceCredential:
+    """Parsed ``<packageSourceCredentials>/<sourceName>`` entry.
+
+    ``has_cleartext_password`` is true when the entry includes an
+    ``<add key="ClearTextPassword" value="..." />`` element (the
+    key is matched case-insensitively, which is how NuGet itself
+    treats it). The literal value is intentionally NOT preserved
+    so rule findings don't echo the credential into reports.
+    """
+
+    source: str
+    has_cleartext_password: bool = False
+
+
+@dataclass(frozen=True, slots=True)
 class NuGetConfig:
     path: str
     sources: tuple[NuGetSource, ...] = ()
     source_mappings: tuple[NuGetSourceMapping, ...] = ()
+    credentials: tuple[NuGetSourceCredential, ...] = ()
 
 
 @dataclass(frozen=True, slots=True)
@@ -222,6 +238,7 @@ def _parse_nuget_config(path: Path, rel: str) -> NuGetConfig:
     tree = _safe_parse_xml(path)
     sources: list[NuGetSource] = []
     mappings: list[NuGetSourceMapping] = []
+    credentials: list[NuGetSourceCredential] = []
     for elem in tree.iter():
         tag = _strip_ns(elem.tag)
         if tag == "packageSources":
@@ -246,9 +263,34 @@ def _parse_nuget_config(path: Path, rel: str) -> NuGetConfig:
                             source=src_key,
                             patterns=tuple(patterns),
                         ))
+        elif tag == "packageSourceCredentials":
+            # Each direct child is a ``<sourceName>`` block; its own
+            # ``<add key="..." value="..." />`` entries declare the
+            # credential fields. NuGet treats the key match
+            # case-insensitively, so do the same here. Don't capture
+            # the value, only the presence of the cleartext key, so
+            # findings can never leak the literal credential.
+            for src_elem in elem:
+                source_name = _strip_ns(src_elem.tag)
+                if not source_name:
+                    continue
+                has_clear = False
+                for cred in src_elem:
+                    if _strip_ns(cred.tag) != "add":
+                        continue
+                    cred_key = (cred.get("key") or "").lower()
+                    if cred_key == "cleartextpassword":
+                        has_clear = True
+                        break
+                if has_clear:
+                    credentials.append(NuGetSourceCredential(
+                        source=source_name,
+                        has_cleartext_password=True,
+                    ))
     return NuGetConfig(
         path=rel, sources=tuple(sources),
         source_mappings=tuple(mappings),
+        credentials=tuple(credentials),
     )
 
 

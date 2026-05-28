@@ -8,6 +8,7 @@ from pipeline_check.core.checks.nuget.base import (
     NuGetPackageRef,
     NuGetProject,
     NuGetSource,
+    NuGetSourceCredential,
     NuGetSourceMapping,
 )
 
@@ -192,6 +193,94 @@ class TestNuget007:
             sources=(NuGetSource("nuget.org", "https://api.nuget.org/v3/index.json"),),
         )
         assert run_check(configs=[cfg], check_id="NUGET-007").passed
+
+
+# ── NUGET-010: cleartext password ──────────────────────────────────────
+
+
+class TestNUGET010:
+    def test_fails_on_cleartext_credential(self):
+        cfg = NuGetConfig(
+            path="NuGet.config",
+            sources=(
+                NuGetSource("internal", "https://nuget.corp.local/v3/index.json"),
+            ),
+            credentials=(
+                NuGetSourceCredential(
+                    source="internal", has_cleartext_password=True,
+                ),
+            ),
+        )
+        f = run_check(configs=[cfg], check_id="NUGET-010")
+        assert not f.passed
+        assert "internal" in f.description
+
+    def test_passes_without_credentials_block(self):
+        cfg = NuGetConfig(
+            path="NuGet.config",
+            sources=(
+                NuGetSource("internal", "https://nuget.corp.local/v3/index.json"),
+            ),
+        )
+        assert run_check(configs=[cfg], check_id="NUGET-010").passed
+
+    def test_passes_when_credentials_lack_cleartext(self):
+        # Credential entry exists (DPAPI-encrypted Password key) but
+        # no ClearTextPassword is present. NUGET-010 only fires on the
+        # plaintext key, not on the encrypted form.
+        cfg = NuGetConfig(
+            path="NuGet.config",
+            sources=(
+                NuGetSource("internal", "https://nuget.corp.local/v3/index.json"),
+            ),
+            credentials=(
+                NuGetSourceCredential(
+                    source="internal", has_cleartext_password=False,
+                ),
+            ),
+        )
+        assert run_check(configs=[cfg], check_id="NUGET-010").passed
+
+    def test_finding_does_not_leak_value(self):
+        # The rule must never echo a credential literal — only the
+        # source name should appear in the description.
+        cfg = NuGetConfig(
+            path="NuGet.config",
+            credentials=(
+                NuGetSourceCredential(
+                    source="internal", has_cleartext_password=True,
+                ),
+            ),
+        )
+        f = run_check(configs=[cfg], check_id="NUGET-010")
+        # Sanity: rule has no access to the literal value (it isn't
+        # captured on the dataclass), so the description is name-only.
+        assert "ClearTextPassword" not in f.description
+
+    def test_parses_cleartext_credential_from_disk(self, tmp_path):
+        # End-to-end: a checked-in NuGet.config with the offending
+        # element shape is picked up by the loader.
+        cfg = tmp_path / "NuGet.config"
+        cfg.write_text(
+            "<configuration>\n"
+            "  <packageSources>\n"
+            '    <add key="internal" value="https://nuget.corp.local/v3/index.json" />\n'
+            "  </packageSources>\n"
+            "  <packageSourceCredentials>\n"
+            "    <internal>\n"
+            '      <add key="Username" value="ci-bot" />\n'
+            '      <add key="ClearTextPassword" value="pat_3vDX" />\n'
+            "    </internal>\n"
+            "  </packageSourceCredentials>\n"
+            "</configuration>\n",
+            encoding="utf-8",
+        )
+        ctx = NuGetContext.from_path(tmp_path)
+        assert len(ctx.configs) == 1
+        creds = ctx.configs[0].credentials
+        assert len(creds) == 1
+        assert creds[0].source == "internal"
+        assert creds[0].has_cleartext_password
 
 
 # ── Context parsing ────────────────────────────────────────────────────

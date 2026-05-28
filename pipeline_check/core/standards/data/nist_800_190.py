@@ -335,6 +335,7 @@ STANDARD = Standard(
         "NPM-006":  ["4.1.3"],                     # compromised npm version
         "NPM-007":  ["4.4.5"],                     # .npmrc ignore-scripts
         "NPM-011":  ["4.1.4"],                     # secret-shaped paths in files field
+        "NPM-013":  ["4.1.4"],                     # broad files-field publishes everything
         "PYPI-001": ["4.1.5"],                     # missing ==pin
         "PYPI-002": ["4.1.5"],                     # hash pinning missing
         "PYPI-003": ["4.2.1"],                     # http index / --trusted-host
@@ -365,6 +366,7 @@ STANDARD = Standard(
         "NUGET-007": ["4.2.1"],                    # multiple sources without packageSourceMapping
         "NUGET-008": ["4.1.3"],                    # cooldown gate (--resolve-remote)
         "NUGET-009": ["4.1.3"],                    # OSV advisory (--resolve-remote)
+        "NUGET-010": ["4.4.5"],                    # NuGet.config cleartext feed credential
         # ── OCI image manifest gaps ──────────────────────────────
         # OCI-001..003/005 are image-provenance metadata gaps —
         # untrusted-image surface (4.1.5). OCI-004 foreign-layer
@@ -378,6 +380,7 @@ STANDARD = Standard(
         "OCI-006":  ["4.1.2"],                     # excessive layer count (image config)
         "OCI-007":  ["4.1.5"],                     # legacy schemaVersion 1
         "OCI-008":  ["4.1.5"],                     # weak digest algorithm
+        "OCI-009":  ["4.1.5"],                     # missing base-image annotations
         # ── Helm chart provenance metadata ───────────────────────
         # The same chart-provenance surface that HELM-001..004
         # already map to 4.1.5 / 4.2.1 — these are the per-field

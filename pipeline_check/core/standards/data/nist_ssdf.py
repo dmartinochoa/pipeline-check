@@ -537,6 +537,7 @@ STANDARD = Standard(
         "NPM-006":  ["PW.4.1", "PW.4.4", "RV.1.1"],    # compromised npm version
         "NPM-007":  ["PO.5.1", "PW.9.1"],              # .npmrc ignore-scripts
         "NPM-011":  ["PS.1.1"],                        # secret-shaped paths in files field
+        "NPM-013":  ["PS.1.1"],                        # broad files-field publishes everything
         "PYPI-001": ["PW.4.1", "PW.4.4"],              # missing ==pin
         "PYPI-002": ["PW.4.4"],                        # hash pinning missing
         "PYPI-003": ["PW.4.1", "PW.4.4"],              # http index / --trusted-host
@@ -567,6 +568,7 @@ STANDARD = Standard(
         "NUGET-007": ["PW.4.1", "PW.4.4"],             # multiple sources without packageSourceMapping
         "NUGET-008": ["PW.4.1", "PW.4.4", "RV.1.1"],   # cooldown gate (--resolve-remote)
         "NUGET-009": ["PW.4.1", "PW.4.4", "RV.1.1"],   # OSV advisory (--resolve-remote)
+        "NUGET-010": ["PS.1.1"],                       # NuGet.config cleartext feed credential
         # ── Dockerfile env-bypass pack (DF-021..030) ────────────
         # Each setting disables the trusted-source channel for any
         # in-image install (PW.4.4 verify failure) and tampers
@@ -593,6 +595,7 @@ STANDARD = Standard(
         "OCI-005":  ["PS.3.2"],                        # missing image.licenses
         "OCI-007":  ["PW.4.4", "PS.3.2"],              # legacy schemaVersion 1
         "OCI-008":  ["PW.4.4", "PS.2.1"],              # weak digest algorithm
+        "OCI-009":  ["PS.3.2"],                        # missing base-image annotations
         # ── SLSA / in-toto attestation content ──────────────────
         # The ATTEST-NNN family is the provenance document itself
         # (PS.2.1 integrity verification + PS.3.2 provenance data).

@@ -608,6 +608,7 @@ STANDARD = Standard(
         "NPM-006":  ["SR-3", "SR-11", "RA-5"],           # compromised npm version
         "NPM-007":  ["CM-6", "CM-7"],                    # .npmrc ignore-scripts
         "NPM-011":  ["IA-5"],                            # secret-shaped paths in files field
+        "NPM-013":  ["IA-5", "AC-3"],                    # broad files-field publishes everything
         "PYPI-001": ["SR-3", "SR-11", "SI-2"],           # missing ==pin
         "PYPI-002": ["SR-3", "SR-11", "SI-7"],           # hash pinning missing
         "PYPI-003": ["SR-3", "SR-11", "SC-8"],           # http index / --trusted-host
@@ -638,6 +639,7 @@ STANDARD = Standard(
         "NUGET-007": ["SR-3", "SR-11"],                  # multiple sources without packageSourceMapping
         "NUGET-008": ["SR-3", "SR-11", "RA-5"],          # cooldown gate (--resolve-remote)
         "NUGET-009": ["SR-3", "SR-11", "RA-5"],          # OSV advisory (--resolve-remote)
+        "NUGET-010": ["IA-5", "AC-3"],                   # NuGet.config cleartext feed credential
         # ── OCI image manifest gaps ──────────────────────────────
         "OCI-001":  ["SR-4", "CM-8"],                    # provenance annotations missing
         "OCI-002":  ["SI-7", "SR-4"],                    # build attestation missing
@@ -647,6 +649,7 @@ STANDARD = Standard(
         "OCI-006":  ["CM-2", "CM-7"],                    # excessive layer count (baseline hygiene)
         "OCI-007":  ["SR-3", "SR-11", "SI-7"],           # legacy schemaVersion 1
         "OCI-008":  ["SR-3", "SR-11", "SI-7", "SC-13"],  # weak digest algorithm
+        "OCI-009":  ["SR-4", "CM-8"],                    # missing base-image annotations
         # ── SLSA / in-toto attestation content ───────────────────
         # ATTEST-NNN family is the provenance document itself.
         # SI-7 (software integrity) + SR-4 (provenance) cover all;

@@ -58,7 +58,7 @@ authoring-time gaps that don't survive into the manifest.
 
 ## What it covers
 
-15 checks · 0 have an autofix patch (``--fix``).
+16 checks · 0 have an autofix patch (``--fix``).
 
 | Check | Title | Severity | Fix |
 |-------|-------|----------|-----|
@@ -77,6 +77,7 @@ authoring-time gaps that don't survive into the manifest.
 | [OCI-006](#oci-006) | Image has an excessive layer count | <span class="pg-sev pg-sev--low">LOW</span> |  |
 | [OCI-007](#oci-007) | Image manifest uses legacy schemaVersion 1 (no content addressing) | <span class="pg-sev pg-sev--high">HIGH</span> |  |
 | [OCI-008](#oci-008) | Manifest references digest using unsupported hash algorithm | <span class="pg-sev pg-sev--high">HIGH</span> |  |
+| [OCI-009](#oci-009) | Image manifest is missing OCI base-image annotations | <span class="pg-sev pg-sev--medium">MEDIUM</span> |  |
 
 ---
 
@@ -505,6 +506,34 @@ Detection scope: the config descriptor digest, every layer descriptor digest (si
 **Recommended action**
 
 Rebuild and re-push the image so every descriptor (config, layers, sub-manifest entries) carries a ``sha256:`` digest. ``sha512:`` is also acceptable per the OCI spec, but anything weaker (md5, sha1) breaks the integrity guarantee the registry pull is supposed to provide. sha1 has had practical collisions since SHAttered (2017); md5 has had them since the early 2000s. A manifest that pins a layer by sha1 lets an attacker who can produce a colliding blob substitute a different tarball without changing the manifest, the registry's content-addressing then ratifies the substitution.
+
+</div>
+
+</div>
+
+<div class="pg-rule pg-rule--medium" markdown>
+
+## OCI-009: Image manifest is missing OCI base-image annotations { #oci-009 }
+
+<div class="pg-rule__tags">
+<span class="pg-sev pg-sev--medium">MEDIUM</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-3</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-10</span> <span class="pg-tag pg-tag--esf">ESF-S-PROVENANCE</span> <span class="pg-tag pg-tag--cwe">CWE-1104</span>
+</div>
+
+Without these two annotations a pulled image can't be tied back to the immutable base layer it was built on, so a downstream consumer can't determine which CVEs apply nor whether the base image was the one the build pipeline intended (vs a hijacked tag at pull time). The annotations are part of the OCI image-spec 1.1 attribution surface; SLSA Build L3 evidence-of-base-image relies on them when the provenance attestation isn't otherwise available.
+
+Distinct from OCI-001 (``org.opencontainers.image.source`` / ``image.revision``): those identify the source repo the image was built from; ``image.base.name`` / ``image.base.digest`` identify the base image the build started on. Both gaps reduce attribution; they're not substitutes for each other.
+
+Skipped: ``scratch``-based images (no base to attribute) and images whose ``image.base.name`` is explicitly empty (the OCI-spec sentinel for 'no base image'). The rule treats either as already-attributed.
+
+**Known false-positive modes**
+
+- Throwaway / scratch images built without a base (``FROM scratch`` in the Dockerfile) have no base image to attribute. The OCI image-spec allows declaring ``image.base.name`` empty (an explicit 'no base' marker); if the build doesn't set the empty marker, the rule will flag the absence. Suppress via ignore-file rather than removing the rule, or set the empty marker at build time with ``--annotation org.opencontainers.image.base.name=`` (empty value).
+
+<div class="pg-rule__rec" markdown>
+
+**Recommended action**
+
+Stamp the image with ``org.opencontainers.image.base.name`` (the registry reference of the base image — e.g. ``gcr.io/distroless/static:nonroot``) and ``org.opencontainers.image.base.digest`` (the immutable sha256 digest of the base image manifest). With ``docker buildx`` these are emitted automatically when the build uses ``--provenance`` or the ``BUILDKIT_INLINE_BUILDINFO_ATTRS=1`` env var; for hand-tagged images, pass ``--annotation org.opencontainers.image.base.name=...`` and ``--annotation org.opencontainers.image.base.digest=...`` so the values land on the manifest where registries surface them.
 
 </div>
 

@@ -165,6 +165,8 @@ STANDARD = Standard(
         "K8S-018":  ["REC-6", "CA-8"],
         "K8S-037":  ["REC-6", "CA-8"],
         "NPM-011":  ["REC-6", "CA-8"],
+        "NPM-013":  ["REC-6", "CA-8"],
+        "NUGET-010": ["REC-6", "CA-8"],
         # REC-10: Scan configuration on public resources
         "SCM-026":  ["REC-10", "EXF-3"],
         "SCM-016":  ["REC-10"],
@@ -711,6 +713,7 @@ STANDARD = Standard(
         "OCI-002":  ["DE-4"],
         "OCI-007":  ["DE-4"],
         "OCI-008":  ["DE-4"],
+        "OCI-009":  ["DE-4"],
         "ATTEST-001": ["DE-4"],
         "ATTEST-002": ["DE-4"],
         "ATTEST-003": ["DE-4"],

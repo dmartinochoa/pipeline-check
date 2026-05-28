@@ -12,6 +12,25 @@ release commit collapses this section into `## [X.Y.Z] - <date>`.
 
 ### Added
 
+- **NPM-013, NUGET-010, OCI-009 (3 new package-ecosystem rules).**
+  - **NPM-013** flags ``package.json`` ``files`` field entries
+    that are broad wildcards (``*``, ``**``, ``**/*``, ``*/**``,
+    ``.``, ``./``). Those publish the entire repo tree at
+    ``npm publish`` time minus whatever ``.npmignore`` happens to
+    block, the documented gap NPM-011's docstring already pointed
+    at. HIGH severity, with 12 standards mappings.
+  - **NUGET-010** flags ``NuGet.config`` storing a feed credential
+    in plaintext via ``<packageSourceCredentials>`` /
+    ``<add key="ClearTextPassword" .../>``. The parser captures
+    presence only (no literal credential), so findings can't leak
+    the value. HIGH severity, 13 standards mappings.
+  - **OCI-009** flags image manifests missing OCI 1.1 base-image
+    annotations ``org.opencontainers.image.base.name`` /
+    ``base.digest`` (SLSA L3 base-image attribution gap;
+    orthogonal to OCI-001's ``image.source`` / ``image.revision``).
+    Honors the OCI-spec empty-string sentinel for ``scratch``
+    images. MEDIUM severity, 13 standards mappings.
+
 - **Inline explain mode (``--inline-explain``).** New terminal-output
   flag that injects each failing finding's ``exploit_example``
   (when one is recorded) directly under the existing

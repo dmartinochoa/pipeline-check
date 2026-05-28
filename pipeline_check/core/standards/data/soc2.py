@@ -600,6 +600,7 @@ STANDARD = Standard(
         "NPM-006":  ["CC6.8", "CC7.1", "CC8.1"],
         "NPM-007":  ["CC6.8"],
         "NPM-011":  ["CC6.1"],
+        "NPM-013":  ["CC6.1"],
         "PYPI-001": ["CC8.1"],
         "PYPI-002": ["CC8.1"],
         "PYPI-003": ["CC6.7", "CC8.1"],
@@ -630,6 +631,7 @@ STANDARD = Standard(
         "NUGET-007": ["CC8.1"],
         "NUGET-008": ["CC6.8", "CC7.1", "CC8.1"],
         "NUGET-009": ["CC6.8", "CC7.1", "CC8.1"],
+        "NUGET-010": ["CC6.1"],
         # ── OCI image manifest gaps ──────────────────────────────
         "OCI-001":  ["CC8.1"],              # provenance annotations missing
         "OCI-002":  ["CC8.1"],              # build attestation missing
@@ -638,6 +640,7 @@ STANDARD = Standard(
         "OCI-005":  ["CC8.1"],              # missing image.licenses
         "OCI-006":  ["CC8.1"],              # excessive layer count (config drift)
         "OCI-007":  ["CC8.1"],              # legacy schemaVersion 1
+        "OCI-009":  ["CC8.1"],              # missing base-image annotations
         "OCI-008":  ["CC8.1"],              # weak digest algorithm
         # ── SLSA / in-toto attestation content ───────────────────
         "ATTEST-001": ["CC8.1"],            # untrusted SLSA builder identity

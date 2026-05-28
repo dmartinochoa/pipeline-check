@@ -51,7 +51,7 @@ missing major surfaces or requires extra config. No = not in scope.
 | Dockerfile | Yes (30) | Yes | Yes | No | No | Yes |
 | **Cloud + supply-chain** | | | | | | |
 | Live AWS account scan | Yes (71 rules, boto3) | No | No | No | No | Partial |
-| OCI image manifests (provenance, SLSA) | Yes (15, incl. ATTEST-001..007 attestation content) | No | No | No | No | Partial |
+| OCI image manifests (provenance, SLSA) | Yes (16, incl. ATTEST-001..007 attestation content) | No | No | No | No | Partial |
 | **Dependency supply chain** | | | | | | |
 | Package registries (npm / PyPI / Maven / NuGet) | Yes (38 rules across 4 providers) | No | No | No | No | Partial |
 | **Analysis depth** | | | | | | |

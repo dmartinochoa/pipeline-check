@@ -408,6 +408,7 @@ STANDARD = Standard(
         "NPM-006":  ["Build.L3.NonFalsifiable"],                   # compromised npm version
         "NPM-007":  ["Build.L3.Isolated"],                         # .npmrc ignore-scripts
         "NPM-011":  ["Build.L3.NonFalsifiable"],                   # secret-shaped paths in files field
+        "NPM-013":  ["Build.L3.NonFalsifiable"],                   # broad files-field publishes everything
         "PYPI-001": ["Build.L3.NonFalsifiable"],                   # missing ==pin
         "PYPI-002": ["Build.L3.NonFalsifiable"],                   # missing hash
         "PYPI-003": ["Build.L3.NonFalsifiable"],                   # http index / --trusted-host
@@ -438,6 +439,7 @@ STANDARD = Standard(
         "NUGET-007": ["Build.L3.NonFalsifiable"],                  # multiple sources without packageSourceMapping
         "NUGET-008": ["Build.L3.NonFalsifiable"],                  # cooldown gate (--resolve-remote)
         "NUGET-009": ["Build.L3.NonFalsifiable"],                  # OSV advisory (--resolve-remote)
+        "NUGET-010": ["Build.L3.NonFalsifiable"],                  # NuGet.config cleartext feed credential
         # ── Helm chart-supply-chain ───────────────────────────────
         # The chart's own packaging metadata sits at the build-output
         # boundary. Chart.lock and Chart.yaml are the chart's
@@ -548,6 +550,7 @@ STANDARD = Standard(
         "OCI-005": ["Build.L1.Provenance"],                        # missing image.licenses
         "OCI-007": ["Build.L3.NonFalsifiable"],                    # legacy schemaVersion 1
         "OCI-008": ["Build.L3.NonFalsifiable"],                    # weak digest algorithm
+        "OCI-009": ["Build.L1.Provenance"],                        # missing base-image annotations
         "ATTEST-001": ["Build.L2.Hosted",
                        "Build.L3.Isolated",
                        "Build.L3.NonFalsifiable"],                 # untrusted builder identity
