@@ -170,7 +170,8 @@ class _GroupedCommand(click.Command):
             "--argocd-path",
             "--helm-values", "--helm-set", "--oci-manifest",
             "--drone-path", "--npm-path", "--pypi-path",
-            "--maven-path", "--nuget-path",
+            "--maven-path", "--nuget-path", "--gomod-path",
+            "--cargo-path",
         })),
         ("Filtering", frozenset({
             "--checks", "--severity-threshold", "--min-confidence",
@@ -630,6 +631,8 @@ _PROVIDER_DETECT_FILES: tuple[tuple[str, tuple[str, ...], tuple[str, ...]], ...]
     ("pypi", ("requirements.txt",), ()),
     ("maven", ("pom.xml",), ()),
     ("nuget", ("Directory.Packages.props",), ()),
+    ("gomod", ("go.mod",), ()),
+    ("cargo", ("Cargo.toml",), ()),
     ("terraform", ("main.tf",), ()),
     (
         "cloudformation",
@@ -746,6 +749,8 @@ _PROVIDER_PATH_KWARG: dict[str, str] = {
     "pypi": "pypi_path",
     "maven": "maven_path",
     "nuget": "nuget_path",
+    "gomod": "gomod_path",
+    "cargo": "cargo_path",
 }
 
 
@@ -1476,6 +1481,25 @@ def _install_completion_callback(
     help=(
         "Path to a directory containing *.csproj, NuGet.config, or "
         "packages.lock.json (required when --pipeline nuget)."
+    ),
+)
+@click.option(
+    "--gomod-path",
+    default=None,
+    metavar="PATH",
+    help=(
+        "Path to a go.mod file or a directory containing one "
+        "(required when --pipeline gomod). Auto-detects ./go.mod."
+    ),
+)
+@click.option(
+    "--cargo-path",
+    default=None,
+    metavar="PATH",
+    help=(
+        "Path to a Cargo.toml file or a directory containing one "
+        "(required when --pipeline cargo). Auto-detects "
+        "./Cargo.toml."
     ),
 )
 @click.option(
@@ -2273,6 +2297,8 @@ def scan(
     pypi_path: str | None,
     maven_path: str | None,
     nuget_path: str | None,
+    gomod_path: str | None,
+    cargo_path: str | None,
     helm_values: tuple[str, ...],
     helm_set: tuple[str, ...],
     oci_manifest: str | None,
@@ -2797,6 +2823,18 @@ def scan(
                 candidates=("Directory.Packages.props",),
                 detect_label="Directory.Packages.props",
             )
+        elif pipeline_lc == "gomod":
+            gomod_path = _resolve_provider_path(
+                "gomod", flag="gomod-path", value=gomod_path,
+                candidates=("go.mod",),
+                detect_label="go.mod",
+            )
+        elif pipeline_lc == "cargo":
+            cargo_path = _resolve_provider_path(
+                "cargo", flag="cargo-path", value=cargo_path,
+                candidates=("Cargo.toml",),
+                detect_label="Cargo.toml",
+            )
 
     if output == "html" and not output_file:
         raise click.UsageError(
@@ -2966,6 +3004,8 @@ def scan(
         pypi_path=pypi_path,
         maven_path=maven_path,
         nuget_path=nuget_path,
+        gomod_path=gomod_path,
+        cargo_path=cargo_path,
         scm_platform=scm_platform,
         scm_repo=scm_repo,
         scm_fixture_dir=scm_fixture_dir,
@@ -3186,6 +3226,8 @@ def scan(
             pypi_path=pypi_path,
             maven_path=maven_path,
             nuget_path=nuget_path,
+            gomod_path=gomod_path,
+            cargo_path=cargo_path,
         )
         _debug(f"--pr-diff: forwarded argv = {forwarded_argv}")
         head_findings_raw = [f.to_dict() for f in findings]
@@ -3424,6 +3466,8 @@ def scan(
             "pypi_path": pypi_path,
             "maven_path": maven_path,
             "nuget_path": nuget_path,
+            "gomod_path": gomod_path,
+            "cargo_path": cargo_path,
         }
         inline_index = _collect_inline_ignores(active_pipelines, path_kwargs)
 
@@ -3605,6 +3649,8 @@ def _build_pr_diff_subprocess_argv(
     pypi_path: str | None,
     maven_path: str | None,
     nuget_path: str | None,
+    gomod_path: str | None = None,
+    cargo_path: str | None = None,
 ) -> list[str]:
     """Build the argv for the BASE-side ``pipeline_check`` subprocess.
 
@@ -3673,6 +3719,8 @@ def _build_pr_diff_subprocess_argv(
         ("--pypi-path", pypi_path),
         ("--maven-path", maven_path),
         ("--nuget-path", nuget_path),
+        ("--gomod-path", gomod_path),
+        ("--cargo-path", cargo_path),
     )
     for flag, value in _path_pairs:
         if value:

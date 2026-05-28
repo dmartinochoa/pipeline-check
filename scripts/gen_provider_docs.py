@@ -1240,6 +1240,72 @@ left unresolved; deeply-recursive property graphs are rare in
 real-world POMs and out of scope for static analysis.
 """,
     ),
+    "gomod": (
+        "Go modules",
+        "pipeline_check.core.checks.gomod.rules",
+        _REPO_ROOT / "docs" / "providers" / "gomod.md",
+        """\
+# Go modules provider
+
+Parses `go.mod` (Go's module manifest) and probes for the sibling
+`go.sum` (integrity manifest) on disk. Text-only static analysis,
+no `go mod tidy`, no module-proxy access, no toolchain required.
+Mirrors the npm / PyPI / Maven / NuGet pack shape.
+
+## Producer workflow
+
+```bash
+# --gomod-path auto-detects ./go.mod when present.
+pipeline_check --pipeline gomod
+pipeline_check --pipeline gomod --gomod-path ./go.mod
+pipeline_check --pipeline gomod --gomod-path ./services/api/
+```
+
+## Supported file formats
+
+| File | Parse shape |
+|------|-------------|
+| `go.mod` | `module` / `go` / `toolchain` / `require` / `replace` / `exclude` directives |
+| `go.sum` | Presence probe only (the load-bearing signal for `GOMOD-001`) |
+
+`vendor/` and `.git/` directories are skipped.
+""",
+    ),
+    "cargo": (
+        "Cargo",
+        "pipeline_check.core.checks.cargo.rules",
+        _REPO_ROOT / "docs" / "providers" / "cargo.md",
+        """\
+# Cargo (Rust) provider
+
+Parses `Cargo.toml` (Cargo manifest) and probes for the sibling
+`Cargo.lock` on disk. Text-only static analysis via the TOML
+stdlib parser, no `cargo update`, no registry access, no
+toolchain required. Mirrors the npm / PyPI / Maven / NuGet / Go
+modules pack shape.
+
+## Producer workflow
+
+```bash
+# --cargo-path auto-detects ./Cargo.toml when present.
+pipeline_check --pipeline cargo
+pipeline_check --pipeline cargo --cargo-path ./Cargo.toml
+pipeline_check --pipeline cargo --cargo-path ./crates/my-crate/
+```
+
+## Dependency tables audited
+
+| Section | Notes |
+|---------|-------|
+| `[dependencies]` | Runtime dependencies |
+| `[dev-dependencies]` | Test / bench dependencies |
+| `[build-dependencies]` | Build-script dependencies |
+| `[target.<target>.dependencies]` | Target-specific entries |
+| `[workspace.dependencies]` | Workspace-root inheritance |
+
+`target/` and `.git/` directories are skipped.
+""",
+    ),
     "nuget": (
         "NuGet",
         "pipeline_check.core.checks.nuget.rules",
@@ -2010,6 +2076,16 @@ _FOOTER_CONFIG: dict[str, dict[str, str]] = {
         "prefix": "SCM", "prefix_lc": "scm", "pkg": "scm",
         "signature": "check(snapshot: SCMRepoSnapshot) -> Finding",
         "arg_kind": "``SCMRepoSnapshot``",
+    },
+    "gomod": {
+        "prefix": "GOMOD", "prefix_lc": "gomod", "pkg": "gomod",
+        "signature": "check(pom: GoModFile) -> Finding",
+        "arg_kind": "``GoModFile``",
+    },
+    "cargo": {
+        "prefix": "CARGO", "prefix_lc": "cargo", "pkg": "cargo",
+        "signature": "check(pom: CargoFile) -> Finding",
+        "arg_kind": "``CargoFile``",
     },
 }
 

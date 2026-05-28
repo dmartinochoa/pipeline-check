@@ -158,6 +158,16 @@ requires editing `Scanner`, `Reporter`, or the CLI.
     <p>Static parse of <code>package.json</code>, <code>requirements*.txt</code>, <code>pom.xml</code>, and <code>*.csproj</code>. Floating versions, missing integrity hashes, plaintext-HTTP indexes, lifecycle scripts, dependency-confusion source mapping, and curated known-compromised version registries. Live OSV advisory lookup behind <code>--resolve-remote</code>.</p>
     <span class="pg-doc-card__meta">{{ providers.registries.checks }}</span>
   </a>
+  <a class="pg-doc-card" href="gomod/">
+    <h3>Go modules</h3>
+    <p>Parses <code>go.mod</code> and probes for <code>go.sum</code>. Replace-directive misuse (local-path, cross-module), <code>+incompatible</code> requires, integrity-manifest presence, missing toolchain directive, and a curated known-compromised module registry.</p>
+    <span class="pg-doc-card__meta">{{ providers.gomod.checks }}</span>
+  </a>
+  <a class="pg-doc-card" href="cargo/">
+    <h3>Cargo (Rust)</h3>
+    <p>Parses <code>Cargo.toml</code> via the TOML stdlib parser. Floating version specs, git deps without <code>rev</code>, missing <code>Cargo.lock</code>, path dependencies, alternate-registry sources, and a curated known-compromised crate registry.</p>
+    <span class="pg-doc-card__meta">{{ providers.cargo.checks }}</span>
+  </a>
 </div>
 
 ## Adding a new provider

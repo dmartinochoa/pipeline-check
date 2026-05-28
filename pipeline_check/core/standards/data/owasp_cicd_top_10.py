@@ -540,6 +540,20 @@ STANDARD = Standard(
         "NUGET-008": ["CICD-SEC-3", "CICD-SEC-8"],  # cooldown gate (--resolve-remote)
         "NUGET-009": ["CICD-SEC-3", "CICD-SEC-8"],  # OSV advisory (--resolve-remote)
         "NUGET-010": ["CICD-SEC-6", "CICD-SEC-7"],  # NuGet.config cleartext feed credential
+        # ── Go modules (GOMOD-001..006) ──
+        "GOMOD-001": ["CICD-SEC-3"],               # go.sum integrity manifest missing
+        "GOMOD-002": ["CICD-SEC-3", "CICD-SEC-5"], # replace directive to local path
+        "GOMOD-003": ["CICD-SEC-3", "CICD-SEC-5"], # replace directive to different module
+        "GOMOD-004": ["CICD-SEC-3"],               # +incompatible direct require
+        "GOMOD-005": ["CICD-SEC-3"],               # missing go toolchain directive
+        "GOMOD-006": ["CICD-SEC-3", "CICD-SEC-7"], # known-compromised module version
+        # ── Cargo / Rust (CARGO-001..006) ──
+        "CARGO-001": ["CICD-SEC-3"],               # floating Cargo.toml version spec
+        "CARGO-002": ["CICD-SEC-3", "CICD-SEC-5"], # git dep with mutable ref (no rev)
+        "CARGO-003": ["CICD-SEC-3"],               # missing Cargo.lock
+        "CARGO-004": ["CICD-SEC-3", "CICD-SEC-5"], # local-path Cargo dependency
+        "CARGO-005": ["CICD-SEC-3", "CICD-SEC-5"], # alternate-registry Cargo dependency
+        "CARGO-006": ["CICD-SEC-3", "CICD-SEC-7"], # known-compromised crate version
         # Buildkite
         "BK-001":   ["CICD-SEC-3"],   # plugin not pinned to exact version
         "BK-002":   ["CICD-SEC-6", "CICD-SEC-7"],  # literal secret in env

@@ -85,6 +85,8 @@ _PROVIDER_PACKAGES: tuple[tuple[str, str, str], ...] = (
     ("gcp",          "pipeline_check.core.checks.gcp.rules",          "GCP"),
     ("maven",        "pipeline_check.core.checks.maven.rules",        "maven"),
     ("nuget",        "pipeline_check.core.checks.nuget.rules",        "NuGet"),
+    ("gomod",        "pipeline_check.core.checks.gomod.rules",        "Go modules"),
+    ("cargo",        "pipeline_check.core.checks.cargo.rules",        "Cargo"),
 )
 
 # --------------------------------------------------------------------------- #

@@ -621,6 +621,20 @@ STANDARD = Standard(
         "NUGET-008": ["1.4.1", "3.1.3"],           # cooldown gate (--resolve-remote)
         "NUGET-009": ["1.4.1", "3.1.3"],           # OSV advisory (--resolve-remote)
         "NUGET-010": ["1.5.1", "2.3.4"],           # NuGet.config cleartext feed credential
+        # ── Go modules (GOMOD-001..006) ──
+        "GOMOD-001": ["1.4.1"],                    # go.sum integrity manifest missing
+        "GOMOD-002": ["1.4.1"],                    # replace directive to local path
+        "GOMOD-003": ["1.4.1"],                    # replace directive to different module
+        "GOMOD-004": ["1.1.8"],                    # +incompatible direct require
+        "GOMOD-005": ["1.1.8"],                    # missing go toolchain directive
+        "GOMOD-006": ["1.4.1", "1.1.8"],           # known-compromised module version
+        # ── Cargo / Rust (CARGO-001..006) ──
+        "CARGO-001": ["1.4.1"],                    # floating Cargo.toml version spec
+        "CARGO-002": ["1.4.1"],                    # git dep with mutable ref (no rev)
+        "CARGO-003": ["1.4.1"],                    # missing Cargo.lock
+        "CARGO-004": ["1.4.1"],                    # local-path Cargo dependency
+        "CARGO-005": ["1.4.1"],                    # alternate-registry Cargo dependency
+        "CARGO-006": ["1.4.1", "1.1.8"],           # known-compromised crate version
         # ── Cross-cutting dataflow / taint engine ───────��─────────
         # The taint family flags cross-step / cross-job flows where
         # untrusted input reaches a privileged sink. That's the

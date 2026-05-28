@@ -632,6 +632,20 @@ STANDARD = Standard(
         "NUGET-008": ["CC6.8", "CC7.1", "CC8.1"],
         "NUGET-009": ["CC6.8", "CC7.1", "CC8.1"],
         "NUGET-010": ["CC6.1"],
+        # ── Go modules ──
+        "GOMOD-001": ["CC8.1"],                 # go.sum integrity manifest missing
+        "GOMOD-002": ["CC8.1"],                 # replace directive to local path
+        "GOMOD-003": ["CC8.1"],                 # replace directive to different module
+        "GOMOD-004": ["CC8.1"],                 # +incompatible direct require
+        "GOMOD-005": ["CC8.1"],                 # missing go toolchain directive
+        "GOMOD-006": ["CC8.1", "CC7.1"],        # known-compromised module version
+        # ── Cargo ──
+        "CARGO-001": ["CC8.1"],                 # floating Cargo.toml version spec
+        "CARGO-002": ["CC8.1"],                 # git dep with mutable ref (no rev)
+        "CARGO-003": ["CC8.1"],                 # missing Cargo.lock
+        "CARGO-004": ["CC8.1"],                 # local-path Cargo dependency
+        "CARGO-005": ["CC8.1"],                 # alternate-registry Cargo dependency
+        "CARGO-006": ["CC8.1", "CC7.1"],        # known-compromised crate version
         # ── OCI image manifest gaps ──────────────────────────────
         "OCI-001":  ["CC8.1"],              # provenance annotations missing
         "OCI-002":  ["CC8.1"],              # build attestation missing

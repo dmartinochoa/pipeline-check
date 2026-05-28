@@ -20,6 +20,7 @@ from .azure_cloud import AzureCloudProvider
 from .base import BaseProvider
 from .bitbucket import BitbucketProvider
 from .buildkite import BuildkiteProvider
+from .cargo import CargoProvider
 from .circleci import CircleCIProvider
 from .cloudbuild import CloudBuildProvider
 from .cloudformation import CloudFormationProvider
@@ -29,6 +30,7 @@ from .gcp import GCPProvider
 from .gitea import GiteaProvider
 from .github import GitHubProvider
 from .gitlab import GitLabProvider
+from .gomod import GoModProvider
 from .helm import HelmProvider
 from .jenkins import JenkinsProvider
 from .kubernetes import KubernetesProvider
@@ -89,3 +91,5 @@ register(NpmProvider())
 register(PypiProvider())
 register(MavenProvider())
 register(NuGetProvider())
+register(GoModProvider())
+register(CargoProvider())

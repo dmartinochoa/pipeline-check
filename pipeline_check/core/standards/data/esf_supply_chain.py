@@ -643,6 +643,20 @@ STANDARD = Standard(
         "NUGET-008": ["ESF-S-VERIFY-DEPS"],
         "NUGET-009": ["ESF-S-VERIFY-DEPS"],
         "NUGET-010": ["ESF-D-SECRETS"],
+        # ── Go modules ──
+        "GOMOD-001": ["ESF-S-VERIFY-DEPS"],
+        "GOMOD-002": ["ESF-S-VERIFY-DEPS"],
+        "GOMOD-003": ["ESF-S-VERIFY-DEPS"],
+        "GOMOD-004": ["ESF-S-VERIFY-DEPS"],
+        "GOMOD-005": ["ESF-S-VERIFY-DEPS"],
+        "GOMOD-006": ["ESF-S-VERIFY-DEPS"],
+        # ── Cargo ──
+        "CARGO-001": ["ESF-S-VERIFY-DEPS"],
+        "CARGO-002": ["ESF-S-VERIFY-DEPS"],
+        "CARGO-003": ["ESF-S-VERIFY-DEPS"],
+        "CARGO-004": ["ESF-S-VERIFY-DEPS"],
+        "CARGO-005": ["ESF-S-VERIFY-DEPS"],
+        "CARGO-006": ["ESF-S-VERIFY-DEPS"],
         # ── OCI image manifest gaps ──────────────────────────────
         # Provenance metadata + integrity → ESF-S-PROVENANCE +
         # ESF-D-SBOM. Foreign-layer URL → ESF-S-TRUSTED-REG. Schema

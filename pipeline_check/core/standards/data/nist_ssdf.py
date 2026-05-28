@@ -569,6 +569,20 @@ STANDARD = Standard(
         "NUGET-008": ["PW.4.1", "PW.4.4", "RV.1.1"],   # cooldown gate (--resolve-remote)
         "NUGET-009": ["PW.4.1", "PW.4.4", "RV.1.1"],   # OSV advisory (--resolve-remote)
         "NUGET-010": ["PS.1.1"],                       # NuGet.config cleartext feed credential
+        # ── Go modules (GOMOD-001..006) ──
+        "GOMOD-001": ["PS.1.1", "PW.4.4"],             # go.sum integrity manifest missing
+        "GOMOD-002": ["PO.5.1", "PW.4.4"],             # replace directive to local path
+        "GOMOD-003": ["PO.5.1", "PW.4.4"],             # replace directive to different module
+        "GOMOD-004": ["PW.4.4"],                       # +incompatible direct require
+        "GOMOD-005": ["PO.5.1"],                       # missing go toolchain directive
+        "GOMOD-006": ["PW.4.4", "RV.1.1"],             # known-compromised module version
+        # ── Cargo / Rust (CARGO-001..006) ──
+        "CARGO-001": ["PW.4.4"],                       # floating Cargo.toml version spec
+        "CARGO-002": ["PO.5.1", "PW.4.4"],             # git dep with mutable ref (no rev)
+        "CARGO-003": ["PS.1.1", "PW.4.4"],             # missing Cargo.lock
+        "CARGO-004": ["PO.5.1", "PW.4.4"],             # local-path Cargo dependency
+        "CARGO-005": ["PO.5.1", "PW.4.4"],             # alternate-registry Cargo dependency
+        "CARGO-006": ["PW.4.4", "RV.1.1"],             # known-compromised crate version
         # ── Dockerfile env-bypass pack (DF-021..030) ────────────
         # Each setting disables the trusted-source channel for any
         # in-image install (PW.4.4 verify failure) and tampers

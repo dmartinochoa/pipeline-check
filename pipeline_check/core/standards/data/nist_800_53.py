@@ -640,6 +640,20 @@ STANDARD = Standard(
         "NUGET-008": ["SR-3", "SR-11", "RA-5"],          # cooldown gate (--resolve-remote)
         "NUGET-009": ["SR-3", "SR-11", "RA-5"],          # OSV advisory (--resolve-remote)
         "NUGET-010": ["IA-5", "AC-3"],                   # NuGet.config cleartext feed credential
+        # ── Go modules (GOMOD-001..006) ─────────────────────────
+        "GOMOD-001": ["SI-7", "CM-7"],                   # go.sum integrity manifest missing
+        "GOMOD-002": ["CM-7", "SR-3"],                  # replace directive to local path
+        "GOMOD-003": ["CM-7", "SR-3"],                  # replace directive to different module
+        "GOMOD-004": ["SI-2"],                           # +incompatible direct require
+        "GOMOD-005": ["CM-6"],                           # missing go toolchain directive
+        "GOMOD-006": ["SI-2", "SR-3"],                  # known-compromised module version
+        # ── Cargo (CARGO-001..006) ─────────────────────────────
+        "CARGO-001": ["CM-7"],                           # floating Cargo.toml version spec
+        "CARGO-002": ["CM-7", "SR-3"],                  # git dep with mutable ref (no rev)
+        "CARGO-003": ["SI-7", "CM-7"],                   # missing Cargo.lock
+        "CARGO-004": ["CM-7", "SR-3"],                  # local-path Cargo dependency
+        "CARGO-005": ["CM-7", "SR-3"],                  # alternate-registry Cargo dependency
+        "CARGO-006": ["SI-2", "SR-3"],                  # known-compromised crate version
         # ── OCI image manifest gaps ──────────────────────────────
         "OCI-001":  ["SR-4", "CM-8"],                    # provenance annotations missing
         "OCI-002":  ["SI-7", "SR-4"],                    # build attestation missing

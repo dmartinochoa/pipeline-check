@@ -724,6 +724,20 @@ STANDARD = Standard(
         "NUGET-008": ["GV.SC-05", "GV.SC-07", "PR.PS-02"],  # cooldown gate (--resolve-remote)
         "NUGET-009": ["GV.SC-05", "GV.SC-07", "PR.PS-02"],  # OSV advisory (--resolve-remote)
         "NUGET-010": ["PR.AA-01", "PR.DS-01"],  # NuGet.config cleartext feed credential
+        # ── Go modules ─────────────────────────────────────────
+        "GOMOD-001": ["PR.DS-01", "GV.SC-07"],  # go.sum integrity manifest missing
+        "GOMOD-002": ["GV.SC-07", "GV.SC-08"],  # replace directive to local path
+        "GOMOD-003": ["GV.SC-07", "GV.SC-08"],  # replace directive to different module
+        "GOMOD-004": ["GV.SC-07"],              # +incompatible direct require
+        "GOMOD-005": ["GV.SC-07"],              # missing go toolchain directive
+        "GOMOD-006": ["GV.SC-05", "GV.SC-08"],  # known-compromised module version
+        # ── Cargo ──────────────────────────────────────────────
+        "CARGO-001": ["GV.SC-07"],              # floating Cargo.toml version spec
+        "CARGO-002": ["GV.SC-07", "GV.SC-08"],  # git dep with mutable ref (no rev)
+        "CARGO-003": ["PR.DS-01", "GV.SC-07"],  # missing Cargo.lock
+        "CARGO-004": ["GV.SC-07", "GV.SC-08"],  # local-path Cargo dependency
+        "CARGO-005": ["GV.SC-07", "GV.SC-08"],  # alternate-registry Cargo dependency
+        "CARGO-006": ["GV.SC-05", "GV.SC-08"],  # known-compromised crate version
         # ── OCI image manifest gaps ──────────────────────────────
         "OCI-001":  ["GV.SC-05"],               # provenance annotations missing
         "OCI-002":  ["PR.PS-06", "GV.SC-05"],   # build attestation missing

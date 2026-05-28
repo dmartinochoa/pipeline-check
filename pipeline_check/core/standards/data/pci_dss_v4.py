@@ -602,6 +602,20 @@ STANDARD = Standard(
         "NUGET-008": ["6.3.1", "6.3.3"],
         "NUGET-009": ["6.3.1", "6.3.3"],
         "NUGET-010": ["8.2.1"],                  # NuGet.config cleartext feed credential
+        # ── Go modules ──
+        "GOMOD-001": ["6.3.1"],                  # go.sum integrity manifest missing
+        "GOMOD-002": ["6.3.1"],                  # replace directive to local path
+        "GOMOD-003": ["6.3.1"],                  # replace directive to different module
+        "GOMOD-004": ["6.3.3"],                  # +incompatible direct require
+        "GOMOD-005": ["6.5.1"],                  # missing go toolchain directive
+        "GOMOD-006": ["6.3.1", "6.3.3"],         # known-compromised module version
+        # ── Cargo ──
+        "CARGO-001": ["6.3.1"],                  # floating Cargo.toml version spec
+        "CARGO-002": ["6.3.1"],                  # git dep with mutable ref (no rev)
+        "CARGO-003": ["6.3.1"],                  # missing Cargo.lock
+        "CARGO-004": ["6.3.1"],                  # local-path Cargo dependency
+        "CARGO-005": ["6.3.1"],                  # alternate-registry Cargo dependency
+        "CARGO-006": ["6.3.1", "6.3.3"],         # known-compromised crate version
         # ── OCI image manifest gaps ──────────────────────────────
         "OCI-001":  ["6.5.1", "10.3.2"],                 # provenance annotations missing
         "OCI-002":  ["6.5.1", "10.3.2"],                 # build attestation missing

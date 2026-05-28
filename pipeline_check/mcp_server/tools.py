@@ -96,6 +96,8 @@ _PROVIDER_PATH_KW: dict[str, str | None] = {
     "pypi":           "pypi_path",
     "maven":          "maven_path",
     "nuget":          "nuget_path",
+    "gomod":          "gomod_path",
+    "cargo":          "cargo_path",
     "aws":            None,
     "azure_cloud":    None,
     "gcp":            None,
@@ -264,6 +266,8 @@ _RULES_FQN: dict[str, str] = {
     "pypi":           "pipeline_check.core.checks.pypi.rules",
     "maven":          "pipeline_check.core.checks.maven.rules",
     "nuget":          "pipeline_check.core.checks.nuget.rules",
+    "gomod":          "pipeline_check.core.checks.gomod.rules",
+    "cargo":          "pipeline_check.core.checks.cargo.rules",
 }
 
 
