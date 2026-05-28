@@ -59,6 +59,12 @@ What's planned, what's shipped, and what's deliberately out of scope.
   one annotation per offending line. Stable SHA-1 fingerprint over
   ``(check_id, path, line, description)`` for cross-run dedupe. Zero
   new dependencies.
+- **Inline explain mode (``--inline-explain``)** — Terminal flag that
+  injects each failing finding's ``exploit_example`` under the
+  Recommendation block in its panel, saving the
+  ``pipeline_check --explain CHECK_ID`` round-trip during triage.
+  Named with the ``inline-`` prefix to avoid colliding with the
+  existing ``--explain CHECK_ID`` early-exit option.
 
 ### v1.5.0 (2026-05-27)
 
@@ -484,11 +490,13 @@ branch restriction, and persistent runner tokens without rotation.
 Complements GHA-068 (deprecated runner image). StepSecurity's
 ``harden-runner`` is a runtime agent; these would be static rules.
 
-### Inline explain mode (``--explain``)
+### ~~Inline explain mode (``--inline-explain``)~~ shipped
 
-When passed alongside a normal scan, inline the recommendation and
-exploit example directly under each failing finding in terminal
-output. Saves the ``pipeline_check explain GHA-037`` round-trip.
+Shipped on ``dev``. The flag uses the ``inline-`` prefix because
+``--explain CHECK_ID`` was already taken as an early-exit option.
+Renders the rule's ``exploit_example`` (when present) under each
+failing finding's panel; recommendation was already inline. See the
+Unreleased entry above.
 
 ### Suppression expiry warnings
 

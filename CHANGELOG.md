@@ -12,6 +12,16 @@ release commit collapses this section into `## [X.Y.Z] - <date>`.
 
 ### Added
 
+- **Inline explain mode (``--inline-explain``).** New terminal-output
+  flag that injects each failing finding's ``exploit_example``
+  (when one is recorded) directly under the existing
+  Recommendation block, saving the
+  ``pipeline_check --explain CHECK_ID`` round-trip when triaging
+  in the terminal. No-op for JSON / SARIF / JUnit / markdown / HTML
+  outputs, which already carry the field. The flag conflicts with
+  the existing ``--explain CHECK_ID`` early-exit option, which is
+  why it carries the ``inline-`` prefix. 5 new tests.
+
 - **GitLab Code Quality output (``--output codequality``).** New output
   format emitting the Code Climate ``gl-code-quality-report`` JSON shape
   GitLab CI renders as inline MR annotations (the GitLab parallel of

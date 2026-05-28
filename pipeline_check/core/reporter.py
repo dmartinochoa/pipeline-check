@@ -107,6 +107,7 @@ def report_terminal(
     show_controls: bool = False,
     show_passed: bool = False,
     group_similar: bool = True,
+    inline_explain: bool = False,
 ) -> None:
     """Print a rich-formatted report to the terminal.
 
@@ -329,11 +330,21 @@ def report_terminal(
                 f"\n[dim]Grouped with {len(followers)} similar finding(s) "
                 f"on the same resource.[/dim]"
             )
+        # ``--inline-explain`` surfaces the rule's ``exploit_example``
+        # (when one is recorded) right under the recommendation so the
+        # operator doesn't need a separate ``--explain CHECK_ID``
+        # round-trip. The example is dedented and printed verbatim;
+        # the panel renderer handles wrapping.
+        exploit_text = ""
+        if inline_explain and f.exploit_example:
+            exploit_text = (
+                f"\n[bold]Exploit:[/bold]\n{f.exploit_example.rstrip()}"
+            )
         console.print(
             Panel(
                 f"{f.description}\n\n"
                 f"[bold]Recommendation:[/bold] {f.recommendation}"
-                f"{cwe_line}{controls_text}{locations_text}",
+                f"{cwe_line}{controls_text}{locations_text}{exploit_text}",
                 title=(
                     f"[{style}]{f.check_id}[/{style}]  "
                     f"{f.title}  [dim]{f.resource}[/dim]"

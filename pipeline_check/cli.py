@@ -2085,6 +2085,20 @@ def _install_completion_callback(
     ),
 )
 @click.option(
+    "--inline-explain",
+    "inline_explain",
+    is_flag=True,
+    default=False,
+    help=(
+        "Inline the rule's ``exploit_example`` (when present) under "
+        "each failing finding's terminal panel. Saves the "
+        "``pipeline_check --explain CHECK_ID`` round-trip when you "
+        "want the proof-of-exploit snippet alongside the description "
+        "and recommendation. No-op for JSON / SARIF / JUnit / "
+        "markdown / html outputs, which already carry the field."
+    ),
+)
+@click.option(
     "--no-chains",
     is_flag=True,
     default=False,
@@ -2279,6 +2293,7 @@ def scan(
     show_controls: bool,
     show_passed: bool,
     no_group: bool,
+    inline_explain: bool,
     no_chains: bool,
     chains_require_reachability: bool,
     list_chains: bool,
@@ -3228,6 +3243,7 @@ def scan(
             show_controls=show_controls,
             show_passed=show_passed,
             group_similar=not no_group,
+            inline_explain=inline_explain,
         )
         if chains:
             report_chains_terminal(chains, console=console)
