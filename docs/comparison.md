@@ -40,14 +40,14 @@ missing major surfaces or requires extra config. No = not in scope.
 | Drone CI | Yes (11) | No | No | No | No | No |
 | Tekton | Yes (16) | No | Partial | No | No | No |
 | Argo Workflows | Yes (16) | No | Partial | No | No | No |
-| Argo CD | Yes (9) | No | No | No | No | No |
+| Argo CD | Yes (13) | No | No | No | No | No |
 | **SCM posture (governance)** | | | | | | |
 | GitHub repo branch protection / secret scanning / Dependabot | Yes (55, `SCM-001..055`) | No | No | No | No | No |
 | **Infrastructure as code** | | | | | | |
 | Terraform plans | Yes | Yes | Yes | Partial | Yes | Yes |
 | CloudFormation (YAML+JSON) | Yes | Yes | Yes | Partial | No | Yes |
 | Kubernetes manifests | Yes (43) | Yes | Yes | No | No | Yes |
-| Helm charts (rendered + supply-chain) | Yes (43 + 10) | Partial | No | No | No | Partial |
+| Helm charts (rendered + supply-chain) | Yes (43 + 14) | Partial | No | No | No | Partial |
 | Dockerfile | Yes (30) | Yes | Yes | No | No | Yes |
 | **Cloud + supply-chain** | | | | | | |
 | Live AWS account scan | Yes (71 rules, boto3) | No | No | No | No | Partial |

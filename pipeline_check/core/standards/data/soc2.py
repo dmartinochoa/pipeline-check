@@ -565,6 +565,11 @@ STANDARD = Standard(
         "ARGO-013": ["CC6.1"],              # SA token automount default
         "ARGO-014": ["CC8.1"],              # unpinned package install
         "ARGO-015": ["CC6.7"],              # insecure (non-HTTPS) artifact URL
+        # ── Argo CD (GitOps deployment) ──
+        "ARGOCD-010": ["CC8.1"],            # mutable targetRevision
+        "ARGOCD-011": ["CC6.1"],            # cluster-resource wildcard
+        "ARGOCD-012": ["CC8.1"],            # no sync windows
+        "ARGOCD-013": ["CC8.1"],            # no revision history cap
         # ── Cloud Build extras ───────────────────────────────────
         "GCB-004": ["CC8.1"],               # community step not SHA-pinned
         "GCB-005": ["CC6.6"],               # build timeout unset
@@ -705,6 +710,11 @@ STANDARD = Standard(
         "HELM-006": ["CC8.1"],              # missing kubeVersion
         "HELM-007": ["CC8.1"],              # missing description
         "HELM-010": ["CC8.1"],              # missing appVersion
+        # ── Helm extended pack ──
+        "HELM-011": ["CC6.1"],              # dependency URL embedded creds
+        "HELM-012": ["CC8.1"],              # deprecated without successor
+        "HELM-013": ["CC8.1"],              # invalid chart type
+        "HELM-014": ["CC8.1", "CC7.1"],     # known-compromised dep
         # ── Degraded-mode findings (API access failures) ─────────
         # Visibility gap = monitoring-for-anomalies failure (CC7.2)
         # plus a logical-access trail evidence gap on the security-

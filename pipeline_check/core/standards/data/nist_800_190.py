@@ -391,6 +391,11 @@ STANDARD = Standard(
         "HELM-008": ["4.2.2"],                     # stale Chart.lock > 90 days
         "HELM-009": ["4.2.1"],                     # non-HTTPS home / sources URL
         "HELM-010": ["4.1.5"],                     # missing appVersion
+        # ── Helm extended pack ──
+        "HELM-011": ["4.2.1"],                     # dependency URL embedded creds
+        "HELM-012": ["4.1.5"],                     # deprecated without successor
+        "HELM-013": ["4.1.5"],                     # invalid chart type
+        "HELM-014": ["4.1.5"],                     # known-compromised dep
         # ── Buildkite (CI runner runs builds inside containers) ───
         # Mostly 4.1.2 / 4.4.4 (runtime config defects), 4.1.5
         # (untrusted images), 4.1.4 (secrets baked into env), and

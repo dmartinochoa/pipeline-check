@@ -276,6 +276,11 @@ STANDARD = Standard(
         "HELM-005": ["REB-3"],             # maintainers chain-of-custody
         "HELM-007": ["REB-3"],             # description empty
         "HELM-010": ["REB-3"],             # appVersion empty
+        # ── Helm extended pack ──
+        "HELM-011": ["REB-3"],             # dependency URL embedded creds
+        "HELM-012": ["REB-3"],             # deprecated without successor
+        "HELM-013": ["REB-3"],             # invalid chart type
+        "HELM-014": ["REB-3"],             # known-compromised dep
         # SBOM content gaps live here too (the SBOM exists but
         # under-specifies what it should track).
         "ATTEST-003": ["REB-3"],           # SBOM floating versions

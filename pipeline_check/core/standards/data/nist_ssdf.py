@@ -497,6 +497,11 @@ STANDARD = Standard(
         "HELM-008": ["PW.4.1"],                        # stale Chart.lock
         "HELM-009": ["PW.4.4"],                        # non-HTTPS home/sources
         "HELM-010": ["PO.3.3", "PS.3.2"],              # missing appVersion
+        # ── Helm extended pack ──
+        "HELM-011": ["PS.1.1"],                        # dependency URL embedded creds
+        "HELM-012": ["PW.4.4"],                        # deprecated without successor
+        "HELM-013": ["PW.4.4"],                        # invalid chart type
+        "HELM-014": ["PW.4.4", "RV.1.1"],              # known-compromised dependency
         # ── Cloud Build (GCB) ────────────────────────────────────
         "GCB-001": ["PW.4.1", "PW.4.4"],               # step image not pinned
         "GCB-002": ["PS.1.1"],                         # plaintext env secret

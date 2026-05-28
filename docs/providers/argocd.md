@@ -43,7 +43,7 @@ All other flags (`--output`, `--severity-threshold`, `--checks`,
 
 ## What it covers
 
-9 checks · 0 have an autofix patch (``--fix``).
+13 checks · 0 have an autofix patch (``--fix``).
 
 | Check | Title | Severity | Fix |
 |-------|-------|----------|-----|
@@ -56,6 +56,10 @@ All other flags (`--output`, `--severity-threshold`, `--checks`,
 | [ARGOCD-007](#argocd-007) | Argo CD Helm parameters interpolate generator output without goTemplate | <span class="pg-sev pg-sev--high">HIGH</span> |  |
 | [ARGOCD-008](#argocd-008) | Argo CD Application invokes a config-management plugin | <span class="pg-sev pg-sev--medium">MEDIUM</span> |  |
 | [ARGOCD-009](#argocd-009) | Argo CD anonymous access enabled | <span class="pg-sev pg-sev--critical">CRITICAL</span> |  |
+| [ARGOCD-010](#argocd-010) | Argo CD Application targetRevision uses a mutable ref | <span class="pg-sev pg-sev--high">HIGH</span> |  |
+| [ARGOCD-011](#argocd-011) | Argo CD AppProject cluster-resource whitelist is wide open | <span class="pg-sev pg-sev--high">HIGH</span> |  |
+| [ARGOCD-012](#argocd-012) | Argo CD AppProject defines no sync windows | <span class="pg-sev pg-sev--medium">MEDIUM</span> |  |
+| [ARGOCD-013](#argocd-013) | Argo CD Application sets no explicit revisionHistoryLimit | <span class="pg-sev pg-sev--low">LOW</span> |  |
 
 ---
 
@@ -234,6 +238,164 @@ Reads ``data.users.anonymous.enabled`` on the ``argocd-cm`` ConfigMap. ConfigMap
 **Recommended action**
 
 Remove the ``users.anonymous.enabled: "true"`` entry from ``argocd-cm`` (or set it to ``"false"``). With anonymous access on, the Argo CD UI / API answers requests carrying no token, and whatever permissions ``role:readonly`` (or the default policy) grants are reachable without authentication.
+
+</div>
+
+</div>
+
+<div class="pg-rule pg-rule--high" markdown>
+
+## ARGOCD-010: Argo CD Application targetRevision uses a mutable ref { #argocd-010 }
+
+<div class="pg-rule__tags">
+<span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-3</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-5</span> <span class="pg-tag pg-tag--esf">ESF-S-PIN-DEPS</span> <span class="pg-tag pg-tag--esf">ESF-S-VERIFY-DEPS</span> <span class="pg-tag pg-tag--cwe">CWE-1357</span> <span class="pg-tag pg-tag--cwe">CWE-829</span>
+</div>
+
+Reads ``spec.source.targetRevision`` (or each entry in ``spec.sources[].targetRevision`` for multi-source apps) and fires when the value matches a mutable-ref shape: ``HEAD``, branch-name literals (``main`` / ``master`` / ``develop`` / ``release-*``), or any non-SHA non-SemVer string. Immutable shapes that pass:
+
+* 40-character hex commit SHA
+* SemVer literal (``1.2.3``, ``1.2.3-rc.1``)
+* ``v``-prefixed SemVer (``v1.2.3``)
+
+Helm chart sources (``spec.source.chart`` set) follow the same rule: ``targetRevision`` should be a SemVer literal, not a range or branch.
+
+**Known false-positive modes**
+
+- Some staging environments deliberately track ``main`` for fast iteration on dev workloads. The rule still fires; suppress per Application with a one-line rationale naming the environment's intentional drift posture. Production environments should not be suppressed.
+
+**Seen in the wild**
+
+- Long-running pattern of Argo CD deployments tracking ``HEAD`` on the default branch and silently picking up every push to that branch. Force-pushes to the branch (intentional or via maintainer-account compromise) redirect the deploy without any Argo CD-side review; SHA-pinned deployments survive the same incident because the ref content is content-addressed.
+
+<div class="pg-rule__rec" markdown>
+
+**Recommended action**
+
+Pin every Application source to an immutable ref. Three stable shapes:
+
+* ``targetRevision: <40-char-commit-sha>`` for git sources. The SHA binds to specific content; force-push and tag-move can't redirect the deploy.
+* ``targetRevision: v1.2.3`` for git sources where signed tags are the org's release convention AND the repo enforces tag-immutability (signed tags + branch protection denying tag-rewrite). Without the protection, treat tags as mutable and pin the SHA instead.
+* ``targetRevision: 1.2.3`` for Helm chart references where the chart repo enforces version-immutability (chart museum default, OCI registry default). SemVer pins to a published chart digest.
+
+Branch refs (``main`` / ``master`` / ``HEAD``) follow the branch tip on every reconcile; whoever has push access to the branch controls what Argo CD deploys. This is the GitOps analog of ``GHA-001 actions/checkout@v4`` and carries the same exposure window.
+
+</div>
+
+</div>
+
+<div class="pg-rule pg-rule--high" markdown>
+
+## ARGOCD-011: Argo CD AppProject cluster-resource whitelist is wide open { #argocd-011 }
+
+<div class="pg-rule__tags">
+<span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-1</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-5</span> <span class="pg-tag pg-tag--esf">ESF-C-LEAST-PRIV</span> <span class="pg-tag pg-tag--cwe">CWE-862</span> <span class="pg-tag pg-tag--cwe">CWE-269</span>
+</div>
+
+Reads ``spec.clusterResourceWhitelist`` from each AppProject and fires when the list contains an entry with ``{group: '*', kind: '*'}`` (the explicit wildcard). The empty-list default passes the rule (it blocks all cluster-scoped writes). Partially-wildcarded entries (``{group: '*', kind: ClusterRole}`` or ``{group: rbac.authorization.k8s.io, kind: '*'}``) also trip the rule because either axis being a wildcard means the other axis can't bound the blast radius.
+
+Pairs with ARGOCD-002 (destinations wildcard, which controls *where* an Application can deploy). This rule controls *what kinds* it can deploy.
+
+**Known false-positive modes**
+
+- Operator-installation projects that legitimately need broad cluster-resource creation rights (the only way to install some operators is via CRD + ClusterRole + ClusterRoleBinding). Suppress per project with a one-line rationale naming the operator and the install procedure that requires the broad rights.
+
+**Seen in the wild**
+
+- Common over-provisioning pattern: a contributor adds ``clusterResourceWhitelist: [{group: '*', kind: '*'}]`` to an AppProject during an operator install, never tightens it back. Months later, an Application under that project is deployed with a malicious ClusterRoleBinding (via a compromised git commit or a typo in a values file); the binding lands without any AppProject-side gate.
+
+<div class="pg-rule__rec" markdown>
+
+**Recommended action**
+
+Restrict ``spec.clusterResourceWhitelist`` to the exact (group, kind) tuples the project's Applications need. The default (an empty list) blocks all cluster-scoped writes, which is the safest posture for namespace-scoped workloads. A wildcard (``{group: '*', kind: '*'}``) allows the project to install ClusterRoleBindings, CustomResourceDefinitions, ValidatingAdmissionWebhooks, and PodSecurityPolicies — every category capable of cluster takeover.
+
+Typical narrow allowlist for a workload project:
+
+    spec:
+      clusterResourceWhitelist: []
+      namespaceResourceWhitelist:
+        - { group: '', kind: ConfigMap }
+        - { group: '', kind: Service }
+        - { group: apps, kind: Deployment }
+
+Projects that legitimately install cluster-scoped resources (an operator project, a CRD-management project) should enumerate the specific kinds, never wildcards.
+
+</div>
+
+</div>
+
+<div class="pg-rule pg-rule--medium" markdown>
+
+## ARGOCD-012: Argo CD AppProject defines no sync windows { #argocd-012 }
+
+<div class="pg-rule__tags">
+<span class="pg-sev pg-sev--medium">MEDIUM</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-4</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-1</span> <span class="pg-tag pg-tag--esf">ESF-C-APPROVAL</span> <span class="pg-tag pg-tag--esf">ESF-C-DEPLOY-MON</span> <span class="pg-tag pg-tag--cwe">CWE-285</span>
+</div>
+
+Reads ``spec.syncWindows`` from each AppProject and fires when the field is missing or empty AND the project's ``destinations`` include a production-shaped namespace (literal ``prod``, ``production``, or any namespace name containing ``prod``). The production-shape heuristic keeps the rule from firing on dev / staging projects where instant reconciliation is the deliberate posture.
+
+Sync windows complement ARGOCD-003 (automated sync without selfHeal) at the schedule layer: ARGOCD-003 catches the drift-revert hazard, this catches the change-freeze hazard.
+
+**Known false-positive modes**
+
+- Hosting / SaaS environments that intentionally deploy continuously across all hours (24/7 always-on update cadence) trip this rule. Suppress per project with a one-line rationale naming the continuous-deploy policy. Most production environments benefit from at least a weekend / overnight freeze.
+
+**Seen in the wild**
+
+- Common change-control gap: a Friday-evening force-push to the manifests repo lands in production within minutes via Argo CD's automated sync. The on-call team is paged for the resulting outage hours later, by which point the responsible contributor is offline. Sync windows would have blocked the deploy until Monday's business hours, buying time for a manual review.
+
+<div class="pg-rule__rec" markdown>
+
+**Recommended action**
+
+Define explicit ``spec.syncWindows`` entries on every AppProject that gates production deploys. A sync window is a calendar-style rule that allows or denies automated / manual sync during specific schedules. Without windows, every git commit can be reconciled to production instantly — fine for staging, dangerous for prod where off-hours change-freezes (weekend / on-call rotations / active-incident windows) are normal posture.
+
+Example: deny automated sync outside business hours but still allow manual sync (for break-glass deploys):
+
+    spec:
+      syncWindows:
+        - kind: deny
+          schedule: "0 18 * * *"
+          duration: 14h
+          applications: ['*']
+          manualSync: true   # operators can still sync manually
+
+Pair with ``manualSync: false`` on incident-window blackouts to fully freeze, and with a separate ``kind: allow`` window for the release-rehearsal cadence.
+
+</div>
+
+</div>
+
+<div class="pg-rule pg-rule--low" markdown>
+
+## ARGOCD-013: Argo CD Application sets no explicit revisionHistoryLimit { #argocd-013 }
+
+<div class="pg-rule__tags">
+<span class="pg-sev pg-sev--low">LOW</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-7</span> <span class="pg-tag pg-tag--esf">ESF-C-AUDIT</span> <span class="pg-tag pg-tag--cwe">CWE-770</span>
+</div>
+
+Reads ``spec.revisionHistoryLimit`` and fires when the field is missing or set to ``null``. Explicit 0 also fires (history disabled entirely is rarely the intended posture — operators usually want at least a 1-2 entry rollback window). The rule is informational-leaning LOW: storage bloat and prolonged-secret-exposure are real but slow-moving risks, not exploitable surfaces an attacker can compromise in isolation.
+
+**Known false-positive modes**
+
+- Sandbox / experimental Applications where rollback is irrelevant trip this rule by design. Suppress per Application with a one-line rationale.
+
+**Seen in the wild**
+
+- Stale-secret pattern in older Argo CD versions: an Application that referenced a secret directly in a manifest (later moved to a sealed-secret / external secret reference) retains the original plaintext manifest in revision history. ``argocd app history`` and the controller API surface the old manifest verbatim, including the plaintext value, until the revision history limit is reached.
+
+<div class="pg-rule__rec" markdown>
+
+**Recommended action**
+
+Set ``spec.revisionHistoryLimit`` to an explicit small integer (5-20 is the typical range) on every Application. The field caps how many prior synced revisions Argo CD retains for rollback. Unbounded retention keeps stale manifests (and any secrets they referenced) accessible via the Argo CD API indefinitely and grows the controller's storage footprint without bound.
+
+Example:
+
+    spec:
+      revisionHistoryLimit: 10  # keep last 10 syncs for rollback
+
+Pick the cap based on the application's rollback need: a stateless web service rarely benefits from more than 5 history entries; an infrastructure controller managing external state may want 20 for forensic comparison across longer windows.
 
 </div>
 

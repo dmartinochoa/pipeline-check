@@ -459,6 +459,12 @@ STANDARD = Standard(
         "HELM-009": ["Build.L3.Isolated",
                      "Build.L3.NonFalsifiable"],                   # non-HTTPS home / sources URL
         "HELM-010": ["Build.L1.Provenance"],                       # appVersion (provenance metadata)
+        # ── Helm extended pack ──
+        "HELM-011": ["Build.L1.Provenance"],                       # dependency URL embedded creds
+        "HELM-012": ["Build.L1.Provenance"],                       # deprecated without successor
+        "HELM-013": ["Build.L1.Provenance"],                       # invalid chart type
+        "HELM-014": ["Build.L1.Provenance",
+                     "Build.L3.NonFalsifiable"],                   # known-compromised dep
         # ── Dockerfile (image build process is the SLSA build) ────
         # Pinning rules tie to L3.NonFalsifiable (digest pinning is
         # the canonical "tenant can't substitute" mitigation).

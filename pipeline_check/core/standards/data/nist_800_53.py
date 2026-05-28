@@ -484,6 +484,11 @@ STANDARD = Standard(
         "HELM-008": ["SR-3", "SI-2"],                    # Chart.lock stale (flaw remediation cadence)
         "HELM-009": ["SR-3", "SC-8"],                    # home / sources non-HTTPS
         "HELM-010": ["CM-2"],                            # appVersion (config baseline)
+        # ── Helm extended pack ──
+        "HELM-011": ["IA-5", "SC-28"],                   # dependency URL embedded creds
+        "HELM-012": ["CM-2", "SI-2"],                    # deprecated without successor
+        "HELM-013": ["CM-2"],                            # invalid chart type
+        "HELM-014": ["SI-2", "SR-3"],                    # known-compromised dep
         # Buildkite, pipeline-config posture maps to the same SR /
         # CM / IA families as the other CI providers' rules.
         "BK-001":   ["SR-3", "SR-11", "SI-2"],           # plugin not pinned
@@ -533,6 +538,11 @@ STANDARD = Standard(
         "ARGO-013": ["AC-6", "IA-5"],                    # SA token automount
         "ARGO-014": ["SR-3", "SR-11"],                   # unpinned package install
         "ARGO-015": ["SC-8", "SI-7"],                    # insecure (non-HTTPS) artifact URL
+        # ── Argo CD (GitOps deployment) ──
+        "ARGOCD-010": ["CM-7", "SR-3"],                  # mutable targetRevision
+        "ARGOCD-011": ["AC-6", "CM-7"],                  # cluster-resource wildcard
+        "ARGOCD-012": ["CM-6", "AU-2"],                  # no sync windows
+        "ARGOCD-013": ["AU-11"],                         # no revision history cap
         # Dockerfile, image build choices evidence supply-chain (SR)
         # and configuration (CM) controls primarily.
         "DF-001":   ["SR-3", "SR-11", "SI-2"],           # FROM not digest-pinned

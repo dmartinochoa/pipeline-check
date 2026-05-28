@@ -467,6 +467,11 @@ STANDARD = Standard(
         "HELM-008": ["CICD-SEC-3"],   # Chart.lock stale > 90 days
         "HELM-009": ["CICD-SEC-3"],   # home / sources non-HTTPS
         "HELM-010": ["CICD-SEC-3"],   # appVersion empty
+        # ── Helm extended pack (HELM-011..014) ──
+        "HELM-011": ["CICD-SEC-6", "CICD-SEC-10"], # dependency URL embedded credentials
+        "HELM-012": ["CICD-SEC-3"],                 # deprecated without successor
+        "HELM-013": ["CICD-SEC-3"],                 # invalid chart type
+        "HELM-014": ["CICD-SEC-3", "CICD-SEC-7"],  # known-compromised dependency
         # Dockerfile
         "DF-001":   ["CICD-SEC-3"],   # FROM not digest-pinned
         "DF-002":   ["CICD-SEC-7"],   # no USER
@@ -625,6 +630,11 @@ STANDARD = Standard(
         "ARGOCD-007": ["CICD-SEC-4", "CICD-SEC-1"],  # Helm generator interpolation
         "ARGOCD-008": ["CICD-SEC-3", "CICD-SEC-4"],  # CMP plugin invocation
         "ARGOCD-009": ["CICD-SEC-2"],                # anonymous access enabled
+        # ── ArgoCD extended pack (ARGOCD-010..013) ──
+        "ARGOCD-010": ["CICD-SEC-3", "CICD-SEC-5"], # mutable targetRevision
+        "ARGOCD-011": ["CICD-SEC-1", "CICD-SEC-5"], # cluster-resource wildcard
+        "ARGOCD-012": ["CICD-SEC-4", "CICD-SEC-1"], # no sync windows on prod
+        "ARGOCD-013": ["CICD-SEC-7"],               # no revision history cap
         # Cross-cutting dataflow / taint engine (provider-spanning,
         # currently GHA-only in v1)
         "TAINT-001": ["CICD-SEC-4", "CICD-SEC-1"],  # cross-step taint via $GITHUB_OUTPUT

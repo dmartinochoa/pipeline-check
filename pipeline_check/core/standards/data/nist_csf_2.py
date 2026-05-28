@@ -401,6 +401,11 @@ STANDARD = Standard(
         "HELM-008": ["GV.SC-07"],   # Chart.lock stale
         "HELM-009": ["GV.SC-05", "PR.DS-02"],   # non-HTTPS sources
         "HELM-010": ["GV.SC-04"],   # appVersion empty
+        # ── Helm extended pack ──
+        "HELM-011": ["PR.DS-01"],   # dependency URL embedded creds
+        "HELM-012": ["GV.SC-04"],   # deprecated without successor
+        "HELM-013": ["GV.SC-04"],   # invalid chart type
+        "HELM-014": ["GV.SC-05"],   # known-compromised dep
         # ── Dockerfile, image-build supply chain. ─────────────────
         # Pinning + verification rules tie to GV.SC-05 (supply chain
         # requirements established and verified). Privileged / root
@@ -585,6 +590,11 @@ STANDARD = Standard(
         "ARGO-013": ["PR.AA-01"],               # SA token automount default
         "ARGO-014": ["GV.SC-05"],               # unpinned package install
         "ARGO-015": ["PR.DS-02"],               # insecure (non-HTTPS) artifact URL
+        # ── Argo CD (GitOps deployment) ──
+        "ARGOCD-010": ["GV.SC-07"],             # mutable targetRevision
+        "ARGOCD-011": ["PR.AA-05"],             # cluster-resource wildcard
+        "ARGOCD-012": ["GV.SC-07"],             # no sync windows
+        "ARGOCD-013": ["GV.SC-07"],             # no revision history cap
         # ── Cloud Build container-touching extras ─────────────────
         "GCB-010": ["GV.SC-05", "PR.DS-02"],    # remote script piped to shell
         "GCB-011": ["PR.DS-02"],                # TLS bypass

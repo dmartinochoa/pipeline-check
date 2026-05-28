@@ -333,6 +333,11 @@ STANDARD = Standard(
         "HELM-008": ["ESF-S-PIN-DEPS"],                            # stale Chart.lock
         "HELM-009": ["ESF-S-TRUSTED-REG"],                         # non-HTTPS home/sources
         "HELM-010": ["ESF-S-VERIFY-DEPS"],                         # appVersion
+        # ── Helm extended pack ──
+        "HELM-011": ["ESF-D-SECRETS"],
+        "HELM-012": ["ESF-S-VERIFY-DEPS"],
+        "HELM-013": ["ESF-S-VERIFY-DEPS"],
+        "HELM-014": ["ESF-S-VERIFY-DEPS"],
         # ── Dockerfile (image build supply chain) ──────────────────
         "DF-001": ["ESF-S-PIN-DEPS", "ESF-S-VERIFY-DEPS"],         # FROM not digest-pinned
         "DF-002": ["ESF-D-PRIV-BUILD"],                            # runs as root
@@ -585,6 +590,11 @@ STANDARD = Standard(
         "ARGOCD-007": ["ESF-D-INJECTION"],                           # Helm generator interpolation
         "ARGOCD-008": ["ESF-S-VERIFY-DEPS"],                         # CMP plugin invocation
         "ARGOCD-009": ["ESF-C-LEAST-PRIV"],                          # anonymous access enabled
+        # ── ArgoCD extended pack ──
+        "ARGOCD-010": ["ESF-S-PIN-DEPS"],
+        "ARGOCD-011": ["ESF-C-LEAST-PRIV"],
+        "ARGOCD-012": ["ESF-C-APPROVAL"],
+        "ARGOCD-013": ["ESF-C-AUDIT"],
         # ── Drone CI ─────────────────────────────────────────────
         "DR-001":   ["ESF-S-PIN-DEPS", "ESF-S-IMMUTABLE"],     # step image not digest-pinned
         "DR-002":   ["ESF-D-PRIV-BUILD"],           # privileged step

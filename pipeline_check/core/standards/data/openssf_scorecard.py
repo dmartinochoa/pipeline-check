@@ -303,6 +303,12 @@ STANDARD = Standard(
         "TKN-015":  ["Dangerous-Workflow"],                            # workspace subPath param injection
         "ARGO-013": ["Token-Permissions"],                             # SA token automount default
         "ARGO-015": ["Pinned-Dependencies"],                           # insecure (non-HTTPS) artifact URL
+        # ── Argo CD (GitOps deployment) ──
+        "ARGOCD-010": ["Pinned-Dependencies"],                         # mutable targetRevision
+        "ARGOCD-011": ["Token-Permissions"],                           # cluster-resource wildcard
+        # ── Helm extended pack ──
+        "HELM-011": ["Token-Permissions"],                             # dependency URL embedded creds
+        "HELM-014": ["Pinned-Dependencies"],                           # known-compromised dep
         "BK-013":   ["Code-Review"],                                   # deploy step no branches filter
         # Cloud Build tainted-substitution / shell pack
         "GCB-012":  ["Token-Permissions"],                             # credential-shaped literal

@@ -550,6 +550,11 @@ STANDARD = Standard(
         # ── Argo extras ──────────────────────────────────────────
         "ARGO-014": ["6.3.3", "6.5.1"],                  # unpinned package install
         "ARGO-015": ["6.5.1"],                           # insecure (non-HTTPS) artifact URL
+        # ── Argo CD (GitOps deployment) ──
+        "ARGOCD-010": ["6.3.1"],                         # mutable targetRevision
+        "ARGOCD-011": ["7.2.1"],                         # cluster-resource wildcard
+        "ARGOCD-012": ["6.5.1"],                         # no sync windows
+        "ARGOCD-013": ["10.3.2"],                        # no revision history cap
         # ── Cloud Build extras ───────────────────────────────────
         "GCB-007":  ["8.2.1"],                           # availableSecrets versions/latest
         "GCB-017":  ["6.5.1", "10.3.2"],                 # no SLSA provenance attestation
@@ -682,6 +687,11 @@ STANDARD = Standard(
         "HELM-006": ["6.5.1"],                           # missing kubeVersion
         "HELM-007": ["6.5.1"],                           # missing description
         "HELM-010": ["6.5.1"],                           # missing appVersion
+        # ── Helm extended pack ──
+        "HELM-011": ["8.2.1"],                           # dependency URL embedded creds
+        "HELM-012": ["6.3.3"],                           # deprecated without successor
+        "HELM-013": ["6.5.1"],                           # invalid chart type
+        "HELM-014": ["6.3.1", "6.3.3"],                  # known-compromised dep
         # ── Degraded-mode findings (API access failures) ─────────
         # Visibility gap = audit-log surface gap; req 10.2.1 says
         # "Audit logs are enabled and active for all system

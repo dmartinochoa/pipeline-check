@@ -428,6 +428,11 @@ STANDARD = Standard(
         "ARGOCD-007": ["2.4.3", "5.1.4"],          # Helm generator interpolation
         "ARGOCD-008": ["2.3.8"],                   # CMP plugin invocation
         "ARGOCD-009": ["2.4.3"],                   # anonymous access enabled
+        # ── ArgoCD extended pack ──
+        "ARGOCD-010": ["1.4.1"],                   # mutable targetRevision
+        "ARGOCD-011": ["1.3.4"],                   # cluster-resource wildcard
+        "ARGOCD-012": ["1.1.5"],                   # no sync windows on prod
+        "ARGOCD-013": ["1.3.4"],                   # no revision history cap
         # ── Helm chart-supply-chain ───────────────────────────────
         # Chart packaging metadata sits at the artifact / build-deps
         # boundary. HELM-002's missing-digest is the exact "signed
@@ -442,6 +447,11 @@ STANDARD = Standard(
         "HELM-008": ["1.4.1", "3.1.3"],            # stale Chart.lock
         "HELM-009": ["3.1.5"],                     # non-HTTPS home/sources URL
         "HELM-010": ["4.4.1"],                     # appVersion (provenance metadata)
+        # ── Helm extended pack ──
+        "HELM-011": ["1.5.1"],                     # dependency URL embedded creds
+        "HELM-012": ["1.4.1"],                     # deprecated without successor
+        "HELM-013": ["4.4.1"],                     # invalid chart type
+        "HELM-014": ["1.4.1"],                     # known-compromised dependency
         # ── Dockerfile (image build supply chain) ──────────────────
         # The CIS Supply Chain Benchmark Section 2 (build) and 3
         # (dependencies) cover the same ground a hardened Dockerfile
