@@ -114,7 +114,7 @@ def _findtext_local(elem: ET.Element, name: str) -> str:
 
 def _find_child_local(
     elem: ET.Element, name: str,
-) -> "ET.Element | None":
+) -> ET.Element | None:
     for child in elem:
         if _strip_ns(child.tag) == name:
             return child
@@ -127,7 +127,7 @@ def _findall_local(
     return [c for c in elem if _strip_ns(c.tag) == name]
 
 
-def _resolve_version(version: str, properties: dict) -> str:
+def _resolve_version(version: str, properties: dict[str, str]) -> str:
     m = _PROPERTY_RE.match(version)
     if not m:
         return version
@@ -154,7 +154,7 @@ def _is_floating(version: str) -> bool:
 
 
 def _walk_extensions(
-    root: ET.Element, properties: dict,
+    root: ET.Element, properties: dict[str, str],
 ) -> list[tuple[str, str, str]]:
     out: list[tuple[str, str, str]] = []
 

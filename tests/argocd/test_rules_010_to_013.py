@@ -3,7 +3,6 @@ from __future__ import annotations
 
 from .conftest import run_check
 
-
 # ── ARGOCD-010 ──────────────────────────────────────────────────
 
 

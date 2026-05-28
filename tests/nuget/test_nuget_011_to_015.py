@@ -6,7 +6,6 @@ import pathlib
 from pipeline_check.core.checks.nuget.base import (
     NuGetConfig,
     NuGetContext,
-    NuGetProject,
     NuGetSource,
     NuGetSourceMapping,
 )

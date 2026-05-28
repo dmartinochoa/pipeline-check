@@ -152,14 +152,7 @@ class PulumiContext:
             )
         if root.is_file():
             project_files = [root] if root.name == PROJECT_MANIFEST else []
-            scan_root = root.parent
-            if not project_files:
-                # Allow ``--pulumi-path`` to point at a single stack
-                # file or source file; in that case we still want to
-                # build a context but with no project loaded.
-                scan_root = root.parent
         else:
-            scan_root = root
             project_files = sorted(
                 p for p in root.rglob(PROJECT_MANIFEST)
                 if p.is_file()

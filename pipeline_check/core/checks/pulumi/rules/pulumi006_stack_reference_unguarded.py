@@ -158,8 +158,8 @@ def check(ctx: PulumiContext) -> Finding:
                 ))
     passed = not offenders
     desc = (
-        f"Every StackReference uses the fully-qualified "
-        f"<org>/<project>/<stack> form."
+        "Every StackReference uses the fully-qualified "
+        "<org>/<project>/<stack> form."
         if passed else
         f"{len(offenders)} StackReference call(s) use a bare "
         f"stack name: {', '.join(offenders[:5])}"

@@ -397,7 +397,7 @@ def is_incompatible_version(version: str) -> bool:
     return version.endswith(_INCOMPATIBLE_SUFFIX)
 
 
-def iter_direct_requires(pom: GoModFile) -> "list[GoRequire]":
+def iter_direct_requires(pom: GoModFile) -> list[GoRequire]:
     """Return only direct requires (``// indirect`` filtered out).
 
     Indirect requires are transitive deps the Go tool added to the

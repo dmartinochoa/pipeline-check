@@ -118,7 +118,7 @@ def _findtext_local(elem: ET.Element, name: str) -> str:
 
 def _find_child_local(
     elem: ET.Element, name: str,
-) -> "ET.Element | None":
+) -> ET.Element | None:
     for child in elem:
         if _strip_ns(child.tag) == name:
             return child
@@ -132,7 +132,7 @@ def _findall_local(
 
 
 def _resolve_version(
-    version: str, properties: dict,
+    version: str, properties: dict[str, str],
 ) -> str:
     """Resolve up to one level of ``${name}`` substitution."""
     m = _PROPERTY_RE.match(version)
@@ -163,7 +163,7 @@ def _is_floating(version: str) -> bool:
 
 
 def _walk_plugins(
-    root: ET.Element, properties: dict,
+    root: ET.Element, properties: dict[str, str],
 ) -> list[tuple[str, str, str]]:
     """Return (group:artifact, version, container-label) for every
     declared plugin in build / pluginManagement / profiles."""

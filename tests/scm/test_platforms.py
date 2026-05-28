@@ -597,7 +597,8 @@ class TestGitLabSpecificRules:
         """SCM-050..053 should pass with a skip note on GitHub
         snapshots, mirroring the GitHub-only routing pattern."""
         from pipeline_check.core.checks.scm.base import (
-            SCMContext, SCMRepoSnapshot,
+            SCMContext,
+            SCMRepoSnapshot,
         )
         from pipeline_check.core.checks.scm.posture import SCMPostureChecks
         snap = SCMRepoSnapshot(owner="o", name="r", platform="github")
@@ -727,7 +728,8 @@ class TestBitbucketSpecificRules:
 
     def test_bitbucket_only_rules_skip_with_note_on_github(self):
         from pipeline_check.core.checks.scm.base import (
-            SCMContext, SCMRepoSnapshot,
+            SCMContext,
+            SCMRepoSnapshot,
         )
         from pipeline_check.core.checks.scm.posture import SCMPostureChecks
         snap = SCMRepoSnapshot(owner="o", name="r", platform="github")

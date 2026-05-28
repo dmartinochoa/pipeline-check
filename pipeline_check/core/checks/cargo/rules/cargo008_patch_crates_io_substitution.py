@@ -129,7 +129,7 @@ def check(pom: CargoFile) -> Finding:
         )
         offenders.append(f"{name} ({source})")
         line_no = 1
-        marker = f"[patch.crates-io]"
+        marker = "[patch.crates-io]"
         if marker in pom.text:
             line_no = pom.text[:pom.text.index(marker)].count("\n") + 1
         locations.append(Location(

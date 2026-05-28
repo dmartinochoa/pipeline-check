@@ -33,7 +33,7 @@ class TestParser:
             "    github.com/c/d v2.0.0 // indirect\n"
             ")\n"
         )
-        findings = _scan(tmp_path, go_mod, has_sum=True)
+        _scan(tmp_path, go_mod, has_sum=True)
         ctx = GoModContext.from_path(str(tmp_path / "go.mod"))
         pom = ctx.files[0]
         assert pom.module_path == "example.com/x"

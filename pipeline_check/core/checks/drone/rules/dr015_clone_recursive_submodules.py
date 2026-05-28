@@ -1,8 +1,6 @@
 """DR-015. Pipeline clone block enables recursive submodule cloning."""
 from __future__ import annotations
 
-from typing import Any
-
 from ...base import Finding, Severity
 from ...rule import Rule
 from ..base import Pipeline

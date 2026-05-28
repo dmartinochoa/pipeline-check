@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import re
+from collections.abc import Iterator
 from typing import Any
 
 from ...base import Finding, Severity
@@ -117,7 +118,9 @@ def _is_immutable_revision(rev: str) -> bool:
     return False
 
 
-def _iter_sources(spec: dict[str, Any]):
+def _iter_sources(
+    spec: dict[str, Any],
+) -> Iterator[tuple[str, Any]]:
     """Yield (path-label, targetRevision-or-None) tuples for each
     Application source. Handles both single ``source`` and the
     multi-source ``sources: []`` form."""

@@ -1,6 +1,8 @@
 """ARGOCD-012. AppProject defines no sync windows for production."""
 from __future__ import annotations
 
+from typing import Any
+
 from ...base import Finding, Severity
 from ...rule import Rule
 from ..base import ArgoCDContext, iter_appprojects
@@ -101,7 +103,7 @@ RULE = Rule(
 _PROD_TOKENS: frozenset[str] = frozenset({"prod", "production"})
 
 
-def _looks_like_production(spec: dict) -> bool:
+def _looks_like_production(spec: dict[str, Any]) -> bool:
     destinations = spec.get("destinations")
     if not isinstance(destinations, list):
         return False

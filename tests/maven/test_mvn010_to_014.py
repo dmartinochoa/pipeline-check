@@ -1,8 +1,6 @@
 """Per-rule unit tests for MVN-010..014 (Maven extended pack)."""
 from __future__ import annotations
 
-import pathlib
-
 from pipeline_check.core.checks.maven.base import MavenContext, _parse_pom
 from pipeline_check.core.checks.maven.pipelines import MavenChecks
 

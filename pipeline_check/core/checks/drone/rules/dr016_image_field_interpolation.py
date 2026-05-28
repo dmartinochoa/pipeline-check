@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import re
+from typing import Any
 
 from ...base import Finding, Severity
 from ...rule import Rule
@@ -114,7 +115,9 @@ RULE = Rule(
 _TEMPLATE_RE = re.compile(r"\$\{[^}]+\}")
 
 
-def _scan_container(name: str, container: dict, offenders: list[str]) -> None:
+def _scan_container(
+    name: str, container: dict[str, Any], offenders: list[str],
+) -> None:
     image = container.get("image")
     if not isinstance(image, str):
         return
