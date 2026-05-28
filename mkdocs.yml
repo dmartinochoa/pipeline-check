@@ -1,5 +1,5 @@
 site_name: Pipeline-Check
-site_description: CI/CD Security Posture Scanner — scores AWS, Azure Cloud, GCP, Terraform, CloudFormation, GitHub Actions, Gitea / Forgejo Actions, GitLab CI, Azure DevOps, Bitbucket Pipelines, Jenkins, CircleCI, Cloud Build, Buildkite, Drone CI, Tekton, Argo Workflows, Argo CD, Dockerfile, Kubernetes manifests, Helm charts, OCI image manifests, SCM repo posture, npm, PyPI, Maven, NuGet, Go modules, and Cargo dependency files against the OWASP Top 10 CI/CD Risks plus 17 other compliance frameworks.
+site_description: CI/CD Security Posture Scanner — scores AWS, Azure Cloud, GCP, Terraform, CloudFormation, Pulumi, GitHub Actions, Gitea / Forgejo Actions, GitLab CI, Azure DevOps, Bitbucket Pipelines, Jenkins, CircleCI, Cloud Build, Buildkite, Drone CI, Tekton, Argo Workflows, Argo CD, Dockerfile, Kubernetes manifests, Helm charts, OCI image manifests, SCM repo posture, npm, PyPI, Maven, NuGet, Go modules, and Cargo dependency files against the OWASP Top 10 CI/CD Risks plus 17 other compliance frameworks.
 site_url: https://dmartinochoa.github.io/pipeline-check/
 repo_url: https://github.com/dmartinochoa/pipeline-check
 repo_name: dmartinochoa/pipeline-check
@@ -177,6 +177,7 @@ nav:
               - GCP: providers/gcp.md
               - Terraform: providers/terraform.md
               - CloudFormation: providers/cloudformation.md
+              - Pulumi: providers/pulumi.md
           - Containers & deployment:
               - Dockerfile: providers/dockerfile.md
               - Kubernetes: providers/kubernetes.md

@@ -554,6 +554,13 @@ STANDARD = Standard(
         "CARGO-004": ["CICD-SEC-3", "CICD-SEC-5"], # local-path Cargo dependency
         "CARGO-005": ["CICD-SEC-3", "CICD-SEC-5"], # alternate-registry Cargo dependency
         "CARGO-006": ["CICD-SEC-3", "CICD-SEC-7"], # known-compromised crate version
+        # ── Pulumi (PULUMI-001..006) ──
+        "PULUMI-001": ["CICD-SEC-6", "CICD-SEC-7"], # passphrase secretsprovider
+        "PULUMI-002": ["CICD-SEC-6"],               # secret-shaped config plaintext
+        "PULUMI-003": ["CICD-SEC-6", "CICD-SEC-7"], # hardcoded credentials in source
+        "PULUMI-004": ["CICD-SEC-2", "CICD-SEC-6"], # insecure state backend
+        "PULUMI-005": ["CICD-SEC-1", "CICD-SEC-2"], # wildcard IAM policy in source
+        "PULUMI-006": ["CICD-SEC-1", "CICD-SEC-6"], # StackReference unguarded
         # Buildkite
         "BK-001":   ["CICD-SEC-3"],   # plugin not pinned to exact version
         "BK-002":   ["CICD-SEC-6", "CICD-SEC-7"],  # literal secret in env

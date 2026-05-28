@@ -1240,6 +1240,48 @@ left unresolved; deeply-recursive property graphs are rare in
 real-world POMs and out of scope for static analysis.
 """,
     ),
+    "pulumi": (
+        "Pulumi",
+        "pipeline_check.core.checks.pulumi.rules",
+        _REPO_ROOT / "docs" / "providers" / "pulumi.md",
+        """\
+# Pulumi provider
+
+Static text-only analysis of a Pulumi project on disk. Three
+document families are loaded:
+
+* `Pulumi.yaml` — project manifest (`name`, `runtime`, `backend.url`).
+* `Pulumi.<stack>.yaml` — per-stack config (`config:`, `secretsprovider`,
+  `encryptionsalt`).
+* Source files (`__main__.py`, `index.ts`, `main.go`, `Program.cs`, …)
+  in the runtime language. Audited via regex-based primitive scans
+  (hardcoded credentials, wildcard IAM policies, `StackReference`
+  shapes) rather than language-aware AST parsing.
+
+No Pulumi CLI required, no engine execution. Mirrors the Terraform
+HCL / CloudFormation / Helm chart-supply-chain providers.
+
+## Producer workflow
+
+```bash
+# --pulumi-path auto-detects ./Pulumi.yaml when present.
+pipeline_check --pipeline pulumi
+pipeline_check --pipeline pulumi --pulumi-path ./Pulumi.yaml
+pipeline_check --pipeline pulumi --pulumi-path ./infra/
+```
+
+## Supported file families
+
+| File | Parse shape |
+|------|-------------|
+| `Pulumi.yaml` | Project manifest (`name`, `runtime`, `backend.url`) |
+| `Pulumi.<stack>.yaml` | Per-stack config + `secretsprovider` + `encryptionsalt` |
+| `*.py` / `*.ts` / `*.js` / `*.go` / `*.cs` | Source-file regex scans |
+
+`node_modules/`, `.venv/`, `venv/`, `.pulumi/`, `bin/`, `obj/`,
+`target/`, `dist/`, `build/`, `__pycache__/`, and `.git/` are skipped.
+""",
+    ),
     "gomod": (
         "Go modules",
         "pipeline_check.core.checks.gomod.rules",
@@ -2086,6 +2128,11 @@ _FOOTER_CONFIG: dict[str, dict[str, str]] = {
         "prefix": "CARGO", "prefix_lc": "cargo", "pkg": "cargo",
         "signature": "check(pom: CargoFile) -> Finding",
         "arg_kind": "``CargoFile``",
+    },
+    "pulumi": {
+        "prefix": "PULUMI", "prefix_lc": "pulumi", "pkg": "pulumi",
+        "signature": "check(ctx: PulumiContext) -> Finding",
+        "arg_kind": "``PulumiContext``",
     },
 }
 

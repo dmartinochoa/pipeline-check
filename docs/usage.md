@@ -135,6 +135,7 @@ pipeline_check --pipeline cargo --cargo-path ./
 pipeline_check --pipeline cloudformation --cfn-template template.yml
 pipeline_check --pipeline terraform --tf-plan plan.json
 pipeline_check --pipeline terraform --tf-source ./infra/   # direct HCL, no terraform binary
+pipeline_check --pipeline pulumi --pulumi-path ./infra/Pulumi.yaml
 pipeline_check --pipeline aws --region eu-west-1 --profile prod
 pipeline_check --pipeline azure_cloud --subscription-id 00000000-0000-0000-0000-000000000000
 pipeline_check --pipeline gcp --gcp-project my-project-id

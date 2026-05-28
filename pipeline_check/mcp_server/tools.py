@@ -98,6 +98,7 @@ _PROVIDER_PATH_KW: dict[str, str | None] = {
     "nuget":          "nuget_path",
     "gomod":          "gomod_path",
     "cargo":          "cargo_path",
+    "pulumi":         "pulumi_path",
     "aws":            None,
     "azure_cloud":    None,
     "gcp":            None,
@@ -268,6 +269,7 @@ _RULES_FQN: dict[str, str] = {
     "nuget":          "pipeline_check.core.checks.nuget.rules",
     "gomod":          "pipeline_check.core.checks.gomod.rules",
     "cargo":          "pipeline_check.core.checks.cargo.rules",
+    "pulumi":         "pipeline_check.core.checks.pulumi.rules",
 }
 
 

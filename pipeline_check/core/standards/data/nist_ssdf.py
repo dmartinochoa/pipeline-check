@@ -583,6 +583,13 @@ STANDARD = Standard(
         "CARGO-004": ["PO.5.1", "PW.4.4"],             # local-path Cargo dependency
         "CARGO-005": ["PO.5.1", "PW.4.4"],             # alternate-registry Cargo dependency
         "CARGO-006": ["PW.4.4", "RV.1.1"],             # known-compromised crate version
+        # ── Pulumi (PULUMI-001..006) ──
+        "PULUMI-001": ["PS.1.1", "PO.5.1"],             # passphrase secretsprovider
+        "PULUMI-002": ["PS.1.1"],                       # secret-shaped config plaintext
+        "PULUMI-003": ["PS.1.1", "PO.5.1"],             # hardcoded credentials in source
+        "PULUMI-004": ["PO.5.1", "PW.4.4"],             # insecure state backend
+        "PULUMI-005": ["PO.5.1"],                       # wildcard IAM policy in source
+        "PULUMI-006": ["PO.5.1", "PW.4.4"],             # StackReference unguarded
         # ── Dockerfile env-bypass pack (DF-021..030) ────────────
         # Each setting disables the trusted-source channel for any
         # in-image install (PW.4.4 verify failure) and tampers

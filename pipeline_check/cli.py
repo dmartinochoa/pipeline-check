@@ -171,7 +171,7 @@ class _GroupedCommand(click.Command):
             "--helm-values", "--helm-set", "--oci-manifest",
             "--drone-path", "--npm-path", "--pypi-path",
             "--maven-path", "--nuget-path", "--gomod-path",
-            "--cargo-path",
+            "--cargo-path", "--pulumi-path",
         })),
         ("Filtering", frozenset({
             "--checks", "--severity-threshold", "--min-confidence",
@@ -633,6 +633,7 @@ _PROVIDER_DETECT_FILES: tuple[tuple[str, tuple[str, ...], tuple[str, ...]], ...]
     ("nuget", ("Directory.Packages.props",), ()),
     ("gomod", ("go.mod",), ()),
     ("cargo", ("Cargo.toml",), ()),
+    ("pulumi", ("Pulumi.yaml",), ()),
     ("terraform", ("main.tf",), ()),
     (
         "cloudformation",
@@ -751,6 +752,7 @@ _PROVIDER_PATH_KWARG: dict[str, str] = {
     "nuget": "nuget_path",
     "gomod": "gomod_path",
     "cargo": "cargo_path",
+    "pulumi": "pulumi_path",
 }
 
 
@@ -1500,6 +1502,16 @@ def _install_completion_callback(
         "Path to a Cargo.toml file or a directory containing one "
         "(required when --pipeline cargo). Auto-detects "
         "./Cargo.toml."
+    ),
+)
+@click.option(
+    "--pulumi-path",
+    default=None,
+    metavar="PATH",
+    help=(
+        "Path to a Pulumi.yaml file or a directory containing one "
+        "(required when --pipeline pulumi). Auto-detects "
+        "./Pulumi.yaml."
     ),
 )
 @click.option(
@@ -2299,6 +2311,7 @@ def scan(
     nuget_path: str | None,
     gomod_path: str | None,
     cargo_path: str | None,
+    pulumi_path: str | None,
     helm_values: tuple[str, ...],
     helm_set: tuple[str, ...],
     oci_manifest: str | None,
@@ -2835,6 +2848,12 @@ def scan(
                 candidates=("Cargo.toml",),
                 detect_label="Cargo.toml",
             )
+        elif pipeline_lc == "pulumi":
+            pulumi_path = _resolve_provider_path(
+                "pulumi", flag="pulumi-path", value=pulumi_path,
+                candidates=("Pulumi.yaml",),
+                detect_label="Pulumi.yaml",
+            )
 
     if output == "html" and not output_file:
         raise click.UsageError(
@@ -3006,6 +3025,7 @@ def scan(
         nuget_path=nuget_path,
         gomod_path=gomod_path,
         cargo_path=cargo_path,
+        pulumi_path=pulumi_path,
         scm_platform=scm_platform,
         scm_repo=scm_repo,
         scm_fixture_dir=scm_fixture_dir,
@@ -3228,6 +3248,7 @@ def scan(
             nuget_path=nuget_path,
             gomod_path=gomod_path,
             cargo_path=cargo_path,
+            pulumi_path=pulumi_path,
         )
         _debug(f"--pr-diff: forwarded argv = {forwarded_argv}")
         head_findings_raw = [f.to_dict() for f in findings]
@@ -3468,6 +3489,7 @@ def scan(
             "nuget_path": nuget_path,
             "gomod_path": gomod_path,
             "cargo_path": cargo_path,
+            "pulumi_path": pulumi_path,
         }
         inline_index = _collect_inline_ignores(active_pipelines, path_kwargs)
 
@@ -3651,6 +3673,7 @@ def _build_pr_diff_subprocess_argv(
     nuget_path: str | None,
     gomod_path: str | None = None,
     cargo_path: str | None = None,
+    pulumi_path: str | None = None,
 ) -> list[str]:
     """Build the argv for the BASE-side ``pipeline_check`` subprocess.
 
@@ -3721,6 +3744,7 @@ def _build_pr_diff_subprocess_argv(
         ("--nuget-path", nuget_path),
         ("--gomod-path", gomod_path),
         ("--cargo-path", cargo_path),
+        ("--pulumi-path", pulumi_path),
     )
     for flag, value in _path_pairs:
         if value:

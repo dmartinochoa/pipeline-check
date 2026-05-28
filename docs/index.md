@@ -22,7 +22,7 @@ hide:
 # Catch supply-chain risks <span class="accent">before they ship.</span>
 
 <p class="pg-hero__lede">
-A read-only scanner for 29 providers, graded against 18 compliance frameworks. 
+A read-only scanner for 30 providers, graded against 18 compliance frameworks. 
 111 of the 1000+ checks also emit a one-shot patch you can apply with <code>--fix</code>.
 </p>
 
@@ -56,7 +56,7 @@ A read-only scanner for 29 providers, graded against 18 compliance frameworks.
 <section class="pg-stats" data-reveal>
 <div class="pg-stats__inner">
   <div class="pg-stat"><div class="pg-stat__num" data-count-to="1000">1000+</div><div class="pg-stat__label">Checks</div></div>
-  <div class="pg-stat"><div class="pg-stat__num" data-count-to="29">29</div><div class="pg-stat__label">Providers</div></div>
+  <div class="pg-stat"><div class="pg-stat__num" data-count-to="30">30</div><div class="pg-stat__label">Providers</div></div>
   <div class="pg-stat"><div class="pg-stat__num" data-count-to="18">18</div><div class="pg-stat__label">Compliance standards</div></div>
   <div class="pg-stat"><div class="pg-stat__num" data-count-to="111">111</div><div class="pg-stat__label">Autofixers</div></div>
 </div>
@@ -215,6 +215,7 @@ to force one. Counts reflect the current rule catalog.
   <a class="pg-provider" href="providers/gcp/"><span class="pg-provider__name">GCP</span><span class="pg-provider__count">{{ providers.gcp.checks }}</span></a>
   <a class="pg-provider" href="providers/terraform/"><span class="pg-provider__name">Terraform</span><span class="pg-provider__count">{{ providers.terraform.checks }}</span></a>
   <a class="pg-provider" href="providers/cloudformation/"><span class="pg-provider__name">CloudFormation</span><span class="pg-provider__count">{{ providers.cloudformation.checks }}</span></a>
+  <a class="pg-provider" href="providers/pulumi/"><span class="pg-provider__name">Pulumi</span><span class="pg-provider__count">{{ providers.pulumi.checks }}</span></a>
 </div>
 
 <div class="pg-provider-group" data-stagger>

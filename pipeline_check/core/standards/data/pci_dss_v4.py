@@ -616,6 +616,13 @@ STANDARD = Standard(
         "CARGO-004": ["6.3.1"],                  # local-path Cargo dependency
         "CARGO-005": ["6.3.1"],                  # alternate-registry Cargo dependency
         "CARGO-006": ["6.3.1", "6.3.3"],         # known-compromised crate version
+        # ── Pulumi ──
+        "PULUMI-001": ["8.2.1"],        # passphrase secretsprovider
+        "PULUMI-002": ["8.2.1"],        # secret-shaped config plaintext
+        "PULUMI-003": ["8.2.1"],        # hardcoded credentials in source
+        "PULUMI-004": ["10.3.2", "8.2.1"],       # insecure state backend
+        "PULUMI-005": ["7.2.1"],                 # wildcard IAM policy in source
+        "PULUMI-006": ["7.2.1"],                 # StackReference unguarded
         # ── OCI image manifest gaps ──────────────────────────────
         "OCI-001":  ["6.5.1", "10.3.2"],                 # provenance annotations missing
         "OCI-002":  ["6.5.1", "10.3.2"],                 # build attestation missing

@@ -635,6 +635,13 @@ STANDARD = Standard(
         "CARGO-004": ["1.4.1"],                    # local-path Cargo dependency
         "CARGO-005": ["1.4.1"],                    # alternate-registry Cargo dependency
         "CARGO-006": ["1.4.1", "1.1.8"],           # known-compromised crate version
+        # ── Pulumi (PULUMI-001..006) ──
+        "PULUMI-001": ["1.5.1"],                   # passphrase secretsprovider
+        "PULUMI-002": ["1.5.1"],                   # secret-shaped config plaintext
+        "PULUMI-003": ["1.5.1"],                   # hardcoded credentials in source
+        "PULUMI-004": ["1.5.1"],                   # insecure state backend
+        "PULUMI-005": ["1.3.4"],                   # wildcard IAM policy in source
+        "PULUMI-006": ["1.4.1"],                   # StackReference unguarded
         # ── Cross-cutting dataflow / taint engine ───────��─────────
         # The taint family flags cross-step / cross-job flows where
         # untrusted input reaches a privileged sink. That's the

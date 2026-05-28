@@ -657,6 +657,13 @@ STANDARD = Standard(
         "CARGO-004": ["ESF-S-VERIFY-DEPS"],
         "CARGO-005": ["ESF-S-VERIFY-DEPS"],
         "CARGO-006": ["ESF-S-VERIFY-DEPS"],
+        # ── Pulumi ──
+        "PULUMI-001": ["ESF-D-SECRETS"],
+        "PULUMI-002": ["ESF-D-SECRETS"],
+        "PULUMI-003": ["ESF-D-SECRETS"],
+        "PULUMI-004": ["ESF-S-PROVENANCE"],
+        "PULUMI-005": ["ESF-C-LEAST-PRIV"],
+        "PULUMI-006": ["ESF-C-LEAST-PRIV"],
         # ── OCI image manifest gaps ──────────────────────────────
         # Provenance metadata + integrity → ESF-S-PROVENANCE +
         # ESF-D-SBOM. Foreign-layer URL → ESF-S-TRUSTED-REG. Schema

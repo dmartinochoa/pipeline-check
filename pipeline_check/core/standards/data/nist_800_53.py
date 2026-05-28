@@ -654,6 +654,13 @@ STANDARD = Standard(
         "CARGO-004": ["CM-7", "SR-3"],                  # local-path Cargo dependency
         "CARGO-005": ["CM-7", "SR-3"],                  # alternate-registry Cargo dependency
         "CARGO-006": ["SI-2", "SR-3"],                  # known-compromised crate version
+        # ── Pulumi (PULUMI-001..006) ──
+        "PULUMI-001": ["SC-13", "SC-12"],                # passphrase secretsprovider
+        "PULUMI-002": ["IA-5", "SC-28"],                 # secret-shaped config plaintext
+        "PULUMI-003": ["IA-5", "SC-28"],                 # hardcoded credentials in source
+        "PULUMI-004": ["AU-9", "SC-8"],                  # insecure state backend
+        "PULUMI-005": ["AC-6", "AC-3"],                  # wildcard IAM policy in source
+        "PULUMI-006": ["AC-3", "CM-7"],                  # StackReference unguarded
         # ── OCI image manifest gaps ──────────────────────────────
         "OCI-001":  ["SR-4", "CM-8"],                    # provenance annotations missing
         "OCI-002":  ["SI-7", "SR-4"],                    # build attestation missing

@@ -64,6 +64,7 @@ EXPECTED_RULE_COUNTS: dict[str, int] = {
     "nuget":      10,
     "gomod":       6,
     "cargo":       6,
+    "pulumi":      6,
 }
 
 

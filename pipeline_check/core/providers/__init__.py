@@ -38,6 +38,7 @@ from .maven import MavenProvider
 from .npm import NpmProvider
 from .nuget import NuGetProvider
 from .oci import OCIProvider
+from .pulumi import PulumiProvider
 from .pypi import PypiProvider
 from .scm import SCMProvider
 from .tekton import TektonProvider
@@ -93,3 +94,4 @@ register(MavenProvider())
 register(NuGetProvider())
 register(GoModProvider())
 register(CargoProvider())
+register(PulumiProvider())

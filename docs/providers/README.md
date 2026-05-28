@@ -98,6 +98,11 @@ requires editing `Scanner`, `Reporter`, or the CLI.
     <p>Parses YAML or JSON templates with intrinsic-function resolution (<code>!Ref</code>, <code>!Sub</code>, <code>!GetAtt</code>).</p>
     <span class="pg-doc-card__meta">{{ providers.cloudformation.checks }}</span>
   </a>
+  <a class="pg-doc-card" href="pulumi/">
+    <h3>Pulumi</h3>
+    <p>Parses <code>Pulumi.yaml</code> + <code>Pulumi.&lt;stack&gt;.yaml</code> plus source files (Python / TypeScript / Go / C#). Secrets-provider posture, plaintext credentials, wildcard IAM policies, insecure state backend, unguarded StackReference.</p>
+    <span class="pg-doc-card__meta">{{ providers.pulumi.checks }}</span>
+  </a>
 </div>
 
 ### Containers & deployment
