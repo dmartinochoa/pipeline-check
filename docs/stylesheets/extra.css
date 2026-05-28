@@ -3880,7 +3880,7 @@ body:has(.pg-home) .md-search__form:focus-within,
   [data-reveal-light] {
     transition-duration: 0.4s;
   }
-  [data-reveal].is-visible {
+  [data-reveal][data-revealed] {
     opacity: 1;
     transform: translateY(0);
   }
@@ -3890,7 +3890,7 @@ body:has(.pg-home) .md-search__form:focus-within,
 @keyframes pg-reveal-fallback {
   to { opacity: 1; transform: none; }
 }
-[data-reveal]:not(.is-visible) {
+[data-reveal]:not([data-revealed]) {
   animation: pg-reveal-fallback 0s 3s forwards;
 }
 
@@ -3906,7 +3906,7 @@ body:has(.pg-home) .md-search__form:focus-within,
                 transform 0.4s var(--ease-out);
     transition-delay: calc(var(--stagger-i, 0) * 60ms);
   }
-  [data-stagger].is-visible > * {
+  [data-stagger][data-revealed] > * {
     opacity: 1;
     transform: translateY(0);
   }
@@ -3917,14 +3917,14 @@ body:has(.pg-home) .md-search__form:focus-within,
    ============================================================ */
 
 @media (prefers-reduced-motion: no-preference) {
-  .pg-pipeline.is-visible .pg-pipe:not(:last-child)::after {
+  .pg-pipeline[data-revealed] .pg-pipe:not(:last-child)::after {
     animation: pg-line-draw 0.4s var(--ease-out) forwards;
     animation-delay: calc(var(--stagger-i, 0) * 60ms + 200ms);
     transform-origin: left center;
     transform: translateY(-50%) scaleX(0);
   }
 
-  .pg-pipeline.is-visible .pg-pipe:not(:last-child)::before {
+  .pg-pipeline[data-revealed] .pg-pipe:not(:last-child)::before {
     animation: pg-arrow-pop 0.2s var(--ease-out) forwards;
     animation-delay: calc(var(--stagger-i, 0) * 60ms + 400ms);
     opacity: 0;

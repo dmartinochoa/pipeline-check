@@ -107,6 +107,25 @@ release commit collapses this section into `## [X.Y.Z] - <date>`.
   explains the pattern so future fixture authors know no manual
   exemption is needed.
 
+### Fixed
+
+- **Doc-site tables lose their outline after instant-nav revisit.**
+  The scroll-reveal animation in ``docs/javascripts/animations.js``
+  tagged ``.md-typeset table:not([class])`` elements with
+  ``data-reveal`` and, on intersection, added an ``is-visible`` class.
+  The added class caused the 13 table-style rules in
+  ``docs/stylesheets/extra.css`` keyed on ``table:not([class])``
+  (border, border-radius, ``overflow:hidden``, padding, hover
+  striping) to stop matching, so revealed tables rendered without
+  their outline. The asymmetry between cold load and revisit came
+  from Material's ``navigation.instant``: on a fresh navigation the
+  chrome wasn't laid out when ``getBoundingClientRect()`` ran, so
+  tables read under the 600px cutoff and never got tagged; on
+  revisit positions measured correctly and the bug bit. Switched
+  the reveal marker from ``.is-visible`` (class) to ``data-revealed``
+  (attribute) across both files, so the marker no longer disturbs
+  ``:not([class])`` selectors.
+
 ## [1.5.0] - 2026-05-27
 
 ### Added
