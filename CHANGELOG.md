@@ -10,6 +10,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 PRs landing on `dev` between releases append entries below. The
 release commit collapses this section into `## [X.Y.Z] - <date>`.
 
+## [1.6.0] - 2026-05-29
+
 ### Added
 
 - **Composer + RubyGems graduated from 8 to 10 rules each (4 new
@@ -218,6 +220,58 @@ release commit collapses this section into `## [X.Y.Z] - <date>`.
 
 ### Fixed
 
+- **Full-feature bug-review sweep (high + medium severity).** Nine
+  fixes from a review of the engine and feature surface:
+  1. **Remote-resolve SSRF via HTTP redirect (high).** The GitLab
+     ``include: { remote: }`` fetcher and the GitHub raw fetcher
+     rejected non-``https://`` URLs on the first hop but followed 3xx
+     redirects to any scheme, so an ``https`` include could redirect to
+     ``http://169.254.169.254/...`` or another internal host. Both now
+     fetch through a shared ``HTTPSOnlyRedirectHandler`` opener
+     (``_primitives/safe_http.py``) that refuses any redirect to a
+     non-https target.
+  2. **PyPI secret verifier promoted dead tokens.** A GET to
+     ``upload.pypi.org/legacy/`` returns ``405`` regardless of the
+     credential, but the verifier read ``405`` as VERIFIED, promoting
+     any PyPI-shaped string to CRITICAL. It now reports UNKNOWN.
+  3. **Google API-key verifier promoted invalid keys.** A
+     ``400 INVALID_ARGUMENT`` (returned for an invalid key) was mapped
+     to VERIFIED. The verifier now reserves VERIFIED for a ``200`` and
+     classifies the invalid-key error as UNVERIFIED.
+  4. **OSV cached truncated responses as clean.** A batch response with
+     fewer result entries than queries left the unpaired packages
+     looking advisory-free and cached them as clean for the TTL,
+     suppressing real advisories. A length mismatch is now treated as a
+     batch error (warned, not cached).
+  5. **GitLab include cache key ignored the host.** The on-disk cache
+     keyed on ``project:file@ref`` with no GitLab host, so the same
+     project path on two ``--gitlab-url`` instances collided. The key
+     is now host-scoped.
+  6. **Cross-repo chains dropped reverse-direction pairs.** All four
+     CXPC matchers deduped on an unordered ``(min, max)`` repo key, so
+     ``X->Y`` and ``Y->X`` collapsed into one when both repos satisfied
+     both legs. The key is now the ordered ``(repo_a, repo_b)`` pair.
+  7. **Terminal reporter leaked Rich markup.** Finding and chain
+     ``title`` / ``resource`` / ``description`` / ``recommendation`` /
+     ``cwe`` / narrative fields were interpolated into Rich tables and
+     panels without escaping (only ``exploit_example`` was escaped), so
+     bracketed content was parsed as style markup and stripped. All
+     user content now passes through ``rich.markup.escape``.
+  8. **Autofix ``--apply`` flipped line endings on Windows.** Files
+     were read with universal newlines and rewritten in text mode,
+     converting a pure-LF file to CRLF on Windows. The apply path now
+     reads and writes with ``newline=""`` and re-applies the detected
+     ending, so only patched lines change.
+  9. **Docker / package-install flag fixers reclassified unsafe.**
+     ``_strip_docker_flags`` (GHA-017 family) and ``_strip_pkg_flags``
+     (GHA-018 family) are whole-file strips that can remove a benign
+     flag on a command other than the flagged one, changing job
+     runtime. They are now ``safety="unsafe"`` so they only run under
+     ``--fix=unsafe``.
+  Also: ``history --dir`` pointed at a fleet ``--output-dir`` ingested
+  the ``fleet.json`` aggregate as a bogus score-0 snapshot; non
+  scan-output JSON (no ``score``/``findings``) is now skipped with a
+  warning.
 - **Code-review sweep on the post-v1.5 cycle.** Fifteen findings from
   a high-effort review of the GitLab Code Quality reporter,
   ``--inline-explain`` feature, docs-site fix, and action.yml

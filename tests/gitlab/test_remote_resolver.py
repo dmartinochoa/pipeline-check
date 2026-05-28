@@ -12,6 +12,8 @@ from pathlib import Path
 from typing import Any
 from unittest.mock import MagicMock, patch
 
+import pytest
+
 from pipeline_check.core.checks.gitlab.base import (
     GitLabContext,
     Pipeline,
@@ -84,6 +86,60 @@ class TestFetcherRemote:
         })
         assert result is None
         assert fetcher.stats.failed == 1
+
+    def test_redirect_to_http_blocked(self):
+        # The https-only guard must also hold across a redirect: an
+        # https remote that 302s to http://169.254.169.254/... is an
+        # SSRF downgrade and must be refused, not followed.
+        import urllib.error
+
+        from pipeline_check.core.checks._primitives.safe_http import (
+            HTTPSOnlyRedirectHandler,
+        )
+
+        handler = HTTPSOnlyRedirectHandler()
+        with pytest.raises(urllib.error.HTTPError):
+            handler.redirect_request(
+                req=None,  # type: ignore[arg-type]
+                fp=None,  # type: ignore[arg-type]
+                code=302,
+                msg="Found",
+                headers=None,  # type: ignore[arg-type]
+                newurl="http://169.254.169.254/latest/meta-data/",
+            )
+
+
+class TestCacheKeyHostScoping:
+    def test_same_project_different_host_no_collision(self):
+        # The on-disk cache key must include the GitLab host so the same
+        # project path on two instances can't collide and serve one
+        # host's bytes for the other.
+        class _DictCache:
+            def __init__(self) -> None:
+                self.store: dict[str, bytes] = {}
+
+            def get(self, key: str) -> bytes | None:
+                return self.store.get(key)
+
+            def put(self, key: str, data: bytes) -> None:
+                self.store[key] = data
+
+        cache = _DictCache()
+        spec = {"project": "group/proj", "file": "/ci.yml", "ref": "HEAD"}
+
+        f_com = GitLabIncludeFetcher(
+            gitlab_url="https://gitlab.com", cache=cache,  # type: ignore[arg-type]
+        )
+        with patch.object(f_com, "_api_get", return_value=b"from-dot-com"):
+            assert f_com.fetch("project", spec) == b"from-dot-com"
+
+        f_self = GitLabIncludeFetcher(
+            gitlab_url="https://gitlab.internal", cache=cache,  # type: ignore[arg-type]
+        )
+        with patch.object(f_self, "_api_get", return_value=b"from-internal"):
+            assert f_self.fetch("project", spec) == b"from-internal"
+
+        assert len(cache.store) == 2
 
 
 class TestFetcherTemplate:

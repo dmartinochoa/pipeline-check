@@ -3884,6 +3884,12 @@ def _apply_fix_patches(findings: list[Any], *, tier: str = "safe") -> None:
     import os
     cache: dict[str, str] = {}
     dirty: dict[str, str] = {}  # path → final content
+    # Original line ending per path. Reading in text mode normalizes
+    # CRLF to "\n" in memory, and writing in text mode would translate
+    # "\n" back to os.linesep, silently flipping a pure-LF file to CRLF
+    # on Windows. Detect the original ending and re-apply it on write so
+    # only the patched lines change.
+    newlines: dict[str, str] = {}
     for f in findings:
         if f.passed:
             continue
@@ -3893,10 +3899,12 @@ def _apply_fix_patches(findings: list[Any], *, tier: str = "safe") -> None:
         before = dirty[path] if path in dirty else cache.get(path)
         if before is None:
             try:
-                with open(path, encoding="utf-8") as fh:
-                    before = fh.read()
+                with open(path, encoding="utf-8", newline="") as fh:
+                    raw = fh.read()
             except (OSError, UnicodeDecodeError):
                 continue
+            newlines[path] = "\r\n" if "\r\n" in raw else "\n"
+            before = raw.replace("\r\n", "\n")
             cache[path] = before
         try:
             after = _autofix.generate_fix(f, before, tier=tier)
@@ -3910,8 +3918,11 @@ def _apply_fix_patches(findings: list[Any], *, tier: str = "safe") -> None:
             continue
         dirty[path] = after
     for path, content in dirty.items():
+        eol = newlines.get(path, "\n")
+        if eol != "\n":
+            content = content.replace("\n", eol)
         try:
-            with open(path, "w", encoding="utf-8") as fh:
+            with open(path, "w", encoding="utf-8", newline="") as fh:
                 fh.write(content)
         except OSError as exc:
             click.echo(f"[autofix] could not write {path}: {exc}", err=True)

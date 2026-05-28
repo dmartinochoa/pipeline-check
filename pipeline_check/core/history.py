@@ -247,6 +247,17 @@ def load_history(directory: Path | str) -> HistoryReport:
         if not isinstance(doc, dict):
             warnings.append(f"{f.name}: top-level JSON is not an object")
             continue
+        if "score" not in doc and "findings" not in doc:
+            # Not a scan-output document. A fleet ``fleet.json``
+            # aggregate (``snapshots`` / ``warnings`` keys) lives in the
+            # same directory when ``--dir`` points at a fleet
+            # ``--output-dir``; coercing it to a score-0 snapshot would
+            # plant a bogus zero point on the trend. Skip it instead.
+            warnings.append(
+                f"{f.name}: not a scan-output JSON "
+                "(no score/findings); skipped"
+            )
+            continue
         ts = _parse_timestamp_from_name(f.name)
         if ts is None:
             # File rotated / deleted between read and stat: log a

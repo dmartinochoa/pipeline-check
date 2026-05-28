@@ -78,7 +78,11 @@ def match_cross_repo(
         for repo_b, fb in leg_b:
             if repo_a == repo_b:
                 continue
-            pair_key = (min(repo_a, repo_b), max(repo_a, repo_b))
+            # Directional key: the chain runs producer -> consumer, so
+            # X->Y and Y->X are distinct attack paths and must not
+            # collapse into one (an unordered min/max key drops the
+            # reverse direction when both repos satisfy both legs).
+            pair_key = (repo_a, repo_b)
             if pair_key in seen:
                 continue
             seen.add(pair_key)

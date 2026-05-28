@@ -2,10 +2,40 @@
 from __future__ import annotations
 
 import json
+from types import SimpleNamespace
 
 from click.testing import CliRunner
 
+from pipeline_check import cli
 from pipeline_check.cli import scan
+
+
+def test_apply_preserves_line_endings(tmp_path, monkeypatch):
+    """``--apply`` must not flip a pure-LF file to CRLF on Windows.
+
+    The file is read with universal newlines (CRLF -> ``\\n``); writing
+    in text mode would translate ``\\n`` back to ``os.linesep``. The fix
+    reads/writes with ``newline=""`` and re-applies the detected ending,
+    so only the patched line changes.
+    """
+    def fake_generate_fix(f, before, *, tier):
+        return before.replace("line2", "FIXED")
+
+    monkeypatch.setattr(cli._autofix, "generate_fix", fake_generate_fix)
+
+    lf = tmp_path / "lf.yml"
+    lf.write_bytes(b"line1\nline2\nline3\n")
+    crlf = tmp_path / "crlf.yml"
+    crlf.write_bytes(b"line1\r\nline2\r\nline3\r\n")
+
+    findings = [
+        SimpleNamespace(passed=False, resource=str(lf), check_id="X"),
+        SimpleNamespace(passed=False, resource=str(crlf), check_id="Y"),
+    ]
+    cli._apply_fix_patches(findings, tier="safe")
+
+    assert lf.read_bytes() == b"line1\nFIXED\nline3\n"
+    assert crlf.read_bytes() == b"line1\r\nFIXED\r\nline3\r\n"
 
 
 def _write_unfixed_workflow(tmp_path):
