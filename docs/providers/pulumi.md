@@ -36,7 +36,7 @@ pipeline_check --pipeline pulumi --pulumi-path ./infra/
 
 ## What it covers
 
-6 checks · 0 have an autofix patch (``--fix``).
+10 checks · 0 have an autofix patch (``--fix``).
 
 | Check | Title | Severity | Fix |
 |-------|-------|----------|-----|
@@ -46,6 +46,10 @@ pipeline_check --pipeline pulumi --pulumi-path ./infra/
 | [PULUMI-004](#pulumi-004) | Pulumi project uses an insecure state backend | <span class="pg-sev pg-sev--medium">MEDIUM</span> |  |
 | [PULUMI-005](#pulumi-005) | Pulumi source declares an IAM policy with wildcard action + resource | <span class="pg-sev pg-sev--high">HIGH</span> |  |
 | [PULUMI-006](#pulumi-006) | Pulumi source uses StackReference without project/org guard | <span class="pg-sev pg-sev--medium">MEDIUM</span> |  |
+| [PULUMI-007](#pulumi-007) | Pulumi source declares a publicly accessible cloud resource | <span class="pg-sev pg-sev--high">HIGH</span> |  |
+| [PULUMI-008](#pulumi-008) | Pulumi source spawns a shell with non-constant input | <span class="pg-sev pg-sev--high">HIGH</span> |  |
+| [PULUMI-009](#pulumi-009) | Pulumi.yaml runtime does not match any source file | <span class="pg-sev pg-sev--medium">MEDIUM</span> |  |
+| [PULUMI-010](#pulumi-010) | Pulumi stack carries both encryptionsalt and a cloud-KMS provider | <span class="pg-sev pg-sev--medium">MEDIUM</span> |  |
 
 ---
 
@@ -266,6 +270,163 @@ Variable / interpolated args (``new StackReference(stackName)``) are skipped —
 **Recommended action**
 
 Always pass the fully-qualified ``<org>/<project>/<stack>`` form to ``new StackReference(...)``. The 3-segment form binds the reference to a specific organization and project; a bare stack name (``"prod"``) resolves against whichever org/project the current Pulumi login is pointing at, which can drift between developers and across CI runners. The drift turns into a data-leakage primitive when an attacker who can influence the login binding swaps the referenced stack for one they control. The fully-qualified form also serves as the audit-trail anchor — a reviewer can grep the source for the explicit org/project pair and verify the cross-stack flow.
+
+</div>
+
+</div>
+
+<div class="pg-rule pg-rule--high" markdown>
+
+## PULUMI-007: Pulumi source declares a publicly accessible cloud resource { #pulumi-007 }
+
+<div class="pg-rule__tags">
+<span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-2</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-6</span> <span class="pg-tag pg-tag--esf">ESF-S-LEAST-PRIV</span> <span class="pg-tag pg-tag--cwe">CWE-732</span> <span class="pg-tag pg-tag--cwe">CWE-200</span>
+</div>
+
+Scans every source file in the Pulumi project root for high-confidence public-access patterns across the three major clouds:
+
+* AWS S3 bucket: ``acl: 'public-read'`` / ``'public-read-write'``, ``aws.s3.BucketAcl.PublicRead``, or a ``BucketPolicy`` granting ``Principal: '*'``.
+* Azure Storage container: ``publicAccess: 'Container'`` / ``'Blob'``.
+* GCP Storage bucket: ``predefinedAcl: 'publicRead'`` / ``'publicReadWrite'``.
+
+Each pattern matches the canonical wire format so the false-positive surface is small. Patterns operate syntactically — a comment containing the literal ``'public-read'`` won't trip the matcher unless the string also appears in a key-value position.
+
+**Known false-positive modes**
+
+- Public-facing static-content buckets that legitimately need public read access trip this rule by design. Suppress per source file with a one-line rationale naming the bucket's content type and the operator's review of the published data.
+
+**Seen in the wild**
+
+- AWS S3 public-bucket disclosure incidents are a long-running pattern: misconfigured ACLs expose customer data, internal documents, and credential files to anyone with the bucket URL. Cloud providers' own audit reports rank public-bucket misconfigurations among the top sources of disclosure.
+
+<div class="pg-rule__rec" markdown>
+
+**Recommended action**
+
+Remove the public-access setting from every flagged resource. Three remediation patterns by cloud:
+
+* AWS S3: set ``acl: aws.s3.BucketAcl.Private`` (or drop the ``acl:`` argument entirely; the default is private) and attach a bucket policy that names exactly the principals that need access. For static-content buckets, front the bucket with a CloudFront distribution + OAI rather than enabling public read.
+* Azure Blob: set ``publicAccess: 'None'`` on storage containers and grant access via SAS tokens / RBAC scoped to specific principals.
+* GCP Storage: drop ``predefinedAcl: 'publicRead'`` / ``'publicReadWrite'`` and use IAM bindings scoped to the principals that need access. Public buckets in GCP also need uniform bucket-level access enabled to prevent ACL-driven escape.
+
+Where the resource genuinely needs public access (public-facing static site, public API), document the intent inline alongside the declaration and confirm the bucket / container content has no sensitive data.
+
+</div>
+
+</div>
+
+<div class="pg-rule pg-rule--high" markdown>
+
+## PULUMI-008: Pulumi source spawns a shell with non-constant input { #pulumi-008 }
+
+<div class="pg-rule__tags">
+<span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-5</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-3</span> <span class="pg-tag pg-tag--esf">ESF-D-INJECTION</span> <span class="pg-tag pg-tag--cwe">CWE-78</span> <span class="pg-tag pg-tag--cwe">CWE-94</span>
+</div>
+
+Scans every source file for canonical shell-exec primitives that take a single string argument (implying shell interpolation rather than argv array passing):
+
+* Node: ``child_process.exec(...)``, ``child_process.execSync(...)``
+* Python: ``os.system(...)``, ``subprocess.run(..., shell=True)``, ``subprocess.Popen(..., shell=True)``
+* Go: ``exec.Command("sh", "-c", ...)``
+* C#: ``Process.Start("cmd.exe", "/c ...")``
+
+argv-array forms (``child_process.spawn(cmd, [args])``, ``subprocess.run([cmd, *args])``) are skipped — those don't go through a shell and aren't injection primitives in the same way. The rule's focus is on the *shell* path.
+
+**Known false-positive modes**
+
+- Some deploy-time scripts legitimately use shell-exec for portability across CI runners. The right fix is to switch to argv-array forms or a Pulumi-native resource; suppress per file with a one-line rationale when the alternative is impractical.
+
+**Seen in the wild**
+
+- Pattern in Pulumi programs that grew organically out of shell scripts: deployment automation logic that used to be a bash script gets ported to Pulumi by wrapping the original shell-exec calls. The Pulumi program runs with the orchestrator's identity (often broader than the original script's), so the injection-surface inheritance is amplified by the scope expansion.
+
+<div class="pg-rule__rec" markdown>
+
+**Recommended action**
+
+Pulumi programs run at deployment-orchestration time, on a developer's machine or a CI runner with whatever credentials the orchestrator carries. Spawning a shell from inside the Pulumi program — especially with input derived from config, stack outputs, or environment variables — turns the program itself into a command-injection primitive: anyone who can influence the config value (a stack-config push, a promoted stack output, a CI env var) executes arbitrary shell with the orchestrator's identity.
+
+Replace shell-exec primitives with one of:
+
+* A native Pulumi resource (``aws.s3.Bucket``, ``kubernetes.helm.v3.Release``) instead of ``exec("aws s3 mb")`` / ``exec("helm install")``. Pulumi's resource model carries the desired-state + diff semantics that command-line invocation lacks.
+* For one-shot deploy-time operations that have no Pulumi resource (running a database migration), use ``pulumi.Command`` (the official command-resource package) with explicit string arrays rather than concatenated shell snippets — the args array bypasses shell-interpolation entirely.
+
+</div>
+
+</div>
+
+<div class="pg-rule pg-rule--medium" markdown>
+
+## PULUMI-009: Pulumi.yaml runtime does not match any source file { #pulumi-009 }
+
+<div class="pg-rule__tags">
+<span class="pg-sev pg-sev--medium">MEDIUM</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-3</span> <span class="pg-tag pg-tag--esf">ESF-S-VERIFY-DEPS</span> <span class="pg-tag pg-tag--cwe">CWE-1357</span>
+</div>
+
+Reads ``Pulumi.yaml`` ``runtime:`` and checks whether the project root contains at least one source file matching the runtime's expected extension set. The language-extension map mirrors the recognition logic in the loader (``__main__.py``, ``index.ts``, ``main.go``, ``Program.cs``, ``*.java``).
+
+Projects with multiple language directories under a single Pulumi.yaml (a rare layout) pass when at least one source matches; the rule's intent is to catch the common 'wrong runtime' case, not enforce a single-language project tree.
+
+**Known false-positive modes**
+
+- Multi-language projects where the Pulumi runtime wraps another language (a custom Pulumi component shipped in one language but invoked from another) may legitimately have a runtime declaration that doesn't match the top-level source. Suppress per project with a one-line rationale.
+
+**Seen in the wild**
+
+- Pattern in repositories that migrated from one Pulumi runtime to another (e.g. Python to TypeScript) without updating Pulumi.yaml: ``pulumi up`` either fails confusingly (loader can't find a matching entry-point) or — in the worst case — silently runs against a stale entry-point file the migration left behind.
+
+<div class="pg-rule__rec" markdown>
+
+**Recommended action**
+
+Align ``Pulumi.yaml``'s ``runtime:`` declaration with the language of the source files in the project. The five recognized runtimes:
+
+* ``python`` -> ``__main__.py`` / ``*.py``
+* ``nodejs`` -> ``index.ts`` / ``index.js`` / ``*.ts``
+* ``go`` -> ``main.go`` / ``*.go``
+* ``dotnet`` -> ``Program.cs`` / ``*.cs`` / ``*.fs``
+* ``java`` -> ``*.java``
+
+A mismatch — ``runtime: python`` with TypeScript sources, or no source files matching the runtime — means ``pulumi up`` either fails outright or, worse, succeeds against an unintended entry-point file the operator didn't review. Adjusting the runtime declaration to match the actual source language is usually a one-line fix; investigate the underlying cause if the mismatch suggests deeper drift.
+
+</div>
+
+</div>
+
+<div class="pg-rule pg-rule--medium" markdown>
+
+## PULUMI-010: Pulumi stack carries both encryptionsalt and a cloud-KMS provider { #pulumi-010 }
+
+<div class="pg-rule__tags">
+<span class="pg-sev pg-sev--medium">MEDIUM</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-6</span> <span class="pg-tag pg-tag--esf">ESF-D-SECRETS</span> <span class="pg-tag pg-tag--cwe">CWE-323</span>
+</div>
+
+Reads ``Pulumi.<stack>.yaml`` and fires when both ``encryptionsalt:`` and ``secretsprovider:`` are set AND the provider URL is a cloud-KMS scheme (``awskms://`` / ``azurekeyvault://`` / ``gcpkms://`` / ``hashivault://``). The shape signals a post-migration stack file where the operator switched to cloud KMS but didn't drop the old passphrase salt.
+
+Distinct from PULUMI-001 (passphrase secretsprovider — active passphrase encryption). This rule catches the cleanup-debt case where KMS is active but evidence of the old passphrase posture lingers.
+
+**Known false-positive modes**
+
+- Operators who deliberately want to maintain the passphrase-recovery option as a safety net trip this rule by design. The right migration discipline is to drop the salt; suppress per file if the operational policy genuinely requires the dual-encryption-recovery fallback.
+
+**Seen in the wild**
+
+- Pattern in Pulumi-using teams that migrate from passphrase to cloud KMS for secrets management: the stack file's ``encryptionsalt`` line is left in place for 'safety' or 'in case we need to roll back', the migration documentation never reaches the cleanup step. The lingering salt becomes the compromise-of-last-resort path if the cloud KMS provider is ever bypassed.
+
+<div class="pg-rule__rec" markdown>
+
+**Recommended action**
+
+Remove the stale ``encryptionsalt`` line from ``Pulumi.<stack>.yaml`` once every secret value has been re-encrypted under the new cloud-KMS provider. The migration sequence is:
+
+1. ``pulumi stack change-secrets-provider "<kms-url>"``. Pulumi rotates every ``secure:`` entry through the new provider and writes the wrapped DEK to ``encryptedkey:``.
+2. Manually drop the ``encryptionsalt`` line from the stack file — Pulumi keeps it during the migration as a safety net but doesn't auto-delete.
+
+Without the cleanup, the stack file documents two incompatible encryption posts (passphrase-derived salt + KMS-managed DEK), which:
+
+* Confuses operator audit (which posture is in force?).
+* Leaves the salt in git history, which is the only secret-bearing artifact a future attacker would need if the operator ever reverts to the passphrase provider for a single secret.
+* Trips static-analysis tools (this one included) that read the salt's presence as evidence of passphrase encryption even when the salt is no longer the active encryption mechanism.
 
 </div>
 

@@ -759,6 +759,11 @@ STANDARD = Standard(
         "GOMOD-004": ["GV.SC-07"],              # +incompatible direct require
         "GOMOD-005": ["GV.SC-07"],              # missing go toolchain directive
         "GOMOD-006": ["GV.SC-05", "GV.SC-08"],  # known-compromised module version
+        # ── Go modules extended pack ──
+        "GOMOD-007": ["PR.DS-01", "GV.SC-07"],  # vendor/modules.txt stale
+        "GOMOD-008": ["GV.SC-07"],              # replace without version pin
+        "GOMOD-009": ["GV.SC-07"],              # pre-release direct require
+        "GOMOD-010": ["GV.SC-07"],              # stale exclude directive
         # ── Cargo ──────────────────────────────────────────────
         "CARGO-001": ["GV.SC-07"],              # floating Cargo.toml version spec
         "CARGO-002": ["GV.SC-07", "GV.SC-08"],  # git dep with mutable ref (no rev)
@@ -766,6 +771,11 @@ STANDARD = Standard(
         "CARGO-004": ["GV.SC-07", "GV.SC-08"],  # local-path Cargo dependency
         "CARGO-005": ["GV.SC-07", "GV.SC-08"],  # alternate-registry Cargo dependency
         "CARGO-006": ["GV.SC-05", "GV.SC-08"],  # known-compromised crate version
+        # ── Cargo extended pack ──
+        "CARGO-007": ["GV.SC-07", "GV.SC-08"],  # build-deps floating
+        "CARGO-008": ["GV.SC-07"],              # patch.crates-io substitution
+        "CARGO-009": ["GV.SC-07"],              # workspace deps floating
+        "CARGO-010": ["GV.SC-07"],              # missing rust-version
         # ── Pulumi (PULUMI-001..006) ──
         "PULUMI-001": ["PR.DS-01", "PR.AA-01"],  # passphrase secretsprovider
         "PULUMI-002": ["PR.DS-01"],              # secret-shaped config plaintext
@@ -773,6 +783,11 @@ STANDARD = Standard(
         "PULUMI-004": ["PR.DS-01", "PR.AA-01"],  # insecure state backend
         "PULUMI-005": ["PR.AA-05"],              # wildcard IAM policy in source
         "PULUMI-006": ["GV.SC-07"],              # StackReference unguarded
+        # ── Pulumi extended pack ──
+        "PULUMI-007": ["PR.AA-05"],              # public-access cloud resource
+        "PULUMI-008": ["GV.SC-07"],              # shell-exec with non-constant input
+        "PULUMI-009": ["GV.SC-07"],              # runtime / source mismatch
+        "PULUMI-010": ["PR.DS-01"],              # stack orphaned encryption salt
         # ── OCI image manifest gaps ──────────────────────────────
         "OCI-001":  ["GV.SC-05"],               # provenance annotations missing
         "OCI-002":  ["PR.PS-06", "GV.SC-05"],   # build attestation missing

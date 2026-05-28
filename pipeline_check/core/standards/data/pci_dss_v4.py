@@ -632,6 +632,11 @@ STANDARD = Standard(
         "GOMOD-004": ["6.3.3"],                  # +incompatible direct require
         "GOMOD-005": ["6.5.1"],                  # missing go toolchain directive
         "GOMOD-006": ["6.3.1", "6.3.3"],         # known-compromised module version
+        # ── Go modules extended pack ──
+        "GOMOD-007": ["6.3.1"],
+        "GOMOD-008": ["6.3.1"],
+        "GOMOD-009": ["6.3.1"],
+        "GOMOD-010": ["6.3.1"],
         # ── Cargo ──
         "CARGO-001": ["6.3.1"],                  # floating Cargo.toml version spec
         "CARGO-002": ["6.3.1"],                  # git dep with mutable ref (no rev)
@@ -639,6 +644,11 @@ STANDARD = Standard(
         "CARGO-004": ["6.3.1"],                  # local-path Cargo dependency
         "CARGO-005": ["6.3.1"],                  # alternate-registry Cargo dependency
         "CARGO-006": ["6.3.1", "6.3.3"],         # known-compromised crate version
+        # ── Cargo extended pack ──
+        "CARGO-007": ["6.3.1"],
+        "CARGO-008": ["6.3.1"],
+        "CARGO-009": ["6.3.1"],
+        "CARGO-010": ["6.5.1"],
         # ── Pulumi ──
         "PULUMI-001": ["8.2.1"],        # passphrase secretsprovider
         "PULUMI-002": ["8.2.1"],        # secret-shaped config plaintext
@@ -646,6 +656,11 @@ STANDARD = Standard(
         "PULUMI-004": ["10.3.2", "8.2.1"],       # insecure state backend
         "PULUMI-005": ["7.2.1"],                 # wildcard IAM policy in source
         "PULUMI-006": ["7.2.1"],                 # StackReference unguarded
+        # ── Pulumi extended pack ──
+        "PULUMI-007": ["8.2.1"],                 # public-access cloud resource
+        "PULUMI-008": ["6.5.1"],                 # shell-exec with non-constant input
+        "PULUMI-009": ["6.5.1"],                 # runtime / source mismatch
+        "PULUMI-010": ["8.2.1"],                 # stack orphaned encryption salt
         # ── OCI image manifest gaps ──────────────────────────────
         "OCI-001":  ["6.5.1", "10.3.2"],                 # provenance annotations missing
         "OCI-002":  ["6.5.1", "10.3.2"],                 # build attestation missing

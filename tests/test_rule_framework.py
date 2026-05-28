@@ -62,9 +62,9 @@ EXPECTED_RULE_COUNTS: dict[str, int] = {
     "pypi":       13,
     "maven":      14,
     "nuget":      10,
-    "gomod":       6,
-    "cargo":       6,
-    "pulumi":      6,
+    "gomod":      10,
+    "cargo":      10,
+    "pulumi":     10,
 }
 
 

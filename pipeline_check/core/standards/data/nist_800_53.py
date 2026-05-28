@@ -675,6 +675,11 @@ STANDARD = Standard(
         "GOMOD-004": ["SI-2"],                           # +incompatible direct require
         "GOMOD-005": ["CM-6"],                           # missing go toolchain directive
         "GOMOD-006": ["SI-2", "SR-3"],                  # known-compromised module version
+        # ── Go modules extended pack ──
+        "GOMOD-007": ["SI-7", "CM-7"],                   # vendor/modules.txt stale
+        "GOMOD-008": ["CM-7", "SR-3"],                   # replace without version pin
+        "GOMOD-009": ["CM-7"],                           # pre-release direct require
+        "GOMOD-010": ["CM-7"],                           # stale exclude directive
         # ── Cargo (CARGO-001..006) ─────────────────────────────
         "CARGO-001": ["CM-7"],                           # floating Cargo.toml version spec
         "CARGO-002": ["CM-7", "SR-3"],                  # git dep with mutable ref (no rev)
@@ -682,6 +687,11 @@ STANDARD = Standard(
         "CARGO-004": ["CM-7", "SR-3"],                  # local-path Cargo dependency
         "CARGO-005": ["CM-7", "SR-3"],                  # alternate-registry Cargo dependency
         "CARGO-006": ["SI-2", "SR-3"],                  # known-compromised crate version
+        # ── Cargo extended pack ──
+        "CARGO-007": ["CM-7", "SR-3"],                   # build-deps floating
+        "CARGO-008": ["CM-7", "SR-3"],                   # patch.crates-io substitution
+        "CARGO-009": ["CM-7"],                           # workspace deps floating
+        "CARGO-010": ["CM-6"],                           # missing rust-version
         # ── Pulumi (PULUMI-001..006) ──
         "PULUMI-001": ["SC-13", "SC-12"],                # passphrase secretsprovider
         "PULUMI-002": ["IA-5", "SC-28"],                 # secret-shaped config plaintext
@@ -689,6 +699,11 @@ STANDARD = Standard(
         "PULUMI-004": ["AU-9", "SC-8"],                  # insecure state backend
         "PULUMI-005": ["AC-6", "AC-3"],                  # wildcard IAM policy in source
         "PULUMI-006": ["AC-3", "CM-7"],                  # StackReference unguarded
+        # ── Pulumi extended pack ──
+        "PULUMI-007": ["AC-3", "AC-6"],                  # public-access cloud resource
+        "PULUMI-008": ["CM-7", "SI-7"],                  # shell-exec with non-constant input
+        "PULUMI-009": ["CM-6"],                          # runtime / source mismatch
+        "PULUMI-010": ["SC-12", "IA-5"],                 # stack orphaned encryption salt
         # ── OCI image manifest gaps ──────────────────────────────
         "OCI-001":  ["SR-4", "CM-8"],                    # provenance annotations missing
         "OCI-002":  ["SI-7", "SR-4"],                    # build attestation missing

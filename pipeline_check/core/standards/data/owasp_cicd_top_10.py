@@ -564,6 +564,11 @@ STANDARD = Standard(
         "GOMOD-004": ["CICD-SEC-3"],               # +incompatible direct require
         "GOMOD-005": ["CICD-SEC-3"],               # missing go toolchain directive
         "GOMOD-006": ["CICD-SEC-3", "CICD-SEC-7"], # known-compromised module version
+        # ── Go modules extended pack (GOMOD-007..010) ──
+        "GOMOD-007": ["CICD-SEC-3"],               # vendor/modules.txt stale
+        "GOMOD-008": ["CICD-SEC-3", "CICD-SEC-5"], # replace directive without version pin
+        "GOMOD-009": ["CICD-SEC-3"],               # pre-release direct require
+        "GOMOD-010": ["CICD-SEC-3"],               # stale exclude directive
         # ── Cargo / Rust (CARGO-001..006) ──
         "CARGO-001": ["CICD-SEC-3"],               # floating Cargo.toml version spec
         "CARGO-002": ["CICD-SEC-3", "CICD-SEC-5"], # git dep with mutable ref (no rev)
@@ -571,6 +576,11 @@ STANDARD = Standard(
         "CARGO-004": ["CICD-SEC-3", "CICD-SEC-5"], # local-path Cargo dependency
         "CARGO-005": ["CICD-SEC-3", "CICD-SEC-5"], # alternate-registry Cargo dependency
         "CARGO-006": ["CICD-SEC-3", "CICD-SEC-7"], # known-compromised crate version
+        # ── Cargo extended pack (CARGO-007..010) ──
+        "CARGO-007": ["CICD-SEC-3", "CICD-SEC-7"], # build-dependencies floating
+        "CARGO-008": ["CICD-SEC-3", "CICD-SEC-5"], # [patch.crates-io] substitution
+        "CARGO-009": ["CICD-SEC-3"],               # workspace deps floating
+        "CARGO-010": ["CICD-SEC-3"],               # missing rust-version
         # ── Pulumi (PULUMI-001..006) ──
         "PULUMI-001": ["CICD-SEC-6", "CICD-SEC-7"], # passphrase secretsprovider
         "PULUMI-002": ["CICD-SEC-6"],               # secret-shaped config plaintext
@@ -578,6 +588,11 @@ STANDARD = Standard(
         "PULUMI-004": ["CICD-SEC-2", "CICD-SEC-6"], # insecure state backend
         "PULUMI-005": ["CICD-SEC-1", "CICD-SEC-2"], # wildcard IAM policy in source
         "PULUMI-006": ["CICD-SEC-1", "CICD-SEC-6"], # StackReference unguarded
+        # ── Pulumi extended pack (PULUMI-007..010) ──
+        "PULUMI-007": ["CICD-SEC-2", "CICD-SEC-6"], # public-access cloud resource
+        "PULUMI-008": ["CICD-SEC-5", "CICD-SEC-3"], # shell-exec with non-constant input
+        "PULUMI-009": ["CICD-SEC-3"],               # runtime / source mismatch
+        "PULUMI-010": ["CICD-SEC-6"],               # stack orphaned encryption salt
         # Buildkite
         "BK-001":   ["CICD-SEC-3"],   # plugin not pinned to exact version
         "BK-002":   ["CICD-SEC-6", "CICD-SEC-7"],  # literal secret in env

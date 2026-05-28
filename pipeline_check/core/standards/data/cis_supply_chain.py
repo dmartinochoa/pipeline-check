@@ -656,6 +656,11 @@ STANDARD = Standard(
         "GOMOD-004": ["1.1.8"],                    # +incompatible direct require
         "GOMOD-005": ["1.1.8"],                    # missing go toolchain directive
         "GOMOD-006": ["1.4.1", "1.1.8"],           # known-compromised module version
+        # ── Go modules extended pack ──
+        "GOMOD-007": ["1.4.1"],                    # vendor/modules.txt stale
+        "GOMOD-008": ["1.4.1"],                    # replace without version pin
+        "GOMOD-009": ["1.4.1"],                    # pre-release direct require
+        "GOMOD-010": ["1.4.1"],                    # stale exclude directive
         # ── Cargo / Rust (CARGO-001..006) ──
         "CARGO-001": ["1.4.1"],                    # floating Cargo.toml version spec
         "CARGO-002": ["1.4.1"],                    # git dep with mutable ref (no rev)
@@ -663,6 +668,11 @@ STANDARD = Standard(
         "CARGO-004": ["1.4.1"],                    # local-path Cargo dependency
         "CARGO-005": ["1.4.1"],                    # alternate-registry Cargo dependency
         "CARGO-006": ["1.4.1", "1.1.8"],           # known-compromised crate version
+        # ── Cargo extended pack ──
+        "CARGO-007": ["1.4.1"],                    # build-deps floating
+        "CARGO-008": ["1.4.1"],                    # patch.crates-io substitution
+        "CARGO-009": ["1.4.1"],                    # workspace deps floating
+        "CARGO-010": ["1.1.8"],                    # missing rust-version
         # ── Pulumi (PULUMI-001..006) ──
         "PULUMI-001": ["1.5.1"],                   # passphrase secretsprovider
         "PULUMI-002": ["1.5.1"],                   # secret-shaped config plaintext
@@ -670,6 +680,11 @@ STANDARD = Standard(
         "PULUMI-004": ["1.5.1"],                   # insecure state backend
         "PULUMI-005": ["1.3.4"],                   # wildcard IAM policy in source
         "PULUMI-006": ["1.4.1"],                   # StackReference unguarded
+        # ── Pulumi extended pack ──
+        "PULUMI-007": ["1.5.1"],                   # public-access cloud resource
+        "PULUMI-008": ["1.5.1"],                   # shell-exec with non-constant input
+        "PULUMI-009": ["1.4.1"],                   # runtime / source mismatch
+        "PULUMI-010": ["1.5.1"],                   # stack orphaned encryption salt
         # ── Cross-cutting dataflow / taint engine ───────��─────────
         # The taint family flags cross-step / cross-job flows where
         # untrusted input reaches a privileged sink. That's the

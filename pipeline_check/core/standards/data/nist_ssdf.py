@@ -599,6 +599,11 @@ STANDARD = Standard(
         "GOMOD-004": ["PW.4.4"],                       # +incompatible direct require
         "GOMOD-005": ["PO.5.1"],                       # missing go toolchain directive
         "GOMOD-006": ["PW.4.4", "RV.1.1"],             # known-compromised module version
+        # ── Go modules extended pack ──
+        "GOMOD-007": ["PS.1.1", "PW.4.4"],             # vendor/modules.txt stale
+        "GOMOD-008": ["PO.5.1", "PW.4.4"],             # replace without version pin
+        "GOMOD-009": ["PW.4.4"],                       # pre-release direct require
+        "GOMOD-010": ["PO.5.1"],                       # stale exclude directive
         # ── Cargo / Rust (CARGO-001..006) ──
         "CARGO-001": ["PW.4.4"],                       # floating Cargo.toml version spec
         "CARGO-002": ["PO.5.1", "PW.4.4"],             # git dep with mutable ref (no rev)
@@ -606,6 +611,11 @@ STANDARD = Standard(
         "CARGO-004": ["PO.5.1", "PW.4.4"],             # local-path Cargo dependency
         "CARGO-005": ["PO.5.1", "PW.4.4"],             # alternate-registry Cargo dependency
         "CARGO-006": ["PW.4.4", "RV.1.1"],             # known-compromised crate version
+        # ── Cargo extended pack ──
+        "CARGO-007": ["PW.4.4", "RV.1.1"],             # build-deps floating
+        "CARGO-008": ["PO.5.1", "PW.4.4"],             # patch.crates-io substitution
+        "CARGO-009": ["PW.4.4"],                       # workspace deps floating
+        "CARGO-010": ["PO.5.1"],                       # missing rust-version
         # ── Pulumi (PULUMI-001..006) ──
         "PULUMI-001": ["PS.1.1", "PO.5.1"],             # passphrase secretsprovider
         "PULUMI-002": ["PS.1.1"],                       # secret-shaped config plaintext
@@ -613,6 +623,11 @@ STANDARD = Standard(
         "PULUMI-004": ["PO.5.1", "PW.4.4"],             # insecure state backend
         "PULUMI-005": ["PO.5.1"],                       # wildcard IAM policy in source
         "PULUMI-006": ["PO.5.1", "PW.4.4"],             # StackReference unguarded
+        # ── Pulumi extended pack ──
+        "PULUMI-007": ["PO.5.1"],                       # public-access cloud resource
+        "PULUMI-008": ["PW.4.4", "PO.5.1"],             # shell-exec with non-constant input
+        "PULUMI-009": ["PO.3.3"],                       # runtime / source mismatch
+        "PULUMI-010": ["PS.1.1"],                       # stack orphaned encryption salt
         # ── Dockerfile env-bypass pack (DF-021..030) ────────────
         # Each setting disables the trusted-source channel for any
         # in-image install (PW.4.4 verify failure) and tampers

@@ -25,7 +25,7 @@ pipeline_check --pipeline gomod --gomod-path ./services/api/
 
 ## What it covers
 
-6 checks · 0 have an autofix patch (``--fix``).
+10 checks · 0 have an autofix patch (``--fix``).
 
 | Check | Title | Severity | Fix |
 |-------|-------|----------|-----|
@@ -35,6 +35,10 @@ pipeline_check --pipeline gomod --gomod-path ./services/api/
 | [GOMOD-004](#gomod-004) | Direct require pinned to a +incompatible version | <span class="pg-sev pg-sev--medium">MEDIUM</span> |  |
 | [GOMOD-005](#gomod-005) | go.mod does not declare a minimum Go toolchain version | <span class="pg-sev pg-sev--low">LOW</span> |  |
 | [GOMOD-006](#gomod-006) | go.mod requires a known-compromised module version | <span class="pg-sev pg-sev--high">HIGH</span> |  |
+| [GOMOD-007](#gomod-007) | vendor/modules.txt missing or stale relative to go.mod | <span class="pg-sev pg-sev--high">HIGH</span> |  |
+| [GOMOD-008](#gomod-008) | go.mod replace directive points to a module without a version pin | <span class="pg-sev pg-sev--medium">MEDIUM</span> |  |
+| [GOMOD-009](#gomod-009) | Direct require uses a pre-release version | <span class="pg-sev pg-sev--medium">MEDIUM</span> |  |
+| [GOMOD-010](#gomod-010) | go.mod exclude directive masks an upstream version | <span class="pg-sev pg-sev--medium">MEDIUM</span> |  |
 
 ---
 
@@ -213,6 +217,144 @@ Mirrors NPM-006 / PYPI-005 / MVN-006 / NUGET-005: the rule fires on exact versio
 **Recommended action**
 
 Bump the offending require to a patched version (named in the cited advisory) and run ``go mod tidy`` to refresh the integrity manifest. If the advisory has no patched release, pin to the last known-good version and add a follow-up TODO so the dependency is replaced or removed the next maintenance cycle. After the bump, re-run the scan, GOMOD-006 should clear; if the rule still fires, an indirect require somewhere is pulling the bad version back in. Use ``go mod why -m <module>@<version>`` to find the path.
+
+</div>
+
+</div>
+
+<div class="pg-rule pg-rule--high" markdown>
+
+## GOMOD-007: vendor/modules.txt missing or stale relative to go.mod { #gomod-007 }
+
+<div class="pg-rule__tags">
+<span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-3</span> <span class="pg-tag pg-tag--esf">ESF-S-VERIFY-DEPS</span> <span class="pg-tag pg-tag--esf">ESF-S-PIN-DEPS</span> <span class="pg-tag pg-tag--cwe">CWE-345</span> <span class="pg-tag pg-tag--cwe">CWE-829</span>
+</div>
+
+Fires when the ``go.mod`` file's directory has a ``vendor/`` sibling without a ``vendor/modules.txt`` file, OR when ``vendor/modules.txt`` declares fewer direct requires than ``go.mod`` does (best-effort staleness detection — a full diff against every require would require parsing modules.txt's nested format).
+
+Projects that don't ship a ``vendor/`` directory pass the rule silently. ``go.mod`` projects use vendor mode selectively, the rule's value is catching the case where vendor mode is in use but its manifest has drifted.
+
+**Known false-positive modes**
+
+- Pre-Go-1.14 projects that vendored without a ``vendor/modules.txt`` (the file became required at Go 1.14) trip this rule. The right fix is to run ``go mod vendor`` once under a modern toolchain to regenerate the manifest; suppress per file if the legacy vendor layout is intentional.
+
+**Seen in the wild**
+
+- Pattern in long-lived Go monorepos where a vendor/ directory carries pre-modules-era dependencies but the modules.txt manifest was never generated. Builds succeed under both ``-mod=mod`` (fetches fresh, ignores vendor) and ``-mod=vendor`` (uses vendor, ignores go.mod), but the resulting binaries can diverge.
+
+<div class="pg-rule__rec" markdown>
+
+**Recommended action**
+
+Run ``go mod vendor`` to regenerate ``vendor/modules.txt`` and ``vendor/`` from the current ``go.mod`` / ``go.sum``. Commit the result. The file is the manifest the Go toolchain consults when ``-mod=vendor`` is set: it pins every direct + indirect dep to the version checked into ``vendor/``. A stale ``vendor/modules.txt`` (older require set than ``go.mod`` declares, or absent entirely while ``vendor/`` is populated) means the build uses different versions depending on whether ``GOFLAGS=-mod=vendor`` is set in the build environment, and a contributor who edits ``go.mod`` without re-running ``go mod vendor`` ships an unreviewed mismatch between the manifest and the vendored content.
+
+Add ``go mod verify`` to CI to catch drift at build time; the verification fails when the vendored content doesn't match the checksums in ``go.sum``.
+
+</div>
+
+</div>
+
+<div class="pg-rule pg-rule--medium" markdown>
+
+## GOMOD-008: go.mod replace directive points to a module without a version pin { #gomod-008 }
+
+<div class="pg-rule__tags">
+<span class="pg-sev pg-sev--medium">MEDIUM</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-3</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-5</span> <span class="pg-tag pg-tag--esf">ESF-S-VERIFY-DEPS</span> <span class="pg-tag pg-tag--cwe">CWE-829</span> <span class="pg-tag pg-tag--cwe">CWE-1357</span>
+</div>
+
+Fires on ``replace`` directives where the right side names a module path (``github.com/...``) but omits the version. Local-path replacements (``=> ../local``) are GOMOD-002's surface and are skipped here; module-to-module replacements with a version pin (``=> foo v1.2.3``) pass this rule.
+
+The check exists because Go's module resolution treats a versionless replace as ``go get`` does — it fetches the default branch's tip. Force-pushes to that branch redirect every consumer's build, mirroring the tag-following pattern CARGO-002 catches for cargo dependencies.
+
+**Known false-positive modes**
+
+- Some vendoring tools (older versions of ``dep`` migrating to modules) emit versionless replaces during a conversion pass. The fix is to run ``go mod tidy`` against a modern toolchain, which resolves the replacement to a concrete version. Suppress per directive while the migration is in flight.
+
+**Seen in the wild**
+
+- Pattern of versionless replaces shipping in commits from contributors using older Go toolchains; ``go mod tidy`` rewrites them once the project upgrades to 1.21+, but the unmigrated form lives in repo history until then.
+
+<div class="pg-rule__rec" markdown>
+
+**Recommended action**
+
+Add an explicit version on the right side of every ``replace`` directive that targets a module path. The fully-qualified form is ``replace <orig> => <new> <version>``. Without the trailing version, ``go mod tidy`` resolves the replacement to whatever the default branch of the replacement module currently points at, which mirrors the mutable-ref class of risk GOMOD-002 catches for local-path replacements but at the module-coordinate layer.
+
+Example:
+
+    # Vulnerable
+    replace github.com/foo/bar => github.com/myorg/bar
+    # Safe
+    replace github.com/foo/bar => github.com/myorg/bar v1.2.3
+
+</div>
+
+</div>
+
+<div class="pg-rule pg-rule--medium" markdown>
+
+## GOMOD-009: Direct require uses a pre-release version { #gomod-009 }
+
+<div class="pg-rule__tags">
+<span class="pg-sev pg-sev--medium">MEDIUM</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-3</span> <span class="pg-tag pg-tag--esf">ESF-S-VERIFY-DEPS</span> <span class="pg-tag pg-tag--cwe">CWE-1357</span>
+</div>
+
+Matches the standard semver pre-release suffix shape on direct requires: ``-rc``, ``-alpha``, ``-beta``, ``-pre``, ``-dev`` (case-insensitive) anywhere after the ``vX.Y.Z`` head. Pseudo-versions (``v0.0.0-YYYYMMDDHHMMSS-commitsha``) are excluded — they're Go's canonical mechanism for pinning to a commit when the upstream has no tagged release yet, and the rule would FP on the most common form of intentional pre-release usage.
+
+Indirect requires (``// indirect``) are exempt; the consumer doesn't directly control the version and auditing them dilutes the rule's signal.
+
+**Known false-positive modes**
+
+- Libraries that exclusively ship pre-release tags (some experimental projects use ``v0.x``-style major zero versioning forever) trip this rule by design. Suppress per dependency with a one-line rationale naming the upstream's stabilization policy.
+
+**Seen in the wild**
+
+- Pattern in early-stage Go projects where a contributor pulls in an upstream's release-candidate during development, the project ships, and the dependency stays at ``-rc`` for years past the upstream's GA release. Security advisories typically don't cover pre-release tags, so the consumer remains exposed to fixed-in-stable vulnerabilities indefinitely.
+
+<div class="pg-rule__rec" markdown>
+
+**Recommended action**
+
+Pin every production direct dependency to a stable release. Pre-release versions (``v1.0.0-rc.1``, ``v2.0.0-alpha.3``, ``v0.9.0-beta``) signal that the upstream maintainer hasn't committed to API or behavioral stability for the tag — a patch may revert or rewrite the suffix, and security advisories specifically scope to released versions, so a stuck pre-release ships with no patched-version migration path.
+
+If the project legitimately needs the pre-release (awaiting an upstream stable that ships a critical fix), document the dependency with a follow-up TODO pointing at the upstream's stabilization issue and revisit on every scan.
+
+</div>
+
+</div>
+
+<div class="pg-rule pg-rule--medium" markdown>
+
+## GOMOD-010: go.mod exclude directive masks an upstream version { #gomod-010 }
+
+<div class="pg-rule__tags">
+<span class="pg-sev pg-sev--medium">MEDIUM</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-3</span> <span class="pg-tag pg-tag--esf">ESF-S-VERIFY-DEPS</span> <span class="pg-tag pg-tag--cwe">CWE-1357</span>
+</div>
+
+Fires on any ``exclude`` directive in go.mod. The rule is informational-leaning MEDIUM: excludes are not themselves a vulnerability, they're a posture / hygiene signal. Long-lived excludes without comments often outlive the upstream issue that prompted them, and their continued presence in the manifest creates audit-trail noise around the dependency graph.
+
+Distinct from GOMOD-006 (known-compromised version) and GOMOD-004 (+incompatible version): those rules audit *what's used*, this one audits *what's deliberately blocked* and surfaces the staleness class.
+
+**Known false-positive modes**
+
+- Excludes pinned to a specific known-broken upstream release that's still in the module graph's transitive set are legitimate and load-bearing. The rule fires anyway because the cleanup decision requires context the manifest doesn't carry. Suppress per directive with a one-line rationale naming the upstream issue.
+
+**Seen in the wild**
+
+- Pattern in long-lived Go monorepos: an exclude from 2019 blocks a then-broken patch release; the upstream has since rolled forward and the block is irrelevant, but no audit cycle has touched the directive. Cleanup of stale excludes during dep-update sprints is a common posture-hygiene exercise.
+
+<div class="pg-rule__rec" markdown>
+
+**Recommended action**
+
+Audit every ``exclude`` directive and remove the ones that aren't load-bearing. ``exclude <path> <version>`` tells Go's module graph resolver to skip the named version — useful for blocking a known-broken release from a transitive resolution, but often left over from a long-ago dependency conflict that's since been patched upstream.
+
+The two failure modes:
+
+1. The excluded version is no longer relevant (upstream fixed the issue in a later release). Remove the exclude.
+2. The excluded version carries a security advisory (``exclude`` hides it from the resolver, but a deliberate ``require`` at the same version still pulls it). Replace the exclude with an explicit patched-version require so future audits see the intent.
+
+Pair every kept exclude with a comment naming the incident or upstream issue that justified it. Excludes without rationale are a code-rot signal.
 
 </div>
 

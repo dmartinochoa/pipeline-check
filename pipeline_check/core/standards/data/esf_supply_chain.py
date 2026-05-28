@@ -678,6 +678,11 @@ STANDARD = Standard(
         "GOMOD-004": ["ESF-S-VERIFY-DEPS"],
         "GOMOD-005": ["ESF-S-VERIFY-DEPS"],
         "GOMOD-006": ["ESF-S-VERIFY-DEPS"],
+        # ── Go modules extended pack ──
+        "GOMOD-007": ["ESF-S-VERIFY-DEPS"],
+        "GOMOD-008": ["ESF-S-VERIFY-DEPS"],
+        "GOMOD-009": ["ESF-S-VERIFY-DEPS"],
+        "GOMOD-010": ["ESF-S-VERIFY-DEPS"],
         # ── Cargo ──
         "CARGO-001": ["ESF-S-VERIFY-DEPS"],
         "CARGO-002": ["ESF-S-VERIFY-DEPS"],
@@ -685,6 +690,11 @@ STANDARD = Standard(
         "CARGO-004": ["ESF-S-VERIFY-DEPS"],
         "CARGO-005": ["ESF-S-VERIFY-DEPS"],
         "CARGO-006": ["ESF-S-VERIFY-DEPS"],
+        # ── Cargo extended pack ──
+        "CARGO-007": ["ESF-S-VERIFY-DEPS"],
+        "CARGO-008": ["ESF-S-VERIFY-DEPS"],
+        "CARGO-009": ["ESF-S-VERIFY-DEPS"],
+        "CARGO-010": ["ESF-S-VERIFY-DEPS"],
         # ── Pulumi ──
         "PULUMI-001": ["ESF-D-SECRETS"],
         "PULUMI-002": ["ESF-D-SECRETS"],
@@ -692,6 +702,11 @@ STANDARD = Standard(
         "PULUMI-004": ["ESF-S-PROVENANCE"],
         "PULUMI-005": ["ESF-C-LEAST-PRIV"],
         "PULUMI-006": ["ESF-C-LEAST-PRIV"],
+        # ── Pulumi extended pack ──
+        "PULUMI-007": ["ESF-C-LEAST-PRIV"],
+        "PULUMI-008": ["ESF-C-LEAST-PRIV"],
+        "PULUMI-009": ["ESF-S-VERIFY-DEPS"],
+        "PULUMI-010": ["ESF-D-SECRETS"],
         # ── OCI image manifest gaps ──────────────────────────────
         # Provenance metadata + integrity → ESF-S-PROVENANCE +
         # ESF-D-SBOM. Foreign-layer URL → ESF-S-TRUSTED-REG. Schema

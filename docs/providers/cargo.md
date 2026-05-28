@@ -29,7 +29,7 @@ pipeline_check --pipeline cargo --cargo-path ./crates/my-crate/
 
 ## What it covers
 
-6 checks · 0 have an autofix patch (``--fix``).
+10 checks · 0 have an autofix patch (``--fix``).
 
 | Check | Title | Severity | Fix |
 |-------|-------|----------|-----|
@@ -39,6 +39,10 @@ pipeline_check --pipeline cargo --cargo-path ./crates/my-crate/
 | [CARGO-004](#cargo-004) | Cargo.toml dependency is a local-path entry | <span class="pg-sev pg-sev--medium">MEDIUM</span> |  |
 | [CARGO-005](#cargo-005) | Cargo.toml dependency sourced from an alternate registry | <span class="pg-sev pg-sev--high">HIGH</span> |  |
 | [CARGO-006](#cargo-006) | Cargo.toml requires a known-compromised crate version | <span class="pg-sev pg-sev--high">HIGH</span> |  |
+| [CARGO-007](#cargo-007) | [build-dependencies] entry uses a floating version spec | <span class="pg-sev pg-sev--high">HIGH</span> |  |
+| [CARGO-008](#cargo-008) | Cargo.toml [patch.crates-io] substitutes a different crate | <span class="pg-sev pg-sev--high">HIGH</span> |  |
+| [CARGO-009](#cargo-009) | [workspace.dependencies] entry uses a floating version spec | <span class="pg-sev pg-sev--medium">MEDIUM</span> |  |
+| [CARGO-010](#cargo-010) | Cargo.toml lacks an explicit rust-version field | <span class="pg-sev pg-sev--low">LOW</span> |  |
 
 ---
 
@@ -225,6 +229,141 @@ Mirrors NPM-006 / PYPI-005 / MVN-006 / NUGET-005 / GOMOD-006 and shares the vers
 **Recommended action**
 
 Bump the offending dep to a patched version (named in the cited advisory) and refresh Cargo.lock with ``cargo update -p <crate>``. If the advisory has no patched release, pin to the last known-good version and add a follow-up TODO to replace or remove the dependency. After the bump, re-run the scan; if CARGO-006 still fires, an indirect dependency is pulling the bad version back in — use ``cargo tree -i <crate>@<version>`` to find the path.
+
+</div>
+
+</div>
+
+<div class="pg-rule pg-rule--high" markdown>
+
+## CARGO-007: [build-dependencies] entry uses a floating version spec { #cargo-007 }
+
+<div class="pg-rule__tags">
+<span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-3</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-7</span> <span class="pg-tag pg-tag--esf">ESF-S-VERIFY-DEPS</span> <span class="pg-tag pg-tag--cwe">CWE-1357</span> <span class="pg-tag pg-tag--cwe">CWE-829</span>
+</div>
+
+Walks ``[build-dependencies]`` and ``[target.<target>.build-dependencies]`` entries on each ``Cargo.toml`` and fires when the version spec is floating per Cargo's semver model (bare numeric / caret / tilde / wildcard / range). Exact pins (``=X.Y.Z``) pass. Workspace-inherited entries (``workspace = true``) are skipped — the workspace root's audit is the right surface for those, and CARGO-009 covers that table specifically.
+
+**Known false-positive modes**
+
+- Library crates published to crates.io legitimately use loose build-dep specifiers so downstream consumers can deduplicate at integration time. The application/binary distinction applies the same way as for CARGO-001: app crates should pin, library crates may suppress with a published-library rationale.
+
+**Seen in the wild**
+
+- Build-time supply-chain pattern: a popular build-dep crate (a code-generator, a protobuf compiler wrapper, a static linker helper) ships a poisoned patch release with a malicious build.rs hook. Every downstream consumer with a floating build-dep spec picks up the bad version on the next ``cargo build``; the hook runs in the build environment and inherits CI runner privileges before any test sandbox executes.
+
+<div class="pg-rule__rec" markdown>
+
+**Recommended action**
+
+Pin every ``[build-dependencies]`` entry to an exact version (``=1.2.3``). Build-dependencies are crates used exclusively at compile time by ``build.rs`` (the Rust-side analog of npm install scripts or Python setup.py): they run arbitrary Rust code in the build environment before the consuming crate's own source ever compiles. A poisoned patch release of a build dependency executes in the build environment with the same privileges any other build code would have, and runs on every developer's machine and every CI runner.
+
+Distinct from CARGO-001 (regular runtime ``[dependencies]``): runtime deps execute at *app* runtime, build deps execute at *build* time, before any test or runtime sandbox is in place. The xz-utils-style build-step backdoor is directly applicable to any build-dependency that ships a build.rs hook.
+
+</div>
+
+</div>
+
+<div class="pg-rule pg-rule--high" markdown>
+
+## CARGO-008: Cargo.toml [patch.crates-io] substitutes a different crate { #cargo-008 }
+
+<div class="pg-rule__tags">
+<span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-3</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-5</span> <span class="pg-tag pg-tag--esf">ESF-S-VERIFY-DEPS</span> <span class="pg-tag pg-tag--cwe">CWE-829</span>
+</div>
+
+Re-parses ``Cargo.toml`` and walks ``[patch.crates-io]``. Fires for every entry — patches are silent substitutions and warrant explicit audit-trail review regardless of the source. Entries with ``path = "..."`` (local-fork patches) are particularly important to surface because the patch lives outside the registry's integrity chain.
+
+Parallels GOMOD-003 (Go module replace directive) and PYPI-013 (pyproject dynamic dependencies): substitution primitives that operate below the import layer deserve dedicated audit surfaces.
+
+**Known false-positive modes**
+
+- Active upstream-fix patches with a documented stabilization timeline trip this rule by design. Suppress per entry with a one-line rationale naming the upstream issue and the expected stabilization release. Long-stuck patches without rationale are code-rot signals.
+
+**Seen in the wild**
+
+- Pattern in Rust monorepos that consume a vendored fork of a popular crate via ``[patch.crates-io]``: the patch entry lands during an emergency hotfix, is never reverted, and downstream consumers continue building against the temporary fork for years. The rule surfaces the deviation at every scan so the operator can decide whether the fork is still load-bearing.
+
+<div class="pg-rule__rec" markdown>
+
+**Recommended action**
+
+Audit every entry under ``[patch.crates-io]``. The section overrides crates.io's resolution for the named crate, replacing it with a different source (a git repo, a local path, or another registry). Any consumer of the patched crate — including transitive deps — silently links against the replacement, with no import-site code change to flag at review.
+
+Three remediation patterns:
+
+* If the patch is a security fix awaiting upstream, document it with a comment naming the upstream issue and revisit on every audit cycle.
+* If the patch is a permanent fork, publish the fork to a private registry and depend on it directly under its own crate name (drop the [patch.crates-io] form).
+* If the patch is a stale workaround from a long-ago compatibility issue, remove it and pull from crates.io directly.
+
+</div>
+
+</div>
+
+<div class="pg-rule pg-rule--medium" markdown>
+
+## CARGO-009: [workspace.dependencies] entry uses a floating version spec { #cargo-009 }
+
+<div class="pg-rule__tags">
+<span class="pg-sev pg-sev--medium">MEDIUM</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-3</span> <span class="pg-tag pg-tag--esf">ESF-S-VERIFY-DEPS</span> <span class="pg-tag pg-tag--cwe">CWE-1357</span>
+</div>
+
+Walks ``[workspace.dependencies]`` table entries on each ``Cargo.toml`` (workspace roots typically declare this) and fires on the same floating shapes CARGO-001 catches for per-crate dependencies. Git / path / workspace-inherited entries are skipped — they're handled by CARGO-002 / CARGO-004 / the workspace root audit itself.
+
+Distinct from CARGO-001 because the scope is wider: a single floating workspace-deps entry cascades to every member crate that uses ``workspace = true``, which on a multi-member workspace amplifies the risk surface significantly compared to a per-crate floating spec.
+
+**Known false-positive modes**
+
+- Library-style workspaces published as a cohesive crate family may deliberately use loose specifiers at the workspace root so all members participate in version-resolution dedup. Application/binary workspaces should pin.
+
+**Seen in the wild**
+
+- Pattern in Rust workspace consumers: a single floating workspace-deps spec for a popular crate (``serde``, ``tokio``) cascades a poisoned patch to every member on the next build, multiplying the blast radius compared to a per-crate dep.
+
+<div class="pg-rule__rec" markdown>
+
+**Recommended action**
+
+Pin every entry in ``[workspace.dependencies]`` to an exact version (``=1.2.3``). Workspace-level dependencies act as the single source of truth for every workspace-member crate that opts into them via ``workspace = true``; a floating spec at the workspace root cascades to every member, so a poisoned patch release upstream rolls across the entire workspace on the next ``cargo build``.
+
+Pair the exact pin with a committed ``Cargo.lock`` at the workspace root (CARGO-003) so lockfile-based audits work across all members.
+
+</div>
+
+</div>
+
+<div class="pg-rule pg-rule--low" markdown>
+
+## CARGO-010: Cargo.toml lacks an explicit rust-version field { #cargo-010 }
+
+<div class="pg-rule__tags">
+<span class="pg-sev pg-sev--low">LOW</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-3</span> <span class="pg-tag pg-tag--esf">ESF-S-VERIFY-DEPS</span> <span class="pg-tag pg-tag--cwe">CWE-1395</span>
+</div>
+
+Reads ``[package].rust-version`` and fires when the field is missing on a non-workspace-root manifest. Workspace roots are skipped — they declare ``[workspace.package].rust-version`` instead, and the member crates inherit it via ``rust-version.workspace = true``.
+
+Single-rule LOW: a missing rust-version isn't a vulnerability, it's a posture / maintenance signal. Parallels GOMOD-005 (missing Go toolchain directive).
+
+**Known false-positive modes**
+
+- Some chart-generation / scaffolding templates emit a Cargo.toml without ``rust-version`` to defer the decision to the consumer. The rule still fires; suppress per file with a one-line rationale, or — better — add the explicit field once the project's compatibility surface stabilizes.
+
+**Seen in the wild**
+
+- Posture-drift class commonly surfaced in internal-tool audits of long-lived Rust projects: no ``rust-version`` field, CI runner pinned to a Rust release from years ago, several CVEs in the standard library quietly in scope. Adding the explicit field forces the runner-image bump or a hard build failure.
+
+<div class="pg-rule__rec" markdown>
+
+**Recommended action**
+
+Add a ``rust-version`` field to ``[package]`` naming the minimum supported Rust toolchain:
+
+    [package]
+    name = "my-crate"
+    version = "0.1.0"
+    rust-version = "1.75"
+
+The field tells cargo to error early if the consumer's toolchain is older than the named version, which catches the silent-incompatibility class of bug where a new language feature lands in a recent compiler but the consumer's CI image hasn't been updated. The field also documents the project's compatibility posture so downstream consumers can audit the toolchain matrix.
 
 </div>
 

@@ -662,6 +662,11 @@ STANDARD = Standard(
         "GOMOD-004": ["CC8.1"],                 # +incompatible direct require
         "GOMOD-005": ["CC8.1"],                 # missing go toolchain directive
         "GOMOD-006": ["CC8.1", "CC7.1"],        # known-compromised module version
+        # ── Go modules extended pack ──
+        "GOMOD-007": ["CC8.1"],
+        "GOMOD-008": ["CC8.1"],
+        "GOMOD-009": ["CC8.1"],
+        "GOMOD-010": ["CC8.1"],
         # ── Cargo ──
         "CARGO-001": ["CC8.1"],                 # floating Cargo.toml version spec
         "CARGO-002": ["CC8.1"],                 # git dep with mutable ref (no rev)
@@ -669,6 +674,11 @@ STANDARD = Standard(
         "CARGO-004": ["CC8.1"],                 # local-path Cargo dependency
         "CARGO-005": ["CC8.1"],                 # alternate-registry Cargo dependency
         "CARGO-006": ["CC8.1", "CC7.1"],        # known-compromised crate version
+        # ── Cargo extended pack ──
+        "CARGO-007": ["CC8.1"],
+        "CARGO-008": ["CC8.1"],
+        "CARGO-009": ["CC8.1"],
+        "CARGO-010": ["CC8.1"],
         # ── Pulumi ──
         "PULUMI-001": ["CC6.1"],                # passphrase secretsprovider
         "PULUMI-002": ["CC6.1"],                # secret-shaped config plaintext
@@ -676,6 +686,11 @@ STANDARD = Standard(
         "PULUMI-004": ["CC6.1", "CC8.1"],       # insecure state backend
         "PULUMI-005": ["CC6.1"],                # wildcard IAM policy in source
         "PULUMI-006": ["CC8.1"],                # StackReference unguarded
+        # ── Pulumi extended pack ──
+        "PULUMI-007": ["CC6.1"],                # public-access cloud resource
+        "PULUMI-008": ["CC6.1"],                # shell-exec with non-constant input
+        "PULUMI-009": ["CC8.1"],                # runtime / source mismatch
+        "PULUMI-010": ["CC6.1"],                # stack orphaned encryption salt
         # ── OCI image manifest gaps ──────────────────────────────
         "OCI-001":  ["CC8.1"],              # provenance annotations missing
         "OCI-002":  ["CC8.1"],              # build attestation missing
