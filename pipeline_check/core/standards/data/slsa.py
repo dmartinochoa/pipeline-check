@@ -451,6 +451,12 @@ STANDARD = Standard(
         "NUGET-008": ["Build.L3.NonFalsifiable"],                  # cooldown gate (--resolve-remote)
         "NUGET-009": ["Build.L3.NonFalsifiable"],                  # OSV advisory (--resolve-remote)
         "NUGET-010": ["Build.L3.NonFalsifiable"],                  # NuGet.config cleartext feed credential
+        # ── NuGet extended pack ──
+        "NUGET-011": ["Build.L3.NonFalsifiable"],
+        "NUGET-012": ["Build.L3.NonFalsifiable"],
+        "NUGET-013": ["Build.L3.NonFalsifiable"],
+        "NUGET-014": ["Build.L3.NonFalsifiable"],
+        "NUGET-015": ["Build.L3.NonFalsifiable"],
         # ── Helm chart-supply-chain ───────────────────────────────
         # The chart's own packaging metadata sits at the build-output
         # boundary. Chart.lock and Chart.yaml are the chart's

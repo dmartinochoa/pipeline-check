@@ -19,7 +19,7 @@ Kubernetes, …) when an audit asks for that framework's vocabulary.
 
 - **Controls in this standard:** 10
 - **Controls evidenced by at least one check:** 10 / 10
-- **Distinct checks evidencing this standard:** 797
+- **Distinct checks evidencing this standard:** 802
 - **Of those, autofixable with `--fix`:** 111
 
 _Severity levels (`CRITICAL` / `HIGH` / `MEDIUM` / `LOW` / `INFO`) follow the same scale across every provider and standard. See [How to read severity](README.md#how-to-read-severity) on the standards overview for the definitions._
@@ -32,14 +32,14 @@ Click a control ID to jump to the per-control section with the full check list. 
 |---------|-------|-------:|--------------|
 | [`CICD-SEC-1`](#ctrl-cicd-sec-1) | Insufficient Flow Control Mechanisms | 88 | 5C · 40H · 35M · 8L |
 | [`CICD-SEC-2`](#ctrl-cicd-sec-2) | Inadequate Identity and Access Management | 70 | 8C · 39H · 22M · 1L |
-| [`CICD-SEC-3`](#ctrl-cicd-sec-3) | Dependency Chain Abuse | 238 | 10C · 123H · 87M · 18L |
+| [`CICD-SEC-3`](#ctrl-cicd-sec-3) | Dependency Chain Abuse | 242 | 10C · 126H · 88M · 18L |
 | [`CICD-SEC-4`](#ctrl-cicd-sec-4) | Poisoned Pipeline Execution | 100 | 25C · 52H · 17M · 6L |
-| [`CICD-SEC-5`](#ctrl-cicd-sec-5) | Insufficient PBAC | 49 | 4C · 32H · 13M |
-| [`CICD-SEC-6`](#ctrl-cicd-sec-6) | Insufficient Credential Hygiene | 104 | 30C · 51H · 23M |
+| [`CICD-SEC-5`](#ctrl-cicd-sec-5) | Insufficient PBAC | 51 | 4C · 34H · 13M |
+| [`CICD-SEC-6`](#ctrl-cicd-sec-6) | Insufficient Credential Hygiene | 105 | 30C · 52H · 23M |
 | [`CICD-SEC-7`](#ctrl-cicd-sec-7) | Insecure System Configuration | 137 | 24C · 59H · 45M · 9L |
 | [`CICD-SEC-8`](#ctrl-cicd-sec-8) | Ungoverned Usage of 3rd-Party Services | 41 | 13C · 21H · 7M |
 | [`CICD-SEC-9`](#ctrl-cicd-sec-9) | Improper Artifact Integrity Validation | 132 | 3C · 44H · 73M · 12L |
-| [`CICD-SEC-10`](#ctrl-cicd-sec-10) | Insufficient Logging and Visibility | 77 | 14H · 33M · 14L · 16I |
+| [`CICD-SEC-10`](#ctrl-cicd-sec-10) | Insufficient Logging and Visibility | 78 | 15H · 33M · 14L · 16I |
 
 ## Filter at runtime
 
@@ -238,7 +238,7 @@ Long-lived static credentials, shared service accounts, and human identities reu
 
 Floating tags, range constraints, and unverified registries let an upstream maintainer compromise (or a typosquat) execute in your build the next time the dependency resolves.
 
-**Evidenced by 238 checks** across 25 providers (AWS, Argo CD, Argo Workflows, Azure DevOps, Bitbucket, Buildkite, Cargo, CircleCI, Cloud Build, Dockerfile, Drone CI, GitHub Actions, GitLab CI, Go modules, Helm, Jenkins, Kubernetes, NuGet, OCI manifest, Pulumi, PyPI, SCM, Tekton, maven, npm).
+**Evidenced by 242 checks** across 25 providers (AWS, Argo CD, Argo Workflows, Azure DevOps, Bitbucket, Buildkite, Cargo, CircleCI, Cloud Build, Dockerfile, Drone CI, GitHub Actions, GitLab CI, Go modules, Helm, Jenkins, Kubernetes, NuGet, OCI manifest, Pulumi, PyPI, SCM, Tekton, maven, npm).
 
 | Check | Title | Severity | Provider | Fix |
 |-------|-------|----------|----------|-----|
@@ -450,6 +450,10 @@ Floating tags, range constraints, and unverified registries let an upstream main
 | [`NUGET-007`](../providers/nuget.md#nuget-007) | Multiple NuGet sources without packageSourceMapping | <span class="pg-sev pg-sev--high">HIGH</span> | [NuGet](../providers/nuget.md) |  |
 | [`NUGET-008`](../providers/nuget.md#nuget-008) | NuGet package published within the cooldown window | <span class="pg-sev pg-sev--high">HIGH</span> | [NuGet](../providers/nuget.md) |  |
 | [`NUGET-009`](../providers/nuget.md#nuget-009) | NuGet package has a known OSV advisory | <span class="pg-sev pg-sev--critical">CRITICAL</span> | [NuGet](../providers/nuget.md) |  |
+| [`NUGET-011`](../providers/nuget.md#nuget-011) | packageSourceMapping pattern is a global wildcard | <span class="pg-sev pg-sev--high">HIGH</span> | [NuGet](../providers/nuget.md) |  |
+| [`NUGET-012`](../providers/nuget.md#nuget-012) | NuGet.config does not enforce signatureValidationMode = require | <span class="pg-sev pg-sev--high">HIGH</span> | [NuGet](../providers/nuget.md) |  |
+| [`NUGET-013`](../providers/nuget.md#nuget-013) | dotnet-tools.json entry lacks a version pin | <span class="pg-sev pg-sev--high">HIGH</span> | [NuGet](../providers/nuget.md) |  |
+| [`NUGET-015`](../providers/nuget.md#nuget-015) | PackageReference VersionOverride defeats Central Package Management | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [NuGet](../providers/nuget.md) |  |
 | [`OCI-001`](../providers/oci.md#oci-001) | Image manifest is missing OCI provenance annotations | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [OCI manifest](../providers/oci.md) |  |
 | [`OCI-002`](../providers/oci.md#oci-002) | Image is missing a build attestation manifest | <span class="pg-sev pg-sev--high">HIGH</span> | [OCI manifest](../providers/oci.md) |  |
 | [`OCI-003`](../providers/oci.md#oci-003) | Image manifest is missing the ``image.created`` annotation | <span class="pg-sev pg-sev--low">LOW</span> | [OCI manifest](../providers/oci.md) |  |
@@ -594,7 +598,7 @@ An attacker who can influence what a build runs, via a PR, an issue comment, or 
 
 Build steps with deploy-class permissions, jobs sharing a single broad role, and missing environment gates each let a routine compromise escalate from build to production.
 
-**Evidenced by 49 checks** across 14 providers (AWS, Argo CD, Argo Workflows, Buildkite, Cargo, CircleCI, Drone CI, GitHub Actions, Go modules, Jenkins, Kubernetes, Pulumi, SCM, Tekton).
+**Evidenced by 51 checks** across 15 providers (AWS, Argo CD, Argo Workflows, Buildkite, Cargo, CircleCI, Drone CI, GitHub Actions, Go modules, Jenkins, Kubernetes, NuGet, Pulumi, SCM, Tekton).
 
 | Check | Title | Severity | Provider | Fix |
 |-------|-------|----------|----------|-----|
@@ -630,6 +634,8 @@ Build steps with deploy-class permissions, jobs sharing a single broad role, and
 | [`K8S-025`](../providers/kubernetes.md#k8s-025) | System priority class used outside kube-system | <span class="pg-sev pg-sev--high">HIGH</span> | [Kubernetes](../providers/kubernetes.md) |  |
 | [`K8S-029`](../providers/kubernetes.md#k8s-029) | RoleBinding grants permissions to the default ServiceAccount | <span class="pg-sev pg-sev--high">HIGH</span> | [Kubernetes](../providers/kubernetes.md) | <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> |
 | [`K8S-042`](../providers/kubernetes.md#k8s-042) | RoleBinding grants access to system:anonymous / system:unauthenticated | <span class="pg-sev pg-sev--critical">CRITICAL</span> | [Kubernetes](../providers/kubernetes.md) |  |
+| [`NUGET-011`](../providers/nuget.md#nuget-011) | packageSourceMapping pattern is a global wildcard | <span class="pg-sev pg-sev--high">HIGH</span> | [NuGet](../providers/nuget.md) |  |
+| [`NUGET-013`](../providers/nuget.md#nuget-013) | dotnet-tools.json entry lacks a version pin | <span class="pg-sev pg-sev--high">HIGH</span> | [NuGet](../providers/nuget.md) |  |
 | [`PBAC-001`](../providers/aws.md#pbac-001) | CodeBuild project has no VPC configuration | <span class="pg-sev pg-sev--high">HIGH</span> | [AWS](../providers/aws.md) |  |
 | [`PBAC-002`](../providers/aws.md#pbac-002) | CodeBuild service role shared across multiple projects | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [AWS](../providers/aws.md) |  |
 | [`PBAC-003`](../providers/aws.md#pbac-003) | CodeBuild security group allows 0.0.0.0/0 all-port egress | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [AWS](../providers/aws.md) |  |
@@ -652,7 +658,7 @@ Build steps with deploy-class permissions, jobs sharing a single broad role, and
 
 Plaintext secrets in YAML, env vars baked into image layers, or tokens echoed to logs all leak credentials before they're ever exploited; rotation only helps if the leak is detected.
 
-**Evidenced by 104 checks** across 26 providers (AWS, Argo CD, Argo Workflows, Azure Cloud, Azure DevOps, Bitbucket, Buildkite, CircleCI, Cloud Build, CloudFormation, Dockerfile, Drone CI, GCP, GitHub Actions, GitLab CI, Helm, Jenkins, Kubernetes, NuGet, Pulumi, PyPI, SCM, Tekton, Terraform, maven, npm).
+**Evidenced by 105 checks** across 26 providers (AWS, Argo CD, Argo Workflows, Azure Cloud, Azure DevOps, Bitbucket, Buildkite, CircleCI, Cloud Build, CloudFormation, Dockerfile, Drone CI, GCP, GitHub Actions, GitLab CI, Helm, Jenkins, Kubernetes, NuGet, Pulumi, PyPI, SCM, Tekton, Terraform, maven, npm).
 
 | Check | Title | Severity | Provider | Fix |
 |-------|-------|----------|----------|-----|
@@ -736,6 +742,7 @@ Plaintext secrets in YAML, env vars baked into image layers, or tokens echoed to
 | [`NPM-012`](../providers/npm.md#npm-012) | .npmrc publish token lacks IP or readonly restriction | <span class="pg-sev pg-sev--high">HIGH</span> | [npm](../providers/npm.md) |  |
 | [`NPM-013`](../providers/npm.md#npm-013) | package.json files field uses an overly broad pattern | <span class="pg-sev pg-sev--high">HIGH</span> | [npm](../providers/npm.md) |  |
 | [`NUGET-010`](../providers/nuget.md#nuget-010) | NuGet.config stores a feed credential in plaintext | <span class="pg-sev pg-sev--high">HIGH</span> | [NuGet](../providers/nuget.md) |  |
+| [`NUGET-014`](../providers/nuget.md#nuget-014) | NuGet.config source URL embeds plaintext credentials | <span class="pg-sev pg-sev--high">HIGH</span> | [NuGet](../providers/nuget.md) |  |
 | [`PULUMI-001`](../providers/pulumi.md) | Pulumi stack uses passphrase-based secret encryption | <span class="pg-sev pg-sev--high">HIGH</span> | [Pulumi](../providers/pulumi.md) |  |
 | [`PULUMI-002`](../providers/pulumi.md) | Pulumi stack config carries a secret-shaped key in plaintext | <span class="pg-sev pg-sev--high">HIGH</span> | [Pulumi](../providers/pulumi.md) |  |
 | [`PULUMI-003`](../providers/pulumi.md) | Pulumi source file embeds a hardcoded credential | <span class="pg-sev pg-sev--high">HIGH</span> | [Pulumi](../providers/pulumi.md) |  |
@@ -1102,7 +1109,7 @@ Without provenance, attestations, signatures, or SBOMs, consumers (including pro
 
 When the pipeline doesn't log its decisions, audits stall and incident response lacks the timeline needed to scope a compromise.
 
-**Evidenced by 77 checks** across 14 providers (AWS, Azure Cloud, CircleCI, Cloud Build, Dockerfile, GCP, GitHub Actions, Helm, Jenkins, Kubernetes, OCI manifest, PyPI, SCM, maven).
+**Evidenced by 78 checks** across 15 providers (AWS, Azure Cloud, CircleCI, Cloud Build, Dockerfile, GCP, GitHub Actions, Helm, Jenkins, Kubernetes, NuGet, OCI manifest, PyPI, SCM, maven).
 
 | Check | Title | Severity | Provider | Fix |
 |-------|-------|----------|----------|-----|
@@ -1164,6 +1171,7 @@ When the pipeline doesn't log its decisions, audits stall and incident response 
 | [`LMB-000`](../providers/aws.md#lmb-000) | Lambda API access failed | <span class="pg-sev pg-sev--info">INFO</span> | [AWS](../providers/aws.md) |  |
 | [`MVN-010`](../providers/maven.md#mvn-010) | settings.xml <server> carries a plaintext password | <span class="pg-sev pg-sev--high">HIGH</span> | [maven](../providers/maven.md) |  |
 | [`MVN-011`](../providers/maven.md#mvn-011) | Maven repository URL embeds plaintext credentials | <span class="pg-sev pg-sev--high">HIGH</span> | [maven](../providers/maven.md) |  |
+| [`NUGET-014`](../providers/nuget.md#nuget-014) | NuGet.config source URL embeds plaintext credentials | <span class="pg-sev pg-sev--high">HIGH</span> | [NuGet](../providers/nuget.md) |  |
 | [`OCI-001`](../providers/oci.md#oci-001) | Image manifest is missing OCI provenance annotations | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [OCI manifest](../providers/oci.md) |  |
 | [`OCI-002`](../providers/oci.md#oci-002) | Image is missing a build attestation manifest | <span class="pg-sev pg-sev--high">HIGH</span> | [OCI manifest](../providers/oci.md) |  |
 | [`OCI-003`](../providers/oci.md#oci-003) | Image manifest is missing the ``image.created`` annotation | <span class="pg-sev pg-sev--low">LOW</span> | [OCI manifest](../providers/oci.md) |  |

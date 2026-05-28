@@ -11,7 +11,7 @@ and artifact controls covering the full pipeline trust chain.
 
 - **Controls in this standard:** 25
 - **Controls evidenced by at least one check:** 25 / 25
-- **Distinct checks evidencing this standard:** 794
+- **Distinct checks evidencing this standard:** 799
 - **Of those, autofixable with `--fix`:** 110
 
 _Severity levels (`CRITICAL` / `HIGH` / `MEDIUM` / `LOW` / `INFO`) follow the same scale across every provider and standard. See [How to read severity](README.md#how-to-read-severity) on the standards overview for the definitions._
@@ -28,8 +28,8 @@ Click a control ID to jump to the per-control section with the full check list. 
 | [`1.1.8`](#ctrl-1-1-8) | Ensure scanners are in place to identify and confirm presence of vulnerabilities (SCA) | 22 | 1C · 4H · 14M · 3L |
 | [`1.1.17`](#ctrl-1-1-17) | Ensure default branches' commits are protected from being deleted/rewritten | 13 | 1C · 6H · 3M · 3L |
 | [`1.3.4`](#ctrl-1-3-4) | Ensure organization identity is required for contribution (no long-lived personal tokens) | 44 | 2C · 30H · 11M · 1L |
-| [`1.4.1`](#ctrl-1-4-1) | Ensure third-party artifacts and open-source libraries are verified | 203 | 24C · 99H · 72M · 8L |
-| [`1.5.1`](#ctrl-1-5-1) | Ensure scanners are in place to identify and prevent sensitive data in code | 63 | 25C · 32H · 4M · 2L |
+| [`1.4.1`](#ctrl-1-4-1) | Ensure third-party artifacts and open-source libraries are verified | 207 | 24C · 102H · 73M · 8L |
+| [`1.5.1`](#ctrl-1-5-1) | Ensure scanners are in place to identify and prevent sensitive data in code | 64 | 25C · 33H · 4M · 2L |
 | [`2.1.3`](#ctrl-2-1-3) | Ensure the build environment is hardened | 118 | 27C · 68H · 20M · 3L |
 | [`2.1.6`](#ctrl-2-1-6) | Ensure build workers have minimal network connectivity | 37 | 4C · 17H · 15M · 1L |
 | [`2.2.2`](#ctrl-2-2-2) | Ensure build workers are single-use | 17 | 13M · 4L |
@@ -226,7 +226,7 @@ pipeline_check --pipeline aws --standard cis_supply_chain --standard owasp_cicd_
 
 ### 1.4.1: Ensure third-party artifacts and open-source libraries are verified { #ctrl-1-4-1 }
 
-**Evidenced by 203 checks** across 27 providers (AWS, Argo CD, Argo Workflows, Azure Cloud, Azure DevOps, Bitbucket, Buildkite, Cargo, CircleCI, Cloud Build, Dockerfile, Drone CI, GCP, GitHub Actions, GitLab CI, Go modules, Helm, Jenkins, Kubernetes, NuGet, OCI manifest, Pulumi, PyPI, SCM, Tekton, maven, npm).
+**Evidenced by 207 checks** across 27 providers (AWS, Argo CD, Argo Workflows, Azure Cloud, Azure DevOps, Bitbucket, Buildkite, Cargo, CircleCI, Cloud Build, Dockerfile, Drone CI, GCP, GitHub Actions, GitLab CI, Go modules, Helm, Jenkins, Kubernetes, NuGet, OCI manifest, Pulumi, PyPI, SCM, Tekton, maven, npm).
 
 | Check | Title | Severity | Provider | Fix |
 |-------|-------|----------|----------|-----|
@@ -413,6 +413,10 @@ pipeline_check --pipeline aws --standard cis_supply_chain --standard owasp_cicd_
 | [`NUGET-007`](../providers/nuget.md#nuget-007) | Multiple NuGet sources without packageSourceMapping | <span class="pg-sev pg-sev--high">HIGH</span> | [NuGet](../providers/nuget.md) |  |
 | [`NUGET-008`](../providers/nuget.md#nuget-008) | NuGet package published within the cooldown window | <span class="pg-sev pg-sev--high">HIGH</span> | [NuGet](../providers/nuget.md) |  |
 | [`NUGET-009`](../providers/nuget.md#nuget-009) | NuGet package has a known OSV advisory | <span class="pg-sev pg-sev--critical">CRITICAL</span> | [NuGet](../providers/nuget.md) |  |
+| [`NUGET-011`](../providers/nuget.md#nuget-011) | packageSourceMapping pattern is a global wildcard | <span class="pg-sev pg-sev--high">HIGH</span> | [NuGet](../providers/nuget.md) |  |
+| [`NUGET-012`](../providers/nuget.md#nuget-012) | NuGet.config does not enforce signatureValidationMode = require | <span class="pg-sev pg-sev--high">HIGH</span> | [NuGet](../providers/nuget.md) |  |
+| [`NUGET-013`](../providers/nuget.md#nuget-013) | dotnet-tools.json entry lacks a version pin | <span class="pg-sev pg-sev--high">HIGH</span> | [NuGet](../providers/nuget.md) |  |
+| [`NUGET-015`](../providers/nuget.md#nuget-015) | PackageReference VersionOverride defeats Central Package Management | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [NuGet](../providers/nuget.md) |  |
 | [`OCI-004`](../providers/oci.md#oci-004) | Image layer references an arbitrary URL (foreign layer) | <span class="pg-sev pg-sev--high">HIGH</span> | [OCI manifest](../providers/oci.md) |  |
 | [`PULUMI-006`](../providers/pulumi.md) | Pulumi source uses StackReference without project/org guard | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [Pulumi](../providers/pulumi.md) |  |
 | [`PULUMI-009`](../providers/pulumi.md) | Pulumi.yaml runtime does not match any source file | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [Pulumi](../providers/pulumi.md) |  |
@@ -436,7 +440,7 @@ pipeline_check --pipeline aws --standard cis_supply_chain --standard owasp_cicd_
 
 ### 1.5.1: Ensure scanners are in place to identify and prevent sensitive data in code { #ctrl-1-5-1 }
 
-**Evidenced by 63 checks** across 24 providers (AWS, Argo CD, Argo Workflows, Azure DevOps, Bitbucket, Buildkite, CircleCI, Cloud Build, CloudFormation, Dockerfile, Drone CI, GitHub Actions, GitLab CI, Helm, Jenkins, Kubernetes, NuGet, Pulumi, PyPI, SCM, Tekton, Terraform, maven, npm).
+**Evidenced by 64 checks** across 24 providers (AWS, Argo CD, Argo Workflows, Azure DevOps, Bitbucket, Buildkite, CircleCI, Cloud Build, CloudFormation, Dockerfile, Drone CI, GitHub Actions, GitLab CI, Helm, Jenkins, Kubernetes, NuGet, Pulumi, PyPI, SCM, Tekton, Terraform, maven, npm).
 
 | Check | Title | Severity | Provider | Fix |
 |-------|-------|----------|----------|-----|
@@ -487,6 +491,7 @@ pipeline_check --pipeline aws --standard cis_supply_chain --standard owasp_cicd_
 | [`NPM-011`](../providers/npm.md#npm-011) | package.json files field includes secret-shaped paths | <span class="pg-sev pg-sev--high">HIGH</span> | [npm](../providers/npm.md) |  |
 | [`NPM-013`](../providers/npm.md#npm-013) | package.json files field uses an overly broad pattern | <span class="pg-sev pg-sev--high">HIGH</span> | [npm](../providers/npm.md) |  |
 | [`NUGET-010`](../providers/nuget.md#nuget-010) | NuGet.config stores a feed credential in plaintext | <span class="pg-sev pg-sev--high">HIGH</span> | [NuGet](../providers/nuget.md) |  |
+| [`NUGET-014`](../providers/nuget.md#nuget-014) | NuGet.config source URL embeds plaintext credentials | <span class="pg-sev pg-sev--high">HIGH</span> | [NuGet](../providers/nuget.md) |  |
 | [`PULUMI-001`](../providers/pulumi.md) | Pulumi stack uses passphrase-based secret encryption | <span class="pg-sev pg-sev--high">HIGH</span> | [Pulumi](../providers/pulumi.md) |  |
 | [`PULUMI-002`](../providers/pulumi.md) | Pulumi stack config carries a secret-shaped key in plaintext | <span class="pg-sev pg-sev--high">HIGH</span> | [Pulumi](../providers/pulumi.md) |  |
 | [`PULUMI-003`](../providers/pulumi.md) | Pulumi source file embeds a hardcoded credential | <span class="pg-sev pg-sev--high">HIGH</span> | [Pulumi](../providers/pulumi.md) |  |

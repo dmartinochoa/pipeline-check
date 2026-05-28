@@ -649,6 +649,12 @@ STANDARD = Standard(
         "NUGET-008": ["1.4.1", "3.1.3"],           # cooldown gate (--resolve-remote)
         "NUGET-009": ["1.4.1", "3.1.3"],           # OSV advisory (--resolve-remote)
         "NUGET-010": ["1.5.1", "2.3.4"],           # NuGet.config cleartext feed credential
+        # ── NuGet extended pack ──
+        "NUGET-011": ["1.4.1"],                    # source mapping wildcard
+        "NUGET-012": ["1.4.1"],                    # signature validation off
+        "NUGET-013": ["1.4.1"],                    # dotnet-tools unpinned
+        "NUGET-014": ["1.5.1"],                    # source URL credentials
+        "NUGET-015": ["1.4.1"],                    # VersionOverride breaks CPM
         # ── Go modules (GOMOD-001..006) ──
         "GOMOD-001": ["1.4.1"],                    # go.sum integrity manifest missing
         "GOMOD-002": ["1.4.1"],                    # replace directive to local path

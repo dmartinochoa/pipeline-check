@@ -592,6 +592,12 @@ STANDARD = Standard(
         "NUGET-008": ["PW.4.1", "PW.4.4", "RV.1.1"],   # cooldown gate (--resolve-remote)
         "NUGET-009": ["PW.4.1", "PW.4.4", "RV.1.1"],   # OSV advisory (--resolve-remote)
         "NUGET-010": ["PS.1.1"],                       # NuGet.config cleartext feed credential
+        # ── NuGet extended pack ──
+        "NUGET-011": ["PW.4.4"],                       # source mapping wildcard
+        "NUGET-012": ["PW.4.4", "PS.3.2"],             # signature validation off
+        "NUGET-013": ["PW.4.4"],                       # dotnet-tools unpinned
+        "NUGET-014": ["PS.1.1"],                       # source URL credentials
+        "NUGET-015": ["PO.5.1", "PW.4.4"],             # VersionOverride breaks CPM
         # ── Go modules (GOMOD-001..006) ──
         "GOMOD-001": ["PS.1.1", "PW.4.4"],             # go.sum integrity manifest missing
         "GOMOD-002": ["PO.5.1", "PW.4.4"],             # replace directive to local path

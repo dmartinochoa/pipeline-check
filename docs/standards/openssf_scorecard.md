@@ -14,7 +14,7 @@ side that Scorecard also covers.
 
 - **Controls in this standard:** 10
 - **Controls evidenced by at least one check:** 10 / 10
-- **Distinct checks evidencing this standard:** 589
+- **Distinct checks evidencing this standard:** 593
 - **Of those, autofixable with `--fix`:** 86
 
 _Severity levels (`CRITICAL` / `HIGH` / `MEDIUM` / `LOW` / `INFO`) follow the same scale across every provider and standard. See [How to read severity](README.md#how-to-read-severity) on the standards overview for the definitions._
@@ -29,11 +29,11 @@ Click a control ID to jump to the per-control section with the full check list. 
 | [`Code-Review`](#ctrl-code-review) | Changes merged to the default branch require review | 31 | 12H · 18M · 1L |
 | [`Dangerous-Workflow`](#ctrl-dangerous-workflow) | No dangerous patterns in CI workflows (untrusted checkout, script injection) | 160 | 32C · 96H · 29M · 3L |
 | [`Dependency-Update-Tool`](#ctrl-dependency-update-tool) | Project uses an automated dependency-update tool (Dependabot / Renovate) | 7 | 7M |
-| [`Pinned-Dependencies`](#ctrl-pinned-dependencies) | Dependencies (actions, images, includes, packages) are pinned to immutable references from trusted sources | 152 | 10C · 85H · 50M · 7L |
+| [`Pinned-Dependencies`](#ctrl-pinned-dependencies) | Dependencies (actions, images, includes, packages) are pinned to immutable references from trusted sources | 155 | 10C · 87H · 51M · 7L |
 | [`SAST`](#ctrl-sast) | Project uses static analysis / vulnerability scanning | 19 | 3H · 14M · 2L |
 | [`SBOM`](#ctrl-sbom) | Releases publish a software bill of materials | 24 | 1H · 18M · 5L |
 | [`Signed-Releases`](#ctrl-signed-releases) | Release artifacts are cryptographically signed | 37 | 6H · 30M · 1L |
-| [`Token-Permissions`](#ctrl-token-permissions) | CI tokens are scoped to the minimum required permissions | 139 | 31C · 64H · 42M · 2L |
+| [`Token-Permissions`](#ctrl-token-permissions) | CI tokens are scoped to the minimum required permissions | 140 | 31C · 65H · 42M · 2L |
 | [`Vulnerabilities`](#ctrl-vulnerabilities) | Project scans for and resolves known vulnerabilities | 29 | 8C · 7H · 14M |
 
 ## Filter at runtime
@@ -325,7 +325,7 @@ pipeline_check --pipeline aws --standard openssf_scorecard --standard owasp_cicd
 
 ### Pinned-Dependencies: Dependencies (actions, images, includes, packages) are pinned to immutable references from trusted sources { #ctrl-pinned-dependencies }
 
-**Evidenced by 152 checks** across 23 providers (AWS, Argo CD, Argo Workflows, Azure Cloud, Azure DevOps, Bitbucket, Buildkite, CircleCI, Cloud Build, Dockerfile, Drone CI, GCP, GitHub Actions, GitLab CI, Helm, Jenkins, NuGet, OCI manifest, PyPI, SCM, Tekton, maven, npm).
+**Evidenced by 155 checks** across 23 providers (AWS, Argo CD, Argo Workflows, Azure Cloud, Azure DevOps, Bitbucket, Buildkite, CircleCI, Cloud Build, Dockerfile, Drone CI, GCP, GitHub Actions, GitLab CI, Helm, Jenkins, NuGet, OCI manifest, PyPI, SCM, Tekton, maven, npm).
 
 | Check | Title | Severity | Provider | Fix |
 |-------|-------|----------|----------|-----|
@@ -466,6 +466,9 @@ pipeline_check --pipeline aws --standard openssf_scorecard --standard owasp_cicd
 | [`NUGET-007`](../providers/nuget.md#nuget-007) | Multiple NuGet sources without packageSourceMapping | <span class="pg-sev pg-sev--high">HIGH</span> | [NuGet](../providers/nuget.md) |  |
 | [`NUGET-008`](../providers/nuget.md#nuget-008) | NuGet package published within the cooldown window | <span class="pg-sev pg-sev--high">HIGH</span> | [NuGet](../providers/nuget.md) |  |
 | [`NUGET-009`](../providers/nuget.md#nuget-009) | NuGet package has a known OSV advisory | <span class="pg-sev pg-sev--critical">CRITICAL</span> | [NuGet](../providers/nuget.md) |  |
+| [`NUGET-011`](../providers/nuget.md#nuget-011) | packageSourceMapping pattern is a global wildcard | <span class="pg-sev pg-sev--high">HIGH</span> | [NuGet](../providers/nuget.md) |  |
+| [`NUGET-013`](../providers/nuget.md#nuget-013) | dotnet-tools.json entry lacks a version pin | <span class="pg-sev pg-sev--high">HIGH</span> | [NuGet](../providers/nuget.md) |  |
+| [`NUGET-015`](../providers/nuget.md#nuget-015) | PackageReference VersionOverride defeats Central Package Management | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [NuGet](../providers/nuget.md) |  |
 | [`OCI-004`](../providers/oci.md#oci-004) | Image layer references an arbitrary URL (foreign layer) | <span class="pg-sev pg-sev--high">HIGH</span> | [OCI manifest](../providers/oci.md) |  |
 | [`OCI-007`](../providers/oci.md#oci-007) | Image manifest uses legacy schemaVersion 1 (no content addressing) | <span class="pg-sev pg-sev--high">HIGH</span> | [OCI manifest](../providers/oci.md) |  |
 | [`OCI-008`](../providers/oci.md#oci-008) | Manifest references digest using unsupported hash algorithm | <span class="pg-sev pg-sev--high">HIGH</span> | [OCI manifest](../providers/oci.md) |  |
@@ -585,7 +588,7 @@ pipeline_check --pipeline aws --standard openssf_scorecard --standard owasp_cicd
 
 ### Token-Permissions: CI tokens are scoped to the minimum required permissions { #ctrl-token-permissions }
 
-**Evidenced by 139 checks** across 23 providers (AWS, Argo CD, Argo Workflows, Azure Cloud, Azure DevOps, Bitbucket, Buildkite, CircleCI, Cloud Build, CloudFormation, Dockerfile, Drone CI, GCP, GitHub Actions, GitLab CI, Helm, Jenkins, NuGet, SCM, Tekton, Terraform, maven, npm).
+**Evidenced by 140 checks** across 23 providers (AWS, Argo CD, Argo Workflows, Azure Cloud, Azure DevOps, Bitbucket, Buildkite, CircleCI, Cloud Build, CloudFormation, Dockerfile, Drone CI, GCP, GitHub Actions, GitLab CI, Helm, Jenkins, NuGet, SCM, Tekton, Terraform, maven, npm).
 
 | Check | Title | Severity | Provider | Fix |
 |-------|-------|----------|----------|-----|
@@ -716,6 +719,7 @@ pipeline_check --pipeline aws --standard openssf_scorecard --standard owasp_cicd
 | [`NPM-011`](../providers/npm.md#npm-011) | package.json files field includes secret-shaped paths | <span class="pg-sev pg-sev--high">HIGH</span> | [npm](../providers/npm.md) |  |
 | [`NPM-013`](../providers/npm.md#npm-013) | package.json files field uses an overly broad pattern | <span class="pg-sev pg-sev--high">HIGH</span> | [npm](../providers/npm.md) |  |
 | [`NUGET-010`](../providers/nuget.md#nuget-010) | NuGet.config stores a feed credential in plaintext | <span class="pg-sev pg-sev--high">HIGH</span> | [NuGet](../providers/nuget.md) |  |
+| [`NUGET-014`](../providers/nuget.md#nuget-014) | NuGet.config source URL embeds plaintext credentials | <span class="pg-sev pg-sev--high">HIGH</span> | [NuGet](../providers/nuget.md) |  |
 | [`PBAC-002`](../providers/aws.md#pbac-002) | CodeBuild service role shared across multiple projects | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [AWS](../providers/aws.md) |  |
 | [`PBAC-005`](../providers/aws.md#pbac-005) | CodePipeline stage action roles mirror the pipeline role | <span class="pg-sev pg-sev--high">HIGH</span> | [AWS](../providers/aws.md) |  |
 | [`SCM-020`](../providers/scm_github.md#scm-020) | Default workflow GITHUB_TOKEN has write permission | <span class="pg-sev pg-sev--high">HIGH</span> | [SCM](../providers/scm_github.md) |  |

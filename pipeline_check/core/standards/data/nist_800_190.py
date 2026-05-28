@@ -373,6 +373,12 @@ STANDARD = Standard(
         "NUGET-008": ["4.1.3"],                    # cooldown gate (--resolve-remote)
         "NUGET-009": ["4.1.3"],                    # OSV advisory (--resolve-remote)
         "NUGET-010": ["4.4.5"],                    # NuGet.config cleartext feed credential
+        # ── NuGet extended pack ──
+        "NUGET-011": ["4.1.3"],
+        "NUGET-012": ["4.1.3"],
+        "NUGET-013": ["4.1.3"],
+        "NUGET-014": ["4.1.4"],
+        "NUGET-015": ["4.1.3"],
         # ── OCI image manifest gaps ──────────────────────────────
         # OCI-001..003/005 are image-provenance metadata gaps —
         # untrusted-image surface (4.1.5). OCI-004 foreign-layer

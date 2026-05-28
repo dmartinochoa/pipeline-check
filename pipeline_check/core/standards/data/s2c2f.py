@@ -85,6 +85,12 @@ STANDARD = Standard(
         "NUGET-004": ["ING-1"],            # HTTP-only NuGet package source
         "NUGET-007": ["ING-1"],            # multiple sources without packageSourceMapping
         "NUGET-010": ["ING-1"],            # NuGet.config cleartext feed credential
+        # ── NuGet extended pack ──
+        "NUGET-011": ["ING-1"],
+        "NUGET-012": ["ING-1"],
+        "NUGET-013": ["ING-1"],
+        "NUGET-014": ["ING-1"],
+        "NUGET-015": ["ING-1"],
         # Dockerfile env-bypass pack disables the trusted-source channel
         # for any subsequent OSS install in the image.
         "DF-021":   ["ING-1"],             # pip install TLS bypass / http index

@@ -625,6 +625,12 @@ STANDARD = Standard(
         "NUGET-008": ["6.3.1", "6.3.3"],
         "NUGET-009": ["6.3.1", "6.3.3"],
         "NUGET-010": ["8.2.1"],                  # NuGet.config cleartext feed credential
+        # ── NuGet extended pack ──
+        "NUGET-011": ["6.3.1"],
+        "NUGET-012": ["6.3.1"],
+        "NUGET-013": ["6.3.1"],
+        "NUGET-014": ["8.2.1"],
+        "NUGET-015": ["6.3.1"],
         # ── Go modules ──
         "GOMOD-001": ["6.3.1"],                  # go.sum integrity manifest missing
         "GOMOD-002": ["6.3.1"],                  # replace directive to local path

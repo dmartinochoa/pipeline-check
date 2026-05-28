@@ -12,7 +12,7 @@ the scanner evidences controls that surface in CI/CD configuration.
 
 - **Controls in this standard:** 24
 - **Controls evidenced by at least one check:** 24 / 24
-- **Distinct checks evidencing this standard:** 790
+- **Distinct checks evidencing this standard:** 795
 - **Of those, autofixable with `--fix`:** 111
 
 _Severity levels (`CRITICAL` / `HIGH` / `MEDIUM` / `LOW` / `INFO`) follow the same scale across every provider and standard. See [How to read severity](README.md#how-to-read-severity) on the standards overview for the definitions._
@@ -26,7 +26,7 @@ Click a control ID to jump to the per-control section with the full check list. 
 | [`ESF-D-BUILD-ENV`](#ctrl-esf-d-build-env) | Harden the build environment (isolated, minimal, ephemeral workers) | 75 | 11C · 26H · 30M · 8L |
 | [`ESF-D-BUILD-LOGS`](#ctrl-esf-d-build-logs) | Generate and preserve build audit logs | 5 | 1H · 2M · 2L |
 | [`ESF-D-BUILD-TIMEOUT`](#ctrl-esf-d-build-timeout) | Enforce bounded build execution (single-use, time-limited) | 12 | 8M · 4L |
-| [`ESF-D-SECRETS`](#ctrl-esf-d-secrets) | Protect secrets used during build; no secrets in source or env | 71 | 28C · 37H · 5M · 1L |
+| [`ESF-D-SECRETS`](#ctrl-esf-d-secrets) | Protect secrets used during build; no secrets in source or env | 72 | 28C · 38H · 5M · 1L |
 | [`ESF-D-PRIV-BUILD`](#ctrl-esf-d-priv-build) | Avoid privileged / host-networked build workers | 41 | 6C · 20H · 14M · 1L |
 | [`ESF-D-SIGN-ARTIFACTS`](#ctrl-esf-d-sign-artifacts) | Sign build artifacts and verify signatures before release | 30 | 6H · 24M |
 | [`ESF-D-SBOM`](#ctrl-esf-d-sbom) | Produce SBOM / provenance metadata with every build | 26 | 1H · 20M · 5L |
@@ -34,12 +34,12 @@ Click a control ID to jump to the per-control section with the full check list. 
 | [`ESF-D-TOKEN-HYGIENE`](#ctrl-esf-d-token-hygiene) | Use short-lived, federated credentials (OIDC), not long-lived tokens | 38 | 25H · 13M |
 | [`ESF-D-INJECTION`](#ctrl-esf-d-injection) | Prevent script / template injection from untrusted pipeline context | 80 | 22C · 50H · 6M · 2L |
 | [`ESF-D-TAMPER`](#ctrl-esf-d-tamper) | Protect build artifacts from tampering and detect unauthorized modification | 6 | 1C · 4M · 1L |
-| [`ESF-S-VERIFY-DEPS`](#ctrl-esf-s-verify-deps) | Verify third-party and open-source dependencies before use | 160 | 22C · 81H · 51M · 6L |
+| [`ESF-S-VERIFY-DEPS`](#ctrl-esf-s-verify-deps) | Verify third-party and open-source dependencies before use | 164 | 22C · 84H · 52M · 6L |
 | [`ESF-S-PIN-DEPS`](#ctrl-esf-s-pin-deps) | Pin dependencies / actions / images to immutable digests | 81 | 1C · 37H · 37M · 6L |
 | [`ESF-S-TRUSTED-REG`](#ctrl-esf-s-trusted-reg) | Use only trusted, authenticated package and image registries | 35 | 1C · 27H · 6M · 1L |
 | [`ESF-S-VULN-MGMT`](#ctrl-esf-s-vuln-mgmt) | Scan inbound artifacts (images, packages) for known vulnerabilities | 28 | 5C · 4H · 16M · 3L |
 | [`ESF-S-IMMUTABLE`](#ctrl-esf-s-immutable) | Enforce artifact / tag immutability to preserve provenance | 15 | 9H · 3M · 3L |
-| [`ESF-S-PROVENANCE`](#ctrl-esf-s-provenance) | Generate and verify provenance metadata (SLSA / in-toto) for produced artifacts | 11 | 4H · 7M |
+| [`ESF-S-PROVENANCE`](#ctrl-esf-s-provenance) | Generate and verify provenance metadata (SLSA / in-toto) for produced artifacts | 12 | 5H · 7M |
 | [`ESF-C-APPROVAL`](#ctrl-esf-c-approval) | Require explicit approval before production deployment | 26 | 8H · 17M · 1L |
 | [`ESF-C-ROLLBACK`](#ctrl-esf-c-rollback) | Automated rollback on deployment failure or alarm | 6 | 2H · 4M |
 | [`ESF-C-DEPLOY-MON`](#ctrl-esf-c-deploy-mon) | Monitor deployments with alarms / health checks | 8 | 4M · 4L |
@@ -180,7 +180,7 @@ pipeline_check --pipeline aws --standard esf_supply_chain --standard owasp_cicd_
 
 ### ESF-D-SECRETS: Protect secrets used during build; no secrets in source or env { #ctrl-esf-d-secrets }
 
-**Evidenced by 71 checks** across 24 providers (AWS, Argo CD, Argo Workflows, Azure DevOps, Bitbucket, Buildkite, CircleCI, Cloud Build, CloudFormation, Dockerfile, Drone CI, GitHub Actions, GitLab CI, Helm, Jenkins, Kubernetes, NuGet, Pulumi, PyPI, SCM, Tekton, Terraform, maven, npm).
+**Evidenced by 72 checks** across 24 providers (AWS, Argo CD, Argo Workflows, Azure DevOps, Bitbucket, Buildkite, CircleCI, Cloud Build, CloudFormation, Dockerfile, Drone CI, GitHub Actions, GitLab CI, Helm, Jenkins, Kubernetes, NuGet, Pulumi, PyPI, SCM, Tekton, Terraform, maven, npm).
 
 | Check | Title | Severity | Provider | Fix |
 |-------|-------|----------|----------|-----|
@@ -242,6 +242,7 @@ pipeline_check --pipeline aws --standard esf_supply_chain --standard owasp_cicd_
 | [`NPM-012`](../providers/npm.md#npm-012) | .npmrc publish token lacks IP or readonly restriction | <span class="pg-sev pg-sev--high">HIGH</span> | [npm](../providers/npm.md) |  |
 | [`NPM-013`](../providers/npm.md#npm-013) | package.json files field uses an overly broad pattern | <span class="pg-sev pg-sev--high">HIGH</span> | [npm](../providers/npm.md) |  |
 | [`NUGET-010`](../providers/nuget.md#nuget-010) | NuGet.config stores a feed credential in plaintext | <span class="pg-sev pg-sev--high">HIGH</span> | [NuGet](../providers/nuget.md) |  |
+| [`NUGET-014`](../providers/nuget.md#nuget-014) | NuGet.config source URL embeds plaintext credentials | <span class="pg-sev pg-sev--high">HIGH</span> | [NuGet](../providers/nuget.md) |  |
 | [`PULUMI-001`](../providers/pulumi.md) | Pulumi stack uses passphrase-based secret encryption | <span class="pg-sev pg-sev--high">HIGH</span> | [Pulumi](../providers/pulumi.md) |  |
 | [`PULUMI-002`](../providers/pulumi.md) | Pulumi stack config carries a secret-shaped key in plaintext | <span class="pg-sev pg-sev--high">HIGH</span> | [Pulumi](../providers/pulumi.md) |  |
 | [`PULUMI-003`](../providers/pulumi.md) | Pulumi source file embeds a hardcoded credential | <span class="pg-sev pg-sev--high">HIGH</span> | [Pulumi](../providers/pulumi.md) |  |
@@ -568,7 +569,7 @@ pipeline_check --pipeline aws --standard esf_supply_chain --standard owasp_cicd_
 
 ### ESF-S-VERIFY-DEPS: Verify third-party and open-source dependencies before use { #ctrl-esf-s-verify-deps }
 
-**Evidenced by 160 checks** across 25 providers (AWS, Argo CD, Argo Workflows, Azure DevOps, Bitbucket, Buildkite, Cargo, CircleCI, Cloud Build, Dockerfile, Drone CI, GitHub Actions, GitLab CI, Go modules, Helm, Jenkins, Kubernetes, NuGet, OCI manifest, Pulumi, PyPI, SCM, Tekton, maven, npm).
+**Evidenced by 164 checks** across 25 providers (AWS, Argo CD, Argo Workflows, Azure DevOps, Bitbucket, Buildkite, Cargo, CircleCI, Cloud Build, Dockerfile, Drone CI, GitHub Actions, GitLab CI, Go modules, Helm, Jenkins, Kubernetes, NuGet, OCI manifest, Pulumi, PyPI, SCM, Tekton, maven, npm).
 
 | Check | Title | Severity | Provider | Fix |
 |-------|-------|----------|----------|-----|
@@ -719,6 +720,10 @@ pipeline_check --pipeline aws --standard esf_supply_chain --standard owasp_cicd_
 | [`NUGET-007`](../providers/nuget.md#nuget-007) | Multiple NuGet sources without packageSourceMapping | <span class="pg-sev pg-sev--high">HIGH</span> | [NuGet](../providers/nuget.md) |  |
 | [`NUGET-008`](../providers/nuget.md#nuget-008) | NuGet package published within the cooldown window | <span class="pg-sev pg-sev--high">HIGH</span> | [NuGet](../providers/nuget.md) |  |
 | [`NUGET-009`](../providers/nuget.md#nuget-009) | NuGet package has a known OSV advisory | <span class="pg-sev pg-sev--critical">CRITICAL</span> | [NuGet](../providers/nuget.md) |  |
+| [`NUGET-011`](../providers/nuget.md#nuget-011) | packageSourceMapping pattern is a global wildcard | <span class="pg-sev pg-sev--high">HIGH</span> | [NuGet](../providers/nuget.md) |  |
+| [`NUGET-012`](../providers/nuget.md#nuget-012) | NuGet.config does not enforce signatureValidationMode = require | <span class="pg-sev pg-sev--high">HIGH</span> | [NuGet](../providers/nuget.md) |  |
+| [`NUGET-013`](../providers/nuget.md#nuget-013) | dotnet-tools.json entry lacks a version pin | <span class="pg-sev pg-sev--high">HIGH</span> | [NuGet](../providers/nuget.md) |  |
+| [`NUGET-015`](../providers/nuget.md#nuget-015) | PackageReference VersionOverride defeats Central Package Management | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [NuGet](../providers/nuget.md) |  |
 | [`OCI-007`](../providers/oci.md#oci-007) | Image manifest uses legacy schemaVersion 1 (no content addressing) | <span class="pg-sev pg-sev--high">HIGH</span> | [OCI manifest](../providers/oci.md) |  |
 | [`OCI-008`](../providers/oci.md#oci-008) | Manifest references digest using unsupported hash algorithm | <span class="pg-sev pg-sev--high">HIGH</span> | [OCI manifest](../providers/oci.md) |  |
 | [`PULUMI-009`](../providers/pulumi.md) | Pulumi.yaml runtime does not match any source file | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [Pulumi](../providers/pulumi.md) |  |
@@ -922,7 +927,7 @@ pipeline_check --pipeline aws --standard esf_supply_chain --standard owasp_cicd_
 
 ### ESF-S-PROVENANCE: Generate and verify provenance metadata (SLSA / in-toto) for produced artifacts { #ctrl-esf-s-provenance }
 
-**Evidenced by 11 checks** across 5 providers (Argo Workflows, Buildkite, OCI manifest, Pulumi, Tekton).
+**Evidenced by 12 checks** across 6 providers (Argo Workflows, Buildkite, NuGet, OCI manifest, Pulumi, Tekton).
 
 | Check | Title | Severity | Provider | Fix |
 |-------|-------|----------|----------|-----|
@@ -933,6 +938,7 @@ pipeline_check --pipeline aws --standard esf_supply_chain --standard owasp_cicd_
 | [`ATTEST-005`](../providers/oci.md#attest-005) | In-toto Statement subject is missing or unpinned | <span class="pg-sev pg-sev--high">HIGH</span> | [OCI manifest](../providers/oci.md) |  |
 | [`ATTEST-006`](../providers/oci.md#attest-006) | SLSA provenance lacks a meaningful buildType | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [OCI manifest](../providers/oci.md) |  |
 | [`BK-011`](../providers/buildkite.md#bk-011) | No SLSA provenance attestation produced | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [Buildkite](../providers/buildkite.md) |  |
+| [`NUGET-012`](../providers/nuget.md#nuget-012) | NuGet.config does not enforce signatureValidationMode = require | <span class="pg-sev pg-sev--high">HIGH</span> | [NuGet](../providers/nuget.md) |  |
 | [`OCI-002`](../providers/oci.md#oci-002) | Image is missing a build attestation manifest | <span class="pg-sev pg-sev--high">HIGH</span> | [OCI manifest](../providers/oci.md) |  |
 | [`OCI-009`](../providers/oci.md#oci-009) | Image manifest is missing OCI base-image annotations | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [OCI manifest](../providers/oci.md) |  |
 | [`PULUMI-004`](../providers/pulumi.md) | Pulumi project uses an insecure state backend | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [Pulumi](../providers/pulumi.md) |  |

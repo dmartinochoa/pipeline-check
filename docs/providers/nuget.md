@@ -28,7 +28,7 @@ pipeline_check --pipeline nuget --nuget-path ./src/
 
 ## What it covers
 
-10 checks · 0 have an autofix patch (``--fix``).
+15 checks · 0 have an autofix patch (``--fix``).
 
 | Check | Title | Severity | Fix |
 |-------|-------|----------|-----|
@@ -42,6 +42,11 @@ pipeline_check --pipeline nuget --nuget-path ./src/
 | [NUGET-008](#nuget-008) | NuGet package published within the cooldown window | <span class="pg-sev pg-sev--high">HIGH</span> |  |
 | [NUGET-009](#nuget-009) | NuGet package has a known OSV advisory | <span class="pg-sev pg-sev--critical">CRITICAL</span> |  |
 | [NUGET-010](#nuget-010) | NuGet.config stores a feed credential in plaintext | <span class="pg-sev pg-sev--high">HIGH</span> |  |
+| [NUGET-011](#nuget-011) | packageSourceMapping pattern is a global wildcard | <span class="pg-sev pg-sev--high">HIGH</span> |  |
+| [NUGET-012](#nuget-012) | NuGet.config does not enforce signatureValidationMode = require | <span class="pg-sev pg-sev--high">HIGH</span> |  |
+| [NUGET-013](#nuget-013) | dotnet-tools.json entry lacks a version pin | <span class="pg-sev pg-sev--high">HIGH</span> |  |
+| [NUGET-014](#nuget-014) | NuGet.config source URL embeds plaintext credentials | <span class="pg-sev pg-sev--high">HIGH</span> |  |
+| [NUGET-015](#nuget-015) | PackageReference VersionOverride defeats Central Package Management | <span class="pg-sev pg-sev--medium">MEDIUM</span> |  |
 
 ---
 
@@ -252,6 +257,221 @@ Note: a session-scoped ``NuGet.config`` written by the build script (never commi
 **Recommended action**
 
 Remove the ``<add key="ClearTextPassword" .../>`` element from ``<packageSourceCredentials>``. If the feed needs auth for the build, use an environment variable reference (``%FEED_PASSWORD%`` on the value of an encrypted ``<add key="Password" ...>`` entry, populated at job time) or NuGet's encrypted-credential workflow (``nuget sources update -username ... -password ...``, which writes the DPAPI-encrypted ``Password`` key on Windows). On Linux / macOS where DPAPI isn't available, inject the secret at build time via the ``NUGET_CREDENTIALS`` environment variable or a ``-StoredPasswordInClearText`` session-scoped source declared in the build script, never in a checked-in ``NuGet.config``. After removal, rotate the credential — anyone with read access to the repo history has it.
+
+</div>
+
+</div>
+
+<div class="pg-rule pg-rule--high" markdown>
+
+## NUGET-011: packageSourceMapping pattern is a global wildcard { #nuget-011 }
+
+<div class="pg-rule__tags">
+<span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-3</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-5</span> <span class="pg-tag pg-tag--esf">ESF-S-VERIFY-DEPS</span> <span class="pg-tag pg-tag--cwe">CWE-829</span>
+</div>
+
+Walks ``NuGet.config`` ``<packageSourceMapping>`` entries and fires when any ``<package pattern="...">`` is a global wildcard. The recognized wildcard shapes:
+
+* ``*`` — match everything
+* ``**`` — equivalent to ``*`` in NuGet pattern syntax
+
+Prefix wildcards (``Microsoft.*``, ``Corp.*``) are the *intended* use of ``<package pattern>`` — they map a package-name namespace to a specific source and don't trip this rule. The signal is specifically the unbounded global wildcard that turns the mapping into a no-op.
+
+Distinct from NUGET-007 (no packageSourceMapping at all): this rule catches the case where mapping exists but is ineffective.
+
+**Known false-positive modes**
+
+- Some workspaces use a global ``*`` deliberately to route all packages through a single internal mirror that does its own dependency-confusion screening. The rule still fires because the mapping itself doesn't carry the screening guarantee. Suppress per config with a one-line rationale naming the mirror's policy.
+
+**Seen in the wild**
+
+- Pattern in .NET monorepos that adopt ``<packageSourceMapping>`` as a quick fix during a dependency-confusion incident response: the initial mapping uses ``*`` to avoid breaking existing restore paths, the cleanup pass that replaces it with explicit prefixes never lands. The mapping looks present at audit time but provides no real gating.
+
+<div class="pg-rule__rec" markdown>
+
+**Recommended action**
+
+Replace the ``*`` (or other broadly-matching wildcard) pattern with explicit package-name prefixes so each package is routed to the source the team has chosen for it. The point of ``<packageSourceMapping>`` is to gate every package against a single trusted source per namespace; a ``*`` catch-all defeats the gate and lets any package — including dependency-confusion typo-squats — flow through whichever source happens to win the race.
+
+Example for an internal package convention:
+
+    <packageSourceMapping>
+      <packageSource key="nuget.org">
+        <package pattern="Newtonsoft.Json" />
+        <package pattern="Microsoft.*" />
+      </packageSource>
+      <packageSource key="corp-nexus">
+        <package pattern="Corp.*" />
+        <package pattern="Internal.*" />
+      </packageSource>
+    </packageSourceMapping>
+
+Every package now maps to exactly one source via longest-prefix match. A typo-squat that doesn't match a known prefix is rejected at restore time.
+
+</div>
+
+</div>
+
+<div class="pg-rule pg-rule--high" markdown>
+
+## NUGET-012: NuGet.config does not enforce signatureValidationMode = require { #nuget-012 }
+
+<div class="pg-rule__tags">
+<span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-3</span> <span class="pg-tag pg-tag--esf">ESF-S-VERIFY-DEPS</span> <span class="pg-tag pg-tag--esf">ESF-S-PROVENANCE</span> <span class="pg-tag pg-tag--cwe">CWE-345</span> <span class="pg-tag pg-tag--cwe">CWE-494</span>
+</div>
+
+Reads each ``NuGet.config``'s ``<config>`` block for ``signatureValidationMode``. Fires when the key is absent (default is ``accept``) or set to anything other than ``require`` (case-insensitive). The rule does NOT verify that ``<trustedSigners>`` is populated when ``require`` is set; a follow-up rule can audit the signers' completeness.
+
+Distinct from NUGET-010 (cleartext credentials) and NUGET-007 (package-source mapping): those audit credential and routing posture; this rule audits the integrity-verification posture at install time.
+
+**Known false-positive modes**
+
+- Internal-only NuGet feeds where every package is trusted by the workspace's perimeter posture (a single internal Nexus that the operator controls end-to-end) may legitimately accept unsigned packages. Suppress per config with a one-line rationale; production-facing workspaces should require signatures.
+
+**Seen in the wild**
+
+- .NET supply-chain compromise pattern: a popular package is published with a slight name variant via a compromised maintainer account. The original package is signed; the variant isn't. Consumers with ``signatureValidationMode=accept`` install both without distinction; ``require`` mode rejects the unsigned variant at restore time.
+
+<div class="pg-rule__rec" markdown>
+
+**Recommended action**
+
+Set ``signatureValidationMode`` to ``require`` in ``NuGet.config`` and add at least one ``<trustedSigners>`` entry naming the authors / repositories whose packages the project will accept:
+
+    <config>
+      <add key="signatureValidationMode" value="require" />
+    </config>
+    <trustedSigners>
+      <author name="microsoft">
+        <certificate fingerprint="<sha256-of-cert>"
+                     hashAlgorithm="SHA256"
+                     allowUntrustedRoot="false" />
+      </author>
+      <repository name="nuget.org" serviceIndex="https://api.nuget.org/v3/index.json">
+        <certificate fingerprint="<sha256-of-cert>"
+                     hashAlgorithm="SHA256"
+                     allowUntrustedRoot="false" />
+      </repository>
+    </trustedSigners>
+
+With ``require``, NuGet rejects any package whose signature doesn't validate against a trusted-signers entry — closing the substitution surface that transport-only verification leaves open. The default (``accept``) verifies signatures when present but happily accepts unsigned packages, which means a compromised mirror serving unsigned drop-ins isn't rejected at restore time.
+
+</div>
+
+</div>
+
+<div class="pg-rule pg-rule--high" markdown>
+
+## NUGET-013: dotnet-tools.json entry lacks a version pin { #nuget-013 }
+
+<div class="pg-rule__tags">
+<span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-3</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-5</span> <span class="pg-tag pg-tag--esf">ESF-S-VERIFY-DEPS</span> <span class="pg-tag pg-tag--esf">ESF-S-PIN-DEPS</span> <span class="pg-tag pg-tag--cwe">CWE-1357</span> <span class="pg-tag pg-tag--cwe">CWE-829</span>
+</div>
+
+Reads every ``.config/dotnet-tools.json`` (and root-level ``dotnet-tools.json``) under the scan path and walks the ``tools`` object. Fires for any entry whose value is either:
+
+* a dict without a ``version`` key, or
+* a dict with ``version`` set to an empty string
+
+Wildcard / range version specs (``"*"``, ``"8.0.*"``) are also flagged because they resolve at restore time to the registry's current content.
+
+**Known false-positive modes**
+
+- Some templating projects emit a ``dotnet-tools.json`` with no version field so the user picks a tool version at first use. The rule still fires; suppress per file with a one-line rationale, or — better — fill in the version once the project's tool requirements stabilize.
+
+**Seen in the wild**
+
+- Pattern of .NET tool-manifest compromise: a popular tool ships a poisoned patch release; every consumer running ``dotnet tool restore`` with a manifest that doesn't pin the version picks up the bad binary automatically. The binary's install hook runs in the developer's shell with their local credentials.
+
+<div class="pg-rule__rec" markdown>
+
+**Recommended action**
+
+Add an explicit ``version`` field to every tool entry in ``.config/dotnet-tools.json``:
+
+    {
+      "version": 1,
+      "isRoot": true,
+      "tools": {
+        "dotnet-ef": {
+          "version": "8.0.10",
+          "commands": ["dotnet-ef"]
+        }
+      }
+    }
+
+Tools listed in the manifest are restored by ``dotnet tool restore``, which executes the tool's binary on first invocation. Without a version pin, the command resolves to whatever ``nuget.org`` is currently publishing under the tool's name — including a poisoned patch release that runs in the developer's shell or the CI runner with whatever credentials those environments carry.
+
+Mirrors NUGET-001 (PackageReference floating version) but for the tool-manifest surface: tools execute on every developer's machine, while packages typically execute only when the application that consumes them runs.
+
+</div>
+
+</div>
+
+<div class="pg-rule pg-rule--high" markdown>
+
+## NUGET-014: NuGet.config source URL embeds plaintext credentials { #nuget-014 }
+
+<div class="pg-rule__tags">
+<span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-6</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-10</span> <span class="pg-tag pg-tag--esf">ESF-D-SECRETS</span> <span class="pg-tag pg-tag--cwe">CWE-798</span> <span class="pg-tag pg-tag--cwe">CWE-522</span>
+</div>
+
+Reads each ``NuGet.config`` ``<packageSources>`` entry and fires when the URL embeds a ``user:pass@`` authority component. Empty-password forms (``https://user:@host``) and ``${env:VAR}`` placeholders are skipped — the former is operator-flagged 'no credential intended' and the latter resolves at restore time from the environment.
+
+Distinct from NUGET-010 (cleartext password in ``<packageSourceCredentials>``) and NUGET-004 (HTTP scheme): those audit credential and transport posture in their canonical NuGet locations. This rule catches the URL-embedded shape, which is the most common developer mistake when adding a private feed manually.
+
+**Known false-positive modes**
+
+- Templated NuGet.config files that materialize a placeholder credential form (``https://__USER__:__TOKEN__@host``) and substitute the real value at build time trip this rule by shape. Suppress per config when the placeholder marker is stable; the rule's placeholder skip-list only recognizes ``${env:VAR}`` and ``${VAR}``.
+
+**Seen in the wild**
+
+- Pattern across .NET enterprise repositories: a contributor pastes a Nexus feed URL with embedded credentials into NuGet.config during a quick test, intends to replace it before commit, the replacement never happens. The credential persists in git history after the fact even if the next commit cleans the file.
+
+<div class="pg-rule__rec" markdown>
+
+**Recommended action**
+
+Move the credential out of the URL and into the ``<packageSourceCredentials>`` section using the encrypted-password form. The recommended flow:
+
+1. Run ``dotnet nuget add source <url> --username <user> --password <pass> --store-password-in-clear-text=false`` on the runner. NuGet stores the credential using the platform's secure-storage API (DPAPI on Windows, keychain on macOS, libsecret on Linux) and writes an encrypted form into the user-level NuGet.config.
+2. For CI, inject the credential at restore time from the secret manager: ``dotnet nuget add source ... --password ${env:NUGET_TOKEN}`` is expanded only at execution time, the literal credential never lives in the project's NuGet.config.
+3. If the source must live in the project NuGet.config for portability, use only the credential-free URL (``https://nexus.corp/repo``) and rely on the consumer's user-level config (where credentials are encrypted) for authentication.
+
+</div>
+
+</div>
+
+<div class="pg-rule pg-rule--medium" markdown>
+
+## NUGET-015: PackageReference VersionOverride defeats Central Package Management { #nuget-015 }
+
+<div class="pg-rule__tags">
+<span class="pg-sev pg-sev--medium">MEDIUM</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-3</span> <span class="pg-tag pg-tag--esf">ESF-S-VERIFY-DEPS</span> <span class="pg-tag pg-tag--cwe">CWE-1357</span>
+</div>
+
+Re-parses each ``.csproj`` and walks ``<PackageReference>`` entries for the ``VersionOverride`` attribute. Fires when the project participates in Central Package Management (i.e. ``NuGetProject.is_central_managed`` is true) AND any ``VersionOverride`` is set.
+
+Skips projects that don't participate in CPM — those use ``Version`` directly on every ``PackageReference``, and the ``VersionOverride`` attribute is a no-op there. The audit anchor is specifically the case where CPM is in force and a project punches a hole through it.
+
+**Known false-positive modes**
+
+- Some workspaces use ``VersionOverride`` to selectively test a newer version of a single package in one project before promoting it to ``Directory.Packages.props``. The rule still fires; suppress per project / per package with a one-line rationale naming the test and the planned promotion milestone.
+
+**Seen in the wild**
+
+- Pattern in long-lived .NET monorepos that adopt CPM during a posture cleanup but never police ``VersionOverride`` usage afterward: individual projects accumulate stale overrides for packages whose central version has since moved on, creating a hidden multi-version graph that defeats the single-version-per-package invariant CPM is meant to guarantee.
+
+<div class="pg-rule__rec" markdown>
+
+**Recommended action**
+
+Remove the ``VersionOverride`` attribute and pin the central version instead — update ``Directory.Packages.props`` if the override was meant to bump every consumer, or scope the override to a child ``Directory.Packages.props`` if only a subtree of the workspace needs the bump. The point of Central Package Management is to keep one version per package across the workspace; per-project ``VersionOverride`` punches through that contract and lets individual ``.csproj`` files drift away from the central pin silently.
+
+Two stable remediation patterns:
+
+* If the override exists because one project needs a newer version, accept the bump everywhere: update ``Directory.Packages.props`` to the new version and delete the override.
+* If only a subtree of the workspace can take the new version, scope it with a nested ``Directory.Packages.props`` in the subtree's directory; CPM honors the closest parent.
 
 </div>
 

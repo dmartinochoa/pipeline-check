@@ -154,6 +154,11 @@ STANDARD = Standard(
         "NUGET-008": ["Pinned-Dependencies", "Vulnerabilities"],       # cooldown gate (--resolve-remote)
         "NUGET-009": ["Pinned-Dependencies", "Vulnerabilities"],       # OSV advisory (--resolve-remote)
         "NUGET-010": ["Token-Permissions"],                            # NuGet.config cleartext feed credential
+        # ── NuGet extended pack ──
+        "NUGET-011": ["Pinned-Dependencies"],
+        "NUGET-013": ["Pinned-Dependencies"],
+        "NUGET-014": ["Token-Permissions"],
+        "NUGET-015": ["Pinned-Dependencies"],
         # Reusable workflow / services-image / cross-step pinning
         "GHA-017":  ["Pinned-Dependencies"],                           # package install insecure source
         "GHA-051":  ["Pinned-Dependencies"],                           # services / container image unpinned

@@ -13,7 +13,7 @@ scanner can witness.
 
 - **Controls in this standard:** 13
 - **Controls evidenced by at least one check:** 13 / 13
-- **Distinct checks evidencing this standard:** 781
+- **Distinct checks evidencing this standard:** 786
 - **Of those, autofixable with `--fix`:** 111
 
 _Severity levels (`CRITICAL` / `HIGH` / `MEDIUM` / `LOW` / `INFO`) follow the same scale across every provider and standard. See [How to read severity](README.md#how-to-read-severity) on the standards overview for the definitions._
@@ -24,7 +24,7 @@ Click a control ID to jump to the per-control section with the full check list. 
 
 | Control | Title | Checks | Severity mix |
 |---------|-------|-------:|--------------|
-| [`6.3.1`](#ctrl-6-3-1) | Security vulnerabilities are identified and managed | 78 | 17C · 30H · 27M · 4L |
+| [`6.3.1`](#ctrl-6-3-1) | Security vulnerabilities are identified and managed | 82 | 17C · 33H · 28M · 4L |
 | [`6.3.3`](#ctrl-6-3-3) | All system components protected from known vulnerabilities by installing applicable patches | 156 | 12C · 75H · 64M · 5L |
 | [`6.4.1`](#ctrl-6-4-1) | Public-facing web apps are protected against attacks (secure build/config) | 138 | 23C · 61H · 45M · 9L |
 | [`6.4.3`](#ctrl-6-4-3) | Changes to systems are managed via documented change control | 63 | 2C · 22H · 32M · 7L |
@@ -32,7 +32,7 @@ Click a control ID to jump to the per-control section with the full check list. 
 | [`7.2.1`](#ctrl-7-2-1) | Access control is defined per job role with least privilege | 35 | 5C · 19H · 10M · 1L |
 | [`7.2.2`](#ctrl-7-2-2) | Access is assigned based on job classification and function | 7 | 2H · 5M |
 | [`7.2.5`](#ctrl-7-2-5) | System and application accounts have least-privilege access | 68 | 9C · 34H · 25M |
-| [`8.2.1`](#ctrl-8-2-1) | Strong unique identifiers are assigned to each user and service account | 117 | 26C · 63H · 26M · 2L |
+| [`8.2.1`](#ctrl-8-2-1) | Strong unique identifiers are assigned to each user and service account | 118 | 26C · 64H · 26M · 2L |
 | [`8.2.2`](#ctrl-8-2-2) | Group, shared, or generic accounts are managed and justified | 10 | 1C · 5H · 4M |
 | [`10.2.1`](#ctrl-10-2-1) | Audit logs are enabled and active for all system components | 53 | 6H · 23M · 8L · 16I |
 | [`10.3.2`](#ctrl-10-3-2) | Audit logs are protected from unauthorized modifications | 68 | 4C · 18H · 42M · 4L |
@@ -57,7 +57,7 @@ pipeline_check --pipeline aws --standard pci_dss_v4 --standard owasp_cicd_top_10
 
 ### 6.3.1: Security vulnerabilities are identified and managed { #ctrl-6-3-1 }
 
-**Evidenced by 78 checks** across 23 providers (AWS, Argo CD, Argo Workflows, Azure Cloud, Azure DevOps, Bitbucket, Buildkite, Cargo, CircleCI, Cloud Build, Drone CI, GCP, GitHub Actions, GitLab CI, Go modules, Helm, Jenkins, NuGet, PyPI, SCM, Tekton, maven, npm).
+**Evidenced by 82 checks** across 23 providers (AWS, Argo CD, Argo Workflows, Azure Cloud, Azure DevOps, Bitbucket, Buildkite, Cargo, CircleCI, Cloud Build, Drone CI, GCP, GitHub Actions, GitLab CI, Go modules, Helm, Jenkins, NuGet, PyPI, SCM, Tekton, maven, npm).
 
 | Check | Title | Severity | Provider | Fix |
 |-------|-------|----------|----------|-----|
@@ -123,6 +123,10 @@ pipeline_check --pipeline aws --standard pci_dss_v4 --standard owasp_cicd_top_10
 | [`NUGET-005`](../providers/nuget.md#nuget-005) | Known-compromised NuGet package version | <span class="pg-sev pg-sev--critical">CRITICAL</span> | [NuGet](../providers/nuget.md) |  |
 | [`NUGET-008`](../providers/nuget.md#nuget-008) | NuGet package published within the cooldown window | <span class="pg-sev pg-sev--high">HIGH</span> | [NuGet](../providers/nuget.md) |  |
 | [`NUGET-009`](../providers/nuget.md#nuget-009) | NuGet package has a known OSV advisory | <span class="pg-sev pg-sev--critical">CRITICAL</span> | [NuGet](../providers/nuget.md) |  |
+| [`NUGET-011`](../providers/nuget.md#nuget-011) | packageSourceMapping pattern is a global wildcard | <span class="pg-sev pg-sev--high">HIGH</span> | [NuGet](../providers/nuget.md) |  |
+| [`NUGET-012`](../providers/nuget.md#nuget-012) | NuGet.config does not enforce signatureValidationMode = require | <span class="pg-sev pg-sev--high">HIGH</span> | [NuGet](../providers/nuget.md) |  |
+| [`NUGET-013`](../providers/nuget.md#nuget-013) | dotnet-tools.json entry lacks a version pin | <span class="pg-sev pg-sev--high">HIGH</span> | [NuGet](../providers/nuget.md) |  |
+| [`NUGET-015`](../providers/nuget.md#nuget-015) | PackageReference VersionOverride defeats Central Package Management | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [NuGet](../providers/nuget.md) |  |
 | [`PYPI-006`](../providers/pypi.md#pypi-006) | requirements.txt pins a known-compromised PyPI package version | <span class="pg-sev pg-sev--critical">CRITICAL</span> | [PyPI](../providers/pypi.md) |  |
 | [`PYPI-008`](../providers/pypi.md#pypi-008) | Direct dependency was published within the cooldown window | <span class="pg-sev pg-sev--high">HIGH</span> | [PyPI](../providers/pypi.md) |  |
 | [`PYPI-009`](../providers/pypi.md#pypi-009) | PyPI package has a known OSV advisory | <span class="pg-sev pg-sev--critical">CRITICAL</span> | [PyPI](../providers/pypi.md) |  |
@@ -975,7 +979,7 @@ pipeline_check --pipeline aws --standard pci_dss_v4 --standard owasp_cicd_top_10
 
 ### 8.2.1: Strong unique identifiers are assigned to each user and service account { #ctrl-8-2-1 }
 
-**Evidenced by 117 checks** across 25 providers (AWS, Argo Workflows, Azure Cloud, Azure DevOps, Bitbucket, Buildkite, CircleCI, Cloud Build, CloudFormation, Dockerfile, Drone CI, GCP, GitHub Actions, GitLab CI, Helm, Jenkins, Kubernetes, NuGet, Pulumi, PyPI, SCM, Tekton, Terraform, maven, npm).
+**Evidenced by 118 checks** across 25 providers (AWS, Argo Workflows, Azure Cloud, Azure DevOps, Bitbucket, Buildkite, CircleCI, Cloud Build, CloudFormation, Dockerfile, Drone CI, GCP, GitHub Actions, GitLab CI, Helm, Jenkins, Kubernetes, NuGet, Pulumi, PyPI, SCM, Tekton, Terraform, maven, npm).
 
 | Check | Title | Severity | Provider | Fix |
 |-------|-------|----------|----------|-----|
@@ -1074,6 +1078,7 @@ pipeline_check --pipeline aws --standard pci_dss_v4 --standard owasp_cicd_top_10
 | [`NPM-012`](../providers/npm.md#npm-012) | .npmrc publish token lacks IP or readonly restriction | <span class="pg-sev pg-sev--high">HIGH</span> | [npm](../providers/npm.md) |  |
 | [`NPM-013`](../providers/npm.md#npm-013) | package.json files field uses an overly broad pattern | <span class="pg-sev pg-sev--high">HIGH</span> | [npm](../providers/npm.md) |  |
 | [`NUGET-010`](../providers/nuget.md#nuget-010) | NuGet.config stores a feed credential in plaintext | <span class="pg-sev pg-sev--high">HIGH</span> | [NuGet](../providers/nuget.md) |  |
+| [`NUGET-014`](../providers/nuget.md#nuget-014) | NuGet.config source URL embeds plaintext credentials | <span class="pg-sev pg-sev--high">HIGH</span> | [NuGet](../providers/nuget.md) |  |
 | [`PULUMI-001`](../providers/pulumi.md) | Pulumi stack uses passphrase-based secret encryption | <span class="pg-sev pg-sev--high">HIGH</span> | [Pulumi](../providers/pulumi.md) |  |
 | [`PULUMI-002`](../providers/pulumi.md) | Pulumi stack config carries a secret-shaped key in plaintext | <span class="pg-sev pg-sev--high">HIGH</span> | [Pulumi](../providers/pulumi.md) |  |
 | [`PULUMI-003`](../providers/pulumi.md) | Pulumi source file embeds a hardcoded credential | <span class="pg-sev pg-sev--high">HIGH</span> | [Pulumi](../providers/pulumi.md) |  |

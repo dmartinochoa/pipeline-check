@@ -668,6 +668,12 @@ STANDARD = Standard(
         "NUGET-008": ["SR-3", "SR-11", "RA-5"],          # cooldown gate (--resolve-remote)
         "NUGET-009": ["SR-3", "SR-11", "RA-5"],          # OSV advisory (--resolve-remote)
         "NUGET-010": ["IA-5", "AC-3"],                   # NuGet.config cleartext feed credential
+        # ── NuGet extended pack ──
+        "NUGET-011": ["CM-7", "SR-3"],                   # source mapping wildcard
+        "NUGET-012": ["SI-7"],                           # signature validation off
+        "NUGET-013": ["CM-7", "SR-3"],                   # dotnet-tools unpinned
+        "NUGET-014": ["IA-5", "SC-28"],                  # source URL credentials
+        "NUGET-015": ["CM-6"],                           # VersionOverride breaks CPM
         # ── Go modules (GOMOD-001..006) ─────────────────────────
         "GOMOD-001": ["SI-7", "CM-7"],                   # go.sum integrity manifest missing
         "GOMOD-002": ["CM-7", "SR-3"],                  # replace directive to local path

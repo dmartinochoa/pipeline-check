@@ -671,6 +671,12 @@ STANDARD = Standard(
         "NUGET-008": ["ESF-S-VERIFY-DEPS"],
         "NUGET-009": ["ESF-S-VERIFY-DEPS"],
         "NUGET-010": ["ESF-D-SECRETS"],
+        # ── NuGet extended pack ──
+        "NUGET-011": ["ESF-S-VERIFY-DEPS"],
+        "NUGET-012": ["ESF-S-VERIFY-DEPS", "ESF-S-PROVENANCE"],
+        "NUGET-013": ["ESF-S-VERIFY-DEPS"],
+        "NUGET-014": ["ESF-D-SECRETS"],
+        "NUGET-015": ["ESF-S-VERIFY-DEPS"],
         # ── Go modules ──
         "GOMOD-001": ["ESF-S-VERIFY-DEPS"],
         "GOMOD-002": ["ESF-S-VERIFY-DEPS"],

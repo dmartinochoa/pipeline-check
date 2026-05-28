@@ -20,7 +20,7 @@ risk language.
 
 - **Controls in this standard:** 13
 - **Controls evidenced by at least one check:** 13 / 13
-- **Distinct checks evidencing this standard:** 782
+- **Distinct checks evidencing this standard:** 787
 - **Of those, autofixable with `--fix`:** 111
 
 _Severity levels (`CRITICAL` / `HIGH` / `MEDIUM` / `LOW` / `INFO`) follow the same scale across every provider and standard. See [How to read severity](README.md#how-to-read-severity) on the standards overview for the definitions._
@@ -33,14 +33,14 @@ Click a control ID to jump to the per-control section with the full check list. 
 |---------|-------|-------:|--------------|
 | [`PO.3.2`](#ctrl-po-3-2) | Implement and maintain supporting toolchains with security controls | 11 | 2H · 5M · 4L |
 | [`PO.3.3`](#ctrl-po-3-3) | Configure the toolchain to generate an audit trail of SDLC activities | 58 | 6H · 26M · 10L · 16I |
-| [`PO.5.1`](#ctrl-po-5-1) | Separate and protect each environment involved in software development | 214 | 30C · 113H · 65M · 6L |
+| [`PO.5.1`](#ctrl-po-5-1) | Separate and protect each environment involved in software development | 215 | 30C · 113H · 66M · 6L |
 | [`PO.5.2`](#ctrl-po-5-2) | Secure and harden endpoints used for software development | 23 | 1C · 1H · 17M · 4L |
-| [`PS.1.1`](#ctrl-ps-1-1) | Store all forms of code based on least-privilege and tamper-resistance | 179 | 32C · 87H · 49M · 11L |
+| [`PS.1.1`](#ctrl-ps-1-1) | Store all forms of code based on least-privilege and tamper-resistance | 180 | 32C · 88H · 49M · 11L |
 | [`PS.2.1`](#ctrl-ps-2-1) | Make software integrity verification information available to acquirers | 36 | 11H · 25M |
 | [`PS.3.1`](#ctrl-ps-3-1) | Securely archive the necessary files and data for each software release | 11 | 5H · 6M |
-| [`PS.3.2`](#ctrl-ps-3-2) | Collect, safeguard, maintain, and share provenance data for releases | 56 | 10H · 39M · 7L |
+| [`PS.3.2`](#ctrl-ps-3-2) | Collect, safeguard, maintain, and share provenance data for releases | 57 | 11H · 39M · 7L |
 | [`PW.4.1`](#ctrl-pw-4-1) | Acquire and maintain well-secured 3rd-party software components | 117 | 10C · 64H · 37M · 6L |
-| [`PW.4.4`](#ctrl-pw-4-4) | Verify that acquired components are what is expected and behave as expected | 201 | 18C · 112H · 67M · 4L |
+| [`PW.4.4`](#ctrl-pw-4-4) | Verify that acquired components are what is expected and behave as expected | 205 | 18C · 115H · 68M · 4L |
 | [`PW.6.1`](#ctrl-pw-6-1) | Use compiler, interpreter, and build tool features to improve security | 38 | 6C · 26H · 2M · 4L |
 | [`PW.9.1`](#ctrl-pw-9-1) | Configure software to have secure settings by default | 150 | 26C · 80H · 37M · 7L |
 | [`RV.1.1`](#ctrl-rv-1-1) | Gather information about potential vulnerabilities in released software | 58 | 17C · 15H · 20M · 6L |
@@ -147,7 +147,7 @@ pipeline_check --pipeline aws --standard nist_ssdf --standard owasp_cicd_top_10
 
 ### PO.5.1: Separate and protect each environment involved in software development { #ctrl-po-5-1 }
 
-**Evidenced by 214 checks** across 24 providers (AWS, Argo Workflows, Azure Cloud, Azure DevOps, Bitbucket, Buildkite, Cargo, CircleCI, Cloud Build, CloudFormation, Dockerfile, Drone CI, GCP, GitHub Actions, GitLab CI, Go modules, Helm, Jenkins, Kubernetes, Pulumi, SCM, Tekton, Terraform, npm).
+**Evidenced by 215 checks** across 25 providers (AWS, Argo Workflows, Azure Cloud, Azure DevOps, Bitbucket, Buildkite, Cargo, CircleCI, Cloud Build, CloudFormation, Dockerfile, Drone CI, GCP, GitHub Actions, GitLab CI, Go modules, Helm, Jenkins, Kubernetes, NuGet, Pulumi, SCM, Tekton, Terraform, npm).
 
 | Check | Title | Severity | Provider | Fix |
 |-------|-------|----------|----------|-----|
@@ -329,6 +329,7 @@ pipeline_check --pipeline aws --standard nist_ssdf --standard owasp_cicd_top_10
 | [`LMB-004`](../providers/aws.md#lmb-004) | Lambda resource policy allows wildcard principal | <span class="pg-sev pg-sev--critical">CRITICAL</span> | [AWS](../providers/aws.md) |  |
 | [`NPM-004`](../providers/npm.md#npm-004) | package.json declares an install-time lifecycle script | <span class="pg-sev pg-sev--high">HIGH</span> | [npm](../providers/npm.md) |  |
 | [`NPM-007`](../providers/npm.md#npm-007) | .npmrc does not disable install-time lifecycle scripts | <span class="pg-sev pg-sev--high">HIGH</span> | [npm](../providers/npm.md) |  |
+| [`NUGET-015`](../providers/nuget.md#nuget-015) | PackageReference VersionOverride defeats Central Package Management | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [NuGet](../providers/nuget.md) |  |
 | [`PBAC-001`](../providers/aws.md#pbac-001) | CodeBuild project has no VPC configuration | <span class="pg-sev pg-sev--high">HIGH</span> | [AWS](../providers/aws.md) |  |
 | [`PBAC-002`](../providers/aws.md#pbac-002) | CodeBuild service role shared across multiple projects | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [AWS](../providers/aws.md) |  |
 | [`PBAC-003`](../providers/aws.md#pbac-003) | CodeBuild security group allows 0.0.0.0/0 all-port egress | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [AWS](../providers/aws.md) |  |
@@ -398,7 +399,7 @@ pipeline_check --pipeline aws --standard nist_ssdf --standard owasp_cicd_top_10
 
 ### PS.1.1: Store all forms of code based on least-privilege and tamper-resistance { #ctrl-ps-1-1 }
 
-**Evidenced by 179 checks** across 27 providers (AWS, Argo Workflows, Azure Cloud, Azure DevOps, Bitbucket, Buildkite, Cargo, CircleCI, Cloud Build, CloudFormation, Dockerfile, Drone CI, GCP, GitHub Actions, GitLab CI, Go modules, Helm, Jenkins, Kubernetes, NuGet, Pulumi, PyPI, SCM, Tekton, Terraform, maven, npm).
+**Evidenced by 180 checks** across 27 providers (AWS, Argo Workflows, Azure Cloud, Azure DevOps, Bitbucket, Buildkite, Cargo, CircleCI, Cloud Build, CloudFormation, Dockerfile, Drone CI, GCP, GitHub Actions, GitLab CI, Go modules, Helm, Jenkins, Kubernetes, NuGet, Pulumi, PyPI, SCM, Tekton, Terraform, maven, npm).
 
 | Check | Title | Severity | Provider | Fix |
 |-------|-------|----------|----------|-----|
@@ -530,6 +531,7 @@ pipeline_check --pipeline aws --standard nist_ssdf --standard owasp_cicd_top_10
 | [`NPM-012`](../providers/npm.md#npm-012) | .npmrc publish token lacks IP or readonly restriction | <span class="pg-sev pg-sev--high">HIGH</span> | [npm](../providers/npm.md) |  |
 | [`NPM-013`](../providers/npm.md#npm-013) | package.json files field uses an overly broad pattern | <span class="pg-sev pg-sev--high">HIGH</span> | [npm](../providers/npm.md) |  |
 | [`NUGET-010`](../providers/nuget.md#nuget-010) | NuGet.config stores a feed credential in plaintext | <span class="pg-sev pg-sev--high">HIGH</span> | [NuGet](../providers/nuget.md) |  |
+| [`NUGET-014`](../providers/nuget.md#nuget-014) | NuGet.config source URL embeds plaintext credentials | <span class="pg-sev pg-sev--high">HIGH</span> | [NuGet](../providers/nuget.md) |  |
 | [`PULUMI-001`](../providers/pulumi.md) | Pulumi stack uses passphrase-based secret encryption | <span class="pg-sev pg-sev--high">HIGH</span> | [Pulumi](../providers/pulumi.md) |  |
 | [`PULUMI-002`](../providers/pulumi.md) | Pulumi stack config carries a secret-shaped key in plaintext | <span class="pg-sev pg-sev--high">HIGH</span> | [Pulumi](../providers/pulumi.md) |  |
 | [`PULUMI-003`](../providers/pulumi.md) | Pulumi source file embeds a hardcoded credential | <span class="pg-sev pg-sev--high">HIGH</span> | [Pulumi](../providers/pulumi.md) |  |
@@ -645,7 +647,7 @@ pipeline_check --pipeline aws --standard nist_ssdf --standard owasp_cicd_top_10
 
 ### PS.3.2: Collect, safeguard, maintain, and share provenance data for releases { #ctrl-ps-3-2 }
 
-**Evidenced by 56 checks** across 15 providers (AWS, Argo Workflows, Azure Cloud, Azure DevOps, Bitbucket, Buildkite, CircleCI, Cloud Build, Dockerfile, GitHub Actions, GitLab CI, Helm, Jenkins, OCI manifest, Tekton).
+**Evidenced by 57 checks** across 16 providers (AWS, Argo Workflows, Azure Cloud, Azure DevOps, Bitbucket, Buildkite, CircleCI, Cloud Build, Dockerfile, GitHub Actions, GitLab CI, Helm, Jenkins, NuGet, OCI manifest, Tekton).
 
 | Check | Title | Severity | Provider | Fix |
 |-------|-------|----------|----------|-----|
@@ -692,6 +694,7 @@ pipeline_check --pipeline aws --standard nist_ssdf --standard owasp_cicd_top_10
 | [`JF-027`](../providers/jenkins.md#jf-027) | `archiveArtifacts` does not record a fingerprint | <span class="pg-sev pg-sev--low">LOW</span> | [Jenkins](../providers/jenkins.md) |  |
 | [`JF-028`](../providers/jenkins.md#jf-028) | No SLSA provenance attestation produced | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [Jenkins](../providers/jenkins.md) |  |
 | [`LMB-001`](../providers/aws.md#lmb-001) | Lambda function has no code-signing config | <span class="pg-sev pg-sev--high">HIGH</span> | [AWS](../providers/aws.md) |  |
+| [`NUGET-012`](../providers/nuget.md#nuget-012) | NuGet.config does not enforce signatureValidationMode = require | <span class="pg-sev pg-sev--high">HIGH</span> | [NuGet](../providers/nuget.md) |  |
 | [`OCI-001`](../providers/oci.md#oci-001) | Image manifest is missing OCI provenance annotations | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [OCI manifest](../providers/oci.md) |  |
 | [`OCI-002`](../providers/oci.md#oci-002) | Image is missing a build attestation manifest | <span class="pg-sev pg-sev--high">HIGH</span> | [OCI manifest](../providers/oci.md) |  |
 | [`OCI-003`](../providers/oci.md#oci-003) | Image manifest is missing the ``image.created`` annotation | <span class="pg-sev pg-sev--low">LOW</span> | [OCI manifest](../providers/oci.md) |  |
@@ -832,7 +835,7 @@ pipeline_check --pipeline aws --standard nist_ssdf --standard owasp_cicd_top_10
 
 ### PW.4.4: Verify that acquired components are what is expected and behave as expected { #ctrl-pw-4-4 }
 
-**Evidenced by 201 checks** across 26 providers (AWS, Argo Workflows, Azure Cloud, Azure DevOps, Bitbucket, Buildkite, Cargo, CircleCI, Cloud Build, Dockerfile, Drone CI, GCP, GitHub Actions, GitLab CI, Go modules, Helm, Jenkins, Kubernetes, NuGet, OCI manifest, Pulumi, PyPI, SCM, Tekton, maven, npm).
+**Evidenced by 205 checks** across 26 providers (AWS, Argo Workflows, Azure Cloud, Azure DevOps, Bitbucket, Buildkite, Cargo, CircleCI, Cloud Build, Dockerfile, Drone CI, GCP, GitHub Actions, GitLab CI, Go modules, Helm, Jenkins, Kubernetes, NuGet, OCI manifest, Pulumi, PyPI, SCM, Tekton, maven, npm).
 
 | Check | Title | Severity | Provider | Fix |
 |-------|-------|----------|----------|-----|
@@ -1014,6 +1017,10 @@ pipeline_check --pipeline aws --standard nist_ssdf --standard owasp_cicd_top_10
 | [`NUGET-007`](../providers/nuget.md#nuget-007) | Multiple NuGet sources without packageSourceMapping | <span class="pg-sev pg-sev--high">HIGH</span> | [NuGet](../providers/nuget.md) |  |
 | [`NUGET-008`](../providers/nuget.md#nuget-008) | NuGet package published within the cooldown window | <span class="pg-sev pg-sev--high">HIGH</span> | [NuGet](../providers/nuget.md) |  |
 | [`NUGET-009`](../providers/nuget.md#nuget-009) | NuGet package has a known OSV advisory | <span class="pg-sev pg-sev--critical">CRITICAL</span> | [NuGet](../providers/nuget.md) |  |
+| [`NUGET-011`](../providers/nuget.md#nuget-011) | packageSourceMapping pattern is a global wildcard | <span class="pg-sev pg-sev--high">HIGH</span> | [NuGet](../providers/nuget.md) |  |
+| [`NUGET-012`](../providers/nuget.md#nuget-012) | NuGet.config does not enforce signatureValidationMode = require | <span class="pg-sev pg-sev--high">HIGH</span> | [NuGet](../providers/nuget.md) |  |
+| [`NUGET-013`](../providers/nuget.md#nuget-013) | dotnet-tools.json entry lacks a version pin | <span class="pg-sev pg-sev--high">HIGH</span> | [NuGet](../providers/nuget.md) |  |
+| [`NUGET-015`](../providers/nuget.md#nuget-015) | PackageReference VersionOverride defeats Central Package Management | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [NuGet](../providers/nuget.md) |  |
 | [`OCI-004`](../providers/oci.md#oci-004) | Image layer references an arbitrary URL (foreign layer) | <span class="pg-sev pg-sev--high">HIGH</span> | [OCI manifest](../providers/oci.md) |  |
 | [`OCI-007`](../providers/oci.md#oci-007) | Image manifest uses legacy schemaVersion 1 (no content addressing) | <span class="pg-sev pg-sev--high">HIGH</span> | [OCI manifest](../providers/oci.md) |  |
 | [`OCI-008`](../providers/oci.md#oci-008) | Manifest references digest using unsupported hash algorithm | <span class="pg-sev pg-sev--high">HIGH</span> | [OCI manifest](../providers/oci.md) |  |

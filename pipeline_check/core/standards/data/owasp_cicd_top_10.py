@@ -557,6 +557,12 @@ STANDARD = Standard(
         "NUGET-008": ["CICD-SEC-3", "CICD-SEC-8"],  # cooldown gate (--resolve-remote)
         "NUGET-009": ["CICD-SEC-3", "CICD-SEC-8"],  # OSV advisory (--resolve-remote)
         "NUGET-010": ["CICD-SEC-6", "CICD-SEC-7"],  # NuGet.config cleartext feed credential
+        # ── NuGet extended pack (NUGET-011..015) ──
+        "NUGET-011": ["CICD-SEC-3", "CICD-SEC-5"],  # source mapping wildcard
+        "NUGET-012": ["CICD-SEC-3"],                # signature validation off
+        "NUGET-013": ["CICD-SEC-3", "CICD-SEC-5"],  # dotnet-tools unpinned
+        "NUGET-014": ["CICD-SEC-6", "CICD-SEC-10"], # source URL credentials
+        "NUGET-015": ["CICD-SEC-3"],                # VersionOverride breaks CPM
         # ── Go modules (GOMOD-001..006) ──
         "GOMOD-001": ["CICD-SEC-3"],               # go.sum integrity manifest missing
         "GOMOD-002": ["CICD-SEC-3", "CICD-SEC-5"], # replace directive to local path

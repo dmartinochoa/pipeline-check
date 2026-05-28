@@ -12,7 +12,7 @@ for taking a third-party dependency safely.
 
 - **Controls in this standard:** 11
 - **Controls evidenced by at least one check:** 11 / 11
-- **Distinct checks evidencing this standard:** 332
+- **Distinct checks evidencing this standard:** 337
 - **Of those, autofixable with `--fix`:** 41
 
 _Severity levels (`CRITICAL` / `HIGH` / `MEDIUM` / `LOW` / `INFO`) follow the same scale across every provider and standard. See [How to read severity](README.md#how-to-read-severity) on the standards overview for the definitions._
@@ -23,7 +23,7 @@ Click a control ID to jump to the per-control section with the full check list. 
 
 | Control | Title | Checks | Severity mix |
 |---------|-------|-------:|--------------|
-| [`ING-1`](#ctrl-ing-1) | L1: Use package managers trusted by your organization | 55 | 1C · 43H · 10M · 1L |
+| [`ING-1`](#ctrl-ing-1) | L1: Use package managers trusted by your organization | 60 | 1C · 47H · 11M · 1L |
 | [`ING-3`](#ctrl-ing-3) | L1: Have the capability to deny-list specific vulnerable / malicious OSS | 25 | 10C · 11H · 4M |
 | [`SCA-1`](#ctrl-sca-1) | L1: Scan OSS for known vulnerabilities | 16 | 3H · 13M |
 | [`SCA-3`](#ctrl-sca-3) | L2: Scan OSS for malware | 31 | 18C · 7H · 6M |
@@ -54,7 +54,7 @@ pipeline_check --pipeline aws --standard s2c2f --standard owasp_cicd_top_10
 
 ### ING-1: L1: Use package managers trusted by your organization { #ctrl-ing-1 }
 
-**Evidenced by 55 checks** across 20 providers (AWS, Argo Workflows, Azure Cloud, Azure DevOps, Bitbucket, Buildkite, CircleCI, Cloud Build, Dockerfile, Drone CI, GCP, GitHub Actions, GitLab CI, Helm, Jenkins, NuGet, PyPI, Tekton, maven, npm).
+**Evidenced by 60 checks** across 20 providers (AWS, Argo Workflows, Azure Cloud, Azure DevOps, Bitbucket, Buildkite, CircleCI, Cloud Build, Dockerfile, Drone CI, GCP, GitHub Actions, GitLab CI, Helm, Jenkins, NuGet, PyPI, Tekton, maven, npm).
 
 | Check | Title | Severity | Provider | Fix |
 |-------|-------|----------|----------|-----|
@@ -110,6 +110,11 @@ pipeline_check --pipeline aws --standard s2c2f --standard owasp_cicd_top_10
 | [`NUGET-004`](../providers/nuget.md#nuget-004) | HTTP-only NuGet package source | <span class="pg-sev pg-sev--high">HIGH</span> | [NuGet](../providers/nuget.md) |  |
 | [`NUGET-007`](../providers/nuget.md#nuget-007) | Multiple NuGet sources without packageSourceMapping | <span class="pg-sev pg-sev--high">HIGH</span> | [NuGet](../providers/nuget.md) |  |
 | [`NUGET-010`](../providers/nuget.md#nuget-010) | NuGet.config stores a feed credential in plaintext | <span class="pg-sev pg-sev--high">HIGH</span> | [NuGet](../providers/nuget.md) |  |
+| [`NUGET-011`](../providers/nuget.md#nuget-011) | packageSourceMapping pattern is a global wildcard | <span class="pg-sev pg-sev--high">HIGH</span> | [NuGet](../providers/nuget.md) |  |
+| [`NUGET-012`](../providers/nuget.md#nuget-012) | NuGet.config does not enforce signatureValidationMode = require | <span class="pg-sev pg-sev--high">HIGH</span> | [NuGet](../providers/nuget.md) |  |
+| [`NUGET-013`](../providers/nuget.md#nuget-013) | dotnet-tools.json entry lacks a version pin | <span class="pg-sev pg-sev--high">HIGH</span> | [NuGet](../providers/nuget.md) |  |
+| [`NUGET-014`](../providers/nuget.md#nuget-014) | NuGet.config source URL embeds plaintext credentials | <span class="pg-sev pg-sev--high">HIGH</span> | [NuGet](../providers/nuget.md) |  |
+| [`NUGET-015`](../providers/nuget.md#nuget-015) | PackageReference VersionOverride defeats Central Package Management | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [NuGet](../providers/nuget.md) |  |
 | [`PYPI-003`](../providers/pypi.md#pypi-003) | requirements.txt uses an HTTP index or disables TLS verification | <span class="pg-sev pg-sev--high">HIGH</span> | [PyPI](../providers/pypi.md) |  |
 | [`PYPI-005`](../providers/pypi.md#pypi-005) | requirements.txt declares --extra-index-url (dependency-confusion surface) | <span class="pg-sev pg-sev--high">HIGH</span> | [PyPI](../providers/pypi.md) |  |
 | [`TKN-008`](../providers/tekton.md#tkn-008) | Tekton step script pipes remote install or disables TLS | <span class="pg-sev pg-sev--high">HIGH</span> | [Tekton](../providers/tekton.md) | <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> |
