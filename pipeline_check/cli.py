@@ -58,6 +58,7 @@ from .core import autofix as _autofix
 from .core import providers as _providers
 from .core import standards as _standards
 from .core.checks.base import Confidence, Severity, confidence_rank
+from .core.codequality_reporter import report_codequality
 from .core.config import load_config
 from .core.gate import GateConfig, evaluate_gate, load_ignore_file
 from .core.html_reporter import report_html
@@ -67,7 +68,6 @@ from .core.inline_ignore import (
     build_inline_index,
     extract_inline_ignores,
 )
-from .core.codequality_reporter import report_codequality
 from .core.junit_reporter import report_junit
 from .core.markdown_reporter import report_markdown
 from .core.policies import (
