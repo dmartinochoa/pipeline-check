@@ -42,7 +42,7 @@ missing major surfaces or requires extra config. No = not in scope.
 | Argo Workflows | Yes (16) | No | Partial | No | No | No |
 | Argo CD | Yes (9) | No | No | No | No | No |
 | **SCM posture (governance)** | | | | | | |
-| GitHub repo branch protection / secret scanning / Dependabot | Yes (49, `SCM-001..049`) | No | No | No | No | No |
+| GitHub repo branch protection / secret scanning / Dependabot | Yes (55, `SCM-001..055`) | No | No | No | No | No |
 | **Infrastructure as code** | | | | | | |
 | Terraform plans | Yes | Yes | Yes | Partial | Yes | Yes |
 | CloudFormation (YAML+JSON) | Yes | Yes | Yes | Partial | No | Yes |

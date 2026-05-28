@@ -688,6 +688,14 @@ STANDARD = Standard(
         "SCM-047":  ["CICD-SEC-10"],               # repo language not covered by default scanning
         "SCM-048":  ["CICD-SEC-2"],                # org codespace secret scoped to all repos
         "SCM-049":  ["CICD-SEC-2"],                # classic PAT used where fine-grained suffices
+        # GitLab-specific platform posture (SCM-050..053)
+        "SCM-050":  ["CICD-SEC-6"],                # GitLab push rules: prevent_secrets
+        "SCM-051":  ["CICD-SEC-1", "CICD-SEC-6"],  # GitLab push rules: committer-email check
+        "SCM-052":  ["CICD-SEC-1"],                # GitLab MR: discussions-resolved gate
+        "SCM-053":  ["CICD-SEC-1", "CICD-SEC-4"],  # GitLab MR: author self-approval allowed
+        # Bitbucket-specific platform posture (SCM-054..055)
+        "SCM-054":  ["CICD-SEC-1", "CICD-SEC-6"],  # Bitbucket private repo allows public forks
+        "SCM-055":  ["CICD-SEC-1"],                # Bitbucket no write-side branch-restriction kinds
         # GHA supply-chain posture pack
         "GHA-097":  ["CICD-SEC-1"],                # recursive PR auto-merge loop
         "GHA-098":  ["CICD-SEC-7"],                # deploy without security scan gate

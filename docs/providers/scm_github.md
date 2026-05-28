@@ -175,7 +175,7 @@ compose SCM findings with workflow / Dockerfile findings:
 
 ## What it covers
 
-49 checks · 0 have an autofix patch (``--fix``).
+55 checks · 0 have an autofix patch (``--fix``).
 
 | Check | Title | Severity | Fix |
 |-------|-------|----------|-----|
@@ -228,6 +228,12 @@ compose SCM findings with workflow / Dockerfile findings:
 | [SCM-047](#scm-047) | Repo language excluded from default code-scanning coverage | <span class="pg-sev pg-sev--medium">MEDIUM</span> |  |
 | [SCM-048](#scm-048) | Org codespace secret scoped to all repos | <span class="pg-sev pg-sev--high">HIGH</span> |  |
 | [SCM-049](#scm-049) | Classic PAT used where a fine-grained token suffices | <span class="pg-sev pg-sev--medium">MEDIUM</span> |  |
+| [SCM-050](#scm-050) | GitLab push rules do not block secret-shaped commits | <span class="pg-sev pg-sev--high">HIGH</span> |  |
+| [SCM-051](#scm-051) | GitLab push rules do not enforce committer-email check | <span class="pg-sev pg-sev--medium">MEDIUM</span> |  |
+| [SCM-052](#scm-052) | GitLab merge requests can land with unresolved discussions | <span class="pg-sev pg-sev--medium">MEDIUM</span> |  |
+| [SCM-053](#scm-053) | GitLab merge requests allow the author to approve their own MR | <span class="pg-sev pg-sev--high">HIGH</span> |  |
+| [SCM-054](#scm-054) | Bitbucket private repo allows public forks | <span class="pg-sev pg-sev--high">HIGH</span> |  |
+| [SCM-055](#scm-055) | Bitbucket default branch has no write-side restriction kinds | <span class="pg-sev pg-sev--high">HIGH</span> |  |
 
 ---
 
@@ -1450,6 +1456,176 @@ The rule passes silently when no token is provided or when the token is a GitHub
 Replace the classic personal access token (``ghp_`` prefix) with a fine-grained PAT (``github_pat_`` prefix). Fine-grained tokens restrict scope to named repos, carry per-permission grants, support expiration policies, and have a distinct audit-log shape. Classic PATs implicitly carry org-wide scope for every granted permission and cannot be restricted to individual repos.
 
 Generate a fine-grained token at ``github.com/settings/personal-access-tokens/new`` and select only the repos and permissions the scanner needs (typically ``repo`` read + ``admin:org`` read for SCM posture scans).
+
+</div>
+
+</div>
+
+<div class="pg-rule pg-rule--high" markdown>
+
+## SCM-050: GitLab push rules do not block secret-shaped commits { #scm-050 }
+
+<div class="pg-rule__tags">
+<span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-6</span> <span class="pg-tag pg-tag--esf">ESF-D-SECRETS</span> <span class="pg-tag pg-tag--cwe">CWE-798</span> <span class="pg-tag pg-tag--cwe">CWE-538</span>
+</div>
+
+Reads ``repo_meta._gitlab_push_rule.prevent_secrets`` (populated from ``GET /projects/:id/push_rule``) and fires when the field is False or missing. The push-rule endpoint requires GitLab Premium / Ultimate; on Free the endpoint returns ``404`` and the rule passes silently with an unavailability note (the operator sees the deliberate skip rather than a silent absence). The same endpoint also surfaces ``commit_committer_check`` (SCM-051) and ``reject_unsigned_commits`` (already consumed by SCM-006), so the fetcher only issues one request to populate the whole push-rule slot.
+
+**Known false-positive modes**
+
+- GitLab Self-Managed deployments running CE (community edition, no Premium license) don't expose push rules at all; this rule passes silently on those snapshots. Suppress per-repo for known-CE installations to avoid the cosmetic skip note polluting the report.
+
+**Seen in the wild**
+
+- Long-running pattern of AWS / GCP credentials accidentally committed to GitLab repos and only caught by retroactive secret-scanning hours / days later; the GitHub equivalent (secret scanning + push protection, SCM-015) blocks the same class of commit at push time. Public examples: https://about.gitlab.com/blog/2023/04/20/gitlab-secret-detection/
+
+<div class="pg-rule__rec" markdown>
+
+**Recommended action**
+
+On the project Settings -> Repository -> Push Rules panel, enable ``Prevent committing secrets to Git``. The setting maps to the API field ``prevent_secrets: true`` on ``PUT /projects/:id/push_rule`` and rejects any commit whose added lines match GitLab's bundled secret-pattern catalog (``aws_secret_key``, ``gcp_credentials.json``, ``id_rsa``, ``id_dsa``, ``server.crt``, ``database.yml`` with literal credentials). Pair with ``file_name_regex`` to block credential-shaped filenames (``\.env$``, ``\.npmrc$``, ``\.pypirc$``). Without ``prevent_secrets``, the platform accepts a commit that adds ``AKIA[A-Z0-9]{16}`` literals into the repo, leaving cleanup to retroactive secret-scanning + revocation. The push-rule guard is the shift-left equivalent: server-side rejection at ``git push`` time, before the bad commit ever lands.
+
+</div>
+
+</div>
+
+<div class="pg-rule pg-rule--medium" markdown>
+
+## SCM-051: GitLab push rules do not enforce committer-email check { #scm-051 }
+
+<div class="pg-rule__tags">
+<span class="pg-sev pg-sev--medium">MEDIUM</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-1</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-6</span> <span class="pg-tag pg-tag--esf">ESF-S-CHANGE-CONTROL</span> <span class="pg-tag pg-tag--cwe">CWE-345</span>
+</div>
+
+Reads ``repo_meta._gitlab_push_rule.commit_committer_check`` and fires when False or missing. Endpoint is GitLab Premium / Ultimate; passes silently on CE / Free with a skip note. The committer-check guard is independent of signed commits: an unsigned commit with a verified committer email passes here but is caught by SCM-006; a signed commit with a spoofed committer email passes SCM-006 but is caught here. Both controls together produce the same posture GitHub achieves via vigilant mode + required signed commits.
+
+**Known false-positive modes**
+
+- GitLab CE / self-managed Free installations don't expose push rules; this rule passes silently on those snapshots. Mirror infrastructure repos that intentionally permit unverified committer emails (cross-org mirrors, third-party import flows) may also legitimately leave this off; suppress per-repo with a rationale.
+
+**Seen in the wild**
+
+- Maintainer-account compromise scenarios where the attacker pushes commits attributed to a different trusted contributor by setting ``committer.email``; without the check the platform accepts the push as-is, and the audit trail shows the wrong author until someone notices the missing verification badge.
+
+<div class="pg-rule__rec" markdown>
+
+**Recommended action**
+
+On the project Settings -> Repository -> Push Rules panel, enable ``Reject unverified users`` (API field ``commit_committer_check: true``). The check rejects any push whose committer email doesn't match a verified address on the pusher's GitLab account, blocking the common spoofing pattern where a stolen credential pushes commits attributed to a different maintainer. Pair with ``reject_unsigned_commits`` (see SCM-006) for defense-in-depth: signed commits bind to a maintained key, committer-check binds to a verified email.
+
+</div>
+
+</div>
+
+<div class="pg-rule pg-rule--medium" markdown>
+
+## SCM-052: GitLab merge requests can land with unresolved discussions { #scm-052 }
+
+<div class="pg-rule__tags">
+<span class="pg-sev pg-sev--medium">MEDIUM</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-1</span> <span class="pg-tag pg-tag--esf">ESF-S-CHANGE-CONTROL</span> <span class="pg-tag pg-tag--cwe">CWE-1023</span>
+</div>
+
+Reads ``repo_meta._gitlab_project.only_allow_merge_if_all_discussions_are_resolved`` and fires when the field is False or missing. The flag is exposed on the standard ``GET /projects/:id`` endpoint, so this rule needs no extra API call beyond what the GitLab hydrator already issues.
+
+**Known false-positive modes**
+
+- Projects that gate merge entirely on approvals + status checks (a separate, equally valid posture) may deliberately leave discussion-resolution off so that informal threads don't block deploys. Suppress per-repo when the merge gate is well-covered by other rules.
+
+**Seen in the wild**
+
+- Common review-bypass pattern: a reviewer asks for a secret to be rotated or a regex to be tightened, the author replies inline but doesn't change the code, and the MR is merged before the discussion is closed. Without ``only_allow_merge_if_all_discussions_are_resolved``, the platform doesn't enforce that the unresolved feedback is addressed.
+
+<div class="pg-rule__rec" markdown>
+
+**Recommended action**
+
+On the project Settings -> General -> Merge requests panel, enable ``All threads must be resolved`` (API field ``only_allow_merge_if_all_discussions_are_resolved: true`` on ``PUT /projects/:id``). The setting blocks merge until every code-review thread is marked resolved, closing the gap where a reviewer raises a security concern in a discussion but the merge happens before the author addresses it. The GitHub analog is ``required_conversation_resolution`` (covered by SCM-013 on the GitHub side).
+
+</div>
+
+</div>
+
+<div class="pg-rule pg-rule--high" markdown>
+
+## SCM-053: GitLab merge requests allow the author to approve their own MR { #scm-053 }
+
+<div class="pg-rule__tags">
+<span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-1</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-4</span> <span class="pg-tag pg-tag--esf">ESF-S-CHANGE-CONTROL</span> <span class="pg-tag pg-tag--cwe">CWE-269</span>
+</div>
+
+Reads ``repo_meta._gitlab_project.merge_requests_author_approval`` and fires when True (the unsafe value). GitLab inverts the field semantics: ``true`` means author approval is permitted, ``false`` means it's disabled. The rule normalizes this so a passing finding reflects the safe posture regardless of the API's boolean polarity. Together with SCM-002 (required approval count >= 1) this catches the full self-merge bypass; either rule alone is insufficient.
+
+**Known false-positive modes**
+
+- Single-maintainer projects (personal repos, small experimental projects) by design have no reviewer pool, so author approval is the only signal available. Suppress per-repo for those cases with a rationale naming the project's single-author posture.
+
+**Seen in the wild**
+
+- Classic self-merge bypass: an attacker with a single maintainer-account compromise pushes a MR, approves it themselves, and merges. With author-approval disabled the approve-button click is rejected at the API level and a second reviewer is forced.
+
+<div class="pg-rule__rec" markdown>
+
+**Recommended action**
+
+On the project Settings -> Merge requests -> Approvals panel, disable ``Allow author of merge request to approve their own merge request``. The API surfaces this as ``merge_requests_author_approval: false`` on ``PUT /projects/:id`` (the inverted boolean: ``false`` *disables* author approval, which is the safe posture). Combined with ``approvals_before_merge >= 1`` (already audited by SCM-002 on the universal-rules side), the approval gate becomes meaningful: the author can't self-merge by clicking Approve and bypassing review.
+
+</div>
+
+</div>
+
+<div class="pg-rule pg-rule--high" markdown>
+
+## SCM-054: Bitbucket private repo allows public forks { #scm-054 }
+
+<div class="pg-rule__tags">
+<span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-1</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-6</span> <span class="pg-tag pg-tag--esf">ESF-S-CHANGE-CONTROL</span> <span class="pg-tag pg-tag--cwe">CWE-200</span> <span class="pg-tag pg-tag--cwe">CWE-732</span>
+</div>
+
+Reads ``repo_meta._bitbucket_repo.fork_policy`` and fires when the repo is private (``is_private: true``) and ``fork_policy`` is ``allow_forks`` (the permissive value). Public repos are not flagged: a public source repo is already visible, so a public fork doesn't increase the disclosure surface. The Bitbucket Cloud API exposes ``fork_policy`` directly on the repo object, so no extra fetch is needed beyond what the hydrator already issues.
+
+**Known false-positive modes**
+
+- Repos that are explicitly meant as upstream templates for community contribution may have been set to ``allow_forks`` on purpose. The right pattern in that case is to either make the source public (so ``allow_forks`` is a no-op for confidentiality) or switch to ``no_public_forks`` (still allows community forks but keeps them inside the workspace's privacy boundary). Suppress per-repo for known-public templates.
+
+**Seen in the wild**
+
+- Bitbucket workspace policy gap that surfaces in audits of multi-tenant SaaS engineering orgs: a private monorepo with ``allow_forks`` lets a contractor fork the entire commit history into their personal workspace, where the source plus full git log is now visible to anyone with the fork URL. Detection requires auditing fork lists per-repo, which most orgs never do.
+
+<div class="pg-rule__rec" markdown>
+
+**Recommended action**
+
+On the repo Settings -> Repository details panel, set ``Forking`` to either ``Disabled`` or ``Restrict to private forks``. The API field is ``fork_policy`` with three values: ``allow_forks`` (permissive, the failure case this rule catches), ``no_public_forks`` (forks allowed but they inherit the parent's private visibility), and ``no_forks`` (forks blocked entirely). On a private repo, ``allow_forks`` means any workspace member can fork the repo into a public personal workspace, which silently makes the source visible to the entire internet. The fork retains the parent's commit history including any secrets the source repo's secret-scanning policy hasn't yet rotated.
+
+</div>
+
+</div>
+
+<div class="pg-rule pg-rule--high" markdown>
+
+## SCM-055: Bitbucket default branch has no write-side restriction kinds { #scm-055 }
+
+<div class="pg-rule__tags">
+<span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-1</span> <span class="pg-tag pg-tag--esf">ESF-S-CHANGE-CONTROL</span> <span class="pg-tag pg-tag--cwe">CWE-732</span>
+</div>
+
+Reads the branch-restrictions list from ``GET /2.0/repositories/{ws}/{repo}/branch-restrictions`` (populated by the universal SCM-001 path) and inspects the restrictions on the default branch. Fires when no restriction of kind ``push`` / ``force`` / ``delete`` is present, even if other merge-side restrictions exist. SCM-001 ensures *some* restriction is present; SCM-055 ensures the right *kind* is present.
+
+Reads the raw payload via ``repo_meta._bitbucket_repo`` for the default-branch name and the universal-rules ``default_branch_protection`` slot for the presence signal.
+
+**Known false-positive modes**
+
+- Some workspaces gate writes entirely via workspace-level user-group permissions rather than per-branch restrictions; in that case the branch-restrictions list is intentionally empty of write-side kinds and the control is enforced one layer up. Suppress per-repo with a rationale naming the workspace-level enforcement.
+
+**Seen in the wild**
+
+- Bitbucket admin-push bypass: a repo with ``require_approvals_to_merge=2`` and ``require_passing_builds_to_merge`` but no ``push``-kind restriction. A repo admin with stolen credentials pushes a malicious commit directly to main, bypassing both merge-side gates because the gates only apply to PRs.
+
+<div class="pg-rule__rec" markdown>
+
+**Recommended action**
+
+On the repo Settings -> Branch restrictions panel, add at least one write-side restriction (``Prevent push`` / ``Prevent force push`` / ``Prevent deletion``) on the default branch in addition to any merge-side checks (``Require approvals``, ``Require passing builds``). Without a ``push``-kind restriction, branch admins can still push directly to the default branch, bypassing the PR-and-approve flow that the merge-side checks gate. The common misconfiguration is to add ``Require N approvals to merge`` but no ``Prevent push``, which means PRs are well-gated but direct pushes are unrestricted.
 
 </div>
 

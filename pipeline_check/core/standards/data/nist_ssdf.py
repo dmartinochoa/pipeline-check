@@ -751,6 +751,14 @@ STANDARD = Standard(
         "CC-032":   ["PS.1.1"],                        # secret echoed to CircleCI log
         "SCM-048":  ["PO.5.1"],                        # org codespace secrets scoped to all repos
         "SCM-049":  ["PS.1.1"],                        # classic PAT where fine-grained suffices
+        # GitLab-specific platform posture (SCM-050..053)
+        "SCM-050":  ["PS.1.1"],                        # GitLab push rules: prevent_secrets
+        "SCM-051":  ["PO.5.1", "PS.1.1"],              # GitLab push rules: committer-email check
+        "SCM-052":  ["PO.5.1"],                        # GitLab MR: discussions-resolved gate
+        "SCM-053":  ["PO.5.1"],                        # GitLab MR: author self-approval allowed
+        # Bitbucket-specific platform posture (SCM-054..055)
+        "SCM-054":  ["PO.5.1", "PS.3.1"],              # Bitbucket private repo allows public forks
+        "SCM-055":  ["PO.5.1"],                        # Bitbucket no write-side branch-restriction kinds
         "NPM-012":  ["PS.1.1"],                        # publish token missing restrictions
         # ── Azure Cloud (Entra ID / Storage / Key Vault / ACR / Monitor) ──
         "ENTRA-001": ["PO.5.1"],                       # SP assigned Global Administrator

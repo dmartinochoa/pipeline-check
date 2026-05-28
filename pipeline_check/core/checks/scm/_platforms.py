@@ -126,6 +126,8 @@ def gitlab_context_for_repo(
     if not isinstance(default_branch, str) or not default_branch:
         default_branch = "main"
 
+    push_rule_raw = fetcher.fetch(f"projects/{encoded}/push_rule")
+
     repo_meta: dict[str, Any] = {
         "default_branch": default_branch,
         "size": int(project.get("statistics", {}).get("repository_size", 1024))
@@ -133,10 +135,22 @@ def gitlab_context_for_repo(
         "private": project.get("visibility") == "private",
         "visibility": project.get("visibility"),
         "archived": bool(project.get("archived")),
+        # Raw payloads so platform-specific rules (SCM-050..053) can
+        # read GitLab-shaped fields without re-issuing the API call.
+        # Keys are underscore-prefixed so they don't collide with the
+        # normalized GitHub-shaped slots above.
+        "_gitlab_project": project,
+        "_gitlab_push_rule": (
+            push_rule_raw if isinstance(push_rule_raw, dict) else None
+        ),
     }
 
     protection = _gitlab_protected_branch(
         fetcher, encoded, default_branch,
+        project=project,
+        push_rules=(
+            push_rule_raw if isinstance(push_rule_raw, dict) else None
+        ),
     )
 
     codeowners_path = _gitlab_codeowners_path(
@@ -172,7 +186,12 @@ def _split_owner(project_path: str) -> tuple[str, str]:
 
 
 def _gitlab_protected_branch(
-    fetcher: SCMFetcher, encoded_path: str, default_branch: str,
+    fetcher: SCMFetcher,
+    encoded_path: str,
+    default_branch: str,
+    *,
+    project: dict[str, Any] | None = None,
+    push_rules: dict[str, Any] | None = None,
 ) -> dict[str, Any] | None:
     """Fetch the protection rule for the default branch (if any) and
     translate into GitHub-shaped slots.
@@ -216,12 +235,17 @@ def _gitlab_protected_branch(
     # SCM-019 compatibility (kept GitHub-only at the rule layer).
     allow_force = bool(target.get("allow_force_push"))
 
-    # Project-level metadata for the cross-cutting knobs.
-    proj = fetcher.fetch(f"projects/{encoded_path}")
-    push_rules = (
-        fetcher.fetch(f"projects/{encoded_path}/push_rule")
-        if isinstance(proj, dict) else None
-    )
+    # Project-level metadata for the cross-cutting knobs. Caller
+    # (``gitlab_context_for_repo``) passes already-fetched payloads;
+    # falling back to a fresh fetch keeps the helper callable from
+    # any future code path that doesn't pre-fetch.
+    proj = project
+    if proj is None:
+        raw_proj = fetcher.fetch(f"projects/{encoded_path}")
+        proj = raw_proj if isinstance(raw_proj, dict) else None
+    if push_rules is None and proj is not None:
+        raw_pr = fetcher.fetch(f"projects/{encoded_path}/push_rule")
+        push_rules = raw_pr if isinstance(raw_pr, dict) else None
 
     approvals: int = 0
     if isinstance(proj, dict):
@@ -379,6 +403,12 @@ def bitbucket_context_for_repo(
         # Bitbucket Cloud doesn't expose an explicit ``archived``
         # field via 2.0; treat unset as False.
         "archived": False,
+        # Raw payload so platform-specific rules (SCM-054..055) can
+        # read Bitbucket-shaped fields (``fork_policy``,
+        # ``project.is_private``, ``has_issues``) without re-issuing
+        # the API call. Underscore-prefixed to avoid colliding with
+        # the normalized GitHub-shaped slots above.
+        "_bitbucket_repo": repo,
     }
 
     protection = _bitbucket_protection(
