@@ -388,6 +388,8 @@ STANDARD = Standard(
         "COMPOSER-006": ["4.1.3"],
         "COMPOSER-007": ["4.1.3"],
         "COMPOSER-008": ["4.1.3"],
+        "COMPOSER-009": ["4.4.5"],
+        "COMPOSER-010": ["4.2.1"],
         # ── RubyGems / Bundler ──
         "GEM-001": ["4.1.3"],
         "GEM-002": ["4.1.3"],
@@ -397,6 +399,8 @@ STANDARD = Standard(
         "GEM-006": ["4.1.3"],
         "GEM-007": ["4.1.3"],
         "GEM-008": ["4.1.3"],
+        "GEM-009": ["4.4.5"],
+        "GEM-010": ["4.1.3"],
         # ── OCI image manifest gaps ──────────────────────────────
         # OCI-001..003/005 are image-provenance metadata gaps —
         # untrusted-image surface (4.1.5). OCI-004 foreign-layer

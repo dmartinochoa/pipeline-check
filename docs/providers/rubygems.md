@@ -36,7 +36,7 @@ reports what it can extract and otherwise passes through.
 
 ## What it covers
 
-8 checks · 0 have an autofix patch (``--fix``).
+10 checks · 0 have an autofix patch (``--fix``).
 
 | Check | Title | Severity | Fix |
 |-------|-------|----------|-----|
@@ -48,6 +48,8 @@ reports what it can extract and otherwise passes through.
 | [GEM-006](#gem-006) | Gemfile requires a known-compromised gem version | <span class="pg-sev pg-sev--high">HIGH</span> |  |
 | [GEM-007](#gem-007) | Gemfile declares multiple top-level sources without scoping | <span class="pg-sev pg-sev--medium">MEDIUM</span> |  |
 | [GEM-008](#gem-008) | Gemfile gem declared with a path: source | <span class="pg-sev pg-sev--high">HIGH</span> |  |
+| [GEM-009](#gem-009) | .bundle/config committed with embedded credentials | <span class="pg-sev pg-sev--high">HIGH</span> |  |
+| [GEM-010](#gem-010) | Gemfile uses dynamic gem-list resolution | <span class="pg-sev pg-sev--medium">MEDIUM</span> |  |
 
 ---
 
@@ -280,6 +282,64 @@ Replace the ``path:`` source with a published, version-pinned dependency. A ``pa
 3. can be subverted by anything that can write to that directory before ``bundle install`` runs (cache poisoning, parallel job, ``actions/cache`` race).
 
 If the dependency is genuinely a local development convenience, gate it behind ``group :development`` so it never runs in CI / production. If it has to ship, publish it as a real gem and pin the version.
+
+</div>
+
+</div>
+
+<div class="pg-rule pg-rule--high" markdown>
+
+## GEM-009: .bundle/config committed with embedded credentials { #gem-009 }
+
+<div class="pg-rule__tags">
+<span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-6</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-10</span> <span class="pg-tag pg-tag--esf">ESF-D-SECRETS</span> <span class="pg-tag pg-tag--cwe">CWE-798</span> <span class="pg-tag pg-tag--cwe">CWE-538</span>
+</div>
+
+Fires when the Gemfile's directory has a ``.bundle/config`` sibling and the YAML body contains at least one ``BUNDLE_<HOST>__USERNAME`` / ``BUNDLE_<HOST>__PASSWORD`` / ``BUNDLE_<HOST>__TOKEN`` entry whose value is a literal (non-placeholder). Placeholder values (``<%= ENV[...] %>`` / ``$ENV`` / ``${VAR}``) are ignored. Bundler accepts both double-underscore (Bundler 2.x) and single-colon (legacy) variants of the key.
+
+**Known false-positive modes**
+
+- Read-only public-mirror credentials may legitimately live in ``.bundle/config`` for offline build runners. Even then, the file shouldn't be in git history — mount it on the runner via the ``$BUNDLE_*`` env vars. Suppress per-repo with a one-line rationale.
+
+**Seen in the wild**
+
+- Recurring pattern: a developer runs ``bundle config set --local gems.corp user:token`` to fix a local build, then commits the resulting ``.bundle/config`` to track ``BUNDLE_DEPLOYMENT`` / ``BUNDLE_FROZEN`` settings — without realizing the credential is in the same file. ``--global`` writes to ``~/.bundle/config`` (out of git scope) but ``--local`` writes to ``./.bundle/config`` (in git scope unless ignored).
+
+<div class="pg-rule__rec" markdown>
+
+**Recommended action**
+
+Remove ``.bundle/config`` (and the whole ``.bundle/`` directory) from version control and add ``.bundle/`` to ``.gitignore``. Bundler's documented convention is to leave that directory out of git — it's a per-user, per-runner config carrying credentials and environment-specific settings. On CI, export the credential through the matching ``$BUNDLE_<HOST>__*`` environment variable instead so the runner mounts the secret out-of-band and no committed file ever holds it.
+
+After removing the file from the working tree, rotate every credential the file ever contained. ``git filter-repo`` can remove the file from history, but rotation is the irrevocable step — anyone who cloned the repo while the file was tracked has the credential.
+
+</div>
+
+</div>
+
+<div class="pg-rule pg-rule--medium" markdown>
+
+## GEM-010: Gemfile uses dynamic gem-list resolution { #gem-010 }
+
+<div class="pg-rule__tags">
+<span class="pg-sev pg-sev--medium">MEDIUM</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-3</span> <span class="pg-tag pg-tag--esf">ESF-S-VERIFY-DEPS</span> <span class="pg-tag pg-tag--cwe">CWE-829</span> <span class="pg-tag pg-tag--cwe">CWE-94</span>
+</div>
+
+Fires when the Gemfile body contains any of ``Dir.glob`` / ``Dir[``, ``eval``, ``instance_eval``, ``require_relative``, ``require ``, ``load ``, or ``File.read`` calls at file scope. Lines inside comments (``#`` prefix) are ignored. The match is conservative — a Gemfile that uses ``ENV["RAILS_ENV"]`` in an ``if`` block doesn't trip the rule; the rule only fires on code paths that *resolve gem names from elsewhere*.
+
+**Known false-positive modes**
+
+- Some monorepo / engine layouts intentionally split their Gemfiles via ``eval_gemfile`` (the documented Bundler shorthand for static inclusion). The rule treats ``eval_gemfile "<literal>"`` as a static-inclusion form and passes; only ``eval(...)`` with non-literal arguments and the ``Dir.glob`` / ``require_relative`` shapes are flagged. If the dynamic resolution is unavoidable, suppress with a one-line rationale naming the static-generation workflow.
+
+**Seen in the wild**
+
+- A Gemfile that runs ``eval File.read("#{ENV[...]}")`` or globbs ``Dir["vendor/*/Gemfile"].each { |f| eval_gemfile f }`` is unauditable by any static tool. The supply-chain risk is two-step: the file the eval reads becomes a manifest-level injection point that the manifest review process never covered.
+
+<div class="pg-rule__rec" markdown>
+
+**Recommended action**
+
+Inline the dynamic ``gem`` declarations into the Gemfile directly. Bundler accepts arbitrary Ruby code at parse time, which is convenient (one Gemfile for many environments) but defeats every static audit you might run against the manifest: the rule pack here, ``bundler-audit``, ``dependabot``, and every other consumer that walks the Gemfile as data sees a hole where the dynamic block expanded into. If the dynamism is genuinely needed, gate it behind ``group :development`` so production / CI Gemfiles stay static, or pre-expand the dynamic block into a generated static file and commit that.
 
 </div>
 

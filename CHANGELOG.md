@@ -12,6 +12,46 @@ release commit collapses this section into `## [X.Y.Z] - <date>`.
 
 ### Added
 
+- **Composer + RubyGems graduated from 8 to 10 rules each (4 new
+  supply-chain detectors).**
+  - **COMPOSER-009** flags ``auth.json`` committed alongside
+    ``composer.json`` with literal credentials. Composer reads
+    ``auth.json`` out of band for HTTP-basic / bearer / GitHub-OAuth
+    / GitLab-OAuth / Bitbucket-OAuth tokens; its presence in git
+    history is a credential leak. Placeholder values
+    (``${COMPOSER_AUTH_TOKEN}`` / ``$ENV``) are ignored so a
+    deliberately-templated auth.json doesn't false-positive. HIGH,
+    13 standards mappings.
+  - **COMPOSER-010** flags ``config.secure-http: false`` in
+    ``composer.json``. Composer's default has been
+    ``secure-http: true`` since 1.8; an explicit ``false`` is a
+    project-wide HTTPS-enforcement downgrade that lets the
+    resolver pull packages over plain HTTP from any source.
+    Companion to COMPOSER-003 (per-URL HTTP detection).
+    MEDIUM, 13 standards mappings.
+  - **GEM-009** flags ``.bundle/config`` committed with embedded
+    credentials. Detects literal-value entries under
+    ``BUNDLE_GEMS__<HOST>`` / ``BUNDLE_GITHUB__COM`` /
+    ``BUNDLE_*__USERNAME`` / ``BUNDLE_*__PASSWORD`` /
+    ``BUNDLE_*__TOKEN`` keys. Placeholder values
+    (``<%= ENV[...] %>`` / ``$ENV``) are ignored. HIGH, 13
+    standards mappings.
+  - **GEM-010** flags Gemfiles that use dynamic gem-list
+    resolution (``Dir.glob`` / ``Dir[...]`` / ``eval(...)`` /
+    ``instance_eval`` / ``require_relative`` / ``File.read``).
+    The static-include helper ``eval_gemfile "<literal>"`` is
+    explicitly allowed. Dynamic Gemfiles defeat every
+    manifest-as-data audit (this rule pack, bundler-audit,
+    dependabot). MEDIUM, 13 standards mappings.
+
+  Lifts both providers' rule counts from 8 to 10, matching the
+  gomod / cargo / pulumi MVP-graduates floor. README architecture
+  block updated for both packs; comparison-table package-registries
+  cell from ``91 rules across 8 providers`` to ``95 rules across 8
+  providers``. Headline ``1060+ checks`` claim still in tolerance
+  (catalog at 1072, tolerance window [1052, 1072]). 22 new unit
+  tests, drift tests pass.
+
 - **RubyGems / Bundler provider, 8 supply-chain rules.** New
   ``--pipeline rubygems`` / ``--rubygems-path`` parses ``Gemfile``
   (Bundler manifest, Ruby DSL) and probes for the sibling

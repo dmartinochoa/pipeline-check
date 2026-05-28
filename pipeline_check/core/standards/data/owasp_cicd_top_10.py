@@ -596,6 +596,8 @@ STANDARD = Standard(
         "COMPOSER-006": ["CICD-SEC-3", "CICD-SEC-1"], # scripts curl-pipe-shell
         "COMPOSER-007": ["CICD-SEC-3", "CICD-SEC-7"], # compromised package
         "COMPOSER-008": ["CICD-SEC-3", "CICD-SEC-5"], # allow-plugins wildcard
+        "COMPOSER-009": ["CICD-SEC-6", "CICD-SEC-10"], # auth.json credentials
+        "COMPOSER-010": ["CICD-SEC-3", "CICD-SEC-5"], # secure-http false
         # ── RubyGems / Bundler (GEM-001..008) ──
         "GEM-001": ["CICD-SEC-3"],               # missing Gemfile.lock
         "GEM-002": ["CICD-SEC-3"],               # floating gem constraint
@@ -605,6 +607,8 @@ STANDARD = Standard(
         "GEM-006": ["CICD-SEC-3", "CICD-SEC-7"], # compromised gem
         "GEM-007": ["CICD-SEC-3", "CICD-SEC-5"], # multiple top-level sources
         "GEM-008": ["CICD-SEC-3", "CICD-SEC-5"], # path: source in prod
+        "GEM-009": ["CICD-SEC-6", "CICD-SEC-10"], # .bundle/config credentials
+        "GEM-010": ["CICD-SEC-3"],               # dynamic Gemfile
         # ── Pulumi (PULUMI-001..006) ──
         "PULUMI-001": ["CICD-SEC-6", "CICD-SEC-7"], # passphrase secretsprovider
         "PULUMI-002": ["CICD-SEC-6"],               # secret-shaped config plaintext

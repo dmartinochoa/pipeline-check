@@ -707,6 +707,8 @@ STANDARD = Standard(
         "COMPOSER-006": ["CM-7", "SI-7"],                # scripts curl-pipe-shell
         "COMPOSER-007": ["SI-2", "SR-3"],                # compromised package
         "COMPOSER-008": ["CM-7", "SR-3"],                # allow-plugins wildcard
+        "COMPOSER-009": ["IA-5", "SC-28"],               # auth.json credentials
+        "COMPOSER-010": ["SC-8", "SC-13"],               # secure-http false
         # ── RubyGems / Bundler ──
         "GEM-001": ["SR-3", "CM-8"],                     # missing Gemfile.lock
         "GEM-002": ["CM-7", "SR-3"],                     # floating gem constraint
@@ -716,6 +718,8 @@ STANDARD = Standard(
         "GEM-006": ["SI-2", "SR-3"],                     # compromised gem
         "GEM-007": ["CM-7", "SR-3"],                     # multiple top-level sources
         "GEM-008": ["CM-7", "SR-3"],                     # path: source in prod
+        "GEM-009": ["IA-5", "SC-28"],                    # .bundle/config credentials
+        "GEM-010": ["CM-7", "SR-3"],                     # dynamic Gemfile
         # ── Pulumi (PULUMI-001..006) ──
         "PULUMI-001": ["SC-13", "SC-12"],                # passphrase secretsprovider
         "PULUMI-002": ["IA-5", "SC-28"],                 # secret-shaped config plaintext

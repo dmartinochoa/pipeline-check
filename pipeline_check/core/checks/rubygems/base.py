@@ -120,6 +120,14 @@ class GemFile:
     #: time.
     has_lockfile: bool = False
     lockfile_path: str | None = None
+    #: Path to ``.bundle/config`` when found in the same directory tree
+    #: as the Gemfile. Bundler reads this file at install time; its
+    #: keys are an ``YAML`` map of ``BUNDLE_<HOSTNAME>``-shaped names.
+    bundle_config_path: str | None = None
+    #: Raw text of ``.bundle/config`` when found. Empty string when not
+    #: present. The bundle-config-side rule (GEM-009) parses the body
+    #: per-line so a malformed YAML file doesn't break the scan.
+    bundle_config_text: str = ""
 
 
 class GemContext:
@@ -164,6 +172,15 @@ class GemContext:
             pf = _parse_gemfile(str(f), text)
             sibling_lock = f.parent / "Gemfile.lock"
             has_lock = sibling_lock.is_file()
+            bundle_cfg = f.parent / ".bundle" / "config"
+            cfg_path: str | None = None
+            cfg_text = ""
+            if bundle_cfg.is_file():
+                cfg_path = str(bundle_cfg)
+                try:
+                    cfg_text = bundle_cfg.read_text(encoding="utf-8")
+                except (OSError, UnicodeDecodeError):
+                    cfg_text = ""
             files.append(GemFile(
                 path=pf.path, text=pf.text,
                 sources=pf.sources,
@@ -171,6 +188,8 @@ class GemContext:
                 parsed_ok=pf.parsed_ok,
                 has_lockfile=has_lock,
                 lockfile_path=str(sibling_lock) if has_lock else None,
+                bundle_config_path=cfg_path,
+                bundle_config_text=cfg_text,
             ))
         ctx = cls(files)
         ctx.files_skipped = skipped

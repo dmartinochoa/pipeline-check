@@ -694,6 +694,8 @@ STANDARD = Standard(
         "COMPOSER-006": ["CC8.1"],
         "COMPOSER-007": ["CC8.1", "CC7.1"],
         "COMPOSER-008": ["CC8.1"],
+        "COMPOSER-009": ["CC6.1"],
+        "COMPOSER-010": ["CC8.1", "CC6.1"],
         # ── RubyGems / Bundler ──
         "GEM-001": ["CC8.1"],
         "GEM-002": ["CC8.1"],
@@ -703,6 +705,8 @@ STANDARD = Standard(
         "GEM-006": ["CC8.1", "CC7.1"],
         "GEM-007": ["CC8.1"],
         "GEM-008": ["CC8.1"],
+        "GEM-009": ["CC6.1"],
+        "GEM-010": ["CC8.1"],
         # ── Pulumi ──
         "PULUMI-001": ["CC6.1"],                # passphrase secretsprovider
         "PULUMI-002": ["CC6.1"],                # secret-shaped config plaintext

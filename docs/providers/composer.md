@@ -30,7 +30,7 @@ pipeline_check --pipeline composer --composer-path ./packages/api/
 
 ## What it covers
 
-8 checks · 0 have an autofix patch (``--fix``).
+10 checks · 0 have an autofix patch (``--fix``).
 
 | Check | Title | Severity | Fix |
 |-------|-------|----------|-----|
@@ -42,6 +42,8 @@ pipeline_check --pipeline composer --composer-path ./packages/api/
 | [COMPOSER-006](#composer-006) | composer.json scripts hook pipes a remote download to a shell | <span class="pg-sev pg-sev--high">HIGH</span> |  |
 | [COMPOSER-007](#composer-007) | composer.json requires a known-compromised package version | <span class="pg-sev pg-sev--high">HIGH</span> |  |
 | [COMPOSER-008](#composer-008) | composer.json allow-plugins permits any plugin to execute | <span class="pg-sev pg-sev--high">HIGH</span> |  |
+| [COMPOSER-009](#composer-009) | auth.json committed alongside composer.json with literal credentials | <span class="pg-sev pg-sev--high">HIGH</span> |  |
+| [COMPOSER-010](#composer-010) | composer.json config.secure-http: false disables HTTPS enforcement | <span class="pg-sev pg-sev--medium">MEDIUM</span> |  |
 
 ---
 
@@ -268,6 +270,66 @@ Fires when ``config.allow-plugins`` is set to the boolean ``true``. The legitima
 **Recommended action**
 
 Replace ``"allow-plugins": true`` with an explicit per-plugin map: ``"allow-plugins": {"vendor/known-plugin": true, ...}``. Composer plugins run arbitrary PHP at install time — including from transitive deps — so the allowlist is one of Composer's primary security boundaries. The wildcard (``true``) defeats the gate entirely. Composer 2.2+ ships the default value as ``{}`` and prompts before running any plugin in interactive mode; CI is non-interactive, so the prompt is silently bypassed and every plugin in the graph runs.
+
+</div>
+
+</div>
+
+<div class="pg-rule pg-rule--high" markdown>
+
+## COMPOSER-009: auth.json committed alongside composer.json with literal credentials { #composer-009 }
+
+<div class="pg-rule__tags">
+<span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-6</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-10</span> <span class="pg-tag pg-tag--esf">ESF-D-SECRETS</span> <span class="pg-tag pg-tag--cwe">CWE-798</span> <span class="pg-tag pg-tag--cwe">CWE-538</span>
+</div>
+
+Fires when the manifest's directory has a sibling ``auth.json`` file and that file's JSON body has at least one entry under ``http-basic`` / ``bearer`` / ``github-oauth`` / ``gitlab-oauth`` / ``gitlab-token`` / ``bitbucket-oauth`` with a literal credential. Placeholder values (``${ENV}`` / ``${COMPOSER_AUTH_TOKEN}``) are ignored. An empty / malformed auth.json passes silently.
+
+**Known false-positive modes**
+
+- Some monorepos use a per-project auth.json that intentionally pins to a low-privilege read-only token scoped to a single private mirror. The rule still fires — suppress per file with a one-line rationale naming the read-only-scope guarantee. Better: move the credential to a runner-side mount.
+
+**Seen in the wild**
+
+- Recurring pattern across PHP shops: a developer copy-pastes ``composer config http-basic …`` from internal docs without running ``composer config --global``, leaving the credential in the project's ``auth.json`` instead of the user's home dir. The credential then lands in the next commit and is exposed to every reader of the repo.
+
+<div class="pg-rule__rec" markdown>
+
+**Recommended action**
+
+Remove ``auth.json`` from version control and add it to ``.gitignore``. Composer reads credentials from ``auth.json`` out of band of ``composer.json`` for exactly the reason that the credential should never live in the same git history as the manifest — the manifest is meant for the team, ``auth.json`` is meant for the runner. On CI, export the credential through ``$COMPOSER_AUTH`` (Composer reads JSON-shaped env at install time) so the runner mounts the secret out-of-band and no committed file ever holds it.
+
+After removing the file from the working tree, rotate every credential the file ever contained. ``git filter-repo`` (or ``git rebase -i`` for a recent commit) can remove the file from history, but rotation is the irrevocable step — anyone who cloned the repo while the file was tracked has the credential.
+
+</div>
+
+</div>
+
+<div class="pg-rule pg-rule--medium" markdown>
+
+## COMPOSER-010: composer.json config.secure-http: false disables HTTPS enforcement { #composer-010 }
+
+<div class="pg-rule__tags">
+<span class="pg-sev pg-sev--medium">MEDIUM</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-3</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-5</span> <span class="pg-tag pg-tag--esf">ESF-S-TRUSTED-REG</span> <span class="pg-tag pg-tag--esf">ESF-S-VERIFY-DEPS</span> <span class="pg-tag pg-tag--cwe">CWE-319</span> <span class="pg-tag pg-tag--cwe">CWE-295</span>
+</div>
+
+Fires when ``config.secure-http`` is explicitly set to the boolean ``false`` in ``composer.json``. The default value (``true``) is the safe posture, so the rule only trips on an explicit downgrade. Companion to COMPOSER-003 (per-repository HTTP URL): COMPOSER-003 catches one offending URL; COMPOSER-010 catches the project-wide flag that lets *any* URL be plain HTTP without complaint.
+
+**Known false-positive modes**
+
+- Air-gapped internal mirrors that absolutely can't terminate TLS may legitimately need this flag. Suppress with a one-line rationale naming the network boundary; revisit when the network team brings up a TLS proxy.
+
+**Seen in the wild**
+
+- Composer 1.8.0 release notes mark ``secure-http`` as ``true`` by default because plain-HTTP package fetches were the most reliable MITM surface in the ecosystem. Explicit ``false`` re-opens that surface for every install run.
+
+<div class="pg-rule__rec" markdown>
+
+**Recommended action**
+
+Remove the ``config.secure-http: false`` entry from ``composer.json`` (or set it back to ``true``). Composer's default has been ``secure-http: true`` since 1.8; the explicit ``false`` is a deliberate downgrade that lets the project pull packages from plain-HTTP sources without complaint. That defeats the same defense that COMPOSER-003 protects on the individual ``repositories`` URL — a plain-HTTP mirror, a typosquatted public source, anything the package resolver finds is now eligible for fetch.
+
+If the deployment legitimately needs to talk to an internal mirror that can't terminate TLS, front the mirror with a TLS-terminating reverse proxy. The ``secure-http: false`` escape hatch is a project-wide weakening that almost always outlives the local constraint that motivated it.
 
 </div>
 

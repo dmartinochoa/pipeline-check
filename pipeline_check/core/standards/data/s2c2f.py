@@ -95,10 +95,13 @@ STANDARD = Standard(
         "COMPOSER-003": ["ING-1"],         # HTTP composer repository
         "COMPOSER-004": ["ING-1"],         # composer.json repo URL credentials
         "COMPOSER-005": ["ING-1"],         # minimum-stability dev / pre-release
+        "COMPOSER-009": ["ING-1"],         # auth.json committed
+        "COMPOSER-010": ["ING-1"],         # secure-http false (HTTP enabled)
         # ── RubyGems / Bundler ──
         "GEM-003": ["ING-1"],              # HTTP Gemfile source
         "GEM-004": ["ING-1"],              # Gemfile source URL credentials
         "GEM-007": ["ING-1"],              # multiple top-level sources (dep-confusion)
+        "GEM-009": ["ING-1"],              # .bundle/config credentials
         # Dockerfile env-bypass pack disables the trusted-source channel
         # for any subsequent OSS install in the image.
         "DF-021":   ["ING-1"],             # pip install TLS bypass / http index

@@ -688,6 +688,8 @@ STANDARD = Standard(
         "COMPOSER-006": ["1.4.1"],                 # scripts curl-pipe-shell
         "COMPOSER-007": ["1.4.1", "1.1.8"],        # known-compromised package
         "COMPOSER-008": ["1.4.1"],                 # allow-plugins wildcard
+        "COMPOSER-009": ["1.4.1"],                 # auth.json credentials
+        "COMPOSER-010": ["1.4.1"],                 # secure-http false
         # ── RubyGems / Bundler (GEM-001..008) ──
         "GEM-001": ["1.4.1"],                      # missing Gemfile.lock
         "GEM-002": ["1.4.1"],                      # floating gem constraint
@@ -697,6 +699,8 @@ STANDARD = Standard(
         "GEM-006": ["1.4.1", "1.1.8"],             # compromised gem
         "GEM-007": ["1.4.1"],                      # multiple top-level sources
         "GEM-008": ["1.4.1"],                      # path: source in prod
+        "GEM-009": ["1.4.1"],                      # .bundle/config credentials
+        "GEM-010": ["1.4.1"],                      # dynamic Gemfile
         # ── Pulumi (PULUMI-001..006) ──
         "PULUMI-001": ["1.5.1"],                   # passphrase secretsprovider
         "PULUMI-002": ["1.5.1"],                   # secret-shaped config plaintext

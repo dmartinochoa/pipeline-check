@@ -710,6 +710,8 @@ STANDARD = Standard(
         "COMPOSER-006": ["ESF-S-VERIFY-DEPS"],
         "COMPOSER-007": ["ESF-S-VERIFY-DEPS"],
         "COMPOSER-008": ["ESF-S-VERIFY-DEPS"],
+        "COMPOSER-009": ["ESF-D-SECRETS"],
+        "COMPOSER-010": ["ESF-S-TRUSTED-REG", "ESF-S-VERIFY-DEPS"],
         # ── RubyGems / Bundler ──
         "GEM-001": ["ESF-S-VERIFY-DEPS"],
         "GEM-002": ["ESF-S-VERIFY-DEPS"],
@@ -719,6 +721,8 @@ STANDARD = Standard(
         "GEM-006": ["ESF-S-VERIFY-DEPS"],
         "GEM-007": ["ESF-S-TRUSTED-REG"],
         "GEM-008": ["ESF-S-VERIFY-DEPS"],
+        "GEM-009": ["ESF-D-SECRETS"],
+        "GEM-010": ["ESF-S-VERIFY-DEPS"],
         # ── Pulumi ──
         "PULUMI-001": ["ESF-D-SECRETS"],
         "PULUMI-002": ["ESF-D-SECRETS"],

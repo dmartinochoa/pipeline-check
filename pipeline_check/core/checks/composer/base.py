@@ -130,6 +130,15 @@ class ComposerFile:
     #: time.
     has_lockfile: bool = False
     lockfile_path: str | None = None
+    #: Path to the sibling ``auth.json`` file if one exists. Composer
+    #: reads this file out of band for HTTP-basic and bearer-token
+    #: credentials; its presence in the same directory as the manifest
+    #: is the seed for COMPOSER-009 (credential leak via committed
+    #: auth.json).
+    auth_json_path: str | None = None
+    #: Parsed body of the sibling ``auth.json`` when found and JSON-
+    #: parseable. Empty dict otherwise.
+    auth_json: dict[str, Any] = field(default_factory=dict)
 
 
 class ComposerContext:
@@ -179,6 +188,19 @@ class ComposerContext:
                 continue
             sibling_lock = f.parent / "composer.lock"
             has_lock = sibling_lock.is_file()
+            sibling_auth = f.parent / "auth.json"
+            auth_path: str | None = None
+            auth_body: dict[str, Any] = {}
+            if sibling_auth.is_file():
+                auth_path = str(sibling_auth)
+                try:
+                    raw = sibling_auth.read_text(encoding="utf-8")
+                    parsed = json.loads(raw)
+                    if isinstance(parsed, dict):
+                        auth_body = parsed
+                except (OSError, UnicodeDecodeError,
+                        json.JSONDecodeError):
+                    auth_body = {}
             files.append(ComposerFile(
                 path=pf.path, text=pf.text,
                 package_name=pf.package_name,
@@ -190,6 +212,8 @@ class ComposerContext:
                 parsed_ok=pf.parsed_ok,
                 has_lockfile=has_lock,
                 lockfile_path=str(sibling_lock) if has_lock else None,
+                auth_json_path=auth_path,
+                auth_json=auth_body,
             ))
         ctx = cls(files)
         ctx.files_skipped = skipped
