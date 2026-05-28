@@ -438,6 +438,23 @@ class TestFleetDirectoryIntegration:
         report = load_history(tmp_path)
         assert len(report.snapshots) == 1
 
+    def test_fleet_aggregate_json_skipped(self, tmp_path: Path) -> None:
+        # A fleet ``--output-dir`` contains a ``fleet.json`` aggregate
+        # (``snapshots``/``warnings`` keys, no ``score``/``findings``)
+        # alongside the per-repo ``findings.json`` files. The aggregate
+        # must be skipped, not coerced into a bogus score-0 snapshot.
+        repo = tmp_path / "github" / "org" / "myrepo"
+        repo.mkdir(parents=True)
+        _write_scan(repo, "findings.json", _scan_doc(score=70, high=5))
+        (tmp_path / "fleet.json").write_text(
+            json.dumps({"snapshots": [], "warnings": []}),
+            encoding="utf-8",
+        )
+        report = load_history(tmp_path)
+        assert len(report.snapshots) == 1
+        assert report.snapshots[0].score == 70
+        assert any("fleet.json" in w for w in report.warnings)
+
     def test_mixed_flat_and_fleet(self, tmp_path: Path) -> None:
         # Flat timestamped scans alongside a fleet subdirectory.
         _write_scan(

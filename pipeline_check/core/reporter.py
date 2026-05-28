@@ -239,18 +239,23 @@ def report_terminal(
             f"[{conf_style}]{conf_label}[/{conf_style}]"
             if conf_style else conf_label
         )
-        resource_cell = f.resource
+        # Escape resource/title through ``rich.markup.escape``: real
+        # content carries literal ``[...]`` tokens (YAML lists, TF refs
+        # like ``[aws_subnet.foo.id]``, capabilities ``[ALL]``) that the
+        # table renderer would otherwise parse as Rich style markup and
+        # silently strip.
+        resource_cell = rich_escape(f.resource)
         if f.locations:
             primary = f.locations[0]
             if primary.start_line is not None:
-                resource_cell = f"{f.resource}:{primary.start_line}"
+                resource_cell = f"{rich_escape(f.resource)}:{primary.start_line}"
         table.add_row(
             status,
             f.check_id,
             f"[{sev_style}]{f.severity.value}[/{sev_style}]",
             conf_cell,
             resource_cell,
-            f.title,
+            rich_escape(f.title),
         )
 
     # Failures first, in group order.
@@ -301,11 +306,12 @@ def report_terminal(
         style = _SEVERITY_STYLE.get(f.severity, "white")
         cwe_line = ""
         if f.cwe:
-            cwe_line = f"\n[dim]CWE: {', '.join(f.cwe)}[/dim]"
+            cwe_line = f"\n[dim]CWE: {rich_escape(', '.join(f.cwe))}[/dim]"
         controls_text = ""
         if f.controls and show_controls:
             controls_text = "\n[bold]Controls:[/bold]\n" + "\n".join(
-                f"  [{c.standard_title}] {c.label()}" for c in f.controls
+                f"  {rich_escape('[' + c.standard_title + '] ' + c.label())}"
+                for c in f.controls
             )
         # When the rule emitted >1 location OR there are grouped
         # followers with locations, list every offending line in the
@@ -325,7 +331,9 @@ def report_terminal(
             if extra:
                 lines_csv += f" (and {extra} more)"
             path = f.locations[0].path if f.locations else f.resource
-            locations_text = f"\n[bold]Locations:[/bold] {path}:{lines_csv}"
+            locations_text = (
+                f"\n[bold]Locations:[/bold] {rich_escape(path)}:{lines_csv}"
+            )
         elif followers:
             locations_text = (
                 f"\n[dim]Grouped with {len(followers)} similar finding(s) "
@@ -352,12 +360,12 @@ def report_terminal(
             )
         console.print(
             Panel(
-                f"{f.description}\n\n"
-                f"[bold]Recommendation:[/bold] {f.recommendation}"
+                f"{rich_escape(f.description)}\n\n"
+                f"[bold]Recommendation:[/bold] {rich_escape(f.recommendation)}"
                 f"{cwe_line}{controls_text}{locations_text}{exploit_text}",
                 title=(
                     f"[{style}]{f.check_id}[/{style}]  "
-                    f"{f.title}  [dim]{f.resource}[/dim]"
+                    f"{rich_escape(f.title)}  [dim]{rich_escape(f.resource)}[/dim]"
                 ),
                 border_style="dim",
                 padding=(0, 2),
@@ -434,29 +442,38 @@ def report_chains_terminal(
     for chain in chains:
         sev_style = _SEVERITY_STYLE.get(chain.severity, "white")
         conf_style = _CONFIDENCE_STYLE.get(chain.confidence, "")
+        # Escape narrative/summary/recommendation/references: chain prose
+        # quotes bracketed payloads and resource refs that would
+        # otherwise be parsed as Rich style markup and stripped.
         body_lines = [
-            f"[bold]{chain.summary}[/bold]",
+            f"[bold]{rich_escape(chain.summary)}[/bold]",
             "",
-            chain.narrative,
+            rich_escape(chain.narrative),
             "",
-            f"[bold]Triggering checks:[/bold] {', '.join(chain.triggering_check_ids)}",
+            f"[bold]Triggering checks:[/bold] "
+            f"{rich_escape(', '.join(chain.triggering_check_ids))}",
         ]
         if chain.confirmed_reachable:
             reach_line = "[bold green]✓ Reachability confirmed[/bold green]"
             if chain.reachability_note:
-                reach_line += f": {chain.reachability_note}"
+                reach_line += f": {rich_escape(chain.reachability_note)}"
             body_lines.append(reach_line)
         if chain.mitre_attack:
             body_lines.append(
-                f"[bold]MITRE ATT&CK:[/bold] {', '.join(chain.mitre_attack)}"
+                f"[bold]MITRE ATT&CK:[/bold] "
+                f"{rich_escape(', '.join(chain.mitre_attack))}"
             )
         if chain.kill_chain_phase:
-            body_lines.append(f"[bold]Kill chain:[/bold] {chain.kill_chain_phase}")
-        body_lines.append(f"[bold]Recommendation:[/bold] {chain.recommendation}")
+            body_lines.append(
+                f"[bold]Kill chain:[/bold] {rich_escape(chain.kill_chain_phase)}"
+            )
+        body_lines.append(
+            f"[bold]Recommendation:[/bold] {rich_escape(chain.recommendation)}"
+        )
         if chain.references:
             body_lines.append("[bold]References:[/bold]")
             for ref in chain.references:
-                body_lines.append(f"  - {ref}")
+                body_lines.append(f"  - {rich_escape(ref)}")
         conf_label = (
             f"[{conf_style}]{chain.confidence.value}[/{conf_style}]"
             if conf_style else chain.confidence.value
@@ -466,7 +483,7 @@ def report_chains_terminal(
                 "\n".join(body_lines),
                 title=(
                     f"[{sev_style}]{chain.chain_id}[/{sev_style}]  "
-                    f"{chain.title}  "
+                    f"{rich_escape(chain.title)}  "
                     f"[dim](severity: {chain.severity.value}, "
                     f"confidence: {conf_label})[/dim]"
                 ),

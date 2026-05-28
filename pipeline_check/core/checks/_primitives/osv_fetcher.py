@@ -116,8 +116,20 @@ def _fetch_batch(
     except Exception as exc:
         return {}, str(exc)
 
+    raw_results = body.get("results", [])
+    # OSV returns one result entry per query, in request order. A
+    # response with fewer entries than queries (truncated / partial)
+    # would otherwise leave the unpaired tail packages looking clean and
+    # get them cached as advisory-free for the cache TTL, suppressing
+    # real advisories. Treat a length mismatch as a batch error so the
+    # caller warns and skips caching instead.
+    if not isinstance(raw_results, list) or len(raw_results) != len(queries):
+        return {}, (
+            f"OSV returned {len(raw_results) if isinstance(raw_results, list) else 0} "
+            f"result(s) for {len(queries)} queries (truncated response)"
+        )
     results: dict[int, list[dict[str, Any]]] = {}
-    for i, entry in enumerate(body.get("results", [])):
+    for i, entry in enumerate(raw_results):
         vulns = entry.get("vulns", [])
         if vulns:
             results[i] = vulns

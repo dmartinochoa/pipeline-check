@@ -14,22 +14,22 @@ class PyPITokenVerifier(SecretVerifier):
             "https://upload.pypi.org/legacy/",
             secret_value,
         )
-        if resp.status == 405:
-            return VerifyResult(
-                outcome=VerifyOutcome.VERIFIED,
-                identity="pypi-token:valid",
-                reason=(
-                    "POST /legacy/ returned 405 (Method Not Allowed with "
-                    "valid auth, the upload endpoint rejects GET but "
-                    "accepts the credential)"
-                ),
-            )
         if resp.auth_failure:
             return VerifyResult(
                 outcome=VerifyOutcome.UNVERIFIED,
                 reason=f"upload.pypi.org returned {resp.status}",
             )
+        # A GET to /legacy/ returns 405 (Method Not Allowed) regardless
+        # of whether the credential is valid, because the endpoint only
+        # accepts POST and rejects the method before checking auth. So a
+        # 405 is NOT proof the token is live. Without an authenticated
+        # read endpoint we cannot confirm a PyPI upload token; report
+        # UNKNOWN rather than a false VERIFIED that would promote a dead
+        # token to CRITICAL.
         return VerifyResult(
             outcome=VerifyOutcome.UNKNOWN,
-            reason=f"upload.pypi.org returned {resp.status}",
+            reason=(
+                f"upload.pypi.org returned {resp.status}; PyPI upload "
+                "tokens cannot be confirmed read-only"
+            ),
         )

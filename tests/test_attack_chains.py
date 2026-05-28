@@ -3295,3 +3295,28 @@ class TestChainAC034:
         ])
         ac34 = [c for c in out if c.chain_id == "AC-034"]
         assert len(ac34) == 1
+
+
+# ── Cross-repo directional dedup ──────────────────────────────────────
+
+
+class TestCrossRepoDirectionalDedup:
+    """CXPC matchers run producer -> consumer, so X->Y and Y->X are
+    distinct paths. The dedup key must be ordered, not min/max, or the
+    reverse direction is silently dropped when two repos each satisfy
+    both legs."""
+
+    def test_both_directions_emitted(self):
+        wf = ".github/workflows/x.yml"
+        findings_by_repo = {
+            "org/repo-x": [_f("TAINT-001", wf), _f("GHA-002", wf)],
+            "org/repo-y": [_f("TAINT-001", wf), _f("GHA-002", wf)],
+        }
+        out = chains_pkg.evaluate_cross_repo(
+            findings_by_repo, enabled={"CXPC-004"},
+        )
+        assert len(out) == 2
+        # Each chain pairs a different producer repo as the leg-A anchor.
+        producers = {c.resources[0] for c in out}
+        assert producers == {wf}
+        assert all(c.chain_id == "CXPC-004" for c in out)
