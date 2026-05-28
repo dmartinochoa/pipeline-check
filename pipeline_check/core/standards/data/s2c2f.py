@@ -95,6 +95,10 @@ STANDARD = Standard(
         "COMPOSER-003": ["ING-1"],         # HTTP composer repository
         "COMPOSER-004": ["ING-1"],         # composer.json repo URL credentials
         "COMPOSER-005": ["ING-1"],         # minimum-stability dev / pre-release
+        # ── RubyGems / Bundler ──
+        "GEM-003": ["ING-1"],              # HTTP Gemfile source
+        "GEM-004": ["ING-1"],              # Gemfile source URL credentials
+        "GEM-007": ["ING-1"],              # multiple top-level sources (dep-confusion)
         # Dockerfile env-bypass pack disables the trusted-source channel
         # for any subsequent OSS install in the image.
         "DF-021":   ["ING-1"],             # pip install TLS bypass / http index
@@ -156,6 +160,7 @@ STANDARD = Standard(
         "NUGET-009": ["SCA-3", "ING-3"],    # OSV advisory (--resolve-remote)
         "COMPOSER-007": ["SCA-3", "ING-3"], # compromised Composer package
         "COMPOSER-008": ["SCA-3", "ING-3"], # allow-plugins wildcard (transitive plugin run)
+        "GEM-006": ["SCA-3", "ING-3"],      # compromised gem version
         # Reputation-class deny-list signals: not malware-confirmed,
         # but each finding is one entry on a curated deny-list of
         # references that should require human-in-the-loop review
@@ -223,6 +228,9 @@ STANDARD = Standard(
         "NUGET-006": ["UPD-1"],            # no lock file for reproducible restores
         "COMPOSER-001": ["UPD-1"],         # missing composer.lock
         "COMPOSER-002": ["UPD-1"],         # floating require constraint
+        "GEM-001": ["UPD-1"],              # missing Gemfile.lock
+        "GEM-002": ["UPD-1"],              # floating gem constraint
+        "GEM-005": ["UPD-1"],              # git/github source mutable ref
         # OCI image manifest pinning
         "OCI-007":  ["UPD-1"],             # legacy schemaVersion 1 (no digest immutability)
         "OCI-008":  ["UPD-1"],             # weak digest algorithm

@@ -20,7 +20,7 @@
 
 Pipeline-Check is a security scanner for GitHub Actions, GitLab CI, Jenkins, CircleCI, Azure DevOps, Bitbucket Pipelines, Buildkite, Drone, Tekton, Argo Workflows, and Google Cloud Build, plus Terraform, CloudFormation, Kubernetes, Helm, Dockerfile, OCI image manifests, and live AWS accounts. It maps every finding to the [OWASP Top 10 CI/CD Security Risks](https://owasp.org/www-project-top-10-ci-cd-security-risks/), SLSA, NIST SSDF, PCI DSS, SOC 2, the CIS GitHub Benchmark, and nine other frameworks, and scores each scan A through D so you can gate merges on the result.
 
-**1050+ checks** across **31 providers**, mapped to **18 compliance standards**, with **111 autofixers**, plus **48 attack chains** correlating findings into MITRE ATT&CK-mapped kill chains. A dataflow taint engine catches multi-step and cross-job propagation that single-rule scanners miss.
+**1060+ checks** across **32 providers**, mapped to **18 compliance standards**, with **111 autofixers**, plus **48 attack chains** correlating findings into MITRE ATT&CK-mapped kill chains. A dataflow taint engine catches multi-step and cross-job propagation that single-rule scanners miss.
 
 [Quick start](#-quick-start) |
 [Usage guide](docs/usage.md) |
@@ -159,7 +159,7 @@ for the full per-check reference.
 
 ```
                  +-----------+
-  Config files   |  Scanner  |   1050+ checks across 31 providers
+  Config files   |  Scanner  |   1060+ checks across 32 providers
   or live APIs ---->         +---> Findings (check_id, severity, resource)
                  +-----------+
                        |
@@ -496,6 +496,7 @@ pipeline_check/
         ├── maven/rules/       # MVN-001 .. MVN-014 — pom.xml + settings.xml supply-chain hygiene + curated compromised-package registry (Log4Shell / Spring4Shell / Text4Shell) + cooldown gate + OSV advisory lookup + settings.xml plaintext server credentials + repo URL embedded credentials + build plugin / extension floating versions + Maven Wrapper distributionSha256Sum verification
         ├── nuget/rules/       # NUGET-001 .. NUGET-015 — *.csproj + NuGet.config + dotnet-tools.json supply-chain hygiene + curated compromised-package registry + cooldown gate + OSV advisory lookup + cleartext-feed-credential detector + packageSourceMapping wildcard detector + signatureValidationMode enforcement + tool-manifest version pinning + source-URL-credentials detector + Central-Package-Management VersionOverride enforcement
         ├── composer/rules/    # COMPOSER-001 .. COMPOSER-008 — composer.json + composer.lock supply-chain hygiene + curated compromised-package registry + floating require constraint + HTTP repository + repo URL credentials + minimum-stability dev / alpha / beta floor + scripts curl-pipe-shell hook + config.allow-plugins wildcard
+        ├── rubygems/rules/    # GEM-001 .. GEM-008 — Gemfile + Gemfile.lock supply-chain hygiene + curated compromised-gem registry (rest-client 2019 / strong_password 2019) + floating gem constraint + HTTP source + source URL credentials + git/github source mutable ref + multiple top-level sources (dep-confusion) + path: source in production
         └── custom/            # YAML rule loader + predicate engine
 ```
 

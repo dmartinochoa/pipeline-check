@@ -41,6 +41,7 @@ from .nuget import NuGetProvider
 from .oci import OCIProvider
 from .pulumi import PulumiProvider
 from .pypi import PypiProvider
+from .rubygems import RubyGemsProvider
 from .scm import SCMProvider
 from .tekton import TektonProvider
 from .terraform import TerraformProvider
@@ -96,4 +97,5 @@ register(NuGetProvider())
 register(GoModProvider())
 register(CargoProvider())
 register(ComposerProvider())
+register(RubyGemsProvider())
 register(PulumiProvider())

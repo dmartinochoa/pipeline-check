@@ -664,6 +664,15 @@ STANDARD = Standard(
         "COMPOSER-006": ["6.3.1"],
         "COMPOSER-007": ["6.3.1", "6.3.3"],
         "COMPOSER-008": ["6.3.1"],
+        # ── RubyGems / Bundler ──
+        "GEM-001": ["6.3.1"],
+        "GEM-002": ["6.3.1"],
+        "GEM-003": ["6.3.1"],
+        "GEM-004": ["8.2.1"],
+        "GEM-005": ["6.3.1"],
+        "GEM-006": ["6.3.1", "6.3.3"],
+        "GEM-007": ["6.3.1"],
+        "GEM-008": ["6.3.1"],
         # ── Pulumi ──
         "PULUMI-001": ["8.2.1"],        # passphrase secretsprovider
         "PULUMI-002": ["8.2.1"],        # secret-shaped config plaintext

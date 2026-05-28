@@ -165,6 +165,13 @@ STANDARD = Standard(
         "COMPOSER-004": ["Token-Permissions"],
         "COMPOSER-007": ["Pinned-Dependencies", "Vulnerabilities"],
         "COMPOSER-008": ["Pinned-Dependencies"],
+        # ── RubyGems / Bundler ──
+        "GEM-001": ["Pinned-Dependencies"],
+        "GEM-002": ["Pinned-Dependencies"],
+        "GEM-004": ["Token-Permissions"],
+        "GEM-005": ["Pinned-Dependencies"],
+        "GEM-006": ["Pinned-Dependencies", "Vulnerabilities"],
+        "GEM-008": ["Pinned-Dependencies"],
         # Reusable workflow / services-image / cross-step pinning
         "GHA-017":  ["Pinned-Dependencies"],                           # package install insecure source
         "GHA-051":  ["Pinned-Dependencies"],                           # services / container image unpinned

@@ -1384,6 +1384,48 @@ pipeline_check --pipeline composer --composer-path ./packages/api/
 `vendor/`, `.git/`, and `node_modules/` directories are skipped.
 """,
     ),
+    "rubygems": (
+        "RubyGems",
+        "pipeline_check.core.checks.rubygems.rules",
+        _REPO_ROOT / "docs" / "providers" / "rubygems.md",
+        """\
+# RubyGems (Bundler) provider
+
+Parses `Gemfile` (Bundler manifest, Ruby DSL) and probes for the
+sibling `Gemfile.lock` on disk. Text-only static analysis via a
+regex extractor over the canonical Bundler idioms, no
+`bundle install`, no rubygems.org access, no Ruby runtime
+required. Mirrors the npm / PyPI / Maven / NuGet / Go modules /
+Cargo / Composer pack shape.
+
+## Producer workflow
+
+```bash
+# --rubygems-path auto-detects ./Gemfile when present.
+pipeline_check --pipeline rubygems
+pipeline_check --pipeline rubygems --rubygems-path ./Gemfile
+pipeline_check --pipeline rubygems --rubygems-path ./services/api/
+```
+
+## Manifest entries audited
+
+| Entry | Notes |
+|-------|-------|
+| `source "..."` | Top-level and scoped `source "..." do ... end` |
+| `gem "name", "..."` | Version constraints, option-hash form |
+| `gem "x", git: ..., ref: ...` | Git source pin / mutable detection |
+| `gem "x", github: "owner/repo"` | GitHub shorthand source |
+| `gem "x", path: "..."` | Local path source |
+| `group :dev do ... end` | Group scoping for dev/test entries |
+
+`.git/`, `vendor/`, and `node_modules/` directories are skipped.
+
+The parser is regex-driven rather than a true Ruby parser, so
+genuinely dynamic Gemfiles (`Dir.glob` over `gem` calls, `eval`
+of a generated string) are treated as opaque - the rule pack
+reports what it can extract and otherwise passes through.
+""",
+    ),
     "nuget": (
         "NuGet",
         "pipeline_check.core.checks.nuget.rules",
@@ -2170,6 +2212,12 @@ _FOOTER_CONFIG: dict[str, dict[str, str]] = {
         "pkg": "composer",
         "signature": "check(pom: ComposerFile) -> Finding",
         "arg_kind": "``ComposerFile``",
+    },
+    "rubygems": {
+        "prefix": "GEM", "prefix_lc": "gem",
+        "pkg": "rubygems",
+        "signature": "check(pom: GemFile) -> Finding",
+        "arg_kind": "``GemFile``",
     },
     "pulumi": {
         "prefix": "PULUMI", "prefix_lc": "pulumi", "pkg": "pulumi",

@@ -65,6 +65,7 @@ EXPECTED_RULE_COUNTS: dict[str, int] = {
     "gomod":      10,
     "cargo":      10,
     "composer":   8,
+    "rubygems":   8,
     "pulumi":     10,
 }
 

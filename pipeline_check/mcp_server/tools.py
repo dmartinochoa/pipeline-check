@@ -99,6 +99,7 @@ _PROVIDER_PATH_KW: dict[str, str | None] = {
     "gomod":          "gomod_path",
     "cargo":          "cargo_path",
     "composer":       "composer_path",
+    "rubygems":       "rubygems_path",
     "pulumi":         "pulumi_path",
     "aws":            None,
     "azure_cloud":    None,
@@ -271,6 +272,7 @@ _RULES_FQN: dict[str, str] = {
     "gomod":          "pipeline_check.core.checks.gomod.rules",
     "cargo":          "pipeline_check.core.checks.cargo.rules",
     "composer":       "pipeline_check.core.checks.composer.rules",
+    "rubygems":       "pipeline_check.core.checks.rubygems.rules",
     "pulumi":         "pipeline_check.core.checks.pulumi.rules",
 }
 

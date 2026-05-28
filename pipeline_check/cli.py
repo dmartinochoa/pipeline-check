@@ -172,6 +172,7 @@ class _GroupedCommand(click.Command):
             "--drone-path", "--npm-path", "--pypi-path",
             "--maven-path", "--nuget-path", "--gomod-path",
             "--cargo-path", "--pulumi-path", "--composer-path",
+            "--rubygems-path",
         })),
         ("Filtering", frozenset({
             "--checks", "--severity-threshold", "--min-confidence",
@@ -634,6 +635,7 @@ _PROVIDER_DETECT_FILES: tuple[tuple[str, tuple[str, ...], tuple[str, ...]], ...]
     ("gomod", ("go.mod",), ()),
     ("cargo", ("Cargo.toml",), ()),
     ("composer", ("composer.json",), ()),
+    ("rubygems", ("Gemfile",), ()),
     ("pulumi", ("Pulumi.yaml",), ()),
     ("terraform", ("main.tf",), ()),
     (
@@ -754,6 +756,7 @@ _PROVIDER_PATH_KWARG: dict[str, str] = {
     "gomod": "gomod_path",
     "cargo": "cargo_path",
     "composer": "composer_path",
+    "rubygems": "rubygems_path",
     "pulumi": "pulumi_path",
 }
 
@@ -1514,6 +1517,16 @@ def _install_completion_callback(
         "Path to a composer.json file or a directory containing "
         "one (required when --pipeline composer). Auto-detects "
         "./composer.json."
+    ),
+)
+@click.option(
+    "--rubygems-path",
+    default=None,
+    metavar="PATH",
+    help=(
+        "Path to a Gemfile or a directory containing one "
+        "(required when --pipeline rubygems). Auto-detects "
+        "./Gemfile."
     ),
 )
 @click.option(
@@ -2324,6 +2337,7 @@ def scan(
     gomod_path: str | None,
     cargo_path: str | None,
     composer_path: str | None,
+    rubygems_path: str | None,
     pulumi_path: str | None,
     helm_values: tuple[str, ...],
     helm_set: tuple[str, ...],
@@ -2868,6 +2882,13 @@ def scan(
                 candidates=("composer.json",),
                 detect_label="composer.json",
             )
+        elif pipeline_lc == "rubygems":
+            rubygems_path = _resolve_provider_path(
+                "rubygems", flag="rubygems-path",
+                value=rubygems_path,
+                candidates=("Gemfile",),
+                detect_label="Gemfile",
+            )
         elif pipeline_lc == "pulumi":
             pulumi_path = _resolve_provider_path(
                 "pulumi", flag="pulumi-path", value=pulumi_path,
@@ -3046,6 +3067,7 @@ def scan(
         gomod_path=gomod_path,
         cargo_path=cargo_path,
         composer_path=composer_path,
+        rubygems_path=rubygems_path,
         pulumi_path=pulumi_path,
         scm_platform=scm_platform,
         scm_repo=scm_repo,
@@ -3270,6 +3292,7 @@ def scan(
             gomod_path=gomod_path,
             cargo_path=cargo_path,
             composer_path=composer_path,
+            rubygems_path=rubygems_path,
             pulumi_path=pulumi_path,
         )
         _debug(f"--pr-diff: forwarded argv = {forwarded_argv}")
@@ -3512,6 +3535,7 @@ def scan(
             "gomod_path": gomod_path,
             "cargo_path": cargo_path,
             "composer_path": composer_path,
+            "rubygems_path": rubygems_path,
             "pulumi_path": pulumi_path,
         }
         inline_index = _collect_inline_ignores(active_pipelines, path_kwargs)
@@ -3697,6 +3721,7 @@ def _build_pr_diff_subprocess_argv(
     gomod_path: str | None = None,
     cargo_path: str | None = None,
     composer_path: str | None = None,
+    rubygems_path: str | None = None,
     pulumi_path: str | None = None,
 ) -> list[str]:
     """Build the argv for the BASE-side ``pipeline_check`` subprocess.
@@ -3769,6 +3794,7 @@ def _build_pr_diff_subprocess_argv(
         ("--gomod-path", gomod_path),
         ("--cargo-path", cargo_path),
         ("--composer-path", composer_path),
+        ("--rubygems-path", rubygems_path),
         ("--pulumi-path", pulumi_path),
     )
     for flag, value in _path_pairs:

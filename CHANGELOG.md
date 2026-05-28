@@ -12,6 +12,32 @@ release commit collapses this section into `## [X.Y.Z] - <date>`.
 
 ### Added
 
+- **RubyGems / Bundler provider, 8 supply-chain rules.** New
+  ``--pipeline rubygems`` / ``--rubygems-path`` parses ``Gemfile``
+  (Bundler manifest, Ruby DSL) and probes for the sibling
+  ``Gemfile.lock``. Text-only static analysis via a regex
+  extractor over the canonical Bundler idioms (``source``, ``gem
+  "name"``, scoped ``source … do … end`` blocks, ``group :dev``,
+  option-hash forms with ``git:`` / ``github:`` / ``ref:`` /
+  ``branch:`` / ``tag:`` / ``path:``), no ``bundle install``, no
+  rubygems.org API access, no Ruby runtime required.
+  Auto-detects ``./Gemfile`` at the working-directory root.
+  Ships ``GEM-001..008``: missing Gemfile.lock, floating ``gem``
+  constraint (covers no-version-at-all, ``~>``, ``>=``, ranges),
+  plain-HTTP ``source``, source URL with embedded plaintext
+  credentials, ``git:`` / ``github:`` source without a ``ref:``
+  SHA pin (mutable branch / tag / default-HEAD), known-
+  compromised gem version (curated registry seeded with
+  rest-client 1.6.10-1.6.13 / strong_password 0.0.7, the two
+  canonical RubyGems supply-chain incidents), multiple
+  top-level sources without scoping (dependency-confusion
+  vector), and ``gem … path: "..."`` declared outside ``group
+  :development`` / ``:test``. Bumps the headline claim from
+  ``1050+ checks across 31 providers`` to ``1060+ checks across
+  32 providers`` and the comparison ``Package registries`` cell
+  from ``83 rules across 7 providers`` to ``91 rules across 8
+  providers``. 32 new unit tests, drift tests pass.
+
 - **Composer (PHP) provider, 8 supply-chain rules.** New
   ``--pipeline composer`` / ``--composer-path`` parses
   ``composer.json`` (Composer manifest) and probes for the sibling

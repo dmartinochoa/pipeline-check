@@ -1,0 +1,1 @@
+"""RubyGems / Bundler provider package."""

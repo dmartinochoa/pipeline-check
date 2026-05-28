@@ -791,6 +791,15 @@ STANDARD = Standard(
         "COMPOSER-006": ["GV.SC-05", "GV.SC-08"],
         "COMPOSER-007": ["GV.SC-05", "GV.SC-08"],
         "COMPOSER-008": ["GV.SC-05", "GV.SC-07"],
+        # ── RubyGems / Bundler ──
+        "GEM-001": ["GV.SC-05", "GV.SC-07"],
+        "GEM-002": ["GV.SC-05", "GV.SC-07"],
+        "GEM-003": ["GV.SC-05", "PR.DS-02"],
+        "GEM-004": ["PR.DS-01", "PR.AA-01"],
+        "GEM-005": ["GV.SC-05", "GV.SC-07"],
+        "GEM-006": ["GV.SC-05", "GV.SC-08"],
+        "GEM-007": ["GV.SC-05"],
+        "GEM-008": ["GV.SC-05", "GV.SC-07"],
         # ── Pulumi (PULUMI-001..006) ──
         "PULUMI-001": ["PR.DS-01", "PR.AA-01"],  # passphrase secretsprovider
         "PULUMI-002": ["PR.DS-01"],              # secret-shaped config plaintext

@@ -462,6 +462,11 @@ STANDARD = Standard(
         "COMPOSER-002": ["Build.L3.NonFalsifiable"], # floating require constraint
         "COMPOSER-007": ["Build.L3.NonFalsifiable"], # compromised package version
         "COMPOSER-008": ["Build.L3.NonFalsifiable"], # allow-plugins wildcard
+        # ── RubyGems / Bundler ──
+        "GEM-001": ["Build.L3.NonFalsifiable"],      # missing Gemfile.lock
+        "GEM-002": ["Build.L3.NonFalsifiable"],      # floating gem constraint
+        "GEM-005": ["Build.L3.NonFalsifiable"],      # git/github source mutable ref
+        "GEM-006": ["Build.L3.NonFalsifiable"],      # compromised gem version
         # ── Helm chart-supply-chain ───────────────────────────────
         # The chart's own packaging metadata sits at the build-output
         # boundary. Chart.lock and Chart.yaml are the chart's

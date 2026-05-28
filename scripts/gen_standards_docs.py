@@ -88,6 +88,7 @@ _PROVIDER_PACKAGES: tuple[tuple[str, str, str], ...] = (
     ("gomod",        "pipeline_check.core.checks.gomod.rules",        "Go modules"),
     ("cargo",        "pipeline_check.core.checks.cargo.rules",        "Cargo"),
     ("composer",     "pipeline_check.core.checks.composer.rules",     "Composer"),
+    ("rubygems",     "pipeline_check.core.checks.rubygems.rules",     "RubyGems"),
     ("pulumi",       "pipeline_check.core.checks.pulumi.rules",       "Pulumi"),
 )
 
