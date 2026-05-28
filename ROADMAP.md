@@ -4,6 +4,68 @@ What's planned, what's shipped, and what's deliberately out of scope.
 
 ## Shipped
 
+### Unreleased (on ``dev``)
+
+- **Azure Cloud + GCP live cloud-posture providers (closes #163)** —
+  Phase 1 seeded ``--pipeline azure-cloud`` and ``--pipeline gcp`` with
+  15 rules each across identity, network, storage, compute, and logging.
+  Phase 2 expanded both packs to 50 rules each, reaching parity with
+  the AWS provider's coverage shape (71 rules). CIS Azure Foundations
+  and CIS GCP Foundations standards mappings landed alongside.
+  Provider rule counts: AZ 0 -> 50, GCP 0 -> 50.
+- **Secret verifier expansion (phase 2)** — Twelve new live-verification
+  probes for ``--verify-secrets``: DigitalOcean, Netlify, Terraform
+  Cloud, Linear, Atlassian, Asana, New Relic, Telegram Bot, Replicate,
+  Cohere, Mailchimp (datacenter-derived endpoint), Square. All probes
+  are read-only, rate-limited, and identity-extracting where the API
+  supports it. Verifier count 13 -> 25. 26 new tests.
+- **Secrets-in-CI-logs detection (cross-provider)** — Four new rules
+  detecting ``echo`` / ``printf`` / ``cat`` of secret-named variables,
+  ``printenv`` / ``env`` environment dumps, and ``set -x`` shell trace
+  with secret-bound variables in scope: GL-036 (GitLab CI), BB-032
+  (Bitbucket Pipelines), ADO-031 (Azure DevOps), CC-032 (CircleCI).
+  Shared detection logic in ``_primitives/log_leak.py``. Extends the
+  existing GHA-033 pattern to every CI provider that supports inline
+  scripts.
+- **AI agent pipeline risk rules** — Two new rules expanding the
+  GHA-058 agentic-CLI category. GHA-103 (CRITICAL) detects AI
+  code-review bots (CodeRabbit, CodiumAI PR-Agent, Sourcery, Codeball,
+  GitHub Copilot) running on ``pull_request_target`` or
+  ``issue_comment`` triggers with write permissions and no
+  ``environment:`` gate (the HackerBot-Claw vector). GHA-104 (HIGH)
+  detects workflows where an agentic CLI generates code and pushes
+  commits directly without routing through a PR review cycle. GHA rule
+  count 93 -> 95.
+- **Gitea / Forgejo Actions provider** — ``--pipeline gitea`` reuses
+  the full GHA rule pack against ``.gitea/workflows/`` and
+  ``.forgejo/workflows/`` YAML files. Auto-detected when either
+  directory is present. GitHub-specific reputation rules pass silently
+  when remote-resolve metadata is absent. Provider count 26 -> 27.
+- **History dashboard enhancements (closes #160)** — The
+  ``pipeline_check history`` dashboard gains per-rule burn-down
+  sparklines, a resource-level heatmap of consistently failing file
+  paths, and fleet directory integration so the history loader can
+  read a fleet ``--output-dir`` directly with recursive
+  ``**/findings.json`` discovery.
+- **exploit_example backfill on all CRITICAL + HIGH rules** — Every
+  CRITICAL rule (13) and every HIGH rule (36) now carries an
+  ``exploit_example`` paired with the existing recommendation. Closes
+  the "continuing posture: proof-of-exploit backfill" line item for
+  the two top severities; MEDIUM / LOW remain opportunistic.
+- **GitLab Code Quality output (``--output codequality``)** — Code
+  Climate JSON shape that GitLab CI renders as inline MR annotations,
+  the GitLab parallel of GitHub's SARIF code-scanning surface. One
+  entry per ``(check_id, location)`` pair so aggregate findings produce
+  one annotation per offending line. Stable SHA-1 fingerprint over
+  ``(check_id, path, line, description)`` for cross-run dedupe. Zero
+  new dependencies.
+- **Inline explain mode (``--inline-explain``)** — Terminal flag that
+  injects each failing finding's ``exploit_example`` under the
+  Recommendation block in its panel, saving the
+  ``pipeline_check --explain CHECK_ID`` round-trip during triage.
+  Named with the ``inline-`` prefix to avoid colliding with the
+  existing ``--explain CHECK_ID`` early-exit option.
+
 ### v1.5.0 (2026-05-27)
 
 - **Build-time dependency SBOM generation** —
@@ -329,22 +391,18 @@ comparison matrix (vs Zizmor / Poutine / Checkov / KICS / Trivy)
 across multiple goat repos would earn external credibility. Probably
 warrants extraction to a separate ``pipeline-check-bench`` repo.
 
-### Live Azure + GCP cloud-posture parity
+### ~~Live Azure + GCP cloud-posture parity~~ shipped
 
-The AWS provider ships 71 rules. Azure and GCP have provider
-directories but only a handful of rules each. A parity push would
-bring each to roughly 50+ rules covering identity, network, storage,
-compute, and logging against their native resource types. Standards
-mappings for CIS Azure Foundations and CIS GCP Foundations would land
-as new entries. Filed as #163.
+Shipped on ``dev`` (closes #163). Both providers now ship 50 rules
+each across identity, network, storage, compute, and logging, with
+CIS Azure Foundations and CIS GCP Foundations standards mappings.
 
-### Self-hosted findings-history dashboard
+### ~~Self-hosted findings-history dashboard~~ shipped
 
-A static-HTML dashboard that reads a directory of ``fleet.json`` or
-``findings.json`` snapshots and renders posture trends over time.
-No server, no database: one HTML + JS bundle that reads local JSON
-files. Closes the "how are we trending?" gap without dragging in a
-SaaS tool. Filed as #160.
+Shipped on ``dev`` (closes #160). ``pipeline_check history`` renders
+posture trends from a directory of ``findings.json`` snapshots, with
+per-rule burn-down sparklines, a resource-level heatmap, and fleet
+``--output-dir`` recursive loading.
 
 ### GitHub Actions dependency locking support
 
@@ -400,22 +458,15 @@ high-value additions that are blocked on detector or pairing gaps:
 - Generic entropy-based detection for tokens from services without
   a dedicated verifier.
 
-### Secrets-in-CI-logs detection
+### ~~Secrets-in-CI-logs detection~~ shipped
 
-Flag ``run:`` steps that leak secrets into build logs. Patterns:
-``echo ${{ secrets.* }}``, ``printf`` with secret interpolation,
-``cat`` / ``printenv`` dumping the environment, ``set -x`` with
-secret-carrying commands. No scanner currently catches this; it is
-a top-5 real-world incident vector. Pairs with GHA-008 (plaintext
-secret in workflow) by covering the "secret reaches stdout" surface
-that GHA-008's "secret in YAML" detection misses.
+Shipped on ``dev``. GL-036, BB-032, ADO-031, CC-032 cover GitLab,
+Bitbucket, Azure DevOps, and CircleCI; GHA-033 already covered GitHub
+Actions. Shared logic in ``_primitives/log_leak.py``.
 
-### GitLab Code Quality output format
+### ~~GitLab Code Quality output format~~ shipped
 
-``--output codequality`` emitting the Code Climate JSON format that
-GitLab CI natively renders as inline MR annotations. ~100 lines in
-``reporter.py``, zero new dependencies. Unlocks the same inline-
-annotation experience GitHub users get via SARIF, for GitLab users.
+Shipped on ``dev``. See the Unreleased entry above.
 
 ### Auto-remediation PRs (``pipeline_check fix-pr``)
 
@@ -439,11 +490,13 @@ branch restriction, and persistent runner tokens without rotation.
 Complements GHA-068 (deprecated runner image). StepSecurity's
 ``harden-runner`` is a runtime agent; these would be static rules.
 
-### Inline explain mode (``--explain``)
+### ~~Inline explain mode (``--inline-explain``)~~ shipped
 
-When passed alongside a normal scan, inline the recommendation and
-exploit example directly under each failing finding in terminal
-output. Saves the ``pipeline_check explain GHA-037`` round-trip.
+Shipped on ``dev``. The flag uses the ``inline-`` prefix because
+``--explain CHECK_ID`` was already taken as an early-exit option.
+Renders the rule's ``exploit_example`` (when present) under each
+failing finding's panel; recommendation was already inline. See the
+Unreleased entry above.
 
 ### Suppression expiry warnings
 
@@ -460,8 +513,10 @@ before they silently disable gating.
 
 ### Continuing posture: proof-of-exploit backfill
 
-Not a discrete milestone. Every new HIGH / CRITICAL rule ships an
-``exploit_example``; existing rules get backfilled opportunistically.
+Every CRITICAL (13) and HIGH (36) rule now carries an
+``exploit_example`` after the dev-cycle backfill. New rules at those
+severities ship one from the start. MEDIUM and LOW backfill remains
+opportunistic and is not a release-blocking milestone.
 
 ### Lower priority
 

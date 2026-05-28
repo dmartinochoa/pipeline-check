@@ -12,6 +12,38 @@ release commit collapses this section into `## [X.Y.Z] - <date>`.
 
 ### Added
 
+- **Inline explain mode (``--inline-explain``).** New terminal-output
+  flag that injects each failing finding's ``exploit_example``
+  (when one is recorded) directly under the existing
+  Recommendation block, saving the
+  ``pipeline_check --explain CHECK_ID`` round-trip when triaging
+  in the terminal. No-op for JSON / SARIF / JUnit / markdown / HTML
+  outputs, which already carry the field. The flag conflicts with
+  the existing ``--explain CHECK_ID`` early-exit option, which is
+  why it carries the ``inline-`` prefix. 5 new tests.
+
+- **GitLab Code Quality output (``--output codequality``).** New output
+  format emitting the Code Climate ``gl-code-quality-report`` JSON shape
+  GitLab CI renders as inline MR annotations (the GitLab parallel of
+  GitHub's SARIF code-scanning experience). Each failing finding becomes
+  one entry per ``(check_id, location)`` pair, so an aggregate finding
+  with N offending lines produces N inline annotations. Severity maps
+  CRITICAL -> ``blocker``, HIGH -> ``critical``, MEDIUM -> ``major``,
+  LOW -> ``minor``, INFO -> ``info``. ``fingerprint`` is a stable SHA-1
+  over ``(check_id, path, line, description)`` so GitLab can dedupe
+  identical findings across runs. Passing findings are skipped (the
+  format has no "passed" concept). Zero new dependencies; 16 new tests.
+
+- **Azure Cloud + GCP live cloud-posture providers (closes #163).** New
+  ``--pipeline azure-cloud`` and ``--pipeline gcp`` providers reach AWS-
+  shaped coverage. Phase 1 seeded each pack with 15 rules across
+  identity, network, storage, compute, and logging; phase 2 expanded
+  both to 50 rules. The providers shell out to ``az`` / ``gcloud`` for
+  live inventory in the same pattern as the AWS provider's boto3 path.
+  CIS Microsoft Azure Foundations Benchmark and CIS Google Cloud
+  Foundations Benchmark are wired up as standards mappings. Provider
+  rule counts: AZ 0 -> 50, GCP 0 -> 50.
+
 - **Secret verifier expansion (phase 2).** Twelve new live-verification
   probes for ``--verify-secrets``: DigitalOcean (``/v2/account``),
   Netlify (``/api/v1/user``), Terraform Cloud (``/api/v2/account/details``),
@@ -63,11 +95,36 @@ release commit collapses this section into `## [X.Y.Z] - <date>`.
 
 ### Changed
 
+- **``exploit_example`` backfill on every CRITICAL and HIGH rule.**
+  All 13 CRITICAL rules and all 36 HIGH rules now carry a concrete
+  ``exploit_example`` paired with their existing recommendation
+  prose. New rules at those severities ship one from the start;
+  MEDIUM / LOW remain opportunistic. ``pipeline_check explain
+  <RULE>`` surfaces the example inline when present.
 - **Scorecard fixture exemption documented** in ``CONTRIBUTING.md``.
   The Scorecard workflow's SARIF filter that strips ``tests/`` and
   ``bench/`` results was already in place; the contributing guide now
   explains the pattern so future fixture authors know no manual
   exemption is needed.
+
+### Fixed
+
+- **Doc-site tables lose their outline after instant-nav revisit.**
+  The scroll-reveal animation in ``docs/javascripts/animations.js``
+  tagged ``.md-typeset table:not([class])`` elements with
+  ``data-reveal`` and, on intersection, added an ``is-visible`` class.
+  The added class caused the 13 table-style rules in
+  ``docs/stylesheets/extra.css`` keyed on ``table:not([class])``
+  (border, border-radius, ``overflow:hidden``, padding, hover
+  striping) to stop matching, so revealed tables rendered without
+  their outline. The asymmetry between cold load and revisit came
+  from Material's ``navigation.instant``: on a fresh navigation the
+  chrome wasn't laid out when ``getBoundingClientRect()`` ran, so
+  tables read under the 600px cutoff and never got tagged; on
+  revisit positions measured correctly and the bug bit. Switched
+  the reveal marker from ``.is-visible`` (class) to ``data-revealed``
+  (attribute) across both files, so the marker no longer disturbs
+  ``:not([class])`` selectors.
 
 ## [1.5.0] - 2026-05-27
 

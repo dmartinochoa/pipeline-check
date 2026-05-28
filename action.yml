@@ -81,7 +81,7 @@ inputs:
       Output format. ``sarif`` is the default so findings flow into
       the GitHub Security tab via the upload-sarif step. Other
       options: ``terminal``, ``json``, ``html``, ``junit``,
-      ``markdown``, ``cyclonedx``, ``both``.
+      ``markdown``, ``codequality``, ``cyclonedx``, ``both``.
     required: false
     default: 'sarif'
   output-file:

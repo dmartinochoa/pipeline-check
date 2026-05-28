@@ -256,3 +256,64 @@ class TestGroupSimilar:
         out = self._render(findings, group_similar=True)
         # Two distinct resources → two separate rows, no follower line.
         assert "more on lines" not in out
+
+
+class TestInlineExplain:
+    """``--inline-explain`` injects the rule's ``exploit_example`` under
+    each failing finding's panel, no round-trip to ``--explain CHECK_ID``."""
+
+    def _render(self, findings, *, inline_explain: bool) -> str:
+        import io
+        buf = io.StringIO()
+        console = Console(file=buf, highlight=False, width=200)
+        report_terminal(
+            findings, score(findings), console=console,
+            inline_explain=inline_explain,
+        )
+        return buf.getvalue()
+
+    def _finding(self, exploit: str | None) -> Finding:
+        return Finding(
+            check_id="GHA-001",
+            title="Unpinned action",
+            severity=Severity.HIGH,
+            resource=".github/workflows/ci.yml",
+            description="desc",
+            recommendation="pin to a SHA",
+            passed=False,
+            exploit_example=exploit,
+        )
+
+    def test_off_by_default_hides_exploit(self):
+        f = self._finding("attacker pushes a tag move and gets RCE")
+        out = self._render([f], inline_explain=False)
+        assert "Exploit:" not in out
+        assert "attacker pushes a tag move" not in out
+
+    def test_on_inlines_exploit_example(self):
+        f = self._finding("attacker pushes a tag move and gets RCE")
+        out = self._render([f], inline_explain=True)
+        assert "Exploit:" in out
+        assert "attacker pushes a tag move" in out
+
+    def test_on_no_exploit_skips_block(self):
+        f = self._finding(None)
+        out = self._render([f], inline_explain=True)
+        assert "Exploit:" not in out
+
+    def test_passing_findings_get_no_panel(self):
+        # Passing findings render no per-finding panel at all, so
+        # exploit injection is a no-op for them regardless of the flag.
+        f = self._finding("would never run")
+        f.passed = True
+        out = self._render([f], inline_explain=True)
+        assert "Exploit:" not in out
+        assert "would never run" not in out
+
+    def test_recommendation_still_renders_with_exploit(self):
+        # The injection appends to the panel; the existing recommendation
+        # must not disappear.
+        f = self._finding("attacker pushes a tag")
+        out = self._render([f], inline_explain=True)
+        assert "pin to a SHA" in out
+        assert "Exploit:" in out

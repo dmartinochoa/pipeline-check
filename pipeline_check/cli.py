@@ -58,6 +58,7 @@ from .core import autofix as _autofix
 from .core import providers as _providers
 from .core import standards as _standards
 from .core.checks.base import Confidence, Severity, confidence_rank
+from .core.codequality_reporter import report_codequality
 from .core.config import load_config
 from .core.gate import GateConfig, evaluate_gate, load_ignore_file
 from .core.html_reporter import report_html
@@ -1664,7 +1665,7 @@ def _install_completion_callback(
     type=click.Choice(
         [
             "terminal", "json", "html", "sarif", "junit",
-            "markdown", "threatmodel", "cyclonedx", "both",
+            "markdown", "threatmodel", "cyclonedx", "codequality", "both",
         ],
         case_sensitive=False,
     ),
@@ -1679,9 +1680,9 @@ def _install_completion_callback(
     metavar="PATH",
     help=(
         "Write the report to this file. Required for --output html. "
-        "Optional for --output json/sarif/junit/markdown/threatmodel "
-        "(stdout is used if unset). Ignored for --output terminal "
-        "and --output both (the latter always writes JSON to stdout)."
+        "Optional for --output json/sarif/junit/markdown/threatmodel/"
+        "codequality (stdout is used if unset). Ignored for --output "
+        "terminal and --output both (the latter always writes JSON to stdout)."
     ),
 )
 @click.option(
@@ -2084,6 +2085,20 @@ def _install_completion_callback(
     ),
 )
 @click.option(
+    "--inline-explain",
+    "inline_explain",
+    is_flag=True,
+    default=False,
+    help=(
+        "Inline the rule's ``exploit_example`` (when present) under "
+        "each failing finding's terminal panel. Saves the "
+        "``pipeline_check --explain CHECK_ID`` round-trip when you "
+        "want the proof-of-exploit snippet alongside the description "
+        "and recommendation. No-op for JSON / SARIF / JUnit / "
+        "markdown / html outputs, which already carry the field."
+    ),
+)
+@click.option(
     "--no-chains",
     is_flag=True,
     default=False,
@@ -2278,6 +2293,7 @@ def scan(
     show_controls: bool,
     show_passed: bool,
     no_group: bool,
+    inline_explain: bool,
     no_chains: bool,
     chains_require_reachability: bool,
     list_chains: bool,
@@ -3227,6 +3243,7 @@ def scan(
             show_controls=show_controls,
             show_passed=show_passed,
             group_similar=not no_group,
+            inline_explain=inline_explain,
         )
         if chains:
             report_chains_terminal(chains, console=console)
@@ -3286,6 +3303,18 @@ def scan(
                 click.echo(f"Markdown report written to {output_file}", err=True)
         elif not quiet:
             click.echo(md_text)
+
+    if output == "codequality":
+        cq_text = report_codequality(findings)
+        if output_file:
+            with open(output_file, "w", encoding="utf-8") as fh:
+                fh.write(cq_text)
+            if not quiet:
+                click.echo(
+                    f"Code Quality report written to {output_file}", err=True,
+                )
+        elif not quiet:
+            click.echo(cq_text)
 
     if output == "cyclonedx":
         from pipeline_check.core.cyclonedx_reporter import report_cyclonedx

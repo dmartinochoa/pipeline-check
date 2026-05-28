@@ -17,13 +17,16 @@
   // ── Module 1: Scroll Reveal ──────────────────────────────────
 
   function initReveal() {
-    var els = document.querySelectorAll("[data-reveal]:not(.is-visible)");
+    // Marker is a data attribute, not a class, so adding it to a
+    // .md-typeset table:not([class]) target doesn't strip the
+    // outline/border/striping rules keyed on that selector.
+    var els = document.querySelectorAll("[data-reveal]:not([data-revealed])");
     if (!els.length) return;
 
     var obs = new IntersectionObserver(function (entries) {
       entries.forEach(function (entry) {
         if (entry.isIntersecting) {
-          entry.target.classList.add("is-visible");
+          entry.target.setAttribute("data-revealed", "");
           obs.unobserve(entry.target);
         }
       });
@@ -36,7 +39,7 @@
   // ── Module 2: Stagger Grid Reveal ────────────────────────────
 
   function initStagger() {
-    var containers = document.querySelectorAll("[data-stagger]:not(.is-visible)");
+    var containers = document.querySelectorAll("[data-stagger]:not([data-revealed])");
     if (!containers.length) return;
 
     var obs = new IntersectionObserver(function (entries) {
@@ -46,7 +49,7 @@
         for (var i = 0; i < children.length; i++) {
           children[i].style.setProperty("--stagger-i", i);
         }
-        entry.target.classList.add("is-visible");
+        entry.target.setAttribute("data-revealed", "");
         obs.unobserve(entry.target);
       });
     }, { threshold: 0.1, rootMargin: "0px 0px -40px 0px" });
