@@ -86,7 +86,7 @@ unlocked dependency, or no maintainers.
 
 ## What it covers
 
-10 checks · 3 have an autofix patch (``--fix``).
+14 checks · 3 have an autofix patch (``--fix``).
 
 | Check | Title | Severity | Fix |
 |-------|-------|----------|-----|
@@ -100,6 +100,10 @@ unlocked dependency, or no maintainers.
 | [HELM-008](#helm-008) | Chart.lock generated more than 90 days ago | <span class="pg-sev pg-sev--medium">MEDIUM</span> |  |
 | [HELM-009](#helm-009) | Chart home / sources URL uses a non-HTTPS scheme | <span class="pg-sev pg-sev--low">LOW</span> |  |
 | [HELM-010](#helm-010) | Chart.yaml appVersion field is empty or missing | <span class="pg-sev pg-sev--low">LOW</span> |  |
+| [HELM-011](#helm-011) | Chart dependency repository URL embeds plaintext credentials | <span class="pg-sev pg-sev--high">HIGH</span> |  |
+| [HELM-012](#helm-012) | Chart marked deprecated without naming a successor | <span class="pg-sev pg-sev--medium">MEDIUM</span> |  |
+| [HELM-013](#helm-013) | Chart.yaml type field missing or invalid | <span class="pg-sev pg-sev--medium">MEDIUM</span> |  |
+| [HELM-014](#helm-014) | Chart dependency matches a known-compromised chart registry | <span class="pg-sev pg-sev--high">HIGH</span> |  |
 
 ---
 
@@ -325,6 +329,162 @@ Library charts (``Chart.yaml`` ``type: library``) legitimately don't have an ``a
 **Recommended action**
 
 Set ``appVersion:`` in ``Chart.yaml`` to the version of the application the chart packages (e.g. ``appVersion: "17.2"`` for a Postgres-17.2 chart at ``version: 1.4.2``). When the upstream application releases, bump ``appVersion`` and re-cut the chart. Helm's CLI displays ``appVersion`` alongside the chart version in ``helm list``, so downstream operators can see which app version is running where.
+
+</div>
+
+</div>
+
+<div class="pg-rule pg-rule--high" markdown>
+
+## HELM-011: Chart dependency repository URL embeds plaintext credentials { #helm-011 }
+
+<div class="pg-rule__tags">
+<span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-6</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-10</span> <span class="pg-tag pg-tag--esf">ESF-D-SECRETS</span> <span class="pg-tag pg-tag--cwe">CWE-798</span> <span class="pg-tag pg-tag--cwe">CWE-522</span>
+</div>
+
+Reads each ``Chart.yaml`` ``dependencies[].repository`` URL and fires when the authority component carries an ``<user>:<pass>@`` prefix. Empty-password forms (``https://user:@host``) and ``${VAR}`` placeholders are skipped — the former is an operator-flagged 'no credential intended' marker and the latter resolves at fetch time from the environment rather than the manifest text.
+
+Distinct from HELM-003 (non-HTTPS scheme), which catches the transport-side risk. This rule catches the credential-leakage risk: an HTTPS URL with embedded credentials passes HELM-003 cleanly but still leaks the credential into git.
+
+**Known false-positive modes**
+
+- Templated Chart.yaml files that materialize a placeholder credential form (``https://__USER__:__PASS__@host``) and substitute the real value at install time trip this rule by shape. Suppress per dependency when the placeholder marker is stable; the rule's placeholder skip-list only recognizes ``${...}``.
+
+**Seen in the wild**
+
+- Long-running pattern of internal chart-museum credentials leaking through Chart.yaml committed to public mirrors. The credential's audit trail (last rotated, who has it) is lost the moment the file lands in a clone an attacker controls; rotation costs scale with the number of consumers.
+
+<div class="pg-rule__rec" markdown>
+
+**Recommended action**
+
+Move the credential out of the URL and into the consumer's Helm-side credential store. Three stable patterns:
+
+* Add the repo once with credentials: ``helm repo add <name> https://<host>/<path> --username <u> --password <p>``. The credentials land in the user's ``~/.config/helm/repositories.yaml`` (not in the repo) and the chart's ``Chart.yaml`` references the alias (``repository: @<name>``).
+* For CI/CD environments, inject credentials at chart-fetch time from environment variables (Helm 3 honors ``HELM_REGISTRY_USERNAME`` / ``HELM_REGISTRY_PASSWORD`` for OCI registries) and keep ``Chart.yaml`` clean.
+* For pure HTTPS chart repos, switch to OCI (``repository: oci://<registry>/<repo>``). OCI registries use the standard Docker credential helper chain, so credentials live in ``~/.docker/config.json`` or a managed credential helper, never in Chart.yaml.
+
+Credentials embedded in a committed ``Chart.yaml`` lock the password into git history. Rotation requires consumer-side updates *plus* history scrub before the leaked credential stops being useful to an attacker.
+
+</div>
+
+</div>
+
+<div class="pg-rule pg-rule--medium" markdown>
+
+## HELM-012: Chart marked deprecated without naming a successor { #helm-012 }
+
+<div class="pg-rule__tags">
+<span class="pg-sev pg-sev--medium">MEDIUM</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-3</span> <span class="pg-tag pg-tag--esf">ESF-S-VERIFY-DEPS</span> <span class="pg-tag pg-tag--cwe">CWE-1104</span> <span class="pg-tag pg-tag--cwe">CWE-1357</span>
+</div>
+
+Reads ``Chart.yaml`` and fires on charts where ``deprecated: true`` is set AND none of the following successor-signal fields are populated:
+
+* ``home:`` (non-empty URL)
+* ``sources:`` (non-empty list of URLs)
+* annotations matching keys ``deprecation-guide``, ``migration-guide``, ``replacement``, ``successor``, ``replaced-by`` (case-insensitive substring match)
+
+Charts that are deprecated but still maintained (a security-fix-only mode) should populate ``home:`` with the maintenance policy URL so the rule passes.
+
+**Known false-positive modes**
+
+- Internal libraries that go through a 'soft-deprecation' phase before the successor lands sometimes mark ``deprecated: true`` without a successor name in the interim. The rule still fires; suppress per chart with a one-line rationale and a TODO to add the successor annotation when the replacement is ready.
+
+**Seen in the wild**
+
+- Long-running pattern in the Bitnami / community-charts ecosystem: a chart is marked deprecated, the maintainer moves on, consumers continue installing the deprecated version for years without knowing the replacement exists. The successor annotation (or a populated ``home:`` URL) closes the discovery gap.
+
+<div class="pg-rule__rec" markdown>
+
+**Recommended action**
+
+When marking a chart ``deprecated: true``, point consumers at the replacement. The two stable patterns are:
+
+* Set ``sources:`` to the successor repo URL and update ``home:`` to point at the migration guide:
+
+    deprecated: true
+    sources:
+      - https://github.com/example/myapp-chart-v2
+    home: https://example.com/docs/myapp-chart-migration
+
+* Add an explicit migration annotation:
+
+    annotations:
+      "helm.sh/migration-guide": "https://example.com/myapp-v2-migration"
+      "helm.sh/replacement": "corp-charts/myapp-v2"
+
+A deprecation flag without a successor strands every consumer at the deprecated version. Without active maintenance, security patches don't roll out; consumers either get stuck running known-vulnerable software or have to discover the replacement chart through ad-hoc channels (Slack, GitHub issues, internal wikis) that scale poorly across teams.
+
+</div>
+
+</div>
+
+<div class="pg-rule pg-rule--medium" markdown>
+
+## HELM-013: Chart.yaml type field missing or invalid { #helm-013 }
+
+<div class="pg-rule__tags">
+<span class="pg-sev pg-sev--medium">MEDIUM</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-3</span> <span class="pg-tag pg-tag--esf">ESF-S-VERIFY-DEPS</span> <span class="pg-tag pg-tag--cwe">CWE-1357</span>
+</div>
+
+Reads ``Chart.yaml`` ``type:`` and fires when the field is missing, empty, or set to a value other than ``application`` / ``library``. The two valid values are defined by the Helm 3 chart schema; other values are ignored by Helm at install time (which is the silent-failure mode the rule catches).
+
+Helm 2 charts (``apiVersion: v1``) are skipped, the ``type:`` field doesn't exist in v1 and HELM-001 already catches the v1 shape.
+
+**Known false-positive modes**
+
+- Some chart-generation tools (early ``helm create`` templates, third-party scaffolders) omit ``type:`` deliberately to defer to Helm's default. The rule still fires; suppress per chart with a rationale, or — better — add the explicit ``type: application`` line.
+
+**Seen in the wild**
+
+- Common refactoring drift: a chart originally written as an ``application`` has its templates pulled out and the ``type:`` forgotten. ``helm install`` against the library-shaped result fails with a cryptic error that doesn't immediately point at the missing type declaration; the chart's review process didn't catch the change because no schema rule was in place.
+
+<div class="pg-rule__rec" markdown>
+
+**Recommended action**
+
+Set ``type:`` to either ``application`` (the default for deployable charts) or ``library`` (for charts shipped as named templates other charts ``import``). Helm 3 treats missing ``type`` as ``application``, which is permissive but leaves the chart's purpose ambiguous at audit time. An explicit declaration:
+
+* Makes ``helm install`` reject library charts at install time (they have no templates that produce manifests).
+* Documents the chart's role for consumers reviewing ``helm search`` output.
+* Catches accidental templates added to a library chart during refactor (the install-time rejection surfaces the mistake).
+
+Example:
+
+    apiVersion: v2
+    name: myapp
+    version: 1.0.0
+    type: application   # or 'library' for template-only
+
+</div>
+
+</div>
+
+<div class="pg-rule pg-rule--high" markdown>
+
+## HELM-014: Chart dependency matches a known-compromised chart registry { #helm-014 }
+
+<div class="pg-rule__tags">
+<span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-3</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-7</span> <span class="pg-tag pg-tag--esf">ESF-S-VERIFY-DEPS</span> <span class="pg-tag pg-tag--cwe">CWE-1357</span> <span class="pg-tag pg-tag--cwe">CWE-829</span>
+</div>
+
+Reads the curated registry under ``pipeline_check.core.checks.helm._compromised_charts`` (table of ``(chart_name, malicious_versions, advisory)`` entries) and fires when any ``Chart.yaml`` dependency matches. Registry is hand-curated and append-only; adding an entry is a one-line table edit plus the citing advisory in the commit message.
+
+Mirrors NPM-006 / PYPI-006 / MVN-006 / NUGET-005 / GOMOD-006 / CARGO-006: the rule fires on exact-version equality (with optional regex-fallback patterns shared via ``_primitives/compromised.py``). Coverage is necessarily incomplete; the value is the audit-trail-locked post-incident detection of a published advisory.
+
+**Known false-positive modes**
+
+- Patched fork-and-pin remediation paths sometimes legitimately leave the original chart name pinned at an affected version (with the actual install pointing at a fork). The rule still fires on the Chart.yaml entry; suppress per dependency with a one-line rationale naming the fork and the advisory the patch covers.
+
+**Seen in the wild**
+
+- Future entries follow the same shape as the seeded examples: append ``(chart_name, version, advisory)`` to _compromised_charts.py with the citing advisory in the commit message. Real entries land when public Helm-chart advisories surface.
+
+<div class="pg-rule__rec" markdown>
+
+**Recommended action**
+
+Bump the offending dependency to a patched version named in the cited advisory and run ``helm dependency update`` to refresh ``Chart.lock`` with the new digests. If the advisory has no patched release, pin to the last known-good version and add a follow-up TODO so the dependency is replaced or removed in the next maintenance cycle. After the bump, re-run the scan; HELM-014 should clear. If the rule still fires, an indirect subchart is pulling the bad version back in; inspect ``Chart.lock`` for the dependency path.
 
 </div>
 

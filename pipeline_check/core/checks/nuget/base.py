@@ -109,6 +109,7 @@ class NuGetContext:
         files_scanned: int = 0,
         files_skipped: int = 0,
         warnings: list[str] | None = None,
+        scan_root: Path | None = None,
     ) -> None:
         self.projects = projects
         self.configs = configs
@@ -118,6 +119,12 @@ class NuGetContext:
         self.warnings: list[str] = warnings or []
         self.publish_times: dict[str, dict[str, Any]] = {}
         self.osv_advisories: dict[tuple[str, str], list[Any]] = {}
+        #: Filesystem root the scan ran against. Stored so rules
+        #: that need to discover sibling files not loaded into the
+        #: typed slots (``.config/dotnet-tools.json``, etc.) can
+        #: walk the project tree without re-deriving the root from
+        #: relative paths.
+        self.scan_root: Path | None = scan_root
 
     @classmethod
     def from_path(cls, path: str | Path) -> NuGetContext:
@@ -172,6 +179,7 @@ class NuGetContext:
             projects, configs, locks,
             files_scanned=scanned, files_skipped=skipped,
             warnings=warnings,
+            scan_root=root,
         )
 
 

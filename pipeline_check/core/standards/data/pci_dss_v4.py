@@ -541,6 +541,12 @@ STANDARD = Standard(
         "DR-009":   ["6.4.1", "6.5.1"],                  # cache key tainted
         "DR-010":   ["6.3.3", "6.5.1"],                  # unpinned package install
         "DR-011":   ["6.5.1"],                           # node map interpolates untrusted
+        # ── Drone extended pack ──
+        "DR-012":   ["6.3.1"],                           # service image not pinned
+        "DR-013":   ["6.5.1"],                           # no trigger event filter
+        "DR-014":   ["6.3.1"],                           # pipe-to-shell
+        "DR-015":   ["6.3.1"],                           # clone recursive
+        "DR-016":   ["6.5.1"],                           # image field interpolation
         # ── Buildkite extras ─────────────────────────────────────
         "BK-014":   ["6.3.3", "6.5.1"],                  # unpinned package install
         "BK-015":   ["6.5.1"],                           # agents map untrusted interpolation
@@ -550,6 +556,11 @@ STANDARD = Standard(
         # ── Argo extras ──────────────────────────────────────────
         "ARGO-014": ["6.3.3", "6.5.1"],                  # unpinned package install
         "ARGO-015": ["6.5.1"],                           # insecure (non-HTTPS) artifact URL
+        # ── Argo CD (GitOps deployment) ──
+        "ARGOCD-010": ["6.3.1"],                         # mutable targetRevision
+        "ARGOCD-011": ["7.2.1"],                         # cluster-resource wildcard
+        "ARGOCD-012": ["6.5.1"],                         # no sync windows
+        "ARGOCD-013": ["10.3.2"],                        # no revision history cap
         # ── Cloud Build extras ───────────────────────────────────
         "GCB-007":  ["8.2.1"],                           # availableSecrets versions/latest
         "GCB-017":  ["6.5.1", "10.3.2"],                 # no SLSA provenance attestation
@@ -586,11 +597,23 @@ STANDARD = Standard(
         "MVN-007":  ["6.3.3", "6.5.1"],
         "MVN-008":  ["6.3.1", "6.3.3"],
         "MVN-009":  ["6.3.1", "6.3.3"],
+        # ── Maven extended pack ──
+        "MVN-010":  ["8.2.1"],
+        "MVN-011":  ["8.2.1"],
+        "MVN-012":  ["6.3.1"],
+        "MVN-013":  ["6.3.1"],
+        "MVN-014":  ["6.3.1"],
         "NPM-008":  ["6.3.1", "6.3.3"],
         "NPM-009":  ["6.3.3", "6.5.1"],
         "NPM-010":  ["6.3.1", "6.3.3"],
         "PYPI-008": ["6.3.1", "6.3.3"],
         "PYPI-009": ["6.3.1", "6.3.3"],
+        # ── PyPI extended pack ──
+        "PYPI-010": ["8.2.1"],                   # index URL embedded credentials
+        "PYPI-011": ["6.3.1"],                   # --trusted-host disables TLS
+        "PYPI-012": ["6.3.1"],                   # build-system requires floating
+        "PYPI-013": ["6.3.1"],                   # pyproject dynamic dependencies
+        "PYPI-014": ["6.3.1"],                   # custom source HTTP
         # ── nuget (dep supply-chain) ─────────────────────────────
         "NUGET-001": ["6.3.3", "6.5.1"],
         "NUGET-002": ["6.3.3", "6.5.1"],
@@ -602,6 +625,70 @@ STANDARD = Standard(
         "NUGET-008": ["6.3.1", "6.3.3"],
         "NUGET-009": ["6.3.1", "6.3.3"],
         "NUGET-010": ["8.2.1"],                  # NuGet.config cleartext feed credential
+        # ── NuGet extended pack ──
+        "NUGET-011": ["6.3.1"],
+        "NUGET-012": ["6.3.1"],
+        "NUGET-013": ["6.3.1"],
+        "NUGET-014": ["8.2.1"],
+        "NUGET-015": ["6.3.1"],
+        # ── Go modules ──
+        "GOMOD-001": ["6.3.1"],                  # go.sum integrity manifest missing
+        "GOMOD-002": ["6.3.1"],                  # replace directive to local path
+        "GOMOD-003": ["6.3.1"],                  # replace directive to different module
+        "GOMOD-004": ["6.3.3"],                  # +incompatible direct require
+        "GOMOD-005": ["6.5.1"],                  # missing go toolchain directive
+        "GOMOD-006": ["6.3.1", "6.3.3"],         # known-compromised module version
+        # ── Go modules extended pack ──
+        "GOMOD-007": ["6.3.1"],
+        "GOMOD-008": ["6.3.1"],
+        "GOMOD-009": ["6.3.1"],
+        "GOMOD-010": ["6.3.1"],
+        # ── Cargo ──
+        "CARGO-001": ["6.3.1"],                  # floating Cargo.toml version spec
+        "CARGO-002": ["6.3.1"],                  # git dep with mutable ref (no rev)
+        "CARGO-003": ["6.3.1"],                  # missing Cargo.lock
+        "CARGO-004": ["6.3.1"],                  # local-path Cargo dependency
+        "CARGO-005": ["6.3.1"],                  # alternate-registry Cargo dependency
+        "CARGO-006": ["6.3.1", "6.3.3"],         # known-compromised crate version
+        # ── Cargo extended pack ──
+        "CARGO-007": ["6.3.1"],
+        "CARGO-008": ["6.3.1"],
+        "CARGO-009": ["6.3.1"],
+        "CARGO-010": ["6.5.1"],
+        # ── Composer / PHP ──
+        "COMPOSER-001": ["6.3.1"],
+        "COMPOSER-002": ["6.3.1"],
+        "COMPOSER-003": ["6.3.1"],
+        "COMPOSER-004": ["8.2.1"],
+        "COMPOSER-005": ["6.3.1"],
+        "COMPOSER-006": ["6.3.1"],
+        "COMPOSER-007": ["6.3.1", "6.3.3"],
+        "COMPOSER-008": ["6.3.1"],
+        "COMPOSER-009": ["8.2.1"],
+        "COMPOSER-010": ["6.3.1"],
+        # ── RubyGems / Bundler ──
+        "GEM-001": ["6.3.1"],
+        "GEM-002": ["6.3.1"],
+        "GEM-003": ["6.3.1"],
+        "GEM-004": ["8.2.1"],
+        "GEM-005": ["6.3.1"],
+        "GEM-006": ["6.3.1", "6.3.3"],
+        "GEM-007": ["6.3.1"],
+        "GEM-008": ["6.3.1"],
+        "GEM-009": ["8.2.1"],
+        "GEM-010": ["6.3.1"],
+        # ── Pulumi ──
+        "PULUMI-001": ["8.2.1"],        # passphrase secretsprovider
+        "PULUMI-002": ["8.2.1"],        # secret-shaped config plaintext
+        "PULUMI-003": ["8.2.1"],        # hardcoded credentials in source
+        "PULUMI-004": ["10.3.2", "8.2.1"],       # insecure state backend
+        "PULUMI-005": ["7.2.1"],                 # wildcard IAM policy in source
+        "PULUMI-006": ["7.2.1"],                 # StackReference unguarded
+        # ── Pulumi extended pack ──
+        "PULUMI-007": ["8.2.1"],                 # public-access cloud resource
+        "PULUMI-008": ["6.5.1"],                 # shell-exec with non-constant input
+        "PULUMI-009": ["6.5.1"],                 # runtime / source mismatch
+        "PULUMI-010": ["8.2.1"],                 # stack orphaned encryption salt
         # ── OCI image manifest gaps ──────────────────────────────
         "OCI-001":  ["6.5.1", "10.3.2"],                 # provenance annotations missing
         "OCI-002":  ["6.5.1", "10.3.2"],                 # build attestation missing
@@ -655,6 +742,11 @@ STANDARD = Standard(
         "HELM-006": ["6.5.1"],                           # missing kubeVersion
         "HELM-007": ["6.5.1"],                           # missing description
         "HELM-010": ["6.5.1"],                           # missing appVersion
+        # ── Helm extended pack ──
+        "HELM-011": ["8.2.1"],                           # dependency URL embedded creds
+        "HELM-012": ["6.3.3"],                           # deprecated without successor
+        "HELM-013": ["6.5.1"],                           # invalid chart type
+        "HELM-014": ["6.3.1", "6.3.3"],                  # known-compromised dep
         # ── Degraded-mode findings (API access failures) ─────────
         # Visibility gap = audit-log surface gap; req 10.2.1 says
         # "Audit logs are enabled and active for all system

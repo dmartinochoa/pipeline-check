@@ -428,6 +428,11 @@ STANDARD = Standard(
         "ARGOCD-007": ["2.4.3", "5.1.4"],          # Helm generator interpolation
         "ARGOCD-008": ["2.3.8"],                   # CMP plugin invocation
         "ARGOCD-009": ["2.4.3"],                   # anonymous access enabled
+        # ── ArgoCD extended pack ──
+        "ARGOCD-010": ["1.4.1"],                   # mutable targetRevision
+        "ARGOCD-011": ["1.3.4"],                   # cluster-resource wildcard
+        "ARGOCD-012": ["1.1.5"],                   # no sync windows on prod
+        "ARGOCD-013": ["1.3.4"],                   # no revision history cap
         # ── Helm chart-supply-chain ───────────────────────────────
         # Chart packaging metadata sits at the artifact / build-deps
         # boundary. HELM-002's missing-digest is the exact "signed
@@ -442,6 +447,11 @@ STANDARD = Standard(
         "HELM-008": ["1.4.1", "3.1.3"],            # stale Chart.lock
         "HELM-009": ["3.1.5"],                     # non-HTTPS home/sources URL
         "HELM-010": ["4.4.1"],                     # appVersion (provenance metadata)
+        # ── Helm extended pack ──
+        "HELM-011": ["1.5.1"],                     # dependency URL embedded creds
+        "HELM-012": ["1.4.1"],                     # deprecated without successor
+        "HELM-013": ["4.4.1"],                     # invalid chart type
+        "HELM-014": ["1.4.1"],                     # known-compromised dependency
         # ── Dockerfile (image build supply chain) ──────────────────
         # The CIS Supply Chain Benchmark Section 2 (build) and 3
         # (dependencies) cover the same ground a hardened Dockerfile
@@ -544,6 +554,12 @@ STANDARD = Standard(
         "DR-009":   ["2.1.3", "2.3.8"],            # cache key tainted by attacker input
         "DR-010":   ["1.4.1", "3.1.5"],            # unpinned package install
         "DR-011":   ["2.1.3"],                     # node map interpolates untrusted variable
+        # ── Drone extended pack ──
+        "DR-012":   ["1.4.1"],                     # service image not pinned
+        "DR-013":   ["1.1.5"],                     # no trigger event filter
+        "DR-014":   ["1.4.1"],                     # pipe-to-shell
+        "DR-015":   ["1.4.1"],                     # clone recursive
+        "DR-016":   ["2.1.3"],                     # image field interpolation
         # ── Cloud Build ────────────────────────────────────────────
         # Mirrors the GCB-* coverage other CI providers got across
         # rounds 22-24 in the catalog.
@@ -605,11 +621,23 @@ STANDARD = Standard(
         "MVN-007":  ["3.1.5", "1.4.1"],            # settings.xml wildcard mirror
         "MVN-008":  ["1.4.1", "3.1.3"],            # cooldown gate (--resolve-remote)
         "MVN-009":  ["1.4.1", "3.1.3"],            # OSV advisory (--resolve-remote)
+        # ── Maven extended pack ──
+        "MVN-010":  ["1.5.1"],                     # plaintext server password
+        "MVN-011":  ["1.5.1"],                     # repo URL credentials
+        "MVN-012":  ["1.4.1"],                     # build plugin floating
+        "MVN-013":  ["1.4.1"],                     # build extension floating
+        "MVN-014":  ["1.4.1"],                     # wrapper sha256 missing
         "NPM-008":  ["1.4.1", "3.1.3"],            # cooldown gate (--resolve-remote)
         "NPM-009":  ["1.4.1", "3.1.3"],            # new-transitive-dep diff gate
         "NPM-010":  ["1.4.1", "3.1.3"],            # OSV advisory (--resolve-remote)
         "PYPI-008": ["1.4.1", "3.1.3"],            # cooldown gate (--resolve-remote)
         "PYPI-009": ["1.4.1", "3.1.3"],            # OSV advisory (--resolve-remote)
+        # ── PyPI extended pack (PYPI-010..014) ──
+        "PYPI-010": ["1.5.1"],                     # index URL with embedded credentials
+        "PYPI-011": ["1.4.1"],                     # --trusted-host disables TLS
+        "PYPI-012": ["1.4.1"],                     # build-system requires floating
+        "PYPI-013": ["1.4.1"],                     # pyproject dynamic dependencies
+        "PYPI-014": ["1.4.1"],                     # custom source HTTP
         # ── nuget (dep supply-chain) ───────��──────────────────────
         "NUGET-001": ["1.4.1", "3.1.3"],           # floating NuGet version range
         "NUGET-002": ["1.4.1", "3.1.3"],           # wildcard prerelease version
@@ -621,6 +649,70 @@ STANDARD = Standard(
         "NUGET-008": ["1.4.1", "3.1.3"],           # cooldown gate (--resolve-remote)
         "NUGET-009": ["1.4.1", "3.1.3"],           # OSV advisory (--resolve-remote)
         "NUGET-010": ["1.5.1", "2.3.4"],           # NuGet.config cleartext feed credential
+        # ── NuGet extended pack ──
+        "NUGET-011": ["1.4.1"],                    # source mapping wildcard
+        "NUGET-012": ["1.4.1"],                    # signature validation off
+        "NUGET-013": ["1.4.1"],                    # dotnet-tools unpinned
+        "NUGET-014": ["1.5.1"],                    # source URL credentials
+        "NUGET-015": ["1.4.1"],                    # VersionOverride breaks CPM
+        # ── Go modules (GOMOD-001..006) ──
+        "GOMOD-001": ["1.4.1"],                    # go.sum integrity manifest missing
+        "GOMOD-002": ["1.4.1"],                    # replace directive to local path
+        "GOMOD-003": ["1.4.1"],                    # replace directive to different module
+        "GOMOD-004": ["1.1.8"],                    # +incompatible direct require
+        "GOMOD-005": ["1.1.8"],                    # missing go toolchain directive
+        "GOMOD-006": ["1.4.1", "1.1.8"],           # known-compromised module version
+        # ── Go modules extended pack ──
+        "GOMOD-007": ["1.4.1"],                    # vendor/modules.txt stale
+        "GOMOD-008": ["1.4.1"],                    # replace without version pin
+        "GOMOD-009": ["1.4.1"],                    # pre-release direct require
+        "GOMOD-010": ["1.4.1"],                    # stale exclude directive
+        # ── Cargo / Rust (CARGO-001..006) ──
+        "CARGO-001": ["1.4.1"],                    # floating Cargo.toml version spec
+        "CARGO-002": ["1.4.1"],                    # git dep with mutable ref (no rev)
+        "CARGO-003": ["1.4.1"],                    # missing Cargo.lock
+        "CARGO-004": ["1.4.1"],                    # local-path Cargo dependency
+        "CARGO-005": ["1.4.1"],                    # alternate-registry Cargo dependency
+        "CARGO-006": ["1.4.1", "1.1.8"],           # known-compromised crate version
+        # ── Cargo extended pack ──
+        "CARGO-007": ["1.4.1"],                    # build-deps floating
+        "CARGO-008": ["1.4.1"],                    # patch.crates-io substitution
+        "CARGO-009": ["1.4.1"],                    # workspace deps floating
+        "CARGO-010": ["1.1.8"],                    # missing rust-version
+        # ── Composer / PHP (COMPOSER-001..008) ──
+        "COMPOSER-001": ["1.4.1"],                 # missing composer.lock
+        "COMPOSER-002": ["1.4.1"],                 # floating require constraint
+        "COMPOSER-003": ["1.4.1"],                 # HTTP repository
+        "COMPOSER-004": ["1.4.1"],                 # repo URL credentials
+        "COMPOSER-005": ["1.4.1"],                 # minimum-stability dev
+        "COMPOSER-006": ["1.4.1"],                 # scripts curl-pipe-shell
+        "COMPOSER-007": ["1.4.1", "1.1.8"],        # known-compromised package
+        "COMPOSER-008": ["1.4.1"],                 # allow-plugins wildcard
+        "COMPOSER-009": ["1.4.1"],                 # auth.json credentials
+        "COMPOSER-010": ["1.4.1"],                 # secure-http false
+        # ── RubyGems / Bundler (GEM-001..008) ──
+        "GEM-001": ["1.4.1"],                      # missing Gemfile.lock
+        "GEM-002": ["1.4.1"],                      # floating gem constraint
+        "GEM-003": ["1.4.1"],                      # HTTP source
+        "GEM-004": ["1.4.1"],                      # source URL credentials
+        "GEM-005": ["1.4.1"],                      # git/github source mutable
+        "GEM-006": ["1.4.1", "1.1.8"],             # compromised gem
+        "GEM-007": ["1.4.1"],                      # multiple top-level sources
+        "GEM-008": ["1.4.1"],                      # path: source in prod
+        "GEM-009": ["1.4.1"],                      # .bundle/config credentials
+        "GEM-010": ["1.4.1"],                      # dynamic Gemfile
+        # ── Pulumi (PULUMI-001..006) ──
+        "PULUMI-001": ["1.5.1"],                   # passphrase secretsprovider
+        "PULUMI-002": ["1.5.1"],                   # secret-shaped config plaintext
+        "PULUMI-003": ["1.5.1"],                   # hardcoded credentials in source
+        "PULUMI-004": ["1.5.1"],                   # insecure state backend
+        "PULUMI-005": ["1.3.4"],                   # wildcard IAM policy in source
+        "PULUMI-006": ["1.4.1"],                   # StackReference unguarded
+        # ── Pulumi extended pack ──
+        "PULUMI-007": ["1.5.1"],                   # public-access cloud resource
+        "PULUMI-008": ["1.5.1"],                   # shell-exec with non-constant input
+        "PULUMI-009": ["1.4.1"],                   # runtime / source mismatch
+        "PULUMI-010": ["1.5.1"],                   # stack orphaned encryption salt
         # ── Cross-cutting dataflow / taint engine ───────��─────────
         # The taint family flags cross-step / cross-job flows where
         # untrusted input reaches a privileged sink. That's the
@@ -772,6 +864,14 @@ STANDARD = Standard(
         "CC-032":   ["1.5.1", "2.3.4"],                  # secret echoed to CircleCI log
         "SCM-048":  ["2.4.3"],                           # org codespace secrets scoped to all repos
         "SCM-049":  ["1.3.4"],                           # classic PAT where fine-grained suffices
+        # GitLab-specific platform posture (SCM-050..053)
+        "SCM-050":  ["1.5.1"],                           # GitLab push rules: prevent_secrets
+        "SCM-051":  ["1.1.6"],                           # GitLab push rules: committer-email check
+        "SCM-052":  ["1.1.5"],                           # GitLab MR: discussions-resolved gate
+        "SCM-053":  ["1.1.5"],                           # GitLab MR: author self-approval allowed
+        # Bitbucket-specific platform posture (SCM-054..055)
+        "SCM-054":  ["1.3.4"],                           # Bitbucket private repo allows public forks
+        "SCM-055":  ["1.1.17"],                          # Bitbucket no write-side branch-restriction kinds
         "NPM-012":  ["1.3.4", "4.3.3"],                 # publish token missing restrictions
         # ── Azure Cloud (Entra ID / Storage / Key Vault / ACR / Monitor) ──
         "ENTRA-001": ["2.4.3"],                            # SP assigned Global Administrator

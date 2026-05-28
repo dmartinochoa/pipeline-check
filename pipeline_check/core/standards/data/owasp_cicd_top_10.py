@@ -467,6 +467,11 @@ STANDARD = Standard(
         "HELM-008": ["CICD-SEC-3"],   # Chart.lock stale > 90 days
         "HELM-009": ["CICD-SEC-3"],   # home / sources non-HTTPS
         "HELM-010": ["CICD-SEC-3"],   # appVersion empty
+        # ── Helm extended pack (HELM-011..014) ──
+        "HELM-011": ["CICD-SEC-6", "CICD-SEC-10"], # dependency URL embedded credentials
+        "HELM-012": ["CICD-SEC-3"],                 # deprecated without successor
+        "HELM-013": ["CICD-SEC-3"],                 # invalid chart type
+        "HELM-014": ["CICD-SEC-3", "CICD-SEC-7"],  # known-compromised dependency
         # Dockerfile
         "DF-001":   ["CICD-SEC-3"],   # FROM not digest-pinned
         "DF-002":   ["CICD-SEC-7"],   # no USER
@@ -519,6 +524,12 @@ STANDARD = Standard(
         "PYPI-006": ["CICD-SEC-3", "CICD-SEC-8"],  # compromised-package registry
         "PYPI-008": ["CICD-SEC-3", "CICD-SEC-8"],  # cooldown gate (--resolve-remote)
         "PYPI-009": ["CICD-SEC-3", "CICD-SEC-8"],  # OSV advisory (--resolve-remote)
+        # ── PyPI (PYPI-010..014) ──
+        "PYPI-010": ["CICD-SEC-6", "CICD-SEC-10"],  # index URL with embedded credentials
+        "PYPI-011": ["CICD-SEC-3", "CICD-SEC-6"],   # --trusted-host disables TLS
+        "PYPI-012": ["CICD-SEC-3", "CICD-SEC-7"],   # build-system requires floating
+        "PYPI-013": ["CICD-SEC-3"],                 # pyproject dynamic dependencies
+        "PYPI-014": ["CICD-SEC-3", "CICD-SEC-6"],   # custom source HTTP
         # maven (pom.xml + settings.xml static analysis)
         "MVN-001":  ["CICD-SEC-3"],                # floating Maven version range
         "MVN-002":  ["CICD-SEC-3"],                # mutable SNAPSHOT dependency
@@ -529,6 +540,12 @@ STANDARD = Standard(
         "MVN-007":  ["CICD-SEC-8", "CICD-SEC-3"],  # settings.xml wildcard mirror
         "MVN-008":  ["CICD-SEC-3", "CICD-SEC-8"],  # cooldown gate (--resolve-remote)
         "MVN-009":  ["CICD-SEC-3", "CICD-SEC-8"],  # OSV advisory (--resolve-remote)
+        # ── Maven extended pack (MVN-010..014) ──
+        "MVN-010":  ["CICD-SEC-6", "CICD-SEC-10"], # settings.xml plaintext password
+        "MVN-011":  ["CICD-SEC-6", "CICD-SEC-10"], # repo URL embedded credentials
+        "MVN-012":  ["CICD-SEC-3", "CICD-SEC-7"],  # build plugin floating
+        "MVN-013":  ["CICD-SEC-3", "CICD-SEC-7"],  # build extension floating
+        "MVN-014":  ["CICD-SEC-3"],                # Maven Wrapper sha256 missing
         # nuget (csproj + NuGet.config static analysis)
         "NUGET-001": ["CICD-SEC-3"],                # floating NuGet version range
         "NUGET-002": ["CICD-SEC-3"],                # wildcard prerelease version
@@ -540,6 +557,70 @@ STANDARD = Standard(
         "NUGET-008": ["CICD-SEC-3", "CICD-SEC-8"],  # cooldown gate (--resolve-remote)
         "NUGET-009": ["CICD-SEC-3", "CICD-SEC-8"],  # OSV advisory (--resolve-remote)
         "NUGET-010": ["CICD-SEC-6", "CICD-SEC-7"],  # NuGet.config cleartext feed credential
+        # ── NuGet extended pack (NUGET-011..015) ──
+        "NUGET-011": ["CICD-SEC-3", "CICD-SEC-5"],  # source mapping wildcard
+        "NUGET-012": ["CICD-SEC-3"],                # signature validation off
+        "NUGET-013": ["CICD-SEC-3", "CICD-SEC-5"],  # dotnet-tools unpinned
+        "NUGET-014": ["CICD-SEC-6", "CICD-SEC-10"], # source URL credentials
+        "NUGET-015": ["CICD-SEC-3"],                # VersionOverride breaks CPM
+        # ── Go modules (GOMOD-001..006) ──
+        "GOMOD-001": ["CICD-SEC-3"],               # go.sum integrity manifest missing
+        "GOMOD-002": ["CICD-SEC-3", "CICD-SEC-5"], # replace directive to local path
+        "GOMOD-003": ["CICD-SEC-3", "CICD-SEC-5"], # replace directive to different module
+        "GOMOD-004": ["CICD-SEC-3"],               # +incompatible direct require
+        "GOMOD-005": ["CICD-SEC-3"],               # missing go toolchain directive
+        "GOMOD-006": ["CICD-SEC-3", "CICD-SEC-7"], # known-compromised module version
+        # ── Go modules extended pack (GOMOD-007..010) ──
+        "GOMOD-007": ["CICD-SEC-3"],               # vendor/modules.txt stale
+        "GOMOD-008": ["CICD-SEC-3", "CICD-SEC-5"], # replace directive without version pin
+        "GOMOD-009": ["CICD-SEC-3"],               # pre-release direct require
+        "GOMOD-010": ["CICD-SEC-3"],               # stale exclude directive
+        # ── Cargo / Rust (CARGO-001..006) ──
+        "CARGO-001": ["CICD-SEC-3"],               # floating Cargo.toml version spec
+        "CARGO-002": ["CICD-SEC-3", "CICD-SEC-5"], # git dep with mutable ref (no rev)
+        "CARGO-003": ["CICD-SEC-3"],               # missing Cargo.lock
+        "CARGO-004": ["CICD-SEC-3", "CICD-SEC-5"], # local-path Cargo dependency
+        "CARGO-005": ["CICD-SEC-3", "CICD-SEC-5"], # alternate-registry Cargo dependency
+        "CARGO-006": ["CICD-SEC-3", "CICD-SEC-7"], # known-compromised crate version
+        # ── Cargo extended pack (CARGO-007..010) ──
+        "CARGO-007": ["CICD-SEC-3", "CICD-SEC-7"], # build-dependencies floating
+        "CARGO-008": ["CICD-SEC-3", "CICD-SEC-5"], # [patch.crates-io] substitution
+        "CARGO-009": ["CICD-SEC-3"],               # workspace deps floating
+        "CARGO-010": ["CICD-SEC-3"],               # missing rust-version
+        # ── Composer / PHP (COMPOSER-001..008) ──
+        "COMPOSER-001": ["CICD-SEC-3"],               # missing composer.lock
+        "COMPOSER-002": ["CICD-SEC-3"],               # floating constraint
+        "COMPOSER-003": ["CICD-SEC-3", "CICD-SEC-5"], # HTTP repository
+        "COMPOSER-004": ["CICD-SEC-6", "CICD-SEC-10"], # repo URL credentials
+        "COMPOSER-005": ["CICD-SEC-3"],               # minimum-stability dev/alpha/beta
+        "COMPOSER-006": ["CICD-SEC-3", "CICD-SEC-1"], # scripts curl-pipe-shell
+        "COMPOSER-007": ["CICD-SEC-3", "CICD-SEC-7"], # compromised package
+        "COMPOSER-008": ["CICD-SEC-3", "CICD-SEC-5"], # allow-plugins wildcard
+        "COMPOSER-009": ["CICD-SEC-6", "CICD-SEC-10"], # auth.json credentials
+        "COMPOSER-010": ["CICD-SEC-3", "CICD-SEC-5"], # secure-http false
+        # ── RubyGems / Bundler (GEM-001..008) ──
+        "GEM-001": ["CICD-SEC-3"],               # missing Gemfile.lock
+        "GEM-002": ["CICD-SEC-3"],               # floating gem constraint
+        "GEM-003": ["CICD-SEC-3", "CICD-SEC-5"], # HTTP source
+        "GEM-004": ["CICD-SEC-6", "CICD-SEC-10"], # source URL credentials
+        "GEM-005": ["CICD-SEC-3", "CICD-SEC-5"], # git/github source mutable ref
+        "GEM-006": ["CICD-SEC-3", "CICD-SEC-7"], # compromised gem
+        "GEM-007": ["CICD-SEC-3", "CICD-SEC-5"], # multiple top-level sources
+        "GEM-008": ["CICD-SEC-3", "CICD-SEC-5"], # path: source in prod
+        "GEM-009": ["CICD-SEC-6", "CICD-SEC-10"], # .bundle/config credentials
+        "GEM-010": ["CICD-SEC-3"],               # dynamic Gemfile
+        # ── Pulumi (PULUMI-001..006) ──
+        "PULUMI-001": ["CICD-SEC-6", "CICD-SEC-7"], # passphrase secretsprovider
+        "PULUMI-002": ["CICD-SEC-6"],               # secret-shaped config plaintext
+        "PULUMI-003": ["CICD-SEC-6", "CICD-SEC-7"], # hardcoded credentials in source
+        "PULUMI-004": ["CICD-SEC-2", "CICD-SEC-6"], # insecure state backend
+        "PULUMI-005": ["CICD-SEC-1", "CICD-SEC-2"], # wildcard IAM policy in source
+        "PULUMI-006": ["CICD-SEC-1", "CICD-SEC-6"], # StackReference unguarded
+        # ── Pulumi extended pack (PULUMI-007..010) ──
+        "PULUMI-007": ["CICD-SEC-2", "CICD-SEC-6"], # public-access cloud resource
+        "PULUMI-008": ["CICD-SEC-5", "CICD-SEC-3"], # shell-exec with non-constant input
+        "PULUMI-009": ["CICD-SEC-3"],               # runtime / source mismatch
+        "PULUMI-010": ["CICD-SEC-6"],               # stack orphaned encryption salt
         # Buildkite
         "BK-001":   ["CICD-SEC-3"],   # plugin not pinned to exact version
         "BK-002":   ["CICD-SEC-6", "CICD-SEC-7"],  # literal secret in env
@@ -598,6 +679,11 @@ STANDARD = Standard(
         "ARGOCD-007": ["CICD-SEC-4", "CICD-SEC-1"],  # Helm generator interpolation
         "ARGOCD-008": ["CICD-SEC-3", "CICD-SEC-4"],  # CMP plugin invocation
         "ARGOCD-009": ["CICD-SEC-2"],                # anonymous access enabled
+        # ── ArgoCD extended pack (ARGOCD-010..013) ──
+        "ARGOCD-010": ["CICD-SEC-3", "CICD-SEC-5"], # mutable targetRevision
+        "ARGOCD-011": ["CICD-SEC-1", "CICD-SEC-5"], # cluster-resource wildcard
+        "ARGOCD-012": ["CICD-SEC-4", "CICD-SEC-1"], # no sync windows on prod
+        "ARGOCD-013": ["CICD-SEC-7"],               # no revision history cap
         # Cross-cutting dataflow / taint engine (provider-spanning,
         # currently GHA-only in v1)
         "TAINT-001": ["CICD-SEC-4", "CICD-SEC-1"],  # cross-step taint via $GITHUB_OUTPUT
@@ -621,6 +707,12 @@ STANDARD = Standard(
         "DR-009":   ["CICD-SEC-1", "CICD-SEC-3"],   # cache key tainted
         "DR-010":   ["CICD-SEC-3"],                 # unpinned package install
         "DR-011":   ["CICD-SEC-7", "CICD-SEC-1"],   # node map interpolation
+        # ── Drone extended pack (DR-012..016) ──
+        "DR-012":   ["CICD-SEC-3"],                 # service image not pinned
+        "DR-013":   ["CICD-SEC-1", "CICD-SEC-4"],   # no trigger event filter
+        "DR-014":   ["CICD-SEC-3", "CICD-SEC-5"],   # pipe-to-shell
+        "DR-015":   ["CICD-SEC-3", "CICD-SEC-5"],   # clone recursive
+        "DR-016":   ["CICD-SEC-3", "CICD-SEC-5"],   # image field interpolation
         # OCI image manifests
         "OCI-001":  ["CICD-SEC-3", "CICD-SEC-10"],  # missing provenance annotations
         "OCI-002":  ["CICD-SEC-3", "CICD-SEC-9", "CICD-SEC-10"],  # missing build attestation
@@ -688,6 +780,14 @@ STANDARD = Standard(
         "SCM-047":  ["CICD-SEC-10"],               # repo language not covered by default scanning
         "SCM-048":  ["CICD-SEC-2"],                # org codespace secret scoped to all repos
         "SCM-049":  ["CICD-SEC-2"],                # classic PAT used where fine-grained suffices
+        # GitLab-specific platform posture (SCM-050..053)
+        "SCM-050":  ["CICD-SEC-6"],                # GitLab push rules: prevent_secrets
+        "SCM-051":  ["CICD-SEC-1", "CICD-SEC-6"],  # GitLab push rules: committer-email check
+        "SCM-052":  ["CICD-SEC-1"],                # GitLab MR: discussions-resolved gate
+        "SCM-053":  ["CICD-SEC-1", "CICD-SEC-4"],  # GitLab MR: author self-approval allowed
+        # Bitbucket-specific platform posture (SCM-054..055)
+        "SCM-054":  ["CICD-SEC-1", "CICD-SEC-6"],  # Bitbucket private repo allows public forks
+        "SCM-055":  ["CICD-SEC-1"],                # Bitbucket no write-side branch-restriction kinds
         # GHA supply-chain posture pack
         "GHA-097":  ["CICD-SEC-1"],                # recursive PR auto-merge loop
         "GHA-098":  ["CICD-SEC-7"],                # deploy without security scan gate

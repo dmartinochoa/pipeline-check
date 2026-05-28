@@ -395,6 +395,12 @@ STANDARD = Standard(
         "DR-009":   ["CM-6", "SA-11"],                   # cache key tainted
         "DR-010":   ["SR-3", "SR-11"],                   # unpinned package install
         "DR-011":   ["CM-6", "SA-11"],                   # node map interpolates untrusted
+        # ── Drone extended pack ──
+        "DR-012":   ["SR-3", "SR-11"],                   # service image not pinned
+        "DR-013":   ["AC-6", "CM-7"],                    # no trigger event filter
+        "DR-014":   ["SI-7", "CM-7"],                    # pipe-to-shell
+        "DR-015":   ["SI-7", "CM-7"],                    # clone recursive
+        "DR-016":   ["CM-7", "SI-7"],                    # image field interpolation
         # Cloud Build
         "GCB-001":  ["SR-3", "SR-11", "SI-2", "RA-5"],   # step image not digest-pinned
         "GCB-002":  ["AC-3", "AC-6"],                    # default service account
@@ -484,6 +490,11 @@ STANDARD = Standard(
         "HELM-008": ["SR-3", "SI-2"],                    # Chart.lock stale (flaw remediation cadence)
         "HELM-009": ["SR-3", "SC-8"],                    # home / sources non-HTTPS
         "HELM-010": ["CM-2"],                            # appVersion (config baseline)
+        # ── Helm extended pack ──
+        "HELM-011": ["IA-5", "SC-28"],                   # dependency URL embedded creds
+        "HELM-012": ["CM-2", "SI-2"],                    # deprecated without successor
+        "HELM-013": ["CM-2"],                            # invalid chart type
+        "HELM-014": ["SI-2", "SR-3"],                    # known-compromised dep
         # Buildkite, pipeline-config posture maps to the same SR /
         # CM / IA families as the other CI providers' rules.
         "BK-001":   ["SR-3", "SR-11", "SI-2"],           # plugin not pinned
@@ -533,6 +544,11 @@ STANDARD = Standard(
         "ARGO-013": ["AC-6", "IA-5"],                    # SA token automount
         "ARGO-014": ["SR-3", "SR-11"],                   # unpinned package install
         "ARGO-015": ["SC-8", "SI-7"],                    # insecure (non-HTTPS) artifact URL
+        # ── Argo CD (GitOps deployment) ──
+        "ARGOCD-010": ["CM-7", "SR-3"],                  # mutable targetRevision
+        "ARGOCD-011": ["AC-6", "CM-7"],                  # cluster-resource wildcard
+        "ARGOCD-012": ["CM-6", "AU-2"],                  # no sync windows
+        "ARGOCD-013": ["AU-11"],                         # no revision history cap
         # Dockerfile, image build choices evidence supply-chain (SR)
         # and configuration (CM) controls primarily.
         "DF-001":   ["SR-3", "SR-11", "SI-2"],           # FROM not digest-pinned
@@ -624,11 +640,23 @@ STANDARD = Standard(
         "MVN-007":  ["SR-3", "SR-11"],                   # settings.xml wildcard mirror
         "MVN-008":  ["SR-3", "SR-11", "RA-5"],           # cooldown gate (--resolve-remote)
         "MVN-009":  ["SR-3", "SR-11", "RA-5"],           # OSV advisory (--resolve-remote)
+        # ── Maven extended pack ──
+        "MVN-010":  ["IA-5", "SC-28"],                   # plaintext server password
+        "MVN-011":  ["IA-5", "SC-28"],                   # repo URL credentials
+        "MVN-012":  ["CM-7", "SR-3"],                    # build plugin floating
+        "MVN-013":  ["CM-7", "SR-3"],                    # build extension floating
+        "MVN-014":  ["SI-7", "CM-7"],                    # wrapper sha256 missing
         "NPM-008":  ["SR-3", "SR-11", "RA-5"],           # cooldown gate (--resolve-remote)
         "NPM-009":  ["SR-3", "SR-11"],                   # new-transitive-dep diff gate
         "NPM-010":  ["SR-3", "SR-11", "RA-5"],           # OSV advisory (--resolve-remote)
         "PYPI-008": ["SR-3", "SR-11", "RA-5"],           # cooldown gate (--resolve-remote)
         "PYPI-009": ["SR-3", "SR-11", "RA-5"],           # OSV advisory (--resolve-remote)
+        # ── PyPI extended pack (PYPI-010..014) ──
+        "PYPI-010": ["IA-5", "SC-28"],                   # index URL embedded credentials
+        "PYPI-011": ["SC-8", "SC-13"],                   # --trusted-host disables TLS
+        "PYPI-012": ["CM-7", "SI-7"],                    # build-system requires floating
+        "PYPI-013": ["CM-7"],                            # pyproject dynamic dependencies
+        "PYPI-014": ["SC-8"],                            # custom source HTTP
         # ── nuget (dep supply-chain) ─────────────────────────────
         "NUGET-001": ["SR-3", "SR-11", "SI-2"],          # floating NuGet version range
         "NUGET-002": ["SR-3", "SR-11", "SI-2"],          # wildcard prerelease version
@@ -640,6 +668,70 @@ STANDARD = Standard(
         "NUGET-008": ["SR-3", "SR-11", "RA-5"],          # cooldown gate (--resolve-remote)
         "NUGET-009": ["SR-3", "SR-11", "RA-5"],          # OSV advisory (--resolve-remote)
         "NUGET-010": ["IA-5", "AC-3"],                   # NuGet.config cleartext feed credential
+        # ── NuGet extended pack ──
+        "NUGET-011": ["CM-7", "SR-3"],                   # source mapping wildcard
+        "NUGET-012": ["SI-7"],                           # signature validation off
+        "NUGET-013": ["CM-7", "SR-3"],                   # dotnet-tools unpinned
+        "NUGET-014": ["IA-5", "SC-28"],                  # source URL credentials
+        "NUGET-015": ["CM-6"],                           # VersionOverride breaks CPM
+        # ── Go modules (GOMOD-001..006) ─────────────────────────
+        "GOMOD-001": ["SI-7", "CM-7"],                   # go.sum integrity manifest missing
+        "GOMOD-002": ["CM-7", "SR-3"],                  # replace directive to local path
+        "GOMOD-003": ["CM-7", "SR-3"],                  # replace directive to different module
+        "GOMOD-004": ["SI-2"],                           # +incompatible direct require
+        "GOMOD-005": ["CM-6"],                           # missing go toolchain directive
+        "GOMOD-006": ["SI-2", "SR-3"],                  # known-compromised module version
+        # ── Go modules extended pack ──
+        "GOMOD-007": ["SI-7", "CM-7"],                   # vendor/modules.txt stale
+        "GOMOD-008": ["CM-7", "SR-3"],                   # replace without version pin
+        "GOMOD-009": ["CM-7"],                           # pre-release direct require
+        "GOMOD-010": ["CM-7"],                           # stale exclude directive
+        # ── Cargo (CARGO-001..006) ─────────────────────────────
+        "CARGO-001": ["CM-7"],                           # floating Cargo.toml version spec
+        "CARGO-002": ["CM-7", "SR-3"],                  # git dep with mutable ref (no rev)
+        "CARGO-003": ["SI-7", "CM-7"],                   # missing Cargo.lock
+        "CARGO-004": ["CM-7", "SR-3"],                  # local-path Cargo dependency
+        "CARGO-005": ["CM-7", "SR-3"],                  # alternate-registry Cargo dependency
+        "CARGO-006": ["SI-2", "SR-3"],                  # known-compromised crate version
+        # ── Cargo extended pack ──
+        "CARGO-007": ["CM-7", "SR-3"],                   # build-deps floating
+        "CARGO-008": ["CM-7", "SR-3"],                   # patch.crates-io substitution
+        "CARGO-009": ["CM-7"],                           # workspace deps floating
+        "CARGO-010": ["CM-6"],                           # missing rust-version
+        # ── Composer / PHP ──
+        "COMPOSER-001": ["SR-3", "CM-8"],                # missing composer.lock
+        "COMPOSER-002": ["CM-7", "SR-3"],                # floating constraint
+        "COMPOSER-003": ["SC-8", "SC-13"],               # HTTP repository
+        "COMPOSER-004": ["IA-5", "SC-28"],               # repo URL credentials
+        "COMPOSER-005": ["CM-7", "SR-3"],                # minimum-stability dev
+        "COMPOSER-006": ["CM-7", "SI-7"],                # scripts curl-pipe-shell
+        "COMPOSER-007": ["SI-2", "SR-3"],                # compromised package
+        "COMPOSER-008": ["CM-7", "SR-3"],                # allow-plugins wildcard
+        "COMPOSER-009": ["IA-5", "SC-28"],               # auth.json credentials
+        "COMPOSER-010": ["SC-8", "SC-13"],               # secure-http false
+        # ── RubyGems / Bundler ──
+        "GEM-001": ["SR-3", "CM-8"],                     # missing Gemfile.lock
+        "GEM-002": ["CM-7", "SR-3"],                     # floating gem constraint
+        "GEM-003": ["SC-8", "SC-13"],                    # HTTP source
+        "GEM-004": ["IA-5", "SC-28"],                    # source URL credentials
+        "GEM-005": ["CM-7", "SR-3"],                     # git/github source mutable
+        "GEM-006": ["SI-2", "SR-3"],                     # compromised gem
+        "GEM-007": ["CM-7", "SR-3"],                     # multiple top-level sources
+        "GEM-008": ["CM-7", "SR-3"],                     # path: source in prod
+        "GEM-009": ["IA-5", "SC-28"],                    # .bundle/config credentials
+        "GEM-010": ["CM-7", "SR-3"],                     # dynamic Gemfile
+        # ── Pulumi (PULUMI-001..006) ──
+        "PULUMI-001": ["SC-13", "SC-12"],                # passphrase secretsprovider
+        "PULUMI-002": ["IA-5", "SC-28"],                 # secret-shaped config plaintext
+        "PULUMI-003": ["IA-5", "SC-28"],                 # hardcoded credentials in source
+        "PULUMI-004": ["AU-9", "SC-8"],                  # insecure state backend
+        "PULUMI-005": ["AC-6", "AC-3"],                  # wildcard IAM policy in source
+        "PULUMI-006": ["AC-3", "CM-7"],                  # StackReference unguarded
+        # ── Pulumi extended pack ──
+        "PULUMI-007": ["AC-3", "AC-6"],                  # public-access cloud resource
+        "PULUMI-008": ["CM-7", "SI-7"],                  # shell-exec with non-constant input
+        "PULUMI-009": ["CM-6"],                          # runtime / source mismatch
+        "PULUMI-010": ["SC-12", "IA-5"],                 # stack orphaned encryption salt
         # ── OCI image manifest gaps ──────────────────────────────
         "OCI-001":  ["SR-4", "CM-8"],                    # provenance annotations missing
         "OCI-002":  ["SI-7", "SR-4"],                    # build attestation missing

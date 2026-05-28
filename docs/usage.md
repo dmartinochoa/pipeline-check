@@ -129,10 +129,15 @@ pipeline_check --pipeline npm --npm-path ./
 pipeline_check --pipeline pypi --pypi-path ./
 pipeline_check --pipeline maven --maven-path ./
 pipeline_check --pipeline nuget --nuget-path ./
+pipeline_check --pipeline gomod --gomod-path ./
+pipeline_check --pipeline cargo --cargo-path ./
+pipeline_check --pipeline composer --composer-path ./
+pipeline_check --pipeline rubygems --rubygems-path ./
 
 pipeline_check --pipeline cloudformation --cfn-template template.yml
 pipeline_check --pipeline terraform --tf-plan plan.json
 pipeline_check --pipeline terraform --tf-source ./infra/   # direct HCL, no terraform binary
+pipeline_check --pipeline pulumi --pulumi-path ./infra/Pulumi.yaml
 pipeline_check --pipeline aws --region eu-west-1 --profile prod
 pipeline_check --pipeline azure_cloud --subscription-id 00000000-0000-0000-0000-000000000000
 pipeline_check --pipeline gcp --gcp-project my-project-id
@@ -290,6 +295,13 @@ pipeline_check --output threatmodel -O tm.json     # MITRE ATT&CK threat model
 pipeline_check --output cyclonedx -O sbom.json     # CycloneDX 1.6 build SBOM
 pipeline_check --output both                       # terminal→stderr, JSON→stdout
 ```
+
+For the default terminal view, `--inline-explain` injects each rule's
+recorded `exploit_example` directly under the Recommendation block, so
+operators see a concrete attack scenario without piping the check ID
+through `pipeline_check explain`. No-op on the structured formats
+(`json` / `sarif` / `markdown` / `codequality` / `junit`), which
+already surface the field via their schema.
 
 Format schemas: [output.md](output.md).
 
@@ -611,5 +623,6 @@ python -m pipeline_check.lsp
 - [config.md](config.md): full config-file schema
 - [ci_gate.md](ci_gate.md): gate logic and baselines
 - [output.md](output.md): output format schemas
+- [history.md](history.md): findings-history HTML dashboard (`pipeline_check history`)
 - [attack_chains.md](attack_chains.md): chain detection
 - [scoring_model.md](scoring_model.md): how grades are computed

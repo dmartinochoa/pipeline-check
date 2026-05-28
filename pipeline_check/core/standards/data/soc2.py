@@ -533,6 +533,12 @@ STANDARD = Standard(
         "DR-009":   ["CC6.6", "CC6.8"],     # cache key tainted
         "DR-010":   ["CC8.1"],              # unpinned package install
         "DR-011":   ["CC6.8"],              # node map interpolates untrusted
+        # ── Drone extended pack ──
+        "DR-012":   ["CC8.1"],              # service image not pinned
+        "DR-013":   ["CC8.1"],              # no trigger event filter
+        "DR-014":   ["CC8.1"],              # pipe-to-shell
+        "DR-015":   ["CC8.1"],              # clone recursive
+        "DR-016":   ["CC8.1"],              # image field interpolation
         # ── Tekton (K8s-native pipeline kinds) ────────────────────
         "TKN-001":  ["CC8.1"],              # step image not digest-pinned
         "TKN-002":  ["CC6.1", "CC6.8"],     # step privileged / root
@@ -565,6 +571,11 @@ STANDARD = Standard(
         "ARGO-013": ["CC6.1"],              # SA token automount default
         "ARGO-014": ["CC8.1"],              # unpinned package install
         "ARGO-015": ["CC6.7"],              # insecure (non-HTTPS) artifact URL
+        # ── Argo CD (GitOps deployment) ──
+        "ARGOCD-010": ["CC8.1"],            # mutable targetRevision
+        "ARGOCD-011": ["CC6.1"],            # cluster-resource wildcard
+        "ARGOCD-012": ["CC8.1"],            # no sync windows
+        "ARGOCD-013": ["CC8.1"],            # no revision history cap
         # ── Cloud Build extras ───────────────────────────────────
         "GCB-004": ["CC8.1"],               # community step not SHA-pinned
         "GCB-005": ["CC6.6"],               # build timeout unset
@@ -616,11 +627,23 @@ STANDARD = Standard(
         "MVN-007":  ["CC8.1"],
         "MVN-008":  ["CC6.8", "CC7.1", "CC8.1"],
         "MVN-009":  ["CC6.8", "CC7.1", "CC8.1"],
+        # ── Maven extended pack ──
+        "MVN-010":  ["CC6.1"],
+        "MVN-011":  ["CC6.1"],
+        "MVN-012":  ["CC8.1"],
+        "MVN-013":  ["CC8.1"],
+        "MVN-014":  ["CC8.1"],
         "NPM-008":  ["CC6.8", "CC7.1", "CC8.1"],
         "NPM-009":  ["CC8.1"],
         "NPM-010":  ["CC6.8", "CC7.1", "CC8.1"],
         "PYPI-008": ["CC6.8", "CC7.1", "CC8.1"],
         "PYPI-009": ["CC6.8", "CC7.1", "CC8.1"],
+        # ── PyPI extended pack ──
+        "PYPI-010": ["CC6.1"],                  # index URL embedded credentials
+        "PYPI-011": ["CC6.1"],                  # --trusted-host disables TLS
+        "PYPI-012": ["CC8.1"],                  # build-system requires floating
+        "PYPI-013": ["CC8.1"],                  # pyproject dynamic dependencies
+        "PYPI-014": ["CC6.1"],                  # custom source HTTP
         # ── nuget (dep supply-chain) ─────────────────────────────
         "NUGET-001": ["CC8.1"],
         "NUGET-002": ["CC8.1"],
@@ -632,6 +655,70 @@ STANDARD = Standard(
         "NUGET-008": ["CC6.8", "CC7.1", "CC8.1"],
         "NUGET-009": ["CC6.8", "CC7.1", "CC8.1"],
         "NUGET-010": ["CC6.1"],
+        # ── NuGet extended pack ──
+        "NUGET-011": ["CC8.1"],
+        "NUGET-012": ["CC8.1"],
+        "NUGET-013": ["CC8.1"],
+        "NUGET-014": ["CC6.1"],
+        "NUGET-015": ["CC8.1"],
+        # ── Go modules ──
+        "GOMOD-001": ["CC8.1"],                 # go.sum integrity manifest missing
+        "GOMOD-002": ["CC8.1"],                 # replace directive to local path
+        "GOMOD-003": ["CC8.1"],                 # replace directive to different module
+        "GOMOD-004": ["CC8.1"],                 # +incompatible direct require
+        "GOMOD-005": ["CC8.1"],                 # missing go toolchain directive
+        "GOMOD-006": ["CC8.1", "CC7.1"],        # known-compromised module version
+        # ── Go modules extended pack ──
+        "GOMOD-007": ["CC8.1"],
+        "GOMOD-008": ["CC8.1"],
+        "GOMOD-009": ["CC8.1"],
+        "GOMOD-010": ["CC8.1"],
+        # ── Cargo ──
+        "CARGO-001": ["CC8.1"],                 # floating Cargo.toml version spec
+        "CARGO-002": ["CC8.1"],                 # git dep with mutable ref (no rev)
+        "CARGO-003": ["CC8.1"],                 # missing Cargo.lock
+        "CARGO-004": ["CC8.1"],                 # local-path Cargo dependency
+        "CARGO-005": ["CC8.1"],                 # alternate-registry Cargo dependency
+        "CARGO-006": ["CC8.1", "CC7.1"],        # known-compromised crate version
+        # ── Cargo extended pack ──
+        "CARGO-007": ["CC8.1"],
+        "CARGO-008": ["CC8.1"],
+        "CARGO-009": ["CC8.1"],
+        "CARGO-010": ["CC8.1"],
+        # ── Composer / PHP ──
+        "COMPOSER-001": ["CC8.1"],
+        "COMPOSER-002": ["CC8.1"],
+        "COMPOSER-003": ["CC8.1", "CC6.1"],
+        "COMPOSER-004": ["CC6.1"],
+        "COMPOSER-005": ["CC8.1"],
+        "COMPOSER-006": ["CC8.1"],
+        "COMPOSER-007": ["CC8.1", "CC7.1"],
+        "COMPOSER-008": ["CC8.1"],
+        "COMPOSER-009": ["CC6.1"],
+        "COMPOSER-010": ["CC8.1", "CC6.1"],
+        # ── RubyGems / Bundler ──
+        "GEM-001": ["CC8.1"],
+        "GEM-002": ["CC8.1"],
+        "GEM-003": ["CC8.1", "CC6.1"],
+        "GEM-004": ["CC6.1"],
+        "GEM-005": ["CC8.1"],
+        "GEM-006": ["CC8.1", "CC7.1"],
+        "GEM-007": ["CC8.1"],
+        "GEM-008": ["CC8.1"],
+        "GEM-009": ["CC6.1"],
+        "GEM-010": ["CC8.1"],
+        # ── Pulumi ──
+        "PULUMI-001": ["CC6.1"],                # passphrase secretsprovider
+        "PULUMI-002": ["CC6.1"],                # secret-shaped config plaintext
+        "PULUMI-003": ["CC6.1"],                # hardcoded credentials in source
+        "PULUMI-004": ["CC6.1", "CC8.1"],       # insecure state backend
+        "PULUMI-005": ["CC6.1"],                # wildcard IAM policy in source
+        "PULUMI-006": ["CC8.1"],                # StackReference unguarded
+        # ── Pulumi extended pack ──
+        "PULUMI-007": ["CC6.1"],                # public-access cloud resource
+        "PULUMI-008": ["CC6.1"],                # shell-exec with non-constant input
+        "PULUMI-009": ["CC8.1"],                # runtime / source mismatch
+        "PULUMI-010": ["CC6.1"],                # stack orphaned encryption salt
         # ── OCI image manifest gaps ──────────────────────────────
         "OCI-001":  ["CC8.1"],              # provenance annotations missing
         "OCI-002":  ["CC8.1"],              # build attestation missing
@@ -678,6 +765,11 @@ STANDARD = Standard(
         "HELM-006": ["CC8.1"],              # missing kubeVersion
         "HELM-007": ["CC8.1"],              # missing description
         "HELM-010": ["CC8.1"],              # missing appVersion
+        # ── Helm extended pack ──
+        "HELM-011": ["CC6.1"],              # dependency URL embedded creds
+        "HELM-012": ["CC8.1"],              # deprecated without successor
+        "HELM-013": ["CC8.1"],              # invalid chart type
+        "HELM-014": ["CC8.1", "CC7.1"],     # known-compromised dep
         # ── Degraded-mode findings (API access failures) ─────────
         # Visibility gap = monitoring-for-anomalies failure (CC7.2)
         # plus a logical-access trail evidence gap on the security-

@@ -85,6 +85,23 @@ STANDARD = Standard(
         "NUGET-004": ["ING-1"],            # HTTP-only NuGet package source
         "NUGET-007": ["ING-1"],            # multiple sources without packageSourceMapping
         "NUGET-010": ["ING-1"],            # NuGet.config cleartext feed credential
+        # ── NuGet extended pack ──
+        "NUGET-011": ["ING-1"],
+        "NUGET-012": ["ING-1"],
+        "NUGET-013": ["ING-1"],
+        "NUGET-014": ["ING-1"],
+        "NUGET-015": ["ING-1"],
+        # ── Composer / PHP ──
+        "COMPOSER-003": ["ING-1"],         # HTTP composer repository
+        "COMPOSER-004": ["ING-1"],         # composer.json repo URL credentials
+        "COMPOSER-005": ["ING-1"],         # minimum-stability dev / pre-release
+        "COMPOSER-009": ["ING-1"],         # auth.json committed
+        "COMPOSER-010": ["ING-1"],         # secure-http false (HTTP enabled)
+        # ── RubyGems / Bundler ──
+        "GEM-003": ["ING-1"],              # HTTP Gemfile source
+        "GEM-004": ["ING-1"],              # Gemfile source URL credentials
+        "GEM-007": ["ING-1"],              # multiple top-level sources (dep-confusion)
+        "GEM-009": ["ING-1"],              # .bundle/config credentials
         # Dockerfile env-bypass pack disables the trusted-source channel
         # for any subsequent OSS install in the image.
         "DF-021":   ["ING-1"],             # pip install TLS bypass / http index
@@ -135,9 +152,18 @@ STANDARD = Standard(
         "MVN-006":  ["SCA-3", "ING-3"],     # compromised Maven version
         "MVN-008":  ["SCA-3", "ING-3"],     # cooldown gate (--resolve-remote)
         "MVN-009":  ["SCA-3", "ING-3"],     # OSV advisory (--resolve-remote)
+        # ── Maven extended pack ──
+        "MVN-010":  ["ING-3"],              # plaintext server password
+        "MVN-011":  ["ING-3"],              # repo URL credentials
+        "MVN-012":  ["SCA-3", "ING-3"],     # build plugin floating
+        "MVN-013":  ["SCA-3", "ING-3"],     # build extension floating
+        "MVN-014":  ["ING-3"],              # wrapper sha256 missing
         "NUGET-005": ["SCA-3", "ING-3"],    # known-compromised NuGet version
         "NUGET-008": ["SCA-3", "ING-3"],    # cooldown gate (--resolve-remote)
         "NUGET-009": ["SCA-3", "ING-3"],    # OSV advisory (--resolve-remote)
+        "COMPOSER-007": ["SCA-3", "ING-3"], # compromised Composer package
+        "COMPOSER-008": ["SCA-3", "ING-3"], # allow-plugins wildcard (transitive plugin run)
+        "GEM-006": ["SCA-3", "ING-3"],      # compromised gem version
         # Reputation-class deny-list signals: not malware-confirmed,
         # but each finding is one entry on a curated deny-list of
         # references that should require human-in-the-loop review
@@ -203,6 +229,11 @@ STANDARD = Standard(
         "NUGET-002": ["UPD-1"],            # wildcard prerelease version
         "NUGET-003": ["UPD-1"],            # missing explicit version
         "NUGET-006": ["UPD-1"],            # no lock file for reproducible restores
+        "COMPOSER-001": ["UPD-1"],         # missing composer.lock
+        "COMPOSER-002": ["UPD-1"],         # floating require constraint
+        "GEM-001": ["UPD-1"],              # missing Gemfile.lock
+        "GEM-002": ["UPD-1"],              # floating gem constraint
+        "GEM-005": ["UPD-1"],              # git/github source mutable ref
         # OCI image manifest pinning
         "OCI-007":  ["UPD-1"],             # legacy schemaVersion 1 (no digest immutability)
         "OCI-008":  ["UPD-1"],             # weak digest algorithm
@@ -276,6 +307,11 @@ STANDARD = Standard(
         "HELM-005": ["REB-3"],             # maintainers chain-of-custody
         "HELM-007": ["REB-3"],             # description empty
         "HELM-010": ["REB-3"],             # appVersion empty
+        # ── Helm extended pack ──
+        "HELM-011": ["REB-3"],             # dependency URL embedded creds
+        "HELM-012": ["REB-3"],             # deprecated without successor
+        "HELM-013": ["REB-3"],             # invalid chart type
+        "HELM-014": ["REB-3"],             # known-compromised dep
         # SBOM content gaps live here too (the SBOM exists but
         # under-specifies what it should track).
         "ATTEST-003": ["REB-3"],           # SBOM floating versions

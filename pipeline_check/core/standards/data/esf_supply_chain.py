@@ -333,6 +333,11 @@ STANDARD = Standard(
         "HELM-008": ["ESF-S-PIN-DEPS"],                            # stale Chart.lock
         "HELM-009": ["ESF-S-TRUSTED-REG"],                         # non-HTTPS home/sources
         "HELM-010": ["ESF-S-VERIFY-DEPS"],                         # appVersion
+        # ── Helm extended pack ──
+        "HELM-011": ["ESF-D-SECRETS"],
+        "HELM-012": ["ESF-S-VERIFY-DEPS"],
+        "HELM-013": ["ESF-S-VERIFY-DEPS"],
+        "HELM-014": ["ESF-S-VERIFY-DEPS"],
         # ── Dockerfile (image build supply chain) ──────────────────
         "DF-001": ["ESF-S-PIN-DEPS", "ESF-S-VERIFY-DEPS"],         # FROM not digest-pinned
         "DF-002": ["ESF-D-PRIV-BUILD"],                            # runs as root
@@ -585,6 +590,11 @@ STANDARD = Standard(
         "ARGOCD-007": ["ESF-D-INJECTION"],                           # Helm generator interpolation
         "ARGOCD-008": ["ESF-S-VERIFY-DEPS"],                         # CMP plugin invocation
         "ARGOCD-009": ["ESF-C-LEAST-PRIV"],                          # anonymous access enabled
+        # ── ArgoCD extended pack ──
+        "ARGOCD-010": ["ESF-S-PIN-DEPS"],
+        "ARGOCD-011": ["ESF-C-LEAST-PRIV"],
+        "ARGOCD-012": ["ESF-C-APPROVAL"],
+        "ARGOCD-013": ["ESF-C-AUDIT"],
         # ── Drone CI ─────────────────────────────────────────────
         "DR-001":   ["ESF-S-PIN-DEPS", "ESF-S-IMMUTABLE"],     # step image not digest-pinned
         "DR-002":   ["ESF-D-PRIV-BUILD"],           # privileged step
@@ -597,6 +607,12 @@ STANDARD = Standard(
         "DR-009":   ["ESF-D-INJECTION"],            # cache key tainted
         "DR-010":   ["ESF-S-PIN-DEPS", "ESF-S-VERIFY-DEPS"],   # unpinned package install
         "DR-011":   ["ESF-D-INJECTION"],            # node map interpolates untrusted
+        # ── Drone extended pack ──
+        "DR-012":   ["ESF-S-PIN-DEPS", "ESF-S-IMMUTABLE"],   # service image not pinned
+        "DR-013":   ["ESF-C-APPROVAL"],             # no trigger event filter
+        "DR-014":   ["ESF-S-VERIFY-DEPS"],          # pipe-to-shell
+        "DR-015":   ["ESF-S-VERIFY-DEPS"],          # clone recursive
+        "DR-016":   ["ESF-D-INJECTION", "ESF-S-PIN-DEPS"],   # image field interpolation
         # ── NPM / PyPI / Maven dep supply-chain ──────────────────
         # Per-package pinning / integrity / non-registry source →
         # ESF-S-PIN-DEPS (+ ESF-S-VERIFY-DEPS). Compromised pkgs add
@@ -627,11 +643,23 @@ STANDARD = Standard(
         "MVN-007":  ["ESF-S-TRUSTED-REG"],
         "MVN-008":  ["ESF-S-VERIFY-DEPS"],
         "MVN-009":  ["ESF-S-VERIFY-DEPS"],
+        # ── Maven extended pack ──
+        "MVN-010":  ["ESF-D-SECRETS"],
+        "MVN-011":  ["ESF-D-SECRETS"],
+        "MVN-012":  ["ESF-S-VERIFY-DEPS"],
+        "MVN-013":  ["ESF-S-VERIFY-DEPS"],
+        "MVN-014":  ["ESF-S-VERIFY-DEPS"],
         "NPM-008":  ["ESF-S-VERIFY-DEPS"],
         "NPM-009":  ["ESF-S-VERIFY-DEPS"],
         "NPM-010":  ["ESF-S-VERIFY-DEPS"],
         "PYPI-008": ["ESF-S-VERIFY-DEPS"],
         "PYPI-009": ["ESF-S-VERIFY-DEPS"],
+        # ── PyPI extended pack ──
+        "PYPI-010": ["ESF-D-SECRETS"],
+        "PYPI-011": ["ESF-S-TRUSTED-REG", "ESF-S-VERIFY-DEPS"],
+        "PYPI-012": ["ESF-S-VERIFY-DEPS"],
+        "PYPI-013": ["ESF-S-VERIFY-DEPS"],
+        "PYPI-014": ["ESF-S-TRUSTED-REG"],
         # nuget (csproj + NuGet.config static analysis)
         "NUGET-001": ["ESF-S-VERIFY-DEPS"],
         "NUGET-002": ["ESF-S-VERIFY-DEPS"],
@@ -643,6 +671,70 @@ STANDARD = Standard(
         "NUGET-008": ["ESF-S-VERIFY-DEPS"],
         "NUGET-009": ["ESF-S-VERIFY-DEPS"],
         "NUGET-010": ["ESF-D-SECRETS"],
+        # ── NuGet extended pack ──
+        "NUGET-011": ["ESF-S-VERIFY-DEPS"],
+        "NUGET-012": ["ESF-S-VERIFY-DEPS", "ESF-S-PROVENANCE"],
+        "NUGET-013": ["ESF-S-VERIFY-DEPS"],
+        "NUGET-014": ["ESF-D-SECRETS"],
+        "NUGET-015": ["ESF-S-VERIFY-DEPS"],
+        # ── Go modules ──
+        "GOMOD-001": ["ESF-S-VERIFY-DEPS"],
+        "GOMOD-002": ["ESF-S-VERIFY-DEPS"],
+        "GOMOD-003": ["ESF-S-VERIFY-DEPS"],
+        "GOMOD-004": ["ESF-S-VERIFY-DEPS"],
+        "GOMOD-005": ["ESF-S-VERIFY-DEPS"],
+        "GOMOD-006": ["ESF-S-VERIFY-DEPS"],
+        # ── Go modules extended pack ──
+        "GOMOD-007": ["ESF-S-VERIFY-DEPS"],
+        "GOMOD-008": ["ESF-S-VERIFY-DEPS"],
+        "GOMOD-009": ["ESF-S-VERIFY-DEPS"],
+        "GOMOD-010": ["ESF-S-VERIFY-DEPS"],
+        # ── Cargo ──
+        "CARGO-001": ["ESF-S-VERIFY-DEPS"],
+        "CARGO-002": ["ESF-S-VERIFY-DEPS"],
+        "CARGO-003": ["ESF-S-VERIFY-DEPS"],
+        "CARGO-004": ["ESF-S-VERIFY-DEPS"],
+        "CARGO-005": ["ESF-S-VERIFY-DEPS"],
+        "CARGO-006": ["ESF-S-VERIFY-DEPS"],
+        # ── Cargo extended pack ──
+        "CARGO-007": ["ESF-S-VERIFY-DEPS"],
+        "CARGO-008": ["ESF-S-VERIFY-DEPS"],
+        "CARGO-009": ["ESF-S-VERIFY-DEPS"],
+        "CARGO-010": ["ESF-S-VERIFY-DEPS"],
+        # ── Composer / PHP ──
+        "COMPOSER-001": ["ESF-S-VERIFY-DEPS"],
+        "COMPOSER-002": ["ESF-S-VERIFY-DEPS"],
+        "COMPOSER-003": ["ESF-S-TRUSTED-REG", "ESF-S-VERIFY-DEPS"],
+        "COMPOSER-004": ["ESF-D-SECRETS"],
+        "COMPOSER-005": ["ESF-S-VERIFY-DEPS"],
+        "COMPOSER-006": ["ESF-S-VERIFY-DEPS"],
+        "COMPOSER-007": ["ESF-S-VERIFY-DEPS"],
+        "COMPOSER-008": ["ESF-S-VERIFY-DEPS"],
+        "COMPOSER-009": ["ESF-D-SECRETS"],
+        "COMPOSER-010": ["ESF-S-TRUSTED-REG", "ESF-S-VERIFY-DEPS"],
+        # ── RubyGems / Bundler ──
+        "GEM-001": ["ESF-S-VERIFY-DEPS"],
+        "GEM-002": ["ESF-S-VERIFY-DEPS"],
+        "GEM-003": ["ESF-S-TRUSTED-REG", "ESF-S-VERIFY-DEPS"],
+        "GEM-004": ["ESF-D-SECRETS"],
+        "GEM-005": ["ESF-S-VERIFY-DEPS"],
+        "GEM-006": ["ESF-S-VERIFY-DEPS"],
+        "GEM-007": ["ESF-S-TRUSTED-REG"],
+        "GEM-008": ["ESF-S-VERIFY-DEPS"],
+        "GEM-009": ["ESF-D-SECRETS"],
+        "GEM-010": ["ESF-S-VERIFY-DEPS"],
+        # ── Pulumi ──
+        "PULUMI-001": ["ESF-D-SECRETS"],
+        "PULUMI-002": ["ESF-D-SECRETS"],
+        "PULUMI-003": ["ESF-D-SECRETS"],
+        "PULUMI-004": ["ESF-S-PROVENANCE"],
+        "PULUMI-005": ["ESF-C-LEAST-PRIV"],
+        "PULUMI-006": ["ESF-C-LEAST-PRIV"],
+        # ── Pulumi extended pack ──
+        "PULUMI-007": ["ESF-C-LEAST-PRIV"],
+        "PULUMI-008": ["ESF-C-LEAST-PRIV"],
+        "PULUMI-009": ["ESF-S-VERIFY-DEPS"],
+        "PULUMI-010": ["ESF-D-SECRETS"],
         # ── OCI image manifest gaps ──────────────────────────────
         # Provenance metadata + integrity → ESF-S-PROVENANCE +
         # ESF-D-SBOM. Foreign-layer URL → ESF-S-TRUSTED-REG. Schema

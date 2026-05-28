@@ -22,8 +22,8 @@ hide:
 # Catch supply-chain risks <span class="accent">before they ship.</span>
 
 <p class="pg-hero__lede">
-A read-only scanner for 27 providers, graded against 18 compliance frameworks. 
-111 of the 970+ checks also emit a one-shot patch you can apply with <code>--fix</code>.
+A read-only scanner for 32 providers, graded against 18 compliance frameworks. 
+111 of the 1060+ checks also emit a one-shot patch you can apply with <code>--fix</code>.
 </p>
 
 <div class="pg-hero__cta">
@@ -55,8 +55,8 @@ A read-only scanner for 27 providers, graded against 18 compliance frameworks.
 
 <section class="pg-stats" data-reveal>
 <div class="pg-stats__inner">
-  <div class="pg-stat"><div class="pg-stat__num" data-count-to="970">970+</div><div class="pg-stat__label">Checks</div></div>
-  <div class="pg-stat"><div class="pg-stat__num" data-count-to="27">27</div><div class="pg-stat__label">Providers</div></div>
+  <div class="pg-stat"><div class="pg-stat__num" data-count-to="1060">1060+</div><div class="pg-stat__label">Checks</div></div>
+  <div class="pg-stat"><div class="pg-stat__num" data-count-to="32">32</div><div class="pg-stat__label">Providers</div></div>
   <div class="pg-stat"><div class="pg-stat__num" data-count-to="18">18</div><div class="pg-stat__label">Compliance standards</div></div>
   <div class="pg-stat"><div class="pg-stat__num" data-count-to="111">111</div><div class="pg-stat__label">Autofixers</div></div>
 </div>
@@ -205,13 +205,17 @@ to force one. Counts reflect the current rule catalog.
   <a class="pg-provider" href="providers/drone/"><span class="pg-provider__name">Drone CI</span><span class="pg-provider__count">{{ providers.drone.checks }}</span></a>
   <a class="pg-provider" href="providers/tekton/"><span class="pg-provider__name">Tekton</span><span class="pg-provider__count">{{ providers.tekton.checks }}</span></a>
   <a class="pg-provider" href="providers/argo/"><span class="pg-provider__name">Argo Workflows</span><span class="pg-provider__count">{{ providers.argo.checks }}</span></a>
+  <a class="pg-provider" href="providers/gitea/"><span class="pg-provider__name">Gitea / Forgejo Actions</span><span class="pg-provider__count">{{ providers.gitea.checks }}</span></a>
 </div>
 
 <div class="pg-provider-group" data-stagger>
   <span class="pg-provider-group__label">Cloud & infrastructure as code</span>
   <a class="pg-provider" href="providers/aws/"><span class="pg-provider__name">AWS</span><span class="pg-provider__count">{{ providers.aws.checks }}</span></a>
+  <a class="pg-provider" href="providers/azure_cloud/"><span class="pg-provider__name">Azure Cloud</span><span class="pg-provider__count">{{ providers.azure_cloud.checks }}</span></a>
+  <a class="pg-provider" href="providers/gcp/"><span class="pg-provider__name">GCP</span><span class="pg-provider__count">{{ providers.gcp.checks }}</span></a>
   <a class="pg-provider" href="providers/terraform/"><span class="pg-provider__name">Terraform</span><span class="pg-provider__count">{{ providers.terraform.checks }}</span></a>
   <a class="pg-provider" href="providers/cloudformation/"><span class="pg-provider__name">CloudFormation</span><span class="pg-provider__count">{{ providers.cloudformation.checks }}</span></a>
+  <a class="pg-provider" href="providers/pulumi/"><span class="pg-provider__name">Pulumi</span><span class="pg-provider__count">{{ providers.pulumi.checks }}</span></a>
 </div>
 
 <div class="pg-provider-group" data-stagger>
@@ -236,6 +240,8 @@ to force one. Counts reflect the current rule catalog.
   <a class="pg-provider" href="providers/pypi/"><span class="pg-provider__name">PyPI</span><span class="pg-provider__count">{{ providers.pypi.checks }}</span></a>
   <a class="pg-provider" href="providers/maven/"><span class="pg-provider__name">Maven</span><span class="pg-provider__count">{{ providers.maven.checks }}</span></a>
   <a class="pg-provider" href="providers/nuget/"><span class="pg-provider__name">NuGet</span><span class="pg-provider__count">{{ providers.nuget.checks }}</span></a>
+  <a class="pg-provider" href="providers/gomod/"><span class="pg-provider__name">Go modules</span><span class="pg-provider__count">{{ providers.gomod.checks }}</span></a>
+  <a class="pg-provider" href="providers/cargo/"><span class="pg-provider__name">Cargo (Rust)</span><span class="pg-provider__count">{{ providers.cargo.checks }}</span></a>
 </div>
 </section>
 
@@ -260,7 +266,7 @@ to force one. Counts reflect the current rule catalog.
   <a class="pg-pipe" href="attack_chains/">
     <span class="pg-pipe__icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg></span>
     <span class="pg-pipe__label">Rule engine</span>
-    <span class="pg-pipe__desc">970+ checks with severity and fix</span>
+    <span class="pg-pipe__desc">1060+ checks with severity and fix</span>
   </a>
   <a class="pg-pipe" href="standards/">
     <span class="pg-pipe__icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7l9-4 9 4-9 4-9-4z"/><path d="M3 12l9 4 9-4"/><path d="M3 17l9 4 9-4"/></svg></span>

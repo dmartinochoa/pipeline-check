@@ -380,6 +380,11 @@ STANDARD = Standard(
         "DR-009":   ["Build.L3.Isolated"],                         # cache key tainted by attacker input
         "DR-010":   ["Build.L3.NonFalsifiable"],                   # unpinned package install
         "DR-011":   ["Build.L3.Isolated"],                         # node map interpolates untrusted
+        # ── Drone extended pack ──
+        "DR-012":   ["Build.L3.NonFalsifiable"],                   # service image not pinned
+        "DR-014":   ["Build.L3.NonFalsifiable"],                   # pipe-to-shell
+        "DR-015":   ["Build.L3.NonFalsifiable"],                   # clone recursive
+        "DR-016":   ["Build.L3.Isolated"],                         # image field interpolation
         # ── Cross-cutting dataflow / taint engine ─────────────────
         # The TAINT-NNN family flags cross-step / cross-job flows
         # where untrusted data reaches a privileged sink. That's
@@ -424,6 +429,12 @@ STANDARD = Standard(
         "MVN-007":  ["Build.L3.NonFalsifiable"],                   # settings.xml wildcard mirror
         "MVN-008":  ["Build.L3.NonFalsifiable"],                   # cooldown gate (--resolve-remote)
         "MVN-009":  ["Build.L3.NonFalsifiable"],                   # OSV advisory (--resolve-remote)
+        # ── Maven extended pack ──
+        "MVN-010":  ["Build.L3.NonFalsifiable"],                   # plaintext server password
+        "MVN-011":  ["Build.L3.NonFalsifiable"],                   # repo URL credentials
+        "MVN-012":  ["Build.L3.NonFalsifiable"],                   # build plugin floating
+        "MVN-013":  ["Build.L3.NonFalsifiable"],                   # build extension floating
+        "MVN-014":  ["Build.L3.NonFalsifiable"],                   # wrapper sha256 missing
         "NPM-008":  ["Build.L3.NonFalsifiable"],                   # cooldown gate (--resolve-remote)
         "NPM-009":  ["Build.L3.NonFalsifiable"],                   # new-transitive-dep diff gate
         "NPM-010":  ["Build.L3.NonFalsifiable"],                   # OSV advisory (--resolve-remote)
@@ -440,6 +451,22 @@ STANDARD = Standard(
         "NUGET-008": ["Build.L3.NonFalsifiable"],                  # cooldown gate (--resolve-remote)
         "NUGET-009": ["Build.L3.NonFalsifiable"],                  # OSV advisory (--resolve-remote)
         "NUGET-010": ["Build.L3.NonFalsifiable"],                  # NuGet.config cleartext feed credential
+        # ── NuGet extended pack ──
+        "NUGET-011": ["Build.L3.NonFalsifiable"],
+        "NUGET-012": ["Build.L3.NonFalsifiable"],
+        "NUGET-013": ["Build.L3.NonFalsifiable"],
+        "NUGET-014": ["Build.L3.NonFalsifiable"],
+        "NUGET-015": ["Build.L3.NonFalsifiable"],
+        # ── Composer / PHP ──
+        "COMPOSER-001": ["Build.L3.NonFalsifiable"], # missing composer.lock
+        "COMPOSER-002": ["Build.L3.NonFalsifiable"], # floating require constraint
+        "COMPOSER-007": ["Build.L3.NonFalsifiable"], # compromised package version
+        "COMPOSER-008": ["Build.L3.NonFalsifiable"], # allow-plugins wildcard
+        # ── RubyGems / Bundler ──
+        "GEM-001": ["Build.L3.NonFalsifiable"],      # missing Gemfile.lock
+        "GEM-002": ["Build.L3.NonFalsifiable"],      # floating gem constraint
+        "GEM-005": ["Build.L3.NonFalsifiable"],      # git/github source mutable ref
+        "GEM-006": ["Build.L3.NonFalsifiable"],      # compromised gem version
         # ── Helm chart-supply-chain ───────────────────────────────
         # The chart's own packaging metadata sits at the build-output
         # boundary. Chart.lock and Chart.yaml are the chart's
@@ -459,6 +486,12 @@ STANDARD = Standard(
         "HELM-009": ["Build.L3.Isolated",
                      "Build.L3.NonFalsifiable"],                   # non-HTTPS home / sources URL
         "HELM-010": ["Build.L1.Provenance"],                       # appVersion (provenance metadata)
+        # ── Helm extended pack ──
+        "HELM-011": ["Build.L1.Provenance"],                       # dependency URL embedded creds
+        "HELM-012": ["Build.L1.Provenance"],                       # deprecated without successor
+        "HELM-013": ["Build.L1.Provenance"],                       # invalid chart type
+        "HELM-014": ["Build.L1.Provenance",
+                     "Build.L3.NonFalsifiable"],                   # known-compromised dep
         # ── Dockerfile (image build process is the SLSA build) ────
         # Pinning rules tie to L3.NonFalsifiable (digest pinning is
         # the canonical "tenant can't substitute" mitigation).

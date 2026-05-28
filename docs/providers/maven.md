@@ -48,7 +48,7 @@ real-world POMs and out of scope for static analysis.
 
 ## What it covers
 
-9 checks · 0 have an autofix patch (``--fix``).
+14 checks · 0 have an autofix patch (``--fix``).
 
 | Check | Title | Severity | Fix |
 |-------|-------|----------|-----|
@@ -61,6 +61,11 @@ real-world POMs and out of scope for static analysis.
 | [MVN-007](#mvn-007) | settings.xml mirror routes external traffic through one repo | <span class="pg-sev pg-sev--medium">MEDIUM</span> |  |
 | [MVN-008](#mvn-008) | Direct dependency was published within the cooldown window | <span class="pg-sev pg-sev--high">HIGH</span> |  |
 | [MVN-009](#mvn-009) | Maven artifact has a known OSV advisory | <span class="pg-sev pg-sev--critical">CRITICAL</span> |  |
+| [MVN-010](#mvn-010) | settings.xml <server> carries a plaintext password | <span class="pg-sev pg-sev--high">HIGH</span> |  |
+| [MVN-011](#mvn-011) | Maven repository URL embeds plaintext credentials | <span class="pg-sev pg-sev--high">HIGH</span> |  |
+| [MVN-012](#mvn-012) | pom.xml build plugin uses a floating version | <span class="pg-sev pg-sev--high">HIGH</span> |  |
+| [MVN-013](#mvn-013) | pom.xml build extension uses a floating version | <span class="pg-sev pg-sev--high">HIGH</span> |  |
+| [MVN-014](#mvn-014) | Maven Wrapper distributionUrl lacks distributionSha256Sum | <span class="pg-sev pg-sev--medium">MEDIUM</span> |  |
 
 ---
 
@@ -292,6 +297,212 @@ Network-dependent: needs ``--resolve-remote`` to query the OSV advisory database
 **Recommended action**
 
 Upgrade to a patched version or remove the affected artifact. Consult the advisory URL for remediation guidance.
+
+</div>
+
+</div>
+
+<div class="pg-rule pg-rule--high" markdown>
+
+## MVN-010: settings.xml <server> carries a plaintext password { #mvn-010 }
+
+<div class="pg-rule__tags">
+<span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-6</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-10</span> <span class="pg-tag pg-tag--esf">ESF-D-SECRETS</span> <span class="pg-tag pg-tag--cwe">CWE-798</span> <span class="pg-tag pg-tag--cwe">CWE-522</span>
+</div>
+
+Reads ``<settings><servers><server>`` entries and fires when ``<password>`` carries a plaintext value (anything that's not the Maven-encrypted ``{...}`` form, an empty string, or an ``${...}`` property expansion). The Maven-encrypted form is a base64-encoded opaque token wrapped in literal curly braces; the password decrypts at build time using the master in ``settings-security.xml``.
+
+Property-expansion forms (``${env.MY_TOKEN}``, ``${deploy.token}``) pass the rule because the actual value lives outside the file. CI-injected forms via environment variables are the safest pattern.
+
+**Known false-positive modes**
+
+- Sandbox / playground settings.xml files used only for local testing against a public mirror may legitimately carry placeholder values that look like plaintext passwords. Suppress per file with a rationale; production settings.xml should never carry plaintext.
+
+**Seen in the wild**
+
+- Long-running pattern of internal Nexus / Artifactory credentials leaking through settings.xml files committed to public mirrors. Maven's own documentation has highlighted password encryption since Maven 2.1 (2008); the plaintext shape is a posture / migration gap that tooling like this one's value is to surface at audit time.
+
+<div class="pg-rule__rec" markdown>
+
+**Recommended action**
+
+Replace every plaintext ``<password>`` inside ``<settings><servers><server>`` with a Maven-encrypted value. The remediation flow is:
+
+1. Generate a master password: ``mvn --encrypt-master-password <master>``. Store the result in ``~/.m2/settings-security.xml`` under ``<settingsSecurity><master>``.
+2. Encrypt the per-server password: ``mvn --encrypt-password <real-password>``. The output is a ``{...}``-wrapped opaque token.
+3. Paste the token into the ``<password>`` element of the ``<server>`` block. Maven decrypts it at build time using the master from ``settings-security.xml``.
+
+For CI environments, prefer injecting the password via environment variable or CI secret manager: Maven 3.6+ expands ``${env.MY_DEPLOY_TOKEN}`` inside settings.xml at read time, so the value never lives on disk. The plaintext form in settings.xml leaves the credential committed to any repository the file is checked into and persists in git history indefinitely.
+
+</div>
+
+</div>
+
+<div class="pg-rule pg-rule--high" markdown>
+
+## MVN-011: Maven repository URL embeds plaintext credentials { #mvn-011 }
+
+<div class="pg-rule__tags">
+<span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-6</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-10</span> <span class="pg-tag pg-tag--esf">ESF-D-SECRETS</span> <span class="pg-tag pg-tag--cwe">CWE-798</span> <span class="pg-tag pg-tag--cwe">CWE-522</span>
+</div>
+
+Walks every ``<repository><url>``, ``<pluginRepository><url>``, ``<distributionManagement><repository><url>``, and settings.xml ``<mirror><url>`` for an embedded ``user:pass@`` authority. Empty-password forms (``https://user:@host``) and ``${var}`` placeholders are skipped, the former is an operator-flagged 'no credential intended' marker and the latter resolves at build time from the environment.
+
+Distinct from MVN-003 (HTTP scheme — transport risk) and MVN-010 (settings.xml ``<server><password>`` — different credential location). All three failure modes can coexist.
+
+**Known false-positive modes**
+
+- Some internal templating tools emit a placeholder credential form (``https://__TOKEN__:@host``) and substitute the real value at build time. The rule's placeholder skip-list only recognizes ``${...}``; suppress per file when the template marker is stable.
+
+**Seen in the wild**
+
+- Common pattern across enterprise Maven projects: a contributor pastes a deploy-bot URL with embedded credentials into pom.xml during a quick test, intends to replace it before commit, the replacement never happens. The repo's git history retains the credential after the fact even if the next commit cleans the file.
+
+<div class="pg-rule__rec" markdown>
+
+**Recommended action**
+
+Strip the credential out of every repository / mirror URL and move it into a ``<server>`` entry in ``~/.m2/settings.xml``. Maven matches the server entry to the repository by ``<id>``:
+
+    <!-- pom.xml -->
+    <repositories>
+      <repository>
+        <id>corp-nexus</id>
+        <url>https://nexus.corp.example/repo/</url>
+      </repository>
+    </repositories>
+
+    <!-- ~/.m2/settings.xml -->
+    <servers>
+      <server>
+        <id>corp-nexus</id>
+        <username>deploy-bot</username>
+        <password>{encrypted-form}</password>
+      </server>
+    </servers>
+
+The settings.xml entry lives outside the project repo and uses the Maven-encrypted password form (see MVN-010). URL-embedded credentials in pom.xml or settings.xml mirror entries land directly in git history; rotation requires a history scrub before the leaked value stops being useful.
+
+</div>
+
+</div>
+
+<div class="pg-rule pg-rule--high" markdown>
+
+## MVN-012: pom.xml build plugin uses a floating version { #mvn-012 }
+
+<div class="pg-rule__tags">
+<span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-3</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-7</span> <span class="pg-tag pg-tag--esf">ESF-S-VERIFY-DEPS</span> <span class="pg-tag pg-tag--cwe">CWE-1357</span> <span class="pg-tag pg-tag--cwe">CWE-829</span>
+</div>
+
+Re-parses ``pom.xml`` and walks every ``<build><plugins><plugin>``, ``<build><pluginManagement><plugins><plugin>``, and ``<profile><build><plugins><plugin>`` entry. Fires when the ``<version>`` element is missing, uses a Maven range (``[1.0,2.0)`` / ``[1.0,)``), is a legacy floating literal (``LATEST`` / ``RELEASE``), or uses a property whose resolved value is itself floating (``${plugin.version}`` resolved via ``<properties>``).
+
+Distinct from MVN-001 (regular ``<dependencies>`` floating versions): the consumer-side impact of a compromised plugin is significantly broader because plugins execute at build time, not just at app runtime.
+
+**Known false-positive modes**
+
+- Multi-module reactor builds sometimes use ``${project.version}`` (the reactor's own version) on a plugin that's distributed alongside the reactor — this is a legitimate exact-pin even though the literal looks property-shaped. The rule resolves property references against ``<properties>`` before evaluating so this case passes when the property is concrete. A property that isn't defined in the same POM stays unresolved and the rule conservatively skips it.
+
+**Seen in the wild**
+
+- Maven Central plugin compromises have a multiplier effect: every downstream build using a floating range picks up the malicious patch automatically. Notable historical examples include the ``codecov`` patch-version compromise (April 2021) and pattern reports against widely-used build plugins where the maintainer account is briefly compromised.
+
+<div class="pg-rule__rec" markdown>
+
+**Recommended action**
+
+Pin every ``<build><plugins><plugin>`` (and ``<pluginManagement>``) entry to an exact version. Maven plugins run code during the build lifecycle (compile, package, install, deploy phases), so a compromised patch release of a popular plugin executes in the build environment before any runtime sandbox is in place — and inherits whatever privileges the build process has (CI runner write access, deploy keys, AWS credentials).
+
+Even more critical than dependency pinning (MVN-001): dependencies usually only run code in production via the application that uses them; plugins run code at build time on every developer's machine and every CI runner. The xz-utils style patch-release smuggle pattern is directly applicable to any plugin without an exact pin.
+
+Example:
+
+    <plugin>
+      <groupId>org.apache.maven.plugins</groupId>
+      <artifactId>maven-shade-plugin</artifactId>
+      <version>3.5.1</version>
+    </plugin>
+
+</div>
+
+</div>
+
+<div class="pg-rule pg-rule--high" markdown>
+
+## MVN-013: pom.xml build extension uses a floating version { #mvn-013 }
+
+<div class="pg-rule__tags">
+<span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-3</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-7</span> <span class="pg-tag pg-tag--esf">ESF-S-VERIFY-DEPS</span> <span class="pg-tag pg-tag--cwe">CWE-1357</span> <span class="pg-tag pg-tag--cwe">CWE-829</span>
+</div>
+
+Re-parses ``pom.xml`` and walks every ``<build><extensions><extension>`` (and the equivalent inside ``<profile><build>``). Fires on the same floating shapes MVN-012 catches for plugins: missing ``<version>``, Maven range (``[1.0,2.0)`` / ``[1.0,)``), legacy floating literals (``LATEST`` / ``RELEASE``).
+
+Distinct from MVN-012 (plugins) because extensions load earlier in the Maven lifecycle and have different remediation guidance (extensions are usually wagons / lifecycle providers, not build-step actors).
+
+**Known false-positive modes**
+
+- Library projects that consume their own snapshot versions in a multi-module reactor may legitimately use ``${project.version}`` on an extension. The rule resolves property references against ``<properties>`` before evaluating, so the case passes when the property is concrete.
+
+**Seen in the wild**
+
+- Maven Central extension compromises follow the same patch-release-smuggle pattern as plugins. Because extensions load before plugins, a malicious extension can also tamper with the plugin loading process, amplifying the blast radius beyond what the extension itself does.
+
+<div class="pg-rule__rec" markdown>
+
+**Recommended action**
+
+Pin every ``<build><extensions><extension>`` entry to an exact version. Build extensions load during Maven's early-init phase — *before* any plugin runs — and can register custom lifecycle phases, deployment protocols, or POM resolvers. A compromised extension patch release executes in the build environment with the same privileges any other build code would have, and runs on every developer's machine and every CI runner.
+
+Example:
+
+    <build>
+      <extensions>
+        <extension>
+          <groupId>org.apache.maven.wagon</groupId>
+          <artifactId>wagon-ssh</artifactId>
+          <version>3.5.3</version>
+        </extension>
+      </extensions>
+    </build>
+
+Extensions are less commonly used than plugins but carry the same patch-release-smuggle risk; the limited surface (most projects use 0 or 1 extensions) makes pinning them a trivial maintenance cost.
+
+</div>
+
+</div>
+
+<div class="pg-rule pg-rule--medium" markdown>
+
+## MVN-014: Maven Wrapper distributionUrl lacks distributionSha256Sum { #mvn-014 }
+
+<div class="pg-rule__tags">
+<span class="pg-sev pg-sev--medium">MEDIUM</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-3</span> <span class="pg-tag pg-tag--esf">ESF-S-VERIFY-DEPS</span> <span class="pg-tag pg-tag--cwe">CWE-494</span> <span class="pg-tag pg-tag--cwe">CWE-345</span>
+</div>
+
+Reads ``.mvn/wrapper/maven-wrapper.properties`` (Java properties format: ``key=value`` lines) in the same directory as each ``pom.xml`` and fires when ``distributionUrl`` is set but ``distributionSha256Sum`` is missing. Projects that don't ship the Maven Wrapper (no properties file) pass silently — the wrapper is optional and absent files aren't a posture risk.
+
+The Maven Wrapper, like Gradle's, downloads its own build tool on first invocation. Hash verification at the wrapper layer closes the supply-chain gap that would otherwise require trusting the URL + TLS chain alone.
+
+**Known false-positive modes**
+
+- Wrapper configurations that use a non-HTTPS internal mirror sometimes deliberately omit the hash because the mirror's content can change. The right fix is to freeze the mirror's distribution to a specific Maven release and pin its hash, but suppression with a rationale is acceptable in the interim.
+
+**Seen in the wild**
+
+- Maven Wrapper compromise pattern: an internal mirror serves a tampered Maven distribution; consumers who use the wrapper without ``distributionSha256Sum`` accept the tampered bytes and run them as their build tool. The hash entry catches this at download time before the malicious Maven ever extracts.
+
+<div class="pg-rule__rec" markdown>
+
+**Recommended action**
+
+Add a ``distributionSha256Sum`` entry to ``.mvn/wrapper/maven-wrapper.properties`` matching the SHA-256 of the Maven distribution at ``distributionUrl``:
+
+    distributionUrl=https://repo.maven.apache.org/maven2/org/apache/maven/apache-maven/3.9.6/apache-maven-3.9.6-bin.zip
+    distributionSha256Sum=<64-char-sha256>
+
+The hash is published at the distribution URL plus ``.sha256`` (or available from Apache's release manifest). The wrapper verifies the downloaded archive's hash before extracting; without the entry, the wrapper trusts whatever bytes the URL serves at download time — fine when the URL is the canonical Apache repo and the connection is HTTPS, but unrecoverable when an internal mirror is compromised or a network MITM intercepts the download.
+
+Modern ``mvn wrapper:wrapper`` invocations support a ``-Dtype=script`` mode that adds the hash automatically.
 
 </div>
 

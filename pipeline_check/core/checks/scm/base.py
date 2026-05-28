@@ -624,6 +624,39 @@ def github_only_skip(
     )
 
 
+def gitlab_only_skip(snapshot: SCMRepoSnapshot) -> str | None:
+    """Return a skip note when the snapshot is not from GitLab.
+
+    Mirror of :func:`github_only_skip` for the GitLab-specific
+    rule pack (SCM-050..053). Rules read GitLab-shaped payloads
+    stashed under ``repo_meta["_gitlab_project"]`` /
+    ``repo_meta["_gitlab_push_rule"]`` by the GitLab hydrator.
+    """
+    if snapshot.platform == "gitlab":
+        return None
+    return (
+        f"Rule is GitLab-specific (reads GitLab push-rule / "
+        f"merge-request settings); skipped on the "
+        f"{snapshot.platform} snapshot."
+    )
+
+
+def bitbucket_only_skip(snapshot: SCMRepoSnapshot) -> str | None:
+    """Return a skip note when the snapshot is not from Bitbucket.
+
+    Mirror of :func:`github_only_skip` for the Bitbucket-specific
+    rule pack (SCM-054..055). Rules read Bitbucket-shaped payloads
+    stashed under ``repo_meta["_bitbucket_repo"]`` by the
+    Bitbucket Cloud hydrator.
+    """
+    if snapshot.platform == "bitbucket":
+        return None
+    return (
+        f"Rule is Bitbucket-specific (reads Bitbucket Cloud repo "
+        f"settings); skipped on the {snapshot.platform} snapshot."
+    )
+
+
 def security_feature_state(
     snapshot: SCMRepoSnapshot, feature: str,
 ) -> str | None:

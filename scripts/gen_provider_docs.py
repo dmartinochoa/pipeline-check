@@ -1240,6 +1240,192 @@ left unresolved; deeply-recursive property graphs are rare in
 real-world POMs and out of scope for static analysis.
 """,
     ),
+    "pulumi": (
+        "Pulumi",
+        "pipeline_check.core.checks.pulumi.rules",
+        _REPO_ROOT / "docs" / "providers" / "pulumi.md",
+        """\
+# Pulumi provider
+
+Static text-only analysis of a Pulumi project on disk. Three
+document families are loaded:
+
+* `Pulumi.yaml` — project manifest (`name`, `runtime`, `backend.url`).
+* `Pulumi.<stack>.yaml` — per-stack config (`config:`, `secretsprovider`,
+  `encryptionsalt`).
+* Source files (`__main__.py`, `index.ts`, `main.go`, `Program.cs`, …)
+  in the runtime language. Audited via regex-based primitive scans
+  (hardcoded credentials, wildcard IAM policies, `StackReference`
+  shapes) rather than language-aware AST parsing.
+
+No Pulumi CLI required, no engine execution. Mirrors the Terraform
+HCL / CloudFormation / Helm chart-supply-chain providers.
+
+## Producer workflow
+
+```bash
+# --pulumi-path auto-detects ./Pulumi.yaml when present.
+pipeline_check --pipeline pulumi
+pipeline_check --pipeline pulumi --pulumi-path ./Pulumi.yaml
+pipeline_check --pipeline pulumi --pulumi-path ./infra/
+```
+
+## Supported file families
+
+| File | Parse shape |
+|------|-------------|
+| `Pulumi.yaml` | Project manifest (`name`, `runtime`, `backend.url`) |
+| `Pulumi.<stack>.yaml` | Per-stack config + `secretsprovider` + `encryptionsalt` |
+| `*.py` / `*.ts` / `*.js` / `*.go` / `*.cs` | Source-file regex scans |
+
+`node_modules/`, `.venv/`, `venv/`, `.pulumi/`, `bin/`, `obj/`,
+`target/`, `dist/`, `build/`, `__pycache__/`, and `.git/` are skipped.
+""",
+    ),
+    "gomod": (
+        "Go modules",
+        "pipeline_check.core.checks.gomod.rules",
+        _REPO_ROOT / "docs" / "providers" / "gomod.md",
+        """\
+# Go modules provider
+
+Parses `go.mod` (Go's module manifest) and probes for the sibling
+`go.sum` (integrity manifest) on disk. Text-only static analysis,
+no `go mod tidy`, no module-proxy access, no toolchain required.
+Mirrors the npm / PyPI / Maven / NuGet pack shape.
+
+## Producer workflow
+
+```bash
+# --gomod-path auto-detects ./go.mod when present.
+pipeline_check --pipeline gomod
+pipeline_check --pipeline gomod --gomod-path ./go.mod
+pipeline_check --pipeline gomod --gomod-path ./services/api/
+```
+
+## Supported file formats
+
+| File | Parse shape |
+|------|-------------|
+| `go.mod` | `module` / `go` / `toolchain` / `require` / `replace` / `exclude` directives |
+| `go.sum` | Presence probe only (the load-bearing signal for `GOMOD-001`) |
+
+`vendor/` and `.git/` directories are skipped.
+""",
+    ),
+    "cargo": (
+        "Cargo",
+        "pipeline_check.core.checks.cargo.rules",
+        _REPO_ROOT / "docs" / "providers" / "cargo.md",
+        """\
+# Cargo (Rust) provider
+
+Parses `Cargo.toml` (Cargo manifest) and probes for the sibling
+`Cargo.lock` on disk. Text-only static analysis via the TOML
+stdlib parser, no `cargo update`, no registry access, no
+toolchain required. Mirrors the npm / PyPI / Maven / NuGet / Go
+modules pack shape.
+
+## Producer workflow
+
+```bash
+# --cargo-path auto-detects ./Cargo.toml when present.
+pipeline_check --pipeline cargo
+pipeline_check --pipeline cargo --cargo-path ./Cargo.toml
+pipeline_check --pipeline cargo --cargo-path ./crates/my-crate/
+```
+
+## Dependency tables audited
+
+| Section | Notes |
+|---------|-------|
+| `[dependencies]` | Runtime dependencies |
+| `[dev-dependencies]` | Test / bench dependencies |
+| `[build-dependencies]` | Build-script dependencies |
+| `[target.<target>.dependencies]` | Target-specific entries |
+| `[workspace.dependencies]` | Workspace-root inheritance |
+
+`target/` and `.git/` directories are skipped.
+""",
+    ),
+    "composer": (
+        "Composer",
+        "pipeline_check.core.checks.composer.rules",
+        _REPO_ROOT / "docs" / "providers" / "composer.md",
+        """\
+# Composer (PHP) provider
+
+Parses `composer.json` (Composer manifest) and probes for the
+sibling `composer.lock` on disk. Text-only static analysis via
+the JSON stdlib parser, no `composer install`, no Packagist
+access, no PHP runtime required. Mirrors the npm / PyPI / Maven
+/ NuGet / Go modules / Cargo pack shape.
+
+## Producer workflow
+
+```bash
+# --composer-path auto-detects ./composer.json when present.
+pipeline_check --pipeline composer
+pipeline_check --pipeline composer --composer-path ./composer.json
+pipeline_check --pipeline composer --composer-path ./packages/api/
+```
+
+## Manifest sections audited
+
+| Section | Notes |
+|---------|-------|
+| `require` | Runtime dependencies |
+| `require-dev` | Test / build-time dependencies |
+| `repositories` | Extra package sources (Composer, VCS, etc.) |
+| `scripts` | Install / update lifecycle hooks |
+| `config.allow-plugins` | Plugin permission map |
+| `minimum-stability` | Pre-release floor |
+
+`vendor/`, `.git/`, and `node_modules/` directories are skipped.
+""",
+    ),
+    "rubygems": (
+        "RubyGems",
+        "pipeline_check.core.checks.rubygems.rules",
+        _REPO_ROOT / "docs" / "providers" / "rubygems.md",
+        """\
+# RubyGems (Bundler) provider
+
+Parses `Gemfile` (Bundler manifest, Ruby DSL) and probes for the
+sibling `Gemfile.lock` on disk. Text-only static analysis via a
+regex extractor over the canonical Bundler idioms, no
+`bundle install`, no rubygems.org access, no Ruby runtime
+required. Mirrors the npm / PyPI / Maven / NuGet / Go modules /
+Cargo / Composer pack shape.
+
+## Producer workflow
+
+```bash
+# --rubygems-path auto-detects ./Gemfile when present.
+pipeline_check --pipeline rubygems
+pipeline_check --pipeline rubygems --rubygems-path ./Gemfile
+pipeline_check --pipeline rubygems --rubygems-path ./services/api/
+```
+
+## Manifest entries audited
+
+| Entry | Notes |
+|-------|-------|
+| `source "..."` | Top-level and scoped `source "..." do ... end` |
+| `gem "name", "..."` | Version constraints, option-hash form |
+| `gem "x", git: ..., ref: ...` | Git source pin / mutable detection |
+| `gem "x", github: "owner/repo"` | GitHub shorthand source |
+| `gem "x", path: "..."` | Local path source |
+| `group :dev do ... end` | Group scoping for dev/test entries |
+
+`.git/`, `vendor/`, and `node_modules/` directories are skipped.
+
+The parser is regex-driven rather than a true Ruby parser, so
+genuinely dynamic Gemfiles (`Dir.glob` over `gem` calls, `eval`
+of a generated string) are treated as opaque - the rule pack
+reports what it can extract and otherwise passes through.
+""",
+    ),
     "nuget": (
         "NuGet",
         "pipeline_check.core.checks.nuget.rules",
@@ -2010,6 +2196,33 @@ _FOOTER_CONFIG: dict[str, dict[str, str]] = {
         "prefix": "SCM", "prefix_lc": "scm", "pkg": "scm",
         "signature": "check(snapshot: SCMRepoSnapshot) -> Finding",
         "arg_kind": "``SCMRepoSnapshot``",
+    },
+    "gomod": {
+        "prefix": "GOMOD", "prefix_lc": "gomod", "pkg": "gomod",
+        "signature": "check(pom: GoModFile) -> Finding",
+        "arg_kind": "``GoModFile``",
+    },
+    "cargo": {
+        "prefix": "CARGO", "prefix_lc": "cargo", "pkg": "cargo",
+        "signature": "check(pom: CargoFile) -> Finding",
+        "arg_kind": "``CargoFile``",
+    },
+    "composer": {
+        "prefix": "COMPOSER", "prefix_lc": "composer",
+        "pkg": "composer",
+        "signature": "check(pom: ComposerFile) -> Finding",
+        "arg_kind": "``ComposerFile``",
+    },
+    "rubygems": {
+        "prefix": "GEM", "prefix_lc": "gem",
+        "pkg": "rubygems",
+        "signature": "check(pom: GemFile) -> Finding",
+        "arg_kind": "``GemFile``",
+    },
+    "pulumi": {
+        "prefix": "PULUMI", "prefix_lc": "pulumi", "pkg": "pulumi",
+        "signature": "check(ctx: PulumiContext) -> Finding",
+        "arg_kind": "``PulumiContext``",
     },
 }
 

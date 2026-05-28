@@ -425,6 +425,12 @@ STANDARD = Standard(
         "DR-009":   ["PO.5.1", "PW.9.1"],              # cache key tainted
         "DR-010":   ["PW.4.1", "PW.4.4"],              # unpinned package install
         "DR-011":   ["PW.6.1", "PW.9.1"],              # node map interpolates untrusted
+        # ── Drone extended pack ──
+        "DR-012":   ["PW.4.1", "PW.4.4"],              # service image not pinned
+        "DR-013":   ["PO.5.1"],                        # no trigger event filter
+        "DR-014":   ["PW.4.4"],                        # pipe-to-shell
+        "DR-015":   ["PW.4.4"],                        # clone recursive
+        "DR-016":   ["PW.4.4", "PW.6.1"],              # image field interpolation
         # ── Tekton ──────────────────────────────────────────────
         "TKN-001":  ["PW.4.1", "PW.4.4"],              # step image not digest-pinned
         "TKN-002":  ["PO.5.1", "PW.9.1"],              # step privileged / root
@@ -497,6 +503,11 @@ STANDARD = Standard(
         "HELM-008": ["PW.4.1"],                        # stale Chart.lock
         "HELM-009": ["PW.4.4"],                        # non-HTTPS home/sources
         "HELM-010": ["PO.3.3", "PS.3.2"],              # missing appVersion
+        # ── Helm extended pack ──
+        "HELM-011": ["PS.1.1"],                        # dependency URL embedded creds
+        "HELM-012": ["PW.4.4"],                        # deprecated without successor
+        "HELM-013": ["PW.4.4"],                        # invalid chart type
+        "HELM-014": ["PW.4.4", "RV.1.1"],              # known-compromised dependency
         # ── Cloud Build (GCB) ────────────────────────────────────
         "GCB-001": ["PW.4.1", "PW.4.4"],               # step image not pinned
         "GCB-002": ["PS.1.1"],                         # plaintext env secret
@@ -553,11 +564,23 @@ STANDARD = Standard(
         "MVN-007":  ["PW.4.1", "PW.4.4"],              # settings.xml wildcard mirror
         "MVN-008":  ["PW.4.1", "PW.4.4", "RV.1.1"],    # cooldown gate (--resolve-remote)
         "MVN-009":  ["PW.4.1", "PW.4.4", "RV.1.1"],    # OSV advisory (--resolve-remote)
+        # ── Maven extended pack ──
+        "MVN-010":  ["PS.1.1"],                        # plaintext server password
+        "MVN-011":  ["PS.1.1"],                        # repo URL credentials
+        "MVN-012":  ["PW.4.4"],                        # build plugin floating
+        "MVN-013":  ["PW.4.4"],                        # build extension floating
+        "MVN-014":  ["PS.1.1", "PW.4.4"],              # wrapper sha256 missing
         "NPM-008":  ["PW.4.1", "PW.4.4", "RV.1.1"],    # cooldown gate (--resolve-remote)
         "NPM-009":  ["PW.4.1", "PW.4.4"],              # new-transitive-dep diff gate
         "NPM-010":  ["PW.4.1", "PW.4.4", "RV.1.1"],    # OSV advisory (--resolve-remote)
         "PYPI-008": ["PW.4.1", "PW.4.4", "RV.1.1"],    # cooldown gate (--resolve-remote)
         "PYPI-009": ["PW.4.1", "PW.4.4", "RV.1.1"],    # OSV advisory (--resolve-remote)
+        # ── PyPI extended pack (PYPI-010..014) ──
+        "PYPI-010": ["PS.1.1"],                        # index URL with embedded credentials
+        "PYPI-011": ["PW.4.4"],                        # --trusted-host disables TLS
+        "PYPI-012": ["PW.4.4"],                        # build-system requires floating
+        "PYPI-013": ["PW.4.4"],                        # pyproject dynamic dependencies
+        "PYPI-014": ["PW.4.4"],                        # custom source HTTP
         # ── nuget (dep supply-chain) ─────────────────────────────
         "NUGET-001": ["PW.4.1", "PW.4.4"],             # floating NuGet version range
         "NUGET-002": ["PW.4.1", "PW.4.4"],             # wildcard prerelease version
@@ -569,6 +592,70 @@ STANDARD = Standard(
         "NUGET-008": ["PW.4.1", "PW.4.4", "RV.1.1"],   # cooldown gate (--resolve-remote)
         "NUGET-009": ["PW.4.1", "PW.4.4", "RV.1.1"],   # OSV advisory (--resolve-remote)
         "NUGET-010": ["PS.1.1"],                       # NuGet.config cleartext feed credential
+        # ── NuGet extended pack ──
+        "NUGET-011": ["PW.4.4"],                       # source mapping wildcard
+        "NUGET-012": ["PW.4.4", "PS.3.2"],             # signature validation off
+        "NUGET-013": ["PW.4.4"],                       # dotnet-tools unpinned
+        "NUGET-014": ["PS.1.1"],                       # source URL credentials
+        "NUGET-015": ["PO.5.1", "PW.4.4"],             # VersionOverride breaks CPM
+        # ── Go modules (GOMOD-001..006) ──
+        "GOMOD-001": ["PS.1.1", "PW.4.4"],             # go.sum integrity manifest missing
+        "GOMOD-002": ["PO.5.1", "PW.4.4"],             # replace directive to local path
+        "GOMOD-003": ["PO.5.1", "PW.4.4"],             # replace directive to different module
+        "GOMOD-004": ["PW.4.4"],                       # +incompatible direct require
+        "GOMOD-005": ["PO.5.1"],                       # missing go toolchain directive
+        "GOMOD-006": ["PW.4.4", "RV.1.1"],             # known-compromised module version
+        # ── Go modules extended pack ──
+        "GOMOD-007": ["PS.1.1", "PW.4.4"],             # vendor/modules.txt stale
+        "GOMOD-008": ["PO.5.1", "PW.4.4"],             # replace without version pin
+        "GOMOD-009": ["PW.4.4"],                       # pre-release direct require
+        "GOMOD-010": ["PO.5.1"],                       # stale exclude directive
+        # ── Cargo / Rust (CARGO-001..006) ──
+        "CARGO-001": ["PW.4.4"],                       # floating Cargo.toml version spec
+        "CARGO-002": ["PO.5.1", "PW.4.4"],             # git dep with mutable ref (no rev)
+        "CARGO-003": ["PS.1.1", "PW.4.4"],             # missing Cargo.lock
+        "CARGO-004": ["PO.5.1", "PW.4.4"],             # local-path Cargo dependency
+        "CARGO-005": ["PO.5.1", "PW.4.4"],             # alternate-registry Cargo dependency
+        "CARGO-006": ["PW.4.4", "RV.1.1"],             # known-compromised crate version
+        # ── Cargo extended pack ──
+        "CARGO-007": ["PW.4.4", "RV.1.1"],             # build-deps floating
+        "CARGO-008": ["PO.5.1", "PW.4.4"],             # patch.crates-io substitution
+        "CARGO-009": ["PW.4.4"],                       # workspace deps floating
+        "CARGO-010": ["PO.5.1"],                       # missing rust-version
+        # ── Composer / PHP ──
+        "COMPOSER-001": ["PW.4.4", "RV.1.1"],
+        "COMPOSER-002": ["PW.4.4", "RV.1.1"],
+        "COMPOSER-003": ["PW.4.4", "PO.5.1"],
+        "COMPOSER-004": ["PS.1.1", "PO.5.1"],
+        "COMPOSER-005": ["PW.4.4"],
+        "COMPOSER-006": ["PW.4.4", "PO.5.1"],
+        "COMPOSER-007": ["PW.4.4", "RV.1.1"],
+        "COMPOSER-008": ["PW.4.4"],
+        "COMPOSER-009": ["PS.1.1", "PO.5.1"],
+        "COMPOSER-010": ["PW.4.4", "PO.5.1"],
+        # ── RubyGems / Bundler ──
+        "GEM-001": ["PW.4.4", "RV.1.1"],
+        "GEM-002": ["PW.4.4", "RV.1.1"],
+        "GEM-003": ["PW.4.4", "PO.5.1"],
+        "GEM-004": ["PS.1.1", "PO.5.1"],
+        "GEM-005": ["PW.4.4"],
+        "GEM-006": ["PW.4.4", "RV.1.1"],
+        "GEM-007": ["PW.4.4"],
+        "GEM-008": ["PW.4.4"],
+        "GEM-009": ["PS.1.1", "PO.5.1"],
+        "GEM-010": ["PW.4.4"],
+        # ── Pulumi (PULUMI-001..006) ──
+        "PULUMI-001": ["PS.1.1", "PO.5.1"],             # passphrase secretsprovider
+        "PULUMI-002": ["PS.1.1"],                       # secret-shaped config plaintext
+        "PULUMI-003": ["PS.1.1", "PO.5.1"],             # hardcoded credentials in source
+        "PULUMI-004": ["PO.5.1", "PW.4.4"],             # insecure state backend
+        "PULUMI-005": ["PO.5.1"],                       # wildcard IAM policy in source
+        "PULUMI-006": ["PO.5.1", "PW.4.4"],             # StackReference unguarded
+        # ── Pulumi extended pack ──
+        "PULUMI-007": ["PO.5.1"],                       # public-access cloud resource
+        "PULUMI-008": ["PW.4.4", "PO.5.1"],             # shell-exec with non-constant input
+        "PULUMI-009": ["PO.3.3"],                       # runtime / source mismatch
+        "PULUMI-010": ["PS.1.1"],                       # stack orphaned encryption salt
         # ── Dockerfile env-bypass pack (DF-021..030) ────────────
         # Each setting disables the trusted-source channel for any
         # in-image install (PW.4.4 verify failure) and tampers
@@ -751,6 +838,14 @@ STANDARD = Standard(
         "CC-032":   ["PS.1.1"],                        # secret echoed to CircleCI log
         "SCM-048":  ["PO.5.1"],                        # org codespace secrets scoped to all repos
         "SCM-049":  ["PS.1.1"],                        # classic PAT where fine-grained suffices
+        # GitLab-specific platform posture (SCM-050..053)
+        "SCM-050":  ["PS.1.1"],                        # GitLab push rules: prevent_secrets
+        "SCM-051":  ["PO.5.1", "PS.1.1"],              # GitLab push rules: committer-email check
+        "SCM-052":  ["PO.5.1"],                        # GitLab MR: discussions-resolved gate
+        "SCM-053":  ["PO.5.1"],                        # GitLab MR: author self-approval allowed
+        # Bitbucket-specific platform posture (SCM-054..055)
+        "SCM-054":  ["PO.5.1", "PS.3.1"],              # Bitbucket private repo allows public forks
+        "SCM-055":  ["PO.5.1"],                        # Bitbucket no write-side branch-restriction kinds
         "NPM-012":  ["PS.1.1"],                        # publish token missing restrictions
         # ── Azure Cloud (Entra ID / Storage / Key Vault / ACR / Monitor) ──
         "ENTRA-001": ["PO.5.1"],                       # SP assigned Global Administrator

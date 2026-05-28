@@ -78,6 +78,16 @@ requires editing `Scanner`, `Reporter`, or the CLI.
     <p>Live account scan via boto3. CodeBuild, CodePipeline, CodeDeploy, ECR, IAM, S3, CloudTrail, Lambda, KMS, and more.</p>
     <span class="pg-doc-card__meta">{{ providers.aws.checks }}</span>
   </a>
+  <a class="pg-doc-card" href="azure_cloud/">
+    <h3>Azure Cloud</h3>
+    <p>Live subscription scan via the <code>azure-mgmt-*</code> management SDKs. Entra ID, Storage, Key Vault, Container Registry, Monitor.</p>
+    <span class="pg-doc-card__meta">{{ providers.azure_cloud.checks }}</span>
+  </a>
+  <a class="pg-doc-card" href="gcp/">
+    <h3>GCP</h3>
+    <p>Live project scan via the <code>google-cloud-*</code> client libraries. IAM, Cloud Storage, Cloud KMS, Artifact Registry, Cloud Logging.</p>
+    <span class="pg-doc-card__meta">{{ providers.gcp.checks }}</span>
+  </a>
   <a class="pg-doc-card" href="terraform/">
     <h3>Terraform</h3>
     <p>Shift-left scan against a <code>terraform show -json</code> plan or raw <code>*.tf</code> source. AWS-rule parity so findings match the live runtime.</p>
@@ -87,6 +97,11 @@ requires editing `Scanner`, `Reporter`, or the CLI.
     <h3>CloudFormation</h3>
     <p>Parses YAML or JSON templates with intrinsic-function resolution (<code>!Ref</code>, <code>!Sub</code>, <code>!GetAtt</code>).</p>
     <span class="pg-doc-card__meta">{{ providers.cloudformation.checks }}</span>
+  </a>
+  <a class="pg-doc-card" href="pulumi/">
+    <h3>Pulumi</h3>
+    <p>Parses <code>Pulumi.yaml</code> + <code>Pulumi.&lt;stack&gt;.yaml</code> plus source files (Python / TypeScript / Go / C#). Secrets-provider posture, plaintext credentials, wildcard IAM policies, insecure state backend, unguarded StackReference.</p>
+    <span class="pg-doc-card__meta">{{ providers.pulumi.checks }}</span>
   </a>
 </div>
 
@@ -147,6 +162,16 @@ requires editing `Scanner`, `Reporter`, or the CLI.
     <h3>npm / PyPI / Maven / NuGet</h3>
     <p>Static parse of <code>package.json</code>, <code>requirements*.txt</code>, <code>pom.xml</code>, and <code>*.csproj</code>. Floating versions, missing integrity hashes, plaintext-HTTP indexes, lifecycle scripts, dependency-confusion source mapping, and curated known-compromised version registries. Live OSV advisory lookup behind <code>--resolve-remote</code>.</p>
     <span class="pg-doc-card__meta">{{ providers.registries.checks }}</span>
+  </a>
+  <a class="pg-doc-card" href="gomod/">
+    <h3>Go modules</h3>
+    <p>Parses <code>go.mod</code> and probes for <code>go.sum</code>. Replace-directive misuse (local-path, cross-module), <code>+incompatible</code> requires, integrity-manifest presence, missing toolchain directive, and a curated known-compromised module registry.</p>
+    <span class="pg-doc-card__meta">{{ providers.gomod.checks }}</span>
+  </a>
+  <a class="pg-doc-card" href="cargo/">
+    <h3>Cargo (Rust)</h3>
+    <p>Parses <code>Cargo.toml</code> via the TOML stdlib parser. Floating version specs, git deps without <code>rev</code>, missing <code>Cargo.lock</code>, path dependencies, alternate-registry sources, and a curated known-compromised crate registry.</p>
+    <span class="pg-doc-card__meta">{{ providers.cargo.checks }}</span>
   </a>
 </div>
 

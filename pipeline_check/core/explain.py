@@ -93,6 +93,11 @@ _RULE_PACKAGES: tuple[str, ...] = (
     "pipeline_check.core.checks.terraform.rules",
     "pipeline_check.core.checks.cloudformation.rules",
     "pipeline_check.core.checks.nuget.rules",
+    "pipeline_check.core.checks.gomod.rules",
+    "pipeline_check.core.checks.cargo.rules",
+    "pipeline_check.core.checks.composer.rules",
+    "pipeline_check.core.checks.rubygems.rules",
+    "pipeline_check.core.checks.pulumi.rules",
 )
 
 # Class-based packages: ID/TITLE/SEV recoverable via docstring table.

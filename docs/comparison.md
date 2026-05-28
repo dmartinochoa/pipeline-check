@@ -37,30 +37,32 @@ missing major surfaces or requires extra config. No = not in scope.
 | Bitbucket Pipelines | Yes (32) | No | No | No | No | No |
 | Google Cloud Build | Yes (26) | No | Partial | No | No | No |
 | Buildkite | Yes (16) | No | No | No | No | No |
-| Drone CI | Yes (11) | No | No | No | No | No |
+| Drone CI | Yes (16) | No | No | No | No | No |
 | Tekton | Yes (16) | No | Partial | No | No | No |
 | Argo Workflows | Yes (16) | No | Partial | No | No | No |
-| Argo CD | Yes (9) | No | No | No | No | No |
+| Argo CD | Yes (13) | No | No | No | No | No |
 | **SCM posture (governance)** | | | | | | |
-| GitHub repo branch protection / secret scanning / Dependabot | Yes (49, `SCM-001..049`) | No | No | No | No | No |
+| GitHub repo branch protection / secret scanning / Dependabot | Yes (55, `SCM-001..055`) | No | No | No | No | No |
 | **Infrastructure as code** | | | | | | |
 | Terraform plans | Yes | Yes | Yes | Partial | Yes | Yes |
 | CloudFormation (YAML+JSON) | Yes | Yes | Yes | Partial | No | Yes |
 | Kubernetes manifests | Yes (43) | Yes | Yes | No | No | Yes |
-| Helm charts (rendered + supply-chain) | Yes (43 + 10) | Partial | No | No | No | Partial |
+| Helm charts (rendered + supply-chain) | Yes (43 + 14) | Partial | No | No | No | Partial |
 | Dockerfile | Yes (30) | Yes | Yes | No | No | Yes |
 | **Cloud + supply-chain** | | | | | | |
 | Live AWS account scan | Yes (71 rules, boto3) | No | No | No | No | Partial |
+| Live Azure subscription scan | Yes (50 rules, azure-mgmt-*) | No | No | No | No | Partial |
+| Live GCP project scan | Yes (50 rules, google-cloud-*) | No | No | No | No | Partial |
 | OCI image manifests (provenance, SLSA) | Yes (16, incl. ATTEST-001..007 attestation content) | No | No | No | No | Partial |
 | **Dependency supply chain** | | | | | | |
-| Package registries (npm / PyPI / Maven / NuGet) | Yes (38 rules across 4 providers) | No | No | No | No | Partial |
+| Package registries (npm / PyPI / Maven / NuGet / Go / Cargo / Composer / RubyGems) | Yes (95 rules across 8 providers) | No | No | No | No | Partial |
 | **Analysis depth** | | | | | | |
 | Dataflow taint, multi-step / cross-job | Yes (TAINT-001..008 across 5 providers) | No | No | Rules-only | No | No |
 | Cross-provider attack chains (MITRE ATT&CK) | Yes (48 chains: 34 AC + 10 XPC + 4 CXPC cross-repo) | No | No | No | No | No |
 | Multi-scanner SARIF ingest + correlation | Yes (`--ingest`, `INGEST-<tool>-<rule>`, chain engine re-evaluates over the union) | No | No | No | No | No |
 | Vulnerable-by-design benchmark | Yes (`bench/`, 6 cases, current recall 6/6, CI-gated) | No | No | No | No | No |
 | Autofix patches (unified diff) | Yes (111 fixers) | Partial | No | Partial | No | No |
-| Compliance frameworks (per-finding controls) | 16 (OWASP, SLSA, NIST SSDF, NIST 800-53, NIST 800-190, NIST CSF 2, CIS AWS, CIS GitHub, CIS Kubernetes, CIS Supply Chain, PCI DSS, SOC 2, ESF, OpenSSF, S2C2F, OSC&R) | Partial | Partial | Partial | No | Partial |
+| Compliance frameworks (per-finding controls) | 18 (OWASP, SLSA, NIST SSDF, NIST 800-53, NIST 800-190, NIST CSF 2, CIS AWS, CIS Azure, CIS GCP, CIS GitHub, CIS Kubernetes, CIS Supply Chain, PCI DSS, SOC 2, ESF, OpenSSF, S2C2F, OSC&R) | Partial | Partial | Partial | No | Partial |
 | Custom rule DSL | Yes (YAML) | No | Yes (Rego/JSON) | Yes (YAML) | No | Partial |
 | Baseline / new-findings-only | Yes | Partial | No | Yes | No | No |
 | Diff-mode (only changed files) | Yes | Partial | No | Partial | No | Partial |

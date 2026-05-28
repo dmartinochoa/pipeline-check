@@ -401,6 +401,11 @@ STANDARD = Standard(
         "HELM-008": ["GV.SC-07"],   # Chart.lock stale
         "HELM-009": ["GV.SC-05", "PR.DS-02"],   # non-HTTPS sources
         "HELM-010": ["GV.SC-04"],   # appVersion empty
+        # ── Helm extended pack ──
+        "HELM-011": ["PR.DS-01"],   # dependency URL embedded creds
+        "HELM-012": ["GV.SC-04"],   # deprecated without successor
+        "HELM-013": ["GV.SC-04"],   # invalid chart type
+        "HELM-014": ["GV.SC-05"],   # known-compromised dep
         # ── Dockerfile, image-build supply chain. ─────────────────
         # Pinning + verification rules tie to GV.SC-05 (supply chain
         # requirements established and verified). Privileged / root
@@ -553,6 +558,12 @@ STANDARD = Standard(
         "DR-009":  ["PR.IR-01"],                # cache key tainted
         "DR-010":  ["GV.SC-05"],                # unpinned package install
         "DR-011":  ["PR.PS-05"],                # node map interpolates untrusted
+        # ── Drone extended pack ──
+        "DR-012":  ["GV.SC-05"],                # service image not pinned
+        "DR-013":  ["GV.SC-07"],                # no trigger event filter
+        "DR-014":  ["GV.SC-05"],                # pipe-to-shell
+        "DR-015":  ["GV.SC-05"],                # clone recursive
+        "DR-016":  ["GV.SC-07"],                # image field interpolation
         # ── Tekton (K8s-native pipeline kinds) ────────────────────
         "TKN-001": ["GV.SC-05", "PR.PS-02"],    # step image not digest-pinned
         "TKN-002": ["PR.PS-01"],                # step privileged / root
@@ -585,6 +596,11 @@ STANDARD = Standard(
         "ARGO-013": ["PR.AA-01"],               # SA token automount default
         "ARGO-014": ["GV.SC-05"],               # unpinned package install
         "ARGO-015": ["PR.DS-02"],               # insecure (non-HTTPS) artifact URL
+        # ── Argo CD (GitOps deployment) ──
+        "ARGOCD-010": ["GV.SC-07"],             # mutable targetRevision
+        "ARGOCD-011": ["PR.AA-05"],             # cluster-resource wildcard
+        "ARGOCD-012": ["GV.SC-07"],             # no sync windows
+        "ARGOCD-013": ["GV.SC-07"],             # no revision history cap
         # ── Cloud Build container-touching extras ─────────────────
         "GCB-010": ["GV.SC-05", "PR.DS-02"],    # remote script piped to shell
         "GCB-011": ["PR.DS-02"],                # TLS bypass
@@ -708,11 +724,23 @@ STANDARD = Standard(
         "MVN-007":  ["GV.SC-05"],               # settings.xml wildcard mirror
         "MVN-008":  ["GV.SC-05", "GV.SC-07", "PR.PS-02"],  # cooldown gate (--resolve-remote)
         "MVN-009":  ["GV.SC-05", "GV.SC-07", "PR.PS-02"],  # OSV advisory (--resolve-remote)
+        # ── Maven extended pack ──
+        "MVN-010":  ["PR.DS-01"],               # plaintext server password
+        "MVN-011":  ["PR.DS-01"],               # repo URL credentials
+        "MVN-012":  ["GV.SC-07"],               # build plugin floating
+        "MVN-013":  ["GV.SC-07"],               # build extension floating
+        "MVN-014":  ["GV.SC-07"],               # wrapper sha256 missing
         "NPM-008":  ["GV.SC-05", "GV.SC-07", "PR.PS-02"],  # cooldown gate (--resolve-remote)
         "NPM-009":  ["GV.SC-05"],               # new-transitive-dep diff gate
         "NPM-010":  ["GV.SC-05", "GV.SC-07", "PR.PS-02"],  # OSV advisory (--resolve-remote)
         "PYPI-008": ["GV.SC-05", "GV.SC-07", "PR.PS-02"],  # cooldown gate (--resolve-remote)
         "PYPI-009": ["GV.SC-05", "GV.SC-07", "PR.PS-02"],  # OSV advisory (--resolve-remote)
+        # ── PyPI extended pack (PYPI-010..014) ──
+        "PYPI-010": ["PR.DS-01"],                # index URL embedded credentials
+        "PYPI-011": ["GV.SC-07"],                # --trusted-host disables TLS
+        "PYPI-012": ["GV.SC-07"],                # build-system requires floating
+        "PYPI-013": ["GV.SC-07"],                # pyproject dynamic dependencies
+        "PYPI-014": ["GV.SC-07"],                # custom source HTTP
         # ── nuget (dep supply-chain) ─────────────────────────────
         "NUGET-001": ["GV.SC-05"],              # floating NuGet version range
         "NUGET-002": ["GV.SC-05"],              # wildcard prerelease version
@@ -724,6 +752,70 @@ STANDARD = Standard(
         "NUGET-008": ["GV.SC-05", "GV.SC-07", "PR.PS-02"],  # cooldown gate (--resolve-remote)
         "NUGET-009": ["GV.SC-05", "GV.SC-07", "PR.PS-02"],  # OSV advisory (--resolve-remote)
         "NUGET-010": ["PR.AA-01", "PR.DS-01"],  # NuGet.config cleartext feed credential
+        # ── NuGet extended pack ──
+        "NUGET-011": ["GV.SC-07"],              # source mapping wildcard
+        "NUGET-012": ["GV.SC-07", "GV.SC-05"],  # signature validation off
+        "NUGET-013": ["GV.SC-07"],              # dotnet-tools unpinned
+        "NUGET-014": ["PR.DS-01"],              # source URL credentials
+        "NUGET-015": ["GV.SC-07"],              # VersionOverride breaks CPM
+        # ── Go modules ─────────────────────────────────────────
+        "GOMOD-001": ["PR.DS-01", "GV.SC-07"],  # go.sum integrity manifest missing
+        "GOMOD-002": ["GV.SC-07", "GV.SC-08"],  # replace directive to local path
+        "GOMOD-003": ["GV.SC-07", "GV.SC-08"],  # replace directive to different module
+        "GOMOD-004": ["GV.SC-07"],              # +incompatible direct require
+        "GOMOD-005": ["GV.SC-07"],              # missing go toolchain directive
+        "GOMOD-006": ["GV.SC-05", "GV.SC-08"],  # known-compromised module version
+        # ── Go modules extended pack ──
+        "GOMOD-007": ["PR.DS-01", "GV.SC-07"],  # vendor/modules.txt stale
+        "GOMOD-008": ["GV.SC-07"],              # replace without version pin
+        "GOMOD-009": ["GV.SC-07"],              # pre-release direct require
+        "GOMOD-010": ["GV.SC-07"],              # stale exclude directive
+        # ── Cargo ──────────────────────────────────────────────
+        "CARGO-001": ["GV.SC-07"],              # floating Cargo.toml version spec
+        "CARGO-002": ["GV.SC-07", "GV.SC-08"],  # git dep with mutable ref (no rev)
+        "CARGO-003": ["PR.DS-01", "GV.SC-07"],  # missing Cargo.lock
+        "CARGO-004": ["GV.SC-07", "GV.SC-08"],  # local-path Cargo dependency
+        "CARGO-005": ["GV.SC-07", "GV.SC-08"],  # alternate-registry Cargo dependency
+        "CARGO-006": ["GV.SC-05", "GV.SC-08"],  # known-compromised crate version
+        # ── Cargo extended pack ──
+        "CARGO-007": ["GV.SC-07", "GV.SC-08"],  # build-deps floating
+        "CARGO-008": ["GV.SC-07"],              # patch.crates-io substitution
+        "CARGO-009": ["GV.SC-07"],              # workspace deps floating
+        "CARGO-010": ["GV.SC-07"],              # missing rust-version
+        # ── Composer / PHP ──
+        "COMPOSER-001": ["GV.SC-05", "GV.SC-07"],
+        "COMPOSER-002": ["GV.SC-05", "GV.SC-07"],
+        "COMPOSER-003": ["GV.SC-05", "PR.DS-02"],
+        "COMPOSER-004": ["PR.DS-01", "PR.AA-01"],
+        "COMPOSER-005": ["GV.SC-05", "GV.SC-07"],
+        "COMPOSER-006": ["GV.SC-05", "GV.SC-08"],
+        "COMPOSER-007": ["GV.SC-05", "GV.SC-08"],
+        "COMPOSER-008": ["GV.SC-05", "GV.SC-07"],
+        "COMPOSER-009": ["PR.DS-01", "PR.AA-01"],
+        "COMPOSER-010": ["GV.SC-05", "PR.DS-02"],
+        # ── RubyGems / Bundler ──
+        "GEM-001": ["GV.SC-05", "GV.SC-07"],
+        "GEM-002": ["GV.SC-05", "GV.SC-07"],
+        "GEM-003": ["GV.SC-05", "PR.DS-02"],
+        "GEM-004": ["PR.DS-01", "PR.AA-01"],
+        "GEM-005": ["GV.SC-05", "GV.SC-07"],
+        "GEM-006": ["GV.SC-05", "GV.SC-08"],
+        "GEM-007": ["GV.SC-05"],
+        "GEM-008": ["GV.SC-05", "GV.SC-07"],
+        "GEM-009": ["PR.DS-01", "PR.AA-01"],
+        "GEM-010": ["GV.SC-05", "GV.SC-07"],
+        # ── Pulumi (PULUMI-001..006) ──
+        "PULUMI-001": ["PR.DS-01", "PR.AA-01"],  # passphrase secretsprovider
+        "PULUMI-002": ["PR.DS-01"],              # secret-shaped config plaintext
+        "PULUMI-003": ["PR.DS-01", "PR.AA-01"],  # hardcoded credentials in source
+        "PULUMI-004": ["PR.DS-01", "PR.AA-01"],  # insecure state backend
+        "PULUMI-005": ["PR.AA-05"],              # wildcard IAM policy in source
+        "PULUMI-006": ["GV.SC-07"],              # StackReference unguarded
+        # ── Pulumi extended pack ──
+        "PULUMI-007": ["PR.AA-05"],              # public-access cloud resource
+        "PULUMI-008": ["GV.SC-07"],              # shell-exec with non-constant input
+        "PULUMI-009": ["GV.SC-07"],              # runtime / source mismatch
+        "PULUMI-010": ["PR.DS-01"],              # stack orphaned encryption salt
         # ── OCI image manifest gaps ──────────────────────────────
         "OCI-001":  ["GV.SC-05"],               # provenance annotations missing
         "OCI-002":  ["PR.PS-06", "GV.SC-05"],   # build attestation missing

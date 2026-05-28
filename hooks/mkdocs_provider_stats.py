@@ -124,6 +124,14 @@ def _build_index() -> dict[str, dict[str, str]]:
             )
         }
 
+    # Gitea / Forgejo reuses the full GitHub Actions rule pack at
+    # runtime (see pipeline_check/core/providers/gitea.py), so it has
+    # no on-disk ``checks/gitea/`` directory. Mirror the GHA count so
+    # the home-page tile renders the same "N checks" label.
+    github = _count_rule_files("github")
+    if github:
+        out["gitea"] = {"checks": f"{github} checks (GHA-* pack)"}
+
     return out
 
 

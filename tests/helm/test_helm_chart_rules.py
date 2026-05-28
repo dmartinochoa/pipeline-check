@@ -526,7 +526,7 @@ class TestHELM010:
 
 class TestHelmChartChecksOrchestrator:
 
-    def test_runs_all_ten_rules(self):
+    def test_runs_all_rules(self):
         ctx = _ctx_with_charts(_chart())
         findings = HelmChartChecks(ctx).run()
         ids = sorted(f.check_id for f in findings)
@@ -534,7 +534,8 @@ class TestHelmChartChecksOrchestrator:
             "HELM-001", "HELM-002", "HELM-003",
             "HELM-004", "HELM-005", "HELM-006",
             "HELM-007", "HELM-008", "HELM-009",
-            "HELM-010",
+            "HELM-010", "HELM-011", "HELM-012",
+            "HELM-013", "HELM-014",
         ]
 
     def test_attaches_cwe_metadata(self):

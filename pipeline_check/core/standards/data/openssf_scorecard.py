@@ -132,6 +132,12 @@ STANDARD = Standard(
         "MVN-007":  ["Pinned-Dependencies"],                           # settings.xml wildcard mirror
         "MVN-008":  ["Pinned-Dependencies", "Vulnerabilities"],        # cooldown gate (--resolve-remote)
         "MVN-009":  ["Pinned-Dependencies", "Vulnerabilities"],        # OSV advisory (--resolve-remote)
+        # ── Maven extended pack ──
+        "MVN-010":  ["Token-Permissions"],                             # plaintext server password
+        "MVN-011":  ["Token-Permissions"],                             # repo URL credentials
+        "MVN-012":  ["Pinned-Dependencies"],                           # build plugin floating
+        "MVN-013":  ["Pinned-Dependencies"],                           # build extension floating
+        "MVN-014":  ["Pinned-Dependencies"],                           # wrapper sha256 missing
         "NPM-008":  ["Pinned-Dependencies", "Vulnerabilities"],        # cooldown gate (--resolve-remote)
         "NPM-009":  ["Pinned-Dependencies"],                           # new-transitive-dep diff gate
         "NPM-010":  ["Pinned-Dependencies", "Vulnerabilities"],        # OSV advisory (--resolve-remote)
@@ -148,6 +154,28 @@ STANDARD = Standard(
         "NUGET-008": ["Pinned-Dependencies", "Vulnerabilities"],       # cooldown gate (--resolve-remote)
         "NUGET-009": ["Pinned-Dependencies", "Vulnerabilities"],       # OSV advisory (--resolve-remote)
         "NUGET-010": ["Token-Permissions"],                            # NuGet.config cleartext feed credential
+        # ── NuGet extended pack ──
+        "NUGET-011": ["Pinned-Dependencies"],
+        "NUGET-013": ["Pinned-Dependencies"],
+        "NUGET-014": ["Token-Permissions"],
+        "NUGET-015": ["Pinned-Dependencies"],
+        # ── Composer / PHP ──
+        "COMPOSER-001": ["Pinned-Dependencies"],
+        "COMPOSER-002": ["Pinned-Dependencies"],
+        "COMPOSER-004": ["Token-Permissions"],
+        "COMPOSER-007": ["Pinned-Dependencies", "Vulnerabilities"],
+        "COMPOSER-008": ["Pinned-Dependencies"],
+        "COMPOSER-009": ["Token-Permissions"],
+        "COMPOSER-010": ["Pinned-Dependencies"],
+        # ── RubyGems / Bundler ──
+        "GEM-001": ["Pinned-Dependencies"],
+        "GEM-002": ["Pinned-Dependencies"],
+        "GEM-004": ["Token-Permissions"],
+        "GEM-005": ["Pinned-Dependencies"],
+        "GEM-006": ["Pinned-Dependencies", "Vulnerabilities"],
+        "GEM-008": ["Pinned-Dependencies"],
+        "GEM-009": ["Token-Permissions"],
+        "GEM-010": ["Pinned-Dependencies"],
         # Reusable workflow / services-image / cross-step pinning
         "GHA-017":  ["Pinned-Dependencies"],                           # package install insecure source
         "GHA-051":  ["Pinned-Dependencies"],                           # services / container image unpinned
@@ -303,6 +331,12 @@ STANDARD = Standard(
         "TKN-015":  ["Dangerous-Workflow"],                            # workspace subPath param injection
         "ARGO-013": ["Token-Permissions"],                             # SA token automount default
         "ARGO-015": ["Pinned-Dependencies"],                           # insecure (non-HTTPS) artifact URL
+        # ── Argo CD (GitOps deployment) ──
+        "ARGOCD-010": ["Pinned-Dependencies"],                         # mutable targetRevision
+        "ARGOCD-011": ["Token-Permissions"],                           # cluster-resource wildcard
+        # ── Helm extended pack ──
+        "HELM-011": ["Token-Permissions"],                             # dependency URL embedded creds
+        "HELM-014": ["Pinned-Dependencies"],                           # known-compromised dep
         "BK-013":   ["Code-Review"],                                   # deploy step no branches filter
         # Cloud Build tainted-substitution / shell pack
         "GCB-012":  ["Token-Permissions"],                             # credential-shaped literal
@@ -513,6 +547,11 @@ STANDARD = Standard(
         "DR-008":   ["Pinned-Dependencies"],                           # ``pull: never`` skips registry verify
         "DR-009":   ["Dangerous-Workflow"],                            # tainted cache key
         "DR-011":   ["Dangerous-Workflow"],                            # node map runner targeting
+        # ── Drone extended pack ──
+        "DR-012":   ["Pinned-Dependencies"],                           # service image not pinned
+        "DR-014":   ["Pinned-Dependencies"],                           # pipe-to-shell
+        "DR-015":   ["Dangerous-Workflow"],                            # clone recursive
+        "DR-016":   ["Dangerous-Workflow"],                            # image field interpolation
         # ── OCI image manifest ───────────────────────────────────────
         "OCI-001":  ["SBOM"],                                          # provenance annotations
         "OCI-002":  ["Signed-Releases", "SBOM"],                       # build attestation manifest

@@ -475,6 +475,271 @@ class TestBitbucketHydration:
             assert "GitHub-specific" in findings[gh_only].description
 
 
+# ── GitLab-specific rule pack (SCM-050..053) ───────────────────────
+
+
+class TestGitLabSpecificRules:
+    def test_scm050_passes_when_prevent_secrets_enabled(self):
+        f = FakeFetcher({
+            "projects/g%2Fp": {
+                "default_branch": "main",
+                "statistics": {"repository_size": 1024},
+            },
+            "projects/g%2Fp/protected_branches": [],
+            "projects/g%2Fp/push_rule": {
+                "prevent_secrets": True,
+            },
+        })
+        ctx = gitlab_context_for_repo("g/p", f)
+        findings = _findings_by_id(ctx)
+        assert findings["SCM-050"].passed
+
+    def test_scm050_fires_when_prevent_secrets_disabled(self):
+        f = FakeFetcher({
+            "projects/g%2Fp": {
+                "default_branch": "main",
+                "statistics": {"repository_size": 1024},
+            },
+            "projects/g%2Fp/protected_branches": [],
+            "projects/g%2Fp/push_rule": {
+                "prevent_secrets": False,
+            },
+        })
+        ctx = gitlab_context_for_repo("g/p", f)
+        findings = _findings_by_id(ctx)
+        assert not findings["SCM-050"].passed
+
+    def test_scm050_passes_silently_on_ce(self):
+        """GitLab CE returns 404 on /push_rule. The rule passes with
+        an unavailability note rather than firing on absence."""
+        f = FakeFetcher({
+            "projects/g%2Fp": {
+                "default_branch": "main",
+                "statistics": {"repository_size": 1024},
+            },
+            "projects/g%2Fp/protected_branches": [],
+            # push_rule key intentionally absent => FakeFetcher
+            # returns None => looks like a 404 to the rule.
+        })
+        ctx = gitlab_context_for_repo("g/p", f)
+        findings = _findings_by_id(ctx)
+        assert findings["SCM-050"].passed
+        assert "unavailable" in findings["SCM-050"].description.lower()
+
+    def test_scm051_fires_when_committer_check_disabled(self):
+        f = FakeFetcher({
+            "projects/g%2Fp": {
+                "default_branch": "main",
+                "statistics": {"repository_size": 1024},
+            },
+            "projects/g%2Fp/protected_branches": [],
+            "projects/g%2Fp/push_rule": {
+                "commit_committer_check": False,
+            },
+        })
+        ctx = gitlab_context_for_repo("g/p", f)
+        findings = _findings_by_id(ctx)
+        assert not findings["SCM-051"].passed
+
+    def test_scm052_fires_when_discussions_not_required(self):
+        f = FakeFetcher({
+            "projects/g%2Fp": {
+                "default_branch": "main",
+                "statistics": {"repository_size": 1024},
+                "only_allow_merge_if_all_discussions_are_resolved": False,
+            },
+            "projects/g%2Fp/protected_branches": [],
+        })
+        ctx = gitlab_context_for_repo("g/p", f)
+        findings = _findings_by_id(ctx)
+        assert not findings["SCM-052"].passed
+
+    def test_scm052_passes_when_discussions_required(self):
+        f = FakeFetcher({
+            "projects/g%2Fp": {
+                "default_branch": "main",
+                "statistics": {"repository_size": 1024},
+                "only_allow_merge_if_all_discussions_are_resolved": True,
+            },
+            "projects/g%2Fp/protected_branches": [],
+        })
+        ctx = gitlab_context_for_repo("g/p", f)
+        findings = _findings_by_id(ctx)
+        assert findings["SCM-052"].passed
+
+    def test_scm053_fires_when_author_self_approval_allowed(self):
+        f = FakeFetcher({
+            "projects/g%2Fp": {
+                "default_branch": "main",
+                "statistics": {"repository_size": 1024},
+                "merge_requests_author_approval": True,
+            },
+            "projects/g%2Fp/protected_branches": [],
+        })
+        ctx = gitlab_context_for_repo("g/p", f)
+        findings = _findings_by_id(ctx)
+        assert not findings["SCM-053"].passed
+
+    def test_scm053_passes_when_author_self_approval_blocked(self):
+        f = FakeFetcher({
+            "projects/g%2Fp": {
+                "default_branch": "main",
+                "statistics": {"repository_size": 1024},
+                "merge_requests_author_approval": False,
+            },
+            "projects/g%2Fp/protected_branches": [],
+        })
+        ctx = gitlab_context_for_repo("g/p", f)
+        findings = _findings_by_id(ctx)
+        assert findings["SCM-053"].passed
+
+    def test_gitlab_only_rules_skip_with_note_on_github(self):
+        """SCM-050..053 should pass with a skip note on GitHub
+        snapshots, mirroring the GitHub-only routing pattern."""
+        from pipeline_check.core.checks.scm.base import (
+            SCMContext,
+            SCMRepoSnapshot,
+        )
+        from pipeline_check.core.checks.scm.posture import SCMPostureChecks
+        snap = SCMRepoSnapshot(owner="o", name="r", platform="github")
+        ctx = SCMContext(repos=[snap])
+        findings = {f.check_id: f for f in SCMPostureChecks(ctx).run()}
+        for gl_only in ("SCM-050", "SCM-051", "SCM-052", "SCM-053"):
+            assert findings[gl_only].passed
+            assert "GitLab-specific" in findings[gl_only].description
+
+
+# ── Bitbucket-specific rule pack (SCM-054..055) ────────────────────
+
+
+class TestBitbucketSpecificRules:
+    def test_scm054_fires_when_private_allows_public_forks(self):
+        f = FakeFetcher({
+            "repositories/w/r": {
+                "mainbranch": {"name": "main"},
+                "size": 1024,
+                "is_private": True,
+                "fork_policy": "allow_forks",
+            },
+            "repositories/w/r/branch-restrictions": {"values": []},
+        })
+        ctx = bitbucket_context_for_repo("w", "r", f)
+        findings = _findings_by_id(ctx)
+        assert not findings["SCM-054"].passed
+
+    def test_scm054_passes_when_private_blocks_forks(self):
+        f = FakeFetcher({
+            "repositories/w/r": {
+                "mainbranch": {"name": "main"},
+                "size": 1024,
+                "is_private": True,
+                "fork_policy": "no_forks",
+            },
+            "repositories/w/r/branch-restrictions": {"values": []},
+        })
+        ctx = bitbucket_context_for_repo("w", "r", f)
+        findings = _findings_by_id(ctx)
+        assert findings["SCM-054"].passed
+
+    def test_scm054_passes_when_private_restricts_to_workspace(self):
+        """``no_public_forks`` keeps forks inside the workspace's
+        privacy boundary, which is the safe posture."""
+        f = FakeFetcher({
+            "repositories/w/r": {
+                "mainbranch": {"name": "main"},
+                "size": 1024,
+                "is_private": True,
+                "fork_policy": "no_public_forks",
+            },
+            "repositories/w/r/branch-restrictions": {"values": []},
+        })
+        ctx = bitbucket_context_for_repo("w", "r", f)
+        findings = _findings_by_id(ctx)
+        assert findings["SCM-054"].passed
+
+    def test_scm054_passes_on_public_repo(self):
+        """Public source repos can't be made *more* visible by
+        forks, so fork_policy is not load-bearing for confidentiality.
+        """
+        f = FakeFetcher({
+            "repositories/w/r": {
+                "mainbranch": {"name": "main"},
+                "size": 1024,
+                "is_private": False,
+                "fork_policy": "allow_forks",
+            },
+            "repositories/w/r/branch-restrictions": {"values": []},
+        })
+        ctx = bitbucket_context_for_repo("w", "r", f)
+        findings = _findings_by_id(ctx)
+        assert findings["SCM-054"].passed
+
+    def test_scm055_fires_when_only_merge_side_restrictions(self):
+        """A repo with require_approvals + require_passing_builds
+        but no push/force/delete kind leaves direct pushes unguarded.
+        """
+        f = FakeFetcher({
+            "repositories/w/r": {
+                "mainbranch": {"name": "main"},
+                "size": 1024,
+                "is_private": True,
+                "fork_policy": "no_forks",
+            },
+            "repositories/w/r/branch-restrictions": {
+                "values": [
+                    {
+                        "kind": "require_approvals_to_merge",
+                        "pattern": "main",
+                        "value": 2,
+                    },
+                    {
+                        "kind": "require_passing_builds_to_merge",
+                        "pattern": "main",
+                    },
+                ],
+            },
+        })
+        ctx = bitbucket_context_for_repo("w", "r", f)
+        findings = _findings_by_id(ctx)
+        assert not findings["SCM-055"].passed
+
+    def test_scm055_passes_when_force_kind_present(self):
+        f = FakeFetcher({
+            "repositories/w/r": {
+                "mainbranch": {"name": "main"},
+                "size": 1024,
+                "is_private": True,
+                "fork_policy": "no_forks",
+            },
+            "repositories/w/r/branch-restrictions": {
+                "values": [
+                    {
+                        "kind": "require_approvals_to_merge",
+                        "pattern": "main",
+                        "value": 1,
+                    },
+                    {"kind": "force", "pattern": "main"},
+                ],
+            },
+        })
+        ctx = bitbucket_context_for_repo("w", "r", f)
+        findings = _findings_by_id(ctx)
+        assert findings["SCM-055"].passed
+
+    def test_bitbucket_only_rules_skip_with_note_on_github(self):
+        from pipeline_check.core.checks.scm.base import (
+            SCMContext,
+            SCMRepoSnapshot,
+        )
+        from pipeline_check.core.checks.scm.posture import SCMPostureChecks
+        snap = SCMRepoSnapshot(owner="o", name="r", platform="github")
+        ctx = SCMContext(repos=[snap])
+        findings = {f.check_id: f for f in SCMPostureChecks(ctx).run()}
+        for bb_only in ("SCM-054", "SCM-055"):
+            assert findings[bb_only].passed
+            assert "Bitbucket-specific" in findings[bb_only].description
+
+
 # ── End-to-end provider routing ────────────────────────────────────
 
 

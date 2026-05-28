@@ -12,6 +12,96 @@ release commit collapses this section into `## [X.Y.Z] - <date>`.
 
 ### Added
 
+- **Composer + RubyGems graduated from 8 to 10 rules each (4 new
+  supply-chain detectors).**
+  - **COMPOSER-009** flags ``auth.json`` committed alongside
+    ``composer.json`` with literal credentials. Composer reads
+    ``auth.json`` out of band for HTTP-basic / bearer / GitHub-OAuth
+    / GitLab-OAuth / Bitbucket-OAuth tokens; its presence in git
+    history is a credential leak. Placeholder values
+    (``${COMPOSER_AUTH_TOKEN}`` / ``$ENV``) are ignored so a
+    deliberately-templated auth.json doesn't false-positive. HIGH,
+    13 standards mappings.
+  - **COMPOSER-010** flags ``config.secure-http: false`` in
+    ``composer.json``. Composer's default has been
+    ``secure-http: true`` since 1.8; an explicit ``false`` is a
+    project-wide HTTPS-enforcement downgrade that lets the
+    resolver pull packages over plain HTTP from any source.
+    Companion to COMPOSER-003 (per-URL HTTP detection).
+    MEDIUM, 13 standards mappings.
+  - **GEM-009** flags ``.bundle/config`` committed with embedded
+    credentials. Detects literal-value entries under
+    ``BUNDLE_GEMS__<HOST>`` / ``BUNDLE_GITHUB__COM`` /
+    ``BUNDLE_*__USERNAME`` / ``BUNDLE_*__PASSWORD`` /
+    ``BUNDLE_*__TOKEN`` keys. Placeholder values
+    (``<%= ENV[...] %>`` / ``$ENV``) are ignored. HIGH, 13
+    standards mappings.
+  - **GEM-010** flags Gemfiles that use dynamic gem-list
+    resolution (``Dir.glob`` / ``Dir[...]`` / ``eval(...)`` /
+    ``instance_eval`` / ``require_relative`` / ``File.read``).
+    The static-include helper ``eval_gemfile "<literal>"`` is
+    explicitly allowed. Dynamic Gemfiles defeat every
+    manifest-as-data audit (this rule pack, bundler-audit,
+    dependabot). MEDIUM, 13 standards mappings.
+
+  Lifts both providers' rule counts from 8 to 10, matching the
+  gomod / cargo / pulumi MVP-graduates floor. README architecture
+  block updated for both packs; comparison-table package-registries
+  cell from ``91 rules across 8 providers`` to ``95 rules across 8
+  providers``. Headline ``1060+ checks`` claim still in tolerance
+  (catalog at 1072, tolerance window [1052, 1072]). 22 new unit
+  tests, drift tests pass.
+
+- **RubyGems / Bundler provider, 8 supply-chain rules.** New
+  ``--pipeline rubygems`` / ``--rubygems-path`` parses ``Gemfile``
+  (Bundler manifest, Ruby DSL) and probes for the sibling
+  ``Gemfile.lock``. Text-only static analysis via a regex
+  extractor over the canonical Bundler idioms (``source``, ``gem
+  "name"``, scoped ``source … do … end`` blocks, ``group :dev``,
+  option-hash forms with ``git:`` / ``github:`` / ``ref:`` /
+  ``branch:`` / ``tag:`` / ``path:``), no ``bundle install``, no
+  rubygems.org API access, no Ruby runtime required.
+  Auto-detects ``./Gemfile`` at the working-directory root.
+  Ships ``GEM-001..008``: missing Gemfile.lock, floating ``gem``
+  constraint (covers no-version-at-all, ``~>``, ``>=``, ranges),
+  plain-HTTP ``source``, source URL with embedded plaintext
+  credentials, ``git:`` / ``github:`` source without a ``ref:``
+  SHA pin (mutable branch / tag / default-HEAD), known-
+  compromised gem version (curated registry seeded with
+  rest-client 1.6.10-1.6.13 / strong_password 0.0.7, the two
+  canonical RubyGems supply-chain incidents), multiple
+  top-level sources without scoping (dependency-confusion
+  vector), and ``gem … path: "..."`` declared outside ``group
+  :development`` / ``:test``. Bumps the headline claim from
+  ``1050+ checks across 31 providers`` to ``1060+ checks across
+  32 providers`` and the comparison ``Package registries`` cell
+  from ``83 rules across 7 providers`` to ``91 rules across 8
+  providers``. 32 new unit tests, drift tests pass.
+
+- **Composer (PHP) provider, 8 supply-chain rules.** New
+  ``--pipeline composer`` / ``--composer-path`` parses
+  ``composer.json`` (Composer manifest) and probes for the sibling
+  ``composer.lock``. Mirrors the npm / PyPI / Maven / NuGet / Go
+  modules / Cargo pack shape: text-only static analysis via the
+  JSON stdlib parser, no ``composer install``, no Packagist
+  access, no PHP runtime required. Auto-detects
+  ``./composer.json`` at the working-directory root. Ships
+  ``COMPOSER-001..008``: missing composer.lock, floating
+  ``require`` constraint, plain-HTTP repository, repository URL
+  with embedded plaintext credentials, ``minimum-stability``
+  lowered to ``dev`` / ``alpha`` / ``beta`` / ``RC`` (widens
+  every transitive constraint to dev-branch aliases), Composer
+  ``scripts`` lifecycle hook piping a remote download into a
+  shell, known-compromised package version (curated registry,
+  seeded with the synthetic placeholder + a representative
+  guzzlehttp/guzzle CVE entry), and ``config.allow-plugins:
+  true`` (defeats Composer 2.2's plugin allowlist gate). Bumps
+  the headline claim from ``1040+ checks across 30 providers``
+  to ``1050+ checks across 31 providers`` and the comparison
+  ``Package registries`` cell from ``75 rules across 6
+  providers`` to ``83 rules across 7 providers``. 33 new unit
+  tests, drift tests pass.
+
 - **NPM-013, NUGET-010, OCI-009 (3 new package-ecosystem rules).**
   - **NPM-013** flags ``package.json`` ``files`` field entries
     that are broad wildcards (``*``, ``**``, ``**/*``, ``*/**``,

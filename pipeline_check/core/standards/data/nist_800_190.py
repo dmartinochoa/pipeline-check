@@ -351,6 +351,12 @@ STANDARD = Standard(
         "MVN-007":  ["4.2.1"],                     # settings.xml wildcard mirror
         "MVN-008":  ["4.1.3"],                     # cooldown gate (--resolve-remote)
         "MVN-009":  ["4.1.3"],                     # OSV advisory (--resolve-remote)
+        # ── Maven extended pack ──
+        "MVN-010":  ["4.1.4"],                     # plaintext server password
+        "MVN-011":  ["4.1.4"],                     # repo URL credentials
+        "MVN-012":  ["4.1.3"],                     # build plugin floating
+        "MVN-013":  ["4.1.3"],                     # build extension floating
+        "MVN-014":  ["4.1.3"],                     # wrapper sha256 missing
         "NPM-008":  ["4.1.3"],                     # cooldown gate (--resolve-remote)
         "NPM-009":  ["4.1.5"],                     # new-transitive-dep diff gate
         "NPM-010":  ["4.1.3"],                     # OSV advisory (--resolve-remote)
@@ -367,6 +373,34 @@ STANDARD = Standard(
         "NUGET-008": ["4.1.3"],                    # cooldown gate (--resolve-remote)
         "NUGET-009": ["4.1.3"],                    # OSV advisory (--resolve-remote)
         "NUGET-010": ["4.4.5"],                    # NuGet.config cleartext feed credential
+        # ── NuGet extended pack ──
+        "NUGET-011": ["4.1.3"],
+        "NUGET-012": ["4.1.3"],
+        "NUGET-013": ["4.1.3"],
+        "NUGET-014": ["4.1.4"],
+        "NUGET-015": ["4.1.3"],
+        # ── Composer / PHP ──
+        "COMPOSER-001": ["4.1.3"],
+        "COMPOSER-002": ["4.1.3"],
+        "COMPOSER-003": ["4.2.1"],
+        "COMPOSER-004": ["4.4.5"],
+        "COMPOSER-005": ["4.1.3"],
+        "COMPOSER-006": ["4.1.3"],
+        "COMPOSER-007": ["4.1.3"],
+        "COMPOSER-008": ["4.1.3"],
+        "COMPOSER-009": ["4.4.5"],
+        "COMPOSER-010": ["4.2.1"],
+        # ── RubyGems / Bundler ──
+        "GEM-001": ["4.1.3"],
+        "GEM-002": ["4.1.3"],
+        "GEM-003": ["4.2.1"],
+        "GEM-004": ["4.4.5"],
+        "GEM-005": ["4.1.3"],
+        "GEM-006": ["4.1.3"],
+        "GEM-007": ["4.1.3"],
+        "GEM-008": ["4.1.3"],
+        "GEM-009": ["4.4.5"],
+        "GEM-010": ["4.1.3"],
         # ── OCI image manifest gaps ──────────────────────────────
         # OCI-001..003/005 are image-provenance metadata gaps —
         # untrusted-image surface (4.1.5). OCI-004 foreign-layer
@@ -391,6 +425,11 @@ STANDARD = Standard(
         "HELM-008": ["4.2.2"],                     # stale Chart.lock > 90 days
         "HELM-009": ["4.2.1"],                     # non-HTTPS home / sources URL
         "HELM-010": ["4.1.5"],                     # missing appVersion
+        # ── Helm extended pack ──
+        "HELM-011": ["4.2.1"],                     # dependency URL embedded creds
+        "HELM-012": ["4.1.5"],                     # deprecated without successor
+        "HELM-013": ["4.1.5"],                     # invalid chart type
+        "HELM-014": ["4.1.5"],                     # known-compromised dep
         # ── Buildkite (CI runner runs builds inside containers) ───
         # Mostly 4.1.2 / 4.4.4 (runtime config defects), 4.1.5
         # (untrusted images), 4.1.4 (secrets baked into env), and
@@ -504,6 +543,12 @@ STANDARD = Standard(
         "DR-009":  ["4.4.6"],                      # cache key tainted = rogue input
         "DR-010":  ["4.1.5"],                      # unpinned package install
         "DR-011":  ["4.4.5"],                      # node map interpolates untrusted
+        # ── Drone extended pack ──
+        "DR-012":  ["4.1.5"],                      # service image not pinned
+        "DR-013":  ["4.4.5"],                      # no trigger event filter
+        "DR-014":  ["4.1.5", "4.4.5"],             # pipe-to-shell
+        "DR-015":  ["4.4.5"],                      # clone recursive
+        "DR-016":  ["4.4.5"],                      # image field interpolation
         # ── Tekton container-touching extras ─────────────────────
         "TKN-003": ["4.4.5"],                      # param injection in script
         "TKN-006": ["4.4.5"],                      # no timeout
