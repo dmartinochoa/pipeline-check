@@ -487,6 +487,7 @@ STANDARD = Standard(
         # OCI-006 (excessive layer count): no CIS SSCS control fit; left unmapped.
         "OCI-007":   ["4.1.1", "3.1.3"],           # legacy schemaVersion 1
         "OCI-008":   ["3.1.3", "4.1.1"],           # weak digest algorithm
+        "OCI-009":   ["4.4.1"],                    # missing base-image annotations
         # ── SLSA / in-toto attestation ────────────────────────────
         "ATTEST-001": ["2.4.2", "4.4.1"],          # untrusted builder identity
         "ATTEST-002": ["1.4.1", "4.4.1"],          # source repo claim unverifiable
@@ -586,6 +587,7 @@ STANDARD = Standard(
         "NPM-006":  ["1.4.1", "3.1.3"],            # compromised-package registry
         "NPM-007":  ["2.1.3"],                     # .npmrc ignore-scripts enforcement
         "NPM-011":  ["1.5.1", "2.3.4"],            # secret-shaped paths in files field
+        "NPM-013":  ["1.5.1", "2.3.4"],            # broad files-field publishes everything
         # ── pypi (dep supply-chain) ───────────────────────────────
         "PYPI-001": ["1.4.1", "3.1.3"],            # requirements line lacks ==pin
         "PYPI-002": ["3.1.3", "4.1.1"],            # hash pinning missing
@@ -618,6 +620,7 @@ STANDARD = Standard(
         "NUGET-007": ["3.1.5", "1.4.1"],           # multiple sources without packageSourceMapping
         "NUGET-008": ["1.4.1", "3.1.3"],           # cooldown gate (--resolve-remote)
         "NUGET-009": ["1.4.1", "3.1.3"],           # OSV advisory (--resolve-remote)
+        "NUGET-010": ["1.5.1", "2.3.4"],           # NuGet.config cleartext feed credential
         # ── Cross-cutting dataflow / taint engine ───────��─────────
         # The taint family flags cross-step / cross-job flows where
         # untrusted input reaches a privileged sink. That's the

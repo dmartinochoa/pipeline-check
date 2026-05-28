@@ -25,7 +25,7 @@ axis.
 
 - **Controls in this standard:** 86
 - **Controls evidenced by at least one check:** 61 / 86
-- **Distinct checks evidencing this standard:** 625
+- **Distinct checks evidencing this standard:** 628
 - **Of those, autofixable with `--fix`:** 105
 
 _Severity levels (`CRITICAL` / `HIGH` / `MEDIUM` / `LOW` / `INFO`) follow the same scale across every provider and standard. See [How to read severity](README.md#how-to-read-severity) on the standards overview for the definitions._
@@ -41,7 +41,7 @@ Click a control ID to jump to the per-control section with the full check list. 
 | [`REC-3`](#ctrl-rec-3) | Discover technology stacks | 0 | — |
 | [`REC-4`](#ctrl-rec-4) | Active scanning | 0 | — |
 | [`REC-5`](#ctrl-rec-5) | Discover used open-source dependencies | 0 | — |
-| [`REC-6`](#ctrl-rec-6) | Scan public artifacts for secrets | 8 | 4C · 4H |
+| [`REC-6`](#ctrl-rec-6) | Scan public artifacts for secrets | 10 | 4C · 6H |
 | [`REC-7`](#ctrl-rec-7) | Discover internal artifact names | 0 | — |
 | [`REC-8`](#ctrl-rec-8) | Discover coding flaws | 0 | — |
 | [`REC-9`](#ctrl-rec-9) | Accidental public disclosure of internal resources | 0 | — |
@@ -101,7 +101,7 @@ Click a control ID to jump to the per-control section with the full check list. 
 | [`DE-1`](#ctrl-de-1) | Bypass review using admin permission | 33 | 8H · 23M · 2L |
 | [`DE-2`](#ctrl-de-2) | SaaS sprawl | 1 | 1M |
 | [`DE-3`](#ctrl-de-3) | Misconfigured audit log settings | 33 | 3H · 7M · 7L · 16I |
-| [`DE-4`](#ctrl-de-4) | Misconfiguration of security measures | 84 | 1C · 13H · 49M · 21L |
+| [`DE-4`](#ctrl-de-4) | Misconfiguration of security measures | 85 | 1C · 13H · 50M · 21L |
 | [`DE-5`](#ctrl-de-5) | Malicious compiler / interpreter | 0 | — |
 | [`DE-6`](#ctrl-de-6) | Misconfigured traffic log settings | 2 | 1M · 1L |
 | [`CA-1`](#ctrl-ca-1) | Passwords in application logs | 1 | 1M |
@@ -111,7 +111,7 @@ Click a control ID to jump to the per-control section with the full check list. 
 | [`CA-5`](#ctrl-ca-5) | Dump tokens from environment variable | 16 | 4C · 11H · 1M |
 | [`CA-6`](#ctrl-ca-6) | Passwords in CI/CD logs | 31 | 17C · 10H · 4M |
 | [`CA-7`](#ctrl-ca-7) | Runtime leakage of password | 0 | — |
-| [`CA-8`](#ctrl-ca-8) | Steal credentials in container artifacts | 10 | 4C · 5H · 1M |
+| [`CA-8`](#ctrl-ca-8) | Steal credentials in container artifacts | 12 | 4C · 7H · 1M |
 | [`LM-1`](#ctrl-lm-1) | Push implants across repositories | 1 | 1H |
 | [`LM-2`](#ctrl-lm-2) | Overprivileged user account | 29 | 5C · 13H · 10M · 1L |
 | [`COL-1`](#ctrl-col-1) | Unencrypted data in transit | 27 | 24H · 2M · 1L |
@@ -179,7 +179,7 @@ _No checks in this scanner currently evidence this control. Open an issue if you
 
 ### REC-6: Scan public artifacts for secrets { #ctrl-rec-6 }
 
-**Evidenced by 8 checks** across 3 providers (Dockerfile, Kubernetes, npm).
+**Evidenced by 10 checks** across 4 providers (Dockerfile, Kubernetes, NuGet, npm).
 
 | Check | Title | Severity | Provider | Fix |
 |-------|-------|----------|----------|-----|
@@ -191,6 +191,8 @@ _No checks in this scanner currently evidence this control. Open an issue if you
 | [`K8S-018`](../providers/kubernetes.md#k8s-018) | Secret stringData/data carries a credential-shaped literal | <span class="pg-sev pg-sev--critical">CRITICAL</span> | [Kubernetes](../providers/kubernetes.md) |  |
 | [`K8S-037`](../providers/kubernetes.md#k8s-037) | ConfigMap data carries a credential-shaped literal | <span class="pg-sev pg-sev--high">HIGH</span> | [Kubernetes](../providers/kubernetes.md) |  |
 | [`NPM-011`](../providers/npm.md#npm-011) | package.json files field includes secret-shaped paths | <span class="pg-sev pg-sev--high">HIGH</span> | [npm](../providers/npm.md) |  |
+| [`NPM-013`](../providers/npm.md#npm-013) | package.json files field uses an overly broad pattern | <span class="pg-sev pg-sev--high">HIGH</span> | [npm](../providers/npm.md) |  |
+| [`NUGET-010`](../providers/nuget.md#nuget-010) | NuGet.config stores a feed credential in plaintext | <span class="pg-sev pg-sev--high">HIGH</span> | [NuGet](../providers/nuget.md) |  |
 
 ### REC-7: Discover internal artifact names { #ctrl-rec-7 }
 
@@ -1014,7 +1016,7 @@ _No checks in this scanner currently evidence this control. Open an issue if you
 
 ### DE-4: Misconfiguration of security measures { #ctrl-de-4 }
 
-**Evidenced by 84 checks** across 17 providers (AWS, Argo CD, Argo Workflows, Azure DevOps, Bitbucket, Buildkite, CircleCI, Cloud Build, Dockerfile, GitHub Actions, GitLab CI, Helm, Jenkins, Kubernetes, OCI manifest, SCM, Tekton).
+**Evidenced by 85 checks** across 17 providers (AWS, Argo CD, Argo Workflows, Azure DevOps, Bitbucket, Buildkite, CircleCI, Cloud Build, Dockerfile, GitHub Actions, GitLab CI, Helm, Jenkins, Kubernetes, OCI manifest, SCM, Tekton).
 
 | Check | Title | Severity | Provider | Fix |
 |-------|-------|----------|----------|-----|
@@ -1081,6 +1083,7 @@ _No checks in this scanner currently evidence this control. Open an issue if you
 | [`OCI-006`](../providers/oci.md#oci-006) | Image has an excessive layer count | <span class="pg-sev pg-sev--low">LOW</span> | [OCI manifest](../providers/oci.md) |  |
 | [`OCI-007`](../providers/oci.md#oci-007) | Image manifest uses legacy schemaVersion 1 (no content addressing) | <span class="pg-sev pg-sev--high">HIGH</span> | [OCI manifest](../providers/oci.md) |  |
 | [`OCI-008`](../providers/oci.md#oci-008) | Manifest references digest using unsupported hash algorithm | <span class="pg-sev pg-sev--high">HIGH</span> | [OCI manifest](../providers/oci.md) |  |
+| [`OCI-009`](../providers/oci.md#oci-009) | Image manifest is missing OCI base-image annotations | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [OCI manifest](../providers/oci.md) |  |
 | [`SCM-006`](../providers/scm_github.md#scm-006) | Default branch protection does not require signed commits | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [SCM](../providers/scm_github.md) |  |
 | [`SCM-007`](../providers/scm_github.md#scm-007) | Default branch protection allows force-pushes | <span class="pg-sev pg-sev--high">HIGH</span> | [SCM](../providers/scm_github.md) |  |
 | [`SCM-008`](../providers/scm_github.md#scm-008) | Default branch protection does not require status checks | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [SCM](../providers/scm_github.md) |  |
@@ -1230,7 +1233,7 @@ _No checks in this scanner currently evidence this control. Open an issue if you
 
 ### CA-8: Steal credentials in container artifacts { #ctrl-ca-8 }
 
-**Evidenced by 10 checks** across 3 providers (Dockerfile, Kubernetes, npm).
+**Evidenced by 12 checks** across 4 providers (Dockerfile, Kubernetes, NuGet, npm).
 
 | Check | Title | Severity | Provider | Fix |
 |-------|-------|----------|----------|-----|
@@ -1244,6 +1247,8 @@ _No checks in this scanner currently evidence this control. Open an issue if you
 | [`K8S-018`](../providers/kubernetes.md#k8s-018) | Secret stringData/data carries a credential-shaped literal | <span class="pg-sev pg-sev--critical">CRITICAL</span> | [Kubernetes](../providers/kubernetes.md) |  |
 | [`K8S-037`](../providers/kubernetes.md#k8s-037) | ConfigMap data carries a credential-shaped literal | <span class="pg-sev pg-sev--high">HIGH</span> | [Kubernetes](../providers/kubernetes.md) |  |
 | [`NPM-011`](../providers/npm.md#npm-011) | package.json files field includes secret-shaped paths | <span class="pg-sev pg-sev--high">HIGH</span> | [npm](../providers/npm.md) |  |
+| [`NPM-013`](../providers/npm.md#npm-013) | package.json files field uses an overly broad pattern | <span class="pg-sev pg-sev--high">HIGH</span> | [npm](../providers/npm.md) |  |
+| [`NUGET-010`](../providers/nuget.md#nuget-010) | NuGet.config stores a feed credential in plaintext | <span class="pg-sev pg-sev--high">HIGH</span> | [NuGet](../providers/nuget.md) |  |
 
 ### LM-1: Push implants across repositories { #ctrl-lm-1 }
 

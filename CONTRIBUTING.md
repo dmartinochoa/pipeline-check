@@ -34,6 +34,19 @@ The `dev` extra pulls in `pytest`, `pytest-cov`, `mypy`, `ruff`,
 `jsonschema`, and `types-PyYAML` at the floor versions declared in
 `pyproject.toml`.
 
+Install the project's internal pre-commit hooks so the four
+drift-test suites (docs <-> code) gate every push:
+
+```bash
+pip install pre-commit
+pre-commit install                       # ruff lint on every commit
+pre-commit install --hook-type pre-push  # drift tests on every push
+```
+
+Config lives at `.pre-commit-config.yaml`. Skip with
+`git commit --no-verify` / `git push --no-verify` only when you
+have a reason (and a follow-up commit).
+
 ## Tests, lint, types
 
 Run the full suite before opening a PR:

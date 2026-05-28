@@ -570,6 +570,7 @@ STANDARD = Standard(
         "NPM-006":  ["6.3.1", "6.3.3"],
         "NPM-007":  ["6.5.1"],
         "NPM-011":  ["8.2.1"],
+        "NPM-013":  ["8.2.1"],
         "PYPI-001": ["6.3.3", "6.5.1"],
         "PYPI-002": ["6.3.3", "6.5.1"],
         "PYPI-003": ["6.3.3", "6.5.1"],
@@ -600,6 +601,7 @@ STANDARD = Standard(
         "NUGET-007": ["6.3.3", "6.5.1"],
         "NUGET-008": ["6.3.1", "6.3.3"],
         "NUGET-009": ["6.3.1", "6.3.3"],
+        "NUGET-010": ["8.2.1"],                  # NuGet.config cleartext feed credential
         # ── OCI image manifest gaps ──────────────────────────────
         "OCI-001":  ["6.5.1", "10.3.2"],                 # provenance annotations missing
         "OCI-002":  ["6.5.1", "10.3.2"],                 # build attestation missing
@@ -609,6 +611,7 @@ STANDARD = Standard(
         "OCI-006":  ["6.5.1"],                           # excessive layer count
         "OCI-007":  ["6.3.3", "6.5.1"],                  # legacy schemaVersion 1
         "OCI-008":  ["6.3.3", "6.5.1"],                  # weak digest algorithm
+        "OCI-009":  ["6.5.1", "10.3.2"],                 # missing base-image annotations
         # ── SLSA / in-toto attestation content ───────────────────
         "ATTEST-001": ["6.5.1", "10.3.2"],               # untrusted SLSA builder identity
         "ATTEST-002": ["6.5.1", "10.3.2"],               # source-repo claim unverifiable

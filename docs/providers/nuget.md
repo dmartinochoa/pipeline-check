@@ -28,7 +28,7 @@ pipeline_check --pipeline nuget --nuget-path ./src/
 
 ## What it covers
 
-9 checks · 0 have an autofix patch (``--fix``).
+10 checks · 0 have an autofix patch (``--fix``).
 
 | Check | Title | Severity | Fix |
 |-------|-------|----------|-----|
@@ -41,6 +41,7 @@ pipeline_check --pipeline nuget --nuget-path ./src/
 | [NUGET-007](#nuget-007) | Multiple NuGet sources without packageSourceMapping | <span class="pg-sev pg-sev--high">HIGH</span> |  |
 | [NUGET-008](#nuget-008) | NuGet package published within the cooldown window | <span class="pg-sev pg-sev--high">HIGH</span> |  |
 | [NUGET-009](#nuget-009) | NuGet package has a known OSV advisory | <span class="pg-sev pg-sev--critical">CRITICAL</span> |  |
+| [NUGET-010](#nuget-010) | NuGet.config stores a feed credential in plaintext | <span class="pg-sev pg-sev--high">HIGH</span> |  |
 
 ---
 
@@ -219,6 +220,38 @@ Network-dependent: needs ``--resolve-remote`` to query the OSV advisory database
 **Recommended action**
 
 Upgrade to a patched version or remove the affected package. Consult the advisory URL for remediation guidance.
+
+</div>
+
+</div>
+
+<div class="pg-rule pg-rule--high" markdown>
+
+## NUGET-010: NuGet.config stores a feed credential in plaintext { #nuget-010 }
+
+<div class="pg-rule__tags">
+<span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-6</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-7</span> <span class="pg-tag pg-tag--esf">ESF-D-SECRETS</span> <span class="pg-tag pg-tag--cwe">CWE-256</span> <span class="pg-tag pg-tag--cwe">CWE-312</span>
+</div>
+
+Fires when a ``NuGet.config`` carries a ``<packageSourceCredentials>`` block whose per-source entry includes an ``<add key="ClearTextPassword" value="..." />`` element. The key match is case-insensitive (NuGet itself treats it that way). The rule does NOT read or echo the literal credential value — findings only name the source the credential is bound to so secrets aren't laundered into reports.
+
+An encrypted ``<add key="Password" .../>`` entry is the DPAPI-encrypted form NuGet writes when you run ``nuget sources update -username ... -password ...`` on Windows. That key is NOT flagged here — its value is unreadable without the original user's key material. The rule's surface is specifically the ``ClearTextPassword`` key, which stores the literal credential in committable plaintext.
+
+Note: a session-scoped ``NuGet.config`` written by the build script (never committed) can legitimately use ``ClearTextPassword`` to pass a token from an environment variable to ``dotnet restore``. If you scan a tree that contains such a file, suppress on the specific path and rule pair with a rationale; the rule has no way to tell a build-script-generated config apart from a hand-committed one.
+
+**Known false-positive modes**
+
+- Build-script-generated ``NuGet.config`` files written into a workspace at job time legitimately use ``ClearTextPassword`` because the file isn't committed. The rule can't distinguish those from a checked-in config; suppress with a rationale on the specific path.
+
+**Seen in the wild**
+
+- NuGet credentials in repo history have driven multiple incidents where a private feed token leaked via a ``NuGet.config`` committed to a public mirror or to an open-source release branch; once in git history, the credential is recoverable forever (even after deletion).
+
+<div class="pg-rule__rec" markdown>
+
+**Recommended action**
+
+Remove the ``<add key="ClearTextPassword" .../>`` element from ``<packageSourceCredentials>``. If the feed needs auth for the build, use an environment variable reference (``%FEED_PASSWORD%`` on the value of an encrypted ``<add key="Password" ...>`` entry, populated at job time) or NuGet's encrypted-credential workflow (``nuget sources update -username ... -password ...``, which writes the DPAPI-encrypted ``Password`` key on Windows). On Linux / macOS where DPAPI isn't available, inject the secret at build time via the ``NUGET_CREDENTIALS`` environment variable or a ``-StoredPasswordInClearText`` session-scoped source declared in the build script, never in a checked-in ``NuGet.config``. After removal, rotate the credential — anyone with read access to the repo history has it.
 
 </div>
 

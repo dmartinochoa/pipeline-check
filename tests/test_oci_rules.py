@@ -37,6 +37,9 @@ from pipeline_check.core.checks.oci.rules import (
 from pipeline_check.core.checks.oci.rules import (
     oci008_weak_digest_algorithm as r8,
 )
+from pipeline_check.core.checks.oci.rules import (
+    oci009_missing_base_image_annotations as r9,
+)
 
 
 def _index(
@@ -599,3 +602,89 @@ class TestOCI008WeakDigestAlgorithm:
         m = _single(layers=[])
         f = r8.check(m)
         assert f.passed
+
+
+# ── OCI-009 ───────────────────────────────────────────────────────────
+
+
+class TestOCI009MissingBaseImageAnnotations:
+    def test_passes_when_both_base_annotations_set(self) -> None:
+        m = _single(annotations={
+            "org.opencontainers.image.base.name": (
+                "gcr.io/distroless/static:nonroot"
+            ),
+            "org.opencontainers.image.base.digest": "sha256:" + "0" * 64,
+        })
+        f = r9.check(m)
+        assert f.passed
+
+    def test_fails_when_both_absent(self) -> None:
+        m = _single(annotations={})
+        f = r9.check(m)
+        assert not f.passed
+        assert "base.name" in f.description
+        assert "base.digest" in f.description
+
+    def test_fails_when_only_name_set(self) -> None:
+        m = _single(annotations={
+            "org.opencontainers.image.base.name": (
+                "gcr.io/distroless/static:nonroot"
+            ),
+        })
+        f = r9.check(m)
+        assert not f.passed
+        assert "base.digest" in f.description
+
+    def test_fails_when_digest_blank(self) -> None:
+        m = _single(annotations={
+            "org.opencontainers.image.base.name": (
+                "gcr.io/distroless/static:nonroot"
+            ),
+            "org.opencontainers.image.base.digest": "",
+        })
+        f = r9.check(m)
+        assert not f.passed
+
+    def test_passes_on_explicit_scratch_marker(self) -> None:
+        # OCI spec: ``image.base.name`` present and empty is the
+        # 'no base image (scratch)' sentinel. The rule treats that
+        # as attributed (the build declared 'no base').
+        m = _single(annotations={
+            "org.opencontainers.image.base.name": "",
+        })
+        f = r9.check(m)
+        assert f.passed
+
+    def test_passes_when_annotations_carried_on_per_platform_entry(
+        self,
+    ) -> None:
+        # BuildKit copies the base.* annotations onto each per-platform
+        # sub-manifest. ``primary_image_annotations`` unions across
+        # the index + entries, so the rule must see them there.
+        entry = _platform_entry()
+        entry["annotations"] = {
+            "org.opencontainers.image.base.name": (
+                "gcr.io/distroless/static:nonroot"
+            ),
+            "org.opencontainers.image.base.digest": "sha256:" + "0" * 64,
+        }
+        m = _index(entries=[entry])
+        f = r9.check(m)
+        assert f.passed
+
+    def test_attestation_annotations_do_not_count(self) -> None:
+        # The base.* annotations must live on the runtime image, not
+        # the attestation manifest. The helper skips attestation
+        # entries; the rule should still fail if that's the only
+        # place the annotations appear.
+        att = _attestation_entry()
+        att["annotations"] = {
+            **att["annotations"],
+            "org.opencontainers.image.base.name": (
+                "gcr.io/distroless/static:nonroot"
+            ),
+            "org.opencontainers.image.base.digest": "sha256:" + "0" * 64,
+        }
+        m = _index(entries=[_platform_entry(), att])
+        f = r9.check(m)
+        assert not f.passed

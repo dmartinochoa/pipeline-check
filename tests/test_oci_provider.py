@@ -88,6 +88,12 @@ class TestOCIManifestChecksOrchestrator:
             "org.opencontainers.image.revision": "abc",
             "org.opencontainers.image.created": "2025-05-09T12:00:00Z",
             "org.opencontainers.image.licenses": "Apache-2.0",
+            "org.opencontainers.image.base.name": (
+                "gcr.io/distroless/static:nonroot"
+            ),
+            "org.opencontainers.image.base.digest": (
+                "sha256:" + "0" * 64
+            ),
         }, entries=[
             {
                 "mediaType": "application/vnd.oci.image.manifest.v1+json",
@@ -114,7 +120,7 @@ class TestOCIManifestChecksOrchestrator:
             "ATTEST-005", "ATTEST-006", "ATTEST-007",
             "OCI-001", "OCI-002", "OCI-003",
             "OCI-004", "OCI-005", "OCI-006",
-            "OCI-007", "OCI-008",
+            "OCI-007", "OCI-008", "OCI-009",
         ]
         # Every rule passes on this fully-stamped index (foreign-layer
         # / layer-count rules pass-by-default on indexes since they
@@ -186,13 +192,14 @@ class TestScannerWiring:
             "ATTEST-005", "ATTEST-006", "ATTEST-007",
             "OCI-001", "OCI-002", "OCI-003",
             "OCI-004", "OCI-005", "OCI-006",
-            "OCI-007", "OCI-008",
+            "OCI-007", "OCI-008", "OCI-009",
         ]
-        # OCI-001..003 + OCI-005 fire on a bare index (no
-        # provenance / attestation / created / licenses annotations).
-        # OCI-004 (foreign-layer) and OCI-006 (excessive layer count)
-        # pass-by-default on indexes since the index has no layers.
+        # OCI-001..003 + OCI-005 + OCI-009 fire on a bare index (no
+        # provenance / attestation / created / licenses / base-image
+        # annotations). OCI-004 (foreign-layer) and OCI-006 (excessive
+        # layer count) pass-by-default on indexes since the index has
+        # no layers.
         failed_ids = sorted(f.check_id for f in findings if not f.passed)
         assert failed_ids == [
-            "OCI-001", "OCI-002", "OCI-003", "OCI-005",
+            "OCI-001", "OCI-002", "OCI-003", "OCI-005", "OCI-009",
         ]

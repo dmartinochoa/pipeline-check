@@ -611,6 +611,7 @@ STANDARD = Standard(
         "NPM-006":  ["ESF-S-VERIFY-DEPS", "ESF-S-VULN-MGMT"],
         "NPM-007":  ["ESF-D-BUILD-ENV"],
         "NPM-011":  ["ESF-D-SECRETS"],
+        "NPM-013":  ["ESF-D-SECRETS"],
         "PYPI-001": ["ESF-S-PIN-DEPS"],
         "PYPI-002": ["ESF-S-PIN-DEPS", "ESF-S-VERIFY-DEPS"],
         "PYPI-003": ["ESF-S-TRUSTED-REG"],
@@ -641,6 +642,7 @@ STANDARD = Standard(
         "NUGET-007": ["ESF-S-VERIFY-DEPS"],
         "NUGET-008": ["ESF-S-VERIFY-DEPS"],
         "NUGET-009": ["ESF-S-VERIFY-DEPS"],
+        "NUGET-010": ["ESF-D-SECRETS"],
         # ── OCI image manifest gaps ──────────────────────────────
         # Provenance metadata + integrity → ESF-S-PROVENANCE +
         # ESF-D-SBOM. Foreign-layer URL → ESF-S-TRUSTED-REG. Schema
@@ -653,6 +655,7 @@ STANDARD = Standard(
         "OCI-006":  ["ESF-D-BUILD-ENV"],           # excessive layer count
         "OCI-007":  ["ESF-S-IMMUTABLE", "ESF-S-VERIFY-DEPS"],   # legacy schemaVersion 1
         "OCI-008":  ["ESF-S-IMMUTABLE", "ESF-S-VERIFY-DEPS"],   # weak digest algorithm
+        "OCI-009":  ["ESF-S-PROVENANCE"],                      # missing base-image annotations
         # ── SLSA / in-toto attestation content ───────────────────
         "ATTEST-001": ["ESF-S-PROVENANCE", "ESF-D-SIGN-ARTIFACTS"],   # untrusted SLSA builder identity
         "ATTEST-002": ["ESF-S-PROVENANCE"],         # source-repo claim unverifiable

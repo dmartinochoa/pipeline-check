@@ -147,6 +147,7 @@ STANDARD = Standard(
         "NUGET-007": ["Pinned-Dependencies"],                          # multiple sources without packageSourceMapping
         "NUGET-008": ["Pinned-Dependencies", "Vulnerabilities"],       # cooldown gate (--resolve-remote)
         "NUGET-009": ["Pinned-Dependencies", "Vulnerabilities"],       # OSV advisory (--resolve-remote)
+        "NUGET-010": ["Token-Permissions"],                            # NuGet.config cleartext feed credential
         # Reusable workflow / services-image / cross-step pinning
         "GHA-017":  ["Pinned-Dependencies"],                           # package install insecure source
         "GHA-051":  ["Pinned-Dependencies"],                           # services / container image unpinned
@@ -321,6 +322,7 @@ STANDARD = Standard(
         "NPM-004":  ["Dangerous-Workflow"],                            # install-time lifecycle script
         "NPM-007":  ["Dangerous-Workflow"],                            # .npmrc ignore-scripts enforcement
         "NPM-011":  ["Token-Permissions"],                             # secret-shaped paths in files field
+        "NPM-013":  ["Token-Permissions"],                             # broad files-field publishes everything
 
         # ── Token-Permissions ────────────────────────────────────────
         # Scorecard's check targets GITHUB_TOKEN scope, but applies in
@@ -517,6 +519,7 @@ STANDARD = Standard(
         "OCI-004":  ["Pinned-Dependencies"],                           # foreign-URL layer = no content pin
         "OCI-007":  ["Pinned-Dependencies"],                           # legacy schemaVersion 1
         "OCI-008":  ["Pinned-Dependencies"],                           # non-sha256 digest
+        "OCI-009":  ["SBOM"],                                          # missing base-image annotations
         # ── Helm chart-supply-chain ──────────────────────────────────
         # Chart deps ARE pinned dependencies in the Scorecard sense —
         # an unlocked Chart.lock is a Pinned-Dependencies failure.

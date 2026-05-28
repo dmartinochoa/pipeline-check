@@ -86,10 +86,17 @@ inputs:
     default: 'sarif'
   output-file:
     description: >
-      Path to write the report. Defaults to ``pipeline-check.sarif``
-      for SARIF output.
+      Path to write the report. When left blank a per-format default
+      is used: ``pipeline-check.sarif`` for SARIF (so the upload-sarif
+      step keeps working), ``pipeline-check.json`` for JSON,
+      ``pipeline-check.html`` for HTML, ``pipeline-check.xml`` for
+      JUnit, ``pipeline-check.md`` for Markdown,
+      ``gl-code-quality-report.json`` for Code Quality (the GitLab
+      convention), ``pipeline-check-sbom.json`` for CycloneDX,
+      ``pipeline-check-threatmodel.json`` for the threat-model
+      report. Terminal / both write to stdout when this is blank.
     required: false
-    default: 'pipeline-check.sarif'
+    default: ''
   upload-sarif:
     description: >
       When ``true`` and ``output`` is ``sarif``, upload the SARIF
@@ -262,6 +269,27 @@ runs:
         [ -n "$DIFF_BASE" ]          && args+=(--diff-base "$DIFF_BASE")
         [ -n "$IGNORE_FILE" ]        && args+=(--ignore-file "$IGNORE_FILE")
         [ -n "$OUTPUT_FORMAT" ]      && args+=(--output "$OUTPUT_FORMAT")
+
+        # Derive a per-format default filename when the caller left
+        # ``output-file`` blank. The previous behavior always wrote
+        # ``pipeline-check.sarif`` regardless of format, so a caller
+        # who set ``output: codequality`` without overriding the file
+        # name got the Code Quality JSON in a ``.sarif`` file —
+        # invisible to GitLab's ``artifacts.reports.codequality:``
+        # slot, no error to diagnose. Terminal/both stay blank
+        # because they stream to stdout.
+        if [ -z "$OUTPUT_FILE" ]; then
+          case "$OUTPUT_FORMAT" in
+            sarif|"")    OUTPUT_FILE="pipeline-check.sarif" ;;
+            json)        OUTPUT_FILE="pipeline-check.json" ;;
+            html)        OUTPUT_FILE="pipeline-check.html" ;;
+            junit)       OUTPUT_FILE="pipeline-check.xml" ;;
+            markdown)    OUTPUT_FILE="pipeline-check.md" ;;
+            codequality) OUTPUT_FILE="gl-code-quality-report.json" ;;
+            cyclonedx)   OUTPUT_FILE="pipeline-check-sbom.json" ;;
+            threatmodel) OUTPUT_FILE="pipeline-check-threatmodel.json" ;;
+          esac
+        fi
         [ -n "$OUTPUT_FILE" ]        && args+=(--output-file "$OUTPUT_FILE")
         [ "$RESOLVE_REMOTE" = "true" ] && args+=(--resolve-remote)
 
@@ -344,7 +372,12 @@ runs:
       if: ${{ inputs.upload-sarif == 'true' && inputs.output == 'sarif' && always() }}
       uses: github/codeql-action/upload-sarif@7211b7c8077ea37d8641b6271f6a365a22a5fbfa  # v4.36.0
       with:
-        sarif_file: ${{ inputs.output-file }}
+        # ``steps.run.outputs.sarif-file`` carries the path the run step
+        # actually wrote to — either the explicit ``inputs.output-file``
+        # or the per-format default the step derives. Reading
+        # ``inputs.output-file`` here would be empty when the caller
+        # relied on the default.
+        sarif_file: ${{ steps.run.outputs.sarif-file }}
 
     - name: Post PR review comments
       if: >-

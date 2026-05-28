@@ -4,7 +4,10 @@ from __future__ import annotations
 import json
 
 from pipeline_check.core.checks.base import Finding, Location, Severity
-from pipeline_check.core.codequality_reporter import report_codequality
+from pipeline_check.core.codequality_reporter import (
+    _SEVERITY_MAP,
+    report_codequality,
+)
 
 
 def _f(check_id="GHA-001", passed=False, severity=Severity.HIGH, **kw):
@@ -95,6 +98,23 @@ class TestLocationExplosion:
         assert issue["location"]["path"] == "cfn/stack.yaml"
         assert "lines" not in issue["location"]
 
+    def test_empty_resource_falls_back_to_unknown_sentinel(self):
+        finding = _f(resource="", locations=[])
+        issue = json.loads(report_codequality([finding]))[0]
+        assert issue["location"]["path"] == "unknown"
+
+    def test_windows_path_is_normalized_to_forward_slashes(self):
+        finding = _f(locations=[
+            Location(path=".github\\workflows\\ci.yml", start_line=5),
+        ])
+        issue = json.loads(report_codequality([finding]))[0]
+        assert issue["location"]["path"] == ".github/workflows/ci.yml"
+
+    def test_windows_resource_fallback_is_normalized(self):
+        finding = _f(resource="cfn\\stack.yaml", locations=[])
+        issue = json.loads(report_codequality([finding]))[0]
+        assert issue["location"]["path"] == "cfn/stack.yaml"
+
     def test_location_with_no_line_omits_lines_block(self):
         finding = _f(locations=[Location(path="ci.yml", start_line=None)])
         issue = json.loads(report_codequality([finding]))[0]
@@ -122,3 +142,34 @@ class TestFingerprint:
         a = json.loads(report_codequality([f1]))[0]["fingerprint"]
         b = json.loads(report_codequality([f2]))[0]["fingerprint"]
         assert a != b
+
+    def test_fingerprint_stable_when_description_changes(self):
+        """Description prose drifts between releases (and one-off flags like
+        ``--verify-secrets-show-identity`` append context). Fingerprint must
+        stay constant so previously-dismissed MR threads don't churn."""
+        f1 = _f(description="Action not pinned.")
+        f2 = _f(description="Action is not pinned to a SHA.")
+        a = json.loads(report_codequality([f1]))[0]["fingerprint"]
+        b = json.loads(report_codequality([f2]))[0]["fingerprint"]
+        assert a == b
+
+    def test_fingerprint_stable_across_platforms(self):
+        """Windows path with backslashes should yield the same fingerprint
+        as the equivalent forward-slash path so a cross-OS scan dedupes."""
+        win = _f(locations=[
+            Location(path=".github\\workflows\\ci.yml", start_line=5),
+        ])
+        nix = _f(locations=[
+            Location(path=".github/workflows/ci.yml", start_line=5),
+        ])
+        a = json.loads(report_codequality([win]))[0]["fingerprint"]
+        b = json.loads(report_codequality([nix]))[0]["fingerprint"]
+        assert a == b
+
+
+class TestSeverityMapCoverage:
+    def test_severity_map_covers_every_enum_member(self):
+        """Adding a new ``Severity`` member without mapping it would silently
+        downgrade real findings to ``info`` via the dict-get fallback. This
+        test fails the moment the registries drift."""
+        assert set(_SEVERITY_MAP) == set(Severity)

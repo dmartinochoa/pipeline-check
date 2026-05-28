@@ -692,6 +692,7 @@ STANDARD = Standard(
         "NPM-006":  ["GV.SC-05", "GV.SC-07", "PR.PS-02"],  # compromised npm version
         "NPM-007":  ["PR.PS-05"],               # .npmrc ignore-scripts
         "NPM-011":  ["PR.AA-01", "PR.DS-01"],   # secret-shaped paths in files field
+        "NPM-013":  ["PR.AA-01", "PR.DS-01"],   # broad files-field publishes everything
         "PYPI-001": ["GV.SC-05"],               # missing ==pin
         "PYPI-002": ["GV.SC-05"],               # hash pinning missing
         "PYPI-003": ["GV.SC-05", "PR.DS-02"],   # http index / --trusted-host
@@ -722,6 +723,7 @@ STANDARD = Standard(
         "NUGET-007": ["GV.SC-05"],              # multiple sources without packageSourceMapping
         "NUGET-008": ["GV.SC-05", "GV.SC-07", "PR.PS-02"],  # cooldown gate (--resolve-remote)
         "NUGET-009": ["GV.SC-05", "GV.SC-07", "PR.PS-02"],  # OSV advisory (--resolve-remote)
+        "NUGET-010": ["PR.AA-01", "PR.DS-01"],  # NuGet.config cleartext feed credential
         # ── OCI image manifest gaps ──────────────────────────────
         "OCI-001":  ["GV.SC-05"],               # provenance annotations missing
         "OCI-002":  ["PR.PS-06", "GV.SC-05"],   # build attestation missing
@@ -731,6 +733,7 @@ STANDARD = Standard(
         "OCI-006":  ["PR.PS-01"],               # excessive layer count
         "OCI-007":  ["GV.SC-05"],               # legacy schemaVersion 1
         "OCI-008":  ["GV.SC-05"],               # weak digest algorithm
+        "OCI-009":  ["GV.SC-05"],               # missing base-image annotations
         # ── SLSA / in-toto attestation content ───────────────────
         "ATTEST-001": ["PR.PS-06", "GV.SC-05"], # untrusted SLSA builder identity
         "ATTEST-002": ["PR.PS-06", "GV.SC-05"], # source-repo claim unverifiable

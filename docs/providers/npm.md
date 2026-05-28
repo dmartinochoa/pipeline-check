@@ -41,7 +41,7 @@ parsers and are queued for a follow-up.
 
 ## What it covers
 
-12 checks · 0 have an autofix patch (``--fix``).
+13 checks · 0 have an autofix patch (``--fix``).
 
 | Check | Title | Severity | Fix |
 |-------|-------|----------|-----|
@@ -57,6 +57,7 @@ parsers and are queued for a follow-up.
 | [NPM-010](#npm-010) | npm package has a known OSV advisory | <span class="pg-sev pg-sev--critical">CRITICAL</span> |  |
 | [NPM-011](#npm-011) | package.json files field includes secret-shaped paths | <span class="pg-sev pg-sev--high">HIGH</span> |  |
 | [NPM-012](#npm-012) | .npmrc publish token lacks IP or readonly restriction | <span class="pg-sev pg-sev--high">HIGH</span> |  |
+| [NPM-013](#npm-013) | package.json files field uses an overly broad pattern | <span class="pg-sev pg-sev--high">HIGH</span> |  |
 
 ---
 
@@ -419,6 +420,42 @@ Restrict every npm auth token to the minimum required scope. For tokens used onl
 3. For read-only CI installs (``npm ci``), use a **read-only** token that cannot publish at all.
 
 A leaked unrestricted publish token enables full package hijack: an attacker publishes a backdoored version under your package name.
+
+</div>
+
+</div>
+
+<div class="pg-rule pg-rule--high" markdown>
+
+## NPM-013: package.json files field uses an overly broad pattern { #npm-013 }
+
+<div class="pg-rule__tags">
+<span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-6</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-3</span> <span class="pg-tag pg-tag--esf">ESF-D-SECRETS</span> <span class="pg-tag pg-tag--cwe">CWE-538</span> <span class="pg-tag pg-tag--cwe">CWE-200</span>
+</div>
+
+Fires when ``package.json`` declares a ``files`` field whose list includes any of these broad-include literals:
+
+* ``"*"`` — npm interprets a lone ``*`` as 'every file in   the package root' (it does NOT mean 'every direct child'   the way a shell glob does)
+* ``"**"`` / ``"**/*"`` / ``"*/**"`` — every file in   every subdirectory
+* ``"."`` / ``"./"`` — explicit current-directory   include
+
+When the broad entry is the only entry, the tarball is effectively the repo tree minus whatever ``.npmignore`` / ``.gitignore`` happens to block. Hand-maintained ignore files routinely miss new dotfiles (``.env.local``, ``.aws/``, ``.terraform/``), so the failure mode is silent credential leakage at the next ``npm publish``. The right fix is the explicit positive-list shape NPM-011 already scans; NPM-013 catches the case where there's no list to scan because everything is in.
+
+Skipped: a ``files`` field that omits broad-include entries (the safe positive-list shape), a manifest with no ``files`` field (different surface — npm falls back to ``.npmignore`` / ``.gitignore`` semantics, which has its own pitfalls but is out of scope here), and any entry that narrows the include with a subdirectory prefix (``dist/**``, ``src/**/*.js``).
+
+**Known false-positive modes**
+
+- A package that is genuinely meant to ship every file in a tightly-controlled subtree (e.g. a single-file documentation package whose entire repo IS the publishable content) may legitimately use ``"*"`` paired with a comprehensive, audited ``.npmignore``. Suppress with a rationale that names the ``.npmignore`` file and the audit cadence; otherwise rewrite the field as a positive list.
+
+**Seen in the wild**
+
+- Socket.dev and ReversingLabs research catalogs document a long tail of npm publishes leaking ``.env`` / ``.aws/`` / ``.git/`` content via permissive ``files`` patterns paired with incomplete ``.npmignore`` files. The pattern is the single most common credential-leak vector at ``npm publish`` time.
+
+<div class="pg-rule__rec" markdown>
+
+**Recommended action**
+
+Replace the broad-include entry (``*``, ``**``, ``./``, ``.``, ``**/*``, ``*/**``) with an explicit positive-list of the paths the package ships: typically ``dist/**`` plus ``README.md`` / ``LICENSE``. ``npm`` interprets a single ``*`` or ``**`` as 'include everything not blocked by an ignore file', which silently ships every dotfile, env file, build artifact, and CI script the repo carries unless a complete ``.npmignore`` exists. Run ``npm pack --dry-run`` after tightening the list, inspect the printed contents, and only then ``npm publish``. NPM-011 catches a small set of secret-shaped *names*; NPM-013 catches the much larger surface where the pattern itself is the leak.
 
 </div>
 

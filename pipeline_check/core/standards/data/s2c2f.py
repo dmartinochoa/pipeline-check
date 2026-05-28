@@ -84,6 +84,7 @@ STANDARD = Standard(
         "MVN-007":  ["ING-1"],             # settings.xml wildcard mirror
         "NUGET-004": ["ING-1"],            # HTTP-only NuGet package source
         "NUGET-007": ["ING-1"],            # multiple sources without packageSourceMapping
+        "NUGET-010": ["ING-1"],            # NuGet.config cleartext feed credential
         # Dockerfile env-bypass pack disables the trusted-source channel
         # for any subsequent OSS install in the image.
         "DF-021":   ["ING-1"],             # pip install TLS bypass / http index
@@ -268,6 +269,7 @@ STANDARD = Standard(
         # artifact" surface for container artifacts; same shape as
         # DF-016 above.
         "OCI-001":  ["REB-3"],             # missing OCI provenance annotations
+        "OCI-009":  ["REB-3"],             # missing OCI base-image annotations
         "OCI-003":  ["REB-3"],             # missing image.created
         "OCI-005":  ["REB-3"],             # missing image.licenses
         # Helm chart provenance metadata
