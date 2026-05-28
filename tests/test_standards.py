@@ -405,7 +405,7 @@ class TestPerFrameworkCoverageFloor:
         "cis_aws_foundations":    14,   # current 15%, AWS-pack-only
         "cis_github":             13,   # current 14%, GitHub-platform-scoped
         "oscr":                   55,   # current ~58%, supply-chain-attack-scoped
-        "cis_kubernetes":          5,   # current 6%, K8s-manifest-scoped
+        "cis_kubernetes":          4,   # current 4-5%, K8s-manifest-scoped (denominator grows with non-K8s rule packs)
     }
 
     def test_floors_hold(self):

@@ -132,6 +132,12 @@ STANDARD = Standard(
         "MVN-007":  ["Pinned-Dependencies"],                           # settings.xml wildcard mirror
         "MVN-008":  ["Pinned-Dependencies", "Vulnerabilities"],        # cooldown gate (--resolve-remote)
         "MVN-009":  ["Pinned-Dependencies", "Vulnerabilities"],        # OSV advisory (--resolve-remote)
+        # ── Maven extended pack ──
+        "MVN-010":  ["Token-Permissions"],                             # plaintext server password
+        "MVN-011":  ["Token-Permissions"],                             # repo URL credentials
+        "MVN-012":  ["Pinned-Dependencies"],                           # build plugin floating
+        "MVN-013":  ["Pinned-Dependencies"],                           # build extension floating
+        "MVN-014":  ["Pinned-Dependencies"],                           # wrapper sha256 missing
         "NPM-008":  ["Pinned-Dependencies", "Vulnerabilities"],        # cooldown gate (--resolve-remote)
         "NPM-009":  ["Pinned-Dependencies"],                           # new-transitive-dep diff gate
         "NPM-010":  ["Pinned-Dependencies", "Vulnerabilities"],        # OSV advisory (--resolve-remote)
@@ -519,6 +525,11 @@ STANDARD = Standard(
         "DR-008":   ["Pinned-Dependencies"],                           # ``pull: never`` skips registry verify
         "DR-009":   ["Dangerous-Workflow"],                            # tainted cache key
         "DR-011":   ["Dangerous-Workflow"],                            # node map runner targeting
+        # ── Drone extended pack ──
+        "DR-012":   ["Pinned-Dependencies"],                           # service image not pinned
+        "DR-014":   ["Pinned-Dependencies"],                           # pipe-to-shell
+        "DR-015":   ["Dangerous-Workflow"],                            # clone recursive
+        "DR-016":   ["Dangerous-Workflow"],                            # image field interpolation
         # ── OCI image manifest ───────────────────────────────────────
         "OCI-001":  ["SBOM"],                                          # provenance annotations
         "OCI-002":  ["Signed-Releases", "SBOM"],                       # build attestation manifest

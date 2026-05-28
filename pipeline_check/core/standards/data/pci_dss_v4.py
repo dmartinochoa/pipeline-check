@@ -541,6 +541,12 @@ STANDARD = Standard(
         "DR-009":   ["6.4.1", "6.5.1"],                  # cache key tainted
         "DR-010":   ["6.3.3", "6.5.1"],                  # unpinned package install
         "DR-011":   ["6.5.1"],                           # node map interpolates untrusted
+        # ── Drone extended pack ──
+        "DR-012":   ["6.3.1"],                           # service image not pinned
+        "DR-013":   ["6.5.1"],                           # no trigger event filter
+        "DR-014":   ["6.3.1"],                           # pipe-to-shell
+        "DR-015":   ["6.3.1"],                           # clone recursive
+        "DR-016":   ["6.5.1"],                           # image field interpolation
         # ── Buildkite extras ─────────────────────────────────────
         "BK-014":   ["6.3.3", "6.5.1"],                  # unpinned package install
         "BK-015":   ["6.5.1"],                           # agents map untrusted interpolation
@@ -591,6 +597,12 @@ STANDARD = Standard(
         "MVN-007":  ["6.3.3", "6.5.1"],
         "MVN-008":  ["6.3.1", "6.3.3"],
         "MVN-009":  ["6.3.1", "6.3.3"],
+        # ── Maven extended pack ──
+        "MVN-010":  ["8.2.1"],
+        "MVN-011":  ["8.2.1"],
+        "MVN-012":  ["6.3.1"],
+        "MVN-013":  ["6.3.1"],
+        "MVN-014":  ["6.3.1"],
         "NPM-008":  ["6.3.1", "6.3.3"],
         "NPM-009":  ["6.3.3", "6.5.1"],
         "NPM-010":  ["6.3.1", "6.3.3"],

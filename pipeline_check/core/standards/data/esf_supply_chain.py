@@ -607,6 +607,12 @@ STANDARD = Standard(
         "DR-009":   ["ESF-D-INJECTION"],            # cache key tainted
         "DR-010":   ["ESF-S-PIN-DEPS", "ESF-S-VERIFY-DEPS"],   # unpinned package install
         "DR-011":   ["ESF-D-INJECTION"],            # node map interpolates untrusted
+        # ── Drone extended pack ──
+        "DR-012":   ["ESF-S-PIN-DEPS", "ESF-S-IMMUTABLE"],   # service image not pinned
+        "DR-013":   ["ESF-C-APPROVAL"],             # no trigger event filter
+        "DR-014":   ["ESF-S-VERIFY-DEPS"],          # pipe-to-shell
+        "DR-015":   ["ESF-S-VERIFY-DEPS"],          # clone recursive
+        "DR-016":   ["ESF-D-INJECTION", "ESF-S-PIN-DEPS"],   # image field interpolation
         # ── NPM / PyPI / Maven dep supply-chain ──────────────────
         # Per-package pinning / integrity / non-registry source →
         # ESF-S-PIN-DEPS (+ ESF-S-VERIFY-DEPS). Compromised pkgs add
@@ -637,6 +643,12 @@ STANDARD = Standard(
         "MVN-007":  ["ESF-S-TRUSTED-REG"],
         "MVN-008":  ["ESF-S-VERIFY-DEPS"],
         "MVN-009":  ["ESF-S-VERIFY-DEPS"],
+        # ── Maven extended pack ──
+        "MVN-010":  ["ESF-D-SECRETS"],
+        "MVN-011":  ["ESF-D-SECRETS"],
+        "MVN-012":  ["ESF-S-VERIFY-DEPS"],
+        "MVN-013":  ["ESF-S-VERIFY-DEPS"],
+        "MVN-014":  ["ESF-S-VERIFY-DEPS"],
         "NPM-008":  ["ESF-S-VERIFY-DEPS"],
         "NPM-009":  ["ESF-S-VERIFY-DEPS"],
         "NPM-010":  ["ESF-S-VERIFY-DEPS"],

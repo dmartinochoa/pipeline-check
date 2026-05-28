@@ -351,6 +351,12 @@ STANDARD = Standard(
         "MVN-007":  ["4.2.1"],                     # settings.xml wildcard mirror
         "MVN-008":  ["4.1.3"],                     # cooldown gate (--resolve-remote)
         "MVN-009":  ["4.1.3"],                     # OSV advisory (--resolve-remote)
+        # ── Maven extended pack ──
+        "MVN-010":  ["4.1.4"],                     # plaintext server password
+        "MVN-011":  ["4.1.4"],                     # repo URL credentials
+        "MVN-012":  ["4.1.3"],                     # build plugin floating
+        "MVN-013":  ["4.1.3"],                     # build extension floating
+        "MVN-014":  ["4.1.3"],                     # wrapper sha256 missing
         "NPM-008":  ["4.1.3"],                     # cooldown gate (--resolve-remote)
         "NPM-009":  ["4.1.5"],                     # new-transitive-dep diff gate
         "NPM-010":  ["4.1.3"],                     # OSV advisory (--resolve-remote)
@@ -509,6 +515,12 @@ STANDARD = Standard(
         "DR-009":  ["4.4.6"],                      # cache key tainted = rogue input
         "DR-010":  ["4.1.5"],                      # unpinned package install
         "DR-011":  ["4.4.5"],                      # node map interpolates untrusted
+        # ── Drone extended pack ──
+        "DR-012":  ["4.1.5"],                      # service image not pinned
+        "DR-013":  ["4.4.5"],                      # no trigger event filter
+        "DR-014":  ["4.1.5", "4.4.5"],             # pipe-to-shell
+        "DR-015":  ["4.4.5"],                      # clone recursive
+        "DR-016":  ["4.4.5"],                      # image field interpolation
         # ── Tekton container-touching extras ─────────────────────
         "TKN-003": ["4.4.5"],                      # param injection in script
         "TKN-006": ["4.4.5"],                      # no timeout

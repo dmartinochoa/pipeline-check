@@ -135,6 +135,12 @@ STANDARD = Standard(
         "MVN-006":  ["SCA-3", "ING-3"],     # compromised Maven version
         "MVN-008":  ["SCA-3", "ING-3"],     # cooldown gate (--resolve-remote)
         "MVN-009":  ["SCA-3", "ING-3"],     # OSV advisory (--resolve-remote)
+        # ── Maven extended pack ──
+        "MVN-010":  ["ING-3"],              # plaintext server password
+        "MVN-011":  ["ING-3"],              # repo URL credentials
+        "MVN-012":  ["SCA-3", "ING-3"],     # build plugin floating
+        "MVN-013":  ["SCA-3", "ING-3"],     # build extension floating
+        "MVN-014":  ["ING-3"],              # wrapper sha256 missing
         "NUGET-005": ["SCA-3", "ING-3"],    # known-compromised NuGet version
         "NUGET-008": ["SCA-3", "ING-3"],    # cooldown gate (--resolve-remote)
         "NUGET-009": ["SCA-3", "ING-3"],    # OSV advisory (--resolve-remote)

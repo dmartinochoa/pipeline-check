@@ -558,6 +558,12 @@ STANDARD = Standard(
         "DR-009":  ["PR.IR-01"],                # cache key tainted
         "DR-010":  ["GV.SC-05"],                # unpinned package install
         "DR-011":  ["PR.PS-05"],                # node map interpolates untrusted
+        # ── Drone extended pack ──
+        "DR-012":  ["GV.SC-05"],                # service image not pinned
+        "DR-013":  ["GV.SC-07"],                # no trigger event filter
+        "DR-014":  ["GV.SC-05"],                # pipe-to-shell
+        "DR-015":  ["GV.SC-05"],                # clone recursive
+        "DR-016":  ["GV.SC-07"],                # image field interpolation
         # ── Tekton (K8s-native pipeline kinds) ────────────────────
         "TKN-001": ["GV.SC-05", "PR.PS-02"],    # step image not digest-pinned
         "TKN-002": ["PR.PS-01"],                # step privileged / root
@@ -718,6 +724,12 @@ STANDARD = Standard(
         "MVN-007":  ["GV.SC-05"],               # settings.xml wildcard mirror
         "MVN-008":  ["GV.SC-05", "GV.SC-07", "PR.PS-02"],  # cooldown gate (--resolve-remote)
         "MVN-009":  ["GV.SC-05", "GV.SC-07", "PR.PS-02"],  # OSV advisory (--resolve-remote)
+        # ── Maven extended pack ──
+        "MVN-010":  ["PR.DS-01"],               # plaintext server password
+        "MVN-011":  ["PR.DS-01"],               # repo URL credentials
+        "MVN-012":  ["GV.SC-07"],               # build plugin floating
+        "MVN-013":  ["GV.SC-07"],               # build extension floating
+        "MVN-014":  ["GV.SC-07"],               # wrapper sha256 missing
         "NPM-008":  ["GV.SC-05", "GV.SC-07", "PR.PS-02"],  # cooldown gate (--resolve-remote)
         "NPM-009":  ["GV.SC-05"],               # new-transitive-dep diff gate
         "NPM-010":  ["GV.SC-05", "GV.SC-07", "PR.PS-02"],  # OSV advisory (--resolve-remote)

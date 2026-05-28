@@ -554,6 +554,12 @@ STANDARD = Standard(
         "DR-009":   ["2.1.3", "2.3.8"],            # cache key tainted by attacker input
         "DR-010":   ["1.4.1", "3.1.5"],            # unpinned package install
         "DR-011":   ["2.1.3"],                     # node map interpolates untrusted variable
+        # ── Drone extended pack ──
+        "DR-012":   ["1.4.1"],                     # service image not pinned
+        "DR-013":   ["1.1.5"],                     # no trigger event filter
+        "DR-014":   ["1.4.1"],                     # pipe-to-shell
+        "DR-015":   ["1.4.1"],                     # clone recursive
+        "DR-016":   ["2.1.3"],                     # image field interpolation
         # ── Cloud Build ────────────────────────────────────────────
         # Mirrors the GCB-* coverage other CI providers got across
         # rounds 22-24 in the catalog.
@@ -615,6 +621,12 @@ STANDARD = Standard(
         "MVN-007":  ["3.1.5", "1.4.1"],            # settings.xml wildcard mirror
         "MVN-008":  ["1.4.1", "3.1.3"],            # cooldown gate (--resolve-remote)
         "MVN-009":  ["1.4.1", "3.1.3"],            # OSV advisory (--resolve-remote)
+        # ── Maven extended pack ──
+        "MVN-010":  ["1.5.1"],                     # plaintext server password
+        "MVN-011":  ["1.5.1"],                     # repo URL credentials
+        "MVN-012":  ["1.4.1"],                     # build plugin floating
+        "MVN-013":  ["1.4.1"],                     # build extension floating
+        "MVN-014":  ["1.4.1"],                     # wrapper sha256 missing
         "NPM-008":  ["1.4.1", "3.1.3"],            # cooldown gate (--resolve-remote)
         "NPM-009":  ["1.4.1", "3.1.3"],            # new-transitive-dep diff gate
         "NPM-010":  ["1.4.1", "3.1.3"],            # OSV advisory (--resolve-remote)

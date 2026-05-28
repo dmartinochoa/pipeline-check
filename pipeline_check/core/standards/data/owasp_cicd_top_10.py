@@ -540,6 +540,12 @@ STANDARD = Standard(
         "MVN-007":  ["CICD-SEC-8", "CICD-SEC-3"],  # settings.xml wildcard mirror
         "MVN-008":  ["CICD-SEC-3", "CICD-SEC-8"],  # cooldown gate (--resolve-remote)
         "MVN-009":  ["CICD-SEC-3", "CICD-SEC-8"],  # OSV advisory (--resolve-remote)
+        # ── Maven extended pack (MVN-010..014) ──
+        "MVN-010":  ["CICD-SEC-6", "CICD-SEC-10"], # settings.xml plaintext password
+        "MVN-011":  ["CICD-SEC-6", "CICD-SEC-10"], # repo URL embedded credentials
+        "MVN-012":  ["CICD-SEC-3", "CICD-SEC-7"],  # build plugin floating
+        "MVN-013":  ["CICD-SEC-3", "CICD-SEC-7"],  # build extension floating
+        "MVN-014":  ["CICD-SEC-3"],                # Maven Wrapper sha256 missing
         # nuget (csproj + NuGet.config static analysis)
         "NUGET-001": ["CICD-SEC-3"],                # floating NuGet version range
         "NUGET-002": ["CICD-SEC-3"],                # wildcard prerelease version
@@ -658,6 +664,12 @@ STANDARD = Standard(
         "DR-009":   ["CICD-SEC-1", "CICD-SEC-3"],   # cache key tainted
         "DR-010":   ["CICD-SEC-3"],                 # unpinned package install
         "DR-011":   ["CICD-SEC-7", "CICD-SEC-1"],   # node map interpolation
+        # ── Drone extended pack (DR-012..016) ──
+        "DR-012":   ["CICD-SEC-3"],                 # service image not pinned
+        "DR-013":   ["CICD-SEC-1", "CICD-SEC-4"],   # no trigger event filter
+        "DR-014":   ["CICD-SEC-3", "CICD-SEC-5"],   # pipe-to-shell
+        "DR-015":   ["CICD-SEC-3", "CICD-SEC-5"],   # clone recursive
+        "DR-016":   ["CICD-SEC-3", "CICD-SEC-5"],   # image field interpolation
         # OCI image manifests
         "OCI-001":  ["CICD-SEC-3", "CICD-SEC-10"],  # missing provenance annotations
         "OCI-002":  ["CICD-SEC-3", "CICD-SEC-9", "CICD-SEC-10"],  # missing build attestation

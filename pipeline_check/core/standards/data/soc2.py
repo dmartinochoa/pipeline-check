@@ -533,6 +533,12 @@ STANDARD = Standard(
         "DR-009":   ["CC6.6", "CC6.8"],     # cache key tainted
         "DR-010":   ["CC8.1"],              # unpinned package install
         "DR-011":   ["CC6.8"],              # node map interpolates untrusted
+        # ── Drone extended pack ──
+        "DR-012":   ["CC8.1"],              # service image not pinned
+        "DR-013":   ["CC8.1"],              # no trigger event filter
+        "DR-014":   ["CC8.1"],              # pipe-to-shell
+        "DR-015":   ["CC8.1"],              # clone recursive
+        "DR-016":   ["CC8.1"],              # image field interpolation
         # ── Tekton (K8s-native pipeline kinds) ────────────────────
         "TKN-001":  ["CC8.1"],              # step image not digest-pinned
         "TKN-002":  ["CC6.1", "CC6.8"],     # step privileged / root
@@ -621,6 +627,12 @@ STANDARD = Standard(
         "MVN-007":  ["CC8.1"],
         "MVN-008":  ["CC6.8", "CC7.1", "CC8.1"],
         "MVN-009":  ["CC6.8", "CC7.1", "CC8.1"],
+        # ── Maven extended pack ──
+        "MVN-010":  ["CC6.1"],
+        "MVN-011":  ["CC6.1"],
+        "MVN-012":  ["CC8.1"],
+        "MVN-013":  ["CC8.1"],
+        "MVN-014":  ["CC8.1"],
         "NPM-008":  ["CC6.8", "CC7.1", "CC8.1"],
         "NPM-009":  ["CC8.1"],
         "NPM-010":  ["CC6.8", "CC7.1", "CC8.1"],

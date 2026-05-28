@@ -395,6 +395,12 @@ STANDARD = Standard(
         "DR-009":   ["CM-6", "SA-11"],                   # cache key tainted
         "DR-010":   ["SR-3", "SR-11"],                   # unpinned package install
         "DR-011":   ["CM-6", "SA-11"],                   # node map interpolates untrusted
+        # ── Drone extended pack ──
+        "DR-012":   ["SR-3", "SR-11"],                   # service image not pinned
+        "DR-013":   ["AC-6", "CM-7"],                    # no trigger event filter
+        "DR-014":   ["SI-7", "CM-7"],                    # pipe-to-shell
+        "DR-015":   ["SI-7", "CM-7"],                    # clone recursive
+        "DR-016":   ["CM-7", "SI-7"],                    # image field interpolation
         # Cloud Build
         "GCB-001":  ["SR-3", "SR-11", "SI-2", "RA-5"],   # step image not digest-pinned
         "GCB-002":  ["AC-3", "AC-6"],                    # default service account
@@ -634,6 +640,12 @@ STANDARD = Standard(
         "MVN-007":  ["SR-3", "SR-11"],                   # settings.xml wildcard mirror
         "MVN-008":  ["SR-3", "SR-11", "RA-5"],           # cooldown gate (--resolve-remote)
         "MVN-009":  ["SR-3", "SR-11", "RA-5"],           # OSV advisory (--resolve-remote)
+        # ── Maven extended pack ──
+        "MVN-010":  ["IA-5", "SC-28"],                   # plaintext server password
+        "MVN-011":  ["IA-5", "SC-28"],                   # repo URL credentials
+        "MVN-012":  ["CM-7", "SR-3"],                    # build plugin floating
+        "MVN-013":  ["CM-7", "SR-3"],                    # build extension floating
+        "MVN-014":  ["SI-7", "CM-7"],                    # wrapper sha256 missing
         "NPM-008":  ["SR-3", "SR-11", "RA-5"],           # cooldown gate (--resolve-remote)
         "NPM-009":  ["SR-3", "SR-11"],                   # new-transitive-dep diff gate
         "NPM-010":  ["SR-3", "SR-11", "RA-5"],           # OSV advisory (--resolve-remote)

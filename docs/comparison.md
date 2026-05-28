@@ -37,7 +37,7 @@ missing major surfaces or requires extra config. No = not in scope.
 | Bitbucket Pipelines | Yes (32) | No | No | No | No | No |
 | Google Cloud Build | Yes (26) | No | Partial | No | No | No |
 | Buildkite | Yes (16) | No | No | No | No | No |
-| Drone CI | Yes (11) | No | No | No | No | No |
+| Drone CI | Yes (16) | No | No | No | No | No |
 | Tekton | Yes (16) | No | Partial | No | No | No |
 | Argo Workflows | Yes (16) | No | Partial | No | No | No |
 | Argo CD | Yes (13) | No | No | No | No | No |
@@ -55,7 +55,7 @@ missing major surfaces or requires extra config. No = not in scope.
 | Live GCP project scan | Yes (50 rules, google-cloud-*) | No | No | No | No | Partial |
 | OCI image manifests (provenance, SLSA) | Yes (16, incl. ATTEST-001..007 attestation content) | No | No | No | No | Partial |
 | **Dependency supply chain** | | | | | | |
-| Package registries (npm / PyPI / Maven / NuGet / Go / Cargo) | Yes (57 rules across 6 providers) | No | No | No | No | Partial |
+| Package registries (npm / PyPI / Maven / NuGet / Go / Cargo) | Yes (62 rules across 6 providers) | No | No | No | No | Partial |
 | **Analysis depth** | | | | | | |
 | Dataflow taint, multi-step / cross-job | Yes (TAINT-001..008 across 5 providers) | No | No | Rules-only | No | No |
 | Cross-provider attack chains (MITRE ATT&CK) | Yes (48 chains: 34 AC + 10 XPC + 4 CXPC cross-repo) | No | No | No | No | No |

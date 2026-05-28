@@ -380,6 +380,11 @@ STANDARD = Standard(
         "DR-009":   ["Build.L3.Isolated"],                         # cache key tainted by attacker input
         "DR-010":   ["Build.L3.NonFalsifiable"],                   # unpinned package install
         "DR-011":   ["Build.L3.Isolated"],                         # node map interpolates untrusted
+        # ── Drone extended pack ──
+        "DR-012":   ["Build.L3.NonFalsifiable"],                   # service image not pinned
+        "DR-014":   ["Build.L3.NonFalsifiable"],                   # pipe-to-shell
+        "DR-015":   ["Build.L3.NonFalsifiable"],                   # clone recursive
+        "DR-016":   ["Build.L3.Isolated"],                         # image field interpolation
         # ── Cross-cutting dataflow / taint engine ─────────────────
         # The TAINT-NNN family flags cross-step / cross-job flows
         # where untrusted data reaches a privileged sink. That's
@@ -424,6 +429,12 @@ STANDARD = Standard(
         "MVN-007":  ["Build.L3.NonFalsifiable"],                   # settings.xml wildcard mirror
         "MVN-008":  ["Build.L3.NonFalsifiable"],                   # cooldown gate (--resolve-remote)
         "MVN-009":  ["Build.L3.NonFalsifiable"],                   # OSV advisory (--resolve-remote)
+        # ── Maven extended pack ──
+        "MVN-010":  ["Build.L3.NonFalsifiable"],                   # plaintext server password
+        "MVN-011":  ["Build.L3.NonFalsifiable"],                   # repo URL credentials
+        "MVN-012":  ["Build.L3.NonFalsifiable"],                   # build plugin floating
+        "MVN-013":  ["Build.L3.NonFalsifiable"],                   # build extension floating
+        "MVN-014":  ["Build.L3.NonFalsifiable"],                   # wrapper sha256 missing
         "NPM-008":  ["Build.L3.NonFalsifiable"],                   # cooldown gate (--resolve-remote)
         "NPM-009":  ["Build.L3.NonFalsifiable"],                   # new-transitive-dep diff gate
         "NPM-010":  ["Build.L3.NonFalsifiable"],                   # OSV advisory (--resolve-remote)

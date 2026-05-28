@@ -28,6 +28,10 @@ kind: pipeline
 type: docker
 name: default
 
+trigger:
+  event:
+    exclude: [pull_request]
+
 steps:
   - name: build
     image: golang:1.21{_DIGEST}
@@ -121,6 +125,8 @@ class TestDronePipelineChecksOrchestrator:
             "DR-001", "DR-002", "DR-003",
             "DR-004", "DR-005", "DR-006", "DR-007",
             "DR-008", "DR-009", "DR-010", "DR-011",
+            "DR-012", "DR-013", "DR-014", "DR-015",
+            "DR-016",
         ]
         # Every rule passes on the hardened fixture.
         assert all(f.passed for f in findings), [
@@ -137,10 +143,14 @@ class TestDronePipelineChecksOrchestrator:
         # DR-005 only fires on plugin steps, DR-007 only on sensitive
         # host-path mounts, DR-008 only on ``pull: never``, DR-009
         # only on cache-plugin steps; the vulnerable fixture lacks
-        # those shapes. Every other rule fires.
+        # those shapes. DR-012 / DR-014 / DR-015 / DR-016 also need
+        # specific shapes that the minimal vulnerable fixture
+        # doesn't carry; DR-013 fires because the fixture has no
+        # ``trigger:`` block.
         failed_ids = sorted(f.check_id for f in findings if not f.passed)
         assert failed_ids == [
             "DR-001", "DR-002", "DR-003", "DR-004", "DR-006",
+            "DR-013",
         ]
 
 
@@ -152,15 +162,15 @@ class TestDroneProvider:
     def test_inventory_records_pipeline_metadata(
         self, tmp_path: Path,
     ) -> None:
+        # Use the hardened fixture but with the trigger overridden
+        # to an explicit allow-list — the inventory test verifies
+        # both event and branch metadata extraction.
+        fixture = _HARDENED.replace(
+            "trigger:\n  event:\n    exclude: [pull_request]\n",
+            "trigger:\n  event:\n    - push\n    - tag\n  branch:\n    - main\n",
+        )
         f = tmp_path / ".drone.yml"
-        _write(f, _HARDENED + """
-trigger:
-  event:
-    - push
-    - tag
-  branch:
-    - main
-""")
+        _write(f, fixture)
         ctx = DroneProvider().build_context(drone_path=str(f))
         components = DroneProvider().inventory(ctx)
         assert len(components) == 1
@@ -183,12 +193,14 @@ class TestScannerWiring:
             "DR-001", "DR-002", "DR-003",
             "DR-004", "DR-005", "DR-006", "DR-007",
             "DR-008", "DR-009", "DR-010", "DR-011",
+            "DR-012", "DR-013", "DR-014", "DR-015",
+            "DR-016",
         ]
-        # Vulnerable fixture trips 5 of 10 (DR-005 needs a plugin,
-        # DR-007 a host-path volume, DR-008 a ``pull: never``
-        # directive, DR-009 a cache-plugin step, DR-010 an unpinned
-        # package install).
+        # Vulnerable fixture trips DR-001..004, DR-006, plus the new
+        # DR-013 (no trigger: block). Other rules need shapes the
+        # minimal fixture doesn't carry.
         failed_ids = sorted(f.check_id for f in findings if not f.passed)
         assert failed_ids == [
             "DR-001", "DR-002", "DR-003", "DR-004", "DR-006",
+            "DR-013",
         ]

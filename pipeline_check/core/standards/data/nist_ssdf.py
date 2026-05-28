@@ -425,6 +425,12 @@ STANDARD = Standard(
         "DR-009":   ["PO.5.1", "PW.9.1"],              # cache key tainted
         "DR-010":   ["PW.4.1", "PW.4.4"],              # unpinned package install
         "DR-011":   ["PW.6.1", "PW.9.1"],              # node map interpolates untrusted
+        # ── Drone extended pack ──
+        "DR-012":   ["PW.4.1", "PW.4.4"],              # service image not pinned
+        "DR-013":   ["PO.5.1"],                        # no trigger event filter
+        "DR-014":   ["PW.4.4"],                        # pipe-to-shell
+        "DR-015":   ["PW.4.4"],                        # clone recursive
+        "DR-016":   ["PW.4.4", "PW.6.1"],              # image field interpolation
         # ── Tekton ──────────────────────────────────────────────
         "TKN-001":  ["PW.4.1", "PW.4.4"],              # step image not digest-pinned
         "TKN-002":  ["PO.5.1", "PW.9.1"],              # step privileged / root
@@ -558,6 +564,12 @@ STANDARD = Standard(
         "MVN-007":  ["PW.4.1", "PW.4.4"],              # settings.xml wildcard mirror
         "MVN-008":  ["PW.4.1", "PW.4.4", "RV.1.1"],    # cooldown gate (--resolve-remote)
         "MVN-009":  ["PW.4.1", "PW.4.4", "RV.1.1"],    # OSV advisory (--resolve-remote)
+        # ── Maven extended pack ──
+        "MVN-010":  ["PS.1.1"],                        # plaintext server password
+        "MVN-011":  ["PS.1.1"],                        # repo URL credentials
+        "MVN-012":  ["PW.4.4"],                        # build plugin floating
+        "MVN-013":  ["PW.4.4"],                        # build extension floating
+        "MVN-014":  ["PS.1.1", "PW.4.4"],              # wrapper sha256 missing
         "NPM-008":  ["PW.4.1", "PW.4.4", "RV.1.1"],    # cooldown gate (--resolve-remote)
         "NPM-009":  ["PW.4.1", "PW.4.4"],              # new-transitive-dep diff gate
         "NPM-010":  ["PW.4.1", "PW.4.4", "RV.1.1"],    # OSV advisory (--resolve-remote)
