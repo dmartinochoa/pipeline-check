@@ -12,6 +12,28 @@ release commit collapses this section into `## [X.Y.Z] - <date>`.
 
 ### Added
 
+- **GitLab Code Quality output (``--output codequality``).** New output
+  format emitting the Code Climate ``gl-code-quality-report`` JSON shape
+  GitLab CI renders as inline MR annotations (the GitLab parallel of
+  GitHub's SARIF code-scanning experience). Each failing finding becomes
+  one entry per ``(check_id, location)`` pair, so an aggregate finding
+  with N offending lines produces N inline annotations. Severity maps
+  CRITICAL -> ``blocker``, HIGH -> ``critical``, MEDIUM -> ``major``,
+  LOW -> ``minor``, INFO -> ``info``. ``fingerprint`` is a stable SHA-1
+  over ``(check_id, path, line, description)`` so GitLab can dedupe
+  identical findings across runs. Passing findings are skipped (the
+  format has no "passed" concept). Zero new dependencies; 16 new tests.
+
+- **Azure Cloud + GCP live cloud-posture providers (closes #163).** New
+  ``--pipeline azure-cloud`` and ``--pipeline gcp`` providers reach AWS-
+  shaped coverage. Phase 1 seeded each pack with 15 rules across
+  identity, network, storage, compute, and logging; phase 2 expanded
+  both to 50 rules. The providers shell out to ``az`` / ``gcloud`` for
+  live inventory in the same pattern as the AWS provider's boto3 path.
+  CIS Microsoft Azure Foundations Benchmark and CIS Google Cloud
+  Foundations Benchmark are wired up as standards mappings. Provider
+  rule counts: AZ 0 -> 50, GCP 0 -> 50.
+
 - **Secret verifier expansion (phase 2).** Twelve new live-verification
   probes for ``--verify-secrets``: DigitalOcean (``/v2/account``),
   Netlify (``/api/v1/user``), Terraform Cloud (``/api/v2/account/details``),
@@ -63,6 +85,12 @@ release commit collapses this section into `## [X.Y.Z] - <date>`.
 
 ### Changed
 
+- **``exploit_example`` backfill on every CRITICAL and HIGH rule.**
+  All 13 CRITICAL rules and all 36 HIGH rules now carry a concrete
+  ``exploit_example`` paired with their existing recommendation
+  prose. New rules at those severities ship one from the start;
+  MEDIUM / LOW remain opportunistic. ``pipeline_check explain
+  <RULE>`` surfaces the example inline when present.
 - **Scorecard fixture exemption documented** in ``CONTRIBUTING.md``.
   The Scorecard workflow's SARIF filter that strips ``tests/`` and
   ``bench/`` results was already in place; the contributing guide now

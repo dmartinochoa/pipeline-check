@@ -215,6 +215,7 @@ pipeline_check --output json                # machine-readable JSON
 pipeline_check --output html --output-file report.html       # self-contained HTML
 pipeline_check --output sarif --output-file scan.sarif       # SARIF 2.1.0 for GitHub/GitLab
 pipeline_check --output junit --output-file junit.xml        # JUnit XML for test-runner UIs
+pipeline_check --output codequality --output-file cq.json    # GitLab Code Quality (inline MR annotations)
 pipeline_check --output markdown            # PR-comment shape (GFM)
 pipeline_check --output threatmodel --output-file threats.md # STRIDE threat model
 pipeline_check --output both                # terminal on stderr + JSON on stdout
@@ -381,8 +382,8 @@ See [docs/standards/](docs/standards/).
 |------|---------|-------------|
 | `--pipeline` / `-p` | `auto` | `auto` (detect from cwd), `aws`, `terraform`, `cloudformation`, `github`, `gitlab`, `bitbucket`, `azure`, `jenkins`, `circleci`, `cloudbuild`, `buildkite`, `drone`, `tekton`, `argo`, `dockerfile`, `kubernetes`, `helm`, `oci`, `scm`, `npm`, `pypi`, `maven`, `nuget` |
 | `--pipelines` | | Comma-separated multi-provider list (e.g. `--pipelines github,oci`). Mutually exclusive with `--pipeline`. Activates cross-provider attack chains (`XPC-NNN`) by evaluating the chain engine over the union of every sub-scan's findings. |
-| `--output` / `-o` | `terminal` | `terminal`, `json`, `html`, `sarif`, `junit`, `markdown`, `threatmodel`, `both` |
-| `--output-file` / `-O` | | Required with `html`; optional with `sarif` / `junit` / `markdown` / `threatmodel` |
+| `--output` / `-o` | `terminal` | `terminal`, `json`, `html`, `sarif`, `junit`, `markdown`, `threatmodel`, `cyclonedx`, `codequality`, `both` |
+| `--output-file` / `-O` | | Required with `html`; optional with `sarif` / `junit` / `markdown` / `threatmodel` / `cyclonedx` / `codequality` |
 | `--fail-on` / `-f` | | Fail if any finding >= severity (`CRITICAL`, `HIGH`, `MEDIUM`, `LOW`) |
 | `--min-grade` | | Fail if grade worse than `A`/`B`/`C`/`D` |
 | `--max-failures` | | Fail if > N effective findings |

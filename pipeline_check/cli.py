@@ -67,6 +67,7 @@ from .core.inline_ignore import (
     build_inline_index,
     extract_inline_ignores,
 )
+from .core.codequality_reporter import report_codequality
 from .core.junit_reporter import report_junit
 from .core.markdown_reporter import report_markdown
 from .core.policies import (
@@ -1664,7 +1665,7 @@ def _install_completion_callback(
     type=click.Choice(
         [
             "terminal", "json", "html", "sarif", "junit",
-            "markdown", "threatmodel", "cyclonedx", "both",
+            "markdown", "threatmodel", "cyclonedx", "codequality", "both",
         ],
         case_sensitive=False,
     ),
@@ -1679,9 +1680,9 @@ def _install_completion_callback(
     metavar="PATH",
     help=(
         "Write the report to this file. Required for --output html. "
-        "Optional for --output json/sarif/junit/markdown/threatmodel "
-        "(stdout is used if unset). Ignored for --output terminal "
-        "and --output both (the latter always writes JSON to stdout)."
+        "Optional for --output json/sarif/junit/markdown/threatmodel/"
+        "codequality (stdout is used if unset). Ignored for --output "
+        "terminal and --output both (the latter always writes JSON to stdout)."
     ),
 )
 @click.option(
@@ -3286,6 +3287,18 @@ def scan(
                 click.echo(f"Markdown report written to {output_file}", err=True)
         elif not quiet:
             click.echo(md_text)
+
+    if output == "codequality":
+        cq_text = report_codequality(findings)
+        if output_file:
+            with open(output_file, "w", encoding="utf-8") as fh:
+                fh.write(cq_text)
+            if not quiet:
+                click.echo(
+                    f"Code Quality report written to {output_file}", err=True,
+                )
+        elif not quiet:
+            click.echo(cq_text)
 
     if output == "cyclonedx":
         from pipeline_check.core.cyclonedx_reporter import report_cyclonedx
