@@ -99,15 +99,12 @@ def _build_index() -> dict[str, dict[str, str]]:
             continue
         out[prov.name] = {"checks": f"{n} checks"}
 
-    # Helm's tile shows the combined K8S + HELM total to match how a
-    # Helm scan actually behaves (chart rendered, K8s rule pack run on
-    # the output). Override the plain "10 checks" derived above.
-    helm = _count_rule_files("helm")
-    k8s = _count_rule_files("kubernetes")
-    if helm and k8s:
-        out["helm"] = {
-            "checks": f"{helm + k8s} checks ({k8s} K8S + {helm} HELM)"
-        }
+    # Helm's tile shows just its chart-side rule count (handled by the
+    # default loop above). ``helm template`` reuses the full K8s pack
+    # on the rendered output, but documenting that on the home-page
+    # tile pushes the cyan "Helm" label out of view (the CSS
+    # truncates ``__name`` to fit ``__count``); the +K8s story lives
+    # in ``docs/providers/helm.md`` instead.
 
     # Synthetic "registries" slug: npm + pypi + maven + nuget combined
     # so the home page can show one Package-registries category tile in
