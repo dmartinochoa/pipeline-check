@@ -19,7 +19,7 @@ Kubernetes, …) when an audit asks for that framework's vocabulary.
 
 - **Controls in this standard:** 10
 - **Controls evidenced by at least one check:** 10 / 10
-- **Distinct checks evidencing this standard:** 802
+- **Distinct checks evidencing this standard:** 810
 - **Of those, autofixable with `--fix`:** 111
 
 _Severity levels (`CRITICAL` / `HIGH` / `MEDIUM` / `LOW` / `INFO`) follow the same scale across every provider and standard. See [How to read severity](README.md#how-to-read-severity) on the standards overview for the definitions._
@@ -30,16 +30,16 @@ Click a control ID to jump to the per-control section with the full check list. 
 
 | Control | Title | Checks | Severity mix |
 |---------|-------|-------:|--------------|
-| [`CICD-SEC-1`](#ctrl-cicd-sec-1) | Insufficient Flow Control Mechanisms | 88 | 5C · 40H · 35M · 8L |
+| [`CICD-SEC-1`](#ctrl-cicd-sec-1) | Insufficient Flow Control Mechanisms | 89 | 5C · 41H · 35M · 8L |
 | [`CICD-SEC-2`](#ctrl-cicd-sec-2) | Inadequate Identity and Access Management | 70 | 8C · 39H · 22M · 1L |
-| [`CICD-SEC-3`](#ctrl-cicd-sec-3) | Dependency Chain Abuse | 242 | 10C · 126H · 88M · 18L |
+| [`CICD-SEC-3`](#ctrl-cicd-sec-3) | Dependency Chain Abuse | 249 | 10C · 131H · 90M · 18L |
 | [`CICD-SEC-4`](#ctrl-cicd-sec-4) | Poisoned Pipeline Execution | 100 | 25C · 52H · 17M · 6L |
-| [`CICD-SEC-5`](#ctrl-cicd-sec-5) | Insufficient PBAC | 51 | 4C · 34H · 13M |
-| [`CICD-SEC-6`](#ctrl-cicd-sec-6) | Insufficient Credential Hygiene | 105 | 30C · 52H · 23M |
-| [`CICD-SEC-7`](#ctrl-cicd-sec-7) | Insecure System Configuration | 137 | 24C · 59H · 45M · 9L |
+| [`CICD-SEC-5`](#ctrl-cicd-sec-5) | Insufficient PBAC | 53 | 4C · 36H · 13M |
+| [`CICD-SEC-6`](#ctrl-cicd-sec-6) | Insufficient Credential Hygiene | 106 | 30C · 53H · 23M |
+| [`CICD-SEC-7`](#ctrl-cicd-sec-7) | Insecure System Configuration | 138 | 24C · 60H · 45M · 9L |
 | [`CICD-SEC-8`](#ctrl-cicd-sec-8) | Ungoverned Usage of 3rd-Party Services | 41 | 13C · 21H · 7M |
 | [`CICD-SEC-9`](#ctrl-cicd-sec-9) | Improper Artifact Integrity Validation | 132 | 3C · 44H · 73M · 12L |
-| [`CICD-SEC-10`](#ctrl-cicd-sec-10) | Insufficient Logging and Visibility | 78 | 15H · 33M · 14L · 16I |
+| [`CICD-SEC-10`](#ctrl-cicd-sec-10) | Insufficient Logging and Visibility | 79 | 16H · 33M · 14L · 16I |
 
 ## Filter at runtime
 
@@ -62,7 +62,7 @@ pipeline_check --pipeline aws --standard owasp_cicd_top_10 --standard nist_ssdf
 
 Reviews, approvals, branch protection, and deployment gates are the brakes on the pipeline. Missing them lets a single commit, or a single API call, ship straight to production.
 
-**Evidenced by 88 checks** across 14 providers (AWS, Argo CD, Argo Workflows, Azure DevOps, Bitbucket, Buildkite, CircleCI, Drone CI, GitHub Actions, GitLab CI, Jenkins, Pulumi, SCM, Tekton).
+**Evidenced by 89 checks** across 15 providers (AWS, Argo CD, Argo Workflows, Azure DevOps, Bitbucket, Buildkite, CircleCI, Composer, Drone CI, GitHub Actions, GitLab CI, Jenkins, Pulumi, SCM, Tekton).
 
 | Check | Title | Severity | Provider | Fix |
 |-------|-------|----------|----------|-----|
@@ -83,6 +83,7 @@ Reviews, approvals, branch protection, and deployment gates are the brakes on th
 | [`CCM-001`](../providers/aws.md#ccm-001) | CodeCommit repository has no approval rule template attached | <span class="pg-sev pg-sev--high">HIGH</span> | [AWS](../providers/aws.md) |  |
 | [`CD-001`](../providers/aws.md#cd-001) | Automatic rollback on failure not enabled | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [AWS](../providers/aws.md) |  |
 | [`CD-002`](../providers/aws.md#cd-002) | AllAtOnce deployment config, no canary or rolling strategy | <span class="pg-sev pg-sev--high">HIGH</span> | [AWS](../providers/aws.md) |  |
+| [`COMPOSER-006`](../providers/composer.md) | composer.json scripts hook pipes a remote download to a shell | <span class="pg-sev pg-sev--high">HIGH</span> | [Composer](../providers/composer.md) |  |
 | [`CP-001`](../providers/aws.md#cp-001) | No approval action before deploy stages | <span class="pg-sev pg-sev--high">HIGH</span> | [AWS](../providers/aws.md) |  |
 | [`CP-005`](../providers/aws.md#cp-005) | Production Deploy stage has no preceding ManualApproval | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [AWS](../providers/aws.md) |  |
 | [`DR-003`](../providers/drone.md#dr-003) | Untrusted Drone template variable in shell command | <span class="pg-sev pg-sev--high">HIGH</span> | [Drone CI](../providers/drone.md) |  |
@@ -238,7 +239,7 @@ Long-lived static credentials, shared service accounts, and human identities reu
 
 Floating tags, range constraints, and unverified registries let an upstream maintainer compromise (or a typosquat) execute in your build the next time the dependency resolves.
 
-**Evidenced by 242 checks** across 25 providers (AWS, Argo CD, Argo Workflows, Azure DevOps, Bitbucket, Buildkite, Cargo, CircleCI, Cloud Build, Dockerfile, Drone CI, GitHub Actions, GitLab CI, Go modules, Helm, Jenkins, Kubernetes, NuGet, OCI manifest, Pulumi, PyPI, SCM, Tekton, maven, npm).
+**Evidenced by 249 checks** across 26 providers (AWS, Argo CD, Argo Workflows, Azure DevOps, Bitbucket, Buildkite, Cargo, CircleCI, Cloud Build, Composer, Dockerfile, Drone CI, GitHub Actions, GitLab CI, Go modules, Helm, Jenkins, Kubernetes, NuGet, OCI manifest, Pulumi, PyPI, SCM, Tekton, maven, npm).
 
 | Check | Title | Severity | Provider | Fix |
 |-------|-------|----------|----------|-----|
@@ -304,6 +305,13 @@ Floating tags, range constraints, and unverified registries let an upstream main
 | [`CC-023`](../providers/circleci.md#cc-023) | TLS / certificate verification bypass | <span class="pg-sev pg-sev--high">HIGH</span> | [CircleCI](../providers/circleci.md) | <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> |
 | [`CC-028`](../providers/circleci.md#cc-028) | Package install bypasses registry integrity (git / path / tarball source) | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [CircleCI](../providers/circleci.md) |  |
 | [`CC-029`](../providers/circleci.md#cc-029) | Machine executor image not pinned | <span class="pg-sev pg-sev--high">HIGH</span> | [CircleCI](../providers/circleci.md) |  |
+| [`COMPOSER-001`](../providers/composer.md) | composer.json present without a sibling composer.lock | <span class="pg-sev pg-sev--high">HIGH</span> | [Composer](../providers/composer.md) |  |
+| [`COMPOSER-002`](../providers/composer.md) | composer.json require uses a floating version constraint | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [Composer](../providers/composer.md) |  |
+| [`COMPOSER-003`](../providers/composer.md) | composer.json repository declared over plain HTTP | <span class="pg-sev pg-sev--high">HIGH</span> | [Composer](../providers/composer.md) |  |
+| [`COMPOSER-005`](../providers/composer.md) | composer.json minimum-stability accepts unstable releases | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [Composer](../providers/composer.md) |  |
+| [`COMPOSER-006`](../providers/composer.md) | composer.json scripts hook pipes a remote download to a shell | <span class="pg-sev pg-sev--high">HIGH</span> | [Composer](../providers/composer.md) |  |
+| [`COMPOSER-007`](../providers/composer.md) | composer.json requires a known-compromised package version | <span class="pg-sev pg-sev--high">HIGH</span> | [Composer](../providers/composer.md) |  |
+| [`COMPOSER-008`](../providers/composer.md) | composer.json allow-plugins permits any plugin to execute | <span class="pg-sev pg-sev--high">HIGH</span> | [Composer](../providers/composer.md) |  |
 | [`DF-001`](../providers/dockerfile.md#df-001) | FROM image not pinned to sha256 digest | <span class="pg-sev pg-sev--high">HIGH</span> | [Dockerfile](../providers/dockerfile.md) | <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> |
 | [`DF-003`](../providers/dockerfile.md#df-003) | ADD pulls remote URL without integrity verification | <span class="pg-sev pg-sev--high">HIGH</span> | [Dockerfile](../providers/dockerfile.md) |  |
 | [`DF-004`](../providers/dockerfile.md#df-004) | RUN executes a remote script via curl-pipe / wget-pipe | <span class="pg-sev pg-sev--high">HIGH</span> | [Dockerfile](../providers/dockerfile.md) |  |
@@ -598,7 +606,7 @@ An attacker who can influence what a build runs, via a PR, an issue comment, or 
 
 Build steps with deploy-class permissions, jobs sharing a single broad role, and missing environment gates each let a routine compromise escalate from build to production.
 
-**Evidenced by 51 checks** across 15 providers (AWS, Argo CD, Argo Workflows, Buildkite, Cargo, CircleCI, Drone CI, GitHub Actions, Go modules, Jenkins, Kubernetes, NuGet, Pulumi, SCM, Tekton).
+**Evidenced by 53 checks** across 16 providers (AWS, Argo CD, Argo Workflows, Buildkite, Cargo, CircleCI, Composer, Drone CI, GitHub Actions, Go modules, Jenkins, Kubernetes, NuGet, Pulumi, SCM, Tekton).
 
 | Check | Title | Severity | Provider | Fix |
 |-------|-------|----------|----------|-----|
@@ -614,6 +622,8 @@ Build steps with deploy-class permissions, jobs sharing a single broad role, and
 | [`CARGO-005`](../providers/cargo.md) | Cargo.toml dependency sourced from an alternate registry | <span class="pg-sev pg-sev--high">HIGH</span> | [Cargo](../providers/cargo.md) |  |
 | [`CARGO-008`](../providers/cargo.md) | Cargo.toml [patch.crates-io] substitutes a different crate | <span class="pg-sev pg-sev--high">HIGH</span> | [Cargo](../providers/cargo.md) |  |
 | [`CC-014`](../providers/circleci.md#cc-014) | Job missing `resource_class` declaration | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [CircleCI](../providers/circleci.md) |  |
+| [`COMPOSER-003`](../providers/composer.md) | composer.json repository declared over plain HTTP | <span class="pg-sev pg-sev--high">HIGH</span> | [Composer](../providers/composer.md) |  |
+| [`COMPOSER-008`](../providers/composer.md) | composer.json allow-plugins permits any plugin to execute | <span class="pg-sev pg-sev--high">HIGH</span> | [Composer](../providers/composer.md) |  |
 | [`DR-002`](../providers/drone.md#dr-002) | Step runs with privileged: true | <span class="pg-sev pg-sev--high">HIGH</span> | [Drone CI](../providers/drone.md) |  |
 | [`DR-007`](../providers/drone.md#dr-007) | Step mounts a sensitive host path | <span class="pg-sev pg-sev--high">HIGH</span> | [Drone CI](../providers/drone.md) |  |
 | [`DR-014`](../providers/drone.md#dr-014) | Step pipes a remote download into a shell interpreter | <span class="pg-sev pg-sev--high">HIGH</span> | [Drone CI](../providers/drone.md) |  |
@@ -658,7 +668,7 @@ Build steps with deploy-class permissions, jobs sharing a single broad role, and
 
 Plaintext secrets in YAML, env vars baked into image layers, or tokens echoed to logs all leak credentials before they're ever exploited; rotation only helps if the leak is detected.
 
-**Evidenced by 105 checks** across 26 providers (AWS, Argo CD, Argo Workflows, Azure Cloud, Azure DevOps, Bitbucket, Buildkite, CircleCI, Cloud Build, CloudFormation, Dockerfile, Drone CI, GCP, GitHub Actions, GitLab CI, Helm, Jenkins, Kubernetes, NuGet, Pulumi, PyPI, SCM, Tekton, Terraform, maven, npm).
+**Evidenced by 106 checks** across 27 providers (AWS, Argo CD, Argo Workflows, Azure Cloud, Azure DevOps, Bitbucket, Buildkite, CircleCI, Cloud Build, CloudFormation, Composer, Dockerfile, Drone CI, GCP, GitHub Actions, GitLab CI, Helm, Jenkins, Kubernetes, NuGet, Pulumi, PyPI, SCM, Tekton, Terraform, maven, npm).
 
 | Check | Title | Severity | Provider | Fix |
 |-------|-------|----------|----------|-----|
@@ -688,6 +698,7 @@ Plaintext secrets in YAML, env vars baked into image layers, or tokens echoed to
 | [`CC-032`](../providers/circleci.md#cc-032) | Secret-named variable echoed / printed in a run step | <span class="pg-sev pg-sev--high">HIGH</span> | [CircleCI](../providers/circleci.md) |  |
 | [`CF-001`](../providers/cloudformation.md#cf-001) | Template declares AWS::IAM::AccessKey (long-lived credential) | <span class="pg-sev pg-sev--high">HIGH</span> | [CloudFormation](../providers/cloudformation.md) |  |
 | [`CF-002`](../providers/cloudformation.md#cf-002) | Stateful data-store resource carries a plaintext secret | <span class="pg-sev pg-sev--critical">CRITICAL</span> | [CloudFormation](../providers/cloudformation.md) |  |
+| [`COMPOSER-004`](../providers/composer.md) | composer.json repository URL embeds plaintext credentials | <span class="pg-sev pg-sev--high">HIGH</span> | [Composer](../providers/composer.md) |  |
 | [`CP-004`](../providers/aws.md#cp-004) | Legacy ThirdParty/GitHub source action (OAuth token) | <span class="pg-sev pg-sev--high">HIGH</span> | [AWS](../providers/aws.md) |  |
 | [`DF-006`](../providers/dockerfile.md#df-006) | ENV or ARG carries a credential-shaped literal value | <span class="pg-sev pg-sev--critical">CRITICAL</span> | [Dockerfile](../providers/dockerfile.md) |  |
 | [`DF-019`](../providers/dockerfile.md#df-019) | COPY/ADD source path looks like a credential file | <span class="pg-sev pg-sev--high">HIGH</span> | [Dockerfile](../providers/dockerfile.md) | <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> |
@@ -772,7 +783,7 @@ Plaintext secrets in YAML, env vars baked into image layers, or tokens echoed to
 
 Privileged containers, host mounts, root user, and disabled TLS turn a routine RCE in a build step into kernel-level access to the runner host.
 
-**Evidenced by 137 checks** across 27 providers (AWS, Argo CD, Argo Workflows, Azure Cloud, Azure DevOps, Bitbucket, Buildkite, Cargo, CircleCI, Cloud Build, CloudFormation, Dockerfile, Drone CI, GCP, GitHub Actions, GitLab CI, Go modules, Helm, Jenkins, Kubernetes, NuGet, Pulumi, PyPI, Tekton, Terraform, maven, npm).
+**Evidenced by 138 checks** across 28 providers (AWS, Argo CD, Argo Workflows, Azure Cloud, Azure DevOps, Bitbucket, Buildkite, Cargo, CircleCI, Cloud Build, CloudFormation, Composer, Dockerfile, Drone CI, GCP, GitHub Actions, GitLab CI, Go modules, Helm, Jenkins, Kubernetes, NuGet, Pulumi, PyPI, Tekton, Terraform, maven, npm).
 
 | Check | Title | Severity | Provider | Fix |
 |-------|-------|----------|----------|-----|
@@ -813,6 +824,7 @@ Privileged containers, host mounts, root user, and disabled TLS turn a routine R
 | [`CC-017`](../providers/circleci.md#cc-017) | Docker run with insecure flags (privileged/host mount) | <span class="pg-sev pg-sev--critical">CRITICAL</span> | [CircleCI](../providers/circleci.md) | <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> |
 | [`CC-026`](../providers/circleci.md#cc-026) | Config contains indicators of malicious activity | <span class="pg-sev pg-sev--critical">CRITICAL</span> | [CircleCI](../providers/circleci.md) |  |
 | [`CF-003`](../providers/cloudformation.md#cf-003) | CodeBuild VPC config references a public subnet | <span class="pg-sev pg-sev--high">HIGH</span> | [CloudFormation](../providers/cloudformation.md) |  |
+| [`COMPOSER-007`](../providers/composer.md) | composer.json requires a known-compromised package version | <span class="pg-sev pg-sev--high">HIGH</span> | [Composer](../providers/composer.md) |  |
 | [`DF-002`](../providers/dockerfile.md#df-002) | Container runs as root (missing or root USER directive) | <span class="pg-sev pg-sev--high">HIGH</span> | [Dockerfile](../providers/dockerfile.md) | <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> |
 | [`DF-008`](../providers/dockerfile.md#df-008) | RUN invokes docker --privileged or escalates capabilities | <span class="pg-sev pg-sev--high">HIGH</span> | [Dockerfile](../providers/dockerfile.md) |  |
 | [`DF-011`](../providers/dockerfile.md#df-011) | Package manager install without cache cleanup in same layer | <span class="pg-sev pg-sev--low">LOW</span> | [Dockerfile](../providers/dockerfile.md) |  |
@@ -1109,7 +1121,7 @@ Without provenance, attestations, signatures, or SBOMs, consumers (including pro
 
 When the pipeline doesn't log its decisions, audits stall and incident response lacks the timeline needed to scope a compromise.
 
-**Evidenced by 78 checks** across 15 providers (AWS, Azure Cloud, CircleCI, Cloud Build, Dockerfile, GCP, GitHub Actions, Helm, Jenkins, Kubernetes, NuGet, OCI manifest, PyPI, SCM, maven).
+**Evidenced by 79 checks** across 16 providers (AWS, Azure Cloud, CircleCI, Cloud Build, Composer, Dockerfile, GCP, GitHub Actions, Helm, Jenkins, Kubernetes, NuGet, OCI manifest, PyPI, SCM, maven).
 
 | Check | Title | Severity | Provider | Fix |
 |-------|-------|----------|----------|-----|
@@ -1133,6 +1145,7 @@ When the pipeline doesn't log its decisions, audits stall and incident response 
 | [`CCM-000`](../providers/aws.md#ccm-000) | CodeCommit API access failed | <span class="pg-sev pg-sev--info">INFO</span> | [AWS](../providers/aws.md) |  |
 | [`CD-000`](../providers/aws.md#cd-000) | CodeDeploy API access failed | <span class="pg-sev pg-sev--info">INFO</span> | [AWS](../providers/aws.md) |  |
 | [`CD-003`](../providers/aws.md#cd-003) | No CloudWatch alarm monitoring on deployment group | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [AWS](../providers/aws.md) |  |
+| [`COMPOSER-004`](../providers/composer.md) | composer.json repository URL embeds plaintext credentials | <span class="pg-sev pg-sev--high">HIGH</span> | [Composer](../providers/composer.md) |  |
 | [`CP-000`](../providers/aws.md#cp-000) | CodePipeline API access failed | <span class="pg-sev pg-sev--info">INFO</span> | [AWS](../providers/aws.md) |  |
 | [`CT-000`](../providers/aws.md#ct-000) | CloudTrail API access failed | <span class="pg-sev pg-sev--info">INFO</span> | [AWS](../providers/aws.md) |  |
 | [`CT-001`](../providers/aws.md#ct-001) | No active CloudTrail trail in region | <span class="pg-sev pg-sev--high">HIGH</span> | [AWS](../providers/aws.md) |  |

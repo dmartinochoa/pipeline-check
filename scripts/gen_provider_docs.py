@@ -1348,6 +1348,42 @@ pipeline_check --pipeline cargo --cargo-path ./crates/my-crate/
 `target/` and `.git/` directories are skipped.
 """,
     ),
+    "composer": (
+        "Composer",
+        "pipeline_check.core.checks.composer.rules",
+        _REPO_ROOT / "docs" / "providers" / "composer.md",
+        """\
+# Composer (PHP) provider
+
+Parses `composer.json` (Composer manifest) and probes for the
+sibling `composer.lock` on disk. Text-only static analysis via
+the JSON stdlib parser, no `composer install`, no Packagist
+access, no PHP runtime required. Mirrors the npm / PyPI / Maven
+/ NuGet / Go modules / Cargo pack shape.
+
+## Producer workflow
+
+```bash
+# --composer-path auto-detects ./composer.json when present.
+pipeline_check --pipeline composer
+pipeline_check --pipeline composer --composer-path ./composer.json
+pipeline_check --pipeline composer --composer-path ./packages/api/
+```
+
+## Manifest sections audited
+
+| Section | Notes |
+|---------|-------|
+| `require` | Runtime dependencies |
+| `require-dev` | Test / build-time dependencies |
+| `repositories` | Extra package sources (Composer, VCS, etc.) |
+| `scripts` | Install / update lifecycle hooks |
+| `config.allow-plugins` | Plugin permission map |
+| `minimum-stability` | Pre-release floor |
+
+`vendor/`, `.git/`, and `node_modules/` directories are skipped.
+""",
+    ),
     "nuget": (
         "NuGet",
         "pipeline_check.core.checks.nuget.rules",
@@ -2128,6 +2164,12 @@ _FOOTER_CONFIG: dict[str, dict[str, str]] = {
         "prefix": "CARGO", "prefix_lc": "cargo", "pkg": "cargo",
         "signature": "check(pom: CargoFile) -> Finding",
         "arg_kind": "``CargoFile``",
+    },
+    "composer": {
+        "prefix": "COMPOSER", "prefix_lc": "composer",
+        "pkg": "composer",
+        "signature": "check(pom: ComposerFile) -> Finding",
+        "arg_kind": "``ComposerFile``",
     },
     "pulumi": {
         "prefix": "PULUMI", "prefix_lc": "pulumi", "pkg": "pulumi",

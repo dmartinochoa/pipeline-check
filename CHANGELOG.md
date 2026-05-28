@@ -12,6 +12,30 @@ release commit collapses this section into `## [X.Y.Z] - <date>`.
 
 ### Added
 
+- **Composer (PHP) provider, 8 supply-chain rules.** New
+  ``--pipeline composer`` / ``--composer-path`` parses
+  ``composer.json`` (Composer manifest) and probes for the sibling
+  ``composer.lock``. Mirrors the npm / PyPI / Maven / NuGet / Go
+  modules / Cargo pack shape: text-only static analysis via the
+  JSON stdlib parser, no ``composer install``, no Packagist
+  access, no PHP runtime required. Auto-detects
+  ``./composer.json`` at the working-directory root. Ships
+  ``COMPOSER-001..008``: missing composer.lock, floating
+  ``require`` constraint, plain-HTTP repository, repository URL
+  with embedded plaintext credentials, ``minimum-stability``
+  lowered to ``dev`` / ``alpha`` / ``beta`` / ``RC`` (widens
+  every transitive constraint to dev-branch aliases), Composer
+  ``scripts`` lifecycle hook piping a remote download into a
+  shell, known-compromised package version (curated registry,
+  seeded with the synthetic placeholder + a representative
+  guzzlehttp/guzzle CVE entry), and ``config.allow-plugins:
+  true`` (defeats Composer 2.2's plugin allowlist gate). Bumps
+  the headline claim from ``1040+ checks across 30 providers``
+  to ``1050+ checks across 31 providers`` and the comparison
+  ``Package registries`` cell from ``75 rules across 6
+  providers`` to ``83 rules across 7 providers``. 33 new unit
+  tests, drift tests pass.
+
 - **NPM-013, NUGET-010, OCI-009 (3 new package-ecosystem rules).**
   - **NPM-013** flags ``package.json`` ``files`` field entries
     that are broad wildcards (``*``, ``**``, ``**/*``, ``*/**``,

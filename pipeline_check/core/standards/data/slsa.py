@@ -457,6 +457,11 @@ STANDARD = Standard(
         "NUGET-013": ["Build.L3.NonFalsifiable"],
         "NUGET-014": ["Build.L3.NonFalsifiable"],
         "NUGET-015": ["Build.L3.NonFalsifiable"],
+        # ── Composer / PHP ──
+        "COMPOSER-001": ["Build.L3.NonFalsifiable"], # missing composer.lock
+        "COMPOSER-002": ["Build.L3.NonFalsifiable"], # floating require constraint
+        "COMPOSER-007": ["Build.L3.NonFalsifiable"], # compromised package version
+        "COMPOSER-008": ["Build.L3.NonFalsifiable"], # allow-plugins wildcard
         # ── Helm chart-supply-chain ───────────────────────────────
         # The chart's own packaging metadata sits at the build-output
         # boundary. Chart.lock and Chart.yaml are the chart's

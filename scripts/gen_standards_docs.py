@@ -87,6 +87,7 @@ _PROVIDER_PACKAGES: tuple[tuple[str, str, str], ...] = (
     ("nuget",        "pipeline_check.core.checks.nuget.rules",        "NuGet"),
     ("gomod",        "pipeline_check.core.checks.gomod.rules",        "Go modules"),
     ("cargo",        "pipeline_check.core.checks.cargo.rules",        "Cargo"),
+    ("composer",     "pipeline_check.core.checks.composer.rules",     "Composer"),
     ("pulumi",       "pipeline_check.core.checks.pulumi.rules",       "Pulumi"),
 )
 

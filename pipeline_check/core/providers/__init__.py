@@ -24,6 +24,7 @@ from .cargo import CargoProvider
 from .circleci import CircleCIProvider
 from .cloudbuild import CloudBuildProvider
 from .cloudformation import CloudFormationProvider
+from .composer import ComposerProvider
 from .dockerfile import DockerfileProvider
 from .drone import DroneProvider
 from .gcp import GCPProvider
@@ -94,4 +95,5 @@ register(MavenProvider())
 register(NuGetProvider())
 register(GoModProvider())
 register(CargoProvider())
+register(ComposerProvider())
 register(PulumiProvider())

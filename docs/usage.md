@@ -131,6 +131,7 @@ pipeline_check --pipeline maven --maven-path ./
 pipeline_check --pipeline nuget --nuget-path ./
 pipeline_check --pipeline gomod --gomod-path ./
 pipeline_check --pipeline cargo --cargo-path ./
+pipeline_check --pipeline composer --composer-path ./
 
 pipeline_check --pipeline cloudformation --cfn-template template.yml
 pipeline_check --pipeline terraform --tf-plan plan.json

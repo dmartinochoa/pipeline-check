@@ -655,6 +655,15 @@ STANDARD = Standard(
         "CARGO-008": ["6.3.1"],
         "CARGO-009": ["6.3.1"],
         "CARGO-010": ["6.5.1"],
+        # ── Composer / PHP ──
+        "COMPOSER-001": ["6.3.1"],
+        "COMPOSER-002": ["6.3.1"],
+        "COMPOSER-003": ["6.3.1"],
+        "COMPOSER-004": ["8.2.1"],
+        "COMPOSER-005": ["6.3.1"],
+        "COMPOSER-006": ["6.3.1"],
+        "COMPOSER-007": ["6.3.1", "6.3.3"],
+        "COMPOSER-008": ["6.3.1"],
         # ── Pulumi ──
         "PULUMI-001": ["8.2.1"],        # passphrase secretsprovider
         "PULUMI-002": ["8.2.1"],        # secret-shaped config plaintext

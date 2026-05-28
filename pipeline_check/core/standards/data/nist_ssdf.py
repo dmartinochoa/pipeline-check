@@ -622,6 +622,15 @@ STANDARD = Standard(
         "CARGO-008": ["PO.5.1", "PW.4.4"],             # patch.crates-io substitution
         "CARGO-009": ["PW.4.4"],                       # workspace deps floating
         "CARGO-010": ["PO.5.1"],                       # missing rust-version
+        # ── Composer / PHP ──
+        "COMPOSER-001": ["PW.4.4", "RV.1.1"],
+        "COMPOSER-002": ["PW.4.4", "RV.1.1"],
+        "COMPOSER-003": ["PW.4.4", "PO.5.1"],
+        "COMPOSER-004": ["PS.1.1", "PO.5.1"],
+        "COMPOSER-005": ["PW.4.4"],
+        "COMPOSER-006": ["PW.4.4", "PO.5.1"],
+        "COMPOSER-007": ["PW.4.4", "RV.1.1"],
+        "COMPOSER-008": ["PW.4.4"],
         # ── Pulumi (PULUMI-001..006) ──
         "PULUMI-001": ["PS.1.1", "PO.5.1"],             # passphrase secretsprovider
         "PULUMI-002": ["PS.1.1"],                       # secret-shaped config plaintext

@@ -587,6 +587,15 @@ STANDARD = Standard(
         "CARGO-008": ["CICD-SEC-3", "CICD-SEC-5"], # [patch.crates-io] substitution
         "CARGO-009": ["CICD-SEC-3"],               # workspace deps floating
         "CARGO-010": ["CICD-SEC-3"],               # missing rust-version
+        # ── Composer / PHP (COMPOSER-001..008) ──
+        "COMPOSER-001": ["CICD-SEC-3"],               # missing composer.lock
+        "COMPOSER-002": ["CICD-SEC-3"],               # floating constraint
+        "COMPOSER-003": ["CICD-SEC-3", "CICD-SEC-5"], # HTTP repository
+        "COMPOSER-004": ["CICD-SEC-6", "CICD-SEC-10"], # repo URL credentials
+        "COMPOSER-005": ["CICD-SEC-3"],               # minimum-stability dev/alpha/beta
+        "COMPOSER-006": ["CICD-SEC-3", "CICD-SEC-1"], # scripts curl-pipe-shell
+        "COMPOSER-007": ["CICD-SEC-3", "CICD-SEC-7"], # compromised package
+        "COMPOSER-008": ["CICD-SEC-3", "CICD-SEC-5"], # allow-plugins wildcard
         # ── Pulumi (PULUMI-001..006) ──
         "PULUMI-001": ["CICD-SEC-6", "CICD-SEC-7"], # passphrase secretsprovider
         "PULUMI-002": ["CICD-SEC-6"],               # secret-shaped config plaintext

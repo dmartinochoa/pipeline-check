@@ -698,6 +698,15 @@ STANDARD = Standard(
         "CARGO-008": ["CM-7", "SR-3"],                   # patch.crates-io substitution
         "CARGO-009": ["CM-7"],                           # workspace deps floating
         "CARGO-010": ["CM-6"],                           # missing rust-version
+        # ── Composer / PHP ──
+        "COMPOSER-001": ["SR-3", "CM-8"],                # missing composer.lock
+        "COMPOSER-002": ["CM-7", "SR-3"],                # floating constraint
+        "COMPOSER-003": ["SC-8", "SC-13"],               # HTTP repository
+        "COMPOSER-004": ["IA-5", "SC-28"],               # repo URL credentials
+        "COMPOSER-005": ["CM-7", "SR-3"],                # minimum-stability dev
+        "COMPOSER-006": ["CM-7", "SI-7"],                # scripts curl-pipe-shell
+        "COMPOSER-007": ["SI-2", "SR-3"],                # compromised package
+        "COMPOSER-008": ["CM-7", "SR-3"],                # allow-plugins wildcard
         # ── Pulumi (PULUMI-001..006) ──
         "PULUMI-001": ["SC-13", "SC-12"],                # passphrase secretsprovider
         "PULUMI-002": ["IA-5", "SC-28"],                 # secret-shaped config plaintext

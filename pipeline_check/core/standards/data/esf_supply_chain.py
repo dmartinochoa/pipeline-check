@@ -701,6 +701,15 @@ STANDARD = Standard(
         "CARGO-008": ["ESF-S-VERIFY-DEPS"],
         "CARGO-009": ["ESF-S-VERIFY-DEPS"],
         "CARGO-010": ["ESF-S-VERIFY-DEPS"],
+        # ── Composer / PHP ──
+        "COMPOSER-001": ["ESF-S-VERIFY-DEPS"],
+        "COMPOSER-002": ["ESF-S-VERIFY-DEPS"],
+        "COMPOSER-003": ["ESF-S-TRUSTED-REG", "ESF-S-VERIFY-DEPS"],
+        "COMPOSER-004": ["ESF-D-SECRETS"],
+        "COMPOSER-005": ["ESF-S-VERIFY-DEPS"],
+        "COMPOSER-006": ["ESF-S-VERIFY-DEPS"],
+        "COMPOSER-007": ["ESF-S-VERIFY-DEPS"],
+        "COMPOSER-008": ["ESF-S-VERIFY-DEPS"],
         # ── Pulumi ──
         "PULUMI-001": ["ESF-D-SECRETS"],
         "PULUMI-002": ["ESF-D-SECRETS"],

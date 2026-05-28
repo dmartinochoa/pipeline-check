@@ -679,6 +679,15 @@ STANDARD = Standard(
         "CARGO-008": ["1.4.1"],                    # patch.crates-io substitution
         "CARGO-009": ["1.4.1"],                    # workspace deps floating
         "CARGO-010": ["1.1.8"],                    # missing rust-version
+        # ── Composer / PHP (COMPOSER-001..008) ──
+        "COMPOSER-001": ["1.4.1"],                 # missing composer.lock
+        "COMPOSER-002": ["1.4.1"],                 # floating require constraint
+        "COMPOSER-003": ["1.4.1"],                 # HTTP repository
+        "COMPOSER-004": ["1.4.1"],                 # repo URL credentials
+        "COMPOSER-005": ["1.4.1"],                 # minimum-stability dev
+        "COMPOSER-006": ["1.4.1"],                 # scripts curl-pipe-shell
+        "COMPOSER-007": ["1.4.1", "1.1.8"],        # known-compromised package
+        "COMPOSER-008": ["1.4.1"],                 # allow-plugins wildcard
         # ── Pulumi (PULUMI-001..006) ──
         "PULUMI-001": ["1.5.1"],                   # passphrase secretsprovider
         "PULUMI-002": ["1.5.1"],                   # secret-shaped config plaintext

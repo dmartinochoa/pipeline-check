@@ -782,6 +782,15 @@ STANDARD = Standard(
         "CARGO-008": ["GV.SC-07"],              # patch.crates-io substitution
         "CARGO-009": ["GV.SC-07"],              # workspace deps floating
         "CARGO-010": ["GV.SC-07"],              # missing rust-version
+        # ── Composer / PHP ──
+        "COMPOSER-001": ["GV.SC-05", "GV.SC-07"],
+        "COMPOSER-002": ["GV.SC-05", "GV.SC-07"],
+        "COMPOSER-003": ["GV.SC-05", "PR.DS-02"],
+        "COMPOSER-004": ["PR.DS-01", "PR.AA-01"],
+        "COMPOSER-005": ["GV.SC-05", "GV.SC-07"],
+        "COMPOSER-006": ["GV.SC-05", "GV.SC-08"],
+        "COMPOSER-007": ["GV.SC-05", "GV.SC-08"],
+        "COMPOSER-008": ["GV.SC-05", "GV.SC-07"],
         # ── Pulumi (PULUMI-001..006) ──
         "PULUMI-001": ["PR.DS-01", "PR.AA-01"],  # passphrase secretsprovider
         "PULUMI-002": ["PR.DS-01"],              # secret-shaped config plaintext

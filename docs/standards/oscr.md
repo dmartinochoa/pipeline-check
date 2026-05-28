@@ -25,7 +25,7 @@ axis.
 
 - **Controls in this standard:** 86
 - **Controls evidenced by at least one check:** 61 / 86
-- **Distinct checks evidencing this standard:** 629
+- **Distinct checks evidencing this standard:** 630
 - **Of those, autofixable with `--fix`:** 105
 
 _Severity levels (`CRITICAL` / `HIGH` / `MEDIUM` / `LOW` / `INFO`) follow the same scale across every provider and standard. See [How to read severity](README.md#how-to-read-severity) on the standards overview for the definitions._
@@ -50,7 +50,7 @@ Click a control ID to jump to the per-control section with the full check list. 
 | [`RD-2`](#ctrl-rd-2) | Accounts in public registry | 0 | — |
 | [`RD-3`](#ctrl-rd-3) | Publish malicious artifact | 4 | 4H |
 | [`RD-4`](#ctrl-rd-4) | Forge developer reputation | 4 | 1H · 3M |
-| [`RD-5`](#ctrl-rd-5) | Compromised legitimate artifact | 12 | 11C · 1H |
+| [`RD-5`](#ctrl-rd-5) | Compromised legitimate artifact | 13 | 11C · 2H |
 | [`RD-6`](#ctrl-rd-6) | Advertise malicious artifact | 0 | — |
 | [`IA-1`](#ctrl-ia-1) | Combosquatting | 1 | 1H |
 | [`IA-2`](#ctrl-ia-2) | Malicious IDE extension | 0 | — |
@@ -64,7 +64,7 @@ Click a control ID to jump to the per-control section with the full check list. 
 | [`IA-10`](#ctrl-ia-10) | Vulnerable CI/CD plugins | 11 | 1C · 10H |
 | [`IA-11`](#ctrl-ia-11) | Vulnerable CI/CD template | 60 | 31H · 24M · 5L |
 | [`IA-12`](#ctrl-ia-12) | Exposed internal API | 0 | — |
-| [`IA-13`](#ctrl-ia-13) | Vulnerability in third-party dependency | 48 | 8C · 6H · 34M |
+| [`IA-13`](#ctrl-ia-13) | Vulnerability in third-party dependency | 49 | 8C · 7H · 34M |
 | [`IA-14`](#ctrl-ia-14) | Compromised developer workstation | 0 | — |
 | [`IA-15`](#ctrl-ia-15) | Exposed database | 0 | — |
 | [`IA-16`](#ctrl-ia-16) | Compromised service account | 8 | 1C · 5H · 2M |
@@ -256,7 +256,7 @@ _No checks in this scanner currently evidence this control. Open an issue if you
 
 ### RD-5: Compromised legitimate artifact { #ctrl-rd-5 }
 
-**Evidenced by 12 checks** across 11 providers (AWS, Azure DevOps, Bitbucket, CircleCI, GitHub Actions, GitLab CI, Jenkins, NuGet, PyPI, maven, npm).
+**Evidenced by 13 checks** across 12 providers (AWS, Azure DevOps, Bitbucket, CircleCI, Composer, GitHub Actions, GitLab CI, Jenkins, NuGet, PyPI, maven, npm).
 
 | Check | Title | Severity | Provider | Fix |
 |-------|-------|----------|----------|-----|
@@ -264,6 +264,7 @@ _No checks in this scanner currently evidence this control. Open an issue if you
 | [`BB-025`](../providers/bitbucket.md#bb-025) | Pipeline contains indicators of malicious activity | <span class="pg-sev pg-sev--critical">CRITICAL</span> | [Bitbucket](../providers/bitbucket.md) |  |
 | [`CB-011`](../providers/aws.md#cb-011) | CodeBuild buildspec contains indicators of malicious activity | <span class="pg-sev pg-sev--critical">CRITICAL</span> | [AWS](../providers/aws.md) |  |
 | [`CC-026`](../providers/circleci.md#cc-026) | Config contains indicators of malicious activity | <span class="pg-sev pg-sev--critical">CRITICAL</span> | [CircleCI](../providers/circleci.md) |  |
+| [`COMPOSER-007`](../providers/composer.md) | composer.json requires a known-compromised package version | <span class="pg-sev pg-sev--high">HIGH</span> | [Composer](../providers/composer.md) |  |
 | [`GHA-040`](../providers/github.md#gha-040) | Action reference matches a known-compromised SHA or tag | <span class="pg-sev pg-sev--critical">CRITICAL</span> | [GitHub Actions](../providers/github.md) |  |
 | [`GHA-096`](../providers/github.md#gha-096) | Action reference has a known GHSA vulnerability | <span class="pg-sev pg-sev--high">HIGH</span> | [GitHub Actions](../providers/github.md) |  |
 | [`GL-025`](../providers/gitlab.md#gl-025) | Pipeline contains indicators of malicious activity | <span class="pg-sev pg-sev--critical">CRITICAL</span> | [GitLab CI](../providers/gitlab.md) |  |
@@ -472,7 +473,7 @@ _No checks in this scanner currently evidence this control. Open an issue if you
 
 ### IA-13: Vulnerability in third-party dependency { #ctrl-ia-13 }
 
-**Evidenced by 48 checks** across 17 providers (AWS, Argo Workflows, Azure DevOps, Bitbucket, Buildkite, CircleCI, Cloud Build, Drone CI, GitHub Actions, GitLab CI, Jenkins, NuGet, PyPI, SCM, Tekton, maven, npm).
+**Evidenced by 49 checks** across 18 providers (AWS, Argo Workflows, Azure DevOps, Bitbucket, Buildkite, CircleCI, Cloud Build, Composer, Drone CI, GitHub Actions, GitLab CI, Jenkins, NuGet, PyPI, SCM, Tekton, maven, npm).
 
 | Check | Title | Severity | Provider | Fix |
 |-------|-------|----------|----------|-----|
@@ -491,6 +492,7 @@ _No checks in this scanner currently evidence this control. Open an issue if you
 | [`CC-020`](../providers/circleci.md#cc-020) | No vulnerability scanning step | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [CircleCI](../providers/circleci.md) |  |
 | [`CC-022`](../providers/circleci.md#cc-022) | Dependency update command bypasses lockfile pins | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [CircleCI](../providers/circleci.md) | <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> |
 | [`CC-028`](../providers/circleci.md#cc-028) | Package install bypasses registry integrity (git / path / tarball source) | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [CircleCI](../providers/circleci.md) |  |
+| [`COMPOSER-007`](../providers/composer.md) | composer.json requires a known-compromised package version | <span class="pg-sev pg-sev--high">HIGH</span> | [Composer](../providers/composer.md) |  |
 | [`DR-010`](../providers/drone.md#dr-010) | Step commands run unpinned package installs | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [Drone CI](../providers/drone.md) |  |
 | [`ECR-001`](../providers/aws.md#ecr-001) | Image scanning on push not enabled | <span class="pg-sev pg-sev--high">HIGH</span> | [AWS](../providers/aws.md) |  |
 | [`ECR-007`](../providers/aws.md#ecr-007) | Inspector v2 enhanced scanning disabled for ECR | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [AWS](../providers/aws.md) |  |

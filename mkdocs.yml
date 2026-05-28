@@ -197,6 +197,7 @@ nav:
               - NuGet: providers/nuget.md
               - Go modules: providers/gomod.md
               - Cargo (Rust): providers/cargo.md
+              - Composer (PHP): providers/composer.md
       - Standards:
           - Overview: standards/README.md
           - OWASP Top 10 CI/CD: standards/owasp_cicd_top_10.md

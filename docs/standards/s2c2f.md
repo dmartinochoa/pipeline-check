@@ -12,7 +12,7 @@ for taking a third-party dependency safely.
 
 - **Controls in this standard:** 11
 - **Controls evidenced by at least one check:** 11 / 11
-- **Distinct checks evidencing this standard:** 337
+- **Distinct checks evidencing this standard:** 344
 - **Of those, autofixable with `--fix`:** 41
 
 _Severity levels (`CRITICAL` / `HIGH` / `MEDIUM` / `LOW` / `INFO`) follow the same scale across every provider and standard. See [How to read severity](README.md#how-to-read-severity) on the standards overview for the definitions._
@@ -23,11 +23,11 @@ Click a control ID to jump to the per-control section with the full check list. 
 
 | Control | Title | Checks | Severity mix |
 |---------|-------|-------:|--------------|
-| [`ING-1`](#ctrl-ing-1) | L1: Use package managers trusted by your organization | 60 | 1C · 47H · 11M · 1L |
-| [`ING-3`](#ctrl-ing-3) | L1: Have the capability to deny-list specific vulnerable / malicious OSS | 25 | 10C · 11H · 4M |
+| [`ING-1`](#ctrl-ing-1) | L1: Use package managers trusted by your organization | 63 | 1C · 49H · 12M · 1L |
+| [`ING-3`](#ctrl-ing-3) | L1: Have the capability to deny-list specific vulnerable / malicious OSS | 27 | 10C · 13H · 4M |
 | [`SCA-1`](#ctrl-sca-1) | L1: Scan OSS for known vulnerabilities | 16 | 3H · 13M |
-| [`SCA-3`](#ctrl-sca-3) | L2: Scan OSS for malware | 31 | 18C · 7H · 6M |
-| [`UPD-1`](#ctrl-upd-1) | L1: Update vulnerable OSS manually (pin + track versions) | 72 | 39H · 27M · 6L |
+| [`SCA-3`](#ctrl-sca-3) | L2: Scan OSS for malware | 33 | 18C · 9H · 6M |
+| [`UPD-1`](#ctrl-upd-1) | L1: Update vulnerable OSS manually (pin + track versions) | 74 | 40H · 28M · 6L |
 | [`UPD-2`](#ctrl-upd-2) | L3: Enable automated OSS updates (Dependabot / Renovate) | 6 | 6M |
 | [`ENF-1`](#ctrl-enf-1) | L2: Enforce security policy of OSS usage (block on violation) | 64 | 4C · 24H · 34M · 2L |
 | [`ENF-2`](#ctrl-enf-2) | L2: Break the build when a violation is detected | 26 | 5H · 20M · 1L |
@@ -54,7 +54,7 @@ pipeline_check --pipeline aws --standard s2c2f --standard owasp_cicd_top_10
 
 ### ING-1: L1: Use package managers trusted by your organization { #ctrl-ing-1 }
 
-**Evidenced by 60 checks** across 20 providers (AWS, Argo Workflows, Azure Cloud, Azure DevOps, Bitbucket, Buildkite, CircleCI, Cloud Build, Dockerfile, Drone CI, GCP, GitHub Actions, GitLab CI, Helm, Jenkins, NuGet, PyPI, Tekton, maven, npm).
+**Evidenced by 63 checks** across 21 providers (AWS, Argo Workflows, Azure Cloud, Azure DevOps, Bitbucket, Buildkite, CircleCI, Cloud Build, Composer, Dockerfile, Drone CI, GCP, GitHub Actions, GitLab CI, Helm, Jenkins, NuGet, PyPI, Tekton, maven, npm).
 
 | Check | Title | Severity | Provider | Fix |
 |-------|-------|----------|----------|-----|
@@ -74,6 +74,9 @@ pipeline_check --pipeline aws --standard s2c2f --standard owasp_cicd_top_10
 | [`CA-002`](../providers/aws.md#ca-002) | CodeArtifact repository has a public external connection | <span class="pg-sev pg-sev--high">HIGH</span> | [AWS](../providers/aws.md) |  |
 | [`CC-018`](../providers/circleci.md#cc-018) | Package install from insecure source | <span class="pg-sev pg-sev--high">HIGH</span> | [CircleCI](../providers/circleci.md) | <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> |
 | [`CC-028`](../providers/circleci.md#cc-028) | Package install bypasses registry integrity (git / path / tarball source) | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [CircleCI](../providers/circleci.md) |  |
+| [`COMPOSER-003`](../providers/composer.md) | composer.json repository declared over plain HTTP | <span class="pg-sev pg-sev--high">HIGH</span> | [Composer](../providers/composer.md) |  |
+| [`COMPOSER-004`](../providers/composer.md) | composer.json repository URL embeds plaintext credentials | <span class="pg-sev pg-sev--high">HIGH</span> | [Composer](../providers/composer.md) |  |
+| [`COMPOSER-005`](../providers/composer.md) | composer.json minimum-stability accepts unstable releases | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [Composer](../providers/composer.md) |  |
 | [`DF-001`](../providers/dockerfile.md#df-001) | FROM image not pinned to sha256 digest | <span class="pg-sev pg-sev--high">HIGH</span> | [Dockerfile](../providers/dockerfile.md) | <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> |
 | [`DF-003`](../providers/dockerfile.md#df-003) | ADD pulls remote URL without integrity verification | <span class="pg-sev pg-sev--high">HIGH</span> | [Dockerfile](../providers/dockerfile.md) |  |
 | [`DF-004`](../providers/dockerfile.md#df-004) | RUN executes a remote script via curl-pipe / wget-pipe | <span class="pg-sev pg-sev--high">HIGH</span> | [Dockerfile](../providers/dockerfile.md) |  |
@@ -121,11 +124,13 @@ pipeline_check --pipeline aws --standard s2c2f --standard owasp_cicd_top_10
 
 ### ING-3: L1: Have the capability to deny-list specific vulnerable / malicious OSS { #ctrl-ing-3 }
 
-**Evidenced by 25 checks** across 6 providers (AWS, GitHub Actions, NuGet, PyPI, maven, npm).
+**Evidenced by 27 checks** across 7 providers (AWS, Composer, GitHub Actions, NuGet, PyPI, maven, npm).
 
 | Check | Title | Severity | Provider | Fix |
 |-------|-------|----------|----------|-----|
 | [`CA-002`](../providers/aws.md#ca-002) | CodeArtifact repository has a public external connection | <span class="pg-sev pg-sev--high">HIGH</span> | [AWS](../providers/aws.md) |  |
+| [`COMPOSER-007`](../providers/composer.md) | composer.json requires a known-compromised package version | <span class="pg-sev pg-sev--high">HIGH</span> | [Composer](../providers/composer.md) |  |
+| [`COMPOSER-008`](../providers/composer.md) | composer.json allow-plugins permits any plugin to execute | <span class="pg-sev pg-sev--high">HIGH</span> | [Composer](../providers/composer.md) |  |
 | [`ECR-006`](../providers/aws.md#ecr-006) | ECR pull-through cache rule uses an untrusted upstream | <span class="pg-sev pg-sev--high">HIGH</span> | [AWS](../providers/aws.md) |  |
 | [`GHA-040`](../providers/github.md#gha-040) | Action reference matches a known-compromised SHA or tag | <span class="pg-sev pg-sev--critical">CRITICAL</span> | [GitHub Actions](../providers/github.md) |  |
 | [`GHA-041`](../providers/github.md#gha-041) | Action upstream repo has a single contributor | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [GitHub Actions](../providers/github.md) |  |
@@ -176,7 +181,7 @@ pipeline_check --pipeline aws --standard s2c2f --standard owasp_cicd_top_10
 
 ### SCA-3: L2: Scan OSS for malware { #ctrl-sca-3 }
 
-**Evidenced by 31 checks** across 11 providers (AWS, Azure DevOps, Bitbucket, CircleCI, GitHub Actions, GitLab CI, Jenkins, NuGet, PyPI, maven, npm).
+**Evidenced by 33 checks** across 12 providers (AWS, Azure DevOps, Bitbucket, CircleCI, Composer, GitHub Actions, GitLab CI, Jenkins, NuGet, PyPI, maven, npm).
 
 | Check | Title | Severity | Provider | Fix |
 |-------|-------|----------|----------|-----|
@@ -186,6 +191,8 @@ pipeline_check --pipeline aws --standard s2c2f --standard owasp_cicd_top_10
 | [`BB-031`](../providers/bitbucket.md#bb-031) | pip install without `--require-hashes` verification | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [Bitbucket](../providers/bitbucket.md) |  |
 | [`CB-011`](../providers/aws.md#cb-011) | CodeBuild buildspec contains indicators of malicious activity | <span class="pg-sev pg-sev--critical">CRITICAL</span> | [AWS](../providers/aws.md) |  |
 | [`CC-026`](../providers/circleci.md#cc-026) | Config contains indicators of malicious activity | <span class="pg-sev pg-sev--critical">CRITICAL</span> | [CircleCI](../providers/circleci.md) |  |
+| [`COMPOSER-007`](../providers/composer.md) | composer.json requires a known-compromised package version | <span class="pg-sev pg-sev--high">HIGH</span> | [Composer](../providers/composer.md) |  |
+| [`COMPOSER-008`](../providers/composer.md) | composer.json allow-plugins permits any plugin to execute | <span class="pg-sev pg-sev--high">HIGH</span> | [Composer](../providers/composer.md) |  |
 | [`GHA-027`](../providers/github.md#gha-027) | Workflow contains indicators of malicious activity | <span class="pg-sev pg-sev--critical">CRITICAL</span> | [GitHub Actions](../providers/github.md) |  |
 | [`GHA-040`](../providers/github.md#gha-040) | Action reference matches a known-compromised SHA or tag | <span class="pg-sev pg-sev--critical">CRITICAL</span> | [GitHub Actions](../providers/github.md) |  |
 | [`GHA-056`](../providers/github.md#gha-056) | Workflow body contains a known supply-chain worm indicator | <span class="pg-sev pg-sev--critical">CRITICAL</span> | [GitHub Actions](../providers/github.md) |  |
@@ -214,7 +221,7 @@ pipeline_check --pipeline aws --standard s2c2f --standard owasp_cicd_top_10
 
 ### UPD-1: L1: Update vulnerable OSS manually (pin + track versions) { #ctrl-upd-1 }
 
-**Evidenced by 72 checks** across 21 providers (AWS, Argo Workflows, Azure Cloud, Azure DevOps, Bitbucket, Buildkite, CircleCI, Cloud Build, Dockerfile, Drone CI, GCP, GitHub Actions, GitLab CI, Helm, Jenkins, NuGet, OCI manifest, PyPI, Tekton, maven, npm).
+**Evidenced by 74 checks** across 22 providers (AWS, Argo Workflows, Azure Cloud, Azure DevOps, Bitbucket, Buildkite, CircleCI, Cloud Build, Composer, Dockerfile, Drone CI, GCP, GitHub Actions, GitLab CI, Helm, Jenkins, NuGet, OCI manifest, PyPI, Tekton, maven, npm).
 
 | Check | Title | Severity | Provider | Fix |
 |-------|-------|----------|----------|-----|
@@ -239,6 +246,8 @@ pipeline_check --pipeline aws --standard s2c2f --standard owasp_cicd_top_10
 | [`CC-003`](../providers/circleci.md#cc-003) | Docker image not pinned by digest | <span class="pg-sev pg-sev--high">HIGH</span> | [CircleCI](../providers/circleci.md) |  |
 | [`CC-021`](../providers/circleci.md#cc-021) | Package install without lockfile enforcement | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [CircleCI](../providers/circleci.md) | <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> |
 | [`CC-029`](../providers/circleci.md#cc-029) | Machine executor image not pinned | <span class="pg-sev pg-sev--high">HIGH</span> | [CircleCI](../providers/circleci.md) |  |
+| [`COMPOSER-001`](../providers/composer.md) | composer.json present without a sibling composer.lock | <span class="pg-sev pg-sev--high">HIGH</span> | [Composer](../providers/composer.md) |  |
+| [`COMPOSER-002`](../providers/composer.md) | composer.json require uses a floating version constraint | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [Composer](../providers/composer.md) |  |
 | [`DF-001`](../providers/dockerfile.md#df-001) | FROM image not pinned to sha256 digest | <span class="pg-sev pg-sev--high">HIGH</span> | [Dockerfile](../providers/dockerfile.md) | <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> |
 | [`DF-003`](../providers/dockerfile.md#df-003) | ADD pulls remote URL without integrity verification | <span class="pg-sev pg-sev--high">HIGH</span> | [Dockerfile](../providers/dockerfile.md) |  |
 | [`DF-010`](../providers/dockerfile.md#df-010) | apt-get dist-upgrade / upgrade pulls unknown package versions | <span class="pg-sev pg-sev--low">LOW</span> | [Dockerfile](../providers/dockerfile.md) |  |

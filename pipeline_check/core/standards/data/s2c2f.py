@@ -91,6 +91,10 @@ STANDARD = Standard(
         "NUGET-013": ["ING-1"],
         "NUGET-014": ["ING-1"],
         "NUGET-015": ["ING-1"],
+        # ── Composer / PHP ──
+        "COMPOSER-003": ["ING-1"],         # HTTP composer repository
+        "COMPOSER-004": ["ING-1"],         # composer.json repo URL credentials
+        "COMPOSER-005": ["ING-1"],         # minimum-stability dev / pre-release
         # Dockerfile env-bypass pack disables the trusted-source channel
         # for any subsequent OSS install in the image.
         "DF-021":   ["ING-1"],             # pip install TLS bypass / http index
@@ -150,6 +154,8 @@ STANDARD = Standard(
         "NUGET-005": ["SCA-3", "ING-3"],    # known-compromised NuGet version
         "NUGET-008": ["SCA-3", "ING-3"],    # cooldown gate (--resolve-remote)
         "NUGET-009": ["SCA-3", "ING-3"],    # OSV advisory (--resolve-remote)
+        "COMPOSER-007": ["SCA-3", "ING-3"], # compromised Composer package
+        "COMPOSER-008": ["SCA-3", "ING-3"], # allow-plugins wildcard (transitive plugin run)
         # Reputation-class deny-list signals: not malware-confirmed,
         # but each finding is one entry on a curated deny-list of
         # references that should require human-in-the-loop review
@@ -215,6 +221,8 @@ STANDARD = Standard(
         "NUGET-002": ["UPD-1"],            # wildcard prerelease version
         "NUGET-003": ["UPD-1"],            # missing explicit version
         "NUGET-006": ["UPD-1"],            # no lock file for reproducible restores
+        "COMPOSER-001": ["UPD-1"],         # missing composer.lock
+        "COMPOSER-002": ["UPD-1"],         # floating require constraint
         # OCI image manifest pinning
         "OCI-007":  ["UPD-1"],             # legacy schemaVersion 1 (no digest immutability)
         "OCI-008":  ["UPD-1"],             # weak digest algorithm

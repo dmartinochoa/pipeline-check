@@ -159,6 +159,12 @@ STANDARD = Standard(
         "NUGET-013": ["Pinned-Dependencies"],
         "NUGET-014": ["Token-Permissions"],
         "NUGET-015": ["Pinned-Dependencies"],
+        # ── Composer / PHP ──
+        "COMPOSER-001": ["Pinned-Dependencies"],
+        "COMPOSER-002": ["Pinned-Dependencies"],
+        "COMPOSER-004": ["Token-Permissions"],
+        "COMPOSER-007": ["Pinned-Dependencies", "Vulnerabilities"],
+        "COMPOSER-008": ["Pinned-Dependencies"],
         # Reusable workflow / services-image / cross-step pinning
         "GHA-017":  ["Pinned-Dependencies"],                           # package install insecure source
         "GHA-051":  ["Pinned-Dependencies"],                           # services / container image unpinned
