@@ -41,7 +41,7 @@ parsers and are queued for a follow-up.
 
 ## What it covers
 
-13 checks · 0 have an autofix patch (``--fix``).
+14 checks · 0 have an autofix patch (``--fix``).
 
 | Check | Title | Severity | Fix |
 |-------|-------|----------|-----|
@@ -58,6 +58,7 @@ parsers and are queued for a follow-up.
 | [NPM-011](#npm-011) | package.json files field includes secret-shaped paths | <span class="pg-sev pg-sev--high">HIGH</span> |  |
 | [NPM-012](#npm-012) | .npmrc publish token lacks IP or readonly restriction | <span class="pg-sev pg-sev--high">HIGH</span> |  |
 | [NPM-013](#npm-013) | package.json files field uses an overly broad pattern | <span class="pg-sev pg-sev--high">HIGH</span> |  |
+| [NPM-014](#npm-014) | Direct dependency relies on a single npm publisher | <span class="pg-sev pg-sev--low">LOW</span> |  |
 
 ---
 
@@ -456,6 +457,35 @@ Skipped: a ``files`` field that omits broad-include entries (the safe positive-l
 **Recommended action**
 
 Replace the broad-include entry (``*``, ``**``, ``./``, ``.``, ``**/*``, ``*/**``) with an explicit positive-list of the paths the package ships: typically ``dist/**`` plus ``README.md`` / ``LICENSE``. ``npm`` interprets a single ``*`` or ``**`` as 'include everything not blocked by an ignore file', which silently ships every dotfile, env file, build artifact, and CI script the repo carries unless a complete ``.npmignore`` exists. Run ``npm pack --dry-run`` after tightening the list, inspect the printed contents, and only then ``npm publish``. NPM-011 catches a small set of secret-shaped *names*; NPM-013 catches the much larger surface where the pattern itself is the leak.
+
+</div>
+
+</div>
+
+<div class="pg-rule pg-rule--low" markdown>
+
+## NPM-014: Direct dependency relies on a single npm publisher { #npm-014 }
+
+<div class="pg-rule__tags">
+<span class="pg-sev pg-sev--low">LOW</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-3</span> <span class="pg-tag pg-tag--esf">ESF-S-VERIFY-DEPS</span> <span class="pg-tag pg-tag--cwe">CWE-1357</span>
+</div>
+
+Network-dependent: needs ``--resolve-remote`` to read each direct dependency's publisher list from ``registry.npmjs.org`` (the same packument fetch NPM-008 uses, so it adds no extra requests). Flags a package whose top-level ``maintainers`` array (the npm accounts with publish access, not the repo's contributor list) has exactly one entry. Scoped to direct dependencies in ``dependencies`` / ``devDependencies`` / ``optionalDependencies`` / ``peerDependencies``; transitive packages are out of scope. LOW severity by design: a single publisher is extremely common across the registry and is a posture signal, not an active vulnerability, so it stays below the default ``--fail-on`` gate while still surfacing in a report. When ``--resolve-remote`` is off or the registry can't be reached, the rule passes silently.
+
+**Known false-positive modes**
+
+- A single-publisher package maintained by a trusted org behind 2FA and provenance is far lower risk than the bare count implies; the rule can't see the account's hardening from the manifest. Suppress per-resource for dependencies the team has vetted.
+
+**Seen in the wild**
+
+- axios maintainer-account takeover (March 30, 2026): a single publisher account compromise let an attacker push a malicious release to roughly 99M weekly downloads before detection.
+- @ctrl/tinycolor account takeover (May 2024): single-publisher package; malicious versions stayed live for ~36 hours before coordinated removal.
+
+<div class="pg-rule__rec" markdown>
+
+**Recommended action**
+
+Treat a single-publisher dependency as a single point of compromise: if that one npm account is phished or its token leaks, every consumer pulls malicious code on the next install (the axios / chalk / lodash class of risk). For dependencies you pull in directly, prefer packages whose publish access is shared across maintainers or an org team, pin to a reviewed version, and pair with NPM-008 (cooldown) so a compromised release has a window to be caught before it reaches your lockfile.
 
 </div>
 

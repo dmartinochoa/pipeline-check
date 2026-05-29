@@ -158,10 +158,78 @@ def fetch_publish_times(
     )
 
 
+# ── Publisher (maintainer-account) count parser ──────────────────
+
+
+def _parse_maintainer_count(blob: bytes) -> int | None:
+    """Count the npm accounts with publish access in a packument.
+
+    The top-level ``maintainers`` array on an npm packument lists the
+    npm accounts that can publish the package (npm's own
+    ``maintainers`` field, distinct from a repo's GitHub contributor
+    list). A length of one is the single-publisher / single-point-of-
+    compromise signal NPM-014 flags. Returns ``None`` when the array
+    is absent or unparseable so the rule skips the package rather than
+    treating "unknown" as "single".
+    """
+    try:
+        doc = json.loads(blob)
+    except (ValueError, json.JSONDecodeError):
+        return None
+    if not isinstance(doc, dict):
+        return None
+    maintainers = doc.get("maintainers")
+    if not isinstance(maintainers, list):
+        return None
+    count = sum(
+        1 for m in maintainers
+        if isinstance(m, dict) and isinstance(m.get("name"), str) and m["name"]
+    )
+    return count or None
+
+
+def fetch_maintainer_counts(
+    names: Iterable[str],
+    fetcher: RegistryMetadataFetcher,
+    cache: FileSystemCache | None = None,
+) -> tuple[dict[str, int], list[str]]:
+    """Resolve the publisher count for every package in *names*.
+
+    Mirrors :func:`fetch_publish_times`' dedup + cache + fetch loop and
+    shares the same packument cache, so resolving both in one
+    ``--resolve-remote`` pass fetches each package only once (the
+    maintainer pass reads the blob the publish-time pass already
+    cached). Returns ``({name: publisher_count}, warnings)``; an
+    unresolved package is omitted so NPM-014 skips it silently.
+    """
+    seen: set[str] = set()
+    out: dict[str, int] = {}
+    warnings: list[str] = []
+    for name in names:
+        if not isinstance(name, str) or not name or name in seen:
+            continue
+        seen.add(name)
+        blob = cache.get(name) if cache is not None else None
+        if blob is None:
+            blob = fetcher.fetch(name)
+            if blob is None:
+                warnings.append(
+                    f"npm-registry: could not fetch metadata for {name}"
+                )
+                continue
+            if cache is not None:
+                cache.put(name, blob)
+        count = _parse_maintainer_count(blob)
+        if count is not None:
+            out[name] = count
+    return out, warnings
+
+
 __all__ = [
     "FileSystemCache",
     "HttpRegistryFetcher",
     "RegistryMetadataFetcher",
     "default_cache_dir",
+    "fetch_maintainer_counts",
     "fetch_publish_times",
 ]

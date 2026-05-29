@@ -124,6 +124,13 @@ class NpmContext:
         #: the dict is empty so the rule's absence isn't a CI
         #: failure for users on the default no-network path.
         self.publish_times: dict[str, dict[str, _dt.datetime]] = {}
+        #: ``{package_name: publisher_count}`` populated alongside
+        #: ``publish_times`` by the npm provider's ``post_filter`` when
+        #: ``--resolve-remote`` is on, parsed from the same packument
+        #: (the top-level ``maintainers`` array). NPM-014
+        #: (single-publisher risk) reads it and passes silently when the
+        #: dict is empty, the same no-network contract as NPM-008.
+        self.maintainer_counts: dict[str, int] = {}
         self.osv_advisories: dict[tuple[str, str], list[Any]] = {}
         #: Base-ref counterparts of ``locks``, populated by the npm
         #: provider's ``post_filter`` when ``--npm-base-ref`` is set.

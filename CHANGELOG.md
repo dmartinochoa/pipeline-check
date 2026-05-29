@@ -12,6 +12,18 @@ release commit collapses this section into `## [X.Y.Z] - <date>`.
 
 ### Added
 
+- **NPM-014: direct dependency relies on a single npm publisher (LOW).**
+  Flags a direct dependency whose npm `maintainers` array (the accounts
+  with publish access) has exactly one entry, the single-point-of-
+  compromise / account-takeover blast radius behind the axios, chalk,
+  and lodash class of supply-chain incidents. Network-dependent: reads
+  the publisher list from the same `registry.npmjs.org` packument the
+  NPM-008 cooldown gate already fetches under `--resolve-remote`, so it
+  adds no extra requests, and passes silently when resolution is off.
+  Scoped to direct deps; LOW severity by design (a single publisher is
+  ubiquitous, so it stays below the default `--fail-on` gate while still
+  surfacing in a report). npm rule count 13 -> 14. Inspired by a review
+  of `proof-of-commitment` / getcommit.dev. 16 tests.
 - **AC-035: AI agent is both reviewer and committer (CRITICAL).** New
   attack chain pairing GHA-103 (AI review bot on an untrusted trigger
   without an environment gate) with GHA-104 (agent pushes directly) OR

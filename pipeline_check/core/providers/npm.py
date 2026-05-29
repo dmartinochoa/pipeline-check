@@ -23,6 +23,7 @@ from ..checks.npm.registry_fetcher import (
     FileSystemCache,
     HttpRegistryFetcher,
     default_cache_dir,
+    fetch_maintainer_counts,
     fetch_publish_times,
 )
 from ..inventory import Component
@@ -121,6 +122,14 @@ class NpmProvider(BaseProvider):
         )
         context.publish_times = publish_times
         context.warnings.extend(warnings)
+
+        # Publisher counts come from the same packument the publish-time
+        # pass just cached, so this adds no network requests. The
+        # warnings half is dropped: any fetch failure was already
+        # surfaced by the publish-time pass above.
+        context.maintainer_counts = fetch_maintainer_counts(
+            names, fetcher, cache=cache,
+        )[0]
 
         osv_queries = _collect_osv_queries_npm(context)
         if osv_queries:
