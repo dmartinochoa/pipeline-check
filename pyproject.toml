@@ -5,17 +5,43 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "pipeline-check"
 version = "1.6.0"
-description = "CI/CD Security Posture Scanner — scores AWS, Azure Cloud, GCP, Terraform, CloudFormation, GitHub Actions, GitLab CI, Azure DevOps, Bitbucket Pipelines, Jenkins, CircleCI, Google Cloud Build, Buildkite, Drone CI, Tekton, Argo Workflows, Dockerfile, Kubernetes manifests, Helm charts, OCI image manifests, SCM repo posture (GitHub / GitLab / Bitbucket), npm and pypi dependency files against OWASP Top 10 CI/CD Risks and 17 other compliance frameworks"
+description = "Security scanner for CI/CD pipelines, IaC, and cloud: GitHub Actions, GitLab CI, Terraform, Kubernetes, and more, scored against the OWASP CI/CD Top 10."
 readme = "README.md"
 license = "MIT"
 requires-python = ">=3.11"
 authors = [
     { name = "Daniel Martin" },
 ]
+keywords = [
+    "security",
+    "security-scanner",
+    "devsecops",
+    "ci-cd",
+    "cicd",
+    "github-actions",
+    "gitlab-ci",
+    "sast",
+    "static-analysis",
+    "supply-chain-security",
+    "vulnerability-scanner",
+    "terraform",
+    "cloudformation",
+    "kubernetes",
+    "dockerfile",
+    "iac",
+    "owasp",
+    "compliance",
+    "sarif",
+    "pipeline-security",
+]
 classifiers = [
     "Development Status :: 5 - Production/Stable",
+    "Environment :: Console",
     "Intended Audience :: Developers",
+    "Intended Audience :: System Administrators",
     "Topic :: Security",
+    "Topic :: Software Development :: Quality Assurance",
+    "Topic :: Software Development :: Build Tools",
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
     "Programming Language :: Python :: 3.13",
@@ -112,7 +138,8 @@ gcp = [
 pipeline_check = "pipeline_check.cli:main"
 
 [project.urls]
-Homepage = "https://github.com/dmartinochoa/pipeline-check"
+Homepage = "https://dmartinochoa.github.io/pipeline-check/"
+Documentation = "https://dmartinochoa.github.io/pipeline-check/"
 Repository = "https://github.com/dmartinochoa/pipeline-check"
 Issues = "https://github.com/dmartinochoa/pipeline-check/issues"
 Changelog = "https://github.com/dmartinochoa/pipeline-check/blob/master/CHANGELOG.md"
