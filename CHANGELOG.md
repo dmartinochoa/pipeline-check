@@ -12,6 +12,22 @@ release commit collapses this section into `## [X.Y.Z] - <date>`.
 
 ### Added
 
+- **GHA-106: AI agent CLI runs with a write-scoped GITHUB_TOKEN
+  (HIGH).** Fires when a job invokes an agentic CLI (`claude` /
+  `gemini` / `q chat` / `cursor-agent` / `aider` / `openhands` /
+  `goose`) and its effective `permissions:` grant `write-all`, the
+  legacy global `write`, or any of `contents` / `packages` / `actions`
+  / `deployments` set to `write`. The agent reads untrusted input at
+  runtime (issue / PR bodies, review comments), so a prompt-injection
+  payload (the HackerBot-Claw vector) acts with the token's full write
+  scope. Sits upstream of GHA-104 (agent + explicit push) and is
+  broader than GHA-061 (App-token mint filter); job-level
+  `permissions:` correctly override the workflow block. Lower-impact
+  scopes (`pull-requests` / `issues` / `checks` / `id-token`) and the
+  missing-block case (GHA-004's domain) are not flagged. MEDIUM
+  confidence, mapped across all 12 applicable standards. GHA rule
+  count 96 -> 97; catalog 1073 -> 1074. 10 unit tests + a per-check
+  real-example pair.
 - **GHA-105: self-hosted runner reachable from an untrusted PR
   trigger (HIGH).** Fires when a workflow's `on:` includes
   `pull_request` or `pull_request_target` and at least one job's

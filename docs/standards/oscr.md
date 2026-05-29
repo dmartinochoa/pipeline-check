@@ -25,7 +25,7 @@ axis.
 
 - **Controls in this standard:** 86
 - **Controls evidenced by at least one check:** 61 / 86
-- **Distinct checks evidencing this standard:** 632
+- **Distinct checks evidencing this standard:** 633
 - **Of those, autofixable with `--fix`:** 105
 
 _Severity levels (`CRITICAL` / `HIGH` / `MEDIUM` / `LOW` / `INFO`) follow the same scale across every provider and standard. See [How to read severity](README.md#how-to-read-severity) on the standards overview for the definitions._
@@ -95,7 +95,7 @@ Click a control ID to jump to the per-control section with the full check list. 
 | [`PER-5`](#ctrl-per-5) | Untagged resources | 0 | — |
 | [`PER-6`](#ctrl-per-6) | Scheduled task / job on self-hosted runner | 7 | 1H · 6M |
 | [`PER-7`](#ctrl-per-7) | Implant in zombie instance | 0 | — |
-| [`PER-8`](#ctrl-per-8) | Create access token | 3 | 2H · 1M |
+| [`PER-8`](#ctrl-per-8) | Create access token | 4 | 3H · 1M |
 | [`PE-1`](#ctrl-pe-1) | Inject malicious dependency to privileged user repository | 7 | 2C · 5H |
 | [`PE-2`](#ctrl-pe-2) | Runners / agents running with high user privileges | 41 | 11C · 21H · 9M |
 | [`DE-1`](#ctrl-de-1) | Bypass review using admin permission | 33 | 8H · 23M · 2L |
@@ -113,7 +113,7 @@ Click a control ID to jump to the per-control section with the full check list. 
 | [`CA-7`](#ctrl-ca-7) | Runtime leakage of password | 0 | — |
 | [`CA-8`](#ctrl-ca-8) | Steal credentials in container artifacts | 12 | 4C · 7H · 1M |
 | [`LM-1`](#ctrl-lm-1) | Push implants across repositories | 1 | 1H |
-| [`LM-2`](#ctrl-lm-2) | Overprivileged user account | 30 | 5C · 14H · 10M · 1L |
+| [`LM-2`](#ctrl-lm-2) | Overprivileged user account | 31 | 5C · 15H · 10M · 1L |
 | [`COL-1`](#ctrl-col-1) | Unencrypted data in transit | 27 | 24H · 2M · 1L |
 | [`COL-2`](#ctrl-col-2) | Unencrypted data at rest | 9 | 1C · 2H · 6M |
 | [`EXF-1`](#ctrl-exf-1) | Bypass of outbound traffic control | 1 | 1C |
@@ -862,13 +862,14 @@ _No checks in this scanner currently evidence this control. Open an issue if you
 
 ### PER-8: Create access token { #ctrl-per-8 }
 
-**Evidenced by 3 checks** across 2 providers (AWS, GitHub Actions).
+**Evidenced by 4 checks** across 2 providers (AWS, GitHub Actions).
 
 | Check | Title | Severity | Provider | Fix |
 |-------|-------|----------|----------|-----|
 | [`CP-004`](../providers/aws.md#cp-004) | Legacy ThirdParty/GitHub source action (OAuth token) | <span class="pg-sev pg-sev--high">HIGH</span> | [AWS](../providers/aws.md) |  |
 | [`GHA-055`](../providers/github.md#gha-055) | Reusable workflow outputs derive a secret or caller-input value | <span class="pg-sev pg-sev--high">HIGH</span> | [GitHub Actions](../providers/github.md) |  |
 | [`GHA-061`](../providers/github.md#gha-061) | GitHub App token minted without a `permissions:` filter | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [GitHub Actions](../providers/github.md) |  |
+| [`GHA-106`](../providers/github.md#gha-106) | AI agent CLI runs with a write-scoped GITHUB_TOKEN | <span class="pg-sev pg-sev--high">HIGH</span> | [GitHub Actions](../providers/github.md) |  |
 
 ### PE-1: Inject malicious dependency to privileged user repository { #ctrl-pe-1 }
 
@@ -1266,7 +1267,7 @@ _No checks in this scanner currently evidence this control. Open an issue if you
 
 ### LM-2: Overprivileged user account { #ctrl-lm-2 }
 
-**Evidenced by 30 checks** across 8 providers (AWS, Argo CD, Argo Workflows, Cloud Build, GitHub Actions, Kubernetes, SCM, Tekton).
+**Evidenced by 31 checks** across 8 providers (AWS, Argo CD, Argo Workflows, Cloud Build, GitHub Actions, Kubernetes, SCM, Tekton).
 
 | Check | Title | Severity | Provider | Fix |
 |-------|-------|----------|----------|-----|
@@ -1282,6 +1283,7 @@ _No checks in this scanner currently evidence this control. Open an issue if you
 | [`GCB-002`](../providers/cloudbuild.md#gcb-002) | Cloud Build uses the default service account | <span class="pg-sev pg-sev--high">HIGH</span> | [Cloud Build](../providers/cloudbuild.md) |  |
 | [`GHA-004`](../providers/github.md#gha-004) | Workflow permissions block missing or overprovisioned | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [GitHub Actions](../providers/github.md) | <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> |
 | [`GHA-061`](../providers/github.md#gha-061) | GitHub App token minted without a `permissions:` filter | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [GitHub Actions](../providers/github.md) |  |
+| [`GHA-106`](../providers/github.md#gha-106) | AI agent CLI runs with a write-scoped GITHUB_TOKEN | <span class="pg-sev pg-sev--high">HIGH</span> | [GitHub Actions](../providers/github.md) |  |
 | [`IAM-001`](../providers/aws.md#iam-001) | CI/CD role has AdministratorAccess policy attached | <span class="pg-sev pg-sev--critical">CRITICAL</span> | [AWS](../providers/aws.md) |  |
 | [`IAM-002`](../providers/aws.md#iam-002) | CI/CD role has wildcard Action in attached policy | <span class="pg-sev pg-sev--high">HIGH</span> | [AWS](../providers/aws.md) |  |
 | [`IAM-004`](../providers/aws.md#iam-004) | CI/CD role can PassRole to any role | <span class="pg-sev pg-sev--high">HIGH</span> | [AWS](../providers/aws.md) |  |

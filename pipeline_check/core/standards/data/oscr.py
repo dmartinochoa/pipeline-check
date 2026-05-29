@@ -460,6 +460,7 @@ STANDARD = Standard(
         "JF-014":   ["PER-6"],
         # PER-8: Create access token
         "GHA-061":  ["PER-8", "LM-2"],
+        "GHA-106":  ["PER-8", "LM-2"],                   # AI agent with write-scoped token
         "GHA-055":  ["PER-8", "CA-5"],
         "CP-004":   ["PER-8", "IA-9"],
         # ================================================================

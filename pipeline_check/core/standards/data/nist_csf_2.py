@@ -497,6 +497,7 @@ STANDARD = Standard(
         "GHA-059":  ["GV.SC-05"],               # npm install without audit signatures
         "GHA-060":  ["GV.SC-05"],               # pip install without --require-hashes
         "GHA-061":  ["PR.AA-05"],               # App token minted without permissions filter
+        "GHA-106":  ["PR.AA-05"],               # AI agent with write-scoped token
         "GHA-062":  ["PR.AA-05"],               # OIDC trust subject in sibling IaC is overly broad
         "GHA-063":  ["PR.AA-01"],               # spoofable bot-actor if-predicate
         "GHA-064":  ["PR.PS-06"],               # unsound contains() with comma-string operand

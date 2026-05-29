@@ -33,6 +33,11 @@ _MEDIUM: frozenset[str] = frozenset({
     # with only trusted internal contributors, so it over-flags the
     # latter.
     "GHA-105",
+    # Agentic AI CLI with a write-scoped token. Some agent jobs
+    # legitimately need contents:write (auto-formatters behind
+    # required reviews); the least-privilege fix is still to scope
+    # the write away from the agent, but it's a judgment call.
+    "GHA-106",
     "JF-014",
     # Dep-update lockfile bypass, catches all ``pip install -U`` by
     # default; the safe subset (pip/setuptools/wheel/virtualenv) is

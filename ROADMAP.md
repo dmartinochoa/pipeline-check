@@ -6,6 +6,14 @@ What's planned, what's shipped, and what's deliberately out of scope.
 
 ### Unreleased (on ``dev``)
 
+- **GHA-106: AI agent CLI runs with a write-scoped GITHUB_TOKEN
+  (HIGH)** — Fires when an agentic CLI runs in a job whose
+  ``GITHUB_TOKEN`` carries ``write-all`` / legacy ``write`` or
+  ``contents`` / ``packages`` / ``actions`` / ``deployments: write``.
+  A prompt-injected agent then acts with the token's full write scope.
+  Upstream of GHA-104 (explicit push) and broader than GHA-061
+  (App-token mint). MEDIUM confidence, mapped across all 12 applicable
+  standards. GHA 96 -> 97.
 - **GHA-105: self-hosted runner reachable from an untrusted PR
   trigger (HIGH)** — Fires when ``pull_request`` /
   ``pull_request_target`` can schedule a job on a self-hosted runner,
@@ -544,11 +552,13 @@ The HackerBot-Claw campaign (February 2026) demonstrated AI prompt
 injection against Claude-based code reviewers in CI. Current
 coverage: GHA-058 (agentic CLI with bypass flags / PR-checkout
 topology), GHA-103 (AI review bot on untrusted trigger without
-environment gate), GHA-104 (AI agent auto-push without PR review).
-Remaining gaps: overly permissive AI agent tokens (broader than
-GHA-061's App-token scope check), AI-generated IaC changes that
-modify security-sensitive resources, multi-step agent chains where
-the AI is both the reviewer and the committer.
+environment gate), GHA-104 (AI agent auto-push without PR review),
+GHA-106 (agentic CLI in a job whose GITHUB_TOKEN carries write scope,
+the over-permissive-token gap, broader than GHA-061's App-token mint
+check). Remaining gaps: AI-generated IaC changes that modify
+security-sensitive resources, and multi-step agent chains where the
+AI is both the reviewer and the committer (a chain pairing GHA-103
+with GHA-104 / GHA-106 on the same workflow).
 
 ### ~~Gitea / Forgejo provider~~ shipped
 
