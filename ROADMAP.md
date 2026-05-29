@@ -545,6 +545,38 @@ a rule flagging workflows missing the section, a rule checking SHA
 consistency, and parser support. First-mover advantage: no scanner
 currently validates this section.
 
+### Behavioral supply-chain signals (maintainer depth, provenance)
+
+Three dependency-trust signals surfaced by reviewing
+``proof-of-commitment`` / getcommit.dev, a supply-chain risk scorer
+whose thesis is that behavioral signals (who can publish, how a package
+is built) catch compromise that stars, download counts, and
+``npm audit`` miss. None are covered by the current pinning / integrity
+/ compromised-list / cooldown / OSV packs.
+
+- **Single-publisher risk (maintainer depth).** A package with one npm
+  publisher is a single point of compromise (the axios / chalk / lodash
+  account-takeover class). The npm registry document NPM-008 already
+  fetches carries the ``maintainers`` array, so the publisher count is
+  free on the same ``--resolve-remote`` call, no new network surface.
+  Ship npm first; PyPI is gated on its JSON API not reliably exposing
+  the owner-account list. Precision is the hard part: a single publisher
+  describes most of the ecosystem, so scope to direct dependencies, keep
+  it LOW / MEDIUM confidence, and ideally pair it with a
+  recent-ownership-change or new-account signal (the actual takeover
+  vector) before it earns a higher severity.
+- **Dependency provenance gap.** Flag a direct dependency published
+  without a build-provenance attestation, the property this project
+  already guarantees for its own wheel (SLSA Build L3, PEP 740). npm
+  exposes per-version attestations at
+  ``/-/npm/v1/attestations/<pkg>@<version>``; PyPI's PEP 740 surface is
+  the parallel once the ecosystem populates it. Same ``--resolve-remote``
+  gate as the cooldown and OSV rules.
+- **OpenSSF Scorecard surfacing.** Show a direct dependency's Scorecard
+  (and the Dangerous-Workflow check in particular) when the package
+  links a GitHub repo. Heavier than the other two (an extra API per
+  linked repo), so it sits below them in priority.
+
 ### SDLC posture graph from fleet data
 
 The fleet scanner and CXPC chain engine already compute cross-repo
