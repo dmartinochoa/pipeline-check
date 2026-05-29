@@ -71,8 +71,13 @@ release commit collapses this section into `## [X.Y.Z] - <date>`.
   to ~138ms. Separately, `Scanner.run()` caches the standards-to-control
   resolution per check_id rather than rebuilding the same `ControlRef`
   list for every finding, which roughly halves the rule and
-  post-processing phase on a workflow set with many findings. No
-  behavior change: same findings, same controls, same gate results.
+  post-processing phase on a workflow set with many findings. The
+  attack-chain engine now filters the findings list to failing findings
+  once before evaluating rules, instead of having each of the ~45 rules
+  re-walk a list dominated by passing findings; on a large monorepo
+  (~5k-16k findings) chain evaluation drops roughly 5x (about 9ms to
+  2ms at 50 files). No behavior change: same findings, same controls,
+  same chains, same gate results.
 - **`--inline-explain` now spans every text reporter.** The flag used
   to affect only the terminal panel; the structured formats dropped
   `exploit_example` entirely. The include/skip decision now lives in a

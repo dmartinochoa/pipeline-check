@@ -14,6 +14,7 @@ that needs the value: the step that uses it.
 """
 from __future__ import annotations
 
+import functools
 import re
 from typing import Any
 
@@ -122,6 +123,19 @@ def _secret_env_at_level(env_block: Any) -> dict[str, str]:
     return out
 
 
+@functools.cache
+def _ref_patterns(name: str) -> tuple[re.Pattern[str], re.Pattern[str]]:
+    """Compiled ``(shell, expression)`` reference patterns for *name*.
+
+    Cached by name: the same env-var name is tested against every step
+    in a job, so compiling once per distinct name (bounded by the
+    workflow's secret-bound env vars) avoids recompiling on every call.
+    """
+    shell = re.compile(rf"\$(?:\{{{re.escape(name)}\}}|{re.escape(name)}\b)")
+    expr = re.compile(rf"\$\{{\{{\s*env\.{re.escape(name)}\s*\}}\}}")
+    return shell, expr
+
+
 def _env_var_reference_count_in_text(name: str, text: str) -> int:
     """Count references to ``$NAME`` / ``${NAME}`` / ``${{ env.NAME }}``.
 
@@ -130,12 +144,7 @@ def _env_var_reference_count_in_text(name: str, text: str) -> int:
     (``${{ env.NAME }}``) count, since either shape is a real
     consumer of the env binding.
     """
-    shell_pattern = re.compile(
-        rf"\$(?:\{{{re.escape(name)}\}}|{re.escape(name)}\b)"
-    )
-    expr_pattern = re.compile(
-        rf"\$\{{\{{\s*env\.{re.escape(name)}\s*\}}\}}"
-    )
+    shell_pattern, expr_pattern = _ref_patterns(name)
     return (
         len(shell_pattern.findall(text)) + len(expr_pattern.findall(text))
     )
