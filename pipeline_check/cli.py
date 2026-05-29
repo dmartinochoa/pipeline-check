@@ -2197,16 +2197,15 @@ def _install_completion_callback(
     "inline_explain",
     is_flag=True,
     help=(
-        "Inline the rule's ``exploit_example`` (when present) under "
-        "each failing finding's terminal panel. Saves the "
-        "``pipeline_check --explain CHECK_ID`` round-trip when you "
-        "want the proof-of-exploit snippet alongside the description "
-        "and recommendation. Affects ``--output terminal`` and "
-        "``--output both`` only. ``--output json`` and "
-        "``--output html`` already include ``exploit_example`` in "
-        "every payload regardless of this flag; ``--output sarif`` "
-        "/ ``junit`` / ``markdown`` / ``codequality`` do not surface "
-        "the field at all."
+        "Surface the rule's ``exploit_example`` (when present) "
+        "alongside each failing finding, saving the "
+        "``pipeline_check --explain CHECK_ID`` round-trip. Honored by "
+        "``terminal`` / ``both`` (under the panel), ``sarif`` (rule "
+        "``help`` text), ``junit`` (``<failure>`` body), ``markdown`` "
+        "(a collapsible Proof-of-exploit section), and ``codequality`` "
+        "(issue ``description``). ``--output json`` and ``--output "
+        "html`` always include ``exploit_example`` regardless of this "
+        "flag."
     ),
 )
 @click.option(
@@ -3458,19 +3457,25 @@ def scan(
     if output == "sarif":
         sarif_text = report_sarif(
             findings, score_result, tool_version=__version__, chains=chains,
+            inline_explain=inline_explain,
         )
         _emit_report(sarif_text, output_file, "SARIF report", quiet=quiet)
 
     if output == "junit":
-        junit_text = report_junit(findings, score_result)
+        junit_text = report_junit(
+            findings, score_result, inline_explain=inline_explain,
+        )
         _emit_report(junit_text, output_file, "JUnit report", quiet=quiet)
 
     if output == "markdown":
-        md_text = report_markdown(findings, score_result, chains=chains)
+        md_text = report_markdown(
+            findings, score_result, chains=chains,
+            inline_explain=inline_explain,
+        )
         _emit_report(md_text, output_file, "Markdown report", quiet=quiet)
 
     if output == "codequality":
-        cq_text = report_codequality(findings)
+        cq_text = report_codequality(findings, inline_explain=inline_explain)
         _emit_report(
             cq_text, output_file, "Code Quality report", quiet=quiet,
         )

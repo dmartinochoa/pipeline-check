@@ -22,24 +22,28 @@ PR-review comment, with introduced / resolved / preserved sections
 rather than the full failures table the `markdown` format renders.
 See [`pr_diff.md`](pr_diff.md) for the mechanism and recipes.
 
-## Terminal: inline exploit examples
+## Inline exploit examples
 
 ```bash
 pipeline_check --inline-explain
 ```
 
-The default terminal view shows each failing finding with its title,
-severity, location, and recommendation. `--inline-explain` injects the
-rule's recorded `exploit_example` directly under the existing
-Recommendation block, so the operator can see a concrete attacker
-scenario without piping the check ID into `pipeline_check explain`.
+`--inline-explain` surfaces each failing finding's recorded
+`exploit_example` so the operator sees a concrete attacker scenario
+without piping the check ID into `pipeline_check explain`. It honors
+every text format that doesn't already carry the field:
 
-The flag is a no-op on `--output json` / `sarif` / `markdown` /
-`codequality` / `junit`. Those formats render the `exploit_example`
-field on demand (or in the case of `json`/`html`, expose it as a
-structured attribute that consumers can render themselves), so the
-flag has nothing to add. The terminal and `--explain` surfaces share
-the canonical label "Proof of exploit".
+| `--output` | Where the example lands |
+|---|---|
+| `terminal` / `both` | Under the Recommendation block in the panel |
+| `sarif` | The rule's `help.text` and `help.markdown` |
+| `junit` | The `<failure>` element body |
+| `markdown` | A collapsible "Proof of exploit" section after the failures table |
+| `codequality` | The issue `description` (the fingerprint is unchanged, so dismissed MR threads don't churn) |
+
+`--output json` and `--output html` always include `exploit_example`
+as a structured attribute regardless of the flag, so it has nothing to
+add there. All surfaces share the canonical label "Proof of exploit".
 
 ## JSON
 

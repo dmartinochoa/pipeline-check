@@ -6,6 +6,14 @@ What's planned, what's shipped, and what's deliberately out of scope.
 
 ### Unreleased (on ``dev``)
 
+- **``--inline-explain`` across every reporter** — Lifted the
+  exploit-example gate out of the terminal reporter into a shared
+  ``inline_exploit()`` decision in ``checks/base.py``. SARIF (rule
+  ``help``), JUnit (``<failure>`` body), markdown (collapsible
+  Proof-of-exploit section), and Code Quality (issue ``description``)
+  now honor ``--inline-explain``; JSON / HTML still carry the field
+  unconditionally. Code Quality fingerprints are unchanged so dismissed
+  MR threads don't churn.
 - **Fixer discoverability (``--list-fixers``)** — New early-exit flag
   that lists every check ID with a registered autofixer
   (``ID  SEVERITY  TIER  TITLE``) and exits without scanning.
@@ -436,19 +444,17 @@ items below remain open.
 Larger items not yet scoped to a specific release. Landing order
 is open.
 
-### ``--inline-explain`` across every reporter
+### ~~``--inline-explain`` across every reporter~~ shipped
 
-Today the flag affects only ``--output terminal`` (and ``both`` via
-the terminal half). JSON and HTML include ``exploit_example``
-unconditionally; SARIF, JUnit, markdown, and codequality drop the
-field entirely. Lift the gate from the terminal reporter into a
-``Finding``-layer decision (e.g. pre-filter or a render context
-shared by every reporter) so all formats can honor the flag
-uniformly. Includes wiring ``exploit_example`` into the SARIF
-``help.text``, the JUnit ``<failure>`` body, the markdown comment
-template, and the Code Quality ``description``. Help text in
-``cli.py`` already names the current carve-outs so users aren't
-misled in the interim.
+Shipped on ``dev``. The gate moved out of the terminal reporter into a
+shared ``inline_exploit(finding, inline_explain)`` decision in
+``checks/base.py`` that every reporter consults. ``exploit_example``
+now lands in the SARIF rule ``help`` (text + markdown), the JUnit
+``<failure>`` body, a collapsible markdown Proof-of-exploit section
+(the failures table is a fixed five-column grid, so the snippets get
+their own section rather than an extra column), and the Code Quality
+issue ``description`` (fingerprint unchanged so dismissed MR threads
+don't churn). JSON and HTML still carry the field unconditionally.
 
 ### VS Code extension
 

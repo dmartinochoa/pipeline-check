@@ -296,12 +296,14 @@ pipeline_check --output cyclonedx -O sbom.json     # CycloneDX 1.6 build SBOM
 pipeline_check --output both                       # terminal→stderr, JSON→stdout
 ```
 
-For the default terminal view, `--inline-explain` injects each rule's
-recorded `exploit_example` directly under the Recommendation block, so
+`--inline-explain` surfaces each rule's recorded `exploit_example` so
 operators see a concrete attack scenario without piping the check ID
-through `pipeline_check explain`. No-op on the structured formats
-(`json` / `sarif` / `markdown` / `codequality` / `junit`), which
-already surface the field via their schema.
+through `pipeline_check explain`. It is honored by `terminal` / `both`
+(under the Recommendation block), `sarif` (rule `help`), `junit`
+(`<failure>` body), `markdown` (a collapsible Proof-of-exploit
+section), and `codequality` (issue `description`). `json` and `html`
+carry the field unconditionally. See [output.md](output.md) for the
+per-format detail.
 
 Format schemas: [output.md](output.md).
 

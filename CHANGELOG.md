@@ -23,6 +23,20 @@ release commit collapses this section into `## [X.Y.Z] - <date>`.
   `--explain` reads, so a new fixer auto-lists. Documented under
   `--man autofix` and `docs/usage.md`. 8 new tests.
 
+### Changed
+
+- **`--inline-explain` now spans every text reporter.** The flag used
+  to affect only the terminal panel; the structured formats dropped
+  `exploit_example` entirely. The include/skip decision now lives in a
+  shared `inline_exploit()` gate in `checks/base.py`, and SARIF (rule
+  `help.text` / `help.markdown`), JUnit (`<failure>` body), markdown (a
+  collapsible Proof-of-exploit section after the failures table), and
+  Code Quality (issue `description`) all honor it. `--output json` and
+  `--output html` continue to carry the field unconditionally. The
+  Code Quality fingerprint is unchanged (it hashes only `check_id` /
+  path / line), so enabling the flag never churns a dismissed MR
+  thread. 13 new tests.
+
 ## [1.6.0] - 2026-05-29
 
 ### Added

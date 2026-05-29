@@ -422,7 +422,7 @@ See [docs/standards/](docs/standards/).
 | `--verbose` / `-v` | | Debug output to stderr |
 | `--quiet` / `-q` | | Suppress all output; exit code only |
 | `--no-group` | | Render every finding on its own row. By default the terminal table collapses repeated `(check_id, resource)` failures into one row plus a `+N similar` summary line. JSON / SARIF / JUnit outputs always carry every finding regardless. |
-| `--inline-explain` | | Inline each finding's `exploit_example` (when present) under its terminal panel, no `--explain CHECK_ID` round-trip. No-op for non-terminal outputs. |
+| `--inline-explain` | | Surface each finding's `exploit_example` (when present), no `--explain CHECK_ID` round-trip. Honored by terminal, SARIF (rule `help`), JUnit, markdown, and codequality; JSON / HTML always include it. |
 | `--version` | | Print version |
 
 Provider-specific path flags (`--gha-path`, `--gitlab-path`, `--bitbucket-path`, `--cfn-template`,

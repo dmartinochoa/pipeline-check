@@ -31,7 +31,7 @@ import hashlib
 import json
 from typing import Any
 
-from .checks.base import Finding, Severity
+from .checks.base import Finding, Severity, inline_exploit
 
 _SEVERITY_MAP: dict[Severity, str] = {
     Severity.CRITICAL: "blocker",
@@ -68,10 +68,19 @@ def _fingerprint(check_id: str, path: str, line: int | None) -> str:
 
 
 def _issue(
-    f: Finding, path: str, line: int | None,
+    f: Finding, path: str, line: int | None, inline_explain: bool = False,
 ) -> dict[str, Any]:
-    """Build one Code Climate issue dict for finding + location."""
+    """Build one Code Climate issue dict for finding + location.
+
+    With *inline_explain*, the finding's ``exploit_example`` is appended
+    to ``description``. The fingerprint is over ``(check_id, path,
+    line)`` only, so enriching the description never churns a
+    previously-dismissed MR thread.
+    """
     desc = (f.description or f.title).strip()
+    exploit = inline_exploit(f, inline_explain)
+    if exploit:
+        desc = f"{desc}\n\nProof of exploit:\n{exploit}"
     norm_path = _normalize_path(path) if path else _UNKNOWN_PATH
     location: dict[str, Any] = {"path": norm_path}
     if line is not None:
@@ -85,12 +94,16 @@ def _issue(
     }
 
 
-def report_codequality(findings: list[Finding]) -> str:
+def report_codequality(
+    findings: list[Finding], inline_explain: bool = False,
+) -> str:
     """Render *findings* as a GitLab Code Quality JSON string.
 
     Only failing findings are emitted; passing findings have no
     representation in the format. The result is a JSON array, ready to
     drop into a GitLab job's ``artifacts.reports.codequality:`` slot.
+    When *inline_explain* is set, each issue's ``description`` carries
+    the finding's ``exploit_example``.
     """
     issues: list[dict[str, Any]] = []
     for f in findings:
@@ -98,7 +111,7 @@ def report_codequality(findings: list[Finding]) -> str:
             continue
         if f.locations:
             for loc in f.locations:
-                issues.append(_issue(f, loc.path, loc.start_line))
+                issues.append(_issue(f, loc.path, loc.start_line, inline_explain))
         else:
-            issues.append(_issue(f, f.resource, None))
+            issues.append(_issue(f, f.resource, None, inline_explain))
     return json.dumps(issues, indent=2) + "\n"

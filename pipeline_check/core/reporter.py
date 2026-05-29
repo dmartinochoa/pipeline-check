@@ -10,7 +10,13 @@ from rich.panel import Panel
 from rich.table import Table
 
 from .chains import Chain
-from .checks.base import Confidence, Finding, Severity, severity_rank
+from .checks.base import (
+    Confidence,
+    Finding,
+    Severity,
+    inline_exploit,
+    severity_rank,
+)
 from .inventory import Component
 from .scorer import ScoreResult
 
@@ -342,21 +348,20 @@ def report_terminal(
         # ``--inline-explain`` surfaces the rule's ``exploit_example``
         # (when one is recorded) right under the recommendation so the
         # operator doesn't need a separate ``--explain CHECK_ID``
-        # round-trip. The example is escaped through ``rich.markup.escape``
-        # because real exploit snippets contain literal ``[...]`` tokens
-        # (YAML lists like ``types: [opened, edited]``, Terraform refs like
-        # ``subnets = [aws_subnet.foo.id]``, K8s capabilities ``[ALL]``) that
-        # the Panel renderer would otherwise parse as Rich style markup and
-        # silently strip from the output. Label matches ``--explain`` and the
+        # round-trip. The gate lives in ``inline_exploit`` so SARIF,
+        # JUnit, markdown, and codequality make the same decision. The
+        # example is escaped through ``rich.markup.escape`` because real
+        # exploit snippets contain literal ``[...]`` tokens (YAML lists
+        # like ``types: [opened, edited]``, Terraform refs like
+        # ``subnets = [aws_subnet.foo.id]``, K8s capabilities ``[ALL]``)
+        # that the Panel renderer would otherwise parse as Rich style
+        # markup and silently strip. Label matches ``--explain`` and the
         # HTML report so the same field reads the same on every surface.
-        # TODO(altitude): move this gating to the Finding/data layer so SARIF,
-        # JUnit, markdown, and codequality reporters can honor --inline-explain
-        # too (currently only terminal and the unconditional JSON/HTML do).
         exploit_text = ""
-        if inline_explain and f.exploit_example:
-            safe_exploit = rich_escape(f.exploit_example.rstrip())
+        exploit = inline_exploit(f, inline_explain)
+        if exploit:
             exploit_text = (
-                f"\n[bold]Proof of exploit:[/bold]\n{safe_exploit}"
+                f"\n[bold]Proof of exploit:[/bold]\n{rich_escape(exploit)}"
             )
         console.print(
             Panel(
