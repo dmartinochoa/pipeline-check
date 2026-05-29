@@ -23,6 +23,8 @@ docs-all:
 #   make new-rule PROVIDER=github SLUG=self_hosted_runner
 # Pass --severity / --title by calling scripts/new_rule.py directly.
 new-rule:
+	@test -n "$(PROVIDER)" || (echo "Error: PROVIDER is required. Usage: make new-rule PROVIDER=github SLUG=self_hosted_runner"; exit 1)
+	@test -n "$(SLUG)" || (echo "Error: SLUG is required. Usage: make new-rule PROVIDER=github SLUG=self_hosted_runner"; exit 1)
 	python scripts/new_rule.py $(PROVIDER) $(SLUG) --apply
 
 # One-command pre-PR gate: lint, doc-freshness, mypy, tests.

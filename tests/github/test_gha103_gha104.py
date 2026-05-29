@@ -225,3 +225,24 @@ class TestGHA104AIAutoPush:
         """
         f = run_check(wf, "GHA-104")
         assert f.passed
+
+    def test_passes_when_git_push_only_echoed_or_commented(self) -> None:
+        # A `git push` that appears only in a comment or echoed output is
+        # not a real push. _step_pushes_directly routes through
+        # find_run_command (the same comment/echo filter the AI-CLI side
+        # uses), so neither shape is a false positive.
+        wf = """
+        name: generate
+        on: workflow_dispatch
+        jobs:
+          generate:
+            runs-on: ubuntu-latest
+            steps:
+              - uses: actions/checkout@v4
+              - run: claude -p "implement the feature"
+              - run: |
+                  # git push is intentionally not run in this step
+                  echo "git push"
+        """
+        f = run_check(wf, "GHA-104")
+        assert f.passed

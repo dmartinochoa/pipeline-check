@@ -26,7 +26,7 @@ python scripts/new_rule.py github schedule_without_permissions --severity MEDIUM
 This picks the next free ID, writes the rule module and a matching test
 stub, and prints the remaining checklist:
 
-```
+```text
 created pipeline_check/core/checks/github/rules/gha107_schedule_without_permissions.py
 created tests/github/test_schedule_without_permissions.py
 ```

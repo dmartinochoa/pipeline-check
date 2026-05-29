@@ -132,7 +132,7 @@ def _step_pushes_directly(step: dict[str, Any]) -> str | None:
             if uses_lc.startswith(pr_action):
                 return None
     run = step.get("run")
-    if isinstance(run, str) and _GIT_PUSH_RE.search(run):
+    if isinstance(run, str) and find_run_command(run, _GIT_PUSH_RE):
         return "git push"
     return None
 
