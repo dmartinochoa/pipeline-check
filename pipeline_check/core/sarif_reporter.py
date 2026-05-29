@@ -46,7 +46,14 @@ import urllib.parse
 from typing import Any
 
 from .chains import Chain
-from .checks.base import Confidence, Finding, Location, Severity, inline_exploit
+from .checks.base import (
+    Confidence,
+    Finding,
+    Location,
+    Severity,
+    inline_exploit,
+    markdown_code_fence,
+)
 from .scorer import ScoreResult
 
 # SARIF 2.1.0 ``rank`` is a 0–100 float conveying "how important this
@@ -424,7 +431,10 @@ def _build_rules(
         help_text = f.recommendation or f.title
         exploit = inline_exploit(f, inline_explain)
         if exploit:
-            help_parts.append(f"**Proof of exploit**\n\n```\n{exploit}\n```")
+            fence = markdown_code_fence(exploit)
+            help_parts.append(
+                f"**Proof of exploit**\n\n{fence}\n{exploit}\n{fence}"
+            )
             help_text = f"{help_text}\n\nProof of exploit:\n{exploit}"
         help_md = "\n\n---\n\n".join(help_parts)
 

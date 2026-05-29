@@ -111,6 +111,36 @@ class TestGHA106AIAgentWriteToken:
         """
         assert run_check(wf, "GHA-106").passed
 
+    def test_passes_on_echoed_or_commented_cli_name(self):
+        # A CLI name that only appears in an echoed string or a comment
+        # isn't a real invocation; don't flag it.
+        wf = """
+        on: push
+        permissions: write-all
+        jobs:
+          a:
+            steps:
+              - run: |
+                  echo "claude -p x"
+                  # aider --message x
+                  printf 'goose run\\n'
+        """
+        assert run_check(wf, "GHA-106").passed
+
+    def test_fails_on_real_invocation_chained_after_another_command(self):
+        # The agent runs for real after a `cd`, not just echoed.
+        wf = """
+        on: push
+        permissions: write-all
+        jobs:
+          a:
+            steps:
+              - run: |
+                  echo "running agent"
+                  cd repo && claude -p x
+        """
+        assert not run_check(wf, "GHA-106").passed
+
     def test_multiple_agent_jobs_aggregated(self):
         wf = """
         on: push

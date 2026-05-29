@@ -6,6 +6,7 @@ subclass :class:`GitHubBaseCheck` and iterate ``self.ctx.workflows``.
 """
 from __future__ import annotations
 
+import re
 from collections.abc import Iterator
 from dataclasses import dataclass
 from pathlib import Path
@@ -196,6 +197,52 @@ def job_location(path: str, job: dict[str, Any]) -> Location:
     """Build a :class:`Location` for *job* in *path*."""
     line = _line_of(job)
     return Location(path=path, start_line=line, end_line=line)
+
+
+#: Shell command separators used to split a ``run:`` line into the
+#: individual commands it chains. Not a full shell parser; enough to
+#: keep ``cd repo && claude ...`` (two commands) from being read as one.
+_CMD_SEPARATOR_RE = re.compile(r"[;&|]+")
+
+
+def _run_command_chunks(run: str) -> Iterator[str]:
+    """Yield the executable command chunks of a shell ``run:`` body.
+
+    Skips comment lines and the arguments of ``echo`` / ``printf`` so a
+    name that only appears in a comment (``# aider ...``) or echoed
+    output (``echo "claude -p x"``) isn't read as a real invocation.
+    Lines are split on ``;`` / ``&&`` / ``||`` / ``|`` so a command
+    chained after another (``cd repo && claude ...``) still surfaces.
+    This is a heuristic, not a shell parser: it strips the common
+    false-positive shapes without modeling quoting exhaustively.
+    """
+    for raw_line in run.splitlines():
+        line = raw_line.strip()
+        if not line or line.startswith("#"):
+            continue
+        for chunk in _CMD_SEPARATOR_RE.split(line):
+            chunk = chunk.strip()
+            if not chunk or chunk.startswith("#"):
+                continue
+            if chunk.split(None, 1)[0].lower() in ("echo", "printf"):
+                continue
+            yield chunk
+
+
+def find_run_command(
+    run: str, pattern: re.Pattern[str],
+) -> re.Match[str] | None:
+    """Search *pattern* against the real command chunks of *run*.
+
+    A drop-in replacement for ``pattern.search(run)`` that ignores
+    matches appearing only in comments or echoed output. Returns the
+    first match, or ``None``.
+    """
+    for chunk in _run_command_chunks(run):
+        m = pattern.search(chunk)
+        if m:
+            return m
+    return None
 
 
 def effective_permissions(
