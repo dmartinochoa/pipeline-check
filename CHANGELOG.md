@@ -62,6 +62,17 @@ release commit collapses this section into `## [X.Y.Z] - <date>`.
 
 ### Changed
 
+- **Faster CLI startup and scans.** The provider registry now imports a
+  provider module only when that provider is selected, instead of
+  importing all 32 at load time, and `boto3` moved behind
+  `TYPE_CHECKING` in the AWS modules (it was used only in annotations
+  plus one `Session()` call). A GitHub-only scan or `--help` no longer
+  pulls in `botocore` / `s3transfer`, so cold startup drops from ~346ms
+  to ~138ms. Separately, `Scanner.run()` caches the standards-to-control
+  resolution per check_id rather than rebuilding the same `ControlRef`
+  list for every finding, which roughly halves the rule and
+  post-processing phase on a workflow set with many findings. No
+  behavior change: same findings, same controls, same gate results.
 - **`--inline-explain` now spans every text reporter.** The flag used
   to affect only the terminal panel; the structured formats dropped
   `exploit_example` entirely. The include/skip decision now lives in a

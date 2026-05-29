@@ -15,10 +15,12 @@ from __future__ import annotations
 
 import json
 from collections.abc import Callable
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
-import boto3
 from botocore.exceptions import ClientError
+
+if TYPE_CHECKING:
+    import boto3
 
 from .._iam_policy import CICD_SERVICE_PRINCIPALS
 from .base import AWSBaseCheck

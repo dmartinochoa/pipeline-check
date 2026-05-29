@@ -373,8 +373,20 @@ class Scanner:
         ))
 
         active_standards = _standards.resolve(standards)
+        # A scan emits many findings sharing a check_id, and
+        # resolve_for_check rebuilds an identical ControlRef list for
+        # each one. Cache by check_id so the work runs once per distinct
+        # check. The ControlRef list is read-only downstream, so findings
+        # with the same check_id can share one instance.
+        controls_by_check: dict[str, list[_standards.ControlRef]] = {}
         for f in findings:
-            f.controls = _standards.resolve_for_check(f.check_id, active_standards)
+            controls = controls_by_check.get(f.check_id)
+            if controls is None:
+                controls = _standards.resolve_for_check(
+                    f.check_id, active_standards,
+                )
+                controls_by_check[f.check_id] = controls
+            f.controls = controls
             # Apply the centralized confidence default unless the rule
             # opted out by setting ``confidence_locked=True`` on the
             # Finding. Rules that want per-finding control (e.g. CB-005
