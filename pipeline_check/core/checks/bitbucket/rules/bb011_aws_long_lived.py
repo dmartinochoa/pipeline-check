@@ -7,7 +7,7 @@ from typing import Any
 from ...base import Finding, Severity
 from ...rule import Rule
 from ..base import iter_steps
-from ._helpers import AWS_KEY_RE
+from ._helpers import aws_key_in
 
 _AWS_CONFIGURE_RE = re.compile(
     r"aws\s+configure\s+set\s+aws_access_key_id\b"
@@ -42,19 +42,19 @@ def check(path: str, doc: dict[str, Any]) -> Finding:
     for _, step in iter_steps(doc):
         for script_line in (step.get("script") or []):
             if isinstance(script_line, str):
-                if AWS_KEY_RE.search(script_line):
+                if aws_key_in(script_line):
                     static_keys = True
                 if _AWS_CONFIGURE_RE.search(script_line):
                     static_keys = True
         # Also check step-level variables (definitions.variables).
         for v in (step.get("variables") or {}).values() if isinstance(step.get("variables"), dict) else []:
-            if isinstance(v, str) and AWS_KEY_RE.search(v):
+            if isinstance(v, str) and aws_key_in(v):
                 static_keys = True
     # Scan top-level definitions variables.
     defs = doc.get("definitions") or {}
     if isinstance(defs, dict):
         for v in (defs.get("variables") or {}).values() if isinstance(defs.get("variables"), dict) else []:
-            if isinstance(v, str) and AWS_KEY_RE.search(v):
+            if isinstance(v, str) and aws_key_in(v):
                 static_keys = True
     if not static_keys:
         return Finding(

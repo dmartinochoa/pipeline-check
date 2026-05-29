@@ -6,6 +6,8 @@ import re
 from ..._primitives.deploy_names import DEPLOY_RE as DEPLOY_RE
 from ..._primitives.secret_shapes import AWS_KEY_RE as AWS_KEY_RE
 from ..._primitives.secret_shapes import SECRETISH_KEY_RE as SECRETISH_KEY_RE
+from ..._primitives.secret_shapes import aws_key_in as aws_key_in
+from ..._primitives.secret_shapes import is_placeholder_value as is_placeholder_value
 
 # Pinned pipe ref = full semver `:x.y.z` or sha256 digest.
 VER_OK_RE = re.compile(r":(?:\d+\.\d+(?:\.\d+)?(?:[-.][\w\d]+)*|[0-9a-f]{40})$")

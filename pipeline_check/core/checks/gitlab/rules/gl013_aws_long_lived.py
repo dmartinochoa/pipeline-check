@@ -7,7 +7,7 @@ from typing import Any
 from ...base import Finding, Severity
 from ...rule import Rule
 from ..base import iter_jobs, job_scripts
-from ._helpers import AWS_KEY_RE
+from ._helpers import aws_key_in
 
 _AWS_CONFIGURE_RE = re.compile(
     r"aws\s+configure\s+set\s+aws_access_key_id\b"
@@ -46,14 +46,14 @@ def check(path: str, doc: dict[str, Any]) -> Finding:
     top_vars = doc.get("variables") or {}
     if isinstance(top_vars, dict):
         for v in top_vars.values():
-            if isinstance(v, str) and AWS_KEY_RE.search(v):
+            if isinstance(v, str) and aws_key_in(v):
                 static_keys = True
     # Scan per-job variables and script bodies.
     for _, job in iter_jobs(doc):
         job_vars = job.get("variables") or {}
         if isinstance(job_vars, dict):
             for v in job_vars.values():
-                if isinstance(v, str) and AWS_KEY_RE.search(v):
+                if isinstance(v, str) and aws_key_in(v):
                     static_keys = True
         # Detect `aws configure set` and inline key assignments in scripts.
         for line in job_scripts(job):

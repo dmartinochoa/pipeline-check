@@ -39,6 +39,8 @@ DETECTORS: list[tuple[str, str]] = [
     ("aws_access_key",        "ASIAZ3MHALF2TESTHIJK"),
     ("github_token",          "ghp_" + _FILLER[:40]),
     ("github_token",          "gho_" + _FILLER[:36]),
+    # Fine-grained PAT: ``github_pat_`` + 82-char body.
+    ("github_token",          "github_pat_" + _FILLER[:82]),
     ("slack_token",           "xoxb-1234567890123-1234567890123"),
     ("jwt",                   "eyJabcdefghij.eyJklmnopqrst.signaturesignaturex"),
     ("stripe_secret",         "sk_live_" + _FILLER[:30]),

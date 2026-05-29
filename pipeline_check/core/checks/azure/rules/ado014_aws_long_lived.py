@@ -7,7 +7,7 @@ from typing import Any
 from ...base import Finding, Severity
 from ...rule import Rule
 from ..base import iter_jobs, iter_steps
-from ._helpers import AWS_KEY_RE
+from ._helpers import aws_key_in
 
 _AWS_CONFIGURE_RE = re.compile(
     r"aws\s+configure\s+set\s+aws_access_key_id\b"
@@ -51,18 +51,18 @@ def check(path: str, doc: dict[str, Any]) -> Finding:
     static_keys = False
     # Scan top-level variables.
     for v in _walk_vars(doc.get("variables")):
-        if AWS_KEY_RE.search(v):
+        if aws_key_in(v):
             static_keys = True
     # Scan job-level variables, step env, and script bodies.
     for _, job in iter_jobs(doc):
         for v in _walk_vars(job.get("variables")):
-            if AWS_KEY_RE.search(v):
+            if aws_key_in(v):
                 static_keys = True
         for _, step in iter_steps(job):
             env = step.get("env") or {}
             if isinstance(env, dict):
                 for val in env.values():
-                    if isinstance(val, str) and AWS_KEY_RE.search(val):
+                    if isinstance(val, str) and aws_key_in(val):
                         static_keys = True
             # Detect `aws configure set` in script bodies.
             for key in ("script", "bash", "pwsh", "powershell"):

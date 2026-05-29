@@ -42,7 +42,10 @@ _BUILTIN_PATTERNS: dict[str, str] = {
     "aws_access_key":         r"A(?:KIA|SIA)[0-9A-Z]{16}",
     # GitHub PATs / OAuth / installation / refresh tokens. ``ghp_`` is
     # the user PAT; ``gho_/ghu_/ghs_/ghr_`` are the OAuth-flow shapes.
-    "github_token":           r"gh[pousr]_[A-Za-z0-9]{36,}",
+    # ``github_pat_`` is the fine-grained PAT (GitHub's recommended PAT
+    # format since 2022): a 22-char prefix, ``_``, then a 59-char body.
+    "github_token":           r"(?:gh[pousr]_[A-Za-z0-9]{36,}"
+                              r"|github_pat_[A-Za-z0-9_]{82,})",
     # Slack workspace, bot, app-level, refresh, and granular tokens.
     "slack_token":            r"xox[abprs]-[A-Za-z0-9-]{10,}",
     # Generic JWT (header.payload.signature, all base64url).

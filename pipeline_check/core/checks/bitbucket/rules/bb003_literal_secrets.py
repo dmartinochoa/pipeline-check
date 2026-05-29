@@ -6,7 +6,7 @@ from typing import Any
 from ...base import Finding, Severity
 from ...rule import Rule
 from ..base import iter_steps
-from ._helpers import AWS_KEY_RE, SECRETISH_KEY_RE
+from ._helpers import SECRETISH_KEY_RE, aws_key_in, is_placeholder_value
 
 RULE = Rule(
     id="BB-003",
@@ -33,7 +33,7 @@ RULE = Rule(
         "# committed to git; the build log echoes the value on\n"
         "# any step that prints env vars.\n"
         "variables:\n"
-        "  AWS_ACCESS_KEY_ID: AKIAIOSFODNN7EXAMPLE\n"
+        "  AWS_ACCESS_KEY_ID: AKIAZ3MHALF2TESTHIJK\n"
         "  AWS_SECRET_ACCESS_KEY: wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY\n"
         "pipelines:\n"
         "  default:\n"
@@ -65,9 +65,13 @@ def check(path: str, doc: dict[str, Any]) -> Finding:
         for key, value in varmap.items():
             if not isinstance(key, str) or not isinstance(value, str):
                 continue
-            if AWS_KEY_RE.search(value):
+            if aws_key_in(value):
                 offenders.append(f"{where}.{key} (AWS access key)")
-            elif SECRETISH_KEY_RE.search(key) and value and "$" not in value:
+            elif (
+                SECRETISH_KEY_RE.search(key)
+                and value and "$" not in value
+                and not is_placeholder_value(value)
+            ):
                 offenders.append(f"{where}.{key}")
 
     defs = doc.get("definitions")

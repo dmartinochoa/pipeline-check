@@ -6,7 +6,7 @@ from typing import Any
 from ...base import Finding, Severity
 from ...rule import Rule
 from ..base import iter_jobs
-from ._helpers import AWS_KEY_RE, SECRETISH_KEY_RE
+from ._helpers import SECRETISH_KEY_RE, aws_key_in, is_placeholder_value
 
 RULE = Rule(
     id="ADO-003",
@@ -33,7 +33,7 @@ RULE = Rule(
         "# to git, printed in build logs when the step echoes\n"
         "# its environment, and visible to anyone with repo read.\n"
         "variables:\n"
-        "  AWS_ACCESS_KEY_ID: AKIAIOSFODNN7EXAMPLE\n"
+        "  AWS_ACCESS_KEY_ID: AKIAZ3MHALF2TESTHIJK\n"
         "  AWS_SECRET_ACCESS_KEY: wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY\n"
         "steps:\n"
         "  - script: aws s3 cp ./build s3://bucket/\n"
@@ -58,9 +58,13 @@ def check(path: str, doc: dict[str, Any]) -> Finding:
             for key, value in mapping.items():
                 if not isinstance(key, str) or not isinstance(value, str):
                     continue
-                if AWS_KEY_RE.search(value):
+                if aws_key_in(value):
                     offenders.append(f"{where}.{key} (AWS access key)")
-                elif SECRETISH_KEY_RE.search(key) and value and "$" not in value:
+                elif (
+                    SECRETISH_KEY_RE.search(key)
+                    and value and "$" not in value
+                    and not is_placeholder_value(value)
+                ):
                     offenders.append(f"{where}.{key}")
         elif isinstance(mapping, list):
             for entry in mapping:
@@ -70,9 +74,13 @@ def check(path: str, doc: dict[str, Any]) -> Finding:
                 value = entry.get("value")
                 if not isinstance(name, str) or not isinstance(value, str):
                     continue
-                if AWS_KEY_RE.search(value):
+                if aws_key_in(value):
                     offenders.append(f"{where}.{name} (AWS access key)")
-                elif SECRETISH_KEY_RE.search(name) and value and "$" not in value:
+                elif (
+                    SECRETISH_KEY_RE.search(name)
+                    and value and "$" not in value
+                    and not is_placeholder_value(value)
+                ):
                     offenders.append(f"{where}.{name}")
 
     _scan(doc.get("variables"), "<top>")

@@ -9,6 +9,8 @@ from ..._primitives.image_pinning import DIGEST_RE as DIGEST_RE
 from ..._primitives.image_pinning import VERSION_TAG_RE as VERSION_TAG_RE
 from ..._primitives.secret_shapes import AWS_KEY_RE as AWS_KEY_RE
 from ..._primitives.secret_shapes import SECRETISH_KEY_RE as SECRETISH_KEY_RE
+from ..._primitives.secret_shapes import aws_key_in as aws_key_in
+from ..._primitives.secret_shapes import is_placeholder_value as is_placeholder_value
 
 # Attacker-controllable GitLab CI predefined variables.
 UNTRUSTED_VAR_RE = re.compile(

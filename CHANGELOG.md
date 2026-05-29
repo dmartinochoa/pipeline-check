@@ -178,6 +178,25 @@ release commit collapses this section into `## [X.Y.Z] - <date>`.
   alternative gained a word boundary so it no longer swallows
   `github.actor_id` (a numeric account ID that can't carry shell
   metacharacters) into a false positive.
+- **Shape-based secret detection now suppresses vendor examples and
+  placeholders.** The `secret_shapes` catalog (used by the GitLab,
+  Azure, Bitbucket, and Dockerfile literal-secret and AWS-long-lived
+  rules) had no placeholder or vendor-example filter, so AWS's
+  documented dummy key `AKIAIOSFODNN7EXAMPLE` was reported as a CRITICAL
+  finding (it appears in many tutorials, and was even in some rules' own
+  examples), and credential-named keys holding `REPLACE_ME` / `changeme`
+  / `<your-token>` were flagged as leaked secrets. New `aws_key_in()` and
+  `is_placeholder_value()` helpers reuse the same `VENDOR_EXAMPLE_TOKENS`
+  / `PLACEHOLDER_MARKER_RE` suppression the entropy-based path already
+  applied, so the two detection paths now agree. Real keys and real
+  literal secrets are still flagged. The Kubernetes Secret-manifest
+  checks (K8S-017/018/037) deliberately flag placeholders as a
+  maintenance footgun and are intentionally left unchanged.
+- **GitHub fine-grained PATs are now detected.** The secret catalog
+  matched only the classic `ghp_/gho_/ghu_/ghs_/ghr_` prefixes; the
+  `github_pat_…` fine-grained format (GitHub's recommended PAT since
+  2022) was missed entirely. Added the shape and routed its `gi…`
+  prefix through the token dispatch.
 
 ## [1.6.0] - 2026-05-29
 
