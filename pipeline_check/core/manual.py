@@ -191,6 +191,16 @@ diff so it composes with ``git apply``.
     "N file(s) modified" to stderr. Opt-in (dry-run by default)
     and only valid alongside --fix.
 
+--list-fixers [--safety safe|unsafe|all]
+    List every check ID with a registered fixer and exit without
+    scanning. One line per ID: ``ID  SEVERITY  TIER  TITLE``. The
+    tier is which ``--fix`` mode runs it: ``safe`` (the default
+    ``--fix``) or ``unsafe`` (needs ``--fix=unsafe``). ``--safety``
+    narrows the listing to one tier. Use it to discover which rules
+    have a fixer, and remember that a listed fixer can still emit no
+    patch on a given run when the finding is already remediated or
+    the edit wouldn't round-trip as valid YAML.
+
 Categories of fix
 -----------------
 Two shapes ship today:

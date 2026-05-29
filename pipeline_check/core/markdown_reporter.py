@@ -28,7 +28,7 @@ Design calls:
 from __future__ import annotations
 
 from .chains import Chain
-from .checks.base import Finding, Severity, severity_rank
+from .checks.base import Finding, Severity, inline_exploit, severity_rank
 from .scorer import ScoreResult
 
 _SEVERITY_EMOJI: dict[Severity, str] = {
@@ -83,6 +83,7 @@ def report_markdown(
     findings: list[Finding],
     score_result: ScoreResult,
     chains: list[Chain] | None = None,
+    inline_explain: bool = False,
 ) -> str:
     """Render *findings* as a GitHub-Flavored Markdown report string.
 
@@ -90,6 +91,12 @@ def report_markdown(
     between the summary line and the Failures table, the chain
     narrative is the highest-signal artifact in the report and
     should be the first thing a PR comment reader sees.
+
+    When *inline_explain* is set, a collapsible Proof-of-exploit
+    section follows the Failures table, one fenced snippet per
+    failing finding that records an ``exploit_example``. The failures
+    table is a fixed five-column grid, so the snippets live in their
+    own section rather than an extra column.
     """
     grade = score_result.get("grade", "?")
     score_value = score_result.get("score", 0)
@@ -164,6 +171,30 @@ def report_markdown(
         for f in fails:
             lines.append(_row(f))
         lines.append("")
+
+        # ``--inline-explain``: proof-of-exploit snippets for the
+        # failing findings that record one, in a collapsible block so
+        # they don't crowd the table.
+        exploits: list[tuple[Finding, str]] = []
+        for f in fails:
+            ex = inline_exploit(f, inline_explain)
+            if ex:
+                exploits.append((f, ex))
+        if exploits:
+            lines.append(
+                f"<details><summary>Proof of exploit ({len(exploits)})"
+                "</summary>"
+            )
+            lines.append("")
+            for f, ex in exploits:
+                lines.append(f"**`{f.check_id}` {f.title}**")
+                lines.append("")
+                lines.append("```")
+                lines.extend(ex.splitlines())
+                lines.append("```")
+                lines.append("")
+            lines.append("</details>")
+            lines.append("")
     else:
         lines.append("## No failures")
         lines.append("")

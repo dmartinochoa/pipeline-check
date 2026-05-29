@@ -19,9 +19,10 @@ Scanner, CLI, and the doc generator all update automatically.
 """
 from __future__ import annotations
 
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
-import boto3
+if TYPE_CHECKING:
+    import boto3
 
 from ..checks.aws._catalog import ResourceCatalog
 from ..checks.aws.workflows import AWSRuleChecks
@@ -42,6 +43,11 @@ class AWSProvider(BaseProvider):
         **_: Any,
     ) -> boto3.Session:
         """Return a boto3 Session scoped to *region* and optional named *profile*."""
+        # Imported lazily so a non-AWS scan (or ``--help``) doesn't pay the
+        # ~165ms boto3/s3transfer import cost. Only an actual AWS scan
+        # reaches build_context.
+        import boto3
+
         return boto3.Session(region_name=region, profile_name=profile)
 
     @property

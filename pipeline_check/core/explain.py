@@ -364,6 +364,52 @@ def render(check_id: str) -> tuple[str, int]:
     return _render_meta(meta), 0
 
 
+def render_fixers(tier: str = "all") -> tuple[str, int]:
+    """Render the ``--list-fixers`` table.
+
+    *tier* filters the listing: ``"safe"`` (safe fixers only),
+    ``"unsafe"`` (inference-dependent fixers only), or ``"all"`` (every
+    fixer, the default). Each row is ``CHECK_ID  SEVERITY  TIER  TITLE``,
+    sorted by check ID so a provider's rules group together. Severity
+    and title come from the same index ``--explain`` uses; a fixer whose
+    check ID has no rule metadata still lists, with placeholders.
+
+    Returns ``(text, exit_code)``. The code is 3 only when no fixer at
+    all is registered (the autofix package failed to import); an empty
+    *safe* / *unsafe* slice is a normal, non-error result.
+    """
+    from .autofix import iter_fixers
+
+    tier = tier.lower()
+    all_fixers = iter_fixers()
+    rows = [
+        (cid, safety) for cid, safety in all_fixers
+        if tier == "all" or safety == tier
+    ]
+    if not all_fixers:
+        return "No autofixers are registered.\n", 3
+    if not rows:
+        return f"No {tier} autofixers are registered.\n", 0
+
+    index = _build_index()
+    id_w = max(len(cid) for cid, _ in rows)
+    sev_w = max(
+        (len(index[cid].severity.value) for cid, _ in rows if cid in index),
+        default=1,
+    )
+    tier_w = max(len(safety) for _, safety in rows)
+
+    lines: list[str] = []
+    for cid, safety in rows:
+        meta = index.get(cid)
+        sev = meta.severity.value if meta is not None else "?"
+        title = meta.title if meta is not None else "(no rule metadata)"
+        lines.append(
+            f"{cid:<{id_w}}  {sev:<{sev_w}}  {safety:<{tier_w}}  {title}"
+        )
+    return "\n".join(lines) + "\n", 0
+
+
 def _render_meta(meta: _CheckMeta) -> str:
     """Plain-text body for one check."""
     lines: list[str] = []

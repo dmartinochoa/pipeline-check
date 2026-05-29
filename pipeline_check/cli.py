@@ -193,7 +193,7 @@ class _GroupedCommand(click.Command):
         ("Attack chains", frozenset({
             "--no-chains", "--list-chains", "--explain-chain",
         })),
-        ("Autofix", frozenset({"--fix", "--apply"})),
+        ("Autofix", frozenset({"--fix", "--apply", "--list-fixers", "--safety"})),
         ("Info & Help", frozenset({
             "--list-checks", "--list-standards", "--standard-report",
             "--explain", "--man", "--config-check",
@@ -1824,6 +1824,29 @@ def _install_completion_callback(
     ),
 )
 @click.option(
+    "--list-fixers",
+    is_flag=True,
+    default=False,
+    help=(
+        "List every check ID with a registered autofixer (one per "
+        "line: ``ID  SEVERITY  TIER  TITLE``) and exit. Narrow the "
+        "tier with ``--safety safe|unsafe|all``. Pipes well into "
+        "``grep`` for a provider prefix. No scan is performed."
+    ),
+)
+@click.option(
+    "--safety",
+    "fixer_safety_filter",
+    type=click.Choice(["safe", "unsafe", "all"], case_sensitive=False),
+    default="all",
+    show_default=True,
+    help=(
+        "Filter ``--list-fixers`` by autofix tier: 'safe' (semantically "
+        "equivalent or additive edits), 'unsafe' (inference-dependent), "
+        "or 'all'. Only meaningful with ``--list-fixers``."
+    ),
+)
+@click.option(
     "--explain",
     "explain_id",
     default=None,
@@ -2174,16 +2197,15 @@ def _install_completion_callback(
     "inline_explain",
     is_flag=True,
     help=(
-        "Inline the rule's ``exploit_example`` (when present) under "
-        "each failing finding's terminal panel. Saves the "
-        "``pipeline_check --explain CHECK_ID`` round-trip when you "
-        "want the proof-of-exploit snippet alongside the description "
-        "and recommendation. Affects ``--output terminal`` and "
-        "``--output both`` only. ``--output json`` and "
-        "``--output html`` already include ``exploit_example`` in "
-        "every payload regardless of this flag; ``--output sarif`` "
-        "/ ``junit`` / ``markdown`` / ``codequality`` do not surface "
-        "the field at all."
+        "Surface the rule's ``exploit_example`` (when present) "
+        "alongside each failing finding, saving the "
+        "``pipeline_check --explain CHECK_ID`` round-trip. Honored by "
+        "``terminal`` / ``both`` (under the panel), ``sarif`` (rule "
+        "``help`` text), ``junit`` (``<failure>`` body), ``markdown`` "
+        "(a collapsible Proof-of-exploit section), and ``codequality`` "
+        "(issue ``description``). ``--output json`` and ``--output "
+        "html`` always include ``exploit_example`` regardless of this "
+        "flag."
     ),
 )
 @click.option(
@@ -2357,6 +2379,8 @@ def scan(
     man_topic: str | None,
     standard_report: str | None,
     list_checks: bool,
+    list_fixers: bool,
+    fixer_safety_filter: str,
     explain_id: str | None,
     ai_explain_id: str | None,
     ai_model_spec: str | None,
@@ -2472,6 +2496,26 @@ def scan(
     if list_checks:
         _list_checks_for_pipeline(pipeline.lower())
         return
+
+    if list_fixers:
+        from .core.autofix import iter_fixers
+        from .core.explain import render_fixers
+
+        fixers_body, fixers_code = render_fixers(fixer_safety_filter)
+        click.echo(fixers_body, nl=False)
+        if fixers_code == 0:
+            all_fixers = iter_fixers()
+            safe_n = sum(1 for _, s in all_fixers if s == "safe")
+            unsafe_n = len(all_fixers) - safe_n
+            click.echo(
+                f"\n{len(all_fixers)} autofixers registered "
+                f"({safe_n} safe, {unsafe_n} unsafe). `--fix` runs safe "
+                "only; `--fix=unsafe` runs both. A registered fixer still "
+                "emits no patch when the finding is already remediated or "
+                "the edit wouldn't round-trip as valid YAML.",
+                err=True,
+            )
+        raise click.exceptions.Exit(fixers_code)
 
     if annotate_fp:
         # ``--annotate-fp CHECK_ID RESOURCE`` writes the local
@@ -3413,19 +3457,25 @@ def scan(
     if output == "sarif":
         sarif_text = report_sarif(
             findings, score_result, tool_version=__version__, chains=chains,
+            inline_explain=inline_explain,
         )
         _emit_report(sarif_text, output_file, "SARIF report", quiet=quiet)
 
     if output == "junit":
-        junit_text = report_junit(findings, score_result)
+        junit_text = report_junit(
+            findings, score_result, inline_explain=inline_explain,
+        )
         _emit_report(junit_text, output_file, "JUnit report", quiet=quiet)
 
     if output == "markdown":
-        md_text = report_markdown(findings, score_result, chains=chains)
+        md_text = report_markdown(
+            findings, score_result, chains=chains,
+            inline_explain=inline_explain,
+        )
         _emit_report(md_text, output_file, "Markdown report", quiet=quiet)
 
     if output == "codequality":
-        cq_text = report_codequality(findings)
+        cq_text = report_codequality(findings, inline_explain=inline_explain)
         _emit_report(
             cq_text, output_file, "Code Quality report", quiet=quiet,
         )

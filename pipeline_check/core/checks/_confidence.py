@@ -28,6 +28,16 @@ _MEDIUM: frozenset[str] = frozenset({
     # Self-hosted-runner ephemeral detection. ARC / autoscaled runners
     # often use org-specific label conventions the heuristic may miss.
     "GHA-012",
+    # Self-hosted runner reachable from a PR trigger. Can't tell a
+    # public repo (fork PRs run untrusted code) from a private one
+    # with only trusted internal contributors, so it over-flags the
+    # latter.
+    "GHA-105",
+    # Agentic AI CLI with a write-scoped token. Some agent jobs
+    # legitimately need contents:write (auto-formatters behind
+    # required reviews); the least-privilege fix is still to scope
+    # the write away from the agent, but it's a judgment call.
+    "GHA-106",
     "JF-014",
     # Dep-update lockfile bypass, catches all ``pip install -U`` by
     # default; the safe subset (pip/setuptools/wheel/virtualenv) is

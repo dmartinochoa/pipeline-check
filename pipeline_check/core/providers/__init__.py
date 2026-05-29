@@ -1,7 +1,14 @@
 """Provider registry.
 
-Built-in providers are registered at the bottom of this module.
-Third-party providers can register themselves before creating a Scanner:
+Built-in providers are registered lazily: the registry knows every
+built-in's name up front, but a provider module (and its check tree) is
+only imported the first time that provider is requested via ``get()``.
+This keeps CLI startup cheap. Scanning a GitHub repo no longer imports
+the AWS provider's ``botocore`` dependency, and ``--help`` imports no
+provider at all.
+
+Third-party providers can still register an instance eagerly before
+creating a Scanner:
 
     from pipeline_check.core.providers import register
     from mypkg.providers.github import GitHubProvider
@@ -12,40 +19,53 @@ without any changes to Scanner or the CLI.
 """
 from __future__ import annotations
 
-from .argo import ArgoProvider
-from .argocd import ArgoCDProvider
-from .aws import AWSProvider
-from .azure import AzureProvider
-from .azure_cloud import AzureCloudProvider
-from .base import BaseProvider
-from .bitbucket import BitbucketProvider
-from .buildkite import BuildkiteProvider
-from .cargo import CargoProvider
-from .circleci import CircleCIProvider
-from .cloudbuild import CloudBuildProvider
-from .cloudformation import CloudFormationProvider
-from .composer import ComposerProvider
-from .dockerfile import DockerfileProvider
-from .drone import DroneProvider
-from .gcp import GCPProvider
-from .gitea import GiteaProvider
-from .github import GitHubProvider
-from .gitlab import GitLabProvider
-from .gomod import GoModProvider
-from .helm import HelmProvider
-from .jenkins import JenkinsProvider
-from .kubernetes import KubernetesProvider
-from .maven import MavenProvider
-from .npm import NpmProvider
-from .nuget import NuGetProvider
-from .oci import OCIProvider
-from .pulumi import PulumiProvider
-from .pypi import PypiProvider
-from .rubygems import RubyGemsProvider
-from .scm import SCMProvider
-from .tekton import TektonProvider
-from .terraform import TerraformProvider
+import importlib
+from typing import TYPE_CHECKING
 
+if TYPE_CHECKING:
+    from .base import BaseProvider
+
+#: Built-in provider name -> class name. The module is the name itself
+#: (e.g. ``aws`` lives in ``aws.py``), imported lazily on first use so an
+#: unrelated scan doesn't pay for every provider's check tree at import.
+_BUILTINS: dict[str, str] = {
+    "argo": "ArgoProvider",
+    "argocd": "ArgoCDProvider",
+    "aws": "AWSProvider",
+    "azure": "AzureProvider",
+    "azure_cloud": "AzureCloudProvider",
+    "bitbucket": "BitbucketProvider",
+    "buildkite": "BuildkiteProvider",
+    "cargo": "CargoProvider",
+    "circleci": "CircleCIProvider",
+    "cloudbuild": "CloudBuildProvider",
+    "cloudformation": "CloudFormationProvider",
+    "composer": "ComposerProvider",
+    "dockerfile": "DockerfileProvider",
+    "drone": "DroneProvider",
+    "gcp": "GCPProvider",
+    "gitea": "GiteaProvider",
+    "github": "GitHubProvider",
+    "gitlab": "GitLabProvider",
+    "gomod": "GoModProvider",
+    "helm": "HelmProvider",
+    "jenkins": "JenkinsProvider",
+    "kubernetes": "KubernetesProvider",
+    "maven": "MavenProvider",
+    "npm": "NpmProvider",
+    "nuget": "NuGetProvider",
+    "oci": "OCIProvider",
+    "pulumi": "PulumiProvider",
+    "pypi": "PypiProvider",
+    "rubygems": "RubyGemsProvider",
+    "scm": "SCMProvider",
+    "tekton": "TektonProvider",
+    "terraform": "TerraformProvider",
+}
+
+#: Eagerly-registered provider instances: third-party registrations, plus
+#: built-ins already materialized by a prior ``get()``. Checked before
+#: ``_BUILTINS`` so a third-party provider can override a built-in name.
 _REGISTRY: dict[str, BaseProvider] = {}
 
 
@@ -56,46 +76,29 @@ def register(provider: BaseProvider) -> None:
     _REGISTRY[provider.NAME.lower()] = provider
 
 
+def _materialize(name: str) -> BaseProvider | None:
+    """Import and instantiate the built-in provider for *name*, caching it.
+
+    Returns ``None`` when *name* isn't a known built-in.
+    """
+    cls_name = _BUILTINS.get(name)
+    if cls_name is None:
+        return None
+    module = importlib.import_module(f".{name}", __name__)
+    provider: BaseProvider = getattr(module, cls_name)()
+    _REGISTRY[name] = provider
+    return provider
+
+
 def get(name: str) -> BaseProvider | None:
     """Return the provider registered under *name*, or ``None`` if unknown."""
-    return _REGISTRY.get(name.lower())
+    key = name.lower()
+    provider = _REGISTRY.get(key)
+    if provider is not None:
+        return provider
+    return _materialize(key)
 
 
 def available() -> list[str]:
     """Return a sorted list of all registered provider names."""
-    return sorted(_REGISTRY.keys())
-
-
-# ── Register built-in providers ───────────────────────────────────────────────
-register(AWSProvider())
-register(TerraformProvider())
-register(CloudFormationProvider())
-register(GitHubProvider())
-register(GitLabProvider())
-register(BitbucketProvider())
-register(AzureProvider())
-register(AzureCloudProvider())
-register(JenkinsProvider())
-register(CircleCIProvider())
-register(CloudBuildProvider())
-register(BuildkiteProvider())
-register(TektonProvider())
-register(ArgoProvider())
-register(ArgoCDProvider())
-register(DockerfileProvider())
-register(KubernetesProvider())
-register(HelmProvider())
-register(OCIProvider())
-register(DroneProvider())
-register(GCPProvider())
-register(GiteaProvider())
-register(SCMProvider())
-register(NpmProvider())
-register(PypiProvider())
-register(MavenProvider())
-register(NuGetProvider())
-register(GoModProvider())
-register(CargoProvider())
-register(ComposerProvider())
-register(RubyGemsProvider())
-register(PulumiProvider())
+    return sorted(_REGISTRY.keys() | _BUILTINS.keys())

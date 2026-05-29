@@ -16,10 +16,12 @@ check module:
 from __future__ import annotations
 
 from collections.abc import Iterator
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
-import boto3
 from botocore.config import Config
+
+if TYPE_CHECKING:
+    import boto3
 
 from pipeline_check.core.checks.base import BaseCheck, Finding, Severity
 

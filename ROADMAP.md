@@ -6,6 +6,56 @@ What's planned, what's shipped, and what's deliberately out of scope.
 
 ### Unreleased (on ``dev``)
 
+- **AC-035: AI agent is both reviewer and committer (CRITICAL)** —
+  New attack chain pairing GHA-103 (AI review bot on an untrusted
+  trigger) with GHA-104 (direct push) or GHA-106 (write-scoped token)
+  on one workflow. A prompt-injected agent reviews attacker input and
+  commits its own change with no human in the loop. Closes the
+  reviewer-and-committer gap in the AI-agent pack. Chain count
+  48 -> 49.
+- **GHA-106: AI agent CLI runs with a write-scoped GITHUB_TOKEN
+  (HIGH)** — Fires when an agentic CLI runs in a job whose
+  ``GITHUB_TOKEN`` carries ``write-all`` / legacy ``write`` or
+  ``contents`` / ``packages`` / ``actions`` / ``deployments: write``.
+  A prompt-injected agent then acts with the token's full write scope.
+  Upstream of GHA-104 (explicit push) and broader than GHA-061
+  (App-token mint). MEDIUM confidence, mapped across all 12 applicable
+  standards. GHA 96 -> 97.
+- **GHA-105: self-hosted runner reachable from an untrusted PR
+  trigger (HIGH)** — Fires when ``pull_request`` /
+  ``pull_request_target`` can schedule a job on a self-hosted runner,
+  so fork code runs on persistent org infrastructure. Complements
+  GHA-012 (ephemeral) and GHA-036 (``runs-on`` interpolation). MEDIUM
+  confidence, mapped across all 11 applicable standards. GHA 95 -> 96.
+- **``--inline-explain`` across every reporter** — Lifted the
+  exploit-example gate out of the terminal reporter into a shared
+  ``inline_exploit()`` decision in ``checks/base.py``. SARIF (rule
+  ``help``), JUnit (``<failure>`` body), markdown (collapsible
+  Proof-of-exploit section), and Code Quality (issue ``description``)
+  now honor ``--inline-explain``; JSON / HTML still carry the field
+  unconditionally. Code Quality fingerprints are unchanged so dismissed
+  MR threads don't churn.
+- **Fixer discoverability (``--list-fixers``)** — New early-exit flag
+  that lists every check ID with a registered autofixer
+  (``ID  SEVERITY  TIER  TITLE``) and exits without scanning.
+  ``--safety safe|unsafe|all`` filters by tier. Surfaces the full
+  111-fixer set and which ``--fix`` mode runs each. Backed by a new
+  ``iter_fixers()`` registry accessor and ``explain.render_fixers``;
+  severity / title reuse the ``--explain`` index so a new fixer
+  auto-lists. Documented under ``--man autofix``.
+
+### v1.6.0 (2026-05-29)
+
+- **Composer + RubyGems registry providers** — Two new
+  dependency-supply-chain providers, both graduated to 10 rules in
+  the same cycle they landed. ``--pipeline composer`` parses
+  ``composer.json`` / ``composer.lock`` (COMPOSER-001..010);
+  ``--pipeline rubygems`` parses ``Gemfile`` / ``Gemfile.lock``
+  (GEM-001..010). Text-only static analysis, no runtime install.
+  Plus NPM-013, NUGET-010, OCI-009 and the gomod / cargo / pulumi /
+  nuget / maven / drone / argocd / helm / pypi rule-count deepenings
+  that filled out the package-registry and GitOps packs. Provider
+  count to 32.
 - **Azure Cloud + GCP live cloud-posture providers (closes #163)** —
   Phase 1 seeded ``--pipeline azure-cloud`` and ``--pipeline gcp`` with
   15 rules each across identity, network, storage, compute, and logging.
@@ -347,7 +397,7 @@ by reading the code path, not just inferred. File references are
 approximate line anchors at review time.
 
 The **high** and **medium** severity findings from this review are
-fixed on ``dev`` (see the ``### Fixed`` block in ``CHANGELOG.md``):
+fixed in v1.6.0 (see the ``### Fixed`` block in ``CHANGELOG.md``):
 the remote-resolve redirect SSRF, the PyPI / Google secret-verifier
 false-positives, the OSV truncated-batch caching, the host-blind
 GitLab include cache key, the cross-repo reverse-direction dedup, the
@@ -415,19 +465,17 @@ items below remain open.
 Larger items not yet scoped to a specific release. Landing order
 is open.
 
-### ``--inline-explain`` across every reporter
+### ~~``--inline-explain`` across every reporter~~ shipped
 
-Today the flag affects only ``--output terminal`` (and ``both`` via
-the terminal half). JSON and HTML include ``exploit_example``
-unconditionally; SARIF, JUnit, markdown, and codequality drop the
-field entirely. Lift the gate from the terminal reporter into a
-``Finding``-layer decision (e.g. pre-filter or a render context
-shared by every reporter) so all formats can honor the flag
-uniformly. Includes wiring ``exploit_example`` into the SARIF
-``help.text``, the JUnit ``<failure>`` body, the markdown comment
-template, and the Code Quality ``description``. Help text in
-``cli.py`` already names the current carve-outs so users aren't
-misled in the interim.
+Shipped on ``dev``. The gate moved out of the terminal reporter into a
+shared ``inline_exploit(finding, inline_explain)`` decision in
+``checks/base.py`` that every reporter consults. ``exploit_example``
+now lands in the SARIF rule ``help`` (text + markdown), the JUnit
+``<failure>`` body, a collapsible markdown Proof-of-exploit section
+(the failures table is a fixed five-column grid, so the snippets get
+their own section rather than an extra column), and the Code Quality
+issue ``description`` (fingerprint unchanged so dismissed MR threads
+don't churn). JSON and HTML still carry the field unconditionally.
 
 ### VS Code extension
 
@@ -477,13 +525,13 @@ warrants extraction to a separate ``pipeline-check-bench`` repo.
 
 ### ~~Live Azure + GCP cloud-posture parity~~ shipped
 
-Shipped on ``dev`` (closes #163). Both providers now ship 50 rules
+Shipped in v1.6.0 (closes #163). Both providers now ship 50 rules
 each across identity, network, storage, compute, and logging, with
 CIS Azure Foundations and CIS GCP Foundations standards mappings.
 
 ### ~~Self-hosted findings-history dashboard~~ shipped
 
-Shipped on ``dev`` (closes #160). ``pipeline_check history`` renders
+Shipped in v1.6.0 (closes #160). ``pipeline_check history`` renders
 posture trends from a directory of ``findings.json`` snapshots, with
 per-rule burn-down sparklines, a resource-level heatmap, and fleet
 ``--output-dir`` recursive loading.
@@ -511,15 +559,18 @@ The HackerBot-Claw campaign (February 2026) demonstrated AI prompt
 injection against Claude-based code reviewers in CI. Current
 coverage: GHA-058 (agentic CLI with bypass flags / PR-checkout
 topology), GHA-103 (AI review bot on untrusted trigger without
-environment gate), GHA-104 (AI agent auto-push without PR review).
-Remaining gaps: overly permissive AI agent tokens (broader than
-GHA-061's App-token scope check), AI-generated IaC changes that
-modify security-sensitive resources, multi-step agent chains where
-the AI is both the reviewer and the committer.
+environment gate), GHA-104 (AI agent auto-push without PR review),
+GHA-106 (agentic CLI in a job whose GITHUB_TOKEN carries write scope,
+the over-permissive-token gap, broader than GHA-061's App-token mint
+check), and AC-035 (the reviewer-and-committer chain: GHA-103 paired
+with GHA-104 / GHA-106 on the same workflow). Remaining gap:
+AI-generated IaC changes that modify security-sensitive resources
+(an agent that edits Terraform / CloudFormation under a write token,
+distinct from the workflow-YAML surface the current rules cover).
 
 ### ~~Gitea / Forgejo provider~~ shipped
 
-Shipped in the current unreleased cycle. ``--pipeline gitea``
+Shipped in v1.6.0. ``--pipeline gitea``
 reuses :class:`GitHubContext` and the full GHA rule pack against
 ``.gitea/workflows/`` and ``.forgejo/workflows/`` directories.
 
@@ -544,13 +595,13 @@ high-value additions that are blocked on detector or pairing gaps:
 
 ### ~~Secrets-in-CI-logs detection~~ shipped
 
-Shipped on ``dev``. GL-036, BB-032, ADO-031, CC-032 cover GitLab,
+Shipped in v1.6.0. GL-036, BB-032, ADO-031, CC-032 cover GitLab,
 Bitbucket, Azure DevOps, and CircleCI; GHA-033 already covered GitHub
 Actions. Shared logic in ``_primitives/log_leak.py``.
 
 ### ~~GitLab Code Quality output format~~ shipped
 
-Shipped on ``dev``. See the Unreleased entry above.
+Shipped in v1.6.0. See the v1.6.0 entry above.
 
 ### Auto-remediation PRs (``pipeline_check fix-pr``)
 
@@ -560,27 +611,43 @@ unified diffs; this is plumbing. Closes the gap between "patch on
 disk" and "PR in your inbox" that drives adoption in orgs that scan
 in CI but never act on findings.
 
-### Fixer discoverability (``--list-fixers``)
+### ~~Fixer discoverability (``--list-fixers``)~~ shipped
 
-Surface the 111 autofixers via ``--list-fixers [--safety safe|unsafe
-|all]`` so users can discover which rules have fixers, which tier
-each belongs to, and why ``--fix`` didn't patch a specific finding.
+Shipped on ``dev``. ``--list-fixers [--safety safe|unsafe|all]`` lists
+the 111 autofixers with the tier each belongs to. The "why ``--fix``
+didn't patch a specific finding" part is surfaced as a footer note
+(idempotent skip, YAML round-trip bail) rather than per-finding
+diagnostics, which would need the finding + file content threaded into
+the listing path.
 
 ### Self-hosted runner security rules
 
-Detect workflows that run on ``self-hosted`` without environment
-gates, ``runs-on`` labels that accept any contributor's PR with no
-branch restriction, and persistent runner tokens without rotation.
-Complements GHA-068 (deprecated runner image). StepSecurity's
-``harden-runner`` is a runtime agent; these would be static rules.
+The highest-signal angle shipped on ``dev`` as GHA-105: a self-hosted
+runner reachable from a ``pull_request`` / ``pull_request_target``
+trigger, so fork code runs on persistent org infrastructure. The other
+two angles from the original scoping turned out to be covered or not
+statically detectable:
+
+- ``runs-on`` labels that accept any contributor's PR is GHA-105 (the
+  trigger reaches the runner); the interpolation variant is already
+  GHA-036.
+- Persistent runner tokens without rotation is a runner-registration
+  config concern, not something visible in the workflow YAML, so it's
+  out of scope for a static workflow scanner.
+
+Remaining static candidate worth considering: a self-hosted deploy
+job that isn't gated behind a protected ``environment:`` (distinct
+from GHA-014's deploy-name heuristic). Complements GHA-012 (ephemeral)
+and GHA-068 (deprecated runner image). StepSecurity's ``harden-runner``
+is a runtime agent, deliberately out of scope.
 
 ### ~~Inline explain mode (``--inline-explain``)~~ shipped
 
-Shipped on ``dev``. The flag uses the ``inline-`` prefix because
+Shipped in v1.6.0. The flag uses the ``inline-`` prefix because
 ``--explain CHECK_ID`` was already taken as an early-exit option.
 Renders the rule's ``exploit_example`` (when present) under each
 failing finding's panel; recommendation was already inline. See the
-Unreleased entry above.
+v1.6.0 entry above.
 
 ### Suppression expiry warnings
 

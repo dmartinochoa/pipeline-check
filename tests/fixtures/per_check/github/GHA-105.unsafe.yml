@@ -1,0 +1,10 @@
+name: ci
+on:
+  pull_request:
+    branches: [main]
+jobs:
+  test:
+    runs-on: [self-hosted, linux, x64]
+    steps:
+      - uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332
+      - run: make test

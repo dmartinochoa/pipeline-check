@@ -28,7 +28,7 @@ from __future__ import annotations
 from xml.sax.saxutils import escape as _xml_escape
 from xml.sax.saxutils import quoteattr as _xml_attr
 
-from .checks.base import Finding
+from .checks.base import Finding, inline_exploit
 from .scorer import ScoreResult
 
 
@@ -42,7 +42,7 @@ def _prefix(check_id: str) -> str:
     return check_id[:dash] if dash > 0 else check_id
 
 
-def _failure_body(f: Finding) -> str:
+def _failure_body(f: Finding, inline_explain: bool = False) -> str:
     """Render the body of a <failure> element, recommendation + controls."""
     parts = [f.description.strip()] if f.description else []
     if f.recommendation:
@@ -55,15 +55,24 @@ def _failure_body(f: Finding) -> str:
                 f"{c.standard}:{c.control_id}" for c in f.controls
             )
         )
+    exploit = inline_exploit(f, inline_explain)
+    if exploit:
+        parts.append(f"Proof of exploit:\n{exploit}")
     return "\n".join(parts)
 
 
-def report_junit(findings: list[Finding], score_result: ScoreResult) -> str:
+def report_junit(
+    findings: list[Finding],
+    score_result: ScoreResult,
+    inline_explain: bool = False,
+) -> str:
     """Render *findings* as a JUnit XML 4.x report string.
 
     Returns the XML as a string, prologue included. The caller decides
     whether to write to a file or stdout, symmetric with the other
-    reporters in this package.
+    reporters in this package. When *inline_explain* is set, each
+    failing finding's ``exploit_example`` is appended to its
+    ``<failure>`` body.
     """
     # Group by prefix. Preserve input order within each group so that
     # CI UIs don't shuffle the user's mental ordering.
@@ -106,7 +115,7 @@ def report_junit(findings: list[Finding], score_result: ScoreResult) -> str:
                     f'file={resource} time="0" />'
                 )
             else:
-                body = _xml_escape(_failure_body(f))
+                body = _xml_escape(_failure_body(f, inline_explain))
                 msg = _xml_attr(
                     (f.description or f.title).split("\n", 1)[0][:200]
                 )

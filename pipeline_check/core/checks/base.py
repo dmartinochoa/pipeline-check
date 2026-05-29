@@ -315,6 +315,22 @@ class Finding:
         return out
 
 
+def inline_exploit(finding: Finding, inline_explain: bool) -> str | None:
+    """Return the finding's ``exploit_example`` when ``--inline-explain`` is on.
+
+    Centralizes the ``--inline-explain`` gate so every reporter makes the
+    same include/skip decision: the rstripped ``exploit_example`` when the
+    flag is set and the finding records one, otherwise ``None``. Each
+    reporter formats the returned text for its own shape (terminal panel,
+    SARIF ``help``, JUnit ``<failure>`` body, markdown section, Code
+    Quality ``description``). JSON and HTML carry ``exploit_example``
+    unconditionally and don't consult this gate.
+    """
+    if inline_explain and finding.exploit_example:
+        return finding.exploit_example.rstrip()
+    return None
+
+
 _ContextT = TypeVar("_ContextT")
 
 

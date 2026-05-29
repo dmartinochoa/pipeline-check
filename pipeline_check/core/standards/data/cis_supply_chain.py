@@ -168,6 +168,7 @@ STANDARD = Standard(
         "GHA-010":  ["2.1.3", "2.3.8"],                  # local action on untrusted-trigger workflow
         "GHA-011":  ["2.1.3", "2.3.8"],                  # cache key tainted by attacker input
         "GHA-012":  ["2.2.2"],                           # self-hosted runner not ephemeral
+        "GHA-105":  ["2.2.2"],                           # self-hosted runner on PR trigger
         "GHA-013":  ["2.3.8", "2.1.3"],                  # issue_comment trigger no author guard
         "GHA-014":  ["5.1.4", "5.2.1"],                  # deploy job missing environment
         "GHA-015":  ["2.2.2"],                           # job has no timeout-minutes
@@ -217,6 +218,7 @@ STANDARD = Standard(
         "GHA-059":  ["1.4.1", "3.1.3"],                  # npm install without audit signatures
         "GHA-060":  ["1.4.1", "3.1.3"],                  # pip install without --require-hashes
         "GHA-061":  ["1.3.4", "2.4.3"],                  # App token minted without permissions filter
+        "GHA-106":  ["1.3.4", "2.4.3"],                  # AI agent with write-scoped token
         "GHA-062":  ["1.3.4", "2.4.3"],                  # OIDC trust subject in sibling IaC is overly broad
         "GHA-063":  ["2.4.3", "2.1.3"],                  # spoofable bot-actor if-predicate
         "GHA-064":  ["2.4.3"],                           # unsound contains() with comma-string operand

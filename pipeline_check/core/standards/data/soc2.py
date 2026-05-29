@@ -110,6 +110,7 @@ STANDARD = Standard(
         "JF-025":   ["CC6.6"],             # k8s privileged
         "GHA-026":  ["CC6.6"],             # container egress
         "GHA-012":  ["CC6.6"],             # self-hosted runner
+        "GHA-105":  ["CC6.6"],             # self-hosted runner on PR trigger
         "GL-014":   ["CC6.6"],
         "BB-016":   ["CC6.6"],
         "ADO-013":  ["CC6.6"],
@@ -418,6 +419,7 @@ STANDARD = Standard(
         "GHA-059":  ["CC8.1"],              # npm install without audit signatures
         "GHA-060":  ["CC8.1"],              # pip install without --require-hashes
         "GHA-061":  ["CC6.1", "CC6.3"],     # App token minted without permissions filter
+        "GHA-106":  ["CC6.1", "CC6.3"],     # AI agent with write-scoped token
         "GHA-062":  ["CC6.1", "CC6.3"],     # OIDC trust subject in sibling IaC is overly broad
         "GHA-063":  ["CC6.1"],              # spoofable bot-actor if-predicate
         "GHA-064":  ["CC8.1"],              # unsound contains() with comma-string operand

@@ -46,7 +46,7 @@ import urllib.parse
 from typing import Any
 
 from .chains import Chain
-from .checks.base import Confidence, Finding, Location, Severity
+from .checks.base import Confidence, Finding, Location, Severity, inline_exploit
 from .scorer import ScoreResult
 
 # SARIF 2.1.0 ``rank`` is a 0–100 float conveying "how important this
@@ -112,6 +112,7 @@ def report_sarif(
     score_result: ScoreResult,
     tool_version: str = "",
     chains: list[Chain] | None = None,
+    inline_explain: bool = False,
 ) -> str:
     """Serialize findings to a SARIF 2.1.0 JSON string.
 
@@ -135,7 +136,7 @@ def report_sarif(
         consumers; MITRE ATT&CK techniques are encoded as ``tags``
         prefixed with ``mitre/``.
     """
-    rules = _build_rules(findings)
+    rules = _build_rules(findings, inline_explain=inline_explain)
     rule_index = {rule["id"]: idx for idx, rule in enumerate(rules)}
 
     results = [_finding_to_result(f, rule_index) for f in findings if not f.passed]
@@ -380,13 +381,19 @@ def _chain_to_result(chain: Chain, rule_index: dict[str, int]) -> dict[str, Any]
 # ────────────────────────────────────────────────────────────────────────────
 
 
-def _build_rules(findings: list[Finding]) -> list[dict[str, Any]]:
+def _build_rules(
+    findings: list[Finding], inline_explain: bool = False,
+) -> list[dict[str, Any]]:
     """Build one rule per distinct check_id.
 
     Severity + help text are taken from the first occurrence. Later
     findings with the same check_id reuse the rule; they may differ in
     their per-resource description, which lives on the result, not the
     rule.
+
+    When *inline_explain* is set, the rule's ``exploit_example`` (a
+    rule-level property, identical across that rule's findings) is
+    appended to both the plain and markdown ``help`` text.
     """
     seen: dict[str, dict[str, Any]] = {}
     for f in findings:
@@ -412,6 +419,13 @@ def _build_rules(findings: list[Finding]) -> list[dict[str, Any]]:
         help_parts = [f"**Recommendation**\n\n{f.recommendation}"]
         if f.cwe:
             help_parts.append(f"**CWE:** {', '.join(f.cwe)}")
+        # ``--inline-explain`` appends the proof-of-exploit snippet to
+        # the rule help so GitHub code-scanning's rule pane carries it.
+        help_text = f.recommendation or f.title
+        exploit = inline_exploit(f, inline_explain)
+        if exploit:
+            help_parts.append(f"**Proof of exploit**\n\n```\n{exploit}\n```")
+            help_text = f"{help_text}\n\nProof of exploit:\n{exploit}"
         help_md = "\n\n---\n\n".join(help_parts)
 
         seen[f.check_id] = {
@@ -420,7 +434,7 @@ def _build_rules(findings: list[Finding]) -> list[dict[str, Any]]:
             "shortDescription": {"text": f.title},
             "fullDescription": {"text": f.recommendation or f.title},
             "help": {
-                "text": f.recommendation or f.title,
+                "text": help_text,
                 "markdown": help_md,
             },
             "defaultConfiguration": {"level": level},

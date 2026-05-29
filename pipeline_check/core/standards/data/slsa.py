@@ -91,6 +91,7 @@ STANDARD = Standard(
         "GHA-010":  ["Build.L3.Isolated"],                         # local action on untrusted trigger
         "GHA-011":  ["Build.L3.Isolated"],                         # cache key tainting
         "GHA-012":  ["Build.L2.Hosted", "Build.L3.Ephemeral"],     # self-hosted runner
+        "GHA-105":  ["Build.L2.Hosted", "Build.L3.Ephemeral"],     # self-hosted runner on PR trigger
         "GHA-013":  ["Build.L3.Isolated"],                         # issue_comment without guard
         "GHA-015":  ["Build.L3.Ephemeral"],                        # unbounded build
         "GHA-016":  ["Build.L3.Isolated"],                         # curl | bash → RCE
@@ -152,6 +153,7 @@ STANDARD = Standard(
         "GHA-059":  ["Build.L3.NonFalsifiable"],                   # npm install without audit signatures
         "GHA-060":  ["Build.L3.NonFalsifiable"],                   # pip install without --require-hashes
         "GHA-061":  ["Build.L3.NonFalsifiable"],                   # App token minted without permissions filter
+        "GHA-106":  ["Build.L3.NonFalsifiable"],                   # AI agent with write-scoped token
         "GHA-062":  ["Build.L3.NonFalsifiable"],                   # OIDC trust subject in sibling IaC is overly broad
         # ── GitLab CI ─────────────────────────────────────────────
         "GL-001":   ["Build.L3.NonFalsifiable"],                   # floating image tag

@@ -13,7 +13,10 @@ of every dependent rule emitting its own copy.
 """
 from __future__ import annotations
 
-import boto3
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    import boto3
 
 from ..base import Finding, Severity
 from ..rule import apply_rule_metadata, discover_rules

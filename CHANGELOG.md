@@ -10,6 +10,81 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 PRs landing on `dev` between releases append entries below. The
 release commit collapses this section into `## [X.Y.Z] - <date>`.
 
+### Added
+
+- **AC-035: AI agent is both reviewer and committer (CRITICAL).** New
+  attack chain pairing GHA-103 (AI review bot on an untrusted trigger
+  without an environment gate) with GHA-104 (agent pushes directly) OR
+  GHA-106 (agent holds a write-scoped token) on the same workflow. The
+  AI both ingests attacker-authored input and can write back, so a
+  prompt-injection payload (HackerBot-Claw) makes it approve and
+  commit its own malicious change with no human in the loop. Per-
+  workflow co-occurrence; OR-leg deduped to one chain per workflow.
+  T1195.002 / T1059 / T1078.004. Chain count 48 -> 49 (35 AC).
+- **GHA-106: AI agent CLI runs with a write-scoped GITHUB_TOKEN
+  (HIGH).** Fires when a job invokes an agentic CLI (`claude` /
+  `gemini` / `q chat` / `cursor-agent` / `aider` / `openhands` /
+  `goose`) and its effective `permissions:` grant `write-all`, the
+  legacy global `write`, or any of `contents` / `packages` / `actions`
+  / `deployments` set to `write`. The agent reads untrusted input at
+  runtime (issue / PR bodies, review comments), so a prompt-injection
+  payload (the HackerBot-Claw vector) acts with the token's full write
+  scope. Sits upstream of GHA-104 (agent + explicit push) and is
+  broader than GHA-061 (App-token mint filter); job-level
+  `permissions:` correctly override the workflow block. Lower-impact
+  scopes (`pull-requests` / `issues` / `checks` / `id-token`) and the
+  missing-block case (GHA-004's domain) are not flagged. MEDIUM
+  confidence, mapped across all 12 applicable standards. GHA rule
+  count 96 -> 97; catalog 1073 -> 1074. 10 unit tests + a per-check
+  real-example pair.
+- **GHA-105: self-hosted runner reachable from an untrusted PR
+  trigger (HIGH).** Fires when a workflow's `on:` includes
+  `pull_request` or `pull_request_target` and at least one job's
+  `runs-on:` names a self-hosted runner (bare `self-hosted` string, a
+  list containing it, or the long-form `{ group, labels }` dict). Fork
+  / PR code then executes on persistent infrastructure the org owns,
+  exposing cached credentials, the internal network, and every later
+  job the runner services. Complements GHA-012 (ephemeral marker) and
+  GHA-036 (`runs-on` interpolation). MEDIUM confidence (can't tell a
+  public repo from a private one with only trusted contributors),
+  mapped across all 11 applicable standards. GHA rule count 95 -> 96;
+  catalog 1072 -> 1073. 10 unit tests + a per-check real-example pair.
+- **Fixer discoverability (`--list-fixers`).** New early-exit flag
+  that lists every check ID with a registered autofixer, one line per
+  ID as `ID  SEVERITY  TIER  TITLE`, and exits without scanning.
+  `--safety safe|unsafe|all` narrows the listing by tier (`safe` is
+  the default `--fix` mode; `unsafe` needs `--fix=unsafe`). Surfaces
+  the full 111-fixer set so users can tell at a glance which rules
+  have a fixer and which tier each belongs to. Pipes into `grep` for
+  a provider prefix. Severity and title come from the same registry
+  `--explain` reads, so a new fixer auto-lists. Documented under
+  `--man autofix` and `docs/usage.md`. 8 new tests.
+
+### Changed
+
+- **Faster CLI startup and scans.** The provider registry now imports a
+  provider module only when that provider is selected, instead of
+  importing all 32 at load time, and `boto3` moved behind
+  `TYPE_CHECKING` in the AWS modules (it was used only in annotations
+  plus one `Session()` call). A GitHub-only scan or `--help` no longer
+  pulls in `botocore` / `s3transfer`, so cold startup drops from ~346ms
+  to ~138ms. Separately, `Scanner.run()` caches the standards-to-control
+  resolution per check_id rather than rebuilding the same `ControlRef`
+  list for every finding, which roughly halves the rule and
+  post-processing phase on a workflow set with many findings. No
+  behavior change: same findings, same controls, same gate results.
+- **`--inline-explain` now spans every text reporter.** The flag used
+  to affect only the terminal panel; the structured formats dropped
+  `exploit_example` entirely. The include/skip decision now lives in a
+  shared `inline_exploit()` gate in `checks/base.py`, and SARIF (rule
+  `help.text` / `help.markdown`), JUnit (`<failure>` body), markdown (a
+  collapsible Proof-of-exploit section after the failures table), and
+  Code Quality (issue `description`) all honor it. `--output json` and
+  `--output html` continue to carry the field unconditionally. The
+  Code Quality fingerprint is unchanged (it hashes only `check_id` /
+  path / line), so enabling the flag never churns a dismissed MR
+  thread. 13 new tests.
+
 ## [1.6.0] - 2026-05-29
 
 ### Added

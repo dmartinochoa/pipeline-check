@@ -296,12 +296,14 @@ pipeline_check --output cyclonedx -O sbom.json     # CycloneDX 1.6 build SBOM
 pipeline_check --output both                       # terminal→stderr, JSON→stdout
 ```
 
-For the default terminal view, `--inline-explain` injects each rule's
-recorded `exploit_example` directly under the Recommendation block, so
+`--inline-explain` surfaces each rule's recorded `exploit_example` so
 operators see a concrete attack scenario without piping the check ID
-through `pipeline_check explain`. No-op on the structured formats
-(`json` / `sarif` / `markdown` / `codequality` / `junit`), which
-already surface the field via their schema.
+through `pipeline_check explain`. It is honored by `terminal` / `both`
+(under the Recommendation block), `sarif` (rule `help`), `junit`
+(`<failure>` body), `markdown` (a collapsible Proof-of-exploit
+section), and `codequality` (issue `description`). `json` and `html`
+carry the field unconditionally. See [output.md](output.md) for the
+per-format detail.
 
 Format schemas: [output.md](output.md).
 
@@ -332,6 +334,22 @@ pipeline_check --fix | git apply  # review first, then apply
 111 fixers cover pinning, secrets, timeouts, TLS bypass, script
 injection, Docker flags, Kubernetes securityContext, and more. See individual check pages under
 [providers/](providers/README.md) for which have autofix support.
+
+To see the whole set without scanning, use `--list-fixers`. It prints
+one line per check ID (`ID  SEVERITY  TIER  TITLE`) and exits, so you
+can tell at a glance which rules have a fixer and which tier it belongs
+to. Narrow the listing with `--safety`:
+
+```bash
+pipeline_check --list-fixers                 # all 111, grouped by ID
+pipeline_check --list-fixers --safety safe   # only the default --fix tier
+pipeline_check --list-fixers --safety unsafe # inference-dependent fixers
+pipeline_check --list-fixers | grep '^GHA-'  # one provider's fixers
+```
+
+A rule that lists here can still emit no patch on a given run: the
+fixer is idempotent (skips an already-remediated finding) and bails
+when its edit wouldn't round-trip as valid YAML.
 
 ## Compliance annotations
 

@@ -189,6 +189,7 @@ class TestEngine:
             "AC-021", "AC-022", "AC-023", "AC-024",
             "AC-025", "AC-026", "AC-027", "AC-028", "AC-029",
             "AC-030", "AC-031", "AC-032", "AC-033", "AC-034",
+            "AC-035",
             "XPC-001", "XPC-002", "XPC-003", "XPC-004", "XPC-005",
             "XPC-006", "XPC-007", "XPC-008", "XPC-009", "XPC-010",
             "CXPC-001", "CXPC-002", "CXPC-003", "CXPC-004",
@@ -334,6 +335,55 @@ class TestChainAC001:
         assert ac1.confirmed_reachable is False
         assert ac1.reachability_note == ""
         assert ac1.confidence is Confidence.MEDIUM
+
+
+class TestChainAC035:
+    """AC-035 — AI agent is both reviewer and committer."""
+
+    def test_fires_on_gha103_plus_gha104(self):
+        wf = ".github/workflows/ai-review.yml"
+        out = chains_pkg.evaluate([_f("GHA-103", wf), _f("GHA-104", wf)])
+        ac = next((c for c in out if c.chain_id == "AC-035"), None)
+        assert ac is not None
+        assert ac.severity is Severity.CRITICAL
+        assert ac.triggering_check_ids == ["GHA-103", "GHA-104"]
+        assert ac.resources == [wf]
+
+    def test_fires_on_gha103_plus_gha106(self):
+        wf = ".github/workflows/ai-review.yml"
+        out = chains_pkg.evaluate([_f("GHA-103", wf), _f("GHA-106", wf)])
+        ac = next((c for c in out if c.chain_id == "AC-035"), None)
+        assert ac is not None
+        assert ac.triggering_check_ids == ["GHA-103", "GHA-106"]
+
+    def test_dedupes_to_one_when_both_write_legs_present(self):
+        wf = ".github/workflows/ai-review.yml"
+        out = chains_pkg.evaluate([
+            _f("GHA-103", wf), _f("GHA-104", wf), _f("GHA-106", wf),
+        ])
+        ac035 = [c for c in out if c.chain_id == "AC-035"]
+        assert len(ac035) == 1
+        # GHA-104 wins the dedupe (iterated first).
+        assert ac035[0].triggering_check_ids == ["GHA-103", "GHA-104"]
+
+    def test_does_not_fire_on_different_workflows(self):
+        out = chains_pkg.evaluate([
+            _f("GHA-103", ".github/workflows/a.yml"),
+            _f("GHA-106", ".github/workflows/b.yml"),
+        ])
+        assert not any(c.chain_id == "AC-035" for c in out)
+
+    def test_does_not_fire_without_write_leg(self):
+        wf = ".github/workflows/ai-review.yml"
+        out = chains_pkg.evaluate([_f("GHA-103", wf)])
+        assert not any(c.chain_id == "AC-035" for c in out)
+
+    def test_does_not_fire_when_reviewer_leg_passed(self):
+        wf = ".github/workflows/ai-review.yml"
+        out = chains_pkg.evaluate([
+            _f("GHA-103", wf, passed=True), _f("GHA-104", wf),
+        ])
+        assert not any(c.chain_id == "AC-035" for c in out)
 
 
 class TestChainAC005:

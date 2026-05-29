@@ -115,6 +115,7 @@ STANDARD = Standard(
         "GHA-010":  ["ESF-D-INJECTION", "ESF-S-PIN-DEPS"],
         "GHA-011":  ["ESF-D-INJECTION", "ESF-S-VERIFY-DEPS"],
         "GHA-012":  ["ESF-D-BUILD-ENV", "ESF-D-PRIV-BUILD"],
+        "GHA-105":  ["ESF-D-BUILD-ENV", "ESF-D-PRIV-BUILD"],
         "GHA-013":  ["ESF-D-INJECTION"],
         "GHA-014":  ["ESF-C-APPROVAL", "ESF-C-ENV-SEP"],
         "GHA-015":  ["ESF-D-BUILD-TIMEOUT"],
@@ -525,6 +526,7 @@ STANDARD = Standard(
         "GHA-059":  ["ESF-S-VERIFY-DEPS"],          # npm install without audit signatures
         "GHA-060":  ["ESF-S-VERIFY-DEPS"],          # pip install without --require-hashes
         "GHA-061":  ["ESF-C-LEAST-PRIV", "ESF-D-TOKEN-HYGIENE"],  # App token without permissions filter
+        "GHA-106":  ["ESF-C-LEAST-PRIV", "ESF-D-TOKEN-HYGIENE"],  # AI agent with write-scoped token
         "GHA-062":  ["ESF-C-LEAST-PRIV"],            # OIDC trust subject in sibling IaC is overly broad
         "GHA-063":  ["ESF-D-INJECTION"],             # spoofable bot-actor if-predicate
         "GHA-064":  ["ESF-D-INJECTION"],             # unsound contains() with comma-string operand
