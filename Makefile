@@ -1,4 +1,4 @@
-.PHONY: install test lint docs build-lambda clean
+.PHONY: install test fast-test lint fmt types check docs docs-all new-rule build-lambda clean
 
 install:
 	pip install --require-hashes -r requirements-dev.txt
@@ -12,6 +12,34 @@ lint:
 
 docs:
 	python scripts/gen_provider_docs.py
+
+# Regenerate every derived doc tree (providers, standards, attack chains).
+docs-all:
+	python scripts/gen_provider_docs.py
+	python scripts/gen_standards_docs.py
+	python scripts/gen_attack_chains_doc.py
+
+# Scaffold a new rule module + test stub:
+#   make new-rule PROVIDER=github SLUG=self_hosted_runner
+# Pass --severity / --title by calling scripts/new_rule.py directly.
+new-rule:
+	python scripts/new_rule.py $(PROVIDER) $(SLUG) --apply
+
+# One-command pre-PR gate: lint, doc-freshness, mypy, tests.
+check:
+	python scripts/preflight.py
+
+# Auto-format the way the pre-commit hook does.
+fmt:
+	ruff format pipeline_check/ tests/ scripts/
+
+# Strict mypy, same invocation as CI.
+types:
+	python -m mypy pipeline_check/
+
+# Fast inner-loop test run: stop on first failure, no coverage.
+fast-test:
+	pytest tests/ -x -q
 
 build-lambda:
 	bash scripts/build_lambda.sh

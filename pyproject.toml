@@ -160,6 +160,7 @@ ignore = [
 "pipeline_check/core/checks/base.py" = ["E402"]    # deferred re import after dataclass
 "scripts/gen_provider_docs.py" = ["E402", "E501"]  # sys.path setup + markdown-table template strings
 "scripts/gen_standards_docs.py" = ["E402"]         # sys.path setup before pipeline_check import
+"scripts/gen_attack_chains_doc.py" = ["E402"]      # sys.path setup before pipeline_check import
 "tests/**" = ["E501", "E402"]                        # test strings + mid-file imports for extended test classes
 "tests/terraform/test_hcl_parser.py" = ["E402"]     # importorskip guard before project imports
 
