@@ -189,7 +189,7 @@ class TestEngine:
             "AC-021", "AC-022", "AC-023", "AC-024",
             "AC-025", "AC-026", "AC-027", "AC-028", "AC-029",
             "AC-030", "AC-031", "AC-032", "AC-033", "AC-034",
-            "AC-035",
+            "AC-035", "AC-036",
             "XPC-001", "XPC-002", "XPC-003", "XPC-004", "XPC-005",
             "XPC-006", "XPC-007", "XPC-008", "XPC-009", "XPC-010",
             "CXPC-001", "CXPC-002", "CXPC-003", "CXPC-004",
@@ -384,6 +384,73 @@ class TestChainAC035:
             _f("GHA-103", wf, passed=True), _f("GHA-104", wf),
         ])
         assert not any(c.chain_id == "AC-035" for c in out)
+
+
+class TestChainAC036:
+    """AC-036 — untrusted-code execution with no egress containment."""
+
+    def test_fires_on_injection_plus_no_egress(self):
+        wf = ".github/workflows/deploy.yml"
+        out = chains_pkg.evaluate([_f("GHA-003", wf), _f("GHA-108", wf)])
+        ac = next((c for c in out if c.chain_id == "AC-036"), None)
+        assert ac is not None
+        assert ac.severity is Severity.HIGH
+        assert ac.triggering_check_ids == ["GHA-003", "GHA-108"]
+        assert ac.resources == [wf]
+
+    def test_fires_on_curlbash_plus_audit_mode(self):
+        wf = ".github/workflows/ci.yml"
+        out = chains_pkg.evaluate([_f("GHA-016", wf), _f("GHA-107", wf)])
+        ac = next((c for c in out if c.chain_id == "AC-036"), None)
+        assert ac is not None
+        assert "GHA-016" in ac.triggering_check_ids
+        assert "GHA-107" in ac.triggering_check_ids
+
+    def test_confirmed_reachable_when_same_job(self):
+        wf = ".github/workflows/deploy.yml"
+        out = chains_pkg.evaluate([
+            _f("GHA-003", wf, job_anchors=("deploy",)),
+            _f("GHA-108", wf, job_anchors=("deploy",)),
+        ])
+        ac = next((c for c in out if c.chain_id == "AC-036"), None)
+        assert ac is not None
+        assert ac.confirmed_reachable is True
+        assert ac.confidence is Confidence.HIGH
+        assert "deploy" in ac.reachability_note
+
+    def test_unconfirmed_when_different_jobs(self):
+        wf = ".github/workflows/deploy.yml"
+        out = chains_pkg.evaluate([
+            _f("GHA-003", wf, job_anchors=("build",)),
+            _f("GHA-108", wf, job_anchors=("release",)),
+        ])
+        ac = next((c for c in out if c.chain_id == "AC-036"), None)
+        assert ac is not None
+        assert ac.confirmed_reachable is False
+
+    def test_does_not_fire_without_egress_leg(self):
+        wf = ".github/workflows/ci.yml"
+        out = chains_pkg.evaluate([_f("GHA-003", wf)])
+        assert not any(c.chain_id == "AC-036" for c in out)
+
+    def test_does_not_fire_without_exec_leg(self):
+        wf = ".github/workflows/ci.yml"
+        out = chains_pkg.evaluate([_f("GHA-108", wf)])
+        assert not any(c.chain_id == "AC-036" for c in out)
+
+    def test_does_not_fire_on_different_workflows(self):
+        out = chains_pkg.evaluate([
+            _f("GHA-003", ".github/workflows/a.yml"),
+            _f("GHA-108", ".github/workflows/b.yml"),
+        ])
+        assert not any(c.chain_id == "AC-036" for c in out)
+
+    def test_does_not_fire_when_exec_leg_passed(self):
+        wf = ".github/workflows/ci.yml"
+        out = chains_pkg.evaluate([
+            _f("GHA-003", wf, passed=True), _f("GHA-108", wf),
+        ])
+        assert not any(c.chain_id == "AC-036" for c in out)
 
 
 class TestChainAC005:

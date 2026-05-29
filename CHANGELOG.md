@@ -48,6 +48,19 @@ release commit collapses this section into `## [X.Y.Z] - <date>`.
   commit its own malicious change with no human in the loop. Per-
   workflow co-occurrence; OR-leg deduped to one chain per workflow.
   T1195.002 / T1059 / T1078.004. Chain count 48 -> 49 (35 AC).
+- **AC-036: untrusted-code execution with no egress containment
+  (HIGH).** New attack chain pairing an execution leg (GHA-003 script
+  injection, GHA-035 github-script injection, GHA-016 `curl | bash`, or
+  GHA-044 build-tool PPE) with an egress leg (GHA-107 harden-runner in
+  audit mode, or GHA-108 no agent at all) on the same workflow.
+  Attacker-influenced code runs while nothing blocks outbound traffic,
+  so it can exfiltrate the OIDC token / GITHUB_TOKEN / secrets. Models
+  missing egress control as a severity amplifier: GHA-107 / GHA-108
+  alone are LOW advisories, but paired with a code-execution primitive
+  they are the last-line-of-defense gap harden-runner's block mode
+  closes. Reachability confirmed (and promoted to HIGH confidence) when
+  the legs share a job via job-anchor intersection; co-occurrence
+  otherwise. T1059 / T1552 / T1041. Chain count 49 -> 50 (36 AC).
 - **GHA-106: AI agent CLI runs with a write-scoped GITHUB_TOKEN
   (HIGH).** Fires when a job invokes an agentic CLI (`claude` /
   `gemini` / `q chat` / `cursor-agent` / `aider` / `openhands` /
