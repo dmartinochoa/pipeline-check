@@ -20,10 +20,22 @@ from .checks.base import (
 from .inventory import Component
 from .scorer import ScoreResult
 
+#: Confidence styling for the findings table. HIGH is the default a
+#: rule keeps unless it opts down to a heuristic match, so it recedes
+#: (dim); MEDIUM and LOW are the ones worth a second look, so they read
+#: at full weight. The column itself only renders when confidence
+#: actually varies (see ``report_terminal``).
 _CONFIDENCE_STYLE: dict[Confidence, str] = {
-    Confidence.HIGH: "bold",
-    Confidence.MEDIUM: "dim",
-    Confidence.LOW: "dim italic",
+    Confidence.HIGH: "dim",
+    Confidence.MEDIUM: "",
+    Confidence.LOW: "italic",
+}
+
+#: Short, lowercase confidence labels for the table cell.
+_CONF_LABEL: dict[Confidence, str] = {
+    Confidence.HIGH: "high",
+    Confidence.MEDIUM: "med",
+    Confidence.LOW: "low",
 }
 
 # Bump when the JSON payload shape changes in a way consumers need to
@@ -31,12 +43,18 @@ _CONFIDENCE_STYLE: dict[Confidence, str] = {
 # adds (appending an optional field) do NOT require a version bump.
 JSON_SCHEMA_VERSION = "1.1"
 
+# Severity scale, matching the design system's terminal-tuned tokens
+# (the same hues the HTML report and docs site use, brightened for
+# legibility on a dark terminal background). CRITICAL red, HIGH orange,
+# MEDIUM gold, LOW cyan, INFO gray. Keeping these 1:1 with the other
+# surfaces is what makes a screenshot of the CLI read as the same
+# product as the docs.
 _SEVERITY_STYLE: dict[Severity, str] = {
-    Severity.CRITICAL: "bold red",
-    Severity.HIGH: "red",
-    Severity.MEDIUM: "yellow",
-    Severity.LOW: "cyan",
-    Severity.INFO: "dim",
+    Severity.CRITICAL: "bold #dc3545",
+    Severity.HIGH: "#ff8c63",
+    Severity.MEDIUM: "#f4c430",
+    Severity.LOW: "#6dd5ed",
+    Severity.INFO: "#6c757d",
 }
 
 _GRADE_STYLE: dict[str, str] = {
@@ -58,6 +76,22 @@ _GRADE_COLOR: dict[str, str] = {
 #: into "(and N more)". Larger lists balloon the row into a
 #: multi-line wall on rules that fire many times on one resource.
 _FOLLOWER_LINES_CAP = 10
+
+
+def _display_path(text: str, limit: int = 50) -> str:
+    """Resource string tuned for the terminal table cell.
+
+    Backslashes render as forward slashes so a Windows scan reads the
+    same as the docs and the HTML report. When a path is longer than
+    *limit*, it's truncated on the *head* (``…ows/release.yml:172``) so
+    the filename and line number, the part the operator acts on, always
+    survive. Right-side truncation would keep the useless ``.github/wo``
+    prefix and drop the filename, so we never do that.
+    """
+    text = text.replace("\\", "/")
+    if len(text) <= limit:
+        return text
+    return "…" + text[-(limit - 1):]
 
 
 def _visible(findings: list[Finding], threshold: Severity) -> list[Finding]:
@@ -228,41 +262,72 @@ def report_terminal(
     else:
         groups = [(f, []) for f in visible_failures]
 
-    table = Table(box=box.SIMPLE_HEAVY, expand=True, pad_edge=False)
-    table.add_column("", no_wrap=True, width=4)
-    table.add_column("Check", style="bold", no_wrap=True, width=8)
-    table.add_column("Severity", no_wrap=True, width=10)
-    table.add_column("Conf.", no_wrap=True, width=7)
-    table.add_column("Resource", overflow="fold", max_width=28)
-    table.add_column("Title", ratio=1)
+    # Confidence is HIGH for the overwhelming majority of rules (it's
+    # the default a rule keeps unless it opts down to a heuristic
+    # match). A column reading "high / high / high …" all the way down
+    # is pure noise, so the column only appears when at least one shown
+    # finding sits *below* HIGH. When it does appear, the HIGH rows dim
+    # away and the MEDIUM / LOW ones catch the eye, which is exactly the
+    # set worth a second look.
+    conf_pool = visible_failures + (visible_passes if show_passed else [])
+    show_conf = any(f.confidence is not Confidence.HIGH for f in conf_pool)
+
+    # No ``expand=True``: the table sizes to its content rather than
+    # padding out to the full terminal width, so a scan on a 200-column
+    # terminal doesn't leave a lake of empty space to the right. The
+    # short columns never wrap; Resource and Title fold (and Resource is
+    # head-truncated by ``_display_path``) so a narrow terminal degrades
+    # to wrapped text instead of one-word-per-line truncation.
+    table = Table(box=box.SIMPLE_HEAVY, pad_edge=False)
+    table.add_column("", no_wrap=True)
+    table.add_column("Check", style="bold", no_wrap=True)
+    table.add_column("Severity", no_wrap=True)
+    if show_conf:
+        table.add_column("Conf.", no_wrap=True)
+    table.add_column("Resource", overflow="fold", max_width=50)
+    # No max_width on Title: it's the flexible column. On a wide
+    # terminal it takes its natural width (no wrap); on a narrow one
+    # Rich shrinks it to fit and folds the text. Capping it would only
+    # truncate titles when there's room to spare.
+    table.add_column("Title", overflow="fold")
 
     def _render_row(f: Finding) -> None:
         sev_style = _SEVERITY_STYLE.get(f.severity, "white")
-        conf_style = _CONFIDENCE_STYLE.get(f.confidence, "")
         status = "[red]FAIL[/red]" if not f.passed else "[green]PASS[/green]"
-        conf_label = f.confidence.value[:3]
-        conf_cell = (
-            f"[{conf_style}]{conf_label}[/{conf_style}]"
-            if conf_style else conf_label
-        )
-        # Escape resource/title through ``rich.markup.escape``: real
-        # content carries literal ``[...]`` tokens (YAML lists, TF refs
-        # like ``[aws_subnet.foo.id]``, capabilities ``[ALL]``) that the
+        # Build the resource cell: append the primary line number when
+        # the rule emitted a Location, then forward-slash and
+        # head-truncate via ``_display_path``. Escape through
+        # ``rich.markup.escape`` because real content carries literal
+        # ``[...]`` tokens (YAML lists, TF refs like
+        # ``[aws_subnet.foo.id]``, capabilities ``[ALL]``) that the
         # table renderer would otherwise parse as Rich style markup and
         # silently strip.
-        resource_cell = rich_escape(f.resource)
+        resource_full = f.resource
         if f.locations:
             primary = f.locations[0]
             if primary.start_line is not None:
-                resource_cell = f"{rich_escape(f.resource)}:{primary.start_line}"
-        table.add_row(
+                resource_full = f"{f.resource}:{primary.start_line}"
+        resource_cell = rich_escape(_display_path(resource_full))
+        cells = [
             status,
             f.check_id,
             f"[{sev_style}]{f.severity.value}[/{sev_style}]",
-            conf_cell,
-            resource_cell,
-            rich_escape(f.title),
-        )
+        ]
+        if show_conf:
+            conf_style = _CONFIDENCE_STYLE.get(f.confidence, "")
+            conf_label = _CONF_LABEL.get(f.confidence, f.confidence.value.lower())
+            cells.append(
+                f"[{conf_style}]{conf_label}[/{conf_style}]"
+                if conf_style else conf_label
+            )
+        cells.append(resource_cell)
+        cells.append(rich_escape(f.title))
+        table.add_row(*cells)
+
+    # Leading blank cells a follower-summary row needs before the Title
+    # column (which carries the "+N more" text): one per column except
+    # Title, so one fewer when the Conf. column is hidden.
+    n_blanks = 5 if show_conf else 4
 
     # Failures first, in group order.
     for representative, followers in groups:
@@ -295,7 +360,7 @@ def report_terminal(
             )
         # Render the follower-summary in the Title column so the row
         # height stays one line and the eye scans down the Check column.
-        table.add_row("", "", "", "", "", follower_cell)
+        table.add_row(*([""] * n_blanks), follower_cell)
 
     # Passes (only present when show_passed is set).
     for f in visible_passes:
@@ -363,6 +428,10 @@ def report_terminal(
             exploit_text = (
                 f"\n[bold]Proof of exploit:[/bold]\n{rich_escape(exploit)}"
             )
+        # Forward-slash the panel-title resource so a Windows scan reads
+        # like the docs (the table cell already does this via
+        # ``_display_path``).
+        panel_resource = rich_escape(f.resource.replace("\\", "/"))
         console.print(
             Panel(
                 f"{rich_escape(f.description)}\n\n"
@@ -370,12 +439,52 @@ def report_terminal(
                 f"{cwe_line}{controls_text}{locations_text}{exploit_text}",
                 title=(
                     f"[{style}]{f.check_id}[/{style}]  "
-                    f"{rich_escape(f.title)}  [dim]{rich_escape(f.resource)}[/dim]"
+                    f"{rich_escape(f.title)}  "
+                    f"[dim]{panel_resource}[/dim]"
                 ),
                 border_style="dim",
                 padding=(0, 2),
             )
         )
+
+
+def next_steps_tip(
+    findings: list[Finding],
+    severity_threshold: Severity = Severity.INFO,
+) -> str | None:
+    """One-line "what next" nudge for the terminal, or None.
+
+    The findings panels explain *why* each finding fired; this says
+    *what to do next*. Returns None when there's nothing actionable
+    (no failures at or above the threshold). The CLI renders it as the
+    final line of a terminal scan, after the table, panels, chains, and
+    inventory, so even a passing run with findings points somewhere.
+    The gate trailer (stderr, only when the gate trips) is the CI-log
+    analog; this is the interactive nudge.
+    """
+    min_rank = severity_rank(severity_threshold)
+    fails = [
+        f for f in findings
+        if not f.passed and severity_rank(f.severity) >= min_rank
+    ]
+    if not fails:
+        return None
+    fails.sort(key=lambda f: (-severity_rank(f.severity), f.check_id))
+    from .autofix import available_fixers
+
+    fixers = set(available_fixers())
+    n_fixable = sum(1 for f in fails if f.check_id.upper() in fixers)
+    top_id = fails[0].check_id
+    tip = (
+        f"[dim]Next →[/dim] inspect a rule: "
+        f"[bold]pipeline_check explain {top_id}[/bold]"
+    )
+    if n_fixable:
+        tip += (
+            f"   [dim]·[/dim]   autofix {n_fixable} of {len(fails)}: "
+            f"[bold]pipeline_check --fix --apply[/bold]"
+        )
+    return tip
 
 
 def report_json(
