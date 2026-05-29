@@ -185,6 +185,7 @@ STANDARD = Standard(
         "GHA-026":  ["2.1.3", "2.1.6"],                  # container job disables isolation
         "GHA-107":  ["2.1.3", "2.1.6"],                  # harden-runner in audit mode (egress not blocked)
         "GHA-108":  ["2.1.3", "2.1.6"],                  # no runtime egress control on OIDC/deploy workflow
+        "GHA-109":  ["2.1.3", "2.1.6"],                  # harden-runner not the first step
         "GHA-027":  ["2.1.3"],                           # dangerous shell idiom
         "GHA-028":  ["1.4.1", "3.1.5"],                  # install bypasses registry integrity
         "GHA-029":  ["1.4.1", "3.1.5"],                  # package install from git/path/tarball

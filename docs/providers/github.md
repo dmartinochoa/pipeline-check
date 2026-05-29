@@ -72,7 +72,7 @@ Resolution rules:
 
 ## What it covers
 
-99 checks · 17 have an autofix patch (``--fix``).
+100 checks · 17 have an autofix patch (``--fix``).
 
 | Check | Title | Severity | Fix |
 |-------|-------|----------|-----|
@@ -171,6 +171,7 @@ Resolution rules:
 | [GHA-106](#gha-106) | AI agent CLI runs with a write-scoped GITHUB_TOKEN | <span class="pg-sev pg-sev--high">HIGH</span> |  |
 | [GHA-107](#gha-107) | harden-runner runs in audit mode (egress not blocked) | <span class="pg-sev pg-sev--medium">MEDIUM</span> |  |
 | [GHA-108](#gha-108) | Sensitive workflow has no runtime egress control | <span class="pg-sev pg-sev--low">LOW</span> |  |
+| [GHA-109](#gha-109) | harden-runner is not the first step in the job | <span class="pg-sev pg-sev--low">LOW</span> |  |
 | [TAINT-001](#taint-001) | Untrusted input flows across step boundaries via step outputs | <span class="pg-sev pg-sev--high">HIGH</span> |  |
 | [TAINT-002](#taint-002) | Untrusted input flows across jobs via ``jobs.<id>.outputs:`` | <span class="pg-sev pg-sev--high">HIGH</span> |  |
 | [TAINT-003](#taint-003) | Untrusted input forwarded into reusable workflow ``with:`` | <span class="pg-sev pg-sev--high">HIGH</span> |  |
@@ -2867,6 +2868,465 @@ Scoped deliberately to OIDC and environment-gated jobs to keep the signal target
 **Recommended action**
 
 Add step-security/harden-runner as the first step of jobs that authenticate via OIDC or deploy through a protected environment, and set `egress-policy: block` with an `allowed-endpoints` allowlist. A static scan can't see what a compromised dependency or action does at runtime; an egress allowlist is the defense-in-depth layer that stops it from shipping the OIDC credential or deploy secret off the runner. If egress is already constrained at the network layer (self-hosted runners behind a firewall or forward proxy), suppress this advisory with that rationale.
+
+</div>
+
+</div>
+
+<div class="pg-rule pg-rule--low" markdown>
+
+## GHA-109: harden-runner is not the first step in the job { #gha-109 }
+
+<div class="pg-rule__tags">
+<span class="pg-sev pg-sev--low">LOW</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-7</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-10</span> <span class="pg-tag pg-tag--esf">ESF-D-BUILD-ENV</span> <span class="pg-tag pg-tag--cwe">CWE-696</span>
+</div>
+
+Fires when a job uses `step-security/harden-runner` but the step is not first: at least one step precedes it. Those earlier steps run before the egress monitor is up, so their outbound traffic is neither recorded nor filtered.
+
+Passes when harden-runner is the first step, and is not applicable (passes) when the job doesn't use harden-runner at all. Severity is LOW because the most common shape (a checkout placed first) is a small gap and the fix is a one-line move.
+
+**Known false-positive modes**
+
+- A
+- 
+- `
+- c
+- h
+- e
+- c
+- k
+- o
+- u
+- t
+- `
+- 
+- p
+- l
+- a
+- c
+- e
+- d
+- 
+- b
+- e
+- f
+- o
+- r
+- e
+- 
+- h
+- a
+- r
+- d
+- e
+- n
+- -
+- r
+- u
+- n
+- n
+- e
+- r
+- 
+- i
+- s
+- 
+- a
+- 
+- m
+- i
+- n
+- o
+- r
+- 
+- g
+- a
+- p
+- :
+- 
+- t
+- h
+- e
+- 
+- c
+- h
+- e
+- c
+- k
+- o
+- u
+- t
+- 
+- r
+- e
+- a
+- c
+- h
+- e
+- s
+- 
+- G
+- i
+- t
+- H
+- u
+- b
+- ,
+- 
+- w
+- h
+- i
+- c
+- h
+- 
+- i
+- s
+- 
+- a
+- l
+- l
+- o
+- w
+- e
+- d
+- 
+- r
+- e
+- g
+- a
+- r
+- d
+- l
+- e
+- s
+- s
+- .
+- 
+- I
+- f
+- 
+- y
+- o
+- u
+- r
+- 
+- p
+- r
+- e
+- -
+- h
+- a
+- r
+- d
+- e
+- n
+- -
+- r
+- u
+- n
+- n
+- e
+- r
+- 
+- s
+- t
+- e
+- p
+- s
+- 
+- p
+- r
+- o
+- v
+- a
+- b
+- l
+- y
+- 
+- m
+- a
+- k
+- e
+- 
+- n
+- o
+- 
+- n
+- e
+- t
+- w
+- o
+- r
+- k
+- 
+- c
+- a
+- l
+- l
+- s
+- ,
+- 
+- t
+- h
+- e
+- 
+- e
+- x
+- p
+- o
+- s
+- u
+- r
+- e
+- 
+- i
+- s
+- 
+- n
+- e
+- g
+- l
+- i
+- g
+- i
+- b
+- l
+- e
+- .
+- 
+- S
+- u
+- p
+- p
+- r
+- e
+- s
+- s
+- 
+- p
+- e
+- r
+- -
+- j
+- o
+- b
+- 
+- o
+- n
+- c
+- e
+- 
+- c
+- o
+- n
+- f
+- i
+- r
+- m
+- e
+- d
+- .
+
+**Seen in the wild**
+
+- S
+- t
+- e
+- p
+- S
+- e
+- c
+- u
+- r
+- i
+- t
+- y
+- 
+- d
+- o
+- c
+- s
+- ,
+- 
+- h
+- a
+- r
+- d
+- e
+- n
+- -
+- r
+- u
+- n
+- n
+- e
+- r
+- 
+- u
+- s
+- a
+- g
+- e
+- :
+- 
+- t
+- h
+- e
+- 
+- a
+- c
+- t
+- i
+- o
+- n
+- 
+- i
+- s
+- 
+- d
+- o
+- c
+- u
+- m
+- e
+- n
+- t
+- e
+- d
+- 
+- t
+- o
+- 
+- r
+- u
+- n
+- 
+- a
+- s
+- 
+- t
+- h
+- e
+- 
+- f
+- i
+- r
+- s
+- t
+- 
+- s
+- t
+- e
+- p
+- 
+- o
+- f
+- 
+- t
+- h
+- e
+- 
+- j
+- o
+- b
+- 
+- s
+- o
+- 
+- t
+- h
+- e
+- 
+- e
+- g
+- r
+- e
+- s
+- s
+- 
+- b
+- a
+- s
+- e
+- l
+- i
+- n
+- e
+- 
+- c
+- o
+- v
+- e
+- r
+- s
+- 
+- t
+- h
+- e
+- 
+- w
+- h
+- o
+- l
+- e
+- 
+- r
+- u
+- n
+- .
+- 
+- h
+- t
+- t
+- p
+- s
+- :
+- /
+- /
+- g
+- i
+- t
+- h
+- u
+- b
+- .
+- c
+- o
+- m
+- /
+- s
+- t
+- e
+- p
+- -
+- s
+- e
+- c
+- u
+- r
+- i
+- t
+- y
+- /
+- h
+- a
+- r
+- d
+- e
+- n
+- -
+- r
+- u
+- n
+- n
+- e
+- r
+
+<div class="pg-rule__rec" markdown>
+
+**Recommended action**
+
+Move the `step-security/harden-runner` step to the top of the job, before `actions/checkout` and any `run:` or setup step. harden-runner only monitors (and in block mode filters) traffic that happens after it starts, so any step that runs before it egresses unwatched. StepSecurity's guidance is that harden-runner is always the first step.
 
 </div>
 

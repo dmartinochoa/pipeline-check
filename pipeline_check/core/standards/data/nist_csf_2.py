@@ -199,6 +199,7 @@ STANDARD = Standard(
         "GHA-026":  ["PR.PS-01"],
         "GHA-107":  ["PR.PS-01"],   # harden-runner in audit mode (egress not blocked)
         "GHA-108":  ["PR.PS-01"],   # no runtime egress control on OIDC/deploy workflow
+        "GHA-109":  ["PR.PS-01"],   # harden-runner not the first step
         "GL-014":   ["PR.PS-01"],
         "GL-015":   ["PR.PS-01"],
         "GL-017":   ["PR.PS-01"],

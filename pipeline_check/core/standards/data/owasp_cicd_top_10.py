@@ -199,6 +199,7 @@ STANDARD = Standard(
         "GHA-106":  ["CICD-SEC-5", "CICD-SEC-2"],  # AI agent with write-scoped token
         "GHA-107":  ["CICD-SEC-7", "CICD-SEC-10"],  # harden-runner in audit mode (egress not blocked)
         "GHA-108":  ["CICD-SEC-7", "CICD-SEC-10"],  # no runtime egress control on OIDC/deploy workflow
+        "GHA-109":  ["CICD-SEC-7", "CICD-SEC-10"],  # harden-runner not the first step
         "GHA-062":  ["CICD-SEC-2", "CICD-SEC-7"],  # OIDC trust subject in sibling IaC is overly broad
         "GHA-063":  ["CICD-SEC-1", "CICD-SEC-4"],  # spoofable bot-actor if-predicate
         "GHA-064":  ["CICD-SEC-1", "CICD-SEC-4"],  # unsound contains() with comma-string operand

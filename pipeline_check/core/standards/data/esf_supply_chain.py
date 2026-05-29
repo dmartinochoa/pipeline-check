@@ -529,6 +529,7 @@ STANDARD = Standard(
         "GHA-106":  ["ESF-C-LEAST-PRIV", "ESF-D-TOKEN-HYGIENE"],  # AI agent with write-scoped token
         "GHA-107":  ["ESF-D-BUILD-ENV"],             # harden-runner in audit mode (egress not blocked)
         "GHA-108":  ["ESF-D-BUILD-ENV"],             # no runtime egress control on OIDC/deploy workflow
+        "GHA-109":  ["ESF-D-BUILD-ENV"],             # harden-runner not the first step
         "GHA-062":  ["ESF-C-LEAST-PRIV"],            # OIDC trust subject in sibling IaC is overly broad
         "GHA-063":  ["ESF-D-INJECTION"],             # spoofable bot-actor if-predicate
         "GHA-064":  ["ESF-D-INJECTION"],             # unsound contains() with comma-string operand

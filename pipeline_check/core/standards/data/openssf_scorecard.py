@@ -214,6 +214,7 @@ STANDARD = Standard(
         "GHA-026":  ["Dangerous-Workflow"],
         "GHA-107":  ["Dangerous-Workflow"],   # harden-runner in audit mode (egress not blocked)
         "GHA-108":  ["Dangerous-Workflow"],   # no runtime egress control on OIDC/deploy workflow
+        "GHA-109":  ["Dangerous-Workflow"],   # harden-runner not the first step
         "GHA-027":  ["Dangerous-Workflow"],
         "GHA-028":  ["Dangerous-Workflow"],
         "GHA-038":  ["Dangerous-Workflow"],                            # ACTIONS_ALLOW_UNSECURE_COMMANDS

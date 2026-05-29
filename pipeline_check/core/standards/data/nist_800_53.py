@@ -162,6 +162,7 @@ STANDARD = Standard(
         "GHA-026":  ["CM-6", "CM-7"],                    # container job disables isolation
         "GHA-107":  ["CM-6", "CM-7"],                    # harden-runner in audit mode (egress not blocked)
         "GHA-108":  ["CM-6", "CM-7"],                    # no runtime egress control on OIDC/deploy workflow
+        "GHA-109":  ["CM-6", "CM-7"],                    # harden-runner not the first step
         "GHA-027":  ["CM-6", "SA-11"],                   # dangerous shell idiom
         "GHA-028":  ["SR-3", "SR-11"],                   # install bypasses registry integrity
         "GHA-029":  ["SR-3", "SR-11"],                   # package source bypasses lockfile
