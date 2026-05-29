@@ -41,7 +41,7 @@ parsers and are queued for a follow-up.
 
 ## What it covers
 
-14 checks · 0 have an autofix patch (``--fix``).
+16 checks · 0 have an autofix patch (``--fix``).
 
 | Check | Title | Severity | Fix |
 |-------|-------|----------|-----|
@@ -59,6 +59,8 @@ parsers and are queued for a follow-up.
 | [NPM-012](#npm-012) | .npmrc publish token lacks IP or readonly restriction | <span class="pg-sev pg-sev--high">HIGH</span> |  |
 | [NPM-013](#npm-013) | package.json files field uses an overly broad pattern | <span class="pg-sev pg-sev--high">HIGH</span> |  |
 | [NPM-014](#npm-014) | Direct dependency relies on a single npm publisher | <span class="pg-sev pg-sev--low">LOW</span> |  |
+| [NPM-015](#npm-015) | Direct dependency published without build provenance | <span class="pg-sev pg-sev--low">LOW</span> |  |
+| [NPM-016](#npm-016) | Direct dependency has a low OpenSSF Scorecard | <span class="pg-sev pg-sev--low">LOW</span> |  |
 
 ---
 
@@ -305,7 +307,7 @@ Either skip the just-published version (pin to the last release older than the c
 <span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-3</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-8</span> <span class="pg-tag pg-tag--esf">ESF-S-VERIFY-DEPS</span> <span class="pg-tag pg-tag--cwe">CWE-829</span> <span class="pg-tag pg-tag--cwe">CWE-1357</span>
 </div>
 
-Needs ``--npm-base-ref <ref>`` to materialize each lockfile's contents at the base ref via ``git show``. Compares the set of package names in the current vs. base lockfile and subtracts top-level direct dependencies (those are NPM-008's territory). Fires HIGH per lockfile when any name appears in the current set that isn't in the base set, after the direct-dep subtraction. Silent-passes when ``--npm-base-ref`` isn't set, the base ref can't be resolved by git, or the lockfile is brand new to this branch (no base counterpart). Diffs by package *name* only — version bumps of an existing transitive are out of scope (NPM-006 covers known-bad version pins; NPM-008 covers fresh-publication windows). Both ``package-lock.json`` (npm 7+) and ``pnpm-lock.yaml`` / ``yarn.lock`` are covered through the shared lockfile-shape synthesizers.
+Needs ``--npm-base-ref <ref>`` to materialize each lockfile's contents at the base ref via ``git show``. Compares the set of package names in the current vs. base lockfile and subtracts top-level direct dependencies (those are NPM-008's territory). Fires HIGH per lockfile when any name appears in the current set that isn't in the base set, after the direct-dep subtraction. Silent-passes when ``--npm-base-ref`` isn't set, the base ref can't be resolved by git, or the lockfile is brand new to this branch (no base counterpart). Diffs by package *name* only — version bumps of an existing transitive are out of scope (NPM-006 covers known-bad version pins; NPM-008 covers fresh-publication windows). Both ``package-lock.json`` (npm 7+) and ``pnpm-lock.yaml`` / ``yarn.lock`` are covered through the shared lockfile-shape synthesizers, which carry each package's declared dependency edges. Every new transitive is annotated with the direct dependency that pulled it in (``<name> (via <parent>)``), traced through the edge graph to the nearest manifest dependency, so reviewers know whose changelog to read. A deep transitive with no resolvable manifest ancestor falls back to its immediate declaring parent.
 
 **Known false-positive modes**
 
@@ -486,6 +488,62 @@ Network-dependent: needs ``--resolve-remote`` to read each direct dependency's p
 **Recommended action**
 
 Treat a single-publisher dependency as a single point of compromise: if that one npm account is phished or its token leaks, every consumer pulls malicious code on the next install (the axios / chalk / lodash class of risk). For dependencies you pull in directly, prefer packages whose publish access is shared across maintainers or an org team, pin to a reviewed version, and pair with NPM-008 (cooldown) so a compromised release has a window to be caught before it reaches your lockfile.
+
+</div>
+
+</div>
+
+<div class="pg-rule pg-rule--low" markdown>
+
+## NPM-015: Direct dependency published without build provenance { #npm-015 }
+
+<div class="pg-rule__tags">
+<span class="pg-sev pg-sev--low">LOW</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-4</span> <span class="pg-tag pg-tag--esf">ESF-S-VERIFY-DEPS</span> <span class="pg-tag pg-tag--cwe">CWE-494</span>
+</div>
+
+Network-dependent: needs ``--resolve-remote`` to read each direct dependency's latest-version `dist.attestations` from ``registry.npmjs.org`` (the same packument fetch NPM-008 and NPM-014 use, so it adds no extra requests). Flags a package whose latest version carries no build-provenance attestation. Scoped to direct dependencies; transitive packages are out of scope. LOW severity by design: provenance adoption across the registry is still low, so the absence is common and this is an informational posture signal that stays below the default ``--fail-on`` gate. When ``--resolve-remote`` is off or the registry can't be reached, the rule passes silently.
+
+**Known false-positive modes**
+
+- A package can be securely published without npm provenance (e.g. via a different attestation framework, or simply because it predates provenance support). The absence is a weaker signal than a present-but-invalid attestation would be. Suppress per-resource for dependencies whose supply chain the team has otherwise vetted.
+
+**Seen in the wild**
+
+- SLSA provenance / npm `--provenance` (GA 2023): publishing with provenance produces a signed link from the registry artifact to the exact source commit and CI run, the property an attacker who republishes a tampered tarball cannot forge.
+
+<div class="pg-rule__rec" markdown>
+
+**Recommended action**
+
+Build provenance ties a published package back to the source commit and CI build that produced it (SLSA / npm `--provenance`), the same guarantee this project ships on its own wheel. A dependency without it can't be cryptographically traced to its source, so a registry-side tamper or a look-alike republish is harder to detect. Prefer dependencies that publish with provenance where a maintained alternative exists, and ask upstreams you rely on to adopt it (it is a one-line change to a GitHub Actions publish job). This is a posture signal, not a defect in the dependency.
+
+</div>
+
+</div>
+
+<div class="pg-rule pg-rule--low" markdown>
+
+## NPM-016: Direct dependency has a low OpenSSF Scorecard { #npm-016 }
+
+<div class="pg-rule__tags">
+<span class="pg-sev pg-sev--low">LOW</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-3</span> <span class="pg-tag pg-tag--esf">ESF-S-VERIFY-DEPS</span> <span class="pg-tag pg-tag--cwe">CWE-1357</span>
+</div>
+
+Network-dependent: needs ``--resolve-remote``. The dependency's GitHub repo comes from its packument (the same fetch NPM-008 / NPM-014 / NPM-015 use), then each repo is looked up against the OpenSSF Scorecard API (``api.securityscorecards.dev``), which is the one extra network surface this rule adds beyond the registry. Fires when the aggregate score is below 5/10 OR the Dangerous-Workflow check failed (an exploitable workflow pattern in the dependency's own repo). Scoped to direct dependencies with a resolvable GitHub repo; packages with no GitHub repo or not indexed by Scorecard are skipped. LOW severity by design: it's an advisory upstream posture signal that stays below the default ``--fail-on`` gate. Passes silently when ``--resolve-remote`` is off or the Scorecard API can't be reached.
+
+**Known false-positive modes**
+
+- Scorecard penalizes practices that don't always apply (e.g. a single-maintainer library that doesn't use code review by policy) and its data can lag a repo's current state. A low score is a prompt to look, not proof of risk. Suppress per-resource for dependencies the team has vetted directly.
+
+**Seen in the wild**
+
+- OpenSSF Scorecard: an automated assessment of a repo's security practices (branch protection, pinned dependencies, dangerous workflows, code review, maintenance). Low-scoring upstreams are over-represented in supply-chain incident post-mortems.
+
+<div class="pg-rule__rec" markdown>
+
+**Recommended action**
+
+A low OpenSSF Scorecard (or a failed Dangerous-Workflow check) on a direct dependency's own repository is a weak-link signal: the project lacks the maintenance and CI-hardening practices (branch protection, pinned actions, no `pull_request_target` script injection, code review) that make a compromise less likely and more detectable. Weigh a better-scored alternative where one exists, pin to a reviewed version, and for the ones you keep, watch them more closely (cooldown, provenance). This is an upstream-posture signal, not a defect you can fix in your own repo.
 
 </div>
 

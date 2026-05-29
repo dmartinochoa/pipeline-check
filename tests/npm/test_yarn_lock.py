@@ -4,8 +4,8 @@ Exercises both layers:
 
 1. ``_parse_yarn_lock`` + ``_synthesize_yarn_lock`` unit tests:
    single- and multi-pattern headers, scoped names, comments,
-   blank lines, sub-blocks (``dependencies:`` skipped), multi-
-   version installs.
+   blank lines, sub-blocks (``dependencies:`` captured for NPM-009),
+   multi-version installs.
 2. End-to-end via ``NpmContext.from_path``: a real ``yarn.lock``
    on disk produces an :class:`NpmLock` that :class:`NpmChecks`
    fans out across NPM-002 / NPM-003 / NPM-006 without per-rule
@@ -94,10 +94,11 @@ class TestParseYarnLock:
             '"@babel/code-frame@^7.0.0"', '"@babel/code-frame@^7.16.0"',
         ]
 
-    def test_sub_blocks_skipped(self) -> None:
+    def test_sub_block_dependencies_captured(self) -> None:
         # Yarn 1 emits a nested ``dependencies:`` block below the
-        # primary properties; the parser must skip it without
-        # recording transitive metadata as primary properties.
+        # primary properties. The parser captures it under a nested
+        # ``dependencies`` key (for NPM-009 attribution) without
+        # leaking the child names into the primary properties.
         body = textwrap.dedent(
             """\
             foo@^1.0.0:
@@ -106,7 +107,7 @@ class TestParseYarnLock:
               integrity sha512-ccc==
               dependencies:
                 bar "^2.0.0"
-                baz "^3.0.0"
+                "@scope/baz" "^3.0.0"
 
             bar@^2.0.0:
               version "2.0.0"
@@ -116,11 +117,29 @@ class TestParseYarnLock:
         )
         out = _parse_yarn_lock(body)
         assert len(out) == 2
-        # The first entry's props should NOT carry ``bar`` /
-        # ``baz`` — those live inside the sub-block.
         _, props = out[0]
-        assert "bar" not in props and "baz" not in props
+        # Child names live under the nested ``dependencies`` map, not
+        # as primary properties.
+        assert "bar" not in props and "@scope/baz" not in props
         assert props["version"] == "1.0.0"
+        assert props["dependencies"] == {
+            "bar": "^2.0.0", "@scope/baz": "^3.0.0",
+        }
+
+    def test_sub_block_dependencies_reach_synthesized_record(self) -> None:
+        body = textwrap.dedent(
+            """\
+            foo@^1.0.0:
+              version "1.0.0"
+              resolved "https://registry.yarnpkg.com/foo/-/foo-1.0.0.tgz#y"
+              integrity sha512-ccc==
+              dependencies:
+                bar "^2.0.0"
+            """
+        )
+        out = _synthesize_yarn_lock(_parse_yarn_lock(body))
+        rec = out["packages"]["node_modules/foo"]
+        assert rec["dependencies"] == {"bar": "^2.0.0"}
 
     def test_comments_and_blank_lines_tolerated(self) -> None:
         body = textwrap.dedent(

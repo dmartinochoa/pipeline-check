@@ -16,6 +16,7 @@ via the ``git_show`` indirection so the tests stay hermetic.
 from __future__ import annotations
 
 import json
+import textwrap
 from pathlib import Path
 from typing import Any
 
@@ -31,6 +32,8 @@ from pipeline_check.core.checks.npm.base import (
 )
 from pipeline_check.core.checks.npm.pipelines import NpmChecks
 from pipeline_check.core.checks.npm.rules.npm009_new_transitive_dep import (
+    _attribute_introducers,
+    _build_child_to_parents,
     _lock_package_names,
     _name_from_install_path,
 )
@@ -312,6 +315,301 @@ class TestNpm009Rule:
         f = _run_npm009(ctx)[0]
         assert f.confidence is Confidence.HIGH
         assert f.severity is Severity.HIGH
+
+
+# ── parent attribution ──────────────────────────────────────────────
+
+
+def _lock_with_records(
+    records: dict[str, dict[str, Any]],
+    path: str = "package-lock.json",
+) -> NpmLock:
+    """Build an npm 7+ lock from explicit ``install_path -> record`` entries.
+
+    Unlike :func:`_lock_with_packages` (versions only), each record
+    can declare a ``dependencies`` map so the edge graph NPM-009's
+    parent attribution walks is populated.
+    """
+    packages: dict[str, Any] = dict(records)
+    packages[""] = {"name": "root"}
+    return NpmLock(
+        path=path,
+        text=json.dumps({"packages": packages}, indent=2),
+        data={"packages": packages},
+        lockfile_version=3,
+    )
+
+
+class TestNpm009ParentAttribution:
+    def test_unit_build_child_to_parents(self) -> None:
+        lock = _lock_with_records({
+            "node_modules/axios": {
+                "version": "1.6.1",
+                "dependencies": {"plain-crypto-js": "^1.0.0"},
+            },
+            "node_modules/plain-crypto-js": {"version": "1.0.0"},
+        })
+        assert _build_child_to_parents(lock) == {
+            "plain-crypto-js": {"axios"},
+        }
+
+    def test_unit_build_reads_npm6_requires(self) -> None:
+        # Legacy v1 records use ``requires`` for declared deps.
+        packages = {
+            "axios": {
+                "version": "0.21.0",
+                "requires": {"follow-redirects": "^1.0.0"},
+            },
+        }
+        lock = NpmLock(
+            path="package-lock.json",
+            text=json.dumps({"dependencies": packages}),
+            data={"dependencies": packages},
+            lockfile_version=1,
+        )
+        assert _build_child_to_parents(lock) == {
+            "follow-redirects": {"axios"},
+        }
+
+    def test_unit_attribute_traces_to_direct_ancestor(self) -> None:
+        # deep-evil <- middle <- app-lib(direct)
+        child_to_parents = {
+            "deep-evil": {"middle"},
+            "middle": {"app-lib"},
+        }
+        out = _attribute_introducers(
+            "deep-evil", child_to_parents, direct={"app-lib"},
+        )
+        assert out == ["app-lib"]
+
+    def test_unit_attribute_falls_back_to_immediate(self) -> None:
+        # No direct dep reachable: report the immediate declaring parent.
+        out = _attribute_introducers(
+            "deep-evil", {"deep-evil": {"middle"}}, direct={"unrelated"},
+        )
+        assert out == ["middle"]
+
+    def test_unit_attribute_cycle_guarded(self) -> None:
+        # a <-> b cycle, neither direct: terminates, reports immediate.
+        out = _attribute_introducers(
+            "a", {"a": {"b"}, "b": {"a"}}, direct=set(),
+        )
+        assert out == ["b"]
+
+    def test_unit_attribute_unknown_returns_empty(self) -> None:
+        assert _attribute_introducers("orphan", {}, direct=set()) == []
+
+    def test_fires_with_direct_parent_named(self) -> None:
+        # axios (direct) gained plain-crypto-js as a new transitive.
+        ctx = NpmContext(
+            manifests=[_manifest({"axios": "^1.6.0"})],
+            locks=[_lock_with_records({
+                "node_modules/axios": {
+                    "version": "1.6.1",
+                    "dependencies": {"plain-crypto-js": "^1.0.0"},
+                },
+                "node_modules/plain-crypto-js": {"version": "1.0.0"},
+            })],
+        )
+        ctx.base_locks = [_lock_with_records({
+            "node_modules/axios": {"version": "1.6.0"},
+        })]
+        f = _run_npm009(ctx)[0]
+        assert f.passed is False
+        assert "plain-crypto-js (via axios)" in f.description
+
+    def test_fires_with_chain_traced_to_direct(self) -> None:
+        ctx = NpmContext(
+            manifests=[_manifest({"app-lib": "^2.0.0"})],
+            locks=[_lock_with_records({
+                "node_modules/app-lib": {
+                    "version": "2.0.1",
+                    "dependencies": {"middle": "^1.0.0"},
+                },
+                "node_modules/middle": {
+                    "version": "1.0.0",
+                    "dependencies": {"deep-evil": "^1.0.0"},
+                },
+                "node_modules/deep-evil": {"version": "1.0.0"},
+            })],
+        )
+        ctx.base_locks = [_lock_with_records({
+            "node_modules/app-lib": {"version": "2.0.0"},
+        })]
+        f = _run_npm009(ctx)[0]
+        assert f.passed is False
+        assert "deep-evil (via app-lib)" in f.description
+        assert "middle (via app-lib)" in f.description
+
+    def test_no_edges_degrades_to_bare_name(self) -> None:
+        # pnpm/yarn-style synthesized records carry no dep maps;
+        # attribution stays silent, the name still surfaces.
+        ctx = NpmContext(
+            manifests=[_manifest({"lodash": "^4.0.0"})],
+            locks=[_lock_with_packages(["lodash", "stealthy"])],
+        )
+        ctx.base_locks = [_lock_with_packages(["lodash"])]
+        f = _run_npm009(ctx)[0]
+        assert f.passed is False
+        assert "stealthy" in f.description
+        assert "(via" not in f.description
+
+
+class TestNpm009AttributionEndToEnd:
+    """Full path: NpmContext.from_path -> synthesizers -> NPM-009.
+
+    Proves the pnpm / yarn synthesizers now carry the dependency
+    edges NPM-009 needs to name the introducing parent. ``git_show``
+    is monkeypatched so no real git runs.
+    """
+
+    @staticmethod
+    def _write_manifest(tmp_path: Path, deps: dict[str, str]) -> None:
+        (tmp_path / "package.json").write_text(
+            json.dumps({"name": "app", "dependencies": deps}),
+            encoding="utf-8",
+        )
+
+    def _run(
+        self,
+        tmp_path: Path,
+        monkeypatch: pytest.MonkeyPatch,
+        base_body: str,
+    ):
+        ctx = NpmContext.from_path(tmp_path)
+        monkeypatch.setattr(
+            npm_base, "git_show", lambda ref, path, cwd: base_body,
+        )
+        load_base_locks_via_git(ctx, "main", tmp_path)
+        return _run_npm009(ctx)[0]
+
+    def test_pnpm_v6_attribution(
+        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch,
+    ) -> None:
+        self._write_manifest(tmp_path, {"axios": "^1.6.0"})
+        (tmp_path / "pnpm-lock.yaml").write_text(textwrap.dedent("""\
+            lockfileVersion: '6.0'
+            packages:
+              /axios@1.6.1:
+                resolution: {integrity: sha512-aaa}
+                dependencies:
+                  plain-crypto-js: 1.0.0
+              /plain-crypto-js@1.0.0:
+                resolution: {integrity: sha512-bbb}
+            """), encoding="utf-8")
+        base = textwrap.dedent("""\
+            lockfileVersion: '6.0'
+            packages:
+              /axios@1.6.0:
+                resolution: {integrity: sha512-old}
+            """)
+        f = self._run(tmp_path, monkeypatch, base)
+        assert f.passed is False
+        assert "plain-crypto-js (via axios)" in f.description
+
+    def test_pnpm_v9_snapshot_attribution(
+        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch,
+    ) -> None:
+        # v9 moves edges into ``snapshots:``; the package entry keeps
+        # only ``resolution``, so attribution must pull deps from the
+        # snapshot index.
+        self._write_manifest(tmp_path, {"axios": "^1.6.0"})
+        (tmp_path / "pnpm-lock.yaml").write_text(textwrap.dedent("""\
+            lockfileVersion: '9.0'
+            packages:
+              axios@1.6.1:
+                resolution: {integrity: sha512-aaa}
+              plain-crypto-js@1.0.0:
+                resolution: {integrity: sha512-bbb}
+            snapshots:
+              axios@1.6.1:
+                dependencies:
+                  plain-crypto-js: 1.0.0
+              plain-crypto-js@1.0.0: {}
+            """), encoding="utf-8")
+        base = textwrap.dedent("""\
+            lockfileVersion: '9.0'
+            packages:
+              axios@1.6.0:
+                resolution: {integrity: sha512-old}
+            snapshots:
+              axios@1.6.0: {}
+            """)
+        f = self._run(tmp_path, monkeypatch, base)
+        assert f.passed is False
+        assert "plain-crypto-js (via axios)" in f.description
+
+    def test_yarn_classic_attribution(
+        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch,
+    ) -> None:
+        self._write_manifest(tmp_path, {"express": "^4.0.0"})
+        (tmp_path / "yarn.lock").write_text(textwrap.dedent("""\
+            # yarn lockfile v1
+
+            express@^4.0.0:
+              version "4.18.0"
+              resolved "https://registry.yarnpkg.com/express/-/express-4.18.0.tgz#a"
+              integrity sha512-aaa==
+              dependencies:
+                sneaky-dep "^1.0.0"
+
+            sneaky-dep@^1.0.0:
+              version "1.0.0"
+              resolved "https://registry.yarnpkg.com/sneaky-dep/-/sneaky-dep-1.0.0.tgz#b"
+              integrity sha512-bbb==
+            """), encoding="utf-8")
+        base = textwrap.dedent("""\
+            # yarn lockfile v1
+
+            express@^4.0.0:
+              version "4.17.0"
+              resolved "https://registry.yarnpkg.com/express/-/express-4.17.0.tgz#c"
+              integrity sha512-ccc==
+            """)
+        f = self._run(tmp_path, monkeypatch, base)
+        assert f.passed is False
+        assert "sneaky-dep (via express)" in f.description
+
+    def test_yarn_berry_attribution(
+        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch,
+    ) -> None:
+        self._write_manifest(tmp_path, {"express": "^4.0.0"})
+        (tmp_path / "yarn.lock").write_text(textwrap.dedent("""\
+            __metadata:
+              version: 8
+              cacheKey: 10
+
+            "express@npm:^4.0.0":
+              version: 4.18.0
+              resolution: "express@npm:4.18.0"
+              dependencies:
+                sneaky-dep: "npm:^1.0.0"
+              checksum: aaa
+              languageName: node
+              linkType: hard
+
+            "sneaky-dep@npm:^1.0.0":
+              version: 1.0.0
+              resolution: "sneaky-dep@npm:1.0.0"
+              checksum: bbb
+              languageName: node
+              linkType: hard
+            """), encoding="utf-8")
+        base = textwrap.dedent("""\
+            __metadata:
+              version: 8
+              cacheKey: 10
+
+            "express@npm:^4.0.0":
+              version: 4.17.0
+              resolution: "express@npm:4.17.0"
+              checksum: ccc
+              languageName: node
+              linkType: hard
+            """)
+        f = self._run(tmp_path, monkeypatch, base)
+        assert f.passed is False
+        assert "sneaky-dep (via express)" in f.description
 
 
 # ── load_base_locks_via_git (subprocess-mocked) ─────────────────────
