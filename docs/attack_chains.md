@@ -71,6 +71,7 @@ references, recommendation).
 | [`AC-032`](#ac-032) | Cosign-verified-but-not-bound artifact to production deploy | <span class="pg-sev pg-sev--critical">CRITICAL</span> | github | [`GHA-100`](providers/github.md#gha-100) + [`GHA-098`](providers/github.md#gha-098) |
 | [`AC-033`](#ac-033) | Environment-secret laundering to unprotected deploy job | <span class="pg-sev pg-sev--critical">CRITICAL</span> | github | [`TAINT-009`](providers/github.md#taint-009) + [`GHA-098`](providers/github.md#gha-098) |
 | [`AC-034`](#ac-034) | Submodule-poisoned PR to credential exfiltration | <span class="pg-sev pg-sev--critical">CRITICAL</span> | github | [`GHA-102`](providers/github.md#gha-102) + ([`GHA-037`](providers/github.md#gha-037) or [`GHA-004`](providers/github.md#gha-004)) |
+| [`AC-035`](#ac-035) | AI agent is both reviewer and committer | <span class="pg-sev pg-sev--critical">CRITICAL</span> | github | [`GHA-103`](providers/github.md#gha-103) + ([`GHA-104`](providers/github.md#gha-104) or [`GHA-106`](providers/github.md#gha-106)) |
 
 ### Cross-provider chains (`XPC-NNN`)
 
@@ -1145,6 +1146,33 @@ Break either leg:
   1. Remove ``submodules: recursive`` from PR-triggered checkout steps (GHA-102). If submodules are required, validate submodule origins before the build step.
   2. Set ``persist-credentials: false`` on the checkout step (GHA-037) AND scope ``permissions:`` to the minimum needed (GHA-004). Without a persisted token or write scope, the attacker's code can't push or exfiltrate.
 Both fixes together are best: no submodule clone means no attacker code; no credentials means no blast radius.
+
+</div>
+
+</div>
+
+<div class="pg-rule pg-rule--critical" markdown>
+
+### AC-035: AI agent is both reviewer and committer { #ac-035 }
+
+<div class="pg-rule__tags">
+<span class="pg-sev pg-sev--critical">CRITICAL</span> <span class="pg-tag" title="MITRE ATT&CK technique">MITRE T1195.002</span> <span class="pg-tag" title="MITRE ATT&CK technique">MITRE T1059</span> <span class="pg-tag" title="MITRE ATT&CK technique">MITRE T1078.004</span> <span class="pg-tag" title="kill-chain phase">initial-access (prompt injection via untrusted PR / comment) -> execution (AI agent follows the injected instruction) -> defense-evasion (the AI is its own reviewer) -> impact (agent commits / pushes without human review)</span> <span class="pg-tag pg-tag--owasp">github</span>
+</div>
+
+An AI review bot runs on an untrusted trigger without an environment gate (GHA-103) AND the same workflow lets the agent write back, by pushing commits directly (GHA-104) or by holding a write-scoped GITHUB_TOKEN (GHA-106). A prompt-injection payload in the PR or comment makes the AI approve and commit its own malicious change with no human review in the loop.
+
+**References**
+
+- <https://docs.github.com/en/actions/security-for-github-actions/security-guides/security-hardening-for-github-actions>
+
+<div class="pg-rule__rec" markdown>
+
+**Recommended action**
+
+Break either leg:
+  1. Don't run the AI bot on an untrusted trigger with write scope (GHA-103): move review to ``pull_request`` with a read-only token, or gate the privileged job behind a protected ``environment:``.
+  2. Take away the agent's write path: route its output through a reviewable PR instead of a direct push (GHA-104), and scope the job to ``contents: read`` (GHA-106).
+Best: never let one workflow both feed an agent untrusted input and grant it the ability to write back. Split review (read-only) from any apply step (human-approved).
 
 </div>
 

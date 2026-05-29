@@ -12,6 +12,15 @@ release commit collapses this section into `## [X.Y.Z] - <date>`.
 
 ### Added
 
+- **AC-035: AI agent is both reviewer and committer (CRITICAL).** New
+  attack chain pairing GHA-103 (AI review bot on an untrusted trigger
+  without an environment gate) with GHA-104 (agent pushes directly) OR
+  GHA-106 (agent holds a write-scoped token) on the same workflow. The
+  AI both ingests attacker-authored input and can write back, so a
+  prompt-injection payload (HackerBot-Claw) makes it approve and
+  commit its own malicious change with no human in the loop. Per-
+  workflow co-occurrence; OR-leg deduped to one chain per workflow.
+  T1195.002 / T1059 / T1078.004. Chain count 48 -> 49 (35 AC).
 - **GHA-106: AI agent CLI runs with a write-scoped GITHUB_TOKEN
   (HIGH).** Fires when a job invokes an agentic CLI (`claude` /
   `gemini` / `q chat` / `cursor-agent` / `aider` / `openhands` /
