@@ -344,6 +344,8 @@ STANDARD = Standard(
         "GHA-024":  ["6.5.1", "10.3.2"],                 # no SLSA provenance attestation
         "GHA-025":  ["6.3.3", "6.5.1"],                  # unpinned reusable workflow
         "GHA-026":  ["6.4.1", "6.5.1"],                  # container job disables isolation
+        "GHA-107":  ["6.4.1", "6.5.1"],                  # harden-runner in audit mode (egress not blocked)
+        "GHA-108":  ["6.4.1", "6.5.1"],                  # no runtime egress control on OIDC/deploy workflow
         "GHA-027":  ["6.5.1"],                           # dangerous shell idiom
         "GHA-028":  ["6.3.3", "6.5.1"],                  # install bypasses registry integrity
         "GHA-029":  ["6.3.3", "6.5.1"],                  # package source bypasses lockfile

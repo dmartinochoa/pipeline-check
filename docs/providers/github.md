@@ -72,7 +72,7 @@ Resolution rules:
 
 ## What it covers
 
-97 checks · 17 have an autofix patch (``--fix``).
+99 checks · 17 have an autofix patch (``--fix``).
 
 | Check | Title | Severity | Fix |
 |-------|-------|----------|-----|
@@ -169,6 +169,8 @@ Resolution rules:
 | [GHA-104](#gha-104) | AI agent generates and pushes commits without PR review | <span class="pg-sev pg-sev--high">HIGH</span> |  |
 | [GHA-105](#gha-105) | Self-hosted runner reachable from an untrusted PR trigger | <span class="pg-sev pg-sev--high">HIGH</span> |  |
 | [GHA-106](#gha-106) | AI agent CLI runs with a write-scoped GITHUB_TOKEN | <span class="pg-sev pg-sev--high">HIGH</span> |  |
+| [GHA-107](#gha-107) | harden-runner runs in audit mode (egress not blocked) | <span class="pg-sev pg-sev--medium">MEDIUM</span> |  |
+| [GHA-108](#gha-108) | Sensitive workflow has no runtime egress control | <span class="pg-sev pg-sev--low">LOW</span> |  |
 | [TAINT-001](#taint-001) | Untrusted input flows across step boundaries via step outputs | <span class="pg-sev pg-sev--high">HIGH</span> |  |
 | [TAINT-002](#taint-002) | Untrusted input flows across jobs via ``jobs.<id>.outputs:`` | <span class="pg-sev pg-sev--high">HIGH</span> |  |
 | [TAINT-003](#taint-003) | Untrusted input forwarded into reusable workflow ``with:`` | <span class="pg-sev pg-sev--high">HIGH</span> |  |
@@ -2804,6 +2806,67 @@ Lower-impact write scopes (`pull-requests`, `issues`, `checks`) and `id-token` a
 **Recommended action**
 
 Scope the agent's job to the minimum its non-agent steps need, usually `permissions: contents: read`. If the agent's output must land in the repo, route it through a reviewable PR (`peter-evans/create-pull-request`) from a separate job, or mint a narrowly-scoped token (`actions/create-github-app-token` with an explicit `permissions:` filter, see GHA-061) for just the write step rather than handing the agent a broad `GITHUB_TOKEN`. Never run an agent under `write-all`.
+
+</div>
+
+</div>
+
+<div class="pg-rule pg-rule--medium" markdown>
+
+## GHA-107: harden-runner runs in audit mode (egress not blocked) { #gha-107 }
+
+<div class="pg-rule__tags">
+<span class="pg-sev pg-sev--medium">MEDIUM</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-7</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-10</span> <span class="pg-tag pg-tag--esf">ESF-D-BUILD-ENV</span> <span class="pg-tag pg-tag--cwe">CWE-693</span>
+</div>
+
+step-security/harden-runner runs as a runtime agent on the runner. With `egress-policy: audit` (also the default when the input is omitted) it logs outbound traffic but lets every connection through. Only `egress-policy: block` enforces the allowlist and drops connections to hosts outside `allowed-endpoints`. A workflow that adopts harden-runner but leaves it in audit mode gets visibility, not prevention: the exfiltration path the agent exists to close stays open.
+
+Fires for each job whose harden-runner step sets `egress-policy: audit` or omits the input entirely. A step pinned to `block` passes. A value the scanner can't resolve (a `${{ }}` expression) is not flagged.
+
+**Known false-positive modes**
+
+- A deliberate audit-only rollout, the recommended first phase before turning on block, will fire here. Suppress per-job with a rationale while you collect the egress baseline, then switch to block and remove the suppression.
+
+**Seen in the wild**
+
+- StepSecurity, tj-actions/changed-files compromise (2025): the injected payload exfiltrated runner secrets over the network. harden-runner in block mode drops that connection; audit mode only records it after the fact. https://www.stepsecurity.io/blog/popular-github-action-tj-actions-changed-files-is-compromised
+
+<div class="pg-rule__rec" markdown>
+
+**Recommended action**
+
+Set `egress-policy: block` on the harden-runner step and list every host the job legitimately reaches under `allowed-endpoints`. In audit mode harden-runner only records outbound connections; it does not stop a compromised dependency or action from exfiltrating `GITHUB_TOKEN`, OIDC credentials, or secrets. Run once in audit mode to learn the baseline, then switch to block.
+
+</div>
+
+</div>
+
+<div class="pg-rule pg-rule--low" markdown>
+
+## GHA-108: Sensitive workflow has no runtime egress control { #gha-108 }
+
+<div class="pg-rule__tags">
+<span class="pg-sev pg-sev--low">LOW</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-7</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-10</span> <span class="pg-tag pg-tag--esf">ESF-D-BUILD-ENV</span> <span class="pg-tag pg-tag--cwe">CWE-693</span>
+</div>
+
+Advisory rule. Fires when a workflow mints an OIDC token (`id-token: write`, at workflow or job scope) or gates a job on a deployment `environment:`, AND no job in the workflow uses an egress-control agent (step-security/harden-runner). Those are the jobs with credentials worth stealing and no runtime guard against a dependency or action exfiltrating them.
+
+Scoped deliberately to OIDC and environment-gated jobs to keep the signal targeted; it does not fire on every job that merely references a secret. Severity is LOW because many teams accept this risk or enforce egress at the infrastructure layer, which the workflow YAML can't express.
+
+**Known false-positive modes**
+
+- Egress controlled outside the workflow (self-hosted runners behind a firewall or forward proxy, an org-wide network policy) gives the same protection without a harden-runner step. The scanner only sees the YAML, so it fires anyway. Suppress with a rationale naming the external control.
+- A workflow that uses OIDC only to read public data, or an environment with no real secrets, carries less exfiltration risk. Suppress per-workflow.
+
+**Seen in the wild**
+
+- StepSecurity, tj-actions/changed-files compromise (2025): a popular action was backdoored to exfiltrate CI secrets over the network. A runtime egress allowlist drops the connection the payload depends on. https://www.stepsecurity.io/blog/popular-github-action-tj-actions-changed-files-is-compromised
+
+<div class="pg-rule__rec" markdown>
+
+**Recommended action**
+
+Add step-security/harden-runner as the first step of jobs that authenticate via OIDC or deploy through a protected environment, and set `egress-policy: block` with an `allowed-endpoints` allowlist. A static scan can't see what a compromised dependency or action does at runtime; an egress allowlist is the defense-in-depth layer that stops it from shipping the OIDC credential or deploy secret off the runner. If egress is already constrained at the network layer (self-hosted runners behind a firewall or forward proxy), suppress this advisory with that rationale.
 
 </div>
 

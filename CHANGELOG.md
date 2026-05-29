@@ -24,6 +24,18 @@ release commit collapses this section into `## [X.Y.Z] - <date>`.
   ubiquitous, so it stays below the default `--fail-on` gate while still
   surfacing in a report). npm rule count 13 -> 14. Inspired by a review
   of `proof-of-commitment` / getcommit.dev. 16 tests.
+- **GHA-107 / GHA-108: runtime egress control for sensitive workflows
+  (MEDIUM / LOW).** GHA-107 flags a `step-security/harden-runner` step
+  left in `egress-policy: audit` (also the default when the input is
+  omitted), which records outbound traffic but blocks nothing, so the
+  exfiltration path the agent exists to close stays open. GHA-108 is an
+  advisory rule: a workflow that mints an OIDC token (`id-token: write`)
+  or gates a job on a deployment `environment:` but runs no
+  egress-control agent at all has credentials worth stealing and no
+  runtime defense-in-depth against a compromised dependency or action
+  shipping them off the runner. Both map to CICD-SEC-7 / CICD-SEC-10,
+  ESF-D-BUILD-ENV, and CWE-693, and are wired across the standards
+  packs. GHA rule count 97 -> 99.
 - **AC-035: AI agent is both reviewer and committer (CRITICAL).** New
   attack chain pairing GHA-103 (AI review bot on an untrusted trigger
   without an environment gate) with GHA-104 (agent pushes directly) OR

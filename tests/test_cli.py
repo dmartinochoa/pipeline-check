@@ -275,7 +275,7 @@ class TestAutoDetect:
                "GHA-091", "GHA-092", "GHA-093", "GHA-094", "GHA-095",
                "GHA-096", "GHA-097", "GHA-098", "GHA-099",
                "GHA-100", "GHA-102", "GHA-103", "GHA-104",
-               "GHA-105", "GHA-106"}
+               "GHA-105", "GHA-106", "GHA-107", "GHA-108"}
             | {"TAINT-001", "TAINT-002", "TAINT-003", "TAINT-009"}
         )
 

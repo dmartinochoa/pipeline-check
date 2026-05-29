@@ -527,6 +527,8 @@ STANDARD = Standard(
         "GHA-060":  ["ESF-S-VERIFY-DEPS"],          # pip install without --require-hashes
         "GHA-061":  ["ESF-C-LEAST-PRIV", "ESF-D-TOKEN-HYGIENE"],  # App token without permissions filter
         "GHA-106":  ["ESF-C-LEAST-PRIV", "ESF-D-TOKEN-HYGIENE"],  # AI agent with write-scoped token
+        "GHA-107":  ["ESF-D-BUILD-ENV"],             # harden-runner in audit mode (egress not blocked)
+        "GHA-108":  ["ESF-D-BUILD-ENV"],             # no runtime egress control on OIDC/deploy workflow
         "GHA-062":  ["ESF-C-LEAST-PRIV"],            # OIDC trust subject in sibling IaC is overly broad
         "GHA-063":  ["ESF-D-INJECTION"],             # spoofable bot-actor if-predicate
         "GHA-064":  ["ESF-D-INJECTION"],             # unsound contains() with comma-string operand
@@ -654,6 +656,7 @@ STANDARD = Standard(
         "NPM-008":  ["ESF-S-VERIFY-DEPS"],
         "NPM-009":  ["ESF-S-VERIFY-DEPS"],
         "NPM-010":  ["ESF-S-VERIFY-DEPS"],
+        "NPM-014":  ["ESF-S-VERIFY-DEPS"],
         "PYPI-008": ["ESF-S-VERIFY-DEPS"],
         "PYPI-009": ["ESF-S-VERIFY-DEPS"],
         # ── PyPI extended pack ──

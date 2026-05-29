@@ -6,6 +6,28 @@ What's planned, what's shipped, and what's deliberately out of scope.
 
 ### Unreleased (on ``dev``)
 
+- **GHA-107 + GHA-108: runtime egress control (harden-runner)** — Two
+  rules covering the StepSecurity ``harden-runner`` egress agent.
+  GHA-107 (MEDIUM) fires when a ``step-security/harden-runner`` step
+  runs with ``egress-policy: audit`` (also the default when the input
+  is omitted), so outbound connections are logged but not blocked, the
+  common half-adoption where a team gets visibility without prevention.
+  GHA-108 (LOW, advisory) fires when a workflow mints an OIDC token
+  (``id-token: write``) or gates a job on a deployment ``environment:``
+  and no job uses an egress-control agent at all. The two are mutually
+  exclusive: GHA-108 only fires when no harden-runner step exists. Both
+  cite the tj-actions/changed-files compromise. This reverses the
+  earlier "harden-runner is a runtime agent, deliberately out of scope"
+  call (see the Self-hosted runner candidate). GHA 97 -> 99.
+- **NPM-014: single-publisher supply-chain risk (LOW)** — Flags a
+  direct dependency whose npm ``maintainers`` array has exactly one
+  entry, a single point of compromise (the axios / chalk / lodash
+  account-takeover class). Network-dependent: reuses the packument
+  ``--resolve-remote`` already fetches for NPM-008 (cooldown), so it
+  adds no requests. Scoped to direct dependencies; LOW severity so it
+  stays below the default gate while still surfacing in a report. First
+  of the three behavioral supply-chain signals (see Candidates).
+  npm 13 -> 14.
 - **AC-035: AI agent is both reviewer and committer (CRITICAL)** —
   New attack chain pairing GHA-103 (AI review bot on an untrusted
   trigger) with GHA-104 (direct push) or GHA-106 (write-scoped token)
@@ -551,20 +573,20 @@ Three dependency-trust signals surfaced by reviewing
 ``proof-of-commitment`` / getcommit.dev, a supply-chain risk scorer
 whose thesis is that behavioral signals (who can publish, how a package
 is built) catch compromise that stars, download counts, and
-``npm audit`` miss. None are covered by the current pinning / integrity
-/ compromised-list / cooldown / OSV packs.
+``npm audit`` miss. The first (single-publisher) shipped as NPM-014;
+the other two remain open and neither is covered by the current
+pinning / integrity / compromised-list / cooldown / OSV packs.
 
-- **Single-publisher risk (maintainer depth).** A package with one npm
-  publisher is a single point of compromise (the axios / chalk / lodash
-  account-takeover class). The npm registry document NPM-008 already
-  fetches carries the ``maintainers`` array, so the publisher count is
-  free on the same ``--resolve-remote`` call, no new network surface.
-  Ship npm first; PyPI is gated on its JSON API not reliably exposing
-  the owner-account list. Precision is the hard part: a single publisher
-  describes most of the ecosystem, so scope to direct dependencies, keep
-  it LOW / MEDIUM confidence, and ideally pair it with a
-  recent-ownership-change or new-account signal (the actual takeover
-  vector) before it earns a higher severity.
+- **Single-publisher risk (maintainer depth). Shipped as NPM-014.** A
+  package with one npm publisher is a single point of compromise (the
+  axios / chalk / lodash account-takeover class). NPM-014 reads the
+  ``maintainers`` array from the packument NPM-008 already fetches (no
+  new network surface), scopes to direct dependencies, and stays at LOW
+  severity since a single publisher describes most of the ecosystem.
+  Still open as a follow-up: pair it with a recent-ownership-change or
+  new-account signal (the actual takeover vector) to earn a higher
+  severity, and the PyPI parallel, gated on its JSON API reliably
+  exposing the owner-account list.
 - **Dependency provenance gap.** Flag a direct dependency published
   without a build-provenance attestation, the property this project
   already guarantees for its own wheel (SLSA Build L3, PEP 740). npm
@@ -671,7 +693,11 @@ Remaining static candidate worth considering: a self-hosted deploy
 job that isn't gated behind a protected ``environment:`` (distinct
 from GHA-014's deploy-name heuristic). Complements GHA-012 (ephemeral)
 and GHA-068 (deprecated runner image). StepSecurity's ``harden-runner``
-is a runtime agent, deliberately out of scope.
+egress agent, earlier called out of scope as a runtime agent, now ships
+as GHA-107 (present but in audit mode, egress not blocked) and GHA-108
+(an OIDC / environment-gated job with no egress control at all). The
+remaining static angle is the runner-token rotation concern, which
+isn't visible in workflow YAML and stays out of scope.
 
 ### ~~Inline explain mode (``--inline-explain``)~~ shipped
 

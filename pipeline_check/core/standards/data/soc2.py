@@ -109,6 +109,8 @@ STANDARD = Standard(
         "CC-017":   ["CC6.6"],
         "JF-025":   ["CC6.6"],             # k8s privileged
         "GHA-026":  ["CC6.6"],             # container egress
+        "GHA-107":  ["CC6.6"],             # harden-runner in audit mode (egress not blocked)
+        "GHA-108":  ["CC6.6"],             # no runtime egress control on OIDC/deploy workflow
         "GHA-012":  ["CC6.6"],             # self-hosted runner
         "GHA-105":  ["CC6.6"],             # self-hosted runner on PR trigger
         "GL-014":   ["CC6.6"],
