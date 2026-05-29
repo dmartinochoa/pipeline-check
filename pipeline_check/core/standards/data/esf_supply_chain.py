@@ -115,6 +115,7 @@ STANDARD = Standard(
         "GHA-010":  ["ESF-D-INJECTION", "ESF-S-PIN-DEPS"],
         "GHA-011":  ["ESF-D-INJECTION", "ESF-S-VERIFY-DEPS"],
         "GHA-012":  ["ESF-D-BUILD-ENV", "ESF-D-PRIV-BUILD"],
+        "GHA-105":  ["ESF-D-BUILD-ENV", "ESF-D-PRIV-BUILD"],
         "GHA-013":  ["ESF-D-INJECTION"],
         "GHA-014":  ["ESF-C-APPROVAL", "ESF-C-ENV-SEP"],
         "GHA-015":  ["ESF-D-BUILD-TIMEOUT"],

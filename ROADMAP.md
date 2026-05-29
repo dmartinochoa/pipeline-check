@@ -6,6 +6,12 @@ What's planned, what's shipped, and what's deliberately out of scope.
 
 ### Unreleased (on ``dev``)
 
+- **GHA-105: self-hosted runner reachable from an untrusted PR
+  trigger (HIGH)** — Fires when ``pull_request`` /
+  ``pull_request_target`` can schedule a job on a self-hosted runner,
+  so fork code runs on persistent org infrastructure. Complements
+  GHA-012 (ephemeral) and GHA-036 (``runs-on`` interpolation). MEDIUM
+  confidence, mapped across all 11 applicable standards. GHA 95 -> 96.
 - **``--inline-explain`` across every reporter** — Lifted the
   exploit-example gate out of the terminal reporter into a shared
   ``inline_exploit()`` decision in ``checks/base.py``. SARIF (rule
@@ -598,11 +604,24 @@ the listing path.
 
 ### Self-hosted runner security rules
 
-Detect workflows that run on ``self-hosted`` without environment
-gates, ``runs-on`` labels that accept any contributor's PR with no
-branch restriction, and persistent runner tokens without rotation.
-Complements GHA-068 (deprecated runner image). StepSecurity's
-``harden-runner`` is a runtime agent; these would be static rules.
+The highest-signal angle shipped on ``dev`` as GHA-105: a self-hosted
+runner reachable from a ``pull_request`` / ``pull_request_target``
+trigger, so fork code runs on persistent org infrastructure. The other
+two angles from the original scoping turned out to be covered or not
+statically detectable:
+
+- ``runs-on`` labels that accept any contributor's PR is GHA-105 (the
+  trigger reaches the runner); the interpolation variant is already
+  GHA-036.
+- Persistent runner tokens without rotation is a runner-registration
+  config concern, not something visible in the workflow YAML, so it's
+  out of scope for a static workflow scanner.
+
+Remaining static candidate worth considering: a self-hosted deploy
+job that isn't gated behind a protected ``environment:`` (distinct
+from GHA-014's deploy-name heuristic). Complements GHA-012 (ephemeral)
+and GHA-068 (deprecated runner image). StepSecurity's ``harden-runner``
+is a runtime agent, deliberately out of scope.
 
 ### ~~Inline explain mode (``--inline-explain``)~~ shipped
 

@@ -110,6 +110,7 @@ STANDARD = Standard(
         "JF-025":   ["CC6.6"],             # k8s privileged
         "GHA-026":  ["CC6.6"],             # container egress
         "GHA-012":  ["CC6.6"],             # self-hosted runner
+        "GHA-105":  ["CC6.6"],             # self-hosted runner on PR trigger
         "GL-014":   ["CC6.6"],
         "BB-016":   ["CC6.6"],
         "ADO-013":  ["CC6.6"],

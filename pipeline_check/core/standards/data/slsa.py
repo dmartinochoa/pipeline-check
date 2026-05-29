@@ -91,6 +91,7 @@ STANDARD = Standard(
         "GHA-010":  ["Build.L3.Isolated"],                         # local action on untrusted trigger
         "GHA-011":  ["Build.L3.Isolated"],                         # cache key tainting
         "GHA-012":  ["Build.L2.Hosted", "Build.L3.Ephemeral"],     # self-hosted runner
+        "GHA-105":  ["Build.L2.Hosted", "Build.L3.Ephemeral"],     # self-hosted runner on PR trigger
         "GHA-013":  ["Build.L3.Isolated"],                         # issue_comment without guard
         "GHA-015":  ["Build.L3.Ephemeral"],                        # unbounded build
         "GHA-016":  ["Build.L3.Isolated"],                         # curl | bash → RCE

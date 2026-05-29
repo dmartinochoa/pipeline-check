@@ -11,7 +11,7 @@ and artifact controls covering the full pipeline trust chain.
 
 - **Controls in this standard:** 25
 - **Controls evidenced by at least one check:** 25 / 25
-- **Distinct checks evidencing this standard:** 819
+- **Distinct checks evidencing this standard:** 820
 - **Of those, autofixable with `--fix`:** 110
 
 _Severity levels (`CRITICAL` / `HIGH` / `MEDIUM` / `LOW` / `INFO`) follow the same scale across every provider and standard. See [How to read severity](README.md#how-to-read-severity) on the standards overview for the definitions._
@@ -32,7 +32,7 @@ Click a control ID to jump to the per-control section with the full check list. 
 | [`1.5.1`](#ctrl-1-5-1) | Ensure scanners are in place to identify and prevent sensitive data in code | 64 | 25C · 33H · 4M · 2L |
 | [`2.1.3`](#ctrl-2-1-3) | Ensure the build environment is hardened | 118 | 27C · 68H · 20M · 3L |
 | [`2.1.6`](#ctrl-2-1-6) | Ensure build workers have minimal network connectivity | 37 | 4C · 17H · 15M · 1L |
-| [`2.2.2`](#ctrl-2-2-2) | Ensure build workers are single-use | 17 | 13M · 4L |
+| [`2.2.2`](#ctrl-2-2-2) | Ensure build workers are single-use | 18 | 1H · 13M · 4L |
 | [`2.3.4`](#ctrl-2-3-4) | Ensure pipelines are scanned for secrets and sensitive data | 38 | 21C · 15H · 1M · 1L |
 | [`2.3.7`](#ctrl-2-3-7) | Ensure pipeline steps produce audit logs | 55 | 11H · 24M · 6L · 14I |
 | [`2.3.8`](#ctrl-2-3-8) | Ensure pipeline configuration files are reviewed before execution | 58 | 12C · 32H · 11M · 3L |
@@ -702,7 +702,7 @@ pipeline_check --pipeline aws --standard cis_supply_chain --standard owasp_cicd_
 
 ### 2.2.2: Ensure build workers are single-use { #ctrl-2-2-2 }
 
-**Evidenced by 17 checks** across 10 providers (AWS, Argo Workflows, Azure DevOps, Bitbucket, Buildkite, CircleCI, GitHub Actions, GitLab CI, Jenkins, Tekton).
+**Evidenced by 18 checks** across 10 providers (AWS, Argo Workflows, Azure DevOps, Bitbucket, Buildkite, CircleCI, GitHub Actions, GitLab CI, Jenkins, Tekton).
 
 | Check | Title | Severity | Provider | Fix |
 |-------|-------|----------|----------|-----|
@@ -717,6 +717,7 @@ pipeline_check --pipeline aws --standard cis_supply_chain --standard owasp_cicd_
 | [`GHA-012`](../providers/github.md#gha-012) | Self-hosted runner without ephemeral marker | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [GitHub Actions](../providers/github.md) |  |
 | [`GHA-015`](../providers/github.md#gha-015) | Job has no `timeout-minutes`, unbounded build | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [GitHub Actions](../providers/github.md) | <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> |
 | [`GHA-068`](../providers/github.md#gha-068) | ``runs-on:`` targets an end-of-life hosted-runner image | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [GitHub Actions](../providers/github.md) |  |
+| [`GHA-105`](../providers/github.md#gha-105) | Self-hosted runner reachable from an untrusted PR trigger | <span class="pg-sev pg-sev--high">HIGH</span> | [GitHub Actions](../providers/github.md) |  |
 | [`GL-014`](../providers/gitlab.md#gl-014) | Self-managed runner without ephemeral tag | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [GitLab CI](../providers/gitlab.md) |  |
 | [`GL-015`](../providers/gitlab.md#gl-015) | Job has no `timeout`, unbounded build | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [GitLab CI](../providers/gitlab.md) | <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> |
 | [`JF-014`](../providers/jenkins.md#jf-014) | Agent label missing ephemeral marker | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [Jenkins](../providers/jenkins.md) |  |

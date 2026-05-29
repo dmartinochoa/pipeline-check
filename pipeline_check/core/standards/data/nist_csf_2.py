@@ -193,6 +193,7 @@ STANDARD = Standard(
         "CB-002":   ["PR.PS-01"],
         "CB-004":   ["PR.PS-01"],
         "GHA-012":  ["PR.PS-01"],
+        "GHA-105":  ["PR.PS-01"],
         "GHA-015":  ["PR.PS-01"],
         "GHA-017":  ["PR.PS-01"],
         "GHA-026":  ["PR.PS-01"],

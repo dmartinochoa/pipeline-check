@@ -19,7 +19,7 @@ Kubernetes, …) when an audit asks for that framework's vocabulary.
 
 - **Controls in this standard:** 10
 - **Controls evidenced by at least one check:** 10 / 10
-- **Distinct checks evidencing this standard:** 822
+- **Distinct checks evidencing this standard:** 823
 - **Of those, autofixable with `--fix`:** 111
 
 _Severity levels (`CRITICAL` / `HIGH` / `MEDIUM` / `LOW` / `INFO`) follow the same scale across every provider and standard. See [How to read severity](README.md#how-to-read-severity) on the standards overview for the definitions._
@@ -33,10 +33,10 @@ Click a control ID to jump to the per-control section with the full check list. 
 | [`CICD-SEC-1`](#ctrl-cicd-sec-1) | Insufficient Flow Control Mechanisms | 89 | 5C · 41H · 35M · 8L |
 | [`CICD-SEC-2`](#ctrl-cicd-sec-2) | Inadequate Identity and Access Management | 70 | 8C · 39H · 22M · 1L |
 | [`CICD-SEC-3`](#ctrl-cicd-sec-3) | Dependency Chain Abuse | 258 | 10C · 136H · 94M · 18L |
-| [`CICD-SEC-4`](#ctrl-cicd-sec-4) | Poisoned Pipeline Execution | 100 | 25C · 52H · 17M · 6L |
+| [`CICD-SEC-4`](#ctrl-cicd-sec-4) | Poisoned Pipeline Execution | 101 | 25C · 53H · 17M · 6L |
 | [`CICD-SEC-5`](#ctrl-cicd-sec-5) | Insufficient PBAC | 58 | 4C · 39H · 15M |
 | [`CICD-SEC-6`](#ctrl-cicd-sec-6) | Insufficient Credential Hygiene | 109 | 30C · 56H · 23M |
-| [`CICD-SEC-7`](#ctrl-cicd-sec-7) | Insecure System Configuration | 139 | 24C · 61H · 45M · 9L |
+| [`CICD-SEC-7`](#ctrl-cicd-sec-7) | Insecure System Configuration | 140 | 24C · 62H · 45M · 9L |
 | [`CICD-SEC-8`](#ctrl-cicd-sec-8) | Ungoverned Usage of 3rd-Party Services | 41 | 13C · 21H · 7M |
 | [`CICD-SEC-9`](#ctrl-cicd-sec-9) | Improper Artifact Integrity Validation | 132 | 3C · 44H · 73M · 12L |
 | [`CICD-SEC-10`](#ctrl-cicd-sec-10) | Insufficient Logging and Visibility | 82 | 19H · 33M · 14L · 16I |
@@ -506,7 +506,7 @@ Floating tags, range constraints, and unverified registries let an upstream main
 
 An attacker who can influence what a build runs, via a PR, an issue comment, or a tainted environment variable, executes with the build's secrets and write-access to your artifacts.
 
-**Evidenced by 100 checks** across 15 providers (AWS, Argo CD, Argo Workflows, Azure DevOps, Bitbucket, Buildkite, CircleCI, Cloud Build, Dockerfile, Drone CI, GitHub Actions, GitLab CI, Jenkins, SCM, Tekton).
+**Evidenced by 101 checks** across 15 providers (AWS, Argo CD, Argo Workflows, Azure DevOps, Bitbucket, Buildkite, CircleCI, Cloud Build, Dockerfile, Drone CI, GitHub Actions, GitLab CI, Jenkins, SCM, Tekton).
 
 | Check | Title | Severity | Provider | Fix |
 |-------|-------|----------|----------|-----|
@@ -578,6 +578,7 @@ An attacker who can influence what a build runs, via a PR, an issue comment, or 
 | [`GHA-102`](../providers/github.md#gha-102) | ``actions/checkout`` with submodule fetch on a PR trigger | <span class="pg-sev pg-sev--high">HIGH</span> | [GitHub Actions](../providers/github.md) |  |
 | [`GHA-103`](../providers/github.md#gha-103) | AI code-review bot on untrusted trigger without environment gate | <span class="pg-sev pg-sev--critical">CRITICAL</span> | [GitHub Actions](../providers/github.md) |  |
 | [`GHA-104`](../providers/github.md#gha-104) | AI agent generates and pushes commits without PR review | <span class="pg-sev pg-sev--high">HIGH</span> | [GitHub Actions](../providers/github.md) |  |
+| [`GHA-105`](../providers/github.md#gha-105) | Self-hosted runner reachable from an untrusted PR trigger | <span class="pg-sev pg-sev--high">HIGH</span> | [GitHub Actions](../providers/github.md) |  |
 | [`GL-002`](../providers/gitlab.md#gl-002) | Script injection via untrusted commit/MR context | <span class="pg-sev pg-sev--high">HIGH</span> | [GitLab CI](../providers/gitlab.md) |  |
 | [`GL-010`](../providers/gitlab.md#gl-010) | Multi-project pipeline ingests upstream artifact unverified | <span class="pg-sev pg-sev--critical">CRITICAL</span> | [GitLab CI](../providers/gitlab.md) |  |
 | [`GL-011`](../providers/gitlab.md#gl-011) | include: local file pulled in MR-triggered pipeline | <span class="pg-sev pg-sev--high">HIGH</span> | [GitLab CI](../providers/gitlab.md) |  |
@@ -800,7 +801,7 @@ Plaintext secrets in YAML, env vars baked into image layers, or tokens echoed to
 
 Privileged containers, host mounts, root user, and disabled TLS turn a routine RCE in a build step into kernel-level access to the runner host.
 
-**Evidenced by 139 checks** across 29 providers (AWS, Argo CD, Argo Workflows, Azure Cloud, Azure DevOps, Bitbucket, Buildkite, Cargo, CircleCI, Cloud Build, CloudFormation, Composer, Dockerfile, Drone CI, GCP, GitHub Actions, GitLab CI, Go modules, Helm, Jenkins, Kubernetes, NuGet, Pulumi, PyPI, RubyGems, Tekton, Terraform, maven, npm).
+**Evidenced by 140 checks** across 29 providers (AWS, Argo CD, Argo Workflows, Azure Cloud, Azure DevOps, Bitbucket, Buildkite, Cargo, CircleCI, Cloud Build, CloudFormation, Composer, Dockerfile, Drone CI, GCP, GitHub Actions, GitLab CI, Go modules, Helm, Jenkins, Kubernetes, NuGet, Pulumi, PyPI, RubyGems, Tekton, Terraform, maven, npm).
 
 | Check | Title | Severity | Provider | Fix |
 |-------|-------|----------|----------|-----|
@@ -889,6 +890,7 @@ Privileged containers, host mounts, root user, and disabled TLS turn a routine R
 | [`GHA-070`](../providers/github.md#gha-070) | ``ssh-keyscan`` / disabled host-key check trust-on-first-use | <span class="pg-sev pg-sev--high">HIGH</span> | [GitHub Actions](../providers/github.md) |  |
 | [`GHA-092`](../providers/github.md#gha-092) | PR head SHA captured then re-fetched (force-push race) | <span class="pg-sev pg-sev--high">HIGH</span> | [GitHub Actions](../providers/github.md) |  |
 | [`GHA-098`](../providers/github.md#gha-098) | Pipeline deploys without a security scan gate | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [GitHub Actions](../providers/github.md) |  |
+| [`GHA-105`](../providers/github.md#gha-105) | Self-hosted runner reachable from an untrusted PR trigger | <span class="pg-sev pg-sev--high">HIGH</span> | [GitHub Actions](../providers/github.md) |  |
 | [`GL-014`](../providers/gitlab.md#gl-014) | Self-managed runner without ephemeral tag | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [GitLab CI](../providers/gitlab.md) |  |
 | [`GL-015`](../providers/gitlab.md#gl-015) | Job has no `timeout`, unbounded build | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [GitLab CI](../providers/gitlab.md) | <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> |
 | [`GL-017`](../providers/gitlab.md#gl-017) | Docker run with insecure flags (privileged/host mount) | <span class="pg-sev pg-sev--critical">CRITICAL</span> | [GitLab CI](../providers/gitlab.md) | <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> |

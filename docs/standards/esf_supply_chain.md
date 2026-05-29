@@ -12,7 +12,7 @@ the scanner evidences controls that surface in CI/CD configuration.
 
 - **Controls in this standard:** 24
 - **Controls evidenced by at least one check:** 24 / 24
-- **Distinct checks evidencing this standard:** 815
+- **Distinct checks evidencing this standard:** 816
 - **Of those, autofixable with `--fix`:** 111
 
 _Severity levels (`CRITICAL` / `HIGH` / `MEDIUM` / `LOW` / `INFO`) follow the same scale across every provider and standard. See [How to read severity](README.md#how-to-read-severity) on the standards overview for the definitions._
@@ -23,11 +23,11 @@ Click a control ID to jump to the per-control section with the full check list. 
 
 | Control | Title | Checks | Severity mix |
 |---------|-------|-------:|--------------|
-| [`ESF-D-BUILD-ENV`](#ctrl-esf-d-build-env) | Harden the build environment (isolated, minimal, ephemeral workers) | 75 | 11C · 26H · 30M · 8L |
+| [`ESF-D-BUILD-ENV`](#ctrl-esf-d-build-env) | Harden the build environment (isolated, minimal, ephemeral workers) | 76 | 11C · 27H · 30M · 8L |
 | [`ESF-D-BUILD-LOGS`](#ctrl-esf-d-build-logs) | Generate and preserve build audit logs | 5 | 1H · 2M · 2L |
 | [`ESF-D-BUILD-TIMEOUT`](#ctrl-esf-d-build-timeout) | Enforce bounded build execution (single-use, time-limited) | 12 | 8M · 4L |
 | [`ESF-D-SECRETS`](#ctrl-esf-d-secrets) | Protect secrets used during build; no secrets in source or env | 76 | 28C · 42H · 5M · 1L |
-| [`ESF-D-PRIV-BUILD`](#ctrl-esf-d-priv-build) | Avoid privileged / host-networked build workers | 41 | 6C · 20H · 14M · 1L |
+| [`ESF-D-PRIV-BUILD`](#ctrl-esf-d-priv-build) | Avoid privileged / host-networked build workers | 42 | 6C · 21H · 14M · 1L |
 | [`ESF-D-SIGN-ARTIFACTS`](#ctrl-esf-d-sign-artifacts) | Sign build artifacts and verify signatures before release | 30 | 6H · 24M |
 | [`ESF-D-SBOM`](#ctrl-esf-d-sbom) | Produce SBOM / provenance metadata with every build | 26 | 1H · 20M · 5L |
 | [`ESF-D-CODE-REVIEW`](#ctrl-esf-d-code-review) | Require peer review of source and pipeline configuration | 40 | 1C · 18H · 13M · 8L |
@@ -67,7 +67,7 @@ pipeline_check --pipeline aws --standard esf_supply_chain --standard owasp_cicd_
 
 ### ESF-D-BUILD-ENV: Harden the build environment (isolated, minimal, ephemeral workers) { #ctrl-esf-d-build-env }
 
-**Evidenced by 75 checks** across 19 providers (AWS, Argo Workflows, Azure Cloud, Azure DevOps, Bitbucket, CircleCI, Cloud Build, CloudFormation, Dockerfile, Drone CI, GCP, GitHub Actions, GitLab CI, Jenkins, Kubernetes, OCI manifest, Tekton, Terraform, npm).
+**Evidenced by 76 checks** across 19 providers (AWS, Argo Workflows, Azure Cloud, Azure DevOps, Bitbucket, CircleCI, Cloud Build, CloudFormation, Dockerfile, Drone CI, GCP, GitHub Actions, GitLab CI, Jenkins, Kubernetes, OCI manifest, Tekton, Terraform, npm).
 
 | Check | Title | Severity | Provider | Fix |
 |-------|-------|----------|----------|-----|
@@ -118,6 +118,7 @@ pipeline_check --pipeline aws --standard esf_supply_chain --standard owasp_cicd_
 | [`GHA-026`](../providers/github.md#gha-026) | Container job disables isolation via `options:` | <span class="pg-sev pg-sev--high">HIGH</span> | [GitHub Actions](../providers/github.md) |  |
 | [`GHA-068`](../providers/github.md#gha-068) | ``runs-on:`` targets an end-of-life hosted-runner image | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [GitHub Actions](../providers/github.md) |  |
 | [`GHA-098`](../providers/github.md#gha-098) | Pipeline deploys without a security scan gate | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [GitHub Actions](../providers/github.md) |  |
+| [`GHA-105`](../providers/github.md#gha-105) | Self-hosted runner reachable from an untrusted PR trigger | <span class="pg-sev pg-sev--high">HIGH</span> | [GitHub Actions](../providers/github.md) |  |
 | [`GL-014`](../providers/gitlab.md#gl-014) | Self-managed runner without ephemeral tag | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [GitLab CI](../providers/gitlab.md) |  |
 | [`GL-017`](../providers/gitlab.md#gl-017) | Docker run with insecure flags (privileged/host mount) | <span class="pg-sev pg-sev--critical">CRITICAL</span> | [GitLab CI](../providers/gitlab.md) | <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> |
 | [`JF-003`](../providers/jenkins.md#jf-003) | Pipeline uses `agent any` (no executor isolation) | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [Jenkins](../providers/jenkins.md) |  |
@@ -263,7 +264,7 @@ pipeline_check --pipeline aws --standard esf_supply_chain --standard owasp_cicd_
 
 ### ESF-D-PRIV-BUILD: Avoid privileged / host-networked build workers { #ctrl-esf-d-priv-build }
 
-**Evidenced by 41 checks** across 14 providers (AWS, Argo Workflows, Azure DevOps, Bitbucket, Buildkite, CircleCI, Cloud Build, Dockerfile, Drone CI, GitHub Actions, GitLab CI, Jenkins, Kubernetes, Tekton).
+**Evidenced by 42 checks** across 14 providers (AWS, Argo Workflows, Azure DevOps, Bitbucket, Buildkite, CircleCI, Cloud Build, Dockerfile, Drone CI, GitHub Actions, GitLab CI, Jenkins, Kubernetes, Tekton).
 
 | Check | Title | Severity | Provider | Fix |
 |-------|-------|----------|----------|-----|
@@ -289,6 +290,7 @@ pipeline_check --pipeline aws --standard esf_supply_chain --standard owasp_cicd_
 | [`GCB-019`](../providers/cloudbuild.md#gcb-019) | Shell entrypoint inlines a user substitution into args | <span class="pg-sev pg-sev--high">HIGH</span> | [Cloud Build](../providers/cloudbuild.md) |  |
 | [`GHA-012`](../providers/github.md#gha-012) | Self-hosted runner without ephemeral marker | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [GitHub Actions](../providers/github.md) |  |
 | [`GHA-026`](../providers/github.md#gha-026) | Container job disables isolation via `options:` | <span class="pg-sev pg-sev--high">HIGH</span> | [GitHub Actions](../providers/github.md) |  |
+| [`GHA-105`](../providers/github.md#gha-105) | Self-hosted runner reachable from an untrusted PR trigger | <span class="pg-sev pg-sev--high">HIGH</span> | [GitHub Actions](../providers/github.md) |  |
 | [`GL-014`](../providers/gitlab.md#gl-014) | Self-managed runner without ephemeral tag | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [GitLab CI](../providers/gitlab.md) |  |
 | [`JF-003`](../providers/jenkins.md#jf-003) | Pipeline uses `agent any` (no executor isolation) | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [Jenkins](../providers/jenkins.md) |  |
 | [`JF-014`](../providers/jenkins.md#jf-014) | Agent label missing ephemeral marker | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [Jenkins](../providers/jenkins.md) |  |

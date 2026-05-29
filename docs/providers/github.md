@@ -72,7 +72,7 @@ Resolution rules:
 
 ## What it covers
 
-95 checks · 17 have an autofix patch (``--fix``).
+96 checks · 17 have an autofix patch (``--fix``).
 
 | Check | Title | Severity | Fix |
 |-------|-------|----------|-----|
@@ -167,6 +167,7 @@ Resolution rules:
 | [GHA-102](#gha-102) | ``actions/checkout`` with submodule fetch on a PR trigger | <span class="pg-sev pg-sev--high">HIGH</span> |  |
 | [GHA-103](#gha-103) | AI code-review bot on untrusted trigger without environment gate | <span class="pg-sev pg-sev--critical">CRITICAL</span> |  |
 | [GHA-104](#gha-104) | AI agent generates and pushes commits without PR review | <span class="pg-sev pg-sev--high">HIGH</span> |  |
+| [GHA-105](#gha-105) | Self-hosted runner reachable from an untrusted PR trigger | <span class="pg-sev pg-sev--high">HIGH</span> |  |
 | [TAINT-001](#taint-001) | Untrusted input flows across step boundaries via step outputs | <span class="pg-sev pg-sev--high">HIGH</span> |  |
 | [TAINT-002](#taint-002) | Untrusted input flows across jobs via ``jobs.<id>.outputs:`` | <span class="pg-sev pg-sev--high">HIGH</span> |  |
 | [TAINT-003](#taint-003) | Untrusted input forwarded into reusable workflow ``with:`` | <span class="pg-sev pg-sev--high">HIGH</span> |  |
@@ -2742,6 +2743,35 @@ The rule does NOT fire when the job has an ``environment:`` gate (human approval
 **Recommended action**
 
 Route AI-generated changes through a pull request instead of pushing directly. Replace ``git push`` or auto-commit actions with ``peter-evans/create-pull-request`` (or equivalent) so a human reviewer sees the AI's output before it lands on a protected branch. If direct push is genuinely needed (e.g. auto-formatting), gate the job behind a protected ``environment:`` that requires manual approval.
+
+</div>
+
+</div>
+
+<div class="pg-rule pg-rule--high" markdown>
+
+## GHA-105: Self-hosted runner reachable from an untrusted PR trigger { #gha-105 }
+
+<div class="pg-rule__tags">
+<span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-4</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-7</span> <span class="pg-tag pg-tag--esf">ESF-D-BUILD-ENV</span> <span class="pg-tag pg-tag--esf">ESF-D-PRIV-BUILD</span> <span class="pg-tag pg-tag--cwe">CWE-94</span>
+</div>
+
+Fires when a workflow's `on:` includes `pull_request` or `pull_request_target` AND at least one job's `runs-on:` names a self-hosted runner. Recognizes all three `runs-on` shapes: the bare `self-hosted` string, a list that contains `self-hosted` (`[self-hosted, linux, x64]`), and the long-form `{ group, labels }` dict (a `group:` selector is always a self-hosted runner group; a `labels:` list is matched for `self-hosted`). A `runs-on:` that resolves to a GitHub-hosted image, or to a `${{ }}` expression the scanner can't resolve, is not flagged here.
+
+**Known false-positive modes**
+
+- A private repository with no external forks, where every PR comes from a trusted internal branch, carries less risk: the code reaching the runner is already trusted. The check can't tell public from private, so it fires regardless. Suppress per-job via the ignore-file once the team has confirmed the repo is private and fork PRs can't run. Defaults to MEDIUM confidence for this reason.
+
+**Seen in the wild**
+
+- GitHub docs, Self-hosted runner security: https://docs.github.com/en/actions/hosting-your-own-runners/managing-self-hosted-runners/about-self-hosted-runners#self-hosted-runner-security ("we recommend that you only use self-hosted runners with private repositories").
+- PostHog disclosure (2024): a fork PR on a self-hosted runner let researchers run code on internal CI infrastructure and reach production credentials.
+
+<div class="pg-rule__rec" markdown>
+
+**Recommended action**
+
+Don't run fork / pull-request code on self-hosted runners. Validate PRs on ephemeral GitHub-hosted runners (`runs-on: ubuntu-latest`); reserve self-hosted runners for `push` / `workflow_dispatch` jobs on trusted refs. If a self-hosted runner is unavoidable on a PR (a private repo with no external forks), gate the job behind a job-level `if:` that checks the actor or author association (`github.event.pull_request.author_association == 'OWNER'`), require manual approval via a protected `environment:`, and run the runner with `--ephemeral` so it can't carry state or an implant into the next job (GHA-012).
 
 </div>
 

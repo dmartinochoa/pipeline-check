@@ -156,6 +156,7 @@ STANDARD = Standard(
         "GHA-010":  ["PO.5.1", "PW.9.1"],              # local action on untrusted trigger
         "GHA-011":  ["PO.5.1", "PW.9.1"],              # cache key tainted
         "GHA-012":  ["PO.5.2", "PW.9.1"],              # self-hosted runner not ephemeral
+        "GHA-105":  ["PO.5.2", "PW.9.1"],              # self-hosted runner on PR trigger
         "GHA-013":  ["PO.5.1", "PW.9.1"],              # issue_comment no author guard
         "GHA-014":  ["PO.5.1"],                        # deploy job missing environment
         "GHA-015":  ["PO.5.2", "PW.9.1"],              # job has no timeout-minutes

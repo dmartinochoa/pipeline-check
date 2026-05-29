@@ -12,7 +12,7 @@ opinion. Use this page to prepare CC6 / CC7 / CC8 evidence walks.
 
 - **Controls in this standard:** 11
 - **Controls evidenced by at least one check:** 11 / 11
-- **Distinct checks evidencing this standard:** 806
+- **Distinct checks evidencing this standard:** 807
 - **Of those, autofixable with `--fix`:** 111
 
 _Severity levels (`CRITICAL` / `HIGH` / `MEDIUM` / `LOW` / `INFO`) follow the same scale across every provider and standard. See [How to read severity](README.md#how-to-read-severity) on the standards overview for the definitions._
@@ -26,7 +26,7 @@ Click a control ID to jump to the per-control section with the full check list. 
 | [`CC6.1`](#ctrl-cc6-1) | Logical access controls restrict entities to authorized system resources | 177 | 24C · 97H · 50M · 6L |
 | [`CC6.2`](#ctrl-cc6-2) | New internal and external users are registered, authorized, and provisioned | 25 | 10C · 8H · 7M |
 | [`CC6.3`](#ctrl-cc6-3) | Access modifications (including revocation) are tracked and timely | 27 | 1C · 15H · 11M |
-| [`CC6.6`](#ctrl-cc6-6) | Boundary-protection measures restrict access from outside the system boundary | 110 | 23C · 41H · 38M · 8L |
+| [`CC6.6`](#ctrl-cc6-6) | Boundary-protection measures restrict access from outside the system boundary | 111 | 23C · 42H · 38M · 8L |
 | [`CC6.7`](#ctrl-cc6-7) | Data in transit is protected from unauthorized disclosure | 36 | 31H · 4M · 1L |
 | [`CC6.8`](#ctrl-cc6-8) | Controls prevent or detect the introduction of malicious software | 151 | 37C · 84H · 29M · 1L |
 | [`CC7.1`](#ctrl-cc7-1) | Detection procedures identify configuration changes that introduce vulnerabilities | 38 | 8C · 11H · 12M · 7L |
@@ -304,7 +304,7 @@ pipeline_check --pipeline aws --standard soc2 --standard owasp_cicd_top_10
 
 ### CC6.6: Boundary-protection measures restrict access from outside the system boundary { #ctrl-cc6-6 }
 
-**Evidenced by 110 checks** across 18 providers (AWS, Argo Workflows, Azure Cloud, Azure DevOps, Bitbucket, Buildkite, CircleCI, Cloud Build, CloudFormation, Dockerfile, Drone CI, GCP, GitHub Actions, GitLab CI, Jenkins, Kubernetes, Tekton, Terraform).
+**Evidenced by 111 checks** across 18 providers (AWS, Argo Workflows, Azure Cloud, Azure DevOps, Bitbucket, Buildkite, CircleCI, Cloud Build, CloudFormation, Dockerfile, Drone CI, GCP, GitHub Actions, GitLab CI, Jenkins, Kubernetes, Tekton, Terraform).
 
 | Check | Title | Severity | Provider | Fix |
 |-------|-------|----------|----------|-----|
@@ -379,6 +379,7 @@ pipeline_check --pipeline aws --standard soc2 --standard owasp_cicd_top_10
 | [`GHA-026`](../providers/github.md#gha-026) | Container job disables isolation via `options:` | <span class="pg-sev pg-sev--high">HIGH</span> | [GitHub Actions](../providers/github.md) |  |
 | [`GHA-052`](../providers/github.md#gha-052) | actions/cache key includes untrusted PR-controllable input | <span class="pg-sev pg-sev--high">HIGH</span> | [GitHub Actions](../providers/github.md) |  |
 | [`GHA-057`](../providers/github.md#gha-057) | Secret-scanner output sent to network egress | <span class="pg-sev pg-sev--critical">CRITICAL</span> | [GitHub Actions](../providers/github.md) |  |
+| [`GHA-105`](../providers/github.md#gha-105) | Self-hosted runner reachable from an untrusted PR trigger | <span class="pg-sev pg-sev--high">HIGH</span> | [GitHub Actions](../providers/github.md) |  |
 | [`GL-010`](../providers/gitlab.md#gl-010) | Multi-project pipeline ingests upstream artifact unverified | <span class="pg-sev pg-sev--critical">CRITICAL</span> | [GitLab CI](../providers/gitlab.md) |  |
 | [`GL-011`](../providers/gitlab.md#gl-011) | include: local file pulled in MR-triggered pipeline | <span class="pg-sev pg-sev--high">HIGH</span> | [GitLab CI](../providers/gitlab.md) |  |
 | [`GL-012`](../providers/gitlab.md#gl-012) | Cache key derives from MR-controlled CI variable | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [GitLab CI](../providers/gitlab.md) |  |

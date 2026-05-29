@@ -211,6 +211,7 @@ STANDARD = Standard(
         "SCM-027":  ["IA-3", "LM-2"],
         # IA-4: Services / servers compromise
         "GHA-012":  ["IA-4", "PER-6"],
+        "GHA-105":  ["IA-4", "PER-6"],
         "GL-014":   ["IA-4", "PER-6"],
         "BB-016":   ["IA-4", "PER-6"],
         "ADO-013":  ["IA-4", "PER-6"],

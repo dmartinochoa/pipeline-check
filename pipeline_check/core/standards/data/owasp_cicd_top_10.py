@@ -146,6 +146,7 @@ STANDARD = Standard(
         "GHA-010":  ["CICD-SEC-4"],
         "GHA-011":  ["CICD-SEC-4"],
         "GHA-012":  ["CICD-SEC-7"],
+        "GHA-105":  ["CICD-SEC-4", "CICD-SEC-7"],        # self-hosted runner on PR trigger
         "GHA-013":  ["CICD-SEC-4"],
         "GHA-014":  ["CICD-SEC-1"],
         "GHA-015":  ["CICD-SEC-7"],

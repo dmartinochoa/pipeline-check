@@ -197,6 +197,7 @@ STANDARD = Standard(
         "PBAC-001": ["4.4.3"],
         "PBAC-003": ["4.4.3"],
         "GHA-012":  ["4.4.3"],             # self-hosted runner = uncontrolled net
+        "GHA-105":  ["4.4.3"],             # self-hosted runner on PR trigger
         "GL-014":   ["4.4.3"],
         "BB-016":   ["4.4.3"],
         "ADO-013":  ["4.4.3"],

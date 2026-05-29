@@ -12,6 +12,18 @@ release commit collapses this section into `## [X.Y.Z] - <date>`.
 
 ### Added
 
+- **GHA-105: self-hosted runner reachable from an untrusted PR
+  trigger (HIGH).** Fires when a workflow's `on:` includes
+  `pull_request` or `pull_request_target` and at least one job's
+  `runs-on:` names a self-hosted runner (bare `self-hosted` string, a
+  list containing it, or the long-form `{ group, labels }` dict). Fork
+  / PR code then executes on persistent infrastructure the org owns,
+  exposing cached credentials, the internal network, and every later
+  job the runner services. Complements GHA-012 (ephemeral marker) and
+  GHA-036 (`runs-on` interpolation). MEDIUM confidence (can't tell a
+  public repo from a private one with only trusted contributors),
+  mapped across all 11 applicable standards. GHA rule count 95 -> 96;
+  catalog 1072 -> 1073. 10 unit tests + a per-check real-example pair.
 - **Fixer discoverability (`--list-fixers`).** New early-exit flag
   that lists every check ID with a registered autofixer, one line per
   ID as `ID  SEVERITY  TIER  TITLE`, and exits without scanning.
