@@ -49,7 +49,8 @@ from pathlib import Path
 
 # Make the repo importable when the script is run directly. The
 # pipeline_check imports below have to come *after* this sys.path
-# nudge, so the E402 noqa is intentional, not a style oversight.
+# nudge, so this file is E402-ignored in pyproject (matching the
+# scripts/ generators), not a style oversight.
 _REPO = Path(__file__).resolve().parent.parent
 if str(_REPO) not in sys.path:
     sys.path.insert(0, str(_REPO))
