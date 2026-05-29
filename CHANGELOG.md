@@ -10,6 +10,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 PRs landing on `dev` between releases append entries below. The
 release commit collapses this section into `## [X.Y.Z] - <date>`.
 
+### Added
+
+- **Fixer discoverability (`--list-fixers`).** New early-exit flag
+  that lists every check ID with a registered autofixer, one line per
+  ID as `ID  SEVERITY  TIER  TITLE`, and exits without scanning.
+  `--safety safe|unsafe|all` narrows the listing by tier (`safe` is
+  the default `--fix` mode; `unsafe` needs `--fix=unsafe`). Surfaces
+  the full 111-fixer set so users can tell at a glance which rules
+  have a fixer and which tier each belongs to. Pipes into `grep` for
+  a provider prefix. Severity and title come from the same registry
+  `--explain` reads, so a new fixer auto-lists. Documented under
+  `--man autofix` and `docs/usage.md`. 8 new tests.
+
 ## [1.6.0] - 2026-05-29
 
 ### Added

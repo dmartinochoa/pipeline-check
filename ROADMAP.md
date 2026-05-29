@@ -6,9 +6,14 @@ What's planned, what's shipped, and what's deliberately out of scope.
 
 ### Unreleased (on ``dev``)
 
-Nothing yet this cycle. PRs landing on ``dev`` add their thematic
-entries here; the release commit collapses this into
-``### vX.Y.Z (YYYY-MM-DD)``.
+- **Fixer discoverability (``--list-fixers``)** — New early-exit flag
+  that lists every check ID with a registered autofixer
+  (``ID  SEVERITY  TIER  TITLE``) and exits without scanning.
+  ``--safety safe|unsafe|all`` filters by tier. Surfaces the full
+  111-fixer set and which ``--fix`` mode runs each. Backed by a new
+  ``iter_fixers()`` registry accessor and ``explain.render_fixers``;
+  severity / title reuse the ``--explain`` index so a new fixer
+  auto-lists. Documented under ``--man autofix``.
 
 ### v1.6.0 (2026-05-29)
 
@@ -576,11 +581,14 @@ unified diffs; this is plumbing. Closes the gap between "patch on
 disk" and "PR in your inbox" that drives adoption in orgs that scan
 in CI but never act on findings.
 
-### Fixer discoverability (``--list-fixers``)
+### ~~Fixer discoverability (``--list-fixers``)~~ shipped
 
-Surface the 111 autofixers via ``--list-fixers [--safety safe|unsafe
-|all]`` so users can discover which rules have fixers, which tier
-each belongs to, and why ``--fix`` didn't patch a specific finding.
+Shipped on ``dev``. ``--list-fixers [--safety safe|unsafe|all]`` lists
+the 111 autofixers with the tier each belongs to. The "why ``--fix``
+didn't patch a specific finding" part is surfaced as a footer note
+(idempotent skip, YAML round-trip bail) rather than per-finding
+diagnostics, which would need the finding + file content threaded into
+the listing path.
 
 ### Self-hosted runner security rules
 

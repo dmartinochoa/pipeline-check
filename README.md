@@ -397,6 +397,8 @@ See [docs/standards/](docs/standards/).
 | `--diff-base` | | Only scan files changed vs this git ref |
 | `--fix` | | Emit unified-diff patches to stdout |
 | `--apply` | | With `--fix`, write patches in place |
+| `--list-fixers` | | List every check ID with a fixer (`ID  SEVERITY  TIER  TITLE`) and exit |
+| `--safety` | `all` | Filter `--list-fixers` by tier: `safe`, `unsafe`, or `all` |
 | `--checks` / `-c` | all | Check ID(s) or globs (`GHA-*`, `*-008`) |
 | `--severity-threshold` | `INFO` | Minimum severity to display |
 | `--secret-pattern` | | Extra regex for credential scanning (repeat) |

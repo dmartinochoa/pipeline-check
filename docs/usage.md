@@ -333,6 +333,22 @@ pipeline_check --fix | git apply  # review first, then apply
 injection, Docker flags, Kubernetes securityContext, and more. See individual check pages under
 [providers/](providers/README.md) for which have autofix support.
 
+To see the whole set without scanning, use `--list-fixers`. It prints
+one line per check ID (`ID  SEVERITY  TIER  TITLE`) and exits, so you
+can tell at a glance which rules have a fixer and which tier it belongs
+to. Narrow the listing with `--safety`:
+
+```bash
+pipeline_check --list-fixers                 # all 111, grouped by ID
+pipeline_check --list-fixers --safety safe   # only the default --fix tier
+pipeline_check --list-fixers --safety unsafe # inference-dependent fixers
+pipeline_check --list-fixers | grep '^GHA-'  # one provider's fixers
+```
+
+A rule that lists here can still emit no patch on a given run: the
+fixer is idempotent (skips an already-remediated finding) and bails
+when its edit wouldn't round-trip as valid YAML.
+
 ## Compliance annotations
 
 Every finding carries control IDs from every enabled standard. Filter:

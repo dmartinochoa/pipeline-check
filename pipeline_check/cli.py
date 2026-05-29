@@ -193,7 +193,7 @@ class _GroupedCommand(click.Command):
         ("Attack chains", frozenset({
             "--no-chains", "--list-chains", "--explain-chain",
         })),
-        ("Autofix", frozenset({"--fix", "--apply"})),
+        ("Autofix", frozenset({"--fix", "--apply", "--list-fixers", "--safety"})),
         ("Info & Help", frozenset({
             "--list-checks", "--list-standards", "--standard-report",
             "--explain", "--man", "--config-check",
@@ -1824,6 +1824,29 @@ def _install_completion_callback(
     ),
 )
 @click.option(
+    "--list-fixers",
+    is_flag=True,
+    default=False,
+    help=(
+        "List every check ID with a registered autofixer (one per "
+        "line: ``ID  SEVERITY  TIER  TITLE``) and exit. Narrow the "
+        "tier with ``--safety safe|unsafe|all``. Pipes well into "
+        "``grep`` for a provider prefix. No scan is performed."
+    ),
+)
+@click.option(
+    "--safety",
+    "fixer_safety_filter",
+    type=click.Choice(["safe", "unsafe", "all"], case_sensitive=False),
+    default="all",
+    show_default=True,
+    help=(
+        "Filter ``--list-fixers`` by autofix tier: 'safe' (semantically "
+        "equivalent or additive edits), 'unsafe' (inference-dependent), "
+        "or 'all'. Only meaningful with ``--list-fixers``."
+    ),
+)
+@click.option(
     "--explain",
     "explain_id",
     default=None,
@@ -2357,6 +2380,8 @@ def scan(
     man_topic: str | None,
     standard_report: str | None,
     list_checks: bool,
+    list_fixers: bool,
+    fixer_safety_filter: str,
     explain_id: str | None,
     ai_explain_id: str | None,
     ai_model_spec: str | None,
@@ -2472,6 +2497,26 @@ def scan(
     if list_checks:
         _list_checks_for_pipeline(pipeline.lower())
         return
+
+    if list_fixers:
+        from .core.autofix import iter_fixers
+        from .core.explain import render_fixers
+
+        fixers_body, fixers_code = render_fixers(fixer_safety_filter)
+        click.echo(fixers_body, nl=False)
+        if fixers_code == 0:
+            all_fixers = iter_fixers()
+            safe_n = sum(1 for _, s in all_fixers if s == "safe")
+            unsafe_n = len(all_fixers) - safe_n
+            click.echo(
+                f"\n{len(all_fixers)} autofixers registered "
+                f"({safe_n} safe, {unsafe_n} unsafe). `--fix` runs safe "
+                "only; `--fix=unsafe` runs both. A registered fixer still "
+                "emits no patch when the finding is already remediated or "
+                "the edit wouldn't round-trip as valid YAML.",
+                err=True,
+            )
+        raise click.exceptions.Exit(fixers_code)
 
     if annotate_fp:
         # ``--annotate-fp CHECK_ID RESOURCE`` writes the local

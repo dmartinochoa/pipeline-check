@@ -80,6 +80,18 @@ def fixer_safety(check_id: str) -> str | None:
     return entry[1] if entry is not None else None
 
 
+def iter_fixers() -> list[tuple[str, str]]:
+    """Return ``(check_id, safety)`` for every registered fixer, sorted by ID.
+
+    Backs ``--list-fixers``. One entry per check ID, so a single
+    callable bound to several IDs (the cross-provider comment-out
+    fixers register the same function under each provider's ID)
+    contributes one row per ID. That matches the headline autofixer
+    count, which is ``len(_FIXERS)``.
+    """
+    return sorted((cid, safety) for cid, (_fn, safety) in _FIXERS.items())
+
+
 def _roundtrip_safe(before: str, after: str) -> bool:
     """Reject patches that broke a YAML file or rewrote its top-level shape.
 
