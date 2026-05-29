@@ -152,6 +152,13 @@
     var terminal = document.querySelector(".pg-terminal");
     if (!terminal) return;
 
+    // Below 960px the hero stacks into one column, so the terminal can
+    // start below the fold. If it loaded off-screen its CSS reveal
+    // finishes before the observer ever fires, so we replay it on the
+    // first view (see the observer's first-view branch).
+    var rect = terminal.getBoundingClientRect();
+    var initiallyVisible = rect.bottom > 0 && rect.top < window.innerHeight;
+
     var scoreEl = terminal.querySelector(".pg-terminal__score");
     var scoreTarget = scoreEl
       ? parseInt(scoreEl.getAttribute("data-score"), 10)
@@ -164,10 +171,17 @@
 
     var seen = false;
     var timers = [];
+    var scoreRaf = 0;
 
     function clearTimers() {
       timers.forEach(function (t) { clearTimeout(t); });
       timers = [];
+      // Cancel any in-flight count-up so a re-entry doesn't leave the
+      // old RAF loop writing to the score cell alongside the new one.
+      if (scoreRaf) {
+        cancelAnimationFrame(scoreRaf);
+        scoreRaf = 0;
+      }
     }
 
     function countScore() {
@@ -179,9 +193,13 @@
         var progress = Math.min((now - startT) / SCORE_DURATION, 1);
         var eased = 1 - Math.pow(1 - progress, 3);
         scoreEl.textContent = Math.round(eased * scoreTarget);
-        if (progress < 1) requestAnimationFrame(tick);
+        if (progress < 1) {
+          scoreRaf = requestAnimationFrame(tick);
+        } else {
+          scoreRaf = 0;
+        }
       }
-      requestAnimationFrame(tick);
+      scoreRaf = requestAnimationFrame(tick);
     }
 
     // Restart the CSS-driven pieces by clearing then restoring each
@@ -205,9 +223,12 @@
       entries.forEach(function (entry) {
         if (!entry.isIntersecting) return;
         if (!seen) {
-          // First view: the CSS reveal is already running from load,
-          // so just time the score count-up to it.
+          // First view. If the terminal was on-screen at load its CSS
+          // reveal is already running, so we just time the count-up to
+          // it. If it loaded off-screen that reveal already finished,
+          // so replay it now.
           seen = true;
+          if (!initiallyVisible) restartCss();
           scheduleCount();
           return;
         }

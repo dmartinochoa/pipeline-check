@@ -270,7 +270,7 @@ def report_terminal(
     # away and the MEDIUM / LOW ones catch the eye, which is exactly the
     # set worth a second look.
     conf_pool = visible_failures + (visible_passes if show_passed else [])
-    show_conf = any(f.confidence is not Confidence.HIGH for f in conf_pool)
+    show_conf = any(f.confidence != Confidence.HIGH for f in conf_pool)
 
     # No ``expand=True``: the table sizes to its content rather than
     # padding out to the full terminal width, so a scan on a 200-column

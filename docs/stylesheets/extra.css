@@ -1615,7 +1615,6 @@ img.pg-hero__mark {
   padding: 0;
   border: 0;
   overflow: hidden;
-  clip: rect(0, 0, 0, 0);
   clip-path: inset(50%);
   white-space: nowrap;
 }
@@ -3919,6 +3918,14 @@ body:has(.pg-home) .md-search__form:focus-within,
   .md-typeset h4 {
     color: #000 !important;
     page-break-after: avoid;
+  }
+
+  /* The hero accent paints text via a clipped gradient with a
+     transparent fill, which prints as invisible words. Drop the
+     gradient and fill with the normal text color on paper. */
+  .pg-hero .accent {
+    background: none !important;
+    -webkit-text-fill-color: currentColor !important;
   }
 
   .md-typeset h1::after,
