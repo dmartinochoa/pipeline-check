@@ -124,16 +124,24 @@ def test_bug_b_fanout_iterates_providers(monkeypatch):
 
 
 # ────────────────────────────────────────────────────────────────────────
-# Bug C — is_quoted_assignment must recognize GitHub ${{ … }} expressions.
+# is_quoted_assignment — the capture-to-variable safe idiom applies only to
+# *runtime* shell/ADO expansions, NOT to GitHub ${{ … }} (which GitHub
+# substitutes into the script text before the shell ever parses it).
 # ────────────────────────────────────────────────────────────────────────
 
-def test_bug_c_is_quoted_assignment_github_expression():
-    assert is_quoted_assignment('TITLE="${{ github.event.pull_request.title }}"')
-    assert is_quoted_assignment('MSG="${{ github.event.head_commit.message }}"')
+def test_is_quoted_assignment_rejects_github_expression():
+    """``VAR="${{ … }}"`` is NOT a safe idiom on GitHub. The expression is
+    expanded into the script text before the shell runs, so a ``"`` in an
+    untrusted field (PR title, commit message) closes the assignment and the
+    remainder executes as shell. These must stay flagged by GHA-003; the
+    only safe handling is an ``env:`` block."""
+    assert not is_quoted_assignment('TITLE="${{ github.event.pull_request.title }}"')
+    assert not is_quoted_assignment('MSG="${{ github.event.head_commit.message }}"')
 
 
-def test_bug_c_is_quoted_assignment_still_recognises_shell_and_ado():
-    """Sanity: the new regex must not regress the shell / ADO cases."""
+def test_is_quoted_assignment_recognizes_shell_and_ado():
+    """Runtime expansions the shell/ADO perform themselves are safe to
+    capture: bash assigns the literal value without re-parsing it."""
     assert is_quoted_assignment('BRANCH="$BITBUCKET_BRANCH"')
     assert is_quoted_assignment('BRANCH="${CI_COMMIT_BRANCH}"')
     assert is_quoted_assignment('BRANCH="$(Build.SourceBranchName)"')
@@ -157,8 +165,9 @@ def test_is_quoted_assignment_rejects_command_substitution_bypass():
     assert not is_quoted_assignment(
         'RESULT="$(echo $UNTRUSTED_VAR)"'
     )
-    # But a plain assignment without command substitution is still safe.
-    assert is_quoted_assignment('TITLE="${{ github.event.pull_request.title }}"')
+    # A plain shell-variable assignment without command substitution is
+    # still safe (bash captures the literal value, no re-execution).
+    assert is_quoted_assignment('BRANCH="$CI_COMMIT_BRANCH"')
 
 
 # ────────────────────────────────────────────────────────────────────────

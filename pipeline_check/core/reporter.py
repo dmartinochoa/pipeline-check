@@ -292,6 +292,7 @@ def report_terminal(
     table.add_column("Title", overflow="fold")
 
     def _render_row(f: Finding) -> None:
+        """Add one finding to the table as a status/severity/resource row."""
         sev_style = _SEVERITY_STYLE.get(f.severity, "white")
         status = "[red]FAIL[/red]" if not f.passed else "[green]PASS[/green]"
         # Build the resource cell: append the primary line number when

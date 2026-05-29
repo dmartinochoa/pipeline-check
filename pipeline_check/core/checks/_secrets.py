@@ -525,7 +525,7 @@ def _build_prefix_dispatch() -> tuple[
     # Maps detector name → list of 2-char prefixes it can match.
     _MULTI_PREFIX: dict[str, list[str]] = {
         "aws_access_key":     ["AK", "AS"],       # A(?:KIA|SIA)
-        "github_token":       ["gh"],              # gh[pousr]_
+        "github_token":       ["gh", "gi"],        # gh[pousr]_ / github_pat_
         "slack_token":        ["xo"],              # xox[abprs]-
         "jwt":                ["ey"],              # eyJ
         "stripe_secret":      ["sk", "rk"],        # (?:sk|rk)_

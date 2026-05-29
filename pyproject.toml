@@ -156,6 +156,7 @@ ignore = [
 ]
 
 [tool.ruff.lint.per-file-ignores]
+"bench/run.py" = ["E402"]                          # sys.path setup before pipeline_check import
 "pipeline_check/core/html_reporter.py" = ["E501"]  # inline CSS/JS templates
 "pipeline_check/core/checks/base.py" = ["E402"]    # deferred re import after dataclass
 "scripts/gen_provider_docs.py" = ["E402", "E501"]  # sys.path setup + markdown-table template strings

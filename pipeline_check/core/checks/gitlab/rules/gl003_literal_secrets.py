@@ -6,7 +6,7 @@ from typing import Any
 from ...base import Finding, Severity
 from ...rule import Rule
 from ..base import iter_jobs
-from ._helpers import AWS_KEY_RE, SECRETISH_KEY_RE
+from ._helpers import SECRETISH_KEY_RE, aws_key_in, is_placeholder_value
 
 RULE = Rule(
     id="GL-003",
@@ -32,7 +32,7 @@ RULE = Rule(
         "# to git, printed in build logs whenever a job echoes\n"
         "# its environment, visible to any repo reader.\n"
         "variables:\n"
-        "  AWS_ACCESS_KEY_ID: AKIAIOSFODNN7EXAMPLE\n"
+        "  AWS_ACCESS_KEY_ID: AKIAZ3MHALF2TESTHIJK\n"
         "  AWS_SECRET_ACCESS_KEY: wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY\n"
         "deploy:\n"
         "  script: [aws s3 cp ./build s3://bucket/]\n"
@@ -61,10 +61,14 @@ def check(path: str, doc: dict[str, Any]) -> Finding:
             raw = value.get("value") if isinstance(value, dict) else value
             if not isinstance(raw, str):
                 continue
-            if AWS_KEY_RE.search(raw):
+            if aws_key_in(raw):
                 offenders.append(f"{where}.{key} (AWS access key)")
                 continue
-            if SECRETISH_KEY_RE.search(key) and raw and "$" not in raw:
+            if (
+                SECRETISH_KEY_RE.search(key)
+                and raw and "$" not in raw
+                and not is_placeholder_value(raw)
+            ):
                 offenders.append(f"{where}.{key}")
 
     _scan(doc.get("variables"), "<top>")

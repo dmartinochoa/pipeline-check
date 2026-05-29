@@ -259,6 +259,28 @@ jobs:
         assert "steps.extract.outputs.title" in f.description
         assert "1 cross-step taint path" in f.description
 
+    def test_propagates_taint_through_lowercase_env_var(self) -> None:
+        # Regression: shell env vars are commonly lowercase. An
+        # uppercase-only ref pattern silently dropped the env-bound
+        # taint link, so this attacker-controlled flow was invisible to
+        # TAINT-001 (and GHA-003 treats the quoted env value as safe).
+        doc = _doc("""
+on: pull_request_target
+jobs:
+  build:
+    steps:
+      - id: extract
+        env:
+          title: ${{ github.event.issue.title }}
+        run: |
+          echo "out=$title" >> "$GITHUB_OUTPUT"
+      - run: echo "${{ steps.extract.outputs.out }}"
+""")
+        f = t1.check("wf.yml", doc)
+        assert not f.passed
+        assert "github.event.issue.title" in f.description
+        assert "steps.extract.outputs.out" in f.description
+
     def test_fails_with_truncation_for_many_paths(self) -> None:
         # Build a workflow with 5 distinct tainted outputs all
         # consumed; the rule's rendered description truncates to

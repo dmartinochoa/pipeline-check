@@ -198,8 +198,15 @@ def _iter_matrix_axis_refs(text: str) -> Iterator[str]:
 # pass 1's env-bound-taint propagation: when an output write's RHS
 # references a tainted env var, the output inherits the env var's
 # original taint source.
+#
+# The name class is case-insensitive: shell env vars are commonly
+# lowercase (``title``, ``branch``, ``version``), and an uppercase-only
+# pattern silently dropped the taint link for ``echo "out=$title" >>
+# $GITHUB_OUTPUT``. Resolution still intersects against the exact env
+# keys declared on the step/job, so broadening the match can only
+# recover real flows, never invent one.
 _ENV_SHELL_REF_RE = re.compile(
-    r"\$\{?(?P<name>[A-Z_][A-Z0-9_]*)\}?"
+    r"\$\{?(?P<name>[A-Za-z_][A-Za-z0-9_]*)\}?"
 )
 
 

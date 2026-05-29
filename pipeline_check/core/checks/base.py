@@ -510,18 +510,22 @@ def has_dep_update(blob: str) -> bool:
 
 # A shell *assignment* like ``VAR="$UNTRUSTED"`` captures the value
 # into a variable; the untrusted content is not executed unless a
-# later command inlines the resulting ``$VAR`` unquoted. All four
-# workflow-provider script-injection checks skip lines that match
-# this pattern so the obvious "safe idiom" doesn't false-positive.
+# later command inlines the resulting ``$VAR`` unquoted. The
+# script-injection checks skip lines that match this pattern so the
+# obvious "safe idiom" doesn't false-positive.
 #
-# Matches shell-style ``${VAR}``, ADO-style ``$(VAR)``, and
-# GitHub-style ``${{ ... }}`` expression interpolations inside the
-# quoted string so every provider can share one helper.
+# This safe idiom only holds for *runtime* expansions the shell layer
+# performs itself: shell-style ``${VAR}`` / ``$VAR`` and ADO-style
+# ``$(VAR)``. It deliberately does NOT cover GitHub ``${{ ... }}``.
+# GitHub substitutes those into the script text BEFORE the shell parses
+# it, so ``VAR="${{ github.event.pull_request.title }}"`` is still
+# injectable: a ``"`` in the title closes the assignment string and the
+# rest of the value runs as shell. Those lines must stay flagged
+# (GHA-003); the only safe handling is routing through an ``env:`` block.
 _QUOTED_ASSIGNMENT_RE = _re.compile(
     r'\s*\w+="[^"]*'
     r'(?:'
-    r'\$\{\{(?:[^}]|\}(?!\}))*\}\}'  # GitHub ${{ ... }}
-    r'|\$\{?\w+\}?'        # shell ${VAR} / $VAR
+    r'\$\{?\w+\}?'        # shell ${VAR} / $VAR
     r'|\$\([^)]+\)'        # ADO $(VAR)
     r')'
     r'[^"]*"\s*$'

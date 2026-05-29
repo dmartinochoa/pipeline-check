@@ -208,6 +208,36 @@ class TestGL003LiteralSecrets:
         )
         assert f.passed
 
+    def test_vendor_example_aws_key_passes(self):
+        # Regression: AWS's documented dummy key is a doc artifact, not a
+        # real credential. The shape-based path now suppresses it like
+        # the entropy-based path already did.
+        f = _run(
+            """
+            variables:
+              MY_KEY: AKIAIOSFODNN7EXAMPLE
+            build:
+              script: [make]
+            """,
+            "GL-003",
+        )
+        assert f.passed
+
+    def test_placeholder_value_passes(self):
+        # Regression: a credential-shaped key holding a placeholder /
+        # redaction marker is a template, not a leaked secret.
+        f = _run(
+            """
+            variables:
+              DATABASE_PASSWORD: REPLACE_ME
+              API_TOKEN: <your-token-here>
+            build:
+              script: [make]
+            """,
+            "GL-003",
+        )
+        assert f.passed
+
 
 class TestGL004DeployGating:
     def test_ungated_deploy_fails(self):

@@ -134,6 +134,70 @@ release commit collapses this section into `## [X.Y.Z] - <date>`.
   CSS-only reveal with a graceful no-JS / reduced-motion final state; no
   package behavior change.
 
+### Fixed
+
+- **Script-injection false negative on inline shell assignments
+  (GHA-003 and the shared taint engine).** `VAR="${{ github.event.* }}"`
+  inside a `run:` block was treated as the safe capture-to-variable
+  idiom and skipped. That idiom only holds for runtime shell/ADO
+  expansions: GitHub substitutes `${{ … }}` into the script text before
+  the shell parses it, so a PR title of `foo"; whoami; "` closes the
+  assignment and runs `whoami`. `is_quoted_assignment` no longer
+  whitelists `${{ … }}` assignments, so GHA-003 now flags them (the
+  safe form remains routing the value through an `env:` block). The
+  `$VAR` / `${VAR}` / `$(VAR)` runtime-expansion idioms used by the
+  GitLab, Bitbucket, and Azure injection checks are unaffected.
+- **Single-quoted shell references no longer false-positive (shared
+  taint engine).** The quote-neutralization pass stripped only
+  double-quoted segments, so `echo 'literal $VAR'` was reported as an
+  unquoted injection even though single quotes suppress expansion
+  entirely (single-quoting is itself a recommended mitigation). Both
+  quote styles are now stripped before re-checking, with the
+  double-quote alternative tried first so an apostrophe inside a
+  double-quoted span (`"it's $VAR"`) is handled correctly. This also
+  closes a matching false negative where a literal `"` inside two
+  single-quoted segments masked a genuinely unquoted reference between
+  them. Applies to the GitHub, GitLab, Bitbucket, and Azure
+  script-injection checks.
+- **Indirect taint through lowercase env vars (GHA taint graph,
+  TAINT-001/002/003).** The shell env-var reference pattern was
+  uppercase-only, so `echo "out=$title" >> "$GITHUB_OUTPUT"` (a
+  lowercase env var bound to untrusted context) dropped the taint link
+  and the downstream consumer was flagged by nothing. The name class is
+  now case-insensitive; resolution still intersects the exact declared
+  env keys, so it only recovers real flows.
+- **GHA-002 now catches `github.head_ref` checkouts.** A
+  `pull_request_target` workflow that checks out
+  `ref: ${{ github.head_ref }}` (the documented shorthand for, and more
+  common form than, `github.event.pull_request.head.ref`) was missed.
+- **GHA-003 untrusted-context catalog: fork-repo fields added, `actor_id`
+  over-match removed.** `github.event.pull_request.head.repo.*` and
+  `workflow_run.head_repository.*` free-form fields (`description`,
+  `homepage`, `default_branch`), all controlled by a fork PR author,
+  are now treated as untrusted. Separately, the `github.actor`
+  alternative gained a word boundary so it no longer swallows
+  `github.actor_id` (a numeric account ID that can't carry shell
+  metacharacters) into a false positive.
+- **Shape-based secret detection now suppresses vendor examples and
+  placeholders.** The `secret_shapes` catalog (used by the GitLab,
+  Azure, Bitbucket, and Dockerfile literal-secret and AWS-long-lived
+  rules) had no placeholder or vendor-example filter, so AWS's
+  documented dummy key `AKIAIOSFODNN7EXAMPLE` was reported as a CRITICAL
+  finding (it appears in many tutorials, and was even in some rules' own
+  examples), and credential-named keys holding `REPLACE_ME` / `changeme`
+  / `<your-token>` were flagged as leaked secrets. New `aws_key_in()` and
+  `is_placeholder_value()` helpers reuse the same `VENDOR_EXAMPLE_TOKENS`
+  / `PLACEHOLDER_MARKER_RE` suppression the entropy-based path already
+  applied, so the two detection paths now agree. Real keys and real
+  literal secrets are still flagged. The Kubernetes Secret-manifest
+  checks (K8S-017/018/037) deliberately flag placeholders as a
+  maintenance footgun and are intentionally left unchanged.
+- **GitHub fine-grained PATs are now detected.** The secret catalog
+  matched only the classic `ghp_/gho_/ghu_/ghs_/ghr_` prefixes; the
+  `github_pat_…` fine-grained format (GitHub's recommended PAT since
+  2022) was missed entirely. Added the shape and routed its `gi…`
+  prefix through the token dispatch.
+
 ## [1.6.0] - 2026-05-29
 
 ### Added

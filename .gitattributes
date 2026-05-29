@@ -1,0 +1,13 @@
+# Line-ending and binary handling for a cross-platform repo (developed
+# on Windows, tested on Linux CI). The committed tree is already all
+# LF; this locks that in so a contributor whose Git has core.autocrlf
+# off can't land CRLF and create diff noise. Working-tree checkout
+# stays native unless a rule below pins it.
+* text=auto
+
+# Bash scripts must stay LF in the working tree too: CRLF breaks the
+# shebang and parser on the Linux runners.
+*.sh text eol=lf
+
+# Binary assets: never diff, never normalize line endings.
+*.png binary

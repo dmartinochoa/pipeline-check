@@ -1250,3 +1250,44 @@ class TestTopActionsFindTyposquat:
         # additions land in the right slot.
         lowered = [a.lower() for a in top_actions.TOP_ACTIONS]
         assert lowered == sorted(lowered)
+
+
+# ──────────────────────────────────────────────────────────────────
+# secret_shapes — vendor-example + placeholder suppression helpers
+# ──────────────────────────────────────────────────────────────────
+
+
+class TestSecretShapesAwsKeyIn:
+    def test_real_key_returned(self):
+        assert (
+            secret_shapes.aws_key_in("AKIAZ3MHALF2TESTHIJK")
+            == "AKIAZ3MHALF2TESTHIJK"
+        )
+
+    def test_vendor_example_suppressed(self):
+        # AWS's documented dummy key is a doc artifact, never a real
+        # credential — it must not be reported as an AWS key.
+        assert secret_shapes.aws_key_in("AKIAIOSFODNN7EXAMPLE") is None
+
+    def test_no_key_returns_none(self):
+        assert secret_shapes.aws_key_in("not a key") is None
+
+    def test_non_string_returns_none(self):
+        assert secret_shapes.aws_key_in(None) is None
+        assert secret_shapes.aws_key_in(1234) is None
+
+
+class TestSecretShapesPlaceholder:
+    @pytest.mark.parametrize(
+        "value",
+        ["REPLACE_ME", "changeme", "<your-token>", "PLACEHOLDER", "XXXXX"],
+    )
+    def test_placeholders_detected(self, value):
+        assert secret_shapes.is_placeholder_value(value) is True
+
+    @pytest.mark.parametrize("value", ["hunter2supersecret", "", "prod-db-01"])
+    def test_real_values_not_placeholders(self, value):
+        assert secret_shapes.is_placeholder_value(value) is False
+
+    def test_non_string_is_not_placeholder(self):
+        assert secret_shapes.is_placeholder_value(None) is False

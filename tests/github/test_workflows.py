@@ -160,6 +160,26 @@ class TestGHA002PullRequestTarget:
         )
         assert not f.passed
 
+    def test_checkout_of_head_ref_shorthand_fails(self):
+        # Regression: ``github.head_ref`` is the documented shorthand
+        # for ``github.event.pull_request.head.ref`` and the more common
+        # way to write a PR-head checkout, so it must be caught too.
+        f = _run(
+            """
+            on: pull_request_target
+            jobs:
+              build:
+                runs-on: ubuntu-latest
+                steps:
+                  - uses: actions/checkout@v4
+                    with:
+                      ref: ${{ github.head_ref }}
+            """,
+            "GHA-002",
+        )
+        assert not f.passed
+        assert f.severity == Severity.CRITICAL
+
     def test_pull_request_target_without_head_checkout_passes(self):
         f = _run(
             """
@@ -221,6 +241,27 @@ class TestGHA003ScriptInjection:
         )
         assert not f.passed
 
+    def test_inline_shell_assignment_of_untrusted_context_fails(self):
+        # Regression: ``VAR="${{ … }}"`` inside a run: block is NOT the
+        # safe env-capture idiom. GitHub expands ``${{ … }}`` into the
+        # script text before the shell parses it, so a PR title of
+        # ``foo"; whoami; "`` closes the assignment and runs ``whoami``.
+        f = _run(
+            """
+            on: pull_request_target
+            jobs:
+              build:
+                runs-on: ubuntu-latest
+                steps:
+                  - run: |
+                      TITLE="${{ github.event.pull_request.title }}"
+                      echo "handling $TITLE"
+            """,
+            "GHA-003",
+        )
+        assert not f.passed
+        assert f.severity == Severity.HIGH
+
     def test_run_via_env_passes(self):
         f = _run(
             """
@@ -232,6 +273,61 @@ class TestGHA003ScriptInjection:
                   - env:
                       TITLE: ${{ github.event.pull_request.title }}
                     run: echo "$TITLE"
+            """,
+            "GHA-003",
+        )
+        assert f.passed
+
+    def test_single_quoted_env_ref_passes(self):
+        # Regression: single quotes suppress shell expansion entirely,
+        # so referencing a tainted env var single-quoted is safe and
+        # must not false-positive (single-quoting is a recommended
+        # mitigation). Only double-quoted segments used to be stripped.
+        f = _run(
+            """
+            on: pull_request_target
+            jobs:
+              build:
+                runs-on: ubuntu-latest
+                steps:
+                  - env:
+                      TITLE: ${{ github.event.pull_request.title }}
+                    run: echo 'literal $TITLE text'
+            """,
+            "GHA-003",
+        )
+        assert f.passed
+
+    def test_fork_repo_description_in_run_fails(self):
+        # Regression: a fork PR author controls their fork repo's
+        # free-form ``head.repo.description``; interpolating it into a
+        # run: block under pull_request_target is template injection.
+        f = _run(
+            """
+            on: pull_request_target
+            jobs:
+              build:
+                runs-on: ubuntu-latest
+                steps:
+                  - run: echo "${{ github.event.pull_request.head.repo.description }}"
+            """,
+            "GHA-003",
+        )
+        assert not f.passed
+
+    def test_actor_id_not_flagged(self):
+        # Regression: ``github.actor_id`` is a numeric account ID (no
+        # shell metacharacters possible). The ``github.actor``
+        # alternative used to swallow the ``_id`` suffix via the trailing
+        # wildcard and false-positive.
+        f = _run(
+            """
+            on: [push]
+            jobs:
+              build:
+                runs-on: ubuntu-latest
+                steps:
+                  - run: echo "${{ github.actor_id }}"
             """,
             "GHA-003",
         )
