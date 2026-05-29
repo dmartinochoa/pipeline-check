@@ -95,7 +95,10 @@ _SCAN_ACTIONS = frozenset({
     "trufflesecurity/trufflehog",
     "pypa/gh-action-pip-audit",
     "ossf/scorecard-action",
-    "step-security/harden-runner",
+    # NB: step-security/harden-runner is deliberately NOT here. It's a
+    # runtime egress monitor, not a SAST / SCA / secret scanner, so it
+    # doesn't satisfy the "scan before deploy" gate this rule checks.
+    # Its own configuration is covered by GHA-107 / GHA-108 / GHA-109.
 })
 
 

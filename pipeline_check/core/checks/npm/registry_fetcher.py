@@ -24,9 +24,10 @@ from __future__ import annotations
 
 import datetime as _dt
 import json
-from collections.abc import Iterable
+import re
+from collections.abc import Callable, Iterable
 from pathlib import Path
-from typing import Protocol
+from typing import Protocol, TypeVar
 
 from .._primitives.registry_fetcher import (
     FileSystemCache as _FileSystemCache,
@@ -45,6 +46,9 @@ from .._primitives.registry_fetcher import (
 # pipeline_check.core.checks.npm.registry_fetcher import
 # FileSystemCache`` keeps working.
 FileSystemCache = _FileSystemCache
+
+#: Generic value type for :func:`_fetch_packument_field`.
+_T = TypeVar("_T")
 
 
 def default_cache_dir() -> Path:
@@ -158,6 +162,51 @@ def fetch_publish_times(
     )
 
 
+# ── Shared packument-field fetch loop ────────────────────────────
+
+
+def _fetch_packument_field(
+    names: Iterable[str],
+    fetcher: RegistryMetadataFetcher,
+    parser: Callable[[bytes], _T | None],
+    cache: FileSystemCache | None = None,
+) -> tuple[dict[str, _T], list[str]]:
+    """Dedup + cache + fetch + parse one field out of each packument.
+
+    Shared by the maintainer-count, provenance, and repo-slug passes.
+    Every pass reads the same ``registry.npmjs.org/<name>`` document, so
+    running them together in one ``--resolve-remote`` scan fetches each
+    package only once (the second and later passes hit the disk cache
+    the first one populated). A package whose metadata can't be fetched
+    lands as a warning and is omitted; a package whose *parser* returns
+    ``None`` (field absent / unparseable) is omitted silently so the
+    consuming rule skips it rather than guessing. A parser returning
+    ``False`` is recorded (that's a meaningful value, e.g. "no
+    provenance"), only ``None`` is treated as "unknown".
+    """
+    seen: set[str] = set()
+    out: dict[str, _T] = {}
+    warnings: list[str] = []
+    for name in names:
+        if not isinstance(name, str) or not name or name in seen:
+            continue
+        seen.add(name)
+        blob = cache.get(name) if cache is not None else None
+        if blob is None:
+            blob = fetcher.fetch(name)
+            if blob is None:
+                warnings.append(
+                    f"npm-registry: could not fetch metadata for {name}"
+                )
+                continue
+            if cache is not None:
+                cache.put(name, blob)
+        parsed = parser(blob)
+        if parsed is not None:
+            out[name] = parsed
+    return out, warnings
+
+
 # ── Publisher (maintainer-account) count parser ──────────────────
 
 
@@ -195,34 +244,134 @@ def fetch_maintainer_counts(
 ) -> tuple[dict[str, int], list[str]]:
     """Resolve the publisher count for every package in *names*.
 
-    Mirrors :func:`fetch_publish_times`' dedup + cache + fetch loop and
-    shares the same packument cache, so resolving both in one
-    ``--resolve-remote`` pass fetches each package only once (the
-    maintainer pass reads the blob the publish-time pass already
-    cached). Returns ``({name: publisher_count}, warnings)``; an
-    unresolved package is omitted so NPM-014 skips it silently.
+    Reads the ``maintainers`` array from each packument (shared cache,
+    so it adds no fetch when run alongside the publish-time pass).
+    Returns ``({name: publisher_count}, warnings)``; an unresolved
+    package is omitted so NPM-014 skips it silently.
     """
-    seen: set[str] = set()
-    out: dict[str, int] = {}
-    warnings: list[str] = []
-    for name in names:
-        if not isinstance(name, str) or not name or name in seen:
-            continue
-        seen.add(name)
-        blob = cache.get(name) if cache is not None else None
-        if blob is None:
-            blob = fetcher.fetch(name)
-            if blob is None:
-                warnings.append(
-                    f"npm-registry: could not fetch metadata for {name}"
-                )
-                continue
-            if cache is not None:
-                cache.put(name, blob)
-        count = _parse_maintainer_count(blob)
-        if count is not None:
-            out[name] = count
-    return out, warnings
+    return _fetch_packument_field(
+        names, fetcher, _parse_maintainer_count, cache,
+    )
+
+
+# ── Build-provenance parser ──────────────────────────────────────
+
+
+def _parse_has_provenance(blob: bytes) -> bool | None:
+    """Whether the package's latest version ships a provenance attestation.
+
+    npm records a build-provenance attestation under
+    ``versions[<v>].dist.attestations`` for any version published with
+    ``--provenance``. We read the ``dist-tags.latest`` version as the
+    package's current provenance posture: ``True`` when that version
+    carries an attestation, ``False`` when it doesn't, ``None`` when the
+    packument doesn't let us tell (so the rule skips it rather than
+    flagging an unknown as missing).
+    """
+    try:
+        doc = json.loads(blob)
+    except (ValueError, json.JSONDecodeError):
+        return None
+    if not isinstance(doc, dict):
+        return None
+    dist_tags = doc.get("dist-tags")
+    if not isinstance(dist_tags, dict):
+        return None
+    latest = dist_tags.get("latest")
+    if not isinstance(latest, str) or not latest:
+        return None
+    versions = doc.get("versions")
+    if not isinstance(versions, dict):
+        return None
+    version = versions.get(latest)
+    if not isinstance(version, dict):
+        return None
+    dist = version.get("dist")
+    if not isinstance(dist, dict):
+        return None
+    return bool(dist.get("attestations"))
+
+
+def fetch_provenance(
+    names: Iterable[str],
+    fetcher: RegistryMetadataFetcher,
+    cache: FileSystemCache | None = None,
+) -> tuple[dict[str, bool], list[str]]:
+    """Resolve build-provenance presence for every package in *names*.
+
+    Reads ``dist.attestations`` on the latest version from each
+    packument (shared cache, no extra fetch alongside the other passes).
+    Returns ``({name: has_provenance}, warnings)``; ``False`` entries
+    are the ones NPM-015 flags, unresolved packages are omitted.
+    """
+    return _fetch_packument_field(
+        names, fetcher, _parse_has_provenance, cache,
+    )
+
+
+# ── GitHub repository-slug parser ────────────────────────────────
+
+
+_GITHUB_REPO_RE = re.compile(
+    r"github\.com[/:]([A-Za-z0-9][A-Za-z0-9._-]*)/([A-Za-z0-9][A-Za-z0-9._-]*)"
+)
+
+
+def _parse_repo_slug(blob: bytes) -> str | None:
+    """Return the ``owner/repo`` GitHub slug from a packument, or None.
+
+    Reads the packument ``repository`` field (a string or a ``{url}``
+    dict) and handles the ``git+https`` / ``git+ssh`` / ``https`` URL
+    shapes plus the ``github:owner/repo`` shorthand. Only GitHub is
+    recognized (the OpenSSF Scorecard API NPM-016 queries is
+    GitHub-scoped); a non-GitHub or unparseable repository returns None
+    so the rule skips the package.
+    """
+    try:
+        doc = json.loads(blob)
+    except (ValueError, json.JSONDecodeError):
+        return None
+    if not isinstance(doc, dict):
+        return None
+    repo = doc.get("repository")
+    if isinstance(repo, str):
+        url = repo
+    elif isinstance(repo, dict) and isinstance(repo.get("url"), str):
+        url = repo["url"]
+    else:
+        return None
+    url = url.strip()
+    if url.startswith("github:"):
+        rest = url[len("github:"):].strip().strip("/")
+        parts = rest.split("/")
+        if len(parts) == 2 and parts[0] and parts[1]:
+            return f"{parts[0]}/{parts[1].removesuffix('.git')}"
+        return None
+    m = _GITHUB_REPO_RE.search(url)
+    if m is None:
+        return None
+    owner, name = m.group(1), m.group(2).removesuffix(".git")
+    if not owner or not name:
+        return None
+    return f"{owner}/{name}"
+
+
+def fetch_repo_slugs(
+    names: Iterable[str],
+    fetcher: RegistryMetadataFetcher,
+    cache: FileSystemCache | None = None,
+) -> tuple[dict[str, str], list[str]]:
+    """Resolve the GitHub ``owner/repo`` slug for every package in *names*.
+
+    Reads the ``repository`` field from each packument (shared cache, so
+    no extra fetch alongside the other passes). Returns
+    ``({name: "owner/repo"}, warnings)``; packages with no GitHub
+    repository are omitted. NPM-016 feeds these slugs to the OpenSSF
+    Scorecard API.
+    """
+    return _fetch_packument_field(
+        names, fetcher, _parse_repo_slug, cache,
+    )
 
 
 __all__ = [
@@ -231,5 +380,7 @@ __all__ = [
     "RegistryMetadataFetcher",
     "default_cache_dir",
     "fetch_maintainer_counts",
+    "fetch_provenance",
     "fetch_publish_times",
+    "fetch_repo_slugs",
 ]

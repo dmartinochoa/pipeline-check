@@ -162,6 +162,7 @@ STANDARD = Standard(
         "GHA-026":  ["CM-6", "CM-7"],                    # container job disables isolation
         "GHA-107":  ["CM-6", "CM-7"],                    # harden-runner in audit mode (egress not blocked)
         "GHA-108":  ["CM-6", "CM-7"],                    # no runtime egress control on OIDC/deploy workflow
+        "GHA-109":  ["CM-6", "CM-7"],                    # harden-runner not the first step
         "GHA-027":  ["CM-6", "SA-11"],                   # dangerous shell idiom
         "GHA-028":  ["SR-3", "SR-11"],                   # install bypasses registry integrity
         "GHA-029":  ["SR-3", "SR-11"],                   # package source bypasses lockfile
@@ -653,6 +654,9 @@ STANDARD = Standard(
         "NPM-008":  ["SR-3", "SR-11", "RA-5"],           # cooldown gate (--resolve-remote)
         "NPM-009":  ["SR-3", "SR-11"],                   # new-transitive-dep diff gate
         "NPM-010":  ["SR-3", "SR-11", "RA-5"],           # OSV advisory (--resolve-remote)
+        "NPM-014":  ["SR-3", "SR-11", "RA-5"],           # single-publisher risk
+        "NPM-015":  ["SR-3", "SR-11", "RA-5"],           # missing build provenance
+        "NPM-016":  ["SR-3", "SR-11", "RA-5"],           # low OpenSSF Scorecard
         "PYPI-008": ["SR-3", "SR-11", "RA-5"],           # cooldown gate (--resolve-remote)
         "PYPI-009": ["SR-3", "SR-11", "RA-5"],           # OSV advisory (--resolve-remote)
         # ── PyPI extended pack (PYPI-010..014) ──

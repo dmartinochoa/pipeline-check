@@ -199,6 +199,7 @@ STANDARD = Standard(
         "GHA-026":  ["PR.PS-01"],
         "GHA-107":  ["PR.PS-01"],   # harden-runner in audit mode (egress not blocked)
         "GHA-108":  ["PR.PS-01"],   # no runtime egress control on OIDC/deploy workflow
+        "GHA-109":  ["PR.PS-01"],   # harden-runner not the first step
         "GL-014":   ["PR.PS-01"],
         "GL-015":   ["PR.PS-01"],
         "GL-017":   ["PR.PS-01"],
@@ -737,6 +738,9 @@ STANDARD = Standard(
         "NPM-008":  ["GV.SC-05", "GV.SC-07", "PR.PS-02"],  # cooldown gate (--resolve-remote)
         "NPM-009":  ["GV.SC-05"],               # new-transitive-dep diff gate
         "NPM-010":  ["GV.SC-05", "GV.SC-07", "PR.PS-02"],  # OSV advisory (--resolve-remote)
+        "NPM-014":  ["GV.SC-05", "GV.SC-07", "PR.PS-02"],  # single-publisher risk
+        "NPM-015":  ["GV.SC-05", "GV.SC-07", "PR.PS-02"],  # missing build provenance
+        "NPM-016":  ["GV.SC-05", "GV.SC-07", "PR.PS-02"],  # low OpenSSF Scorecard
         "PYPI-008": ["GV.SC-05", "GV.SC-07", "PR.PS-02"],  # cooldown gate (--resolve-remote)
         "PYPI-009": ["GV.SC-05", "GV.SC-07", "PR.PS-02"],  # OSV advisory (--resolve-remote)
         # ── PyPI extended pack (PYPI-010..014) ──
