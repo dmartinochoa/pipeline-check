@@ -60,7 +60,14 @@ RULE = Rule(
         "the signal targeted; it does not fire on every job that merely "
         "references a secret. Severity is LOW because many teams accept "
         "this risk or enforce egress at the infrastructure layer, which "
-        "the workflow YAML can't express."
+        "the workflow YAML can't express.\n\n"
+        "Scope note: the harden-runner check is workflow-level. If any "
+        "job uses harden-runner, the rule passes for the whole workflow, "
+        "even when a sensitive job (one that mints an OIDC token or "
+        "deploys through an environment) runs with no harden-runner step "
+        "of its own. Each GitHub Actions job gets a fresh runner, so a "
+        "harden-runner step in one job protects only that job; an "
+        "unprotected sibling job is not flagged."
     ),
     known_fp=(
         "Egress controlled outside the workflow (self-hosted runners "
