@@ -98,6 +98,18 @@ release commit collapses this section into `## [X.Y.Z] - <date>`.
   Code Quality fingerprint is unchanged (it hashes only `check_id` /
   path / line), so enabling the flag never churns a dismissed MR
   thread. 13 new tests.
+- **Landing-page hero now performs a live scan (docs site).** The hero
+  terminal types the command in, ticks a scanner spinner, streams
+  findings with scanner cadence, counts the score up, and stamps the
+  grade, replacing the previous fade-in. Its rule rows now carry real
+  titles and severities from the registry (GHA-008 / 001 / 016 / 015)
+  instead of an invented severity gradient, the scan result is exposed
+  to screen readers behind a visually-hidden summary while the animated
+  specimen stays `aria-hidden`, and the provider grid gains the Composer
+  and RubyGems tiles. The headline accent gradient (previously scoped to
+  a `.pg-hero__title` element absent from the markup) now renders.
+  CSS-only reveal with a graceful no-JS / reduced-motion final state; no
+  package behavior change.
 
 ## [1.6.0] - 2026-05-29
 
