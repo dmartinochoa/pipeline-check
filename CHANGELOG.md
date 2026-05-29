@@ -59,6 +59,15 @@ release commit collapses this section into `## [X.Y.Z] - <date>`.
   a provider prefix. Severity and title come from the same registry
   `--explain` reads, so a new fixer auto-lists. Documented under
   `--man autofix` and `docs/usage.md`. 8 new tests.
+- **Contributor tooling: one-command pre-PR gate and a rule scaffold.**
+  `scripts/preflight.py` runs the same gates CI does (ruff lint,
+  doc-freshness, strict mypy, pytest) in one command and prints a
+  pass/fail summary; `--quick` swaps the full suite for the fast
+  drift/framework subset. `scripts/new_rule.py` scaffolds a rule module
+  plus its test stub, picks the next free ID, and prints the remaining
+  drift-gate checklist. Adds a "Your first rule in 10 minutes" guide, a
+  devcontainer, CODEOWNERS, a PR template, and `make check` / `fmt` /
+  `types` / `fast-test` / `docs-all` / `new-rule` targets.
 
 ### Changed
 
