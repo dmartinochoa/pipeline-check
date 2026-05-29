@@ -24,7 +24,13 @@ from typing import Any
 
 from ...base import Finding, Severity
 from ...rule import Rule
-from ..base import iter_jobs, iter_steps, step_location, workflow_triggers
+from ..base import (
+    find_run_command,
+    iter_jobs,
+    iter_steps,
+    step_location,
+    workflow_triggers,
+)
 
 RULE = Rule(
     id="GHA-103",
@@ -136,7 +142,7 @@ def _step_is_ai_review(step: dict[str, Any]) -> str | None:
                 return uses.split("@")[0]
     run = step.get("run")
     if isinstance(run, str):
-        m = _AI_CLI_RE.search(run)
+        m = find_run_command(run, _AI_CLI_RE)
         if m:
             return m.group(0).lower()
     return None

@@ -107,11 +107,20 @@ def evaluate(
     sorted by chain_id then severity then resources.
     """
     out: list[Chain] = []
+    # Chain rules correlate FAILING findings only: every helper
+    # (failing / group_by_resource / group_by_anchor / has_failing) and
+    # every rule body skips ``f.passed``. The orchestrators emit a
+    # Finding for every check on every doc, so on a large repo this list
+    # is dominated by passing findings no rule looks at. Filter once here
+    # instead of making each of the ~45 rules re-walk the full list,
+    # collapsing ~45 full passes into one filter plus per-rule passes over
+    # the (much smaller) failing subset.
+    failing_only = [f for f in findings if not f.passed]
     for rule, match in _discover():
         if enabled is not None and rule.id not in enabled:
             continue
         try:
-            matches = match(findings) or []
+            matches = match(failing_only) or []
         except Exception:  # pragma: no cover - defensive
             # A buggy chain rule must not abort evaluation of the others
             # (chains are an additive signal, never a gate by

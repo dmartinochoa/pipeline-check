@@ -230,6 +230,7 @@ nav:
       - VS Code extension: vscode.md
   - Contributing:
       - Architecture: architecture.md
+      - Your first rule in 10 minutes: contributing_first_rule.md
       - Adding a rule: writing_a_rule.md
       - Adding an attack chain: writing_a_chain.md
       - Adding a provider: writing_a_provider.md

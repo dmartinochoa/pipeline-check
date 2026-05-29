@@ -28,7 +28,13 @@ Design calls:
 from __future__ import annotations
 
 from .chains import Chain
-from .checks.base import Finding, Severity, inline_exploit, severity_rank
+from .checks.base import (
+    Finding,
+    Severity,
+    inline_exploit,
+    markdown_code_fence,
+    severity_rank,
+)
 from .scorer import ScoreResult
 
 _SEVERITY_EMOJI: dict[Severity, str] = {
@@ -187,11 +193,12 @@ def report_markdown(
             )
             lines.append("")
             for f, ex in exploits:
+                fence = markdown_code_fence(ex)
                 lines.append(f"**`{f.check_id}` {f.title}**")
                 lines.append("")
-                lines.append("```")
+                lines.append(fence)
                 lines.extend(ex.splitlines())
-                lines.append("```")
+                lines.append(fence)
                 lines.append("")
             lines.append("</details>")
             lines.append("")

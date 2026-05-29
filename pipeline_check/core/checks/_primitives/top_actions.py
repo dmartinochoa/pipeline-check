@@ -110,6 +110,14 @@ TOP_ACTIONS: tuple[str, ...] = (
 #: Lowercased lookup set for O(1) exact-match short-circuit.
 _TOP_ACTIONS_LOWER: frozenset[str] = frozenset(a.lower() for a in TOP_ACTIONS)
 
+#: ``(lowercased, canonical)`` pairs for the edit-distance scan. The
+#: distance compares against the lowercased form; the canonical form is
+#: what ``find_typosquat`` returns. Precomputed so the per-call loop
+#: doesn't re-lowercase all ~80 entries on every slug.
+_TOP_ACTIONS_PAIRS: tuple[tuple[str, str], ...] = tuple(
+    (a.lower(), a) for a in TOP_ACTIONS
+)
+
 
 def _damerau_levenshtein(a: str, b: str, ceiling: int) -> int:
     """Edit distance between *a* and *b*, capped at *ceiling*.
@@ -173,8 +181,8 @@ def find_typosquat(slug: str, max_distance: int = 2) -> str | None:
     if candidate in _TOP_ACTIONS_LOWER:
         return None
     best: tuple[int, str] | None = None
-    for top in TOP_ACTIONS:
-        d = _damerau_levenshtein(candidate, top.lower(), max_distance)
+    for top_lower, top in _TOP_ACTIONS_PAIRS:
+        d = _damerau_levenshtein(candidate, top_lower, max_distance)
         if 0 < d <= max_distance:
             if best is None or (d, top) < best:
                 best = (d, top)

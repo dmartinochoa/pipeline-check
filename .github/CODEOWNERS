@@ -1,0 +1,15 @@
+# Code owners for pipeline-check.
+#
+# This is a solo-maintained project, so one owner covers the whole
+# tree. GitHub auto-requests a review from the owner on every PR and
+# can enforce owner approval through branch protection.
+#
+# As the project grows, scope ownership by path. For example, hand a
+# provider pack to the contributor who maintains it:
+#
+#   /pipeline_check/core/checks/gitlab/   @some-contributor
+#
+# Reference:
+# https://docs.github.com/en/repositories/managing-your-repositorys-settings-and-features/customizing-your-repository/about-code-owners
+
+* @dmartinochoa

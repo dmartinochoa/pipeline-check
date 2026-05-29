@@ -23,7 +23,7 @@ from typing import Any
 
 from ...base import Finding, Severity
 from ...rule import Rule
-from ..base import iter_jobs, iter_steps, step_location
+from ..base import find_run_command, iter_jobs, iter_steps, step_location
 
 RULE = Rule(
     id="GHA-104",
@@ -114,7 +114,7 @@ _PR_ACTIONS: tuple[str, ...] = (
 def _step_invokes_ai(step: dict[str, Any]) -> str | None:
     run = step.get("run")
     if isinstance(run, str):
-        m = _AI_CLI_RE.search(run)
+        m = find_run_command(run, _AI_CLI_RE)
         if m:
             return m.group(0).lower()
     return None
@@ -132,7 +132,7 @@ def _step_pushes_directly(step: dict[str, Any]) -> str | None:
             if uses_lc.startswith(pr_action):
                 return None
     run = step.get("run")
-    if isinstance(run, str) and _GIT_PUSH_RE.search(run):
+    if isinstance(run, str) and find_run_command(run, _GIT_PUSH_RE):
         return "git push"
     return None
 

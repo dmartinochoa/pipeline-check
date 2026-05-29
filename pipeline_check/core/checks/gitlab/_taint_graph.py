@@ -92,6 +92,11 @@ class TaintPath:
 #   echo "KEY=value" > taint.env
 #   echo "KEY=value" >> taint.env
 # Captures the var name and the RHS value text. The redirect
+# Shell variable reference (``$NAME`` / ``${NAME}``). Static, so it's
+# compiled once at module load rather than per script line in the
+# quote-aware walker below.
+_VAR_REF_RE = re.compile(r"\$\{?(?P<name>[A-Za-z_][A-Za-z0-9_]*)\}?")
+
 # target is captured separately so downstream we can confirm the
 # job's ``artifacts.reports.dotenv`` exposes the same path.
 _DOTENV_WRITE_RE = re.compile(
@@ -140,9 +145,6 @@ def _iter_var_refs(text: str, names: set[str]) -> Iterator[tuple[str, int]]:
     in_single = False
     in_double = False
     i = 0
-    pattern = re.compile(
-        r"\$\{?(?P<name>[A-Za-z_][A-Za-z0-9_]*)\}?",
-    )
     while i < len(text):
         ch = text[i]
         if ch == "'" and not in_double:
@@ -154,7 +156,7 @@ def _iter_var_refs(text: str, names: set[str]) -> Iterator[tuple[str, int]]:
             i += 1
             continue
         if ch == "$" and not (in_single or in_double):
-            m = pattern.match(text, i)
+            m = _VAR_REF_RE.match(text, i)
             if m and m.group("name") in names:
                 yield m.group("name"), i
                 i = m.end()

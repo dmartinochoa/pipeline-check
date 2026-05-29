@@ -59,6 +59,15 @@ release commit collapses this section into `## [X.Y.Z] - <date>`.
   a provider prefix. Severity and title come from the same registry
   `--explain` reads, so a new fixer auto-lists. Documented under
   `--man autofix` and `docs/usage.md`. 8 new tests.
+- **Contributor tooling: one-command pre-PR gate and a rule scaffold.**
+  `scripts/preflight.py` runs the same gates CI does (ruff lint,
+  doc-freshness, strict mypy, pytest) in one command and prints a
+  pass/fail summary; `--quick` swaps the full suite for the fast
+  drift/framework subset. `scripts/new_rule.py` scaffolds a rule module
+  plus its test stub, picks the next free ID, and prints the remaining
+  drift-gate checklist. Adds a "Your first rule in 10 minutes" guide, a
+  devcontainer, CODEOWNERS, a PR template, and `make check` / `fmt` /
+  `types` / `fast-test` / `docs-all` / `new-rule` targets.
 
 ### Changed
 
@@ -71,8 +80,13 @@ release commit collapses this section into `## [X.Y.Z] - <date>`.
   to ~138ms. Separately, `Scanner.run()` caches the standards-to-control
   resolution per check_id rather than rebuilding the same `ControlRef`
   list for every finding, which roughly halves the rule and
-  post-processing phase on a workflow set with many findings. No
-  behavior change: same findings, same controls, same gate results.
+  post-processing phase on a workflow set with many findings. The
+  attack-chain engine now filters the findings list to failing findings
+  once before evaluating rules, instead of having each of the ~45 rules
+  re-walk a list dominated by passing findings; on a large monorepo
+  (~5k-16k findings) chain evaluation drops roughly 5x (about 9ms to
+  2ms at 50 files). No behavior change: same findings, same controls,
+  same chains, same gate results.
 - **`--inline-explain` now spans every text reporter.** The flag used
   to affect only the terminal panel; the structured formats dropped
   `exploit_example` entirely. The include/skip decision now lives in a

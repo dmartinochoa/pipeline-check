@@ -31,7 +31,7 @@ from typing import Any
 
 from ...base import Finding, Severity
 from ...rule import Rule
-from ..base import iter_jobs, iter_steps, step_location
+from ..base import find_run_command, iter_jobs, iter_steps, step_location
 
 # Same agentic-CLI vocabulary as GHA-058 / GHA-104. ``q chat`` is the
 # Amazon Q CLI; the bare ``q`` is too ambiguous to match on its own.
@@ -159,7 +159,7 @@ def _write_grant_label(perms: Any) -> str | None:
 def _step_invokes_ai(step: dict[str, Any]) -> str | None:
     run = step.get("run")
     if isinstance(run, str):
-        m = _AI_CLI_RE.search(run)
+        m = find_run_command(run, _AI_CLI_RE)
         if m:
             return re.sub(r"\s+", " ", m.group(0).strip().lower())
     return None

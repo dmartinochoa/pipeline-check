@@ -331,6 +331,28 @@ def inline_exploit(finding: Finding, inline_explain: bool) -> str | None:
     return None
 
 
+def markdown_code_fence(text: str) -> str:
+    """Return a backtick fence long enough to wrap *text* safely.
+
+    A fenced code block must open and close with a backtick run longer
+    than any run inside its body, otherwise a ``` embedded in the
+    snippet closes the block early and corrupts the rest of the
+    document. Returns three backticks in the common case (no embedded
+    backticks), one more than the longest run otherwise. Shared by the
+    markdown and SARIF reporters, which both fence ``exploit_example``
+    snippets.
+    """
+    longest = 0
+    run = 0
+    for ch in text:
+        if ch == "`":
+            run += 1
+            longest = max(longest, run)
+        else:
+            run = 0
+    return "`" * max(3, longest + 1)
+
+
 _ContextT = TypeVar("_ContextT")
 
 

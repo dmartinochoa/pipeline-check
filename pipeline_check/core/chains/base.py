@@ -5,7 +5,7 @@ from collections import defaultdict
 from dataclasses import dataclass
 from typing import Any
 
-from ..checks.base import Confidence, Finding, Severity
+from ..checks.base import Confidence, Finding, Severity, confidence_rank
 
 
 @dataclass(frozen=True, slots=True)
@@ -238,7 +238,6 @@ def min_confidence(findings: list[Finding]) -> Confidence:
     A chain is only as trustworthy as its weakest leg, if one leg is
     a heuristic blob match, the chain shouldn't claim HIGH confidence.
     """
-    from ..checks.base import confidence_rank
     if not findings:
         return Confidence.HIGH
     return min(
