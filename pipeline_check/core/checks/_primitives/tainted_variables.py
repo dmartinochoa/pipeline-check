@@ -33,11 +33,18 @@ from collections.abc import Callable, Iterable
 
 from ..base import is_quoted_assignment
 
-#: Strip every double-quoted segment from a line before re-checking
-#: for a variable reference. Bash double-quotes prevent re-evaluation,
-#: so ``cmd "$X"`` is safe even if ``$X`` carries shell
-#: metacharacters, the value is treated as a single literal argument.
-_DQ_SEGMENT_RE = re.compile(r'"[^"]*"')
+#: Strip every quoted segment from a line before re-checking for a
+#: variable reference. Bash double-quotes prevent re-evaluation, so
+#: ``cmd "$X"`` is safe even if ``$X`` carries shell metacharacters,
+#: the value is treated as a single literal argument. Single-quotes are
+#: stronger still, they suppress expansion entirely, so ``echo '$X'``
+#: is a literal and never references ``$X`` at all. Both must be removed
+#: before a surviving (unquoted) reference can be called unsafe;
+#: stripping only double-quotes flagged the recommended single-quote
+#: idiom as an injection. The double-quote alternative is tried first
+#: so a literal ``'`` inside a double-quoted span (``"it's $X"``) is
+#: consumed as part of that span, not treated as a single-quote opener.
+_QUOTED_SEGMENT_RE = re.compile(r"\"[^\"]*\"|'[^']*'")
 
 
 #: Compile-cache for per-name reference patterns. ``has_unsafe_reference``
@@ -95,7 +102,7 @@ def has_unsafe_reference(
                 continue
             if is_quoted_assignment(line):
                 continue
-            stripped = _DQ_SEGMENT_RE.sub("", line)
+            stripped = _QUOTED_SEGMENT_RE.sub("", line)
             if rx.search(stripped):
                 return True
     return False

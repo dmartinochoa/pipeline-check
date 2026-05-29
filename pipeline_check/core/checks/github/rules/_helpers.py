@@ -43,6 +43,12 @@ UNTRUSTED_CONTEXT_RE = re.compile(
     r"github\.event\.(?:"
     r"issue\.(?:title|body)"
     r"|pull_request\.(?:title|body|head\.ref|head\.label"
+    # A fork PR author fully controls their fork repo's free-form text
+    # fields. ``head.repo.description`` / ``.homepage`` are arbitrary
+    # text; ``.default_branch`` is an attacker-chosen ref name (git refs
+    # permit ``$()``, backticks, ``;``). All are documented untrusted
+    # sinks under pull_request_target.
+    r"|head\.repo\.(?:description|homepage|default_branch)"
     # ``labels.*.name`` (and ``.description``) lets a PR author or any
     # labeler land arbitrary text in a list a downstream job iterates.
     # Targets the GitHub Security Lab matrix-injection writeup shape.
@@ -56,9 +62,13 @@ UNTRUSTED_CONTEXT_RE = re.compile(
     r"|discussion\.(?:title|body)"
     r"|release\.(?:name|body|tag_name)"
     r"|deployment\.payload\.[^\})]*"
-    r"|workflow_run\.(?:head_branch|display_title|head_commit\.message)"
+    r"|workflow_run\.(?:head_branch|display_title|head_commit\.message"
+    r"|head_repository\.(?:description|homepage|default_branch))"
     r")"
-    r"|github\.(?:head_ref|ref_name|actor)"
+    # ``\b`` after the alternation so ``github.actor`` matches but
+    # ``github.actor_id`` (a numeric account ID, never injectable) does
+    # not get swallowed by the trailing ``[^\}]*`` wildcard below.
+    r"|github\.(?:head_ref|ref_name|actor)\b"
     r"|github\.event\.pull_request\.base\.ref"
     r"|github\.event\.client_payload\.[^\})]*"
     r"|inputs\.[A-Za-z_][A-Za-z0-9_]*"
@@ -69,8 +79,14 @@ UNTRUSTED_CONTEXT_RE = re.compile(
 )
 
 # A ``ref:`` value pointing at the PR head, used by GHA-002.
+# ``github.head_ref`` is the documented shorthand for
+# ``github.event.pull_request.head.ref`` and is the more common way
+# to write a PR-head checkout, so it must be caught too.
 PR_HEAD_REF_RE = re.compile(
-    r"\$\{\{\s*github\.event\.pull_request\.head\.(?:sha|ref)\s*\}\}"
+    r"\$\{\{\s*(?:"
+    r"github\.event\.pull_request\.head\.(?:sha|ref)"
+    r"|github\.head_ref"
+    r")\s*\}\}"
 )
 
 # Cache-key taint regex used by GHA-011.
