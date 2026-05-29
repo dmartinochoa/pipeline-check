@@ -78,6 +78,7 @@ from .core.policies import (
     policy_to_config_map,
 )
 from .core.reporter import (
+    next_steps_tip,
     report_chains_terminal,
     report_inventory_terminal,
     report_json,
@@ -3428,6 +3429,12 @@ def scan(
             report_chains_terminal(chains, console=console)
         if components is not None:
             report_inventory_terminal(components, console=console)
+        # Final line of a terminal scan: a single "what next" nudge,
+        # rendered after every panel so it's the last thing on screen.
+        tip = next_steps_tip(findings, severity_threshold=threshold)
+        if tip:
+            console.print()
+            console.print(tip)
 
     if output in ("json", "both"):
         json_text = report_json(
@@ -4484,39 +4491,91 @@ def init_cmd(
 
 
 def _print_init_summary(result: Any, config_path: str) -> None:
-    """Render the post-scan summary the smart-init flow prints to stderr."""
-    click.echo(f"[init] wrote {config_path} (pipeline: {result.detected_pipeline})", err=True)
+    """Render the post-scan summary as a short guided tour to stderr.
+
+    Rich gives the grade and severities the same color language as a
+    scan report, so ``init`` and a normal run read as one product. The
+    console writes to stderr (stdout stays clean for piping) and, under
+    a non-terminal (tests, CI logs), renders as plain text, so the
+    ``[init]`` log lines downstream tooling greps for survive intact.
+    The literal ``[init]`` prefix is escaped (``\\[init]``) so Rich
+    doesn't try to parse it as a ``[style]`` tag.
+    """
+    from rich.console import Console
+    from rich.markup import escape as _esc
+
+    from .core.reporter import _GRADE_STYLE, _SEVERITY_STYLE
+
+    console = Console(stderr=True)
+
+    # 1. What got written.
+    console.print(
+        rf"\[init] wrote [bold]{_esc(config_path)}[/bold] "
+        f"(pipeline: {result.detected_pipeline})"
+    )
     if result.has_failures:
-        click.echo(
-            f"[init] wrote {result.baseline_path} "
-            f"({result.failing_findings} failing finding(s) baselined)",
-            err=True,
+        console.print(
+            rf"\[init] wrote [bold]{_esc(result.baseline_path)}[/bold] "
+            f"({result.failing_findings} failing finding(s) baselined)"
+        )
+
+    # 2. The result, in the scan report's color language.
+    grade_style = _GRADE_STYLE.get(result.grade, "white")
+    fail_on = result.recommended_fail_on.value
+    console.print(
+        f"\n  [{grade_style}]Grade {result.grade}[/{grade_style}] "
+        f"[dim]·[/dim] score {result.score}/100"
+    )
+    if result.has_failures:
+        console.print(
+            f"  Gate set to [bold]fail_on={fail_on}[/bold]. Today's "
+            f"{result.failing_findings} finding(s) are baselined, so CI "
+            f"blocks only on [bold]new[/bold] ones."
         )
     else:
-        click.echo(
-            "[init] no failing findings to baseline; gate runs against "
-            "every future finding from a clean slate.",
-            err=True,
+        console.print(
+            f"  No failing findings. Gate set to [bold]fail_on={fail_on}[/bold] "
+            f"from a clean slate (nothing to baseline)."
         )
-    click.echo(
-        f"[init] score {result.score}/100, grade {result.grade}; "
-        f"recommended gate: fail_on={result.recommended_fail_on.value}",
-        err=True,
-    )
+
+    # 3. The shortlist, severity-colored, with forward-slashed paths.
     if result.top:
-        click.echo("[init] top to fix first:", err=True)
-        width = max(len(t.check_id) for t in result.top)
+        console.print("\n" + r"\[init] top to fix first:")
+        id_w = max(len(t.check_id) for t in result.top)
         for t in result.top:
-            tag = " [autofix available]" if t.fixable else ""
-            click.echo(
-                f"        {t.check_id:<{width}}  {t.severity.value:<8}  "
-                f"{t.title}  ({t.resource}){tag}",
-                err=True,
+            sev_style = _SEVERITY_STYLE.get(t.severity, "white")
+            tag = "  [dim](autofix)[/dim]" if t.fixable else ""
+            resource = _esc(t.resource.replace("\\", "/"))
+            console.print(
+                f"    [bold]{t.check_id:<{id_w}}[/bold]  "
+                f"[{sev_style}]{t.severity.value:<8}[/{sev_style}]  "
+                f"{_esc(t.title)}  [dim]{resource}[/dim]{tag}"
             )
-        click.echo(
-            "[init] run `pipeline_check explain <ID>` for any of the above, "
-            "or `pipeline_check --fix --apply` to apply autofixes.",
-            err=True,
+
+    # 4. The guided "now what". Commit the artifacts; fix-oriented steps
+    # only when there's something to fix.
+    commit = f"commit [bold]{_esc(config_path)}[/bold]"
+    if result.has_failures:
+        commit += f" and [bold]{_esc(result.baseline_path)}[/bold]"
+    console.print("\n" + r"\[init] next steps:")
+    console.print(f"    [dim]1.[/dim] {commit}")
+    if result.top:
+        top_id = result.top[0].check_id
+        console.print(
+            "    [dim]2.[/dim] see every finding   [bold]pipeline_check[/bold]"
+        )
+        console.print(
+            f"    [dim]3.[/dim] understand a rule   "
+            f"[bold]pipeline_check explain {top_id}[/bold]"
+        )
+        console.print(
+            "    [dim]4.[/dim] apply autofixes     "
+            "[bold]pipeline_check --fix --apply[/bold]"
+        )
+    else:
+        console.print(
+            "    [dim]2.[/dim] wire it into CI     "
+            f"[bold]pipeline_check --fail-on {fail_on}[/bold]"
         )
 
 

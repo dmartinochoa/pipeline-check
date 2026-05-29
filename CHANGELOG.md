@@ -71,6 +71,29 @@ release commit collapses this section into `## [X.Y.Z] - <date>`.
 
 ### Changed
 
+- **Cleaner default terminal report.** The findings table sizes to its
+  content instead of padding out to the full terminal width, so a scan
+  on a wide terminal no longer leaves a lake of empty space. Resource
+  paths render with forward slashes (a Windows scan now reads like the
+  docs) and head-truncate when long, so the filename and line number
+  always survive instead of folding mid-token (`release.ym` / `l:172`).
+  Severity colors match the design system's terminal-tuned scale
+  (CRITICAL red, HIGH orange, MEDIUM gold, LOW cyan), so a CLI
+  screenshot reads as the same product as the HTML report and docs.
+  The `Conf.` column, which previously printed `HIG` on every row,
+  now appears only when a shown finding sits below HIGH confidence, so
+  the common all-high scan drops the noise column and gives titles the
+  room. A single dim `Next →` line closes a terminal scan, pointing at
+  `pipeline_check explain <top-rule>` and `--fix --apply` (when fixers
+  exist) so even a passing run with findings says what to do next.
+- **`init` reads like a guided tour.** The post-scan summary now prints
+  the grade and the top-to-fix severities in the same color language as
+  a scan report, forward-slashes the resource paths (matching the
+  table), and closes with a numbered "next steps" block (commit the two
+  files, see findings, `explain` the top rule, `--fix --apply`) instead
+  of a single dense line. Clean scans get a "from a clean slate" path
+  that points straight at the CI gate. The machine-readable `[init]`
+  log lines are preserved for anything grepping the output.
 - **Faster CLI startup and scans.** The provider registry now imports a
   provider module only when that provider is selected, instead of
   importing all 32 at load time, and `boto3` moved behind
@@ -98,6 +121,18 @@ release commit collapses this section into `## [X.Y.Z] - <date>`.
   Code Quality fingerprint is unchanged (it hashes only `check_id` /
   path / line), so enabling the flag never churns a dismissed MR
   thread. 13 new tests.
+- **Landing-page hero now performs a live scan (docs site).** The hero
+  terminal types the command in, ticks a scanner spinner, streams
+  findings with scanner cadence, counts the score up, and stamps the
+  grade, replacing the previous fade-in. Its rule rows now carry real
+  titles and severities from the registry (GHA-008 / 001 / 016 / 015)
+  instead of an invented severity gradient, the scan result is exposed
+  to screen readers behind a visually-hidden summary while the animated
+  specimen stays `aria-hidden`, and the provider grid gains the Composer
+  and RubyGems tiles. The headline accent gradient (previously scoped to
+  a `.pg-hero__title` element absent from the markup) now renders.
+  CSS-only reveal with a graceful no-JS / reduced-motion final state; no
+  package behavior change.
 
 ## [1.6.0] - 2026-05-29
 

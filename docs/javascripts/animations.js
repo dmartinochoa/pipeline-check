@@ -141,35 +141,100 @@
     observers.push(obs);
   }
 
-  // ── Module 4: Terminal Replay ────────────────────────────────
+  // ── Module 4: Terminal Scan Player ───────────────────────────
+  // The line reveal, typewriter, spinner, and grade stamp are all
+  // CSS — they play on load and degrade to the final state with no
+  // JS. This module adds the one thing CSS can't do (count the
+  // numeric score up to its target in time with the score line
+  // landing) and replays the whole sequence on re-entry.
 
-  function initTerminalReplay() {
+  function initTerminal() {
     var terminal = document.querySelector(".pg-terminal");
     if (!terminal) return;
 
-    var hasPlayed = false;
+    // Below 960px the hero stacks into one column, so the terminal can
+    // start below the fold. If it loaded off-screen its CSS reveal
+    // finishes before the observer ever fires, so we replay it on the
+    // first view (see the observer's first-view branch).
+    var rect = terminal.getBoundingClientRect();
+    var initiallyVisible = rect.bottom > 0 && rect.top < window.innerHeight;
+
+    var scoreEl = terminal.querySelector(".pg-terminal__score");
+    var scoreTarget = scoreEl
+      ? parseInt(scoreEl.getAttribute("data-score"), 10)
+      : 0;
+
+    // Kept in sync with the .l14 (score line) animation-delay in
+    // extra.css so the count-up starts as the line lands.
+    var SCORE_DELAY = 3600;
+    var SCORE_DURATION = 1100;
+
+    var seen = false;
+    var timers = [];
+    var scoreRaf = 0;
+
+    function clearTimers() {
+      timers.forEach(function (t) { clearTimeout(t); });
+      timers = [];
+      // Cancel any in-flight count-up so a re-entry doesn't leave the
+      // old RAF loop writing to the score cell alongside the new one.
+      if (scoreRaf) {
+        cancelAnimationFrame(scoreRaf);
+        scoreRaf = 0;
+      }
+    }
+
+    function countScore() {
+      if (!scoreEl) return;
+      var startT;
+      scoreEl.textContent = "0";
+      function tick(now) {
+        if (startT === undefined) startT = now;
+        var progress = Math.min((now - startT) / SCORE_DURATION, 1);
+        var eased = 1 - Math.pow(1 - progress, 3);
+        scoreEl.textContent = Math.round(eased * scoreTarget);
+        if (progress < 1) {
+          scoreRaf = requestAnimationFrame(tick);
+        } else {
+          scoreRaf = 0;
+        }
+      }
+      scoreRaf = requestAnimationFrame(tick);
+    }
+
+    // Restart the CSS-driven pieces by clearing then restoring each
+    // element's inline animation, with a forced reflow in between.
+    function restartCss() {
+      var els = Array.prototype.slice.call(terminal.querySelectorAll(
+        ".line, .pg-terminal__cmd, .pg-terminal__spin, .pg-terminal__grade"
+      ));
+      els.forEach(function (el) { el.style.animation = "none"; });
+      void terminal.offsetWidth;
+      els.forEach(function (el) { el.style.animation = ""; });
+    }
+
+    function scheduleCount() {
+      if (scoreEl) scoreEl.textContent = "0";
+      clearTimers();
+      timers.push(setTimeout(countScore, SCORE_DELAY));
+    }
 
     var obs = new IntersectionObserver(function (entries) {
       entries.forEach(function (entry) {
         if (!entry.isIntersecting) return;
-        if (!hasPlayed) {
-          hasPlayed = true;
+        if (!seen) {
+          // First view. If the terminal was on-screen at load its CSS
+          // reveal is already running, so we just time the count-up to
+          // it. If it loaded off-screen that reveal already finished,
+          // so replay it now.
+          seen = true;
+          if (!initiallyVisible) restartCss();
+          scheduleCount();
           return;
         }
-
-        var lines = terminal.querySelectorAll(".line");
-        var cursor = terminal.querySelector(".pg-cursor");
-        var els = cursor ? Array.prototype.slice.call(lines).concat([cursor]) : Array.prototype.slice.call(lines);
-
-        els.forEach(function (el) {
-          el.style.animation = "none";
-        });
-
-        void terminal.offsetWidth;
-
-        els.forEach(function (el) {
-          el.style.animation = "";
-        });
+        // Re-entry: replay the full sequence.
+        restartCss();
+        scheduleCount();
       });
     }, { threshold: 0.3 });
 
@@ -207,7 +272,7 @@
 
     if (reducedMotion.matches) return;
 
-    initTerminalReplay();
+    initTerminal();
     initParallax();
   }
 

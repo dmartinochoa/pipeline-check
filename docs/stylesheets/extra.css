@@ -1270,17 +1270,12 @@ img.pg-hero__mark {
   opacity: 0.6;
 }
 
-.pg-hero__title {
-  font-size: clamp(2.4rem, 4.6vw, 3.6rem);
-  line-height: 1.05;
-  font-weight: 700;
-  margin: 0 0 1.1rem;
-  letter-spacing: -0.035em;
-  color: #fff;
-  text-wrap: balance;
-}
-
-.pg-hero__title .accent {
+/* Headline accent — the gradient run inside the hero H1
+   (``<span class="accent">``). The H1 is a markdown heading styled
+   via ``.pg-hero ... h1`` above, so the accent is scoped to the
+   hero, not to a ``.pg-hero__title`` element (which doesn't exist
+   in the markup). */
+.pg-hero .accent {
   background: linear-gradient(135deg, #1ba3a9 0%, #6dd5ed 100%);
   -webkit-background-clip: text;
   background-clip: text;
@@ -1460,13 +1455,52 @@ img.pg-hero__mark {
 .pg-terminal .label     { color: #fff; font-weight: 600; }
 
 /* ----- Animated scan output -------------------------------- */
-/* Each line lands sequentially with realistic scanner cadence:
-   short pauses between findings, longer pauses around section
-   breaks. Plays once on page load. Reduced-motion users get the
-   final state instantly. */
+/* The hero terminal performs a scan on load: the command types in,
+   a scanner spins, findings stream in with realistic cadence, the
+   score counts up, and the grade badge stamps in. The reveal is
+   CSS (plays on load, degrades to the final state with no JS);
+   animations.js coordinates the numeric score count-up and replays
+   the sequence on re-scroll. Reduced-motion users get the final
+   state instantly. */
 
 .pg-terminal .line {
   display: block;
+}
+
+/* Command typewriter. The typed run is clipped by an inline-block
+   wrapper whose width animates 0 -> its character length; JetBrains
+   Mono is monospace so `ch` units land on glyph boundaries. A teal
+   caret rides the growing edge, then clears when typing finishes. */
+.pg-terminal__cmd {
+  display: inline-block;
+  white-space: nowrap;
+  overflow: hidden;
+  vertical-align: bottom;
+  --cmd-ch: 32ch;
+}
+
+/* Scanner spinner: a small teal arc, drawn entirely with borders,
+   that spins for the scan window then fades. Empty element, so it
+   degrades to nothing (not a stray glyph) when motion is off. */
+.pg-terminal__spin {
+  display: inline-block;
+  width: 0.72em;
+  height: 0.72em;
+  border: 2px solid color-mix(in oklab, var(--pg-teal-400) 30%, transparent);
+  border-top-color: var(--pg-teal-400);
+  border-radius: 50%;
+  vertical-align: -0.08em;
+  opacity: 0;
+}
+
+/* Score number + grade badge final (static) state. */
+.pg-terminal__score {
+  color: #fff;
+  font-weight: 600;
+}
+
+.pg-terminal__grade {
+  display: inline-block;
 }
 
 @media (prefers-reduced-motion: no-preference) {
@@ -1476,25 +1510,44 @@ img.pg-hero__mark {
     animation: pg-line-in 0.32s cubic-bezier(0.2, 0.7, 0.3, 1) forwards;
   }
 
-  .pg-terminal .l1  { animation-delay: 0.20s; }
-  .pg-terminal .l2  { animation-delay: 0.32s; }
-  .pg-terminal .l3  { animation-delay: 0.50s; }
-  .pg-terminal .l4  { animation-delay: 0.68s; }
-  .pg-terminal .l5  { animation-delay: 1.00s; }
-  .pg-terminal .l6  { animation-delay: 1.18s; }
-  .pg-terminal .l7  { animation-delay: 1.50s; }
-  .pg-terminal .l8  { animation-delay: 1.68s; }
-  .pg-terminal .l9  { animation-delay: 2.00s; }
-  .pg-terminal .l10 { animation-delay: 2.18s; }
-  .pg-terminal .l11 { animation-delay: 2.45s; }
-  .pg-terminal .l12 { animation-delay: 2.65s; }
-  .pg-terminal .l13 { animation-delay: 2.85s; }
-  .pg-terminal .l14 { animation-delay: 3.00s; }
-  .pg-terminal .l15 { animation-delay: 3.20s; }
-  .pg-terminal .l16 { animation-delay: 3.40s; }
-  .pg-terminal .l17 { animation-delay: 3.62s; }
-  .pg-terminal .l18 { animation-delay: 3.82s; }
-  .pg-terminal .l19 { animation-delay: 4.05s; }
+  /* Command types over ~0.9s; scan spinner runs while findings begin
+     to land; the score line and grade stamp close the sequence. */
+  .pg-terminal .l1  { animation-delay: 0.15s; }
+  .pg-terminal .l2  { animation-delay: 1.05s; }
+  .pg-terminal .l3  { animation-delay: 1.15s; }
+  .pg-terminal .l4  { animation-delay: 1.95s; }
+  .pg-terminal .l5  { animation-delay: 2.10s; }
+  .pg-terminal .l6  { animation-delay: 2.22s; }
+  .pg-terminal .l7  { animation-delay: 2.45s; }
+  .pg-terminal .l8  { animation-delay: 2.57s; }
+  .pg-terminal .l9  { animation-delay: 2.80s; }
+  .pg-terminal .l10 { animation-delay: 2.92s; }
+  .pg-terminal .l11 { animation-delay: 3.15s; }
+  .pg-terminal .l12 { animation-delay: 3.27s; }
+  .pg-terminal .l13 { animation-delay: 3.50s; }
+  .pg-terminal .l14 { animation-delay: 3.60s; }
+  .pg-terminal .l15 { animation-delay: 3.75s; }
+  .pg-terminal .l16 { animation-delay: 3.90s; }
+  .pg-terminal .l17 { animation-delay: 3.98s; }
+  .pg-terminal .l18 { animation-delay: 4.12s; }
+  .pg-terminal .l19 { animation-delay: 4.20s; }
+  .pg-terminal .l20 { animation-delay: 4.35s; }
+
+  .pg-terminal__cmd {
+    width: 0;
+    border-right: 2px solid var(--pg-teal-400);
+    animation: pg-type 0.9s steps(32, end) 0.25s forwards;
+  }
+
+  .pg-terminal__spin {
+    animation: pg-spin-rot 1.05s linear 1.15s forwards;
+  }
+
+  .pg-terminal__grade {
+    opacity: 0;
+    transform: scale(1.6);
+    animation: pg-grade-stamp 0.42s var(--ease-out) 3.95s forwards;
+  }
 }
 
 @keyframes pg-line-in {
@@ -1502,6 +1555,26 @@ img.pg-hero__mark {
     opacity: 1;
     transform: translateY(0);
   }
+}
+
+@keyframes pg-type {
+  to {
+    width: var(--cmd-ch);
+    border-right-color: transparent;
+  }
+}
+
+@keyframes pg-spin-rot {
+  0%   { opacity: 0; transform: rotate(0); }
+  12%  { opacity: 1; }
+  82%  { opacity: 1; transform: rotate(560deg); }
+  100% { opacity: 0; transform: rotate(620deg); }
+}
+
+@keyframes pg-grade-stamp {
+  0%   { opacity: 0; transform: scale(1.6) rotate(-6deg); }
+  60%  { opacity: 1; transform: scale(0.94) rotate(1deg); }
+  100% { opacity: 1; transform: scale(1) rotate(0); }
 }
 
 /* Blinking cursor at the prompt position after the last line lands. */
@@ -1517,7 +1590,7 @@ img.pg-hero__mark {
 
 @media (prefers-reduced-motion: no-preference) {
   .pg-cursor {
-    animation: pg-cursor-blink 1.05s steps(1, end) 4.5s infinite;
+    animation: pg-cursor-blink 1.05s steps(1, end) 4.8s infinite;
   }
 }
 
@@ -1530,6 +1603,20 @@ img.pg-hero__mark {
 @keyframes pg-cursor-blink {
   0%, 49%   { opacity: 1; }
   50%, 100% { opacity: 0; }
+}
+
+/* Visually-hidden text — exposes the terminal's scan result to
+   screen readers while the animated specimen stays aria-hidden. */
+.pg-visually-hidden {
+  position: absolute !important;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  border: 0;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
 }
 
 /* ============================================================
@@ -1747,35 +1834,9 @@ img.pg-hero__mark {
 .pg-feature a.pg-feature__link:hover::after { transform: translateX(2px); }
 
 /* ----- Provider grid ----------------------------------------
-   Fixed 4-column layout prevents orphan items on the last row
-   from stretching to fill available space. Drops to 3 → 2 → 1
-   columns at narrower viewports. The last two entries (SCM
-   posture, Package registries) have long names with parenthetical
-   lists; they span 2 columns so the text can breathe. */
-.pg-providers {
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 0.55rem;
-}
-
-@media (max-width: 960px) {
-  .pg-providers {
-    grid-template-columns: repeat(3, 1fr);
-  }
-}
-
-@media (max-width: 640px) {
-  .pg-providers {
-    grid-template-columns: repeat(2, 1fr);
-  }
-}
-
-@media (max-width: 400px) {
-  .pg-providers {
-    grid-template-columns: 1fr;
-  }
-}
-
+   Provider chips, grouped into category rows by
+   ``.pg-provider-group`` (which owns the responsive 4 → 3 → 2 → 1
+   column layout further down). */
 .pg-provider {
   background: var(--md-default-bg-color);
   border: 1px solid var(--md-default-fg-color--lightest);
@@ -1822,17 +1883,6 @@ img.pg-hero__mark {
   white-space: nowrap;
 }
 
-/* Wide entries: long parenthetical names span 2 columns */
-.pg-provider--wide {
-  grid-column: span 2;
-}
-
-@media (max-width: 400px) {
-  .pg-provider--wide {
-    grid-column: span 1;
-  }
-}
-
 /* Sub-groups: SCM posture, package registries */
 .pg-provider-group {
   display: grid;
@@ -1877,256 +1927,6 @@ img.pg-hero__mark {
   padding: 2rem 1.25rem;
   text-align: center;
 }
-
-/* ============================================================
-   Interactive scan-pipeline flow
-   ============================================================ */
-
-.pg-flow {
-  list-style: none;
-  margin: 0;
-  padding: 0;
-  display: grid;
-  grid-template-columns: repeat(5, 1fr);
-  gap: 0;
-  position: relative;
-}
-
-@media (max-width: 900px) {
-  .pg-flow { grid-template-columns: 1fr; }
-}
-
-.pg-flow__step {
-  position: relative;
-  padding: 0 0.5rem;
-}
-
-/* Connector line between steps (desktop horizontal, mobile vertical) */
-.pg-flow__step:not(:last-child)::after {
-  content: "";
-  position: absolute;
-  background: linear-gradient(90deg,
-    color-mix(in oklab, var(--md-default-fg-color--lightest) 40%, transparent) 0%,
-    var(--pg-teal-500) 100%);
-  opacity: 0.6;
-}
-
-@media (min-width: 901px) {
-  .pg-flow__step:not(:last-child)::after {
-    top: 36px;
-    right: -0.5rem;
-    left: calc(100% - 1rem);
-    height: 2px;
-  }
-}
-
-@media (max-width: 900px) {
-  .pg-flow__step:not(:last-child)::after {
-    left: 24px;
-    top: calc(100% - 0.5rem);
-    bottom: -0.5rem;
-    width: 2px;
-    background: linear-gradient(180deg,
-      color-mix(in oklab, var(--md-default-fg-color--lightest) 40%, transparent) 0%,
-      var(--pg-teal-500) 100%);
-  }
-  .pg-flow__step { margin-bottom: 1rem; }
-}
-
-/* Node — the visible interactive button */
-.pg-flow__node {
-  position: relative;
-  width: 100%;
-  background: var(--md-default-bg-color);
-  border: 1px solid var(--md-default-fg-color--lightest);
-  border-radius: 12px;
-  padding: 1rem 1rem 1.1rem;
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  gap: 0.15rem;
-  cursor: pointer;
-  text-align: left;
-  font: inherit;
-  color: inherit;
-  transition: border-color 0.18s ease, transform 0.18s ease,
-              box-shadow 0.18s ease, background 0.18s ease;
-  z-index: 1;
-}
-
-.pg-flow__node:hover,
-.pg-flow__node:focus-visible {
-  border-color: var(--pg-teal-500);
-  transform: translateY(-2px);
-  box-shadow: 0 12px 28px -16px color-mix(in oklab, var(--pg-teal-500) 60%, transparent);
-  outline: none;
-  background: color-mix(in oklab, var(--md-default-bg-color) 96%, var(--pg-teal-500));
-}
-
-.pg-flow__icon {
-  width: 32px;
-  height: 32px;
-  border-radius: 8px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  background: color-mix(in oklab, var(--md-default-bg-color) 86%, var(--pg-teal-500));
-  color: var(--pg-teal-500);
-  margin-bottom: 0.6rem;
-  transition: background 0.18s ease, color 0.18s ease;
-}
-
-.pg-flow__node:hover .pg-flow__icon,
-.pg-flow__node:focus-visible .pg-flow__icon {
-  background: var(--pg-teal-500);
-  color: #fff;
-}
-
-[data-md-color-scheme="slate"] .pg-flow__icon {
-  background: color-mix(in oklab, var(--md-default-bg-color) 80%, var(--pg-teal-500));
-  color: var(--pg-teal-400);
-}
-
-.pg-flow__num {
-  font-family: "JetBrains Mono", ui-monospace, monospace;
-  font-size: 0.7rem;
-  letter-spacing: 0.08em;
-  color: var(--md-default-fg-color--lighter);
-  font-weight: var(--fw-refined);
-}
-
-.pg-flow__label {
-  font-size: 1rem;
-  font-weight: var(--fw-card-h);
-  letter-spacing: -0.02em;
-  color: var(--md-default-fg-color);
-}
-
-.pg-flow__sub {
-  font-size: 0.78rem;
-  color: var(--md-default-fg-color--light);
-  font-family: "JetBrains Mono", ui-monospace, monospace;
-  letter-spacing: 0.01em;
-}
-
-/* Popover card */
-.pg-flow__card {
-  position: absolute;
-  top: calc(100% + 0.75rem);
-  left: 0.5rem;
-  right: 0.5rem;
-  z-index: 10;
-  background: var(--md-default-bg-color);
-  border: 1px solid var(--md-default-fg-color--lightest);
-  border-top: 3px solid var(--pg-teal-500);
-  border-radius: 10px;
-  padding: 1rem 1.1rem 1.1rem;
-  box-shadow: 0 24px 48px -16px color-mix(in oklab, var(--pg-navy-900) 35%, transparent);
-  opacity: 0;
-  visibility: hidden;
-  transform: translateY(-6px);
-  transition: opacity 0.18s ease, transform 0.18s ease, visibility 0.18s ease;
-  pointer-events: none;
-  font-size: 0.84rem;
-  line-height: 1.55;
-}
-
-@media (min-width: 901px) {
-  /* On wider grids, give the popover a comfortable fixed width
-     and let it overlap neighbours via z-index + shadow. */
-  .pg-flow__card {
-    width: 320px;
-    max-width: 320px;
-    right: auto;
-  }
-
-  /* The last two steps' popovers anchor right-edge so they don't
-     overflow the viewport. */
-  .pg-flow__step:nth-child(4) .pg-flow__card,
-  .pg-flow__step:nth-child(5) .pg-flow__card {
-    left: auto;
-    right: 0.5rem;
-  }
-}
-
-.pg-flow__step:hover .pg-flow__card,
-.pg-flow__step:focus-within .pg-flow__card {
-  opacity: 1;
-  visibility: visible;
-  transform: translateY(0);
-  pointer-events: auto;
-}
-
-.pg-flow__card-title {
-  font-weight: var(--fw-card-h);
-  font-size: 0.95rem;
-  letter-spacing: -0.015em;
-  margin-bottom: 0.45rem;
-  color: var(--md-default-fg-color);
-}
-
-.pg-flow__card p {
-  margin: 0 0 0.65rem;
-  color: var(--md-default-fg-color--light);
-}
-
-.pg-flow__card ul {
-  margin: 0 0 0.85rem;
-  padding-left: 1rem;
-  list-style: none;
-}
-
-.pg-flow__card ul li {
-  position: relative;
-  padding-left: 0.85rem;
-  margin-bottom: 0.3rem;
-  color: var(--md-default-fg-color--light);
-}
-
-.pg-flow__card ul li::before {
-  content: "";
-  position: absolute;
-  left: 0;
-  top: 0.6em;
-  width: 4px;
-  height: 4px;
-  border-radius: 50%;
-  background: var(--pg-teal-500);
-}
-
-[data-md-color-scheme="slate"] .pg-flow__card ul li::before {
-  background: var(--pg-teal-400);
-}
-
-.pg-flow__card code {
-  font-size: 0.82em;
-  padding: 0.1em 0.35em;
-}
-
-.pg-flow__link {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.25rem;
-  font-size: 0.8rem;
-  font-weight: 600;
-  color: var(--pg-teal-500);
-  text-decoration: none;
-}
-
-.pg-flow__link:hover { text-decoration: underline; }
-.pg-flow__link::after {
-  content: "→";
-  transition: transform 0.15s ease;
-}
-.pg-flow__link:hover::after { transform: translateX(2px); }
-
-[data-md-color-scheme="slate"] .pg-flow__link {
-  color: var(--pg-teal-400);
-}
-
-/* Strip the external-link arrow inside flow cards (it's all
-   internal docs links there) */
-.pg-flow__card a::after { content: ""; }
 
 /* ----- Output formats grid -------------------------------- */
 /* ============================================================
@@ -4118,6 +3918,14 @@ body:has(.pg-home) .md-search__form:focus-within,
   .md-typeset h4 {
     color: #000 !important;
     page-break-after: avoid;
+  }
+
+  /* The hero accent paints text via a clipped gradient with a
+     transparent fill, which prints as invisible words. Drop the
+     gradient and fill with the normal text color on paper. */
+  .pg-hero .accent {
+    background: none !important;
+    -webkit-text-fill-color: currentColor !important;
   }
 
   .md-typeset h1::after,
