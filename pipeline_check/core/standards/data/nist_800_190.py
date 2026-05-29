@@ -60,6 +60,9 @@ STANDARD = Standard(
         "CB-002":   ["4.1.2", "4.4.4"],
         "GHA-017":  ["4.1.2", "4.4.4"],
         "GHA-026":  ["4.1.2", "4.4.3"],
+        "GHA-107":  ["4.4.3"],            # harden-runner in audit mode (egress not blocked)
+        "GHA-108":  ["4.4.3"],            # no runtime egress control on OIDC/deploy workflow
+        "GHA-109":  ["4.4.3"],            # harden-runner not the first step
         "GL-017":   ["4.1.2", "4.4.4"],
         "BB-013":   ["4.1.2", "4.4.4"],
         "ADO-017":  ["4.1.2", "4.4.4"],

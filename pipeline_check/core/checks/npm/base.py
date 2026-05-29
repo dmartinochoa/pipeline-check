@@ -39,10 +39,13 @@ import datetime as _dt
 import json
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 from ...diff import git_show, git_top
 from ..base import BaseCheck, safe_load_yaml
+
+if TYPE_CHECKING:
+    from .._primitives.scorecard import ScorecardResult
 
 #: Filenames the npm loader picks up. ``package.json`` is the manifest;
 #: ``package-lock.json`` / ``npm-shrinkwrap.json`` / ``pnpm-lock.yaml``
@@ -124,6 +127,27 @@ class NpmContext:
         #: the dict is empty so the rule's absence isn't a CI
         #: failure for users on the default no-network path.
         self.publish_times: dict[str, dict[str, _dt.datetime]] = {}
+        #: ``{package_name: publisher_count}`` populated alongside
+        #: ``publish_times`` by the npm provider's ``post_filter`` when
+        #: ``--resolve-remote`` is on, parsed from the same packument
+        #: (the top-level ``maintainers`` array). NPM-014
+        #: (single-publisher risk) reads it and passes silently when the
+        #: dict is empty, the same no-network contract as NPM-008.
+        self.maintainer_counts: dict[str, int] = {}
+        #: ``{package_name: has_provenance}`` populated alongside
+        #: ``publish_times`` by the npm provider's ``post_filter`` when
+        #: ``--resolve-remote`` is on, parsed from the same packument
+        #: (``dist.attestations`` on the latest version). NPM-015
+        #: (provenance gap) reads it and flags ``False`` entries; passes
+        #: silently when the dict is empty.
+        self.provenance: dict[str, bool] = {}
+        #: ``{package_name: ScorecardResult}`` populated by the npm
+        #: provider's ``post_filter`` when ``--resolve-remote`` is on:
+        #: each direct dependency's GitHub repo (from its packument) is
+        #: looked up against the OpenSSF Scorecard API. NPM-016 reads it
+        #: and flags low-scoring / dangerous-workflow repos; passes
+        #: silently when the dict is empty.
+        self.scorecards: dict[str, ScorecardResult] = {}
         self.osv_advisories: dict[tuple[str, str], list[Any]] = {}
         #: Base-ref counterparts of ``locks``, populated by the npm
         #: provider's ``post_filter`` when ``--npm-base-ref`` is set.
@@ -471,11 +495,21 @@ def _split_yarn_pattern(pattern: str) -> str | None:
 
 
 # Quoted ``key value`` shapes ("version", "resolved", etc.) we read
-# from each yarn 1 entry's indented property lines. Sub-blocks
-# (``dependencies:`` / ``optionalDependencies:``) are skipped — the
-# existing NPM-* rules don't need transitive metadata.
+# from each yarn 1 entry's indented property lines. The
+# ``dependencies:`` / ``optionalDependencies:`` sub-blocks are captured
+# separately (see ``_YARN_DEP_SUBBLOCKS``) so NPM-009 can attribute a
+# new transitive to its parent; other sub-blocks are walked over
+# without recording.
 _YARN_VALUE_KEYS: frozenset[str] = frozenset({
     "version", "resolved", "integrity",
+})
+
+#: Sub-block headers whose child lines name transitive dependencies.
+#: Captured into nested maps on the entry's props and merged onto the
+#: synthesized npm-7+ record's ``dependencies`` key by the yarn
+#: synthesizers. Both yarn 1 and Berry use these exact header names.
+_YARN_DEP_SUBBLOCKS: frozenset[str] = frozenset({
+    "dependencies", "optionalDependencies",
 })
 
 
@@ -498,18 +532,75 @@ def _strip_yarn_value(value: str) -> str:
     return v
 
 
+def _coerce_dep_map(block: Any) -> dict[str, str]:
+    """Coerce a raw dependency block to ``{child_name: spec}``.
+
+    Drops non-string keys and stringifies values (YAML may parse a
+    bare version like ``1.2`` as a float). Shared by the yarn and
+    pnpm synthesizers when they attach declared edges to npm-7+
+    records.
+    """
+    if not isinstance(block, dict):
+        return {}
+    out: dict[str, str] = {}
+    for child, spec in block.items():
+        if isinstance(child, str) and child:
+            out[child] = str(spec)
+    return out
+
+
+def _merge_dep_sections(props: dict[str, Any]) -> dict[str, str]:
+    """Merge an entry's ``dependencies`` + ``optionalDependencies`` maps.
+
+    Both yarn synthesizers attach the union under the npm-7+ record's
+    ``dependencies`` key so NPM-009's :func:`_build_child_to_parents`
+    can attribute a new transitive to the parent that declared it.
+    """
+    out: dict[str, str] = {}
+    for section in ("dependencies", "optionalDependencies"):
+        out.update(_coerce_dep_map(props.get(section)))
+    return out
+
+
+def _parse_yarn_classic_dep_line(line: str) -> tuple[str, str] | None:
+    """Parse a yarn-1 sub-block child line into ``(name, spec)``.
+
+    Child lines are ``name "spec"`` with the name either quoted
+    (scoped packages: ``"@scope/name" "^1.0.0"``) or bare
+    (``lodash "^4.17.4"``). Returns ``None`` when no name is
+    recoverable.
+    """
+    s = line.strip()
+    if not s:
+        return None
+    if s[0] == '"':
+        end = s.find('"', 1)
+        if end < 0:
+            return None
+        name = s[1:end]
+        spec = _strip_yarn_value(s[end + 1:])
+    else:
+        raw_name, _, raw_spec = s.partition(" ")
+        name = raw_name.strip()
+        spec = _strip_yarn_value(raw_spec)
+    if not name:
+        return None
+    return name, spec
+
+
 def _parse_yarn_lock(
     text: str,
-) -> list[tuple[list[str], dict[str, str]]]:
+) -> list[tuple[list[str], dict[str, Any]]]:
     """Parse a yarn 1 / Classic lockfile body into a list of entries.
 
     Each returned tuple is ``(patterns, props)`` where ``patterns``
     are the raw header pattern strings (one or more
-    comma-separated) and ``props`` is a flat string-keyed map of
-    the entry's top-level properties (``version`` / ``resolved`` /
-    ``integrity``). Nested sub-blocks like ``dependencies:`` are
-    walked over without recording — the existing NPM-* rules read
-    flat lockfile entries.
+    comma-separated) and ``props`` carries the entry's top-level
+    properties (``version`` / ``resolved`` / ``integrity``). The
+    ``dependencies`` / ``optionalDependencies`` sub-blocks are
+    captured as nested ``{child: spec}`` maps under their own keys
+    in ``props`` (NPM-009 reads them); other sub-blocks are walked
+    over without recording.
 
     Tolerant of comments (``# ...``), blank lines, mixed indent
     widths (yarn defaults to 2 spaces), and the trailing newline
@@ -517,12 +608,13 @@ def _parse_yarn_lock(
     for unrecoverable input (binary content, malformed header
     lines that can't be split).
     """
-    entries: list[tuple[list[str], dict[str, str]]] = []
+    entries: list[tuple[list[str], dict[str, Any]]] = []
     current_patterns: list[str] | None = None
-    current_props: dict[str, str] | None = None
+    current_props: dict[str, Any] | None = None
     current_indent: int | None = None
     in_subblock = False
     subblock_indent: int | None = None
+    current_subblock_name: str | None = None
 
     for raw_line in text.splitlines():
         line = raw_line.rstrip("\r")
@@ -575,8 +667,20 @@ def _parse_yarn_lock(
             if subblock_indent is not None and indent <= subblock_indent:
                 in_subblock = False
                 subblock_indent = None
+                current_subblock_name = None
                 # Fall through to handle this line as a primary prop.
             else:
+                # Capture dependency edges; other sub-blocks are
+                # walked over without recording.
+                if (
+                    current_subblock_name is not None
+                    and current_subblock_name in _YARN_DEP_SUBBLOCKS
+                ):
+                    dep = _parse_yarn_classic_dep_line(stripped)
+                    if dep is not None:
+                        current_props.setdefault(
+                            current_subblock_name, {},
+                        )[dep[0]] = dep[1]
                 continue
         if indent > current_indent:
             # Deeper indent without a corresponding sub-block header
@@ -584,9 +688,11 @@ def _parse_yarn_lock(
             continue
         # Primary property line.
         if stripped.endswith(":"):
-            # Sub-block header — record so we can skip its body.
+            # Sub-block header — record the name so its body can be
+            # captured (deps) or skipped (everything else).
             in_subblock = True
             subblock_indent = indent
+            current_subblock_name = stripped[:-1].strip()
             continue
         # ``key value`` (with one-or-more spaces between).
         key, _, value = stripped.partition(" ")
@@ -602,7 +708,7 @@ def _parse_yarn_lock(
 
 
 def _synthesize_yarn_lock(
-    entries: list[tuple[list[str], dict[str, str]]],
+    entries: list[tuple[list[str], dict[str, Any]]],
 ) -> dict[str, Any]:
     """Project parsed yarn 1 entries to an npm-7+ lockfile dict.
 
@@ -653,6 +759,9 @@ def _synthesize_yarn_lock(
             record["resolved"] = resolved
         if isinstance(integrity, str) and integrity:
             record["integrity"] = integrity
+        deps = _merge_dep_sections(props)
+        if deps:
+            record["dependencies"] = deps
         install_path = f"node_modules/{name}"
         if install_path in seen_paths and version:
             install_path = f"node_modules/{name}+{version}"
@@ -698,24 +807,28 @@ _YARN_BERRY_VALUE_KEYS: frozenset[str] = frozenset({
 
 def _parse_yarn_berry_lock(
     text: str,
-) -> list[tuple[list[str], dict[str, str]]]:
+) -> list[tuple[list[str], dict[str, Any]]]:
     """Parse a Yarn Berry lockfile body into a list of entries.
 
     Mirrors :func:`_parse_yarn_lock` in shape (header pattern list +
-    flat property dict per entry) but reads Berry's key set
+    property dict per entry) but reads Berry's key set
     (``version`` / ``resolution`` / ``checksum``) and tolerates the
-    ``__metadata:`` block by letting the synthesizer drop it.
+    ``__metadata:`` block by letting the synthesizer drop it. The
+    ``dependencies`` / ``optionalDependencies`` sub-blocks are
+    captured as nested ``{child: spec}`` maps under their own keys
+    in ``props`` for NPM-009 parent attribution.
 
     Berry headers use the same comma-separated pattern shape Classic
     uses (``"name@npm:^1.0.0, name@npm:^2.0.0":``); the parser strips
     quotes and splits on commas just like the Classic path.
     """
-    entries: list[tuple[list[str], dict[str, str]]] = []
+    entries: list[tuple[list[str], dict[str, Any]]] = []
     current_patterns: list[str] | None = None
-    current_props: dict[str, str] | None = None
+    current_props: dict[str, Any] | None = None
     current_indent: int | None = None
     in_subblock = False
     subblock_indent: int | None = None
+    current_subblock_name: str | None = None
 
     for raw_line in text.splitlines():
         line = raw_line.rstrip("\r")
@@ -752,13 +865,30 @@ def _parse_yarn_berry_lock(
             if subblock_indent is not None and indent <= subblock_indent:
                 in_subblock = False
                 subblock_indent = None
+                current_subblock_name = None
             else:
+                # Capture dependency edges; other sub-blocks are
+                # walked over without recording. Berry child lines are
+                # ``name: "spec"`` (the name may be quoted for scoped
+                # packages).
+                if (
+                    current_subblock_name is not None
+                    and current_subblock_name in _YARN_DEP_SUBBLOCKS
+                    and ":" in stripped
+                ):
+                    raw_child, _, raw_spec = stripped.partition(":")
+                    child = _strip_yarn_value(raw_child)
+                    if child:
+                        current_props.setdefault(
+                            current_subblock_name, {},
+                        )[child] = _strip_yarn_value(raw_spec)
                 continue
         if indent > current_indent:
             continue
         if stripped.endswith(":"):
             in_subblock = True
             subblock_indent = indent
+            current_subblock_name = stripped[:-1].strip()
             continue
         # Berry writes ``key: value`` with a colon separator (yarn-1
         # uses a space-separated ``key "value"`` instead).
@@ -891,7 +1021,7 @@ def _classify_berry_resolution(resolution: str) -> tuple[str, str]:
 
 
 def _synthesize_yarn_berry_lock(
-    entries: list[tuple[list[str], dict[str, str]]],
+    entries: list[tuple[list[str], dict[str, Any]]],
 ) -> dict[str, Any]:
     """Project parsed Berry entries to an npm-7+ lockfile dict.
 
@@ -934,6 +1064,9 @@ def _synthesize_yarn_berry_lock(
             # Linked / workspace deps have no tarball; NPM-002 skips
             # records carrying ``link: true``.
             record["link"] = True
+        deps = _merge_dep_sections(props)
+        if deps:
+            record["dependencies"] = deps
         install_path = f"node_modules/{name}"
         if install_path in seen_paths and version:
             install_path = f"node_modules/{name}+{version}"
@@ -1007,10 +1140,37 @@ def _pnpm_registry_tarball_url(name: str, version: str) -> str:
     )
 
 
+def _pnpm_snapshot_dep_index(snapshots: Any) -> dict[str, dict[str, str]]:
+    """Index a pnpm ``snapshots:`` block by ``name@version`` → dep map.
+
+    pnpm v9 moves the resolved dependency edges into ``snapshots:``,
+    keyed with peer-dependency context suffixes the ``packages:`` keys
+    don't carry. Normalizing both sides through :func:`_split_pnpm_key`
+    pairs a package with its edges regardless of the peer suffix.
+    Multiple peer-context snapshots for one coordinate are unioned
+    (NPM-009 attribution only needs the child names).
+    """
+    out: dict[str, dict[str, str]] = {}
+    if not isinstance(snapshots, dict):
+        return out
+    for key, snap in snapshots.items():
+        if not isinstance(snap, dict):
+            continue
+        parsed = _split_pnpm_key(key)
+        if parsed is None:
+            continue
+        coord = f"{parsed[0]}@{parsed[1]}"
+        bucket = out.setdefault(coord, {})
+        for section in ("dependencies", "optionalDependencies"):
+            bucket.update(_coerce_dep_map(snap.get(section)))
+    return out
+
+
 def _synthesize_pnpm_record(
     name: str,
     version: str,
     pkg_entry: dict[str, Any],
+    snapshot_deps: dict[str, str] | None = None,
 ) -> dict[str, Any]:
     """Project a pnpm package entry to an npm-7+ lockfile record.
 
@@ -1034,6 +1194,13 @@ def _synthesize_pnpm_record(
     ``resolution``) get ``link: True`` so NPM-002 skips them.
     """
     record: dict[str, Any] = {"name": name, "version": version}
+    deps: dict[str, str] = {}
+    for section in ("dependencies", "optionalDependencies"):
+        deps.update(_coerce_dep_map(pkg_entry.get(section)))
+    if snapshot_deps:
+        deps.update(snapshot_deps)
+    if deps:
+        record["dependencies"] = deps
     resolution = pkg_entry.get("resolution")
     if not isinstance(resolution, dict):
         # No resolution block: treat as a workspace link entry.
@@ -1086,6 +1253,7 @@ def _synthesize_pnpm_lock(raw: dict[str, Any]) -> dict[str, Any]:
         # Older pnpm v5 schemas sometimes only ship snapshots-like
         # blocks; treat that as empty rather than raising.
         return {"packages": synthesized, "lockfileVersion": 3}
+    snapshot_deps = _pnpm_snapshot_dep_index(snapshots)
     seen_paths: set[str] = set()
     for key, entry in packages.items():
         parsed = _split_pnpm_key(key)
@@ -1097,7 +1265,10 @@ def _synthesize_pnpm_lock(raw: dict[str, Any]) -> dict[str, Any]:
             snap = snapshots.get(key)
             if isinstance(snap, dict):
                 pkg_entry = snap
-        record = _synthesize_pnpm_record(name, version, pkg_entry)
+        record = _synthesize_pnpm_record(
+            name, version, pkg_entry,
+            snapshot_deps.get(f"{name}@{version}"),
+        )
         # Build install path; disambiguate same-name-different-version
         # entries by appending the version after a ``+`` sigil. ``+`` is
         # not a legal npm package-name character so this never collides

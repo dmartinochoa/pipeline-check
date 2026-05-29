@@ -12,6 +12,54 @@ release commit collapses this section into `## [X.Y.Z] - <date>`.
 
 ### Added
 
+- **NPM-014: direct dependency relies on a single npm publisher (LOW).**
+  Flags a direct dependency whose npm `maintainers` array (the accounts
+  with publish access) has exactly one entry, the single-point-of-
+  compromise / account-takeover blast radius behind the axios, chalk,
+  and lodash class of supply-chain incidents. Network-dependent: reads
+  the publisher list from the same `registry.npmjs.org` packument the
+  NPM-008 cooldown gate already fetches under `--resolve-remote`, so it
+  adds no extra requests, and passes silently when resolution is off.
+  Scoped to direct deps; LOW severity by design (a single publisher is
+  ubiquitous, so it stays below the default `--fail-on` gate while still
+  surfacing in a report). npm rule count 13 -> 14. Inspired by a review
+  of `proof-of-commitment` / getcommit.dev. 16 tests.
+- **NPM-015 / NPM-016: provenance gap + OpenSSF Scorecard (LOW).** The
+  other two behavioral supply-chain signals from the
+  `proof-of-commitment` review. NPM-015 flags a direct dependency whose
+  latest version ships no build-provenance attestation
+  (`dist.attestations`), so it can't be cryptographically traced to its
+  source commit and CI build, the guarantee this project ships on its
+  own wheel (SLSA / PEP 740). NPM-016 resolves each direct dependency's
+  GitHub repo from its packument and queries the OpenSSF Scorecard API
+  (`api.securityscorecards.dev`), flagging upstreams that score below
+  5/10 or fail the Dangerous-Workflow check. Both reuse the packument
+  the cooldown/single-publisher passes already cache (NPM-016 adds one
+  external API per linked repo), are `--resolve-remote`-gated, scoped to
+  direct deps, LOW severity (posture signals below the default
+  `--fail-on` gate), and mapped to OWASP, ESF, NIST 800-53, NIST CSF 2,
+  SOC 2, and PCI DSS. npm rule count 14 -> 16. 35 tests.
+- **GHA-107 / GHA-108: runtime egress control for sensitive workflows
+  (MEDIUM / LOW).** GHA-107 flags a `step-security/harden-runner` step
+  left in `egress-policy: audit` (also the default when the input is
+  omitted), which records outbound traffic but blocks nothing, so the
+  exfiltration path the agent exists to close stays open. GHA-108 is an
+  advisory rule: a workflow that mints an OIDC token (`id-token: write`)
+  or gates a job on a deployment `environment:` but runs no
+  egress-control agent at all has credentials worth stealing and no
+  runtime defense-in-depth against a compromised dependency or action
+  shipping them off the runner. Both map to CICD-SEC-7 / CICD-SEC-10,
+  ESF-D-BUILD-ENV, and CWE-693, and are wired across the standards
+  packs. GHA rule count 97 -> 99.
+- **GHA-109: harden-runner is not the first step (LOW).** Completes the
+  harden-runner pack. Fires when a job uses `step-security/harden-runner`
+  but at least one step (a `checkout`, a `run:`, a setup action) runs
+  before it, so that earlier step's outbound traffic is neither recorded
+  nor filtered, harden-runner only covers what happens after it starts.
+  Passes when it's the first step or the job doesn't use it. LOW
+  severity (the common shape, a checkout placed first, is a small gap
+  with a one-line fix). CICD-SEC-7 / CICD-SEC-10, ESF-D-BUILD-ENV,
+  CWE-696. GHA rule count 99 -> 100.
 - **AC-035: AI agent is both reviewer and committer (CRITICAL).** New
   attack chain pairing GHA-103 (AI review bot on an untrusted trigger
   without an environment gate) with GHA-104 (agent pushes directly) OR
@@ -71,6 +119,16 @@ release commit collapses this section into `## [X.Y.Z] - <date>`.
 
 ### Changed
 
+- **NPM-009 names the dependency that introduced each new transitive.**
+  Findings now read `<name> (via <parent>)` instead of just the bare
+  package name, so a reviewer knows which direct dependency's bump to
+  audit. The pnpm (v6 packages + v9 snapshots) and yarn (classic +
+  Berry) lockfile synthesizers now preserve each package's declared
+  dependency edges, which they previously dropped, so attribution works
+  across every lockfile format alongside `package-lock.json`. The rule
+  walks the edge graph to the nearest manifest dependency and falls back
+  to the immediate declaring parent for a deep transitive with no
+  manifest ancestor.
 - **Cleaner default terminal report.** The findings table sizes to its
   content instead of padding out to the full terminal width, so a scan
   on a wide terminal no longer leaves a lake of empty space. Resource

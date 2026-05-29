@@ -109,6 +109,9 @@ STANDARD = Standard(
         "CC-017":   ["CC6.6"],
         "JF-025":   ["CC6.6"],             # k8s privileged
         "GHA-026":  ["CC6.6"],             # container egress
+        "GHA-107":  ["CC6.6"],             # harden-runner in audit mode (egress not blocked)
+        "GHA-108":  ["CC6.6"],             # no runtime egress control on OIDC/deploy workflow
+        "GHA-109":  ["CC6.6"],             # harden-runner not the first step
         "GHA-012":  ["CC6.6"],             # self-hosted runner
         "GHA-105":  ["CC6.6"],             # self-hosted runner on PR trigger
         "GL-014":   ["CC6.6"],
@@ -638,6 +641,9 @@ STANDARD = Standard(
         "NPM-008":  ["CC6.8", "CC7.1", "CC8.1"],
         "NPM-009":  ["CC8.1"],
         "NPM-010":  ["CC6.8", "CC7.1", "CC8.1"],
+        "NPM-014":  ["CC6.8", "CC7.1", "CC8.1"],
+        "NPM-015":  ["CC6.8", "CC7.1", "CC8.1"],
+        "NPM-016":  ["CC6.8", "CC7.1", "CC8.1"],
         "PYPI-008": ["CC6.8", "CC7.1", "CC8.1"],
         "PYPI-009": ["CC6.8", "CC7.1", "CC8.1"],
         # ── PyPI extended pack ──

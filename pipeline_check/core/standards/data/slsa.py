@@ -103,6 +103,9 @@ STANDARD = Standard(
                      "Build.L3.NonFalsifiable"],                   # SLSA attestation missing
         "GHA-025":  ["Build.L3.NonFalsifiable"],                   # unpinned reusable workflow
         "GHA-026":  ["Build.L3.Isolated"],                         # container escape via options
+        "GHA-107":  ["Build.L3.Isolated"],                         # harden-runner in audit mode (egress not blocked)
+        "GHA-108":  ["Build.L3.Isolated"],                         # no runtime egress control on OIDC/deploy workflow
+        "GHA-109":  ["Build.L3.Isolated"],                         # harden-runner not the first step
         "GHA-028":  ["Build.L3.Isolated"],                         # eval / shell re-invocation
         "GHA-029":  ["Build.L3.Isolated"],                         # package source bypasses lockfile
         # OIDC w/o env-protected job (provenance binding weak)

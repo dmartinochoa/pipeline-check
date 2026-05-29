@@ -48,7 +48,13 @@ RULE = Rule(
         "NPM-008 covers fresh-publication windows). Both "
         "``package-lock.json`` (npm 7+) and ``pnpm-lock.yaml`` / "
         "``yarn.lock`` are covered through the shared lockfile-"
-        "shape synthesizers."
+        "shape synthesizers, which carry each package's declared "
+        "dependency edges. Every new transitive is annotated with "
+        "the direct dependency that pulled it in (``<name> (via "
+        "<parent>)``), traced through the edge graph to the nearest "
+        "manifest dependency, so reviewers know whose changelog to "
+        "read. A deep transitive with no resolvable manifest "
+        "ancestor falls back to its immediate declaring parent."
     ),
     known_fp=(
         "A legitimate maintainer bump can introduce new "
@@ -159,6 +165,91 @@ def _direct_dep_names(ctx: NpmContext) -> set[str]:
     return out
 
 
+#: Per-record dependency maps that name child packages. npm 7+ writes
+#: these on every ``packages`` entry; the npm 6 ``requires`` map is
+#: added in :func:`_build_child_to_parents` when the lock is v1.
+_RECORD_DEP_SECTIONS: tuple[str, ...] = (
+    "dependencies", "optionalDependencies", "peerDependencies",
+)
+
+
+def _build_child_to_parents(lock: NpmLock) -> dict[str, set[str]]:
+    """Map each declared child package name to the packages that declare it.
+
+    Reads the per-record dependency maps the lockfile carries:
+    ``dependencies`` / ``optionalDependencies`` / ``peerDependencies``
+    on npm 7+ entries, plus the npm 6 ``requires`` map. The result is
+    the declared-edge graph (parent names keyed by child name).
+
+    The synthesized pnpm / yarn locks drop these maps (their
+    synthesizers project only name / version / integrity / resolved),
+    so the dict comes back empty for them and parent attribution
+    degrades to silence rather than guessing.
+    """
+    sections = _RECORD_DEP_SECTIONS + (
+        ("requires",) if lock.lockfile_version < 2 else ()
+    )
+    edges: dict[str, set[str]] = {}
+    for install_path, record in iter_lock_packages(lock):
+        parent = _name_from_install_path(install_path)
+        if not parent:
+            continue
+        for section in sections:
+            block = record.get(section)
+            if not isinstance(block, dict):
+                continue
+            for child in block:
+                if isinstance(child, str) and child:
+                    edges.setdefault(child, set()).add(parent)
+    return edges
+
+
+def _attribute_introducers(
+    transitive: str,
+    child_to_parents: dict[str, set[str]],
+    direct: set[str],
+    *,
+    max_depth: int = 8,
+    max_results: int = 3,
+) -> list[str]:
+    """Return the direct dependency / dependencies that pulled *transitive* in.
+
+    Walks the declared-edge graph upward from *transitive* toward the
+    manifest's own deps. Each direct dependency reached is an
+    introducer the developer actually controls (the one whose bump
+    should explain the new transitive in its changelog). When the
+    chain never reaches a manifest dep (a deep tree whose top isn't
+    declared locally, or a lock format that carries no edges) it
+    falls back to the immediate declaring parents so the finding
+    still names something concrete.
+
+    Cycle-guarded via ``seen`` and depth-bounded via ``max_depth`` so
+    a pathological lockfile can't spin. Result is capped at
+    ``max_results`` and sorted for stable output.
+    """
+    immediate = child_to_parents.get(transitive)
+    if not immediate:
+        return []
+    direct_ancestors: set[str] = set()
+    seen: set[str] = {transitive}
+    frontier = set(immediate)
+    depth = 0
+    while frontier and depth < max_depth:
+        nxt: set[str] = set()
+        for node in frontier:
+            if node in seen:
+                continue
+            seen.add(node)
+            if node in direct:
+                direct_ancestors.add(node)
+                continue  # don't climb past a direct dep
+            nxt |= child_to_parents.get(node, set())
+        frontier = nxt
+        depth += 1
+    chosen = sorted(direct_ancestors) or sorted(immediate)
+    return chosen[:max_results]
+
+
 def check(lock: NpmLock, ctx: NpmContext | None = None) -> Finding:
     if ctx is None or not ctx.base_locks:
         return Finding(
@@ -190,6 +281,16 @@ def check(lock: NpmLock, ctx: NpmContext | None = None) -> Finding:
     new_names = current_names - base_names
     direct = _direct_dep_names(ctx)
     new_transitive = sorted(n for n in new_names if n not in direct)
+    child_to_parents = _build_child_to_parents(lock)
+
+    def _label(name: str) -> str:
+        introducers = _attribute_introducers(
+            name, child_to_parents, direct,
+        )
+        if not introducers:
+            return name
+        return f"{name} (via {', '.join(introducers)})"
+
     locations: list[Location] = []
     for name in new_transitive[:5]:
         idx = lock.text.find(f'"{name}"')
@@ -197,6 +298,7 @@ def check(lock: NpmLock, ctx: NpmContext | None = None) -> Finding:
         locations.append(Location(
             path=lock.path, start_line=line_no, end_line=line_no,
         ))
+    displayed = [_label(name) for name in new_transitive[:5]]
     passed = not new_transitive
     desc = (
         "Every package name in this lockfile was present at the "
@@ -205,7 +307,7 @@ def check(lock: NpmLock, ctx: NpmContext | None = None) -> Finding:
         f"{len(new_transitive)} new transitive dependency / "
         f"dependencies appeared in this lockfile that weren't in "
         f"the base-ref version: "
-        f"{', '.join(new_transitive[:5])}"
+        f"{', '.join(displayed)}"
         f"{'…' if len(new_transitive) > 5 else ''}. A patch / "
         f"minor bump shouldn't introduce new transitives without "
         f"a clear changelog reason; review before letting this "

@@ -23,7 +23,10 @@ from ..checks.npm.registry_fetcher import (
     FileSystemCache,
     HttpRegistryFetcher,
     default_cache_dir,
+    fetch_maintainer_counts,
+    fetch_provenance,
     fetch_publish_times,
+    fetch_repo_slugs,
 )
 from ..inventory import Component
 from ..sbom import BuildDependency, make_npm_purl
@@ -121,6 +124,34 @@ class NpmProvider(BaseProvider):
         )
         context.publish_times = publish_times
         context.warnings.extend(warnings)
+
+        # Publisher counts and build-provenance both come from the same
+        # packument the publish-time pass just cached, so these add no
+        # network requests. The warnings half is dropped: any fetch
+        # failure was already surfaced by the publish-time pass above.
+        context.maintainer_counts = fetch_maintainer_counts(
+            names, fetcher, cache=cache,
+        )[0]
+        context.provenance = fetch_provenance(
+            names, fetcher, cache=cache,
+        )[0]
+
+        # OpenSSF Scorecard (NPM-016): the GitHub repo slug comes free
+        # from the cached packument, but the Scorecard lookup itself is a
+        # separate external API (api.securityscorecards.dev), so it only
+        # runs when there are GitHub-linked deps to query.
+        repo_slugs = fetch_repo_slugs(names, fetcher, cache=cache)[0]
+        if repo_slugs:
+            from ..checks._primitives.scorecard import (
+                fetch_scorecards,
+                scorecard_cache_dir,
+            )
+            sc_cache = FileSystemCache(
+                scorecard_cache_dir(), enabled=not no_cache,
+            )
+            context.scorecards = fetch_scorecards(
+                repo_slugs, cache=sc_cache,
+            )[0]
 
         osv_queries = _collect_osv_queries_npm(context)
         if osv_queries:

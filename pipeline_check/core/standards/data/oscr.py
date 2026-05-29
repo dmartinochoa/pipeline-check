@@ -490,6 +490,9 @@ STANDARD = Standard(
         "DR-007":   ["PE-2"],
         "BK-005":   ["PE-2"],
         "GHA-026":  ["PE-2"],
+        "GHA-107":  ["PE-2"],   # harden-runner in audit mode (egress not blocked)
+        "GHA-108":  ["PE-2"],   # no runtime egress control on OIDC/deploy workflow
+        "GHA-109":  ["PE-2"],   # harden-runner not the first step
         "DF-008":   ["PE-2"],
         "DF-012":   ["PE-2"],
         "DF-002":   ["PE-2"],

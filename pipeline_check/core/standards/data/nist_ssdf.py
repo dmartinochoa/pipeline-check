@@ -171,6 +171,9 @@ STANDARD = Standard(
         "GHA-024":  ["PS.2.1", "PS.3.2"],              # no SLSA provenance attestation
         "GHA-025":  ["PW.4.1", "PW.4.4"],              # unpinned reusable workflow
         "GHA-026":  ["PO.5.1", "PW.9.1"],              # container job disables isolation
+        "GHA-107":  ["PO.5.1"],                        # harden-runner in audit mode (egress not blocked)
+        "GHA-108":  ["PO.5.1"],                        # no runtime egress control on OIDC/deploy workflow
+        "GHA-109":  ["PO.5.1"],                        # harden-runner not the first step
         "GHA-027":  ["PW.6.1", "PW.9.1"],              # dangerous shell idiom
         "GHA-028":  ["PW.4.1", "PW.4.4"],              # install bypasses registry integrity
         "GHA-029":  ["PW.4.1", "PW.4.4"],              # package source bypasses lockfile

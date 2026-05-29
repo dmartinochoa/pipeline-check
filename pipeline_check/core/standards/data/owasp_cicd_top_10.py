@@ -197,6 +197,9 @@ STANDARD = Standard(
         "GHA-060":  ["CICD-SEC-3"],                # pip install without --require-hashes
         "GHA-061":  ["CICD-SEC-5", "CICD-SEC-2"],  # App token minted without permissions filter
         "GHA-106":  ["CICD-SEC-5", "CICD-SEC-2"],  # AI agent with write-scoped token
+        "GHA-107":  ["CICD-SEC-7", "CICD-SEC-10"],  # harden-runner in audit mode (egress not blocked)
+        "GHA-108":  ["CICD-SEC-7", "CICD-SEC-10"],  # no runtime egress control on OIDC/deploy workflow
+        "GHA-109":  ["CICD-SEC-7", "CICD-SEC-10"],  # harden-runner not the first step
         "GHA-062":  ["CICD-SEC-2", "CICD-SEC-7"],  # OIDC trust subject in sibling IaC is overly broad
         "GHA-063":  ["CICD-SEC-1", "CICD-SEC-4"],  # spoofable bot-actor if-predicate
         "GHA-064":  ["CICD-SEC-1", "CICD-SEC-4"],  # unsound contains() with comma-string operand
@@ -517,6 +520,9 @@ STANDARD = Standard(
         "NPM-009":  ["CICD-SEC-3", "CICD-SEC-8"],  # new-transitive-dep diff gate
         "NPM-010":  ["CICD-SEC-3", "CICD-SEC-8"],  # OSV advisory (--resolve-remote)
         "NPM-011":  ["CICD-SEC-6", "CICD-SEC-3"],  # secret-shaped paths in files field
+        "NPM-014":  ["CICD-SEC-3"],   # single-publisher supply-chain risk
+        "NPM-015":  ["CICD-SEC-4"],   # missing build provenance
+        "NPM-016":  ["CICD-SEC-3"],   # low OpenSSF Scorecard upstream
         # pypi (requirements file static analysis)
         "PYPI-001": ["CICD-SEC-3"],   # requirements line lacks ==pin
         "PYPI-002": ["CICD-SEC-3", "CICD-SEC-9"],  # hash pinning missing
