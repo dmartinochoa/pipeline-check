@@ -6,6 +6,22 @@ What's planned, what's shipped, and what's deliberately out of scope.
 
 ### Unreleased (on ``dev``)
 
+Nothing yet this cycle. PRs landing on ``dev`` add their thematic
+entries here; the release commit collapses this into
+``### vX.Y.Z (YYYY-MM-DD)``.
+
+### v1.6.0 (2026-05-29)
+
+- **Composer + RubyGems registry providers** — Two new
+  dependency-supply-chain providers, both graduated to 10 rules in
+  the same cycle they landed. ``--pipeline composer`` parses
+  ``composer.json`` / ``composer.lock`` (COMPOSER-001..010);
+  ``--pipeline rubygems`` parses ``Gemfile`` / ``Gemfile.lock``
+  (GEM-001..010). Text-only static analysis, no runtime install.
+  Plus NPM-013, NUGET-010, OCI-009 and the gomod / cargo / pulumi /
+  nuget / maven / drone / argocd / helm / pypi rule-count deepenings
+  that filled out the package-registry and GitOps packs. Provider
+  count to 32.
 - **Azure Cloud + GCP live cloud-posture providers (closes #163)** —
   Phase 1 seeded ``--pipeline azure-cloud`` and ``--pipeline gcp`` with
   15 rules each across identity, network, storage, compute, and logging.
@@ -347,7 +363,7 @@ by reading the code path, not just inferred. File references are
 approximate line anchors at review time.
 
 The **high** and **medium** severity findings from this review are
-fixed on ``dev`` (see the ``### Fixed`` block in ``CHANGELOG.md``):
+fixed in v1.6.0 (see the ``### Fixed`` block in ``CHANGELOG.md``):
 the remote-resolve redirect SSRF, the PyPI / Google secret-verifier
 false-positives, the OSV truncated-batch caching, the host-blind
 GitLab include cache key, the cross-repo reverse-direction dedup, the
@@ -477,13 +493,13 @@ warrants extraction to a separate ``pipeline-check-bench`` repo.
 
 ### ~~Live Azure + GCP cloud-posture parity~~ shipped
 
-Shipped on ``dev`` (closes #163). Both providers now ship 50 rules
+Shipped in v1.6.0 (closes #163). Both providers now ship 50 rules
 each across identity, network, storage, compute, and logging, with
 CIS Azure Foundations and CIS GCP Foundations standards mappings.
 
 ### ~~Self-hosted findings-history dashboard~~ shipped
 
-Shipped on ``dev`` (closes #160). ``pipeline_check history`` renders
+Shipped in v1.6.0 (closes #160). ``pipeline_check history`` renders
 posture trends from a directory of ``findings.json`` snapshots, with
 per-rule burn-down sparklines, a resource-level heatmap, and fleet
 ``--output-dir`` recursive loading.
@@ -519,7 +535,7 @@ the AI is both the reviewer and the committer.
 
 ### ~~Gitea / Forgejo provider~~ shipped
 
-Shipped in the current unreleased cycle. ``--pipeline gitea``
+Shipped in v1.6.0. ``--pipeline gitea``
 reuses :class:`GitHubContext` and the full GHA rule pack against
 ``.gitea/workflows/`` and ``.forgejo/workflows/`` directories.
 
@@ -544,13 +560,13 @@ high-value additions that are blocked on detector or pairing gaps:
 
 ### ~~Secrets-in-CI-logs detection~~ shipped
 
-Shipped on ``dev``. GL-036, BB-032, ADO-031, CC-032 cover GitLab,
+Shipped in v1.6.0. GL-036, BB-032, ADO-031, CC-032 cover GitLab,
 Bitbucket, Azure DevOps, and CircleCI; GHA-033 already covered GitHub
 Actions. Shared logic in ``_primitives/log_leak.py``.
 
 ### ~~GitLab Code Quality output format~~ shipped
 
-Shipped on ``dev``. See the Unreleased entry above.
+Shipped in v1.6.0. See the v1.6.0 entry above.
 
 ### Auto-remediation PRs (``pipeline_check fix-pr``)
 
@@ -576,11 +592,11 @@ Complements GHA-068 (deprecated runner image). StepSecurity's
 
 ### ~~Inline explain mode (``--inline-explain``)~~ shipped
 
-Shipped on ``dev``. The flag uses the ``inline-`` prefix because
+Shipped in v1.6.0. The flag uses the ``inline-`` prefix because
 ``--explain CHECK_ID`` was already taken as an early-exit option.
 Renders the rule's ``exploit_example`` (when present) under each
 failing finding's panel; recommendation was already inline. See the
-Unreleased entry above.
+v1.6.0 entry above.
 
 ### Suppression expiry warnings
 
