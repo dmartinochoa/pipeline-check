@@ -19,6 +19,14 @@ What's planned, what's shipped, and what's deliberately out of scope.
   cite the tj-actions/changed-files compromise. This reverses the
   earlier "harden-runner is a runtime agent, deliberately out of scope"
   call (see the Self-hosted runner candidate). GHA 97 -> 99.
+- **GHA-109: harden-runner is not the first step (LOW)** — Completes the
+  harden-runner pack. Fires when a job uses
+  ``step-security/harden-runner`` but a step (a checkout, a ``run:``, a
+  setup action) runs before it, so that earlier step's outbound traffic
+  is neither recorded nor filtered (harden-runner only covers what runs
+  after it starts). Passes when it's the first step or the job doesn't
+  use it. The common shape, a checkout placed first, is a small gap with
+  a one-line fix, hence LOW. GHA 99 -> 100.
 - **NPM-014: single-publisher supply-chain risk (LOW)** — Flags a
   direct dependency whose npm ``maintainers`` array has exactly one
   entry, a single point of compromise (the axios / chalk / lodash
@@ -28,6 +36,18 @@ What's planned, what's shipped, and what's deliberately out of scope.
   stays below the default gate while still surfacing in a report. First
   of the three behavioral supply-chain signals (see Candidates).
   npm 13 -> 14.
+- **NPM-015 + NPM-016: provenance gap + OpenSSF Scorecard (LOW)** — The
+  other two behavioral supply-chain signals from the
+  ``proof-of-commitment`` review, closing that candidate. NPM-015 flags
+  a direct dependency whose latest version ships no build-provenance
+  attestation (``dist.attestations``), so it can't be traced to its
+  source commit and CI build, the SLSA / PEP 740 guarantee this project
+  ships on its own wheel. NPM-016 resolves each direct dependency's
+  GitHub repo from its packument and queries the OpenSSF Scorecard API
+  (``api.securityscorecards.dev``), flagging upstreams that score below
+  5/10 or fail the Dangerous-Workflow check (one extra API per linked
+  repo). Both reuse the cached packument, are ``--resolve-remote``-gated,
+  scoped to direct deps, and LOW severity. npm 14 -> 16.
 - **AC-035: AI agent is both reviewer and committer (CRITICAL)** —
   New attack chain pairing GHA-103 (AI review bot on an untrusted
   trigger) with GHA-104 (direct push) or GHA-106 (write-scoped token)
@@ -35,6 +55,18 @@ What's planned, what's shipped, and what's deliberately out of scope.
   commits its own change with no human in the loop. Closes the
   reviewer-and-committer gap in the AI-agent pack. Chain count
   48 -> 49.
+- **AC-036: untrusted-code execution with no egress containment
+  (HIGH)** — New attack chain pairing an execution leg (GHA-003 script
+  injection, GHA-035 github-script injection, GHA-016 ``curl | bash``,
+  or GHA-044 build-tool PPE) with an egress leg (GHA-107 harden-runner
+  in audit mode, or GHA-108 no agent at all) on the same workflow.
+  Attacker-influenced code runs while nothing blocks outbound traffic,
+  so it can exfiltrate the OIDC token / GITHUB_TOKEN / secrets. Models
+  missing egress control as a severity amplifier: GHA-107 / GHA-108
+  alone are LOW advisories, but paired with a code-execution primitive
+  they are the last-line gap harden-runner's block mode closes.
+  Reachability promoted to HIGH confidence when the legs share a job;
+  co-occurrence otherwise. Chain count 49 -> 50 (36 AC).
 - **GHA-106: AI agent CLI runs with a write-scoped GITHUB_TOKEN
   (HIGH)** — Fires when an agentic CLI runs in a job whose
   ``GITHUB_TOKEN`` carries ``write-all`` / legacy ``write`` or
@@ -567,37 +599,34 @@ a rule flagging workflows missing the section, a rule checking SHA
 consistency, and parser support. First-mover advantage: no scanner
 currently validates this section.
 
-### Behavioral supply-chain signals (maintainer depth, provenance)
+### ~~Behavioral supply-chain signals (maintainer depth, provenance)~~ shipped
 
-Three dependency-trust signals surfaced by reviewing
-``proof-of-commitment`` / getcommit.dev, a supply-chain risk scorer
-whose thesis is that behavioral signals (who can publish, how a package
-is built) catch compromise that stars, download counts, and
-``npm audit`` miss. The first (single-publisher) shipped as NPM-014;
-the other two remain open and neither is covered by the current
-pinning / integrity / compromised-list / cooldown / OSV packs.
+All three dependency-trust signals from the ``proof-of-commitment`` /
+getcommit.dev review now ship as NPM-014 / NPM-015 / NPM-016, each
+``--resolve-remote``-gated, scoped to direct dependencies, and LOW
+severity (posture signals below the default gate). The thesis: behavioral
+signals (who can publish, how a package is built) catch compromise that
+stars, download counts, and ``npm audit`` miss.
 
-- **Single-publisher risk (maintainer depth). Shipped as NPM-014.** A
-  package with one npm publisher is a single point of compromise (the
-  axios / chalk / lodash account-takeover class). NPM-014 reads the
-  ``maintainers`` array from the packument NPM-008 already fetches (no
-  new network surface), scopes to direct dependencies, and stays at LOW
-  severity since a single publisher describes most of the ecosystem.
-  Still open as a follow-up: pair it with a recent-ownership-change or
-  new-account signal (the actual takeover vector) to earn a higher
-  severity, and the PyPI parallel, gated on its JSON API reliably
-  exposing the owner-account list.
-- **Dependency provenance gap.** Flag a direct dependency published
-  without a build-provenance attestation, the property this project
-  already guarantees for its own wheel (SLSA Build L3, PEP 740). npm
-  exposes per-version attestations at
-  ``/-/npm/v1/attestations/<pkg>@<version>``; PyPI's PEP 740 surface is
-  the parallel once the ecosystem populates it. Same ``--resolve-remote``
-  gate as the cooldown and OSV rules.
-- **OpenSSF Scorecard surfacing.** Show a direct dependency's Scorecard
-  (and the Dangerous-Workflow check in particular) when the package
-  links a GitHub repo. Heavier than the other two (an extra API per
-  linked repo), so it sits below them in priority.
+- **Single-publisher risk (maintainer depth). NPM-014.** Flags a direct
+  dependency whose npm ``maintainers`` array has one entry, a single
+  point of compromise (the axios / chalk / lodash account-takeover
+  class). Reads the ``maintainers`` list from the packument NPM-008
+  already fetches, so no new network surface.
+- **Dependency provenance gap. NPM-015.** Flags a direct dependency
+  whose latest version ships no build-provenance attestation
+  (``dist.attestations``), so it can't be traced to its source commit
+  and CI build (the SLSA Build L3 / PEP 740 guarantee this project ships
+  on its own wheel). Reads npm's per-version attestation surface.
+- **OpenSSF Scorecard surfacing. NPM-016.** Resolves each direct
+  dependency's GitHub repo and queries the OpenSSF Scorecard API,
+  flagging upstreams that score below 5/10 or fail the Dangerous-Workflow
+  check. The heaviest of the three (one extra API per linked repo).
+
+Still open as follow-ups: a recent-ownership-change / new-account signal
+to pair with NPM-014 (the actual takeover vector, worth a higher
+severity), and the PyPI parallels for all three, gated on PyPI's JSON
+API / PEP 740 surface reliably exposing the owner list and attestations.
 
 ### Weak-coverage provider deepening
 
@@ -835,34 +864,35 @@ plugins, the dominant real-world Maven build-RCE primitive.
   SNAPSHOT-acceptance angle since the ``http://`` deploy-URL half is
   already MVN-003.
 
-**nuget (15 rules).** The headline gap is public-feed inheritance, the
-canonical .NET dependency-confusion shape, plus MSBuild build-time
-execution.
+**nuget (15 rules). First batch shipped (NUGET-016 / 018 / 019), now
+18 rules.** The headline gap was public-feed inheritance, the canonical
+.NET dependency-confusion shape, plus MSBuild build-time execution.
 
 - **NUGET-016: private feed without ``<clear/>`` inherits the public
-  gallery (HIGH).** NuGet merges ``packageSources`` across machine / user
-  / repo configs, so a repo config listing only the internal feed still
-  resolves ``nuget.org`` and the highest-version-wins rule lets a public
-  typosquat override an internal package. Microsoft's "3 Ways to Mitigate
-  Risk" names ``<clear/>`` as the fix. NUGET-007 only fires when one
-  config enumerates 2+ sources, so it structurally misses this.
+  gallery (HIGH). Shipped.** NuGet merges ``packageSources`` across
+  machine / user / repo configs, so a repo config listing only the
+  internal feed still resolves ``nuget.org`` and the highest-version-wins
+  rule lets a public typosquat override an internal package. Microsoft's
+  "3 Ways to Mitigate Risk" names ``<clear/>`` as the fix. NUGET-007 only
+  fires when one config enumerates 2+ sources, so it structurally misses
+  this.
 - **NUGET-019: signatureValidationMode = require but ``<trustedSigners>``
-  is empty or missing (HIGH).** The exact follow-up NUGET-012's
+  is empty or missing (HIGH). Shipped.** The exact follow-up NUGET-012's
   ``docs_note`` flags: ``require`` only rejects untrusted packages when
   there is a populated signer list to validate against.
 - **NUGET-018: PackageReference / Import runs build-time MSBuild logic at
-  restore/build (HIGH).** Packages ship ``build/<id>.props`` and
+  restore/build (HIGH). Shipped.** Packages ship ``build/<id>.props`` and
   ``.targets`` that MSBuild auto-imports, the .NET analog of a
-  ``postinstall`` script. Narrow to high-signal shapes (inline
-  ``<Exec>`` in a restore / build-phase ``<Target>``,
-  ``GeneratePathProperty`` + a package ``build/`` import) to control the
-  FP rate.
-- Fourth: **NUGET-017** (public gallery not in
+  ``postinstall`` script. Scoped to high-signal shapes (an ``<Exec>`` in a
+  build / restore-phase ``<Target>``, an ``<Import>`` of a
+  ``GeneratePathProperty`` package ``build/`` path) to control the FP
+  rate.
+- Still open: **NUGET-017** (public gallery not in
   ``<disabledPackageSources>`` when a private feed exists, HIGH); it
   detects a genuinely different config state from 016 but overlaps
-  conceptually, so decide whether both should fire on one repo. All four
-  follow NUGET-012's ElementTree-reparse pattern, so none needs a
-  shared-parser change.
+  conceptually, so decide whether both should fire on one repo. Follows
+  NUGET-012's ElementTree-reparse pattern, so it needs no shared-parser
+  change.
 
 Cross-cutting note: several of the highest-value candidates need a small
 loader extension rather than just a new rule module (cargo's ``build.rs``
@@ -968,10 +998,15 @@ job that isn't gated behind a protected ``environment:`` (distinct
 from GHA-014's deploy-name heuristic). Complements GHA-012 (ephemeral)
 and GHA-068 (deprecated runner image). StepSecurity's ``harden-runner``
 egress agent, earlier called out of scope as a runtime agent, now ships
-as GHA-107 (present but in audit mode, egress not blocked) and GHA-108
-(an OIDC / environment-gated job with no egress control at all). The
-remaining static angle is the runner-token rotation concern, which
-isn't visible in workflow YAML and stays out of scope.
+as a three-rule pack: GHA-107 (present but in audit mode, egress not
+blocked), GHA-108 (an OIDC / environment-gated job with no egress
+control at all), and GHA-109 (present but not the first step, so earlier
+steps' traffic is uncovered). AC-036 chains the egress gap to a
+code-execution leg (GHA-003 / 035 / 016 / 044), promoting the LOW egress
+advisories to a HIGH finding when untrusted code can run with no
+outbound containment. The remaining static angle is the runner-token
+rotation concern, which isn't visible in workflow YAML and stays out of
+scope.
 
 ### ~~Inline explain mode (``--inline-explain``)~~ shipped
 
