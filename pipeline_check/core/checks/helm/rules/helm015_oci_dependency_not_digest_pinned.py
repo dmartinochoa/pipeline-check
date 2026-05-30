@@ -125,7 +125,8 @@ def check(ctx: HelmContext) -> Finding:
         for dep in chart.dependencies:
             if not _is_oci(dep.get("repository")):
                 continue
-            name = dep.get("name") if isinstance(dep.get("name"), str) else "?"
+            raw_name = dep.get("name")
+            name = raw_name if isinstance(raw_name, str) else "?"
             version = dep.get("version")
             version_str = version if isinstance(version, str) else ""
             # A version that is itself a digest reference is bound.

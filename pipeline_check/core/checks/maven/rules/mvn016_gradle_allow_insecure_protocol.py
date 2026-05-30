@@ -85,6 +85,10 @@ _FLAG_RE = re.compile(
     r"allowInsecureProtocol\s*[=(]?\s*true",
     re.IGNORECASE,
 )
+#: Single- / double-quoted string literals, blanked out of a line
+#: prefix before the ``//`` line-comment check so an embedded URL
+#: (``"http://…"``) isn't mistaken for a comment.
+_QUOTED_STRING_RE = re.compile(r"'[^']*'|\"[^\"]*\"")
 _GRADLE_SUFFIXES: tuple[str, ...] = ("build.gradle", "build.gradle.kts")
 
 
@@ -101,8 +105,11 @@ def check(pom: PomFile) -> Finding:
     for m in _FLAG_RE.finditer(pom.text):
         line_start = pom.text.rfind("\n", 0, m.start()) + 1
         prefix = pom.text[line_start:m.start()]
-        # Skip a flag inside a ``//`` line comment.
-        if "//" in prefix:
+        # Skip a flag inside a ``//`` line comment, but first blank out
+        # quoted string literals so a repo URL like ``url "http://…"``
+        # earlier on the same line isn't misread as a comment (that
+        # would be a false negative on the exact unsafe pattern).
+        if "//" in _QUOTED_STRING_RE.sub("", prefix):
             continue
         line_no = pom.text[:m.start()].count("\n") + 1
         offenders.append(line_no)

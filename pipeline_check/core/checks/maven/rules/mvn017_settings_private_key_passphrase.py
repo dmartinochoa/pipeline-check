@@ -145,13 +145,14 @@ def check(pom: PomFile) -> Finding:
             continue  # property / env-var expansion
         server_id = _findtext_local(server, "id") or "(no id)"
         offenders.append(server_id)
-        line_no = 1
-        marker = f"<id>{server_id}</id>"
-        if marker in pom.text:
-            line_no = pom.text[:pom.text.index(marker)].count("\n") + 1
-        locations.append(Location(
-            path=pom.path, start_line=line_no, end_line=line_no,
-        ))
+        # Tolerant match (whitespace around the value) so a reformatted
+        # ``<id>`` still resolves; only attach a location when found.
+        m = re.search(rf"<id>\s*{re.escape(server_id)}\s*</id>", pom.text)
+        if m is not None:
+            line_no = pom.text[:m.start()].count("\n") + 1
+            locations.append(Location(
+                path=pom.path, start_line=line_no, end_line=line_no,
+            ))
     passed = not offenders
     desc = (
         "No <server> pairs a private key with a plaintext passphrase."

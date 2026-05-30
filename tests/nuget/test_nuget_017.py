@@ -27,7 +27,9 @@ class TestNuget017PublicGalleryNotDisabled:
             + _INTERNAL + _GALLERY + "  </packageSources>\n"
         ))
         assert not findings["NUGET-017"].passed
-        assert "nuget.org" in findings["NUGET-017"].description
+        # Assert on a non-host substring (a ``"<host>" in url``-shaped
+        # check trips CodeQL's incomplete-url-sanitization query).
+        assert "public gallery" in findings["NUGET-017"].description
 
     def test_gallery_disabled_passes(self, tmp_path):
         findings = _scan(tmp_path, (

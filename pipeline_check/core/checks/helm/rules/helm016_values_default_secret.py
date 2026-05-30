@@ -115,7 +115,11 @@ def _is_real_secret_value(value: Any, key: str) -> bool:
     s = value.strip()
     if len(s) < 4:
         return False
-    if s.startswith(("${", "<")) or "{{" in s:
+    # Skip template / env interpolations anywhere in the value
+    # (``${VAR}`` / ``{{ .x }}``) and ``<placeholder>`` forms, matching
+    # the documented behavior; a value like ``prefix-${DEPLOY_ENV}`` is
+    # not a baked-in literal secret.
+    if s.startswith("<") or "${" in s or "{{" in s:
         return False
     low = s.lower()
     if low in _PLACEHOLDERS:

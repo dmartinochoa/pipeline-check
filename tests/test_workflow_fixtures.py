@@ -516,7 +516,7 @@ class TestArgoFixtures:
      ({f"GHA-{i:03d}" for i in range(1, 63)} - {"GHA-062"})
      | {"TAINT-001", "TAINT-002", "TAINT-003"}),
     ("gitlab", "gitlab/insecure.gitlab-ci.yml", GitLabContext, GitLabPipelineChecks,
-     {f"GL-{i:03d}" for i in range(1, 36)} | {"TAINT-004", "TAINT-008"}),
+     {f"GL-{i:03d}" for i in range(1, 38)} | {"TAINT-004", "TAINT-008"}),
     ("bitbucket", "bitbucket/insecure-bitbucket-pipelines.yml",
      BitbucketContext, BitbucketPipelineChecks,
      {f"BB-{i:03d}" for i in range(1, 32)}),
@@ -526,7 +526,7 @@ class TestArgoFixtures:
     ("jenkins", "jenkins/Jenkinsfile.insecure", JenkinsContext, JenkinsfileChecks,
      {f"JF-{i:03d}" for i in range(1, 36)}),
     ("circleci", "circleci/insecure-config.yml", CircleCIContext, CircleCIPipelineChecks,
-     {f"CC-{i:03d}" for i in range(1, 32)}),
+     {f"CC-{i:03d}" for i in range(1, 34)}),
     ("buildkite", "buildkite/insecure-pipeline.yml",
      BuildkiteContext, BuildkitePipelineChecks,
      {f"BK-{i:03d}" for i in range(1, 16)} | {"TAINT-005"}),

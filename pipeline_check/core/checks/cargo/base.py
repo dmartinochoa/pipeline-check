@@ -407,25 +407,7 @@ def _discover_cargo_config(
     ``(path, parsed_table)`` for the nearest config found, or
     ``(None, {})`` when none exists.
     """
-    try:
-        scan_resolved = scan_root.resolve()
-        cur = manifest_dir.resolve()
-    except OSError:
-        return None, {}
-    chain: list[Path] = []
-    while True:
-        chain.append(cur)
-        if cur == scan_resolved:
-            break
-        parent = cur.parent
-        if parent == cur:
-            break
-        try:
-            parent.relative_to(scan_resolved)
-        except ValueError:
-            break
-        cur = parent
-    for d in chain:  # nearest-first
+    for d in _dir_chain(manifest_dir, scan_root):  # nearest-first
         for name in ("config.toml", "config"):
             cfg = d / ".cargo" / name
             if not cfg.is_file():

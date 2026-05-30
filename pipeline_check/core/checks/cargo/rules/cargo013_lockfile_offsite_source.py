@@ -132,7 +132,12 @@ def check(manifest: CargoFile) -> Finding:
                 continue
             name = str(pkg.get("name", "?"))
             offenders.append(f"{name} ({category})")
-            marker = f'name = "{name}"'
+            # Anchor on the offending ``source = "..."`` line, not the
+            # first ``name = "..."`` match: Cargo.lock often carries
+            # several ``[[package]]`` entries for the same crate name
+            # (different versions), so the source string pins the
+            # actual offending block.
+            marker = f'source = "{source}"'
             line_no = 1
             if marker in manifest.lockfile_text:
                 line_no = (

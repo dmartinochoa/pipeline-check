@@ -208,12 +208,18 @@ def check(pom: PomFile) -> Finding:
         )
     offenders = _walk_exec_plugins(root)
     locations: list[Location] = []
+    # Walk each artifact's occurrences in order so a plugin that appears
+    # more than once (build + a profile) doesn't point every finding at
+    # the first match.
+    last_pos: dict[str, int] = {}
     for coord, _phases in offenders:
         artifact = coord.split(":", 1)[-1]
         marker = f"<artifactId>{artifact}</artifactId>"
         line_no = 1
-        if marker in pom.text:
-            line_no = pom.text[:pom.text.index(marker)].count("\n") + 1
+        pos = pom.text.find(marker, last_pos.get(artifact, 0))
+        if pos != -1:
+            last_pos[artifact] = pos + len(marker)
+            line_no = pom.text[:pos].count("\n") + 1
         locations.append(Location(
             path=pom.path, start_line=line_no, end_line=line_no,
         ))

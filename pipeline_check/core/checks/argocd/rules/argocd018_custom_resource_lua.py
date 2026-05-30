@@ -109,14 +109,22 @@ def check(ctx: ArgoCDContext) -> Finding:
     for key, value in data.items():
         if not isinstance(key, str):
             continue
-        if not key.startswith("resource.customizations"):
-            continue
-        # Aggregate key only counts when its value actually carries Lua.
         if key == "resource.customizations":
+            # Legacy aggregate block: only counts when its value
+            # actually embeds Lua (a health.lua / actions entry).
             text = value if isinstance(value, str) else ""
             if "health.lua" not in text and "actions" not in text:
                 continue
-        elif not (isinstance(value, str) and value.strip()):
+        elif key.startswith((
+            "resource.customizations.health.",
+            "resource.customizations.actions.",
+        )):
+            # Per-resource Lua hook; only the populated ones run code.
+            if not (isinstance(value, str) and value.strip()):
+                continue
+        else:
+            # Other resource.customizations.* keys (ignoreDifferences,
+            # knownTypeFields, useOpenLibs) are not Lua; skip them.
             continue
         offenders.append(key)
     passed = not offenders

@@ -146,9 +146,12 @@ def check(pom: PomFile) -> Finding:
         )
     repo_id = _findtext_local(repo, "id") or "(no id)"
     line_no = 1
-    marker = "<distributionManagement>"
-    if marker in pom.text:
-        line_no = pom.text[:pom.text.index(marker)].count("\n") + 1
+    # Tolerate a namespace prefix / attributes on the opening tag
+    # (``<foo:distributionManagement ...>``) so the location stays
+    # accurate instead of falling back to line 1.
+    m = re.search(r"<(?:\w+:)?distributionManagement(?:\s|>)", pom.text)
+    if m is not None:
+        line_no = pom.text[:m.start()].count("\n") + 1
     desc = (
         f"distributionManagement release repository '{repo_id}' "
         f"enables snapshots, so mutable -SNAPSHOT artifacts deploy "

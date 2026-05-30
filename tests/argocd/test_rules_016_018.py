@@ -140,3 +140,23 @@ def test_argocd018_no_customizations_passes() -> None:
         "ARGOCD-018",
     )
     assert f.passed is True
+
+
+def test_argocd018_ignore_differences_does_not_fire() -> None:
+    # resource.customizations.ignoreDifferences.* is config, not Lua —
+    # must not be flagged (would be a false positive).
+    f = run_check(
+        """
+        apiVersion: v1
+        kind: ConfigMap
+        metadata:
+          name: argocd-cm
+          namespace: argocd
+        data:
+          resource.customizations.ignoreDifferences.apps_Deployment: |
+            jsonPointers:
+              - /spec/replicas
+        """,
+        "ARGOCD-018",
+    )
+    assert f.passed is True

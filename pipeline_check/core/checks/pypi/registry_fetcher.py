@@ -274,7 +274,10 @@ def fetch_provenance(
 
 
 _GITHUB_REPO_RE = re.compile(
-    r"github\.com[/:]([A-Za-z0-9][A-Za-z0-9._-]*)/([A-Za-z0-9][A-Za-z0-9._-]*)"
+    # Host-anchored so a look-alike domain (``evilgithub.com``) can't
+    # masquerade as ``github.com``.
+    r"(?<![A-Za-z0-9.-])github\.com[/:]"
+    r"([A-Za-z0-9][A-Za-z0-9._-]*)/([A-Za-z0-9][A-Za-z0-9._-]*)"
 )
 #: First-segment values on ``github.com/<seg>/<x>`` that are NOT a
 #: repository owner (sponsor / marketplace / docs links commonly

@@ -152,8 +152,9 @@ def check(cfg: NuGetConfig, ctx: NuGetContext) -> Finding:
     cfg_path = Path(cfg.path)
     if not cfg_path.is_absolute() and ctx.scan_root is not None:
         cfg_path = ctx.scan_root / cfg_path
-    disabled = _disabled_source_keys(str(cfg_path))
-    active_public = [s for s in public if s.name not in disabled]
+    # NuGet matches source names case-insensitively, so compare lowered.
+    disabled = {k.lower() for k in _disabled_source_keys(str(cfg_path))}
+    active_public = [s for s in public if s.name.lower() not in disabled]
     if not active_public:
         return Finding(
             check_id=RULE.id, title=RULE.title, severity=RULE.severity,

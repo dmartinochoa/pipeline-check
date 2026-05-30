@@ -58,7 +58,7 @@ RULE = Rule(
         "Verification-bypass class: a runner told to skip the Go "
         "checksum database / sum file can be served a substituted "
         "module without ``go mod verify`` catching it, the same gap "
-        "GOMOD-001 flags from the ``go.sum`` side."
+        "GOMOD-001 flags from the ``go.sum`` side.",
     ),
     exploit_example=(
         "# Vulnerable: global variables disable verification.\n"

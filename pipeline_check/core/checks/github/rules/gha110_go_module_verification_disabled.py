@@ -64,7 +64,7 @@ RULE = Rule(
         "checksum database / sum file can be served a substituted "
         "module (a MITM on an insecure fetch, a poisoned proxy) "
         "without ``go mod verify`` catching it, the same gap "
-        "GOMOD-001 flags from the ``go.sum`` side."
+        "GOMOD-001 flags from the ``go.sum`` side.",
     ),
     exploit_example=(
         "# Vulnerable: the workflow disables module verification.\n"
