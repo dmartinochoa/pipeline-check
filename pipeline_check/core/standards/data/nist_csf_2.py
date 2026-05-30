@@ -766,6 +766,9 @@ STANDARD = Standard(
         "NUGET-013": ["GV.SC-07"],              # dotnet-tools unpinned
         "NUGET-014": ["PR.DS-01"],              # source URL credentials
         "NUGET-015": ["GV.SC-07"],              # VersionOverride breaks CPM
+        "NUGET-016": ["GV.SC-05"],              # missing <clear/> inherits public gallery
+        "NUGET-018": ["GV.SC-07"],              # build-time MSBuild execution
+        "NUGET-019": ["GV.SC-07", "GV.SC-05"],  # require mode, no trusted signers
         # ── Go modules ─────────────────────────────────────────
         "GOMOD-001": ["PR.DS-01", "GV.SC-07"],  # go.sum integrity manifest missing
         "GOMOD-002": ["GV.SC-07", "GV.SC-08"],  # replace directive to local path

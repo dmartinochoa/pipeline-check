@@ -639,6 +639,9 @@ STANDARD = Standard(
         "NUGET-013": ["6.3.1"],
         "NUGET-014": ["8.2.1"],
         "NUGET-015": ["6.3.1"],
+        "NUGET-016": ["6.3.3", "6.5.1"],  # missing <clear/> inherits public gallery
+        "NUGET-018": ["6.3.1"],  # build-time MSBuild execution
+        "NUGET-019": ["6.3.1"],  # require mode, no trusted signers
         # ── Go modules ──
         "GOMOD-001": ["6.3.1"],                  # go.sum integrity manifest missing
         "GOMOD-002": ["6.3.1"],                  # replace directive to local path

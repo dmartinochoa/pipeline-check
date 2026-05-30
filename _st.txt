@@ -1,0 +1,33 @@
+ M .github/DOCKERHUB.md
+ M CONTRIBUTING.md
+ M README.md
+ M action.yml
+ M docs/index.md
+ M docs/providers/nuget.md
+ M docs/standards/cis_supply_chain.md
+ M docs/standards/nist_800_53.md
+ M docs/standards/nist_csf_2.md
+ M docs/standards/nist_ssdf.md
+ M docs/standards/openssf_scorecard.md
+ M docs/standards/owasp_cicd_top_10.md
+ M pipeline_check/core/standards/data/cis_supply_chain.py
+ M pipeline_check/core/standards/data/esf_supply_chain.py
+ M pipeline_check/core/standards/data/nist_800_190.py
+ M pipeline_check/core/standards/data/nist_800_53.py
+ M pipeline_check/core/standards/data/nist_csf_2.py
+ M pipeline_check/core/standards/data/nist_ssdf.py
+ M pipeline_check/core/standards/data/openssf_scorecard.py
+ M pipeline_check/core/standards/data/owasp_cicd_top_10.py
+ M pipeline_check/core/standards/data/pci_dss_v4.py
+ M pipeline_check/core/standards/data/s2c2f.py
+ M pipeline_check/core/standards/data/slsa.py
+ M pipeline_check/core/standards/data/soc2.py
+ M tests/test_rule_framework.py
+?? _inspect.txt
+?? _reflog.txt
+?? _st.txt
+?? _x.txt
+?? pipeline_check/core/checks/nuget/rules/nuget016_missing_clear_inherits_public.py
+?? pipeline_check/core/checks/nuget/rules/nuget018_build_time_msbuild_exec.py
+?? pipeline_check/core/checks/nuget/rules/nuget019_require_without_trusted_signers.py
+?? tests/nuget/test_nuget_016_to_019.py

@@ -603,6 +603,9 @@ STANDARD = Standard(
         "NUGET-013": ["PW.4.4"],                       # dotnet-tools unpinned
         "NUGET-014": ["PS.1.1"],                       # source URL credentials
         "NUGET-015": ["PO.5.1", "PW.4.4"],             # VersionOverride breaks CPM
+        "NUGET-016": ["PW.4.1", "PW.4.4"],             # missing <clear/> inherits public gallery
+        "NUGET-018": ["PW.4.4"],                       # build-time MSBuild execution
+        "NUGET-019": ["PW.4.4", "PS.3.2"],             # require mode, no trusted signers
         # ── Go modules (GOMOD-001..006) ──
         "GOMOD-001": ["PS.1.1", "PW.4.4"],             # go.sum integrity manifest missing
         "GOMOD-002": ["PO.5.1", "PW.4.4"],             # replace directive to local path

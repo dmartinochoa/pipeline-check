@@ -462,6 +462,9 @@ STANDARD = Standard(
         "NUGET-013": ["Build.L3.NonFalsifiable"],
         "NUGET-014": ["Build.L3.NonFalsifiable"],
         "NUGET-015": ["Build.L3.NonFalsifiable"],
+        "NUGET-016": ["Build.L3.NonFalsifiable"],  # missing <clear/> inherits public gallery
+        "NUGET-018": ["Build.L3.NonFalsifiable"],  # build-time MSBuild execution
+        "NUGET-019": ["Build.L3.NonFalsifiable"],  # require mode, no trusted signers
         # ── Composer / PHP ──
         "COMPOSER-001": ["Build.L3.NonFalsifiable"], # missing composer.lock
         "COMPOSER-002": ["Build.L3.NonFalsifiable"], # floating require constraint

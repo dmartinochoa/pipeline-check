@@ -91,6 +91,9 @@ STANDARD = Standard(
         "NUGET-013": ["ING-1"],
         "NUGET-014": ["ING-1"],
         "NUGET-015": ["ING-1"],
+        "NUGET-016": ["ING-1"],  # missing <clear/> inherits public gallery
+        "NUGET-018": ["ING-1"],  # build-time MSBuild execution
+        "NUGET-019": ["ING-1"],  # require mode, no trusted signers
         # ── Composer / PHP ──
         "COMPOSER-003": ["ING-1"],         # HTTP composer repository
         "COMPOSER-004": ["ING-1"],         # composer.json repo URL credentials

@@ -28,7 +28,7 @@ pipeline_check --pipeline nuget --nuget-path ./src/
 
 ## What it covers
 
-15 checks · 0 have an autofix patch (``--fix``).
+18 checks · 0 have an autofix patch (``--fix``).
 
 | Check | Title | Severity | Fix |
 |-------|-------|----------|-----|
@@ -47,6 +47,9 @@ pipeline_check --pipeline nuget --nuget-path ./src/
 | [NUGET-013](#nuget-013) | dotnet-tools.json entry lacks a version pin | <span class="pg-sev pg-sev--high">HIGH</span> |  |
 | [NUGET-014](#nuget-014) | NuGet.config source URL embeds plaintext credentials | <span class="pg-sev pg-sev--high">HIGH</span> |  |
 | [NUGET-015](#nuget-015) | PackageReference VersionOverride defeats Central Package Management | <span class="pg-sev pg-sev--medium">MEDIUM</span> |  |
+| [NUGET-016](#nuget-016) | Private feed without <clear/> inherits the public gallery | <span class="pg-sev pg-sev--high">HIGH</span> |  |
+| [NUGET-018](#nuget-018) | Project runs build-time MSBuild logic at restore/build | <span class="pg-sev pg-sev--high">HIGH</span> |  |
+| [NUGET-019](#nuget-019) | signatureValidationMode=require with no trusted signers | <span class="pg-sev pg-sev--high">HIGH</span> |  |
 
 ---
 
@@ -472,6 +475,125 @@ Two stable remediation patterns:
 
 * If the override exists because one project needs a newer version, accept the bump everywhere: update ``Directory.Packages.props`` to the new version and delete the override.
 * If only a subtree of the workspace can take the new version, scope it with a nested ``Directory.Packages.props`` in the subtree's directory; CPM honors the closest parent.
+
+</div>
+
+</div>
+
+<div class="pg-rule pg-rule--high" markdown>
+
+## NUGET-016: Private feed without <clear/> inherits the public gallery { #nuget-016 }
+
+<div class="pg-rule__tags">
+<span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-3</span> <span class="pg-tag pg-tag--esf">ESF-S-VERIFY-DEPS</span> <span class="pg-tag pg-tag--cwe">CWE-829</span>
+</div>
+
+Fires when a ``NuGet.config`` declares at least one non-``nuget.org`` package source and its ``<packageSources>`` block has no ``<clear />`` element. The rule re-reads the file to detect ``<clear />`` (the loader keeps only ``<add>`` entries). A source counts as the public gallery when its URL contains ``nuget.org``; anything else (an internal Nexus / Artifactory / Azure Artifacts feed, a local folder) is treated as a private feed whose names a public package could shadow.
+
+Distinct from NUGET-007 (multiple sources without ``packageSourceMapping``): NUGET-007 only fires when one config enumerates two or more sources, so it structurally misses the common shape this rule catches, a config that lists only the internal feed while ``nuget.org`` leaks in through config inheritance. Microsoft's "3 Ways to Mitigate Risk Using Private Package Feeds" names ``<clear/>`` as the fix.
+
+**Known false-positive modes**
+
+- A repo whose only source is an internal mirror that itself proxies and screens nuget.org may accept the inherited gallery deliberately. The rule still fires because the config text alone can't prove the mirror screens for dependency confusion. Suppress per config with a one-line rationale naming the mirror's policy.
+
+**Seen in the wild**
+
+- Birsan 2021 dependency-confusion research: internal package names resolved against the public registry because the public feed stayed active alongside the private one. The .NET face of the attack is a NuGet.config that adds a private feed without ``<clear/>``, leaving nuget.org in the resolution set so a public package with the internal name and a higher version is installed.
+
+<div class="pg-rule__rec" markdown>
+
+**Recommended action**
+
+Add a ``<clear />`` element as the first child of ``<packageSources>`` in ``NuGet.config``, then list every source the project is allowed to use explicitly:
+
+    <packageSources>
+      <clear />
+      <add key="internal" value="https://nuget.corp.local/v3/index.json" />
+      <add key="nuget.org" value="https://api.nuget.org/v3/index.json" />
+    </packageSources>
+
+NuGet merges ``packageSources`` across the machine, user, and repo configs, so a repo config that lists only the internal feed still resolves ``nuget.org`` (added by the machine-level default config). Because NuGet installs the highest version found across every active source, a public package that shadows an internal name can win the race. ``<clear />`` discards the inherited sources so only the ones you list apply. Pair it with ``<packageSourceMapping>`` (see NUGET-007) to pin each namespace to one feed.
+
+</div>
+
+</div>
+
+<div class="pg-rule pg-rule--high" markdown>
+
+## NUGET-018: Project runs build-time MSBuild logic at restore/build { #nuget-018 }
+
+<div class="pg-rule__tags">
+<span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-4</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-3</span> <span class="pg-tag pg-tag--esf">ESF-S-VERIFY-DEPS</span> <span class="pg-tag pg-tag--cwe">CWE-829</span> <span class="pg-tag pg-tag--cwe">CWE-94</span>
+</div>
+
+Re-reads each ``*.csproj`` and fires on two high-signal shapes of build-time code execution:
+
+* an ``<Exec>`` task nested in a ``<Target>`` whose ``BeforeTargets`` or ``AfterTargets`` names a build / restore phase (``Build``, ``Restore``, ``Compile``, ``Pack``, ``Publish``, and the common pre/post hooks), so the command runs automatically; and
+* an ``<Import>`` whose ``Project`` references a generated package path property (``$(Pkg...)``), which pulls a package's ``build/`` MSBuild logic into the build.
+
+The rule inspects structure, not command content, so a legitimate codegen ``<Exec>`` is flagged too (see the known false-positive note). ``packages.config`` projects and non-``.csproj`` inputs are skipped.
+
+**Known false-positive modes**
+
+- Many projects use a build-phase ``<Exec>`` for legitimate codegen (T4, protobuf, a version-stamp script). The rule flags the execution surface, not malice, since the command string alone can't be trusted to stay benign. Review the command; if it's a trusted in-repo script, suppress per project with a one-line rationale.
+
+**Seen in the wild**
+
+- MSBuild build-time execution is the .NET parallel of the npm lifecycle-script attack class: a package ships ``build/<id>.props`` / ``.targets`` that MSBuild auto-imports, or a project carries a ``BeforeTargets="Build"`` ``<Exec>``, so attacker-controlled commands run during a routine restore / build with the runner's credentials.
+
+<div class="pg-rule__rec" markdown>
+
+**Recommended action**
+
+Move build-time shell-outs out of the project file, or gate them behind an explicit, reviewed opt-in. Two shapes trip this rule:
+
+1. An ``<Exec>`` task in a ``<Target>`` wired to a build / restore phase via ``BeforeTargets`` / ``AfterTargets`` runs an arbitrary command on every build, in the developer shell and the CI runner with whatever credentials those carry. Prefer a checked-in, reviewed build script invoked explicitly over an auto-running ``<Exec>``; if codegen is unavoidable, pin the tool version and review the command.
+
+2. A ``PackageReference`` with ``GeneratePathProperty="true"`` feeding an ``<Import Project="$(Pkg...)\build\..." />`` auto-imports a package's MSBuild ``.props`` / ``.targets`` (the .NET analog of an npm ``postinstall``). Remove the manual import, or vet the package's ``build/`` payload and pin it by version.
+
+The point is that nothing in a package restore or a routine ``dotnet build`` should be able to execute attacker-controlled host commands without a human having reviewed exactly what runs.
+
+</div>
+
+</div>
+
+<div class="pg-rule pg-rule--high" markdown>
+
+## NUGET-019: signatureValidationMode=require with no trusted signers { #nuget-019 }
+
+<div class="pg-rule__tags">
+<span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-3</span> <span class="pg-tag pg-tag--esf">ESF-S-VERIFY-DEPS</span> <span class="pg-tag pg-tag--esf">ESF-S-PROVENANCE</span> <span class="pg-tag pg-tag--cwe">CWE-345</span> <span class="pg-tag pg-tag--cwe">CWE-494</span>
+</div>
+
+The follow-up to NUGET-012. NUGET-012 fires when ``signatureValidationMode`` is not ``require``; this rule fires for the opposite, narrower case: the mode IS ``require`` but ``<trustedSigners>`` is missing or carries no ``<certificate>`` under any ``<author>`` / ``<repository>`` entry. The rule re-reads the file to inspect ``<config>`` and ``<trustedSigners>``. When the mode is anything other than ``require`` the rule passes and leaves the finding to NUGET-012.
+
+**Known false-positive modes**
+
+- A config that inherits ``<trustedSigners>`` from a machine-level or parent ``NuGet.config`` looks empty here but validates correctly at restore time. The rule reads a single file, so it can't see inherited signers. Suppress per config with a one-line rationale pointing at the parent config that supplies the signers.
+
+**Seen in the wild**
+
+- .NET supply-chain hardening guidance: teams enable ``signatureValidationMode=require`` expecting it to reject unsigned or untrusted packages, but without a populated ``<trustedSigners>`` list the setting has no trust anchor to enforce against, so the protection is silently a no-op.
+
+<div class="pg-rule__rec" markdown>
+
+**Recommended action**
+
+When ``signatureValidationMode`` is ``require``, add at least one ``<trustedSigners>`` entry with a certificate so there is something to validate signatures against:
+
+    <config>
+      <add key="signatureValidationMode" value="require" />
+    </config>
+    <trustedSigners>
+      <repository name="nuget.org"
+                  serviceIndex="https://api.nuget.org/v3/index.json">
+        <certificate fingerprint="<sha256-of-cert>"
+                     hashAlgorithm="SHA256"
+                     allowUntrustedRoot="false" />
+      </repository>
+    </trustedSigners>
+
+``require`` only rejects untrusted packages when there is a populated signer list to validate against. With ``require`` set but ``<trustedSigners>`` empty or absent, NuGet has no anchor to check signatures against, so the integrity guarantee the mode is supposed to provide doesn't actually hold.
 
 </div>
 

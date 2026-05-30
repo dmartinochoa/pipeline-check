@@ -383,6 +383,9 @@ STANDARD = Standard(
         "NUGET-013": ["4.1.3"],
         "NUGET-014": ["4.1.4"],
         "NUGET-015": ["4.1.3"],
+        "NUGET-016": ["4.2.1"],  # missing <clear/> inherits public gallery
+        "NUGET-018": ["4.1.3"],  # build-time MSBuild execution
+        "NUGET-019": ["4.1.3"],  # require mode, no trusted signers
         # ── Composer / PHP ──
         "COMPOSER-001": ["4.1.3"],
         "COMPOSER-002": ["4.1.3"],

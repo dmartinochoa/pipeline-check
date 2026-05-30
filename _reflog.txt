@@ -1,0 +1,8 @@
+358f9f8 HEAD@{0}: commit: docs(roadmap): sync shipped list + mark nuget batch shipped
+59b9004 HEAD@{1}: commit: documentation update
+b6362cd HEAD@{2}: commit (merge): merge(github): AC-036 egress-containment chain from gha-egress-rules
+fea1ec6 HEAD@{3}: commit: feat(npm,github): NPM-015/016 behavioral supply-chain signals + GHA-109
+b32be57 HEAD@{4}: commit: feat(npm): NPM-009 attributes new transitives to the introducing parent
+be8385b HEAD@{5}: commit: feat(github): GHA-107/108 runtime egress control (harden-runner)
+c1e32eb HEAD@{6}: commit: feat(npm): NPM-014 single-publisher supply-chain risk
+94c1a66 HEAD@{7}: reset: moving to HEAD

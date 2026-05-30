@@ -159,6 +159,8 @@ STANDARD = Standard(
         "NUGET-013": ["Pinned-Dependencies"],
         "NUGET-014": ["Token-Permissions"],
         "NUGET-015": ["Pinned-Dependencies"],
+        "NUGET-016": ["Pinned-Dependencies"],
+        "NUGET-018": ["Dangerous-Workflow"],
         # ── Composer / PHP ──
         "COMPOSER-001": ["Pinned-Dependencies"],
         "COMPOSER-002": ["Pinned-Dependencies"],

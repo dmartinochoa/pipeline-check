@@ -685,6 +685,9 @@ STANDARD = Standard(
         "NUGET-013": ["ESF-S-VERIFY-DEPS"],
         "NUGET-014": ["ESF-D-SECRETS"],
         "NUGET-015": ["ESF-S-VERIFY-DEPS"],
+        "NUGET-016": ["ESF-S-VERIFY-DEPS"],  # missing <clear/> inherits public gallery
+        "NUGET-018": ["ESF-S-VERIFY-DEPS"],  # build-time MSBuild execution
+        "NUGET-019": ["ESF-S-VERIFY-DEPS", "ESF-S-PROVENANCE"],  # require mode, no trusted signers
         # ── Go modules ──
         "GOMOD-001": ["ESF-S-VERIFY-DEPS"],
         "GOMOD-002": ["ESF-S-VERIFY-DEPS"],
