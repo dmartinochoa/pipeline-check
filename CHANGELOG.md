@@ -12,6 +12,16 @@ release commit collapses this section into `## [X.Y.Z] - <date>`.
 
 ### Added
 
+- **PyPI behavioral-trust signals (PYPI-019, PYPI-020, LOW).** The PyPI
+  parallels of NPM-015 / NPM-016, both ``--resolve-remote``-gated and
+  scoped to direct dependencies. PYPI-019 flags a direct dependency
+  whose latest release ships no PEP 740 provenance attestation (from
+  the PyPI JSON API's per-file ``provenance`` field). PYPI-020 resolves
+  the dependency's GitHub repo from ``info.project_urls`` and queries
+  the OpenSSF Scorecard API (reusing ``_primitives/scorecard``),
+  flagging upstreams below 5/10 or failing Dangerous-Workflow. The
+  single-publisher analog (NPM-014) is not shipped: PyPI exposes no
+  reliable maintainer-account-list API. pypi 17 -> 19.
 - **CI Go-module-verification rules (GHA-110, GL-037, CC-033, HIGH).**
   A shared primitive (``_primitives/go_insecure_env.py``) plus three
   per-provider rules flag a CI pipeline that disables Go module

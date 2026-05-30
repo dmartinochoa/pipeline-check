@@ -47,7 +47,7 @@ covered.
 
 ## What it covers
 
-17 checks · 0 have an autofix patch (``--fix``).
+19 checks · 0 have an autofix patch (``--fix``).
 
 | Check | Title | Severity | Fix |
 |-------|-------|----------|-----|
@@ -68,6 +68,8 @@ covered.
 | [PYPI-016](#pypi-016) | requirements.txt repoints the primary index at a non-PyPI host | <span class="pg-sev pg-sev--high">HIGH</span> |  |
 | [PYPI-017](#pypi-017) | requirements.txt uses a remote --find-links source | <span class="pg-sev pg-sev--medium">MEDIUM</span> |  |
 | [PYPI-018](#pypi-018) | requirements.txt forces source builds via --no-binary | <span class="pg-sev pg-sev--medium">MEDIUM</span> |  |
+| [PYPI-019](#pypi-019) | Direct dependency published without PEP 740 provenance | <span class="pg-sev pg-sev--low">LOW</span> |  |
+| [PYPI-020](#pypi-020) | Direct dependency has a low OpenSSF Scorecard | <span class="pg-sev pg-sev--low">LOW</span> |  |
 
 ---
 
@@ -561,6 +563,66 @@ This is the install-time code-execution surface that the wheel-only path avoids:
 **Recommended action**
 
 Drop ``--no-binary`` and install prebuilt wheels where possible. ``--no-binary`` tells pip to skip wheels and build from the source distribution, and an sdist build runs the package's ``setup.py`` (or PEP 517 backend) on the build machine, so installing the dependency executes arbitrary code at install time. A wheel install runs no package code, so this option widens the install-time code-execution surface. If a source build is genuinely required (a package with no wheel, or a C extension you must compile), scope ``--no-binary`` to the specific package rather than ``:all:``, and run the build in a sandboxed, network-isolated step with pinned, hashed requirements.
+
+</div>
+
+</div>
+
+<div class="pg-rule pg-rule--low" markdown>
+
+## PYPI-019: Direct dependency published without PEP 740 provenance { #pypi-019 }
+
+<div class="pg-rule__tags">
+<span class="pg-sev pg-sev--low">LOW</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-4</span> <span class="pg-tag pg-tag--esf">ESF-S-VERIFY-DEPS</span> <span class="pg-tag pg-tag--cwe">CWE-494</span>
+</div>
+
+Network-dependent: needs ``--resolve-remote`` to read each direct dependency's latest-release attestation surface from the PyPI JSON API (the same per-package document the cooldown / OSV passes fetch, so it adds no extra requests). Reads the ``provenance`` field on the latest release's file records and flags a package whose files carry no populated provenance. Scoped to direct, index-resolved dependencies in the requirements files; URL / VCS / ``name @ url`` specs and transitive packages are out of scope.
+
+LOW severity by design: PEP 740 attestation adoption across PyPI is still ramping, so the absence is common and this is an informational posture signal that stays below the default ``--fail-on`` gate. When ``--resolve-remote`` is off, the registry can't be reached, or the index doesn't expose the attestation field, the rule passes silently.
+
+**Known false-positive modes**
+
+- A distribution can be securely published without PEP 740 attestations (it may predate Trusted Publishing, or use a different signing scheme). The absence is a weaker signal than a present-but-invalid attestation would be. Suppress per-resource for dependencies whose supply chain the team has otherwise vetted.
+
+**Seen in the wild**
+
+- PEP 740 / PyPI digital attestations (GA November 2024): publishing via Trusted Publishing produces a signed, verifiable link from the PyPI artifact to the exact source commit and CI run, the property an attacker who republishes a tampered distribution cannot forge.
+
+<div class="pg-rule__rec" markdown>
+
+**Recommended action**
+
+Build provenance (PEP 740 attestations on PyPI) ties a published distribution back to the source repository and CI build that produced it, the same SLSA guarantee this project ships on its own wheel. A dependency whose latest release carries no attestation can't be cryptographically traced to its source, so a registry-side tamper or a look-alike republish is harder to detect. Prefer dependencies that publish with attestations where a maintained alternative exists, and ask upstreams you rely on to adopt Trusted Publishing with attestations (a one-line change to a GitHub Actions ``pypa/gh-action-pypi-publish`` job). This is a posture signal, not a defect in the dependency. The npm analog is NPM-015.
+
+</div>
+
+</div>
+
+<div class="pg-rule pg-rule--low" markdown>
+
+## PYPI-020: Direct dependency has a low OpenSSF Scorecard { #pypi-020 }
+
+<div class="pg-rule__tags">
+<span class="pg-sev pg-sev--low">LOW</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-3</span> <span class="pg-tag pg-tag--esf">ESF-S-VERIFY-DEPS</span> <span class="pg-tag pg-tag--cwe">CWE-1357</span>
+</div>
+
+Network-dependent: needs ``--resolve-remote``. The dependency's GitHub repo is resolved from its PyPI metadata (``info.project_urls`` / ``home_page``, the same per-package JSON document the cooldown / provenance passes read), then each repo is looked up against the OpenSSF Scorecard API (``api.securityscorecards.dev``), which is the one extra network surface this rule adds. Flags a dependency whose upstream repo scores below 5/10 or fails the Dangerous-Workflow check.
+
+Scoped to direct, index-resolved dependencies. A package with no GitHub repo in its PyPI metadata, or one the Scorecard project hasn't indexed, is skipped. LOW severity, an informational upstream-posture signal below the default ``--fail-on`` gate; passes silently when ``--resolve-remote`` is off or the APIs can't be reached.
+
+**Known false-positive modes**
+
+- Scorecard scores a repo's *practices*, not whether a given release is malicious; a low score is a prior, not a verdict. Small but well-run projects can score low on checks that assume a larger team (code-review, CII-best-practices). Treat it as a prompt to look closer, and suppress per-resource for dependencies the team has vetted.
+
+**Seen in the wild**
+
+- OpenSSF Scorecard (securityscorecards.dev): the Dangerous-Workflow check specifically detects the ``pull_request_target`` + untrusted-checkout script-injection pattern behind multiple real CI compromises, so a failing score on a dependency's repo is a concrete, not abstract, weak-link signal.
+
+<div class="pg-rule__rec" markdown>
+
+**Recommended action**
+
+A low OpenSSF Scorecard (or a failed Dangerous-Workflow check) on a direct dependency's own repository is a weak-link signal: the project lacks the maintenance and CI-hardening practices (branch protection, pinned actions, no ``pull_request_target`` script injection, code review) that make a compromise less likely and more detectable. Weigh a better-scored alternative where one exists, pin to a reviewed version, and for the ones you keep, watch them more closely (cooldown, provenance). This is an upstream-posture signal, not a defect you can fix in your own repo. The npm analog is NPM-016.
 
 </div>
 

@@ -14,13 +14,19 @@ import re
 from typing import Any
 
 from ..checks.base import BaseCheck
-from ..checks.pypi.base import PypiContext, iter_specs
+from ..checks.pypi.base import (
+    PypiContext,
+    iter_specs,
+    requirement_package_name,
+)
 from ..checks.pypi.pipelines import PypiChecks
 from ..checks.pypi.registry_fetcher import (
     FileSystemCache,
     HttpRegistryFetcher,
     default_cache_dir,
+    fetch_provenance,
     fetch_publish_times,
+    fetch_repo_slugs,
 )
 from ..inventory import Component
 from ..sbom import BuildDependency, make_pypi_purl, parse_requirement_line
@@ -119,6 +125,45 @@ class PypiProvider(BaseProvider):
                 osv_queries, cache=osv_cache,
                 warnings=context.warnings,
             )
+
+        # Behavioral-trust signals (PYPI-019 / PYPI-020), scoped to
+        # direct (named, index-resolved) dependencies. Reuse the same
+        # per-package JSON document the publish-time pass fetched, so
+        # provenance + repo-slug add no requests beyond the Scorecard
+        # API lookup. The maintainer-depth signal (the NPM-014 analog)
+        # is deliberately absent: PyPI exposes no public maintainer-
+        # account-list API, only the freeform ``info.maintainer`` /
+        # ``info.author`` fields, which are too unreliable to flag on.
+        dep_names: list[str] = []
+        for rf in context.files:
+            for line in iter_specs(rf):
+                pkg = requirement_package_name(line.body)
+                if pkg is not None:
+                    dep_names.append(pkg)
+        if dep_names:
+            provenance, prov_warnings = fetch_provenance(
+                dep_names, fetcher, cache=cache,
+            )
+            context.provenance = provenance
+            context.warnings.extend(prov_warnings)
+
+            slugs, slug_warnings = fetch_repo_slugs(
+                dep_names, fetcher, cache=cache,
+            )
+            context.warnings.extend(slug_warnings)
+            if slugs:
+                from ..checks._primitives.scorecard import (
+                    fetch_scorecards,
+                    scorecard_cache_dir,
+                )
+                sc_cache = FileSystemCache(
+                    scorecard_cache_dir(), enabled=not no_cache,
+                )
+                scorecards, sc_warnings = fetch_scorecards(
+                    slugs, cache=sc_cache,
+                )
+                context.scorecards = scorecards
+                context.warnings.extend(sc_warnings)
 
     def build_dependencies(
         self, context: PypiContext,

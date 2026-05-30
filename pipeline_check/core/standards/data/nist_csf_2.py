@@ -727,6 +727,8 @@ STANDARD = Standard(
         "PYPI-002": ["GV.SC-05"],               # hash pinning missing
         "PYPI-003": ["GV.SC-05", "PR.DS-02"],   # http index / --trusted-host
         "PYPI-018": ["GV.SC-05", "PR.DS-02"],  # --no-binary forces sdist build
+        "PYPI-019": ["GV.SC-05", "GV.SC-07", "PR.PS-02"],  # missing PEP 740 build provenance
+        "PYPI-020": ["GV.SC-05", "GV.SC-07", "PR.PS-02"],  # low OpenSSF Scorecard upstream
         "PYPI-004": ["GV.SC-05"],               # VCS dep without commit SHA
         "PYPI-015": ["GV.SC-05"],  # direct artifact URL
         "PYPI-005": ["GV.SC-05"],               # --extra-index-url (dep confusion)

@@ -96,6 +96,17 @@ class PypiContext:
         #: failure for users on the default no-network path.
         self.publish_times: dict[str, dict[str, _dt.datetime]] = {}
         self.osv_advisories: dict[tuple[str, str], list[Any]] = {}
+        #: ``{package_name: has_provenance}`` populated by the pypi
+        #: provider's ``post_filter`` when ``--resolve-remote`` is on
+        #: (the PEP 740 attestation surface from the PyPI JSON API).
+        #: ``False`` entries are what PYPI-019 flags; empty by default
+        #: so the rule passes silently on the offline path.
+        self.provenance: dict[str, bool] = {}
+        #: ``{package_name: ScorecardResult}`` populated by the pypi
+        #: provider's ``post_filter`` (the dependency's GitHub repo
+        #: resolved from PyPI ``project_urls``, then the OpenSSF
+        #: Scorecard API). PYPI-020 reads it; empty by default.
+        self.scorecards: dict[str, Any] = {}
 
     @classmethod
     def from_path(cls, path: str | Path) -> PypiContext:
@@ -706,6 +717,36 @@ def iter_specs(rf: RequirementsFile) -> list[RequirementLine]:
     dataclass field directly so future shape changes stay local.
     """
     return list(rf.lines)
+
+
+_REQ_NAME_RE = re.compile(r"^\s*([A-Za-z0-9][A-Za-z0-9._-]*)")
+_NON_INDEX_PREFIXES = (
+    "http://", "https://", "git+", "hg+", "svn+", "bzr+", "-",
+)
+
+
+def requirement_package_name(body: str) -> str | None:
+    """Return the lowercased PyPI project name from a requirement line
+    body, or ``None`` for specs that don't resolve to a named index
+    package.
+
+    Skips option lines (``-r`` / ``--hash``), direct URL / VCS specs,
+    and the ``name @ url`` direct-reference form (those pull bytes from
+    a URL, not the PyPI index, so they carry no PyPI registry metadata
+    to query). The name is lowercased to match the registry fetcher's
+    cache-key normalization, so the provider's fetch keys and a rule's
+    lookups agree.
+    """
+    s = body.strip()
+    if not s or s.lower().startswith(_NON_INDEX_PREFIXES):
+        return None
+    if "@" in s:
+        # ``name @ url`` direct reference, not an index package.
+        return None
+    m = _REQ_NAME_RE.match(s)
+    if m is None:
+        return None
+    return m.group(1).lower()
 
 
 def has_option(rf: RequirementsFile, name: str) -> bool:

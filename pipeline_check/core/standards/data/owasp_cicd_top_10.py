@@ -534,6 +534,8 @@ STANDARD = Standard(
         "PYPI-002": ["CICD-SEC-3", "CICD-SEC-9"],  # hash pinning missing
         "PYPI-003": ["CICD-SEC-3", "CICD-SEC-7"],  # http index / --trusted-host
         "PYPI-018": ["CICD-SEC-3"],  # --no-binary forces sdist build
+        "PYPI-019": ["CICD-SEC-4"],  # missing PEP 740 build provenance
+        "PYPI-020": ["CICD-SEC-3"],  # low OpenSSF Scorecard upstream
         "PYPI-004": ["CICD-SEC-3", "CICD-SEC-9"],  # VCS dep without commit SHA
         "PYPI-015": ["CICD-SEC-3"],  # direct artifact URL
         "PYPI-005": ["CICD-SEC-3"],   # --extra-index-url (dep confusion)

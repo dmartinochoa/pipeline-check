@@ -6,6 +6,24 @@ What's planned, what's shipped, and what's deliberately out of scope.
 
 ### Unreleased (on ``dev``)
 
+- **PyPI behavioral-trust signals (PYPI-019 / PYPI-020)** — The PyPI
+  parallels of the NPM-015 / NPM-016 supply-chain-posture signals, both
+  LOW and ``--resolve-remote``-gated. **PYPI-019** flags a direct
+  dependency whose latest release ships no PEP 740 provenance
+  attestation (reads the per-file ``provenance`` field from the PyPI
+  JSON API; returns "unknown / skip" rather than flagging everything if
+  the index doesn't expose the field). **PYPI-020** resolves a direct
+  dependency's GitHub repo from ``info.project_urls`` and queries the
+  OpenSSF Scorecard API, flagging upstreams scoring below 5/10 or
+  failing the Dangerous-Workflow check (reuses the shared
+  ``_primitives/scorecard`` client). Both reuse the per-package JSON
+  document the cooldown / OSV passes already fetch, so provenance +
+  repo-slug add no requests beyond the Scorecard lookup. The
+  single-publisher analog (NPM-014) is deliberately not shipped: PyPI
+  exposes no reliable maintainer-account-list API. New pypi
+  registry-fetcher passes (``fetch_provenance`` / ``fetch_repo_slugs``)
+  + a shared ``requirement_package_name`` extractor; wired across the
+  standards data files mirroring NPM-015/016's coverage. pypi 17 -> 19.
 - **CI Go-module-verification primitive (GHA-110 / GL-037 / CC-033)** —
   Builds the shared CI env-var primitive the roadmap reserved for the
   GOMOD-013/014 idea, rather than growing the gomod loader into a
@@ -722,10 +740,26 @@ stars, download counts, and ``npm audit`` miss.
   flagging upstreams that score below 5/10 or fail the Dangerous-Workflow
   check. The heaviest of the three (one extra API per linked repo).
 
-Still open as follow-ups: a recent-ownership-change / new-account signal
-to pair with NPM-014 (the actual takeover vector, worth a higher
-severity), and the PyPI parallels for all three, gated on PyPI's JSON
-API / PEP 740 surface reliably exposing the owner list and attestations.
+The PyPI parallels then shipped two of the three: **PYPI-019**
+(missing PEP 740 provenance, the NPM-015 analog, reads the per-file
+``provenance`` field on the latest release from the PyPI JSON API) and
+**PYPI-020** (low upstream OpenSSF Scorecard, the NPM-016 analog,
+resolves the GitHub repo from ``info.project_urls`` and reuses the
+shared ``_primitives/scorecard`` client). The single-publisher analog
+(NPM-014) is deliberately **not** shipped: PyPI exposes no public
+maintainer-account-list API, only the freeform ``info.maintainer`` /
+``info.author`` metadata fields, which are too unreliable to flag on,
+exactly the gate the roadmap flagged. The provenance parser returns
+``None`` (skip) rather than ``False`` when the index doesn't expose the
+attestation field at all, so it never flags every dependency if PyPI's
+surface changes. Both are LOW, ``--resolve-remote``-gated, scoped to
+direct index dependencies, and reuse the per-package JSON document the
+cooldown / OSV passes already fetch.
+
+Still open as follow-ups: a recent-ownership-change / new-account
+signal to pair with NPM-014 (the actual takeover vector, worth a higher
+severity), and a PyPI single-maintainer signal if PyPI ever exposes a
+reliable owner-list API.
 
 ### Weak-coverage provider deepening
 
@@ -777,8 +811,10 @@ actually runs), each flagging ``GOFLAGS=-insecure`` / ``GOSUMDB=off`` /
 ``GONOSUMDB`` (013's hard-disables + 014's over-broad-glob folded into
 one HIGH rule). Bitbucket and Azure DevOps were left out (negligible Go
 CI, FP-risky env schemas); the primitive is shared, so adding them is a
-small follow-up. Also still open: the PyPI parallels of the NPM
-behavioral-trust signals.
+small follow-up. (The PyPI parallels of the NPM behavioral-trust
+signals then shipped as PYPI-019 / PYPI-020; the single-maintainer
+analog stays deferred, no reliable PyPI owner-list API. See the
+behavioral-signals candidate above.)
 
 A 2026-05-29 coverage pass ranked every provider by shipped rule count
 and ran a per-provider gap analysis on the thinnest packs. The
