@@ -24,6 +24,9 @@ variables:
   AWS_ACCESS_KEY_ID: AKIAZ3MHALF2TESTHIJK
   DATABASE_PASSWORD: hunter2
   DEPLOY_TARGET: production
+  # GL-037 — Go module checksum / sum-db verification disabled.
+  GOSUMDB: "off"
+  GOFLAGS: -insecure
 
 # GL-011 — opt the pipeline into MR triggering so include: local fires.
 workflow:

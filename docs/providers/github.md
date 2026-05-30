@@ -72,7 +72,7 @@ Resolution rules:
 
 ## What it covers
 
-100 checks · 17 have an autofix patch (``--fix``).
+101 checks · 17 have an autofix patch (``--fix``).
 
 | Check | Title | Severity | Fix |
 |-------|-------|----------|-----|
@@ -172,6 +172,7 @@ Resolution rules:
 | [GHA-107](#gha-107) | harden-runner runs in audit mode (egress not blocked) | <span class="pg-sev pg-sev--medium">MEDIUM</span> |  |
 | [GHA-108](#gha-108) | Sensitive workflow has no runtime egress control | <span class="pg-sev pg-sev--low">LOW</span> |  |
 | [GHA-109](#gha-109) | harden-runner is not the first step in the job | <span class="pg-sev pg-sev--low">LOW</span> |  |
+| [GHA-110](#gha-110) | Workflow disables Go module checksum / sum-db verification | <span class="pg-sev pg-sev--high">HIGH</span> |  |
 | [TAINT-001](#taint-001) | Untrusted input flows across step boundaries via step outputs | <span class="pg-sev pg-sev--high">HIGH</span> |  |
 | [TAINT-002](#taint-002) | Untrusted input flows across jobs via ``jobs.<id>.outputs:`` | <span class="pg-sev pg-sev--high">HIGH</span> |  |
 | [TAINT-003](#taint-003) | Untrusted input forwarded into reusable workflow ``with:`` | <span class="pg-sev pg-sev--high">HIGH</span> |  |
@@ -2900,6 +2901,296 @@ Passes when harden-runner is the first step, and is not applicable (passes) when
 **Recommended action**
 
 Move the `step-security/harden-runner` step to the top of the job, before `actions/checkout` and any `run:` or setup step. harden-runner only monitors (and in block mode filters) traffic that happens after it starts, so any step that runs before it egresses unwatched. StepSecurity's guidance is that harden-runner is always the first step.
+
+</div>
+
+</div>
+
+<div class="pg-rule pg-rule--high" markdown>
+
+## GHA-110: Workflow disables Go module checksum / sum-db verification { #gha-110 }
+
+<div class="pg-rule__tags">
+<span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-3</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-5</span> <span class="pg-tag pg-tag--esf">ESF-S-VERIFY-DEPS</span> <span class="pg-tag pg-tag--cwe">CWE-353</span> <span class="pg-tag pg-tag--cwe">CWE-494</span>
+</div>
+
+Walks the workflow / job / step ``env:`` blocks and every ``run:`` step (for inline ``export GOSUMDB=off`` / ``GOFLAGS=-insecure go build`` assignments) and flags the Go integrity-disabling settings via the shared ``_primitives/go_insecure_env`` detector: ``GOFLAGS`` with ``-insecure``, ``GOSUMDB=off``, truthy ``GONOSUMCHECK``, any ``GOINSECURE``, and a broad ``GOPRIVATE`` / ``GONOSUMDB`` glob (``*`` / public TLD / whole host).
+
+Scoped ``GOPRIVATE`` (an internal org namespace) and ``GOPROXY=off`` / ``GOPROXY=direct`` (still checksum-verified) are not flagged. The env-var face of the verification-bypass surface GOMOD-001 warns about; shipped here (and in GL-037 / CC-033) rather than the gomod loader because the setting lives in the CI config, not ``go.mod``.
+
+**Known false-positive modes**
+
+- A workflow that builds only against an internal module proxy on a trusted network may set a scoped ``GOINSECURE`` for one internal host deliberately. Suppress per workflow with a rationale naming the host; the safer path is a TLS-terminating internal proxy that preserves checksum verification.
+
+**Seen in the wild**
+
+- V
+- e
+- r
+- i
+- f
+- i
+- c
+- a
+- t
+- i
+- o
+- n
+- -
+- b
+- y
+- p
+- a
+- s
+- s
+- 
+- c
+- l
+- a
+- s
+- s
+- :
+- 
+- a
+- 
+- r
+- u
+- n
+- n
+- e
+- r
+- 
+- t
+- o
+- l
+- d
+- 
+- t
+- o
+- 
+- s
+- k
+- i
+- p
+- 
+- t
+- h
+- e
+- 
+- G
+- o
+- 
+- c
+- h
+- e
+- c
+- k
+- s
+- u
+- m
+- 
+- d
+- a
+- t
+- a
+- b
+- a
+- s
+- e
+- 
+- /
+- 
+- s
+- u
+- m
+- 
+- f
+- i
+- l
+- e
+- 
+- c
+- a
+- n
+- 
+- b
+- e
+- 
+- s
+- e
+- r
+- v
+- e
+- d
+- 
+- a
+- 
+- s
+- u
+- b
+- s
+- t
+- i
+- t
+- u
+- t
+- e
+- d
+- 
+- m
+- o
+- d
+- u
+- l
+- e
+- 
+- (
+- a
+- 
+- M
+- I
+- T
+- M
+- 
+- o
+- n
+- 
+- a
+- n
+- 
+- i
+- n
+- s
+- e
+- c
+- u
+- r
+- e
+- 
+- f
+- e
+- t
+- c
+- h
+- ,
+- 
+- a
+- 
+- p
+- o
+- i
+- s
+- o
+- n
+- e
+- d
+- 
+- p
+- r
+- o
+- x
+- y
+- )
+- 
+- w
+- i
+- t
+- h
+- o
+- u
+- t
+- 
+- `
+- `
+- g
+- o
+- 
+- m
+- o
+- d
+- 
+- v
+- e
+- r
+- i
+- f
+- y
+- `
+- `
+- 
+- c
+- a
+- t
+- c
+- h
+- i
+- n
+- g
+- 
+- i
+- t
+- ,
+- 
+- t
+- h
+- e
+- 
+- s
+- a
+- m
+- e
+- 
+- g
+- a
+- p
+- 
+- G
+- O
+- M
+- O
+- D
+- -
+- 0
+- 0
+- 1
+- 
+- f
+- l
+- a
+- g
+- s
+- 
+- f
+- r
+- o
+- m
+- 
+- t
+- h
+- e
+- 
+- `
+- `
+- g
+- o
+- .
+- s
+- u
+- m
+- `
+- `
+- 
+- s
+- i
+- d
+- e
+- .
+
+<div class="pg-rule__rec" markdown>
+
+**Recommended action**
+
+Remove the Go toolchain environment settings that turn off module integrity verification, so ``go build`` keeps checking every downloaded module against ``go.sum`` and the checksum transparency database. Specifically: drop ``GOFLAGS=-insecure`` (it fetches modules over plain HTTP with TLS validation off), ``GOSUMDB=off`` and legacy ``GONOSUMCHECK`` (they disable the checksum DB / sum check), and any ``GOINSECURE`` entry; and scope ``GOPRIVATE`` / ``GONOSUMDB`` to the exact internal namespace that needs it (``corp.example.com/team/*``) instead of a broad ``*`` or a whole public host. This is the CI-env twin of GOMOD-001: committing a ``go.sum`` doesn't help if the runner is configured to ignore it. For private modules, prefer a trusted internal proxy (``GOPROXY``) that still enforces checksums over disabling verification.
 
 </div>
 

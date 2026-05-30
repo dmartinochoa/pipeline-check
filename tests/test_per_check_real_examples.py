@@ -331,6 +331,7 @@ CASES: list[CheckCase] = [
     CheckCase("CC-030", "CICD-SEC-6"),
     CheckCase("CC-031", "CICD-SEC-2"),
     CheckCase("CC-032", "CICD-SEC-6", ("ESF-D-SECRETS",)),
+    CheckCase("CC-033", "CICD-SEC-3", ("ESF-S-VERIFY-DEPS",)),
     # ── GitHub Actions backfill (GHA-028..055) ───────────────────────
     # GHA-041 / 042 / 043 / 047 are network-dependent (need
     # ``--resolve-remote`` to populate ``ctx.action_metadata``); the
@@ -389,6 +390,7 @@ CASES: list[CheckCase] = [
     CheckCase("GHA-107", "CICD-SEC-7", ("ESF-D-BUILD-ENV",)),
     CheckCase("GHA-108", "CICD-SEC-7", ("ESF-D-BUILD-ENV",)),
     CheckCase("GHA-109", "CICD-SEC-7", ("ESF-D-BUILD-ENV",)),
+    CheckCase("GHA-110", "CICD-SEC-3", ("ESF-S-VERIFY-DEPS",)),
     # ── GitLab CI backfill (GL-026..033) ─────────────────────────────
     CheckCase("GL-026", "CICD-SEC-4", ("ESF-D-INJECTION",)),
     CheckCase("GL-027", "CICD-SEC-3", ("ESF-S-PIN-DEPS", "ESF-S-VERIFY-DEPS")),
@@ -401,6 +403,7 @@ CASES: list[CheckCase] = [
     CheckCase("GL-034", "CICD-SEC-3", ("ESF-S-VERIFY-DEPS",)),
     CheckCase("GL-035", "CICD-SEC-3", ("ESF-S-VERIFY-DEPS",)),
     CheckCase("GL-036", "CICD-SEC-6", ("ESF-D-SECRETS",)),
+    CheckCase("GL-037", "CICD-SEC-3", ("ESF-S-VERIFY-DEPS",)),
     # ── Bitbucket Pipelines backfill (BB-026..029) ───────────────────
     CheckCase("BB-026", "CICD-SEC-4", ("ESF-D-INJECTION",)),
     CheckCase("BB-027", "CICD-SEC-3", ("ESF-S-PIN-DEPS", "ESF-S-VERIFY-DEPS")),

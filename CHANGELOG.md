@@ -12,6 +12,17 @@ release commit collapses this section into `## [X.Y.Z] - <date>`.
 
 ### Added
 
+- **CI Go-module-verification rules (GHA-110, GL-037, CC-033, HIGH).**
+  A shared primitive (``_primitives/go_insecure_env.py``) plus three
+  per-provider rules flag a CI pipeline that disables Go module
+  integrity verification via env / variables / inline ``export``:
+  ``GOFLAGS=-insecure``, ``GOSUMDB=off``, ``GONOSUMCHECK``, any
+  ``GOINSECURE``, or a broad ``GOPRIVATE`` / ``GONOSUMDB`` glob (the
+  env-var twin of GOMOD-001; ``GOPROXY=off`` / ``direct`` and scoped
+  ``GOPRIVATE`` are not flagged). GHA-110 walks workflow / job / step
+  ``env:`` + ``run:``; GL-037 walks global + job ``variables:`` +
+  scripts; CC-033 walks job + run-step ``environment:`` + run commands.
+  github 100 -> 101, gitlab 38 -> 39, circleci 32 -> 33.
 - **Weak-coverage provider deepening: deferred fourth picks.** Five
   rules across four providers. nuget: NUGET-017 (public gallery active
   alongside a private feed, not disabled in

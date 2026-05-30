@@ -145,6 +145,7 @@ STANDARD = Standard(
         "S3-005":   ["PS.1.1"],                        # SecureTransport deny
         # GitHub Actions
         "GHA-001":  ["PW.4.1", "PW.4.4"],              # action not pinned to SHA
+        "GHA-110": ["PW.4.4"],  # CI env disables Go module verification
         "GHA-002":  ["PO.5.1", "PW.9.1"],              # pull_request_target with PR head
         "GHA-003":  ["PW.6.1", "PW.9.1"],              # script injection
         "GHA-004":  ["PO.5.1"],                        # no explicit permissions
@@ -234,6 +235,7 @@ STANDARD = Standard(
         "GHA-096":  ["PW.4.1", "PW.4.4", "RV.1.1"],    # known-vulnerable action ref (GHSA)
         # GitLab CI
         "GL-001":   ["PW.4.1", "PW.4.4"],
+        "GL-037": ["PW.4.4"],  # CI env disables Go module verification
         "GL-002":   ["PW.6.1", "PW.9.1"],
         "GL-003":   ["PS.1.1"],
         "GL-004":   ["PO.5.1"],
@@ -333,6 +335,7 @@ STANDARD = Standard(
         "ADO-030":  ["PW.6.1", "PW.9.1"],              # pool interpolates untrusted
         # CircleCI
         "CC-001":   ["PW.4.1", "PW.4.4"],              # orb not pinned to SHA
+        "CC-033": ["PW.4.4"],  # CI env disables Go module verification
         "CC-002":   ["PW.6.1", "PW.9.1"],              # script injection
         "CC-003":   ["PW.4.1", "PW.4.4"],              # image not pinned to digest
         "CC-004":   ["PS.1.1"],                        # unrestricted context

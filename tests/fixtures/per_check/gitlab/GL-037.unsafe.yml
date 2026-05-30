@@ -1,0 +1,6 @@
+variables:
+  GOSUMDB: "off"
+  GOFLAGS: -insecure
+build:
+  script:
+    - go build ./...

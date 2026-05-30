@@ -72,10 +72,12 @@ STANDARD = Standard(
         # Left unmapped on purpose.
         # ── GV.SC. Supply-chain risk management ────────────────────
         "GHA-001":  ["GV.SC-05", "GV.SC-07"],
+        "GHA-110": ["GV.SC-07"],  # CI env disables Go module verification
         "GHA-021":  ["GV.SC-05"],
         "GHA-025":  ["GV.SC-05"],
         "GHA-029":  ["GV.SC-05"],
         "GL-001":   ["GV.SC-05", "GV.SC-07"],
+        "GL-037": ["GV.SC-07"],  # CI env disables Go module verification
         "GL-005":   ["GV.SC-05"],
         "GL-009":   ["GV.SC-05"],
         "GL-021":   ["GV.SC-05"],
@@ -97,6 +99,7 @@ STANDARD = Standard(
         "JF-021":   ["GV.SC-05"],
         "JF-031":   ["GV.SC-05"],
         "CC-001":   ["GV.SC-05", "GV.SC-07"],
+        "CC-033": ["GV.SC-07"],  # CI env disables Go module verification
         "CC-003":   ["GV.SC-05"],
         "CC-021":   ["GV.SC-05"],
         "CC-028":   ["GV.SC-05"],

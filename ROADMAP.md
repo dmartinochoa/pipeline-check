@@ -6,6 +6,26 @@ What's planned, what's shipped, and what's deliberately out of scope.
 
 ### Unreleased (on ``dev``)
 
+- **CI Go-module-verification primitive (GHA-110 / GL-037 / CC-033)** —
+  Builds the shared CI env-var primitive the roadmap reserved for the
+  GOMOD-013/014 idea, rather than growing the gomod loader into a
+  CI-config scanner. ``_primitives/go_insecure_env.py`` detects the Go
+  toolchain settings that turn off module integrity verification
+  (``GOFLAGS=-insecure``, ``GOSUMDB=off``, truthy ``GONOSUMCHECK``, any
+  ``GOINSECURE``, a broad ``GOPRIVATE`` / ``GONOSUMDB`` glob) from both
+  a declared env / variables map and an inline ``export`` in a ``run:``
+  body; ``GOPROXY=off`` / ``direct`` and scoped ``GOPRIVATE`` are not
+  flagged. Three HIGH consumer rules wire it into the platforms where
+  Go CI actually runs: **GHA-110** (workflow / job / step ``env:`` +
+  ``run:``), **GL-037** (global + job ``variables:`` + scripts),
+  **CC-033** (job + run-step ``environment:`` + run commands). The
+  env-var twin of GOMOD-001 (013's hard-disables + 014's
+  over-broad-glob folded into one rule per provider). Bitbucket /
+  Azure DevOps deferred (negligible Go CI, FP-risky env schemas; the
+  primitive is shared, so adding them is small). Mapped across the
+  standards data files (owasp / esf from declared tags, the rest from
+  each standard's dependency-integrity control); GHA-110 also mapped in
+  cis_github. github 100 -> 101, gitlab 38 -> 39, circleci 32 -> 33.
 - **Weak-coverage deepening: deferred fourth-picks batch** — Five rules
   across four providers, the clean, net-new tail of the coverage-pass
   candidate list (the noisy / overlapping / parser-blocked picks were
@@ -747,11 +767,17 @@ too heavily to ship as a separate rule without double-reporting;
 K8S-001 once the chart renders, and **HELM-019** (subchart host
 mismatch) is noisy; **GEM-014** (``git_source`` block) is noisy and
 overlaps GEM-010, **GEM-015** (gemspec floating ``add_dependency``)
-needs a gemspec parser the rubygems loader doesn't have;
-**GOMOD-013/014** (CI env-vars disabling sum-db verification) are best
-built as a shared primitive inside the CI provider packs (GHA / GitLab
-/ etc.), not bolted onto the gomod loader, so they're their own
-follow-up. Also still open: the PyPI parallels of the NPM
+needs a gemspec parser the rubygems loader doesn't have. The
+**GOMOD-013/014** idea (CI env-vars disabling sum-db verification) then
+shipped as the shared-primitive batch it always wanted to be:
+``_primitives/go_insecure_env.py`` plus per-provider rules GHA-110 /
+GL-037 / CC-033 (GitHub Actions, GitLab CI, CircleCI, where Go CI
+actually runs), each flagging ``GOFLAGS=-insecure`` / ``GOSUMDB=off`` /
+``GONOSUMCHECK`` / any ``GOINSECURE`` / a broad ``GOPRIVATE`` /
+``GONOSUMDB`` (013's hard-disables + 014's over-broad-glob folded into
+one HIGH rule). Bitbucket and Azure DevOps were left out (negligible Go
+CI, FP-risky env schemas); the primitive is shared, so adding them is a
+small follow-up. Also still open: the PyPI parallels of the NPM
 behavioral-trust signals.
 
 A 2026-05-29 coverage pass ranked every provider by shipped rule count
@@ -813,14 +839,19 @@ about.
   literal, or an explicit ``:port``. The module-graph analog of the
   PyPI / JFrog insecure-host rules; operates on already-parsed
   coordinates.
-- **GOMOD-013: CI environment disables module checksum / sum-db
-  verification (HIGH).** ``GOFLAGS=-insecure``, ``GONOSUMCHECK``,
-  ``GOSUMDB=off``, ``GOPROXY=off|direct``, broad ``GOINSECURE``. The
+- **GOMOD-013 / GOMOD-014: CI environment disables module checksum /
+  sum-db verification (HIGH). Shipped, as CI-provider rules.** The
   env-var twin of GOMOD-001 (sum file committed, runner told to ignore
-  it). Network-free but parser-gated: best shipped inside the CI provider
-  packs via a shared primitive rather than growing the gomod loader a
-  CI-config scanner. **GOMOD-014** (over-broad ``GOPRIVATE`` /
-  ``GONOSUMDB`` glob, MEDIUM) is a candidate to fold into 013. Rejected:
+  it). Built as the shared primitive
+  ``_primitives/go_insecure_env.py`` plus per-provider rules **GHA-110**
+  / **GL-037** / **CC-033** (not a gomod ID, since the setting lives in
+  the CI config, not ``go.mod``, and growing the gomod loader into a
+  CI-config scanner was the wrong shape). Each flags
+  ``GOFLAGS=-insecure``, ``GOSUMDB=off``, truthy ``GONOSUMCHECK``, any
+  ``GOINSECURE``, and a broad ``GOPRIVATE`` / ``GONOSUMDB`` glob (013's
+  hard-disables + 014's over-broad-glob folded into one HIGH rule).
+  ``GOPROXY=off`` / ``direct`` are deliberately not flagged (neither is
+  an integrity bypass on its own). Scoped ``GOPRIVATE`` passes. Rejected:
   ``//go:generate`` and ``go.work`` rules (the provider loads neither Go
   source nor ``go.work`` today).
 

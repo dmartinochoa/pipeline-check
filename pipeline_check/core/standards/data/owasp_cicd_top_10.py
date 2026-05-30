@@ -135,6 +135,7 @@ STANDARD = Standard(
         "S3-005":   ["CICD-SEC-9"],
         # GitHub Actions
         "GHA-001":  ["CICD-SEC-3", "CICD-SEC-8"],
+        "GHA-110": ["CICD-SEC-3", "CICD-SEC-5"],  # CI env disables Go module verification
         "GHA-002":  ["CICD-SEC-4"],
         "GHA-003":  ["CICD-SEC-4"],
         "GHA-004":  ["CICD-SEC-5"],
@@ -225,6 +226,7 @@ STANDARD = Standard(
         "GHA-096":  ["CICD-SEC-3", "CICD-SEC-8"],  # known-vulnerable action ref (GHSA)
         # GitLab CI
         "GL-001":   ["CICD-SEC-3"],
+        "GL-037": ["CICD-SEC-3", "CICD-SEC-5"],  # CI env disables Go module verification
         "GL-002":   ["CICD-SEC-4"],
         "GL-003":   ["CICD-SEC-6"],
         "GL-004":   ["CICD-SEC-1"],
@@ -360,6 +362,7 @@ STANDARD = Standard(
         "JF-035":   ["CICD-SEC-3"],   # httpRequest ignoreSslErrors: true
         # CircleCI
         "CC-001":   ["CICD-SEC-3", "CICD-SEC-8"],
+        "CC-033": ["CICD-SEC-3", "CICD-SEC-5"],  # CI env disables Go module verification
         "CC-002":   ["CICD-SEC-4"],
         "CC-003":   ["CICD-SEC-3"],
         "CC-004":   ["CICD-SEC-6"],

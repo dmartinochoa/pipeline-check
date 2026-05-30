@@ -110,12 +110,14 @@ STANDARD = Standard(
         "S3-005":   ["10.3.2"],
         # GitHub Actions
         "GHA-001":  ["6.3.3"],                           # unpinned action
+        "GHA-110": ["6.3.1"],  # CI env disables Go module verification
         "GHA-002":  ["6.5.1"],                           # pull_request_target + PR head
         "GHA-003":  ["6.5.1"],                           # script injection
         "GHA-004":  ["7.2.5"],                           # unrestricted GITHUB_TOKEN
         "GHA-005":  ["8.2.1"],                           # long-lived AWS keys
         # GitLab CI
         "GL-001":   ["6.3.3"],
+        "GL-037": ["6.3.1"],  # CI env disables Go module verification
         "GL-002":   ["6.5.1"],
         "GL-003":   ["8.2.1", "6.5.1"],
         "GL-004":   ["6.4.3"],
@@ -134,6 +136,7 @@ STANDARD = Standard(
         "ADO-005":  ["6.3.3"],
         # CircleCI
         "CC-001":   ["6.3.3"],                           # orb not pinned to SHA
+        "CC-033": ["6.3.1"],  # CI env disables Go module verification
         "CC-002":   ["6.5.1"],                           # script injection
         "CC-003":   ["6.3.3"],                           # image not pinned to digest
         "CC-004":   ["8.2.1", "6.5.1"],                  # unrestricted context

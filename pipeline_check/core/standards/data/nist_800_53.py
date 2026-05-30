@@ -134,6 +134,7 @@ STANDARD = Standard(
         "S3-005":   ["SC-8", "AU-9"],
         # GitHub Actions
         "GHA-001":  ["SR-3", "SR-11", "SI-2", "RA-5"],   # unpinned action
+        "GHA-110": ["CM-7", "SR-3"],  # CI env disables Go module verification
         "GHA-002":  ["CM-6", "SI-7", "SA-11"],           # pull_request_target + PR head
         "GHA-003":  ["CM-6", "SA-11", "SA-15"],          # script injection
         "GHA-004":  ["AC-6", "CM-6", "CM-7"],            # unrestricted GITHUB_TOKEN
@@ -223,6 +224,7 @@ STANDARD = Standard(
         "GHA-096":  ["SR-3", "SR-11", "RA-5"],           # known-vulnerable action ref (GHSA)
         # GitLab CI
         "GL-001":   ["SR-3", "SR-11", "SI-2"],
+        "GL-037": ["CM-7", "SR-3"],  # CI env disables Go module verification
         "GL-002":   ["SI-7", "SA-11", "CM-6"],
         "GL-003":   ["IA-5"],
         "GL-004":   ["SA-10", "AC-3"],
@@ -322,6 +324,7 @@ STANDARD = Standard(
         "ADO-030":  ["CM-6", "SA-11"],                   # pool interpolates untrusted
         # CircleCI
         "CC-001":   ["SR-3", "SR-11", "SI-2", "RA-5"],  # orb not pinned to SHA
+        "CC-033": ["CM-7", "SR-3"],  # CI env disables Go module verification
         "CC-002":   ["CM-6", "SA-11", "SA-15"],          # script injection
         "CC-003":   ["SR-3", "SR-11", "SI-2", "RA-5"],  # image not pinned to digest
         "CC-004":   ["IA-5"],                            # unrestricted context

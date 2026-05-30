@@ -157,6 +157,7 @@ STANDARD = Standard(
         "EB-002":   ["2.4.3"],                           # EventBridge rule wildcard target ARN
         # GitHub Actions
         "GHA-001":  ["1.4.1", "3.1.5"],                  # unpinned 3rd-party action
+        "GHA-110": ["1.4.1"],  # CI env disables Go module verification
         "GHA-002":  ["2.1.3", "2.3.8"],                  # pull_request_target + PR head
         "GHA-003":  ["2.1.3"],                           # script injection
         "GHA-004":  ["2.4.3"],                           # unrestricted GITHUB_TOKEN
@@ -246,6 +247,7 @@ STANDARD = Standard(
         "GHA-096":  ["1.4.1", "3.1.3"],                  # known-vulnerable action ref (GHSA)
         # GitLab CI
         "GL-001":   ["1.4.1", "3.1.5"],
+        "GL-037": ["1.4.1"],  # CI env disables Go module verification
         "GL-002":   ["2.1.3", "2.3.8"],
         "GL-003":   ["1.5.1", "2.3.4", "2.4.3"],
         "GL-004":   ["5.1.4", "5.2.1"],
@@ -345,6 +347,7 @@ STANDARD = Standard(
         "ADO-030":  ["2.1.3"],                           # pool interpolates untrusted value
         # CircleCI
         "CC-001":   ["1.4.1", "3.1.5"],
+        "CC-033": ["1.4.1"],  # CI env disables Go module verification
         "CC-002":   ["2.1.3"],
         "CC-003":   ["1.4.1", "3.1.5"],
         "CC-004":   ["1.5.1", "2.3.4", "2.4.3"],

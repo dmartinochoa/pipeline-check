@@ -56,6 +56,7 @@ STANDARD = Standard(
         "ECR-006":  ["Pinned-Dependencies"],                           # ECR pull-through untrusted upstream
         "CA-002":   ["Pinned-Dependencies"],                           # CodeArtifact public upstream
         "GHA-001":  ["Pinned-Dependencies"],
+        "GHA-110": ["Pinned-Dependencies"],  # CI env disables Go module verification
         "GHA-040":  ["Pinned-Dependencies"],                           # known-compromised action ref
         "GHA-018":  ["Pinned-Dependencies"],                           # insecure package registry
         "GHA-025":  ["Pinned-Dependencies"],
@@ -68,6 +69,7 @@ STANDARD = Standard(
         "GHA-094":  ["Pinned-Dependencies"],                           # stale-action-refs
         "GHA-096":  ["Pinned-Dependencies"],                           # known-vulnerable action ref (GHSA)
         "GL-001":   ["Pinned-Dependencies"],
+        "GL-037": ["Pinned-Dependencies"],  # CI env disables Go module verification
         "GL-005":   ["Pinned-Dependencies"],
         "GL-009":   ["Pinned-Dependencies"],
         "GL-018":   ["Pinned-Dependencies"],
@@ -85,6 +87,7 @@ STANDARD = Standard(
         "JF-009":   ["Pinned-Dependencies"],
         "JF-018":   ["Pinned-Dependencies"],
         "CC-001":   ["Pinned-Dependencies"],
+        "CC-033": ["Pinned-Dependencies"],  # CI env disables Go module verification
         "CC-003":   ["Pinned-Dependencies"],
         "CC-018":   ["Pinned-Dependencies"],
         "CC-029":   ["Pinned-Dependencies"],

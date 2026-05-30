@@ -104,6 +104,7 @@ STANDARD = Standard(
         "S3-005":   ["ESF-C-ARTIFACT-AUTHZ"],
         # ── GitHub Actions ─────────────────────────────────────────
         "GHA-001":  ["ESF-S-PIN-DEPS", "ESF-S-VERIFY-DEPS"],
+        "GHA-110": ["ESF-S-VERIFY-DEPS"],  # CI env disables Go module verification
         "GHA-002":  ["ESF-D-INJECTION", "ESF-D-BUILD-ENV"],
         "GHA-003":  ["ESF-D-INJECTION"],
         "GHA-004":  ["ESF-C-LEAST-PRIV"],
@@ -135,6 +136,7 @@ STANDARD = Standard(
         "GHA-029":  ["ESF-S-PIN-DEPS", "ESF-S-VERIFY-DEPS"],
         # ── GitLab CI ──────────────────────────────────────────────
         "GL-001":   ["ESF-S-PIN-DEPS", "ESF-S-VERIFY-DEPS"],
+        "GL-037": ["ESF-S-VERIFY-DEPS"],  # CI env disables Go module verification
         "GL-002":   ["ESF-D-INJECTION"],
         "GL-003":   ["ESF-D-SECRETS"],
         "GL-004":   ["ESF-C-APPROVAL", "ESF-C-ENV-SEP"],
@@ -252,6 +254,7 @@ STANDARD = Standard(
         "JF-031":   ["ESF-S-PIN-DEPS", "ESF-S-VERIFY-DEPS"],
         # ── CircleCI ───────────────────────────────────────────────
         "CC-001":   ["ESF-S-PIN-DEPS", "ESF-S-VERIFY-DEPS"],
+        "CC-033": ["ESF-S-VERIFY-DEPS"],  # CI env disables Go module verification
         "CC-002":   ["ESF-D-INJECTION"],
         "CC-003":   ["ESF-S-PIN-DEPS", "ESF-S-VERIFY-DEPS"],
         "CC-004":   ["ESF-D-SECRETS"],

@@ -224,14 +224,17 @@ STANDARD = Standard(
         "CC-013":   ["CC8.1"],
         # Pinning (changes require explicit review, not silent drift)
         "GHA-001":  ["CC8.1"],
+        "GHA-110": ["CC8.1"],  # CI env disables Go module verification
         "GHA-025":  ["CC8.1"],
         "GL-001":   ["CC8.1"],
+        "GL-037": ["CC8.1"],  # CI env disables Go module verification
         "GL-005":   ["CC8.1"],
         "BB-001":   ["CC8.1"],
         "ADO-001":  ["CC8.1"],
         "ADO-025":  ["CC8.1"],
         "JF-001":   ["CC8.1"],
         "CC-001":   ["CC8.1"],
+        "CC-033": ["CC8.1"],  # CI env disables Go module verification
         "GCB-001":  ["CC8.1"],
         # Integrity / attestation (change record)
         "SIGN-001": ["CC8.1"],

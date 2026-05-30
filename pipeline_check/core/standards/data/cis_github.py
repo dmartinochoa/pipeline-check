@@ -159,6 +159,7 @@ STANDARD = Standard(
         # privileged-runtime patterns. Anchors of 1.5.2 evidence; the
         # full GHA pack still maps via OWASP CICD-SEC-* on every page.
         "GHA-001": ["1.5.2"],                                 # action not pinned to SHA
+        "GHA-110": ["1.5.2"],  # CI env disables Go module verification
         "GHA-002": ["1.5.2"],                                 # pull_request_target + checkout PR head
         "GHA-003": ["1.5.2"],                                 # script injection via ${{ }}
         "GHA-004": ["1.5.2"],                                 # GITHUB_TOKEN unrestricted

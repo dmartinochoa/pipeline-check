@@ -157,7 +157,7 @@ class TestGitHubFixtures:
 
 class TestGitLabFixtures:
     EXPECTED_IDS = (
-        {f"GL-{i:03d}" for i in range(1, 37)}
+        {f"GL-{i:03d}" for i in range(1, 38)}
         | {"TAINT-004", "TAINT-008"}
     )
 
@@ -281,7 +281,7 @@ class TestJenkinsFixtures:
 
 
 class TestCircleCIFixtures:
-    EXPECTED_IDS = {f"CC-{i:03d}" for i in range(1, 33)}
+    EXPECTED_IDS = {f"CC-{i:03d}" for i in range(1, 34)}
 
     def _scan(self, filename: str):
         ctx = CircleCIContext.from_path(FIXTURES / "circleci" / filename)

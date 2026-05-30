@@ -81,6 +81,7 @@ STANDARD = Standard(
         "PBAC-005": ["Build.L3.NonFalsifiable"],                   # stage roles mirror pipeline role
         # ── GitHub Actions ────────────────────────────────────────
         "GHA-001":  ["Build.L3.NonFalsifiable"],                   # unpinned 3rd-party action
+        "GHA-110": ["Build.L3.NonFalsifiable"],  # CI env disables Go module verification
         "GHA-002":  ["Build.L3.NonFalsifiable", "Build.L3.Isolated"], # pull_request_target + PR head
         "GHA-003":  ["Build.L3.Isolated"],                         # script injection
         "GHA-004":  ["Build.L3.NonFalsifiable"],                   # unrestricted GITHUB_TOKEN
@@ -160,6 +161,7 @@ STANDARD = Standard(
         "GHA-062":  ["Build.L3.NonFalsifiable"],                   # OIDC trust subject in sibling IaC is overly broad
         # ── GitLab CI ─────────────────────────────────────────────
         "GL-001":   ["Build.L3.NonFalsifiable"],                   # floating image tag
+        "GL-037": ["Build.L3.NonFalsifiable"],  # CI env disables Go module verification
         "GL-002":   ["Build.L3.Isolated"],                         # script injection
         "GL-005":   ["Build.L3.NonFalsifiable"],                   # unpinned include
         "GL-006":   ["Build.L2.Signed"],
@@ -294,6 +296,7 @@ STANDARD = Standard(
                      "Build.L3.NonFalsifiable"],                   # httpRequest SSL off
         # ── CircleCI ──────────────────────────────────────────────
         "CC-001":   ["Build.L3.NonFalsifiable"],                   # orb not pinned
+        "CC-033": ["Build.L3.NonFalsifiable"],  # CI env disables Go module verification
         "CC-002":   ["Build.L3.Isolated"],                         # script injection
         "CC-003":   ["Build.L3.NonFalsifiable"],                   # image not pinned to digest
         "CC-004":   ["Build.L3.NonFalsifiable"],                   # unrestricted context

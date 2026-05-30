@@ -28,7 +28,7 @@ in other providers:
 
 ## What it covers
 
-32 checks · 10 have an autofix patch (``--fix``).
+33 checks · 10 have an autofix patch (``--fix``).
 
 | Check | Title | Severity | Fix |
 |-------|-------|----------|-----|
@@ -64,6 +64,7 @@ in other providers:
 | [CC-030](#cc-030) | Workflow job uses context without branch filter or approval gate | <span class="pg-sev pg-sev--medium">MEDIUM</span> |  |
 | [CC-031](#cc-031) | OIDC role assumption without branch filter or approval gate | <span class="pg-sev pg-sev--high">HIGH</span> |  |
 | [CC-032](#cc-032) | Secret-named variable echoed / printed in a run step | <span class="pg-sev pg-sev--high">HIGH</span> |  |
+| [CC-033](#cc-033) | Job disables Go module checksum / sum-db verification | <span class="pg-sev pg-sev--high">HIGH</span> |  |
 
 ---
 
@@ -723,6 +724,248 @@ Scans every ``run:`` command across all jobs. Variable names matching common sec
 **Recommended action**
 
 Don't print secret values in CI scripts. CircleCI masks context variables in logs, but only exact-match substrings. Encoded, truncated, or derived forms bypass the mask. Log a boolean instead (``[ -n "$X" ] && echo set || echo unset``). Avoid ``set -x`` when secret-bound variables are in scope.
+
+</div>
+
+</div>
+
+<div class="pg-rule pg-rule--high" markdown>
+
+## CC-033: Job disables Go module checksum / sum-db verification { #cc-033 }
+
+<div class="pg-rule__tags">
+<span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-3</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-5</span> <span class="pg-tag pg-tag--esf">ESF-S-VERIFY-DEPS</span> <span class="pg-tag pg-tag--cwe">CWE-353</span> <span class="pg-tag pg-tag--cwe">CWE-494</span>
+</div>
+
+Walks each job's ``environment:`` map, every ``run`` step's ``environment:`` map, and every ``run`` command body (for inline ``export GOSUMDB=off`` assignments), and flags the Go integrity-disabling settings via the shared ``_primitives/go_insecure_env`` detector: ``GOFLAGS`` with ``-insecure``, ``GOSUMDB=off``, truthy ``GONOSUMCHECK``, any ``GOINSECURE``, and a broad ``GOPRIVATE`` / ``GONOSUMDB`` glob.
+
+Scoped ``GOPRIVATE`` and ``GOPROXY=off`` / ``direct`` (still checksum-verified) are not flagged. The CircleCI sibling of GHA-110 / GL-037, the CI-env face of the verification-bypass surface GOMOD-001 warns about.
+
+**Known false-positive modes**
+
+- A job that builds only against an internal module proxy on a trusted network may set a scoped ``GOINSECURE`` for one internal host deliberately. Suppress per job with a rationale; a TLS-terminating internal proxy that preserves checksum verification is the safer path.
+
+**Seen in the wild**
+
+- V
+- e
+- r
+- i
+- f
+- i
+- c
+- a
+- t
+- i
+- o
+- n
+- -
+- b
+- y
+- p
+- a
+- s
+- s
+- 
+- c
+- l
+- a
+- s
+- s
+- :
+- 
+- a
+- 
+- r
+- u
+- n
+- n
+- e
+- r
+- 
+- t
+- o
+- l
+- d
+- 
+- t
+- o
+- 
+- s
+- k
+- i
+- p
+- 
+- t
+- h
+- e
+- 
+- G
+- o
+- 
+- c
+- h
+- e
+- c
+- k
+- s
+- u
+- m
+- 
+- d
+- a
+- t
+- a
+- b
+- a
+- s
+- e
+- 
+- /
+- 
+- s
+- u
+- m
+- 
+- f
+- i
+- l
+- e
+- 
+- c
+- a
+- n
+- 
+- b
+- e
+- 
+- s
+- e
+- r
+- v
+- e
+- d
+- 
+- a
+- 
+- s
+- u
+- b
+- s
+- t
+- i
+- t
+- u
+- t
+- e
+- d
+- 
+- m
+- o
+- d
+- u
+- l
+- e
+- 
+- w
+- i
+- t
+- h
+- o
+- u
+- t
+- 
+- `
+- `
+- g
+- o
+- 
+- m
+- o
+- d
+- 
+- v
+- e
+- r
+- i
+- f
+- y
+- `
+- `
+- 
+- c
+- a
+- t
+- c
+- h
+- i
+- n
+- g
+- 
+- i
+- t
+- ,
+- 
+- t
+- h
+- e
+- 
+- s
+- a
+- m
+- e
+- 
+- g
+- a
+- p
+- 
+- G
+- O
+- M
+- O
+- D
+- -
+- 0
+- 0
+- 1
+- 
+- f
+- l
+- a
+- g
+- s
+- 
+- f
+- r
+- o
+- m
+- 
+- t
+- h
+- e
+- 
+- `
+- `
+- g
+- o
+- .
+- s
+- u
+- m
+- `
+- `
+- 
+- s
+- i
+- d
+- e
+- .
+
+<div class="pg-rule__rec" markdown>
+
+**Recommended action**
+
+Remove the Go toolchain environment settings that turn off module integrity verification so ``go build`` keeps checking every downloaded module against ``go.sum`` and the checksum transparency database. Drop ``GOFLAGS=-insecure`` (plain HTTP fetch, TLS off), ``GOSUMDB=off`` / legacy ``GONOSUMCHECK`` (checksum DB / sum check off), and any ``GOINSECURE``; scope ``GOPRIVATE`` / ``GONOSUMDB`` to the exact internal namespace (``corp.example.com/team/*``) rather than a broad ``*`` or whole public host. This is the CI-env twin of GOMOD-001, a committed ``go.sum`` is moot if the runner ignores it. For private modules, prefer a trusted internal ``GOPROXY`` that still enforces checksums over disabling verification.
 
 </div>
 
