@@ -72,6 +72,7 @@ references, recommendation).
 | [`AC-033`](#ac-033) | Environment-secret laundering to unprotected deploy job | <span class="pg-sev pg-sev--critical">CRITICAL</span> | github | [`TAINT-009`](providers/github.md#taint-009) + [`GHA-098`](providers/github.md#gha-098) |
 | [`AC-034`](#ac-034) | Submodule-poisoned PR to credential exfiltration | <span class="pg-sev pg-sev--critical">CRITICAL</span> | github | [`GHA-102`](providers/github.md#gha-102) + ([`GHA-037`](providers/github.md#gha-037) or [`GHA-004`](providers/github.md#gha-004)) |
 | [`AC-035`](#ac-035) | AI agent is both reviewer and committer | <span class="pg-sev pg-sev--critical">CRITICAL</span> | github | [`GHA-103`](providers/github.md#gha-103) + ([`GHA-104`](providers/github.md#gha-104) or [`GHA-106`](providers/github.md#gha-106)) |
+| [`AC-036`](#ac-036) | Untrusted-code execution with no runtime egress containment | <span class="pg-sev pg-sev--high">HIGH</span> | github | ([`GHA-003`](providers/github.md#gha-003) or [`GHA-016`](providers/github.md#gha-016) or [`GHA-035`](providers/github.md#gha-035) or [`GHA-044`](providers/github.md#gha-044)) + ([`GHA-107`](providers/github.md#gha-107) or [`GHA-108`](providers/github.md#gha-108)) |
 
 ### Cross-provider chains (`XPC-NNN`)
 
@@ -1173,6 +1174,34 @@ Break either leg:
   1. Don't run the AI bot on an untrusted trigger with write scope (GHA-103): move review to ``pull_request`` with a read-only token, or gate the privileged job behind a protected ``environment:``.
   2. Take away the agent's write path: route its output through a reviewable PR instead of a direct push (GHA-104), and scope the job to ``contents: read`` (GHA-106).
 Best: never let one workflow both feed an agent untrusted input and grant it the ability to write back. Split review (read-only) from any apply step (human-approved).
+
+</div>
+
+</div>
+
+<div class="pg-rule pg-rule--high" markdown>
+
+### AC-036: Untrusted-code execution with no runtime egress containment { #ac-036 }
+
+<div class="pg-rule__tags">
+<span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-tag" title="MITRE ATT&CK technique">MITRE T1059</span> <span class="pg-tag" title="MITRE ATT&CK technique">MITRE T1552</span> <span class="pg-tag" title="MITRE ATT&CK technique">MITRE T1041</span> <span class="pg-tag" title="kill-chain phase">execution (attacker-influenced code runs on the runner) -> credential-access (reads the OIDC token / GITHUB_TOKEN / secrets) -> exfiltration (no egress allowlist blocks the outbound connection)</span> <span class="pg-tag pg-tag--owasp">github</span>
+</div>
+
+A workflow runs attacker-influenced or remotely-fetched code (script injection, github-script injection, `curl | bash`, or build-tool lifecycle scripts on an untrusted trigger) AND has no enforced egress allowlist: harden-runner is absent on an OIDC/deploy workflow (GHA-108) or present but in audit mode (GHA-107). The executing code can read the runner's OIDC token, GITHUB_TOKEN, or secrets and exfiltrate them with nothing at the network layer to stop it.
+
+**References**
+
+- <https://www.stepsecurity.io/blog/popular-github-action-tj-actions-changed-files-is-compromised>
+- <https://owasp.org/www-project-top-10-ci-cd-security-risks/CICD-SEC-04-Poisoned-Pipeline-Execution-PPE>
+
+<div class="pg-rule__rec" markdown>
+
+**Recommended action**
+
+Break either leg:
+  1. Close the execution primitive: route untrusted input through an `env:` var instead of inlining `${{ github.event.* }}` (GHA-003 / GHA-035), pin and verify actions, and replace `curl | bash` (GHA-016) / untrusted build-tool scripts (GHA-044) with pinned, checksummed installs.
+  2. Add an enforced egress allowlist: run `step-security/harden-runner` as the first step with `egress-policy: block` and an `allowed-endpoints` list (GHA-107 / GHA-108).
+Either fix narrows the chain; do both. Egress blocking is the defense-in-depth layer that contains an execution primitive you missed.
 
 </div>
 

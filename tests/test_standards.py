@@ -398,11 +398,11 @@ class TestPerFrameworkCoverageFloor:
         "esf_supply_chain":       98,   # current 100%
         "cis_supply_chain":       97,   # current 99%, DF-007 + OCI-006 carve-outs
         "nist_ssdf":              97,   # current 99%, OCI-006 carve-out
-        "openssf_scorecard":      74,   # current 74-77%, GitHub-scoped; non-GitHub rule packs grow the denominator without expected new coverage
+        "openssf_scorecard":      73,   # current 73-77%, GitHub-scoped; non-GitHub rule packs grow the denominator without expected new coverage
         "slsa":                   67,   # current 69%
         "nist_800_190":           54,   # current 56%, container-scoped
         "s2c2f":                  31,   # current 33%, OSS-consumption-scoped
-        "cis_aws_foundations":    14,   # current 15%, AWS-pack-only
+        "cis_aws_foundations":    13,   # current 13%, AWS-pack-only (registry rule packs grow the denominator)
         "cis_github":             13,   # current 14%, GitHub-platform-scoped
         "oscr":                   55,   # current ~58%, supply-chain-attack-scoped
         "cis_kubernetes":          4,   # current 4-5%, K8s-manifest-scoped (denominator grows with non-K8s rule packs)

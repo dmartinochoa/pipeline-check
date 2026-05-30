@@ -432,9 +432,12 @@ STANDARD = Standard(
         "ARGOCD-006": ["2.4.3", "5.1.4"],          # ApplicationSet PR/SCM no allowlist
         "ARGOCD-007": ["2.4.3", "5.1.4"],          # Helm generator interpolation
         "ARGOCD-008": ["2.3.8"],                   # CMP plugin invocation
+        "ARGOCD-015": ["2.3.8"],  # kustomize --enable-helm
         "ARGOCD-009": ["2.4.3"],                   # anonymous access enabled
+        "ARGOCD-014": ["2.4.3"],  # web terminal exec.enabled
         # ── ArgoCD extended pack ──
         "ARGOCD-010": ["1.4.1"],                   # mutable targetRevision
+        "ARGOCD-017": ["1.4.1"],  # in-cluster mutable source
         "ARGOCD-011": ["1.3.4"],                   # cluster-resource wildcard
         "ARGOCD-012": ["1.1.5"],                   # no sync windows on prod
         "ARGOCD-013": ["1.3.4"],                   # no revision history cap
@@ -613,8 +616,12 @@ STANDARD = Standard(
         "PYPI-001": ["1.4.1", "3.1.3"],            # requirements line lacks ==pin
         "PYPI-002": ["3.1.3", "4.1.1"],            # hash pinning missing
         "PYPI-003": ["3.1.5", "1.4.1"],            # http index / --trusted-host
+        "PYPI-018": ["3.1.5", "1.4.1"],  # --no-binary forces sdist build
         "PYPI-004": ["1.4.1", "3.1.3"],            # VCS dep without commit SHA
+        "PYPI-015": ["1.4.1", "3.1.3"],  # direct artifact URL
         "PYPI-005": ["3.1.5", "1.4.1"],            # --extra-index-url (dep confusion)
+        "PYPI-017": ["3.1.5", "1.4.1"],  # remote --find-links
+        "PYPI-016": ["3.1.5", "1.4.1"],  # primary index repointed
         "PYPI-006": ["1.4.1", "3.1.3"],            # compromised-package registry
         # ── maven (dep supply-chain) ──────────────────────────────
         "MVN-001":  ["1.4.1", "3.1.3"],            # floating Maven version range
@@ -660,6 +667,9 @@ STANDARD = Standard(
         "NUGET-013": ["1.4.1"],                    # dotnet-tools unpinned
         "NUGET-014": ["1.5.1"],                    # source URL credentials
         "NUGET-015": ["1.4.1"],                    # VersionOverride breaks CPM
+        "NUGET-016": ["3.1.5", "1.4.1"],           # missing <clear/> inherits public gallery
+        "NUGET-018": ["1.4.1"],                    # build-time MSBuild execution
+        "NUGET-019": ["1.4.1"],                    # require mode, no trusted signers
         # ── Go modules (GOMOD-001..006) ──
         "GOMOD-001": ["1.4.1"],                    # go.sum integrity manifest missing
         "GOMOD-002": ["1.4.1"],                    # replace directive to local path
@@ -688,13 +698,17 @@ STANDARD = Standard(
         "COMPOSER-001": ["1.4.1"],                 # missing composer.lock
         "COMPOSER-002": ["1.4.1"],                 # floating require constraint
         "COMPOSER-003": ["1.4.1"],                 # HTTP repository
+        "COMPOSER-012": ["1.4.1"],  # disables Packagist / marks custom repo canonical
+        "COMPOSER-011": ["1.4.1"],  # external VCS repository re-points a package
         "COMPOSER-004": ["1.4.1"],                 # repo URL credentials
         "COMPOSER-005": ["1.4.1"],                 # minimum-stability dev
+        "COMPOSER-014": ["1.4.1"],  # minimum-stability without prefer-stable
         "COMPOSER-006": ["1.4.1"],                 # scripts curl-pipe-shell
         "COMPOSER-007": ["1.4.1", "1.1.8"],        # known-compromised package
         "COMPOSER-008": ["1.4.1"],                 # allow-plugins wildcard
         "COMPOSER-009": ["1.4.1"],                 # auth.json credentials
         "COMPOSER-010": ["1.4.1"],                 # secure-http false
+        "COMPOSER-013": ["1.4.1"],  # config.disable-tls
         # ── RubyGems / Bundler (GEM-001..008) ──
         "GEM-001": ["1.4.1"],                      # missing Gemfile.lock
         "GEM-002": ["1.4.1"],                      # floating gem constraint
@@ -710,13 +724,16 @@ STANDARD = Standard(
         "PULUMI-001": ["1.5.1"],                   # passphrase secretsprovider
         "PULUMI-002": ["1.5.1"],                   # secret-shaped config plaintext
         "PULUMI-003": ["1.5.1"],                   # hardcoded credentials in source
+        "PULUMI-011": ["1.5.1"],  # plugin from custom download server
         "PULUMI-004": ["1.5.1"],                   # insecure state backend
         "PULUMI-005": ["1.3.4"],                   # wildcard IAM policy in source
         "PULUMI-006": ["1.4.1"],                   # StackReference unguarded
         # ── Pulumi extended pack ──
         "PULUMI-007": ["1.5.1"],                   # public-access cloud resource
         "PULUMI-008": ["1.5.1"],                   # shell-exec with non-constant input
+        "PULUMI-013": ["1.5.1"],  # dynamic provider deploy-time code
         "PULUMI-009": ["1.4.1"],                   # runtime / source mismatch
+        "PULUMI-012": ["1.4.1"],  # plugin version unpinned
         "PULUMI-010": ["1.5.1"],                   # stack orphaned encryption salt
         # ── Cross-cutting dataflow / taint engine ───────��─────────
         # The taint family flags cross-step / cross-job flows where

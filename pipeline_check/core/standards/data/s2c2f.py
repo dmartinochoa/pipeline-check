@@ -79,7 +79,10 @@ STANDARD = Standard(
         "NPM-004":  ["ING-1"],             # install-time lifecycle script
         "NPM-007":  ["ING-1"],             # .npmrc ignore-scripts enforcement
         "PYPI-003": ["ING-1"],             # http index / --trusted-host
+        "PYPI-018": ["ING-1"],  # --no-binary forces sdist build
         "PYPI-005": ["ING-1"],             # --extra-index-url (dep confusion)
+        "PYPI-017": ["ING-1"],  # remote --find-links
+        "PYPI-016": ["ING-1"],  # primary index repointed
         "MVN-003":  ["ING-1"],             # plaintext-HTTP repository
         "MVN-007":  ["ING-1"],             # settings.xml wildcard mirror
         "NUGET-004": ["ING-1"],            # HTTP-only NuGet package source
@@ -91,12 +94,19 @@ STANDARD = Standard(
         "NUGET-013": ["ING-1"],
         "NUGET-014": ["ING-1"],
         "NUGET-015": ["ING-1"],
+        "NUGET-016": ["ING-1"],  # missing <clear/> inherits public gallery
+        "NUGET-018": ["ING-1"],  # build-time MSBuild execution
+        "NUGET-019": ["ING-1"],  # require mode, no trusted signers
         # ── Composer / PHP ──
         "COMPOSER-003": ["ING-1"],         # HTTP composer repository
+        "COMPOSER-012": ["ING-1"],  # disables Packagist / marks custom repo canonical
+        "COMPOSER-011": ["ING-1"],  # external VCS repository re-points a package
         "COMPOSER-004": ["ING-1"],         # composer.json repo URL credentials
         "COMPOSER-005": ["ING-1"],         # minimum-stability dev / pre-release
+        "COMPOSER-014": ["ING-1"],  # minimum-stability without prefer-stable
         "COMPOSER-009": ["ING-1"],         # auth.json committed
         "COMPOSER-010": ["ING-1"],         # secure-http false (HTTP enabled)
+        "COMPOSER-013": ["ING-1"],  # config.disable-tls
         # ── RubyGems / Bundler ──
         "GEM-003": ["ING-1"],              # HTTP Gemfile source
         "GEM-004": ["ING-1"],              # Gemfile source URL credentials
@@ -221,6 +231,7 @@ STANDARD = Standard(
         "PYPI-001": ["UPD-1"],             # requirements lacks ==pin
         "PYPI-002": ["UPD-1"],             # hash pinning missing
         "PYPI-004": ["UPD-1"],             # VCS dep without commit SHA
+        "PYPI-015": ["UPD-1"],  # direct artifact URL
         "MVN-001":  ["UPD-1"],             # floating Maven version range
         "MVN-002":  ["UPD-1"],             # mutable SNAPSHOT dep
         "MVN-004":  ["UPD-1"],             # missing <version> element

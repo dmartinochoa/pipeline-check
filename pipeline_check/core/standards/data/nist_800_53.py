@@ -551,6 +551,7 @@ STANDARD = Standard(
         "ARGO-015": ["SC-8", "SI-7"],                    # insecure (non-HTTPS) artifact URL
         # ── Argo CD (GitOps deployment) ──
         "ARGOCD-010": ["CM-7", "SR-3"],                  # mutable targetRevision
+        "ARGOCD-017": ["CM-7", "SR-3"],  # in-cluster mutable source
         "ARGOCD-011": ["AC-6", "CM-7"],                  # cluster-resource wildcard
         "ARGOCD-012": ["CM-6", "AU-2"],                  # no sync windows
         "ARGOCD-013": ["AU-11"],                         # no revision history cap
@@ -633,8 +634,12 @@ STANDARD = Standard(
         "PYPI-001": ["SR-3", "SR-11", "SI-2"],           # missing ==pin
         "PYPI-002": ["SR-3", "SR-11", "SI-7"],           # hash pinning missing
         "PYPI-003": ["SR-3", "SR-11", "SC-8"],           # http index / --trusted-host
+        "PYPI-018": ["SR-3", "SR-11", "SC-8"],  # --no-binary forces sdist build
         "PYPI-004": ["SR-3", "SR-11", "SI-2"],           # VCS dep without commit SHA
+        "PYPI-015": ["SR-3", "SR-11", "SI-2"],  # direct artifact URL
         "PYPI-005": ["SR-3", "SR-11"],                   # --extra-index-url (dep confusion)
+        "PYPI-017": ["SR-3", "SR-11"],  # remote --find-links
+        "PYPI-016": ["SR-3", "SR-11"],  # primary index repointed
         "PYPI-006": ["SR-3", "SR-11", "RA-5"],           # compromised PyPI version
         "MVN-001":  ["SR-3", "SR-11", "SI-2"],           # floating Maven range
         "MVN-002":  ["SR-3", "SR-11", "SI-2"],           # mutable SNAPSHOT dep
@@ -682,6 +687,9 @@ STANDARD = Standard(
         "NUGET-013": ["CM-7", "SR-3"],                   # dotnet-tools unpinned
         "NUGET-014": ["IA-5", "SC-28"],                  # source URL credentials
         "NUGET-015": ["CM-6"],                           # VersionOverride breaks CPM
+        "NUGET-016": ["CM-7", "SR-3"],                   # missing <clear/> inherits public gallery
+        "NUGET-018": ["CM-7", "SR-3"],                   # build-time MSBuild execution
+        "NUGET-019": ["SI-7"],                           # require mode, no trusted signers
         # ── Go modules (GOMOD-001..006) ─────────────────────────
         "GOMOD-001": ["SI-7", "CM-7"],                   # go.sum integrity manifest missing
         "GOMOD-002": ["CM-7", "SR-3"],                  # replace directive to local path
@@ -710,13 +718,17 @@ STANDARD = Standard(
         "COMPOSER-001": ["SR-3", "CM-8"],                # missing composer.lock
         "COMPOSER-002": ["CM-7", "SR-3"],                # floating constraint
         "COMPOSER-003": ["SC-8", "SC-13"],               # HTTP repository
+        "COMPOSER-012": ["SC-8", "SC-13"],  # disables Packagist / marks custom repo canonical
+        "COMPOSER-011": ["SC-8", "SC-13"],  # external VCS repository re-points a package
         "COMPOSER-004": ["IA-5", "SC-28"],               # repo URL credentials
         "COMPOSER-005": ["CM-7", "SR-3"],                # minimum-stability dev
+        "COMPOSER-014": ["CM-7", "SR-3"],  # minimum-stability without prefer-stable
         "COMPOSER-006": ["CM-7", "SI-7"],                # scripts curl-pipe-shell
         "COMPOSER-007": ["SI-2", "SR-3"],                # compromised package
         "COMPOSER-008": ["CM-7", "SR-3"],                # allow-plugins wildcard
         "COMPOSER-009": ["IA-5", "SC-28"],               # auth.json credentials
         "COMPOSER-010": ["SC-8", "SC-13"],               # secure-http false
+        "COMPOSER-013": ["SC-8", "SC-13"],  # config.disable-tls
         # ── RubyGems / Bundler ──
         "GEM-001": ["SR-3", "CM-8"],                     # missing Gemfile.lock
         "GEM-002": ["CM-7", "SR-3"],                     # floating gem constraint
@@ -732,13 +744,16 @@ STANDARD = Standard(
         "PULUMI-001": ["SC-13", "SC-12"],                # passphrase secretsprovider
         "PULUMI-002": ["IA-5", "SC-28"],                 # secret-shaped config plaintext
         "PULUMI-003": ["IA-5", "SC-28"],                 # hardcoded credentials in source
+        "PULUMI-011": ["IA-5", "SC-28"],  # plugin from custom download server
         "PULUMI-004": ["AU-9", "SC-8"],                  # insecure state backend
         "PULUMI-005": ["AC-6", "AC-3"],                  # wildcard IAM policy in source
         "PULUMI-006": ["AC-3", "CM-7"],                  # StackReference unguarded
         # ── Pulumi extended pack ──
         "PULUMI-007": ["AC-3", "AC-6"],                  # public-access cloud resource
         "PULUMI-008": ["CM-7", "SI-7"],                  # shell-exec with non-constant input
+        "PULUMI-013": ["CM-7", "SI-7"],  # dynamic provider deploy-time code
         "PULUMI-009": ["CM-6"],                          # runtime / source mismatch
+        "PULUMI-012": ["CM-6"],  # plugin version unpinned
         "PULUMI-010": ["SC-12", "IA-5"],                 # stack orphaned encryption salt
         # ── OCI image manifest gaps ──────────────────────────────
         "OCI-001":  ["SR-4", "CM-8"],                    # provenance annotations missing

@@ -527,8 +527,12 @@ STANDARD = Standard(
         "PYPI-001": ["CICD-SEC-3"],   # requirements line lacks ==pin
         "PYPI-002": ["CICD-SEC-3", "CICD-SEC-9"],  # hash pinning missing
         "PYPI-003": ["CICD-SEC-3", "CICD-SEC-7"],  # http index / --trusted-host
+        "PYPI-018": ["CICD-SEC-3"],  # --no-binary forces sdist build
         "PYPI-004": ["CICD-SEC-3", "CICD-SEC-9"],  # VCS dep without commit SHA
+        "PYPI-015": ["CICD-SEC-3"],  # direct artifact URL
         "PYPI-005": ["CICD-SEC-3"],   # --extra-index-url (dep confusion)
+        "PYPI-017": ["CICD-SEC-3"],  # remote --find-links
+        "PYPI-016": ["CICD-SEC-3"],  # primary index repointed
         "PYPI-006": ["CICD-SEC-3", "CICD-SEC-8"],  # compromised-package registry
         "PYPI-008": ["CICD-SEC-3", "CICD-SEC-8"],  # cooldown gate (--resolve-remote)
         "PYPI-009": ["CICD-SEC-3", "CICD-SEC-8"],  # OSV advisory (--resolve-remote)
@@ -571,6 +575,9 @@ STANDARD = Standard(
         "NUGET-013": ["CICD-SEC-3", "CICD-SEC-5"],  # dotnet-tools unpinned
         "NUGET-014": ["CICD-SEC-6", "CICD-SEC-10"], # source URL credentials
         "NUGET-015": ["CICD-SEC-3"],                # VersionOverride breaks CPM
+        "NUGET-016": ["CICD-SEC-3"],                # missing <clear/> inherits public gallery
+        "NUGET-018": ["CICD-SEC-4", "CICD-SEC-3"],  # build-time MSBuild execution
+        "NUGET-019": ["CICD-SEC-3"],                # require mode, no trusted signers
         # ── Go modules (GOMOD-001..006) ──
         "GOMOD-001": ["CICD-SEC-3"],               # go.sum integrity manifest missing
         "GOMOD-002": ["CICD-SEC-3", "CICD-SEC-5"], # replace directive to local path
@@ -599,13 +606,17 @@ STANDARD = Standard(
         "COMPOSER-001": ["CICD-SEC-3"],               # missing composer.lock
         "COMPOSER-002": ["CICD-SEC-3"],               # floating constraint
         "COMPOSER-003": ["CICD-SEC-3", "CICD-SEC-5"], # HTTP repository
+        "COMPOSER-012": ["CICD-SEC-3", "CICD-SEC-5"],  # disables Packagist / marks custom repo canonical
+        "COMPOSER-011": ["CICD-SEC-3", "CICD-SEC-5"],  # external VCS repository re-points a package
         "COMPOSER-004": ["CICD-SEC-6", "CICD-SEC-10"], # repo URL credentials
         "COMPOSER-005": ["CICD-SEC-3"],               # minimum-stability dev/alpha/beta
+        "COMPOSER-014": ["CICD-SEC-3"],  # minimum-stability without prefer-stable
         "COMPOSER-006": ["CICD-SEC-3", "CICD-SEC-1"], # scripts curl-pipe-shell
         "COMPOSER-007": ["CICD-SEC-3", "CICD-SEC-7"], # compromised package
         "COMPOSER-008": ["CICD-SEC-3", "CICD-SEC-5"], # allow-plugins wildcard
         "COMPOSER-009": ["CICD-SEC-6", "CICD-SEC-10"], # auth.json credentials
         "COMPOSER-010": ["CICD-SEC-3", "CICD-SEC-5"], # secure-http false
+        "COMPOSER-013": ["CICD-SEC-3", "CICD-SEC-5"],  # config.disable-tls
         # ── RubyGems / Bundler (GEM-001..008) ──
         "GEM-001": ["CICD-SEC-3"],               # missing Gemfile.lock
         "GEM-002": ["CICD-SEC-3"],               # floating gem constraint
@@ -621,13 +632,16 @@ STANDARD = Standard(
         "PULUMI-001": ["CICD-SEC-6", "CICD-SEC-7"], # passphrase secretsprovider
         "PULUMI-002": ["CICD-SEC-6"],               # secret-shaped config plaintext
         "PULUMI-003": ["CICD-SEC-6", "CICD-SEC-7"], # hardcoded credentials in source
+        "PULUMI-011": ["CICD-SEC-3", "CICD-SEC-4"],  # plugin from custom download server
         "PULUMI-004": ["CICD-SEC-2", "CICD-SEC-6"], # insecure state backend
         "PULUMI-005": ["CICD-SEC-1", "CICD-SEC-2"], # wildcard IAM policy in source
         "PULUMI-006": ["CICD-SEC-1", "CICD-SEC-6"], # StackReference unguarded
         # ── Pulumi extended pack (PULUMI-007..010) ──
         "PULUMI-007": ["CICD-SEC-2", "CICD-SEC-6"], # public-access cloud resource
         "PULUMI-008": ["CICD-SEC-5", "CICD-SEC-3"], # shell-exec with non-constant input
+        "PULUMI-013": ["CICD-SEC-3", "CICD-SEC-5"],  # dynamic provider deploy-time code
         "PULUMI-009": ["CICD-SEC-3"],               # runtime / source mismatch
+        "PULUMI-012": ["CICD-SEC-3", "CICD-SEC-4"],  # plugin version unpinned
         "PULUMI-010": ["CICD-SEC-6"],               # stack orphaned encryption salt
         # Buildkite
         "BK-001":   ["CICD-SEC-3"],   # plugin not pinned to exact version
@@ -686,9 +700,12 @@ STANDARD = Standard(
         "ARGOCD-006": ["CICD-SEC-1", "CICD-SEC-4"],  # ApplicationSet PR/SCM no allowlist
         "ARGOCD-007": ["CICD-SEC-4", "CICD-SEC-1"],  # Helm generator interpolation
         "ARGOCD-008": ["CICD-SEC-3", "CICD-SEC-4"],  # CMP plugin invocation
+        "ARGOCD-015": ["CICD-SEC-4"],  # kustomize --enable-helm
         "ARGOCD-009": ["CICD-SEC-2"],                # anonymous access enabled
+        "ARGOCD-014": ["CICD-SEC-2"],  # web terminal exec.enabled
         # ── ArgoCD extended pack (ARGOCD-010..013) ──
         "ARGOCD-010": ["CICD-SEC-3", "CICD-SEC-5"], # mutable targetRevision
+        "ARGOCD-017": ["CICD-SEC-3", "CICD-SEC-5"],  # in-cluster mutable source
         "ARGOCD-011": ["CICD-SEC-1", "CICD-SEC-5"], # cluster-resource wildcard
         "ARGOCD-012": ["CICD-SEC-4", "CICD-SEC-1"], # no sync windows on prod
         "ARGOCD-013": ["CICD-SEC-7"],               # no revision history cap

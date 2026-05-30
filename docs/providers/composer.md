@@ -30,7 +30,7 @@ pipeline_check --pipeline composer --composer-path ./packages/api/
 
 ## What it covers
 
-10 checks · 0 have an autofix patch (``--fix``).
+14 checks · 0 have an autofix patch (``--fix``).
 
 | Check | Title | Severity | Fix |
 |-------|-------|----------|-----|
@@ -44,6 +44,10 @@ pipeline_check --pipeline composer --composer-path ./packages/api/
 | [COMPOSER-008](#composer-008) | composer.json allow-plugins permits any plugin to execute | <span class="pg-sev pg-sev--high">HIGH</span> |  |
 | [COMPOSER-009](#composer-009) | auth.json committed alongside composer.json with literal credentials | <span class="pg-sev pg-sev--high">HIGH</span> |  |
 | [COMPOSER-010](#composer-010) | composer.json config.secure-http: false disables HTTPS enforcement | <span class="pg-sev pg-sev--medium">MEDIUM</span> |  |
+| [COMPOSER-011](#composer-011) | composer.json repository re-points a package to an external VCS source | <span class="pg-sev pg-sev--high">HIGH</span> |  |
+| [COMPOSER-012](#composer-012) | composer.json disables Packagist or marks a custom repo canonical | <span class="pg-sev pg-sev--high">HIGH</span> |  |
+| [COMPOSER-013](#composer-013) | composer.json config.disable-tls turns off certificate verification | <span class="pg-sev pg-sev--high">HIGH</span> |  |
+| [COMPOSER-014](#composer-014) | composer.json minimum-stability lowered without prefer-stable | <span class="pg-sev pg-sev--medium">MEDIUM</span> |  |
 
 ---
 
@@ -330,6 +334,112 @@ Fires when ``config.secure-http`` is explicitly set to the boolean ``false`` in 
 Remove the ``config.secure-http: false`` entry from ``composer.json`` (or set it back to ``true``). Composer's default has been ``secure-http: true`` since 1.8; the explicit ``false`` is a deliberate downgrade that lets the project pull packages from plain-HTTP sources without complaint. That defeats the same defense that COMPOSER-003 protects on the individual ``repositories`` URL — a plain-HTTP mirror, a typosquatted public source, anything the package resolver finds is now eligible for fetch.
 
 If the deployment legitimately needs to talk to an internal mirror that can't terminate TLS, front the mirror with a TLS-terminating reverse proxy. The ``secure-http: false`` escape hatch is a project-wide weakening that almost always outlives the local constraint that motivated it.
+
+</div>
+
+</div>
+
+<div class="pg-rule pg-rule--high" markdown>
+
+## COMPOSER-011: composer.json repository re-points a package to an external VCS source { #composer-011 }
+
+<div class="pg-rule__tags">
+<span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-3</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-5</span> <span class="pg-tag pg-tag--esf">ESF-S-TRUSTED-REG</span> <span class="pg-tag pg-tag--esf">ESF-S-VERIFY-DEPS</span> <span class="pg-tag pg-tag--cwe">CWE-829</span>
+</div>
+
+Fires on any ``repositories`` entry of type ``vcs``, ``git``, ``package``, or ``composer``. These types re-point package resolution to an arbitrary source, and because custom repos win over Packagist, a malicious entry is a dependency-confusion vector. ``path`` and ``artifact`` types are local-only and don't trip the rule. Companion to COMPOSER-012 (Packagist disabled / custom repo canonical).
+
+**Known false-positive modes**
+
+- Private organizations legitimately host internal packages on a custom Composer / VCS repository. Suppress with a one-line rationale confirming the URL is owned by your team; pair it with namespaced package names so the custom source can't shadow a public coordinate.
+
+**Seen in the wild**
+
+- Composer resolves custom ``repositories`` before Packagist, the same priority order that makes dependency-confusion attacks work across npm / PyPI / NuGet. A custom ``vcs`` entry that names a public coordinate serves the attacker's fork on the next install.
+
+<div class="pg-rule__rec" markdown>
+
+**Recommended action**
+
+Drop the custom ``repositories`` entry, or pin the package to a trusted source you control. Composer resolves custom repositories ahead of Packagist, so a ``vcs`` / ``git`` / ``package`` / ``composer`` entry can quietly override a well-known coordinate with an attacker-controlled fork. This is the Composer shape of dependency confusion: the coordinate still reads like the real package, but resolution now points at the custom source first.
+
+If the project genuinely needs an internal package source, keep it but confirm the URL is owned by your team and that the names it serves are namespaced so they can't shadow public packages.
+
+</div>
+
+</div>
+
+<div class="pg-rule pg-rule--high" markdown>
+
+## COMPOSER-012: composer.json disables Packagist or marks a custom repo canonical { #composer-012 }
+
+<div class="pg-rule__tags">
+<span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-3</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-5</span> <span class="pg-tag pg-tag--esf">ESF-S-TRUSTED-REG</span> <span class="pg-tag pg-tag--esf">ESF-S-VERIFY-DEPS</span> <span class="pg-tag pg-tag--cwe">CWE-829</span>
+</div>
+
+Fires on two exact shapes inside ``repositories``: a Packagist disable (``{"packagist.org": false}`` or ``{"packagist": false}``), or a custom repo with ``"canonical": true``. Both hand package resolution to a non-default source for the names it provides. Exact key / value reads keep this the lowest-false-positive rule of the repository set. Companion to COMPOSER-011 (custom vcs / package repo).
+
+**Seen in the wild**
+
+- Disabling Packagist or marking a mirror canonical is the documented Composer way to force every dependency through one source. When that source is attacker-owned, the whole graph resolves through it, the worst-case version of dependency confusion.
+
+<div class="pg-rule__rec" markdown>
+
+**Recommended action**
+
+Keep Packagist enabled and avoid marking a custom repository canonical unless you fully trust it for every coordinate it can serve. Disabling Packagist with ``{"packagist.org": false}`` (or the legacy ``"packagist": false``), or setting ``"canonical": true`` on a custom repo, lets that single source answer for any package name, including ones it should not own. That is the broadest form of the dependency-confusion surface COMPOSER-011 catches per entry.
+
+</div>
+
+</div>
+
+<div class="pg-rule pg-rule--high" markdown>
+
+## COMPOSER-013: composer.json config.disable-tls turns off certificate verification { #composer-013 }
+
+<div class="pg-rule__tags">
+<span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-3</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-5</span> <span class="pg-tag pg-tag--esf">ESF-S-TRUSTED-REG</span> <span class="pg-tag pg-tag--esf">ESF-S-VERIFY-DEPS</span> <span class="pg-tag pg-tag--cwe">CWE-295</span> <span class="pg-tag pg-tag--cwe">CWE-319</span>
+</div>
+
+Fires when ``config.disable-tls`` is explicitly set to the boolean ``true`` in ``composer.json``. The default (``false``) is the safe posture, so the rule only trips on an explicit downgrade. Mirrors the one-key config lookup of COMPOSER-008 (allow-plugins) and COMPOSER-010 (secure-http).
+
+**Seen in the wild**
+
+- Composer documents ``disable-tls`` as a last-resort escape hatch precisely because it removes the only integrity guarantee on package downloads. A persistent ``true`` in a committed manifest re-opens the MITM surface on every CI install run.
+
+<div class="pg-rule__rec" markdown>
+
+**Recommended action**
+
+Remove the ``config.disable-tls: true`` entry from ``composer.json`` (or set it back to ``false``). With TLS disabled, Composer skips certificate verification on every HTTPS request, so a man-in-the-middle can present a forged certificate and serve tampered packages without a warning. This is strictly worse than ``secure-http: false`` (COMPOSER-010): that one allows plain HTTP, this one keeps the ``https://`` scheme but stops validating who is on the other end.
+
+If a certificate error pushed someone to set this flag, fix the trust chain (install the corporate CA, renew the expired cert) rather than turning verification off globally.
+
+</div>
+
+</div>
+
+<div class="pg-rule pg-rule--medium" markdown>
+
+## COMPOSER-014: composer.json minimum-stability lowered without prefer-stable { #composer-014 }
+
+<div class="pg-rule__tags">
+<span class="pg-sev pg-sev--medium">MEDIUM</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-3</span> <span class="pg-tag pg-tag--esf">ESF-S-VERIFY-DEPS</span> <span class="pg-tag pg-tag--cwe">CWE-1104</span> <span class="pg-tag pg-tag--cwe">CWE-1357</span>
+</div>
+
+Fires when top-level ``minimum-stability`` is one of ``dev``, ``alpha``, ``beta``, or ``RC`` and top-level ``prefer-stable`` is not ``true``. Reads both top-level keys. Where COMPOSER-005 fires on any lowered floor, COMPOSER-014 is the subset where ``prefer-stable`` does not soften it, so the two overlap by design (005 is the broad signal, 014 the sharper one).
+
+**Known false-positive modes**
+
+- Projects that intentionally track dev dependencies may accept the lowered floor. Adding ``prefer-stable: true`` keeps the wider range while preferring stable where available, which clears this rule without giving up the pre-release access.
+
+<div class="pg-rule__rec" markdown>
+
+**Recommended action**
+
+Set ``"prefer-stable": true`` alongside a lowered ``minimum-stability``, or raise ``minimum-stability`` back to ``stable``. With ``prefer-stable`` off, Composer is free to resolve every dependency to a dev / alpha / beta / RC release even when a stable version exists, pulling unreviewed code across the whole tree. ``prefer-stable: true`` keeps the wider floor (needed for a few genuine pre-release deps) while still preferring stable wherever it can.
+
+COMPOSER-005 flags the lowered floor on its own; this rule narrows to the higher-risk combination where nothing pulls resolution back toward stable.
 
 </div>
 

@@ -36,7 +36,7 @@ pipeline_check --pipeline pulumi --pulumi-path ./infra/
 
 ## What it covers
 
-10 checks · 0 have an autofix patch (``--fix``).
+13 checks · 0 have an autofix patch (``--fix``).
 
 | Check | Title | Severity | Fix |
 |-------|-------|----------|-----|
@@ -50,6 +50,9 @@ pipeline_check --pipeline pulumi --pulumi-path ./infra/
 | [PULUMI-008](#pulumi-008) | Pulumi source spawns a shell with non-constant input | <span class="pg-sev pg-sev--high">HIGH</span> |  |
 | [PULUMI-009](#pulumi-009) | Pulumi.yaml runtime does not match any source file | <span class="pg-sev pg-sev--medium">MEDIUM</span> |  |
 | [PULUMI-010](#pulumi-010) | Pulumi stack carries both encryptionsalt and a cloud-KMS provider | <span class="pg-sev pg-sev--medium">MEDIUM</span> |  |
+| [PULUMI-011](#pulumi-011) | Pulumi plugin pulled from a custom download server | <span class="pg-sev pg-sev--high">HIGH</span> |  |
+| [PULUMI-012](#pulumi-012) | Pulumi plugin version unpinned or floating | <span class="pg-sev pg-sev--medium">MEDIUM</span> |  |
+| [PULUMI-013](#pulumi-013) | Pulumi dynamic provider runs arbitrary code at deploy time | <span class="pg-sev pg-sev--high">HIGH</span> |  |
 
 ---
 
@@ -427,6 +430,105 @@ Without the cleanup, the stack file documents two incompatible encryption posts 
 * Confuses operator audit (which posture is in force?).
 * Leaves the salt in git history, which is the only secret-bearing artifact a future attacker would need if the operator ever reverts to the passphrase provider for a single secret.
 * Trips static-analysis tools (this one included) that read the salt's presence as evidence of passphrase encryption even when the salt is no longer the active encryption mechanism.
+
+</div>
+
+</div>
+
+<div class="pg-rule pg-rule--high" markdown>
+
+## PULUMI-011: Pulumi plugin pulled from a custom download server { #pulumi-011 }
+
+<div class="pg-rule__tags">
+<span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-3</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-4</span> <span class="pg-tag pg-tag--esf">ESF-S-PROVENANCE</span> <span class="pg-tag pg-tag--cwe">CWE-494</span> <span class="pg-tag pg-tag--cwe">CWE-829</span>
+</div>
+
+Walks the ``plugins:`` block of every ``Pulumi.yaml`` and fires on any entry under ``providers`` / ``analyzers`` / ``languages`` that carries a ``server:`` key. The default (no ``server:``) resolves from the trusted Pulumi registry and passes.
+
+The rule reads the already-parsed ``project.data['plugins']`` structure; it does not fetch the plugin or verify the host's reputation. A ``server:`` pointing at a known-good internal mirror still fires, because the manifest alone can't prove the host is trusted.
+
+**Known false-positive modes**
+
+- A deliberate internal mirror on a host the team controls (``server: https://artifacts.corp.internal/pulumi``) is flagged by shape even though it's a legitimate posture. Suppress per project with a one-line rationale naming the mirror and the checksum-verification step that gates it.
+
+**Seen in the wild**
+
+- Maps to the supply-chain class behind dependency-source substitution attacks: a build pulls native code from an attacker-influenced host and executes it with deploy credentials. Pulumi provider plugins run in-process during ``pulumi up`` with whatever cloud identity the orchestrator holds, so a swapped binary inherits the full deploy blast radius (the same property that made the registry-poisoning and typosquat-source incidents so damaging).
+
+<div class="pg-rule__rec" markdown>
+
+**Recommended action**
+
+Drop the ``server:`` override on the plugin entry and let Pulumi resolve the provider / analyzer binary from the default registry (``get.pulumi.com``). A provider plugin is native code that runs with the orchestrator's cloud credentials during ``pulumi up``, so the download source is part of your trusted compute base.
+
+If a private mirror is genuinely required (air-gapped CI, an internal compliance copy), pin ``server:`` to a host your org controls, serve it over HTTPS, and verify the plugin checksum before it reaches the runner. Treat any change to the ``server:`` value the same as a change to a pinned dependency: reviewed, justified, and logged.
+
+</div>
+
+</div>
+
+<div class="pg-rule pg-rule--medium" markdown>
+
+## PULUMI-012: Pulumi plugin version unpinned or floating { #pulumi-012 }
+
+<div class="pg-rule__tags">
+<span class="pg-sev pg-sev--medium">MEDIUM</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-3</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-4</span> <span class="pg-tag pg-tag--esf">ESF-S-PROVENANCE</span> <span class="pg-tag pg-tag--cwe">CWE-1104</span> <span class="pg-tag pg-tag--cwe">CWE-829</span>
+</div>
+
+Walks the ``plugins:`` block of every ``Pulumi.yaml`` and fires on any entry under ``providers`` / ``analyzers`` / ``languages`` whose ``version:`` is absent or uses a range / floating spec (a leading ``^`` / ``~`` / ``>`` / ``<`` / ``=`` comparator, a ``*`` or ``x`` wildcard, or the literal ``latest``).
+
+Entries that point at a local build via ``path:`` are skipped: a path plugin carries no registry version to pin, so a missing ``version:`` there is expected. An exact version (``6.18.0``) passes. The rule reads the already-parsed ``project.data['plugins']`` structure and does not contact the registry.
+
+**Known false-positive modes**
+
+- Locally built plugins referenced by ``path:`` are not flagged. A repo that deliberately tracks the latest provider in a sandbox stack trips this rule by shape; suppress per project with a one-line rationale naming the sandbox and the gate that keeps the floating pin out of production.
+
+**Seen in the wild**
+
+- Maps to the unpinned-dependency class: a deploy that resolves a plugin version at run time silently picks up a new (or hijacked) release. The Pulumi engine executes provider plugins in-process with the deploy identity, so a drifted binary runs with full deploy access, the same fresh-carrier-version risk the npm / PyPI cooldown rules address on the registry side.
+
+<div class="pg-rule__rec" markdown>
+
+**Recommended action**
+
+Pin every plugin entry to an exact version (for example ``version: 6.18.0``). A provider / analyzer plugin is native code the Pulumi engine runs at deploy time; an absent or range-pinned ``version:`` lets that binary change between deploys with no code review and no diff.
+
+Bump the pin through a reviewed commit when you want a new release, so the binary that runs in CI always matches what a human approved. Treat the pin like a lockfile entry, not a hint.
+
+</div>
+
+</div>
+
+<div class="pg-rule pg-rule--high" markdown>
+
+## PULUMI-013: Pulumi dynamic provider runs arbitrary code at deploy time { #pulumi-013 }
+
+<div class="pg-rule__tags">
+<span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-3</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-5</span> <span class="pg-tag pg-tag--esf">ESF-D-INJECTION</span> <span class="pg-tag pg-tag--cwe">CWE-94</span> <span class="pg-tag pg-tag--cwe">CWE-913</span>
+</div>
+
+Scans source files for the dynamic-provider API, scoped to the runtimes where it exists:
+
+* Python: ``pulumi.dynamic.ResourceProvider`` (the base class a dynamic provider subclasses)
+* Node / TypeScript: ``pulumi.dynamic`` namespace usage (``pulumi.dynamic.ResourceProvider`` / ``pulumi.dynamic.Resource``)
+
+Go and .NET source files are not scanned because the dynamic-provider API is a Python / Node feature. The rule reads the preserved source text; it does not execute the program.
+
+**Known false-positive modes**
+
+- A dynamic provider with a small, constant, reviewed handler is lower risk than one that reads config or remote input, but it still fires: the engine executes the handler either way and the closure still lands in state. Suppress per file with a one-line rationale when the handler is audited and input-free.
+
+**Seen in the wild**
+
+- Maps to the engine-invoked-code class: deploy-time automation that runs arbitrary handler logic with broad credentials. Because Pulumi serializes the dynamic provider's handler closure into stack state, the rule also covers the state-tampering variant where an attacker who can write the backing state injects code that the next ``pulumi up`` deserializes and runs.
+
+<div class="pg-rule__rec" markdown>
+
+**Recommended action**
+
+Prefer a native Pulumi provider or a reviewed, published component over a dynamic provider. A dynamic provider's ``create`` / ``update`` / ``delete`` handlers are invoked by the Pulumi engine during ``pulumi up``, on the deploy host, with the orchestrator's cloud credentials. The handler closure is also serialized into stack state, so anyone who can edit the handler source (or tamper with the state) gets code execution on the next deploy.
+
+If a dynamic provider is unavoidable, keep the handler code minimal, free of external / config-derived input, and reviewed on every change. Never let a handler shell out or fetch remote code (see PULUMI-008 and PULUMI-007).
 
 </div>
 

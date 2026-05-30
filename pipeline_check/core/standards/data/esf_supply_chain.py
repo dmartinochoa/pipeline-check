@@ -594,9 +594,12 @@ STANDARD = Standard(
         "ARGOCD-006": ["ESF-D-CODE-REVIEW", "ESF-C-LEAST-PRIV"],     # ApplicationSet PR/SCM no allowlist
         "ARGOCD-007": ["ESF-D-INJECTION"],                           # Helm generator interpolation
         "ARGOCD-008": ["ESF-S-VERIFY-DEPS"],                         # CMP plugin invocation
+        "ARGOCD-015": ["ESF-S-VERIFY-DEPS"],  # kustomize --enable-helm
         "ARGOCD-009": ["ESF-C-LEAST-PRIV"],                          # anonymous access enabled
+        "ARGOCD-014": ["ESF-C-LEAST-PRIV"],  # web terminal exec.enabled
         # ── ArgoCD extended pack ──
         "ARGOCD-010": ["ESF-S-PIN-DEPS"],
+        "ARGOCD-017": ["ESF-S-PIN-DEPS", "ESF-C-LEAST-PRIV"],  # in-cluster mutable source
         "ARGOCD-011": ["ESF-C-LEAST-PRIV"],
         "ARGOCD-012": ["ESF-C-APPROVAL"],
         "ARGOCD-013": ["ESF-C-AUDIT"],
@@ -636,8 +639,12 @@ STANDARD = Standard(
         "PYPI-001": ["ESF-S-PIN-DEPS"],
         "PYPI-002": ["ESF-S-PIN-DEPS", "ESF-S-VERIFY-DEPS"],
         "PYPI-003": ["ESF-S-TRUSTED-REG"],
+        "PYPI-018": ["ESF-S-VERIFY-DEPS"],  # --no-binary forces sdist build
         "PYPI-004": ["ESF-S-PIN-DEPS"],
+        "PYPI-015": ["ESF-S-VERIFY-DEPS"],  # direct artifact URL
         "PYPI-005": ["ESF-S-TRUSTED-REG"],
+        "PYPI-017": ["ESF-S-TRUSTED-REG", "ESF-S-VERIFY-DEPS"],  # remote --find-links
+        "PYPI-016": ["ESF-S-TRUSTED-REG", "ESF-S-VERIFY-DEPS"],  # primary index repointed
         "PYPI-006": ["ESF-S-VERIFY-DEPS", "ESF-S-VULN-MGMT"],
         "MVN-001":  ["ESF-S-PIN-DEPS"],
         "MVN-002":  ["ESF-S-PIN-DEPS"],
@@ -685,6 +692,9 @@ STANDARD = Standard(
         "NUGET-013": ["ESF-S-VERIFY-DEPS"],
         "NUGET-014": ["ESF-D-SECRETS"],
         "NUGET-015": ["ESF-S-VERIFY-DEPS"],
+        "NUGET-016": ["ESF-S-VERIFY-DEPS"],  # missing <clear/> inherits public gallery
+        "NUGET-018": ["ESF-S-VERIFY-DEPS"],  # build-time MSBuild execution
+        "NUGET-019": ["ESF-S-VERIFY-DEPS", "ESF-S-PROVENANCE"],  # require mode, no trusted signers
         # ── Go modules ──
         "GOMOD-001": ["ESF-S-VERIFY-DEPS"],
         "GOMOD-002": ["ESF-S-VERIFY-DEPS"],
@@ -713,13 +723,17 @@ STANDARD = Standard(
         "COMPOSER-001": ["ESF-S-VERIFY-DEPS"],
         "COMPOSER-002": ["ESF-S-VERIFY-DEPS"],
         "COMPOSER-003": ["ESF-S-TRUSTED-REG", "ESF-S-VERIFY-DEPS"],
+        "COMPOSER-012": ["ESF-S-TRUSTED-REG", "ESF-S-VERIFY-DEPS"],  # disables Packagist / marks custom repo canonical
+        "COMPOSER-011": ["ESF-S-TRUSTED-REG", "ESF-S-VERIFY-DEPS"],  # external VCS repository re-points a package
         "COMPOSER-004": ["ESF-D-SECRETS"],
         "COMPOSER-005": ["ESF-S-VERIFY-DEPS"],
+        "COMPOSER-014": ["ESF-S-VERIFY-DEPS"],  # minimum-stability without prefer-stable
         "COMPOSER-006": ["ESF-S-VERIFY-DEPS"],
         "COMPOSER-007": ["ESF-S-VERIFY-DEPS"],
         "COMPOSER-008": ["ESF-S-VERIFY-DEPS"],
         "COMPOSER-009": ["ESF-D-SECRETS"],
         "COMPOSER-010": ["ESF-S-TRUSTED-REG", "ESF-S-VERIFY-DEPS"],
+        "COMPOSER-013": ["ESF-S-TRUSTED-REG", "ESF-S-VERIFY-DEPS"],  # config.disable-tls
         # ── RubyGems / Bundler ──
         "GEM-001": ["ESF-S-VERIFY-DEPS"],
         "GEM-002": ["ESF-S-VERIFY-DEPS"],
@@ -735,13 +749,16 @@ STANDARD = Standard(
         "PULUMI-001": ["ESF-D-SECRETS"],
         "PULUMI-002": ["ESF-D-SECRETS"],
         "PULUMI-003": ["ESF-D-SECRETS"],
+        "PULUMI-011": ["ESF-S-PROVENANCE"],  # plugin from custom download server
         "PULUMI-004": ["ESF-S-PROVENANCE"],
         "PULUMI-005": ["ESF-C-LEAST-PRIV"],
         "PULUMI-006": ["ESF-C-LEAST-PRIV"],
         # ── Pulumi extended pack ──
         "PULUMI-007": ["ESF-C-LEAST-PRIV"],
         "PULUMI-008": ["ESF-C-LEAST-PRIV"],
+        "PULUMI-013": ["ESF-D-INJECTION"],  # dynamic provider deploy-time code
         "PULUMI-009": ["ESF-S-VERIFY-DEPS"],
+        "PULUMI-012": ["ESF-S-PROVENANCE"],  # plugin version unpinned
         "PULUMI-010": ["ESF-D-SECRETS"],
         # ── OCI image manifest gaps ──────────────────────────────
         # Provenance metadata + integrity → ESF-S-PROVENANCE +

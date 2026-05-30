@@ -389,3 +389,171 @@ class TestCOMPOSER008:
             {"name": "x", "config": {"allow-plugins": False}},
         )
         assert findings["COMPOSER-008"].passed
+
+
+# ── COMPOSER-011 ─────────────────────────────────────────────
+
+
+class TestCOMPOSER011:
+    def test_fires_on_vcs_repo(self, tmp_path):
+        findings = _scan(
+            tmp_path,
+            {
+                "name": "x",
+                "repositories": [
+                    {
+                        "type": "vcs",
+                        "url": "https://github.com/attacker/widgets",
+                    },
+                ],
+            },
+        )
+        assert not findings["COMPOSER-011"].passed
+
+    def test_fires_on_package_type(self, tmp_path):
+        findings = _scan(
+            tmp_path,
+            {
+                "name": "x",
+                "repositories": [
+                    {
+                        "type": "package",
+                        "package": {
+                            "name": "acme/widgets",
+                            "version": "1.0.0",
+                        },
+                    },
+                ],
+            },
+        )
+        assert not findings["COMPOSER-011"].passed
+
+    def test_passes_on_path_repo(self, tmp_path):
+        findings = _scan(
+            tmp_path,
+            {
+                "name": "x",
+                "repositories": [
+                    {"type": "path", "url": "../local-pkg"},
+                ],
+            },
+        )
+        assert findings["COMPOSER-011"].passed
+
+    def test_passes_with_no_repos(self, tmp_path):
+        findings = _scan(tmp_path, {"name": "x"})
+        assert findings["COMPOSER-011"].passed
+
+
+# ── COMPOSER-012 ─────────────────────────────────────────────
+
+
+class TestCOMPOSER012:
+    def test_fires_on_packagist_disabled_keyed(self, tmp_path):
+        findings = _scan(
+            tmp_path,
+            {"name": "x", "repositories": {"packagist.org": False}},
+        )
+        assert not findings["COMPOSER-012"].passed
+
+    def test_fires_on_packagist_disabled_list(self, tmp_path):
+        findings = _scan(
+            tmp_path,
+            {"name": "x", "repositories": [{"packagist.org": False}]},
+        )
+        assert not findings["COMPOSER-012"].passed
+
+    def test_fires_on_canonical_repo(self, tmp_path):
+        findings = _scan(
+            tmp_path,
+            {
+                "name": "x",
+                "repositories": [
+                    {
+                        "type": "composer",
+                        "url": "https://repo.example",
+                        "canonical": True,
+                    },
+                ],
+            },
+        )
+        assert not findings["COMPOSER-012"].passed
+
+    def test_passes_on_default_repositories(self, tmp_path):
+        findings = _scan(
+            tmp_path,
+            {
+                "name": "x",
+                "repositories": [
+                    {"type": "composer", "url": "https://repo.example"},
+                ],
+            },
+        )
+        assert findings["COMPOSER-012"].passed
+
+
+# ── COMPOSER-013 ─────────────────────────────────────────────
+
+
+class TestCOMPOSER013:
+    def test_fires_on_disable_tls_true(self, tmp_path):
+        findings = _scan(
+            tmp_path,
+            {"name": "x", "config": {"disable-tls": True}},
+        )
+        assert not findings["COMPOSER-013"].passed
+
+    def test_passes_when_absent(self, tmp_path):
+        findings = _scan(
+            tmp_path,
+            {"name": "x", "config": {"secure-http": True}},
+        )
+        assert findings["COMPOSER-013"].passed
+
+    def test_passes_when_false(self, tmp_path):
+        findings = _scan(
+            tmp_path,
+            {"name": "x", "config": {"disable-tls": False}},
+        )
+        assert findings["COMPOSER-013"].passed
+
+
+# ── COMPOSER-014 ─────────────────────────────────────────────
+
+
+class TestCOMPOSER014:
+    def test_fires_on_dev_without_prefer_stable(self, tmp_path):
+        findings = _scan(
+            tmp_path,
+            {"name": "x", "minimum-stability": "dev"},
+        )
+        assert not findings["COMPOSER-014"].passed
+
+    def test_fires_on_beta_without_prefer_stable(self, tmp_path):
+        findings = _scan(
+            tmp_path,
+            {"name": "x", "minimum-stability": "beta"},
+        )
+        assert not findings["COMPOSER-014"].passed
+
+    def test_passes_with_prefer_stable(self, tmp_path):
+        findings = _scan(
+            tmp_path,
+            {
+                "name": "x",
+                "minimum-stability": "dev",
+                "prefer-stable": True,
+            },
+        )
+        assert findings["COMPOSER-014"].passed
+
+    def test_passes_on_stable(self, tmp_path):
+        findings = _scan(
+            tmp_path,
+            {"name": "x", "minimum-stability": "stable"},
+        )
+        assert findings["COMPOSER-014"].passed
+
+    def test_passes_when_unset(self, tmp_path):
+        findings = _scan(tmp_path, {"name": "x"})
+        assert findings["COMPOSER-014"].passed

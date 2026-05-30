@@ -12,6 +12,31 @@ release commit collapses this section into `## [X.Y.Z] - <date>`.
 
 ### Added
 
+- **NuGet dependency-confusion and build-execution batch (NUGET-016 /
+  NUGET-018 / NUGET-019, HIGH).** NUGET-016 flags a `NuGet.config` that
+  adds a private feed without a `<clear/>`, so `nuget.org` is still
+  inherited and a public package can shadow an internal name (the Birsan
+  dependency-confusion class NUGET-007 structurally misses when only the
+  internal feed is listed). NUGET-018 flags build-time MSBuild execution
+  (an `<Exec>` wired to a build / restore phase, or an `<Import>` of a
+  package's generated `build/` path). NUGET-019 is the NUGET-012
+  follow-up: `signatureValidationMode=require` with an empty or absent
+  `<trustedSigners>` is a no-op. All three reuse NUGET-012's re-parse
+  pattern. nuget rule count 15 -> 18.
+- **Weak-coverage provider deepening: composer, pulumi, argocd, pypi.**
+  Fourteen rules closing supply-chain gaps the roadmap's coverage pass
+  flagged. composer: COMPOSER-011 (external VCS repository re-points a
+  package), COMPOSER-012 (disables Packagist / marks a custom repo
+  canonical), COMPOSER-013 (`config.disable-tls`), COMPOSER-014
+  (`minimum-stability` lowered without `prefer-stable`); 10 -> 14.
+  pulumi: PULUMI-011 (plugin from a custom download server), PULUMI-012
+  (plugin version unpinned), PULUMI-013 (dynamic provider runs code at
+  deploy time); 10 -> 13. argocd: ARGOCD-014 (web terminal /
+  `exec.enabled`, CRITICAL), ARGOCD-015 (Kustomize `--enable-helm`),
+  ARGOCD-017 (in-cluster Application from a mutable source); 13 -> 16.
+  pypi: PYPI-015 (direct artifact URL), PYPI-016 (primary `--index-url`
+  repointed off PyPI), PYPI-017 (remote `--find-links`), PYPI-018
+  (`--no-binary` forces the sdist build path); 13 -> 17.
 - **NPM-014: direct dependency relies on a single npm publisher (LOW).**
   Flags a direct dependency whose npm `maintainers` array (the accounts
   with publish access) has exactly one entry, the single-point-of-
@@ -69,6 +94,19 @@ release commit collapses this section into `## [X.Y.Z] - <date>`.
   commit its own malicious change with no human in the loop. Per-
   workflow co-occurrence; OR-leg deduped to one chain per workflow.
   T1195.002 / T1059 / T1078.004. Chain count 48 -> 49 (35 AC).
+- **AC-036: untrusted-code execution with no egress containment
+  (HIGH).** New attack chain pairing an execution leg (GHA-003 script
+  injection, GHA-035 github-script injection, GHA-016 `curl | bash`, or
+  GHA-044 build-tool PPE) with an egress leg (GHA-107 harden-runner in
+  audit mode, or GHA-108 no agent at all) on the same workflow.
+  Attacker-influenced code runs while nothing blocks outbound traffic,
+  so it can exfiltrate the OIDC token / GITHUB_TOKEN / secrets. Models
+  missing egress control as a severity amplifier: GHA-107 / GHA-108
+  alone are LOW advisories, but paired with a code-execution primitive
+  they are the last-line-of-defense gap harden-runner's block mode
+  closes. Reachability confirmed (and promoted to HIGH confidence) when
+  the legs share a job via job-anchor intersection; co-occurrence
+  otherwise. T1059 / T1552 / T1041. Chain count 49 -> 50 (36 AC).
 - **GHA-106: AI agent CLI runs with a write-scoped GITHUB_TOKEN
   (HIGH).** Fires when a job invokes an agentic CLI (`claude` /
   `gemini` / `q chat` / `cursor-agent` / `aider` / `openhands` /
@@ -194,6 +232,12 @@ release commit collapses this section into `## [X.Y.Z] - <date>`.
 
 ### Fixed
 
+- **GHA-098 no longer counts `step-security/harden-runner` as a
+  security scan.** harden-runner is a runtime egress monitor, not a
+  SAST / SCA / secret scanner, so a deploy job whose only scan-shaped
+  step was harden-runner incorrectly satisfied the scan-before-deploy
+  gate. Removed it from the recognized-scanner set; its own
+  configuration is now covered by GHA-107 / GHA-108 / GHA-109.
 - **Script-injection false negative on inline shell assignments
   (GHA-003 and the shared taint engine).** `VAR="${{ github.event.* }}"`
   inside a `run:` block was treated as the safe capture-to-variable

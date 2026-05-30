@@ -422,8 +422,12 @@ STANDARD = Standard(
         "PYPI-001": ["Build.L3.NonFalsifiable"],                   # missing ==pin
         "PYPI-002": ["Build.L3.NonFalsifiable"],                   # missing hash
         "PYPI-003": ["Build.L3.NonFalsifiable"],                   # http index / --trusted-host
+        "PYPI-018": ["Build.L3.NonFalsifiable"],  # --no-binary forces sdist build
         "PYPI-004": ["Build.L3.NonFalsifiable"],                   # VCS dep without commit SHA
+        "PYPI-015": ["Build.L3.NonFalsifiable"],  # direct artifact URL
         "PYPI-005": ["Build.L3.NonFalsifiable"],                   # --extra-index-url (dep confusion)
+        "PYPI-017": ["Build.L3.NonFalsifiable"],  # remote --find-links
+        "PYPI-016": ["Build.L3.NonFalsifiable"],  # primary index repointed
         "PYPI-006": ["Build.L3.NonFalsifiable"],                   # compromised PyPI version
         "MVN-001":  ["Build.L3.NonFalsifiable"],                   # floating Maven range
         "MVN-002":  ["Build.L3.NonFalsifiable"],                   # mutable SNAPSHOT dep
@@ -462,6 +466,9 @@ STANDARD = Standard(
         "NUGET-013": ["Build.L3.NonFalsifiable"],
         "NUGET-014": ["Build.L3.NonFalsifiable"],
         "NUGET-015": ["Build.L3.NonFalsifiable"],
+        "NUGET-016": ["Build.L3.NonFalsifiable"],  # missing <clear/> inherits public gallery
+        "NUGET-018": ["Build.L3.NonFalsifiable"],  # build-time MSBuild execution
+        "NUGET-019": ["Build.L3.NonFalsifiable"],  # require mode, no trusted signers
         # ── Composer / PHP ──
         "COMPOSER-001": ["Build.L3.NonFalsifiable"], # missing composer.lock
         "COMPOSER-002": ["Build.L3.NonFalsifiable"], # floating require constraint

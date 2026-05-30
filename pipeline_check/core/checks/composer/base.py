@@ -121,6 +121,10 @@ class ComposerFile:
     #: ``minimum-stability`` value, defaults to ``"stable"`` per
     #: Composer.
     minimum_stability: str = "stable"
+    #: ``prefer-stable`` top-level flag. ``None`` when the key is
+    #: absent; Composer treats absence as ``false``. Read by
+    #: COMPOSER-014 alongside ``minimum_stability``.
+    prefer_stable: Any = None
     #: ``config`` table — opaque dict so rules can probe its keys
     #: directly.
     config: dict[str, Any] = field(default_factory=dict)
@@ -208,6 +212,7 @@ class ComposerContext:
                 repositories=pf.repositories,
                 scripts=pf.scripts,
                 minimum_stability=pf.minimum_stability,
+                prefer_stable=pf.prefer_stable,
                 config=pf.config,
                 parsed_ok=pf.parsed_ok,
                 has_lockfile=has_lock,
@@ -266,17 +271,35 @@ def _walk_dependencies(
     return out
 
 
+# Repository keys that toggle a built-in source off rather than
+# declaring a new one (``{"packagist.org": false}`` /
+# ``{"packagist": false}``). These entries have no ``type`` so they
+# are preserved separately for COMPOSER-012 to read.
+_REPO_DISABLE_KEYS: frozenset[str] = frozenset(
+    {"packagist.org", "packagist"},
+)
+
+
 def _walk_repositories(
     data: dict[str, Any], text: str,
 ) -> list[ComposerRepository]:
     out: list[ComposerRepository] = []
     repos = data.get("repositories")
     # Composer accepts either a list of repo objects or a dict
-    # keyed by friendly name. Normalize both forms.
+    # keyed by friendly name. Normalize both forms. The dict form
+    # is iterated as ``(name, body)`` pairs so a disable entry like
+    # ``{"packagist.org": false}`` (which has no ``body`` dict)
+    # is still captured.
+    items: list[Any] = []
     if isinstance(repos, list):
-        items: list[Any] = list(repos)
+        items = list(repos)
     elif isinstance(repos, dict):
-        items = list(repos.values())
+        for name, body in repos.items():
+            if isinstance(body, dict):
+                items.append(body)
+            elif body is False and isinstance(name, str):
+                # ``{"packagist.org": false}`` keyed form.
+                items.append({name: False})
     else:
         return out
     for entry in items:
@@ -284,6 +307,21 @@ def _walk_repositories(
             continue
         rtype = entry.get("type")
         if not isinstance(rtype, str):
+            # Keep type-less entries that toggle a built-in source
+            # off; everything else without a ``type`` is noise.
+            disabled = any(
+                entry.get(k) is False for k in _REPO_DISABLE_KEYS
+            )
+            if not disabled:
+                continue
+            needle = next(
+                (k for k in _REPO_DISABLE_KEYS if entry.get(k) is False),
+                "",
+            )
+            out.append(ComposerRepository(
+                type="", url="", raw=dict(entry),
+                line_no=_line_of(text, f'"{needle}"') if needle else 1,
+            ))
             continue
         url = entry.get("url")
         url_s = url if isinstance(url, str) else ""
@@ -342,6 +380,7 @@ def _parse_composer(path: str, text: str) -> ComposerFile:
     raw_ms = data.get("minimum-stability")
     if isinstance(raw_ms, str):
         min_stability = raw_ms
+    prefer_stable = data.get("prefer-stable")
     config = data.get("config")
     config_d = config if isinstance(config, dict) else {}
     deps = _walk_dependencies(data, text)
@@ -351,6 +390,7 @@ def _parse_composer(path: str, text: str) -> ComposerFile:
         path=path, text=text, package_name=package_name,
         dependencies=tuple(deps), repositories=tuple(repos),
         scripts=tuple(scripts), minimum_stability=min_stability,
+        prefer_stable=prefer_stable,
         config=config_d, parsed_ok=True,
     )
 
