@@ -25,7 +25,7 @@ axis.
 
 - **Controls in this standard:** 86
 - **Controls evidenced by at least one check:** 61 / 86
-- **Distinct checks evidencing this standard:** 636
+- **Distinct checks evidencing this standard:** 642
 - **Of those, autofixable with `--fix`:** 105
 
 _Severity levels (`CRITICAL` / `HIGH` / `MEDIUM` / `LOW` / `INFO`) follow the same scale across every provider and standard. See [How to read severity](README.md#how-to-read-severity) on the standards overview for the definitions._
@@ -62,13 +62,13 @@ Click a control ID to jump to the per-control section with the full check list. 
 | [`IA-8`](#ctrl-ia-8) | Exposed webhook | 1 | 1H |
 | [`IA-9`](#ctrl-ia-9) | Compromised token | 20 | 4C · 9H · 7M |
 | [`IA-10`](#ctrl-ia-10) | Vulnerable CI/CD plugins | 11 | 1C · 10H |
-| [`IA-11`](#ctrl-ia-11) | Vulnerable CI/CD template | 60 | 31H · 24M · 5L |
+| [`IA-11`](#ctrl-ia-11) | Vulnerable CI/CD template | 61 | 32H · 24M · 5L |
 | [`IA-12`](#ctrl-ia-12) | Exposed internal API | 0 | — |
 | [`IA-13`](#ctrl-ia-13) | Vulnerability in third-party dependency | 50 | 8C · 8H · 34M |
 | [`IA-14`](#ctrl-ia-14) | Compromised developer workstation | 0 | — |
 | [`IA-15`](#ctrl-ia-15) | Exposed database | 0 | — |
 | [`IA-16`](#ctrl-ia-16) | Compromised service account | 8 | 1C · 5H · 2M |
-| [`IA-17`](#ctrl-ia-17) | Dependency confusion | 6 | 5H · 1M |
+| [`IA-17`](#ctrl-ia-17) | Dependency confusion | 8 | 6H · 2M |
 | [`IA-18`](#ctrl-ia-18) | Permissive network access | 10 | 1C · 5H · 4M |
 | [`IA-19`](#ctrl-ia-19) | Repojacking | 2 | 2H |
 | [`IA-20`](#ctrl-ia-20) | Compromised user account | 3 | 2H · 1M |
@@ -76,7 +76,7 @@ Click a control ID to jump to the per-control section with the full check list. 
 | [`IA-22`](#ctrl-ia-22) | Weak authentication methods | 8 | 7H · 1M |
 | [`IA-23`](#ctrl-ia-23) | Brandjacking | 1 | 1H |
 | [`IA-24`](#ctrl-ia-24) | Shadow IT | 2 | 1H · 1M |
-| [`EX-1`](#ctrl-ex-1) | Installation scripts | 14 | 12H · 2M |
+| [`EX-1`](#ctrl-ex-1) | Installation scripts | 15 | 13H · 2M |
 | [`EX-2`](#ctrl-ex-2) | Runtime logic bomb | 0 | — |
 | [`EX-3`](#ctrl-ex-3) | IDE | 0 | — |
 | [`EX-4`](#ctrl-ex-4) | Runtime backdoor | 0 | — |
@@ -113,8 +113,8 @@ Click a control ID to jump to the per-control section with the full check list. 
 | [`CA-7`](#ctrl-ca-7) | Runtime leakage of password | 0 | — |
 | [`CA-8`](#ctrl-ca-8) | Steal credentials in container artifacts | 12 | 4C · 7H · 1M |
 | [`LM-1`](#ctrl-lm-1) | Push implants across repositories | 1 | 1H |
-| [`LM-2`](#ctrl-lm-2) | Overprivileged user account | 31 | 5C · 15H · 10M · 1L |
-| [`COL-1`](#ctrl-col-1) | Unencrypted data in transit | 27 | 24H · 2M · 1L |
+| [`LM-2`](#ctrl-lm-2) | Overprivileged user account | 32 | 6C · 15H · 10M · 1L |
+| [`COL-1`](#ctrl-col-1) | Unencrypted data in transit | 28 | 24H · 3M · 1L |
 | [`COL-2`](#ctrl-col-2) | Unencrypted data at rest | 9 | 1C · 2H · 6M |
 | [`EXF-1`](#ctrl-exf-1) | Bypass of outbound traffic control | 1 | 1C |
 | [`EXF-2`](#ctrl-exf-2) | Source code | 2 | 1C · 1H |
@@ -404,7 +404,7 @@ _No checks in this scanner currently evidence this control. Open an issue if you
 
 ### IA-11: Vulnerable CI/CD template { #ctrl-ia-11 }
 
-**Evidenced by 60 checks** across 19 providers (AWS, Argo Workflows, Azure DevOps, Bitbucket, Buildkite, CircleCI, Cloud Build, Dockerfile, Drone CI, GitHub Actions, GitLab CI, Helm, Jenkins, Kubernetes, NuGet, PyPI, Tekton, maven, npm).
+**Evidenced by 61 checks** across 19 providers (AWS, Argo Workflows, Azure DevOps, Bitbucket, Buildkite, CircleCI, Cloud Build, Dockerfile, Drone CI, GitHub Actions, GitLab CI, Helm, Jenkins, Kubernetes, NuGet, PyPI, Tekton, maven, npm).
 
 | Check | Title | Severity | Provider | Fix |
 |-------|-------|----------|----------|-----|
@@ -467,6 +467,7 @@ _No checks in this scanner currently evidence this control. Open an issue if you
 | [`PYPI-001`](../providers/pypi.md#pypi-001) | requirements.txt entry missing an exact version pin | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [PyPI](../providers/pypi.md) |  |
 | [`PYPI-002`](../providers/pypi.md#pypi-002) | requirements.txt missing hash pinning (--require-hashes / --hash=) | <span class="pg-sev pg-sev--high">HIGH</span> | [PyPI](../providers/pypi.md) |  |
 | [`PYPI-004`](../providers/pypi.md#pypi-004) | requirements.txt VCS dependency uses a mutable ref | <span class="pg-sev pg-sev--high">HIGH</span> | [PyPI](../providers/pypi.md) |  |
+| [`PYPI-015`](../providers/pypi.md#pypi-015) | requirements.txt installs from a direct artifact URL | <span class="pg-sev pg-sev--high">HIGH</span> | [PyPI](../providers/pypi.md) |  |
 | [`TKN-001`](../providers/tekton.md#tkn-001) | Tekton step image not pinned to a digest | <span class="pg-sev pg-sev--high">HIGH</span> | [Tekton](../providers/tekton.md) |  |
 
 ### IA-12: Exposed internal API { #ctrl-ia-12 }
@@ -555,7 +556,7 @@ _No checks in this scanner currently evidence this control. Open an issue if you
 
 ### IA-17: Dependency confusion { #ctrl-ia-17 }
 
-**Evidenced by 6 checks** across 5 providers (AWS, NuGet, PyPI, maven, npm).
+**Evidenced by 8 checks** across 5 providers (AWS, NuGet, PyPI, maven, npm).
 
 | Check | Title | Severity | Provider | Fix |
 |-------|-------|----------|----------|-----|
@@ -565,6 +566,8 @@ _No checks in this scanner currently evidence this control. Open an issue if you
 | [`NPM-003`](../providers/npm.md#npm-003) | package-lock.json entry resolves from a non-registry source | <span class="pg-sev pg-sev--high">HIGH</span> | [npm](../providers/npm.md) |  |
 | [`NUGET-007`](../providers/nuget.md#nuget-007) | Multiple NuGet sources without packageSourceMapping | <span class="pg-sev pg-sev--high">HIGH</span> | [NuGet](../providers/nuget.md) |  |
 | [`PYPI-005`](../providers/pypi.md#pypi-005) | requirements.txt declares --extra-index-url (dependency-confusion surface) | <span class="pg-sev pg-sev--high">HIGH</span> | [PyPI](../providers/pypi.md) |  |
+| [`PYPI-016`](../providers/pypi.md#pypi-016) | requirements.txt repoints the primary index at a non-PyPI host | <span class="pg-sev pg-sev--high">HIGH</span> | [PyPI](../providers/pypi.md) |  |
+| [`PYPI-017`](../providers/pypi.md#pypi-017) | requirements.txt uses a remote --find-links source | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [PyPI](../providers/pypi.md) |  |
 
 ### IA-18: Permissive network access { #ctrl-ia-18 }
 
@@ -644,12 +647,13 @@ _No checks in this scanner currently evidence this control. Open an issue if you
 
 ### EX-1: Installation scripts { #ctrl-ex-1 }
 
-**Evidenced by 14 checks** across 11 providers (Argo CD, Azure DevOps, Bitbucket, Buildkite, CircleCI, Cloud Build, Dockerfile, GitHub Actions, GitLab CI, Jenkins, npm).
+**Evidenced by 15 checks** across 11 providers (Argo CD, Azure DevOps, Bitbucket, Buildkite, CircleCI, Cloud Build, Dockerfile, GitHub Actions, GitLab CI, Jenkins, npm).
 
 | Check | Title | Severity | Provider | Fix |
 |-------|-------|----------|----------|-----|
 | [`ADO-016`](../providers/azure.md#ado-016) | Remote script piped to shell interpreter | <span class="pg-sev pg-sev--high">HIGH</span> | [Azure DevOps](../providers/azure.md) | <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> |
 | [`ARGOCD-008`](../providers/argocd.md#argocd-008) | Argo CD Application invokes a config-management plugin | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [Argo CD](../providers/argocd.md) |  |
+| [`ARGOCD-015`](../providers/argocd.md#argocd-015) | Argo CD Kustomize build options enable the Helm plugin | <span class="pg-sev pg-sev--high">HIGH</span> | [Argo CD](../providers/argocd.md) |  |
 | [`BB-012`](../providers/bitbucket.md#bb-012) | Remote script piped to shell interpreter | <span class="pg-sev pg-sev--high">HIGH</span> | [Bitbucket](../providers/bitbucket.md) | <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> |
 | [`BK-004`](../providers/buildkite.md#bk-004) | Remote script piped into shell interpreter | <span class="pg-sev pg-sev--high">HIGH</span> | [Buildkite](../providers/buildkite.md) | <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> |
 | [`CC-016`](../providers/circleci.md#cc-016) | Remote script piped to shell interpreter | <span class="pg-sev pg-sev--high">HIGH</span> | [CircleCI](../providers/circleci.md) | <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> |
@@ -1270,7 +1274,7 @@ _No checks in this scanner currently evidence this control. Open an issue if you
 
 ### LM-2: Overprivileged user account { #ctrl-lm-2 }
 
-**Evidenced by 31 checks** across 8 providers (AWS, Argo CD, Argo Workflows, Cloud Build, GitHub Actions, Kubernetes, SCM, Tekton).
+**Evidenced by 32 checks** across 8 providers (AWS, Argo CD, Argo Workflows, Cloud Build, GitHub Actions, Kubernetes, SCM, Tekton).
 
 | Check | Title | Severity | Provider | Fix |
 |-------|-------|----------|----------|-----|
@@ -1281,6 +1285,7 @@ _No checks in this scanner currently evidence this control. Open an issue if you
 | [`ARGOCD-004`](../providers/argocd.md#argocd-004) | Argo CD RBAC policy grants wildcard authority | <span class="pg-sev pg-sev--critical">CRITICAL</span> | [Argo CD](../providers/argocd.md) |  |
 | [`ARGOCD-009`](../providers/argocd.md#argocd-009) | Argo CD anonymous access enabled | <span class="pg-sev pg-sev--critical">CRITICAL</span> | [Argo CD](../providers/argocd.md) |  |
 | [`ARGOCD-011`](../providers/argocd.md#argocd-011) | Argo CD AppProject cluster-resource whitelist is wide open | <span class="pg-sev pg-sev--high">HIGH</span> | [Argo CD](../providers/argocd.md) |  |
+| [`ARGOCD-014`](../providers/argocd.md#argocd-014) | Argo CD web terminal enabled via exec.enabled | <span class="pg-sev pg-sev--critical">CRITICAL</span> | [Argo CD](../providers/argocd.md) |  |
 | [`CA-004`](../providers/aws.md#ca-004) | CodeArtifact repo policy grants ``codeartifact:*`` with ``Resource '*'`` | <span class="pg-sev pg-sev--high">HIGH</span> | [AWS](../providers/aws.md) |  |
 | [`CB-002`](../providers/aws.md#cb-002) | Privileged mode enabled | <span class="pg-sev pg-sev--high">HIGH</span> | [AWS](../providers/aws.md) |  |
 | [`GCB-002`](../providers/cloudbuild.md#gcb-002) | Cloud Build uses the default service account | <span class="pg-sev pg-sev--high">HIGH</span> | [Cloud Build](../providers/cloudbuild.md) |  |
@@ -1308,7 +1313,7 @@ _No checks in this scanner currently evidence this control. Open an issue if you
 
 ### COL-1: Unencrypted data in transit { #ctrl-col-1 }
 
-**Evidenced by 27 checks** across 19 providers (Argo Workflows, Azure DevOps, Bitbucket, Buildkite, CircleCI, Cloud Build, Dockerfile, Drone CI, GitHub Actions, GitLab CI, Helm, Jenkins, Kubernetes, NuGet, OCI manifest, PyPI, Tekton, maven, npm).
+**Evidenced by 28 checks** across 19 providers (Argo Workflows, Azure DevOps, Bitbucket, Buildkite, CircleCI, Cloud Build, Dockerfile, Drone CI, GitHub Actions, GitLab CI, Helm, Jenkins, Kubernetes, NuGet, OCI manifest, PyPI, Tekton, maven, npm).
 
 | Check | Title | Severity | Provider | Fix |
 |-------|-------|----------|----------|-----|
@@ -1338,6 +1343,7 @@ _No checks in this scanner currently evidence this control. Open an issue if you
 | [`NUGET-004`](../providers/nuget.md#nuget-004) | HTTP-only NuGet package source | <span class="pg-sev pg-sev--high">HIGH</span> | [NuGet](../providers/nuget.md) |  |
 | [`OCI-004`](../providers/oci.md#oci-004) | Image layer references an arbitrary URL (foreign layer) | <span class="pg-sev pg-sev--high">HIGH</span> | [OCI manifest](../providers/oci.md) |  |
 | [`PYPI-003`](../providers/pypi.md#pypi-003) | requirements.txt uses an HTTP index or disables TLS verification | <span class="pg-sev pg-sev--high">HIGH</span> | [PyPI](../providers/pypi.md) |  |
+| [`PYPI-018`](../providers/pypi.md#pypi-018) | requirements.txt forces source builds via --no-binary | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [PyPI](../providers/pypi.md) |  |
 | [`TKN-008`](../providers/tekton.md#tkn-008) | Tekton step script pipes remote install or disables TLS | <span class="pg-sev pg-sev--high">HIGH</span> | [Tekton](../providers/tekton.md) | <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> |
 
 ### COL-2: Unencrypted data at rest { #ctrl-col-2 }

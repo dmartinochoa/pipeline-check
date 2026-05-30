@@ -557,8 +557,12 @@ STANDARD = Standard(
         "PYPI-001": ["PW.4.1", "PW.4.4"],              # missing ==pin
         "PYPI-002": ["PW.4.4"],                        # hash pinning missing
         "PYPI-003": ["PW.4.1", "PW.4.4"],              # http index / --trusted-host
+        "PYPI-018": ["PW.4.1", "PW.4.4"],  # --no-binary forces sdist build
         "PYPI-004": ["PW.4.1", "PW.4.4"],              # VCS dep without commit SHA
+        "PYPI-015": ["PW.4.1", "PW.4.4"],  # direct artifact URL
         "PYPI-005": ["PW.4.1", "PW.4.4"],              # --extra-index-url (dep confusion)
+        "PYPI-017": ["PW.4.1", "PW.4.4"],  # remote --find-links
+        "PYPI-016": ["PW.4.1", "PW.4.4"],  # primary index repointed
         "PYPI-006": ["PW.4.1", "PW.4.4", "RV.1.1"],    # compromised PyPI version
         "MVN-001":  ["PW.4.1", "PW.4.4"],              # floating Maven range
         "MVN-002":  ["PW.4.1", "PW.4.4"],              # mutable SNAPSHOT dep
@@ -634,13 +638,17 @@ STANDARD = Standard(
         "COMPOSER-001": ["PW.4.4", "RV.1.1"],
         "COMPOSER-002": ["PW.4.4", "RV.1.1"],
         "COMPOSER-003": ["PW.4.4", "PO.5.1"],
+        "COMPOSER-012": ["PW.4.4", "PO.5.1"],  # disables Packagist / marks custom repo canonical
+        "COMPOSER-011": ["PW.4.4", "PO.5.1"],  # external VCS repository re-points a package
         "COMPOSER-004": ["PS.1.1", "PO.5.1"],
         "COMPOSER-005": ["PW.4.4"],
+        "COMPOSER-014": ["PW.4.4"],  # minimum-stability without prefer-stable
         "COMPOSER-006": ["PW.4.4", "PO.5.1"],
         "COMPOSER-007": ["PW.4.4", "RV.1.1"],
         "COMPOSER-008": ["PW.4.4"],
         "COMPOSER-009": ["PS.1.1", "PO.5.1"],
         "COMPOSER-010": ["PW.4.4", "PO.5.1"],
+        "COMPOSER-013": ["PW.4.4", "PO.5.1"],  # config.disable-tls
         # ── RubyGems / Bundler ──
         "GEM-001": ["PW.4.4", "RV.1.1"],
         "GEM-002": ["PW.4.4", "RV.1.1"],
@@ -656,13 +664,16 @@ STANDARD = Standard(
         "PULUMI-001": ["PS.1.1", "PO.5.1"],             # passphrase secretsprovider
         "PULUMI-002": ["PS.1.1"],                       # secret-shaped config plaintext
         "PULUMI-003": ["PS.1.1", "PO.5.1"],             # hardcoded credentials in source
+        "PULUMI-011": ["PS.1.1", "PO.5.1"],  # plugin from custom download server
         "PULUMI-004": ["PO.5.1", "PW.4.4"],             # insecure state backend
         "PULUMI-005": ["PO.5.1"],                       # wildcard IAM policy in source
         "PULUMI-006": ["PO.5.1", "PW.4.4"],             # StackReference unguarded
         # ── Pulumi extended pack ──
         "PULUMI-007": ["PO.5.1"],                       # public-access cloud resource
         "PULUMI-008": ["PW.4.4", "PO.5.1"],             # shell-exec with non-constant input
+        "PULUMI-013": ["PW.4.4", "PO.5.1"],  # dynamic provider deploy-time code
         "PULUMI-009": ["PO.3.3"],                       # runtime / source mismatch
+        "PULUMI-012": ["PO.3.3"],  # plugin version unpinned
         "PULUMI-010": ["PS.1.1"],                       # stack orphaned encryption salt
         # ── Dockerfile env-bypass pack (DF-021..030) ────────────
         # Each setting disables the trusted-source channel for any

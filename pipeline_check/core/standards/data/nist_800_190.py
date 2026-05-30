@@ -343,8 +343,12 @@ STANDARD = Standard(
         "PYPI-001": ["4.1.5"],                     # missing ==pin
         "PYPI-002": ["4.1.5"],                     # hash pinning missing
         "PYPI-003": ["4.2.1"],                     # http index / --trusted-host
+        "PYPI-018": ["4.2.1"],  # --no-binary forces sdist build
         "PYPI-004": ["4.1.5"],                     # VCS dep without commit SHA
+        "PYPI-015": ["4.1.5"],  # direct artifact URL
         "PYPI-005": ["4.2.1"],                     # --extra-index-url (dep confusion)
+        "PYPI-017": ["4.2.1"],  # remote --find-links
+        "PYPI-016": ["4.2.1"],  # primary index repointed
         "PYPI-006": ["4.1.3"],                     # compromised PyPI version
         "MVN-001":  ["4.1.5"],                     # floating Maven range
         "MVN-002":  ["4.1.5"],                     # mutable SNAPSHOT dep
@@ -390,13 +394,17 @@ STANDARD = Standard(
         "COMPOSER-001": ["4.1.3"],
         "COMPOSER-002": ["4.1.3"],
         "COMPOSER-003": ["4.2.1"],
+        "COMPOSER-012": ["4.2.1"],  # disables Packagist / marks custom repo canonical
+        "COMPOSER-011": ["4.2.1"],  # external VCS repository re-points a package
         "COMPOSER-004": ["4.4.5"],
         "COMPOSER-005": ["4.1.3"],
+        "COMPOSER-014": ["4.1.3"],  # minimum-stability without prefer-stable
         "COMPOSER-006": ["4.1.3"],
         "COMPOSER-007": ["4.1.3"],
         "COMPOSER-008": ["4.1.3"],
         "COMPOSER-009": ["4.4.5"],
         "COMPOSER-010": ["4.2.1"],
+        "COMPOSER-013": ["4.2.1"],  # config.disable-tls
         # ── RubyGems / Bundler ──
         "GEM-001": ["4.1.3"],
         "GEM-002": ["4.1.3"],

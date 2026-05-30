@@ -1,5 +1,5 @@
 name: 'pipeline-check'
-description: 'CI/CD pipeline security scanner. 1080+ checks across 32 providers, 18 compliance standards. SARIF output for code scanning.'
+description: 'CI/CD pipeline security scanner. 1090+ checks across 32 providers, 18 compliance standards. SARIF output for code scanning.'
 author: 'Pipeline-Check'
 branding:
   icon: 'shield'

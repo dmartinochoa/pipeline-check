@@ -43,7 +43,7 @@ All other flags (`--output`, `--severity-threshold`, `--checks`,
 
 ## What it covers
 
-13 checks · 0 have an autofix patch (``--fix``).
+16 checks · 0 have an autofix patch (``--fix``).
 
 | Check | Title | Severity | Fix |
 |-------|-------|----------|-----|
@@ -60,6 +60,9 @@ All other flags (`--output`, `--severity-threshold`, `--checks`,
 | [ARGOCD-011](#argocd-011) | Argo CD AppProject cluster-resource whitelist is wide open | <span class="pg-sev pg-sev--high">HIGH</span> |  |
 | [ARGOCD-012](#argocd-012) | Argo CD AppProject defines no sync windows | <span class="pg-sev pg-sev--medium">MEDIUM</span> |  |
 | [ARGOCD-013](#argocd-013) | Argo CD Application sets no explicit revisionHistoryLimit | <span class="pg-sev pg-sev--low">LOW</span> |  |
+| [ARGOCD-014](#argocd-014) | Argo CD web terminal enabled via exec.enabled | <span class="pg-sev pg-sev--critical">CRITICAL</span> |  |
+| [ARGOCD-015](#argocd-015) | Argo CD Kustomize build options enable the Helm plugin | <span class="pg-sev pg-sev--high">HIGH</span> |  |
+| [ARGOCD-017](#argocd-017) | Argo CD in-cluster Application deploys from a mutable source | <span class="pg-sev pg-sev--high">HIGH</span> |  |
 
 ---
 
@@ -396,6 +399,78 @@ Example:
       revisionHistoryLimit: 10  # keep last 10 syncs for rollback
 
 Pick the cap based on the application's rollback need: a stateless web service rarely benefits from more than 5 history entries; an infrastructure controller managing external state may want 20 for forensic comparison across longer windows.
+
+</div>
+
+</div>
+
+<div class="pg-rule pg-rule--critical" markdown>
+
+## ARGOCD-014: Argo CD web terminal enabled via exec.enabled { #argocd-014 }
+
+<div class="pg-rule__tags">
+<span class="pg-sev pg-sev--critical">CRITICAL</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-2</span> <span class="pg-tag pg-tag--esf">ESF-C-LEAST-PRIV</span> <span class="pg-tag pg-tag--cwe">CWE-284</span> <span class="pg-tag pg-tag--cwe">CWE-668</span>
+</div>
+
+Reads ``data.exec.enabled`` on the ``argocd-cm`` ConfigMap. ConfigMap data values are always stringified by Kubernetes, but the YAML loader can hand us either ``"true"`` or boolean ``true`` depending on how the manifest was written, so both forms fail the check. The terminal also needs the ``exec`` RBAC verb; this rule fires on the global toggle regardless of the RBAC scope.
+
+**Known false-positive modes**
+
+- Platform teams that restrict the ``exec`` RBAC verb to a small break-glass role sometimes accept the terminal being enabled. The rule still fires; confirm the RBAC scope (see ARGOCD-004) before treating it as benign, and suppress per instance with a rationale naming the scoped role.
+
+<div class="pg-rule__rec" markdown>
+
+**Recommended action**
+
+Set ``exec.enabled`` to ``"false"`` in ``argocd-cm`` (or drop the key, since the terminal is off by default). If a terminal is genuinely needed for break-glass debugging, gate it behind a narrowly scoped ``exec`` RBAC role bound to a single named group, and audit every session. The web terminal opens an interactive shell into any managed pod, so it sits at the top of the blast-radius ladder.
+
+</div>
+
+</div>
+
+<div class="pg-rule pg-rule--high" markdown>
+
+## ARGOCD-015: Argo CD Kustomize build options enable the Helm plugin { #argocd-015 }
+
+<div class="pg-rule__tags">
+<span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-4</span> <span class="pg-tag pg-tag--esf">ESF-S-PIPELINE-INTEGRITY</span> <span class="pg-tag pg-tag--cwe">CWE-94</span> <span class="pg-tag pg-tag--cwe">CWE-829</span>
+</div>
+
+Reads ``data.kustomize.buildOptions`` on the ``argocd-cm`` ConfigMap and fires when the value contains the ``--enable-helm`` token. ``kustomize build --enable-helm`` lets a ``kustomization.yaml`` declare ``helmCharts`` that Kustomize fetches and templates, turning a Kustomize app into a remote chart fetch-and-execute path.
+
+**Known false-positive modes**
+
+- Some teams legitimately inflate trusted in-repo charts through Kustomize and accept the global flag. The rule still fires; confirm every Kustomize app's chart sources are pinned and trusted, then suppress with a rationale.
+
+<div class="pg-rule__rec" markdown>
+
+**Recommended action**
+
+Remove ``--enable-helm`` from ``kustomize.buildOptions`` in ``argocd-cm``. The flag is global: once set, every Kustomize Application on the instance can inflate Helm charts at build time, fetching and rendering remote charts instead of staying a plain set of manifests. If a chart is required, model it as a Helm source on the specific Application so it goes through the normal source review (ARGOCD-007 / ARGOCD-010).
+
+</div>
+
+</div>
+
+<div class="pg-rule pg-rule--high" markdown>
+
+## ARGOCD-017: Argo CD in-cluster Application deploys from a mutable source { #argocd-017 }
+
+<div class="pg-rule__tags">
+<span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-3</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-5</span> <span class="pg-tag pg-tag--esf">ESF-S-PIN-DEPS</span> <span class="pg-tag pg-tag--esf">ESF-C-LEAST-PRIV</span> <span class="pg-tag pg-tag--cwe">CWE-1357</span> <span class="pg-tag pg-tag--cwe">CWE-829</span>
+</div>
+
+Fires when an Application's ``spec.destination.server`` is the canonical in-cluster value ``https://kubernetes.default.svc`` AND a source ``targetRevision`` is mutable (a branch, ``HEAD``, or any non-SHA non-SemVer string). Reuses ARGOCD-010's immutable-ref helper, so 40-character commit SHAs and SemVer literals pass. Both single-source (``spec.source``) and multi-source (``spec.sources[]``) forms are checked. This is the in-cluster intersection of ARGOCD-010: ARGOCD-010 flags any mutable source, this rule raises the bar for the control-plane destination specifically.
+
+**Known false-positive modes**
+
+- Bootstrap or app-of-apps Applications that intentionally manage the local cluster from a branch behind required-review branch protection may accept branch tracking. The rule still fires; suppress per Application with a rationale naming the branch-protection control.
+
+<div class="pg-rule__rec" markdown>
+
+**Recommended action**
+
+Pin ``targetRevision`` to an immutable ref (a 40-character commit SHA or a signed, immutability-enforced tag) for any Application that targets the in-cluster API (``spec.destination.server: https://kubernetes.default.svc``). That destination is where Argo CD itself runs, so a push to a tracked branch can reshape the control-plane namespace with no manifest change and no Argo CD-side review. If the workload does not need to live next to Argo CD, move it to a dedicated remote cluster instead.
 
 </div>
 

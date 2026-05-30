@@ -331,6 +331,8 @@ STANDARD = Standard(
         "GCB-020":  ["IA-16"],
         # IA-17: Dependency confusion
         "PYPI-005": ["IA-17"],
+        "PYPI-017": ["IA-17"],  # remote --find-links
+        "PYPI-016": ["IA-17"],  # primary index repointed
         "NUGET-007": ["IA-17"],
         "NPM-003":  ["IA-17"],
         "CA-002":   ["IA-17"],
@@ -613,6 +615,7 @@ STANDARD = Standard(
         "ARGOCD-002": ["LM-2"],
         "ARGOCD-004": ["LM-2"],
         "ARGOCD-009": ["LM-2"],
+        "ARGOCD-014": ["LM-2"],  # web terminal exec.enabled
         "ARGOCD-011": ["LM-2"],
         "GCB-002":  ["LM-2"],
         "CB-002":   ["LM-2", "PE-2"],
@@ -639,6 +642,7 @@ STANDARD = Standard(
         "DF-028":   ["COL-1"],
         "DF-029":   ["COL-1"],
         "PYPI-003": ["COL-1"],
+        "PYPI-018": ["COL-1"],  # --no-binary forces sdist build
         "MVN-003":  ["COL-1"],
         "NUGET-004": ["COL-1"],
         "HELM-003": ["COL-1"],
@@ -745,6 +749,7 @@ STANDARD = Standard(
         "PYPI-001": ["IA-11"],
         "PYPI-002": ["IA-11"],
         "PYPI-004": ["IA-11"],
+        "PYPI-015": ["IA-11"],  # direct artifact URL
         "MVN-001":  ["IA-11"],
         "MVN-002":  ["IA-11"],
         "MVN-004":  ["IA-11"],
@@ -794,6 +799,7 @@ STANDARD = Standard(
         "ARGOCD-006": ["EX-12", "PE-1"],
         "ARGOCD-007": ["EX-6"],
         "ARGOCD-008": ["EX-1"],
+        "ARGOCD-015": ["EX-1"],  # kustomize --enable-helm
         # ================================================================
         # Kubernetes workload-security cluster
         # ================================================================

@@ -47,7 +47,7 @@ covered.
 
 ## What it covers
 
-13 checks · 0 have an autofix patch (``--fix``).
+17 checks · 0 have an autofix patch (``--fix``).
 
 | Check | Title | Severity | Fix |
 |-------|-------|----------|-----|
@@ -64,6 +64,10 @@ covered.
 | [PYPI-012](#pypi-012) | pyproject.toml [build-system].requires uses floating versions | <span class="pg-sev pg-sev--high">HIGH</span> |  |
 | [PYPI-013](#pypi-013) | pyproject.toml defers dependency resolution via dynamic | <span class="pg-sev pg-sev--medium">MEDIUM</span> |  |
 | [PYPI-014](#pypi-014) | Custom package source in pyproject.toml uses plain HTTP | <span class="pg-sev pg-sev--medium">MEDIUM</span> |  |
+| [PYPI-015](#pypi-015) | requirements.txt installs from a direct artifact URL | <span class="pg-sev pg-sev--high">HIGH</span> |  |
+| [PYPI-016](#pypi-016) | requirements.txt repoints the primary index at a non-PyPI host | <span class="pg-sev pg-sev--high">HIGH</span> |  |
+| [PYPI-017](#pypi-017) | requirements.txt uses a remote --find-links source | <span class="pg-sev pg-sev--medium">MEDIUM</span> |  |
+| [PYPI-018](#pypi-018) | requirements.txt forces source builds via --no-binary | <span class="pg-sev pg-sev--medium">MEDIUM</span> |  |
 
 ---
 
@@ -453,6 +457,110 @@ Switch the source URL to HTTPS for every custom registry declared in ``pyproject
 * PDM: ``[[tool.pdm.source]]`` entries with a ``url = "http://..."`` value.
 
 Internal artifact registries (Nexus, Artifactory, devpi, private mirrors) ship with built-in HTTPS support; the switch is usually a one-line config change. After the switch, drop any ``--trusted-host`` workarounds the HTTP endpoint was hiding (see PYPI-011).
+
+</div>
+
+</div>
+
+<div class="pg-rule pg-rule--high" markdown>
+
+## PYPI-015: requirements.txt installs from a direct artifact URL { #pypi-015 }
+
+<div class="pg-rule__tags">
+<span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-3</span> <span class="pg-tag pg-tag--esf">ESF-S-VERIFY-DEPS</span> <span class="pg-tag pg-tag--cwe">CWE-829</span> <span class="pg-tag pg-tag--cwe">CWE-494</span>
+</div>
+
+Fires on a requirement whose spec is an ``http(s)`` artifact URL: the PEP 508 ``name @ https://...`` form and the bare ``https://host/foo.whl`` / ``foo.tar.gz`` / ``foo.zip`` direct-download form. VCS schemes (``git+``, ``hg+``, ``svn+``, ``bzr+``) are PYPI-004's surface and are skipped here. URLs pointing at canonical PyPI hosts (``pypi.org`` / ``files.pythonhosted.org``) are not flagged. A line that carries an inline ``--hash=`` is not flagged, the hash makes the direct download verifiable.
+
+Complements PYPI-001 (which skips URL specs) and PYPI-004 (which only matches VCS schemes), closing the http(s)-artifact gap neither one sees.
+
+**Known false-positive modes**
+
+- An internal release server that publishes immutable, content-addressed artifacts may legitimately use direct URLs. Add an inline ``--hash`` to pin the bytes (which also silences this rule), or suppress per line with a rationale once the URL is verified out of band.
+
+<div class="pg-rule__rec" markdown>
+
+**Recommended action**
+
+Install the package from an index by ``name==version`` (PYPI-001) with a recorded ``--hash`` (PYPI-002) instead of a direct artifact URL. A ``name @ https://host/foo.whl`` or a bare wheel / tarball URL pulls bytes from one host with no name, version, or hash gating, so a takeover of that host, or a swap of the file behind a stable URL, lands arbitrary code in the build. If a direct URL is genuinely unavoidable, pin it with an inline ``--hash=sha256:...`` so the downloaded bytes are verified, and serve it over HTTPS from a host you control.
+
+</div>
+
+</div>
+
+<div class="pg-rule pg-rule--high" markdown>
+
+## PYPI-016: requirements.txt repoints the primary index at a non-PyPI host { #pypi-016 }
+
+<div class="pg-rule__tags">
+<span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-3</span> <span class="pg-tag pg-tag--esf">ESF-S-TRUSTED-REG</span> <span class="pg-tag pg-tag--esf">ESF-S-VERIFY-DEPS</span> <span class="pg-tag pg-tag--cwe">CWE-829</span> <span class="pg-tag pg-tag--cwe">CWE-494</span>
+</div>
+
+Fires on a top-level ``--index-url`` / ``-i`` whose host is not ``pypi.org`` / ``files.pythonhosted.org``. PYPI-005 flags only the additive ``--extra-index-url``; this rule catches the substitutive vector, which is the more dangerous one because there is no PyPI source left to compare against.
+
+Plain-HTTP index URLs are also PYPI-003 and inline-credential URLs are also PYPI-010; this rule is specifically about the primary index host being repointed at all. Hosts that look like internal mirrors (``*.internal``, ``*.corp``, ``*.local``, ``*.intra``, ``*.lan``, ``localhost``, an ``artifactory`` / ``nexus`` / ``devpi`` host, or a bare hostname with no dot) are treated as known false positives and skipped.
+
+**Known false-positive modes**
+
+- A legitimate corporate mirror or proxy is the intended index. The internal-mirror heuristic skips the common shapes (``pypi.internal``, ``artifactory.corp/...``, ``*.local`` / ``*.intra`` / ``*.lan`` hosts, ``localhost``, single-label hostnames). For a cloud-hosted private index that does not match the heuristic, suppress per file once the host is verified.
+
+<div class="pg-rule__rec" markdown>
+
+**Recommended action**
+
+Point ``--index-url`` / ``-i`` at canonical PyPI (``https://pypi.org/simple``) or at a vetted internal mirror that proxies PyPI. ``--index-url`` (and the ``PIP_INDEX_URL`` environment form) replaces the default index outright, so every package, direct and transitive, is resolved from that one host. If the host is attacker-controlled or compromised, the whole dependency tree is served by it. Keep the chosen index under change control and pin every requirement with ``==`` (PYPI-001) and a ``--hash`` (PYPI-002) so a swapped index cannot silently change the bytes.
+
+</div>
+
+</div>
+
+<div class="pg-rule pg-rule--medium" markdown>
+
+## PYPI-017: requirements.txt uses a remote --find-links source { #pypi-017 }
+
+<div class="pg-rule__tags">
+<span class="pg-sev pg-sev--medium">MEDIUM</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-3</span> <span class="pg-tag pg-tag--esf">ESF-S-TRUSTED-REG</span> <span class="pg-tag pg-tag--esf">ESF-S-VERIFY-DEPS</span> <span class="pg-tag pg-tag--cwe">CWE-829</span>
+</div>
+
+Fires on a top-level ``--find-links`` / ``-f`` whose value is a remote ``http(s)`` URL. Local directory paths (``./vendor/wheels``, ``/opt/wheels``) carry no host and are not flagged. URLs on canonical PyPI hosts are not flagged.
+
+Severity escalates from MEDIUM to HIGH when ``--no-index`` is also set in the same file (find-links becomes the only source pip uses, with no index to fall back on) or when the URL is plain ``http://`` (the download is tamperable in transit). ``--find-links`` was parsed before but unused; this rule is the consumer.
+
+**Known false-positive modes**
+
+- A ``--find-links`` to a vetted internal artifact host serving immutable, hashed files can be intentional. Pin the requirements with ``--hash`` and suppress per file once the host is verified.
+
+<div class="pg-rule__rec" markdown>
+
+**Recommended action**
+
+Resolve packages from a single trusted index instead of a remote ``--find-links`` URL. ``--find-links`` adds an extra place pip looks for distributions, and pip will install a wheel or sdist found there outside the normal index resolution, so the host becomes an unreviewed package source. If you must serve files this way, use an ``https://`` host you control and pin every requirement with ``==`` (PYPI-001) and a ``--hash`` (PYPI-002) so the bytes are verified regardless of where pip found them.
+
+</div>
+
+</div>
+
+<div class="pg-rule pg-rule--medium" markdown>
+
+## PYPI-018: requirements.txt forces source builds via --no-binary { #pypi-018 }
+
+<div class="pg-rule__tags">
+<span class="pg-sev pg-sev--medium">MEDIUM</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-3</span> <span class="pg-tag pg-tag--esf">ESF-S-VERIFY-DEPS</span> <span class="pg-tag pg-tag--cwe">CWE-829</span>
+</div>
+
+Fires on any top-level ``--no-binary`` option, including the ``--no-binary :all:`` form and the package-scoped ``--no-binary <name>`` form. The complementary ``--only-binary`` is the safer direction (it forbids source builds) and is not flagged.
+
+This is the install-time code-execution surface that the wheel-only path avoids: pip building an sdist invokes the package's build backend, which is attacker-controlled code for any dependency whose source you don't audit.
+
+**Known false-positive modes**
+
+- Some packages ship only an sdist, or you compile a C extension against the build host on purpose. In that case the source build is intentional; scope ``--no-binary`` to the named package and suppress per file with a rationale.
+
+<div class="pg-rule__rec" markdown>
+
+**Recommended action**
+
+Drop ``--no-binary`` and install prebuilt wheels where possible. ``--no-binary`` tells pip to skip wheels and build from the source distribution, and an sdist build runs the package's ``setup.py`` (or PEP 517 backend) on the build machine, so installing the dependency executes arbitrary code at install time. A wheel install runs no package code, so this option widens the install-time code-execution surface. If a source build is genuinely required (a package with no wheel, or a C extension you must compile), scope ``--no-binary`` to the specific package rather than ``:all:``, and run the build in a sandboxed, network-isolated step with pinned, hashed requirements.
 
 </div>
 

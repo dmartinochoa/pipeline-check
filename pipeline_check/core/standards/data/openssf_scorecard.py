@@ -120,8 +120,12 @@ STANDARD = Standard(
         "PYPI-001": ["Pinned-Dependencies"],                           # requirements lacks ==pin
         "PYPI-002": ["Pinned-Dependencies"],                           # hash pinning missing
         "PYPI-003": ["Pinned-Dependencies"],                           # http index / --trusted-host
+        "PYPI-018": ["Pinned-Dependencies"],  # --no-binary forces sdist build
         "PYPI-004": ["Pinned-Dependencies"],                           # VCS dep without commit SHA
+        "PYPI-015": ["Pinned-Dependencies"],  # direct artifact URL
         "PYPI-005": ["Pinned-Dependencies"],                           # --extra-index-url (dep confusion)
+        "PYPI-017": ["Pinned-Dependencies"],  # remote --find-links
+        "PYPI-016": ["Pinned-Dependencies"],  # primary index repointed
         "PYPI-006": ["Pinned-Dependencies", "Vulnerabilities"],        # compromised PyPI version
         "MVN-001":  ["Pinned-Dependencies"],                           # floating Maven range
         "MVN-002":  ["Pinned-Dependencies"],                           # mutable SNAPSHOT dep
@@ -169,6 +173,7 @@ STANDARD = Standard(
         "COMPOSER-008": ["Pinned-Dependencies"],
         "COMPOSER-009": ["Token-Permissions"],
         "COMPOSER-010": ["Pinned-Dependencies"],
+        "COMPOSER-013": ["Pinned-Dependencies"],  # config.disable-tls
         # ── RubyGems / Bundler ──
         "GEM-001": ["Pinned-Dependencies"],
         "GEM-002": ["Pinned-Dependencies"],
@@ -339,6 +344,7 @@ STANDARD = Standard(
         "ARGO-015": ["Pinned-Dependencies"],                           # insecure (non-HTTPS) artifact URL
         # ── Argo CD (GitOps deployment) ──
         "ARGOCD-010": ["Pinned-Dependencies"],                         # mutable targetRevision
+        "ARGOCD-017": ["Pinned-Dependencies"],  # in-cluster mutable source
         "ARGOCD-011": ["Token-Permissions"],                           # cluster-resource wildcard
         # ── Helm extended pack ──
         "HELM-011": ["Token-Permissions"],                             # dependency URL embedded creds

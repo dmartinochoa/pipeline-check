@@ -563,6 +563,7 @@ STANDARD = Standard(
         "ARGO-015": ["6.5.1"],                           # insecure (non-HTTPS) artifact URL
         # ── Argo CD (GitOps deployment) ──
         "ARGOCD-010": ["6.3.1"],                         # mutable targetRevision
+        "ARGOCD-017": ["6.3.1"],  # in-cluster mutable source
         "ARGOCD-011": ["7.2.1"],                         # cluster-resource wildcard
         "ARGOCD-012": ["6.5.1"],                         # no sync windows
         "ARGOCD-013": ["10.3.2"],                        # no revision history cap
@@ -590,8 +591,12 @@ STANDARD = Standard(
         "PYPI-001": ["6.3.3", "6.5.1"],
         "PYPI-002": ["6.3.3", "6.5.1"],
         "PYPI-003": ["6.3.3", "6.5.1"],
+        "PYPI-018": ["6.3.3", "6.5.1"],  # --no-binary forces sdist build
         "PYPI-004": ["6.3.3", "6.5.1"],
+        "PYPI-015": ["6.3.3", "6.5.1"],  # direct artifact URL
         "PYPI-005": ["6.3.3", "6.5.1"],
+        "PYPI-017": ["6.3.3", "6.5.1"],  # remote --find-links
+        "PYPI-016": ["6.3.3", "6.5.1"],  # primary index repointed
         "PYPI-006": ["6.3.1", "6.3.3"],
         "MVN-001":  ["6.3.3", "6.5.1"],
         "MVN-002":  ["6.3.3", "6.5.1"],
@@ -670,13 +675,17 @@ STANDARD = Standard(
         "COMPOSER-001": ["6.3.1"],
         "COMPOSER-002": ["6.3.1"],
         "COMPOSER-003": ["6.3.1"],
+        "COMPOSER-012": ["6.3.1"],  # disables Packagist / marks custom repo canonical
+        "COMPOSER-011": ["6.3.1"],  # external VCS repository re-points a package
         "COMPOSER-004": ["8.2.1"],
         "COMPOSER-005": ["6.3.1"],
+        "COMPOSER-014": ["6.3.1"],  # minimum-stability without prefer-stable
         "COMPOSER-006": ["6.3.1"],
         "COMPOSER-007": ["6.3.1", "6.3.3"],
         "COMPOSER-008": ["6.3.1"],
         "COMPOSER-009": ["8.2.1"],
         "COMPOSER-010": ["6.3.1"],
+        "COMPOSER-013": ["6.3.1"],  # config.disable-tls
         # ── RubyGems / Bundler ──
         "GEM-001": ["6.3.1"],
         "GEM-002": ["6.3.1"],
@@ -692,13 +701,16 @@ STANDARD = Standard(
         "PULUMI-001": ["8.2.1"],        # passphrase secretsprovider
         "PULUMI-002": ["8.2.1"],        # secret-shaped config plaintext
         "PULUMI-003": ["8.2.1"],        # hardcoded credentials in source
+        "PULUMI-011": ["8.2.1"],  # plugin from custom download server
         "PULUMI-004": ["10.3.2", "8.2.1"],       # insecure state backend
         "PULUMI-005": ["7.2.1"],                 # wildcard IAM policy in source
         "PULUMI-006": ["7.2.1"],                 # StackReference unguarded
         # ── Pulumi extended pack ──
         "PULUMI-007": ["8.2.1"],                 # public-access cloud resource
         "PULUMI-008": ["6.5.1"],                 # shell-exec with non-constant input
+        "PULUMI-013": ["6.5.1"],  # dynamic provider deploy-time code
         "PULUMI-009": ["6.5.1"],                 # runtime / source mismatch
+        "PULUMI-012": ["6.5.1"],  # plugin version unpinned
         "PULUMI-010": ["8.2.1"],                 # stack orphaned encryption salt
         # ── OCI image manifest gaps ──────────────────────────────
         "OCI-001":  ["6.5.1", "10.3.2"],                 # provenance annotations missing

@@ -603,6 +603,7 @@ STANDARD = Standard(
         "ARGO-015": ["PR.DS-02"],               # insecure (non-HTTPS) artifact URL
         # ── Argo CD (GitOps deployment) ──
         "ARGOCD-010": ["GV.SC-07"],             # mutable targetRevision
+        "ARGOCD-017": ["GV.SC-07"],  # in-cluster mutable source
         "ARGOCD-011": ["PR.AA-05"],             # cluster-resource wildcard
         "ARGOCD-012": ["GV.SC-07"],             # no sync windows
         "ARGOCD-013": ["GV.SC-07"],             # no revision history cap
@@ -717,8 +718,12 @@ STANDARD = Standard(
         "PYPI-001": ["GV.SC-05"],               # missing ==pin
         "PYPI-002": ["GV.SC-05"],               # hash pinning missing
         "PYPI-003": ["GV.SC-05", "PR.DS-02"],   # http index / --trusted-host
+        "PYPI-018": ["GV.SC-05", "PR.DS-02"],  # --no-binary forces sdist build
         "PYPI-004": ["GV.SC-05"],               # VCS dep without commit SHA
+        "PYPI-015": ["GV.SC-05"],  # direct artifact URL
         "PYPI-005": ["GV.SC-05"],               # --extra-index-url (dep confusion)
+        "PYPI-017": ["GV.SC-05"],  # remote --find-links
+        "PYPI-016": ["GV.SC-05"],  # primary index repointed
         "PYPI-006": ["GV.SC-05", "GV.SC-07", "PR.PS-02"],  # compromised PyPI version
         "MVN-001":  ["GV.SC-05"],               # floating Maven range
         "MVN-002":  ["GV.SC-05"],               # mutable SNAPSHOT dep
@@ -797,13 +802,17 @@ STANDARD = Standard(
         "COMPOSER-001": ["GV.SC-05", "GV.SC-07"],
         "COMPOSER-002": ["GV.SC-05", "GV.SC-07"],
         "COMPOSER-003": ["GV.SC-05", "PR.DS-02"],
+        "COMPOSER-012": ["GV.SC-05", "PR.DS-02"],  # disables Packagist / marks custom repo canonical
+        "COMPOSER-011": ["GV.SC-05", "PR.DS-02"],  # external VCS repository re-points a package
         "COMPOSER-004": ["PR.DS-01", "PR.AA-01"],
         "COMPOSER-005": ["GV.SC-05", "GV.SC-07"],
+        "COMPOSER-014": ["GV.SC-05", "GV.SC-07"],  # minimum-stability without prefer-stable
         "COMPOSER-006": ["GV.SC-05", "GV.SC-08"],
         "COMPOSER-007": ["GV.SC-05", "GV.SC-08"],
         "COMPOSER-008": ["GV.SC-05", "GV.SC-07"],
         "COMPOSER-009": ["PR.DS-01", "PR.AA-01"],
         "COMPOSER-010": ["GV.SC-05", "PR.DS-02"],
+        "COMPOSER-013": ["GV.SC-05", "PR.DS-02"],  # config.disable-tls
         # ── RubyGems / Bundler ──
         "GEM-001": ["GV.SC-05", "GV.SC-07"],
         "GEM-002": ["GV.SC-05", "GV.SC-07"],
@@ -819,13 +828,16 @@ STANDARD = Standard(
         "PULUMI-001": ["PR.DS-01", "PR.AA-01"],  # passphrase secretsprovider
         "PULUMI-002": ["PR.DS-01"],              # secret-shaped config plaintext
         "PULUMI-003": ["PR.DS-01", "PR.AA-01"],  # hardcoded credentials in source
+        "PULUMI-011": ["PR.DS-01", "PR.AA-01"],  # plugin from custom download server
         "PULUMI-004": ["PR.DS-01", "PR.AA-01"],  # insecure state backend
         "PULUMI-005": ["PR.AA-05"],              # wildcard IAM policy in source
         "PULUMI-006": ["GV.SC-07"],              # StackReference unguarded
         # ── Pulumi extended pack ──
         "PULUMI-007": ["PR.AA-05"],              # public-access cloud resource
         "PULUMI-008": ["GV.SC-07"],              # shell-exec with non-constant input
+        "PULUMI-013": ["GV.SC-07"],  # dynamic provider deploy-time code
         "PULUMI-009": ["GV.SC-07"],              # runtime / source mismatch
+        "PULUMI-012": ["GV.SC-07"],  # plugin version unpinned
         "PULUMI-010": ["PR.DS-01"],              # stack orphaned encryption salt
         # ── OCI image manifest gaps ──────────────────────────────
         "OCI-001":  ["GV.SC-05"],               # provenance annotations missing
