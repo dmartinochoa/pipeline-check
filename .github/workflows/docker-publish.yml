@@ -206,8 +206,28 @@ jobs:
           TAGS: ${{ steps.meta.outputs.tags }}
         run: |
           set -euo pipefail
+          # Docker Hub intermittently returns a transient 403 under
+          # load. We hit one on the *last* tag of the multi-tag promote
+          # (``:latest``) while ``:${version}`` had pushed to the same
+          # repo seconds earlier with the same token, leaving Docker Hub
+          # ``:latest`` stranded on the prior release. Retry each tag
+          # with linear backoff so one flaky push no longer half-
+          # promotes the manifest. An exhausted retry still fails the
+          # step (we never silently skip a tag).
+          promote() {
+            local tag="$1" attempt
+            for attempt in 1 2 3; do
+              if docker buildx imagetools create --tag "$tag" "$SRC"; then
+                return 0
+              fi
+              echo "promote of $tag failed (attempt $attempt/3); retrying in $((attempt * 5))s" >&2
+              sleep $((attempt * 5))
+            done
+            echo "ERROR: failed to promote $tag after 3 attempts" >&2
+            return 1
+          }
           while IFS= read -r tag; do
             [ -z "$tag" ] && continue
             echo "promoting $SRC -> $tag"
-            docker buildx imagetools create --tag "$tag" "$SRC"
+            promote "$tag"
           done <<< "$TAGS"
