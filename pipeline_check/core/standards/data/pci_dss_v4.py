@@ -613,6 +613,10 @@ STANDARD = Standard(
         "MVN-012":  ["6.3.1"],
         "MVN-013":  ["6.3.1"],
         "MVN-014":  ["6.3.1"],
+        "MVN-015": ["6.3.1"],  # build-time plugin exec bound to lifecycle
+        "MVN-016": ["6.3.1"],  # gradle allowInsecureProtocol
+        "MVN-017": ["8.2.1"],  # settings.xml privateKey + plaintext passphrase
+        "MVN-018": ["6.3.1"],  # distributionManagement release accepts snapshots
         "NPM-008":  ["6.3.1", "6.3.3"],
         "NPM-009":  ["6.3.3", "6.5.1"],
         "NPM-010":  ["6.3.1", "6.3.3"],
@@ -659,6 +663,8 @@ STANDARD = Standard(
         "GOMOD-008": ["6.3.1"],
         "GOMOD-009": ["6.3.1"],
         "GOMOD-010": ["6.3.1"],
+        "GOMOD-011": ["6.3.1"],  # tool directive build-time exec
+        "GOMOD-012": ["6.3.1"],  # insecure / non-canonical module host
         # ── Cargo ──
         "CARGO-001": ["6.3.1"],                  # floating Cargo.toml version spec
         "CARGO-002": ["6.3.1"],                  # git dep with mutable ref (no rev)
@@ -697,6 +703,9 @@ STANDARD = Standard(
         "GEM-008": ["6.3.1"],
         "GEM-009": ["8.2.1"],
         "GEM-010": ["6.3.1"],
+        "GEM-011": ["6.3.1"],  # Bundler plugin install-time exec
+        "GEM-012": ["6.3.1"],  # per-gem :source override
+        "GEM-013": ["6.3.1"],  # insecure git transport
         # ── Pulumi ──
         "PULUMI-001": ["8.2.1"],        # passphrase secretsprovider
         "PULUMI-002": ["8.2.1"],        # secret-shaped config plaintext

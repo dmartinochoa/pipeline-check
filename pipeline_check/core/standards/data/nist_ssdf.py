@@ -579,6 +579,10 @@ STANDARD = Standard(
         "MVN-012":  ["PW.4.4"],                        # build plugin floating
         "MVN-013":  ["PW.4.4"],                        # build extension floating
         "MVN-014":  ["PS.1.1", "PW.4.4"],              # wrapper sha256 missing
+        "MVN-015": ["PW.4.4"],  # build-time plugin exec bound to lifecycle
+        "MVN-016": ["PW.4.4"],  # gradle allowInsecureProtocol
+        "MVN-017": ["PS.1.1"],  # settings.xml privateKey + plaintext passphrase
+        "MVN-018": ["PW.4.4"],  # distributionManagement release accepts snapshots
         "NPM-008":  ["PW.4.1", "PW.4.4", "RV.1.1"],    # cooldown gate (--resolve-remote)
         "NPM-009":  ["PW.4.1", "PW.4.4"],              # new-transitive-dep diff gate
         "NPM-010":  ["PW.4.1", "PW.4.4", "RV.1.1"],    # OSV advisory (--resolve-remote)
@@ -622,6 +626,8 @@ STANDARD = Standard(
         "GOMOD-008": ["PO.5.1", "PW.4.4"],             # replace without version pin
         "GOMOD-009": ["PW.4.4"],                       # pre-release direct require
         "GOMOD-010": ["PO.5.1"],                       # stale exclude directive
+        "GOMOD-011": ["PW.4.4"],  # tool directive build-time exec
+        "GOMOD-012": ["PW.4.4"],  # insecure / non-canonical module host
         # ── Cargo / Rust (CARGO-001..006) ──
         "CARGO-001": ["PW.4.4"],                       # floating Cargo.toml version spec
         "CARGO-002": ["PO.5.1", "PW.4.4"],             # git dep with mutable ref (no rev)
@@ -660,6 +666,9 @@ STANDARD = Standard(
         "GEM-008": ["PW.4.4"],
         "GEM-009": ["PS.1.1", "PO.5.1"],
         "GEM-010": ["PW.4.4"],
+        "GEM-011": ["PW.4.4"],  # Bundler plugin install-time exec
+        "GEM-012": ["PW.4.4"],  # per-gem :source override
+        "GEM-013": ["PW.4.4"],  # insecure git transport
         # ── Pulumi (PULUMI-001..006) ──
         "PULUMI-001": ["PS.1.1", "PO.5.1"],             # passphrase secretsprovider
         "PULUMI-002": ["PS.1.1"],                       # secret-shaped config plaintext

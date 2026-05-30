@@ -661,6 +661,10 @@ STANDARD = Standard(
         "MVN-012":  ["ESF-S-VERIFY-DEPS"],
         "MVN-013":  ["ESF-S-VERIFY-DEPS"],
         "MVN-014":  ["ESF-S-VERIFY-DEPS"],
+        "MVN-015": ["ESF-S-VERIFY-DEPS"],  # build-time plugin exec bound to lifecycle
+        "MVN-016": ["ESF-S-TRUSTED-REG", "ESF-S-VERIFY-DEPS"],  # gradle allowInsecureProtocol
+        "MVN-017": ["ESF-D-SECRETS"],  # settings.xml privateKey + plaintext passphrase
+        "MVN-018": ["ESF-S-VERIFY-DEPS"],  # distributionManagement release accepts snapshots
         "NPM-008":  ["ESF-S-VERIFY-DEPS"],
         "NPM-009":  ["ESF-S-VERIFY-DEPS"],
         "NPM-010":  ["ESF-S-VERIFY-DEPS"],
@@ -707,6 +711,8 @@ STANDARD = Standard(
         "GOMOD-008": ["ESF-S-VERIFY-DEPS"],
         "GOMOD-009": ["ESF-S-VERIFY-DEPS"],
         "GOMOD-010": ["ESF-S-VERIFY-DEPS"],
+        "GOMOD-011": ["ESF-S-VERIFY-DEPS"],  # tool directive build-time exec
+        "GOMOD-012": ["ESF-S-TRUSTED-REG", "ESF-S-VERIFY-DEPS"],  # insecure / non-canonical module host
         # ── Cargo ──
         "CARGO-001": ["ESF-S-VERIFY-DEPS"],
         "CARGO-002": ["ESF-S-VERIFY-DEPS"],
@@ -745,6 +751,9 @@ STANDARD = Standard(
         "GEM-008": ["ESF-S-VERIFY-DEPS"],
         "GEM-009": ["ESF-D-SECRETS"],
         "GEM-010": ["ESF-S-VERIFY-DEPS"],
+        "GEM-011": ["ESF-S-VERIFY-DEPS"],  # Bundler plugin install-time exec
+        "GEM-012": ["ESF-S-TRUSTED-REG", "ESF-S-VERIFY-DEPS"],  # per-gem :source override
+        "GEM-013": ["ESF-S-TRUSTED-REG", "ESF-S-VERIFY-DEPS"],  # insecure git transport
         # ── Pulumi ──
         "PULUMI-001": ["ESF-D-SECRETS"],
         "PULUMI-002": ["ESF-D-SECRETS"],

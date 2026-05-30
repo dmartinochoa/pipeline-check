@@ -84,6 +84,10 @@ class GemDependency:
     #: Source URL when declared inside a scoped ``source "..." do … end``
     #: block. Empty when declared at top level.
     scoped_source: str = ""
+    #: Per-gem ``source:`` option value (``gem "x", source: "https://…"``).
+    #: Empty when the entry sets no inline source. Distinct from
+    #: ``scoped_source`` (the block form). GEM-012's signal.
+    per_gem_source: str = ""
     line_no: int = 1
 
     @property
@@ -452,12 +456,14 @@ def _parse_gemfile(path: str, text: str) -> GemFile:
             else:
                 git_mutable = True
         is_path = bool(options.get("path"))
+        per_gem_source = options.get("source", "")
 
         deps.append(GemDependency(
             name=name, version=version,
             is_git=is_git, git_url=git_url, git_ref=git_ref,
             git_mutable=git_mutable, is_path=is_path,
             groups=groups, scoped_source=scoped_url,
+            per_gem_source=per_gem_source,
             line_no=_line_of(text, offset),
         ))
 

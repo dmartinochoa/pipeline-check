@@ -740,6 +740,10 @@ STANDARD = Standard(
         "MVN-012":  ["GV.SC-07"],               # build plugin floating
         "MVN-013":  ["GV.SC-07"],               # build extension floating
         "MVN-014":  ["GV.SC-07"],               # wrapper sha256 missing
+        "MVN-015": ["GV.SC-07"],  # build-time plugin exec bound to lifecycle
+        "MVN-016": ["GV.SC-07"],  # gradle allowInsecureProtocol
+        "MVN-017": ["PR.DS-01"],  # settings.xml privateKey + plaintext passphrase
+        "MVN-018": ["GV.SC-07"],  # distributionManagement release accepts snapshots
         "NPM-008":  ["GV.SC-05", "GV.SC-07", "PR.PS-02"],  # cooldown gate (--resolve-remote)
         "NPM-009":  ["GV.SC-05"],               # new-transitive-dep diff gate
         "NPM-010":  ["GV.SC-05", "GV.SC-07", "PR.PS-02"],  # OSV advisory (--resolve-remote)
@@ -786,6 +790,8 @@ STANDARD = Standard(
         "GOMOD-008": ["GV.SC-07"],              # replace without version pin
         "GOMOD-009": ["GV.SC-07"],              # pre-release direct require
         "GOMOD-010": ["GV.SC-07"],              # stale exclude directive
+        "GOMOD-011": ["GV.SC-07"],  # tool directive build-time exec
+        "GOMOD-012": ["GV.SC-07"],  # insecure / non-canonical module host
         # ── Cargo ──────────────────────────────────────────────
         "CARGO-001": ["GV.SC-07"],              # floating Cargo.toml version spec
         "CARGO-002": ["GV.SC-07", "GV.SC-08"],  # git dep with mutable ref (no rev)
@@ -824,6 +830,9 @@ STANDARD = Standard(
         "GEM-008": ["GV.SC-05", "GV.SC-07"],
         "GEM-009": ["PR.DS-01", "PR.AA-01"],
         "GEM-010": ["GV.SC-05", "GV.SC-07"],
+        "GEM-011": ["GV.SC-07"],  # Bundler plugin install-time exec
+        "GEM-012": ["GV.SC-07"],  # per-gem :source override
+        "GEM-013": ["GV.SC-07"],  # insecure git transport
         # ── Pulumi (PULUMI-001..006) ──
         "PULUMI-001": ["PR.DS-01", "PR.AA-01"],  # passphrase secretsprovider
         "PULUMI-002": ["PR.DS-01"],              # secret-shaped config plaintext

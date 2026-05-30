@@ -6,6 +6,35 @@ What's planned, what's shipped, and what's deliberately out of scope.
 
 ### Unreleased (on ``dev``)
 
+- **Weak-coverage deepening: gomod / rubygems / maven batch** — Nine
+  rules continuing the weak-coverage provider deepening, the three
+  packs the initiative flagged as needing no new base-loader reads.
+  **gomod:** GOMOD-011 (MEDIUM, a ``tool`` directive promotes a module
+  to a build-time executable that ``go generate`` / ``go tool`` runs,
+  the module-graph analog of an npm install script) and GOMOD-012
+  (HIGH, a ``require`` / ``replace`` coordinate whose host is a bare IP
+  or carries an explicit ``:port``, a non-canonical fetch that bypasses
+  TLS name binding + the canonical proxy). **rubygems:** GEM-011 (HIGH,
+  a Bundler ``plugin`` directive runs its ``plugins.rb`` at
+  ``bundle install`` time), GEM-012 (MEDIUM, a per-gem inline
+  ``source:`` override splits one name off to a different registry,
+  the per-gem face of GEM-007), GEM-013 (HIGH, a ``git:`` gem cloned
+  over ``git://`` / ``http://`` with no server auth). **maven:**
+  MVN-015 (HIGH, a command-running plugin, ``exec-maven-plugin`` /
+  ``maven-antrun-plugin`` / ``gmavenplus-plugin`` /
+  ``frontend-maven-plugin``, bound to the lifecycle via an
+  ``<execution>``, build-time RCE that a version pin like MVN-012 does
+  not stop), MVN-016 (HIGH, ``build.gradle`` re-enabling HTTP repos
+  with ``allowInsecureProtocol = true``), MVN-017 (HIGH, a ``<server>``
+  shipping a ``<privateKey>`` next to a plaintext ``<passphrase>``, the
+  SSH / GPG sibling of MVN-010), MVN-018 (MEDIUM, a
+  ``<distributionManagement>`` release repository that accepts mutable
+  ``-SNAPSHOT`` artifacts). Loader adds: a ``tool``-directive parse
+  (gomod) and a per-gem ``source:`` surface (rubygems); the maven rules
+  reparse the POM / settings XML in-rule. All nine wired across the
+  standards data files (owasp / esf from each rule's declared tags, the
+  rest cloned from the nearest sibling) and the provider / standards
+  docs regenerated. gomod 10 -> 12, rubygems 10 -> 13, maven 14 -> 18.
 - **GHA-107 + GHA-108: runtime egress control (harden-runner)** — Two
   rules covering the StepSecurity ``harden-runner`` egress agent.
   GHA-107 (MEDIUM) fires when a ``step-security/harden-runner`` step
@@ -630,14 +659,22 @@ API / PEP 740 surface reliably exposing the owner list and attestations.
 
 ### Weak-coverage provider deepening
 
-**Status (2026-05-30):** first batches shipped on ``dev`` for nuget
+**Status (2026-05-30):** batches shipped on ``dev`` for nuget
 (NUGET-016/018/019), composer (COMPOSER-011..014), pulumi
-(PULUMI-011..013), argocd (ARGOCD-014/015/017; 016 skipped), and pypi
-(PYPI-015..018). Still open: cargo (CARGO-011..013, needs the
+(PULUMI-011..013), argocd (ARGOCD-014/015/017; 016 skipped), pypi
+(PYPI-015..018), gomod (GOMOD-011/012), rubygems (GEM-011/012/013),
+and maven (MVN-015..018). The gomod / rubygems / maven batch needed no
+new base-loader reads beyond a ``tool``-directive parse (gomod) and a
+per-gem ``source:`` surface (rubygems); the maven rules reparse the
+POM / settings XML in-rule the way MVN-010 / MVN-012 already do, and
+MVN-016 reads the Gradle script text. GOMOD-012 ships as bare-IP /
+explicit-port host detection only: a ``http://`` scheme can't survive
+the go.mod ``//`` comment stripper and never appears in a canonical
+module path anyway. Still open: cargo (CARGO-011..013, needs the
 ``build.rs`` / ``.cargo/config.toml`` / ``Cargo.lock``-body loader
-reads), gomod (GOMOD-011/012), rubygems (GEM-011/012/013), helm
-(HELM-015/016/017, needs the ``values.yaml`` / template reader), maven
-(MVN-015..018), and the deferred fourth picks (NUGET-017, etc.).
+reads), helm (HELM-015/016/017, needs the ``values.yaml`` / template
+reader), and the deferred fourth picks (NUGET-017, GOMOD-013/014 best
+placed in the CI provider packs, GEM-014/015, MVN follow-ups, etc.).
 
 A 2026-05-29 coverage pass ranked every provider by shipped rule count
 and ran a per-provider gap analysis on the thinnest packs. The

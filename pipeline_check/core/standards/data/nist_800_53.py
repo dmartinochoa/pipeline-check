@@ -656,6 +656,10 @@ STANDARD = Standard(
         "MVN-012":  ["CM-7", "SR-3"],                    # build plugin floating
         "MVN-013":  ["CM-7", "SR-3"],                    # build extension floating
         "MVN-014":  ["SI-7", "CM-7"],                    # wrapper sha256 missing
+        "MVN-015": ["CM-7", "SR-3"],  # build-time plugin exec bound to lifecycle
+        "MVN-016": ["CM-7", "SR-3"],  # gradle allowInsecureProtocol
+        "MVN-017": ["IA-5", "SC-28"],  # settings.xml privateKey + plaintext passphrase
+        "MVN-018": ["CM-7", "SR-3"],  # distributionManagement release accepts snapshots
         "NPM-008":  ["SR-3", "SR-11", "RA-5"],           # cooldown gate (--resolve-remote)
         "NPM-009":  ["SR-3", "SR-11"],                   # new-transitive-dep diff gate
         "NPM-010":  ["SR-3", "SR-11", "RA-5"],           # OSV advisory (--resolve-remote)
@@ -702,6 +706,8 @@ STANDARD = Standard(
         "GOMOD-008": ["CM-7", "SR-3"],                   # replace without version pin
         "GOMOD-009": ["CM-7"],                           # pre-release direct require
         "GOMOD-010": ["CM-7"],                           # stale exclude directive
+        "GOMOD-011": ["CM-7"],  # tool directive build-time exec
+        "GOMOD-012": ["CM-7"],  # insecure / non-canonical module host
         # ── Cargo (CARGO-001..006) ─────────────────────────────
         "CARGO-001": ["CM-7"],                           # floating Cargo.toml version spec
         "CARGO-002": ["CM-7", "SR-3"],                  # git dep with mutable ref (no rev)
@@ -740,6 +746,9 @@ STANDARD = Standard(
         "GEM-008": ["CM-7", "SR-3"],                     # path: source in prod
         "GEM-009": ["IA-5", "SC-28"],                    # .bundle/config credentials
         "GEM-010": ["CM-7", "SR-3"],                     # dynamic Gemfile
+        "GEM-011": ["CM-7", "SR-3"],  # Bundler plugin install-time exec
+        "GEM-012": ["CM-7", "SR-3"],  # per-gem :source override
+        "GEM-013": ["CM-7", "SR-3"],  # insecure git transport
         # ── Pulumi (PULUMI-001..006) ──
         "PULUMI-001": ["SC-13", "SC-12"],                # passphrase secretsprovider
         "PULUMI-002": ["IA-5", "SC-28"],                 # secret-shaped config plaintext

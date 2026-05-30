@@ -142,6 +142,10 @@ STANDARD = Standard(
         "MVN-012":  ["Pinned-Dependencies"],                           # build plugin floating
         "MVN-013":  ["Pinned-Dependencies"],                           # build extension floating
         "MVN-014":  ["Pinned-Dependencies"],                           # wrapper sha256 missing
+        "MVN-015": ["Pinned-Dependencies"],  # build-time plugin exec bound to lifecycle
+        "MVN-016": ["Pinned-Dependencies"],  # gradle allowInsecureProtocol
+        "MVN-017": ["Token-Permissions"],  # settings.xml privateKey + plaintext passphrase
+        "MVN-018": ["Pinned-Dependencies"],  # distributionManagement release accepts snapshots
         "NPM-008":  ["Pinned-Dependencies", "Vulnerabilities"],        # cooldown gate (--resolve-remote)
         "NPM-009":  ["Pinned-Dependencies"],                           # new-transitive-dep diff gate
         "NPM-010":  ["Pinned-Dependencies", "Vulnerabilities"],        # OSV advisory (--resolve-remote)
@@ -183,6 +187,9 @@ STANDARD = Standard(
         "GEM-008": ["Pinned-Dependencies"],
         "GEM-009": ["Token-Permissions"],
         "GEM-010": ["Pinned-Dependencies"],
+        "GEM-011": ["Pinned-Dependencies"],  # Bundler plugin install-time exec
+        "GEM-012": ["Pinned-Dependencies"],  # per-gem :source override
+        "GEM-013": ["Pinned-Dependencies"],  # insecure git transport
         # Reusable workflow / services-image / cross-step pinning
         "GHA-017":  ["Pinned-Dependencies"],                           # package install insecure source
         "GHA-051":  ["Pinned-Dependencies"],                           # services / container image unpinned

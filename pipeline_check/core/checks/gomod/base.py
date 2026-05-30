@@ -126,6 +126,21 @@ class GoExclude:
 
 
 @dataclass(frozen=True, slots=True)
+class GoTool:
+    """One ``tool`` directive entry (Go 1.24+).
+
+    The ``tool`` directive promotes a module to a build-time
+    executable that ``go tool`` / ``go generate`` can run. ``path``
+    is the module / package import path; the version is resolved
+    from the matching ``require`` line, so the directive itself
+    carries only the path.
+    """
+
+    path: str
+    line_no: int = 1
+
+
+@dataclass(frozen=True, slots=True)
 class GoModFile:
     """A parsed ``go.mod`` document."""
 
@@ -141,6 +156,8 @@ class GoModFile:
     requires: tuple[GoRequire, ...] = field(default_factory=tuple)
     replaces: tuple[GoReplace, ...] = field(default_factory=tuple)
     excludes: tuple[GoExclude, ...] = field(default_factory=tuple)
+    #: ``tool`` directives (Go 1.24+). Empty when none are declared.
+    tools: tuple[GoTool, ...] = field(default_factory=tuple)
     #: ``True`` when the document parsed without raising. ``False`` on
     #: unrecoverable malformed input.
     parsed_ok: bool = True
@@ -210,6 +227,7 @@ class GoModContext:
                 requires=pf.requires,
                 replaces=pf.replaces,
                 excludes=pf.excludes,
+                tools=pf.tools,
                 parsed_ok=pf.parsed_ok,
                 has_sumfile=has_sum,
                 sumfile_path=str(sibling_sum) if has_sum else None,
@@ -240,7 +258,7 @@ class GoModBaseCheck(BaseCheck[GoModContext]):
 _COMMENT_RE = re.compile(r"//.*$", re.MULTILINE)
 #: Block-open: ``require (`` / ``replace (`` / ``exclude (``.
 _BLOCK_OPEN_RE = re.compile(
-    r"^(require|replace|exclude)\s*\(\s*$"
+    r"^(require|replace|exclude|tool)\s*\(\s*$"
 )
 #: Block-close: ``)`` on its own line.
 _BLOCK_CLOSE_RE = re.compile(r"^\s*\)\s*$")
@@ -260,6 +278,7 @@ def _parse_gomod(path: str, text: str) -> GoModFile:
     requires: list[GoRequire] = []
     replaces: list[GoReplace] = []
     excludes: list[GoExclude] = []
+    tools: list[GoTool] = []
 
     in_block: str | None = None
     for line_no, raw_line in enumerate(text.splitlines(), start=1):
@@ -304,6 +323,12 @@ def _parse_gomod(path: str, text: str) -> GoModFile:
                 ):
                     excludes.append(entry_e)
                 continue
+            if stripped.startswith("tool "):
+                if entry_t := _parse_tool_line(
+                    stripped[len("tool "):], line_no,
+                ):
+                    tools.append(entry_t)
+                continue
         else:
             if _BLOCK_CLOSE_RE.match(stripped):
                 in_block = None
@@ -319,6 +344,9 @@ def _parse_gomod(path: str, text: str) -> GoModFile:
             elif in_block == "exclude":
                 if entry_e := _parse_exclude_line(stripped, line_no):
                     excludes.append(entry_e)
+            elif in_block == "tool":
+                if entry_t := _parse_tool_line(stripped, line_no):
+                    tools.append(entry_t)
 
     parsed_ok = bool(module_path)
     return GoModFile(
@@ -327,6 +355,7 @@ def _parse_gomod(path: str, text: str) -> GoModFile:
         requires=tuple(requires),
         replaces=tuple(replaces),
         excludes=tuple(excludes),
+        tools=tuple(tools),
         parsed_ok=parsed_ok,
     )
 
@@ -375,6 +404,17 @@ def _parse_exclude_line(
     return GoExclude(
         path=tokens[0], version=tokens[1], line_no=line_no,
     )
+
+
+def _parse_tool_line(
+    body: str, line_no: int,
+) -> GoTool | None:
+    # A ``tool`` directive carries a single package / module path;
+    # the version is resolved from the matching ``require`` line.
+    tokens = body.split()
+    if not tokens:
+        return None
+    return GoTool(path=tokens[0], line_no=line_no)
 
 
 # ── Helpers exposed to rule modules ───────────────────────────────

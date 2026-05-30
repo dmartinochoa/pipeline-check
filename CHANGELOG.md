@@ -12,6 +12,21 @@ release commit collapses this section into `## [X.Y.Z] - <date>`.
 
 ### Added
 
+- **Weak-coverage provider deepening: gomod, rubygems, maven.** Nine
+  rules continuing the coverage-pass deepening, the three packs that
+  needed no new base-loader reads. gomod: GOMOD-011 (`tool` directive
+  pulls a build-time executable, MEDIUM), GOMOD-012 (`require` /
+  `replace` targets a bare-IP / explicit-port host, HIGH); 10 -> 12.
+  rubygems: GEM-011 (Bundler `plugin` runs at install time, HIGH),
+  GEM-012 (per-gem `:source` override, MEDIUM), GEM-013 (git gem over
+  `git://` / `http://`, HIGH); 10 -> 13. maven: MVN-015 (command-running
+  plugin bound to the build lifecycle, build-time RCE that survives a
+  version pin, HIGH), MVN-016 (`build.gradle` `allowInsecureProtocol =
+  true`, HIGH), MVN-017 (`<server>` with a `<privateKey>` + plaintext
+  `<passphrase>`, HIGH), MVN-018 (`distributionManagement` release repo
+  accepts `-SNAPSHOT` artifacts, MEDIUM); 14 -> 18. All nine mapped
+  across the standards registries and the provider / standards docs
+  regenerated.
 - **NuGet dependency-confusion and build-execution batch (NUGET-016 /
   NUGET-018 / NUGET-019, HIGH).** NUGET-016 flags a `NuGet.config` that
   adds a private feed without a `<clear/>`, so `nuget.org` is still

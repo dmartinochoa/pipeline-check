@@ -558,6 +558,10 @@ STANDARD = Standard(
         "MVN-012":  ["CICD-SEC-3", "CICD-SEC-7"],  # build plugin floating
         "MVN-013":  ["CICD-SEC-3", "CICD-SEC-7"],  # build extension floating
         "MVN-014":  ["CICD-SEC-3"],                # Maven Wrapper sha256 missing
+        "MVN-015": ["CICD-SEC-1", "CICD-SEC-3"],  # build-time plugin exec bound to lifecycle
+        "MVN-016": ["CICD-SEC-3", "CICD-SEC-5"],  # gradle allowInsecureProtocol
+        "MVN-017": ["CICD-SEC-6", "CICD-SEC-10"],  # settings.xml privateKey + plaintext passphrase
+        "MVN-018": ["CICD-SEC-3"],  # distributionManagement release accepts snapshots
         # nuget (csproj + NuGet.config static analysis)
         "NUGET-001": ["CICD-SEC-3"],                # floating NuGet version range
         "NUGET-002": ["CICD-SEC-3"],                # wildcard prerelease version
@@ -590,6 +594,8 @@ STANDARD = Standard(
         "GOMOD-008": ["CICD-SEC-3", "CICD-SEC-5"], # replace directive without version pin
         "GOMOD-009": ["CICD-SEC-3"],               # pre-release direct require
         "GOMOD-010": ["CICD-SEC-3"],               # stale exclude directive
+        "GOMOD-011": ["CICD-SEC-3", "CICD-SEC-4"],  # tool directive build-time exec
+        "GOMOD-012": ["CICD-SEC-3", "CICD-SEC-5"],  # insecure / non-canonical module host
         # ── Cargo / Rust (CARGO-001..006) ──
         "CARGO-001": ["CICD-SEC-3"],               # floating Cargo.toml version spec
         "CARGO-002": ["CICD-SEC-3", "CICD-SEC-5"], # git dep with mutable ref (no rev)
@@ -628,6 +634,9 @@ STANDARD = Standard(
         "GEM-008": ["CICD-SEC-3", "CICD-SEC-5"], # path: source in prod
         "GEM-009": ["CICD-SEC-6", "CICD-SEC-10"], # .bundle/config credentials
         "GEM-010": ["CICD-SEC-3"],               # dynamic Gemfile
+        "GEM-011": ["CICD-SEC-3", "CICD-SEC-1"],  # Bundler plugin install-time exec
+        "GEM-012": ["CICD-SEC-3", "CICD-SEC-5"],  # per-gem :source override
+        "GEM-013": ["CICD-SEC-3", "CICD-SEC-5"],  # insecure git transport
         # ── Pulumi (PULUMI-001..006) ──
         "PULUMI-001": ["CICD-SEC-6", "CICD-SEC-7"], # passphrase secretsprovider
         "PULUMI-002": ["CICD-SEC-6"],               # secret-shaped config plaintext

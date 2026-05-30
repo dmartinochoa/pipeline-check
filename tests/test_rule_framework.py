@@ -60,12 +60,12 @@ EXPECTED_RULE_COUNTS: dict[str, int] = {
     "scm":        55,
     "npm":        16,
     "pypi":       17,
-    "maven":      14,
+    "maven":      18,
     "nuget":      18,
-    "gomod":      10,
+    "gomod":      12,
     "cargo":      10,
     "composer":   14,
-    "rubygems":   10,
+    "rubygems":   13,
     "pulumi":     13,
 }
 

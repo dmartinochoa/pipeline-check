@@ -639,6 +639,10 @@ STANDARD = Standard(
         "MVN-012":  ["1.4.1"],                     # build plugin floating
         "MVN-013":  ["1.4.1"],                     # build extension floating
         "MVN-014":  ["1.4.1"],                     # wrapper sha256 missing
+        "MVN-015": ["1.4.1"],  # build-time plugin exec bound to lifecycle
+        "MVN-016": ["1.4.1"],  # gradle allowInsecureProtocol
+        "MVN-017": ["1.5.1"],  # settings.xml privateKey + plaintext passphrase
+        "MVN-018": ["1.4.1"],  # distributionManagement release accepts snapshots
         "NPM-008":  ["1.4.1", "3.1.3"],            # cooldown gate (--resolve-remote)
         "NPM-009":  ["1.4.1", "3.1.3"],            # new-transitive-dep diff gate
         "NPM-010":  ["1.4.1", "3.1.3"],            # OSV advisory (--resolve-remote)
@@ -682,6 +686,8 @@ STANDARD = Standard(
         "GOMOD-008": ["1.4.1"],                    # replace without version pin
         "GOMOD-009": ["1.4.1"],                    # pre-release direct require
         "GOMOD-010": ["1.4.1"],                    # stale exclude directive
+        "GOMOD-011": ["1.4.1"],  # tool directive build-time exec
+        "GOMOD-012": ["1.4.1"],  # insecure / non-canonical module host
         # ── Cargo / Rust (CARGO-001..006) ──
         "CARGO-001": ["1.4.1"],                    # floating Cargo.toml version spec
         "CARGO-002": ["1.4.1"],                    # git dep with mutable ref (no rev)
@@ -720,6 +726,9 @@ STANDARD = Standard(
         "GEM-008": ["1.4.1"],                      # path: source in prod
         "GEM-009": ["1.4.1"],                      # .bundle/config credentials
         "GEM-010": ["1.4.1"],                      # dynamic Gemfile
+        "GEM-011": ["1.4.1"],  # Bundler plugin install-time exec
+        "GEM-012": ["1.4.1"],  # per-gem :source override
+        "GEM-013": ["1.4.1"],  # insecure git transport
         # ── Pulumi (PULUMI-001..006) ──
         "PULUMI-001": ["1.5.1"],                   # passphrase secretsprovider
         "PULUMI-002": ["1.5.1"],                   # secret-shaped config plaintext

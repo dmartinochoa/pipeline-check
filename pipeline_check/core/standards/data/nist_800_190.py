@@ -365,6 +365,10 @@ STANDARD = Standard(
         "MVN-012":  ["4.1.3"],                     # build plugin floating
         "MVN-013":  ["4.1.3"],                     # build extension floating
         "MVN-014":  ["4.1.3"],                     # wrapper sha256 missing
+        "MVN-015": ["4.1.3"],  # build-time plugin exec bound to lifecycle
+        "MVN-016": ["4.1.3"],  # gradle allowInsecureProtocol
+        "MVN-017": ["4.1.4"],  # settings.xml privateKey + plaintext passphrase
+        "MVN-018": ["4.1.3"],  # distributionManagement release accepts snapshots
         "NPM-008":  ["4.1.3"],                     # cooldown gate (--resolve-remote)
         "NPM-009":  ["4.1.5"],                     # new-transitive-dep diff gate
         "NPM-010":  ["4.1.3"],                     # OSV advisory (--resolve-remote)
@@ -416,6 +420,9 @@ STANDARD = Standard(
         "GEM-008": ["4.1.3"],
         "GEM-009": ["4.4.5"],
         "GEM-010": ["4.1.3"],
+        "GEM-011": ["4.1.3"],  # Bundler plugin install-time exec
+        "GEM-012": ["4.1.3"],  # per-gem :source override
+        "GEM-013": ["4.1.3"],  # insecure git transport
         # ── OCI image manifest gaps ──────────────────────────────
         # OCI-001..003/005 are image-provenance metadata gaps —
         # untrusted-image surface (4.1.5). OCI-004 foreign-layer
