@@ -161,6 +161,10 @@ def test_npm_post_filter_populates_publish_times_and_osv(tmp_path):
 
 
 def test_pypi_post_filter_populates_publish_times_and_osv(tmp_path):
+    from pipeline_check.core.checks._primitives.scorecard import (
+        ScorecardResult,
+    )
+
     req = tmp_path / "requirements.txt"
     req.write_text("requests==2.31.0\nclick>=8.0\n")
     fake_times = {
@@ -169,8 +173,16 @@ def test_pypi_post_filter_populates_publish_times_and_osv(tmp_path):
     fake_osv: dict[tuple[str, str], list[object]] = {
         ("requests", "2.31.0"): [],
     }
+    fake_prov = {"requests": False, "click": True}
+    fake_slugs = {"requests": "psf/requests"}
+    fake_scorecards = {
+        "requests": ScorecardResult(score=3.0, dangerous_workflow_failed=False),
+    }
     provider = _providers.get("pypi")
     ctx = provider.build_context(pypi_path=str(req))
+    # Patch every network entry point: publish-times, OSV, and the
+    # behavioral-signal passes (provenance / repo-slug / Scorecard).
+    # The test must never touch the real registry / Scorecard API.
     with (
         patch(
             "pipeline_check.core.providers.pypi.fetch_publish_times",
@@ -180,12 +192,29 @@ def test_pypi_post_filter_populates_publish_times_and_osv(tmp_path):
             "pipeline_check.core.checks._primitives.osv_fetcher.query_osv_batch",
             return_value=fake_osv,
         ) as mock_osv,
+        patch(
+            "pipeline_check.core.providers.pypi.fetch_provenance",
+            return_value=(fake_prov, []),
+        ) as mock_prov,
+        patch(
+            "pipeline_check.core.providers.pypi.fetch_repo_slugs",
+            return_value=(fake_slugs, []),
+        ) as mock_slugs,
+        patch(
+            "pipeline_check.core.checks._primitives.scorecard.fetch_scorecards",
+            return_value=(fake_scorecards, []),
+        ) as mock_sc,
     ):
         provider.post_filter(ctx, resolve_remote=True, no_cache=True)
     mock_fetch.assert_called_once()
     mock_osv.assert_called_once()
+    mock_prov.assert_called_once()
+    mock_slugs.assert_called_once()
+    mock_sc.assert_called_once()
     assert ctx.publish_times == fake_times
     assert ctx.osv_advisories == fake_osv
+    assert ctx.provenance == fake_prov
+    assert ctx.scorecards == fake_scorecards
 
 
 # ── post_filter: nuget with resolve_remote=True ──────────────────

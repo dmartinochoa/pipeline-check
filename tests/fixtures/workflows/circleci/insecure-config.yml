@@ -74,9 +74,12 @@ jobs:
     # CC-010: Self-hosted runner without ephemeral marker.
     resource_class: myorg/self-hosted-linux-large
     # CC-005: AWS long-lived access keys in environment block.
+    # CC-033: Go module checksum / sum-db verification disabled.
     environment:
       AWS_ACCESS_KEY_ID: "${AWS_KEY}"
       AWS_SECRET_ACCESS_KEY: "${AWS_SECRET}"
+      GOSUMDB: "off"
+      GOFLAGS: -insecure
     steps:
       - checkout
       - run: npm run build

@@ -72,10 +72,12 @@ STANDARD = Standard(
         # Left unmapped on purpose.
         # ── GV.SC. Supply-chain risk management ────────────────────
         "GHA-001":  ["GV.SC-05", "GV.SC-07"],
+        "GHA-110": ["GV.SC-07"],  # CI env disables Go module verification
         "GHA-021":  ["GV.SC-05"],
         "GHA-025":  ["GV.SC-05"],
         "GHA-029":  ["GV.SC-05"],
         "GL-001":   ["GV.SC-05", "GV.SC-07"],
+        "GL-037": ["GV.SC-07"],  # CI env disables Go module verification
         "GL-005":   ["GV.SC-05"],
         "GL-009":   ["GV.SC-05"],
         "GL-021":   ["GV.SC-05"],
@@ -97,6 +99,7 @@ STANDARD = Standard(
         "JF-021":   ["GV.SC-05"],
         "JF-031":   ["GV.SC-05"],
         "CC-001":   ["GV.SC-05", "GV.SC-07"],
+        "CC-033": ["GV.SC-07"],  # CI env disables Go module verification
         "CC-003":   ["GV.SC-05"],
         "CC-021":   ["GV.SC-05"],
         "CC-028":   ["GV.SC-05"],
@@ -410,6 +413,9 @@ STANDARD = Standard(
         "HELM-012": ["GV.SC-04"],   # deprecated without successor
         "HELM-013": ["GV.SC-04"],   # invalid chart type
         "HELM-014": ["GV.SC-05"],   # known-compromised dep
+        "HELM-015": ["GV.SC-07"],  # oci:// dependency not digest-pinned
+        "HELM-016": ["PR.DS-01"],  # default secret in values.yaml
+        "HELM-017": ["GV.SC-07"],  # tpl of an untrusted .Values value
         # ── Dockerfile, image-build supply chain. ─────────────────
         # Pinning + verification rules tie to GV.SC-05 (supply chain
         # requirements established and verified). Privileged / root
@@ -604,6 +610,8 @@ STANDARD = Standard(
         # ── Argo CD (GitOps deployment) ──
         "ARGOCD-010": ["GV.SC-07"],             # mutable targetRevision
         "ARGOCD-017": ["GV.SC-07"],  # in-cluster mutable source
+        "ARGOCD-016": ["GV.SC-07"],  # Helm valueFiles from a remote URL
+        "ARGOCD-018": ["GV.SC-07"],  # custom resource health / action Lua
         "ARGOCD-011": ["PR.AA-05"],             # cluster-resource wildcard
         "ARGOCD-012": ["GV.SC-07"],             # no sync windows
         "ARGOCD-013": ["GV.SC-07"],             # no revision history cap
@@ -719,6 +727,8 @@ STANDARD = Standard(
         "PYPI-002": ["GV.SC-05"],               # hash pinning missing
         "PYPI-003": ["GV.SC-05", "PR.DS-02"],   # http index / --trusted-host
         "PYPI-018": ["GV.SC-05", "PR.DS-02"],  # --no-binary forces sdist build
+        "PYPI-019": ["GV.SC-05", "GV.SC-07", "PR.PS-02"],  # missing PEP 740 build provenance
+        "PYPI-020": ["GV.SC-05", "GV.SC-07", "PR.PS-02"],  # low OpenSSF Scorecard upstream
         "PYPI-004": ["GV.SC-05"],               # VCS dep without commit SHA
         "PYPI-015": ["GV.SC-05"],  # direct artifact URL
         "PYPI-005": ["GV.SC-05"],               # --extra-index-url (dep confusion)
@@ -740,6 +750,10 @@ STANDARD = Standard(
         "MVN-012":  ["GV.SC-07"],               # build plugin floating
         "MVN-013":  ["GV.SC-07"],               # build extension floating
         "MVN-014":  ["GV.SC-07"],               # wrapper sha256 missing
+        "MVN-015": ["GV.SC-07"],  # build-time plugin exec bound to lifecycle
+        "MVN-016": ["GV.SC-07"],  # gradle allowInsecureProtocol
+        "MVN-017": ["PR.DS-01"],  # settings.xml privateKey + plaintext passphrase
+        "MVN-018": ["GV.SC-07"],  # distributionManagement release accepts snapshots
         "NPM-008":  ["GV.SC-05", "GV.SC-07", "PR.PS-02"],  # cooldown gate (--resolve-remote)
         "NPM-009":  ["GV.SC-05"],               # new-transitive-dep diff gate
         "NPM-010":  ["GV.SC-05", "GV.SC-07", "PR.PS-02"],  # OSV advisory (--resolve-remote)
@@ -772,6 +786,7 @@ STANDARD = Standard(
         "NUGET-014": ["PR.DS-01"],              # source URL credentials
         "NUGET-015": ["GV.SC-07"],              # VersionOverride breaks CPM
         "NUGET-016": ["GV.SC-05"],              # missing <clear/> inherits public gallery
+        "NUGET-017": ["GV.SC-05"],  # public gallery active alongside private feed, not disabled
         "NUGET-018": ["GV.SC-07"],              # build-time MSBuild execution
         "NUGET-019": ["GV.SC-07", "GV.SC-05"],  # require mode, no trusted signers
         # ── Go modules ─────────────────────────────────────────
@@ -786,6 +801,8 @@ STANDARD = Standard(
         "GOMOD-008": ["GV.SC-07"],              # replace without version pin
         "GOMOD-009": ["GV.SC-07"],              # pre-release direct require
         "GOMOD-010": ["GV.SC-07"],              # stale exclude directive
+        "GOMOD-011": ["GV.SC-07"],  # tool directive build-time exec
+        "GOMOD-012": ["GV.SC-07"],  # insecure / non-canonical module host
         # ── Cargo ──────────────────────────────────────────────
         "CARGO-001": ["GV.SC-07"],              # floating Cargo.toml version spec
         "CARGO-002": ["GV.SC-07", "GV.SC-08"],  # git dep with mutable ref (no rev)
@@ -798,6 +815,10 @@ STANDARD = Standard(
         "CARGO-008": ["GV.SC-07"],              # patch.crates-io substitution
         "CARGO-009": ["GV.SC-07"],              # workspace deps floating
         "CARGO-010": ["GV.SC-07"],              # missing rust-version
+        "CARGO-011": ["GV.SC-07"],  # build.rs compile-time egress / exec
+        "CARGO-012": ["GV.SC-07"],  # .cargo/config.toml source override / build flags
+        "CARGO-013": ["GV.SC-07"],  # Cargo.lock off-crates.io source
+        "CARGO-014": ["GV.SC-07"],  # no supply-chain audit-gate config
         # ── Composer / PHP ──
         "COMPOSER-001": ["GV.SC-05", "GV.SC-07"],
         "COMPOSER-002": ["GV.SC-05", "GV.SC-07"],
@@ -824,6 +845,9 @@ STANDARD = Standard(
         "GEM-008": ["GV.SC-05", "GV.SC-07"],
         "GEM-009": ["PR.DS-01", "PR.AA-01"],
         "GEM-010": ["GV.SC-05", "GV.SC-07"],
+        "GEM-011": ["GV.SC-07"],  # Bundler plugin install-time exec
+        "GEM-012": ["GV.SC-07"],  # per-gem :source override
+        "GEM-013": ["GV.SC-07"],  # insecure git transport
         # ── Pulumi (PULUMI-001..006) ──
         "PULUMI-001": ["PR.DS-01", "PR.AA-01"],  # passphrase secretsprovider
         "PULUMI-002": ["PR.DS-01"],              # secret-shaped config plaintext
@@ -836,6 +860,7 @@ STANDARD = Standard(
         "PULUMI-007": ["PR.AA-05"],              # public-access cloud resource
         "PULUMI-008": ["GV.SC-07"],              # shell-exec with non-constant input
         "PULUMI-013": ["GV.SC-07"],  # dynamic provider deploy-time code
+        "PULUMI-014": ["GV.SC-07"],  # ESC environment imported without a qualifier
         "PULUMI-009": ["GV.SC-07"],              # runtime / source mismatch
         "PULUMI-012": ["GV.SC-07"],  # plugin version unpinned
         "PULUMI-010": ["PR.DS-01"],              # stack orphaned encryption salt

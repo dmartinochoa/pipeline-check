@@ -145,6 +145,7 @@ STANDARD = Standard(
         "S3-005":   ["PS.1.1"],                        # SecureTransport deny
         # GitHub Actions
         "GHA-001":  ["PW.4.1", "PW.4.4"],              # action not pinned to SHA
+        "GHA-110": ["PW.4.4"],  # CI env disables Go module verification
         "GHA-002":  ["PO.5.1", "PW.9.1"],              # pull_request_target with PR head
         "GHA-003":  ["PW.6.1", "PW.9.1"],              # script injection
         "GHA-004":  ["PO.5.1"],                        # no explicit permissions
@@ -234,6 +235,7 @@ STANDARD = Standard(
         "GHA-096":  ["PW.4.1", "PW.4.4", "RV.1.1"],    # known-vulnerable action ref (GHSA)
         # GitLab CI
         "GL-001":   ["PW.4.1", "PW.4.4"],
+        "GL-037": ["PW.4.4"],  # CI env disables Go module verification
         "GL-002":   ["PW.6.1", "PW.9.1"],
         "GL-003":   ["PS.1.1"],
         "GL-004":   ["PO.5.1"],
@@ -333,6 +335,7 @@ STANDARD = Standard(
         "ADO-030":  ["PW.6.1", "PW.9.1"],              # pool interpolates untrusted
         # CircleCI
         "CC-001":   ["PW.4.1", "PW.4.4"],              # orb not pinned to SHA
+        "CC-033": ["PW.4.4"],  # CI env disables Go module verification
         "CC-002":   ["PW.6.1", "PW.9.1"],              # script injection
         "CC-003":   ["PW.4.1", "PW.4.4"],              # image not pinned to digest
         "CC-004":   ["PS.1.1"],                        # unrestricted context
@@ -513,6 +516,9 @@ STANDARD = Standard(
         "HELM-012": ["PW.4.4"],                        # deprecated without successor
         "HELM-013": ["PW.4.4"],                        # invalid chart type
         "HELM-014": ["PW.4.4", "RV.1.1"],              # known-compromised dependency
+        "HELM-015": ["PW.4.4"],  # oci:// dependency not digest-pinned
+        "HELM-016": ["PS.1.1"],  # default secret in values.yaml
+        "HELM-017": ["PW.4.4"],  # tpl of an untrusted .Values value
         # ── Cloud Build (GCB) ────────────────────────────────────
         "GCB-001": ["PW.4.1", "PW.4.4"],               # step image not pinned
         "GCB-002": ["PS.1.1"],                         # plaintext env secret
@@ -579,6 +585,10 @@ STANDARD = Standard(
         "MVN-012":  ["PW.4.4"],                        # build plugin floating
         "MVN-013":  ["PW.4.4"],                        # build extension floating
         "MVN-014":  ["PS.1.1", "PW.4.4"],              # wrapper sha256 missing
+        "MVN-015": ["PW.4.4"],  # build-time plugin exec bound to lifecycle
+        "MVN-016": ["PW.4.4"],  # gradle allowInsecureProtocol
+        "MVN-017": ["PS.1.1"],  # settings.xml privateKey + plaintext passphrase
+        "MVN-018": ["PW.4.4"],  # distributionManagement release accepts snapshots
         "NPM-008":  ["PW.4.1", "PW.4.4", "RV.1.1"],    # cooldown gate (--resolve-remote)
         "NPM-009":  ["PW.4.1", "PW.4.4"],              # new-transitive-dep diff gate
         "NPM-010":  ["PW.4.1", "PW.4.4", "RV.1.1"],    # OSV advisory (--resolve-remote)
@@ -608,6 +618,7 @@ STANDARD = Standard(
         "NUGET-014": ["PS.1.1"],                       # source URL credentials
         "NUGET-015": ["PO.5.1", "PW.4.4"],             # VersionOverride breaks CPM
         "NUGET-016": ["PW.4.1", "PW.4.4"],             # missing <clear/> inherits public gallery
+        "NUGET-017": ["PW.4.1", "PW.4.4"],  # public gallery active alongside private feed, not disabled
         "NUGET-018": ["PW.4.4"],                       # build-time MSBuild execution
         "NUGET-019": ["PW.4.4", "PS.3.2"],             # require mode, no trusted signers
         # ── Go modules (GOMOD-001..006) ──
@@ -622,6 +633,8 @@ STANDARD = Standard(
         "GOMOD-008": ["PO.5.1", "PW.4.4"],             # replace without version pin
         "GOMOD-009": ["PW.4.4"],                       # pre-release direct require
         "GOMOD-010": ["PO.5.1"],                       # stale exclude directive
+        "GOMOD-011": ["PW.4.4"],  # tool directive build-time exec
+        "GOMOD-012": ["PW.4.4"],  # insecure / non-canonical module host
         # ── Cargo / Rust (CARGO-001..006) ──
         "CARGO-001": ["PW.4.4"],                       # floating Cargo.toml version spec
         "CARGO-002": ["PO.5.1", "PW.4.4"],             # git dep with mutable ref (no rev)
@@ -634,6 +647,10 @@ STANDARD = Standard(
         "CARGO-008": ["PO.5.1", "PW.4.4"],             # patch.crates-io substitution
         "CARGO-009": ["PW.4.4"],                       # workspace deps floating
         "CARGO-010": ["PO.5.1"],                       # missing rust-version
+        "CARGO-011": ["PW.4.4"],  # build.rs compile-time egress / exec
+        "CARGO-012": ["PW.4.4"],  # .cargo/config.toml source override / build flags
+        "CARGO-013": ["PW.4.4"],  # Cargo.lock off-crates.io source
+        "CARGO-014": ["PW.4.4"],  # no supply-chain audit-gate config
         # ── Composer / PHP ──
         "COMPOSER-001": ["PW.4.4", "RV.1.1"],
         "COMPOSER-002": ["PW.4.4", "RV.1.1"],
@@ -660,6 +677,9 @@ STANDARD = Standard(
         "GEM-008": ["PW.4.4"],
         "GEM-009": ["PS.1.1", "PO.5.1"],
         "GEM-010": ["PW.4.4"],
+        "GEM-011": ["PW.4.4"],  # Bundler plugin install-time exec
+        "GEM-012": ["PW.4.4"],  # per-gem :source override
+        "GEM-013": ["PW.4.4"],  # insecure git transport
         # ── Pulumi (PULUMI-001..006) ──
         "PULUMI-001": ["PS.1.1", "PO.5.1"],             # passphrase secretsprovider
         "PULUMI-002": ["PS.1.1"],                       # secret-shaped config plaintext
@@ -672,6 +692,7 @@ STANDARD = Standard(
         "PULUMI-007": ["PO.5.1"],                       # public-access cloud resource
         "PULUMI-008": ["PW.4.4", "PO.5.1"],             # shell-exec with non-constant input
         "PULUMI-013": ["PW.4.4", "PO.5.1"],  # dynamic provider deploy-time code
+        "PULUMI-014": ["PW.4.4", "PO.5.1"],  # ESC environment imported without a qualifier
         "PULUMI-009": ["PO.3.3"],                       # runtime / source mismatch
         "PULUMI-012": ["PO.3.3"],  # plugin version unpinned
         "PULUMI-010": ["PS.1.1"],                       # stack orphaned encryption salt

@@ -119,6 +119,23 @@ class CargoFile:
     #: lockfile lives at the workspace root, not the per-crate
     #: manifest.
     is_workspace_root: bool = False
+    #: Raw ``Cargo.lock`` body when present (CARGO-013 reads the
+    #: ``[[package]]`` ``source`` entries). Empty when absent.
+    lockfile_text: str = ""
+    #: Sibling ``build.rs`` path + body when present (CARGO-011 reads
+    #: the compile-time egress / exec idioms).
+    build_rs_path: str | None = None
+    build_rs_text: str = ""
+    #: Nearest ``.cargo/config.toml`` path + parsed body, discovered by
+    #: walking up to the scan root (CARGO-012 audits the
+    #: source-replacement + build-flag keys). Empty when absent.
+    cargo_config_path: str | None = None
+    cargo_config: dict[str, Any] = field(default_factory=dict)
+    #: ``True`` when a committed supply-chain audit-gate config
+    #: (cargo-deny ``deny.toml`` / cargo-vet ``supply-chain/`` /
+    #: cargo-audit ``audit.toml``) was found at or above the manifest
+    #: dir, bounded by the scan root. CARGO-014 reads this.
+    has_audit_gate: bool = False
 
 
 class CargoContext:
@@ -150,6 +167,7 @@ class CargoContext:
                 and "target" not in p.parts
                 and ".git" not in p.parts
             )
+        scan_root = root if root.is_dir() else root.parent
         files: list[CargoFile] = []
         warnings: list[str] = []
         skipped = 0
@@ -175,6 +193,23 @@ class CargoContext:
                 if workspace_lock.is_file():
                     has_lock = True
                     sibling_lock = workspace_lock
+            lockfile_text = ""
+            if has_lock:
+                try:
+                    lockfile_text = sibling_lock.read_text(encoding="utf-8")
+                except (OSError, UnicodeDecodeError):
+                    pass
+            build_rs_path: str | None = None
+            build_rs_text = ""
+            build_rs = f.parent / "build.rs"
+            if build_rs.is_file():
+                try:
+                    build_rs_text = build_rs.read_text(encoding="utf-8")
+                    build_rs_path = str(build_rs)
+                except (OSError, UnicodeDecodeError):
+                    pass
+            cfg_path, cfg_data = _discover_cargo_config(f.parent, scan_root)
+            has_audit_gate = _has_cargo_audit_gate(f.parent, scan_root)
             files.append(CargoFile(
                 path=pf.path, text=pf.text,
                 crate_name=pf.crate_name,
@@ -183,6 +218,12 @@ class CargoContext:
                 has_lockfile=has_lock,
                 lockfile_path=str(sibling_lock) if has_lock else None,
                 is_workspace_root=pf.is_workspace_root,
+                lockfile_text=lockfile_text,
+                build_rs_path=build_rs_path,
+                build_rs_text=build_rs_text,
+                cargo_config_path=cfg_path,
+                cargo_config=cfg_data,
+                has_audit_gate=has_audit_gate,
             ))
         ctx = cls(files)
         ctx.files_skipped = skipped
@@ -350,6 +391,74 @@ def _parse_cargo(path: str, text: str) -> CargoFile:
         dependencies=tuple(deps), parsed_ok=True,
         is_workspace_root=is_workspace_root,
     )
+
+
+def _discover_cargo_config(
+    manifest_dir: Path, scan_root: Path,
+) -> tuple[str | None, dict[str, Any]]:
+    """Find and parse the nearest ``.cargo/config.toml`` (or the legacy
+    ``.cargo/config``) at or above *manifest_dir*, bounded by
+    *scan_root* so the walk never reads outside the scanned tree.
+
+    Cargo searches the manifest directory and its ancestors for a
+    ``.cargo/config.toml``; this replicates that walk but stops at the
+    scan root (it never reads ``~/.cargo/config.toml`` or other
+    out-of-tree ancestors, keeping the scanner hermetic). Returns
+    ``(path, parsed_table)`` for the nearest config found, or
+    ``(None, {})`` when none exists.
+    """
+    for d in _dir_chain(manifest_dir, scan_root):  # nearest-first
+        for name in ("config.toml", "config"):
+            cfg = d / ".cargo" / name
+            if not cfg.is_file():
+                continue
+            try:
+                data = tomllib.loads(cfg.read_text(encoding="utf-8"))
+            except (OSError, UnicodeDecodeError, tomllib.TOMLDecodeError):
+                return str(cfg), {}
+            return str(cfg), data if isinstance(data, dict) else {}
+    return None, {}
+
+
+def _dir_chain(manifest_dir: Path, scan_root: Path) -> list[Path]:
+    """Directories from *manifest_dir* up to *scan_root* (inclusive),
+    nearest first; bounded so the walk never leaves the scan root."""
+    try:
+        scan_resolved = scan_root.resolve()
+        cur = manifest_dir.resolve()
+    except OSError:
+        return []
+    chain: list[Path] = []
+    while True:
+        chain.append(cur)
+        if cur == scan_resolved:
+            break
+        parent = cur.parent
+        if parent == cur:
+            break
+        try:
+            parent.relative_to(scan_resolved)
+        except ValueError:
+            break
+        cur = parent
+    return chain
+
+
+def _has_cargo_audit_gate(manifest_dir: Path, scan_root: Path) -> bool:
+    """Return ``True`` when a committed supply-chain audit-gate config
+    is present at or above *manifest_dir* (bounded by *scan_root*):
+    cargo-deny (``deny.toml``), cargo-vet (``supply-chain/config.toml``),
+    or cargo-audit (``audit.toml`` / ``.cargo/audit.toml``)."""
+    for d in _dir_chain(manifest_dir, scan_root):
+        if (d / "deny.toml").is_file():
+            return True
+        if (d / "supply-chain" / "config.toml").is_file():
+            return True
+        if (d / "audit.toml").is_file():
+            return True
+        if (d / ".cargo" / "audit.toml").is_file():
+            return True
+    return False
 
 
 # ── Helpers exposed to rule modules ───────────────────────────────

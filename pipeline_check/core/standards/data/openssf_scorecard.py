@@ -56,6 +56,7 @@ STANDARD = Standard(
         "ECR-006":  ["Pinned-Dependencies"],                           # ECR pull-through untrusted upstream
         "CA-002":   ["Pinned-Dependencies"],                           # CodeArtifact public upstream
         "GHA-001":  ["Pinned-Dependencies"],
+        "GHA-110": ["Pinned-Dependencies"],  # CI env disables Go module verification
         "GHA-040":  ["Pinned-Dependencies"],                           # known-compromised action ref
         "GHA-018":  ["Pinned-Dependencies"],                           # insecure package registry
         "GHA-025":  ["Pinned-Dependencies"],
@@ -68,6 +69,7 @@ STANDARD = Standard(
         "GHA-094":  ["Pinned-Dependencies"],                           # stale-action-refs
         "GHA-096":  ["Pinned-Dependencies"],                           # known-vulnerable action ref (GHSA)
         "GL-001":   ["Pinned-Dependencies"],
+        "GL-037": ["Pinned-Dependencies"],  # CI env disables Go module verification
         "GL-005":   ["Pinned-Dependencies"],
         "GL-009":   ["Pinned-Dependencies"],
         "GL-018":   ["Pinned-Dependencies"],
@@ -85,6 +87,7 @@ STANDARD = Standard(
         "JF-009":   ["Pinned-Dependencies"],
         "JF-018":   ["Pinned-Dependencies"],
         "CC-001":   ["Pinned-Dependencies"],
+        "CC-033": ["Pinned-Dependencies"],  # CI env disables Go module verification
         "CC-003":   ["Pinned-Dependencies"],
         "CC-018":   ["Pinned-Dependencies"],
         "CC-029":   ["Pinned-Dependencies"],
@@ -142,6 +145,10 @@ STANDARD = Standard(
         "MVN-012":  ["Pinned-Dependencies"],                           # build plugin floating
         "MVN-013":  ["Pinned-Dependencies"],                           # build extension floating
         "MVN-014":  ["Pinned-Dependencies"],                           # wrapper sha256 missing
+        "MVN-015": ["Pinned-Dependencies"],  # build-time plugin exec bound to lifecycle
+        "MVN-016": ["Pinned-Dependencies"],  # gradle allowInsecureProtocol
+        "MVN-017": ["Token-Permissions"],  # settings.xml privateKey + plaintext passphrase
+        "MVN-018": ["Pinned-Dependencies"],  # distributionManagement release accepts snapshots
         "NPM-008":  ["Pinned-Dependencies", "Vulnerabilities"],        # cooldown gate (--resolve-remote)
         "NPM-009":  ["Pinned-Dependencies"],                           # new-transitive-dep diff gate
         "NPM-010":  ["Pinned-Dependencies", "Vulnerabilities"],        # OSV advisory (--resolve-remote)
@@ -164,6 +171,7 @@ STANDARD = Standard(
         "NUGET-014": ["Token-Permissions"],
         "NUGET-015": ["Pinned-Dependencies"],
         "NUGET-016": ["Pinned-Dependencies"],
+        "NUGET-017": ["Pinned-Dependencies"],  # public gallery active alongside private feed, not disabled
         "NUGET-018": ["Dangerous-Workflow"],
         # ── Composer / PHP ──
         "COMPOSER-001": ["Pinned-Dependencies"],
@@ -183,6 +191,9 @@ STANDARD = Standard(
         "GEM-008": ["Pinned-Dependencies"],
         "GEM-009": ["Token-Permissions"],
         "GEM-010": ["Pinned-Dependencies"],
+        "GEM-011": ["Pinned-Dependencies"],  # Bundler plugin install-time exec
+        "GEM-012": ["Pinned-Dependencies"],  # per-gem :source override
+        "GEM-013": ["Pinned-Dependencies"],  # insecure git transport
         # Reusable workflow / services-image / cross-step pinning
         "GHA-017":  ["Pinned-Dependencies"],                           # package install insecure source
         "GHA-051":  ["Pinned-Dependencies"],                           # services / container image unpinned
@@ -345,10 +356,15 @@ STANDARD = Standard(
         # ── Argo CD (GitOps deployment) ──
         "ARGOCD-010": ["Pinned-Dependencies"],                         # mutable targetRevision
         "ARGOCD-017": ["Pinned-Dependencies"],  # in-cluster mutable source
+        "ARGOCD-016": ["Pinned-Dependencies"],  # Helm valueFiles from a remote URL
+        "ARGOCD-018": ["Pinned-Dependencies"],  # custom resource health / action Lua
         "ARGOCD-011": ["Token-Permissions"],                           # cluster-resource wildcard
         # ── Helm extended pack ──
         "HELM-011": ["Token-Permissions"],                             # dependency URL embedded creds
         "HELM-014": ["Pinned-Dependencies"],                           # known-compromised dep
+        "HELM-015": ["Pinned-Dependencies"],  # oci:// dependency not digest-pinned
+        "HELM-016": ["Token-Permissions"],  # default secret in values.yaml
+        "HELM-017": ["Pinned-Dependencies"],  # tpl of an untrusted .Values value
         "BK-013":   ["Code-Review"],                                   # deploy step no branches filter
         # Cloud Build tainted-substitution / shell pack
         "GCB-012":  ["Token-Permissions"],                             # credential-shaped literal

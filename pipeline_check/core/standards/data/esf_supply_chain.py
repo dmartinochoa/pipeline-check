@@ -104,6 +104,7 @@ STANDARD = Standard(
         "S3-005":   ["ESF-C-ARTIFACT-AUTHZ"],
         # ── GitHub Actions ─────────────────────────────────────────
         "GHA-001":  ["ESF-S-PIN-DEPS", "ESF-S-VERIFY-DEPS"],
+        "GHA-110": ["ESF-S-VERIFY-DEPS"],  # CI env disables Go module verification
         "GHA-002":  ["ESF-D-INJECTION", "ESF-D-BUILD-ENV"],
         "GHA-003":  ["ESF-D-INJECTION"],
         "GHA-004":  ["ESF-C-LEAST-PRIV"],
@@ -135,6 +136,7 @@ STANDARD = Standard(
         "GHA-029":  ["ESF-S-PIN-DEPS", "ESF-S-VERIFY-DEPS"],
         # ── GitLab CI ──────────────────────────────────────────────
         "GL-001":   ["ESF-S-PIN-DEPS", "ESF-S-VERIFY-DEPS"],
+        "GL-037": ["ESF-S-VERIFY-DEPS"],  # CI env disables Go module verification
         "GL-002":   ["ESF-D-INJECTION"],
         "GL-003":   ["ESF-D-SECRETS"],
         "GL-004":   ["ESF-C-APPROVAL", "ESF-C-ENV-SEP"],
@@ -252,6 +254,7 @@ STANDARD = Standard(
         "JF-031":   ["ESF-S-PIN-DEPS", "ESF-S-VERIFY-DEPS"],
         # ── CircleCI ───────────────────────────────────────────────
         "CC-001":   ["ESF-S-PIN-DEPS", "ESF-S-VERIFY-DEPS"],
+        "CC-033": ["ESF-S-VERIFY-DEPS"],  # CI env disables Go module verification
         "CC-002":   ["ESF-D-INJECTION"],
         "CC-003":   ["ESF-S-PIN-DEPS", "ESF-S-VERIFY-DEPS"],
         "CC-004":   ["ESF-D-SECRETS"],
@@ -339,6 +342,9 @@ STANDARD = Standard(
         "HELM-012": ["ESF-S-VERIFY-DEPS"],
         "HELM-013": ["ESF-S-VERIFY-DEPS"],
         "HELM-014": ["ESF-S-VERIFY-DEPS"],
+        "HELM-015": ["ESF-S-PIN-DEPS", "ESF-S-VERIFY-DEPS"],  # oci:// dependency not digest-pinned
+        "HELM-016": ["ESF-D-SECRETS"],  # default secret in values.yaml
+        "HELM-017": ["ESF-S-VERIFY-DEPS"],  # tpl of an untrusted .Values value
         # ── Dockerfile (image build supply chain) ──────────────────
         "DF-001": ["ESF-S-PIN-DEPS", "ESF-S-VERIFY-DEPS"],         # FROM not digest-pinned
         "DF-002": ["ESF-D-PRIV-BUILD"],                            # runs as root
@@ -600,6 +606,8 @@ STANDARD = Standard(
         # ── ArgoCD extended pack ──
         "ARGOCD-010": ["ESF-S-PIN-DEPS"],
         "ARGOCD-017": ["ESF-S-PIN-DEPS", "ESF-C-LEAST-PRIV"],  # in-cluster mutable source
+        "ARGOCD-016": ["ESF-S-VERIFY-DEPS"],  # Helm valueFiles from a remote URL
+        "ARGOCD-018": ["ESF-C-LEAST-PRIV"],  # custom resource health / action Lua
         "ARGOCD-011": ["ESF-C-LEAST-PRIV"],
         "ARGOCD-012": ["ESF-C-APPROVAL"],
         "ARGOCD-013": ["ESF-C-AUDIT"],
@@ -640,6 +648,8 @@ STANDARD = Standard(
         "PYPI-002": ["ESF-S-PIN-DEPS", "ESF-S-VERIFY-DEPS"],
         "PYPI-003": ["ESF-S-TRUSTED-REG"],
         "PYPI-018": ["ESF-S-VERIFY-DEPS"],  # --no-binary forces sdist build
+        "PYPI-019": ["ESF-S-VERIFY-DEPS"],  # missing PEP 740 build provenance
+        "PYPI-020": ["ESF-S-VERIFY-DEPS"],  # low OpenSSF Scorecard upstream
         "PYPI-004": ["ESF-S-PIN-DEPS"],
         "PYPI-015": ["ESF-S-VERIFY-DEPS"],  # direct artifact URL
         "PYPI-005": ["ESF-S-TRUSTED-REG"],
@@ -661,6 +671,10 @@ STANDARD = Standard(
         "MVN-012":  ["ESF-S-VERIFY-DEPS"],
         "MVN-013":  ["ESF-S-VERIFY-DEPS"],
         "MVN-014":  ["ESF-S-VERIFY-DEPS"],
+        "MVN-015": ["ESF-S-VERIFY-DEPS"],  # build-time plugin exec bound to lifecycle
+        "MVN-016": ["ESF-S-TRUSTED-REG", "ESF-S-VERIFY-DEPS"],  # gradle allowInsecureProtocol
+        "MVN-017": ["ESF-D-SECRETS"],  # settings.xml privateKey + plaintext passphrase
+        "MVN-018": ["ESF-S-VERIFY-DEPS"],  # distributionManagement release accepts snapshots
         "NPM-008":  ["ESF-S-VERIFY-DEPS"],
         "NPM-009":  ["ESF-S-VERIFY-DEPS"],
         "NPM-010":  ["ESF-S-VERIFY-DEPS"],
@@ -693,6 +707,7 @@ STANDARD = Standard(
         "NUGET-014": ["ESF-D-SECRETS"],
         "NUGET-015": ["ESF-S-VERIFY-DEPS"],
         "NUGET-016": ["ESF-S-VERIFY-DEPS"],  # missing <clear/> inherits public gallery
+        "NUGET-017": ["ESF-S-VERIFY-DEPS"],  # public gallery active alongside private feed, not disabled
         "NUGET-018": ["ESF-S-VERIFY-DEPS"],  # build-time MSBuild execution
         "NUGET-019": ["ESF-S-VERIFY-DEPS", "ESF-S-PROVENANCE"],  # require mode, no trusted signers
         # ── Go modules ──
@@ -707,6 +722,8 @@ STANDARD = Standard(
         "GOMOD-008": ["ESF-S-VERIFY-DEPS"],
         "GOMOD-009": ["ESF-S-VERIFY-DEPS"],
         "GOMOD-010": ["ESF-S-VERIFY-DEPS"],
+        "GOMOD-011": ["ESF-S-VERIFY-DEPS"],  # tool directive build-time exec
+        "GOMOD-012": ["ESF-S-TRUSTED-REG", "ESF-S-VERIFY-DEPS"],  # insecure / non-canonical module host
         # ── Cargo ──
         "CARGO-001": ["ESF-S-VERIFY-DEPS"],
         "CARGO-002": ["ESF-S-VERIFY-DEPS"],
@@ -719,6 +736,10 @@ STANDARD = Standard(
         "CARGO-008": ["ESF-S-VERIFY-DEPS"],
         "CARGO-009": ["ESF-S-VERIFY-DEPS"],
         "CARGO-010": ["ESF-S-VERIFY-DEPS"],
+        "CARGO-011": ["ESF-S-VERIFY-DEPS"],  # build.rs compile-time egress / exec
+        "CARGO-012": ["ESF-S-TRUSTED-REG", "ESF-S-VERIFY-DEPS"],  # .cargo/config.toml source override / build flags
+        "CARGO-013": ["ESF-S-VERIFY-DEPS"],  # Cargo.lock off-crates.io source
+        "CARGO-014": ["ESF-S-VERIFY-DEPS"],  # no supply-chain audit-gate config
         # ── Composer / PHP ──
         "COMPOSER-001": ["ESF-S-VERIFY-DEPS"],
         "COMPOSER-002": ["ESF-S-VERIFY-DEPS"],
@@ -745,6 +766,9 @@ STANDARD = Standard(
         "GEM-008": ["ESF-S-VERIFY-DEPS"],
         "GEM-009": ["ESF-D-SECRETS"],
         "GEM-010": ["ESF-S-VERIFY-DEPS"],
+        "GEM-011": ["ESF-S-VERIFY-DEPS"],  # Bundler plugin install-time exec
+        "GEM-012": ["ESF-S-TRUSTED-REG", "ESF-S-VERIFY-DEPS"],  # per-gem :source override
+        "GEM-013": ["ESF-S-TRUSTED-REG", "ESF-S-VERIFY-DEPS"],  # insecure git transport
         # ── Pulumi ──
         "PULUMI-001": ["ESF-D-SECRETS"],
         "PULUMI-002": ["ESF-D-SECRETS"],
@@ -757,6 +781,7 @@ STANDARD = Standard(
         "PULUMI-007": ["ESF-C-LEAST-PRIV"],
         "PULUMI-008": ["ESF-C-LEAST-PRIV"],
         "PULUMI-013": ["ESF-D-INJECTION"],  # dynamic provider deploy-time code
+        "PULUMI-014": ["ESF-S-VERIFY-DEPS"],  # ESC environment imported without a qualifier
         "PULUMI-009": ["ESF-S-VERIFY-DEPS"],
         "PULUMI-012": ["ESF-S-PROVENANCE"],  # plugin version unpinned
         "PULUMI-010": ["ESF-D-SECRETS"],

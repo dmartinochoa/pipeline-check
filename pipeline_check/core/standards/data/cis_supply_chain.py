@@ -157,6 +157,7 @@ STANDARD = Standard(
         "EB-002":   ["2.4.3"],                           # EventBridge rule wildcard target ARN
         # GitHub Actions
         "GHA-001":  ["1.4.1", "3.1.5"],                  # unpinned 3rd-party action
+        "GHA-110": ["1.4.1"],  # CI env disables Go module verification
         "GHA-002":  ["2.1.3", "2.3.8"],                  # pull_request_target + PR head
         "GHA-003":  ["2.1.3"],                           # script injection
         "GHA-004":  ["2.4.3"],                           # unrestricted GITHUB_TOKEN
@@ -246,6 +247,7 @@ STANDARD = Standard(
         "GHA-096":  ["1.4.1", "3.1.3"],                  # known-vulnerable action ref (GHSA)
         # GitLab CI
         "GL-001":   ["1.4.1", "3.1.5"],
+        "GL-037": ["1.4.1"],  # CI env disables Go module verification
         "GL-002":   ["2.1.3", "2.3.8"],
         "GL-003":   ["1.5.1", "2.3.4", "2.4.3"],
         "GL-004":   ["5.1.4", "5.2.1"],
@@ -345,6 +347,7 @@ STANDARD = Standard(
         "ADO-030":  ["2.1.3"],                           # pool interpolates untrusted value
         # CircleCI
         "CC-001":   ["1.4.1", "3.1.5"],
+        "CC-033": ["1.4.1"],  # CI env disables Go module verification
         "CC-002":   ["2.1.3"],
         "CC-003":   ["1.4.1", "3.1.5"],
         "CC-004":   ["1.5.1", "2.3.4", "2.4.3"],
@@ -438,6 +441,8 @@ STANDARD = Standard(
         # ── ArgoCD extended pack ──
         "ARGOCD-010": ["1.4.1"],                   # mutable targetRevision
         "ARGOCD-017": ["1.4.1"],  # in-cluster mutable source
+        "ARGOCD-016": ["1.4.1"],  # Helm valueFiles from a remote URL
+        "ARGOCD-018": ["1.4.1"],  # custom resource health / action Lua
         "ARGOCD-011": ["1.3.4"],                   # cluster-resource wildcard
         "ARGOCD-012": ["1.1.5"],                   # no sync windows on prod
         "ARGOCD-013": ["1.3.4"],                   # no revision history cap
@@ -460,6 +465,9 @@ STANDARD = Standard(
         "HELM-012": ["1.4.1"],                     # deprecated without successor
         "HELM-013": ["4.4.1"],                     # invalid chart type
         "HELM-014": ["1.4.1"],                     # known-compromised dependency
+        "HELM-015": ["1.4.1"],  # oci:// dependency not digest-pinned
+        "HELM-016": ["1.5.1"],  # default secret in values.yaml
+        "HELM-017": ["1.4.1"],  # tpl of an untrusted .Values value
         # ── Dockerfile (image build supply chain) ──────────────────
         # The CIS Supply Chain Benchmark Section 2 (build) and 3
         # (dependencies) cover the same ground a hardened Dockerfile
@@ -639,6 +647,10 @@ STANDARD = Standard(
         "MVN-012":  ["1.4.1"],                     # build plugin floating
         "MVN-013":  ["1.4.1"],                     # build extension floating
         "MVN-014":  ["1.4.1"],                     # wrapper sha256 missing
+        "MVN-015": ["1.4.1"],  # build-time plugin exec bound to lifecycle
+        "MVN-016": ["1.4.1"],  # gradle allowInsecureProtocol
+        "MVN-017": ["1.5.1"],  # settings.xml privateKey + plaintext passphrase
+        "MVN-018": ["1.4.1"],  # distributionManagement release accepts snapshots
         "NPM-008":  ["1.4.1", "3.1.3"],            # cooldown gate (--resolve-remote)
         "NPM-009":  ["1.4.1", "3.1.3"],            # new-transitive-dep diff gate
         "NPM-010":  ["1.4.1", "3.1.3"],            # OSV advisory (--resolve-remote)
@@ -668,6 +680,7 @@ STANDARD = Standard(
         "NUGET-014": ["1.5.1"],                    # source URL credentials
         "NUGET-015": ["1.4.1"],                    # VersionOverride breaks CPM
         "NUGET-016": ["3.1.5", "1.4.1"],           # missing <clear/> inherits public gallery
+        "NUGET-017": ["3.1.5", "1.4.1"],  # public gallery active alongside private feed, not disabled
         "NUGET-018": ["1.4.1"],                    # build-time MSBuild execution
         "NUGET-019": ["1.4.1"],                    # require mode, no trusted signers
         # ── Go modules (GOMOD-001..006) ──
@@ -682,6 +695,8 @@ STANDARD = Standard(
         "GOMOD-008": ["1.4.1"],                    # replace without version pin
         "GOMOD-009": ["1.4.1"],                    # pre-release direct require
         "GOMOD-010": ["1.4.1"],                    # stale exclude directive
+        "GOMOD-011": ["1.4.1"],  # tool directive build-time exec
+        "GOMOD-012": ["1.4.1"],  # insecure / non-canonical module host
         # ── Cargo / Rust (CARGO-001..006) ──
         "CARGO-001": ["1.4.1"],                    # floating Cargo.toml version spec
         "CARGO-002": ["1.4.1"],                    # git dep with mutable ref (no rev)
@@ -694,6 +709,10 @@ STANDARD = Standard(
         "CARGO-008": ["1.4.1"],                    # patch.crates-io substitution
         "CARGO-009": ["1.4.1"],                    # workspace deps floating
         "CARGO-010": ["1.1.8"],                    # missing rust-version
+        "CARGO-011": ["1.4.1"],  # build.rs compile-time egress / exec
+        "CARGO-012": ["1.4.1"],  # .cargo/config.toml source override / build flags
+        "CARGO-013": ["1.4.1"],  # Cargo.lock off-crates.io source
+        "CARGO-014": ["1.4.1"],  # no supply-chain audit-gate config
         # ── Composer / PHP (COMPOSER-001..008) ──
         "COMPOSER-001": ["1.4.1"],                 # missing composer.lock
         "COMPOSER-002": ["1.4.1"],                 # floating require constraint
@@ -720,6 +739,9 @@ STANDARD = Standard(
         "GEM-008": ["1.4.1"],                      # path: source in prod
         "GEM-009": ["1.4.1"],                      # .bundle/config credentials
         "GEM-010": ["1.4.1"],                      # dynamic Gemfile
+        "GEM-011": ["1.4.1"],  # Bundler plugin install-time exec
+        "GEM-012": ["1.4.1"],  # per-gem :source override
+        "GEM-013": ["1.4.1"],  # insecure git transport
         # ── Pulumi (PULUMI-001..006) ──
         "PULUMI-001": ["1.5.1"],                   # passphrase secretsprovider
         "PULUMI-002": ["1.5.1"],                   # secret-shaped config plaintext
@@ -732,6 +754,7 @@ STANDARD = Standard(
         "PULUMI-007": ["1.5.1"],                   # public-access cloud resource
         "PULUMI-008": ["1.5.1"],                   # shell-exec with non-constant input
         "PULUMI-013": ["1.5.1"],  # dynamic provider deploy-time code
+        "PULUMI-014": ["1.5.1"],  # ESC environment imported without a qualifier
         "PULUMI-009": ["1.4.1"],                   # runtime / source mismatch
         "PULUMI-012": ["1.4.1"],  # plugin version unpinned
         "PULUMI-010": ["1.5.1"],                   # stack orphaned encryption salt

@@ -535,7 +535,8 @@ class TestHelmChartChecksOrchestrator:
             "HELM-004", "HELM-005", "HELM-006",
             "HELM-007", "HELM-008", "HELM-009",
             "HELM-010", "HELM-011", "HELM-012",
-            "HELM-013", "HELM-014",
+            "HELM-013", "HELM-014", "HELM-015",
+            "HELM-016", "HELM-017",
         ]
 
     def test_attaches_cwe_metadata(self):

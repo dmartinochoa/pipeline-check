@@ -25,7 +25,7 @@ pipeline_check --pipeline gomod --gomod-path ./services/api/
 
 ## What it covers
 
-10 checks · 0 have an autofix patch (``--fix``).
+12 checks · 0 have an autofix patch (``--fix``).
 
 | Check | Title | Severity | Fix |
 |-------|-------|----------|-----|
@@ -39,6 +39,8 @@ pipeline_check --pipeline gomod --gomod-path ./services/api/
 | [GOMOD-008](#gomod-008) | go.mod replace directive points to a module without a version pin | <span class="pg-sev pg-sev--medium">MEDIUM</span> |  |
 | [GOMOD-009](#gomod-009) | Direct require uses a pre-release version | <span class="pg-sev pg-sev--medium">MEDIUM</span> |  |
 | [GOMOD-010](#gomod-010) | go.mod exclude directive masks an upstream version | <span class="pg-sev pg-sev--medium">MEDIUM</span> |  |
+| [GOMOD-011](#gomod-011) | go.mod tool directive pulls an executable build dependency | <span class="pg-sev pg-sev--medium">MEDIUM</span> |  |
+| [GOMOD-012](#gomod-012) | go.mod require / replace targets an insecure or non-canonical host | <span class="pg-sev pg-sev--high">HIGH</span> |  |
 
 ---
 
@@ -355,6 +357,66 @@ The two failure modes:
 2. The excluded version carries a security advisory (``exclude`` hides it from the resolver, but a deliberate ``require`` at the same version still pulls it). Replace the exclude with an explicit patched-version require so future audits see the intent.
 
 Pair every kept exclude with a comment naming the incident or upstream issue that justified it. Excludes without rationale are a code-rot signal.
+
+</div>
+
+</div>
+
+<div class="pg-rule pg-rule--medium" markdown>
+
+## GOMOD-011: go.mod tool directive pulls an executable build dependency { #gomod-011 }
+
+<div class="pg-rule__tags">
+<span class="pg-sev pg-sev--medium">MEDIUM</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-3</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-4</span> <span class="pg-tag pg-tag--esf">ESF-S-VERIFY-DEPS</span> <span class="pg-tag pg-tag--cwe">CWE-829</span>
+</div>
+
+Fires when ``go.mod`` declares one or more ``tool`` directives (single-line ``tool example.com/cmd/foo`` or the ``tool ( ... )`` block form, Go 1.24+). The directive is the module-graph analog of an npm ``postinstall`` script or a Maven build-time plugin (MVN-015): the named module's code executes during the build, not at application runtime, so a compromised tool release runs in CI before any runtime sandbox exists.
+
+This is a posture / visibility signal (MEDIUM), not proof of compromise. ``tool`` is a normal, useful feature; the rule surfaces the build-time-execution surface so a reviewer can confirm each entry is pinned and trusted. Tooling-heavy repos that legitimately register several generators will fire and can suppress with a rationale.
+
+**Known false-positive modes**
+
+- Repos that legitimately register code generators (``stringer``, ``mockgen``, ``protoc-gen-go``, ``sqlc``) via ``tool`` will fire. The directive itself is not a vulnerability; suppress per file with a rationale once each tool module is confirmed pinned (GOMOD-001 / GOMOD-009) and trusted.
+
+**Seen in the wild**
+
+- Build-time code execution is the class behind the xz-utils backdoor (the malicious payload ran from the build step, not the shipped library) and the recurring npm lifecycle-script attacks. The Go ``tool`` directive is the same surface expressed in the module graph: a poisoned tool release runs on every ``go generate`` before anyone inspects the output.
+
+<div class="pg-rule__rec" markdown>
+
+**Recommended action**
+
+Confirm every ``tool`` directive points at a module you trust to run at build time. The Go 1.24 ``tool`` directive promotes a module to a build-time executable that ``go tool`` and ``go generate`` invoke directly, so the module's ``main`` runs with the build's privileges (CI runner write access, any mounted deploy keys / cloud credentials) before the application is ever built. Pin each tool module to an exact version on its ``require`` line (no floating range, no pseudo-version drift), keep the matching ``go.sum`` entries committed (GOMOD-001), and prefer vendoring a tool you can audit over pulling a fresh build each run. Drop any ``tool`` line that no longer corresponds to a generator the build actually needs.
+
+</div>
+
+</div>
+
+<div class="pg-rule pg-rule--high" markdown>
+
+## GOMOD-012: go.mod require / replace targets an insecure or non-canonical host { #gomod-012 }
+
+<div class="pg-rule__tags">
+<span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-3</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-5</span> <span class="pg-tag pg-tag--esf">ESF-S-TRUSTED-REG</span> <span class="pg-tag pg-tag--esf">ESF-S-VERIFY-DEPS</span> <span class="pg-tag pg-tag--cwe">CWE-829</span> <span class="pg-tag pg-tag--cwe">CWE-319</span>
+</div>
+
+Walks every ``require`` path and every ``replace`` target (the right-hand module coordinate; local-path replaces are GOMOD-002's surface and are skipped) and fires when the host component is non-canonical: a bare IPv4 / bracketed-IPv6 literal as the host, or an explicit ``host:port``. Canonical Go module paths resolve a real hostname (no scheme, no port), so either shape is a downgrade or a self-hosted-proxy smell.
+
+The module-graph analog of the PyPI / JFrog insecure-host rules (PYPI-003, PYPI-016). Operates on already-parsed coordinates, so it adds no network surface. Note that a scheme prefix (``http://`` / ``https://``) never appears in a well-formed go.mod coordinate, so the rule keys off the host shape rather than a URL scheme.
+
+**Known false-positive modes**
+
+- Self-hosted VCS or module proxies reached on a custom port over a trusted internal network may legitimately use a ``host:port`` coordinate. Suppress per directive with a rationale naming the network boundary; better, front the host with a TLS-terminating canonical name so the coordinate is a plain ``host/path``.
+
+**Seen in the wild**
+
+- Insecure module fetch is the Go analog of the classic dependency MITM: a runner that resolves a module over plain HTTP or a spoofable bare IP can be served attacker-controlled bytes, and a coordinate that bypasses the canonical proxy also bypasses the sum-database transparency log.
+
+<div class="pg-rule__rec" markdown>
+
+**Recommended action**
+
+Point every module coordinate at a canonical hostname. A module path whose host is a bare IP literal or carries an explicit ``:port`` is fetched over a non-canonical channel: a bare IP pins the fetch to one box with no DNS / TLS-name binding (trivial to spoof on a shared network), and a custom port usually means a self-hosted proxy / VCS that sits outside the public module-proxy + checksum-database guarantees. Replace the coordinate with the canonical ``host/path`` form. If the dependency genuinely lives on an internal host, front it with a TLS-terminating canonical name (not a raw IP / port) and keep ``GOINSECURE`` scoped narrowly rather than disabling sum verification globally.
 
 </div>
 

@@ -1,0 +1,117 @@
+"""GL-037. Pipeline disables Go module checksum / sum-db verification."""
+from __future__ import annotations
+
+from typing import Any
+
+from ..._primitives.go_insecure_env import (
+    insecure_settings_in_env,
+    insecure_settings_in_script,
+)
+from ...base import Finding, Severity
+from ...rule import Rule
+from ..base import iter_jobs, job_scripts
+
+RULE = Rule(
+    id="GL-037",
+    title="Pipeline disables Go module checksum / sum-db verification",
+    severity=Severity.HIGH,
+    owasp=("CICD-SEC-3", "CICD-SEC-5"),
+    esf=("ESF-S-VERIFY-DEPS",),
+    cwe=("CWE-353", "CWE-494"),
+    recommendation=(
+        "Remove the Go toolchain variables that turn off module "
+        "integrity verification so ``go build`` keeps checking every "
+        "downloaded module against ``go.sum`` and the checksum "
+        "transparency database. Drop ``GOFLAGS=-insecure`` (plain "
+        "HTTP fetch, TLS off), ``GOSUMDB=off`` / legacy "
+        "``GONOSUMCHECK`` (checksum DB / sum check off), and any "
+        "``GOINSECURE``; scope ``GOPRIVATE`` / ``GONOSUMDB`` to the "
+        "exact internal namespace (``corp.example.com/team/*``) "
+        "rather than a broad ``*`` or whole public host. This is the "
+        "CI-variable twin of GOMOD-001, a committed ``go.sum`` is "
+        "moot if the runner ignores it. For private modules, prefer "
+        "a trusted internal ``GOPROXY`` that still enforces "
+        "checksums over disabling verification."
+    ),
+    docs_note=(
+        "Walks the global and per-job ``variables:`` maps and every "
+        "``script:`` / ``before_script:`` / ``after_script:`` body "
+        "(for inline ``export GOSUMDB=off`` assignments) and flags "
+        "the Go integrity-disabling settings via the shared "
+        "``_primitives/go_insecure_env`` detector: ``GOFLAGS`` with "
+        "``-insecure``, ``GOSUMDB=off``, truthy ``GONOSUMCHECK``, any "
+        "``GOINSECURE``, and a broad ``GOPRIVATE`` / ``GONOSUMDB`` "
+        "glob.\n\n"
+        "Scoped ``GOPRIVATE`` and ``GOPROXY=off`` / ``direct`` "
+        "(still checksum-verified) are not flagged. The CI-variable "
+        "face of the verification-bypass surface GOMOD-001 warns "
+        "about; the GitLab sibling of GHA-110 / CC-033."
+    ),
+    known_fp=(
+        "A pipeline that builds only against an internal module "
+        "proxy on a trusted network may set a scoped ``GOINSECURE`` "
+        "for one internal host deliberately. Suppress per pipeline "
+        "with a rationale; a TLS-terminating internal proxy that "
+        "preserves checksum verification is the safer path.",
+    ),
+    incident_refs=(
+        "Verification-bypass class: a runner told to skip the Go "
+        "checksum database / sum file can be served a substituted "
+        "module without ``go mod verify`` catching it, the same gap "
+        "GOMOD-001 flags from the ``go.sum`` side.",
+    ),
+    exploit_example=(
+        "# Vulnerable: global variables disable verification.\n"
+        "variables:\n"
+        "  GOSUMDB: \"off\"\n"
+        "  GOFLAGS: -insecure\n"
+        "build:\n"
+        "  script:\n"
+        "    - go build ./...\n"
+        "\n"
+        "# Attack: with GOSUMDB off and -insecure, the runner fetches\n"
+        "# modules over plain HTTP and skips the checksum DB; a MITM\n"
+        "# or poisoned mirror serves a backdoored module and nothing\n"
+        "# verifies it against go.sum.\n"
+        "\n"
+        "# Safe: drop the toggles; let go.sum + the sum DB verify.\n"
+        "build:\n"
+        "  script:\n"
+        "    - go build ./...\n"
+    ),
+)
+
+
+def check(path: str, doc: dict[str, Any]) -> Finding:
+    offenders: list[str] = []
+    seen: set[str] = set()
+
+    def _record(scope: str, labels: list[str]) -> None:
+        for label in labels:
+            key = f"{scope}|{label}"
+            if key in seen:
+                continue
+            seen.add(key)
+            offenders.append(f"{scope}: {label}")
+
+    _record("global variables", insecure_settings_in_env(doc.get("variables")))
+    for job_name, job in iter_jobs(doc):
+        _record(f"{job_name} variables", insecure_settings_in_env(job.get("variables")))
+        body = "\n".join(job_scripts(job))
+        if body.strip():
+            _record(f"{job_name} script", insecure_settings_in_script(body))
+    passed = not offenders
+    desc = (
+        "No Go module-verification-disabling settings in the pipeline."
+        if passed else
+        f"{len(offenders)} Go integrity-disabling setting(s): "
+        f"{', '.join(offenders[:5])}"
+        f"{'…' if len(offenders) > 5 else ''}. The runner can no "
+        f"longer prove a downloaded module matches go.sum / the "
+        f"checksum database."
+    )
+    return Finding(
+        check_id=RULE.id, title=RULE.title, severity=RULE.severity,
+        resource=path, description=desc,
+        recommendation=RULE.recommendation, passed=passed,
+    )

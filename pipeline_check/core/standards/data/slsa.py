@@ -81,6 +81,7 @@ STANDARD = Standard(
         "PBAC-005": ["Build.L3.NonFalsifiable"],                   # stage roles mirror pipeline role
         # ── GitHub Actions ────────────────────────────────────────
         "GHA-001":  ["Build.L3.NonFalsifiable"],                   # unpinned 3rd-party action
+        "GHA-110": ["Build.L3.NonFalsifiable"],  # CI env disables Go module verification
         "GHA-002":  ["Build.L3.NonFalsifiable", "Build.L3.Isolated"], # pull_request_target + PR head
         "GHA-003":  ["Build.L3.Isolated"],                         # script injection
         "GHA-004":  ["Build.L3.NonFalsifiable"],                   # unrestricted GITHUB_TOKEN
@@ -160,6 +161,7 @@ STANDARD = Standard(
         "GHA-062":  ["Build.L3.NonFalsifiable"],                   # OIDC trust subject in sibling IaC is overly broad
         # ── GitLab CI ─────────────────────────────────────────────
         "GL-001":   ["Build.L3.NonFalsifiable"],                   # floating image tag
+        "GL-037": ["Build.L3.NonFalsifiable"],  # CI env disables Go module verification
         "GL-002":   ["Build.L3.Isolated"],                         # script injection
         "GL-005":   ["Build.L3.NonFalsifiable"],                   # unpinned include
         "GL-006":   ["Build.L2.Signed"],
@@ -294,6 +296,7 @@ STANDARD = Standard(
                      "Build.L3.NonFalsifiable"],                   # httpRequest SSL off
         # ── CircleCI ──────────────────────────────────────────────
         "CC-001":   ["Build.L3.NonFalsifiable"],                   # orb not pinned
+        "CC-033": ["Build.L3.NonFalsifiable"],  # CI env disables Go module verification
         "CC-002":   ["Build.L3.Isolated"],                         # script injection
         "CC-003":   ["Build.L3.NonFalsifiable"],                   # image not pinned to digest
         "CC-004":   ["Build.L3.NonFalsifiable"],                   # unrestricted context
@@ -444,6 +447,10 @@ STANDARD = Standard(
         "MVN-012":  ["Build.L3.NonFalsifiable"],                   # build plugin floating
         "MVN-013":  ["Build.L3.NonFalsifiable"],                   # build extension floating
         "MVN-014":  ["Build.L3.NonFalsifiable"],                   # wrapper sha256 missing
+        "MVN-015": ["Build.L3.NonFalsifiable"],  # build-time plugin exec bound to lifecycle
+        "MVN-016": ["Build.L3.NonFalsifiable"],  # gradle allowInsecureProtocol
+        "MVN-017": ["Build.L3.NonFalsifiable"],  # settings.xml privateKey + plaintext passphrase
+        "MVN-018": ["Build.L3.NonFalsifiable"],  # distributionManagement release accepts snapshots
         "NPM-008":  ["Build.L3.NonFalsifiable"],                   # cooldown gate (--resolve-remote)
         "NPM-009":  ["Build.L3.NonFalsifiable"],                   # new-transitive-dep diff gate
         "NPM-010":  ["Build.L3.NonFalsifiable"],                   # OSV advisory (--resolve-remote)
@@ -467,6 +474,7 @@ STANDARD = Standard(
         "NUGET-014": ["Build.L3.NonFalsifiable"],
         "NUGET-015": ["Build.L3.NonFalsifiable"],
         "NUGET-016": ["Build.L3.NonFalsifiable"],  # missing <clear/> inherits public gallery
+        "NUGET-017": ["Build.L3.NonFalsifiable"],  # public gallery active alongside private feed, not disabled
         "NUGET-018": ["Build.L3.NonFalsifiable"],  # build-time MSBuild execution
         "NUGET-019": ["Build.L3.NonFalsifiable"],  # require mode, no trusted signers
         # ── Composer / PHP ──
@@ -479,6 +487,9 @@ STANDARD = Standard(
         "GEM-002": ["Build.L3.NonFalsifiable"],      # floating gem constraint
         "GEM-005": ["Build.L3.NonFalsifiable"],      # git/github source mutable ref
         "GEM-006": ["Build.L3.NonFalsifiable"],      # compromised gem version
+        "GEM-011": ["Build.L3.NonFalsifiable"],  # Bundler plugin install-time exec
+        "GEM-012": ["Build.L3.NonFalsifiable"],  # per-gem :source override
+        "GEM-013": ["Build.L3.NonFalsifiable"],  # insecure git transport
         # ── Helm chart-supply-chain ───────────────────────────────
         # The chart's own packaging metadata sits at the build-output
         # boundary. Chart.lock and Chart.yaml are the chart's
@@ -502,6 +513,9 @@ STANDARD = Standard(
         "HELM-011": ["Build.L1.Provenance"],                       # dependency URL embedded creds
         "HELM-012": ["Build.L1.Provenance"],                       # deprecated without successor
         "HELM-013": ["Build.L1.Provenance"],                       # invalid chart type
+        "HELM-015": ["Build.L3.NonFalsifiable"],  # oci:// dependency not digest-pinned
+        "HELM-016": ["Build.L3.NonFalsifiable"],  # default secret in values.yaml
+        "HELM-017": ["Build.L3.NonFalsifiable"],  # tpl of an untrusted .Values value
         "HELM-014": ["Build.L1.Provenance",
                      "Build.L3.NonFalsifiable"],                   # known-compromised dep
         # ── Dockerfile (image build process is the SLSA build) ────

@@ -240,7 +240,7 @@ class TestAutoDetect:
         payload = json.loads(result.stdout)
         emitted = {f["check_id"] for f in payload["findings"]}
         assert emitted == (
-            {f"GL-{i:03d}" for i in range(1, 37)}
+            {f"GL-{i:03d}" for i in range(1, 38)}
             | {"TAINT-004", "TAINT-008"}
         )
 
@@ -275,7 +275,8 @@ class TestAutoDetect:
                "GHA-091", "GHA-092", "GHA-093", "GHA-094", "GHA-095",
                "GHA-096", "GHA-097", "GHA-098", "GHA-099",
                "GHA-100", "GHA-102", "GHA-103", "GHA-104",
-               "GHA-105", "GHA-106", "GHA-107", "GHA-108", "GHA-109"}
+               "GHA-105", "GHA-106", "GHA-107", "GHA-108", "GHA-109",
+               "GHA-110"}
             | {"TAINT-001", "TAINT-002", "TAINT-003", "TAINT-009"}
         )
 

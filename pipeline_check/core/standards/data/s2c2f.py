@@ -95,6 +95,7 @@ STANDARD = Standard(
         "NUGET-014": ["ING-1"],
         "NUGET-015": ["ING-1"],
         "NUGET-016": ["ING-1"],  # missing <clear/> inherits public gallery
+        "NUGET-017": ["ING-1"],  # public gallery active alongside private feed, not disabled
         "NUGET-018": ["ING-1"],  # build-time MSBuild execution
         "NUGET-019": ["ING-1"],  # require mode, no trusted signers
         # ── Composer / PHP ──
@@ -323,6 +324,9 @@ STANDARD = Standard(
         "HELM-012": ["REB-3"],             # deprecated without successor
         "HELM-013": ["REB-3"],             # invalid chart type
         "HELM-014": ["REB-3"],             # known-compromised dep
+        "HELM-015": ["SCA-3"],  # oci:// dependency not digest-pinned
+        "HELM-016": ["ING-3"],  # default secret in values.yaml
+        "HELM-017": ["SCA-3"],  # tpl of an untrusted .Values value
         # SBOM content gaps live here too (the SBOM exists but
         # under-specifies what it should track).
         "ATTEST-003": ["REB-3"],           # SBOM floating versions

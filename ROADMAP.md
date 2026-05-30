@@ -6,6 +6,123 @@ What's planned, what's shipped, and what's deliberately out of scope.
 
 ### Unreleased (on ``dev``)
 
+- **PyPI behavioral-trust signals (PYPI-019 / PYPI-020)** — The PyPI
+  parallels of the NPM-015 / NPM-016 supply-chain-posture signals, both
+  LOW and ``--resolve-remote``-gated. **PYPI-019** flags a direct
+  dependency whose latest release ships no PEP 740 provenance
+  attestation (reads the per-file ``provenance`` field from the PyPI
+  JSON API; returns "unknown / skip" rather than flagging everything if
+  the index doesn't expose the field). **PYPI-020** resolves a direct
+  dependency's GitHub repo from ``info.project_urls`` and queries the
+  OpenSSF Scorecard API, flagging upstreams scoring below 5/10 or
+  failing the Dangerous-Workflow check (reuses the shared
+  ``_primitives/scorecard`` client). Both reuse the per-package JSON
+  document the cooldown / OSV passes already fetch, so provenance +
+  repo-slug add no requests beyond the Scorecard lookup. The
+  single-publisher analog (NPM-014) is deliberately not shipped: PyPI
+  exposes no reliable maintainer-account-list API. New pypi
+  registry-fetcher passes (``fetch_provenance`` / ``fetch_repo_slugs``)
+  + a shared ``requirement_package_name`` extractor; wired across the
+  standards data files mirroring NPM-015/016's coverage. pypi 17 -> 19.
+- **CI Go-module-verification primitive (GHA-110 / GL-037 / CC-033)** —
+  Builds the shared CI env-var primitive the roadmap reserved for the
+  GOMOD-013/014 idea, rather than growing the gomod loader into a
+  CI-config scanner. ``_primitives/go_insecure_env.py`` detects the Go
+  toolchain settings that turn off module integrity verification
+  (``GOFLAGS=-insecure``, ``GOSUMDB=off``, truthy ``GONOSUMCHECK``, any
+  ``GOINSECURE``, a broad ``GOPRIVATE`` / ``GONOSUMDB`` glob) from both
+  a declared env / variables map and an inline ``export`` in a ``run:``
+  body; ``GOPROXY=off`` / ``direct`` and scoped ``GOPRIVATE`` are not
+  flagged. Three HIGH consumer rules wire it into the platforms where
+  Go CI actually runs: **GHA-110** (workflow / job / step ``env:`` +
+  ``run:``), **GL-037** (global + job ``variables:`` + scripts),
+  **CC-033** (job + run-step ``environment:`` + run commands). The
+  env-var twin of GOMOD-001 (013's hard-disables + 014's
+  over-broad-glob folded into one rule per provider). Bitbucket /
+  Azure DevOps deferred (negligible Go CI, FP-risky env schemas; the
+  primitive is shared, so adding them is small). Mapped across the
+  standards data files (owasp / esf from declared tags, the rest from
+  each standard's dependency-integrity control); GHA-110 also mapped in
+  cis_github. github 100 -> 101, gitlab 38 -> 39, circleci 32 -> 33.
+- **Weak-coverage deepening: deferred fourth-picks batch** — Five rules
+  across four providers, the clean, net-new tail of the coverage-pass
+  candidate list (the noisy / overlapping / parser-blocked picks were
+  left deferred with rationale, see the Candidates section). **nuget:**
+  NUGET-017 (HIGH, the public gallery active alongside a private feed
+  and not disabled in ``<disabledPackageSources>``, the
+  explicit-coexistence complement to NUGET-016's inheritance case; same
+  ElementTree-reparse pattern). **cargo:** CARGO-014 (LOW, no committed
+  cargo-deny / cargo-vet / cargo-audit gate config; the loader gained a
+  small probe for ``deny.toml`` / ``supply-chain/config.toml`` /
+  ``audit.toml`` walked up to the scan root). **pulumi:** PULUMI-014
+  (MEDIUM, an ESC ``environment:`` import without a project / org
+  qualifier, the StackReference-drift primitive applied to ESC).
+  **argocd:** ARGOCD-016 (HIGH, Helm ``valueFiles`` fetched from a
+  remote ``http(s)`` URL, an unpinned / unverified render input;
+  scoped to the URL case to keep FP low) and ARGOCD-018 (MEDIUM,
+  custom ``resource.customizations`` health / action Lua in
+  ``argocd-cm``, code that runs in the application controller). All
+  five wired across the standards data files (owasp / esf from each
+  rule's declared tags, the rest cloned from the nearest sibling) and
+  the provider / standards docs regenerated. nuget 18 -> 19, cargo
+  13 -> 14, pulumi 13 -> 14, argocd 16 -> 18. The ``cis_github`` per-
+  framework coverage floor drops 13 -> 12 (the expected denominator
+  growth when non-GitHub rule packs land).
+- **Weak-coverage deepening: cargo / helm batch** — Six rules closing
+  the two packs that needed a loader extension, completing the
+  first-batch sweep of every provider the coverage pass flagged.
+  **cargo:** CARGO-011 (HIGH, ``build.rs`` runs network / process /
+  ``include!`` idioms at compile time, the Rust analog of an npm
+  install script), CARGO-012 (HIGH, ``.cargo/config.toml`` sets a
+  ``[source.*] replace-with`` that reroutes the whole crate graph, or
+  a linker / ``link-arg`` in ``rustflags``), CARGO-013 (MEDIUM, a
+  ``Cargo.lock`` ``[[package]]`` resolved off crates.io via a ``git+``
+  or alternate-registry source, the transitive substitution the
+  manifest rules can't see). Loader now reads the sibling ``build.rs``,
+  the nearest ``.cargo/config.toml`` (walked up to the scan root), and
+  the ``Cargo.lock`` body. **helm:** HELM-015 (HIGH, an ``oci://``
+  dependency bound only by a mutable tag, no Chart.lock digest and no
+  digest reference, sharpening HELM-003 on the OCI axis), HELM-016
+  (HIGH, a default secret / credential baked into ``values.yaml``,
+  which the K8s render pass misses when consumed via ``| b64enc`` into
+  a Secret), HELM-017 (HIGH, a ``{{ tpl .Values.x . }}`` that
+  re-evaluates an operator-supplied value as a Go template, a chart
+  SSTI sink). The helm ``Chart`` now carries the parsed
+  ``values.yaml`` and ``templates/`` texts (dir + ``.tgz`` member).
+  All six wired across the standards data files (owasp / esf from each
+  rule's declared tags, the rest cloned from the nearest sibling) and
+  the provider / standards docs regenerated. cargo 10 -> 13, helm
+  14 -> 17. Catalog floor bumped 1090 -> 1110 across README / docs /
+  action.yml / CONTRIBUTING / DOCKERHUB.
+- **Weak-coverage deepening: gomod / rubygems / maven batch** — Nine
+  rules continuing the weak-coverage provider deepening, the three
+  packs the initiative flagged as needing no new base-loader reads.
+  **gomod:** GOMOD-011 (MEDIUM, a ``tool`` directive promotes a module
+  to a build-time executable that ``go generate`` / ``go tool`` runs,
+  the module-graph analog of an npm install script) and GOMOD-012
+  (HIGH, a ``require`` / ``replace`` coordinate whose host is a bare IP
+  or carries an explicit ``:port``, a non-canonical fetch that bypasses
+  TLS name binding + the canonical proxy). **rubygems:** GEM-011 (HIGH,
+  a Bundler ``plugin`` directive runs its ``plugins.rb`` at
+  ``bundle install`` time), GEM-012 (MEDIUM, a per-gem inline
+  ``source:`` override splits one name off to a different registry,
+  the per-gem face of GEM-007), GEM-013 (HIGH, a ``git:`` gem cloned
+  over ``git://`` / ``http://`` with no server auth). **maven:**
+  MVN-015 (HIGH, a command-running plugin, ``exec-maven-plugin`` /
+  ``maven-antrun-plugin`` / ``gmavenplus-plugin`` /
+  ``frontend-maven-plugin``, bound to the lifecycle via an
+  ``<execution>``, build-time RCE that a version pin like MVN-012 does
+  not stop), MVN-016 (HIGH, ``build.gradle`` re-enabling HTTP repos
+  with ``allowInsecureProtocol = true``), MVN-017 (HIGH, a ``<server>``
+  shipping a ``<privateKey>`` next to a plaintext ``<passphrase>``, the
+  SSH / GPG sibling of MVN-010), MVN-018 (MEDIUM, a
+  ``<distributionManagement>`` release repository that accepts mutable
+  ``-SNAPSHOT`` artifacts). Loader adds: a ``tool``-directive parse
+  (gomod) and a per-gem ``source:`` surface (rubygems); the maven rules
+  reparse the POM / settings XML in-rule. All nine wired across the
+  standards data files (owasp / esf from each rule's declared tags, the
+  rest cloned from the nearest sibling) and the provider / standards
+  docs regenerated. gomod 10 -> 12, rubygems 10 -> 13, maven 14 -> 18.
 - **GHA-107 + GHA-108: runtime egress control (harden-runner)** — Two
   rules covering the StepSecurity ``harden-runner`` egress agent.
   GHA-107 (MEDIUM) fires when a ``step-security/harden-runner`` step
@@ -623,21 +740,81 @@ stars, download counts, and ``npm audit`` miss.
   flagging upstreams that score below 5/10 or fail the Dangerous-Workflow
   check. The heaviest of the three (one extra API per linked repo).
 
-Still open as follow-ups: a recent-ownership-change / new-account signal
-to pair with NPM-014 (the actual takeover vector, worth a higher
-severity), and the PyPI parallels for all three, gated on PyPI's JSON
-API / PEP 740 surface reliably exposing the owner list and attestations.
+The PyPI parallels then shipped two of the three: **PYPI-019**
+(missing PEP 740 provenance, the NPM-015 analog, reads the per-file
+``provenance`` field on the latest release from the PyPI JSON API) and
+**PYPI-020** (low upstream OpenSSF Scorecard, the NPM-016 analog,
+resolves the GitHub repo from ``info.project_urls`` and reuses the
+shared ``_primitives/scorecard`` client). The single-publisher analog
+(NPM-014) is deliberately **not** shipped: PyPI exposes no public
+maintainer-account-list API, only the freeform ``info.maintainer`` /
+``info.author`` metadata fields, which are too unreliable to flag on,
+exactly the gate the roadmap flagged. The provenance parser returns
+``None`` (skip) rather than ``False`` when the index doesn't expose the
+attestation field at all, so it never flags every dependency if PyPI's
+surface changes. Both are LOW, ``--resolve-remote``-gated, scoped to
+direct index dependencies, and reuse the per-package JSON document the
+cooldown / OSV passes already fetch.
+
+Still open as follow-ups: a recent-ownership-change / new-account
+signal to pair with NPM-014 (the actual takeover vector, worth a higher
+severity), and a PyPI single-maintainer signal if PyPI ever exposes a
+reliable owner-list API.
 
 ### Weak-coverage provider deepening
 
-**Status (2026-05-30):** first batches shipped on ``dev`` for nuget
+**Status (2026-05-30):** batches shipped on ``dev`` for nuget
 (NUGET-016/018/019), composer (COMPOSER-011..014), pulumi
-(PULUMI-011..013), argocd (ARGOCD-014/015/017; 016 skipped), and pypi
-(PYPI-015..018). Still open: cargo (CARGO-011..013, needs the
-``build.rs`` / ``.cargo/config.toml`` / ``Cargo.lock``-body loader
-reads), gomod (GOMOD-011/012), rubygems (GEM-011/012/013), helm
-(HELM-015/016/017, needs the ``values.yaml`` / template reader), maven
-(MVN-015..018), and the deferred fourth picks (NUGET-017, etc.).
+(PULUMI-011..013), argocd (ARGOCD-014/015/017; 016 skipped), pypi
+(PYPI-015..018), gomod (GOMOD-011/012), rubygems (GEM-011/012/013),
+maven (MVN-015..018), cargo (CARGO-011/012/013), and helm
+(HELM-015/016/017). With cargo and helm in, every provider the
+2026-05-29 coverage pass flagged has shipped its first deepening batch.
+The two loader extensions the pass called out both landed: cargo's
+loader now reads the sibling ``build.rs``, walks up to the nearest
+``.cargo/config.toml``, and keeps the ``Cargo.lock`` body; the helm
+``Chart`` now carries the parsed ``values.yaml`` and the
+``templates/`` file texts (dir + ``.tgz`` member). The
+gomod / rubygems / maven batch needed no base-loader reads beyond a
+``tool``-directive parse (gomod) and a per-gem ``source:`` surface
+(rubygems); the maven rules reparse the POM / settings XML in-rule the
+way MVN-010 / MVN-012 already do, and MVN-016 reads the Gradle script
+text. GOMOD-012 ships as bare-IP / explicit-port host detection only:
+a ``http://`` scheme can't survive the go.mod ``//`` comment stripper
+and never appears in a canonical module path anyway.
+
+The deferred fourth-picks batch then shipped NUGET-017 (public gallery
+active alongside a private feed and not in
+``<disabledPackageSources>``, the explicit-coexistence complement to
+NUGET-016's inheritance case), CARGO-014 (no committed
+cargo-deny / cargo-vet / cargo-audit gate, LOW posture, needed a small
+loader probe for the gate config files), PULUMI-014 (an ESC
+``environment:`` import without a project / org qualifier, the
+StackReference-drift primitive applied to ESC), ARGOCD-016 (Helm
+``valueFiles`` fetched from a remote ``http(s)`` URL, scoped to that
+unambiguous case to keep FP low), and ARGOCD-018 (custom resource
+health / action Lua in ``argocd-cm``, controller-side code). Still
+open, and now genuinely deferred with rationale: **PULUMI-015**
+(Automation-API inline shell) overlaps PULUMI-008's shell-exec scan
+too heavily to ship as a separate rule without double-reporting;
+**HELM-018** (values default image not digest-pinned) overlaps
+K8S-001 once the chart renders, and **HELM-019** (subchart host
+mismatch) is noisy; **GEM-014** (``git_source`` block) is noisy and
+overlaps GEM-010, **GEM-015** (gemspec floating ``add_dependency``)
+needs a gemspec parser the rubygems loader doesn't have. The
+**GOMOD-013/014** idea (CI env-vars disabling sum-db verification) then
+shipped as the shared-primitive batch it always wanted to be:
+``_primitives/go_insecure_env.py`` plus per-provider rules GHA-110 /
+GL-037 / CC-033 (GitHub Actions, GitLab CI, CircleCI, where Go CI
+actually runs), each flagging ``GOFLAGS=-insecure`` / ``GOSUMDB=off`` /
+``GONOSUMCHECK`` / any ``GOINSECURE`` / a broad ``GOPRIVATE`` /
+``GONOSUMDB`` (013's hard-disables + 014's over-broad-glob folded into
+one HIGH rule). Bitbucket and Azure DevOps were left out (negligible Go
+CI, FP-risky env schemas); the primitive is shared, so adding them is a
+small follow-up. (The PyPI parallels of the NPM behavioral-trust
+signals then shipped as PYPI-019 / PYPI-020; the single-maintainer
+analog stays deferred, no reliable PyPI owner-list API. See the
+behavioral-signals candidate above.)
 
 A 2026-05-29 coverage pass ranked every provider by shipped rule count
 and ran a per-provider gap analysis on the thinnest packs. The
@@ -698,14 +875,19 @@ about.
   literal, or an explicit ``:port``. The module-graph analog of the
   PyPI / JFrog insecure-host rules; operates on already-parsed
   coordinates.
-- **GOMOD-013: CI environment disables module checksum / sum-db
-  verification (HIGH).** ``GOFLAGS=-insecure``, ``GONOSUMCHECK``,
-  ``GOSUMDB=off``, ``GOPROXY=off|direct``, broad ``GOINSECURE``. The
+- **GOMOD-013 / GOMOD-014: CI environment disables module checksum /
+  sum-db verification (HIGH). Shipped, as CI-provider rules.** The
   env-var twin of GOMOD-001 (sum file committed, runner told to ignore
-  it). Network-free but parser-gated: best shipped inside the CI provider
-  packs via a shared primitive rather than growing the gomod loader a
-  CI-config scanner. **GOMOD-014** (over-broad ``GOPRIVATE`` /
-  ``GONOSUMDB`` glob, MEDIUM) is a candidate to fold into 013. Rejected:
+  it). Built as the shared primitive
+  ``_primitives/go_insecure_env.py`` plus per-provider rules **GHA-110**
+  / **GL-037** / **CC-033** (not a gomod ID, since the setting lives in
+  the CI config, not ``go.mod``, and growing the gomod loader into a
+  CI-config scanner was the wrong shape). Each flags
+  ``GOFLAGS=-insecure``, ``GOSUMDB=off``, truthy ``GONOSUMCHECK``, any
+  ``GOINSECURE``, and a broad ``GOPRIVATE`` / ``GONOSUMDB`` glob (013's
+  hard-disables + 014's over-broad-glob folded into one HIGH rule).
+  ``GOPROXY=off`` / ``direct`` are deliberately not flagged (neither is
+  an integrity bypass on its own). Scoped ``GOPRIVATE`` passes. Rejected:
   ``//go:generate`` and ``go.work`` rules (the provider loads neither Go
   source nor ``go.work`` today).
 

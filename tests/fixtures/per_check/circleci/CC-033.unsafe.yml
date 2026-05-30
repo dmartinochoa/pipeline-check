@@ -1,0 +1,15 @@
+version: 2.1
+jobs:
+  build:
+    docker:
+      - image: cimg/go:1.22
+    environment:
+      GOSUMDB: "off"
+      GOFLAGS: -insecure
+    steps:
+      - checkout
+      - run: go build ./...
+workflows:
+  build:
+    jobs:
+      - build

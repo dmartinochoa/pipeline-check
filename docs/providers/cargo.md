@@ -29,7 +29,7 @@ pipeline_check --pipeline cargo --cargo-path ./crates/my-crate/
 
 ## What it covers
 
-10 checks · 0 have an autofix patch (``--fix``).
+14 checks · 0 have an autofix patch (``--fix``).
 
 | Check | Title | Severity | Fix |
 |-------|-------|----------|-----|
@@ -43,6 +43,10 @@ pipeline_check --pipeline cargo --cargo-path ./crates/my-crate/
 | [CARGO-008](#cargo-008) | Cargo.toml [patch.crates-io] substitutes a different crate | <span class="pg-sev pg-sev--high">HIGH</span> |  |
 | [CARGO-009](#cargo-009) | [workspace.dependencies] entry uses a floating version spec | <span class="pg-sev pg-sev--medium">MEDIUM</span> |  |
 | [CARGO-010](#cargo-010) | Cargo.toml lacks an explicit rust-version field | <span class="pg-sev pg-sev--low">LOW</span> |  |
+| [CARGO-011](#cargo-011) | build.rs runs network or process calls at compile time | <span class="pg-sev pg-sev--high">HIGH</span> |  |
+| [CARGO-012](#cargo-012) | .cargo/config.toml overrides the registry source or injects build flags | <span class="pg-sev pg-sev--high">HIGH</span> |  |
+| [CARGO-013](#cargo-013) | Cargo.lock package sourced off crates.io | <span class="pg-sev pg-sev--medium">MEDIUM</span> |  |
+| [CARGO-014](#cargo-014) | No supply-chain audit-gate config (cargo-deny / cargo-vet / cargo-audit) | <span class="pg-sev pg-sev--low">LOW</span> |  |
 
 ---
 
@@ -364,6 +368,128 @@ Add a ``rust-version`` field to ``[package]`` naming the minimum supported Rust 
     rust-version = "1.75"
 
 The field tells cargo to error early if the consumer's toolchain is older than the named version, which catches the silent-incompatibility class of bug where a new language feature lands in a recent compiler but the consumer's CI image hasn't been updated. The field also documents the project's compatibility posture so downstream consumers can audit the toolchain matrix.
+
+</div>
+
+</div>
+
+<div class="pg-rule pg-rule--high" markdown>
+
+## CARGO-011: build.rs runs network or process calls at compile time { #cargo-011 }
+
+<div class="pg-rule__tags">
+<span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-1</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-3</span> <span class="pg-tag pg-tag--esf">ESF-S-VERIFY-DEPS</span> <span class="pg-tag pg-tag--cwe">CWE-94</span> <span class="pg-tag pg-tag--cwe">CWE-829</span>
+</div>
+
+Reads the sibling ``build.rs`` and flags compile-time egress / exec idioms: network access (``std::net``, ``reqwest``, ``ureq``, ``isahc``, ``curl``, ``hyper``, ``tokio::net``), process spawning (``std::process::Command`` / ``Command::new``), and ``include!`` / ``include_str!`` / ``include_bytes!`` of a path.
+
+The Rust analog of an npm install script (NPM lifecycle), a Maven build-time plugin (MVN-015), or a Go ``tool`` directive (GOMOD-011): code that runs during the build, not at application runtime. A build script with no flagged idiom (or no ``build.rs`` at all) passes.
+
+**Known false-positive modes**
+
+- Many legitimate ``build.rs`` files shell out to ``pkg-config`` / ``cc`` (via ``std::process::Command``) to locate or compile native libraries, and some ``include!`` a checked-in generated file. Those are normal; the rule surfaces the compile-time-execution surface so a reviewer can confirm the command / path / endpoint is constant and trusted. Suppress per crate with a rationale once verified. Network idioms in a build script are rarely legitimate and deserve the closest look.
+
+**Seen in the wild**
+
+- Compile-time / build-step code execution is the class behind the xz-utils backdoor (the payload ran from the build step, not the shipped library). A Rust ``build.rs`` that fetches or execs at compile time is the same primitive expressed in the Cargo build.
+
+<div class="pg-rule__rec" markdown>
+
+**Recommended action**
+
+Audit the ``build.rs`` egress / exec idioms this rule flags. A build script runs as native code during ``cargo build`` with the build's full privileges (CI runner write access, any mounted credentials), before any test or sandbox, so a network call can fetch and run an attacker-controlled payload and an ``include!`` of a non-constant path can pull arbitrary source into the compile. Remove network access from the build script (do any fetching ahead of time, into a checked-in, reviewed artifact), ``include!`` only constant, in-repo paths, and keep any process calls limited to constant, well-known build tools (``pkg-config`` / ``cc``). Where a build script isn't strictly needed, drop it.
+
+</div>
+
+</div>
+
+<div class="pg-rule pg-rule--high" markdown>
+
+## CARGO-012: .cargo/config.toml overrides the registry source or injects build flags { #cargo-012 }
+
+<div class="pg-rule__tags">
+<span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-3</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-4</span> <span class="pg-tag pg-tag--esf">ESF-S-TRUSTED-REG</span> <span class="pg-tag pg-tag--esf">ESF-S-VERIFY-DEPS</span> <span class="pg-tag pg-tag--cwe">CWE-829</span> <span class="pg-tag pg-tag--cwe">CWE-94</span>
+</div>
+
+Parses the nearest ``.cargo/config.toml`` (walked up from the manifest to the scan root) and fires on two shapes: (1) any ``[source.<name>]`` table with a ``replace-with`` key, the source-substitution knob CARGO-005's ``docs_note`` calls out, which reroutes resolution without a Cargo.toml edit; (2) a ``[build]`` or ``[target.<cfg>]`` ``rustflags`` that sets a custom linker (``-C linker=`` / ``-Clinker=``) or a ``link-arg`` / ``link-args``, which can execute a binary at link time.
+
+Distinct from CARGO-008 (``[patch]`` / ``[replace]`` in ``Cargo.toml``) and CARGO-005 (a per-dependency ``registry`` key): this rule audits the separate ``.cargo/config.toml`` file, which the manifest rules never read.
+
+**Known false-positive modes**
+
+- A ``replace-with`` pointing at a trusted, access-controlled internal mirror is a legitimate vendoring pattern, and a constant ``link-arg`` is sometimes genuinely required for a native build. Suppress per repo with a rationale once the replacement source and any linker flags are confirmed trusted.
+
+**Seen in the wild**
+
+- Source-replacement / dependency-confusion class: a ``replace-with`` silently rerouting the whole crate graph to an attacker-influenced registry, invisible to anyone reading only ``Cargo.toml``.
+
+<div class="pg-rule__rec" markdown>
+
+**Recommended action**
+
+Audit ``.cargo/config.toml`` source-replacement and build-flag keys. A ``[source.crates-io] replace-with`` reroutes the entire dependency graph to another source without touching a single ``Cargo.toml`` line, so a compromised or attacker-controlled replacement registry serves every crate the build pulls. A linker / link-arg injected through ``[build] rustflags`` (or ``[target.<cfg>] rustflags``) can run an arbitrary binary at link time. Remove the source replacement (or point it at a trusted, access-controlled internal mirror that you audit), and drop any ``rustflags`` that set a custom linker or ``link-arg`` unless it's a reviewed, constant value the build genuinely needs.
+
+</div>
+
+</div>
+
+<div class="pg-rule pg-rule--medium" markdown>
+
+## CARGO-013: Cargo.lock package sourced off crates.io { #cargo-013 }
+
+<div class="pg-rule__tags">
+<span class="pg-sev pg-sev--medium">MEDIUM</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-3</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-5</span> <span class="pg-tag pg-tag--esf">ESF-S-VERIFY-DEPS</span> <span class="pg-tag pg-tag--cwe">CWE-829</span>
+</div>
+
+Parses the committed ``Cargo.lock`` body and flags any ``[[package]]`` whose ``source`` is a ``git+`` URL or an alternate registry (a ``registry+`` / ``sparse+`` source that is not the canonical crates.io index). Packages with no ``source`` (local path / workspace members) are skipped.
+
+Catches transitive source substitution the manifest rules can't reach: CARGO-002 (git dep mutable ref), CARGO-005 (alternate registry), and CARGO-008 (``[patch]`` / ``[replace]``) all read ``Cargo.toml`` direct declarations, while a substituted source can enter the graph transitively and only appears in the lockfile.
+
+**Known false-positive modes**
+
+- Workspaces that legitimately depend on a git fork (pending an upstream release) or pull internal crates from a trusted alternate registry will fire. Suppress per repo with a rationale once each off-crates.io source is confirmed; pin git sources to a ``rev`` SHA so the resolved commit is immutable.
+
+**Seen in the wild**
+
+- Transitive source-substitution class: a dependency-of-a-dependency silently resolved from a git fork or alternate registry rather than the audited crates.io release, invisible to anyone reading only the top-level manifest.
+
+<div class="pg-rule__rec" markdown>
+
+**Recommended action**
+
+Confirm every off-crates.io ``source`` in ``Cargo.lock`` is intentional and trusted. A ``[[package]]`` whose ``source`` is a ``git+`` URL or an alternate registry (``registry+`` / ``sparse+`` pointing somewhere other than crates.io) is resolved outside the crates.io index and its checksum, so a transitive dependency can be substituted without any change to your ``Cargo.toml``. Prefer crates.io releases; where a git / alternate source is genuinely needed, pin it (``rev`` SHA for git, a trusted internal registry for alternates) and review what pulled it in. The manifest rules (CARGO-002 / CARGO-005 / CARGO-008) only see your direct declarations; the lockfile is where transitive substitution shows up.
+
+</div>
+
+</div>
+
+<div class="pg-rule pg-rule--low" markdown>
+
+## CARGO-014: No supply-chain audit-gate config (cargo-deny / cargo-vet / cargo-audit) { #cargo-014 }
+
+<div class="pg-rule__tags">
+<span class="pg-sev pg-sev--low">LOW</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-3</span> <span class="pg-tag pg-tag--esf">ESF-S-VERIFY-DEPS</span> <span class="pg-tag pg-tag--cwe">CWE-1104</span>
+</div>
+
+Fires when a manifest declares dependencies but no committed audit-gate config is found at or above the manifest directory (bounded by the scan root): cargo-deny's ``deny.toml``, cargo-vet's ``supply-chain/config.toml``, or cargo-audit's ``audit.toml`` / ``.cargo/audit.toml``. A dependency-free manifest passes (nothing to gate).
+
+LOW severity, below the default gate: it's a completeness / posture nudge, not a finding about a specific bad dependency (CARGO-006 / CARGO-013 cover those).
+
+**Known false-positive modes**
+
+- A repo that runs ``cargo audit`` purely as a CI step with no committed config file leaves nothing on disk for this rule to detect, so it fires as a false positive. Suppress per repo with a rationale naming the CI gate, or commit a minimal ``deny.toml`` / ``audit.toml`` so the gate is visible in the tree.
+
+<div class="pg-rule__rec" markdown>
+
+**Recommended action**
+
+Add a committed supply-chain audit gate so dependency advisories, license drift, and untrusted sources fail the build instead of going unnoticed. Pick one (or more) and wire it into CI:
+
+* cargo-deny: a ``deny.toml`` (advisory DB, license allowlist, banned crates, source allowlist), run with ``cargo deny check``.
+* cargo-vet: a ``supply-chain/`` directory (``config.toml`` + ``audits.toml``) recording who reviewed each dependency, run with ``cargo vet``.
+* cargo-audit: ``cargo audit`` against the RustSec advisory DB (optionally an ``audit.toml`` to tune it).
+
+This is a posture signal (LOW): it doesn't prove a vulnerable dependency exists, only that the repo carries no committed gate to catch one. Parallel to CARGO-010 (missing ``rust-version``).
 
 </div>
 

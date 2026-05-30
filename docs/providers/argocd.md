@@ -43,7 +43,7 @@ All other flags (`--output`, `--severity-threshold`, `--checks`,
 
 ## What it covers
 
-16 checks · 0 have an autofix patch (``--fix``).
+18 checks · 0 have an autofix patch (``--fix``).
 
 | Check | Title | Severity | Fix |
 |-------|-------|----------|-----|
@@ -62,7 +62,9 @@ All other flags (`--output`, `--severity-threshold`, `--checks`,
 | [ARGOCD-013](#argocd-013) | Argo CD Application sets no explicit revisionHistoryLimit | <span class="pg-sev pg-sev--low">LOW</span> |  |
 | [ARGOCD-014](#argocd-014) | Argo CD web terminal enabled via exec.enabled | <span class="pg-sev pg-sev--critical">CRITICAL</span> |  |
 | [ARGOCD-015](#argocd-015) | Argo CD Kustomize build options enable the Helm plugin | <span class="pg-sev pg-sev--high">HIGH</span> |  |
+| [ARGOCD-016](#argocd-016) | Application Helm valueFiles fetched from a remote URL | <span class="pg-sev pg-sev--high">HIGH</span> |  |
 | [ARGOCD-017](#argocd-017) | Argo CD in-cluster Application deploys from a mutable source | <span class="pg-sev pg-sev--high">HIGH</span> |  |
+| [ARGOCD-018](#argocd-018) | argocd-cm ships custom resource health / action Lua | <span class="pg-sev pg-sev--medium">MEDIUM</span> |  |
 
 ---
 
@@ -454,6 +456,36 @@ Remove ``--enable-helm`` from ``kustomize.buildOptions`` in ``argocd-cm``. The f
 
 <div class="pg-rule pg-rule--high" markdown>
 
+## ARGOCD-016: Application Helm valueFiles fetched from a remote URL { #argocd-016 }
+
+<div class="pg-rule__tags">
+<span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-4</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-3</span> <span class="pg-tag pg-tag--esf">ESF-S-VERIFY-DEPS</span> <span class="pg-tag pg-tag--cwe">CWE-829</span> <span class="pg-tag pg-tag--cwe">CWE-494</span>
+</div>
+
+Walks every ``Application`` / ``ApplicationSet`` source and flags a ``helm.valueFiles`` entry whose value is an ``http://`` or ``https://`` URL. Path-form entries (a file inside the chart repo) and the multi-source ``$ref/path`` form are not flagged: those resolve against a revision-pinned Git source. Inline ``helm.values`` / ``valuesObject`` are also out of scope (they're committed with the Application).
+
+A remote values file is an unpinned, unverified input to the Helm render, distinct from HELM-003 (the chart *repository* transport) and ARGOCD-007 (Helm *parameter* interpolation): this is the values *file* pulled from an arbitrary host.
+
+**Known false-positive modes**
+
+- An internal, access-controlled values server that publishes immutable, content-addressed files may be used deliberately. Suppress per Application with a rationale; the durable fix is to track the values file in the chart's Git source or a revision-pinned ``$ref`` repo.
+
+**Seen in the wild**
+
+- Unpinned-remote-input class: a render-time values file fetched over the network can be swapped to change what the chart deploys, the GitOps analog of pulling a build script from an attacker-controlled URL.
+
+<div class="pg-rule__rec" markdown>
+
+**Recommended action**
+
+Don't point ``spec.source.helm.valueFiles`` at an ``http(s)://`` URL. A remote values file is fetched at render time from a host outside the chart's own repo, with no revision pin and no integrity check, so whoever controls that URL (or its DNS / TLS, or just the file behind it) can rewrite the values Argo CD renders the chart with, flipping image tags, injecting init containers, mounting secrets, or widening RBAC. Keep value files inside the chart's own Git-tracked source (a path in the same repo, pinned by the Application's ``targetRevision``), or use the multi-source ``$ref`` form pointed at a revision-pinned repo you control. Argo CD's ``helm.valuesFileSchemes`` setting can hard-block remote schemes instance-wide.
+
+</div>
+
+</div>
+
+<div class="pg-rule pg-rule--high" markdown>
+
 ## ARGOCD-017: Argo CD in-cluster Application deploys from a mutable source { #argocd-017 }
 
 <div class="pg-rule__tags">
@@ -471,6 +503,36 @@ Fires when an Application's ``spec.destination.server`` is the canonical in-clus
 **Recommended action**
 
 Pin ``targetRevision`` to an immutable ref (a 40-character commit SHA or a signed, immutability-enforced tag) for any Application that targets the in-cluster API (``spec.destination.server: https://kubernetes.default.svc``). That destination is where Argo CD itself runs, so a push to a tracked branch can reshape the control-plane namespace with no manifest change and no Argo CD-side review. If the workload does not need to live next to Argo CD, move it to a dedicated remote cluster instead.
+
+</div>
+
+</div>
+
+<div class="pg-rule pg-rule--medium" markdown>
+
+## ARGOCD-018: argocd-cm ships custom resource health / action Lua { #argocd-018 }
+
+<div class="pg-rule__tags">
+<span class="pg-sev pg-sev--medium">MEDIUM</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-4</span> <span class="pg-tag pg-tag--esf">ESF-C-LEAST-PRIV</span> <span class="pg-tag pg-tag--cwe">CWE-94</span> <span class="pg-tag pg-tag--cwe">CWE-829</span>
+</div>
+
+Fires when ``argocd-cm`` carries one or more ``resource.customizations`` keys with a non-empty value, either the per-resource form (``resource.customizations.health.<group_kind>``, ``resource.customizations.actions.<group_kind>``) or the legacy aggregate ``resource.customizations`` block whose value embeds ``health.lua`` / ``actions`` entries.
+
+This is a posture / visibility signal (MEDIUM), not proof of compromise: custom health and action Lua is a normal, useful Argo CD feature. The rule surfaces the controller-side execution surface so a reviewer can confirm each script is trusted, minimal, and (for actions) narrowly scoped.
+
+**Known false-positive modes**
+
+- Many production Argo CD instances legitimately define custom health checks for CRDs the built-ins don't cover. The rule fires on their presence; suppress per instance with a rationale once the scripts are reviewed, or scope the suppression to the specific resource keys.
+
+**Seen in the wild**
+
+- Controller-side code-execution surface: resource-action Lua can patch managed objects, and health Lua runs against live cluster state on every reconcile, so an over-broad or attacker-supplied script in argocd-cm executes with the Argo CD controller's cluster access.
+
+<div class="pg-rule__rec" markdown>
+
+**Recommended action**
+
+Treat every ``resource.customizations`` Lua block in ``argocd-cm`` as code that runs inside the Argo CD application controller. Health-check and resource-action Lua is evaluated by the controller against live cluster objects on every reconcile, so a malicious or buggy script runs with the controller's broad read (and, for actions, mutate) access to managed resources. Review each script, keep them minimal and side-effect-free (health scripts should only read ``obj`` and return a status; actions should be narrowly scoped), gate changes to ``argocd-cm`` behind the same review as RBAC changes, and prefer the built-in health checks where they suffice. Anyone who can edit ``argocd-cm`` can ship controller-side code, so the ConfigMap's write access is part of this rule's threat model.
 
 </div>
 

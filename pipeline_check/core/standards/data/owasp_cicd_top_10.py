@@ -135,6 +135,7 @@ STANDARD = Standard(
         "S3-005":   ["CICD-SEC-9"],
         # GitHub Actions
         "GHA-001":  ["CICD-SEC-3", "CICD-SEC-8"],
+        "GHA-110": ["CICD-SEC-3", "CICD-SEC-5"],  # CI env disables Go module verification
         "GHA-002":  ["CICD-SEC-4"],
         "GHA-003":  ["CICD-SEC-4"],
         "GHA-004":  ["CICD-SEC-5"],
@@ -225,6 +226,7 @@ STANDARD = Standard(
         "GHA-096":  ["CICD-SEC-3", "CICD-SEC-8"],  # known-vulnerable action ref (GHSA)
         # GitLab CI
         "GL-001":   ["CICD-SEC-3"],
+        "GL-037": ["CICD-SEC-3", "CICD-SEC-5"],  # CI env disables Go module verification
         "GL-002":   ["CICD-SEC-4"],
         "GL-003":   ["CICD-SEC-6"],
         "GL-004":   ["CICD-SEC-1"],
@@ -360,6 +362,7 @@ STANDARD = Standard(
         "JF-035":   ["CICD-SEC-3"],   # httpRequest ignoreSslErrors: true
         # CircleCI
         "CC-001":   ["CICD-SEC-3", "CICD-SEC-8"],
+        "CC-033": ["CICD-SEC-3", "CICD-SEC-5"],  # CI env disables Go module verification
         "CC-002":   ["CICD-SEC-4"],
         "CC-003":   ["CICD-SEC-3"],
         "CC-004":   ["CICD-SEC-6"],
@@ -477,6 +480,9 @@ STANDARD = Standard(
         "HELM-012": ["CICD-SEC-3"],                 # deprecated without successor
         "HELM-013": ["CICD-SEC-3"],                 # invalid chart type
         "HELM-014": ["CICD-SEC-3", "CICD-SEC-7"],  # known-compromised dependency
+        "HELM-015": ["CICD-SEC-3"],  # oci:// dependency not digest-pinned
+        "HELM-016": ["CICD-SEC-6"],  # default secret in values.yaml
+        "HELM-017": ["CICD-SEC-4"],  # tpl of an untrusted .Values value
         # Dockerfile
         "DF-001":   ["CICD-SEC-3"],   # FROM not digest-pinned
         "DF-002":   ["CICD-SEC-7"],   # no USER
@@ -528,6 +534,8 @@ STANDARD = Standard(
         "PYPI-002": ["CICD-SEC-3", "CICD-SEC-9"],  # hash pinning missing
         "PYPI-003": ["CICD-SEC-3", "CICD-SEC-7"],  # http index / --trusted-host
         "PYPI-018": ["CICD-SEC-3"],  # --no-binary forces sdist build
+        "PYPI-019": ["CICD-SEC-4"],  # missing PEP 740 build provenance
+        "PYPI-020": ["CICD-SEC-3"],  # low OpenSSF Scorecard upstream
         "PYPI-004": ["CICD-SEC-3", "CICD-SEC-9"],  # VCS dep without commit SHA
         "PYPI-015": ["CICD-SEC-3"],  # direct artifact URL
         "PYPI-005": ["CICD-SEC-3"],   # --extra-index-url (dep confusion)
@@ -558,6 +566,10 @@ STANDARD = Standard(
         "MVN-012":  ["CICD-SEC-3", "CICD-SEC-7"],  # build plugin floating
         "MVN-013":  ["CICD-SEC-3", "CICD-SEC-7"],  # build extension floating
         "MVN-014":  ["CICD-SEC-3"],                # Maven Wrapper sha256 missing
+        "MVN-015": ["CICD-SEC-1", "CICD-SEC-3"],  # build-time plugin exec bound to lifecycle
+        "MVN-016": ["CICD-SEC-3", "CICD-SEC-5"],  # gradle allowInsecureProtocol
+        "MVN-017": ["CICD-SEC-6", "CICD-SEC-10"],  # settings.xml privateKey + plaintext passphrase
+        "MVN-018": ["CICD-SEC-3"],  # distributionManagement release accepts snapshots
         # nuget (csproj + NuGet.config static analysis)
         "NUGET-001": ["CICD-SEC-3"],                # floating NuGet version range
         "NUGET-002": ["CICD-SEC-3"],                # wildcard prerelease version
@@ -576,6 +588,7 @@ STANDARD = Standard(
         "NUGET-014": ["CICD-SEC-6", "CICD-SEC-10"], # source URL credentials
         "NUGET-015": ["CICD-SEC-3"],                # VersionOverride breaks CPM
         "NUGET-016": ["CICD-SEC-3"],                # missing <clear/> inherits public gallery
+        "NUGET-017": ["CICD-SEC-3"],  # public gallery active alongside private feed, not disabled
         "NUGET-018": ["CICD-SEC-4", "CICD-SEC-3"],  # build-time MSBuild execution
         "NUGET-019": ["CICD-SEC-3"],                # require mode, no trusted signers
         # ── Go modules (GOMOD-001..006) ──
@@ -590,6 +603,8 @@ STANDARD = Standard(
         "GOMOD-008": ["CICD-SEC-3", "CICD-SEC-5"], # replace directive without version pin
         "GOMOD-009": ["CICD-SEC-3"],               # pre-release direct require
         "GOMOD-010": ["CICD-SEC-3"],               # stale exclude directive
+        "GOMOD-011": ["CICD-SEC-3", "CICD-SEC-4"],  # tool directive build-time exec
+        "GOMOD-012": ["CICD-SEC-3", "CICD-SEC-5"],  # insecure / non-canonical module host
         # ── Cargo / Rust (CARGO-001..006) ──
         "CARGO-001": ["CICD-SEC-3"],               # floating Cargo.toml version spec
         "CARGO-002": ["CICD-SEC-3", "CICD-SEC-5"], # git dep with mutable ref (no rev)
@@ -602,6 +617,10 @@ STANDARD = Standard(
         "CARGO-008": ["CICD-SEC-3", "CICD-SEC-5"], # [patch.crates-io] substitution
         "CARGO-009": ["CICD-SEC-3"],               # workspace deps floating
         "CARGO-010": ["CICD-SEC-3"],               # missing rust-version
+        "CARGO-011": ["CICD-SEC-1", "CICD-SEC-3"],  # build.rs compile-time egress / exec
+        "CARGO-012": ["CICD-SEC-3", "CICD-SEC-4"],  # .cargo/config.toml source override / build flags
+        "CARGO-013": ["CICD-SEC-3", "CICD-SEC-5"],  # Cargo.lock off-crates.io source
+        "CARGO-014": ["CICD-SEC-3"],  # no supply-chain audit-gate config
         # ── Composer / PHP (COMPOSER-001..008) ──
         "COMPOSER-001": ["CICD-SEC-3"],               # missing composer.lock
         "COMPOSER-002": ["CICD-SEC-3"],               # floating constraint
@@ -628,6 +647,9 @@ STANDARD = Standard(
         "GEM-008": ["CICD-SEC-3", "CICD-SEC-5"], # path: source in prod
         "GEM-009": ["CICD-SEC-6", "CICD-SEC-10"], # .bundle/config credentials
         "GEM-010": ["CICD-SEC-3"],               # dynamic Gemfile
+        "GEM-011": ["CICD-SEC-3", "CICD-SEC-1"],  # Bundler plugin install-time exec
+        "GEM-012": ["CICD-SEC-3", "CICD-SEC-5"],  # per-gem :source override
+        "GEM-013": ["CICD-SEC-3", "CICD-SEC-5"],  # insecure git transport
         # ── Pulumi (PULUMI-001..006) ──
         "PULUMI-001": ["CICD-SEC-6", "CICD-SEC-7"], # passphrase secretsprovider
         "PULUMI-002": ["CICD-SEC-6"],               # secret-shaped config plaintext
@@ -640,6 +662,7 @@ STANDARD = Standard(
         "PULUMI-007": ["CICD-SEC-2", "CICD-SEC-6"], # public-access cloud resource
         "PULUMI-008": ["CICD-SEC-5", "CICD-SEC-3"], # shell-exec with non-constant input
         "PULUMI-013": ["CICD-SEC-3", "CICD-SEC-5"],  # dynamic provider deploy-time code
+        "PULUMI-014": ["CICD-SEC-3", "CICD-SEC-6"],  # ESC environment imported without a qualifier
         "PULUMI-009": ["CICD-SEC-3"],               # runtime / source mismatch
         "PULUMI-012": ["CICD-SEC-3", "CICD-SEC-4"],  # plugin version unpinned
         "PULUMI-010": ["CICD-SEC-6"],               # stack orphaned encryption salt
@@ -706,6 +729,8 @@ STANDARD = Standard(
         # ── ArgoCD extended pack (ARGOCD-010..013) ──
         "ARGOCD-010": ["CICD-SEC-3", "CICD-SEC-5"], # mutable targetRevision
         "ARGOCD-017": ["CICD-SEC-3", "CICD-SEC-5"],  # in-cluster mutable source
+        "ARGOCD-016": ["CICD-SEC-4", "CICD-SEC-3"],  # Helm valueFiles from a remote URL
+        "ARGOCD-018": ["CICD-SEC-4"],  # custom resource health / action Lua
         "ARGOCD-011": ["CICD-SEC-1", "CICD-SEC-5"], # cluster-resource wildcard
         "ARGOCD-012": ["CICD-SEC-4", "CICD-SEC-1"], # no sync windows on prod
         "ARGOCD-013": ["CICD-SEC-7"],               # no revision history cap

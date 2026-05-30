@@ -36,7 +36,7 @@ reports what it can extract and otherwise passes through.
 
 ## What it covers
 
-10 checks · 0 have an autofix patch (``--fix``).
+13 checks · 0 have an autofix patch (``--fix``).
 
 | Check | Title | Severity | Fix |
 |-------|-------|----------|-----|
@@ -50,6 +50,9 @@ reports what it can extract and otherwise passes through.
 | [GEM-008](#gem-008) | Gemfile gem declared with a path: source | <span class="pg-sev pg-sev--high">HIGH</span> |  |
 | [GEM-009](#gem-009) | .bundle/config committed with embedded credentials | <span class="pg-sev pg-sev--high">HIGH</span> |  |
 | [GEM-010](#gem-010) | Gemfile uses dynamic gem-list resolution | <span class="pg-sev pg-sev--medium">MEDIUM</span> |  |
+| [GEM-011](#gem-011) | Gemfile registers a Bundler plugin that runs at install time | <span class="pg-sev pg-sev--high">HIGH</span> |  |
+| [GEM-012](#gem-012) | Gemfile gem pinned to a per-gem :source | <span class="pg-sev pg-sev--medium">MEDIUM</span> |  |
+| [GEM-013](#gem-013) | Gemfile git gem fetched over an insecure transport | <span class="pg-sev pg-sev--high">HIGH</span> |  |
 
 ---
 
@@ -340,6 +343,90 @@ Fires when the Gemfile body contains any of ``Dir.glob`` / ``Dir[``, ``eval``, `
 **Recommended action**
 
 Inline the dynamic ``gem`` declarations into the Gemfile directly. Bundler accepts arbitrary Ruby code at parse time, which is convenient (one Gemfile for many environments) but defeats every static audit you might run against the manifest: the rule pack here, ``bundler-audit``, ``dependabot``, and every other consumer that walks the Gemfile as data sees a hole where the dynamic block expanded into. If the dynamism is genuinely needed, gate it behind ``group :development`` so production / CI Gemfiles stay static, or pre-expand the dynamic block into a generated static file and commit that.
+
+</div>
+
+</div>
+
+<div class="pg-rule pg-rule--high" markdown>
+
+## GEM-011: Gemfile registers a Bundler plugin that runs at install time { #gem-011 }
+
+<div class="pg-rule__tags">
+<span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-3</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-1</span> <span class="pg-tag pg-tag--esf">ESF-S-VERIFY-DEPS</span> <span class="pg-tag pg-tag--cwe">CWE-829</span> <span class="pg-tag pg-tag--cwe">CWE-94</span>
+</div>
+
+Fires on any ``plugin "name"`` directive in the Gemfile. Bundler plugins are not gems: their ``plugins.rb`` runs at install time, before the lockfile-pinned application dependencies are even resolved, which is why GEM-010 (dynamic gem-list resolution) explicitly does not match ``plugin``. The Ruby analog of an npm install script (NPM lifecycle) or a Maven build-time plugin (MVN-015).
+
+Single regex over the raw Gemfile text; comment lines are skipped. The directive name and any pinned source / version are surfaced so a reviewer can confirm the plugin is pinned and trusted.
+
+**Known false-positive modes**
+
+- Repos that legitimately use a trusted, pinned Bundler plugin (``bundler-audit`` via plugin, a vendored internal plugin) will fire. The directive is not itself a vulnerability; suppress per line with a rationale once the plugin source is confirmed pinned and reviewed.
+
+**Seen in the wild**
+
+- Install-time code execution is the class behind the npm ``postinstall`` supply-chain attacks and the xz-utils build-step backdoor. A Bundler plugin is the same primitive in the Ruby ecosystem: code that runs during dependency installation, before the consumer inspects anything.
+
+<div class="pg-rule__rec" markdown>
+
+**Recommended action**
+
+Treat every ``plugin`` directive as build-time code that runs before any application code. Bundler executes a plugin's ``plugins.rb`` during ``bundle install`` (and on ``bundle plugin install``), so a compromised plugin release runs arbitrary Ruby with the installer's privileges (CI runner write access, any credentials in the environment) before your app, your tests, or any sandbox exist. Pin the plugin to an immutable source: a ``git:`` + ``ref:`` SHA, or an exact ``version:``, never a floating version or a branch. Audit the plugin's source before adding it, vendor it where practical, and drop any ``plugin`` line whose generator the build no longer needs. A plugin you don't control is strictly more dangerous than an ordinary gem dependency.
+
+</div>
+
+</div>
+
+<div class="pg-rule pg-rule--medium" markdown>
+
+## GEM-012: Gemfile gem pinned to a per-gem :source { #gem-012 }
+
+<div class="pg-rule__tags">
+<span class="pg-sev pg-sev--medium">MEDIUM</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-3</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-5</span> <span class="pg-tag pg-tag--esf">ESF-S-TRUSTED-REG</span> <span class="pg-tag pg-tag--esf">ESF-S-VERIFY-DEPS</span> <span class="pg-tag pg-tag--cwe">CWE-829</span>
+</div>
+
+Fires on a ``gem`` entry that carries an inline ``source:`` option (``gem "x", source: "https://…"``). This is the per-gem analog of GEM-007's multiple-top-level-``source`` confusion: it splits one gem's resolution off to a different registry than the bundle default. Distinct from GEM-003 (a ``source`` over plain HTTP) and from GEM-005 (a ``git:`` / ``github:`` source); this rule is about a registry override, not transport or VCS pinning.
+
+MEDIUM because a per-gem source is sometimes legitimate (one private gem on an internal index). The signal is the split itself: it widens the trusted-source set for a single name and is easy to overlook.
+
+**Known false-positive modes**
+
+- A single private gem hosted on a trusted internal index, pulled in via a per-gem ``source:`` while the rest of the bundle uses rubygems.org, is a legitimate pattern. Suppress per line with a rationale, or move the private gem behind a scoped ``source "…" do … end`` block so the split is explicit.
+
+<div class="pg-rule__rec" markdown>
+
+**Recommended action**
+
+Confirm each per-gem ``source:`` points at a registry you trust, and prefer a scoped ``source "…" do … end`` block over the inline option so the gem's origin is obvious at a glance. A ``gem "x", source: "https://other-registry"`` pulls that one gem from a different index than the rest of the bundle, so a name that also exists on the default source can be resolved from the attacker's registry instead (the Bundler face of dependency confusion). Where a private gem is involved, host it on a single canonical internal source and route the whole bundle through it rather than per-gem overrides, which are easy to miss in review and easy to point at a typosquatted host.
+
+</div>
+
+</div>
+
+<div class="pg-rule pg-rule--high" markdown>
+
+## GEM-013: Gemfile git gem fetched over an insecure transport { #gem-013 }
+
+<div class="pg-rule__tags">
+<span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-3</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-5</span> <span class="pg-tag pg-tag--esf">ESF-S-TRUSTED-REG</span> <span class="pg-tag pg-tag--esf">ESF-S-VERIFY-DEPS</span> <span class="pg-tag pg-tag--cwe">CWE-319</span> <span class="pg-tag pg-tag--cwe">CWE-829</span>
+</div>
+
+Fires on a ``gem`` entry whose ``git:`` URL uses the ``git://`` protocol or a plain ``http://`` clone URL. The ``github:`` shorthand resolves to HTTPS and is not flagged; ``https://``, ``ssh://``, and ``git@host:`` forms pass. Companion to GEM-003 (a registry ``source`` over HTTP) and GEM-005 (a git source missing a ref pin), covering the git-transport gap neither one sees.
+
+**Known false-positive modes**
+
+- Air-gapped internal git mirrors on a trusted network segment may serve plain ``git://`` / ``http://``. Suppress per line with a rationale naming the network boundary; better, front the mirror with an HTTPS or SSH endpoint.
+
+**Seen in the wild**
+
+- The unauthenticated ``git://`` protocol is a textbook MITM surface: GitHub deprecated and then disabled it in 2022 because a network attacker could serve arbitrary repository content over the unprotected channel.
+
+<div class="pg-rule__rec" markdown>
+
+**Recommended action**
+
+Clone every ``git:`` gem over an authenticated, encrypted transport (``https://`` or ``ssh://`` / ``git@``). The ``git://`` protocol carries no encryption and no server authentication, and a plain ``http://`` clone is equally open to a MITM swapping the cloned tree, so an attacker on the network path between the runner and the host can serve a backdoored repository. (GitHub removed ``git://`` support entirely in 2022 for exactly this reason.) Switch the URL to ``https://`` and pair it with a ``ref:`` SHA pin (GEM-005) so both the channel and the content are verifiable.
 
 </div>
 

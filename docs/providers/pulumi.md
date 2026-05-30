@@ -36,7 +36,7 @@ pipeline_check --pipeline pulumi --pulumi-path ./infra/
 
 ## What it covers
 
-13 checks · 0 have an autofix patch (``--fix``).
+14 checks · 0 have an autofix patch (``--fix``).
 
 | Check | Title | Severity | Fix |
 |-------|-------|----------|-----|
@@ -53,6 +53,7 @@ pipeline_check --pipeline pulumi --pulumi-path ./infra/
 | [PULUMI-011](#pulumi-011) | Pulumi plugin pulled from a custom download server | <span class="pg-sev pg-sev--high">HIGH</span> |  |
 | [PULUMI-012](#pulumi-012) | Pulumi plugin version unpinned or floating | <span class="pg-sev pg-sev--medium">MEDIUM</span> |  |
 | [PULUMI-013](#pulumi-013) | Pulumi dynamic provider runs arbitrary code at deploy time | <span class="pg-sev pg-sev--high">HIGH</span> |  |
+| [PULUMI-014](#pulumi-014) | ESC environment imported without a project / org qualifier | <span class="pg-sev pg-sev--medium">MEDIUM</span> |  |
 
 ---
 
@@ -529,6 +530,36 @@ Go and .NET source files are not scanned because the dynamic-provider API is a P
 Prefer a native Pulumi provider or a reviewed, published component over a dynamic provider. A dynamic provider's ``create`` / ``update`` / ``delete`` handlers are invoked by the Pulumi engine during ``pulumi up``, on the deploy host, with the orchestrator's cloud credentials. The handler closure is also serialized into stack state, so anyone who can edit the handler source (or tamper with the state) gets code execution on the next deploy.
 
 If a dynamic provider is unavoidable, keep the handler code minimal, free of external / config-derived input, and reviewed on every change. Never let a handler shell out or fetch remote code (see PULUMI-008 and PULUMI-007).
+
+</div>
+
+</div>
+
+<div class="pg-rule pg-rule--medium" markdown>
+
+## PULUMI-014: ESC environment imported without a project / org qualifier { #pulumi-014 }
+
+<div class="pg-rule__tags">
+<span class="pg-sev pg-sev--medium">MEDIUM</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-3</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-6</span> <span class="pg-tag pg-tag--esf">ESF-S-VERIFY-DEPS</span> <span class="pg-tag pg-tag--cwe">CWE-829</span>
+</div>
+
+Reads the ``environment:`` import list from each ``Pulumi.yaml`` and ``Pulumi.<stack>.yaml`` (both the bare-list form and the ``{ imports: [...] }`` form) and fires on any entry that is a bare environment name with no ``/`` qualifier. A qualified name (``project/env`` or ``org/project/env``) pins the import; a bare name resolves against the ambient default project / org context.
+
+The ESC face of the StackReference-drift primitive (PULUMI-006): an unqualified cross-resource reference that can silently resolve to the wrong source.
+
+**Known false-positive modes**
+
+- A single-project setup where the default context is unambiguous and stable may use bare environment names safely. Suppress per stack with a rationale; qualifying the name is cheap and removes the ambiguity outright.
+
+**Seen in the wild**
+
+- Ambiguous-reference drift class: an unqualified ESC import binding to a different environment (and its credentials) than the author intended when the default project / org context differs between who runs the deployment.
+
+<div class="pg-rule__rec" markdown>
+
+**Recommended action**
+
+Import every Pulumi ESC environment by its fully-qualified ``<project>/<environment>`` (or ``<org>/<project>/<env>``) name, not a bare environment name. An ESC environment can carry secrets and the cloud OIDC / credential config a stack assumes at ``pulumi up``, so resolving it by an unqualified name lets the import bind to whichever project context happens to apply, a different environment (with different credentials) than intended if the default context drifts or differs between operators / CI. Qualify the name so the import is unambiguous and pins to one environment, the same drift concern PULUMI-006 flags for ``StackReference``.
 
 </div>
 

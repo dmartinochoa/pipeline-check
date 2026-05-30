@@ -49,6 +49,15 @@ class Chart:
     chart_yaml: dict[str, Any]
     chart_lock_path: str | None = None
     chart_lock: dict[str, Any] | None = None
+    #: Parsed ``values.yaml`` (chart defaults) + its path, read for
+    #: HELM-016 (a default secret baked into shipped values). Empty
+    #: dict / ``None`` when the chart ships no ``values.yaml``.
+    values: dict[str, Any] = field(default_factory=dict)
+    values_path: str | None = None
+    #: Chart ``templates/`` files as ``(display_path, text)`` pairs,
+    #: read for HELM-017 (``tpl`` of an untrusted value). Empty when the
+    #: chart has no readable ``templates/``.
+    templates: tuple[tuple[str, str], ...] = field(default_factory=tuple)
     #: Free-form per-chart warnings captured during parse (e.g. a
     #: ``Chart.lock`` that exists but won't parse). Surfaced through
     #: the scanner's warning channel without aborting the scan.
@@ -114,12 +123,24 @@ def _parse_dir(chart_dir: Path) -> Chart | None:
             chart_lock = parsed
             chart_lock_path = str(lock_path)
 
+    values: dict[str, Any] = {}
+    values_path: str | None = None
+    values_file = chart_dir / "values.yaml"
+    if values_file.is_file():
+        parsed_v = _read_yaml(values_file, warnings)
+        if parsed_v is not None:
+            values = parsed_v
+            values_path = str(values_file)
+
     return Chart(
         path=str(chart_dir),
         chart_yaml_path=str(chart_yaml_path),
         chart_yaml=chart_yaml,
         chart_lock_path=chart_lock_path,
         chart_lock=chart_lock,
+        values=values,
+        values_path=values_path,
+        templates=_read_dir_templates(chart_dir / "templates"),
         parse_warnings=tuple(warnings),
     )
 
@@ -153,6 +174,15 @@ def _parse_tgz(tgz_path: Path) -> Chart | None:
                     chart_lock_path = (
                         f"{tgz_path}!{lock_member.name}"
                     )
+            values: dict[str, Any] = {}
+            values_path: str | None = None
+            values_member = _find_top_level(tar, "values.yaml")
+            if values_member is not None:
+                parsed_v = _yaml_from_tar(tar, values_member, warnings)
+                if parsed_v is not None:
+                    values = parsed_v
+                    values_path = f"{tgz_path}!{values_member.name}"
+            templates = _read_tgz_templates(tar, str(tgz_path), warnings)
     except (tarfile.TarError, OSError) as exc:
         warnings.append(f"{tgz_path}: tar read error: {exc}")
         return None
@@ -163,6 +193,9 @@ def _parse_tgz(tgz_path: Path) -> Chart | None:
         chart_yaml=chart_yaml,
         chart_lock_path=chart_lock_path,
         chart_lock=chart_lock,
+        values=values,
+        values_path=values_path,
+        templates=templates,
         parse_warnings=tuple(warnings),
     )
 
@@ -244,6 +277,60 @@ def _parse_yaml_text(
         )
         return None
     return doc
+
+
+#: Template file suffixes Helm renders. ``.tpl`` (helper partials) and
+#: ``.txt`` (NOTES.txt) are included since both can carry a ``tpl`` call.
+_TEMPLATE_SUFFIXES: tuple[str, ...] = (".yaml", ".yml", ".tpl", ".txt")
+
+
+def _read_dir_templates(tdir: Path) -> tuple[tuple[str, str], ...]:
+    """Read every rendered template file under *tdir* as
+    ``(display_path, text)``. Binary / unknown files and read errors
+    are skipped per-file rather than failing the chart load."""
+    if not tdir.is_dir():
+        return ()
+    out: list[tuple[str, str]] = []
+    for p in sorted(tdir.rglob("*")):
+        if not p.is_file() or p.suffix.lower() not in _TEMPLATE_SUFFIXES:
+            continue
+        try:
+            text = p.read_text(encoding="utf-8", errors="replace")
+        except OSError:
+            continue
+        out.append((str(p), text))
+    return tuple(out)
+
+
+def _read_tgz_templates(
+    tar: tarfile.TarFile, tgz_path: str, warnings: list[str],
+) -> tuple[tuple[str, str], ...]:
+    """Read ``<top>/templates/...`` text members from a packaged chart
+    as ``(display_path, text)``, bounded by the per-member size cap."""
+    out: list[tuple[str, str]] = []
+    for member in tar.getmembers():
+        if not member.isfile():
+            continue
+        parts = member.name.split("/")
+        if len(parts) < 3 or parts[1] != "templates":
+            continue
+        if Path(member.name).suffix.lower() not in _TEMPLATE_SUFFIXES:
+            continue
+        if member.size > _MAX_TAR_MEMBER_BYTES:
+            warnings.append(f"{member.name}: skipped (exceeds size limit)")
+            continue
+        try:
+            fobj = tar.extractfile(member)
+            if fobj is None:
+                continue
+            raw = fobj.read(_MAX_TAR_MEMBER_BYTES + 1)
+        except (KeyError, OSError):
+            continue
+        out.append((
+            f"{tgz_path}!{member.name}",
+            raw.decode("utf-8", errors="replace"),
+        ))
+    return tuple(out)
 
 
 __all__ = ["Chart", "parse_chart"]

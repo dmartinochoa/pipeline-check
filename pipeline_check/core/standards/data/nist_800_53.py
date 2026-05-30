@@ -134,6 +134,7 @@ STANDARD = Standard(
         "S3-005":   ["SC-8", "AU-9"],
         # GitHub Actions
         "GHA-001":  ["SR-3", "SR-11", "SI-2", "RA-5"],   # unpinned action
+        "GHA-110": ["CM-7", "SR-3"],  # CI env disables Go module verification
         "GHA-002":  ["CM-6", "SI-7", "SA-11"],           # pull_request_target + PR head
         "GHA-003":  ["CM-6", "SA-11", "SA-15"],          # script injection
         "GHA-004":  ["AC-6", "CM-6", "CM-7"],            # unrestricted GITHUB_TOKEN
@@ -223,6 +224,7 @@ STANDARD = Standard(
         "GHA-096":  ["SR-3", "SR-11", "RA-5"],           # known-vulnerable action ref (GHSA)
         # GitLab CI
         "GL-001":   ["SR-3", "SR-11", "SI-2"],
+        "GL-037": ["CM-7", "SR-3"],  # CI env disables Go module verification
         "GL-002":   ["SI-7", "SA-11", "CM-6"],
         "GL-003":   ["IA-5"],
         "GL-004":   ["SA-10", "AC-3"],
@@ -322,6 +324,7 @@ STANDARD = Standard(
         "ADO-030":  ["CM-6", "SA-11"],                   # pool interpolates untrusted
         # CircleCI
         "CC-001":   ["SR-3", "SR-11", "SI-2", "RA-5"],  # orb not pinned to SHA
+        "CC-033": ["CM-7", "SR-3"],  # CI env disables Go module verification
         "CC-002":   ["CM-6", "SA-11", "SA-15"],          # script injection
         "CC-003":   ["SR-3", "SR-11", "SI-2", "RA-5"],  # image not pinned to digest
         "CC-004":   ["IA-5"],                            # unrestricted context
@@ -500,6 +503,9 @@ STANDARD = Standard(
         "HELM-012": ["CM-2", "SI-2"],                    # deprecated without successor
         "HELM-013": ["CM-2"],                            # invalid chart type
         "HELM-014": ["SI-2", "SR-3"],                    # known-compromised dep
+        "HELM-015": ["CM-7", "SR-3"],  # oci:// dependency not digest-pinned
+        "HELM-016": ["IA-5", "SC-28"],  # default secret in values.yaml
+        "HELM-017": ["CM-7"],  # tpl of an untrusted .Values value
         # Buildkite, pipeline-config posture maps to the same SR /
         # CM / IA families as the other CI providers' rules.
         "BK-001":   ["SR-3", "SR-11", "SI-2"],           # plugin not pinned
@@ -552,6 +558,8 @@ STANDARD = Standard(
         # ── Argo CD (GitOps deployment) ──
         "ARGOCD-010": ["CM-7", "SR-3"],                  # mutable targetRevision
         "ARGOCD-017": ["CM-7", "SR-3"],  # in-cluster mutable source
+        "ARGOCD-016": ["CM-7", "SR-3"],  # Helm valueFiles from a remote URL
+        "ARGOCD-018": ["CM-7", "SR-3"],  # custom resource health / action Lua
         "ARGOCD-011": ["AC-6", "CM-7"],                  # cluster-resource wildcard
         "ARGOCD-012": ["CM-6", "AU-2"],                  # no sync windows
         "ARGOCD-013": ["AU-11"],                         # no revision history cap
@@ -635,6 +643,8 @@ STANDARD = Standard(
         "PYPI-002": ["SR-3", "SR-11", "SI-7"],           # hash pinning missing
         "PYPI-003": ["SR-3", "SR-11", "SC-8"],           # http index / --trusted-host
         "PYPI-018": ["SR-3", "SR-11", "SC-8"],  # --no-binary forces sdist build
+        "PYPI-019": ["SR-3", "SR-11", "RA-5"],  # missing PEP 740 build provenance
+        "PYPI-020": ["SR-3", "SR-11", "RA-5"],  # low OpenSSF Scorecard upstream
         "PYPI-004": ["SR-3", "SR-11", "SI-2"],           # VCS dep without commit SHA
         "PYPI-015": ["SR-3", "SR-11", "SI-2"],  # direct artifact URL
         "PYPI-005": ["SR-3", "SR-11"],                   # --extra-index-url (dep confusion)
@@ -656,6 +666,10 @@ STANDARD = Standard(
         "MVN-012":  ["CM-7", "SR-3"],                    # build plugin floating
         "MVN-013":  ["CM-7", "SR-3"],                    # build extension floating
         "MVN-014":  ["SI-7", "CM-7"],                    # wrapper sha256 missing
+        "MVN-015": ["CM-7", "SR-3"],  # build-time plugin exec bound to lifecycle
+        "MVN-016": ["CM-7", "SR-3"],  # gradle allowInsecureProtocol
+        "MVN-017": ["IA-5", "SC-28"],  # settings.xml privateKey + plaintext passphrase
+        "MVN-018": ["CM-7", "SR-3"],  # distributionManagement release accepts snapshots
         "NPM-008":  ["SR-3", "SR-11", "RA-5"],           # cooldown gate (--resolve-remote)
         "NPM-009":  ["SR-3", "SR-11"],                   # new-transitive-dep diff gate
         "NPM-010":  ["SR-3", "SR-11", "RA-5"],           # OSV advisory (--resolve-remote)
@@ -688,6 +702,7 @@ STANDARD = Standard(
         "NUGET-014": ["IA-5", "SC-28"],                  # source URL credentials
         "NUGET-015": ["CM-6"],                           # VersionOverride breaks CPM
         "NUGET-016": ["CM-7", "SR-3"],                   # missing <clear/> inherits public gallery
+        "NUGET-017": ["CM-7", "SR-3"],  # public gallery active alongside private feed, not disabled
         "NUGET-018": ["CM-7", "SR-3"],                   # build-time MSBuild execution
         "NUGET-019": ["SI-7"],                           # require mode, no trusted signers
         # ── Go modules (GOMOD-001..006) ─────────────────────────
@@ -702,6 +717,8 @@ STANDARD = Standard(
         "GOMOD-008": ["CM-7", "SR-3"],                   # replace without version pin
         "GOMOD-009": ["CM-7"],                           # pre-release direct require
         "GOMOD-010": ["CM-7"],                           # stale exclude directive
+        "GOMOD-011": ["CM-7"],  # tool directive build-time exec
+        "GOMOD-012": ["CM-7"],  # insecure / non-canonical module host
         # ── Cargo (CARGO-001..006) ─────────────────────────────
         "CARGO-001": ["CM-7"],                           # floating Cargo.toml version spec
         "CARGO-002": ["CM-7", "SR-3"],                  # git dep with mutable ref (no rev)
@@ -714,6 +731,10 @@ STANDARD = Standard(
         "CARGO-008": ["CM-7", "SR-3"],                   # patch.crates-io substitution
         "CARGO-009": ["CM-7"],                           # workspace deps floating
         "CARGO-010": ["CM-6"],                           # missing rust-version
+        "CARGO-011": ["CM-7"],  # build.rs compile-time egress / exec
+        "CARGO-012": ["CM-7"],  # .cargo/config.toml source override / build flags
+        "CARGO-013": ["CM-7"],  # Cargo.lock off-crates.io source
+        "CARGO-014": ["CM-7"],  # no supply-chain audit-gate config
         # ── Composer / PHP ──
         "COMPOSER-001": ["SR-3", "CM-8"],                # missing composer.lock
         "COMPOSER-002": ["CM-7", "SR-3"],                # floating constraint
@@ -740,6 +761,9 @@ STANDARD = Standard(
         "GEM-008": ["CM-7", "SR-3"],                     # path: source in prod
         "GEM-009": ["IA-5", "SC-28"],                    # .bundle/config credentials
         "GEM-010": ["CM-7", "SR-3"],                     # dynamic Gemfile
+        "GEM-011": ["CM-7", "SR-3"],  # Bundler plugin install-time exec
+        "GEM-012": ["CM-7", "SR-3"],  # per-gem :source override
+        "GEM-013": ["CM-7", "SR-3"],  # insecure git transport
         # ── Pulumi (PULUMI-001..006) ──
         "PULUMI-001": ["SC-13", "SC-12"],                # passphrase secretsprovider
         "PULUMI-002": ["IA-5", "SC-28"],                 # secret-shaped config plaintext
@@ -752,6 +776,7 @@ STANDARD = Standard(
         "PULUMI-007": ["AC-3", "AC-6"],                  # public-access cloud resource
         "PULUMI-008": ["CM-7", "SI-7"],                  # shell-exec with non-constant input
         "PULUMI-013": ["CM-7", "SI-7"],  # dynamic provider deploy-time code
+        "PULUMI-014": ["CM-7", "SI-7"],  # ESC environment imported without a qualifier
         "PULUMI-009": ["CM-6"],                          # runtime / source mismatch
         "PULUMI-012": ["CM-6"],  # plugin version unpinned
         "PULUMI-010": ["SC-12", "IA-5"],                 # stack orphaned encryption salt

@@ -12,6 +12,67 @@ release commit collapses this section into `## [X.Y.Z] - <date>`.
 
 ### Added
 
+- **PyPI behavioral-trust signals (PYPI-019, PYPI-020, LOW).** The PyPI
+  parallels of NPM-015 / NPM-016, both ``--resolve-remote``-gated and
+  scoped to direct dependencies. PYPI-019 flags a direct dependency
+  whose latest release ships no PEP 740 provenance attestation (from
+  the PyPI JSON API's per-file ``provenance`` field). PYPI-020 resolves
+  the dependency's GitHub repo from ``info.project_urls`` and queries
+  the OpenSSF Scorecard API (reusing ``_primitives/scorecard``),
+  flagging upstreams below 5/10 or failing Dangerous-Workflow. The
+  single-publisher analog (NPM-014) is not shipped: PyPI exposes no
+  reliable maintainer-account-list API. pypi 17 -> 19.
+- **CI Go-module-verification rules (GHA-110, GL-037, CC-033, HIGH).**
+  A shared primitive (``_primitives/go_insecure_env.py``) plus three
+  per-provider rules flag a CI pipeline that disables Go module
+  integrity verification via env / variables / inline ``export``:
+  ``GOFLAGS=-insecure``, ``GOSUMDB=off``, ``GONOSUMCHECK``, any
+  ``GOINSECURE``, or a broad ``GOPRIVATE`` / ``GONOSUMDB`` glob (the
+  env-var twin of GOMOD-001; ``GOPROXY=off`` / ``direct`` and scoped
+  ``GOPRIVATE`` are not flagged). GHA-110 walks workflow / job / step
+  ``env:`` + ``run:``; GL-037 walks global + job ``variables:`` +
+  scripts; CC-033 walks job + run-step ``environment:`` + run commands.
+  github 100 -> 101, gitlab 38 -> 39, circleci 32 -> 33.
+- **Weak-coverage provider deepening: deferred fourth picks.** Five
+  rules across four providers. nuget: NUGET-017 (public gallery active
+  alongside a private feed, not disabled in
+  ``<disabledPackageSources>``, HIGH); 18 -> 19. cargo: CARGO-014 (no
+  committed cargo-deny / cargo-vet / cargo-audit gate, LOW); 13 -> 14.
+  pulumi: PULUMI-014 (ESC ``environment:`` import without a
+  project / org qualifier, MEDIUM); 13 -> 14. argocd: ARGOCD-016 (Helm
+  ``valueFiles`` from a remote URL, HIGH), ARGOCD-018 (custom resource
+  health / action Lua in ``argocd-cm``, MEDIUM); 16 -> 18. The cargo
+  loader gained a probe for committed audit-gate config files. All five
+  mapped across the standards registries and the provider / standards
+  docs regenerated.
+- **Weak-coverage provider deepening: cargo, helm.** Six rules closing
+  the two packs that needed a loader extension. cargo: CARGO-011
+  (``build.rs`` compile-time network / process / ``include!``, HIGH),
+  CARGO-012 (``.cargo/config.toml`` source ``replace-with`` or
+  linker ``rustflags``, HIGH), CARGO-013 (``Cargo.lock`` package
+  resolved off crates.io, MEDIUM); 10 -> 13. helm: HELM-015 (``oci://``
+  dependency pinned only by a mutable tag, HIGH), HELM-016 (default
+  secret in ``values.yaml``, HIGH), HELM-017 (``tpl`` of an untrusted
+  ``.Values`` value, chart SSTI, HIGH); 14 -> 17. The cargo loader now
+  reads ``build.rs`` / ``.cargo/config.toml`` / the ``Cargo.lock``
+  body; the helm ``Chart`` now carries the parsed ``values.yaml`` and
+  ``templates/`` texts. All six mapped across the standards registries
+  and the provider / standards docs regenerated.
+- **Weak-coverage provider deepening: gomod, rubygems, maven.** Nine
+  rules continuing the coverage-pass deepening, the three packs that
+  needed no new base-loader reads. gomod: GOMOD-011 (`tool` directive
+  pulls a build-time executable, MEDIUM), GOMOD-012 (`require` /
+  `replace` targets a bare-IP / explicit-port host, HIGH); 10 -> 12.
+  rubygems: GEM-011 (Bundler `plugin` runs at install time, HIGH),
+  GEM-012 (per-gem `:source` override, MEDIUM), GEM-013 (git gem over
+  `git://` / `http://`, HIGH); 10 -> 13. maven: MVN-015 (command-running
+  plugin bound to the build lifecycle, build-time RCE that survives a
+  version pin, HIGH), MVN-016 (`build.gradle` `allowInsecureProtocol =
+  true`, HIGH), MVN-017 (`<server>` with a `<privateKey>` + plaintext
+  `<passphrase>`, HIGH), MVN-018 (`distributionManagement` release repo
+  accepts `-SNAPSHOT` artifacts, MEDIUM); 14 -> 18. All nine mapped
+  across the standards registries and the provider / standards docs
+  regenerated.
 - **NuGet dependency-confusion and build-execution batch (NUGET-016 /
   NUGET-018 / NUGET-019, HIGH).** NUGET-016 flags a `NuGet.config` that
   adds a private feed without a `<clear/>`, so `nuget.org` is still
