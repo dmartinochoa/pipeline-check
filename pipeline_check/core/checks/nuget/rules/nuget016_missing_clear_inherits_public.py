@@ -4,6 +4,7 @@ from __future__ import annotations
 import re
 import xml.etree.ElementTree as ET
 from pathlib import Path
+from urllib.parse import urlparse
 
 from ...base import Finding, Severity
 from ...rule import Rule
@@ -129,7 +130,12 @@ def _package_sources_cleared(cfg_path: str) -> bool:
 
 
 def _is_public_gallery(url: str) -> bool:
-    return "nuget.org" in url.lower()
+    # Match the host on a dot boundary, not a bare substring, so a
+    # lookalike feed (``nuget.org.evil.example``, ``nuget-org.attacker``)
+    # isn't misread as the public gallery and dropped from the private
+    # set. Mirrors the host-allowlist idiom in gha057.
+    host = (urlparse(url).hostname or "").lower()
+    return host == "nuget.org" or host.endswith(".nuget.org")
 
 
 def check(cfg: NuGetConfig, ctx: NuGetContext) -> Finding:

@@ -71,6 +71,19 @@ class TestNuget016MissingClear:
         })
         assert "NUGET-016" not in findings
 
+    def test_lookalike_host_is_treated_as_private(self, tmp_path):
+        # A feed whose host merely contains "nuget.org" as a substring
+        # (e.g. an attacker domain) is a private feed, not the gallery,
+        # so the missing-<clear/> finding must still fire.
+        findings = _scan(tmp_path, {
+            "NuGet.config": _config(
+                "  <packageSources>\n"
+                '    <add key="evil" value="https://nuget.org.evil.example/v3/index.json" />\n'
+                "  </packageSources>\n"
+            ),
+        })
+        assert not findings["NUGET-016"].passed
+
 
 # ── NUGET-019 ──────────────────────────────────────────────────────
 
