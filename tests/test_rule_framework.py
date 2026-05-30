@@ -53,7 +53,7 @@ EXPECTED_RULE_COUNTS: dict[str, int] = {
     "buildkite":  16,
     "tekton":     16,
     "argo":       16,
-    "argocd":     16,
+    "argocd":     18,
     "dockerfile": 30,
     "oci":        16,
     "drone":      16,
@@ -61,12 +61,12 @@ EXPECTED_RULE_COUNTS: dict[str, int] = {
     "npm":        16,
     "pypi":       17,
     "maven":      18,
-    "nuget":      18,
+    "nuget":      19,
     "gomod":      12,
-    "cargo":      13,
+    "cargo":      14,
     "composer":   14,
     "rubygems":   13,
-    "pulumi":     13,
+    "pulumi":     14,
 }
 
 

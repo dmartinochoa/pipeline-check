@@ -6,6 +6,30 @@ What's planned, what's shipped, and what's deliberately out of scope.
 
 ### Unreleased (on ``dev``)
 
+- **Weak-coverage deepening: deferred fourth-picks batch** — Five rules
+  across four providers, the clean, net-new tail of the coverage-pass
+  candidate list (the noisy / overlapping / parser-blocked picks were
+  left deferred with rationale, see the Candidates section). **nuget:**
+  NUGET-017 (HIGH, the public gallery active alongside a private feed
+  and not disabled in ``<disabledPackageSources>``, the
+  explicit-coexistence complement to NUGET-016's inheritance case; same
+  ElementTree-reparse pattern). **cargo:** CARGO-014 (LOW, no committed
+  cargo-deny / cargo-vet / cargo-audit gate config; the loader gained a
+  small probe for ``deny.toml`` / ``supply-chain/config.toml`` /
+  ``audit.toml`` walked up to the scan root). **pulumi:** PULUMI-014
+  (MEDIUM, an ESC ``environment:`` import without a project / org
+  qualifier, the StackReference-drift primitive applied to ESC).
+  **argocd:** ARGOCD-016 (HIGH, Helm ``valueFiles`` fetched from a
+  remote ``http(s)`` URL, an unpinned / unverified render input;
+  scoped to the URL case to keep FP low) and ARGOCD-018 (MEDIUM,
+  custom ``resource.customizations`` health / action Lua in
+  ``argocd-cm``, code that runs in the application controller). All
+  five wired across the standards data files (owasp / esf from each
+  rule's declared tags, the rest cloned from the nearest sibling) and
+  the provider / standards docs regenerated. nuget 18 -> 19, cargo
+  13 -> 14, pulumi 13 -> 14, argocd 16 -> 18. The ``cis_github`` per-
+  framework coverage floor drops 13 -> 12 (the expected denominator
+  growth when non-GitHub rule packs land).
 - **Weak-coverage deepening: cargo / helm batch** — Six rules closing
   the two packs that needed a loader extension, completing the
   first-batch sweep of every provider the coverage pass flagged.
@@ -703,11 +727,32 @@ gomod / rubygems / maven batch needed no base-loader reads beyond a
 way MVN-010 / MVN-012 already do, and MVN-016 reads the Gradle script
 text. GOMOD-012 ships as bare-IP / explicit-port host detection only:
 a ``http://`` scheme can't survive the go.mod ``//`` comment stripper
-and never appears in a canonical module path anyway. Still open: the
-deferred fourth picks (NUGET-017, GOMOD-013/014 best placed in the CI
-provider packs, GEM-014/015, CARGO-014, MVN follow-ups, the secondary
-HELM / ARGOCD / PULUMI / PYPI picks, etc.) and the PyPI parallels of
-the NPM behavioral-trust signals.
+and never appears in a canonical module path anyway.
+
+The deferred fourth-picks batch then shipped NUGET-017 (public gallery
+active alongside a private feed and not in
+``<disabledPackageSources>``, the explicit-coexistence complement to
+NUGET-016's inheritance case), CARGO-014 (no committed
+cargo-deny / cargo-vet / cargo-audit gate, LOW posture, needed a small
+loader probe for the gate config files), PULUMI-014 (an ESC
+``environment:`` import without a project / org qualifier, the
+StackReference-drift primitive applied to ESC), ARGOCD-016 (Helm
+``valueFiles`` fetched from a remote ``http(s)`` URL, scoped to that
+unambiguous case to keep FP low), and ARGOCD-018 (custom resource
+health / action Lua in ``argocd-cm``, controller-side code). Still
+open, and now genuinely deferred with rationale: **PULUMI-015**
+(Automation-API inline shell) overlaps PULUMI-008's shell-exec scan
+too heavily to ship as a separate rule without double-reporting;
+**HELM-018** (values default image not digest-pinned) overlaps
+K8S-001 once the chart renders, and **HELM-019** (subchart host
+mismatch) is noisy; **GEM-014** (``git_source`` block) is noisy and
+overlaps GEM-010, **GEM-015** (gemspec floating ``add_dependency``)
+needs a gemspec parser the rubygems loader doesn't have;
+**GOMOD-013/014** (CI env-vars disabling sum-db verification) are best
+built as a shared primitive inside the CI provider packs (GHA / GitLab
+/ etc.), not bolted onto the gomod loader, so they're their own
+follow-up. Also still open: the PyPI parallels of the NPM
+behavioral-trust signals.
 
 A 2026-05-29 coverage pass ranked every provider by shipped rule count
 and ran a per-provider gap analysis on the thinnest packs. The

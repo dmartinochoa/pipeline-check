@@ -28,7 +28,7 @@ pipeline_check --pipeline nuget --nuget-path ./src/
 
 ## What it covers
 
-18 checks · 0 have an autofix patch (``--fix``).
+19 checks · 0 have an autofix patch (``--fix``).
 
 | Check | Title | Severity | Fix |
 |-------|-------|----------|-----|
@@ -48,6 +48,7 @@ pipeline_check --pipeline nuget --nuget-path ./src/
 | [NUGET-014](#nuget-014) | NuGet.config source URL embeds plaintext credentials | <span class="pg-sev pg-sev--high">HIGH</span> |  |
 | [NUGET-015](#nuget-015) | PackageReference VersionOverride defeats Central Package Management | <span class="pg-sev pg-sev--medium">MEDIUM</span> |  |
 | [NUGET-016](#nuget-016) | Private feed without <clear/> inherits the public gallery | <span class="pg-sev pg-sev--high">HIGH</span> |  |
+| [NUGET-017](#nuget-017) | Public gallery active alongside a private feed, not disabled | <span class="pg-sev pg-sev--high">HIGH</span> |  |
 | [NUGET-018](#nuget-018) | Project runs build-time MSBuild logic at restore/build | <span class="pg-sev pg-sev--high">HIGH</span> |  |
 | [NUGET-019](#nuget-019) | signatureValidationMode=require with no trusted signers | <span class="pg-sev pg-sev--high">HIGH</span> |  |
 
@@ -513,6 +514,42 @@ Add a ``<clear />`` element as the first child of ``<packageSources>`` in ``NuGe
     </packageSources>
 
 NuGet merges ``packageSources`` across the machine, user, and repo configs, so a repo config that lists only the internal feed still resolves ``nuget.org`` (added by the machine-level default config). Because NuGet installs the highest version found across every active source, a public package that shadows an internal name can win the race. ``<clear />`` discards the inherited sources so only the ones you list apply. Pair it with ``<packageSourceMapping>`` (see NUGET-007) to pin each namespace to one feed.
+
+</div>
+
+</div>
+
+<div class="pg-rule pg-rule--high" markdown>
+
+## NUGET-017: Public gallery active alongside a private feed, not disabled { #nuget-017 }
+
+<div class="pg-rule__tags">
+<span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-3</span> <span class="pg-tag pg-tag--esf">ESF-S-VERIFY-DEPS</span> <span class="pg-tag pg-tag--cwe">CWE-829</span>
+</div>
+
+Fires when a ``NuGet.config`` (1) lists at least one private (non-``nuget.org``) source, (2) lists the public gallery as an explicit active ``<add>`` source, and (3) does NOT disable that gallery key in ``<disabledPackageSources>``. The rule re-reads the file to collect the truthy ``<disabledPackageSources>`` keys (the loader doesn't surface them).
+
+Companion to NUGET-016, scoped to the complementary mitigation: NUGET-016 owns the inheritance case (only the private feed listed, no ``<clear/>``, so ``nuget.org`` leaks in from the machine config), while this rule owns the explicit-coexistence case (both feeds listed, the gallery not disabled). A config that uses ``<clear/>`` and then re-adds ``nuget.org`` passes NUGET-016 but still trips this rule, the gallery is active. A config that absent both mitigations legitimately trips both.
+
+**Known false-positive modes**
+
+- A repo that deliberately consumes public packages from ``nuget.org`` alongside its private feed, and pins names with ``packageSourceMapping`` (NUGET-007) so confusion can't occur, may keep the gallery active by design. The rule doesn't read the mapping coverage; suppress per config with a rationale once the namespace pinning is confirmed.
+
+**Seen in the wild**
+
+- Birsan 2021 dependency-confusion research. The .NET face is a NuGet.config that keeps ``nuget.org`` active next to a private feed without disabling it or pinning namespaces, so a public package with an internal name and a higher version wins the highest-version-wins restore.
+
+<div class="pg-rule__rec" markdown>
+
+**Recommended action**
+
+When a ``NuGet.config`` lists both a private feed and ``nuget.org`` as active sources, disable the public gallery for restore unless you genuinely consume public packages from it, or pin every namespace to one feed with ``<packageSourceMapping>`` (NUGET-007). The targeted fix is a ``<disabledPackageSources>`` entry:
+
+    <disabledPackageSources>
+      <add key="nuget.org" value="true" />
+    </disabledPackageSources>
+
+With the gallery active, NuGet's highest-version-wins resolution lets a public package that shadows an internal name win the restore, the Birsan dependency-confusion vector. ``packageSourceMapping`` is the strongest control (each name resolves from exactly one feed); disabling the gallery is the blunt instrument when no public package is needed.
 
 </div>
 

@@ -579,6 +579,8 @@ STANDARD = Standard(
         # ── Argo CD (GitOps deployment) ──
         "ARGOCD-010": ["CC8.1"],            # mutable targetRevision
         "ARGOCD-017": ["CC8.1"],  # in-cluster mutable source
+        "ARGOCD-016": ["CC8.1"],  # Helm valueFiles from a remote URL
+        "ARGOCD-018": ["CC8.1"],  # custom resource health / action Lua
         "ARGOCD-011": ["CC6.1"],            # cluster-resource wildcard
         "ARGOCD-012": ["CC8.1"],            # no sync windows
         "ARGOCD-013": ["CC8.1"],            # no revision history cap
@@ -679,6 +681,7 @@ STANDARD = Standard(
         "NUGET-014": ["CC6.1"],
         "NUGET-015": ["CC8.1"],
         "NUGET-016": ["CC8.1"],  # missing <clear/> inherits public gallery
+        "NUGET-017": ["CC8.1"],  # public gallery active alongside private feed, not disabled
         "NUGET-018": ["CC8.1"],  # build-time MSBuild execution
         "NUGET-019": ["CC8.1"],  # require mode, no trusted signers
         # ── Go modules ──
@@ -710,6 +713,7 @@ STANDARD = Standard(
         "CARGO-011": ["CC8.1"],  # build.rs compile-time egress / exec
         "CARGO-012": ["CC8.1"],  # .cargo/config.toml source override / build flags
         "CARGO-013": ["CC8.1"],  # Cargo.lock off-crates.io source
+        "CARGO-014": ["CC8.1"],  # no supply-chain audit-gate config
         # ── Composer / PHP ──
         "COMPOSER-001": ["CC8.1"],
         "COMPOSER-002": ["CC8.1"],
@@ -751,6 +755,7 @@ STANDARD = Standard(
         "PULUMI-007": ["CC6.1"],                # public-access cloud resource
         "PULUMI-008": ["CC6.1"],                # shell-exec with non-constant input
         "PULUMI-013": ["CC6.1"],  # dynamic provider deploy-time code
+        "PULUMI-014": ["CC6.1"],  # ESC environment imported without a qualifier
         "PULUMI-009": ["CC8.1"],                # runtime / source mismatch
         "PULUMI-012": ["CC8.1"],  # plugin version unpinned
         "PULUMI-010": ["CC6.1"],                # stack orphaned encryption salt

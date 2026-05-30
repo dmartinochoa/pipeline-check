@@ -12,6 +12,18 @@ release commit collapses this section into `## [X.Y.Z] - <date>`.
 
 ### Added
 
+- **Weak-coverage provider deepening: deferred fourth picks.** Five
+  rules across four providers. nuget: NUGET-017 (public gallery active
+  alongside a private feed, not disabled in
+  ``<disabledPackageSources>``, HIGH); 18 -> 19. cargo: CARGO-014 (no
+  committed cargo-deny / cargo-vet / cargo-audit gate, LOW); 13 -> 14.
+  pulumi: PULUMI-014 (ESC ``environment:`` import without a
+  project / org qualifier, MEDIUM); 13 -> 14. argocd: ARGOCD-016 (Helm
+  ``valueFiles`` from a remote URL, HIGH), ARGOCD-018 (custom resource
+  health / action Lua in ``argocd-cm``, MEDIUM); 16 -> 18. The cargo
+  loader gained a probe for committed audit-gate config files. All five
+  mapped across the standards registries and the provider / standards
+  docs regenerated.
 - **Weak-coverage provider deepening: cargo, helm.** Six rules closing
   the two packs that needed a loader extension. cargo: CARGO-011
   (``build.rs`` compile-time network / process / ``include!``, HIGH),

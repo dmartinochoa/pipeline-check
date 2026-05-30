@@ -471,6 +471,7 @@ STANDARD = Standard(
         "NUGET-014": ["Build.L3.NonFalsifiable"],
         "NUGET-015": ["Build.L3.NonFalsifiable"],
         "NUGET-016": ["Build.L3.NonFalsifiable"],  # missing <clear/> inherits public gallery
+        "NUGET-017": ["Build.L3.NonFalsifiable"],  # public gallery active alongside private feed, not disabled
         "NUGET-018": ["Build.L3.NonFalsifiable"],  # build-time MSBuild execution
         "NUGET-019": ["Build.L3.NonFalsifiable"],  # require mode, no trusted signers
         # ── Composer / PHP ──

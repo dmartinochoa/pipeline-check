@@ -131,6 +131,11 @@ class CargoFile:
     #: source-replacement + build-flag keys). Empty when absent.
     cargo_config_path: str | None = None
     cargo_config: dict[str, Any] = field(default_factory=dict)
+    #: ``True`` when a committed supply-chain audit-gate config
+    #: (cargo-deny ``deny.toml`` / cargo-vet ``supply-chain/`` /
+    #: cargo-audit ``audit.toml``) was found at or above the manifest
+    #: dir, bounded by the scan root. CARGO-014 reads this.
+    has_audit_gate: bool = False
 
 
 class CargoContext:
@@ -204,6 +209,7 @@ class CargoContext:
                 except (OSError, UnicodeDecodeError):
                     pass
             cfg_path, cfg_data = _discover_cargo_config(f.parent, scan_root)
+            has_audit_gate = _has_cargo_audit_gate(f.parent, scan_root)
             files.append(CargoFile(
                 path=pf.path, text=pf.text,
                 crate_name=pf.crate_name,
@@ -217,6 +223,7 @@ class CargoContext:
                 build_rs_text=build_rs_text,
                 cargo_config_path=cfg_path,
                 cargo_config=cfg_data,
+                has_audit_gate=has_audit_gate,
             ))
         ctx = cls(files)
         ctx.files_skipped = skipped
@@ -429,6 +436,47 @@ def _discover_cargo_config(
                 return str(cfg), {}
             return str(cfg), data if isinstance(data, dict) else {}
     return None, {}
+
+
+def _dir_chain(manifest_dir: Path, scan_root: Path) -> list[Path]:
+    """Directories from *manifest_dir* up to *scan_root* (inclusive),
+    nearest first; bounded so the walk never leaves the scan root."""
+    try:
+        scan_resolved = scan_root.resolve()
+        cur = manifest_dir.resolve()
+    except OSError:
+        return []
+    chain: list[Path] = []
+    while True:
+        chain.append(cur)
+        if cur == scan_resolved:
+            break
+        parent = cur.parent
+        if parent == cur:
+            break
+        try:
+            parent.relative_to(scan_resolved)
+        except ValueError:
+            break
+        cur = parent
+    return chain
+
+
+def _has_cargo_audit_gate(manifest_dir: Path, scan_root: Path) -> bool:
+    """Return ``True`` when a committed supply-chain audit-gate config
+    is present at or above *manifest_dir* (bounded by *scan_root*):
+    cargo-deny (``deny.toml``), cargo-vet (``supply-chain/config.toml``),
+    or cargo-audit (``audit.toml`` / ``.cargo/audit.toml``)."""
+    for d in _dir_chain(manifest_dir, scan_root):
+        if (d / "deny.toml").is_file():
+            return True
+        if (d / "supply-chain" / "config.toml").is_file():
+            return True
+        if (d / "audit.toml").is_file():
+            return True
+        if (d / ".cargo" / "audit.toml").is_file():
+            return True
+    return False
 
 
 # ── Helpers exposed to rule modules ───────────────────────────────

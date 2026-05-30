@@ -29,7 +29,7 @@ pipeline_check --pipeline cargo --cargo-path ./crates/my-crate/
 
 ## What it covers
 
-13 checks · 0 have an autofix patch (``--fix``).
+14 checks · 0 have an autofix patch (``--fix``).
 
 | Check | Title | Severity | Fix |
 |-------|-------|----------|-----|
@@ -46,6 +46,7 @@ pipeline_check --pipeline cargo --cargo-path ./crates/my-crate/
 | [CARGO-011](#cargo-011) | build.rs runs network or process calls at compile time | <span class="pg-sev pg-sev--high">HIGH</span> |  |
 | [CARGO-012](#cargo-012) | .cargo/config.toml overrides the registry source or injects build flags | <span class="pg-sev pg-sev--high">HIGH</span> |  |
 | [CARGO-013](#cargo-013) | Cargo.lock package sourced off crates.io | <span class="pg-sev pg-sev--medium">MEDIUM</span> |  |
+| [CARGO-014](#cargo-014) | No supply-chain audit-gate config (cargo-deny / cargo-vet / cargo-audit) | <span class="pg-sev pg-sev--low">LOW</span> |  |
 
 ---
 
@@ -457,6 +458,38 @@ Catches transitive source substitution the manifest rules can't reach: CARGO-002
 **Recommended action**
 
 Confirm every off-crates.io ``source`` in ``Cargo.lock`` is intentional and trusted. A ``[[package]]`` whose ``source`` is a ``git+`` URL or an alternate registry (``registry+`` / ``sparse+`` pointing somewhere other than crates.io) is resolved outside the crates.io index and its checksum, so a transitive dependency can be substituted without any change to your ``Cargo.toml``. Prefer crates.io releases; where a git / alternate source is genuinely needed, pin it (``rev`` SHA for git, a trusted internal registry for alternates) and review what pulled it in. The manifest rules (CARGO-002 / CARGO-005 / CARGO-008) only see your direct declarations; the lockfile is where transitive substitution shows up.
+
+</div>
+
+</div>
+
+<div class="pg-rule pg-rule--low" markdown>
+
+## CARGO-014: No supply-chain audit-gate config (cargo-deny / cargo-vet / cargo-audit) { #cargo-014 }
+
+<div class="pg-rule__tags">
+<span class="pg-sev pg-sev--low">LOW</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-3</span> <span class="pg-tag pg-tag--esf">ESF-S-VERIFY-DEPS</span> <span class="pg-tag pg-tag--cwe">CWE-1104</span>
+</div>
+
+Fires when a manifest declares dependencies but no committed audit-gate config is found at or above the manifest directory (bounded by the scan root): cargo-deny's ``deny.toml``, cargo-vet's ``supply-chain/config.toml``, or cargo-audit's ``audit.toml`` / ``.cargo/audit.toml``. A dependency-free manifest passes (nothing to gate).
+
+LOW severity, below the default gate: it's a completeness / posture nudge, not a finding about a specific bad dependency (CARGO-006 / CARGO-013 cover those).
+
+**Known false-positive modes**
+
+- A repo that runs ``cargo audit`` purely as a CI step with no committed config file leaves nothing on disk for this rule to detect, so it fires as a false positive. Suppress per repo with a rationale naming the CI gate, or commit a minimal ``deny.toml`` / ``audit.toml`` so the gate is visible in the tree.
+
+<div class="pg-rule__rec" markdown>
+
+**Recommended action**
+
+Add a committed supply-chain audit gate so dependency advisories, license drift, and untrusted sources fail the build instead of going unnoticed. Pick one (or more) and wire it into CI:
+
+* cargo-deny: a ``deny.toml`` (advisory DB, license allowlist, banned crates, source allowlist), run with ``cargo deny check``.
+* cargo-vet: a ``supply-chain/`` directory (``config.toml`` + ``audits.toml``) recording who reviewed each dependency, run with ``cargo vet``.
+* cargo-audit: ``cargo audit`` against the RustSec advisory DB (optionally an ``audit.toml`` to tune it).
+
+This is a posture signal (LOW): it doesn't prove a vulnerable dependency exists, only that the repo carries no committed gate to catch one. Parallel to CARGO-010 (missing ``rust-version``).
 
 </div>
 

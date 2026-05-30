@@ -95,6 +95,7 @@ STANDARD = Standard(
         "NUGET-014": ["ING-1"],
         "NUGET-015": ["ING-1"],
         "NUGET-016": ["ING-1"],  # missing <clear/> inherits public gallery
+        "NUGET-017": ["ING-1"],  # public gallery active alongside private feed, not disabled
         "NUGET-018": ["ING-1"],  # build-time MSBuild execution
         "NUGET-019": ["ING-1"],  # require mode, no trusted signers
         # ── Composer / PHP ──

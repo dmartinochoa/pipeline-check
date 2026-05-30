@@ -583,6 +583,7 @@ STANDARD = Standard(
         "NUGET-014": ["CICD-SEC-6", "CICD-SEC-10"], # source URL credentials
         "NUGET-015": ["CICD-SEC-3"],                # VersionOverride breaks CPM
         "NUGET-016": ["CICD-SEC-3"],                # missing <clear/> inherits public gallery
+        "NUGET-017": ["CICD-SEC-3"],  # public gallery active alongside private feed, not disabled
         "NUGET-018": ["CICD-SEC-4", "CICD-SEC-3"],  # build-time MSBuild execution
         "NUGET-019": ["CICD-SEC-3"],                # require mode, no trusted signers
         # ── Go modules (GOMOD-001..006) ──
@@ -614,6 +615,7 @@ STANDARD = Standard(
         "CARGO-011": ["CICD-SEC-1", "CICD-SEC-3"],  # build.rs compile-time egress / exec
         "CARGO-012": ["CICD-SEC-3", "CICD-SEC-4"],  # .cargo/config.toml source override / build flags
         "CARGO-013": ["CICD-SEC-3", "CICD-SEC-5"],  # Cargo.lock off-crates.io source
+        "CARGO-014": ["CICD-SEC-3"],  # no supply-chain audit-gate config
         # ── Composer / PHP (COMPOSER-001..008) ──
         "COMPOSER-001": ["CICD-SEC-3"],               # missing composer.lock
         "COMPOSER-002": ["CICD-SEC-3"],               # floating constraint
@@ -655,6 +657,7 @@ STANDARD = Standard(
         "PULUMI-007": ["CICD-SEC-2", "CICD-SEC-6"], # public-access cloud resource
         "PULUMI-008": ["CICD-SEC-5", "CICD-SEC-3"], # shell-exec with non-constant input
         "PULUMI-013": ["CICD-SEC-3", "CICD-SEC-5"],  # dynamic provider deploy-time code
+        "PULUMI-014": ["CICD-SEC-3", "CICD-SEC-6"],  # ESC environment imported without a qualifier
         "PULUMI-009": ["CICD-SEC-3"],               # runtime / source mismatch
         "PULUMI-012": ["CICD-SEC-3", "CICD-SEC-4"],  # plugin version unpinned
         "PULUMI-010": ["CICD-SEC-6"],               # stack orphaned encryption salt
@@ -721,6 +724,8 @@ STANDARD = Standard(
         # ── ArgoCD extended pack (ARGOCD-010..013) ──
         "ARGOCD-010": ["CICD-SEC-3", "CICD-SEC-5"], # mutable targetRevision
         "ARGOCD-017": ["CICD-SEC-3", "CICD-SEC-5"],  # in-cluster mutable source
+        "ARGOCD-016": ["CICD-SEC-4", "CICD-SEC-3"],  # Helm valueFiles from a remote URL
+        "ARGOCD-018": ["CICD-SEC-4"],  # custom resource health / action Lua
         "ARGOCD-011": ["CICD-SEC-1", "CICD-SEC-5"], # cluster-resource wildcard
         "ARGOCD-012": ["CICD-SEC-4", "CICD-SEC-1"], # no sync windows on prod
         "ARGOCD-013": ["CICD-SEC-7"],               # no revision history cap

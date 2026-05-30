@@ -603,6 +603,8 @@ STANDARD = Standard(
         # ── ArgoCD extended pack ──
         "ARGOCD-010": ["ESF-S-PIN-DEPS"],
         "ARGOCD-017": ["ESF-S-PIN-DEPS", "ESF-C-LEAST-PRIV"],  # in-cluster mutable source
+        "ARGOCD-016": ["ESF-S-VERIFY-DEPS"],  # Helm valueFiles from a remote URL
+        "ARGOCD-018": ["ESF-C-LEAST-PRIV"],  # custom resource health / action Lua
         "ARGOCD-011": ["ESF-C-LEAST-PRIV"],
         "ARGOCD-012": ["ESF-C-APPROVAL"],
         "ARGOCD-013": ["ESF-C-AUDIT"],
@@ -700,6 +702,7 @@ STANDARD = Standard(
         "NUGET-014": ["ESF-D-SECRETS"],
         "NUGET-015": ["ESF-S-VERIFY-DEPS"],
         "NUGET-016": ["ESF-S-VERIFY-DEPS"],  # missing <clear/> inherits public gallery
+        "NUGET-017": ["ESF-S-VERIFY-DEPS"],  # public gallery active alongside private feed, not disabled
         "NUGET-018": ["ESF-S-VERIFY-DEPS"],  # build-time MSBuild execution
         "NUGET-019": ["ESF-S-VERIFY-DEPS", "ESF-S-PROVENANCE"],  # require mode, no trusted signers
         # ── Go modules ──
@@ -731,6 +734,7 @@ STANDARD = Standard(
         "CARGO-011": ["ESF-S-VERIFY-DEPS"],  # build.rs compile-time egress / exec
         "CARGO-012": ["ESF-S-TRUSTED-REG", "ESF-S-VERIFY-DEPS"],  # .cargo/config.toml source override / build flags
         "CARGO-013": ["ESF-S-VERIFY-DEPS"],  # Cargo.lock off-crates.io source
+        "CARGO-014": ["ESF-S-VERIFY-DEPS"],  # no supply-chain audit-gate config
         # ── Composer / PHP ──
         "COMPOSER-001": ["ESF-S-VERIFY-DEPS"],
         "COMPOSER-002": ["ESF-S-VERIFY-DEPS"],
@@ -772,6 +776,7 @@ STANDARD = Standard(
         "PULUMI-007": ["ESF-C-LEAST-PRIV"],
         "PULUMI-008": ["ESF-C-LEAST-PRIV"],
         "PULUMI-013": ["ESF-D-INJECTION"],  # dynamic provider deploy-time code
+        "PULUMI-014": ["ESF-S-VERIFY-DEPS"],  # ESC environment imported without a qualifier
         "PULUMI-009": ["ESF-S-VERIFY-DEPS"],
         "PULUMI-012": ["ESF-S-PROVENANCE"],  # plugin version unpinned
         "PULUMI-010": ["ESF-D-SECRETS"],

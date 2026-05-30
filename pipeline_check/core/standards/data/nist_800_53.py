@@ -555,6 +555,8 @@ STANDARD = Standard(
         # ── Argo CD (GitOps deployment) ──
         "ARGOCD-010": ["CM-7", "SR-3"],                  # mutable targetRevision
         "ARGOCD-017": ["CM-7", "SR-3"],  # in-cluster mutable source
+        "ARGOCD-016": ["CM-7", "SR-3"],  # Helm valueFiles from a remote URL
+        "ARGOCD-018": ["CM-7", "SR-3"],  # custom resource health / action Lua
         "ARGOCD-011": ["AC-6", "CM-7"],                  # cluster-resource wildcard
         "ARGOCD-012": ["CM-6", "AU-2"],                  # no sync windows
         "ARGOCD-013": ["AU-11"],                         # no revision history cap
@@ -695,6 +697,7 @@ STANDARD = Standard(
         "NUGET-014": ["IA-5", "SC-28"],                  # source URL credentials
         "NUGET-015": ["CM-6"],                           # VersionOverride breaks CPM
         "NUGET-016": ["CM-7", "SR-3"],                   # missing <clear/> inherits public gallery
+        "NUGET-017": ["CM-7", "SR-3"],  # public gallery active alongside private feed, not disabled
         "NUGET-018": ["CM-7", "SR-3"],                   # build-time MSBuild execution
         "NUGET-019": ["SI-7"],                           # require mode, no trusted signers
         # ── Go modules (GOMOD-001..006) ─────────────────────────
@@ -726,6 +729,7 @@ STANDARD = Standard(
         "CARGO-011": ["CM-7"],  # build.rs compile-time egress / exec
         "CARGO-012": ["CM-7"],  # .cargo/config.toml source override / build flags
         "CARGO-013": ["CM-7"],  # Cargo.lock off-crates.io source
+        "CARGO-014": ["CM-7"],  # no supply-chain audit-gate config
         # ── Composer / PHP ──
         "COMPOSER-001": ["SR-3", "CM-8"],                # missing composer.lock
         "COMPOSER-002": ["CM-7", "SR-3"],                # floating constraint
@@ -767,6 +771,7 @@ STANDARD = Standard(
         "PULUMI-007": ["AC-3", "AC-6"],                  # public-access cloud resource
         "PULUMI-008": ["CM-7", "SI-7"],                  # shell-exec with non-constant input
         "PULUMI-013": ["CM-7", "SI-7"],  # dynamic provider deploy-time code
+        "PULUMI-014": ["CM-7", "SI-7"],  # ESC environment imported without a qualifier
         "PULUMI-009": ["CM-6"],                          # runtime / source mismatch
         "PULUMI-012": ["CM-6"],  # plugin version unpinned
         "PULUMI-010": ["SC-12", "IA-5"],                 # stack orphaned encryption salt

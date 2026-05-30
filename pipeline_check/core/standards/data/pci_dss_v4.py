@@ -564,6 +564,8 @@ STANDARD = Standard(
         # ── Argo CD (GitOps deployment) ──
         "ARGOCD-010": ["6.3.1"],                         # mutable targetRevision
         "ARGOCD-017": ["6.3.1"],  # in-cluster mutable source
+        "ARGOCD-016": ["6.3.1"],  # Helm valueFiles from a remote URL
+        "ARGOCD-018": ["6.3.1"],  # custom resource health / action Lua
         "ARGOCD-011": ["7.2.1"],                         # cluster-resource wildcard
         "ARGOCD-012": ["6.5.1"],                         # no sync windows
         "ARGOCD-013": ["10.3.2"],                        # no revision history cap
@@ -649,6 +651,7 @@ STANDARD = Standard(
         "NUGET-014": ["8.2.1"],
         "NUGET-015": ["6.3.1"],
         "NUGET-016": ["6.3.3", "6.5.1"],  # missing <clear/> inherits public gallery
+        "NUGET-017": ["6.3.3", "6.5.1"],  # public gallery active alongside private feed, not disabled
         "NUGET-018": ["6.3.1"],  # build-time MSBuild execution
         "NUGET-019": ["6.3.1"],  # require mode, no trusted signers
         # ── Go modules ──
@@ -680,6 +683,7 @@ STANDARD = Standard(
         "CARGO-011": ["6.3.1"],  # build.rs compile-time egress / exec
         "CARGO-012": ["6.3.1"],  # .cargo/config.toml source override / build flags
         "CARGO-013": ["6.3.1"],  # Cargo.lock off-crates.io source
+        "CARGO-014": ["6.3.1"],  # no supply-chain audit-gate config
         # ── Composer / PHP ──
         "COMPOSER-001": ["6.3.1"],
         "COMPOSER-002": ["6.3.1"],
@@ -721,6 +725,7 @@ STANDARD = Standard(
         "PULUMI-007": ["8.2.1"],                 # public-access cloud resource
         "PULUMI-008": ["6.5.1"],                 # shell-exec with non-constant input
         "PULUMI-013": ["6.5.1"],  # dynamic provider deploy-time code
+        "PULUMI-014": ["6.5.1"],  # ESC environment imported without a qualifier
         "PULUMI-009": ["6.5.1"],                 # runtime / source mismatch
         "PULUMI-012": ["6.5.1"],  # plugin version unpinned
         "PULUMI-010": ["8.2.1"],                 # stack orphaned encryption salt

@@ -615,6 +615,7 @@ STANDARD = Standard(
         "NUGET-014": ["PS.1.1"],                       # source URL credentials
         "NUGET-015": ["PO.5.1", "PW.4.4"],             # VersionOverride breaks CPM
         "NUGET-016": ["PW.4.1", "PW.4.4"],             # missing <clear/> inherits public gallery
+        "NUGET-017": ["PW.4.1", "PW.4.4"],  # public gallery active alongside private feed, not disabled
         "NUGET-018": ["PW.4.4"],                       # build-time MSBuild execution
         "NUGET-019": ["PW.4.4", "PS.3.2"],             # require mode, no trusted signers
         # ── Go modules (GOMOD-001..006) ──
@@ -646,6 +647,7 @@ STANDARD = Standard(
         "CARGO-011": ["PW.4.4"],  # build.rs compile-time egress / exec
         "CARGO-012": ["PW.4.4"],  # .cargo/config.toml source override / build flags
         "CARGO-013": ["PW.4.4"],  # Cargo.lock off-crates.io source
+        "CARGO-014": ["PW.4.4"],  # no supply-chain audit-gate config
         # ── Composer / PHP ──
         "COMPOSER-001": ["PW.4.4", "RV.1.1"],
         "COMPOSER-002": ["PW.4.4", "RV.1.1"],
@@ -687,6 +689,7 @@ STANDARD = Standard(
         "PULUMI-007": ["PO.5.1"],                       # public-access cloud resource
         "PULUMI-008": ["PW.4.4", "PO.5.1"],             # shell-exec with non-constant input
         "PULUMI-013": ["PW.4.4", "PO.5.1"],  # dynamic provider deploy-time code
+        "PULUMI-014": ["PW.4.4", "PO.5.1"],  # ESC environment imported without a qualifier
         "PULUMI-009": ["PO.3.3"],                       # runtime / source mismatch
         "PULUMI-012": ["PO.3.3"],  # plugin version unpinned
         "PULUMI-010": ["PS.1.1"],                       # stack orphaned encryption salt

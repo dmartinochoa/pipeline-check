@@ -607,6 +607,8 @@ STANDARD = Standard(
         # ── Argo CD (GitOps deployment) ──
         "ARGOCD-010": ["GV.SC-07"],             # mutable targetRevision
         "ARGOCD-017": ["GV.SC-07"],  # in-cluster mutable source
+        "ARGOCD-016": ["GV.SC-07"],  # Helm valueFiles from a remote URL
+        "ARGOCD-018": ["GV.SC-07"],  # custom resource health / action Lua
         "ARGOCD-011": ["PR.AA-05"],             # cluster-resource wildcard
         "ARGOCD-012": ["GV.SC-07"],             # no sync windows
         "ARGOCD-013": ["GV.SC-07"],             # no revision history cap
@@ -779,6 +781,7 @@ STANDARD = Standard(
         "NUGET-014": ["PR.DS-01"],              # source URL credentials
         "NUGET-015": ["GV.SC-07"],              # VersionOverride breaks CPM
         "NUGET-016": ["GV.SC-05"],              # missing <clear/> inherits public gallery
+        "NUGET-017": ["GV.SC-05"],  # public gallery active alongside private feed, not disabled
         "NUGET-018": ["GV.SC-07"],              # build-time MSBuild execution
         "NUGET-019": ["GV.SC-07", "GV.SC-05"],  # require mode, no trusted signers
         # ── Go modules ─────────────────────────────────────────
@@ -810,6 +813,7 @@ STANDARD = Standard(
         "CARGO-011": ["GV.SC-07"],  # build.rs compile-time egress / exec
         "CARGO-012": ["GV.SC-07"],  # .cargo/config.toml source override / build flags
         "CARGO-013": ["GV.SC-07"],  # Cargo.lock off-crates.io source
+        "CARGO-014": ["GV.SC-07"],  # no supply-chain audit-gate config
         # ── Composer / PHP ──
         "COMPOSER-001": ["GV.SC-05", "GV.SC-07"],
         "COMPOSER-002": ["GV.SC-05", "GV.SC-07"],
@@ -851,6 +855,7 @@ STANDARD = Standard(
         "PULUMI-007": ["PR.AA-05"],              # public-access cloud resource
         "PULUMI-008": ["GV.SC-07"],              # shell-exec with non-constant input
         "PULUMI-013": ["GV.SC-07"],  # dynamic provider deploy-time code
+        "PULUMI-014": ["GV.SC-07"],  # ESC environment imported without a qualifier
         "PULUMI-009": ["GV.SC-07"],              # runtime / source mismatch
         "PULUMI-012": ["GV.SC-07"],  # plugin version unpinned
         "PULUMI-010": ["PR.DS-01"],              # stack orphaned encryption salt

@@ -168,6 +168,7 @@ STANDARD = Standard(
         "NUGET-014": ["Token-Permissions"],
         "NUGET-015": ["Pinned-Dependencies"],
         "NUGET-016": ["Pinned-Dependencies"],
+        "NUGET-017": ["Pinned-Dependencies"],  # public gallery active alongside private feed, not disabled
         "NUGET-018": ["Dangerous-Workflow"],
         # ── Composer / PHP ──
         "COMPOSER-001": ["Pinned-Dependencies"],
@@ -352,6 +353,8 @@ STANDARD = Standard(
         # ── Argo CD (GitOps deployment) ──
         "ARGOCD-010": ["Pinned-Dependencies"],                         # mutable targetRevision
         "ARGOCD-017": ["Pinned-Dependencies"],  # in-cluster mutable source
+        "ARGOCD-016": ["Pinned-Dependencies"],  # Helm valueFiles from a remote URL
+        "ARGOCD-018": ["Pinned-Dependencies"],  # custom resource health / action Lua
         "ARGOCD-011": ["Token-Permissions"],                           # cluster-resource wildcard
         # ── Helm extended pack ──
         "HELM-011": ["Token-Permissions"],                             # dependency URL embedded creds

@@ -438,6 +438,8 @@ STANDARD = Standard(
         # ── ArgoCD extended pack ──
         "ARGOCD-010": ["1.4.1"],                   # mutable targetRevision
         "ARGOCD-017": ["1.4.1"],  # in-cluster mutable source
+        "ARGOCD-016": ["1.4.1"],  # Helm valueFiles from a remote URL
+        "ARGOCD-018": ["1.4.1"],  # custom resource health / action Lua
         "ARGOCD-011": ["1.3.4"],                   # cluster-resource wildcard
         "ARGOCD-012": ["1.1.5"],                   # no sync windows on prod
         "ARGOCD-013": ["1.3.4"],                   # no revision history cap
@@ -675,6 +677,7 @@ STANDARD = Standard(
         "NUGET-014": ["1.5.1"],                    # source URL credentials
         "NUGET-015": ["1.4.1"],                    # VersionOverride breaks CPM
         "NUGET-016": ["3.1.5", "1.4.1"],           # missing <clear/> inherits public gallery
+        "NUGET-017": ["3.1.5", "1.4.1"],  # public gallery active alongside private feed, not disabled
         "NUGET-018": ["1.4.1"],                    # build-time MSBuild execution
         "NUGET-019": ["1.4.1"],                    # require mode, no trusted signers
         # ── Go modules (GOMOD-001..006) ──
@@ -706,6 +709,7 @@ STANDARD = Standard(
         "CARGO-011": ["1.4.1"],  # build.rs compile-time egress / exec
         "CARGO-012": ["1.4.1"],  # .cargo/config.toml source override / build flags
         "CARGO-013": ["1.4.1"],  # Cargo.lock off-crates.io source
+        "CARGO-014": ["1.4.1"],  # no supply-chain audit-gate config
         # ── Composer / PHP (COMPOSER-001..008) ──
         "COMPOSER-001": ["1.4.1"],                 # missing composer.lock
         "COMPOSER-002": ["1.4.1"],                 # floating require constraint
@@ -747,6 +751,7 @@ STANDARD = Standard(
         "PULUMI-007": ["1.5.1"],                   # public-access cloud resource
         "PULUMI-008": ["1.5.1"],                   # shell-exec with non-constant input
         "PULUMI-013": ["1.5.1"],  # dynamic provider deploy-time code
+        "PULUMI-014": ["1.5.1"],  # ESC environment imported without a qualifier
         "PULUMI-009": ["1.4.1"],                   # runtime / source mismatch
         "PULUMI-012": ["1.4.1"],  # plugin version unpinned
         "PULUMI-010": ["1.5.1"],                   # stack orphaned encryption salt

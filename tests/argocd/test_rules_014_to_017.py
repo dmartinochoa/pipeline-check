@@ -1,7 +1,6 @@
 """Per-rule tests for ARGOCD-014, ARGOCD-015, and ARGOCD-017.
 
-ID 016 is intentionally unused; this provider deepening implemented
-014, 015, and 017 only.
+ARGOCD-016 landed in a later batch (see test_rules_016_018.py).
 """
 from __future__ import annotations
 
