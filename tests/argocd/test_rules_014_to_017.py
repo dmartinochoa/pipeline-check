@@ -5,7 +5,7 @@ ID 016 is intentionally unused; this provider deepening implemented
 """
 from __future__ import annotations
 
-from tests.argocd.conftest import run_check
+from .conftest import run_check
 
 
 # --- ARGOCD-014: web terminal exec.enabled -----------------------------------
