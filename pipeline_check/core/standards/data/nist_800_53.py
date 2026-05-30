@@ -500,6 +500,9 @@ STANDARD = Standard(
         "HELM-012": ["CM-2", "SI-2"],                    # deprecated without successor
         "HELM-013": ["CM-2"],                            # invalid chart type
         "HELM-014": ["SI-2", "SR-3"],                    # known-compromised dep
+        "HELM-015": ["CM-7", "SR-3"],  # oci:// dependency not digest-pinned
+        "HELM-016": ["IA-5", "SC-28"],  # default secret in values.yaml
+        "HELM-017": ["CM-7"],  # tpl of an untrusted .Values value
         # Buildkite, pipeline-config posture maps to the same SR /
         # CM / IA families as the other CI providers' rules.
         "BK-001":   ["SR-3", "SR-11", "SI-2"],           # plugin not pinned
@@ -720,6 +723,9 @@ STANDARD = Standard(
         "CARGO-008": ["CM-7", "SR-3"],                   # patch.crates-io substitution
         "CARGO-009": ["CM-7"],                           # workspace deps floating
         "CARGO-010": ["CM-6"],                           # missing rust-version
+        "CARGO-011": ["CM-7"],  # build.rs compile-time egress / exec
+        "CARGO-012": ["CM-7"],  # .cargo/config.toml source override / build flags
+        "CARGO-013": ["CM-7"],  # Cargo.lock off-crates.io source
         # ── Composer / PHP ──
         "COMPOSER-001": ["SR-3", "CM-8"],                # missing composer.lock
         "COMPOSER-002": ["CM-7", "SR-3"],                # floating constraint

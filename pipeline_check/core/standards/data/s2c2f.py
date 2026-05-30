@@ -323,6 +323,9 @@ STANDARD = Standard(
         "HELM-012": ["REB-3"],             # deprecated without successor
         "HELM-013": ["REB-3"],             # invalid chart type
         "HELM-014": ["REB-3"],             # known-compromised dep
+        "HELM-015": ["SCA-3"],  # oci:// dependency not digest-pinned
+        "HELM-016": ["ING-3"],  # default secret in values.yaml
+        "HELM-017": ["SCA-3"],  # tpl of an untrusted .Values value
         # SBOM content gaps live here too (the SBOM exists but
         # under-specifies what it should track).
         "ATTEST-003": ["REB-3"],           # SBOM floating versions

@@ -509,6 +509,9 @@ STANDARD = Standard(
         "HELM-011": ["Build.L1.Provenance"],                       # dependency URL embedded creds
         "HELM-012": ["Build.L1.Provenance"],                       # deprecated without successor
         "HELM-013": ["Build.L1.Provenance"],                       # invalid chart type
+        "HELM-015": ["Build.L3.NonFalsifiable"],  # oci:// dependency not digest-pinned
+        "HELM-016": ["Build.L3.NonFalsifiable"],  # default secret in values.yaml
+        "HELM-017": ["Build.L3.NonFalsifiable"],  # tpl of an untrusted .Values value
         "HELM-014": ["Build.L1.Provenance",
                      "Build.L3.NonFalsifiable"],                   # known-compromised dep
         # ── Dockerfile (image build process is the SLSA build) ────

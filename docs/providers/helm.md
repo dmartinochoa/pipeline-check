@@ -86,7 +86,7 @@ unlocked dependency, or no maintainers.
 
 ## What it covers
 
-14 checks · 3 have an autofix patch (``--fix``).
+17 checks · 3 have an autofix patch (``--fix``).
 
 | Check | Title | Severity | Fix |
 |-------|-------|----------|-----|
@@ -104,6 +104,9 @@ unlocked dependency, or no maintainers.
 | [HELM-012](#helm-012) | Chart marked deprecated without naming a successor | <span class="pg-sev pg-sev--medium">MEDIUM</span> |  |
 | [HELM-013](#helm-013) | Chart.yaml type field missing or invalid | <span class="pg-sev pg-sev--medium">MEDIUM</span> |  |
 | [HELM-014](#helm-014) | Chart dependency matches a known-compromised chart registry | <span class="pg-sev pg-sev--high">HIGH</span> |  |
+| [HELM-015](#helm-015) | OCI chart dependency pinned only by a mutable tag | <span class="pg-sev pg-sev--high">HIGH</span> |  |
+| [HELM-016](#helm-016) | values.yaml ships a default secret or credential | <span class="pg-sev pg-sev--high">HIGH</span> |  |
+| [HELM-017](#helm-017) | Template renders an untrusted value through tpl | <span class="pg-sev pg-sev--high">HIGH</span> |  |
 
 ---
 
@@ -485,6 +488,96 @@ Mirrors NPM-006 / PYPI-006 / MVN-006 / NUGET-005 / GOMOD-006 / CARGO-006: the ru
 **Recommended action**
 
 Bump the offending dependency to a patched version named in the cited advisory and run ``helm dependency update`` to refresh ``Chart.lock`` with the new digests. If the advisory has no patched release, pin to the last known-good version and add a follow-up TODO so the dependency is replaced or removed in the next maintenance cycle. After the bump, re-run the scan; HELM-014 should clear. If the rule still fires, an indirect subchart is pulling the bad version back in; inspect ``Chart.lock`` for the dependency path.
+
+</div>
+
+</div>
+
+<div class="pg-rule pg-rule--high" markdown>
+
+## HELM-015: OCI chart dependency pinned only by a mutable tag { #helm-015 }
+
+<div class="pg-rule__tags">
+<span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-3</span> <span class="pg-tag pg-tag--esf">ESF-S-PIN-DEPS</span> <span class="pg-tag pg-tag--esf">ESF-S-VERIFY-DEPS</span> <span class="pg-tag pg-tag--cwe">CWE-353</span> <span class="pg-tag pg-tag--cwe">CWE-494</span>
+</div>
+
+Fires on a v2-chart dependency whose ``repository`` is an ``oci://`` URL that is bound only by a mutable tag: its ``version`` is not a ``sha256:`` digest AND no valid ``sha256`` ``digest`` for it exists in ``Chart.lock``.
+
+Sharpens HELM-003 (which accepts every ``oci://`` repo unconditionally on the transport axis) and complements HELM-002 / HELM-004: HELM-004 flags a floating SemVer range and HELM-002 flags a missing lockfile digest for any dependency, while this rule is the OCI-specific, HIGH-severity signal that an OCI tag, even an exact one, is registry-mutable until a digest binds the content. Reuses HELM-002's digest-shape helper; no new plumbing.
+
+**Known false-positive modes**
+
+- A chart that already commits a ``Chart.lock`` with a sha256 digest for the dependency passes (the content is bound). A development chart pulling an internal OCI chart from a trusted registry may accept the lower assurance; suppress per dependency with a rationale, but the durable fix is a committed Chart.lock digest.
+
+**Seen in the wild**
+
+- Mutable-reference supply-chain class: an OCI tag re-pushed to point at different chart content after the reference was audited, the Helm-registry analog of the mutable container-image-tag problem the K8s / OCI rules flag.
+
+<div class="pg-rule__rec" markdown>
+
+**Recommended action**
+
+Bind every ``oci://`` chart dependency to immutable content. An OCI registry tag (the ``version:`` of an ``oci://`` dependency) is mutable: the registry can serve different chart bytes under the same ``name`` + ``version`` at any time, unlike a classic chart-museum ``index.yaml`` entry. Commit a ``Chart.lock`` whose entry for this dependency carries a ``sha256:`` ``digest`` (run ``helm dependency update``), so ``helm dependency build`` verifies the pulled archive against a fixed hash. An exact SemVer (HELM-004) is necessary but not sufficient for OCI: the tag is still rewritable until a digest binds it.
+
+</div>
+
+</div>
+
+<div class="pg-rule pg-rule--high" markdown>
+
+## HELM-016: values.yaml ships a default secret or credential { #helm-016 }
+
+<div class="pg-rule__tags">
+<span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-6</span> <span class="pg-tag pg-tag--esf">ESF-D-SECRETS</span> <span class="pg-tag pg-tag--cwe">CWE-798</span> <span class="pg-tag pg-tag--cwe">CWE-258</span>
+</div>
+
+Walks the chart's ``values.yaml`` and fires when a secret-named key (``password`` / ``passwd`` / ``passphrase`` suffixes, or ``token`` / ``apiKey`` / ``secretKey`` / ``privateKey`` / ``accessKey`` / ``clientSecret``) carries a non-empty, non-placeholder literal value. Reference-style keys (``existingSecret``, ``secretName``, ``*KeyRef``) are skipped, as are empty defaults, template / env interpolations (``{{ ... }}`` / ``${...}``), ``<placeholder>`` forms, and common dummy values (``changeme``, ``password``, ``example`` …).
+
+Catches what the K8s render pass misses: when the value is consumed via ``{{ .Values.x | b64enc }}`` into a Secret, the secret material lives in the chart defaults, not the rendered manifest a Secret-detection rule would inspect.
+
+**Known false-positive modes**
+
+- A chart that defaults the key to an empty string (the operator must supply the real value) passes. A clearly-marked placeholder that matches the dummy-value list also passes. If a chart genuinely ships a throwaway credential for a local-only demo, suppress per chart with a rationale; production charts should default secrets to empty.
+
+**Seen in the wild**
+
+- Default-credential class (CWE-798 / CWE-1392): shipped charts and images that install with a known baked-in password are a recurring breach vector, the attacker reads the published default and walks in.
+
+<div class="pg-rule__rec" markdown>
+
+**Recommended action**
+
+Never ship a real password / token / key as a chart default. A credential baked into ``values.yaml`` installs into the cluster on a plain ``helm install`` (the rendered Secret carries it verbatim), and because the chart is committed and often published, the value leaks to every consumer and lives in git history indefinitely. Default the key to an empty string and require the operator to supply it (``--set`` / a values override / a sealed Secret), or reference an out-of-band Secret via an ``existingSecret`` pattern. If a value must ship, make it a clearly-marked placeholder the chart refuses to run with.
+
+</div>
+
+</div>
+
+<div class="pg-rule pg-rule--high" markdown>
+
+## HELM-017: Template renders an untrusted value through tpl { #helm-017 }
+
+<div class="pg-rule__tags">
+<span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-4</span> <span class="pg-tag pg-tag--esf">ESF-S-VERIFY-DEPS</span> <span class="pg-tag pg-tag--cwe">CWE-1336</span> <span class="pg-tag pg-tag--cwe">CWE-94</span>
+</div>
+
+Scans each chart's ``templates/`` files for a Go-template action that calls ``tpl`` on a ``.Values`` expression (``{{ tpl .Values.x . }}``, ``{{ tpl (printf ... .Values.x) . }}``, etc.). ``tpl`` of a constant string literal or a non-``.Values`` expression is not flagged.
+
+A chart SSTI sink the K8s render pass can't see: by the time ``helm template`` has run, the injection has already been evaluated, so the risk is only visible in the unrendered template source this rule reads.
+
+**Known false-positive modes**
+
+- A chart that uses ``tpl`` on a value it fully controls (a constant default the operator is not expected to override) is lower risk. The rule still flags it because the ``.Values`` indirection makes the value override-able; suppress per template with a rationale once you've confirmed the value can't carry attacker input.
+
+**Seen in the wild**
+
+- Helm chart SSTI class: passing operator-supplied values through ``tpl`` lets a values override inject template logic that exfiltrates other rendered values (including secrets) or reshapes the manifest, the chart-template analog of server-side template injection.
+
+<div class="pg-rule__rec" markdown>
+
+**Recommended action**
+
+Don't pass a ``.Values``-derived string through ``tpl``. ``{{ tpl .Values.x . }}`` re-evaluates the value as a Go template with the full chart context, so any operator (or anyone who can influence the values supplied at install time) who sets ``x`` to a template expression gets it executed: a server-side template-injection sink that can read other ``.Values`` (including rendered secrets), call template functions, and shape arbitrary manifest output. Render the value as plain data instead (``{{ .Values.x }}`` with the appropriate quoting / ``toYaml``), or, if dynamic templating is genuinely required, restrict it to a chart-internal constant string, never a user-supplied value.
 
 </div>
 

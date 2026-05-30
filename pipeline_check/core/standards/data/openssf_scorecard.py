@@ -356,6 +356,9 @@ STANDARD = Standard(
         # ── Helm extended pack ──
         "HELM-011": ["Token-Permissions"],                             # dependency URL embedded creds
         "HELM-014": ["Pinned-Dependencies"],                           # known-compromised dep
+        "HELM-015": ["Pinned-Dependencies"],  # oci:// dependency not digest-pinned
+        "HELM-016": ["Token-Permissions"],  # default secret in values.yaml
+        "HELM-017": ["Pinned-Dependencies"],  # tpl of an untrusted .Values value
         "BK-013":   ["Code-Review"],                                   # deploy step no branches filter
         # Cloud Build tainted-substitution / shell pack
         "GCB-012":  ["Token-Permissions"],                             # credential-shaped literal

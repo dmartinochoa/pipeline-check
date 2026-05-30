@@ -707,6 +707,9 @@ STANDARD = Standard(
         "CARGO-008": ["CC8.1"],
         "CARGO-009": ["CC8.1"],
         "CARGO-010": ["CC8.1"],
+        "CARGO-011": ["CC8.1"],  # build.rs compile-time egress / exec
+        "CARGO-012": ["CC8.1"],  # .cargo/config.toml source override / build flags
+        "CARGO-013": ["CC8.1"],  # Cargo.lock off-crates.io source
         # ── Composer / PHP ──
         "COMPOSER-001": ["CC8.1"],
         "COMPOSER-002": ["CC8.1"],
@@ -802,6 +805,9 @@ STANDARD = Standard(
         "HELM-012": ["CC8.1"],              # deprecated without successor
         "HELM-013": ["CC8.1"],              # invalid chart type
         "HELM-014": ["CC8.1", "CC7.1"],     # known-compromised dep
+        "HELM-015": ["CC8.1"],  # oci:// dependency not digest-pinned
+        "HELM-016": ["CC6.1"],  # default secret in values.yaml
+        "HELM-017": ["CC8.1"],  # tpl of an untrusted .Values value
         # ── Degraded-mode findings (API access failures) ─────────
         # Visibility gap = monitoring-for-anomalies failure (CC7.2)
         # plus a logical-access trail evidence gap on the security-

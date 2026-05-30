@@ -410,6 +410,9 @@ STANDARD = Standard(
         "HELM-012": ["GV.SC-04"],   # deprecated without successor
         "HELM-013": ["GV.SC-04"],   # invalid chart type
         "HELM-014": ["GV.SC-05"],   # known-compromised dep
+        "HELM-015": ["GV.SC-07"],  # oci:// dependency not digest-pinned
+        "HELM-016": ["PR.DS-01"],  # default secret in values.yaml
+        "HELM-017": ["GV.SC-07"],  # tpl of an untrusted .Values value
         # ── Dockerfile, image-build supply chain. ─────────────────
         # Pinning + verification rules tie to GV.SC-05 (supply chain
         # requirements established and verified). Privileged / root
@@ -804,6 +807,9 @@ STANDARD = Standard(
         "CARGO-008": ["GV.SC-07"],              # patch.crates-io substitution
         "CARGO-009": ["GV.SC-07"],              # workspace deps floating
         "CARGO-010": ["GV.SC-07"],              # missing rust-version
+        "CARGO-011": ["GV.SC-07"],  # build.rs compile-time egress / exec
+        "CARGO-012": ["GV.SC-07"],  # .cargo/config.toml source override / build flags
+        "CARGO-013": ["GV.SC-07"],  # Cargo.lock off-crates.io source
         # ── Composer / PHP ──
         "COMPOSER-001": ["GV.SC-05", "GV.SC-07"],
         "COMPOSER-002": ["GV.SC-05", "GV.SC-07"],

@@ -477,6 +477,9 @@ STANDARD = Standard(
         "HELM-012": ["CICD-SEC-3"],                 # deprecated without successor
         "HELM-013": ["CICD-SEC-3"],                 # invalid chart type
         "HELM-014": ["CICD-SEC-3", "CICD-SEC-7"],  # known-compromised dependency
+        "HELM-015": ["CICD-SEC-3"],  # oci:// dependency not digest-pinned
+        "HELM-016": ["CICD-SEC-6"],  # default secret in values.yaml
+        "HELM-017": ["CICD-SEC-4"],  # tpl of an untrusted .Values value
         # Dockerfile
         "DF-001":   ["CICD-SEC-3"],   # FROM not digest-pinned
         "DF-002":   ["CICD-SEC-7"],   # no USER
@@ -608,6 +611,9 @@ STANDARD = Standard(
         "CARGO-008": ["CICD-SEC-3", "CICD-SEC-5"], # [patch.crates-io] substitution
         "CARGO-009": ["CICD-SEC-3"],               # workspace deps floating
         "CARGO-010": ["CICD-SEC-3"],               # missing rust-version
+        "CARGO-011": ["CICD-SEC-1", "CICD-SEC-3"],  # build.rs compile-time egress / exec
+        "CARGO-012": ["CICD-SEC-3", "CICD-SEC-4"],  # .cargo/config.toml source override / build flags
+        "CARGO-013": ["CICD-SEC-3", "CICD-SEC-5"],  # Cargo.lock off-crates.io source
         # ── Composer / PHP (COMPOSER-001..008) ──
         "COMPOSER-001": ["CICD-SEC-3"],               # missing composer.lock
         "COMPOSER-002": ["CICD-SEC-3"],               # floating constraint

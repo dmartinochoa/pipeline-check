@@ -677,6 +677,9 @@ STANDARD = Standard(
         "CARGO-008": ["6.3.1"],
         "CARGO-009": ["6.3.1"],
         "CARGO-010": ["6.5.1"],
+        "CARGO-011": ["6.3.1"],  # build.rs compile-time egress / exec
+        "CARGO-012": ["6.3.1"],  # .cargo/config.toml source override / build flags
+        "CARGO-013": ["6.3.1"],  # Cargo.lock off-crates.io source
         # ── Composer / PHP ──
         "COMPOSER-001": ["6.3.1"],
         "COMPOSER-002": ["6.3.1"],
@@ -779,6 +782,9 @@ STANDARD = Standard(
         "HELM-012": ["6.3.3"],                           # deprecated without successor
         "HELM-013": ["6.5.1"],                           # invalid chart type
         "HELM-014": ["6.3.1", "6.3.3"],                  # known-compromised dep
+        "HELM-015": ["6.3.1"],  # oci:// dependency not digest-pinned
+        "HELM-016": ["8.2.1"],  # default secret in values.yaml
+        "HELM-017": ["6.3.1"],  # tpl of an untrusted .Values value
         # ── Degraded-mode findings (API access failures) ─────────
         # Visibility gap = audit-log surface gap; req 10.2.1 says
         # "Audit logs are enabled and active for all system

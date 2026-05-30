@@ -460,6 +460,9 @@ STANDARD = Standard(
         "HELM-012": ["1.4.1"],                     # deprecated without successor
         "HELM-013": ["4.4.1"],                     # invalid chart type
         "HELM-014": ["1.4.1"],                     # known-compromised dependency
+        "HELM-015": ["1.4.1"],  # oci:// dependency not digest-pinned
+        "HELM-016": ["1.5.1"],  # default secret in values.yaml
+        "HELM-017": ["1.4.1"],  # tpl of an untrusted .Values value
         # ── Dockerfile (image build supply chain) ──────────────────
         # The CIS Supply Chain Benchmark Section 2 (build) and 3
         # (dependencies) cover the same ground a hardened Dockerfile
@@ -700,6 +703,9 @@ STANDARD = Standard(
         "CARGO-008": ["1.4.1"],                    # patch.crates-io substitution
         "CARGO-009": ["1.4.1"],                    # workspace deps floating
         "CARGO-010": ["1.1.8"],                    # missing rust-version
+        "CARGO-011": ["1.4.1"],  # build.rs compile-time egress / exec
+        "CARGO-012": ["1.4.1"],  # .cargo/config.toml source override / build flags
+        "CARGO-013": ["1.4.1"],  # Cargo.lock off-crates.io source
         # ── Composer / PHP (COMPOSER-001..008) ──
         "COMPOSER-001": ["1.4.1"],                 # missing composer.lock
         "COMPOSER-002": ["1.4.1"],                 # floating require constraint

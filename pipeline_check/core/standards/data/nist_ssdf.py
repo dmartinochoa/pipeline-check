@@ -513,6 +513,9 @@ STANDARD = Standard(
         "HELM-012": ["PW.4.4"],                        # deprecated without successor
         "HELM-013": ["PW.4.4"],                        # invalid chart type
         "HELM-014": ["PW.4.4", "RV.1.1"],              # known-compromised dependency
+        "HELM-015": ["PW.4.4"],  # oci:// dependency not digest-pinned
+        "HELM-016": ["PS.1.1"],  # default secret in values.yaml
+        "HELM-017": ["PW.4.4"],  # tpl of an untrusted .Values value
         # ── Cloud Build (GCB) ────────────────────────────────────
         "GCB-001": ["PW.4.1", "PW.4.4"],               # step image not pinned
         "GCB-002": ["PS.1.1"],                         # plaintext env secret
@@ -640,6 +643,9 @@ STANDARD = Standard(
         "CARGO-008": ["PO.5.1", "PW.4.4"],             # patch.crates-io substitution
         "CARGO-009": ["PW.4.4"],                       # workspace deps floating
         "CARGO-010": ["PO.5.1"],                       # missing rust-version
+        "CARGO-011": ["PW.4.4"],  # build.rs compile-time egress / exec
+        "CARGO-012": ["PW.4.4"],  # .cargo/config.toml source override / build flags
+        "CARGO-013": ["PW.4.4"],  # Cargo.lock off-crates.io source
         # ── Composer / PHP ──
         "COMPOSER-001": ["PW.4.4", "RV.1.1"],
         "COMPOSER-002": ["PW.4.4", "RV.1.1"],

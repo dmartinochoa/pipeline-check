@@ -12,6 +12,19 @@ release commit collapses this section into `## [X.Y.Z] - <date>`.
 
 ### Added
 
+- **Weak-coverage provider deepening: cargo, helm.** Six rules closing
+  the two packs that needed a loader extension. cargo: CARGO-011
+  (``build.rs`` compile-time network / process / ``include!``, HIGH),
+  CARGO-012 (``.cargo/config.toml`` source ``replace-with`` or
+  linker ``rustflags``, HIGH), CARGO-013 (``Cargo.lock`` package
+  resolved off crates.io, MEDIUM); 10 -> 13. helm: HELM-015 (``oci://``
+  dependency pinned only by a mutable tag, HIGH), HELM-016 (default
+  secret in ``values.yaml``, HIGH), HELM-017 (``tpl`` of an untrusted
+  ``.Values`` value, chart SSTI, HIGH); 14 -> 17. The cargo loader now
+  reads ``build.rs`` / ``.cargo/config.toml`` / the ``Cargo.lock``
+  body; the helm ``Chart`` now carries the parsed ``values.yaml`` and
+  ``templates/`` texts. All six mapped across the standards registries
+  and the provider / standards docs regenerated.
 - **Weak-coverage provider deepening: gomod, rubygems, maven.** Nine
   rules continuing the coverage-pass deepening, the three packs that
   needed no new base-loader reads. gomod: GOMOD-011 (`tool` directive

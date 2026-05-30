@@ -339,6 +339,9 @@ STANDARD = Standard(
         "HELM-012": ["ESF-S-VERIFY-DEPS"],
         "HELM-013": ["ESF-S-VERIFY-DEPS"],
         "HELM-014": ["ESF-S-VERIFY-DEPS"],
+        "HELM-015": ["ESF-S-PIN-DEPS", "ESF-S-VERIFY-DEPS"],  # oci:// dependency not digest-pinned
+        "HELM-016": ["ESF-D-SECRETS"],  # default secret in values.yaml
+        "HELM-017": ["ESF-S-VERIFY-DEPS"],  # tpl of an untrusted .Values value
         # ── Dockerfile (image build supply chain) ──────────────────
         "DF-001": ["ESF-S-PIN-DEPS", "ESF-S-VERIFY-DEPS"],         # FROM not digest-pinned
         "DF-002": ["ESF-D-PRIV-BUILD"],                            # runs as root
@@ -725,6 +728,9 @@ STANDARD = Standard(
         "CARGO-008": ["ESF-S-VERIFY-DEPS"],
         "CARGO-009": ["ESF-S-VERIFY-DEPS"],
         "CARGO-010": ["ESF-S-VERIFY-DEPS"],
+        "CARGO-011": ["ESF-S-VERIFY-DEPS"],  # build.rs compile-time egress / exec
+        "CARGO-012": ["ESF-S-TRUSTED-REG", "ESF-S-VERIFY-DEPS"],  # .cargo/config.toml source override / build flags
+        "CARGO-013": ["ESF-S-VERIFY-DEPS"],  # Cargo.lock off-crates.io source
         # ── Composer / PHP ──
         "COMPOSER-001": ["ESF-S-VERIFY-DEPS"],
         "COMPOSER-002": ["ESF-S-VERIFY-DEPS"],

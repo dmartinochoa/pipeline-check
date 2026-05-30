@@ -6,6 +6,32 @@ What's planned, what's shipped, and what's deliberately out of scope.
 
 ### Unreleased (on ``dev``)
 
+- **Weak-coverage deepening: cargo / helm batch** — Six rules closing
+  the two packs that needed a loader extension, completing the
+  first-batch sweep of every provider the coverage pass flagged.
+  **cargo:** CARGO-011 (HIGH, ``build.rs`` runs network / process /
+  ``include!`` idioms at compile time, the Rust analog of an npm
+  install script), CARGO-012 (HIGH, ``.cargo/config.toml`` sets a
+  ``[source.*] replace-with`` that reroutes the whole crate graph, or
+  a linker / ``link-arg`` in ``rustflags``), CARGO-013 (MEDIUM, a
+  ``Cargo.lock`` ``[[package]]`` resolved off crates.io via a ``git+``
+  or alternate-registry source, the transitive substitution the
+  manifest rules can't see). Loader now reads the sibling ``build.rs``,
+  the nearest ``.cargo/config.toml`` (walked up to the scan root), and
+  the ``Cargo.lock`` body. **helm:** HELM-015 (HIGH, an ``oci://``
+  dependency bound only by a mutable tag, no Chart.lock digest and no
+  digest reference, sharpening HELM-003 on the OCI axis), HELM-016
+  (HIGH, a default secret / credential baked into ``values.yaml``,
+  which the K8s render pass misses when consumed via ``| b64enc`` into
+  a Secret), HELM-017 (HIGH, a ``{{ tpl .Values.x . }}`` that
+  re-evaluates an operator-supplied value as a Go template, a chart
+  SSTI sink). The helm ``Chart`` now carries the parsed
+  ``values.yaml`` and ``templates/`` texts (dir + ``.tgz`` member).
+  All six wired across the standards data files (owasp / esf from each
+  rule's declared tags, the rest cloned from the nearest sibling) and
+  the provider / standards docs regenerated. cargo 10 -> 13, helm
+  14 -> 17. Catalog floor bumped 1090 -> 1110 across README / docs /
+  action.yml / CONTRIBUTING / DOCKERHUB.
 - **Weak-coverage deepening: gomod / rubygems / maven batch** — Nine
   rules continuing the weak-coverage provider deepening, the three
   packs the initiative flagged as needing no new base-loader reads.
@@ -663,18 +689,25 @@ API / PEP 740 surface reliably exposing the owner list and attestations.
 (NUGET-016/018/019), composer (COMPOSER-011..014), pulumi
 (PULUMI-011..013), argocd (ARGOCD-014/015/017; 016 skipped), pypi
 (PYPI-015..018), gomod (GOMOD-011/012), rubygems (GEM-011/012/013),
-and maven (MVN-015..018). The gomod / rubygems / maven batch needed no
-new base-loader reads beyond a ``tool``-directive parse (gomod) and a
-per-gem ``source:`` surface (rubygems); the maven rules reparse the
-POM / settings XML in-rule the way MVN-010 / MVN-012 already do, and
-MVN-016 reads the Gradle script text. GOMOD-012 ships as bare-IP /
-explicit-port host detection only: a ``http://`` scheme can't survive
-the go.mod ``//`` comment stripper and never appears in a canonical
-module path anyway. Still open: cargo (CARGO-011..013, needs the
-``build.rs`` / ``.cargo/config.toml`` / ``Cargo.lock``-body loader
-reads), helm (HELM-015/016/017, needs the ``values.yaml`` / template
-reader), and the deferred fourth picks (NUGET-017, GOMOD-013/014 best
-placed in the CI provider packs, GEM-014/015, MVN follow-ups, etc.).
+maven (MVN-015..018), cargo (CARGO-011/012/013), and helm
+(HELM-015/016/017). With cargo and helm in, every provider the
+2026-05-29 coverage pass flagged has shipped its first deepening batch.
+The two loader extensions the pass called out both landed: cargo's
+loader now reads the sibling ``build.rs``, walks up to the nearest
+``.cargo/config.toml``, and keeps the ``Cargo.lock`` body; the helm
+``Chart`` now carries the parsed ``values.yaml`` and the
+``templates/`` file texts (dir + ``.tgz`` member). The
+gomod / rubygems / maven batch needed no base-loader reads beyond a
+``tool``-directive parse (gomod) and a per-gem ``source:`` surface
+(rubygems); the maven rules reparse the POM / settings XML in-rule the
+way MVN-010 / MVN-012 already do, and MVN-016 reads the Gradle script
+text. GOMOD-012 ships as bare-IP / explicit-port host detection only:
+a ``http://`` scheme can't survive the go.mod ``//`` comment stripper
+and never appears in a canonical module path anyway. Still open: the
+deferred fourth picks (NUGET-017, GOMOD-013/014 best placed in the CI
+provider packs, GEM-014/015, CARGO-014, MVN follow-ups, the secondary
+HELM / ARGOCD / PULUMI / PYPI picks, etc.) and the PyPI parallels of
+the NPM behavioral-trust signals.
 
 A 2026-05-29 coverage pass ranked every provider by shipped rule count
 and ran a per-provider gap analysis on the thinnest packs. The

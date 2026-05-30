@@ -452,6 +452,9 @@ STANDARD = Standard(
         "HELM-012": ["4.1.5"],                     # deprecated without successor
         "HELM-013": ["4.1.5"],                     # invalid chart type
         "HELM-014": ["4.1.5"],                     # known-compromised dep
+        "HELM-015": ["4.1.3"],  # oci:// dependency not digest-pinned
+        "HELM-016": ["4.1.4"],  # default secret in values.yaml
+        "HELM-017": ["4.1.3"],  # tpl of an untrusted .Values value
         # ── Buildkite (CI runner runs builds inside containers) ───
         # Mostly 4.1.2 / 4.4.4 (runtime config defects), 4.1.5
         # (untrusted images), 4.1.4 (secrets baked into env), and
