@@ -630,6 +630,15 @@ API / PEP 740 surface reliably exposing the owner list and attestations.
 
 ### Weak-coverage provider deepening
 
+**Status (2026-05-30):** first batches shipped on ``dev`` for nuget
+(NUGET-016/018/019), composer (COMPOSER-011..014), pulumi
+(PULUMI-011..013), argocd (ARGOCD-014/015/017; 016 skipped), and pypi
+(PYPI-015..018). Still open: cargo (CARGO-011..013, needs the
+``build.rs`` / ``.cargo/config.toml`` / ``Cargo.lock``-body loader
+reads), gomod (GOMOD-011/012), rubygems (GEM-011/012/013), helm
+(HELM-015/016/017, needs the ``values.yaml`` / template reader), maven
+(MVN-015..018), and the deferred fourth picks (NUGET-017, etc.).
+
 A 2026-05-29 coverage pass ranked every provider by shipped rule count
 and ran a per-provider gap analysis on the thinnest packs. The
 registry, IaC, and GitOps providers at the bottom of the table (cargo,
