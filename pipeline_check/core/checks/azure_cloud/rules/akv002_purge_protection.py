@@ -22,6 +22,14 @@ RULE = Rule(
         "protection makes the retention period mandatory, closing the "
         "insider-threat vector."
     ),
+    exploit_example=(
+        "An attacker who compromises an identity with Key Vault "
+        "Contributor (or a disgruntled admin) deletes and then purges "
+        "the vault during the soft-delete window. With purge protection "
+        "off, the keys and secrets are gone irreversibly, destroying "
+        "the data they protected and any chance of recovery within the "
+        "retention period."
+    ),
 )
 
 

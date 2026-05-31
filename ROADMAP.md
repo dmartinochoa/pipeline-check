@@ -575,9 +575,10 @@ GitLab include cache key, the cross-repo reverse-direction dedup, the
 terminal Rich-markup leak, the autofix line-ending flip on Windows,
 the docker / package flag fixers reclassified ``unsafe``, and the
 ``history --dir`` fleet-aggregate ingestion. The **low** severity
-items below remain open.
+items below were then swept on 2026-05-31 (fixed on ``dev``); each fix
+is summarized in the ``### Fixed`` block in ``CHANGELOG.md``.
 
-### Low
+### Low (fixed 2026-05-31 on ``dev``)
 
 - **JWT verifier uses wrong userinfo endpoints.** For Microsoft Entra
   it builds ``{issuer}/openid/userinfo`` instead of the Graph
@@ -1207,25 +1208,81 @@ Renders the rule's ``exploit_example`` (when present) under each
 failing finding's panel; recommendation was already inline. See the
 v1.6.0 entry above.
 
-### Suppression expiry warnings
+### ~~Suppression expiry warnings~~ shipped
 
-``--warn-expiring-suppressions 7d`` surfaces about-to-expire
-``.pipelinecheckignore`` entries in stderr before they silently flip
-from suppressed to CI-blocking.
+Shipped on ``dev``. ``--warn-expiring-suppressions DAYS`` makes the
+soon-to-expire forewarning window configurable (was a hardcoded,
+always-on 14 days). Accepts ``7`` / ``7d``; ``0`` / ``off`` / ``none`` /
+``never`` disables it (already-expired rules are still reported). Parsing
+is ``gate.parse_expiry_window``; the window flows through
+``GateConfig.expiry_warning_days``.
 
-### Config-strict mode
+### ~~Config-strict mode~~ shipped
 
-``--config-strict`` promotes unknown config keys in
-``.pipeline-check.yml`` / ``pyproject.toml`` to hard errors (like
-ruff ``--config-strict``). Catches typos in ``fail_on: HIGH``
-before they silently disable gating.
+Shipped on ``dev``. ``--config-strict`` promotes an unknown config key in
+``.pipeline-check.yml`` / ``pyproject.toml`` to a hard error (exit 2)
+before a real scan, catching a typo like a top-level ``fail_on: HIGH``
+(belongs under ``gate:``) before it silently disables gating. Reuses the
+``config.last_unknown_keys()`` the existing ``--config-check`` preflight
+already populates; ``--config-strict`` differs by guarding a normal scan
+rather than being a standalone report-and-exit step.
 
 ### Continuing posture: proof-of-exploit backfill
 
-Every CRITICAL (13) and HIGH (36) rule now carries an
-``exploit_example`` after the dev-cycle backfill. New rules at those
-severities ship one from the start. MEDIUM and LOW backfill remains
-opportunistic and is not a release-blocking milestone.
+Every CRITICAL rule (89) carries an ``exploit_example``, and new
+CRITICAL rules ship one from the start. HIGH (386) carries one too,
+with the sole exception of ``GAR-001`` (no Artifact Registry
+vulnerability scanning), which stays None by design like the other
+absence-of-scanning posture rules. The last cloud-posture gap closed
+in the dev cycle: ``ACR-002``, ``AKV-002``, ``AZST-002``, ``ENTRA-003``,
+``GAR-002``, ``GCIAM-003``, ``GCKMS-002``. MEDIUM and LOW backfill stays
+opportunistic and is not a release-blocking milestone; the batches so
+far cover the GitHub Actions MEDIUM rules with a concrete exploitation
+primitive (GHA-005 long-lived AWS keys, GHA-011 cache-key poisoning,
+GHA-014 ungated deploy, GHA-029 git / path / tarball install, GHA-034
+``secrets: inherit``) and their GitLab analogs (GL-004 ungated deploy,
+GL-012 cache poisoning, GL-013 long-lived AWS keys, GL-027 git / path /
+tarball install, plus the GitLab-specific GL-029 manual deploy
+defaulting to ``allow_failure: true``), and the CircleCI set (CC-005
+long-lived AWS keys, CC-009 ungated deploy, CC-025 cache poisoning,
+CC-028 git / path / tarball install, plus the CircleCI-specific CC-012
+``setup: true`` dynamic-config injection), and the Bitbucket set
+(BB-004 ungated deploy, BB-011 long-lived AWS keys, BB-018 cache
+poisoning, BB-027 git / path / tarball install, plus BB-009 a third-
+party ``pipe:`` pinned by mutable tag instead of sha256 digest), and
+the Azure DevOps set (ADO-004 ungated deployment job, ADO-012 cache
+poisoning via ``$(System.PullRequest.*)``, ADO-014 long-lived AWS keys,
+ADO-028 git / path / tarball install, plus ADO-009 a container image
+pinned by mutable tag instead of sha256 digest), and the Jenkins set
+(JF-004 long-lived AWS keys via ``withCredentials``, JF-005 deploy
+stage with no ``input`` approval, JF-031 git / path / tarball install,
+plus the Jenkins-specific JF-012 ``load`` of unpinned Groovy and JF-024
+an ``input`` gate with no ``submitter`` restriction), and the Buildkite
+set (BK-007 deploy with no manual ``block:``, BK-008 TLS verification
+disabled in a step command, BK-013 deploy step with no ``branches:``
+filter, BK-014 unpinned package installs), and the Drone set (DR-008
+``pull: never`` reusing an unverified cached image, DR-010 unpinned
+package installs), and the Tekton set (TKN-007 a run on the namespace
+``default`` ServiceAccount, TKN-014 unpinned package installs). That
+completes the concrete-primitive MEDIUM rules across every CI provider.
+The backfill then began extending into the IaC providers, starting with
+the Terraform AWS-CI/CD pack (CB-007 an unfiltered CodeBuild webhook
+that lets fork PRs run in the build account, IAM-006 a wildcard
+``Resource`` on sensitive actions, CP-005 a production deploy with no
+ManualApproval, PBAC-003 a build security group with ``0.0.0.0/0``
+egress, CB-009 a build image pinned by a mutable tag). The
+CloudFormation pack mirrors the same AWS CI/CD model, so the same five
+(CB-007, IAM-006, CP-005, PBAC-003, CB-009) got the CFN-template
+versions. Kubernetes was higher-yield (its primitives are concrete):
+K8S-011 (the ``default`` ServiceAccount), K8S-012 (an auto-mounted SA
+token a compromised container reads), K8S-039 (``shareProcessNamespace``
+letting a sidecar read a neighbor's secrets), K8S-038 (an allow-all
+NetworkPolicy), and K8S-028 (a ``hostPort`` bypassing the cluster
+network model). IaC packs are more posture-heavy than CI, so a larger
+share of their MEDIUM rules stay None. Absence-of-hygiene posture rules (no SBOM / SLSA / signing /
+vulnerability scanning, encryption / logging / retention settings) keep
+no example by design, since the gap is a missing control rather than an
+exploitation primitive.
 
 ### Lower priority
 

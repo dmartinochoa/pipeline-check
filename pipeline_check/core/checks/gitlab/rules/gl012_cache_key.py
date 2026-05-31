@@ -27,6 +27,28 @@ RULE = Rule(
         "an MR-controlled variable, an attacker can poison a cache "
         "entry that a later default-branch pipeline restores."
     ),
+    exploit_example=(
+        "# Vulnerable: cache key prefix derives from the MR branch slug.\n"
+        "build:\n"
+        "  cache:\n"
+        "    key:\n"
+        "      prefix: \"$CI_COMMIT_REF_SLUG\"\n"
+        "      files:\n"
+        "        - package-lock.json\n"
+        "  script:\n"
+        "    - npm ci\n"
+        "\n"
+        "# Attack: open an MR from a branch you name. Your MR pipeline\n"
+        "# writes a cache entry under your prefix. GitLab restores caches\n"
+        "# by key prefix, so a later default-branch pipeline can restore\n"
+        "# your poisoned entry (tampered node_modules / build output) and\n"
+        "# treat it as a clean cache.\n"
+        "\n"
+        "# Safe: derive the key only from values the MR can't control.\n"
+        "    key:\n"
+        "      files:\n"
+        "        - package-lock.json"
+    ),
 )
 
 

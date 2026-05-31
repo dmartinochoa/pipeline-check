@@ -167,12 +167,12 @@ class TestSeverityMapping:
         r = parse_sarif_text(json.dumps(sarif))
         assert r.findings[0].severity == Severity.HIGH
 
-    def test_falls_back_to_info_when_neither_present(self):
+    def test_falls_back_to_warning_default_when_neither_present(self):
         sarif = _trivy_sarif()
         sarif["runs"][0]["results"][0].pop("properties", None)
         sarif["runs"][0]["results"][0].pop("level", None)
         r = parse_sarif_text(json.dumps(sarif))
-        assert r.findings[0].severity == Severity.INFO
+        assert r.findings[0].severity == Severity.MEDIUM
 
     def test_invalid_security_severity_falls_back_to_level(self):
         """A non-numeric security-severity (some scanners ship the

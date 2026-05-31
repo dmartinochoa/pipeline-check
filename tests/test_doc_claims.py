@@ -1,8 +1,8 @@
 """Lock doc claims against the live code.
 
-Numerical claims in `README.md` and `docs/index.md` ("23 providers",
-"16 compliance standards", "111 autofixers", "45 attack chains",
-"820+ checks") are easy to lie about and easy to forget when adding
+Numerical claims in `README.md` and `docs/index.md` ("32 providers",
+"18 compliance standards", "111 autofixers", "50 attack chains",
+"1110+ checks") are easy to lie about and easy to forget when adding
 a new provider, fixer, or standard. This test scans the doc set for
 those claims and asserts each one matches what the registries
 actually expose.
@@ -603,9 +603,16 @@ def test_readme_architecture_rule_ranges_match_registry():
 # ──────────────────────────────────────────────────────────────────
 
 # Maps the bolded row label in the README provider table to the rule
-# directory slug. Argo CD added 2026-05-21 as the 23rd provider.
+# directory slug. Covers every row whose fourth column leads with a
+# bare ``<N> checks`` figure: live-cloud, CI, IaC, and the package-
+# ecosystem ``↳`` continuation sub-rows. Rows with a composite cell
+# (Helm, SCM, the npm/PyPI header) are verified by their own dedicated
+# assertions instead.
 _README_PROVIDER_TABLE_ROWS: dict[str, str] = {
     "AWS": "aws",
+    "Azure (live)": "azure_cloud",
+    "GCP (live)": "gcp",
+    "Pulumi": "pulumi",
     "GitHub Actions": "github",
     "GitLab CI": "gitlab",
     "Bitbucket Pipelines": "bitbucket",
@@ -621,6 +628,12 @@ _README_PROVIDER_TABLE_ROWS: dict[str, str] = {
     "Dockerfile": "dockerfile",
     "Kubernetes": "kubernetes",
     "OCI image manifest": "oci",
+    "Maven": "maven",
+    "NuGet": "nuget",
+    "Composer": "composer",
+    "Cargo": "cargo",
+    "Go modules": "gomod",
+    "RubyGems": "rubygems",
 }
 
 
@@ -641,7 +654,7 @@ def test_readme_provider_table_per_row_rule_counts_match_registry():
         # bold row label, anything up to the fourth column, then the
         # leading "<N> checks" we want to verify.
         pat = re.compile(
-            rf"\|\s*\*\*{re.escape(row_name)}\*\*[^|]*\|"
+            rf"\|\s*(?:↳\s*)?\*\*{re.escape(row_name)}\*\*[^|]*\|"
             rf"[^|]*\|[^|]*\|\s*(\d+)\s+checks?",
         )
         m = pat.search(text)
@@ -907,3 +920,76 @@ def test_severity_legend_in_readme_matches_constants():
             )
 
     assert not drift, "severity-legend drift:\n  " + "\n  ".join(drift)
+
+
+# ──────────────────────────────────────────────────────────────────
+# Coverage-completeness guards.
+#
+# The per-claim drift tests above verify that a number *present* in a
+# doc agrees with the registry. They stay silent when a registered
+# provider / standard / tool is simply *absent* from the doc, which is
+# how the README under-listed providers and standards for several
+# releases while the headline counts stayed green (the aggregate
+# "32 providers" / "18 standards" claims matched, but the enumerated
+# tables and the --pipeline value list lagged behind). These guards
+# close that gap: every registered item must be enumerated, not merely
+# counted.
+# ──────────────────────────────────────────────────────────────────
+
+
+def test_readme_pipeline_row_enumerates_every_provider():
+    """The ``--pipeline`` / ``-p`` row in the README CLI-reference
+    table must list every registered provider as a backticked value.
+
+    Catches a provider that lands in the registry (and is selectable
+    via ``--pipeline <name>``) but never gets added to the documented
+    value list.
+    """
+    text = (REPO / "README.md").read_text(encoding="utf-8")
+    m = re.search(r"`--pipeline`\s*/\s*`-p`.*", text)
+    assert m, "README CLI table: '--pipeline / -p' row not found"
+    documented = set(re.findall(r"`([a-z0-9_]+)`", m.group(0)))
+    missing = sorted(set(_providers_available()) - documented)
+    assert not missing, (
+        f"README '--pipeline' row doesn't enumerate these registered "
+        f"providers: {missing}. Add each as a `<name>` value so the "
+        f"documented selector list matches pipeline_check.core.providers."
+    )
+
+
+def test_readme_standards_table_lists_every_registered_standard():
+    """Every registered standard must have a row in the README
+    compliance table linking to ``docs/standards/<slug>.md``.
+
+    Catches the case where a standard is added to the registry (so the
+    aggregate '18 standards' headline auto-bumps and passes) but its
+    table row is forgotten, leaving the visible table under-listing
+    the real coverage.
+    """
+    text = (REPO / "README.md").read_text(encoding="utf-8")
+    linked = set(re.findall(r"docs/standards/([a-z0-9_]+)\.md", text))
+    missing = sorted(set(_standards_available()) - linked)
+    assert not missing, (
+        f"README standards table is missing rows for these registered "
+        f"standards: {missing}. Add a row linking to "
+        f"docs/standards/<slug>.md."
+    )
+
+
+def test_readme_mcp_tool_count_matches_registry():
+    """The MCP feature row claims '<N> tools advertised'. N must equal
+    the number of tool specs the server actually exposes via
+    ``TOOL_SPECS``."""
+    from pipeline_check.mcp_server.tools import TOOL_SPECS
+
+    text = (REPO / "README.md").read_text(encoding="utf-8")
+    m = re.search(r"(\d+)\s+tools advertised", text)
+    assert m, (
+        "README MCP feature row: no '<N> tools advertised' claim found"
+    )
+    claimed = int(m.group(1))
+    expected = len(TOOL_SPECS)
+    assert claimed == expected, (
+        f"README says {claimed} MCP tools advertised; TOOL_SPECS "
+        f"exposes {expected}. Update the README or the tool registry."
+    )

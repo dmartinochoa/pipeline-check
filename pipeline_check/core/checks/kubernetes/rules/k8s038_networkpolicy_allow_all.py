@@ -44,6 +44,30 @@ RULE = Rule(
         "specific NetworkPolicy if the wide-open shape is "
         "deliberate.",
     ),
+    exploit_example=(
+        "# Vulnerable: a NetworkPolicy whose ingress rule has empty from:.\n"
+        "apiVersion: networking.k8s.io/v1\n"
+        "kind: NetworkPolicy\n"
+        "metadata:\n"
+        "  name: web\n"
+        "spec:\n"
+        "  podSelector:\n"
+        "    matchLabels: { app: web }\n"
+        "  ingress:\n"
+        "    - from: []        # empty = allow from EVERY source\n"
+        "\n"
+        "# Attack: an empty `from:` matches every pod in every namespace\n"
+        "# plus every external IP, so the policy enforces nothing while\n"
+        "# looking like a control. Any compromised pod in the cluster\n"
+        "# reaches `web` directly, the lateral-movement path the policy\n"
+        "# was supposed to close.\n"
+        "\n"
+        "# Safe: name the legitimate peer explicitly.\n"
+        "  ingress:\n"
+        "    - from:\n"
+        "        - podSelector:\n"
+        "            matchLabels: { app: api-gateway }"
+    ),
 )
 
 

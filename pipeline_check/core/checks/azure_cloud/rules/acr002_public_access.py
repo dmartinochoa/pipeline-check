@@ -21,6 +21,13 @@ RULE = Rule(
         "endpoint to brute-force attempts and the image catalog to "
         "enumeration. Private endpoints restrict access to the VNet."
     ),
+    exploit_example=(
+        "The registry's authentication endpoint is reachable from the "
+        "internet. An attacker enumerates the image catalog to map the "
+        "deployment, then brute-forces the registry credentials; on "
+        "success they push a backdoored tag that the next deployment "
+        "pulls and runs."
+    ),
 )
 
 

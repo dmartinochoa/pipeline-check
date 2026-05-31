@@ -57,6 +57,28 @@ RULE = Rule(
         "the integrity guarantee instead of the registry "
         "round-trip.",
     ),
+    exploit_example=(
+        "# Vulnerable: a step that reuses a cached image, unverified.\n"
+        "kind: pipeline\n"
+        "type: docker\n"
+        "steps:\n"
+        "  - name: build\n"
+        "    image: acme/builder:latest\n"
+        "    pull: never\n"
+        "    commands:\n"
+        "      - make release\n"
+        "\n"
+        "# Attack: `pull: never` runs whatever image bytes the agent\n"
+        "# already cached, skipping the registry round-trip and the\n"
+        "# digest verification an `always` pull performs. If a poisoned\n"
+        "# image ever landed in that agent's cache (a repointed registry\n"
+        "# tag, a debug `docker pull`, a co-resident workload), the\n"
+        "# malicious bytes keep running on every build until an operator\n"
+        "# clears the cache by hand.\n"
+        "\n"
+        "# Safe: re-fetch and verify on each build (the Drone default).\n"
+        "    pull: always"
+    ),
 )
 
 

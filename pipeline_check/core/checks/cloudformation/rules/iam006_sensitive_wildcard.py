@@ -26,6 +26,30 @@ RULE = Rule(
         "``ssm:*``, ``iam:*``, ``sts:*``, ``dynamodb:*``, "
         "``lambda:*``, ``ec2:*``) with ``Resource: \"*\"``."
     ),
+    exploit_example=(
+        "# Vulnerable: a CI/CD role granting s3:* on Resource \"*\".\n"
+        "Resources:\n"
+        "  CIRole:\n"
+        "    Type: AWS::IAM::Role\n"
+        "    Properties:\n"
+        "      Policies:\n"
+        "        - PolicyName: ci\n"
+        "          PolicyDocument:\n"
+        "            Statement:\n"
+        "              - Effect: Allow\n"
+        "                Action: [\"s3:*\", \"secretsmanager:GetSecretValue\"]\n"
+        "                Resource: \"*\"\n"
+        "\n"
+        "# Attack: the build role can read and write every bucket and\n"
+        "# every secret in the account, not just its own. A compromised\n"
+        "# build step (an injected buildspec, a malicious dependency)\n"
+        "# uses the role to pull production secrets and tamper with\n"
+        "# unrelated data in one call.\n"
+        "\n"
+        "# Safe: scope Resource to the specific ARNs the build needs.\n"
+        "                Action: [\"s3:GetObject\", \"s3:PutObject\"]\n"
+        "                Resource: !Sub \"${ArtifactBucket.Arn}/*\""
+    ),
 )
 
 

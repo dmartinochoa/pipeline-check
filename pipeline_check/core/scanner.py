@@ -843,6 +843,13 @@ def _filter_terraform_by_diff(context: Any, allowed: set[str]) -> None:
     if not isinstance(planned, list):
         return
 
+    # Map each module call label to its (local) source directory from the
+    # plan's configuration block. The resource address uses the call label
+    # (``module.vpc``) while the changed file lives under the source dir
+    # (``modules/networking``); without this map a module whose label
+    # differs from its source dir silently drops every changed resource.
+    label_to_dir = _tf_module_source_dirs(plan)
+
     def _keep(res: Any) -> bool:
         # Fail open on shape errors, a malformed plan with a non-dict
         # resource entry shouldn't crash the diff filter. The
@@ -856,14 +863,19 @@ def _filter_terraform_by_diff(context: Any, allowed: set[str]) -> None:
             return True
         if not addr.startswith("module."):
             return root_changed
-        # module.<name>.<type>.<...>, use <name> as a directory hint.
         parts = addr.split(".")
         if len(parts) < 2:
             return root_changed
-        mod_name = parts[1]
-        # Exact match only. Substring (``vpc in "vpc-prod"``) would
-        # keep resources from unrelated modules whose directory name
-        # happens to share a prefix.
+        # ``module.<label>[...]`` — strip any index suffix on the label.
+        mod_name = parts[1].split("[", 1)[0]
+        src_dir = label_to_dir.get(mod_name)
+        if src_dir is not None:
+            # Match the module's real source directory (handles a module
+            # whose call label differs from its source dir).
+            return any(_tf_dir_matches(src_dir, d) for d in module_dirs_changed)
+        # No source mapping (plan without a ``configuration`` block, or a
+        # registry / remote module): fall back to the call-label heuristic,
+        # exact match against a changed directory's leaf name.
         return mod_name in module_dirs_changed
 
     rm["resources"] = [r for r in planned if _keep(r)]
@@ -873,3 +885,70 @@ def _tf_dir(path: str) -> str:
     from pathlib import Path as _P
     parts = _P(path).parent.parts
     return parts[-1] if parts else ""
+
+
+def _tf_module_source_dirs(plan: dict[str, Any]) -> dict[str, str]:
+    """Map each root-module call label to its local source directory, read
+    from the plan's ``configuration`` block. ``module "vpc" { source =
+    "./modules/networking" }`` yields ``{"vpc": "modules/networking"}``.
+
+    The resource address keys on the call *label* while the changed file
+    lives under the *source directory*; this map lets the diff filter match a
+    module whose label differs from its source dir. Best-effort: returns an
+    empty map on any missing / wrong-shape node, and skips non-local sources
+    (registry address, git / http URL), so the caller falls back to the
+    label heuristic for those.
+    """
+    out: dict[str, str] = {}
+    config = plan.get("configuration")
+    if not isinstance(config, dict):
+        return out
+    rm = config.get("root_module")
+    if not isinstance(rm, dict):
+        return out
+    calls = rm.get("module_calls")
+    if not isinstance(calls, dict):
+        return out
+    for label, body in calls.items():
+        if not isinstance(label, str) or not isinstance(body, dict):
+            continue
+        source = body.get("source")
+        if not isinstance(source, str) or not source:
+            continue
+        norm = _normalize_tf_source(source)
+        if norm:
+            out[label] = norm
+    return out
+
+
+def _normalize_tf_source(source: str) -> str:
+    """Normalize a *local* module ``source`` to a forward-slash directory
+    path with no leading ``./`` or trailing slash. Terraform treats a source
+    as local only when it starts with ``./`` or ``../``; everything else
+    (registry address, git / http URL, bare name) is remote and returns ''.
+    """
+    s = source.replace("\\", "/").strip()
+    if not (s.startswith("./") or s.startswith("../")):
+        return ""
+    while s.startswith("./"):
+        s = s[2:]
+    return s.rstrip("/")
+
+
+def _tf_dir_matches(src_dir: str, changed_dir: str) -> bool:
+    """True when a module's source dir and a changed .tf file's directory
+    refer to the same place. ``changed_dir`` is a single directory-name leaf
+    (see :func:`_tf_dir`); compare on path components so a multi-segment
+    source (``modules/networking``) matches its leaf (``networking``). Leans
+    toward over-matching, the documented safe direction here."""
+    a = src_dir.replace("\\", "/").strip("/")
+    b = changed_dir.replace("\\", "/").strip("/")
+    if not a or not b:
+        return False
+    return (
+        a == b
+        or a.endswith("/" + b)
+        or b.endswith("/" + a)
+        or a.startswith(b + "/")
+        or b.startswith(a + "/")
+    )

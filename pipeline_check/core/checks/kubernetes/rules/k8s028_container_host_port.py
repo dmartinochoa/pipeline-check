@@ -41,6 +41,32 @@ RULE = Rule(
         "suppress this rule with a brief ``.pipelinecheckignore`` "
         "rationale rather than leaving it open across the catalog."
     ),
+    exploit_example=(
+        "# Vulnerable: a container that binds a hostPort.\n"
+        "apiVersion: apps/v1\n"
+        "kind: Deployment\n"
+        "metadata:\n"
+        "  name: web\n"
+        "spec:\n"
+        "  template:\n"
+        "    spec:\n"
+        "      containers:\n"
+        "        - name: app\n"
+        "          image: web:1.2.3\n"
+        "          ports:\n"
+        "            - containerPort: 8080\n"
+        "              hostPort: 8080\n"
+        "\n"
+        "# Attack: hostPort binds the container port straight to the\n"
+        "# node's IP, bypassing Services, kube-proxy, and\n"
+        "# NetworkPolicies. Any pod (or host) that can reach the node's\n"
+        "# IP hits the workload directly on :8080, none of the cluster's\n"
+        "# network controls see or filter the traffic.\n"
+        "\n"
+        "# Safe: publish via a Service instead of a host-level port.\n"
+        "          ports:\n"
+        "            - containerPort: 8080"
+    ),
 )
 
 

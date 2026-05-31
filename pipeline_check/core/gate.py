@@ -59,12 +59,45 @@ from .scorer import ScoreResult
 # from the scorer so this module has no upward coupling.
 _GRADES = ("A", "B", "C", "D")
 
-#: Forewarning window for soon-to-expire suppressions. An ignore rule
-#: with ``expires`` within this many days of today shows up under
+#: Default forewarning window for soon-to-expire suppressions. An ignore
+#: rule with ``expires`` within this many days of today shows up under
 #: :attr:`GateResult.expiring_soon` so the operator schedules a revisit
 #: before the gate flips. Two-week default chosen so a Friday afternoon
-#: scan still gives the team a sprint's notice.
+#: scan still gives the team a sprint's notice. Tunable per-run via
+#: ``--warn-expiring-suppressions`` (see :func:`parse_expiry_window`).
 EXPIRY_WARNING_DAYS = 14
+
+#: Words that disable the expiry forewarning entirely when passed to
+#: ``--warn-expiring-suppressions`` (alongside a bare ``0`` / ``0d``).
+_EXPIRY_DISABLE_WORDS = frozenset({"off", "none", "never", "no"})
+
+
+def parse_expiry_window(raw: str) -> int | None:
+    """Parse a ``--warn-expiring-suppressions`` value into a day count.
+
+    Accepts a bare integer (``"7"``) or a day-suffixed form (``"7d"``);
+    ``"0"`` / ``"0d"`` and the words ``off`` / ``none`` / ``never`` / ``no``
+    disable the forewarning and return ``None``. Raises ``ValueError`` on a
+    negative or non-numeric value so the CLI can surface a clean error.
+    """
+    s = raw.strip().lower()
+    if s in _EXPIRY_DISABLE_WORDS:
+        return None
+    if s.endswith("d"):
+        s = s[:-1]
+    try:
+        days = int(s)
+    except ValueError:
+        raise ValueError(
+            f"expiry window must be an integer number of days "
+            f"(e.g. '7' or '7d'), or one of "
+            f"{sorted(_EXPIRY_DISABLE_WORDS)} to disable; got {raw!r}"
+        ) from None
+    if days < 0:
+        raise ValueError(
+            f"expiry window cannot be negative; got {raw!r}"
+        )
+    return None if days == 0 else days
 
 
 @dataclass(frozen=True, slots=True)
@@ -128,6 +161,13 @@ class GateConfig:
     #: When True, fail the gate if *any* attack chain matched. Useful as
     #: a blanket "no correlated attack paths" guard for high-trust repos.
     fail_on_any_chain: bool = False
+    #: Forewarning window (days) for soon-to-expire ignore rules. An
+    #: ignore rule expiring within this many days is reported under
+    #: :attr:`GateResult.expiring_soon`. ``None`` disables the forewarning
+    #: (already-expired rules are still reported via ``expired_rules``).
+    #: Defaults to :data:`EXPIRY_WARNING_DAYS`; set by
+    #: ``--warn-expiring-suppressions``.
+    expiry_warning_days: int | None = EXPIRY_WARNING_DAYS
 
     def any_explicit_gate(self) -> bool:
         """True when at least one gate condition is explicitly configured.
@@ -423,10 +463,14 @@ def evaluate_gate(
         baseline_pairs = load_baseline_from_git(ref, path)
     else:
         baseline_pairs = set()
+    # Normalize resource path separators so a baseline written on one OS
+    # (``.github\workflows\x.yml``) still suppresses the same finding on
+    # another (``.github/workflows/x.yml``).
+    baseline_pairs = {(cid, _norm_resource(res)) for cid, res in baseline_pairs}
     baseline_matched: list[Finding] = []
     after_baseline: list[Finding] = []
     for f in failing:
-        if (f.check_id.upper(), f.resource) in baseline_pairs:
+        if (f.check_id.upper(), _norm_resource(f.resource)) in baseline_pairs:
             baseline_matched.append(f)
         else:
             after_baseline.append(f)
@@ -519,12 +563,14 @@ def evaluate_gate(
 
     expired_rules = [r for r in config.ignore_rules if r.is_expired(today)]
     expiring_soon: list[IgnoreRule] = []
-    for r in config.ignore_rules:
-        if r.expires is None or r.is_expired(today):
-            continue
-        days = r.days_until_expiry(today)
-        if days is not None and days <= EXPIRY_WARNING_DAYS:
-            expiring_soon.append(r)
+    window = config.expiry_warning_days
+    if window is not None:
+        for r in config.ignore_rules:
+            if r.expires is None or r.is_expired(today):
+                continue
+            days = r.days_until_expiry(today)
+            if days is not None and days <= window:
+                expiring_soon.append(r)
 
     return GateResult(
         passed=not reasons,

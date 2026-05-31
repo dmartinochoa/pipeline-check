@@ -44,6 +44,34 @@ RULE = Rule(
         "workload genuinely requires it, ignore the rule with "
         "a documented justification.",
     ),
+    exploit_example=(
+        "# Vulnerable: a pod that shares one PID namespace across\n"
+        "# its containers.\n"
+        "apiVersion: v1\n"
+        "kind: Pod\n"
+        "metadata:\n"
+        "  name: app\n"
+        "spec:\n"
+        "  shareProcessNamespace: true\n"
+        "  containers:\n"
+        "    - name: app\n"
+        "      image: web:1.2.3\n"
+        "    - name: logger\n"
+        "      image: third-party/log-agent:latest\n"
+        "\n"
+        "# Attack: every container in the pod shares one PID namespace,\n"
+        "# so the logger sidecar can `ps` the app's processes and read\n"
+        "# their secrets straight out of /proc/<pid>/environ and the\n"
+        "# command line. A compromised or malicious sidecar pivots into\n"
+        "# the primary container's credentials with no escape needed.\n"
+        "\n"
+        "# Safe: drop the field so containers keep isolated PID\n"
+        "# namespaces.\n"
+        "spec:\n"
+        "  containers:\n"
+        "    - name: app\n"
+        "      image: web:1.2.3"
+    ),
 )
 
 

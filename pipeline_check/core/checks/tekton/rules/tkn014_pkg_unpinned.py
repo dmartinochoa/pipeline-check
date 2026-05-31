@@ -46,6 +46,31 @@ RULE = Rule(
         "lockfile. Suppress via ignore-file scoped to the "
         "specific step name.",
     ),
+    exploit_example=(
+        "# Vulnerable: a Task step script with an unpinned install.\n"
+        "apiVersion: tekton.dev/v1\n"
+        "kind: Task\n"
+        "metadata:\n"
+        "  name: build\n"
+        "spec:\n"
+        "  steps:\n"
+        "    - name: deps\n"
+        "      image: node:20\n"
+        "      script: |\n"
+        "        npm install\n"
+        "        npm run build\n"
+        "\n"
+        "# Attack: `npm install` resolves dependencies fresh against the\n"
+        "# registry instead of honoring the committed lockfile, so a\n"
+        "# newly published malicious version (typosquat, dependency-\n"
+        "# confusion, or a compromised maintainer) is pulled into the\n"
+        "# build and runs in the step's pod with its mounted\n"
+        "# credentials.\n"
+        "\n"
+        "# Safe: install from the lockfile exactly.\n"
+        "        npm ci\n"
+        "        npm run build"
+    ),
 )
 
 

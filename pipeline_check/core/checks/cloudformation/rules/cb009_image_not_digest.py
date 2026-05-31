@@ -23,6 +23,25 @@ RULE = Rule(
         "let an upstream image swap execute on the next build with "
         "no template change."
     ),
+    exploit_example=(
+        "# Vulnerable: the build image is pinned by a mutable tag.\n"
+        "Resources:\n"
+        "  CIProject:\n"
+        "    Type: AWS::CodeBuild::Project\n"
+        "    Properties:\n"
+        "      Environment:\n"
+        "        Image: acme/build-tools:3.4\n"
+        "\n"
+        "# Attack: the tag `3.4` is mutable. Whoever controls that\n"
+        "# registry repo (the publisher, or an attacker who compromises\n"
+        "# the account) repoints `3.4` to a malicious image. The next\n"
+        "# build pulls it with no template change and runs the whole\n"
+        "# build inside attacker-controlled tooling with the project's\n"
+        "# IAM role.\n"
+        "\n"
+        "# Safe: pin the image to an immutable digest.\n"
+        "        Image: acme/build-tools@sha256:<digest>"
+    ),
 )
 
 

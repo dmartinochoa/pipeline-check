@@ -52,6 +52,33 @@ RULE = Rule(
         "per-resource via ``--ignore-file`` once you've verified "
         "they don't actually mutate any environment.",
     ),
+    exploit_example=(
+        "# Vulnerable: a deployment job with no environment: binding.\n"
+        "jobs:\n"
+        "  - deployment: DeployProd\n"
+        "    pool: { vmImage: ubuntu-latest }\n"
+        "    strategy:\n"
+        "      runOnce:\n"
+        "        deploy:\n"
+        "          steps:\n"
+        "            - script: aws s3 sync ./dist s3://prod-site\n"
+        "\n"
+        "# Attack: with no `environment:`, ADO can't enforce approvals,\n"
+        "# branch-control checks, or business-hours gates. Any run on\n"
+        "# the trigger branch rolls out to production with no reviewer\n"
+        "# and no deployment record.\n"
+        "\n"
+        "# Safe: bind an environment (approvals + checks configured on\n"
+        "# the Environment resource in the ADO UI).\n"
+        "  - deployment: DeployProd\n"
+        "    environment: production\n"
+        "    pool: { vmImage: ubuntu-latest }\n"
+        "    strategy:\n"
+        "      runOnce:\n"
+        "        deploy:\n"
+        "          steps:\n"
+        "            - script: aws s3 sync ./dist s3://prod-site"
+    ),
 )
 
 

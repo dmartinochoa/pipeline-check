@@ -42,6 +42,30 @@ RULE = Rule(
         "later default-branch run restores and treats as a clean "
         "build cache."
     ),
+    exploit_example=(
+        "# Vulnerable: the cache key namespace derives from the PR head ref.\n"
+        "on: [pull_request]\n"
+        "jobs:\n"
+        "  build:\n"
+        "    runs-on: ubuntu-latest\n"
+        "    steps:\n"
+        "      - uses: actions/cache@v4\n"
+        "        with:\n"
+        "          path: ~/.cache/build\n"
+        "          key: build-${{ github.head_ref }}\n"
+        "          restore-keys: |\n"
+        "            build-\n"
+        "\n"
+        "# Attack: open a PR from a branch you name. Your PR run writes\n"
+        "# poisoned artifacts under `build-<your-branch>`. Caches are\n"
+        "# shared across a repo's branches, so a later push to the\n"
+        "# default branch misses its own key and falls through\n"
+        "# `restore-keys: build-` to your entry, restoring attacker-\n"
+        "# controlled content into the release build before it runs.\n"
+        "\n"
+        "# Safe: key only on values the attacker can't control.\n"
+        "          key: build-${{ runner.os }}-${{ hashFiles('**/*.lock') }}"
+    ),
 )
 
 

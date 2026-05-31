@@ -23,6 +23,31 @@ RULE = Rule(
         "``production`` / ``live`` substrings and requires a "
         "preceding ``Approval`` action."
     ),
+    exploit_example=(
+        "# Vulnerable: a production Deploy stage with no approval before it.\n"
+        "Resources:\n"
+        "  Release:\n"
+        "    Type: AWS::CodePipeline::Pipeline\n"
+        "    Properties:\n"
+        "      Stages:\n"
+        "        # ... Source + Build ...\n"
+        "        - Name: DeployProd\n"
+        "          Actions:\n"
+        "            - Name: Deploy\n"
+        "              ActionTypeId: { Category: Deploy, Owner: AWS, Provider: CodeDeploy, Version: \"1\" }\n"
+        "\n"
+        "# Attack: nothing gates the production stage, so every change\n"
+        "# that reaches it deploys to prod automatically. An unreviewed\n"
+        "# merge (or a poisoned upstream artifact) ships straight to\n"
+        "# production with no human sign-off and no auditable approval\n"
+        "# event.\n"
+        "\n"
+        "# Safe: add a Manual approval action in the stage before prod.\n"
+        "        - Name: Approve\n"
+        "          Actions:\n"
+        "            - Name: ManualApproval\n"
+        "              ActionTypeId: { Category: Approval, Owner: AWS, Provider: Manual, Version: \"1\" }"
+    ),
 )
 
 

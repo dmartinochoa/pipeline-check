@@ -209,7 +209,9 @@ def _make_cmp_op(name: str, cmp: Callable[[Any, Any], bool]) -> Callable[[Any, s
             )
         path = _resolve_path(arg, where)
         expected = arg["value"]
-        if not isinstance(expected, (int, float)):
+        # ``bool`` subclasses ``int``; reject it so a YAML ``true`` written
+        # as the comparison value isn't silently treated as ``1``.
+        if isinstance(expected, bool) or not isinstance(expected, (int, float)):
             raise PredicateError(
                 f"{where}: 'value' must be numeric for {name}, got "
                 f"{type(expected).__name__}"
@@ -217,7 +219,13 @@ def _make_cmp_op(name: str, cmp: Callable[[Any, Any], bool]) -> Callable[[Any, s
 
         def _eval(node: Any) -> bool:
             actual, ok = _first_match(path, node)
-            if not ok or not isinstance(actual, (int, float)):
+            # Likewise reject a ``bool`` node value: ``true`` must not
+            # satisfy a numeric comparison as ``1``.
+            if (
+                not ok
+                or isinstance(actual, bool)
+                or not isinstance(actual, (int, float))
+            ):
                 return False
             return cmp(actual, expected)
 
@@ -266,9 +274,17 @@ def _regex_op(arg: Any, where: str) -> Predicate:
         actual, ok = _first_match(path, node)
         if not ok or not isinstance(actual, str):
             return False
-        # Bound the haystack so a quadratic-backtracking pattern can
-        # only burn time proportional to the cap, not the full doc.
-        return pattern.search(actual[:_MAX_REGEX_HAYSTACK_BYTES]) is not None
+        # Within the cap, match the full value so a ``$`` / ``\Z`` anchor
+        # binds to the real end of the string.
+        if len(actual) <= _MAX_REGEX_HAYSTACK_BYTES:
+            return pattern.search(actual) is not None
+        # Oversized value: bound the work to the cap (a quadratic-
+        # backtracking pattern can only burn time proportional to it), but
+        # drop a match that ends exactly at the truncation boundary so an
+        # end-anchored pattern can't false-positive on the artificial cut.
+        truncated = actual[:_MAX_REGEX_HAYSTACK_BYTES]
+        m = pattern.search(truncated)
+        return m is not None and m.end() < len(truncated)
 
     return _eval
 
@@ -341,7 +357,9 @@ def _make_len_op(name: str, cmp: Callable[[int, int], bool]) -> Callable[[Any, s
             )
         path = _resolve_path(arg, where)
         expected = arg["value"]
-        if not isinstance(expected, int):
+        # ``bool`` subclasses ``int``; reject it so a YAML ``true`` isn't
+        # accepted as the length ``1``.
+        if isinstance(expected, bool) or not isinstance(expected, int):
             raise PredicateError(
                 f"{where}: 'value' must be an integer for {name}, got "
                 f"{type(expected).__name__}"

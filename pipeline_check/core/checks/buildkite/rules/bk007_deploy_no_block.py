@@ -38,6 +38,24 @@ RULE = Rule(
         "looks ungated even though the actual deploy is gated "
         "downstream. Add a no-op ``block:`` to silence.",
     ),
+    exploit_example=(
+        "# Vulnerable: a deploy step with no preceding manual block.\n"
+        "steps:\n"
+        "  - label: \":rocket: Deploy prod\"\n"
+        "    command: \"aws s3 sync ./dist s3://prod-site\"\n"
+        "\n"
+        "# Attack: there's no `block:` ahead of the deploy, so every\n"
+        "# build that reaches this step ships to production\n"
+        "# automatically. An unreviewed merge (or a compromised branch)\n"
+        "# deploys with no human in the loop.\n"
+        "\n"
+        "# Safe: gate the deploy behind a manual block.\n"
+        "steps:\n"
+        "  - block: \"Deploy to prod?\"\n"
+        "    branches: \"main\"\n"
+        "  - label: \":rocket: Deploy prod\"\n"
+        "    command: \"aws s3 sync ./dist s3://prod-site\""
+    ),
 )
 
 # Heuristic deploy markers. Lower-cased before match.

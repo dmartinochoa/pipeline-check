@@ -24,6 +24,29 @@ RULE = Rule(
         "on the full port range — that's a completely open "
         "exfiltration channel."
     ),
+    exploit_example=(
+        "# Vulnerable: the CodeBuild VPC security group allows all egress.\n"
+        "Resources:\n"
+        "  BuildSG:\n"
+        "    Type: AWS::EC2::SecurityGroup\n"
+        "    Properties:\n"
+        "      SecurityGroupEgress:\n"
+        "        - CidrIp: 0.0.0.0/0\n"
+        "          IpProtocol: \"-1\"\n"
+        "\n"
+        "# Attack: the build runs inside the VPC but can open a\n"
+        "# connection to any host on any port. A compromised build step\n"
+        "# (malicious dependency, injected command) streams the source,\n"
+        "# secrets, and assumed-role credentials out to an attacker\n"
+        "# endpoint with no egress control to stop it.\n"
+        "\n"
+        "# Safe: scope egress to the destinations the build needs.\n"
+        "      SecurityGroupEgress:\n"
+        "        - CidrIp: 10.0.0.0/16\n"
+        "          FromPort: 443\n"
+        "          ToPort: 443\n"
+        "          IpProtocol: tcp"
+    ),
 )
 
 

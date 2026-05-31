@@ -33,6 +33,18 @@ release commit collapses this section into `## [X.Y.Z] - <date>`.
 
 ### Added
 
+- **``--config-strict``.** Promotes an unknown config-file key from the
+  default warn-and-drop to a hard error (exit 2) before a real scan, so a
+  misplaced key (e.g. ``fail_on`` written at the top level instead of
+  under ``gate:``) fails fast instead of silently disabling the setting.
+  Distinct from ``--config-check``, which is a standalone preflight that
+  reports unknown keys and exits 3 without scanning; ``--config-strict``
+  guards a normal scan and is a no-op when the config is clean.
+- **``--warn-expiring-suppressions DAYS``.** Makes the soon-to-expire
+  ignore-rule forewarning window configurable (was a hardcoded, always-on
+  14 days). Accepts ``7`` / ``7d``; ``0`` or ``off`` / ``none`` /
+  ``never`` disables the forewarning (already-expired rules are still
+  reported). Default ``14d``. Wired through ``GateConfig.expiry_warning_days``.
 - **PyPI behavioral-trust signals (PYPI-019, PYPI-020, LOW).** The PyPI
   parallels of NPM-015 / NPM-016, both ``--resolve-remote``-gated and
   scoped to direct dependencies. PYPI-019 flags a direct dependency
@@ -239,6 +251,119 @@ release commit collapses this section into `## [X.Y.Z] - <date>`.
 
 ### Changed
 
+- **Proof-of-exploit examples on five Kubernetes MEDIUM rules.** The
+  IaC backfill's highest-yield pack so far (concrete cluster
+  primitives): K8S-011 (a workload on the namespace ``default``
+  ServiceAccount), K8S-012 (``automountServiceAccountToken`` left on, so
+  a compromised container reads the mounted API token), K8S-039
+  (``shareProcessNamespace: true`` letting a sidecar read a neighbor's
+  secrets from ``/proc``), K8S-038 (a NetworkPolicy with an empty
+  ``from:`` / ``to:`` that allows all peers), and K8S-028 (a
+  ``hostPort`` that bypasses Services and NetworkPolicies) now carry an
+  ``exploit_example``. The hardening / resource-limit / probe rules stay
+  ``None`` by design.
+- **Proof-of-exploit examples on five CloudFormation AWS-CI/CD MEDIUM
+  rules.** The CloudFormation-template counterparts of the Terraform
+  batch (same shared AWS CI/CD model): CB-007 (an
+  ``AWS::CodeBuild::Project`` with ``Triggers.Webhook`` but no
+  ``FilterGroups``), IAM-006 (sensitive actions with ``Resource: "*"``),
+  CP-005 (a production CodePipeline stage with no preceding Manual
+  approval), PBAC-003 (a build SG with ``0.0.0.0/0`` egress), and CB-009
+  (a build image on a mutable tag) now carry an ``exploit_example``.
+  The rest of the pack is posture and stays ``None`` by design.
+- **Proof-of-exploit examples on five Terraform AWS-CI/CD MEDIUM
+  rules.** Begins extending the backfill into the IaC providers:
+  CB-007 (an ``aws_codebuild_webhook`` with no ``filter_group``, so a
+  fork PR runs in the build account), IAM-006 (a CI/CD role policy
+  pairing sensitive actions with ``Resource = "*"``), CP-005 (a
+  production CodePipeline Deploy stage with no preceding ManualApproval),
+  PBAC-003 (a CodeBuild security group with ``0.0.0.0/0`` all-port
+  egress), and CB-009 (a build image pinned by a mutable tag) now carry
+  an ``exploit_example``. The remaining Terraform MEDIUM rules are
+  posture (CMK encryption, logging, retention, versioning) and stay
+  ``None`` by design.
+- **Proof-of-exploit examples on two Tekton MEDIUM rules.** Completes
+  the MEDIUM backfill across every CI provider: TKN-007 (a TaskRun /
+  PipelineRun on the namespace ``default`` ServiceAccount, whose
+  mounted API token carries whatever RBAC is bound to ``default``) and
+  TKN-014 (unpinned package installs) now carry an ``exploit_example``.
+  Every concrete-primitive MEDIUM rule across all providers now has one;
+  the remaining gaps are absence-of-hygiene posture rules (no SBOM /
+  SLSA / signing / vuln-scan), which stay ``None`` by design.
+- **Proof-of-exploit examples on two Drone MEDIUM rules.** Extends the
+  MEDIUM backfill to Drone: DR-008 (``pull: never`` reuses a cached
+  image without re-verifying the digest, so a poisoned cache entry
+  keeps running) and DR-010 (unpinned package installs) now carry an
+  ``exploit_example``. Drone's other MEDIUM rules (trigger filter,
+  recursive submodule clone) already had one or are posture-only.
+- **Proof-of-exploit examples on four Buildkite MEDIUM rules.** Extends
+  the MEDIUM backfill to Buildkite pipelines: BK-007 (deploy step with
+  no preceding manual ``block:``), BK-008 (TLS verification disabled in
+  a step command, an MITM opening), BK-013 (deploy step with no
+  ``branches:`` filter), and BK-014 (unpinned package installs) now
+  carry an ``exploit_example``. Buildkite has no AWS or cache rule, so
+  this batch is four. SBOM / SLSA / signing / vuln-scan / timeout rules
+  stay ``None`` by design.
+- **Proof-of-exploit examples on five Jenkins MEDIUM rules.** Extends
+  the MEDIUM backfill to Jenkinsfiles: JF-004 (long-lived AWS keys via
+  ``withCredentials``), JF-005 (deploy stage with no ``input`` approval),
+  JF-031 (git / path / tarball install), and two Jenkins-specific gaps,
+  JF-012 (a ``load`` of unpinned Groovy that runs with the build's
+  permissions) and JF-024 (an ``input`` gate with no ``submitter``, so
+  anyone with Build permission approves) now carry an
+  ``exploit_example``. SBOM / SLSA / signing / vuln-scan / timeout rules
+  stay ``None`` by design.
+- **Proof-of-exploit examples on five Azure DevOps MEDIUM rules.**
+  Extends the MEDIUM backfill to Azure Pipelines: ADO-004 (deployment
+  job with no ``environment:`` binding), ADO-012 (Cache@2 key from
+  ``$(System.PullRequest.*)``), ADO-014 (long-lived AWS keys), ADO-028
+  (git / path / tarball install), and ADO-009 (a container image
+  pinned by a mutable version tag the registry can repoint, not a
+  sha256 digest) now carry an ``exploit_example``. SBOM / SLSA /
+  signing / vuln-scan / timeout rules stay ``None`` by design.
+- **Proof-of-exploit examples on five Bitbucket MEDIUM rules.** Extends
+  the MEDIUM backfill to Bitbucket Pipelines: BB-004 (deploy step with
+  no ``deployment:`` gate), BB-011 (long-lived AWS keys), BB-018
+  (cache-key poisoning), BB-027 (git / path / tarball install), and
+  BB-009 (a third-party ``pipe:`` pinned by a mutable version tag the
+  registry can repoint, not a sha256 digest) now carry an
+  ``exploit_example``. SBOM / SLSA / signing / vuln-scan / max-time
+  rules stay ``None`` by design.
+- **Proof-of-exploit examples on five CircleCI MEDIUM rules.** Extends
+  the MEDIUM backfill to CircleCI: CC-005 (long-lived AWS keys in a job
+  ``environment:`` block), CC-009 (deploy job with no ``type: approval``
+  gate), CC-025 (cache-key poisoning), CC-028 (git / path / tarball
+  install), and the CircleCI-specific CC-012 (``setup: true`` dynamic
+  config lets a fork PR inject arbitrary pipeline config) now carry an
+  ``exploit_example``. SBOM / SLSA / signing / vuln-scan / resource
+  rules stay ``None`` by design.
+- **Proof-of-exploit examples on five GitLab MEDIUM rules.** Mirrors
+  the GitHub Actions MEDIUM batch on the GitLab side: GL-004 (ungated
+  deploy), GL-012 (cache-key poisoning), GL-013 (long-lived AWS keys),
+  GL-027 (git / path / tarball install), and the GitLab-specific GL-029
+  (manual deploy defaulting to ``allow_failure: true``, a gate that
+  blocks nothing) now carry an ``exploit_example``. SBOM / SLSA /
+  signing / vuln-scan / timeout rules stay ``None`` by design.
+- **Proof-of-exploit examples on seven HIGH cloud-posture rules.**
+  Closes the last HIGH-severity gaps in the exploit-example backfill:
+  ACR-002 (public registry), AKV-002 (no Key Vault purge protection),
+  AZST-002 (non-HTTPS storage), ENTRA-003 (service-principal password
+  credential), GAR-002 (public Artifact Registry repo), GCIAM-003
+  (unconstrained service-account token creator), and GCKMS-002 (public
+  KMS key) now carry an ``exploit_example``. Every CRITICAL and HIGH
+  rule now ships one, except GAR-001 (no vulnerability scanning), which
+  stays ``None`` by design like the other absence-of-hygiene posture
+  rules.
+- **Proof-of-exploit examples on five GitHub Actions MEDIUM rules.**
+  GHA-005 (long-lived AWS keys), GHA-011 (cache-key poisoning), GHA-014
+  (ungated deploy job), GHA-029 (install from a git / path / tarball
+  source), and GHA-034 (``secrets: inherit``) now carry an
+  ``exploit_example``, surfaced under ``--explain`` / ``--inline-explain``
+  and in the HTML and JSON reports. Continues the opportunistic MEDIUM
+  backfill (every CRITICAL / HIGH rule already ships one); the
+  absence-of-hygiene posture rules (no SBOM / SLSA / signing) keep no
+  example by design, since the gap isn't a concrete exploitation
+  primitive.
 - **NPM-009 names the dependency that introduced each new transitive.**
   Findings now read `<name> (via <parent>)` instead of just the bare
   package name, so a reviewer knows which direct dependency's bump to
@@ -314,6 +439,35 @@ release commit collapses this section into `## [X.Y.Z] - <date>`.
 
 ### Fixed
 
+- **Known-issues low-severity sweep (2026-05-31).** The open low-severity
+  findings from the 2026-05-29 feature review, fixed together. **SARIF
+  ingest** now maps a result with no `level` and no `security-severity` to
+  MEDIUM (the SARIF 2.1.0 `warning` default) instead of INFO, so findings
+  from tools that omit per-result level aren't dropped by a severity gate
+  (an explicit `level: none` still maps to INFO). **`--diff-base`** anchors
+  git's repo-root-relative output at the repo top, so a scan launched from
+  a subdirectory no longer misses real changes. **The Terraform diff
+  filter** maps each module call label to its source directory from the
+  plan's `configuration` block, so a module whose label differs from its
+  source dir (`module "vpc" { source = "./modules/networking" }`) keeps its
+  changed resources (falls back to the old label heuristic when no
+  configuration is present). **The GitLab `project:` include** handles a
+  list-valued `file:` by fetching each entry instead of 404-ing on a
+  stringified list. **The fleet GitHub enumerator** guards a null
+  `clone_url` with `isinstance` like the GitLab / Bitbucket paths. **The
+  JWT secret verifier** uses the real Microsoft Graph and Google OIDC
+  UserInfo hosts instead of paths appended to the issuer. **The custom-rule
+  evaluator** rejects `bool` (which subclasses `int`) in numeric and length
+  operators so a YAML `true` isn't compared as `1`, and its `regex` op
+  matches the full value within the cap so a `$` / `\Z` anchor binds to the
+  real end of the string. **Passing Rego findings** carry `cwe` /
+  `incident_refs` / `exploit_example` like the failing path, and a K8s rego
+  violation that names no resource now reports the manifest path (when
+  unambiguous) instead of defaulting to `<unknown>`.
+  **Cosmetic:** the history line chart shows its "no history yet"
+  placeholder for an all-zero dataset; an inline `reason=` keeps a
+  multi-word reason; gate baseline matching normalizes path separators so a
+  baseline written on one OS suppresses on another.
 - **GHA-098 no longer counts `step-security/harden-runner` as a
   security scan.** harden-runner is a runtime egress monitor, not a
   SAST / SCA / secret scanner, so a deploy job whose only scan-shaped

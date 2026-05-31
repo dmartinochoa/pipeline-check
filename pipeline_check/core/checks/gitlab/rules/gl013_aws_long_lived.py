@@ -37,6 +37,32 @@ RULE = Rule(
         "schedule. GitLab supports OIDC via `id_tokens:` for short-"
         "lived credential injection."
     ),
+    exploit_example=(
+        "# Vulnerable: long-lived IAM user keys in CI/CD variables.\n"
+        "variables:\n"
+        "  AWS_ACCESS_KEY_ID: \"AKIA…\"        # long-lived user key\n"
+        "  AWS_SECRET_ACCESS_KEY: \"…\"\n"
+        "deploy:\n"
+        "  script:\n"
+        "    - aws s3 sync ./dist s3://prod-site\n"
+        "\n"
+        "# Attack: the keys are exposed to every job's environment. A\n"
+        "# script running untrusted code (a compromised dependency, an\n"
+        "# MR that edits the pipeline, a leaked job log) reads and\n"
+        "# exfiltrates them. Because they're long-lived IAM user keys,\n"
+        "# the attacker keeps AWS access until someone rotates them by\n"
+        "# hand.\n"
+        "\n"
+        "# Safe: OIDC. id_tokens mints a short-lived role session per job.\n"
+        "deploy:\n"
+        "  id_tokens:\n"
+        "    AWS_TOKEN:\n"
+        "      aud: https://gitlab.example.com\n"
+        "  script:\n"
+        "    - aws sts assume-role-with-web-identity"
+        " --role-arn \"$AWS_ROLE_ARN\""
+        " --web-identity-token \"$AWS_TOKEN\" ..."
+    ),
 )
 
 

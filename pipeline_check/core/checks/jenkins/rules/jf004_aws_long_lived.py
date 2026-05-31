@@ -27,6 +27,29 @@ RULE = Rule(
         "fires when `withAWS(credentials: '…')` is used, the "
         "safe alternative is `withAWS(role: '…')`."
     ),
+    exploit_example=(
+        "// Vulnerable: withCredentials binds long-lived AWS keys.\n"
+        "stage('Deploy') {\n"
+        "  steps {\n"
+        "    withCredentials([usernamePassword(\n"
+        "        credentialsId: 'aws-prod',\n"
+        "        usernameVariable: 'AWS_ACCESS_KEY_ID',\n"
+        "        passwordVariable: 'AWS_SECRET_ACCESS_KEY')]) {\n"
+        "      sh 'aws s3 sync ./dist s3://prod-site'\n"
+        "    }\n"
+        "  }\n"
+        "}\n"
+        "\n"
+        "// Attack: the static keys land in the build environment. A\n"
+        "// leaked console log, a malicious shared library, or an `sh`\n"
+        "// step that dumps env exfiltrates them. The long-lived IAM\n"
+        "// user keys keep working until someone rotates them by hand.\n"
+        "\n"
+        "// Safe: assume a short-lived role per build.\n"
+        "    withAWS(role: 'arn:aws:iam::123456789012:role/jenkins') {\n"
+        "      sh 'aws s3 sync ./dist s3://prod-site'\n"
+        "    }"
+    ),
 )
 
 

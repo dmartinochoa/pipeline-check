@@ -21,6 +21,13 @@ RULE = Rule(
         "internet to encrypt, decrypt, or sign data with the key, "
         "depending on the granted role."
     ),
+    exploit_example=(
+        "A KMS CryptoKey grants roles/cloudkms.cryptoKeyDecrypter to "
+        "allUsers. Anyone on the internet who knows the key's resource "
+        "name calls kms.decrypt on ciphertext they've exfiltrated (an "
+        "encrypted backup, a sealed secret), recovering the plaintext "
+        "without ever touching the project's IAM."
+    ),
 )
 
 

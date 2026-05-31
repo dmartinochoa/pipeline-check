@@ -32,6 +32,21 @@ RULE = Rule(
         "maven / gradle / aws bypasses. Partial-word matches "
         "(``--insecure-protocols``) are excluded."
     ),
+    exploit_example=(
+        "# Vulnerable: TLS verification disabled mid-pipeline.\n"
+        "steps:\n"
+        "  - command: \"curl -k https://artifacts.internal/app.tar.gz | tar xz\"\n"
+        "\n"
+        "# Attack: `curl -k` skips certificate validation. An on-path\n"
+        "# attacker (a compromised proxy, a poisoned DNS entry, a\n"
+        "# hostile network) presents any certificate and serves a\n"
+        "# backdoored app.tar.gz, which the step unpacks and runs with\n"
+        "# the agent's credentials.\n"
+        "\n"
+        "# Safe: keep verification on; install the CA into the agent\n"
+        "# trust store if it's a private root.\n"
+        "  - command: \"curl https://artifacts.internal/app.tar.gz | tar xz\""
+    ),
 )
 
 

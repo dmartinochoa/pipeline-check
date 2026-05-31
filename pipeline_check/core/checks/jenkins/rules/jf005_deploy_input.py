@@ -29,6 +29,27 @@ RULE = Rule(
         "Without one, any push that triggers the pipeline ships to "
         "the target with no human review."
     ),
+    exploit_example=(
+        "// Vulnerable: a deploy stage with no manual input gate.\n"
+        "stage('Deploy to prod') {\n"
+        "  steps {\n"
+        "    sh 'aws s3 sync ./dist s3://prod-site'\n"
+        "  }\n"
+        "}\n"
+        "\n"
+        "// Attack: nothing pauses the pipeline. Any commit that\n"
+        "// triggers the job ships to production with no human review,\n"
+        "// a self-merged change or a compromised branch deploys\n"
+        "// straight through.\n"
+        "\n"
+        "// Safe: require a manual approval, scoped to release engineers.\n"
+        "stage('Deploy to prod') {\n"
+        "  steps {\n"
+        "    input message: 'Promote to prod?', submitter: 'releasers'\n"
+        "    sh 'aws s3 sync ./dist s3://prod-site'\n"
+        "  }\n"
+        "}"
+    ),
 )
 
 
