@@ -40,6 +40,24 @@ RULE = Rule(
         "any of those surfaces the ability to substitute code into "
         "the build."
     ),
+    exploit_example=(
+        "# Vulnerable: install from an unpinned git URL (no commit SHA).\n"
+        "jobs:\n"
+        "  build:\n"
+        "    runs-on: ubuntu-latest\n"
+        "    steps:\n"
+        "      - run: pip install git+https://github.com/acme/helper.git\n"
+        "\n"
+        "# Attack: the install resolves the helper repo's default-branch\n"
+        "# HEAD, which no lockfile or hash pin can protect. Whoever can\n"
+        "# push to that branch (the upstream owner, or anyone who\n"
+        "# compromises the repo) silently swaps in code that runs in\n"
+        "# your build with your CI token and secrets. The same hole\n"
+        "# applies to `file:` paths and bare tarball URLs.\n"
+        "\n"
+        "# Safe: pin the dependency to an immutable commit SHA.\n"
+        "      - run: pip install git+https://github.com/acme/helper.git@<full-sha>"
+    ),
 )
 
 

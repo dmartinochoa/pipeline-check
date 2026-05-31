@@ -51,6 +51,31 @@ RULE = Rule(
         "step whose env carries ``AWS_ENDPOINT_URL`` or ``KUBE_API_URL`` "
         "pointing at a localhost address.",
     ),
+    exploit_example=(
+        "# Vulnerable: a deploy job with no environment: binding.\n"
+        "on:\n"
+        "  push:\n"
+        "    branches: [main]\n"
+        "jobs:\n"
+        "  deploy:\n"
+        "    runs-on: ubuntu-latest\n"
+        "    steps:\n"
+        "      - run: aws s3 sync ./dist s3://prod-site\n"
+        "\n"
+        "# Attack: with no `environment:`, GitHub can't require a\n"
+        "# reviewer, enforce a deployment-branch policy, or apply a wait\n"
+        "# timer. Any commit that lands on main, a self-merged PR, a\n"
+        "# typo'd hotfix, a push from a compromised contributor, ships\n"
+        "# straight to production with no second pair of eyes.\n"
+        "\n"
+        "# Safe: bind an environment and set required reviewers on it.\n"
+        "jobs:\n"
+        "  deploy:\n"
+        "    runs-on: ubuntu-latest\n"
+        "    environment: production   # required reviewers configured here\n"
+        "    steps:\n"
+        "      - run: aws s3 sync ./dist s3://prod-site"
+    ),
 )
 
 

@@ -38,6 +38,38 @@ RULE = Rule(
         "AWS, so the rule auto-suppresses an env block that pairs a "
         "localhost endpoint with sentinel keys.",
     ),
+    exploit_example=(
+        "# Vulnerable: long-lived IAM user keys, even sourced from secrets.\n"
+        "jobs:\n"
+        "  deploy:\n"
+        "    runs-on: ubuntu-latest\n"
+        "    steps:\n"
+        "      - uses: aws-actions/configure-aws-credentials@v4\n"
+        "        with:\n"
+        "          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}\n"
+        "          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}\n"
+        "          aws-region: us-east-1\n"
+        "\n"
+        "# Attack: the keys land in the runner environment and\n"
+        "# ~/.aws/credentials. A later step running untrusted code (a\n"
+        "# compromised third-party action, an injected `run:`, a\n"
+        "# malicious transitive dependency) reads and exfiltrates them.\n"
+        "# Because they're long-lived IAM user keys, the attacker keeps\n"
+        "# AWS access until someone notices and rotates them by hand.\n"
+        "\n"
+        "# Safe: OIDC. The assumed-role credential expires within the\n"
+        "# hour and is scoped to this run.\n"
+        "jobs:\n"
+        "  deploy:\n"
+        "    runs-on: ubuntu-latest\n"
+        "    permissions:\n"
+        "      id-token: write\n"
+        "    steps:\n"
+        "      - uses: aws-actions/configure-aws-credentials@v4\n"
+        "        with:\n"
+        "          role-to-assume: arn:aws:iam::123456789012:role/ci-deploy\n"
+        "          aws-region: us-east-1"
+    ),
 )
 
 
