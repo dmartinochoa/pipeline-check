@@ -21,6 +21,13 @@ RULE = Rule(
         "artifacts, secrets, and pipeline state) can be intercepted "
         "on shared networks."
     ),
+    exploit_example=(
+        "A pipeline uploads build artifacts to the storage account "
+        "over HTTP. An on-path attacker on a shared network reads the "
+        "artifacts in transit and captures the SAS token embedded in "
+        "the request URL, then reuses that token to overwrite the "
+        "artifacts with a backdoored build."
+    ),
 )
 
 

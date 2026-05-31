@@ -21,6 +21,13 @@ RULE = Rule(
         "images. Internal images may contain proprietary code, "
         "configuration, or embedded credentials."
     ),
+    exploit_example=(
+        "An internal Docker repository grants artifactregistry.reader "
+        "to allUsers. An attacker enumerates the registry, pulls the "
+        "private images anonymously, and extracts the proprietary "
+        "source, build config, and the cloud credentials commonly "
+        "baked into image layers."
+    ),
 )
 
 

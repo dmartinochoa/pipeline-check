@@ -23,6 +23,14 @@ RULE = Rule(
         "credentials bind to a key pair; the private key never leaves "
         "the host."
     ),
+    exploit_example=(
+        "A service principal authenticates with a client secret stored "
+        "in the pipeline. The secret leaks through a build log, a "
+        "committed .env, or an environment dump, and because it's a "
+        "bearer string an attacker authenticates as the principal from "
+        "anywhere. A certificate credential can't be copy-pasted out "
+        "the same way: the private key never leaves the host."
+    ),
 )
 
 
