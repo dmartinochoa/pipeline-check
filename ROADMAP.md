@@ -575,9 +575,10 @@ GitLab include cache key, the cross-repo reverse-direction dedup, the
 terminal Rich-markup leak, the autofix line-ending flip on Windows,
 the docker / package flag fixers reclassified ``unsafe``, and the
 ``history --dir`` fleet-aggregate ingestion. The **low** severity
-items below remain open.
+items below were then swept on 2026-05-31 (fixed on ``dev``); each fix
+is summarized in the ``### Fixed`` block in ``CHANGELOG.md``.
 
-### Low
+### Low (fixed 2026-05-31 on ``dev``)
 
 - **JWT verifier uses wrong userinfo endpoints.** For Microsoft Entra
   it builds ``{issuer}/openid/userinfo`` instead of the Graph

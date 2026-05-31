@@ -52,7 +52,9 @@ SARIF level → internal Severity:
     ``security-severity``).
   * ``warning``      → MEDIUM.
   * ``note``         → LOW.
-  * ``none`` / unset → INFO.
+  * ``none``         → INFO.
+  * unset / unknown  → MEDIUM (SARIF 2.1.0 defaults an absent
+    ``level`` to ``warning``).
 
 Override: if ``properties.security-severity`` is present
 (GitHub's CVSS-like 0..10 score), it wins over ``level``:
@@ -148,7 +150,7 @@ def _resolve_severity(
     level: str | None, properties: dict[str, Any] | None,
 ) -> Severity:
     """Pick severity using security-severity override first, then
-    SARIF level, then INFO fallback."""
+    SARIF level, then the spec's ``warning`` default (MEDIUM)."""
     if isinstance(properties, dict):
         sec = properties.get("security-severity")
         if sec is not None:
@@ -159,7 +161,11 @@ def _resolve_severity(
         mapped_level = _LEVEL_TO_SEVERITY.get(level.lower())
         if mapped_level is not None:
             return mapped_level
-    return Severity.INFO
+    # SARIF 2.1.0 defaults an absent (or unrecognized) result ``level`` to
+    # ``warning``, not ``none``. Map that to MEDIUM so findings from tools
+    # that omit per-result level aren't silently dropped by a severity
+    # gate. An explicit ``level: none`` still maps to INFO via the table.
+    return Severity.MEDIUM
 
 
 # ── Source / driver normalization ─────────────────────────────────────

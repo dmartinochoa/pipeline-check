@@ -110,8 +110,27 @@ class GitLabIncludeFetcher:
         ref = spec.get("ref", "HEAD")
         if not project or not file_path:
             return None
+        # GitLab allows ``file:`` to be a single path or a list of paths
+        # (include several files from one project in one directive). A list
+        # stringified straight into the URL 404s and the include is silently
+        # dropped, so fetch each entry and join them as a YAML document
+        # stream.
+        if isinstance(file_path, list):
+            chunks: list[bytes] = []
+            for one in file_path:
+                if not isinstance(one, str) or not one:
+                    continue
+                data = self._fetch_one_file(project, one, ref)
+                if data is not None:
+                    chunks.append(data)
+            return b"\n---\n".join(chunks) if chunks else None
+        return self._fetch_one_file(project, str(file_path), ref)
+
+    def _fetch_one_file(
+        self, project: Any, file_path: str, ref: Any,
+    ) -> bytes | None:
         encoded_project = urllib.parse.quote(str(project), safe="")
-        encoded_file = urllib.parse.quote(str(file_path).lstrip("/"), safe="")
+        encoded_file = urllib.parse.quote(file_path.lstrip("/"), safe="")
         url = (
             f"{self.gitlab_url}/api/v4/projects/{encoded_project}"
             f"/repository/files/{encoded_file}/raw"

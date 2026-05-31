@@ -23,11 +23,15 @@ def _decode_jwt_payload(token: str) -> dict[str, object] | None:
         return None
 
 
+# ``path`` is either a path appended to the issuer (Auth0 and Okta serve
+# UserInfo under the issuer origin) or an absolute URL when the provider
+# hosts UserInfo on a different host. Microsoft's identity platform serves
+# it from Microsoft Graph and Google from its OIDC host, not the issuer.
 _ISSUER_PROBES: list[tuple[str, str]] = [
     ("auth0.com", "/userinfo"),
     ("okta.com", "/oauth2/v1/userinfo"),
-    ("login.microsoftonline.com", "/openid/userinfo"),
-    ("accounts.google.com", "/oauth2/v3/userinfo"),
+    ("login.microsoftonline.com", "https://graph.microsoft.com/oidc/userinfo"),
+    ("accounts.google.com", "https://openidconnect.googleapis.com/v1/userinfo"),
     ("token.actions.githubusercontent.com", ""),
 ]
 
@@ -66,14 +70,17 @@ class JWTTokenVerifier(SecretVerifier):
 
         for domain, path in _ISSUER_PROBES:
             if host == domain or host.endswith("." + domain):
-                base = issuer.rstrip("/")
                 if not path:
                     return VerifyResult(
                         outcome=VerifyOutcome.UNKNOWN,
                         identity=f"jwt:{domain}:{sub}",
                         reason=f"issuer recognized ({domain}) but no userinfo endpoint",
                     )
-                resp = bearer_probe(f"{base}{path}", secret_value)
+                url = (
+                    path if path.startswith("http")
+                    else f"{issuer.rstrip('/')}{path}"
+                )
+                resp = bearer_probe(url, secret_value)
                 if resp.ok:
                     identity = f"jwt:{domain}:{sub}"
                     try:

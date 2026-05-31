@@ -370,7 +370,9 @@ def _svg_line_chart(
     all series. Empty data returns an "empty" SVG placeholder so the
     surrounding HTML stays predictable.
     """
-    if not snapshots or not any(series.values()):
+    if not snapshots or not any(
+        v for series_values in series.values() for v in series_values
+    ):
         return (
             f'<svg viewBox="0 0 {width} {height}" '
             f'width="{width}" height="{height}">'

@@ -164,13 +164,39 @@ def _walk_provider_tree(
             )
 
 
+def _default_resource(input_data: dict[str, Any]) -> str:
+    """Best-effort resource path for a deny item that names no ``resource``.
+
+    The doc-list providers pass a top-level ``path``. The Kubernetes path
+    passes ``manifests`` (a list of ``{path, kind, name, ...}``) with no
+    top-level ``path``, which otherwise defaulted every K8s rego violation
+    to ``<unknown>``. Use the manifest path only when it's unambiguous (a
+    single manifest, or all manifests share one path); a deny string can't
+    be attributed to one of several files, so fall back to ``<unknown>``.
+    """
+    raw_path = input_data.get("path")
+    if isinstance(raw_path, str) and raw_path:
+        return raw_path
+    manifests = input_data.get("manifests")
+    if isinstance(manifests, list):
+        paths: set[str] = set()
+        for m in manifests:
+            if isinstance(m, dict):
+                p = m.get("path")
+                if isinstance(p, str) and p:
+                    paths.add(p)
+        if len(paths) == 1:
+            return next(iter(paths))
+    return "<unknown>"
+
+
 def _process_deny_set(
     deny_set: list[Any],
     meta: RegoRuleMetadata | None,
     input_data: dict[str, Any],
     findings: list[Finding],
 ) -> None:
-    default_resource = input_data.get("path", "<unknown>")
+    default_resource = _default_resource(input_data)
 
     for item in deny_set:
         if isinstance(item, str):
@@ -205,6 +231,7 @@ def _process_deny_set(
                 passed=False,
             )
             finding.cwe = list(meta.rule.cwe)
+            _copy_optional_rule_meta(finding, meta)
         else:
             finding = Finding(
                 check_id="REGO-000",
@@ -228,7 +255,7 @@ def make_passing_findings(
     findings: list[Finding] = []
     for meta in rules:
         if meta.rule.id not in deny_rule_ids:
-            findings.append(Finding(
+            finding = Finding(
                 check_id=meta.rule.id,
                 title=meta.rule.title,
                 severity=meta.rule.severity,
@@ -236,8 +263,26 @@ def make_passing_findings(
                 description=f"{meta.rule.title}, no violations.",
                 recommendation=meta.rule.recommendation,
                 passed=True,
-            ))
+            )
+            # Carry the same rule metadata the failing path attaches so a
+            # passing finding round-trips through SARIF / --explain with its
+            # CWE and incident references intact.
+            finding.cwe = list(meta.rule.cwe)
+            _copy_optional_rule_meta(finding, meta)
+            findings.append(finding)
     return findings
+
+
+def _copy_optional_rule_meta(finding: Finding, meta: RegoRuleMetadata) -> None:
+    """Copy ``incident_refs`` / ``exploit_example`` from the rule onto a
+    finding when both sides carry the field. Defensive so it never raises
+    if either type omits the attribute."""
+    refs = getattr(meta.rule, "incident_refs", None)
+    if refs and hasattr(finding, "incident_refs"):
+        finding.incident_refs = list(refs)
+    example = getattr(meta.rule, "exploit_example", None)
+    if example and hasattr(finding, "exploit_example"):
+        finding.exploit_example = example
 
 
 __all__ = [

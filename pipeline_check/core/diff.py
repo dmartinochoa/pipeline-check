@@ -77,17 +77,24 @@ def changed_files(base_ref: str, cwd: str | Path = ".") -> set[str] | None:
         return None
     if result.returncode != 0:
         return None
-    root = Path(cwd).resolve()
+    # ``git diff --name-only`` emits paths relative to the repo root, not
+    # the cwd. Anchor them at the repo top so the absolute forms are correct
+    # even when the scan runs from a subdirectory; joining a repo-root-
+    # relative path onto a subdirectory cwd points at a file that doesn't
+    # exist and the intersection would miss real changes. Fall back to cwd
+    # when the repo top can't be resolved.
+    root = git_top(cwd) or Path(cwd).resolve()
     out: set[str] = set()
     for raw in result.stdout.splitlines():
         rel = raw.strip()
         if not rel:
             continue
         out.add(rel)
-        out.add(str(root / rel))
+        abs_path = root / rel
+        out.add(str(abs_path))
         # Also add the forward-slash-normalized absolute form so the
         # filter matches on Windows where Path strings use backslashes.
-        out.add((root / rel).as_posix())
+        out.add(abs_path.as_posix())
     return out
 
 
