@@ -25,6 +25,24 @@ RULE = Rule(
         "stricter tier. Even immutable-looking version tags can be "
         "repointed by registry operators."
     ),
+    exploit_example=(
+        "# Vulnerable: a container resource pinned by version tag.\n"
+        "resources:\n"
+        "  containers:\n"
+        "    - container: builder\n"
+        "      image: acme/build-tools:3.4\n"
+        "\n"
+        "# Attack: the tag `3.4` is mutable. A registry operator (or an\n"
+        "# attacker who compromises the registry account) repoints `3.4`\n"
+        "# to a malicious image. Your next run pulls it and executes the\n"
+        "# build inside it with your pipeline's variables and tokens.\n"
+        "\n"
+        "# Safe: pin the container to its immutable sha256 digest.\n"
+        "resources:\n"
+        "  containers:\n"
+        "    - container: builder\n"
+        "      image: acme/build-tools@sha256:<digest>"
+    ),
 )
 
 

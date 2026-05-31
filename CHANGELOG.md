@@ -230,6 +230,14 @@ release commit collapses this section into `## [X.Y.Z] - <date>`.
 
 ### Changed
 
+- **Proof-of-exploit examples on five Azure DevOps MEDIUM rules.**
+  Extends the MEDIUM backfill to Azure Pipelines: ADO-004 (deployment
+  job with no ``environment:`` binding), ADO-012 (Cache@2 key from
+  ``$(System.PullRequest.*)``), ADO-014 (long-lived AWS keys), ADO-028
+  (git / path / tarball install), and ADO-009 (a container image
+  pinned by a mutable version tag the registry can repoint, not a
+  sha256 digest) now carry an ``exploit_example``. SBOM / SLSA /
+  signing / vuln-scan / timeout rules stay ``None`` by design.
 - **Proof-of-exploit examples on five Bitbucket MEDIUM rules.** Extends
   the MEDIUM backfill to Bitbucket Pipelines: BB-004 (deploy step with
   no ``deployment:`` gate), BB-011 (long-lived AWS keys), BB-018
