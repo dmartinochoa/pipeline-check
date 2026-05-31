@@ -230,6 +230,12 @@ release commit collapses this section into `## [X.Y.Z] - <date>`.
 
 ### Changed
 
+- **Proof-of-exploit examples on two Drone MEDIUM rules.** Extends the
+  MEDIUM backfill to Drone: DR-008 (``pull: never`` reuses a cached
+  image without re-verifying the digest, so a poisoned cache entry
+  keeps running) and DR-010 (unpinned package installs) now carry an
+  ``exploit_example``. Drone's other MEDIUM rules (trigger filter,
+  recursive submodule clone) already had one or are posture-only.
 - **Proof-of-exploit examples on four Buildkite MEDIUM rules.** Extends
   the MEDIUM backfill to Buildkite pipelines: BK-007 (deploy step with
   no preceding manual ``block:``), BK-008 (TLS verification disabled in
