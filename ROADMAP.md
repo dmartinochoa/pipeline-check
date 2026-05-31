@@ -1273,8 +1273,13 @@ ManualApproval, PBAC-003 a build security group with ``0.0.0.0/0``
 egress, CB-009 a build image pinned by a mutable tag). The
 CloudFormation pack mirrors the same AWS CI/CD model, so the same five
 (CB-007, IAM-006, CP-005, PBAC-003, CB-009) got the CFN-template
-versions. IaC packs are more posture-heavy than CI, so a larger share
-of their MEDIUM rules stay None. Absence-of-hygiene posture rules (no SBOM / SLSA / signing /
+versions. Kubernetes was higher-yield (its primitives are concrete):
+K8S-011 (the ``default`` ServiceAccount), K8S-012 (an auto-mounted SA
+token a compromised container reads), K8S-039 (``shareProcessNamespace``
+letting a sidecar read a neighbor's secrets), K8S-038 (an allow-all
+NetworkPolicy), and K8S-028 (a ``hostPort`` bypassing the cluster
+network model). IaC packs are more posture-heavy than CI, so a larger
+share of their MEDIUM rules stay None. Absence-of-hygiene posture rules (no SBOM / SLSA / signing /
 vulnerability scanning, encryption / logging / retention settings) keep
 no example by design, since the gap is a missing control rather than an
 exploitation primitive.

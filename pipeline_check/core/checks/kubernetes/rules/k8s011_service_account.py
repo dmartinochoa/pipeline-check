@@ -26,6 +26,33 @@ RULE = Rule(
         "fail the rule. Pair this with K8S-012 to also disable token "
         "auto-mounting where the workload doesn't need API access."
     ),
+    exploit_example=(
+        "# Vulnerable: a Deployment with no serviceAccountName.\n"
+        "apiVersion: apps/v1\n"
+        "kind: Deployment\n"
+        "metadata:\n"
+        "  name: web\n"
+        "spec:\n"
+        "  template:\n"
+        "    spec:\n"
+        "      containers:\n"
+        "        - name: app\n"
+        "          image: web:1.2.3\n"
+        "\n"
+        "# Attack: with no serviceAccountName the pod runs as the\n"
+        "# namespace's `default` SA, which accretes RoleBindings over\n"
+        "# time. A compromised container uses default's mounted token to\n"
+        "# call the Kubernetes API with whatever RBAC anything in the\n"
+        "# namespace ever needed, often far more than this workload\n"
+        "# should have.\n"
+        "\n"
+        "# Safe: bind a dedicated least-privilege ServiceAccount.\n"
+        "    spec:\n"
+        "      serviceAccountName: web-sa\n"
+        "      containers:\n"
+        "        - name: app\n"
+        "          image: web:1.2.3"
+    ),
 )
 
 

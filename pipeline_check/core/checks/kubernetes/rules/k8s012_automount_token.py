@@ -29,6 +29,34 @@ RULE = Rule(
         "set the field to ``true`` so the choice is visible in code "
         "review."
     ),
+    exploit_example=(
+        "# Vulnerable: SA token auto-mounted into a workload that\n"
+        "# never calls the Kubernetes API.\n"
+        "apiVersion: apps/v1\n"
+        "kind: Deployment\n"
+        "metadata:\n"
+        "  name: web\n"
+        "spec:\n"
+        "  template:\n"
+        "    spec:\n"
+        "      containers:\n"
+        "        - name: app\n"
+        "          image: web:1.2.3\n"
+        "\n"
+        "# Attack: automountServiceAccountToken defaults to true, so the\n"
+        "# SA token is mounted at\n"
+        "# /var/run/secrets/kubernetes.io/serviceaccount/. An attacker\n"
+        "# who lands a shell in the container (RCE, SSRF-to-exec) reads\n"
+        "# the token and calls the Kubernetes API as the pod's SA, no\n"
+        "# extra credential needed.\n"
+        "\n"
+        "# Safe: opt out for workloads that never call the API.\n"
+        "    spec:\n"
+        "      automountServiceAccountToken: false\n"
+        "      containers:\n"
+        "        - name: app\n"
+        "          image: web:1.2.3"
+    ),
 )
 
 

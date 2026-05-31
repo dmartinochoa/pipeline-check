@@ -251,6 +251,17 @@ release commit collapses this section into `## [X.Y.Z] - <date>`.
 
 ### Changed
 
+- **Proof-of-exploit examples on five Kubernetes MEDIUM rules.** The
+  IaC backfill's highest-yield pack so far (concrete cluster
+  primitives): K8S-011 (a workload on the namespace ``default``
+  ServiceAccount), K8S-012 (``automountServiceAccountToken`` left on, so
+  a compromised container reads the mounted API token), K8S-039
+  (``shareProcessNamespace: true`` letting a sidecar read a neighbor's
+  secrets from ``/proc``), K8S-038 (a NetworkPolicy with an empty
+  ``from:`` / ``to:`` that allows all peers), and K8S-028 (a
+  ``hostPort`` that bypasses Services and NetworkPolicies) now carry an
+  ``exploit_example``. The hardening / resource-limit / probe rules stay
+  ``None`` by design.
 - **Proof-of-exploit examples on five CloudFormation AWS-CI/CD MEDIUM
   rules.** The CloudFormation-template counterparts of the Terraform
   batch (same shared AWS CI/CD model): CB-007 (an
