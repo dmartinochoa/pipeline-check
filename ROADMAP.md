@@ -1270,9 +1270,11 @@ the Terraform AWS-CI/CD pack (CB-007 an unfiltered CodeBuild webhook
 that lets fork PRs run in the build account, IAM-006 a wildcard
 ``Resource`` on sensitive actions, CP-005 a production deploy with no
 ManualApproval, PBAC-003 a build security group with ``0.0.0.0/0``
-egress, CB-009 a build image pinned by a mutable tag). IaC packs are
-more posture-heavy than CI, so a larger share of their MEDIUM rules
-stay None. Absence-of-hygiene posture rules (no SBOM / SLSA / signing /
+egress, CB-009 a build image pinned by a mutable tag). The
+CloudFormation pack mirrors the same AWS CI/CD model, so the same five
+(CB-007, IAM-006, CP-005, PBAC-003, CB-009) got the CFN-template
+versions. IaC packs are more posture-heavy than CI, so a larger share
+of their MEDIUM rules stay None. Absence-of-hygiene posture rules (no SBOM / SLSA / signing /
 vulnerability scanning, encryption / logging / retention settings) keep
 no example by design, since the gap is a missing control rather than an
 exploitation primitive.
