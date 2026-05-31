@@ -125,7 +125,10 @@ Subtractive filters
             expires: 2026-06-30
             reason: waiting on Dependabot
     Expired YAML rules no longer suppress and surface in the gate
-    summary as warnings — debt that doesn't rot silently.
+    summary as warnings, debt that doesn't rot silently. A rule
+    expiring soon is forewarned before it lapses; tune that window
+    with ``--warn-expiring-suppressions`` (default ``14d``; ``off`` /
+    ``0`` disables the forewarning, expired rules still report).
 
 Exit codes
 ----------
@@ -567,6 +570,13 @@ typo, run ``pipeline_check --config-check`` as a separate step:
   [config] 1 unknown key(s) detected.
   $ echo $?
   3
+
+``--config-check`` is a standalone preflight (it reports and exits 3,
+no scan). To guard a normal scan instead, add ``--config-strict``: an
+unknown key aborts with exit 2 before scanning, while a clean config
+runs as usual. Use it to catch a misplaced key (e.g. ``fail_on`` at
+the top level instead of under ``gate:``) that would otherwise be
+dropped with only a warning.
 """
 
 

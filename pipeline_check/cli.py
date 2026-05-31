@@ -60,7 +60,12 @@ from .core import standards as _standards
 from .core.checks.base import Confidence, Severity, confidence_rank
 from .core.codequality_reporter import report_codequality
 from .core.config import load_config
-from .core.gate import GateConfig, evaluate_gate, load_ignore_file
+from .core.gate import (
+    GateConfig,
+    evaluate_gate,
+    load_ignore_file,
+    parse_expiry_window,
+)
 from .core.html_reporter import report_html
 from .core.inline_ignore import (
     InlineIgnoreIndex,
@@ -1915,6 +1920,17 @@ def _install_completion_callback(
     ),
 )
 @click.option(
+    "--config-strict",
+    is_flag=True,
+    help=(
+        "Promote an unknown config-file key from a warning to a hard "
+        "error before scanning, so a typo like 'fail_on: HIGH' at the "
+        "top level (instead of under 'gate:') fails fast instead of "
+        "silently disabling the setting. Unlike --config-check, this "
+        "runs the scan when the config is clean. (ruff --config-strict.)"
+    ),
+)
+@click.option(
     "--severity-threshold",
     type=click.Choice(_SEVERITY_CHOICES, case_sensitive=False),
     default="INFO",
@@ -2106,6 +2122,19 @@ def _install_completion_callback(
     help=(
         "Disable inline ``# pipeline-check: ignore[RULE-ID]`` comments. "
         "When set, only the ignore file (--ignore-file) suppresses findings."
+    ),
+)
+@click.option(
+    "--warn-expiring-suppressions",
+    "warn_expiring_suppressions",
+    default="14d",
+    show_default=True,
+    metavar="DAYS",
+    help=(
+        "Forewarn (stderr) when an ignore rule's ``expires`` date falls "
+        "within this many days, so the team revisits it before the gate "
+        "flips. Accepts '7' or '7d'; '0' or 'off' disables the "
+        "forewarning. Already-expired rules are always reported."
     ),
 )
 @click.option(
@@ -2387,6 +2416,7 @@ def scan(
     ai_model_spec: str | None,
     ai_context_file: str | None,
     config_check: bool,
+    config_strict: bool,
     severity_threshold: str,
     min_confidence: str,
     fail_on: str | None,
@@ -2404,6 +2434,7 @@ def scan(
     write_baseline: str | None,
     ignore_file: str | None,
     no_inline_ignore: bool,
+    warn_expiring_suppressions: str,
     custom_rules: tuple[str, ...],
     rego_rules: tuple[str, ...],
     verbose: bool,
@@ -2589,6 +2620,22 @@ def scan(
             click.echo(f"[config] {source}: {key!r}, {reason}", err=True)
         click.echo(f"[config] {len(dropped)} unknown key(s) detected.", err=True)
         raise click.exceptions.Exit(3)
+
+    # --config-strict: abort a real scan when the loaded config carried an
+    # unknown key, rather than the default warn-and-drop. Catches a typo
+    # that would otherwise silently disable a setting (e.g. a gate key
+    # written at the top level instead of under 'gate:').
+    if config_strict:
+        from .core.config import last_unknown_keys
+        dropped = last_unknown_keys()
+        if dropped:
+            for source, key, reason in dropped:
+                click.echo(f"[config] {source}: {key!r}, {reason}", err=True)
+            raise click.UsageError(
+                f"--config-strict: {len(dropped)} unknown config key(s) "
+                f"detected (see above). Fix the key(s) or drop "
+                f"--config-strict."
+            )
 
     if apply_fixes and not fix:
         raise click.UsageError("--apply requires --fix.")
@@ -3597,6 +3644,13 @@ def scan(
         }
         inline_index = _collect_inline_ignores(active_pipelines, path_kwargs)
 
+    try:
+        expiry_window = parse_expiry_window(warn_expiring_suppressions)
+    except ValueError as exc:
+        raise click.UsageError(
+            f"--warn-expiring-suppressions: {exc}"
+        ) from exc
+
     gate_config = GateConfig(
         fail_on=Severity(fail_on.upper()) if fail_on else None,
         min_grade=min_grade.upper() if min_grade else None,
@@ -3608,6 +3662,7 @@ def scan(
         inline_ignores=inline_index,
         fail_on_chains={c.upper() for c in fail_on_chain_ids},
         fail_on_any_chain=fail_on_any_chain,
+        expiry_warning_days=expiry_window,
     )
 
     if verbose:

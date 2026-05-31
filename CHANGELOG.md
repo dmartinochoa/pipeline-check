@@ -12,6 +12,18 @@ release commit collapses this section into `## [X.Y.Z] - <date>`.
 
 ### Added
 
+- **``--config-strict``.** Promotes an unknown config-file key from the
+  default warn-and-drop to a hard error (exit 2) before a real scan, so a
+  misplaced key (e.g. ``fail_on`` written at the top level instead of
+  under ``gate:``) fails fast instead of silently disabling the setting.
+  Distinct from ``--config-check``, which is a standalone preflight that
+  reports unknown keys and exits 3 without scanning; ``--config-strict``
+  guards a normal scan and is a no-op when the config is clean.
+- **``--warn-expiring-suppressions DAYS``.** Makes the soon-to-expire
+  ignore-rule forewarning window configurable (was a hardcoded, always-on
+  14 days). Accepts ``7`` / ``7d``; ``0`` or ``off`` / ``none`` /
+  ``never`` disables the forewarning (already-expired rules are still
+  reported). Default ``14d``. Wired through ``GateConfig.expiry_warning_days``.
 - **PyPI behavioral-trust signals (PYPI-019, PYPI-020, LOW).** The PyPI
   parallels of NPM-015 / NPM-016, both ``--resolve-remote``-gated and
   scoped to direct dependencies. PYPI-019 flags a direct dependency

@@ -141,12 +141,17 @@ longer applies and the gate summary emits:
 [gate] ignore rule expired on 2026-06-30: GHA-001:.github/workflows/release.yml (no longer suppressing)
 ```
 
-Suppressions within 14 days of expiry surface an advance warning in
-the same place so the team schedules a revisit before the gate flips:
+Suppressions within the forewarning window (14 days by default) surface
+an advance warning in the same place so the team schedules a revisit
+before the gate flips:
 
 ```
 [gate] ignore rule expires in 5 days on 2026-06-30: GHA-001:.github/workflows/release.yml (still suppressing, but plan to revisit)
 ```
+
+Tune the window with `--warn-expiring-suppressions DAYS` (accepts `7` or
+`7d`; `0` or `off` disables the forewarning). Already-expired rules are
+always reported regardless of the window.
 
 This forces a review rather than letting suppressions rot silently.
 `reason` is free-form metadata for reviewers.

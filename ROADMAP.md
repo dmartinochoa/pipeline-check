@@ -1207,18 +1207,24 @@ Renders the rule's ``exploit_example`` (when present) under each
 failing finding's panel; recommendation was already inline. See the
 v1.6.0 entry above.
 
-### Suppression expiry warnings
+### ~~Suppression expiry warnings~~ shipped
 
-``--warn-expiring-suppressions 7d`` surfaces about-to-expire
-``.pipelinecheckignore`` entries in stderr before they silently flip
-from suppressed to CI-blocking.
+Shipped on ``dev``. ``--warn-expiring-suppressions DAYS`` makes the
+soon-to-expire forewarning window configurable (was a hardcoded,
+always-on 14 days). Accepts ``7`` / ``7d``; ``0`` / ``off`` / ``none`` /
+``never`` disables it (already-expired rules are still reported). Parsing
+is ``gate.parse_expiry_window``; the window flows through
+``GateConfig.expiry_warning_days``.
 
-### Config-strict mode
+### ~~Config-strict mode~~ shipped
 
-``--config-strict`` promotes unknown config keys in
-``.pipeline-check.yml`` / ``pyproject.toml`` to hard errors (like
-ruff ``--config-strict``). Catches typos in ``fail_on: HIGH``
-before they silently disable gating.
+Shipped on ``dev``. ``--config-strict`` promotes an unknown config key in
+``.pipeline-check.yml`` / ``pyproject.toml`` to a hard error (exit 2)
+before a real scan, catching a typo like a top-level ``fail_on: HIGH``
+(belongs under ``gate:``) before it silently disables gating. Reuses the
+``config.last_unknown_keys()`` the existing ``--config-check`` preflight
+already populates; ``--config-strict`` differs by guarding a normal scan
+rather than being a standalone report-and-exit step.
 
 ### Continuing posture: proof-of-exploit backfill
 
