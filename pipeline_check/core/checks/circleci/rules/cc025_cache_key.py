@@ -30,6 +30,31 @@ RULE = Rule(
         "can plant a cache entry that a protected job later uses. "
         "Uses checksum-of-lockfile or a static version label instead."
     ),
+    exploit_example=(
+        "# Vulnerable: cache key derives from the branch name.\n"
+        "jobs:\n"
+        "  build:\n"
+        "    steps:\n"
+        "      - restore_cache:\n"
+        "          keys:\n"
+        "            - deps-{{ .Branch }}\n"
+        "            - deps-\n"
+        "      - run: npm ci\n"
+        "      - save_cache:\n"
+        "          key: deps-{{ .Branch }}\n"
+        "          paths: [node_modules]\n"
+        "\n"
+        "# Attack: open a PR from a branch you name. Your PR build writes\n"
+        "# `deps-<your-branch>`. restore_cache falls through its key\n"
+        "# list, so a later protected-branch build misses its own key\n"
+        "# and restores your poisoned entry (tampered node_modules),\n"
+        "# executing attacker code.\n"
+        "\n"
+        "# Safe: key on the lockfile checksum, not the branch.\n"
+        "      - restore_cache:\n"
+        "          keys:\n"
+        "            - deps-{{ checksum \"package-lock.json\" }}"
+    ),
 )
 
 

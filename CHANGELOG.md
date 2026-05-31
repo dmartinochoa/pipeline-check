@@ -230,6 +230,14 @@ release commit collapses this section into `## [X.Y.Z] - <date>`.
 
 ### Changed
 
+- **Proof-of-exploit examples on five CircleCI MEDIUM rules.** Extends
+  the MEDIUM backfill to CircleCI: CC-005 (long-lived AWS keys in a job
+  ``environment:`` block), CC-009 (deploy job with no ``type: approval``
+  gate), CC-025 (cache-key poisoning), CC-028 (git / path / tarball
+  install), and the CircleCI-specific CC-012 (``setup: true`` dynamic
+  config lets a fork PR inject arbitrary pipeline config) now carry an
+  ``exploit_example``. SBOM / SLSA / signing / vuln-scan / resource
+  rules stay ``None`` by design.
 - **Proof-of-exploit examples on five GitLab MEDIUM rules.** Mirrors
   the GitHub Actions MEDIUM batch on the GitLab side: GL-004 (ungated
   deploy), GL-012 (cache-key poisoning), GL-013 (long-lived AWS keys),
