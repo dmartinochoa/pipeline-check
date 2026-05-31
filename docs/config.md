@@ -237,6 +237,26 @@ on the cause:
 # ↑ fails the job immediately on any unknown key
 ```
 
+### `--config-strict`: fail the scan itself on typos
+
+`--config-check` is a separate preflight step that scans nothing.
+`--config-strict` instead guards a *normal* scan: an unknown key aborts
+with a `UsageError` (exit 2) before scanning, while a clean config runs
+as usual. Use it when you'd rather not add a dedicated validation step:
+
+```bash
+pipeline_check --pipeline github --config-strict
+# [config] .pipeline-check.yml: 'fail_on', unknown key
+# Error: --config-strict: 1 unknown config key(s) detected ...
+# exit 2
+```
+
+The classic catch is a gate key written at the top level instead of
+under `gate:` (`fail_on: HIGH` at the root is ignored, silently
+disabling the threshold). `--config-strict` turns that into a hard
+failure. A clean config makes the flag a no-op, so it's safe to leave
+on in CI.
+
 ## Tips
 
 - Keep `pyproject.toml` as the single source of truth for Python projects;

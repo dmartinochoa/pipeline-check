@@ -18,7 +18,6 @@ import pytest
 from click.testing import CliRunner
 
 from pipeline_check.cli import scan
-from pipeline_check.core.checks.base import Finding, Severity
 from pipeline_check.core.gate import (
     EXPIRY_WARNING_DAYS,
     GateConfig,
@@ -27,7 +26,6 @@ from pipeline_check.core.gate import (
     parse_expiry_window,
 )
 from pipeline_check.core.scorer import ScoreResult
-
 
 # ── parse_expiry_window ──────────────────────────────────────────────
 
