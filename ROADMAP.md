@@ -1236,13 +1236,16 @@ vulnerability scanning), which stays None by design like the other
 absence-of-scanning posture rules. The last cloud-posture gap closed
 in the dev cycle: ``ACR-002``, ``AKV-002``, ``AZST-002``, ``ENTRA-003``,
 ``GAR-002``, ``GCIAM-003``, ``GCKMS-002``. MEDIUM and LOW backfill stays
-opportunistic and is not a release-blocking milestone; the first such
-batch added examples to the five GitHub Actions MEDIUM rules with a
-concrete exploitation primitive (GHA-005 long-lived AWS keys, GHA-011
-cache-key poisoning, GHA-014 ungated deploy, GHA-029 git / path /
-tarball install, GHA-034 ``secrets: inherit``). Absence-of-hygiene
-posture rules (no SBOM / SLSA / signing / vulnerability scanning) keep
-no example by design, since the gap is a missing control rather than an
+opportunistic and is not a release-blocking milestone; the batches so
+far cover the GitHub Actions MEDIUM rules with a concrete exploitation
+primitive (GHA-005 long-lived AWS keys, GHA-011 cache-key poisoning,
+GHA-014 ungated deploy, GHA-029 git / path / tarball install, GHA-034
+``secrets: inherit``) and their GitLab analogs (GL-004 ungated deploy,
+GL-012 cache poisoning, GL-013 long-lived AWS keys, GL-027 git / path /
+tarball install, plus the GitLab-specific GL-029 manual deploy
+defaulting to ``allow_failure: true``). Absence-of-hygiene posture
+rules (no SBOM / SLSA / signing / vulnerability scanning) keep no
+example by design, since the gap is a missing control rather than an
 exploitation primitive.
 
 ### Lower priority

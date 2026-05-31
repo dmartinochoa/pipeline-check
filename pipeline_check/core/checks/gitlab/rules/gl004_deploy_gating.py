@@ -42,6 +42,29 @@ RULE = Rule(
         "or declare an `environment:` binding. Otherwise any push to "
         "the trigger branch ships to the target."
     ),
+    exploit_example=(
+        "# Vulnerable: a deploy job with no manual gate or environment:.\n"
+        "deploy_prod:\n"
+        "  stage: deploy\n"
+        "  script:\n"
+        "    - aws s3 sync ./dist s3://prod-site\n"
+        "\n"
+        "# Attack: nothing gates this. With no `when: manual` and no\n"
+        "# `environment:`, GitLab runs it on every pipeline for the\n"
+        "# trigger branch, so any push (a self-approved MR, a typo'd\n"
+        "# hotfix, a compromised account) ships straight to production\n"
+        "# with no approval and no environment audit trail.\n"
+        "\n"
+        "# Safe: require manual approval and bind an environment for the\n"
+        "# audit trail plus protected-branch policy.\n"
+        "deploy_prod:\n"
+        "  stage: deploy\n"
+        "  environment: production\n"
+        "  when: manual\n"
+        "  allow_failure: false\n"
+        "  script:\n"
+        "    - aws s3 sync ./dist s3://prod-site"
+    ),
 )
 
 

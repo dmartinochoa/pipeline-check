@@ -29,6 +29,22 @@ RULE = Rule(
         "sibling checkout, or change a served tarball can substitute "
         "code into the build."
     ),
+    exploit_example=(
+        "# Vulnerable: install from an unpinned git URL (no commit SHA).\n"
+        "build:\n"
+        "  script:\n"
+        "    - pip install git+https://gitlab.example.com/acme/helper.git\n"
+        "\n"
+        "# Attack: the install resolves the helper repo's default-branch\n"
+        "# HEAD, which no lockfile or hash pin can protect. Whoever can\n"
+        "# push to that branch (the upstream owner, or anyone who\n"
+        "# compromises the repo) silently swaps in code that runs in\n"
+        "# your pipeline with its CI variables and tokens. `file:` paths\n"
+        "# and bare tarball URLs share the hole.\n"
+        "\n"
+        "# Safe: pin the dependency to an immutable commit SHA.\n"
+        "    - pip install git+https://gitlab.example.com/acme/helper.git@<full-sha>"
+    ),
 )
 
 
