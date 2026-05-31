@@ -150,21 +150,29 @@ jobs:
 
       - name: Scan image with Docker Scout
         # Vulnerability scan against the quarantine digest. ``exit-
-        # code: true`` + ``only-severities: critical,high`` fails the
-        # workflow on any new critical or high CVE BEFORE the promote
-        # step runs, so a vulnerable image never escapes the
-        # quarantine tag. Mirrors release.yml's ``pip-audit
-        # --strict`` posture for the wheel. SARIF output is uploaded
-        # in the next step so findings land on the repo's Security
-        # tab even when this step fails the job. Scout authenticates
-        # via the Docker Hub login already performed above; no
-        # separate secret is needed.
+        # code: true`` + ``only-severities: critical,high`` +
+        # ``only-fixed: true`` fails the workflow on any critical or
+        # high CVE THAT HAS A FIX AVAILABLE, BEFORE the promote step
+        # runs, so a remediable vulnerable image never escapes the
+        # quarantine tag. ``only-fixed`` is the deliberate scope: the
+        # gate should block on what we can act on (bump the base /
+        # pin a patched package) and not strand a release on
+        # unfixed-upstream CVEs in base packages we don't use (e.g.
+        # Debian's perl-base, which python:slim drags in). It
+        # re-blocks automatically the moment upstream ships a fix.
+        # Mirrors release.yml's ``pip-audit`` posture for the wheel.
+        # SARIF output is uploaded in the next step (it still records
+        # every finding, fixed or not, on the Security tab) so a
+        # failed build's findings don't vanish with the job. Scout
+        # authenticates via the Docker Hub login already performed
+        # above; no separate secret is needed.
         id: scout
         uses: docker/scout-action@cd72f264beff1cd72735de31148b9d3244a0234a  # v1.21.0
         with:
           command: cves
           image: ghcr.io/dmartinochoa/pipeline-check@${{ steps.build.outputs.digest }}
           only-severities: critical,high
+          only-fixed: true
           exit-code: true
           sarif-file: scout-cves.sarif
           summary: true
@@ -198,8 +206,28 @@ jobs:
           TAGS: ${{ steps.meta.outputs.tags }}
         run: |
           set -euo pipefail
+          # Docker Hub intermittently returns a transient 403 under
+          # load. We hit one on the *last* tag of the multi-tag promote
+          # (``:latest``) while ``:${version}`` had pushed to the same
+          # repo seconds earlier with the same token, leaving Docker Hub
+          # ``:latest`` stranded on the prior release. Retry each tag
+          # with linear backoff so one flaky push no longer half-
+          # promotes the manifest. An exhausted retry still fails the
+          # step (we never silently skip a tag).
+          promote() {
+            local tag="$1" attempt
+            for attempt in 1 2 3; do
+              if docker buildx imagetools create --tag "$tag" "$SRC"; then
+                return 0
+              fi
+              echo "promote of $tag failed (attempt $attempt/3); retrying in $((attempt * 5))s" >&2
+              sleep $((attempt * 5))
+            done
+            echo "ERROR: failed to promote $tag after 3 attempts" >&2
+            return 1
+          }
           while IFS= read -r tag; do
             [ -z "$tag" ] && continue
             echo "promoting $SRC -> $tag"
-            docker buildx imagetools create --tag "$tag" "$SRC"
+            promote "$tag"
           done <<< "$TAGS"

@@ -10,6 +10,27 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 PRs landing on `dev` between releases append entries below. The
 release commit collapses this section into `## [X.Y.Z] - <date>`.
 
+### Fixed
+
+- **Docker image publish unblocked.** The `docker-publish` workflow's
+  Docker Scout gate now sets `only-fixed: true` alongside
+  `only-severities: critical,high`, so it blocks promotion on
+  *remediable* critical/high CVEs but no longer strands a release on
+  unfixed-upstream CVEs in base packages the image doesn't use (Debian
+  `perl-base`, pulled in by `python:slim`, had 1 critical + 4 high
+  CVEs all marked "not fixed" — which silently blocked the v1.6.0 and
+  v1.7.0 image promotions). The gate re-blocks automatically once
+  upstream ships a fix.
+- **Docker promote step retries transient registry errors.** The
+  `docker-publish` promote loop now retries each `imagetools create`
+  up to three times with linear backoff. A one-off Docker Hub 403 on
+  the final tag had left Docker Hub `:latest` pointing at the prior
+  release while `:${version}` published correctly, so the retry keeps
+  a flaky push from half-promoting the manifest. An exhausted retry
+  still fails the step, so a tag is never silently skipped.
+
+## [1.7.0] - 2026-05-31
+
 ### Added
 
 - **``--config-strict``.** Promotes an unknown config-file key from the
