@@ -31,6 +31,30 @@ RULE = Rule(
         "pull-request pipeline can plant a poisoned cache entry that a "
         "subsequent default-branch build restores."
     ),
+    exploit_example=(
+        "# Vulnerable: cache path is namespaced by the branch name.\n"
+        "definitions:\n"
+        "  caches:\n"
+        "    deps: node_modules-$BITBUCKET_BRANCH\n"
+        "pipelines:\n"
+        "  default:\n"
+        "    - step:\n"
+        "        caches: [deps]\n"
+        "        script:\n"
+        "          - npm ci\n"
+        "\n"
+        "# Attack: open a PR from a branch you name. Your PR pipeline\n"
+        "# populates the `deps` cache under your branch-derived key. A\n"
+        "# later default-branch build that resolves the same attacker-\n"
+        "# influenced key restores your poisoned node_modules and runs\n"
+        "# it.\n"
+        "\n"
+        "# Safe: key the cache on values the attacker can't change, not\n"
+        "# on the branch.\n"
+        "definitions:\n"
+        "  caches:\n"
+        "    deps: node_modules"
+    ),
 )
 
 
