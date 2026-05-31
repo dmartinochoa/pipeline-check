@@ -21,6 +21,13 @@ release commit collapses this section into `## [X.Y.Z] - <date>`.
   CVEs all marked "not fixed" — which silently blocked the v1.6.0 and
   v1.7.0 image promotions). The gate re-blocks automatically once
   upstream ships a fix.
+- **Docker promote step retries transient registry errors.** The
+  `docker-publish` promote loop now retries each `imagetools create`
+  up to three times with linear backoff. A one-off Docker Hub 403 on
+  the final tag had left Docker Hub `:latest` pointing at the prior
+  release while `:${version}` published correctly, so the retry keeps
+  a flaky push from half-promoting the manifest. An exhausted retry
+  still fails the step, so a tag is never silently skipped.
 
 ## [1.7.0] - 2026-05-31
 
