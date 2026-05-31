@@ -230,6 +230,14 @@ release commit collapses this section into `## [X.Y.Z] - <date>`.
 
 ### Changed
 
+- **Proof-of-exploit examples on two Tekton MEDIUM rules.** Completes
+  the MEDIUM backfill across every CI provider: TKN-007 (a TaskRun /
+  PipelineRun on the namespace ``default`` ServiceAccount, whose
+  mounted API token carries whatever RBAC is bound to ``default``) and
+  TKN-014 (unpinned package installs) now carry an ``exploit_example``.
+  Every concrete-primitive MEDIUM rule across all providers now has one;
+  the remaining gaps are absence-of-hygiene posture rules (no SBOM /
+  SLSA / signing / vuln-scan), which stay ``None`` by design.
 - **Proof-of-exploit examples on two Drone MEDIUM rules.** Extends the
   MEDIUM backfill to Drone: DR-008 (``pull: never`` reuses a cached
   image without re-verifying the digest, so a poisoned cache entry

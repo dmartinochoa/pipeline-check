@@ -27,6 +27,30 @@ RULE = Rule(
         "An explicit ``serviceAccountName: default`` setting is "
         "treated the same as omission."
     ),
+    exploit_example=(
+        "# Vulnerable: a PipelineRun with no serviceAccountName.\n"
+        "apiVersion: tekton.dev/v1\n"
+        "kind: PipelineRun\n"
+        "metadata:\n"
+        "  name: release\n"
+        "spec:\n"
+        "  pipelineRef:\n"
+        "    name: build-and-deploy\n"
+        "\n"
+        "# Attack: with no serviceAccountName the run's pods get the\n"
+        "# namespace's `default` ServiceAccount and its mounted API\n"
+        "# token. Any step (including injected or third-party task code)\n"
+        "# uses that token to call the Kubernetes API with whatever RBAC\n"
+        "# is bound to `default`, which in many clusters drifts to far\n"
+        "# more than a build needs. A compromised step escalates to\n"
+        "# cluster resources.\n"
+        "\n"
+        "# Safe: bind a least-privilege SA created for this pipeline.\n"
+        "spec:\n"
+        "  serviceAccountName: release-ci\n"
+        "  pipelineRef:\n"
+        "    name: build-and-deploy"
+    ),
 )
 
 

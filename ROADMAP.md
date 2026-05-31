@@ -1262,9 +1262,12 @@ set (BK-007 deploy with no manual ``block:``, BK-008 TLS verification
 disabled in a step command, BK-013 deploy step with no ``branches:``
 filter, BK-014 unpinned package installs), and the Drone set (DR-008
 ``pull: never`` reusing an unverified cached image, DR-010 unpinned
-package installs). Absence-of-hygiene posture rules (no SBOM / SLSA /
-signing / vulnerability scanning) keep no example by design, since the
-gap is a missing control rather than an exploitation primitive.
+package installs), and the Tekton set (TKN-007 a run on the namespace
+``default`` ServiceAccount, TKN-014 unpinned package installs). That
+completes the concrete-primitive MEDIUM rules across every CI provider.
+Absence-of-hygiene posture rules (no SBOM / SLSA / signing /
+vulnerability scanning) keep no example by design, since the gap is a
+missing control rather than an exploitation primitive.
 
 ### Lower priority
 
