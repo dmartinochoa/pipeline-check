@@ -59,6 +59,20 @@ RULE = Rule(
         "shape; the broader pinning policy still covers the "
         "rest of the pipeline.",
     ),
+    exploit_example=(
+        "# Vulnerable: an unpinned package install in a step command.\n"
+        "steps:\n"
+        "  - command: \"npm install && npm run build\"\n"
+        "\n"
+        "# Attack: `npm install` resolves dependencies fresh against the\n"
+        "# registry instead of honoring the committed lockfile, so a\n"
+        "# newly published malicious version (typosquat, dependency-\n"
+        "# confusion, or a compromised maintainer) is pulled into the\n"
+        "# build and runs with the agent's credentials.\n"
+        "\n"
+        "# Safe: install from the lockfile exactly.\n"
+        "  - command: \"npm ci && npm run build\""
+    ),
 )
 
 

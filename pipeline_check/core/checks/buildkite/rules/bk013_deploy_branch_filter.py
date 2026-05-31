@@ -43,6 +43,23 @@ RULE = Rule(
         "ignore BK-013 in ``.pipeline-check-ignore.yml`` with a "
         "scope of ``main``-only repos.",
     ),
+    exploit_example=(
+        "# Vulnerable: a deploy step with no branches: filter.\n"
+        "steps:\n"
+        "  - label: \"Deploy\"\n"
+        "    command: \"kubectl apply -f k8s/\"\n"
+        "\n"
+        "# Attack: the step runs on every branch, so a feature branch\n"
+        "# or a fork PR build promotes its own code to the cluster.\n"
+        "# There's no release-branch boundary between \"someone pushed\"\n"
+        "# and \"it's in prod.\"\n"
+        "\n"
+        "# Safe: restrict the deploy to the release branch (pair with\n"
+        "# BK-007's manual block).\n"
+        "  - label: \"Deploy\"\n"
+        "    branches: \"main\"\n"
+        "    command: \"kubectl apply -f k8s/\""
+    ),
 )
 
 
