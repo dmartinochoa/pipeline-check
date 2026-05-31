@@ -25,6 +25,32 @@ RULE = Rule(
         "that allows ``0.0.0.0/0`` on the full port range — that's a "
         "completely open exfiltration channel."
     ),
+    exploit_example=(
+        "# Vulnerable: the CodeBuild VPC security group allows all egress.\n"
+        "resource \"aws_security_group\" \"build\" {\n"
+        "  egress {\n"
+        "    from_port   = 0\n"
+        "    to_port     = 0\n"
+        "    protocol    = \"-1\"\n"
+        "    cidr_blocks = [\"0.0.0.0/0\"]\n"
+        "  }\n"
+        "}\n"
+        "\n"
+        "# Attack: the build runs inside the VPC but can open a\n"
+        "# connection to any host on any port. A compromised build step\n"
+        "# (malicious dependency, injected command) streams the source,\n"
+        "# secrets, and assumed-role credentials out to an attacker\n"
+        "# endpoint with no egress control to stop it.\n"
+        "\n"
+        "# Safe: scope egress to the destinations the build needs\n"
+        "# (package mirrors, AWS endpoints via VPC interface endpoints).\n"
+        "  egress {\n"
+        "    from_port       = 443\n"
+        "    to_port         = 443\n"
+        "    protocol        = \"tcp\"\n"
+        "    prefix_list_ids = [aws_vpc_endpoint.s3.prefix_list_id]\n"
+        "  }"
+    ),
 )
 
 

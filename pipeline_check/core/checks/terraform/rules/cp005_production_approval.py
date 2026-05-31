@@ -25,6 +25,36 @@ RULE = Rule(
         "``Approval`` action — even pipelines that pass CP-001 "
         "globally often skip the gate on the production stage."
     ),
+    exploit_example=(
+        "# Vulnerable: a production Deploy stage with no approval before it.\n"
+        "resource \"aws_codepipeline\" \"release\" {\n"
+        "  # ... source + build stages ...\n"
+        "  stage {\n"
+        "    name = \"DeployProd\"\n"
+        "    action {\n"
+        "      name     = \"Deploy\"\n"
+        "      category = \"Deploy\"\n"
+        "      # ...\n"
+        "    }\n"
+        "  }\n"
+        "}\n"
+        "\n"
+        "# Attack: nothing gates the production stage, so every change\n"
+        "# that reaches it deploys to prod automatically. An unreviewed\n"
+        "# merge (or a poisoned upstream artifact) ships straight to\n"
+        "# production with no human sign-off and no auditable approval\n"
+        "# event.\n"
+        "\n"
+        "# Safe: add a Manual approval action in the stage before prod.\n"
+        "  stage {\n"
+        "    name = \"Approve\"\n"
+        "    action {\n"
+        "      name     = \"ManualApproval\"\n"
+        "      category = \"Approval\"\n"
+        "      provider = \"Manual\"\n"
+        "    }\n"
+        "  }"
+    ),
 )
 
 

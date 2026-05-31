@@ -23,6 +23,25 @@ RULE = Rule(
         "providers use. Mutable tags let an upstream image swap "
         "execute on the next build with no plan change."
     ),
+    exploit_example=(
+        "# Vulnerable: the build image is pinned by a mutable tag.\n"
+        "resource \"aws_codebuild_project\" \"ci\" {\n"
+        "  environment {\n"
+        "    image = \"acme/build-tools:3.4\"\n"
+        "    # ...\n"
+        "  }\n"
+        "}\n"
+        "\n"
+        "# Attack: the tag `3.4` is mutable. Whoever controls that\n"
+        "# registry repo (the publisher, or an attacker who compromises\n"
+        "# the account) repoints `3.4` to a malicious image. The next\n"
+        "# build pulls it with no Terraform plan change and runs the\n"
+        "# whole build inside attacker-controlled tooling with the\n"
+        "# project's IAM role.\n"
+        "\n"
+        "# Safe: pin the image to an immutable digest.\n"
+        "    image = \"acme/build-tools@sha256:<digest>\""
+    ),
 )
 
 

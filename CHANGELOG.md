@@ -230,6 +230,17 @@ release commit collapses this section into `## [X.Y.Z] - <date>`.
 
 ### Changed
 
+- **Proof-of-exploit examples on five Terraform AWS-CI/CD MEDIUM
+  rules.** Begins extending the backfill into the IaC providers:
+  CB-007 (an ``aws_codebuild_webhook`` with no ``filter_group``, so a
+  fork PR runs in the build account), IAM-006 (a CI/CD role policy
+  pairing sensitive actions with ``Resource = "*"``), CP-005 (a
+  production CodePipeline Deploy stage with no preceding ManualApproval),
+  PBAC-003 (a CodeBuild security group with ``0.0.0.0/0`` all-port
+  egress), and CB-009 (a build image pinned by a mutable tag) now carry
+  an ``exploit_example``. The remaining Terraform MEDIUM rules are
+  posture (CMK encryption, logging, retention, versioning) and stay
+  ``None`` by design.
 - **Proof-of-exploit examples on two Tekton MEDIUM rules.** Completes
   the MEDIUM backfill across every CI provider: TKN-007 (a TaskRun /
   PipelineRun on the namespace ``default`` ServiceAccount, whose
