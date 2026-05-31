@@ -423,10 +423,14 @@ def evaluate_gate(
         baseline_pairs = load_baseline_from_git(ref, path)
     else:
         baseline_pairs = set()
+    # Normalize resource path separators so a baseline written on one OS
+    # (``.github\workflows\x.yml``) still suppresses the same finding on
+    # another (``.github/workflows/x.yml``).
+    baseline_pairs = {(cid, _norm_resource(res)) for cid, res in baseline_pairs}
     baseline_matched: list[Finding] = []
     after_baseline: list[Finding] = []
     for f in failing:
-        if (f.check_id.upper(), f.resource) in baseline_pairs:
+        if (f.check_id.upper(), _norm_resource(f.resource)) in baseline_pairs:
             baseline_matched.append(f)
         else:
             after_baseline.append(f)

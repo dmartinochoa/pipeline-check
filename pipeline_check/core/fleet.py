@@ -320,11 +320,13 @@ def _github_org_repos(
             if r.get("archived"):
                 continue
             owner, repo = full_name.split("/", 1)
+            gh_clone = r.get("clone_url")
             coords.append(RepoCoordinate(
                 coord=full_name,
-                clone_url=r.get(
-                    "clone_url",
-                    f"https://github.com/{full_name}.git",
+                clone_url=(
+                    gh_clone
+                    if isinstance(gh_clone, str) and gh_clone
+                    else f"https://github.com/{full_name}.git"
                 ),
                 owner=owner,
                 repo=repo,

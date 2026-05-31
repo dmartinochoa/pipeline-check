@@ -28,7 +28,7 @@ _INLINE_RE = re.compile(
     r"(?:#|//)\s*pipeline-check:\s*"
     r"(ignore|ignore-next-line|ignore-file)"
     r"\[([^\]]+)\]"
-    r"(?:\s+reason=(\S+))?",
+    r"(?:\s+reason=(.+))?",
     re.IGNORECASE,
 )
 
@@ -54,7 +54,7 @@ def extract_inline_ignores(
             continue
         directive = m.group(1).lower()
         raw_ids = m.group(2)
-        reason = m.group(3)
+        reason = m.group(3).strip() if m.group(3) else None
         check_ids = [cid.strip().upper() for cid in raw_ids.split(",") if cid.strip()]
         for cid in check_ids:
             if directive == "ignore":

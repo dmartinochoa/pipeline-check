@@ -293,6 +293,35 @@ release commit collapses this section into `## [X.Y.Z] - <date>`.
 
 ### Fixed
 
+- **Known-issues low-severity sweep (2026-05-31).** The open low-severity
+  findings from the 2026-05-29 feature review, fixed together. **SARIF
+  ingest** now maps a result with no `level` and no `security-severity` to
+  MEDIUM (the SARIF 2.1.0 `warning` default) instead of INFO, so findings
+  from tools that omit per-result level aren't dropped by a severity gate
+  (an explicit `level: none` still maps to INFO). **`--diff-base`** anchors
+  git's repo-root-relative output at the repo top, so a scan launched from
+  a subdirectory no longer misses real changes. **The Terraform diff
+  filter** maps each module call label to its source directory from the
+  plan's `configuration` block, so a module whose label differs from its
+  source dir (`module "vpc" { source = "./modules/networking" }`) keeps its
+  changed resources (falls back to the old label heuristic when no
+  configuration is present). **The GitLab `project:` include** handles a
+  list-valued `file:` by fetching each entry instead of 404-ing on a
+  stringified list. **The fleet GitHub enumerator** guards a null
+  `clone_url` with `isinstance` like the GitLab / Bitbucket paths. **The
+  JWT secret verifier** uses the real Microsoft Graph and Google OIDC
+  UserInfo hosts instead of paths appended to the issuer. **The custom-rule
+  evaluator** rejects `bool` (which subclasses `int`) in numeric and length
+  operators so a YAML `true` isn't compared as `1`, and its `regex` op
+  matches the full value within the cap so a `$` / `\Z` anchor binds to the
+  real end of the string. **Passing Rego findings** carry `cwe` /
+  `incident_refs` / `exploit_example` like the failing path, and a K8s rego
+  violation that names no resource now reports the manifest path (when
+  unambiguous) instead of defaulting to `<unknown>`.
+  **Cosmetic:** the history line chart shows its "no history yet"
+  placeholder for an all-zero dataset; an inline `reason=` keeps a
+  multi-word reason; gate baseline matching normalizes path separators so a
+  baseline written on one OS suppresses on another.
 - **GHA-098 no longer counts `step-security/harden-runner` as a
   security scan.** harden-runner is a runtime egress monitor, not a
   SAST / SCA / secret scanner, so a deploy job whose only scan-shaped
