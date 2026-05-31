@@ -230,6 +230,16 @@ release commit collapses this section into `## [X.Y.Z] - <date>`.
 
 ### Changed
 
+- **Proof-of-exploit examples on seven HIGH cloud-posture rules.**
+  Closes the last HIGH-severity gaps in the exploit-example backfill:
+  ACR-002 (public registry), AKV-002 (no Key Vault purge protection),
+  AZST-002 (non-HTTPS storage), ENTRA-003 (service-principal password
+  credential), GAR-002 (public Artifact Registry repo), GCIAM-003
+  (unconstrained service-account token creator), and GCKMS-002 (public
+  KMS key) now carry an ``exploit_example``. Every CRITICAL and HIGH
+  rule now ships one, except GAR-001 (no vulnerability scanning), which
+  stays ``None`` by design like the other absence-of-hygiene posture
+  rules.
 - **Proof-of-exploit examples on five GitHub Actions MEDIUM rules.**
   GHA-005 (long-lived AWS keys), GHA-011 (cache-key poisoning), GHA-014
   (ungated deploy job), GHA-029 (install from a git / path / tarball

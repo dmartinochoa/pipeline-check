@@ -1230,18 +1230,20 @@ rather than being a standalone report-and-exit step.
 ### Continuing posture: proof-of-exploit backfill
 
 Every CRITICAL rule (89) carries an ``exploit_example``, and new
-CRITICAL rules ship one from the start. HIGH (386) is nearly there: 8
-cloud-posture rules still lack one (``ACR-002``, ``AKV-002``,
-``AZST-002``, ``ENTRA-003``, ``GAR-001``, ``GAR-002``, ``GCIAM-003``,
-``GCKMS-002``), queued for the next opportunistic pass. MEDIUM and LOW
-backfill stays opportunistic and is not a release-blocking milestone;
-the first such batch added examples to the five GitHub Actions MEDIUM
-rules with a concrete exploitation primitive (GHA-005 long-lived AWS
-keys, GHA-011 cache-key poisoning, GHA-014 ungated deploy, GHA-029
-git / path / tarball install, GHA-034 ``secrets: inherit``). Absence-of-
-hygiene posture rules (no SBOM / SLSA / signing) keep no example by
-design, since the gap is a missing control rather than an exploitation
-primitive.
+CRITICAL rules ship one from the start. HIGH (386) carries one too,
+with the sole exception of ``GAR-001`` (no Artifact Registry
+vulnerability scanning), which stays None by design like the other
+absence-of-scanning posture rules. The last cloud-posture gap closed
+in the dev cycle: ``ACR-002``, ``AKV-002``, ``AZST-002``, ``ENTRA-003``,
+``GAR-002``, ``GCIAM-003``, ``GCKMS-002``. MEDIUM and LOW backfill stays
+opportunistic and is not a release-blocking milestone; the first such
+batch added examples to the five GitHub Actions MEDIUM rules with a
+concrete exploitation primitive (GHA-005 long-lived AWS keys, GHA-011
+cache-key poisoning, GHA-014 ungated deploy, GHA-029 git / path /
+tarball install, GHA-034 ``secrets: inherit``). Absence-of-hygiene
+posture rules (no SBOM / SLSA / signing / vulnerability scanning) keep
+no example by design, since the gap is a missing control rather than an
+exploitation primitive.
 
 ### Lower priority
 

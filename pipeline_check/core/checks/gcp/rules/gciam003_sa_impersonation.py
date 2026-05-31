@@ -23,6 +23,14 @@ RULE = Rule(
         "the project. A project-level grant without a condition is "
         "effectively a privilege-escalation vector."
     ),
+    exploit_example=(
+        "A CI service account is granted "
+        "roles/iam.serviceAccountTokenCreator at the project level. An "
+        "attacker who lands on that account (a leaked key, a poisoned "
+        "build step) mints an access token for the project's most "
+        "privileged service account and acts as it, turning a foothold "
+        "in CI into full project control."
+    ),
 )
 
 _IMPERSONATION_ROLES = frozenset({
