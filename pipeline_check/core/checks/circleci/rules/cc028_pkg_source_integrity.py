@@ -25,6 +25,22 @@ RULE = Rule(
         "URLs bypass the registry integrity controls the lockfile "
         "relies on."
     ),
+    exploit_example=(
+        "# Vulnerable: install from an unpinned git URL (no commit SHA).\n"
+        "jobs:\n"
+        "  build:\n"
+        "    steps:\n"
+        "      - run: pip install git+https://github.com/acme/helper.git\n"
+        "\n"
+        "# Attack: the install resolves the helper repo's default-branch\n"
+        "# HEAD, which no lockfile or hash pin can protect. Whoever can\n"
+        "# push to that branch silently swaps in code that runs in your\n"
+        "# build with its context secrets. `file:` paths and bare\n"
+        "# tarball URLs share the hole.\n"
+        "\n"
+        "# Safe: pin the dependency to an immutable commit SHA.\n"
+        "      - run: pip install git+https://github.com/acme/helper.git@<full-sha>"
+    ),
 )
 
 

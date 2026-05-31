@@ -28,6 +28,30 @@ RULE = Rule(
         "PR in a fork) can inject arbitrary config for all subsequent "
         "jobs, including deploy steps with production secrets."
     ),
+    exploit_example=(
+        "# Vulnerable: a setup workflow that builds the real config\n"
+        "# dynamically from repo content.\n"
+        "setup: true\n"
+        "jobs:\n"
+        "  generate:\n"
+        "    steps:\n"
+        "      - checkout\n"
+        "      - run: ./scripts/make-config.sh > generated.yml\n"
+        "      - continuation/continue:\n"
+        "          configuration_path: generated.yml\n"
+        "\n"
+        "# Attack: with `setup: true`, the setup job generates the\n"
+        "# pipeline that actually runs. A fork PR that edits\n"
+        "# make-config.sh (or any file it reads) injects arbitrary jobs\n"
+        "# into the continuation config, including deploy steps that run\n"
+        "# with production context secrets, all before any human reviews\n"
+        "# the PR.\n"
+        "\n"
+        "# Safe: continue to a checked-in, trusted config and gate the\n"
+        "# setup job to a trusted branch; never derive it from PR content.\n"
+        "      - continuation/continue:\n"
+        "          configuration_path: .circleci/continue_config.yml"
+    ),
 )
 
 

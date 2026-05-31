@@ -1243,7 +1243,10 @@ GHA-014 ungated deploy, GHA-029 git / path / tarball install, GHA-034
 ``secrets: inherit``) and their GitLab analogs (GL-004 ungated deploy,
 GL-012 cache poisoning, GL-013 long-lived AWS keys, GL-027 git / path /
 tarball install, plus the GitLab-specific GL-029 manual deploy
-defaulting to ``allow_failure: true``). Absence-of-hygiene posture
+defaulting to ``allow_failure: true``), and the CircleCI set (CC-005
+long-lived AWS keys, CC-009 ungated deploy, CC-025 cache poisoning,
+CC-028 git / path / tarball install, plus the CircleCI-specific CC-012
+``setup: true`` dynamic-config injection). Absence-of-hygiene posture
 rules (no SBOM / SLSA / signing / vulnerability scanning) keep no
 example by design, since the gap is a missing control rather than an
 exploitation primitive.
