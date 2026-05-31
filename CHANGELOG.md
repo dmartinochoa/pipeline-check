@@ -230,6 +230,14 @@ release commit collapses this section into `## [X.Y.Z] - <date>`.
 
 ### Changed
 
+- **Proof-of-exploit examples on four Buildkite MEDIUM rules.** Extends
+  the MEDIUM backfill to Buildkite pipelines: BK-007 (deploy step with
+  no preceding manual ``block:``), BK-008 (TLS verification disabled in
+  a step command, an MITM opening), BK-013 (deploy step with no
+  ``branches:`` filter), and BK-014 (unpinned package installs) now
+  carry an ``exploit_example``. Buildkite has no AWS or cache rule, so
+  this batch is four. SBOM / SLSA / signing / vuln-scan / timeout rules
+  stay ``None`` by design.
 - **Proof-of-exploit examples on five Jenkins MEDIUM rules.** Extends
   the MEDIUM backfill to Jenkinsfiles: JF-004 (long-lived AWS keys via
   ``withCredentials``), JF-005 (deploy stage with no ``input`` approval),

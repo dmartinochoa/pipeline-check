@@ -1257,9 +1257,12 @@ pinned by mutable tag instead of sha256 digest), and the Jenkins set
 (JF-004 long-lived AWS keys via ``withCredentials``, JF-005 deploy
 stage with no ``input`` approval, JF-031 git / path / tarball install,
 plus the Jenkins-specific JF-012 ``load`` of unpinned Groovy and JF-024
-an ``input`` gate with no ``submitter`` restriction). Absence-of-hygiene
-posture rules (no SBOM / SLSA / signing / vulnerability scanning) keep
-no example by design, since the gap is a missing control rather than an
+an ``input`` gate with no ``submitter`` restriction), and the Buildkite
+set (BK-007 deploy with no manual ``block:``, BK-008 TLS verification
+disabled in a step command, BK-013 deploy step with no ``branches:``
+filter, BK-014 unpinned package installs). Absence-of-hygiene posture
+rules (no SBOM / SLSA / signing / vulnerability scanning) keep no
+example by design, since the gap is a missing control rather than an
 exploitation primitive.
 
 ### Lower priority
