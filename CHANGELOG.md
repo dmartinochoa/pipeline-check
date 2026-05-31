@@ -230,6 +230,14 @@ release commit collapses this section into `## [X.Y.Z] - <date>`.
 
 ### Changed
 
+- **Proof-of-exploit examples on five Bitbucket MEDIUM rules.** Extends
+  the MEDIUM backfill to Bitbucket Pipelines: BB-004 (deploy step with
+  no ``deployment:`` gate), BB-011 (long-lived AWS keys), BB-018
+  (cache-key poisoning), BB-027 (git / path / tarball install), and
+  BB-009 (a third-party ``pipe:`` pinned by a mutable version tag the
+  registry can repoint, not a sha256 digest) now carry an
+  ``exploit_example``. SBOM / SLSA / signing / vuln-scan / max-time
+  rules stay ``None`` by design.
 - **Proof-of-exploit examples on five CircleCI MEDIUM rules.** Extends
   the MEDIUM backfill to CircleCI: CC-005 (long-lived AWS keys in a job
   ``environment:`` block), CC-009 (deploy job with no ``type: approval``

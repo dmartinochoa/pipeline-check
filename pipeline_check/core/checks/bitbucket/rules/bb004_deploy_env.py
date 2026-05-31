@@ -42,6 +42,29 @@ RULE = Rule(
         "`deployment:` field so Bitbucket enforces deployment-scoped "
         "variables, approvals, and history."
     ),
+    exploit_example=(
+        "# Vulnerable: a deploy step with no deployment: environment.\n"
+        "pipelines:\n"
+        "  branches:\n"
+        "    main:\n"
+        "      - step:\n"
+        "          name: Deploy to prod\n"
+        "          script:\n"
+        "            - aws s3 sync ./dist s3://prod-site\n"
+        "\n"
+        "# Attack: with no `deployment:` field, Bitbucket can't scope\n"
+        "# deployment variables, require a reviewer, or record\n"
+        "# deployment history. Any push to main ships straight to\n"
+        "# production, no approval and no audit trail.\n"
+        "\n"
+        "# Safe: declare a deployment environment (required reviewers\n"
+        "# configured in the repo's Deployments settings).\n"
+        "      - step:\n"
+        "          name: Deploy to prod\n"
+        "          deployment: production\n"
+        "          script:\n"
+        "            - aws s3 sync ./dist s3://prod-site"
+    ),
 )
 
 

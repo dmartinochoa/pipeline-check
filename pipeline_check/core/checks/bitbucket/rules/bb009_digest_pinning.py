@@ -25,6 +25,23 @@ RULE = Rule(
         "tier. Even immutable-looking semver tags can be repointed "
         "by the registry; sha256 digests are tamper-evident."
     ),
+    exploit_example=(
+        "# Vulnerable: a third-party pipe pinned by version tag.\n"
+        "pipelines:\n"
+        "  default:\n"
+        "    - step:\n"
+        "        script:\n"
+        "          - pipe: acme/deploy-pipe:1.2.0\n"
+        "\n"
+        "# Attack: the tag `1.2.0` is mutable. The pipe's publisher (or\n"
+        "# whoever compromises their registry account) repoints `1.2.0`\n"
+        "# to a new image carrying credential-exfil code. Your next\n"
+        "# pipeline run pulls it and runs it with your repository\n"
+        "# variables and tokens.\n"
+        "\n"
+        "# Safe: pin to the immutable sha256 digest.\n"
+        "          - pipe: acme/deploy-pipe@sha256:<digest>"
+    ),
 )
 
 

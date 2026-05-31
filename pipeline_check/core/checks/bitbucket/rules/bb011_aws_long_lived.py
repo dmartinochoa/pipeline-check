@@ -33,6 +33,31 @@ RULE = Rule(
         "fine-grained schedule. Prefer OIDC or Bitbucket secured "
         "variables for cross-cloud access."
     ),
+    exploit_example=(
+        "# Vulnerable: long-lived AWS keys baked into the pipeline.\n"
+        "pipelines:\n"
+        "  default:\n"
+        "    - step:\n"
+        "        script:\n"
+        "          - export AWS_ACCESS_KEY_ID=AKIA…\n"
+        "          - export AWS_SECRET_ACCESS_KEY=…\n"
+        "          - aws s3 sync ./dist s3://prod-site\n"
+        "\n"
+        "# Attack: the keys are in the checked-in pipeline file (or an\n"
+        "# unsecured variable), readable by anyone with repo access and\n"
+        "# present in the build environment. A leaked log or malicious\n"
+        "# dependency exfiltrates them, and the long-lived IAM user keys\n"
+        "# keep working until someone rotates them by hand.\n"
+        "\n"
+        "# Safe: OIDC via the AWS pipe's `oidc: true` (short-lived role\n"
+        "# credentials per build), or secured repo variables.\n"
+        "    - step:\n"
+        "        oidc: true\n"
+        "        script:\n"
+        "          - pipe: atlassian/aws-s3-deploy:1.7.0\n"
+        "            variables:\n"
+        "              AWS_OIDC_ROLE_ARN: arn:aws:iam::123456789012:role/ci-deploy"
+    ),
 )
 
 
