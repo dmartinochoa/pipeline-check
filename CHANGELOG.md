@@ -230,6 +230,13 @@ release commit collapses this section into `## [X.Y.Z] - <date>`.
 
 ### Changed
 
+- **Proof-of-exploit examples on five GitLab MEDIUM rules.** Mirrors
+  the GitHub Actions MEDIUM batch on the GitLab side: GL-004 (ungated
+  deploy), GL-012 (cache-key poisoning), GL-013 (long-lived AWS keys),
+  GL-027 (git / path / tarball install), and the GitLab-specific GL-029
+  (manual deploy defaulting to ``allow_failure: true``, a gate that
+  blocks nothing) now carry an ``exploit_example``. SBOM / SLSA /
+  signing / vuln-scan / timeout rules stay ``None`` by design.
 - **Proof-of-exploit examples on seven HIGH cloud-posture rules.**
   Closes the last HIGH-severity gaps in the exploit-example backfill:
   ACR-002 (public registry), AKV-002 (no Key Vault purge protection),

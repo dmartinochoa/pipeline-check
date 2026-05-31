@@ -60,6 +60,28 @@ RULE = Rule(
         "allow_failure by default. Downstream jobs (and the overall "
         "pipeline status) proceed as though the human approved."
     ),
+    exploit_example=(
+        "# Vulnerable: a manual deploy job on the default allow_failure.\n"
+        "deploy_prod:\n"
+        "  stage: deploy\n"
+        "  when: manual\n"
+        "  script:\n"
+        "    - aws s3 sync ./dist s3://prod-site\n"
+        "\n"
+        "# Attack: GitLab defaults `allow_failure: true` for `when:\n"
+        "# manual` jobs, so the pipeline reports success whether or not\n"
+        "# anyone clicks Deploy. The job looks like an approval gate in\n"
+        "# the UI, but downstream jobs and the overall pipeline status\n"
+        "# proceed as if it ran. The gate blocks nothing.\n"
+        "\n"
+        "# Safe: make the gate actually block.\n"
+        "deploy_prod:\n"
+        "  stage: deploy\n"
+        "  when: manual\n"
+        "  allow_failure: false\n"
+        "  script:\n"
+        "    - aws s3 sync ./dist s3://prod-site"
+    ),
 )
 
 
