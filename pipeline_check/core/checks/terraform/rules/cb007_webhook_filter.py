@@ -27,6 +27,34 @@ RULE = Rule(
         "every push event from every principal, including forks for "
         "public repositories."
     ),
+    exploit_example=(
+        "# Vulnerable: a CodeBuild webhook with no filter_group.\n"
+        "resource \"aws_codebuild_webhook\" \"ci\" {\n"
+        "  project_name = aws_codebuild_project.ci.name\n"
+        "}\n"
+        "\n"
+        "# Attack: with no filter_group the webhook fires on every\n"
+        "# event, including pull requests from forks of a public repo.\n"
+        "# The fork PR's code (its buildspec, its scripts) runs in\n"
+        "# CodeBuild with the project's IAM role and environment, so\n"
+        "# anyone on the internet executes in your build account\n"
+        "# (poisoned-pipeline execution).\n"
+        "\n"
+        "# Safe: restrict to trusted branches and actors.\n"
+        "resource \"aws_codebuild_webhook\" \"ci\" {\n"
+        "  project_name = aws_codebuild_project.ci.name\n"
+        "  filter_group {\n"
+        "    filter {\n"
+        "      type    = \"HEAD_REF\"\n"
+        "      pattern = \"^refs/heads/main$\"\n"
+        "    }\n"
+        "    filter {\n"
+        "      type    = \"ACTOR_ACCOUNT_ID\"\n"
+        "      pattern = \"^123456789012$\"\n"
+        "    }\n"
+        "  }\n"
+        "}"
+    ),
 )
 
 

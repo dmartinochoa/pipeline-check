@@ -28,6 +28,29 @@ RULE = Rule(
         "with these reaches into prod data, secrets, and IAM in one "
         "step."
     ),
+    exploit_example=(
+        "# Vulnerable: a CI/CD role policy granting s3:* on Resource \"*\".\n"
+        "resource \"aws_iam_role_policy\" \"ci\" {\n"
+        "  role   = aws_iam_role.ci.id\n"
+        "  policy = jsonencode({\n"
+        "    Statement = [{\n"
+        "      Effect   = \"Allow\"\n"
+        "      Action   = [\"s3:*\", \"secretsmanager:GetSecretValue\"]\n"
+        "      Resource = \"*\"\n"
+        "    }]\n"
+        "  })\n"
+        "}\n"
+        "\n"
+        "# Attack: the build role can read and write every bucket and\n"
+        "# every secret in the account, not just its own. A compromised\n"
+        "# build step (an injected buildspec, a malicious dependency)\n"
+        "# uses the role to pull production secrets and tamper with\n"
+        "# unrelated data in one call.\n"
+        "\n"
+        "# Safe: scope Resource to the specific ARNs the build needs.\n"
+        "      Action   = [\"s3:GetObject\", \"s3:PutObject\"]\n"
+        "      Resource = [\"${aws_s3_bucket.artifacts.arn}/*\"]"
+    ),
 )
 
 
