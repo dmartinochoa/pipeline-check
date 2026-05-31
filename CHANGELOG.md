@@ -230,6 +230,15 @@ release commit collapses this section into `## [X.Y.Z] - <date>`.
 
 ### Changed
 
+- **Proof-of-exploit examples on five CloudFormation AWS-CI/CD MEDIUM
+  rules.** The CloudFormation-template counterparts of the Terraform
+  batch (same shared AWS CI/CD model): CB-007 (an
+  ``AWS::CodeBuild::Project`` with ``Triggers.Webhook`` but no
+  ``FilterGroups``), IAM-006 (sensitive actions with ``Resource: "*"``),
+  CP-005 (a production CodePipeline stage with no preceding Manual
+  approval), PBAC-003 (a build SG with ``0.0.0.0/0`` egress), and CB-009
+  (a build image on a mutable tag) now carry an ``exploit_example``.
+  The rest of the pack is posture and stays ``None`` by design.
 - **Proof-of-exploit examples on five Terraform AWS-CI/CD MEDIUM
   rules.** Begins extending the backfill into the IaC providers:
   CB-007 (an ``aws_codebuild_webhook`` with no ``filter_group``, so a

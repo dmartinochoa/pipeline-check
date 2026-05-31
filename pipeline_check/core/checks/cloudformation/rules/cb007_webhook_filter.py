@@ -25,6 +25,32 @@ RULE = Rule(
         "``Triggers.{Webhook,FilterGroups}`` and fires when a "
         "webhook is enabled with no filter groups."
     ),
+    exploit_example=(
+        "# Vulnerable: a CodeBuild webhook with no FilterGroups.\n"
+        "Resources:\n"
+        "  CIProject:\n"
+        "    Type: AWS::CodeBuild::Project\n"
+        "    Properties:\n"
+        "      Source:\n"
+        "        Type: GITHUB\n"
+        "      Triggers:\n"
+        "        Webhook: true\n"
+        "\n"
+        "# Attack: Webhook: true with no FilterGroups builds on every\n"
+        "# event, including pull requests from forks of a public repo.\n"
+        "# The fork PR's buildspec and scripts run in CodeBuild with the\n"
+        "# project's IAM role, so anyone on the internet executes in\n"
+        "# your build account (poisoned-pipeline execution).\n"
+        "\n"
+        "# Safe: restrict triggers to a trusted branch and actor.\n"
+        "      Triggers:\n"
+        "        Webhook: true\n"
+        "        FilterGroups:\n"
+        "          - - Type: HEAD_REF\n"
+        "              Pattern: ^refs/heads/main$\n"
+        "            - Type: ACTOR_ACCOUNT_ID\n"
+        "              Pattern: ^123456789012$"
+    ),
 )
 
 
