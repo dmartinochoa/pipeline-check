@@ -24,6 +24,26 @@ RULE = Rule(
         "when the build runs, there's no integrity check, so a "
         "workspace mutation can swap the loaded code between runs."
     ),
+    exploit_example=(
+        "// Vulnerable: load evaluates whatever Groovy is at the path.\n"
+        "stage('Build') {\n"
+        "  steps {\n"
+        "    script {\n"
+        "      def helpers = load 'ci/helpers.groovy'\n"
+        "      helpers.deploy()\n"
+        "    }\n"
+        "  }\n"
+        "}\n"
+        "\n"
+        "// Attack: `load` runs the file's contents with no integrity\n"
+        "// check. An earlier stage, a malicious PR, or any workspace\n"
+        "// write can swap ci/helpers.groovy between checkout and load,\n"
+        "// and the substituted Groovy runs on the controller/agent with\n"
+        "// the build's full permissions and credentials.\n"
+        "\n"
+        "// Safe: move shared code into a version-pinned shared library.\n"
+        "@Library('ci-helpers@<sha>') _"
+    ),
 )
 
 
