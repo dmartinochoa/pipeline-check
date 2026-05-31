@@ -26,6 +26,24 @@ RULE = Rule(
         "comma-separated list of Jenkins usernames and group names; "
         "scope it to the smallest release-eligible pool."
     ),
+    exploit_example=(
+        "// Vulnerable: a deploy gate that anyone can approve.\n"
+        "stage('Deploy to prod') {\n"
+        "  steps {\n"
+        "    input message: 'Promote to prod?'\n"
+        "    sh 'aws s3 sync ./dist s3://prod-site'\n"
+        "  }\n"
+        "}\n"
+        "\n"
+        "// Attack: with no `submitter`, any user holding the job's\n"
+        "// Build permission, often the whole engineering org, can click\n"
+        "// Approve. The gate looks like a control but enforces nothing;\n"
+        "// a non-release engineer (or a compromised account) promotes\n"
+        "// to production.\n"
+        "\n"
+        "// Safe: restrict approval to the release-eligible pool.\n"
+        "    input message: 'Promote to prod?', submitter: 'releasers,sre'"
+    ),
 )
 
 # Identifies a ``;`` or newline *at the outer Groovy expression depth*

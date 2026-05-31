@@ -230,6 +230,15 @@ release commit collapses this section into `## [X.Y.Z] - <date>`.
 
 ### Changed
 
+- **Proof-of-exploit examples on five Jenkins MEDIUM rules.** Extends
+  the MEDIUM backfill to Jenkinsfiles: JF-004 (long-lived AWS keys via
+  ``withCredentials``), JF-005 (deploy stage with no ``input`` approval),
+  JF-031 (git / path / tarball install), and two Jenkins-specific gaps,
+  JF-012 (a ``load`` of unpinned Groovy that runs with the build's
+  permissions) and JF-024 (an ``input`` gate with no ``submitter``, so
+  anyone with Build permission approves) now carry an
+  ``exploit_example``. SBOM / SLSA / signing / vuln-scan / timeout rules
+  stay ``None`` by design.
 - **Proof-of-exploit examples on five Azure DevOps MEDIUM rules.**
   Extends the MEDIUM backfill to Azure Pipelines: ADO-004 (deployment
   job with no ``environment:`` binding), ADO-012 (Cache@2 key from

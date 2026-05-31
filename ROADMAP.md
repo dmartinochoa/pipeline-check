@@ -1253,7 +1253,11 @@ party ``pipe:`` pinned by mutable tag instead of sha256 digest), and
 the Azure DevOps set (ADO-004 ungated deployment job, ADO-012 cache
 poisoning via ``$(System.PullRequest.*)``, ADO-014 long-lived AWS keys,
 ADO-028 git / path / tarball install, plus ADO-009 a container image
-pinned by mutable tag instead of sha256 digest). Absence-of-hygiene
+pinned by mutable tag instead of sha256 digest), and the Jenkins set
+(JF-004 long-lived AWS keys via ``withCredentials``, JF-005 deploy
+stage with no ``input`` approval, JF-031 git / path / tarball install,
+plus the Jenkins-specific JF-012 ``load`` of unpinned Groovy and JF-024
+an ``input`` gate with no ``submitter`` restriction). Absence-of-hygiene
 posture rules (no SBOM / SLSA / signing / vulnerability scanning) keep
 no example by design, since the gap is a missing control rather than an
 exploitation primitive.
