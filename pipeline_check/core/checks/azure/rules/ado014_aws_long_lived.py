@@ -44,6 +44,28 @@ RULE = Rule(
         "confirmed the value is injected at runtime from a Key "
         "Vault group rather than stored in the YAML.",
     ),
+    exploit_example=(
+        "# Vulnerable: long-lived AWS keys in pipeline variables.\n"
+        "variables:\n"
+        "  AWS_ACCESS_KEY_ID: AKIA…\n"
+        "  AWS_SECRET_ACCESS_KEY: …\n"
+        "steps:\n"
+        "  - script: aws s3 sync ./dist s3://prod-site\n"
+        "\n"
+        "# Attack: the keys are in the YAML (or a plain variable),\n"
+        "# exposed to every task's environment. A leaked log or a\n"
+        "# malicious dependency exfiltrates them; the long-lived IAM\n"
+        "# user keys keep working until someone rotates them by hand.\n"
+        "\n"
+        "# Safe: a federated service connection (workload identity) or a\n"
+        "# Key Vault task, both injecting short-lived credentials.\n"
+        "steps:\n"
+        "  - task: AWSShellScript@1\n"
+        "    inputs:\n"
+        "      awsCredentials: prod-oidc-connection\n"
+        "      scriptType: inline\n"
+        "      inlineScript: aws s3 sync ./dist s3://prod-site"
+    ),
 )
 
 

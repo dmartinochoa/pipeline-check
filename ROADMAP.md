@@ -1249,10 +1249,13 @@ CC-028 git / path / tarball install, plus the CircleCI-specific CC-012
 ``setup: true`` dynamic-config injection), and the Bitbucket set
 (BB-004 ungated deploy, BB-011 long-lived AWS keys, BB-018 cache
 poisoning, BB-027 git / path / tarball install, plus BB-009 a third-
-party ``pipe:`` pinned by mutable tag instead of sha256 digest).
-Absence-of-hygiene posture rules (no SBOM / SLSA / signing /
-vulnerability scanning) keep no example by design, since the gap is a
-missing control rather than an
+party ``pipe:`` pinned by mutable tag instead of sha256 digest), and
+the Azure DevOps set (ADO-004 ungated deployment job, ADO-012 cache
+poisoning via ``$(System.PullRequest.*)``, ADO-014 long-lived AWS keys,
+ADO-028 git / path / tarball install, plus ADO-009 a container image
+pinned by mutable tag instead of sha256 digest). Absence-of-hygiene
+posture rules (no SBOM / SLSA / signing / vulnerability scanning) keep
+no example by design, since the gap is a missing control rather than an
 exploitation primitive.
 
 ### Lower priority
