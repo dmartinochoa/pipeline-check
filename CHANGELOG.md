@@ -218,6 +218,16 @@ release commit collapses this section into `## [X.Y.Z] - <date>`.
 
 ### Changed
 
+- **Proof-of-exploit examples on five GitHub Actions MEDIUM rules.**
+  GHA-005 (long-lived AWS keys), GHA-011 (cache-key poisoning), GHA-014
+  (ungated deploy job), GHA-029 (install from a git / path / tarball
+  source), and GHA-034 (``secrets: inherit``) now carry an
+  ``exploit_example``, surfaced under ``--explain`` / ``--inline-explain``
+  and in the HTML and JSON reports. Continues the opportunistic MEDIUM
+  backfill (every CRITICAL / HIGH rule already ships one); the
+  absence-of-hygiene posture rules (no SBOM / SLSA / signing) keep no
+  example by design, since the gap isn't a concrete exploitation
+  primitive.
 - **NPM-009 names the dependency that introduced each new transitive.**
   Findings now read `<name> (via <parent>)` instead of just the bare
   package name, so a reviewer knows which direct dependency's bump to

