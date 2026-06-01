@@ -10,6 +10,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 PRs landing on `dev` between releases append entries below. The
 release commit collapses this section into `## [X.Y.Z] - <date>`.
 
+### Changed
+
+- **Proof-of-exploit examples on three Argo Workflows MEDIUM rules.**
+  Closes a gap the v1.7.0 CI sweep left: Argo is a CI-style provider
+  whose concrete primitives mirror the Kubernetes / Tekton packs.
+  ARGO-003 (a Workflow on the namespace ``default`` ServiceAccount),
+  ARGO-013 (``automountServiceAccountToken`` not opted out, so a
+  compromised step reads the mounted SA token), and ARGO-014 (a template
+  script running ``npm install`` instead of ``npm ci``, an unpinned
+  install) now carry a Vulnerable/Attack/Safe ``exploit_example``.
+
 ## [1.7.1] - 2026-06-01
 
 ### Changed
