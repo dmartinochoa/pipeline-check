@@ -51,8 +51,16 @@ def check(catalog: ResourceCatalog) -> list[Finding]:
         if state != "enabled":
             continue
         grant = policy.get("grantControls") or {}
-        built_in = [c.lower() for c in grant.get("builtInControls", [])]
-        if _MFA_GRANT not in built_in:
+        # builtInControls is often present-but-null in the Graph response,
+        # so `.get(key, [])` (default only on absent key) is not enough.
+        built_in = [
+            c.lower() for c in (grant.get("builtInControls") or [])
+            if isinstance(c, str)
+        ]
+        # Modern policies enforce MFA via authenticationStrength rather
+        # than the legacy builtInControls "mfa" grant; treat either as MFA.
+        has_mfa = _MFA_GRANT in built_in or bool(grant.get("authenticationStrength"))
+        if not has_mfa:
             continue
         conditions = policy.get("conditions") or {}
         users = conditions.get("users") or {}

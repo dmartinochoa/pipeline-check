@@ -12,6 +12,19 @@ release commit collapses this section into `## [X.Y.Z] - <date>`.
 
 ### Added
 
+- **GHA-112: self-hosted deploy job not gated by a protected
+  environment (HIGH).** New GitHub Actions rule completing the
+  self-hosted-runner pack. Fires when a job runs on a self-hosted
+  runner (the ``self-hosted`` label, any ``runs-on`` shape), is a
+  deploy (by job-name or a deploy command, ``kubectl apply`` /
+  ``terraform apply`` / ``helm upgrade`` / ``aws|gcloud|az ... deploy``,
+  etc.), and has no ``environment:`` binding, so persistent org
+  infrastructure with standing credentials ships to production on any
+  push with no required reviewer. The HIGH self-hosted case of GHA-014
+  (MEDIUM); complements GHA-012 / GHA-068 / GHA-105. Local-mock deploys
+  (LocalStack / kind) are carved out. The deploy-command vocabulary
+  moved to a shared ``_primitives/deploy_names`` primitive that GHA-014
+  now reuses. Mapped across all 12 standards. github 102 -> 103.
 - **AC-037: AI agent applies attacker-influenced IaC to the cloud
   (CRITICAL).** New attack chain pairing an untrusted-input agent leg
   (GHA-058, an agentic CLI with permission-bypass flags / PR-checkout
@@ -56,6 +69,30 @@ release commit collapses this section into `## [X.Y.Z] - <date>`.
   compromised step reads the mounted SA token), and ARGO-014 (a template
   script running ``npm install`` instead of ``npm ci``, an unpinned
   install) now carry a Vulnerable/Attack/Safe ``exploit_example``.
+
+### Fixed
+
+- **Rule audit: false-positive, false-negative, and crash fixes across
+  the AWS, Azure, and CloudFormation checks.** A read-only audit of the
+  rule pack surfaced a batch of defects, now fixed and pinned with
+  regression tests. S3-005 no longer crashes when a bucket policy
+  carries ``Statement`` as a single object (not a list) and now
+  detects a list-form ``["false"]`` ``aws:SecureTransport`` value.
+  ECR-003 tolerates a string principal without crashing, flags the
+  list-form ``{"AWS": ["*"]}`` wildcard, and stops flagging a wildcard
+  scoped by ``aws:PrincipalOrgID`` (the org-sharing idiom). CP-005
+  matches ``prod`` / ``live`` as whole words, so ``Delivery`` and
+  ``Product`` are no longer read as production stages. IAM-005 no
+  longer flags a same-account trust principal as a confused-deputy
+  risk. PBAC-002, CD-003, LMB-004, ENTRA-002, ENTRA-004, ENTRA-006,
+  and ADO-013 no longer crash on a missing name key, a null
+  ``builtInControls``, a non-dict ``Condition``, mixed naive/aware
+  datetimes, a non-string risk level, or a structured ``demands``
+  entry; ENTRA-004 now credits ``authenticationStrength`` as MFA. In
+  CloudFormation, KMS-002 stops flagging ``kms:*`` granted to the
+  account root (the AWS-recommended default key policy), CA-003 stops
+  flagging an ``aws:PrincipalOrgID`` scoped wildcard, and CF-002 stops
+  flagging a ``{{resolve:secretsmanager:...}}`` dynamic reference.
 
 ## [1.7.1] - 2026-06-01
 

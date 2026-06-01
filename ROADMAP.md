@@ -1194,10 +1194,14 @@ statically detectable:
   config concern, not something visible in the workflow YAML, so it's
   out of scope for a static workflow scanner.
 
-Remaining static candidate worth considering: a self-hosted deploy
-job that isn't gated behind a protected ``environment:`` (distinct
-from GHA-014's deploy-name heuristic). Complements GHA-012 (ephemeral)
-and GHA-068 (deprecated runner image). StepSecurity's ``harden-runner``
+The last static candidate then shipped as GHA-112: a deploy job on a
+self-hosted runner with no protected ``environment:`` gate, the HIGH
+self-hosted case of GHA-014's MEDIUM ungated-deploy (it reuses the
+shared deploy name / command vocabulary but scopes to the self-hosted
+runner, where persistent infrastructure holds standing deploy
+credentials). It completes the self-hosted-runner pack alongside
+GHA-012 (ephemeral), GHA-068 (deprecated runner image), and GHA-105
+(reachable from a PR trigger). StepSecurity's ``harden-runner``
 egress agent, earlier called out of scope as a runtime agent, now ships
 as a three-rule pack: GHA-107 (present but in audit mode, egress not
 blocked), GHA-108 (an OIDC / environment-gated job with no egress

@@ -45,8 +45,11 @@ def check(catalog: ResourceCatalog) -> list[Finding]:
         if state != "enabled":
             continue
         conditions = policy.get("conditions") or {}
-        sign_in_risk = conditions.get("signInRiskLevels", [])
-        if any(level.lower() in _RISK_LEVELS for level in sign_in_risk):
+        sign_in_risk = conditions.get("signInRiskLevels") or []
+        if any(
+            isinstance(level, str) and level.lower() in _RISK_LEVELS
+            for level in sign_in_risk
+        ):
             has_risk_policy = True
             break
 
