@@ -1113,10 +1113,15 @@ environment gate), GHA-104 (AI agent auto-push without PR review),
 GHA-106 (agentic CLI in a job whose GITHUB_TOKEN carries write scope,
 the over-permissive-token gap, broader than GHA-061's App-token mint
 check), and AC-035 (the reviewer-and-committer chain: GHA-103 paired
-with GHA-104 / GHA-106 on the same workflow). Remaining gap:
-AI-generated IaC changes that modify security-sensitive resources
-(an agent that edits Terraform / CloudFormation under a write token,
-distinct from the workflow-YAML surface the current rules cover).
+with GHA-104 / GHA-106 on the same workflow), and GHA-111 (an agentic
+CLI co-located in one job with an unattended IaC apply, ``terraform
+apply`` / ``cloudformation deploy`` / ``cdk deploy`` / ``pulumi up``, so
+a prompt-injected agent's generated infrastructure reaches the cloud
+account, not just the repo). GHA-111 closes the AI-generated-IaC gap
+this section flagged, the agent-edits-Terraform / CloudFormation
+surface distinct from the workflow-YAML surface the other rules cover.
+No further AI-agent gaps are open; the next move in this theme would be
+a reachability chain pairing GHA-111 with an untrusted trigger.
 
 ### ~~Gitea / Forgejo provider~~ shipped
 

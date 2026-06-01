@@ -198,6 +198,7 @@ STANDARD = Standard(
         "GHA-060":  ["CICD-SEC-3"],                # pip install without --require-hashes
         "GHA-061":  ["CICD-SEC-5", "CICD-SEC-2"],  # App token minted without permissions filter
         "GHA-106":  ["CICD-SEC-5", "CICD-SEC-2"],  # AI agent with write-scoped token
+        "GHA-111":  ["CICD-SEC-5", "CICD-SEC-4"],  # AI agent edits IaC applied in the same job
         "GHA-107":  ["CICD-SEC-7", "CICD-SEC-10"],  # harden-runner in audit mode (egress not blocked)
         "GHA-108":  ["CICD-SEC-7", "CICD-SEC-10"],  # no runtime egress control on OIDC/deploy workflow
         "GHA-109":  ["CICD-SEC-7", "CICD-SEC-10"],  # harden-runner not the first step

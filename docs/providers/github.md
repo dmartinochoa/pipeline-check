@@ -72,7 +72,7 @@ Resolution rules:
 
 ## What it covers
 
-101 checks · 17 have an autofix patch (``--fix``).
+102 checks · 17 have an autofix patch (``--fix``).
 
 | Check | Title | Severity | Fix |
 |-------|-------|----------|-----|
@@ -173,6 +173,7 @@ Resolution rules:
 | [GHA-108](#gha-108) | Sensitive workflow has no runtime egress control | <span class="pg-sev pg-sev--low">LOW</span> |  |
 | [GHA-109](#gha-109) | harden-runner is not the first step in the job | <span class="pg-sev pg-sev--low">LOW</span> |  |
 | [GHA-110](#gha-110) | Workflow disables Go module checksum / sum-db verification | <span class="pg-sev pg-sev--high">HIGH</span> |  |
+| [GHA-111](#gha-111) | AI agent generates IaC applied to the cloud in the same job | <span class="pg-sev pg-sev--high">HIGH</span> |  |
 | [TAINT-001](#taint-001) | Untrusted input flows across step boundaries via step outputs | <span class="pg-sev pg-sev--high">HIGH</span> |  |
 | [TAINT-002](#taint-002) | Untrusted input flows across jobs via ``jobs.<id>.outputs:`` | <span class="pg-sev pg-sev--high">HIGH</span> |  |
 | [TAINT-003](#taint-003) | Untrusted input forwarded into reusable workflow ``with:`` | <span class="pg-sev pg-sev--high">HIGH</span> |  |
@@ -2931,6 +2932,36 @@ Scoped ``GOPRIVATE`` (an internal org namespace) and ``GOPROXY=off`` / ``GOPROXY
 **Recommended action**
 
 Remove the Go toolchain environment settings that turn off module integrity verification, so ``go build`` keeps checking every downloaded module against ``go.sum`` and the checksum transparency database. Specifically: drop ``GOFLAGS=-insecure`` (it fetches modules over plain HTTP with TLS validation off), ``GOSUMDB=off`` and legacy ``GONOSUMCHECK`` (they disable the checksum DB / sum check), and any ``GOINSECURE`` entry; and scope ``GOPRIVATE`` / ``GONOSUMDB`` to the exact internal namespace that needs it (``corp.example.com/team/*``) instead of a broad ``*`` or a whole public host. This is the CI-env twin of GOMOD-001: committing a ``go.sum`` doesn't help if the runner is configured to ignore it. For private modules, prefer a trusted internal proxy (``GOPROXY``) that still enforces checksums over disabling verification.
+
+</div>
+
+</div>
+
+<div class="pg-rule pg-rule--high" markdown>
+
+## GHA-111: AI agent generates IaC applied to the cloud in the same job { #gha-111 }
+
+<div class="pg-rule__tags">
+<span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-5</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-4</span> <span class="pg-tag pg-tag--esf">ESF-C-LEAST-PRIV</span> <span class="pg-tag pg-tag--esf">ESF-D-PRIV-BUILD</span> <span class="pg-tag pg-tag--cwe">CWE-94</span> <span class="pg-tag pg-tag--cwe">CWE-269</span>
+</div>
+
+Fires when one job contains both (1) a `run:` step invoking an agentic CLI (`claude` / `gemini` / `q chat` / `cursor-agent` / `aider` / `openhands` / `goose`) and (2) a `run:` step issuing an unattended IaC apply / deploy (`terraform apply`, `terragrunt apply`, `aws cloudformation deploy` / `create-stack` / `update-stack` / `execute-change-set`, `cdk deploy`, `pulumi up`, `sam deploy`). The two can be the same step. Comment-only / echoed occurrences are ignored (shared `find_run_command` chunking).
+
+Distinct from GHA-104 (agent pushes to the repo) and GHA-106 (agent holds a write-scoped GITHUB_TOKEN): here the agent's output reaches the cloud account, not the repository. The rule does not try to prove the agent edits the exact files the apply consumes; co-location in one job (shared workspace + cloud credentials) is the risk. The canonical shape is an agent step followed by an apply step.
+
+**Known false-positive modes**
+
+- A job that runs an agent purely for an unrelated read-only task (summarizing logs, drafting a comment) next to an apply that consumes only committed, reviewed IaC. The fix is still to separate the agent from the privileged apply; suppress with a rationale if the split isn't practical. Defaults to MEDIUM confidence because the rule asserts co-location, not a proven dataflow from the agent to the applied plan.
+
+**Seen in the wild**
+
+- HackerBot-Claw campaign (February 2026): prompt-injection against Claude-based agents in CI. A redirected agent acts with whatever the job can reach, here the cloud account the apply step targets.
+
+<div class="pg-rule__rec" markdown>
+
+**Recommended action**
+
+Don't run an agentic CLI in the same job that applies infrastructure. Split the pipeline: let the agent only propose changes into a reviewable PR (`peter-evans/create-pull-request`), and run the `terraform apply` / `cloudformation deploy` from a separate job on the merged, human-reviewed plan, ideally behind a protected `environment:` with required reviewers. If an agent must run next to infra tooling, keep it to read-only commands (`terraform plan`, `cdk diff`) and never let an agent-influenced job reach an unattended apply.
 
 </div>
 
