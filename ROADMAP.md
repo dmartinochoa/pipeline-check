@@ -1278,8 +1278,17 @@ K8S-011 (the ``default`` ServiceAccount), K8S-012 (an auto-mounted SA
 token a compromised container reads), K8S-039 (``shareProcessNamespace``
 letting a sidecar read a neighbor's secrets), K8S-038 (an allow-all
 NetworkPolicy), and K8S-028 (a ``hostPort`` bypassing the cluster
-network model). IaC packs are more posture-heavy than CI, so a larger
-share of their MEDIUM rules stay None. Absence-of-hygiene posture rules (no SBOM / SLSA / signing /
+network model). The Dockerfile pack was a clean five, every remaining
+MEDIUM there is a concrete primitive rather than posture: DF-015 (a
+``chmod 777`` that lets a non-root process overwrite a trusted binary),
+DF-017 (a world-writable ``PATH`` entry ahead of the system bins, a
+shadowing hijack), DF-018 (a ``chown`` handing the runtime user
+ownership of a system path like ``/usr``), DF-022 (``npm install``
+resolving against the live registry instead of the committed lockfile),
+and DF-030 (``NODE_OPTIONS`` opening the V8 inspector or preloading a
+module on every ``node`` the image runs). IaC packs are more
+posture-heavy than CI, so a larger share of their MEDIUM rules stay
+None. Absence-of-hygiene posture rules (no SBOM / SLSA / signing /
 vulnerability scanning, encryption / logging / retention settings) keep
 no example by design, since the gap is a missing control rather than an
 exploitation primitive.

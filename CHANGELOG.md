@@ -10,6 +10,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 PRs landing on `dev` between releases append entries below. The
 release commit collapses this section into `## [X.Y.Z] - <date>`.
 
+### Changed
+
+- **Proof-of-exploit examples on five Dockerfile MEDIUM rules.** A clean
+  pack to continue the backfill: every remaining MEDIUM rule in the
+  Dockerfile provider carries a concrete primitive rather than posture.
+  DF-015 (``chmod 777`` makes an executables directory world-writable,
+  so a non-root process overwrites a trusted binary), DF-017 (a
+  world-writable ``PATH`` entry ahead of the system bins, a shadowing
+  PATH hijack), DF-018 (a ``chown`` of a system path hands the runtime
+  user ownership of ``/usr``), DF-022 (``npm install`` resolves against
+  the live registry instead of the committed lockfile), and DF-030
+  (``NODE_OPTIONS`` opens the V8 inspector or preloads a module on every
+  ``node`` the image runs) now carry an ``exploit_example``.
+
 ### Fixed
 
 - **Docker image publish unblocked.** The `docker-publish` workflow's

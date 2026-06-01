@@ -39,6 +39,27 @@ RULE = Rule(
         "use ``777``. Suppress with an ignore-file entry rather than "
         "weakening the rule.",
     ),
+    exploit_example=(
+        "# Vulnerable: a build makes an executables directory\n"
+        "# world-writable, usually copy-pasted to clear a\n"
+        "# permission-denied error.\n"
+        "RUN chmod -R 777 /usr/local/bin\n"
+        "\n"
+        "# Attack: 777 sets the world-writable bit, so any\n"
+        "# process in the container, including one dropped to a\n"
+        "# non-root user, can overwrite files under\n"
+        "# /usr/local/bin. A runtime RCE replaces a trusted\n"
+        "# binary there (the `node` / `python` / healthcheck the\n"
+        "# image already runs); the next root-owned entrypoint or\n"
+        "# cron step executes it and the attacker has root in the\n"
+        "# container.\n"
+        "USER node\n"
+        "\n"
+        "# Safe: grant the narrowest mode the workload needs. 755\n"
+        "# keeps the directory traversable and the binaries\n"
+        "# executable without making them writable by non-owners.\n"
+        "RUN chmod -R 755 /usr/local/bin"
+    ),
 )
 
 
