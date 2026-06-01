@@ -189,7 +189,7 @@ class TestEngine:
             "AC-021", "AC-022", "AC-023", "AC-024",
             "AC-025", "AC-026", "AC-027", "AC-028", "AC-029",
             "AC-030", "AC-031", "AC-032", "AC-033", "AC-034",
-            "AC-035", "AC-036",
+            "AC-035", "AC-036", "AC-037",
             "XPC-001", "XPC-002", "XPC-003", "XPC-004", "XPC-005",
             "XPC-006", "XPC-007", "XPC-008", "XPC-009", "XPC-010",
             "CXPC-001", "CXPC-002", "CXPC-003", "CXPC-004",
@@ -3437,3 +3437,51 @@ class TestCrossRepoDirectionalDedup:
         producers = {c.resources[0] for c in out}
         assert producers == {wf}
         assert all(c.chain_id == "CXPC-004" for c in out)
+
+
+class TestChainAC037:
+    """AC-037: AI agent applies attacker-influenced IaC to the cloud."""
+
+    WF = ".github/workflows/iac.yml"
+
+    def _ac037(self, findings):
+        return [c for c in chains_pkg.evaluate(findings) if c.chain_id == "AC-037"]
+
+    def test_gha058_plus_gha111_fires_critical(self):
+        out = self._ac037([_f("GHA-058", self.WF), _f("GHA-111", self.WF)])
+        assert len(out) == 1
+        assert out[0].severity is Severity.CRITICAL
+        assert out[0].triggering_check_ids == ["GHA-058", "GHA-111"]
+        assert out[0].resources == [self.WF]
+
+    def test_gha103_plus_gha111_fires(self):
+        out = self._ac037([_f("GHA-103", self.WF), _f("GHA-111", self.WF)])
+        assert len(out) == 1
+        assert out[0].triggering_check_ids == ["GHA-103", "GHA-111"]
+
+    def test_both_input_legs_dedup_to_one(self):
+        out = self._ac037([
+            _f("GHA-058", self.WF), _f("GHA-103", self.WF), _f("GHA-111", self.WF),
+        ])
+        assert len(out) == 1
+        # Dedup keeps the GHA-058 leg per resource.
+        assert out[0].triggering_check_ids == ["GHA-058", "GHA-111"]
+
+    def test_no_chain_without_iac_apply(self):
+        assert self._ac037([_f("GHA-058", self.WF)]) == []
+
+    def test_no_chain_without_input_leg(self):
+        assert self._ac037([_f("GHA-111", self.WF)]) == []
+
+    def test_no_chain_across_different_workflows(self):
+        out = self._ac037([
+            _f("GHA-058", self.WF),
+            _f("GHA-111", ".github/workflows/other.yml"),
+        ])
+        assert out == []
+
+    def test_passed_iac_finding_does_not_chain(self):
+        out = self._ac037([
+            _f("GHA-058", self.WF), _f("GHA-111", self.WF, passed=True),
+        ])
+        assert out == []

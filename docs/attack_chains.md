@@ -73,6 +73,7 @@ references, recommendation).
 | [`AC-034`](#ac-034) | Submodule-poisoned PR to credential exfiltration | <span class="pg-sev pg-sev--critical">CRITICAL</span> | github | [`GHA-102`](providers/github.md#gha-102) + ([`GHA-037`](providers/github.md#gha-037) or [`GHA-004`](providers/github.md#gha-004)) |
 | [`AC-035`](#ac-035) | AI agent is both reviewer and committer | <span class="pg-sev pg-sev--critical">CRITICAL</span> | github | [`GHA-103`](providers/github.md#gha-103) + ([`GHA-104`](providers/github.md#gha-104) or [`GHA-106`](providers/github.md#gha-106)) |
 | [`AC-036`](#ac-036) | Untrusted-code execution with no runtime egress containment | <span class="pg-sev pg-sev--high">HIGH</span> | github | ([`GHA-003`](providers/github.md#gha-003) or [`GHA-016`](providers/github.md#gha-016) or [`GHA-035`](providers/github.md#gha-035) or [`GHA-044`](providers/github.md#gha-044)) + ([`GHA-107`](providers/github.md#gha-107) or [`GHA-108`](providers/github.md#gha-108)) |
+| [`AC-037`](#ac-037) | AI agent applies attacker-influenced IaC to the cloud | <span class="pg-sev pg-sev--critical">CRITICAL</span> | github | ([`GHA-058`](providers/github.md#gha-058) or [`GHA-103`](providers/github.md#gha-103)) + [`GHA-111`](providers/github.md#gha-111) |
 
 ### Cross-provider chains (`XPC-NNN`)
 
@@ -1202,6 +1203,34 @@ Break either leg:
   1. Close the execution primitive: route untrusted input through an `env:` var instead of inlining `${{ github.event.* }}` (GHA-003 / GHA-035), pin and verify actions, and replace `curl | bash` (GHA-016) / untrusted build-tool scripts (GHA-044) with pinned, checksummed installs.
   2. Add an enforced egress allowlist: run `step-security/harden-runner` as the first step with `egress-policy: block` and an `allowed-endpoints` list (GHA-107 / GHA-108).
 Either fix narrows the chain; do both. Egress blocking is the defense-in-depth layer that contains an execution primitive you missed.
+
+</div>
+
+</div>
+
+<div class="pg-rule pg-rule--critical" markdown>
+
+### AC-037: AI agent applies attacker-influenced IaC to the cloud { #ac-037 }
+
+<div class="pg-rule__tags">
+<span class="pg-sev pg-sev--critical">CRITICAL</span> <span class="pg-tag" title="MITRE ATT&CK technique">MITRE T1195.002</span> <span class="pg-tag" title="MITRE ATT&CK technique">MITRE T1059</span> <span class="pg-tag" title="MITRE ATT&CK technique">MITRE T1078.004</span> <span class="pg-tag" title="kill-chain phase">initial-access (prompt injection via untrusted PR / comment) -> execution (AI agent follows the injected instruction and edits the IaC) -> impact (unattended apply realizes the malicious infrastructure in the cloud account, no human review)</span> <span class="pg-tag pg-tag--owasp">github</span>
+</div>
+
+An agentic CLI reads attacker-controlled input, via permission-bypass flags or a PR-checkout topology (GHA-058) or an AI review bot on an untrusted trigger (GHA-103), AND the same workflow runs an agent alongside an unattended IaC apply (GHA-111). A prompt-injection payload in the PR or comment makes the agent write malicious Terraform / CloudFormation that the apply pushes straight to the cloud account, no human reviewing the plan.
+
+**References**
+
+- <https://owasp.org/www-project-top-10-ci-cd-security-risks/CICD-SEC-04-Poisoned-Pipeline-Execution-PPE>
+- <https://docs.github.com/en/actions/security-for-github-actions/security-guides/security-hardening-for-github-actions>
+
+<div class="pg-rule__rec" markdown>
+
+**Recommended action**
+
+Break either leg:
+  1. Cut the untrusted-input path: don't run an agentic CLI on an untrusted trigger or over a checked-out fork PR, and don't pass attacker-authored text into the prompt (GHA-058 / GHA-103).
+  2. Take the apply away from the agent's job: have the agent only propose changes into a reviewable PR, and run ``terraform apply`` / ``cloudformation deploy`` from a separate job on the merged, human-reviewed plan behind a protected ``environment:`` (GHA-111).
+Best: never let one workflow both feed an agent untrusted input and apply that agent's infrastructure changes unattended.
 
 </div>
 
