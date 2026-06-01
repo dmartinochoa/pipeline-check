@@ -1315,9 +1315,12 @@ into its opportunistic long tail. A follow-up pass then caught two
 CI-style providers the original CI sweep skipped: Argo Workflows now
 ships ARGO-003 (default ServiceAccount), ARGO-013 (SA-token automount not
 opted out), and ARGO-014 (a template script's unpinned package install),
-the same primitives as the Kubernetes and Tekton packs. Cloud Build's
-GCB-013 (git / path / tarball install) and GCB-016 (a step ``dir`` with a
-``..`` escape) are the analogous remaining picks.
+the same primitives as the Kubernetes and Tekton packs. Cloud Build then
+shipped the analogous pair: GCB-013 (a git / path / tarball install that
+bypasses the registry) and GCB-016 (a step ``dir`` with a ``..`` escape
+that reaches the builder image's root filesystem). That exhausts the
+concrete-primitive MEDIUM rules across every provider; the remainder
+stay None by design.
 
 ### Lower priority
 

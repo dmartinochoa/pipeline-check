@@ -12,6 +12,13 @@ release commit collapses this section into `## [X.Y.Z] - <date>`.
 
 ### Changed
 
+- **Proof-of-exploit examples on two Cloud Build MEDIUM rules.** The
+  other CI-style provider the v1.7.0 sweep skipped, and the last
+  concrete-primitive batch of the backfill. GCB-013 (a step running a
+  git / path / tarball ``pip install`` that bypasses the registry and
+  lockfile) and GCB-016 (a step ``dir:`` with a ``..`` escape that
+  resolves outside ``/workspace`` into the builder image's filesystem)
+  now carry a Vulnerable/Attack/Safe ``exploit_example``.
 - **Proof-of-exploit examples on three Argo Workflows MEDIUM rules.**
   Closes a gap the v1.7.0 CI sweep left: Argo is a CI-style provider
   whose concrete primitives mirror the Kubernetes / Tekton packs.

@@ -30,6 +30,28 @@ RULE = Rule(
         "intent. The check fires on any literal ``..`` segment; "
         "single-dot ``./`` and absolute paths are fine."
     ),
+    exploit_example=(
+        "# Vulnerable: a step sets dir: to a path that escapes the\n"
+        "# /workspace mount.\n"
+        "steps:\n"
+        "  - name: gcr.io/cloud-builders/gcloud@sha256:abc123...\n"
+        "    dir: ../secrets\n"
+        "    args: [run, deploy, app]\n"
+        "\n"
+        "# Attack: Cloud Build mounts the repo at /workspace and\n"
+        "# joins dir: against it with no sandboxing, so dir: ../secrets\n"
+        "# resolves to /secrets in the builder image, outside the\n"
+        "# checkout. A step (or injected build logic) reads or writes\n"
+        "# the builder image's own filesystem, including credentials\n"
+        "# baked into the image, instead of staying in the source tree.\n"
+        "\n"
+        "# Safe: keep dir: under /workspace with an absolute path or\n"
+        "# an exact subdirectory.\n"
+        "steps:\n"
+        "  - name: gcr.io/cloud-builders/gcloud@sha256:abc123...\n"
+        "    dir: /workspace/app\n"
+        "    args: [run, deploy, app]"
+    ),
 )
 
 
