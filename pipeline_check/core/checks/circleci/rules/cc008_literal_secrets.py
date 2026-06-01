@@ -46,7 +46,7 @@ RULE = Rule(
         "    docker:\n"
         "      - image: cimg/aws@sha256:abc123...\n"
         "    environment:\n"
-        "      AWS_ACCESS_KEY_ID: AKIAIOSFODNN7EXAMPLE\n"
+        "      AWS_ACCESS_KEY_ID: AKIAZ3MHALF2TESTHIJK\n"
         "      AWS_SECRET_ACCESS_KEY: wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY\n"
         "    steps:\n"
         "      - run: aws s3 cp build/ s3://bucket/\n"

@@ -260,6 +260,15 @@ def _lambda(ctx: CloudFormationContext) -> list[Finding]:
             if not isinstance(k, str):
                 continue
             if SECRET_NAME_RE.search(k):
+                # A secret-like NAME is a finding only when the VALUE is a
+                # plaintext literal. A value that merely references a secret
+                # (an intrinsic Ref/GetAtt/Sub, a {{resolve:...}} dynamic
+                # reference, or a literal ARN) is the recommended pattern,
+                # e.g. ``DB_SECRET_ARN: !Ref DbSecret``.
+                if is_intrinsic(v):
+                    continue
+                if isinstance(v, str) and v.startswith(("{{resolve:", "arn:aws:")):
+                    continue
                 suspicious.append(k)
                 continue
             if isinstance(v, str) and SECRET_VALUE_RE.match(v):

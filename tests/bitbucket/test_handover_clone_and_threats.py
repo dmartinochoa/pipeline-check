@@ -17,46 +17,70 @@ from .conftest import run_check
 
 class TestBB010PRArtifactHandover:
     def test_fails_when_deploy_consumes_artifact_without_verify(self):
+        # BB-010 targets the PR-artifact-handover vector: an untrusted
+        # (fork) pull-request build feeding a deploy step. A trusted
+        # branches:/default build->deploy is not this finding.
         cfg = """
         pipelines:
-          default:
-            - step:
-                name: build
-                max-time: 30
-                image: alpine:3.19.1
-                script: [make build]
-                artifacts:
-                  - dist/**
-            - step:
-                name: ship
-                max-time: 30
-                deployment: production
-                image: alpine:3.19.1
-                script:
-                  - aws s3 cp dist/app.tar.gz s3://prod/
+          pull-requests:
+            "**":
+              - step:
+                  name: build
+                  max-time: 30
+                  image: alpine:3.19.1
+                  script: [make build]
+                  artifacts:
+                    - dist/**
+              - step:
+                  name: ship
+                  max-time: 30
+                  deployment: production
+                  image: alpine:3.19.1
+                  script:
+                    - aws s3 cp dist/app.tar.gz s3://prod/
         """
         f = run_check(cfg, "BB-010")
         assert not f.passed
 
+    def test_passes_for_trusted_branch_pipeline(self):
+        # A branches: build->deploy is the trusted release path; pairing
+        # produce+deploy there must not fire (regression for the FP).
+        cfg = """
+        pipelines:
+          branches:
+            main:
+              - step:
+                  name: build
+                  script: [make build]
+                  artifacts: [dist/**]
+              - step:
+                  name: ship
+                  deployment: production
+                  script: [aws s3 cp dist/app.tar.gz s3://prod/]
+        """
+        f = run_check(cfg, "BB-010")
+        assert f.passed
+
     def test_passes_with_cosign_verify_step(self):
         cfg = """
         pipelines:
-          default:
-            - step:
-                name: build
-                max-time: 30
-                image: alpine:3.19.1
-                script: [make build]
-                artifacts:
-                  - dist/**
-            - step:
-                name: ship
-                max-time: 30
-                deployment: production
-                image: alpine:3.19.1
-                script:
-                  - cosign verify --certificate-identity-regexp '.*' dist/app.tar.gz
-                  - aws s3 cp dist/app.tar.gz s3://prod/
+          pull-requests:
+            "**":
+              - step:
+                  name: build
+                  max-time: 30
+                  image: alpine:3.19.1
+                  script: [make build]
+                  artifacts:
+                    - dist/**
+              - step:
+                  name: ship
+                  max-time: 30
+                  deployment: production
+                  image: alpine:3.19.1
+                  script:
+                    - cosign verify --certificate-identity-regexp '.*' dist/app.tar.gz
+                    - aws s3 cp dist/app.tar.gz s3://prod/
         """
         f = run_check(cfg, "BB-010")
         assert f.passed

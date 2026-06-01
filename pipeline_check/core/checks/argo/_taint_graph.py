@@ -117,11 +117,13 @@ _INPUTS_PARAM_RE = re.compile(
     r"\{\{\s*inputs\.parameters\.(?P<name>[A-Za-z_][A-Za-z0-9_-]*)\s*\}\}"
 )
 
-# ``{{tasks.<task>.outputs.parameters.<output>}}`` cross-task
-# substitution that forward a template's output parameter into
-# a downstream task's argument list.
+# Cross-step substitution that passes a template's output parameter
+# into a downstream argument list. A ``dag:`` orchestrator references a
+# producer as ``{{tasks.<task>.outputs.parameters.<output>}}``; a
+# ``steps:`` orchestrator uses ``{{steps.<step>...}}``. Both are walked
+# the same way, so accept either prefix.
 _TASKS_OUT_REF_RE = re.compile(
-    r"\{\{\s*tasks\.(?P<task>[A-Za-z_][A-Za-z0-9_-]*)"
+    r"\{\{\s*(?:tasks|steps)\.(?P<task>[A-Za-z_][A-Za-z0-9_-]*)"
     r"\.outputs\.parameters\.(?P<output>[A-Za-z_][A-Za-z0-9_-]*)"
     r"\s*\}\}"
 )

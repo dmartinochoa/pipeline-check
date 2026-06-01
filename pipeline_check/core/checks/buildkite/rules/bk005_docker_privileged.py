@@ -5,7 +5,28 @@ from typing import Any
 
 from ...base import DOCKER_INSECURE_RE, Finding, Severity
 from ...rule import Rule
-from ..base import iter_command_steps, step_commands, step_label
+from ..base import iter_command_steps, iter_plugins, step_commands, step_label
+
+
+def _plugin_escalation(step: dict[str, Any]) -> str | None:
+    """Return a reason string when a docker plugin opts into host access.
+
+    The docker / docker-compose Buildkite plugins express the same
+    escalation as a ``docker run --privileged`` command through config:
+    ``privileged: true`` or mounting the host Docker socket.
+    """
+    for ref, cfg in iter_plugins(step):
+        if "docker" not in ref.lower() or not isinstance(cfg, dict):
+            continue
+        if cfg.get("privileged") is True:
+            return f"{ref}: privileged: true"
+        volumes = cfg.get("volumes")
+        if isinstance(volumes, list) and any(
+            isinstance(vol, str) and "/var/run/docker.sock" in vol
+            for vol in volumes
+        ):
+            return f"{ref}: /var/run/docker.sock mount"
+    return None
 
 RULE = Rule(
     id="BK-005",
@@ -62,13 +83,18 @@ RULE = Rule(
 def check(path: str, doc: dict[str, Any]) -> Finding:
     offenders: list[str] = []
     for idx, step in iter_command_steps(doc):
+        matched = False
         for cmd in step_commands(step):
             m = DOCKER_INSECURE_RE.search(cmd)
             if m:
-                offenders.append(
-                    f"{step_label(step, idx)}: {m.group(0)}"
-                )
+                offenders.append(f"{step_label(step, idx)}: {m.group(0)}")
+                matched = True
                 break
+        if matched:
+            continue
+        reason = _plugin_escalation(step)
+        if reason:
+            offenders.append(f"{step_label(step, idx)}: {reason}")
     passed = not offenders
     desc = (
         "No --privileged / host-bind container invocations."

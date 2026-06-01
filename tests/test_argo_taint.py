@@ -198,7 +198,10 @@ spec:
 
     def test_steps_orchestrator_works_too(self) -> None:
         # Argo supports both ``dag:`` and ``steps:``. The engine
-        # walks both shapes via ``_iter_orchestrator_tasks``.
+        # walks both shapes via ``_iter_orchestrator_tasks``. A
+        # ``steps:`` orchestrator passes a producer output as
+        # ``{{steps.<step>.outputs...}}`` (not ``{{tasks...}}``);
+        # the forwarding regex must accept the ``steps.`` prefix.
         doc = _doc("""
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
@@ -215,7 +218,7 @@ spec:
             arguments:
               parameters:
                 - name: title
-                  value: "{{tasks.extract.outputs.parameters.clean}}"
+                  value: "{{steps.extract.outputs.parameters.clean}}"
     - name: extract-tpl
       outputs:
         parameters:

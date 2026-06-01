@@ -75,7 +75,12 @@ def check(path: str, doc: dict[str, Any]) -> Finding:
     produces = False
     deploys = False
     verified = False
-    for _, step in iter_steps(doc):
+    for loc, step in iter_steps(doc):
+        # Only a ``pull-requests:`` pipeline runs on untrusted (fork) input.
+        # A ``branches:`` / ``default`` build->deploy is the trusted release
+        # path, so pairing produce+deploy there is not this finding.
+        if not loc.startswith("pull-requests"):
+            continue
         arts = step.get("artifacts")
         if (isinstance(arts, list) and arts) or (isinstance(arts, dict) and arts):
             produces = True
