@@ -10,6 +10,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 PRs landing on `dev` between releases append entries below. The
 release commit collapses this section into `## [X.Y.Z] - <date>`.
 
+## [1.7.1] - 2026-06-01
+
 ### Changed
 
 - **Proof-of-exploit examples on three Azure cloud MEDIUM rules.** The
