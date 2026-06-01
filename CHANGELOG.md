@@ -12,6 +12,16 @@ release commit collapses this section into `## [X.Y.Z] - <date>`.
 
 ### Added
 
+- **AC-037: AI agent applies attacker-influenced IaC to the cloud
+  (CRITICAL).** New attack chain pairing an untrusted-input agent leg
+  (GHA-058, an agentic CLI with permission-bypass flags / PR-checkout
+  topology, or GHA-103, an AI review bot on an untrusted trigger) with
+  GHA-111 (an agent next to an unattended IaC apply) on the same
+  workflow. A prompt-injection payload in the PR or comment makes the
+  agent write malicious Terraform / CloudFormation that the apply
+  pushes to the cloud account with no human review, the cloud-account
+  analog of AC-035's reviewer-and-committer loop. Chain count
+  50 -> 51.
 - **GHA-111: AI agent generates IaC applied in the same job (HIGH).**
   New GitHub Actions rule closing the AI-agent-risk gap the roadmap
   flagged. Fires when one job runs an agentic CLI (``claude`` /

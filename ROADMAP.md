@@ -1120,8 +1120,12 @@ a prompt-injected agent's generated infrastructure reaches the cloud
 account, not just the repo). GHA-111 closes the AI-generated-IaC gap
 this section flagged, the agent-edits-Terraform / CloudFormation
 surface distinct from the workflow-YAML surface the other rules cover.
-No further AI-agent gaps are open; the next move in this theme would be
-a reachability chain pairing GHA-111 with an untrusted trigger.
+AC-037 then shipped the reachability chain this theme called for: it
+pairs an untrusted-input agent leg (GHA-058 agentic-CLI bypass /
+PR-checkout topology, or GHA-103 review bot on an untrusted trigger)
+with GHA-111 on one workflow, the cloud-account analog of AC-035's
+repo-write reviewer-and-committer loop. The AI-agent pipeline-risk
+theme is now fully covered, rule and chain.
 
 ### ~~Gitea / Forgejo provider~~ shipped
 
