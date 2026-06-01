@@ -12,6 +12,16 @@ release commit collapses this section into `## [X.Y.Z] - <date>`.
 
 ### Changed
 
+- **Proof-of-exploit examples on three Terraform AWS MEDIUM rules.** A
+  second tranche of the Terraform AWS pack beyond the CI/CD five: the
+  rules there with a concrete primitive rather than encryption /
+  logging posture. PBAC-002 (a CodeBuild ``service_role`` shared across
+  projects, so a build compromise in one inherits the others'
+  permissions), CCM-003 (an ``aws_codecommit_trigger`` whose
+  ``destination_arn`` is a literal cross-account SNS / Lambda ARN,
+  leaking repository events outside the account), and S3-005 (an
+  artifact bucket with no ``aws:SecureTransport`` deny, so a plaintext
+  fetch can be read or swapped on-path) now carry an ``exploit_example``.
 - **Proof-of-exploit examples on five Dockerfile MEDIUM rules.** A clean
   pack to continue the backfill: every remaining MEDIUM rule in the
   Dockerfile provider carries a concrete primitive rather than posture.

