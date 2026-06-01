@@ -23,6 +23,17 @@ RULE = Rule(
         "firewall rules (allow SSH, RDP, ICMP from anywhere). "
         "Deleting it forces teams to create purpose-built networks."
     ),
+    exploit_example=(
+        "A project keeps the auto-created default VPC network. The "
+        "default network ships pre-populated firewall rules "
+        "(default-allow-ssh, default-allow-rdp, default-allow-icmp) "
+        "that permit ingress from 0.0.0.0/0, so every instance "
+        "launched into it has SSH (22) and RDP (3389) reachable from "
+        "the entire internet. An attacker scans the project's external "
+        "IPs, finds the open ports, and brute-forces or exploits the "
+        "exposed service to land on a VM, with no firewall change "
+        "required."
+    ),
 )
 
 

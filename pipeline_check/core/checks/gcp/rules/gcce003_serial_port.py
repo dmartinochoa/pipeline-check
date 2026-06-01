@@ -22,6 +22,19 @@ RULE = Rule(
         "permission to read console output, which may contain boot "
         "logs, kernel messages, or application secrets."
     ),
+    exploit_example=(
+        "A Compute Engine instance sets the serial-port-enable "
+        "metadata key to true, turning on the interactive serial "
+        "console. Console output (boot logs, kernel messages, and any "
+        "secret an init script or app echoes at startup) is then "
+        "readable by any principal holding the low-privilege "
+        "compute.instances.getSerialPortOutput permission, and the "
+        "console is reached over Google's infrastructure rather than "
+        "the VPC, so it bypasses the project's firewall rules "
+        "entirely. An attacker with a broadly-scoped viewer credential "
+        "streams the console and harvests those secrets without ever "
+        "authenticating to the instance."
+    ),
 )
 
 
