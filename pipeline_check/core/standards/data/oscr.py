@@ -463,6 +463,7 @@ STANDARD = Standard(
         # PER-8: Create access token
         "GHA-061":  ["PER-8", "LM-2"],
         "GHA-106":  ["PER-8", "LM-2"],                   # AI agent with write-scoped token
+        "GHA-111":  ["PER-8", "LM-2"],  # AI agent edits IaC applied in the same job
         "GHA-055":  ["PER-8", "CA-5"],
         "CP-004":   ["PER-8", "IA-9"],
         # ================================================================

@@ -533,6 +533,7 @@ STANDARD = Standard(
         "GHA-060":  ["ESF-S-VERIFY-DEPS"],          # pip install without --require-hashes
         "GHA-061":  ["ESF-C-LEAST-PRIV", "ESF-D-TOKEN-HYGIENE"],  # App token without permissions filter
         "GHA-106":  ["ESF-C-LEAST-PRIV", "ESF-D-TOKEN-HYGIENE"],  # AI agent with write-scoped token
+        "GHA-111":  ["ESF-C-LEAST-PRIV", "ESF-D-PRIV-BUILD"],  # AI agent edits IaC applied in the same job
         "GHA-107":  ["ESF-D-BUILD-ENV"],             # harden-runner in audit mode (egress not blocked)
         "GHA-108":  ["ESF-D-BUILD-ENV"],             # no runtime egress control on OIDC/deploy workflow
         "GHA-109":  ["ESF-D-BUILD-ENV"],             # harden-runner not the first step

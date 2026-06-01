@@ -319,6 +319,7 @@ STANDARD = Standard(
         "GHA-060":  ["Pinned-Dependencies"],                           # pip install without --require-hashes
         "GHA-061":  ["Token-Permissions"],                             # App token minted without permissions filter
         "GHA-106":  ["Token-Permissions"],                             # AI agent with write-scoped token
+        "GHA-111":  ["Dangerous-Workflow"],  # AI agent edits IaC applied in the same job
         "GHA-062":  ["Token-Permissions"],                             # OIDC trust subject in sibling IaC overly broad
         # Cross-pipeline / cross-project artifact ingestion = same
         # source-poisoning shape as the GHA workflow_run rule

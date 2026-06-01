@@ -19,7 +19,7 @@ Kubernetes, …) when an audit asks for that framework's vocabulary.
 
 - **Controls in this standard:** 10
 - **Controls evidenced by at least one check:** 10 / 10
-- **Distinct checks evidencing this standard:** 872
+- **Distinct checks evidencing this standard:** 873
 - **Of those, autofixable with `--fix`:** 111
 
 _Severity levels (`CRITICAL` / `HIGH` / `MEDIUM` / `LOW` / `INFO`) follow the same scale across every provider and standard. See [How to read severity](README.md#how-to-read-severity) on the standards overview for the definitions._
@@ -33,8 +33,8 @@ Click a control ID to jump to the per-control section with the full check list. 
 | [`CICD-SEC-1`](#ctrl-cicd-sec-1) | Insufficient Flow Control Mechanisms | 92 | 5C · 44H · 35M · 8L |
 | [`CICD-SEC-2`](#ctrl-cicd-sec-2) | Inadequate Identity and Access Management | 72 | 9C · 40H · 22M · 1L |
 | [`CICD-SEC-3`](#ctrl-cicd-sec-3) | Dependency Chain Abuse | 295 | 10C · 160H · 103M · 22L |
-| [`CICD-SEC-4`](#ctrl-cicd-sec-4) | Poisoned Pipeline Execution | 112 | 25C · 59H · 20M · 8L |
-| [`CICD-SEC-5`](#ctrl-cicd-sec-5) | Insufficient PBAC | 72 | 4C · 51H · 17M |
+| [`CICD-SEC-4`](#ctrl-cicd-sec-4) | Poisoned Pipeline Execution | 113 | 25C · 60H · 20M · 8L |
+| [`CICD-SEC-5`](#ctrl-cicd-sec-5) | Insufficient PBAC | 73 | 4C · 52H · 17M |
 | [`CICD-SEC-6`](#ctrl-cicd-sec-6) | Insufficient Credential Hygiene | 112 | 30C · 58H · 24M |
 | [`CICD-SEC-7`](#ctrl-cicd-sec-7) | Insecure System Configuration | 143 | 24C · 62H · 46M · 11L |
 | [`CICD-SEC-8`](#ctrl-cicd-sec-8) | Ungoverned Usage of 3rd-Party Services | 41 | 13C · 21H · 7M |
@@ -548,7 +548,7 @@ Floating tags, range constraints, and unverified registries let an upstream main
 
 An attacker who can influence what a build runs, via a PR, an issue comment, or a tainted environment variable, executes with the build's secrets and write-access to your artifacts.
 
-**Evidenced by 112 checks** across 22 providers (AWS, Argo CD, Argo Workflows, Azure DevOps, Bitbucket, Buildkite, Cargo, CircleCI, Cloud Build, Dockerfile, Drone CI, GitHub Actions, GitLab CI, Go modules, Helm, Jenkins, NuGet, Pulumi, PyPI, SCM, Tekton, npm).
+**Evidenced by 113 checks** across 22 providers (AWS, Argo CD, Argo Workflows, Azure DevOps, Bitbucket, Buildkite, Cargo, CircleCI, Cloud Build, Dockerfile, Drone CI, GitHub Actions, GitLab CI, Go modules, Helm, Jenkins, NuGet, Pulumi, PyPI, SCM, Tekton, npm).
 
 | Check | Title | Severity | Provider | Fix |
 |-------|-------|----------|----------|-----|
@@ -625,6 +625,7 @@ An attacker who can influence what a build runs, via a PR, an issue comment, or 
 | [`GHA-103`](../providers/github.md#gha-103) | AI code-review bot on untrusted trigger without environment gate | <span class="pg-sev pg-sev--critical">CRITICAL</span> | [GitHub Actions](../providers/github.md) |  |
 | [`GHA-104`](../providers/github.md#gha-104) | AI agent generates and pushes commits without PR review | <span class="pg-sev pg-sev--high">HIGH</span> | [GitHub Actions](../providers/github.md) |  |
 | [`GHA-105`](../providers/github.md#gha-105) | Self-hosted runner reachable from an untrusted PR trigger | <span class="pg-sev pg-sev--high">HIGH</span> | [GitHub Actions](../providers/github.md) |  |
+| [`GHA-111`](../providers/github.md#gha-111) | AI agent generates IaC applied to the cloud in the same job | <span class="pg-sev pg-sev--high">HIGH</span> | [GitHub Actions](../providers/github.md) |  |
 | [`GL-002`](../providers/gitlab.md#gl-002) | Script injection via untrusted commit/MR context | <span class="pg-sev pg-sev--high">HIGH</span> | [GitLab CI](../providers/gitlab.md) |  |
 | [`GL-010`](../providers/gitlab.md#gl-010) | Multi-project pipeline ingests upstream artifact unverified | <span class="pg-sev pg-sev--critical">CRITICAL</span> | [GitLab CI](../providers/gitlab.md) |  |
 | [`GL-011`](../providers/gitlab.md#gl-011) | include: local file pulled in MR-triggered pipeline | <span class="pg-sev pg-sev--high">HIGH</span> | [GitLab CI](../providers/gitlab.md) |  |
@@ -669,7 +670,7 @@ An attacker who can influence what a build runs, via a PR, an issue comment, or 
 
 Build steps with deploy-class permissions, jobs sharing a single broad role, and missing environment gates each let a routine compromise escalate from build to production.
 
-**Evidenced by 72 checks** across 19 providers (AWS, Argo CD, Argo Workflows, Buildkite, Cargo, CircleCI, Composer, Drone CI, GitHub Actions, GitLab CI, Go modules, Jenkins, Kubernetes, NuGet, Pulumi, RubyGems, SCM, Tekton, maven).
+**Evidenced by 73 checks** across 19 providers (AWS, Argo CD, Argo Workflows, Buildkite, Cargo, CircleCI, Composer, Drone CI, GitHub Actions, GitLab CI, Go modules, Jenkins, Kubernetes, NuGet, Pulumi, RubyGems, SCM, Tekton, maven).
 
 | Check | Title | Severity | Provider | Fix |
 |-------|-------|----------|----------|-----|
@@ -713,6 +714,7 @@ Build steps with deploy-class permissions, jobs sharing a single broad role, and
 | [`GHA-086`](../providers/github.md#gha-086) | Wildcard branch trigger gates an environment-bound deploy | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [GitHub Actions](../providers/github.md) |  |
 | [`GHA-106`](../providers/github.md#gha-106) | AI agent CLI runs with a write-scoped GITHUB_TOKEN | <span class="pg-sev pg-sev--high">HIGH</span> | [GitHub Actions](../providers/github.md) |  |
 | [`GHA-110`](../providers/github.md#gha-110) | Workflow disables Go module checksum / sum-db verification | <span class="pg-sev pg-sev--high">HIGH</span> | [GitHub Actions](../providers/github.md) |  |
+| [`GHA-111`](../providers/github.md#gha-111) | AI agent generates IaC applied to the cloud in the same job | <span class="pg-sev pg-sev--high">HIGH</span> | [GitHub Actions](../providers/github.md) |  |
 | [`GL-037`](../providers/gitlab.md#gl-037) | Pipeline disables Go module checksum / sum-db verification | <span class="pg-sev pg-sev--high">HIGH</span> | [GitLab CI](../providers/gitlab.md) |  |
 | [`GOMOD-002`](../providers/gomod.md) | go.mod replace directive points to a local filesystem path | <span class="pg-sev pg-sev--high">HIGH</span> | [Go modules](../providers/gomod.md) |  |
 | [`GOMOD-003`](../providers/gomod.md) | go.mod replace directive substitutes a different module | <span class="pg-sev pg-sev--high">HIGH</span> | [Go modules](../providers/gomod.md) |  |

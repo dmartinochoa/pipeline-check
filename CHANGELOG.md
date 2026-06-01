@@ -10,6 +10,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 PRs landing on `dev` between releases append entries below. The
 release commit collapses this section into `## [X.Y.Z] - <date>`.
 
+### Added
+
+- **GHA-111: AI agent generates IaC applied in the same job (HIGH).**
+  New GitHub Actions rule closing the AI-agent-risk gap the roadmap
+  flagged. Fires when one job runs an agentic CLI (``claude`` /
+  ``gemini`` / ``q chat`` / ``cursor-agent`` / ``aider`` /
+  ``openhands`` / ``goose``) alongside an unattended IaC apply
+  (``terraform apply``, ``terragrunt apply``, ``aws cloudformation
+  deploy`` / ``create-stack`` / ``update-stack`` /
+  ``execute-change-set``, ``cdk deploy``, ``pulumi up``, ``sam
+  deploy``). A prompt-injected agent rewrites the Terraform /
+  CloudFormation in the shared workspace and the apply pushes it
+  straight to the cloud account with no plan reviewed. Distinct from
+  GHA-104 (agent pushes to the repo) and GHA-106 (agent holds a
+  write-scoped ``GITHUB_TOKEN``): the blast radius here is the cloud
+  account. Read-only ``terraform plan`` / ``cdk diff`` and agents
+  split across jobs are not flagged. Mapped across all 12 standards.
+  github 101 -> 102.
+
 ### Changed
 
 - **Proof-of-exploit examples on two Cloud Build MEDIUM rules.** The
