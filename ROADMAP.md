@@ -1303,7 +1303,13 @@ exposure rules are GCNET-001 (the default VPC's pre-populated
 allow-SSH / RDP-from-anywhere firewall), GCCE-003 (the readable serial
 console leaking boot-time secrets), and GCCE-005 (an instance honoring
 project-wide SSH keys, a one-metadata-write path to shell on the fleet).
-The remaining cloud-posture MEDIUM rules (encryption, rotation, logging,
+The Azure cloud pack added the same kind of exposure cherry-picks:
+AKV-003 (a Key Vault whose firewall default-action is Allow, so its
+secrets are reachable from the public internet), AZAPP-005 (an App
+Service still accepting plain FTP, leaking publish credentials in
+cleartext), and ACR-005 (a container registry without tag immutability,
+so a pushed tag can be overwritten with a backdoored image). The
+remaining cloud-posture MEDIUM rules (encryption, rotation, logging,
 backups, hardening toggles) stay None by design, so this backfill is now
 into its opportunistic long tail.
 
