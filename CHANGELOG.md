@@ -12,6 +12,19 @@ release commit collapses this section into `## [X.Y.Z] - <date>`.
 
 ### Added
 
+- **GHA-112: self-hosted deploy job not gated by a protected
+  environment (HIGH).** New GitHub Actions rule completing the
+  self-hosted-runner pack. Fires when a job runs on a self-hosted
+  runner (the ``self-hosted`` label, any ``runs-on`` shape), is a
+  deploy (by job-name or a deploy command, ``kubectl apply`` /
+  ``terraform apply`` / ``helm upgrade`` / ``aws|gcloud|az ... deploy``,
+  etc.), and has no ``environment:`` binding, so persistent org
+  infrastructure with standing credentials ships to production on any
+  push with no required reviewer. The HIGH self-hosted case of GHA-014
+  (MEDIUM); complements GHA-012 / GHA-068 / GHA-105. Local-mock deploys
+  (LocalStack / kind) are carved out. The deploy-command vocabulary
+  moved to a shared ``_primitives/deploy_names`` primitive that GHA-014
+  now reuses. Mapped across all 12 standards. github 102 -> 103.
 - **AC-037: AI agent applies attacker-influenced IaC to the cloud
   (CRITICAL).** New attack chain pairing an untrusted-input agent leg
   (GHA-058, an agentic CLI with permission-bypass flags / PR-checkout

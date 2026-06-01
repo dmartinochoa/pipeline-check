@@ -224,6 +224,7 @@ STANDARD = Standard(
         "GHA-061":  ["1.3.4", "2.4.3"],                  # App token minted without permissions filter
         "GHA-106":  ["1.3.4", "2.4.3"],                  # AI agent with write-scoped token
         "GHA-111":  ["1.3.4", "2.4.3"],  # AI agent edits IaC applied in the same job
+        "GHA-112":  ["5.1.4", "2.2.2"],  # self-hosted deploy with no environment gate
         "GHA-062":  ["1.3.4", "2.4.3"],                  # OIDC trust subject in sibling IaC is overly broad
         "GHA-063":  ["2.4.3", "2.1.3"],                  # spoofable bot-actor if-predicate
         "GHA-064":  ["2.4.3"],                           # unsound contains() with comma-string operand

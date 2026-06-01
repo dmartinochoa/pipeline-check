@@ -44,6 +44,10 @@ _MEDIUM: frozenset[str] = frozenset({
     # the applied plan, so an unrelated read-only agent next to an
     # apply over-flags.
     "GHA-111",
+    # Self-hosted deploy without an environment gate. Deploy detection
+    # is a job-name / command heuristic, and a non-prod (staging /
+    # preview) self-hosted deploy may intentionally skip the gate.
+    "GHA-112",
     "JF-014",
     # Dep-update lockfile bypass, catches all ``pip install -U`` by
     # default; the safe subset (pip/setuptools/wheel/virtualenv) is

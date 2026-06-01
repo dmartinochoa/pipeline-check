@@ -72,7 +72,7 @@ Resolution rules:
 
 ## What it covers
 
-102 checks · 17 have an autofix patch (``--fix``).
+103 checks · 17 have an autofix patch (``--fix``).
 
 | Check | Title | Severity | Fix |
 |-------|-------|----------|-----|
@@ -174,6 +174,7 @@ Resolution rules:
 | [GHA-109](#gha-109) | harden-runner is not the first step in the job | <span class="pg-sev pg-sev--low">LOW</span> |  |
 | [GHA-110](#gha-110) | Workflow disables Go module checksum / sum-db verification | <span class="pg-sev pg-sev--high">HIGH</span> |  |
 | [GHA-111](#gha-111) | AI agent generates IaC applied to the cloud in the same job | <span class="pg-sev pg-sev--high">HIGH</span> |  |
+| [GHA-112](#gha-112) | Self-hosted deploy job not gated by a protected environment | <span class="pg-sev pg-sev--high">HIGH</span> |  |
 | [TAINT-001](#taint-001) | Untrusted input flows across step boundaries via step outputs | <span class="pg-sev pg-sev--high">HIGH</span> |  |
 | [TAINT-002](#taint-002) | Untrusted input flows across jobs via ``jobs.<id>.outputs:`` | <span class="pg-sev pg-sev--high">HIGH</span> |  |
 | [TAINT-003](#taint-003) | Untrusted input forwarded into reusable workflow ``with:`` | <span class="pg-sev pg-sev--high">HIGH</span> |  |
@@ -2962,6 +2963,34 @@ Distinct from GHA-104 (agent pushes to the repo) and GHA-106 (agent holds a writ
 **Recommended action**
 
 Don't run an agentic CLI in the same job that applies infrastructure. Split the pipeline: let the agent only propose changes into a reviewable PR (`peter-evans/create-pull-request`), and run the `terraform apply` / `cloudformation deploy` from a separate job on the merged, human-reviewed plan, ideally behind a protected `environment:` with required reviewers. If an agent must run next to infra tooling, keep it to read-only commands (`terraform plan`, `cdk diff`) and never let an agent-influenced job reach an unattended apply.
+
+</div>
+
+</div>
+
+<div class="pg-rule pg-rule--high" markdown>
+
+## GHA-112: Self-hosted deploy job not gated by a protected environment { #gha-112 }
+
+<div class="pg-rule__tags">
+<span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-1</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-7</span> <span class="pg-tag pg-tag--esf">ESF-C-APPROVAL</span> <span class="pg-tag pg-tag--esf">ESF-D-PRIV-BUILD</span> <span class="pg-tag pg-tag--cwe">CWE-284</span> <span class="pg-tag pg-tag--cwe">CWE-269</span>
+</div>
+
+Fires when a job (1) runs on a self-hosted runner (the `self-hosted` label on any `runs-on` shape: string, list, or `{ group, labels }` dict), (2) is a deploy, by job-name (`deploy` / `release` / `publish` / `promote`) or by a deploy command in a `run:` step (`kubectl apply`, `terraform apply`, `helm upgrade`, `aws ... deploy`, `gcloud ... deploy`, etc.), and (3) has no `environment:` binding. A job whose deploy commands all target a local mock (LocalStack / kind via `AWS_ENDPOINT_URL` / `KUBE_API_URL` at a localhost address) is treated as a test, not a deploy. Overlaps GHA-014 on the missing-environment axis but is scoped to the higher-severity self-hosted case; the same `environment:` fix clears both.
+
+**Known false-positive modes**
+
+- A self-hosted job named `release` (or running a deploy command) that targets a staging / preview account where an approval gate is intentionally skipped. Bind a separate `environment:` for non-prod with no required reviewers so the intent is explicit in the workflow, or suppress with a rationale. Defaults to MEDIUM confidence because deploy detection is a name / command heuristic.
+
+**Seen in the wild**
+
+- OWASP CICD-SEC-1 (Insufficient Flow Control Mechanisms) and CICD-SEC-7 (Insecure System Configuration): persistent self-hosted runners that deploy without an approval gate let a single low-privilege trigger reach production infrastructure.
+
+<div class="pg-rule__rec" markdown>
+
+**Recommended action**
+
+Bind the deploy job to a protected `environment:` with required reviewers and a deployment-branch policy, and prefer ephemeral self-hosted runners (actions-runner-controller, `--ephemeral`) so a job can't inherit state or credentials from a previous one. Best: run the deploy from a dedicated, minimally-scoped runner pool that only the gated job can reach, and keep untrusted-trigger jobs (fork PRs) off the self-hosted fleet entirely (see GHA-105).
 
 </div>
 
