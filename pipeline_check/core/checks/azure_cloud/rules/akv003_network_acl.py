@@ -21,6 +21,20 @@ RULE = Rule(
         "networks. Restricting to known VNets and IPs limits the "
         "attack surface for credential theft and key exfiltration."
     ),
+    exploit_example=(
+        "A Key Vault keeps its firewall default action at 'Allow', so "
+        "its data plane is reachable from any IP on the internet rather "
+        "than only trusted VNets or private endpoints. The vault still "
+        "requires an Azure AD token, but that token is now the only "
+        "thing between the public internet and every secret, key, and "
+        "certificate it holds. An attacker who steals a credential with "
+        "data-plane access (a leaked service-principal secret, a token "
+        "lifted from a compromised CI runner) reads the secrets "
+        "directly from anywhere, with no need to first gain a foothold "
+        "inside the network. A default action of 'Deny' would have "
+        "rejected the request at the firewall before the token was even "
+        "evaluated."
+    ),
 )
 
 

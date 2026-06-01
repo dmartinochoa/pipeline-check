@@ -12,6 +12,16 @@ release commit collapses this section into `## [X.Y.Z] - <date>`.
 
 ### Changed
 
+- **Proof-of-exploit examples on three Azure cloud MEDIUM rules.** The
+  Azure parallel of the GCP exposure cherry-picks, again the only
+  cloud-posture rules with a concrete reachability primitive: AKV-003
+  (a Key Vault whose firewall default action is ``Allow``, so its
+  secrets are reachable from the public internet behind only an Azure
+  AD token), AZAPP-005 (an App Service still accepting plain FTP, which
+  leaks publish-profile credentials and file contents in cleartext),
+  and ACR-005 (a container registry without tag immutability, so a
+  pushed tag can be overwritten in place with a backdoored image) now
+  carry a prose ``exploit_example``.
 - **Proof-of-exploit examples on three GCP exposure MEDIUM rules.** The
   backfill's first reach into the live cloud-posture providers, which
   are posture-weighted, so only the rules with a concrete reachability
