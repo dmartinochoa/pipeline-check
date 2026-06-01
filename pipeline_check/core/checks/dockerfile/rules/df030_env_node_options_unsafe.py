@@ -65,6 +65,27 @@ RULE = Rule(
         "because the same shape is the runtime-injection "
         "primitive Shai-Hulud-class npm worms exploit.",
     ),
+    exploit_example=(
+        "# Vulnerable: NODE_OPTIONS opens the V8 inspector on\n"
+        "# every `node` the image runs (often left over from a\n"
+        "# debug session).\n"
+        "ENV NODE_OPTIONS=\"--inspect=0.0.0.0:9229\"\n"
+        "\n"
+        "# Attack: every Node process, the app, `npm`, `yarn`,\n"
+        "# now listens for a debugger on 9229. Anyone who can\n"
+        "# reach that port (a neighboring pod, a misconfigured\n"
+        "# Service, an SSRF that hits localhost) attaches over\n"
+        "# the Chrome DevTools protocol and takes full control\n"
+        "# of the V8 context: dump process memory and secrets,\n"
+        "# set breakpoints, and run arbitrary code in the Node\n"
+        "# process, no auth required.\n"
+        "\n"
+        "# Safe: never bake an inspector or a --require /\n"
+        "# --import preload into the image-wide NODE_OPTIONS.\n"
+        "# Keep only sizing / source-map flags; scope a debugger\n"
+        "# to an on-demand, loopback-bound dev command instead.\n"
+        "ENV NODE_OPTIONS=\"--max-old-space-size=2048 --enable-source-maps\""
+    ),
 )
 
 

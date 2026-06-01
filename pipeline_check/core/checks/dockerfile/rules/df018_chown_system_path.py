@@ -33,6 +33,25 @@ RULE = Rule(
         "whether it's wrong. Application paths under ``/opt``, "
         "``/srv``, ``/var/lib/<app>``, and ``/app`` are not flagged."
     ),
+    exploit_example=(
+        "# Vulnerable: the build hands the runtime user ownership\n"
+        "# of a system directory to clear a write error.\n"
+        "RUN useradd app && chown -R app:app /usr/local\n"
+        "\n"
+        "# Attack: `app` now owns everything under /usr/local,\n"
+        "# including /usr/local/bin. A process compromised as\n"
+        "# `app` at runtime overwrites a trusted binary there\n"
+        "# (the same `node` / `python` the entrypoint execs), so\n"
+        "# the next launch runs attacker code, and any step that\n"
+        "# runs as root executes it with full privilege.\n"
+        "USER app\n"
+        "\n"
+        "# Safe: chown only the workload's own subtree and leave\n"
+        "# system paths owned by root. COPY --chown lands files\n"
+        "# already owned correctly without a recursive chown.\n"
+        "RUN useradd app && mkdir /app && chown app:app /app\n"
+        "COPY --chown=app:app . /app"
+    ),
 )
 
 _SYSTEM_PREFIXES: tuple[str, ...] = (
