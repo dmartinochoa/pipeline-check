@@ -2,11 +2,22 @@
 from __future__ import annotations
 
 import json
+import re
 
 from ..._iam_policy import iter_allow
 from ...base import Finding, Severity
 from ...rule import Rule
 from .._catalog import ResourceCatalog
+
+# Account id (12 digits) from any-partition ARN: aws / aws-cn / aws-us-gov.
+_ARN_ACCOUNT_RE = re.compile(r"arn:aws[a-z-]*:[^:]*:[^:]*:(\d{12}):")
+
+
+def _account_of(arn: object) -> str | None:
+    if not isinstance(arn, str):
+        return None
+    m = _ARN_ACCOUNT_RE.search(arn)
+    return m.group(1) if m else None
 
 RULE = Rule(
     id="IAM-005",
@@ -66,6 +77,7 @@ def check(catalog: ResourceCatalog) -> list[Finding]:
     findings: list[Finding] = []
     for role in catalog.cicd_roles():
         role_name = role.get("RoleName", "<unnamed>")
+        role_account = _account_of(role.get("Arn", ""))
         doc = role.get("AssumeRolePolicyDocument", {})
         if isinstance(doc, str):
             try:
@@ -76,6 +88,27 @@ def check(catalog: ResourceCatalog) -> list[Finding]:
         for idx, stmt in enumerate(iter_allow(doc)):
             principal = stmt.get("Principal", {}) or {}
             if not (isinstance(principal, dict) and principal.get("AWS")):
+                continue
+            # sts:ExternalId guards the confused-deputy risk for EXTERNAL
+            # accounts only. A same-account principal (the role's own
+            # account root) is not a confused-deputy vector, don't flag it.
+            aws_principal = principal.get("AWS")
+            aws_values = (
+                aws_principal if isinstance(aws_principal, list)
+                else [aws_principal]
+            )
+            # A principal is external when it is a wildcard, or its account
+            # differs from the role's own. When the role's account can't be
+            # parsed we can't prove same-account, so flag conservatively
+            # (no worse than the pre-fix behavior). Only a CONFIRMED
+            # same-account principal is skipped.
+            has_external = any(
+                v == "*"
+                or role_account is None
+                or _account_of(v) != role_account
+                for v in aws_values
+            )
+            if not has_external:
                 continue
             conditions = stmt.get("Condition", {}) or {}
             has_external_id = any(

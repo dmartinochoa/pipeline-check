@@ -15,6 +15,7 @@ import json
 import re
 from typing import Any
 
+from .._context import statement_is_constrained
 from .._iam_policy import as_list, iter_allow, public_principal
 from .._patterns import SECRET_NAME_RE, SECRET_VALUE_RE
 from ..base import Finding, Severity
@@ -25,6 +26,32 @@ from .base import (
     is_intrinsic,
     is_true,
 )
+
+
+def _principal_is_only_account_root(stmt: dict[str, Any]) -> bool:
+    """True when a statement's principal is exclusively the account root.
+
+    The default/required KMS key policy grants ``kms:*`` to
+    ``arn:aws:iam::<acct>:root`` (literal or via ``Fn::Sub`` with
+    ``${AWS::AccountId}``). That root statement is AWS's recommended
+    baseline (it lets IAM policies govern access), not an over-broad
+    grant, so KMS-002 must not flag it.
+    """
+    principal = stmt.get("Principal")
+    if not isinstance(principal, dict) or set(principal) - {"AWS"}:
+        return False
+    aws = principal.get("AWS")
+    values = aws if isinstance(aws, list) else [aws]
+    if not values:
+        return False
+    for v in values:
+        if isinstance(v, str) and v.endswith(":root"):
+            continue
+        if (isinstance(v, dict) and isinstance(v.get("Fn::Sub"), str)
+                and v["Fn::Sub"].endswith(":root")):
+            continue
+        return False
+    return True
 
 
 class ServiceChecks(CloudFormationBaseCheck):
@@ -64,7 +91,12 @@ def _codeartifact(ctx: CloudFormationContext) -> list[Finding]:
         doc = d.properties.get("PermissionsPolicyDocument")
         if doc is not None:
             policy = _parse_policy(doc)
-            offenders = [i for i, s in enumerate(iter_allow(policy)) if public_principal(s)]
+            # A wildcard principal narrowed by aws:PrincipalOrgID (the
+            # documented org-sharing idiom) is not cross-account exposure.
+            offenders = [
+                i for i, s in enumerate(iter_allow(policy))
+                if public_principal(s) and not statement_is_constrained(s)
+            ]
             out.append(Finding(
                 check_id="CA-003",
                 title="CodeArtifact domain policy allows cross-account wildcard",
@@ -314,8 +346,14 @@ def _kms(ctx: CloudFormationContext) -> list[Finding]:
         offenders: list[str] = []
         for stmt in iter_allow(doc):
             actions = as_list(stmt.get("Action"))
-            if any(a in ("*", "kms:*") for a in actions if isinstance(a, str)):
-                offenders.append(stmt.get("Sid") or "<unsid>")
+            if not any(a in ("*", "kms:*") for a in actions if isinstance(a, str)):
+                continue
+            # The default/required KMS key policy grants kms:* to the
+            # account root so IAM policies can delegate; that root
+            # statement is the recommended baseline, not a finding.
+            if _principal_is_only_account_root(stmt):
+                continue
+            offenders.append(stmt.get("Sid") or "<unsid>")
         out.append(Finding(
             check_id="KMS-002",
             title="KMS key policy grants wildcard KMS actions",

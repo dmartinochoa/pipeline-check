@@ -238,7 +238,9 @@ Resources:
       Principal: '*'
       Action: 'lambda:InvokeFunction'
 
-  # KMS — KMS-001/002.
+  # KMS — KMS-001/002. KMS-002 fires on wildcard kms:* to a non-root
+  # principal (kms:* to the account root is the AWS-recommended
+  # baseline and is intentionally not flagged).
   BadKey:
     Type: AWS::KMS::Key
     Properties:
@@ -247,7 +249,7 @@ Resources:
         Statement:
           - Effect: Allow
             Principal:
-              AWS: 'arn:aws:iam::111111111111:root'
+              AWS: 'arn:aws:iam::111111111111:role/Admin'
             Action: 'kms:*'
 
   # SSM — SSM-001.

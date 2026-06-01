@@ -37,7 +37,7 @@ def check(catalog: ResourceCatalog) -> list[Finding]:
         alarms = alarm_cfg.get("alarms", []) or []
         passed = enabled and len(alarms) > 0
         if passed:
-            names = [a["name"] for a in alarms]
+            names = [a.get("name", "<unnamed>") for a in alarms if isinstance(a, dict)]
             desc = f"CloudWatch alarm monitoring is enabled: {names}."
         else:
             desc = (

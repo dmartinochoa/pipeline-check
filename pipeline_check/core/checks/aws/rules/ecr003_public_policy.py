@@ -5,6 +5,8 @@ import json
 
 from botocore.exceptions import ClientError
 
+from ..._context import statement_is_constrained
+from ..._iam_policy import iter_allow, public_principal
 from ...base import Finding, Severity
 from ...rule import Rule
 from .._catalog import ResourceCatalog
@@ -91,14 +93,14 @@ def check(catalog: ResourceCatalog) -> list[Finding]:
             ))
             continue
 
+        # A wildcard principal scoped by a narrowing Condition
+        # (aws:PrincipalOrgID, aws:SourceArn, ...) is the documented
+        # org-sharing idiom, not public access. iter_allow tolerates a
+        # single-dict Statement and non-dict junk; public_principal
+        # handles the list-form wildcard {"AWS": ["*"]}.
         public_statements = [
-            s for s in policy.get("Statement", [])
-            if s.get("Effect") == "Allow"
-            and (
-                s.get("Principal") == "*"
-                or s.get("Principal", {}).get("AWS") == "*"
-                or s.get("Principal", {}).get("Service") == "*"
-            )
+            s for s in iter_allow(policy)
+            if public_principal(s) and not statement_is_constrained(s)
         ]
         passed = not public_statements
         if passed:
