@@ -40,6 +40,32 @@ RULE = Rule(
         "the source of truth is whatever the git ref / filesystem / "
         "tarball URL served most recently."
     ),
+    exploit_example=(
+        "# Vulnerable: a build step installs a dependency straight\n"
+        "# from a git branch, bypassing the registry and lockfile.\n"
+        "steps:\n"
+        "  - name: python:3.12@sha256:abc123...\n"
+        "    entrypoint: bash\n"
+        "    args:\n"
+        "      - -c\n"
+        "      - pip install git+https://github.com/acme/helper.git\n"
+        "\n"
+        "# Attack: the install resolves the branch head at build\n"
+        "# time, so whoever can move that branch (a maintainer, a\n"
+        "# repo compromise, a typosquatted fork) controls the code\n"
+        "# that runs in the build with the build's service account\n"
+        "# and any mounted secrets. No registry signature or lockfile\n"
+        "# digest gates it.\n"
+        "\n"
+        "# Safe: pin the git dependency to an immutable commit (or\n"
+        "# publish it to Artifact Registry and install from there).\n"
+        "steps:\n"
+        "  - name: python:3.12@sha256:abc123...\n"
+        "    entrypoint: bash\n"
+        "    args:\n"
+        "      - -c\n"
+        "      - pip install git+https://github.com/acme/helper.git@<commit-sha>"
+    ),
 )
 
 
