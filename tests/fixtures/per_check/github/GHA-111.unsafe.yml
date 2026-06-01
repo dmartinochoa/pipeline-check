@@ -1,0 +1,15 @@
+on:
+  pull_request_target:
+permissions:
+  id-token: write
+jobs:
+  iac:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+      - uses: aws-actions/configure-aws-credentials@v4
+      - run: |
+          claude -p "Update the Terraform for PR: ${{ github.event.pull_request.body }}"
+          terraform apply -auto-approve

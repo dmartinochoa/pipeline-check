@@ -1,0 +1,17 @@
+on:
+  pull_request:
+jobs:
+  propose:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: claude -p "Draft Terraform for issue #${{ github.event.issue.number }}"
+      - uses: peter-evans/create-pull-request@v6
+  apply:
+    needs: propose
+    if: github.ref == 'refs/heads/main'
+    environment: production
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: terraform apply -auto-approve
