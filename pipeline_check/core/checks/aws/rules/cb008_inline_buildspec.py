@@ -58,21 +58,25 @@ RULE = Rule(
 def _is_inline(buildspec: str) -> bool:
     """Return True when *buildspec* is inline YAML rather than a repo path.
 
-    CodeBuild accepts three shapes:
-    - Empty / missing  -> buildspec.yml from the source root (safe)
-    - ``path/to/file`` -> relative path in the source repo (safe)
-    - Multi-line YAML  -> inline (unsafe)
-    - ``arn:aws:s3:::`` -> inline from S3 (unsafe, external to repo)
+    CodeBuild accepts these shapes:
+    - Empty / missing       -> buildspec.yml from the source root (safe)
+    - ``path/to/file``      -> relative path in the source repo (safe)
+    - Multi-line YAML       -> inline (unsafe)
+    - Single-line JSON       -> inline (unsafe); the shape the API/console
+      emits for an inline buildspec
+    - ``arn:aws:s3:::``     -> inline from S3 (unsafe, external to repo)
     """
     if not buildspec:
         return False
     text = buildspec.strip()
     if text.startswith(("arn:aws:s3:::", "s3://")):
         return True
-    # A single-line relative path never contains a newline, colon, or
-    # pipe. Anything multi-line or containing a YAML block marker is
-    # inline content.
-    if "\n" in text or text.startswith(("version:", "phases:", "|", ">")):
+    # A single-line relative path never contains a newline, a JSON brace,
+    # or a ``key: value`` pair. Anything multi-line, a JSON object, or a
+    # YAML block marker is inline content.
+    if "\n" in text or text.startswith(("version:", "phases:", "|", ">", "{")):
+        return True
+    if ": " in text:  # single-line "key: value" YAML
         return True
     return False
 

