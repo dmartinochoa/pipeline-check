@@ -1286,9 +1286,14 @@ shadowing hijack), DF-018 (a ``chown`` handing the runtime user
 ownership of a system path like ``/usr``), DF-022 (``npm install``
 resolving against the live registry instead of the committed lockfile),
 and DF-030 (``NODE_OPTIONS`` opening the V8 inspector or preloading a
-module on every ``node`` the image runs). IaC packs are more
-posture-heavy than CI, so a larger share of their MEDIUM rules stay
-None. Absence-of-hygiene posture rules (no SBOM / SLSA / signing /
+module on every ``node`` the image runs). The Terraform AWS pack then
+took a second tranche beyond the CI/CD five: PBAC-002 (a CodeBuild
+service role shared across projects, a blast-radius pivot), CCM-003 (a
+CodeCommit trigger firing to a literal cross-account SNS / Lambda ARN,
+repo-event exfil), and S3-005 (an artifact bucket with no
+``aws:SecureTransport`` deny, a plaintext-transport artifact MITM). IaC
+packs are more posture-heavy than CI, so a larger share of their MEDIUM
+rules stay None. Absence-of-hygiene posture rules (no SBOM / SLSA / signing /
 vulnerability scanning, encryption / logging / retention settings) keep
 no example by design, since the gap is a missing control rather than an
 exploitation primitive.
