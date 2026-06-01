@@ -47,6 +47,29 @@ RULE = Rule(
         "``devDependencies`` but still re-resolves and mutates the "
         "lockfile. Use ``npm ci --omit=dev`` instead.",
     ),
+    exploit_example=(
+        "# Vulnerable: the image build resolves dependencies\n"
+        "# against the live registry instead of the committed\n"
+        "# lockfile.\n"
+        "COPY package.json package-lock.json ./\n"
+        "RUN npm install\n"
+        "\n"
+        "# Attack: `npm install` re-resolves the `^` / `~` ranges\n"
+        "# in package.json at build time and rewrites\n"
+        "# package-lock.json to match, so the committed lockfile\n"
+        "# is advisory, not binding. A transitive dependency\n"
+        "# ships a fresh malicious patch release (the\n"
+        "# event-stream / Shai-Hulud shape); the next rebuild\n"
+        "# pulls it even though no reviewed change touched the\n"
+        "# repo, and bakes its install script into the image.\n"
+        "\n"
+        "# Safe: `npm ci` installs exactly the locked set and\n"
+        "# fails the build if package.json and the lockfile\n"
+        "# disagree. It never mutates the lockfile or reaches\n"
+        "# past it.\n"
+        "COPY package.json package-lock.json ./\n"
+        "RUN npm ci"
+    ),
 )
 
 

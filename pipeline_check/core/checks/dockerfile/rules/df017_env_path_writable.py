@@ -28,6 +28,24 @@ RULE = Rule(
         "any image where an exploit can reach the filesystem, "
         "this is a free privilege-escalation vector."
     ),
+    exploit_example=(
+        "# Vulnerable: a world-writable directory sits ahead of\n"
+        "# the system binaries on PATH.\n"
+        "ENV PATH=\"/tmp/bin:${PATH}\"\n"
+        "\n"
+        "# Attack: /tmp is writable by every user in the image\n"
+        "# and now resolves before /usr/bin, so a dropped file\n"
+        "# shadows the real tool. A runtime RCE writes\n"
+        "# /tmp/bin/apt-get (or psql, node, aws); the next bare\n"
+        "# `apt-get` call, a later build step, the entrypoint, an\n"
+        "# operator shelling in, runs the attacker's binary\n"
+        "# instead of the system one.\n"
+        "\n"
+        "# Safe: keep writable dirs off PATH, or pin them after\n"
+        "# the system bins so a real binary always shadows a\n"
+        "# dropped one.\n"
+        "ENV PATH=\"${PATH}:/tmp/bin\""
+    ),
 )
 
 _WRITABLE_PREFIXES: tuple[str, ...] = (

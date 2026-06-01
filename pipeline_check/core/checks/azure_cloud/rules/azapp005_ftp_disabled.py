@@ -22,6 +22,17 @@ RULE = Rule(
         "credentials unencrypted. FTPS (FTP over TLS) is acceptable "
         "but disabling FTP entirely is preferred."
     ),
+    exploit_example=(
+        "An App Service leaves its FTP state at 'AllAllowed', so the "
+        "deployment endpoint accepts plain FTP. The publishing "
+        "credentials and every file pushed travel unencrypted, so an "
+        "attacker on the network path (a shared or compromised network, "
+        "a hostile Wi-Fi hop, an on-path position near the CI runner) "
+        "captures the publish-profile credentials in cleartext, then "
+        "either deploys their own code to the app or reads the source "
+        "and config as it transits. Setting the state to 'FtpsOnly' or "
+        "'Disabled' removes the cleartext channel."
+    ),
 )
 
 _ACCEPTABLE_STATES = {"disabled", "ftpsonly"}

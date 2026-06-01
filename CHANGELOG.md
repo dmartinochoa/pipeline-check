@@ -10,6 +10,60 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 PRs landing on `dev` between releases append entries below. The
 release commit collapses this section into `## [X.Y.Z] - <date>`.
 
+## [1.7.1] - 2026-06-01
+
+### Changed
+
+- **Proof-of-exploit examples on three Azure cloud MEDIUM rules.** The
+  Azure parallel of the GCP exposure cherry-picks, again the only
+  cloud-posture rules with a concrete reachability primitive: AKV-003
+  (a Key Vault whose firewall default action is ``Allow``, so its
+  secrets are reachable from the public internet behind only an Azure
+  AD token), AZAPP-005 (an App Service still accepting plain FTP, which
+  leaks publish-profile credentials and file contents in cleartext),
+  and ACR-005 (a container registry without tag immutability, so a
+  pushed tag can be overwritten in place with a backdoored image) now
+  carry a prose ``exploit_example``.
+- **Proof-of-exploit examples on three GCP exposure MEDIUM rules.** The
+  backfill's first reach into the live cloud-posture providers, which
+  are posture-weighted, so only the rules with a concrete reachability
+  primitive get one: GCNET-001 (the default VPC's pre-populated
+  allow-SSH / RDP-from-0.0.0.0/0 firewall rules), GCCE-003 (the
+  interactive serial console, whose output leaks boot-time secrets to
+  any holder of ``compute.instances.getSerialPortOutput``), and GCCE-005
+  (an instance honoring project-wide SSH keys, so one
+  ``setCommonInstanceMetadata`` write is shell across the fleet) now
+  carry an ``exploit_example`` (prose, since the cloud-posture rules
+  scan live API state rather than a config file).
+- **Proof-of-exploit examples on three CloudFormation AWS MEDIUM
+  rules.** The CFN-template counterparts of the Terraform second tranche
+  (same shared AWS model): PBAC-002 (a CodeBuild ``ServiceRole`` shared
+  across projects), CCM-003 (a CodeCommit ``Triggers[*].DestinationArn``
+  that is a literal cross-account SNS / Lambda ARN), and S3-005 (an
+  artifact bucket with no ``aws:SecureTransport`` deny) now carry an
+  ``exploit_example``.
+- **Proof-of-exploit examples on three Terraform AWS MEDIUM rules.** A
+  second tranche of the Terraform AWS pack beyond the CI/CD five: the
+  rules there with a concrete primitive rather than encryption /
+  logging posture. PBAC-002 (a CodeBuild ``service_role`` shared across
+  projects, so a build compromise in one inherits the others'
+  permissions), CCM-003 (an ``aws_codecommit_trigger`` whose
+  ``destination_arn`` is a literal cross-account SNS / Lambda ARN,
+  leaking repository events outside the account), and S3-005 (an
+  artifact bucket with no ``aws:SecureTransport`` deny, so a plaintext
+  fetch can be read or swapped on-path) now carry an ``exploit_example``.
+- **Proof-of-exploit examples on five Dockerfile MEDIUM rules.** A clean
+  pack to continue the backfill: every remaining MEDIUM rule in the
+  Dockerfile provider carries a concrete primitive rather than posture.
+  DF-015 (``chmod 777`` makes an executables directory world-writable,
+  so a non-root process overwrites a trusted binary), DF-017 (a
+  world-writable ``PATH`` entry ahead of the system bins, a shadowing
+  PATH hijack), DF-018 (a ``chown`` of a system path hands the runtime
+  user ownership of ``/usr``), DF-022 (``npm install`` resolves against
+  the live registry instead of the committed lockfile), and DF-030
+  (``NODE_OPTIONS`` opens the V8 inspector or preloads a module on every
+  ``node`` the image runs) now carry an ``exploit_example``.
+
 ### Fixed
 
 - **Docker image publish unblocked.** The `docker-publish` workflow's

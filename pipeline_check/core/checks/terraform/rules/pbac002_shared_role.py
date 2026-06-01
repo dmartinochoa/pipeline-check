@@ -26,6 +26,37 @@ RULE = Rule(
         "compromise in any one of them inherits the others' "
         "permissions wholesale."
     ),
+    exploit_example=(
+        "# Vulnerable: two CodeBuild projects share one service role.\n"
+        "resource \"aws_codebuild_project\" \"api\" {\n"
+        "  name         = \"api\"\n"
+        "  service_role = aws_iam_role.shared.arn\n"
+        "}\n"
+        "\n"
+        "resource \"aws_codebuild_project\" \"infra\" {\n"
+        "  name         = \"infra\"\n"
+        "  service_role = aws_iam_role.shared.arn\n"
+        "}\n"
+        "\n"
+        "# Attack: the shared role is the union of what every project\n"
+        "# needs (api's S3 + secrets, infra's deploy permissions). A\n"
+        "# build compromise in `api` (a malicious dependency, an\n"
+        "# injected buildspec command) assumes the shared role and now\n"
+        "# wields infra's deploy permissions too, so a low-value project\n"
+        "# becomes the pivot into the high-value one.\n"
+        "\n"
+        "# Safe: one least-privilege role per project caps the blast\n"
+        "# radius to that project's own resources.\n"
+        "resource \"aws_codebuild_project\" \"api\" {\n"
+        "  name         = \"api\"\n"
+        "  service_role = aws_iam_role.api.arn\n"
+        "}\n"
+        "\n"
+        "resource \"aws_codebuild_project\" \"infra\" {\n"
+        "  name         = \"infra\"\n"
+        "  service_role = aws_iam_role.infra.arn\n"
+        "}"
+    ),
 )
 
 

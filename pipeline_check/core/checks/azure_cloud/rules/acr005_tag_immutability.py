@@ -23,6 +23,18 @@ RULE = Rule(
         "image. Consumers pulling by tag receive the new, "
         "potentially malicious, content."
     ),
+    exploit_example=(
+        "A container registry does not enforce tag immutability, so an "
+        "existing tag like myapp:1.4.2 can be overwritten in place. An "
+        "attacker who gains push access (a leaked registry credential, "
+        "a compromised CI job holding AcrPush) re-pushes a backdoored "
+        "image under the same tag the production deployment already "
+        "references. Every node that pulls myapp:1.4.2 from then on (an "
+        "autoscale event, a node replacement, a rollout) fetches the "
+        "attacker's image even though no manifest, pipeline, or tag "
+        "reference changed. Immutable tags make the overwrite fail, "
+        "forcing a new tag and a visible change instead."
+    ),
 )
 
 
