@@ -12,6 +12,17 @@ release commit collapses this section into `## [X.Y.Z] - <date>`.
 
 ### Changed
 
+- **Proof-of-exploit examples on three GCP exposure MEDIUM rules.** The
+  backfill's first reach into the live cloud-posture providers, which
+  are posture-weighted, so only the rules with a concrete reachability
+  primitive get one: GCNET-001 (the default VPC's pre-populated
+  allow-SSH / RDP-from-0.0.0.0/0 firewall rules), GCCE-003 (the
+  interactive serial console, whose output leaks boot-time secrets to
+  any holder of ``compute.instances.getSerialPortOutput``), and GCCE-005
+  (an instance honoring project-wide SSH keys, so one
+  ``setCommonInstanceMetadata`` write is shell across the fleet) now
+  carry an ``exploit_example`` (prose, since the cloud-posture rules
+  scan live API state rather than a config file).
 - **Proof-of-exploit examples on three CloudFormation AWS MEDIUM
   rules.** The CFN-template counterparts of the Terraform second tranche
   (same shared AWS model): PBAC-002 (a CodeBuild ``ServiceRole`` shared

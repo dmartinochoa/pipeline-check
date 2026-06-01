@@ -1297,7 +1297,15 @@ S3-005) in CFN-template form. IaC packs are more posture-heavy than CI,
 so a larger share of their MEDIUM rules stay None. Absence-of-hygiene posture rules (no SBOM / SLSA / signing /
 vulnerability scanning, encryption / logging / retention settings) keep
 no example by design, since the gap is a missing control rather than an
-exploitation primitive.
+exploitation primitive. The backfill then reached the live cloud-posture
+providers, which are even more posture-weighted; the cherry-picked GCP
+exposure rules are GCNET-001 (the default VPC's pre-populated
+allow-SSH / RDP-from-anywhere firewall), GCCE-003 (the readable serial
+console leaking boot-time secrets), and GCCE-005 (an instance honoring
+project-wide SSH keys, a one-metadata-write path to shell on the fleet).
+The remaining cloud-posture MEDIUM rules (encryption, rotation, logging,
+backups, hardening toggles) stay None by design, so this backfill is now
+into its opportunistic long tail.
 
 ### Lower priority
 

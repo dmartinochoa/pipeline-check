@@ -23,6 +23,16 @@ RULE = Rule(
         "project metadata can inject an SSH key and access all "
         "instances that accept project keys."
     ),
+    exploit_example=(
+        "A Compute Engine instance leaves block-project-ssh-keys "
+        "unset, so it honors every SSH key published in project "
+        "metadata. An attacker who lands a credential carrying "
+        "compute.projects.setCommonInstanceMetadata injects their own "
+        "public key once at the project level and immediately gains "
+        "SSH on this instance, and on every other instance in the "
+        "project that has not opted out, turning a single "
+        "metadata-write permission into shell across the fleet."
+    ),
 )
 
 
