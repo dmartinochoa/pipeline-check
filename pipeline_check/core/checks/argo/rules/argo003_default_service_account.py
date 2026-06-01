@@ -32,6 +32,38 @@ RULE = Rule(
         "them. An explicit ``serviceAccountName: default`` is "
         "treated the same as omission."
     ),
+    exploit_example=(
+        "# Vulnerable: a Workflow with no serviceAccountName, so it\n"
+        "# runs as the namespace `default` ServiceAccount.\n"
+        "apiVersion: argoproj.io/v1alpha1\n"
+        "kind: Workflow\n"
+        "metadata: { name: ci }\n"
+        "spec:\n"
+        "  entrypoint: build\n"
+        "  templates:\n"
+        "    - name: build\n"
+        "      container:\n"
+        "        image: ci-tools@sha256:abc123...\n"
+        "        command: [./build.sh]\n"
+        "\n"
+        "# Attack: with no serviceAccountName the workflow pod mounts\n"
+        "# the `default` SA's token. `default` accretes RoleBindings\n"
+        "# over a cluster's life (an operator quickstart, a Helm chart\n"
+        "# that bound it cluster-wide). A compromised build step reads\n"
+        "# the mounted token and calls the Kubernetes API with whatever\n"
+        "# `default` was ever granted, far more than a CI workflow\n"
+        "# should hold.\n"
+        "\n"
+        "# Safe: bind a dedicated least-privilege ServiceAccount.\n"
+        "spec:\n"
+        "  entrypoint: build\n"
+        "  serviceAccountName: ci-workflow-sa\n"
+        "  templates:\n"
+        "    - name: build\n"
+        "      container:\n"
+        "        image: ci-tools@sha256:abc123...\n"
+        "        command: [./build.sh]"
+    ),
 )
 
 

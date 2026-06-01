@@ -1311,7 +1311,13 @@ cleartext), and ACR-005 (a container registry without tag immutability,
 so a pushed tag can be overwritten with a backdoored image). The
 remaining cloud-posture MEDIUM rules (encryption, rotation, logging,
 backups, hardening toggles) stay None by design, so this backfill is now
-into its opportunistic long tail.
+into its opportunistic long tail. A follow-up pass then caught two
+CI-style providers the original CI sweep skipped: Argo Workflows now
+ships ARGO-003 (default ServiceAccount), ARGO-013 (SA-token automount not
+opted out), and ARGO-014 (a template script's unpinned package install),
+the same primitives as the Kubernetes and Tekton packs. Cloud Build's
+GCB-013 (git / path / tarball install) and GCB-016 (a step ``dir`` with a
+``..`` escape) are the analogous remaining picks.
 
 ### Lower priority
 
