@@ -27,6 +27,36 @@ RULE = Rule(
         "When two or more projects point at the same role, a build "
         "compromise in any one inherits the others' permissions."
     ),
+    exploit_example=(
+        "# Vulnerable: two CodeBuild projects share one ServiceRole.\n"
+        "Resources:\n"
+        "  ApiProject:\n"
+        "    Type: AWS::CodeBuild::Project\n"
+        "    Properties:\n"
+        "      Name: api\n"
+        "      ServiceRole: !Ref SharedRole\n"
+        "  InfraProject:\n"
+        "    Type: AWS::CodeBuild::Project\n"
+        "    Properties:\n"
+        "      Name: infra\n"
+        "      ServiceRole: !Ref SharedRole\n"
+        "\n"
+        "# Attack: the shared role is the union of what every project\n"
+        "# needs (api's S3 + secrets, infra's deploy permissions). A\n"
+        "# build compromise in ApiProject (a malicious dependency, an\n"
+        "# injected buildspec command) assumes the shared role and now\n"
+        "# wields infra's deploy permissions too, so a low-value project\n"
+        "# becomes the pivot into the high-value one.\n"
+        "\n"
+        "# Safe: one least-privilege role per project caps the blast\n"
+        "# radius to that project's own resources.\n"
+        "  ApiProject:\n"
+        "    Properties:\n"
+        "      ServiceRole: !Ref ApiRole\n"
+        "  InfraProject:\n"
+        "    Properties:\n"
+        "      ServiceRole: !Ref InfraRole"
+    ),
 )
 
 

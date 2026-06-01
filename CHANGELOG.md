@@ -12,6 +12,13 @@ release commit collapses this section into `## [X.Y.Z] - <date>`.
 
 ### Changed
 
+- **Proof-of-exploit examples on three CloudFormation AWS MEDIUM
+  rules.** The CFN-template counterparts of the Terraform second tranche
+  (same shared AWS model): PBAC-002 (a CodeBuild ``ServiceRole`` shared
+  across projects), CCM-003 (a CodeCommit ``Triggers[*].DestinationArn``
+  that is a literal cross-account SNS / Lambda ARN), and S3-005 (an
+  artifact bucket with no ``aws:SecureTransport`` deny) now carry an
+  ``exploit_example``.
 - **Proof-of-exploit examples on three Terraform AWS MEDIUM rules.** A
   second tranche of the Terraform AWS pack beyond the CI/CD five: the
   rules there with a concrete primitive rather than encryption /
