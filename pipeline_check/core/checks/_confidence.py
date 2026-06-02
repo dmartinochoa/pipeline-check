@@ -84,6 +84,10 @@ _MEDIUM: frozenset[str] = frozenset({
     # default heuristic is main/master only, so a project whose default
     # branch is named otherwise (develop, trunk) over-flags.
     "NPM-017",
+    # PYPI-021, the PyPI / PEP 740 analog of NPM-017. Same trusted-
+    # default heuristic (main/master only), so a project whose default
+    # branch is named otherwise over-flags.
+    "PYPI-021",
 })
 
 # ── LOW: blob-search heuristics; meaningful FP rate expected ─────────

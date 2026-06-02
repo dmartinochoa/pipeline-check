@@ -25,6 +25,7 @@ from ..checks.pypi.registry_fetcher import (
     HttpRegistryFetcher,
     default_cache_dir,
     fetch_provenance,
+    fetch_provenance_refs,
     fetch_publish_times,
     fetch_repo_slugs,
 )
@@ -146,6 +147,12 @@ class PypiProvider(BaseProvider):
             )
             context.provenance = provenance
             context.warnings.extend(prov_warnings)
+
+            prov_refs, prov_ref_warnings = fetch_provenance_refs(
+                dep_names, fetcher, cache=cache,
+            )
+            context.provenance_ref = prov_refs
+            context.warnings.extend(prov_ref_warnings)
 
             slugs, slug_warnings = fetch_repo_slugs(
                 dep_names, fetcher, cache=cache,

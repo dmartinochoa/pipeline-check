@@ -650,6 +650,7 @@ STANDARD = Standard(
         "PYPI-018": ["SR-3", "SR-11", "SC-8"],  # --no-binary forces sdist build
         "PYPI-019": ["SR-3", "SR-11", "RA-5"],  # missing PEP 740 build provenance
         "PYPI-020": ["SR-3", "SR-11", "RA-5"],  # low OpenSSF Scorecard upstream
+        "PYPI-021": ["SR-3", "SR-11", "RA-5"],  # provenance built from a non-release ref
         "PYPI-004": ["SR-3", "SR-11", "SI-2"],           # VCS dep without commit SHA
         "PYPI-015": ["SR-3", "SR-11", "SI-2"],  # direct artifact URL
         "PYPI-005": ["SR-3", "SR-11"],                   # --extra-index-url (dep confusion)
