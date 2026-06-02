@@ -126,30 +126,49 @@ def _env_values(block: Any) -> list[str]:
     return out
 
 
+def _hit(text: Any) -> bool:
+    return isinstance(text, str) and bool(_TOJSON_SECRETS_RE.search(text))
+
+
 def check(path: str, doc: dict[str, Any]) -> Finding:
     offenders: list[str] = []
+    anchor_jobs: set[str] = set()
 
-    def _scan(text: Any, where: str) -> None:
-        if isinstance(text, str) and _TOJSON_SECRETS_RE.search(text):
-            offenders.append(where)
+    # Workflow-level env: propagates the serialized secrets into every
+    # job's environment, so it anchors to all jobs (filled in below).
+    workflow_dump = any(_hit(v) for v in _env_values(doc.get("env")))
+    if workflow_dump:
+        offenders.append("<workflow env>")
 
-    # Workflow-level env.
-    for val in _env_values(doc.get("env")):
-        _scan(val, "<workflow env>")
-
+    job_ids: list[str] = []
     for job_id, job in iter_jobs(doc):
         if not isinstance(job, dict):
             continue
+        job_ids.append(job_id)
+        job_hit = False
         for val in _env_values(job.get("env")):
-            _scan(val, f"{job_id} (job env)")
+            if _hit(val):
+                offenders.append(f"{job_id} (job env)")
+                job_hit = True
         for idx, step in enumerate(iter_steps(job)):
             if not isinstance(step, dict):
                 continue
-            _scan(step.get("run"), f"{job_id}[{idx}] run")
+            if _hit(step.get("run")):
+                offenders.append(f"{job_id}[{idx}] run")
+                job_hit = True
             for val in _env_values(step.get("env")):
-                _scan(val, f"{job_id}[{idx}] env")
+                if _hit(val):
+                    offenders.append(f"{job_id}[{idx}] env")
+                    job_hit = True
             for val in _env_values(step.get("with")):
-                _scan(val, f"{job_id}[{idx}] with")
+                if _hit(val):
+                    offenders.append(f"{job_id}[{idx}] with")
+                    job_hit = True
+        if job_hit:
+            anchor_jobs.add(job_id)
+
+    if workflow_dump:
+        anchor_jobs.update(job_ids)
 
     passed = not offenders
     desc = (
@@ -165,4 +184,5 @@ def check(path: str, doc: dict[str, Any]) -> Finding:
         check_id=RULE.id, title=RULE.title, severity=RULE.severity,
         resource=path, description=desc,
         recommendation=RULE.recommendation, passed=passed,
+        job_anchors=tuple(sorted(anchor_jobs)),
     )

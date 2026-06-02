@@ -189,7 +189,7 @@ class TestEngine:
             "AC-021", "AC-022", "AC-023", "AC-024",
             "AC-025", "AC-026", "AC-027", "AC-028", "AC-029",
             "AC-030", "AC-031", "AC-032", "AC-033", "AC-034",
-            "AC-035", "AC-036", "AC-037", "AC-038",
+            "AC-035", "AC-036", "AC-037", "AC-038", "AC-039",
             "XPC-001", "XPC-002", "XPC-003", "XPC-004", "XPC-005",
             "XPC-006", "XPC-007", "XPC-008", "XPC-009", "XPC-010",
             "CXPC-001", "CXPC-002", "CXPC-003", "CXPC-004",
@@ -3537,5 +3537,65 @@ class TestChainAC038:
         out = self._ac038([
             _f("GHA-113", self.WF, job_anchors=("release",)),
             _f("GHA-114", self.WF, job_anchors=("release",), passed=True),
+        ])
+        assert out == []
+
+
+class TestAC039UntrustedTriggerBulkSecrets:
+    """AC-039: untrusted trigger (GHA-002/009/013) reaches a
+    bulk-secrets serialization (GHA-116) in the same workflow."""
+
+    WF = ".github/workflows/pr.yml"
+
+    def _ac039(self, findings):
+        return [c for c in chains_pkg.evaluate(findings) if c.chain_id == "AC-039"]
+
+    def test_fires_on_trigger_plus_dump(self):
+        out = self._ac039([
+            _f("GHA-002", self.WF),
+            _f("GHA-116", self.WF),
+        ])
+        assert len(out) == 1
+        assert out[0].severity is Severity.CRITICAL
+        assert "GHA-002" in out[0].triggering_check_ids
+        assert "GHA-116" in out[0].triggering_check_ids
+
+    def test_confirmed_reachable_when_same_job(self):
+        out = self._ac039([
+            _f("GHA-013", self.WF, job_anchors=("build",)),
+            _f("GHA-116", self.WF, job_anchors=("build",)),
+        ])
+        assert len(out) == 1
+        assert out[0].confirmed_reachable is True
+        assert out[0].confidence is Confidence.HIGH
+        assert "build" in out[0].reachability_note
+
+    def test_unconfirmed_when_different_jobs(self):
+        out = self._ac039([
+            _f("GHA-002", self.WF, job_anchors=("checkout",)),
+            _f("GHA-116", self.WF, job_anchors=("dump",)),
+        ])
+        assert len(out) == 1
+        assert out[0].confirmed_reachable is False
+
+    def test_does_not_fire_without_dump_leg(self):
+        out = self._ac039([_f("GHA-002", self.WF)])
+        assert out == []
+
+    def test_does_not_fire_without_trigger_leg(self):
+        out = self._ac039([_f("GHA-116", self.WF)])
+        assert out == []
+
+    def test_does_not_fire_on_different_workflows(self):
+        out = self._ac039([
+            _f("GHA-002", ".github/workflows/a.yml"),
+            _f("GHA-116", ".github/workflows/b.yml"),
+        ])
+        assert out == []
+
+    def test_passed_finding_does_not_chain(self):
+        out = self._ac039([
+            _f("GHA-002", self.WF),
+            _f("GHA-116", self.WF, passed=True),
         ])
         assert out == []

@@ -108,6 +108,25 @@ class TestGHA116BulkSecretsSerialization:
         )
         assert f.passed is True
 
+    def test_emits_job_anchors_for_dump_job(self):
+        # The job containing the dump is anchored, so AC-039 can confirm
+        # reachability against an untrusted-trigger leg.
+        f = run_check(
+            """
+            on: push
+            jobs:
+              leak:
+                runs-on: ubuntu-latest
+                steps:
+                  - env:
+                      ALL: ${{ toJSON(secrets) }}
+                    run: echo "$ALL"
+            """,
+            "GHA-116",
+        )
+        assert f.passed is False
+        assert "leak" in f.job_anchors
+
     def test_passes_when_no_secrets(self):
         f = run_check(
             """
