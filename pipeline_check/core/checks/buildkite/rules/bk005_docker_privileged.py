@@ -44,10 +44,13 @@ RULE = Rule(
         "Docker socket to the build script."
     ),
     docs_note=(
-        "Detection fires on ``--privileged``, ``--cap-add=SYS_ADMIN``, "
-        "``--pid=host`` / ``--ipc=host`` / ``--userns=host``, and "
-        "explicit mounts of the host Docker socket "
-        "(``/var/run/docker.sock``)."
+        "Detection fires in two places. In step command strings: "
+        "``--privileged``, ``--cap-add=SYS_ADMIN``, ``--pid=host`` / "
+        "``--ipc=host`` / ``--userns=host``, and explicit mounts of the "
+        "host Docker socket (``/var/run/docker.sock``). In the ``docker`` "
+        "/ ``docker-compose`` Buildkite plugin config: ``privileged: "
+        "true`` or a ``/var/run/docker.sock`` entry in the plugin's "
+        "``volumes`` (the config form of the same escalation)."
     ),
     exploit_example=(
         "# Vulnerable: ``--privileged`` plus the host Docker socket\n"

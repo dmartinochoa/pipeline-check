@@ -45,9 +45,9 @@ RULE = Rule(
         "registry."
     ),
     docs_note=(
-        "Walks step args / entrypoint / cmd looking for ``docker "
-        "push`` (or the ``buildx imagetools push`` variant) "
-        "invocations. When the build has at least one such step "
+        "Walks each step's ``name`` (builder image) and ``args`` "
+        "looking for ``docker push`` (or the ``buildx imagetools "
+        "push`` variant) invocations. When the build has at least one such step "
         "but the top-level ``images:`` field is missing or "
         "empty, fires. Steps that build *and* push via the "
         "``gcr.io/cloud-builders/docker`` builder image are the "

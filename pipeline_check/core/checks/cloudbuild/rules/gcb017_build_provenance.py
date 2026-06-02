@@ -29,7 +29,7 @@ RULE = Rule(
         "verify option is the documented way to opt in. The check "
         "is silent when the build does not produce an image (no "
         "top-level ``images:`` and no ``docker push`` / "
-        "``gcloud run deploy`` style steps); for those, signing "
+        "``docker build`` style steps); for those, signing "
         "and provenance aren't applicable."
     ),
 )

@@ -160,6 +160,22 @@ release commit collapses this section into `## [X.Y.Z] - <date>`.
 
 ### Fixed
 
+- **Rule audit: ``docs_note`` accuracy drift in four rules.** A
+  follow-up pass reconciled each rule's ``docs_note`` prose with what
+  its detector actually inspects. ARGO-010 now lists the real SBOM-token
+  catalog (``anchore/sbom-action`` and ``spdx-sbom-generator`` instead of
+  the never-present ``spdx-tools``). GCB-017 drops the ``gcloud run
+  deploy`` example from its image-production note (``_produces_image``
+  only recognizes ``docker push`` / ``docker build`` steps and top-level
+  ``images:``). GCB-024 now says it walks each step's ``name`` + ``args``
+  (not ``entrypoint`` / ``cmd``, which it never read). BK-005 documents
+  the ``docker`` / ``docker-compose`` plugin-config form (``privileged:
+  true`` / a ``/var/run/docker.sock`` volume) its detector already flags
+  alongside command strings. Prose-only: no detection, count, or
+  standards-mapping change; provider docs regenerated. (ARGO-009,
+  GCB-008, and GCB-023 were flagged by the same audit but their gaps had
+  already been closed by the earlier false-negative fixes, so no change
+  was needed.)
 - **Rule audit: unparseable GitHub Actions ``exploit_example`` snippets.**
   A parse scan of the github pack (never covered by the original audit)
   found seven rules whose documented exploit example contained YAML no
