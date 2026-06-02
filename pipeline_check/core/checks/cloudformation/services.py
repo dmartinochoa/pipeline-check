@@ -354,6 +354,43 @@ def _lambda(ctx: CloudFormationContext) -> list[Finding]:
                 passed=auth == "AWS_IAM",
             ))
 
+    # Second pass: AWS::Lambda::Url resources whose TargetFunctionArn is a
+    # literal cross-stack ARN (no local function to match) are missed by the
+    # fn-loop above. Emit LMB-002 directly from the Url resource for any Url
+    # that was not already matched by a local function.
+    matched_url_addresses: set[str] = set()
+    # Collect addresses of Url resources that ARE already covered above.
+    for fn in ctx.resources("AWS::Lambda::Function"):
+        url_props = url_by_fn_logical.get(fn.logical_id)
+        if url_props is None:
+            fn_name = as_str(fn.properties.get("FunctionName"))
+            if fn_name:
+                url_props = url_by_fn_name.get(fn_name)
+        if url_props is not None:
+            # Record this url's address so we skip it below.
+            for u in ctx.resources("AWS::Lambda::Url"):
+                if u.properties is url_props:
+                    matched_url_addresses.add(u.address)
+
+    for u in ctx.resources("AWS::Lambda::Url"):
+        if u.address in matched_url_addresses:
+            continue
+        # This Url targets a function that is not defined in the template
+        # (e.g. a literal cross-stack ARN). Evaluate AuthType directly.
+        auth = as_str(u.properties.get("AuthType"))
+        out.append(Finding(
+            check_id="LMB-002",
+            title="Lambda function URL has AuthType=NONE",
+            severity=Severity.HIGH,
+            resource=u.address,
+            description=(
+                f"AuthType: {auth}." if auth == "AWS_IAM"
+                else f"AuthType: {auth or 'NONE'}; URL is public."
+            ),
+            recommendation='Set AuthType: "AWS_IAM" and grant invoke via IAM.',
+            passed=auth == "AWS_IAM",
+        ))
+
     for p in ctx.resources("AWS::Lambda::Permission"):
         principal = as_str(p.properties.get("Principal"))
         scoped = bool(p.properties.get("SourceArn")) or bool(p.properties.get("SourceAccount"))

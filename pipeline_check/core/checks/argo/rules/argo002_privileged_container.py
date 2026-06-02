@@ -28,8 +28,13 @@ RULE = Rule(
         "Detection fires on ``securityContext.privileged: true``, "
         "``runAsUser: 0``, ``runAsNonRoot: false``, "
         "``allowPrivilegeEscalation: true``, or no ``securityContext`` "
-        "block at all. Also walks ``spec.podSpecPatch`` (raw YAML) "
-        "for an explicit ``privileged: true`` token."
+        "block at all. Walks ``spec.templates[].container``, "
+        "``spec.templates[].script``, "
+        "``spec.templates[].containerSet.containers[]``, "
+        "``spec.templates[].initContainers[]``, and "
+        "``spec.templates[].sidecars[]``. Also walks "
+        "``spec.podSpecPatch`` (raw YAML) for an explicit "
+        "``privileged: true`` token."
     ),
     exploit_example=(
         "# Vulnerable: ``privileged: true`` gives the container full\n"

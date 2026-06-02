@@ -25,8 +25,10 @@ RULE = Rule(
     ),
     docs_note=(
         "Walks ``spec.templates[].container``, "
-        "``spec.templates[].script``, and "
-        "``spec.templates[].containerSet.containers[]``. The image "
+        "``spec.templates[].script``, "
+        "``spec.templates[].containerSet.containers[]``, "
+        "``spec.templates[].initContainers[]``, and "
+        "``spec.templates[].sidecars[]``. The image "
         "must contain ``@sha256:`` followed by a 64-char hex digest."
     ),
     exploit_example=(

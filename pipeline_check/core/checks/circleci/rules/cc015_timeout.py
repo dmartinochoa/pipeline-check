@@ -3,7 +3,7 @@ from __future__ import annotations
 
 from typing import Any
 
-from ...base import Finding, Severity, blob_lower
+from ...base import Finding, Severity
 from ...rule import Rule
 from ..base import iter_jobs, iter_steps
 
@@ -37,8 +37,7 @@ def _has_timeout(doc: dict[str, Any]) -> bool:
                 run = step.get("run")
                 if isinstance(run, dict) and "no_output_timeout" in run:
                     return True
-    # Fallback: check blob for the token (covers anchors, orb params, etc.)
-    return "no_output_timeout" in blob_lower(doc)
+    return False
 
 
 def check(path: str, doc: dict[str, Any]) -> Finding:

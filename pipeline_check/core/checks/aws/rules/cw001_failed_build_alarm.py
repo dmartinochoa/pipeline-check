@@ -29,6 +29,30 @@ RULE = Rule(
 )
 
 
+def _alarm_covers_failed_builds(alarm: dict) -> bool:
+    """Return True when *alarm* monitors the AWS/CodeBuild FailedBuilds metric.
+
+    A standard metric alarm carries top-level ``Namespace`` and ``MetricName``
+    fields. A metric-math alarm instead carries a ``Metrics`` list where each
+    entry may have a ``MetricStat.Metric`` sub-object. Check both shapes.
+    """
+    if (
+        alarm.get("Namespace") == "AWS/CodeBuild"
+        and alarm.get("MetricName") == "FailedBuilds"
+    ):
+        return True
+    # Metric-math alarms: scan the Metrics list for a MetricStat entry.
+    for entry in alarm.get("Metrics") or []:
+        metric_stat = entry.get("MetricStat") or {}
+        metric = metric_stat.get("Metric") or {}
+        if (
+            metric.get("Namespace") == "AWS/CodeBuild"
+            and metric.get("MetricName") == "FailedBuilds"
+        ):
+            return True
+    return False
+
+
 def check(catalog: ResourceCatalog) -> list[Finding]:
     # No CodeBuild projects in this account/region — the alarm is irrelevant.
     # The CFN/Terraform mirrors apply the same suppression so behavior is
@@ -44,10 +68,7 @@ def check(catalog: ResourceCatalog) -> list[Finding]:
     except ClientError:
         return []
     alarms = resp.get("MetricAlarms", [])
-    covered = any(
-        a.get("Namespace") == "AWS/CodeBuild" and a.get("MetricName") == "FailedBuilds"
-        for a in alarms
-    )
+    covered = any(_alarm_covers_failed_builds(a) for a in alarms)
     return [Finding(
         check_id=RULE.id, title=RULE.title, severity=RULE.severity,
         resource="cloudwatch",

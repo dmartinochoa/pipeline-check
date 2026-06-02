@@ -19,11 +19,16 @@ from ..base import iter_workflow_jobs
 #: workflow-binding layer. Detection signal is intentionally name-
 #: based, every common AWS / Azure / GCP CircleCI orb uses one of
 #: these conventions and the parameter shape is stable.
+#: Both hyphenated and underscore forms are listed; orbs accept either.
 _OIDC_ROLE_PARAMS = (
     "role-arn",
+    "role_arn",
     "aws-role-arn",
+    "aws_role_arn",
     "oidc-role-arn",
+    "oidc_role_arn",
     "aws-oidc-role-arn",
+    "aws_oidc_role_arn",
 )
 
 

@@ -186,12 +186,15 @@ class TestAzvm003:
         assert findings[0].passed is False
         assert findings[0].check_id == "AZVM-003"
 
-    def test_security_profile_passes(self, make_catalog):
+    def test_security_profile_alone_fails(self, make_catalog):
+        # security_profile reflects Trusted Launch / Secure Boot / vTPM,
+        # not JIT access. A Gen2 VM with only security_profile set must
+        # still fire if no jit tag is present.
         vm = _vm(security_profile=MagicMock())
         catalog = make_catalog(**{"compute:vms": [vm]})
         findings = azvm003.check(catalog)
         assert len(findings) == 1
-        assert findings[0].passed is True
+        assert findings[0].passed is False
 
     def test_jit_tag_passes(self, make_catalog):
         vm = _vm(tags={"jit-enabled": "true"})

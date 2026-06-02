@@ -5,6 +5,7 @@ from typing import Any
 
 from ...base import Finding, Severity
 from ...rule import Rule
+from ..base import iter_steps
 
 RULE = Rule(
     id="BB-020",
@@ -24,18 +25,31 @@ RULE = Rule(
         "By default Bitbucket Pipelines clone with `depth: 50`. "
         "Setting `depth: full` exposes the entire commit history, "
         "including any secrets that were committed and later removed. "
-        "This check flags explicit `clone: depth: full` settings."
+        "This check flags explicit `clone: depth: full` settings at the "
+        "top level or inside individual steps."
     ),
 )
 
 
+def _is_full_depth(clone: object) -> bool:
+    """Return True when a clone block has depth: full (case-insensitive)."""
+    if not isinstance(clone, dict):
+        return False
+    depth = clone.get("depth")
+    return isinstance(depth, str) and depth.lower() == "full"
+
+
 def check(path: str, doc: dict[str, Any]) -> Finding:
-    clone = doc.get("clone")
-    full_clone = False
-    if isinstance(clone, dict):
-        depth = clone.get("depth")
-        if depth == "full" or (isinstance(depth, str) and depth.lower() == "full"):
-            full_clone = True
+    # Check top-level clone block.
+    full_clone = _is_full_depth(doc.get("clone"))
+
+    # Also check step-level clone overrides.
+    if not full_clone:
+        for _loc, step in iter_steps(doc):
+            if _is_full_depth(step.get("clone")):
+                full_clone = True
+                break
+
     passed = not full_clone
     desc = (
         "Pipeline does not use full clone depth."

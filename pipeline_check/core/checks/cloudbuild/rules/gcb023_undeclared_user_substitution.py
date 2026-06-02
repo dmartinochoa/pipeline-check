@@ -85,6 +85,30 @@ def _referenced_user_subs(text: str) -> set[str]:
     return {m.group("name") for m in _USER_SUB_RE.finditer(text)}
 
 
+def _step_strings_extended(step: dict[str, Any]) -> list[str]:
+    """Return all string-valued fields from a step relevant to GCB-023.
+
+    Extends the shared ``step_strings()`` helper (entrypoint/args/env/
+    secretEnv) with the three fields that also accept user substitutions
+    but are intentionally excluded from the shared helper to avoid
+    false positives in other rules: ``dir``, ``id``, and the string
+    entries of ``waitFor``.
+    """
+    out = step_strings(step)
+    d = step.get("dir")
+    if isinstance(d, str):
+        out.append(d)
+    sid = step.get("id")
+    if isinstance(sid, str):
+        out.append(sid)
+    wait = step.get("waitFor")
+    if isinstance(wait, list):
+        for entry in wait:
+            if isinstance(entry, str):
+                out.append(entry)
+    return out
+
+
 def check(path: str, doc: dict[str, Any]) -> Finding:
     declared = _declared_user_subs(doc) | _BUILTIN_USER_SHAPED
     offenders: list[str] = []
@@ -92,7 +116,7 @@ def check(path: str, doc: dict[str, Any]) -> Finding:
     seen_per_step: set[tuple[str, str]] = set()
     for idx, step in iter_steps(doc):
         name = step_name(step, idx)
-        for blob in step_strings(step):
+        for blob in _step_strings_extended(step):
             for ref in _referenced_user_subs(blob):
                 if ref in declared:
                     continue

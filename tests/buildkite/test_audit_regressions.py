@@ -7,6 +7,9 @@ from pipeline_check.core.checks.buildkite.rules import (
     bk005_docker_privileged as bk005,
 )
 from pipeline_check.core.checks.buildkite.rules import (
+    bk009_signing as bk009,
+)
+from pipeline_check.core.checks.buildkite.rules import (
     bk013_deploy_branch_filter as bk013,
 )
 from pipeline_check.core.checks.buildkite.rules import (
@@ -139,3 +142,59 @@ class TestBK013DeployBranchFilterFP:
             "    command: \"scripts/release.sh\"\n"
         )
         assert bk013.check("pipeline.yml", doc).passed is True
+
+
+# ── TAINT-005 verify-stale ─────────────────────────────────────────────
+#
+# Batch 2 added BUILDKITE_PULL_REQUEST_TITLE to the tainted-var set.
+# The test in TestTAINT005MetadataTaint above (line ~20) already pins
+# this behavior.  Confirming STALE: the existing test fires correctly.
+
+
+# ── BK-009 batch-5 FN: buildkite-agent artifact upload not recognized ──
+
+
+class TestBK009BuildkiteArtifactUpload:
+    """BK-009: ``buildkite-agent artifact upload`` is the canonical
+    Buildkite mechanism for publishing build artifacts. It was absent
+    from _ARTIFACT_TOKENS, so a pipeline that uploads via this command
+    (without also running docker build/push) was not recognized as
+    artifact-producing and BK-009 silently passed."""
+
+    def test_unsigned_artifact_upload_fires_bk009(self):
+        # A pipeline that only uploads via buildkite-agent artifact upload
+        # and has no signing step must now fire BK-009.
+        doc = yaml.safe_load(
+            "steps:\n"
+            "  - command: |\n"
+            "      make build\n"
+            "      buildkite-agent artifact upload dist/*.tar.gz\n"
+        )
+        assert bk009.check("pipeline.yml", doc).passed is False, (
+            "BK-009 must fire when buildkite-agent artifact upload is present "
+            "but no signing tool is invoked"
+        )
+
+    def test_signed_artifact_upload_passes_bk009(self):
+        # A pipeline that uploads an artifact AND signs it must pass BK-009.
+        doc = yaml.safe_load(
+            "steps:\n"
+            "  - command: |\n"
+            "      make build\n"
+            "      cosign sign --yes dist/app\n"
+            "      buildkite-agent artifact upload dist/*.tar.gz\n"
+        )
+        assert bk009.check("pipeline.yml", doc).passed is True, (
+            "BK-009 must pass when the pipeline both uploads and signs"
+        )
+
+    def test_no_artifact_step_still_skips_bk009(self):
+        # A pipeline with no artifact-producing step must still skip BK-009
+        # (no false positive on lint/test-only pipelines).
+        doc = yaml.safe_load(
+            "steps:\n"
+            "  - command: pytest tests/\n"
+        )
+        assert bk009.check("pipeline.yml", doc).passed is True, (
+            "BK-009 must pass (no artifact) on a test-only pipeline"
+        )

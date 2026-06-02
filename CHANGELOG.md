@@ -167,6 +167,38 @@ release commit collapses this section into `## [X.Y.Z] - <date>`.
   title no longer asserts an unverified absence ("blob lifecycle policy
   should be reviewed"); CCM-003's title no longer claims a cross-account
   comparison the check does not perform.
+- **Rule audit, batch 5: false-negative fixes across AWS, Argo, Azure
+  Pipelines, CircleCI, CloudFormation, Buildkite, Bitbucket, ArgoCD,
+  Cloud Build, Azure cloud, and Composer.** Detections that missed real
+  violations now catch them, each pinned by tests confirming the
+  previously-missed case fires, a benign neighbor still passes, and the
+  existing true positive still fires. Partition and representation
+  coverage: IAM-001 and CCM-003 recognize ``AdministratorAccess`` and
+  trigger ARNs in the aws-cn and aws-us-gov partitions; ECR-003 (CFN)
+  matches a list-form ``{AWS: ['*']}`` wildcard principal. Scope
+  coverage: ARGO-001 and ARGO-002 scan ``initContainers`` and
+  ``sidecars``; CC-019 scans reusable ``commands:`` and ``when:`` /
+  ``unless:`` step groups; LMB-002 flags a Lambda function URL whose
+  target is a cross-stack ARN; BB-020 inspects a step-level ``clone:``;
+  GCB-023 scans ``dir`` / ``id`` / ``waitFor``; PBAC-003 covers IPv6
+  ``::/0`` egress. Detector accuracy: ADO-017 matches ``--network=host``;
+  ADO-023 matches inline ``git -c http.sslVerify=false``; CC-015 drops a
+  blob fallback that passed on an incidental token mention; CC-031
+  accepts underscore OIDC role params; PBAC-005 requires every executable
+  action to carry its own role (approval gates excluded); EB-001 credits
+  a no-state-filter EventBridge rule; CW-001 reads metric-math alarms;
+  CA-001 and CP-002 stop crediting an AWS-managed key as a customer CMK.
+  Tool catalog: kaniko and ``buildkite-agent artifact upload`` are
+  recognized as artifact producers (gating ARGO-009 / BK-009); cdxgen
+  (ARGO-010), ``notation sign`` (ADO-006), and the circleci/attestation
+  orb (CC-024) are credited; GCB-008 recognizes a scanner used as a step
+  image. Hardening: AZNW-002 requires the flow log to be enabled;
+  AZVM-003 stops treating Trusted Launch as Just-in-Time access; BB-016
+  scopes its ephemeral check to the step's own ``runs-on`` labels; BB-001
+  requires full semver for pipe tags; COMPOSER-004 matches base64
+  passwords containing ``/``; COMPOSER-009 stops treating a literal ``$``
+  as a placeholder. CA-001 and PBAC-003 titles were reworded to match
+  what they detect.
 
 ## [1.7.1] - 2026-06-01
 

@@ -5,11 +5,8 @@ from typing import Any
 
 from ...base import Finding, Severity
 from ...rule import Rule
-from ..base import ArgoCDContext, iter_applications
-from .argocd010_application_mutable_targetrevision import (
-    _is_immutable_revision,
-    _iter_sources,
-)
+from ..base import ArgoCDContext, application_sources, iter_applications
+from .argocd010_application_mutable_targetrevision import _is_immutable_revision
 
 RULE = Rule(
     id="ARGOCD-017",
@@ -112,7 +109,9 @@ def check(ctx: ArgoCDContext) -> Finding:
         if not _targets_in_cluster(spec):
             continue
         in_cluster_apps += 1
-        for label, rev in _iter_sources(spec):
+        for idx, source in enumerate(application_sources(app)):
+            rev = source.get("targetRevision")
+            label = f"source[{idx}]"
             if rev is None:
                 offenders.append(
                     f"{app.display}: {label}.targetRevision missing "

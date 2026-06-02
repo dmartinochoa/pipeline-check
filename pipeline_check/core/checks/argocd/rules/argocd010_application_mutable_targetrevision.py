@@ -2,12 +2,15 @@
 from __future__ import annotations
 
 import re
-from collections.abc import Iterator
-from typing import Any
 
 from ...base import Finding, Severity
 from ...rule import Rule
-from ..base import ArgoCDContext, iter_applications
+from ..base import (
+    ArgoCDContext,
+    application_sources,
+    iter_applications,
+    iter_applicationsets,
+)
 
 RULE = Rule(
     id="ARGOCD-010",
@@ -43,7 +46,10 @@ RULE = Rule(
         "and fires when the value matches a mutable-ref shape: "
         "``HEAD``, branch-name literals (``main`` / ``master`` / "
         "``develop`` / ``release-*``), or any non-SHA non-SemVer "
-        "string. Immutable shapes that pass:\n\n"
+        "string. Also walks ``ApplicationSet`` documents via "
+        "``spec.template.spec.source[s]``, because an ApplicationSet "
+        "with a mutable ref generates Applications that all track that "
+        "same mutable branch. Immutable shapes that pass:\n\n"
         "* 40-character hex commit SHA\n"
         "* SemVer literal (``1.2.3``, ``1.2.3-rc.1``)\n"
         "* ``v``-prefixed SemVer (``v1.2.3``)\n\n"
@@ -118,40 +124,23 @@ def _is_immutable_revision(rev: str) -> bool:
     return False
 
 
-def _iter_sources(
-    spec: dict[str, Any],
-) -> Iterator[tuple[str, Any]]:
-    """Yield (path-label, targetRevision-or-None) tuples for each
-    Application source. Handles both single ``source`` and the
-    multi-source ``sources: []`` form."""
-    single = spec.get("source")
-    if isinstance(single, dict):
-        yield "source", single.get("targetRevision")
-    multi = spec.get("sources")
-    if isinstance(multi, list):
-        for idx, src in enumerate(multi):
-            if isinstance(src, dict):
-                yield f"sources[{idx}]", src.get("targetRevision")
-
-
 def check(ctx: ArgoCDContext) -> Finding:
-    apps = list(iter_applications(ctx))
-    if not apps:
+    all_docs = list(iter_applications(ctx)) + list(iter_applicationsets(ctx))
+    if not all_docs:
         return Finding(
             check_id=RULE.id, title=RULE.title, severity=RULE.severity,
             resource="(no Applications)",
             description=(
-                "No Argo CD Application documents in scope; "
+                "No Argo CD Application or ApplicationSet documents in scope; "
                 "nothing to audit."
             ),
             recommendation=RULE.recommendation, passed=True,
         )
     offenders: list[str] = []
-    for app in apps:
-        spec = app.data.get("spec")
-        if not isinstance(spec, dict):
-            continue
-        for label, rev in _iter_sources(spec):
+    for app in all_docs:
+        for idx, source in enumerate(application_sources(app)):
+            rev = source.get("targetRevision")
+            label = f"source[{idx}]"
             if rev is None:
                 offenders.append(
                     f"{app.display}: {label}.targetRevision missing "
@@ -171,17 +160,17 @@ def check(ctx: ArgoCDContext) -> Finding:
             )
     passed = not offenders
     desc = (
-        "Every Application source pins to an immutable ref "
+        "Every Application and ApplicationSet source pins to an immutable ref "
         "(commit SHA or SemVer)."
         if passed else
-        f"{len(offenders)} Application source(s) track mutable "
+        f"{len(offenders)} Application/ApplicationSet source(s) track mutable "
         f"refs: {'; '.join(offenders[:3])}"
         f"{' …' if len(offenders) > 3 else ''}. Each reconcile "
         f"picks up whatever the branch tip points at."
     )
     return Finding(
         check_id=RULE.id, title=RULE.title, severity=RULE.severity,
-        resource=apps[0].display,
+        resource=all_docs[0].display,
         description=desc,
         recommendation=RULE.recommendation, passed=passed,
     )

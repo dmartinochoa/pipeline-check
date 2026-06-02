@@ -32,29 +32,64 @@ RULE = Rule(
     ),
 )
 
-_ARN_ACCOUNT_RE = re.compile(r"^arn:aws:[^:]+:[^:]*:(\d{12}):")
+_ARN_ACCOUNT_RE = re.compile(r"^arn:aws[a-z-]*:[^:]+:[^:]*:(\d{12}):")
+
+
+def _account_from_arn(arn: str) -> str:
+    """Extract the 12-digit account ID from any ARN partition, or '' on failure."""
+    m = _ARN_ACCOUNT_RE.match(arn or "")
+    return m.group(1) if m else ""
 
 
 def check(catalog: ResourceCatalog) -> list[Finding]:
     findings: list[Finding] = []
     client = catalog.client("codecommit")
+    sts_failed = False
     try:
         sts = catalog.client("sts").get_caller_identity()
         self_account = sts.get("Account", "")
     except Exception:
         self_account = ""
+        sts_failed = True
     for repo in catalog.codecommit_repositories():
         name = repo.get("repositoryName", "<unnamed>")
+        # When STS failed, derive the account from the repository ARN
+        # (list_repositories includes cloneUrlHttp / ARN fields; fall back
+        # gracefully if none are present).
+        effective_self = self_account
+        if sts_failed and not effective_self:
+            effective_self = _account_from_arn(repo.get("repositoryArn", ""))
         try:
             resp = client.get_repository_triggers(repositoryName=name)
         except ClientError:
             continue
         offenders: list[str] = []
+        degraded = False
         for trigger in resp.get("triggers", []):
             dest = trigger.get("destinationArn", "")
             m = _ARN_ACCOUNT_RE.match(dest or "")
-            if m and self_account and m.group(1) != self_account:
+            if not m:
+                continue
+            dest_account = m.group(1)
+            if not effective_self:
+                # Cannot resolve own account; record a degraded result so the
+                # trigger is not silently ignored.
+                degraded = True
                 offenders.append(dest)
+            elif dest_account != effective_self:
+                offenders.append(dest)
+        if degraded:
+            desc = (
+                f"Repo '{name}' has trigger(s) whose account ownership "
+                f"cannot be verified (STS unavailable): {', '.join(offenders)}. "
+                "Treat as potentially cross-account."
+            )
+            findings.append(Finding(
+                check_id=RULE.id, title=RULE.title, severity=RULE.severity,
+                resource=name, description=desc,
+                recommendation=RULE.recommendation, passed=False,
+            ))
+            continue
         passed = not offenders
         desc = (
             f"Repo '{name}' triggers stay within the account."

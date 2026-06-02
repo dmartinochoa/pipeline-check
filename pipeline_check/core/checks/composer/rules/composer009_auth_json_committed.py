@@ -102,7 +102,7 @@ def _is_placeholder(value: Any) -> bool:
     if not s:
         return True
     return any(m in s for m in (
-        "$", "%env(", "%(", "{{", "<", "${{",
+        "${", "%env(", "%(", "{{", "<", "${{",
     ))
 
 

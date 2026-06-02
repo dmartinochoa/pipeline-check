@@ -48,6 +48,13 @@ _PATTERNS: tuple[tuple[str, str, re.Pattern[str]], ...] = (
     # ── Git ──
     ("git-sslverify-false", "git",
      re.compile(r"\bgit\s+config\s+[^\n]*http\.sslverify\s+false\b", re.IGNORECASE)),
+    # Per-invocation inline form: ``git -c http.sslVerify=false <cmd>``.
+    # This is the standard way to disable TLS verification for a single
+    # git call without touching the global config; it is just as risky
+    # as the ``git config`` form because it bypasses cert checking for
+    # the entire duration of that invocation.
+    ("git-inline-sslverify-false", "git",
+     re.compile(r"\bgit\b[^\n]*-c\s+http\.sslverify\s*=\s*false\b", re.IGNORECASE)),
     # Env vars are case-insensitive in the primitive: rule callers
     # hand us lowercased blobs via ``blob_lower``, and the uppercased
     # form in raw docs also matches via IGNORECASE.

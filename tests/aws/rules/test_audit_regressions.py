@@ -10,19 +10,27 @@ from __future__ import annotations
 import json
 from unittest.mock import MagicMock
 
+from botocore.exceptions import ClientError
+
+from pipeline_check.core.checks.aws.rules import ca001_domain_encryption as ca001
 from pipeline_check.core.checks.aws.rules import ca004_repo_wildcard_actions as ca004
 from pipeline_check.core.checks.aws.rules import cb008_inline_buildspec as cb008
 from pipeline_check.core.checks.aws.rules import cb011_malicious_buildspec as cb011
+from pipeline_check.core.checks.aws.rules import ccm003_trigger_cross_account as ccm003
 from pipeline_check.core.checks.aws.rules import cd003_alarm_config as cd003
+from pipeline_check.core.checks.aws.rules import cp002_artifact_encryption as cp002
 from pipeline_check.core.checks.aws.rules import cp005_production_approval as cp005
 from pipeline_check.core.checks.aws.rules import cw001_failed_build_alarm as cw001
+from pipeline_check.core.checks.aws.rules import eb001_pipeline_failure_rule as eb001
 from pipeline_check.core.checks.aws.rules import ecr003_public_policy as ecr003
 from pipeline_check.core.checks.aws.rules import ecr006_pull_through_untrusted as ecr006
+from pipeline_check.core.checks.aws.rules import iam001_admin_access as iam001
 from pipeline_check.core.checks.aws.rules import iam002_wildcard_action as iam002
 from pipeline_check.core.checks.aws.rules import iam005_external_trust as iam005
 from pipeline_check.core.checks.aws.rules import lmb003_plaintext_env as lmb003
 from pipeline_check.core.checks.aws.rules import lmb004_resource_policy_public as lmb004
 from pipeline_check.core.checks.aws.rules import pbac002_shared_service_role as pbac002
+from pipeline_check.core.checks.aws.rules import pbac005_stage_role_reuse as pbac005
 from pipeline_check.core.checks.aws.rules import s3005_secure_transport as s3005
 from pipeline_check.core.checks.aws.rules import sm001_rotation as sm001
 
@@ -486,3 +494,338 @@ class TestECR003PublicPolicyStaleVerification:
         f = self._check({"Statement": [{"Effect": "Allow",
             "Principal": {"AWS": "*"}, "Action": "ecr:BatchGetImage"}]})
         assert f.passed is False
+
+
+# ---------------------------------------------------------------------------
+# Batch 5 false-negative fixes
+# ---------------------------------------------------------------------------
+
+
+class TestCA001DomainEncryption:
+    """CA-001: detect AWS-managed default encryption (empty encryptionKey)."""
+
+    def test_no_key_fires(self):
+        # Domain with no encryptionKey configured should be flagged.
+        cat = _catalog(codeartifact_domains=[{"name": "d"}])
+        res = ca001.check(cat)
+        assert res and res[0].passed is False
+
+    def test_empty_string_key_fires(self):
+        # An explicitly empty string is the same as absent.
+        cat = _catalog(codeartifact_domains=[{"name": "d", "encryptionKey": ""}])
+        res = ca001.check(cat)
+        assert res and res[0].passed is False
+
+    def test_resolved_arn_key_passes(self):
+        # When an encryptionKey ARN is present, assume a CMK is configured.
+        # (The previous alias/aws/ substring check would falsely pass this.)
+        cat = _catalog(codeartifact_domains=[{
+            "name": "d",
+            "encryptionKey": "arn:aws:kms:us-east-1:123456789012:key/mrk-abc123def456",
+        }])
+        res = ca001.check(cat)
+        assert res and res[0].passed is True
+
+    def test_alias_key_passes(self):
+        # A domain explicitly configured with any key alias should pass.
+        cat = _catalog(codeartifact_domains=[{
+            "name": "d",
+            "encryptionKey": "alias/my-cmk",
+        }])
+        res = ca001.check(cat)
+        assert res and res[0].passed is True
+
+
+class TestCCM003TriggerCrossAccount:
+    """CCM-003: cross-account trigger detection, partition coverage, STS fallback."""
+
+    def _make_cat(self, dest_arn, self_account="111111111111", repo_arn=""):
+        cat = MagicMock()
+        sts_client = MagicMock()
+        sts_client.get_caller_identity.return_value = {"Account": self_account}
+        cc_client = MagicMock()
+        cc_client.get_repository_triggers.return_value = {
+            "triggers": [{"destinationArn": dest_arn}]
+        }
+        repo = {"repositoryName": "my-repo"}
+        if repo_arn:
+            repo["repositoryArn"] = repo_arn
+
+        def _client(svc):
+            if svc == "sts":
+                return sts_client
+            return cc_client
+
+        cat.client.side_effect = _client
+        cat.codecommit_repositories.return_value = [repo]
+        return cat
+
+    def test_aws_cn_cross_account_fires(self):
+        # China-partition ARN with a different account ID must be flagged.
+        cat = self._make_cat(
+            dest_arn="arn:aws-cn:sns:cn-north-1:999999999999:my-topic",
+            self_account="111111111111",
+        )
+        res = ccm003.check(cat)
+        assert res and res[0].passed is False
+
+    def test_aws_cn_same_account_passes(self):
+        # Same account in China partition should pass.
+        cat = self._make_cat(
+            dest_arn="arn:aws-cn:sns:cn-north-1:111111111111:my-topic",
+            self_account="111111111111",
+        )
+        res = ccm003.check(cat)
+        assert res and res[0].passed is True
+
+    def test_govcloud_cross_account_fires(self):
+        # GovCloud-partition ARN with a different account ID must be flagged.
+        cat = self._make_cat(
+            dest_arn="arn:aws-us-gov:lambda:us-gov-west-1:999999999999:function:fn",
+            self_account="111111111111",
+        )
+        res = ccm003.check(cat)
+        assert res and res[0].passed is False
+
+    def test_commercial_cross_account_still_fires(self):
+        # Existing commercial-partition detection must still work.
+        cat = self._make_cat(
+            dest_arn="arn:aws:sns:us-east-1:999999999999:topic",
+            self_account="111111111111",
+        )
+        res = ccm003.check(cat)
+        assert res and res[0].passed is False
+
+    def test_sts_failure_cross_account_does_not_pass(self):
+        # When STS raises, a cross-account trigger must NOT silently pass.
+        cat = MagicMock()
+        sts_client = MagicMock()
+        sts_client.get_caller_identity.side_effect = ClientError(
+            {"Error": {"Code": "AccessDenied", "Message": "x"}}, "GetCallerIdentity"
+        )
+        cc_client = MagicMock()
+        cc_client.get_repository_triggers.return_value = {
+            "triggers": [{"destinationArn": "arn:aws:sns:us-east-1:999999999999:topic"}]
+        }
+
+        def _client(svc):
+            if svc == "sts":
+                return sts_client
+            return cc_client
+
+        cat.client.side_effect = _client
+        # Repo ARN provides account fallback (111...) — different from dest 999...
+        cat.codecommit_repositories.return_value = [{
+            "repositoryName": "r",
+            "repositoryArn": "arn:aws:codecommit:us-east-1:111111111111:r",
+        }]
+        res = ccm003.check(cat)
+        assert res and res[0].passed is False
+
+    def test_sts_failure_no_repo_arn_is_degraded_not_silent(self):
+        # With no repo ARN and STS down, the trigger still surfaces as failed.
+        cat = MagicMock()
+        sts_client = MagicMock()
+        sts_client.get_caller_identity.side_effect = Exception("network error")
+        cc_client = MagicMock()
+        cc_client.get_repository_triggers.return_value = {
+            "triggers": [{"destinationArn": "arn:aws:sns:us-east-1:999999999999:topic"}]
+        }
+
+        def _client(svc):
+            if svc == "sts":
+                return sts_client
+            return cc_client
+
+        cat.client.side_effect = _client
+        cat.codecommit_repositories.return_value = [{"repositoryName": "r"}]
+        res = ccm003.check(cat)
+        assert res and res[0].passed is False
+
+
+class TestIAM001AdminAccess:
+    """IAM-001: AdministratorAccess detection across all AWS partitions."""
+
+    def _check(self, arns):
+        role = {"RoleName": "r"}
+        cat = MagicMock()
+        cat.cicd_roles.return_value = [role]
+        cat.iam_role_attached_arns.return_value = (arns, None)
+        return iam001.check(cat)[0]
+
+    def test_commercial_admin_fires(self):
+        f = self._check(["arn:aws:iam::aws:policy/AdministratorAccess"])
+        assert f.passed is False
+
+    def test_govcloud_admin_fires(self):
+        # GovCloud uses arn:aws-us-gov: partition.
+        f = self._check(["arn:aws-us-gov:iam::aws:policy/AdministratorAccess"])
+        assert f.passed is False
+
+    def test_china_admin_fires(self):
+        # China uses arn:aws-cn: partition.
+        f = self._check(["arn:aws-cn:iam::aws:policy/AdministratorAccess"])
+        assert f.passed is False
+
+    def test_non_admin_policy_passes(self):
+        f = self._check(["arn:aws:iam::aws:policy/AmazonS3ReadOnlyAccess"])
+        assert f.passed is True
+
+    def test_no_policies_passes(self):
+        f = self._check([])
+        assert f.passed is True
+
+
+class TestPBAC005StageRoleReuse:
+    """PBAC-005: every action must have its own scoped role."""
+
+    _PIPELINE_ROLE = "arn:aws:iam::123:role/pipeline-master"
+
+    def _check(self, stages):
+        cat = _catalog(codepipeline_pipelines=[{
+            "name": "p",
+            "roleArn": self._PIPELINE_ROLE,
+            "stages": stages,
+        }])
+        return pbac005.check(cat)[0]
+
+    def test_all_actions_scoped_passes(self):
+        f = self._check([
+            {"name": "Source", "actions": [{"roleArn": "arn:aws:iam::123:role/src"}]},
+            {"name": "Build",  "actions": [{"roleArn": "arn:aws:iam::123:role/bld"}]},
+            {"name": "Deploy", "actions": [{"roleArn": "arn:aws:iam::123:role/dep"}]},
+        ])
+        assert f.passed is True
+
+    def test_no_action_scoped_fires(self):
+        f = self._check([
+            {"name": "Source", "actions": [{"roleArn": self._PIPELINE_ROLE}]},
+            {"name": "Build",  "actions": [{"roleArn": self._PIPELINE_ROLE}]},
+        ])
+        assert f.passed is False
+
+    def test_partial_override_fires(self):
+        # One scoped action does not protect the rest; the build action still
+        # mirrors the pipeline role, so the pipeline must be flagged.
+        f = self._check([
+            {"name": "Source", "actions": [{"roleArn": "arn:aws:iam::123:role/src"}]},
+            {"name": "Build",  "actions": [{"roleArn": self._PIPELINE_ROLE}]},
+            {"name": "Deploy", "actions": [{"roleArn": self._PIPELINE_ROLE}]},
+        ])
+        assert f.passed is False
+
+    def test_one_action_total_scoped_passes(self):
+        f = self._check([
+            {"name": "Source", "actions": [{"roleArn": "arn:aws:iam::123:role/src"}]},
+        ])
+        assert f.passed is True
+
+    def test_approval_action_excluded_from_count(self):
+        # A Manual Approval action has no execution role; it must not inflate
+        # the denominator and cause a false positive on an otherwise-scoped pipeline.
+        f = self._check([
+            {"name": "Source", "actions": [
+                {"roleArn": "arn:aws:iam::123:role/src",
+                 "actionTypeId": {"category": "Source", "owner": "AWS", "provider": "CodeCommit", "version": "1"}},
+            ]},
+            {"name": "Build", "actions": [
+                {"roleArn": "arn:aws:iam::123:role/bld",
+                 "actionTypeId": {"category": "Build", "owner": "AWS", "provider": "CodeBuild", "version": "1"}},
+            ]},
+            {"name": "Approve", "actions": [
+                # No roleArn — this is a Manual approval gate, not an executor.
+                {"name": "Approve",
+                 "actionTypeId": {"category": "Approval", "owner": "AWS", "provider": "Manual", "version": "1"}},
+            ]},
+            {"name": "Deploy", "actions": [
+                {"roleArn": "arn:aws:iam::123:role/dep",
+                 "actionTypeId": {"category": "Deploy", "owner": "AWS", "provider": "CodeDeploy", "version": "1"}},
+            ]},
+        ])
+        assert f.passed is True
+
+
+class TestCP002ArtifactEncryption:
+    """CP-002: artifact store with AWS-managed key must fire."""
+
+    def test_no_encryption_key_fires(self):
+        cat = _catalog(codepipeline_pipelines=[{
+            "name": "p",
+            "artifactStore": {"location": "my-bucket", "type": "S3"},
+        }])
+        res = cp002.check(cat)
+        assert res and res[0].passed is False
+
+    def test_aws_managed_alias_fires(self):
+        # alias/aws/s3 is AWS-managed, not a customer CMK.
+        cat = _catalog(codepipeline_pipelines=[{
+            "name": "p",
+            "artifactStore": {
+                "location": "my-bucket",
+                "type": "S3",
+                "encryptionKey": {"id": "alias/aws/s3", "type": "KMS"},
+            },
+        }])
+        res = cp002.check(cat)
+        assert res and res[0].passed is False
+
+    def test_customer_cmk_arn_passes(self):
+        cat = _catalog(codepipeline_pipelines=[{
+            "name": "p",
+            "artifactStore": {
+                "location": "my-bucket",
+                "type": "S3",
+                "encryptionKey": {
+                    "id": "arn:aws:kms:us-east-1:123456789012:key/mrk-abc",
+                    "type": "KMS",
+                },
+            },
+        }])
+        res = cp002.check(cat)
+        assert res and res[0].passed is True
+
+    def test_customer_cmk_alias_passes(self):
+        cat = _catalog(codepipeline_pipelines=[{
+            "name": "p",
+            "artifactStore": {
+                "location": "my-bucket",
+                "type": "S3",
+                "encryptionKey": {"id": "alias/my-pipeline-key", "type": "KMS"},
+            },
+        }])
+        res = cp002.check(cat)
+        assert res and res[0].passed is True
+
+
+class TestEB001PipelineFailureRule:
+    """EB-001: EventBridge rules — no-state-filter covers FAILED."""
+
+    def _check(self, pattern):
+        cat = _catalog(eventbridge_rules=[{"EventPattern": json.dumps(pattern)}])
+        return eb001.check(cat)[0]
+
+    def test_explicit_failed_state_passes(self):
+        f = self._check({
+            "detail-type": ["CodePipeline Pipeline Execution State Change"],
+            "detail": {"state": ["FAILED"]},
+        })
+        assert f.passed is True
+
+    def test_no_state_filter_passes(self):
+        # No detail.state means all states, including FAILED.
+        f = self._check({
+            "detail-type": ["CodePipeline Pipeline Execution State Change"],
+        })
+        assert f.passed is True
+
+    def test_only_succeeded_filter_fires(self):
+        # A rule filtering only SUCCEEDED does NOT cover FAILED.
+        f = self._check({
+            "detail-type": ["CodePipeline Pipeline Execution State Change"],
+            "detail": {"state": ["SUCCEEDED"]},
+        })
+        assert f.passed is False
+
+    def test_no_pipeline_rule_fires(self):
+        cat = _catalog(eventbridge_rules=[])
+        assert eb001.check(cat)[0].passed is False

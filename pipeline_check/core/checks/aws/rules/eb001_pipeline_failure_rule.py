@@ -48,7 +48,9 @@ def check(catalog: ResourceCatalog) -> list[Finding]:
             states = (doc.get("detail") or {}).get("state") or []
             if isinstance(states, str):
                 states = [states]
-            if "FAILED" in states:
+            # An empty (absent) state filter matches ALL execution states,
+            # including FAILED, so it satisfies the coverage requirement.
+            if not states or "FAILED" in states:
                 has_failure_rule = True
                 break
     return [Finding(
