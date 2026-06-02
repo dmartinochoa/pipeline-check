@@ -88,7 +88,8 @@ RULE = Rule(
         "    needs: mint\n"
         "    runs-on: ubuntu-latest\n"
         "    steps:\n"
-        "      - run: curl -H \"Authorization: ${{ needs.mint.outputs.token }}\" https://deploy.example.com\n"
+        "      - run: |\n"
+        "          curl -H \"Authorization: ${{ needs.mint.outputs.token }}\" https://deploy.example.com\n"
         "\n"
         "# Safe: the deploy job also binds the same environment.\n"
         "on: push\n"
@@ -106,7 +107,8 @@ RULE = Rule(
         "    environment: production\n"
         "    runs-on: ubuntu-latest\n"
         "    steps:\n"
-        "      - run: curl -H \"Authorization: ${{ needs.mint.outputs.token }}\" https://deploy.example.com"
+        "      - run: |\n"
+        "          curl -H \"Authorization: ${{ needs.mint.outputs.token }}\" https://deploy.example.com"
     ),
 )
 

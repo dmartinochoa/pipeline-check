@@ -160,6 +160,20 @@ release commit collapses this section into `## [X.Y.Z] - <date>`.
 
 ### Fixed
 
+- **Rule audit: unparseable GitHub Actions ``exploit_example`` snippets.**
+  A parse scan of the github pack (never covered by the original audit)
+  found seven rules whose documented exploit example contained YAML no
+  loader accepts, so the snippet would silently fail to parse if a user
+  fed it back through the scanner: a ``${{ ... }}`` expression inside a
+  YAML *flow* mapping (GHA-111, GHA-055, TAINT-002, TAINT-003) and a
+  ``run:`` plain scalar carrying a ``: `` (GHA-072, TAINT-009). All
+  switched to block style; GHA-002's prose em-dash and a few British
+  ``sanitise`` spellings in the touched examples were corrected at the
+  same time. A new ``tests/github/test_audit_regressions.py`` pins every
+  github example to parse via the production loader, and the
+  self-contained single-workflow examples (GHA-055/072/111) to still
+  fire on the Vulnerable half and pass on the Safe half. No rule
+  behavior, count, or doc output changed.
 - **Rule audit: false-positive, false-negative, and crash fixes across
   the AWS, Azure, and CloudFormation checks.** A read-only audit of the
   rule pack surfaced a batch of defects, now fixed and pinned with
