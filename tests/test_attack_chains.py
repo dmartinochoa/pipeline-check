@@ -189,7 +189,7 @@ class TestEngine:
             "AC-021", "AC-022", "AC-023", "AC-024",
             "AC-025", "AC-026", "AC-027", "AC-028", "AC-029",
             "AC-030", "AC-031", "AC-032", "AC-033", "AC-034",
-            "AC-035", "AC-036", "AC-037",
+            "AC-035", "AC-036", "AC-037", "AC-038",
             "XPC-001", "XPC-002", "XPC-003", "XPC-004", "XPC-005",
             "XPC-006", "XPC-007", "XPC-008", "XPC-009", "XPC-010",
             "CXPC-001", "CXPC-002", "CXPC-003", "CXPC-004",
@@ -3483,5 +3483,59 @@ class TestChainAC037:
     def test_passed_iac_finding_does_not_chain(self):
         out = self._ac037([
             _f("GHA-058", self.WF), _f("GHA-111", self.WF, passed=True),
+        ])
+        assert out == []
+
+
+class TestChainAC038:
+    """AC-038: untrusted branch reaches OIDC trusted publish."""
+
+    WF = ".github/workflows/release.yml"
+
+    def _ac038(self, findings):
+        return [c for c in chains_pkg.evaluate(findings) if c.chain_id == "AC-038"]
+
+    def test_same_job_fires_critical_confirmed(self):
+        out = self._ac038([
+            _f("GHA-113", self.WF, job_anchors=("release",)),
+            _f("GHA-114", self.WF, job_anchors=("release",)),
+        ])
+        assert len(out) == 1
+        assert out[0].severity is Severity.CRITICAL
+        assert out[0].triggering_check_ids == ["GHA-113", "GHA-114"]
+        assert out[0].resources == [self.WF]
+        assert out[0].confirmed_reachable is True
+        # Confirmed single-job reachability promotes to HIGH confidence.
+        assert out[0].confidence is Confidence.HIGH
+
+    def test_different_jobs_fires_unconfirmed(self):
+        out = self._ac038([
+            _f("GHA-113", self.WF, job_anchors=("oidc",),
+               confidence=Confidence.MEDIUM),
+            _f("GHA-114", self.WF, job_anchors=("publish",),
+               confidence=Confidence.MEDIUM),
+        ])
+        assert len(out) == 1
+        assert out[0].confirmed_reachable is False
+        # Unconfirmed co-occurrence stays at the weakest leg's confidence.
+        assert out[0].confidence is Confidence.MEDIUM
+
+    def test_no_chain_without_oidc_leg(self):
+        assert self._ac038([_f("GHA-114", self.WF, job_anchors=("release",))]) == []
+
+    def test_no_chain_without_trigger_leg(self):
+        assert self._ac038([_f("GHA-113", self.WF, job_anchors=("release",))]) == []
+
+    def test_no_chain_across_different_workflows(self):
+        out = self._ac038([
+            _f("GHA-113", self.WF, job_anchors=("release",)),
+            _f("GHA-114", ".github/workflows/other.yml", job_anchors=("release",)),
+        ])
+        assert out == []
+
+    def test_passed_finding_does_not_chain(self):
+        out = self._ac038([
+            _f("GHA-113", self.WF, job_anchors=("release",)),
+            _f("GHA-114", self.WF, job_anchors=("release",), passed=True),
         ])
         assert out == []
