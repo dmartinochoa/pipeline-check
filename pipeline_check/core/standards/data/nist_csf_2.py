@@ -511,6 +511,7 @@ STANDARD = Standard(
         "GHA-112":  ["PR.PS-01"],  # self-hosted deploy with no environment gate
         "GHA-113":  ["PR.AA-05"],  # OIDC trusted-publish w/o env gate
         "GHA-114":  ["PR.AA-05"],  # publish workflow on an unrestricted push trigger
+        "GHA-115":  ["PR.AA-05"],  # id-token granted workflow-wide, not job-scoped
         "GHA-062":  ["PR.AA-05"],               # OIDC trust subject in sibling IaC is overly broad
         "GHA-063":  ["PR.AA-01"],               # spoofable bot-actor if-predicate
         "GHA-064":  ["PR.PS-06"],               # unsound contains() with comma-string operand

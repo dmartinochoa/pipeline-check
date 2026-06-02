@@ -72,7 +72,7 @@ Resolution rules:
 
 ## What it covers
 
-105 checks · 17 have an autofix patch (``--fix``).
+106 checks · 17 have an autofix patch (``--fix``).
 
 | Check | Title | Severity | Fix |
 |-------|-------|----------|-----|
@@ -177,6 +177,7 @@ Resolution rules:
 | [GHA-112](#gha-112) | Self-hosted deploy job not gated by a protected environment | <span class="pg-sev pg-sev--high">HIGH</span> |  |
 | [GHA-113](#gha-113) | OIDC trusted-publishing job without an environment gate | <span class="pg-sev pg-sev--high">HIGH</span> |  |
 | [GHA-114](#gha-114) | Package-publish workflow runs on an unrestricted push trigger | <span class="pg-sev pg-sev--high">HIGH</span> |  |
+| [GHA-115](#gha-115) | ``id-token: write`` granted workflow-wide instead of job-scoped | <span class="pg-sev pg-sev--medium">MEDIUM</span> |  |
 | [TAINT-001](#taint-001) | Untrusted input flows across step boundaries via step outputs | <span class="pg-sev pg-sev--high">HIGH</span> |  |
 | [TAINT-002](#taint-002) | Untrusted input flows across jobs via ``jobs.<id>.outputs:`` | <span class="pg-sev pg-sev--high">HIGH</span> |  |
 | [TAINT-003](#taint-003) | Untrusted input forwarded into reusable workflow ``with:`` | <span class="pg-sev pg-sev--high">HIGH</span> |  |
@@ -3079,6 +3080,46 @@ Trigger a publish workflow only from a ref an attacker cannot cheaply create:
 - If a branch ``push`` trigger is unavoidable, pin ``branches:`` to the exact protected release branch (``branches: [main]``, never ``branches: ['*']`` / ``['release/*']`` / no filter), and pair it with a protected ``environment:`` whose deployment-branch rule enforces the same ref (see GHA-113).
 
 A publish workflow runnable by ``push`` to any branch is the untrusted-branch half of the trusted-publishing attack: a counterfeit workflow on a throwaway branch publishes as the real release.
+
+</div>
+
+</div>
+
+<div class="pg-rule pg-rule--medium" markdown>
+
+## GHA-115: ``id-token: write`` granted workflow-wide instead of job-scoped { #gha-115 }
+
+<div class="pg-rule__tags">
+<span class="pg-sev pg-sev--medium">MEDIUM</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-5</span> <span class="pg-tag pg-tag--esf">ESF-C-LEAST-PRIV</span> <span class="pg-tag pg-tag--cwe">CWE-272</span> <span class="pg-tag pg-tag--cwe">CWE-269</span>
+</div>
+
+Fires when all three hold:
+
+1. The workflow's **top-level** ``permissions:`` block grants ``id-token: write`` (or ``permissions: write-all``).
+2. At least one job consumes the OIDC token (a known consumer step, the same list GHA-069 uses: cloud-credentials actions, trusted-publisher actions, the Sigstore signing pack, ``docker/build-push-action`` with provenance / sbom).
+3. At least one job inherits the workflow-level grant (it declares no ``permissions:`` block of its own, so the job-level block does not REPLACE the inherited one) AND does NOT consume the token.
+
+The conjunction is the granted-too-broadly shape: the scope is used somewhere, so dropping it entirely (GHA-069) is wrong, but the workflow-level grant hands a publish-capable mint right to jobs that don't need it. When NO job consumes the token, GHA-069 covers the orphan case instead. When every inheriting job consumes it, the grant is not over-broad and the rule stays silent. A consuming job that declares its own ``id-token: write`` does not need the workflow-level grant, so the workflow-level grant is still flagged if any other job inherits it without consuming.
+
+Defaults to MEDIUM confidence: the over-broad determination depends on recognizing every job's OIDC consumer, and a consumer reached through an action the shared consumer list doesn't name yet can make a consuming job look non-consuming.
+
+**Known false-positive modes**
+
+- A workflow where every inheriting job legitimately consumes the OIDC token (e.g. a matrix of publish jobs) is not flagged. A consumer reached through a third-party action this rule's list doesn't recognize yet can make a consuming job look non-consuming, over-flagging it as over-broad. Extend the consumer list (shared with GHA-069) or suppress per-workflow via ``--ignore-file``.
+
+**Seen in the wild**
+
+- Red Hat npm compromise (BoostSecurity, 'Trusted Publishing, Untrusted Branch', 2026), defense-in-depth item: scope ``id-token: write`` to the publish job so a compromised sibling job cannot mint a publish-capable token: https://labs.boostsecurity.io/articles/trusted-publishing-untrusted-branch-red-hat-npm/
+
+<div class="pg-rule__rec" markdown>
+
+**Recommended action**
+
+Move ``id-token: write`` off the workflow-level ``permissions:`` block and onto only the job(s) that consume the OIDC token (the publish / cloud-credentials job):
+
+- Set the workflow-level ``permissions:`` to what the other jobs actually need (often ``contents: read``), and add a job-level ``permissions: { id-token: write, ... }`` to the consuming job only.
+- A workflow-level grant gives every job that doesn't override its permissions the right to mint an OIDC token, so a compromised build / test / lint job can request a publish-capable token it never needed and relay it.
+- Job-level grants also minimize the window in which the mint right is in effect (see GHA-069).
 
 </div>
 
