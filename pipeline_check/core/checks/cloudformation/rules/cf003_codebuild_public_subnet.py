@@ -8,7 +8,7 @@ from ..phase4 import _cf003_codebuild_public_subnet
 
 RULE = Rule(
     id="CF-003",
-    title="CodeBuild VPC config references a public subnet",
+    title="CodeBuild project's VPC contains a public subnet",
     severity=Severity.HIGH,
     owasp=("CICD-SEC-7",),
     cwe=("CWE-1327",),

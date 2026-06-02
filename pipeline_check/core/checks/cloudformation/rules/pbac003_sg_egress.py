@@ -8,7 +8,7 @@ from ..phase3 import _pbac003
 
 RULE = Rule(
     id="PBAC-003",
-    title="CodeBuild security group allows 0.0.0.0/0 all-port egress",
+    title="Security group allows 0.0.0.0/0 all-port egress",
     severity=Severity.MEDIUM,
     owasp=("CICD-SEC-5",),
     cwe=("CWE-1327",),
@@ -19,10 +19,10 @@ RULE = Rule(
     ),
     docs_note=(
         "Walks ``AWS::EC2::SecurityGroup.Properties.SecurityGroupEgress`` "
-        "for every SG attached to a CodeBuild project's "
-        "``VpcConfig``. Fires on any rule that allows ``0.0.0.0/0`` "
-        "on the full port range — that's a completely open "
-        "exfiltration channel."
+        "for every ``AWS::EC2::SecurityGroup`` in the template (not only "
+        "CodeBuild-attached ones). Fires on any rule that allows "
+        "``0.0.0.0/0`` (or ``::/0``) on the full port range, a "
+        "completely open exfiltration channel."
     ),
     exploit_example=(
         "# Vulnerable: the CodeBuild VPC security group allows all egress.\n"

@@ -10,7 +10,7 @@ Mirrors ``checks/terraform/phase4.py`` resource-for-resource:
 **CloudFormation-native** (IDs with CF- prefix):
     CF-001    AWS::IAM::AccessKey declares a long-lived key              CRIT  CICD-SEC-6
     CF-002    Resource property contains a hard-coded secret shape       CRIT  CICD-SEC-6
-    CF-003    CodeBuild VPC shares its VPC with a public subnet          HIGH  CICD-SEC-7
+    CF-003    CodeBuild project's VPC contains a public subnet          HIGH  CICD-SEC-7
 
 Intrinsics (``{"Ref": ...}``, ``{"Fn::Sub": ...}``) are treated as
 non-literal, a rule that can only reason about concrete strings stays
@@ -293,7 +293,7 @@ def _walk(node: object, path: str, hits: list[tuple[str, str]]) -> None:
 
 
 # ---------------------------------------------------------------------------
-# CF-003. CodeBuild VPC shares its VPC with a public subnet
+# CF-003. CodeBuild project's VPC contains a public subnet
 # ---------------------------------------------------------------------------
 
 def _cf003_codebuild_public_subnet(ctx: CloudFormationContext) -> list[Finding]:
@@ -317,7 +317,7 @@ def _cf003_codebuild_public_subnet(ctx: CloudFormationContext) -> list[Finding]:
         public = public_by_vpc.get(vpc_id, [])
         out.append(Finding(
             check_id="CF-003",
-            title="CodeBuild VPC shares its VPC with a public subnet",
+            title="CodeBuild project's VPC contains a public subnet",
             severity=Severity.HIGH,
             resource=p.address,
             description=(
