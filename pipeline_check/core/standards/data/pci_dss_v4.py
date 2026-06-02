@@ -994,5 +994,11 @@ STANDARD = Standard(
         "GCKMS-004": ["7.2.1", "7.2.5"],                   # keyring IAM
         "GCKMS-005": ["6.5.1"],                             # destroy sched
         "GCKMS-006": ["10.3.2"],                            # imported key
+        # Developer-environment auto-execution
+        "DEV-001":   ["6.5.1"],
+        "DEV-002":   ["6.5.1"],
+        "DEV-003":   ["6.5.1"],
+        "DEV-004":   ["6.3.3", "6.5.1"],
+        "DEV-005":   ["6.5.1"],
     },
 )

@@ -12,6 +12,30 @@ release commit collapses this section into `## [X.Y.Z] - <date>`.
 
 ### Added
 
+- **`devenv` provider: developer-environment auto-execution scanner
+  (DEV-001..005).** New `--pipeline devenv` provider that scans the
+  config files which run code the moment a developer opens or checks out
+  the repo, a surface distinct from the CI-pipeline definitions the rest
+  of the scanner covers. Parses `.vscode/tasks.json`,
+  `.devcontainer/devcontainer.json` (root, and the
+  `.devcontainer/<name>/` layout), and `.claude/settings.json` /
+  `settings.local.json` as JSON(C) (comments and trailing commas
+  tolerated, string-aware so a `//` inside a URL survives), no tokens,
+  no network. **DEV-001** (LOW) a VS Code task with
+  `runOptions.runOn: folderOpen`; **DEV-002** (LOW) a devcontainer
+  lifecycle command (`postCreateCommand` and friends); **DEV-003**
+  (MEDIUM) a committed Claude Code `type: command` hook (SessionStart
+  and the other events); **DEV-004** (CRITICAL) any auto-run command
+  that fetches and executes remote code (`curl | sh`, `iwr | iex`,
+  `bash -c "$(curl …)"`), reusing the shared
+  `_primitives/remote_script_exec` detector but scoped to the auto-run
+  command strings to keep the false-positive rate near zero; **DEV-005**
+  (HIGH) a devcontainer `initializeCommand`, which runs unsandboxed on
+  the host before the container is built. Models the second stage of the
+  2026 Red Hat npm compromise (loaders that fire on repo open). Auto-
+  detected when `.vscode/` / `.devcontainer/` / `.claude/` config files
+  are present; mapped across OWASP CICD-SEC-3/4/7, NIST 800-53, and ESF.
+  Provider count 32 -> 33.
 - **`pipeline_check fix-pr`: apply autofixes and open a pull / merge
   request.** New subcommand that closes the gap between "patch on disk"
   and "PR in your inbox". Scans the auto-detected pipeline files,

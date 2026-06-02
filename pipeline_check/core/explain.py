@@ -98,6 +98,7 @@ _RULE_PACKAGES: tuple[str, ...] = (
     "pipeline_check.core.checks.composer.rules",
     "pipeline_check.core.checks.rubygems.rules",
     "pipeline_check.core.checks.pulumi.rules",
+    "pipeline_check.core.checks.devenv.rules",
 )
 
 # Class-based packages: ID/TITLE/SEV recoverable via docstring table.

@@ -178,7 +178,7 @@ class _GroupedCommand(click.Command):
             "--drone-path", "--npm-path", "--pypi-path",
             "--maven-path", "--nuget-path", "--gomod-path",
             "--cargo-path", "--pulumi-path", "--composer-path",
-            "--rubygems-path",
+            "--rubygems-path", "--devenv-path",
         })),
         ("Filtering", frozenset({
             "--checks", "--severity-threshold", "--min-confidence",
@@ -660,6 +660,20 @@ _PROVIDER_DETECT_FILES: tuple[tuple[str, tuple[str, ...], tuple[str, ...]], ...]
     # ``index.json`` when explicitly selected; multi-provider runs
     # that want OCI in scope use ``--pipelines github,oci``.
     ("helm", ("Chart.yaml",), ()),
+    # Developer-environment auto-execution configs. Listed late so a
+    # repo that also ships a real CI / registry manifest is detected as
+    # that provider first; multi-provider auto-detect still adds devenv.
+    (
+        "devenv",
+        (
+            ".vscode/tasks.json",
+            ".devcontainer.json",
+            ".devcontainer/devcontainer.json",
+            ".claude/settings.json",
+            ".claude/settings.local.json",
+        ),
+        (),
+    ),
     ("kubernetes", (), ("kubernetes", "k8s", "manifests")),
 )
 
@@ -764,6 +778,7 @@ _PROVIDER_PATH_KWARG: dict[str, str] = {
     "composer": "composer_path",
     "rubygems": "rubygems_path",
     "pulumi": "pulumi_path",
+    "devenv": "devenv_path",
 }
 
 
@@ -1548,6 +1563,18 @@ def _install_completion_callback(
         "Path to a Pulumi.yaml file or a directory containing one "
         "(required when --pipeline pulumi). Auto-detects "
         "./Pulumi.yaml."
+    ),
+)
+@click.option(
+    "--devenv-path",
+    default=None,
+    metavar="PATH",
+    help=(
+        "Path to a repository root, or a .vscode/tasks.json / "
+        "devcontainer.json / .claude/settings.json file (used when "
+        "--pipeline devenv). Defaults to the current directory and "
+        "discovers the editor / agent / container configs that "
+        "auto-execute on repo open."
     ),
 )
 @click.option(
@@ -2396,6 +2423,7 @@ def scan(
     composer_path: str | None,
     rubygems_path: str | None,
     pulumi_path: str | None,
+    devenv_path: str | None,
     helm_values: tuple[str, ...],
     helm_set: tuple[str, ...],
     oci_manifest: str | None,
@@ -3166,6 +3194,7 @@ def scan(
         composer_path=composer_path,
         rubygems_path=rubygems_path,
         pulumi_path=pulumi_path,
+        devenv_path=devenv_path,
         scm_platform=scm_platform,
         scm_repo=scm_repo,
         scm_fixture_dir=scm_fixture_dir,
@@ -4377,6 +4406,7 @@ _INIT_SCANNER_KWARGS: dict[str, tuple[str, tuple[str, ...]]] = {
     "dockerfile": ("dockerfile_path", ("Dockerfile", "Containerfile")),
     "kubernetes": ("k8s_path", ("kubernetes", "k8s", "manifests")),
     "helm": ("helm_path", (".",)),
+    "devenv": ("devenv_path", (".",)),
     "npm": ("npm_path", (".",)),
     "pypi": ("pypi_path", (".",)),
     "maven": ("maven_path", ("pom.xml",)),

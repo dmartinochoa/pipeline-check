@@ -101,6 +101,7 @@ _PROVIDER_PATH_KW: dict[str, str | None] = {
     "composer":       "composer_path",
     "rubygems":       "rubygems_path",
     "pulumi":         "pulumi_path",
+    "devenv":         "devenv_path",
     "aws":            None,
     "azure_cloud":    None,
     "gcp":            None,
@@ -274,6 +275,7 @@ _RULES_FQN: dict[str, str] = {
     "composer":       "pipeline_check.core.checks.composer.rules",
     "rubygems":       "pipeline_check.core.checks.rubygems.rules",
     "pulumi":         "pipeline_check.core.checks.pulumi.rules",
+    "devenv":         "pipeline_check.core.checks.devenv.rules",
 }
 
 

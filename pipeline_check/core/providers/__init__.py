@@ -41,6 +41,7 @@ _BUILTINS: dict[str, str] = {
     "cloudbuild": "CloudBuildProvider",
     "cloudformation": "CloudFormationProvider",
     "composer": "ComposerProvider",
+    "devenv": "DevEnvProvider",
     "dockerfile": "DockerfileProvider",
     "drone": "DroneProvider",
     "gcp": "GCPProvider",
