@@ -141,6 +141,14 @@ class NpmContext:
         #: (provenance gap) reads it and flags ``False`` entries; passes
         #: silently when the dict is empty.
         self.provenance: dict[str, bool] = {}
+        #: ``{package_name: source_ref}`` populated alongside
+        #: ``provenance`` by the npm provider's ``post_filter`` when
+        #: ``--resolve-remote`` is on: the build-provenance source ref
+        #: (e.g. ``refs/heads/main``) parsed from each attested package's
+        #: attestation bundle. NPM-017 flags a ref that is neither a tag
+        #: nor the default branch (the throwaway-branch publish signal);
+        #: passes silently when the dict is empty.
+        self.provenance_ref: dict[str, str] = {}
         #: ``{package_name: ScorecardResult}`` populated by the npm
         #: provider's ``post_filter`` when ``--resolve-remote`` is on:
         #: each direct dependency's GitHub repo (from its packument) is
