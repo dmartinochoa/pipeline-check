@@ -30,8 +30,9 @@ RULE = Rule(
     ),
     docs_note=(
         "Walks ``spec.source.plugin`` on every Application and "
-        "ApplicationSet template. Fires whenever the field is set "
-        "with a non-empty ``name``. Helm and Kustomize sources are "
+        "ApplicationSet template. Fires whenever a ``plugin:`` block "
+        "is present; a missing or empty ``name`` is reported as "
+        "``plugin (unnamed)``. Helm and Kustomize sources are "
         "ignored (they're separately covered by ARGOCD-007 / future "
         "Kustomize rules). This is a deliberate noisy-but-correct "
         "v1, suppress per-Application once you've reviewed the CMP."

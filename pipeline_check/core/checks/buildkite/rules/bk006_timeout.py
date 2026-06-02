@@ -24,10 +24,8 @@ RULE = Rule(
     ),
     docs_note=(
         "Buildkite has no implicit timeout; agents will wait forever. "
-        "Set ``timeout_in_minutes:`` per step. The pipeline-level "
-        "default counts, a global ``steps:`` block with "
-        "``timeout_in_minutes:`` is fine, since Buildkite copies it "
-        "to each step."
+        "Set ``timeout_in_minutes:`` per step. The check reads each "
+        "step's own ``timeout_in_minutes:`` value."
     ),
     known_fp=(
         "Steps that genuinely need >24h (rare; database migrations, "

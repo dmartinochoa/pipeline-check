@@ -216,7 +216,7 @@ Set ``spec.goTemplate: true`` on the ApplicationSet (with ``goTemplateOptions: [
 <span class="pg-sev pg-sev--medium">MEDIUM</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-3</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-4</span> <span class="pg-tag pg-tag--esf">ESF-S-VERIFY-DEPS</span> <span class="pg-tag pg-tag--cwe">CWE-94</span>
 </div>
 
-Walks ``spec.source.plugin`` on every Application and ApplicationSet template. Fires whenever the field is set with a non-empty ``name``. Helm and Kustomize sources are ignored (they're separately covered by ARGOCD-007 / future Kustomize rules). This is a deliberate noisy-but-correct v1, suppress per-Application once you've reviewed the CMP.
+Walks ``spec.source.plugin`` on every Application and ApplicationSet template. Fires whenever a ``plugin:`` block is present; a missing or empty ``name`` is reported as ``plugin (unnamed)``. Helm and Kustomize sources are ignored (they're separately covered by ARGOCD-007 / future Kustomize rules). This is a deliberate noisy-but-correct v1, suppress per-Application once you've reviewed the CMP.
 
 <div class="pg-rule__rec" markdown>
 
@@ -379,7 +379,7 @@ Pair with ``manualSync: false`` on incident-window blackouts to fully freeze, an
 <span class="pg-sev pg-sev--low">LOW</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-7</span> <span class="pg-tag pg-tag--esf">ESF-C-AUDIT</span> <span class="pg-tag pg-tag--cwe">CWE-770</span>
 </div>
 
-Reads ``spec.revisionHistoryLimit`` and fires when the field is missing or set to ``null``. Explicit 0 also fires (history disabled entirely is rarely the intended posture — operators usually want at least a 1-2 entry rollback window). The rule is informational-leaning LOW: storage bloat and prolonged-secret-exposure are real but slow-moving risks, not exploitable surfaces an attacker can compromise in isolation.
+Reads ``spec.revisionHistoryLimit`` and fires when the field is missing or set to ``null``. The rule is informational-leaning LOW: storage bloat and prolonged-secret-exposure are real but slow-moving risks, not exploitable surfaces an attacker can compromise in isolation.
 
 **Known false-positive modes**
 

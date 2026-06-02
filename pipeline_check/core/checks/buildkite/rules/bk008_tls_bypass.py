@@ -30,7 +30,7 @@ RULE = Rule(
         "ADO-026 / CC-024 / GCB-011 / DR-006. Covers curl / wget / "
         "git / npm / yarn / pip / helm / kubectl / ssh / docker / "
         "maven / gradle / aws bypasses. Partial-word matches "
-        "(``--insecure-protocols``) are excluded."
+        "(``--insecurefoo``) are excluded."
     ),
     exploit_example=(
         "# Vulnerable: TLS verification disabled mid-pipeline.\n"

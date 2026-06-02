@@ -15,16 +15,15 @@ RULE = Rule(
     esf=("ESF-D-BUILD-ENV", "ESF-D-PRIV-BUILD"),
     cwe=("CWE-269",),
     recommendation=(
-        "Use Docker-based self-hosted runners or configure runners to "
-        "tear down between jobs. Add 'ephemeral' to `runs-on` labels "
-        "or use Bitbucket's runner images that are rebuilt per-job."
+        "Configure runners to tear down between jobs. Add 'ephemeral' "
+        "to `runs-on` labels or use Bitbucket's runner images that are "
+        "rebuilt per-job."
     ),
     docs_note=(
         "Self-hosted runners that persist between jobs leak filesystem "
         "and process state. A PR-triggered step writes to a well-known "
         "path; a subsequent deploy step on the same runner reads it. "
-        "Detects `runs-on: self.hosted` without an `ephemeral` marker "
-        "or Docker image override."
+        "Detects `runs-on: self.hosted` without an `ephemeral` marker."
     ),
 )
 

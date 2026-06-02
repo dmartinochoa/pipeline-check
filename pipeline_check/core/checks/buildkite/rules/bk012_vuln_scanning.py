@@ -25,9 +25,9 @@ RULE = Rule(
         "Vulnerability scanning sits at a different layer from signing "
         "and SBOM. It answers ``does this artifact ship a known "
         "CVE?`` rather than ``can we verify what it is?``. Detection "
-        "uses the shared vuln-scan-token catalog: trivy, grype, "
-        "snyk, npm-audit, pip-audit, anchore, dependency-check, "
-        "checkov, semgrep."
+        "uses the shared vuln-scan-token catalog of common scanners "
+        "including trivy, grype, snyk, npm-audit, pip-audit, "
+        "checkov, semgrep, and others."
     ),
 )
 
