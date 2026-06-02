@@ -47,8 +47,10 @@ def check(path: str, doc: dict[str, Any]) -> Finding:
                 return
             name = pool.get("name")
             demands = pool.get("demands") or []
+            # demands entries are normally strings ("ephemeral -equals true")
+            # but can be structured; coerce each to str before joining.
             demand_text = (
-                " ".join(demands).lower()
+                " ".join(str(d) for d in demands).lower()
                 if isinstance(demands, list)
                 else str(demands).lower()
             )

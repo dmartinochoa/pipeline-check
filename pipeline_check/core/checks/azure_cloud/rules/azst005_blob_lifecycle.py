@@ -7,7 +7,7 @@ from .._catalog import ResourceCatalog
 
 RULE = Rule(
     id="AZST-005",
-    title="Storage account has no blob lifecycle management policy",
+    title="Storage account blob lifecycle policy should be reviewed",
     severity=Severity.LOW,
     owasp=("CICD-SEC-9",),
     cwe=("CWE-404",),

@@ -1,11 +1,12 @@
 """CC-019, add_ssh_keys must specify fingerprints."""
 from __future__ import annotations
 
+from collections.abc import Iterator
 from typing import Any
 
 from ...base import Finding, Severity
 from ...rule import Rule
-from ..base import iter_jobs, iter_steps
+from ..base import iter_jobs
 
 RULE = Rule(
     id="CC-019",
@@ -58,21 +59,52 @@ RULE = Rule(
 )
 
 
+def _iter_steps_recursive(
+    steps: list[Any],
+) -> Iterator[dict[str, Any] | str]:
+    """Yield every step, recursing into ``when:``/``unless:`` sub-step lists."""
+    for step in steps:
+        yield step
+        if isinstance(step, dict):
+            for key in ("when", "unless"):
+                sub = step.get(key)
+                if isinstance(sub, dict):
+                    inner = sub.get("steps")
+                    if isinstance(inner, list):
+                        yield from _iter_steps_recursive(inner)
+
+
+def _bare_add_ssh_keys_in_steps(steps: list[Any]) -> bool:
+    """Return True if any step (recursively) is a fingerprint-less add_ssh_keys."""
+    for step in _iter_steps_recursive(steps):
+        if isinstance(step, str) and step == "add_ssh_keys":
+            return True
+        if isinstance(step, dict) and "add_ssh_keys" in step:
+            cfg = step["add_ssh_keys"]
+            if not isinstance(cfg, dict) or not cfg.get("fingerprints"):
+                return True
+    return False
+
+
 def check(path: str, doc: dict[str, Any]) -> Finding:
     unrestricted: list[str] = []
+
+    # Scan top-level job steps (including when:/unless: sub-steps).
     for job_id, job in iter_jobs(doc):
-        for step in iter_steps(job):
-            # Bare string step: `- add_ssh_keys`
-            if isinstance(step, str) and step == "add_ssh_keys":
-                unrestricted.append(job_id)
-                break
-            # Dict step: `- add_ssh_keys:` or `- add_ssh_keys: {fingerprints: [...]}`
-            if isinstance(step, dict) and "add_ssh_keys" in step:
-                cfg = step["add_ssh_keys"]
-                # cfg is None (bare `- add_ssh_keys:`) or a dict
-                if not isinstance(cfg, dict) or not cfg.get("fingerprints"):
-                    unrestricted.append(job_id)
-                    break
+        raw_steps = job.get("steps") or []
+        if isinstance(raw_steps, list) and _bare_add_ssh_keys_in_steps(raw_steps):
+            unrestricted.append(job_id)
+
+    # Scan top-level reusable commands block.
+    commands = doc.get("commands") or {}
+    if isinstance(commands, dict):
+        for cmd_id, cmd_def in commands.items():
+            if not isinstance(cmd_def, dict):
+                continue
+            raw_steps = cmd_def.get("steps") or []
+            if isinstance(raw_steps, list) and _bare_add_ssh_keys_in_steps(raw_steps):
+                unrestricted.append(f"commands/{cmd_id}")
+
     passed = not unrestricted
     desc = (
         "All `add_ssh_keys` steps specify fingerprints, or no "

@@ -25,7 +25,7 @@ axis.
 
 - **Controls in this standard:** 86
 - **Controls evidenced by at least one check:** 61 / 86
-- **Distinct checks evidencing this standard:** 642
+- **Distinct checks evidencing this standard:** 645
 - **Of those, autofixable with `--fix`:** 105
 
 _Severity levels (`CRITICAL` / `HIGH` / `MEDIUM` / `LOW` / `INFO`) follow the same scale across every provider and standard. See [How to read severity](README.md#how-to-read-severity) on the standards overview for the definitions._
@@ -73,7 +73,7 @@ Click a control ID to jump to the per-control section with the full check list. 
 | [`IA-19`](#ctrl-ia-19) | Repojacking | 2 | 2H |
 | [`IA-20`](#ctrl-ia-20) | Compromised user account | 3 | 2H · 1M |
 | [`IA-21`](#ctrl-ia-21) | Typosquatting | 1 | 1H |
-| [`IA-22`](#ctrl-ia-22) | Weak authentication methods | 8 | 7H · 1M |
+| [`IA-22`](#ctrl-ia-22) | Weak authentication methods | 9 | 8H · 1M |
 | [`IA-23`](#ctrl-ia-23) | Brandjacking | 1 | 1H |
 | [`IA-24`](#ctrl-ia-24) | Shadow IT | 2 | 1H · 1M |
 | [`EX-1`](#ctrl-ex-1) | Installation scripts | 15 | 13H · 2M |
@@ -93,12 +93,12 @@ Click a control ID to jump to the per-control section with the full check list. 
 | [`PER-3`](#ctrl-per-3) | Backdoor in code | 4 | 3C · 1H |
 | [`PER-4`](#ctrl-per-4) | Add user | 1 | 1H |
 | [`PER-5`](#ctrl-per-5) | Untagged resources | 0 | — |
-| [`PER-6`](#ctrl-per-6) | Scheduled task / job on self-hosted runner | 7 | 1H · 6M |
+| [`PER-6`](#ctrl-per-6) | Scheduled task / job on self-hosted runner | 8 | 2H · 6M |
 | [`PER-7`](#ctrl-per-7) | Implant in zombie instance | 0 | — |
-| [`PER-8`](#ctrl-per-8) | Create access token | 4 | 3H · 1M |
+| [`PER-8`](#ctrl-per-8) | Create access token | 5 | 4H · 1M |
 | [`PE-1`](#ctrl-pe-1) | Inject malicious dependency to privileged user repository | 7 | 2C · 5H |
 | [`PE-2`](#ctrl-pe-2) | Runners / agents running with high user privileges | 44 | 11C · 21H · 10M · 2L |
-| [`DE-1`](#ctrl-de-1) | Bypass review using admin permission | 33 | 8H · 23M · 2L |
+| [`DE-1`](#ctrl-de-1) | Bypass review using admin permission | 34 | 9H · 23M · 2L |
 | [`DE-2`](#ctrl-de-2) | SaaS sprawl | 1 | 1M |
 | [`DE-3`](#ctrl-de-3) | Misconfigured audit log settings | 33 | 3H · 7M · 7L · 16I |
 | [`DE-4`](#ctrl-de-4) | Misconfiguration of security measures | 85 | 1C · 13H · 50M · 21L |
@@ -113,7 +113,7 @@ Click a control ID to jump to the per-control section with the full check list. 
 | [`CA-7`](#ctrl-ca-7) | Runtime leakage of password | 0 | — |
 | [`CA-8`](#ctrl-ca-8) | Steal credentials in container artifacts | 12 | 4C · 7H · 1M |
 | [`LM-1`](#ctrl-lm-1) | Push implants across repositories | 1 | 1H |
-| [`LM-2`](#ctrl-lm-2) | Overprivileged user account | 32 | 6C · 15H · 10M · 1L |
+| [`LM-2`](#ctrl-lm-2) | Overprivileged user account | 33 | 6C · 16H · 10M · 1L |
 | [`COL-1`](#ctrl-col-1) | Unencrypted data in transit | 28 | 24H · 3M · 1L |
 | [`COL-2`](#ctrl-col-2) | Unencrypted data at rest | 9 | 1C · 2H · 6M |
 | [`EXF-1`](#ctrl-exf-1) | Bypass of outbound traffic control | 1 | 1C |
@@ -615,7 +615,7 @@ _No checks in this scanner currently evidence this control. Open an issue if you
 
 ### IA-22: Weak authentication methods { #ctrl-ia-22 }
 
-**Evidenced by 8 checks** across 5 providers (Azure DevOps, Bitbucket, CircleCI, GitHub Actions, GitLab CI).
+**Evidenced by 9 checks** across 5 providers (Azure DevOps, Bitbucket, CircleCI, GitHub Actions, GitLab CI).
 
 | Check | Title | Severity | Provider | Fix |
 |-------|-------|----------|----------|-----|
@@ -626,6 +626,7 @@ _No checks in this scanner currently evidence this control. Open an issue if you
 | [`GHA-050`](../providers/github.md#gha-050) | Publish step relies on long-lived registry token | <span class="pg-sev pg-sev--high">HIGH</span> | [GitHub Actions](../providers/github.md) |  |
 | [`GHA-062`](../providers/github.md#gha-062) | OIDC subject claim in sibling IaC grants overly broad scope | <span class="pg-sev pg-sev--high">HIGH</span> | [GitHub Actions](../providers/github.md) |  |
 | [`GHA-069`](../providers/github.md#gha-069) | ``id-token: write`` granted without an OIDC-consumer step | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [GitHub Actions](../providers/github.md) |  |
+| [`GHA-113`](../providers/github.md#gha-113) | OIDC trusted-publishing job without an environment gate | <span class="pg-sev pg-sev--high">HIGH</span> | [GitHub Actions](../providers/github.md) |  |
 | [`GL-031`](../providers/gitlab.md#gl-031) | id_tokens: missing audience pin or environment binding | <span class="pg-sev pg-sev--high">HIGH</span> | [GitLab CI](../providers/gitlab.md) |  |
 
 ### IA-23: Brandjacking { #ctrl-ia-23 }
@@ -848,7 +849,7 @@ _No checks in this scanner currently evidence this control. Open an issue if you
 
 ### PER-6: Scheduled task / job on self-hosted runner { #ctrl-per-6 }
 
-**Evidenced by 7 checks** across 6 providers (Azure DevOps, Bitbucket, CircleCI, GitHub Actions, GitLab CI, Jenkins).
+**Evidenced by 8 checks** across 6 providers (Azure DevOps, Bitbucket, CircleCI, GitHub Actions, GitLab CI, Jenkins).
 
 | Check | Title | Severity | Provider | Fix |
 |-------|-------|----------|----------|-----|
@@ -857,6 +858,7 @@ _No checks in this scanner currently evidence this control. Open an issue if you
 | [`CC-010`](../providers/circleci.md#cc-010) | Self-hosted runner without ephemeral marker | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [CircleCI](../providers/circleci.md) |  |
 | [`GHA-012`](../providers/github.md#gha-012) | Self-hosted runner without ephemeral marker | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [GitHub Actions](../providers/github.md) |  |
 | [`GHA-105`](../providers/github.md#gha-105) | Self-hosted runner reachable from an untrusted PR trigger | <span class="pg-sev pg-sev--high">HIGH</span> | [GitHub Actions](../providers/github.md) |  |
+| [`GHA-112`](../providers/github.md#gha-112) | Self-hosted deploy job not gated by a protected environment | <span class="pg-sev pg-sev--high">HIGH</span> | [GitHub Actions](../providers/github.md) |  |
 | [`GL-014`](../providers/gitlab.md#gl-014) | Self-managed runner without ephemeral tag | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [GitLab CI](../providers/gitlab.md) |  |
 | [`JF-014`](../providers/jenkins.md#jf-014) | Agent label missing ephemeral marker | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [Jenkins](../providers/jenkins.md) |  |
 
@@ -866,7 +868,7 @@ _No checks in this scanner currently evidence this control. Open an issue if you
 
 ### PER-8: Create access token { #ctrl-per-8 }
 
-**Evidenced by 4 checks** across 2 providers (AWS, GitHub Actions).
+**Evidenced by 5 checks** across 2 providers (AWS, GitHub Actions).
 
 | Check | Title | Severity | Provider | Fix |
 |-------|-------|----------|----------|-----|
@@ -874,6 +876,7 @@ _No checks in this scanner currently evidence this control. Open an issue if you
 | [`GHA-055`](../providers/github.md#gha-055) | Reusable workflow outputs derive a secret or caller-input value | <span class="pg-sev pg-sev--high">HIGH</span> | [GitHub Actions](../providers/github.md) |  |
 | [`GHA-061`](../providers/github.md#gha-061) | GitHub App token minted without a `permissions:` filter | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [GitHub Actions](../providers/github.md) |  |
 | [`GHA-106`](../providers/github.md#gha-106) | AI agent CLI runs with a write-scoped GITHUB_TOKEN | <span class="pg-sev pg-sev--high">HIGH</span> | [GitHub Actions](../providers/github.md) |  |
+| [`GHA-111`](../providers/github.md#gha-111) | AI agent generates IaC applied to the cloud in the same job | <span class="pg-sev pg-sev--high">HIGH</span> | [GitHub Actions](../providers/github.md) |  |
 
 ### PE-1: Inject malicious dependency to privileged user repository { #ctrl-pe-1 }
 
@@ -942,7 +945,7 @@ _No checks in this scanner currently evidence this control. Open an issue if you
 
 ### DE-1: Bypass review using admin permission { #ctrl-de-1 }
 
-**Evidenced by 33 checks** across 9 providers (AWS, Azure DevOps, Bitbucket, Buildkite, CircleCI, GitHub Actions, GitLab CI, Jenkins, SCM).
+**Evidenced by 34 checks** across 9 providers (AWS, Azure DevOps, Bitbucket, Buildkite, CircleCI, GitHub Actions, GitLab CI, Jenkins, SCM).
 
 | Check | Title | Severity | Provider | Fix |
 |-------|-------|----------|----------|-----|
@@ -960,6 +963,7 @@ _No checks in this scanner currently evidence this control. Open an issue if you
 | [`CP-005`](../providers/aws.md#cp-005) | Production Deploy stage has no preceding ManualApproval | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [AWS](../providers/aws.md) |  |
 | [`GHA-014`](../providers/github.md#gha-014) | Deploy job missing environment binding | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [GitHub Actions](../providers/github.md) | <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> |
 | [`GHA-086`](../providers/github.md#gha-086) | Wildcard branch trigger gates an environment-bound deploy | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [GitHub Actions](../providers/github.md) |  |
+| [`GHA-112`](../providers/github.md#gha-112) | Self-hosted deploy job not gated by a protected environment | <span class="pg-sev pg-sev--high">HIGH</span> | [GitHub Actions](../providers/github.md) |  |
 | [`GL-004`](../providers/gitlab.md#gl-004) | Deploy job lacks manual approval or environment gate | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [GitLab CI](../providers/gitlab.md) |  |
 | [`GL-029`](../providers/gitlab.md#gl-029) | Manual deploy job defaults to allow_failure: true | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [GitLab CI](../providers/gitlab.md) |  |
 | [`JF-005`](../providers/jenkins.md#jf-005) | Deploy stage missing manual `input` approval | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [Jenkins](../providers/jenkins.md) |  |
@@ -1274,7 +1278,7 @@ _No checks in this scanner currently evidence this control. Open an issue if you
 
 ### LM-2: Overprivileged user account { #ctrl-lm-2 }
 
-**Evidenced by 32 checks** across 8 providers (AWS, Argo CD, Argo Workflows, Cloud Build, GitHub Actions, Kubernetes, SCM, Tekton).
+**Evidenced by 33 checks** across 8 providers (AWS, Argo CD, Argo Workflows, Cloud Build, GitHub Actions, Kubernetes, SCM, Tekton).
 
 | Check | Title | Severity | Provider | Fix |
 |-------|-------|----------|----------|-----|
@@ -1292,6 +1296,7 @@ _No checks in this scanner currently evidence this control. Open an issue if you
 | [`GHA-004`](../providers/github.md#gha-004) | Workflow permissions block missing or overprovisioned | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [GitHub Actions](../providers/github.md) | <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> |
 | [`GHA-061`](../providers/github.md#gha-061) | GitHub App token minted without a `permissions:` filter | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [GitHub Actions](../providers/github.md) |  |
 | [`GHA-106`](../providers/github.md#gha-106) | AI agent CLI runs with a write-scoped GITHUB_TOKEN | <span class="pg-sev pg-sev--high">HIGH</span> | [GitHub Actions](../providers/github.md) |  |
+| [`GHA-111`](../providers/github.md#gha-111) | AI agent generates IaC applied to the cloud in the same job | <span class="pg-sev pg-sev--high">HIGH</span> | [GitHub Actions](../providers/github.md) |  |
 | [`IAM-001`](../providers/aws.md#iam-001) | CI/CD role has AdministratorAccess policy attached | <span class="pg-sev pg-sev--critical">CRITICAL</span> | [AWS](../providers/aws.md) |  |
 | [`IAM-002`](../providers/aws.md#iam-002) | CI/CD role has wildcard Action in attached policy | <span class="pg-sev pg-sev--high">HIGH</span> | [AWS](../providers/aws.md) |  |
 | [`IAM-004`](../providers/aws.md#iam-004) | CI/CD role can PassRole to any role | <span class="pg-sev pg-sev--high">HIGH</span> | [AWS](../providers/aws.md) |  |
@@ -1352,7 +1357,7 @@ _No checks in this scanner currently evidence this control. Open an issue if you
 
 | Check | Title | Severity | Provider | Fix |
 |-------|-------|----------|----------|-----|
-| [`CA-001`](../providers/aws.md#ca-001) | CodeArtifact domain not encrypted with customer KMS CMK | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [AWS](../providers/aws.md) |  |
+| [`CA-001`](../providers/aws.md#ca-001) | CodeArtifact domain has no KMS encryptionKey configured | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [AWS](../providers/aws.md) |  |
 | [`CP-002`](../providers/aws.md#cp-002) | Artifact store not encrypted with customer-managed KMS key | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [AWS](../providers/aws.md) |  |
 | [`CWL-002`](../providers/aws.md#cwl-002) | CodeBuild log group not KMS-encrypted | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [AWS](../providers/aws.md) |  |
 | [`ECR-005`](../providers/aws.md#ecr-005) | Repository encrypted with AES256 rather than KMS CMK | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [AWS](../providers/aws.md) |  |

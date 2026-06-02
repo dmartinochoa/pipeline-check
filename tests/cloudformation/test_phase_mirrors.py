@@ -363,12 +363,16 @@ def test_kms001_rotation_off_fails():
 
 
 def test_kms002_wildcard_fails():
+    # kms:* granted to a non-root principal is the over-broad case.
+    # (Granting kms:* to the account root is the AWS-recommended
+    # baseline and is intentionally not flagged; see TestKMS002 in
+    # test_audit_regressions.py.)
     ctx = make_context({
         "K": r("K", "AWS::KMS::Key", {
             "EnableKeyRotation": True,
             "KeyPolicy": {"Statement": [{
                 "Effect": "Allow",
-                "Principal": {"AWS": "arn:aws:iam::1:root"},
+                "Principal": {"AWS": "arn:aws:iam::1:role/admin"},
                 "Action": "kms:*",
             }]},
         }),

@@ -26,7 +26,7 @@ from typing import Any
 
 from ...base import Finding, Severity
 from ...rule import Rule
-from ..base import iter_steps, step_name, step_strings
+from ..base import iter_steps, step_name
 
 RULE = Rule(
     id="GCB-004",
@@ -88,7 +88,7 @@ RULE = Rule(
         "steps:\n"
         "  - name: gcr.io/cloud-builders/docker@sha256:abc123...\n"
         "    entrypoint: bash\n"
-        "    env: [TAG=${_TAG}]\n"
+        "    env: ['TAG=${_TAG}']\n"
         "    args:\n"
         "      - -c\n"
         "      - docker build -t \"image:$TAG\" ."
@@ -107,10 +107,32 @@ def _dynamic_subs_enabled(doc: dict[str, Any]) -> bool:
     return options.get("dynamicSubstitutions") is True
 
 
+def _args_entrypoint_strings(step: dict[str, Any]) -> list[str]:
+    """Return only the ``args`` and ``entrypoint`` strings from a step.
+
+    GCB-004 deliberately excludes ``env`` and ``secretEnv``: the rule's
+    recommended remediation is to pass ``$_USER_SUB`` through ``env:``
+    so the shell handles quoting inside the script.  Scanning ``env``
+    would cause that safe pattern to still fire.
+    """
+    out: list[str] = []
+    ent = step.get("entrypoint")
+    if isinstance(ent, str):
+        out.append(ent)
+    args = step.get("args")
+    if isinstance(args, list):
+        for a in args:
+            if isinstance(a, str):
+                out.append(a)
+    elif isinstance(args, str):
+        out.append(args)
+    return out
+
+
 def _steps_using_user_subs(doc: dict[str, Any]) -> list[str]:
     offenders: list[str] = []
     for idx, step in iter_steps(doc):
-        for blob in step_strings(step):
+        for blob in _args_entrypoint_strings(step):
             m = _USER_SUB_RE.search(blob)
             if m:
                 offenders.append(f"{step_name(step, idx)}: {m.group(0)}")

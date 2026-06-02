@@ -35,7 +35,7 @@ def check(catalog: ResourceCatalog) -> list[Finding]:
     for project in projects:
         role_arn = project.get("serviceRole", "")
         if role_arn:
-            role_to_projects[role_arn].append(project["name"])
+            role_to_projects[role_arn].append(project.get("name", "<unnamed>"))
 
     findings: list[Finding] = []
     for project in sorted(projects, key=lambda p: p.get("name", "")):

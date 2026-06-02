@@ -21,7 +21,7 @@ posture. Pair with [OpenSSF Scorecard](openssf_scorecard.md) and
 
 - **Controls in this standard:** 28
 - **Controls evidenced by at least one check:** 28 / 28
-- **Distinct checks evidencing this standard:** 127
+- **Distinct checks evidencing this standard:** 130
 - **Of those, autofixable with `--fix`:** 15
 
 _Severity levels (`CRITICAL` / `HIGH` / `MEDIUM` / `LOW` / `INFO`) follow the same scale across every provider and standard. See [How to read severity](README.md#how-to-read-severity) on the standards overview for the definitions._
@@ -57,7 +57,7 @@ Click a control ID to jump to the per-control section with the full check list. 
 | [`1.4.3`](#ctrl-1-4-3) | Ensure the access granted to each installed application is limited | 2 | 1H · 1M |
 | [`1.4.4`](#ctrl-1-4-4) | Ensure only secured webhooks are used | 1 | 1H |
 | [`1.5.1`](#ctrl-1-5-1) | Ensure scanners are in place to identify and prevent sensitive data in code | 16 | 8C · 6H · 1M · 1L |
-| [`1.5.2`](#ctrl-1-5-2) | Ensure scanners are in place to secure CI/CD pipeline instructions | 54 | 11C · 33H · 9M · 1L |
+| [`1.5.2`](#ctrl-1-5-2) | Ensure scanners are in place to secure CI/CD pipeline instructions | 57 | 11C · 36H · 9M · 1L |
 | [`1.5.3`](#ctrl-1-5-3) | Ensure scanners are in place to secure IaC instructions | 25 | 6C · 19H |
 | [`1.5.4`](#ctrl-1-5-4) | Ensure scanners are in place to identify and confirm presence of vulnerabilities | 8 | 1H · 6M · 1L |
 
@@ -333,7 +333,7 @@ pipeline_check --pipeline aws --standard cis_github --standard owasp_cicd_top_10
 
 ### 1.5.2: Ensure scanners are in place to secure CI/CD pipeline instructions { #ctrl-1-5-2 }
 
-**Evidenced by 54 checks** across 6 providers (Argo Workflows, Buildkite, GitHub Actions, GitLab CI, SCM, Tekton).
+**Evidenced by 57 checks** across 6 providers (Argo Workflows, Buildkite, GitHub Actions, GitLab CI, SCM, Tekton).
 
 | Check | Title | Severity | Provider | Fix |
 |-------|-------|----------|----------|-----|
@@ -381,6 +381,9 @@ pipeline_check --pipeline aws --standard cis_github --standard owasp_cicd_top_10
 | [`GHA-105`](../providers/github.md#gha-105) | Self-hosted runner reachable from an untrusted PR trigger | <span class="pg-sev pg-sev--high">HIGH</span> | [GitHub Actions](../providers/github.md) |  |
 | [`GHA-106`](../providers/github.md#gha-106) | AI agent CLI runs with a write-scoped GITHUB_TOKEN | <span class="pg-sev pg-sev--high">HIGH</span> | [GitHub Actions](../providers/github.md) |  |
 | [`GHA-110`](../providers/github.md#gha-110) | Workflow disables Go module checksum / sum-db verification | <span class="pg-sev pg-sev--high">HIGH</span> | [GitHub Actions](../providers/github.md) |  |
+| [`GHA-111`](../providers/github.md#gha-111) | AI agent generates IaC applied to the cloud in the same job | <span class="pg-sev pg-sev--high">HIGH</span> | [GitHub Actions](../providers/github.md) |  |
+| [`GHA-112`](../providers/github.md#gha-112) | Self-hosted deploy job not gated by a protected environment | <span class="pg-sev pg-sev--high">HIGH</span> | [GitHub Actions](../providers/github.md) |  |
+| [`GHA-113`](../providers/github.md#gha-113) | OIDC trusted-publishing job without an environment gate | <span class="pg-sev pg-sev--high">HIGH</span> | [GitHub Actions](../providers/github.md) |  |
 | [`SCM-020`](../providers/scm_github.md#scm-020) | Default workflow GITHUB_TOKEN has write permission | <span class="pg-sev pg-sev--high">HIGH</span> | [SCM](../providers/scm_github.md) |  |
 | [`SCM-041`](../providers/scm_github.md#scm-041) | Active ruleset doesn't gate on a deployment environment | <span class="pg-sev pg-sev--low">LOW</span> | [SCM](../providers/scm_github.md) |  |
 | [`TAINT-001`](../providers/github.md#taint-001) | Untrusted input flows across step boundaries via step outputs | <span class="pg-sev pg-sev--high">HIGH</span> | [GitHub Actions](../providers/github.md) |  |

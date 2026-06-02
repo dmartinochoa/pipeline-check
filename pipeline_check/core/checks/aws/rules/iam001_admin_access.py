@@ -1,7 +1,7 @@
 """IAM-001. CI/CD service role has AdministratorAccess attached."""
 from __future__ import annotations
 
-from ..._iam_policy import ADMIN_POLICY_ARN
+from ..._iam_policy import _ADMIN_POLICY_SUFFIX, ADMIN_POLICY_ARN
 from ...base import Finding, Severity
 from ...rule import Rule
 from .._catalog import ResourceCatalog
@@ -73,7 +73,12 @@ def check(catalog: ResourceCatalog) -> list[Finding]:
                 passed=False,
             ))
             continue
-        has_admin = ADMIN_POLICY_ARN in arns
+        # Match the commercial ARN exactly, but also accept GovCloud
+        # (arn:aws-us-gov:) and China (arn:aws-cn:) partition forms by
+        # checking the suffix that is constant across all partitions.
+        has_admin = ADMIN_POLICY_ARN in arns or any(
+            a.endswith(_ADMIN_POLICY_SUFFIX) for a in arns
+        )
         desc = (
             f"Role '{role_name}' has AdministratorAccess attached."
             if has_admin else

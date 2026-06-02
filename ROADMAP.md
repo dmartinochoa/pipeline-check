@@ -1113,10 +1113,19 @@ environment gate), GHA-104 (AI agent auto-push without PR review),
 GHA-106 (agentic CLI in a job whose GITHUB_TOKEN carries write scope,
 the over-permissive-token gap, broader than GHA-061's App-token mint
 check), and AC-035 (the reviewer-and-committer chain: GHA-103 paired
-with GHA-104 / GHA-106 on the same workflow). Remaining gap:
-AI-generated IaC changes that modify security-sensitive resources
-(an agent that edits Terraform / CloudFormation under a write token,
-distinct from the workflow-YAML surface the current rules cover).
+with GHA-104 / GHA-106 on the same workflow), and GHA-111 (an agentic
+CLI co-located in one job with an unattended IaC apply, ``terraform
+apply`` / ``cloudformation deploy`` / ``cdk deploy`` / ``pulumi up``, so
+a prompt-injected agent's generated infrastructure reaches the cloud
+account, not just the repo). GHA-111 closes the AI-generated-IaC gap
+this section flagged, the agent-edits-Terraform / CloudFormation
+surface distinct from the workflow-YAML surface the other rules cover.
+AC-037 then shipped the reachability chain this theme called for: it
+pairs an untrusted-input agent leg (GHA-058 agentic-CLI bypass /
+PR-checkout topology, or GHA-103 review bot on an untrusted trigger)
+with GHA-111 on one workflow, the cloud-account analog of AC-035's
+repo-write reviewer-and-committer loop. The AI-agent pipeline-risk
+theme is now fully covered, rule and chain.
 
 ### ~~Gitea / Forgejo provider~~ shipped
 
@@ -1185,10 +1194,14 @@ statically detectable:
   config concern, not something visible in the workflow YAML, so it's
   out of scope for a static workflow scanner.
 
-Remaining static candidate worth considering: a self-hosted deploy
-job that isn't gated behind a protected ``environment:`` (distinct
-from GHA-014's deploy-name heuristic). Complements GHA-012 (ephemeral)
-and GHA-068 (deprecated runner image). StepSecurity's ``harden-runner``
+The last static candidate then shipped as GHA-112: a deploy job on a
+self-hosted runner with no protected ``environment:`` gate, the HIGH
+self-hosted case of GHA-014's MEDIUM ungated-deploy (it reuses the
+shared deploy name / command vocabulary but scopes to the self-hosted
+runner, where persistent infrastructure holds standing deploy
+credentials). It completes the self-hosted-runner pack alongside
+GHA-012 (ephemeral), GHA-068 (deprecated runner image), and GHA-105
+(reachable from a PR trigger). StepSecurity's ``harden-runner``
 egress agent, earlier called out of scope as a runtime agent, now ships
 as a three-rule pack: GHA-107 (present but in audit mode, egress not
 blocked), GHA-108 (an OIDC / environment-gated job with no egress
@@ -1311,7 +1324,16 @@ cleartext), and ACR-005 (a container registry without tag immutability,
 so a pushed tag can be overwritten with a backdoored image). The
 remaining cloud-posture MEDIUM rules (encryption, rotation, logging,
 backups, hardening toggles) stay None by design, so this backfill is now
-into its opportunistic long tail.
+into its opportunistic long tail. A follow-up pass then caught two
+CI-style providers the original CI sweep skipped: Argo Workflows now
+ships ARGO-003 (default ServiceAccount), ARGO-013 (SA-token automount not
+opted out), and ARGO-014 (a template script's unpinned package install),
+the same primitives as the Kubernetes and Tekton packs. Cloud Build then
+shipped the analogous pair: GCB-013 (a git / path / tarball install that
+bypasses the registry) and GCB-016 (a step ``dir`` with a ``..`` escape
+that reaches the builder image's root filesystem). That exhausts the
+concrete-primitive MEDIUM rules across every provider; the remainder
+stay None by design.
 
 ### Lower priority
 

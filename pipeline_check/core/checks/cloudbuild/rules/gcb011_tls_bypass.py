@@ -43,14 +43,17 @@ RULE = Rule(
         "# path (compromised proxy, malicious VPN exit) MITMs the\n"
         "# response and ships substituted bytes into the build.\n"
         "steps:\n"
-        "  - name: gcr.io/cloud-builders/curl@sha256:abc123...\n"
-        "    args: [-k, -O, https://internal-mirror.example.com/artifact.tar.gz]\n"
+        "  - name: gcr.io/cloud-builders/curl@sha256:9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08\n"
+        "    entrypoint: bash\n"
+        "    args:\n"
+        "      - -c\n"
+        "      - curl -k -O https://internal-mirror.example.com/artifact.tar.gz\n"
         "\n"
         "# Safe: keep TLS verification on. If the internal mirror\n"
         "# uses a private CA, install the CA into the step image's\n"
         "# trust store rather than papering over with ``-k``.\n"
         "steps:\n"
-        "  - name: gcr.io/cloud-builders/curl@sha256:abc123...\n"
+        "  - name: gcr.io/cloud-builders/curl@sha256:9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08\n"
         "    args: [-O, https://internal-mirror.example.com/artifact.tar.gz]"
     ),
 )
@@ -70,4 +73,5 @@ check = yaml_blob_check(
     scanner=tls_bypass.scan,
     pass_desc="No TLS verification bypass patterns detected in this pipeline.",
     fail_desc=_fail_desc,
+    lowercase=False,
 )

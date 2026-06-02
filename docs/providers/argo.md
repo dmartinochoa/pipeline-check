@@ -62,7 +62,7 @@ All other flags (`--output`, `--severity-threshold`, `--checks`,
 <span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-3</span> <span class="pg-tag pg-tag--esf">ESF-S-PIN-DEPS</span> <span class="pg-tag pg-tag--esf">ESF-S-VERIFY-DEPS</span> <span class="pg-tag pg-tag--cwe">CWE-829</span>
 </div>
 
-Walks ``spec.templates[].container``, ``spec.templates[].script``, and ``spec.templates[].containerSet.containers[]``. The image must contain ``@sha256:`` followed by a 64-char hex digest.
+Walks ``spec.templates[].container``, ``spec.templates[].script``, ``spec.templates[].containerSet.containers[]``, ``spec.templates[].initContainers[]``, and ``spec.templates[].sidecars[]``. The image must contain ``@sha256:`` followed by a 64-char hex digest.
 
 <div class="pg-rule__rec" markdown>
 
@@ -82,7 +82,7 @@ Pin every container / script template image to a content-addressable digest (``a
 <span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-5</span> <span class="pg-tag pg-tag--esf">ESF-D-RUNTIME-HARDENING</span> <span class="pg-tag pg-tag--cwe">CWE-269</span> <span class="pg-tag pg-tag--cwe">CWE-250</span>
 </div>
 
-Detection fires on ``securityContext.privileged: true``, ``runAsUser: 0``, ``runAsNonRoot: false``, ``allowPrivilegeEscalation: true``, or no ``securityContext`` block at all. Also walks ``spec.podSpecPatch`` (raw YAML) for an explicit ``privileged: true`` token.
+Detection fires on ``securityContext.privileged: true``, ``runAsUser: 0``, ``runAsNonRoot: false``, ``allowPrivilegeEscalation: true``, or no ``securityContext`` block at all. Walks ``spec.templates[].container``, ``spec.templates[].script``, ``spec.templates[].containerSet.containers[]``, ``spec.templates[].initContainers[]``, and ``spec.templates[].sidecars[]``. Also walks ``spec.podSpecPatch`` (raw YAML) for an explicit ``privileged: true`` token.
 
 <div class="pg-rule__rec" markdown>
 
@@ -166,7 +166,7 @@ Don't interpolate ``{{inputs.parameters.<name>}}`` directly into ``script.source
 <span class="pg-sev pg-sev--critical">CRITICAL</span> <span class="pg-fix pg-fix--rule" title="`--fix` will patch this rule">🔧 autofix</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-6</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-7</span> <span class="pg-tag pg-tag--esf">ESF-D-SECRETS</span> <span class="pg-tag pg-tag--cwe">CWE-798</span>
 </div>
 
-Strong matches: AWS access keys, GitHub PATs, JWTs. Weak match: env var name suggests a secret (``*_TOKEN``, ``*_KEY``, ``*PASSWORD``, ``*SECRET``) and the value is a non-empty literal rather than an interpolation.
+Strong matches: AWS access keys, GitHub PATs, JWTs. Weak match: env var name suggests a secret (``*_TOKEN``, ``*_KEY``, ``*PASSWORD``, ``*SECRET``) and the value is a non-empty literal rather than an interpolation. Known false positives for the weak-match path: cache or partition keys (``CACHE_KEY``, ``REDIS_KEY``, ``DYNAMO_PARTITION_KEY``); path variables whose name contains ``_KEY_PATH`` or ``_KEY_FILE`` (``SSH_PRIVATE_KEY_PATH``); names where ``KEY`` is followed by a non-secret suffix such as ``_PREFIX``, ``_INDEX``, or ``_NAME``. These are excluded by the rule logic and will not fire.
 
 <div class="pg-rule__rec" markdown>
 

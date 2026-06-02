@@ -12,8 +12,6 @@ pipelines:
         script:
           - echo "Building $BITBUCKET_BRANCH"
           - npm test
-        # BB-010 — produces an artifact that the downstream deployment
-        # step consumes without verification.
         artifacts:
           - dist/**
 
@@ -29,8 +27,8 @@ pipelines:
               AWS_SECRET_ACCESS_KEY: $AWS_SECRET_ACCESS_KEY
               S3_BUCKET: 'example-bucket'
 
-    # BB-010 — separate deployment-marked step that consumes the
-    # earlier artifacts without verification.
+    # A deployment-marked promotion step (BB-010's untrusted-handover
+    # case lives in the pull-requests pipeline below).
     - step:
         name: Promote release
         deployment: staging
@@ -89,6 +87,22 @@ pipelines:
     - step:
         script:
           - echo "Key is $API_KEY"
+
+  # BB-010 — a pull-request build produces an artifact that a later
+  # deploy step consumes without verification (the untrusted-handover
+  # vector; the rule is scoped to pull-requests pipelines).
+  pull-requests:
+    "**":
+      - step:
+          name: PR build
+          script: [npm run build]
+          artifacts:
+            - dist/**
+      - step:
+          name: PR deploy
+          deployment: staging
+          script:
+            - ./dist/install.sh
 
 # BB-020 — full clone depth.
 clone:

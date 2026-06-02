@@ -51,6 +51,38 @@ RULE = Rule(
         "lockfile. Suppress via ignore-file scoped to the "
         "specific template name.",
     ),
+    exploit_example=(
+        "# Vulnerable: a script template installs dependencies with no\n"
+        "# lockfile or hash pinning.\n"
+        "apiVersion: argoproj.io/v1alpha1\n"
+        "kind: Workflow\n"
+        "metadata: { name: ci }\n"
+        "spec:\n"
+        "  entrypoint: test\n"
+        "  templates:\n"
+        "    - name: test\n"
+        "      script:\n"
+        "        image: node@sha256:abc123...\n"
+        "        command: [sh]\n"
+        "        source: |\n"
+        "          npm install\n"
+        "          npm test\n"
+        "\n"
+        "# Attack: `npm install` resolves the `^` / `~` ranges in\n"
+        "# package.json against the live registry at run time instead\n"
+        "# of the committed lockfile, so a freshly published malicious\n"
+        "# patch of a transitive dependency (the event-stream /\n"
+        "# Shai-Hulud shape) lands in the workflow pod and its\n"
+        "# postinstall runs with the workflow's credentials.\n"
+        "\n"
+        "# Safe: install the locked set with integrity checks.\n"
+        "      script:\n"
+        "        image: node@sha256:abc123...\n"
+        "        command: [sh]\n"
+        "        source: |\n"
+        "          npm ci\n"
+        "          npm test"
+    ),
 )
 
 

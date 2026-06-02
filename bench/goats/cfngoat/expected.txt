@@ -8,6 +8,11 @@
 CF-001    # AWS::IAM::AccessKey.AccessKey: long-lived static IAM credential as code
 CT-001    # Stack deploys AWS resources with no AWS::CloudTrail::Trail (CIS AWS 3.1)
 KMS-001   # KMS::Key.LogsKey rotation disabled (CIS AWS 3.8; cfngoat README's CKV_AWS_7)
-KMS-002   # KMS::Key.LogsKey policy grants wildcard kms:* (CIS AWS 1.16)
+# KMS-002 intentionally NOT expected: LogsKey's policy is the default
+# ``Enable IAM User Permissions`` statement granting kms:* to the account
+# root (arn:aws:iam::${AWS::AccountId}:root), the AWS-recommended default,
+# not a wildcard principal. KMS-002 correctly stopped firing on it in the
+# audit FP fix (#242); the earlier "wildcard kms:*" expectation was a false
+# positive (root != wildcard).
 LMB-001   # AnalysisLambda + CleanBucketFunction lack CodeSigningConfigArn (CIS SSC 2.4.2)
 LMB-003   # AnalysisLambda env vars carry plaintext secret-shaped values (CIS AWS 3.7)

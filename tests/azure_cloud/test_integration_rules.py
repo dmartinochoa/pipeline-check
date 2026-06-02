@@ -188,7 +188,12 @@ def _insecure_cache() -> dict[str, object]:
     sa = _storage_account()
     sa.minimum_tls_version = "TLS1_0"
     sa.kind = "StorageV2"
-    sa.key_creation_time = None
+    # Stale keys (over 90 days old) — triggers AZST-006 violation.
+    stale_time = now - timedelta(days=120)
+    key_creation = MagicMock()
+    key_creation.key1 = stale_time
+    key_creation.key2 = stale_time
+    sa.key_creation_time = key_creation
 
     kv = _key_vault()
     kv.id = "/subscriptions/sub-test-123/resourceGroups/rg/providers/Microsoft.KeyVault/vaults/badkv"

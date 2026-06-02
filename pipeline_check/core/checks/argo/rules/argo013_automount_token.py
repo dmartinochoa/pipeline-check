@@ -41,6 +41,41 @@ RULE = Rule(
         "rule then fires only on the broad spec-level absence, "
         "which is the actual gap.",
     ),
+    exploit_example=(
+        "# Vulnerable: a Workflow that never opts out of SA-token\n"
+        "# automount, so every step's pod gets the token mounted.\n"
+        "apiVersion: argoproj.io/v1alpha1\n"
+        "kind: Workflow\n"
+        "metadata: { name: ci }\n"
+        "spec:\n"
+        "  entrypoint: build\n"
+        "  serviceAccountName: ci-workflow-sa\n"
+        "  templates:\n"
+        "    - name: build\n"
+        "      container:\n"
+        "        image: ci-tools@sha256:abc123...\n"
+        "        command: [./build.sh]\n"
+        "\n"
+        "# Attack: automountServiceAccountToken defaults to true, so\n"
+        "# the SA token is mounted at\n"
+        "# /var/run/secrets/kubernetes.io/serviceaccount/ in the build\n"
+        "# pod even though build.sh never calls the Kubernetes API. An\n"
+        "# attacker who lands a shell in the step (a poisoned\n"
+        "# dependency, an injected command) reads the token and acts as\n"
+        "# ci-workflow-sa against the API, widening a build-step RCE\n"
+        "# into cluster access.\n"
+        "\n"
+        "# Safe: drop the token from pods that don't call the API.\n"
+        "spec:\n"
+        "  entrypoint: build\n"
+        "  serviceAccountName: ci-workflow-sa\n"
+        "  automountServiceAccountToken: false\n"
+        "  templates:\n"
+        "    - name: build\n"
+        "      container:\n"
+        "        image: ci-tools@sha256:abc123...\n"
+        "        command: [./build.sh]"
+    ),
 )
 
 

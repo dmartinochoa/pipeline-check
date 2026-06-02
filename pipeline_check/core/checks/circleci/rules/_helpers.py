@@ -40,7 +40,7 @@ SSH_NO_FINGERPRINT_RE = re.compile(
 # poisoned entry under a key derived from ``CIRCLE_BRANCH`` /
 # ``CIRCLE_PR_*`` that a later default-branch run restores.
 CACHE_TAINT_RE = re.compile(
-    r"\{\{\s*\.(?:Branch|Revision)\s*\}\}"
+    r"\{\{\s*\.Branch\s*\}\}"
     r"|\{\{\s*\.Environment\.(?:CIRCLE_BRANCH|CIRCLE_TAG|CIRCLE_PR_[A-Z_]+|CIRCLE_PULL_REQUEST)\s*\}\}"
     r"|\$\{?(?:CIRCLE_BRANCH|CIRCLE_TAG|CIRCLE_PR_[A-Z_]+|CIRCLE_PULL_REQUEST)\}?",
 )

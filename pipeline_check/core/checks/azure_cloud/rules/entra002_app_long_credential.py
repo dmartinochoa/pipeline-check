@@ -66,6 +66,13 @@ def check(catalog: ResourceCatalog) -> list[Finding]:
                 else:
                     start_dt = datetime.now(tz=UTC)
 
+                # One side can be tz-aware (a "Z"/offset string or the
+                # datetime.now(tz=UTC) fallback) while the other is naive;
+                # normalize both to UTC before subtracting.
+                if isinstance(end_dt, datetime) and end_dt.tzinfo is None:
+                    end_dt = end_dt.replace(tzinfo=UTC)
+                if isinstance(start_dt, datetime) and start_dt.tzinfo is None:
+                    start_dt = start_dt.replace(tzinfo=UTC)
                 lifetime = (end_dt - start_dt).days
                 passed = lifetime <= _MAX_DAYS
                 cred_type = "secret" if cred_list_key == "passwordCredentials" else "key"

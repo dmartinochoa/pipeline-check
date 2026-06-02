@@ -32,14 +32,27 @@ RULE = Rule(
 
 
 def _policy_denies_insecure_transport(doc: dict[str, Any]) -> bool:
-    for stmt in doc.get("Statement", []):
-        if stmt.get("Effect") != "Deny":
+    # Statement can legally be a single dict or a list; normalize before
+    # iterating so a single-object policy doesn't iterate over dict keys.
+    statements = doc.get("Statement", [])
+    if isinstance(statements, dict):
+        statements = [statements]
+    elif not isinstance(statements, list):
+        return False
+    for stmt in statements:
+        if not isinstance(stmt, dict) or stmt.get("Effect") != "Deny":
             continue
         cond = stmt.get("Condition", {}) or {}
+        if not isinstance(cond, dict):
+            continue
         for operator_block in cond.values():
             if not isinstance(operator_block, dict):
                 continue
-            if str(operator_block.get("aws:SecureTransport", "")).lower() == "false":
+            # The Bool value is usually a scalar "false", but AWS also
+            # accepts a single-element list ["false"]; check every form.
+            value = operator_block.get("aws:SecureTransport", "")
+            values = value if isinstance(value, list) else [value]
+            if any(str(v).lower() == "false" for v in values):
                 return True
     return False
 

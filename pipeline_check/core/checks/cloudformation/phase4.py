@@ -277,6 +277,11 @@ def _walk(node: object, path: str, hits: list[tuple[str, str]]) -> None:
         return
     if PLACEHOLDER_MARKER_RE.search(node):
         return
+    # CloudFormation dynamic references resolve a secret at deploy time
+    # ({{resolve:secretsmanager:...}}, {{resolve:ssm-secure:...}}); they
+    # are the documented secure pattern, not a literal credential.
+    if node.startswith("{{resolve:"):
+        return
     if SECRET_VALUE_RE.match(node):
         hits.append((path, "vendor-token"))
         return

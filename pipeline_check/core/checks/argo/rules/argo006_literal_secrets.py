@@ -26,7 +26,14 @@ RULE = Rule(
         "Strong matches: AWS access keys, GitHub PATs, JWTs. Weak "
         "match: env var name suggests a secret "
         "(``*_TOKEN``, ``*_KEY``, ``*PASSWORD``, ``*SECRET``) and the "
-        "value is a non-empty literal rather than an interpolation."
+        "value is a non-empty literal rather than an interpolation. "
+        "Known false positives for the weak-match path: cache or "
+        "partition keys (``CACHE_KEY``, ``REDIS_KEY``, "
+        "``DYNAMO_PARTITION_KEY``); path variables whose name contains "
+        "``_KEY_PATH`` or ``_KEY_FILE`` (``SSH_PRIVATE_KEY_PATH``); "
+        "names where ``KEY`` is followed by a non-secret suffix such as "
+        "``_PREFIX``, ``_INDEX``, or ``_NAME``. These are excluded by "
+        "the rule logic and will not fire."
     ),
     exploit_example=(
         "# Vulnerable: the AWS access key literal lives in the\n"
@@ -77,12 +84,32 @@ _STRONG_PATTERNS = (
     re.compile(r"\bsk-[A-Za-z0-9]{20,}\b"),
     re.compile(r"\beyJ[A-Za-z0-9_-]{10,}\.eyJ[A-Za-z0-9_-]{10,}\."),
 )
+# Matches env var names that contain a secret-bearing token (TOKEN, KEY, etc.)
+# as a whole underscore-delimited word.  The negative lookahead prevents
+# matching KEY/PRIVATE_KEY/ACCESS_KEY when they are immediately followed by a
+# non-secret suffix word such as _PATH, _FILE, _DIR, _PREFIX, _SUFFIX, _INDEX,
+# _NAME, _TYPE, _STORE, _RING, or _CHAIN (e.g. SSH_PRIVATE_KEY_PATH,
+# S3_KEY_PREFIX).
 _SECRET_KEY_RE = re.compile(
-    r"(?:^|_)(TOKEN|KEY|SECRET|PASSWORD|PASSWD|API_KEY|"
-    r"ACCESS_KEY|PRIVATE_KEY|CREDENTIAL)s?(?:_|$)",
+    r"(?:^|_)(TOKEN|KEY|SECRET|PASSWORD|PASSWD|"
+    r"ACCESS_KEY|PRIVATE_KEY|CREDENTIAL)s?"
+    r"(?!_(?:PATH|FILE|DIR|PREFIX|SUFFIX|INDEX|NAME|TYPE|STORE|RING|CHAIN))"
+    r"(?:_|$)",
+    re.IGNORECASE,
+)
+# Names whose leading segment indicates a non-credential lookup key (cache
+# keys, partition keys, checksums, etc.).  These are excluded from the
+# weak-match path even when _SECRET_KEY_RE matches the trailing word.
+_BENIGN_NAME_RE = re.compile(
+    r"(?:^|_)(?:CACHE|PARTITION|SORT|HASH|LOOKUP|REDIS|MEMCACHE|ETAG|CHECKSUM)(?:_|$)",
     re.IGNORECASE,
 )
 _INTERPOLATED_RE = re.compile(r"\{\{[^}]+\}\}|\$\{?[A-Za-z_][A-Za-z0-9_]*\}?")
+# Values that start with a path separator are filesystem references, not
+# credentials.  Only anchor to the start of the string to avoid
+# misclassifying base64-like values that happen to contain a slash
+# (e.g. AWS secret access keys).
+_PATH_VALUE_RE = re.compile(r"^[./]")
 
 
 def _looks_like_secret(name: str, value: str) -> bool:
@@ -92,10 +119,12 @@ def _looks_like_secret(name: str, value: str) -> bool:
     for pat in _STRONG_PATTERNS:
         if pat.search(v):
             return True
-    if _SECRET_KEY_RE.search(name):
+    if _SECRET_KEY_RE.search(name) and not _BENIGN_NAME_RE.search(name):
         if v.lower() in {"true", "false", "none", "null", "0", "1"}:
             return False
         if len(v) < 8:
+            return False
+        if _PATH_VALUE_RE.search(v):
             return False
         return True
     return False

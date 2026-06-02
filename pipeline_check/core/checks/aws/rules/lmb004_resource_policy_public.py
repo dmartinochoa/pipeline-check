@@ -91,8 +91,10 @@ def check(catalog: ResourceCatalog) -> list[Finding]:
             if not public_principal(stmt):
                 continue
             # If the statement has a SourceArn / SourceAccount condition,
-            # the wildcard is effectively scoped.
-            conditions = stmt.get("Condition", {}) or {}
+            # the wildcard is effectively scoped. A non-dict Condition
+            # (malformed policy) carries no scoping keys.
+            cond_raw = stmt.get("Condition")
+            conditions = cond_raw if isinstance(cond_raw, dict) else {}
             scoped = any(
                 any(
                     isinstance(key, str) and key.lower() in ("aws:sourcearn", "aws:sourceaccount")

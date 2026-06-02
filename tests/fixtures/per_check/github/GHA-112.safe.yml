@@ -1,0 +1,10 @@
+on:
+  push:
+    branches: [main]
+jobs:
+  deploy:
+    runs-on: [self-hosted, ephemeral, deploy]
+    environment: production
+    steps:
+      - uses: actions/checkout@v4
+      - run: kubectl apply -f k8s/

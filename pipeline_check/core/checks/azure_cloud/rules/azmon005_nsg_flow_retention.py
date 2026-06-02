@@ -52,6 +52,21 @@ def check(catalog: ResourceCatalog) -> list[Finding]:
                 recommendation=RULE.recommendation,
                 passed=False,
             ))
+        elif days == 0:
+            # days=0 with retention enabled means retain indefinitely,
+            # which satisfies any minimum-days requirement.
+            findings.append(Finding(
+                check_id=RULE.id,
+                title=RULE.title,
+                severity=RULE.severity,
+                resource=fl_name,
+                description=(
+                    f"Flow log '{fl_name}' retains logs indefinitely "
+                    "(days=0 means no expiry)."
+                ),
+                recommendation=RULE.recommendation,
+                passed=True,
+            ))
         elif days < _MIN_RETENTION_DAYS:
             findings.append(Finding(
                 check_id=RULE.id,

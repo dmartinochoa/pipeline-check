@@ -34,17 +34,16 @@ RULE = Rule(
         "    Type: AWS::ECR::PullThroughCacheRule\n"
         "    Properties:\n"
         "      EcrRepositoryPrefix: internal-mirror\n"
-        "      UpstreamRegistryUrl: https://rando-mirror.example.com\n"
+        "      UpstreamRegistryUrl: rando-mirror.example.com\n"
         "\n"
         "# Safe: pull-through caches only against well-known\n"
-        "# upstreams (Docker Hub Verified, ECR Public, Quay,\n"
-        "# k8s.io).\n"
+        "# upstreams (ECR Public, k8s.io, GHCR, GCR).\n"
         "Resources:\n"
         "  Cache:\n"
         "    Type: AWS::ECR::PullThroughCacheRule\n"
         "    Properties:\n"
         "      EcrRepositoryPrefix: public-cache\n"
-        "      UpstreamRegistryUrl: https://public.ecr.aws"
+        "      UpstreamRegistryUrl: public.ecr.aws"
     ),
 )
 

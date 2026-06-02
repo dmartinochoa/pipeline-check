@@ -136,11 +136,26 @@ def _scalar_text(value: object) -> str:
     return ""
 
 
+_COMMENT_RE = re.compile(r"(?m)(?:^|(?<=\s))#[^\n]*")
+
+
+def _strip_shell_comments(script: str) -> str:
+    """Remove shell comments (``# ...`` through end of line) from *script*.
+
+    Only strips a ``#`` that is either at the start of a line or preceded
+    by whitespace, which excludes ``#`` inside strings and URL fragments
+    (``https://host/path#anchor``). This is an approximation sufficient
+    for the CI-script patterns the primitive targets.
+    """
+    return _COMMENT_RE.sub("", script)
+
+
 def insecure_settings_in_script(script: str) -> list[str]:
     """Return offender labels for ``export NAME=VALUE`` / ``NAME=VALUE cmd``
     assignments found in a shell ``run:`` body."""
+    clean = _strip_shell_comments(script)
     out: list[str] = []
-    for m in _EXPORT_RE.finditer(script):
+    for m in _EXPORT_RE.finditer(clean):
         label = _classify(m.group("name"), m.group("value"))
         if label is not None:
             out.append(label)

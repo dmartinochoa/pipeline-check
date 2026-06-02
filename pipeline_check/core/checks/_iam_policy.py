@@ -20,6 +20,9 @@ CICD_SERVICE_PRINCIPALS = {
 
 ADMIN_POLICY_ARN = "arn:aws:iam::aws:policy/AdministratorAccess"
 
+# Suffix shared across all partitions; used for partition-tolerant matching.
+_ADMIN_POLICY_SUFFIX = ":iam::aws:policy/AdministratorAccess"
+
 SENSITIVE_ACTION_PREFIXES = (
     "s3:", "kms:", "secretsmanager:", "ssm:", "iam:", "sts:",
     "dynamodb:", "lambda:", "ec2:",

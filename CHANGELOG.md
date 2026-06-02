@@ -10,6 +10,212 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 PRs landing on `dev` between releases append entries below. The
 release commit collapses this section into `## [X.Y.Z] - <date>`.
 
+### Added
+
+- **GHA-113: OIDC trusted-publishing job without an environment gate
+  (HIGH).** New GitHub Actions rule for the npm "trusted publishing,
+  untrusted branch" shape (the Red Hat npm compromise, BoostSecurity
+  2026). Fires when one job has effective ``id-token: write`` (declared,
+  inherited, or ``write-all``), runs a package-publish step (``npm`` /
+  ``pnpm`` / ``yarn publish``, ``twine upload``, ``poetry`` / ``uv
+  publish``, ``gem push``, ``cargo publish``, or the trusted-publisher
+  actions ``pypa/gh-action-pypi-publish`` / ``rubygems/release-gem`` /
+  ``crates-io/publish-action``), and binds no ``environment:``. Trusted
+  publishing validates only org + repo + workflow filename, so without
+  an environment's deployment-branch rule the OIDC token mints from any
+  branch that runs the workflow. The registry-publish twin of GHA-030
+  (cloud OIDC without env gate); closes the seam GHA-050 leaves by
+  passing the OIDC path. Emits ``job_anchors`` for a future
+  untrusted-branch-reaches-publish chain. Mapped across all 12
+  standards. github 103 -> 104.
+- **GHA-112: self-hosted deploy job not gated by a protected
+  environment (HIGH).** New GitHub Actions rule completing the
+  self-hosted-runner pack. Fires when a job runs on a self-hosted
+  runner (the ``self-hosted`` label, any ``runs-on`` shape), is a
+  deploy (by job-name or a deploy command, ``kubectl apply`` /
+  ``terraform apply`` / ``helm upgrade`` / ``aws|gcloud|az ... deploy``,
+  etc.), and has no ``environment:`` binding, so persistent org
+  infrastructure with standing credentials ships to production on any
+  push with no required reviewer. The HIGH self-hosted case of GHA-014
+  (MEDIUM); complements GHA-012 / GHA-068 / GHA-105. Local-mock deploys
+  (LocalStack / kind) are carved out. The deploy-command vocabulary
+  moved to a shared ``_primitives/deploy_names`` primitive that GHA-014
+  now reuses. Mapped across all 12 standards. github 102 -> 103.
+- **AC-037: AI agent applies attacker-influenced IaC to the cloud
+  (CRITICAL).** New attack chain pairing an untrusted-input agent leg
+  (GHA-058, an agentic CLI with permission-bypass flags / PR-checkout
+  topology, or GHA-103, an AI review bot on an untrusted trigger) with
+  GHA-111 (an agent next to an unattended IaC apply) on the same
+  workflow. A prompt-injection payload in the PR or comment makes the
+  agent write malicious Terraform / CloudFormation that the apply
+  pushes to the cloud account with no human review, the cloud-account
+  analog of AC-035's reviewer-and-committer loop. Chain count
+  50 -> 51.
+- **GHA-111: AI agent generates IaC applied in the same job (HIGH).**
+  New GitHub Actions rule closing the AI-agent-risk gap the roadmap
+  flagged. Fires when one job runs an agentic CLI (``claude`` /
+  ``gemini`` / ``q chat`` / ``cursor-agent`` / ``aider`` /
+  ``openhands`` / ``goose``) alongside an unattended IaC apply
+  (``terraform apply``, ``terragrunt apply``, ``aws cloudformation
+  deploy`` / ``create-stack`` / ``update-stack`` /
+  ``execute-change-set``, ``cdk deploy``, ``pulumi up``, ``sam
+  deploy``). A prompt-injected agent rewrites the Terraform /
+  CloudFormation in the shared workspace and the apply pushes it
+  straight to the cloud account with no plan reviewed. Distinct from
+  GHA-104 (agent pushes to the repo) and GHA-106 (agent holds a
+  write-scoped ``GITHUB_TOKEN``): the blast radius here is the cloud
+  account. Read-only ``terraform plan`` / ``cdk diff`` and agents
+  split across jobs are not flagged. Mapped across all 12 standards.
+  github 101 -> 102.
+
+### Changed
+
+- **Proof-of-exploit examples on two Cloud Build MEDIUM rules.** The
+  other CI-style provider the v1.7.0 sweep skipped, and the last
+  concrete-primitive batch of the backfill. GCB-013 (a step running a
+  git / path / tarball ``pip install`` that bypasses the registry and
+  lockfile) and GCB-016 (a step ``dir:`` with a ``..`` escape that
+  resolves outside ``/workspace`` into the builder image's filesystem)
+  now carry a Vulnerable/Attack/Safe ``exploit_example``.
+- **Proof-of-exploit examples on three Argo Workflows MEDIUM rules.**
+  Closes a gap the v1.7.0 CI sweep left: Argo is a CI-style provider
+  whose concrete primitives mirror the Kubernetes / Tekton packs.
+  ARGO-003 (a Workflow on the namespace ``default`` ServiceAccount),
+  ARGO-013 (``automountServiceAccountToken`` not opted out, so a
+  compromised step reads the mounted SA token), and ARGO-014 (a template
+  script running ``npm install`` instead of ``npm ci``, an unpinned
+  install) now carry a Vulnerable/Attack/Safe ``exploit_example``.
+
+### Fixed
+
+- **Rule audit: false-positive, false-negative, and crash fixes across
+  the AWS, Azure, and CloudFormation checks.** A read-only audit of the
+  rule pack surfaced a batch of defects, now fixed and pinned with
+  regression tests. S3-005 no longer crashes when a bucket policy
+  carries ``Statement`` as a single object (not a list) and now
+  detects a list-form ``["false"]`` ``aws:SecureTransport`` value.
+  ECR-003 tolerates a string principal without crashing, flags the
+  list-form ``{"AWS": ["*"]}`` wildcard, and stops flagging a wildcard
+  scoped by ``aws:PrincipalOrgID`` (the org-sharing idiom). CP-005
+  matches ``prod`` / ``live`` as whole words, so ``Delivery`` and
+  ``Product`` are no longer read as production stages. IAM-005 no
+  longer flags a same-account trust principal as a confused-deputy
+  risk. PBAC-002, CD-003, LMB-004, ENTRA-002, ENTRA-004, ENTRA-006,
+  and ADO-013 no longer crash on a missing name key, a null
+  ``builtInControls``, a non-dict ``Condition``, mixed naive/aware
+  datetimes, a non-string risk level, or a structured ``demands``
+  entry; ENTRA-004 now credits ``authenticationStrength`` as MFA. In
+  CloudFormation, KMS-002 stops flagging ``kms:*`` granted to the
+  account root (the AWS-recommended default key policy), CA-003 stops
+  flagging an ``aws:PrincipalOrgID`` scoped wildcard, and CF-002 stops
+  flagging a ``{{resolve:secretsmanager:...}}`` dynamic reference.
+- **Rule audit, batch 2: high-severity FP/FN/example fixes across Argo,
+  Buildkite, Bitbucket, CircleCI, AWS, and CloudFormation.** TAINT-007
+  now follows tainted outputs through a ``steps:`` orchestrator (it only
+  matched ``{{tasks...}}`` before, missing every ``{{steps...}}`` graph).
+  TAINT-005 recognizes ``BUILDKITE_PULL_REQUEST_TITLE`` as a tainted
+  source. BK-005 detects a privileged ``docker`` plugin (``privileged:
+  true`` / host-socket mount), not only ``docker run`` commands. CB-008
+  and CB-011 now scan single-line inline JSON buildspecs (the shape the
+  CodeBuild API emits), and CB-011 in CloudFormation no longer
+  example-suppresses an IOC nested under a ``test:`` key. SM-001 matches
+  a CodeBuild-referenced secret exactly instead of by the substring
+  ``"arn"`` (which flagged every secret), and credits a ``!GetAtt``
+  rotation schedule. BB-017 stops flagging ``curl -H "...$TOKEN" URL >
+  out.json`` (the redirect saves the response, not the token). BB-010
+  fires only on a ``pull-requests:`` artifact-to-deploy handover, not a
+  trusted ``branches:`` release. The CC-008, BB-003, CA-003, and LMB-003
+  proof-of-exploit examples were corrected so their Vulnerable fragment
+  fires and their Safe fragment passes.
+- **Rule audit, batch 3: broken proof-of-exploit examples across Cloud
+  Build, CircleCI, Bitbucket, Azure Pipelines, Argo, CloudFormation, and
+  AWS.** Twenty-eight rules carried an ``exploit_example`` whose
+  Vulnerable fragment never fired, whose Safe fragment was itself
+  flagged, or that did not parse at all; each is now repaired and pinned
+  with a strong-check regression test (Vulnerable fires, Safe passes).
+  Cloud Build GCB-004 / GCB-006 / GCB-012 / GCB-019 and Azure ADO-030
+  used YAML flow-collection forms (``env: [X=${...}]``,
+  ``pool: { name: ${{ ... }} }``) that a parser rejects. GCB-003,
+  GCB-011, Bitbucket BB-011 / BB-017 / BB-025, CircleCI CC-026,
+  CloudFormation S3-005 / CF-003 / IAM-002 / IAM-004 / IAM-005 / IAM-006,
+  and AWS CA-004 / CB-011 / IAM-002 had a Vulnerable fragment the rule
+  never flagged (a secret kept out of the scanned fields, a ``curl -k``
+  split across args, vendor example credentials the scanner suppresses,
+  an undeclared trust document, a too-short base64 blob, an ``s3:*``
+  literal the wildcard check does not match, a bare policy statement with
+  no enclosing document). The pinning examples GCB-001, CC-003, and
+  ARGO-001 used a placeholder digest that is not valid 64-hex, so their
+  Safe half was flagged; ADO-001 advised an ``@2.x`` task version the pin
+  check rejects; CloudFormation ECR-003 / ECR-006 and AWS ECR-006
+  presented an org-scoped wildcard or a scheme-prefixed registry host as
+  Safe that the check still flags. AWS IAM-002's ``docs_note`` no longer
+  claims it catches service-prefix wildcards like ``s3:*`` (that is
+  IAM-006).
+- **Rule audit, batch 4: false-positive fixes across Cloud Build,
+  CircleCI, Azure Pipelines, Buildkite, Argo, Bitbucket, AWS, and
+  CloudFormation.** Documented-safe idioms that the checks wrongly
+  flagged now pass, each pinned by a regression test that also confirms
+  a genuine violation still fires. GCB-004 scans only step ``args`` /
+  ``entrypoint`` for a user substitution, so the recommended ``env:``
+  remediation clears. CC-004 anchors its secret-name match on segment
+  boundaries (``TOKENIZER_VERSION`` / ``SECRET_SCANNING_ENABLED`` are no
+  longer secret-like). The shared ``curl``-insecure detector matches
+  ``-k`` case-sensitively (curl's ``-K`` is ``--config``, not a TLS
+  bypass), and the shared go-insecure and pip-hash detectors ignore a
+  commented-out ``export`` and a quoted tooling package respectively.
+  CC-025 drops ``{{ .Revision }}`` (a content-addressed commit SHA is not
+  attacker-controllable for cache poisoning); CC-029 accepts CircleCI's
+  legacy ``:YYYYMM-NN`` machine-image tags as pinned. ADO-002 adds a word
+  boundary so a tainted ``$BR`` no longer matches ``$BRANCHX``; ADO-027
+  scans only script-step bodies, not free-text fields. BK-013 treats
+  ``release`` / ``promote`` as deploy intent only as a label's leading
+  verb (not in "Build release artifact"). ARGO-006 excludes cache /
+  partition keys and ``*_KEY_PATH`` reference names from its weak
+  name-based match. BB-005 honors a global ``options.max-time``. LMB-003
+  exempts ARN/name-reference env vars (``DB_SECRET_ARN``). CW-001 stays
+  silent in accounts with no CodeBuild projects. CCM-002 accepts a
+  ``!Ref`` / ``!GetAtt`` to an in-template KMS key as a customer-managed
+  CMK. Azure storage retention rules (AZMON-002, AZMON-005) treat
+  ``days=0`` with retention enabled as indefinite (compliant); AZSQL-001
+  accepts Managed HSM and sovereign-cloud key vaults; AZST-006 reports a
+  missing key-creation-time as advisory rather than a hard failure.
+- **Rule audit, batch 4: accuracy fixes to rule titles.** AZST-005's
+  title no longer asserts an unverified absence ("blob lifecycle policy
+  should be reviewed"); CCM-003's title no longer claims a cross-account
+  comparison the check does not perform.
+- **Rule audit, batch 5: false-negative fixes across AWS, Argo, Azure
+  Pipelines, CircleCI, CloudFormation, Buildkite, Bitbucket, ArgoCD,
+  Cloud Build, Azure cloud, and Composer.** Detections that missed real
+  violations now catch them, each pinned by tests confirming the
+  previously-missed case fires, a benign neighbor still passes, and the
+  existing true positive still fires. Partition and representation
+  coverage: IAM-001 and CCM-003 recognize ``AdministratorAccess`` and
+  trigger ARNs in the aws-cn and aws-us-gov partitions; ECR-003 (CFN)
+  matches a list-form ``{AWS: ['*']}`` wildcard principal. Scope
+  coverage: ARGO-001 and ARGO-002 scan ``initContainers`` and
+  ``sidecars``; CC-019 scans reusable ``commands:`` and ``when:`` /
+  ``unless:`` step groups; LMB-002 flags a Lambda function URL whose
+  target is a cross-stack ARN; BB-020 inspects a step-level ``clone:``;
+  GCB-023 scans ``dir`` / ``id`` / ``waitFor``; PBAC-003 covers IPv6
+  ``::/0`` egress. Detector accuracy: ADO-017 matches ``--network=host``;
+  ADO-023 matches inline ``git -c http.sslVerify=false``; CC-015 drops a
+  blob fallback that passed on an incidental token mention; CC-031
+  accepts underscore OIDC role params; PBAC-005 requires every executable
+  action to carry its own role (approval gates excluded); EB-001 credits
+  a no-state-filter EventBridge rule; CW-001 reads metric-math alarms;
+  CA-001 and CP-002 stop crediting an AWS-managed key as a customer CMK.
+  Tool catalog: kaniko and ``buildkite-agent artifact upload`` are
+  recognized as artifact producers (gating ARGO-009 / BK-009); cdxgen
+  (ARGO-010), ``notation sign`` (ADO-006), and the circleci/attestation
+  orb (CC-024) are credited; GCB-008 recognizes a scanner used as a step
+  image. Hardening: AZNW-002 requires the flow log to be enabled;
+  AZVM-003 stops treating Trusted Launch as Just-in-Time access; BB-016
+  scopes its ephemeral check to the step's own ``runs-on`` labels; BB-001
+  requires full semver for pipe tags; COMPOSER-004 matches base64
+  passwords containing ``/``; COMPOSER-009 stops treating a literal ``$``
+  as a placeholder. CA-001 and PBAC-003 titles were reworded to match
+  what they detect.
+
 ## [1.7.1] - 2026-06-01
 
 ### Changed
