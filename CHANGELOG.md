@@ -12,6 +12,18 @@ release commit collapses this section into `## [X.Y.Z] - <date>`.
 
 ### Added
 
+- **AC-039: untrusted trigger reaches a bulk-secrets serialization
+  (CRITICAL chain).** Correlates an attacker-influenced trigger
+  (GHA-002 / GHA-009 / GHA-013) with a step that serializes the whole
+  secrets context (GHA-116) on the same workflow: an external attacker
+  who opens a fork PR or posts a comment triggers a run that dumps every
+  secret into a world-readable log, the *reachable* form of the 2025
+  tj-actions / GhostAction secret-harvesting attacks (where the payload
+  needed a compromised action or pushed workflow, this lane needs only a
+  pull request). Confirms reachability when a job is both
+  attacker-reachable and serializes the secrets (HIGH confidence) via
+  ``job_anchors`` (GHA-116 now emits them). MITRE T1195.002 / T1552 /
+  T1567.002. Attack-chain count 52 -> 53.
 - **GHA-116: workflow serializes the entire secrets context
   (``toJSON(secrets)``) (HIGH).** New GitHub Actions rule for the 2025
   secret-harvesting wave (tj-actions/changed-files + reviewdog,

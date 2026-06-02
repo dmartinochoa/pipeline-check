@@ -83,7 +83,7 @@ leaks, deploy approval gates, artifact signing, SBOM generation,
 container hardening, package integrity, timeout enforcement,
 vulnerability scanning, and TLS verification. A dataflow taint engine
 catches multi-step and cross-job propagation that single-rule scanners
-miss, and **52 attack chains** correlate findings into MITRE ATT&CK-mapped
+miss, and **53 attack chains** correlate findings into MITRE ATT&CK-mapped
 kill chains.
 
 ## Use in CI
