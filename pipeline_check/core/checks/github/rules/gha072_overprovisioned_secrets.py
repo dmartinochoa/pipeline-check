@@ -85,7 +85,8 @@ RULE = Rule(
         "    steps:\n"
         "      - uses: actions/checkout@<sha>\n"
         "      - run: ./test.sh\n"
-        "      - run: curl -X POST -H \"Authorization: Bearer "
+        "      - run: |\n"
+        "          curl -X POST -H \"Authorization: Bearer "
         "$DEPLOY_TOKEN\" https://api.example.com/deploy\n"
         "\n"
         "# Safe: scope the ``env:`` block to the consuming step.\n"
@@ -97,7 +98,8 @@ RULE = Rule(
         "      - run: ./test.sh\n"
         "      - env:\n"
         "          DEPLOY_TOKEN: ${{ secrets.DEPLOY_TOKEN }}\n"
-        "        run: curl -X POST -H \"Authorization: Bearer "
+        "        run: |\n"
+        "          curl -X POST -H \"Authorization: Bearer "
         "$DEPLOY_TOKEN\" https://api.example.com/deploy"
     ),
 )

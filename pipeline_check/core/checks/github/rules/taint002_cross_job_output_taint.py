@@ -115,7 +115,7 @@ RULE = Rule(
         "    steps:\n"
         "      - run: ./generate-notes --title ${{ needs.extract.outputs.title }}\n"
         "\n"
-        "# Safe: sanitise at the producer + quote at the consumer\n"
+        "# Safe: sanitize at the producer + quote at the consumer\n"
         "# via env-var indirection, same shape as TAINT-001 but\n"
         "# across the jobs boundary.\n"
         "jobs:\n"
@@ -125,7 +125,8 @@ RULE = Rule(
         "      title: ${{ steps.x.outputs.title }}\n"
         "    steps:\n"
         "      - id: x\n"
-        "        env: { RAW: ${{ github.event.issue.title }} }\n"
+        "        env:\n"
+        "          RAW: ${{ github.event.issue.title }}\n"
         "        run: |\n"
         "          clean=$(echo \"$RAW\" | tr -dc 'a-zA-Z0-9 -')\n"
         "          echo \"title=$clean\" >> \"$GITHUB_OUTPUT\"\n"
@@ -133,7 +134,8 @@ RULE = Rule(
         "    needs: extract\n"
         "    runs-on: ubuntu-latest\n"
         "    steps:\n"
-        "      - env: { TITLE: ${{ needs.extract.outputs.title }} }\n"
+        "      - env:\n"
+        "          TITLE: ${{ needs.extract.outputs.title }}\n"
         "        run: ./generate-notes --title \"$TITLE\""
     ),
 )
