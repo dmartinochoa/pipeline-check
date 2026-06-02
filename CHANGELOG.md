@@ -12,6 +12,22 @@ release commit collapses this section into `## [X.Y.Z] - <date>`.
 
 ### Added
 
+- **GHA-113: OIDC trusted-publishing job without an environment gate
+  (HIGH).** New GitHub Actions rule for the npm "trusted publishing,
+  untrusted branch" shape (the Red Hat npm compromise, BoostSecurity
+  2026). Fires when one job has effective ``id-token: write`` (declared,
+  inherited, or ``write-all``), runs a package-publish step (``npm`` /
+  ``pnpm`` / ``yarn publish``, ``twine upload``, ``poetry`` / ``uv
+  publish``, ``gem push``, ``cargo publish``, or the trusted-publisher
+  actions ``pypa/gh-action-pypi-publish`` / ``rubygems/release-gem`` /
+  ``crates-io/publish-action``), and binds no ``environment:``. Trusted
+  publishing validates only org + repo + workflow filename, so without
+  an environment's deployment-branch rule the OIDC token mints from any
+  branch that runs the workflow. The registry-publish twin of GHA-030
+  (cloud OIDC without env gate); closes the seam GHA-050 leaves by
+  passing the OIDC path. Emits ``job_anchors`` for a future
+  untrusted-branch-reaches-publish chain. Mapped across all 12
+  standards. github 103 -> 104.
 - **GHA-112: self-hosted deploy job not gated by a protected
   environment (HIGH).** New GitHub Actions rule completing the
   self-hosted-runner pack. Fires when a job runs on a self-hosted

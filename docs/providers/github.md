@@ -72,7 +72,7 @@ Resolution rules:
 
 ## What it covers
 
-103 checks · 17 have an autofix patch (``--fix``).
+104 checks · 17 have an autofix patch (``--fix``).
 
 | Check | Title | Severity | Fix |
 |-------|-------|----------|-----|
@@ -175,6 +175,7 @@ Resolution rules:
 | [GHA-110](#gha-110) | Workflow disables Go module checksum / sum-db verification | <span class="pg-sev pg-sev--high">HIGH</span> |  |
 | [GHA-111](#gha-111) | AI agent generates IaC applied to the cloud in the same job | <span class="pg-sev pg-sev--high">HIGH</span> |  |
 | [GHA-112](#gha-112) | Self-hosted deploy job not gated by a protected environment | <span class="pg-sev pg-sev--high">HIGH</span> |  |
+| [GHA-113](#gha-113) | OIDC trusted-publishing job without an environment gate | <span class="pg-sev pg-sev--high">HIGH</span> |  |
 | [TAINT-001](#taint-001) | Untrusted input flows across step boundaries via step outputs | <span class="pg-sev pg-sev--high">HIGH</span> |  |
 | [TAINT-002](#taint-002) | Untrusted input flows across jobs via ``jobs.<id>.outputs:`` | <span class="pg-sev pg-sev--high">HIGH</span> |  |
 | [TAINT-003](#taint-003) | Untrusted input forwarded into reusable workflow ``with:`` | <span class="pg-sev pg-sev--high">HIGH</span> |  |
@@ -2991,6 +2992,48 @@ Fires when a job (1) runs on a self-hosted runner (the `self-hosted` label on an
 **Recommended action**
 
 Bind the deploy job to a protected `environment:` with required reviewers and a deployment-branch policy, and prefer ephemeral self-hosted runners (actions-runner-controller, `--ephemeral`) so a job can't inherit state or credentials from a previous one. Best: run the deploy from a dedicated, minimally-scoped runner pool that only the gated job can reach, and keep untrusted-trigger jobs (fork PRs) off the self-hosted fleet entirely (see GHA-105).
+
+</div>
+
+</div>
+
+<div class="pg-rule pg-rule--high" markdown>
+
+## GHA-113: OIDC trusted-publishing job without an environment gate { #gha-113 }
+
+<div class="pg-rule__tags">
+<span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-2</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-1</span> <span class="pg-tag pg-tag--esf">ESF-D-TOKEN-HYGIENE</span> <span class="pg-tag pg-tag--esf">ESF-C-APPROVAL</span> <span class="pg-tag pg-tag--cwe">CWE-284</span> <span class="pg-tag pg-tag--cwe">CWE-862</span>
+</div>
+
+Fires when a single job satisfies all three:
+
+1. It effectively has ``id-token: write`` (declared on the job's own ``permissions:`` block, inherited from a workflow-level block it didn't override, or via ``permissions: write-all``).
+2. It runs a package-publish step. Run-based: ``npm`` / ``pnpm`` / ``yarn publish``, ``twine upload``, ``poetry publish``, ``uv publish``, ``gem push``, ``cargo publish``. Action-based trusted publishers: ``pypa/gh-action-pypi-publish``, ``rubygems/release-gem``, ``crates-io/publish-action``.
+3. It binds no ``environment:`` (neither the short string form nor the long ``{name: ...}`` mapping).
+
+The conjunction is the trusted-publishing-without-a-trusted-ref shape: an OIDC token mintable from any branch that runs the workflow, gating publication on nothing the registry checks. A job that binds a protected ``environment:`` passes regardless, because the environment's deployment-branch rule and required reviewers constrain which ref can mint the token. A job with no ``id-token: write`` is the long-lived-token lane GHA-050 covers, not this one.
+
+**Known false-positive modes**
+
+- First-publish bootstrap of a new package. npm and PyPI both require an initial manual publish before a trusted-publisher record exists; the workflow may carry ``id-token: write`` ahead of that. Suppress on the specific job until the trusted-publisher + environment are wired.
+- A job that mints the OIDC token for signing / cloud credentials (cosign, configure-aws-credentials) and happens to also run a publish step on a long-lived token. GHA-050 is the more precise finding there, but the environment-gate recommendation still applies: an ungated publish job that can mint an OIDC token from any branch is the risk either way.
+
+**Seen in the wild**
+
+- Red Hat npm compromise (BoostSecurity, 'Trusted Publishing, Untrusted Branch', 2026): a counterfeit ``ci.yml`` on a throwaway ``oidc-*`` branch minted an OIDC token that npm trusted publishing accepted, because it validates only org + repo + workflow filename and no GitHub Environment was configured. An environment with a deployment-branch rule would have refused to mint the token from the throwaway branch: https://labs.boostsecurity.io/articles/trusted-publishing-untrusted-branch-red-hat-npm/
+
+<div class="pg-rule__rec" markdown>
+
+**Recommended action**
+
+Bind every package-publish job that mints an OIDC token to a protected ``environment:`` (e.g. ``environment: npm-publish``), then configure that environment's ``Deployment branches and tags`` rule to allow only the release ref (a protected branch or, better, a tag). Concretely:
+
+- Add ``environment: <name>`` to the publish job and set the environment's branch policy to ``Selected branches and tags`` -> the exact release ref. The OIDC token then mints only when the run targets that ref, so a counterfeit workflow on a throwaway branch can't publish.
+- Prefer a tag trigger (``on: push: tags:``) or ``workflow_dispatch`` for the release workflow over a branch ``push`` (see GHA-114).
+- Keep ``id-token: write`` scoped to the publish job, not the whole workflow.
+- For high-blast-radius packages, enable the registry's staged-publishing-with-2FA flow so a human approves the release even after the token is minted.
+
+Trusted publishing alone validates only org + repo + workflow filename; the environment gate is what binds publication to a trusted ref.
 
 </div>
 
