@@ -17,6 +17,9 @@ from .blob import blob_lower
 SIGN_TOKENS = (
     "cosign", "sigstore", "slsa-github-generator",
     "slsa-framework/slsa-", "notation-sign",
+    # ADO-006 FN fix: ``notation sign <ref>`` (space-separated CLI form)
+    # was not matched because only ``notation-sign`` (hyphenated) was listed.
+    "notation sign",
 )
 
 # SBOM tokens: direct hits pass on their own. Trivy only passes when combined
@@ -24,6 +27,9 @@ SIGN_TOKENS = (
 SBOM_DIRECT_TOKENS = (
     "cyclonedx", "syft", "anchore/sbom-action",
     "spdx-sbom-generator", "microsoft/sbom-tool",
+    # ARGO-010 FN fix: ``cdxgen`` (CycloneDX-generator CLI) was named in
+    # the recommendation but absent from detection.
+    "cdxgen",
 )
 
 # Provenance tokens, narrower than SIGN_TOKENS. SLSA Build L3 requires
@@ -41,6 +47,10 @@ PROVENANCE_TOKENS = (
     "in-toto-attestation",           # in-toto library/CLI
     "intoto.jsonl",                  # standard provenance filename
     "provenance.intoto",             # common provenance output name
+    # CC-024 FN fix: the circleci/attestation orb (canonical CircleCI SLSA
+    # provenance mechanism) was named in the recommendation but absent here.
+    "circleci/attestation",
+    "attestation/attest",
 )
 
 
@@ -62,6 +72,13 @@ _ARTIFACT_TOKENS = (
     "docker/build-push-action",
     "docker/metadata-action",
     "buildah push", "podman push",
+    # ARGO-009 FN fix: kaniko builds and pushes a container image directly;
+    # it was documented in the ARGO-009 docs_note but absent from detection.
+    # Match the short name and the canonical image ref so both ``image: kaniko``
+    # (custom image) and ``name: gcr.io/kaniko-project/executor`` (GCB/Argo)
+    # are recognized.
+    "kaniko",
+    "gcr.io/kaniko-project/executor",
     # GitHub Actions artifact + release flows. ``upload-artifact@`` is
     # anchored with ``@`` so ``actions/upload-pages-artifact@<ref>`` (a
     # docs/Pages site, not a software artifact) doesn't match.
@@ -74,6 +91,10 @@ _ARTIFACT_TOKENS = (
     "archiveartifacts",
     # CircleCI
     "store_artifacts", "persist_to_workspace",
+    # Buildkite: the canonical artifact mechanism
+    # BK-009 FN fix: a pipeline that only uploads via ``buildkite-agent
+    # artifact upload`` was not recognized as artifact-producing.
+    "buildkite-agent artifact upload",
     # Cloud deploys
     "aws s3 cp", "aws s3 sync",
     "aws cloudformation deploy",

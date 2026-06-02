@@ -32,16 +32,12 @@ def check(catalog: ResourceCatalog) -> list[Finding]:
         name = getattr(vm, "name", "<unnamed>")
         # JIT status is tracked via Defender for Cloud / Security
         # Center. The VM object itself does not expose JIT directly.
-        # We check for the presence of a JIT access policy tag or
-        # the security_profile attribute.
-        security_profile = getattr(vm, "security_profile", None)
-        # In the absence of a direct JIT indicator on the VM model,
-        # we check resource tags for a JIT-related marker.
+        # We check resource tags for a JIT-related marker.
+        # NOTE: security_profile controls Trusted Launch / Secure Boot /
+        # vTPM (the default for Gen2 VMs) and is unrelated to JIT access,
+        # so it must NOT be used as a JIT indicator.
         tags = getattr(vm, "tags", {}) or {}
-        has_jit = (
-            security_profile is not None
-            or "jit" in str(tags).lower()
-        )
+        has_jit = "jit" in str(tags).lower()
         passed = has_jit
         if passed:
             desc = (

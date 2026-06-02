@@ -61,6 +61,28 @@ def _ecr002_tag_mutability(properties: dict[str, Any], name: str) -> Finding:
     )
 
 
+def _is_public_principal(principal: Any) -> bool:
+    """Return True when *principal* is an anonymous / wildcard value.
+
+    Handles the three forms that CloudFormation policy documents allow:
+    - bare ``"*"``
+    - ``{"AWS": "*"}`` or ``{"Service": "*"}``  (scalar)
+    - ``{"AWS": ["*", ...]}`` or ``{"Service": ["*", ...]}``  (list)
+    - bare ``["*"]`` (rare but valid)
+    """
+    if principal == "*":
+        return True
+    if isinstance(principal, list):
+        return "*" in principal
+    if isinstance(principal, dict):
+        for v in principal.values():
+            if v == "*":
+                return True
+            if isinstance(v, list) and "*" in v:
+                return True
+    return False
+
+
 def _ecr003_public_policy(properties: dict[str, Any], name: str) -> Finding:
     policy_text = properties.get("RepositoryPolicyText")
     if not policy_text:
@@ -95,13 +117,7 @@ def _ecr003_public_policy(properties: dict[str, Any], name: str) -> Finding:
         s for s in policy.get("Statement", [])
         if isinstance(s, dict)
         and s.get("Effect") == "Allow"
-        and (
-            s.get("Principal") == "*"
-            or (isinstance(s.get("Principal"), dict) and (
-                s["Principal"].get("AWS") == "*"
-                or s["Principal"].get("Service") == "*"
-            ))
-        )
+        and _is_public_principal(s.get("Principal"))
     ]
     passed = not public
     desc = (

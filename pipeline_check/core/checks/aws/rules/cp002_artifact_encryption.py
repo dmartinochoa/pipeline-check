@@ -30,6 +30,21 @@ RULE = Rule(
 )
 
 
+def _is_aws_managed_key(enc_key: dict[str, Any]) -> bool:
+    """Return True when the encryptionKey refers to an AWS-managed (non-CMK) key.
+
+    CodePipeline stores the key as ``{"type": "KMS", "id": "<alias-or-arn>"}``.
+    AWS-managed keys use the ``alias/aws/*`` alias family or, when resolved to
+    an ARN, the key ID can match ``aws/`` prefixes.  Checking the ``id`` field
+    for these patterns catches both the alias form and the common ARN forms.
+    """
+    key_id = enc_key.get("id", "") or ""
+    # alias/aws/s3, alias/aws/codepipeline, etc.
+    if "alias/aws/" in key_id:
+        return True
+    return False
+
+
 def check(catalog: ResourceCatalog) -> list[Finding]:
     findings: list[Finding] = []
     for pipeline in catalog.codepipeline_pipelines():
@@ -38,19 +53,21 @@ def check(catalog: ResourceCatalog) -> list[Finding]:
         if "artifactStore" in pipeline:
             stores.append(pipeline["artifactStore"])
         stores.extend((pipeline.get("artifactStores") or {}).values())
-        unencrypted = [
+        not_cmk = [
             s.get("location", "unknown")
             for s in stores
             if "encryptionKey" not in s
+            or _is_aws_managed_key(s.get("encryptionKey") or {})
         ]
-        passed = not unencrypted
+        passed = not not_cmk
         if passed:
             desc = "All artifact stores use a customer-managed KMS encryption key."
         else:
             desc = (
-                f"Artifact store(s) {unencrypted} rely on default S3 SSE (AWS-managed "
-                f"key) rather than a customer-managed KMS key. This reduces auditability "
-                f"and control over who can decrypt pipeline artifacts."
+                f"Artifact store(s) {not_cmk} lack a customer-managed KMS key "
+                "(either no encryptionKey is set, or the key is AWS-managed). "
+                "This reduces auditability and control over who can decrypt "
+                "pipeline artifacts."
             )
         findings.append(Finding(
             check_id=RULE.id, title=RULE.title, severity=RULE.severity,

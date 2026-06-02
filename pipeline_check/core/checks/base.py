@@ -401,7 +401,7 @@ import re as _re
 #: ``docker run --privileged`` or ``-v /…:/…``, container escape via
 #: host mount, privileged mode, namespace sharing, or socket mount.
 DOCKER_INSECURE_RE = _re.compile(
-    r"docker\s+run\s[^;&]*(?:--privileged|--cap-add|--net[= ]host"
+    r"docker\s+run\s[^;&]*(?:--privileged|--cap-add|--net(?:work)?[= ]host"
     r"|--pid[= ]host|--userns[= ]host"                              # namespace sharing
     r"|-v\s+/var/run/docker\.sock:/var/run/docker\.sock"            # socket mount
     r"|-v\s+/:/)"                                                   # root mount
@@ -493,17 +493,28 @@ _DEP_UPDATE_TOOL_EXEMPT_RE = _re.compile(
 )
 
 
+# Matches any shell command separator so that the exemption test can
+# be scoped to the individual command, not the whole line.  This
+# prevents an exempt tooling upgrade earlier on the same line (e.g.
+# ``pip install --upgrade pip && npm update``) from suppressing a
+# real dependency-update command later on that line.
+_CMD_SEP_RE = _re.compile(r"[;&|\n]")
+
+
 def has_dep_update(blob: str) -> bool:
     """Return True if *blob* contains a non-exempt dependency-update command."""
     for m in DEP_UPDATE_RE.finditer(blob):
-        # Extract the full line so the exemption regex can see the
-        # trailing package name (e.g. "pip install --upgrade pip").
-        line_start = blob.rfind("\n", 0, m.start()) + 1
-        line_end = blob.find("\n", m.end())
-        if line_end == -1:
-            line_end = len(blob)
-        full_line = blob[line_start:line_end]
-        if not _DEP_UPDATE_TOOL_EXEMPT_RE.search(full_line):
+        # Extract from the start of the match to the next command
+        # separator (or end of string) to capture the full token
+        # including any trailing package name (e.g. ``pip install
+        # --upgrade pip``). This scopes the exemption to the individual
+        # command rather than the whole line, so an exempt tooling
+        # upgrade earlier on the same line cannot suppress a real
+        # dependency-update command later on that line.
+        tail = blob[m.start():]
+        sep = _CMD_SEP_RE.search(tail)
+        cmd_seg = tail[:sep.start()] if sep else tail
+        if not _DEP_UPDATE_TOOL_EXEMPT_RE.search(cmd_seg):
             return True
     return False
 

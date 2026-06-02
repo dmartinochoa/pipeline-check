@@ -7,7 +7,7 @@ from .._catalog import ResourceCatalog
 
 RULE = Rule(
     id="CA-001",
-    title="CodeArtifact domain not encrypted with customer KMS CMK",
+    title="CodeArtifact domain has no KMS encryptionKey configured",
     severity=Severity.MEDIUM,
     owasp=("CICD-SEC-9",),
     cwe=("CWE-311",),
@@ -17,13 +17,15 @@ RULE = Rule(
         "creation and cannot be changed after."
     ),
     docs_note=(
-        "AWS-owned encryption (the default ``alias/aws/codeartifact`` "
-        "key) keeps the key policy under AWS's control, not yours. "
-        "That's fine for confidentiality but means cross-account "
-        "auditability of every Decrypt event lives with AWS, and you "
-        "can't revoke or scope key access without recreating the "
-        "domain. A customer-managed CMK puts both controls back in "
-        "your hands."
+        "When no ``encryptionKey`` is configured on the domain, AWS uses "
+        "its own managed key, keeping the key policy under AWS's control. "
+        "That removes your ability to scope or audit Decrypt operations, "
+        "and you can't revoke key access without recreating the domain. "
+        "A customer-managed CMK puts those controls back in your hands. "
+        "Note: the CodeArtifact API returns the resolved KMS key ARN in "
+        "this field; the check flags only the absent-key case because the "
+        "ARN alone does not reliably identify whether the key is AWS-managed "
+        "or customer-managed without a separate ``kms:DescribeKey`` call."
     ),
 )
 
@@ -33,15 +35,19 @@ def check(catalog: ResourceCatalog) -> list[Finding]:
     for domain in catalog.codeartifact_domains():
         name = domain.get("name", "<unnamed>")
         key = domain.get("encryptionKey", "") or ""
-        # AWS-owned keys use the ``alias/aws/codeartifact`` alias or are
-        # unset. A CMK is any key whose ARN starts with ``arn:aws:kms:``
-        # and is not the AWS-owned alias.
-        passed = bool(key) and "alias/aws/" not in key
+        # Flag only when no encryptionKey is configured at all. The
+        # CodeArtifact API returns the resolved KMS key ARN (not the alias
+        # string), so the previous ``"alias/aws/" not in key`` check would
+        # silently pass a domain using the AWS-managed default key once it
+        # has been resolved to an ARN. Flagging the absent-key case is safe
+        # and accurate; distinguishing CMK from AWS-managed would require a
+        # separate kms:DescribeKey call that the catalog does not support.
+        passed = bool(key)
         desc = (
-            f"Domain '{name}' is encrypted with {key}."
+            f"Domain '{name}' has an encryptionKey configured ({key})."
             if passed else
-            f"Domain '{name}' uses AWS-owned encryption ({key or 'default'}); "
-            "the key policy is not under your control."
+            f"Domain '{name}' has no encryptionKey configured; "
+            "AWS-owned encryption is in use and the key policy is not under your control."
         )
         findings.append(Finding(
             check_id=RULE.id, title=RULE.title, severity=RULE.severity,

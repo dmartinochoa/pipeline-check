@@ -30,11 +30,13 @@ def check(catalog: ResourceCatalog) -> list[Finding]:
     nsgs = catalog.network_security_groups()
     flow_logs = catalog.nsg_flow_logs()
 
-    # Build a set of NSG resource IDs that have flow logs.
+    # Build a set of NSG resource IDs that have flow logs *and* are
+    # actually enabled. A flow log with enabled=False records nothing,
+    # so the NSG must not be treated as logged.
     logged_nsg_ids: set[str] = set()
     for fl in flow_logs:
         target_id = getattr(fl, "target_resource_id", "") or ""
-        if target_id:
+        if target_id and getattr(fl, "enabled", True):
             logged_nsg_ids.add(target_id.lower())
 
     for nsg in nsgs:

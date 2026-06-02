@@ -82,13 +82,29 @@ RULE = Rule(
 )
 
 
-# Match ``scheme://user:password@host`` where ``password`` is one or
-# more characters that are not ``$``, ``%``, ``{``, ``}`` (i.e. not
-# an obvious placeholder expression).
-_CREDS_RE = re.compile(
-    r"^[a-z][a-z0-9+\-.]*://[^:/@?\s]+:([^@/\s]+)@",
+# Match ``scheme://`` followed by a non-whitespace userinfo block that
+# ends at the LAST ``@`` before the host.  The greedy ``[^\s]*`` ensures
+# we consume embedded ``@`` signs (e.g. ``user:p%40ss@host``) and
+# passwords containing ``/`` (common in base64 tokens).
+_USERINFO_RE = re.compile(
+    r"^([a-z][a-z0-9+\-.]*://)([^\s]*)@",
     re.IGNORECASE,
 )
+
+
+def _split_userinfo(userinfo: str) -> tuple[str, str] | None:
+    """Split ``user:password`` from the userinfo block.
+
+    Returns ``(user, password)`` when a password is present, else
+    ``None``.  The split is on the *first* ``:`` so that a password
+    containing ``:`` is captured whole.
+    """
+    if ":" not in userinfo:
+        return None
+    user, password = userinfo.split(":", 1)
+    if not password:
+        return None
+    return user, password
 
 
 def _is_placeholder(secret: str) -> bool:
@@ -99,6 +115,22 @@ def _is_placeholder(secret: str) -> bool:
     return any(m in s for m in placeholder_markers)
 
 
+def _redact_url(url: str) -> str:
+    """Return the URL with the password replaced by ``***``."""
+    m = _USERINFO_RE.match(url)
+    if not m:
+        return url
+    scheme = m.group(1)
+    userinfo = m.group(2)
+    rest = url[m.end():]  # everything after the last ``@``
+    parts = userinfo.split(":", 1)
+    if len(parts) == 2:
+        redacted_userinfo = parts[0] + ":***"
+    else:
+        redacted_userinfo = userinfo
+    return scheme + redacted_userinfo + "@" + rest
+
+
 def check(pom: ComposerFile) -> Finding:
     offenders: list[tuple[str, str]] = []
     locations: list[Location] = []
@@ -106,17 +138,18 @@ def check(pom: ComposerFile) -> Finding:
         url = repo.url
         if not url:
             continue
-        m = _CREDS_RE.match(url)
+        m = _USERINFO_RE.match(url)
         if not m:
             continue
-        if _is_placeholder(m.group(1)):
+        pair = _split_userinfo(m.group(2))
+        if pair is None:
+            continue
+        _user, password = pair
+        if _is_placeholder(password):
             continue
         # Redact the secret in the rendered output so the finding
         # doesn't expand the blast radius further.
-        offenders.append((repo.type, _CREDS_RE.sub(
-            lambda mm: mm.group(0)[: mm.start(1) - mm.start(0)]
-            + "***@", url,
-        )))
+        offenders.append((repo.type, _redact_url(url)))
         locations.append(Location(
             path=pom.path,
             start_line=repo.line_no, end_line=repo.line_no,
