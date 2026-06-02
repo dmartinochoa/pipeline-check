@@ -212,6 +212,13 @@ def is_real_pip_install_line(line: str) -> bool:
     if not pkg_tokens:
         return False
     for pkg in pkg_tokens:
+        # Strip surrounding single or double quotes before splitting on
+        # version specifiers/extras.  Shell quoting (e.g.
+        # ``pip install "ruff==0.1.0"``) must not prevent the tooling
+        # allowlist from matching; without this strip, ``"ruff`` (the
+        # left-quote still attached) is not found in PIP_TOOLING_PACKAGES
+        # even though ``ruff`` is.
+        pkg = pkg.strip("\"'")
         bare = _PKG_NAME_SPLIT_RE.split(pkg, maxsplit=1)[0]
         if bare not in PIP_TOOLING_PACKAGES:
             return True

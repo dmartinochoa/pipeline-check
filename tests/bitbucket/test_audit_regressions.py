@@ -3,8 +3,14 @@ from __future__ import annotations
 
 import yaml
 
+from pipeline_check.core.checks._primitives.dep_verification import (
+    is_real_pip_install_line,
+)
 from pipeline_check.core.checks.bitbucket.rules import (
     bb003_literal_secrets as bb003,
+)
+from pipeline_check.core.checks.bitbucket.rules import (
+    bb005_max_time as bb005,
 )
 from pipeline_check.core.checks.bitbucket.rules import (
     bb010_pr_artifact_handover as bb010,
@@ -98,3 +104,78 @@ class TestBB017TokenPersistence:
             "          - 'echo \"$BITBUCKET_TOKEN\" | tee creds.txt'\n"
         )
         assert bb017.check("x.yml", doc).passed is False
+
+
+class TestBB031QuotedToolingPackage:
+    """BB-031 / shared primitive — quoted package tokens must respect the
+    tooling allowlist the same as unquoted tokens."""
+
+    def test_quoted_tooling_pkg_is_exempt(self):
+        # "ruff==0.1.0" (shell-quoted) was previously mis-classified as a
+        # real install because the leading quote prevented allowlist lookup.
+        assert is_real_pip_install_line('pip install "ruff==0.1.0"') is False
+
+    def test_quoted_tooling_pkg_single_quote_is_exempt(self):
+        assert is_real_pip_install_line("pip install 'ruff==0.1.0'") is False
+
+    def test_unquoted_tooling_pkg_still_exempt(self):
+        # Regression guard: the existing unquoted path must not be broken.
+        assert is_real_pip_install_line("pip install ruff==0.1.0") is False
+
+    def test_real_install_without_hashes_still_fires(self):
+        # A genuine runtime dep (requests) must always be flagged.
+        assert is_real_pip_install_line("pip install requests") is True
+
+    def test_quoted_real_pkg_fires(self):
+        # Even when shell-quoted, a non-tooling package is still real.
+        assert is_real_pip_install_line('pip install "requests==2.31.0"') is True
+
+
+class TestBB005GlobalMaxTime:
+    """BB-005 — global options.max-time satisfies the control."""
+
+    def test_global_options_max_time_passes(self):
+        # A pipeline that sets options.max-time globally is bounded even
+        # though individual steps omit a per-step max-time.
+        doc = _doc(
+            "options:\n"
+            "  max-time: 30\n"
+            "pipelines:\n"
+            "  default:\n"
+            "    - step:\n"
+            "        script: [./build.sh]\n"
+        )
+        assert bb005.check("x.yml", doc).passed is True
+
+    def test_per_step_max_time_alone_passes(self):
+        doc = _doc(
+            "pipelines:\n"
+            "  default:\n"
+            "    - step:\n"
+            "        max-time: 15\n"
+            "        script: [./build.sh]\n"
+        )
+        assert bb005.check("x.yml", doc).passed is True
+
+    def test_no_max_time_anywhere_fires(self):
+        # Neither global options.max-time nor a per-step value — must fire.
+        doc = _doc(
+            "pipelines:\n"
+            "  default:\n"
+            "    - step:\n"
+            "        script: [./build.sh]\n"
+        )
+        assert bb005.check("x.yml", doc).passed is False
+
+    def test_global_max_time_with_multiple_steps_passes(self):
+        doc = _doc(
+            "options:\n"
+            "  max-time: 60\n"
+            "pipelines:\n"
+            "  default:\n"
+            "    - step:\n"
+            "        script: [./step1.sh]\n"
+            "    - step:\n"
+            "        script: [./step2.sh]\n"
+        )
+        assert bb005.check("x.yml", doc).passed is True

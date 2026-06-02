@@ -70,4 +70,5 @@ check = yaml_blob_check(
     scanner=tls_bypass.scan,
     pass_desc="No TLS verification bypass patterns detected in this pipeline.",
     fail_desc=_fail_desc,
+    lowercase=False,
 )

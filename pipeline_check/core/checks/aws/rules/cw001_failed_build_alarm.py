@@ -30,6 +30,11 @@ RULE = Rule(
 
 
 def check(catalog: ResourceCatalog) -> list[Finding]:
+    # No CodeBuild projects in this account/region — the alarm is irrelevant.
+    # The CFN/Terraform mirrors apply the same suppression so behavior is
+    # consistent across all scan modes.
+    if not catalog.codebuild_projects():
+        return []
     try:
         client = catalog.client("cloudwatch")
     except Exception:

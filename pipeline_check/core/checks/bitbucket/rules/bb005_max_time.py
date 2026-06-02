@@ -23,13 +23,22 @@ RULE = Rule(
     docs_note=(
         "Without `max-time`, the step runs until Bitbucket's 120-"
         "minute global default kills it. Explicit per-step timeouts "
-        "cap blast radius and cost."
+        "cap blast radius and cost. A global `options.max-time` sets "
+        "the default for all steps and satisfies this control when no "
+        "per-step override is present."
     ),
 )
 
 
 def check(path: str, doc: dict[str, Any]) -> Finding:
-    unbounded = [loc for loc, step in iter_steps(doc) if "max-time" not in step]
+    # A global options.max-time applies to every step that omits a
+    # per-step override, so the pipeline is bounded even without
+    # per-step declarations.
+    global_max_time = doc.get("options", {}).get("max-time")
+    unbounded = [
+        loc for loc, step in iter_steps(doc)
+        if "max-time" not in step and global_max_time is None
+    ]
     passed = not unbounded
     desc = (
         "Every step declares a `max-time`."

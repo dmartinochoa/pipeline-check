@@ -58,11 +58,16 @@ RULE = Rule(
     ),
 )
 
-# Immutable image tags from CircleCI, dated release suffix, e.g.
-# ``ubuntu-2204:2024.05.1`` or ``android:2024.01.1-node``. The leading
-# four-digit year gates the whole family so we don't have to hard-code
-# every current image family.
-_IMMUTABLE_TAG_RE = re.compile(r":\d{4}\.\d{1,2}(?:\.\d+)?(?:-[A-Za-z0-9_.-]+)?$")
+# Immutable image tags from CircleCI, two formats:
+#   New:    ``ubuntu-2204:2024.05.1`` or ``android:2024.01.1-node``
+#           (four-digit year prefix).
+#   Legacy: ``ubuntu-2004:202010-01`` (six-digit YYYYMM dash NN).
+#           These are pinned release tags even though they use a dash
+#           separator; CircleCI never reuses them.
+_IMMUTABLE_TAG_RE = re.compile(
+    r":\d{4}\.\d{1,2}(?:\.\d+)?(?:-[A-Za-z0-9_.-]+)?$"   # new dotted
+    r"|:\d{6}-\d{1,2}$",                                   # legacy YYYYMM-NN
+)
 
 # Rolling / alias tags that float and should never be relied on.
 _ROLLING_TAGS = ("current", "edge", "default", "latest", "stable")

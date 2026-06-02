@@ -140,3 +140,124 @@ class TestLMB003ExploitExample:
         vuln_ctx, safe_ctx = _example_contexts(lmb003.RULE)
         assert lmb003.check(vuln_ctx)[0].passed is False
         assert lmb003.check(safe_ctx)[0].passed is True
+
+
+class TestCCM002KmsIntrinsic:
+    """CCM-002: KmsKeyId via intrinsic referencing an in-template KMS resource."""
+
+    def test_ref_to_kms_key_passes(self):
+        # KmsKeyId: !Ref MyKey — the standard CFN idiom for a CMK.
+        # Used to produce key_str='' and flag as unencrypted (FP).
+        ctx = make_context({
+            "MyKey": r("MyKey", "AWS::KMS::Key", {"EnableKeyRotation": True}),
+            "Repo": r("Repo", "AWS::CodeCommit::Repository", {
+                "RepositoryName": "my-repo",
+                "KmsKeyId": {"Ref": "MyKey"},
+            }),
+        })
+        f = _find(ctx, "CCM-002")
+        assert f and f[0].passed is True
+
+    def test_getatt_to_kms_key_passes(self):
+        # KmsKeyId: !GetAtt MyKey.Arn — another valid CMK reference idiom.
+        ctx = make_context({
+            "MyKey": r("MyKey", "AWS::KMS::Key", {"EnableKeyRotation": True}),
+            "Repo": r("Repo", "AWS::CodeCommit::Repository", {
+                "RepositoryName": "my-repo",
+                "KmsKeyId": {"Fn::GetAtt": ["MyKey", "Arn"]},
+            }),
+        })
+        f = _find(ctx, "CCM-002")
+        assert f and f[0].passed is True
+
+    def test_ref_to_kms_alias_passes(self):
+        # KmsKeyId: !Ref MyAlias — alias is also a CMK reference.
+        ctx = make_context({
+            "MyAlias": r("MyAlias", "AWS::KMS::Alias", {
+                "AliasName": "alias/my-key", "TargetKeyId": "some-key-id",
+            }),
+            "Repo": r("Repo", "AWS::CodeCommit::Repository", {
+                "RepositoryName": "my-repo",
+                "KmsKeyId": {"Ref": "MyAlias"},
+            }),
+        })
+        f = _find(ctx, "CCM-002")
+        assert f and f[0].passed is True
+
+    def test_no_kms_key_still_fires(self):
+        # A CodeCommit repo with no KmsKeyId must still fail CCM-002.
+        ctx = make_context({
+            "Repo": r("Repo", "AWS::CodeCommit::Repository", {
+                "RepositoryName": "my-repo",
+            }),
+        })
+        f = _find(ctx, "CCM-002")
+        assert f and f[0].passed is False
+
+    def test_aws_owned_alias_still_fires(self):
+        # KmsKeyId: alias/aws/codecommit is the AWS-owned key; must still fail.
+        ctx = make_context({
+            "Repo": r("Repo", "AWS::CodeCommit::Repository", {
+                "RepositoryName": "my-repo",
+                "KmsKeyId": "alias/aws/codecommit",
+            }),
+        })
+        f = _find(ctx, "CCM-002")
+        assert f and f[0].passed is False
+
+    def test_ref_to_non_kms_resource_does_not_pass(self):
+        # !Ref to something that is NOT a KMS resource stays unresolved;
+        # the check must not pass (conservative default).
+        ctx = make_context({
+            "SomeParam": r("SomeRole", "AWS::IAM::Role", {
+                "AssumeRolePolicyDocument": {},
+            }),
+            "Repo": r("Repo", "AWS::CodeCommit::Repository", {
+                "RepositoryName": "my-repo",
+                "KmsKeyId": {"Ref": "SomeRole"},
+            }),
+        })
+        f = _find(ctx, "CCM-002")
+        assert f and f[0].passed is False
+
+
+class TestCCM003LiteralArn:
+    """CCM-003: literal DestinationArn triggers flag; intrinsic refs pass."""
+
+    def test_literal_arn_fires(self):
+        # A literal SNS ARN in DestinationArn must be flagged.
+        ctx = make_context({
+            "Repo": r("Repo", "AWS::CodeCommit::Repository", {
+                "RepositoryName": "my-repo",
+                "Triggers": [{"Name": "t1",
+                              "DestinationArn": "arn:aws:sns:us-east-1:123456789012:my-topic",
+                              "Events": ["all"]}],
+            }),
+        })
+        f = _find(ctx, "CCM-003")
+        assert f and f[0].passed is False
+
+    def test_intrinsic_destination_passes(self):
+        # A trigger whose DestinationArn is a Ref (not a literal string)
+        # does not produce an offender entry; the finding must pass.
+        ctx = make_context({
+            "MyTopic": r("MyTopic", "AWS::SNS::Topic", {}),
+            "Repo": r("Repo", "AWS::CodeCommit::Repository", {
+                "RepositoryName": "my-repo",
+                "Triggers": [{"Name": "t1",
+                              "DestinationArn": {"Ref": "MyTopic"},
+                              "Events": ["all"]}],
+            }),
+        })
+        f = _find(ctx, "CCM-003")
+        assert f and f[0].passed is True
+
+    def test_no_triggers_produces_no_finding(self):
+        # When there are no Triggers, CCM-003 emits no finding at all.
+        ctx = make_context({
+            "Repo": r("Repo", "AWS::CodeCommit::Repository", {
+                "RepositoryName": "my-repo",
+            }),
+        })
+        f = _find(ctx, "CCM-003")
+        assert f == []

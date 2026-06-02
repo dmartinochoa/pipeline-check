@@ -111,6 +111,38 @@ release commit collapses this section into `## [X.Y.Z] - <date>`.
   trusted ``branches:`` release. The CC-008, BB-003, CA-003, and LMB-003
   proof-of-exploit examples were corrected so their Vulnerable fragment
   fires and their Safe fragment passes.
+- **Rule audit, batch 4: false-positive fixes across Cloud Build,
+  CircleCI, Azure Pipelines, Buildkite, Argo, Bitbucket, AWS, and
+  CloudFormation.** Documented-safe idioms that the checks wrongly
+  flagged now pass, each pinned by a regression test that also confirms
+  a genuine violation still fires. GCB-004 scans only step ``args`` /
+  ``entrypoint`` for a user substitution, so the recommended ``env:``
+  remediation clears. CC-004 anchors its secret-name match on segment
+  boundaries (``TOKENIZER_VERSION`` / ``SECRET_SCANNING_ENABLED`` are no
+  longer secret-like). The shared ``curl``-insecure detector matches
+  ``-k`` case-sensitively (curl's ``-K`` is ``--config``, not a TLS
+  bypass), and the shared go-insecure and pip-hash detectors ignore a
+  commented-out ``export`` and a quoted tooling package respectively.
+  CC-025 drops ``{{ .Revision }}`` (a content-addressed commit SHA is not
+  attacker-controllable for cache poisoning); CC-029 accepts CircleCI's
+  legacy ``:YYYYMM-NN`` machine-image tags as pinned. ADO-002 adds a word
+  boundary so a tainted ``$BR`` no longer matches ``$BRANCHX``; ADO-027
+  scans only script-step bodies, not free-text fields. BK-013 treats
+  ``release`` / ``promote`` as deploy intent only as a label's leading
+  verb (not in "Build release artifact"). ARGO-006 excludes cache /
+  partition keys and ``*_KEY_PATH`` reference names from its weak
+  name-based match. BB-005 honors a global ``options.max-time``. LMB-003
+  exempts ARN/name-reference env vars (``DB_SECRET_ARN``). CW-001 stays
+  silent in accounts with no CodeBuild projects. CCM-002 accepts a
+  ``!Ref`` / ``!GetAtt`` to an in-template KMS key as a customer-managed
+  CMK. Azure storage retention rules (AZMON-002, AZMON-005) treat
+  ``days=0`` with retention enabled as indefinite (compliant); AZSQL-001
+  accepts Managed HSM and sovereign-cloud key vaults; AZST-006 reports a
+  missing key-creation-time as advisory rather than a hard failure.
+- **Rule audit, batch 4: accuracy fixes to rule titles.** AZST-005's
+  title no longer asserts an unverified absence ("blob lifecycle policy
+  should be reviewed"); CCM-003's title no longer claims a cross-account
+  comparison the check does not perform.
 
 ## [1.7.1] - 2026-06-01
 
