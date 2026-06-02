@@ -374,7 +374,9 @@ class TestFullIntegration:
         )
 
     @pytest.mark.parametrize("check_id", sorted(
-        _ALL_RULE_IDS - {"AZMON-001"},  # AZMON-001 passes (settings exist)
+        # AZMON-001 passes (settings exist); ACR-005 is an INFO advisory
+        # that always passes (ACR has no registry-level tag immutability).
+        _ALL_RULE_IDS - {"AZMON-001", "ACR-005"},
     ))
     def test_rule_fires(self, _all_findings, check_id):
         assert check_id in _failed_ids(_all_findings), (
@@ -387,6 +389,13 @@ class TestFullIntegration:
         azmon001 = [f for f in _all_findings if f.check_id == "AZMON-001"]
         assert len(azmon001) == 1
         assert azmon001[0].passed is True
+
+    def test_acr005_passes_as_advisory(self, _all_findings):
+        """ACR-005 is an INFO advisory that always passes: ACR has no
+        registry-level tag-immutability setting to assert a verdict on."""
+        acr005 = [f for f in _all_findings if f.check_id == "ACR-005"]
+        assert len(acr005) == 1
+        assert acr005[0].passed is True
 
     def test_all_prefixes_present(self, _all_findings):
         prefixes = {f.check_id.split("-")[0] for f in _all_findings}

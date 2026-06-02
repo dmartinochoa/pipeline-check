@@ -31,7 +31,7 @@ pipeline_check --pipeline azure_cloud --subscription-id $AZURE_SUBSCRIPTION_ID -
 | [ACR-002](#acr-002) | Container registry allows public network access | <span class="pg-sev pg-sev--high">HIGH</span> |  |
 | [ACR-003](#acr-003) | Container registry content trust not enabled | <span class="pg-sev pg-sev--medium">MEDIUM</span> |  |
 | [ACR-004](#acr-004) | Container registry Defender scanning not enabled | <span class="pg-sev pg-sev--high">HIGH</span> |  |
-| [ACR-005](#acr-005) | Container registry does not enforce tag immutability | <span class="pg-sev pg-sev--medium">MEDIUM</span> |  |
+| [ACR-005](#acr-005) | Container registry tag immutability (verify per-repository locking) | <span class="pg-sev pg-sev--info">INFO</span> |  |
 | [AKV-001](#akv-001) | Key Vault soft delete not enabled | <span class="pg-sev pg-sev--high">HIGH</span> |  |
 | [AKV-002](#akv-002) | Key Vault purge protection not enabled | <span class="pg-sev pg-sev--high">HIGH</span> |  |
 | [AKV-003](#akv-003) | Key Vault allows access from all networks | <span class="pg-sev pg-sev--medium">MEDIUM</span> |  |
@@ -160,21 +160,21 @@ Enable Microsoft Defender for Containers on the subscription and configure the q
 
 </div>
 
-<div class="pg-rule pg-rule--medium" markdown>
+<div class="pg-rule pg-rule--info" markdown>
 
-## ACR-005: Container registry does not enforce tag immutability { #acr-005 }
+## ACR-005: Container registry tag immutability (verify per-repository locking) { #acr-005 }
 
 <div class="pg-rule__tags">
-<span class="pg-sev pg-sev--medium">MEDIUM</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-9</span> <span class="pg-tag pg-tag--cwe">CWE-494</span>
+<span class="pg-sev pg-sev--info">INFO</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-9</span> <span class="pg-tag pg-tag--cwe">CWE-494</span>
 </div>
 
-Without tag immutability, an attacker (or an accidental push) can overwrite a production image tag with a different image. Consumers pulling by tag receive the new, potentially malicious, content.
+Advisory (INFO), always passes. Unlike ECR's registry-level ``imageTagMutability``, ACR exposes no tag-immutability setting on the registry; immutability is a per-repository / per-tag ``writeEnabled=false`` lock applied through the data plane. A registry-level posture scan cannot enumerate those locks (it would need data-plane auth and a per-repository walk), so this rule does not assert a pass/fail verdict. It surfaces the recommendation, lock critical tags and pin by digest, as a reminder. (The prior MEDIUM check inferred immutability from the quarantine / export policy, an unrelated proxy that both false-positived on default registries and false-negatived on mutable ones.)
 
 <div class="pg-rule__rec" markdown>
 
 **Recommended action**
 
-Enable tag immutability on the container registry. Immutable tags prevent overwriting an existing image tag, ensuring that a deployed tag always resolves to the same digest.
+Azure Container Registry has no registry-level tag-immutability toggle. Immutability is enforced per repository / tag by write-locking: ``az acr repository update --image <repo>:<tag> --write-enabled false`` (or ``--repository <repo>``) prevents an existing tag from being overwritten. Lock critical production tags, and/or reference images by digest (``@sha256:...``) so a deployment always resolves to the same content regardless of tag mutability.
 
 </div>
 

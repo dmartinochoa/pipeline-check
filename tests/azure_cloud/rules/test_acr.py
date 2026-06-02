@@ -12,6 +12,7 @@ from pipeline_check.core.checks.azure_cloud.rules import (
 from pipeline_check.core.checks.azure_cloud.rules import (
     acr003_content_trust as acr003,
 )
+from pipeline_check.core.checks.base import Severity
 
 # -----------------------------------------------------------------------
 # Helpers
@@ -184,7 +185,7 @@ class TestAcr004:
 
 
 # -----------------------------------------------------------------------
-# ACR-005  Container registry does not enforce tag immutability
+# ACR-005  Container registry tag immutability (INFO advisory)
 # -----------------------------------------------------------------------
 
 from pipeline_check.core.checks.azure_cloud.rules import (
@@ -193,42 +194,34 @@ from pipeline_check.core.checks.azure_cloud.rules import (
 
 
 class TestAcr005:
-    def test_quarantine_enabled_passes(self, make_catalog):
+    """ACR-005 is an INFO advisory: ACR has no registry-level
+    tag-immutability setting (it's a per-repo/tag ``writeEnabled=false``
+    data-plane lock), so the rule always passes and carries the
+    recommendation rather than a verdict inferred from an unrelated
+    policy. The prior quarantine/export proxy is gone."""
+
+    def test_advisory_passes_regardless_of_policies(self, make_catalog):
         reg = _registry()
-        reg.policies.quarantine_policy.status = "enabled"
-        reg.policies.export_policy.status = "enabled"
         catalog = make_catalog(**{"acr:registries": [reg]})
         findings = acr005.check(catalog)
         assert len(findings) == 1
-        assert findings[0].passed is True
-        assert findings[0].check_id == "ACR-005"
+        f = findings[0]
+        assert f.check_id == "ACR-005"
+        assert f.passed is True
+        assert f.severity is Severity.INFO
+        # The advisory carries the per-repo lock / digest guidance.
+        assert "writeEnabled" in f.description or "digest" in f.description
 
-    def test_export_disabled_passes(self, make_catalog):
-        reg = _registry()
-        reg.policies.quarantine_policy.status = "disabled"
-        reg.policies.export_policy.status = "disabled"
-        catalog = make_catalog(**{"acr:registries": [reg]})
-        findings = acr005.check(catalog)
-        assert len(findings) == 1
-        assert findings[0].passed is True
-
-    def test_no_policies_fails(self, make_catalog):
+    def test_passes_with_no_policies(self, make_catalog):
+        # A registry whose ``policies`` is None must not crash and still
+        # passes (the proxy logic that used to read policies is gone).
         reg = MagicMock()
         reg.name = "bare-acr"
         reg.policies = None
         catalog = make_catalog(**{"acr:registries": [reg]})
         findings = acr005.check(catalog)
         assert len(findings) == 1
-        assert findings[0].passed is False
-
-    def test_all_disabled_fails(self, make_catalog):
-        reg = _registry()
-        reg.policies.quarantine_policy.status = "disabled"
-        reg.policies.export_policy.status = "enabled"
-        catalog = make_catalog(**{"acr:registries": [reg]})
-        findings = acr005.check(catalog)
-        assert len(findings) == 1
-        assert findings[0].passed is False
+        assert findings[0].passed is True
 
     def test_empty_registries(self, make_catalog):
         catalog = make_catalog(**{"acr:registries": []})
