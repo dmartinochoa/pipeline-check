@@ -12,6 +12,21 @@ release commit collapses this section into `## [X.Y.Z] - <date>`.
 
 ### Added
 
+- **GHA-114: Package-publish workflow runs on an unrestricted push trigger
+  (HIGH, MEDIUM confidence).** New GitHub Actions rule for the npm
+  "trusted publishing, untrusted branch" attack: a publish workflow
+  reachable from an unrestricted ``push`` trigger (wildcard ``branches:``
+  pattern or no branch filter at all) lets a counterfeit workflow on any
+  throwaway branch mint the OIDC publish token and ship a release as
+  though it were the real one. Fires when a workflow contains a
+  package-publish step (``npm publish``, ``pypa/gh-action-pypi-publish``,
+  ``cargo publish``, ``rubygems/release-gem``, etc.) and its ``on:`` block
+  includes an unrestricted ``push`` event (no ``branches:`` filter or a
+  ``branches: ['*']``-style wildcard). Recommend gating publishes on
+  ``on: push: tags:`` patterns, ``release:`` events, or
+  ``workflow_dispatch`` only. The trigger-side twin of GHA-113 (env-gate
+  side); both generalize GHA-086 to the full trusted-publisher surface.
+  Mapped across all 12 standards. github 104 -> 105.
 - **GHA-113: OIDC trusted-publishing job without an environment gate
   (HIGH).** New GitHub Actions rule for the npm "trusted publishing,
   untrusted branch" shape (the Red Hat npm compromise, BoostSecurity

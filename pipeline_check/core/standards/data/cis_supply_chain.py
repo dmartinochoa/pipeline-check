@@ -226,6 +226,7 @@ STANDARD = Standard(
         "GHA-111":  ["1.3.4", "2.4.3"],  # AI agent edits IaC applied in the same job
         "GHA-112":  ["5.1.4", "2.2.2"],  # self-hosted deploy with no environment gate
         "GHA-113":  ["1.3.4", "2.4.3", "5.2.1"],  # OIDC trusted-publish w/o env gate
+        "GHA-114":  ["1.3.4", "2.4.3", "5.2.1"],  # publish workflow on an unrestricted push trigger
         "GHA-062":  ["1.3.4", "2.4.3"],                  # OIDC trust subject in sibling IaC is overly broad
         "GHA-063":  ["2.4.3", "2.1.3"],                  # spoofable bot-actor if-predicate
         "GHA-064":  ["2.4.3"],                           # unsound contains() with comma-string operand

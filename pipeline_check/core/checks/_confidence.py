@@ -56,6 +56,11 @@ _MEDIUM: frozenset[str] = frozenset({
     # exists) over-flags, so the assertion is co-occurrence, not a
     # proven OIDC exchange.
     "GHA-113",
+    # Publish workflow on an unrestricted push trigger. An internal CD
+    # pipeline may intentionally publish a snapshot to a private registry
+    # on every branch push, so an unrestricted-trigger publish is not
+    # always a public-release exposure.
+    "GHA-114",
     "JF-014",
     # Dep-update lockfile bypass, catches all ``pip install -U`` by
     # default; the safe subset (pip/setuptools/wheel/virtualenv) is
