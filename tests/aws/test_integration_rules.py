@@ -213,7 +213,7 @@ def _insecure_codeartifact():
 
 
 def _insecure_codecommit():
-    """Repo with no approval template, AWS-managed encryption, cross-account trigger."""
+    """Repo with no approval template, no customer KMS key, cross-account trigger."""
     client = MagicMock()
     repos = [{"repositoryName": "app", "repositoryId": "r-1"}]
     client.get_paginator.return_value = _pages([{"repositories": repos}])
@@ -221,7 +221,7 @@ def _insecure_codecommit():
         "approvalRuleTemplateNames": [],
     }
     client.get_repository.return_value = {
-        "repositoryMetadata": {"kmsKeyId": "alias/aws/codecommit"},
+        "repositoryMetadata": {},  # no customer KMS key -> CCM-002 fires
     }
     client.get_repository_triggers.return_value = {"triggers": [
         {"name": "t", "destinationArn": f"arn:aws:sns:us-east-1:{_OTHER_ACCOUNT}:external"},
