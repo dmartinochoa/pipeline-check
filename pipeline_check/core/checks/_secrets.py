@@ -19,7 +19,7 @@ that lack a publicly-documented shape.
 
 Four signal types can fire:
 
-  1. **Token-shape match.** Tokenised value matches a built-in
+  1. **Token-shape match.** Tokenized value matches a built-in
      credential regex. Hit label: ``<detector>:<token>``.
   2. **PEM private-key block.** Multi-line ``-----BEGIN PRIVATE
      KEY-----`` marker anywhere in the document. Hit label:
@@ -63,7 +63,7 @@ def register_pattern(pattern: str | Pattern[str]) -> None:
     """Add ``pattern`` to the set of regexes :func:`find_secret_values` checks.
 
     The pattern is anchored by the caller, tokens are whole-string
-    matched (``re.fullmatch``) after tokenisation, so a pattern like
+    matched (``re.fullmatch``) after tokenization, so a pattern like
     ``^acme_[a-z0-9]{32}$`` matches the token ``acme_…`` but not a
     substring of a larger blob. Duplicate patterns are ignored.
     """
@@ -573,7 +573,7 @@ def _tokenize(s: str) -> Iterable[str]:
     """Split ``s`` on whitespace + common shell separators.
 
     Yields each token for pattern-matching. Built-in patterns are
-    anchored (``^...$``), so tokenising lets a secret embedded in
+    anchored (``^...$``), so tokenizing lets a secret embedded in
     ``echo "AKIA…"`` still fire.
     """
     for tok in _TOKENIZE_RE.split(s):

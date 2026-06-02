@@ -49,7 +49,7 @@ RULE = Rule(
         "command body. Quoted (``\"${DRONE_*}\"``) or "
         "single-quoted uses are safe in POSIX shell because "
         "the substitution runs after Drone's templating but "
-        "the shell still tokenises the expanded value as a "
+        "the shell still tokenizes the expanded value as a "
         "single argument. Same model as the Tekton TKN-003 / "
         "Argo ARGO-005 / Buildkite BK-003 rules in this catalog."
     ),

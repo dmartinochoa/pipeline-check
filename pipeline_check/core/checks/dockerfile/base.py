@@ -9,7 +9,7 @@ The parser is deliberately small. It does NOT execute build args, it
 does NOT resolve ``FROM <stage>`` references, and it does NOT
 validate semantics. Its job is to surface the directive shape so
 per-rule regexes don't each reimplement comment-stripping, line-
-continuation handling, and tokenisation.
+continuation handling, and tokenization.
 
 Behavior notes:
 

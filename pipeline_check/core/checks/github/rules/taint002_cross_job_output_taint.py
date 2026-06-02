@@ -37,7 +37,7 @@ RULE = Rule(
     esf=("ESF-D-INJECTION",),
     cwe=("CWE-78", "CWE-829"),
     recommendation=(
-        "Sanitise the value at the producer step *before* it lands "
+        "Sanitize the value at the producer step *before* it lands "
         "in ``$GITHUB_OUTPUT``. Once the value is in a job output "
         "the consuming job has no expression-level escaping pass "
         "left, ``${{ needs.<job>.outputs.<name> }}`` substitutes "
@@ -86,7 +86,7 @@ RULE = Rule(
         "cross-job hop the single-step rule can't see."
     ),
     known_fp=(
-        "Sanitisation between the source interpolation and the "
+        "Sanitization between the source interpolation and the "
         "$GITHUB_OUTPUT write isn't modeled. If the producer "
         "step runs ``echo \"$TITLE\" | tr -dc 'a-zA-Z0-9 '`` "
         "before redirecting to GITHUB_OUTPUT, the consumer is "

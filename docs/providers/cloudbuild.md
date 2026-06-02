@@ -96,7 +96,7 @@ Pin every ``steps[].name`` image to an ``@sha256:<digest>`` suffix. ``gcr.io/clo
 <span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-2</span> <span class="pg-tag pg-tag--esf">ESF-D-IDENTITY</span> <span class="pg-tag pg-tag--esf">ESF-D-LEAST-PRIV</span> <span class="pg-tag pg-tag--cwe">CWE-250</span>
 </div>
 
-The default Cloud Build service account historically held ``roles/cloudbuild.builds.builder`` plus project-level editor in many organisations. Even under the GCP April-2024 default-identity change, the default SA is still broader than what a single pipeline needs. Explicit ``serviceAccount:`` is required to pass.
+The default Cloud Build service account historically held ``roles/cloudbuild.builds.builder`` plus project-level editor in many organizations. Even under the GCP April-2024 default-identity change, the default SA is still broader than what a single pipeline needs. Explicit ``serviceAccount:`` is required to pass.
 
 <div class="pg-rule__rec" markdown>
 

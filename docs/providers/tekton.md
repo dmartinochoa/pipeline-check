@@ -69,13 +69,13 @@ Body resolution: inline ``taskSpec:`` blocks are walked directly; ``taskRef: { n
 
 **Known false-positive modes**
 
-- If the producer task runs a sanitiser between the tainted ``$(params.X)`` interpolation and the ``$(results.Y.path)`` write, the consumer is no longer exploitable but TAINT-006 still fires. Suppress via ignore-file scoped to the consumer task name when this is the deliberate shape; the sanitiser is then load-bearing.
+- If the producer task runs a sanitizer between the tainted ``$(params.X)`` interpolation and the ``$(results.Y.path)`` write, the consumer is no longer exploitable but TAINT-006 still fires. Suppress via ignore-file scoped to the consumer task name when this is the deliberate shape; the sanitizer is then load-bearing.
 
 <div class="pg-rule__rec" markdown>
 
 **Recommended action**
 
-Sanitise the value at the producer task before it lands in ``$(results.<name>.path)``. The canonical safe pattern is to copy the ``$(params.<name>)`` source into an intermediate shell variable, run a sanitiser (``tr -dc 'a-zA-Z0-9 '`` for a freeform title), and only then write the cleaned value to the result file. The consumer task should still treat its own param as tainted: surface ``$(params.<name>)`` into a quoted shell variable (``TITLE="$(params.title)"``) before interpolating elsewhere. Removing the cross-task results forwarding is the strongest fix; if the value genuinely needs to flow downstream, validate the sanitiser is doing what you think before relying on it.
+Sanitize the value at the producer task before it lands in ``$(results.<name>.path)``. The canonical safe pattern is to copy the ``$(params.<name>)`` source into an intermediate shell variable, run a sanitizer (``tr -dc 'a-zA-Z0-9 '`` for a freeform title), and only then write the cleaned value to the result file. The consumer task should still treat its own param as tainted: surface ``$(params.<name>)`` into a quoted shell variable (``TITLE="$(params.title)"``) before interpolating elsewhere. Removing the cross-task results forwarding is the strongest fix; if the value genuinely needs to flow downstream, validate the sanitizer is doing what you think before relying on it.
 
 </div>
 
@@ -393,7 +393,7 @@ The detection scans the step-level ``workspaces:`` list (``spec.steps[*].workspa
 
 **Recommended action**
 
-Pin every workspace ``subPath:`` to a static literal that your team controls. ``subPath: build/output`` is fine; ``subPath: $(params.target_dir)`` is not, because a parameter-driven sub-path lets an attacker break out of the workspace and write into a sibling directory of the shared volume. Tekton resolves ``$(params.x)`` substitution in workspace bindings before the volume mount happens, so ``../../../etc`` lands as a real path. If you genuinely need a runtime-chosen sub-path, sanitise the parameter with a step-level pre-check (``case`` against an allow-list, reject anything containing ``..``) and pass the validated value through a result rather than the raw parameter.
+Pin every workspace ``subPath:`` to a static literal that your team controls. ``subPath: build/output`` is fine; ``subPath: $(params.target_dir)`` is not, because a parameter-driven sub-path lets an attacker break out of the workspace and write into a sibling directory of the shared volume. Tekton resolves ``$(params.x)`` substitution in workspace bindings before the volume mount happens, so ``../../../etc`` lands as a real path. If you genuinely need a runtime-chosen sub-path, sanitize the parameter with a step-level pre-check (``case`` against an allow-list, reject anything containing ``..``) and pass the validated value through a result rather than the raw parameter.
 
 </div>
 

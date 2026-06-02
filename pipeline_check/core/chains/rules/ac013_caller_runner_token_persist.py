@@ -17,7 +17,7 @@ Distinct from:
     directly without the persistence-on-shared-host step.
   * AC-001, fork-PR credential theft via ``pull_request_target``
     is a different initial-access shape; this chain doesn't
-    require a fork PR, just any caller of the parameterised
+    require a fork PR, just any caller of the parameterized
     workflow.
 
 The chain fires when both GHA-036 and GHA-019 fire on the *same*

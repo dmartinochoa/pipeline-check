@@ -1,7 +1,7 @@
 """Per-pipeline taint graph for the GitLab CI dataflow rules.
 
 The GitLab analogue of the GHA engine in
-``pipeline_check.core.checks.github._taint_graph``. Generalises
+``pipeline_check.core.checks.github._taint_graph``. Generalizes
 ``GL-002``'s single-job script-injection detection to a pipeline-
 wide reachability problem that follows the canonical GitLab cross-
 job propagation channel: ``artifacts.reports.dotenv``.

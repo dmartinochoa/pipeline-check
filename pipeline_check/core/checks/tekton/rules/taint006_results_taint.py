@@ -58,10 +58,10 @@ RULE = Rule(
     esf=("ESF-D-INJECTION",),
     cwe=("CWE-78", "CWE-829"),
     recommendation=(
-        "Sanitise the value at the producer task before it "
+        "Sanitize the value at the producer task before it "
         "lands in ``$(results.<name>.path)``. The canonical "
         "safe pattern is to copy the ``$(params.<name>)`` source "
-        "into an intermediate shell variable, run a sanitiser "
+        "into an intermediate shell variable, run a sanitizer "
         "(``tr -dc 'a-zA-Z0-9 '`` for a freeform title), and "
         "only then write the cleaned value to the result file. "
         "The consumer task should still treat its own param as "
@@ -70,7 +70,7 @@ RULE = Rule(
         "interpolating elsewhere. Removing the cross-task "
         "results forwarding is the strongest fix; if the value "
         "genuinely needs to flow downstream, validate the "
-        "sanitiser is doing what you think before relying on "
+        "sanitizer is doing what you think before relying on "
         "it."
     ),
     docs_note=(
@@ -98,12 +98,12 @@ RULE = Rule(
         "yet."
     ),
     known_fp=(
-        "If the producer task runs a sanitiser between the "
+        "If the producer task runs a sanitizer between the "
         "tainted ``$(params.X)`` interpolation and the "
         "``$(results.Y.path)`` write, the consumer is no longer "
         "exploitable but TAINT-006 still fires. Suppress via "
         "ignore-file scoped to the consumer task name when "
-        "this is the deliberate shape; the sanitiser is then "
+        "this is the deliberate shape; the sanitizer is then "
         "load-bearing.",
     ),
     exploit_example=(
@@ -141,7 +141,7 @@ RULE = Rule(
         "      params:\n"
         "        - { name: title, value: $(tasks.extract.results.clean-title) }\n"
         "\n"
-        "# Safe: sanitise at the producer Task (strip metacharacters\n"
+        "# Safe: sanitize at the producer Task (strip metacharacters\n"
         "# to an expected charset) before writing the result, and\n"
         "# bind the consumer's param to a shell env var that's\n"
         "# quoted on every use. The injected ``;`` / backticks\n"

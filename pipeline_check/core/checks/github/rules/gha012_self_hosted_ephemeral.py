@@ -33,7 +33,7 @@ RULE = Rule(
         "list, and `{ group, labels }` dict form."
     ),
     known_fp=(
-        "Organisations using actions-runner-controller (ARC), "
+        "Organizations using actions-runner-controller (ARC), "
         "autoscaled pools, or vendor runner fleets often use labels "
         "like ``arc-*``, ``autoscaled-*``, or ``ephemeral-pool-*`` "
         "instead of a bare ``ephemeral`` label. The check only "

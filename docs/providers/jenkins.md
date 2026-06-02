@@ -732,7 +732,7 @@ JF-014 catches agent labels that aren't ephemeral; this rule catches the upstrea
 
 **Recommended action**
 
-Hard-code agent labels to a specific pool name. If label selection has to be parameterised, validate the candidate value against an explicit allowlist before the build starts (Groovy ``if`` guard at the top of the pipeline), and never inline ``${params.X}`` / ``${env.BRANCH_NAME}`` / ``${env.CHANGE_BRANCH}`` directly into ``label "..."``.
+Hard-code agent labels to a specific pool name. If label selection has to be parameterized, validate the candidate value against an explicit allowlist before the build starts (Groovy ``if`` guard at the top of the pipeline), and never inline ``${params.X}`` / ``${env.BRANCH_NAME}`` / ``${env.CHANGE_BRANCH}`` directly into ``label "..."``.
 
 </div>
 

@@ -19,7 +19,7 @@ RULE = Rule(
         "trivial escape via ``nsenter`` / ``/proc/<pid>/root``."
     ),
     docs_note=(
-        "There is no application use case for hostPID. Only specialised "
+        "There is no application use case for hostPID. Only specialized "
         "node agents (process exporters, debuggers) legitimately need "
         "it, and those are typically deployed via a system DaemonSet "
         "with an explicit security review."
