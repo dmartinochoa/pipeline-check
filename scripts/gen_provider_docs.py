@@ -560,6 +560,45 @@ analogue in other providers:
   controlled shell-injection path.
 """,
     ),
+    "devenv": (
+        "Developer environment",
+        "pipeline_check.core.checks.devenv.rules",
+        _REPO_ROOT / "docs" / "providers" / "devenv.md",
+        """\
+# Developer-environment provider
+
+Scans the config files that run code the moment a developer opens or
+checks out the repository, a surface distinct from the CI pipeline
+definitions the rest of the scanner covers:
+
+- `.vscode/tasks.json` tasks set to `runOptions.runOn: folderOpen`
+- `.devcontainer/devcontainer.json` lifecycle commands
+  (`postCreateCommand` and friends) and the host-side
+  `initializeCommand`
+- `.claude/settings.json` Claude Code hooks of `type: command`
+
+Text-only JSON(C) parsing (comments and trailing commas are
+tolerated), no tokens, no network. The threat is the second stage of
+campaigns like the 2026 Red Hat npm compromise: a poisoned repo that
+runs a loader on folder-open / devcontainer-create / agent-session-
+start, before any build or test. `DEV-004` reserves CRITICAL for the
+remote-fetch-and-execute shape.
+
+## Producer workflow
+
+```bash
+# Auto-detected when .vscode/ , .devcontainer/ , or .claude/ config
+# files are present at cwd; defaults to scanning the current directory.
+pipeline_check --pipeline devenv
+
+# …or point it at a repo root or a single config file.
+pipeline_check --pipeline devenv --devenv-path ./checkout
+```
+
+All other flags (`--output`, `--severity-threshold`, `--checks`,
+`--standard`, …) behave the same as with the other providers.
+""",
+    ),
     "kubernetes": (
         "Kubernetes",
         "pipeline_check.core.checks.kubernetes.rules",

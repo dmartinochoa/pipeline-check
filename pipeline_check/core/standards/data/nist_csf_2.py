@@ -1052,5 +1052,11 @@ STANDARD = Standard(
         "GCKMS-004": ["PR.AA-05"],               # keyring IAM
         "GCKMS-005": ["PR.DS-01"],               # destroy sched
         "GCKMS-006": ["PR.DS-01"],               # imported key
+        # Developer-environment auto-execution
+        "DEV-001":   ["PR.PS-05"],
+        "DEV-002":   ["PR.PS-05"],
+        "DEV-003":   ["PR.PS-05"],
+        "DEV-004":   ["PR.PS-05"],
+        "DEV-005":   ["PR.PS-05"],
     },
 )

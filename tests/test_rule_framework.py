@@ -50,6 +50,7 @@ EXPECTED_RULE_COUNTS: dict[str, int] = {
     "gcp":        50,
     "kubernetes": 43,
     "helm":       17,
+    "devenv":     5,
     "buildkite":  16,
     "tekton":     16,
     "argo":       16,

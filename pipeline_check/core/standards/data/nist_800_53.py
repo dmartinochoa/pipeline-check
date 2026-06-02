@@ -1005,5 +1005,11 @@ STANDARD = Standard(
         "GCKMS-004": ["AC-3", "AC-6"],                     # keyring IAM
         "GCKMS-005": ["SC-12", "CM-6"],                    # destroy sched
         "GCKMS-006": ["SC-12", "SC-13"],                   # imported key
+        # Developer-environment auto-execution
+        "DEV-001":   ["CM-7"],                             # vscode folderOpen task
+        "DEV-002":   ["CM-7"],                             # devcontainer lifecycle
+        "DEV-003":   ["CM-7"],                             # committed claude hook
+        "DEV-004":   ["SI-7", "CM-7"],                     # auto-run remote fetch+exec
+        "DEV-005":   ["CM-7", "AC-6"],                     # initializeCommand on host
     },
 )

@@ -6,6 +6,22 @@ What's planned, what's shipped, and what's deliberately out of scope.
 
 ### Unreleased (on ``dev``)
 
+- **``devenv`` provider: developer-environment auto-execution scanner
+  (DEV-001..005)** — Crosses the "scan pipeline definitions, not the dev
+  environment" line deliberately (the boundary the npm-theme adjacent
+  note flagged). ``--pipeline devenv`` parses the config files that run
+  code on repo open: ``.vscode/tasks.json`` (DEV-001, folder-open
+  tasks), ``.devcontainer/devcontainer.json`` (DEV-002 lifecycle
+  commands, DEV-005 host-side ``initializeCommand``), and
+  ``.claude/settings.json`` (DEV-003, committed ``type: command``
+  hooks). DEV-004 (CRITICAL) is the headline: any of those auto-run
+  surfaces piping a remote download into a shell, reusing
+  ``_primitives/remote_script_exec`` scoped to the auto-run command
+  strings. JSON(C) parsing (string-aware comment / trailing-comma
+  strip), no tokens, no network. Models the 2026 Red Hat npm second-
+  stage loaders. Auto-detected on ``.vscode`` / ``.devcontainer`` /
+  ``.claude`` presence; mapped across OWASP / NIST 800-53 / ESF. Provider
+  count 32 -> 33.
 - **``pipeline_check fix-pr``: autofix-to-PR subcommand** — Closes the
   "patch on disk vs. PR in your inbox" gap the candidate flagged. Scans
   the auto-detected pipeline files, applies the autofixers of the chosen
@@ -1176,11 +1192,13 @@ GHA-114, GHA-115, AC-038, and the consumer-side NPM-017 / PYPI-021
 (provenance built from a non-release ref, reusing a shared
 ``_primitives/provenance_ref`` extractor). The analysis is kept below
 because it documents why each pre-existing rule missed this exact shape.
-Still open as a follow-up: the checkout-time auto-execution scanner
-discussed at the end of this section (``.vscode/tasks.json`` folder-open
-tasks, ``.claude/settings.json`` session-start hooks, ``.github/setup.js``
-loaders), which crosses the dev-environment line and needs a scope
-decision before building.
+The checkout-time auto-execution scanner discussed at the end of this
+section then shipped as the ``devenv`` provider (DEV-001..005): the
+boundary decision was taken to cross the dev-environment line, and the
+pack covers ``.vscode/tasks.json`` folder-open tasks,
+``.claude/settings.json`` session-start hooks, and devcontainer
+lifecycle / ``initializeCommand`` (the ``.github/setup.js`` loader is
+caught when a devcontainer command shells out to it).
 
 The Red Hat npm compromise (BoostSecurity, "Trusted Publishing,
 Untrusted Branch", 2026) exposed a structural gap the rule pack did
@@ -1296,10 +1314,11 @@ checkout, a ``.vscode/tasks.json`` task with ``runOptions.runOn:
 folderOpen``, a ``.claude/settings.json`` ``SessionStart`` hook, and a
 ``.github/setup.js`` shelled out by Codespaces / devcontainer. GHA-056
 catches literal worm IOC strings but not the general "this repo runs
-code the instant you open it" shape. A small editor / agent-config
-scanner (flag folder-open tasks and session-start hooks that shell out
-or fetch) would cover it. Worth a decision before building, since it
-crosses the dev-environment line the project has so far stayed behind.
+code the instant you open it" shape. **Shipped** as the ``devenv``
+provider (DEV-001..005, see the Shipped section): the decision was taken
+to cross the dev-environment line, and the pack flags folder-open tasks,
+devcontainer lifecycle / ``initializeCommand``, and committed Claude Code
+hooks, with CRITICAL reserved for the fetch-and-execute shape.
 The registry-side and operational defenses from the writeup (npm
 enforcing environments when configured, staged publishing as the
 default, hunting the Activity API for ephemeral-branch +

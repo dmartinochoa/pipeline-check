@@ -68,6 +68,7 @@ _PROVIDER_PACKAGES: tuple[tuple[str, str, str], ...] = (
     ("helm",       "pipeline_check.core.checks.helm.rules",       "Helm"),
     ("oci",        "pipeline_check.core.checks.oci.rules",        "OCI manifest"),
     ("scm",        "pipeline_check.core.checks.scm.rules",        "SCM"),
+    ("devenv",     "pipeline_check.core.checks.devenv.rules",     "Developer environment"),
     # cloudformation, terraform, npm, pypi each ship a rule-based
     # ``rules/`` package now. Listing them BEFORE aws preserves the
     # historical "AWS wins for shared IDs (IAM-001, S3-001, ...)"

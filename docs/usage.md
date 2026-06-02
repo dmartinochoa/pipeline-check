@@ -125,6 +125,10 @@ pipeline_check --pipeline helm --helm-path charts/myapp/
 pipeline_check --pipeline drone --drone-path .drone.yml
 pipeline_check --pipeline oci --oci-manifest index.json
 
+# Developer-environment configs that auto-execute on repo open
+# (.vscode/tasks.json, devcontainer.json, .claude/settings.json).
+pipeline_check --pipeline devenv --devenv-path ./
+
 pipeline_check --pipeline npm --npm-path ./
 pipeline_check --pipeline pypi --pypi-path ./
 pipeline_check --pipeline maven --maven-path ./

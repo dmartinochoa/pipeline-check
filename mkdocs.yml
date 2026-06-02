@@ -184,6 +184,7 @@ nav:
               - Helm: providers/helm.md
               - Argo CD: providers/argocd.md
               - OCI image manifest: providers/oci.md
+              - Developer environment: providers/devenv.md
           - SCM posture:
               - Overview: providers/scm.md
               - GitHub: providers/scm_github.md

@@ -1027,5 +1027,11 @@ STANDARD = Standard(
         "GCKMS-004": ["ESF-C-LEAST-PRIV"],                 # keyring IAM
         "GCKMS-005": ["ESF-C-ARTIFACT-AUTHZ"],             # destroy sched
         "GCKMS-006": ["ESF-C-ARTIFACT-AUTHZ"],             # imported key
+        # Developer-environment auto-execution
+        "DEV-001":   ["ESF-D-INJECTION"],                  # vscode folderOpen task
+        "DEV-002":   ["ESF-D-INJECTION"],                  # devcontainer lifecycle
+        "DEV-003":   ["ESF-D-INJECTION"],                  # committed claude hook
+        "DEV-004":   ["ESF-S-VERIFY-DEPS", "ESF-D-INJECTION"],  # remote fetch+exec
+        "DEV-005":   ["ESF-D-INJECTION"],                  # initializeCommand on host
     },
 )

@@ -966,5 +966,11 @@ STANDARD = Standard(
         "GCKMS-004": ["CICD-SEC-2", "CICD-SEC-9"],  # keyring IAM
         "GCKMS-005": ["CICD-SEC-9"],                # destroy sched
         "GCKMS-006": ["CICD-SEC-9"],                # imported key
+        # Developer-environment auto-execution
+        "DEV-001":   ["CICD-SEC-4"],                # vscode folderOpen task
+        "DEV-002":   ["CICD-SEC-4"],                # devcontainer lifecycle
+        "DEV-003":   ["CICD-SEC-4"],                # committed claude hook
+        "DEV-004":   ["CICD-SEC-3", "CICD-SEC-4"],  # auto-run remote fetch+exec
+        "DEV-005":   ["CICD-SEC-4", "CICD-SEC-7"],  # initializeCommand on host
     },
 )

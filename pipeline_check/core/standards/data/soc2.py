@@ -1020,5 +1020,11 @@ STANDARD = Standard(
         "GCKMS-004": ["CC6.1"],                  # keyring IAM
         "GCKMS-005": ["CC6.1"],                  # destroy sched
         "GCKMS-006": ["CC6.1"],                  # imported key
+        # Developer-environment auto-execution (malware / untrusted-code vector)
+        "DEV-001":   ["CC6.8"],
+        "DEV-002":   ["CC6.8"],
+        "DEV-003":   ["CC6.8"],
+        "DEV-004":   ["CC6.8"],
+        "DEV-005":   ["CC6.8"],
     },
 )
