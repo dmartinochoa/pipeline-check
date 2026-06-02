@@ -88,7 +88,7 @@ RULE = Rule(
         "steps:\n"
         "  - name: gcr.io/cloud-builders/docker@sha256:abc123...\n"
         "    entrypoint: bash\n"
-        "    env: [TAG=${_TAG}]\n"
+        "    env: ['TAG=${_TAG}']\n"
         "    args:\n"
         "      - -c\n"
         "      - docker build -t \"image:$TAG\" ."

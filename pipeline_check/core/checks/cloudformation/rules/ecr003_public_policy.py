@@ -39,8 +39,8 @@ RULE = Rule(
         "            Principal: '*'\n"
         "            Action: [ecr:BatchGetImage, ecr:GetDownloadUrlForLayer]\n"
         "\n"
-        "# Safe: scope to the account / org. Use ECR Public for\n"
-        "# truly public images.\n"
+        "# Safe: scope the principal to a specific account rather\n"
+        "# than a wildcard. Use ECR Public for truly public images.\n"
         "Resources:\n"
         "  Repo:\n"
         "    Type: AWS::ECR::Repository\n"
@@ -50,10 +50,9 @@ RULE = Rule(
         "        Version: '2012-10-17'\n"
         "        Statement:\n"
         "          - Effect: Allow\n"
-        "            Principal: { AWS: '*' }\n"
-        "            Action: [ecr:BatchGetImage, ecr:GetDownloadUrlForLayer]\n"
-        "            Condition:\n"
-        "              StringEquals: { aws:PrincipalOrgID: o-abc123def4 }"
+        "            Principal:\n"
+        "              AWS: arn:aws:iam::123456789012:root\n"
+        "            Action: [ecr:BatchGetImage, ecr:GetDownloadUrlForLayer]"
     ),
 )
 

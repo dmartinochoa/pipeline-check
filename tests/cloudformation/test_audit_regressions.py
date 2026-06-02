@@ -13,7 +13,31 @@ from pipeline_check.core.checks.cloudformation.rules import (
     ca003_domain_policy_public as ca003,
 )
 from pipeline_check.core.checks.cloudformation.rules import (
+    cf003_codebuild_public_subnet as cf003,
+)
+from pipeline_check.core.checks.cloudformation.rules import (
+    ecr003_public_policy as ecr003,
+)
+from pipeline_check.core.checks.cloudformation.rules import (
+    ecr006_pull_through_untrusted as ecr006,
+)
+from pipeline_check.core.checks.cloudformation.rules import (
+    iam002_wildcard_action as iam002,
+)
+from pipeline_check.core.checks.cloudformation.rules import (
+    iam004_passrole as iam004,
+)
+from pipeline_check.core.checks.cloudformation.rules import (
+    iam005_external_trust as iam005,
+)
+from pipeline_check.core.checks.cloudformation.rules import (
+    iam006_sensitive_wildcard as iam006,
+)
+from pipeline_check.core.checks.cloudformation.rules import (
     lmb003_plaintext_env as lmb003,
+)
+from pipeline_check.core.checks.cloudformation.rules import (
+    s3005_secure_transport as s3005,
 )
 from pipeline_check.core.checks.cloudformation.services import (
     ServiceChecks,
@@ -140,3 +164,96 @@ class TestLMB003ExploitExample:
         vuln_ctx, safe_ctx = _example_contexts(lmb003.RULE)
         assert lmb003.check(vuln_ctx)[0].passed is False
         assert lmb003.check(safe_ctx)[0].passed is True
+
+
+# ---------------------------------------------------------------------------
+# Batch-3 exploit_example fixes
+# ---------------------------------------------------------------------------
+
+
+class TestS3005ExploitExample:
+    def test_strong_check(self):
+        # Vulnerable: pipeline bucket with no SecureTransport deny fires.
+        # Safe: bucket policy with the deny passes.
+        vuln_ctx, safe_ctx = _example_contexts(s3005.RULE)
+        vuln = [f for f in s3005.check(vuln_ctx) if f.check_id == "S3-005"]
+        safe = [f for f in s3005.check(safe_ctx) if f.check_id == "S3-005"]
+        assert vuln and vuln[0].passed is False
+        assert safe and safe[0].passed is True
+
+
+class TestCF003ExploitExample:
+    def test_strong_check(self):
+        # Vulnerable: CodeBuild in a public subnet fires.
+        # Safe: private subnet passes.
+        vuln_ctx, safe_ctx = _example_contexts(cf003.RULE)
+        vuln = cf003.check(vuln_ctx)
+        safe = cf003.check(safe_ctx)
+        assert any(not f.passed for f in vuln)
+        assert all(f.passed for f in safe)
+
+
+class TestECR003ExploitExample:
+    def test_strong_check(self):
+        # Vulnerable: wildcard principal fires.
+        # Safe: specific account principal passes.
+        vuln_ctx, safe_ctx = _example_contexts(ecr003.RULE)
+        vuln = [f for f in ecr003.check(vuln_ctx) if f.check_id == "ECR-003"]
+        safe = [f for f in ecr003.check(safe_ctx) if f.check_id == "ECR-003"]
+        assert vuln and vuln[0].passed is False
+        assert safe and safe[0].passed is True
+
+
+class TestECR006ExploitExample:
+    def test_strong_check(self):
+        # Vulnerable: untrusted upstream fires.
+        # Safe: public.ecr.aws (trusted, bare host) passes.
+        vuln_ctx, safe_ctx = _example_contexts(ecr006.RULE)
+        vuln = ecr006.check(vuln_ctx)
+        safe = ecr006.check(safe_ctx)
+        assert any(not f.passed for f in vuln)
+        assert all(f.passed for f in safe)
+
+
+class TestIAM002ExploitExample:
+    def test_strong_check(self):
+        # Vulnerable: Action:'*' in a CI/CD role fires.
+        # Safe: scoped actions pass.
+        vuln_ctx, safe_ctx = _example_contexts(iam002.RULE)
+        vuln = [f for f in iam002.check(vuln_ctx) if f.check_id == "IAM-002"]
+        safe = [f for f in iam002.check(safe_ctx) if f.check_id == "IAM-002"]
+        assert vuln and vuln[0].passed is False
+        assert safe and safe[0].passed is True
+
+
+class TestIAM004ExploitExample:
+    def test_strong_check(self):
+        # Vulnerable: iam:PassRole on Resource:'*' fires.
+        # Safe: scoped Resource ARNs pass.
+        vuln_ctx, safe_ctx = _example_contexts(iam004.RULE)
+        vuln = [f for f in iam004.check(vuln_ctx) if f.check_id == "IAM-004"]
+        safe = [f for f in iam004.check(safe_ctx) if f.check_id == "IAM-004"]
+        assert vuln and vuln[0].passed is False
+        assert safe and safe[0].passed is True
+
+
+class TestIAM005ExploitExample:
+    def test_strong_check(self):
+        # Vulnerable: external-account trust without sts:ExternalId fires.
+        # Safe: same trust with sts:ExternalId passes.
+        vuln_ctx, safe_ctx = _example_contexts(iam005.RULE)
+        vuln = [f for f in iam005.check(vuln_ctx) if f.check_id == "IAM-005"]
+        safe = [f for f in iam005.check(safe_ctx) if f.check_id == "IAM-005"]
+        assert vuln and vuln[0].passed is False
+        assert safe and safe[0].passed is True
+
+
+class TestIAM006ExploitExample:
+    def test_strong_check(self):
+        # Vulnerable: sensitive service prefix on Resource:'*' fires.
+        # Safe: scoped Resource ARNs pass.
+        vuln_ctx, safe_ctx = _example_contexts(iam006.RULE)
+        vuln = [f for f in iam006.check(vuln_ctx) if f.check_id == "IAM-006"]
+        safe = [f for f in iam006.check(safe_ctx) if f.check_id == "IAM-006"]
+        assert vuln and vuln[0].passed is False
+        assert safe and safe[0].passed is True

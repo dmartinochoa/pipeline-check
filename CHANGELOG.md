@@ -111,6 +111,30 @@ release commit collapses this section into `## [X.Y.Z] - <date>`.
   trusted ``branches:`` release. The CC-008, BB-003, CA-003, and LMB-003
   proof-of-exploit examples were corrected so their Vulnerable fragment
   fires and their Safe fragment passes.
+- **Rule audit, batch 3: broken proof-of-exploit examples across Cloud
+  Build, CircleCI, Bitbucket, Azure Pipelines, Argo, CloudFormation, and
+  AWS.** Twenty-eight rules carried an ``exploit_example`` whose
+  Vulnerable fragment never fired, whose Safe fragment was itself
+  flagged, or that did not parse at all; each is now repaired and pinned
+  with a strong-check regression test (Vulnerable fires, Safe passes).
+  Cloud Build GCB-004 / GCB-006 / GCB-012 / GCB-019 and Azure ADO-030
+  used YAML flow-collection forms (``env: [X=${...}]``,
+  ``pool: { name: ${{ ... }} }``) that a parser rejects. GCB-003,
+  GCB-011, Bitbucket BB-011 / BB-017 / BB-025, CircleCI CC-026,
+  CloudFormation S3-005 / CF-003 / IAM-002 / IAM-004 / IAM-005 / IAM-006,
+  and AWS CA-004 / CB-011 / IAM-002 had a Vulnerable fragment the rule
+  never flagged (a secret kept out of the scanned fields, a ``curl -k``
+  split across args, vendor example credentials the scanner suppresses,
+  an undeclared trust document, a too-short base64 blob, an ``s3:*``
+  literal the wildcard check does not match, a bare policy statement with
+  no enclosing document). The pinning examples GCB-001, CC-003, and
+  ARGO-001 used a placeholder digest that is not valid 64-hex, so their
+  Safe half was flagged; ADO-001 advised an ``@2.x`` task version the pin
+  check rejects; CloudFormation ECR-003 / ECR-006 and AWS ECR-006
+  presented an org-scoped wildcard or a scheme-prefixed registry host as
+  Safe that the check still flags. AWS IAM-002's ``docs_note`` no longer
+  claims it catches service-prefix wildcards like ``s3:*`` (that is
+  IAM-006).
 
 ## [1.7.1] - 2026-06-01
 

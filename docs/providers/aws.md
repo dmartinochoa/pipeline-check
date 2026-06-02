@@ -1200,7 +1200,7 @@ Replace AdministratorAccess with least-privilege policies.
 <span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-2</span> <span class="pg-tag pg-tag--cwe">CWE-269</span>
 </div>
 
-``Action: '*'`` (or service-prefix wildcards like ``s3:*``) on an attached policy is functionally equivalent to AdministratorAccess for that resource. The wildcard absorbs every new IAM action AWS adds, so the role's authority grows without any local change.
+``Action: '*'`` on an attached policy is functionally equivalent to AdministratorAccess: the role can call every API in every service. The wildcard absorbs every new IAM action AWS adds, so the role's authority grows without any local change. Service-prefix wildcards like ``s3:*`` are caught by IAM-006, not this rule.
 
 <div class="pg-rule__rec" markdown>
 
