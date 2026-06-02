@@ -72,7 +72,7 @@ Resolution rules:
 
 ## What it covers
 
-106 checks · 17 have an autofix patch (``--fix``).
+107 checks · 17 have an autofix patch (``--fix``).
 
 | Check | Title | Severity | Fix |
 |-------|-------|----------|-----|
@@ -178,6 +178,7 @@ Resolution rules:
 | [GHA-113](#gha-113) | OIDC trusted-publishing job without an environment gate | <span class="pg-sev pg-sev--high">HIGH</span> |  |
 | [GHA-114](#gha-114) | Package-publish workflow runs on an unrestricted push trigger | <span class="pg-sev pg-sev--high">HIGH</span> |  |
 | [GHA-115](#gha-115) | ``id-token: write`` granted workflow-wide instead of job-scoped | <span class="pg-sev pg-sev--medium">MEDIUM</span> |  |
+| [GHA-116](#gha-116) | Workflow serializes the entire secrets context (toJSON(secrets)) | <span class="pg-sev pg-sev--high">HIGH</span> |  |
 | [TAINT-001](#taint-001) | Untrusted input flows across step boundaries via step outputs | <span class="pg-sev pg-sev--high">HIGH</span> |  |
 | [TAINT-002](#taint-002) | Untrusted input flows across jobs via ``jobs.<id>.outputs:`` | <span class="pg-sev pg-sev--high">HIGH</span> |  |
 | [TAINT-003](#taint-003) | Untrusted input forwarded into reusable workflow ``with:`` | <span class="pg-sev pg-sev--high">HIGH</span> |  |
@@ -3120,6 +3121,34 @@ Move ``id-token: write`` off the workflow-level ``permissions:`` block and onto 
 - Set the workflow-level ``permissions:`` to what the other jobs actually need (often ``contents: read``), and add a job-level ``permissions: { id-token: write, ... }`` to the consuming job only.
 - A workflow-level grant gives every job that doesn't override its permissions the right to mint an OIDC token, so a compromised build / test / lint job can request a publish-capable token it never needed and relay it.
 - Job-level grants also minimize the window in which the mint right is in effect (see GHA-069).
+
+</div>
+
+</div>
+
+<div class="pg-rule pg-rule--high" markdown>
+
+## GHA-116: Workflow serializes the entire secrets context (toJSON(secrets)) { #gha-116 }
+
+<div class="pg-rule__tags">
+<span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-6</span> <span class="pg-tag pg-tag--esf">ESF-D-SECRETS</span> <span class="pg-tag pg-tag--cwe">CWE-522</span>
+</div>
+
+Fires when ``toJSON(secrets)`` appears in any string the workflow evaluates: a step ``run:`` body, a step / job / workflow ``env:`` value, or a step ``with:`` input (the wrappers ``fromJSON(toJSON(secrets))`` and ``format(..., toJSON(secrets))`` match too, since they contain the same substring). HIGH severity, HIGH confidence: serializing the entire secrets context has no benign per-secret use, so the false-positive rate is low. The rare legitimate case (handing every secret to a trusted internal aggregator action) is still an anti-pattern that defeats per-secret scoping and log redaction; suppress it per-resource with a rationale. Distinct from GHA-033 (echoes a named secret), GHA-034 (``secrets: inherit``), and GHA-057 (secret-scanner output to egress).
+
+**Known false-positive modes**
+
+- A workflow that deliberately passes the full secrets context to a trusted, audited internal action (a secrets-sync or vault-bootstrap step) will fire. That is still a broad-surface anti-pattern, but if the receiving action is vetted, suppress per-resource with a rationale naming the action.
+
+**Seen in the wild**
+
+- tj-actions/changed-files + reviewdog supply-chain attack (CVE-2025-30066, March 2025): a compromised action dumped the runner's secrets to the workflow log, affecting 23,000+ repos. The GhostAction campaign (GitGuardian, September 2025) pushed malicious workflows that serialized every repository secret and POSTed them to an attacker endpoint, stealing 3,325 secrets. ``toJSON(secrets)`` is the in-YAML primitive both classes rely on to grab everything at once: https://blog.gitguardian.com/ghostaction-campaign-3-325-secrets-stolen/
+
+<div class="pg-rule__rec" markdown>
+
+**Recommended action**
+
+Never materialize the whole secrets object. ``toJSON(secrets)`` puts every credential the job can see into one string, so a single log line or outbound request exfiltrates all of them at once (the tj-actions / GhostAction 2025 payload pattern). Reference only the specific secrets a step needs by name (``${{ secrets.NPM_TOKEN }}``), bind each to a narrowly-scoped step ``env:``, and prefer short-lived OIDC tokens over long-lived secrets. If a downstream action genuinely needs several secrets, pass them individually rather than the full context.
 
 </div>
 

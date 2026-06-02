@@ -25,7 +25,7 @@ axis.
 
 - **Controls in this standard:** 86
 - **Controls evidenced by at least one check:** 61 / 86
-- **Distinct checks evidencing this standard:** 647
+- **Distinct checks evidencing this standard:** 648
 - **Of those, autofixable with `--fix`:** 105
 
 _Severity levels (`CRITICAL` / `HIGH` / `MEDIUM` / `LOW` / `INFO`) follow the same scale across every provider and standard. See [How to read severity](README.md#how-to-read-severity) on the standards overview for the definitions._
@@ -71,7 +71,7 @@ Click a control ID to jump to the per-control section with the full check list. 
 | [`IA-17`](#ctrl-ia-17) | Dependency confusion | 8 | 6H · 2M |
 | [`IA-18`](#ctrl-ia-18) | Permissive network access | 10 | 1C · 5H · 4M |
 | [`IA-19`](#ctrl-ia-19) | Repojacking | 2 | 2H |
-| [`IA-20`](#ctrl-ia-20) | Compromised user account | 3 | 2H · 1M |
+| [`IA-20`](#ctrl-ia-20) | Compromised user account | 4 | 3H · 1M |
 | [`IA-21`](#ctrl-ia-21) | Typosquatting | 1 | 1H |
 | [`IA-22`](#ctrl-ia-22) | Weak authentication methods | 11 | 9H · 2M |
 | [`IA-23`](#ctrl-ia-23) | Brandjacking | 1 | 1H |
@@ -597,11 +597,12 @@ _No checks in this scanner currently evidence this control. Open an issue if you
 
 ### IA-20: Compromised user account { #ctrl-ia-20 }
 
-**Evidenced by 3 checks** across 2 providers (GitHub Actions, SCM).
+**Evidenced by 4 checks** across 2 providers (GitHub Actions, SCM).
 
 | Check | Title | Severity | Provider | Fix |
 |-------|-------|----------|----------|-----|
 | [`GHA-034`](../providers/github.md#gha-034) | Reusable workflow called with secrets: inherit | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [GitHub Actions](../providers/github.md) | <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> |
+| [`GHA-116`](../providers/github.md#gha-116) | Workflow serializes the entire secrets context (toJSON(secrets)) | <span class="pg-sev pg-sev--high">HIGH</span> | [GitHub Actions](../providers/github.md) |  |
 | [`SCM-020`](../providers/scm_github.md#scm-020) | Default workflow GITHUB_TOKEN has write permission | <span class="pg-sev pg-sev--high">HIGH</span> | [SCM](../providers/scm_github.md) |  |
 | [`SCM-025`](../providers/scm_github.md#scm-025) | Repo has write-enabled deploy keys (push backdoor) | <span class="pg-sev pg-sev--high">HIGH</span> | [SCM](../providers/scm_github.md) |  |
 

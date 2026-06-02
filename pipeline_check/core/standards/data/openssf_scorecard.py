@@ -296,6 +296,7 @@ STANDARD = Standard(
         "GHA-032":  ["Dangerous-Workflow"],                            # local script on untrusted trigger
         "GHA-033":  ["Token-Permissions"],                             # secret echoed in run:
         "GHA-034":  ["Token-Permissions"],                             # secrets: inherit (broad cred surface)
+        "GHA-116":  ["Token-Permissions"],                             # bulk secrets serialization
         "GHA-035":  ["Dangerous-Workflow"],                            # github-script untrusted context
         "GHA-036":  ["Dangerous-Workflow"],                            # runs-on untrusted context
         "GHA-041":  ["Dangerous-Workflow"],                            # single-maintainer action (reputation)

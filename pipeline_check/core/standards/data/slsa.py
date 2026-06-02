@@ -143,6 +143,7 @@ STANDARD = Standard(
         "GHA-032":  ["Build.L3.Isolated"],                         # local script on untrusted trigger
         "GHA-033":  ["Build.L3.NonFalsifiable"],                   # secret echoed in run:
         "GHA-034":  ["Build.L3.NonFalsifiable"],                   # secrets: inherit (broad cred surface)
+        "GHA-116":  ["Build.L3.NonFalsifiable"],                   # bulk secrets serialization
         "GHA-035":  ["Build.L3.Isolated"],                         # github-script untrusted context
         "GHA-036":  ["Build.L3.Isolated"],                         # runs-on untrusted context
         "GHA-038":  ["Build.L3.Isolated"],                         # ACTIONS_ALLOW_UNSECURE_COMMANDS

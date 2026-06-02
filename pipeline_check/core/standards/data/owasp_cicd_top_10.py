@@ -203,6 +203,7 @@ STANDARD = Standard(
         "GHA-113":  ["CICD-SEC-2", "CICD-SEC-1"],  # OIDC trusted-publish w/o env gate
         "GHA-114": ["CICD-SEC-1", "CICD-SEC-2"],  # publish workflow on an unrestricted push trigger
         "GHA-115":  ["CICD-SEC-5"],                # id-token granted workflow-wide, not job-scoped
+        "GHA-116":  ["CICD-SEC-6"],                # bulk secrets serialization
         "GHA-107":  ["CICD-SEC-7", "CICD-SEC-10"],  # harden-runner in audit mode (egress not blocked)
         "GHA-108":  ["CICD-SEC-7", "CICD-SEC-10"],  # no runtime egress control on OIDC/deploy workflow
         "GHA-109":  ["CICD-SEC-7", "CICD-SEC-10"],  # harden-runner not the first step
