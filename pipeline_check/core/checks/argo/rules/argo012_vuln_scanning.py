@@ -26,7 +26,7 @@ RULE = Rule(
         "known CVE?* rather than *can we verify what it is?*. "
         "Detection uses the shared vuln-scan-token catalog: trivy, "
         "grype, snyk, npm-audit, pip-audit, osv-scanner, "
-        "govulncheck, anchore, codeql-action, semgrep, bandit, "
+        "govulncheck, codeql-action, semgrep, bandit, "
         "checkov, tfsec. Walks every Argo document and passes if "
         "any document includes a scanner reference."
     ),

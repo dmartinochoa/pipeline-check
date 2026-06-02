@@ -26,8 +26,7 @@ RULE = Rule(
         "subsequent prod-deploy job on the same runner reads it. The "
         "check looks for `resource_class` values containing "
         "'self-hosted', if found, it checks for 'ephemeral' in the "
-        "value. Also checks for `machine: true` combined with a "
-        "self-hosted resource class."
+        "value."
     ),
 )
 

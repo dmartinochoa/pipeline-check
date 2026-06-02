@@ -16,7 +16,8 @@ RULE = Rule(
     cwe=("CWE-284",),
     recommendation=(
         "Add a ``Manual`` approval action immediately before any stage "
-        "whose name contains ``prod`` / ``production``. CP-001 covers "
+        "whose name contains ``prod`` / ``production`` / ``live``. "
+        "CP-001 covers "
         "the generic case; this rule specifically looks at production-"
         "tagged stages where the blast radius of an unreviewed deploy "
         "is largest."

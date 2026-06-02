@@ -37,10 +37,10 @@ RULE = Rule(
         "``$BUILDKITE_COMMIT``). The pattern matches what GHA-036, "
         "GL-032, JF-032, ADO-030, and CC-031 already enforce on the "
         "other CI providers; closes parity for Buildkite.\n\n"
-        "Quote-state aware in the same way BK-003 is. ``\"$BUILDKITE_"
-        "BRANCH\"`` doesn't fire (Buildkite doesn't shell-eval the "
-        "agents map anyway, but the value still substitutes), only "
-        "the unquoted single-token interpolation does."
+        "The ``agents:`` map is scanned regardless of quoting; "
+        "Buildkite substitutes the value either way, so a quoted "
+        "``\"$BUILDKITE_BRANCH\"`` fires the same as the unquoted "
+        "form."
     ),
     known_fp=(
         "Some teams use a static prefix plus a CI-controlled tail "

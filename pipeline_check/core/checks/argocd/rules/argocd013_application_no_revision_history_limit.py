@@ -41,10 +41,7 @@ RULE = Rule(
     ),
     docs_note=(
         "Reads ``spec.revisionHistoryLimit`` and fires when the "
-        "field is missing or set to ``null``. Explicit 0 also "
-        "fires (history disabled entirely is rarely the "
-        "intended posture — operators usually want at least a "
-        "1-2 entry rollback window). The rule is informational-"
+        "field is missing or set to ``null``. The rule is informational-"
         "leaning LOW: storage bloat and prolonged-secret-"
         "exposure are real but slow-moving risks, not "
         "exploitable surfaces an attacker can compromise in "

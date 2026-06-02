@@ -23,7 +23,7 @@ RULE = Rule(
         "Gated check: fires only when an ``AWS::Lambda::Function`` "
         "references ``CodeSigningConfigArn``. Passes when at least "
         "one ``AWS::Signer::SigningProfile`` with ``PlatformId`` "
-        "starting with ``AWSLambda-`` exists in the template."
+        "containing ``AWSLambda`` exists in the template."
     ),
 )
 

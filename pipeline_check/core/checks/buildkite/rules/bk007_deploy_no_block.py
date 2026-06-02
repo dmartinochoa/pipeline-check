@@ -25,10 +25,11 @@ RULE = Rule(
     ),
     docs_note=(
         "A step is treated as a deploy when its label, key, or any "
-        "command line contains a deploy keyword (``deploy``, ``ship``, "
-        "``release``, ``promote``, ``apply``, ``rollout``, ``terraform "
-        "apply``, ``kubectl apply``, ``helm upgrade``, ``aws ecs "
-        "update-service``). The check passes when at least one "
+        "command line contains a deploy keyword (``deploy``, ``ship-"
+        "it``, ``release``, ``promote``, ``rollout``, ``terraform "
+        "apply``, ``kubectl apply``, ``helm upgrade``, ``helm "
+        "install``, ``aws ecs update-service``). The check passes "
+        "when at least one "
         "preceding step in the same pipeline file is a ``block:`` or "
         "``input:`` flow-control step."
     ),

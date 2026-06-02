@@ -160,6 +160,25 @@ release commit collapses this section into `## [X.Y.Z] - <date>`.
 
 ### Fixed
 
+- **Rule audit: ``docs_note`` / ``recommendation`` accuracy in 20 rules.**
+  A verify-first pass over the audit's metadata findings reconciled each
+  rule's prose with what its detector actually does (no behavior, count,
+  or standards-mapping change). Corrected token-catalog names (ARGO-011
+  ``in-toto-attestation``, BK-010 ``spdx-sbom-generator``) and dropped
+  names that were never tokens (ARGO-012 ``anchore``; BK-012
+  ``anchore`` / ``dependency-check``); made over-specific scanner
+  enumerations illustrative (ADO-020, BB-015); removed claims for surfaces
+  the code never inspects (BK-006 pipeline-level timeout default, CC-010
+  ``machine: true`` executor, BK-015 quote-awareness, BB-016 Docker-image
+  override); fixed inaccurate keyword / example lists (BK-007 deploy
+  verbs, BK-008 curl ``--insecure`` example, CP-005 ``live`` token); added
+  scanned surfaces the prose omitted (CARGO-001 / CARGO-007 workspace
+  tables); and corrected wrong claims (ARGOCD-008 plugin-name handling,
+  ARGOCD-013 ``revisionHistoryLimit: 0``, ADO-014 ``known_fp`` rationale,
+  EB-001 event detail-type, SIGN-001 substring match). Provider docs
+  regenerated. (13 sibling metadata / test findings from the same audit
+  were verified STALE, already fixed by earlier batches, and needed no
+  change.)
 - **English-variant enforcement: closed the PAIRS gaps the rule audit
   flagged.** The ``test_english_variant.py`` guard list was missing
   several British ``-ise`` / ``-isation`` word families (the

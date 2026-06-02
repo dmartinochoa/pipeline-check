@@ -172,7 +172,7 @@ Drop ``--privileged``, ``--cap-add=SYS_ADMIN``, ``--pid=host``, and ``-v /var/ru
 <span class="pg-sev pg-sev--low">LOW</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-9</span> <span class="pg-tag pg-tag--esf">ESF-D-RUNTIME-HARDENING</span> <span class="pg-tag pg-tag--cwe">CWE-400</span>
 </div>
 
-Buildkite has no implicit timeout; agents will wait forever. Set ``timeout_in_minutes:`` per step. The pipeline-level default counts, a global ``steps:`` block with ``timeout_in_minutes:`` is fine, since Buildkite copies it to each step.
+Buildkite has no implicit timeout; agents will wait forever. Set ``timeout_in_minutes:`` per step. The check reads each step's own ``timeout_in_minutes:`` value.
 
 **Known false-positive modes**
 
@@ -196,7 +196,7 @@ Set ``timeout_in_minutes:`` on every command step. A compromised dependency or a
 <span class="pg-sev pg-sev--medium">MEDIUM</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-2</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-7</span> <span class="pg-tag pg-tag--esf">ESF-D-CHANGE-MGMT</span> <span class="pg-tag pg-tag--cwe">CWE-285</span>
 </div>
 
-A step is treated as a deploy when its label, key, or any command line contains a deploy keyword (``deploy``, ``ship``, ``release``, ``promote``, ``apply``, ``rollout``, ``terraform apply``, ``kubectl apply``, ``helm upgrade``, ``aws ecs update-service``). The check passes when at least one preceding step in the same pipeline file is a ``block:`` or ``input:`` flow-control step.
+A step is treated as a deploy when its label, key, or any command line contains a deploy keyword (``deploy``, ``ship-it``, ``release``, ``promote``, ``rollout``, ``terraform apply``, ``kubectl apply``, ``helm upgrade``, ``helm install``, ``aws ecs update-service``). The check passes when at least one preceding step in the same pipeline file is a ``block:`` or ``input:`` flow-control step.
 
 **Known false-positive modes**
 
@@ -220,7 +220,7 @@ Insert a ``- block: "Deploy?"`` (or ``- input:`` step) in front of every deploy 
 <span class="pg-sev pg-sev--medium">MEDIUM</span> <span class="pg-fix pg-fix--rule" title="`--fix` will patch this rule">🔧 autofix</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-3</span> <span class="pg-tag pg-tag--esf">ESF-D-COMMS-INTEGRITY</span> <span class="pg-tag pg-tag--cwe">CWE-295</span>
 </div>
 
-Uses the cross-provider ``_primitives.tls_bypass`` detector so detection stays aligned with GHA-027 / GL-023 / JF-022 / ADO-026 / CC-024 / GCB-011 / DR-006. Covers curl / wget / git / npm / yarn / pip / helm / kubectl / ssh / docker / maven / gradle / aws bypasses. Partial-word matches (``--insecure-protocols``) are excluded.
+Uses the cross-provider ``_primitives.tls_bypass`` detector so detection stays aligned with GHA-027 / GL-023 / JF-022 / ADO-026 / CC-024 / GCB-011 / DR-006. Covers curl / wget / git / npm / yarn / pip / helm / kubectl / ssh / docker / maven / gradle / aws bypasses. Partial-word matches (``--insecurefoo``) are excluded.
 
 <div class="pg-rule__rec" markdown>
 
@@ -260,7 +260,7 @@ Add a signing step, install cosign once (``brew install cosign`` in the agent im
 <span class="pg-sev pg-sev--medium">MEDIUM</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-9</span> <span class="pg-tag pg-tag--esf">ESF-S-SBOM</span> <span class="pg-tag pg-tag--cwe">CWE-1357</span>
 </div>
 
-An SBOM (CycloneDX or SPDX) records every component baked into the build. Without one, post-incident triage can't answer ``did this CVE ship?`` for a given artifact. Detection uses the shared SBOM-token catalog, syft, cyclonedx, cdxgen, spdx-tools, microsoft/sbom-tool.
+An SBOM (CycloneDX or SPDX) records every component baked into the build. Without one, post-incident triage can't answer ``did this CVE ship?`` for a given artifact. Detection uses the shared SBOM-token catalog, syft, cyclonedx, cdxgen, spdx-sbom-generator, microsoft/sbom-tool.
 
 <div class="pg-rule__rec" markdown>
 
@@ -300,7 +300,7 @@ Run ``cosign attest --predicate slsa.json`` (or the SLSA-framework generator fro
 <span class="pg-sev pg-sev--medium">MEDIUM</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-9</span> <span class="pg-tag pg-tag--esf">ESF-D-VULN-SCAN</span> <span class="pg-tag pg-tag--cwe">CWE-1104</span>
 </div>
 
-Vulnerability scanning sits at a different layer from signing and SBOM. It answers ``does this artifact ship a known CVE?`` rather than ``can we verify what it is?``. Detection uses the shared vuln-scan-token catalog: trivy, grype, snyk, npm-audit, pip-audit, anchore, dependency-check, checkov, semgrep.
+Vulnerability scanning sits at a different layer from signing and SBOM. It answers ``does this artifact ship a known CVE?`` rather than ``can we verify what it is?``. Detection uses the shared vuln-scan-token catalog of common scanners including trivy, grype, snyk, npm-audit, pip-audit, checkov, semgrep, and others.
 
 <div class="pg-rule__rec" markdown>
 
@@ -372,7 +372,7 @@ Pin every package install to a lockfile or a checksum-verified version. ``npm ci
 
 Buildkite uses an ``agents:`` map to route a step to a specific runner pool. Both the top-level ``agents:`` and the per-step override are scanned. Detection mirrors BK-003's tainted-variable list (``$BUILDKITE_BRANCH``, ``$BUILDKITE_TAG``, ``$BUILDKITE_MESSAGE``, ``$BUILDKITE_PULL_REQUEST_*``, ``$BUILDKITE_BUILD_AUTHOR*``, ``$BUILDKITE_COMMIT``). The pattern matches what GHA-036, GL-032, JF-032, ADO-030, and CC-031 already enforce on the other CI providers; closes parity for Buildkite.
 
-Quote-state aware in the same way BK-003 is. ``"$BUILDKITE_BRANCH"`` doesn't fire (Buildkite doesn't shell-eval the agents map anyway, but the value still substitutes), only the unquoted single-token interpolation does.
+The ``agents:`` map is scanned regardless of quoting; Buildkite substitutes the value either way, so a quoted ``"$BUILDKITE_BRANCH"`` fires the same as the unquoted form.
 
 **Known false-positive modes**
 

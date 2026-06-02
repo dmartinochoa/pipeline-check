@@ -893,7 +893,7 @@ Looks for at least one ``AWS::Events::Rule`` whose ``EventPattern`` JSON matches
 
 **Recommended action**
 
-Declare an ``AWS::Events::Rule`` whose ``EventPattern`` matches ``aws.codepipeline`` events with ``detail.state: FAILED``, and target it at the notification destination of your choice (SNS, Slack via Chatbot, PagerDuty).
+Declare an ``AWS::Events::Rule`` whose ``EventPattern`` matches the ``CodePipeline Pipeline Execution State Change`` detail-type with ``detail.state: FAILED``, and target it at the notification destination of your choice (SNS, Slack via Chatbot, PagerDuty).
 
 </div>
 
@@ -1487,7 +1487,7 @@ Attach an ``AWS::S3::BucketPolicy`` carrying a ``Deny`` statement on ``Action: "
 <span class="pg-sev pg-sev--medium">MEDIUM</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-9</span> <span class="pg-tag pg-tag--cwe">CWE-345</span>
 </div>
 
-Gated check: fires only when an ``AWS::Lambda::Function`` references ``CodeSigningConfigArn``. Passes when at least one ``AWS::Signer::SigningProfile`` with ``PlatformId`` starting with ``AWSLambda-`` exists in the template.
+Gated check: fires only when an ``AWS::Lambda::Function`` references ``CodeSigningConfigArn``. Passes when at least one ``AWS::Signer::SigningProfile`` with ``PlatformId`` containing ``AWSLambda`` exists in the template.
 
 <div class="pg-rule__rec" markdown>
 

@@ -25,8 +25,8 @@ RULE = Rule(
         "artifact proves *who* published it; a provenance "
         "attestation proves *where / how* it was built. Detection "
         "uses the shared provenance-token catalog (``slsa-"
-        "framework``, ``cosign attest``, ``in-toto``, ``witness "
-        "run``, ``attest-build-provenance``)."
+        "framework``, ``cosign attest``, ``in-toto-attestation``, "
+        "``witness run``, ``attest-build-provenance``)."
     ),
 )
 

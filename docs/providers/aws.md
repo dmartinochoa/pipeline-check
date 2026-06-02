@@ -846,7 +846,7 @@ The complement to CP-001: this rule fires only on stages whose name contains ``p
 
 **Recommended action**
 
-Add a ``Manual`` approval action immediately before any stage whose name contains ``prod`` / ``production``. CP-001 covers the generic case; this rule specifically looks at production-tagged stages where the blast radius of an unreviewed deploy is largest.
+Add a ``Manual`` approval action immediately before any stage whose name contains ``prod`` / ``production`` / ``live``. CP-001 covers the generic case; this rule specifically looks at production-tagged stages where the blast radius of an unreviewed deploy is largest.
 
 </div>
 
