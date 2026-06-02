@@ -43,7 +43,7 @@ RULE = Rule(
     esf=("ESF-D-INJECTION",),
     cwe=("CWE-78", "CWE-829"),
     recommendation=(
-        "Sanitise the value at the step that *writes* the "
+        "Sanitize the value at the step that *writes* the "
         "``$GITHUB_OUTPUT`` entry. The canonical pattern is to "
         "interpolate the untrusted source into an ``env:`` "
         "variable on the producer step and reference the env var "
@@ -77,7 +77,7 @@ RULE = Rule(
         "name=...::`` workflow-command form."
     ),
     known_fp=(
-        "If the producer step deliberately runs a sanitiser "
+        "If the producer step deliberately runs a sanitizer "
         "between the interpolation and the ``$GITHUB_OUTPUT`` "
         "write (``echo \"$TITLE\" | tr -dc 'a-zA-Z0-9 ' >> "
         "$GITHUB_OUTPUT``), the consumer is no longer "
@@ -86,7 +86,7 @@ RULE = Rule(
         "ignore-file scoped to the consumer step name when "
         "this is the deliberate shape. The producer's GHA-003 "
         "finding then carries the residual signal that the "
-        "sanitiser is load-bearing.",
+        "sanitizer is load-bearing.",
     ),
     exploit_example=(
         "# Vulnerable: a producer step writes\n"
@@ -105,11 +105,11 @@ RULE = Rule(
         "          echo \"title=${{ github.event.issue.title }}\" >> \"$GITHUB_OUTPUT\"\n"
         "      - run: ./generate-notes --title ${{ steps.extract.outputs.title }}\n"
         "\n"
-        "# Safe: sanitise the untrusted value at the producer\n"
+        "# Safe: sanitize the untrusted value at the producer\n"
         "# step BEFORE it lands in $GITHUB_OUTPUT. The canonical\n"
         "# pattern is to pull the source into an env var, strip\n"
         "# unsafe chars with a known-good filter, and only then\n"
-        "# write the sanitised value. The consumer step uses an\n"
+        "# write the sanitized value. The consumer step uses an\n"
         "# env-var indirection with shell quoting.\n"
         "jobs:\n"
         "  build:\n"

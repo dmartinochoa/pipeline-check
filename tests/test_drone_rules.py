@@ -208,7 +208,7 @@ class TestDR003ParameterInjection:
         assert r3.check(p).passed
 
     def test_passes_when_single_quoted(self) -> None:
-        # Single quotes also tokenise as one argument.
+        # Single quotes also tokenize as one argument.
         p = _pipeline(steps=[
             {"name": "build", "image": f"x{_DIGEST}",
              "commands": ["echo '${DRONE_COMMIT_MESSAGE}'"]},

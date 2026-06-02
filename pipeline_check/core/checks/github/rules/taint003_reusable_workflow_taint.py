@@ -76,12 +76,12 @@ RULE = Rule(
     esf=("ESF-D-INJECTION",),
     cwe=("CWE-78", "CWE-829"),
     recommendation=(
-        "Sanitise the value at the caller before forwarding it "
+        "Sanitize the value at the caller before forwarding it "
         "across the reusable-workflow boundary. The canonical "
         "safe pattern is to copy the untrusted source into a "
-        "step's ``env:`` block, run a sanitiser (``tr -dc "
+        "step's ``env:`` block, run a sanitizer (``tr -dc "
         "'a-zA-Z0-9 '`` is enough for a freeform title), surface "
-        "the sanitised result via ``echo \"name=$VAR\" >> "
+        "the sanitized result via ``echo \"name=$VAR\" >> "
         "$GITHUB_OUTPUT``, then forward "
         "``${{ steps.<id>.outputs.<name> }}`` as the ``with:`` "
         "input. The callee then sees a string-typed value with "
@@ -110,7 +110,7 @@ RULE = Rule(
     ),
     known_fp=(
         "Callees that wrap the input safely (immediately copy "
-        "into env, sanitise before use) make the caller-side "
+        "into env, sanitize before use) make the caller-side "
         "forward harmless. When the callee body is loaded into "
         "the scan, the rule downgrades to MEDIUM confidence on "
         "those paths; suppress via ignore-file when the "
@@ -185,7 +185,7 @@ def _consumed_unquoted(text: str, input_name: str) -> bool:
     outside any double-quoted segment.
 
     Mirrors the GHA-003 quote-state logic: a reference inside a
-    ``"..."`` segment is treated as safe (the shell tokeniser
+    ``"..."`` segment is treated as safe (the shell tokenizer
     keeps the expanded value intact). Anything still matching
     after the strip is an unquoted reference and is unsafe.
     """

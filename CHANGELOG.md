@@ -160,6 +160,19 @@ release commit collapses this section into `## [X.Y.Z] - <date>`.
 
 ### Fixed
 
+- **English-variant enforcement: closed the PAIRS gaps the rule audit
+  flagged.** The ``test_english_variant.py`` guard list was missing
+  several British ``-ise`` / ``-isation`` word families (the
+  ``sanitize``, ``organization``, ``parameterize``, ``tokenize``,
+  ``generalize``, and ``specialize`` families, named here by their
+  American form, plus inflections), so the British forms could land in
+  source and docs unchecked. Added the pairs to the PAIRS
+  list (and to the bulk-converter list + the CLAUDE.md reference table)
+  and converted every existing occurrence to American spelling across
+  rule docstrings, recommendations, ``docs_note`` text, comments, a
+  workflow fixture, generator scripts, and CHANGELOG history. Provider
+  and standards docs regenerated. Prose-only: no rule behavior, count, or
+  detection change.
 - **Rule audit: ``docs_note`` accuracy drift in four rules.** A
   follow-up pass reconciled each rule's ``docs_note`` prose with what
   its detector actually inspects. ARGO-010 now lists the real SBOM-token
@@ -184,7 +197,7 @@ release commit collapses this section into `## [X.Y.Z] - <date>`.
   YAML *flow* mapping (GHA-111, GHA-055, TAINT-002, TAINT-003) and a
   ``run:`` plain scalar carrying a ``: `` (GHA-072, TAINT-009). All
   switched to block style; GHA-002's prose em-dash and a few British
-  ``sanitise`` spellings in the touched examples were corrected at the
+  ``-ise`` spellings in the touched examples were corrected at the
   same time. A new ``tests/github/test_audit_regressions.py`` pins every
   github example to parse via the production loader, and the
   self-contained single-workflow examples (GHA-055/072/111) to still
@@ -6655,7 +6668,7 @@ promotion to Production/Stable.
 - **TAINT-001 / dataflow taint engine for GHA.** First v0.6.0
   vision item, *landed early on dev*. New per-workflow taint
   graph (``pipeline_check.core.checks.github._taint_graph``)
-  generalises the existing GHA-003 single-step interpolation
+  generalizes the existing GHA-003 single-step interpolation
   detector to a workflow-wide reachability problem: track
   ``${{ github.event.* }}`` source expressions through
   ``$GITHUB_OUTPUT`` writes (and the legacy ``::set-output``
@@ -8994,7 +9007,7 @@ promotion to Production/Stable.
   `report_json`, `report_html`, `report_sarif`, `report_junit`,
   `report_markdown`, `evaluate_gate`) now accept the actual
   `ScoreResult` `TypedDict` from `core.scorer` instead of an
-  unparameterised `dict`. Closes a real type-inference gap that
+  unparameterized `dict`. Closes a real type-inference gap that
   mypy was flagging in `cli.py` lines 1517–1617 and unblocks part
   of the eventual strict-mode flip.
 - `GCB-018` rule narrowing: replaced the boolean-flag pattern with

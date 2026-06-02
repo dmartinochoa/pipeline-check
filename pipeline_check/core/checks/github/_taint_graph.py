@@ -1,6 +1,6 @@
 """Per-workflow taint graph for the GHA dataflow rules.
 
-Generalises the per-step pattern matching that ``GHA-003`` does
+Generalizes the per-step pattern matching that ``GHA-003`` does
 (direct interpolation + env-inherited taint within a single step)
 to a workflow-wide reachability problem:
 

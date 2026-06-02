@@ -17,7 +17,7 @@ RULE = Rule(
     cwe=("CWE-345",),
     recommendation=(
         "Hard-code ``runs-on:`` to a specific runner label or list of "
-        "labels. If the choice has to be parameterised across callers, "
+        "labels. If the choice has to be parameterized across callers, "
         "validate the input against an allowlist of known-good labels "
         "before the job runs (a small ``if:`` guard at job level), "
         "and never accept ``${{ inputs.* }}`` or any ``${{ github.event.* "
@@ -67,7 +67,7 @@ RULE = Rule(
         "      - run: ./scripts/build\n"
         "\n"
         "# Safe: pin to a hard-coded label. If the choice really has\n"
-        "# to be parameterised, validate the input against an\n"
+        "# to be parameterized, validate the input against an\n"
         "# allowlist at job-level via a small if: guard before any\n"
         "# step runs.\n"
         "on: { workflow_dispatch: {} }\n"

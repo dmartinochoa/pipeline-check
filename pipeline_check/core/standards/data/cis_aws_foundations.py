@@ -88,7 +88,7 @@ STANDARD = Standard(
         "SSM-002": ["3.7", "3.8"],   # SSM uses CMK + rotation
         # ── Over-broad principals / admin privileges (1.16) ──
         # CIS 1.16 is canonically "no IAM policy attaches '*:*'
-        # admin to a user". The principle generalises to any
+        # admin to a user". The principle generalizes to any
         # resource policy that grants more than the consumer needs:
         # CodeArtifact domain / repo policies, ECR repo policies,
         # Lambda resource policies, Secrets Manager resource

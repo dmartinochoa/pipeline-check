@@ -1,6 +1,6 @@
 """Per-pipeline taint graph for the Buildkite dataflow rules.
 
-The Buildkite analogue of the GHA / GitLab engines. Generalises
+The Buildkite analogue of the GHA / GitLab engines. Generalizes
 ``BK-003``'s single-step interpolation detection to a pipeline-
 wide reachability problem that follows the canonical Buildkite
 cross-step channel: ``buildkite-agent meta-data set / get``.

@@ -695,7 +695,7 @@ ADO-013 catches self-hosted pools that aren't ephemeral; this rule catches the u
 
 **Recommended action**
 
-Hard-code ``pool:`` to a specific agent pool name (or ``vmImage:`` for Microsoft-hosted). If pool selection has to be parameterised, validate the candidate against an explicit allowlist before the job runs (e.g. a ``condition:`` guard against a vetted set), and never inline ``$(Build.*)`` / ``$(System.PullRequest.*)`` / ``${{ parameters.X }}`` values as the pool name or as a demand.
+Hard-code ``pool:`` to a specific agent pool name (or ``vmImage:`` for Microsoft-hosted). If pool selection has to be parameterized, validate the candidate against an explicit allowlist before the job runs (e.g. a ``condition:`` guard against a vetted set), and never inline ``$(Build.*)`` / ``$(System.PullRequest.*)`` / ``${{ parameters.X }}`` values as the pool name or as a demand.
 
 </div>
 

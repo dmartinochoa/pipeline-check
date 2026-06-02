@@ -17,7 +17,7 @@ RULE = Rule(
     cwe=("CWE-345",),
     recommendation=(
         "Hard-code ``tags:`` to a specific runner tag list. If runner "
-        "selection has to be parameterised, validate the candidate "
+        "selection has to be parameterized, validate the candidate "
         "value against an explicit allowlist in a job ``rules:`` "
         "block before the job runs, and never accept a "
         "``$CI_COMMIT_*`` / ``$CI_MERGE_REQUEST_*`` field as a tag "

@@ -58,7 +58,7 @@ Rule helpers (importable from ``cloudformation/base.py``):
   intrinsic dicts entirely when walking for hard-coded secrets.
 
 This matches cfn-lint and cfn-nag conventions and keeps findings
-useful under the common case where templates are parameterised.
+useful under the common case where templates are parameterized.
 
 ## Resource-type coverage
 
