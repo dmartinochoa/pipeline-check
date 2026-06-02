@@ -41,7 +41,7 @@ parsers and are queued for a follow-up.
 
 ## What it covers
 
-16 checks · 0 have an autofix patch (``--fix``).
+17 checks · 0 have an autofix patch (``--fix``).
 
 | Check | Title | Severity | Fix |
 |-------|-------|----------|-----|
@@ -61,6 +61,7 @@ parsers and are queued for a follow-up.
 | [NPM-014](#npm-014) | Direct dependency relies on a single npm publisher | <span class="pg-sev pg-sev--low">LOW</span> |  |
 | [NPM-015](#npm-015) | Direct dependency published without build provenance | <span class="pg-sev pg-sev--low">LOW</span> |  |
 | [NPM-016](#npm-016) | Direct dependency has a low OpenSSF Scorecard | <span class="pg-sev pg-sev--low">LOW</span> |  |
+| [NPM-017](#npm-017) | Direct dependency provenance built from a non-release ref | <span class="pg-sev pg-sev--low">LOW</span> |  |
 
 ---
 
@@ -544,6 +545,34 @@ Network-dependent: needs ``--resolve-remote``. The dependency's GitHub repo come
 **Recommended action**
 
 A low OpenSSF Scorecard (or a failed Dangerous-Workflow check) on a direct dependency's own repository is a weak-link signal: the project lacks the maintenance and CI-hardening practices (branch protection, pinned actions, no `pull_request_target` script injection, code review) that make a compromise less likely and more detectable. Weigh a better-scored alternative where one exists, pin to a reviewed version, and for the ones you keep, watch them more closely (cooldown, provenance). This is an upstream-posture signal, not a defect you can fix in your own repo.
+
+</div>
+
+</div>
+
+<div class="pg-rule pg-rule--low" markdown>
+
+## NPM-017: Direct dependency provenance built from a non-release ref { #npm-017 }
+
+<div class="pg-rule__tags">
+<span class="pg-sev pg-sev--low">LOW</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-4</span> <span class="pg-tag pg-tag--esf">ESF-S-VERIFY-DEPS</span> <span class="pg-tag pg-tag--cwe">CWE-494</span>
+</div>
+
+Network-dependent: needs ``--resolve-remote``. Reads each direct dependency's latest-version attestation bundle from ``registry.npmjs.org/-/npm/v1/attestations`` and parses the SLSA provenance source ref (``predicate.buildDefinition.externalParameters.workflow.ref``). Flags a ref that is a branch other than ``refs/heads/main`` / ``refs/heads/master``; a tag (``refs/tags/...``) or a default branch passes. Skips (does not flag) a package whose latest version has no provenance (NPM-015's concern), whose attestation can't be fetched or parsed, or whose ref is an unrecognized shape. Scoped to direct dependencies. Default-branch detection assumes ``main`` / ``master``; a repo whose default branch is named otherwise can be flagged (see known_fp). LOW severity / MEDIUM confidence: a posture signal below the default ``--fail-on`` gate. Passes silently offline.
+
+**Known false-positive modes**
+
+- A project whose default branch is not ``main`` / ``master`` (``develop``, ``trunk``, a ``release/*`` branch) publishes legitimately from that branch; this rule treats only ``main`` / ``master`` as the trusted default, so other branch refs are flagged. Suppress per-resource when the upstream's release branch is known-good. A monorepo or non-standard SLSA layout that doesn't expose the ref at the parsed path is skipped, not flagged.
+
+**Seen in the wild**
+
+- Red Hat npm compromise (BoostSecurity, 'Trusted Publishing, Untrusted Branch', 2026): 30+ packages shipped valid SLSA provenance recording a throwaway ``refs/heads/oidc-*`` branch. The provenance ref is the only install-side signal that would have distinguished them: https://labs.boostsecurity.io/articles/trusted-publishing-untrusted-branch-red-hat-npm/
+
+<div class="pg-rule__rec" markdown>
+
+**Recommended action**
+
+A package's build provenance records the git ref the release was built from. A latest release built from a throwaway branch (``refs/heads/oidc-...``) rather than a tag or the default branch is the 'untrusted branch' signal: valid provenance, attacker ref. Confirm the upstream cuts releases only from a tag or a protected branch, and pin to a known-good version if its latest provenance ref looks unexpected. If the dependency's real default branch is not ``main`` / ``master`` (e.g. ``develop``), this is a false positive: suppress it per-resource.
 
 </div>
 

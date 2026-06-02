@@ -764,6 +764,7 @@ STANDARD = Standard(
         "NPM-010":  ["GV.SC-05", "GV.SC-07", "PR.PS-02"],  # OSV advisory (--resolve-remote)
         "NPM-014":  ["GV.SC-05", "GV.SC-07", "PR.PS-02"],  # single-publisher risk
         "NPM-015":  ["GV.SC-05", "GV.SC-07", "PR.PS-02"],  # missing build provenance
+        "NPM-017":  ["GV.SC-05", "GV.SC-07", "PR.PS-02"],  # provenance built from a non-release ref
         "NPM-016":  ["GV.SC-05", "GV.SC-07", "PR.PS-02"],  # low OpenSSF Scorecard
         "PYPI-008": ["GV.SC-05", "GV.SC-07", "PR.PS-02"],  # cooldown gate (--resolve-remote)
         "PYPI-009": ["GV.SC-05", "GV.SC-07", "PR.PS-02"],  # OSV advisory (--resolve-remote)

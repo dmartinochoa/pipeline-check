@@ -80,6 +80,10 @@ _MEDIUM: frozenset[str] = frozenset({
     # hygiene warning, not a production issue. Two+ versions behind
     # remains HIGH via per-rule confidence assignment.
     "CB-005",
+    # NPM-017 provenance built from a non-release ref. The trusted-
+    # default heuristic is main/master only, so a project whose default
+    # branch is named otherwise (develop, trunk) over-flags.
+    "NPM-017",
 })
 
 # ── LOW: blob-search heuristics; meaningful FP rate expected ─────────

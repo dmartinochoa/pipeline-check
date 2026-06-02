@@ -29,6 +29,7 @@ from collections.abc import Callable, Iterable
 from pathlib import Path
 from typing import Protocol, TypeVar
 
+from .._primitives.provenance_ref import source_ref_from_npm_attestations
 from .._primitives.registry_fetcher import (
     FileSystemCache as _FileSystemCache,
 )
@@ -86,6 +87,18 @@ class HttpRegistryFetcher:
     def fetch(self, name: str) -> bytes | None:
         encoded = name.replace("/", "%2F")
         return self._http.get(f"{self.BASE_URL}/{encoded}")
+
+    def fetch_attestations(self, name: str, version: str) -> bytes | None:
+        """Fetch the attestation bundle for ``<name>@<version>``.
+
+        npm serves it from ``/-/npm/v1/attestations/<name>@<version>``,
+        separate from the packument. Used by NPM-017 to read the build
+        provenance's source ref.
+        """
+        encoded = name.replace("/", "%2F")
+        return self._http.get(
+            f"{self.BASE_URL}/-/npm/v1/attestations/{encoded}@{version}"
+        )
 
 
 # ── Per-version timestamp parser ─────────────────────────────────
@@ -374,6 +387,98 @@ def fetch_repo_slugs(
     )
 
 
+def _parse_latest_attested_version(blob: bytes) -> str | None:
+    """Return the ``dist-tags.latest`` version IFF it ships provenance.
+
+    Mirrors :func:`_parse_has_provenance` but returns the version string
+    (so the attestation bundle can be fetched) only when that version
+    carries a ``dist.attestations`` entry; ``None`` otherwise.
+    """
+    try:
+        doc = json.loads(blob)
+    except (ValueError, json.JSONDecodeError):
+        return None
+    if not isinstance(doc, dict):
+        return None
+    dist_tags = doc.get("dist-tags")
+    if not isinstance(dist_tags, dict):
+        return None
+    latest = dist_tags.get("latest")
+    if not isinstance(latest, str) or not latest:
+        return None
+    versions = doc.get("versions")
+    if not isinstance(versions, dict):
+        return None
+    version = versions.get(latest)
+    if not isinstance(version, dict):
+        return None
+    dist = version.get("dist")
+    if not isinstance(dist, dict):
+        return None
+    if not dist.get("attestations"):
+        return None
+    return latest
+
+
+def fetch_provenance_refs(
+    names: Iterable[str],
+    fetcher: RegistryMetadataFetcher,
+    cache: FileSystemCache | None = None,
+) -> tuple[dict[str, str], list[str]]:
+    """Resolve the build-provenance *source ref* for packages that ship one.
+
+    Two-stage: read each packument (shared name-keyed cache, so no extra
+    fetch alongside the other ``--resolve-remote`` passes) to find the
+    latest attested version, then fetch that version's attestation bundle
+    and parse the SLSA source ref. Only packages whose latest version
+    both ships provenance AND exposes a parseable ref are returned;
+    everything else is omitted so NPM-017 skips unknowns rather than
+    flagging them. Needs a fetcher exposing ``fetch_attestations``;
+    without it the pass is a no-op. Packages with no provenance are
+    NPM-015's concern and are silently skipped here.
+    """
+    fetch_att = getattr(fetcher, "fetch_attestations", None)
+    seen: set[str] = set()
+    out: dict[str, str] = {}
+    warnings: list[str] = []
+    for name in names:
+        if not isinstance(name, str) or not name or name in seen:
+            continue
+        seen.add(name)
+        blob = cache.get(name) if cache is not None else None
+        if blob is None:
+            blob = fetcher.fetch(name)
+            if blob is None:
+                continue  # unfetchable metadata: NPM-015 already warns
+            if cache is not None:
+                cache.put(name, blob)
+        version = _parse_latest_attested_version(blob)
+        if version is None or fetch_att is None:
+            continue
+        att_key = f"{name}@{version}::attestations"
+        att_blob = cache.get(att_key) if cache is not None else None
+        if att_blob is None:
+            att_blob = fetch_att(name, version)
+            if att_blob is None:
+                warnings.append(
+                    f"npm-registry: could not fetch attestations for "
+                    f"{name}@{version}"
+                )
+                continue
+            if cache is not None:
+                cache.put(att_key, att_blob)
+        try:
+            bundle = json.loads(att_blob)
+        except (ValueError, json.JSONDecodeError):
+            continue
+        if not isinstance(bundle, dict):
+            continue
+        ref = source_ref_from_npm_attestations(bundle)
+        if ref:
+            out[name] = ref
+    return out, warnings
+
+
 __all__ = [
     "FileSystemCache",
     "HttpRegistryFetcher",
@@ -381,6 +486,7 @@ __all__ = [
     "default_cache_dir",
     "fetch_maintainer_counts",
     "fetch_provenance",
+    "fetch_provenance_refs",
     "fetch_publish_times",
     "fetch_repo_slugs",
 ]

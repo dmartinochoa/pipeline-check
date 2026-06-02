@@ -664,6 +664,7 @@ STANDARD = Standard(
         "NPM-010":  ["CC6.8", "CC7.1", "CC8.1"],
         "NPM-014":  ["CC6.8", "CC7.1", "CC8.1"],
         "NPM-015":  ["CC6.8", "CC7.1", "CC8.1"],
+        "NPM-017":  ["CC6.8", "CC7.1", "CC8.1"],  # provenance built from a non-release ref
         "NPM-016":  ["CC6.8", "CC7.1", "CC8.1"],
         "PYPI-008": ["CC6.8", "CC7.1", "CC8.1"],
         "PYPI-009": ["CC6.8", "CC7.1", "CC8.1"],
