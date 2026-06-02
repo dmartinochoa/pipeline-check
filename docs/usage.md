@@ -351,6 +351,34 @@ A rule that lists here can still emit no patch on a given run: the
 fixer is idempotent (skips an already-remediated finding) and bails
 when its edit wouldn't round-trip as valid YAML.
 
+## Fix and open a PR: `fix-pr`
+
+```bash
+pipeline_check fix-pr --dry-run   # preview the patch + planned actions
+pipeline_check fix-pr             # fix, commit to a branch, push, open the PR
+pipeline_check fix-pr --no-push   # stop after the local commit
+pipeline_check fix-pr --safety all --base main
+```
+
+`fix-pr` runs a scan, applies the autofixers of the chosen `--safety`
+tier (`safe` default / `unsafe` / `all`, the same vocabulary as
+`--list-fixers`), commits the changed files to a fresh branch
+(`pipeline-check/autofix`, auto-suffixed if it already exists), pushes,
+and opens the request:
+
+- **GitHub** — `gh pr create` (falls back to printing the compare URL
+  when the `gh` CLI isn't installed).
+- **GitLab** — the MR is created by the push itself via
+  `-o merge_request.*` push options, so no token or `glab` is needed.
+- **Other hosts** — the branch is pushed and you're told to open the
+  request by hand.
+
+It refuses a dirty working tree by default so the commit never sweeps in
+unrelated edits; `--allow-dirty` overrides that but still stages only the
+autofix edits. `--base` sets the target branch (defaults to the current
+one), `--branch` / `--remote` / `--title` / `--body` / `--checks` tune
+the rest.
+
 ## Compliance annotations
 
 Every finding carries control IDs from every enabled standard. Filter:

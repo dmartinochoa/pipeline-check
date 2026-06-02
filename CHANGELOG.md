@@ -12,6 +12,24 @@ release commit collapses this section into `## [X.Y.Z] - <date>`.
 
 ### Added
 
+- **`pipeline_check fix-pr`: apply autofixes and open a pull / merge
+  request.** New subcommand that closes the gap between "patch on disk"
+  and "PR in your inbox". Scans the auto-detected pipeline files,
+  applies the autofixers of the chosen ``--safety`` tier
+  (``safe`` default / ``unsafe`` / ``all``, the same vocabulary as
+  ``--list-fixers``), commits the changed files to a fresh branch
+  (``pipeline-check/autofix``, auto-suffixed on collision), pushes, and
+  opens the request. GitHub uses ``gh pr create``; GitLab creates the MR
+  via ``-o merge_request.*`` push options (no token or ``glab`` needed);
+  other hosts get the branch pushed with manual instructions. Refuses a
+  dirty working tree by default (``--allow-dirty`` overrides, and even
+  then stages only the autofix edits). ``--dry-run`` shows the patch and
+  the planned git actions without touching the repo; ``--no-push`` stops
+  after the local commit; ``--base`` / ``--branch`` / ``--remote`` /
+  ``--checks`` / ``--title`` / ``--body`` tune the rest. Reuses the
+  existing autofix engine (the apply path was split into a pure planner
+  plus a writer) and a new ``core/fix_pr.py`` for the git / host
+  plumbing. Documented under ``--man autofix``.
 - **AC-039: untrusted trigger reaches a bulk-secrets serialization
   (CRITICAL chain).** Correlates an attacker-influenced trigger
   (GHA-002 / GHA-009 / GHA-013) with a step that serializes the whole

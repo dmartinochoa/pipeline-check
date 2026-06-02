@@ -1052,7 +1052,12 @@ def _install_completion_callback(
 
 @click.command(cls=_GroupedCommand, epilog=(
     "Subcommands:\n"
-    "  init    Scaffold a starter .pipeline-check.yml in the current directory."
+    "  init      Scaffold a starter .pipeline-check.yml in the current directory.\n"
+    "  fix-pr    Apply autofixes and open a pull / merge request.\n"
+    "  explain   Print the full reference for one check (severity, fix, controls).\n"
+    "  history   Render an HTML dashboard from past scan outputs.\n"
+    "  fleet     Scan many repos and emit a unified posture digest.\n"
+    "  fp-stats  Print false-positive annotation totals."
 ))
 @click.version_option(version=__version__, prog_name="pipeline_check")
 @click.option(
@@ -3986,22 +3991,30 @@ def _emit_fix_patches(findings: list[Any], *, to_stderr: bool = False, tier: str
         )
 
 
-def _apply_fix_patches(findings: list[Any], *, tier: str = "safe") -> None:
-    """Apply autofixes in place; print an N-files-modified summary to stderr.
+def _plan_fix_edits(
+    findings: list[Any], *, tier: str = "safe",
+) -> tuple[dict[str, str], dict[str, str], set[str]]:
+    """Compute the autofix edits without touching disk.
 
-    Each fixer is idempotent, so it's safe to re-run after an apply —
-    already-fixed files produce no further patch. Unfixable findings
-    are silently skipped.
+    Returns ``(edits, newlines, fixed_ids)`` where *edits* maps each path
+    to its fully-patched content (every applicable fixer folded in,
+    idempotent), *newlines* records the path's original line ending, and
+    *fixed_ids* is the set of check IDs whose fixer actually produced a
+    change (used by ``fix-pr`` for the PR title / body). Splitting the
+    planning out of the write lets ``fix-pr`` decide whether there's
+    anything to commit before it creates a branch.
+
+    The line-ending bookkeeping matters on Windows: reading in text mode
+    normalizes CRLF to ``\\n``, and writing it back in text mode would
+    translate ``\\n`` to ``os.linesep``, silently flipping a pure-LF file
+    to CRLF. We read with ``newline=""``, patch the in-memory LF copy,
+    and re-apply the detected ending on write so only patched lines move.
     """
     import os
     cache: dict[str, str] = {}
     dirty: dict[str, str] = {}  # path → final content
-    # Original line ending per path. Reading in text mode normalizes
-    # CRLF to "\n" in memory, and writing in text mode would translate
-    # "\n" back to os.linesep, silently flipping a pure-LF file to CRLF
-    # on Windows. Detect the original ending and re-apply it on write so
-    # only the patched lines change.
     newlines: dict[str, str] = {}
+    fixed_ids: set[str] = set()
     for f in findings:
         if f.passed:
             continue
@@ -4029,16 +4042,40 @@ def _apply_fix_patches(findings: list[Any], *, tier: str = "safe") -> None:
         if after is None:
             continue
         dirty[path] = after
-    for path, content in dirty.items():
+        fixed_ids.add(f.check_id)
+    return dirty, newlines, fixed_ids
+
+
+def _write_fix_edits(
+    edits: dict[str, str], newlines: dict[str, str],
+) -> list[str]:
+    """Write planned *edits* to disk; return the paths actually written."""
+    written: list[str] = []
+    for path, content in edits.items():
         eol = newlines.get(path, "\n")
         if eol != "\n":
             content = content.replace("\n", eol)
         try:
             with open(path, "w", encoding="utf-8", newline="") as fh:
                 fh.write(content)
+            written.append(path)
         except OSError as exc:
             click.echo(f"[autofix] could not write {path}: {exc}", err=True)
-    click.echo(f"[autofix] {len(dirty)} file(s) modified.", err=True)
+    return written
+
+
+def _apply_fix_patches(findings: list[Any], *, tier: str = "safe") -> list[str]:
+    """Apply autofixes in place; print an N-files-modified summary to stderr.
+
+    Each fixer is idempotent, so it's safe to re-run after an apply —
+    already-fixed files produce no further patch. Unfixable findings
+    are silently skipped. Returns the list of modified paths so callers
+    (``fix-pr``) can stage exactly those files.
+    """
+    edits, newlines, _fixed_ids = _plan_fix_edits(findings, tier=tier)
+    written = _write_fix_edits(edits, newlines)
+    click.echo(f"[autofix] {len(written)} file(s) modified.", err=True)
+    return written
 
 
 def _find_sibling_package_jsons(root: str, max_depth: int = 3) -> list[str]:
@@ -4963,6 +5000,335 @@ def fleet_cmd(
         click.echo(f"  warn: {w}", err=True)
 
 
+# ────────────────────────────────────────────────────────────────────────────
+# `fix-pr` subcommand, scan, apply autofixes, and open a PR / MR.
+# ────────────────────────────────────────────────────────────────────────────
+
+
+#: Maps the user-facing ``--safety`` choice to the ``generate_fix`` tier.
+#: ``safe`` runs only safe fixers; ``all`` runs both tiers; ``unsafe``
+#: runs only the inference-dependent ones. Mirrors ``--list-fixers``'
+#: vocabulary so the two read the same.
+_FIX_PR_TIERS: dict[str, str] = {
+    "safe": "safe",
+    "unsafe": "unsafe-only",
+    "all": "unsafe",
+}
+
+
+def _fix_pr_scan(
+    checks: list[str] | None,
+) -> tuple[list[Any], list[str]]:
+    """Auto-detect pipelines at cwd and return ``(findings, pipelines)``.
+
+    Reuses the same detection table and per-provider path resolution as
+    ``init``, minus the providers that need live credentials (AWS, the
+    cloud-posture packs, OCI, SCM), which can't be autofixed on disk.
+    Chains are disabled: fix-pr only needs per-file findings, not
+    cross-rule correlation. Returns an empty pipeline list when nothing
+    scannable is present so the caller can exit cleanly.
+    """
+    detected = [
+        p for p in _detect_all_pipelines_from_cwd()
+        if p not in _INIT_SKIP_PROVIDERS
+    ]
+    if not detected:
+        return [], []
+    scanner_kwargs: dict[str, Any] = {}
+    for provider in detected:
+        scanner_kwargs.update(_init_scanner_kwargs_for(provider))
+    scanner: Scanner | MultiScanner
+    if len(detected) == 1:
+        scanner = Scanner(
+            pipeline=detected[0], chains_enabled=False, **scanner_kwargs,
+        )
+    else:
+        scanner = MultiScanner(
+            pipelines=detected, chains_enabled=False, **scanner_kwargs,
+        )
+    findings = scanner.run(checks=checks)
+    return findings, detected
+
+
+@click.command(name="fix-pr")
+@click.option(
+    "--safety",
+    "safety",
+    type=click.Choice(["safe", "unsafe", "all"], case_sensitive=False),
+    default="safe",
+    show_default=True,
+    help=(
+        "Which autofixers to apply. 'safe' (default) only semantically "
+        "equivalent edits; 'unsafe' only the inference-dependent ones; "
+        "'all' both tiers. Run `pipeline_check --list-fixers` to see "
+        "which fixer is in which tier."
+    ),
+)
+@click.option(
+    "--base",
+    "base",
+    default=None,
+    metavar="BRANCH",
+    help=(
+        "Branch the PR / MR targets and the autofix branch is cut from. "
+        "Defaults to the current branch."
+    ),
+)
+@click.option(
+    "--branch",
+    "branch_name",
+    default="pipeline-check/autofix",
+    show_default=True,
+    metavar="NAME",
+    help=(
+        "Name for the autofix branch. A numeric suffix is appended if it "
+        "already exists, so repeat runs never collide."
+    ),
+)
+@click.option(
+    "--remote",
+    "remote",
+    default="origin",
+    show_default=True,
+    metavar="NAME",
+    help="Git remote to push the branch to.",
+)
+@click.option(
+    "--checks",
+    "-c",
+    "checks",
+    multiple=True,
+    metavar="CHECK_ID",
+    shell_complete=_complete_check_ids,
+    help=(
+        "Limit the fix to specific check ID(s). Repeat to include "
+        "several. Omit to fix every finding with a matching fixer."
+    ),
+)
+@click.option(
+    "--title",
+    "title",
+    default=None,
+    metavar="TEXT",
+    help="PR / MR title. Defaults to a summary of the fixed rules.",
+)
+@click.option(
+    "--body",
+    "body",
+    default=None,
+    metavar="TEXT",
+    help=(
+        "PR body (GitHub). Defaults to a generated summary listing the "
+        "remediated checks. GitLab MRs carry the title only."
+    ),
+)
+@click.option(
+    "--dry-run",
+    "dry_run",
+    is_flag=True,
+    default=False,
+    help=(
+        "Show the patch and the planned git actions without touching the "
+        "repo. No branch, no commit, no push."
+    ),
+)
+@click.option(
+    "--push/--no-push",
+    "do_push",
+    default=True,
+    show_default=True,
+    help=(
+        "Push the branch and open the request. --no-push stops after the "
+        "local commit so you can review before sharing."
+    ),
+)
+@click.option(
+    "--allow-dirty",
+    "allow_dirty",
+    is_flag=True,
+    default=False,
+    help=(
+        "Proceed even when the working tree has uncommitted changes. "
+        "Only the autofix edits are staged, but the branch is still cut "
+        "from the current (dirty) HEAD."
+    ),
+)
+def fix_pr_cmd(
+    safety: str,
+    base: str | None,
+    branch_name: str,
+    remote: str,
+    checks: tuple[str, ...],
+    title: str | None,
+    body: str | None,
+    dry_run: bool,
+    do_push: bool,
+    allow_dirty: bool,
+) -> None:
+    """Scan, apply autofixes, and open a pull / merge request.
+
+    Runs a scan over the auto-detected pipeline files, applies the
+    autofixers of the chosen ``--safety`` tier, commits the changed
+    files to a fresh branch, pushes, and opens the request. GitHub uses
+    ``gh pr create``; GitLab creates the MR via push options (no token
+    needed); other hosts get the branch pushed with manual instructions.
+
+    Refuses to run on a dirty working tree by default so the commit
+    never sweeps in unrelated edits (override with ``--allow-dirty``).
+    Exits cleanly with no branch created when nothing is autofixable.
+    """
+    from .core import fix_pr as _fix_pr
+
+    if _fix_pr.repo_root() is None:
+        raise click.UsageError("fix-pr must run inside a git repository.")
+    if not allow_dirty and _fix_pr.is_dirty():
+        raise click.UsageError(
+            "working tree has uncommitted changes. Commit or stash them "
+            "first, or pass --allow-dirty to commit only the autofix edits."
+        )
+
+    base_branch = base or _fix_pr.current_branch()
+    if base_branch in ("", "HEAD"):
+        raise click.UsageError(
+            "could not determine the base branch (detached HEAD?). Pass "
+            "--base BRANCH explicitly."
+        )
+
+    tier = _FIX_PR_TIERS[safety.lower()]
+    check_filter = list(checks) or None
+
+    click.echo("[fix-pr] scanning for autofixable findings...", err=True)
+    try:
+        findings, pipelines = _fix_pr_scan(check_filter)
+    except Exception as exc:
+        raise click.UsageError(f"scan failed: {exc}") from exc
+    if not pipelines:
+        click.echo(
+            "[fix-pr] no scannable pipeline files detected at cwd; "
+            "nothing to do.",
+            err=True,
+        )
+        return
+
+    edits, newlines, fixed_ids = _plan_fix_edits(findings, tier=tier)
+    if not edits:
+        click.echo(
+            f"[fix-pr] no {safety} autofixes apply to the current findings. "
+            "Nothing to open a PR for.",
+            err=True,
+        )
+        return
+
+    fixed_id_list = sorted(fixed_ids)
+    pr_title = title or _fix_pr.default_title(fixed_id_list)
+    pr_body = body or _fix_pr.build_body(fixed_id_list, len(edits), safety)
+
+    if dry_run:
+        for path in sorted(edits):
+            try:
+                with open(path, encoding="utf-8") as fh:
+                    before = fh.read().replace("\r\n", "\n")
+            except (OSError, UnicodeDecodeError):
+                continue
+            click.echo(_autofix.render_patch(path, before, edits[path]), nl=False)
+        click.echo(
+            f"\n[fix-pr] dry run: would fix {len(edits)} file(s) "
+            f"({', '.join(fixed_id_list)}), commit to branch "
+            f"{branch_name!r}, and open a PR against {base_branch!r}. "
+            "No changes made.",
+            err=True,
+        )
+        return
+
+    # Cut the branch from the current HEAD, then write the edits onto it
+    # so the base branch is never touched.
+    try:
+        branch = _fix_pr.unique_branch_name(branch_name)
+        _fix_pr.checkout_new_branch(branch)
+    except _fix_pr.GitError as exc:
+        raise click.UsageError(str(exc)) from exc
+
+    written = _write_fix_edits(edits, newlines)
+    if not written:
+        # Every write failed; abandon the empty branch and return to base.
+        try:
+            _fix_pr.checkout(base_branch)
+        except _fix_pr.GitError:
+            pass
+        raise click.UsageError(
+            "could not write any autofix edits to disk; left on branch "
+            f"{branch!r}."
+        )
+
+    try:
+        _fix_pr.commit(written, pr_title, pr_body)
+    except _fix_pr.GitError as exc:
+        raise click.UsageError(f"commit failed: {exc}") from exc
+    click.echo(
+        f"[fix-pr] committed {len(written)} file(s) to branch {branch!r}.",
+        err=True,
+    )
+
+    if not do_push:
+        click.echo(
+            f"[fix-pr] --no-push: branch {branch!r} is ready. Push it and "
+            "open the request when you're satisfied with the diff.",
+            err=True,
+        )
+        return
+
+    platform = _fix_pr.detect_platform(_fix_pr.remote_url(remote))
+    result = _fix_pr.FixPrResult(
+        branch=branch, base=base_branch, platform=platform,
+        file_count=len(written), check_ids=fixed_id_list,
+    )
+
+    try:
+        if platform == _fix_pr.GITLAB:
+            _fix_pr.push(
+                remote, branch,
+                push_options=_fix_pr.gitlab_push_options(base_branch, pr_title),
+            )
+            result.pushed = True
+            result.note = (
+                "GitLab MR created via push options. Open the branch URL "
+                "git printed above to review it."
+            )
+        else:
+            _fix_pr.push(remote, branch)
+            result.pushed = True
+            if platform == _fix_pr.GITHUB and _fix_pr.gh_available():
+                result.pr_url = _fix_pr.gh_create_pr(
+                    base_branch, branch, pr_title, pr_body,
+                )
+            elif platform == _fix_pr.GITHUB:
+                result.note = (
+                    "GitHub `gh` CLI not found. Branch pushed; open the PR "
+                    "from the compare URL git printed, or install gh."
+                )
+            else:
+                result.note = (
+                    f"Host {platform!r} has no automated PR path. Branch "
+                    "pushed; open the request in your host's UI."
+                )
+    except _fix_pr.GitError as exc:
+        raise click.UsageError(
+            f"push / PR step failed: {exc}. The commit is on local branch "
+            f"{branch!r}; push it by hand once resolved."
+        ) from exc
+
+    if result.pr_url:
+        click.echo(f"[fix-pr] opened {result.pr_url}")
+    else:
+        click.echo(
+            f"[fix-pr] pushed branch {branch!r} -> {remote} "
+            f"(base {base_branch!r}).",
+            err=True,
+        )
+        if result.note:
+            click.echo(f"[fix-pr] {result.note}", err=True)
+
+
 def main() -> None:
     """Console entry point: dispatches between ``scan`` and subcommands.
 
@@ -4995,5 +5361,9 @@ def main() -> None:
     if len(sys.argv) >= 2 and sys.argv[1] == "fleet":
         sys.argv.pop(1)
         fleet_cmd()
+        return
+    if len(sys.argv) >= 2 and sys.argv[1] == "fix-pr":
+        sys.argv.pop(1)
+        fix_pr_cmd()
         return
     scan()

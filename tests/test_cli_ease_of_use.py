@@ -296,6 +296,15 @@ class TestInit:
         assert exc.value.code in (0, None)
         assert (tmp_path / ".pipeline-check.yml").exists()
 
+    def test_main_dispatch_routes_to_fix_pr(self, monkeypatch):
+        monkeypatch.setattr(
+            "sys.argv", ["pipeline_check", "fix-pr", "--help"],
+        )
+        # main() routes to fix_pr_cmd; --help exits cleanly via Click.
+        with pytest.raises(SystemExit) as exc:
+            main()
+        assert exc.value.code in (0, None)
+
     def test_redirected_stdout_is_utf8_on_windows(self, tmp_path):
         # Regression: Windows redirected stdout used cp1252, which
         # mojibakes the · and … characters Rich emits. On non-Windows
