@@ -152,7 +152,7 @@ Download the installer to disk, verify a checksum or signature, then execute it.
 <span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-fix pg-fix--rule" title="`--fix` will patch this rule">🔧 autofix</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-5</span> <span class="pg-tag pg-tag--esf">ESF-D-RUNTIME-HARDENING</span> <span class="pg-tag pg-tag--cwe">CWE-269</span> <span class="pg-tag pg-tag--cwe">CWE-250</span>
 </div>
 
-Detection fires on ``--privileged``, ``--cap-add=SYS_ADMIN``, ``--pid=host`` / ``--ipc=host`` / ``--userns=host``, and explicit mounts of the host Docker socket (``/var/run/docker.sock``).
+Detection fires in two places. In step command strings: ``--privileged``, ``--cap-add=SYS_ADMIN``, ``--pid=host`` / ``--ipc=host`` / ``--userns=host``, and explicit mounts of the host Docker socket (``/var/run/docker.sock``). In the ``docker`` / ``docker-compose`` Buildkite plugin config: ``privileged: true`` or a ``/var/run/docker.sock`` entry in the plugin's ``volumes`` (the config form of the same escalation).
 
 <div class="pg-rule__rec" markdown>
 

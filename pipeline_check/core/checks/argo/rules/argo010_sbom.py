@@ -24,8 +24,8 @@ RULE = Rule(
         "into the build. Without one, post-incident triage can't "
         "answer ``did this CVE ship?`` for a given artifact. "
         "Detection uses the shared SBOM-token catalog: syft, "
-        "cyclonedx, cdxgen, spdx-tools, microsoft/sbom-tool. Fires "
-        "only on artifact-producing Workflows."
+        "cyclonedx, cdxgen, anchore/sbom-action, spdx-sbom-generator, "
+        "microsoft/sbom-tool. Fires only on artifact-producing Workflows."
     ),
 )
 
