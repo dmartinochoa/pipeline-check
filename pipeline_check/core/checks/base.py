@@ -207,6 +207,42 @@ class ResourceAnchor:
         return {"kind": self.kind, "identity": self.identity}
 
 
+@dataclass(frozen=True, slots=True)
+class TaintFlow:
+    """A structured untrusted-input dataflow edge a finding evidences.
+
+    The machine-readable counterpart to ``Finding.path_evidence`` (which
+    is the human-rendered ``source -> hop -> sink`` string). Where
+    ``job_anchors`` exposes only the *sink* job, this carries both ends
+    of the flow so the attack-chain engine can walk a real source-to-sink
+    graph between two legs (phase-2 reachability) rather than intersecting
+    coarse job sets.
+
+    ``source_job`` / ``sink_job`` are the execution units (job ids) the
+    untrusted value enters and is consumed in. ``cross_document`` marks a
+    flow whose sink leaves the current workflow file (e.g. forwarded into
+    a reusable workflow via ``with:``), in which case ``sink_job`` is the
+    callee reference rather than a local job id. ``rendered`` is the same
+    one-line path string that lands in ``path_evidence``, reused verbatim
+    so the chain engine can quote the exact connecting path.
+    """
+
+    source_job: str
+    sink_job: str
+    rendered: str
+    cross_document: bool = False
+
+    def to_dict(self) -> dict[str, Any]:
+        out: dict[str, Any] = {
+            "source_job": self.source_job,
+            "sink_job": self.sink_job,
+            "rendered": self.rendered,
+        }
+        if self.cross_document:
+            out["cross_document"] = True
+        return out
+
+
 @dataclass(slots=True)
 class Finding:
     check_id: str
@@ -286,6 +322,15 @@ class Finding:
     #: ``checks/_primitives/anchors.py`` to build entries so both
     #: legs agree on a canonical form.
     resource_anchors: tuple[ResourceAnchor, ...] = ()
+    #: Structured untrusted-input dataflow edges (source job -> sink job)
+    #: the finding evidences. Populated by the TAINT-NNN family alongside
+    #: the rendered ``path_evidence`` strings. The reachability-aware
+    #: chain engine (phase 2) walks these as a directed graph between two
+    #: legs to confirm a real source-to-sink connection, where
+    #: ``job_anchors`` alone gives only the sink side. Empty for non-taint
+    #: rules; engine-internal, not serialized into reports (the
+    #: human-readable form is ``path_evidence``).
+    taint_flows: tuple[TaintFlow, ...] = ()
 
     def to_dict(self) -> dict[str, Any]:
         out: dict[str, Any] = {

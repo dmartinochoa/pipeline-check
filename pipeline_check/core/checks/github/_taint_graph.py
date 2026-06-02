@@ -40,6 +40,7 @@ from collections.abc import Iterator
 from dataclasses import dataclass, field
 from typing import Any
 
+from ..base import TaintFlow
 from .rules._helpers import UNTRUSTED_CONTEXT_RE
 
 
@@ -87,6 +88,30 @@ class TaintPath:
         chain.extend(self.hops)
         chain.append(f"sink@{self.sink_location}({self.sink_consumer})")
         return " -> ".join(chain)
+
+    def to_flow(self) -> TaintFlow:
+        """Structured ``source_job -> sink_job`` edge for the chain engine.
+
+        Both ``source.location`` and ``sink_location`` lead with the
+        execution unit's job id (``job_id[step_idx]`` / ``job_id[idx]
+        .env.X``); the job id is the prefix before ``[``. A ``uses:``
+        sink (a value forwarded into a reusable workflow) leaves the
+        current document, so it's marked ``cross_document`` and the
+        callee reference is carried as the sink instead of a local job.
+        """
+        source_job = self.source.location.split("[", 1)[0]
+        if self.sink_location.startswith("uses:"):
+            return TaintFlow(
+                source_job=source_job,
+                sink_job=self.sink_location[len("uses:"):],
+                rendered=self.render(),
+                cross_document=True,
+            )
+        return TaintFlow(
+            source_job=source_job,
+            sink_job=self.sink_location.split("[", 1)[0],
+            rendered=self.render(),
+        )
 
 
 # ── Step-output write detector ─────────────────────────────────────────
