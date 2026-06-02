@@ -48,6 +48,14 @@ _MEDIUM: frozenset[str] = frozenset({
     # is a job-name / command heuristic, and a non-prod (staging /
     # preview) self-hosted deploy may intentionally skip the gate.
     "GHA-112",
+    # OIDC trusted-publishing job with no environment gate. The rule
+    # infers the OIDC path from the co-occurrence of ``id-token: write``
+    # and a publish step, but a job that mints the token for signing /
+    # cloud credentials and publishes on a long-lived token (or a
+    # first-publish bootstrap before the trusted-publisher record
+    # exists) over-flags, so the assertion is co-occurrence, not a
+    # proven OIDC exchange.
+    "GHA-113",
     "JF-014",
     # Dep-update lockfile bypass, catches all ``pip install -U`` by
     # default; the safe subset (pip/setuptools/wheel/virtualenv) is

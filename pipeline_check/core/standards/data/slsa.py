@@ -160,6 +160,7 @@ STANDARD = Standard(
         "GHA-106":  ["Build.L3.NonFalsifiable"],                   # AI agent with write-scoped token
         "GHA-111":  ["Build.L3.NonFalsifiable"],  # AI agent edits IaC applied in the same job
         "GHA-112":  ["Build.L3.Ephemeral"],  # self-hosted deploy with no environment gate
+        "GHA-113":  ["Build.L3.NonFalsifiable"],  # OIDC trusted-publish w/o env gate
         "GHA-062":  ["Build.L3.NonFalsifiable"],                   # OIDC trust subject in sibling IaC is overly broad
         # ── GitLab CI ─────────────────────────────────────────────
         "GL-001":   ["Build.L3.NonFalsifiable"],                   # floating image tag
