@@ -43,13 +43,13 @@ attrs==26.1.0 \
     # via
     #   jsonschema
     #   referencing
-boto3==1.43.14 \
-    --hash=sha256:574335744656cfed0b362a0a0467aaf2eb2bf15526edcd02d31d3c661f4b09e4 \
-    --hash=sha256:5c0a994b3182061ee101812e721100717a4d664f9f4ceaf4a86b6d032ce9fc2d
+boto3==1.43.19 \
+    --hash=sha256:8b84704719dd3960ac12a8f37d9ff5adb853715baa9742f84fdbe2de0305c4cb \
+    --hash=sha256:ec6825193b75fbb6bfbf12181e4960d00ad2f404343586765394ce620e63783c
     # via -r requirements.txt
-botocore==1.43.14 \
-    --hash=sha256:1f4a2a95ea78c10398e78431e98c1fe47adb54a7b10a32975144c1f541186658 \
-    --hash=sha256:b9e500737e43d2f147c9d4e23b54360335e77d4c0ba90a318f51b65e06cb8516
+botocore==1.43.19 \
+    --hash=sha256:18ac2fdd76c89b940707eb10493ff58678adad337d03215caec2d408ccd43cc0 \
+    --hash=sha256:99dbdccbf748974750601e805cecc9362a85d11fee89d6d58cd3f4ff302e6ff9
     # via
     #   -r requirements.txt
     #   boto3
@@ -58,12 +58,6 @@ click==8.4.1 \
     --hash=sha256:482be17c6991b8c19c5429a1e995d9b0efdbb63172824c41f99965dc0ade8ec2 \
     --hash=sha256:918b5633eddf6b41c32d4f454bf0de810065c74e3f7dbf8ee5452f8be88d3e96
     # via -r requirements.txt
-colorama==0.4.6 \
-    --hash=sha256:08695f5cb7ed6e0531a20572697297273c47b8cae5a63ffc6d6ed5c201be6e44 \
-    --hash=sha256:4f1d9991f5acc0ca119f9d443620b77f9d6b33703e51011c16baf57afb285fc6
-    # via
-    #   click
-    #   pytest
 coverage[toml]==7.13.5 \
     --hash=sha256:012d5319e66e9d5a218834642d6c35d265515a62f01157a45bcc036ecf947256 \
     --hash=sha256:02ca0eed225b2ff301c474aeeeae27d26e2537942aa0f87491d3e147e784a82b \
@@ -624,9 +618,9 @@ ruff==0.15.14 \
     --hash=sha256:f3707da619a143a2e8830e2abab8224478d69ace2d28cb6c20543ae97c36bf61 \
     --hash=sha256:ff47b90a9ef6a40c9e2f3b479c1fb78531adf055b94c1eba0a7ba04b31951826
     # via -r requirements-dev.in
-s3transfer==0.17.0 \
-    --hash=sha256:9edeb6d1c3c2f89d6050348548834ad8289610d886e5bf7b7207728bd43ce33a \
-    --hash=sha256:ce3801712acf4ad3e89fb9990df97b4972e93f4b3b0004d214be5bce12814c20
+s3transfer==0.18.0 \
+    --hash=sha256:239c13b09e65ad0346e1be7348b8a202dcad44ac7ea7c6eb858fc881dce739b6 \
+    --hash=sha256:3760b8b7ec1315da54048b2d626276732bee4300d054d492d4e1d43e20d4ecbd
     # via
     #   -r requirements.txt
     #   boto3
@@ -646,6 +640,7 @@ typing-extensions==4.15.0 \
     # via
     #   -r requirements-dev.in
     #   mypy
+    #   referencing
 urllib3==2.7.0 \
     --hash=sha256:231e0ec3b63ceb14667c67be60f2f2c40a518cb38b03af60abc813da26505f4c \
     --hash=sha256:9fb4c81ebbb1ce9531cce37674bbc6f1360472bc18ca9a553ede278ef7276897
