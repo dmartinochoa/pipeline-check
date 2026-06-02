@@ -100,7 +100,14 @@ RULE = Rule(
         "regardless, because the environment's deployment-branch rule "
         "and required reviewers constrain which ref can mint the "
         "token. A job with no ``id-token: write`` is the long-lived-"
-        "token lane GHA-050 covers, not this one."
+        "token lane GHA-050 covers, not this one.\n\n"
+        "Defaults to MEDIUM confidence: the rule infers the OIDC "
+        "trusted-publishing path from the co-occurrence of "
+        "``id-token: write`` and a publish step, not from a proven "
+        "token exchange. A job that mints the OIDC token for signing "
+        "or cloud credentials and publishes on a long-lived token, or "
+        "a first-publish bootstrap before the trusted-publisher record "
+        "exists, can over-flag."
     ),
     known_fp=(
         "First-publish bootstrap of a new package. npm and PyPI both "

@@ -3013,6 +3013,8 @@ Fires when a single job satisfies all three:
 
 The conjunction is the trusted-publishing-without-a-trusted-ref shape: an OIDC token mintable from any branch that runs the workflow, gating publication on nothing the registry checks. A job that binds a protected ``environment:`` passes regardless, because the environment's deployment-branch rule and required reviewers constrain which ref can mint the token. A job with no ``id-token: write`` is the long-lived-token lane GHA-050 covers, not this one.
 
+Defaults to MEDIUM confidence: the rule infers the OIDC trusted-publishing path from the co-occurrence of ``id-token: write`` and a publish step, not from a proven token exchange. A job that mints the OIDC token for signing or cloud credentials and publishes on a long-lived token, or a first-publish bootstrap before the trusted-publisher record exists, can over-flag.
+
 **Known false-positive modes**
 
 - First-publish bootstrap of a new package. npm and PyPI both require an initial manual publish before a trusted-publisher record exists; the workflow may carry ``id-token: write`` ahead of that. Suppress on the specific job until the trusted-publisher + environment are wired.
