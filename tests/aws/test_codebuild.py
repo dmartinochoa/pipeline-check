@@ -30,6 +30,7 @@ from pipeline_check.core.checks.aws.rules import (
 from pipeline_check.core.checks.aws.rules import (
     cb007_webhook_filter as cb007,
 )
+from pipeline_check.core.checks.base import Confidence
 from tests.aws.conftest import make_paginator
 
 
@@ -176,6 +177,24 @@ class TestCB005ImageVersion:
     def test_version_1_fails(self):
         proj = _project(image="aws/codebuild/standard:1.0")
         assert not cb005.check(_catalog([proj]))[0].passed
+
+    def test_two_versions_behind_locks_high_confidence(self):
+        # 2+ versions behind (latest is 7, so 5.0 is two behind) is an
+        # unambiguous staleness signal: the rule locks HIGH so the
+        # scanner's blanket MEDIUM demotion does not apply.
+        proj = _project(image="aws/codebuild/standard:5.0")
+        f = cb005.check(_catalog([proj]))[0]
+        assert f.passed is False
+        assert f.confidence_locked is True
+        assert f.confidence is Confidence.HIGH
+
+    def test_one_version_behind_not_locked(self):
+        # One behind (6.0) stays unlocked so the scanner demotes it to
+        # MEDIUM (the one-behind hygiene case).
+        proj = _project(image="aws/codebuild/standard:6.0")
+        f = cb005.check(_catalog([proj]))[0]
+        assert f.passed is False
+        assert f.confidence_locked is False
 
 
 class TestCB006SourceAuth:

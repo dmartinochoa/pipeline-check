@@ -160,6 +160,22 @@ release commit collapses this section into `## [X.Y.Z] - <date>`.
 
 ### Fixed
 
+- **Rule audit: logic-bug fixes and test strengthening.** The final audit
+  cluster, each fix pinned by a regression test. **ADO-003** no longer
+  escalates a plain secret to CRITICAL just because the variable name
+  contains "AWS" (the severity bump now keys on a real AKIA-shaped value,
+  not a name substring), and stops double-counting a bare top-level
+  ``variables:`` block. **CB-005** now locks ``HIGH`` confidence when a
+  CodeBuild image is two or more versions behind (the behavior its
+  ``known_fp`` and the confidence registry already documented but the
+  check never implemented; one-behind still demotes to MEDIUM).
+  **CARGO-005** dropped a dead ``seen`` set. **GCB-005**'s docstrings were
+  corrected to match the parser (a bare integer ``timeout:`` is read as a
+  seconds count; only minute/hour suffixes are rejected). Test gaps closed:
+  ARGOCD-013 now pins ``revisionHistoryLimit: 0`` passing, AZMON-004 covers
+  the has-diagnostics pass path (previously unreachable without the azure
+  SDK installed), and the CloudFormation CA-004 variant gains a
+  scoped-policy-passes assertion.
 - **Rule audit: ``docs_note`` / ``recommendation`` accuracy in 20 rules.**
   A verify-first pass over the audit's metadata findings reconciled each
   rule's prose with what its detector actually does (no behavior, count,

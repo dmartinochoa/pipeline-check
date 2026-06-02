@@ -85,6 +85,11 @@ def check(path: str, doc: dict[str, Any]) -> Finding:
 
     _scan(doc.get("variables"), "<top>")
     for job_loc, job in iter_jobs(doc):
+        # For the bare top-level ``steps:`` shape, iter_jobs yields the
+        # document itself as the sole job; its ``variables:`` were already
+        # scanned as ``<top>`` above, so skip it to avoid double-counting.
+        if job is doc:
+            continue
         _scan(job.get("variables"), job_loc)
 
     passed = not offenders
@@ -95,7 +100,14 @@ def check(path: str, doc: dict[str, Any]) -> Finding:
         f"values: {', '.join(offenders[:5])}"
         f"{'…' if len(offenders) > 5 else ''}."
     )
-    severity = Severity.CRITICAL if any("AWS" in o for o in offenders) else Severity.HIGH
+    # Escalate to CRITICAL only for a real AWS access key (matched by
+    # value shape), not merely a variable whose NAME contains "AWS"
+    # (e.g. a plain ``AWS_DB_PASSWORD`` secret is HIGH, not CRITICAL).
+    severity = (
+        Severity.CRITICAL
+        if any("(AWS access key)" in o for o in offenders)
+        else Severity.HIGH
+    )
     return Finding(
         check_id=RULE.id, title=RULE.title, severity=severity,
         resource=path, description=desc,
