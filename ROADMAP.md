@@ -6,6 +6,48 @@ What's planned, what's shipped, and what's deliberately out of scope.
 
 ### Unreleased (on ``dev``)
 
+- **``pipeline_check fix-pr``: autofix-to-PR subcommand** — Closes the
+  "patch on disk vs. PR in your inbox" gap the candidate flagged. Scans
+  the auto-detected pipeline files, applies the autofixers of the chosen
+  ``--safety`` tier (``safe`` / ``unsafe`` / ``all``, same vocabulary as
+  ``--list-fixers``), commits the changed files to a fresh branch
+  (``pipeline-check/autofix``, auto-suffixed on collision), pushes, and
+  opens the request: ``gh pr create`` on GitHub, a GitLab MR via
+  ``merge_request.*`` push options (no token needed), or a pushed branch
+  plus manual instructions elsewhere. Refuses a dirty tree by default
+  (``--allow-dirty`` stages only the autofix edits even then);
+  ``--dry-run`` previews the patch + planned git actions touching
+  nothing, ``--no-push`` stops at the local commit. The ``--fix --apply``
+  path was split into a pure ``_plan_fix_edits`` planner plus a writer so
+  fix-pr can decide there's something to commit before cutting a branch;
+  git / host plumbing lives in ``core/fix_pr.py``. Documented under
+  ``--man autofix``.
+- **GHA-116 + AC-039: bulk-secrets serialization** — GHA-116 (HIGH)
+  flags ``${{ toJSON(secrets) }}`` (plus the ``fromJSON`` / ``format``
+  wrappers) in a step / job / workflow ``env:`` / ``run:`` / ``with:``,
+  the in-YAML primitive behind the 2025 tj-actions/changed-files
+  (CVE-2025-30066) and GhostAction secret-harvesting campaigns. AC-039
+  (CRITICAL chain) makes it reachable: an attacker-influenced trigger
+  (GHA-002 / 009 / 013) plus a GHA-116 step on the same workflow means a
+  fork PR or comment dumps every secret into a log. github 106 -> 107,
+  chains 52 -> 53.
+- **npm "untrusted branch" / trusted-publishing pack** — The Red Hat npm
+  compromise family (see the candidate below, now shipped). GHA-113
+  (HIGH, OIDC trusted-publishing job with no environment gate), GHA-114
+  (HIGH, publish workflow reachable from an unrestricted push trigger),
+  GHA-115 (MEDIUM, workflow-wide ``id-token: write`` a subset of jobs
+  consume), AC-038 (CRITICAL chain, untrusted branch reaches OIDC
+  publish), and the consumer-side provenance-ref signals NPM-017 +
+  PYPI-021 (LOW, ``--resolve-remote``, flag a latest release whose SLSA
+  source ref is a branch, not a tag, via the shared
+  ``_primitives/provenance_ref`` extractor).
+- **AI-agent IaC pack (GHA-111 / AC-037) + GHA-112** — GHA-111 (an
+  agentic CLI co-located with an unattended ``terraform apply`` /
+  ``cdk deploy`` / ``pulumi up``, so a prompt-injected agent's IaC
+  reaches the cloud) and AC-037 (the reachability chain pairing an
+  untrusted-input agent leg with GHA-111). GHA-112 closes the
+  self-hosted-runner pack (a deploy job on a self-hosted runner with no
+  protected ``environment:`` gate).
 - **PyPI behavioral-trust signals (PYPI-019 / PYPI-020)** — The PyPI
   parallels of the NPM-015 / NPM-016 supply-chain-posture signals, both
   LOW and ``--resolve-remote``-gated. **PYPI-019** flags a direct
@@ -1127,11 +1169,22 @@ with GHA-111 on one workflow, the cloud-account analog of AC-035's
 repo-write reviewer-and-committer loop. The AI-agent pipeline-risk
 theme is now fully covered, rule and chain.
 
-### npm trusted-publishing / "untrusted branch" abuse rules
+### ~~npm trusted-publishing / "untrusted branch" abuse rules~~ shipped
+
+Shipped on ``dev`` as the full pack the proposal below scopes: GHA-113,
+GHA-114, GHA-115, AC-038, and the consumer-side NPM-017 / PYPI-021
+(provenance built from a non-release ref, reusing a shared
+``_primitives/provenance_ref`` extractor). The analysis is kept below
+because it documents why each pre-existing rule missed this exact shape.
+Still open as a follow-up: the checkout-time auto-execution scanner
+discussed at the end of this section (``.vscode/tasks.json`` folder-open
+tasks, ``.claude/settings.json`` session-start hooks, ``.github/setup.js``
+loaders), which crosses the dev-environment line and needs a scope
+decision before building.
 
 The Red Hat npm compromise (BoostSecurity, "Trusted Publishing,
-Untrusted Branch", 2026) exposed a structural gap the rule pack does
-not yet cover. With a stolen maintainer credential the attacker
+Untrusted Branch", 2026) exposed a structural gap the rule pack did
+not previously cover. With a stolen maintainer credential the attacker
 created short-lived ``oidc-*`` branches (alive for 1 to 73 seconds),
 pushed a counterfeit ``.github/workflows/ci.yml`` that matched the
 legitimate workflow filename, and let a plain ``push`` trigger mint a
@@ -1288,13 +1341,19 @@ Actions. Shared logic in ``_primitives/log_leak.py``.
 
 Shipped in v1.6.0. See the v1.6.0 entry above.
 
-### Auto-remediation PRs (``pipeline_check fix-pr``)
+### ~~Auto-remediation PRs (``pipeline_check fix-pr``)~~ shipped
 
-A subcommand that runs the scan, applies safe fixers, and opens a
-PR via ``gh pr create`` / GitLab API. The scanner already computes
-unified diffs; this is plumbing. Closes the gap between "patch on
-disk" and "PR in your inbox" that drives adoption in orgs that scan
-in CI but never act on findings.
+Shipped on ``dev``. ``pipeline_check fix-pr`` runs the scan, applies the
+autofixers of the chosen ``--safety`` tier, commits the changed files to
+a fresh branch, pushes, and opens the request (``gh pr create`` on
+GitHub, a GitLab MR via ``merge_request.*`` push options, a pushed
+branch plus manual instructions elsewhere). ``--dry-run`` previews
+without touching the repo; ``--no-push`` stops at the local commit;
+``--allow-dirty`` proceeds on a dirty tree while still staging only the
+autofix edits. Reuses the existing fixer engine via a planner / writer
+split; git + host plumbing lives in ``core/fix_pr.py``. Still open as a
+follow-up: a Bitbucket PR path (the branch is pushed today but the PR
+must be opened by hand) and a ``--reviewer`` / labels passthrough.
 
 ### ~~Fixer discoverability (``--list-fixers``)~~ shipped
 

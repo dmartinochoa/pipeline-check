@@ -31,8 +31,9 @@ Available topics:
   gate        How the CI gate decides pass / fail and what the
               --fail-on / --min-grade / --max-failures / --baseline /
               --ignore-file flags do.
-  autofix     --fix and --fix --apply: what each registered fixer
-              does, how they compose, and how to write your own.
+  autofix     --fix, --fix --apply, and the fix-pr subcommand: what
+              each registered fixer does, how they compose, and how
+              to open an autofix PR.
   diff        --diff-base for scoping a scan to changed files only.
               Terraform / workflow / AWS provider semantics.
   secrets     --secret-pattern for org-specific token shapes; what the
@@ -204,6 +205,21 @@ diff so it composes with ``git apply``.
     patch on a given run when the finding is already remediated or
     the edit wouldn't round-trip as valid YAML.
 
+pipeline_check fix-pr [--safety safe|unsafe|all]
+    One-shot "fix and open a PR". Scans the auto-detected pipeline
+    files, applies the fixers of the chosen tier, commits the changed
+    files to a fresh branch (``pipeline-check/autofix`` by default),
+    pushes, and opens the request: ``gh pr create`` on GitHub, a
+    GitLab MR via push options (no token needed), or a pushed branch
+    plus manual instructions on other hosts. Refuses a dirty working
+    tree unless ``--allow-dirty`` (and even then commits only the
+    autofix edits). ``--dry-run`` shows the patch and the planned git
+    actions without touching the repo; ``--no-push`` stops after the
+    local commit. ``--base`` sets the target branch (defaults to the
+    current one). The same tier vocabulary as ``--list-fixers``:
+    ``safe`` (default), ``unsafe`` (inference-dependent only), or
+    ``all``.
+
 Categories of fix
 -----------------
 Two shapes ship today:
@@ -246,6 +262,10 @@ git diff
 # The patch goes to stderr (because --output sarif consumes stdout);
 # the SARIF report goes to r.sarif.
 pipeline_check --pipeline github --fix --output sarif --output-file r.sarif
+
+# Fix and open a PR in one step (preview first, then for real)
+pipeline_check fix-pr --dry-run
+pipeline_check fix-pr
 
 Limits
 ------

@@ -453,6 +453,15 @@ Subcommands:
   *new* regressions. Prints a "top 5 to fix" summary to stderr. Pass
   `--no-scan` for the legacy commented-out scaffold, `--path PATH` to
   redirect the output, or `--force` to overwrite an existing file.
+- **`pipeline_check fix-pr`** scans, applies the autofixers of the
+  chosen `--safety` tier (`safe` default / `unsafe` / `all`), commits the
+  changed files to a fresh branch, pushes, and opens the request:
+  `gh pr create` on GitHub, a GitLab MR via `merge_request.*` push
+  options (no token needed), or a pushed branch plus manual instructions
+  on other hosts. `--dry-run` previews the patch and planned git actions
+  without touching the repo; `--no-push` stops at the local commit;
+  `--allow-dirty` proceeds on a dirty tree while staging only the autofix
+  edits. Closes the gap between "patch on disk" and "PR in your inbox".
 - **`pipeline_check explain CHECK_ID`** prints the full per-check
   reference (severity, recommendation, controls, autofix availability,
   related rules, attack chains). Equivalent to
@@ -460,6 +469,16 @@ Subcommands:
   discoverable and is what the smart-init top-5 summary and the
   gate-failure trailer point users at. Exit code `0` on a known ID,
   `3` on an unknown ID with a "did you mean" list.
+- **`pipeline_check history --dir DIR`** renders a self-contained HTML
+  dashboard (trend graphs + a top-N firing-rules burn-down) from a
+  directory of past `--output json` snapshots. No server, no JS.
+- **`pipeline_check fleet --repos repos.yml`** (or `--from-org ORG`)
+  shallow-clones and scans many repositories, writing per-repo findings
+  plus a fleet-wide digest and re-evaluating cross-repo (`CXPC-NNN`)
+  chains over the union.
+- **`pipeline_check fp-stats`** prints rule-to-false-positive-vote
+  totals from the local `--annotate-fp` annotation file so rule authors
+  can see which checks accumulate the most FP reports.
 
 ---
 
