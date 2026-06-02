@@ -40,10 +40,13 @@ def test_ccm001_with_template_passes(make_catalog):
     assert ccm001_approval_rule.check(cat)[0].passed is True
 
 
-def test_ccm002_default_encryption_fails(make_catalog):
+def test_ccm002_no_key_fails(make_catalog):
+    # Only the absent-key case fires. CodeCommit returns the resolved KMS
+    # ARN (not the alias string), so the check flags only a repo whose
+    # metadata reports no key at all (mirrors CA-001).
     cat = make_catalog(codecommit=_cc_client(
         repos=[{"repositoryName": "r"}],
-        metadata={"kmsKeyId": "alias/aws/codecommit"},
+        metadata={},
     ))
     assert ccm002_repo_encryption.check(cat)[0].passed is False
 
@@ -52,6 +55,17 @@ def test_ccm002_cmk_passes(make_catalog):
     cat = make_catalog(codecommit=_cc_client(
         repos=[{"repositoryName": "r"}],
         metadata={"kmsKeyId": "arn:aws:kms:us-east-1:1:key/abc"},
+    ))
+    assert ccm002_repo_encryption.check(cat)[0].passed is True
+
+
+def test_ccm002_managed_default_arn_passes(make_catalog):
+    # Known limitation: the AWS-managed default key, once resolved to an
+    # ARN, is indistinguishable from a CMK without kms:DescribeKey, so it
+    # passes (documented in the rule's docs_note).
+    cat = make_catalog(codecommit=_cc_client(
+        repos=[{"repositoryName": "r"}],
+        metadata={"kmsKeyId": "arn:aws:kms:us-east-1:1:key/aws-managed-default"},
     ))
     assert ccm002_repo_encryption.check(cat)[0].passed is True
 

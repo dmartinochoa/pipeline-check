@@ -160,6 +160,16 @@ release commit collapses this section into `## [X.Y.Z] - <date>`.
 
 ### Fixed
 
+- **CCM-002 (CodeCommit repo encryption) aligned with CA-001.** The check
+  carried a dead ``"alias/aws/codecommit" not in key`` branch: the
+  CodeCommit API returns the resolved KMS key ARN (not the alias string),
+  so a repo on the AWS-managed default would silently pass once resolved,
+  yet the branch suggested it was detected. Following the resolution its
+  own docs_note already pointed at ("same shape as CA-001"), the check now
+  flags only the absent-key case (``passed = bool(key)``) and documents
+  that classifying the managed default vs a CMK would need a separate
+  ``kms:DescribeKey`` call. No collector change; closes the final open
+  rule-audit finding.
 - **ACR-005 reframed as an advisory (ACR has no registry-level tag
   immutability).** The check inferred tag immutability from a registry's
   quarantine / export policy, an unrelated proxy that false-positived on

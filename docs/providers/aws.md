@@ -656,7 +656,7 @@ Create a CodeCommit approval-rule template requiring at least one approval from 
 <span class="pg-sev pg-sev--medium">MEDIUM</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-9</span> <span class="pg-tag pg-tag--cwe">CWE-311</span>
 </div>
 
-Same shape as CA-001 / ECR-005 / S3 default encryption: the AWS-owned default key keeps the key policy under AWS, removing your ability to scope or audit Decrypt operations. Source code in the repo deserves the same key-policy + CloudTrail story you'd apply to artifacts in S3.
+Same shape as CA-001 / ECR-005 / S3 default encryption: the AWS-owned default key keeps the key policy under AWS, removing your ability to scope or audit Decrypt operations. Source code in the repo deserves the same key-policy + CloudTrail story you'd apply to artifacts in S3. Note: the CodeCommit API returns the resolved KMS key ARN in ``kmsKeyId``; the check flags only the absent-key case because the ARN alone does not reliably identify whether the key is AWS-managed or customer-managed without a separate ``kms:DescribeKey`` call.
 
 <div class="pg-rule__rec" markdown>
 
