@@ -1,6 +1,8 @@
 """CW-001. No CloudWatch alarm on CodeBuild FailedBuilds metric."""
 from __future__ import annotations
 
+from typing import Any
+
 from botocore.exceptions import ClientError
 
 from ...base import Finding, Severity
@@ -29,7 +31,7 @@ RULE = Rule(
 )
 
 
-def _alarm_covers_failed_builds(alarm: dict) -> bool:
+def _alarm_covers_failed_builds(alarm: dict[str, Any]) -> bool:
     """Return True when *alarm* monitors the AWS/CodeBuild FailedBuilds metric.
 
     A standard metric alarm carries top-level ``Namespace`` and ``MetricName``

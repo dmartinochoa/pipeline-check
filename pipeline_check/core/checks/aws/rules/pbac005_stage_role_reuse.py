@@ -1,6 +1,8 @@
 """PBAC-005. CodePipeline stage action roles match the pipeline role."""
 from __future__ import annotations
 
+from typing import Any
+
 from ...base import Finding, Severity
 from ...rule import Rule
 from .._catalog import ResourceCatalog
@@ -71,7 +73,7 @@ RULE = Rule(
 )
 
 
-def _action_needs_role(action: dict) -> bool:
+def _action_needs_role(action: dict[str, Any]) -> bool:
     """Return True when the action type can (and should) carry its own roleArn.
 
     Manual Approval actions are a gate, not an executor; they don't run code
