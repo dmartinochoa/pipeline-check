@@ -728,12 +728,26 @@ through; the v1 heatmap intentionally avoided that plumbing change.
 ### Reachability-aware attack chains
 
 Phase 1 (shared-job intersection) shipped incrementally across the
-chain pack. Phase 2 is the dataflow-DAG variant: walk the TAINT
-engine's DAG between the two anchor findings and only fire when an
-executable connection exists. Requires extending TAINT findings to
-expose their source / sink coordinates on a cross-document graph;
-the v1.0.x TAINT engine carries this state per-workflow but doesn't
-yet expose it to the chain engine.
+chain pack. **Phase 2 (dataflow DAG) is now landing incrementally**,
+same as phase 1 did. The TAINT-NNN rules expose their source-to-sink
+edges as a structured ``Finding.taint_flows`` (``source_job ->
+sink_job`` plus the rendered path), and ``chains/_reachability.py``'s
+``assess_reachability`` builds a directed graph from those edges and
+breadth-first-searches (multi-hop) from the injection leg's job(s) to
+the impact leg's job(s). AC-002 is the pilot: it reports a *proven
+dataflow path* when one exists (the precise connecting job chain + the
+rendered taint path), falling back to the phase-1 shared-job signal
+otherwise. ``Chain.via_dataflow`` marks the stronger tier in JSON +
+the terminal badge, and ``--chains-require-dataflow`` is the stricter
+CI gate (vs ``--chains-require-reachability``).
+
+Still open as follow-ups: migrate the other injection chains
+(AC-022 GitLab, AC-023 Tekton, AC-025 Argo, AC-026 Buildkite) to
+``assess_reachability`` (each needs its provider's taint engine to
+populate ``taint_flows`` the way GHA's TAINT-001/002 now do), and
+extend the graph across the reusable-workflow boundary (TAINT-003
+already carries a ``cross_document`` ``uses:`` sink in its flows, but
+walking into the callee body needs ``--resolve-remote``).
 
 ### Pluggable LLM-assisted triage (opt-in, local)
 

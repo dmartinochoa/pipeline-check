@@ -22,6 +22,7 @@ from pipeline_check.core.checks.base import (
     Finding,
     ResourceAnchor,
     Severity,
+    TaintFlow,
 )
 from pipeline_check.core.gate import GateConfig, evaluate_gate
 
@@ -38,6 +39,7 @@ def _f(
     job_anchors: tuple[str, ...] = (),
     path_evidence: tuple[str, ...] = (),
     resource_anchors: tuple[ResourceAnchor, ...] = (),
+    taint_flows: tuple[TaintFlow, ...] = (),
 ) -> Finding:
     return Finding(
         check_id=check_id,
@@ -51,6 +53,7 @@ def _f(
         job_anchors=job_anchors,
         path_evidence=path_evidence,
         resource_anchors=resource_anchors,
+        taint_flows=taint_flows,
     )
 
 
@@ -669,11 +672,22 @@ class TestChainAC002:
                 wf,
                 job_anchors=("release",),
                 path_evidence=(rendered_path,),
+                taint_flows=(
+                    TaintFlow(
+                        source_job="extract",
+                        sink_job="release",
+                        rendered=rendered_path,
+                    ),
+                ),
             ),
             _f("GHA-014", wf, job_anchors=("release",)),
         ])
         ac2 = next(c for c in out if c.chain_id == "AC-002")
         assert ac2.confirmed_reachable is True
+        # Phase-2: confirmed by a real source->sink taint path, not just
+        # shared-job co-location.
+        assert ac2.via_dataflow is True
+        assert "extract" in ac2.reachability_note
         assert "release" in ac2.reachability_note
         assert rendered_path in ac2.narrative
         assert "TAINT-002" in ac2.triggering_check_ids

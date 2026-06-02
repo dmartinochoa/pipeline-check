@@ -2298,6 +2298,20 @@ def _install_completion_callback(
     ),
 )
 @click.option(
+    "--chains-require-dataflow",
+    "chains_require_dataflow",
+    is_flag=True,
+    default=False,
+    help=(
+        "Stricter than --chains-require-reachability: keep only chains "
+        "confirmed by a real source-to-sink taint path (phase-2 "
+        "dataflow reachability), dropping those confirmed by shared-job "
+        "co-location alone. Highest-precision chain gate; pairs with "
+        "``--fail-on-any-chain`` for a CI gate that fires only on a "
+        "proven executable dataflow."
+    ),
+)
+@click.option(
     "--list-chains",
     is_flag=True,
     default=False,
@@ -2478,6 +2492,7 @@ def scan(
     inline_explain: bool,
     no_chains: bool,
     chains_require_reachability: bool,
+    chains_require_dataflow: bool,
     list_chains: bool,
     annotate_fp: tuple[str, str] | None,
     fp_path: str | None,
@@ -3493,6 +3508,17 @@ def scan(
             _debug(
                 f"--chains-require-reachability: dropped "
                 f"{before - len(chains)} unreachable chain(s)"
+            )
+    # ``--chains-require-dataflow`` is the stricter phase-2 gate: keep
+    # only chains backed by a proven source-to-sink taint path, dropping
+    # those confirmed by shared-job co-location alone.
+    if chains_require_dataflow and chains:
+        before = len(chains)
+        chains = [c for c in chains if c.via_dataflow]
+        if verbose and before != len(chains):
+            _debug(
+                f"--chains-require-dataflow: dropped "
+                f"{before - len(chains)} non-dataflow chain(s)"
             )
 
     if not quiet and output in ("terminal", "both"):

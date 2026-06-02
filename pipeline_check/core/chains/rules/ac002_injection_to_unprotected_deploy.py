@@ -7,6 +7,7 @@ gives a PR opener a path straight to production.
 from __future__ import annotations
 
 from ...checks.base import Confidence, Finding, Severity
+from .._reachability import assess_reachability
 from ..base import Chain, ChainRule, group_by_resource, min_confidence
 
 RULE = ChainRule(
@@ -40,13 +41,15 @@ RULE = ChainRule(
 
 
 def match(findings: list[Finding]) -> list[Chain]:
-    # Reachability is computed by intersecting the injection-side
-    # ``job_anchors`` (from GHA-003 / TAINT-001 / TAINT-002) with the
-    # deploy-side ``job_anchors`` (from GHA-014). When the same job
-    # both interpolates untrusted input AND performs an ungated deploy,
-    # we have a confirmed executable path; the chain still fires
-    # without that intersection (co-occurrence in the same workflow
-    # is the legacy signal), but the report flags it as unconfirmed.
+    # Reachability (phase 2): walk the taint graph between the injection
+    # leg and the deploy leg. ``assess_reachability`` first looks for a
+    # real source-to-sink taint path (TAINT-001 / TAINT-002 expose the
+    # ``source_job -> sink_job`` edges) connecting the injection job(s)
+    # to the deploy job(s), multi-hop included; only if none exists does
+    # it fall back to the phase-1 shared-job signal. The chain still
+    # fires without any confirmation (co-occurrence in one workflow is
+    # the legacy signal), but the report distinguishes a proven dataflow
+    # path from mere co-location.
     grouped = group_by_resource(findings, ["GHA-003", "GHA-014"])
     # Map resource -> { check_id -> Finding } for the injection-side
     # corroborators, picked up if present on the same workflow file.
@@ -63,33 +66,38 @@ def match(findings: list[Finding]) -> list[Chain]:
         triggers: list[Finding] = [gha003, gha014]
 
         deploy_jobs = set(gha014.job_anchors)
+        # The injection source is the job GHA-003 fired in; the taint
+        # findings supply the source->sink edges between there and the
+        # deploy job.
         injection_jobs = set(gha003.job_anchors)
-        # TAINT-001 / TAINT-002 widen the injection-side set with
-        # sink jobs reachable via step / job-output propagation.
-        taint_paths: list[str] = []
+        taint_findings: list[Finding] = []
         for check_id in ("TAINT-001", "TAINT-002"):
             tf = taint_by_resource.get(resource, {}).get(check_id)
             if tf is None:
                 continue
             triggers.append(tf)
-            injection_jobs |= set(tf.job_anchors)
-            taint_paths.extend(tf.path_evidence)
+            taint_findings.append(tf)
+            # A taint flow's source is also an injection entry point, so
+            # widen the source set with the taint sources' jobs.
+            injection_jobs |= {fl.source_job for fl in tf.taint_flows}
 
-        shared = sorted(deploy_jobs & injection_jobs)
-        confirmed = bool(shared)
-        if confirmed:
-            shared_repr = ", ".join(f"`{j}`" for j in shared)
-            reach_note = (
-                f"injection and ungated deploy share job {shared_repr}"
-            )
+        reach = assess_reachability(taint_findings, injection_jobs, deploy_jobs)
+        confirmed = reach.confirmed
+        reach_note = reach.note
+        if reach.via_dataflow:
             reach_narrative = (
-                f"  4. Reachability confirmed: untrusted input "
-                f"reaches the same job(s) that perform the ungated "
-                f"deploy ({shared_repr}). The two legs are not just "
-                f"co-located in `{resource}`, they execute together."
+                f"  4. Reachability confirmed by dataflow: {reach.note}. "
+                f"The untrusted value is carried to the ungated deploy "
+                f"by a real source-to-sink taint path, not just "
+                f"co-location in `{resource}`."
+            )
+        elif confirmed:
+            reach_narrative = (
+                f"  4. Reachability confirmed: {reach.note}. The "
+                f"injection and the ungated deploy execute in the same "
+                f"job, so untrusted input reaches the deploy context."
             )
         else:
-            reach_note = ""
             reach_narrative = (
                 "  4. Reachability unconfirmed: the injection sink "
                 "and the ungated deploy fire on the same workflow "
@@ -110,10 +118,8 @@ def match(findings: list[Finding]) -> list[Chain]:
             "attacker artifacts to production.\n"
             f"{reach_narrative}"
         )
-        if taint_paths:
-            narrative += "\n  Dataflow evidence: " + "; ".join(taint_paths[:3])
-            if len(taint_paths) > 3:
-                narrative += "..."
+        if reach.path:
+            narrative += f"\n  Dataflow evidence: {reach.path}"
 
         # Confirmed reachability promotes the composite to HIGH
         # confidence even if a single leg is heuristic; the cross-
@@ -141,5 +147,6 @@ def match(findings: list[Finding]) -> list[Chain]:
             recommendation=RULE.recommendation,
             confirmed_reachable=confirmed,
             reachability_note=reach_note,
+            via_dataflow=reach.via_dataflow,
         ))
     return out

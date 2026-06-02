@@ -569,7 +569,12 @@ def report_chains_terminal(
             f"{rich_escape(', '.join(chain.triggering_check_ids))}",
         ]
         if chain.confirmed_reachable:
-            reach_line = "[bold green]✓ Reachability confirmed[/bold green]"
+            label = (
+                "✓ Reachability confirmed (dataflow)"
+                if chain.via_dataflow
+                else "✓ Reachability confirmed"
+            )
+            reach_line = f"[bold green]{label}[/bold green]"
             if chain.reachability_note:
                 reach_line += f": {rich_escape(chain.reachability_note)}"
             body_lines.append(reach_line)
