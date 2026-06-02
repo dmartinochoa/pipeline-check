@@ -4,6 +4,12 @@ from __future__ import annotations
 from unittest.mock import MagicMock
 
 from pipeline_check.core.checks.azure_cloud.rules import (
+    aznw002_flow_logs as aznw002,
+)
+from pipeline_check.core.checks.azure_cloud.rules import (
+    azvm003_jit_access as azvm003,
+)
+from pipeline_check.core.checks.azure_cloud.rules import (
     entra002_app_long_credential as entra002,
 )
 from pipeline_check.core.checks.azure_cloud.rules import (
@@ -54,3 +60,95 @@ class TestENTRA006RiskySigninPolicy:
         cat = _catalog("conditional_access_policies", [{"state": "enabled",
             "conditions": {"signInRiskLevels": [None]}}])
         assert entra006.check(cat)[0].passed is False
+
+
+# ---------------------------------------------------------------------------
+# Batch 5 — false-negative fixes
+# ---------------------------------------------------------------------------
+
+def _nsg(name="nsg1", nsg_id="/subscriptions/sub/resourceGroups/rg/providers/Microsoft.Network/networkSecurityGroups/nsg1"):
+    obj = MagicMock()
+    obj.name = name
+    obj.id = nsg_id
+    obj.security_rules = []
+    return obj
+
+
+def _flow_log(target_id: str, enabled: bool = True) -> MagicMock:
+    fl = MagicMock()
+    fl.target_resource_id = target_id
+    fl.enabled = enabled
+    return fl
+
+
+def _vm(name="vm1", security_profile=None, tags=None):
+    vm = MagicMock()
+    vm.name = name
+    vm.security_profile = security_profile
+    vm.tags = tags or {}
+    return vm
+
+
+class TestAZNW002FlowLogEnabledFlag:
+    """AZNW-002: a flow log with enabled=False must not credit the NSG."""
+
+    _NSG_ID = "/subscriptions/sub/resourceGroups/rg/providers/Microsoft.Network/networkSecurityGroups/nsg1"
+
+    def test_disabled_flow_log_fires(self):
+        # Previously missed: flow log exists but is disabled — NSG must fail.
+        cat = MagicMock()
+        cat.network_security_groups.return_value = [_nsg(nsg_id=self._NSG_ID)]
+        cat.nsg_flow_logs.return_value = [_flow_log(self._NSG_ID, enabled=False)]
+        result = aznw002.check(cat)
+        assert len(result) == 1
+        assert result[0].passed is False, "disabled flow log must not satisfy logging requirement"
+
+    def test_enabled_flow_log_passes(self):
+        # True-positive: enabled flow log correctly credits the NSG.
+        cat = MagicMock()
+        cat.network_security_groups.return_value = [_nsg(nsg_id=self._NSG_ID)]
+        cat.nsg_flow_logs.return_value = [_flow_log(self._NSG_ID, enabled=True)]
+        result = aznw002.check(cat)
+        assert len(result) == 1
+        assert result[0].passed is True
+
+    def test_no_flow_log_fires(self):
+        # Existing true-positive: no flow log at all still fires.
+        cat = MagicMock()
+        cat.network_security_groups.return_value = [_nsg(nsg_id=self._NSG_ID)]
+        cat.nsg_flow_logs.return_value = []
+        result = aznw002.check(cat)
+        assert len(result) == 1
+        assert result[0].passed is False
+
+
+class TestAZVM003JITAccessSecurityProfile:
+    """AZVM-003: security_profile (Trusted Launch) must not masquerade as JIT."""
+
+    def test_trusted_launch_vm_no_jit_tag_fires(self):
+        # Previously missed: Gen2 VM with security_profile but no jit tag
+        # was wrongly passing. It must now fire.
+        vm = _vm(security_profile=MagicMock(), tags={})
+        cat = MagicMock()
+        cat.virtual_machines.return_value = [vm]
+        result = azvm003.check(cat)
+        assert len(result) == 1
+        assert result[0].passed is False, "Trusted Launch VM without jit tag must fire"
+
+    def test_jit_tag_passes(self):
+        # A VM with an explicit jit tag should still pass.
+        vm = _vm(security_profile=MagicMock(), tags={"jit-enabled": "true"})
+        cat = MagicMock()
+        cat.virtual_machines.return_value = [vm]
+        result = azvm003.check(cat)
+        assert len(result) == 1
+        assert result[0].passed is True
+
+    def test_no_profile_no_tag_fires(self):
+        # Existing true-positive: plain VM with no markers must fire.
+        vm = _vm(security_profile=None, tags={})
+        cat = MagicMock()
+        cat.virtual_machines.return_value = [vm]
+        result = azvm003.check(cat)
+        assert len(result) == 1
+        assert result[0].passed is False

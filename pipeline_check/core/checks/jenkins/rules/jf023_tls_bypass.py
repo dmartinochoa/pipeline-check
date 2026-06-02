@@ -63,7 +63,7 @@ RULE = Rule(
 )
 
 def check(jf: Jenkinsfile) -> Finding:
-    hits = tls_bypass.scan(jf.text.lower())
+    hits = tls_bypass.scan(jf.text)
     passed = not hits
     desc = (
         "No TLS verification bypass patterns detected."

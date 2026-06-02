@@ -4,8 +4,9 @@ from __future__ import annotations
 from typing import Any
 
 from ..._primitives import shell_eval
-from ...base import Finding, Severity, blob_lower
+from ...base import Finding, Severity
 from ...rule import Rule
+from ..base import iter_jobs, iter_steps
 
 RULE = Rule(
     id="ADO-027",
@@ -57,16 +58,29 @@ RULE = Rule(
 )
 
 
+def _step_script_body(step: dict[str, Any]) -> str:
+    for key in ("script", "bash", "powershell", "pwsh"):
+        val = step.get(key)
+        if isinstance(val, str):
+            return val
+    return ""
+
+
 def check(path: str, doc: dict[str, Any]) -> Finding:
-    blob = blob_lower(doc)
-    hits = shell_eval.scan(blob)
+    hits: list[shell_eval.ShellEvalFinding] = []
+    for _job_loc, job in iter_jobs(doc):
+        for _step_loc, step in iter_steps(job):
+            body = _step_script_body(step)
+            if body.strip():
+                hits.extend(shell_eval.scan(body.lower()))
     passed = not hits
+    snippets = sorted({h.snippet for h in hits})
     desc = (
         "No dangerous shell idioms detected in this pipeline."
         if passed else
         f"{len(hits)} dangerous shell idiom(s) detected: "
-        f"{', '.join(sorted({h.snippet for h in hits})[:3])}"
-        f"{'…' if len({h.snippet for h in hits}) > 3 else ''}."
+        f"{', '.join(snippets[:3])}"
+        f"{'…' if len(snippets) > 3 else ''}."
     )
     return Finding(
         check_id=RULE.id, title=RULE.title, severity=RULE.severity,

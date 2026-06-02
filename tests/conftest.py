@@ -19,6 +19,24 @@ import os
 
 import pytest
 
+from pipeline_check.core.checks.blob import clear_blob_cache
+
+
+@pytest.fixture(autouse=True)
+def _clear_blob_cache():
+    """Reset the ``id(doc)`` / ``id(blob)``-keyed blob caches before each test.
+
+    ``blob_lower`` / ``blob_raw`` memoize on ``id(doc)`` and
+    ``looks_like_example`` indexes on ``id(blob)``. The orchestrator clears
+    these per scanned file, but tests that call ``check(path, doc)`` directly
+    do not. When CPython reuses a garbage-collected object's id (common under
+    ``pytest -n auto --dist worksteal``), a later check can read a stale blob
+    from an unrelated earlier test and flip its result. Clearing before each
+    test keeps direct-``check`` unit tests deterministic regardless of order.
+    """
+    clear_blob_cache()
+    yield
+
 
 @pytest.fixture(autouse=True)
 def _no_cwd_or_env_drift():

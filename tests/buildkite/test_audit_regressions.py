@@ -7,6 +7,12 @@ from pipeline_check.core.checks.buildkite.rules import (
     bk005_docker_privileged as bk005,
 )
 from pipeline_check.core.checks.buildkite.rules import (
+    bk009_signing as bk009,
+)
+from pipeline_check.core.checks.buildkite.rules import (
+    bk013_deploy_branch_filter as bk013,
+)
+from pipeline_check.core.checks.buildkite.rules import (
     taint005_metadata_taint as taint005,
 )
 
@@ -61,3 +67,134 @@ class TestBK005DockerPrivileged:
         vuln, safe = _halves(bk005.RULE)
         assert bk005.check("pipeline.yml", vuln).passed is False
         assert bk005.check("pipeline.yml", safe).passed is True
+
+
+class TestBK013DeployBranchFilterFP:
+    """BK-013 false-positive regression: mid-phrase 'release'/'promote' in
+    a step label must not be treated as deploy intent when the step's
+    command performs no deploy action."""
+
+    def _doc(self, label: str, command: str) -> dict:
+        return yaml.safe_load(
+            f"steps:\n"
+            f"  - label: \"{label}\"\n"
+            f"    command: \"{command}\"\n"
+        )
+
+    # ── False-positive cases (safe inputs that must PASS) ──────────────
+
+    def test_build_release_artifact_label_passes(self):
+        # "release" appears mid-phrase; command is a pure build — no deploy.
+        doc = self._doc("Build release artifact", "docker build -t app:latest .")
+        assert bk013.check("pipeline.yml", doc).passed is True
+
+    def test_generate_release_notes_label_passes(self):
+        doc = self._doc("Generate release notes", "scripts/gen_notes.sh")
+        assert bk013.check("pipeline.yml", doc).passed is True
+
+    def test_mid_phrase_promote_label_passes(self):
+        # "promote" mid-phrase (not leading), pure build command — no deploy.
+        doc = self._doc("Check promotion eligibility", "scripts/check_promo.sh")
+        assert bk013.check("pipeline.yml", doc).passed is True
+
+    def test_build_and_release_artifacts_label_passes(self):
+        doc = self._doc("Build and release artifacts", "make package")
+        assert bk013.check("pipeline.yml", doc).passed is True
+
+    # ── True-positive cases (genuine deploys that must FIRE) ───────────
+
+    def test_leading_release_label_no_branches_fires(self):
+        # "Release to production" — leading verb, no branches: filter.
+        doc = self._doc("Release to production", "scripts/release.sh")
+        assert bk013.check("pipeline.yml", doc).passed is False
+
+    def test_leading_promote_label_no_branches_fires(self):
+        # "Promote to staging" — leading verb, no branches: filter.
+        doc = self._doc("Promote to staging", "scripts/promote.sh")
+        assert bk013.check("pipeline.yml", doc).passed is False
+
+    def test_emoji_leading_release_label_no_branches_fires(self):
+        # Emoji prefix before "Release" is common in Buildkite labels.
+        doc = self._doc(":rocket: Release to prod", "scripts/release.sh")
+        assert bk013.check("pipeline.yml", doc).passed is False
+
+    def test_deploy_label_no_branches_fires(self):
+        # Unambiguous "deploy" in label still fires as before.
+        doc = self._doc("Deploy production", "kubectl apply -f k8s/")
+        assert bk013.check("pipeline.yml", doc).passed is False
+
+    def test_build_label_but_deploy_command_fires(self):
+        # Label has no deploy keyword, but command runs kubectl apply.
+        doc = self._doc("Build release artifact", "kubectl apply -f k8s/")
+        assert bk013.check("pipeline.yml", doc).passed is False
+
+    def test_build_label_release_command_fires(self):
+        # Command explicitly calls a release script — fires via command path.
+        doc = self._doc("Build release artifact", "scripts/release.sh --env prod")
+        assert bk013.check("pipeline.yml", doc).passed is False
+
+    def test_leading_release_label_with_branches_passes(self):
+        # Genuine deploy label + branches: filter = correctly passes.
+        doc = yaml.safe_load(
+            "steps:\n"
+            "  - label: \"Release to production\"\n"
+            "    branches: \"main\"\n"
+            "    command: \"scripts/release.sh\"\n"
+        )
+        assert bk013.check("pipeline.yml", doc).passed is True
+
+
+# ── TAINT-005 verify-stale ─────────────────────────────────────────────
+#
+# Batch 2 added BUILDKITE_PULL_REQUEST_TITLE to the tainted-var set.
+# The test in TestTAINT005MetadataTaint above (line ~20) already pins
+# this behavior.  Confirming STALE: the existing test fires correctly.
+
+
+# ── BK-009 batch-5 FN: buildkite-agent artifact upload not recognized ──
+
+
+class TestBK009BuildkiteArtifactUpload:
+    """BK-009: ``buildkite-agent artifact upload`` is the canonical
+    Buildkite mechanism for publishing build artifacts. It was absent
+    from _ARTIFACT_TOKENS, so a pipeline that uploads via this command
+    (without also running docker build/push) was not recognized as
+    artifact-producing and BK-009 silently passed."""
+
+    def test_unsigned_artifact_upload_fires_bk009(self):
+        # A pipeline that only uploads via buildkite-agent artifact upload
+        # and has no signing step must now fire BK-009.
+        doc = yaml.safe_load(
+            "steps:\n"
+            "  - command: |\n"
+            "      make build\n"
+            "      buildkite-agent artifact upload dist/*.tar.gz\n"
+        )
+        assert bk009.check("pipeline.yml", doc).passed is False, (
+            "BK-009 must fire when buildkite-agent artifact upload is present "
+            "but no signing tool is invoked"
+        )
+
+    def test_signed_artifact_upload_passes_bk009(self):
+        # A pipeline that uploads an artifact AND signs it must pass BK-009.
+        doc = yaml.safe_load(
+            "steps:\n"
+            "  - command: |\n"
+            "      make build\n"
+            "      cosign sign --yes dist/app\n"
+            "      buildkite-agent artifact upload dist/*.tar.gz\n"
+        )
+        assert bk009.check("pipeline.yml", doc).passed is True, (
+            "BK-009 must pass when the pipeline both uploads and signs"
+        )
+
+    def test_no_artifact_step_still_skips_bk009(self):
+        # A pipeline with no artifact-producing step must still skip BK-009
+        # (no false positive on lint/test-only pipelines).
+        doc = yaml.safe_load(
+            "steps:\n"
+            "  - command: pytest tests/\n"
+        )
+        assert bk009.check("pipeline.yml", doc).passed is True, (
+            "BK-009 must pass (no artifact) on a test-only pipeline"
+        )

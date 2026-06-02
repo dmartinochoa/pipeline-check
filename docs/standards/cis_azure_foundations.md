@@ -134,7 +134,7 @@ pipeline_check --pipeline aws --standard cis_azure_foundations --standard owasp_
 
 | Check | Title | Severity | Provider | Fix |
 |-------|-------|----------|----------|-----|
-| [`AZST-005`](../providers/azure_cloud.md) | Storage account has no blob lifecycle management policy | <span class="pg-sev pg-sev--low">LOW</span> | [Azure Cloud](../providers/azure_cloud.md) |  |
+| [`AZST-005`](../providers/azure_cloud.md) | Storage account blob lifecycle policy should be reviewed | <span class="pg-sev pg-sev--low">LOW</span> | [Azure Cloud](../providers/azure_cloud.md) |  |
 | [`AZST-006`](../providers/azure_cloud.md) | Storage account access keys not rotated within 90 days | <span class="pg-sev pg-sev--high">HIGH</span> | [Azure Cloud](../providers/azure_cloud.md) |  |
 
 ### 3.12: Ensure storage for critical data is encrypted with Customer-Managed Key { #ctrl-3-12 }

@@ -100,12 +100,17 @@ def _tainted_vars(variables_block: Any) -> set[str]:
 
 def _ado_ref_pattern(name: str) -> str:
     """Match every ADO reference syntax for *name*: ``$(VAR)`` (macro),
-    ``$env:VAR`` (PowerShell), and ``$VAR`` / ``${VAR}`` (bash)."""
+    ``$env:VAR`` (PowerShell), and ``$VAR`` / ``${VAR}`` (bash).
+
+    The bash alternative uses ``\b`` for the bare form and requires the
+    closing ``}`` for the braced form, preventing ``$BR`` from matching
+    inside the longer token ``$BRANCHX``.
+    """
     n = re.escape(name)
     return (
-        rf"\$\(\s*{n}\s*\)"        # $(VAR)
-        rf"|\$env:{n}\b"            # $env:VAR
-        rf"|\$\{{?{n}\}}?"          # $VAR / ${VAR}
+        rf"\$\(\s*{n}\s*\)"         # $(VAR)
+        rf"|\$env:{n}\b"             # $env:VAR
+        rf"|\$(?:\{{{n}\}}|{n}\b)"  # ${VAR} (must close brace) / $VAR\b
     )
 
 

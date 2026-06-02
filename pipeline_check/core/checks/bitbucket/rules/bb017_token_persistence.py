@@ -46,16 +46,16 @@ RULE = Rule(
         "steps, artifacts, or cache entries."
     ),
     exploit_example=(
-        "# Vulnerable: ``BITBUCKET_REPO_ACCESS_TOKEN`` written to\n"
-        "# a file or piped to ``tee`` for downstream steps. The\n"
-        "# token is meant to live only for the step's duration;\n"
-        "# persisting it into an artifact or a cache extends the\n"
-        "# credential's lifetime well beyond its intended scope.\n"
+        "# Vulnerable: ``BITBUCKET_TOKEN`` written to a file or\n"
+        "# piped to ``tee`` for downstream steps. The token is\n"
+        "# meant to live only for the step's duration; persisting\n"
+        "# it into an artifact or a cache extends the credential's\n"
+        "# lifetime well beyond its intended scope.\n"
         "pipelines:\n"
         "  default:\n"
         "    - step:\n"
         "        script:\n"
-        "          - echo \"TOKEN=$BITBUCKET_REPO_ACCESS_TOKEN\" >> .env\n"
+        "          - echo \"TOKEN=$BITBUCKET_TOKEN\" >> .env\n"
         "        artifacts: [.env]\n"
         "\n"
         "# Safe: use the token inline in the one command that\n"
@@ -65,7 +65,7 @@ RULE = Rule(
         "  default:\n"
         "    - step:\n"
         "        script:\n"
-        "          - curl --header \"Authorization: Bearer $BITBUCKET_REPO_ACCESS_TOKEN\" \\\n"
+        "          - curl --header \"Authorization: Bearer $BITBUCKET_TOKEN\" \\\n"
         "              \"https://api.bitbucket.org/2.0/repositories/$BITBUCKET_REPO_FULL_NAME\""
     ),
 )

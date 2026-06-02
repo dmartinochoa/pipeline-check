@@ -30,8 +30,21 @@ RULE = Rule(
     ),
 )
 
+# Match a secret-like keyword as a complete underscore-delimited segment.
+# To reduce false positives on names like ``SECRET_SCANNING_ENABLED`` or
+# ``TOKEN_TYPE`` (where the keyword is a non-secret prefix), require the
+# keyword to either:
+#   - be preceded by ``_`` (never the first segment), OR
+#   - be the entire variable name (standalone, no underscores).
+# This keeps ``NPM_TOKEN``, ``DATABASE_PASSWORD``, ``GH_TOKEN``,
+# ``MY_SECRET``, ``APP_API_KEY`` while dropping ``SECRET_SCANNING_ENABLED``.
+# ``APIKEY`` (no underscore) is matched as a substring because it has no
+# known non-secret homographs.
 _SECRET_NAME_RE = re.compile(
-    r"(?:PASSWORD|TOKEN|SECRET|API_KEY|APIKEY)", re.IGNORECASE,
+    r"_(?:PASSWORD|PASSWD|TOKEN|SECRET|API_?KEY)(?:_|$)"
+    r"|^(?:PASSWORD|PASSWD|TOKEN|SECRET|API_?KEY)$"
+    r"|APIKEY",
+    re.IGNORECASE,
 )
 
 

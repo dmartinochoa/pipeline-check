@@ -54,7 +54,8 @@ RULE = Rule(
         "# Safe: pin to the content-addressable digest. Renovate /\n"
         "# Dependabot bump the digest in reviewable PRs.\n"
         "steps:\n"
-        "  - name: gcr.io/cloud-builders/gcloud@sha256:abc123...\n"
+        "  - name: gcr.io/cloud-builders/gcloud"
+        "@sha256:9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08\n"
         "    args: [run, deploy, app, --image, us-central1-docker.pkg.dev/proj/repo/app]"
     ),
 )

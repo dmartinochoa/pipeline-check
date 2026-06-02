@@ -256,7 +256,7 @@ Remove the ``users.anonymous.enabled: "true"`` entry from ``argocd-cm`` (or set 
 <span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-3</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-5</span> <span class="pg-tag pg-tag--esf">ESF-S-PIN-DEPS</span> <span class="pg-tag pg-tag--esf">ESF-S-VERIFY-DEPS</span> <span class="pg-tag pg-tag--cwe">CWE-1357</span> <span class="pg-tag pg-tag--cwe">CWE-829</span>
 </div>
 
-Reads ``spec.source.targetRevision`` (or each entry in ``spec.sources[].targetRevision`` for multi-source apps) and fires when the value matches a mutable-ref shape: ``HEAD``, branch-name literals (``main`` / ``master`` / ``develop`` / ``release-*``), or any non-SHA non-SemVer string. Immutable shapes that pass:
+Reads ``spec.source.targetRevision`` (or each entry in ``spec.sources[].targetRevision`` for multi-source apps) and fires when the value matches a mutable-ref shape: ``HEAD``, branch-name literals (``main`` / ``master`` / ``develop`` / ``release-*``), or any non-SHA non-SemVer string. Also walks ``ApplicationSet`` documents via ``spec.template.spec.source[s]``, because an ApplicationSet with a mutable ref generates Applications that all track that same mutable branch. Immutable shapes that pass:
 
 * 40-character hex commit SHA
 * SemVer literal (``1.2.3``, ``1.2.3-rc.1``)

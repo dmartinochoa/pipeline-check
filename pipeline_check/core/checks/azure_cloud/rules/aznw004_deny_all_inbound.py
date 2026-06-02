@@ -35,14 +35,24 @@ def check(catalog: ResourceCatalog) -> list[Finding]:
         for rule in rules:
             direction = str(getattr(rule, "direction", "")).lower()
             access = str(getattr(rule, "access", "")).lower()
-            src = str(getattr(rule, "source_address_prefix", ""))
-            dest_port = str(getattr(rule, "destination_port_range", ""))
-            if (
-                direction == "inbound"
-                and access == "deny"
-                and src == "*"
-                and dest_port == "*"
-            ):
+            if direction != "inbound" or access != "deny":
+                continue
+
+            # Source: accept scalar '*' or list containing '*'
+            src = str(getattr(rule, "source_address_prefix", "") or "")
+            src_list = getattr(rule, "source_address_prefixes", None) or []
+            src_any = src == "*" or "*" in src_list
+
+            # Destination port: accept '*', '0-65535', or list containing either
+            dest_port = str(getattr(rule, "destination_port_range", "") or "")
+            dest_list = getattr(rule, "destination_port_ranges", None) or []
+            _FULL_RANGE = {"*", "0-65535"}
+            dest_any = (
+                dest_port in _FULL_RANGE
+                or bool(_FULL_RANGE.intersection(dest_list))
+            )
+
+            if src_any and dest_any:
                 has_deny_all = True
                 break
 

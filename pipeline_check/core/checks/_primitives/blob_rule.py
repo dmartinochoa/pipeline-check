@@ -18,6 +18,7 @@ from collections.abc import Callable
 from typing import Any, TypeVar
 
 from ..base import Finding, blob_lower
+from ..blob import blob_raw
 from ..rule import Rule
 
 T = TypeVar("T")
@@ -30,11 +31,15 @@ def yaml_blob_check(
     pass_desc: str,
     fail_desc: Callable[[T], str],
     pass_recommendation: str | None = None,
+    lowercase: bool = True,
 ) -> Callable[[str, dict[str, Any]], Finding]:
     """Build a ``check(path, doc)`` callable for the blob-scan rule shape.
 
-    Lowers ``doc`` via :func:`blob_lower`, runs ``scanner`` against the
-    result, and builds a :class:`Finding` with the rule's metadata.
+    By default, lowers ``doc`` via :func:`blob_lower` before passing to
+    ``scanner``.  Pass ``lowercase=False`` when the scanner needs to
+    inspect original-case text (e.g. to distinguish ``curl -k`` from
+    ``curl -K``); in that case :func:`blob_raw` is used instead.
+
     ``pass_desc`` fires when ``scanner`` returns falsy;
     ``fail_desc(result)`` fires on a truthy result. The recommendation
     field is sourced from ``rule.recommendation`` unless
@@ -42,9 +47,10 @@ def yaml_blob_check(
     fires on the passing branch only (used by malicious-activity
     rules that print "No action required." when clean).
     """
+    _blob_fn = blob_lower if lowercase else blob_raw
 
     def check(path: str, doc: dict[str, Any]) -> Finding:
-        result = scanner(blob_lower(doc))
+        result = scanner(_blob_fn(doc))
         passed = not result
         if passed and pass_recommendation is not None:
             recommendation = pass_recommendation

@@ -66,7 +66,7 @@ RULE = Rule(
         "steps:\n"
         "  - name: gcr.io/cloud-builders/bash@sha256:abc123...\n"
         "    entrypoint: bash\n"
-        "    env: [TAG=${_TAG}]\n"
+        "    env: ['TAG=${_TAG}']\n"
         "    args:\n"
         "      - -c\n"
         "      - echo \"building $TAG\" && ./build.sh --tag \"$TAG\""

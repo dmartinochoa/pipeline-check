@@ -49,7 +49,7 @@ RULE = Rule(
         "    args:\n"
         "      - -c\n"
         "      - eval \"$BUILD_CMD\"\n"
-        "    env: [BUILD_CMD=${_USER_CMD}]\n"
+        "    env: ['BUILD_CMD=${_USER_CMD}']\n"
         "\n"
         "# Safe: never eval untrusted input. Replace the dynamic\n"
         "# command with an explicit dispatcher over an allow-list\n"

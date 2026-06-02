@@ -59,19 +59,22 @@ def _pbac003(ctx: CloudFormationContext) -> list[Finding]:
         for rule in sg.properties.get("SecurityGroupEgress") or []:
             if not isinstance(rule, dict):
                 continue
-            cidr = as_str(rule.get("CidrIp"))
+            cidr4 = as_str(rule.get("CidrIp"))
+            cidr6 = as_str(rule.get("CidrIpv6"))
             proto = as_str(rule.get("IpProtocol"))
             from_p = rule.get("FromPort")
             to_p = rule.get("ToPort")
-            if cidr == "0.0.0.0/0" and (
+            open_cidr = cidr4 == "0.0.0.0/0" or cidr6 == "::/0"
+            if open_cidr and (
                 proto in ("-1", "all") or (from_p in (0, None) and to_p in (65535, None))
             ):
+                cidr_display = cidr4 or cidr6
                 out.append(Finding(
                     check_id="PBAC-003",
-                    title="Security group allows 0.0.0.0/0 all-port egress",
+                    title="Security group allows all-port egress to the internet",
                     severity=Severity.MEDIUM,
                     resource=sg.address,
-                    description="Egress rule allows 0.0.0.0/0 on all ports.",
+                    description=f"Egress rule allows {cidr_display} on all ports.",
                     recommendation="Scope egress to specific destinations/ports.",
                     passed=False,
                 ))

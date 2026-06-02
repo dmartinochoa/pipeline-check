@@ -24,17 +24,22 @@ RULE = Rule(
         "branch *plus* a human approval is the path to deploy."
     ),
     docs_note=(
-        "A step is treated as a deploy when its label, key, or any "
-        "command line contains a deploy keyword (``deploy``, ``ship-"
-        "it``, ``release``, ``promote``, ``rollout``, ``helm "
-        "upgrade``, ``kubectl apply``, ``terraform apply``, ``aws "
-        "ecs update-service``, ``aws lambda update-function-code``, "
-        "``gcloud run deploy``). The check passes when the step "
-        "declares ``branches:`` with at least one literal branch "
-        "name (a wildcard like ``\"*\"`` is treated as an explicit "
-        "opt-out, not a passing filter, and still trips). The "
-        "pipeline-level default also counts, top-level ``steps:`` "
-        "with ``branches:`` propagates."
+        "A step is treated as a deploy when its command line contains "
+        "a deploy keyword (``deploy``, ``ship-it``, ``release``, "
+        "``promote``, ``rollout``, ``helm upgrade``, ``kubectl "
+        "apply``, ``terraform apply``, ``aws ecs update-service``, "
+        "``aws lambda update-function-code``, ``gcloud run deploy``), "
+        "or its label / key begins with an unambiguous deploy verb "
+        "(``deploy``, ``ship-it``, ``rollout``) or with ``release`` / "
+        "``promote`` as the leading word (after optional emoji / "
+        "punctuation). Labels that only mention ``release`` or "
+        "``promote`` mid-phrase (e.g. 'Build release artifact') are "
+        "not flagged. The check passes when the step declares "
+        "``branches:`` with at least one literal branch name (a "
+        "wildcard like ``\"*\"`` is treated as an explicit opt-out, "
+        "not a passing filter, and still trips). The pipeline-level "
+        "default also counts, top-level ``steps:`` with ``branches:`` "
+        "propagates."
     ),
     known_fp=(
         "Trunk-based teams that branch-protect ``main`` and treat "
@@ -63,6 +68,8 @@ RULE = Rule(
 )
 
 
+# Full keyword set used for command-line matching.  Commands are precise
+# enough that any occurrence of "release" / "promote" is genuine.
 _DEPLOY_KEYWORDS_RE = re.compile(
     r"\b(deploy|ship-it|release|promote|rollout|"
     r"helm\s+(?:upgrade|install)|kubectl\s+apply|terraform\s+apply|"
@@ -71,11 +78,36 @@ _DEPLOY_KEYWORDS_RE = re.compile(
     re.IGNORECASE,
 )
 
+# Narrower pattern for label / key matching.  "release" and "promote" are
+# only treated as deploy intent when they appear as the *leading verb* of
+# the label (optionally after emoji, punctuation, or whitespace).  This
+# avoids false positives on labels like "Build release artifact" or
+# "Generate release notes" whose commands perform no deploy action.
+# Unambiguous action words (deploy, ship-it, rollout) and multi-token
+# tool invocations are matched anywhere in the label as before.
+_LABEL_DEPLOY_RE = re.compile(
+    r"(?:"
+    # Unambiguous single-word deploy verbs — match anywhere.
+    r"\b(?:deploy|ship-it|rollout)\b"
+    r"|"
+    # Multi-token tool invocations — match anywhere.
+    r"(?:helm\s+(?:upgrade|install)|kubectl\s+apply|terraform\s+apply|"
+    r"aws\s+ecs\s+update-service|aws\s+lambda\s+update-function-code|"
+    r"gcloud\s+run\s+deploy)"
+    r"|"
+    # "release" / "promote" only when leading the label (after optional
+    # emoji / punctuation / whitespace so ":rocket: Release to prod" still
+    # fires, but "Build release artifact" does not).
+    r"(?:^[\s\W]*)(?:release|promote)\b"
+    r")",
+    re.IGNORECASE,
+)
+
 
 def _step_is_deploy(step: dict[str, Any]) -> bool:
     for k in ("label", "key"):
         v = step.get(k)
-        if isinstance(v, str) and _DEPLOY_KEYWORDS_RE.search(v):
+        if isinstance(v, str) and _LABEL_DEPLOY_RE.search(v):
             return True
     for cmd in step_commands(step):
         if _DEPLOY_KEYWORDS_RE.search(cmd):

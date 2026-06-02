@@ -111,6 +111,94 @@ release commit collapses this section into `## [X.Y.Z] - <date>`.
   trusted ``branches:`` release. The CC-008, BB-003, CA-003, and LMB-003
   proof-of-exploit examples were corrected so their Vulnerable fragment
   fires and their Safe fragment passes.
+- **Rule audit, batch 3: broken proof-of-exploit examples across Cloud
+  Build, CircleCI, Bitbucket, Azure Pipelines, Argo, CloudFormation, and
+  AWS.** Twenty-eight rules carried an ``exploit_example`` whose
+  Vulnerable fragment never fired, whose Safe fragment was itself
+  flagged, or that did not parse at all; each is now repaired and pinned
+  with a strong-check regression test (Vulnerable fires, Safe passes).
+  Cloud Build GCB-004 / GCB-006 / GCB-012 / GCB-019 and Azure ADO-030
+  used YAML flow-collection forms (``env: [X=${...}]``,
+  ``pool: { name: ${{ ... }} }``) that a parser rejects. GCB-003,
+  GCB-011, Bitbucket BB-011 / BB-017 / BB-025, CircleCI CC-026,
+  CloudFormation S3-005 / CF-003 / IAM-002 / IAM-004 / IAM-005 / IAM-006,
+  and AWS CA-004 / CB-011 / IAM-002 had a Vulnerable fragment the rule
+  never flagged (a secret kept out of the scanned fields, a ``curl -k``
+  split across args, vendor example credentials the scanner suppresses,
+  an undeclared trust document, a too-short base64 blob, an ``s3:*``
+  literal the wildcard check does not match, a bare policy statement with
+  no enclosing document). The pinning examples GCB-001, CC-003, and
+  ARGO-001 used a placeholder digest that is not valid 64-hex, so their
+  Safe half was flagged; ADO-001 advised an ``@2.x`` task version the pin
+  check rejects; CloudFormation ECR-003 / ECR-006 and AWS ECR-006
+  presented an org-scoped wildcard or a scheme-prefixed registry host as
+  Safe that the check still flags. AWS IAM-002's ``docs_note`` no longer
+  claims it catches service-prefix wildcards like ``s3:*`` (that is
+  IAM-006).
+- **Rule audit, batch 4: false-positive fixes across Cloud Build,
+  CircleCI, Azure Pipelines, Buildkite, Argo, Bitbucket, AWS, and
+  CloudFormation.** Documented-safe idioms that the checks wrongly
+  flagged now pass, each pinned by a regression test that also confirms
+  a genuine violation still fires. GCB-004 scans only step ``args`` /
+  ``entrypoint`` for a user substitution, so the recommended ``env:``
+  remediation clears. CC-004 anchors its secret-name match on segment
+  boundaries (``TOKENIZER_VERSION`` / ``SECRET_SCANNING_ENABLED`` are no
+  longer secret-like). The shared ``curl``-insecure detector matches
+  ``-k`` case-sensitively (curl's ``-K`` is ``--config``, not a TLS
+  bypass), and the shared go-insecure and pip-hash detectors ignore a
+  commented-out ``export`` and a quoted tooling package respectively.
+  CC-025 drops ``{{ .Revision }}`` (a content-addressed commit SHA is not
+  attacker-controllable for cache poisoning); CC-029 accepts CircleCI's
+  legacy ``:YYYYMM-NN`` machine-image tags as pinned. ADO-002 adds a word
+  boundary so a tainted ``$BR`` no longer matches ``$BRANCHX``; ADO-027
+  scans only script-step bodies, not free-text fields. BK-013 treats
+  ``release`` / ``promote`` as deploy intent only as a label's leading
+  verb (not in "Build release artifact"). ARGO-006 excludes cache /
+  partition keys and ``*_KEY_PATH`` reference names from its weak
+  name-based match. BB-005 honors a global ``options.max-time``. LMB-003
+  exempts ARN/name-reference env vars (``DB_SECRET_ARN``). CW-001 stays
+  silent in accounts with no CodeBuild projects. CCM-002 accepts a
+  ``!Ref`` / ``!GetAtt`` to an in-template KMS key as a customer-managed
+  CMK. Azure storage retention rules (AZMON-002, AZMON-005) treat
+  ``days=0`` with retention enabled as indefinite (compliant); AZSQL-001
+  accepts Managed HSM and sovereign-cloud key vaults; AZST-006 reports a
+  missing key-creation-time as advisory rather than a hard failure.
+- **Rule audit, batch 4: accuracy fixes to rule titles.** AZST-005's
+  title no longer asserts an unverified absence ("blob lifecycle policy
+  should be reviewed"); CCM-003's title no longer claims a cross-account
+  comparison the check does not perform.
+- **Rule audit, batch 5: false-negative fixes across AWS, Argo, Azure
+  Pipelines, CircleCI, CloudFormation, Buildkite, Bitbucket, ArgoCD,
+  Cloud Build, Azure cloud, and Composer.** Detections that missed real
+  violations now catch them, each pinned by tests confirming the
+  previously-missed case fires, a benign neighbor still passes, and the
+  existing true positive still fires. Partition and representation
+  coverage: IAM-001 and CCM-003 recognize ``AdministratorAccess`` and
+  trigger ARNs in the aws-cn and aws-us-gov partitions; ECR-003 (CFN)
+  matches a list-form ``{AWS: ['*']}`` wildcard principal. Scope
+  coverage: ARGO-001 and ARGO-002 scan ``initContainers`` and
+  ``sidecars``; CC-019 scans reusable ``commands:`` and ``when:`` /
+  ``unless:`` step groups; LMB-002 flags a Lambda function URL whose
+  target is a cross-stack ARN; BB-020 inspects a step-level ``clone:``;
+  GCB-023 scans ``dir`` / ``id`` / ``waitFor``; PBAC-003 covers IPv6
+  ``::/0`` egress. Detector accuracy: ADO-017 matches ``--network=host``;
+  ADO-023 matches inline ``git -c http.sslVerify=false``; CC-015 drops a
+  blob fallback that passed on an incidental token mention; CC-031
+  accepts underscore OIDC role params; PBAC-005 requires every executable
+  action to carry its own role (approval gates excluded); EB-001 credits
+  a no-state-filter EventBridge rule; CW-001 reads metric-math alarms;
+  CA-001 and CP-002 stop crediting an AWS-managed key as a customer CMK.
+  Tool catalog: kaniko and ``buildkite-agent artifact upload`` are
+  recognized as artifact producers (gating ARGO-009 / BK-009); cdxgen
+  (ARGO-010), ``notation sign`` (ADO-006), and the circleci/attestation
+  orb (CC-024) are credited; GCB-008 recognizes a scanner used as a step
+  image. Hardening: AZNW-002 requires the flow log to be enabled;
+  AZVM-003 stops treating Trusted Launch as Just-in-Time access; BB-016
+  scopes its ephemeral check to the step's own ``runs-on`` labels; BB-001
+  requires full semver for pipe tags; COMPOSER-004 matches base64
+  passwords containing ``/``; COMPOSER-009 stops treating a literal ``$``
+  as a placeholder. CA-001 and PBAC-003 titles were reworded to match
+  what they detect.
 
 ## [1.7.1] - 2026-06-01
 

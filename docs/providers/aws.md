@@ -245,7 +245,7 @@ optional:
 
 | Check | Title | Severity | Fix |
 |-------|-------|----------|-----|
-| [CA-001](#ca-001) | CodeArtifact domain not encrypted with customer KMS CMK | <span class="pg-sev pg-sev--medium">MEDIUM</span> |  |
+| [CA-001](#ca-001) | CodeArtifact domain has no KMS encryptionKey configured | <span class="pg-sev pg-sev--medium">MEDIUM</span> |  |
 | [CA-002](#ca-002) | CodeArtifact repository has a public external connection | <span class="pg-sev pg-sev--high">HIGH</span> |  |
 | [CA-003](#ca-003) | CodeArtifact domain policy allows cross-account wildcard | <span class="pg-sev pg-sev--critical">CRITICAL</span> |  |
 | [CA-004](#ca-004) | CodeArtifact repo policy grants ``codeartifact:*`` with ``Resource '*'`` | <span class="pg-sev pg-sev--high">HIGH</span> |  |
@@ -321,13 +321,13 @@ optional:
 
 <div class="pg-rule pg-rule--medium" markdown>
 
-## CA-001: CodeArtifact domain not encrypted with customer KMS CMK { #ca-001 }
+## CA-001: CodeArtifact domain has no KMS encryptionKey configured { #ca-001 }
 
 <div class="pg-rule__tags">
 <span class="pg-sev pg-sev--medium">MEDIUM</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-9</span> <span class="pg-tag pg-tag--cwe">CWE-311</span>
 </div>
 
-AWS-owned encryption (the default ``alias/aws/codeartifact`` key) keeps the key policy under AWS's control, not yours. That's fine for confidentiality but means cross-account auditability of every Decrypt event lives with AWS, and you can't revoke or scope key access without recreating the domain. A customer-managed CMK puts both controls back in your hands.
+When no ``encryptionKey`` is configured on the domain, AWS uses its own managed key, keeping the key policy under AWS's control. That removes your ability to scope or audit Decrypt operations, and you can't revoke key access without recreating the domain. A customer-managed CMK puts those controls back in your hands. Note: the CodeArtifact API returns the resolved KMS key ARN in this field; the check flags only the absent-key case because the ARN alone does not reliably identify whether the key is AWS-managed or customer-managed without a separate ``kms:DescribeKey`` call.
 
 <div class="pg-rule__rec" markdown>
 
@@ -1200,7 +1200,7 @@ Replace AdministratorAccess with least-privilege policies.
 <span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-2</span> <span class="pg-tag pg-tag--cwe">CWE-269</span>
 </div>
 
-``Action: '*'`` (or service-prefix wildcards like ``s3:*``) on an attached policy is functionally equivalent to AdministratorAccess for that resource. The wildcard absorbs every new IAM action AWS adds, so the role's authority grows without any local change.
+``Action: '*'`` on an attached policy is functionally equivalent to AdministratorAccess: the role can call every API in every service. The wildcard absorbs every new IAM action AWS adds, so the role's authority grows without any local change. Service-prefix wildcards like ``s3:*`` are caught by IAM-006, not this rule.
 
 <div class="pg-rule__rec" markdown>
 

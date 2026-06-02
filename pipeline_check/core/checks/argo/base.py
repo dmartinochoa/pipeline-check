@@ -168,9 +168,10 @@ def template_name(template: dict[str, Any], idx: int) -> str:
 def iter_containers(template: dict[str, Any]) -> Iterator[dict[str, Any]]:
     """Yield every container-shaped child of a template.
 
-    Argo templates can use ``container``, ``script``, or ``containerSet``.
-    All carry an ``image`` and ``securityContext`` in the same place; we
-    yield each one as a dict so rules can read uniform fields.
+    Argo templates can use ``container``, ``script``, ``containerSet``,
+    ``initContainers``, or ``sidecars``. All carry an ``image`` and
+    ``securityContext`` in the same place; we yield each one as a dict
+    so rules can read uniform fields.
     """
     for key in ("container", "script"):
         v = template.get(key)
@@ -181,5 +182,11 @@ def iter_containers(template: dict[str, Any]) -> Iterator[dict[str, Any]]:
         children = cs.get("containers")
         if isinstance(children, list):
             for c in children:
+                if isinstance(c, dict):
+                    yield c
+    for key in ("initContainers", "sidecars"):
+        items = template.get(key)
+        if isinstance(items, list):
+            for c in items:
                 if isinstance(c, dict):
                     yield c

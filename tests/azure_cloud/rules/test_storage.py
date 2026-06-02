@@ -233,13 +233,17 @@ class TestAzst006:
         assert len(findings) == 1
         assert findings[0].passed is True
 
-    def test_no_key_creation_time_fails(self, make_catalog):
+    def test_no_key_creation_time_advisory(self, make_catalog):
+        # key_creation_time=None means no rotation policy is set, not that
+        # keys are stale. The fix emits an INFO advisory (passed=True).
+        from pipeline_check.core.checks.base import Severity
         acct = _storage_account()
         acct.key_creation_time = None
         catalog = make_catalog(**{"storage:accounts": [acct]})
         findings = azst006.check(catalog)
         assert len(findings) == 1
-        assert findings[0].passed is False
+        assert findings[0].passed is True
+        assert findings[0].severity == Severity.INFO
 
     def test_empty_accounts(self, make_catalog):
         catalog = make_catalog(**{"storage:accounts": []})
