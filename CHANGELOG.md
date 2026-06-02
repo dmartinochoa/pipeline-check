@@ -160,6 +160,20 @@ release commit collapses this section into `## [X.Y.Z] - <date>`.
 
 ### Fixed
 
+- **ACR-005 reframed as an advisory (ACR has no registry-level tag
+  immutability).** The check inferred tag immutability from a registry's
+  quarantine / export policy, an unrelated proxy that false-positived on
+  default registries and false-negatived on mutable ones. Azure Container
+  Registry, unlike ECR's ``imageTagMutability``, has no registry-level
+  immutability setting: it's a per-repository / per-tag
+  ``writeEnabled=false`` lock applied through the data plane, which a
+  registry-level posture scan cannot enumerate. ACR-005 is now an INFO
+  advisory that always passes and carries the recommendation (lock
+  critical production tags via ``az acr repository update --write-enabled
+  false`` and/or pin by digest) instead of asserting a proxy-based
+  verdict. Severity MEDIUM -> INFO; provider and standards docs
+  regenerated. (Closes the last open rule-audit finding that didn't
+  require a collector change.)
 - **Rule audit: title / severity / ESF-mapping corrections (5 rules).**
   The closing audit batch, aligning catalog metadata with each rule's
   actual behavior. **CB-004**'s title was "No build timeout configured"

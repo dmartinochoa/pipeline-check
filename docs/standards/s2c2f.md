@@ -29,7 +29,7 @@ Click a control ID to jump to the per-control section with the full check list. 
 | [`SCA-3`](#ctrl-sca-3) | L2: Scan OSS for malware | 36 | 18C · 12H · 6M |
 | [`UPD-1`](#ctrl-upd-1) | L1: Update vulnerable OSS manually (pin + track versions) | 78 | 43H · 29M · 6L |
 | [`UPD-2`](#ctrl-upd-2) | L3: Enable automated OSS updates (Dependabot / Renovate) | 6 | 6M |
-| [`ENF-1`](#ctrl-enf-1) | L2: Enforce security policy of OSS usage (block on violation) | 64 | 4C · 24H · 34M · 2L |
+| [`ENF-1`](#ctrl-enf-1) | L2: Enforce security policy of OSS usage (block on violation) | 64 | 4C · 24H · 33M · 2L · 1I |
 | [`ENF-2`](#ctrl-enf-2) | L2: Break the build when a violation is detected | 26 | 5H · 20M · 1L |
 | [`REB-2`](#ctrl-reb-2) | L4: Digitally sign rebuilt / produced OSS artifacts | 23 | 3H · 18M · 2L |
 | [`REB-3`](#ctrl-reb-3) | L4: Generate SBOMs for artifacts produced | 25 | 3H · 15M · 7L |
@@ -347,7 +347,7 @@ pipeline_check --pipeline aws --standard s2c2f --standard owasp_cicd_top_10
 |-------|-------|----------|----------|-----|
 | [`ACR-001`](../providers/azure_cloud.md) | Container registry admin user enabled | <span class="pg-sev pg-sev--high">HIGH</span> | [Azure Cloud](../providers/azure_cloud.md) |  |
 | [`ACR-002`](../providers/azure_cloud.md) | Container registry allows public network access | <span class="pg-sev pg-sev--high">HIGH</span> | [Azure Cloud](../providers/azure_cloud.md) |  |
-| [`ACR-005`](../providers/azure_cloud.md) | Container registry does not enforce tag immutability | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [Azure Cloud](../providers/azure_cloud.md) |  |
+| [`ACR-005`](../providers/azure_cloud.md) | Container registry tag immutability (verify per-repository locking) | <span class="pg-sev pg-sev--info">INFO</span> | [Azure Cloud](../providers/azure_cloud.md) |  |
 | [`ADO-004`](../providers/azure.md#ado-004) | Deployment job missing environment binding | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [Azure DevOps](../providers/azure.md) |  |
 | [`AKV-001`](../providers/azure_cloud.md) | Key Vault soft delete not enabled | <span class="pg-sev pg-sev--high">HIGH</span> | [Azure Cloud](../providers/azure_cloud.md) |  |
 | [`AKV-002`](../providers/azure_cloud.md) | Key Vault purge protection not enabled | <span class="pg-sev pg-sev--high">HIGH</span> | [Azure Cloud](../providers/azure_cloud.md) |  |
