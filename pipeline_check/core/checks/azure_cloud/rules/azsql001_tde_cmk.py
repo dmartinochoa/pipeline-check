@@ -35,7 +35,20 @@ def check(catalog: ResourceCatalog) -> list[Finding]:
         # we infer from the key_id property.
         key_id = getattr(server, "key_id", None)
         key_str = str(key_id).lower() if key_id else ""
-        passed = key_str.startswith("https://") and key_str.split("/")[2].endswith(".vault.azure.net")
+        # Accept Key Vault (commercial, sovereign) and Managed HSM endpoints.
+        _VALID_HOSTS = (
+            ".vault.azure.net",
+            ".managedhsm.azure.net",
+            ".vault.usgovcloudapi.net",
+            ".vault.azure.cn",
+        )
+        parts = key_str.split("/")
+        passed = (
+            key_str.startswith("https://")
+            and len(parts) > 2
+            and "/keys/" in key_str
+            and any(parts[2].endswith(suffix) for suffix in _VALID_HOSTS)
+        )
         if passed:
             desc = (
                 f"SQL Server '{name}' uses a customer-managed TDE key "

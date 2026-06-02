@@ -166,7 +166,7 @@ Don't interpolate ``{{inputs.parameters.<name>}}`` directly into ``script.source
 <span class="pg-sev pg-sev--critical">CRITICAL</span> <span class="pg-fix pg-fix--rule" title="`--fix` will patch this rule">🔧 autofix</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-6</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-7</span> <span class="pg-tag pg-tag--esf">ESF-D-SECRETS</span> <span class="pg-tag pg-tag--cwe">CWE-798</span>
 </div>
 
-Strong matches: AWS access keys, GitHub PATs, JWTs. Weak match: env var name suggests a secret (``*_TOKEN``, ``*_KEY``, ``*PASSWORD``, ``*SECRET``) and the value is a non-empty literal rather than an interpolation.
+Strong matches: AWS access keys, GitHub PATs, JWTs. Weak match: env var name suggests a secret (``*_TOKEN``, ``*_KEY``, ``*PASSWORD``, ``*SECRET``) and the value is a non-empty literal rather than an interpolation. Known false positives for the weak-match path: cache or partition keys (``CACHE_KEY``, ``REDIS_KEY``, ``DYNAMO_PARTITION_KEY``); path variables whose name contains ``_KEY_PATH`` or ``_KEY_FILE`` (``SSH_PRIVATE_KEY_PATH``); names where ``KEY`` is followed by a non-secret suffix such as ``_PREFIX``, ``_INDEX``, or ``_NAME``. These are excluded by the rule logic and will not fire.
 
 <div class="pg-rule__rec" markdown>
 

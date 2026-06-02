@@ -15,10 +15,12 @@ from pipeline_check.core.checks.aws.rules import cb008_inline_buildspec as cb008
 from pipeline_check.core.checks.aws.rules import cb011_malicious_buildspec as cb011
 from pipeline_check.core.checks.aws.rules import cd003_alarm_config as cd003
 from pipeline_check.core.checks.aws.rules import cp005_production_approval as cp005
+from pipeline_check.core.checks.aws.rules import cw001_failed_build_alarm as cw001
 from pipeline_check.core.checks.aws.rules import ecr003_public_policy as ecr003
 from pipeline_check.core.checks.aws.rules import ecr006_pull_through_untrusted as ecr006
 from pipeline_check.core.checks.aws.rules import iam002_wildcard_action as iam002
 from pipeline_check.core.checks.aws.rules import iam005_external_trust as iam005
+from pipeline_check.core.checks.aws.rules import lmb003_plaintext_env as lmb003
 from pipeline_check.core.checks.aws.rules import lmb004_resource_policy_public as lmb004
 from pipeline_check.core.checks.aws.rules import pbac002_shared_service_role as pbac002
 from pipeline_check.core.checks.aws.rules import s3005_secure_transport as s3005
@@ -345,3 +347,142 @@ class TestECR006PullThroughUntrusted:
             "credentialArn": "arn:aws:secretsmanager:us-east-1:123:secret/ecr-dockerhub",
         }])
         assert ecr006.check(cat)[0].passed is True
+
+
+class TestLMB003PlaintextEnv:
+    # batch-4 FP: env-var names ending in reference suffixes (_ARN, _NAME,
+    # _PARAM, _PATH, _REF) store a secret reference (ARN / parameter name),
+    # not the value itself. The name-based heuristic should not flag them.
+    # The value-based detector still runs, so a real credential stored under
+    # such a key still fires.
+
+    def _check(self, env_vars: dict) -> bool:
+        fn = {"FunctionName": "f", "Environment": {"Variables": env_vars}}
+        cat = _catalog(lambda_functions=[fn])
+        return lmb003.check(cat)[0].passed
+
+    def test_db_secret_arn_with_arn_value_passes(self):
+        # AWS-recommended pattern: env var stores the secret ARN, not the
+        # secret value. Should not be flagged by the name heuristic.
+        assert self._check({
+            "DB_SECRET_ARN": "arn:aws:secretsmanager:us-east-1:123:secret:prod/db-AbCdEf",
+        }) is True
+
+    def test_api_key_secret_arn_with_arn_value_passes(self):
+        assert self._check({
+            "API_KEY_SECRET_ARN": "arn:aws:secretsmanager:us-east-1:123:secret:prod/api-Ab2Cd3",
+        }) is True
+
+    def test_reference_suffixes_all_pass(self):
+        # All five suppressed suffixes should avoid the name-based flag.
+        for suffix, value in [
+            ("_ARN", "arn:aws:secretsmanager:us-east-1:1:secret:x-AAAAAA"),
+            ("_NAME", "prod/my-secret"),
+            ("_PARAM", "/app/prod/token"),
+            ("_PATH", "/ssm/param/path"),
+            ("_REF", "my-secret-ref"),
+        ]:
+            assert self._check({f"SECRET{suffix}": value}) is True, (
+                f"Expected SECRET{suffix} with a non-secret value to pass"
+            )
+
+    def test_reference_name_with_real_secret_value_still_fires(self):
+        # Even though the name ends in _ARN, a GitHub PAT stored as the
+        # value is caught by the value-based detector.
+        github_pat = "ghp_" + "A" * 36
+        assert self._check({"DB_SECRET_ARN": github_pat}) is False
+
+    def test_plain_api_key_name_still_fires(self):
+        # Non-reference-suffix name: the name heuristic still triggers.
+        assert self._check({"API_KEY": "some-value"}) is False
+
+    def test_db_password_name_still_fires(self):
+        assert self._check({"DB_PASSWORD": "hunter2-prod-pw"}) is False
+
+
+class TestCW001FailedBuildAlarm:
+    # batch-4 FP: in an account with zero CodeBuild projects there is nothing
+    # to alarm on. The check should return [] (no finding) rather than firing
+    # a false-positive "no alarm found" result.
+
+    def _cw_client(self, alarms):
+        cw = MagicMock()
+        cw.describe_alarms.return_value = {"MetricAlarms": alarms}
+        return cw
+
+    def test_no_codebuild_projects_suppresses_check(self):
+        # Accounts with no CodeBuild resources: alarm is irrelevant.
+        cat = MagicMock()
+        cat.codebuild_projects.return_value = []
+        assert cw001.check(cat) == []
+
+    def test_codebuild_project_present_no_alarm_fires(self):
+        # At least one CodeBuild project exists but no alarm: should flag.
+        cat = MagicMock()
+        cat.codebuild_projects.return_value = [{"name": "my-build"}]
+        cat.client.return_value = self._cw_client([])
+        findings = cw001.check(cat)
+        assert findings and findings[0].passed is False
+
+    def test_codebuild_project_present_alarm_present_passes(self):
+        # Project exists and alarm is configured: should pass.
+        cat = MagicMock()
+        cat.codebuild_projects.return_value = [{"name": "my-build"}]
+        cat.client.return_value = self._cw_client([
+            {"Namespace": "AWS/CodeBuild", "MetricName": "FailedBuilds"},
+        ])
+        findings = cw001.check(cat)
+        assert findings and findings[0].passed is True
+
+
+class TestSM001RotationStaleVerification:
+    # batch-4 STALE: the sibling-prefix substring match was fixed in batch 2.
+    # These tests pin the correct behavior so any future regression is caught.
+
+    def _check(self, ref_value, secrets):
+        cat = _catalog(
+            codebuild_projects=[{"name": "p", "environment": {
+                "environmentVariables": [
+                    {"type": "SECRETS_MANAGER", "value": ref_value}]}}],
+            secrets=secrets)
+        return sm001.check(cat)
+
+    def test_bare_name_does_not_bleed_to_sibling_prefix(self):
+        # ``my-secret`` must not match ``my-secret-staging`` via a substring
+        # branch — the fix in batch 2 uses exact equality for bare names.
+        res = self._check("my-secret", [
+            {"Name": "my-secret",
+             "ARN": "arn:aws:secretsmanager:us-east-1:123:secret:my-secret-XXXXXX",
+             "RotationEnabled": True},
+            {"Name": "my-secret-staging",
+             "ARN": "arn:aws:secretsmanager:us-east-1:123:secret:my-secret-staging-YYYYYY",
+             "RotationEnabled": False},
+        ])
+        # Only the exact match is returned; sibling is not included.
+        assert len(res) == 1 and res[0].resource == "my-secret" and res[0].passed is True
+
+
+class TestECR003PublicPolicyStaleVerification:
+    # batch-4 STALE: the PrincipalOrgID Condition bypass was fixed in batch 1.
+    # Pin the correct behavior.
+
+    def _check(self, policy):
+        client = MagicMock()
+        client.get_repository_policy.return_value = {"policyText": json.dumps(policy)}
+        cat = _catalog(ecr_repositories=[{"repositoryName": "r"}])
+        cat.client.return_value = client
+        return ecr003.check(cat)[0]
+
+    def test_org_condition_scoped_wildcard_passes(self):
+        # ``Principal: *`` narrowed by ``aws:PrincipalOrgID`` is the
+        # org-sharing idiom; it should not be reported as public access.
+        f = self._check({"Statement": [{"Effect": "Allow",
+            "Principal": {"AWS": "*"}, "Action": "ecr:BatchGetImage",
+            "Condition": {"StringEquals": {"aws:PrincipalOrgID": "o-abc123def4"}}}]})
+        assert f.passed is True
+
+    def test_unscoped_wildcard_still_fires(self):
+        # A wildcard without any narrowing Condition is still public access.
+        f = self._check({"Statement": [{"Effect": "Allow",
+            "Principal": {"AWS": "*"}, "Action": "ecr:BatchGetImage"}]})
+        assert f.passed is False

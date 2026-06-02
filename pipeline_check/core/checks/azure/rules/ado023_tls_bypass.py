@@ -55,4 +55,5 @@ check = yaml_blob_check(
         f"TLS verification bypass detected: "
         f"{', '.join(h.snippet for h in hits[:3])}"
     ),
+    lowercase=False,
 )

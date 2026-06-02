@@ -44,17 +44,21 @@ def check(catalog: ResourceCatalog) -> list[Finding]:
         name = getattr(account, "name", "<unnamed>")
         key_creation = getattr(account, "key_creation_time", None)
         if key_creation is None:
+            # The Azure SDK only populates key_creation_time when a key
+            # rotation policy is configured. Its absence does not mean the
+            # keys are stale; emit an advisory rather than a hard failure.
             findings.append(Finding(
                 check_id=RULE.id,
                 title=RULE.title,
-                severity=RULE.severity,
+                severity=Severity.INFO,
                 resource=name,
                 description=(
                     f"Storage account '{name}' does not expose key "
-                    "creation time. Verify key rotation manually."
+                    "creation time (no rotation policy is configured). "
+                    "Verify key rotation manually."
                 ),
                 recommendation=RULE.recommendation,
-                passed=False,
+                passed=True,
             ))
             continue
 

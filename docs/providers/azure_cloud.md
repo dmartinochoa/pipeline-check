@@ -64,7 +64,7 @@ pipeline_check --pipeline azure_cloud --subscription-id $AZURE_SUBSCRIPTION_ID -
 | [AZST-002](#azst-002) | Storage account allows non-HTTPS traffic | <span class="pg-sev pg-sev--high">HIGH</span> |  |
 | [AZST-003](#azst-003) | Storage account not encrypted with customer-managed key | <span class="pg-sev pg-sev--medium">MEDIUM</span> |  |
 | [AZST-004](#azst-004) | Storage account minimum TLS version below 1.2 | <span class="pg-sev pg-sev--high">HIGH</span> |  |
-| [AZST-005](#azst-005) | Storage account has no blob lifecycle management policy | <span class="pg-sev pg-sev--low">LOW</span> |  |
+| [AZST-005](#azst-005) | Storage account blob lifecycle policy should be reviewed | <span class="pg-sev pg-sev--low">LOW</span> |  |
 | [AZST-006](#azst-006) | Storage account access keys not rotated within 90 days | <span class="pg-sev pg-sev--high">HIGH</span> |  |
 | [AZVM-001](#azvm-001) | Virtual machine disks are not encrypted | <span class="pg-sev pg-sev--high">HIGH</span> |  |
 | [AZVM-002](#azvm-002) | Virtual machine has a public IP address | <span class="pg-sev pg-sev--high">HIGH</span> |  |
@@ -822,7 +822,7 @@ Set the storage account's minimum TLS version to TLS1_2. TLS 1.0 and 1.1 have kn
 
 <div class="pg-rule pg-rule--low" markdown>
 
-## AZST-005: Storage account has no blob lifecycle management policy { #azst-005 }
+## AZST-005: Storage account blob lifecycle policy should be reviewed { #azst-005 }
 
 <div class="pg-rule__tags">
 <span class="pg-sev pg-sev--low">LOW</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-9</span> <span class="pg-tag pg-tag--cwe">CWE-404</span>

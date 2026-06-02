@@ -49,6 +49,14 @@ def check(catalog: ResourceCatalog) -> list[Finding]:
                 "retention policy (retention is managed at the "
                 "destination)."
             )
+        elif min_retention == 0:
+            # days=0 with retention enabled means retain indefinitely,
+            # which satisfies any minimum-days requirement.
+            passed = True
+            desc = (
+                f"Diagnostic setting '{name}' retains logs indefinitely "
+                "(days=0 means no expiry)."
+            )
         elif min_retention >= _MIN_RETENTION_DAYS:
             passed = True
             desc = (

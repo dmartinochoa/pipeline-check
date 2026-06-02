@@ -41,6 +41,25 @@ def walk_strings(node: Any) -> Iterator[str]:
 _BLOB_CACHE: dict[int, str] = {}
 
 
+_BLOB_RAW_CACHE: dict[int, str] = {}
+
+
+def blob_raw(doc: Any) -> str:
+    """Concatenate all string values in ``doc`` into one blob, preserving case.
+
+    Memoized on object identity, same contract as :func:`blob_lower`.
+    Use this when the scanner needs to distinguish characters whose
+    case carries semantic meaning (e.g. ``curl -k`` vs ``curl -K``).
+    """
+    key = id(doc)
+    cached = _BLOB_RAW_CACHE.get(key)
+    if cached is not None:
+        return cached
+    blob = "\n".join(walk_strings(doc))
+    _BLOB_RAW_CACHE[key] = blob
+    return blob
+
+
 def blob_lower(doc: Any) -> str:
     """Concatenate all string values in ``doc`` into one lowercase blob.
 
@@ -61,6 +80,7 @@ def blob_lower(doc: Any) -> str:
 
 def clear_blob_cache() -> None:
     _BLOB_CACHE.clear()
+    _BLOB_RAW_CACHE.clear()
     # ``looks_like_example`` keys its prefix-line index on ``id(blob)``
     # the same way ``blob_lower`` does, so callers that already invoke
     # ``clear_blob_cache`` between tests pick up the secondary cache

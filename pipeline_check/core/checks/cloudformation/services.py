@@ -12,7 +12,6 @@ Mirrors ``checks/terraform/services.py``. Notes:
 from __future__ import annotations
 
 import json
-import re
 from typing import Any
 
 from .._context import statement_is_constrained
@@ -161,7 +160,40 @@ def _codeartifact(ctx: CloudFormationContext) -> list[Finding]:
 # CCM-001 omitted (no CFN resource for approval-rule template association).
 # ---------------------------------------------------------------------------
 
-_ARN_ACCOUNT_RE = re.compile(r"^arn:aws:[^:]+:[^:]*:(\d{12}):")
+_KMS_RESOURCE_TYPES = frozenset({
+    "AWS::KMS::Key",
+    "AWS::KMS::Alias",
+})
+
+
+def _is_cmk_intrinsic(value: Any, ctx: CloudFormationContext) -> bool:
+    """Return True when *value* is an intrinsic that references a KMS resource.
+
+    Handles ``{"Ref": "LogicalId"}`` and ``{"Fn::GetAtt": ["LogicalId", ...]}``
+    when the logical ID maps to an ``AWS::KMS::Key`` or ``AWS::KMS::Alias``
+    resource in the template. If the intrinsic targets something else or is
+    unresolvable, returns False so the rule keeps its conservative default.
+    """
+    if not isinstance(value, dict) or len(value) != 1:
+        return False
+    (intrinsic_key, inner) = next(iter(value.items()))
+    if intrinsic_key == "Ref" and isinstance(inner, str):
+        logical_id = inner
+    elif intrinsic_key == "Fn::GetAtt":
+        if isinstance(inner, list) and inner:
+            logical_id = inner[0]
+        elif isinstance(inner, str) and "." in inner:
+            logical_id = inner.split(".", 1)[0]
+        else:
+            return False
+    else:
+        return False
+    kms_logical_ids = {
+        res.logical_id
+        for res in ctx.resources()
+        if res.type in _KMS_RESOURCE_TYPES
+    }
+    return logical_id in kms_logical_ids
 
 
 def _codecommit(ctx: CloudFormationContext) -> list[Finding]:
@@ -169,7 +201,16 @@ def _codecommit(ctx: CloudFormationContext) -> list[Finding]:
     for r in ctx.resources("AWS::CodeCommit::Repository"):
         key = r.properties.get("KmsKeyId")
         key_str = as_str(key)
-        passed = bool(key_str) and "alias/aws/codecommit" not in key_str
+        if key_str:
+            # Literal string: pass only when it is not the AWS-owned alias.
+            passed = "alias/aws/codecommit" not in key_str
+        elif is_intrinsic(key) and _is_cmk_intrinsic(key, ctx):
+            # Ref/GetAtt to a KMS resource in the template is the standard
+            # CFN idiom for a customer-managed key. Treat it as a CMK.
+            passed = True
+            key_str = "<intrinsic CMK reference>"
+        else:
+            passed = False
         out.append(Finding(
             check_id="CCM-002",
             title="CodeCommit repository not encrypted with customer KMS CMK",
@@ -182,9 +223,12 @@ def _codecommit(ctx: CloudFormationContext) -> list[Finding]:
             recommendation="Set KmsKeyId to a customer-managed KMS key ARN.",
             passed=passed,
         ))
-        # CCM-003, literal cross-account ARNs in Triggers.DestinationArn
-        # signal potential cross-account drift. CFN's Triggers prop is a
-        # list of {Name, DestinationArn, Events, ...} entries.
+        # CCM-003: CodeCommit triggers that specify a literal DestinationArn
+        # bypass the in-template resource graph and cannot be validated
+        # statically for account membership. Flag any literal ARN so
+        # reviewers can confirm the target stays within the same account.
+        # Destinations expressed via Fn::GetAtt / Ref on in-template
+        # SNS/Lambda resources are the recommended pattern and pass.
         triggers = r.properties.get("Triggers") or []
         offenders: list[str] = []
         for trig in triggers:
@@ -192,23 +236,28 @@ def _codecommit(ctx: CloudFormationContext) -> list[Finding]:
                 continue
             dest = trig.get("DestinationArn")
             if isinstance(dest, str) and dest.count(":") >= 4:
-                # Literal ARN. We can't resolve what account; flag for audit.
+                # Literal ARN — the account field cannot be compared
+                # statically; flag for human review.
                 offenders.append(dest)
         if triggers:
             out.append(Finding(
                 check_id="CCM-003",
-                title="CodeCommit trigger targets SNS/Lambda in a different account",
+                title=(
+                    "CodeCommit trigger uses a literal DestinationArn "
+                    "that cannot be validated as same-account"
+                ),
                 severity=Severity.MEDIUM,
                 resource=r.address,
                 description=(
-                    f"Literal DestinationArn(s) in Triggers: {offenders}, verify "
-                    "these stay within the repository's account."
+                    f"Literal DestinationArn(s) in Triggers: {offenders}. "
+                    "Static analysis cannot confirm these belong to the same "
+                    "account as the repository."
                     if offenders else
                     "All trigger destinations reference template resources, not literal ARNs."
                 ),
                 recommendation=(
                     "Reference trigger destinations via Fn::GetAtt / Ref on in-template "
-                    "SNS/Lambda resources instead of literal cross-account ARNs."
+                    "SNS/Lambda resources instead of literal ARNs."
                 ),
                 passed=not offenders,
             ))

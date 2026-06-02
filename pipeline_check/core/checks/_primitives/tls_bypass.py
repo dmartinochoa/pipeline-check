@@ -63,8 +63,15 @@ _PATTERNS: tuple[tuple[str, str, re.Pattern[str]], ...] = (
      re.compile(r"\bGOINSECURE\s*=", re.IGNORECASE)),
 
     # ── curl / wget ──
+    # ``-k`` is case-sensitive: uppercase ``-K`` is curl's ``--config``
+    # flag and is unrelated to TLS.  ``--insecure`` is kept
+    # case-insensitive because it is a long flag with no ambiguous
+    # uppercase sibling.  The two patterns share the "curl-insecure"
+    # kind tag so downstream consumers get a single label for both.
     ("curl-insecure", "curl",
-     re.compile(r"\bcurl\b[^\n]*(?:\s-k\b|\s--insecure\b)", re.IGNORECASE)),
+     re.compile(r"\bcurl\b[^\n]*\s-k\b")),                 # case-sensitive
+    ("curl-insecure", "curl",
+     re.compile(r"\bcurl\b[^\n]*\s--insecure\b", re.IGNORECASE)),
     ("wget-no-check-certificate", "wget",
      re.compile(r"\bwget\s+[^\n]*--no-check-certificate\b", re.IGNORECASE)),
 
