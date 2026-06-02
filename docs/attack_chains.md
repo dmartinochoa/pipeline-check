@@ -74,6 +74,7 @@ references, recommendation).
 | [`AC-035`](#ac-035) | AI agent is both reviewer and committer | <span class="pg-sev pg-sev--critical">CRITICAL</span> | github | [`GHA-103`](providers/github.md#gha-103) + ([`GHA-104`](providers/github.md#gha-104) or [`GHA-106`](providers/github.md#gha-106)) |
 | [`AC-036`](#ac-036) | Untrusted-code execution with no runtime egress containment | <span class="pg-sev pg-sev--high">HIGH</span> | github | ([`GHA-003`](providers/github.md#gha-003) or [`GHA-016`](providers/github.md#gha-016) or [`GHA-035`](providers/github.md#gha-035) or [`GHA-044`](providers/github.md#gha-044)) + ([`GHA-107`](providers/github.md#gha-107) or [`GHA-108`](providers/github.md#gha-108)) |
 | [`AC-037`](#ac-037) | AI agent applies attacker-influenced IaC to the cloud | <span class="pg-sev pg-sev--critical">CRITICAL</span> | github | ([`GHA-058`](providers/github.md#gha-058) or [`GHA-103`](providers/github.md#gha-103)) + [`GHA-111`](providers/github.md#gha-111) |
+| [`AC-038`](#ac-038) | Untrusted branch reaches OIDC trusted publish | <span class="pg-sev pg-sev--critical">CRITICAL</span> | github | [`GHA-113`](providers/github.md#gha-113) + [`GHA-114`](providers/github.md#gha-114) |
 
 ### Cross-provider chains (`XPC-NNN`)
 
@@ -1231,6 +1232,34 @@ Break either leg:
   1. Cut the untrusted-input path: don't run an agentic CLI on an untrusted trigger or over a checked-out fork PR, and don't pass attacker-authored text into the prompt (GHA-058 / GHA-103).
   2. Take the apply away from the agent's job: have the agent only propose changes into a reviewable PR, and run ``terraform apply`` / ``cloudformation deploy`` from a separate job on the merged, human-reviewed plan behind a protected ``environment:`` (GHA-111).
 Best: never let one workflow both feed an agent untrusted input and apply that agent's infrastructure changes unattended.
+
+</div>
+
+</div>
+
+<div class="pg-rule pg-rule--critical" markdown>
+
+### AC-038: Untrusted branch reaches OIDC trusted publish { #ac-038 }
+
+<div class="pg-rule__tags">
+<span class="pg-sev pg-sev--critical">CRITICAL</span> <span class="pg-tag" title="MITRE ATT&CK technique">MITRE T1195.002</span> <span class="pg-tag" title="MITRE ATT&CK technique">MITRE T1199</span> <span class="pg-tag" title="MITRE ATT&CK technique">MITRE T1606</span> <span class="pg-tag" title="kill-chain phase">initial-access (push a counterfeit publish workflow to a throwaway branch) -> credential-access (mint an OIDC token the registry accepts because it validates only org + repo + workflow filename) -> impact (publish a malicious package version as the trusted maintainer, no human or branch gate)</span> <span class="pg-tag pg-tag--owasp">github</span>
+</div>
+
+A package-publish job mints an OIDC token with no environment gate (GHA-113) AND the workflow is reachable from an unrestricted push trigger (GHA-114). The publish token mints from any branch with no human or branch gate, so a counterfeit workflow on a throwaway branch publishes a malicious version as the trusted maintainer (the Red Hat npm 'untrusted branch' compromise).
+
+**References**
+
+- <https://labs.boostsecurity.io/articles/trusted-publishing-untrusted-branch-red-hat-npm/>
+- <https://owasp.org/www-project-top-10-ci-cd-security-risks/CICD-SEC-02-Inadequate-Identity-And-Access-Management>
+
+<div class="pg-rule__rec" markdown>
+
+**Recommended action**
+
+Break either leg:
+  1. Gate the trigger (GHA-114): publish only from a tag (``on: push: tags:``), a ``release: published`` event, or ``workflow_dispatch``, not a branch push to any ref.
+  2. Gate the token (GHA-113): bind the publish job to a protected ``environment:`` whose deployment-branch rule pins the release ref, so the OIDC token mints only from that ref.
+Best: do both, and keep ``id-token: write`` scoped to the publish job. Either gate alone stops a throwaway branch from minting a publish token.
 
 </div>
 

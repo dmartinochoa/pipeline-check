@@ -56,6 +56,17 @@ release commit collapses this section into `## [X.Y.Z] - <date>`.
   (LocalStack / kind) are carved out. The deploy-command vocabulary
   moved to a shared ``_primitives/deploy_names`` primitive that GHA-014
   now reuses. Mapped across all 12 standards. github 102 -> 103.
+- **AC-038: Untrusted branch reaches OIDC trusted publish (CRITICAL).**
+  New attack chain intersecting GHA-114 (publish workflow on an
+  unrestricted push trigger) with GHA-113 (OIDC publish job with no
+  environment gate) on the same job: a publish token mintable from any
+  branch with no human or branch gate, the reachable form of the npm
+  "trusted publishing, untrusted branch" compromise (Red Hat npm, 2026).
+  Confirms an executable path when the two findings' ``job_anchors``
+  intersect (promoting the composite to HIGH confidence); co-occurrence
+  on different jobs stays an unconfirmed signal. The OIDC trusted-
+  publishing lane AC-029 (the long-lived-token publish lane) cannot
+  reach. Chain count 51 -> 52.
 - **AC-037: AI agent applies attacker-influenced IaC to the cloud
   (CRITICAL).** New attack chain pairing an untrusted-input agent leg
   (GHA-058, an agentic CLI with permission-bypass flags / PR-checkout
