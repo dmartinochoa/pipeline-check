@@ -20,18 +20,22 @@ release commit collapses this section into `## [X.Y.Z] - <date>`.
   `Finding.taint_flows` (`source_job -> sink_job` plus the rendered
   path); a new `chains/_reachability.py` helper builds a directed graph
   from those edges and breadth-first searches (multi-hop) from the
-  injection job(s) to the impact job(s). AC-002 (script-injection to
-  unprotected deploy) is the pilot: it now reports a *proven dataflow
-  path* (the precise connecting `extract -> deploy` job chain and the
-  rendered taint path) when one exists, falling back to the phase-1
-  shared-job signal otherwise, so nothing the older chain detected is
-  regressed. A new `Chain.via_dataflow` flag marks the stronger tier in
-  the JSON output and the terminal badge, and a new
+  injection job(s) to the impact job(s). **AC-002** (GitHub script-
+  injection to unprotected deploy) and **AC-022** (the GitLab analog)
+  now report a *proven dataflow path* (the precise connecting job chain,
+  e.g. `extract -> deploy`, plus the rendered taint path) when one
+  exists, falling back to the phase-1 shared-job signal otherwise, so
+  nothing the older chains detected is regressed. AC-002 walks GHA's
+  step / job-output taint flows (TAINT-001 / TAINT-002); AC-022 walks
+  GitLab's dotenv-artifact and `extends:`-inheritance flows (TAINT-004 /
+  TAINT-008); each provider's TAINT rules now populate
+  `Finding.taint_flows`. A new `Chain.via_dataflow` flag marks the
+  stronger tier in the JSON output and the terminal badge, and a new
   `--chains-require-dataflow` CLI gate keeps only dataflow-confirmed
   chains (stricter than `--chains-require-reachability`). The remaining
-  injection chains (AC-022 / AC-023 / AC-025 / AC-026) and cross-document
-  reachability through reusable workflows (TAINT-003) reuse the same
-  infrastructure and are follow-ups.
+  injection chains (AC-023 Tekton / AC-025 Argo / AC-026 Buildkite) and
+  cross-document reachability through reusable workflows (TAINT-003)
+  reuse the same infrastructure and are follow-ups.
 - **`devenv` provider: developer-environment auto-execution scanner
   (DEV-001..005).** New `--pipeline devenv` provider that scans the
   config files which run code the moment a developer opens or checks out

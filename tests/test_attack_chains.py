@@ -2333,11 +2333,19 @@ class TestChainAC022:
                 self.WF,
                 job_anchors=("release",),
                 path_evidence=(rendered_path,),
+                taint_flows=(
+                    TaintFlow(
+                        source_job="extract",
+                        sink_job="release",
+                        rendered=rendered_path,
+                    ),
+                ),
             ),
             _f("GL-004", self.WF, job_anchors=("release",)),
         ])
         ac22 = next(c for c in out if c.chain_id == "AC-022")
         assert ac22.confirmed_reachable is True
+        assert ac22.via_dataflow is True
         assert "release" in ac22.reachability_note
         assert rendered_path in ac22.narrative
         assert "TAINT-004" in ac22.triggering_check_ids
@@ -2360,11 +2368,22 @@ class TestChainAC022:
                 self.WF,
                 job_anchors=("release",),
                 path_evidence=(rendered_path,),
+                taint_flows=(
+                    # extends inheritance is a self-edge: the tainted
+                    # template var is inherited into and consumed by the
+                    # same (release) job.
+                    TaintFlow(
+                        source_job="release",
+                        sink_job="release",
+                        rendered=rendered_path,
+                    ),
+                ),
             ),
             _f("GL-004", self.WF, job_anchors=("release",)),
         ])
         ac22 = next(c for c in out if c.chain_id == "AC-022")
         assert ac22.confirmed_reachable is True
+        assert ac22.via_dataflow is True
         assert "release" in ac22.reachability_note
         assert rendered_path in ac22.narrative
         assert "TAINT-008" in ac22.triggering_check_ids
