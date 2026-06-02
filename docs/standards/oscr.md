@@ -25,7 +25,7 @@ axis.
 
 - **Controls in this standard:** 86
 - **Controls evidenced by at least one check:** 61 / 86
-- **Distinct checks evidencing this standard:** 645
+- **Distinct checks evidencing this standard:** 646
 - **Of those, autofixable with `--fix`:** 105
 
 _Severity levels (`CRITICAL` / `HIGH` / `MEDIUM` / `LOW` / `INFO`) follow the same scale across every provider and standard. See [How to read severity](README.md#how-to-read-severity) on the standards overview for the definitions._
@@ -73,7 +73,7 @@ Click a control ID to jump to the per-control section with the full check list. 
 | [`IA-19`](#ctrl-ia-19) | Repojacking | 2 | 2H |
 | [`IA-20`](#ctrl-ia-20) | Compromised user account | 3 | 2H · 1M |
 | [`IA-21`](#ctrl-ia-21) | Typosquatting | 1 | 1H |
-| [`IA-22`](#ctrl-ia-22) | Weak authentication methods | 9 | 8H · 1M |
+| [`IA-22`](#ctrl-ia-22) | Weak authentication methods | 10 | 9H · 1M |
 | [`IA-23`](#ctrl-ia-23) | Brandjacking | 1 | 1H |
 | [`IA-24`](#ctrl-ia-24) | Shadow IT | 2 | 1H · 1M |
 | [`EX-1`](#ctrl-ex-1) | Installation scripts | 15 | 13H · 2M |
@@ -615,7 +615,7 @@ _No checks in this scanner currently evidence this control. Open an issue if you
 
 ### IA-22: Weak authentication methods { #ctrl-ia-22 }
 
-**Evidenced by 9 checks** across 5 providers (Azure DevOps, Bitbucket, CircleCI, GitHub Actions, GitLab CI).
+**Evidenced by 10 checks** across 5 providers (Azure DevOps, Bitbucket, CircleCI, GitHub Actions, GitLab CI).
 
 | Check | Title | Severity | Provider | Fix |
 |-------|-------|----------|----------|-----|
@@ -627,6 +627,7 @@ _No checks in this scanner currently evidence this control. Open an issue if you
 | [`GHA-062`](../providers/github.md#gha-062) | OIDC subject claim in sibling IaC grants overly broad scope | <span class="pg-sev pg-sev--high">HIGH</span> | [GitHub Actions](../providers/github.md) |  |
 | [`GHA-069`](../providers/github.md#gha-069) | ``id-token: write`` granted without an OIDC-consumer step | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [GitHub Actions](../providers/github.md) |  |
 | [`GHA-113`](../providers/github.md#gha-113) | OIDC trusted-publishing job without an environment gate | <span class="pg-sev pg-sev--high">HIGH</span> | [GitHub Actions](../providers/github.md) |  |
+| [`GHA-114`](../providers/github.md#gha-114) | Package-publish workflow runs on an unrestricted push trigger | <span class="pg-sev pg-sev--high">HIGH</span> | [GitHub Actions](../providers/github.md) |  |
 | [`GL-031`](../providers/gitlab.md#gl-031) | id_tokens: missing audience pin or environment binding | <span class="pg-sev pg-sev--high">HIGH</span> | [GitLab CI](../providers/gitlab.md) |  |
 
 ### IA-23: Brandjacking { #ctrl-ia-23 }

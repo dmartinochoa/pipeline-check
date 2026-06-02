@@ -536,6 +536,7 @@ STANDARD = Standard(
         "GHA-111":  ["ESF-C-LEAST-PRIV", "ESF-D-PRIV-BUILD"],  # AI agent edits IaC applied in the same job
         "GHA-112":  ["ESF-C-APPROVAL", "ESF-D-PRIV-BUILD"],  # self-hosted deploy with no environment gate
         "GHA-113":  ["ESF-D-TOKEN-HYGIENE", "ESF-C-APPROVAL"],  # OIDC trusted-publish w/o env gate
+        "GHA-114":  ["ESF-D-TOKEN-HYGIENE", "ESF-C-APPROVAL"],  # publish workflow on an unrestricted push trigger
         "GHA-107":  ["ESF-D-BUILD-ENV"],             # harden-runner in audit mode (egress not blocked)
         "GHA-108":  ["ESF-D-BUILD-ENV"],             # no runtime egress control on OIDC/deploy workflow
         "GHA-109":  ["ESF-D-BUILD-ENV"],             # harden-runner not the first step

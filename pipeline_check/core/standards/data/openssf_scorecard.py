@@ -322,6 +322,7 @@ STANDARD = Standard(
         "GHA-111":  ["Dangerous-Workflow"],  # AI agent edits IaC applied in the same job
         "GHA-112":  ["Code-Review"],  # self-hosted deploy with no environment gate
         "GHA-113":  ["Dangerous-Workflow", "Token-Permissions"],  # OIDC trusted-publish w/o env gate
+        "GHA-114":  ["Dangerous-Workflow", "Token-Permissions"],  # publish workflow on an unrestricted push trigger
         "GHA-062":  ["Token-Permissions"],                             # OIDC trust subject in sibling IaC overly broad
         # Cross-pipeline / cross-project artifact ingestion = same
         # source-poisoning shape as the GHA workflow_run rule

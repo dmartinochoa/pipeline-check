@@ -207,6 +207,7 @@ STANDARD = Standard(
         "GHA-111":  ["1.5.2"],  # AI agent edits IaC applied in the same job
         "GHA-112":  ["1.5.2"],  # self-hosted deploy with no environment gate
         "GHA-113":  ["1.5.2"],  # OIDC trusted-publish w/o env gate
+        "GHA-114":  ["1.5.2"],  # publish workflow on an unrestricted push trigger
         "GHA-062": ["1.5.2"],                                 # OIDC trust subject in sibling IaC is overly broad
         "GHA-092": ["1.5.2"],                                 # TOCTOU PR head SHA force-push race
         "GHA-093": ["1.5.2"],                                 # LOTP indicators

@@ -466,6 +466,7 @@ STANDARD = Standard(
         "GHA-111":  ["PER-8", "LM-2"],  # AI agent edits IaC applied in the same job
         "GHA-112":  ["DE-1", "PER-6"],  # self-hosted deploy with no environment gate
         "GHA-113":  ["IA-22"],  # OIDC trusted-publish w/o env gate
+        "GHA-114":  ["IA-22"],  # publish workflow on an unrestricted push trigger
         "GHA-055":  ["PER-8", "CA-5"],
         "CP-004":   ["PER-8", "IA-9"],
         # ================================================================

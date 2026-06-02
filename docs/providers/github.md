@@ -72,7 +72,7 @@ Resolution rules:
 
 ## What it covers
 
-104 checks · 17 have an autofix patch (``--fix``).
+105 checks · 17 have an autofix patch (``--fix``).
 
 | Check | Title | Severity | Fix |
 |-------|-------|----------|-----|
@@ -176,6 +176,7 @@ Resolution rules:
 | [GHA-111](#gha-111) | AI agent generates IaC applied to the cloud in the same job | <span class="pg-sev pg-sev--high">HIGH</span> |  |
 | [GHA-112](#gha-112) | Self-hosted deploy job not gated by a protected environment | <span class="pg-sev pg-sev--high">HIGH</span> |  |
 | [GHA-113](#gha-113) | OIDC trusted-publishing job without an environment gate | <span class="pg-sev pg-sev--high">HIGH</span> |  |
+| [GHA-114](#gha-114) | Package-publish workflow runs on an unrestricted push trigger | <span class="pg-sev pg-sev--high">HIGH</span> |  |
 | [TAINT-001](#taint-001) | Untrusted input flows across step boundaries via step outputs | <span class="pg-sev pg-sev--high">HIGH</span> |  |
 | [TAINT-002](#taint-002) | Untrusted input flows across jobs via ``jobs.<id>.outputs:`` | <span class="pg-sev pg-sev--high">HIGH</span> |  |
 | [TAINT-003](#taint-003) | Untrusted input forwarded into reusable workflow ``with:`` | <span class="pg-sev pg-sev--high">HIGH</span> |  |
@@ -3036,6 +3037,48 @@ Bind every package-publish job that mints an OIDC token to a protected ``environ
 - For high-blast-radius packages, enable the registry's staged-publishing-with-2FA flow so a human approves the release even after the token is minted.
 
 Trusted publishing alone validates only org + repo + workflow filename; the environment gate is what binds publication to a trusted ref.
+
+</div>
+
+</div>
+
+<div class="pg-rule pg-rule--high" markdown>
+
+## GHA-114: Package-publish workflow runs on an unrestricted push trigger { #gha-114 }
+
+<div class="pg-rule__tags">
+<span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-1</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-2</span> <span class="pg-tag pg-tag--esf">ESF-C-APPROVAL</span> <span class="pg-tag pg-tag--esf">ESF-D-TOKEN-HYGIENE</span> <span class="pg-tag pg-tag--cwe">CWE-284</span> <span class="pg-tag pg-tag--cwe">CWE-863</span>
+</div>
+
+Fires when both hold:
+
+1. The workflow runs a package-publish step in some job, run-based (``npm`` / ``pnpm`` / ``yarn publish``, ``twine upload``, ``poetry`` / ``uv publish``, ``gem push``, ``cargo publish``) or a trusted-publisher action (``pypa/gh-action-pypi-publish`` / ``rubygems/release-gem`` / ``crates-io/publish-action``). Same publish surface as GHA-113.
+2. The workflow is reachable from an unrestricted ``push``: a wildcard ``branches:`` pattern (``*``, ``?``, ``+``, ``[``), or no ``branches:`` filter at all (bare ``on: push`` / ``push: {}`` fires on every branch).
+
+Restricted triggers pass: a tag-only push (``push: {tags: ['v*']}`` with no ``branches:``), an exact branch list (``branches: [main]``), ``workflow_dispatch``-only, or ``release``-only. When ``push`` carries both an exact branch list and tags it stays silent; a wildcard or unfiltered branch push fires even if a tag filter is also present, because the branch path still runs the publish. ``branches-ignore`` without ``branches:`` is unrestricted (every non-ignored branch fires). Emits ``job_anchors`` for the publish jobs so AC-038 can intersect with GHA-113 on the same job.
+
+Defaults to MEDIUM confidence: an internal continuous-delivery pipeline may intentionally publish a snapshot to a private registry on every branch push, so an unrestricted-trigger publish is not always a public-release exposure.
+
+**Known false-positive modes**
+
+- Internal continuous-delivery pipelines that intentionally publish a snapshot / pre-release artifact on every push to a development branch (the publish target is a private staging registry, not the public index). The unrestricted trigger is by design there; suppress per-workflow via ``--ignore-file`` once the publish target is confirmed non-public.
+- A workflow whose only ``push`` trigger is an exact protected branch is not flagged, but the writeup still recommends a tag or dispatch trigger over a branch push for public releases.
+
+**Seen in the wild**
+
+- Red Hat npm compromise (BoostSecurity, 'Trusted Publishing, Untrusted Branch', 2026): a counterfeit ``ci.yml`` on a throwaway ``oidc-*`` branch, triggered by a plain ``push``, minted an OIDC token and published 30+ packages. A tag-only or dispatch-gated trigger would not have run from the throwaway branch: https://labs.boostsecurity.io/articles/trusted-publishing-untrusted-branch-red-hat-npm/
+
+<div class="pg-rule__rec" markdown>
+
+**Recommended action**
+
+Trigger a publish workflow only from a ref an attacker cannot cheaply create:
+
+- Prefer ``on: push: tags: ['v*']`` (or ``on: release: types: [published]``) so only a tag/release, not an arbitrary branch, runs the publish path. Tags are a higher-privilege operation than branch creation.
+- Or gate the release behind ``on: workflow_dispatch`` so a human starts it.
+- If a branch ``push`` trigger is unavoidable, pin ``branches:`` to the exact protected release branch (``branches: [main]``, never ``branches: ['*']`` / ``['release/*']`` / no filter), and pair it with a protected ``environment:`` whose deployment-branch rule enforces the same ref (see GHA-113).
+
+A publish workflow runnable by ``push`` to any branch is the untrusted-branch half of the trusted-publishing attack: a counterfeit workflow on a throwaway branch publishes as the real release.
 
 </div>
 
