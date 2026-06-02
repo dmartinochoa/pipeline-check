@@ -467,6 +467,7 @@ STANDARD = Standard(
         "GHA-112":  ["DE-1", "PER-6"],  # self-hosted deploy with no environment gate
         "GHA-113":  ["IA-22"],  # OIDC trusted-publish w/o env gate
         "GHA-114":  ["IA-22"],  # publish workflow on an unrestricted push trigger
+        "GHA-115":  ["IA-22", "CA-4"],  # id-token granted workflow-wide, not job-scoped
         "GHA-055":  ["PER-8", "CA-5"],
         "CP-004":   ["PER-8", "IA-9"],
         # ================================================================

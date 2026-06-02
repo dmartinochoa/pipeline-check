@@ -61,6 +61,11 @@ _MEDIUM: frozenset[str] = frozenset({
     # on every branch push, so an unrestricted-trigger publish is not
     # always a public-release exposure.
     "GHA-114",
+    # id-token: write granted workflow-wide while only a subset of jobs
+    # consume it. The over-broad call depends on recognizing every job's
+    # OIDC consumer; a consumer reached through an unrecognized action
+    # can make a consuming job look non-consuming and over-flag it.
+    "GHA-115",
     "JF-014",
     # Dep-update lockfile bypass, catches all ``pip install -U`` by
     # default; the safe subset (pip/setuptools/wheel/virtualenv) is

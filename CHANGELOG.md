@@ -12,6 +12,23 @@ release commit collapses this section into `## [X.Y.Z] - <date>`.
 
 ### Added
 
+- **GHA-115: ``id-token: write`` granted workflow-wide instead of
+  job-scoped (MEDIUM, MEDIUM confidence).** New GitHub Actions rule for
+  the least-privilege OIDC surface raised by the npm untrusted-branch
+  writeup: when the workflow-level ``permissions:`` block grants
+  ``id-token: write`` but only a subset of jobs (publish, deploy) actually
+  consume the OIDC token, every other job in the workflow inherits a
+  publish-capable mint right it never needs. A compromised build or test
+  job can use that inherited permission to obtain a cloud or registry
+  token without running the intended publish step. Fires when a
+  workflow-level ``permissions: id-token: write`` is detected and at least
+  one non-consumer job (no OIDC-consuming action or CLI invocation) runs
+  in the same workflow. Recommend scoping ``id-token: write`` to the
+  specific job that mints the token and setting ``id-token: none`` at the
+  workflow level (or omitting the workflow-level grant entirely). The
+  least-privilege sibling of GHA-069 (orphan ``id-token: write`` with no
+  consumer at all); reuses GHA-069's consumer-detection logic. Mapped
+  across all 9 standards that cover GHA-069. github 105 -> 106.
 - **GHA-114: Package-publish workflow runs on an unrestricted push trigger
   (HIGH, MEDIUM confidence).** New GitHub Actions rule for the npm
   "trusted publishing, untrusted branch" attack: a publish workflow
