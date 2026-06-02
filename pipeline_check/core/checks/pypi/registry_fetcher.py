@@ -28,7 +28,9 @@ import re
 from collections.abc import Callable, Iterable
 from pathlib import Path
 from typing import Protocol, TypeVar
+from urllib.parse import urlsplit
 
+from .._primitives.provenance_ref import source_ref_from_pep740_provenance
 from .._primitives.registry_fetcher import (
     FileSystemCache as _FileSystemCache,
 )
@@ -82,6 +84,26 @@ class HttpRegistryFetcher:
     def fetch(self, name: str) -> bytes | None:
         encoded = name.strip().lower()
         return self._http.get(f"{self.BASE_URL}/{encoded}/json")
+
+    def fetch_provenance_object(self, url: str) -> bytes | None:
+        """Fetch a PEP 740 provenance object from its PyPI ``provenance`` URL.
+
+        Each attested file record in the JSON API carries a ``provenance``
+        URL once attestations are published. That URL is set by PyPI's
+        integrity service, not by the uploader, but it's pinned to the
+        ``pypi.org`` host before the GET so a tampered metadata blob can't
+        redirect the fetch off-index. Used by PYPI-021 to read the build's
+        source ref. Returns ``None`` for an off-host or non-HTTPS URL.
+        """
+        if not isinstance(url, str):
+            return None
+        parts = urlsplit(url)
+        host = parts.hostname or ""
+        if parts.scheme != "https":
+            return None
+        if host != "pypi.org" and not host.endswith(".pypi.org"):
+            return None
+        return self._http.get(url)
 
 
 # ── Per-version timestamp parser ─────────────────────────────────
@@ -270,6 +292,96 @@ def fetch_provenance(
     return _fetch_field(names, fetcher, _parse_has_provenance, cache)
 
 
+def _parse_latest_provenance_url(blob: bytes) -> str | None:
+    """The PEP 740 provenance URL of the latest release, if a file exposes one.
+
+    PyPI's JSON API lists the latest release's files under the top-level
+    ``urls`` array; an attested file gains a populated ``provenance``
+    field holding the URL of its provenance object. Returns the first
+    populated URL; ``None`` when no file carries one (no attestation,
+    which is PYPI-019's concern, so PYPI-021 skips the package). Mirrors
+    :func:`_parse_has_provenance` but returns the URL the provenance
+    object lives at instead of a presence flag.
+    """
+    try:
+        doc = json.loads(blob)
+    except (ValueError, json.JSONDecodeError):
+        return None
+    if not isinstance(doc, dict):
+        return None
+    urls = doc.get("urls")
+    if not isinstance(urls, list):
+        return None
+    for file_rec in urls:
+        if not isinstance(file_rec, dict):
+            continue
+        prov = file_rec.get("provenance")
+        if isinstance(prov, str) and prov.strip():
+            return prov.strip()
+    return None
+
+
+def fetch_provenance_refs(
+    names: Iterable[str],
+    fetcher: RegistryMetadataFetcher,
+    cache: FileSystemCache | None = None,
+) -> tuple[dict[str, str], list[str]]:
+    """Resolve the build-provenance *source ref* for packages that ship one.
+
+    Two-stage, mirroring the npm pass: read each PyPI JSON document
+    (shared name-keyed cache, so no extra fetch alongside the other
+    ``--resolve-remote`` passes) to find the latest release's PEP 740
+    provenance URL, then fetch that provenance object and parse the SLSA
+    source ref. Only packages whose latest release both ships provenance
+    AND exposes a parseable ref are returned; everything else is omitted
+    so PYPI-021 skips unknowns rather than flagging them. Needs a fetcher
+    exposing ``fetch_provenance_object``; without it the pass is a no-op.
+    Packages with no provenance are PYPI-019's concern and skipped here.
+    """
+    fetch_obj = getattr(fetcher, "fetch_provenance_object", None)
+    seen: set[str] = set()
+    out: dict[str, str] = {}
+    warnings: list[str] = []
+    for raw in names:
+        if not isinstance(raw, str) or not raw:
+            continue
+        name = raw.strip().lower()
+        if not name or name in seen:
+            continue
+        seen.add(name)
+        blob = cache.get(name) if cache is not None else None
+        if blob is None:
+            blob = fetcher.fetch(name)
+            if blob is None:
+                continue  # unfetchable metadata: PYPI-019 already warns
+            if cache is not None:
+                cache.put(name, blob)
+        prov_url = _parse_latest_provenance_url(blob)
+        if prov_url is None or fetch_obj is None:
+            continue
+        prov_key = f"{name}::provenance"
+        prov_blob = cache.get(prov_key) if cache is not None else None
+        if prov_blob is None:
+            prov_blob = fetch_obj(prov_url)
+            if prov_blob is None:
+                warnings.append(
+                    f"pypi-registry: could not fetch provenance for {name}"
+                )
+                continue
+            if cache is not None:
+                cache.put(prov_key, prov_blob)
+        try:
+            provenance = json.loads(prov_blob)
+        except (ValueError, json.JSONDecodeError):
+            continue
+        if not isinstance(provenance, dict):
+            continue
+        ref = source_ref_from_pep740_provenance(provenance)
+        if ref:
+            out[name] = ref
+    return out, warnings
+
+
 # ── GitHub repository-slug parser ────────────────────────────────
 
 
@@ -356,6 +468,7 @@ __all__ = [
     "RegistryMetadataFetcher",
     "default_cache_dir",
     "fetch_provenance",
+    "fetch_provenance_refs",
     "fetch_publish_times",
     "fetch_repo_slugs",
 ]

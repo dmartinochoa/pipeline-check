@@ -634,6 +634,7 @@ STANDARD = Standard(
         "PYPI-018": ["CC6.7", "CC8.1"],  # --no-binary forces sdist build
         "PYPI-019": ["CC6.8", "CC7.1", "CC8.1"],  # missing PEP 740 build provenance
         "PYPI-020": ["CC6.8", "CC7.1", "CC8.1"],  # low OpenSSF Scorecard upstream
+        "PYPI-021": ["CC6.8", "CC7.1", "CC8.1"],  # provenance built from a non-release ref
         "PYPI-004": ["CC8.1"],
         "PYPI-015": ["CC8.1"],  # direct artifact URL
         "PYPI-005": ["CC8.1"],

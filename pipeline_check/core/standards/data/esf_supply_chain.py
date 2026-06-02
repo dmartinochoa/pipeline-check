@@ -655,6 +655,7 @@ STANDARD = Standard(
         "PYPI-018": ["ESF-S-VERIFY-DEPS"],  # --no-binary forces sdist build
         "PYPI-019": ["ESF-S-VERIFY-DEPS"],  # missing PEP 740 build provenance
         "PYPI-020": ["ESF-S-VERIFY-DEPS"],  # low OpenSSF Scorecard upstream
+        "PYPI-021": ["ESF-S-VERIFY-DEPS"],  # provenance built from a non-release ref
         "PYPI-004": ["ESF-S-PIN-DEPS"],
         "PYPI-015": ["ESF-S-VERIFY-DEPS"],  # direct artifact URL
         "PYPI-005": ["ESF-S-TRUSTED-REG"],

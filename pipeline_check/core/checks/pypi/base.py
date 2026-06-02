@@ -102,6 +102,13 @@ class PypiContext:
         #: ``False`` entries are what PYPI-019 flags; empty by default
         #: so the rule passes silently on the offline path.
         self.provenance: dict[str, bool] = {}
+        #: ``{package_name: source_ref}`` populated by the pypi
+        #: provider's ``post_filter`` when ``--resolve-remote`` is on:
+        #: the git ref each dependency's latest PEP 740 provenance was
+        #: built from. PYPI-021 reads it and flags a ref that is a
+        #: branch other than main / master. Empty by default so the
+        #: rule passes silently offline.
+        self.provenance_ref: dict[str, str] = {}
         #: ``{package_name: ScorecardResult}`` populated by the pypi
         #: provider's ``post_filter`` (the dependency's GitHub repo
         #: resolved from PyPI ``project_urls``, then the OpenSSF

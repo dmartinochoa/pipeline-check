@@ -12,6 +12,21 @@ release commit collapses this section into `## [X.Y.Z] - <date>`.
 
 ### Added
 
+- **PYPI-021: direct dependency provenance built from a non-release ref
+  (LOW, MEDIUM confidence).** The PyPI / PEP 740 analog of NPM-017.
+  Extends PYPI-019 (provenance gap): where PYPI-019 flags a missing PEP
+  740 attestation, PYPI-021 fetches each direct dependency's latest-release
+  provenance object via ``--resolve-remote`` (the integrity-endpoint URL
+  the PyPI JSON API exposes on each attested file, host-pinned to
+  ``pypi.org``) and parses the SLSA ``source ref``. Flags a release whose
+  ref is a branch other than ``main`` / ``master`` rather than a version
+  tag, the same "untrusted branch" / Red Hat compromise signal NPM-017
+  covers on the npm side: valid provenance, attacker-controlled build ref.
+  Reuses the shared ``_primitives/provenance_ref`` extractor (DSSE -> in-toto
+  -> SLSA v1). Scoped to direct dependencies, LOW severity (posture signal
+  below the default ``--fail-on`` gate), MEDIUM confidence. pypi rule count
+  19 -> 20. Mapped to OWASP CICD-SEC-4, ESF ESF-S-VERIFY-DEPS, NIST 800-53,
+  NIST CSF 2, PCI DSS v4, and SOC 2 (same controls as PYPI-019).
 - **NPM-017: direct dependency provenance built from a non-release ref
   (LOW, MEDIUM confidence).** Consumer-side provenance source-ref check
   that extends NPM-015 (provenance gap). Where NPM-015 flags a missing
@@ -23,7 +38,7 @@ release commit collapses this section into `## [X.Y.Z] - <date>`.
   Scoped to direct dependencies, LOW severity (posture signal below the
   default ``--fail-on`` gate), MEDIUM confidence. Pairs with the
   GHA-113/GHA-114/GHA-115 + AC-038 workflow-side family that covers the
-  same attack. A PYPI-021 analog (PEP 740 ref check) is planned. npm rule
+  same attack. The PyPI / PEP 740 analog ships as PYPI-021. npm rule
   count 16 -> 17. Mapped to OWASP CICD-SEC-4, ESF ESF-S-VERIFY-DEPS, NIST
   800-53, NIST CSF 2, PCI DSS v4, and SOC 2 (same controls as NPM-015).
 - **GHA-115: ``id-token: write`` granted workflow-wide instead of

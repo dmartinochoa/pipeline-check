@@ -604,6 +604,7 @@ STANDARD = Standard(
         "PYPI-018": ["6.3.3", "6.5.1"],  # --no-binary forces sdist build
         "PYPI-019": ["6.3.1", "6.3.3"],  # missing PEP 740 build provenance
         "PYPI-020": ["6.3.1", "6.3.3"],  # low OpenSSF Scorecard upstream
+        "PYPI-021": ["6.3.1", "6.3.3"],  # provenance built from a non-release ref
         "PYPI-004": ["6.3.3", "6.5.1"],
         "PYPI-015": ["6.3.3", "6.5.1"],  # direct artifact URL
         "PYPI-005": ["6.3.3", "6.5.1"],
