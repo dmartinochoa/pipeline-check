@@ -216,6 +216,7 @@ STANDARD = Standard(
         "GHA-113":  ["PO.5.1", "PS.1.1"],  # OIDC trusted-publish w/o env gate
         "GHA-114":  ["PO.5.1", "PS.1.1"],  # publish workflow on an unrestricted push trigger
         "GHA-115":  ["PO.5.1"],                        # id-token granted workflow-wide, not job-scoped
+        "GHA-116":  ["PS.1.1"],                        # bulk secrets serialization
         "GHA-062":  ["PO.5.1"],                        # OIDC trust subject in sibling IaC is overly broad
         "GHA-063":  ["PO.5.1"],                        # spoofable bot-actor if-predicate
         "GHA-064":  ["PO.5.1"],                        # unsound contains() with comma-string operand

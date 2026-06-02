@@ -177,6 +177,7 @@ STANDARD = Standard(
         "GHA-032": ["1.5.2"],                                 # local script on untrusted trigger
         "GHA-033": ["1.5.2", "1.5.1"],                        # secret echoed in run:
         "GHA-034": ["1.5.2"],                                 # secrets: inherit
+        "GHA-116": ["1.5.2"],                                 # bulk secrets serialization
         "GHA-035": ["1.5.2"],                                 # github-script untrusted context
         "GHA-036": ["1.5.2"],                                 # runs-on untrusted context
         "GHA-037": ["1.5.2"],                                 # checkout persists GITHUB_TOKEN

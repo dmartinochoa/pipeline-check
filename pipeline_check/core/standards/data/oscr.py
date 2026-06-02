@@ -468,6 +468,7 @@ STANDARD = Standard(
         "GHA-113":  ["IA-22"],  # OIDC trusted-publish w/o env gate
         "GHA-114":  ["IA-22"],  # publish workflow on an unrestricted push trigger
         "GHA-115":  ["IA-22", "CA-4"],  # id-token granted workflow-wide, not job-scoped
+        "GHA-116":  ["IA-20"],  # bulk secrets serialization
         "GHA-055":  ["PER-8", "CA-5"],
         "CP-004":   ["PER-8", "IA-9"],
         # ================================================================

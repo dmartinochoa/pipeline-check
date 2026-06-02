@@ -12,6 +12,21 @@ release commit collapses this section into `## [X.Y.Z] - <date>`.
 
 ### Added
 
+- **GHA-116: workflow serializes the entire secrets context
+  (``toJSON(secrets)``) (HIGH).** New GitHub Actions rule for the 2025
+  secret-harvesting wave (tj-actions/changed-files + reviewdog,
+  CVE-2025-30066; the GhostAction campaign, 3,325 secrets stolen).
+  ``${{ toJSON(secrets) }}`` serializes every credential a job can see
+  into a single string, so one log line or outbound request exfiltrates
+  all of them at once, the in-YAML primitive both campaigns relied on.
+  Fires when it appears in a step ``run:`` / ``env:`` / ``with:``, a job
+  ``env:``, or a workflow ``env:`` (the ``fromJSON(toJSON(secrets))`` /
+  ``format(..., toJSON(secrets))`` wrappers match too). HIGH severity /
+  HIGH confidence: serializing the whole secrets object has no benign
+  per-secret use. Distinct from GHA-033 (echoes a named secret), GHA-034
+  (``secrets: inherit``), and GHA-057 (secret-scanner output to egress).
+  github rule count 106 -> 107. Mapped to OWASP CICD-SEC-6, ESF
+  ESF-D-SECRETS, and the standard supply-chain set.
 - **PYPI-021: direct dependency provenance built from a non-release ref
   (LOW, MEDIUM confidence).** The PyPI / PEP 740 analog of NPM-017.
   Extends PYPI-019 (provenance gap): where PYPI-019 flags a missing PEP

@@ -498,6 +498,7 @@ STANDARD = Standard(
         "GHA-032":  ["4.4.5"],                     # local script on untrusted trigger
         "GHA-033":  ["4.1.4"],                     # secret echoed
         "GHA-034":  ["4.1.4"],                     # secrets: inherit
+        "GHA-116":  ["4.1.4"],                     # bulk secrets serialization
         "GHA-035":  ["4.4.5"],                     # github-script untrusted context
         "GHA-036":  ["4.4.5"],                     # runs-on untrusted context
         "GHA-037":  ["4.1.4"],                     # checkout persists GITHUB_TOKEN
