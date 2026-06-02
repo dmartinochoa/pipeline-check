@@ -6,10 +6,11 @@ import yaml
 from pipeline_check.core.checks._primitives import tls_bypass
 from pipeline_check.core.checks.azure.rules import ado001_task_pinning as ado001
 from pipeline_check.core.checks.azure.rules import ado002_script_injection as ado002
+from pipeline_check.core.checks.azure.rules import ado003_literal_secrets as ado003
 from pipeline_check.core.checks.azure.rules import ado013_self_hosted_ephemeral as ado013
 from pipeline_check.core.checks.azure.rules import ado027_shell_eval as ado027
 from pipeline_check.core.checks.azure.rules import ado030_pool_injection as ado030
-from pipeline_check.core.checks.base import DOCKER_INSECURE_RE, has_dep_update
+from pipeline_check.core.checks.base import DOCKER_INSECURE_RE, Severity, has_dep_update
 
 from .conftest import run_check
 
@@ -376,3 +377,51 @@ class TestADO006NotationSignSpaceForm:
         assert f.passed, (
             "ADO-006 must still pass on the hyphenated notation-sign form"
         )
+
+
+class TestADO003SecretEscalation:
+    """ADO-003: severity escalation used a bare ``"AWS" in offender``
+    substring on the offender label, so a plain secret whose variable
+    NAME merely contains "AWS" (e.g. ``AWS_DB_PASSWORD``) was escalated
+    to CRITICAL though it is not an AWS access key. Also, a bare
+    top-level ``variables:`` block was scanned twice (once as ``<top>``,
+    once as the iter_jobs-yielded document)."""
+
+    def test_aws_named_plain_secret_is_high_not_critical(self):
+        # ``AWS_DB_PASSWORD`` holds a plain password, not an AKIA value;
+        # it must be HIGH (a literal secret), not CRITICAL (an AWS key).
+        doc = yaml.safe_load(
+            "variables:\n"
+            "  AWS_DB_PASSWORD: hunter2\n"
+            "steps:\n"
+            "  - script: make\n"
+        )
+        f = ado003.check("azure-pipelines.yml", doc)
+        assert f.passed is False
+        assert f.severity is Severity.HIGH
+
+    def test_real_aws_key_value_still_critical(self):
+        # A genuine AKIA-shaped value must still escalate to CRITICAL.
+        doc = yaml.safe_load(
+            "variables:\n"
+            "  CREDS: AKIAZ3MHALF2TESTHIJK\n"
+            "steps:\n"
+            "  - script: make\n"
+        )
+        f = ado003.check("azure-pipelines.yml", doc)
+        assert f.passed is False
+        assert f.severity is Severity.CRITICAL
+
+    def test_top_level_variables_scanned_once(self):
+        # The bare top-level ``steps:`` shape makes iter_jobs yield the
+        # document itself; its ``variables:`` must be counted once.
+        doc = yaml.safe_load(
+            "variables:\n"
+            "  DB_PASSWORD: hunter2\n"
+            "steps:\n"
+            "  - script: make\n"
+        )
+        f = ado003.check("azure-pipelines.yml", doc)
+        assert f.passed is False
+        assert "1 variable(s)" in f.description
+        assert f.description.count("DB_PASSWORD") == 1

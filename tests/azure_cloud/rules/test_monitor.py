@@ -171,8 +171,41 @@ from pipeline_check.core.checks.azure_cloud.rules import (
 
 
 class TestAzmon004:
+    def test_vault_with_diagnostics_passes(self, make_catalog, monkeypatch):
+        """The pass path (has_diag=True) needs a monitor client returning at
+        least one diagnostic setting. The azure SDK isn't installed in CI, so
+        the rule's in-function ``from azure.mgmt.monitor import ...`` normally
+        raises and the pass branch was never exercised. Stub the package chain
+        and inject a fake client so the branch is covered."""
+        import sys
+        import types
+
+        monitor_mod = types.ModuleType("azure.mgmt.monitor")
+        monitor_mod.MonitorManagementClient = object
+        mgmt_mod = types.ModuleType("azure.mgmt")
+        mgmt_mod.monitor = monitor_mod
+        azure_mod = types.ModuleType("azure")
+        azure_mod.mgmt = mgmt_mod
+        monkeypatch.setitem(sys.modules, "azure", azure_mod)
+        monkeypatch.setitem(sys.modules, "azure.mgmt", mgmt_mod)
+        monkeypatch.setitem(sys.modules, "azure.mgmt.monitor", monitor_mod)
+
+        fake_client = MagicMock()
+        fake_client.diagnostic_settings.list.return_value = [MagicMock()]
+        vault = MagicMock()
+        vault.name = "kv-diag"
+        vault.id = (
+            "/subscriptions/sub/resourceGroups/rg/providers/"
+            "Microsoft.KeyVault/vaults/kv-diag"
+        )
+        catalog = make_catalog(**{"keyvault:vaults": [vault]})
+        monkeypatch.setattr(catalog, "mgmt_client", lambda _cls: fake_client)
+        findings = azmon004.check(catalog)
+        assert len(findings) == 1
+        assert findings[0].passed is True
+
     def test_vault_without_diagnostics_fails(self, make_catalog):
-        """Without a real MonitorManagementClient, the try/except falls to no-diag."""
+        """Exercises the import-failure / no-diagnostics fallback path."""
         vault = MagicMock()
         vault.name = "kv-no-diag"
         vault.id = "/subscriptions/sub/resourceGroups/rg/providers/Microsoft.KeyVault/vaults/kv-no-diag"

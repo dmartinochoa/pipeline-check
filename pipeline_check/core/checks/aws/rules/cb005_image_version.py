@@ -2,7 +2,7 @@
 from __future__ import annotations
 
 from ..._patterns import LATEST_STANDARD_VERSION, MANAGED_IMAGE_RE
-from ...base import Finding, Severity
+from ...base import Confidence, Finding, Severity
 from ...rule import Rule
 from .._catalog import ResourceCatalog
 
@@ -41,6 +41,7 @@ def check(catalog: ResourceCatalog) -> list[Finding]:
         name = project.get("name", "<unnamed>")
         image = project.get("environment", {}).get("image", "")
         match = MANAGED_IMAGE_RE.search(image)
+        confidence_locked = False
         if match:
             version = int(match.group(1))
             passed = version >= LATEST_STANDARD_VERSION
@@ -56,6 +57,11 @@ def check(catalog: ResourceCatalog) -> list[Finding]:
                     f"may contain unpatched OS packages, runtimes, or tools that "
                     f"introduce supply-chain risk."
                 )
+                # Two-or-more versions behind is an unambiguous staleness
+                # signal: lock HIGH so the scanner's blanket MEDIUM demotion
+                # (which targets the one-behind hygiene case) does not apply.
+                if version <= LATEST_STANDARD_VERSION - 2:
+                    confidence_locked = True
         else:
             passed = True
             desc = (
@@ -67,5 +73,6 @@ def check(catalog: ResourceCatalog) -> list[Finding]:
             check_id=RULE.id, title=RULE.title, severity=RULE.severity,
             resource=name, description=desc,
             recommendation=RULE.recommendation, passed=passed,
+            confidence=Confidence.HIGH, confidence_locked=confidence_locked,
         ))
     return findings

@@ -219,3 +219,22 @@ class TestARGOCD013:
         """
         f = run_check(y, "ARGOCD-013")
         assert not f.passed
+
+    def test_explicit_zero_passes(self):
+        # ``revisionHistoryLimit: 0`` is a valid int, so the check passes
+        # it (only a missing / null value fires). This pins the documented
+        # behavior after the docs_note was corrected to drop the wrong
+        # "explicit 0 also fires" claim.
+        y = """
+        apiVersion: argoproj.io/v1alpha1
+        kind: Application
+        metadata: { name: payments, namespace: argocd }
+        spec:
+          source:
+            repoURL: https://github.com/example/m
+            targetRevision: main
+          destination: { server: https://kubernetes.default.svc, namespace: prod }
+          revisionHistoryLimit: 0
+        """
+        f = run_check(y, "ARGOCD-013")
+        assert f.passed
