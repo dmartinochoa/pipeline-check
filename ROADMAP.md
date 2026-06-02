@@ -1127,6 +1127,132 @@ with GHA-111 on one workflow, the cloud-account analog of AC-035's
 repo-write reviewer-and-committer loop. The AI-agent pipeline-risk
 theme is now fully covered, rule and chain.
 
+### npm trusted-publishing / "untrusted branch" abuse rules
+
+The Red Hat npm compromise (BoostSecurity, "Trusted Publishing,
+Untrusted Branch", 2026) exposed a structural gap the rule pack does
+not yet cover. With a stolen maintainer credential the attacker
+created short-lived ``oidc-*`` branches (alive for 1 to 73 seconds),
+pushed a counterfeit ``.github/workflows/ci.yml`` that matched the
+legitimate workflow filename, and let a plain ``push`` trigger mint a
+GitHub Actions OIDC token. npm's trusted publishing accepted the
+token because it validates only org + repo + workflow filename, never
+the branch, the ref, or the workflow content, and no GitHub
+Environment was configured. 30+ ``@redhat-cloud-services`` packages
+shipped with cryptographically valid SLSA provenance recording the
+throwaway branch (``refs/heads/oidc-b67eedca``). Branch protection on
+``main`` was irrelevant; the attacker never touched it. The lesson:
+once trust is anchored to a workflow filename on any branch, the only
+project-side control that pins which ref may publish is a GitHub
+Environment with a deployment-branch rule on the publish job.
+
+Current coverage, and why each rule misses this exact shape:
+
+- **GHA-030** (OIDC token without environment gate) only knows the
+  cloud-credentials actions (``configure-aws-credentials``,
+  ``azure/login``, ``google-github-actions/auth``). It has no
+  registry-publish leg, so an npm / PyPI trusted-publishing job slips
+  past it.
+- **GHA-050** (publish without OIDC) fires only when the publish step
+  carries a long-lived registry secret (``NPM_TOKEN`` and friends). It
+  deliberately *passes* the OIDC trusted-publisher path, which is
+  exactly the path the Red Hat job used, environment gate or not.
+- **GHA-069** (orphan ``id-token``) passes because the publish job did
+  consume the token (``npm publish --provenance``); the grant was not
+  orphaned, it was abused.
+- **GHA-086** (wildcard branch trigger gates an environment deploy)
+  needs a job that already binds ``environment:``. The attack had no
+  environment at all, so the rule stays silent. It covers the opposite
+  topology (gate present, trigger too broad).
+- **GHA-024** (missing SLSA provenance) checks that a producer emits
+  provenance. These packages emitted valid provenance; presence was
+  never the gap, the *ref* in it was.
+- **SCM-023 / SCM-024** (environment missing reviewers / branch
+  policy) both pass silently when no environment is configured, which
+  is precisely the attack's state.
+- **AC-029** (untrusted trigger reaches long-lived publish) is built
+  for the long-lived-token lane (Ultralytics / s1ngularity shape). It
+  cannot reach this attack: no long-lived secret, and a plain ``push``
+  on an attacker-made branch is not one of its untrusted-trigger
+  anchors (``pull_request_target`` / ``workflow_run`` /
+  ``issue_comment``).
+
+Proposed rules (the GHA-014 / GHA-086 "two halves" pattern: one for
+the missing gate, one for the over-broad trigger, plus a reachability
+chain and a consumer-side signal):
+
+- **GHA-113 (HIGH) — OIDC trusted-publishing job without an
+  environment gate.** The registry-publish twin of GHA-030. Fires when
+  a job effectively has ``id-token: write`` (reuse GHA-030 /
+  GHA-069's ``_job_has_id_token``) AND runs a package-publish
+  primitive (reuse GHA-050's ``_PUBLISH_RE`` / ``_PUBLISH_ACTIONS``,
+  treating ``npm publish --provenance``, ``pypa/gh-action-pypi-publish``
+  with no ``password``, ``rubygems/release-gem``, and
+  ``crates-io/publish-action`` as the trusted-publisher shape) AND the
+  job binds no ``environment:``. This is the seam GHA-050 (long-lived
+  only) and GHA-030 (cloud-creds only) leave open. The recommendation
+  names the environment + deployment-branch rule as the fix and points
+  at npm's staged-publishing-with-2FA option for high-blast packages.
+- **GHA-114 (HIGH) — package-publish workflow triggers on an
+  unrestricted ref.** The "untrusted branch" half. Fires when a
+  workflow that publishes (publish primitive, or ``id-token: write``
+  paired with a publish step) is reachable from ``on: push`` with a
+  wildcard ``branches:`` pattern, no ``branches:`` / ``tags:`` filter
+  at all (every branch fires), or a branch list that is not the
+  protected default, and carries no tag-only / ``workflow_dispatch`` /
+  ``release: published`` restriction. Release should be tag-triggered
+  or dispatch-gated; a publish workflow runnable by ``push`` to any
+  branch is what let the counterfeit ``ci.yml`` run on a one-minute-old
+  ``oidc-*`` branch. Generalizes GHA-086 to the no-environment case.
+  Emits ``job_anchors`` for the chain.
+- **GHA-115 (LOW/MEDIUM) — ``id-token: write`` granted workflow-wide
+  instead of job-scoped.** Defense-in-depth item #2 from the writeup.
+  Fires when ``id-token: write`` sits on the top-level ``permissions:``
+  block (so every job inherits mint rights) while only a subset of
+  jobs actually consume it (reuse GHA-069's consumer detection).
+  Recommend pushing the scope down to the publish job so a compromised
+  build / test job in the same workflow can't request a
+  publish-capable token. Pairs with GHA-069 (granted-but-unused); this
+  is granted-too-broadly.
+- **AC-038 (CRITICAL, chain) — untrusted branch reaches OIDC trusted
+  publish.** The reachable form of the whole attack. Intersects
+  GHA-114 (publish workflow on an unrestricted push trigger) with
+  GHA-113 (OIDC publish, no environment gate) on the same job: a
+  publish token mintable from any branch with no human or branch gate.
+  This is the OIDC trusted-publishing lane AC-029 was written for the
+  long-lived-token lane and explicitly cannot reach.
+- **NPM-017 (LOW, ``--resolve-remote``) — dependency provenance minted
+  from a non-release ref.** The consumer-side lesson the article ends
+  on: valid provenance is not a trusted branch. Extends NPM-015's
+  attestation read to inspect the provenance predicate's source ref
+  (the SLSA ``buildDefinition`` / ``invocation`` ref, e.g.
+  ``refs/heads/oidc-b67eedca``) and flag a latest release whose
+  provenance was built from a ref that is neither a tag nor the repo's
+  default branch. Returns skip (not flag) when the attestation omits
+  the ref, the same conservative default PYPI-019's provenance parser
+  uses. A PyPI analog (PYPI-021) reads the PEP 740 attestation ref the
+  same way. This is the only signal that would have flagged the Red Hat
+  packages on the install side; they carried valid provenance, just
+  from a throwaway branch.
+
+Adjacent, and probably a separate theme (checkout-time auto-execution,
+not a pipeline definition, so it sits near the "scans pipeline
+definitions, not the dev environment" non-goal line): the campaign's
+second stage dropped loaders that run the moment a developer opens the
+checkout, a ``.vscode/tasks.json`` task with ``runOptions.runOn:
+folderOpen``, a ``.claude/settings.json`` ``SessionStart`` hook, and a
+``.github/setup.js`` shelled out by Codespaces / devcontainer. GHA-056
+catches literal worm IOC strings but not the general "this repo runs
+code the instant you open it" shape. A small editor / agent-config
+scanner (flag folder-open tasks and session-start hooks that shell out
+or fetch) would cover it. Worth a decision before building, since it
+crosses the dev-environment line the project has so far stayed behind.
+The registry-side and operational defenses from the writeup (npm
+enforcing environments when configured, staged publishing as the
+default, hunting the Activity API for ephemeral-branch +
+``id-token: write`` pairs) are outside a static scanner's reach and
+belong in the docs, not a rule.
+
 ### ~~Gitea / Forgejo provider~~ shipped
 
 Shipped in v1.6.0. ``--pipeline gitea``
