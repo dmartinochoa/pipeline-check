@@ -155,4 +155,5 @@ def check(path: str, doc: dict[str, Any]) -> Finding:
         recommendation=RULE.recommendation, passed=False,
         job_anchors=tuple(anchor_jobs),
         path_evidence=tuple(rendered),
+        taint_flows=tuple(p.to_flow() for p in paths),
     )

@@ -38,6 +38,7 @@ $CI_COMMIT_TITLE``) or move the deploy job behind ``when: manual``
 from __future__ import annotations
 
 from ...checks.base import Confidence, Finding, Severity
+from .._reachability import assess_reachability
 from ..base import Chain, ChainRule, group_by_resource, min_confidence
 
 RULE = ChainRule(
@@ -120,34 +121,39 @@ def match(findings: list[Finding]) -> list[Chain]:
 
         injection_jobs = set(gl002.job_anchors)
         deploy_jobs = set(gl004.job_anchors)
-        # TAINT-004 (dotenv) and TAINT-008 (extends) widen the
-        # injection-side set with sink jobs reachable via cross-job
-        # propagation.
-        taint_paths: list[str] = []
+        # TAINT-004 (dotenv) and TAINT-008 (extends) supply GitLab's two
+        # cross-job dataflow channels as structured source->sink edges.
+        taint_findings: list[Finding] = []
         for check_id in ("TAINT-004", "TAINT-008"):
             tf = taint_by_resource.get(resource, {}).get(check_id)
             if tf is None:
                 continue
             triggers.append(tf)
-            injection_jobs |= set(tf.job_anchors)
-            taint_paths.extend(tf.path_evidence)
+            taint_findings.append(tf)
+            injection_jobs |= {fl.source_job for fl in tf.taint_flows}
 
-        shared = sorted(deploy_jobs & injection_jobs)
-        confirmed = bool(shared)
-        if confirmed:
-            shared_repr = ", ".join(f"`{j}`" for j in shared)
-            reach_note = (
-                f"injection and ungated deploy share job {shared_repr}"
-            )
+        # Phase-2 reachability: walk the dotenv / extends taint graph
+        # between the injection job(s) and the deploy job(s); fall back
+        # to the phase-1 shared-job signal when no dataflow path exists.
+        reach = assess_reachability(taint_findings, injection_jobs, deploy_jobs)
+        confirmed = reach.confirmed
+        reach_note = reach.note
+        if reach.via_dataflow:
             reach_narrative = (
-                f"  4. Reachability confirmed: the untrusted "
-                f"interpolation and the ungated deploy fire in the "
-                f"same job(s) ({shared_repr}). The two legs are not "
-                f"just co-located in `{resource}`, they execute "
-                f"together."
+                f"  4. Reachability confirmed by dataflow: {reach.note}. "
+                f"The untrusted value is carried to the ungated deploy by "
+                f"a real source-to-sink taint path (dotenv artifact or "
+                f"``extends:`` inheritance), not just co-location in "
+                f"`{resource}`."
+            )
+        elif confirmed:
+            reach_narrative = (
+                f"  4. Reachability confirmed: {reach.note}. The "
+                f"untrusted interpolation and the ungated deploy execute "
+                f"in the same job, so the injection reaches the deploy "
+                f"context."
             )
         else:
-            reach_note = ""
             reach_narrative = (
                 "  4. Reachability unconfirmed: the injection sink "
                 "and the ungated deploy fire on the same pipeline "
@@ -182,10 +188,8 @@ def match(findings: list[Finding]) -> list[Chain]:
             "``when: manual``. Either breaks the chain.\n"
             f"{reach_narrative}"
         )
-        if taint_paths:
-            narrative += "\n  Dataflow evidence: " + "; ".join(taint_paths[:3])
-            if len(taint_paths) > 3:
-                narrative += "..."
+        if reach.path:
+            narrative += f"\n  Dataflow evidence: {reach.path}"
 
         # Confirmed reachability promotes the composite to HIGH
         # confidence; unconfirmed chains keep the weakest-leg
@@ -211,5 +215,6 @@ def match(findings: list[Finding]) -> list[Chain]:
             recommendation=RULE.recommendation,
             confirmed_reachable=confirmed,
             reachability_note=reach_note,
+            via_dataflow=reach.via_dataflow,
         ))
     return out

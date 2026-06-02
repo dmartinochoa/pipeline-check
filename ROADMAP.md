@@ -741,13 +741,19 @@ otherwise. ``Chain.via_dataflow`` marks the stronger tier in JSON +
 the terminal badge, and ``--chains-require-dataflow`` is the stricter
 CI gate (vs ``--chains-require-reachability``).
 
-Still open as follow-ups: migrate the other injection chains
-(AC-022 GitLab, AC-023 Tekton, AC-025 Argo, AC-026 Buildkite) to
+AC-022 (the GitLab analog) then migrated too: its TAINT-004 (dotenv
+artifact) and TAINT-008 (``extends:`` inheritance) rules populate
+``taint_flows``, and AC-022 walks them through the same
+``assess_reachability`` helper.
+
+Still open as follow-ups: migrate the remaining injection chains
+(AC-023 Tekton, AC-025 Argo, AC-026 Buildkite) to
 ``assess_reachability`` (each needs its provider's taint engine to
-populate ``taint_flows`` the way GHA's TAINT-001/002 now do), and
-extend the graph across the reusable-workflow boundary (TAINT-003
-already carries a ``cross_document`` ``uses:`` sink in its flows, but
-walking into the callee body needs ``--resolve-remote``).
+populate ``taint_flows`` the way GHA's TAINT-001/002 and GitLab's
+TAINT-004/008 now do), and extend the graph across the reusable-
+workflow boundary (TAINT-003 already carries a ``cross_document``
+``uses:`` sink in its flows, but walking into the callee body needs
+``--resolve-remote``).
 
 ### Pluggable LLM-assisted triage (opt-in, local)
 

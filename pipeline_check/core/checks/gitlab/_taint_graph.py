@@ -49,6 +49,7 @@ from collections.abc import Iterator
 from dataclasses import dataclass, field
 from typing import Any
 
+from ..base import TaintFlow
 from .base import iter_jobs, job_scripts
 from .rules._helpers import UNTRUSTED_VAR_RE
 
@@ -83,6 +84,24 @@ class TaintPath:
         chain.extend(self.hops)
         chain.append(f"sink@{self.sink_location}({self.sink_consumer})")
         return " -> ".join(chain)
+
+    def to_flow(self) -> TaintFlow:
+        """Structured ``source_job -> sink_job`` edge for the chain engine.
+
+        GitLab job breadcrumbs are ``job_name:script[idx]`` (colon-
+        separated), so the job id is the prefix before the first ``:``.
+        The ``extends:`` analyzer locates a source in a hidden template's
+        ``variables:`` block (``tpl.variables.X``, no colon) whose taint
+        is inherited into and consumed by the same job, so when the
+        source carries no job breadcrumb the flow is a self-edge on the
+        sink (consuming) job.
+        """
+        sink_job = self.sink_location.split(":", 1)[0]
+        src_loc = self.source.location
+        source_job = src_loc.split(":", 1)[0] if ":" in src_loc else sink_job
+        return TaintFlow(
+            source_job=source_job, sink_job=sink_job, rendered=self.render(),
+        )
 
 
 # ── Dotenv write detector ─────────────────────────────────────────

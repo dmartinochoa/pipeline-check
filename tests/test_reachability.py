@@ -13,6 +13,8 @@ from pipeline_check.core.chains._reachability import assess_reachability
 from pipeline_check.core.checks.base import Finding, Severity, TaintFlow
 from pipeline_check.core.checks.github.base import GitHubContext, Workflow
 from pipeline_check.core.checks.github.workflows import WorkflowChecks
+from pipeline_check.core.checks.gitlab.base import GitLabContext, Pipeline
+from pipeline_check.core.checks.gitlab.pipelines import GitLabPipelineChecks
 
 _DATAFLOW_WF = """\
 name: ci
@@ -197,6 +199,55 @@ class TestAC002Dataflow:
         c = ac[0]
         assert not c.via_dataflow
         assert not c.confirmed_reachable
+
+
+class TestAC022GitLabDataflow:
+    """GitLab AC-022 confirms reachability via the dotenv taint graph."""
+
+    _GL_DATAFLOW = textwrap.dedent("""
+        stages: [build, deploy]
+        extract:
+          stage: build
+          script:
+            - echo "TITLE=$CI_COMMIT_TITLE" > taint.env
+          artifacts:
+            reports:
+              dotenv: taint.env
+        deploy:
+          stage: deploy
+          needs: [extract]
+          script:
+            - ./deploy.sh $TITLE
+    """)
+
+    def _evaluate(self, gl_text: str) -> list:
+        ctx = GitLabContext(
+            [Pipeline(path=".gitlab-ci.yml", data=yaml.safe_load(gl_text))]
+        )
+        findings = GitLabPipelineChecks(ctx).run()
+        return findings, [
+            c for c in chains.engine.evaluate(findings) if c.chain_id == "AC-022"
+        ]
+
+    def test_dotenv_dataflow_confirmed(self):
+        findings, ac = self._evaluate(self._GL_DATAFLOW)
+        assert ac, "AC-022 should fire"
+        c = ac[0]
+        assert c.confirmed_reachable
+        assert c.via_dataflow
+        assert "taint path" in c.reachability_note
+
+    def test_taint004_exposes_structured_flow(self):
+        findings, _ = self._evaluate(self._GL_DATAFLOW)
+        taint = [
+            f for f in findings
+            if f.check_id == "TAINT-004" and not f.passed
+        ]
+        assert taint
+        assert any(
+            fl.source_job == "extract" and fl.sink_job == "deploy"
+            for fl in taint[0].taint_flows
+        )
 
 
 class TestChainsRequireDataflowFlag:
