@@ -160,6 +160,25 @@ release commit collapses this section into `## [X.Y.Z] - <date>`.
 
 ### Fixed
 
+- **Rule audit: title / severity / ESF-mapping corrections (5 rules).**
+  The closing audit batch, aligning catalog metadata with each rule's
+  actual behavior. **CB-004**'s title was "No build timeout configured"
+  but the check fires on a missing timeout *or* one set to the AWS
+  maximum (480 min); retitled to match. **CF-001** declared ``HIGH`` but
+  the finding it emits is ``CRITICAL`` (a long-lived ``AWS::IAM::AccessKey``
+  in a template); the declared severity now matches. **CF-003**'s title
+  claimed the project "references" a public subnet, but the check fires
+  when the project's VPC merely *contains* one; retitled (catalog and
+  emitted finding now agree). **PBAC-003**'s title / docs_note claimed
+  CodeBuild scoping, but the check flags every ``AWS::EC2::SecurityGroup``
+  with open all-port egress in the template; prose corrected to the actual
+  scope (narrowing the check to CodeBuild-attached groups is a separate
+  decision, deliberately not taken here to avoid new false negatives).
+  **ADO-024**'s ESF mapping disagreed between the rule module
+  (``ESF-S-PROVENANCE`` alone) and the standards registry (``ESF-D-SBOM`` /
+  ``ESF-D-SIGN-ARTIFACTS``); the module is now aligned to the registry and
+  to its cross-provider siblings GHA-024 / GL-024 / BB-024 (``ESF-D-SBOM``
+  + ``ESF-D-SIGN-ARTIFACTS``). Provider docs regenerated.
 - **Rule audit: logic-bug fixes and test strengthening.** The final audit
   cluster, each fix pinned by a regression test. **ADO-003** no longer
   escalates a plain secret to CRITICAL just because the variable name

@@ -252,7 +252,7 @@ optional:
 | [CB-001](#cb-001) | Secrets in plaintext environment variables | <span class="pg-sev pg-sev--critical">CRITICAL</span> |  |
 | [CB-002](#cb-002) | Privileged mode enabled | <span class="pg-sev pg-sev--high">HIGH</span> |  |
 | [CB-003](#cb-003) | Build logging not enabled | <span class="pg-sev pg-sev--medium">MEDIUM</span> |  |
-| [CB-004](#cb-004) | No build timeout configured | <span class="pg-sev pg-sev--low">LOW</span> |  |
+| [CB-004](#cb-004) | Build timeout missing or at the AWS maximum (480 min) | <span class="pg-sev pg-sev--low">LOW</span> |  |
 | [CB-005](#cb-005) | Outdated managed build image | <span class="pg-sev pg-sev--medium">MEDIUM</span> |  |
 | [CB-006](#cb-006) | CodeBuild source auth uses long-lived token | <span class="pg-sev pg-sev--high">HIGH</span> |  |
 | [CB-007](#cb-007) | CodeBuild webhook has no filter group | <span class="pg-sev pg-sev--medium">MEDIUM</span> |  |
@@ -461,7 +461,7 @@ Enable CloudWatch Logs or S3 logging in the CodeBuild project configuration to m
 
 <div class="pg-rule pg-rule--low" markdown>
 
-## CB-004: No build timeout configured { #cb-004 }
+## CB-004: Build timeout missing or at the AWS maximum (480 min) { #cb-004 }
 
 <div class="pg-rule__tags">
 <span class="pg-sev pg-sev--low">LOW</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-7</span> <span class="pg-tag pg-tag--cwe">CWE-400</span>

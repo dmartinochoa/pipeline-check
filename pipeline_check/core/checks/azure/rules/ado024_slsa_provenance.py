@@ -11,7 +11,7 @@ RULE = Rule(
     title="No SLSA provenance attestation produced",
     severity=Severity.MEDIUM,
     owasp=("CICD-SEC-9",),
-    esf=("ESF-S-PROVENANCE",),
+    esf=("ESF-D-SBOM", "ESF-D-SIGN-ARTIFACTS"),
     cwe=("CWE-345",),
     recommendation=(
         "Add a task that runs ``cosign attest`` against a "

@@ -9,7 +9,7 @@ from ..phase4 import _cf001_iam_access_key
 RULE = Rule(
     id="CF-001",
     title="Template declares AWS::IAM::AccessKey (long-lived credential)",
-    severity=Severity.HIGH,
+    severity=Severity.CRITICAL,
     owasp=("CICD-SEC-6",),
     cwe=("CWE-798",),
     recommendation=(
