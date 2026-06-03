@@ -182,6 +182,7 @@ class _GroupedCommand(click.Command):
         })),
         ("Filtering", frozenset({
             "--checks", "--severity-threshold", "--min-confidence",
+            "--no-best-practice",
             "--secret-pattern", "--detect-entropy", "--custom-rules",
             "--rego-rules",
         })),
@@ -2283,6 +2284,21 @@ def _install_completion_callback(
     ),
 )
 @click.option(
+    "--no-best-practice",
+    is_flag=True,
+    default=False,
+    help=(
+        "Drop best-practice / missing-control findings (unbounded build "
+        "/ no timeout, no SBOM, no artifact signing, no SLSA provenance, "
+        "no vulnerability-scan step, ...). These are structurally true "
+        "but fire on most pipelines regardless of the specific "
+        "vulnerability under review, so they dominate the list as noise. "
+        "Hiding them focuses the output and the gate on active-"
+        "vulnerability findings. Severity and confidence are unchanged; "
+        "this is purely an output filter."
+    ),
+)
+@click.option(
     "--chains-require-reachability",
     "chains_require_reachability",
     is_flag=True,
@@ -2491,6 +2507,7 @@ def scan(
     no_group: bool,
     inline_explain: bool,
     no_chains: bool,
+    no_best_practice: bool,
     chains_require_reachability: bool,
     chains_require_dataflow: bool,
     list_chains: bool,
@@ -3377,6 +3394,20 @@ def scan(
             f"--min-confidence {confidence_threshold.value}: dropped "
             f"{pre_filter_count - len(findings)} finding(s)"
         )
+
+    # Best-practice filter: drop missing-control hygiene findings (no
+    # timeout / SBOM / signing / SLSA provenance / vuln-scan step) so the
+    # output and the gate focus on active-vulnerability findings. Applied
+    # before scoring + gate, like the confidence filter above.
+    if no_best_practice:
+        from .core.checks._best_practice import is_best_practice
+        bp_before = len(findings)
+        findings = [f for f in findings if not is_best_practice(f.check_id)]
+        if verbose and bp_before != len(findings):
+            _debug(
+                f"--no-best-practice: dropped "
+                f"{bp_before - len(findings)} best-practice finding(s)"
+            )
 
     n_passed = sum(1 for f in findings if f.passed)
     n_failed = sum(1 for f in findings if not f.passed)
