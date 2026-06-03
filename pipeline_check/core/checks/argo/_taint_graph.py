@@ -77,6 +77,7 @@ from collections.abc import Iterator
 from dataclasses import dataclass, field
 from typing import Any
 
+from ..base import TaintFlow
 from .base import ArgoDoc, iter_templates, workflow_spec
 
 
@@ -105,6 +106,25 @@ class TaintPath:
         chain.extend(self.hops)
         chain.append(f"sink@{self.sink_location}({self.sink_consumer})")
         return " -> ".join(chain)
+
+    def to_flow(self, anchor_prefix: str = "") -> TaintFlow:
+        """Structured ``source_job -> sink_job`` edge for the chain engine.
+
+        ``source.location`` / ``sink_location`` are ``<template>.script``
+        breadcrumbs; the template name is the part before ``.script``.
+        ARGO-002 / ARGO-005 anchor templates as
+        ``<Kind>/<name>:<template>``, so TAINT-007's rule passes the
+        document's ``<Kind>/<name>:`` prefix here to land the edge in the
+        same namespace (and to keep same-named templates in different
+        workflow documents distinct within the shared ``argo`` corpus).
+        """
+        producer = self.source.location.removesuffix(".script")
+        consumer = self.sink_location.removesuffix(".script")
+        return TaintFlow(
+            source_job=f"{anchor_prefix}{producer}",
+            sink_job=f"{anchor_prefix}{consumer}",
+            rendered=self.render(),
+        )
 
 
 # ── Detectors ─────────────────────────────────────────────────────

@@ -50,6 +50,7 @@ level config is easy to drift back over time.
 from __future__ import annotations
 
 from ...checks.base import Confidence, Finding, Severity
+from .._reachability import assess_reachability
 from ..base import Chain, ChainRule, group_by_resource, min_confidence
 
 RULE = ChainRule(
@@ -112,20 +113,31 @@ RULE = ChainRule(
 
 
 def match(findings: list[Finding]) -> list[Chain]:
-    # Reachability: a shared template anchor (``<Kind>/<name>:<template>``)
-    # between ARGO-002 (privileged / root container) and ARGO-005
-    # (unsafe ``{{inputs.parameters.X}}`` in script / args / command)
-    # confirms the same template is BOTH the injection sink AND the
-    # privilege amplifier — the exact node-escape primitive. When
-    # the privilege comes from ``spec.podSpecPatch: 'privileged:
-    # true'`` (workflow-wide), ARGO-002 fans out an anchor per
-    # template in that workflow so reachability with ARGO-005 on
-    # any one of them still lands on the same key. Disjoint anchors
-    # still co-occur within the Argo corpus but don't compose into
-    # the single-template kernel-RCE shape; we keep the weaker
-    # co-occurrence signal there because both legs remain
-    # individually risky.
+    # Reachability mirrors the AC-022 (GitLab) phase-2 pattern, scoped
+    # to Argo's template namespace. A shared template anchor
+    # (``<Kind>/<name>:<template>``) between ARGO-002 (privileged / root
+    # container) and ARGO-005 (unsafe ``{{inputs.parameters.X}}`` in
+    # script / args / command) confirms the same template is BOTH the
+    # injection sink AND the privilege amplifier, the single-template
+    # node-escape primitive. TAINT-007 adds Argo's cross-template
+    # channel, ``{{tasks.<t>.outputs.parameters.<o>}}``, as structured
+    # source->sink edges keyed by the same ``<Kind>/<name>:<template>``
+    # anchors: ``assess_reachability`` walks them from the injection
+    # template(s) (widened with the output-producer templates) to the
+    # privileged template(s), so a producer template whose tainted
+    # output flows into a *separate* privileged consumer template still
+    # resolves to a confirmed dataflow path. When ARGO-002's privilege
+    # comes from a workflow-wide ``spec.podSpecPatch``, it fans out an
+    # anchor per template so any one consumer still matches. Disjoint
+    # anchors with no dataflow edge keep the weaker co-occurrence signal
+    # so existing detections don't regress.
     grouped = group_by_resource(findings, ["ARGO-002", "ARGO-005"])
+    # Map resource -> TAINT-007 finding (cross-template outputs taint).
+    taint_by_resource: dict[str, Finding] = {}
+    for f in findings:
+        if not f.passed and f.check_id == "TAINT-007":
+            taint_by_resource[f.resource] = f
+
     out: list[Chain] = []
     for resource, ck_map in grouped.items():
         argo002 = ck_map["ARGO-002"]
@@ -134,32 +146,50 @@ def match(findings: list[Finding]) -> list[Chain]:
 
         priv_templates = set(argo002.job_anchors)
         inj_templates = set(argo005.job_anchors)
-        shared = sorted(priv_templates & inj_templates)
-        confirmed = bool(shared)
-        if confirmed:
-            shared_repr = ", ".join(f"`{t}`" for t in shared)
-            reach_note = (
-                f"Privileged template and param-injection sink share "
-                f"template {shared_repr}"
-            )
+
+        # TAINT-007 supplies the cross-template outputs channel as
+        # source->sink edges; widen the injection side with the
+        # producer templates so a producer->privileged-consumer flow
+        # resolves to a confirmed path.
+        taint_findings: list[Finding] = []
+        taint = taint_by_resource.get(resource)
+        if taint is not None:
+            triggers.append(taint)
+            taint_findings.append(taint)
+            inj_templates |= {fl.source_job for fl in taint.taint_flows}
+
+        reach = assess_reachability(taint_findings, inj_templates, priv_templates)
+        confirmed = reach.confirmed
+        reach_note = reach.note
+        if reach.via_dataflow:
             reach_narrative = (
-                f"  4. Reachability confirmed: the same template(s) "
-                f"({shared_repr}) BOTH run privileged AND interpolate "
+                f"  4. Reachability confirmed by dataflow: {reach.note}. "
+                f"A producer template's tainted "
+                f"``outputs.parameters`` value is carried into the "
+                f"privileged template via "
+                f"``{{{{tasks.<t>.outputs.parameters.<o>}}}}``, so the "
+                f"injection reaches the kernel-privileged container "
+                f"across templates, not just within one."
+            )
+        elif confirmed:
+            reach_narrative = (
+                f"  4. Reachability confirmed: {reach.note}. The same "
+                f"template BOTH runs privileged AND interpolates "
                 f"``{{{{inputs.parameters.<name>}}}}`` unquoted. A "
-                f"crafted Workflow-submission param value executes "
-                f"as a shell command inside the kernel-privileged "
+                f"crafted Workflow-submission param value executes as "
+                f"a shell command inside the kernel-privileged "
                 f"container in one go, no inter-template dataflow "
                 f"required."
             )
         else:
-            reach_note = ""
             reach_narrative = (
                 "  4. Reachability unconfirmed: the privileged "
                 "template and the param-injection sink live in "
-                "different templates of this Argo corpus. Each leg "
-                "is independently risky but neither single template "
-                "exposes the kernel-RCE primitive; treat as a "
-                "co-occurrence signal."
+                "different templates of this Argo corpus, with no "
+                "``outputs.parameters`` dataflow link between them. "
+                "Each leg is independently risky but neither single "
+                "template exposes the kernel-RCE primitive; treat as "
+                "a co-occurrence signal."
             )
 
         narrative = (
@@ -193,6 +223,8 @@ def match(findings: list[Finding]) -> list[Chain]:
             "alone breaks the chain.\n"
             f"{reach_narrative}"
         )
+        if reach.path:
+            narrative += f"\n  Dataflow evidence: {reach.path}"
 
         chain_confidence = Confidence.HIGH if confirmed else min_confidence(triggers)
 
@@ -205,12 +237,13 @@ def match(findings: list[Finding]) -> list[Chain]:
             narrative=narrative,
             mitre_attack=list(RULE.mitre_attack),
             kill_chain_phase=RULE.kill_chain_phase,
-            triggering_check_ids=["ARGO-002", "ARGO-005"],
+            triggering_check_ids=sorted({f.check_id for f in triggers}),
             triggering_findings=triggers,
             resources=[resource],
             references=list(RULE.references),
             recommendation=RULE.recommendation,
             confirmed_reachable=confirmed,
             reachability_note=reach_note,
+            via_dataflow=reach.via_dataflow,
         ))
     return out

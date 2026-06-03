@@ -746,14 +746,27 @@ artifact) and TAINT-008 (``extends:`` inheritance) rules populate
 ``taint_flows``, and AC-022 walks them through the same
 ``assess_reachability`` helper.
 
-Still open as follow-ups: migrate the remaining injection chains
-(AC-023 Tekton, AC-025 Argo, AC-026 Buildkite) to
-``assess_reachability`` (each needs its provider's taint engine to
-populate ``taint_flows`` the way GHA's TAINT-001/002 and GitLab's
-TAINT-004/008 now do), and extend the graph across the reusable-
-workflow boundary (TAINT-003 already carries a ``cross_document``
-``uses:`` sink in its flows, but walking into the callee body needs
-``--resolve-remote``).
+The three remaining injection chains then migrated, completing the
+provider sweep. **AC-026** (Buildkite) walks TAINT-005's
+``buildkite-agent meta-data`` set/get edges, keyed on step labels (the
+same identifiers BK-003 / BK-007 anchor on), so it reuses the full
+helper exactly like AC-022. **AC-025** (Argo) walks TAINT-007's
+``{{tasks.<t>.outputs.parameters.<o>}}`` cross-template edges; the rule
+qualifies each edge with the document's ``<Kind>/<name>:`` prefix so the
+producer / consumer template names match ARGO-002 / ARGO-005's anchors
+(and don't collide across documents in the shared ``argo`` corpus).
+**AC-023** (Tekton) walks TAINT-006's ``$(tasks.<t>.results.<r>)`` edges
+across the Task / Pipeline document split: TAINT-006 keys each edge on
+the Pipeline task's resolved ``taskRef`` document id (``<Kind>/<name>``,
+matching TKN-002 / TKN-003's per-step anchor prefix), and AC-023 walks
+at that task-identity granularity while keeping the phase-1 *same-step*
+check as the fallback, so the precise single-step semantics never widen
+to a coarser same-task match.
+
+Still open as the one phase-2 follow-up: extend the graph across the
+reusable-workflow boundary (TAINT-003 already carries a
+``cross_document`` ``uses:`` sink in its flows, but walking into the
+callee body needs ``--resolve-remote``).
 
 The reusable-workflow boundary then shipped, closing phase 2. TAINT-003
 populates ``taint_flows`` with a ``cross_document`` edge per forward,

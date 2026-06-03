@@ -49,10 +49,32 @@ release commit collapses this section into `## [X.Y.Z] - <date>`.
   `Finding.taint_flows`. A new `Chain.via_dataflow` flag marks the
   stronger tier in the JSON output and the terminal badge, and a new
   `--chains-require-dataflow` CLI gate keeps only dataflow-confirmed
-  chains (stricter than `--chains-require-reachability`). The remaining
-  injection chains (AC-023 Tekton / AC-025 Argo / AC-026 Buildkite) and
-  cross-document reachability through reusable workflows (TAINT-003)
-  reuse the same infrastructure and are follow-ups.
+  chains (stricter than `--chains-require-reachability`).
+- **Reachability-aware attack chains, phase 2: Tekton, Argo, and
+  Buildkite.** Extends the phase-2 dataflow tier to the three remaining
+  injection chains, so each provider with a TAINT engine now reports a
+  proven path rather than file co-occurrence. Their TAINT rules populate
+  `Finding.taint_flows`: **TAINT-005** (Buildkite `buildkite-agent
+  meta-data` set/get round-trip), **TAINT-006** (Tekton
+  `$(tasks.<t>.results.<r>)` results channel), and **TAINT-007** (Argo
+  `{{tasks.<t>.outputs.parameters.<o>}}` cross-template forwarding).
+  **AC-026** (Buildkite injection to unmanual deploy) keys its edges on
+  step labels, the same identifiers BK-003 / BK-007 anchor on, and
+  confirms when a meta-data value reaches the deploy step. **AC-025**
+  (Argo param injection to privileged template) qualifies each edge with
+  the document's `<Kind>/<name>:` prefix so a producer template whose
+  tainted output flows into a *separate* privileged consumer template
+  resolves to a cross-template node-escape path. **AC-023** (Tekton param
+  injection to privileged step) bridges the Task/Pipeline document split:
+  TAINT-006 keys its edges on each Pipeline task's resolved `taskRef`
+  document id (`<Kind>/<name>`), matching TKN-002 / TKN-003's per-step
+  anchor prefix, so a tainted result flowing from one Task into a
+  privileged Task is confirmed across documents while the precise
+  same-step signal is preserved as the fallback. Each falls back to the
+  phase-1 shared-anchor signal, then plain co-occurrence, so nothing
+  regresses; all three honor `Chain.via_dataflow` and
+  `--chains-require-dataflow`. Cross-document reachability through
+  reusable workflows (TAINT-003) remains the one open phase-2 follow-up.
 - **`devenv` provider: developer-environment auto-execution scanner
   (DEV-001..005).** New `--pipeline devenv` provider that scans the
   config files which run code the moment a developer opens or checks out
