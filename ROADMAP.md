@@ -827,11 +827,20 @@ substitution, BB-029 top-level ``image:``) are already fixed on ``dev``.
 - ~~**Bitbucket ``clone: skip-ssl-verify: true``** (scenario 65).~~
   Shipped on ``dev`` by extending **BB-023** with a structural
   ``clone:`` walk (global + step-level).
-- Lower-confidence / parser-dependent: Azure macro ``$()`` and
-  ``${{ parameters }}`` injection (49 / 50), CircleCI ``<< pipeline.* >>``
-  run injection (56), Bitbucket custom-pipeline variable injection (66).
-  These want real expression parsing, not regex; group with the broader
-  injection-taint work.
+- Injection cluster, partly shipped on ``dev`` by extending the existing
+  per-provider injection rules (no new rules):
+  - ~~Azure macro ``$()`` injection (49)~~ ADO-002 now scans task-based
+    ``inputs.script`` (Bash@3 / PowerShell@2 / CmdLine@2), not just the
+    ``script:`` shorthand.
+  - ~~CircleCI ``<< pipeline.git.* >>`` run injection (56)~~ CC-002 now
+    flags the native ``<< pipeline.git.branch >>`` / ``tag`` interpolation
+    (``<< pipeline.parameters.* >>`` stays the safe alternative).
+  - Still open as NEW rules (distinct vuln classes, FP-sensitive, want
+    structural parsing): Azure ``${{ parameters.X }}`` template injection
+    where the parameter is a free-form string with no ``values:`` list
+    (50), and Bitbucket ``custom:`` pipeline-variable injection where a
+    trigger-time ``variables:`` entry is used unquoted in a ``script:``
+    (66).
 
 Next-gen targets no scanner in the corpus catches (design-pass, not
 mechanical): Tekton ``$(params.*)`` injection (71, regressed out by a

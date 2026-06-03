@@ -65,6 +65,22 @@ class TestADO002ScriptInjection:
         )
         assert not f.passed
 
+    def test_task_inputs_script_fails(self):
+        # Task-based step (Bash@3) carries the script under inputs.script,
+        # not the script: shorthand. The untrusted macro is just as exposed.
+        f = _run(
+            """
+            steps:
+              - task: Bash@3
+                inputs:
+                  targetType: inline
+                  script: |
+                    echo "Building $(System.PullRequest.SourceBranch)"
+            """,
+            "ADO-002",
+        )
+        assert not f.passed
+
     def test_quoted_assignment_passes(self):
         f = _run(
             """

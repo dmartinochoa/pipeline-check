@@ -96,7 +96,7 @@ Pin every orb to an exact semver version (`circleci/node@5.1.0`). Floating refer
 <span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-4</span> <span class="pg-tag pg-tag--esf">ESF-D-INJECTION</span> <span class="pg-tag pg-tag--cwe">CWE-78</span>
 </div>
 
-CircleCI exposes environment variables like `$CIRCLE_BRANCH`, `$CIRCLE_TAG`, and `$CIRCLE_PR_NUMBER` that are controlled by the event source (branch name, tag, PR). Interpolating them unquoted into `run:` commands allows shell injection via specially crafted branch or tag names.
+CircleCI exposes environment variables like `$CIRCLE_BRANCH`, `$CIRCLE_TAG`, and `$CIRCLE_PR_NUMBER` that are controlled by the event source (branch name, tag, PR). Interpolating them unquoted into `run:` commands allows shell injection via specially crafted branch or tag names. The same applies to the native `<< pipeline.git.branch >>` / `<< pipeline.git.tag >>` interpolations, which CircleCI splices into the command at config-compile time straight from the (attacker-named) ref. `<< pipeline.parameters.* >>` is the safe alternative: typed and set by the triggering workflow, not by a ref name.
 
 <div class="pg-rule__rec" markdown>
 

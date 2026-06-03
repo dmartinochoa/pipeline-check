@@ -122,28 +122,37 @@ def check(path: str, doc: dict[str, Any]) -> Finding:
     for job_loc, job in iter_jobs(doc):
         job_tainted = pipeline_tainted | _tainted_vars(job.get("variables"))
         for step_loc, step in iter_steps(job):
-            for key in ("script", "bash", "pwsh", "powershell"):
-                body = step.get(key)
-                if not isinstance(body, str):
-                    continue
+            # Script bodies live either on a shorthand key (``script:`` /
+            # ``bash:`` / ``pwsh:`` / ``powershell:``) or, for a task-based
+            # step (``task: Bash@3`` / ``PowerShell@2`` / ``CmdLine@2``),
+            # inline under ``inputs.script``. Both carry the same injection
+            # exposure, so both are scanned.
+            bodies: list[str] = [
+                step[key] for key in ("script", "bash", "pwsh", "powershell")
+                if isinstance(step.get(key), str)
+            ]
+            inputs = step.get("inputs")
+            if isinstance(inputs, dict) and isinstance(inputs.get("script"), str):
+                bodies.append(inputs["script"])
+            loc = f"{job_loc}.{step_loc}"
+            hit = False
+            for body in bodies:
                 lines = body.splitlines()
-                loc = f"{job_loc}.{step_loc}"
-                hit = False
                 # 1. Direct interpolation of untrusted ADO macros.
                 if has_direct_taint(lines, UNTRUSTED_VAR_RE) or job_tainted and has_unsafe_reference(
                     lines, job_tainted, ref_pattern=_ado_ref_pattern
                 ):
                     offenders.append(loc)
                     hit = True
-                if hit:
-                    step_line = line_of(step)
-                    if step_line is not None and step_line not in seen_step_lines:
-                        seen_step_lines.add(step_line)
-                        locations.append(Location(
-                            path=path,
-                            start_line=step_line, end_line=step_line,
-                        ))
                     break
+            if hit:
+                step_line = line_of(step)
+                if step_line is not None and step_line not in seen_step_lines:
+                    seen_step_lines.add(step_line)
+                    locations.append(Location(
+                        path=path,
+                        start_line=step_line, end_line=step_line,
+                    ))
     passed = not offenders
     desc = (
         "No script interpolates attacker-controllable build or PR metadata."

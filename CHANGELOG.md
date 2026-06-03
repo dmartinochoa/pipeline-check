@@ -45,6 +45,17 @@ release commit collapses this section into `## [X.Y.Z] - <date>`.
 
 ### Changed
 
+- **ADO-002 now scans task-based script steps.** It read the `script:` /
+  `bash:` / `pwsh:` / `powershell:` shorthands but not the inline
+  `inputs.script` of a `task: Bash@3` / `PowerShell@2` / `CmdLine@2`
+  step, so a `$(System.PullRequest.SourceBranch)` macro spliced into a
+  `Bash@3` task slipped through. Now flagged (cicd-goat scenario 49).
+- **CC-002 now flags `<< pipeline.git.branch >>` / `<< pipeline.git.tag >>`
+  interpolation.** Beyond the `$CIRCLE_*` shell vars it already caught,
+  the rule now flags CircleCI's native `<< pipeline.git.* >>`
+  interpolation of the attacker-named ref into a `run:` command.
+  `<< pipeline.parameters.* >>` (typed, workflow-set) stays the safe
+  alternative and is not flagged (cicd-goat scenario 56).
 - **BB-023 now also flags Bitbucket's structural clone bypass.** In
   addition to the shell-level TLS-verification bypasses it already
   detected (`curl -k`, `git http.sslVerify=false`, ...), the rule now

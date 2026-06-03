@@ -43,6 +43,44 @@ class TestCC002ScriptInjection:
         f = run_check(cfg, "CC-002")
         assert not f.passed
 
+    def test_fails_on_pipeline_git_branch_interpolation(self):
+        # Native ``<< pipeline.git.branch >>`` splices the attacker-named
+        # ref into the command at config-compile time (no shell env var).
+        cfg = """
+        version: 2.1
+        jobs:
+          build:
+            docker:
+              - image: cimg/base@sha256:0000000000000000000000000000000000000000000000000000000000000001
+            steps:
+              - run:
+                  no_output_timeout: 30m
+                  command: echo "Building << pipeline.git.branch >>"
+        """
+        f = run_check(cfg, "CC-002")
+        assert not f.passed
+
+    def test_passes_on_pipeline_parameters_interpolation(self):
+        # ``<< pipeline.parameters.* >>`` is typed and workflow-set: the
+        # documented safe alternative, must not fire.
+        cfg = """
+        version: 2.1
+        parameters:
+          deploy_branch:
+            type: string
+            default: main
+        jobs:
+          build:
+            docker:
+              - image: cimg/base@sha256:0000000000000000000000000000000000000000000000000000000000000001
+            steps:
+              - run:
+                  no_output_timeout: 30m
+                  command: echo "Building << pipeline.parameters.deploy_branch >>"
+        """
+        f = run_check(cfg, "CC-002")
+        assert f.passed
+
     def test_passes_when_no_untrusted_var(self):
         cfg = """
         version: 2.1
