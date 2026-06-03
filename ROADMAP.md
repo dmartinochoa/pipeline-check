@@ -835,10 +835,20 @@ surface changes. Both are LOW, ``--resolve-remote``-gated, scoped to
 direct index dependencies, and reuse the per-package JSON document the
 cooldown / OSV passes already fetch.
 
-Still open as follow-ups: a recent-ownership-change / new-account
-signal to pair with NPM-014 (the actual takeover vector, worth a higher
-severity), and a PyPI single-maintainer signal if PyPI ever exposes a
-reliable owner-list API.
+The recent-ownership-change / new-account signal then shipped as
+**NPM-018**: it reads each direct dependency's per-version publisher
+(the packument's ``_npmUser``) and flags a package whose latest release
+was published by an account that published none of its prior versions,
+the active account-takeover vector that fires the single-publisher blast
+radius NPM-014 only measures. MEDIUM severity (higher than NPM-014's LOW,
+as this section called for), MEDIUM confidence (a legitimate hand-off
+trips it the same as a takeover), ``--resolve-remote``-gated, three-prior-
+version floor so brand-new packages stay out. npm 17 -> 18.
+
+Still open as follow-ups: a PyPI new-publisher analog (blocked the same
+way the PyPI single-maintainer signal is, PyPI exposes no reliable
+per-release publisher-account field), and a PyPI single-maintainer
+signal if PyPI ever exposes a reliable owner-list API.
 
 ### Weak-coverage provider deepening
 

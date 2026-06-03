@@ -12,6 +12,24 @@ release commit collapses this section into `## [X.Y.Z] - <date>`.
 
 ### Added
 
+- **NPM-018: latest release published by a new npm account
+  (publisher-change / takeover signal).** The active-takeover companion
+  to NPM-014's single-publisher blast radius (the roadmap follow-up the
+  behavioral-signals review flagged as "the actual takeover vector,
+  worth a higher severity"). Reads each direct dependency's per-version
+  publisher (the packument's ``_npmUser`` account that ran ``npm
+  publish``, from the same fetch NPM-008 / NPM-014 already do, so no
+  extra requests) and flags a package whose ``dist-tags.latest`` version
+  was published by an account that published none of its prior versions,
+  the axios / @ctrl/tinycolor account-takeover fingerprint. Requires at
+  least three prior versions with a known publisher, so brand-new
+  packages (NPM-008 cooldown territory) are skipped, and skips silently
+  when the packument doesn't expose ``_npmUser`` (the conservative
+  default NPM-017 uses). MEDIUM severity (it fires the blast radius
+  NPM-014 only measures), MEDIUM confidence via the central
+  ``_confidence.py`` registry (a legitimate maintainer hand-off trips it
+  the same as a takeover), ``--resolve-remote``-gated, scoped to direct
+  dependencies. npm 17 -> 18.
 - **Reachability-aware attack chains, phase 2 (dataflow DAG).** The
   chain engine can now confirm an injection-to-impact chain by walking
   the actual taint graph between its two legs, not just by intersecting
