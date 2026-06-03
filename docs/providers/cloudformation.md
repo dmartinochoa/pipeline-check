@@ -58,7 +58,7 @@ Rule helpers (importable from ``cloudformation/base.py``):
   intrinsic dicts entirely when walking for hard-coded secrets.
 
 This matches cfn-lint and cfn-nag conventions and keeps findings
-useful under the common case where templates are parameterised.
+useful under the common case where templates are parameterized.
 
 ## Resource-type coverage
 
@@ -126,9 +126,9 @@ useful under the common case where templates are parameterised.
 | [CD-001](#cd-001) | Automatic rollback on failure not enabled | <span class="pg-sev pg-sev--medium">MEDIUM</span> |  |
 | [CD-002](#cd-002) | AllAtOnce deployment config, no canary or rolling strategy | <span class="pg-sev pg-sev--high">HIGH</span> |  |
 | [CD-003](#cd-003) | No CloudWatch alarm monitoring on deployment group | <span class="pg-sev pg-sev--medium">MEDIUM</span> |  |
-| [CF-001](#cf-001) | Template declares AWS::IAM::AccessKey (long-lived credential) | <span class="pg-sev pg-sev--high">HIGH</span> |  |
+| [CF-001](#cf-001) | Template declares AWS::IAM::AccessKey (long-lived credential) | <span class="pg-sev pg-sev--critical">CRITICAL</span> |  |
 | [CF-002](#cf-002) | Stateful data-store resource carries a plaintext secret | <span class="pg-sev pg-sev--critical">CRITICAL</span> |  |
-| [CF-003](#cf-003) | CodeBuild VPC config references a public subnet | <span class="pg-sev pg-sev--high">HIGH</span> |  |
+| [CF-003](#cf-003) | CodeBuild project's VPC contains a public subnet | <span class="pg-sev pg-sev--high">HIGH</span> |  |
 | [CP-001](#cp-001) | No approval action before deploy stages | <span class="pg-sev pg-sev--high">HIGH</span> |  |
 | [CP-002](#cp-002) | Artifact store not encrypted with customer-managed KMS key | <span class="pg-sev pg-sev--medium">MEDIUM</span> |  |
 | [CP-003](#cp-003) | Source stage using polling instead of event-driven trigger | <span class="pg-sev pg-sev--low">LOW</span> |  |
@@ -164,7 +164,7 @@ useful under the common case where templates are parameterised.
 | [LMB-004](#lmb-004) | Lambda resource policy grants wildcard principal | <span class="pg-sev pg-sev--critical">CRITICAL</span> |  |
 | [PBAC-001](#pbac-001) | CodeBuild project has no VPC configuration | <span class="pg-sev pg-sev--high">HIGH</span> |  |
 | [PBAC-002](#pbac-002) | CodeBuild service role shared across multiple projects | <span class="pg-sev pg-sev--medium">MEDIUM</span> |  |
-| [PBAC-003](#pbac-003) | CodeBuild security group allows 0.0.0.0/0 all-port egress | <span class="pg-sev pg-sev--medium">MEDIUM</span> |  |
+| [PBAC-003](#pbac-003) | Security group allows 0.0.0.0/0 all-port egress | <span class="pg-sev pg-sev--medium">MEDIUM</span> |  |
 | [PBAC-005](#pbac-005) | Pipeline action roles all equal the pipeline-level role | <span class="pg-sev pg-sev--high">HIGH</span> |  |
 | [S3-001](#s3-001) | Artifact bucket public access block not fully enabled | <span class="pg-sev pg-sev--critical">CRITICAL</span> |  |
 | [S3-002](#s3-002) | Artifact bucket server-side encryption not configured | <span class="pg-sev pg-sev--high">HIGH</span> |  |
@@ -579,12 +579,12 @@ Add CloudWatch alarms to ``AlarmConfiguration.Alarms`` and set ``AlarmConfigurat
 
 </div>
 
-<div class="pg-rule pg-rule--high" markdown>
+<div class="pg-rule pg-rule--critical" markdown>
 
 ## CF-001: Template declares AWS::IAM::AccessKey (long-lived credential) { #cf-001 }
 
 <div class="pg-rule__tags">
-<span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-6</span> <span class="pg-tag pg-tag--cwe">CWE-798</span>
+<span class="pg-sev pg-sev--critical">CRITICAL</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-6</span> <span class="pg-tag pg-tag--cwe">CWE-798</span>
 </div>
 
 Fires on every ``AWS::IAM::AccessKey`` in the template. CloudFormation writes the resulting ``SecretAccessKey`` to stack outputs — the secret is now in every stack update log and every ``DescribeStacks`` response.
@@ -621,7 +621,7 @@ Move the secret into Secrets Manager (or SSM Parameter Store SecureString) and r
 
 <div class="pg-rule pg-rule--high" markdown>
 
-## CF-003: CodeBuild VPC config references a public subnet { #cf-003 }
+## CF-003: CodeBuild project's VPC contains a public subnet { #cf-003 }
 
 <div class="pg-rule__tags">
 <span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-7</span> <span class="pg-tag pg-tag--cwe">CWE-1327</span>
@@ -893,7 +893,7 @@ Looks for at least one ``AWS::Events::Rule`` whose ``EventPattern`` JSON matches
 
 **Recommended action**
 
-Declare an ``AWS::Events::Rule`` whose ``EventPattern`` matches ``aws.codepipeline`` events with ``detail.state: FAILED``, and target it at the notification destination of your choice (SNS, Slack via Chatbot, PagerDuty).
+Declare an ``AWS::Events::Rule`` whose ``EventPattern`` matches the ``CodePipeline Pipeline Execution State Change`` detail-type with ``detail.state: FAILED``, and target it at the notification destination of your choice (SNS, Slack via Chatbot, PagerDuty).
 
 </div>
 
@@ -1341,13 +1341,13 @@ Create one ``AWS::IAM::Role`` per ``AWS::CodeBuild::Project`` and reference it v
 
 <div class="pg-rule pg-rule--medium" markdown>
 
-## PBAC-003: CodeBuild security group allows 0.0.0.0/0 all-port egress { #pbac-003 }
+## PBAC-003: Security group allows 0.0.0.0/0 all-port egress { #pbac-003 }
 
 <div class="pg-rule__tags">
 <span class="pg-sev pg-sev--medium">MEDIUM</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-5</span> <span class="pg-tag pg-tag--cwe">CWE-1327</span>
 </div>
 
-Walks ``AWS::EC2::SecurityGroup.Properties.SecurityGroupEgress`` for every SG attached to a CodeBuild project's ``VpcConfig``. Fires on any rule that allows ``0.0.0.0/0`` on the full port range — that's a completely open exfiltration channel.
+Walks ``AWS::EC2::SecurityGroup.Properties.SecurityGroupEgress`` for every ``AWS::EC2::SecurityGroup`` in the template (not only CodeBuild-attached ones). Fires on any rule that allows ``0.0.0.0/0`` (or ``::/0``) on the full port range, a completely open exfiltration channel.
 
 <div class="pg-rule__rec" markdown>
 
@@ -1487,7 +1487,7 @@ Attach an ``AWS::S3::BucketPolicy`` carrying a ``Deny`` statement on ``Action: "
 <span class="pg-sev pg-sev--medium">MEDIUM</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-9</span> <span class="pg-tag pg-tag--cwe">CWE-345</span>
 </div>
 
-Gated check: fires only when an ``AWS::Lambda::Function`` references ``CodeSigningConfigArn``. Passes when at least one ``AWS::Signer::SigningProfile`` with ``PlatformId`` starting with ``AWSLambda-`` exists in the template.
+Gated check: fires only when an ``AWS::Lambda::Function`` references ``CodeSigningConfigArn``. Passes when at least one ``AWS::Signer::SigningProfile`` with ``PlatformId`` containing ``AWSLambda`` exists in the template.
 
 <div class="pg-rule__rec" markdown>
 

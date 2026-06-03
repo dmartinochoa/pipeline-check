@@ -6,6 +6,64 @@ What's planned, what's shipped, and what's deliberately out of scope.
 
 ### Unreleased (on ``dev``)
 
+- **``devenv`` provider: developer-environment auto-execution scanner
+  (DEV-001..005)** — Crosses the "scan pipeline definitions, not the dev
+  environment" line deliberately (the boundary the npm-theme adjacent
+  note flagged). ``--pipeline devenv`` parses the config files that run
+  code on repo open: ``.vscode/tasks.json`` (DEV-001, folder-open
+  tasks), ``.devcontainer/devcontainer.json`` (DEV-002 lifecycle
+  commands, DEV-005 host-side ``initializeCommand``), and
+  ``.claude/settings.json`` (DEV-003, committed ``type: command``
+  hooks). DEV-004 (CRITICAL) is the headline: any of those auto-run
+  surfaces piping a remote download into a shell, reusing
+  ``_primitives/remote_script_exec`` scoped to the auto-run command
+  strings. JSON(C) parsing (string-aware comment / trailing-comma
+  strip), no tokens, no network. Models the 2026 Red Hat npm second-
+  stage loaders. Auto-detected on ``.vscode`` / ``.devcontainer`` /
+  ``.claude`` presence; mapped across OWASP / NIST 800-53 / ESF. Provider
+  count 32 -> 33.
+- **``pipeline_check fix-pr``: autofix-to-PR subcommand** — Closes the
+  "patch on disk vs. PR in your inbox" gap the candidate flagged. Scans
+  the auto-detected pipeline files, applies the autofixers of the chosen
+  ``--safety`` tier (``safe`` / ``unsafe`` / ``all``, same vocabulary as
+  ``--list-fixers``), commits the changed files to a fresh branch
+  (``pipeline-check/autofix``, auto-suffixed on collision), pushes, and
+  opens the request: ``gh pr create`` on GitHub, a GitLab MR via
+  ``merge_request.*`` push options (no token needed), or a pushed branch
+  plus manual instructions elsewhere. Refuses a dirty tree by default
+  (``--allow-dirty`` stages only the autofix edits even then);
+  ``--dry-run`` previews the patch + planned git actions touching
+  nothing, ``--no-push`` stops at the local commit. The ``--fix --apply``
+  path was split into a pure ``_plan_fix_edits`` planner plus a writer so
+  fix-pr can decide there's something to commit before cutting a branch;
+  git / host plumbing lives in ``core/fix_pr.py``. Documented under
+  ``--man autofix``.
+- **GHA-116 + AC-039: bulk-secrets serialization** — GHA-116 (HIGH)
+  flags ``${{ toJSON(secrets) }}`` (plus the ``fromJSON`` / ``format``
+  wrappers) in a step / job / workflow ``env:`` / ``run:`` / ``with:``,
+  the in-YAML primitive behind the 2025 tj-actions/changed-files
+  (CVE-2025-30066) and GhostAction secret-harvesting campaigns. AC-039
+  (CRITICAL chain) makes it reachable: an attacker-influenced trigger
+  (GHA-002 / 009 / 013) plus a GHA-116 step on the same workflow means a
+  fork PR or comment dumps every secret into a log. github 106 -> 107,
+  chains 52 -> 53.
+- **npm "untrusted branch" / trusted-publishing pack** — The Red Hat npm
+  compromise family (see the candidate below, now shipped). GHA-113
+  (HIGH, OIDC trusted-publishing job with no environment gate), GHA-114
+  (HIGH, publish workflow reachable from an unrestricted push trigger),
+  GHA-115 (MEDIUM, workflow-wide ``id-token: write`` a subset of jobs
+  consume), AC-038 (CRITICAL chain, untrusted branch reaches OIDC
+  publish), and the consumer-side provenance-ref signals NPM-017 +
+  PYPI-021 (LOW, ``--resolve-remote``, flag a latest release whose SLSA
+  source ref is a branch, not a tag, via the shared
+  ``_primitives/provenance_ref`` extractor).
+- **AI-agent IaC pack (GHA-111 / AC-037) + GHA-112** — GHA-111 (an
+  agentic CLI co-located with an unattended ``terraform apply`` /
+  ``cdk deploy`` / ``pulumi up``, so a prompt-injected agent's IaC
+  reaches the cloud) and AC-037 (the reachability chain pairing an
+  untrusted-input agent leg with GHA-111). GHA-112 closes the
+  self-hosted-runner pack (a deploy job on a self-hosted runner with no
+  protected ``environment:`` gate).
 - **PyPI behavioral-trust signals (PYPI-019 / PYPI-020)** — The PyPI
   parallels of the NPM-015 / NPM-016 supply-chain-posture signals, both
   LOW and ``--resolve-remote``-gated. **PYPI-019** flags a direct
@@ -670,12 +728,59 @@ through; the v1 heatmap intentionally avoided that plumbing change.
 ### Reachability-aware attack chains
 
 Phase 1 (shared-job intersection) shipped incrementally across the
-chain pack. Phase 2 is the dataflow-DAG variant: walk the TAINT
-engine's DAG between the two anchor findings and only fire when an
-executable connection exists. Requires extending TAINT findings to
-expose their source / sink coordinates on a cross-document graph;
-the v1.0.x TAINT engine carries this state per-workflow but doesn't
-yet expose it to the chain engine.
+chain pack. **Phase 2 (dataflow DAG) is now landing incrementally**,
+same as phase 1 did. The TAINT-NNN rules expose their source-to-sink
+edges as a structured ``Finding.taint_flows`` (``source_job ->
+sink_job`` plus the rendered path), and ``chains/_reachability.py``'s
+``assess_reachability`` builds a directed graph from those edges and
+breadth-first-searches (multi-hop) from the injection leg's job(s) to
+the impact leg's job(s). AC-002 is the pilot: it reports a *proven
+dataflow path* when one exists (the precise connecting job chain + the
+rendered taint path), falling back to the phase-1 shared-job signal
+otherwise. ``Chain.via_dataflow`` marks the stronger tier in JSON +
+the terminal badge, and ``--chains-require-dataflow`` is the stricter
+CI gate (vs ``--chains-require-reachability``).
+
+AC-022 (the GitLab analog) then migrated too: its TAINT-004 (dotenv
+artifact) and TAINT-008 (``extends:`` inheritance) rules populate
+``taint_flows``, and AC-022 walks them through the same
+``assess_reachability`` helper.
+
+The three remaining injection chains then migrated, completing the
+provider sweep. **AC-026** (Buildkite) walks TAINT-005's
+``buildkite-agent meta-data`` set/get edges, keyed on step labels (the
+same identifiers BK-003 / BK-007 anchor on), so it reuses the full
+helper exactly like AC-022. **AC-025** (Argo) walks TAINT-007's
+``{{tasks.<t>.outputs.parameters.<o>}}`` cross-template edges; the rule
+qualifies each edge with the document's ``<Kind>/<name>:`` prefix so the
+producer / consumer template names match ARGO-002 / ARGO-005's anchors
+(and don't collide across documents in the shared ``argo`` corpus).
+**AC-023** (Tekton) walks TAINT-006's ``$(tasks.<t>.results.<r>)`` edges
+across the Task / Pipeline document split: TAINT-006 keys each edge on
+the Pipeline task's resolved ``taskRef`` document id (``<Kind>/<name>``,
+matching TKN-002 / TKN-003's per-step anchor prefix), and AC-023 walks
+at that task-identity granularity while keeping the phase-1 *same-step*
+check as the fallback, so the precise single-step semantics never widen
+to a coarser same-task match.
+
+Still open as the one phase-2 follow-up: extend the graph across the
+reusable-workflow boundary (TAINT-003 already carries a
+``cross_document`` ``uses:`` sink in its flows, but walking into the
+callee body needs ``--resolve-remote``).
+
+The reusable-workflow boundary then shipped, closing phase 2. TAINT-003
+populates ``taint_flows`` with a ``cross_document`` edge per forward,
+keyed on the resolved callee ``Workflow.path`` when the forward is
+confirmed to reach an unquoted ``${{ inputs.<name> }}`` sink in a loaded
+callee (on disk, or via ``--resolve-remote``), or the raw callee ref
+otherwise. AC-002 gained a cross-document tier: a confirmed forward
+whose callee path also has an ungated deploy (GHA-014) reports a
+dataflow-confirmed injection-to-deploy chain spanning ``[caller,
+callee]``, the reusable-workflow analog of its single-document path. It
+never fires without the callee body in scope, since only a confirmed
+forward keys its edge on a real path. With the three injection chains
+(above) and this boundary done, phase 2's dataflow tier covers every
+TAINT engine and the one cross-document channel.
 
 ### Pluggable LLM-assisted triage (opt-in, local)
 
@@ -757,10 +862,20 @@ surface changes. Both are LOW, ``--resolve-remote``-gated, scoped to
 direct index dependencies, and reuse the per-package JSON document the
 cooldown / OSV passes already fetch.
 
-Still open as follow-ups: a recent-ownership-change / new-account
-signal to pair with NPM-014 (the actual takeover vector, worth a higher
-severity), and a PyPI single-maintainer signal if PyPI ever exposes a
-reliable owner-list API.
+The recent-ownership-change / new-account signal then shipped as
+**NPM-018**: it reads each direct dependency's per-version publisher
+(the packument's ``_npmUser``) and flags a package whose latest release
+was published by an account that published none of its prior versions,
+the active account-takeover vector that fires the single-publisher blast
+radius NPM-014 only measures. MEDIUM severity (higher than NPM-014's LOW,
+as this section called for), MEDIUM confidence (a legitimate hand-off
+trips it the same as a takeover), ``--resolve-remote``-gated, three-prior-
+version floor so brand-new packages stay out. npm 17 -> 18.
+
+Still open as follow-ups: a PyPI new-publisher analog (blocked the same
+way the PyPI single-maintainer signal is, PyPI exposes no reliable
+per-release publisher-account field), and a PyPI single-maintainer
+signal if PyPI ever exposes a reliable owner-list API.
 
 ### Weak-coverage provider deepening
 
@@ -1103,6 +1218,17 @@ lightweight HTML visualization bundled in the fleet report. This is
 what commercial ASPM tools (Cycode, Legit Security, Apiiro) sell as
 "pipeline topology." Builds on the fleet phase 2 infrastructure.
 
+**JSON shipped.** ``fleet.json`` now carries a ``posture_graph``: nodes
+are the scanned repos (grade / score / per-severity breakdown), edges
+are the cross-repo CXPC relationships as directed ``source -> target``
+links tagged with chain id / severity / title. ``Chain`` gained a
+structured ``repos`` field (``[source, target]`` for cross-repo chains)
+that CXPC-001..004 populate, so the repo-to-repo edge is data, not just
+narrative prose; a chain endpoint outside the scanned fleet still lands
+as a node with ``scanned: false``. ``fleet.md`` gets a matching edge
+table. Still open: the lightweight HTML visualization (the JSON is the
+contract it would render).
+
 ### AI agent pipeline risk rules
 
 The HackerBot-Claw campaign (February 2026) demonstrated AI prompt
@@ -1126,6 +1252,146 @@ PR-checkout topology, or GHA-103 review bot on an untrusted trigger)
 with GHA-111 on one workflow, the cloud-account analog of AC-035's
 repo-write reviewer-and-committer loop. The AI-agent pipeline-risk
 theme is now fully covered, rule and chain.
+
+### ~~npm trusted-publishing / "untrusted branch" abuse rules~~ shipped
+
+Shipped on ``dev`` as the full pack the proposal below scopes: GHA-113,
+GHA-114, GHA-115, AC-038, and the consumer-side NPM-017 / PYPI-021
+(provenance built from a non-release ref, reusing a shared
+``_primitives/provenance_ref`` extractor). The analysis is kept below
+because it documents why each pre-existing rule missed this exact shape.
+The checkout-time auto-execution scanner discussed at the end of this
+section then shipped as the ``devenv`` provider (DEV-001..005): the
+boundary decision was taken to cross the dev-environment line, and the
+pack covers ``.vscode/tasks.json`` folder-open tasks,
+``.claude/settings.json`` session-start hooks, and devcontainer
+lifecycle / ``initializeCommand`` (the ``.github/setup.js`` loader is
+caught when a devcontainer command shells out to it).
+
+The Red Hat npm compromise (BoostSecurity, "Trusted Publishing,
+Untrusted Branch", 2026) exposed a structural gap the rule pack did
+not previously cover. With a stolen maintainer credential the attacker
+created short-lived ``oidc-*`` branches (alive for 1 to 73 seconds),
+pushed a counterfeit ``.github/workflows/ci.yml`` that matched the
+legitimate workflow filename, and let a plain ``push`` trigger mint a
+GitHub Actions OIDC token. npm's trusted publishing accepted the
+token because it validates only org + repo + workflow filename, never
+the branch, the ref, or the workflow content, and no GitHub
+Environment was configured. 30+ ``@redhat-cloud-services`` packages
+shipped with cryptographically valid SLSA provenance recording the
+throwaway branch (``refs/heads/oidc-b67eedca``). Branch protection on
+``main`` was irrelevant; the attacker never touched it. The lesson:
+once trust is anchored to a workflow filename on any branch, the only
+project-side control that pins which ref may publish is a GitHub
+Environment with a deployment-branch rule on the publish job.
+
+Current coverage, and why each rule misses this exact shape:
+
+- **GHA-030** (OIDC token without environment gate) only knows the
+  cloud-credentials actions (``configure-aws-credentials``,
+  ``azure/login``, ``google-github-actions/auth``). It has no
+  registry-publish leg, so an npm / PyPI trusted-publishing job slips
+  past it.
+- **GHA-050** (publish without OIDC) fires only when the publish step
+  carries a long-lived registry secret (``NPM_TOKEN`` and friends). It
+  deliberately *passes* the OIDC trusted-publisher path, which is
+  exactly the path the Red Hat job used, environment gate or not.
+- **GHA-069** (orphan ``id-token``) passes because the publish job did
+  consume the token (``npm publish --provenance``); the grant was not
+  orphaned, it was abused.
+- **GHA-086** (wildcard branch trigger gates an environment deploy)
+  needs a job that already binds ``environment:``. The attack had no
+  environment at all, so the rule stays silent. It covers the opposite
+  topology (gate present, trigger too broad).
+- **GHA-024** (missing SLSA provenance) checks that a producer emits
+  provenance. These packages emitted valid provenance; presence was
+  never the gap, the *ref* in it was.
+- **SCM-023 / SCM-024** (environment missing reviewers / branch
+  policy) both pass silently when no environment is configured, which
+  is precisely the attack's state.
+- **AC-029** (untrusted trigger reaches long-lived publish) is built
+  for the long-lived-token lane (Ultralytics / s1ngularity shape). It
+  cannot reach this attack: no long-lived secret, and a plain ``push``
+  on an attacker-made branch is not one of its untrusted-trigger
+  anchors (``pull_request_target`` / ``workflow_run`` /
+  ``issue_comment``).
+
+Proposed rules (the GHA-014 / GHA-086 "two halves" pattern: one for
+the missing gate, one for the over-broad trigger, plus a reachability
+chain and a consumer-side signal):
+
+- **GHA-113 (HIGH) — OIDC trusted-publishing job without an
+  environment gate.** The registry-publish twin of GHA-030. Fires when
+  a job effectively has ``id-token: write`` (reuse GHA-030 /
+  GHA-069's ``_job_has_id_token``) AND runs a package-publish
+  primitive (reuse GHA-050's ``_PUBLISH_RE`` / ``_PUBLISH_ACTIONS``,
+  treating ``npm publish --provenance``, ``pypa/gh-action-pypi-publish``
+  with no ``password``, ``rubygems/release-gem``, and
+  ``crates-io/publish-action`` as the trusted-publisher shape) AND the
+  job binds no ``environment:``. This is the seam GHA-050 (long-lived
+  only) and GHA-030 (cloud-creds only) leave open. The recommendation
+  names the environment + deployment-branch rule as the fix and points
+  at npm's staged-publishing-with-2FA option for high-blast packages.
+- **GHA-114 (HIGH) — package-publish workflow triggers on an
+  unrestricted ref.** The "untrusted branch" half. Fires when a
+  workflow that publishes (publish primitive, or ``id-token: write``
+  paired with a publish step) is reachable from ``on: push`` with a
+  wildcard ``branches:`` pattern, no ``branches:`` / ``tags:`` filter
+  at all (every branch fires), or a branch list that is not the
+  protected default, and carries no tag-only / ``workflow_dispatch`` /
+  ``release: published`` restriction. Release should be tag-triggered
+  or dispatch-gated; a publish workflow runnable by ``push`` to any
+  branch is what let the counterfeit ``ci.yml`` run on a one-minute-old
+  ``oidc-*`` branch. Generalizes GHA-086 to the no-environment case.
+  Emits ``job_anchors`` for the chain.
+- **GHA-115 (LOW/MEDIUM) — ``id-token: write`` granted workflow-wide
+  instead of job-scoped.** Defense-in-depth item #2 from the writeup.
+  Fires when ``id-token: write`` sits on the top-level ``permissions:``
+  block (so every job inherits mint rights) while only a subset of
+  jobs actually consume it (reuse GHA-069's consumer detection).
+  Recommend pushing the scope down to the publish job so a compromised
+  build / test job in the same workflow can't request a
+  publish-capable token. Pairs with GHA-069 (granted-but-unused); this
+  is granted-too-broadly.
+- **AC-038 (CRITICAL, chain) — untrusted branch reaches OIDC trusted
+  publish.** The reachable form of the whole attack. Intersects
+  GHA-114 (publish workflow on an unrestricted push trigger) with
+  GHA-113 (OIDC publish, no environment gate) on the same job: a
+  publish token mintable from any branch with no human or branch gate.
+  This is the OIDC trusted-publishing lane AC-029 was written for the
+  long-lived-token lane and explicitly cannot reach.
+- **NPM-017 (LOW, ``--resolve-remote``) — dependency provenance minted
+  from a non-release ref.** The consumer-side lesson the article ends
+  on: valid provenance is not a trusted branch. Extends NPM-015's
+  attestation read to inspect the provenance predicate's source ref
+  (the SLSA ``buildDefinition`` / ``invocation`` ref, e.g.
+  ``refs/heads/oidc-b67eedca``) and flag a latest release whose
+  provenance was built from a ref that is neither a tag nor the repo's
+  default branch. Returns skip (not flag) when the attestation omits
+  the ref, the same conservative default PYPI-019's provenance parser
+  uses. A PyPI analog (PYPI-021) reads the PEP 740 attestation ref the
+  same way. This is the only signal that would have flagged the Red Hat
+  packages on the install side; they carried valid provenance, just
+  from a throwaway branch.
+
+Adjacent, and probably a separate theme (checkout-time auto-execution,
+not a pipeline definition, so it sits near the "scans pipeline
+definitions, not the dev environment" non-goal line): the campaign's
+second stage dropped loaders that run the moment a developer opens the
+checkout, a ``.vscode/tasks.json`` task with ``runOptions.runOn:
+folderOpen``, a ``.claude/settings.json`` ``SessionStart`` hook, and a
+``.github/setup.js`` shelled out by Codespaces / devcontainer. GHA-056
+catches literal worm IOC strings but not the general "this repo runs
+code the instant you open it" shape. **Shipped** as the ``devenv``
+provider (DEV-001..005, see the Shipped section): the decision was taken
+to cross the dev-environment line, and the pack flags folder-open tasks,
+devcontainer lifecycle / ``initializeCommand``, and committed Claude Code
+hooks, with CRITICAL reserved for the fetch-and-execute shape.
+The registry-side and operational defenses from the writeup (npm
+enforcing environments when configured, staged publishing as the
+default, hunting the Activity API for ephemeral-branch +
+``id-token: write`` pairs) are outside a static scanner's reach and
+belong in the docs, not a rule.
 
 ### ~~Gitea / Forgejo provider~~ shipped
 
@@ -1162,13 +1428,19 @@ Actions. Shared logic in ``_primitives/log_leak.py``.
 
 Shipped in v1.6.0. See the v1.6.0 entry above.
 
-### Auto-remediation PRs (``pipeline_check fix-pr``)
+### ~~Auto-remediation PRs (``pipeline_check fix-pr``)~~ shipped
 
-A subcommand that runs the scan, applies safe fixers, and opens a
-PR via ``gh pr create`` / GitLab API. The scanner already computes
-unified diffs; this is plumbing. Closes the gap between "patch on
-disk" and "PR in your inbox" that drives adoption in orgs that scan
-in CI but never act on findings.
+Shipped on ``dev``. ``pipeline_check fix-pr`` runs the scan, applies the
+autofixers of the chosen ``--safety`` tier, commits the changed files to
+a fresh branch, pushes, and opens the request (``gh pr create`` on
+GitHub, a GitLab MR via ``merge_request.*`` push options, a pushed
+branch plus manual instructions elsewhere). ``--dry-run`` previews
+without touching the repo; ``--no-push`` stops at the local commit;
+``--allow-dirty`` proceeds on a dirty tree while still staging only the
+autofix edits. Reuses the existing fixer engine via a planner / writer
+split; git + host plumbing lives in ``core/fix_pr.py``. Still open as a
+follow-up: a Bitbucket PR path (the branch is pushed today but the PR
+must be opened by hand) and a ``--reviewer`` / labels passthrough.
 
 ### ~~Fixer discoverability (``--list-fixers``)~~ shipped
 

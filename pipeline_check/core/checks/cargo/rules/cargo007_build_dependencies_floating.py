@@ -31,15 +31,16 @@ RULE = Rule(
         "build-dependency that ships a build.rs hook."
     ),
     docs_note=(
-        "Walks ``[build-dependencies]`` and "
-        "``[target.<target>.build-dependencies]`` entries on each "
+        "Walks ``[build-dependencies]``, "
+        "``[target.<target>.build-dependencies]``, and "
+        "``[workspace.build-dependencies]`` entries on each "
         "``Cargo.toml`` and fires when the version spec is "
         "floating per Cargo's semver model (bare numeric / "
         "caret / tilde / wildcard / range). Exact pins "
-        "(``=X.Y.Z``) pass. Workspace-inherited entries "
-        "(``workspace = true``) are skipped — the workspace "
-        "root's audit is the right surface for those, and "
-        "CARGO-009 covers that table specifically."
+        "(``=X.Y.Z``) pass. Only ``workspace = true``-inherited "
+        "entries are skipped (the workspace root's audit is the "
+        "right surface for those, and CARGO-009 covers that table "
+        "specifically)."
     ),
     known_fp=(
         "Library crates published to crates.io legitimately use "

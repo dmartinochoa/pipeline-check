@@ -15,6 +15,9 @@ from pipeline_check.core.checks.cloudformation.rules import (
     ca003_domain_policy_public as ca003,
 )
 from pipeline_check.core.checks.cloudformation.rules import (
+    ca004_repo_wildcard_actions as ca004,
+)
+from pipeline_check.core.checks.cloudformation.rules import (
     cf003_codebuild_public_subnet as cf003,
 )
 from pipeline_check.core.checks.cloudformation.rules import (
@@ -157,6 +160,18 @@ class TestCA003ExploitExample:
         vuln_ctx, safe_ctx = _example_contexts(ca003.RULE)
         assert ca003.check(vuln_ctx)[0].passed is False
         assert ca003.check(safe_ctx)[0].passed is True
+
+
+class TestCA004ExploitExample:
+    def test_strong_check(self):
+        # The CFN CA-004 variant previously had only a firing-side test
+        # (a wildcard action+resource fails); no test pinned that a
+        # properly scoped CodeArtifact repository policy PASSES. The
+        # exploit_example's Safe fragment scopes both, so it must pass
+        # while the Vulnerable fragment fires.
+        vuln_ctx, safe_ctx = _example_contexts(ca004.RULE)
+        assert ca004.check(vuln_ctx)[0].passed is False
+        assert ca004.check(safe_ctx)[0].passed is True
 
 
 class TestLMB003ExploitExample:

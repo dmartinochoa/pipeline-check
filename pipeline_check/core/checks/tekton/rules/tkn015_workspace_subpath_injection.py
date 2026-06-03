@@ -24,7 +24,7 @@ RULE = Rule(
         "shared volume. Tekton resolves ``$(params.x)`` substitution "
         "in workspace bindings before the volume mount happens, so "
         "``../../../etc`` lands as a real path. If you genuinely "
-        "need a runtime-chosen sub-path, sanitise the parameter "
+        "need a runtime-chosen sub-path, sanitize the parameter "
         "with a step-level pre-check (``case`` against an allow-"
         "list, reject anything containing ``..``) and pass the "
         "validated value through a result rather than the raw "

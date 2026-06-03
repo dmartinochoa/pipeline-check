@@ -429,6 +429,9 @@ STANDARD = Standard(
         "GHA-111":  ["CC6.1", "CC6.3"],  # AI agent edits IaC applied in the same job
         "GHA-112":  ["CC6.6", "CC8.1"],  # self-hosted deploy with no environment gate
         "GHA-113":  ["CC6.1", "CC8.1"],  # OIDC trusted-publish w/o env gate
+        "GHA-114":  ["CC6.1", "CC8.1"],  # publish workflow on an unrestricted push trigger
+        "GHA-115":  ["CC6.1"],              # id-token granted workflow-wide, not job-scoped
+        "GHA-116":  ["CC6.1"],              # bulk secrets serialization
         "GHA-062":  ["CC6.1", "CC6.3"],     # OIDC trust subject in sibling IaC is overly broad
         "GHA-063":  ["CC6.1"],              # spoofable bot-actor if-predicate
         "GHA-064":  ["CC8.1"],              # unsound contains() with comma-string operand
@@ -632,6 +635,7 @@ STANDARD = Standard(
         "PYPI-018": ["CC6.7", "CC8.1"],  # --no-binary forces sdist build
         "PYPI-019": ["CC6.8", "CC7.1", "CC8.1"],  # missing PEP 740 build provenance
         "PYPI-020": ["CC6.8", "CC7.1", "CC8.1"],  # low OpenSSF Scorecard upstream
+        "PYPI-021": ["CC6.8", "CC7.1", "CC8.1"],  # provenance built from a non-release ref
         "PYPI-004": ["CC8.1"],
         "PYPI-015": ["CC8.1"],  # direct artifact URL
         "PYPI-005": ["CC8.1"],
@@ -662,6 +666,8 @@ STANDARD = Standard(
         "NPM-010":  ["CC6.8", "CC7.1", "CC8.1"],
         "NPM-014":  ["CC6.8", "CC7.1", "CC8.1"],
         "NPM-015":  ["CC6.8", "CC7.1", "CC8.1"],
+        "NPM-017":  ["CC6.8", "CC7.1", "CC8.1"],  # provenance built from a non-release ref
+        "NPM-018":  ["CC6.8", "CC7.1", "CC8.1"],  # latest release from a new publisher
         "NPM-016":  ["CC6.8", "CC7.1", "CC8.1"],
         "PYPI-008": ["CC6.8", "CC7.1", "CC8.1"],
         "PYPI-009": ["CC6.8", "CC7.1", "CC8.1"],
@@ -1015,5 +1021,11 @@ STANDARD = Standard(
         "GCKMS-004": ["CC6.1"],                  # keyring IAM
         "GCKMS-005": ["CC6.1"],                  # destroy sched
         "GCKMS-006": ["CC6.1"],                  # imported key
+        # Developer-environment auto-execution (malware / untrusted-code vector)
+        "DEV-001":   ["CC6.8"],
+        "DEV-002":   ["CC6.8"],
+        "DEV-003":   ["CC6.8"],
+        "DEV-004":   ["CC6.8"],
+        "DEV-005":   ["CC6.8"],
     },
 )

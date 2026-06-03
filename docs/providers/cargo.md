@@ -58,7 +58,7 @@ pipeline_check --pipeline cargo --cargo-path ./crates/my-crate/
 <span class="pg-sev pg-sev--medium">MEDIUM</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-3</span> <span class="pg-tag pg-tag--esf">ESF-S-VERIFY-DEPS</span> <span class="pg-tag pg-tag--cwe">CWE-1357</span>
 </div>
 
-Fires on any ``[dependencies]`` / ``[dev-dependencies]`` / ``[build-dependencies]`` / ``[target.<...>.dependencies]`` entry whose version specifier evaluates as floating per Cargo's semver grammar (any leading ``^`` / ``~`` / ``>=`` / ``<`` / ``*``, or bare versions which Cargo interprets as caret-equivalent). Exact pins (``=N.M.P``) pass. Entries without a version (``git`` / ``path``) are handled by CARGO-002 / CARGO-004 respectively, not here.
+Fires on any ``[dependencies]`` / ``[dev-dependencies]`` / ``[build-dependencies]`` / ``[target.<...>.dependencies]`` / ``[workspace.dependencies]`` entry whose version specifier evaluates as floating per Cargo's semver grammar (any leading ``^`` / ``~`` / ``>=`` / ``<`` / ``*``, or bare versions which Cargo interprets as caret-equivalent). Exact pins (``=N.M.P``) pass. Entries without a version (``git`` / ``path``) are handled by CARGO-002 / CARGO-004 respectively, not here.
 
 **Known false-positive modes**
 
@@ -246,7 +246,7 @@ Bump the offending dep to a patched version (named in the cited advisory) and re
 <span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-3</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-7</span> <span class="pg-tag pg-tag--esf">ESF-S-VERIFY-DEPS</span> <span class="pg-tag pg-tag--cwe">CWE-1357</span> <span class="pg-tag pg-tag--cwe">CWE-829</span>
 </div>
 
-Walks ``[build-dependencies]`` and ``[target.<target>.build-dependencies]`` entries on each ``Cargo.toml`` and fires when the version spec is floating per Cargo's semver model (bare numeric / caret / tilde / wildcard / range). Exact pins (``=X.Y.Z``) pass. Workspace-inherited entries (``workspace = true``) are skipped — the workspace root's audit is the right surface for those, and CARGO-009 covers that table specifically.
+Walks ``[build-dependencies]``, ``[target.<target>.build-dependencies]``, and ``[workspace.build-dependencies]`` entries on each ``Cargo.toml`` and fires when the version spec is floating per Cargo's semver model (bare numeric / caret / tilde / wildcard / range). Exact pins (``=X.Y.Z``) pass. Only ``workspace = true``-inherited entries are skipped (the workspace root's audit is the right surface for those, and CARGO-009 covers that table specifically).
 
 **Known false-positive modes**
 

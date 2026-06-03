@@ -71,7 +71,7 @@ RULE = Rule(
         "# CI runs the malicious target with the base repo's secrets\n"
         "# (every ${{ secrets.* }} the workflow has access to) and a\n"
         "# write-scope GITHUB_TOKEN. The PR doesn't even need to be\n"
-        "# merged or reviewed — the privileged execution happens at\n"
+        "# merged or reviewed. The privileged execution happens at\n"
         "# PR-open time.\n"
         "\n"
         "# Safe: split the workflow. The labeler runs with secrets\n"

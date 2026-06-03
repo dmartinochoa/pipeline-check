@@ -6,7 +6,7 @@ idioms, ``eval``, ``sh -c "$VAR"``, backtick command substitution
 with a variable, regardless of whether the input source is
 attacker-controllable. The content of the variable at runtime
 decides whether the shell invocation escapes the current process;
-flagging the idiom forces the author to sanitise at the boundary.
+flagging the idiom forces the author to sanitize at the boundary.
 """
 from __future__ import annotations
 

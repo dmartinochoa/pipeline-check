@@ -203,6 +203,9 @@ STANDARD = Standard(
         "GHA-111":  ["AC-6", "IA-5"],  # AI agent edits IaC applied in the same job
         "GHA-112":  ["AC-3", "CM-7"],  # self-hosted deploy with no environment gate
         "GHA-113":  ["AC-3", "IA-5"],  # OIDC trusted-publish w/o env gate
+        "GHA-114":  ["AC-3", "IA-5"],  # publish workflow on an unrestricted push trigger
+        "GHA-115":  ["AC-6", "CM-7"],                     # id-token granted workflow-wide, not job-scoped
+        "GHA-116":  ["AC-6", "IA-5"],                     # bulk secrets serialization
         "GHA-062":  ["AC-3", "AC-6"],                     # OIDC trust subject in sibling IaC is overly broad
         "GHA-063":  ["AC-3", "SI-7"],                     # spoofable bot-actor if-predicate
         "GHA-064":  ["SA-10", "AC-3"],                    # unsound contains() with comma-string operand
@@ -648,6 +651,7 @@ STANDARD = Standard(
         "PYPI-018": ["SR-3", "SR-11", "SC-8"],  # --no-binary forces sdist build
         "PYPI-019": ["SR-3", "SR-11", "RA-5"],  # missing PEP 740 build provenance
         "PYPI-020": ["SR-3", "SR-11", "RA-5"],  # low OpenSSF Scorecard upstream
+        "PYPI-021": ["SR-3", "SR-11", "RA-5"],  # provenance built from a non-release ref
         "PYPI-004": ["SR-3", "SR-11", "SI-2"],           # VCS dep without commit SHA
         "PYPI-015": ["SR-3", "SR-11", "SI-2"],  # direct artifact URL
         "PYPI-005": ["SR-3", "SR-11"],                   # --extra-index-url (dep confusion)
@@ -678,6 +682,8 @@ STANDARD = Standard(
         "NPM-010":  ["SR-3", "SR-11", "RA-5"],           # OSV advisory (--resolve-remote)
         "NPM-014":  ["SR-3", "SR-11", "RA-5"],           # single-publisher risk
         "NPM-015":  ["SR-3", "SR-11", "RA-5"],           # missing build provenance
+        "NPM-017":  ["SR-3", "SR-11", "RA-5"],           # provenance built from a non-release ref
+        "NPM-018":  ["SR-3", "SR-11", "RA-5"],           # latest release from a new publisher
         "NPM-016":  ["SR-3", "SR-11", "RA-5"],           # low OpenSSF Scorecard
         "PYPI-008": ["SR-3", "SR-11", "RA-5"],           # cooldown gate (--resolve-remote)
         "PYPI-009": ["SR-3", "SR-11", "RA-5"],           # OSV advisory (--resolve-remote)
@@ -1000,5 +1006,11 @@ STANDARD = Standard(
         "GCKMS-004": ["AC-3", "AC-6"],                     # keyring IAM
         "GCKMS-005": ["SC-12", "CM-6"],                    # destroy sched
         "GCKMS-006": ["SC-12", "SC-13"],                   # imported key
+        # Developer-environment auto-execution
+        "DEV-001":   ["CM-7"],                             # vscode folderOpen task
+        "DEV-002":   ["CM-7"],                             # devcontainer lifecycle
+        "DEV-003":   ["CM-7"],                             # committed claude hook
+        "DEV-004":   ["SI-7", "CM-7"],                     # auto-run remote fetch+exec
+        "DEV-005":   ["CM-7", "AC-6"],                     # initializeCommand on host
     },
 )

@@ -214,6 +214,9 @@ STANDARD = Standard(
         "GHA-111":  ["PS.1.1"],  # AI agent edits IaC applied in the same job
         "GHA-112":  ["PO.5.1", "PO.5.2"],  # self-hosted deploy with no environment gate
         "GHA-113":  ["PO.5.1", "PS.1.1"],  # OIDC trusted-publish w/o env gate
+        "GHA-114":  ["PO.5.1", "PS.1.1"],  # publish workflow on an unrestricted push trigger
+        "GHA-115":  ["PO.5.1"],                        # id-token granted workflow-wide, not job-scoped
+        "GHA-116":  ["PS.1.1"],                        # bulk secrets serialization
         "GHA-062":  ["PO.5.1"],                        # OIDC trust subject in sibling IaC is overly broad
         "GHA-063":  ["PO.5.1"],                        # spoofable bot-actor if-predicate
         "GHA-064":  ["PO.5.1"],                        # unsound contains() with comma-string operand
@@ -994,5 +997,11 @@ STANDARD = Standard(
         "GCKMS-004": ["PO.5.1"],                       # keyring IAM
         "GCKMS-005": ["PS.1.1"],                       # destroy sched
         "GCKMS-006": ["PS.1.1"],                       # imported key
+        # Developer-environment auto-execution
+        "DEV-001":   ["PW.6.1", "PW.9.1"],
+        "DEV-002":   ["PW.6.1", "PW.9.1"],
+        "DEV-003":   ["PW.6.1", "PW.9.1"],
+        "DEV-004":   ["PW.4.1", "PW.4.4"],
+        "DEV-005":   ["PW.6.1", "PW.9.1"],
     },
 )

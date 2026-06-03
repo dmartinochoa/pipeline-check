@@ -133,6 +133,7 @@ class FleetDigest:
         }
         if self.cxpc_chains:
             out["cxpc_chains"] = [c.to_dict() for c in self.cxpc_chains]
+        out["posture_graph"] = build_posture_graph(self)
         return out
 
 
@@ -882,6 +883,24 @@ def render_markdown(digest: FleetDigest) -> str:
                 f"| {c.severity.value} | {c.confidence.value} "
                 f"| {resources} |"
             )
+    graph = build_posture_graph(digest)
+    if graph["edges"]:
+        lines.append("")
+        lines.append("## Cross-repo posture graph")
+        lines.append("")
+        lines.append(
+            f"**{len(graph['nodes'])}** repo node(s), "
+            f"**{len(graph['edges'])}** cross-repo edge(s) "
+            f"(full graph in `posture_graph` of fleet.json)."
+        )
+        lines.append("")
+        lines.append("| From (producer) | To (consumer) | Via |")
+        lines.append("|---|---|---|")
+        for e in graph["edges"]:
+            lines.append(
+                f"| {e['source']} | {e['target']} "
+                f"| {e['chain_id']} ({e['severity']}) |"
+            )
     if digest.warnings:
         lines.append("")
         lines.append("## Warnings")
@@ -892,11 +911,68 @@ def render_markdown(digest: FleetDigest) -> str:
     return "\n".join(lines)
 
 
+def build_posture_graph(digest: FleetDigest) -> dict[str, Any]:
+    """Cross-repo posture graph derived from a fleet digest.
+
+    Nodes are the scanned repos (from ``snapshots``), each carrying its
+    grade / score / per-severity failed-finding breakdown. Edges are the
+    cross-repo (CXPC) relationships: each cross-repo chain contributes a
+    directed ``source -> target`` edge (the producer repo that carries
+    the risk, then the consumer / partner repo that inherits it), tagged
+    with the chain id / severity / title. A chain endpoint that wasn't in
+    the scanned fleet (a partner repo referenced but not scanned) still
+    appears as a node with null posture data and ``scanned: false``, so
+    the edge isn't silently dropped.
+
+    Shape: ``{"nodes": [...], "edges": [...]}`` — a plain adjacency the
+    fleet report bundles into ``fleet.json`` (a future HTML view renders
+    it directly). The fleet / CXPC engine already computes these
+    relationships; this just exposes the implied graph as data.
+    """
+    nodes: dict[str, dict[str, Any]] = {}
+    for s in digest.snapshots:
+        nodes[s.coord] = {
+            "id": s.coord,
+            "grade": s.grade,
+            "score": s.score,
+            "failed_by_severity": dict(s.failed_by_severity),
+            "total_failed": s.total_failed,
+            "scanned": True,
+        }
+    edges: list[dict[str, Any]] = []
+    for c in digest.cxpc_chains:
+        # CXPC chains carry a two-entry ``repos`` (source, target); skip
+        # anything that doesn't (defensive — a future cross-repo chain
+        # could span more, but the v1 graph models pairwise edges).
+        if len(c.repos) != 2:
+            continue
+        source, target = c.repos[0], c.repos[1]
+        for coord in (source, target):
+            if coord not in nodes:
+                nodes[coord] = {
+                    "id": coord,
+                    "grade": None,
+                    "score": None,
+                    "failed_by_severity": {},
+                    "total_failed": 0,
+                    "scanned": False,
+                }
+        edges.append({
+            "source": source,
+            "target": target,
+            "chain_id": c.chain_id,
+            "severity": c.severity.value,
+            "title": c.title,
+        })
+    return {"nodes": list(nodes.values()), "edges": edges}
+
+
 __all__ = [
     "FleetDigest",
     "FleetSnapshot",
     "RepoCoordinate",
     "apply_filters",
+    "build_posture_graph",
     "default_worker_count",
     "enumerate_org_repos",
     "load_repo_list",

@@ -360,7 +360,7 @@ class TestGHA014DeployEnvStub:
 
 class TestK8sDropTrueLine:
     """K8S-002 / K8S-003 / K8S-004 / K8S-005 all drop a YAML key set to
-    ``true``. Parameterised over the four rule IDs since the logic is
+    ``true``. Parameterized over the four rule IDs since the logic is
     identical."""
 
     def test_k8s005_drops_privileged_true(self):

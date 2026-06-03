@@ -510,6 +510,9 @@ STANDARD = Standard(
         "GHA-111":  ["PR.AA-05"],  # AI agent edits IaC applied in the same job
         "GHA-112":  ["PR.PS-01"],  # self-hosted deploy with no environment gate
         "GHA-113":  ["PR.AA-05"],  # OIDC trusted-publish w/o env gate
+        "GHA-114":  ["PR.AA-05"],  # publish workflow on an unrestricted push trigger
+        "GHA-115":  ["PR.AA-05"],  # id-token granted workflow-wide, not job-scoped
+        "GHA-116":  ["PR.AA-05", "PR.AA-01"],   # bulk secrets serialization
         "GHA-062":  ["PR.AA-05"],               # OIDC trust subject in sibling IaC is overly broad
         "GHA-063":  ["PR.AA-01"],               # spoofable bot-actor if-predicate
         "GHA-064":  ["PR.PS-06"],               # unsound contains() with comma-string operand
@@ -732,6 +735,7 @@ STANDARD = Standard(
         "PYPI-018": ["GV.SC-05", "PR.DS-02"],  # --no-binary forces sdist build
         "PYPI-019": ["GV.SC-05", "GV.SC-07", "PR.PS-02"],  # missing PEP 740 build provenance
         "PYPI-020": ["GV.SC-05", "GV.SC-07", "PR.PS-02"],  # low OpenSSF Scorecard upstream
+        "PYPI-021": ["GV.SC-05", "GV.SC-07", "PR.PS-02"],  # provenance built from a non-release ref
         "PYPI-004": ["GV.SC-05"],               # VCS dep without commit SHA
         "PYPI-015": ["GV.SC-05"],  # direct artifact URL
         "PYPI-005": ["GV.SC-05"],               # --extra-index-url (dep confusion)
@@ -762,6 +766,8 @@ STANDARD = Standard(
         "NPM-010":  ["GV.SC-05", "GV.SC-07", "PR.PS-02"],  # OSV advisory (--resolve-remote)
         "NPM-014":  ["GV.SC-05", "GV.SC-07", "PR.PS-02"],  # single-publisher risk
         "NPM-015":  ["GV.SC-05", "GV.SC-07", "PR.PS-02"],  # missing build provenance
+        "NPM-017":  ["GV.SC-05", "GV.SC-07", "PR.PS-02"],  # provenance built from a non-release ref
+        "NPM-018":  ["GV.SC-05", "GV.SC-07", "PR.PS-02"],  # latest release from a new publisher
         "NPM-016":  ["GV.SC-05", "GV.SC-07", "PR.PS-02"],  # low OpenSSF Scorecard
         "PYPI-008": ["GV.SC-05", "GV.SC-07", "PR.PS-02"],  # cooldown gate (--resolve-remote)
         "PYPI-009": ["GV.SC-05", "GV.SC-07", "PR.PS-02"],  # OSV advisory (--resolve-remote)
@@ -1047,5 +1053,11 @@ STANDARD = Standard(
         "GCKMS-004": ["PR.AA-05"],               # keyring IAM
         "GCKMS-005": ["PR.DS-01"],               # destroy sched
         "GCKMS-006": ["PR.DS-01"],               # imported key
+        # Developer-environment auto-execution
+        "DEV-001":   ["PR.PS-05"],
+        "DEV-002":   ["PR.PS-05"],
+        "DEV-003":   ["PR.PS-05"],
+        "DEV-004":   ["PR.PS-05"],
+        "DEV-005":   ["PR.PS-05"],
     },
 )

@@ -22,6 +22,7 @@ from pipeline_check.core.checks.base import (
     Finding,
     ResourceAnchor,
     Severity,
+    TaintFlow,
 )
 from pipeline_check.core.gate import GateConfig, evaluate_gate
 
@@ -38,6 +39,7 @@ def _f(
     job_anchors: tuple[str, ...] = (),
     path_evidence: tuple[str, ...] = (),
     resource_anchors: tuple[ResourceAnchor, ...] = (),
+    taint_flows: tuple[TaintFlow, ...] = (),
 ) -> Finding:
     return Finding(
         check_id=check_id,
@@ -51,6 +53,7 @@ def _f(
         job_anchors=job_anchors,
         path_evidence=path_evidence,
         resource_anchors=resource_anchors,
+        taint_flows=taint_flows,
     )
 
 
@@ -189,7 +192,7 @@ class TestEngine:
             "AC-021", "AC-022", "AC-023", "AC-024",
             "AC-025", "AC-026", "AC-027", "AC-028", "AC-029",
             "AC-030", "AC-031", "AC-032", "AC-033", "AC-034",
-            "AC-035", "AC-036", "AC-037",
+            "AC-035", "AC-036", "AC-037", "AC-038", "AC-039",
             "XPC-001", "XPC-002", "XPC-003", "XPC-004", "XPC-005",
             "XPC-006", "XPC-007", "XPC-008", "XPC-009", "XPC-010",
             "CXPC-001", "CXPC-002", "CXPC-003", "CXPC-004",
@@ -669,14 +672,85 @@ class TestChainAC002:
                 wf,
                 job_anchors=("release",),
                 path_evidence=(rendered_path,),
+                taint_flows=(
+                    TaintFlow(
+                        source_job="extract",
+                        sink_job="release",
+                        rendered=rendered_path,
+                    ),
+                ),
             ),
             _f("GHA-014", wf, job_anchors=("release",)),
         ])
         ac2 = next(c for c in out if c.chain_id == "AC-002")
         assert ac2.confirmed_reachable is True
+        # Phase-2: confirmed by a real source->sink taint path, not just
+        # shared-job co-location.
+        assert ac2.via_dataflow is True
+        assert "extract" in ac2.reachability_note
         assert "release" in ac2.reachability_note
         assert rendered_path in ac2.narrative
         assert "TAINT-002" in ac2.triggering_check_ids
+
+    def test_cross_document_reusable_workflow_dataflow(self):
+        # A caller passes untrusted input into a reusable workflow
+        # (TAINT-003 confirmed the forward, so its cross_document flow's
+        # sink_job is the resolved callee path) and that callee deploys
+        # without an environment gate (GHA-014 on the callee path). The
+        # injection reaches the ungated deploy across the boundary.
+        caller = ".github/workflows/caller.yml"
+        callee = ".github/workflows/deploy.yml"
+        rendered = (
+            "${{ github.event.issue.title }}@call.with.title -> "
+            "jobs.call.with.title -> "
+            "sink@uses:./.github/workflows/deploy.yml(inputs.title@...)"
+        )
+        out = chains_pkg.evaluate([
+            _f(
+                "TAINT-003",
+                caller,
+                taint_flows=(
+                    TaintFlow(
+                        source_job="call",
+                        sink_job=callee,
+                        rendered=rendered,
+                        cross_document=True,
+                    ),
+                ),
+            ),
+            _f("GHA-014", callee, job_anchors=("deploy",)),
+        ])
+        ac2 = [c for c in out if c.chain_id == "AC-002"]
+        assert len(ac2) == 1
+        c = ac2[0]
+        assert c.via_dataflow is True
+        assert c.confirmed_reachable is True
+        assert set(c.resources) == {caller, callee}
+        assert set(c.triggering_check_ids) == {"TAINT-003", "GHA-014"}
+        assert rendered in c.narrative
+
+    def test_no_cross_document_chain_when_callee_unresolved(self):
+        # An unconfirmed forward (callee not loaded) keeps the raw ref as
+        # the flow sink, which never matches a GHA-014 resource path, so
+        # no cross-document chain fires (no false reachability claim).
+        out = chains_pkg.evaluate([
+            _f(
+                "TAINT-003",
+                ".github/workflows/caller.yml",
+                taint_flows=(
+                    TaintFlow(
+                        source_job="call",
+                        sink_job="org/repo/.github/workflows/x.yml@sha",
+                        rendered="...",
+                        cross_document=True,
+                    ),
+                ),
+            ),
+            _f("GHA-014", ".github/workflows/deploy.yml", job_anchors=("deploy",)),
+        ])
+        assert not any(
+            c.chain_id == "AC-002" and len(c.resources) == 2 for c in out
+        )
 
 
 class TestChainAC003:
@@ -2319,11 +2393,19 @@ class TestChainAC022:
                 self.WF,
                 job_anchors=("release",),
                 path_evidence=(rendered_path,),
+                taint_flows=(
+                    TaintFlow(
+                        source_job="extract",
+                        sink_job="release",
+                        rendered=rendered_path,
+                    ),
+                ),
             ),
             _f("GL-004", self.WF, job_anchors=("release",)),
         ])
         ac22 = next(c for c in out if c.chain_id == "AC-022")
         assert ac22.confirmed_reachable is True
+        assert ac22.via_dataflow is True
         assert "release" in ac22.reachability_note
         assert rendered_path in ac22.narrative
         assert "TAINT-004" in ac22.triggering_check_ids
@@ -2346,11 +2428,22 @@ class TestChainAC022:
                 self.WF,
                 job_anchors=("release",),
                 path_evidence=(rendered_path,),
+                taint_flows=(
+                    # extends inheritance is a self-edge: the tainted
+                    # template var is inherited into and consumed by the
+                    # same (release) job.
+                    TaintFlow(
+                        source_job="release",
+                        sink_job="release",
+                        rendered=rendered_path,
+                    ),
+                ),
             ),
             _f("GL-004", self.WF, job_anchors=("release",)),
         ])
         ac22 = next(c for c in out if c.chain_id == "AC-022")
         assert ac22.confirmed_reachable is True
+        assert ac22.via_dataflow is True
         assert "release" in ac22.reachability_note
         assert rendered_path in ac22.narrative
         assert "TAINT-008" in ac22.triggering_check_ids
@@ -2482,6 +2575,40 @@ class TestChainAC023:
         assert chain.confirmed_reachable is False
         assert chain.reachability_note == ""
         assert chain.confidence is Confidence.MEDIUM
+
+    def test_taint006_confirms_cross_task_dataflow(self):
+        # TKN-003 fires in task ``extract``; the privileged step
+        # (TKN-002) is in a *different* task ``build``; TAINT-006
+        # reports a results flow extract -> build. The injection
+        # reaches the privileged container across tasks — a proven
+        # dataflow path the step-level shared check can't see.
+        rendered = (
+            "$(params.title)@extract.steps[0] -> "
+            "tasks.<producer>.results.<output> -> "
+            "tasks.build.params.title -> "
+            "sink@build.steps[0]($(params.title))"
+        )
+        out = chains_pkg.evaluate([
+            _f("TKN-003", self.TASK, job_anchors=("Task/extract:extract",)),
+            _f("TKN-002", self.TASK, job_anchors=("Task/build:build",)),
+            _f(
+                "TAINT-006",
+                self.TASK,
+                taint_flows=(
+                    TaintFlow(
+                        source_job="Task/extract",
+                        sink_job="Task/build",
+                        rendered=rendered,
+                    ),
+                ),
+            ),
+        ])
+        chain = next(c for c in out if c.chain_id == "AC-023")
+        assert chain.confirmed_reachable is True
+        assert chain.via_dataflow is True
+        assert "taint path" in chain.reachability_note
+        assert rendered in chain.narrative
+        assert "TAINT-006" in chain.triggering_check_ids
 
 
 class TestChainAC024:
@@ -2706,6 +2833,40 @@ class TestChainAC025:
         assert chain.reachability_note == ""
         assert chain.confidence is Confidence.MEDIUM
 
+    def test_taint007_confirms_cross_template_dataflow(self):
+        # ARGO-005 fires in template ``read-title``; the privileged
+        # container (ARGO-002) is in a *different* template ``ship``;
+        # TAINT-007 reports an outputs.parameters flow read-title ->
+        # ship. The injection reaches the privileged container across
+        # templates — a proven dataflow path.
+        rendered = (
+            "{{inputs.parameters.title}}@read-title.script -> "
+            "tasks.<producer>.outputs.parameters.<output> -> "
+            "tasks.consume.arguments.clean_title -> "
+            "sink@ship.script({{inputs.parameters.clean_title}})"
+        )
+        out = chains_pkg.evaluate([
+            _f("ARGO-005", self.WF, job_anchors=("Workflow/build:read-title",)),
+            _f("ARGO-002", self.WF, job_anchors=("Workflow/build:ship",)),
+            _f(
+                "TAINT-007",
+                self.WF,
+                taint_flows=(
+                    TaintFlow(
+                        source_job="Workflow/build:read-title",
+                        sink_job="Workflow/build:ship",
+                        rendered=rendered,
+                    ),
+                ),
+            ),
+        ])
+        chain = next(c for c in out if c.chain_id == "AC-025")
+        assert chain.confirmed_reachable is True
+        assert chain.via_dataflow is True
+        assert "taint path" in chain.reachability_note
+        assert rendered in chain.narrative
+        assert "TAINT-007" in chain.triggering_check_ids
+
 
 class TestChainAC026:
     """AC-026 — Buildkite injection lands on auto-deploy step."""
@@ -2804,6 +2965,39 @@ class TestChainAC026:
         assert ac26.confirmed_reachable is False
         assert ac26.reachability_note == ""
         assert ac26.confidence is Confidence.MEDIUM
+
+    def test_taint005_confirms_cross_step_dataflow(self):
+        # BK-003 fires on step ``extract``; the ungated deploy
+        # (BK-007) is a *different* step ``deploy``; TAINT-005 reports
+        # a meta-data round-trip extract -> deploy. The injected value
+        # is read back by the deploy step — a proven dataflow path the
+        # step-level shared check can't see.
+        rendered = (
+            "$BUILDKITE_PULL_REQUEST_TITLE@extract -> "
+            "steps.extract.meta-data.title -> "
+            "sink@deploy(buildkite-agent meta-data get title)"
+        )
+        out = chains_pkg.evaluate([
+            _f("BK-003", self.PIPELINE, job_anchors=("extract",)),
+            _f("BK-007", self.PIPELINE, job_anchors=("deploy",)),
+            _f(
+                "TAINT-005",
+                self.PIPELINE,
+                taint_flows=(
+                    TaintFlow(
+                        source_job="extract",
+                        sink_job="deploy",
+                        rendered=rendered,
+                    ),
+                ),
+            ),
+        ])
+        ac26 = next(c for c in out if c.chain_id == "AC-026")
+        assert ac26.confirmed_reachable is True
+        assert ac26.via_dataflow is True
+        assert "taint path" in ac26.reachability_note
+        assert rendered in ac26.narrative
+        assert "TAINT-005" in ac26.triggering_check_ids
 
 
 class TestChainAC027:
@@ -3483,5 +3677,119 @@ class TestChainAC037:
     def test_passed_iac_finding_does_not_chain(self):
         out = self._ac037([
             _f("GHA-058", self.WF), _f("GHA-111", self.WF, passed=True),
+        ])
+        assert out == []
+
+
+class TestChainAC038:
+    """AC-038: untrusted branch reaches OIDC trusted publish."""
+
+    WF = ".github/workflows/release.yml"
+
+    def _ac038(self, findings):
+        return [c for c in chains_pkg.evaluate(findings) if c.chain_id == "AC-038"]
+
+    def test_same_job_fires_critical_confirmed(self):
+        out = self._ac038([
+            _f("GHA-113", self.WF, job_anchors=("release",)),
+            _f("GHA-114", self.WF, job_anchors=("release",)),
+        ])
+        assert len(out) == 1
+        assert out[0].severity is Severity.CRITICAL
+        assert out[0].triggering_check_ids == ["GHA-113", "GHA-114"]
+        assert out[0].resources == [self.WF]
+        assert out[0].confirmed_reachable is True
+        # Confirmed single-job reachability promotes to HIGH confidence.
+        assert out[0].confidence is Confidence.HIGH
+
+    def test_different_jobs_fires_unconfirmed(self):
+        out = self._ac038([
+            _f("GHA-113", self.WF, job_anchors=("oidc",),
+               confidence=Confidence.MEDIUM),
+            _f("GHA-114", self.WF, job_anchors=("publish",),
+               confidence=Confidence.MEDIUM),
+        ])
+        assert len(out) == 1
+        assert out[0].confirmed_reachable is False
+        # Unconfirmed co-occurrence stays at the weakest leg's confidence.
+        assert out[0].confidence is Confidence.MEDIUM
+
+    def test_no_chain_without_oidc_leg(self):
+        assert self._ac038([_f("GHA-114", self.WF, job_anchors=("release",))]) == []
+
+    def test_no_chain_without_trigger_leg(self):
+        assert self._ac038([_f("GHA-113", self.WF, job_anchors=("release",))]) == []
+
+    def test_no_chain_across_different_workflows(self):
+        out = self._ac038([
+            _f("GHA-113", self.WF, job_anchors=("release",)),
+            _f("GHA-114", ".github/workflows/other.yml", job_anchors=("release",)),
+        ])
+        assert out == []
+
+    def test_passed_finding_does_not_chain(self):
+        out = self._ac038([
+            _f("GHA-113", self.WF, job_anchors=("release",)),
+            _f("GHA-114", self.WF, job_anchors=("release",), passed=True),
+        ])
+        assert out == []
+
+
+class TestAC039UntrustedTriggerBulkSecrets:
+    """AC-039: untrusted trigger (GHA-002/009/013) reaches a
+    bulk-secrets serialization (GHA-116) in the same workflow."""
+
+    WF = ".github/workflows/pr.yml"
+
+    def _ac039(self, findings):
+        return [c for c in chains_pkg.evaluate(findings) if c.chain_id == "AC-039"]
+
+    def test_fires_on_trigger_plus_dump(self):
+        out = self._ac039([
+            _f("GHA-002", self.WF),
+            _f("GHA-116", self.WF),
+        ])
+        assert len(out) == 1
+        assert out[0].severity is Severity.CRITICAL
+        assert "GHA-002" in out[0].triggering_check_ids
+        assert "GHA-116" in out[0].triggering_check_ids
+
+    def test_confirmed_reachable_when_same_job(self):
+        out = self._ac039([
+            _f("GHA-013", self.WF, job_anchors=("build",)),
+            _f("GHA-116", self.WF, job_anchors=("build",)),
+        ])
+        assert len(out) == 1
+        assert out[0].confirmed_reachable is True
+        assert out[0].confidence is Confidence.HIGH
+        assert "build" in out[0].reachability_note
+
+    def test_unconfirmed_when_different_jobs(self):
+        out = self._ac039([
+            _f("GHA-002", self.WF, job_anchors=("checkout",)),
+            _f("GHA-116", self.WF, job_anchors=("dump",)),
+        ])
+        assert len(out) == 1
+        assert out[0].confirmed_reachable is False
+
+    def test_does_not_fire_without_dump_leg(self):
+        out = self._ac039([_f("GHA-002", self.WF)])
+        assert out == []
+
+    def test_does_not_fire_without_trigger_leg(self):
+        out = self._ac039([_f("GHA-116", self.WF)])
+        assert out == []
+
+    def test_does_not_fire_on_different_workflows(self):
+        out = self._ac039([
+            _f("GHA-002", ".github/workflows/a.yml"),
+            _f("GHA-116", ".github/workflows/b.yml"),
+        ])
+        assert out == []
+
+    def test_passed_finding_does_not_chain(self):
+        out = self._ac039([
+            _f("GHA-002", self.WF),
+            _f("GHA-116", self.WF, passed=True),
         ])
         assert out == []

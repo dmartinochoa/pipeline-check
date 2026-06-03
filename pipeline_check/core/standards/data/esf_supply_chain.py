@@ -536,6 +536,9 @@ STANDARD = Standard(
         "GHA-111":  ["ESF-C-LEAST-PRIV", "ESF-D-PRIV-BUILD"],  # AI agent edits IaC applied in the same job
         "GHA-112":  ["ESF-C-APPROVAL", "ESF-D-PRIV-BUILD"],  # self-hosted deploy with no environment gate
         "GHA-113":  ["ESF-D-TOKEN-HYGIENE", "ESF-C-APPROVAL"],  # OIDC trusted-publish w/o env gate
+        "GHA-114":  ["ESF-D-TOKEN-HYGIENE", "ESF-C-APPROVAL"],  # publish workflow on an unrestricted push trigger
+        "GHA-115":  ["ESF-C-LEAST-PRIV"],            # id-token granted workflow-wide, not job-scoped
+        "GHA-116":  ["ESF-D-SECRETS"],               # bulk secrets serialization
         "GHA-107":  ["ESF-D-BUILD-ENV"],             # harden-runner in audit mode (egress not blocked)
         "GHA-108":  ["ESF-D-BUILD-ENV"],             # no runtime egress control on OIDC/deploy workflow
         "GHA-109":  ["ESF-D-BUILD-ENV"],             # harden-runner not the first step
@@ -653,6 +656,7 @@ STANDARD = Standard(
         "PYPI-018": ["ESF-S-VERIFY-DEPS"],  # --no-binary forces sdist build
         "PYPI-019": ["ESF-S-VERIFY-DEPS"],  # missing PEP 740 build provenance
         "PYPI-020": ["ESF-S-VERIFY-DEPS"],  # low OpenSSF Scorecard upstream
+        "PYPI-021": ["ESF-S-VERIFY-DEPS"],  # provenance built from a non-release ref
         "PYPI-004": ["ESF-S-PIN-DEPS"],
         "PYPI-015": ["ESF-S-VERIFY-DEPS"],  # direct artifact URL
         "PYPI-005": ["ESF-S-TRUSTED-REG"],
@@ -683,6 +687,8 @@ STANDARD = Standard(
         "NPM-010":  ["ESF-S-VERIFY-DEPS"],
         "NPM-014":  ["ESF-S-VERIFY-DEPS"],
         "NPM-015":  ["ESF-S-VERIFY-DEPS"],
+        "NPM-017":  ["ESF-S-VERIFY-DEPS"],  # provenance built from a non-release ref
+        "NPM-018":  ["ESF-S-VERIFY-DEPS"],  # latest release from a new publisher
         "NPM-016":  ["ESF-S-VERIFY-DEPS"],
         "PYPI-008": ["ESF-S-VERIFY-DEPS"],
         "PYPI-009": ["ESF-S-VERIFY-DEPS"],
@@ -1022,5 +1028,11 @@ STANDARD = Standard(
         "GCKMS-004": ["ESF-C-LEAST-PRIV"],                 # keyring IAM
         "GCKMS-005": ["ESF-C-ARTIFACT-AUTHZ"],             # destroy sched
         "GCKMS-006": ["ESF-C-ARTIFACT-AUTHZ"],             # imported key
+        # Developer-environment auto-execution
+        "DEV-001":   ["ESF-D-INJECTION"],                  # vscode folderOpen task
+        "DEV-002":   ["ESF-D-INJECTION"],                  # devcontainer lifecycle
+        "DEV-003":   ["ESF-D-INJECTION"],                  # committed claude hook
+        "DEV-004":   ["ESF-S-VERIFY-DEPS", "ESF-D-INJECTION"],  # remote fetch+exec
+        "DEV-005":   ["ESF-D-INJECTION"],                  # initializeCommand on host
     },
 )

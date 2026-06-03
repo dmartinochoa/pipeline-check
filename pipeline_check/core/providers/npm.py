@@ -24,7 +24,9 @@ from ..checks.npm.registry_fetcher import (
     HttpRegistryFetcher,
     default_cache_dir,
     fetch_maintainer_counts,
+    fetch_new_publisher,
     fetch_provenance,
+    fetch_provenance_refs,
     fetch_publish_times,
     fetch_repo_slugs,
 )
@@ -132,9 +134,24 @@ class NpmProvider(BaseProvider):
         context.maintainer_counts = fetch_maintainer_counts(
             names, fetcher, cache=cache,
         )[0]
+        # NPM-018: whether each package's latest release came from an
+        # account new to the package (the takeover / publisher-change
+        # shape). Reuses the cached packument's per-version ``_npmUser``,
+        # so it adds no network requests.
+        context.new_publisher = fetch_new_publisher(
+            names, fetcher, cache=cache,
+        )[0]
         context.provenance = fetch_provenance(
             names, fetcher, cache=cache,
         )[0]
+        # NPM-017: the source ref each attested package's provenance was
+        # built from. Reuses the cached packument; only attested packages
+        # incur the extra attestation-bundle fetch.
+        prov_refs, prov_ref_warnings = fetch_provenance_refs(
+            names, fetcher, cache=cache,
+        )
+        context.provenance_ref = prov_refs
+        context.warnings.extend(prov_ref_warnings)
 
         # OpenSSF Scorecard (NPM-016): the GitHub repo slug comes free
         # from the cached packument, but the Scorecard lookup itself is a

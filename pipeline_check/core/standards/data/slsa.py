@@ -143,6 +143,7 @@ STANDARD = Standard(
         "GHA-032":  ["Build.L3.Isolated"],                         # local script on untrusted trigger
         "GHA-033":  ["Build.L3.NonFalsifiable"],                   # secret echoed in run:
         "GHA-034":  ["Build.L3.NonFalsifiable"],                   # secrets: inherit (broad cred surface)
+        "GHA-116":  ["Build.L3.NonFalsifiable"],                   # bulk secrets serialization
         "GHA-035":  ["Build.L3.Isolated"],                         # github-script untrusted context
         "GHA-036":  ["Build.L3.Isolated"],                         # runs-on untrusted context
         "GHA-038":  ["Build.L3.Isolated"],                         # ACTIONS_ALLOW_UNSECURE_COMMANDS
@@ -161,6 +162,7 @@ STANDARD = Standard(
         "GHA-111":  ["Build.L3.NonFalsifiable"],  # AI agent edits IaC applied in the same job
         "GHA-112":  ["Build.L3.Ephemeral"],  # self-hosted deploy with no environment gate
         "GHA-113":  ["Build.L3.NonFalsifiable"],  # OIDC trusted-publish w/o env gate
+        "GHA-114":  ["Build.L3.NonFalsifiable"],  # publish workflow on an unrestricted push trigger
         "GHA-062":  ["Build.L3.NonFalsifiable"],                   # OIDC trust subject in sibling IaC is overly broad
         # ── GitLab CI ─────────────────────────────────────────────
         "GL-001":   ["Build.L3.NonFalsifiable"],                   # floating image tag

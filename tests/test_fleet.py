@@ -13,6 +13,8 @@ from click.testing import CliRunner
 
 from pipeline_check.cli import fleet_cmd
 from pipeline_check.core import fleet as fleet_mod
+from pipeline_check.core.chains.base import Chain
+from pipeline_check.core.checks.base import Confidence, Severity
 from pipeline_check.core.fleet import (
     FleetDigest,
     FleetSnapshot,
@@ -20,6 +22,7 @@ from pipeline_check.core.fleet import (
     _parse_coord_string,
     _resolve_coord,
     apply_filters,
+    build_posture_graph,
     default_worker_count,
     enumerate_org_repos,
     load_repo_list,
@@ -360,6 +363,100 @@ class TestRenderMarkdown:
         out = render_markdown(digest)
         assert "x" * 60 in out
         assert "x" * 200 not in out
+
+
+# ── posture graph ─────────────────────────────────────────────────
+
+
+class TestPostureGraph:
+    def _cxpc_chain(
+        self, source: str, target: str,
+        chain_id: str = "CXPC-004", severity: Severity = Severity.HIGH,
+    ) -> Chain:
+        return Chain(
+            chain_id=chain_id, title="x-repo chain",
+            severity=severity, confidence=Confidence.MEDIUM,
+            summary="", narrative="", mitre_attack=[], kill_chain_phase="",
+            triggering_check_ids=[], triggering_findings=[],
+            resources=["a.yml", "b.yml"], references=[], recommendation="",
+            repos=[source, target],
+        )
+
+    def _snap(self, coord: str, grade: str = "C", score: int = 70) -> FleetSnapshot:
+        return FleetSnapshot(
+            coord=coord, grade=grade, score=score,
+            failed_by_severity={}, total_failed=0,
+        )
+
+    def test_nodes_from_snapshots(self) -> None:
+        dg = FleetDigest(snapshots=[
+            FleetSnapshot(
+                coord="o/a", grade="C", score=70,
+                failed_by_severity={"HIGH": 2}, total_failed=2,
+            ),
+        ])
+        g = build_posture_graph(dg)
+        assert len(g["nodes"]) == 1
+        n = g["nodes"][0]
+        assert n["id"] == "o/a" and n["grade"] == "C" and n["scanned"] is True
+        assert n["failed_by_severity"] == {"HIGH": 2}
+        assert g["edges"] == []
+
+    def test_edges_from_cxpc_repos(self) -> None:
+        dg = FleetDigest(
+            snapshots=[self._snap("o/prod"), self._snap("o/cons", "B", 85)],
+            cxpc_chains=[self._cxpc_chain("o/prod", "o/cons")],
+        )
+        g = build_posture_graph(dg)
+        assert len(g["edges"]) == 1
+        e = g["edges"][0]
+        assert e["source"] == "o/prod" and e["target"] == "o/cons"
+        assert e["chain_id"] == "CXPC-004" and e["severity"] == "HIGH"
+
+    def test_unscanned_partner_becomes_node(self) -> None:
+        # A chain endpoint outside the scanned fleet still appears as a
+        # node so the edge isn't dropped.
+        dg = FleetDigest(
+            snapshots=[self._snap("o/prod")],
+            cxpc_chains=[self._cxpc_chain("o/prod", "o/external")],
+        )
+        g = build_posture_graph(dg)
+        ext = [n for n in g["nodes"] if n["id"] == "o/external"]
+        assert ext and ext[0]["scanned"] is False and ext[0]["grade"] is None
+
+    def test_directed_edges_distinct(self) -> None:
+        # X->Y and Y->X are distinct attack directions; both survive.
+        dg = FleetDigest(
+            snapshots=[self._snap("o/x"), self._snap("o/y")],
+            cxpc_chains=[
+                self._cxpc_chain("o/x", "o/y"),
+                self._cxpc_chain("o/y", "o/x"),
+            ],
+        )
+        g = build_posture_graph(dg)
+        pairs = {(e["source"], e["target"]) for e in g["edges"]}
+        assert pairs == {("o/x", "o/y"), ("o/y", "o/x")}
+
+    def test_in_to_dict_and_markdown(self) -> None:
+        dg = FleetDigest(
+            snapshots=[self._snap("o/prod"), self._snap("o/cons", "B", 85)],
+            cxpc_chains=[self._cxpc_chain("o/prod", "o/cons")],
+        )
+        d = dg.to_dict()
+        assert "posture_graph" in d
+        assert d["posture_graph"]["edges"][0]["source"] == "o/prod"
+        # The CXPC chain serializes its structured repo pair.
+        assert d["cxpc_chains"][0]["repos"] == ["o/prod", "o/cons"]
+        md = render_markdown(dg)
+        assert "Cross-repo posture graph" in md
+        assert "o/prod" in md and "o/cons" in md
+
+    def test_chain_without_repos_contributes_no_edge(self) -> None:
+        c = self._cxpc_chain("o/a", "o/b")
+        c.repos = []  # a chain that didn't set the structured pair
+        dg = FleetDigest(snapshots=[], cxpc_chains=[c])
+        g = build_posture_graph(dg)
+        assert g["edges"] == []
 
 
 # ── run_fleet (orchestrator with monkeypatched clone + scan) ─────

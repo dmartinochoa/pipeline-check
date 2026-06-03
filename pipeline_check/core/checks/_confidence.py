@@ -56,6 +56,16 @@ _MEDIUM: frozenset[str] = frozenset({
     # exists) over-flags, so the assertion is co-occurrence, not a
     # proven OIDC exchange.
     "GHA-113",
+    # Publish workflow on an unrestricted push trigger. An internal CD
+    # pipeline may intentionally publish a snapshot to a private registry
+    # on every branch push, so an unrestricted-trigger publish is not
+    # always a public-release exposure.
+    "GHA-114",
+    # id-token: write granted workflow-wide while only a subset of jobs
+    # consume it. The over-broad call depends on recognizing every job's
+    # OIDC consumer; a consumer reached through an unrecognized action
+    # can make a consuming job look non-consuming and over-flag it.
+    "GHA-115",
     "JF-014",
     # Dep-update lockfile bypass, catches all ``pip install -U`` by
     # default; the safe subset (pip/setuptools/wheel/virtualenv) is
@@ -70,6 +80,19 @@ _MEDIUM: frozenset[str] = frozenset({
     # hygiene warning, not a production issue. Two+ versions behind
     # remains HIGH via per-rule confidence assignment.
     "CB-005",
+    # NPM-017 provenance built from a non-release ref. The trusted-
+    # default heuristic is main/master only, so a project whose default
+    # branch is named otherwise (develop, trunk) over-flags.
+    "NPM-017",
+    # PYPI-021, the PyPI / PEP 740 analog of NPM-017. Same trusted-
+    # default heuristic (main/master only), so a project whose default
+    # branch is named otherwise over-flags.
+    "PYPI-021",
+    # NPM-018, latest release published by an account new to the package.
+    # The per-version publisher is the only static signal, so a
+    # legitimate maintainer hand-off / new co-maintainer's first publish
+    # trips it the same as a takeover.
+    "NPM-018",
 })
 
 # ── LOW: blob-search heuristics; meaningful FP rate expected ─────────

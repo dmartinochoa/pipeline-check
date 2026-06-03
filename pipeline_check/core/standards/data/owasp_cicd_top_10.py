@@ -201,6 +201,9 @@ STANDARD = Standard(
         "GHA-111":  ["CICD-SEC-5", "CICD-SEC-4"],  # AI agent edits IaC applied in the same job
         "GHA-112":  ["CICD-SEC-1", "CICD-SEC-7"],  # self-hosted deploy with no environment gate
         "GHA-113":  ["CICD-SEC-2", "CICD-SEC-1"],  # OIDC trusted-publish w/o env gate
+        "GHA-114": ["CICD-SEC-1", "CICD-SEC-2"],  # publish workflow on an unrestricted push trigger
+        "GHA-115":  ["CICD-SEC-5"],                # id-token granted workflow-wide, not job-scoped
+        "GHA-116":  ["CICD-SEC-6"],                # bulk secrets serialization
         "GHA-107":  ["CICD-SEC-7", "CICD-SEC-10"],  # harden-runner in audit mode (egress not blocked)
         "GHA-108":  ["CICD-SEC-7", "CICD-SEC-10"],  # no runtime egress control on OIDC/deploy workflow
         "GHA-109":  ["CICD-SEC-7", "CICD-SEC-10"],  # harden-runner not the first step
@@ -531,6 +534,8 @@ STANDARD = Standard(
         "NPM-011":  ["CICD-SEC-6", "CICD-SEC-3"],  # secret-shaped paths in files field
         "NPM-014":  ["CICD-SEC-3"],   # single-publisher supply-chain risk
         "NPM-015":  ["CICD-SEC-4"],   # missing build provenance
+        "NPM-017":  ["CICD-SEC-4"],   # provenance built from a non-release ref
+        "NPM-018":  ["CICD-SEC-3"],   # latest release from a new publisher (takeover)
         "NPM-016":  ["CICD-SEC-3"],   # low OpenSSF Scorecard upstream
         # pypi (requirements file static analysis)
         "PYPI-001": ["CICD-SEC-3"],   # requirements line lacks ==pin
@@ -539,6 +544,7 @@ STANDARD = Standard(
         "PYPI-018": ["CICD-SEC-3"],  # --no-binary forces sdist build
         "PYPI-019": ["CICD-SEC-4"],  # missing PEP 740 build provenance
         "PYPI-020": ["CICD-SEC-3"],  # low OpenSSF Scorecard upstream
+        "PYPI-021": ["CICD-SEC-4"],  # provenance built from a non-release ref
         "PYPI-004": ["CICD-SEC-3", "CICD-SEC-9"],  # VCS dep without commit SHA
         "PYPI-015": ["CICD-SEC-3"],  # direct artifact URL
         "PYPI-005": ["CICD-SEC-3"],   # --extra-index-url (dep confusion)
@@ -961,5 +967,11 @@ STANDARD = Standard(
         "GCKMS-004": ["CICD-SEC-2", "CICD-SEC-9"],  # keyring IAM
         "GCKMS-005": ["CICD-SEC-9"],                # destroy sched
         "GCKMS-006": ["CICD-SEC-9"],                # imported key
+        # Developer-environment auto-execution
+        "DEV-001":   ["CICD-SEC-4"],                # vscode folderOpen task
+        "DEV-002":   ["CICD-SEC-4"],                # devcontainer lifecycle
+        "DEV-003":   ["CICD-SEC-4"],                # committed claude hook
+        "DEV-004":   ["CICD-SEC-3", "CICD-SEC-4"],  # auto-run remote fetch+exec
+        "DEV-005":   ["CICD-SEC-4", "CICD-SEC-7"],  # initializeCommand on host
     },
 )

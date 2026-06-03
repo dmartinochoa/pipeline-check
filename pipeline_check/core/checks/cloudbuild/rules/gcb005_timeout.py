@@ -8,10 +8,13 @@ excessive timeout (``7200s`` / 2 h and up) keeps hijacked builds
 alive far longer than needed for a legitimate build, amplifying
 the cost / dwell-time of a compromise.
 
-Values accepted:
-- ``timeout: 1800s`` (seconds, Cloud Build native format)
-- ``timeout: 30m`` (convenience suffix, accepted by gcloud but not
-  by the API; treated here as unresolvable and a fail)
+Values resolved to a seconds count:
+- ``timeout: 1800s`` (Cloud Build's native ``<seconds>s`` string)
+- ``timeout: 1800`` (a bare integer / float, read as seconds)
+
+Treated as unresolvable (fails the same as an unset timeout):
+- ``timeout: 30m`` / ``2h`` (minute / hour suffixes are not a valid
+  Cloud Build duration)
 
 This rule fails on:
 1. ``timeout:`` absent entirely.
@@ -58,10 +61,11 @@ _MAX_ACCEPTABLE_SECONDS = 1800
 def _parse_timeout_seconds(value: Any) -> int | None:
     """Return timeout in seconds for a Cloud Build ``timeout:`` value.
 
-    Cloud Build accepts ``"1800s"`` (string with ``s`` suffix); the API
-    rejects bare numbers and rejects minute/hour suffixes. Anything
-    unparseable returns ``None`` so the caller can treat it the same as
-    an unset timeout.
+    Resolves ``"1800s"`` (Cloud Build's native ``<seconds>s`` string)
+    and a bare integer / float (read as a seconds count). A minute /
+    hour suffix (``30m`` / ``2h``) is not a valid Cloud Build duration
+    and returns ``None``, as does anything else unparseable, so the
+    caller treats it the same as an unset timeout.
     """
     if value is None:
         return None

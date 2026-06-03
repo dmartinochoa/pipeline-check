@@ -72,7 +72,7 @@ Resolution rules:
 
 ## What it covers
 
-104 checks · 17 have an autofix patch (``--fix``).
+107 checks · 17 have an autofix patch (``--fix``).
 
 | Check | Title | Severity | Fix |
 |-------|-------|----------|-----|
@@ -176,6 +176,9 @@ Resolution rules:
 | [GHA-111](#gha-111) | AI agent generates IaC applied to the cloud in the same job | <span class="pg-sev pg-sev--high">HIGH</span> |  |
 | [GHA-112](#gha-112) | Self-hosted deploy job not gated by a protected environment | <span class="pg-sev pg-sev--high">HIGH</span> |  |
 | [GHA-113](#gha-113) | OIDC trusted-publishing job without an environment gate | <span class="pg-sev pg-sev--high">HIGH</span> |  |
+| [GHA-114](#gha-114) | Package-publish workflow runs on an unrestricted push trigger | <span class="pg-sev pg-sev--high">HIGH</span> |  |
+| [GHA-115](#gha-115) | ``id-token: write`` granted workflow-wide instead of job-scoped | <span class="pg-sev pg-sev--medium">MEDIUM</span> |  |
+| [GHA-116](#gha-116) | Workflow serializes the entire secrets context (toJSON(secrets)) | <span class="pg-sev pg-sev--high">HIGH</span> |  |
 | [TAINT-001](#taint-001) | Untrusted input flows across step boundaries via step outputs | <span class="pg-sev pg-sev--high">HIGH</span> |  |
 | [TAINT-002](#taint-002) | Untrusted input flows across jobs via ``jobs.<id>.outputs:`` | <span class="pg-sev pg-sev--high">HIGH</span> |  |
 | [TAINT-003](#taint-003) | Untrusted input forwarded into reusable workflow ``with:`` | <span class="pg-sev pg-sev--high">HIGH</span> |  |
@@ -458,7 +461,7 @@ Self-hosted runners that don't tear down between jobs leak filesystem and proces
 
 **Known false-positive modes**
 
-- Organisations using actions-runner-controller (ARC), autoscaled pools, or vendor runner fleets often use labels like ``arc-*``, ``autoscaled-*``, or ``ephemeral-pool-*`` instead of a bare ``ephemeral`` label. The check only matches the literal ``ephemeral`` token on ``runs-on``; extend via a custom allow-prefix config if your fleet uses a different naming convention. Defaults to MEDIUM confidence.
+- Organizations using actions-runner-controller (ARC), autoscaled pools, or vendor runner fleets often use labels like ``arc-*``, ``autoscaled-*``, or ``ephemeral-pool-*`` instead of a bare ``ephemeral`` label. The check only matches the literal ``ephemeral`` token on ``runs-on``; extend via a custom allow-prefix config if your fleet uses a different naming convention. Defaults to MEDIUM confidence.
 
 <div class="pg-rule__rec" markdown>
 
@@ -1006,7 +1009,7 @@ GHA-012 catches self-hosted runners that aren't ephemeral; this rule catches the
 
 **Recommended action**
 
-Hard-code ``runs-on:`` to a specific runner label or list of labels. If the choice has to be parameterised across callers, validate the input against an allowlist of known-good labels before the job runs (a small ``if:`` guard at job level), and never accept ``${{ inputs.* }}`` or any ``${{ github.event.* }}`` field as the ``runs-on`` value directly.
+Hard-code ``runs-on:`` to a specific runner label or list of labels. If the choice has to be parameterized across callers, validate the input against an allowlist of known-good labels before the job runs (a small ``if:`` guard at job level), and never accept ``${{ inputs.* }}`` or any ``${{ github.event.* }}`` field as the ``runs-on`` value directly.
 
 </div>
 
@@ -3043,6 +3046,116 @@ Trusted publishing alone validates only org + repo + workflow filename; the envi
 
 <div class="pg-rule pg-rule--high" markdown>
 
+## GHA-114: Package-publish workflow runs on an unrestricted push trigger { #gha-114 }
+
+<div class="pg-rule__tags">
+<span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-1</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-2</span> <span class="pg-tag pg-tag--esf">ESF-C-APPROVAL</span> <span class="pg-tag pg-tag--esf">ESF-D-TOKEN-HYGIENE</span> <span class="pg-tag pg-tag--cwe">CWE-284</span> <span class="pg-tag pg-tag--cwe">CWE-863</span>
+</div>
+
+Fires when both hold:
+
+1. The workflow runs a package-publish step in some job, run-based (``npm`` / ``pnpm`` / ``yarn publish``, ``twine upload``, ``poetry`` / ``uv publish``, ``gem push``, ``cargo publish``) or a trusted-publisher action (``pypa/gh-action-pypi-publish`` / ``rubygems/release-gem`` / ``crates-io/publish-action``). Same publish surface as GHA-113.
+2. The workflow is reachable from an unrestricted ``push``: a wildcard ``branches:`` pattern (``*``, ``?``, ``+``, ``[``), or no ``branches:`` filter at all (bare ``on: push`` / ``push: {}`` fires on every branch).
+
+Restricted triggers pass: a tag-only push (``push: {tags: ['v*']}`` with no ``branches:``), an exact branch list (``branches: [main]``), ``workflow_dispatch``-only, or ``release``-only. When ``push`` carries both an exact branch list and tags it stays silent; a wildcard or unfiltered branch push fires even if a tag filter is also present, because the branch path still runs the publish. ``branches-ignore`` without ``branches:`` is unrestricted (every non-ignored branch fires). Emits ``job_anchors`` for the publish jobs so AC-038 can intersect with GHA-113 on the same job.
+
+Defaults to MEDIUM confidence: an internal continuous-delivery pipeline may intentionally publish a snapshot to a private registry on every branch push, so an unrestricted-trigger publish is not always a public-release exposure.
+
+**Known false-positive modes**
+
+- Internal continuous-delivery pipelines that intentionally publish a snapshot / pre-release artifact on every push to a development branch (the publish target is a private staging registry, not the public index). The unrestricted trigger is by design there; suppress per-workflow via ``--ignore-file`` once the publish target is confirmed non-public.
+- A workflow whose only ``push`` trigger is an exact protected branch is not flagged, but the writeup still recommends a tag or dispatch trigger over a branch push for public releases.
+
+**Seen in the wild**
+
+- Red Hat npm compromise (BoostSecurity, 'Trusted Publishing, Untrusted Branch', 2026): a counterfeit ``ci.yml`` on a throwaway ``oidc-*`` branch, triggered by a plain ``push``, minted an OIDC token and published 30+ packages. A tag-only or dispatch-gated trigger would not have run from the throwaway branch: https://labs.boostsecurity.io/articles/trusted-publishing-untrusted-branch-red-hat-npm/
+
+<div class="pg-rule__rec" markdown>
+
+**Recommended action**
+
+Trigger a publish workflow only from a ref an attacker cannot cheaply create:
+
+- Prefer ``on: push: tags: ['v*']`` (or ``on: release: types: [published]``) so only a tag/release, not an arbitrary branch, runs the publish path. Tags are a higher-privilege operation than branch creation.
+- Or gate the release behind ``on: workflow_dispatch`` so a human starts it.
+- If a branch ``push`` trigger is unavoidable, pin ``branches:`` to the exact protected release branch (``branches: [main]``, never ``branches: ['*']`` / ``['release/*']`` / no filter), and pair it with a protected ``environment:`` whose deployment-branch rule enforces the same ref (see GHA-113).
+
+A publish workflow runnable by ``push`` to any branch is the untrusted-branch half of the trusted-publishing attack: a counterfeit workflow on a throwaway branch publishes as the real release.
+
+</div>
+
+</div>
+
+<div class="pg-rule pg-rule--medium" markdown>
+
+## GHA-115: ``id-token: write`` granted workflow-wide instead of job-scoped { #gha-115 }
+
+<div class="pg-rule__tags">
+<span class="pg-sev pg-sev--medium">MEDIUM</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-5</span> <span class="pg-tag pg-tag--esf">ESF-C-LEAST-PRIV</span> <span class="pg-tag pg-tag--cwe">CWE-272</span> <span class="pg-tag pg-tag--cwe">CWE-269</span>
+</div>
+
+Fires when all three hold:
+
+1. The workflow's **top-level** ``permissions:`` block grants ``id-token: write`` (or ``permissions: write-all``).
+2. At least one job consumes the OIDC token (a known consumer step, the same list GHA-069 uses: cloud-credentials actions, trusted-publisher actions, the Sigstore signing pack, ``docker/build-push-action`` with provenance / sbom).
+3. At least one job inherits the workflow-level grant (it declares no ``permissions:`` block of its own, so the job-level block does not REPLACE the inherited one) AND does NOT consume the token.
+
+The conjunction is the granted-too-broadly shape: the scope is used somewhere, so dropping it entirely (GHA-069) is wrong, but the workflow-level grant hands a publish-capable mint right to jobs that don't need it. When NO job consumes the token, GHA-069 covers the orphan case instead. When every inheriting job consumes it, the grant is not over-broad and the rule stays silent. A consuming job that declares its own ``id-token: write`` does not need the workflow-level grant, so the workflow-level grant is still flagged if any other job inherits it without consuming.
+
+Defaults to MEDIUM confidence: the over-broad determination depends on recognizing every job's OIDC consumer, and a consumer reached through an action the shared consumer list doesn't name yet can make a consuming job look non-consuming.
+
+**Known false-positive modes**
+
+- A workflow where every inheriting job legitimately consumes the OIDC token (e.g. a matrix of publish jobs) is not flagged. A consumer reached through a third-party action this rule's list doesn't recognize yet can make a consuming job look non-consuming, over-flagging it as over-broad. Extend the consumer list (shared with GHA-069) or suppress per-workflow via ``--ignore-file``.
+
+**Seen in the wild**
+
+- Red Hat npm compromise (BoostSecurity, 'Trusted Publishing, Untrusted Branch', 2026), defense-in-depth item: scope ``id-token: write`` to the publish job so a compromised sibling job cannot mint a publish-capable token: https://labs.boostsecurity.io/articles/trusted-publishing-untrusted-branch-red-hat-npm/
+
+<div class="pg-rule__rec" markdown>
+
+**Recommended action**
+
+Move ``id-token: write`` off the workflow-level ``permissions:`` block and onto only the job(s) that consume the OIDC token (the publish / cloud-credentials job):
+
+- Set the workflow-level ``permissions:`` to what the other jobs actually need (often ``contents: read``), and add a job-level ``permissions: { id-token: write, ... }`` to the consuming job only.
+- A workflow-level grant gives every job that doesn't override its permissions the right to mint an OIDC token, so a compromised build / test / lint job can request a publish-capable token it never needed and relay it.
+- Job-level grants also minimize the window in which the mint right is in effect (see GHA-069).
+
+</div>
+
+</div>
+
+<div class="pg-rule pg-rule--high" markdown>
+
+## GHA-116: Workflow serializes the entire secrets context (toJSON(secrets)) { #gha-116 }
+
+<div class="pg-rule__tags">
+<span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-6</span> <span class="pg-tag pg-tag--esf">ESF-D-SECRETS</span> <span class="pg-tag pg-tag--cwe">CWE-522</span>
+</div>
+
+Fires when ``toJSON(secrets)`` appears in any string the workflow evaluates: a step ``run:`` body, a step / job / workflow ``env:`` value, or a step ``with:`` input (the wrappers ``fromJSON(toJSON(secrets))`` and ``format(..., toJSON(secrets))`` match too, since they contain the same substring). HIGH severity, HIGH confidence: serializing the entire secrets context has no benign per-secret use, so the false-positive rate is low. The rare legitimate case (handing every secret to a trusted internal aggregator action) is still an anti-pattern that defeats per-secret scoping and log redaction; suppress it per-resource with a rationale. Distinct from GHA-033 (echoes a named secret), GHA-034 (``secrets: inherit``), and GHA-057 (secret-scanner output to egress).
+
+**Known false-positive modes**
+
+- A workflow that deliberately passes the full secrets context to a trusted, audited internal action (a secrets-sync or vault-bootstrap step) will fire. That is still a broad-surface anti-pattern, but if the receiving action is vetted, suppress per-resource with a rationale naming the action.
+
+**Seen in the wild**
+
+- tj-actions/changed-files + reviewdog supply-chain attack (CVE-2025-30066, March 2025): a compromised action dumped the runner's secrets to the workflow log, affecting 23,000+ repos. The GhostAction campaign (GitGuardian, September 2025) pushed malicious workflows that serialized every repository secret and POSTed them to an attacker endpoint, stealing 3,325 secrets. ``toJSON(secrets)`` is the in-YAML primitive both classes rely on to grab everything at once: https://blog.gitguardian.com/ghostaction-campaign-3-325-secrets-stolen/
+
+<div class="pg-rule__rec" markdown>
+
+**Recommended action**
+
+Never materialize the whole secrets object. ``toJSON(secrets)`` puts every credential the job can see into one string, so a single log line or outbound request exfiltrates all of them at once (the tj-actions / GhostAction 2025 payload pattern). Reference only the specific secrets a step needs by name (``${{ secrets.NPM_TOKEN }}``), bind each to a narrowly-scoped step ``env:``, and prefer short-lived OIDC tokens over long-lived secrets. If a downstream action genuinely needs several secrets, pass them individually rather than the full context.
+
+</div>
+
+</div>
+
+<div class="pg-rule pg-rule--high" markdown>
+
 ## TAINT-001: Untrusted input flows across step boundaries via step outputs { #taint-001 }
 
 <div class="pg-rule__tags">
@@ -3055,13 +3168,13 @@ v1 limitations: only same-job step outputs are tracked; ``jobs.<id>.outputs.*`` 
 
 **Known false-positive modes**
 
-- If the producer step deliberately runs a sanitiser between the interpolation and the ``$GITHUB_OUTPUT`` write (``echo "$TITLE" | tr -dc 'a-zA-Z0-9 ' >> $GITHUB_OUTPUT``), the consumer is no longer exploitable. The rule's regex doesn't model that transformation and will still fire; suppress via ignore-file scoped to the consumer step name when this is the deliberate shape. The producer's GHA-003 finding then carries the residual signal that the sanitiser is load-bearing.
+- If the producer step deliberately runs a sanitizer between the interpolation and the ``$GITHUB_OUTPUT`` write (``echo "$TITLE" | tr -dc 'a-zA-Z0-9 ' >> $GITHUB_OUTPUT``), the consumer is no longer exploitable. The rule's regex doesn't model that transformation and will still fire; suppress via ignore-file scoped to the consumer step name when this is the deliberate shape. The producer's GHA-003 finding then carries the residual signal that the sanitizer is load-bearing.
 
 <div class="pg-rule__rec" markdown>
 
 **Recommended action**
 
-Sanitise the value at the step that *writes* the ``$GITHUB_OUTPUT`` entry. The canonical pattern is to interpolate the untrusted source into an ``env:`` variable on the producer step and reference the env var in the ``echo``: ``env: TITLE: ${{ github.event.issue.title }}`` then ``echo "title=$TITLE" >> $GITHUB_OUTPUT``. After that, downstream steps reading ``steps.<id>.outputs.title`` see a string-typed value with no GitHub-expression evaluation pass left to exploit. Removing the source entirely is the safest fix; if the value genuinely needs to flow downstream, round-trip it through an env var the way GHA-003 recommends so the shell quoting still applies.
+Sanitize the value at the step that *writes* the ``$GITHUB_OUTPUT`` entry. The canonical pattern is to interpolate the untrusted source into an ``env:`` variable on the producer step and reference the env var in the ``echo``: ``env: TITLE: ${{ github.event.issue.title }}`` then ``echo "title=$TITLE" >> $GITHUB_OUTPUT``. After that, downstream steps reading ``steps.<id>.outputs.title`` see a string-typed value with no GitHub-expression evaluation pass left to exploit. Removing the source entirely is the safest fix; if the value genuinely needs to flow downstream, round-trip it through an env var the way GHA-003 recommends so the shell quoting still applies.
 
 </div>
 
@@ -3086,13 +3199,13 @@ Same-step interpolations (the producer's own use of ``${{ github.event.* }}`` in
 
 **Known false-positive modes**
 
-- Sanitisation between the source interpolation and the $GITHUB_OUTPUT write isn't modeled. If the producer step runs ``echo "$TITLE" | tr -dc 'a-zA-Z0-9 '`` before redirecting to GITHUB_OUTPUT, the consumer is no longer exploitable but TAINT-002 will still fire; suppress via ignore-file scoped to the consumer job's workflow file when this is the deliberate shape.
+- Sanitization between the source interpolation and the $GITHUB_OUTPUT write isn't modeled. If the producer step runs ``echo "$TITLE" | tr -dc 'a-zA-Z0-9 '`` before redirecting to GITHUB_OUTPUT, the consumer is no longer exploitable but TAINT-002 will still fire; suppress via ignore-file scoped to the consumer job's workflow file when this is the deliberate shape.
 
 <div class="pg-rule__rec" markdown>
 
 **Recommended action**
 
-Sanitise the value at the producer step *before* it lands in ``$GITHUB_OUTPUT``. Once the value is in a job output the consuming job has no expression-level escaping pass left, ``${{ needs.<job>.outputs.<name> }}`` substitutes the string verbatim into the consumer's shell. The canonical safe pattern is to copy the untrusted source into the producer step's ``env:`` block, reference the env var quoted in ``echo "name=$VAR" >> $GITHUB_OUTPUT``, and only then surface it through the job output. The consuming job should still treat the value as tainted (use it in env-var form, not interpolated directly into shell).
+Sanitize the value at the producer step *before* it lands in ``$GITHUB_OUTPUT``. Once the value is in a job output the consuming job has no expression-level escaping pass left, ``${{ needs.<job>.outputs.<name> }}`` substitutes the string verbatim into the consumer's shell. The canonical safe pattern is to copy the untrusted source into the producer step's ``env:`` block, reference the env var quoted in ``echo "name=$VAR" >> $GITHUB_OUTPUT``, and only then surface it through the job output. The consuming job should still treat the value as tainted (use it in env-var form, not interpolated directly into shell).
 
 </div>
 
@@ -3112,13 +3225,13 @@ When the callee body is loaded into the same scan (local ``./.github/workflows/<
 
 **Known false-positive modes**
 
-- Callees that wrap the input safely (immediately copy into env, sanitise before use) make the caller-side forward harmless. When the callee body is loaded into the scan, the rule downgrades to MEDIUM confidence on those paths; suppress via ignore-file when the callee's handling is audited and sound. Without ``--resolve-remote`` the rule can't see remote callee bodies and every forward stays at MEDIUM, the right default for unverifiable cross-repo flow.
+- Callees that wrap the input safely (immediately copy into env, sanitize before use) make the caller-side forward harmless. When the callee body is loaded into the scan, the rule downgrades to MEDIUM confidence on those paths; suppress via ignore-file when the callee's handling is audited and sound. Without ``--resolve-remote`` the rule can't see remote callee bodies and every forward stays at MEDIUM, the right default for unverifiable cross-repo flow.
 
 <div class="pg-rule__rec" markdown>
 
 **Recommended action**
 
-Sanitise the value at the caller before forwarding it across the reusable-workflow boundary. The canonical safe pattern is to copy the untrusted source into a step's ``env:`` block, run a sanitiser (``tr -dc 'a-zA-Z0-9 '`` is enough for a freeform title), surface the sanitised result via ``echo "name=$VAR" >> $GITHUB_OUTPUT``, then forward ``${{ steps.<id>.outputs.<name> }}`` as the ``with:`` input. The callee then sees a string-typed value with no expression-evaluation pass left to exploit. If the callee is under your control, also handle the input via env in the callee's ``run:`` body (not direct ``${{ inputs.<name> }}`` interpolation).
+Sanitize the value at the caller before forwarding it across the reusable-workflow boundary. The canonical safe pattern is to copy the untrusted source into a step's ``env:`` block, run a sanitizer (``tr -dc 'a-zA-Z0-9 '`` is enough for a freeform title), surface the sanitized result via ``echo "name=$VAR" >> $GITHUB_OUTPUT``, then forward ``${{ steps.<id>.outputs.<name> }}`` as the ``with:`` input. The callee then sees a string-typed value with no expression-evaluation pass left to exploit. If the callee is under your control, also handle the input via env in the callee's ``run:`` body (not direct ``${{ inputs.<name> }}`` interpolation).
 
 </div>
 

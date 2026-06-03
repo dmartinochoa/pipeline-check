@@ -23,7 +23,12 @@ RULE = Rule(
         "AWS-owned default key keeps the key policy under AWS, "
         "removing your ability to scope or audit Decrypt operations. "
         "Source code in the repo deserves the same key-policy + "
-        "CloudTrail story you'd apply to artifacts in S3."
+        "CloudTrail story you'd apply to artifacts in S3. "
+        "Note: the CodeCommit API returns the resolved KMS key ARN in "
+        "``kmsKeyId``; the check flags only the absent-key case because "
+        "the ARN alone does not reliably identify whether the key is "
+        "AWS-managed or customer-managed without a separate "
+        "``kms:DescribeKey`` call."
     ),
 )
 
@@ -38,12 +43,19 @@ def check(catalog: ResourceCatalog) -> list[Finding]:
         except ClientError:
             continue
         key = (detail.get("repositoryMetadata") or {}).get("kmsKeyId", "") or ""
-        passed = bool(key) and "alias/aws/codecommit" not in key
+        # Flag only when no key is configured at all. The CodeCommit API
+        # returns the resolved KMS key ARN (not the alias string), so the
+        # previous ``"alias/aws/codecommit" not in key`` check would
+        # silently pass a repo using the AWS-managed default once it has
+        # resolved to an ARN. Distinguishing the managed default from a
+        # CMK would require a separate kms:DescribeKey call the catalog
+        # does not make. (Mirrors CA-001.)
+        passed = bool(key)
         desc = (
             f"Repo '{name}' is encrypted with KMS key {key}."
             if passed else
-            f"Repo '{name}' uses AWS-owned encryption; the key policy is "
-            "not under your control."
+            f"Repo '{name}' has no customer KMS key configured; AWS-owned "
+            "encryption is in use and the key policy is not under your control."
         )
         findings.append(Finding(
             check_id=RULE.id, title=RULE.title, severity=RULE.severity,

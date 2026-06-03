@@ -296,6 +296,7 @@ STANDARD = Standard(
         "GHA-032":  ["Dangerous-Workflow"],                            # local script on untrusted trigger
         "GHA-033":  ["Token-Permissions"],                             # secret echoed in run:
         "GHA-034":  ["Token-Permissions"],                             # secrets: inherit (broad cred surface)
+        "GHA-116":  ["Token-Permissions"],                             # bulk secrets serialization
         "GHA-035":  ["Dangerous-Workflow"],                            # github-script untrusted context
         "GHA-036":  ["Dangerous-Workflow"],                            # runs-on untrusted context
         "GHA-041":  ["Dangerous-Workflow"],                            # single-maintainer action (reputation)
@@ -322,6 +323,7 @@ STANDARD = Standard(
         "GHA-111":  ["Dangerous-Workflow"],  # AI agent edits IaC applied in the same job
         "GHA-112":  ["Code-Review"],  # self-hosted deploy with no environment gate
         "GHA-113":  ["Dangerous-Workflow", "Token-Permissions"],  # OIDC trusted-publish w/o env gate
+        "GHA-114":  ["Dangerous-Workflow", "Token-Permissions"],  # publish workflow on an unrestricted push trigger
         "GHA-062":  ["Token-Permissions"],                             # OIDC trust subject in sibling IaC overly broad
         # Cross-pipeline / cross-project artifact ingestion = same
         # source-poisoning shape as the GHA workflow_run rule

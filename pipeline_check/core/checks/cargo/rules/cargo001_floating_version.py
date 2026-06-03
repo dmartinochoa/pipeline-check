@@ -29,8 +29,9 @@ RULE = Rule(
     ),
     docs_note=(
         "Fires on any ``[dependencies]`` / ``[dev-dependencies]`` / "
-        "``[build-dependencies]`` / ``[target.<...>.dependencies]`` "
-        "entry whose version specifier evaluates as floating per "
+        "``[build-dependencies]`` / ``[target.<...>.dependencies]`` / "
+        "``[workspace.dependencies]`` entry whose version specifier "
+        "evaluates as floating per "
         "Cargo's semver grammar (any leading ``^`` / ``~`` / "
         "``>=`` / ``<`` / ``*``, or bare versions which Cargo "
         "interprets as caret-equivalent). Exact pins (``=N.M.P``) "

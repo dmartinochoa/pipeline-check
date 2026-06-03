@@ -2,7 +2,7 @@
 from __future__ import annotations
 
 from collections import defaultdict
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import Any
 
 from ..checks.base import Confidence, Finding, Severity, confidence_rank
@@ -83,6 +83,21 @@ class Chain:
     #: this alongside the badge so a reader sees *why* the chain is
     #: reachable, not just that it is.
     reachability_note: str = ""
+    #: True when ``confirmed_reachable`` was established by a real
+    #: source-to-sink taint path (phase-2 dataflow reachability), as
+    #: opposed to the weaker phase-1 shared-job co-location signal. A
+    #: chain can be ``confirmed_reachable`` (co-located) without being
+    #: ``via_dataflow`` (a proven executable path). CI consumers can
+    #: gate on the stronger tier with ``--chains-require-dataflow``.
+    via_dataflow: bool = False
+    #: For cross-repo (CXPC) chains, the repo coordinates the chain
+    #: spans, in ``[source, target]`` order (the producer repo that
+    #: carries the risk, then the consumer / partner repo that inherits
+    #: it). Empty for single-repo chains, whose footprint is
+    #: ``resources`` (file paths within one repo). The fleet posture
+    #: graph reads this to draw repo-to-repo edges; ``resources`` alone
+    #: can't, since it holds file paths, not repo coordinates.
+    repos: list[str] = field(default_factory=list)
 
     def to_dict(self) -> dict[str, Any]:
         out: dict[str, Any] = {
@@ -104,8 +119,12 @@ class Chain:
             "recommendation": self.recommendation,
             "confirmed_reachable": self.confirmed_reachable,
         }
+        if self.via_dataflow:
+            out["via_dataflow"] = True
         if self.reachability_note:
             out["reachability_note"] = self.reachability_note
+        if self.repos:
+            out["repos"] = list(self.repos)
         return out
 
 

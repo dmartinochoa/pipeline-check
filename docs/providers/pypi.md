@@ -47,7 +47,7 @@ covered.
 
 ## What it covers
 
-19 checks · 0 have an autofix patch (``--fix``).
+20 checks · 0 have an autofix patch (``--fix``).
 
 | Check | Title | Severity | Fix |
 |-------|-------|----------|-----|
@@ -70,6 +70,7 @@ covered.
 | [PYPI-018](#pypi-018) | requirements.txt forces source builds via --no-binary | <span class="pg-sev pg-sev--medium">MEDIUM</span> |  |
 | [PYPI-019](#pypi-019) | Direct dependency published without PEP 740 provenance | <span class="pg-sev pg-sev--low">LOW</span> |  |
 | [PYPI-020](#pypi-020) | Direct dependency has a low OpenSSF Scorecard | <span class="pg-sev pg-sev--low">LOW</span> |  |
+| [PYPI-021](#pypi-021) | Direct dependency provenance built from a non-release ref | <span class="pg-sev pg-sev--low">LOW</span> |  |
 
 ---
 
@@ -623,6 +624,34 @@ Scoped to direct, index-resolved dependencies. A package with no GitHub repo in 
 **Recommended action**
 
 A low OpenSSF Scorecard (or a failed Dangerous-Workflow check) on a direct dependency's own repository is a weak-link signal: the project lacks the maintenance and CI-hardening practices (branch protection, pinned actions, no ``pull_request_target`` script injection, code review) that make a compromise less likely and more detectable. Weigh a better-scored alternative where one exists, pin to a reviewed version, and for the ones you keep, watch them more closely (cooldown, provenance). This is an upstream-posture signal, not a defect you can fix in your own repo. The npm analog is NPM-016.
+
+</div>
+
+</div>
+
+<div class="pg-rule pg-rule--low" markdown>
+
+## PYPI-021: Direct dependency provenance built from a non-release ref { #pypi-021 }
+
+<div class="pg-rule__tags">
+<span class="pg-sev pg-sev--low">LOW</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-4</span> <span class="pg-tag pg-tag--esf">ESF-S-VERIFY-DEPS</span> <span class="pg-tag pg-tag--cwe">CWE-494</span>
+</div>
+
+Network-dependent: needs ``--resolve-remote``. Reads each direct dependency's latest-release PEP 740 provenance object from the PyPI integrity endpoint (the URL the JSON API exposes on each attested file) and parses the SLSA provenance source ref (``predicate.buildDefinition.externalParameters.workflow.ref``). Flags a ref that is a branch other than ``refs/heads/main`` / ``refs/heads/master``; a tag (``refs/tags/...``) or a default branch passes. Skips (does not flag) a package whose latest release has no provenance (PYPI-019's concern), whose provenance object can't be fetched or parsed, or whose ref is an unrecognized shape. Scoped to direct, index-resolved dependencies. Default-branch detection assumes ``main`` / ``master``; a repo whose default branch is named otherwise can be flagged (see known_fp). LOW severity / MEDIUM confidence: a posture signal below the default ``--fail-on`` gate. Passes silently offline.
+
+**Known false-positive modes**
+
+- A project whose default branch is not ``main`` / ``master`` (``develop``, ``trunk``, a ``release/*`` branch) publishes legitimately from that branch; this rule treats only ``main`` / ``master`` as the trusted default, so other branch refs are flagged. Suppress per-resource when the upstream's release branch is known-good. A SLSA v0.2 attestation or a non-standard layout that doesn't expose the ref at the parsed path is skipped, not flagged.
+
+**Seen in the wild**
+
+- Red Hat npm compromise (BoostSecurity, 'Trusted Publishing, Untrusted Branch', 2026): 30+ packages shipped valid SLSA provenance recording a throwaway ``refs/heads/oidc-*`` branch. The provenance ref is the only install-side signal that would have distinguished them. The same class of attack applies to PyPI PEP 740 attestations minted from an attacker-pushed branch: https://labs.boostsecurity.io/articles/trusted-publishing-untrusted-branch-red-hat-npm/
+
+<div class="pg-rule__rec" markdown>
+
+**Recommended action**
+
+A package's PEP 740 attestation records the git ref the release was built from. A latest release built from a throwaway branch (``refs/heads/oidc-...``) rather than a tag or the default branch is the 'untrusted branch' signal: valid provenance, attacker ref. Confirm the upstream cuts releases only from a tag or a protected branch, and pin to a known-good version if its latest provenance ref looks unexpected. If the dependency's real default branch is not ``main`` / ``master`` (e.g. ``develop``), this is a false positive: suppress it per-resource. The npm analog is NPM-017.
 
 </div>
 

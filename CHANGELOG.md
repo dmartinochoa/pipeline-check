@@ -10,8 +10,240 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 PRs landing on `dev` between releases append entries below. The
 release commit collapses this section into `## [X.Y.Z] - <date>`.
 
+## [1.8.0] - 2026-06-03
+
 ### Added
 
+- **Fleet SDLC posture graph (JSON).** The fleet report now bundles a
+  cross-repo posture graph the fleet / CXPC engine already implies but
+  never exposed as data. ``fleet.json`` gains a ``posture_graph`` key:
+  **nodes** are the scanned repos (carrying grade / score / per-severity
+  failed-finding breakdown), **edges** are the cross-repo (CXPC)
+  relationships as directed ``source -> target`` links (the producer
+  repo that carries the risk to the consumer / partner repo that
+  inherits it), tagged with the chain id / severity / title. A chain
+  endpoint outside the scanned fleet (a partner repo referenced but not
+  scanned) still appears as a node with ``scanned: false`` so the edge
+  isn't dropped. To make the edges first-class, ``Chain`` gained a
+  structured ``repos`` field (``[source, target]`` for cross-repo
+  chains, empty otherwise) that CXPC-001..004 now populate, so the
+  repo-to-repo link is data rather than only narrative prose; it also
+  surfaces in each cross-repo chain's JSON. ``fleet.md`` gets a matching
+  "Cross-repo posture graph" edge table. The graph is the topology view
+  commercial ASPM tools sell; a lightweight HTML rendering of it is a
+  deferred follow-up. Builds on the fleet phase-2 / CXPC infrastructure;
+  no new scan work, just the implied graph as output.
+- **NPM-018: latest release published by a new npm account
+  (publisher-change / takeover signal).** The active-takeover companion
+  to NPM-014's single-publisher blast radius (the roadmap follow-up the
+  behavioral-signals review flagged as "the actual takeover vector,
+  worth a higher severity"). Reads each direct dependency's per-version
+  publisher (the packument's ``_npmUser`` account that ran ``npm
+  publish``, from the same fetch NPM-008 / NPM-014 already do, so no
+  extra requests) and flags a package whose ``dist-tags.latest`` version
+  was published by an account that published none of its prior versions,
+  the axios / @ctrl/tinycolor account-takeover fingerprint. Requires at
+  least three prior versions with a known publisher, so brand-new
+  packages (NPM-008 cooldown territory) are skipped, and skips silently
+  when the packument doesn't expose ``_npmUser`` (the conservative
+  default NPM-017 uses). MEDIUM severity (it fires the blast radius
+  NPM-014 only measures), MEDIUM confidence via the central
+  ``_confidence.py`` registry (a legitimate maintainer hand-off trips it
+  the same as a takeover), ``--resolve-remote``-gated, scoped to direct
+  dependencies. npm 17 -> 18.
+- **Reachability-aware attack chains, phase 2: across the reusable-
+  workflow boundary.** The dataflow tier now spans GitHub Actions'
+  reusable-workflow `uses:` boundary. **TAINT-003** (untrusted input
+  forwarded into a reusable workflow's `with:` inputs) now populates
+  `Finding.taint_flows` with a `cross_document` edge per forward: a
+  forward confirmed to reach an unquoted `${{ inputs.<name> }}` sink in
+  a *loaded* callee (on disk, or fetched by `--resolve-remote`) keys its
+  `sink_job` on the resolved callee `Workflow.path`; an unconfirmed or
+  unresolved forward carries the raw callee ref instead, so it surfaces
+  the edge without claiming reachability. **AC-002** gains a
+  cross-document tier: a confirmed TAINT-003 forward whose callee path
+  also has an ungated deploy (GHA-014) reports a dataflow-confirmed
+  injection-to-deploy chain spanning `[caller, callee]` (a poisoned
+  input forwarded into a reusable deploy workflow). It never fires
+  without the callee body in scope, since only a confirmed forward keys
+  its edge on a real path. This closes the last phase-2 follow-up; the
+  per-document grouping it complements is unchanged.
+- **Reachability-aware attack chains, phase 2 (dataflow DAG).** The
+  chain engine can now confirm an injection-to-impact chain by walking
+  the actual taint graph between its two legs, not just by intersecting
+  their `job_anchors` (the phase-1 shared-job signal). The TAINT-NNN
+  rules expose their source-to-sink edges as a new structured
+  `Finding.taint_flows` (`source_job -> sink_job` plus the rendered
+  path); a new `chains/_reachability.py` helper builds a directed graph
+  from those edges and breadth-first searches (multi-hop) from the
+  injection job(s) to the impact job(s). **AC-002** (GitHub script-
+  injection to unprotected deploy) and **AC-022** (the GitLab analog)
+  now report a *proven dataflow path* (the precise connecting job chain,
+  e.g. `extract -> deploy`, plus the rendered taint path) when one
+  exists, falling back to the phase-1 shared-job signal otherwise, so
+  nothing the older chains detected is regressed. AC-002 walks GHA's
+  step / job-output taint flows (TAINT-001 / TAINT-002); AC-022 walks
+  GitLab's dotenv-artifact and `extends:`-inheritance flows (TAINT-004 /
+  TAINT-008); each provider's TAINT rules now populate
+  `Finding.taint_flows`. A new `Chain.via_dataflow` flag marks the
+  stronger tier in the JSON output and the terminal badge, and a new
+  `--chains-require-dataflow` CLI gate keeps only dataflow-confirmed
+  chains (stricter than `--chains-require-reachability`).
+- **Reachability-aware attack chains, phase 2: Tekton, Argo, and
+  Buildkite.** Extends the phase-2 dataflow tier to the three remaining
+  injection chains, so each provider with a TAINT engine now reports a
+  proven path rather than file co-occurrence. Their TAINT rules populate
+  `Finding.taint_flows`: **TAINT-005** (Buildkite `buildkite-agent
+  meta-data` set/get round-trip), **TAINT-006** (Tekton
+  `$(tasks.<t>.results.<r>)` results channel), and **TAINT-007** (Argo
+  `{{tasks.<t>.outputs.parameters.<o>}}` cross-template forwarding).
+  **AC-026** (Buildkite injection to unmanual deploy) keys its edges on
+  step labels, the same identifiers BK-003 / BK-007 anchor on, and
+  confirms when a meta-data value reaches the deploy step. **AC-025**
+  (Argo param injection to privileged template) qualifies each edge with
+  the document's `<Kind>/<name>:` prefix so a producer template whose
+  tainted output flows into a *separate* privileged consumer template
+  resolves to a cross-template node-escape path. **AC-023** (Tekton param
+  injection to privileged step) bridges the Task/Pipeline document split:
+  TAINT-006 keys its edges on each Pipeline task's resolved `taskRef`
+  document id (`<Kind>/<name>`), matching TKN-002 / TKN-003's per-step
+  anchor prefix, so a tainted result flowing from one Task into a
+  privileged Task is confirmed across documents while the precise
+  same-step signal is preserved as the fallback. Each falls back to the
+  phase-1 shared-anchor signal, then plain co-occurrence, so nothing
+  regresses; all three honor `Chain.via_dataflow` and
+  `--chains-require-dataflow`. Cross-document reachability through
+  reusable workflows (TAINT-003) remains the one open phase-2 follow-up.
+- **`devenv` provider: developer-environment auto-execution scanner
+  (DEV-001..005).** New `--pipeline devenv` provider that scans the
+  config files which run code the moment a developer opens or checks out
+  the repo, a surface distinct from the CI-pipeline definitions the rest
+  of the scanner covers. Parses `.vscode/tasks.json`,
+  `.devcontainer/devcontainer.json` (root, and the
+  `.devcontainer/<name>/` layout), and `.claude/settings.json` /
+  `settings.local.json` as JSON(C) (comments and trailing commas
+  tolerated, string-aware so a `//` inside a URL survives), no tokens,
+  no network. **DEV-001** (LOW) a VS Code task with
+  `runOptions.runOn: folderOpen`; **DEV-002** (LOW) a devcontainer
+  lifecycle command (`postCreateCommand` and friends); **DEV-003**
+  (MEDIUM) a committed Claude Code `type: command` hook (SessionStart
+  and the other events); **DEV-004** (CRITICAL) any auto-run command
+  that fetches and executes remote code (`curl | sh`, `iwr | iex`,
+  `bash -c "$(curl …)"`), reusing the shared
+  `_primitives/remote_script_exec` detector but scoped to the auto-run
+  command strings to keep the false-positive rate near zero; **DEV-005**
+  (HIGH) a devcontainer `initializeCommand`, which runs unsandboxed on
+  the host before the container is built. Models the second stage of the
+  2026 Red Hat npm compromise (loaders that fire on repo open). Auto-
+  detected when `.vscode/` / `.devcontainer/` / `.claude/` config files
+  are present; mapped across OWASP CICD-SEC-3/4/7, NIST 800-53, and ESF.
+  Provider count 32 -> 33.
+- **`pipeline_check fix-pr`: apply autofixes and open a pull / merge
+  request.** New subcommand that closes the gap between "patch on disk"
+  and "PR in your inbox". Scans the auto-detected pipeline files,
+  applies the autofixers of the chosen ``--safety`` tier
+  (``safe`` default / ``unsafe`` / ``all``, the same vocabulary as
+  ``--list-fixers``), commits the changed files to a fresh branch
+  (``pipeline-check/autofix``, auto-suffixed on collision), pushes, and
+  opens the request. GitHub uses ``gh pr create``; GitLab creates the MR
+  via ``-o merge_request.*`` push options (no token or ``glab`` needed);
+  other hosts get the branch pushed with manual instructions. Refuses a
+  dirty working tree by default (``--allow-dirty`` overrides, and even
+  then stages only the autofix edits). ``--dry-run`` shows the patch and
+  the planned git actions without touching the repo; ``--no-push`` stops
+  after the local commit; ``--base`` / ``--branch`` / ``--remote`` /
+  ``--checks`` / ``--title`` / ``--body`` tune the rest. Reuses the
+  existing autofix engine (the apply path was split into a pure planner
+  plus a writer) and a new ``core/fix_pr.py`` for the git / host
+  plumbing. Documented under ``--man autofix``.
+- **AC-039: untrusted trigger reaches a bulk-secrets serialization
+  (CRITICAL chain).** Correlates an attacker-influenced trigger
+  (GHA-002 / GHA-009 / GHA-013) with a step that serializes the whole
+  secrets context (GHA-116) on the same workflow: an external attacker
+  who opens a fork PR or posts a comment triggers a run that dumps every
+  secret into a world-readable log, the *reachable* form of the 2025
+  tj-actions / GhostAction secret-harvesting attacks (where the payload
+  needed a compromised action or pushed workflow, this lane needs only a
+  pull request). Confirms reachability when a job is both
+  attacker-reachable and serializes the secrets (HIGH confidence) via
+  ``job_anchors`` (GHA-116 now emits them). MITRE T1195.002 / T1552 /
+  T1567.002. Attack-chain count 52 -> 53.
+- **GHA-116: workflow serializes the entire secrets context
+  (``toJSON(secrets)``) (HIGH).** New GitHub Actions rule for the 2025
+  secret-harvesting wave (tj-actions/changed-files + reviewdog,
+  CVE-2025-30066; the GhostAction campaign, 3,325 secrets stolen).
+  ``${{ toJSON(secrets) }}`` serializes every credential a job can see
+  into a single string, so one log line or outbound request exfiltrates
+  all of them at once, the in-YAML primitive both campaigns relied on.
+  Fires when it appears in a step ``run:`` / ``env:`` / ``with:``, a job
+  ``env:``, or a workflow ``env:`` (the ``fromJSON(toJSON(secrets))`` /
+  ``format(..., toJSON(secrets))`` wrappers match too). HIGH severity /
+  HIGH confidence: serializing the whole secrets object has no benign
+  per-secret use. Distinct from GHA-033 (echoes a named secret), GHA-034
+  (``secrets: inherit``), and GHA-057 (secret-scanner output to egress).
+  github rule count 106 -> 107. Mapped to OWASP CICD-SEC-6, ESF
+  ESF-D-SECRETS, and the standard supply-chain set.
+- **PYPI-021: direct dependency provenance built from a non-release ref
+  (LOW, MEDIUM confidence).** The PyPI / PEP 740 analog of NPM-017.
+  Extends PYPI-019 (provenance gap): where PYPI-019 flags a missing PEP
+  740 attestation, PYPI-021 fetches each direct dependency's latest-release
+  provenance object via ``--resolve-remote`` (the integrity-endpoint URL
+  the PyPI JSON API exposes on each attested file, host-pinned to
+  ``pypi.org``) and parses the SLSA ``source ref``. Flags a release whose
+  ref is a branch other than ``main`` / ``master`` rather than a version
+  tag, the same "untrusted branch" / Red Hat compromise signal NPM-017
+  covers on the npm side: valid provenance, attacker-controlled build ref.
+  Reuses the shared ``_primitives/provenance_ref`` extractor (DSSE -> in-toto
+  -> SLSA v1). Scoped to direct dependencies, LOW severity (posture signal
+  below the default ``--fail-on`` gate), MEDIUM confidence. pypi rule count
+  19 -> 20. Mapped to OWASP CICD-SEC-4, ESF ESF-S-VERIFY-DEPS, NIST 800-53,
+  NIST CSF 2, PCI DSS v4, and SOC 2 (same controls as PYPI-019).
+- **NPM-017: direct dependency provenance built from a non-release ref
+  (LOW, MEDIUM confidence).** Consumer-side provenance source-ref check
+  that extends NPM-015 (provenance gap). Where NPM-015 flags a missing
+  attestation, NPM-017 reads the attestation bundle via ``--resolve-remote``
+  and flags a latest release whose SLSA ``source.ref`` is a branch name
+  rather than a version tag, the npm "untrusted branch" / Red Hat npm
+  compromise signal: the package ships valid provenance, but the build ran
+  from an attacker-controlled branch, not the canonical release ref.
+  Scoped to direct dependencies, LOW severity (posture signal below the
+  default ``--fail-on`` gate), MEDIUM confidence. Pairs with the
+  GHA-113/GHA-114/GHA-115 + AC-038 workflow-side family that covers the
+  same attack. The PyPI / PEP 740 analog ships as PYPI-021. npm rule
+  count 16 -> 17. Mapped to OWASP CICD-SEC-4, ESF ESF-S-VERIFY-DEPS, NIST
+  800-53, NIST CSF 2, PCI DSS v4, and SOC 2 (same controls as NPM-015).
+- **GHA-115: ``id-token: write`` granted workflow-wide instead of
+  job-scoped (MEDIUM, MEDIUM confidence).** New GitHub Actions rule for
+  the least-privilege OIDC surface raised by the npm untrusted-branch
+  writeup: when the workflow-level ``permissions:`` block grants
+  ``id-token: write`` but only a subset of jobs (publish, deploy) actually
+  consume the OIDC token, every other job in the workflow inherits a
+  publish-capable mint right it never needs. A compromised build or test
+  job can use that inherited permission to obtain a cloud or registry
+  token without running the intended publish step. Fires when a
+  workflow-level ``permissions: id-token: write`` is detected and at least
+  one non-consumer job (no OIDC-consuming action or CLI invocation) runs
+  in the same workflow. Recommend scoping ``id-token: write`` to the
+  specific job that mints the token and setting ``id-token: none`` at the
+  workflow level (or omitting the workflow-level grant entirely). The
+  least-privilege sibling of GHA-069 (orphan ``id-token: write`` with no
+  consumer at all); reuses GHA-069's consumer-detection logic. Mapped
+  across all 9 standards that cover GHA-069. github 105 -> 106.
+- **GHA-114: Package-publish workflow runs on an unrestricted push trigger
+  (HIGH, MEDIUM confidence).** New GitHub Actions rule for the npm
+  "trusted publishing, untrusted branch" attack: a publish workflow
+  reachable from an unrestricted ``push`` trigger (wildcard ``branches:``
+  pattern or no branch filter at all) lets a counterfeit workflow on any
+  throwaway branch mint the OIDC publish token and ship a release as
+  though it were the real one. Fires when a workflow contains a
+  package-publish step (``npm publish``, ``pypa/gh-action-pypi-publish``,
+  ``cargo publish``, ``rubygems/release-gem``, etc.) and its ``on:`` block
+  includes an unrestricted ``push`` event (no ``branches:`` filter or a
+  ``branches: ['*']``-style wildcard). Recommend gating publishes on
+  ``on: push: tags:`` patterns, ``release:`` events, or
+  ``workflow_dispatch`` only. The trigger-side twin of GHA-113 (env-gate
+  side); both generalize GHA-086 to the full trusted-publisher surface.
+  Mapped across all 12 standards. github 104 -> 105.
 - **GHA-113: OIDC trusted-publishing job without an environment gate
   (HIGH).** New GitHub Actions rule for the npm "trusted publishing,
   untrusted branch" shape (the Red Hat npm compromise, BoostSecurity
@@ -41,6 +273,17 @@ release commit collapses this section into `## [X.Y.Z] - <date>`.
   (LocalStack / kind) are carved out. The deploy-command vocabulary
   moved to a shared ``_primitives/deploy_names`` primitive that GHA-014
   now reuses. Mapped across all 12 standards. github 102 -> 103.
+- **AC-038: Untrusted branch reaches OIDC trusted publish (CRITICAL).**
+  New attack chain intersecting GHA-114 (publish workflow on an
+  unrestricted push trigger) with GHA-113 (OIDC publish job with no
+  environment gate) on the same job: a publish token mintable from any
+  branch with no human or branch gate, the reachable form of the npm
+  "trusted publishing, untrusted branch" compromise (Red Hat npm, 2026).
+  Confirms an executable path when the two findings' ``job_anchors``
+  intersect (promoting the composite to HIGH confidence); co-occurrence
+  on different jobs stays an unconfirmed signal. The OIDC trusted-
+  publishing lane AC-029 (the long-lived-token publish lane) cannot
+  reach. Chain count 51 -> 52.
 - **AC-037: AI agent applies attacker-influenced IaC to the cloud
   (CRITICAL).** New attack chain pairing an untrusted-input agent leg
   (GHA-058, an agentic CLI with permission-bypass flags / PR-checkout
@@ -88,6 +331,127 @@ release commit collapses this section into `## [X.Y.Z] - <date>`.
 
 ### Fixed
 
+- **CCM-002 (CodeCommit repo encryption) aligned with CA-001.** The check
+  carried a dead ``"alias/aws/codecommit" not in key`` branch: the
+  CodeCommit API returns the resolved KMS key ARN (not the alias string),
+  so a repo on the AWS-managed default would silently pass once resolved,
+  yet the branch suggested it was detected. Following the resolution its
+  own docs_note already pointed at ("same shape as CA-001"), the check now
+  flags only the absent-key case (``passed = bool(key)``) and documents
+  that classifying the managed default vs a CMK would need a separate
+  ``kms:DescribeKey`` call. No collector change; closes the final open
+  rule-audit finding.
+- **ACR-005 reframed as an advisory (ACR has no registry-level tag
+  immutability).** The check inferred tag immutability from a registry's
+  quarantine / export policy, an unrelated proxy that false-positived on
+  default registries and false-negatived on mutable ones. Azure Container
+  Registry, unlike ECR's ``imageTagMutability``, has no registry-level
+  immutability setting: it's a per-repository / per-tag
+  ``writeEnabled=false`` lock applied through the data plane, which a
+  registry-level posture scan cannot enumerate. ACR-005 is now an INFO
+  advisory that always passes and carries the recommendation (lock
+  critical production tags via ``az acr repository update --write-enabled
+  false`` and/or pin by digest) instead of asserting a proxy-based
+  verdict. Severity MEDIUM -> INFO; provider and standards docs
+  regenerated. (Closes the last open rule-audit finding that didn't
+  require a collector change.)
+- **Rule audit: title / severity / ESF-mapping corrections (5 rules).**
+  The closing audit batch, aligning catalog metadata with each rule's
+  actual behavior. **CB-004**'s title was "No build timeout configured"
+  but the check fires on a missing timeout *or* one set to the AWS
+  maximum (480 min); retitled to match. **CF-001** declared ``HIGH`` but
+  the finding it emits is ``CRITICAL`` (a long-lived ``AWS::IAM::AccessKey``
+  in a template); the declared severity now matches. **CF-003**'s title
+  claimed the project "references" a public subnet, but the check fires
+  when the project's VPC merely *contains* one; retitled (catalog and
+  emitted finding now agree). **PBAC-003**'s title / docs_note claimed
+  CodeBuild scoping, but the check flags every ``AWS::EC2::SecurityGroup``
+  with open all-port egress in the template; prose corrected to the actual
+  scope (narrowing the check to CodeBuild-attached groups is a separate
+  decision, deliberately not taken here to avoid new false negatives).
+  **ADO-024**'s ESF mapping disagreed between the rule module
+  (``ESF-S-PROVENANCE`` alone) and the standards registry (``ESF-D-SBOM`` /
+  ``ESF-D-SIGN-ARTIFACTS``); the module is now aligned to the registry and
+  to its cross-provider siblings GHA-024 / GL-024 / BB-024 (``ESF-D-SBOM``
+  + ``ESF-D-SIGN-ARTIFACTS``). Provider docs regenerated.
+- **Rule audit: logic-bug fixes and test strengthening.** The final audit
+  cluster, each fix pinned by a regression test. **ADO-003** no longer
+  escalates a plain secret to CRITICAL just because the variable name
+  contains "AWS" (the severity bump now keys on a real AKIA-shaped value,
+  not a name substring), and stops double-counting a bare top-level
+  ``variables:`` block. **CB-005** now locks ``HIGH`` confidence when a
+  CodeBuild image is two or more versions behind (the behavior its
+  ``known_fp`` and the confidence registry already documented but the
+  check never implemented; one-behind still demotes to MEDIUM).
+  **CARGO-005** dropped a dead ``seen`` set. **GCB-005**'s docstrings were
+  corrected to match the parser (a bare integer ``timeout:`` is read as a
+  seconds count; only minute/hour suffixes are rejected). Test gaps closed:
+  ARGOCD-013 now pins ``revisionHistoryLimit: 0`` passing, AZMON-004 covers
+  the has-diagnostics pass path (previously unreachable without the azure
+  SDK installed), and the CloudFormation CA-004 variant gains a
+  scoped-policy-passes assertion.
+- **Rule audit: ``docs_note`` / ``recommendation`` accuracy in 20 rules.**
+  A verify-first pass over the audit's metadata findings reconciled each
+  rule's prose with what its detector actually does (no behavior, count,
+  or standards-mapping change). Corrected token-catalog names (ARGO-011
+  ``in-toto-attestation``, BK-010 ``spdx-sbom-generator``) and dropped
+  names that were never tokens (ARGO-012 ``anchore``; BK-012
+  ``anchore`` / ``dependency-check``); made over-specific scanner
+  enumerations illustrative (ADO-020, BB-015); removed claims for surfaces
+  the code never inspects (BK-006 pipeline-level timeout default, CC-010
+  ``machine: true`` executor, BK-015 quote-awareness, BB-016 Docker-image
+  override); fixed inaccurate keyword / example lists (BK-007 deploy
+  verbs, BK-008 curl ``--insecure`` example, CP-005 ``live`` token); added
+  scanned surfaces the prose omitted (CARGO-001 / CARGO-007 workspace
+  tables); and corrected wrong claims (ARGOCD-008 plugin-name handling,
+  ARGOCD-013 ``revisionHistoryLimit: 0``, ADO-014 ``known_fp`` rationale,
+  EB-001 event detail-type, SIGN-001 substring match). Provider docs
+  regenerated. (13 sibling metadata / test findings from the same audit
+  were verified STALE, already fixed by earlier batches, and needed no
+  change.)
+- **English-variant enforcement: closed the PAIRS gaps the rule audit
+  flagged.** The ``test_english_variant.py`` guard list was missing
+  several British ``-ise`` / ``-isation`` word families (the
+  ``sanitize``, ``organization``, ``parameterize``, ``tokenize``,
+  ``generalize``, and ``specialize`` families, named here by their
+  American form, plus inflections), so the British forms could land in
+  source and docs unchecked. Added the pairs to the PAIRS
+  list (and to the bulk-converter list + the CLAUDE.md reference table)
+  and converted every existing occurrence to American spelling across
+  rule docstrings, recommendations, ``docs_note`` text, comments, a
+  workflow fixture, generator scripts, and CHANGELOG history. Provider
+  and standards docs regenerated. Prose-only: no rule behavior, count, or
+  detection change.
+- **Rule audit: ``docs_note`` accuracy drift in four rules.** A
+  follow-up pass reconciled each rule's ``docs_note`` prose with what
+  its detector actually inspects. ARGO-010 now lists the real SBOM-token
+  catalog (``anchore/sbom-action`` and ``spdx-sbom-generator`` instead of
+  the never-present ``spdx-tools``). GCB-017 drops the ``gcloud run
+  deploy`` example from its image-production note (``_produces_image``
+  only recognizes ``docker push`` / ``docker build`` steps and top-level
+  ``images:``). GCB-024 now says it walks each step's ``name`` + ``args``
+  (not ``entrypoint`` / ``cmd``, which it never read). BK-005 documents
+  the ``docker`` / ``docker-compose`` plugin-config form (``privileged:
+  true`` / a ``/var/run/docker.sock`` volume) its detector already flags
+  alongside command strings. Prose-only: no detection, count, or
+  standards-mapping change; provider docs regenerated. (ARGO-009,
+  GCB-008, and GCB-023 were flagged by the same audit but their gaps had
+  already been closed by the earlier false-negative fixes, so no change
+  was needed.)
+- **Rule audit: unparseable GitHub Actions ``exploit_example`` snippets.**
+  A parse scan of the github pack (never covered by the original audit)
+  found seven rules whose documented exploit example contained YAML no
+  loader accepts, so the snippet would silently fail to parse if a user
+  fed it back through the scanner: a ``${{ ... }}`` expression inside a
+  YAML *flow* mapping (GHA-111, GHA-055, TAINT-002, TAINT-003) and a
+  ``run:`` plain scalar carrying a ``: `` (GHA-072, TAINT-009). All
+  switched to block style; GHA-002's prose em-dash and a few British
+  ``-ise`` spellings in the touched examples were corrected at the
+  same time. A new ``tests/github/test_audit_regressions.py`` pins every
+  github example to parse via the production loader, and the
+  self-contained single-workflow examples (GHA-055/072/111) to still
+  fire on the Vulnerable half and pass on the Safe half. No rule
+  behavior, count, or doc output changed.
 - **Rule audit: false-positive, false-negative, and crash fixes across
   the AWS, Azure, and CloudFormation checks.** A read-only audit of the
   rule pack surfaced a batch of defects, now fixed and pinned with
@@ -6553,7 +6917,7 @@ promotion to Production/Stable.
 - **TAINT-001 / dataflow taint engine for GHA.** First v0.6.0
   vision item, *landed early on dev*. New per-workflow taint
   graph (``pipeline_check.core.checks.github._taint_graph``)
-  generalises the existing GHA-003 single-step interpolation
+  generalizes the existing GHA-003 single-step interpolation
   detector to a workflow-wide reachability problem: track
   ``${{ github.event.* }}`` source expressions through
   ``$GITHUB_OUTPUT`` writes (and the legacy ``::set-output``
@@ -8892,7 +9256,7 @@ promotion to Production/Stable.
   `report_json`, `report_html`, `report_sarif`, `report_junit`,
   `report_markdown`, `evaluate_gate`) now accept the actual
   `ScoreResult` `TypedDict` from `core.scorer` instead of an
-  unparameterised `dict`. Closes a real type-inference gap that
+  unparameterized `dict`. Closes a real type-inference gap that
   mypy was flagging in `cli.py` lines 1517–1617 and unblocks part
   of the eventual strict-mode flip.
 - `GCB-018` rule narrowing: replaced the boolean-flag pattern with

@@ -44,18 +44,18 @@ RULE = Rule(
     esf=("ESF-D-INJECTION",),
     cwe=("CWE-78", "CWE-829"),
     recommendation=(
-        "Sanitise the value at the producer job before it lands "
+        "Sanitize the value at the producer job before it lands "
         "in the dotenv file. The canonical safe pattern is to "
         "copy the ``$CI_COMMIT_*`` / ``$CI_MERGE_REQUEST_*`` "
         "source into an intermediate shell variable, run a "
-        "sanitiser (``tr -dc 'a-zA-Z0-9 '`` is enough for a "
+        "sanitizer (``tr -dc 'a-zA-Z0-9 '`` is enough for a "
         "freeform title), and only then write the cleaned value "
         "to dotenv. The consuming job should still treat the "
         "auto-imported variable as tainted, reference it quoted "
         "(``\"$TITLE\"``) and never inline into a command "
         "without re-quoting. Removing the dotenv entirely is "
         "the strongest fix; if the value genuinely needs to "
-        "flow downstream, validate the sanitiser is doing what "
+        "flow downstream, validate the sanitizer is doing what "
         "you think before relying on it."
     ),
     docs_note=(
@@ -75,13 +75,13 @@ RULE = Rule(
         "glob expansion is performed."
     ),
     known_fp=(
-        "If the producer job runs a sanitiser between the "
+        "If the producer job runs a sanitizer between the "
         "tainted source interpolation and the dotenv write "
         "(``echo \"$CI_COMMIT_TITLE\" | tr -dc 'a-zA-Z0-9 ' "
         "> taint.env``), the consumer is no longer exploitable "
         "but TAINT-004 still fires. Suppress via ignore-file "
         "scoped to the consumer job's pipeline file when this "
-        "is the deliberate shape; the sanitiser is then "
+        "is the deliberate shape; the sanitizer is then "
         "load-bearing and any future regression in it would "
         "re-expose the consumer.",
     ),
@@ -103,7 +103,7 @@ RULE = Rule(
         "  script:\n"
         "    - ./gen-notes --message $MSG\n"
         "\n"
-        "# Safe: sanitise at the producer before writing the\n"
+        "# Safe: sanitize at the producer before writing the\n"
         "# dotenv file, and quote at the consumer. The cleaned\n"
         "# value is safe to inline; the consumer's env binding\n"
         "# is properly quoted.\n"
@@ -157,4 +157,5 @@ def check(path: str, doc: dict[str, Any]) -> Finding:
         recommendation=RULE.recommendation, passed=False,
         job_anchors=tuple(anchor_jobs),
         path_evidence=tuple(rendered),
+        taint_flows=tuple(p.to_flow() for p in paths),
     )

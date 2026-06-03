@@ -34,15 +34,14 @@ RULE = Rule(
         "credential injection for cross-cloud access."
     ),
     known_fp=(
-        "Variable values that *reference* a secret rather than "
-        "embed one (``$(MySecretVar)`` / ``$(AwsKey)`` mapped from "
-        "a variable group backed by Key Vault) still match the "
-        "``AWS_ACCESS_KEY_ID`` / ``AWS_SECRET_ACCESS_KEY`` name "
-        "regex because the variable name itself looks long-lived. "
-        "The rule has no way to follow the binding to its source. "
-        "Suppress per-pipeline via ``--ignore-file`` once you've "
-        "confirmed the value is injected at runtime from a Key "
-        "Vault group rather than stored in the YAML.",
+        "The check only flags literal AKIA-shaped *values*, never "
+        "variable names. The residual false positive is a literal "
+        "AKIA-shaped value that is actually a deactivated or test "
+        "key (a documentation sample, or a deliberately revoked "
+        "credential left in place). The rule can't tell a live key "
+        "from a dead one. Suppress per-pipeline via "
+        "``--ignore-file`` once you've confirmed the value is "
+        "deactivated or non-production.",
     ),
     exploit_example=(
         "# Vulnerable: long-lived AWS keys in pipeline variables.\n"

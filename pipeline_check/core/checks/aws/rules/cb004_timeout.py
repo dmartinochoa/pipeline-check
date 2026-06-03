@@ -10,7 +10,7 @@ _MAX_SENSIBLE_TIMEOUT = 480  # minutes (AWS maximum)
 
 RULE = Rule(
     id="CB-004",
-    title="No build timeout configured",
+    title="Build timeout missing or at the AWS maximum (480 min)",
     severity=Severity.LOW,
     owasp=("CICD-SEC-7",),
     cwe=("CWE-400",),

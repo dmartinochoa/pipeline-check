@@ -100,6 +100,7 @@ def match_cross_repo(
                 triggering_check_ids=list(RULE.triggering_check_ids),
                 triggering_findings=triggers,
                 resources=[fa.resource, fb.resource],
+                repos=[repo_a, repo_b],
                 references=list(RULE.references),
                 recommendation=RULE.recommendation,
                 confirmed_reachable=False,

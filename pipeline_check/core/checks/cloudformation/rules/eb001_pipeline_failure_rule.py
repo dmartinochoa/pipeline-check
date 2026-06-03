@@ -14,9 +14,10 @@ RULE = Rule(
     cwe=("CWE-778",),
     recommendation=(
         "Declare an ``AWS::Events::Rule`` whose ``EventPattern`` "
-        "matches ``aws.codepipeline`` events with ``detail.state: "
-        "FAILED``, and target it at the notification destination of "
-        "your choice (SNS, Slack via Chatbot, PagerDuty)."
+        "matches the ``CodePipeline Pipeline Execution State "
+        "Change`` detail-type with ``detail.state: FAILED``, and "
+        "target it at the notification destination of your choice "
+        "(SNS, Slack via Chatbot, PagerDuty)."
     ),
     docs_note=(
         "Looks for at least one ``AWS::Events::Rule`` whose "

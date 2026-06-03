@@ -40,7 +40,7 @@ Click a control ID to jump to the per-control section with the full check list. 
 | [`8.4`](#ctrl-8-4) | Ensure the Key Vault is recoverable | 2 | 2H |
 | [`8.5`](#ctrl-8-5) | Enable role-based access control for Azure Key Vault | 2 | 2M |
 | [`9.1`](#ctrl-9-1) | Ensure Container Registry has admin user disabled | 3 | 3H |
-| [`9.2`](#ctrl-9-2) | Ensure Container Registry has content trust enabled | 2 | 2M |
+| [`9.2`](#ctrl-9-2) | Ensure Container Registry has content trust enabled | 2 | 1M · 1I |
 | [`6.1`](#ctrl-6-1) | Ensure that RDP access from the Internet is evaluated and restricted | 1 | 1C |
 | [`6.2`](#ctrl-6-2) | Ensure that SSH access from the Internet is evaluated and restricted | 1 | 1C |
 | [`6.3`](#ctrl-6-3) | Ensure no Network Security Group allows unrestricted ingress to port 3389 | 3 | 1C · 1H · 1M |
@@ -233,7 +233,7 @@ pipeline_check --pipeline aws --standard cis_azure_foundations --standard owasp_
 | Check | Title | Severity | Provider | Fix |
 |-------|-------|----------|----------|-----|
 | [`ACR-003`](../providers/azure_cloud.md) | Container registry content trust not enabled | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [Azure Cloud](../providers/azure_cloud.md) |  |
-| [`ACR-005`](../providers/azure_cloud.md) | Container registry does not enforce tag immutability | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [Azure Cloud](../providers/azure_cloud.md) |  |
+| [`ACR-005`](../providers/azure_cloud.md) | Container registry tag immutability (verify per-repository locking) | <span class="pg-sev pg-sev--info">INFO</span> | [Azure Cloud](../providers/azure_cloud.md) |  |
 
 ### 6.1: Ensure that RDP access from the Internet is evaluated and restricted { #ctrl-6-1 }
 

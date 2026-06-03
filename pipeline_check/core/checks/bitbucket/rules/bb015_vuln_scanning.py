@@ -21,8 +21,9 @@ RULE = Rule(
     docs_note=(
         "Without a vulnerability scanning step, known-vulnerable "
         "dependencies ship to production undetected. The check "
-        "recognizes trivy, grype, snyk, npm audit, yarn audit, "
-        "safety check, pip-audit, osv-scanner, and govulncheck."
+        "recognizes common scanners including trivy, grype, snyk, "
+        "pip-audit, osv-scanner, govulncheck, semgrep, checkov, and "
+        "others."
     ),
 )
 

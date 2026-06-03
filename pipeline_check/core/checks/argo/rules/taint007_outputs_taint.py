@@ -17,7 +17,7 @@ The detector lives in
 """
 from __future__ import annotations
 
-from ...base import Finding, Severity
+from ...base import Finding, Severity, TaintFlow
 from ...rule import Rule
 from .._taint_graph import analyze_workflow_doc
 from ..base import ArgoContext
@@ -33,10 +33,10 @@ RULE = Rule(
     esf=("ESF-D-INJECTION",),
     cwe=("CWE-78", "CWE-829"),
     recommendation=(
-        "Sanitise the value at the producer template before it "
+        "Sanitize the value at the producer template before it "
         "lands in an output parameter. The canonical safe "
         "pattern is to surface ``{{inputs.parameters.<X>}}`` "
-        "into a quoted shell variable, run a sanitiser "
+        "into a quoted shell variable, run a sanitizer "
         "(``tr -dc 'a-zA-Z0-9 '`` for a freeform title), and "
         "only then redirect the cleaned value to the output "
         "path. The consumer template should still reference "
@@ -45,7 +45,7 @@ RULE = Rule(
         "into a command without re-quoting. Removing the "
         "cross-template forwarding is the strongest fix; if "
         "the value genuinely needs to flow downstream, validate "
-        "the sanitiser is doing what you think before relying "
+        "the sanitizer is doing what you think before relying "
         "on it."
     ),
     docs_note=(
@@ -67,12 +67,12 @@ RULE = Rule(
         "``onExit:`` exit handlers aren't yet walked."
     ),
     known_fp=(
-        "If the producer template runs a sanitiser between the "
+        "If the producer template runs a sanitizer between the "
         "tainted ``{{inputs.parameters.X}}`` interpolation and "
         "the output-path write, the consumer is no longer "
         "exploitable but TAINT-007 still fires. Suppress via "
         "ignore-file scoped to the consumer template name when "
-        "this is the deliberate shape; the sanitiser is then "
+        "this is the deliberate shape; the sanitizer is then "
         "load-bearing.",
     ),
     exploit_example=(
@@ -136,7 +136,7 @@ RULE = Rule(
         "# into the shell. The container's ServiceAccount carries\n"
         "# whatever privilege you've granted the workflow.\n"
         "\n"
-        "# Safe: sanitise in the producer before writing the output,\n"
+        "# Safe: sanitize in the producer before writing the output,\n"
         "# and keep the consumer's reference quoted as an extra belt.\n"
         "    - name: read-title\n"
         "      inputs: { parameters: [ { name: title } ] }\n"
@@ -158,6 +158,11 @@ RULE = Rule(
 def check(ctx: ArgoContext) -> Finding:
     examined = 0
     all_paths = []
+    # Structured source->sink edges for the chain engine (AC-025),
+    # qualified with each document's ``<Kind>/<name>:`` so the producer
+    # and consumer template names match ARGO-002 / ARGO-005's anchors
+    # and don't collide across documents in the shared ``argo`` corpus.
+    all_flows: list[TaintFlow] = []
     for doc in ctx.docs:
         # Workflow / WorkflowTemplate / ClusterWorkflowTemplate /
         # CronWorkflow all carry templates; the engine handles each.
@@ -167,7 +172,10 @@ def check(ctx: ArgoContext) -> Finding:
         ):
             continue
         examined += 1
-        all_paths.extend(analyze_workflow_doc(doc))
+        doc_paths = analyze_workflow_doc(doc)
+        all_paths.extend(doc_paths)
+        prefix = f"{doc.kind}/{doc.name}:"
+        all_flows.extend(p.to_flow(prefix) for p in doc_paths)
 
     if examined == 0:
         return Finding(
@@ -197,4 +205,5 @@ def check(ctx: ArgoContext) -> Finding:
         check_id=RULE.id, title=RULE.title, severity=RULE.severity,
         resource="argo", description=desc,
         recommendation=RULE.recommendation, passed=False,
+        taint_flows=tuple(all_flows),
     )

@@ -37,7 +37,7 @@ RULE = Rule(
     esf=("ESF-D-INJECTION",),
     cwe=("CWE-78", "CWE-829"),
     recommendation=(
-        "Sanitise the value at the producer step *before* it lands "
+        "Sanitize the value at the producer step *before* it lands "
         "in ``$GITHUB_OUTPUT``. Once the value is in a job output "
         "the consuming job has no expression-level escaping pass "
         "left, ``${{ needs.<job>.outputs.<name> }}`` substitutes "
@@ -86,7 +86,7 @@ RULE = Rule(
         "cross-job hop the single-step rule can't see."
     ),
     known_fp=(
-        "Sanitisation between the source interpolation and the "
+        "Sanitization between the source interpolation and the "
         "$GITHUB_OUTPUT write isn't modeled. If the producer "
         "step runs ``echo \"$TITLE\" | tr -dc 'a-zA-Z0-9 '`` "
         "before redirecting to GITHUB_OUTPUT, the consumer is "
@@ -115,7 +115,7 @@ RULE = Rule(
         "    steps:\n"
         "      - run: ./generate-notes --title ${{ needs.extract.outputs.title }}\n"
         "\n"
-        "# Safe: sanitise at the producer + quote at the consumer\n"
+        "# Safe: sanitize at the producer + quote at the consumer\n"
         "# via env-var indirection, same shape as TAINT-001 but\n"
         "# across the jobs boundary.\n"
         "jobs:\n"
@@ -125,7 +125,8 @@ RULE = Rule(
         "      title: ${{ steps.x.outputs.title }}\n"
         "    steps:\n"
         "      - id: x\n"
-        "        env: { RAW: ${{ github.event.issue.title }} }\n"
+        "        env:\n"
+        "          RAW: ${{ github.event.issue.title }}\n"
         "        run: |\n"
         "          clean=$(echo \"$RAW\" | tr -dc 'a-zA-Z0-9 -')\n"
         "          echo \"title=$clean\" >> \"$GITHUB_OUTPUT\"\n"
@@ -133,7 +134,8 @@ RULE = Rule(
         "    needs: extract\n"
         "    runs-on: ubuntu-latest\n"
         "    steps:\n"
-        "      - env: { TITLE: ${{ needs.extract.outputs.title }} }\n"
+        "      - env:\n"
+        "          TITLE: ${{ needs.extract.outputs.title }}\n"
         "        run: ./generate-notes --title \"$TITLE\""
     ),
 )
@@ -175,4 +177,5 @@ def check(path: str, doc: dict[str, Any]) -> Finding:
         recommendation=RULE.recommendation, passed=False,
         job_anchors=tuple(anchor_jobs),
         path_evidence=tuple(rendered),
+        taint_flows=tuple(p.to_flow() for p in cross_job_paths),
     )

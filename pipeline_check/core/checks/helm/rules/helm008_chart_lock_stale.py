@@ -91,7 +91,7 @@ def _parse_generated(value: object) -> datetime | None:
 
 
 def check(ctx: HelmContext, *, _now: datetime | None = None) -> Finding:
-    """Check is parameterised on ``_now`` so tests inject a frozen clock."""
+    """Check is parameterized on ``_now`` so tests inject a frozen clock."""
     now = _now or datetime.now(UTC)
     offenders: list[str] = []
     locations: list[Location] = []

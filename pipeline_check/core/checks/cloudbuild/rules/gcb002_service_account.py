@@ -38,7 +38,7 @@ RULE = Rule(
     docs_note=(
         "The default Cloud Build service account historically held "
         "``roles/cloudbuild.builds.builder`` plus project-level editor "
-        "in many organisations. Even under the GCP April-2024 default-"
+        "in many organizations. Even under the GCP April-2024 default-"
         "identity change, the default SA is still broader than what "
         "a single pipeline needs. Explicit ``serviceAccount:`` is "
         "required to pass."

@@ -85,13 +85,10 @@ RULE = Rule(
 def check(pom: CargoFile) -> Finding:
     offenders: list[str] = []
     locations: list[Location] = []
-    seen: set[str] = set()
     for dep in pom.dependencies:
         if not dep.registry:
             continue
         offenders.append(f"{dep.name} (registry: {dep.registry})")
-        if dep.registry not in seen:
-            seen.add(dep.registry)
         locations.append(Location(
             path=pom.path, start_line=dep.line_no, end_line=dep.line_no,
         ))

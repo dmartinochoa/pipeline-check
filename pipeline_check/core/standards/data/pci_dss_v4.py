@@ -389,6 +389,9 @@ STANDARD = Standard(
         "GHA-111":  ["7.2.5", "8.2.1"],  # AI agent edits IaC applied in the same job
         "GHA-112":  ["6.4.1", "6.4.3"],  # self-hosted deploy with no environment gate
         "GHA-113":  ["7.2.1", "8.2.1"],  # OIDC trusted-publish w/o env gate
+        "GHA-114":  ["7.2.1", "8.2.1"],  # publish workflow on an unrestricted push trigger
+        "GHA-115":  ["7.2.5"],                           # id-token granted workflow-wide, not job-scoped
+        "GHA-116":  ["8.2.1", "7.2.5"],                  # bulk secrets serialization
         "GHA-062":  ["7.2.1", "7.2.5"],                  # OIDC trust subject in sibling IaC is overly broad
         "GHA-063":  ["7.2.5", "8.2.1"],                  # spoofable bot-actor if-predicate
         "GHA-064":  ["6.4.3"],                           # unsound contains() with comma-string operand
@@ -602,6 +605,7 @@ STANDARD = Standard(
         "PYPI-018": ["6.3.3", "6.5.1"],  # --no-binary forces sdist build
         "PYPI-019": ["6.3.1", "6.3.3"],  # missing PEP 740 build provenance
         "PYPI-020": ["6.3.1", "6.3.3"],  # low OpenSSF Scorecard upstream
+        "PYPI-021": ["6.3.1", "6.3.3"],  # provenance built from a non-release ref
         "PYPI-004": ["6.3.3", "6.5.1"],
         "PYPI-015": ["6.3.3", "6.5.1"],  # direct artifact URL
         "PYPI-005": ["6.3.3", "6.5.1"],
@@ -632,6 +636,8 @@ STANDARD = Standard(
         "NPM-010":  ["6.3.1", "6.3.3"],
         "NPM-014":  ["6.3.1", "6.3.3"],
         "NPM-015":  ["6.3.1", "6.3.3"],
+        "NPM-017":  ["6.3.1", "6.3.3"],  # provenance built from a non-release ref
+        "NPM-018":  ["6.3.1", "6.3.3"],  # latest release from a new publisher
         "NPM-016":  ["6.3.1", "6.3.3"],
         "PYPI-008": ["6.3.1", "6.3.3"],
         "PYPI-009": ["6.3.1", "6.3.3"],
@@ -989,5 +995,11 @@ STANDARD = Standard(
         "GCKMS-004": ["7.2.1", "7.2.5"],                   # keyring IAM
         "GCKMS-005": ["6.5.1"],                             # destroy sched
         "GCKMS-006": ["10.3.2"],                            # imported key
+        # Developer-environment auto-execution
+        "DEV-001":   ["6.5.1"],
+        "DEV-002":   ["6.5.1"],
+        "DEV-003":   ["6.5.1"],
+        "DEV-004":   ["6.3.3", "6.5.1"],
+        "DEV-005":   ["6.5.1"],
     },
 )

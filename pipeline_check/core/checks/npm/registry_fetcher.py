@@ -29,6 +29,7 @@ from collections.abc import Callable, Iterable
 from pathlib import Path
 from typing import Protocol, TypeVar
 
+from .._primitives.provenance_ref import source_ref_from_npm_attestations
 from .._primitives.registry_fetcher import (
     FileSystemCache as _FileSystemCache,
 )
@@ -86,6 +87,18 @@ class HttpRegistryFetcher:
     def fetch(self, name: str) -> bytes | None:
         encoded = name.replace("/", "%2F")
         return self._http.get(f"{self.BASE_URL}/{encoded}")
+
+    def fetch_attestations(self, name: str, version: str) -> bytes | None:
+        """Fetch the attestation bundle for ``<name>@<version>``.
+
+        npm serves it from ``/-/npm/v1/attestations/<name>@<version>``,
+        separate from the packument. Used by NPM-017 to read the build
+        provenance's source ref.
+        """
+        encoded = name.replace("/", "%2F")
+        return self._http.get(
+            f"{self.BASE_URL}/-/npm/v1/attestations/{encoded}@{version}"
+        )
 
 
 # ── Per-version timestamp parser ─────────────────────────────────
@@ -374,13 +387,191 @@ def fetch_repo_slugs(
     )
 
 
+def _parse_latest_attested_version(blob: bytes) -> str | None:
+    """Return the ``dist-tags.latest`` version IFF it ships provenance.
+
+    Mirrors :func:`_parse_has_provenance` but returns the version string
+    (so the attestation bundle can be fetched) only when that version
+    carries a ``dist.attestations`` entry; ``None`` otherwise.
+    """
+    try:
+        doc = json.loads(blob)
+    except (ValueError, json.JSONDecodeError):
+        return None
+    if not isinstance(doc, dict):
+        return None
+    dist_tags = doc.get("dist-tags")
+    if not isinstance(dist_tags, dict):
+        return None
+    latest = dist_tags.get("latest")
+    if not isinstance(latest, str) or not latest:
+        return None
+    versions = doc.get("versions")
+    if not isinstance(versions, dict):
+        return None
+    version = versions.get(latest)
+    if not isinstance(version, dict):
+        return None
+    dist = version.get("dist")
+    if not isinstance(dist, dict):
+        return None
+    if not dist.get("attestations"):
+        return None
+    return latest
+
+
+def _parse_latest_publisher_is_new(blob: bytes) -> bool | None:
+    """Whether the latest release was published by an account new to the package.
+
+    Each packument version records ``_npmUser`` (the npm account that ran
+    ``npm publish`` for that version), distinct from the top-level
+    ``maintainers`` list (current publish access). This reads the
+    publisher of ``dist-tags.latest`` and compares it against the
+    publishers of every prior version: a latest publisher that appears in
+    no earlier version is a publisher change, the account-takeover /
+    new-maintainer shape (a stolen credential or a freshly added account
+    pushing a release).
+
+    Returns ``True`` for a new latest publisher, ``False`` for an
+    established one, and ``None`` when the packument can't tell: it's
+    unparseable, there's no resolvable latest version, the latest
+    version's ``_npmUser`` is absent, or fewer than three prior versions
+    carry a known publisher. The three-version floor keeps brand-new
+    packages (one or two releases, where "new publisher" is meaningless
+    and the cooldown rule NPM-008 already covers the fresh-carrier risk)
+    out of the signal, and the absent-field skip mirrors NPM-017's
+    conservative default so a packument that doesn't expose ``_npmUser``
+    is never flagged.
+    """
+    try:
+        doc = json.loads(blob)
+    except (ValueError, json.JSONDecodeError):
+        return None
+    if not isinstance(doc, dict):
+        return None
+    dist_tags = doc.get("dist-tags")
+    versions = doc.get("versions")
+    if not isinstance(dist_tags, dict) or not isinstance(versions, dict):
+        return None
+    latest = dist_tags.get("latest")
+    if not isinstance(latest, str) or latest not in versions:
+        return None
+
+    def _publisher(version: str) -> str | None:
+        vd = versions.get(version)
+        if not isinstance(vd, dict):
+            return None
+        user = vd.get("_npmUser")
+        if not isinstance(user, dict):
+            return None
+        name = user.get("name")
+        if isinstance(name, str) and name:
+            return name
+        return None
+
+    latest_pub = _publisher(latest)
+    if latest_pub is None:
+        return None
+    prior_publishers: set[str] = set()
+    prior_count = 0
+    for version in versions:
+        if version == latest:
+            continue
+        pub = _publisher(version)
+        if pub is not None:
+            prior_publishers.add(pub)
+            prior_count += 1
+    if prior_count < 3:
+        return None
+    return latest_pub not in prior_publishers
+
+
+def fetch_new_publisher(
+    names: Iterable[str],
+    fetcher: RegistryMetadataFetcher,
+    cache: FileSystemCache | None = None,
+) -> tuple[dict[str, bool], list[str]]:
+    """Resolve, per package, whether its latest release came from a new publisher.
+
+    Reads each packument's per-version ``_npmUser`` (shared name-keyed
+    cache, so no extra fetch alongside the other ``--resolve-remote``
+    passes). Returns ``({name: latest_publisher_is_new}, warnings)``; the
+    ``True`` entries are what NPM-018 flags, and packages without enough
+    publisher history are omitted so the rule skips them.
+    """
+    return _fetch_packument_field(
+        names, fetcher, _parse_latest_publisher_is_new, cache,
+    )
+
+
+def fetch_provenance_refs(
+    names: Iterable[str],
+    fetcher: RegistryMetadataFetcher,
+    cache: FileSystemCache | None = None,
+) -> tuple[dict[str, str], list[str]]:
+    """Resolve the build-provenance *source ref* for packages that ship one.
+
+    Two-stage: read each packument (shared name-keyed cache, so no extra
+    fetch alongside the other ``--resolve-remote`` passes) to find the
+    latest attested version, then fetch that version's attestation bundle
+    and parse the SLSA source ref. Only packages whose latest version
+    both ships provenance AND exposes a parseable ref are returned;
+    everything else is omitted so NPM-017 skips unknowns rather than
+    flagging them. Needs a fetcher exposing ``fetch_attestations``;
+    without it the pass is a no-op. Packages with no provenance are
+    NPM-015's concern and are silently skipped here.
+    """
+    fetch_att = getattr(fetcher, "fetch_attestations", None)
+    seen: set[str] = set()
+    out: dict[str, str] = {}
+    warnings: list[str] = []
+    for name in names:
+        if not isinstance(name, str) or not name or name in seen:
+            continue
+        seen.add(name)
+        blob = cache.get(name) if cache is not None else None
+        if blob is None:
+            blob = fetcher.fetch(name)
+            if blob is None:
+                continue  # unfetchable metadata: NPM-015 already warns
+            if cache is not None:
+                cache.put(name, blob)
+        version = _parse_latest_attested_version(blob)
+        if version is None or fetch_att is None:
+            continue
+        att_key = f"{name}@{version}::attestations"
+        att_blob = cache.get(att_key) if cache is not None else None
+        if att_blob is None:
+            att_blob = fetch_att(name, version)
+            if att_blob is None:
+                warnings.append(
+                    f"npm-registry: could not fetch attestations for "
+                    f"{name}@{version}"
+                )
+                continue
+            if cache is not None:
+                cache.put(att_key, att_blob)
+        try:
+            bundle = json.loads(att_blob)
+        except (ValueError, json.JSONDecodeError):
+            continue
+        if not isinstance(bundle, dict):
+            continue
+        ref = source_ref_from_npm_attestations(bundle)
+        if ref:
+            out[name] = ref
+    return out, warnings
+
+
 __all__ = [
     "FileSystemCache",
     "HttpRegistryFetcher",
     "RegistryMetadataFetcher",
     "default_cache_dir",
     "fetch_maintainer_counts",
+    "fetch_new_publisher",
     "fetch_provenance",
+    "fetch_provenance_refs",
     "fetch_publish_times",
     "fetch_repo_slugs",
 ]

@@ -177,6 +177,7 @@ STANDARD = Standard(
         "GHA-032": ["1.5.2"],                                 # local script on untrusted trigger
         "GHA-033": ["1.5.2", "1.5.1"],                        # secret echoed in run:
         "GHA-034": ["1.5.2"],                                 # secrets: inherit
+        "GHA-116": ["1.5.2"],                                 # bulk secrets serialization
         "GHA-035": ["1.5.2"],                                 # github-script untrusted context
         "GHA-036": ["1.5.2"],                                 # runs-on untrusted context
         "GHA-037": ["1.5.2"],                                 # checkout persists GITHUB_TOKEN
@@ -207,6 +208,7 @@ STANDARD = Standard(
         "GHA-111":  ["1.5.2"],  # AI agent edits IaC applied in the same job
         "GHA-112":  ["1.5.2"],  # self-hosted deploy with no environment gate
         "GHA-113":  ["1.5.2"],  # OIDC trusted-publish w/o env gate
+        "GHA-114":  ["1.5.2"],  # publish workflow on an unrestricted push trigger
         "GHA-062": ["1.5.2"],                                 # OIDC trust subject in sibling IaC is overly broad
         "GHA-092": ["1.5.2"],                                 # TOCTOU PR head SHA force-push race
         "GHA-093": ["1.5.2"],                                 # LOTP indicators
