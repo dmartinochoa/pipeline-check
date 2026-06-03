@@ -14,7 +14,7 @@ process telemetry the tool cannot witness.
 
 - **Controls in this standard:** 23
 - **Controls evidenced by at least one check:** 23 / 23
-- **Distinct checks evidencing this standard:** 868
+- **Distinct checks evidencing this standard:** 872
 - **Of those, autofixable with `--fix`:** 111
 
 _Severity levels (`CRITICAL` / `HIGH` / `MEDIUM` / `LOW` / `INFO`) follow the same scale across every provider and standard. See [How to read severity](README.md#how-to-read-severity) on the standards overview for the definitions._
@@ -30,12 +30,12 @@ Click a control ID to jump to the per-control section with the full check list. 
 | [`GV.SC-05`](#ctrl-gv-sc-05) | Requirements to address cybersecurity risks in supply chains are established, prioritized, and integrated into contracts | 179 | 9C · 92H · 64M · 14L |
 | [`GV.SC-07`](#ctrl-gv-sc-07) | Risks posed by suppliers, their products and services, are understood, recorded, prioritized, assessed, responded to, and monitored | 122 | 10C · 59H · 41M · 12L |
 | [`GV.SC-08`](#ctrl-gv-sc-08) | Relevant suppliers and other third parties are included in incident planning, response, and recovery activities | 11 | 10H · 1M |
-| [`PR.AA-01`](#ctrl-pr-aa-01) | Identities and credentials for authorized users, services, and hardware are managed | 97 | 28C · 49H · 20M |
+| [`PR.AA-01`](#ctrl-pr-aa-01) | Identities and credentials for authorized users, services, and hardware are managed | 99 | 28C · 51H · 20M |
 | [`PR.AA-03`](#ctrl-pr-aa-03) | Users, services, and hardware are authenticated | 8 | 4H · 4M |
-| [`PR.AA-05`](#ctrl-pr-aa-05) | Access permissions, entitlements, and authorizations are defined in a policy, managed, enforced, and reviewed | 64 | 7C · 33H · 23M · 1L |
-| [`PR.DS-01`](#ctrl-pr-ds-01) | The confidentiality, integrity, and availability of data-at-rest are protected | 69 | 11C · 41H · 15M · 2L |
+| [`PR.AA-05`](#ctrl-pr-aa-05) | Access permissions, entitlements, and authorizations are defined in a policy, managed, enforced, and reviewed | 65 | 7C · 34H · 23M · 1L |
+| [`PR.DS-01`](#ctrl-pr-ds-01) | The confidentiality, integrity, and availability of data-at-rest are protected | 71 | 11C · 43H · 15M · 2L |
 | [`PR.DS-02`](#ctrl-pr-ds-02) | The confidentiality, integrity, and availability of data-in-transit are protected | 43 | 37H · 5M · 1L |
-| [`PR.PS-01`](#ctrl-pr-ps-01) | Configuration management practices are established and applied | 86 | 13C · 29H · 30M · 13L · 1I |
+| [`PR.PS-01`](#ctrl-pr-ps-01) | Configuration management practices are established and applied | 87 | 13C · 30H · 30M · 13L · 1I |
 | [`PR.PS-02`](#ctrl-pr-ps-02) | Software is maintained, replaced, and removed commensurate with risk | 47 | 8C · 11H · 18M · 10L |
 | [`PR.PS-04`](#ctrl-pr-ps-04) | Log records are generated and made available for continuous monitoring | 41 | 5H · 15M · 5L · 16I |
 | [`PR.PS-05`](#ctrl-pr-ps-05) | Installation and execution of unauthorized software are prevented | 78 | 17C · 50H · 6M · 5L |
@@ -455,7 +455,7 @@ pipeline_check --pipeline aws --standard nist_csf_2 --standard owasp_cicd_top_10
 
 ### PR.AA-01: Identities and credentials for authorized users, services, and hardware are managed { #ctrl-pr-aa-01 }
 
-**Evidenced by 97 checks** across 24 providers (AWS, Argo Workflows, Azure Cloud, Azure DevOps, Bitbucket, Buildkite, CircleCI, Cloud Build, CloudFormation, Composer, Dockerfile, Drone CI, GCP, GitHub Actions, GitLab CI, Jenkins, Kubernetes, NuGet, Pulumi, RubyGems, SCM, Tekton, Terraform, npm).
+**Evidenced by 99 checks** across 24 providers (AWS, Argo Workflows, Azure Cloud, Azure DevOps, Bitbucket, Buildkite, CircleCI, Cloud Build, CloudFormation, Composer, Dockerfile, Drone CI, GCP, GitHub Actions, GitLab CI, Jenkins, Kubernetes, NuGet, Pulumi, RubyGems, SCM, Tekton, Terraform, npm).
 
 | Check | Title | Severity | Provider | Fix |
 |-------|-------|----------|----------|-----|
@@ -463,6 +463,7 @@ pipeline_check --pipeline aws --standard nist_csf_2 --standard owasp_cicd_top_10
 | [`ADO-008`](../providers/azure.md#ado-008) | Credential-shaped literal in pipeline body | <span class="pg-sev pg-sev--critical">CRITICAL</span> | [Azure DevOps](../providers/azure.md) | <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> |
 | [`ADO-014`](../providers/azure.md#ado-014) | AWS auth uses long-lived access keys | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [Azure DevOps](../providers/azure.md) | <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> |
 | [`ADO-031`](../providers/azure.md#ado-031) | Secret variable echoed / printed in a script step | <span class="pg-sev pg-sev--high">HIGH</span> | [Azure DevOps](../providers/azure.md) |  |
+| [`ADO-032`](../providers/azure.md#ado-032) | checkout persistCredentials leaves the pipeline token in .git/config | <span class="pg-sev pg-sev--high">HIGH</span> | [Azure DevOps](../providers/azure.md) |  |
 | [`AKV-004`](../providers/azure_cloud.md) | Key Vault key has no expiration date | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [Azure Cloud](../providers/azure_cloud.md) |  |
 | [`AKV-005`](../providers/azure_cloud.md) | Key Vault secret has no expiration date | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [Azure Cloud](../providers/azure_cloud.md) |  |
 | [`ARGO-006`](../providers/argo.md#argo-006) | Literal secret value in Argo template env or parameter default | <span class="pg-sev pg-sev--critical">CRITICAL</span> | [Argo Workflows](../providers/argo.md) | <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> |
@@ -526,6 +527,7 @@ pipeline_check --pipeline aws --standard nist_csf_2 --standard owasp_cicd_top_10
 | [`GL-013`](../providers/gitlab.md#gl-013) | AWS auth uses long-lived access keys | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [GitLab CI](../providers/gitlab.md) | <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> |
 | [`GL-020`](../providers/gitlab.md#gl-020) | CI_JOB_TOKEN written to persistent storage | <span class="pg-sev pg-sev--critical">CRITICAL</span> | [GitLab CI](../providers/gitlab.md) | <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> |
 | [`GL-036`](../providers/gitlab.md#gl-036) | Secret-named variable echoed / printed in a script block | <span class="pg-sev pg-sev--high">HIGH</span> | [GitLab CI](../providers/gitlab.md) |  |
+| [`GL-038`](../providers/gitlab.md#gl-038) | CI_DEBUG_TRACE / debug logging dumps secrets to the job log | <span class="pg-sev pg-sev--high">HIGH</span> | [GitLab CI](../providers/gitlab.md) |  |
 | [`IAM-005`](../providers/aws.md#iam-005) | CI/CD role trust policy missing sts:ExternalId | <span class="pg-sev pg-sev--high">HIGH</span> | [AWS](../providers/aws.md) |  |
 | [`IAM-007`](../providers/aws.md#iam-007) | IAM user has access key older than 90 days | <span class="pg-sev pg-sev--high">HIGH</span> | [AWS](../providers/aws.md) |  |
 | [`JF-004`](../providers/jenkins.md#jf-004) | AWS auth uses long-lived access keys via withCredentials | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [Jenkins](../providers/jenkins.md) | <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> |
@@ -574,7 +576,7 @@ pipeline_check --pipeline aws --standard nist_csf_2 --standard owasp_cicd_top_10
 
 ### PR.AA-05: Access permissions, entitlements, and authorizations are defined in a policy, managed, enforced, and reviewed { #ctrl-pr-aa-05 }
 
-**Evidenced by 64 checks** across 15 providers (AWS, Argo CD, Argo Workflows, Azure Cloud, Bitbucket, Buildkite, CircleCI, Cloud Build, GCP, GitHub Actions, GitLab CI, Kubernetes, Pulumi, SCM, Tekton).
+**Evidenced by 65 checks** across 15 providers (AWS, Argo CD, Argo Workflows, Azure Cloud, Bitbucket, Buildkite, CircleCI, Cloud Build, GCP, GitHub Actions, GitLab CI, Kubernetes, Pulumi, SCM, Tekton).
 
 | Check | Title | Severity | Provider | Fix |
 |-------|-------|----------|----------|-----|
@@ -617,6 +619,7 @@ pipeline_check --pipeline aws --standard nist_csf_2 --standard owasp_cicd_top_10
 | [`GHA-115`](../providers/github.md#gha-115) | ``id-token: write`` granted workflow-wide instead of job-scoped | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [GitHub Actions](../providers/github.md) |  |
 | [`GHA-116`](../providers/github.md#gha-116) | Workflow serializes the entire secrets context (toJSON(secrets)) | <span class="pg-sev pg-sev--high">HIGH</span> | [GitHub Actions](../providers/github.md) |  |
 | [`GL-031`](../providers/gitlab.md#gl-031) | id_tokens: missing audience pin or environment binding | <span class="pg-sev pg-sev--high">HIGH</span> | [GitLab CI](../providers/gitlab.md) |  |
+| [`GL-040`](../providers/gitlab.md#gl-040) | CI_JOB_TOKEN used for cross-project / remote access | <span class="pg-sev pg-sev--high">HIGH</span> | [GitLab CI](../providers/gitlab.md) |  |
 | [`IAM-001`](../providers/aws.md#iam-001) | CI/CD role has AdministratorAccess policy attached | <span class="pg-sev pg-sev--critical">CRITICAL</span> | [AWS](../providers/aws.md) |  |
 | [`IAM-002`](../providers/aws.md#iam-002) | CI/CD role has wildcard Action in attached policy | <span class="pg-sev pg-sev--high">HIGH</span> | [AWS](../providers/aws.md) |  |
 | [`IAM-003`](../providers/aws.md#iam-003) | CI/CD role has no permission boundary | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [AWS](../providers/aws.md) |  |
@@ -645,11 +648,12 @@ pipeline_check --pipeline aws --standard nist_csf_2 --standard owasp_cicd_top_10
 
 ### PR.DS-01: The confidentiality, integrity, and availability of data-at-rest are protected { #ctrl-pr-ds-01 }
 
-**Evidenced by 69 checks** across 27 providers (AWS, Argo Workflows, Azure Cloud, Azure DevOps, Bitbucket, Buildkite, Cargo, CircleCI, CloudFormation, Composer, Dockerfile, GCP, GitHub Actions, GitLab CI, Go modules, Helm, Jenkins, Kubernetes, NuGet, Pulumi, PyPI, RubyGems, SCM, Tekton, Terraform, maven, npm).
+**Evidenced by 71 checks** across 27 providers (AWS, Argo Workflows, Azure Cloud, Azure DevOps, Bitbucket, Buildkite, Cargo, CircleCI, CloudFormation, Composer, Dockerfile, GCP, GitHub Actions, GitLab CI, Go modules, Helm, Jenkins, Kubernetes, NuGet, Pulumi, PyPI, RubyGems, SCM, Tekton, Terraform, maven, npm).
 
 | Check | Title | Severity | Provider | Fix |
 |-------|-------|----------|----------|-----|
 | [`ADO-031`](../providers/azure.md#ado-031) | Secret variable echoed / printed in a script step | <span class="pg-sev pg-sev--high">HIGH</span> | [Azure DevOps](../providers/azure.md) |  |
+| [`ADO-032`](../providers/azure.md#ado-032) | checkout persistCredentials leaves the pipeline token in .git/config | <span class="pg-sev pg-sev--high">HIGH</span> | [Azure DevOps](../providers/azure.md) |  |
 | [`AKV-001`](../providers/azure_cloud.md) | Key Vault soft delete not enabled | <span class="pg-sev pg-sev--high">HIGH</span> | [Azure Cloud](../providers/azure_cloud.md) |  |
 | [`AKV-002`](../providers/azure_cloud.md) | Key Vault purge protection not enabled | <span class="pg-sev pg-sev--high">HIGH</span> | [Azure Cloud](../providers/azure_cloud.md) |  |
 | [`ARGO-006`](../providers/argo.md#argo-006) | Literal secret value in Argo template env or parameter default | <span class="pg-sev pg-sev--critical">CRITICAL</span> | [Argo Workflows](../providers/argo.md) | <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> |
@@ -686,6 +690,7 @@ pipeline_check --pipeline aws --standard nist_csf_2 --standard owasp_cicd_top_10
 | [`GHA-093`](../providers/github.md#gha-093) | Living-off-the-Pipeline indicators (workflow-command abuse) | <span class="pg-sev pg-sev--high">HIGH</span> | [GitHub Actions](../providers/github.md) |  |
 | [`GHA-099`](../providers/github.md#gha-099) | Deployment job has a secret-shaped plaintext env var | <span class="pg-sev pg-sev--critical">CRITICAL</span> | [GitHub Actions](../providers/github.md) |  |
 | [`GL-036`](../providers/gitlab.md#gl-036) | Secret-named variable echoed / printed in a script block | <span class="pg-sev pg-sev--high">HIGH</span> | [GitLab CI](../providers/gitlab.md) |  |
+| [`GL-038`](../providers/gitlab.md#gl-038) | CI_DEBUG_TRACE / debug logging dumps secrets to the job log | <span class="pg-sev pg-sev--high">HIGH</span> | [GitLab CI](../providers/gitlab.md) |  |
 | [`GOMOD-001`](../providers/gomod.md) | go.mod present without sibling go.sum integrity manifest | <span class="pg-sev pg-sev--high">HIGH</span> | [Go modules](../providers/gomod.md) |  |
 | [`GOMOD-007`](../providers/gomod.md) | vendor/modules.txt missing or stale relative to go.mod | <span class="pg-sev pg-sev--high">HIGH</span> | [Go modules](../providers/gomod.md) |  |
 | [`HELM-011`](../providers/helm.md#helm-011) | Chart dependency repository URL embeds plaintext credentials | <span class="pg-sev pg-sev--high">HIGH</span> | [Helm](../providers/helm.md) |  |
@@ -771,7 +776,7 @@ pipeline_check --pipeline aws --standard nist_csf_2 --standard owasp_cicd_top_10
 
 ### PR.PS-01: Configuration management practices are established and applied { #ctrl-pr-ps-01 }
 
-**Evidenced by 86 checks** across 18 providers (AWS, Argo Workflows, Azure Cloud, Azure DevOps, Bitbucket, Buildkite, CircleCI, Cloud Build, Dockerfile, Drone CI, GCP, GitHub Actions, GitLab CI, Jenkins, Kubernetes, OCI manifest, SCM, Tekton).
+**Evidenced by 87 checks** across 18 providers (AWS, Argo Workflows, Azure Cloud, Azure DevOps, Bitbucket, Buildkite, CircleCI, Cloud Build, Dockerfile, Drone CI, GCP, GitHub Actions, GitLab CI, Jenkins, Kubernetes, OCI manifest, SCM, Tekton).
 
 | Check | Title | Severity | Provider | Fix |
 |-------|-------|----------|----------|-----|
@@ -828,6 +833,7 @@ pipeline_check --pipeline aws --standard nist_csf_2 --standard owasp_cicd_top_10
 | [`GL-014`](../providers/gitlab.md#gl-014) | Self-managed runner without ephemeral tag | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [GitLab CI](../providers/gitlab.md) |  |
 | [`GL-015`](../providers/gitlab.md#gl-015) | Job has no `timeout`, unbounded build | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [GitLab CI](../providers/gitlab.md) | <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> |
 | [`GL-017`](../providers/gitlab.md#gl-017) | Docker run with insecure flags (privileged/host mount) | <span class="pg-sev pg-sev--critical">CRITICAL</span> | [GitLab CI](../providers/gitlab.md) | <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> |
+| [`GL-039`](../providers/gitlab.md#gl-039) | Docker-in-Docker service exposes an unauthenticated daemon | <span class="pg-sev pg-sev--high">HIGH</span> | [GitLab CI](../providers/gitlab.md) |  |
 | [`JF-003`](../providers/jenkins.md#jf-003) | Pipeline uses `agent any` (no executor isolation) | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [Jenkins](../providers/jenkins.md) |  |
 | [`JF-014`](../providers/jenkins.md#jf-014) | Agent label missing ephemeral marker | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [Jenkins](../providers/jenkins.md) |  |
 | [`JF-015`](../providers/jenkins.md#jf-015) | Pipeline has no `timeout` wrapper, unbounded build | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [Jenkins](../providers/jenkins.md) | <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> |

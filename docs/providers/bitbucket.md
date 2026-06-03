@@ -524,6 +524,8 @@ Remove dependency-update commands from CI. Use lockfile-pinned install commands 
 
 Detects patterns that disable TLS certificate verification: `git config http.sslVerify false`, `NODE_TLS_REJECT_UNAUTHORIZED=0`, `npm config set strict-ssl false`, `curl -k`, `wget --no-check-certificate`, `PYTHONHTTPSVERIFY=0`, and `GOINSECURE=`. Disabling TLS verification allows MITM injection of malicious packages, repositories, or build tools.
 
+Also flags Bitbucket's structural clone bypass, a step-level `clone: { skip-ssl-verify: true }`, which turns off certificate verification on the repository clone itself so a MITM can inject source into the build before any script runs.
+
 <div class="pg-rule__rec" markdown>
 
 **Recommended action**

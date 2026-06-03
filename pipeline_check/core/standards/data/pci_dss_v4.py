@@ -427,6 +427,7 @@ STANDARD = Standard(
         "GL-015":   ["6.4.1"],                           # no timeout
         "GL-016":   ["6.3.3", "6.5.1"],                  # remote script piped to shell
         "GL-017":   ["6.4.1", "6.5.1"],                  # docker privileged
+        "GL-039":   ["6.4.1", "6.5.1"],                  # dind daemon TLS disabled / exposed on 2375
         "GL-018":   ["6.3.3", "6.5.1"],                  # package install insecure source
         "GL-019":   ["6.3.1", "6.3.3"],                  # no vulnerability scanning
         "GL-020":   ["8.2.1"],                           # CI_JOB_TOKEN persisted
@@ -441,6 +442,7 @@ STANDARD = Standard(
         "GL-029":   ["6.4.3"],                           # manual deploy allow_failure
         "GL-030":   ["6.3.3", "6.5.1"],                  # trigger: include w/o pinned ref
         "GL-031":   ["7.2.1", "8.2.1"],                  # id_tokens missing audience pin
+        "GL-040":   ["7.2.1", "8.2.1"],                  # CI_JOB_TOKEN used for cross-project access
         "GL-032":   ["6.5.1"],                           # tags interpolates untrusted
         "GL-033":   ["6.4.1", "6.5.1"],                  # global before_script taint
         "GL-034":   ["6.3.3", "6.5.1"],                  # npm install without audit signatures
@@ -885,8 +887,10 @@ STANDARD = Standard(
         "GHA-103":  ["6.4.1", "6.5.1"],                  # AI review bot on untrusted trigger
         "GHA-104":  ["6.4.1", "6.5.1"],                  # AI agent auto-push without PR review
         "GL-036":   ["8.2.1", "10.3.2"],                  # secret echoed to GitLab CI log
+        "GL-038":   ["8.2.1", "10.3.2"],                  # CI_DEBUG_TRACE dumps secrets to GitLab CI log
         "BB-032":   ["8.2.1", "10.3.2"],                  # secret echoed to Bitbucket log
         "ADO-031":  ["8.2.1", "10.3.2"],                  # secret echoed to Azure DevOps log
+        "ADO-032":  ["8.2.1", "10.3.2"],                  # checkout persistCredentials leaks token to .git/config
         "CC-032":   ["8.2.1", "10.3.2"],                  # secret echoed to CircleCI log
         "SCM-048":  ["7.2.5", "8.2.1"],                   # org codespace secrets scoped to all repos
         "SCM-049":  ["7.2.5", "8.2.1"],                   # classic PAT used where fine-grained suffices

@@ -64,6 +64,7 @@ STANDARD = Standard(
         "GHA-108":  ["4.4.3"],            # no runtime egress control on OIDC/deploy workflow
         "GHA-109":  ["4.4.3"],            # harden-runner not the first step
         "GL-017":   ["4.1.2", "4.4.4"],
+        "GL-039":   ["4.1.2", "4.4.4"],# dind daemon TLS disabled / exposed on 2375
         "BB-013":   ["4.1.2", "4.4.4"],
         "ADO-017":  ["4.1.2", "4.4.4"],
         "JF-017":   ["4.1.2", "4.4.4"],

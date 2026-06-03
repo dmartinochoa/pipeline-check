@@ -249,6 +249,7 @@ STANDARD = Standard(
         "GL-015":   ["CICD-SEC-7"],
         "GL-016":   ["CICD-SEC-3"],
         "GL-017":   ["CICD-SEC-7"],
+        "GL-039":   ["CICD-SEC-7"],# dind daemon TLS disabled / exposed on 2375
         "GL-018":   ["CICD-SEC-3"],
         "GL-019":   ["CICD-SEC-3"],
         "GL-020":   ["CICD-SEC-6"],
@@ -263,6 +264,7 @@ STANDARD = Standard(
         "GL-029":   ["CICD-SEC-1"],
         "GL-030":   ["CICD-SEC-3"],
         "GL-031":   ["CICD-SEC-2"],   # id_tokens missing audience pin / env binding
+        "GL-040":   ["CICD-SEC-2"],   # CI_JOB_TOKEN used for cross-project access
         "GL-032":   ["CICD-SEC-7"],   # tags interpolates untrusted CI variable
         "GL-033":   ["CICD-SEC-4", "CICD-SEC-1"],  # global before_script taint
         "GL-034":   ["CICD-SEC-3"],                # npm install without audit signatures
@@ -857,8 +859,10 @@ STANDARD = Standard(
         "GHA-104":  ["CICD-SEC-4", "CICD-SEC-9"],  # AI agent auto-push without PR review
         # Secrets-in-logs (cross-provider)
         "GL-036":   ["CICD-SEC-6"],               # secret echoed to GitLab CI log
+        "GL-038":   ["CICD-SEC-6"],               # CI_DEBUG_TRACE dumps secrets to GitLab CI log
         "BB-032":   ["CICD-SEC-6"],               # secret echoed to Bitbucket log
         "ADO-031":  ["CICD-SEC-6"],               # secret echoed to Azure DevOps log
+        "ADO-032":  ["CICD-SEC-6"],               # checkout persistCredentials leaks token to .git/config
         "CC-032":   ["CICD-SEC-6"],               # secret echoed to CircleCI log
         # npm supply-chain posture
         "NPM-012":  ["CICD-SEC-3", "CICD-SEC-6"],  # publish token missing restrictions

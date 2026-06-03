@@ -157,7 +157,7 @@ class TestGitHubFixtures:
 
 class TestGitLabFixtures:
     EXPECTED_IDS = (
-        {f"GL-{i:03d}" for i in range(1, 38)}
+        {f"GL-{i:03d}" for i in range(1, 41)}
         | {"TAINT-004", "TAINT-008"}
     )
 
@@ -223,7 +223,7 @@ class TestBitbucketFixtures:
 
 
 class TestAzureFixtures:
-    EXPECTED_IDS = {f"ADO-{i:03d}" for i in range(1, 32)}
+    EXPECTED_IDS = {f"ADO-{i:03d}" for i in range(1, 33)}
 
     def _scan(self, filename: str):
         ctx = AzureContext.from_path(FIXTURES / "azure" / filename)

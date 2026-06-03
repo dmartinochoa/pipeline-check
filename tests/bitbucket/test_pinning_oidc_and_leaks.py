@@ -232,3 +232,34 @@ class TestBB029ImageDigestPinning:
         """
         f = run_check(cfg, "BB-029")
         assert not f.passed
+
+    def test_fails_on_unpinned_top_level_image(self):
+        # The document-root ``image:`` is the global default every step
+        # inherits; it's the most load-bearing surface to pin. A step
+        # with no image of its own still runs inside this container.
+        cfg = """
+        image: node:latest
+        pipelines:
+          default:
+            - step:
+                max-time: 30
+                script:
+                  - npm ci
+                  - npm run build
+        """
+        f = run_check(cfg, "BB-029")
+        assert not f.passed
+        assert "node:latest" in f.description
+
+    def test_passes_on_pinned_top_level_image(self):
+        cfg = f"""
+        image: node{self.SHA}
+        pipelines:
+          default:
+            - step:
+                max-time: 30
+                script:
+                  - npm test
+        """
+        f = run_check(cfg, "BB-029")
+        assert f.passed

@@ -35,6 +35,8 @@ import subprocess
 from dataclasses import dataclass
 from pathlib import Path
 
+import yaml
+
 
 class HelmRenderError(RuntimeError):
     """Raised when ``helm template`` cannot produce manifests.
@@ -298,10 +300,107 @@ def _extract_source_templates(yaml_text: str) -> list[str | None]:
     return out
 
 
+# ── Offline fallback (no helm binary) ────────────────────────────
+
+# A Go-template action ``{{ ... }}`` (non-greedy, single line). Helm
+# templates are overwhelmingly single-line actions; a multi-line action
+# leaves a stray brace that makes its document fail to parse, which the
+# caller drops per-document.
+_TEMPLATE_ACTION_RE = re.compile(r"\{\{.*?\}\}")
+# Placeholder substituted for an inline action that contributes a value
+# (``name: {{ .Release.Name }}`` -> ``name: pipelinecheck``). A bare word
+# is a valid YAML scalar as a string, and is read as a string in
+# numeric / bool positions, which the K8s rules tolerate.
+_TEMPLATE_PLACEHOLDER = "pipelinecheck"
+
+
+def _neutralize_template(text: str) -> str:
+    """Best-effort strip of Go-template syntax so a chart template parses
+    as plain YAML without the ``helm`` binary.
+
+    Two line shapes:
+
+    * Lines that are ONLY a template action once the braces are removed
+      (control flow like ``{{- if .Values.x }}`` / ``{{ end }}`` /
+      ``{{ range }}``, or a standalone expression) are dropped. Dropping
+      ``if`` / ``end`` keeps the guarded block unconditionally, which is
+      what a static security scan wants: it sees the dangerous branch.
+    * Lines mixing literal YAML with an inline action
+      (``name: {{ .Release.Name }}-x``) keep the literal and replace the
+      action with a placeholder scalar.
+
+    This recovers literal ``securityContext`` / ``hostPath`` /
+    ``privileged`` fields, which is where the security signal lives.
+    Heavily-templated structure (``{{ toYaml .Values.resources | nindent
+    8 }}``) collapses to a placeholder, which is acceptable for a static
+    scan.
+    """
+    out: list[str] = []
+    for line in text.splitlines():
+        had_action = "{{" in line
+        bare = _TEMPLATE_ACTION_RE.sub("", line).strip()
+        if had_action and bare in ("", "-"):
+            # Control-only or pure-expression line: drop it.
+            continue
+        out.append(_TEMPLATE_ACTION_RE.sub(_TEMPLATE_PLACEHOLDER, line))
+    return "\n".join(out)
+
+
+def render_chart_offline(chart_path: str | Path) -> RenderResult:
+    """Parse a chart's ``templates/*.yaml`` WITHOUT the helm binary.
+
+    Fallback for environments where ``helm`` isn't installed (most CI
+    images, many dev machines). Go-template expressions are neutralized
+    (see :func:`_neutralize_template`) and each template file is parsed
+    independently so one un-parseable file doesn't sink the rest. The
+    output mirrors ``helm template``'s ``# Source:``-headed multi-doc
+    stream so the source-template parser and the K8s rule pack run
+    unchanged.
+
+    Raises :class:`HelmRenderError` when the chart has no ``templates/``
+    directory or no template file survives neutralization + parse.
+    """
+    chart = Path(chart_path)
+    templates_dir = chart / "templates"
+    if not templates_dir.is_dir():
+        raise HelmRenderError(
+            f"{chart}: no templates/ directory for offline parse"
+        )
+    parts: list[str] = []
+    for tpl in sorted(templates_dir.rglob("*.y*ml")):
+        if not tpl.is_file():
+            continue
+        try:
+            raw = tpl.read_text(encoding="utf-8")
+        except OSError:
+            continue
+        neutralized = _neutralize_template(raw)
+        if not neutralized.strip():
+            continue
+        # Drop files that still don't parse (multi-line actions, helm
+        # named-template includes, ...) rather than failing the chart.
+        try:
+            list(yaml.safe_load_all(neutralized))
+        except yaml.YAMLError:
+            continue
+        rel = tpl.relative_to(chart).as_posix()
+        parts.append(f"# Source: {chart.name}/{rel}\n{neutralized}")
+    if not parts:
+        raise HelmRenderError(
+            f"{chart}: offline parse produced no usable manifests"
+        )
+    yaml_text = "\n---\n".join(parts)
+    return RenderResult(
+        yaml=yaml_text,
+        source_templates=_extract_source_templates(yaml_text),
+    )
+
+
 __all__ = [
     "HelmRenderError",
     "RenderResult",
     "helm_available",
     "helm_version",
     "render_chart",
+    "render_chart_offline",
 ]

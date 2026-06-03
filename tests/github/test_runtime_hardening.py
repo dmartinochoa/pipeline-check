@@ -171,6 +171,24 @@ class TestGHA016CurlPipe:
         f = run_check(wf, "GHA-016")
         assert not f.passed
 
+    def test_fails_on_process_substitution(self):
+        # ``bash <(curl ...)`` runs the fetched content via a /dev/fd
+        # handle, no pipe character, so the direct-pipe matcher never
+        # sees it. Regression guard: this evasion of the curl-pipe shape
+        # must still fire.
+        wf = """
+        name: ci
+        on: push
+        jobs:
+          build:
+            runs-on: ubuntu-latest
+            timeout-minutes: 30
+            steps:
+              - run: bash <(curl -fsSL https://example.com/install.sh)
+        """
+        f = run_check(wf, "GHA-016")
+        assert not f.passed
+
     def test_fails_on_codecov_style_sha_verified_third_party_install(self):
         # Post-2021 contract: sha256 verification alone isn't enough
         # for third-party installers. The Codecov compromise ships

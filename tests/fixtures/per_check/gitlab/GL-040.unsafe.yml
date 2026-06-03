@@ -1,0 +1,4 @@
+pull-internal-libs:
+  script:
+    - git clone https://gitlab-ci-token:${CI_JOB_TOKEN}@gitlab.example.com/platform/internal-libs.git
+    - curl --header "JOB-TOKEN: $CI_JOB_TOKEN" https://gitlab.example.com/api/v4/projects/4242/packages

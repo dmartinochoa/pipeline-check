@@ -22,7 +22,7 @@ from pathlib import Path
 from ..base import BaseCheck
 from ..kubernetes.base import KubernetesContext, Manifest
 from .charts import Chart, parse_chart
-from .render import HelmRenderError, render_chart
+from .render import HelmRenderError, render_chart, render_chart_offline
 
 
 class HelmContext(KubernetesContext):
@@ -95,9 +95,28 @@ class HelmContext(KubernetesContext):
                     set_overrides=set_overrides,
                 )
             except HelmRenderError as exc:
-                warnings.append(f"{chart_path}: helm render failed: {exc}")
-                skipped += 1
-                continue
+                # No helm binary (or a render failure): fall back to a
+                # best-effort offline parse of templates/*.yaml so the
+                # K8S-* security rules still run on the chart's literal
+                # fields (privileged / hostPath / securityContext).
+                # Without this fallback a chart's container-security bugs
+                # silently vanish on any machine without `helm` installed,
+                # which is the common case in CI images and dev setups.
+                try:
+                    result = render_chart_offline(chart_path)
+                except HelmRenderError as offline_exc:
+                    warnings.append(
+                        f"{chart_path}: helm render failed: {exc}; "
+                        f"offline fallback also failed: {offline_exc}"
+                    )
+                    skipped += 1
+                    continue
+                warnings.append(
+                    f"{chart_path}: helm binary unavailable, used a "
+                    f"best-effort offline template parse (Go-template "
+                    f"expressions neutralized). Install Helm 3 for exact "
+                    f"rendering. Underlying: {exc}"
+                )
             sub = KubernetesContext.from_yaml_stream(
                 result.yaml,
                 path_hint=str(chart_path),

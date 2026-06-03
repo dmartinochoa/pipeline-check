@@ -206,6 +206,7 @@ STANDARD = Standard(
         "GL-014":   ["PR.PS-01"],
         "GL-015":   ["PR.PS-01"],
         "GL-017":   ["PR.PS-01"],
+        "GL-039":   ["PR.PS-01"],# dind daemon TLS disabled / exposed on 2375
         "BB-005":   ["PR.PS-01"],
         "BB-013":   ["PR.PS-01"],
         "BB-016":   ["PR.PS-01"],
@@ -539,6 +540,7 @@ STANDARD = Standard(
         "GL-004":  ["PR.PS-06"],                # manual deploy allow_failure
         "GL-029":  ["PR.PS-06"],                # manual deploy allow_failure (variant)
         "GL-031":  ["PR.AA-05"],                # id_tokens missing audience pin
+        "GL-040":  ["PR.AA-05"],                # CI_JOB_TOKEN used for cross-project access
         "GL-032":  ["PR.PS-05"],                # tags interpolates untrusted
         "GL-033":  ["PR.PS-05"],                # global before_script taint
         "GL-034":  ["GV.SC-05"],                # npm install without audit signatures
@@ -943,8 +945,10 @@ STANDARD = Standard(
         "GHA-103":  ["PR.PS-05"],               # AI review bot on untrusted trigger
         "GHA-104":  ["PR.PS-05"],               # AI agent auto-push without PR review
         "GL-036":   ["PR.AA-01", "PR.DS-01"],   # secret echoed to GitLab CI log
+        "GL-038":   ["PR.AA-01", "PR.DS-01"],   # CI_DEBUG_TRACE dumps secrets to GitLab CI log
         "BB-032":   ["PR.AA-01", "PR.DS-01"],   # secret echoed to Bitbucket log
         "ADO-031":  ["PR.AA-01", "PR.DS-01"],   # secret echoed to Azure DevOps log
+        "ADO-032":  ["PR.AA-01", "PR.DS-01"],   # checkout persistCredentials leaks token to .git/config
         "CC-032":   ["PR.AA-01", "PR.DS-01"],   # secret echoed to CircleCI log
         "SCM-048":  ["PR.AA-05"],                # org codespace secrets scoped to all repos
         "SCM-049":  ["PR.AA-01", "PR.AA-05"],    # classic PAT used where fine-grained suffices

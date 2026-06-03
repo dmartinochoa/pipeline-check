@@ -409,6 +409,9 @@ CASES: list[CheckCase] = [
     CheckCase("GL-034", "CICD-SEC-3", ("ESF-S-VERIFY-DEPS",)),
     CheckCase("GL-035", "CICD-SEC-3", ("ESF-S-VERIFY-DEPS",)),
     CheckCase("GL-036", "CICD-SEC-6", ("ESF-D-SECRETS",)),
+    CheckCase("GL-038", "CICD-SEC-6", ("ESF-D-SECRETS",)),
+    CheckCase("GL-039", "CICD-SEC-7", ("ESF-D-BUILD-ENV",)),
+    CheckCase("GL-040", "CICD-SEC-2", ("ESF-D-TOKEN-HYGIENE",)),
     CheckCase("GL-037", "CICD-SEC-3", ("ESF-S-VERIFY-DEPS",)),
     # ── Bitbucket Pipelines backfill (BB-026..029) ───────────────────
     CheckCase("BB-026", "CICD-SEC-4", ("ESF-D-INJECTION",)),
@@ -424,6 +427,7 @@ CASES: list[CheckCase] = [
     CheckCase("ADO-029", "CICD-SEC-2"),
     CheckCase("ADO-030", "CICD-SEC-7"),
     CheckCase("ADO-031", "CICD-SEC-6", ("ESF-D-SECRETS",)),
+    CheckCase("ADO-032", "CICD-SEC-6", ("ESF-D-SECRETS",)),
     # ── Jenkins backfill (JF-030..035) ───────────────────────────────
     CheckCase("JF-030", "CICD-SEC-4", ("ESF-D-INJECTION",)),
     CheckCase("JF-031", "CICD-SEC-3", ("ESF-S-PIN-DEPS", "ESF-S-VERIFY-DEPS")),
