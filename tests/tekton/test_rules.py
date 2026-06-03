@@ -114,6 +114,28 @@ class TestTKN003ParamInjection:
         f = run_check(cfg, "TKN-003")
         assert not f.passed
 
+    def test_fails_when_param_double_quoted_in_script(self):
+        # Tekton substitutes the value into the script text before the
+        # shell parses it, so double-quoting the token does NOT help: an
+        # attacker value containing a `"` breaks out. (cicd-goat 71)
+        cfg = """
+        apiVersion: tekton.dev/v1
+        kind: Task
+        metadata:
+          name: build
+        spec:
+          params:
+            - name: branch
+              type: string
+          steps:
+            - name: build
+              image: alpine:3
+              script: |
+                echo "building $(params.branch)"
+        """
+        f = run_check(cfg, "TKN-003")
+        assert not f.passed
+
     def test_passes_when_param_passed_via_env(self):
         cfg = """
         apiVersion: tekton.dev/v1

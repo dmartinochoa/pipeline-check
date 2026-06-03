@@ -129,7 +129,7 @@ Set ``securityContext.privileged: false``, ``runAsNonRoot: true``, and ``allowPr
 <span class="pg-sev pg-sev--critical">CRITICAL</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-4</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-1</span> <span class="pg-tag pg-tag--esf">ESF-D-CODE-INTEGRITY</span> <span class="pg-tag pg-tag--cwe">CWE-78</span>
 </div>
 
-Fires on any ``$(params.X)`` or ``$(workspaces.X.path)`` token inside a ``script:`` body that isn't already wrapped in double quotes (`"$(params.X)"`). Doesn't fire on the env-var indirection pattern, which is safe.
+Fires on any ``$(params.X)`` or ``$(workspaces.X.path)`` token inside a ``script:`` body. Tekton substitutes the value into the script text before the shell parses it, so wrapping the token in double quotes does NOT help: an attacker value containing a ``"`` closes the quote and the rest runs as shell. Only the env-var indirection pattern (bind the param via ``env:`` then reference the shell variable quoted, ``"$NAME"``) is safe, and the rule doesn't fire on that.
 
 <div class="pg-rule__rec" markdown>
 

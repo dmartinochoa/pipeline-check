@@ -847,11 +847,20 @@ substitution, BB-029 top-level ``image:``) are already fixed on ``dev``.
   extending the existing per-provider injection rules (no new rule IDs).
 
 Next-gen targets no scanner in the corpus catches (design-pass, not
-mechanical): Tekton ``$(params.*)`` injection (71, regressed out by a
-quoting carve-out), ``terraform apply`` on an untrusted PR / MR (89 /
-the apply-RCE specifics of 91), Argo cluster-admin ServiceAccount (92),
-Jenkins fork-PR PPE where the trust strategy lives in job config not the
-Jenkinsfile (86).
+mechanical):
+
+- ~~Tekton ``$(params.*)`` injection (71)~~ Fixed on ``dev``: TKN-003's
+  double-quote carve-out was wrong (Tekton substitutes the value into
+  the script text before the shell parses it, so quoting gives no
+  protection). The carve-out is removed; any param / workspace token in
+  a ``script:`` body now fires.
+- Still open: ``terraform apply`` on an untrusted PR / MR (89, plus the
+  apply-RCE specifics of 91). A new GHA rule (PR trigger + ``terraform
+  apply`` / ``terragrunt apply`` with no approval gate; distinct from
+  GHA-111, which requires an AI agent in the loop). Argo cluster-admin
+  ServiceAccount (92), a heuristic name match on ``serviceAccountName``.
+  Jenkins fork-PR PPE (86): the trust strategy lives in job config, not
+  the Jenkinsfile, so it is not statically reachable.
 
 Also: the build already catches six scenarios the published matrix
 still scores as misses, because their ``expected:`` lists in

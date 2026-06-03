@@ -77,7 +77,16 @@ release commit collapses this section into `## [X.Y.Z] - <date>`.
 
 ### Fixed
 
-- **Helm charts are scanned even without the `helm` binary.** The Helm
+- **TKN-003 no longer exempts double-quoted Tekton params.** The rule
+  skipped a `$(params.X)` / `$(workspaces.X.path)` token wrapped in
+  double quotes, but Tekton substitutes the value into the script text
+  *before* the shell parses it, so quoting in the template gives no
+  protection: an attacker value containing a `"` closes the quote and
+  the rest runs as shell (the rule's own recommendation already said
+  so). The carve-out is removed; any param/workspace token in a
+  `script:` body now fires, and the env-var indirection pattern stays
+  the documented safe form. Closes the false negative on cicd-goat
+  scenario 71. The Helm
   provider rendered charts by shelling out to `helm template`; when the
   binary was absent (the common case in CI images and on dev machines)
   it skipped the chart and ran only the `HELM-*` Chart.yaml metadata
