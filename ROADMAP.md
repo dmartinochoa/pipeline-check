@@ -768,6 +768,20 @@ reusable-workflow boundary (TAINT-003 already carries a
 ``cross_document`` ``uses:`` sink in its flows, but walking into the
 callee body needs ``--resolve-remote``).
 
+The reusable-workflow boundary then shipped, closing phase 2. TAINT-003
+populates ``taint_flows`` with a ``cross_document`` edge per forward,
+keyed on the resolved callee ``Workflow.path`` when the forward is
+confirmed to reach an unquoted ``${{ inputs.<name> }}`` sink in a loaded
+callee (on disk, or via ``--resolve-remote``), or the raw callee ref
+otherwise. AC-002 gained a cross-document tier: a confirmed forward
+whose callee path also has an ungated deploy (GHA-014) reports a
+dataflow-confirmed injection-to-deploy chain spanning ``[caller,
+callee]``, the reusable-workflow analog of its single-document path. It
+never fires without the callee body in scope, since only a confirmed
+forward keys its edge on a real path. With the three injection chains
+(above) and this boundary done, phase 2's dataflow tier covers every
+TAINT engine and the one cross-document channel.
+
 ### Pluggable LLM-assisted triage (opt-in, local)
 
 A ``--triage`` flag pipes each finding through a local-only LLM

@@ -692,6 +692,66 @@ class TestChainAC002:
         assert rendered_path in ac2.narrative
         assert "TAINT-002" in ac2.triggering_check_ids
 
+    def test_cross_document_reusable_workflow_dataflow(self):
+        # A caller passes untrusted input into a reusable workflow
+        # (TAINT-003 confirmed the forward, so its cross_document flow's
+        # sink_job is the resolved callee path) and that callee deploys
+        # without an environment gate (GHA-014 on the callee path). The
+        # injection reaches the ungated deploy across the boundary.
+        caller = ".github/workflows/caller.yml"
+        callee = ".github/workflows/deploy.yml"
+        rendered = (
+            "${{ github.event.issue.title }}@call.with.title -> "
+            "jobs.call.with.title -> "
+            "sink@uses:./.github/workflows/deploy.yml(inputs.title@...)"
+        )
+        out = chains_pkg.evaluate([
+            _f(
+                "TAINT-003",
+                caller,
+                taint_flows=(
+                    TaintFlow(
+                        source_job="call",
+                        sink_job=callee,
+                        rendered=rendered,
+                        cross_document=True,
+                    ),
+                ),
+            ),
+            _f("GHA-014", callee, job_anchors=("deploy",)),
+        ])
+        ac2 = [c for c in out if c.chain_id == "AC-002"]
+        assert len(ac2) == 1
+        c = ac2[0]
+        assert c.via_dataflow is True
+        assert c.confirmed_reachable is True
+        assert set(c.resources) == {caller, callee}
+        assert set(c.triggering_check_ids) == {"TAINT-003", "GHA-014"}
+        assert rendered in c.narrative
+
+    def test_no_cross_document_chain_when_callee_unresolved(self):
+        # An unconfirmed forward (callee not loaded) keeps the raw ref as
+        # the flow sink, which never matches a GHA-014 resource path, so
+        # no cross-document chain fires (no false reachability claim).
+        out = chains_pkg.evaluate([
+            _f(
+                "TAINT-003",
+                ".github/workflows/caller.yml",
+                taint_flows=(
+                    TaintFlow(
+                        source_job="call",
+                        sink_job="org/repo/.github/workflows/x.yml@sha",
+                        rendered="...",
+                        cross_document=True,
+                    ),
+                ),
+            ),
+            _f("GHA-014", ".github/workflows/deploy.yml", job_anchors=("deploy",)),
+        ])
+        assert not any(
+            c.chain_id == "AC-002" and len(c.resources) == 2 for c in out
+        )
+
 
 class TestChainAC003:
     """AC-003 — Unpinned action to credential exfiltration."""

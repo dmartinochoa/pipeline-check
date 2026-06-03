@@ -63,7 +63,7 @@ from __future__ import annotations
 import re
 from typing import Any
 
-from ...base import Confidence, Finding, Severity
+from ...base import Confidence, Finding, Severity, TaintFlow
 from ...rule import Rule
 from .._taint_graph import TaintPath, analyze_workflow
 from ..base import GitHubContext, Workflow
@@ -288,6 +288,25 @@ def _resolve_callee(
     return None
 
 
+def _caller_job(path: TaintPath) -> str:
+    """The caller job that passes a value into the callee (``uses:`` + ``with:``).
+
+    Pass-4 paths carry a single hop of the shape
+    ``jobs.<caller_job>.with.<input>``; the caller job is the segment
+    between ``jobs.`` and ``.with.``. Returns "" if the hop is absent
+    (defensive; the caller filters to ``.with.`` hops before this runs).
+    """
+    for h in path.hops:
+        if h.startswith("jobs.") and ".with." in h:
+            return h[len("jobs."):].split(".with.", 1)[0]
+    return ""
+
+
+def _callee_ref(path: TaintPath) -> str:
+    """The raw callee ref from the ``inputs.<name>@<callee-ref>`` sink."""
+    return path.sink_consumer.partition("@")[2]
+
+
 def _classify_path(
     path: TaintPath, ctx: GitHubContext,
 ) -> tuple[bool, str | None]:
@@ -342,8 +361,25 @@ def check(
         )
     confirmed_paths: list[tuple[TaintPath, str]] = []
     unconfirmed_paths: list[TaintPath] = []
+    # Structured cross-document edges for the chain engine (AC-002's
+    # cross-document tier). A confirmed forward into a loaded callee
+    # keys its ``sink_job`` on the resolved callee ``Workflow.path`` so a
+    # chain can join it against the callee's own findings (e.g. an
+    # ungated deploy). A forward whose callee wasn't loaded, or was
+    # loaded but doesn't consume the input in a sink, carries the raw
+    # callee ref instead: it surfaces the edge for output parity but
+    # proves no end-to-end reachability, so it never matches a callee
+    # resource path.
+    flows: list[TaintFlow] = []
     for p in forward_paths:
         ok, callee_path = _classify_path(p, ctx)
+        sink = callee_path if (ok and callee_path) else _callee_ref(p)
+        flows.append(TaintFlow(
+            source_job=_caller_job(p),
+            sink_job=sink,
+            rendered=p.render(),
+            cross_document=True,
+        ))
         if ok and callee_path:
             confirmed_paths.append((p, callee_path))
         else:
@@ -382,6 +418,7 @@ def check(
         resource=path, description=desc,
         recommendation=RULE.recommendation, passed=False,
         confidence=confidence,
+        taint_flows=tuple(flows),
     )
     finding.confidence_locked = True
     return finding

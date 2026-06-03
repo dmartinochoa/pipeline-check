@@ -257,6 +257,84 @@ class TestAC022GitLabDataflow:
         )
 
 
+class TestAC002ReusableWorkflowDataflow:
+    """AC-002 confirms reachability across the reusable-workflow boundary.
+    A caller passes an untrusted value into a reusable workflow
+    (TAINT-003 confirms the callee consumes it in a sink), and that same
+    callee deploys without an environment gate (GHA-014). When the callee
+    body is in scope (on disk here; ``--resolve-remote`` for remote refs)
+    the injection-to-deploy path is proven across the two documents."""
+
+    _CALLER = textwrap.dedent("""
+        name: caller
+        on: [issues]
+        jobs:
+          call:
+            uses: ./.github/workflows/deploy.yml
+            with:
+              title: ${{ github.event.issue.title }}
+    """)
+    _CALLEE = textwrap.dedent("""
+        name: deploy
+        on:
+          workflow_call:
+            inputs:
+              title: { required: true, type: string }
+        jobs:
+          deploy:
+            runs-on: ubuntu-latest
+            steps:
+              - run: ./gen --title ${{ inputs.title }}
+              - run: ./deploy.sh --prod
+    """)
+
+    def _evaluate(self):
+        ctx = GitHubContext([
+            Workflow(path=".github/workflows/caller.yml",
+                     data=yaml.safe_load(self._CALLER)),
+            Workflow(path=".github/workflows/deploy.yml",
+                     data=yaml.safe_load(self._CALLEE)),
+        ])
+        findings = WorkflowChecks(ctx).run()
+        return findings, [
+            c for c in chains.engine.evaluate(findings) if c.chain_id == "AC-002"
+        ]
+
+    def test_cross_document_confirmed(self):
+        _findings, ac = self._evaluate()
+        # The cross-document instance spans both documents and is
+        # dataflow-confirmed; identify it by its two-resource footprint.
+        cross = [
+            c for c in ac
+            if set(c.resources) == {
+                ".github/workflows/caller.yml",
+                ".github/workflows/deploy.yml",
+            }
+        ]
+        assert cross, "cross-document AC-002 should fire"
+        c = cross[0]
+        assert c.confirmed_reachable
+        assert c.via_dataflow
+        assert "TAINT-003" in c.triggering_check_ids
+        assert "GHA-014" in c.triggering_check_ids
+        assert "reusable workflow" in c.reachability_note
+
+    def test_taint003_exposes_cross_document_flow(self):
+        findings, _ = self._evaluate()
+        taint = [
+            f for f in findings
+            if f.check_id == "TAINT-003" and not f.passed
+        ]
+        assert taint
+        # The confirmed forward keys its sink_job on the resolved callee
+        # path so the chain engine can join it to the callee's findings.
+        assert any(
+            fl.cross_document
+            and fl.sink_job == ".github/workflows/deploy.yml"
+            for fl in taint[0].taint_flows
+        )
+
+
 class TestChainsRequireDataflowFlag:
     """``--chains-require-dataflow`` keeps only dataflow-confirmed chains."""
 
