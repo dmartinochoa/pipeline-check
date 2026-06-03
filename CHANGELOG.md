@@ -12,6 +12,18 @@ release commit collapses this section into `## [X.Y.Z] - <date>`.
 
 ### Added
 
+- **`--no-best-practice` filter + best-practice rule classification.**
+  The "missing-control" hygiene family (unbounded build / no timeout, no
+  SBOM, no artifact signing, no SLSA provenance, no vulnerability-scan
+  step) is structurally true but fires on most pipelines regardless of
+  the specific vulnerability under review, so it dominates the findings
+  list as low-signal noise. A curated central registry
+  (`core/checks/_best_practice.py`) classifies these rules, and
+  `--no-best-practice` drops them from the output and the gate so the
+  result focuses on active-vulnerability findings. Severity and
+  confidence are unchanged (confidence is false-positive likelihood, and
+  these findings are true); this is purely an output filter, and the
+  classification is extensible in one auditable place.
 - **ARGO-016: Workflow bound to a cluster-admin / over-privileged
   ServiceAccount.** Fires when a `Workflow` / `CronWorkflow` sets
   `spec.serviceAccountName` to a name signaling a cluster-wide admin
