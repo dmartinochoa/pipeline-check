@@ -72,7 +72,7 @@ Resolution rules:
 
 ## What it covers
 
-107 checks · 17 have an autofix patch (``--fix``).
+108 checks · 17 have an autofix patch (``--fix``).
 
 | Check | Title | Severity | Fix |
 |-------|-------|----------|-----|
@@ -179,6 +179,7 @@ Resolution rules:
 | [GHA-114](#gha-114) | Package-publish workflow runs on an unrestricted push trigger | <span class="pg-sev pg-sev--high">HIGH</span> |  |
 | [GHA-115](#gha-115) | ``id-token: write`` granted workflow-wide instead of job-scoped | <span class="pg-sev pg-sev--medium">MEDIUM</span> |  |
 | [GHA-116](#gha-116) | Workflow serializes the entire secrets context (toJSON(secrets)) | <span class="pg-sev pg-sev--high">HIGH</span> |  |
+| [GHA-117](#gha-117) | IaC apply on an untrusted pull_request trigger | <span class="pg-sev pg-sev--critical">CRITICAL</span> |  |
 | [TAINT-001](#taint-001) | Untrusted input flows across step boundaries via step outputs | <span class="pg-sev pg-sev--high">HIGH</span> |  |
 | [TAINT-002](#taint-002) | Untrusted input flows across jobs via ``jobs.<id>.outputs:`` | <span class="pg-sev pg-sev--high">HIGH</span> |  |
 | [TAINT-003](#taint-003) | Untrusted input forwarded into reusable workflow ``with:`` | <span class="pg-sev pg-sev--high">HIGH</span> |  |
@@ -3149,6 +3150,26 @@ Fires when ``toJSON(secrets)`` appears in any string the workflow evaluates: a s
 **Recommended action**
 
 Never materialize the whole secrets object. ``toJSON(secrets)`` puts every credential the job can see into one string, so a single log line or outbound request exfiltrates all of them at once (the tj-actions / GhostAction 2025 payload pattern). Reference only the specific secrets a step needs by name (``${{ secrets.NPM_TOKEN }}``), bind each to a narrowly-scoped step ``env:``, and prefer short-lived OIDC tokens over long-lived secrets. If a downstream action genuinely needs several secrets, pass them individually rather than the full context.
+
+</div>
+
+</div>
+
+<div class="pg-rule pg-rule--critical" markdown>
+
+## GHA-117: IaC apply on an untrusted pull_request trigger { #gha-117 }
+
+<div class="pg-rule__tags">
+<span class="pg-sev pg-sev--critical">CRITICAL</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-4</span> <span class="pg-tag pg-tag--esf">ESF-D-INJECTION</span> <span class="pg-tag pg-tag--cwe">CWE-94</span> <span class="pg-tag pg-tag--cwe">CWE-78</span>
+</div>
+
+Fires when a workflow is triggered by ``pull_request`` or ``pull_request_target`` AND a ``run:`` step invokes an unattended IaC apply (``terraform``/``terragrunt apply`` or ``destroy``, ``aws cloudformation deploy``/``create-stack``/``update-stack``/``execute-change-set``, ``cdk deploy``, ``pulumi up``, ``sam deploy``). Applying attacker-controlled IaC is the plan/apply-on-untrusted-input RCE class. Distinct from GHA-111, which requires an agentic CLI in the loop; here the untrusted input is the PR's own IaC.
+
+<div class="pg-rule__rec" markdown>
+
+**Recommended action**
+
+Never run ``terraform apply`` (or ``cloudformation deploy`` / ``cdk deploy`` / ``pulumi up`` / ``sam deploy``) on a ``pull_request`` or ``pull_request_target`` trigger. Apply executes the PR's IaC, an ``external`` data source, a ``local-exec`` provisioner, or a hijacked provider runs arbitrary code on the runner with whatever cloud credentials (often an OIDC ``id-token``) the apply uses. On PRs run a read-only ``plan`` and post it for review; gate the apply on a separate ``push`` / ``workflow_dispatch`` trigger against the merged, reviewed code, behind a protected ``environment:``.
 
 </div>
 

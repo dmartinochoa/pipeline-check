@@ -171,6 +171,76 @@ class TestProviderReusesK8sRules:
         )
 
 
+class TestOfflineFallback:
+    """When the helm binary is absent, the provider parses templates/*.yaml
+    directly (Go-template expressions neutralized) so the K8S-* security
+    rules still fire. Regression guard: a chart's privileged / hostPath
+    bugs must not silently vanish just because helm isn't installed (the
+    common case in CI images and dev machines)."""
+
+    def _write_chart(self, root: Path) -> Path:
+        (root / "Chart.yaml").write_text(
+            "apiVersion: v2\nname: agent\nversion: 0.1.0\n", encoding="utf-8"
+        )
+        tpl = root / "templates"
+        tpl.mkdir()
+        # A literal privileged container guarded by a templated `if`, plus
+        # a `{{ .Release.Name }}` interpolation in the name — the exact
+        # shape of cicd-goat's helm scenarios.
+        (tpl / "daemonset.yaml").write_text(
+            "apiVersion: apps/v1\n"
+            "kind: DaemonSet\n"
+            "metadata:\n"
+            "  name: {{ .Release.Name }}-agent\n"
+            "spec:\n"
+            "  selector: {matchLabels: {app: agent}}\n"
+            "  template:\n"
+            "    metadata: {labels: {app: agent}}\n"
+            "    spec:\n"
+            "      {{- if .Values.enabled }}\n"
+            "      containers:\n"
+            "        - name: agent\n"
+            "          image: alpine@sha256:" + "0" * 64 + "\n"
+            "          securityContext:\n"
+            "            privileged: true\n"
+            "      {{- end }}\n",
+            encoding="utf-8",
+        )
+        return root
+
+    def test_offline_parse_fires_k8s_when_helm_missing(
+        self, tmp_path, monkeypatch
+    ):
+        from pipeline_check.core.checks.helm import base as helm_base
+
+        def no_helm(chart_path, **_):
+            raise HelmRenderError("helm binary not found on PATH.")
+
+        monkeypatch.setattr(helm_base, "render_chart", no_helm)
+
+        chart = self._write_chart(tmp_path)
+        scanner = Scanner(pipeline="helm", helm_path=str(chart))
+        findings = scanner.run()
+        failed = {f.check_id for f in findings if not f.passed}
+        # K8S-005 = privileged container. Without the offline fallback the
+        # rule never runs and this set holds only HELM-* metadata nits.
+        assert "K8S-005" in failed, sorted(failed)
+
+    def test_neutralize_drops_control_lines_keeps_literals(self):
+        from pipeline_check.core.checks.helm.render import _neutralize_template
+
+        out = _neutralize_template(
+            "metadata:\n"
+            "  name: {{ .Release.Name }}-x\n"
+            "  {{- if .Values.on }}\n"
+            "  privileged: true\n"
+            "  {{- end }}\n"
+        )
+        assert "name: pipelinecheck-x" in out
+        assert "privileged: true" in out
+        assert "{{" not in out and "}}" not in out
+
+
 class TestEndToEnd:
     """One real ``helm template`` invocation. Skipped when helm is missing."""
 

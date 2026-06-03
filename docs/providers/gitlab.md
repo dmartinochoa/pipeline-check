@@ -16,7 +16,7 @@ pipeline_check --pipeline gitlab --gitlab-path ci/
 
 ## What it covers
 
-39 checks · 12 have an autofix patch (``--fix``).
+42 checks · 12 have an autofix patch (``--fix``).
 
 | Check | Title | Severity | Fix |
 |-------|-------|----------|-----|
@@ -57,6 +57,9 @@ pipeline_check --pipeline gitlab --gitlab-path ci/
 | [GL-035](#gl-035) | pip install without `--require-hashes` verification | <span class="pg-sev pg-sev--medium">MEDIUM</span> |  |
 | [GL-036](#gl-036) | Secret-named variable echoed / printed in a script block | <span class="pg-sev pg-sev--high">HIGH</span> |  |
 | [GL-037](#gl-037) | Pipeline disables Go module checksum / sum-db verification | <span class="pg-sev pg-sev--high">HIGH</span> |  |
+| [GL-038](#gl-038) | CI_DEBUG_TRACE / debug logging dumps secrets to the job log | <span class="pg-sev pg-sev--high">HIGH</span> |  |
+| [GL-039](#gl-039) | Docker-in-Docker service exposes an unauthenticated daemon | <span class="pg-sev pg-sev--high">HIGH</span> |  |
+| [GL-040](#gl-040) | CI_JOB_TOKEN used for cross-project / remote access | <span class="pg-sev pg-sev--high">HIGH</span> |  |
 | [TAINT-004](#taint-004) | Untrusted input flows across jobs via dotenv artifact | <span class="pg-sev pg-sev--high">HIGH</span> |  |
 | [TAINT-008](#taint-008) | Untrusted input flows via GitLab ``extends:`` template inheritance | <span class="pg-sev pg-sev--high">HIGH</span> |  |
 
@@ -875,6 +878,66 @@ Scoped ``GOPRIVATE`` and ``GOPROXY=off`` / ``direct`` (still checksum-verified) 
 **Recommended action**
 
 Remove the Go toolchain variables that turn off module integrity verification so ``go build`` keeps checking every downloaded module against ``go.sum`` and the checksum transparency database. Drop ``GOFLAGS=-insecure`` (plain HTTP fetch, TLS off), ``GOSUMDB=off`` / legacy ``GONOSUMCHECK`` (checksum DB / sum check off), and any ``GOINSECURE``; scope ``GOPRIVATE`` / ``GONOSUMDB`` to the exact internal namespace (``corp.example.com/team/*``) rather than a broad ``*`` or whole public host. This is the CI-variable twin of GOMOD-001, a committed ``go.sum`` is moot if the runner ignores it. For private modules, prefer a trusted internal ``GOPROXY`` that still enforces checksums over disabling verification.
+
+</div>
+
+</div>
+
+<div class="pg-rule pg-rule--high" markdown>
+
+## GL-038: CI_DEBUG_TRACE / debug logging dumps secrets to the job log { #gl-038 }
+
+<div class="pg-rule__tags">
+<span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-6</span> <span class="pg-tag pg-tag--esf">ESF-D-SECRETS</span> <span class="pg-tag pg-tag--cwe">CWE-532</span> <span class="pg-tag pg-tag--cwe">CWE-200</span>
+</div>
+
+Fires when ``CI_DEBUG_TRACE`` or ``CI_DEBUG_SERVICES`` is set to a truthy value (``"true"``, ``1``, ...) in the global ``variables:`` block or any job's ``variables:`` block. Both the bare scalar form (``CI_DEBUG_TRACE: "true"``) and the typed form (``CI_DEBUG_TRACE: {value: "true"}``) are matched. It inverts a logging / visibility control into a secret-exfiltration channel: the job trace itself leaks every secret in scope, masking and all.
+
+<div class="pg-rule__rec" markdown>
+
+**Recommended action**
+
+Remove ``CI_DEBUG_TRACE`` / ``CI_DEBUG_SERVICES`` (or set them to ``false``) anywhere they ship in the repo. Debug trace expands the entire environment, including masked CI/CD variables and protected secrets, into the job log, where anyone with Reporter access (or the trace API) can read it. GitLab's log masking does not cover the debug dump. If you need a one-off debug run, enable it transiently from the pipeline UI on a job with no secrets in scope rather than committing it to ``.gitlab-ci.yml``.
+
+</div>
+
+</div>
+
+<div class="pg-rule pg-rule--high" markdown>
+
+## GL-039: Docker-in-Docker service exposes an unauthenticated daemon { #gl-039 }
+
+<div class="pg-rule__tags">
+<span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-7</span> <span class="pg-tag pg-tag--esf">ESF-D-BUILD-ENV</span> <span class="pg-tag pg-tag--cwe">CWE-306</span> <span class="pg-tag pg-tag--cwe">CWE-319</span>
+</div>
+
+Fires when a job (or the global config) runs a ``docker:*-dind`` service AND disables daemon authentication, either via ``DOCKER_TLS_CERTDIR: ""`` (reverts to the plaintext 2375 socket) or by exposing / pointing at ``tcp://...:2375`` in the service ``command:`` or ``DOCKER_HOST``. Global ``services:`` / ``variables:`` are merged into each job before the check. The unauthenticated daemon is the container-escape vector behind the untagged shared-runner + privileged-dind anti-pattern.
+
+<div class="pg-rule__rec" markdown>
+
+**Recommended action**
+
+Keep TLS on the dind daemon: drop ``DOCKER_TLS_CERTDIR: ""`` (let it default to ``/certs``) and talk to the daemon over the TLS port 2376, not the plaintext 2375. Never expose the daemon with ``--host=tcp://0.0.0.0:2375``. On a shared / untagged runner an unauthenticated daemon socket is reachable by every other tenant's job, which means container escape and cross-tenant compromise; pin the job to a dedicated, ephemeral runner via ``tags:`` as well.
+
+</div>
+
+</div>
+
+<div class="pg-rule pg-rule--high" markdown>
+
+## GL-040: CI_JOB_TOKEN used for cross-project / remote access { #gl-040 }
+
+<div class="pg-rule__tags">
+<span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-2</span> <span class="pg-tag pg-tag--esf">ESF-D-TOKEN-HYGIENE</span> <span class="pg-tag pg-tag--cwe">CWE-668</span> <span class="pg-tag pg-tag--cwe">CWE-284</span>
+</div>
+
+Fires on the two documented cross-project job-token idioms in a ``script:`` / ``before_script:`` / ``after_script:`` block: a ``gitlab-ci-token:$CI_JOB_TOKEN@<host>`` clone URL, or a ``JOB-TOKEN: $CI_JOB_TOKEN`` request header. Defaults to MEDIUM confidence because a same-project pull uses the same idiom; the finding flags the access surface so the target's inbound allowlist gets reviewed, it can't see the server-side allowlist from the pipeline YAML.
+
+<div class="pg-rule__rec" markdown>
+
+**Recommended action**
+
+A job authenticates to a GitLab endpoint with the ambient ``CI_JOB_TOKEN`` (a ``gitlab-ci-token:$CI_JOB_TOKEN@`` clone URL or a ``JOB-TOKEN: $CI_JOB_TOKEN`` API header). The job token is minted automatically for every pipeline, so if the TARGET project's inbound job-token allowlist is disabled (the pre-hardening default), any project that can run a pipeline can reach it (GitLab #243703 / CVE-2024-8641). Restrict the target's ``CI/CD > Token Access`` inbound allowlist to the specific projects that need it, or use a scoped deploy token / project access token with least privilege instead of the ambient job token.
 
 </div>
 

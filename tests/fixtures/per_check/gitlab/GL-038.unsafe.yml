@@ -1,0 +1,5 @@
+variables:
+  CI_DEBUG_TRACE: "true"
+build:
+  script:
+    - make build

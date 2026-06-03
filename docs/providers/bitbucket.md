@@ -82,7 +82,7 @@ Pin every `pipe:` to a full semver tag (e.g. `atlassian/aws-s3-deploy:1.4.0`) or
 <span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-4</span> <span class="pg-tag pg-tag--esf">ESF-D-INJECTION</span> <span class="pg-tag pg-tag--cwe">CWE-78</span>
 </div>
 
-$BITBUCKET_BRANCH, $BITBUCKET_TAG, and $BITBUCKET_PR_* are populated from SCM event metadata the attacker controls. Interpolating them unquoted into a shell command lets a crafted branch or tag name can execute inline.
+$BITBUCKET_BRANCH, $BITBUCKET_TAG, and $BITBUCKET_PR_* are populated from SCM event metadata the attacker controls. Interpolating them unquoted into a shell command lets a crafted branch or tag name can execute inline. The same applies to trigger-time ``variables:`` declared by a ``custom:`` pipeline: anyone with run / trigger rights supplies the value (UI or API), so an unquoted reference in a later ``script:`` step is injection (the Bitbucket analogue of a workflow_dispatch input).
 
 **Known false-positive modes**
 
@@ -523,6 +523,8 @@ Remove dependency-update commands from CI. Use lockfile-pinned install commands 
 </div>
 
 Detects patterns that disable TLS certificate verification: `git config http.sslVerify false`, `NODE_TLS_REJECT_UNAUTHORIZED=0`, `npm config set strict-ssl false`, `curl -k`, `wget --no-check-certificate`, `PYTHONHTTPSVERIFY=0`, and `GOINSECURE=`. Disabling TLS verification allows MITM injection of malicious packages, repositories, or build tools.
+
+Also flags Bitbucket's structural clone bypass, a step-level `clone: { skip-ssl-verify: true }`, which turns off certificate verification on the repository clone itself so a MITM can inject source into the build before any script runs.
 
 <div class="pg-rule__rec" markdown>
 

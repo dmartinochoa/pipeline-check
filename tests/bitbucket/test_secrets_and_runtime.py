@@ -231,12 +231,32 @@ class TestBB023TLSBypass:
         f = run_check(cfg, "BB-023")
         assert not f.passed
 
+    def test_fails_on_clone_skip_ssl_verify(self):
+        # Structural bypass: ``clone: { skip-ssl-verify: true }`` disables
+        # cert verification on the repo clone itself (a YAML key + bool,
+        # so it never reaches the script blob).
+        cfg = """
+        pipelines:
+          default:
+            - step:
+                max-time: 30
+                clone:
+                  skip-ssl-verify: true
+                script:
+                  - make build
+        """
+        f = run_check(cfg, "BB-023")
+        assert not f.passed
+        assert "clone" in f.description.lower()
+
     def test_passes_when_no_tls_bypass(self):
         cfg = """
         pipelines:
           default:
             - step:
                 max-time: 30
+                clone:
+                  skip-ssl-verify: false
                 script:
                   - curl -fsSL https://example.com/data
         """

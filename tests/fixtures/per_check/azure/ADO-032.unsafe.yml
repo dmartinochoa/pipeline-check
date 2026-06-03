@@ -1,0 +1,4 @@
+steps:
+  - checkout: self
+    persistCredentials: true
+  - script: git config --get http.https://dev.azure.com.extraheader

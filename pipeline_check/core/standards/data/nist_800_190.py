@@ -64,6 +64,7 @@ STANDARD = Standard(
         "GHA-108":  ["4.4.3"],            # no runtime egress control on OIDC/deploy workflow
         "GHA-109":  ["4.4.3"],            # harden-runner not the first step
         "GL-017":   ["4.1.2", "4.4.4"],
+        "GL-039":   ["4.1.2", "4.4.4"],# dind daemon TLS disabled / exposed on 2375
         "BB-013":   ["4.1.2", "4.4.4"],
         "ADO-017":  ["4.1.2", "4.4.4"],
         "JF-017":   ["4.1.2", "4.4.4"],
@@ -73,6 +74,7 @@ STANDARD = Standard(
         # ── 4.1.3. Embedded malware ────────────────────────────────
         "CB-011":   ["4.1.3"],
         "GHA-003":  ["4.1.3"],
+        "GHA-117":  ["4.1.3"],# IaC apply on untrusted PR trigger
         "GHA-016":  ["4.1.3"],
         "GHA-027":  ["4.1.3"],
         "GHA-028":  ["4.1.3"],

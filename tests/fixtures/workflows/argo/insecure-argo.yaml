@@ -76,6 +76,8 @@ metadata:
   namespace: argo
 spec:
   entrypoint: main
+  # ARGO-016: bound to a cluster-admin ServiceAccount (cluster takeover).
+  serviceAccountName: cluster-admin
   arguments:
     parameters:
       - name: pr-title

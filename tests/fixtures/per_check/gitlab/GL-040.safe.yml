@@ -1,0 +1,3 @@
+pull-internal-libs:
+  script:
+    - git clone https://gitlab-deploy-token:${LIBS_DEPLOY_TOKEN}@gitlab.example.com/platform/internal-libs.git

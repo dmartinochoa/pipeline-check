@@ -157,7 +157,7 @@ class TestGitHubFixtures:
 
 class TestGitLabFixtures:
     EXPECTED_IDS = (
-        {f"GL-{i:03d}" for i in range(1, 38)}
+        {f"GL-{i:03d}" for i in range(1, 41)}
         | {"TAINT-004", "TAINT-008"}
     )
 
@@ -223,7 +223,7 @@ class TestBitbucketFixtures:
 
 
 class TestAzureFixtures:
-    EXPECTED_IDS = {f"ADO-{i:03d}" for i in range(1, 32)}
+    EXPECTED_IDS = {f"ADO-{i:03d}" for i in range(1, 33)}
 
     def _scan(self, filename: str):
         ctx = AzureContext.from_path(FIXTURES / "azure" / filename)
@@ -480,7 +480,7 @@ class TestTektonFixtures:
 
 
 class TestArgoFixtures:
-    EXPECTED_IDS = {f"ARGO-{i:03d}" for i in range(1, 16)} | {"TAINT-007"}
+    EXPECTED_IDS = {f"ARGO-{i:03d}" for i in range(1, 17)} | {"TAINT-007"}
 
     def _scan(self, filename: str):
         ctx = ArgoContext.from_path(FIXTURES / "argo" / filename)
@@ -516,13 +516,13 @@ class TestArgoFixtures:
      ({f"GHA-{i:03d}" for i in range(1, 63)} - {"GHA-062"})
      | {"TAINT-001", "TAINT-002", "TAINT-003"}),
     ("gitlab", "gitlab/insecure.gitlab-ci.yml", GitLabContext, GitLabPipelineChecks,
-     {f"GL-{i:03d}" for i in range(1, 38)} | {"TAINT-004", "TAINT-008"}),
+     {f"GL-{i:03d}" for i in range(1, 41)} | {"TAINT-004", "TAINT-008"}),
     ("bitbucket", "bitbucket/insecure-bitbucket-pipelines.yml",
      BitbucketContext, BitbucketPipelineChecks,
      {f"BB-{i:03d}" for i in range(1, 32)}),
     ("azure", "azure/insecure-azure-pipelines.yml",
      AzureContext, AzurePipelineChecks,
-     {f"ADO-{i:03d}" for i in range(1, 31)}),
+     {f"ADO-{i:03d}" for i in range(1, 33)}),
     ("jenkins", "jenkins/Jenkinsfile.insecure", JenkinsContext, JenkinsfileChecks,
      {f"JF-{i:03d}" for i in range(1, 36)}),
     ("circleci", "circleci/insecure-config.yml", CircleCIContext, CircleCIPipelineChecks,
@@ -535,7 +535,7 @@ class TestArgoFixtures:
      {f"TKN-{i:03d}" for i in range(1, 16)} | {"TAINT-006"}),
     ("argo", "argo/insecure-argo.yaml",
      ArgoContext, ArgoChecks,
-     {f"ARGO-{i:03d}" for i in range(1, 16)} | {"TAINT-007"}),
+     {f"ARGO-{i:03d}" for i in range(1, 17)} | {"TAINT-007"}),
     ("cloudbuild", "cloudbuild/insecure-cloudbuild.yaml",
      CloudBuildContext, CloudBuildPipelineChecks,
      {f"GCB-{i:03d}" for i in range(1, 27)}),

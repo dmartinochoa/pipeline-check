@@ -206,6 +206,7 @@ STANDARD = Standard(
         "GL-014":   ["PR.PS-01"],
         "GL-015":   ["PR.PS-01"],
         "GL-017":   ["PR.PS-01"],
+        "GL-039":   ["PR.PS-01"],# dind daemon TLS disabled / exposed on 2375
         "BB-005":   ["PR.PS-01"],
         "BB-013":   ["PR.PS-01"],
         "BB-016":   ["PR.PS-01"],
@@ -250,6 +251,7 @@ STANDARD = Standard(
         # PS-05: prevent unauthorized software execution
         "CB-011":   ["PR.PS-05"],
         "GHA-003":  ["PR.PS-05"],
+        "GHA-117":  ["PR.PS-05"],# IaC apply on untrusted PR trigger
         "GHA-016":  ["PR.PS-05"],
         "GHA-027":  ["PR.PS-05"],
         "GHA-028":  ["PR.PS-05"],
@@ -539,6 +541,7 @@ STANDARD = Standard(
         "GL-004":  ["PR.PS-06"],                # manual deploy allow_failure
         "GL-029":  ["PR.PS-06"],                # manual deploy allow_failure (variant)
         "GL-031":  ["PR.AA-05"],                # id_tokens missing audience pin
+        "GL-040":  ["PR.AA-05"],                # CI_JOB_TOKEN used for cross-project access
         "GL-032":  ["PR.PS-05"],                # tags interpolates untrusted
         "GL-033":  ["PR.PS-05"],                # global before_script taint
         "GL-034":  ["GV.SC-05"],                # npm install without audit signatures
@@ -601,6 +604,7 @@ STANDARD = Standard(
         "ARGO-001": ["GV.SC-05", "PR.PS-02"],   # template image not digest-pinned
         "ARGO-002": ["PR.PS-01"],               # template privileged / root
         "ARGO-003": ["PR.AA-05"],               # default ServiceAccount
+        "ARGO-016": ["PR.AA-05"],               # cluster-admin / over-privileged ServiceAccount
         "ARGO-004": ["PR.PS-01"],               # hostPath / host namespaces
         "ARGO-005": ["PR.PS-05"],               # parameter injection
         "ARGO-006": ["PR.AA-01", "PR.DS-01"],   # leaked creds
@@ -943,8 +947,10 @@ STANDARD = Standard(
         "GHA-103":  ["PR.PS-05"],               # AI review bot on untrusted trigger
         "GHA-104":  ["PR.PS-05"],               # AI agent auto-push without PR review
         "GL-036":   ["PR.AA-01", "PR.DS-01"],   # secret echoed to GitLab CI log
+        "GL-038":   ["PR.AA-01", "PR.DS-01"],   # CI_DEBUG_TRACE dumps secrets to GitLab CI log
         "BB-032":   ["PR.AA-01", "PR.DS-01"],   # secret echoed to Bitbucket log
         "ADO-031":  ["PR.AA-01", "PR.DS-01"],   # secret echoed to Azure DevOps log
+        "ADO-032":  ["PR.AA-01", "PR.DS-01"],   # checkout persistCredentials leaks token to .git/config
         "CC-032":   ["PR.AA-01", "PR.DS-01"],   # secret echoed to CircleCI log
         "SCM-048":  ["PR.AA-05"],                # org codespace secrets scoped to all repos
         "SCM-049":  ["PR.AA-01", "PR.AA-05"],    # classic PAT used where fine-grained suffices

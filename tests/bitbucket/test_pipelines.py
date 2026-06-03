@@ -77,6 +77,41 @@ class TestBB002ScriptInjection:
         )
         assert not f.passed
 
+    def test_custom_pipeline_variable_unquoted_fails(self):
+        # A trigger-time variable declared by a custom: pipeline, used
+        # unquoted in a later step, is the Bitbucket workflow_dispatch
+        # injection analogue.
+        f = _run(
+            """
+            pipelines:
+              custom:
+                deploy:
+                  - variables:
+                      - name: TARGET
+                  - step:
+                      script:
+                        - ./deploy.sh --target $TARGET
+            """,
+            "BB-002",
+        )
+        assert not f.passed
+
+    def test_custom_pipeline_variable_quoted_passes(self):
+        f = _run(
+            """
+            pipelines:
+              custom:
+                deploy:
+                  - variables:
+                      - name: TARGET
+                  - step:
+                      script:
+                        - ./deploy.sh --target "$TARGET"
+            """,
+            "BB-002",
+        )
+        assert f.passed
+
     def test_quoted_assignment_passes(self):
         f = _run(
             """

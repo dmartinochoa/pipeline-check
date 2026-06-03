@@ -103,6 +103,7 @@ STANDARD = Standard(
         "CB-002":   ["CC6.6"],             # privileged mode breaks sandbox boundary
         "GHA-017":  ["CC6.6"],
         "GL-017":   ["CC6.6"],
+        "GL-039":   ["CC6.6"],# dind daemon TLS disabled / exposed on 2375
         "BB-013":   ["CC6.6"],
         "ADO-017":  ["CC6.6"],
         "JF-017":   ["CC6.6"],
@@ -145,6 +146,7 @@ STANDARD = Standard(
         # ── CC6.8. Malicious software prevention / detection ───────
         "CB-011":   ["CC6.8"],
         "GHA-003":  ["CC6.8"],             # script injection = malware vector
+        "GHA-117":  ["CC6.8"],             # IaC apply on untrusted PR trigger
         "GHA-016":  ["CC6.8"],             # curl|bash = malware vector
         "GHA-020":  ["CC6.8"],             # vuln scanning
         "GHA-027":  ["CC6.8"],             # malicious activity
@@ -469,6 +471,7 @@ STANDARD = Standard(
         "GL-028":   ["CC8.1"],              # services: image not pinned
         "GL-030":   ["CC8.1"],              # trigger: include w/o pinned ref
         "GL-031":   ["CC6.1", "CC8.1"],     # id_tokens missing audience pin
+        "GL-040":   ["CC6.1", "CC8.1"],     # CI_JOB_TOKEN used for cross-project access
         "GL-032":   ["CC6.8"],              # tags interpolates untrusted
         "GL-033":   ["CC6.8"],              # global before_script taint
         "GL-034":   ["CC8.1"],              # npm install without audit signatures
@@ -573,6 +576,7 @@ STANDARD = Standard(
         "ARGO-001": ["CC8.1"],              # template image not digest-pinned
         "ARGO-002": ["CC6.1", "CC6.8"],     # template privileged / root
         "ARGO-003": ["CC6.1"],              # default ServiceAccount
+        "ARGO-016": ["CC6.1"],              # cluster-admin / over-privileged ServiceAccount
         "ARGO-004": ["CC6.6", "CC6.8"],     # hostPath / host namespaces
         "ARGO-005": ["CC6.8"],              # parameter injection
         "ARGO-006": ["CC6.1"],              # leaked creds
@@ -856,8 +860,10 @@ STANDARD = Standard(
         "GHA-103":  ["CC6.8"],              # AI review bot on untrusted trigger
         "GHA-104":  ["CC6.8"],              # AI agent auto-push without PR review
         "GL-036":   ["CC6.1"],              # secret echoed to GitLab CI log
+        "GL-038":   ["CC6.1"],              # CI_DEBUG_TRACE dumps secrets to GitLab CI log
         "BB-032":   ["CC6.1"],              # secret echoed to Bitbucket log
         "ADO-031":  ["CC6.1"],              # secret echoed to Azure DevOps log
+        "ADO-032":  ["CC6.1"],              # checkout persistCredentials leaks token to .git/config
         "CC-032":   ["CC6.1"],              # secret echoed to CircleCI log
         "SCM-048":  ["CC6.1"],                   # org codespace secrets scoped to all repos
         "SCM-049":  ["CC6.1", "CC6.3"],          # classic PAT used where fine-grained suffices

@@ -1,10 +1,13 @@
 """BB-023. TLS / certificate verification bypass."""
 from __future__ import annotations
 
+from typing import Any
+
 from ..._primitives import tls_bypass
-from ..._primitives.blob_rule import yaml_blob_check
-from ...base import Severity
+from ...base import Finding, Severity
+from ...blob import blob_raw
 from ...rule import Rule
+from ..base import iter_steps
 
 RULE = Rule(
     id="BB-023",
@@ -24,7 +27,11 @@ RULE = Rule(
         "`npm config set strict-ssl false`, `curl -k`, "
         "`wget --no-check-certificate`, `PYTHONHTTPSVERIFY=0`, and "
         "`GOINSECURE=`. Disabling TLS verification allows MITM injection "
-        "of malicious packages, repositories, or build tools."
+        "of malicious packages, repositories, or build tools.\n\n"
+        "Also flags Bitbucket's structural clone bypass, a step-level "
+        "`clone: { skip-ssl-verify: true }`, which turns off certificate "
+        "verification on the repository clone itself so a MITM can inject "
+        "source into the build before any script runs."
     ),
     exploit_example=(
         "# Vulnerable: ``npm config set strict-ssl false`` (or\n"
@@ -54,13 +61,47 @@ RULE = Rule(
 )
 
 
-check = yaml_blob_check(
-    RULE,
-    scanner=tls_bypass.scan,
-    pass_desc="No TLS verification bypass patterns detected.",
-    fail_desc=lambda hits: (
-        f"TLS verification bypass detected: "
-        f"{', '.join(h.snippet for h in hits[:3])}"
-    ),
-    lowercase=False,
-)
+_TRUTHY = frozenset({"true", "1", "yes", "on"})
+
+
+def _clone_skips_ssl(clone: Any) -> bool:
+    """True when a ``clone:`` block sets ``skip-ssl-verify`` truthy."""
+    if not isinstance(clone, dict):
+        return False
+    v = clone.get("skip-ssl-verify")
+    return v is True or (isinstance(v, str) and v.strip().lower() in _TRUTHY)
+
+
+def check(path: str, doc: dict[str, Any]) -> Finding:
+    # Shell-level bypass idioms (curl -k, git http.sslVerify=false, ...)
+    # live in script text, which blob_raw flattens. The Bitbucket
+    # ``clone: { skip-ssl-verify: true }`` bypass is structural (a YAML
+    # key + bool), which never reaches the blob, so it's walked here.
+    hits = tls_bypass.scan(blob_raw(doc))
+    structural: list[str] = []
+    if _clone_skips_ssl(doc.get("clone")):
+        structural.append("global clone: skip-ssl-verify")
+    for loc, step in iter_steps(doc):
+        if _clone_skips_ssl(step.get("clone")):
+            structural.append(f"{loc}: clone skip-ssl-verify")
+    passed = not hits and not structural
+    if passed:
+        desc = "No TLS verification bypass patterns detected."
+    else:
+        parts: list[str] = []
+        if hits:
+            parts.append(
+                "TLS verification bypass detected: "
+                + ", ".join(h.snippet for h in hits[:3])
+            )
+        if structural:
+            parts.append(
+                "clone TLS verification disabled: "
+                + ", ".join(structural[:3])
+            )
+        desc = ". ".join(parts) + "."
+    return Finding(
+        check_id=RULE.id, title=RULE.title, severity=RULE.severity,
+        resource=path, description=desc,
+        recommendation=RULE.recommendation, passed=passed,
+    )

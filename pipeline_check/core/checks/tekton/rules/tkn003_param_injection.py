@@ -26,9 +26,13 @@ RULE = Rule(
     ),
     docs_note=(
         "Fires on any ``$(params.X)`` or ``$(workspaces.X.path)`` "
-        "token inside a ``script:`` body that isn't already wrapped "
-        "in double quotes (`\"$(params.X)\"`). Doesn't fire on the "
-        "env-var indirection pattern, which is safe."
+        "token inside a ``script:`` body. Tekton substitutes the value "
+        "into the script text before the shell parses it, so wrapping "
+        "the token in double quotes does NOT help: an attacker value "
+        "containing a ``\"`` closes the quote and the rest runs as "
+        "shell. Only the env-var indirection pattern (bind the param "
+        "via ``env:`` then reference the shell variable quoted, "
+        "``\"$NAME\"``) is safe, and the rule doesn't fire on that."
     ),
     exploit_example=(
         "# Vulnerable: ``$(params.revision)`` is substituted into\n"
@@ -71,20 +75,16 @@ RULE = Rule(
     ),
 )
 
+# Any ``$(params.X)`` / ``$(workspaces.X.path)`` token in a script body.
+# Tekton expands these into the script text BEFORE the shell parses it,
+# so quoting in the template (``"$(params.X)"``) does not protect against
+# an attacker value that contains a closing quote. Every direct
+# interpolation into a script is therefore unsafe; the safe pattern is
+# env-var indirection, which carries no ``$(params.X)`` token in the
+# script (it references a shell variable instead).
 _PARAM_RE = re.compile(
     r"\$\(params\.[A-Za-z0-9_-]+\)"
     r"|\$\(workspaces\.[A-Za-z0-9_-]+\.path\)"
-)
-
-
-def _is_inside_double_quotes(text: str, pos: int) -> bool:
-    return text[:pos].count('"') % 2 == 1
-# ``eval`` (and other shell-eval contexts) re-parses its argument as
-# shell, so even quoted ``"$(params.X)"`` is unsafe inside eval. Match
-# eval invocations regardless of quoting around the substitution.
-_EVAL_PARAM_RE = re.compile(
-    r"\beval\b[^\n]*?\$\(params\.[A-Za-z0-9_-]+\)"
-    r"|\beval\b[^\n]*?\$\(workspaces\.[A-Za-z0-9_-]+\.path\)"
 )
 
 
@@ -101,12 +101,7 @@ def check(ctx: TektonContext) -> Finding:
             continue
         examined += 1
         for sname, script in iter_step_scripts(doc):
-            m = _EVAL_PARAM_RE.search(script)
-            if m is None:
-                for pm in _PARAM_RE.finditer(script):
-                    if not _is_inside_double_quotes(script, pm.start()):
-                        m = pm
-                        break
+            m = _PARAM_RE.search(script)
             if m is not None:
                 offenders.append(
                     f"{doc.kind}/{doc.name} {sname}: {m.group(0)}"

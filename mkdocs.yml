@@ -137,15 +137,20 @@ hooks:
   - hooks/mkdocs_design_tokens.py
 
 nav:
-  # Six top-level tabs grouped by user intent. Previous layout exposed
+  # Seven top-level tabs grouped by user intent. Previous layout exposed
   # ~15 tabs (one per page), which overflowed the Material tab bar and
   # made the site read as a flat dump. Grouping:
   #   Home             entry point
   #   Getting started  "how do I run / configure / gate / read output"
   #   Coverage         "does it scan my stack / fit my compliance ask"
+  #   Benchmarks       scanner comparison + cicd-goat benchmark
   #   Concepts         scoring, threat model, attack-chain framing
   #   Integrations     MCP server + VS Code extension
   #   Contributing     developer audience (architecture + add-a-*)
+  #
+  # Comparison + GOAT bench were buried at the bottom of the Coverage
+  # tab (under the long Providers + Standards trees); promoted to their
+  # own Benchmarks tab so the cross-scanner results aren't hidden.
   - Home: index.md
   - Getting started:
       - Usage: usage.md
@@ -220,8 +225,9 @@ nav:
           - S2C2F: standards/s2c2f.md
           - "OSC&R": standards/oscr.md
           - SOC 2: standards/soc2.md
-      - Comparison: comparison.md
-      - GOAT bench: goat_bench.md
+  - Benchmarks:
+      - Scanner comparison: comparison.md
+      - cicd-goat benchmark: goat_bench.md
   - Concepts:
       - Scoring model: scoring_model.md
       - Threat model: threatmodel.md

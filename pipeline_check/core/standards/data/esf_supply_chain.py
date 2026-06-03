@@ -107,6 +107,7 @@ STANDARD = Standard(
         "GHA-110": ["ESF-S-VERIFY-DEPS"],  # CI env disables Go module verification
         "GHA-002":  ["ESF-D-INJECTION", "ESF-D-BUILD-ENV"],
         "GHA-003":  ["ESF-D-INJECTION"],
+        "GHA-117":  ["ESF-D-INJECTION"],# IaC apply on untrusted PR trigger
         "GHA-004":  ["ESF-C-LEAST-PRIV"],
         "GHA-005":  ["ESF-D-TOKEN-HYGIENE"],
         "GHA-006":  ["ESF-D-SIGN-ARTIFACTS"],
@@ -153,6 +154,7 @@ STANDARD = Standard(
         "GL-015":   ["ESF-D-BUILD-TIMEOUT"],
         "GL-016":   ["ESF-S-VERIFY-DEPS"],
         "GL-017":   ["ESF-D-BUILD-ENV"],
+        "GL-039":   ["ESF-D-BUILD-ENV"],# dind daemon TLS disabled / exposed on 2375
         "GL-018":   ["ESF-S-VERIFY-DEPS"],
         "GL-019":   ["ESF-S-VULN-MGMT"],
         "GL-020":   ["ESF-D-SECRETS"],
@@ -314,6 +316,7 @@ STANDARD = Standard(
         "ARGO-001": ["ESF-S-PIN-DEPS", "ESF-S-IMMUTABLE"],         # template image not pinned
         "ARGO-002": ["ESF-D-PRIV-BUILD"],                          # template privileged
         "ARGO-003": ["ESF-C-LEAST-PRIV"],                          # default SA
+        "ARGO-016": ["ESF-C-LEAST-PRIV"],                          # cluster-admin / over-privileged ServiceAccount
         "ARGO-004": ["ESF-D-PRIV-BUILD", "ESF-D-BUILD-ENV"],       # hostPath / namespaces
         "ARGO-005": ["ESF-D-INJECTION"],                           # parameter injection
         "ARGO-006": ["ESF-D-SECRETS"],                             # leaked creds
@@ -569,6 +572,7 @@ STANDARD = Standard(
         "GL-029":   ["ESF-C-APPROVAL"],             # manual deploy allow_failure
         "GL-030":   ["ESF-S-PIN-DEPS", "ESF-S-VERIFY-DEPS"],   # trigger: include w/o pinned ref
         "GL-031":   ["ESF-D-TOKEN-HYGIENE", "ESF-C-APPROVAL"],  # id_tokens missing audience pin
+        "GL-040":   ["ESF-D-TOKEN-HYGIENE", "ESF-C-APPROVAL"],  # CI_JOB_TOKEN used for cross-project access
         "GL-032":   ["ESF-D-INJECTION"],            # tags interpolates untrusted
         "GL-033":   ["ESF-D-INJECTION"],            # global before_script taint
         "GL-034":   ["ESF-S-VERIFY-DEPS"],          # npm install without audit signatures
@@ -918,8 +922,10 @@ STANDARD = Standard(
         "GHA-104":  ["ESF-D-CODE-REVIEW"],        # AI agent auto-push without PR review
         # Secrets-in-logs (cross-provider)
         "GL-036":   ["ESF-D-SECRETS"],             # secret echoed to GitLab CI log
+        "GL-038":   ["ESF-D-SECRETS"],             # CI_DEBUG_TRACE dumps secrets to GitLab CI log
         "BB-032":   ["ESF-D-SECRETS"],             # secret echoed to Bitbucket log
         "ADO-031":  ["ESF-D-SECRETS"],             # secret echoed to Azure DevOps log
+        "ADO-032":  ["ESF-D-SECRETS"],             # checkout persistCredentials leaks token to .git/config
         "CC-032":   ["ESF-D-SECRETS"],             # secret echoed to CircleCI log
         "SCM-048":  ["ESF-D-SECRETS"],             # org codespace secret scoped to all repos
         "SCM-049":  ["ESF-D-SECRETS"],             # classic PAT where fine-grained suffices

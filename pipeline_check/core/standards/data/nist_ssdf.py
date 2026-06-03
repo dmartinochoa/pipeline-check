@@ -148,6 +148,7 @@ STANDARD = Standard(
         "GHA-110": ["PW.4.4"],  # CI env disables Go module verification
         "GHA-002":  ["PO.5.1", "PW.9.1"],              # pull_request_target with PR head
         "GHA-003":  ["PW.6.1", "PW.9.1"],              # script injection
+        "GHA-117":  ["PW.6.1", "PW.9.1"],              # IaC apply on untrusted PR trigger
         "GHA-004":  ["PO.5.1"],                        # no explicit permissions
         "GHA-005":  ["PS.1.1"],                        # long-lived AWS keys
         "GHA-006":  ["PS.2.1", "PS.3.2"],              # unsigned artifacts
@@ -258,6 +259,7 @@ STANDARD = Standard(
         "GL-015":   ["PO.5.2", "PW.9.1"],              # no timeout
         "GL-016":   ["PW.4.1", "PW.4.4"],              # remote script piped to shell
         "GL-017":   ["PO.5.1", "PW.9.1"],              # docker privileged / host
+        "GL-039":   ["PO.5.1", "PW.9.1"],              # dind daemon TLS disabled / exposed on 2375
         "GL-018":   ["PW.4.1", "PW.4.4"],              # package install insecure source
         "GL-019":   ["RV.1.1"],                        # no vulnerability scanning
         "GL-020":   ["PS.1.1"],                        # CI_JOB_TOKEN persisted
@@ -272,6 +274,7 @@ STANDARD = Standard(
         "GL-029":   ["PO.5.1"],                        # manual deploy allow_failure
         "GL-030":   ["PW.4.1", "PW.4.4"],              # trigger: include w/o pinned ref
         "GL-031":   ["PO.5.1", "PS.1.1"],              # id_tokens missing audience pin
+        "GL-040":   ["PO.5.1", "PS.1.1"],              # CI_JOB_TOKEN used for cross-project access
         "GL-032":   ["PW.6.1", "PW.9.1"],              # tags interpolates untrusted
         "GL-033":   ["PO.5.1", "PW.9.1"],              # global before_script taint
         "GL-034":   ["PW.4.4"],                        # npm install without audit signatures
@@ -465,6 +468,7 @@ STANDARD = Standard(
         "ARGO-001": ["PW.4.1", "PW.4.4"],              # template image not digest-pinned
         "ARGO-002": ["PO.5.1", "PW.9.1"],              # template privileged / root
         "ARGO-003": ["PO.5.1"],                        # default ServiceAccount
+        "ARGO-016": ["PO.5.1"],                        # cluster-admin / over-privileged ServiceAccount
         "ARGO-004": ["PO.5.1", "PW.9.1"],              # hostPath / host namespaces
         "ARGO-005": ["PW.6.1", "PW.9.1"],              # parameter injection in script
         "ARGO-006": ["PS.1.1"],                        # leaked creds in env / param
@@ -879,8 +883,10 @@ STANDARD = Standard(
         "GHA-103":  ["PW.6.1", "PW.9.1"],              # AI review bot on untrusted trigger
         "GHA-104":  ["PW.6.1", "PW.9.1"],              # AI agent auto-push without PR review
         "GL-036":   ["PS.1.1"],                        # secret echoed to GitLab CI log
+        "GL-038":   ["PS.1.1"],                        # CI_DEBUG_TRACE dumps secrets to GitLab CI log
         "BB-032":   ["PS.1.1"],                        # secret echoed to Bitbucket log
         "ADO-031":  ["PS.1.1"],                        # secret echoed to Azure DevOps log
+        "ADO-032":  ["PS.1.1"],                        # checkout persistCredentials leaks token to .git/config
         "CC-032":   ["PS.1.1"],                        # secret echoed to CircleCI log
         "SCM-048":  ["PO.5.1"],                        # org codespace secrets scoped to all repos
         "SCM-049":  ["PS.1.1"],                        # classic PAT where fine-grained suffices

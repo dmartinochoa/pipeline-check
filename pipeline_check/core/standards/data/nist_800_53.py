@@ -137,6 +137,7 @@ STANDARD = Standard(
         "GHA-110": ["CM-7", "SR-3"],  # CI env disables Go module verification
         "GHA-002":  ["CM-6", "SI-7", "SA-11"],           # pull_request_target + PR head
         "GHA-003":  ["CM-6", "SA-11", "SA-15"],          # script injection
+        "GHA-117":  ["CM-6", "SA-11", "SA-15"],          # IaC apply on untrusted PR trigger
         "GHA-004":  ["AC-6", "CM-6", "CM-7"],            # unrestricted GITHUB_TOKEN
         "GHA-005":  ["IA-5"],                            # long-lived AWS keys
         "GHA-006":  ["SI-7", "SR-4"],                    # unsigned artifacts
@@ -247,6 +248,7 @@ STANDARD = Standard(
         "GL-015":   ["CM-6"],                            # no timeout
         "GL-016":   ["SR-3", "SR-11"],                   # remote script piped to shell
         "GL-017":   ["CM-6", "CM-7"],                    # docker privileged / host
+        "GL-039":   ["CM-6", "CM-7"],                    # dind daemon TLS disabled / exposed on 2375
         "GL-018":   ["SR-3", "SR-11"],                   # package install insecure source
         "GL-019":   ["RA-5", "SI-2"],                    # no vulnerability scanning
         "GL-020":   ["IA-5"],                            # CI_JOB_TOKEN persisted
@@ -261,6 +263,7 @@ STANDARD = Standard(
         "GL-029":   ["SA-10", "AC-3"],                   # manual deploy allow_failure
         "GL-030":   ["SR-3", "SR-11"],                   # trigger: include w/o pinned ref
         "GL-031":   ["AC-3", "IA-5"],                    # id_tokens missing audience pin
+        "GL-040":   ["AC-3", "IA-5"],                    # CI_JOB_TOKEN used for cross-project access
         "GL-032":   ["CM-6", "SA-11"],                   # tags interpolates untrusted
         "GL-033":   ["CM-6", "SA-11"],                   # global before_script taint
         "GL-034":   ["SR-3", "SR-11", "SI-7"],            # npm install without audit signatures
@@ -549,6 +552,7 @@ STANDARD = Standard(
         "ARGO-001": ["SR-3", "SR-11", "SI-2"],           # template image not pinned
         "ARGO-002": ["AC-6", "CM-7"],                    # template privileged
         "ARGO-003": ["AC-2", "AC-6"],                    # default SA
+        "ARGO-016": ["AC-2", "AC-6"],                    # cluster-admin / over-privileged ServiceAccount
         "ARGO-004": ["SC-7", "AC-6", "SI-7"],            # hostPath / namespaces
         "ARGO-005": ["CM-6", "SA-11"],                   # parameter injection
         "ARGO-006": ["IA-5", "SC-28"],                   # leaked creds
@@ -896,8 +900,10 @@ STANDARD = Standard(
         "GHA-103":  ["CM-6", "SA-11"],                   # AI review bot on untrusted trigger
         "GHA-104":  ["CM-6", "SA-11"],                   # AI agent auto-push without PR review
         "GL-036":   ["IA-5", "AU-9"],                      # secret echoed to GitLab CI log
+        "GL-038":   ["IA-5", "AU-9"],                      # CI_DEBUG_TRACE dumps secrets to GitLab CI log
         "BB-032":   ["IA-5", "AU-9"],                      # secret echoed to Bitbucket log
         "ADO-031":  ["IA-5", "AU-9"],                      # secret echoed to Azure DevOps log
+        "ADO-032":  ["IA-5", "AU-9"],                      # checkout persistCredentials leaks token to .git/config
         "CC-032":   ["IA-5", "AU-9"],                      # secret echoed to CircleCI log
         "SCM-048":  ["AC-6", "IA-5"],                      # org codespace secrets scoped to all repos
         "SCM-049":  ["AC-6", "IA-5"],                      # classic PAT used where fine-grained suffices
