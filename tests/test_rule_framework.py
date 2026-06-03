@@ -40,7 +40,7 @@ EXPECTED_RULE_COUNTS: dict[str, int] = {
     "azure_cloud":    50,
     "terraform":      71,
     "cloudformation": 70,
-    "github":         107,
+    "github":         108,
     "gitlab":     42,
     "bitbucket":  32,
     "azure":      32,

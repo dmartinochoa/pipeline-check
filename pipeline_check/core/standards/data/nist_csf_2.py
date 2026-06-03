@@ -251,6 +251,7 @@ STANDARD = Standard(
         # PS-05: prevent unauthorized software execution
         "CB-011":   ["PR.PS-05"],
         "GHA-003":  ["PR.PS-05"],
+        "GHA-117":  ["PR.PS-05"],# IaC apply on untrusted PR trigger
         "GHA-016":  ["PR.PS-05"],
         "GHA-027":  ["PR.PS-05"],
         "GHA-028":  ["PR.PS-05"],

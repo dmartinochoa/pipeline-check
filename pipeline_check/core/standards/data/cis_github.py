@@ -162,6 +162,7 @@ STANDARD = Standard(
         "GHA-110": ["1.5.2"],  # CI env disables Go module verification
         "GHA-002": ["1.5.2"],                                 # pull_request_target + checkout PR head
         "GHA-003": ["1.5.2"],                                 # script injection via ${{ }}
+        "GHA-117": ["1.5.2"],                                 # IaC apply on untrusted PR trigger
         "GHA-004": ["1.5.2"],                                 # GITHUB_TOKEN unrestricted
         "GHA-005": ["1.5.2", "1.5.1"],                        # long-lived AWS keys in workflow
         "GHA-019": ["1.5.2"],                                 # job-level permissions broader than needed

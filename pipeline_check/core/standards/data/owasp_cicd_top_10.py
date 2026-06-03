@@ -138,6 +138,7 @@ STANDARD = Standard(
         "GHA-110": ["CICD-SEC-3", "CICD-SEC-5"],  # CI env disables Go module verification
         "GHA-002":  ["CICD-SEC-4"],
         "GHA-003":  ["CICD-SEC-4"],
+        "GHA-117":  ["CICD-SEC-4"],# IaC apply on untrusted PR trigger
         "GHA-004":  ["CICD-SEC-5"],
         "GHA-005":  ["CICD-SEC-6"],
         "GHA-006":  ["CICD-SEC-9"],

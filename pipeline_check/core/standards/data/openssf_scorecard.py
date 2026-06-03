@@ -224,6 +224,7 @@ STANDARD = Standard(
         "CP-007":   ["Dangerous-Workflow"],                            # v2 PR trigger all branches
         "GHA-002":  ["Dangerous-Workflow"],
         "GHA-003":  ["Dangerous-Workflow"],
+        "GHA-117":  ["Dangerous-Workflow"],# IaC apply on untrusted PR trigger
         "GHA-009":  ["Dangerous-Workflow"],
         "GHA-010":  ["Dangerous-Workflow"],
         "GHA-011":  ["Dangerous-Workflow"],

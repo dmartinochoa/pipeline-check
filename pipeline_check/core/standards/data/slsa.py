@@ -84,6 +84,7 @@ STANDARD = Standard(
         "GHA-110": ["Build.L3.NonFalsifiable"],  # CI env disables Go module verification
         "GHA-002":  ["Build.L3.NonFalsifiable", "Build.L3.Isolated"], # pull_request_target + PR head
         "GHA-003":  ["Build.L3.Isolated"],                         # script injection
+        "GHA-117":  ["Build.L3.Isolated"],                         # IaC apply on untrusted PR trigger
         "GHA-004":  ["Build.L3.NonFalsifiable"],                   # unrestricted GITHUB_TOKEN
         "GHA-006":  ["Build.L2.Signed"],                           # unsigned artifacts
         "GHA-007":  ["Build.L1.Provenance"],                       # no SBOM / provenance

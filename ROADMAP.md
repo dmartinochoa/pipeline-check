@@ -854,10 +854,13 @@ mechanical):
   the script text before the shell parses it, so quoting gives no
   protection). The carve-out is removed; any param / workspace token in
   a ``script:`` body now fires.
-- Still open: ``terraform apply`` on an untrusted PR / MR (89, plus the
-  apply-RCE specifics of 91). A new GHA rule (PR trigger + ``terraform
-  apply`` / ``terragrunt apply`` with no approval gate; distinct from
-  GHA-111, which requires an AI agent in the loop). Argo cluster-admin
+- ~~``terraform apply`` on an untrusted PR (89)~~ Shipped on ``dev`` as
+  **GHA-117**: a ``pull_request`` / ``pull_request_target`` trigger plus
+  an unattended IaC apply (``terraform``/``terragrunt apply``/``destroy``,
+  ``cloudformation deploy``, ``cdk deploy``, ``pulumi up``, ``sam
+  deploy``). Distinct from GHA-111, which needs an AI agent in the loop.
+- Still open: the apply-RCE specifics of GitLab 91 (currently caught as
+  an ungated MR deploy via GL-004, not as apply-RCE). Argo cluster-admin
   ServiceAccount (92), a heuristic name match on ``serviceAccountName``.
   Jenkins fork-PR PPE (86): the trust strategy lives in job config, not
   the Jenkinsfile, so it is not statically reachable.
