@@ -12,6 +12,17 @@ release commit collapses this section into `## [X.Y.Z] - <date>`.
 
 ### Added
 
+- **GHA-117: unattended IaC apply on an untrusted `pull_request`
+  trigger.** Fires when a workflow triggered by `pull_request` /
+  `pull_request_target` runs `terraform apply` (or `terragrunt apply` /
+  `cloudformation deploy` / `cdk deploy` / `pulumi up` / `sam deploy` /
+  the `destroy` variants). Applying a PR author's IaC executes attacker
+  code at apply time (an `external` data source, a `local-exec`
+  provisioner, a hijacked provider) on the runner, with whatever cloud
+  credentials (often an OIDC `id-token`) the apply uses. The
+  plan/apply-on-untrusted-input RCE class; no scanner in the cicd-goat
+  comparison catches it. Distinct from GHA-111, which requires an
+  agentic CLI in the loop (CICD-SEC-4).
 - **GL-039: GitLab Docker-in-Docker service exposes an unauthenticated
   daemon.** Fires when a job (or the global config) runs a
   `docker:*-dind` service AND disables daemon auth, either via

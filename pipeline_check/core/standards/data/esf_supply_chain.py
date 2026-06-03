@@ -107,6 +107,7 @@ STANDARD = Standard(
         "GHA-110": ["ESF-S-VERIFY-DEPS"],  # CI env disables Go module verification
         "GHA-002":  ["ESF-D-INJECTION", "ESF-D-BUILD-ENV"],
         "GHA-003":  ["ESF-D-INJECTION"],
+        "GHA-117":  ["ESF-D-INJECTION"],# IaC apply on untrusted PR trigger
         "GHA-004":  ["ESF-C-LEAST-PRIV"],
         "GHA-005":  ["ESF-D-TOKEN-HYGIENE"],
         "GHA-006":  ["ESF-D-SIGN-ARTIFACTS"],

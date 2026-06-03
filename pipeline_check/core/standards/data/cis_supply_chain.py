@@ -160,6 +160,7 @@ STANDARD = Standard(
         "GHA-110": ["1.4.1"],  # CI env disables Go module verification
         "GHA-002":  ["2.1.3", "2.3.8"],                  # pull_request_target + PR head
         "GHA-003":  ["2.1.3"],                           # script injection
+        "GHA-117":  ["2.1.3"],                           # IaC apply on untrusted PR trigger
         "GHA-004":  ["2.4.3"],                           # unrestricted GITHUB_TOKEN
         "GHA-005":  ["1.3.4"],                           # long-lived AWS keys
         "GHA-006":  ["4.1.1"],                           # artifact signing

@@ -148,6 +148,7 @@ STANDARD = Standard(
         "GHA-110": ["PW.4.4"],  # CI env disables Go module verification
         "GHA-002":  ["PO.5.1", "PW.9.1"],              # pull_request_target with PR head
         "GHA-003":  ["PW.6.1", "PW.9.1"],              # script injection
+        "GHA-117":  ["PW.6.1", "PW.9.1"],              # IaC apply on untrusted PR trigger
         "GHA-004":  ["PO.5.1"],                        # no explicit permissions
         "GHA-005":  ["PS.1.1"],                        # long-lived AWS keys
         "GHA-006":  ["PS.2.1", "PS.3.2"],              # unsigned artifacts

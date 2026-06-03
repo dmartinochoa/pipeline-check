@@ -113,6 +113,7 @@ STANDARD = Standard(
         "GHA-110": ["6.3.1"],  # CI env disables Go module verification
         "GHA-002":  ["6.5.1"],                           # pull_request_target + PR head
         "GHA-003":  ["6.5.1"],                           # script injection
+        "GHA-117":  ["6.5.1"],                           # IaC apply on untrusted PR trigger
         "GHA-004":  ["7.2.5"],                           # unrestricted GITHUB_TOKEN
         "GHA-005":  ["8.2.1"],                           # long-lived AWS keys
         # GitLab CI

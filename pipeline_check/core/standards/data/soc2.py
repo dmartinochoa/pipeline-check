@@ -146,6 +146,7 @@ STANDARD = Standard(
         # ── CC6.8. Malicious software prevention / detection ───────
         "CB-011":   ["CC6.8"],
         "GHA-003":  ["CC6.8"],             # script injection = malware vector
+        "GHA-117":  ["CC6.8"],             # IaC apply on untrusted PR trigger
         "GHA-016":  ["CC6.8"],             # curl|bash = malware vector
         "GHA-020":  ["CC6.8"],             # vuln scanning
         "GHA-027":  ["CC6.8"],             # malicious activity

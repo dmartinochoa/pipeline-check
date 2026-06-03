@@ -74,6 +74,7 @@ STANDARD = Standard(
         # ── 4.1.3. Embedded malware ────────────────────────────────
         "CB-011":   ["4.1.3"],
         "GHA-003":  ["4.1.3"],
+        "GHA-117":  ["4.1.3"],# IaC apply on untrusted PR trigger
         "GHA-016":  ["4.1.3"],
         "GHA-027":  ["4.1.3"],
         "GHA-028":  ["4.1.3"],
