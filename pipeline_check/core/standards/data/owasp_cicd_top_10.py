@@ -535,6 +535,7 @@ STANDARD = Standard(
         "NPM-014":  ["CICD-SEC-3"],   # single-publisher supply-chain risk
         "NPM-015":  ["CICD-SEC-4"],   # missing build provenance
         "NPM-017":  ["CICD-SEC-4"],   # provenance built from a non-release ref
+        "NPM-018":  ["CICD-SEC-3"],   # latest release from a new publisher (takeover)
         "NPM-016":  ["CICD-SEC-3"],   # low OpenSSF Scorecard upstream
         # pypi (requirements file static analysis)
         "PYPI-001": ["CICD-SEC-3"],   # requirements line lacks ==pin

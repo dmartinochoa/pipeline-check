@@ -50,6 +50,7 @@ from collections.abc import Iterator
 from dataclasses import dataclass, field
 from typing import Any
 
+from ..base import TaintFlow
 from .base import iter_command_steps, step_commands, step_label
 from .rules.bk003_untrusted_interpolation import _TAINTED_VARS
 
@@ -79,6 +80,21 @@ class TaintPath:
         chain.extend(self.hops)
         chain.append(f"sink@{self.sink_location}({self.sink_consumer})")
         return " -> ".join(chain)
+
+    def to_flow(self) -> TaintFlow:
+        """Structured ``source_job -> sink_job`` edge for the chain engine.
+
+        Both ``source.location`` and ``sink_location`` are step labels
+        (the same ``key`` > ``label`` > ``steps[N]`` identifier BK-003 /
+        BK-007 anchor on), so the edge connects directly to those legs'
+        anchors with no normalization. The meta-data channel is per-build
+        rather than ordered, so the edge is producer-step -> consumer-step.
+        """
+        return TaintFlow(
+            source_job=self.source.location,
+            sink_job=self.sink_location,
+            rendered=self.render(),
+        )
 
 
 # ── Meta-data set / get detectors ─────────────────────────────────

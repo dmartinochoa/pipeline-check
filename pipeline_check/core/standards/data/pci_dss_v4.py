@@ -637,6 +637,7 @@ STANDARD = Standard(
         "NPM-014":  ["6.3.1", "6.3.3"],
         "NPM-015":  ["6.3.1", "6.3.3"],
         "NPM-017":  ["6.3.1", "6.3.3"],  # provenance built from a non-release ref
+        "NPM-018":  ["6.3.1", "6.3.3"],  # latest release from a new publisher
         "NPM-016":  ["6.3.1", "6.3.3"],
         "PYPI-008": ["6.3.1", "6.3.3"],
         "PYPI-009": ["6.3.1", "6.3.3"],

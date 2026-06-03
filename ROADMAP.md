@@ -746,14 +746,41 @@ artifact) and TAINT-008 (``extends:`` inheritance) rules populate
 ``taint_flows``, and AC-022 walks them through the same
 ``assess_reachability`` helper.
 
-Still open as follow-ups: migrate the remaining injection chains
-(AC-023 Tekton, AC-025 Argo, AC-026 Buildkite) to
-``assess_reachability`` (each needs its provider's taint engine to
-populate ``taint_flows`` the way GHA's TAINT-001/002 and GitLab's
-TAINT-004/008 now do), and extend the graph across the reusable-
-workflow boundary (TAINT-003 already carries a ``cross_document``
-``uses:`` sink in its flows, but walking into the callee body needs
-``--resolve-remote``).
+The three remaining injection chains then migrated, completing the
+provider sweep. **AC-026** (Buildkite) walks TAINT-005's
+``buildkite-agent meta-data`` set/get edges, keyed on step labels (the
+same identifiers BK-003 / BK-007 anchor on), so it reuses the full
+helper exactly like AC-022. **AC-025** (Argo) walks TAINT-007's
+``{{tasks.<t>.outputs.parameters.<o>}}`` cross-template edges; the rule
+qualifies each edge with the document's ``<Kind>/<name>:`` prefix so the
+producer / consumer template names match ARGO-002 / ARGO-005's anchors
+(and don't collide across documents in the shared ``argo`` corpus).
+**AC-023** (Tekton) walks TAINT-006's ``$(tasks.<t>.results.<r>)`` edges
+across the Task / Pipeline document split: TAINT-006 keys each edge on
+the Pipeline task's resolved ``taskRef`` document id (``<Kind>/<name>``,
+matching TKN-002 / TKN-003's per-step anchor prefix), and AC-023 walks
+at that task-identity granularity while keeping the phase-1 *same-step*
+check as the fallback, so the precise single-step semantics never widen
+to a coarser same-task match.
+
+Still open as the one phase-2 follow-up: extend the graph across the
+reusable-workflow boundary (TAINT-003 already carries a
+``cross_document`` ``uses:`` sink in its flows, but walking into the
+callee body needs ``--resolve-remote``).
+
+The reusable-workflow boundary then shipped, closing phase 2. TAINT-003
+populates ``taint_flows`` with a ``cross_document`` edge per forward,
+keyed on the resolved callee ``Workflow.path`` when the forward is
+confirmed to reach an unquoted ``${{ inputs.<name> }}`` sink in a loaded
+callee (on disk, or via ``--resolve-remote``), or the raw callee ref
+otherwise. AC-002 gained a cross-document tier: a confirmed forward
+whose callee path also has an ungated deploy (GHA-014) reports a
+dataflow-confirmed injection-to-deploy chain spanning ``[caller,
+callee]``, the reusable-workflow analog of its single-document path. It
+never fires without the callee body in scope, since only a confirmed
+forward keys its edge on a real path. With the three injection chains
+(above) and this boundary done, phase 2's dataflow tier covers every
+TAINT engine and the one cross-document channel.
 
 ### Pluggable LLM-assisted triage (opt-in, local)
 
@@ -835,10 +862,20 @@ surface changes. Both are LOW, ``--resolve-remote``-gated, scoped to
 direct index dependencies, and reuse the per-package JSON document the
 cooldown / OSV passes already fetch.
 
-Still open as follow-ups: a recent-ownership-change / new-account
-signal to pair with NPM-014 (the actual takeover vector, worth a higher
-severity), and a PyPI single-maintainer signal if PyPI ever exposes a
-reliable owner-list API.
+The recent-ownership-change / new-account signal then shipped as
+**NPM-018**: it reads each direct dependency's per-version publisher
+(the packument's ``_npmUser``) and flags a package whose latest release
+was published by an account that published none of its prior versions,
+the active account-takeover vector that fires the single-publisher blast
+radius NPM-014 only measures. MEDIUM severity (higher than NPM-014's LOW,
+as this section called for), MEDIUM confidence (a legitimate hand-off
+trips it the same as a takeover), ``--resolve-remote``-gated, three-prior-
+version floor so brand-new packages stay out. npm 17 -> 18.
+
+Still open as follow-ups: a PyPI new-publisher analog (blocked the same
+way the PyPI single-maintainer signal is, PyPI exposes no reliable
+per-release publisher-account field), and a PyPI single-maintainer
+signal if PyPI ever exposes a reliable owner-list API.
 
 ### Weak-coverage provider deepening
 

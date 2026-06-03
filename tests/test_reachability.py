@@ -10,11 +10,18 @@ from click.testing import CliRunner
 from pipeline_check.cli import scan
 from pipeline_check.core import chains
 from pipeline_check.core.chains._reachability import assess_reachability
+from pipeline_check.core.checks.argo.base import ArgoContext, ArgoDoc
+from pipeline_check.core.checks.argo.pipelines import ArgoChecks
 from pipeline_check.core.checks.base import Finding, Severity, TaintFlow
+from pipeline_check.core.checks.buildkite.base import BuildkiteContext
+from pipeline_check.core.checks.buildkite.base import Pipeline as BuildkitePipeline
+from pipeline_check.core.checks.buildkite.pipelines import BuildkitePipelineChecks
 from pipeline_check.core.checks.github.base import GitHubContext, Workflow
 from pipeline_check.core.checks.github.workflows import WorkflowChecks
 from pipeline_check.core.checks.gitlab.base import GitLabContext, Pipeline
 from pipeline_check.core.checks.gitlab.pipelines import GitLabPipelineChecks
+from pipeline_check.core.checks.tekton.base import TektonContext, TektonDoc
+from pipeline_check.core.checks.tekton.pipelines import TektonChecks
 
 _DATAFLOW_WF = """\
 name: ci
@@ -250,6 +257,84 @@ class TestAC022GitLabDataflow:
         )
 
 
+class TestAC002ReusableWorkflowDataflow:
+    """AC-002 confirms reachability across the reusable-workflow boundary.
+    A caller passes an untrusted value into a reusable workflow
+    (TAINT-003 confirms the callee consumes it in a sink), and that same
+    callee deploys without an environment gate (GHA-014). When the callee
+    body is in scope (on disk here; ``--resolve-remote`` for remote refs)
+    the injection-to-deploy path is proven across the two documents."""
+
+    _CALLER = textwrap.dedent("""
+        name: caller
+        on: [issues]
+        jobs:
+          call:
+            uses: ./.github/workflows/deploy.yml
+            with:
+              title: ${{ github.event.issue.title }}
+    """)
+    _CALLEE = textwrap.dedent("""
+        name: deploy
+        on:
+          workflow_call:
+            inputs:
+              title: { required: true, type: string }
+        jobs:
+          deploy:
+            runs-on: ubuntu-latest
+            steps:
+              - run: ./gen --title ${{ inputs.title }}
+              - run: ./deploy.sh --prod
+    """)
+
+    def _evaluate(self):
+        ctx = GitHubContext([
+            Workflow(path=".github/workflows/caller.yml",
+                     data=yaml.safe_load(self._CALLER)),
+            Workflow(path=".github/workflows/deploy.yml",
+                     data=yaml.safe_load(self._CALLEE)),
+        ])
+        findings = WorkflowChecks(ctx).run()
+        return findings, [
+            c for c in chains.engine.evaluate(findings) if c.chain_id == "AC-002"
+        ]
+
+    def test_cross_document_confirmed(self):
+        _findings, ac = self._evaluate()
+        # The cross-document instance spans both documents and is
+        # dataflow-confirmed; identify it by its two-resource footprint.
+        cross = [
+            c for c in ac
+            if set(c.resources) == {
+                ".github/workflows/caller.yml",
+                ".github/workflows/deploy.yml",
+            }
+        ]
+        assert cross, "cross-document AC-002 should fire"
+        c = cross[0]
+        assert c.confirmed_reachable
+        assert c.via_dataflow
+        assert "TAINT-003" in c.triggering_check_ids
+        assert "GHA-014" in c.triggering_check_ids
+        assert "reusable workflow" in c.reachability_note
+
+    def test_taint003_exposes_cross_document_flow(self):
+        findings, _ = self._evaluate()
+        taint = [
+            f for f in findings
+            if f.check_id == "TAINT-003" and not f.passed
+        ]
+        assert taint
+        # The confirmed forward keys its sink_job on the resolved callee
+        # path so the chain engine can join it to the callee's findings.
+        assert any(
+            fl.cross_document
+            and fl.sink_job == ".github/workflows/deploy.yml"
+            for fl in taint[0].taint_flows
+        )
+
+
 class TestChainsRequireDataflowFlag:
     """``--chains-require-dataflow`` keeps only dataflow-confirmed chains."""
 
@@ -285,3 +370,243 @@ class TestChainsRequireDataflowFlag:
             tmp_path, monkeypatch, _COOCCUR_WF, "--chains-require-dataflow",
         )
         assert "AC-002" not in self._chain_ids(result)
+
+
+# ── AC-026 Buildkite (meta-data taint graph) ────────────────────────────
+
+
+class TestAC026BuildkiteDataflow:
+    """AC-026 confirms reachability via the Buildkite meta-data taint
+    graph. The producer step quotes the untrusted value (so it's safe in
+    its own shell) but still writes it to meta-data; the ungated deploy
+    step reads it back, the cross-step path BK-003's single-step check
+    can't see on its own."""
+
+    _BK_DATAFLOW = textwrap.dedent("""
+        steps:
+          - label: extract
+            command: |
+              echo building $BUILDKITE_BRANCH
+              buildkite-agent meta-data set "title" "$BUILDKITE_PULL_REQUEST_TITLE"
+          - wait
+          - label: deploy
+            command: |
+              TITLE=$(buildkite-agent meta-data get title)
+              ./deploy.sh $TITLE
+    """)
+
+    def _evaluate(self, text: str):
+        ctx = BuildkiteContext(
+            [BuildkitePipeline(path=".buildkite/pipeline.yml",
+                               data=yaml.safe_load(text))]
+        )
+        findings = BuildkitePipelineChecks(ctx).run()
+        return findings, [
+            c for c in chains.engine.evaluate(findings) if c.chain_id == "AC-026"
+        ]
+
+    def test_metadata_dataflow_confirmed(self):
+        _findings, ac = self._evaluate(self._BK_DATAFLOW)
+        assert ac, "AC-026 should fire"
+        c = ac[0]
+        assert c.confirmed_reachable
+        assert c.via_dataflow
+        assert "taint path" in c.reachability_note
+
+    def test_taint005_exposes_structured_flow(self):
+        findings, _ = self._evaluate(self._BK_DATAFLOW)
+        taint = [
+            f for f in findings
+            if f.check_id == "TAINT-005" and not f.passed
+        ]
+        assert taint
+        assert any(
+            fl.source_job == "extract" and fl.sink_job == "deploy"
+            for fl in taint[0].taint_flows
+        )
+
+
+# ── AC-025 Argo (outputs.parameters taint graph) ────────────────────────
+
+
+class TestAC025ArgoDataflow:
+    """AC-025 confirms reachability via the Argo outputs.parameters taint
+    graph: a producer template's tainted output is forwarded into a
+    *separate* privileged template, so the injection reaches the
+    kernel-privileged container across templates."""
+
+    _ARGO_DATAFLOW = textwrap.dedent("""
+        apiVersion: argoproj.io/v1alpha1
+        kind: Workflow
+        metadata: { name: build }
+        spec:
+          entrypoint: main
+          arguments: { parameters: [ { name: title } ] }
+          templates:
+            - name: main
+              dag:
+                tasks:
+                  - name: produce
+                    template: read-title
+                    arguments:
+                      parameters:
+                        - { name: title, value: "{{workflow.parameters.title}}" }
+                  - name: consume
+                    template: ship
+                    dependencies: [produce]
+                    arguments:
+                      parameters:
+                        - name: clean_title
+                          value: "{{tasks.produce.outputs.parameters.title}}"
+            - name: read-title
+              inputs: { parameters: [ { name: title } ] }
+              outputs:
+                parameters:
+                  - { name: title, valueFrom: { path: /tmp/t } }
+              script:
+                image: alpine@sha256:abc
+                command: [sh]
+                source: |
+                  echo {{inputs.parameters.title}} > /tmp/t
+            - name: ship
+              inputs: { parameters: [ { name: clean_title } ] }
+              script:
+                image: alpine@sha256:abc
+                securityContext: { privileged: true }
+                command: [sh]
+                source: |
+                  echo "{{inputs.parameters.clean_title}}"
+    """)
+
+    def _evaluate(self, text: str):
+        data = yaml.safe_load(text)
+        doc = ArgoDoc(
+            path="argo/build.yaml", doc_index=0,
+            api_version=str(data.get("apiVersion", "")),
+            kind=str(data.get("kind", "")),
+            name=str((data.get("metadata") or {}).get("name", "")),
+            namespace="", data=data,
+        )
+        findings = ArgoChecks(ArgoContext([doc])).run()
+        return findings, [
+            c for c in chains.engine.evaluate(findings) if c.chain_id == "AC-025"
+        ]
+
+    def test_outputs_dataflow_confirmed(self):
+        _findings, ac = self._evaluate(self._ARGO_DATAFLOW)
+        assert ac, "AC-025 should fire"
+        c = ac[0]
+        assert c.confirmed_reachable
+        assert c.via_dataflow
+        assert "taint path" in c.reachability_note
+
+    def test_taint007_exposes_structured_flow(self):
+        findings, _ = self._evaluate(self._ARGO_DATAFLOW)
+        taint = [
+            f for f in findings
+            if f.check_id == "TAINT-007" and not f.passed
+        ]
+        assert taint
+        # Flows are qualified with the document's <Kind>/<name>: prefix so
+        # they line up with ARGO-002 / ARGO-005's template anchors.
+        assert any(
+            fl.source_job == "Workflow/build:read-title"
+            and fl.sink_job == "Workflow/build:ship"
+            for fl in taint[0].taint_flows
+        )
+
+
+# ── AC-023 Tekton (results taint graph, cross-document) ──────────────────
+
+
+class TestAC023TektonDataflow:
+    """AC-023 confirms reachability via the Tekton results taint graph.
+    TKN-003 fires only in ``extract-task`` and TKN-002 only in
+    ``build-task`` (different Tasks, so the step-level shared check can't
+    fire), but TAINT-006 bridges them: the tainted result flows from the
+    extract Task into the privileged build Task via ``taskRef``."""
+
+    def _docs(self):
+        def mk(text: str) -> TektonDoc:
+            d = yaml.safe_load(text)
+            return TektonDoc(
+                path="tekton/x.yaml", doc_index=0,
+                api_version=str(d.get("apiVersion", "")),
+                kind=str(d.get("kind", "")),
+                name=str((d.get("metadata") or {}).get("name", "")),
+                namespace="", data=d,
+            )
+        pipeline = mk(textwrap.dedent("""
+            apiVersion: tekton.dev/v1
+            kind: Pipeline
+            metadata: { name: p }
+            spec:
+              tasks:
+                - name: extract
+                  taskRef: { name: extract-task }
+                  params: [ { name: title, value: $(params.pr-title) } ]
+                - name: build
+                  runAfter: [extract]
+                  taskRef: { name: build-task }
+                  params: [ { name: clean, value: $(tasks.extract.results.clean) } ]
+        """))
+        extract = mk(textwrap.dedent("""
+            apiVersion: tekton.dev/v1
+            kind: Task
+            metadata: { name: extract-task }
+            spec:
+              params: [ { name: title } ]
+              results: [ { name: clean } ]
+              steps:
+                - name: extract
+                  image: alpine@sha256:abc
+                  securityContext:
+                    privileged: false
+                    runAsNonRoot: true
+                    runAsUser: 10001
+                  script: |
+                    echo $(params.title) > $(results.clean.path)
+        """))
+        build = mk(textwrap.dedent("""
+            apiVersion: tekton.dev/v1
+            kind: Task
+            metadata: { name: build-task }
+            spec:
+              params: [ { name: clean } ]
+              steps:
+                - name: build
+                  image: alpine@sha256:abc
+                  securityContext: { privileged: true }
+                  script: |
+                    echo "$(params.clean)"
+        """))
+        return [pipeline, extract, build]
+
+    def _evaluate(self):
+        findings = TektonChecks(TektonContext(self._docs())).run()
+        return findings, [
+            c for c in chains.engine.evaluate(findings) if c.chain_id == "AC-023"
+        ]
+
+    def test_results_dataflow_confirmed(self):
+        _findings, ac = self._evaluate()
+        assert ac, "AC-023 should fire"
+        c = ac[0]
+        assert c.confirmed_reachable
+        assert c.via_dataflow
+        assert "taint path" in c.reachability_note
+
+    def test_taint006_exposes_structured_flow(self):
+        findings, _ = self._evaluate()
+        taint = [
+            f for f in findings
+            if f.check_id == "TAINT-006" and not f.passed
+        ]
+        assert taint
+        # taskRef tasks resolve to their backing <Kind>/<name> document id
+        # so the flow lines up with TKN-002 / TKN-003's anchor prefix.
+        assert any(
+            fl.source_job == "Task/extract-task"
+            and fl.sink_job == "Task/build-task"
+            for fl in taint[0].taint_flows
+        )

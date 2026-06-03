@@ -41,7 +41,7 @@ parsers and are queued for a follow-up.
 
 ## What it covers
 
-17 checks · 0 have an autofix patch (``--fix``).
+18 checks · 0 have an autofix patch (``--fix``).
 
 | Check | Title | Severity | Fix |
 |-------|-------|----------|-----|
@@ -62,6 +62,7 @@ parsers and are queued for a follow-up.
 | [NPM-015](#npm-015) | Direct dependency published without build provenance | <span class="pg-sev pg-sev--low">LOW</span> |  |
 | [NPM-016](#npm-016) | Direct dependency has a low OpenSSF Scorecard | <span class="pg-sev pg-sev--low">LOW</span> |  |
 | [NPM-017](#npm-017) | Direct dependency provenance built from a non-release ref | <span class="pg-sev pg-sev--low">LOW</span> |  |
+| [NPM-018](#npm-018) | Direct dependency's latest release published by a new npm account | <span class="pg-sev pg-sev--medium">MEDIUM</span> |  |
 
 ---
 
@@ -573,6 +574,35 @@ Network-dependent: needs ``--resolve-remote``. Reads each direct dependency's la
 **Recommended action**
 
 A package's build provenance records the git ref the release was built from. A latest release built from a throwaway branch (``refs/heads/oidc-...``) rather than a tag or the default branch is the 'untrusted branch' signal: valid provenance, attacker ref. Confirm the upstream cuts releases only from a tag or a protected branch, and pin to a known-good version if its latest provenance ref looks unexpected. If the dependency's real default branch is not ``main`` / ``master`` (e.g. ``develop``), this is a false positive: suppress it per-resource.
+
+</div>
+
+</div>
+
+<div class="pg-rule pg-rule--medium" markdown>
+
+## NPM-018: Direct dependency's latest release published by a new npm account { #npm-018 }
+
+<div class="pg-rule__tags">
+<span class="pg-sev pg-sev--medium">MEDIUM</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-3</span> <span class="pg-tag pg-tag--esf">ESF-S-VERIFY-DEPS</span> <span class="pg-tag pg-tag--cwe">CWE-1357</span>
+</div>
+
+Network-dependent: needs ``--resolve-remote`` to read each direct dependency's per-version publisher (the packument's ``_npmUser`` account that ran ``npm publish`` for each version, from the same fetch NPM-008 / NPM-014 use, so it adds no extra requests). Flags a package whose ``dist-tags.latest`` version was published by an account that published none of its prior versions. Requires at least three prior versions with a known publisher, so a brand-new package (one or two releases, where a "new publisher" is meaningless and NPM-008's cooldown already covers the fresh-carrier risk) is skipped. Scoped to direct dependencies in ``dependencies`` / ``devDependencies`` / ``optionalDependencies`` / ``peerDependencies``; transitive packages are out of scope. MEDIUM confidence: a legitimate new co-maintainer's first publish trips it too, so the finding is a review prompt rather than proof of compromise. When ``--resolve-remote`` is off, the registry can't be reached, or the packument doesn't expose ``_npmUser``, the rule passes silently.
+
+**Known false-positive modes**
+
+- A legitimate maintainer hand-off or a newly added co-maintainer publishing their first release flags identically to a takeover (the per-version publisher is the only static signal; intent isn't visible). When the change is verified and expected, suppress per-resource for that dependency.
+
+**Seen in the wild**
+
+- axios maintainer-account takeover (March 30, 2026): a compromised publisher account pushed a malicious release to ~99M weekly downloads, the new-publisher-on-an-established-package shape this rule surfaces.
+- @ctrl/tinycolor account takeover (May 2024): a hijacked account published malicious versions that stayed live for ~36 hours.
+
+<div class="pg-rule__rec" markdown>
+
+**Recommended action**
+
+Treat a publisher change as the live account-takeover signal it is: the latest release of this dependency was published by an npm account that published none of its earlier versions. That is exactly the shape of a stolen-credential or freshly-added-account compromise (the axios / @ctrl/tinycolor / chalk class), where an attacker pushes one malicious release that every consumer pulls on the next install. Before upgrading into the new release: confirm the maintainer change is legitimate (a documented hand-off, a new co-maintainer the project announced), pin to the last release from the known publisher until you have, and pair with NPM-008 (cooldown) so a hijacked release has a window to be caught before it reaches your lockfile. NPM-014 (single publisher) is the standing blast-radius; this is the moment that blast radius fires.
 
 </div>
 
