@@ -604,6 +604,7 @@ STANDARD = Standard(
         "ARGO-001": ["GV.SC-05", "PR.PS-02"],   # template image not digest-pinned
         "ARGO-002": ["PR.PS-01"],               # template privileged / root
         "ARGO-003": ["PR.AA-05"],               # default ServiceAccount
+        "ARGO-016": ["PR.AA-05"],               # cluster-admin / over-privileged ServiceAccount
         "ARGO-004": ["PR.PS-01"],               # hostPath / host namespaces
         "ARGO-005": ["PR.PS-05"],               # parameter injection
         "ARGO-006": ["PR.AA-01", "PR.DS-01"],   # leaked creds

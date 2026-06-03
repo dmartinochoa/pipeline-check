@@ -370,6 +370,7 @@ STANDARD = Standard(
         "ARGO-001": ["Build.L3.NonFalsifiable"],                   # template image not digest-pinned
         "ARGO-002": ["Build.L3.Isolated"],                         # template privileged / root
         "ARGO-003": ["Build.L3.NonFalsifiable"],                   # default ServiceAccount
+        "ARGO-016": ["Build.L3.NonFalsifiable"],                   # cluster-admin / over-privileged ServiceAccount
         "ARGO-004": ["Build.L3.Isolated"],                         # hostPath / host namespaces
         "ARGO-005": ["Build.L3.Isolated"],                         # parameter injection in script
         "ARGO-006": ["Build.L3.NonFalsifiable"],                   # leaked creds in env / param

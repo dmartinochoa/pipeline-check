@@ -860,10 +860,15 @@ mechanical):
   ``cloudformation deploy``, ``cdk deploy``, ``pulumi up``, ``sam
   deploy``). Distinct from GHA-111, which needs an AI agent in the loop.
 - Still open: the apply-RCE specifics of GitLab 91 (currently caught as
-  an ungated MR deploy via GL-004, not as apply-RCE). Argo cluster-admin
-  ServiceAccount (92), a heuristic name match on ``serviceAccountName``.
-  Jenkins fork-PR PPE (86): the trust strategy lives in job config, not
-  the Jenkinsfile, so it is not statically reachable.
+  an ungated MR deploy via GL-004, not as apply-RCE).
+- ~~Argo cluster-admin ServiceAccount (92)~~ Shipped on ``dev`` as
+  **ARGO-016**: a name-based heuristic on ``serviceAccountName``
+  (``cluster-admin`` / ``admin`` / ``root`` / ``superuser`` or a name
+  containing ``cluster-admin``), MEDIUM confidence. The general case (an
+  innocuously-named SA bound to cluster-admin in RBAC) still needs the
+  RBAC manifest, which isn't in the Workflow.
+- Still open: Jenkins fork-PR PPE (86): the trust strategy lives in job
+  config, not the Jenkinsfile, so it is not statically reachable.
 
 Also: the build already catches six scenarios the published matrix
 still scores as misses, because their ``expected:`` lists in

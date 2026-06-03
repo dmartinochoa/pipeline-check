@@ -423,6 +423,7 @@ STANDARD = Standard(
         "ARGO-001": ["1.4.1", "3.1.3"],            # template image not pinned
         "ARGO-002": ["2.1.3"],                     # template privileged
         "ARGO-003": ["2.4.3"],                     # default SA
+        "ARGO-016": ["2.4.3"],                     # cluster-admin / over-privileged ServiceAccount
         "ARGO-004": ["2.1.3"],                     # hostPath / host namespaces
         "ARGO-005": ["2.1.3", "2.3.8"],            # parameter injection
         "ARGO-006": ["1.5.1", "2.3.4"],            # leaked creds

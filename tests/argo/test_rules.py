@@ -1034,3 +1034,84 @@ class TestARGO015ArtifactInsecureURL:
         """
         f = run_check(cfg, "ARGO-015")
         assert f.passed
+
+
+class TestARGO016ClusterAdminServiceAccount:
+    def test_fails_on_cluster_admin_sa(self):
+        cfg = """
+        apiVersion: argoproj.io/v1alpha1
+        kind: Workflow
+        metadata:
+          name: deploy
+        spec:
+          serviceAccountName: cluster-admin
+          entrypoint: main
+          templates:
+            - name: main
+              container:
+                image: kubectl@sha256:0000000000000000000000000000000000000000000000000000000000000001
+                args: ["kubectl get secrets -A"]
+        """
+        f = run_check(cfg, "ARGO-016")
+        assert not f.passed
+        assert "cluster-admin" in f.description
+
+    def test_fails_on_name_containing_cluster_admin(self):
+        cfg = """
+        apiVersion: argoproj.io/v1alpha1
+        kind: Workflow
+        metadata: {name: d}
+        spec:
+          serviceAccountName: my-cluster-admin-sa
+          entrypoint: main
+          templates:
+            - name: main
+              container: {image: "x@sha256:0000000000000000000000000000000000000000000000000000000000000001"}
+        """
+        f = run_check(cfg, "ARGO-016")
+        assert not f.passed
+
+    def test_fails_on_admin_sa(self):
+        cfg = """
+        apiVersion: argoproj.io/v1alpha1
+        kind: Workflow
+        metadata: {name: d}
+        spec:
+          serviceAccountName: admin
+          entrypoint: main
+          templates:
+            - name: main
+              container: {image: "x@sha256:0000000000000000000000000000000000000000000000000000000000000001"}
+        """
+        f = run_check(cfg, "ARGO-016")
+        assert not f.passed
+
+    def test_passes_on_least_privilege_named_sa(self):
+        cfg = """
+        apiVersion: argoproj.io/v1alpha1
+        kind: Workflow
+        metadata: {name: d}
+        spec:
+          serviceAccountName: ci-deploy-sa
+          entrypoint: main
+          templates:
+            - name: main
+              container: {image: "x@sha256:0000000000000000000000000000000000000000000000000000000000000001"}
+        """
+        f = run_check(cfg, "ARGO-016")
+        assert f.passed
+
+    def test_passes_when_no_sa(self):
+        # No serviceAccountName is ARGO-003's concern, not ARGO-016's.
+        cfg = """
+        apiVersion: argoproj.io/v1alpha1
+        kind: Workflow
+        metadata: {name: d}
+        spec:
+          entrypoint: main
+          templates:
+            - name: main
+              container: {image: "x@sha256:0000000000000000000000000000000000000000000000000000000000000001"}
+        """
+        f = run_check(cfg, "ARGO-016")
+        assert f.passed

@@ -12,6 +12,17 @@ release commit collapses this section into `## [X.Y.Z] - <date>`.
 
 ### Added
 
+- **ARGO-016: Workflow bound to a cluster-admin / over-privileged
+  ServiceAccount.** Fires when a `Workflow` / `CronWorkflow` sets
+  `spec.serviceAccountName` to a name signaling a cluster-wide admin
+  binding (`cluster-admin`, a name containing `cluster-admin`, or
+  `admin` / `root` / `superuser`). Any step's automounted token then
+  acts cluster-wide (read every secret, schedule privileged pods,
+  bind more roles), the cluster-takeover shape. Name-based heuristic
+  (MEDIUM confidence), since the privilege itself lives in RBAC; the
+  broader case (an innocuously-named SA bound to cluster-admin) needs
+  the RBAC manifest. Distinct from ARGO-003 (default SA). Closes
+  cicd-goat scenario 92 (CICD-SEC-2).
 - **GHA-117: unattended IaC apply on an untrusted `pull_request`
   trigger.** Fires when a workflow triggered by `pull_request` /
   `pull_request_target` runs `terraform apply` (or `terragrunt apply` /

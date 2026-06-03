@@ -576,6 +576,7 @@ STANDARD = Standard(
         "ARGO-001": ["CC8.1"],              # template image not digest-pinned
         "ARGO-002": ["CC6.1", "CC6.8"],     # template privileged / root
         "ARGO-003": ["CC6.1"],              # default ServiceAccount
+        "ARGO-016": ["CC6.1"],              # cluster-admin / over-privileged ServiceAccount
         "ARGO-004": ["CC6.6", "CC6.8"],     # hostPath / host namespaces
         "ARGO-005": ["CC6.8"],              # parameter injection
         "ARGO-006": ["CC6.1"],              # leaked creds

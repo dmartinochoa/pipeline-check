@@ -193,6 +193,7 @@ STANDARD = Standard(
         "ARGO-001": ["6.3.3"],                           # template image not pinned
         "ARGO-002": ["6.4.1", "6.5.1"],                  # template privileged / root
         "ARGO-003": ["7.2.2", "7.2.5", "8.2.2"],         # default SA
+        "ARGO-016": ["7.2.2", "7.2.5", "8.2.2"],         # cluster-admin / over-privileged ServiceAccount
         "ARGO-004": ["6.4.1"],                           # hostPath / host namespaces
         "ARGO-005": ["6.5.1"],                           # param injection
         "ARGO-006": ["8.2.1", "6.5.1"],                  # literal secrets

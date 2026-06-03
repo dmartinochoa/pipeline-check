@@ -552,6 +552,7 @@ STANDARD = Standard(
         "ARGO-001": ["SR-3", "SR-11", "SI-2"],           # template image not pinned
         "ARGO-002": ["AC-6", "CM-7"],                    # template privileged
         "ARGO-003": ["AC-2", "AC-6"],                    # default SA
+        "ARGO-016": ["AC-2", "AC-6"],                    # cluster-admin / over-privileged ServiceAccount
         "ARGO-004": ["SC-7", "AC-6", "SI-7"],            # hostPath / namespaces
         "ARGO-005": ["CM-6", "SA-11"],                   # parameter injection
         "ARGO-006": ["IA-5", "SC-28"],                   # leaked creds
