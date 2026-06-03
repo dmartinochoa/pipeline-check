@@ -12,6 +12,23 @@ release commit collapses this section into `## [X.Y.Z] - <date>`.
 
 ### Added
 
+- **Reachability-aware attack chains, phase 2: across the reusable-
+  workflow boundary.** The dataflow tier now spans GitHub Actions'
+  reusable-workflow `uses:` boundary. **TAINT-003** (untrusted input
+  forwarded into a reusable workflow's `with:` inputs) now populates
+  `Finding.taint_flows` with a `cross_document` edge per forward: a
+  forward confirmed to reach an unquoted `${{ inputs.<name> }}` sink in
+  a *loaded* callee (on disk, or fetched by `--resolve-remote`) keys its
+  `sink_job` on the resolved callee `Workflow.path`; an unconfirmed or
+  unresolved forward carries the raw callee ref instead, so it surfaces
+  the edge without claiming reachability. **AC-002** gains a
+  cross-document tier: a confirmed TAINT-003 forward whose callee path
+  also has an ungated deploy (GHA-014) reports a dataflow-confirmed
+  injection-to-deploy chain spanning `[caller, callee]` (a poisoned
+  input forwarded into a reusable deploy workflow). It never fires
+  without the callee body in scope, since only a confirmed forward keys
+  its edge on a real path. This closes the last phase-2 follow-up; the
+  per-document grouping it complements is unchanged.
 - **Reachability-aware attack chains, phase 2 (dataflow DAG).** The
   chain engine can now confirm an injection-to-impact chain by walking
   the actual taint graph between its two legs, not just by intersecting

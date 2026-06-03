@@ -747,3 +747,66 @@ jobs:
         f = t3.check("wf.yml", caller_doc, wf, ctx)
         assert not f.passed
         assert "CONFIRMED" in f.description
+
+    def test_emits_cross_document_flow_with_callee_path_when_confirmed(
+        self,
+    ) -> None:
+        # A confirmed forward (callee loaded and consumes the input)
+        # keys the structured flow's ``sink_job`` on the resolved callee
+        # path so the chain engine can join it against the callee's own
+        # findings (AC-002's cross-document tier).
+        caller_doc = _doc("""
+on: pull_request_target
+jobs:
+  call:
+    uses: ./.github/workflows/build.yml
+    with:
+      title: ${{ github.event.issue.title }}
+""")
+        callee_doc = _doc("""
+on:
+  workflow_call:
+    inputs:
+      title:
+        type: string
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - run: echo ${{ inputs.title }}
+""")
+        callee_wf = Workflow(
+            path=".github/workflows/build.yml", data=callee_doc,
+        )
+        wf, ctx = _ctx_for(caller_doc, callees=[callee_wf])
+        f = t3.check("wf.yml", caller_doc, wf, ctx)
+        assert not f.passed
+        assert f.taint_flows
+        assert any(
+            fl.cross_document
+            and fl.source_job == "call"
+            and fl.sink_job == ".github/workflows/build.yml"
+            for fl in f.taint_flows
+        )
+
+    def test_flow_uses_raw_ref_when_callee_not_loaded(self) -> None:
+        # No callee body in the context: the forward is unconfirmed, so
+        # the flow carries the raw callee ref (not a resource path) and
+        # never matches a callee's findings — no false cross-document
+        # reachability.
+        caller_doc = _doc("""
+on: pull_request_target
+jobs:
+  call:
+    uses: ./.github/workflows/build.yml
+    with:
+      title: ${{ github.event.issue.title }}
+""")
+        wf, ctx = _ctx_for(caller_doc)
+        f = t3.check("wf.yml", caller_doc, wf, ctx)
+        assert f.taint_flows
+        assert all(fl.cross_document for fl in f.taint_flows)
+        assert any(
+            fl.sink_job == "./.github/workflows/build.yml"
+            for fl in f.taint_flows
+        )

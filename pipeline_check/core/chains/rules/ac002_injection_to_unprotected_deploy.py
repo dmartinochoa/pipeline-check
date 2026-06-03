@@ -149,4 +149,81 @@ def match(findings: list[Finding]) -> list[Chain]:
             reachability_note=reach_note,
             via_dataflow=reach.via_dataflow,
         ))
+
+    # ── Cross-document tier (reusable-workflow boundary). ─────────────
+    # The same injection-to-deploy shape, but split across two
+    # documents: a caller passes untrusted input into a reusable
+    # workflow (TAINT-003), the callee consumes it in an unquoted
+    # ``${{ inputs.<name> }}`` sink (TAINT-003 confirmed the forward, so
+    # its flow's ``sink_job`` is the resolved callee path), and that same
+    # callee deploys without an ``environment:`` gate (GHA-014 on the
+    # callee path). The untrusted input reaches the ungated deploy across
+    # the reusable-workflow boundary, a path the per-document grouping
+    # above can't see. Only a confirmed forward into a loaded callee keys
+    # its ``sink_job`` on a real path, so this never fires without the
+    # callee body in scope (``--resolve-remote`` or an on-disk callee).
+    gha014_by_resource: dict[str, Finding] = {}
+    for f in findings:
+        if not f.passed and f.check_id == "GHA-014":
+            gha014_by_resource.setdefault(f.resource, f)
+    seen_cross: set[tuple[str, str]] = set()
+    for f in findings:
+        if f.passed or f.check_id != "TAINT-003":
+            continue
+        for fl in f.taint_flows:
+            if not fl.cross_document or fl.sink_job == f.resource:
+                continue
+            callee_deploy = gha014_by_resource.get(fl.sink_job)
+            if callee_deploy is None:
+                continue
+            key = (f.resource, fl.sink_job)
+            if key in seen_cross:
+                continue
+            seen_cross.add(key)
+
+            triggers = [f, callee_deploy]
+            reach_note = (
+                f"untrusted input forwarded from `{f.resource}` reaches "
+                f"the ungated deploy in reusable workflow `{fl.sink_job}` "
+                f"via a confirmed cross-document taint path"
+            )
+            narrative = (
+                f"Across the reusable-workflow boundary "
+                f"(`{f.resource}` -> `{fl.sink_job}`):\n"
+                "  1. The caller passes an attacker-controlled value "
+                "into a reusable workflow's ``with:`` inputs, and the "
+                "callee consumes it unquoted in a "
+                "``${{ inputs.<name> }}`` sink (TAINT-003, confirmed "
+                "end-to-end), so a PR/issue author controls a command "
+                "in the callee's runtime.\n"
+                "  2. That same reusable workflow deploys without an "
+                "``environment:`` gate (GHA-014), so no required-"
+                "reviewer approval fires.\n"
+                "  3. The attacker's injected command runs in the "
+                "callee and rides its ungated deploy to production. "
+                "Sanitize the value at the caller before forwarding it, "
+                "and add ``environment:`` with required reviewers to the "
+                "callee's deploy job. Either fix alone narrows the "
+                "chain.\n"
+                f"  4. Reachability confirmed by dataflow: {reach_note}.\n"
+                f"  Dataflow evidence: {fl.rendered}"
+            )
+            out.append(Chain(
+                chain_id=RULE.id,
+                title=RULE.title,
+                severity=RULE.severity,
+                confidence=Confidence.HIGH,
+                summary=RULE.summary,
+                narrative=narrative,
+                mitre_attack=list(RULE.mitre_attack),
+                kill_chain_phase=RULE.kill_chain_phase,
+                triggering_check_ids=sorted({t.check_id for t in triggers}),
+                triggering_findings=triggers,
+                resources=[f.resource, fl.sink_job],
+                references=list(RULE.references),
+                recommendation=RULE.recommendation,
+                confirmed_reachable=True,
+                reachability_note=reach_note,
+                via_dataflow=True,
+            ))
     return out
