@@ -677,7 +677,7 @@ STANDARD = Standard(
         "GL-038":   ["Build.L3.NonFalsifiable"],                   # CI_DEBUG_TRACE dumps secrets to GitLab CI log
         "BB-032":   ["Build.L3.NonFalsifiable"],                   # secret echoed to Bitbucket log
         "ADO-031":  ["Build.L3.NonFalsifiable"],                   # secret echoed to Azure DevOps log
-        "ADO-032":  ["Build.L3.NonFalsifiable"],                   # checkout persistCredentials leaks token to .git/config
+        "ADO-032":  ["Build.L3.NonFalsifiable"],                   # checkout persistCredentials leaks token
         "CC-032":   ["Build.L3.NonFalsifiable"],                   # secret echoed to CircleCI log
         "SCM-048":  ["Build.L3.NonFalsifiable"],                   # org codespace secrets scoped to all repos
         "SCM-049":  ["Build.L3.NonFalsifiable"],                   # classic PAT where fine-grained suffices
