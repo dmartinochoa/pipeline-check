@@ -1181,6 +1181,17 @@ lightweight HTML visualization bundled in the fleet report. This is
 what commercial ASPM tools (Cycode, Legit Security, Apiiro) sell as
 "pipeline topology." Builds on the fleet phase 2 infrastructure.
 
+**JSON shipped.** ``fleet.json`` now carries a ``posture_graph``: nodes
+are the scanned repos (grade / score / per-severity breakdown), edges
+are the cross-repo CXPC relationships as directed ``source -> target``
+links tagged with chain id / severity / title. ``Chain`` gained a
+structured ``repos`` field (``[source, target]`` for cross-repo chains)
+that CXPC-001..004 populate, so the repo-to-repo edge is data, not just
+narrative prose; a chain endpoint outside the scanned fleet still lands
+as a node with ``scanned: false``. ``fleet.md`` gets a matching edge
+table. Still open: the lightweight HTML visualization (the JSON is the
+contract it would render).
+
 ### AI agent pipeline risk rules
 
 The HackerBot-Claw campaign (February 2026) demonstrated AI prompt
