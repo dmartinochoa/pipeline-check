@@ -25,7 +25,7 @@ axis.
 
 - **Controls in this standard:** 86
 - **Controls evidenced by at least one check:** 61 / 86
-- **Distinct checks evidencing this standard:** 653
+- **Distinct checks evidencing this standard:** 654
 - **Of those, autofixable with `--fix`:** 105
 
 _Severity levels (`CRITICAL` / `HIGH` / `MEDIUM` / `LOW` / `INFO`) follow the same scale across every provider and standard. See [How to read severity](README.md#how-to-read-severity) on the standards overview for the definitions._
@@ -113,7 +113,7 @@ Click a control ID to jump to the per-control section with the full check list. 
 | [`CA-7`](#ctrl-ca-7) | Runtime leakage of password | 0 | — |
 | [`CA-8`](#ctrl-ca-8) | Steal credentials in container artifacts | 12 | 4C · 7H · 1M |
 | [`LM-1`](#ctrl-lm-1) | Push implants across repositories | 1 | 1H |
-| [`LM-2`](#ctrl-lm-2) | Overprivileged user account | 33 | 6C · 16H · 10M · 1L |
+| [`LM-2`](#ctrl-lm-2) | Overprivileged user account | 34 | 7C · 16H · 10M · 1L |
 | [`COL-1`](#ctrl-col-1) | Unencrypted data in transit | 28 | 24H · 3M · 1L |
 | [`COL-2`](#ctrl-col-2) | Unencrypted data at rest | 9 | 1C · 2H · 6M |
 | [`EXF-1`](#ctrl-exf-1) | Bypass of outbound traffic control | 1 | 1C |
@@ -1289,12 +1289,13 @@ _No checks in this scanner currently evidence this control. Open an issue if you
 
 ### LM-2: Overprivileged user account { #ctrl-lm-2 }
 
-**Evidenced by 33 checks** across 8 providers (AWS, Argo CD, Argo Workflows, Cloud Build, GitHub Actions, Kubernetes, SCM, Tekton).
+**Evidenced by 34 checks** across 8 providers (AWS, Argo CD, Argo Workflows, Cloud Build, GitHub Actions, Kubernetes, SCM, Tekton).
 
 | Check | Title | Severity | Provider | Fix |
 |-------|-------|----------|----------|-----|
 | [`ARGO-003`](../providers/argo.md#argo-003) | Argo workflow uses the default ServiceAccount | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [Argo Workflows](../providers/argo.md) |  |
 | [`ARGO-013`](../providers/argo.md#argo-013) | Argo workflow does not opt out of SA token automount | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [Argo Workflows](../providers/argo.md) |  |
+| [`ARGO-016`](../providers/argo.md#argo-016) | Workflow bound to a cluster-admin / over-privileged ServiceAccount | <span class="pg-sev pg-sev--critical">CRITICAL</span> | [Argo Workflows](../providers/argo.md) |  |
 | [`ARGOCD-001`](../providers/argocd.md#argocd-001) | Argo CD AppProject permits any source repository | <span class="pg-sev pg-sev--high">HIGH</span> | [Argo CD](../providers/argocd.md) |  |
 | [`ARGOCD-002`](../providers/argocd.md#argocd-002) | Argo CD AppProject permits any destination cluster or namespace | <span class="pg-sev pg-sev--high">HIGH</span> | [Argo CD](../providers/argocd.md) |  |
 | [`ARGOCD-004`](../providers/argocd.md#argocd-004) | Argo CD RBAC policy grants wildcard authority | <span class="pg-sev pg-sev--critical">CRITICAL</span> | [Argo CD](../providers/argocd.md) |  |

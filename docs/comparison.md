@@ -39,7 +39,7 @@ missing major surfaces or requires extra config. No = not in scope.
 | Buildkite | Yes (16) | No | No | No | No | No |
 | Drone CI | Yes (16) | No | No | No | No | No |
 | Tekton | Yes (16) | No | Partial | No | No | No |
-| Argo Workflows | Yes (16) | No | Partial | No | No | No |
+| Argo Workflows | Yes (17) | No | Partial | No | No | No |
 | Argo CD | Yes (13) | No | No | No | No | No |
 | **SCM posture (governance)** | | | | | | |
 | GitHub repo branch protection / secret scanning / Dependabot | Yes (55, `SCM-001..055`) | No | No | No | No | No |

@@ -565,6 +565,7 @@ STANDARD = Standard(
         "ARGO-001": ["Pinned-Dependencies"],                           # template image not pinned
         "ARGO-002": ["Dangerous-Workflow"],                            # template privileged
         "ARGO-003": ["Token-Permissions"],                             # default SA
+        "ARGO-016": ["Token-Permissions"],                             # cluster-admin / over-privileged ServiceAccount
         "ARGO-004": ["Dangerous-Workflow"],                            # hostPath / namespaces
         "ARGO-005": ["Dangerous-Workflow"],                            # parameter injection
         "ARGO-006": ["Token-Permissions"],                             # leaked creds

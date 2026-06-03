@@ -15,7 +15,7 @@ controls require live cluster access and are out of scope.
 
 - **Controls in this standard:** 24
 - **Controls evidenced by at least one check:** 24 / 24
-- **Distinct checks evidencing this standard:** 45
+- **Distinct checks evidencing this standard:** 46
 - **Of those, autofixable with `--fix`:** 13
 
 _Severity levels (`CRITICAL` / `HIGH` / `MEDIUM` / `LOW` / `INFO`) follow the same scale across every provider and standard. See [How to read severity](README.md#how-to-read-severity) on the standards overview for the definitions._
@@ -30,7 +30,7 @@ Click a control ID to jump to the per-control section with the full check list. 
 | [`5.1.2`](#ctrl-5-1-2) | Minimize access to secrets | 5 | 3C · 2H |
 | [`5.1.3`](#ctrl-5-1-3) | Minimize wildcard use in Roles and ClusterRoles | 3 | 2C · 1H |
 | [`5.1.4`](#ctrl-5-1-4) | Minimize access to create pods | 3 | 2C · 1H |
-| [`5.1.5`](#ctrl-5-1-5) | Ensure that default service accounts are not actively used | 4 | 1H · 3M |
+| [`5.1.5`](#ctrl-5-1-5) | Ensure that default service accounts are not actively used | 5 | 1C · 1H · 3M |
 | [`5.1.6`](#ctrl-5-1-6) | Ensure that Service Account Tokens are only mounted where necessary | 4 | 4M |
 | [`5.1.8`](#ctrl-5-1-8) | Limit use of the Bind, Impersonate and Escalate permissions in the Kubernetes cluster | 3 | 2C · 1H |
 | [`5.2.2`](#ctrl-5-2-2) | Minimize the admission of privileged containers | 4 | 1C · 3H |
@@ -111,11 +111,12 @@ pipeline_check --pipeline aws --standard cis_kubernetes --standard owasp_cicd_to
 
 ### 5.1.5: Ensure that default service accounts are not actively used { #ctrl-5-1-5 }
 
-**Evidenced by 4 checks** across 3 providers (Argo Workflows, Kubernetes, Tekton).
+**Evidenced by 5 checks** across 3 providers (Argo Workflows, Kubernetes, Tekton).
 
 | Check | Title | Severity | Provider | Fix |
 |-------|-------|----------|----------|-----|
 | [`ARGO-003`](../providers/argo.md#argo-003) | Argo workflow uses the default ServiceAccount | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [Argo Workflows](../providers/argo.md) |  |
+| [`ARGO-016`](../providers/argo.md#argo-016) | Workflow bound to a cluster-admin / over-privileged ServiceAccount | <span class="pg-sev pg-sev--critical">CRITICAL</span> | [Argo Workflows](../providers/argo.md) |  |
 | [`K8S-011`](../providers/kubernetes.md#k8s-011) | Pod serviceAccountName unset or 'default' | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [Kubernetes](../providers/kubernetes.md) |  |
 | [`K8S-029`](../providers/kubernetes.md#k8s-029) | RoleBinding grants permissions to the default ServiceAccount | <span class="pg-sev pg-sev--high">HIGH</span> | [Kubernetes](../providers/kubernetes.md) | <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> |
 | [`TKN-007`](../providers/tekton.md#tkn-007) | Tekton run uses the default ServiceAccount | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [Tekton](../providers/tekton.md) |  |

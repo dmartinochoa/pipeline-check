@@ -316,6 +316,7 @@ STANDARD = Standard(
         "ARGO-001": ["ESF-S-PIN-DEPS", "ESF-S-IMMUTABLE"],         # template image not pinned
         "ARGO-002": ["ESF-D-PRIV-BUILD"],                          # template privileged
         "ARGO-003": ["ESF-C-LEAST-PRIV"],                          # default SA
+        "ARGO-016": ["ESF-C-LEAST-PRIV"],                          # cluster-admin / over-privileged ServiceAccount
         "ARGO-004": ["ESF-D-PRIV-BUILD", "ESF-D-BUILD-ENV"],       # hostPath / namespaces
         "ARGO-005": ["ESF-D-INJECTION"],                           # parameter injection
         "ARGO-006": ["ESF-D-SECRETS"],                             # leaked creds

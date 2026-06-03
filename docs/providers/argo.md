@@ -31,7 +31,7 @@ All other flags (`--output`, `--severity-threshold`, `--checks`,
 
 ## What it covers
 
-16 checks · 2 have an autofix patch (``--fix``).
+17 checks · 2 have an autofix patch (``--fix``).
 
 | Check | Title | Severity | Fix |
 |-------|-------|----------|-----|
@@ -50,6 +50,7 @@ All other flags (`--output`, `--severity-threshold`, `--checks`,
 | [ARGO-013](#argo-013) | Argo workflow does not opt out of SA token automount | <span class="pg-sev pg-sev--medium">MEDIUM</span> |  |
 | [ARGO-014](#argo-014) | Argo template script runs unpinned package install | <span class="pg-sev pg-sev--medium">MEDIUM</span> |  |
 | [ARGO-015](#argo-015) | Input artifact pulls from an insecure (non-HTTPS) URL | <span class="pg-sev pg-sev--high">HIGH</span> |  |
+| [ARGO-016](#argo-016) | Workflow bound to a cluster-admin / over-privileged ServiceAccount | <span class="pg-sev pg-sev--critical">CRITICAL</span> |  |
 | [TAINT-007](#taint-007) | Untrusted input flows across templates via Argo ``outputs.parameters`` | <span class="pg-sev pg-sev--high">HIGH</span> |  |
 
 ---
@@ -373,6 +374,26 @@ Other artifact sources are skipped, an OCI / S3 / GCS pull carries its own integ
 **Recommended action**
 
 Pull every input artifact over HTTPS. Replace ``http://`` with ``https://`` in any ``http.url:`` block, and use ``https://`` git remote URLs instead of ``git://``, ``ssh://``-without-key-pinning, or anonymous-cleartext access. Plain HTTP fetches let any on-path attacker swap the artifact bytes for a different payload, and Argo will execute whatever bytes arrive without an integrity check unless the artifact source provides one (S3 + checksum, OCI + digest). If the artifact source genuinely doesn't ship over HTTPS (a legacy internal mirror), wrap it in a CDN or proxy that adds TLS, then pin the artifact by checksum on the consuming side.
+
+</div>
+
+</div>
+
+<div class="pg-rule pg-rule--critical" markdown>
+
+## ARGO-016: Workflow bound to a cluster-admin / over-privileged ServiceAccount { #argo-016 }
+
+<div class="pg-rule__tags">
+<span class="pg-sev pg-sev--critical">CRITICAL</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-2</span> <span class="pg-tag pg-tag--esf">ESF-D-IAM</span> <span class="pg-tag pg-tag--cwe">CWE-269</span> <span class="pg-tag pg-tag--cwe">CWE-250</span>
+</div>
+
+Fires when a Workflow / CronWorkflow sets ``spec.serviceAccountName`` to a name that signals a cluster-wide admin binding (``cluster-admin``, or a name containing ``cluster-admin``, ``admin``, ``root``, ``superuser``). The actual privilege lives in the RBAC ``ClusterRoleBinding``, which isn't visible in the Workflow, so this is a name-based heuristic (MEDIUM confidence) for the common copy-paste shape; the broader case (an innocuously-named SA bound to cluster-admin) needs the RBAC manifest. Distinct from ARGO-003, which flags the *default* SA.
+
+<div class="pg-rule__rec" markdown>
+
+**Recommended action**
+
+Don't run a Workflow as a cluster-admin / superuser ServiceAccount. Create a dedicated SA scoped to the workflow's namespace and bind it (via a namespaced ``Role`` / ``RoleBinding``) to only the verbs and resources the workflow needs. A workflow running as ``cluster-admin`` lets any step, or any code injected into a step, use the automounted token to act cluster-wide: read every secret, schedule privileged pods on any node, and grant itself more roles.
 
 </div>
 

@@ -714,6 +714,7 @@ STANDARD = Standard(
         "ARGO-001": ["CICD-SEC-3"],   # template image not digest-pinned
         "ARGO-002": ["CICD-SEC-5"],   # template privileged / root
         "ARGO-003": ["CICD-SEC-2"],   # default ServiceAccount
+        "ARGO-016": ["CICD-SEC-2"],   # cluster-admin / over-privileged ServiceAccount
         "ARGO-004": ["CICD-SEC-5"],   # hostPath / host namespaces
         "ARGO-005": ["CICD-SEC-4", "CICD-SEC-1"],  # parameter injection in script
         "ARGO-006": ["CICD-SEC-6", "CICD-SEC-7"],  # literal secret in env / param

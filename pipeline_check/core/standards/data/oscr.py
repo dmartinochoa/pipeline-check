@@ -618,6 +618,7 @@ STANDARD = Standard(
         "K8S-034":  ["LM-2"],
         "K8S-042":  ["LM-2"],
         "ARGO-003": ["LM-2"],
+        "ARGO-016": ["LM-2"],# cluster-admin / over-privileged ServiceAccount
         "ARGO-013": ["LM-2"],
         "TKN-007":  ["LM-2"],
         "ARGOCD-001": ["LM-2"],

@@ -468,6 +468,7 @@ STANDARD = Standard(
         "ARGO-001": ["PW.4.1", "PW.4.4"],              # template image not digest-pinned
         "ARGO-002": ["PO.5.1", "PW.9.1"],              # template privileged / root
         "ARGO-003": ["PO.5.1"],                        # default ServiceAccount
+        "ARGO-016": ["PO.5.1"],                        # cluster-admin / over-privileged ServiceAccount
         "ARGO-004": ["PO.5.1", "PW.9.1"],              # hostPath / host namespaces
         "ARGO-005": ["PW.6.1", "PW.9.1"],              # parameter injection in script
         "ARGO-006": ["PS.1.1"],                        # leaked creds in env / param

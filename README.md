@@ -131,7 +131,7 @@ for inputs, idempotency, and fork-PR fallback behavior.
 | **Buildkite** | `.buildkite/pipeline.yml` | `--buildkite-path` | 16 checks (`BK-001`--`015`, plus `TAINT-005`) |
 | **Drone CI** | `.drone.yml` / `.drone.yaml` | `--drone-path` | 16 checks (`DR-001`--`016`): step / service image / plugin pinning, privileged steps, ${DRONE_*} injection, literal secrets, TLS bypass, sensitive host-path mount, `pull: never` policy, tainted cache key, unpinned package install, runner-targeting node map, no `trigger:` event filter (fork-PR exposure), pipe-to-shell remote-script execution, recursive submodule clone, `image:` field with template substitution (image-name injection) |
 | **Tekton** | `Task` / `Pipeline` / `*Run` YAML | `--tekton-path` | 16 checks (`TKN-001`--`015`, plus `TAINT-006`) |
-| **Argo Workflows** | `Workflow` / `WorkflowTemplate` YAML | `--argo-path` | 16 checks (`ARGO-001`--`015`, plus `TAINT-007`) |
+| **Argo Workflows** | `Workflow` / `WorkflowTemplate` YAML | `--argo-path` | 17 checks (`ARGO-001`--`016`, plus `TAINT-007`). `ARGO-016` flags a Workflow bound to a cluster-admin / over-privileged `serviceAccountName` (`cluster-admin`, `admin`, `root`, `superuser`), the cluster-takeover shape; `ARGO-003` covers the default SA. |
 | **Argo CD** | `Application` / `ApplicationSet` / `AppProject` YAML + `argocd-cm` / `argocd-rbac-cm` ConfigMaps | `--argocd-path` | 18 checks (`ARGOCD-001`--`018`) — AppProject sourceRepo / destination wildcards, auto-sync prune without selfHeal, RBAC wildcard policies, repo plaintext credentials, ApplicationSet PR/SCM generators without project allowlist, Helm generator interpolation without `goTemplate`, CMP plugin invocations, anonymous access, Application sources tracking mutable refs (HEAD / branch), AppProject cluster-resource wildcard whitelist, production-shaped projects without syncWindows, Application without revisionHistoryLimit cap, web terminal (`exec.enabled`) in argocd-cm, Kustomize `--enable-helm` build option, in-cluster Application from a mutable source, Helm `valueFiles` fetched from a remote URL, and custom resource health / action Lua in argocd-cm |
 | **Dockerfile** | `Dockerfile` / `Containerfile` | `--dockerfile-path` | 30 checks (`DF-001`--`030`). `DF-021`/`DF-024`/`DF-025` cover the lifecycle-scripts / npmrc-token / pip-TLS-bypass primitives the npm-worm pack relies on. `DF-026`..`030` extend DF-023's loader-hijack detection to the language-runtime TLS bypass surface (Node `NODE_TLS_REJECT_UNAUTHORIZED`, Python `PYTHONHTTPSVERIFY` / `REQUESTS_CA_BUNDLE`, Git `GIT_SSL_NO_VERIFY`) plus `NODE_OPTIONS` preload / debugger flags. |
 | **Kubernetes** | Manifest YAML (`Deployment`, `Pod`, …) | `--k8s-path` | 43 checks (`K8S-001`--`043`) |
@@ -518,7 +518,7 @@ pipeline_check/
         ├── buildkite/rules/   # BK-001 .. BK-015 + TAINT-005
         ├── drone/rules/       # DR-001 .. DR-016
         ├── tekton/rules/      # TKN-001 .. TKN-015 + TAINT-006
-        ├── argo/rules/        # ARGO-001 .. ARGO-015 + TAINT-007
+        ├── argo/rules/        # ARGO-001 .. ARGO-016 + TAINT-007
         ├── argocd/rules/      # ARGOCD-001 .. ARGOCD-018
         ├── oci/rules/         # OCI-001 .. OCI-009 + ATTEST-001..007
         ├── dockerfile/rules/  # DF-001 .. DF-030
