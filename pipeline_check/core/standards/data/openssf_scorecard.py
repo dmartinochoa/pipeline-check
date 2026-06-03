@@ -346,7 +346,9 @@ STANDARD = Standard(
         "DR-004":   ["Token-Permissions"],                             # literal credential
         "GL-010":   ["Dangerous-Workflow"],                            # multi-project artifact unverified
         "GL-017":   ["Dangerous-Workflow"],                            # docker run privileged
+        "GL-039":   ["Dangerous-Workflow"],                            # dind daemon TLS disabled / exposed on 2375
         "GL-031":   ["Token-Permissions"],                             # id_tokens missing audience
+        "GL-040":   ["Token-Permissions"],                             # CI_JOB_TOKEN used for cross-project access
         "GL-032":   ["Dangerous-Workflow"],                            # tags interpolates untrusted
         "JF-017":   ["Dangerous-Workflow"],                            # docker run privileged/host
         "JF-025":   ["Dangerous-Workflow"],                            # K8s agent privileged / hostPath

@@ -10,6 +10,101 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 PRs landing on `dev` between releases append entries below. The
 release commit collapses this section into `## [X.Y.Z] - <date>`.
 
+### Added
+
+- **GL-039: GitLab Docker-in-Docker service exposes an unauthenticated
+  daemon.** Fires when a job (or the global config) runs a
+  `docker:*-dind` service AND disables daemon auth, either via
+  `DOCKER_TLS_CERTDIR: ""` (reverts to the plaintext 2375 socket) or by
+  exposing / pointing at `tcp://...:2375` in the service `command:` or
+  `DOCKER_HOST`. On a shared / untagged runner the unauthenticated
+  socket is reachable by every other tenant's job — the container-escape
+  vector behind the privileged-dind anti-pattern (CICD-SEC-7).
+- **GL-040: GitLab `CI_JOB_TOKEN` used for cross-project / remote
+  access.** Flags the two documented job-token idioms in a script
+  block — a `gitlab-ci-token:$CI_JOB_TOKEN@<host>` clone URL and a
+  `JOB-TOKEN: $CI_JOB_TOKEN` API header. If the target project's inbound
+  job-token allowlist is disabled (the pre-hardening default), any
+  project that can run a pipeline can reach it (GitLab #243703 /
+  CVE-2024-8641). MEDIUM confidence, since a same-project pull uses the
+  same idiom (CICD-SEC-2).
+- **GL-038: GitLab `CI_DEBUG_TRACE` / `CI_DEBUG_SERVICES` secret-to-log
+  leak.** GitLab's debug-trace variables expand the entire environment,
+  including masked CI/CD variables and protected secrets, into the job
+  log, where anyone with Reporter access (or the trace API) can read
+  them. The rule fires when either variable is set truthy in the global
+  or a job's `variables:` block (bare-scalar and typed `{value:}` forms
+  both matched). No other scanner in the cicd-goat comparison catches
+  this (CICD-SEC-10 / CICD-SEC-6).
+- **ADO-032: Azure `checkout` with `persistCredentials: true`.** The
+  Azure analogue of the GitHub `persist-credentials` / ArtiPACKED leak
+  (GHA-037). `persistCredentials: true` writes the pipeline
+  `System.AccessToken` into `.git/config` as an `AUTHORIZATION` bearer
+  header after fetch, where any later step (or untrusted PR build code)
+  can recover and reuse it (CICD-SEC-6).
+
+### Changed
+
+- **ADO-002 now scans task-based script steps and flags template
+  injection.** It read the `script:` / `bash:` / `pwsh:` / `powershell:`
+  shorthands but not the inline `inputs.script` of a `task: Bash@3` /
+  `PowerShell@2` / `CmdLine@2` step, so a
+  `$(System.PullRequest.SourceBranch)` macro spliced into a `Bash@3` task
+  slipped through (cicd-goat scenario 49). It also now flags compile-time
+  template injection: a free-form `string` parameter (no `values:`
+  allowlist) spliced into a script via `${{ parameters.X }}`, which
+  becomes pipeline structure before any quoting applies (scenario 50).
+- **BB-002 now flags custom-pipeline variable injection.** Beyond the
+  `$BITBUCKET_*` ref variables it already caught, it flags a trigger-time
+  variable declared by a `custom:` pipeline (`- variables: [{name: X}]`)
+  referenced unquoted in a later `script:` step. Anyone with run / trigger
+  rights supplies the value, so it is the Bitbucket analogue of a
+  workflow_dispatch input (cicd-goat scenario 66).
+- **CC-002 now flags `<< pipeline.git.branch >>` / `<< pipeline.git.tag >>`
+  interpolation.** Beyond the `$CIRCLE_*` shell vars it already caught,
+  the rule now flags CircleCI's native `<< pipeline.git.* >>`
+  interpolation of the attacker-named ref into a `run:` command.
+  `<< pipeline.parameters.* >>` (typed, workflow-set) stays the safe
+  alternative and is not flagged (cicd-goat scenario 56).
+- **BB-023 now also flags Bitbucket's structural clone bypass.** In
+  addition to the shell-level TLS-verification bypasses it already
+  detected (`curl -k`, `git http.sslVerify=false`, ...), the rule now
+  walks `clone: { skip-ssl-verify: true }` (global and step-level),
+  which disables certificate verification on the repository clone
+  itself so a MITM can inject source before any script runs. The clone
+  bypass is structural YAML (a key plus a bool), so it never reached
+  the script-text scan.
+
+### Fixed
+
+- **Helm charts are scanned even without the `helm` binary.** The Helm
+  provider rendered charts by shelling out to `helm template`; when the
+  binary was absent (the common case in CI images and on dev machines)
+  it skipped the chart and ran only the `HELM-*` Chart.yaml metadata
+  rules, so a chart's privileged container / hostPath / weak
+  securityContext bugs silently vanished and the report could grade a
+  node-root-mounting DaemonSet "A". The provider now falls back to a
+  best-effort offline parse of `templates/*.yaml` (Go-template
+  expressions neutralized, each template parsed independently) and runs
+  the full `K8S-*` rule pack on the literal fields. Exact rendering
+  still uses `helm` when it's installed. Restores detection on the
+  cicd-goat Helm scenarios (privileged pod, root + privilege
+  escalation, hostPath node escape).
+- **GHA-016 / curl-pipe now flags process substitution.** The
+  `remote_script_exec` primitive matched `curl … | bash`,
+  `sh -c "$(curl …)"`, and `wget … | sudo sh`, but not the
+  process-substitution form `bash <(curl …)` (also `sh <(wget …)`,
+  `source <(curl …)`), which runs the fetched content through a
+  `/dev/fd` handle with no pipe character. That gap let the most
+  common curl-pipe evasion through. All providers that reuse the
+  primitive inherit the fix.
+- **BB-029 now inspects the top-level Bitbucket `image:`.** The rule
+  walked step-level and `definitions.services.*` images but not the
+  document-root `image:`, which is the global default every step
+  inherits and the most load-bearing surface to pin. A pipeline whose
+  only image is a top-level mutable tag (`image: node:latest`) is now
+  flagged.
+
 ## [1.8.0] - 2026-06-03
 
 ### Added

@@ -30,7 +30,7 @@ The walker handles every layout ADO supports:
 
 ## What it covers
 
-31 checks · 11 have an autofix patch (``--fix``).
+32 checks · 11 have an autofix patch (``--fix``).
 
 | Check | Title | Severity | Fix |
 |-------|-------|----------|-----|
@@ -65,6 +65,7 @@ The walker handles every layout ADO supports:
 | [ADO-029](#ado-029) | Service-connection-using job without environment or branch gate | <span class="pg-sev pg-sev--high">HIGH</span> |  |
 | [ADO-030](#ado-030) | pool interpolates attacker-controllable value | <span class="pg-sev pg-sev--high">HIGH</span> | <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> |
 | [ADO-031](#ado-031) | Secret variable echoed / printed in a script step | <span class="pg-sev pg-sev--high">HIGH</span> |  |
+| [ADO-032](#ado-032) | checkout persistCredentials leaves the pipeline token in .git/config | <span class="pg-sev pg-sev--high">HIGH</span> |  |
 
 ---
 
@@ -97,6 +98,12 @@ Reference tasks by a full semver (`DownloadSecureFile@1.2.3`) or extension-publi
 </div>
 
 `$(Build.SourceBranch*)`, `$(Build.SourceVersionMessage)`, and `$(System.PullRequest.*)` are populated from SCM event metadata the attacker controls. Inline interpolation into a script body executes crafted content.
+
+The rule inspects:
+
+- Script bodies from the `script:` / `bash:` / `pwsh:` / `powershell:` shorthands.
+- Inline scripts in a task's `inputs.script` (Bash@3 / PowerShell@2 / CmdLine@2).
+- Compile-time template injection: a free-form `string` parameter (no `values:` allowlist) spliced into a script via `${{ parameters.X }}`, which becomes pipeline structure before any quoting applies.
 
 <div class="pg-rule__rec" markdown>
 
@@ -718,6 +725,26 @@ Variables declared with ``issecret: true`` in the pipeline YAML are treated as k
 **Recommended action**
 
 Don't print secret values in pipeline scripts. Azure Pipelines masks variables marked ``issecret=true`` in logs, but only exact-match substrings. Encoded, truncated, or derived forms bypass the mask, and raw API log downloads are not masked. Log a boolean instead. Avoid ``set -x`` when secret-bound variables are in scope.
+
+</div>
+
+</div>
+
+<div class="pg-rule pg-rule--high" markdown>
+
+## ADO-032: checkout persistCredentials leaves the pipeline token in .git/config { #ado-032 }
+
+<div class="pg-rule__tags">
+<span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-6</span> <span class="pg-tag pg-tag--esf">ESF-D-SECRETS</span> <span class="pg-tag pg-tag--cwe">CWE-522</span> <span class="pg-tag pg-tag--cwe">CWE-200</span>
+</div>
+
+The Azure analogue of the GitHub ``persist-credentials`` / ArtiPACKED leak (GHA-037). Fires on any ``checkout`` step (``checkout: self`` / a repository resource) that sets ``persistCredentials: true``. The persisted token survives in ``.git/config`` for the rest of the job, so a later ``git config --get http.<host>.extraheader`` (or attacker-controlled build code) recovers it. Both the bare boolean and the quoted-string form are matched.
+
+<div class="pg-rule__rec" markdown>
+
+**Recommended action**
+
+Drop ``persistCredentials: true`` from ``checkout`` steps (the default is ``false``). When set, Azure Pipelines writes the ``System.AccessToken`` (the pipeline's OAuth token) into ``.git/config`` as an ``AUTHORIZATION: bearer`` extraheader after fetch, where every later step, including code from an untrusted PR, can read and reuse it to push or reach other repos. If a step genuinely needs to push back, scope a dedicated credential to that step instead of persisting the ambient token for the whole job.
 
 </div>
 

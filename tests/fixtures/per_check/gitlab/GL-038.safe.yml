@@ -1,0 +1,3 @@
+build:
+  script:
+    - make build

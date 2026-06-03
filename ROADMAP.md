@@ -800,6 +800,83 @@ comparison matrix (vs Zizmor / Poutine / Checkov / KICS / Trivy)
 across multiple goat repos would earn external credibility. Probably
 warrants extraction to a separate ``pipeline-check-bench`` repo.
 
+### cicd-goat gap rules (2026-06-03 benchmark run)
+
+Reproducing the current build against the full cicd-goat corpus (120
+scenarios) surfaced a batch of new-rule candidates. Each is tied to a
+scenario the build misses where the bug is real and in a format we
+parse; competitor rule listed where one exists. The three correctness
+bugs the run also found (Helm offline rendering, GHA-016 process
+substitution, BB-029 top-level ``image:``) are already fixed on ``dev``.
+
+- ~~**GitLab ``CI_DEBUG_TRACE`` secret-to-log leak** (scenario 113,
+  CICD-SEC-10).~~ Shipped as **GL-038** on ``dev`` (also covers
+  ``CI_DEBUG_SERVICES``, global + job ``variables:``, bare-scalar and
+  typed ``{value:}`` forms). No other scanner in the corpus catches it.
+- ~~**GitLab privileged dind on an untagged (shared) runner** (scenario
+  48, ciguard RUN-002).~~ Shipped as **GL-039** on ``dev``: flags a
+  ``docker:*-dind`` service with ``DOCKER_TLS_CERTDIR: ""`` or the
+  daemon exposed on the plaintext 2375 socket (global ``services:`` /
+  ``variables:`` merged per job).
+- ~~**GitLab ``CI_JOB_TOKEN`` cross-project access** (scenario 41,
+  ciguard IAM-002, CVE-2024-8641).~~ Shipped as **GL-040** on ``dev``
+  (MEDIUM confidence): the ``gitlab-ci-token:$CI_JOB_TOKEN@`` clone URL
+  and ``JOB-TOKEN: $CI_JOB_TOKEN`` API-header idioms.
+- ~~**Azure ``checkout persistCredentials: true``** (scenario 51).~~
+  Shipped as **ADO-032** on ``dev`` (the Azure analogue of GHA-037).
+- ~~**Bitbucket ``clone: skip-ssl-verify: true``** (scenario 65).~~
+  Shipped on ``dev`` by extending **BB-023** with a structural
+  ``clone:`` walk (global + step-level).
+- Injection cluster, partly shipped on ``dev`` by extending the existing
+  per-provider injection rules (no new rules):
+  - ~~Azure macro ``$()`` injection (49)~~ ADO-002 now scans task-based
+    ``inputs.script`` (Bash@3 / PowerShell@2 / CmdLine@2), not just the
+    ``script:`` shorthand.
+  - ~~CircleCI ``<< pipeline.git.* >>`` run injection (56)~~ CC-002 now
+    flags the native ``<< pipeline.git.branch >>`` / ``tag`` interpolation
+    (``<< pipeline.parameters.* >>`` stays the safe alternative).
+  - ~~Azure ``${{ parameters.X }}`` template injection (50)~~ ADO-002
+    now flags a free-form ``string`` parameter (no ``values:`` list)
+    spliced into a script via ``${{ parameters.X }}`` (compile-time, no
+    quoting carve-out).
+  - ~~Bitbucket ``custom:`` pipeline-variable injection (66)~~ BB-002
+    now flags a trigger-time ``custom:`` pipeline variable used unquoted
+    in a ``script:`` step.
+
+  The full injection cluster (49 / 50 / 56 / 66) is closed, all by
+  extending the existing per-provider injection rules (no new rule IDs).
+
+Next-gen targets no scanner in the corpus catches (design-pass, not
+mechanical): Tekton ``$(params.*)`` injection (71, regressed out by a
+quoting carve-out), ``terraform apply`` on an untrusted PR / MR (89 /
+the apply-RCE specifics of 91), Argo cluster-admin ServiceAccount (92),
+Jenkins fork-PR PPE where the trust strategy lives in job config not the
+Jenkinsfile (86).
+
+Also: the build already catches six scenarios the published matrix
+still scores as misses, because their ``expected:`` lists in
+``cicd-goat/tools/scenarios.yaml`` predate the rules. Worth an upstream
+PR crediting them so the matrix reflects reality: 34 -> ``GHA-038``,
+35 -> ``GHA-100``, 36 -> ``TAINT-009``, 38 -> ``GHA-102``,
+61 -> ``BB-032``, 68 -> ``JF-024`` (plus 64 -> ``BB-029`` once the
+top-level-image fix releases). That lifts the published GHA total from
+37 to 41 of 42 with no engine work.
+
+### Hygiene-rule confidence tiering (precision)
+
+On the cicd-goat GitHub corpus, 84% of all (scenario, rule) firings are
+non-canonical: the one intended bug is buried under ~6 findings per
+file, dominated by the "missing-control" family (GHA-015 no-timeout on
+90% of files, GHA-037 persist-credentials 73%, plus SBOM / SLSA /
+scan-gate rules). The root cause is that ``Finding.confidence`` defaults
+to ``HIGH`` and only 4 of ~1005 rule modules override it, so a
+best-practice nit and a ``pull_request_target`` RCE land at the same
+confidence and ``--min-confidence`` can't separate them. Give the
+hygiene / missing-control family a lower default confidence (or a
+distinct "best-practice" class) so ``--min-confidence MEDIUM`` yields a
+high-signal view. These findings stay valid on real repos; the point is
+to tier them, not drop them.
+
 ### ~~Live Azure + GCP cloud-posture parity~~ shipped
 
 Shipped in v1.6.0 (closes #163). Both providers now ship 50 rules

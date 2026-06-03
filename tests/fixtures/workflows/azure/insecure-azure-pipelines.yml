@@ -51,6 +51,9 @@ stages:
         pool:
           name: $(Build.SourceBranchName)
         steps:
+          # ADO-032 — persists the pipeline token into .git/config.
+          - checkout: self
+            persistCredentials: true
           - task: DotNetCoreCLI@2
             inputs:
               command: 'build'

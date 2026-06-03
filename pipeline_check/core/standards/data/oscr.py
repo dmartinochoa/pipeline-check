@@ -355,6 +355,7 @@ STANDARD = Standard(
         # IA-22: Weak authentication methods
         "GHA-030":  ["IA-22"],
         "GL-031":   ["IA-22"],
+        "GL-040":   ["IA-22"],# CI_JOB_TOKEN used for cross-project access
         "BB-028":   ["IA-22"],
         "ADO-029":  ["IA-22"],
         "CC-031":   ["IA-22"],
@@ -480,6 +481,7 @@ STANDARD = Standard(
         # PE-2: Runners / agents running with high user privileges
         "GHA-017":  ["PE-2"],
         "GL-017":   ["PE-2"],
+        "GL-039":   ["PE-2"],# dind daemon TLS disabled / exposed on 2375
         "BB-013":   ["PE-2"],
         "ADO-017":  ["PE-2"],
         "JF-017":   ["PE-2"],
@@ -946,8 +948,10 @@ STANDARD = Standard(
         "GHA-103":  ["EX-12"],                     # AI review bot on untrusted trigger
         "GHA-104":  ["EX-12"],                     # AI agent auto-push without PR review
         "GL-036":   ["CA-5", "CA-6"],              # secret echoed to GitLab CI log
+        "GL-038":   ["CA-5", "CA-6"],              # CI_DEBUG_TRACE dumps secrets to GitLab CI log
         "BB-032":   ["CA-5", "CA-6"],              # secret echoed to Bitbucket log
         "ADO-031":  ["CA-5", "CA-6"],              # secret echoed to Azure DevOps log
+        "ADO-032":  ["CA-5", "CA-6"],              # checkout persistCredentials leaks token to .git/config
         "CC-032":   ["CA-5", "CA-6"],              # secret echoed to CircleCI log
         "SCM-048":  ["CA-5"],                      # org codespace secrets scoped to all repos
         "SCM-049":  ["IA-9"],                      # classic PAT where fine-grained suffices

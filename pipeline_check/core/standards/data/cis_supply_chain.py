@@ -270,6 +270,7 @@ STANDARD = Standard(
         "GL-015":   ["2.2.2"],                           # job has no timeout
         "GL-016":   ["1.4.1", "3.1.5"],                  # remote script piped to shell
         "GL-017":   ["2.1.3"],                           # docker run privileged/host mount
+        "GL-039":   ["2.1.3"],                           # dind daemon TLS disabled / exposed on 2375
         "GL-018":   ["3.1.5", "1.4.1"],                  # package install insecure source
         "GL-019":   ["1.1.8", "1.4.1"],                  # no vulnerability scanning
         "GL-020":   ["1.3.4", "2.4.3"],                  # CI_JOB_TOKEN persisted
@@ -284,6 +285,7 @@ STANDARD = Standard(
         "GL-029":   ["5.1.4", "5.2.1"],                  # manual deploy defaults allow_failure
         "GL-030":   ["1.4.1", "3.1.3"],                  # trigger: include: pulls child pipeline w/o pinned ref
         "GL-031":   ["1.3.4", "2.4.3", "5.2.1"],         # id_tokens missing audience/env binding
+        "GL-040":   ["1.3.4", "2.4.3", "5.2.1"],         # CI_JOB_TOKEN used for cross-project access
         "GL-032":   ["2.1.3"],                           # tags: interpolates untrusted variable
         "GL-033":   ["2.1.3", "2.3.8"],                  # global before_script taint
         "GL-034":   ["1.4.1", "3.1.3"],                  # npm install without audit signatures
@@ -910,8 +912,10 @@ STANDARD = Standard(
         "GHA-103":  ["2.1.3"],                           # AI review bot on untrusted trigger
         "GHA-104":  ["2.1.3"],                           # AI agent auto-push without PR review
         "GL-036":   ["1.5.1", "2.3.4"],                  # secret echoed to GitLab CI log
+        "GL-038":   ["1.5.1", "2.3.4"],                  # CI_DEBUG_TRACE dumps secrets to GitLab CI log
         "BB-032":   ["1.5.1", "2.3.4"],                  # secret echoed to Bitbucket log
         "ADO-031":  ["1.5.1", "2.3.4"],                  # secret echoed to Azure DevOps log
+        "ADO-032":  ["1.5.1", "2.3.4"],                  # checkout persistCredentials leaks token to .git/config
         "CC-032":   ["1.5.1", "2.3.4"],                  # secret echoed to CircleCI log
         "SCM-048":  ["2.4.3"],                           # org codespace secrets scoped to all repos
         "SCM-049":  ["1.3.4"],                           # classic PAT where fine-grained suffices

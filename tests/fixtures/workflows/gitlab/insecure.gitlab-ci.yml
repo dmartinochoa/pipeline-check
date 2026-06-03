@@ -19,6 +19,9 @@ before_script:
 # GL-028 — top-level services image not pinned.
 services:
   - postgres:latest
+  # GL-039 — Docker-in-Docker daemon; TLS disabled via DOCKER_TLS_CERTDIR below.
+  - name: docker:27-dind
+    command: ["--host=tcp://0.0.0.0:2375"]
 
 variables:
   AWS_ACCESS_KEY_ID: AKIAZ3MHALF2TESTHIJK
@@ -27,6 +30,11 @@ variables:
   # GL-037 — Go module checksum / sum-db verification disabled.
   GOSUMDB: "off"
   GOFLAGS: -insecure
+  # GL-038 — debug trace dumps every variable (incl. masked secrets) to the log.
+  CI_DEBUG_TRACE: "true"
+  # GL-039 — empty cert dir reverts the dind daemon to the plaintext 2375 socket.
+  DOCKER_TLS_CERTDIR: ""
+  DOCKER_HOST: "tcp://docker:2375"
 
 # GL-011 — opt the pipeline into MR triggering so include: local fires.
 workflow:
@@ -61,6 +69,8 @@ ingest-upstream:
       ref: main
       artifacts: true
   script:
+    # GL-040 — CI_JOB_TOKEN used to clone a DIFFERENT project.
+    - git clone https://gitlab-ci-token:${CI_JOB_TOKEN}@gitlab.example.com/platform/internal-libs.git
     - ./package/install.sh
 
 deploy-prod:

@@ -180,6 +180,7 @@ STANDARD = Standard(
         "GL-015":   ["Build.L3.Ephemeral"],                        # unbounded build
         "GL-016":   ["Build.L3.Isolated"],                         # curl | bash
         "GL-017":   ["Build.L3.Isolated"],                         # Docker privileged
+        "GL-039":   ["Build.L3.Isolated"],                         # dind daemon TLS disabled / exposed on 2375
         "GL-020":   ["Build.L3.NonFalsifiable"],                   # token persistence
         "GL-021":   ["Build.L3.Isolated"],                         # no lockfile
         "GL-023":   ["Build.L3.Isolated"],                         # TLS bypass
@@ -197,6 +198,7 @@ STANDARD = Standard(
         "GL-029":   ["Build.L3.NonFalsifiable"],                   # manual deploy allow_failure
         "GL-030":   ["Build.L3.NonFalsifiable"],                   # trigger: include w/o pinned ref
         "GL-031":   ["Build.L3.NonFalsifiable"],                   # id_tokens missing audience pin
+        "GL-040":   ["Build.L3.NonFalsifiable"],                   # CI_JOB_TOKEN used for cross-project access
         "GL-032":   ["Build.L3.Isolated"],                         # tags interpolates untrusted variable
         "GL-033":   ["Build.L3.Isolated"],                         # global before_script taint
         "GL-034":   ["Build.L3.NonFalsifiable"],                   # npm install without audit signatures
@@ -672,8 +674,10 @@ STANDARD = Standard(
         "GHA-103":  ["Build.L3.Isolated"],                         # AI review bot on untrusted trigger
         "GHA-104":  ["Build.L3.Isolated"],                         # AI agent auto-push without PR review
         "GL-036":   ["Build.L3.NonFalsifiable"],                   # secret echoed to GitLab CI log
+        "GL-038":   ["Build.L3.NonFalsifiable"],                   # CI_DEBUG_TRACE dumps secrets to GitLab CI log
         "BB-032":   ["Build.L3.NonFalsifiable"],                   # secret echoed to Bitbucket log
         "ADO-031":  ["Build.L3.NonFalsifiable"],                   # secret echoed to Azure DevOps log
+        "ADO-032":  ["Build.L3.NonFalsifiable"],                   # checkout persistCredentials leaks token
         "CC-032":   ["Build.L3.NonFalsifiable"],                   # secret echoed to CircleCI log
         "SCM-048":  ["Build.L3.NonFalsifiable"],                   # org codespace secrets scoped to all repos
         "SCM-049":  ["Build.L3.NonFalsifiable"],                   # classic PAT where fine-grained suffices
