@@ -44,6 +44,7 @@ is both: defense in depth on the same kill chain.
 from __future__ import annotations
 
 from ...checks.base import Confidence, Finding, Severity
+from .._reachability import assess_reachability
 from ..base import Chain, ChainRule, group_by_resource, min_confidence
 
 RULE = ChainRule(
@@ -94,17 +95,29 @@ RULE = ChainRule(
 
 
 def match(findings: list[Finding]) -> list[Chain]:
-    # Reachability mirrors the AC-002 / AC-022 pattern, with the
-    # caveat that Buildkite pipelines are a flat list of steps, not
-    # named jobs. The "anchor" each leg surfaces is the step label
-    # (``key`` > ``label`` > ``steps[N]`` fallback). A non-empty
-    # intersection means the same step both interpolates untrusted
-    # input AND is the ungated deploy — the strongest possible
-    # signal short of a dataflow rule, since Buildkite has no
-    # TAINT-NNN family yet to model meta-data / artifact propagation
-    # across steps. Disjoint anchors fall back to the legacy file-
-    # co-occurrence signal so existing detections don't regress.
+    # Reachability mirrors the AC-022 (GitLab) phase-2 pattern.
+    # Buildkite pipelines are a flat list of steps, not named jobs, so
+    # the "anchor" each leg surfaces is the step label (``key`` >
+    # ``label`` > ``steps[N]`` fallback). TAINT-005 models the canonical
+    # cross-step channel, ``buildkite-agent meta-data set`` in a
+    # producer step read back via ``meta-data get`` in a consumer step,
+    # as structured ``source_job -> sink_job`` edges keyed by the same
+    # step labels. ``assess_reachability`` walks those edges from the
+    # injection step(s) (widened with the meta-data producer steps) to
+    # the deploy step(s): a hit means the untrusted value the producer
+    # wrote is read by the ungated deploy step, a proven path rather
+    # than mere file co-occurrence. With no dataflow edge it falls back
+    # to the phase-1 shared-step signal, and to plain co-occurrence
+    # when the legs are on different steps, so nothing regresses.
     grouped = group_by_resource(findings, ["BK-003", "BK-007"])
+    # Map resource -> TAINT-005 finding (the meta-data taint graph) so a
+    # producer-side injection in one step and a consumer-side read in
+    # the deploy step still resolve to a confirmed dataflow chain.
+    taint_by_resource: dict[str, Finding] = {}
+    for f in findings:
+        if not f.passed and f.check_id == "TAINT-005":
+            taint_by_resource[f.resource] = f
+
     out: list[Chain] = []
     for resource, ck_map in grouped.items():
         bk003 = ck_map["BK-003"]
@@ -113,28 +126,45 @@ def match(findings: list[Finding]) -> list[Chain]:
 
         injection_steps = set(bk003.job_anchors)
         deploy_steps = set(bk007.job_anchors)
-        shared = sorted(deploy_steps & injection_steps)
-        confirmed = bool(shared)
-        if confirmed:
-            shared_repr = ", ".join(f"`{s}`" for s in shared)
-            reach_note = (
-                f"injection and unmanual deploy share step {shared_repr}"
-            )
+
+        # TAINT-005 supplies Buildkite's cross-step meta-data channel as
+        # structured source->sink edges; widen the injection side with
+        # the producer steps so a meta-data round-trip into the deploy
+        # step resolves to a confirmed path.
+        taint_findings: list[Finding] = []
+        taint = taint_by_resource.get(resource)
+        if taint is not None:
+            triggers.append(taint)
+            taint_findings.append(taint)
+            injection_steps |= {fl.source_job for fl in taint.taint_flows}
+
+        reach = assess_reachability(taint_findings, injection_steps, deploy_steps)
+        confirmed = reach.confirmed
+        reach_note = reach.note
+        if reach.via_dataflow:
             reach_narrative = (
-                f"  4. Reachability confirmed: the untrusted "
-                f"interpolation and the unmanual deploy fire on the "
-                f"same step(s) ({shared_repr}). The injected command "
-                f"executes in the deploy step's own runner with its "
-                f"secrets in scope."
+                f"  4. Reachability confirmed by dataflow: {reach.note}. "
+                f"The untrusted value is carried to the unmanual deploy "
+                f"by a real meta-data round-trip "
+                f"(``buildkite-agent meta-data set`` -> ``get``), not "
+                f"just co-location in `{resource}`."
+            )
+        elif confirmed:
+            shared_repr = reach.note
+            reach_narrative = (
+                f"  4. Reachability confirmed: {shared_repr}. The "
+                f"untrusted interpolation and the unmanual deploy fire "
+                f"on the same step, so the injected command executes "
+                f"in the deploy step's own runner with its secrets in "
+                f"scope."
             )
         else:
-            reach_note = ""
             reach_narrative = (
                 "  4. Reachability unconfirmed: the injection and "
                 "the unmanual deploy fire on the same pipeline file "
-                "but on different steps, with no cross-step dataflow "
-                "link (meta-data, artifacts) modeled. Treat as a co-"
-                "occurrence signal rather than a proven path."
+                "but on different steps, with no meta-data dataflow "
+                "link between them. Treat as a co-occurrence signal "
+                "rather than a proven path."
             )
 
         narrative = (
@@ -160,6 +190,8 @@ def match(findings: list[Finding]) -> list[Chain]:
             "breaks the chain, both is best.\n"
             f"{reach_narrative}"
         )
+        if reach.path:
+            narrative += f"\n  Dataflow evidence: {reach.path}"
 
         if confirmed:
             chain_confidence = Confidence.HIGH
@@ -175,12 +207,13 @@ def match(findings: list[Finding]) -> list[Chain]:
             narrative=narrative,
             mitre_attack=list(RULE.mitre_attack),
             kill_chain_phase=RULE.kill_chain_phase,
-            triggering_check_ids=["BK-003", "BK-007"],
+            triggering_check_ids=sorted({f.check_id for f in triggers}),
             triggering_findings=triggers,
             resources=[resource],
             references=list(RULE.references),
             recommendation=RULE.recommendation,
             confirmed_reachable=confirmed,
             reachability_note=reach_note,
+            via_dataflow=reach.via_dataflow,
         ))
     return out

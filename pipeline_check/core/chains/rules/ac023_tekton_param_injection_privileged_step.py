@@ -42,6 +42,7 @@ quoted param is the right shape even on a non-privileged step.
 from __future__ import annotations
 
 from ...checks.base import Confidence, Finding, Severity
+from .._reachability import assess_reachability
 from ..base import Chain, ChainRule, group_by_resource, min_confidence
 
 RULE = ChainRule(
@@ -94,17 +95,29 @@ RULE = ChainRule(
 
 
 def match(findings: list[Finding]) -> list[Chain]:
-    # Reachability: a shared step anchor (``<Kind>/<name>:<step>``)
-    # between TKN-002 (privileged / root step) and TKN-003 (unsafe
-    # ``$(params.<name>)`` in step script) confirms the same step
-    # is BOTH the injection sink AND the privilege amplifier, the
-    # exact node-escape primitive. Disjoint anchors still co-occur
-    # within the Tekton corpus (one Task has a privileged step
-    # somewhere, another Task interpolates a param somewhere else)
-    # but don't compose into the single-step kernel-RCE shape;
-    # we keep the weaker co-occurrence signal in that case because
-    # both legs remain individually risky.
+    # Reachability has two tiers. The phase-1 signal is a shared step
+    # anchor (``<Kind>/<name>:<step>``) between TKN-002 (privileged /
+    # root step) and TKN-003 (unsafe ``$(params.<name>)`` in step
+    # script): the same step is BOTH the injection sink AND the
+    # privilege amplifier, the single-step node-escape primitive.
+    # Phase-2 adds the cross-task tier: TAINT-006 models Tekton's
+    # ``$(tasks.<t>.results.<r>)`` results channel as structured
+    # source->sink edges keyed by each task's resolved ``<Kind>/<name>``
+    # identity (the prefix of the per-step anchors). When a tainted
+    # result flows from one task into a *privileged* task,
+    # ``assess_reachability`` (walked at that task-identity granularity)
+    # confirms a proven cross-task path even though the injection and
+    # the privilege live in different tasks. The phase-1 same-step check
+    # is kept verbatim as the fallback so its precise single-step
+    # semantics never widen to a coarser same-task match. Disjoint
+    # anchors with no results edge keep the weaker co-occurrence signal.
     grouped = group_by_resource(findings, ["TKN-002", "TKN-003"])
+    # TAINT-006 (cross-task results channel) keyed by resource.
+    taint_by_resource: dict[str, Finding] = {}
+    for f in findings:
+        if not f.passed and f.check_id == "TAINT-006":
+            taint_by_resource[f.resource] = f
+
     out: list[Chain] = []
     for resource, ck_map in grouped.items():
         tkn002 = ck_map["TKN-002"]
@@ -113,32 +126,69 @@ def match(findings: list[Finding]) -> list[Chain]:
 
         priv_steps = set(tkn002.job_anchors)
         inj_steps = set(tkn003.job_anchors)
-        shared = sorted(priv_steps & inj_steps)
-        confirmed = bool(shared)
-        if confirmed:
-            shared_repr = ", ".join(f"`{s}`" for s in shared)
-            reach_note = (
-                f"Privileged step and param-injection sink share "
-                f"step {shared_repr}"
+
+        # Phase-2 dataflow tier: does a tainted result reach a
+        # privileged task? Walk at task-identity granularity (the
+        # ``<Kind>/<name>`` prefix of the per-step anchors), the same
+        # namespace TAINT-006's edges use. Only the dataflow verdict is
+        # taken from the helper; the shared-job fallback below stays at
+        # step granularity to preserve the single-step semantics.
+        via_dataflow = False
+        reach_path = ""
+        reach_dataflow_note = ""
+        taint = taint_by_resource.get(resource)
+        if taint is not None:
+            triggers.append(taint)
+            inj_task_ids = {a.rsplit(":", 1)[0] for a in inj_steps}
+            inj_task_ids |= {fl.source_job for fl in taint.taint_flows}
+            priv_task_ids = {a.rsplit(":", 1)[0] for a in priv_steps}
+            reach = assess_reachability(
+                [taint], inj_task_ids, priv_task_ids,
             )
+            if reach.via_dataflow:
+                via_dataflow = True
+                reach_path = reach.path
+                reach_dataflow_note = reach.note
+
+        if via_dataflow:
+            confirmed = True
+            reach_note = reach_dataflow_note
             reach_narrative = (
-                f"  4. Reachability confirmed: the same step(s) "
-                f"({shared_repr}) BOTH run privileged AND interpolate "
-                f"``$(params.<name>)`` unquoted. A crafted PipelineRun "
-                f"param value executes as a shell command inside the "
-                f"kernel-privileged container in one go, no inter-"
-                f"step dataflow required."
+                f"  4. Reachability confirmed by dataflow: "
+                f"{reach_dataflow_note}. A tainted ``$(params.<name>)`` "
+                f"value is carried via a ``$(tasks.<t>.results.<r>)`` "
+                f"result into a privileged task, so the injection "
+                f"reaches the kernel-privileged container across tasks, "
+                f"not just within a single step."
             )
         else:
-            reach_note = ""
-            reach_narrative = (
-                "  4. Reachability unconfirmed: the privileged step "
-                "and the param-injection sink live in different "
-                "steps (or different Tasks) of this Tekton corpus. "
-                "Each leg is independently risky but neither single "
-                "step exposes the kernel-RCE primitive; treat as a "
-                "co-occurrence signal."
-            )
+            shared = sorted(priv_steps & inj_steps)
+            confirmed = bool(shared)
+            if confirmed:
+                shared_repr = ", ".join(f"`{s}`" for s in shared)
+                reach_note = (
+                    f"Privileged step and param-injection sink share "
+                    f"step {shared_repr}"
+                )
+                reach_narrative = (
+                    f"  4. Reachability confirmed: the same step(s) "
+                    f"({shared_repr}) BOTH run privileged AND interpolate "
+                    f"``$(params.<name>)`` unquoted. A crafted PipelineRun "
+                    f"param value executes as a shell command inside the "
+                    f"kernel-privileged container in one go, no inter-"
+                    f"step dataflow required."
+                )
+            else:
+                reach_note = ""
+                reach_narrative = (
+                    "  4. Reachability unconfirmed: the privileged step "
+                    "and the param-injection sink live in different "
+                    "steps (or different Tasks) of this Tekton corpus, "
+                    "with no ``$(tasks.<t>.results.<r>)`` dataflow link "
+                    "between them. Each leg is independently risky but "
+                    "neither single step exposes the kernel-RCE "
+                    "primitive; treat as a co-occurrence signal."
+                )
 
         narrative = (
             f"In `{resource}`:\n"
@@ -169,6 +219,8 @@ def match(findings: list[Finding]) -> list[Chain]:
             "breaks the chain.\n"
             f"{reach_narrative}"
         )
+        if reach_path:
+            narrative += f"\n  Dataflow evidence: {reach_path}"
 
         chain_confidence = Confidence.HIGH if confirmed else min_confidence(triggers)
 
@@ -181,12 +233,13 @@ def match(findings: list[Finding]) -> list[Chain]:
             narrative=narrative,
             mitre_attack=list(RULE.mitre_attack),
             kill_chain_phase=RULE.kill_chain_phase,
-            triggering_check_ids=["TKN-002", "TKN-003"],
+            triggering_check_ids=sorted({f.check_id for f in triggers}),
             triggering_findings=triggers,
             resources=[resource],
             references=list(RULE.references),
             recommendation=RULE.recommendation,
             confirmed_reachable=confirmed,
             reachability_note=reach_note,
+            via_dataflow=via_dataflow,
         ))
     return out

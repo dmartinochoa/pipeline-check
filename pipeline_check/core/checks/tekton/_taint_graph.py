@@ -54,6 +54,7 @@ from collections.abc import Iterator
 from dataclasses import dataclass, field
 from typing import Any
 
+from ..base import TaintFlow
 from .base import TektonContext, TektonDoc
 
 
@@ -73,6 +74,13 @@ class TaintPath:
     hops: tuple[str, ...]
     sink_location: str
     sink_consumer: str
+    # Stable graph-node ids for the producer / consumer tasks, set by
+    # ``analyze_pipeline_doc``. A ``taskRef:`` task resolves to its
+    # backing ``<Kind>/<name>`` document id; an inline ``taskSpec:``
+    # task falls back to its Pipeline-task name. Empty only for paths
+    # built by a legacy caller that predates the field.
+    source_node: str = ""
+    sink_node: str = ""
 
     def render(self) -> str:
         chain: list[str] = [
@@ -81,6 +89,23 @@ class TaintPath:
         chain.extend(self.hops)
         chain.append(f"sink@{self.sink_location}({self.sink_consumer})")
         return " -> ".join(chain)
+
+    def to_flow(self) -> TaintFlow:
+        """Structured ``source_job -> sink_job`` edge for the chain engine.
+
+        ``source_node`` / ``sink_node`` are the producer and consumer
+        tasks' graph identities. A ``taskRef:`` task resolves to the
+        backing ``<Kind>/<name>`` Task / ClusterTask document id, which
+        matches TKN-002 / TKN-003's ``<Kind>/<name>:<step>`` anchor
+        prefix, so AC-023 can bridge a results-flow edge to those
+        per-step legs. An inline ``taskSpec:`` task, which the TKN rules
+        never anchor, carries its Pipeline-task name instead.
+        """
+        return TaintFlow(
+            source_job=self.source_node,
+            sink_job=self.sink_node,
+            rendered=self.render(),
+        )
 
 
 # ── Detectors ─────────────────────────────────────────────────────
@@ -247,6 +272,40 @@ def _resolve_task_body(
     return task_index.get((other_kind, ref_name))
 
 
+def _task_node_key(
+    task: dict[str, Any],
+    task_index: dict[tuple[str, str], dict[str, Any]],
+) -> str:
+    """Stable graph-node id for a Pipeline task.
+
+    A ``taskRef:`` resolves to the backing ``<Kind>/<name>`` Task /
+    ClusterTask document id, the same identity TKN-002 / TKN-003 anchor
+    on, so the chain engine can connect a results-flow edge to those
+    per-step legs. The kind is selected the same way
+    :func:`_resolve_task_body` picks the body (declared kind first,
+    then the other kind as a refactor-resilience fallback). An inline
+    ``taskSpec:`` task has no document identity and the TKN rules never
+    fire on it, so fall back to the Pipeline-task name.
+    """
+    if isinstance(task.get("taskSpec"), dict):
+        name = task.get("name")
+        return name if isinstance(name, str) else ""
+    ref = task.get("taskRef")
+    if isinstance(ref, dict):
+        ref_name = ref.get("name")
+        if isinstance(ref_name, str):
+            kind_val = ref.get("kind", "Task")
+            ref_kind = kind_val if isinstance(kind_val, str) else "Task"
+            if (ref_kind, ref_name) in task_index:
+                return f"{ref_kind}/{ref_name}"
+            other = "Task" if ref_kind == "ClusterTask" else "ClusterTask"
+            if (other, ref_name) in task_index:
+                return f"{other}/{ref_name}"
+            return f"{ref_kind}/{ref_name}"
+    name = task.get("name")
+    return name if isinstance(name, str) else ""
+
+
 def analyze_pipeline_doc(
     doc: TektonDoc,
     ctx: TektonContext | None = None,
@@ -271,6 +330,15 @@ def analyze_pipeline_doc(
         return []
 
     task_index = _build_task_index(ctx)
+    # Resolve each Pipeline task to its stable graph-node id once, so the
+    # emitted taint flows carry the ``<Kind>/<name>`` identity AC-023
+    # bridges against (see :func:`_task_node_key`).
+    node_key_by_task: dict[str, str] = {}
+    for task in tasks:
+        if isinstance(task, dict):
+            tname = task.get("name")
+            if isinstance(tname, str) and tname:
+                node_key_by_task[tname] = _task_node_key(task, task_index)
     state = _GraphState()
     paths: list[TaintPath] = []
 
@@ -329,8 +397,10 @@ def analyze_pipeline_doc(
         if not isinstance(consumer_name, str) or not consumer_name:
             continue
         # Map this task's params: which ones are tainted via
-        # ``$(tasks.X.results.Y)`` references, with their source list.
-        tainted_consumer_params: dict[str, list[TaintSource]] = {}
+        # ``$(tasks.X.results.Y)`` references, paired with the producer
+        # task name X so the emitted flow can carry the producer's
+        # resolved graph-node id.
+        tainted_consumer_params: dict[str, list[tuple[str, TaintSource]]] = {}
         params = task.get("params")
         if isinstance(params, list):
             for p in params:
@@ -341,13 +411,14 @@ def analyze_pipeline_doc(
                 if not isinstance(pname, str) or not isinstance(pvalue, str):
                     continue
                 for m in _TASK_RESULTS_REF_RE.finditer(pvalue):
+                    producer_task = m.group("task")
                     sources = state.lookup(
-                        m.group("task"), m.group("output"),
+                        producer_task, m.group("output"),
                     )
-                    if sources:
+                    for src in sources:
                         tainted_consumer_params.setdefault(
                             pname, [],
-                        ).extend(sources)
+                        ).append((producer_task, src))
         if not tainted_consumer_params:
             continue
         # Walk the resolved body for sinks.
@@ -366,7 +437,7 @@ def analyze_pipeline_doc(
             for ref_name in _iter_params_refs(script):
                 if ref_name not in tainted_consumer_params:
                     continue
-                for src in tainted_consumer_params[ref_name]:
+                for producer_task, src in tainted_consumer_params[ref_name]:
                     paths.append(TaintPath(
                         source=src,
                         hops=(
@@ -377,6 +448,12 @@ def analyze_pipeline_doc(
                             f"{consumer_name}.steps[{idx}]"
                         ),
                         sink_consumer=f"$(params.{ref_name})",
+                        source_node=node_key_by_task.get(
+                            producer_task, producer_task,
+                        ),
+                        sink_node=node_key_by_task.get(
+                            consumer_name, consumer_name,
+                        ),
                     ))
     return paths
 

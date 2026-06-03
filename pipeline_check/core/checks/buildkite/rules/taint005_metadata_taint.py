@@ -152,4 +152,5 @@ def check(path: str, doc: dict[str, Any]) -> Finding:
         check_id=RULE.id, title=RULE.title, severity=RULE.severity,
         resource=path, description=desc,
         recommendation=RULE.recommendation, passed=False,
+        taint_flows=tuple(p.to_flow() for p in paths),
     )

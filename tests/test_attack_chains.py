@@ -2516,6 +2516,40 @@ class TestChainAC023:
         assert chain.reachability_note == ""
         assert chain.confidence is Confidence.MEDIUM
 
+    def test_taint006_confirms_cross_task_dataflow(self):
+        # TKN-003 fires in task ``extract``; the privileged step
+        # (TKN-002) is in a *different* task ``build``; TAINT-006
+        # reports a results flow extract -> build. The injection
+        # reaches the privileged container across tasks — a proven
+        # dataflow path the step-level shared check can't see.
+        rendered = (
+            "$(params.title)@extract.steps[0] -> "
+            "tasks.<producer>.results.<output> -> "
+            "tasks.build.params.title -> "
+            "sink@build.steps[0]($(params.title))"
+        )
+        out = chains_pkg.evaluate([
+            _f("TKN-003", self.TASK, job_anchors=("Task/extract:extract",)),
+            _f("TKN-002", self.TASK, job_anchors=("Task/build:build",)),
+            _f(
+                "TAINT-006",
+                self.TASK,
+                taint_flows=(
+                    TaintFlow(
+                        source_job="Task/extract",
+                        sink_job="Task/build",
+                        rendered=rendered,
+                    ),
+                ),
+            ),
+        ])
+        chain = next(c for c in out if c.chain_id == "AC-023")
+        assert chain.confirmed_reachable is True
+        assert chain.via_dataflow is True
+        assert "taint path" in chain.reachability_note
+        assert rendered in chain.narrative
+        assert "TAINT-006" in chain.triggering_check_ids
+
 
 class TestChainAC024:
     """AC-024 — OIDC trust drift lands on a mutable ECR tag."""
@@ -2739,6 +2773,40 @@ class TestChainAC025:
         assert chain.reachability_note == ""
         assert chain.confidence is Confidence.MEDIUM
 
+    def test_taint007_confirms_cross_template_dataflow(self):
+        # ARGO-005 fires in template ``read-title``; the privileged
+        # container (ARGO-002) is in a *different* template ``ship``;
+        # TAINT-007 reports an outputs.parameters flow read-title ->
+        # ship. The injection reaches the privileged container across
+        # templates — a proven dataflow path.
+        rendered = (
+            "{{inputs.parameters.title}}@read-title.script -> "
+            "tasks.<producer>.outputs.parameters.<output> -> "
+            "tasks.consume.arguments.clean_title -> "
+            "sink@ship.script({{inputs.parameters.clean_title}})"
+        )
+        out = chains_pkg.evaluate([
+            _f("ARGO-005", self.WF, job_anchors=("Workflow/build:read-title",)),
+            _f("ARGO-002", self.WF, job_anchors=("Workflow/build:ship",)),
+            _f(
+                "TAINT-007",
+                self.WF,
+                taint_flows=(
+                    TaintFlow(
+                        source_job="Workflow/build:read-title",
+                        sink_job="Workflow/build:ship",
+                        rendered=rendered,
+                    ),
+                ),
+            ),
+        ])
+        chain = next(c for c in out if c.chain_id == "AC-025")
+        assert chain.confirmed_reachable is True
+        assert chain.via_dataflow is True
+        assert "taint path" in chain.reachability_note
+        assert rendered in chain.narrative
+        assert "TAINT-007" in chain.triggering_check_ids
+
 
 class TestChainAC026:
     """AC-026 — Buildkite injection lands on auto-deploy step."""
@@ -2837,6 +2905,39 @@ class TestChainAC026:
         assert ac26.confirmed_reachable is False
         assert ac26.reachability_note == ""
         assert ac26.confidence is Confidence.MEDIUM
+
+    def test_taint005_confirms_cross_step_dataflow(self):
+        # BK-003 fires on step ``extract``; the ungated deploy
+        # (BK-007) is a *different* step ``deploy``; TAINT-005 reports
+        # a meta-data round-trip extract -> deploy. The injected value
+        # is read back by the deploy step — a proven dataflow path the
+        # step-level shared check can't see.
+        rendered = (
+            "$BUILDKITE_PULL_REQUEST_TITLE@extract -> "
+            "steps.extract.meta-data.title -> "
+            "sink@deploy(buildkite-agent meta-data get title)"
+        )
+        out = chains_pkg.evaluate([
+            _f("BK-003", self.PIPELINE, job_anchors=("extract",)),
+            _f("BK-007", self.PIPELINE, job_anchors=("deploy",)),
+            _f(
+                "TAINT-005",
+                self.PIPELINE,
+                taint_flows=(
+                    TaintFlow(
+                        source_job="extract",
+                        sink_job="deploy",
+                        rendered=rendered,
+                    ),
+                ),
+            ),
+        ])
+        ac26 = next(c for c in out if c.chain_id == "AC-026")
+        assert ac26.confirmed_reachable is True
+        assert ac26.via_dataflow is True
+        assert "taint path" in ac26.reachability_note
+        assert rendered in ac26.narrative
+        assert "TAINT-005" in ac26.triggering_check_ids
 
 
 class TestChainAC027:
