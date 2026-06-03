@@ -17,7 +17,7 @@ The detector lives in
 """
 from __future__ import annotations
 
-from ...base import Finding, Severity
+from ...base import Finding, Severity, TaintFlow
 from ...rule import Rule
 from .._taint_graph import analyze_workflow_doc
 from ..base import ArgoContext
@@ -158,6 +158,11 @@ RULE = Rule(
 def check(ctx: ArgoContext) -> Finding:
     examined = 0
     all_paths = []
+    # Structured source->sink edges for the chain engine (AC-025),
+    # qualified with each document's ``<Kind>/<name>:`` so the producer
+    # and consumer template names match ARGO-002 / ARGO-005's anchors
+    # and don't collide across documents in the shared ``argo`` corpus.
+    all_flows: list[TaintFlow] = []
     for doc in ctx.docs:
         # Workflow / WorkflowTemplate / ClusterWorkflowTemplate /
         # CronWorkflow all carry templates; the engine handles each.
@@ -167,7 +172,10 @@ def check(ctx: ArgoContext) -> Finding:
         ):
             continue
         examined += 1
-        all_paths.extend(analyze_workflow_doc(doc))
+        doc_paths = analyze_workflow_doc(doc)
+        all_paths.extend(doc_paths)
+        prefix = f"{doc.kind}/{doc.name}:"
+        all_flows.extend(p.to_flow(prefix) for p in doc_paths)
 
     if examined == 0:
         return Finding(
@@ -197,4 +205,5 @@ def check(ctx: ArgoContext) -> Finding:
         check_id=RULE.id, title=RULE.title, severity=RULE.severity,
         resource="argo", description=desc,
         recommendation=RULE.recommendation, passed=False,
+        taint_flows=tuple(all_flows),
     )
