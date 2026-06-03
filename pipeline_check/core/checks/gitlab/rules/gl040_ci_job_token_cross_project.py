@@ -12,12 +12,12 @@ from ..base import iter_jobs, job_scripts
 # embeds the ambient job token as the clone credential, the documented
 # cross-project pull idiom.
 _CLONE_TOKEN_RE = re.compile(
-    r"gitlab-ci-token:\s*\$\{?CI_JOB_TOKEN\}?@", re.IGNORECASE
+    r"gitlab-ci-token:\s*\$(?:\{CI_JOB_TOKEN\}|CI_JOB_TOKEN)@", re.IGNORECASE
 )
 # ``curl --header "JOB-TOKEN: $CI_JOB_TOKEN" https://host/api/v4/projects/...``
 # authenticates to the REST API with the job token.
 _HEADER_TOKEN_RE = re.compile(
-    r"JOB-TOKEN:\s*[\"']?\$\{?CI_JOB_TOKEN\}?", re.IGNORECASE
+    r"JOB-TOKEN:\s*[\"']?\$(?:\{CI_JOB_TOKEN\}|CI_JOB_TOKEN)", re.IGNORECASE
 )
 
 RULE = Rule(

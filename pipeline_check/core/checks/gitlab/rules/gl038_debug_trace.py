@@ -18,10 +18,13 @@ _TRUTHY = frozenset({"true", "1", "yes", "on"})
 
 
 def _is_truthy(value: Any) -> bool:
-    if value is True:
-        return True
-    if isinstance(value, str):
-        return value.strip().lower() in _TRUTHY
+    # bool first: bool is a subclass of int, so a bare ``true`` stays a
+    # bool. YAML parses an unquoted ``1`` as int, which GitLab still reads
+    # as the string "1", so coerce int/str alike before matching.
+    if isinstance(value, bool):
+        return value
+    if isinstance(value, (int, str)):
+        return str(value).strip().lower() in _TRUTHY
     return False
 
 

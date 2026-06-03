@@ -97,7 +97,13 @@ Reference tasks by a full semver (`DownloadSecureFile@1.2.3`) or extension-publi
 <span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-4</span> <span class="pg-tag pg-tag--esf">ESF-D-INJECTION</span> <span class="pg-tag pg-tag--cwe">CWE-78</span>
 </div>
 
-`$(Build.SourceBranch*)`, `$(Build.SourceVersionMessage)`, and `$(System.PullRequest.*)` are populated from SCM event metadata the attacker controls. Inline interpolation into a script body executes crafted content. Script bodies are read from the `script:` / `bash:` / `pwsh:` / `powershell:` shorthands and from a task's inline `inputs.script` (Bash@3 / PowerShell@2 / CmdLine@2). The rule also flags compile-time template injection: a free-form `string` parameter (no `values:` allowlist) spliced into a script via `${{ parameters.X }}`, which becomes pipeline structure before any quoting applies.
+`$(Build.SourceBranch*)`, `$(Build.SourceVersionMessage)`, and `$(System.PullRequest.*)` are populated from SCM event metadata the attacker controls. Inline interpolation into a script body executes crafted content.
+
+The rule inspects:
+
+- Script bodies from the `script:` / `bash:` / `pwsh:` / `powershell:` shorthands.
+- Inline scripts in a task's `inputs.script` (Bash@3 / PowerShell@2 / CmdLine@2).
+- Compile-time template injection: a free-form `string` parameter (no `values:` allowlist) spliced into a script via `${{ parameters.X }}`, which becomes pipeline structure before any quoting applies.
 
 <div class="pg-rule__rec" markdown>
 

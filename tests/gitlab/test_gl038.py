@@ -25,6 +25,17 @@ class TestGL038DebugTrace:
         """, "GL-038")
         assert not f.passed
 
+    def test_fails_on_unquoted_int_one(self) -> None:
+        # YAML parses unquoted ``1`` as an int; GitLab still reads it as
+        # the string "1", so the rule must treat it as truthy.
+        f = run_check("""
+        variables:
+          CI_DEBUG_TRACE: 1
+        build:
+          script: [make]
+        """, "GL-038")
+        assert not f.passed
+
     def test_fails_on_job_level_debug_trace(self) -> None:
         f = run_check("""
         build:
