@@ -835,12 +835,16 @@ substitution, BB-029 top-level ``image:``) are already fixed on ``dev``.
   - ~~CircleCI ``<< pipeline.git.* >>`` run injection (56)~~ CC-002 now
     flags the native ``<< pipeline.git.branch >>`` / ``tag`` interpolation
     (``<< pipeline.parameters.* >>`` stays the safe alternative).
-  - Still open as NEW rules (distinct vuln classes, FP-sensitive, want
-    structural parsing): Azure ``${{ parameters.X }}`` template injection
-    where the parameter is a free-form string with no ``values:`` list
-    (50), and Bitbucket ``custom:`` pipeline-variable injection where a
-    trigger-time ``variables:`` entry is used unquoted in a ``script:``
-    (66).
+  - ~~Azure ``${{ parameters.X }}`` template injection (50)~~ ADO-002
+    now flags a free-form ``string`` parameter (no ``values:`` list)
+    spliced into a script via ``${{ parameters.X }}`` (compile-time, no
+    quoting carve-out).
+  - ~~Bitbucket ``custom:`` pipeline-variable injection (66)~~ BB-002
+    now flags a trigger-time ``custom:`` pipeline variable used unquoted
+    in a ``script:`` step.
+
+  The full injection cluster (49 / 50 / 56 / 66) is closed, all by
+  extending the existing per-provider injection rules (no new rule IDs).
 
 Next-gen targets no scanner in the corpus catches (design-pass, not
 mechanical): Tekton ``$(params.*)`` injection (71, regressed out by a

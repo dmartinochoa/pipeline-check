@@ -81,6 +81,37 @@ class TestADO002ScriptInjection:
         )
         assert not f.passed
 
+    def test_freeform_template_parameter_in_script_fails(self):
+        # Compile-time template injection: a free-form string parameter
+        # spliced into a script step becomes pipeline structure.
+        f = _run(
+            """
+            parameters:
+              - name: userInput
+                type: string
+            steps:
+              - script: ${{ parameters.userInput }}
+            """,
+            "ADO-002",
+        )
+        assert not f.passed
+
+    def test_template_parameter_with_values_allowlist_passes(self):
+        # A ``values:`` enum constrains the parameter, so it is not
+        # free-form and template injection is not possible.
+        f = _run(
+            """
+            parameters:
+              - name: env
+                type: string
+                values: [dev, prod]
+            steps:
+              - script: ./deploy.sh ${{ parameters.env }}
+            """,
+            "ADO-002",
+        )
+        assert f.passed
+
     def test_quoted_assignment_passes(self):
         f = _run(
             """

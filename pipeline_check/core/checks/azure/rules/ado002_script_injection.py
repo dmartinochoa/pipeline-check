@@ -32,7 +32,14 @@ RULE = Rule(
         "`$(Build.SourceBranch*)`, `$(Build.SourceVersionMessage)`, "
         "and `$(System.PullRequest.*)` are populated from SCM event "
         "metadata the attacker controls. Inline interpolation into a "
-        "script body executes crafted content."
+        "script body executes crafted content. Script bodies are read "
+        "from the `script:` / `bash:` / `pwsh:` / `powershell:` "
+        "shorthands and from a task's inline `inputs.script` (Bash@3 / "
+        "PowerShell@2 / CmdLine@2). The rule also flags compile-time "
+        "template injection: a free-form `string` parameter (no "
+        "`values:` allowlist) spliced into a script via "
+        "`${{ parameters.X }}`, which becomes pipeline structure before "
+        "any quoting applies."
     ),
     exploit_example=(
         "# Vulnerable: PR title macro interpolated straight into script.\n"
@@ -98,6 +105,38 @@ def _tainted_vars(variables_block: Any) -> set[str]:
     return tainted
 
 
+def _freeform_params(doc: dict[str, Any]) -> set[str]:
+    """Names of free-form ``string`` parameters (no ``values:`` allowlist).
+
+    A ``${{ parameters.X }}`` template expression is substituted into the
+    pipeline at COMPILE time, before any shell quoting exists, so splicing
+    a free-form string parameter into a script body is template injection:
+    the value becomes pipeline structure, not just data. A parameter
+    constrained by a ``values:`` enum can only take allowed values, so it
+    is excluded.
+    """
+    params = doc.get("parameters")
+    names: set[str] = set()
+    if not isinstance(params, list):
+        return names
+    for p in params:
+        if not isinstance(p, dict):
+            continue
+        name = p.get("name")
+        if (
+            isinstance(name, str)
+            and p.get("type", "string") == "string"
+            and "values" not in p
+        ):
+            names.add(name)
+    return names
+
+
+def _template_param_re(name: str) -> re.Pattern[str]:
+    """Match ``${{ parameters.<name> }}`` (any internal whitespace)."""
+    return re.compile(rf"\$\{{\{{\s*parameters\.{re.escape(name)}\s*\}}\}}")
+
+
 def _ado_ref_pattern(name: str) -> str:
     """Match every ADO reference syntax for *name*: ``$(VAR)`` (macro),
     ``$env:VAR`` (PowerShell), and ``$VAR`` / ``${VAR}`` (bash).
@@ -119,6 +158,7 @@ def check(path: str, doc: dict[str, Any]) -> Finding:
     locations: list[Location] = []
     seen_step_lines: set[int] = set()
     pipeline_tainted = _tainted_vars(doc.get("variables"))
+    freeform_param_res = [_template_param_re(p) for p in _freeform_params(doc)]
     for job_loc, job in iter_jobs(doc):
         job_tainted = pipeline_tainted | _tainted_vars(job.get("variables"))
         for step_loc, step in iter_steps(job):
@@ -142,6 +182,13 @@ def check(path: str, doc: dict[str, Any]) -> Finding:
                 if has_direct_taint(lines, UNTRUSTED_VAR_RE) or job_tainted and has_unsafe_reference(
                     lines, job_tainted, ref_pattern=_ado_ref_pattern
                 ):
+                    offenders.append(loc)
+                    hit = True
+                    break
+                # 2. Template injection: a free-form ``string`` parameter
+                #    spliced into the script at compile time. No quoting
+                #    carve-out, the substitution precedes shell parsing.
+                if any(rx.search(body) for rx in freeform_param_res):
                     offenders.append(loc)
                     hit = True
                     break

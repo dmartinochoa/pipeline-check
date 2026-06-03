@@ -30,7 +30,12 @@ RULE = Rule(
         "$BITBUCKET_BRANCH, $BITBUCKET_TAG, and $BITBUCKET_PR_* are "
         "populated from SCM event metadata the attacker controls. "
         "Interpolating them unquoted into a shell command lets a "
-        "crafted branch or tag name can execute inline."
+        "crafted branch or tag name can execute inline. The same "
+        "applies to trigger-time ``variables:`` declared by a "
+        "``custom:`` pipeline: anyone with run / trigger rights supplies "
+        "the value (UI or API), so an unquoted reference in a later "
+        "``script:`` step is injection (the Bitbucket analogue of a "
+        "workflow_dispatch input)."
     ),
     known_fp=(
         "Pipelines that *parse* a ref name rather than execute it "
@@ -104,9 +109,34 @@ def _bb_ref_pattern(name: str) -> str:
     return rf"\$\{{?{re.escape(name)}\}}?"
 
 
+def _custom_pipeline_vars(doc: dict[str, Any]) -> set[str]:
+    """Names of trigger-time ``variables:`` declared by a ``custom:`` pipeline.
+
+    A custom pipeline can declare ``- variables: [{name: X}]`` entries that
+    anyone with run / trigger rights supplies at run time (UI or API), so
+    they are attacker-controllable the same way a workflow_dispatch input
+    is. Unquoted use in a later ``script:`` step is injection.
+    """
+    names: set[str] = set()
+    pipelines = doc.get("pipelines")
+    custom = pipelines.get("custom") if isinstance(pipelines, dict) else None
+    if not isinstance(custom, dict):
+        return names
+    for items in custom.values():
+        if not isinstance(items, list):
+            continue
+        for item in items:
+            if isinstance(item, dict) and isinstance(item.get("variables"), list):
+                for v in item["variables"]:
+                    if isinstance(v, dict) and isinstance(v.get("name"), str):
+                        names.add(v["name"])
+    return names
+
+
 def check(path: str, doc: dict[str, Any]) -> Finding:
     offenders: list[str] = []
     locations: list[Location] = []
+    custom_vars = _custom_pipeline_vars(doc)
     for loc, step in iter_steps(doc):
         scripts = step_scripts(step)
         hit = False
@@ -120,6 +150,12 @@ def check(path: str, doc: dict[str, Any]) -> Finding:
             tainted = _tainted_exports(scripts)
             if tainted and has_unsafe_reference(
                 scripts, tainted, ref_pattern=_bb_ref_pattern
+            ):
+                offenders.append(loc)
+                hit = True
+            # 3. A custom-pipeline trigger-time variable referenced unquoted.
+            elif custom_vars and has_unsafe_reference(
+                scripts, custom_vars, ref_pattern=_bb_ref_pattern
             ):
                 offenders.append(loc)
                 hit = True

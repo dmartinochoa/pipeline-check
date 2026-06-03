@@ -45,11 +45,21 @@ release commit collapses this section into `## [X.Y.Z] - <date>`.
 
 ### Changed
 
-- **ADO-002 now scans task-based script steps.** It read the `script:` /
-  `bash:` / `pwsh:` / `powershell:` shorthands but not the inline
-  `inputs.script` of a `task: Bash@3` / `PowerShell@2` / `CmdLine@2`
-  step, so a `$(System.PullRequest.SourceBranch)` macro spliced into a
-  `Bash@3` task slipped through. Now flagged (cicd-goat scenario 49).
+- **ADO-002 now scans task-based script steps and flags template
+  injection.** It read the `script:` / `bash:` / `pwsh:` / `powershell:`
+  shorthands but not the inline `inputs.script` of a `task: Bash@3` /
+  `PowerShell@2` / `CmdLine@2` step, so a
+  `$(System.PullRequest.SourceBranch)` macro spliced into a `Bash@3` task
+  slipped through (cicd-goat scenario 49). It also now flags compile-time
+  template injection: a free-form `string` parameter (no `values:`
+  allowlist) spliced into a script via `${{ parameters.X }}`, which
+  becomes pipeline structure before any quoting applies (scenario 50).
+- **BB-002 now flags custom-pipeline variable injection.** Beyond the
+  `$BITBUCKET_*` ref variables it already caught, it flags a trigger-time
+  variable declared by a `custom:` pipeline (`- variables: [{name: X}]`)
+  referenced unquoted in a later `script:` step. Anyone with run / trigger
+  rights supplies the value, so it is the Bitbucket analogue of a
+  workflow_dispatch input (cicd-goat scenario 66).
 - **CC-002 now flags `<< pipeline.git.branch >>` / `<< pipeline.git.tag >>`
   interpolation.** Beyond the `$CIRCLE_*` shell vars it already caught,
   the rule now flags CircleCI's native `<< pipeline.git.* >>`
