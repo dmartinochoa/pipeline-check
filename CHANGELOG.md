@@ -12,6 +12,25 @@ release commit collapses this section into `## [X.Y.Z] - <date>`.
 
 ### Added
 
+- **Fleet SDLC posture graph (JSON).** The fleet report now bundles a
+  cross-repo posture graph the fleet / CXPC engine already implies but
+  never exposed as data. ``fleet.json`` gains a ``posture_graph`` key:
+  **nodes** are the scanned repos (carrying grade / score / per-severity
+  failed-finding breakdown), **edges** are the cross-repo (CXPC)
+  relationships as directed ``source -> target`` links (the producer
+  repo that carries the risk to the consumer / partner repo that
+  inherits it), tagged with the chain id / severity / title. A chain
+  endpoint outside the scanned fleet (a partner repo referenced but not
+  scanned) still appears as a node with ``scanned: false`` so the edge
+  isn't dropped. To make the edges first-class, ``Chain`` gained a
+  structured ``repos`` field (``[source, target]`` for cross-repo
+  chains, empty otherwise) that CXPC-001..004 now populate, so the
+  repo-to-repo link is data rather than only narrative prose; it also
+  surfaces in each cross-repo chain's JSON. ``fleet.md`` gets a matching
+  "Cross-repo posture graph" edge table. The graph is the topology view
+  commercial ASPM tools sell; a lightweight HTML rendering of it is a
+  deferred follow-up. Builds on the fleet phase-2 / CXPC infrastructure;
+  no new scan work, just the implied graph as output.
 - **NPM-018: latest release published by a new npm account
   (publisher-change / takeover signal).** The active-takeover companion
   to NPM-014's single-publisher blast radius (the roadmap follow-up the
