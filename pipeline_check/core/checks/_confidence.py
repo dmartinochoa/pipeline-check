@@ -88,6 +88,11 @@ _MEDIUM: frozenset[str] = frozenset({
     # default heuristic (main/master only), so a project whose default
     # branch is named otherwise over-flags.
     "PYPI-021",
+    # NPM-018, latest release published by an account new to the package.
+    # The per-version publisher is the only static signal, so a
+    # legitimate maintainer hand-off / new co-maintainer's first publish
+    # trips it the same as a takeover.
+    "NPM-018",
 })
 
 # ── LOW: blob-search heuristics; meaningful FP rate expected ─────────

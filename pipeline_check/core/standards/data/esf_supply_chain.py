@@ -688,6 +688,7 @@ STANDARD = Standard(
         "NPM-014":  ["ESF-S-VERIFY-DEPS"],
         "NPM-015":  ["ESF-S-VERIFY-DEPS"],
         "NPM-017":  ["ESF-S-VERIFY-DEPS"],  # provenance built from a non-release ref
+        "NPM-018":  ["ESF-S-VERIFY-DEPS"],  # latest release from a new publisher
         "NPM-016":  ["ESF-S-VERIFY-DEPS"],
         "PYPI-008": ["ESF-S-VERIFY-DEPS"],
         "PYPI-009": ["ESF-S-VERIFY-DEPS"],

@@ -24,6 +24,7 @@ from ..checks.npm.registry_fetcher import (
     HttpRegistryFetcher,
     default_cache_dir,
     fetch_maintainer_counts,
+    fetch_new_publisher,
     fetch_provenance,
     fetch_provenance_refs,
     fetch_publish_times,
@@ -131,6 +132,13 @@ class NpmProvider(BaseProvider):
         # network requests. The warnings half is dropped: any fetch
         # failure was already surfaced by the publish-time pass above.
         context.maintainer_counts = fetch_maintainer_counts(
+            names, fetcher, cache=cache,
+        )[0]
+        # NPM-018: whether each package's latest release came from an
+        # account new to the package (the takeover / publisher-change
+        # shape). Reuses the cached packument's per-version ``_npmUser``,
+        # so it adds no network requests.
+        context.new_publisher = fetch_new_publisher(
             names, fetcher, cache=cache,
         )[0]
         context.provenance = fetch_provenance(
