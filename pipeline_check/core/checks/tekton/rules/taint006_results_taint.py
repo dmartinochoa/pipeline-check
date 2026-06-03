@@ -203,4 +203,5 @@ def check(ctx: TektonContext) -> Finding:
         check_id=RULE.id, title=RULE.title, severity=RULE.severity,
         resource="tekton", description=desc,
         recommendation=RULE.recommendation, passed=False,
+        taint_flows=tuple(p.to_flow() for p in all_paths),
     )
