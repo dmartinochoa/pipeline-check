@@ -454,6 +454,7 @@ STANDARD = Standard(
         # ── ArgoCD extended pack ──
         "ARGOCD-010": ["1.4.1"],                   # mutable targetRevision
         "ARGOCD-017": ["1.4.1"],  # in-cluster mutable source
+        "ARGOCD-019": ["1.4.1"],  # drift detection disabled on a sensitive field
         "ARGOCD-016": ["1.4.1"],  # Helm valueFiles from a remote URL
         "ARGOCD-018": ["1.4.1"],  # custom resource health / action Lua
         "ARGOCD-011": ["1.3.4"],                   # cluster-resource wildcard

@@ -580,6 +580,7 @@ STANDARD = Standard(
         # ── Argo CD (GitOps deployment) ──
         "ARGOCD-010": ["6.3.1"],                         # mutable targetRevision
         "ARGOCD-017": ["6.3.1"],  # in-cluster mutable source
+        "ARGOCD-019": ["6.3.1"],  # drift detection disabled on a sensitive field
         "ARGOCD-016": ["6.3.1"],  # Helm valueFiles from a remote URL
         "ARGOCD-018": ["6.3.1"],  # custom resource health / action Lua
         "ARGOCD-011": ["7.2.1"],                         # cluster-resource wildcard

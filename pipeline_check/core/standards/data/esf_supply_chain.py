@@ -619,6 +619,7 @@ STANDARD = Standard(
         # ── ArgoCD extended pack ──
         "ARGOCD-010": ["ESF-S-PIN-DEPS"],
         "ARGOCD-017": ["ESF-S-PIN-DEPS", "ESF-C-LEAST-PRIV"],  # in-cluster mutable source
+        "ARGOCD-019": ["ESF-C-LEAST-PRIV"],  # drift detection disabled on a sensitive field
         "ARGOCD-016": ["ESF-S-VERIFY-DEPS"],  # Helm valueFiles from a remote URL
         "ARGOCD-018": ["ESF-C-LEAST-PRIV"],  # custom resource health / action Lua
         "ARGOCD-011": ["ESF-C-LEAST-PRIV"],
