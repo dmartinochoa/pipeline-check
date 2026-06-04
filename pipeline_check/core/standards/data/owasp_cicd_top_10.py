@@ -747,6 +747,7 @@ STANDARD = Standard(
         # ── ArgoCD extended pack (ARGOCD-010..013) ──
         "ARGOCD-010": ["CICD-SEC-3", "CICD-SEC-5"], # mutable targetRevision
         "ARGOCD-017": ["CICD-SEC-3", "CICD-SEC-5"],  # in-cluster mutable source
+        "ARGOCD-019": ["CICD-SEC-5"],  # drift detection disabled on a sensitive field
         "ARGOCD-016": ["CICD-SEC-4", "CICD-SEC-3"],  # Helm valueFiles from a remote URL
         "ARGOCD-018": ["CICD-SEC-4"],  # custom resource health / action Lua
         "ARGOCD-011": ["CICD-SEC-1", "CICD-SEC-5"], # cluster-resource wildcard

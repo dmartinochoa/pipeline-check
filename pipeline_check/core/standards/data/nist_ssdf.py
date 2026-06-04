@@ -474,6 +474,7 @@ STANDARD = Standard(
         "ARGO-004": ["PO.5.1", "PW.9.1"],              # hostPath / host namespaces
         "ARGO-005": ["PW.6.1", "PW.9.1"],              # parameter injection in script
         "ARGO-017": ["PW.6.1", "PW.9.1"],              # resource template manifest injection
+        "ARGOCD-019": ["PW.9.1"],                      # drift detection disabled on a sensitive field
         "ARGO-006": ["PS.1.1"],                        # leaked creds in env / param
         "ARGO-007": ["PO.5.2", "PW.9.1"],              # missing activeDeadlineSeconds
         "ARGO-008": ["PW.4.1", "PW.4.4"],              # remote install / TLS bypass

@@ -12,6 +12,22 @@ release commit collapses this section into `## [X.Y.Z] - <date>`.
 
 ### Added
 
+- **ARGOCD-019: Argo CD Application disables drift detection on a
+  sensitive field (HIGH).** Tier 2 of the 2026-06-04 high-impact sweep.
+  Fires when an Application (or ApplicationSet template) sets
+  `syncPolicy.syncOptions: [Validate=false]`, or carries a
+  `spec.ignoreDifferences` entry whose `jsonPointers` / `jqPathExpressions`
+  / `kind` references a security-relevant field (container `image`, RBAC
+  `rules` / `subjects` / `roleRef`, `securityContext`, host namespaces,
+  service account, capabilities). Both tell Argo CD to stop enforcing the
+  field's desired state, so an out-of-band edit (a backdoored image, a
+  widened ClusterRole) persists in the live cluster while the dashboard
+  stays Synced / Healthy: stealth persistence sanctioned by the GitOps
+  controller. A non-security `ignoreDifferences` (a replica count, a
+  webhook-injected annotation) does not fire. Distinct from ARGOCD-003
+  (prune / selfHeal) and ARGOCD-010 / 017 (mutable source ref), which
+  reason about the input rather than the controller ignoring its output.
+  argocd 18 -> 19.
 - **GL-041: IaC apply on an untrusted merge-request trigger.** The
   GitLab analog of GHA-117. Fires when a job runs an unattended IaC
   apply (`terraform`/`terragrunt apply` or `destroy`, `aws
