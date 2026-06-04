@@ -17,9 +17,13 @@ _MUTATING_ACTIONS = frozenset({"create", "apply", "patch", "replace"})
 # shell sink (ARGO-005), quoting gives no protection here because the sink
 # is the YAML object structure itself, so a crafted parameter injects whole
 # fields or entire objects (a privileged Pod, a cluster-admin RoleBinding).
+# Covers the plain ``{{ inputs.parameters.X }}`` form, the expr-template
+# ``{{= inputs.parameters.X }}`` form, and bracket access
+# ``parameters['X']`` / ``item['k']`` -- all reach the same text sink.
 _PARAM_TOKEN_RE = re.compile(
-    r"\{\{\s*(?:inputs|workflow|item)\.parameters?\.[A-Za-z0-9_.-]+\s*\}\}"
-    r"|\{\{\s*item(?:\.[A-Za-z0-9_-]+)?\s*\}\}"
+    r"\{\{=?\s*(?:inputs|workflow|item)\.parameters?"
+    r"(?:\.[A-Za-z0-9_-]+|\s*\[[^\]]+\])+\s*\}\}"
+    r"|\{\{=?\s*item(?:\.[A-Za-z0-9_-]+|\s*\[[^\]]+\])*\s*\}\}"
 )
 
 RULE = Rule(

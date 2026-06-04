@@ -18,12 +18,21 @@ _UNTRUSTED_TRIGGERS = frozenset({
     "pull_request", "pull_request_target", "workflow_run", "issue_comment",
 })
 
-# A redirect (``>>`` or ``>``) into GitHub's env-control file. GitHub
-# parses this file after the step and sets the named vars / PATH entries
-# for every SUBSEQUENT step in the job.
+# A write into GitHub's env-control file: a ``>``/``>>`` redirect or a
+# ``tee [-a] $GITHUB_ENV`` (which takes the file as an argument, no
+# redirect operator). GitHub parses this file after the step and sets the
+# named vars / PATH entries for every SUBSEQUENT step in the job.
 _CONTROL_RE = re.compile(
-    r'>>?\s*"?\$\{?(GITHUB_ENV|GITHUB_PATH)\}?"?'
+    r'(?:>>?\s*|\btee\b\s+(?:-{1,2}\S+\s+)*)'
+    r'"?\$\{?(GITHUB_ENV|GITHUB_PATH)\}?"?'
 )
+
+# Shell statement separators. A reader command BEFORE one of these does
+# not feed the redirect that follows it, so only the last statement on a
+# line decides whether the env write carries file/command-output content.
+# A single ``|`` (pipe) is deliberately NOT a separator: a pipeline's
+# output is the redirected content, so its reader still counts.
+_STATEMENT_SPLIT_RE = re.compile(r'&&|\|\||;|&')
 
 # File / command-output readers. Their output is repo / artifact content,
 # which an attacker controls on an untrusted trigger, so piping it into
@@ -128,7 +137,10 @@ def check(path: str, doc: dict[str, Any]) -> Finding:
                     if not m:
                         continue
                     target = m.group(1)
-                    lhs = line[:m.start()]
+                    # Only the statement immediately producing the write
+                    # matters; a reader in an earlier ``&&`` / ``;`` clause
+                    # doesn't feed this redirect.
+                    lhs = _STATEMENT_SPLIT_RE.split(line[:m.start()])[-1]
                     reason: str | None = None
                     if _FILE_READ_RE.search(lhs):
                         reason = "file / command-output content"

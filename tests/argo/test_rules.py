@@ -1160,6 +1160,48 @@ class TestARGO017ResourceManifestInjection:
         f = run_check(cfg, "ARGO-017")
         assert not f.passed
 
+    def test_fails_on_expr_template_param(self):
+        # The expr-template ``{{= ... }}`` form reaches the same text sink.
+        cfg = """
+        apiVersion: argoproj.io/v1alpha1
+        kind: WorkflowTemplate
+        metadata: {name: provision}
+        spec:
+          entrypoint: apply
+          templates:
+            - name: apply
+              inputs: {parameters: [{name: spec}]}
+              resource:
+                action: apply
+                manifest: |
+                  apiVersion: v1
+                  kind: ConfigMap
+                  data: {payload: "{{=inputs.parameters.spec}}"}
+        """
+        f = run_check(cfg, "ARGO-017")
+        assert not f.passed
+
+    def test_fails_on_bracket_index_param(self):
+        # Bracket access ``parameters['spec']`` is the same sink as dotted.
+        cfg = """
+        apiVersion: argoproj.io/v1alpha1
+        kind: WorkflowTemplate
+        metadata: {name: provision}
+        spec:
+          entrypoint: apply
+          templates:
+            - name: apply
+              inputs: {parameters: [{name: spec}]}
+              resource:
+                action: apply
+                manifest: |
+                  apiVersion: v1
+                  kind: ConfigMap
+                  data: {payload: "{{ inputs.parameters['spec'] }}"}
+        """
+        f = run_check(cfg, "ARGO-017")
+        assert not f.passed
+
     def test_passes_on_fixed_manifest(self):
         cfg = """
         apiVersion: argoproj.io/v1alpha1

@@ -1,24 +1,42 @@
 """ARGOCD-019. Application disables drift detection on a sensitive field."""
 from __future__ import annotations
 
+import re
 from typing import Any
 
 from ...base import Finding, Severity
 from ...rule import Rule
 from ..base import ArgoCDContext, iter_applications, iter_applicationsets
 
-# Tokens that mark an ``ignoreDifferences`` path as security-relevant. If
-# the controller stops reconciling one of these, an out-of-band edit to a
-# privileged field (an image swap, an RBAC widening, a securityContext
-# relaxation) persists in the live cluster while Argo CD reports the app
-# Synced / Healthy. Matched case-insensitively against the path strings
-# (``jsonPointers`` / ``jqPathExpressions``) and the entry's ``kind``.
-_SENSITIVE_TOKENS = (
+# Path-field tokens that mark an ``ignoreDifferences`` path as security-
+# relevant. If the controller stops reconciling one of these, an
+# out-of-band edit to a privileged field (an image swap, an RBAC
+# widening, a securityContext relaxation) persists in the live cluster
+# while Argo CD reports the app Synced / Healthy. Matched as the PREFIX
+# of a ``/``- or ``.``-delimited path SEGMENT (not as a raw substring),
+# so ``env`` matches an ``env`` / ``envFrom`` field rather than any word
+# that merely contains those letters. Prefix (not exact) so the camelCase
+# ``securityContext`` / ``runAsUser`` fields, ``serviceAccountName``,
+# ``automountServiceAccountToken`` and ``allowPrivilegeEscalation`` all
+# still match.
+_SENSITIVE_PATH_TOKENS = (
     "image", "securitycontext", "rules", "subjects", "roleref",
-    "clusterrole", "role", "env", "command", "args", "privileged",
-    "hostpath", "hostnetwork", "hostpid", "serviceaccount",
-    "automount", "capabilities", "runasuser", "allowprivilege",
+    "env", "command", "args", "privileged", "hostpath", "hostnetwork",
+    "hostpid", "serviceaccount", "automount", "capabilities",
+    "runasuser", "allowprivilege",
 )
+
+# Whole-object kinds whose ignored drift is security-relevant, matched
+# EXACTLY (case-insensitively) against the entry's ``kind`` so a custom
+# resource named ``ControllerRole`` doesn't trip on ``role``.
+_SENSITIVE_KINDS = frozenset({
+    "role", "clusterrole", "rolebinding", "clusterrolebinding",
+    "serviceaccount", "pod", "podsecuritypolicy",
+    "securitycontextconstraints",
+})
+
+# Split a json-pointer / jq path into its alphanumeric components.
+_PATH_SEGMENT_RE = re.compile(r"[^a-z0-9]+")
 
 RULE = Rule(
     id="ARGOCD-019",
@@ -126,17 +144,19 @@ def _sensitive_ignore(spec: dict[str, Any]) -> bool:
     for entry in entries:
         if not isinstance(entry, dict):
             continue
-        blob = ""
-        for key in ("jsonPointers", "jqPathExpressions"):
-            v = entry.get(key)
-            if isinstance(v, list):
-                blob += " ".join(str(x) for x in v)
         kind = entry.get("kind")
-        if isinstance(kind, str):
-            blob += " " + kind
-        lowered = blob.lower()
-        if any(tok in lowered for tok in _SENSITIVE_TOKENS):
+        if isinstance(kind, str) and kind.strip().lower() in _SENSITIVE_KINDS:
             return True
+        for key in ("jsonPointers", "jqPathExpressions"):
+            paths = entry.get(key)
+            if not isinstance(paths, list):
+                continue
+            for path in paths:
+                for seg in _PATH_SEGMENT_RE.split(str(path).lower()):
+                    if seg and any(
+                        seg.startswith(tok) for tok in _SENSITIVE_PATH_TOKENS
+                    ):
+                        return True
     return False
 
 

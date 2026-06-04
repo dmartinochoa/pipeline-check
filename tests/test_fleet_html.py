@@ -21,9 +21,10 @@ def _snap(
 def _chain(
     source: str, target: str,
     chain_id: str = "CXPC-002", severity: Severity = Severity.CRITICAL,
+    title: str = "x-repo chain",
 ) -> Chain:
     return Chain(
-        chain_id=chain_id, title="x-repo chain",
+        chain_id=chain_id, title=title,
         severity=severity, confidence=Confidence.MEDIUM,
         summary="", narrative="", mitre_attack=[], kill_chain_phase="",
         triggering_check_ids=[], triggering_findings=[],
@@ -126,3 +127,30 @@ class TestFleetHtml:
         html = render_fleet_html(dg)
         assert "<img src=x>" not in html
         assert "&lt;img" in html
+
+    def test_chain_title_and_error_are_html_escaped(self) -> None:
+        # A malicious chain title (SVG <title> sink) or scan-error message
+        # (error-card sink) must be escaped, not break out of the markup.
+        dg = FleetDigest(
+            snapshots=[
+                _snap("o/prod"),
+                _snap("o/broken", error="boom </script><script>alert(1)</script>"),
+            ],
+            cxpc_chains=[
+                _chain("o/prod", "o/cons", title="</title><script>evil()</script>"),
+            ],
+        )
+        html = render_fleet_html(dg)
+        assert "<script>" not in html
+        assert "</script>" not in html
+        assert "</title><script>" not in html
+        # the escaped forms of both payloads are present
+        assert "&lt;script&gt;evil()" in html
+        assert "&lt;/script&gt;&lt;script&gt;alert(1)" in html
+
+    def test_severities_match_fleet_module(self) -> None:
+        # The HTML view must iterate the same severity tiers the fleet
+        # digest actually counts; a divergence renders an always-empty
+        # chip the Markdown digest never shows.
+        from pipeline_check.core import fleet, fleet_html
+        assert fleet_html._SEVERITIES == fleet._SEVERITIES

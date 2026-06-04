@@ -42,7 +42,7 @@ DEPLOY_CMD_RE = re.compile(
 # verbs are the high-confidence shape); the ``destroy`` variants are
 # included because they realize a state change just as apply does.
 IAC_APPLY_RE = re.compile(
-    r"\b(?:terraform|terragrunt)\s+(?:apply|destroy)\b"
+    r"\b(?:terraform|terragrunt|tofu)\s+(?:run-all\s+)?(?:apply|destroy)\b"
     r"|\baws\s+cloudformation\s+(?:deploy|create-stack|update-stack|execute-change-set)\b"
     r"|\bcdk\s+(?:deploy|destroy)\b"
     r"|\bpulumi\s+(?:up|destroy)\b"

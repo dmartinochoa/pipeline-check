@@ -50,6 +50,28 @@ class TestGL041IacApplyUntrustedMr:
         """, "GL-041")
         assert not f.passed
 
+    def test_fails_on_tofu_apply(self) -> None:
+        # OpenTofu (the Terraform fork) shares the apply sink.
+        f = run_check("""
+        deploy:
+          script:
+            - tofu apply -auto-approve
+          rules:
+            - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+        """, "GL-041")
+        assert not f.passed
+
+    def test_fails_on_terragrunt_run_all_apply(self) -> None:
+        # ``terragrunt run-all apply`` realizes state across every module.
+        f = run_check("""
+        deploy:
+          script:
+            - terragrunt run-all apply -auto-approve
+          rules:
+            - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+        """, "GL-041")
+        assert not f.passed
+
     def test_passes_on_plan_only_on_mr(self) -> None:
         f = run_check("""
         terraform_plan:

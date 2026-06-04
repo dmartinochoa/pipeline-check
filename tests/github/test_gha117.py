@@ -47,6 +47,19 @@ class TestGHA117IacApplyUntrustedPr:
         f = run_check(wf, "GHA-117")
         assert not f.passed
 
+    def test_fails_on_pull_request_tofu_apply(self):
+        # OpenTofu shares the apply sink via the same primitive.
+        wf = """
+        on: pull_request
+        jobs:
+          apply:
+            runs-on: ubuntu-latest
+            steps:
+              - run: tofu apply -auto-approve
+        """
+        f = run_check(wf, "GHA-117")
+        assert not f.passed
+
     def test_passes_on_push_apply(self):
         # apply on push (trusted) is the intended deploy path, not flagged.
         wf = """

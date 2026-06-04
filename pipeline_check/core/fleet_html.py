@@ -43,7 +43,12 @@ try:
 except OSError:
     _DESIGN_TOKENS_CSS = ""
 
-_SEVERITIES = ("CRITICAL", "HIGH", "MEDIUM", "LOW", "INFO")
+# Mirror ``fleet._SEVERITIES`` exactly: the org-wide chip band and the
+# per-card badges iterate this, and ``failed_by_severity`` is built from
+# the fleet tuple, so a fifth tier here (e.g. INFO) would render an
+# always-empty chip the Markdown digest never shows. A drift guard in
+# ``tests/test_fleet_html.py`` keeps the two in lockstep.
+_SEVERITIES = ("CRITICAL", "HIGH", "MEDIUM", "LOW")
 
 # Severity / grade names -> the CSS variable that holds their color, so
 # the markup references ``var(--sev-high)`` rather than a hardcoded hex

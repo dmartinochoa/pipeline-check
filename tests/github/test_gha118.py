@@ -54,6 +54,34 @@ class TestGHA118GithubEnvInjection:
         f = run_check(wf, "GHA-118")
         assert not f.passed
 
+    def test_fails_on_tee_append_into_github_env(self):
+        # ``tee -a`` takes the env-control file as an argument (no redirect
+        # operator), so a file piped through it still injects.
+        wf = """
+        on: pull_request_target
+        jobs:
+          b:
+            runs-on: ubuntu-latest
+            steps:
+              - run: cat ./ci.env | tee -a "$GITHUB_ENV"
+        """
+        f = run_check(wf, "GHA-118")
+        assert not f.passed
+
+    def test_passes_on_reader_in_earlier_clause_then_literal_write(self):
+        # A reader (``grep``) in an earlier ``&&`` clause does not feed the
+        # redirect; the actual env write is a fixed literal, so this passes.
+        wf = """
+        on: pull_request_target
+        jobs:
+          b:
+            runs-on: ubuntu-latest
+            steps:
+              - run: grep -q foo ./file && echo "OK=1" >> "$GITHUB_ENV"
+        """
+        f = run_check(wf, "GHA-118")
+        assert f.passed
+
     def test_passes_on_fixed_literal(self):
         wf = """
         on: pull_request_target
