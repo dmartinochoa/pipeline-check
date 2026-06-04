@@ -379,6 +379,7 @@ STANDARD = Standard(
         "K8S-021":  ["PR.AA-05"],               # wildcard verbs
         "K8S-022":  ["PR.IR-01"],               # SSH service exposed
         "K8S-023":  ["PR.PS-01"],               # PSA enforce missing
+        "K8S-044":  ["PR.PS-01"],               # admission webhook fail-open / unscoped mutating
         "K8S-024":  ["DE.CM-09"],               # readiness/liveness probes
         "K8S-025":  ["PR.PS-01"],               # system priority class
         "K8S-026":  ["PR.IR-01"],               # LB without source ranges

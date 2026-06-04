@@ -455,6 +455,7 @@ STANDARD = Standard(
         "K8S-021":  ["CICD-SEC-2", "CICD-SEC-5"],
         "K8S-022":  ["CICD-SEC-7"],
         "K8S-023":  ["CICD-SEC-7"],   # PSA enforce label missing
+        "K8S-044":  ["CICD-SEC-7"],   # admission webhook fail-open / unscoped mutating
         "K8S-024":  ["CICD-SEC-7", "CICD-SEC-10"],  # missing health probes
         "K8S-025":  ["CICD-SEC-2", "CICD-SEC-5", "CICD-SEC-7"],  # system-* priority class
         "K8S-026":  ["CICD-SEC-7"],   # LB without source ranges

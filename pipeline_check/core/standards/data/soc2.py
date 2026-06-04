@@ -278,6 +278,7 @@ STANDARD = Standard(
         "K8S-021":  ["CC6.1"],            # wildcard verbs
         "K8S-022":  ["CC6.6"],            # SSH service exposed
         "K8S-023":  ["CC7.1"],            # PSA enforce missing
+        "K8S-044":  ["CC7.1"],            # admission webhook fail-open / unscoped mutating
         "K8S-024":  ["CC7.2"],            # readiness/liveness probes
         "K8S-015":  ["CC6.6"],            # no memory limit (availability boundary)
         "K8S-016":  ["CC6.6"],            # no CPU limit (availability boundary)

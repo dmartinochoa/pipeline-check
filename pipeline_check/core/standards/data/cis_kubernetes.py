@@ -117,6 +117,7 @@ STANDARD = Standard(
         # ── 5.7 General Policies ─────────────────────────────────
         "K8S-019":  ["5.7.1", "5.7.4"],                          # default namespace = no admin boundary
         "K8S-023":  ["5.7.1", "5.7.3"],                          # PSA enforce missing = no admission boundary
+        "K8S-044":  ["5.7.1", "5.7.3"],                          # admission webhook fail-open / unscoped mutating
         "K8S-031":  ["5.7.1", "5.7.3"],                          # PSA warn missing
         "K8S-025":  ["5.7.1"],                                   # system priority class outside kube-system
         "K8S-030":  ["5.7.1"],                                   # schedules onto control-plane node

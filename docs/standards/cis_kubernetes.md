@@ -15,7 +15,7 @@ controls require live cluster access and are out of scope.
 
 - **Controls in this standard:** 24
 - **Controls evidenced by at least one check:** 24 / 24
-- **Distinct checks evidencing this standard:** 46
+- **Distinct checks evidencing this standard:** 47
 - **Of those, autofixable with `--fix`:** 13
 
 _Severity levels (`CRITICAL` / `HIGH` / `MEDIUM` / `LOW` / `INFO`) follow the same scale across every provider and standard. See [How to read severity](README.md#how-to-read-severity) on the standards overview for the definitions._
@@ -46,9 +46,9 @@ Click a control ID to jump to the per-control section with the full check list. 
 | [`5.3.2`](#ctrl-5-3-2) | Ensure that all Namespaces have NetworkPolicies defined | 2 | 2M |
 | [`5.4.1`](#ctrl-5-4-1) | Prefer using Secrets as files over Secrets as environment variables | 2 | 2C |
 | [`5.4.2`](#ctrl-5-4-2) | Consider external secret storage | 4 | 3C · 1H |
-| [`5.7.1`](#ctrl-5-7-1) | Create administrative boundaries between resources using namespaces | 7 | 3H · 1M · 3L |
+| [`5.7.1`](#ctrl-5-7-1) | Create administrative boundaries between resources using namespaces | 8 | 4H · 1M · 3L |
 | [`5.7.2`](#ctrl-5-7-2) | Ensure that the seccomp profile is set to docker/default in your Pod definitions | 1 | 1M |
-| [`5.7.3`](#ctrl-5-7-3) | Apply SecurityContext to your Pods and Containers | 13 | 1C · 8H · 3M · 1L |
+| [`5.7.3`](#ctrl-5-7-3) | Apply SecurityContext to your Pods and Containers | 14 | 1C · 9H · 3M · 1L |
 | [`5.7.4`](#ctrl-5-7-4) | The default namespace should not be used | 1 | 1L |
 
 ## Filter at runtime
@@ -266,7 +266,7 @@ pipeline_check --pipeline aws --standard cis_kubernetes --standard owasp_cicd_to
 
 ### 5.7.1: Create administrative boundaries between resources using namespaces { #ctrl-5-7-1 }
 
-**Evidenced by 7 checks** across 2 providers (Helm, Kubernetes).
+**Evidenced by 8 checks** across 2 providers (Helm, Kubernetes).
 
 | Check | Title | Severity | Provider | Fix |
 |-------|-------|----------|----------|-----|
@@ -277,6 +277,7 @@ pipeline_check --pipeline aws --standard cis_kubernetes --standard owasp_cicd_to
 | [`K8S-030`](../providers/kubernetes.md#k8s-030) | Workload schedules onto a control-plane node | <span class="pg-sev pg-sev--high">HIGH</span> | [Kubernetes](../providers/kubernetes.md) | <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> |
 | [`K8S-031`](../providers/kubernetes.md#k8s-031) | Namespace missing PSA warn label | <span class="pg-sev pg-sev--low">LOW</span> | [Kubernetes](../providers/kubernetes.md) |  |
 | [`K8S-033`](../providers/kubernetes.md#k8s-033) | Namespace lacks ResourceQuota or LimitRange | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [Kubernetes](../providers/kubernetes.md) |  |
+| [`K8S-044`](../providers/kubernetes.md#k8s-044) | Admission webhook fails open or mutates cluster-wide unscoped | <span class="pg-sev pg-sev--high">HIGH</span> | [Kubernetes](../providers/kubernetes.md) |  |
 
 ### 5.7.2: Ensure that the seccomp profile is set to docker/default in your Pod definitions { #ctrl-5-7-2 }
 
@@ -288,7 +289,7 @@ pipeline_check --pipeline aws --standard cis_kubernetes --standard owasp_cicd_to
 
 ### 5.7.3: Apply SecurityContext to your Pods and Containers { #ctrl-5-7-3 }
 
-**Evidenced by 13 checks** across 3 providers (Argo Workflows, Kubernetes, Tekton).
+**Evidenced by 14 checks** across 3 providers (Argo Workflows, Kubernetes, Tekton).
 
 | Check | Title | Severity | Provider | Fix |
 |-------|-------|----------|----------|-----|
@@ -304,6 +305,7 @@ pipeline_check --pipeline aws --standard cis_kubernetes --standard owasp_cicd_to
 | [`K8S-035`](../providers/kubernetes.md#k8s-035) | Container securityContext.runAsUser is 0 | <span class="pg-sev pg-sev--high">HIGH</span> | [Kubernetes](../providers/kubernetes.md) |  |
 | [`K8S-039`](../providers/kubernetes.md#k8s-039) | Pod uses shareProcessNamespace: true | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [Kubernetes](../providers/kubernetes.md) |  |
 | [`K8S-040`](../providers/kubernetes.md#k8s-040) | Container securityContext.procMount: Unmasked | <span class="pg-sev pg-sev--high">HIGH</span> | [Kubernetes](../providers/kubernetes.md) |  |
+| [`K8S-044`](../providers/kubernetes.md#k8s-044) | Admission webhook fails open or mutates cluster-wide unscoped | <span class="pg-sev pg-sev--high">HIGH</span> | [Kubernetes](../providers/kubernetes.md) |  |
 | [`TKN-002`](../providers/tekton.md#tkn-002) | Tekton step runs privileged or as root | <span class="pg-sev pg-sev--high">HIGH</span> | [Tekton](../providers/tekton.md) |  |
 
 ### 5.7.4: The default namespace should not be used { #ctrl-5-7-4 }

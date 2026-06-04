@@ -46,8 +46,8 @@ missing major surfaces or requires extra config. No = not in scope.
 | **Infrastructure as code** | | | | | | |
 | Terraform plans | Yes | Yes | Yes | Partial | Yes | Yes |
 | CloudFormation (YAML+JSON) | Yes | Yes | Yes | Partial | No | Yes |
-| Kubernetes manifests | Yes (43) | Yes | Yes | No | No | Yes |
-| Helm charts (rendered + supply-chain) | Yes (43 + 17) | Partial | No | No | No | Partial |
+| Kubernetes manifests | Yes (44) | Yes | Yes | No | No | Yes |
+| Helm charts (rendered + supply-chain) | Yes (44 + 17) | Partial | No | No | No | Partial |
 | Dockerfile | Yes (30) | Yes | Yes | No | No | Yes |
 | **Cloud + supply-chain** | | | | | | |
 | Live AWS account scan | Yes (71 rules, boto3) | No | No | No | No | Partial |
