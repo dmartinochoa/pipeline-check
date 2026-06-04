@@ -17,17 +17,17 @@ workflow](https://github.com/dmartinochoa/pipeline-check/actions/workflows/goat-
 | Goat | Recall | Findings | Coverage |
 |---|---|---|---|
 | [`cicd-goat`](https://github.com/cider-security-research/cicd-goat) | **9 / 9 (100%)** | 28 | GHA release workflow + 7 Jenkinsfiles |
-| [`cicd-goat-comparison`](https://github.com/greylag-ci/cicd-goat) | **31 / 38** | - | 38-scenario cross-scanner matrix (GHA + npm) |
+| [`cicd-goat-comparison`](https://github.com/greylag-ci/cicd-goat) | **27 / 27 (100%)** | - | GHA + npm slice of the 120-scenario cross-scanner matrix (pipeline-check leads) |
 | [`cfngoat`](https://github.com/bridgecrewio/cfngoat) | **6 / 6 (100%)** | 7 | `cfngoat.yaml` (IAM, KMS, Lambda, CloudTrail) |
 | [`kubernetes-goat`](https://github.com/madhuakula/kubernetes-goat) | **27 / 27 (100%)** | 27 | `scenarios/` manifest tree |
 | [`terragoat`](https://github.com/bridgecrewio/terragoat) | pending curation | - | Direct-HCL parsing shipped; `expected.txt` awaiting population |
 
 **42 check IDs locked across the three fully curated goats.** Any rule
 change that stops one from firing on its goat trips the bench in
-CI. The `cicd-goat-comparison` goat maps 27 unique check IDs
-across its curated expected set; the upstream corpus expanded to
-38 scenarios and a coverage push to 38/38 is tracked in
-[ROADMAP.md](https://github.com/dmartinochoa/pipeline-check/blob/master/ROADMAP.md).
+CI. The `cicd-goat-comparison` goat gates the GHA + npm slice with 27
+unique curated check IDs; upstream that testbed has since grown into a
+120-scenario, 16-provider cross-scanner matrix that Pipeline-Check
+leads (see below).
 
 ## How it works
 
@@ -99,18 +99,41 @@ are anchored against specific CICD-SEC risks:
 
 [Full `expected.txt`](https://github.com/dmartinochoa/pipeline-check/blob/master/bench/goats/cicd-goat/expected.txt)
 
-### cicd-goat-comparison — 38-scenario cross-scanner matrix
+### cicd-goat-comparison — 120-scenario cross-scanner matrix
 
-[`greylag-ci/cicd-goat`](https://github.com/greylag-ci/cicd-goat)
-is a purpose-built 38-scenario testbed for cross-scanner
-comparison. Each scenario isolates one CI/CD vulnerability class
-with a minimal GHA workflow. Pipeline-check leads the leaderboard
-at **31 / 38**, with 27 unique check IDs in the bench's curated
-expected set. A coverage push to 38/38 (three new rules + config
-fixes) is tracked in ROADMAP.md.
+[`greylag-ci/cicd-goat`](https://github.com/greylag-ci/cicd-goat) is a
+purpose-built testbed for cross-scanner comparison: 120 scenarios
+across 16 providers and formats, each isolating one CI/CD or IaC
+vulnerability with a minimal fixture. It scores nine scanners head to
+head (pipeline-check, Checkov, KICS, Trivy, zizmor, poutine, octoscan,
+ciguard, actionlint).
 
-The goat also compares against zizmor, poutine, octoscan, KICS,
-Checkov, and actionlint; the per-row expected values live in
+On the 43 GitHub Actions scenarios, where the GHA-specialist scanners
+compete directly, Pipeline-check leads by a wide margin:
+
+| Scanner | GHA scenarios |
+|---|---|
+| **pipeline-check** | **37 / 43** |
+| zizmor | 17 / 43 |
+| poutine | 14 / 43 |
+| octoscan | 13 / 43 |
+| Checkov | 10 / 43 |
+| KICS | 8 / 43 |
+| actionlint | 6 / 43 |
+
+Across all 16 categories Pipeline-check is the top scorer in 14 and the
+sole leader in 11: GitHub Actions, GitLab CI (14/14), Azure Pipelines
+(7/7), CircleCI (6/7), Bitbucket Pipelines (7/7), Jenkins (4/6), Tekton
+(4/4), Argo (5/5), Drone (3/3), Buildkite (2/2), and Cloud Build (2/2).
+It ties Trivy for first on Dockerfile, Kubernetes, and Helm (3/3 each).
+Terraform and CloudFormation are scored only for the IaC scanners
+(Checkov, KICS, Trivy), which lead there.
+
+The local GOAT bench gates a slice of this corpus: the runner scans the
+GHA + npm scenarios and asserts 27 curated check IDs still fire, so a
+rule regression that would cost Pipeline-check its leaderboard standing
+trips CI here first. The full per-scenario expected values for every
+scanner live in
 [`tools/scenarios.yaml`](https://github.com/greylag-ci/cicd-goat/blob/main/tools/scenarios.yaml)
 in the goat repo.
 

@@ -47,9 +47,10 @@ goats:
     # pipeline covers scenarios 20 + 29 (dependency-confusion /
     # lifecycle-script-RCE).
     description: >
-      38-scenario cross-scanner comparison matrix. Each scenario
-      isolates one CI/CD vulnerability with a minimal GHA workflow.
-      Coverage: 31/38 as of v1.4.0; 38/38 push tracked in ROADMAP.md.
+      Cross-scanner comparison matrix (120 scenarios across 16
+      providers upstream). The local gate scans the GitHub Actions +
+      npm slice and asserts its 27 curated check IDs still fire;
+      pipeline-check leads the upstream leaderboard.
 
   - slug: terragoat
     repo: https://github.com/bridgecrewio/terragoat
