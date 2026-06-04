@@ -163,6 +163,19 @@ release commit collapses this section into `## [X.Y.Z] - <date>`.
   `--resolve-remote` checks (cooldown / OSV / OpenSSF Scorecard /
   provenance / live secret verification).
 
+### Changed
+
+- **Docs: refreshed the cicd-goat cross-scanner benchmark numbers.**
+  The upstream [`greylag-ci/cicd-goat`](https://github.com/greylag-ci/cicd-goat)
+  testbed grew from a 38-scenario GHA + npm matrix to 120 scenarios
+  across 16 providers and formats. `docs/goat_bench.md` now carries the
+  current GitHub Actions leaderboard (pipeline-check 37/43, ahead of
+  zizmor 17, poutine 14, octoscan 13, Checkov 10, KICS 8, actionlint 6)
+  and the cross-provider standing (top scorer in 14 of 16 categories,
+  sole leader in 11). `docs/comparison.md` gains a "Cross-scanner
+  benchmark" section presenting the same measured results next to the
+  self-reported feature matrix.
+
 ## [1.9.0] - 2026-06-03
 
 ### Added

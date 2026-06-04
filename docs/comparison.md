@@ -75,6 +75,37 @@ missing major surfaces or requires extra config. No = not in scope.
 | License | MIT | Apache 2.0 | Apache 2.0 | LGPL 2.1 | MIT | Apache 2.0 |
 | Implementation language | Python | Python | Go | OCaml + Python | Go | Go |
 
+## Cross-scanner benchmark (cicd-goat)
+
+The matrix above is self-reported coverage. For measured, head-to-head
+numbers, [`greylag-ci/cicd-goat`](https://github.com/greylag-ci/cicd-goat)
+runs nine scanners against the same 120 scenarios across 16 providers
+and formats, one isolated vulnerability per scenario. It's maintained
+by the Pipeline-Check author, so read it the way you'd read any
+first-party benchmark: the scenarios and the harness are public and you
+can rerun the whole matrix yourself.
+
+On the 43 GitHub Actions scenarios, where the GHA-specialist scanners
+all compete:
+
+| Scanner | GHA scenarios |
+|---|---|
+| **Pipeline-Check** | **37 / 43** |
+| zizmor | 17 / 43 |
+| poutine | 14 / 43 |
+| octoscan | 13 / 43 |
+| Checkov | 10 / 43 |
+| KICS | 8 / 43 |
+| actionlint | 6 / 43 |
+
+Across all 16 categories Pipeline-Check is the top scorer in 14 and the
+sole leader in 11, including a clean sweep on GitLab CI (14/14), Azure
+Pipelines (7/7), Bitbucket Pipelines (7/7), Tekton (4/4), Argo (5/5),
+Drone, Buildkite, and Cloud Build. It ties Trivy for first on
+Dockerfile, Kubernetes, and Helm (3/3 each). The two it sits out are
+Terraform and CloudFormation, where the IaC scanners (Checkov, KICS,
+Trivy) are the right tool and lead.
+
 ## When Pipeline-Check is the right pick
 
 - **You ship through more than one CI provider.** Pipeline-Check has
