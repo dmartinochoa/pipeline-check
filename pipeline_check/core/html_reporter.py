@@ -13,6 +13,7 @@ from typing import Any
 
 from .chains import Chain
 from .checks.base import Finding, Severity, severity_rank
+from .pipeline_graph import GraphNode, NodeBadge, PipelineGraph, attach_findings
 from .scorer import ScoreResult
 
 try:
@@ -1295,6 +1296,190 @@ def _filter_bar_html(findings: list[Finding]) -> str:
 # Public API
 # ---------------------------------------------------------------------------
 
+# ── Pipeline graph DAG v2 (step-level) ─────────────────────────────────
+# Renders each pipeline file as a layered jobs->steps SVG (no JS, no CDN),
+# nodes colored by the worst finding that lands on them. Only the HTML
+# reporter consumes the graphs; IaC / SCA / cloud providers produce none.
+
+_DAG_NEUTRAL = "#adb5bd"
+_DAG_EDGE = "#ced4da"
+_DAG_BOX_W = 200
+_DAG_HEADER_H = 26
+_DAG_STEP_H = 18
+_DAG_COL_GAP = 64
+_DAG_ROW_GAP = 22
+_DAG_MARGIN = 16
+
+
+def _dag_text(label: str, maxlen: int) -> str:
+    """Truncate then HTML-escape a node label for an SVG ``<text>``."""
+    s = label if len(label) <= maxlen else label[: maxlen - 1] + "…"
+    return _e(s)
+
+
+def _dag_job_layers(graph: PipelineGraph) -> dict[str, int]:
+    """Longest-path layer per job over needs/stage edges (cycle-bounded)."""
+    jobs = [n.id for n in graph.nodes if n.kind in ("job", "stage")]
+    jobset = set(jobs)
+    preds: dict[str, list[str]] = {j: [] for j in jobs}
+    for e in graph.edges:
+        if e.kind in ("needs", "stage") and e.src in jobset and e.dst in jobset:
+            preds[e.dst].append(e.src)
+    layer = dict.fromkeys(jobs, 0)
+    for _ in range(len(jobs)):  # the cap makes any cycle terminate
+        changed = False
+        for j in jobs:
+            want = max((layer[p] + 1 for p in preds[j]), default=0)
+            if want > layer[j]:
+                layer[j] = want
+                changed = True
+        if not changed:
+            break
+    return layer
+
+
+def _dag_job_worst(
+    graph: PipelineGraph, badges: dict[str, NodeBadge], job_id: str,
+) -> tuple[str, int]:
+    """Aggregate (color, total count) for a job: itself plus its steps."""
+    sevs: list[Severity] = []
+    total = 0
+    own = badges.get(job_id)
+    if own:
+        sevs.append(own.worst)
+        total += own.count
+    for n in graph.nodes:
+        if n.parent == job_id and n.id in badges:
+            nb = badges[n.id]
+            sevs.append(nb.worst)
+            total += nb.count
+    if not sevs:
+        return _DAG_NEUTRAL, 0
+    return _SEVERITY_COLOR.get(max(sevs, key=severity_rank), _DAG_NEUTRAL), total
+
+
+def _dag_graph_svg(graph: PipelineGraph, findings: list[Finding]) -> str:
+    job_nodes = [n for n in graph.nodes if n.kind in ("job", "stage")]
+    if not job_nodes:
+        return ""
+    badges = attach_findings(graph, findings)
+    layers = _dag_job_layers(graph)
+    steps_by_job: dict[str, list[GraphNode]] = {}
+    for n in graph.nodes:
+        if n.kind == "step" and n.parent:
+            steps_by_job.setdefault(n.parent, []).append(n)
+
+    by_layer: dict[int, list[GraphNode]] = {}
+    for n in job_nodes:
+        by_layer.setdefault(layers.get(n.id, 0), []).append(n)
+    max_layer = max(by_layer) if by_layer else 0
+
+    pos: dict[str, tuple[int, int, int, int]] = {}
+    col_bottoms = [_DAG_MARGIN]
+    for layer in range(max_layer + 1):
+        x = _DAG_MARGIN + layer * (_DAG_BOX_W + _DAG_COL_GAP)
+        y = _DAG_MARGIN
+        for n in by_layer.get(layer, []):
+            n_steps = len(steps_by_job.get(n.id, []))
+            h = _DAG_HEADER_H + n_steps * _DAG_STEP_H + 6
+            pos[n.id] = (x, y, _DAG_BOX_W, h)
+            y += h + _DAG_ROW_GAP
+        col_bottoms.append(y)
+    width = _DAG_MARGIN * 2 + (max_layer + 1) * _DAG_BOX_W + max_layer * _DAG_COL_GAP
+    height = max(col_bottoms)
+
+    parts: list[str] = [
+        '<defs><marker id="dag-arrow" viewBox="0 0 10 10" refX="9" refY="5" '
+        'markerWidth="7" markerHeight="7" orient="auto">'
+        f'<path d="M0 0 L10 5 L0 10 z" fill="{_DAG_NEUTRAL}"/></marker></defs>',
+    ]
+    for e in graph.edges:
+        if e.kind not in ("needs", "stage") or e.src not in pos or e.dst not in pos:
+            continue
+        sx, sy, sw, sh = pos[e.src]
+        dx, dy, _dw, dh = pos[e.dst]
+        parts.append(
+            f'<line x1="{sx + sw}" y1="{sy + sh // 2}" x2="{dx - 7}" '
+            f'y2="{dy + dh // 2}" stroke="{_DAG_EDGE}" stroke-width="1.5" '
+            'marker-end="url(#dag-arrow)"/>'
+        )
+    for n in job_nodes:
+        x, y, w, h = pos[n.id]
+        color, total = _dag_job_worst(graph, badges, n.id)
+        count = (
+            f'<text x="{x + w - 8}" y="{y + 17}" text-anchor="end" fill="#fff" '
+            f'font-size="11" font-weight="600">{total}</text>' if total else ""
+        )
+        parts.append(
+            f'<g><title>{_e(n.label)} ({total} finding(s))</title>'
+            f'<rect x="{x}" y="{y}" width="{w}" height="{h}" rx="6" '
+            f'fill="#ffffff" stroke="{color}" stroke-width="1.5"/>'
+            f'<rect x="{x}" y="{y}" width="{w}" height="{_DAG_HEADER_H}" rx="6" '
+            f'fill="{color}"/>'
+            f'<text x="{x + 8}" y="{y + 17}" fill="#fff" font-size="12" '
+            f'font-weight="600">{_dag_text(n.label, 22)}</text>{count}</g>'
+        )
+        sy = y + _DAG_HEADER_H + 3
+        for s in steps_by_job.get(n.id, []):
+            sb = badges.get(s.id)
+            scolor = _SEVERITY_COLOR.get(sb.worst, _DAG_NEUTRAL) if sb else _DAG_NEUTRAL
+            tip = f" ({sb.count})" if sb else ""
+            parts.append(
+                f'<g><title>{_e(s.label)}{_e(tip)}</title>'
+                f'<rect x="{x + 5}" y="{sy}" width="{w - 10}" '
+                f'height="{_DAG_STEP_H - 3}" rx="3" fill="{scolor}" '
+                f'fill-opacity="{0.85 if sb else 0.18}"/>'
+                f'<text x="{x + 10}" y="{sy + 11}" font-size="10" '
+                f'fill="#1b1f24">{_dag_text(s.label, 26)}</text></g>'
+            )
+            sy += _DAG_STEP_H
+
+    return (
+        f'<svg viewBox="0 0 {width} {height}" width="100%" '
+        f'preserveAspectRatio="xMinYMin meet" '
+        f'style="max-width:{width}px;font-family:Inter,system-ui,sans-serif" '
+        f'role="img" aria-label="Pipeline graph for {_e(graph.path)}">'
+        f'{"".join(parts)}</svg>'
+    )
+
+
+def _pipeline_dag_section_html(
+    graphs: list[PipelineGraph], findings: list[Finding],
+) -> str:
+    """Render one layered jobs->steps SVG per pipeline file (worst-load first)."""
+    renderable: list[tuple[int, PipelineGraph]] = []
+    for g in graphs:
+        if not any(n.kind in ("job", "stage") for n in g.nodes):
+            continue
+        load = sum(b.count for b in attach_findings(g, findings).values())
+        renderable.append((load, g))
+    if not renderable:
+        return ""
+    renderable.sort(key=lambda t: -t[0])
+
+    cards: list[str] = []
+    for _load, g in renderable:
+        svg = _dag_graph_svg(g, findings)
+        if svg:
+            cards.append(
+                '<div style="margin:14px 0;border-top:1px solid #e9ecef;'
+                'padding-top:8px">'
+                f'<h3 style="font-size:13px;margin:0 0 6px;font-weight:600">'
+                f'{_e(g.path)}</h3>'
+                f'<div style="overflow-x:auto">{svg}</div></div>'
+            )
+    if not cards:
+        return ""
+    return (
+        '<section style="margin:24px 0"><h2>Pipeline graph</h2>'
+        '<p style="color:#6c757d;font-size:13px;margin:4px 0 8px">'
+        'Jobs and steps as nodes, <code>needs:</code> as edges. Node color is '
+        'the worst finding that lands on it; the blast-radius heatmap below '
+        'ranks every resource.</p>'
+        f'{"".join(cards)}</section>'
+    )
+
+
 def report_html(
     findings: list[Finding],
     score_result: ScoreResult,
@@ -1302,6 +1487,7 @@ def report_html(
     target: str = "",
     output_path: str | None = None,
     chains: list[Chain] | None = None,
+    pipeline_graphs: list[PipelineGraph] | None = None,
 ) -> str:
     """Generate a self-contained HTML security report.
 
@@ -1353,6 +1539,10 @@ def report_html(
     summary_html = _severity_summary_html(summary)
     filter_bar_html = _filter_bar_html(findings)
     chains_html = _chains_section_html(chains) if chains else ""
+    pipeline_dag_html = (
+        _pipeline_dag_section_html(pipeline_graphs, findings)
+        if pipeline_graphs else ""
+    )
     blast_radius_html = _blast_radius_section_html(findings)
 
     content = f"""<!DOCTYPE html>
@@ -1412,6 +1602,8 @@ def report_html(
   </div>
 
   {chains_html}
+
+  {pipeline_dag_html}
 
   {blast_radius_html}
 

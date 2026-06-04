@@ -3524,6 +3524,9 @@ def scan(
             components = []
 
     chains = list(getattr(scanner, "chains", []) or [])
+    # Step-level pipeline DAGs (one per pipeline file); empty for IaC /
+    # SCA / cloud providers. Only the HTML reporter renders them.
+    pipeline_graphs = list(getattr(scanner, "pipeline_graphs", []) or [])
     # ``--chains-require-reachability`` filters out chains whose
     # triggering findings only co-occur on the same resource without
     # a confirmed dataflow link between them. Chains that opted out
@@ -3595,6 +3598,7 @@ def scan(
         report_html(
             findings, score_result, region=region, target=target or "",
             output_path=output_file, chains=chains,
+            pipeline_graphs=pipeline_graphs,
         )
         if not quiet:
             click.echo(f"HTML report written to {output_file}", err=True)

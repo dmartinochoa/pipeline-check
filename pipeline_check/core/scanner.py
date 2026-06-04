@@ -39,6 +39,8 @@ from .fp_annotations import (
     load_annotations,
 )
 from .inventory import Component
+from .pipeline_graph import PipelineGraph
+from .pipeline_graph_builders import build_graphs_for
 from .sbom import BuildDependency
 
 logger = logging.getLogger(__name__)
@@ -114,6 +116,10 @@ class Scanner:
         #: run, so consumers always want both together. Empty list when
         #: chains are disabled or no chains matched.
         self.chains: list[Chain] = []
+        #: Step-level pipeline graphs built by the most recent ``run()``,
+        #: one per pipeline file (empty for IaC / SCA / cloud providers
+        #: with no jobs/steps DAG). Consumed by the HTML reporter.
+        self.pipeline_graphs: list[PipelineGraph] = []
         provider = _providers.get(pipeline)
         if provider is None:
             available = ", ".join(_providers.available()) or "none registered"
@@ -436,6 +442,10 @@ class Scanner:
         else:
             self.chains = []
 
+        # Build the step-level pipeline graphs from the retained context.
+        # Additive visual signal only; build_graphs_for swallows failures.
+        self.pipeline_graphs = build_graphs_for(self.pipeline, self._context)
+
         self.metadata.elapsed_seconds = time.monotonic() - t0
 
         return findings
@@ -512,6 +522,9 @@ class MultiScanner:
         #: matches the :class:`Scanner.chains` shape so reporters
         #: can use either type interchangeably.
         self.chains: list[Chain] = []
+        #: Union of every sub-scan's pipeline graphs (one per pipeline
+        #: file across all providers). Populated by :meth:`run`.
+        self.pipeline_graphs: list[PipelineGraph] = []
 
     def run(
         self,
@@ -538,10 +551,12 @@ class MultiScanner:
         sequence.
         """
         findings: list[Finding] = []
+        self.pipeline_graphs = []
         for scanner in self._scanners:
             findings.extend(scanner.run(
                 checks=checks, target=target, standards=standards,
             ))
+            self.pipeline_graphs.extend(scanner.pipeline_graphs)
         # Single chain-engine pass over the unified findings so
         # cross-provider chain rules (XPC-NNN) see both providers'
         # findings at once. Single-provider chain rules still match

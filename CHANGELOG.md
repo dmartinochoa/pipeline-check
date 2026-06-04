@@ -12,6 +12,19 @@ release commit collapses this section into `## [X.Y.Z] - <date>`.
 
 ### Added
 
+- **HTML report: step-level pipeline graph (DAG v2), GitHub.** The HTML
+  report now renders each GitHub Actions workflow as a layered jobs ->
+  steps SVG: jobs and steps are nodes, `needs:` are edges, and each node
+  is colored by the worst finding that lands on it (mapped by source
+  line, with a job / file fallback for line-less findings). It sits above
+  the resource-level blast-radius heatmap, which still ranks every
+  resource. Pure inline SVG, no JS / CDN / network. The Scanner now
+  exposes a `pipeline_graphs` attribute (built from the retained provider
+  context, like `chains`); only the HTML reporter consumes it, so every
+  other reporter is unchanged. This is the first increment of the
+  step-level "DAG v2" lift of the v1 heatmap; the remaining pipeline
+  providers (GitLab, Azure, ...) follow as additive `_graph.py` builders
+  with no contract change.
 - **IAM-009: Azure federated identity credential trusts a broad GitHub
   subject (HIGH, Terraform).** Tier 2 of the 2026-06-04 high-impact
   sweep, the OIDC-trust-in-IaC batch. Fires on an
