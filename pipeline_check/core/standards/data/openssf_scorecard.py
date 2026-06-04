@@ -71,6 +71,7 @@ STANDARD = Standard(
         "GL-001":   ["Pinned-Dependencies"],
         "GL-037": ["Pinned-Dependencies"],  # CI env disables Go module verification
         "GL-005":   ["Pinned-Dependencies"],
+        "GL-042":   ["Pinned-Dependencies"],    # include: component unpinned
         "GL-009":   ["Pinned-Dependencies"],
         "GL-018":   ["Pinned-Dependencies"],
         "GL-028":   ["Pinned-Dependencies"],

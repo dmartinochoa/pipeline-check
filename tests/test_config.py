@@ -256,7 +256,7 @@ class TestCliIntegration:
         # GitLab check IDs should be emitted.
         emitted = {f["check_id"] for f in payload["findings"]}
         assert emitted == (
-            {f"GL-{i:03d}" for i in range(1, 42)}
+            {f"GL-{i:03d}" for i in range(1, 43)}
             | {"TAINT-004", "TAINT-008"}
         )
 
@@ -309,7 +309,7 @@ class TestCliIntegration:
         # emit CB-*/IAM-*/etc. ids, none of which should appear here.
         emitted = {f["check_id"] for f in payload["findings"]}
         assert emitted == (
-            {f"GL-{i:03d}" for i in range(1, 42)}
+            {f"GL-{i:03d}" for i in range(1, 43)}
             | {"TAINT-004", "TAINT-008"}
         )
 

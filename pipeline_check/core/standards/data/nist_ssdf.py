@@ -248,6 +248,7 @@ STANDARD = Standard(
         "GL-003":   ["PS.1.1"],
         "GL-004":   ["PO.5.1"],
         "GL-005":   ["PW.4.1", "PW.4.4"],
+        "GL-042":   ["PW.4.1", "PW.4.4"],    # include: component unpinned
         "GL-006":   ["PS.2.1", "PS.3.2"],              # unsigned artifacts
         "GL-007":   ["PS.3.2"],                        # no SBOM
         "GL-008":   ["PS.1.1"],                        # literal secrets

@@ -124,6 +124,7 @@ STANDARD = Standard(
         "GL-003":   ["8.2.1", "6.5.1"],
         "GL-004":   ["6.4.3"],
         "GL-005":   ["6.3.3"],
+        "GL-042":   ["6.3.3"],    # include: component unpinned
         # Bitbucket Pipelines
         "BB-001":   ["6.3.3"],
         "BB-002":   ["6.5.1"],

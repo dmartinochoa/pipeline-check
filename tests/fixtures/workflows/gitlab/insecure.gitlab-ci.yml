@@ -5,6 +5,9 @@ include:
   - remote: 'https://gitlab.example.com/snippets/42/raw'
   # GL-011 — local include resolved from the MR branch.
   - local: 'ci/local-helpers.yml'
+  # GL-042 — CI/CD component pinned to a mutable version (~latest). The
+  # component project can re-point it and ship arbitrary pipeline code.
+  - component: 'gitlab.example.com/ci/templates/build@~latest'
 
 image: python:latest
 

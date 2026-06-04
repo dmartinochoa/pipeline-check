@@ -79,6 +79,7 @@ STANDARD = Standard(
         "GL-001":   ["GV.SC-05", "GV.SC-07"],
         "GL-037": ["GV.SC-07"],  # CI env disables Go module verification
         "GL-005":   ["GV.SC-05"],
+        "GL-042":   ["GV.SC-05"],    # include: component unpinned
         "GL-009":   ["GV.SC-05"],
         "GL-021":   ["GV.SC-05"],
         "GL-027":   ["GV.SC-05"],

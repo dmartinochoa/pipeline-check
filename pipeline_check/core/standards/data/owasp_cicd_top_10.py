@@ -239,6 +239,7 @@ STANDARD = Standard(
         "GL-003":   ["CICD-SEC-6"],
         "GL-004":   ["CICD-SEC-1"],
         "GL-005":   ["CICD-SEC-3"],
+        "GL-042":   ["CICD-SEC-3"],   # include: component unpinned
         "GL-006":   ["CICD-SEC-9"],
         "GL-007":   ["CICD-SEC-9"],
         "GL-008":   ["CICD-SEC-6"],

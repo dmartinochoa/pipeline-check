@@ -237,6 +237,7 @@ STANDARD = Standard(
         "GL-003":   ["IA-5"],
         "GL-004":   ["SA-10", "AC-3"],
         "GL-005":   ["SR-3", "SR-11", "CM-6"],
+        "GL-042":   ["SR-3", "SR-11", "CM-6"],    # include: component unpinned
         "GL-006":   ["SI-7", "SR-4"],                    # unsigned artifacts
         "GL-007":   ["SR-4", "CM-8"],                    # no SBOM
         "GL-008":   ["IA-5"],                            # literal secrets

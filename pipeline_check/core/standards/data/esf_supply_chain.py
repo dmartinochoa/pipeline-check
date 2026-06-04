@@ -143,6 +143,7 @@ STANDARD = Standard(
         "GL-003":   ["ESF-D-SECRETS"],
         "GL-004":   ["ESF-C-APPROVAL", "ESF-C-ENV-SEP"],
         "GL-005":   ["ESF-S-PIN-DEPS", "ESF-S-TRUSTED-REG"],
+        "GL-042":   ["ESF-S-PIN-DEPS", "ESF-S-TRUSTED-REG"],    # include: component unpinned
         "GL-006":   ["ESF-D-SIGN-ARTIFACTS"],
         "GL-007":   ["ESF-D-SBOM"],
         "GL-008":   ["ESF-D-SECRETS"],
