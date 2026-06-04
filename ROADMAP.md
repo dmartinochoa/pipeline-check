@@ -1414,7 +1414,7 @@ existing CI provider packs via a shared primitive than bolted onto the
 gomod loader. Landing order is open; the per-provider "strongest" picks
 above are the suggested first batch.
 
-### SDLC posture graph from fleet data
+### ~~SDLC posture graph from fleet data~~ shipped
 
 The fleet scanner and CXPC chain engine already compute cross-repo
 relationships. Expose the implied graph as a JSON graph and a
@@ -1430,8 +1430,19 @@ structured ``repos`` field (``[source, target]`` for cross-repo chains)
 that CXPC-001..004 populate, so the repo-to-repo edge is data, not just
 narrative prose; a chain endpoint outside the scanned fleet still lands
 as a node with ``scanned: false``. ``fleet.md`` gets a matching edge
-table. Still open: the lightweight HTML visualization (the JSON is the
-contract it would render).
+table.
+
+**HTML shipped.** ``fleet.html`` now renders that ``posture_graph`` as a
+self-contained, static SVG node-link diagram (``core/fleet_html.py``,
+written alongside ``fleet.json`` / ``fleet.md`` by ``_write_digest``):
+repos are grade-colored nodes, CXPC chains are severity-colored
+producer-to-consumer edges, unscanned endpoints are dashed / muted, and
+a ranked card grid above the graph shows each repo's grade / score /
+per-severity breakdown. The layout is computed in Python (deterministic
+circular placement, bidirectional pairs split by a perpendicular
+offset), so there is no JavaScript, no CDN, and no network; the shared
+``_design_tokens.css`` palette keeps it in sync with the HTML report and
+the docs site. This closes the item.
 
 ### AI agent pipeline risk rules
 

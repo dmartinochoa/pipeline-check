@@ -13,6 +13,7 @@ and writes a unified output tree:
       fleet.json                      aggregate (per-repo grade,
                                       score, severity totals)
       fleet.md                        human-readable digest
+      fleet.html                      self-contained posture-graph view
 
 A single repo's clone or scan failure becomes a per-repo warning
 on the aggregate rather than aborting the whole run, so the
@@ -815,13 +816,21 @@ def run_fleet(
 
 
 def _write_digest(output_dir: Path, digest: FleetDigest) -> None:
-    """Write fleet.json + fleet.md to *output_dir*."""
+    """Write fleet.json + fleet.md + fleet.html to *output_dir*."""
+    # Imported lazily so the html view is only loaded when a fleet run
+    # actually writes its report (keeps ``import fleet`` light and avoids
+    # a hard cycle with the html module, which type-imports FleetDigest).
+    from .fleet_html import render_fleet_html
+
     (output_dir / "fleet.json").write_text(
         json.dumps(digest.to_dict(), indent=2),
         encoding="utf-8",
     )
     (output_dir / "fleet.md").write_text(
         render_markdown(digest), encoding="utf-8",
+    )
+    (output_dir / "fleet.html").write_text(
+        render_fleet_html(digest), encoding="utf-8",
     )
 
 
@@ -925,9 +934,9 @@ def build_posture_graph(digest: FleetDigest) -> dict[str, Any]:
     the edge isn't silently dropped.
 
     Shape: ``{"nodes": [...], "edges": [...]}`` — a plain adjacency the
-    fleet report bundles into ``fleet.json`` (a future HTML view renders
-    it directly). The fleet / CXPC engine already computes these
-    relationships; this just exposes the implied graph as data.
+    fleet report bundles into ``fleet.json`` and ``fleet_html`` renders
+    as a node-link diagram. The fleet / CXPC engine already computes
+    these relationships; this just exposes the implied graph as data.
     """
     nodes: dict[str, dict[str, Any]] = {}
     for s in digest.snapshots:

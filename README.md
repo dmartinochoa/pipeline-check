@@ -475,8 +475,10 @@ Subcommands:
   directory of past `--output json` snapshots. No server, no JS.
 - **`pipeline_check fleet --repos repos.yml`** (or `--from-org ORG`)
   shallow-clones and scans many repositories, writing per-repo findings
-  plus a fleet-wide digest and re-evaluating cross-repo (`CXPC-NNN`)
-  chains over the union.
+  plus a fleet-wide digest (`fleet.json` / `fleet.md`) and a
+  self-contained `fleet.html` posture graph (repos as grade-colored
+  nodes, cross-repo `CXPC-NNN` chains as severity-colored edges; no JS,
+  no CDN), re-evaluating those cross-repo chains over the union.
 - **`pipeline_check fp-stats`** prints rule-to-false-positive-vote
   totals from the local `--annotate-fp` annotation file so rule authors
   can see which checks accumulate the most FP reports.
