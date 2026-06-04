@@ -695,6 +695,109 @@ is summarized in the ``### Fixed`` block in ``CHANGELOG.md``.
 Larger items not yet scoped to a specific release. Landing order
 is open.
 
+### High-impact provider checks (2026-06-04 cross-provider sweep)
+
+A multi-agent audit of all 33 providers for net-new, high-severity,
+statically-detectable, NOT-already-covered checks. Each was verified
+against the live rule pack (the closest existing rules are named so the
+novelty claim is auditable). Tiers reflect impact x cleanliness of the
+signal. **Tier 1 is being implemented now (this batch); the rest are
+queued here.**
+
+**Tier 1 (implementing now):**
+
+- ~~**ARGO-017: ``resource`` template applies an attacker-controlled
+  manifest** (CRITICAL).~~ A ``resource:`` template with ``action:
+  create``/``apply`` and ``{{inputs.parameters.X}}`` inside ``manifest:``
+  lets a caller inject arbitrary K8s *objects* (a privileged Pod, a
+  cluster-admin RoleBinding) applied by the workflow's ServiceAccount,
+  cluster takeover even without ARGO-016's cluster-admin SA, and ARGO-005's
+  shell-quoting defenses don't help (the sink is YAML, not a shell). Novel:
+  ``iter_containers`` never visits ``resource`` templates, so ARGO-002/005
+  are blind to it; TAINT-007 tracks cross-template outputs, not the
+  in-template ``resource.manifest`` sink.
+- ~~**NPM-019: ``overrides`` / ``resolutions`` rewrites a dependency to a
+  malicious version or source** (HIGH).~~ npm ``overrides`` (Yarn
+  ``resolutions``, ``pnpm.overrides``) force-replace any transitive
+  package's version/source ahead of the lockfile, from one line a reviewer
+  doesn't scan. Novel: every npm manifest rule routes through
+  ``iter_manifest_dependencies``, which only walks the ``*dependencies``
+  blocks.
+- ~~**NPM-020: ``.npmrc`` repoints the default / scoped registry to a
+  non-canonical host** (HIGH).~~ The npm config-layer dependency-confusion
+  rule, the one major ecosystem missing it (PYPI-016 / COMPOSER-012 /
+  CARGO-012 already ship the analog). Novel: NPM-007 reads the same
+  ``rc.settings`` but only the ``ignore-scripts`` key; NPM-003 treats any
+  HTTPS registry host as safe.
+- ~~**GHA-118: untrusted value written to ``$GITHUB_ENV`` / ``$GITHUB_PATH``**
+  (HIGH).~~ Appending PR/tool-controlled content to the env-control file
+  sets env (``LD_PRELOAD`` / ``NODE_OPTIONS`` / ``PATH``) for every later
+  step, escalating a benign later privileged step to RCE, the file-channel
+  successor to ``::set-env::``. Novel: GHA-038 only catches the old
+  ``ACTIONS_ALLOW_UNSECURE_COMMANDS`` stdout channel, GHA-019 only the
+  secret-exfil direction, and TAINT/GHA-003 only model
+  ``${{ }}`` + ``$GITHUB_OUTPUT``.
+
+**Tier 2 (queued, strong + clean):**
+
+- **OIDC-trust-in-IaC batch** (HIGH). The CI-to-cloud OIDC trust surface is
+  uncovered when an infra repo is scanned directly (GHA-062 lives in the
+  github provider, needs a sibling workflow, and covers only the AWS
+  org-segment ``repo:org/*`` + GCP org-prefix ``startsWith``). Three new
+  Terraform/CloudFormation checks: (a) ``azurerm_federated_identity_credential``
+  with an org-level / branch-less ``subject`` (zero Azure-WIF coverage
+  anywhere; gha062's own comment documents Azure as deliberately excluded);
+  (b) ``google_iam_workload_identity_pool_provider`` with no
+  ``attribute_condition`` (any repo on the planet can federate); (c) an AWS
+  OIDC trust whose ``sub`` ref-segment is ``:*`` / ``:pull_request`` (today
+  ``oidc_subject_pinned`` treats any non-bare-``*`` sub as pinned, so a fork
+  PR mints the prod-role token). Sharpen the shared ``_iam_policy`` helper.
+- **K8S-044: admission webhook fail-open / unscoped mutating webhook**
+  (HIGH). ``failurePolicy: Ignore`` lets an attacker DoS a security webhook
+  cluster-wide; a ``MutatingWebhookConfiguration`` with no
+  ``namespaceSelector`` matching pods is a tenant-escape primitive. Novel:
+  no rule reads ``admissionregistration.k8s.io`` objects.
+- **ARGOCD-019: ``ignoreDifferences`` / ``syncOptions: Validate=false``**
+  (HIGH). Tells Argo CD to stop reconciling a field; an attacker mutates the
+  live image / RBAC out-of-band while the dashboard stays "Synced/Healthy"
+  (stealth persistence). Novel: ARGOCD-003 only covers prune/selfHeal; the
+  per-Application ``spec.ignoreDifferences`` is unread (ARGOCD-018's comment
+  only refers to the ``argocd-cm`` key).
+- **DF-031: ``COPY --from=<external image>`` not digest-pinned** (HIGH).
+  Pulls an external image at build time, fully sidestepping DF-001's
+  ``FROM``-only digest check (DF-008's safe example even uses the named-stage
+  form). Resolve ``--from`` against earlier ``FROM ... AS <stage>`` names;
+  flag the image-ref case via the existing ``image_pinning`` classifier.
+- **GL-042: ``include: component:`` without a pinned version** (HIGH). A
+  mutable ``@~latest`` / ``@main`` component re-points to attacker pipeline
+  code run with ``CI_JOB_TOKEN``. Novel: GL-005 walks only ``project:`` /
+  ``remote:`` (GL-041 is the apply-RCE rule already on a branch).
+- **DEV-006: ``.vscode/settings.json`` exec-path key points at a repo-local
+  binary** (HIGH). ``git.path`` / ``python.defaultInterpreterPath`` /
+  ``*.path`` set to an in-repo binary is RCE the moment a dev opens the
+  clone. Novel: the devenv loader reads ``tasks.json`` but never
+  ``settings.json``.
+
+**Tier 3 (plausible, more scoping / FP risk):**
+
+- **TKN-016**: remote ``resolver`` (bundles / git / hub) ``taskRef`` /
+  ``pipelineRef`` not pinned to a digest / immutable revision (the executed
+  Task body is fetched remotely; TKN-001 pins the image, not the body).
+- **CC-034**: a reusable command / job ``parameters`` entry of ``type:
+  steps`` (or an enum-less ``string``) spliced into a ``run`` via
+  ``<< parameters.X >>`` (CC-002 explicitly treats ``<< parameters.* >>`` as
+  safe).
+- **GOMOD-013**: a ``toolchain`` directive naming a non-canonical /
+  downgraded Go toolchain (``GOTOOLCHAIN=auto`` downloads + runs it); FP
+  risk on normal forward bumps.
+- **COMPOSER-015**: a ``repositories`` ``path`` entry with a wildcard /
+  ``symlink: false`` that shadows a public package and runs its install
+  scripts (COMPOSER-011 carves out the ``path`` type).
+- **DR-017**: a secret-bearing step reachable on a ``promote`` / ``rollback``
+  event with no actor-trusted target gate (more runtime-trust dependent).
+- A ``docker build`` / ``docker/build-push-action`` PPE on an untrusted
+  trigger is better shipped as a *widening of GHA-044* than a new ID.
+
 ### ~~``--inline-explain`` across every reporter~~ shipped
 
 Shipped on ``dev``. The gate moved out of the terminal reporter into a

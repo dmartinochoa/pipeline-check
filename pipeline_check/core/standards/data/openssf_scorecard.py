@@ -225,6 +225,7 @@ STANDARD = Standard(
         "GHA-002":  ["Dangerous-Workflow"],
         "GHA-003":  ["Dangerous-Workflow"],
         "GHA-117":  ["Dangerous-Workflow"],# IaC apply on untrusted PR trigger
+        "GHA-118":  ["Dangerous-Workflow"],# untrusted content into $GITHUB_ENV / $GITHUB_PATH
         "GHA-009":  ["Dangerous-Workflow"],
         "GHA-010":  ["Dangerous-Workflow"],
         "GHA-011":  ["Dangerous-Workflow"],
@@ -569,6 +570,7 @@ STANDARD = Standard(
         "ARGO-016": ["Token-Permissions"],                             # cluster-admin / over-privileged ServiceAccount
         "ARGO-004": ["Dangerous-Workflow"],                            # hostPath / namespaces
         "ARGO-005": ["Dangerous-Workflow"],                            # parameter injection
+        "ARGO-017": ["Dangerous-Workflow"],                            # resource template manifest injection
         "ARGO-006": ["Token-Permissions"],                             # leaked creds
         "ARGO-008": ["Dangerous-Workflow", "Pinned-Dependencies"],     # remote install / TLS
         "ARGO-009": ["Signed-Releases"],                               # artifact signing

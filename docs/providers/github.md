@@ -72,7 +72,7 @@ Resolution rules:
 
 ## What it covers
 
-108 checks · 17 have an autofix patch (``--fix``).
+109 checks · 17 have an autofix patch (``--fix``).
 
 | Check | Title | Severity | Fix |
 |-------|-------|----------|-----|
@@ -180,6 +180,7 @@ Resolution rules:
 | [GHA-115](#gha-115) | ``id-token: write`` granted workflow-wide instead of job-scoped | <span class="pg-sev pg-sev--medium">MEDIUM</span> |  |
 | [GHA-116](#gha-116) | Workflow serializes the entire secrets context (toJSON(secrets)) | <span class="pg-sev pg-sev--high">HIGH</span> |  |
 | [GHA-117](#gha-117) | IaC apply on an untrusted pull_request trigger | <span class="pg-sev pg-sev--critical">CRITICAL</span> |  |
+| [GHA-118](#gha-118) | Untrusted content written to $GITHUB_ENV / $GITHUB_PATH | <span class="pg-sev pg-sev--high">HIGH</span> |  |
 | [TAINT-001](#taint-001) | Untrusted input flows across step boundaries via step outputs | <span class="pg-sev pg-sev--high">HIGH</span> |  |
 | [TAINT-002](#taint-002) | Untrusted input flows across jobs via ``jobs.<id>.outputs:`` | <span class="pg-sev pg-sev--high">HIGH</span> |  |
 | [TAINT-003](#taint-003) | Untrusted input forwarded into reusable workflow ``with:`` | <span class="pg-sev pg-sev--high">HIGH</span> |  |
@@ -3170,6 +3171,26 @@ Fires when a workflow is triggered by ``pull_request`` or ``pull_request_target`
 **Recommended action**
 
 Never run ``terraform apply`` (or ``cloudformation deploy`` / ``cdk deploy`` / ``pulumi up`` / ``sam deploy``) on a ``pull_request`` or ``pull_request_target`` trigger. Apply executes the PR's IaC, an ``external`` data source, a ``local-exec`` provisioner, or a hijacked provider runs arbitrary code on the runner with whatever cloud credentials (often an OIDC ``id-token``) the apply uses. On PRs run a read-only ``plan`` and post it for review; gate the apply on a separate ``push`` / ``workflow_dispatch`` trigger against the merged, reviewed code, behind a protected ``environment:``.
+
+</div>
+
+</div>
+
+<div class="pg-rule pg-rule--high" markdown>
+
+## GHA-118: Untrusted content written to $GITHUB_ENV / $GITHUB_PATH { #gha-118 }
+
+<div class="pg-rule__tags">
+<span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-4</span> <span class="pg-tag pg-tag--esf">ESF-D-INJECTION</span> <span class="pg-tag pg-tag--cwe">CWE-94</span> <span class="pg-tag pg-tag--cwe">CWE-77</span>
+</div>
+
+Fires when a workflow reachable from ``pull_request`` / ``pull_request_target`` / ``workflow_run`` / ``issue_comment`` has a ``run:`` step that redirects into ``$GITHUB_ENV`` / ``$GITHUB_PATH`` AND the written content is either (a) file / command output (``cat`` / ``sed`` / ``jq`` / a ``$(...)`` subshell of one, etc.), which is repo / artifact content the trigger lets an attacker control, or (b) a process-hijack key (``LD_PRELOAD`` / ``NODE_OPTIONS`` / ``BASH_ENV`` / ``PYTHONPATH`` / ...) set from a dynamic value. A fixed literal ``echo "KEY=value" >> $GITHUB_ENV`` passes, as does ``$(git describe)`` into a benign key. Distinct from GHA-038 (legacy ``ACTIONS_ALLOW_UNSECURE_COMMANDS`` stdout channel), GHA-019 (a token written OUT of the env file), and GHA-003 / TAINT (``${{ }}`` expression / ``$GITHUB_OUTPUT`` channels), none of which watch attacker content written INTO the env-control file.
+
+<div class="pg-rule__rec" markdown>
+
+**Recommended action**
+
+Never write file content, command output, or any attacker-influenceable value into ``$GITHUB_ENV`` / ``$GITHUB_PATH`` on an untrusted trigger. GitHub sets those vars (and prepends those PATH entries) for every later step, so a single injected line sets ``LD_PRELOAD`` / ``NODE_OPTIONS`` / ``PATH`` and turns a benign later step (which may hold secrets and a write token) into arbitrary code execution. Write only fixed, literal ``KEY=value`` pairs; if a value must be dynamic, validate it against an allowlist first, and never set a process-hijack key from a computed value. This is the file-channel successor to the retired ``::set-env::`` command (GHA-038 covers that legacy stdout channel).
 
 </div>
 

@@ -30,6 +30,46 @@ release commit collapses this section into `## [X.Y.Z] - <date>`.
   Closes cicd-goat scenario 91. The IaC-apply command vocabulary now
   lives in the shared `_primitives/deploy_names.IAC_APPLY_RE` (GHA-117
   refactored to consume it). gitlab 42 -> 43.
+- **High-impact provider checks (2026-06-04 cross-provider sweep), batch
+  1.** Four net-new, high-severity rules a multi-provider audit surfaced
+  as genuine blind spots, each verified against the live rule pack (the
+  closest existing rules are cited so the novelty is auditable):
+  - **ARGO-017 (CRITICAL): Argo `resource` template applies a manifest
+    built from an untrusted parameter.** A `resource:` template with
+    `action: create` / `apply` / `patch` / `replace` and a
+    `{{inputs.parameters.X}}` / `{{workflow.parameters.X}}` / `{{item}}`
+    token inside `manifest:` lets a caller inject arbitrary K8s objects
+    (a privileged Pod, a cluster-admin RoleBinding) applied by the
+    workflow's ServiceAccount, cluster takeover even without ARGO-016's
+    cluster-admin SA, and ARGO-005's shell-quoting defenses don't apply
+    (the sink is the YAML object structure). `iter_containers` never
+    visits `resource` templates, so no other Argo rule sees this sink.
+    argo 17 -> 18.
+  - **NPM-019 (HIGH): `overrides` / `resolutions` rewrites a dependency
+    to a non-registry source.** npm `overrides` (Yarn `resolutions`,
+    `pnpm.overrides`, walked recursively) force-replace any transitive
+    package's version / source ahead of the lockfile, from one line a
+    reviewer doesn't scan. Flags a git / URL / `file:` / `npm:`-alias
+    target; a plain version override (the legitimate use) passes. The
+    npm manifest rules only walk the `*dependencies` blocks via
+    `iter_manifest_dependencies`, so none saw the override map.
+  - **NPM-020 (HIGH): `.npmrc` repoints the default or a scoped registry
+    to a non-canonical host.** The npm config-layer dependency-confusion
+    rule (the analog of PYPI-016 / COMPOSER-012 / CARGO-012). NPM-007
+    reads the same `.npmrc` but only the `ignore-scripts` key; NPM-003
+    treats any HTTPS registry host as safe. Leans on suppression for
+    legitimate internal mirrors. npm 18 -> 20.
+  - **GHA-118 (HIGH): untrusted content written to `$GITHUB_ENV` /
+    `$GITHUB_PATH`.** On an untrusted trigger (`pull_request` /
+    `pull_request_target` / `workflow_run` / `issue_comment`), a `run:`
+    step that pipes file / command output, or sets a process-hijack key
+    (`LD_PRELOAD` / `NODE_OPTIONS` / `BASH_ENV` / `PYTHONPATH`), into the
+    env-control file escalates a benign later step to code execution, the
+    file-channel successor to the retired `::set-env::`. GHA-038 only
+    catches the legacy stdout channel, GHA-019 only the secret-exfil
+    direction, and GHA-003 / TAINT only the `${{ }}` / `$GITHUB_OUTPUT`
+    channels. github 108 -> 109. Tier 2/3 of the sweep are queued in
+    `ROADMAP.md`.
 
 ### Added
 

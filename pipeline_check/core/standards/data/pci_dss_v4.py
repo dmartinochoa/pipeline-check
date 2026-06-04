@@ -114,6 +114,7 @@ STANDARD = Standard(
         "GHA-002":  ["6.5.1"],                           # pull_request_target + PR head
         "GHA-003":  ["6.5.1"],                           # script injection
         "GHA-117":  ["6.5.1"],                           # IaC apply on untrusted PR trigger
+        "GHA-118":  ["6.5.1"],                           # untrusted content into $GITHUB_ENV / $GITHUB_PATH
         "GHA-004":  ["7.2.5"],                           # unrestricted GITHUB_TOKEN
         "GHA-005":  ["8.2.1"],                           # long-lived AWS keys
         # GitLab CI
@@ -196,6 +197,7 @@ STANDARD = Standard(
         "ARGO-016": ["7.2.2", "7.2.5", "8.2.2"],         # cluster-admin / over-privileged ServiceAccount
         "ARGO-004": ["6.4.1"],                           # hostPath / host namespaces
         "ARGO-005": ["6.5.1"],                           # param injection
+        "ARGO-017": ["6.5.1"],                           # resource template manifest injection
         "ARGO-006": ["8.2.1", "6.5.1"],                  # literal secrets
         "ARGO-007": ["6.4.1"],                           # no activeDeadlineSeconds
         "ARGO-008": ["6.3.3"],                           # remote install / TLS
@@ -643,6 +645,8 @@ STANDARD = Standard(
         "NPM-015":  ["6.3.1", "6.3.3"],
         "NPM-017":  ["6.3.1", "6.3.3"],  # provenance built from a non-release ref
         "NPM-018":  ["6.3.1", "6.3.3"],  # latest release from a new publisher
+        "NPM-019":  ["6.3.1", "6.3.3"],  # overrides / resolutions redirect
+        "NPM-020":  ["6.3.1", "6.3.3"],  # .npmrc registry repoint
         "NPM-016":  ["6.3.1", "6.3.3"],
         "PYPI-008": ["6.3.1", "6.3.3"],
         "PYPI-009": ["6.3.1", "6.3.3"],

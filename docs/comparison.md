@@ -29,7 +29,7 @@ missing major surfaces or requires extra config. No = not in scope.
 | Capability | Pipeline-Check | Checkov | KICS | Semgrep | tfsec | Trivy |
 |---|---|---|---|---|---|---|
 | **CI/CD pipeline configs** | | | | | | |
-| GitHub Actions | Yes (108 rules) | Partial | Yes | Partial | No | No |
+| GitHub Actions | Yes (109 rules) | Partial | Yes | Partial | No | No |
 | GitLab CI | Yes (43) | No | Partial | No | No | No |
 | Jenkins (Declarative + Scripted) | Yes (35) | No | No | Partial | No | No |
 | CircleCI | Yes (33) | No | Partial | No | No | No |
@@ -39,7 +39,7 @@ missing major surfaces or requires extra config. No = not in scope.
 | Buildkite | Yes (16) | No | No | No | No | No |
 | Drone CI | Yes (16) | No | No | No | No | No |
 | Tekton | Yes (16) | No | Partial | No | No | No |
-| Argo Workflows | Yes (17) | No | Partial | No | No | No |
+| Argo Workflows | Yes (18) | No | Partial | No | No | No |
 | Argo CD | Yes (13) | No | No | No | No | No |
 | **SCM posture (governance)** | | | | | | |
 | GitHub repo branch protection / secret scanning / Dependabot | Yes (55, `SCM-001..055`) | No | No | No | No | No |

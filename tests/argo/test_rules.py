@@ -1115,3 +1115,98 @@ class TestARGO016ClusterAdminServiceAccount:
         """
         f = run_check(cfg, "ARGO-016")
         assert f.passed
+
+
+# ── ARGO-017 resource-template manifest injection ──────────────────────
+
+
+class TestARGO017ResourceManifestInjection:
+    def test_fails_when_apply_manifest_interpolates_param(self):
+        cfg = """
+        apiVersion: argoproj.io/v1alpha1
+        kind: WorkflowTemplate
+        metadata: {name: provision}
+        spec:
+          entrypoint: apply
+          templates:
+            - name: apply
+              inputs: {parameters: [{name: spec}]}
+              resource:
+                action: apply
+                manifest: |
+                  apiVersion: v1
+                  kind: ConfigMap
+                  data: {payload: "{{inputs.parameters.spec}}"}
+        """
+        f = run_check(cfg, "ARGO-017")
+        assert not f.passed
+        assert "WorkflowTemplate/provision:apply" in f.job_anchors
+
+    def test_fails_on_create_with_workflow_param(self):
+        cfg = """
+        apiVersion: argoproj.io/v1alpha1
+        kind: Workflow
+        metadata: {name: w}
+        spec:
+          entrypoint: main
+          templates:
+            - name: main
+              resource:
+                action: create
+                manifest: |
+                  kind: Pod
+                  metadata: {name: "{{workflow.parameters.name}}"}
+        """
+        f = run_check(cfg, "ARGO-017")
+        assert not f.passed
+
+    def test_passes_on_fixed_manifest(self):
+        cfg = """
+        apiVersion: argoproj.io/v1alpha1
+        kind: WorkflowTemplate
+        metadata: {name: provision}
+        spec:
+          entrypoint: apply
+          templates:
+            - name: apply
+              resource:
+                action: apply
+                manifest: |
+                  apiVersion: v1
+                  kind: ConfigMap
+                  data: {payload: fixed-value}
+        """
+        f = run_check(cfg, "ARGO-017")
+        assert f.passed
+
+    def test_passes_on_read_only_get_action(self):
+        # ``get`` is read-only: a param in the selector can't create objects.
+        cfg = """
+        apiVersion: argoproj.io/v1alpha1
+        kind: WorkflowTemplate
+        metadata: {name: lookup}
+        spec:
+          templates:
+            - name: get
+              resource:
+                action: get
+                manifest: |
+                  kind: Pod
+                  metadata: {name: "{{inputs.parameters.x}}"}
+        """
+        f = run_check(cfg, "ARGO-017")
+        assert f.passed
+
+    def test_passes_when_no_resource_template(self):
+        cfg = """
+        apiVersion: argoproj.io/v1alpha1
+        kind: Workflow
+        metadata: {name: w}
+        spec:
+          entrypoint: main
+          templates:
+            - name: main
+              container: {image: "x@sha256:0000000000000000000000000000000000000000000000000000000000000001"}
+        """
+        f = run_check(cfg, "ARGO-017")
+        assert f.passed
