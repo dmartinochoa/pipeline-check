@@ -139,6 +139,8 @@ STANDARD = Standard(
         "IAM-006":  ["PR.AA-05"],
         "IAM-007":  ["PR.AA-01"],
         "IAM-008":  ["PR.AA-03"],
+        "IAM-009":  ["PR.AA-03"],
+        "IAM-010":  ["PR.AA-03"],
         "KMS-002":  ["PR.AA-05"],
         "CB-001":   ["PR.AA-01"],
         "CB-006":   ["PR.AA-01"],

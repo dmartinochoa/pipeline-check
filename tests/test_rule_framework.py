@@ -38,7 +38,7 @@ REPO_ROOT = Path(__file__).resolve().parent.parent
 EXPECTED_RULE_COUNTS: dict[str, int] = {
     "aws":            71,
     "azure_cloud":    50,
-    "terraform":      71,
+    "terraform":      73,
     "cloudformation": 70,
     "github":         109,
     "gitlab":     44,

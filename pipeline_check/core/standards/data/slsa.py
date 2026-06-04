@@ -75,6 +75,8 @@ STANDARD = Standard(
         "IAM-006":  ["Build.L3.NonFalsifiable"],                   # wildcard resource
         "IAM-007":  ["Build.L3.NonFalsifiable"],                   # access key > 90 days (forgeable)
         "IAM-008":  ["Build.L3.NonFalsifiable"],                   # OIDC trust missing aud/sub pin
+        "IAM-009":  ["Build.L3.NonFalsifiable"],                   # Azure WIF broad subject
+        "IAM-010":  ["Build.L3.NonFalsifiable"],                   # GCP WIF no repo condition
         # PBAC, cross-build contamination breaks isolation
         "PBAC-001": ["Build.L3.Isolated"],                         # no VPC boundary
         "PBAC-002": ["Build.L3.Isolated"],                         # shared service role

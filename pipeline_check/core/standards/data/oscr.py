@@ -330,6 +330,8 @@ STANDARD = Standard(
         "IAM-005":  ["IA-16"],
         "IAM-006":  ["IA-16", "LM-2"],
         "IAM-008":  ["IA-16"],
+        "IAM-009":  ["IA-16"],
+        "IAM-010":  ["IA-16"],
         "GCB-020":  ["IA-16"],
         # IA-17: Dependency confusion
         "PYPI-005": ["IA-17"],

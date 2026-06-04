@@ -25,8 +25,11 @@ RULE = Rule(
         "AssumeRolePolicyDocument`` that carries an OIDC trust "
         "statement (provider URL like "
         "``token.actions.githubusercontent.com``). Fires when "
-        "``Condition`` omits the audience or subject claim — without "
-        "both, any repo under the IdP can assume the role."
+        "``Condition`` omits the audience or subject claim, or when a "
+        "GitHub ``repo:`` subject wildcards the repo or ref segment "
+        "(``repo:org/*``, ``repo:org/repo:*``) or trusts the "
+        "``pull_request`` context. Without a specific repo + ref pin, an "
+        "untrusted workflow (including a fork PR) can assume the role."
     ),
     exploit_example=(
         "# Vulnerable: OIDC-federated role trust policy missing\n"

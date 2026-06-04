@@ -1167,7 +1167,7 @@ Scope ``Resource`` to specific ARNs (bucket ARNs, key ARNs, secret ARNs, role AR
 <span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-2</span> <span class="pg-tag pg-tag--cwe">CWE-287</span>
 </div>
 
-Inspects every ``AWS::IAM::Role.Properties.AssumeRolePolicyDocument`` that carries an OIDC trust statement (provider URL like ``token.actions.githubusercontent.com``). Fires when ``Condition`` omits the audience or subject claim — without both, any repo under the IdP can assume the role.
+Inspects every ``AWS::IAM::Role.Properties.AssumeRolePolicyDocument`` that carries an OIDC trust statement (provider URL like ``token.actions.githubusercontent.com``). Fires when ``Condition`` omits the audience or subject claim, or when a GitHub ``repo:`` subject wildcards the repo or ref segment (``repo:org/*``, ``repo:org/repo:*``) or trusts the ``pull_request`` context. Without a specific repo + ref pin, an untrusted workflow (including a fork PR) can assume the role.
 
 <div class="pg-rule__rec" markdown>
 

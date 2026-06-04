@@ -479,6 +479,8 @@ STANDARD = Standard(
         "ECR-007":  ["ESF-S-VULN-MGMT"],            # Inspector v2 enhanced scanning
         "IAM-007":  ["ESF-D-TOKEN-HYGIENE"],        # access key > 90 days
         "IAM-008":  ["ESF-D-TOKEN-HYGIENE", "ESF-C-LEAST-PRIV"],   # OIDC trust missing aud/sub pin
+        "IAM-009":  ["ESF-D-TOKEN-HYGIENE", "ESF-C-LEAST-PRIV"],   # Azure WIF broad subject
+        "IAM-010":  ["ESF-D-TOKEN-HYGIENE", "ESF-C-LEAST-PRIV"],   # GCP WIF no repo condition
         "PBAC-003": ["ESF-D-BUILD-ENV"],            # SG 0.0.0.0/0 egress
         "PBAC-005": ["ESF-C-LEAST-PRIV"],           # stage roles mirror pipeline
         "KMS-001":  ["ESF-C-ARTIFACT-AUTHZ"],       # CMK rotation disabled

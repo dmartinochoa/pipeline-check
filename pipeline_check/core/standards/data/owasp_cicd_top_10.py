@@ -65,6 +65,8 @@ STANDARD = Standard(
         "IAM-006":  ["CICD-SEC-2"],
         "IAM-007":  ["CICD-SEC-6"],
         "IAM-008":  ["CICD-SEC-2"],
+        "IAM-009":  ["CICD-SEC-2"],
+        "IAM-010":  ["CICD-SEC-2"],
         # CloudTrail
         "CT-000":   ["CICD-SEC-10"],
         "CT-001":   ["CICD-SEC-10"],

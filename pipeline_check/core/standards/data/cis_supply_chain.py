@@ -112,6 +112,8 @@ STANDARD = Standard(
         "IAM-006":  ["2.4.3"],
         "IAM-007":  ["1.3.4"],                           # access key > 90 days
         "IAM-008":  ["1.3.4", "2.4.3"],                  # OIDC trust missing aud/sub pin
+        "IAM-009":  ["1.3.4", "2.4.3"],                  # Azure WIF broad subject
+        "IAM-010":  ["1.3.4", "2.4.3"],                  # GCP WIF no repo condition
         # PBAC
         "PBAC-001": ["2.1.6"],                           # no VPC boundary
         "PBAC-002": ["2.2.2", "2.4.3"],                  # shared service role

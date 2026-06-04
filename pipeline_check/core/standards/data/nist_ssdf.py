@@ -103,6 +103,8 @@ STANDARD = Standard(
         "IAM-006":  ["PO.5.1"],
         "IAM-007":  ["PS.1.1"],                        # access key > 90 days
         "IAM-008":  ["PO.5.1", "PS.1.1"],              # OIDC trust missing aud/sub pin
+        "IAM-009":  ["PO.5.1", "PS.1.1"],              # Azure WIF broad subject
+        "IAM-010":  ["PO.5.1", "PS.1.1"],              # GCP WIF no repo condition
         # PBAC
         "PBAC-001": ["PO.5.1", "PO.3.2"],              # no VPC for CodeBuild
         "PBAC-002": ["PO.5.1", "PO.3.2"],              # shared service role

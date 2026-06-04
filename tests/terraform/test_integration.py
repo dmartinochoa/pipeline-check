@@ -93,7 +93,7 @@ _GOOD_OIDC_TRUST = json.dumps({
         "Action": "sts:AssumeRoleWithWebIdentity",
         "Condition": {
             "StringEquals": {"token.actions.githubusercontent.com:aud": "sts.amazonaws.com"},
-            "StringLike": {"token.actions.githubusercontent.com:sub": "repo:corp/*:ref:refs/heads/main"},
+            "StringLike": {"token.actions.githubusercontent.com:sub": "repo:corp/app:ref:refs/heads/main"},
         },
     }]
 })

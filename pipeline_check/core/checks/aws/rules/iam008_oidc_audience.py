@@ -23,15 +23,23 @@ RULE = Rule(
         "Every Allow statement that trusts a federated OIDC provider "
         "(``token.actions.githubusercontent.com``, GitLab, CircleCI, "
         "Terraform Cloud, etc.) must pin both the audience "
-        "(``...:aud = sts.amazonaws.com``) and a subject prefix "
-        "(``...:sub`` matching ``repo:myorg/*``). Without these, any "
-        "workflow from any tenant can assume the role."
+        "(``...:aud = sts.amazonaws.com``) and a specific subject "
+        "(``...:sub`` matching one repo AND ref, e.g. "
+        "``repo:myorg/myrepo:ref:refs/heads/main`` or "
+        "``...:environment:production``). An org wildcard "
+        "(``repo:myorg/*``), a ref wildcard (``repo:myorg/myrepo:*``), or "
+        "the ``pull_request`` context all let an untrusted workflow run "
+        "(including a fork PR) assume the role."
     ),
     docs_note=(
         "IAM-005 already covers cross-account AWS principals. This rule "
         "targets the OIDC federation path specifically because the blast "
         "radius of a missed audience/subject pin is the entire identity "
-        "provider's tenant base (e.g. all GitHub users, not just your org)."
+        "provider's tenant base (e.g. all GitHub users, not just your "
+        "org). For GitHub ``repo:`` subjects it also fires when the "
+        "subject is present but wildcards the repo or ref segment, or "
+        "trusts the ``pull_request`` context, since a fork PR then mints "
+        "the role's token."
     ),
     exploit_example=(
         "# Vulnerable: an OIDC-federated IAM role's trust policy\n"
@@ -105,7 +113,7 @@ def check(catalog: ResourceCatalog) -> list[Finding]:
             if not oidc_audience_pinned(stmt):
                 offending.append(f"stmt[{idx}]({host}): missing :aud condition")
             elif not oidc_subject_pinned(stmt):
-                offending.append(f"stmt[{idx}]({host}): missing :sub condition")
+                offending.append(f"stmt[{idx}]({host}): :sub missing or too broad")
         if not matched:
             continue
         passed = not offending

@@ -146,9 +146,44 @@ def oidc_audience_pinned(stmt: dict[str, Any]) -> bool:
     return False
 
 
+def github_repo_sub_too_broad(value: str) -> bool:
+    """Return True when a GitHub Actions OIDC ``sub`` claim is broad
+    enough that an untrusted workflow run can assume the role.
+
+    GitHub subjects look like ``repo:<owner>/<repo>:<context>`` where the
+    context is e.g. ``ref:refs/heads/main`` / ``environment:prod`` /
+    ``pull_request``. A subject is too broad when:
+
+    * the owner/repo segment is wildcarded (``repo:*`` or
+      ``repo:<owner>/*``), so any repo in (or beyond) the org federates; or
+    * the context segment is a bare ``*`` (any ref / environment) or
+      ``pull_request``, so a fork PR (via ``pull_request_target``) mints
+      the role's token.
+
+    Non-``repo:`` subjects (GitLab, Terraform Cloud, ...) return False:
+    only the GitHub claim shape is recognized here, so other IdPs keep
+    the looser "any non-``*`` value is a pin" treatment.
+    """
+    if not isinstance(value, str) or not value.startswith("repo:"):
+        return False
+    owner, sep, context = value[len("repo:"):].partition(":")
+    # Owner/repo wildcard: ``repo:*``, ``repo:org/*``, or a bare segment.
+    if owner == "*" or owner.endswith("/*") or "/" not in owner:
+        return True
+    # Context wildcard or the fork-reachable ``pull_request`` context.
+    return bool(sep) and context in {"*", "pull_request"}
+
+
 def oidc_subject_pinned(stmt: dict[str, Any]) -> bool:
-    """Return True when *stmt* pins a subject condition (``...:sub``)
-    **and** the value is not an unrestricted wildcard."""
+    """Return True when *stmt* pins a subject condition (``...:sub``) to a
+    specific principal.
+
+    A subject is NOT a pin when it is absent, a bare ``*``, or - for
+    GitHub Actions ``repo:`` claims - wildcarded at the owner/repo segment
+    (``repo:org/*``) or the context segment (``repo:org/repo:*`` /
+    ``...:pull_request``). Any of those lets an untrusted workflow run,
+    including a fork pull request, assume the role.
+    """
     conditions = stmt.get("Condition", {}) or {}
     for op, inner in conditions.items():
         if not isinstance(inner, dict):
@@ -159,10 +194,12 @@ def oidc_subject_pinned(stmt: dict[str, Any]) -> bool:
             values = as_list(value)
             if not values:
                 return False
-            # StringLike with bare "*" defeats the purpose. Any other
-            # pattern (including ``repo:myorg/*:ref:refs/heads/main``)
-            # is considered pinned.
+            # StringLike with bare "*" trusts every subject.
             if op.lower() == "stringlike" and all(v == "*" for v in values):
+                return False
+            # GitHub ``repo:`` claims that wildcard the repo or the ref,
+            # or trust the ``pull_request`` context, are not real pins.
+            if any(github_repo_sub_too_broad(v) for v in values):
                 return False
             return True
     return False

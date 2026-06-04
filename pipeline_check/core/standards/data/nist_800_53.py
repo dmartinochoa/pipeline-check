@@ -121,6 +121,8 @@ STANDARD = Standard(
         "IAM-006":  ["AC-3", "AC-6"],
         "IAM-007":  ["IA-5"],                            # access key > 90 days
         "IAM-008":  ["AC-3", "IA-5"],                    # OIDC trust missing aud/sub pin
+        "IAM-009":  ["AC-3", "IA-5"],                    # Azure WIF broad subject
+        "IAM-010":  ["AC-3", "IA-5"],                    # GCP WIF no repo condition
         # PBAC
         "PBAC-001": ["SC-7"],                            # no VPC boundary
         "PBAC-002": ["AC-2", "AC-6"],                    # shared service role

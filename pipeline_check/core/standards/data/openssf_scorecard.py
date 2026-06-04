@@ -441,6 +441,8 @@ STANDARD = Standard(
         "IAM-006":  ["Token-Permissions"],
         "IAM-007":  ["Token-Permissions"],
         "IAM-008":  ["Token-Permissions"],                             # OIDC audience not pinned
+        "IAM-009":  ["Token-Permissions"],                             # Azure WIF broad subject
+        "IAM-010":  ["Token-Permissions"],                             # GCP WIF no repo condition
         "KMS-001":  ["Token-Permissions"],                             # CMK rotation disabled
         "KMS-002":  ["Token-Permissions"],                             # KMS policy wildcard
         "LMB-002":  ["Token-Permissions"],                             # public Lambda function URL

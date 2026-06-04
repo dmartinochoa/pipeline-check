@@ -25,7 +25,7 @@ axis.
 
 - **Controls in this standard:** 86
 - **Controls evidenced by at least one check:** 61 / 86
-- **Distinct checks evidencing this standard:** 660
+- **Distinct checks evidencing this standard:** 662
 - **Of those, autofixable with `--fix`:** 105
 
 _Severity levels (`CRITICAL` / `HIGH` / `MEDIUM` / `LOW` / `INFO`) follow the same scale across every provider and standard. See [How to read severity](README.md#how-to-read-severity) on the standards overview for the definitions._
@@ -67,7 +67,7 @@ Click a control ID to jump to the per-control section with the full check list. 
 | [`IA-13`](#ctrl-ia-13) | Vulnerability in third-party dependency | 50 | 8C · 8H · 34M |
 | [`IA-14`](#ctrl-ia-14) | Compromised developer workstation | 0 | — |
 | [`IA-15`](#ctrl-ia-15) | Exposed database | 0 | — |
-| [`IA-16`](#ctrl-ia-16) | Compromised service account | 8 | 1C · 5H · 2M |
+| [`IA-16`](#ctrl-ia-16) | Compromised service account | 10 | 1C · 7H · 2M |
 | [`IA-17`](#ctrl-ia-17) | Dependency confusion | 8 | 6H · 2M |
 | [`IA-18`](#ctrl-ia-18) | Permissive network access | 10 | 1C · 5H · 4M |
 | [`IA-19`](#ctrl-ia-19) | Repojacking | 2 | 2H |
@@ -543,7 +543,7 @@ _No checks in this scanner currently evidence this control. Open an issue if you
 
 ### IA-16: Compromised service account { #ctrl-ia-16 }
 
-**Evidenced by 8 checks** across 2 providers (AWS, Cloud Build).
+**Evidenced by 10 checks** across 3 providers (AWS, Cloud Build, Terraform).
 
 | Check | Title | Severity | Provider | Fix |
 |-------|-------|----------|----------|-----|
@@ -555,6 +555,8 @@ _No checks in this scanner currently evidence this control. Open an issue if you
 | [`IAM-005`](../providers/aws.md#iam-005) | CI/CD role trust policy missing sts:ExternalId | <span class="pg-sev pg-sev--high">HIGH</span> | [AWS](../providers/aws.md) |  |
 | [`IAM-006`](../providers/aws.md#iam-006) | Sensitive actions granted with wildcard Resource | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [AWS](../providers/aws.md) |  |
 | [`IAM-008`](../providers/aws.md#iam-008) | OIDC-federated role trust policy missing audience or subject pin | <span class="pg-sev pg-sev--high">HIGH</span> | [AWS](../providers/aws.md) |  |
+| [`IAM-009`](../providers/terraform.md#iam-009) | Azure federated identity credential trusts a broad GitHub subject | <span class="pg-sev pg-sev--high">HIGH</span> | [Terraform](../providers/terraform.md) |  |
+| [`IAM-010`](../providers/terraform.md#iam-010) | GCP workload identity provider has no repository attribute condition | <span class="pg-sev pg-sev--high">HIGH</span> | [Terraform](../providers/terraform.md) |  |
 
 ### IA-17: Dependency confusion { #ctrl-ia-17 }
 

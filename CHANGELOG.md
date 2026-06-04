@@ -12,6 +12,25 @@ release commit collapses this section into `## [X.Y.Z] - <date>`.
 
 ### Added
 
+- **IAM-009: Azure federated identity credential trusts a broad GitHub
+  subject (HIGH, Terraform).** Tier 2 of the 2026-06-04 high-impact
+  sweep, the OIDC-trust-in-IaC batch. Fires on an
+  `azurerm_federated_identity_credential` whose `issuer` is the GitHub
+  Actions OIDC issuer and whose `subject` wildcards the org/repo segment
+  (`repo:org/*`), wildcards the ref segment (`repo:org/repo:*`), or uses
+  the `pull_request` context, so a fork PR can exchange its GitHub token
+  for the Azure identity. Azure Workload Identity Federation is the Azure
+  analogue of the AWS OIDC trust IAM-008 audits and was previously
+  uncovered (GHA-062 documents Azure as deliberately excluded). Reuses
+  the shared `github_repo_sub_too_broad` subject helper.
+- **IAM-010: GCP workload identity provider has no repository attribute
+  condition (HIGH, Terraform).** Tier 2 of the 2026-06-04 high-impact
+  sweep. Fires on a `google_iam_workload_identity_pool_provider` with an
+  `oidc` block that has no `attribute_condition` (any identity the issuer
+  mints can federate), or, for the GitHub / GitLab CI issuers, a
+  condition that never references the repository, so it doesn't constrain
+  which repo can assume the identity. GHA-062 audits this from a
+  workflow's sibling files; IAM-010 reads the Terraform resource directly.
 - **DEV-006: VS Code settings point a tool at a repo-local binary
   (HIGH).** Tier 2 of the 2026-06-04 high-impact sweep. The devenv
   loader now also reads `.vscode/settings.json`. DEV-006 fires when a
@@ -165,6 +184,14 @@ release commit collapses this section into `## [X.Y.Z] - <date>`.
 
 ### Changed
 
+- **IAM-008 now flags a present-but-broad OIDC subject (HIGH).** Tier 2
+  of the 2026-06-04 high-impact sweep. The shared `oidc_subject_pinned`
+  helper previously treated any non-bare-`*` `...:sub` as pinned, so an
+  org wildcard (`repo:org/*`), a ref wildcard (`repo:org/repo:*`), and the
+  `pull_request` context all passed. They now fail across the AWS
+  (runtime), Terraform, and CloudFormation IAM-008 paths, since a fork PR
+  via `pull_request_target` can mint the role's token. A subject pinned to
+  a specific repo AND ref/environment still passes.
 - **Docs: refreshed the cicd-goat cross-scanner benchmark numbers.**
   The upstream [`greylag-ci/cicd-goat`](https://github.com/greylag-ci/cicd-goat)
   testbed grew from a 38-scenario GHA + npm matrix to 120 scenarios

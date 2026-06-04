@@ -73,6 +73,8 @@ STANDARD = Standard(
         "IAM-005":  ["CC6.2", "CC6.3"],    # relaxed external trust = weak provisioning
         "IAM-007":  ["CC6.3"],             # stale access keys = untimely revocation
         "IAM-008":  ["CC6.2"],             # OIDC audience pin = federated authz
+        "IAM-009":  ["CC6.2"],             # Azure WIF broad subject
+        "IAM-010":  ["CC6.2"],             # GCP WIF no repo condition
         "CB-006":   ["CC6.3"],             # long-lived source token
         "CP-004":   ["CC6.3"],             # legacy OAuth = non-revocable token
         "GHA-005":  ["CC6.2", "CC6.3"],

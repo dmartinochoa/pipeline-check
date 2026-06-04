@@ -97,6 +97,8 @@ STANDARD = Standard(
         "IAM-006":  ["7.2.5"],
         "IAM-007":  ["8.2.1"],                           # access key > 90 days
         "IAM-008":  ["7.2.1", "8.2.1"],                  # OIDC trust no aud/sub pin
+        "IAM-009":  ["7.2.1", "8.2.1"],                  # Azure WIF broad subject
+        "IAM-010":  ["7.2.1", "8.2.1"],                  # GCP WIF no repo condition
         # PBAC
         "PBAC-001": ["6.4.1"],                           # no VPC boundary
         "PBAC-002": ["7.2.2", "7.2.5", "8.2.2"],         # shared role = no per-classification access
