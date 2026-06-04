@@ -158,6 +158,7 @@ nav:
       - CI gate: ci_gate.md
       - PR diff: pr_diff.md
       - Output: output.md
+      - Fleet (org-wide): fleet.md
       - History dashboard: history.md
       - Stability: stability.md
   - Coverage:

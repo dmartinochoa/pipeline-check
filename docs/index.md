@@ -56,7 +56,7 @@ A read-only scanner for 33 providers, graded against 18 compliance frameworks.
 
 <section class="pg-stats" data-reveal>
 <div class="pg-stats__inner">
-  <div class="pg-stat"><div class="pg-stat__num" data-count-to="1120">1140+</div><div class="pg-stat__label">Checks</div></div>
+  <div class="pg-stat"><div class="pg-stat__num" data-count-to="1140">1140+</div><div class="pg-stat__label">Checks</div></div>
   <div class="pg-stat"><div class="pg-stat__num" data-count-to="33">33</div><div class="pg-stat__label">Providers</div></div>
   <div class="pg-stat"><div class="pg-stat__num" data-count-to="18">18</div><div class="pg-stat__label">Compliance standards</div></div>
   <div class="pg-stat"><div class="pg-stat__num" data-count-to="111">111</div><div class="pg-stat__label">Autofixers</div></div>
@@ -120,6 +120,32 @@ attacker-controllable input across cross-step boundaries on five providers
 through that host's native channel: `$GITHUB_OUTPUT`, dotenv artifact,
 `buildkite-agent meta-data`, Tekton results, Argo `outputs.parameters`.
 <a class="pg-feature__link" href="attack_chains/">Attack chains</a>
+</div>
+
+<div class="pg-feature" markdown>
+<div class="pg-feature__icon">
+<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><circle cx="5" cy="6" r="2"/><circle cx="19" cy="6" r="2"/><circle cx="12" cy="18" r="2"/><path d="M7 7l4 9M17 7l-4 9"/></svg>
+</div>
+### Org-wide fleet scanning
+Point `fleet --from-org <org>` (or `--repos repos.yml`) at a whole GitHub /
+GitLab / Bitbucket org. It clones and scans every repo in parallel, writes one
+graded digest ranked worst-first, and re-runs the cross-repo `CXPC-NNN` attack
+chains over the union, catching risks that only exist *between* repos. A posture
+graph (repos as nodes, cross-repo chains as edges) ships in `fleet.json`.
+<a class="pg-feature__link" href="fleet/">Fleet scanning</a>
+</div>
+
+<div class="pg-feature" markdown>
+<div class="pg-feature__icon">
+<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/><path d="M11 8v3l2 2"/></svg>
+</div>
+### Supply-chain depth on demand
+`--resolve-remote` turns on the network-backed checks: a cooldown gate on freshly
+published packages, OSV advisory lookups, OpenSSF Scorecard and build-provenance
+signals, and live secret verification that probes a leaked credential against its
+issuing API (two dozen services) and promotes a confirmed-live token to CRITICAL.
+Off by default so the base scan stays hermetic.
+<a class="pg-feature__link" href="usage/#what-resolve-remote-unlocks">Supply-chain checks</a>
 </div>
 
 <div class="pg-feature" markdown>

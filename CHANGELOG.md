@@ -83,6 +83,17 @@ release commit collapses this section into `## [X.Y.Z] - <date>`.
   palette keeps it in sync with the HTML report and the docs site). This
   completes the SDLC posture-graph roadmap item whose JSON contract
   shipped in v1.8.0.
+- **Docs: Fleet (org-wide) scanning guide.** `pipeline_check fleet`
+  was only mentioned in passing on the docs site (under the cross-repo
+  attack-chains page). It now has its own page covering `--repos` /
+  `--from-org`, the `--include` / `--exclude` / `--jobs` /
+  `--scan-flags` / `--per-repo-timeout` flags, the output tree
+  (`fleet.json` / `fleet.md` + per-repo `findings.json`), the
+  `posture_graph` JSON shape, and the `CXPC-NNN` cross-repo chains.
+  Surfaced in the nav and as a home-page feature card, alongside a new
+  "supply-chain depth on demand" card spotlighting the
+  `--resolve-remote` checks (cooldown / OSV / OpenSSF Scorecard /
+  provenance / live secret verification).
 
 ## [1.9.0] - 2026-06-03
 
