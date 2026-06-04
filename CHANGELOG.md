@@ -12,6 +12,18 @@ release commit collapses this section into `## [X.Y.Z] - <date>`.
 
 ### Added
 
+- **GL-042: `include: component:` pulls a CI/CD component without a
+  pinned version (HIGH).** Tier 2 of the 2026-06-04 high-impact sweep.
+  GitLab CI/CD components are third-party pipeline code merged into the
+  consumer's pipeline before any job runs. Fires when the
+  `include: component: <host>/<path>@<version>` version is mutable
+  (`~latest`, a branch, a floating major / minor like `1` / `1.2`, or
+  missing); a full `X.Y.Z` release tag or a 40-char commit SHA pass.
+  Whoever controls the component project can re-point a mutable version
+  and run arbitrary `script:` in every consumer's next pipeline with its
+  `CI_JOB_TOKEN` and CI/CD variables. Novel: GL-005 walks only
+  `project:` / `remote:` includes and GL-030 only `trigger:` includes;
+  neither inspects the newer component surface. gitlab 43 -> 44.
 - **DF-031: `COPY --from=<external image>` not digest-pinned (HIGH).**
   Tier 2 of the 2026-06-04 high-impact sweep. Fires when a `COPY` / `ADD`
   carries `--from=<X>` where `X` is an external image reference (it has a

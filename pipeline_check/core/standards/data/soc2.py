@@ -232,6 +232,7 @@ STANDARD = Standard(
         "GL-001":   ["CC8.1"],
         "GL-037": ["CC8.1"],  # CI env disables Go module verification
         "GL-005":   ["CC8.1"],
+        "GL-042":   ["CC8.1"],
         "BB-001":   ["CC8.1"],
         "ADO-001":  ["CC8.1"],
         "ADO-025":  ["CC8.1"],

@@ -195,6 +195,7 @@ STANDARD = Standard(
         "GHA-021":  ["UPD-1"],             # lockfile present = tracked versions
         "GL-001":   ["UPD-1"],
         "GL-005":   ["UPD-1"],
+        "GL-042":   ["UPD-1"],
         "GL-009":   ["UPD-1"],
         "GL-021":   ["UPD-1"],
         "GL-028":   ["UPD-1"],

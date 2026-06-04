@@ -171,6 +171,7 @@ STANDARD = Standard(
         "GL-037": ["Build.L3.NonFalsifiable"],  # CI env disables Go module verification
         "GL-002":   ["Build.L3.Isolated"],                         # script injection
         "GL-005":   ["Build.L3.NonFalsifiable"],                   # unpinned include
+        "GL-042":   ["Build.L3.NonFalsifiable"],                   # unpinned component include
         "GL-006":   ["Build.L2.Signed"],
         "GL-007":   ["Build.L1.Provenance"],
         "GL-008":   ["Build.L3.NonFalsifiable"],                   # leaked creds

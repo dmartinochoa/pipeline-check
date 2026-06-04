@@ -1,0 +1,6 @@
+include:
+  - component: gitlab.example.com/ci/security/scan@~latest
+
+build:
+  script:
+    - make
