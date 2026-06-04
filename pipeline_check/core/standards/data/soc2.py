@@ -1038,6 +1038,7 @@ STANDARD = Standard(
         "GCKMS-006": ["CC6.1"],                  # imported key
         # Developer-environment auto-execution (malware / untrusted-code vector)
         "DEV-001":   ["CC6.8"],
+        "DEV-006":   ["CC6.8"],
         "DEV-002":   ["CC6.8"],
         "DEV-003":   ["CC6.8"],
         "DEV-004":   ["CC6.8"],

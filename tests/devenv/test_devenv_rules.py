@@ -5,6 +5,7 @@ from pipeline_check.core.checks.base import Severity
 from pipeline_check.core.checks.devenv.base import (
     KIND_CLAUDE_SETTINGS,
     KIND_DEVCONTAINER,
+    KIND_VSCODE_SETTINGS,
     KIND_VSCODE_TASKS,
     _strip_jsonc,
     loads_jsonc,
@@ -218,3 +219,64 @@ class TestJsoncParser:
 
     def test_strip_is_idempotent_on_plain_json(self):
         assert _strip_jsonc('{"a":1}') == '{"a":1}'
+
+
+class TestDEV006:
+    """VS Code settings point a tool at a repo-local binary."""
+
+    def test_fires_on_repo_local_git_path(self):
+        f = run_check('{"git.path": "./.tools/git"}', KIND_VSCODE_SETTINGS, "DEV-006")
+        assert not f.passed
+
+    def test_fires_on_workspacefolder_interpreter(self):
+        f = run_check(
+            '{"python.defaultInterpreterPath": "${workspaceFolder}/.venv/bin/python"}',
+            KIND_VSCODE_SETTINGS, "DEV-006",
+        )
+        assert not f.passed
+
+    def test_fires_on_terminal_env_path_injection(self):
+        f = run_check(
+            '{"terminal.integrated.env.linux": {"PATH": "${workspaceFolder}/.bin:${env:PATH}"}}',
+            KIND_VSCODE_SETTINGS, "DEV-006",
+        )
+        assert not f.passed
+
+    def test_fires_on_allow_automatic_tasks(self):
+        f = run_check(
+            '{"task.allowAutomaticTasks": "on"}', KIND_VSCODE_SETTINGS, "DEV-006",
+        )
+        assert not f.passed
+
+    def test_fires_on_go_alternate_tools_local(self):
+        f = run_check(
+            '{"go.alternateTools": {"go": "./.bin/go"}}',
+            KIND_VSCODE_SETTINGS, "DEV-006",
+        )
+        assert not f.passed
+
+    def test_passes_on_bare_command(self):
+        f = run_check('{"git.path": "git"}', KIND_VSCODE_SETTINGS, "DEV-006")
+        assert f.passed
+
+    def test_passes_on_absolute_system_path(self):
+        f = run_check(
+            '{"python.defaultInterpreterPath": "/usr/bin/python3"}',
+            KIND_VSCODE_SETTINGS, "DEV-006",
+        )
+        assert f.passed
+
+    def test_passes_on_user_home_path(self):
+        f = run_check(
+            '{"git.path": "${env:HOME}/bin/git"}', KIND_VSCODE_SETTINGS, "DEV-006",
+        )
+        assert f.passed
+
+    def test_passes_on_unrelated_settings(self):
+        f = run_check('{"editor.tabSize": 2}', KIND_VSCODE_SETTINGS, "DEV-006")
+        assert f.passed
+
+    def test_passes_on_non_settings_kind(self):
+        # The rule only inspects .vscode/settings.json documents.
+        f = run_check('{"version": "2.0.0"}', KIND_VSCODE_TASKS, "DEV-006")
+        assert f.passed

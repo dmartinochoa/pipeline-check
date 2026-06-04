@@ -1070,6 +1070,7 @@ STANDARD = Standard(
         "GCKMS-006": ["PR.DS-01"],               # imported key
         # Developer-environment auto-execution
         "DEV-001":   ["PR.PS-05"],
+        "DEV-006":   ["PR.PS-05"],
         "DEV-002":   ["PR.PS-05"],
         "DEV-003":   ["PR.PS-05"],
         "DEV-004":   ["PR.PS-05"],

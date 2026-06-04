@@ -12,6 +12,20 @@ release commit collapses this section into `## [X.Y.Z] - <date>`.
 
 ### Added
 
+- **DEV-006: VS Code settings point a tool at a repo-local binary
+  (HIGH).** Tier 2 of the 2026-06-04 high-impact sweep. The devenv
+  loader now also reads `.vscode/settings.json`. DEV-006 fires when a
+  committed workspace settings file points an executable-path key
+  (`git.path`, `python.defaultInterpreterPath`, `eslint.runtime`,
+  `go.alternateTools`, a terminal automation profile, ...) at a
+  repo-relative path, injects a `terminal.integrated.env.*`
+  process-hijack variable (`PATH` / `LD_PRELOAD` / `NODE_OPTIONS`), or
+  enables `task.allowAutomaticTasks`. The moment a developer opens the
+  checkout in VS Code (and trusts the workspace), VS Code launches the
+  repo-shipped binary as the tool: checkout-time RCE, the same
+  second-stage shape DEV-001..005 cover, on a file the loader did not
+  previously read. A bare command (resolved from `PATH`) or an absolute
+  system path passes. devenv 5 -> 6.
 - **GL-042: `include: component:` pulls a CI/CD component without a
   pinned version (HIGH).** Tier 2 of the 2026-06-04 high-impact sweep.
   GitLab CI/CD components are third-party pipeline code merged into the

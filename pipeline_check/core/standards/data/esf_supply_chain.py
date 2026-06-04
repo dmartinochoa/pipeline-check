@@ -1045,6 +1045,7 @@ STANDARD = Standard(
         "GCKMS-006": ["ESF-C-ARTIFACT-AUTHZ"],             # imported key
         # Developer-environment auto-execution
         "DEV-001":   ["ESF-D-INJECTION"],                  # vscode folderOpen task
+        "DEV-006":   ["ESF-D-INJECTION"],                  # vscode settings exec-path / env injection
         "DEV-002":   ["ESF-D-INJECTION"],                  # devcontainer lifecycle
         "DEV-003":   ["ESF-D-INJECTION"],                  # committed claude hook
         "DEV-004":   ["ESF-S-VERIFY-DEPS", "ESF-D-INJECTION"],  # remote fetch+exec
