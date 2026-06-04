@@ -48,7 +48,7 @@ EXPECTED_RULE_COUNTS: dict[str, int] = {
     "circleci":   33,
     "cloudbuild": 26,
     "gcp":        50,
-    "kubernetes": 43,
+    "kubernetes": 44,
     "helm":       17,
     "devenv":     5,
     "buildkite":  16,

@@ -886,6 +886,7 @@ STANDARD = Standard(
         "K8S-021":  ["2.4.3"],                      # wildcard RBAC verbs
         "K8S-022":  ["5.1.4", "2.1.6"],             # Service exposes SSH host port
         "K8S-023":  ["5.1.4"],                      # PSA enforce label missing
+        "K8S-044":  ["5.1.4"],                      # admission webhook fail-open / unscoped mutating
         "K8S-024":  ["5.2.3"],                      # missing readiness / liveness probes
         "K8S-025":  ["5.1.4"],                      # system priority class outside kube-system
         "K8S-026":  ["5.1.4", "2.1.6"],             # LoadBalancer without source ranges

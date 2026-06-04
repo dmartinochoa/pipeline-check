@@ -855,6 +855,7 @@ STANDARD = Standard(
         "K8S-021":  ["PO.5.1"],                        # wildcard RBAC verbs
         "K8S-022":  ["PO.5.1", "PW.9.1"],              # Service exposes SSH
         "K8S-023":  ["PW.9.1"],                        # PSA enforce label missing
+        "K8S-044":  ["PW.9.1"],                        # admission webhook fail-open / unscoped mutating
         "K8S-024":  ["PO.3.3"],                        # missing readiness / liveness probes
         "K8S-025":  ["PO.5.1"],                        # system priority class
         "K8S-026":  ["PO.5.1"],                        # LB without source ranges

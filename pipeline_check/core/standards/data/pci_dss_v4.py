@@ -864,6 +864,7 @@ STANDARD = Standard(
         "K8S-021":  ["7.2.1", "7.2.5"],                  # wildcard RBAC verbs
         "K8S-022":  ["6.4.1"],                           # SSH service exposed
         "K8S-023":  ["6.4.1"],                           # PSA enforce missing
+        "K8S-044":  ["6.4.1"],                           # admission webhook fail-open / unscoped mutating
         "K8S-024":  ["10.2.1"],                          # missing health probes
         "K8S-025":  ["6.4.1"],                           # system priority class
         "K8S-026":  ["6.4.1"],                           # LB without source ranges

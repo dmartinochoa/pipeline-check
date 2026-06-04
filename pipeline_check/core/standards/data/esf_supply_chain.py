@@ -896,6 +896,7 @@ STANDARD = Standard(
         "K8S-021":  ["ESF-C-LEAST-PRIV"],           # wildcard RBAC verbs
         "K8S-022":  ["ESF-D-BUILD-ENV"],            # SSH service exposed
         "K8S-023":  ["ESF-D-PRIV-BUILD"],           # PSA enforce missing
+        "K8S-044":  ["ESF-D-PRIV-BUILD"],           # admission webhook fail-open / unscoped mutating
         "K8S-024":  ["ESF-C-DEPLOY-MON"],           # missing health probes
         "K8S-025":  ["ESF-D-BUILD-ENV"],            # system priority class
         "K8S-026":  ["ESF-D-BUILD-ENV"],            # LB without source ranges

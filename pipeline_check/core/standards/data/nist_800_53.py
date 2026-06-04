@@ -473,6 +473,7 @@ STANDARD = Standard(
         "K8S-021":  ["AC-3", "AC-6", "CM-7"],            # wildcard RBAC
         "K8S-022":  ["SC-7", "CM-7"],                    # service exposes SSH
         "K8S-023":  ["AC-6", "CM-6"],                    # PSA enforce label missing
+        "K8S-044":  ["AC-6", "CM-6"],                    # admission webhook fail-open / unscoped mutating
         "K8S-024":  ["AU-2", "SI-2"],                    # missing health probes
         "K8S-025":  ["AC-6", "CM-7"],                    # system-* priority class
         "K8S-026":  ["SC-7", "AC-3"],                    # LB without source ranges

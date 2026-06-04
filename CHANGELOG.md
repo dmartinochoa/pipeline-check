@@ -12,6 +12,19 @@ release commit collapses this section into `## [X.Y.Z] - <date>`.
 
 ### Added
 
+- **K8S-044: admission webhook fails open or mutates cluster-wide
+  unscoped (HIGH).** Tier 2 of the 2026-06-04 high-impact sweep. Fires on
+  a `MutatingWebhookConfiguration` / `ValidatingWebhookConfiguration`
+  whose webhook either (a) sets `failurePolicy: Ignore` while its `rules`
+  match a broad target (`pods` / `*` resources or `*` apiGroups), so an
+  attacker who DoSes or deletes the backend silently disables the
+  admission control cluster-wide (the v1 default is `Fail`), or (b) is a
+  mutating webhook with no `namespaceSelector` and no `objectSelector` and
+  broad rules, so whoever controls the backend rewrites every pod spec in
+  the cluster (inject a sidecar, add `hostPID`) - a tenant-escape
+  primitive. Novel: RBAC rules (K8S-020 / 021) reason about who can call
+  the API; webhooks intercept every call regardless, and no other rule
+  reads `admissionregistration.k8s.io` objects. kubernetes 43 -> 44.
 - **ARGOCD-019: Argo CD Application disables drift detection on a
   sensitive field (HIGH).** Tier 2 of the 2026-06-04 high-impact sweep.
   Fires when an Application (or ApplicationSet template) sets

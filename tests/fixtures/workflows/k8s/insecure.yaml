@@ -381,3 +381,27 @@ spec:
                 name: insecure-public-lb
                 port:
                   number: 80
+---
+# K8S-044: a mutating admission webhook that (a) fails open on a broad
+# rule (DoS the backend to bypass it) AND (b) has no namespace/object
+# selector, so whoever controls the backend rewrites every pod in the
+# cluster (inject a sidecar, add hostPID, mount the host).
+apiVersion: admissionregistration.k8s.io/v1
+kind: MutatingWebhookConfiguration
+metadata:
+  name: insecure-injector
+webhooks:
+  - name: inject.insecure.example.com
+    failurePolicy: Ignore
+    sideEffects: None
+    admissionReviewVersions: ["v1"]
+    clientConfig:
+      service:
+        name: injector
+        namespace: insecure-apps
+        path: /mutate
+    rules:
+      - apiGroups: [""]
+        apiVersions: ["v1"]
+        operations: [CREATE, UPDATE]
+        resources: [pods]
