@@ -1,9 +1,9 @@
 """GHA-117. Unattended IaC apply on an untrusted pull_request trigger."""
 from __future__ import annotations
 
-import re
 from typing import Any
 
+from ..._primitives.deploy_names import IAC_APPLY_RE
 from ...base import Finding, Severity
 from ...rule import Rule
 from ..base import iter_jobs, iter_steps, workflow_triggers
@@ -12,23 +12,6 @@ from ..base import iter_jobs, iter_steps, workflow_triggers
 # ``pull_request_target`` does the same but with the base repo's secrets
 # and a write token in scope, so it is strictly worse.
 _UNTRUSTED_PR_TRIGGERS = frozenset({"pull_request", "pull_request_target"})
-
-# Unattended IaC apply / deploy commands that REALIZE a state change.
-# Each one executes attacker-influenceable code at apply time (a Terraform
-# ``external`` data source, a ``local-exec`` provisioner, a hijacked
-# provider, a CloudFormation custom resource), so applying PR-controlled
-# IaC is arbitrary code execution on the runner. Mirrors GHA-111's
-# vocabulary; ``terraform plan`` / ``cdk diff`` are read-only and excluded
-# (though plan can also execute external data sources, the apply/deploy
-# verbs are the high-confidence shape).
-_IAC_APPLY_RE = re.compile(
-    r"\b(?:terraform|terragrunt)\s+(?:apply|destroy)\b"
-    r"|\baws\s+cloudformation\s+(?:deploy|create-stack|update-stack|execute-change-set)\b"
-    r"|\bcdk\s+(?:deploy|destroy)\b"
-    r"|\bpulumi\s+(?:up|destroy)\b"
-    r"|\bsam\s+deploy\b",
-    re.IGNORECASE,
-)
 
 RULE = Rule(
     id="GHA-117",
@@ -98,7 +81,7 @@ def check(path: str, doc: dict[str, Any]) -> Finding:
         for job_id, job in iter_jobs(doc):
             for idx, step in enumerate(iter_steps(job)):
                 run = step.get("run")
-                if isinstance(run, str) and _IAC_APPLY_RE.search(run):
+                if isinstance(run, str) and IAC_APPLY_RE.search(run):
                     offenders.append(f"{job_id}.steps[{idx}]")
     passed = not offenders
     desc = (

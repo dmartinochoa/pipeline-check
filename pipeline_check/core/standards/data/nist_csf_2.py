@@ -542,6 +542,7 @@ STANDARD = Standard(
         "GL-029":  ["PR.PS-06"],                # manual deploy allow_failure (variant)
         "GL-031":  ["PR.AA-05"],                # id_tokens missing audience pin
         "GL-040":  ["PR.AA-05"],                # CI_JOB_TOKEN used for cross-project access
+        "GL-041":  ["PR.PS-05"],                # IaC apply on an untrusted MR trigger
         "GL-032":  ["PR.PS-05"],                # tags interpolates untrusted
         "GL-033":  ["PR.PS-05"],                # global before_script taint
         "GL-034":  ["GV.SC-05"],                # npm install without audit signatures

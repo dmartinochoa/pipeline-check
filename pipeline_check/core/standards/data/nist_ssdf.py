@@ -275,6 +275,7 @@ STANDARD = Standard(
         "GL-030":   ["PW.4.1", "PW.4.4"],              # trigger: include w/o pinned ref
         "GL-031":   ["PO.5.1", "PS.1.1"],              # id_tokens missing audience pin
         "GL-040":   ["PO.5.1", "PS.1.1"],              # CI_JOB_TOKEN used for cross-project access
+        "GL-041":   ["PW.6.1", "PW.9.1"],              # IaC apply on an untrusted MR trigger
         "GL-032":   ["PW.6.1", "PW.9.1"],              # tags interpolates untrusted
         "GL-033":   ["PO.5.1", "PW.9.1"],              # global before_script taint
         "GL-034":   ["PW.4.4"],                        # npm install without audit signatures

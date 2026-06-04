@@ -10,7 +10,26 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 PRs landing on `dev` between releases append entries below. The
 release commit collapses this section into `## [X.Y.Z] - <date>`.
 
-## [1.9.0] - 2026-06-03
+### Added
+
+- **GL-041: IaC apply on an untrusted merge-request trigger.** The
+  GitLab analog of GHA-117. Fires when a job runs an unattended IaC
+  apply (`terraform`/`terragrunt apply` or `destroy`, `aws
+  cloudformation deploy`/`create-stack`/`update-stack`/
+  `execute-change-set`, `cdk deploy`, `pulumi up`, `sam deploy`) AND
+  the job is reachable on a merge-request pipeline (its own `rules:`
+  admit `merge_request_event`, its legacy `only:` includes
+  `merge_requests`, or it inherits a `workflow:` that admits MR
+  pipelines). Applying an MR author's IaC executes attacker code at
+  apply time (an `external` data source, a `local-exec` provisioner, a
+  hijacked provider) on the runner with whatever cloud credentials
+  (often an OIDC role via `id_tokens:`) the apply uses, before the
+  change is reviewed or merged. The plan/apply-on-untrusted-input RCE
+  class. GL-004 already caught this as a generic ungated deploy
+  (MEDIUM); GL-041 names the apply-RCE shape and raises it to CRITICAL.
+  Closes cicd-goat scenario 91. The IaC-apply command vocabulary now
+  lives in the shared `_primitives/deploy_names.IAC_APPLY_RE` (GHA-117
+  refactored to consume it). gitlab 42 -> 43.
 
 ### Added
 

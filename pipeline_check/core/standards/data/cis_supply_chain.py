@@ -287,6 +287,7 @@ STANDARD = Standard(
         "GL-030":   ["1.4.1", "3.1.3"],                  # trigger: include: pulls child pipeline w/o pinned ref
         "GL-031":   ["1.3.4", "2.4.3", "5.2.1"],         # id_tokens missing audience/env binding
         "GL-040":   ["1.3.4", "2.4.3", "5.2.1"],         # CI_JOB_TOKEN used for cross-project access
+        "GL-041":   ["2.1.3"],                           # IaC apply on an untrusted MR trigger
         "GL-032":   ["2.1.3"],                           # tags: interpolates untrusted variable
         "GL-033":   ["2.1.3", "2.3.8"],                  # global before_script taint
         "GL-034":   ["1.4.1", "3.1.3"],                  # npm install without audit signatures
