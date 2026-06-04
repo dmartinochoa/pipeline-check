@@ -25,7 +25,7 @@ axis.
 
 - **Controls in this standard:** 86
 - **Controls evidenced by at least one check:** 61 / 86
-- **Distinct checks evidencing this standard:** 658
+- **Distinct checks evidencing this standard:** 659
 - **Of those, autofixable with `--fix`:** 105
 
 _Severity levels (`CRITICAL` / `HIGH` / `MEDIUM` / `LOW` / `INFO`) follow the same scale across every provider and standard. See [How to read severity](README.md#how-to-read-severity) on the standards overview for the definitions._
@@ -62,7 +62,7 @@ Click a control ID to jump to the per-control section with the full check list. 
 | [`IA-8`](#ctrl-ia-8) | Exposed webhook | 1 | 1H |
 | [`IA-9`](#ctrl-ia-9) | Compromised token | 20 | 4C · 9H · 7M |
 | [`IA-10`](#ctrl-ia-10) | Vulnerable CI/CD plugins | 11 | 1C · 10H |
-| [`IA-11`](#ctrl-ia-11) | Vulnerable CI/CD template | 61 | 32H · 24M · 5L |
+| [`IA-11`](#ctrl-ia-11) | Vulnerable CI/CD template | 62 | 33H · 24M · 5L |
 | [`IA-12`](#ctrl-ia-12) | Exposed internal API | 0 | — |
 | [`IA-13`](#ctrl-ia-13) | Vulnerability in third-party dependency | 50 | 8C · 8H · 34M |
 | [`IA-14`](#ctrl-ia-14) | Compromised developer workstation | 0 | — |
@@ -404,7 +404,7 @@ _No checks in this scanner currently evidence this control. Open an issue if you
 
 ### IA-11: Vulnerable CI/CD template { #ctrl-ia-11 }
 
-**Evidenced by 61 checks** across 19 providers (AWS, Argo Workflows, Azure DevOps, Bitbucket, Buildkite, CircleCI, Cloud Build, Dockerfile, Drone CI, GitHub Actions, GitLab CI, Helm, Jenkins, Kubernetes, NuGet, PyPI, Tekton, maven, npm).
+**Evidenced by 62 checks** across 19 providers (AWS, Argo Workflows, Azure DevOps, Bitbucket, Buildkite, CircleCI, Cloud Build, Dockerfile, Drone CI, GitHub Actions, GitLab CI, Helm, Jenkins, Kubernetes, NuGet, PyPI, Tekton, maven, npm).
 
 | Check | Title | Severity | Provider | Fix |
 |-------|-------|----------|----------|-----|
@@ -428,6 +428,7 @@ _No checks in this scanner currently evidence this control. Open an issue if you
 | [`DF-003`](../providers/dockerfile.md#df-003) | ADD pulls remote URL without integrity verification | <span class="pg-sev pg-sev--high">HIGH</span> | [Dockerfile](../providers/dockerfile.md) |  |
 | [`DF-009`](../providers/dockerfile.md#df-009) | ADD used where COPY would suffice | <span class="pg-sev pg-sev--low">LOW</span> | [Dockerfile](../providers/dockerfile.md) |  |
 | [`DF-010`](../providers/dockerfile.md#df-010) | apt-get dist-upgrade / upgrade pulls unknown package versions | <span class="pg-sev pg-sev--low">LOW</span> | [Dockerfile](../providers/dockerfile.md) |  |
+| [`DF-031`](../providers/dockerfile.md#df-031) | COPY --from external image not pinned to sha256 digest | <span class="pg-sev pg-sev--high">HIGH</span> | [Dockerfile](../providers/dockerfile.md) |  |
 | [`DR-001`](../providers/drone.md#dr-001) | Step image not pinned to a digest | <span class="pg-sev pg-sev--high">HIGH</span> | [Drone CI](../providers/drone.md) |  |
 | [`DR-005`](../providers/drone.md#dr-005) | Plugin step uses a floating image tag | <span class="pg-sev pg-sev--high">HIGH</span> | [Drone CI](../providers/drone.md) |  |
 | [`DR-008`](../providers/drone.md#dr-008) | Step uses ``pull: never`` (skips registry verification) | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [Drone CI](../providers/drone.md) |  |

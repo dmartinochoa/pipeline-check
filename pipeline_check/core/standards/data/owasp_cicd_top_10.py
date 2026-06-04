@@ -497,6 +497,7 @@ STANDARD = Standard(
         "HELM-017": ["CICD-SEC-4"],  # tpl of an untrusted .Values value
         # Dockerfile
         "DF-001":   ["CICD-SEC-3"],   # FROM not digest-pinned
+        "DF-031":   ["CICD-SEC-3"],   # COPY --from external image not digest-pinned
         "DF-002":   ["CICD-SEC-7"],   # no USER
         "DF-003":   ["CICD-SEC-3", "CICD-SEC-9"],   # ADD URL no checksum
         "DF-004":   ["CICD-SEC-3"],   # curl-pipe in RUN

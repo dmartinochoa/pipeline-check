@@ -317,6 +317,7 @@ STANDARD = Standard(
         # covers data-in-transit (curl-pipe / TLS bypass). CC8.1
         # covers change management (pinning, version drift).
         "DF-001": ["CC8.1"],                # FROM not digest-pinned
+        "DF-031": ["CC8.1"],                # COPY --from external image not digest-pinned
         "DF-002": ["CC6.1", "CC6.8"],       # runs as root
         "DF-003": ["CC6.7", "CC8.1"],       # ADD remote no integrity
         "DF-004": ["CC6.7", "CC8.1"],       # curl-pipe

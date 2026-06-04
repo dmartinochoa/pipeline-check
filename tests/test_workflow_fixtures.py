@@ -384,7 +384,7 @@ class TestBuildkiteFixtures:
 
 
 class TestDockerfileFixtures:
-    EXPECTED_IDS = {f"DF-{i:03d}" for i in range(1, 31)}
+    EXPECTED_IDS = {f"DF-{i:03d}" for i in range(1, 32)}
 
     def _scan(self, filename: str):
         ctx = DockerfileContext.from_path(FIXTURES / "dockerfile" / filename)

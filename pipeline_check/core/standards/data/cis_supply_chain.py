@@ -490,6 +490,7 @@ STANDARD = Standard(
         # to 2.1.3 (build env hardened); credential-shape rules tie
         # to 2.3.4 (scan for secrets).
         "DF-001": ["1.4.1", "3.1.3"],              # FROM not digest-pinned
+        "DF-031": ["1.4.1", "3.1.3"],              # COPY --from external image not digest-pinned
         "DF-002": ["2.1.3"],                       # runs as root
         "DF-003": ["1.4.1", "3.1.3"],              # ADD remote, no integrity
         "DF-004": ["3.1.5", "1.4.1"],              # curl-pipe in RUN

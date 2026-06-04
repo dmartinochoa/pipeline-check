@@ -227,6 +227,7 @@ STANDARD = Standard(
         "TAINT-008": ["1.5.2"],
         # Dockerfile / IaC scanning, 1.5.3
         "DF-001":  ["1.5.3"],                                 # FROM image not digest-pinned
+        "DF-031":  ["1.5.3"],                                 # COPY --from external image not digest-pinned
         "DF-005":  ["1.5.3"],                                 # shell-eval pattern
         "DF-006":  ["1.5.3", "1.5.1"],                        # ENV credential literal
         "DF-008":  ["1.5.3"],                                 # docker --privileged

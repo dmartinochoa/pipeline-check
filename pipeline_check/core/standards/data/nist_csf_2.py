@@ -427,6 +427,7 @@ STANDARD = Standard(
         # Credential rules tie to PR.AA-01 (identity / credential
         # management). Vuln-scan / outdated-dep rules tie to PR.PS-02.
         "DF-001": ["GV.SC-05"],                 # FROM not digest-pinned
+        "DF-031": ["GV.SC-05"],                 # COPY --from external image not digest-pinned
         "DF-002": ["PR.PS-01"],                 # runs as root
         "DF-003": ["GV.SC-05", "PR.DS-02"],     # ADD remote no integrity
         "DF-004": ["GV.SC-05", "PR.DS-02"],     # curl-pipe
