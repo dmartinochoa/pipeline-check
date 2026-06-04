@@ -10,6 +10,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 PRs landing on `dev` between releases append entries below. The
 release commit collapses this section into `## [X.Y.Z] - <date>`.
 
+### Added
+
+- **Docs: Fleet (org-wide) scanning guide.** `pipeline_check fleet`
+  was only mentioned in passing on the docs site (under the cross-repo
+  attack-chains page). It now has its own page covering `--repos` /
+  `--from-org`, the `--include` / `--exclude` / `--jobs` /
+  `--scan-flags` / `--per-repo-timeout` flags, the output tree
+  (`fleet.json` / `fleet.md` + per-repo `findings.json`), the
+  `posture_graph` JSON shape, and the `CXPC-NNN` cross-repo chains.
+  Surfaced in the nav and as a home-page feature card, alongside a new
+  "supply-chain depth on demand" card spotlighting the
+  `--resolve-remote` checks (cooldown / OSV / OpenSSF Scorecard /
+  provenance / live secret verification).
+
 ## [1.9.0] - 2026-06-03
 
 ### Added
