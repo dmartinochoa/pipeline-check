@@ -138,6 +138,7 @@ STANDARD = Standard(
         "GHA-002":  ["CM-6", "SI-7", "SA-11"],           # pull_request_target + PR head
         "GHA-003":  ["CM-6", "SA-11", "SA-15"],          # script injection
         "GHA-117":  ["CM-6", "SA-11", "SA-15"],          # IaC apply on untrusted PR trigger
+        "GHA-118":  ["CM-6", "SA-11", "SA-15"],          # untrusted content into $GITHUB_ENV / $GITHUB_PATH
         "GHA-004":  ["AC-6", "CM-6", "CM-7"],            # unrestricted GITHUB_TOKEN
         "GHA-005":  ["IA-5"],                            # long-lived AWS keys
         "GHA-006":  ["SI-7", "SR-4"],                    # unsigned artifacts
@@ -555,6 +556,7 @@ STANDARD = Standard(
         "ARGO-016": ["AC-2", "AC-6"],                    # cluster-admin / over-privileged ServiceAccount
         "ARGO-004": ["SC-7", "AC-6", "SI-7"],            # hostPath / namespaces
         "ARGO-005": ["CM-6", "SA-11"],                   # parameter injection
+        "ARGO-017": ["CM-6", "SA-11"],                   # resource template manifest injection
         "ARGO-006": ["IA-5", "SC-28"],                   # leaked creds
         "ARGO-007": ["AU-2", "SI-2"],                    # no activeDeadlineSeconds
         "ARGO-008": ["SR-3", "SR-11", "SC-8", "SI-7"],   # remote install / TLS
@@ -688,6 +690,8 @@ STANDARD = Standard(
         "NPM-015":  ["SR-3", "SR-11", "RA-5"],           # missing build provenance
         "NPM-017":  ["SR-3", "SR-11", "RA-5"],           # provenance built from a non-release ref
         "NPM-018":  ["SR-3", "SR-11", "RA-5"],           # latest release from a new publisher
+        "NPM-019":  ["SR-3", "SR-11", "RA-5"],           # overrides / resolutions redirect
+        "NPM-020":  ["SR-3", "SR-11", "RA-5"],           # .npmrc registry repoint
         "NPM-016":  ["SR-3", "SR-11", "RA-5"],           # low OpenSSF Scorecard
         "PYPI-008": ["SR-3", "SR-11", "RA-5"],           # cooldown gate (--resolve-remote)
         "PYPI-009": ["SR-3", "SR-11", "RA-5"],           # OSV advisory (--resolve-remote)

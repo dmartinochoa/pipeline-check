@@ -377,6 +377,7 @@ STANDARD = Standard(
         # EX-6: Command injection (script injection in CI/CD)
         "GHA-003":  ["EX-6"],
         "GHA-117":  ["EX-6"],# IaC apply on untrusted PR trigger
+        "GHA-118":  ["EX-6"],# untrusted content into $GITHUB_ENV / $GITHUB_PATH
         "GHA-002":  ["EX-6", "PE-1"],
         "GL-002":   ["EX-6"],
         "BB-002":   ["EX-6"],
@@ -386,6 +387,7 @@ STANDARD = Standard(
         "BK-003":   ["EX-6"],
         "TKN-003":  ["EX-6"],
         "ARGO-005": ["EX-6"],
+        "ARGO-017": ["EX-6"],
         "DR-003":   ["EX-6"],
         "GCB-019":  ["EX-6"],
         "GCB-022":  ["EX-6"],

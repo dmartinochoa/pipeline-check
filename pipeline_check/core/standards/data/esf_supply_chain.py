@@ -108,6 +108,7 @@ STANDARD = Standard(
         "GHA-002":  ["ESF-D-INJECTION", "ESF-D-BUILD-ENV"],
         "GHA-003":  ["ESF-D-INJECTION"],
         "GHA-117":  ["ESF-D-INJECTION"],# IaC apply on untrusted PR trigger
+        "GHA-118":  ["ESF-D-INJECTION"],# untrusted content into $GITHUB_ENV / $GITHUB_PATH
         "GHA-004":  ["ESF-C-LEAST-PRIV"],
         "GHA-005":  ["ESF-D-TOKEN-HYGIENE"],
         "GHA-006":  ["ESF-D-SIGN-ARTIFACTS"],
@@ -319,6 +320,7 @@ STANDARD = Standard(
         "ARGO-016": ["ESF-C-LEAST-PRIV"],                          # cluster-admin / over-privileged ServiceAccount
         "ARGO-004": ["ESF-D-PRIV-BUILD", "ESF-D-BUILD-ENV"],       # hostPath / namespaces
         "ARGO-005": ["ESF-D-INJECTION"],                           # parameter injection
+        "ARGO-017": ["ESF-D-INJECTION"],                           # resource template manifest injection
         "ARGO-006": ["ESF-D-SECRETS"],                             # leaked creds
         "ARGO-007": ["ESF-D-BUILD-TIMEOUT"],                       # no activeDeadlineSeconds
         "ARGO-008": ["ESF-S-VERIFY-DEPS", "ESF-S-TRUSTED-REG"],    # remote install / TLS
@@ -693,6 +695,8 @@ STANDARD = Standard(
         "NPM-015":  ["ESF-S-VERIFY-DEPS"],
         "NPM-017":  ["ESF-S-VERIFY-DEPS"],  # provenance built from a non-release ref
         "NPM-018":  ["ESF-S-VERIFY-DEPS"],  # latest release from a new publisher
+        "NPM-019":  ["ESF-S-VERIFY-DEPS"],  # overrides / resolutions redirect
+        "NPM-020":  ["ESF-S-TRUSTED-REG", "ESF-S-VERIFY-DEPS"],  # .npmrc registry repoint
         "NPM-016":  ["ESF-S-VERIFY-DEPS"],
         "PYPI-008": ["ESF-S-VERIFY-DEPS"],
         "PYPI-009": ["ESF-S-VERIFY-DEPS"],

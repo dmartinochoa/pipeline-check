@@ -480,7 +480,7 @@ class TestTektonFixtures:
 
 
 class TestArgoFixtures:
-    EXPECTED_IDS = {f"ARGO-{i:03d}" for i in range(1, 17)} | {"TAINT-007"}
+    EXPECTED_IDS = {f"ARGO-{i:03d}" for i in range(1, 18)} | {"TAINT-007"}
 
     def _scan(self, filename: str):
         ctx = ArgoContext.from_path(FIXTURES / "argo" / filename)

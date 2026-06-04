@@ -75,6 +75,7 @@ STANDARD = Standard(
         "CB-011":   ["4.1.3"],
         "GHA-003":  ["4.1.3"],
         "GHA-117":  ["4.1.3"],# IaC apply on untrusted PR trigger
+        "GHA-118":  ["4.1.3"],# untrusted content into $GITHUB_ENV / $GITHUB_PATH
         "GHA-016":  ["4.1.3"],
         "GHA-027":  ["4.1.3"],
         "GHA-028":  ["4.1.3"],
@@ -586,6 +587,7 @@ STANDARD = Standard(
         "TKN-015": ["4.4.5"],                      # workspace subPath param injection
         # ── Argo Workflows container-touching extras ─────────────
         "ARGO-005": ["4.4.5"],                     # parameter injection in script
+        "ARGO-017": ["4.4.5"],                     # resource template manifest injection
         "ARGO-007": ["4.4.5"],                     # missing activeDeadlineSeconds
         "ARGO-008": ["4.2.1"],                     # remote install / TLS bypass
         "ARGO-014": ["4.1.5"],                     # unpinned package install

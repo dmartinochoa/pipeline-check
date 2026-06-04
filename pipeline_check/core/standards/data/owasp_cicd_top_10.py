@@ -139,6 +139,7 @@ STANDARD = Standard(
         "GHA-002":  ["CICD-SEC-4"],
         "GHA-003":  ["CICD-SEC-4"],
         "GHA-117":  ["CICD-SEC-4"],# IaC apply on untrusted PR trigger
+        "GHA-118":  ["CICD-SEC-4"],# untrusted content into $GITHUB_ENV / $GITHUB_PATH
         "GHA-004":  ["CICD-SEC-5"],
         "GHA-005":  ["CICD-SEC-6"],
         "GHA-006":  ["CICD-SEC-9"],
@@ -539,6 +540,8 @@ STANDARD = Standard(
         "NPM-015":  ["CICD-SEC-4"],   # missing build provenance
         "NPM-017":  ["CICD-SEC-4"],   # provenance built from a non-release ref
         "NPM-018":  ["CICD-SEC-3"],   # latest release from a new publisher (takeover)
+        "NPM-019":  ["CICD-SEC-3"],   # overrides / resolutions redirect to non-registry source
+        "NPM-020":  ["CICD-SEC-3"],   # .npmrc registry repoint off canonical npm
         "NPM-016":  ["CICD-SEC-3"],   # low OpenSSF Scorecard upstream
         # pypi (requirements file static analysis)
         "PYPI-001": ["CICD-SEC-3"],   # requirements line lacks ==pin
@@ -717,6 +720,7 @@ STANDARD = Standard(
         "ARGO-016": ["CICD-SEC-2"],   # cluster-admin / over-privileged ServiceAccount
         "ARGO-004": ["CICD-SEC-5"],   # hostPath / host namespaces
         "ARGO-005": ["CICD-SEC-4", "CICD-SEC-1"],  # parameter injection in script
+        "ARGO-017": ["CICD-SEC-4", "CICD-SEC-2"],  # resource template manifest injection
         "ARGO-006": ["CICD-SEC-6", "CICD-SEC-7"],  # literal secret in env / param
         "ARGO-007": ["CICD-SEC-9"],   # missing activeDeadlineSeconds
         "ARGO-008": ["CICD-SEC-3"],   # remote install / TLS bypass

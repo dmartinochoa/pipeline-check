@@ -1,0 +1,14 @@
+name: pr-build
+on: pull_request_target
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@a1b2c3d4e5f60718293a4b5c6d7e8f9012345678
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+      # A PR-controlled file piped into the env-control file. GitHub sets
+      # whatever it contains (e.g. LD_PRELOAD=./evil.so) for every later
+      # step, escalating the secret-bearing build step to code execution.
+      - run: cat ./ci.env >> "$GITHUB_ENV"
+      - run: ./build.sh

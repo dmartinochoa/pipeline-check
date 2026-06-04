@@ -149,6 +149,7 @@ STANDARD = Standard(
         "GHA-002":  ["PO.5.1", "PW.9.1"],              # pull_request_target with PR head
         "GHA-003":  ["PW.6.1", "PW.9.1"],              # script injection
         "GHA-117":  ["PW.6.1", "PW.9.1"],              # IaC apply on untrusted PR trigger
+        "GHA-118":  ["PW.6.1", "PW.9.1"],              # untrusted content into $GITHUB_ENV / $GITHUB_PATH
         "GHA-004":  ["PO.5.1"],                        # no explicit permissions
         "GHA-005":  ["PS.1.1"],                        # long-lived AWS keys
         "GHA-006":  ["PS.2.1", "PS.3.2"],              # unsigned artifacts
@@ -471,6 +472,7 @@ STANDARD = Standard(
         "ARGO-016": ["PO.5.1"],                        # cluster-admin / over-privileged ServiceAccount
         "ARGO-004": ["PO.5.1", "PW.9.1"],              # hostPath / host namespaces
         "ARGO-005": ["PW.6.1", "PW.9.1"],              # parameter injection in script
+        "ARGO-017": ["PW.6.1", "PW.9.1"],              # resource template manifest injection
         "ARGO-006": ["PS.1.1"],                        # leaked creds in env / param
         "ARGO-007": ["PO.5.2", "PW.9.1"],              # missing activeDeadlineSeconds
         "ARGO-008": ["PW.4.1", "PW.4.4"],              # remote install / TLS bypass

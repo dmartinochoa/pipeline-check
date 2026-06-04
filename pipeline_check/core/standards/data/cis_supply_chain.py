@@ -161,6 +161,7 @@ STANDARD = Standard(
         "GHA-002":  ["2.1.3", "2.3.8"],                  # pull_request_target + PR head
         "GHA-003":  ["2.1.3"],                           # script injection
         "GHA-117":  ["2.1.3"],                           # IaC apply on untrusted PR trigger
+        "GHA-118":  ["2.1.3"],                           # untrusted content into $GITHUB_ENV / $GITHUB_PATH
         "GHA-004":  ["2.4.3"],                           # unrestricted GITHUB_TOKEN
         "GHA-005":  ["1.3.4"],                           # long-lived AWS keys
         "GHA-006":  ["4.1.1"],                           # artifact signing
@@ -426,6 +427,7 @@ STANDARD = Standard(
         "ARGO-016": ["2.4.3"],                     # cluster-admin / over-privileged ServiceAccount
         "ARGO-004": ["2.1.3"],                     # hostPath / host namespaces
         "ARGO-005": ["2.1.3", "2.3.8"],            # parameter injection
+        "ARGO-017": ["2.1.3", "2.3.8"],            # resource template manifest injection
         "ARGO-006": ["1.5.1", "2.3.4"],            # leaked creds
         "ARGO-007": ["2.2.2"],                     # no activeDeadlineSeconds
         "ARGO-008": ["1.4.1", "3.1.5"],            # remote install / TLS

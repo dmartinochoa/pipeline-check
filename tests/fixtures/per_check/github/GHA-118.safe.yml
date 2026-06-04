@@ -1,0 +1,13 @@
+name: pr-build
+on: pull_request_target
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@a1b2c3d4e5f60718293a4b5c6d7e8f9012345678
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+      # Only a fixed literal is written to the env-control file; nothing
+      # is read from the PR tree or computed into a process-hijack key.
+      - run: echo "BUILD_PROFILE=ci" >> "$GITHUB_ENV"
+      - run: ./build.sh

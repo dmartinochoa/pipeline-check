@@ -85,6 +85,7 @@ STANDARD = Standard(
         "GHA-002":  ["Build.L3.NonFalsifiable", "Build.L3.Isolated"], # pull_request_target + PR head
         "GHA-003":  ["Build.L3.Isolated"],                         # script injection
         "GHA-117":  ["Build.L3.Isolated"],                         # IaC apply on untrusted PR trigger
+        "GHA-118":  ["Build.L3.Isolated"],                         # untrusted content into $GITHUB_ENV / $GITHUB_PATH
         "GHA-004":  ["Build.L3.NonFalsifiable"],                   # unrestricted GITHUB_TOKEN
         "GHA-006":  ["Build.L2.Signed"],                           # unsigned artifacts
         "GHA-007":  ["Build.L1.Provenance"],                       # no SBOM / provenance
@@ -373,6 +374,7 @@ STANDARD = Standard(
         "ARGO-016": ["Build.L3.NonFalsifiable"],                   # cluster-admin / over-privileged ServiceAccount
         "ARGO-004": ["Build.L3.Isolated"],                         # hostPath / host namespaces
         "ARGO-005": ["Build.L3.Isolated"],                         # parameter injection in script
+        "ARGO-017": ["Build.L3.Isolated"],                         # resource template manifest injection
         "ARGO-006": ["Build.L3.NonFalsifiable"],                   # leaked creds in env / param
         "ARGO-007": ["Build.L3.Ephemeral"],                        # no activeDeadlineSeconds
         "ARGO-008": ["Build.L3.Isolated"],                         # remote install / TLS bypass
