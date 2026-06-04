@@ -10,6 +10,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 PRs landing on `dev` between releases append entries below. The
 release commit collapses this section into `## [X.Y.Z] - <date>`.
 
+### Added
+
+- **Fleet posture-graph HTML view (`fleet.html`).** A fleet scan now
+  writes a self-contained `fleet.html` next to `fleet.json` / `fleet.md`,
+  rendering the cross-repo `posture_graph` as a static SVG node-link
+  diagram: repos are nodes colored by grade, cross-repo (`CXPC-NNN`)
+  attack chains are directed producer-to-consumer edges colored by
+  severity, and a chain endpoint outside the scanned fleet renders as a
+  dashed, muted node. Above the graph, a ranked card grid shows every
+  repo's grade, score, and per-severity failed-finding breakdown. The
+  layout is computed in Python so the output is deterministic; there is
+  no JavaScript, no CDN, and no network (the shared `_design_tokens.css`
+  palette keeps it in sync with the HTML report and the docs site). This
+  completes the SDLC posture-graph roadmap item whose JSON contract
+  shipped in v1.8.0.
+
 ## [1.9.0] - 2026-06-03
 
 ### Added
