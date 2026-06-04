@@ -12,6 +12,19 @@ release commit collapses this section into `## [X.Y.Z] - <date>`.
 
 ### Added
 
+- **DF-031: `COPY --from=<external image>` not digest-pinned (HIGH).**
+  Tier 2 of the 2026-06-04 high-impact sweep. Fires when a `COPY` / `ADD`
+  carries `--from=<X>` where `X` is an external image reference (it has a
+  registry / tag / digest separator and is not an earlier
+  `FROM ... AS <stage>` name or a numeric stage index) and `X` is not
+  `@sha256:`-pinned. `--from=<image>` pulls that image at build time and
+  copies bytes out of it into the final image (a common way to grab
+  `cosign` / `kubectl` / a CA bundle), so a floating tag lets the
+  registry serve different content and a typosquat / takeover ships an
+  attacker's binary straight into the build. DF-001 only inspects `FROM`,
+  so this sidesteps it; reuses the shared `image_pinning` classifier. A
+  named / numbered stage and a bare build-context name don't fire.
+  dockerfile 30 -> 31.
 - **K8S-044: admission webhook fails open or mutates cluster-wide
   unscoped (HIGH).** Tier 2 of the 2026-06-04 high-impact sweep. Fires on
   a `MutatingWebhookConfiguration` / `ValidatingWebhookConfiguration`

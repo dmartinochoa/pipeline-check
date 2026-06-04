@@ -538,6 +538,7 @@ STANDARD = Standard(
         # or by the build's own tenant). Provenance labels tie to
         # L1.Provenance + L2.Signed.
         "DF-001": ["Build.L3.NonFalsifiable"],                     # FROM not digest-pinned
+        "DF-031": ["Build.L3.NonFalsifiable"],                     # COPY --from external image not digest-pinned
         "DF-003": ["Build.L3.NonFalsifiable"],                     # ADD remote no integrity
         "DF-004": ["Build.L3.Isolated",
                    "Build.L3.NonFalsifiable"],                     # curl-pipe

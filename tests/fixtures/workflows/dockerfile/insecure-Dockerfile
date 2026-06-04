@@ -90,6 +90,11 @@ ARG NPM_REGISTRY_TOKEN
 RUN echo "//registry.npmjs.org/:_authToken=${NPM_REGISTRY_TOKEN}" \
     > /root/.npmrc
 
+# DF-031: COPY --from pulls an external image by floating tag, a
+# build-time image pull (and byte copy into the final image) that
+# DF-001's FROM-only digest check never sees.
+COPY --from=sigstore/cosign:latest /ko-app/cosign /usr/local/bin/cosign
+
 COPY . .
 
 # DF-013: EXPOSE declares SSH port — containers should not run sshd.

@@ -491,6 +491,7 @@ STANDARD = Standard(
         # PW.9.1 (env separation, secure defaults); credential-shape
         # rules tie to PS.1.1 (least-privilege code storage).
         "DF-001":   ["PW.4.1", "PW.4.4"],              # FROM not digest-pinned
+        "DF-031":   ["PW.4.1", "PW.4.4"],              # COPY --from external image not digest-pinned
         "DF-002":   ["PO.5.1", "PW.9.1"],              # runs as root
         "DF-003":   ["PW.4.4", "PS.2.1"],              # ADD remote, no integrity
         "DF-004":   ["PW.4.1", "PW.4.4"],              # curl-pipe in RUN

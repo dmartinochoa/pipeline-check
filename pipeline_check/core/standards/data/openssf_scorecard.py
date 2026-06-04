@@ -613,6 +613,7 @@ STANDARD = Standard(
         # includes, and packages. ``FROM image:tag`` without a
         # digest is the canonical image-not-pinned failure.
         "DF-001": ["Pinned-Dependencies"],                              # FROM not digest-pinned
+        "DF-031": ["Pinned-Dependencies"],                              # COPY --from external image not digest-pinned
         "DF-003": ["Pinned-Dependencies"],                              # ADD remote no integrity
         "DF-004": ["Pinned-Dependencies", "Dangerous-Workflow"],        # curl-pipe
         "DF-005": ["Dangerous-Workflow"],                               # shell-eval

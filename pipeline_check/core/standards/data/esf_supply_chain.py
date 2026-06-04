@@ -352,6 +352,7 @@ STANDARD = Standard(
         "HELM-017": ["ESF-S-VERIFY-DEPS"],  # tpl of an untrusted .Values value
         # ── Dockerfile (image build supply chain) ──────────────────
         "DF-001": ["ESF-S-PIN-DEPS", "ESF-S-VERIFY-DEPS"],         # FROM not digest-pinned
+        "DF-031": ["ESF-S-PIN-DEPS", "ESF-S-VERIFY-DEPS"],         # COPY --from external image not digest-pinned
         "DF-002": ["ESF-D-PRIV-BUILD"],                            # runs as root
         "DF-003": ["ESF-S-VERIFY-DEPS"],                           # ADD remote no integrity
         "DF-004": ["ESF-S-VERIFY-DEPS", "ESF-S-TRUSTED-REG"],      # curl-pipe

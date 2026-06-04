@@ -581,6 +581,7 @@ STANDARD = Standard(
         # Dockerfile, image build choices evidence supply-chain (SR)
         # and configuration (CM) controls primarily.
         "DF-001":   ["SR-3", "SR-11", "SI-2"],           # FROM not digest-pinned
+        "DF-031":   ["SR-3", "SR-11", "SI-2"],           # COPY --from external image not digest-pinned
         "DF-002":   ["AC-6", "CM-6"],                    # no USER
         "DF-003":   ["SR-3", "SR-11", "SI-7"],           # ADD URL no checksum
         "DF-004":   ["SR-3", "SR-11", "SI-7"],           # curl-pipe
