@@ -356,6 +356,7 @@ STANDARD = Standard(
         "GHA-030":  ["IA-22"],
         "GL-031":   ["IA-22"],
         "GL-040":   ["IA-22"],# CI_JOB_TOKEN used for cross-project access
+        "GL-041":   ["EX-6"],# IaC apply on an untrusted MR trigger
         "BB-028":   ["IA-22"],
         "ADO-029":  ["IA-22"],
         "CC-031":   ["IA-22"],

@@ -65,6 +65,7 @@ STANDARD = Standard(
         "GHA-109":  ["4.4.3"],            # harden-runner not the first step
         "GL-017":   ["4.1.2", "4.4.4"],
         "GL-039":   ["4.1.2", "4.4.4"],# dind daemon TLS disabled / exposed on 2375
+        "GL-041":   ["4.1.3"],# IaC apply on an untrusted MR trigger
         "BB-013":   ["4.1.2", "4.4.4"],
         "ADO-017":  ["4.1.2", "4.4.4"],
         "JF-017":   ["4.1.2", "4.4.4"],

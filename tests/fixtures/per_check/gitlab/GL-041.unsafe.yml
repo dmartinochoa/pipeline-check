@@ -1,0 +1,10 @@
+terraform_apply:
+  stage: deploy
+  id_tokens:
+    AWS_TOKEN:
+      aud: https://gitlab.example.com
+  script:
+    - terraform init
+    - terraform apply -auto-approve
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"

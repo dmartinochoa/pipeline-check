@@ -859,8 +859,15 @@ mechanical):
   an unattended IaC apply (``terraform``/``terragrunt apply``/``destroy``,
   ``cloudformation deploy``, ``cdk deploy``, ``pulumi up``, ``sam
   deploy``). Distinct from GHA-111, which needs an AI agent in the loop.
-- Still open: the apply-RCE specifics of GitLab 91 (currently caught as
-  an ungated MR deploy via GL-004, not as apply-RCE).
+- ~~the apply-RCE specifics of GitLab 91~~ Shipped on ``dev`` as
+  **GL-041** (CRITICAL), the GitLab analog of GHA-117: an unattended IaC
+  apply in a job reachable from a merge-request pipeline (its own
+  ``rules:`` admit ``merge_request_event``, its legacy ``only:`` includes
+  ``merge_requests``, or it inherits a ``workflow:`` that admits MR
+  pipelines). GL-004 still catches the same job as a generic ungated
+  deploy (MEDIUM); GL-041 names the apply-RCE shape and raises it to
+  CRITICAL. The IaC-apply command vocabulary moved to the shared
+  ``_primitives/deploy_names.IAC_APPLY_RE``.
 - ~~Argo cluster-admin ServiceAccount (92)~~ Shipped on ``dev`` as
   **ARGO-016**: a name-based heuristic on ``serviceAccountName``
   (``cluster-admin`` / ``admin`` / ``root`` / ``superuser`` or a name
