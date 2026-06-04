@@ -1012,6 +1012,7 @@ STANDARD = Standard(
         "GCKMS-006": ["PS.1.1"],                       # imported key
         # Developer-environment auto-execution
         "DEV-001":   ["PW.6.1", "PW.9.1"],
+        "DEV-006":   ["PW.6.1", "PW.9.1"],
         "DEV-002":   ["PW.6.1", "PW.9.1"],
         "DEV-003":   ["PW.6.1", "PW.9.1"],
         "DEV-004":   ["PW.4.1", "PW.4.4"],

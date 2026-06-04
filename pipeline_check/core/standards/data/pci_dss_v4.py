@@ -1012,6 +1012,7 @@ STANDARD = Standard(
         "GCKMS-006": ["10.3.2"],                            # imported key
         # Developer-environment auto-execution
         "DEV-001":   ["6.5.1"],
+        "DEV-006":   ["6.5.1"],
         "DEV-002":   ["6.5.1"],
         "DEV-003":   ["6.5.1"],
         "DEV-004":   ["6.3.3", "6.5.1"],

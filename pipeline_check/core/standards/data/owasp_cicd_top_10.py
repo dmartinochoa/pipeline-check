@@ -984,6 +984,7 @@ STANDARD = Standard(
         "GCKMS-006": ["CICD-SEC-9"],                # imported key
         # Developer-environment auto-execution
         "DEV-001":   ["CICD-SEC-4"],                # vscode folderOpen task
+        "DEV-006":   ["CICD-SEC-4"],                # vscode settings exec-path / env injection
         "DEV-002":   ["CICD-SEC-4"],                # devcontainer lifecycle
         "DEV-003":   ["CICD-SEC-4"],                # committed claude hook
         "DEV-004":   ["CICD-SEC-3", "CICD-SEC-4"],  # auto-run remote fetch+exec

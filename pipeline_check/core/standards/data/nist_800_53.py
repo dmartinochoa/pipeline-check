@@ -1023,6 +1023,7 @@ STANDARD = Standard(
         "GCKMS-006": ["SC-12", "SC-13"],                   # imported key
         # Developer-environment auto-execution
         "DEV-001":   ["CM-7"],                             # vscode folderOpen task
+        "DEV-006":   ["CM-7"],                             # vscode settings exec-path / env injection
         "DEV-002":   ["CM-7"],                             # devcontainer lifecycle
         "DEV-003":   ["CM-7"],                             # committed claude hook
         "DEV-004":   ["SI-7", "CM-7"],                     # auto-run remote fetch+exec
