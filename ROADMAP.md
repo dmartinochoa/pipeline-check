@@ -793,14 +793,19 @@ same day; the rest are queued for a later pass.
     reads the resolved paths from that bundle (``gha_path=_paths.gha_path``,
     ...) instead of ~30 loose mutated locals. Full serial suite green.
     ``scan()`` body is now ~907 lines.
+  - ~~``scan()`` body seams, phase 3 / output dispatch (done 2026-06-05 on
+    ``dev``):~~ the 8-way output-format if-chain moved into
+    ``_emit_scan_report`` (body byte-identical extraction), and inside it
+    the six single-artifact text formats (sarif / junit / markdown /
+    codequality / cyclonedx / threatmodel) became a ``text_reporters``
+    dispatch table of lazy thunks; terminal / json / html stay
+    special-cased (``both`` fires terminal + json, html writes its own
+    file). Full serial suite green; all 10 output paths smoke-tested.
+    ``scan()`` body is now ~810 lines (from ~1,372 at the start).
   - Remaining (queued): the ``_scanner_kwargs`` dict build + (Multi)Scanner
-    construction (a ~30-key dict, no clean param reduction on its own) and
-    the output dispatch (replace the 7-way if-chain with a
-    ``dict[str, Reporter]`` table, the messiest seam since it's entangled
-    with pr-diff mode, chains / inventory rendering, file-writing, and the
-    gate). Then split the subcommands into a ``cli/`` package. Also fold
-    the LSP's dead ``_DETECTORS`` table (``lsp/detection.py``) onto the new
-    ``core/detect.py``.
+    construction (a ~30-key dict, no clean param reduction on its own).
+    Then split the subcommands into a ``cli/`` package. Also fold the LSP's
+    dead ``_DETECTORS`` table (``lsp/detection.py``) onto ``core/detect.py``.
 
 **Medium priority (queued):**
 

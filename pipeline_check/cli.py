@@ -49,6 +49,7 @@ missing canonical file raises a ``UsageError``.
 import os
 import re
 import sys
+from collections.abc import Callable
 from dataclasses import dataclass
 from typing import Any
 
@@ -3042,101 +3043,25 @@ def scan(
                 f"{before - len(chains)} non-dataflow chain(s)"
             )
 
-    if not quiet and output in ("terminal", "both"):
-        from rich.console import Console as _Console  # local import, only needed here
-        console = _Console(stderr=(output == "both"))
-        report_terminal(
-            findings, score_result,
-            severity_threshold=threshold, console=console,
-            show_controls=show_controls,
-            show_passed=show_passed,
-            group_similar=not no_group,
-            inline_explain=inline_explain,
-            incomplete_reason=_scan_incomplete_reason(scanner.metadata, findings),
-        )
-        if chains:
-            report_chains_terminal(chains, console=console)
-        if components is not None:
-            report_inventory_terminal(components, console=console)
-        # Final line of a terminal scan: a single "what next" nudge,
-        # rendered after every panel so it's the last thing on screen.
-        tip = next_steps_tip(findings, severity_threshold=threshold)
-        if tip:
-            console.print()
-            console.print(tip)
-
-    if output in ("json", "both"):
-        json_text = report_json(
-            findings, score_result, tool_version=__version__,
-            inventory=components,
-            chains=chains if not no_chains else None,
-        )
-        # ``both`` always streams JSON to stdout regardless of
-        # ``--output-file``; the file destination is only honored
-        # when JSON is the sole format the user asked for.
-        if output == "both":
-            if not quiet:
-                click.echo(json_text)
-        else:
-            _emit_report(json_text, output_file, "JSON report", quiet=quiet)
-
-    if output == "html":
-        # HTML reporter writes the file itself (it bundles assets), so
-        # we don't route it through ``_emit_report``.
-        report_html(
-            findings, score_result, region=region, target=target or "",
-            output_path=output_file, chains=chains,
-            pipeline_graphs=pipeline_graphs,
-        )
-        if not quiet:
-            click.echo(f"HTML report written to {output_file}", err=True)
-
-    if output == "sarif":
-        sarif_text = report_sarif(
-            findings, score_result, tool_version=__version__, chains=chains,
-            inline_explain=inline_explain,
-        )
-        _emit_report(sarif_text, output_file, "SARIF report", quiet=quiet)
-
-    if output == "junit":
-        junit_text = report_junit(
-            findings, score_result, inline_explain=inline_explain,
-        )
-        _emit_report(junit_text, output_file, "JUnit report", quiet=quiet)
-
-    if output == "markdown":
-        md_text = report_markdown(
-            findings, score_result, chains=chains,
-            inline_explain=inline_explain,
-        )
-        _emit_report(md_text, output_file, "Markdown report", quiet=quiet)
-
-    if output == "codequality":
-        cq_text = report_codequality(findings, inline_explain=inline_explain)
-        _emit_report(
-            cq_text, output_file, "Code Quality report", quiet=quiet,
-        )
-
-    if output == "cyclonedx":
-        from pipeline_check.core.cyclonedx_reporter import report_cyclonedx
-        sbom_deps = scanner.sbom()
-        cdx_text = report_cyclonedx(
-            sbom_deps,
-            tool_version=__version__,
-            scanned_path=target or ".",
-        )
-        _emit_report(cdx_text, output_file, "CycloneDX SBOM", quiet=quiet)
-
-    if output == "threatmodel":
-        tm_text = report_threatmodel(
-            findings, score_result,
-            inventory=components, chains=chains,
-            tool_version=__version__,
-            region=region or "", target=target or "",
-        )
-        _emit_report(
-            tm_text, output_file, "Threat-model report", quiet=quiet,
-        )
+    _emit_scan_report(
+        output,
+        findings=findings,
+        score_result=score_result,
+        chains=chains,
+        components=components,
+        pipeline_graphs=pipeline_graphs,
+        scanner=scanner,
+        threshold=threshold,
+        show_controls=show_controls,
+        show_passed=show_passed,
+        no_group=no_group,
+        inline_explain=inline_explain,
+        no_chains=no_chains,
+        output_file=output_file,
+        quiet=quiet,
+        region=region,
+        target=target,
+    )
 
     if fix:
         if apply_fixes:
@@ -3792,6 +3717,132 @@ def _resolve_provider_paths(
         rubygems_path=rubygems_path,
         pulumi_path=pulumi_path,
     )
+
+
+def _emit_scan_report(
+    output: str,
+    *,
+    findings: list[Any],
+    score_result: Any,
+    chains: list[Any],
+    components: list[Any] | None,
+    pipeline_graphs: list[Any],
+    scanner: "Scanner | MultiScanner",
+    threshold: Severity,
+    show_controls: bool,
+    show_passed: bool,
+    no_group: bool,
+    inline_explain: bool,
+    no_chains: bool,
+    output_file: str | None,
+    quiet: bool,
+    region: str,
+    target: str | None,
+) -> None:
+    """Render the scan results in the requested output format(s).
+
+    ``terminal`` / ``both`` print the rich report (plus chains, inventory,
+    and the next-step tip), and ``both`` additionally streams JSON to
+    stdout. ``html`` writes its own bundled file. Every other format is a
+    single text artifact emitted via :func:`_emit_report`.
+    """
+    if not quiet and output in ("terminal", "both"):
+        from rich.console import Console as _Console  # local import, only needed here
+        console = _Console(stderr=(output == "both"))
+        report_terminal(
+            findings, score_result,
+            severity_threshold=threshold, console=console,
+            show_controls=show_controls,
+            show_passed=show_passed,
+            group_similar=not no_group,
+            inline_explain=inline_explain,
+            incomplete_reason=_scan_incomplete_reason(scanner.metadata, findings),
+        )
+        if chains:
+            report_chains_terminal(chains, console=console)
+        if components is not None:
+            report_inventory_terminal(components, console=console)
+        # Final line of a terminal scan: a single "what next" nudge,
+        # rendered after every panel so it's the last thing on screen.
+        tip = next_steps_tip(findings, severity_threshold=threshold)
+        if tip:
+            console.print()
+            console.print(tip)
+
+    if output in ("json", "both"):
+        json_text = report_json(
+            findings, score_result, tool_version=__version__,
+            inventory=components,
+            chains=chains if not no_chains else None,
+        )
+        # ``both`` always streams JSON to stdout regardless of
+        # ``--output-file``; the file destination is only honored
+        # when JSON is the sole format the user asked for.
+        if output == "both":
+            if not quiet:
+                click.echo(json_text)
+        else:
+            _emit_report(json_text, output_file, "JSON report", quiet=quiet)
+
+    if output == "html":
+        # HTML reporter writes the file itself (it bundles assets), so
+        # we don't route it through ``_emit_report``.
+        report_html(
+            findings, score_result, region=region, target=target or "",
+            output_path=output_file, chains=chains,
+            pipeline_graphs=pipeline_graphs,
+        )
+        if not quiet:
+            click.echo(f"HTML report written to {output_file}", err=True)
+
+    # Single-artifact text formats. Each builder is a thunk so only the
+    # selected format runs (the CycloneDX one defers a lazy import and the
+    # ``scanner.sbom()`` call); a dispatch table keeps the per-format
+    # wiring in one place instead of a seven-way if-chain.
+    def _cyclonedx_text() -> str:
+        from pipeline_check.core.cyclonedx_reporter import report_cyclonedx
+        return report_cyclonedx(
+            scanner.sbom(), tool_version=__version__, scanned_path=target or ".",
+        )
+
+    text_reporters: dict[str, tuple[Callable[[], str], str]] = {
+        "sarif": (
+            lambda: report_sarif(
+                findings, score_result, tool_version=__version__,
+                chains=chains, inline_explain=inline_explain,
+            ),
+            "SARIF report",
+        ),
+        "junit": (
+            lambda: report_junit(
+                findings, score_result, inline_explain=inline_explain,
+            ),
+            "JUnit report",
+        ),
+        "markdown": (
+            lambda: report_markdown(
+                findings, score_result, chains=chains,
+                inline_explain=inline_explain,
+            ),
+            "Markdown report",
+        ),
+        "codequality": (
+            lambda: report_codequality(findings, inline_explain=inline_explain),
+            "Code Quality report",
+        ),
+        "cyclonedx": (_cyclonedx_text, "CycloneDX SBOM"),
+        "threatmodel": (
+            lambda: report_threatmodel(
+                findings, score_result, inventory=components, chains=chains,
+                tool_version=__version__, region=region or "", target=target or "",
+            ),
+            "Threat-model report",
+        ),
+    }
+    reporter = text_reporters.get(output)
+    if reporter is not None:
+        build_text, label = reporter
+        _emit_report(build_text(), output_file, label, quiet=quiet)
 
 
 def _run_informational_commands(
