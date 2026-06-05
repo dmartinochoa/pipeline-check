@@ -463,7 +463,7 @@ def _references_unquoted_var(text: str, var_name: str) -> bool:
 
     Mirrors the quote-state walker used by the dotenv consumer
     pass: a reference inside ``"..."`` is treated as safe
-    (single-token expansion); single quotes neutralise entirely.
+    (single-token expansion); single quotes neutralize entirely.
     """
     in_single = False
     in_double = False

@@ -184,6 +184,32 @@ class TestDuplicateKeys:
         captured = capsys.readouterr()
         assert "duplicate key" in captured.err
 
+    def test_merge_key_override_is_not_a_duplicate(self, tmp_path, monkeypatch, capsys):
+        """A YAML merge key (``<<:``) followed by a local override is valid
+        YAML, not a duplicate. The strict loader must keep the override and
+        the inherited keys, not reject the whole file. Regression: the loader
+        used to flatten the merge first and then trip its own duplicate-key
+        guard, silently dropping the entire config."""
+        _clear_env(monkeypatch)
+        cfg_file = tmp_path / ".pipeline-check.yml"
+        cfg_file.write_text(
+            "pipeline: github\n"
+            "gate:\n"
+            "  <<: &base\n"
+            "    fail_on: HIGH\n"
+            "    min_grade: B\n"
+            "  fail_on: CRITICAL\n"
+        )
+        cfg = load_config(cwd=tmp_path)
+        captured = capsys.readouterr()
+        assert "duplicate key" not in captured.err
+        # The file loaded (the bug returned {} here).
+        assert cfg.get("pipeline") == "github"
+        # The local override wins over the merged value.
+        assert cfg.get("fail_on") == "CRITICAL"
+        # The non-overridden merged key is still inherited.
+        assert cfg.get("min_grade") == "B"
+
 
 # ────────────────────────────────────────────────────────────────────────────
 # Environment variables

@@ -430,7 +430,7 @@ class Scanner:
                         # pass anything.
                         pass
 
-        # Attack-chain correlation runs after confidence is finalised so
+        # Attack-chain correlation runs after confidence is finalized so
         # ``min_confidence(triggers)`` reflects the post-demotion value.
         # A chain rule that crashes never aborts the scan, chains are
         # an additive signal, not a gate. ``getattr`` guards against

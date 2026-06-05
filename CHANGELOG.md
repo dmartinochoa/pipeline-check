@@ -218,6 +218,29 @@ release commit collapses this section into `## [X.Y.Z] - <date>`.
   benchmark" section presenting the same measured results next to the
   self-reported feature matrix.
 
+### Fixed
+
+- **Config / ignore files using a YAML merge-key override are no longer
+  silently dropped.** The strict loader (`DupKeyLoader`) flattened `<<:`
+  merge keys before running its duplicate-key guard, so a valid
+  `<<: *anchor` followed by a local override (a common DRY pattern)
+  tripped the guard. The callers in `config.py` and `gate.py` catch the
+  resulting parse error and fall back to an empty config, so the whole
+  `.pipeline-check.yml` or YAML ignore file was discarded with only a
+  stderr line, which could quietly weaken a configured CI gate. The
+  guard now validates only explicitly-written keys and defers to stock
+  merge-aware (last-wins) construction, so overrides load correctly while
+  a genuine duplicate key still fails loudly.
+- **The `pipeline-check` (hyphen) command now works.** Only the
+  `pipeline_check` (underscore) console script was registered, but the
+  PyPI package, Docker image, and every doc use the hyphenated name, so
+  a user who ran the name they had just installed got "command not
+  found". Both spellings now resolve to the same entry point.
+- **Corrected eight British spellings** in rule metadata, docstrings, and
+  comments (inflections of catalog, flavor, serialize, fulfill,
+  neutralize, finalize) that the American-English drift test did not yet
+  match. The enforcement list was extended so they cannot recur.
+
 ## [1.9.0] - 2026-06-03
 
 ### Added

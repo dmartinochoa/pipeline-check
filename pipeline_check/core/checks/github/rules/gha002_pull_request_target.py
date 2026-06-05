@@ -39,7 +39,7 @@ RULE = Rule(
         "privileged context.",
         "[Keeping your GitHub Actions and workflows secure: "
         "Untrusted input](https://securitylab.github.com/resources/github-actions-untrusted-input/) "
-        "(GitHub Security Lab, 2020): catalogued real-world Actions "
+        "(GitHub Security Lab, 2020): cataloged real-world Actions "
         "carrying the same primitive. The fix pattern (split the "
         "workflow into a privileged labeler + an unprivileged "
         "builder) is now standard guidance.",

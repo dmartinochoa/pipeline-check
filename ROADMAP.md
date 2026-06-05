@@ -695,6 +695,139 @@ is summarized in the ``### Fixed`` block in ``CHANGELOG.md``.
 Larger items not yet scoped to a specific release. Landing order
 is open.
 
+### Full-project review findings (2026-06-05)
+
+A multi-angle review (architecture, code quality, correctness, test
+coverage, test quality, test performance, usability, runtime
+performance, design/extensibility) surfaced the backlog below. Items
+are grouped by priority. File:line anchors are included so each is
+pick-up-able in isolation. The quick-wins batch was implemented the
+same day; the rest are queued for a later pass.
+
+**Quick wins (done 2026-06-05 on ``dev``):**
+
+- ~~**Valid YAML merge-key config silently dropped** (correctness,
+  High).~~ ``_yaml_strict.py``'s ``DupKeyLoader`` flattened ``<<:``
+  merge keys before its duplicate-key guard, so a legal
+  ``<<: *anchor`` + local override tripped the guard; the callers in
+  ``config.py`` / ``gate.py`` swallow the error and return ``{}``, so
+  the whole config or ignore file was silently discarded (could quietly
+  weaken a CI gate). Fixed: validate only explicit (pre-flatten) keys,
+  then defer to stock merge-aware last-wins construction. Regression
+  test in ``tests/test_config.py::TestDuplicateKeys``.
+- ~~**``pipeline-check`` (hyphen) binary did not exist** (UX, High).~~
+  Only ``pipeline_check`` (underscore) was registered, but the package,
+  Docker image, and all docs use the hyphen, so typing the installed
+  name gave "command not found". Added the hyphen ``[project.scripts]``
+  entry alongside the underscore one.
+- ~~**American-English misses the enforced test skipped** (consistency).~~
+  Eight British spellings (inflections of catalog, flavor, serialize,
+  fulfill, neutralize, finalize) slid past ``test_english_variant.py``
+  because its boundary-anchored matches did not cover those forms. Fixed
+  the strings, regenerated the github/helm/scm provider docs, and
+  extended ``PAIRS`` + the CLAUDE.md table so they cannot recur.
+
+**High priority (queued):**
+
+- **Reporter base + external-schema validation.** The ~9 reporters in
+  ``core/*_reporter.py`` share no base and each re-derives the
+  failed-findings filter/severity-sort/group (``sarif_reporter.py:149``,
+  ``markdown_reporter.py:109``, ``junit_reporter.py:84``,
+  ``codequality_reporter.py:110``). Introduce ``core/reporters/`` with a
+  ``ReportView`` builder + ``Reporter`` Protocol. Separately, only the
+  JSON output is schema-validated (``tests/test_json_schema.py``, the
+  model to copy); add round-trip tests validating SARIF 2.1.0,
+  CycloneDX 1.6, and JUnit output against vendored official schemas
+  (these feed GitHub code-scanning / ADO / Jenkins blind today).
+- **Honest status on degraded / unparseable scans.** A malformed YAML
+  file or a credential-less cloud scan currently prints
+  ``Score 100/100 · Grade A · [gate] PASS`` next to a parse warning (and
+  AWS-no-creds shows Grade A beside ``14 failed``). A security tool must
+  not report a green grade when it parsed nothing. Gate the grade behind
+  "did we actually parse a file", and surface a distinct
+  "scan incomplete" status. Terminal reporter + ``scanner.py`` degraded
+  flag.
+- **Decompose ``cli.py`` (5,460 lines; ``scan()`` is 1,372 lines /
+  ~70 params).** Introduce a ``ScanRequest``/``ScanOptions`` dataclass
+  Click populates once; split into a ``cli/`` package (one module per
+  subcommand) over extracted ``core/`` seams: fix-application
+  (``cli.py:4084-4171``) into ``core/fix_apply.py``, provider
+  autodetection into a shared ``core/detect.py`` that the LSP
+  (``lsp/scan.py``, which re-implements provider dispatch) and MCP also
+  consume. Replace the 7-way output if-chain with a
+  ``dict[str, Reporter]`` dispatch table.
+
+**Medium priority (queued):**
+
+- **Engine test-coverage gaps the 90% gate misses.** No
+  ``tests/test_scanner.py`` exists (the 969-line orchestrator is only
+  indirectly tested, ~46% in isolation). Add unit tests for
+  ``Scanner.run`` / ``MultiScanner.run`` dispatch, per-provider error
+  isolation, and the ``_verify_and_enrich_findings`` severity mutation.
+  Also untested: the ``pipeline_graph_builders`` resilience contract
+  (``pipeline_graph_builders.py:42-54``, "graph-building can't abort a
+  scan"), the gate's malformed-ignore-file fail-open branches
+  (``gate.py:285-329``), and the ``_MAX_YAML_BYTES`` 5 MB YAML-bomb guard
+  (``_yaml_files.py:40``). Consider bringing ``fleet.py`` + the rego
+  modules into the coverage measurement (currently ``omit``-ed in
+  ``.github/coveragerc-no-fleet``).
+- **Rule/finding emission ergonomics + the 95%-passing overhead.** Add
+  ``RULE.pass_finding()`` / ``fail_finding()`` helpers (the
+  ``Finding(check_id=RULE.id, title=RULE.title, ...)`` block is
+  copy-pasted across ~744 rule modules) and a
+  ``summarize_offenders(items, limit=5)`` helper (363 ``[:5]`` / 213
+  ``[:3]`` hand-rolled join-and-ellipsis tails, with an inconsistent
+  5-vs-3 cap). Separately, ~95% of emitted findings are passing and are
+  still fully post-processed (standards / confidence / FP-index /
+  metadata) before reporters discard them; skip that tail for
+  ``passed=True`` findings (``scanner.py:388``).
+- **Re-label the weak reachability tier.** The taint engine's phase-1
+  fallback returns ``confirmed_reachable=True`` when the only evidence is
+  two findings sharing a job name (``_reachability.py:154``), which is
+  co-location, not a proven path. Default the report badge to the
+  ``via_dataflow`` (proven) tier; label shared-job as
+  "co-located (unverified)".
+- **Test performance: ``test_english_variant.py`` re-reads the whole
+  repo once per word-pair** (~146 x ~2,600 files, the dominant cost in
+  the meta-test slice). Read every file once into a session/module
+  fixture and scan the cached text, or collapse the 146 params into one
+  all-patterns pass.
+- **Startup: defer heavy reporter/autofix imports.** ``cli.py:57,69``
+  imports ``junit_reporter`` (``xml.sax``, ~22 ms) and ``autofix``
+  (``difflib``, ~14 ms) at module top; move them into the format-dispatch
+  / ``--fix`` branches (~25 ms off every invocation). Also ship libyaml
+  in the published wheel/Docker image so ``yaml.CSafeLoader`` exists
+  (10-30x on the non-line YAML path).
+
+**Low priority (queued):**
+
+- **Reduce the rule-add bookkeeping tax.** ``new_rule.py --apply`` could
+  auto-bump the registry-derived counts (``EXPECTED_RULE_COUNTS``,
+  README / ``docs/index.md`` numbers), leaving only judgment steps to the
+  contributor.
+- **De-duplicate parallel registries.** Derive MCP ``_RULES_FQN``
+  (``mcp_server/tools.py:246``) from the provider registry; share one
+  overrides/severity parser between ``config.py:260`` and
+  ``policies.py:368``.
+- **Close substring-match seams.** ``is_known_installer``
+  (``_context.py:161``) matches bare hosts by substring
+  (``get.k3s.io`` would match ``evil-get.k3s.io.attacker.com``); use
+  ``endswith`` on the canonical segment, matching the OIDC-host lesson.
+- **ReDoS hardening.** Bound the lazy/greedy fills in
+  ``_primitives/remote_script_exec.py`` (``_SHELL_SUBSHELL_RE`` /
+  ``_PROCESS_SUBST_RE`` / ``_DOWNLOAD_EXEC_RE``); an 80k-char crafted
+  line backtracks ~11 s, and these run on PR-controlled CI files.
+- **Strengthen the rule-coverage meta-test.** ``test_rule_test_coverage.py``
+  text-greps for a ``Test<ID>`` class and counts empty stubs as covered;
+  AST-parse and require >=1 ``assert`` per rule-test class.
+- **Em-dash prose cleanup + minor tics.** ~914 lines use em-dashes as
+  pauses against the CLAUDE.md convention; a handful of banned words
+  remain (``robust``, ``comprehensive``, ``leverage`` in a few rule
+  docstrings). Consider a lint mirroring the English-variant test.
+- **De-stringify severity in ``pr_diff.py:187``** (use the canonical
+  ``severity_rank`` instead of a local ``_SEVERITY_ORDER`` dict), and
+  **delete the dead ``_DETECTORS`` table** in ``lsp/detection.py:20``.
+
 ### High-impact provider checks (2026-06-04 cross-provider sweep)
 
 A multi-agent audit of all 33 providers for net-new, high-severity,

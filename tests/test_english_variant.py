@@ -168,6 +168,21 @@ PAIRS: list[tuple[str, str]] = [
     ("forwards", "forward"),
     ("upwards", "upward"),
     ("downwards", "downward"),
+    # Stems a 2026-06-05 review found in source/docs that the
+    # boundary-anchored forms above missed (e.g. ``catalogue`` was
+    # listed but ``catalogued`` was not).
+    ("catalogued", "cataloged"),
+    ("flavoured", "flavored"),
+    ("serialising", "serializing"),
+    ("finalise", "finalize"),
+    ("finalised", "finalized"),
+    ("finalising", "finalizing"),
+    ("fulfil", "fulfill"),
+    ("fulfils", "fulfills"),
+    ("fulfilment", "fulfillment"),
+    ("neutralise", "neutralize"),
+    ("neutralised", "neutralized"),
+    ("neutralising", "neutralizing"),
 ]
 
 # Files exempt from the scan. Both files intentionally carry the

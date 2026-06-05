@@ -35,7 +35,7 @@ RULE = Rule(
         "pre-flight rather than at runtime."
     ),
     docs_note=(
-        "The field is a string carrying a Helm-flavoured SemVer "
+        "The field is a string carrying a Helm-flavored SemVer "
         "range. Empty / missing fails the rule. Whitespace-only "
         "values fail too, an obviously-blank key should not "
         "satisfy a posture check."
