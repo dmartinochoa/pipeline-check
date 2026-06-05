@@ -32,6 +32,7 @@ import json
 from typing import Any
 
 from .checks.base import Finding, Severity, inline_exploit
+from .report_view import ReportView
 
 _SEVERITY_MAP: dict[Severity, str] = {
     Severity.CRITICAL: "blocker",
@@ -106,9 +107,7 @@ def report_codequality(
     the finding's ``exploit_example``.
     """
     issues: list[dict[str, Any]] = []
-    for f in findings:
-        if f.passed:
-            continue
+    for f in ReportView(findings).failed:
         if f.locations:
             for loc in f.locations:
                 issues.append(_issue(f, loc.path, loc.start_line, inline_explain))

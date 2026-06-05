@@ -18,6 +18,7 @@ from .checks.base import (
     severity_rank,
 )
 from .inventory import Component
+from .report_view import failure_sort_key, report_sort_key
 from .scorer import ScoreResult
 
 #: Confidence styling for the findings table. HIGH is the default a
@@ -98,10 +99,8 @@ def _visible(findings: list[Finding], threshold: Severity) -> list[Finding]:
     """Return findings at or above *threshold* severity, failures first."""
     min_rank = severity_rank(threshold)
     filtered = [f for f in findings if severity_rank(f.severity) >= min_rank]
-    # Sort: failures before passes, then most-severe first, then by check_id.
-    filtered.sort(
-        key=lambda f: (f.passed, -severity_rank(f.severity), f.check_id)
-    )
+    # Failures before passes, then most-severe first, then by check_id.
+    filtered.sort(key=report_sort_key)
     return filtered
 
 
@@ -491,7 +490,7 @@ def next_steps_tip(
     ]
     if not fails:
         return None
-    fails.sort(key=lambda f: (-severity_rank(f.severity), f.check_id))
+    fails.sort(key=failure_sort_key)
     from .autofix import available_fixers
 
     fixers = set(available_fixers())

@@ -54,6 +54,7 @@ from .checks.base import (
     inline_exploit,
     markdown_code_fence,
 )
+from .report_view import ReportView
 from .scorer import ScoreResult
 
 # SARIF 2.1.0 ``rank`` is a 0–100 float conveying "how important this
@@ -146,7 +147,7 @@ def report_sarif(
     rules = _build_rules(findings, inline_explain=inline_explain)
     rule_index = {rule["id"]: idx for idx, rule in enumerate(rules)}
 
-    results = [_finding_to_result(f, rule_index) for f in findings if not f.passed]
+    results = [_finding_to_result(f, rule_index) for f in ReportView(findings).failed]
 
     if chains:
         chain_rules = _build_chain_rules(chains)

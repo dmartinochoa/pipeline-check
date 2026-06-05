@@ -738,13 +738,18 @@ same day; the rest are queued for a later pass.
     structural contract (``test_junit_schema.py``). The JUnit reporter
     was fixed in the same pass to carry grade/score as standard
     ``<properties>`` instead of non-standard ``data-*`` attributes.
-  - Reporter base (queued): the ~9 reporters in ``core/*_reporter.py``
-    share no base and each re-derives the failed-findings
-    filter/severity-sort/group (``sarif_reporter.py:149``,
-    ``markdown_reporter.py:109``, ``junit_reporter.py:84``,
-    ``codequality_reporter.py:110``). Introduce ``core/reporters/`` with
-    a ``ReportView`` builder + ``Reporter`` Protocol so that filtering,
-    ordering, and grouping live in one place.
+  - ~~Reporter base (done 2026-06-05 on ``dev``):~~ ``core/report_view.py``
+    now owns the shared ordering (``report_sort_key`` /
+    ``failure_sort_key``) and the partition / counts (``ReportView``).
+    The terminal, markdown, JUnit, CodeQuality, and SARIF reporters were
+    refactored onto it, so the canonical failures-first /
+    severity-desc / check_id ordering and the pass/fail counts live in
+    one place instead of being re-derived (and able to drift) per format.
+  - Follow-up (queued, optional): a ``Reporter`` ``Protocol`` typing the
+    CLI's output-dispatch, moving the ``*_reporter.py`` modules into a
+    ``core/reporters/`` package, and folding the bespoke grouping
+    in ``threatmodel_reporter`` / ``pr_diff_reporter`` onto ``ReportView``
+    (they carry extra tiebreaks today). Lower value, mostly import churn.
 - **Honest status on degraded / unparseable scans.** A malformed YAML
   file or a credential-less cloud scan used to print
   ``Score 100/100 · Grade A · [gate] PASS`` next to a parse warning (and

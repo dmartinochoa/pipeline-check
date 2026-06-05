@@ -32,6 +32,7 @@ from xml.sax.saxutils import escape as _xml_escape
 from xml.sax.saxutils import quoteattr as _xml_attr
 
 from .checks.base import Finding, inline_exploit
+from .report_view import ReportView
 from .scorer import ScoreResult
 
 
@@ -83,8 +84,9 @@ def report_junit(
     for f in findings:
         by_suite.setdefault(_prefix(f.check_id), []).append(f)
 
-    total = len(findings)
-    failures = sum(1 for f in findings if not f.passed)
+    view = ReportView(findings)
+    total = view.total
+    failures = view.failed_count
     grade = score_result.get("grade", "")
     score = f"{score_result.get('score', 0)}"
 
