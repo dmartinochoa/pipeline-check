@@ -729,16 +729,22 @@ same day; the rest are queued for a later pass.
 
 **High priority (queued):**
 
-- **Reporter base + external-schema validation.** The ~9 reporters in
-  ``core/*_reporter.py`` share no base and each re-derives the
-  failed-findings filter/severity-sort/group (``sarif_reporter.py:149``,
-  ``markdown_reporter.py:109``, ``junit_reporter.py:84``,
-  ``codequality_reporter.py:110``). Introduce ``core/reporters/`` with a
-  ``ReportView`` builder + ``Reporter`` Protocol. Separately, only the
-  JSON output is schema-validated (``tests/test_json_schema.py``, the
-  model to copy); add round-trip tests validating SARIF 2.1.0,
-  CycloneDX 1.6, and JUnit output against vendored official schemas
-  (these feed GitHub code-scanning / ADO / Jenkins blind today).
+- **Reporter base + external-schema validation.**
+  - ~~Schema validation (done 2026-06-05 on ``dev``):~~ SARIF and
+    CycloneDX output is now validated against the vendored official
+    SARIF 2.1.0 / CycloneDX 1.6 schemas (``tests/schemas/`` +
+    ``tests/schema_validators.py``, ``test_sarif_schema.py`` /
+    ``test_cyclonedx_schema.py``), and the JUnit output against its
+    structural contract (``test_junit_schema.py``). The JUnit reporter
+    was fixed in the same pass to carry grade/score as standard
+    ``<properties>`` instead of non-standard ``data-*`` attributes.
+  - Reporter base (queued): the ~9 reporters in ``core/*_reporter.py``
+    share no base and each re-derives the failed-findings
+    filter/severity-sort/group (``sarif_reporter.py:149``,
+    ``markdown_reporter.py:109``, ``junit_reporter.py:84``,
+    ``codequality_reporter.py:110``). Introduce ``core/reporters/`` with
+    a ``ReportView`` builder + ``Reporter`` Protocol so that filtering,
+    ordering, and grouping live in one place.
 - **Honest status on degraded / unparseable scans.** A malformed YAML
   file or a credential-less cloud scan used to print
   ``Score 100/100 · Grade A · [gate] PASS`` next to a parse warning (and

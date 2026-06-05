@@ -217,6 +217,18 @@ release commit collapses this section into `## [X.Y.Z] - <date>`.
   sole leader in 11). `docs/comparison.md` gains a "Cross-scanner
   benchmark" section presenting the same measured results next to the
   self-reported feature matrix.
+- **JUnit report: run-level grade / score moved from non-standard
+  `data-*` attributes to standard `<properties>`.** The `<testsuites>`
+  root previously carried `data-grade` / `data-score`, which is an HTML
+  attribute convention, not JUnit, and strict schema-validating
+  ingestors (some Azure DevOps / Jenkins publishers) reject unknown
+  attributes. The grade and score now travel as
+  `<property name="pipeline-check.grade" .../>` /
+  `pipeline-check.score` inside each suite's `<properties>` block, the
+  portable slot every JUnit consumer understands. The SARIF and
+  CycloneDX reporters are now validated in CI against the official
+  SARIF 2.1.0 and CycloneDX 1.6 schemas, and the JUnit output against
+  its structural contract, so spec drift is caught before release.
 
 ### Fixed
 
