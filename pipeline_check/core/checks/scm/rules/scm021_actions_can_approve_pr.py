@@ -35,7 +35,7 @@ RULE = Rule(
         "``True`` is the fail signal; ``False`` (or absent) passes. "
         "Requires admin scope on the repo. Complements SCM-002 / "
         "SCM-011 / SCM-014 — without SCM-021, those rules document "
-        "intent rather than enforcement, because Actions can fulfil "
+        "intent rather than enforcement, because Actions can fulfill "
         "the review requirement itself."
     ),
     known_fp=(

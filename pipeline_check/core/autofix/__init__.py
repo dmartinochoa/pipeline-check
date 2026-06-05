@@ -13,7 +13,7 @@ Design rules:
 - Fixers must be *idempotent* . running one whose output is already
   present returns ``None``, never a no-op patch.
 - Fixers operate on text, not the parsed YAML AST. Parsing and
-  re-serialising destroys comments, blank lines, and YAML style that
+  re-serializing destroys comments, blank lines, and YAML style that
   maintainers rely on; text patches preserve them.
 
 Package layout

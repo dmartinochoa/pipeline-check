@@ -237,7 +237,7 @@ Populate ``maintainers:`` in ``Chart.yaml`` with at least one entry carrying a `
 <span class="pg-sev pg-sev--low">LOW</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-3</span> <span class="pg-tag pg-tag--esf">ESF-D-COMPAT</span> <span class="pg-tag pg-tag--cwe">CWE-1357</span>
 </div>
 
-The field is a string carrying a Helm-flavoured SemVer range. Empty / missing fails the rule. Whitespace-only values fail too, an obviously-blank key should not satisfy a posture check.
+The field is a string carrying a Helm-flavored SemVer range. Empty / missing fails the rule. Whitespace-only values fail too, an obviously-blank key should not satisfy a posture check.
 
 **Known false-positive modes**
 

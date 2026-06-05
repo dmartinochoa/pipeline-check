@@ -2,10 +2,18 @@
 
 pyyaml's default mapping behavior keeps the *last* value when a key
 appears twice, silently discarding the earlier declaration. For the
-user-facing files this project loads, config files and ignore files —
+user-facing files this project loads, config files and ignore files,
 that's a trap: a duplicated ``pipeline:`` key or a repeated
 ``resource:`` under one ignore rule hides half the declared intent
 without a warning. We raise at load time instead so the typo surfaces.
+
+The check fires only on *explicit* duplicate keys, the ones the user
+literally wrote twice. A YAML merge key that is then overridden locally
+(``<<: *anchor`` followed by a key that the anchor also defines) is
+valid YAML and a common DRY pattern; stock pyyaml keeps the explicit
+value, and so do we. Rejecting it would discard the whole file over
+correct input, which is exactly the silent data loss this loader exists
+to prevent.
 """
 from __future__ import annotations
 
@@ -13,16 +21,28 @@ from typing import Any
 
 import yaml
 
+_MERGE_TAG = "tag:yaml.org,2002:merge"
+
 
 class DupKeyLoader(yaml.SafeLoader):
-    """SafeLoader that rejects duplicate mapping keys."""
+    """SafeLoader that rejects explicitly duplicated mapping keys."""
 
     def construct_mapping(self, node: Any, deep: bool = False) -> dict[Any, Any]:
-        self.flatten_mapping(node)
-        mapping: dict[Any, Any] = {}
-        for key_node, value_node in node.value:
+        # Validate against the keys the user wrote *before* flattening any
+        # ``<<:`` merge keys. A merge that re-supplies a locally-overridden
+        # key is legal and must not count as a duplicate.
+        seen: set[Any] = set()
+        for key_node, _ in node.value:
+            if key_node.tag == _MERGE_TAG:
+                continue
             key = self.construct_object(key_node, deep=deep)
-            if key in mapping:
+            try:
+                duplicate = key in seen
+            except TypeError:
+                # Unhashable key (e.g. a list). Let the stock constructor
+                # raise its own "unhashable key" error below.
+                continue
+            if duplicate:
                 mark = key_node.start_mark
                 raise yaml.constructor.ConstructorError(
                     None, None,
@@ -30,8 +50,11 @@ class DupKeyLoader(yaml.SafeLoader):
                     f"column {mark.column + 1}",
                     mark,
                 )
-            mapping[key] = self.construct_object(value_node, deep=deep)
-        return mapping
+            seen.add(key)
+        # Defer to the stock merge-aware construction, which flattens the
+        # merge keys and applies last-wins so an explicit key overrides the
+        # merged one.
+        return super().construct_mapping(node, deep=deep)
 
 
 def safe_load_strict(text: str) -> Any:

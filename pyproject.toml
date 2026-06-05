@@ -135,6 +135,11 @@ gcp = [
 ]
 
 [project.scripts]
+# Both spellings resolve to the same entry point. ``pipeline-check``
+# (hyphen) matches the PyPI/Docker/brand name users install, so typing
+# the name they just installed works; ``pipeline_check`` (underscore) is
+# kept for back-compat with every existing doc and script.
+pipeline-check = "pipeline_check.cli:main"
 pipeline_check = "pipeline_check.cli:main"
 
 [project.urls]
