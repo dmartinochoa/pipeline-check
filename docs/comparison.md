@@ -46,6 +46,7 @@ missing major surfaces or requires extra config. No = not in scope.
 | **Infrastructure as code** | | | | | | |
 | Terraform plans | Yes | Yes | Yes | Partial | Yes | Yes |
 | CloudFormation (YAML+JSON) | Yes | Yes | Yes | Partial | No | Yes |
+| Pulumi (Python / TS / Go / C# source) | Yes (14) | No | No | Partial | No | No |
 | Kubernetes manifests | Yes (44) | Yes | Yes | No | No | Yes |
 | Helm charts (rendered + supply-chain) | Yes (44 + 17) | Partial | No | No | No | Partial |
 | Dockerfile | Yes (31) | Yes | Yes | No | No | Yes |
@@ -55,12 +56,12 @@ missing major surfaces or requires extra config. No = not in scope.
 | Live GCP project scan | Yes (50 rules, google-cloud-*) | No | No | No | No | Partial |
 | OCI image manifests (provenance, SLSA) | Yes (16, incl. ATTEST-001..007 attestation content) | No | No | No | No | Partial |
 | **Dependency supply chain** | | | | | | |
-| Package registries (npm / PyPI / Maven / NuGet / Go / Cargo / Composer / RubyGems) | Yes (126 rules across 8 providers) | No | No | No | No | Partial |
+| Package registries (npm / PyPI / Maven / NuGet / Go / Cargo / Composer / RubyGems) | Yes (130 rules across 8 providers) | No | No | No | No | Partial |
 | **Analysis depth** | | | | | | |
-| Dataflow taint, multi-step / cross-job | Yes (TAINT-001..008 across 5 providers) | No | No | Rules-only | No | No |
+| Dataflow taint, multi-step / cross-job | Yes (TAINT-001..009 across 5 providers) | No | No | Rules-only | No | No |
 | Cross-provider attack chains (MITRE ATT&CK) | Yes (53 chains: 39 AC + 10 XPC + 4 CXPC cross-repo) | No | No | No | No | No |
 | Multi-scanner SARIF ingest + correlation | Yes (`--ingest`, `INGEST-<tool>-<rule>`, chain engine re-evaluates over the union) | No | No | No | No | No |
-| Vulnerable-by-design benchmark | Yes (`bench/`, 6 cases, current recall 6/6, CI-gated) | No | No | No | No | No |
+| Vulnerable-by-design benchmark | Yes (synthetic `bench/cases` at 6/6 recall, plus pinned real-world goats; both CI-gated) | No | No | No | No | No |
 | Autofix patches (unified diff) | Yes (111 fixers) | Partial | No | Partial | No | No |
 | Compliance frameworks (per-finding controls) | 18 (OWASP, SLSA, NIST SSDF, NIST 800-53, NIST 800-190, NIST CSF 2, CIS AWS, CIS Azure, CIS GCP, CIS GitHub, CIS Kubernetes, CIS Supply Chain, PCI DSS, SOC 2, ESF, OpenSSF, S2C2F, OSC&R) | Partial | Partial | Partial | No | Partial |
 | Custom rule DSL | Yes (YAML) | No | Yes (Rego/JSON) | Yes (YAML) | No | Partial |
