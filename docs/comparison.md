@@ -29,8 +29,8 @@ missing major surfaces or requires extra config. No = not in scope.
 | Capability | Pipeline-Check | Checkov | KICS | Semgrep | tfsec | Trivy |
 |---|---|---|---|---|---|---|
 | **CI/CD pipeline configs** | | | | | | |
-| GitHub Actions | Yes (108 rules) | Partial | Yes | Partial | No | No |
-| GitLab CI | Yes (42) | No | Partial | No | No | No |
+| GitHub Actions | Yes (109 rules) | Partial | Yes | Partial | No | No |
+| GitLab CI | Yes (44) | No | Partial | No | No | No |
 | Jenkins (Declarative + Scripted) | Yes (35) | No | No | Partial | No | No |
 | CircleCI | Yes (33) | No | Partial | No | No | No |
 | Azure DevOps | Yes (32) | No | Partial | No | No | No |
@@ -39,28 +39,29 @@ missing major surfaces or requires extra config. No = not in scope.
 | Buildkite | Yes (16) | No | No | No | No | No |
 | Drone CI | Yes (16) | No | No | No | No | No |
 | Tekton | Yes (16) | No | Partial | No | No | No |
-| Argo Workflows | Yes (17) | No | Partial | No | No | No |
-| Argo CD | Yes (13) | No | No | No | No | No |
+| Argo Workflows | Yes (18) | No | Partial | No | No | No |
+| Argo CD | Yes (19) | No | No | No | No | No |
 | **SCM posture (governance)** | | | | | | |
 | GitHub repo branch protection / secret scanning / Dependabot | Yes (55, `SCM-001..055`) | No | No | No | No | No |
 | **Infrastructure as code** | | | | | | |
 | Terraform plans | Yes | Yes | Yes | Partial | Yes | Yes |
 | CloudFormation (YAML+JSON) | Yes | Yes | Yes | Partial | No | Yes |
-| Kubernetes manifests | Yes (43) | Yes | Yes | No | No | Yes |
-| Helm charts (rendered + supply-chain) | Yes (43 + 17) | Partial | No | No | No | Partial |
-| Dockerfile | Yes (30) | Yes | Yes | No | No | Yes |
+| Pulumi (Python / TS / Go / C# source) | Yes (14) | No | No | Partial | No | No |
+| Kubernetes manifests | Yes (44) | Yes | Yes | No | No | Yes |
+| Helm charts (rendered + supply-chain) | Yes (44 + 17) | Partial | No | No | No | Partial |
+| Dockerfile | Yes (31) | Yes | Yes | No | No | Yes |
 | **Cloud + supply-chain** | | | | | | |
 | Live AWS account scan | Yes (71 rules, boto3) | No | No | No | No | Partial |
 | Live Azure subscription scan | Yes (50 rules, azure-mgmt-*) | No | No | No | No | Partial |
 | Live GCP project scan | Yes (50 rules, google-cloud-*) | No | No | No | No | Partial |
 | OCI image manifests (provenance, SLSA) | Yes (16, incl. ATTEST-001..007 attestation content) | No | No | No | No | Partial |
 | **Dependency supply chain** | | | | | | |
-| Package registries (npm / PyPI / Maven / NuGet / Go / Cargo / Composer / RubyGems) | Yes (126 rules across 8 providers) | No | No | No | No | Partial |
+| Package registries (npm / PyPI / Maven / NuGet / Go / Cargo / Composer / RubyGems) | Yes (130 rules across 8 providers) | No | No | No | No | Partial |
 | **Analysis depth** | | | | | | |
-| Dataflow taint, multi-step / cross-job | Yes (TAINT-001..008 across 5 providers) | No | No | Rules-only | No | No |
+| Dataflow taint, multi-step / cross-job | Yes (TAINT-001..009 across 5 providers) | No | No | Rules-only | No | No |
 | Cross-provider attack chains (MITRE ATT&CK) | Yes (53 chains: 39 AC + 10 XPC + 4 CXPC cross-repo) | No | No | No | No | No |
 | Multi-scanner SARIF ingest + correlation | Yes (`--ingest`, `INGEST-<tool>-<rule>`, chain engine re-evaluates over the union) | No | No | No | No | No |
-| Vulnerable-by-design benchmark | Yes (`bench/`, 6 cases, current recall 6/6, CI-gated) | No | No | No | No | No |
+| Vulnerable-by-design benchmark | Yes (synthetic `bench/cases` at 6/6 recall, plus pinned real-world goats; both CI-gated) | No | No | No | No | No |
 | Autofix patches (unified diff) | Yes (111 fixers) | Partial | No | Partial | No | No |
 | Compliance frameworks (per-finding controls) | 18 (OWASP, SLSA, NIST SSDF, NIST 800-53, NIST 800-190, NIST CSF 2, CIS AWS, CIS Azure, CIS GCP, CIS GitHub, CIS Kubernetes, CIS Supply Chain, PCI DSS, SOC 2, ESF, OpenSSF, S2C2F, OSC&R) | Partial | Partial | Partial | No | Partial |
 | Custom rule DSL | Yes (YAML) | No | Yes (Rego/JSON) | Yes (YAML) | No | Partial |
@@ -74,6 +75,37 @@ missing major surfaces or requires extra config. No = not in scope.
 | **Project basics** | | | | | | |
 | License | MIT | Apache 2.0 | Apache 2.0 | LGPL 2.1 | MIT | Apache 2.0 |
 | Implementation language | Python | Python | Go | OCaml + Python | Go | Go |
+
+## Cross-scanner benchmark (cicd-goat)
+
+The matrix above is self-reported coverage. For measured, head-to-head
+numbers, [`greylag-ci/cicd-goat`](https://github.com/greylag-ci/cicd-goat)
+runs nine scanners against the same 120 scenarios across 16 providers
+and formats, one isolated vulnerability per scenario. It's maintained
+by the Pipeline-Check author, so read it the way you'd read any
+first-party benchmark: the scenarios and the harness are public and you
+can rerun the whole matrix yourself.
+
+On the 43 GitHub Actions scenarios, where the GHA-specialist scanners
+all compete:
+
+| Scanner | GHA scenarios |
+|---|---|
+| **Pipeline-Check** | **37 / 43** |
+| zizmor | 17 / 43 |
+| poutine | 14 / 43 |
+| octoscan | 13 / 43 |
+| Checkov | 10 / 43 |
+| KICS | 8 / 43 |
+| actionlint | 6 / 43 |
+
+Across all 16 categories Pipeline-Check is the top scorer in 14 and the
+sole leader in 11, including a clean sweep on GitLab CI (14/14), Azure
+Pipelines (7/7), Bitbucket Pipelines (7/7), Tekton (4/4), Argo (5/5),
+Drone, Buildkite, and Cloud Build. It ties Trivy for first on
+Dockerfile, Kubernetes, and Helm (3/3 each). The two it sits out are
+Terraform and CloudFormation, where the IaC scanners (Checkov, KICS,
+Trivy) are the right tool and lead.
 
 ## When Pipeline-Check is the right pick
 

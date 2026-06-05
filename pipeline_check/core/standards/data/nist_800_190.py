@@ -65,6 +65,7 @@ STANDARD = Standard(
         "GHA-109":  ["4.4.3"],            # harden-runner not the first step
         "GL-017":   ["4.1.2", "4.4.4"],
         "GL-039":   ["4.1.2", "4.4.4"],# dind daemon TLS disabled / exposed on 2375
+        "GL-041":   ["4.1.3"],# IaC apply on an untrusted MR trigger
         "BB-013":   ["4.1.2", "4.4.4"],
         "ADO-017":  ["4.1.2", "4.4.4"],
         "JF-017":   ["4.1.2", "4.4.4"],
@@ -75,6 +76,7 @@ STANDARD = Standard(
         "CB-011":   ["4.1.3"],
         "GHA-003":  ["4.1.3"],
         "GHA-117":  ["4.1.3"],# IaC apply on untrusted PR trigger
+        "GHA-118":  ["4.1.3"],# untrusted content into $GITHUB_ENV / $GITHUB_PATH
         "GHA-016":  ["4.1.3"],
         "GHA-027":  ["4.1.3"],
         "GHA-028":  ["4.1.3"],
@@ -134,6 +136,7 @@ STANDARD = Standard(
         "GHA-029":  ["4.1.5"],
         "GL-001":   ["4.1.5"],
         "GL-005":   ["4.1.5"],
+        "GL-042":   ["4.1.5"],    # include: component unpinned
         "GL-009":   ["4.1.5"],
         "GL-018":   ["4.1.5"],
         "GL-021":   ["4.1.5"],
@@ -291,6 +294,7 @@ STANDARD = Standard(
         # cleartext secrets in images, 4.1.5 untrusted images
         # (unpinned).
         "DF-001": ["4.1.5"],                       # FROM not digest-pinned
+        "DF-031": ["4.1.5"],                       # COPY --from external image not digest-pinned
         "DF-002": ["4.1.2", "4.4.4"],              # runs as root
         "DF-003": ["4.1.5", "4.2.1"],              # ADD remote, no integrity
         "DF-004": ["4.2.1"],                       # curl-pipe
@@ -586,6 +590,7 @@ STANDARD = Standard(
         "TKN-015": ["4.4.5"],                      # workspace subPath param injection
         # ── Argo Workflows container-touching extras ─────────────
         "ARGO-005": ["4.4.5"],                     # parameter injection in script
+        "ARGO-017": ["4.4.5"],                     # resource template manifest injection
         "ARGO-007": ["4.4.5"],                     # missing activeDeadlineSeconds
         "ARGO-008": ["4.2.1"],                     # remote install / TLS bypass
         "ARGO-014": ["4.1.5"],                     # unpinned package install

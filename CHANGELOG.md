@@ -10,6 +10,261 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 PRs landing on `dev` between releases append entries below. The
 release commit collapses this section into `## [X.Y.Z] - <date>`.
 
+## [1.10.0] - 2026-06-05
+
+### Added
+
+- **HTML report: step-level pipeline graph (DAG v2), GitHub.** The HTML
+  report now renders each GitHub Actions workflow as a layered jobs ->
+  steps SVG: jobs and steps are nodes, `needs:` are edges, and each node
+  is colored by the worst finding that lands on it (mapped by source
+  line, with a job / file fallback for line-less findings). Only pipelines
+  that have findings render, worst-load first, with a severity legend and
+  a count of any files elided beyond the display cap. It sits above the
+  resource-level blast-radius heatmap, which still ranks every resource.
+  Pure inline SVG, no JS / CDN / network. The Scanner now
+  exposes a `pipeline_graphs` attribute (built from the retained provider
+  context, like `chains`); only the HTML reporter consumes it, so every
+  other reporter is unchanged. This is the first increment of the
+  step-level "DAG v2" lift of the v1 heatmap; the remaining pipeline
+  providers (GitLab, Azure, ...) follow as additive `_graph.py` builders
+  with no contract change.
+- **IAM-009: Azure federated identity credential trusts a broad GitHub
+  subject (HIGH, Terraform).** Tier 2 of the 2026-06-04 high-impact
+  sweep, the OIDC-trust-in-IaC batch. Fires on an
+  `azurerm_federated_identity_credential` whose `issuer` is the GitHub
+  Actions OIDC issuer and whose `subject` wildcards the org/repo segment
+  (`repo:org/*`), wildcards the ref segment (`repo:org/repo:*`), or uses
+  the `pull_request` context, so a fork PR can exchange its GitHub token
+  for the Azure identity. Azure Workload Identity Federation is the Azure
+  analogue of the AWS OIDC trust IAM-008 audits and was previously
+  uncovered (GHA-062 documents Azure as deliberately excluded). Reuses
+  the shared `github_repo_sub_too_broad` subject helper.
+- **IAM-010: GCP workload identity provider has no repository attribute
+  condition (HIGH, Terraform).** Tier 2 of the 2026-06-04 high-impact
+  sweep. Fires on a `google_iam_workload_identity_pool_provider` with an
+  `oidc` block that has no `attribute_condition` (any identity the issuer
+  mints can federate), or, for the GitHub / GitLab CI issuers, a
+  condition that never references the repository, so it doesn't constrain
+  which repo can assume the identity. GHA-062 audits this from a
+  workflow's sibling files; IAM-010 reads the Terraform resource directly.
+- **DEV-006: VS Code settings point a tool at a repo-local binary
+  (HIGH).** Tier 2 of the 2026-06-04 high-impact sweep. The devenv
+  loader now also reads `.vscode/settings.json`. DEV-006 fires when a
+  committed workspace settings file points an executable-path key
+  (`git.path`, `python.defaultInterpreterPath`, `eslint.runtime`,
+  `go.alternateTools`, a terminal automation profile, ...) at a
+  repo-relative path, injects a `terminal.integrated.env.*`
+  process-hijack variable (`PATH` / `LD_PRELOAD` / `NODE_OPTIONS`), or
+  enables `task.allowAutomaticTasks`. The moment a developer opens the
+  checkout in VS Code (and trusts the workspace), VS Code launches the
+  repo-shipped binary as the tool: checkout-time RCE, the same
+  second-stage shape DEV-001..005 cover, on a file the loader did not
+  previously read. A bare command (resolved from `PATH`) or an absolute
+  system path passes. devenv 5 -> 6.
+- **GL-042: `include: component:` pulls a CI/CD component without a
+  pinned version (HIGH).** Tier 2 of the 2026-06-04 high-impact sweep.
+  GitLab CI/CD components are third-party pipeline code merged into the
+  consumer's pipeline before any job runs. Fires when the
+  `include: component: <host>/<path>@<version>` version is mutable
+  (`~latest`, a branch, a floating major / minor like `1` / `1.2`, or
+  missing); a full `X.Y.Z` release tag or a 40-char commit SHA pass.
+  Whoever controls the component project can re-point a mutable version
+  and run arbitrary `script:` in every consumer's next pipeline with its
+  `CI_JOB_TOKEN` and CI/CD variables. Novel: GL-005 walks only
+  `project:` / `remote:` includes and GL-030 only `trigger:` includes;
+  neither inspects the newer component surface. gitlab 43 -> 44.
+- **DF-031: `COPY --from=<external image>` not digest-pinned (HIGH).**
+  Tier 2 of the 2026-06-04 high-impact sweep. Fires when a `COPY` / `ADD`
+  carries `--from=<X>` where `X` is an external image reference (it has a
+  registry / tag / digest separator and is not an earlier
+  `FROM ... AS <stage>` name or a numeric stage index) and `X` is not
+  `@sha256:`-pinned. `--from=<image>` pulls that image at build time and
+  copies bytes out of it into the final image (a common way to grab
+  `cosign` / `kubectl` / a CA bundle), so a floating tag lets the
+  registry serve different content and a typosquat / takeover ships an
+  attacker's binary straight into the build. DF-001 only inspects `FROM`,
+  so this sidesteps it; reuses the shared `image_pinning` classifier. A
+  named / numbered stage and a bare build-context name don't fire.
+  dockerfile 30 -> 31.
+- **K8S-044: admission webhook fails open or mutates cluster-wide
+  unscoped (HIGH).** Tier 2 of the 2026-06-04 high-impact sweep. Fires on
+  a `MutatingWebhookConfiguration` / `ValidatingWebhookConfiguration`
+  whose webhook either (a) sets `failurePolicy: Ignore` while its `rules`
+  match a broad target (`pods` / `*` resources or `*` apiGroups), so an
+  attacker who DoSes or deletes the backend silently disables the
+  admission control cluster-wide (the v1 default is `Fail`), or (b) is a
+  mutating webhook with no `namespaceSelector` and no `objectSelector` and
+  broad rules, so whoever controls the backend rewrites every pod spec in
+  the cluster (inject a sidecar, add `hostPID`) - a tenant-escape
+  primitive. Novel: RBAC rules (K8S-020 / 021) reason about who can call
+  the API; webhooks intercept every call regardless, and no other rule
+  reads `admissionregistration.k8s.io` objects. kubernetes 43 -> 44.
+- **ARGOCD-019: Argo CD Application disables drift detection on a
+  sensitive field (HIGH).** Tier 2 of the 2026-06-04 high-impact sweep.
+  Fires when an Application (or ApplicationSet template) sets
+  `syncPolicy.syncOptions: [Validate=false]`, or carries a
+  `spec.ignoreDifferences` entry whose `jsonPointers` / `jqPathExpressions`
+  / `kind` references a security-relevant field (container `image`, RBAC
+  `rules` / `subjects` / `roleRef`, `securityContext`, host namespaces,
+  service account, capabilities). Both tell Argo CD to stop enforcing the
+  field's desired state, so an out-of-band edit (a backdoored image, a
+  widened ClusterRole) persists in the live cluster while the dashboard
+  stays Synced / Healthy: stealth persistence sanctioned by the GitOps
+  controller. A non-security `ignoreDifferences` (a replica count, a
+  webhook-injected annotation) does not fire. Distinct from ARGOCD-003
+  (prune / selfHeal) and ARGOCD-010 / 017 (mutable source ref), which
+  reason about the input rather than the controller ignoring its output.
+  argocd 18 -> 19.
+- **GL-041: IaC apply on an untrusted merge-request trigger.** The
+  GitLab analog of GHA-117. Fires when a job runs an unattended IaC
+  apply (`terraform`/`terragrunt apply` or `destroy`, `aws
+  cloudformation deploy`/`create-stack`/`update-stack`/
+  `execute-change-set`, `cdk deploy`, `pulumi up`, `sam deploy`) AND
+  the job is reachable on a merge-request pipeline (its own `rules:`
+  admit `merge_request_event`, its legacy `only:` includes
+  `merge_requests`, or it inherits a `workflow:` that admits MR
+  pipelines). Applying an MR author's IaC executes attacker code at
+  apply time (an `external` data source, a `local-exec` provisioner, a
+  hijacked provider) on the runner with whatever cloud credentials
+  (often an OIDC role via `id_tokens:`) the apply uses, before the
+  change is reviewed or merged. The plan/apply-on-untrusted-input RCE
+  class. GL-004 already caught this as a generic ungated deploy
+  (MEDIUM); GL-041 names the apply-RCE shape and raises it to CRITICAL.
+  Closes cicd-goat scenario 91. The IaC-apply command vocabulary now
+  lives in the shared `_primitives/deploy_names.IAC_APPLY_RE` (GHA-117
+  refactored to consume it). gitlab 42 -> 43.
+- **High-impact provider checks (2026-06-04 cross-provider sweep), batch
+  1.** Four net-new, high-severity rules a multi-provider audit surfaced
+  as genuine blind spots, each verified against the live rule pack (the
+  closest existing rules are cited so the novelty is auditable):
+  - **ARGO-017 (CRITICAL): Argo `resource` template applies a manifest
+    built from an untrusted parameter.** A `resource:` template with
+    `action: create` / `apply` / `patch` / `replace` and a
+    `{{inputs.parameters.X}}` / `{{workflow.parameters.X}}` / `{{item}}`
+    token inside `manifest:` lets a caller inject arbitrary K8s objects
+    (a privileged Pod, a cluster-admin RoleBinding) applied by the
+    workflow's ServiceAccount, cluster takeover even without ARGO-016's
+    cluster-admin SA, and ARGO-005's shell-quoting defenses don't apply
+    (the sink is the YAML object structure). `iter_containers` never
+    visits `resource` templates, so no other Argo rule sees this sink.
+    argo 17 -> 18.
+  - **NPM-019 (HIGH): `overrides` / `resolutions` rewrites a dependency
+    to a non-registry source.** npm `overrides` (Yarn `resolutions`,
+    `pnpm.overrides`, walked recursively) force-replace any transitive
+    package's version / source ahead of the lockfile, from one line a
+    reviewer doesn't scan. Flags a git / URL / `file:` / `npm:`-alias
+    target; a plain version override (the legitimate use) passes. The
+    npm manifest rules only walk the `*dependencies` blocks via
+    `iter_manifest_dependencies`, so none saw the override map.
+  - **NPM-020 (HIGH): `.npmrc` repoints the default or a scoped registry
+    to a non-canonical host.** The npm config-layer dependency-confusion
+    rule (the analog of PYPI-016 / COMPOSER-012 / CARGO-012). NPM-007
+    reads the same `.npmrc` but only the `ignore-scripts` key; NPM-003
+    treats any HTTPS registry host as safe. Leans on suppression for
+    legitimate internal mirrors. npm 18 -> 20.
+  - **GHA-118 (HIGH): untrusted content written to `$GITHUB_ENV` /
+    `$GITHUB_PATH`.** On an untrusted trigger (`pull_request` /
+    `pull_request_target` / `workflow_run` / `issue_comment`), a `run:`
+    step that pipes file / command output, or sets a process-hijack key
+    (`LD_PRELOAD` / `NODE_OPTIONS` / `BASH_ENV` / `PYTHONPATH`), into the
+    env-control file escalates a benign later step to code execution, the
+    file-channel successor to the retired `::set-env::`. GHA-038 only
+    catches the legacy stdout channel, GHA-019 only the secret-exfil
+    direction, and GHA-003 / TAINT only the `${{ }}` / `$GITHUB_OUTPUT`
+    channels. github 108 -> 109. Tier 2/3 of the sweep are queued in
+    `ROADMAP.md`.
+- **Fleet posture-graph HTML view (`fleet.html`).** A fleet scan now
+  writes a self-contained `fleet.html` next to `fleet.json` / `fleet.md`,
+  rendering the cross-repo `posture_graph` as a static SVG node-link
+  diagram: repos are nodes colored by grade, cross-repo (`CXPC-NNN`)
+  attack chains are directed producer-to-consumer edges colored by
+  severity, and a chain endpoint outside the scanned fleet renders as a
+  dashed, muted node. Above the graph, a ranked card grid shows every
+  repo's grade, score, and per-severity failed-finding breakdown. The
+  layout is computed in Python so the output is deterministic; there is
+  no JavaScript, no CDN, and no network (the shared `_design_tokens.css`
+  palette keeps it in sync with the HTML report and the docs site). This
+  completes the SDLC posture-graph roadmap item whose JSON contract
+  shipped in v1.8.0.
+- **Docs: Fleet (org-wide) scanning guide.** `pipeline_check fleet`
+  was only mentioned in passing on the docs site (under the cross-repo
+  attack-chains page). It now has its own page covering `--repos` /
+  `--from-org`, the `--include` / `--exclude` / `--jobs` /
+  `--scan-flags` / `--per-repo-timeout` flags, the output tree
+  (`fleet.json` / `fleet.md` + per-repo `findings.json`), the
+  `posture_graph` JSON shape, and the `CXPC-NNN` cross-repo chains.
+  Surfaced in the nav and as a home-page feature card, alongside a new
+  "supply-chain depth on demand" card spotlighting the
+  `--resolve-remote` checks (cooldown / OSV / OpenSSF Scorecard /
+  provenance / live secret verification).
+
+### Changed
+
+- **IAM-008 now flags a present-but-broad OIDC subject (HIGH).** Tier 2
+  of the 2026-06-04 high-impact sweep. The shared `oidc_subject_pinned`
+  helper previously treated any non-bare-`*` `...:sub` as pinned, so an
+  org wildcard (`repo:org/*`), a ref wildcard (`repo:org/repo:*`), and the
+  `pull_request` context all passed. They now fail across the AWS
+  (runtime), Terraform, and CloudFormation IAM-008 paths, since a fork PR
+  via `pull_request_target` can mint the role's token. A subject pinned to
+  a specific repo AND ref/environment still passes.
+- **Docs: refreshed the cicd-goat cross-scanner benchmark numbers.**
+  The upstream [`greylag-ci/cicd-goat`](https://github.com/greylag-ci/cicd-goat)
+  testbed grew from a 38-scenario GHA + npm matrix to 120 scenarios
+  across 16 providers and formats. `docs/goat_bench.md` now carries the
+  current GitHub Actions leaderboard (pipeline-check 37/43, ahead of
+  zizmor 17, poutine 14, octoscan 13, Checkov 10, KICS 8, actionlint 6)
+  and the cross-provider standing (top scorer in 14 of 16 categories,
+  sole leader in 11). `docs/comparison.md` gains a "Cross-scanner
+  benchmark" section presenting the same measured results next to the
+  self-reported feature matrix.
+- **JUnit report: run-level grade / score moved from non-standard
+  `data-*` attributes to standard `<properties>`.** The `<testsuites>`
+  root previously carried `data-grade` / `data-score`, which is an HTML
+  attribute convention, not JUnit, and strict schema-validating
+  ingestors (some Azure DevOps / Jenkins publishers) reject unknown
+  attributes. The grade and score now travel as
+  `<property name="pipeline-check.grade" .../>` /
+  `pipeline-check.score` inside each suite's `<properties>` block, the
+  portable slot every JUnit consumer understands. The SARIF and
+  CycloneDX reporters are now validated in CI against the official
+  SARIF 2.1.0 and CycloneDX 1.6 schemas, and the JUnit output against
+  its structural contract, so spec drift is caught before release.
+
+### Fixed
+
+- **The terminal report no longer shows a confident "Grade A" on a
+  degraded scan.** When a file could not be parsed (malformed YAML /
+  JSON) or a cloud module failed API access, the headline now renders
+  `Grade A (incomplete)` in a caution style with an `incomplete scan:
+  ...` status line explaining that the grade covers only what was
+  actually scanned. Previously a single unparseable file or a
+  credential-less cloud probe could display `Score 100 / Grade A` next
+  to a parse warning, which read as a clean pass. The JSON / SARIF
+  outputs and the gate are unchanged for now (a `scan_status` field and
+  an opt-in `--fail-on-parse-error` are tracked as follow-ups).
+- **Config / ignore files using a YAML merge-key override are no longer
+  silently dropped.** The strict loader (`DupKeyLoader`) flattened `<<:`
+  merge keys before running its duplicate-key guard, so a valid
+  `<<: *anchor` followed by a local override (a common DRY pattern)
+  tripped the guard. The callers in `config.py` and `gate.py` catch the
+  resulting parse error and fall back to an empty config, so the whole
+  `.pipeline-check.yml` or YAML ignore file was discarded with only a
+  stderr line, which could quietly weaken a configured CI gate. The
+  guard now validates only explicitly-written keys and defers to stock
+  merge-aware (last-wins) construction, so overrides load correctly while
+  a genuine duplicate key still fails loudly.
+- **The `pipeline-check` (hyphen) command now works.** Only the
+  `pipeline_check` (underscore) console script was registered, but the
+  PyPI package, Docker image, and every doc use the hyphenated name, so
+  a user who ran the name they had just installed got "command not
+  found". Both spellings now resolve to the same entry point.
+- **Corrected eight British spellings** in rule metadata, docstrings, and
+  comments (inflections of catalog, flavor, serialize, fulfill,
+  neutralize, finalize) that the American-English drift test did not yet
+  match. The enforcement list was extended so they cannot recur.
+
 ## [1.9.0] - 2026-06-03
 
 ### Added

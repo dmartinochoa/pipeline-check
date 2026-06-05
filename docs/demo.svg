@@ -1,0 +1,44 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="860" height="392" viewBox="0 0 860 392" font-family="ui-monospace, 'SF Mono', 'Cascadia Code', Menlo, Consolas, monospace" role="img" aria-label="Example pipeline_check scan: 16 findings on a GitHub Actions repo, score 47 of 100, grade D, 4 auto-fixable with --apply.">
+  <!-- window -->
+  <rect x="0.5" y="0.5" width="859" height="391" rx="12" fill="#0d1117" stroke="#30363d"/>
+  <!-- title bar -->
+  <path d="M0 12 A12 12 0 0 1 12 0 H848 A12 12 0 0 1 860 12 V42 H0 Z" fill="#161b22"/>
+  <line x1="0" y1="42" x2="860" y2="42" stroke="#30363d"/>
+  <circle cx="26" cy="21" r="6" fill="#ff5f56"/>
+  <circle cx="48" cy="21" r="6" fill="#ffbd2e"/>
+  <circle cx="70" cy="21" r="6" fill="#27c93f"/>
+  <text x="430" y="26" text-anchor="middle" font-size="13" fill="#8b949e">payments-api · pipeline-check</text>
+
+  <!-- body -->
+  <text font-size="14" xml:space="preserve">
+    <!-- command -->
+    <tspan x="24" y="76"><tspan fill="#1ba3a9">$</tspan> <tspan fill="#e6edf3">pipeline_check</tspan> <tspan fill="#79c0ff">--pipeline github</tspan></tspan>
+    <tspan x="24" y="100" fill="#6e7681">[scan] github · scanned 9 files in 0.1s</tspan>
+  </text>
+
+  <!-- findings -->
+  <text font-size="14" xml:space="preserve">
+    <tspan x="24" y="140"><tspan fill="#f85149">●</tspan>  <tspan fill="#f85149">CRITICAL</tspan>  <tspan fill="#e6edf3">GHA-008</tspan>  <tspan fill="#8b949e">release.yml:31</tspan>   <tspan fill="#c9d1d9">Credential-shaped literal in workflow</tspan></tspan>
+    <tspan x="24" y="168"><tspan fill="#f0883e">●</tspan>  <tspan fill="#f0883e">HIGH</tspan>      <tspan fill="#e6edf3">GHA-001</tspan>  <tspan fill="#8b949e">release.yml:14</tspan>   <tspan fill="#c9d1d9">Action not pinned to a commit SHA</tspan></tspan>
+    <tspan x="24" y="196"><tspan fill="#f0883e">●</tspan>  <tspan fill="#f0883e">HIGH</tspan>      <tspan fill="#e6edf3">GHA-016</tspan>  <tspan fill="#8b949e">build.yml:42</tspan>     <tspan fill="#c9d1d9">Remote script piped to a shell</tspan></tspan>
+    <tspan x="24" y="224"><tspan fill="#d29922">●</tspan>  <tspan fill="#d29922">MEDIUM</tspan>    <tspan fill="#e6edf3">GHA-015</tspan>  <tspan fill="#8b949e">test.yml:9</tspan>       <tspan fill="#c9d1d9">Job has no timeout-minutes</tspan></tspan>
+  </text>
+
+  <line x1="24" y1="252" x2="836" y2="252" stroke="#21262d"/>
+
+  <!-- score -->
+  <text font-size="16" xml:space="preserve">
+    <tspan x="24" y="288"><tspan fill="#8b949e">Score</tspan>  <tspan fill="#f0883e" font-weight="bold">47</tspan> <tspan fill="#6e7681">/ 100</tspan></tspan>
+  </text>
+  <rect x="190" y="272" width="80" height="24" rx="6" fill="#3d1418" stroke="#f85149"/>
+  <text x="230" y="289" text-anchor="middle" font-size="14" font-weight="bold" fill="#f85149">Grade D</text>
+  <text font-size="13" xml:space="preserve">
+    <tspan x="296" y="288" fill="#6e7681">2 critical · 4 high · 7 medium · 3 low</tspan>
+  </text>
+
+  <!-- standards + autofix -->
+  <text font-size="13" xml:space="preserve">
+    <tspan x="24" y="324"><tspan fill="#8b949e">Standards</tspan>  <tspan fill="#6e7681">OWASP CI/CD Top 10 · NIST SSDF · SLSA · CIS Supply Chain</tspan></tspan>
+    <tspan x="24" y="356"><tspan fill="#3fb950">→</tspan> <tspan fill="#c9d1d9">4 of 16 findings are auto-fixable</tspan> <tspan fill="#6e7681">— run with</tspan> <tspan fill="#79c0ff">--apply</tspan></tspan>
+  </text>
+</svg>

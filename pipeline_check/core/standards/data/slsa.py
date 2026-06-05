@@ -75,6 +75,8 @@ STANDARD = Standard(
         "IAM-006":  ["Build.L3.NonFalsifiable"],                   # wildcard resource
         "IAM-007":  ["Build.L3.NonFalsifiable"],                   # access key > 90 days (forgeable)
         "IAM-008":  ["Build.L3.NonFalsifiable"],                   # OIDC trust missing aud/sub pin
+        "IAM-009":  ["Build.L3.NonFalsifiable"],                   # Azure WIF broad subject
+        "IAM-010":  ["Build.L3.NonFalsifiable"],                   # GCP WIF no repo condition
         # PBAC, cross-build contamination breaks isolation
         "PBAC-001": ["Build.L3.Isolated"],                         # no VPC boundary
         "PBAC-002": ["Build.L3.Isolated"],                         # shared service role
@@ -85,6 +87,7 @@ STANDARD = Standard(
         "GHA-002":  ["Build.L3.NonFalsifiable", "Build.L3.Isolated"], # pull_request_target + PR head
         "GHA-003":  ["Build.L3.Isolated"],                         # script injection
         "GHA-117":  ["Build.L3.Isolated"],                         # IaC apply on untrusted PR trigger
+        "GHA-118":  ["Build.L3.Isolated"],                         # untrusted content into $GITHUB_ENV / $GITHUB_PATH
         "GHA-004":  ["Build.L3.NonFalsifiable"],                   # unrestricted GITHUB_TOKEN
         "GHA-006":  ["Build.L2.Signed"],                           # unsigned artifacts
         "GHA-007":  ["Build.L1.Provenance"],                       # no SBOM / provenance
@@ -170,6 +173,7 @@ STANDARD = Standard(
         "GL-037": ["Build.L3.NonFalsifiable"],  # CI env disables Go module verification
         "GL-002":   ["Build.L3.Isolated"],                         # script injection
         "GL-005":   ["Build.L3.NonFalsifiable"],                   # unpinned include
+        "GL-042":   ["Build.L3.NonFalsifiable"],                   # unpinned component include
         "GL-006":   ["Build.L2.Signed"],
         "GL-007":   ["Build.L1.Provenance"],
         "GL-008":   ["Build.L3.NonFalsifiable"],                   # leaked creds
@@ -200,6 +204,7 @@ STANDARD = Standard(
         "GL-030":   ["Build.L3.NonFalsifiable"],                   # trigger: include w/o pinned ref
         "GL-031":   ["Build.L3.NonFalsifiable"],                   # id_tokens missing audience pin
         "GL-040":   ["Build.L3.NonFalsifiable"],                   # CI_JOB_TOKEN used for cross-project access
+        "GL-041":   ["Build.L3.Isolated"],                         # IaC apply on an untrusted MR trigger
         "GL-032":   ["Build.L3.Isolated"],                         # tags interpolates untrusted variable
         "GL-033":   ["Build.L3.Isolated"],                         # global before_script taint
         "GL-034":   ["Build.L3.NonFalsifiable"],                   # npm install without audit signatures
@@ -373,6 +378,7 @@ STANDARD = Standard(
         "ARGO-016": ["Build.L3.NonFalsifiable"],                   # cluster-admin / over-privileged ServiceAccount
         "ARGO-004": ["Build.L3.Isolated"],                         # hostPath / host namespaces
         "ARGO-005": ["Build.L3.Isolated"],                         # parameter injection in script
+        "ARGO-017": ["Build.L3.Isolated"],                         # resource template manifest injection
         "ARGO-006": ["Build.L3.NonFalsifiable"],                   # leaked creds in env / param
         "ARGO-007": ["Build.L3.Ephemeral"],                        # no activeDeadlineSeconds
         "ARGO-008": ["Build.L3.Isolated"],                         # remote install / TLS bypass
@@ -535,6 +541,7 @@ STANDARD = Standard(
         # or by the build's own tenant). Provenance labels tie to
         # L1.Provenance + L2.Signed.
         "DF-001": ["Build.L3.NonFalsifiable"],                     # FROM not digest-pinned
+        "DF-031": ["Build.L3.NonFalsifiable"],                     # COPY --from external image not digest-pinned
         "DF-003": ["Build.L3.NonFalsifiable"],                     # ADD remote no integrity
         "DF-004": ["Build.L3.Isolated",
                    "Build.L3.NonFalsifiable"],                     # curl-pipe

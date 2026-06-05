@@ -48,7 +48,7 @@ def test_oidc_audience_but_no_subject_fails(make_catalog):
     cat = make_catalog(iam=_iam_client([_role("gh", doc)]))
     f = rule.check(cat)[0]
     assert f.passed is False
-    assert "missing :sub" in f.description
+    assert ":sub" in f.description
 
 
 def test_oidc_subject_wildcard_fails(make_catalog):
@@ -72,8 +72,44 @@ def test_oidc_pinned_passes(make_catalog):
         "Action": "sts:AssumeRoleWithWebIdentity",
         "Condition": {
             "StringEquals": {"token.actions.githubusercontent.com:aud": "sts.amazonaws.com"},
-            "StringLike": {"token.actions.githubusercontent.com:sub": "repo:myorg/*:ref:refs/heads/main"},
+            "StringLike": {"token.actions.githubusercontent.com:sub": "repo:myorg/myrepo:ref:refs/heads/main"},
         },
     }]}
     cat = make_catalog(iam=_iam_client([_role("gh", doc)]))
+    assert rule.check(cat)[0].passed is True
+
+
+def _gh_oidc_with_sub(sub):
+    return {"Statement": [{
+        "Effect": "Allow",
+        "Principal": {"Federated": _GH_OIDC_ARN},
+        "Action": "sts:AssumeRoleWithWebIdentity",
+        "Condition": {
+            "StringEquals": {"token.actions.githubusercontent.com:aud": "sts.amazonaws.com"},
+            "StringLike": {"token.actions.githubusercontent.com:sub": sub},
+        },
+    }]}
+
+
+def test_oidc_org_wildcard_subject_fails(make_catalog):
+    # ``repo:myorg/*`` trusts every repo in the org, even a new / forked one.
+    cat = make_catalog(iam=_iam_client([_role("gh", _gh_oidc_with_sub("repo:myorg/*:ref:refs/heads/main"))]))
+    assert rule.check(cat)[0].passed is False
+
+
+def test_oidc_ref_wildcard_subject_fails(make_catalog):
+    # ``repo:myorg/myrepo:*`` trusts any ref / environment in the repo.
+    cat = make_catalog(iam=_iam_client([_role("gh", _gh_oidc_with_sub("repo:myorg/myrepo:*"))]))
+    assert rule.check(cat)[0].passed is False
+
+
+def test_oidc_pull_request_subject_fails(make_catalog):
+    # The ``pull_request`` context is reachable from a fork PR.
+    cat = make_catalog(iam=_iam_client([_role("gh", _gh_oidc_with_sub("repo:myorg/myrepo:pull_request"))]))
+    assert rule.check(cat)[0].passed is False
+
+
+def test_oidc_environment_pinned_passes(make_catalog):
+    # A specific environment is a valid pin, not a wildcard.
+    cat = make_catalog(iam=_iam_client([_role("gh", _gh_oidc_with_sub("repo:myorg/myrepo:environment:production"))]))
     assert rule.check(cat)[0].passed is True

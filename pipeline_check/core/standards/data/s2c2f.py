@@ -195,6 +195,7 @@ STANDARD = Standard(
         "GHA-021":  ["UPD-1"],             # lockfile present = tracked versions
         "GL-001":   ["UPD-1"],
         "GL-005":   ["UPD-1"],
+        "GL-042":   ["UPD-1"],
         "GL-009":   ["UPD-1"],
         "GL-021":   ["UPD-1"],
         "GL-028":   ["UPD-1"],
@@ -359,6 +360,7 @@ STANDARD = Standard(
         # tracking and updating OSS; REB-2 / REB-3 cover signing
         # and SBOMs of produced artifacts.
         "DF-001":  ["ING-1", "UPD-1"],   # FROM not digest-pinned
+        "DF-031":  ["ING-1", "UPD-1"],   # COPY --from external image not digest-pinned
         "DF-003":  ["ING-1", "UPD-1"],   # ADD remote no integrity
         "DF-004":  ["ING-1"],            # curl-pipe
         "DF-010":  ["UPD-1"],            # apt upgrade unpinned

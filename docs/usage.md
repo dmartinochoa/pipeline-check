@@ -295,7 +295,7 @@ pipeline_check --output sarif -O scan.sarif        # GitHub/GitLab SAST
 pipeline_check --output markdown                   # PR comments
 pipeline_check --output junit -O junit.xml         # test-runner UIs
 pipeline_check --output codequality -O gl-code-quality-report.json  # GitLab MR annotations
-pipeline_check --output threatmodel -O tm.json     # MITRE ATT&CK threat model
+pipeline_check --output threatmodel -O threats.md  # STRIDE threat model (Markdown)
 pipeline_check --output cyclonedx -O sbom.json     # CycloneDX 1.6 build SBOM
 pipeline_check --output both                       # terminal→stderr, JSON→stdout
 ```
@@ -455,6 +455,7 @@ native cross-step propagation channel:
 | `TAINT-006`  | Tekton       | `$(params.<X>)` flowing into `$(results.<Y>.path)` then read via `$(tasks.<producer>.results.<Y>)` in a consumer task's script |
 | `TAINT-007`  | Argo Workflows | `{{inputs.parameters.<X>}}` flowing through `outputs.parameters` then read via `{{tasks.<producer>.outputs.parameters.<X>}}` in a consumer template |
 | `TAINT-008`  | GitLab CI    | `extends:` job-template inheritance carrying tainted `variables:` into a consumer job's scripts. Quote-state aware; transitive across the extends chain with cycle detection. |
+| `TAINT-009`  | GHA          | A protected secret read in an `environment:`-bound job, surfaced via `jobs.<id>.outputs:`, reaching a downstream `needs:` job that has no `environment:` binding (protection-gate bypass) |
 
 Each finding carries the full source-to-sink chain in its
 description. Single-rule scanners stop at the producer's
@@ -611,7 +612,7 @@ python bench/run.py --json
 python bench/run.py --case <slug> --suggest
 ```
 
-Exit code is zero only when every case hits 100 % recall.
+Exit code is zero only when every case hits 100% recall.
 `tests/test_bench.py` runs the harness as part of the CI suite.
 The eventual cross-scanner comparison matrix (vs Zizmor /
 Poutine / Checkov / KICS / Trivy) is tracked under

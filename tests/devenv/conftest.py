@@ -11,6 +11,7 @@ import textwrap
 from pipeline_check.core.checks.devenv.base import (
     KIND_CLAUDE_SETTINGS,
     KIND_DEVCONTAINER,
+    KIND_VSCODE_SETTINGS,
     KIND_VSCODE_TASKS,
     DevEnvContext,
     WorkspaceFile,
@@ -20,6 +21,7 @@ from pipeline_check.core.checks.devenv.checks import DevEnvChecks
 
 _DEFAULT_PATH = {
     KIND_VSCODE_TASKS: ".vscode/tasks.json",
+    KIND_VSCODE_SETTINGS: ".vscode/settings.json",
     KIND_DEVCONTAINER: ".devcontainer/devcontainer.json",
     KIND_CLAUDE_SETTINGS: ".claude/settings.json",
 }

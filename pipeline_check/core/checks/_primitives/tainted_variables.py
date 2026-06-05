@@ -13,7 +13,7 @@ provider differences are entirely in the *vocabulary*:
   GitHub ``${{ env.VAR }}``).
 
 The *algorithm*, "scan script lines, treat double-quoted segments as
-neutralised, treat ``VAR="...$X..."`` assignments as safe, otherwise
+neutralized, treat ``VAR="...$X..."`` assignments as safe, otherwise
 flag", is identical. This module owns that algorithm so every
 provider rule collapses to a thin adapter passing in the right regex.
 

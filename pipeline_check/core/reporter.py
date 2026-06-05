@@ -18,6 +18,7 @@ from .checks.base import (
     severity_rank,
 )
 from .inventory import Component
+from .report_view import failure_sort_key, report_sort_key
 from .scorer import ScoreResult
 
 #: Confidence styling for the findings table. HIGH is the default a
@@ -98,10 +99,8 @@ def _visible(findings: list[Finding], threshold: Severity) -> list[Finding]:
     """Return findings at or above *threshold* severity, failures first."""
     min_rank = severity_rank(threshold)
     filtered = [f for f in findings if severity_rank(f.severity) >= min_rank]
-    # Sort: failures before passes, then most-severe first, then by check_id.
-    filtered.sort(
-        key=lambda f: (f.passed, -severity_rank(f.severity), f.check_id)
-    )
+    # Failures before passes, then most-severe first, then by check_id.
+    filtered.sort(key=report_sort_key)
     return filtered
 
 
@@ -149,8 +148,17 @@ def report_terminal(
     show_passed: bool = False,
     group_similar: bool = True,
     inline_explain: bool = False,
+    incomplete_reason: str | None = None,
 ) -> None:
     """Print a rich-formatted report to the terminal.
+
+    When ``incomplete_reason`` is set, the scan could not read
+    everything it was asked to (a malformed file, a credential-less
+    cloud probe). A confident green "Grade A" would be false
+    reassurance in that case, since the grade only reflects what was
+    actually parsed. The headline renders the grade in a caution style
+    with an explicit "(incomplete)" tag plus a status line carrying the
+    reason, so a partial scan can't be mistaken for a clean one.
 
     By default the table renders only failures: passed findings sit
     behind ``show_passed`` because on a real repo with 50 GHA checks
@@ -182,6 +190,13 @@ def report_terminal(
     grade_style = _GRADE_STYLE.get(grade, "white")
     summary = score_result.get("summary", {})
 
+    # A degraded scan must not present as a confident pass. Override the
+    # grade/bar palette to a caution color so a green "Grade A" can't
+    # sit on top of an unparseable file or a failed cloud probe.
+    incomplete = bool(incomplete_reason)
+    if incomplete:
+        grade_style = "bold yellow"
+
     total = len(findings)
     failed = sum(1 for f in findings if not f.passed)
     passed_count = total - failed
@@ -198,16 +213,19 @@ def report_terminal(
         sev_parts.append(f"[{style}]{n_fail} {sev.value.lower()}[/{style}]")
 
     # Score bar
-    bar_color = _GRADE_COLOR.get(grade, "white")
+    bar_color = "yellow" if incomplete else _GRADE_COLOR.get(grade, "white")
     filled = score // 5
     bar = f"[{bar_color}]{'#' * filled}[/{bar_color}][dim]{'.' * (20 - filled)}[/dim]"
 
     # Headline grading copy:
     #     Score 47 / 100 · Grade D · 2 critical · 4 high · 7 medium · 3 low
     sep = "[dim] · [/dim]"
+    grade_text = f"[{grade_style}]Grade {grade}[/{grade_style}]"
+    if incomplete:
+        grade_text += "[yellow] (incomplete)[/yellow]"
     headline_parts = [
         f"[bold]Score {score} / 100[/bold]",
-        f"[{grade_style}]Grade {grade}[/{grade_style}]",
+        grade_text,
     ]
     headline_parts.extend(sev_parts)
     headline = sep.join(headline_parts)
@@ -218,12 +236,15 @@ def report_terminal(
         f"[red]{failed} failed[/red] / [green]{passed_count} passed[/green] "
         f"[dim]({total} checks)[/dim]",
     ]
+    if incomplete:
+        reason = rich_escape(incomplete_reason or "")
+        header_lines.append(f"[yellow]incomplete scan: {reason}[/yellow]")
 
     console.print(
         Panel(
             "\n".join(header_lines),
             title="[bold]Pipeline-Check[/bold]",
-            border_style="blue",
+            border_style="yellow" if incomplete else "blue",
             padding=(0, 2),
         )
     )
@@ -470,7 +491,7 @@ def next_steps_tip(
     ]
     if not fails:
         return None
-    fails.sort(key=lambda f: (-severity_rank(f.severity), f.check_id))
+    fails.sort(key=failure_sort_key)
     from .autofix import available_fixers
 
     fixers = set(available_fixers())

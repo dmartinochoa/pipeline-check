@@ -57,20 +57,58 @@ def rules_manual(rules: Any) -> bool:
     )
 
 
+def _rules_opt_into_mr(rules: Any) -> bool:
+    """True when a ``rules:`` list has an entry whose ``if:`` admits MR pipelines."""
+    if not isinstance(rules, list):
+        return False
+    return any(
+        isinstance(r, dict) and "merge_request_event" in str(r.get("if", ""))
+        for r in rules
+    )
+
+
+def _only_opts_into_mr(only: Any) -> bool:
+    """True when a legacy ``only:`` clause includes ``merge_requests``."""
+    if isinstance(only, str):
+        return only == "merge_requests"
+    if isinstance(only, list):
+        return "merge_requests" in only
+    if isinstance(only, dict):  # only: { refs: [...] }
+        refs = only.get("refs")
+        return isinstance(refs, list) and "merge_requests" in refs
+    return False
+
+
+def workflow_opts_into_mr(doc: dict[str, Any]) -> bool:
+    """True when the top-level ``workflow: rules:`` admit merge-request pipelines."""
+    wf = doc.get("workflow")
+    return isinstance(wf, dict) and _rules_opt_into_mr(wf.get("rules"))
+
+
 def pipeline_runs_on_mr(doc: dict[str, Any], jobs: Any) -> bool:
     """Heuristic: the pipeline (or any job) opts into ``merge_request_event``."""
     from ..base import iter_jobs
-    wf = doc.get("workflow")
-    if isinstance(wf, dict):
-        rules = wf.get("rules")
-        if isinstance(rules, list):
-            for r in rules:
-                if isinstance(r, dict) and "merge_request_event" in str(r.get("if", "")):
-                    return True
-    for _, job in iter_jobs(doc):
-        rules = job.get("rules")
-        if isinstance(rules, list):
-            for r in rules:
-                if isinstance(r, dict) and "merge_request_event" in str(r.get("if", "")):
-                    return True
-    return False
+    if workflow_opts_into_mr(doc):
+        return True
+    return any(_rules_opt_into_mr(job.get("rules")) for _, job in iter_jobs(doc))
+
+
+def job_runs_on_mr(doc: dict[str, Any], job: dict[str, Any]) -> bool:
+    """True when *job* is reachable on a merge-request pipeline.
+
+    Checked in GitLab's precedence order: a job's own ``rules:``
+    supersede its legacy ``only:``, and both supersede the pipeline
+    default. A job opts into MR pipelines when
+
+    - its own ``rules:`` has an ``if:`` admitting ``merge_request_event``,
+    - its legacy ``only:`` includes ``merge_requests``, or
+    - it declares neither, so it inherits the pipeline default and runs
+      whenever the top-level ``workflow: rules:`` admit MR pipelines.
+    """
+    rules = job.get("rules")
+    if rules is not None:
+        return _rules_opt_into_mr(rules)
+    only = job.get("only")
+    if only is not None:
+        return _only_opts_into_mr(only)
+    return workflow_opts_into_mr(doc)

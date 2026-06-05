@@ -73,6 +73,8 @@ STANDARD = Standard(
         "IAM-005":  ["CC6.2", "CC6.3"],    # relaxed external trust = weak provisioning
         "IAM-007":  ["CC6.3"],             # stale access keys = untimely revocation
         "IAM-008":  ["CC6.2"],             # OIDC audience pin = federated authz
+        "IAM-009":  ["CC6.2"],             # Azure WIF broad subject
+        "IAM-010":  ["CC6.2"],             # GCP WIF no repo condition
         "CB-006":   ["CC6.3"],             # long-lived source token
         "CP-004":   ["CC6.3"],             # legacy OAuth = non-revocable token
         "GHA-005":  ["CC6.2", "CC6.3"],
@@ -147,6 +149,7 @@ STANDARD = Standard(
         "CB-011":   ["CC6.8"],
         "GHA-003":  ["CC6.8"],             # script injection = malware vector
         "GHA-117":  ["CC6.8"],             # IaC apply on untrusted PR trigger
+        "GHA-118":  ["CC6.8"],             # untrusted content into $GITHUB_ENV / $GITHUB_PATH
         "GHA-016":  ["CC6.8"],             # curl|bash = malware vector
         "GHA-020":  ["CC6.8"],             # vuln scanning
         "GHA-027":  ["CC6.8"],             # malicious activity
@@ -231,6 +234,7 @@ STANDARD = Standard(
         "GL-001":   ["CC8.1"],
         "GL-037": ["CC8.1"],  # CI env disables Go module verification
         "GL-005":   ["CC8.1"],
+        "GL-042":   ["CC8.1"],
         "BB-001":   ["CC8.1"],
         "ADO-001":  ["CC8.1"],
         "ADO-025":  ["CC8.1"],
@@ -277,6 +281,7 @@ STANDARD = Standard(
         "K8S-021":  ["CC6.1"],            # wildcard verbs
         "K8S-022":  ["CC6.6"],            # SSH service exposed
         "K8S-023":  ["CC7.1"],            # PSA enforce missing
+        "K8S-044":  ["CC7.1"],            # admission webhook fail-open / unscoped mutating
         "K8S-024":  ["CC7.2"],            # readiness/liveness probes
         "K8S-015":  ["CC6.6"],            # no memory limit (availability boundary)
         "K8S-016":  ["CC6.6"],            # no CPU limit (availability boundary)
@@ -315,6 +320,7 @@ STANDARD = Standard(
         # covers data-in-transit (curl-pipe / TLS bypass). CC8.1
         # covers change management (pinning, version drift).
         "DF-001": ["CC8.1"],                # FROM not digest-pinned
+        "DF-031": ["CC8.1"],                # COPY --from external image not digest-pinned
         "DF-002": ["CC6.1", "CC6.8"],       # runs as root
         "DF-003": ["CC6.7", "CC8.1"],       # ADD remote no integrity
         "DF-004": ["CC6.7", "CC8.1"],       # curl-pipe
@@ -472,6 +478,7 @@ STANDARD = Standard(
         "GL-030":   ["CC8.1"],              # trigger: include w/o pinned ref
         "GL-031":   ["CC6.1", "CC8.1"],     # id_tokens missing audience pin
         "GL-040":   ["CC6.1", "CC8.1"],     # CI_JOB_TOKEN used for cross-project access
+        "GL-041":   ["CC6.8"],              # IaC apply on an untrusted MR trigger
         "GL-032":   ["CC6.8"],              # tags interpolates untrusted
         "GL-033":   ["CC6.8"],              # global before_script taint
         "GL-034":   ["CC8.1"],              # npm install without audit signatures
@@ -579,6 +586,7 @@ STANDARD = Standard(
         "ARGO-016": ["CC6.1"],              # cluster-admin / over-privileged ServiceAccount
         "ARGO-004": ["CC6.6", "CC6.8"],     # hostPath / host namespaces
         "ARGO-005": ["CC6.8"],              # parameter injection
+        "ARGO-017": ["CC6.8"],              # resource template manifest injection
         "ARGO-006": ["CC6.1"],              # leaked creds
         "ARGO-007": ["CC6.6"],              # missing activeDeadlineSeconds
         "ARGO-008": ["CC6.7", "CC8.1"],     # remote install / TLS bypass
@@ -592,6 +600,7 @@ STANDARD = Standard(
         # ── Argo CD (GitOps deployment) ──
         "ARGOCD-010": ["CC8.1"],            # mutable targetRevision
         "ARGOCD-017": ["CC8.1"],  # in-cluster mutable source
+        "ARGOCD-019": ["CC8.1"],  # drift detection disabled on a sensitive field
         "ARGOCD-016": ["CC8.1"],  # Helm valueFiles from a remote URL
         "ARGOCD-018": ["CC8.1"],  # custom resource health / action Lua
         "ARGOCD-011": ["CC6.1"],            # cluster-resource wildcard
@@ -672,6 +681,8 @@ STANDARD = Standard(
         "NPM-015":  ["CC6.8", "CC7.1", "CC8.1"],
         "NPM-017":  ["CC6.8", "CC7.1", "CC8.1"],  # provenance built from a non-release ref
         "NPM-018":  ["CC6.8", "CC7.1", "CC8.1"],  # latest release from a new publisher
+        "NPM-019":  ["CC6.8", "CC7.1", "CC8.1"],  # overrides / resolutions redirect
+        "NPM-020":  ["CC6.8", "CC7.1", "CC8.1"],  # .npmrc registry repoint
         "NPM-016":  ["CC6.8", "CC7.1", "CC8.1"],
         "PYPI-008": ["CC6.8", "CC7.1", "CC8.1"],
         "PYPI-009": ["CC6.8", "CC7.1", "CC8.1"],
@@ -1029,6 +1040,7 @@ STANDARD = Standard(
         "GCKMS-006": ["CC6.1"],                  # imported key
         # Developer-environment auto-execution (malware / untrusted-code vector)
         "DEV-001":   ["CC6.8"],
+        "DEV-006":   ["CC6.8"],
         "DEV-002":   ["CC6.8"],
         "DEV-003":   ["CC6.8"],
         "DEV-004":   ["CC6.8"],

@@ -43,7 +43,7 @@ All other flags (`--output`, `--severity-threshold`, `--checks`,
 
 ## What it covers
 
-18 checks · 0 have an autofix patch (``--fix``).
+19 checks · 0 have an autofix patch (``--fix``).
 
 | Check | Title | Severity | Fix |
 |-------|-------|----------|-----|
@@ -65,6 +65,7 @@ All other flags (`--output`, `--severity-threshold`, `--checks`,
 | [ARGOCD-016](#argocd-016) | Application Helm valueFiles fetched from a remote URL | <span class="pg-sev pg-sev--high">HIGH</span> |  |
 | [ARGOCD-017](#argocd-017) | Argo CD in-cluster Application deploys from a mutable source | <span class="pg-sev pg-sev--high">HIGH</span> |  |
 | [ARGOCD-018](#argocd-018) | argocd-cm ships custom resource health / action Lua | <span class="pg-sev pg-sev--medium">MEDIUM</span> |  |
+| [ARGOCD-019](#argocd-019) | Argo CD Application disables drift detection on a sensitive field | <span class="pg-sev pg-sev--high">HIGH</span> |  |
 
 ---
 
@@ -533,6 +534,30 @@ This is a posture / visibility signal (MEDIUM), not proof of compromise: custom 
 **Recommended action**
 
 Treat every ``resource.customizations`` Lua block in ``argocd-cm`` as code that runs inside the Argo CD application controller. Health-check and resource-action Lua is evaluated by the controller against live cluster objects on every reconcile, so a malicious or buggy script runs with the controller's broad read (and, for actions, mutate) access to managed resources. Review each script, keep them minimal and side-effect-free (health scripts should only read ``obj`` and return a status; actions should be narrowly scoped), gate changes to ``argocd-cm`` behind the same review as RBAC changes, and prefer the built-in health checks where they suffice. Anyone who can edit ``argocd-cm`` can ship controller-side code, so the ConfigMap's write access is part of this rule's threat model.
+
+</div>
+
+</div>
+
+<div class="pg-rule pg-rule--high" markdown>
+
+## ARGOCD-019: Argo CD Application disables drift detection on a sensitive field { #argocd-019 }
+
+<div class="pg-rule__tags">
+<span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-5</span> <span class="pg-tag pg-tag--esf">ESF-C-LEAST-PRIV</span> <span class="pg-tag pg-tag--cwe">CWE-1059</span> <span class="pg-tag pg-tag--cwe">CWE-778</span>
+</div>
+
+Fires when an Application (or ApplicationSet template) sets ``syncPolicy.syncOptions`` to include ``Validate=false`` (server-side schema validation off, cluster-wide for that app), or carries a ``spec.ignoreDifferences`` entry whose ``jsonPointers`` / ``jqPathExpressions`` / ``kind`` references a security-relevant field (image, RBAC rules / subjects / roleRef, securityContext, host namespaces, service account, capabilities). A non-security ``ignoreDifferences`` (a replica count, a webhook-injected annotation) does not fire, to keep the false-positive rate low. Distinct from ARGOCD-003 (auto-sync prune / selfHeal, a reliability guardrail) and ARGOCD-010 / 017 (mutable source ref): those reason about the input; this flags the controller being told to ignore what it deploys.
+
+**Known false-positive modes**
+
+- ``ignoreDifferences`` legitimately suppresses controller-owned drift (HPA replica counts, cert-manager-injected CA bundles, webhook defaults). Those paths don't carry the sensitive tokens this rule matches, so they pass. If a sensitive-looking path is genuinely benign in your setup, suppress per Application with a rationale.
+
+<div class="pg-rule__rec" markdown>
+
+**Recommended action**
+
+Don't add ``spec.ignoreDifferences`` on a security-relevant field (a container ``image``, a Role/ClusterRole ``rules``, a RoleBinding ``subjects`` / ``roleRef``, a ``securityContext``), and don't set ``syncPolicy.syncOptions: [Validate=false]``. Both tell Argo CD to stop enforcing the field's desired state, so an attacker who edits the live object out of band (or lands a drift the controller now ignores) keeps the change while the dashboard stays Synced / Healthy. If a field is genuinely controller-owned (an HPA-managed replica count, a webhook-injected annotation), scope the ``ignoreDifferences`` entry to exactly that non-security field and document why.
 
 </div>
 

@@ -16,7 +16,7 @@ pipeline_check --pipeline gitlab --gitlab-path ci/
 
 ## What it covers
 
-42 checks · 12 have an autofix patch (``--fix``).
+44 checks · 12 have an autofix patch (``--fix``).
 
 | Check | Title | Severity | Fix |
 |-------|-------|----------|-----|
@@ -60,6 +60,8 @@ pipeline_check --pipeline gitlab --gitlab-path ci/
 | [GL-038](#gl-038) | CI_DEBUG_TRACE / debug logging dumps secrets to the job log | <span class="pg-sev pg-sev--high">HIGH</span> |  |
 | [GL-039](#gl-039) | Docker-in-Docker service exposes an unauthenticated daemon | <span class="pg-sev pg-sev--high">HIGH</span> |  |
 | [GL-040](#gl-040) | CI_JOB_TOKEN used for cross-project / remote access | <span class="pg-sev pg-sev--high">HIGH</span> |  |
+| [GL-041](#gl-041) | IaC apply on an untrusted merge-request trigger | <span class="pg-sev pg-sev--critical">CRITICAL</span> |  |
+| [GL-042](#gl-042) | include: component pulls a CI/CD component without a pinned version | <span class="pg-sev pg-sev--high">HIGH</span> |  |
 | [TAINT-004](#taint-004) | Untrusted input flows across jobs via dotenv artifact | <span class="pg-sev pg-sev--high">HIGH</span> |  |
 | [TAINT-008](#taint-008) | Untrusted input flows via GitLab ``extends:`` template inheritance | <span class="pg-sev pg-sev--high">HIGH</span> |  |
 
@@ -938,6 +940,46 @@ Fires on the two documented cross-project job-token idioms in a ``script:`` / ``
 **Recommended action**
 
 A job authenticates to a GitLab endpoint with the ambient ``CI_JOB_TOKEN`` (a ``gitlab-ci-token:$CI_JOB_TOKEN@`` clone URL or a ``JOB-TOKEN: $CI_JOB_TOKEN`` API header). The job token is minted automatically for every pipeline, so if the TARGET project's inbound job-token allowlist is disabled (the pre-hardening default), any project that can run a pipeline can reach it (GitLab #243703 / CVE-2024-8641). Restrict the target's ``CI/CD > Token Access`` inbound allowlist to the specific projects that need it, or use a scoped deploy token / project access token with least privilege instead of the ambient job token.
+
+</div>
+
+</div>
+
+<div class="pg-rule pg-rule--critical" markdown>
+
+## GL-041: IaC apply on an untrusted merge-request trigger { #gl-041 }
+
+<div class="pg-rule__tags">
+<span class="pg-sev pg-sev--critical">CRITICAL</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-4</span> <span class="pg-tag pg-tag--esf">ESF-D-INJECTION</span> <span class="pg-tag pg-tag--cwe">CWE-94</span> <span class="pg-tag pg-tag--cwe">CWE-78</span>
+</div>
+
+Fires when a job runs an unattended IaC apply (`terraform`/`terragrunt apply` or `destroy`, `aws cloudformation deploy`/`create-stack`/`update-stack`/`execute-change-set`, `cdk deploy`, `pulumi up`, `sam deploy`) AND the job is reachable on a merge-request pipeline (its own `rules:` admit `merge_request_event`, its legacy `only:` includes `merge_requests`, or it inherits a `workflow:` that admits MR pipelines). Applying an MR author's IaC is the plan/apply-on-untrusted-input RCE class. GL-004 already flags this as an ungated deploy; GL-041 names the apply-RCE shape and raises it to CRITICAL when the trigger is merge-request reach.
+
+<div class="pg-rule__rec" markdown>
+
+**Recommended action**
+
+Never run `terraform apply` (or `cloudformation deploy` / `cdk deploy` / `pulumi up` / `sam deploy`) in a job reachable from a merge-request pipeline. Apply executes the MR branch's IaC, so an `external` data source, a `local-exec` provisioner, or a hijacked provider runs arbitrary code on the runner with whatever cloud credentials (often an OIDC role via `id_tokens:`) the apply uses. On merge requests run a read-only `plan` and post it for review; gate the apply on a protected branch (`if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH`) with `when: manual` or an `environment:` so it runs against merged, reviewed code.
+
+</div>
+
+</div>
+
+<div class="pg-rule pg-rule--high" markdown>
+
+## GL-042: include: component pulls a CI/CD component without a pinned version { #gl-042 }
+
+<div class="pg-rule__tags">
+<span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-3</span> <span class="pg-tag pg-tag--esf">ESF-S-PIN-DEPS</span> <span class="pg-tag pg-tag--esf">ESF-S-TRUSTED-REG</span> <span class="pg-tag pg-tag--cwe">CWE-829</span>
+</div>
+
+GitLab CI/CD components are third-party pipeline code merged into the consumer's pipeline before any job runs. The version in `include: component: <host>/<path>@<version>` resolves like a dependency ref: `~latest` (the latest release), a branch, and a floating major / minor are all mutable; a full `X.Y.Z` tag or a 40-char commit SHA are pinned. Fires when the `@<version>` is missing, `~latest`, branch-shaped, or a partial version. The same supply-chain class as GL-005 (remote / project includes) and GL-030 (trigger includes), through the newer component surface those two rules don't inspect.
+
+<div class="pg-rule__rec" markdown>
+
+**Recommended action**
+
+Pin every `include: component:` to an immutable version: a 40-character commit SHA, or a full release tag (`X.Y.Z`) on a component project that enforces tag protection. A mutable version (`~latest`, a branch like `main`, or a floating major / minor like `1` / `1.2`) lets whoever controls the component project re-point that reference and ship arbitrary pipeline code into every consumer's next pipeline, running with the consumer's `CI_JOB_TOKEN` and CI/CD variables. Bump pins in reviewable MRs (Renovate's GitLab CI/CD component updater supports this).
 
 </div>
 

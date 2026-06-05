@@ -41,7 +41,7 @@ parsers and are queued for a follow-up.
 
 ## What it covers
 
-18 checks · 0 have an autofix patch (``--fix``).
+20 checks · 0 have an autofix patch (``--fix``).
 
 | Check | Title | Severity | Fix |
 |-------|-------|----------|-----|
@@ -63,6 +63,8 @@ parsers and are queued for a follow-up.
 | [NPM-016](#npm-016) | Direct dependency has a low OpenSSF Scorecard | <span class="pg-sev pg-sev--low">LOW</span> |  |
 | [NPM-017](#npm-017) | Direct dependency provenance built from a non-release ref | <span class="pg-sev pg-sev--low">LOW</span> |  |
 | [NPM-018](#npm-018) | Direct dependency's latest release published by a new npm account | <span class="pg-sev pg-sev--medium">MEDIUM</span> |  |
+| [NPM-019](#npm-019) | package.json overrides / resolutions rewrites a dependency to a non-registry source | <span class="pg-sev pg-sev--high">HIGH</span> |  |
+| [NPM-020](#npm-020) | .npmrc repoints the default or a scoped registry to a non-canonical host | <span class="pg-sev pg-sev--high">HIGH</span> |  |
 
 ---
 
@@ -603,6 +605,50 @@ Network-dependent: needs ``--resolve-remote`` to read each direct dependency's p
 **Recommended action**
 
 Treat a publisher change as the live account-takeover signal it is: the latest release of this dependency was published by an npm account that published none of its earlier versions. That is exactly the shape of a stolen-credential or freshly-added-account compromise (the axios / @ctrl/tinycolor / chalk class), where an attacker pushes one malicious release that every consumer pulls on the next install. Before upgrading into the new release: confirm the maintainer change is legitimate (a documented hand-off, a new co-maintainer the project announced), pin to the last release from the known publisher until you have, and pair with NPM-008 (cooldown) so a hijacked release has a window to be caught before it reaches your lockfile. NPM-014 (single publisher) is the standing blast-radius; this is the moment that blast radius fires.
+
+</div>
+
+</div>
+
+<div class="pg-rule pg-rule--high" markdown>
+
+## NPM-019: package.json overrides / resolutions rewrites a dependency to a non-registry source { #npm-019 }
+
+<div class="pg-rule__tags">
+<span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-3</span> <span class="pg-tag pg-tag--esf">ESF-S-VERIFY-DEPS</span> <span class="pg-tag pg-tag--cwe">CWE-829</span> <span class="pg-tag pg-tag--cwe">CWE-494</span>
+</div>
+
+Fires when an ``overrides`` / ``resolutions`` / ``pnpm.overrides`` entry (walked recursively, so nested npm overrides are covered) resolves a package to a non-registry source: a git spec (``git+...`` / ``github:`` / ``gitlab:`` / ``bitbucket:``), an ``http(s)://`` tarball, a ``file:`` / ``link:`` / ``portal:`` local path, or an ``npm:<other>`` alias that redirects the name to a different package. A plain version / range override (the common, legitimate use, pinning a transitive to a patched version) passes. Distinct from NPM-001 / NPM-005, which only walk the ``*dependencies`` blocks via ``iter_manifest_dependencies`` and never read the override map.
+
+<div class="pg-rule__rec" markdown>
+
+**Recommended action**
+
+Keep ``overrides`` (npm), ``resolutions`` (Yarn), and ``pnpm.overrides`` to exact registry versions. A git / URL / ``file:`` / ``npm:``-alias target in an override force-replaces the resolved source of a package anywhere in the tree, including deep transitives, ahead of the lockfile and without touching any ``dependencies`` line a reviewer reads. If you must override to a fork, pin it to a 40-character commit SHA and vendor it into a registry you control; if you must alias a name (``npm:``), confirm the target package is one you trust, since the alias silently redirects a trusted name to a different package.
+
+</div>
+
+</div>
+
+<div class="pg-rule pg-rule--high" markdown>
+
+## NPM-020: .npmrc repoints the default or a scoped registry to a non-canonical host { #npm-020 }
+
+<div class="pg-rule__tags">
+<span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-3</span> <span class="pg-tag pg-tag--esf">ESF-S-TRUSTED-REG</span> <span class="pg-tag pg-tag--esf">ESF-S-VERIFY-DEPS</span> <span class="pg-tag pg-tag--cwe">CWE-829</span> <span class="pg-tag pg-tag--cwe">CWE-494</span>
+</div>
+
+Fires when a ``.npmrc`` sets ``registry=`` or ``@scope:registry=`` to a host other than ``registry.npmjs.org`` (``registry.yarnpkg.com`` is also accepted as canonical), or to a plaintext ``http://`` registry of any host. The default-registry repoint is the substitutive dependency-confusion vector (the npm config-layer analog of PYPI-016 / COMPOSER-012 / CARGO-012); a scoped repoint is how an internal ``@company`` scope gets hijacked to a public / attacker host. NPM-007 reads the same ``.npmrc`` but only the ``ignore-scripts`` key; NPM-003 treats any HTTPS registry host as safe, so neither sees this. Leans on suppression for legitimate internal mirrors.
+
+**Known false-positive modes**
+
+- Many organizations set ``registry=`` to an internal proxy (Artifactory / Verdaccio / GitHub Packages) that mirrors npm, and route a private ``@scope`` to it. That is a legitimate, recommended setup; the rule can't tell a vetted internal mirror from an attacker host. Suppress with ``--ignore-file`` and a one-line note naming the registry once you've confirmed it.
+
+<div class="pg-rule__rec" markdown>
+
+**Recommended action**
+
+Point ``registry=`` (and any ``@scope:registry=``) at canonical npm (``https://registry.npmjs.org/``) or a vetted internal mirror that proxies it. ``registry=`` replaces the default index outright, so every package, direct and transitive, is fetched from that host; a ``@scope:registry=`` line silently routes one scope elsewhere. An attacker who lands a committed ``.npmrc`` repoint serves backdoored tarballs under the real names. If the host is a legitimate internal registry, suppress with a one-line rationale that names it.
 
 </div>
 

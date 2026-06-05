@@ -65,6 +65,8 @@ STANDARD = Standard(
         "IAM-006":  ["CICD-SEC-2"],
         "IAM-007":  ["CICD-SEC-6"],
         "IAM-008":  ["CICD-SEC-2"],
+        "IAM-009":  ["CICD-SEC-2"],
+        "IAM-010":  ["CICD-SEC-2"],
         # CloudTrail
         "CT-000":   ["CICD-SEC-10"],
         "CT-001":   ["CICD-SEC-10"],
@@ -139,6 +141,7 @@ STANDARD = Standard(
         "GHA-002":  ["CICD-SEC-4"],
         "GHA-003":  ["CICD-SEC-4"],
         "GHA-117":  ["CICD-SEC-4"],# IaC apply on untrusted PR trigger
+        "GHA-118":  ["CICD-SEC-4"],# untrusted content into $GITHUB_ENV / $GITHUB_PATH
         "GHA-004":  ["CICD-SEC-5"],
         "GHA-005":  ["CICD-SEC-6"],
         "GHA-006":  ["CICD-SEC-9"],
@@ -238,6 +241,7 @@ STANDARD = Standard(
         "GL-003":   ["CICD-SEC-6"],
         "GL-004":   ["CICD-SEC-1"],
         "GL-005":   ["CICD-SEC-3"],
+        "GL-042":   ["CICD-SEC-3"],   # include: component unpinned
         "GL-006":   ["CICD-SEC-9"],
         "GL-007":   ["CICD-SEC-9"],
         "GL-008":   ["CICD-SEC-6"],
@@ -266,6 +270,7 @@ STANDARD = Standard(
         "GL-030":   ["CICD-SEC-3"],
         "GL-031":   ["CICD-SEC-2"],   # id_tokens missing audience pin / env binding
         "GL-040":   ["CICD-SEC-2"],   # CI_JOB_TOKEN used for cross-project access
+        "GL-041":   ["CICD-SEC-4"],   # IaC apply on an untrusted MR trigger
         "GL-032":   ["CICD-SEC-7"],   # tags interpolates untrusted CI variable
         "GL-033":   ["CICD-SEC-4", "CICD-SEC-1"],  # global before_script taint
         "GL-034":   ["CICD-SEC-3"],                # npm install without audit signatures
@@ -453,6 +458,7 @@ STANDARD = Standard(
         "K8S-021":  ["CICD-SEC-2", "CICD-SEC-5"],
         "K8S-022":  ["CICD-SEC-7"],
         "K8S-023":  ["CICD-SEC-7"],   # PSA enforce label missing
+        "K8S-044":  ["CICD-SEC-7"],   # admission webhook fail-open / unscoped mutating
         "K8S-024":  ["CICD-SEC-7", "CICD-SEC-10"],  # missing health probes
         "K8S-025":  ["CICD-SEC-2", "CICD-SEC-5", "CICD-SEC-7"],  # system-* priority class
         "K8S-026":  ["CICD-SEC-7"],   # LB without source ranges
@@ -494,6 +500,7 @@ STANDARD = Standard(
         "HELM-017": ["CICD-SEC-4"],  # tpl of an untrusted .Values value
         # Dockerfile
         "DF-001":   ["CICD-SEC-3"],   # FROM not digest-pinned
+        "DF-031":   ["CICD-SEC-3"],   # COPY --from external image not digest-pinned
         "DF-002":   ["CICD-SEC-7"],   # no USER
         "DF-003":   ["CICD-SEC-3", "CICD-SEC-9"],   # ADD URL no checksum
         "DF-004":   ["CICD-SEC-3"],   # curl-pipe in RUN
@@ -539,6 +546,8 @@ STANDARD = Standard(
         "NPM-015":  ["CICD-SEC-4"],   # missing build provenance
         "NPM-017":  ["CICD-SEC-4"],   # provenance built from a non-release ref
         "NPM-018":  ["CICD-SEC-3"],   # latest release from a new publisher (takeover)
+        "NPM-019":  ["CICD-SEC-3"],   # overrides / resolutions redirect to non-registry source
+        "NPM-020":  ["CICD-SEC-3"],   # .npmrc registry repoint off canonical npm
         "NPM-016":  ["CICD-SEC-3"],   # low OpenSSF Scorecard upstream
         # pypi (requirements file static analysis)
         "PYPI-001": ["CICD-SEC-3"],   # requirements line lacks ==pin
@@ -717,6 +726,7 @@ STANDARD = Standard(
         "ARGO-016": ["CICD-SEC-2"],   # cluster-admin / over-privileged ServiceAccount
         "ARGO-004": ["CICD-SEC-5"],   # hostPath / host namespaces
         "ARGO-005": ["CICD-SEC-4", "CICD-SEC-1"],  # parameter injection in script
+        "ARGO-017": ["CICD-SEC-4", "CICD-SEC-2"],  # resource template manifest injection
         "ARGO-006": ["CICD-SEC-6", "CICD-SEC-7"],  # literal secret in env / param
         "ARGO-007": ["CICD-SEC-9"],   # missing activeDeadlineSeconds
         "ARGO-008": ["CICD-SEC-3"],   # remote install / TLS bypass
@@ -742,6 +752,7 @@ STANDARD = Standard(
         # ── ArgoCD extended pack (ARGOCD-010..013) ──
         "ARGOCD-010": ["CICD-SEC-3", "CICD-SEC-5"], # mutable targetRevision
         "ARGOCD-017": ["CICD-SEC-3", "CICD-SEC-5"],  # in-cluster mutable source
+        "ARGOCD-019": ["CICD-SEC-5"],  # drift detection disabled on a sensitive field
         "ARGOCD-016": ["CICD-SEC-4", "CICD-SEC-3"],  # Helm valueFiles from a remote URL
         "ARGOCD-018": ["CICD-SEC-4"],  # custom resource health / action Lua
         "ARGOCD-011": ["CICD-SEC-1", "CICD-SEC-5"], # cluster-resource wildcard
@@ -975,6 +986,7 @@ STANDARD = Standard(
         "GCKMS-006": ["CICD-SEC-9"],                # imported key
         # Developer-environment auto-execution
         "DEV-001":   ["CICD-SEC-4"],                # vscode folderOpen task
+        "DEV-006":   ["CICD-SEC-4"],                # vscode settings exec-path / env injection
         "DEV-002":   ["CICD-SEC-4"],                # devcontainer lifecycle
         "DEV-003":   ["CICD-SEC-4"],                # committed claude hook
         "DEV-004":   ["CICD-SEC-3", "CICD-SEC-4"],  # auto-run remote fetch+exec

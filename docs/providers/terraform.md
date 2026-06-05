@@ -159,7 +159,7 @@ to-be-created resource and Terraform defers it to apply.
 
 ## What it covers
 
-71 checks · 0 have an autofix patch (``--fix``).
+73 checks · 0 have an autofix patch (``--fix``).
 
 | Check | Title | Severity | Fix |
 |-------|-------|----------|-----|
@@ -211,6 +211,8 @@ to-be-created resource and Terraform defers it to apply.
 | [IAM-005](#iam-005) | CI/CD role trust policy missing sts:ExternalId | <span class="pg-sev pg-sev--high">HIGH</span> |  |
 | [IAM-006](#iam-006) | Sensitive actions granted with wildcard Resource | <span class="pg-sev pg-sev--medium">MEDIUM</span> |  |
 | [IAM-008](#iam-008) | OIDC-federated role trust policy missing audience or subject pin | <span class="pg-sev pg-sev--high">HIGH</span> |  |
+| [IAM-009](#iam-009) | Azure federated identity credential trusts a broad GitHub subject | <span class="pg-sev pg-sev--high">HIGH</span> |  |
+| [IAM-010](#iam-010) | GCP workload identity provider has no repository attribute condition | <span class="pg-sev pg-sev--high">HIGH</span> |  |
 | [KMS-001](#kms-001) | Customer-managed symmetric KMS key has rotation disabled | <span class="pg-sev pg-sev--medium">MEDIUM</span> |  |
 | [KMS-002](#kms-002) | KMS key policy grants kms:* to an IAM principal | <span class="pg-sev pg-sev--high">HIGH</span> |  |
 | [LMB-001](#lmb-001) | Lambda function has no code-signing config | <span class="pg-sev pg-sev--high">HIGH</span> |  |
@@ -1185,13 +1187,53 @@ Scope ``Resource`` to specific ARNs (bucket ARNs, key ARNs, secret ARNs, role AR
 <span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-2</span> <span class="pg-tag pg-tag--cwe">CWE-287</span>
 </div>
 
-Inspects every ``aws_iam_role.assume_role_policy`` that carries an OIDC trust statement (provider URL like ``token.actions.githubusercontent.com``). Fires when ``Condition`` omits the audience or subject claim — without both, any repo under the IdP can assume the role.
+Inspects every ``aws_iam_role.assume_role_policy`` that carries an OIDC trust statement (provider URL like ``token.actions.githubusercontent.com``). Fires when ``Condition`` omits the audience or subject claim, or when a GitHub ``repo:`` subject wildcards the repo or ref segment (``repo:org/*``, ``repo:org/repo:*``) or trusts the ``pull_request`` context. Without a specific repo + ref pin, an untrusted workflow (including a fork PR) can assume the role.
 
 <div class="pg-rule__rec" markdown>
 
 **Recommended action**
 
 Add ``Condition.StringEquals`` (or ``StringLike``) entries pinning both ``<host>:aud`` and ``<host>:sub`` to specific values. For GitHub Actions: pin ``aud`` to ``sts.amazonaws.com`` and ``sub`` to ``repo:<org>/<repo>:ref:refs/heads/main`` (or the env / branch combination the role expects).
+
+</div>
+
+</div>
+
+<div class="pg-rule pg-rule--high" markdown>
+
+## IAM-009: Azure federated identity credential trusts a broad GitHub subject { #iam-009 }
+
+<div class="pg-rule__tags">
+<span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-2</span> <span class="pg-tag pg-tag--cwe">CWE-287</span> <span class="pg-tag pg-tag--cwe">CWE-1390</span>
+</div>
+
+Fires on an ``azurerm_federated_identity_credential`` whose ``issuer`` is the GitHub Actions OIDC issuer and whose ``subject`` wildcards the org/repo segment, wildcards the ref segment, or uses the ``pull_request`` context. Azure's Workload Identity Federation is the Azure analogue of the AWS OIDC trust IAM-008 audits; no other rule reads ``azurerm_federated_identity_credential``. A subject pinned to a specific repo and ref/environment passes.
+
+<div class="pg-rule__rec" markdown>
+
+**Recommended action**
+
+Pin ``azurerm_federated_identity_credential.subject`` to one repository AND a specific ref or environment, e.g. ``repo:myorg/myrepo:ref:refs/heads/main`` or ``repo:myorg/myrepo:environment:production``. An org wildcard (``repo:myorg/*``), a ref wildcard (``repo:myorg/myrepo:*``), or the ``pull_request`` context lets an untrusted workflow run (including a fork pull request) exchange its GitHub token for your Azure identity. Use one federated credential per repo+environment rather than a wildcarded subject.
+
+</div>
+
+</div>
+
+<div class="pg-rule pg-rule--high" markdown>
+
+## IAM-010: GCP workload identity provider has no repository attribute condition { #iam-010 }
+
+<div class="pg-rule__tags">
+<span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-2</span> <span class="pg-tag pg-tag--cwe">CWE-287</span> <span class="pg-tag pg-tag--cwe">CWE-1390</span>
+</div>
+
+Fires on a ``google_iam_workload_identity_pool_provider`` with an ``oidc`` block that either has no ``attribute_condition`` at all (any token from the issuer federates), or - for the GitHub / GitLab CI issuers - has a condition that never references the repository (``repository`` / ``repo:`` / ``sub``), so it does not constrain which repo can assume the identity. GHA-062 audits the same surface from a GitHub workflow's sibling files; this reads the Terraform resource directly.
+
+<div class="pg-rule__rec" markdown>
+
+**Recommended action**
+
+Set ``attribute_condition`` on every ``google_iam_workload_identity_pool_provider`` with an ``oidc`` block, and make it constrain the source repository, e.g. ``assertion.repository_owner == 'myorg'`` or ``assertion.repository == 'myorg/myrepo'``. Without a condition that pins the repo, any identity the issuer mints (any GitHub repo on the planet, for the GitHub issuer) can exchange its token for a Google access token scoped to whatever the pool grants. Restrict ``allowed_audiences`` as well.
 
 </div>
 

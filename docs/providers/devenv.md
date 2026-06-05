@@ -33,7 +33,7 @@ All other flags (`--output`, `--severity-threshold`, `--checks`,
 
 ## What it covers
 
-5 checks · 0 have an autofix patch (``--fix``).
+6 checks · 0 have an autofix patch (``--fix``).
 
 | Check | Title | Severity | Fix |
 |-------|-------|----------|-----|
@@ -42,6 +42,7 @@ All other flags (`--output`, `--severity-threshold`, `--checks`,
 | [DEV-003](#dev-003) | Committed Claude Code hook runs a shell command | <span class="pg-sev pg-sev--medium">MEDIUM</span> |  |
 | [DEV-004](#dev-004) | Auto-run command fetches and executes remote code | <span class="pg-sev pg-sev--critical">CRITICAL</span> |  |
 | [DEV-005](#dev-005) | Devcontainer initializeCommand runs unsandboxed on the host | <span class="pg-sev pg-sev--high">HIGH</span> |  |
+| [DEV-006](#dev-006) | VS Code settings point a tool at a repo-local binary | <span class="pg-sev pg-sev--high">HIGH</span> |  |
 
 ---
 
@@ -144,6 +145,30 @@ Fires whenever ``devcontainer.json`` declares an ``initializeCommand``. That hoo
 **Recommended action**
 
 Move host-side setup into ``onCreateCommand`` / ``postCreateCommand`` so it runs inside the container, where the blast radius is the disposable devcontainer rather than the developer's workstation. Reserve ``initializeCommand`` for genuinely host-only, trusted, vendored steps, and never let it fetch and run remote code (DEV-004).
+
+</div>
+
+</div>
+
+<div class="pg-rule pg-rule--high" markdown>
+
+## DEV-006: VS Code settings point a tool at a repo-local binary { #dev-006 }
+
+<div class="pg-rule__tags">
+<span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-4</span> <span class="pg-tag pg-tag--esf">ESF-D-INJECTION</span> <span class="pg-tag pg-tag--cwe">CWE-426</span> <span class="pg-tag pg-tag--cwe">CWE-829</span>
+</div>
+
+Fires on a ``.vscode/settings.json`` that (a) sets a known executable-path key (or a ``go.alternateTools`` / terminal automation-profile path) to a repo-relative value (a path with a separator that is not absolute, or one using ``${workspaceFolder}``), (b) sets ``terminal.integrated.env.*`` to a process-hijack variable, or (c) enables ``task.allowAutomaticTasks``. A bare command (``git``, resolved from ``PATH``) or an absolute system path passes. VS Code Workspace Trust gates the first open, but reviewers routinely trust repos they clone. Complements DEV-001 (folder-open task), DEV-003 (committed Claude hook), and DEV-005 (devcontainer host command); this is the settings-file launch surface none of them read.
+
+**Seen in the wild**
+
+- Microsoft VS Code Workspace Trust exists precisely because a committed workspace ``settings.json`` can point tool / interpreter paths at attacker-controlled binaries that run on folder open; the 2026 npm second-stage 'open the checkout' loaders (Red Hat compromise) used the same checkout-time auto-execution class.
+
+<div class="pg-rule__rec" markdown>
+
+**Recommended action**
+
+Don't commit a workspace ``.vscode/settings.json`` that points an executable-path setting (``git.path``, ``python.defaultInterpreterPath``, ``eslint.runtime``, ``go.alternateTools``, a terminal automation profile, ...) at a repo-relative path, injects a process-hijack variable through ``terminal.integrated.env.*`` (``PATH`` / ``LD_PRELOAD`` / ``NODE_OPTIONS``), or sets ``task.allowAutomaticTasks: on``. Keep tool paths pointing at system binaries (an absolute path or a bare command resolved from the user's ``PATH``), and let each developer configure machine-specific paths in their user settings, not a committed workspace file.
 
 </div>
 

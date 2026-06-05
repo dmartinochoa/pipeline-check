@@ -49,6 +49,8 @@ missing canonical file raises a ``UsageError``.
 import os
 import re
 import sys
+from collections.abc import Callable
+from dataclasses import dataclass
 from typing import Any
 
 import click
@@ -60,6 +62,24 @@ from .core import standards as _standards
 from .core.checks.base import Confidence, Severity, confidence_rank
 from .core.codequality_reporter import report_codequality
 from .core.config import load_config
+from .core.detect import (
+    detect_all_pipelines_from_cwd as _detect_all_pipelines_from_cwd,
+)
+from .core.detect import (
+    detect_pipeline_from_cwd as _detect_pipeline_from_cwd,
+)
+from .core.fix_apply import (
+    apply_fix_patches as _apply_fix_patches,
+)
+from .core.fix_apply import (
+    emit_fix_patches as _emit_fix_patches,
+)
+from .core.fix_apply import (
+    plan_fix_edits as _plan_fix_edits,
+)
+from .core.fix_apply import (
+    write_fix_edits as _write_fix_edits,
+)
 from .core.gate import (
     GateConfig,
     evaluate_gate,
@@ -607,116 +627,6 @@ def _resolve_provider_path(
             f"--{flag} {kind_word}not found: {value}"
         )
     return value
-
-
-# Provider detection table. Each entry maps a provider name to the list
-# of cwd-relative paths whose presence signals "this provider should
-# scan here". File entries use ``os.path.isfile``; directory entries use
-# ``os.path.isdir``. Iterated by both :func:`_detect_pipeline_from_cwd`
-# (first-match-wins single-provider detection) and
-# :func:`_detect_all_pipelines_from_cwd` (multi-provider walk that
-# returns every provider whose canonical path is present).
-#
-# Order matters: helm before kubernetes because a ``Chart.yaml`` at
-# the repo root is an unambiguous signal, whereas the k8s indicators
-# (``kubernetes/``, ``k8s/``, ``manifests/``) are generic directory
-# names that helm charts often use too. Multi-detect drops the
-# ambiguous-k8s case when helm already matched (see below).
-_PROVIDER_DETECT_FILES: tuple[tuple[str, tuple[str, ...], tuple[str, ...]], ...] = (
-    # (provider, files, directories)
-    ("github", (), (".github/workflows",)),
-    ("gitea", (), (".gitea/workflows", ".forgejo/workflows")),
-    ("gitlab", (".gitlab-ci.yml",), ()),
-    ("circleci", (".circleci/config.yml",), ()),
-    ("jenkins", ("Jenkinsfile",), ()),
-    ("azure", ("azure-pipelines.yml",), ()),
-    ("bitbucket", ("bitbucket-pipelines.yml",), ()),
-    ("cloudbuild", ("cloudbuild.yaml", "cloudbuild.yml"), ()),
-    ("buildkite", (".buildkite/pipeline.yml", ".buildkite/pipeline.yaml"), ()),
-    ("drone", (".drone.yml", ".drone.yaml"), ()),
-    ("dockerfile", ("Dockerfile", "Containerfile"), ()),
-    ("npm", ("package.json", "package-lock.json"), ()),
-    ("pypi", ("requirements.txt",), ()),
-    ("maven", ("pom.xml",), ()),
-    ("nuget", ("Directory.Packages.props",), ()),
-    ("gomod", ("go.mod",), ()),
-    ("cargo", ("Cargo.toml",), ()),
-    ("composer", ("composer.json",), ()),
-    ("rubygems", ("Gemfile",), ()),
-    ("pulumi", ("Pulumi.yaml",), ()),
-    ("terraform", ("main.tf",), ()),
-    (
-        "cloudformation",
-        (
-            "template.yml", "template.yaml", "template.json",
-            "cloudformation.yml", "cloudformation.yaml",
-            "cfn.yml", "cfn.yaml",
-        ),
-        (),
-    ),
-    # OCI deliberately omitted from auto-detect: ``index.json`` is too
-    # generic a filename to promote on presence alone (Backstage,
-    # Sphinx, and various Node tooling produce unrelated index.json
-    # files at repo roots). ``--pipeline oci`` still auto-resolves
-    # ``index.json`` when explicitly selected; multi-provider runs
-    # that want OCI in scope use ``--pipelines github,oci``.
-    ("helm", ("Chart.yaml",), ()),
-    # Developer-environment auto-execution configs. Listed late so a
-    # repo that also ships a real CI / registry manifest is detected as
-    # that provider first; multi-provider auto-detect still adds devenv.
-    (
-        "devenv",
-        (
-            ".vscode/tasks.json",
-            ".devcontainer.json",
-            ".devcontainer/devcontainer.json",
-            ".claude/settings.json",
-            ".claude/settings.local.json",
-        ),
-        (),
-    ),
-    ("kubernetes", (), ("kubernetes", "k8s", "manifests")),
-)
-
-
-def _provider_present(files: tuple[str, ...], dirs: tuple[str, ...]) -> bool:
-    return any(os.path.isfile(f) for f in files) or any(os.path.isdir(d) for d in dirs)
-
-
-def _detect_pipeline_from_cwd() -> str | None:
-    """Return the best-guess pipeline name based on files present at cwd.
-
-    First match wins. Returns None when nothing recognizable is found;
-    the caller then falls back to ``aws`` (preserves prior default).
-    """
-    for name, files, dirs in _PROVIDER_DETECT_FILES:
-        if _provider_present(files, dirs):
-            return name
-    return None
-
-
-def _detect_all_pipelines_from_cwd() -> list[str]:
-    """Return every provider whose canonical path is present at cwd.
-
-    Used by the no-args / ``--pipeline auto`` flow to switch into
-    multi-provider mode automatically when a repo carries more than
-    one pipeline-shape file (e.g. ``.github/workflows`` and a
-    ``Dockerfile``). Order follows :data:`_PROVIDER_DETECT_FILES` so
-    multi-mode runs sub-scanners in a stable, repeatable sequence.
-
-    Helm / Kubernetes disambiguation: a Helm chart's templates often
-    sit under ``charts/`` next to a ``Chart.yaml``, so when both helm
-    and kubernetes match at cwd, kubernetes is dropped to avoid
-    rendering the same charts twice (helm renders templates and
-    feeds them to the K8s rule pack already).
-    """
-    detected: list[str] = []
-    for name, files, dirs in _PROVIDER_DETECT_FILES:
-        if _provider_present(files, dirs):
-            detected.append(name)
-    if "helm" in detected and "kubernetes" in detected:
-        detected.remove("kubernetes")
-    return detected
 
 
 # ── Inline ignore collection ─────────────────────────────────────────────
@@ -2548,192 +2458,36 @@ def scan(
         if verbose:
             click.echo(f"[debug] {msg}", err=True)
 
-    if man_topic is not None:
-        from .core import manual as _manual
-        known = set(_manual.topics())
-        requested = (man_topic or "").lower()
-        # ``--man`` alone (empty string) prints the index; only flag a
-        # typo when the user supplied a non-empty topic that isn't in
-        # the registry so scripts piping this through ``| grep`` get
-        # a non-zero exit on misuse.
-        click.echo(_manual.render(man_topic), nl=False)
-        if requested and requested != "index" and requested not in known:
-            raise click.exceptions.Exit(3)
+    if _run_informational_commands(
+        man_topic=man_topic,
+        list_standards=list_standards,
+        serve=serve,
+        list_checks=list_checks,
+        list_fixers=list_fixers,
+        fixer_safety_filter=fixer_safety_filter,
+        annotate_fp=annotate_fp,
+        fp_path=fp_path,
+        list_chains=list_chains,
+        explain_chain_id=explain_chain_id,
+        explain_id=explain_id,
+        ai_explain_id=ai_explain_id,
+        ai_model_spec=ai_model_spec,
+        ai_context_file=ai_context_file,
+        standard_report=standard_report,
+        config_check=config_check,
+        pipeline=pipeline,
+    ):
         return
 
-    if list_standards:
-        for std in _standards.resolve():
-            click.echo(f"{std.name} ,  {std.title} (v{std.version or 'n/a'})")
-            if std.url:
-                click.echo(f"    {std.url}")
-        return
-
-    if serve:
-        # Lazy import so the optional ``mcp`` SDK doesn't load at
-        # CLI startup. The harness raises a clean RuntimeError when
-        # the package isn't installed; surface it as exit 3.
-        try:
-            from .mcp_server import run_stdio
-        except ImportError as exc:  # pragma: no cover - import-time safeguard
-            click.echo(
-                f"[error] MCP support unavailable: {exc}. "
-                "Install with ``pip install 'pipeline-check[mcp]'``.",
-                err=True,
-            )
-            raise click.exceptions.Exit(3) from exc
-        try:
-            run_stdio()
-        except RuntimeError as exc:
-            click.echo(f"[error] {exc}", err=True)
-            raise click.exceptions.Exit(3) from exc
-        except KeyboardInterrupt:
-            pass
-        return
-
-    if list_checks:
-        _list_checks_for_pipeline(pipeline.lower())
-        return
-
-    if list_fixers:
-        from .core.autofix import iter_fixers
-        from .core.explain import render_fixers
-
-        fixers_body, fixers_code = render_fixers(fixer_safety_filter)
-        click.echo(fixers_body, nl=False)
-        if fixers_code == 0:
-            all_fixers = iter_fixers()
-            safe_n = sum(1 for _, s in all_fixers if s == "safe")
-            unsafe_n = len(all_fixers) - safe_n
-            click.echo(
-                f"\n{len(all_fixers)} autofixers registered "
-                f"({safe_n} safe, {unsafe_n} unsafe). `--fix` runs safe "
-                "only; `--fix=unsafe` runs both. A registered fixer still "
-                "emits no patch when the finding is already remediated or "
-                "the edit wouldn't round-trip as valid YAML.",
-                err=True,
-            )
-        raise click.exceptions.Exit(fixers_code)
-
-    if annotate_fp:
-        # ``--annotate-fp CHECK_ID RESOURCE`` writes the local
-        # annotation file and exits without scanning. Idempotent.
-        from .core.fp_annotations import (
-            DEFAULT_FP_PATH,
-            append_annotation,
-        )
-
-        cid, resource = annotate_fp
-        target_path = fp_path or DEFAULT_FP_PATH
-        try:
-            wrote = append_annotation(cid, resource, path=target_path)
-        except (OSError, ValueError) as exc:
-            raise click.UsageError(
-                f"could not write {target_path}: {exc}"
-            ) from exc
-        if wrote:
-            click.echo(
-                f"[annotate-fp] recorded {cid.upper()}:{resource} "
-                f"in {target_path}"
-            )
-        else:
-            click.echo(
-                f"[annotate-fp] {cid.upper()}:{resource} already "
-                f"present in {target_path} (no change)"
-            )
-        return
-
-    if list_chains:
-        raise click.exceptions.Exit(_eager_print_list_chains())
-
-    if explain_chain_id:
-        raise click.exceptions.Exit(_eager_print_explain_chain(explain_chain_id))
-
-    if explain_id and ai_explain_id:
-        # ``--ai-explain`` already runs the deterministic body before
-        # the AI section, so passing both flags is always a mistake.
-        # Reject it explicitly instead of silently letting ``--explain``
-        # win (which used to drop the AI section without any signal).
-        raise click.UsageError(
-            "--explain and --ai-explain are mutually exclusive. "
-            "Use --ai-explain CHECK_ID for the deterministic body "
-            "plus the AI-generated section, or --explain CHECK_ID "
-            "for the deterministic body alone."
-        )
-
-    if explain_id:
-        from .core.explain import print_explain
-        raise click.exceptions.Exit(print_explain(explain_id))
-
-    if ai_explain_id:
-        raise click.exceptions.Exit(_run_ai_explain(
-            ai_explain_id,
-            model_spec=ai_model_spec,
-            context_file=ai_context_file,
-        ))
-
-    if standard_report:
-        _eager_print_standard_report(standard_report)
-        return
-
-    if config_check:
-        from .core.config import last_unknown_keys
-        dropped = last_unknown_keys()
-        if not dropped:
-            click.echo("[config] OK, no unknown keys.")
-            return
-        for source, key, reason in dropped:
-            click.echo(f"[config] {source}: {key!r}, {reason}", err=True)
-        click.echo(f"[config] {len(dropped)} unknown key(s) detected.", err=True)
-        raise click.exceptions.Exit(3)
-
-    # --config-strict: abort a real scan when the loaded config carried an
-    # unknown key, rather than the default warn-and-drop. Catches a typo
-    # that would otherwise silently disable a setting (e.g. a gate key
-    # written at the top level instead of under 'gate:').
-    if config_strict:
-        from .core.config import last_unknown_keys
-        dropped = last_unknown_keys()
-        if dropped:
-            for source, key, reason in dropped:
-                click.echo(f"[config] {source}: {key!r}, {reason}", err=True)
-            raise click.UsageError(
-                f"--config-strict: {len(dropped)} unknown config key(s) "
-                f"detected (see above). Fix the key(s) or drop "
-                f"--config-strict."
-            )
-
-    if apply_fixes and not fix:
-        raise click.UsageError("--apply requires --fix.")
-
-    # Mutually-exclusive flag combinations, catch these before the
-    # provider context is built so the error points at the conflict
-    # rather than surfacing as a silent no-op later.
-    if inventory_only and fix:
-        raise click.UsageError(
-            "--fix cannot be combined with --inventory-only "
-            "(no findings are produced to fix)."
-        )
-    if inventory_only and diff_base:
-        raise click.UsageError(
-            "--diff-base cannot be combined with --inventory-only "
-            "(inventory is a full-state snapshot, not a per-commit delta)."
-        )
-    if inventory_only and baseline:
-        raise click.UsageError(
-            "--baseline cannot be combined with --inventory-only "
-            "(baselines gate findings; --inventory-only emits no findings)."
-        )
-    if inventory_only and ingest_paths:
-        raise click.UsageError(
-            "--ingest cannot be combined with --inventory-only "
-            "(inventory-only emits no findings or chains for the "
-            "ingested SARIF to merge into)."
-        )
-
-    # Validate --baseline early so a typo'd path doesn't surface as
-    # "no regressions found" after a full scan completes.
-    if baseline and not os.path.isfile(baseline):
-        raise click.UsageError(f"--baseline file not found: {baseline}")
+    _validate_scan_flags_early(
+        config_strict=config_strict,
+        apply_fixes=apply_fixes,
+        fix=fix,
+        inventory_only=inventory_only,
+        diff_base=diff_base,
+        baseline=baseline,
+        ingest_paths=ingest_paths,
+    )
 
     # Parse --pipelines (multi-provider mode). Mutually exclusive
     # with the single-valued --pipeline flag, the user picks one or
@@ -2818,319 +2572,53 @@ def scan(
     # resolved + auto-detected the same way as a single-pipeline
     # invocation.
     pipelines_to_resolve = pipelines_list or [pipeline_lc]
-    for pipeline_lc in pipelines_to_resolve:
-        if pipeline_lc == "terraform":
-            if tf_plan and tf_source:
-                raise click.UsageError(
-                    "--tf-plan and --tf-source are mutually exclusive."
-                )
-            if tf_plan:
-                tf_plan = _resolve_provider_path(
-                    "terraform", flag="tf-plan", value=tf_plan,
-                    validate_kind="file", not_found_label="path",
-                )
-            elif tf_source:
-                tf_source = _resolve_provider_path(
-                    "terraform", flag="tf-source", value=tf_source,
-                    validate_kind="dir", not_found_label="directory",
-                )
-            elif os.path.isfile("main.tf"):
-                tf_source = "."
-                click.echo(
-                    "[auto] using --tf-source . (main.tf detected)",
-                    err=True,
-                )
-        elif pipeline_lc == "github":
-            gha_path = _resolve_provider_path(
-                "github", flag="gha-path", value=gha_path,
-                candidates=(".github/workflows",), candidate_kind="dir",
-                validate_kind="dir", detect_label=".github/workflows",
-                not_found_label="directory",
-            )
-        elif pipeline_lc == "gitea":
-            gitea_path = _resolve_provider_path(
-                "gitea", flag="gitea-path", value=gitea_path,
-                candidates=(".gitea/workflows", ".forgejo/workflows"),
-                candidate_kind="dir",
-                validate_kind="dir",
-                detect_label=".gitea/workflows or .forgejo/workflows",
-                not_found_label="directory",
-            )
-        elif pipeline_lc == "gitlab":
-            gitlab_path = _resolve_provider_path(
-                "gitlab", flag="gitlab-path", value=gitlab_path,
-                candidates=(".gitlab-ci.yml",),
-                detect_label=".gitlab-ci.yml",
-            )
-        elif pipeline_lc == "bitbucket":
-            bitbucket_path = _resolve_provider_path(
-                "bitbucket", flag="bitbucket-path", value=bitbucket_path,
-                candidates=("bitbucket-pipelines.yml",),
-                detect_label="bitbucket-pipelines.yml",
-            )
-        elif pipeline_lc == "azure":
-            azure_path = _resolve_provider_path(
-                "azure", flag="azure-path", value=azure_path,
-                candidates=("azure-pipelines.yml",),
-                detect_label="azure-pipelines.yml",
-            )
-        elif pipeline_lc == "jenkins":
-            jenkinsfile_path = _resolve_provider_path(
-                "jenkins", flag="jenkinsfile-path", value=jenkinsfile_path,
-                candidates=("Jenkinsfile",),
-                detect_label="Jenkinsfile",
-            )
-        elif pipeline_lc == "circleci":
-            circleci_path = _resolve_provider_path(
-                "circleci", flag="circleci-path", value=circleci_path,
-                candidates=(".circleci/config.yml",),
-                detect_label=".circleci/config.yml",
-            )
-        elif pipeline_lc == "cloudformation":
-            if not cfn_template:
-                for _candidate in (
-                    "template.yml", "template.yaml", "template.json",
-                    "cloudformation.yml", "cloudformation.yaml",
-                    "cfn.yml", "cfn.yaml",
-                ):
-                    if os.path.isfile(_candidate):
-                        cfn_template = _candidate
-                        click.echo(
-                            f"[auto] using --cfn-template {cfn_template}",
-                            err=True,
-                        )
-                        break
-            if not cfn_template:
-                raise click.UsageError(
-                    "--cfn-template PATH is required when --pipeline "
-                    "cloudformation (no template.yml / template.json / "
-                    "cloudformation.yml / cfn.yaml found in the current "
-                    "directory)."
-                )
-            if not os.path.exists(cfn_template):
-                raise click.UsageError(
-                    f"--cfn-template not found: {cfn_template}"
-                )
-            # Distinguish "directory but no templates" from "file not found" —
-            # the former is a common mistake when someone points the flag at
-            # their project root instead of an infrastructure subdirectory.
-            if os.path.isdir(cfn_template):
-                _exts = (".yml", ".yaml", ".json", ".template")
-                has_templates = any(
-                    _ent.is_file() and _ent.name.lower().endswith(_exts)
-                    for _ent in os.scandir(cfn_template)
-                )
-                if not has_templates:
-                    raise click.UsageError(
-                        f"--cfn-template directory {cfn_template!r} contains "
-                        f"no .yml / .yaml / .json / .template files."
-                    )
-        elif pipeline_lc == "cloudbuild":
-            cloudbuild_path = _resolve_provider_path(
-                "cloudbuild", flag="cloudbuild-path", value=cloudbuild_path,
-                candidates=("cloudbuild.yaml", "cloudbuild.yml"),
-                detect_label="cloudbuild.yaml/cloudbuild.yml",
-            )
-        elif pipeline_lc == "buildkite":
-            buildkite_path = _resolve_provider_path(
-                "buildkite", flag="buildkite-path", value=buildkite_path,
-                candidates=(".buildkite/pipeline.yml", ".buildkite/pipeline.yaml"),
-                detect_label=".buildkite/pipeline.yml",
-            )
-        elif pipeline_lc == "tekton":
-            tekton_path = _resolve_provider_path(
-                "tekton", flag="tekton-path", value=tekton_path,
-            )
-        elif pipeline_lc == "argo":
-            argo_path = _resolve_provider_path(
-                "argo", flag="argo-path", value=argo_path,
-            )
-        elif pipeline_lc == "argocd":
-            argocd_path = _resolve_provider_path(
-                "argocd", flag="argocd-path", value=argocd_path,
-            )
-        elif pipeline_lc == "dockerfile":
-            dockerfile_path = _resolve_provider_path(
-                "dockerfile", flag="dockerfile-path", value=dockerfile_path,
-                candidates=("Dockerfile", "Containerfile"),
-                detect_label="Dockerfile/Containerfile",
-            )
-        elif pipeline_lc == "kubernetes":
-            k8s_path = _resolve_provider_path(
-                "kubernetes", flag="k8s-path", value=k8s_path,
-                candidates=("kubernetes", "k8s", "manifests"),
-                candidate_kind="dir",
-                detect_label="kubernetes/, k8s/, or manifests/ directory",
-            )
-        elif pipeline_lc == "helm":
-            if not helm_path:
-                if os.path.isfile("Chart.yaml"):
-                    helm_path = "."
-                    click.echo("[auto] using --helm-path .", err=True)
-                elif os.path.isdir("charts"):
-                    helm_path = "charts"
-                    click.echo("[auto] using --helm-path charts", err=True)
-            if not helm_path:
-                raise click.UsageError(
-                    "--helm-path PATH is required when --pipeline helm "
-                    "(no Chart.yaml or charts/ directory found in cwd)."
-                )
-            if not os.path.exists(helm_path):
-                raise click.UsageError(
-                    f"--helm-path not found: {helm_path}"
-                )
-            for vf in helm_values:
-                if not os.path.isfile(vf):
-                    raise click.UsageError(
-                        f"--helm-values not found: {vf}"
-                    )
-        elif pipeline_lc == "oci":
-            oci_manifest = _resolve_provider_path(
-                "oci", flag="oci-manifest", value=oci_manifest,
-                candidates=("index.json",),
-                detect_label="index.json",
-            )
-        elif pipeline_lc == "drone":
-            drone_path = _resolve_provider_path(
-                "drone", flag="drone-path", value=drone_path,
-                candidates=(".drone.yml", ".drone.yaml"),
-                detect_label=".drone.yml/.drone.yaml",
-            )
-        elif pipeline_lc == "npm":
-            npm_path = _resolve_provider_path(
-                "npm", flag="npm-path", value=npm_path,
-                candidates=("package.json", "package-lock.json"),
-                detect_label="package.json/package-lock.json",
-            )
-        elif pipeline_lc == "pypi":
-            pypi_path = _resolve_provider_path(
-                "pypi", flag="pypi-path", value=pypi_path,
-                candidates=("requirements.txt",),
-                detect_label="requirements.txt",
-            )
-        elif pipeline_lc == "maven":
-            maven_path = _resolve_provider_path(
-                "maven", flag="maven-path", value=maven_path,
-                candidates=("pom.xml",),
-                detect_label="pom.xml",
-            )
-        elif pipeline_lc == "nuget":
-            nuget_path = _resolve_provider_path(
-                "nuget", flag="nuget-path", value=nuget_path,
-                candidates=("Directory.Packages.props",),
-                detect_label="Directory.Packages.props",
-            )
-        elif pipeline_lc == "gomod":
-            gomod_path = _resolve_provider_path(
-                "gomod", flag="gomod-path", value=gomod_path,
-                candidates=("go.mod",),
-                detect_label="go.mod",
-            )
-        elif pipeline_lc == "cargo":
-            cargo_path = _resolve_provider_path(
-                "cargo", flag="cargo-path", value=cargo_path,
-                candidates=("Cargo.toml",),
-                detect_label="Cargo.toml",
-            )
-        elif pipeline_lc == "composer":
-            composer_path = _resolve_provider_path(
-                "composer", flag="composer-path",
-                value=composer_path,
-                candidates=("composer.json",),
-                detect_label="composer.json",
-            )
-        elif pipeline_lc == "rubygems":
-            rubygems_path = _resolve_provider_path(
-                "rubygems", flag="rubygems-path",
-                value=rubygems_path,
-                candidates=("Gemfile",),
-                detect_label="Gemfile",
-            )
-        elif pipeline_lc == "pulumi":
-            pulumi_path = _resolve_provider_path(
-                "pulumi", flag="pulumi-path", value=pulumi_path,
-                candidates=("Pulumi.yaml",),
-                detect_label="Pulumi.yaml",
-            )
+    _paths = _resolve_provider_paths(
+        pipelines_to_resolve,
+        tf_plan=tf_plan,
+        tf_source=tf_source,
+        gha_path=gha_path,
+        gitea_path=gitea_path,
+        gitlab_path=gitlab_path,
+        bitbucket_path=bitbucket_path,
+        azure_path=azure_path,
+        jenkinsfile_path=jenkinsfile_path,
+        circleci_path=circleci_path,
+        cfn_template=cfn_template,
+        cloudbuild_path=cloudbuild_path,
+        buildkite_path=buildkite_path,
+        tekton_path=tekton_path,
+        argo_path=argo_path,
+        argocd_path=argocd_path,
+        dockerfile_path=dockerfile_path,
+        k8s_path=k8s_path,
+        helm_path=helm_path,
+        oci_manifest=oci_manifest,
+        drone_path=drone_path,
+        npm_path=npm_path,
+        pypi_path=pypi_path,
+        maven_path=maven_path,
+        nuget_path=nuget_path,
+        gomod_path=gomod_path,
+        cargo_path=cargo_path,
+        composer_path=composer_path,
+        rubygems_path=rubygems_path,
+        pulumi_path=pulumi_path,
+        helm_values=helm_values,
+    )
 
-    if output == "html" and not output_file:
-        raise click.UsageError(
-            "--output-file PATH is required when --output html."
-        )
-
-    for pat in secret_patterns:
-        try:
-            re.compile(pat)
-        except re.error as exc:
-            raise click.UsageError(
-                f"--secret-pattern {pat!r} is not a valid regex: {exc}"
-            ) from exc
-
-    for crp in custom_rules:
-        if not os.path.exists(crp):
-            raise click.UsageError(f"--custom-rules not found: {crp}")
-
-    for rrp in rego_rules:
-        if not os.path.exists(rrp):
-            raise click.UsageError(f"--rego-rules not found: {rrp}")
-
-    if diff_base is not None and diff_base.startswith("-"):
-        # ``diff_base`` is composed into ``git diff --name-only
-        # <base>...HEAD``. A leading ``-`` makes git parse the value
-        # as an option (e.g. ``--output=path``, write-anywhere
-        # primitive). Catch it here so the CLI shows a clean
-        # UsageError; the helper also validates as defense in depth
-        # (CWE-88, argument injection).
-        raise click.UsageError(
-            "--diff-base must not start with '-' "
-            "(would be parsed as a git flag, not a positional ref)"
-        )
-
-    if pr_diff is not None:
-        if pr_diff.startswith("-"):
-            # Same argument-injection concern as ``--diff-base``: the
-            # ref string flows into ``git worktree add`` and ``git
-            # rev-parse``. The pr_diff module re-validates as a second
-            # line of defense.
-            raise click.UsageError(
-                "--pr-diff must not start with '-' "
-                "(would be parsed as a git flag, not a positional ref)"
-            )
-        if inventory_only:
-            raise click.UsageError(
-                "--pr-diff cannot be combined with --inventory-only "
-                "(inventory is a full-state snapshot, not a per-PR delta)."
-            )
-        if fix:
-            raise click.UsageError(
-                "--pr-diff cannot be combined with --fix "
-                "(diff mode reports the delta; it does not modify either side)."
-            )
-        if baseline or baseline_from_git:
-            raise click.UsageError(
-                "--pr-diff is mutually exclusive with --baseline / "
-                "--baseline-from-git (both define a comparison; pick one)."
-            )
-        if diff_base:
-            raise click.UsageError(
-                "--pr-diff is mutually exclusive with --diff-base. "
-                "--diff-base scopes the scan to changed files only, "
-                "which would leave the base side empty by construction."
-            )
-        # ``--pr-diff`` always emits Markdown to stdout (or
-        # ``--output-file``). The other formats don't fit the
-        # "delta of failures" shape we ship today, and silently
-        # honoring ``--output json`` while emitting Markdown was a
-        # surprising mismatch. Accept the default (``terminal``)
-        # since it's what every invocation without an explicit
-        # ``--output`` carries; accept ``markdown`` for an
-        # explicit-intent invocation; reject everything else.
-        if output not in ("terminal", "markdown"):
-            raise click.UsageError(
-                f"--pr-diff produces a Markdown delta report; "
-                f"--output {output!r} is not supported. Drop "
-                f"``--output`` or pass ``--output markdown``."
-            )
+    _validate_scan_inputs(
+        output=output,
+        output_file=output_file,
+        secret_patterns=secret_patterns,
+        custom_rules=custom_rules,
+        rego_rules=rego_rules,
+        diff_base=diff_base,
+        pr_diff=pr_diff,
+        inventory_only=inventory_only,
+        fix=fix,
+        baseline=baseline,
+        baseline_from_git=baseline_from_git,
+    )
 
     threshold = Severity(severity_threshold.upper())
     confidence_threshold = Confidence(min_confidence.upper())
@@ -3185,21 +2673,21 @@ def scan(
         rego_rules=list(rego_rules) or None,
         fp_annotations_path=fp_path,
         log=_debug if verbose else None,
-        tf_plan=tf_plan,
-        tf_source=tf_source,
-        gha_path=gha_path,
-        gitea_path=gitea_path,
-        gitlab_path=gitlab_path,
-        bitbucket_path=bitbucket_path,
-        azure_path=azure_path,
-        jenkinsfile_path=jenkinsfile_path,
-        circleci_path=circleci_path,
-        cfn_template=cfn_template,
-        cloudbuild_path=cloudbuild_path,
-        buildkite_path=buildkite_path,
-        tekton_path=tekton_path,
-        argo_path=argo_path,
-        argocd_path=argocd_path,
+        tf_plan=_paths.tf_plan,
+        tf_source=_paths.tf_source,
+        gha_path=_paths.gha_path,
+        gitea_path=_paths.gitea_path,
+        gitlab_path=_paths.gitlab_path,
+        bitbucket_path=_paths.bitbucket_path,
+        azure_path=_paths.azure_path,
+        jenkinsfile_path=_paths.jenkinsfile_path,
+        circleci_path=_paths.circleci_path,
+        cfn_template=_paths.cfn_template,
+        cloudbuild_path=_paths.cloudbuild_path,
+        buildkite_path=_paths.buildkite_path,
+        tekton_path=_paths.tekton_path,
+        argo_path=_paths.argo_path,
+        argocd_path=_paths.argocd_path,
         resolve_remote=resolve_remote,
         gh_token=gh_token,
         gitlab_token=gitlab_token,
@@ -3209,23 +2697,23 @@ def scan(
         verify_secrets_show_identity=verify_secrets_show_identity,
         gha_search_paths=list(gha_search_paths),
         gha_resolve_depth=gha_resolve_depth,
-        dockerfile_path=dockerfile_path,
-        k8s_path=k8s_path,
-        helm_path=helm_path,
+        dockerfile_path=_paths.dockerfile_path,
+        k8s_path=_paths.k8s_path,
+        helm_path=_paths.helm_path,
         helm_values=list(helm_values) or None,
         helm_set=list(helm_set) or None,
-        oci_manifest=oci_manifest,
-        drone_path=drone_path,
-        npm_path=npm_path,
+        oci_manifest=_paths.oci_manifest,
+        drone_path=_paths.drone_path,
+        npm_path=_paths.npm_path,
         npm_base_ref=npm_base_ref,
-        pypi_path=pypi_path,
-        maven_path=maven_path,
-        nuget_path=nuget_path,
-        gomod_path=gomod_path,
-        cargo_path=cargo_path,
-        composer_path=composer_path,
-        rubygems_path=rubygems_path,
-        pulumi_path=pulumi_path,
+        pypi_path=_paths.pypi_path,
+        maven_path=_paths.maven_path,
+        nuget_path=_paths.nuget_path,
+        gomod_path=_paths.gomod_path,
+        cargo_path=_paths.cargo_path,
+        composer_path=_paths.composer_path,
+        rubygems_path=_paths.rubygems_path,
+        pulumi_path=_paths.pulumi_path,
         devenv_path=devenv_path,
         scm_platform=scm_platform,
         scm_repo=scm_repo,
@@ -3524,6 +3012,9 @@ def scan(
             components = []
 
     chains = list(getattr(scanner, "chains", []) or [])
+    # Step-level pipeline DAGs (one per pipeline file); empty for IaC /
+    # SCA / cloud providers. Only the HTML reporter renders them.
+    pipeline_graphs = list(getattr(scanner, "pipeline_graphs", []) or [])
     # ``--chains-require-reachability`` filters out chains whose
     # triggering findings only co-occur on the same resource without
     # a confirmed dataflow link between them. Chains that opted out
@@ -3552,99 +3043,25 @@ def scan(
                 f"{before - len(chains)} non-dataflow chain(s)"
             )
 
-    if not quiet and output in ("terminal", "both"):
-        from rich.console import Console as _Console  # local import, only needed here
-        console = _Console(stderr=(output == "both"))
-        report_terminal(
-            findings, score_result,
-            severity_threshold=threshold, console=console,
-            show_controls=show_controls,
-            show_passed=show_passed,
-            group_similar=not no_group,
-            inline_explain=inline_explain,
-        )
-        if chains:
-            report_chains_terminal(chains, console=console)
-        if components is not None:
-            report_inventory_terminal(components, console=console)
-        # Final line of a terminal scan: a single "what next" nudge,
-        # rendered after every panel so it's the last thing on screen.
-        tip = next_steps_tip(findings, severity_threshold=threshold)
-        if tip:
-            console.print()
-            console.print(tip)
-
-    if output in ("json", "both"):
-        json_text = report_json(
-            findings, score_result, tool_version=__version__,
-            inventory=components,
-            chains=chains if not no_chains else None,
-        )
-        # ``both`` always streams JSON to stdout regardless of
-        # ``--output-file``; the file destination is only honored
-        # when JSON is the sole format the user asked for.
-        if output == "both":
-            if not quiet:
-                click.echo(json_text)
-        else:
-            _emit_report(json_text, output_file, "JSON report", quiet=quiet)
-
-    if output == "html":
-        # HTML reporter writes the file itself (it bundles assets), so
-        # we don't route it through ``_emit_report``.
-        report_html(
-            findings, score_result, region=region, target=target or "",
-            output_path=output_file, chains=chains,
-        )
-        if not quiet:
-            click.echo(f"HTML report written to {output_file}", err=True)
-
-    if output == "sarif":
-        sarif_text = report_sarif(
-            findings, score_result, tool_version=__version__, chains=chains,
-            inline_explain=inline_explain,
-        )
-        _emit_report(sarif_text, output_file, "SARIF report", quiet=quiet)
-
-    if output == "junit":
-        junit_text = report_junit(
-            findings, score_result, inline_explain=inline_explain,
-        )
-        _emit_report(junit_text, output_file, "JUnit report", quiet=quiet)
-
-    if output == "markdown":
-        md_text = report_markdown(
-            findings, score_result, chains=chains,
-            inline_explain=inline_explain,
-        )
-        _emit_report(md_text, output_file, "Markdown report", quiet=quiet)
-
-    if output == "codequality":
-        cq_text = report_codequality(findings, inline_explain=inline_explain)
-        _emit_report(
-            cq_text, output_file, "Code Quality report", quiet=quiet,
-        )
-
-    if output == "cyclonedx":
-        from pipeline_check.core.cyclonedx_reporter import report_cyclonedx
-        sbom_deps = scanner.sbom()
-        cdx_text = report_cyclonedx(
-            sbom_deps,
-            tool_version=__version__,
-            scanned_path=target or ".",
-        )
-        _emit_report(cdx_text, output_file, "CycloneDX SBOM", quiet=quiet)
-
-    if output == "threatmodel":
-        tm_text = report_threatmodel(
-            findings, score_result,
-            inventory=components, chains=chains,
-            tool_version=__version__,
-            region=region or "", target=target or "",
-        )
-        _emit_report(
-            tm_text, output_file, "Threat-model report", quiet=quiet,
-        )
+    _emit_scan_report(
+        output,
+        findings=findings,
+        score_result=score_result,
+        chains=chains,
+        components=components,
+        pipeline_graphs=pipeline_graphs,
+        scanner=scanner,
+        threshold=threshold,
+        show_controls=show_controls,
+        show_passed=show_passed,
+        no_group=no_group,
+        inline_explain=inline_explain,
+        no_chains=no_chains,
+        output_file=output_file,
+        quiet=quiet,
+        region=region,
+        target=target,
+    )
 
     if fix:
         if apply_fixes:
@@ -3780,6 +3197,823 @@ def scan(
 
     if not gate.passed:
         raise click.exceptions.Exit(1)
+
+
+def _validate_scan_flags_early(
+    *,
+    config_strict: bool,
+    apply_fixes: bool,
+    fix: str | None,
+    inventory_only: bool,
+    diff_base: str | None,
+    baseline: str | None,
+    ingest_paths: tuple[str, ...],
+) -> None:
+    """Validate flags before the provider context is built.
+
+    ``--config-strict`` aborts when the loaded config carried an unknown
+    key; the rest are mutual-exclusion / existence guards (``--apply``
+    needs ``--fix``; ``--inventory-only`` can't combine with fix /
+    diff-base / baseline / ingest; ``--baseline`` must point at a real
+    file). Raising here points the error at the conflict rather than a
+    silent no-op later. Raises ``click.UsageError``.
+    """
+    # --config-strict: abort a real scan when the loaded config carried an
+    # unknown key, rather than the default warn-and-drop. Catches a typo
+    # that would otherwise silently disable a setting (e.g. a gate key
+    # written at the top level instead of under 'gate:').
+    if config_strict:
+        from .core.config import last_unknown_keys
+        dropped = last_unknown_keys()
+        if dropped:
+            for source, key, reason in dropped:
+                click.echo(f"[config] {source}: {key!r}, {reason}", err=True)
+            raise click.UsageError(
+                f"--config-strict: {len(dropped)} unknown config key(s) "
+                f"detected (see above). Fix the key(s) or drop "
+                f"--config-strict."
+            )
+
+    if apply_fixes and not fix:
+        raise click.UsageError("--apply requires --fix.")
+
+    # Mutually-exclusive flag combinations, catch these before the
+    # provider context is built so the error points at the conflict
+    # rather than surfacing as a silent no-op later.
+    if inventory_only and fix:
+        raise click.UsageError(
+            "--fix cannot be combined with --inventory-only "
+            "(no findings are produced to fix)."
+        )
+    if inventory_only and diff_base:
+        raise click.UsageError(
+            "--diff-base cannot be combined with --inventory-only "
+            "(inventory is a full-state snapshot, not a per-commit delta)."
+        )
+    if inventory_only and baseline:
+        raise click.UsageError(
+            "--baseline cannot be combined with --inventory-only "
+            "(baselines gate findings; --inventory-only emits no findings)."
+        )
+    if inventory_only and ingest_paths:
+        raise click.UsageError(
+            "--ingest cannot be combined with --inventory-only "
+            "(inventory-only emits no findings or chains for the "
+            "ingested SARIF to merge into)."
+        )
+
+    # Validate --baseline early so a typo'd path doesn't surface as
+    # "no regressions found" after a full scan completes.
+    if baseline and not os.path.isfile(baseline):
+        raise click.UsageError(f"--baseline file not found: {baseline}")
+
+
+def _validate_scan_inputs(
+    *,
+    output: str,
+    output_file: str | None,
+    secret_patterns: tuple[str, ...],
+    custom_rules: tuple[str, ...],
+    rego_rules: tuple[str, ...],
+    diff_base: str | None,
+    pr_diff: str | None,
+    inventory_only: bool,
+    fix: str | None,
+    baseline: str | None,
+    baseline_from_git: str | None,
+) -> None:
+    """Validate flag combinations checked after provider/path resolution.
+
+    These don't depend on the resolved paths: the ``--output html`` file
+    requirement, the regex / file-existence checks for
+    ``--secret-pattern`` / ``--custom-rules`` / ``--rego-rules``, and the
+    argument-injection + mutual-exclusivity guards on ``--diff-base`` /
+    ``--pr-diff``. Raises ``click.UsageError`` on the first problem.
+    """
+    if output == "html" and not output_file:
+        raise click.UsageError(
+            "--output-file PATH is required when --output html."
+        )
+
+    for pat in secret_patterns:
+        try:
+            re.compile(pat)
+        except re.error as exc:
+            raise click.UsageError(
+                f"--secret-pattern {pat!r} is not a valid regex: {exc}"
+            ) from exc
+
+    for crp in custom_rules:
+        if not os.path.exists(crp):
+            raise click.UsageError(f"--custom-rules not found: {crp}")
+
+    for rrp in rego_rules:
+        if not os.path.exists(rrp):
+            raise click.UsageError(f"--rego-rules not found: {rrp}")
+
+    if diff_base is not None and diff_base.startswith("-"):
+        # ``diff_base`` is composed into ``git diff --name-only
+        # <base>...HEAD``. A leading ``-`` makes git parse the value
+        # as an option (e.g. ``--output=path``, write-anywhere
+        # primitive). Catch it here so the CLI shows a clean
+        # UsageError; the helper also validates as defense in depth
+        # (CWE-88, argument injection).
+        raise click.UsageError(
+            "--diff-base must not start with '-' "
+            "(would be parsed as a git flag, not a positional ref)"
+        )
+
+    if pr_diff is not None:
+        if pr_diff.startswith("-"):
+            # Same argument-injection concern as ``--diff-base``: the
+            # ref string flows into ``git worktree add`` and ``git
+            # rev-parse``. The pr_diff module re-validates as a second
+            # line of defense.
+            raise click.UsageError(
+                "--pr-diff must not start with '-' "
+                "(would be parsed as a git flag, not a positional ref)"
+            )
+        if inventory_only:
+            raise click.UsageError(
+                "--pr-diff cannot be combined with --inventory-only "
+                "(inventory is a full-state snapshot, not a per-PR delta)."
+            )
+        if fix:
+            raise click.UsageError(
+                "--pr-diff cannot be combined with --fix "
+                "(diff mode reports the delta; it does not modify either side)."
+            )
+        if baseline or baseline_from_git:
+            raise click.UsageError(
+                "--pr-diff is mutually exclusive with --baseline / "
+                "--baseline-from-git (both define a comparison; pick one)."
+            )
+        if diff_base:
+            raise click.UsageError(
+                "--pr-diff is mutually exclusive with --diff-base. "
+                "--diff-base scopes the scan to changed files only, "
+                "which would leave the base side empty by construction."
+            )
+        # ``--pr-diff`` always emits Markdown to stdout (or
+        # ``--output-file``). The other formats don't fit the
+        # "delta of failures" shape we ship today, and silently
+        # honoring ``--output json`` while emitting Markdown was a
+        # surprising mismatch. Accept the default (``terminal``)
+        # since it's what every invocation without an explicit
+        # ``--output`` carries; accept ``markdown`` for an
+        # explicit-intent invocation; reject everything else.
+        if output not in ("terminal", "markdown"):
+            raise click.UsageError(
+                f"--pr-diff produces a Markdown delta report; "
+                f"--output {output!r} is not supported. Drop "
+                f"``--output`` or pass ``--output markdown``."
+            )
+
+
+@dataclass
+class _ScanPaths:
+    """The per-provider source paths after auto-detect / validation.
+
+    ``scan()`` carries one ``--<provider>-path`` flag per provider;
+    :func:`_resolve_provider_paths` resolves each and returns them
+    bundled here so the scanner-kwargs construction reads one object
+    instead of ~30 loose locals.
+    """
+    tf_plan: str | None = None
+    tf_source: str | None = None
+    gha_path: str | None = None
+    gitea_path: str | None = None
+    gitlab_path: str | None = None
+    bitbucket_path: str | None = None
+    azure_path: str | None = None
+    jenkinsfile_path: str | None = None
+    circleci_path: str | None = None
+    cfn_template: str | None = None
+    cloudbuild_path: str | None = None
+    buildkite_path: str | None = None
+    tekton_path: str | None = None
+    argo_path: str | None = None
+    argocd_path: str | None = None
+    dockerfile_path: str | None = None
+    k8s_path: str | None = None
+    helm_path: str | None = None
+    oci_manifest: str | None = None
+    drone_path: str | None = None
+    npm_path: str | None = None
+    pypi_path: str | None = None
+    maven_path: str | None = None
+    nuget_path: str | None = None
+    gomod_path: str | None = None
+    cargo_path: str | None = None
+    composer_path: str | None = None
+    rubygems_path: str | None = None
+    pulumi_path: str | None = None
+
+
+def _resolve_provider_paths(
+    pipelines_to_resolve: list[str],
+    *,
+    tf_plan: str | None,
+    tf_source: str | None,
+    gha_path: str | None,
+    gitea_path: str | None,
+    gitlab_path: str | None,
+    bitbucket_path: str | None,
+    azure_path: str | None,
+    jenkinsfile_path: str | None,
+    circleci_path: str | None,
+    cfn_template: str | None,
+    cloudbuild_path: str | None,
+    buildkite_path: str | None,
+    tekton_path: str | None,
+    argo_path: str | None,
+    argocd_path: str | None,
+    dockerfile_path: str | None,
+    k8s_path: str | None,
+    helm_path: str | None,
+    oci_manifest: str | None,
+    drone_path: str | None,
+    npm_path: str | None,
+    pypi_path: str | None,
+    maven_path: str | None,
+    nuget_path: str | None,
+    gomod_path: str | None,
+    cargo_path: str | None,
+    composer_path: str | None,
+    rubygems_path: str | None,
+    pulumi_path: str | None,
+    helm_values: tuple[str, ...],
+) -> _ScanPaths:
+    """Resolve / auto-detect each selected provider's source path.
+
+    Runs once per provider in *pipelines_to_resolve* (one entry in
+    single-pipeline mode, the full list in multi-pipeline mode),
+    auto-detecting a canonical path when the flag was omitted and raising
+    ``click.UsageError`` on a missing or invalid one. Returns the
+    resolved paths bundled for the scanner kwargs.
+    """
+    for pipeline_lc in pipelines_to_resolve:
+        if pipeline_lc == "terraform":
+            if tf_plan and tf_source:
+                raise click.UsageError(
+                    "--tf-plan and --tf-source are mutually exclusive."
+                )
+            if tf_plan:
+                tf_plan = _resolve_provider_path(
+                    "terraform", flag="tf-plan", value=tf_plan,
+                    validate_kind="file", not_found_label="path",
+                )
+            elif tf_source:
+                tf_source = _resolve_provider_path(
+                    "terraform", flag="tf-source", value=tf_source,
+                    validate_kind="dir", not_found_label="directory",
+                )
+            elif os.path.isfile("main.tf"):
+                tf_source = "."
+                click.echo(
+                    "[auto] using --tf-source . (main.tf detected)",
+                    err=True,
+                )
+        elif pipeline_lc == "github":
+            gha_path = _resolve_provider_path(
+                "github", flag="gha-path", value=gha_path,
+                candidates=(".github/workflows",), candidate_kind="dir",
+                validate_kind="dir", detect_label=".github/workflows",
+                not_found_label="directory",
+            )
+        elif pipeline_lc == "gitea":
+            gitea_path = _resolve_provider_path(
+                "gitea", flag="gitea-path", value=gitea_path,
+                candidates=(".gitea/workflows", ".forgejo/workflows"),
+                candidate_kind="dir",
+                validate_kind="dir",
+                detect_label=".gitea/workflows or .forgejo/workflows",
+                not_found_label="directory",
+            )
+        elif pipeline_lc == "gitlab":
+            gitlab_path = _resolve_provider_path(
+                "gitlab", flag="gitlab-path", value=gitlab_path,
+                candidates=(".gitlab-ci.yml",),
+                detect_label=".gitlab-ci.yml",
+            )
+        elif pipeline_lc == "bitbucket":
+            bitbucket_path = _resolve_provider_path(
+                "bitbucket", flag="bitbucket-path", value=bitbucket_path,
+                candidates=("bitbucket-pipelines.yml",),
+                detect_label="bitbucket-pipelines.yml",
+            )
+        elif pipeline_lc == "azure":
+            azure_path = _resolve_provider_path(
+                "azure", flag="azure-path", value=azure_path,
+                candidates=("azure-pipelines.yml",),
+                detect_label="azure-pipelines.yml",
+            )
+        elif pipeline_lc == "jenkins":
+            jenkinsfile_path = _resolve_provider_path(
+                "jenkins", flag="jenkinsfile-path", value=jenkinsfile_path,
+                candidates=("Jenkinsfile",),
+                detect_label="Jenkinsfile",
+            )
+        elif pipeline_lc == "circleci":
+            circleci_path = _resolve_provider_path(
+                "circleci", flag="circleci-path", value=circleci_path,
+                candidates=(".circleci/config.yml",),
+                detect_label=".circleci/config.yml",
+            )
+        elif pipeline_lc == "cloudformation":
+            if not cfn_template:
+                for _candidate in (
+                    "template.yml", "template.yaml", "template.json",
+                    "cloudformation.yml", "cloudformation.yaml",
+                    "cfn.yml", "cfn.yaml",
+                ):
+                    if os.path.isfile(_candidate):
+                        cfn_template = _candidate
+                        click.echo(
+                            f"[auto] using --cfn-template {cfn_template}",
+                            err=True,
+                        )
+                        break
+            if not cfn_template:
+                raise click.UsageError(
+                    "--cfn-template PATH is required when --pipeline "
+                    "cloudformation (no template.yml / template.json / "
+                    "cloudformation.yml / cfn.yaml found in the current "
+                    "directory)."
+                )
+            if not os.path.exists(cfn_template):
+                raise click.UsageError(
+                    f"--cfn-template not found: {cfn_template}"
+                )
+            # Distinguish "directory but no templates" from "file not found" —
+            # the former is a common mistake when someone points the flag at
+            # their project root instead of an infrastructure subdirectory.
+            if os.path.isdir(cfn_template):
+                _exts = (".yml", ".yaml", ".json", ".template")
+                has_templates = any(
+                    _ent.is_file() and _ent.name.lower().endswith(_exts)
+                    for _ent in os.scandir(cfn_template)
+                )
+                if not has_templates:
+                    raise click.UsageError(
+                        f"--cfn-template directory {cfn_template!r} contains "
+                        f"no .yml / .yaml / .json / .template files."
+                    )
+        elif pipeline_lc == "cloudbuild":
+            cloudbuild_path = _resolve_provider_path(
+                "cloudbuild", flag="cloudbuild-path", value=cloudbuild_path,
+                candidates=("cloudbuild.yaml", "cloudbuild.yml"),
+                detect_label="cloudbuild.yaml/cloudbuild.yml",
+            )
+        elif pipeline_lc == "buildkite":
+            buildkite_path = _resolve_provider_path(
+                "buildkite", flag="buildkite-path", value=buildkite_path,
+                candidates=(".buildkite/pipeline.yml", ".buildkite/pipeline.yaml"),
+                detect_label=".buildkite/pipeline.yml",
+            )
+        elif pipeline_lc == "tekton":
+            tekton_path = _resolve_provider_path(
+                "tekton", flag="tekton-path", value=tekton_path,
+            )
+        elif pipeline_lc == "argo":
+            argo_path = _resolve_provider_path(
+                "argo", flag="argo-path", value=argo_path,
+            )
+        elif pipeline_lc == "argocd":
+            argocd_path = _resolve_provider_path(
+                "argocd", flag="argocd-path", value=argocd_path,
+            )
+        elif pipeline_lc == "dockerfile":
+            dockerfile_path = _resolve_provider_path(
+                "dockerfile", flag="dockerfile-path", value=dockerfile_path,
+                candidates=("Dockerfile", "Containerfile"),
+                detect_label="Dockerfile/Containerfile",
+            )
+        elif pipeline_lc == "kubernetes":
+            k8s_path = _resolve_provider_path(
+                "kubernetes", flag="k8s-path", value=k8s_path,
+                candidates=("kubernetes", "k8s", "manifests"),
+                candidate_kind="dir",
+                detect_label="kubernetes/, k8s/, or manifests/ directory",
+            )
+        elif pipeline_lc == "helm":
+            if not helm_path:
+                if os.path.isfile("Chart.yaml"):
+                    helm_path = "."
+                    click.echo("[auto] using --helm-path .", err=True)
+                elif os.path.isdir("charts"):
+                    helm_path = "charts"
+                    click.echo("[auto] using --helm-path charts", err=True)
+            if not helm_path:
+                raise click.UsageError(
+                    "--helm-path PATH is required when --pipeline helm "
+                    "(no Chart.yaml or charts/ directory found in cwd)."
+                )
+            if not os.path.exists(helm_path):
+                raise click.UsageError(
+                    f"--helm-path not found: {helm_path}"
+                )
+            for vf in helm_values:
+                if not os.path.isfile(vf):
+                    raise click.UsageError(
+                        f"--helm-values not found: {vf}"
+                    )
+        elif pipeline_lc == "oci":
+            oci_manifest = _resolve_provider_path(
+                "oci", flag="oci-manifest", value=oci_manifest,
+                candidates=("index.json",),
+                detect_label="index.json",
+            )
+        elif pipeline_lc == "drone":
+            drone_path = _resolve_provider_path(
+                "drone", flag="drone-path", value=drone_path,
+                candidates=(".drone.yml", ".drone.yaml"),
+                detect_label=".drone.yml/.drone.yaml",
+            )
+        elif pipeline_lc == "npm":
+            npm_path = _resolve_provider_path(
+                "npm", flag="npm-path", value=npm_path,
+                candidates=("package.json", "package-lock.json"),
+                detect_label="package.json/package-lock.json",
+            )
+        elif pipeline_lc == "pypi":
+            pypi_path = _resolve_provider_path(
+                "pypi", flag="pypi-path", value=pypi_path,
+                candidates=("requirements.txt",),
+                detect_label="requirements.txt",
+            )
+        elif pipeline_lc == "maven":
+            maven_path = _resolve_provider_path(
+                "maven", flag="maven-path", value=maven_path,
+                candidates=("pom.xml",),
+                detect_label="pom.xml",
+            )
+        elif pipeline_lc == "nuget":
+            nuget_path = _resolve_provider_path(
+                "nuget", flag="nuget-path", value=nuget_path,
+                candidates=("Directory.Packages.props",),
+                detect_label="Directory.Packages.props",
+            )
+        elif pipeline_lc == "gomod":
+            gomod_path = _resolve_provider_path(
+                "gomod", flag="gomod-path", value=gomod_path,
+                candidates=("go.mod",),
+                detect_label="go.mod",
+            )
+        elif pipeline_lc == "cargo":
+            cargo_path = _resolve_provider_path(
+                "cargo", flag="cargo-path", value=cargo_path,
+                candidates=("Cargo.toml",),
+                detect_label="Cargo.toml",
+            )
+        elif pipeline_lc == "composer":
+            composer_path = _resolve_provider_path(
+                "composer", flag="composer-path",
+                value=composer_path,
+                candidates=("composer.json",),
+                detect_label="composer.json",
+            )
+        elif pipeline_lc == "rubygems":
+            rubygems_path = _resolve_provider_path(
+                "rubygems", flag="rubygems-path",
+                value=rubygems_path,
+                candidates=("Gemfile",),
+                detect_label="Gemfile",
+            )
+        elif pipeline_lc == "pulumi":
+            pulumi_path = _resolve_provider_path(
+                "pulumi", flag="pulumi-path", value=pulumi_path,
+                candidates=("Pulumi.yaml",),
+                detect_label="Pulumi.yaml",
+            )
+    return _ScanPaths(
+        tf_plan=tf_plan,
+        tf_source=tf_source,
+        gha_path=gha_path,
+        gitea_path=gitea_path,
+        gitlab_path=gitlab_path,
+        bitbucket_path=bitbucket_path,
+        azure_path=azure_path,
+        jenkinsfile_path=jenkinsfile_path,
+        circleci_path=circleci_path,
+        cfn_template=cfn_template,
+        cloudbuild_path=cloudbuild_path,
+        buildkite_path=buildkite_path,
+        tekton_path=tekton_path,
+        argo_path=argo_path,
+        argocd_path=argocd_path,
+        dockerfile_path=dockerfile_path,
+        k8s_path=k8s_path,
+        helm_path=helm_path,
+        oci_manifest=oci_manifest,
+        drone_path=drone_path,
+        npm_path=npm_path,
+        pypi_path=pypi_path,
+        maven_path=maven_path,
+        nuget_path=nuget_path,
+        gomod_path=gomod_path,
+        cargo_path=cargo_path,
+        composer_path=composer_path,
+        rubygems_path=rubygems_path,
+        pulumi_path=pulumi_path,
+    )
+
+
+def _emit_scan_report(
+    output: str,
+    *,
+    findings: list[Any],
+    score_result: Any,
+    chains: list[Any],
+    components: list[Any] | None,
+    pipeline_graphs: list[Any],
+    scanner: "Scanner | MultiScanner",
+    threshold: Severity,
+    show_controls: bool,
+    show_passed: bool,
+    no_group: bool,
+    inline_explain: bool,
+    no_chains: bool,
+    output_file: str | None,
+    quiet: bool,
+    region: str,
+    target: str | None,
+) -> None:
+    """Render the scan results in the requested output format(s).
+
+    ``terminal`` / ``both`` print the rich report (plus chains, inventory,
+    and the next-step tip), and ``both`` additionally streams JSON to
+    stdout. ``html`` writes its own bundled file. Every other format is a
+    single text artifact emitted via :func:`_emit_report`.
+    """
+    if not quiet and output in ("terminal", "both"):
+        from rich.console import Console as _Console  # local import, only needed here
+        console = _Console(stderr=(output == "both"))
+        report_terminal(
+            findings, score_result,
+            severity_threshold=threshold, console=console,
+            show_controls=show_controls,
+            show_passed=show_passed,
+            group_similar=not no_group,
+            inline_explain=inline_explain,
+            incomplete_reason=_scan_incomplete_reason(scanner.metadata, findings),
+        )
+        if chains:
+            report_chains_terminal(chains, console=console)
+        if components is not None:
+            report_inventory_terminal(components, console=console)
+        # Final line of a terminal scan: a single "what next" nudge,
+        # rendered after every panel so it's the last thing on screen.
+        tip = next_steps_tip(findings, severity_threshold=threshold)
+        if tip:
+            console.print()
+            console.print(tip)
+
+    if output in ("json", "both"):
+        json_text = report_json(
+            findings, score_result, tool_version=__version__,
+            inventory=components,
+            chains=chains if not no_chains else None,
+        )
+        # ``both`` always streams JSON to stdout regardless of
+        # ``--output-file``; the file destination is only honored
+        # when JSON is the sole format the user asked for.
+        if output == "both":
+            if not quiet:
+                click.echo(json_text)
+        else:
+            _emit_report(json_text, output_file, "JSON report", quiet=quiet)
+
+    if output == "html":
+        # HTML reporter writes the file itself (it bundles assets), so
+        # we don't route it through ``_emit_report``.
+        report_html(
+            findings, score_result, region=region, target=target or "",
+            output_path=output_file, chains=chains,
+            pipeline_graphs=pipeline_graphs,
+        )
+        if not quiet:
+            click.echo(f"HTML report written to {output_file}", err=True)
+
+    # Single-artifact text formats. Each builder is a thunk so only the
+    # selected format runs (the CycloneDX one defers a lazy import and the
+    # ``scanner.sbom()`` call); a dispatch table keeps the per-format
+    # wiring in one place instead of a seven-way if-chain.
+    def _cyclonedx_text() -> str:
+        from pipeline_check.core.cyclonedx_reporter import report_cyclonedx
+        return report_cyclonedx(
+            scanner.sbom(), tool_version=__version__, scanned_path=target or ".",
+        )
+
+    text_reporters: dict[str, tuple[Callable[[], str], str]] = {
+        "sarif": (
+            lambda: report_sarif(
+                findings, score_result, tool_version=__version__,
+                chains=chains, inline_explain=inline_explain,
+            ),
+            "SARIF report",
+        ),
+        "junit": (
+            lambda: report_junit(
+                findings, score_result, inline_explain=inline_explain,
+            ),
+            "JUnit report",
+        ),
+        "markdown": (
+            lambda: report_markdown(
+                findings, score_result, chains=chains,
+                inline_explain=inline_explain,
+            ),
+            "Markdown report",
+        ),
+        "codequality": (
+            lambda: report_codequality(findings, inline_explain=inline_explain),
+            "Code Quality report",
+        ),
+        "cyclonedx": (_cyclonedx_text, "CycloneDX SBOM"),
+        "threatmodel": (
+            lambda: report_threatmodel(
+                findings, score_result, inventory=components, chains=chains,
+                tool_version=__version__, region=region or "", target=target or "",
+            ),
+            "Threat-model report",
+        ),
+    }
+    reporter = text_reporters.get(output)
+    if reporter is not None:
+        build_text, label = reporter
+        _emit_report(build_text(), output_file, label, quiet=quiet)
+
+
+def _run_informational_commands(
+    *,
+    man_topic: str | None,
+    list_standards: bool,
+    serve: bool,
+    list_checks: bool,
+    list_fixers: bool,
+    fixer_safety_filter: str,
+    annotate_fp: tuple[str, str] | None,
+    fp_path: str | None,
+    list_chains: bool,
+    explain_chain_id: str | None,
+    explain_id: str | None,
+    ai_explain_id: str | None,
+    ai_model_spec: str | None,
+    ai_context_file: str | None,
+    standard_report: str | None,
+    config_check: bool,
+    pipeline: str,
+) -> bool:
+    """Handle the informational / eager-exit flags that short-circuit a scan.
+
+    These flags (``--man``, ``--list-standards``, ``--serve``,
+    ``--list-checks``, ``--list-fixers``, ``--annotate-fp``,
+    ``--list-chains``, ``--explain-chain``, ``--explain`` /
+    ``--ai-explain``, ``--standard-report``, ``--config-check``) each do
+    their own thing and stop before any provider is scanned. Returns True
+    when one handled the invocation (the caller then returns); the ones
+    that carry a specific exit code raise ``click.exceptions.Exit``
+    directly. Returns False when none matched and a real scan should run.
+    """
+    if man_topic is not None:
+        from .core import manual as _manual
+        known = set(_manual.topics())
+        requested = (man_topic or "").lower()
+        # ``--man`` alone (empty string) prints the index; only flag a
+        # typo when the user supplied a non-empty topic that isn't in
+        # the registry so scripts piping this through ``| grep`` get
+        # a non-zero exit on misuse.
+        click.echo(_manual.render(man_topic), nl=False)
+        if requested and requested != "index" and requested not in known:
+            raise click.exceptions.Exit(3)
+        return True
+
+    if list_standards:
+        for std in _standards.resolve():
+            click.echo(f"{std.name} ,  {std.title} (v{std.version or 'n/a'})")
+            if std.url:
+                click.echo(f"    {std.url}")
+        return True
+
+    if serve:
+        # Lazy import so the optional ``mcp`` SDK doesn't load at
+        # CLI startup. The harness raises a clean RuntimeError when
+        # the package isn't installed; surface it as exit 3.
+        try:
+            from .mcp_server import run_stdio
+        except ImportError as exc:  # pragma: no cover - import-time safeguard
+            click.echo(
+                f"[error] MCP support unavailable: {exc}. "
+                "Install with ``pip install 'pipeline-check[mcp]'``.",
+                err=True,
+            )
+            raise click.exceptions.Exit(3) from exc
+        try:
+            run_stdio()
+        except RuntimeError as exc:
+            click.echo(f"[error] {exc}", err=True)
+            raise click.exceptions.Exit(3) from exc
+        except KeyboardInterrupt:
+            pass
+        return True
+
+    if list_checks:
+        _list_checks_for_pipeline(pipeline.lower())
+        return True
+
+    if list_fixers:
+        from .core.autofix import iter_fixers
+        from .core.explain import render_fixers
+
+        fixers_body, fixers_code = render_fixers(fixer_safety_filter)
+        click.echo(fixers_body, nl=False)
+        if fixers_code == 0:
+            all_fixers = iter_fixers()
+            safe_n = sum(1 for _, s in all_fixers if s == "safe")
+            unsafe_n = len(all_fixers) - safe_n
+            click.echo(
+                f"\n{len(all_fixers)} autofixers registered "
+                f"({safe_n} safe, {unsafe_n} unsafe). `--fix` runs safe "
+                "only; `--fix=unsafe` runs both. A registered fixer still "
+                "emits no patch when the finding is already remediated or "
+                "the edit wouldn't round-trip as valid YAML.",
+                err=True,
+            )
+        raise click.exceptions.Exit(fixers_code)
+
+    if annotate_fp:
+        # ``--annotate-fp CHECK_ID RESOURCE`` writes the local
+        # annotation file and exits without scanning. Idempotent.
+        from .core.fp_annotations import (
+            DEFAULT_FP_PATH,
+            append_annotation,
+        )
+
+        cid, resource = annotate_fp
+        target_path = fp_path or DEFAULT_FP_PATH
+        try:
+            wrote = append_annotation(cid, resource, path=target_path)
+        except (OSError, ValueError) as exc:
+            raise click.UsageError(
+                f"could not write {target_path}: {exc}"
+            ) from exc
+        if wrote:
+            click.echo(
+                f"[annotate-fp] recorded {cid.upper()}:{resource} "
+                f"in {target_path}"
+            )
+        else:
+            click.echo(
+                f"[annotate-fp] {cid.upper()}:{resource} already "
+                f"present in {target_path} (no change)"
+            )
+        return True
+
+    if list_chains:
+        raise click.exceptions.Exit(_eager_print_list_chains())
+
+    if explain_chain_id:
+        raise click.exceptions.Exit(_eager_print_explain_chain(explain_chain_id))
+
+    if explain_id and ai_explain_id:
+        # ``--ai-explain`` already runs the deterministic body before
+        # the AI section, so passing both flags is always a mistake.
+        # Reject it explicitly instead of silently letting ``--explain``
+        # win (which used to drop the AI section without any signal).
+        raise click.UsageError(
+            "--explain and --ai-explain are mutually exclusive. "
+            "Use --ai-explain CHECK_ID for the deterministic body "
+            "plus the AI-generated section, or --explain CHECK_ID "
+            "for the deterministic body alone."
+        )
+
+    if explain_id:
+        from .core.explain import print_explain
+        raise click.exceptions.Exit(print_explain(explain_id))
+
+    if ai_explain_id:
+        raise click.exceptions.Exit(_run_ai_explain(
+            ai_explain_id,
+            model_spec=ai_model_spec,
+            context_file=ai_context_file,
+        ))
+
+    if standard_report:
+        _eager_print_standard_report(standard_report)
+        return True
+
+    if config_check:
+        from .core.config import last_unknown_keys
+        dropped = last_unknown_keys()
+        if not dropped:
+            click.echo("[config] OK, no unknown keys.")
+            return True
+        for source, key, reason in dropped:
+            click.echo(f"[config] {source}: {key!r}, {reason}", err=True)
+        click.echo(f"[config] {len(dropped)} unknown key(s) detected.", err=True)
+        raise click.exceptions.Exit(3)
+    return False
 
 
 def _run_ai_explain(
@@ -4018,152 +4252,6 @@ def _build_pr_diff_subprocess_argv(
     return argv
 
 
-def _emit_fix_patches(findings: list[Any], *, to_stderr: bool = False, tier: str = "safe") -> None:
-    """Emit one unified-diff patch per failing finding that has a fixer.
-
-    Patches go to stdout by default so a user can pipe straight into
-    ``git apply``. When a machine-readable report is already occupying
-    stdout (``--output json/sarif/html/both``), the caller sets
-    ``to_stderr=True`` to avoid corrupting that stream.
-
-    File read errors are silently skipped, a missing file is almost
-    always due to a finding with a synthetic resource name (e.g. an
-    AWS check), not a real on-disk workflow. Per-path content is
-    cached so multiple findings against the same file only re-read
-    the source once.
-    """
-    import os
-    cache: dict[str, str] = {}
-    dirty: dict[str, str] = {}
-    patch_count = 0
-    patched_files: set[str] = set()
-    for f in findings:
-        if f.passed:
-            continue
-        path = f.resource
-        if not path or not os.path.isfile(path):
-            continue
-        before = dirty[path] if path in dirty else cache.get(path)
-        if before is None:
-            try:
-                with open(path, encoding="utf-8") as fh:
-                    before = fh.read()
-            except (OSError, UnicodeDecodeError):
-                continue
-            cache[path] = before
-        try:
-            after = _autofix.generate_fix(f, before, tier=tier)
-        except Exception as exc:
-            click.echo(
-                f"[autofix] fixer for {f.check_id} raised {type(exc).__name__}: {exc}",
-                err=True,
-            )
-            continue
-        if after is None:
-            continue
-        patch_count += 1
-        patched_files.add(path)
-        click.echo(
-            _autofix.render_patch(path, before, after),
-            nl=False,
-            err=to_stderr,
-        )
-        dirty[path] = after
-    if patch_count:
-        click.echo(
-            f"[autofix] {patch_count} patch(es) for {len(patched_files)} file(s)."
-            f" Run with --apply to modify in place.",
-            err=True,
-        )
-
-
-def _plan_fix_edits(
-    findings: list[Any], *, tier: str = "safe",
-) -> tuple[dict[str, str], dict[str, str], set[str]]:
-    """Compute the autofix edits without touching disk.
-
-    Returns ``(edits, newlines, fixed_ids)`` where *edits* maps each path
-    to its fully-patched content (every applicable fixer folded in,
-    idempotent), *newlines* records the path's original line ending, and
-    *fixed_ids* is the set of check IDs whose fixer actually produced a
-    change (used by ``fix-pr`` for the PR title / body). Splitting the
-    planning out of the write lets ``fix-pr`` decide whether there's
-    anything to commit before it creates a branch.
-
-    The line-ending bookkeeping matters on Windows: reading in text mode
-    normalizes CRLF to ``\\n``, and writing it back in text mode would
-    translate ``\\n`` to ``os.linesep``, silently flipping a pure-LF file
-    to CRLF. We read with ``newline=""``, patch the in-memory LF copy,
-    and re-apply the detected ending on write so only patched lines move.
-    """
-    import os
-    cache: dict[str, str] = {}
-    dirty: dict[str, str] = {}  # path → final content
-    newlines: dict[str, str] = {}
-    fixed_ids: set[str] = set()
-    for f in findings:
-        if f.passed:
-            continue
-        path = f.resource
-        if not path or not os.path.isfile(path):
-            continue
-        before = dirty[path] if path in dirty else cache.get(path)
-        if before is None:
-            try:
-                with open(path, encoding="utf-8", newline="") as fh:
-                    raw = fh.read()
-            except (OSError, UnicodeDecodeError):
-                continue
-            newlines[path] = "\r\n" if "\r\n" in raw else "\n"
-            before = raw.replace("\r\n", "\n")
-            cache[path] = before
-        try:
-            after = _autofix.generate_fix(f, before, tier=tier)
-        except Exception as exc:
-            click.echo(
-                f"[autofix] fixer for {f.check_id} raised {type(exc).__name__}: {exc}",
-                err=True,
-            )
-            continue
-        if after is None:
-            continue
-        dirty[path] = after
-        fixed_ids.add(f.check_id)
-    return dirty, newlines, fixed_ids
-
-
-def _write_fix_edits(
-    edits: dict[str, str], newlines: dict[str, str],
-) -> list[str]:
-    """Write planned *edits* to disk; return the paths actually written."""
-    written: list[str] = []
-    for path, content in edits.items():
-        eol = newlines.get(path, "\n")
-        if eol != "\n":
-            content = content.replace("\n", eol)
-        try:
-            with open(path, "w", encoding="utf-8", newline="") as fh:
-                fh.write(content)
-            written.append(path)
-        except OSError as exc:
-            click.echo(f"[autofix] could not write {path}: {exc}", err=True)
-    return written
-
-
-def _apply_fix_patches(findings: list[Any], *, tier: str = "safe") -> list[str]:
-    """Apply autofixes in place; print an N-files-modified summary to stderr.
-
-    Each fixer is idempotent, so it's safe to re-run after an apply —
-    already-fixed files produce no further patch. Unfixable findings
-    are silently skipped. Returns the list of modified paths so callers
-    (``fix-pr``) can stage exactly those files.
-    """
-    edits, newlines, _fixed_ids = _plan_fix_edits(findings, tier=tier)
-    written = _write_fix_edits(edits, newlines)
-    click.echo(f"[autofix] {len(written)} file(s) modified.", err=True)
-    return written
-
-
 def _find_sibling_package_jsons(root: str, max_depth: int = 3) -> list[str]:
     """Return up to a handful of ``package.json`` paths under *root*.
 
@@ -4305,6 +4393,36 @@ def _maybe_emit_degraded_scan_warning(findings: list[Any]) -> None:
         f"with --verbose to see which modules were skipped.",
         err=True,
     )
+
+
+def _scan_incomplete_reason(meta: Any, findings: list[Any]) -> str | None:
+    """Describe why a scan is incomplete, or ``None`` when it fully ran.
+
+    A scan is incomplete when a file it tried to read could not be
+    parsed (malformed YAML / JSON, read error) or when a cloud module
+    failed API access (the ``*-000`` degraded probes). The score then
+    reflects only what was actually scanned, so the terminal report
+    flags the grade as incomplete instead of presenting a confident
+    pass. Returns a human-readable reason for the report's status line.
+    """
+    parse_fail = 0
+    for w in getattr(meta, "warnings", None) or []:
+        wl = str(w).lower()
+        if "parse error" in wl or "read error" in wl:
+            parse_fail += 1
+    degraded = sum(
+        1 for f in findings
+        if getattr(f, "check_id", "").endswith("-000")
+        and not getattr(f, "passed", True)
+    )
+    parts: list[str] = []
+    if parse_fail:
+        parts.append(f"{parse_fail} file(s) could not be parsed")
+    if degraded:
+        parts.append(f"{degraded} module(s) failed API access")
+    if not parts:
+        return None
+    return f"{'; '.join(parts)}. The grade reflects only what was scanned."
 
 
 def _emit_scan_summary(meta: Any) -> None:

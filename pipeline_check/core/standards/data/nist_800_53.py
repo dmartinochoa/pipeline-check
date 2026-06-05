@@ -121,6 +121,8 @@ STANDARD = Standard(
         "IAM-006":  ["AC-3", "AC-6"],
         "IAM-007":  ["IA-5"],                            # access key > 90 days
         "IAM-008":  ["AC-3", "IA-5"],                    # OIDC trust missing aud/sub pin
+        "IAM-009":  ["AC-3", "IA-5"],                    # Azure WIF broad subject
+        "IAM-010":  ["AC-3", "IA-5"],                    # GCP WIF no repo condition
         # PBAC
         "PBAC-001": ["SC-7"],                            # no VPC boundary
         "PBAC-002": ["AC-2", "AC-6"],                    # shared service role
@@ -138,6 +140,7 @@ STANDARD = Standard(
         "GHA-002":  ["CM-6", "SI-7", "SA-11"],           # pull_request_target + PR head
         "GHA-003":  ["CM-6", "SA-11", "SA-15"],          # script injection
         "GHA-117":  ["CM-6", "SA-11", "SA-15"],          # IaC apply on untrusted PR trigger
+        "GHA-118":  ["CM-6", "SA-11", "SA-15"],          # untrusted content into $GITHUB_ENV / $GITHUB_PATH
         "GHA-004":  ["AC-6", "CM-6", "CM-7"],            # unrestricted GITHUB_TOKEN
         "GHA-005":  ["IA-5"],                            # long-lived AWS keys
         "GHA-006":  ["SI-7", "SR-4"],                    # unsigned artifacts
@@ -236,6 +239,7 @@ STANDARD = Standard(
         "GL-003":   ["IA-5"],
         "GL-004":   ["SA-10", "AC-3"],
         "GL-005":   ["SR-3", "SR-11", "CM-6"],
+        "GL-042":   ["SR-3", "SR-11", "CM-6"],    # include: component unpinned
         "GL-006":   ["SI-7", "SR-4"],                    # unsigned artifacts
         "GL-007":   ["SR-4", "CM-8"],                    # no SBOM
         "GL-008":   ["IA-5"],                            # literal secrets
@@ -264,6 +268,7 @@ STANDARD = Standard(
         "GL-030":   ["SR-3", "SR-11"],                   # trigger: include w/o pinned ref
         "GL-031":   ["AC-3", "IA-5"],                    # id_tokens missing audience pin
         "GL-040":   ["AC-3", "IA-5"],                    # CI_JOB_TOKEN used for cross-project access
+        "GL-041":   ["CM-6", "SA-11", "SA-15"],          # IaC apply on an untrusted MR trigger
         "GL-032":   ["CM-6", "SA-11"],                   # tags interpolates untrusted
         "GL-033":   ["CM-6", "SA-11"],                   # global before_script taint
         "GL-034":   ["SR-3", "SR-11", "SI-7"],            # npm install without audit signatures
@@ -471,6 +476,7 @@ STANDARD = Standard(
         "K8S-021":  ["AC-3", "AC-6", "CM-7"],            # wildcard RBAC
         "K8S-022":  ["SC-7", "CM-7"],                    # service exposes SSH
         "K8S-023":  ["AC-6", "CM-6"],                    # PSA enforce label missing
+        "K8S-044":  ["AC-6", "CM-6"],                    # admission webhook fail-open / unscoped mutating
         "K8S-024":  ["AU-2", "SI-2"],                    # missing health probes
         "K8S-025":  ["AC-6", "CM-7"],                    # system-* priority class
         "K8S-026":  ["SC-7", "AC-3"],                    # LB without source ranges
@@ -555,6 +561,7 @@ STANDARD = Standard(
         "ARGO-016": ["AC-2", "AC-6"],                    # cluster-admin / over-privileged ServiceAccount
         "ARGO-004": ["SC-7", "AC-6", "SI-7"],            # hostPath / namespaces
         "ARGO-005": ["CM-6", "SA-11"],                   # parameter injection
+        "ARGO-017": ["CM-6", "SA-11"],                   # resource template manifest injection
         "ARGO-006": ["IA-5", "SC-28"],                   # leaked creds
         "ARGO-007": ["AU-2", "SI-2"],                    # no activeDeadlineSeconds
         "ARGO-008": ["SR-3", "SR-11", "SC-8", "SI-7"],   # remote install / TLS
@@ -568,6 +575,7 @@ STANDARD = Standard(
         # ── Argo CD (GitOps deployment) ──
         "ARGOCD-010": ["CM-7", "SR-3"],                  # mutable targetRevision
         "ARGOCD-017": ["CM-7", "SR-3"],  # in-cluster mutable source
+        "ARGOCD-019": ["CM-7", "SR-3"],  # drift detection disabled on a sensitive field
         "ARGOCD-016": ["CM-7", "SR-3"],  # Helm valueFiles from a remote URL
         "ARGOCD-018": ["CM-7", "SR-3"],  # custom resource health / action Lua
         "ARGOCD-011": ["AC-6", "CM-7"],                  # cluster-resource wildcard
@@ -576,6 +584,7 @@ STANDARD = Standard(
         # Dockerfile, image build choices evidence supply-chain (SR)
         # and configuration (CM) controls primarily.
         "DF-001":   ["SR-3", "SR-11", "SI-2"],           # FROM not digest-pinned
+        "DF-031":   ["SR-3", "SR-11", "SI-2"],           # COPY --from external image not digest-pinned
         "DF-002":   ["AC-6", "CM-6"],                    # no USER
         "DF-003":   ["SR-3", "SR-11", "SI-7"],           # ADD URL no checksum
         "DF-004":   ["SR-3", "SR-11", "SI-7"],           # curl-pipe
@@ -688,6 +697,8 @@ STANDARD = Standard(
         "NPM-015":  ["SR-3", "SR-11", "RA-5"],           # missing build provenance
         "NPM-017":  ["SR-3", "SR-11", "RA-5"],           # provenance built from a non-release ref
         "NPM-018":  ["SR-3", "SR-11", "RA-5"],           # latest release from a new publisher
+        "NPM-019":  ["SR-3", "SR-11", "RA-5"],           # overrides / resolutions redirect
+        "NPM-020":  ["SR-3", "SR-11", "RA-5"],           # .npmrc registry repoint
         "NPM-016":  ["SR-3", "SR-11", "RA-5"],           # low OpenSSF Scorecard
         "PYPI-008": ["SR-3", "SR-11", "RA-5"],           # cooldown gate (--resolve-remote)
         "PYPI-009": ["SR-3", "SR-11", "RA-5"],           # OSV advisory (--resolve-remote)
@@ -1014,6 +1025,7 @@ STANDARD = Standard(
         "GCKMS-006": ["SC-12", "SC-13"],                   # imported key
         # Developer-environment auto-execution
         "DEV-001":   ["CM-7"],                             # vscode folderOpen task
+        "DEV-006":   ["CM-7"],                             # vscode settings exec-path / env injection
         "DEV-002":   ["CM-7"],                             # devcontainer lifecycle
         "DEV-003":   ["CM-7"],                             # committed claude hook
         "DEV-004":   ["SI-7", "CM-7"],                     # auto-run remote fetch+exec

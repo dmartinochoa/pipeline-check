@@ -112,6 +112,8 @@ STANDARD = Standard(
         "IAM-006":  ["2.4.3"],
         "IAM-007":  ["1.3.4"],                           # access key > 90 days
         "IAM-008":  ["1.3.4", "2.4.3"],                  # OIDC trust missing aud/sub pin
+        "IAM-009":  ["1.3.4", "2.4.3"],                  # Azure WIF broad subject
+        "IAM-010":  ["1.3.4", "2.4.3"],                  # GCP WIF no repo condition
         # PBAC
         "PBAC-001": ["2.1.6"],                           # no VPC boundary
         "PBAC-002": ["2.2.2", "2.4.3"],                  # shared service role
@@ -161,6 +163,7 @@ STANDARD = Standard(
         "GHA-002":  ["2.1.3", "2.3.8"],                  # pull_request_target + PR head
         "GHA-003":  ["2.1.3"],                           # script injection
         "GHA-117":  ["2.1.3"],                           # IaC apply on untrusted PR trigger
+        "GHA-118":  ["2.1.3"],                           # untrusted content into $GITHUB_ENV / $GITHUB_PATH
         "GHA-004":  ["2.4.3"],                           # unrestricted GITHUB_TOKEN
         "GHA-005":  ["1.3.4"],                           # long-lived AWS keys
         "GHA-006":  ["4.1.1"],                           # artifact signing
@@ -259,6 +262,7 @@ STANDARD = Standard(
         "GL-003":   ["1.5.1", "2.3.4", "2.4.3"],
         "GL-004":   ["5.1.4", "5.2.1"],
         "GL-005":   ["1.4.1", "3.1.3", "3.1.5"],
+        "GL-042":   ["1.4.1", "3.1.3", "3.1.5"],    # include: component unpinned
         "GL-006":   ["4.1.1"],
         "GL-007":   ["4.4.1"],
         "GL-008":   ["1.5.1", "2.3.4"],                  # literal secrets
@@ -287,6 +291,7 @@ STANDARD = Standard(
         "GL-030":   ["1.4.1", "3.1.3"],                  # trigger: include: pulls child pipeline w/o pinned ref
         "GL-031":   ["1.3.4", "2.4.3", "5.2.1"],         # id_tokens missing audience/env binding
         "GL-040":   ["1.3.4", "2.4.3", "5.2.1"],         # CI_JOB_TOKEN used for cross-project access
+        "GL-041":   ["2.1.3"],                           # IaC apply on an untrusted MR trigger
         "GL-032":   ["2.1.3"],                           # tags: interpolates untrusted variable
         "GL-033":   ["2.1.3", "2.3.8"],                  # global before_script taint
         "GL-034":   ["1.4.1", "3.1.3"],                  # npm install without audit signatures
@@ -426,6 +431,7 @@ STANDARD = Standard(
         "ARGO-016": ["2.4.3"],                     # cluster-admin / over-privileged ServiceAccount
         "ARGO-004": ["2.1.3"],                     # hostPath / host namespaces
         "ARGO-005": ["2.1.3", "2.3.8"],            # parameter injection
+        "ARGO-017": ["2.1.3", "2.3.8"],            # resource template manifest injection
         "ARGO-006": ["1.5.1", "2.3.4"],            # leaked creds
         "ARGO-007": ["2.2.2"],                     # no activeDeadlineSeconds
         "ARGO-008": ["1.4.1", "3.1.5"],            # remote install / TLS
@@ -451,6 +457,7 @@ STANDARD = Standard(
         # ── ArgoCD extended pack ──
         "ARGOCD-010": ["1.4.1"],                   # mutable targetRevision
         "ARGOCD-017": ["1.4.1"],  # in-cluster mutable source
+        "ARGOCD-019": ["1.4.1"],  # drift detection disabled on a sensitive field
         "ARGOCD-016": ["1.4.1"],  # Helm valueFiles from a remote URL
         "ARGOCD-018": ["1.4.1"],  # custom resource health / action Lua
         "ARGOCD-011": ["1.3.4"],                   # cluster-resource wildcard
@@ -486,6 +493,7 @@ STANDARD = Standard(
         # to 2.1.3 (build env hardened); credential-shape rules tie
         # to 2.3.4 (scan for secrets).
         "DF-001": ["1.4.1", "3.1.3"],              # FROM not digest-pinned
+        "DF-031": ["1.4.1", "3.1.3"],              # COPY --from external image not digest-pinned
         "DF-002": ["2.1.3"],                       # runs as root
         "DF-003": ["1.4.1", "3.1.3"],              # ADD remote, no integrity
         "DF-004": ["3.1.5", "1.4.1"],              # curl-pipe in RUN
@@ -882,6 +890,7 @@ STANDARD = Standard(
         "K8S-021":  ["2.4.3"],                      # wildcard RBAC verbs
         "K8S-022":  ["5.1.4", "2.1.6"],             # Service exposes SSH host port
         "K8S-023":  ["5.1.4"],                      # PSA enforce label missing
+        "K8S-044":  ["5.1.4"],                      # admission webhook fail-open / unscoped mutating
         "K8S-024":  ["5.2.3"],                      # missing readiness / liveness probes
         "K8S-025":  ["5.1.4"],                      # system priority class outside kube-system
         "K8S-026":  ["5.1.4", "2.1.6"],             # LoadBalancer without source ranges

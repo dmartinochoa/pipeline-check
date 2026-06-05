@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "pipeline-check"
-version = "1.9.0"
+version = "1.10.0"
 description = "Security scanner for CI/CD pipelines, IaC, and cloud: GitHub Actions, GitLab CI, Terraform, Kubernetes, and more, scored against the OWASP CI/CD Top 10."
 readme = "README.md"
 license = "MIT"
@@ -135,6 +135,11 @@ gcp = [
 ]
 
 [project.scripts]
+# Both spellings resolve to the same entry point. ``pipeline-check``
+# (hyphen) matches the PyPI/Docker/brand name users install, so typing
+# the name they just installed works; ``pipeline_check`` (underscore) is
+# kept for back-compat with every existing doc and script.
+pipeline-check = "pipeline_check.cli:main"
 pipeline_check = "pipeline_check.cli:main"
 
 [project.urls]

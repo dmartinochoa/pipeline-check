@@ -74,7 +74,7 @@ RULE = Rule(
         "repo's secrets in scope. Same shape with ``pip install -e "
         ".`` (setup.py) and ``make`` (Makefile).",
         "Cycode / Legit Security ``Poisoned Pipeline Execution`` "
-        "research (2022-2023) catalogued dozens of OSS repos where "
+        "research (2022-2023) cataloged dozens of OSS repos where "
         "a privileged-trigger workflow's build step executed PR-"
         "controlled config: ``setup.py``'s ``cmdclass``, "
         "``build.gradle``'s ``init.gradle``, ``pom.xml``'s ``<build>"

@@ -20,7 +20,7 @@ the source-control side of the chain.
 
 - **Controls in this standard:** 7
 - **Controls evidenced by at least one check:** 6 / 7
-- **Distinct checks evidencing this standard:** 626
+- **Distinct checks evidencing this standard:** 633
 - **Of those, autofixable with `--fix`:** 92
 
 _Severity levels (`CRITICAL` / `HIGH` / `MEDIUM` / `LOW` / `INFO`) follow the same scale across every provider and standard. See [How to read severity](README.md#how-to-read-severity) on the standards overview for the definitions._
@@ -35,9 +35,9 @@ Click a control ID to jump to the per-control section with the full check list. 
 | [`Build.L1.Provenance`](#ctrl-build-l1-provenance) | Build L1: Provenance describing how the artifact was produced is generated | 44 | 5H · 29M · 10L |
 | [`Build.L2.Hosted`](#ctrl-build-l2-hosted) | Build L2: Builds run on a hosted build platform (not a developer workstation) | 8 | 2H · 6M |
 | [`Build.L2.Signed`](#ctrl-build-l2-signed) | Build L2: Provenance is authenticated and cannot be forged by tenants | 43 | 8H · 32M · 3L |
-| [`Build.L3.Isolated`](#ctrl-build-l3-isolated) | Build L3: Build runs in an isolated environment not influenced by other builds | 187 | 28C · 113H · 41M · 5L |
+| [`Build.L3.Isolated`](#ctrl-build-l3-isolated) | Build L3: Build runs in an isolated environment not influenced by other builds | 190 | 30C · 114H · 41M · 5L |
 | [`Build.L3.Ephemeral`](#ctrl-build-l3-ephemeral) | Build L3: Build environment is ephemeral and provisioned fresh for each run | 21 | 2H · 14M · 5L |
-| [`Build.L3.NonFalsifiable`](#ctrl-build-l3-nonfalsifiable) | Build L3: Provenance cannot be falsified by the build's own tenant | 395 | 48C · 198H · 134M · 14L · 1I |
+| [`Build.L3.NonFalsifiable`](#ctrl-build-l3-nonfalsifiable) | Build L3: Provenance cannot be falsified by the build's own tenant | 399 | 48C · 202H · 134M · 14L · 1I |
 
 ## Filter at runtime
 
@@ -188,7 +188,7 @@ Provenance is cryptographically signed by the build platform; tenants of the pla
 
 Each build runs in a fresh environment without influence from concurrent or previous builds. No shared mutable state.
 
-**Evidenced by 187 checks** across 21 providers (AWS, Argo Workflows, Azure Cloud, Azure DevOps, Bitbucket, Buildkite, CircleCI, Cloud Build, CloudFormation, Dockerfile, Drone CI, GCP, GitHub Actions, GitLab CI, Helm, Jenkins, OCI manifest, SCM, Tekton, Terraform, npm).
+**Evidenced by 190 checks** across 21 providers (AWS, Argo Workflows, Azure Cloud, Azure DevOps, Bitbucket, Buildkite, CircleCI, Cloud Build, CloudFormation, Dockerfile, Drone CI, GCP, GitHub Actions, GitLab CI, Helm, Jenkins, OCI manifest, SCM, Tekton, Terraform, npm).
 
 | Check | Title | Severity | Provider | Fix |
 |-------|-------|----------|----------|-----|
@@ -209,6 +209,7 @@ Each build runs in a fresh environment without influence from concurrent or prev
 | [`ARGO-005`](../providers/argo.md#argo-005) | Argo input parameter interpolated unsafely in script / args | <span class="pg-sev pg-sev--critical">CRITICAL</span> | [Argo Workflows](../providers/argo.md) |  |
 | [`ARGO-008`](../providers/argo.md#argo-008) | Argo script source pipes remote install or disables TLS | <span class="pg-sev pg-sev--high">HIGH</span> | [Argo Workflows](../providers/argo.md) | <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> |
 | [`ARGO-015`](../providers/argo.md#argo-015) | Input artifact pulls from an insecure (non-HTTPS) URL | <span class="pg-sev pg-sev--high">HIGH</span> | [Argo Workflows](../providers/argo.md) |  |
+| [`ARGO-017`](../providers/argo.md#argo-017) | Argo resource template applies a manifest built from an untrusted parameter | <span class="pg-sev pg-sev--critical">CRITICAL</span> | [Argo Workflows](../providers/argo.md) |  |
 | [`ATTEST-001`](../providers/oci.md#attest-001) | SLSA provenance attests an untrusted builder identity | <span class="pg-sev pg-sev--high">HIGH</span> | [OCI manifest](../providers/oci.md) |  |
 | [`AZAPP-001`](../providers/azure_cloud.md) | App Service does not enforce HTTPS | <span class="pg-sev pg-sev--high">HIGH</span> | [Azure Cloud](../providers/azure_cloud.md) |  |
 | [`AZAPP-002`](../providers/azure_cloud.md) | App Service minimum TLS version below 1.2 | <span class="pg-sev pg-sev--high">HIGH</span> | [Azure Cloud](../providers/azure_cloud.md) |  |
@@ -330,6 +331,7 @@ Each build runs in a fresh environment without influence from concurrent or prev
 | [`GHA-108`](../providers/github.md#gha-108) | Sensitive workflow has no runtime egress control | <span class="pg-sev pg-sev--low">LOW</span> | [GitHub Actions](../providers/github.md) |  |
 | [`GHA-109`](../providers/github.md#gha-109) | harden-runner is not the first step in the job | <span class="pg-sev pg-sev--low">LOW</span> | [GitHub Actions](../providers/github.md) |  |
 | [`GHA-117`](../providers/github.md#gha-117) | IaC apply on an untrusted pull_request trigger | <span class="pg-sev pg-sev--critical">CRITICAL</span> | [GitHub Actions](../providers/github.md) |  |
+| [`GHA-118`](../providers/github.md#gha-118) | Untrusted content written to $GITHUB_ENV / $GITHUB_PATH | <span class="pg-sev pg-sev--high">HIGH</span> | [GitHub Actions](../providers/github.md) |  |
 | [`GL-002`](../providers/gitlab.md#gl-002) | Script injection via untrusted commit/MR context | <span class="pg-sev pg-sev--high">HIGH</span> | [GitLab CI](../providers/gitlab.md) |  |
 | [`GL-010`](../providers/gitlab.md#gl-010) | Multi-project pipeline ingests upstream artifact unverified | <span class="pg-sev pg-sev--critical">CRITICAL</span> | [GitLab CI](../providers/gitlab.md) |  |
 | [`GL-011`](../providers/gitlab.md#gl-011) | include: local file pulled in MR-triggered pipeline | <span class="pg-sev pg-sev--high">HIGH</span> | [GitLab CI](../providers/gitlab.md) |  |
@@ -343,6 +345,7 @@ Each build runs in a fresh environment without influence from concurrent or prev
 | [`GL-032`](../providers/gitlab.md#gl-032) | tags: interpolates untrusted CI variable | <span class="pg-sev pg-sev--high">HIGH</span> | [GitLab CI](../providers/gitlab.md) | <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> |
 | [`GL-033`](../providers/gitlab.md#gl-033) | Global before_script / after_script propagates taint to every job | <span class="pg-sev pg-sev--high">HIGH</span> | [GitLab CI](../providers/gitlab.md) |  |
 | [`GL-039`](../providers/gitlab.md#gl-039) | Docker-in-Docker service exposes an unauthenticated daemon | <span class="pg-sev pg-sev--high">HIGH</span> | [GitLab CI](../providers/gitlab.md) |  |
+| [`GL-041`](../providers/gitlab.md#gl-041) | IaC apply on an untrusted merge-request trigger | <span class="pg-sev pg-sev--critical">CRITICAL</span> | [GitLab CI](../providers/gitlab.md) |  |
 | [`HELM-003`](../providers/helm.md#helm-003) | Chart dependency declared on a non-HTTPS repository | <span class="pg-sev pg-sev--high">HIGH</span> | [Helm](../providers/helm.md) | <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> |
 | [`HELM-009`](../providers/helm.md#helm-009) | Chart home / sources URL uses a non-HTTPS scheme | <span class="pg-sev pg-sev--low">LOW</span> | [Helm](../providers/helm.md) |  |
 | [`JF-002`](../providers/jenkins.md#jf-002) | Script step interpolates attacker-controllable env var | <span class="pg-sev pg-sev--high">HIGH</span> | [Jenkins](../providers/jenkins.md) |  |
@@ -414,7 +417,7 @@ Build environments are provisioned per run and torn down after, so a compromised
 
 The build platform's provenance signature is bound to inputs the tenant cannot influence (e.g. a backend-controlled identity), so a tenant-controlled compromise cannot mint forged provenance.
 
-**Evidenced by 395 checks** across 26 providers (AWS, Argo Workflows, Azure Cloud, Azure DevOps, Bitbucket, Buildkite, CircleCI, Cloud Build, CloudFormation, Composer, Dockerfile, Drone CI, GCP, GitHub Actions, GitLab CI, Helm, Jenkins, NuGet, OCI manifest, PyPI, RubyGems, SCM, Tekton, Terraform, maven, npm).
+**Evidenced by 399 checks** across 26 providers (AWS, Argo Workflows, Azure Cloud, Azure DevOps, Bitbucket, Buildkite, CircleCI, Cloud Build, CloudFormation, Composer, Dockerfile, Drone CI, GCP, GitHub Actions, GitLab CI, Helm, Jenkins, NuGet, OCI manifest, PyPI, RubyGems, SCM, Tekton, Terraform, maven, npm).
 
 | Check | Title | Severity | Provider | Fix |
 |-------|-------|----------|----------|-----|
@@ -547,6 +550,7 @@ The build platform's provenance signature is bound to inputs the tenant cannot i
 | [`DF-027`](../providers/dockerfile.md#df-027) | ENV disables Python HTTPS certificate verification | <span class="pg-sev pg-sev--high">HIGH</span> | [Dockerfile](../providers/dockerfile.md) |  |
 | [`DF-028`](../providers/dockerfile.md#df-028) | ENV disables Git TLS certificate verification | <span class="pg-sev pg-sev--high">HIGH</span> | [Dockerfile](../providers/dockerfile.md) |  |
 | [`DF-029`](../providers/dockerfile.md#df-029) | ENV neuters Python requests CA bundle | <span class="pg-sev pg-sev--high">HIGH</span> | [Dockerfile](../providers/dockerfile.md) |  |
+| [`DF-031`](../providers/dockerfile.md#df-031) | COPY --from external image not pinned to sha256 digest | <span class="pg-sev pg-sev--high">HIGH</span> | [Dockerfile](../providers/dockerfile.md) |  |
 | [`DR-001`](../providers/drone.md#dr-001) | Step image not pinned to a digest | <span class="pg-sev pg-sev--high">HIGH</span> | [Drone CI](../providers/drone.md) |  |
 | [`DR-004`](../providers/drone.md#dr-004) | Literal credential in step environment / settings | <span class="pg-sev pg-sev--critical">CRITICAL</span> | [Drone CI](../providers/drone.md) |  |
 | [`DR-005`](../providers/drone.md#dr-005) | Plugin step uses a floating image tag | <span class="pg-sev pg-sev--high">HIGH</span> | [Drone CI](../providers/drone.md) |  |
@@ -688,6 +692,7 @@ The build platform's provenance signature is bound to inputs the tenant cannot i
 | [`GL-037`](../providers/gitlab.md#gl-037) | Pipeline disables Go module checksum / sum-db verification | <span class="pg-sev pg-sev--high">HIGH</span> | [GitLab CI](../providers/gitlab.md) |  |
 | [`GL-038`](../providers/gitlab.md#gl-038) | CI_DEBUG_TRACE / debug logging dumps secrets to the job log | <span class="pg-sev pg-sev--high">HIGH</span> | [GitLab CI](../providers/gitlab.md) |  |
 | [`GL-040`](../providers/gitlab.md#gl-040) | CI_JOB_TOKEN used for cross-project / remote access | <span class="pg-sev pg-sev--high">HIGH</span> | [GitLab CI](../providers/gitlab.md) |  |
+| [`GL-042`](../providers/gitlab.md#gl-042) | include: component pulls a CI/CD component without a pinned version | <span class="pg-sev pg-sev--high">HIGH</span> | [GitLab CI](../providers/gitlab.md) |  |
 | [`HELM-002`](../providers/helm.md#helm-002) | Chart.lock missing per-dependency digests | <span class="pg-sev pg-sev--high">HIGH</span> | [Helm](../providers/helm.md) | <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> |
 | [`HELM-003`](../providers/helm.md#helm-003) | Chart dependency declared on a non-HTTPS repository | <span class="pg-sev pg-sev--high">HIGH</span> | [Helm](../providers/helm.md) | <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> |
 | [`HELM-004`](../providers/helm.md#helm-004) | Chart dependency version is a range, not an exact pin | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [Helm](../providers/helm.md) |  |
@@ -705,6 +710,8 @@ The build platform's provenance signature is bound to inputs the tenant cannot i
 | [`IAM-006`](../providers/aws.md#iam-006) | Sensitive actions granted with wildcard Resource | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [AWS](../providers/aws.md) |  |
 | [`IAM-007`](../providers/aws.md#iam-007) | IAM user has access key older than 90 days | <span class="pg-sev pg-sev--high">HIGH</span> | [AWS](../providers/aws.md) |  |
 | [`IAM-008`](../providers/aws.md#iam-008) | OIDC-federated role trust policy missing audience or subject pin | <span class="pg-sev pg-sev--high">HIGH</span> | [AWS](../providers/aws.md) |  |
+| [`IAM-009`](../providers/terraform.md#iam-009) | Azure federated identity credential trusts a broad GitHub subject | <span class="pg-sev pg-sev--high">HIGH</span> | [Terraform](../providers/terraform.md) |  |
+| [`IAM-010`](../providers/terraform.md#iam-010) | GCP workload identity provider has no repository attribute condition | <span class="pg-sev pg-sev--high">HIGH</span> | [Terraform](../providers/terraform.md) |  |
 | [`JF-001`](../providers/jenkins.md#jf-001) | Shared library not pinned to a tag or commit | <span class="pg-sev pg-sev--high">HIGH</span> | [Jenkins](../providers/jenkins.md) |  |
 | [`JF-004`](../providers/jenkins.md#jf-004) | AWS auth uses long-lived access keys via withCredentials | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [Jenkins](../providers/jenkins.md) | <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> |
 | [`JF-005`](../providers/jenkins.md#jf-005) | Deploy stage missing manual `input` approval | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [Jenkins](../providers/jenkins.md) |  |

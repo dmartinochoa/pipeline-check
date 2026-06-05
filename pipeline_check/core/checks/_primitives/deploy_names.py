@@ -30,3 +30,22 @@ DEPLOY_CMD_RE = re.compile(
     r"|az\s+(?:webapp\s+deploy|functionapp\s+deploy|containerapp\s+update))",
     re.IGNORECASE,
 )
+
+# Unattended IaC *apply* regex: a command that realizes infrastructure
+# state from the repository's own IaC. Each one executes
+# attacker-influenceable code at apply time (a Terraform ``external`` data
+# source, a ``local-exec`` provisioner, a hijacked provider, a
+# CloudFormation custom resource), so applying untrusted IaC is arbitrary
+# code execution on the runner. Used by the "IaC apply on an untrusted
+# trigger" rules across providers (GHA-117, GL-041). ``terraform plan`` /
+# ``cdk diff`` are read-only and deliberately excluded (the apply / deploy
+# verbs are the high-confidence shape); the ``destroy`` variants are
+# included because they realize a state change just as apply does.
+IAC_APPLY_RE = re.compile(
+    r"\b(?:terraform|terragrunt|tofu)\s+(?:run-all\s+)?(?:apply|destroy)\b"
+    r"|\baws\s+cloudformation\s+(?:deploy|create-stack|update-stack|execute-change-set)\b"
+    r"|\bcdk\s+(?:deploy|destroy)\b"
+    r"|\bpulumi\s+(?:up|destroy)\b"
+    r"|\bsam\s+deploy\b",
+    re.IGNORECASE,
+)

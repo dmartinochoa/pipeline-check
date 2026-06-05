@@ -12,7 +12,10 @@ Shape:
 - One ``<testsuite>`` per check-ID *prefix* (e.g. GHA, IAM, CB) so CI
   UIs surface a "GitHub Actions rules: 3/12 failing" row rather than
   a single opaque suite. Groupings match how the provider docs
-  organize rules, so users already know how to navigate them.
+  organize rules, so users already know how to navigate them. Each
+  suite leads with a ``<properties>`` block carrying the run's
+  ``pipeline-check.grade`` and ``pipeline-check.score`` (the standard,
+  portable slot for that metadata; ``data-*`` attributes are not JUnit).
 - One ``<testcase>`` per Finding. Passing findings are empty self-
   closed elements. Failing findings nest a ``<failure>`` child whose
   ``message`` is the one-line description, ``type`` is the severity
@@ -29,6 +32,7 @@ from xml.sax.saxutils import escape as _xml_escape
 from xml.sax.saxutils import quoteattr as _xml_attr
 
 from .checks.base import Finding, inline_exploit
+from .report_view import ReportView
 from .scorer import ScoreResult
 
 
@@ -80,16 +84,16 @@ def report_junit(
     for f in findings:
         by_suite.setdefault(_prefix(f.check_id), []).append(f)
 
-    total = len(findings)
-    failures = sum(1 for f in findings if not f.passed)
+    view = ReportView(findings)
+    total = view.total
+    failures = view.failed_count
     grade = score_result.get("grade", "")
     score = f"{score_result.get('score', 0)}"
 
     out: list[str] = ['<?xml version="1.0" encoding="UTF-8"?>']
     out.append(
         f'<testsuites name="pipeline_check" '
-        f'tests="{total}" failures="{failures}" errors="0" '
-        f'data-grade={_xml_attr(grade)} data-score={_xml_attr(score)}>'
+        f'tests="{total}" failures="{failures}" errors="0">'
     )
     for suite, group in sorted(by_suite.items()):
         suite_total = len(group)
@@ -98,6 +102,22 @@ def report_junit(
             f'  <testsuite name={_xml_attr(suite)} '
             f'tests="{suite_total}" failures="{suite_failed}" errors="0">'
         )
+        # Carry the run-level grade / score as standard JUnit
+        # ``<properties>`` rather than non-standard ``data-*`` attributes
+        # on the root. ``data-*`` is an HTML convention, not JUnit, and
+        # strict schema-validating ingestors (some Azure DevOps / Jenkins
+        # publishers) reject unknown attributes; ``<properties>`` is the
+        # portable extension slot and must precede the test cases.
+        out.append('    <properties>')
+        out.append(
+            f'      <property name="pipeline-check.grade" '
+            f'value={_xml_attr(grade)} />'
+        )
+        out.append(
+            f'      <property name="pipeline-check.score" '
+            f'value={_xml_attr(score)} />'
+        )
+        out.append('    </properties>')
         for f in group:
             # JUnit's <testcase> uses ``name`` for the displayed label
             # and ``classname`` for the grouping-within-suite. We put

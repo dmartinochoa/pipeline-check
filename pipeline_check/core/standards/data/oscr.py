@@ -267,6 +267,7 @@ STANDARD = Standard(
         "GHA-001":  ["IA-11"],
         "GHA-025":  ["IA-11"],
         "GL-005":   ["IA-11"],
+        "GL-042":   ["IA-11"],
         "BB-001":   ["IA-11"],
         "ADO-001":  ["IA-11"],
         "ADO-025":  ["IA-11"],
@@ -291,6 +292,7 @@ STANDARD = Standard(
         "DR-001":   ["IA-11"],
         "DR-005":   ["IA-11"],
         "DF-001":   ["IA-11"],
+        "DF-031":   ["IA-11"],
         "GHA-089":  ["IA-11"],
         "GHA-094":  ["IA-11"],
         "GHA-095":  ["IA-11"],
@@ -328,6 +330,8 @@ STANDARD = Standard(
         "IAM-005":  ["IA-16"],
         "IAM-006":  ["IA-16", "LM-2"],
         "IAM-008":  ["IA-16"],
+        "IAM-009":  ["IA-16"],
+        "IAM-010":  ["IA-16"],
         "GCB-020":  ["IA-16"],
         # IA-17: Dependency confusion
         "PYPI-005": ["IA-17"],
@@ -356,6 +360,7 @@ STANDARD = Standard(
         "GHA-030":  ["IA-22"],
         "GL-031":   ["IA-22"],
         "GL-040":   ["IA-22"],# CI_JOB_TOKEN used for cross-project access
+        "GL-041":   ["EX-6"],# IaC apply on an untrusted MR trigger
         "BB-028":   ["IA-22"],
         "ADO-029":  ["IA-22"],
         "CC-031":   ["IA-22"],
@@ -377,6 +382,7 @@ STANDARD = Standard(
         # EX-6: Command injection (script injection in CI/CD)
         "GHA-003":  ["EX-6"],
         "GHA-117":  ["EX-6"],# IaC apply on untrusted PR trigger
+        "GHA-118":  ["EX-6"],# untrusted content into $GITHUB_ENV / $GITHUB_PATH
         "GHA-002":  ["EX-6", "PE-1"],
         "GL-002":   ["EX-6"],
         "BB-002":   ["EX-6"],
@@ -386,6 +392,7 @@ STANDARD = Standard(
         "BK-003":   ["EX-6"],
         "TKN-003":  ["EX-6"],
         "ARGO-005": ["EX-6"],
+        "ARGO-017": ["EX-6"],
         "DR-003":   ["EX-6"],
         "GCB-019":  ["EX-6"],
         "GCB-022":  ["EX-6"],
@@ -821,6 +828,7 @@ STANDARD = Standard(
         "K8S-016":  ["DE-4"],
         "K8S-022":  ["DE-4"],
         "K8S-023":  ["DE-4"],
+        "K8S-044":  ["DE-4"],
         "K8S-028":  ["PE-2"],
         "K8S-030":  ["PE-2"],
         "K8S-031":  ["DE-4"],

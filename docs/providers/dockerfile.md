@@ -46,7 +46,7 @@ analogue in other providers:
 
 ## What it covers
 
-30 checks · 7 have an autofix patch (``--fix``).
+31 checks · 7 have an autofix patch (``--fix``).
 
 | Check | Title | Severity | Fix |
 |-------|-------|----------|-----|
@@ -80,6 +80,7 @@ analogue in other providers:
 | [DF-028](#df-028) | ENV disables Git TLS certificate verification | <span class="pg-sev pg-sev--high">HIGH</span> |  |
 | [DF-029](#df-029) | ENV neuters Python requests CA bundle | <span class="pg-sev pg-sev--high">HIGH</span> |  |
 | [DF-030](#df-030) | ENV NODE_OPTIONS preloads code or opens an inspector | <span class="pg-sev pg-sev--medium">MEDIUM</span> |  |
+| [DF-031](#df-031) | COPY --from external image not pinned to sha256 digest | <span class="pg-sev pg-sev--high">HIGH</span> |  |
 
 ---
 
@@ -778,6 +779,26 @@ Drop the ``--require=`` / ``--import=`` and ``--inspect`` / ``--inspect-brk`` fl
 * ``--inspect`` / ``--inspect-brk`` opens the V8   inspector on port 9229 (or the configured port).   Anyone who can reach that port has full debugger   control: read process memory (incl. secrets), set   breakpoints, and execute arbitrary code in the   Node context.
 
 If your image needs an APM-style preload (Datadog, Sentry, OpenTelemetry), scope it to the specific service entrypoint via the agent's own startup wrapper rather than baking it into ``ENV NODE_OPTIONS``. The image-wide form applies to every Node process — including ``npm`` and ``yarn`` themselves — which broadens the attack surface unnecessarily.
+
+</div>
+
+</div>
+
+<div class="pg-rule pg-rule--high" markdown>
+
+## DF-031: COPY --from external image not pinned to sha256 digest { #df-031 }
+
+<div class="pg-rule__tags">
+<span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-3</span> <span class="pg-tag pg-tag--esf">ESF-S-PIN-DEPS</span> <span class="pg-tag pg-tag--esf">ESF-S-IMMUTABLE</span> <span class="pg-tag pg-tag--esf">ESF-S-VERIFY-DEPS</span> <span class="pg-tag pg-tag--cwe">CWE-829</span>
+</div>
+
+Fires when a ``COPY`` / ``ADD`` carries ``--from=<X>`` where ``X`` is an external image reference (it contains a registry / tag / digest separator and does not match an earlier ``FROM ... AS <stage>`` name or a numeric stage index) and ``X`` is not ``@sha256:``-pinned. DF-001 only inspects ``FROM``, so an unpinned ``COPY --from=<image>`` (a common way to pull ``cosign`` / ``kubectl`` / a CA bundle into the build) sidesteps it entirely. Reuses ``_primitives/image_pinning.classify`` so a floating tag and a pinned-but-mutable tag are both treated as unpinned, matching DF-001. A ``--from=<stage>`` (a named or numbered build stage) and a bare build-context name are not flagged.
+
+<div class="pg-rule__rec" markdown>
+
+**Recommended action**
+
+Pin the image in ``COPY --from=<image>`` (and ``ADD --from=<image>``) to an immutable ``@sha256:<digest>``, the same way DF-001 requires for ``FROM``. A ``--from`` that names an external image (not an earlier ``FROM ... AS <stage>``) pulls that image at build time and copies bytes out of it, so a floating tag lets the registry serve different content under the same reference, and a typosquatted / taken-over name ships an attacker's binary straight into the final image. Resolve the digest (``docker buildx imagetools inspect <ref>``) and let Renovate / Dependabot refresh it. For first-party content, copy from a named build stage instead.
 
 </div>
 

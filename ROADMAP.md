@@ -695,6 +695,292 @@ is summarized in the ``### Fixed`` block in ``CHANGELOG.md``.
 Larger items not yet scoped to a specific release. Landing order
 is open.
 
+### Full-project review findings (2026-06-05)
+
+A multi-angle review (architecture, code quality, correctness, test
+coverage, test quality, test performance, usability, runtime
+performance, design/extensibility) surfaced the backlog below. Items
+are grouped by priority. File:line anchors are included so each is
+pick-up-able in isolation. The quick-wins batch was implemented the
+same day; the rest are queued for a later pass.
+
+**Quick wins (done 2026-06-05 on ``dev``):**
+
+- ~~**Valid YAML merge-key config silently dropped** (correctness,
+  High).~~ ``_yaml_strict.py``'s ``DupKeyLoader`` flattened ``<<:``
+  merge keys before its duplicate-key guard, so a legal
+  ``<<: *anchor`` + local override tripped the guard; the callers in
+  ``config.py`` / ``gate.py`` swallow the error and return ``{}``, so
+  the whole config or ignore file was silently discarded (could quietly
+  weaken a CI gate). Fixed: validate only explicit (pre-flatten) keys,
+  then defer to stock merge-aware last-wins construction. Regression
+  test in ``tests/test_config.py::TestDuplicateKeys``.
+- ~~**``pipeline-check`` (hyphen) binary did not exist** (UX, High).~~
+  Only ``pipeline_check`` (underscore) was registered, but the package,
+  Docker image, and all docs use the hyphen, so typing the installed
+  name gave "command not found". Added the hyphen ``[project.scripts]``
+  entry alongside the underscore one.
+- ~~**American-English misses the enforced test skipped** (consistency).~~
+  Eight British spellings (inflections of catalog, flavor, serialize,
+  fulfill, neutralize, finalize) slid past ``test_english_variant.py``
+  because its boundary-anchored matches did not cover those forms. Fixed
+  the strings, regenerated the github/helm/scm provider docs, and
+  extended ``PAIRS`` + the CLAUDE.md table so they cannot recur.
+
+**High priority (queued):**
+
+- **Reporter base + external-schema validation.**
+  - ~~Schema validation (done 2026-06-05 on ``dev``):~~ SARIF and
+    CycloneDX output is now validated against the vendored official
+    SARIF 2.1.0 / CycloneDX 1.6 schemas (``tests/schemas/`` +
+    ``tests/schema_validators.py``, ``test_sarif_schema.py`` /
+    ``test_cyclonedx_schema.py``), and the JUnit output against its
+    structural contract (``test_junit_schema.py``). The JUnit reporter
+    was fixed in the same pass to carry grade/score as standard
+    ``<properties>`` instead of non-standard ``data-*`` attributes.
+  - ~~Reporter base (done 2026-06-05 on ``dev``):~~ ``core/report_view.py``
+    now owns the shared ordering (``report_sort_key`` /
+    ``failure_sort_key``) and the partition / counts (``ReportView``).
+    The terminal, markdown, JUnit, CodeQuality, and SARIF reporters were
+    refactored onto it, so the canonical failures-first /
+    severity-desc / check_id ordering and the pass/fail counts live in
+    one place instead of being re-derived (and able to drift) per format.
+  - Follow-up (queued, optional): a ``Reporter`` ``Protocol`` typing the
+    CLI's output-dispatch, moving the ``*_reporter.py`` modules into a
+    ``core/reporters/`` package, and folding the bespoke grouping
+    in ``threatmodel_reporter`` / ``pr_diff_reporter`` onto ``ReportView``
+    (they carry extra tiebreaks today). Lower value, mostly import churn.
+- **Honest status on degraded / unparseable scans.** A malformed YAML
+  file or a credential-less cloud scan used to print
+  ``Score 100/100 · Grade A · [gate] PASS`` next to a parse warning (and
+  AWS-no-creds showed Grade A beside ``14 failed``). A security tool must
+  not report a green grade when it parsed nothing.
+  - ~~Terminal report (done 2026-06-05 on ``dev``):~~ the headline now
+    renders ``Grade A (incomplete)`` in a caution style with an
+    ``incomplete scan: N file(s) could not be parsed ...`` status line
+    whenever a file failed to parse or a cloud module failed API access
+    (``reporter.py`` ``incomplete_reason`` +
+    ``cli.py:_scan_incomplete_reason``).
+  - Follow-up (queued): carry the same ``scan_status`` (files scanned /
+    unparsed / degraded) in the JSON and SARIF outputs so CI consumers
+    can detect an incomplete scan, and add an opt-in
+    ``--fail-on-parse-error`` so the gate can treat an unparseable file
+    as a failure rather than passing silently.
+- **Decompose ``cli.py`` (was 5,491 lines; ``scan()`` is 1,372 lines /
+  ~70 params).**
+  - ~~Core-seam extraction (done 2026-06-05 on ``dev``):~~ provider
+    autodetection moved to ``core/detect.py`` (Click-free, now shareable
+    by the LSP / MCP, with ``test_detect.py``), and the fix-application
+    engine (plan / write / apply / emit patches) moved to
+    ``core/fix_apply.py``. cli.py re-imports both under their old private
+    names, so the public surface is unchanged. cli.py is down to ~5,254
+    lines.
+  - ~~``scan()`` body seams, phase 1 (done 2026-06-05 on ``dev``):~~ the
+    eager / informational-command cluster (``--man`` / ``--list-*`` /
+    ``--serve`` / ``--explain`` / ``--annotate-fp`` / ``--config-check``,
+    etc.) became ``_run_informational_commands``, and the two validation
+    phases became ``_validate_scan_flags_early`` (pre-resolution:
+    config-strict, apply/fix, inventory mutual-exclusions, baseline
+    exists) and ``_validate_scan_inputs`` (post-resolution: html /
+    secret-regex / custom-rules / diff-base / pr-diff). ~263 lines of
+    ``scan()``'s body moved into three named, focused helpers; behavior
+    byte-identical (full CLI suite green). ``scan()`` body is now ~1,110
+    lines.
+  - ~~``scan()`` body seams, phase 2 / paths-bundle (done 2026-06-05 on
+    ``dev``):~~ the ~234-line per-provider path-resolution loop moved into
+    ``_resolve_provider_paths`` (loop body byte-identical) returning a
+    ``_ScanPaths`` dataclass, and the ``_scanner_kwargs`` construction now
+    reads the resolved paths from that bundle (``gha_path=_paths.gha_path``,
+    ...) instead of ~30 loose mutated locals. Full serial suite green.
+    ``scan()`` body is now ~907 lines.
+  - ~~``scan()`` body seams, phase 3 / output dispatch (done 2026-06-05 on
+    ``dev``):~~ the 8-way output-format if-chain moved into
+    ``_emit_scan_report`` (body byte-identical extraction), and inside it
+    the six single-artifact text formats (sarif / junit / markdown /
+    codequality / cyclonedx / threatmodel) became a ``text_reporters``
+    dispatch table of lazy thunks; terminal / json / html stay
+    special-cased (``both`` fires terminal + json, html writes its own
+    file). Full serial suite green; all 10 output paths smoke-tested.
+    ``scan()`` body is now ~810 lines (from ~1,372 at the start).
+  - Remaining (queued): the ``_scanner_kwargs`` dict build + (Multi)Scanner
+    construction (a ~30-key dict, no clean param reduction on its own).
+    Then split the subcommands into a ``cli/`` package. Also fold the LSP's
+    dead ``_DETECTORS`` table (``lsp/detection.py``) onto ``core/detect.py``.
+
+**Medium priority (queued):**
+
+- **Engine test-coverage gaps the 90% gate misses.** No
+  ``tests/test_scanner.py`` exists (the 969-line orchestrator is only
+  indirectly tested, ~46% in isolation). Add unit tests for
+  ``Scanner.run`` / ``MultiScanner.run`` dispatch, per-provider error
+  isolation, and the ``_verify_and_enrich_findings`` severity mutation.
+  Also untested: the ``pipeline_graph_builders`` resilience contract
+  (``pipeline_graph_builders.py:42-54``, "graph-building can't abort a
+  scan"), the gate's malformed-ignore-file fail-open branches
+  (``gate.py:285-329``), and the ``_MAX_YAML_BYTES`` 5 MB YAML-bomb guard
+  (``_yaml_files.py:40``). Consider bringing ``fleet.py`` + the rego
+  modules into the coverage measurement (currently ``omit``-ed in
+  ``.github/coveragerc-no-fleet``).
+- **Rule/finding emission ergonomics + the 95%-passing overhead.** Add
+  ``RULE.pass_finding()`` / ``fail_finding()`` helpers (the
+  ``Finding(check_id=RULE.id, title=RULE.title, ...)`` block is
+  copy-pasted across ~744 rule modules) and a
+  ``summarize_offenders(items, limit=5)`` helper (363 ``[:5]`` / 213
+  ``[:3]`` hand-rolled join-and-ellipsis tails, with an inconsistent
+  5-vs-3 cap). Separately, ~95% of emitted findings are passing and are
+  still fully post-processed (standards / confidence / FP-index /
+  metadata) before reporters discard them; skip that tail for
+  ``passed=True`` findings (``scanner.py:388``).
+- **Re-label the weak reachability tier.** The taint engine's phase-1
+  fallback returns ``confirmed_reachable=True`` when the only evidence is
+  two findings sharing a job name (``_reachability.py:154``), which is
+  co-location, not a proven path. Default the report badge to the
+  ``via_dataflow`` (proven) tier; label shared-job as
+  "co-located (unverified)".
+- **Test performance: ``test_english_variant.py`` re-reads the whole
+  repo once per word-pair** (~146 x ~2,600 files, the dominant cost in
+  the meta-test slice). Read every file once into a session/module
+  fixture and scan the cached text, or collapse the 146 params into one
+  all-patterns pass.
+- **Startup: defer heavy reporter/autofix imports.** ``cli.py:57,69``
+  imports ``junit_reporter`` (``xml.sax``, ~22 ms) and ``autofix``
+  (``difflib``, ~14 ms) at module top; move them into the format-dispatch
+  / ``--fix`` branches (~25 ms off every invocation). Also ship libyaml
+  in the published wheel/Docker image so ``yaml.CSafeLoader`` exists
+  (10-30x on the non-line YAML path).
+
+**Low priority (queued):**
+
+- **Reduce the rule-add bookkeeping tax.** ``new_rule.py --apply`` could
+  auto-bump the registry-derived counts (``EXPECTED_RULE_COUNTS``,
+  README / ``docs/index.md`` numbers), leaving only judgment steps to the
+  contributor.
+- **De-duplicate parallel registries.** Derive MCP ``_RULES_FQN``
+  (``mcp_server/tools.py:246``) from the provider registry; share one
+  overrides/severity parser between ``config.py:260`` and
+  ``policies.py:368``.
+- **Close substring-match seams.** ``is_known_installer``
+  (``_context.py:161``) matches bare hosts by substring
+  (``get.k3s.io`` would match ``evil-get.k3s.io.attacker.com``); use
+  ``endswith`` on the canonical segment, matching the OIDC-host lesson.
+- **ReDoS hardening.** Bound the lazy/greedy fills in
+  ``_primitives/remote_script_exec.py`` (``_SHELL_SUBSHELL_RE`` /
+  ``_PROCESS_SUBST_RE`` / ``_DOWNLOAD_EXEC_RE``); an 80k-char crafted
+  line backtracks ~11 s, and these run on PR-controlled CI files.
+- **Strengthen the rule-coverage meta-test.** ``test_rule_test_coverage.py``
+  text-greps for a ``Test<ID>`` class and counts empty stubs as covered;
+  AST-parse and require >=1 ``assert`` per rule-test class.
+- **Em-dash prose cleanup + minor tics.** ~914 lines use em-dashes as
+  pauses against the CLAUDE.md convention; a handful of banned words
+  remain (``robust``, ``comprehensive``, ``leverage`` in a few rule
+  docstrings). Consider a lint mirroring the English-variant test.
+- **De-stringify severity in ``pr_diff.py:187``** (use the canonical
+  ``severity_rank`` instead of a local ``_SEVERITY_ORDER`` dict), and
+  **delete the dead ``_DETECTORS`` table** in ``lsp/detection.py:20``.
+
+### High-impact provider checks (2026-06-04 cross-provider sweep)
+
+A multi-agent audit of all 33 providers for net-new, high-severity,
+statically-detectable, NOT-already-covered checks. Each was verified
+against the live rule pack (the closest existing rules are named so the
+novelty claim is auditable). Tiers reflect impact x cleanliness of the
+signal. **Tier 1 is being implemented now (this batch); the rest are
+queued here.**
+
+**Tier 1 (implementing now):**
+
+- ~~**ARGO-017: ``resource`` template applies an attacker-controlled
+  manifest** (CRITICAL).~~ A ``resource:`` template with ``action:
+  create``/``apply`` and ``{{inputs.parameters.X}}`` inside ``manifest:``
+  lets a caller inject arbitrary K8s *objects* (a privileged Pod, a
+  cluster-admin RoleBinding) applied by the workflow's ServiceAccount,
+  cluster takeover even without ARGO-016's cluster-admin SA, and ARGO-005's
+  shell-quoting defenses don't help (the sink is YAML, not a shell). Novel:
+  ``iter_containers`` never visits ``resource`` templates, so ARGO-002/005
+  are blind to it; TAINT-007 tracks cross-template outputs, not the
+  in-template ``resource.manifest`` sink.
+- ~~**NPM-019: ``overrides`` / ``resolutions`` rewrites a dependency to a
+  malicious version or source** (HIGH).~~ npm ``overrides`` (Yarn
+  ``resolutions``, ``pnpm.overrides``) force-replace any transitive
+  package's version/source ahead of the lockfile, from one line a reviewer
+  doesn't scan. Novel: every npm manifest rule routes through
+  ``iter_manifest_dependencies``, which only walks the ``*dependencies``
+  blocks.
+- ~~**NPM-020: ``.npmrc`` repoints the default / scoped registry to a
+  non-canonical host** (HIGH).~~ The npm config-layer dependency-confusion
+  rule, the one major ecosystem missing it (PYPI-016 / COMPOSER-012 /
+  CARGO-012 already ship the analog). Novel: NPM-007 reads the same
+  ``rc.settings`` but only the ``ignore-scripts`` key; NPM-003 treats any
+  HTTPS registry host as safe.
+- ~~**GHA-118: untrusted value written to ``$GITHUB_ENV`` / ``$GITHUB_PATH``**
+  (HIGH).~~ Appending PR/tool-controlled content to the env-control file
+  sets env (``LD_PRELOAD`` / ``NODE_OPTIONS`` / ``PATH``) for every later
+  step, escalating a benign later privileged step to RCE, the file-channel
+  successor to ``::set-env::``. Novel: GHA-038 only catches the old
+  ``ACTIONS_ALLOW_UNSECURE_COMMANDS`` stdout channel, GHA-019 only the
+  secret-exfil direction, and TAINT/GHA-003 only model
+  ``${{ }}`` + ``$GITHUB_OUTPUT``.
+
+**Tier 2 (queued, strong + clean):**
+
+- **OIDC-trust-in-IaC batch** (HIGH). The CI-to-cloud OIDC trust surface is
+  uncovered when an infra repo is scanned directly (GHA-062 lives in the
+  github provider, needs a sibling workflow, and covers only the AWS
+  org-segment ``repo:org/*`` + GCP org-prefix ``startsWith``). Three new
+  Terraform/CloudFormation checks: (a) ``azurerm_federated_identity_credential``
+  with an org-level / branch-less ``subject`` (zero Azure-WIF coverage
+  anywhere; gha062's own comment documents Azure as deliberately excluded);
+  (b) ``google_iam_workload_identity_pool_provider`` with no
+  ``attribute_condition`` (any repo on the planet can federate); (c) an AWS
+  OIDC trust whose ``sub`` ref-segment is ``:*`` / ``:pull_request`` (today
+  ``oidc_subject_pinned`` treats any non-bare-``*`` sub as pinned, so a fork
+  PR mints the prod-role token). Sharpen the shared ``_iam_policy`` helper.
+- **K8S-044: admission webhook fail-open / unscoped mutating webhook**
+  (HIGH). ``failurePolicy: Ignore`` lets an attacker DoS a security webhook
+  cluster-wide; a ``MutatingWebhookConfiguration`` with no
+  ``namespaceSelector`` matching pods is a tenant-escape primitive. Novel:
+  no rule reads ``admissionregistration.k8s.io`` objects.
+- **ARGOCD-019: ``ignoreDifferences`` / ``syncOptions: Validate=false``**
+  (HIGH). Tells Argo CD to stop reconciling a field; an attacker mutates the
+  live image / RBAC out-of-band while the dashboard stays "Synced/Healthy"
+  (stealth persistence). Novel: ARGOCD-003 only covers prune/selfHeal; the
+  per-Application ``spec.ignoreDifferences`` is unread (ARGOCD-018's comment
+  only refers to the ``argocd-cm`` key).
+- **DF-031: ``COPY --from=<external image>`` not digest-pinned** (HIGH).
+  Pulls an external image at build time, fully sidestepping DF-001's
+  ``FROM``-only digest check (DF-008's safe example even uses the named-stage
+  form). Resolve ``--from`` against earlier ``FROM ... AS <stage>`` names;
+  flag the image-ref case via the existing ``image_pinning`` classifier.
+- **GL-042: ``include: component:`` without a pinned version** (HIGH). A
+  mutable ``@~latest`` / ``@main`` component re-points to attacker pipeline
+  code run with ``CI_JOB_TOKEN``. Novel: GL-005 walks only ``project:`` /
+  ``remote:`` (GL-041 is the apply-RCE rule already on a branch).
+- **DEV-006: ``.vscode/settings.json`` exec-path key points at a repo-local
+  binary** (HIGH). ``git.path`` / ``python.defaultInterpreterPath`` /
+  ``*.path`` set to an in-repo binary is RCE the moment a dev opens the
+  clone. Novel: the devenv loader reads ``tasks.json`` but never
+  ``settings.json``.
+
+**Tier 3 (plausible, more scoping / FP risk):**
+
+- **TKN-016**: remote ``resolver`` (bundles / git / hub) ``taskRef`` /
+  ``pipelineRef`` not pinned to a digest / immutable revision (the executed
+  Task body is fetched remotely; TKN-001 pins the image, not the body).
+- **CC-034**: a reusable command / job ``parameters`` entry of ``type:
+  steps`` (or an enum-less ``string``) spliced into a ``run`` via
+  ``<< parameters.X >>`` (CC-002 explicitly treats ``<< parameters.* >>`` as
+  safe).
+- **GOMOD-013**: a ``toolchain`` directive naming a non-canonical /
+  downgraded Go toolchain (``GOTOOLCHAIN=auto`` downloads + runs it); FP
+  risk on normal forward bumps.
+- **COMPOSER-015**: a ``repositories`` ``path`` entry with a wildcard /
+  ``symlink: false`` that shadows a public package and runs its install
+  scripts (COMPOSER-011 carves out the ``path`` type).
+- **DR-017**: a secret-bearing step reachable on a ``promote`` / ``rollback``
+  event with no actor-trusted target gate (more runtime-trust dependent).
+- A ``docker build`` / ``docker/build-push-action`` PPE on an untrusted
+  trigger is better shipped as a *widening of GHA-044* than a new ID.
+
 ### ~~``--inline-explain`` across every reporter~~ shipped
 
 Shipped on ``dev``. The gate moved out of the terminal reporter into a
@@ -859,8 +1145,15 @@ mechanical):
   an unattended IaC apply (``terraform``/``terragrunt apply``/``destroy``,
   ``cloudformation deploy``, ``cdk deploy``, ``pulumi up``, ``sam
   deploy``). Distinct from GHA-111, which needs an AI agent in the loop.
-- Still open: the apply-RCE specifics of GitLab 91 (currently caught as
-  an ungated MR deploy via GL-004, not as apply-RCE).
+- ~~the apply-RCE specifics of GitLab 91~~ Shipped on ``dev`` as
+  **GL-041** (CRITICAL), the GitLab analog of GHA-117: an unattended IaC
+  apply in a job reachable from a merge-request pipeline (its own
+  ``rules:`` admit ``merge_request_event``, its legacy ``only:`` includes
+  ``merge_requests``, or it inherits a ``workflow:`` that admits MR
+  pipelines). GL-004 still catches the same job as a generic ungated
+  deploy (MEDIUM); GL-041 names the apply-RCE shape and raises it to
+  CRITICAL. The IaC-apply command vocabulary moved to the shared
+  ``_primitives/deploy_names.IAC_APPLY_RE``.
 - ~~Argo cluster-admin ServiceAccount (92)~~ Shipped on ``dev`` as
   **ARGO-016**: a name-based heuristic on ``serviceAccountName``
   (``cluster-admin`` / ``admin`` / ``root`` / ``superuser`` or a name
@@ -1304,7 +1597,7 @@ existing CI provider packs via a shared primitive than bolted onto the
 gomod loader. Landing order is open; the per-provider "strongest" picks
 above are the suggested first batch.
 
-### SDLC posture graph from fleet data
+### ~~SDLC posture graph from fleet data~~ shipped
 
 The fleet scanner and CXPC chain engine already compute cross-repo
 relationships. Expose the implied graph as a JSON graph and a
@@ -1320,8 +1613,19 @@ structured ``repos`` field (``[source, target]`` for cross-repo chains)
 that CXPC-001..004 populate, so the repo-to-repo edge is data, not just
 narrative prose; a chain endpoint outside the scanned fleet still lands
 as a node with ``scanned: false``. ``fleet.md`` gets a matching edge
-table. Still open: the lightweight HTML visualization (the JSON is the
-contract it would render).
+table.
+
+**HTML shipped.** ``fleet.html`` now renders that ``posture_graph`` as a
+self-contained, static SVG node-link diagram (``core/fleet_html.py``,
+written alongside ``fleet.json`` / ``fleet.md`` by ``_write_digest``):
+repos are grade-colored nodes, CXPC chains are severity-colored
+producer-to-consumer edges, unscanned endpoints are dashed / muted, and
+a ranked card grid above the graph shows each repo's grade / score /
+per-severity breakdown. The layout is computed in Python (deterministic
+circular placement, bidirectional pairs split by a perpendicular
+offset), so there is no JavaScript, no CDN, and no network; the shared
+``_design_tokens.css`` palette keeps it in sync with the HTML report and
+the docs site. This closes the item.
 
 ### AI agent pipeline risk rules
 

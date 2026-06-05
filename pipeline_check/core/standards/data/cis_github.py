@@ -163,6 +163,7 @@ STANDARD = Standard(
         "GHA-002": ["1.5.2"],                                 # pull_request_target + checkout PR head
         "GHA-003": ["1.5.2"],                                 # script injection via ${{ }}
         "GHA-117": ["1.5.2"],                                 # IaC apply on untrusted PR trigger
+        "GHA-118": ["1.5.2"],                                 # untrusted content into $GITHUB_ENV / $GITHUB_PATH
         "GHA-004": ["1.5.2"],                                 # GITHUB_TOKEN unrestricted
         "GHA-005": ["1.5.2", "1.5.1"],                        # long-lived AWS keys in workflow
         "GHA-019": ["1.5.2"],                                 # job-level permissions broader than needed
@@ -226,6 +227,7 @@ STANDARD = Standard(
         "TAINT-008": ["1.5.2"],
         # Dockerfile / IaC scanning, 1.5.3
         "DF-001":  ["1.5.3"],                                 # FROM image not digest-pinned
+        "DF-031":  ["1.5.3"],                                 # COPY --from external image not digest-pinned
         "DF-005":  ["1.5.3"],                                 # shell-eval pattern
         "DF-006":  ["1.5.3", "1.5.1"],                        # ENV credential literal
         "DF-008":  ["1.5.3"],                                 # docker --privileged

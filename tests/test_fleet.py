@@ -502,6 +502,7 @@ class TestRunFleet:
         assert (out_dir / "github/acme/beta/findings.json").exists()
         assert (out_dir / "fleet.json").exists()
         assert (out_dir / "fleet.md").exists()
+        assert (out_dir / "fleet.html").exists()
         fleet_json = json.loads(
             (out_dir / "fleet.json").read_text(encoding="utf-8"),
         )
@@ -599,6 +600,7 @@ class TestFleetCli:
         assert result.exit_code == 0, result.output
         assert "1 OK" in result.output
         assert (out_dir / "fleet.json").exists()
+        assert (out_dir / "fleet.html").exists()
         assert (out_dir / "github/acme/alpha/findings.json").exists()
 
     def test_fleet_cli_errors_on_missing_repos_file(

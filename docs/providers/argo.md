@@ -31,7 +31,7 @@ All other flags (`--output`, `--severity-threshold`, `--checks`,
 
 ## What it covers
 
-17 checks · 2 have an autofix patch (``--fix``).
+18 checks · 2 have an autofix patch (``--fix``).
 
 | Check | Title | Severity | Fix |
 |-------|-------|----------|-----|
@@ -51,6 +51,7 @@ All other flags (`--output`, `--severity-threshold`, `--checks`,
 | [ARGO-014](#argo-014) | Argo template script runs unpinned package install | <span class="pg-sev pg-sev--medium">MEDIUM</span> |  |
 | [ARGO-015](#argo-015) | Input artifact pulls from an insecure (non-HTTPS) URL | <span class="pg-sev pg-sev--high">HIGH</span> |  |
 | [ARGO-016](#argo-016) | Workflow bound to a cluster-admin / over-privileged ServiceAccount | <span class="pg-sev pg-sev--critical">CRITICAL</span> |  |
+| [ARGO-017](#argo-017) | Argo resource template applies a manifest built from an untrusted parameter | <span class="pg-sev pg-sev--critical">CRITICAL</span> |  |
 | [TAINT-007](#taint-007) | Untrusted input flows across templates via Argo ``outputs.parameters`` | <span class="pg-sev pg-sev--high">HIGH</span> |  |
 
 ---
@@ -394,6 +395,26 @@ Fires when a Workflow / CronWorkflow sets ``spec.serviceAccountName`` to a name 
 **Recommended action**
 
 Don't run a Workflow as a cluster-admin / superuser ServiceAccount. Create a dedicated SA scoped to the workflow's namespace and bind it (via a namespaced ``Role`` / ``RoleBinding``) to only the verbs and resources the workflow needs. A workflow running as ``cluster-admin`` lets any step, or any code injected into a step, use the automounted token to act cluster-wide: read every secret, schedule privileged pods on any node, and grant itself more roles.
+
+</div>
+
+</div>
+
+<div class="pg-rule pg-rule--critical" markdown>
+
+## ARGO-017: Argo resource template applies a manifest built from an untrusted parameter { #argo-017 }
+
+<div class="pg-rule__tags">
+<span class="pg-sev pg-sev--critical">CRITICAL</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-4</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-2</span> <span class="pg-tag pg-tag--esf">ESF-D-INJECTION</span> <span class="pg-tag pg-tag--cwe">CWE-94</span> <span class="pg-tag pg-tag--cwe">CWE-77</span>
+</div>
+
+Fires when a `resource` template with `action: create` / `apply` / `patch` / `replace` has an inline `manifest:` string containing a `{{...parameters...}}` or `{{item...}}` token. The manifest is K8s-object injection, not shell injection, so it fires regardless of quoting (ARGO-005's quoting carve-out does not apply) and `iter_containers` never visits `resource` templates, so no other rule sees this sink. A caller who can set the parameter (a webhook / Sensor, or anyone with Submit on the template) creates attacker-chosen objects, e.g. a privileged Pod or a cluster-admin binding, under the workflow's SA.
+
+<div class="pg-rule__rec" markdown>
+
+**Recommended action**
+
+Don't interpolate `{{inputs.parameters.X}}` / `{{workflow.parameters.X}}` / `{{item}}` into a `resource` template's `manifest:` when `action:` is `create` / `apply` / `patch` / `replace`. Argo substitutes the value into the manifest text before `kubectl` applies it, so a parameter carrying YAML injects arbitrary fields or whole objects, applied by the workflow's ServiceAccount. Build the object from a fixed template and pass only scalar leaf values through `kubectl` field args, restrict who can set the parameter, and scope the ServiceAccount's RBAC to the exact objects the workflow needs.
 
 </div>
 

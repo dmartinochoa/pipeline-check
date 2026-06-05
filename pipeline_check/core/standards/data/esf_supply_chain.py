@@ -108,6 +108,7 @@ STANDARD = Standard(
         "GHA-002":  ["ESF-D-INJECTION", "ESF-D-BUILD-ENV"],
         "GHA-003":  ["ESF-D-INJECTION"],
         "GHA-117":  ["ESF-D-INJECTION"],# IaC apply on untrusted PR trigger
+        "GHA-118":  ["ESF-D-INJECTION"],# untrusted content into $GITHUB_ENV / $GITHUB_PATH
         "GHA-004":  ["ESF-C-LEAST-PRIV"],
         "GHA-005":  ["ESF-D-TOKEN-HYGIENE"],
         "GHA-006":  ["ESF-D-SIGN-ARTIFACTS"],
@@ -142,6 +143,7 @@ STANDARD = Standard(
         "GL-003":   ["ESF-D-SECRETS"],
         "GL-004":   ["ESF-C-APPROVAL", "ESF-C-ENV-SEP"],
         "GL-005":   ["ESF-S-PIN-DEPS", "ESF-S-TRUSTED-REG"],
+        "GL-042":   ["ESF-S-PIN-DEPS", "ESF-S-TRUSTED-REG"],    # include: component unpinned
         "GL-006":   ["ESF-D-SIGN-ARTIFACTS"],
         "GL-007":   ["ESF-D-SBOM"],
         "GL-008":   ["ESF-D-SECRETS"],
@@ -319,6 +321,7 @@ STANDARD = Standard(
         "ARGO-016": ["ESF-C-LEAST-PRIV"],                          # cluster-admin / over-privileged ServiceAccount
         "ARGO-004": ["ESF-D-PRIV-BUILD", "ESF-D-BUILD-ENV"],       # hostPath / namespaces
         "ARGO-005": ["ESF-D-INJECTION"],                           # parameter injection
+        "ARGO-017": ["ESF-D-INJECTION"],                           # resource template manifest injection
         "ARGO-006": ["ESF-D-SECRETS"],                             # leaked creds
         "ARGO-007": ["ESF-D-BUILD-TIMEOUT"],                       # no activeDeadlineSeconds
         "ARGO-008": ["ESF-S-VERIFY-DEPS", "ESF-S-TRUSTED-REG"],    # remote install / TLS
@@ -350,6 +353,7 @@ STANDARD = Standard(
         "HELM-017": ["ESF-S-VERIFY-DEPS"],  # tpl of an untrusted .Values value
         # ── Dockerfile (image build supply chain) ──────────────────
         "DF-001": ["ESF-S-PIN-DEPS", "ESF-S-VERIFY-DEPS"],         # FROM not digest-pinned
+        "DF-031": ["ESF-S-PIN-DEPS", "ESF-S-VERIFY-DEPS"],         # COPY --from external image not digest-pinned
         "DF-002": ["ESF-D-PRIV-BUILD"],                            # runs as root
         "DF-003": ["ESF-S-VERIFY-DEPS"],                           # ADD remote no integrity
         "DF-004": ["ESF-S-VERIFY-DEPS", "ESF-S-TRUSTED-REG"],      # curl-pipe
@@ -475,6 +479,8 @@ STANDARD = Standard(
         "ECR-007":  ["ESF-S-VULN-MGMT"],            # Inspector v2 enhanced scanning
         "IAM-007":  ["ESF-D-TOKEN-HYGIENE"],        # access key > 90 days
         "IAM-008":  ["ESF-D-TOKEN-HYGIENE", "ESF-C-LEAST-PRIV"],   # OIDC trust missing aud/sub pin
+        "IAM-009":  ["ESF-D-TOKEN-HYGIENE", "ESF-C-LEAST-PRIV"],   # Azure WIF broad subject
+        "IAM-010":  ["ESF-D-TOKEN-HYGIENE", "ESF-C-LEAST-PRIV"],   # GCP WIF no repo condition
         "PBAC-003": ["ESF-D-BUILD-ENV"],            # SG 0.0.0.0/0 egress
         "PBAC-005": ["ESF-C-LEAST-PRIV"],           # stage roles mirror pipeline
         "KMS-001":  ["ESF-C-ARTIFACT-AUTHZ"],       # CMK rotation disabled
@@ -573,6 +579,7 @@ STANDARD = Standard(
         "GL-030":   ["ESF-S-PIN-DEPS", "ESF-S-VERIFY-DEPS"],   # trigger: include w/o pinned ref
         "GL-031":   ["ESF-D-TOKEN-HYGIENE", "ESF-C-APPROVAL"],  # id_tokens missing audience pin
         "GL-040":   ["ESF-D-TOKEN-HYGIENE", "ESF-C-APPROVAL"],  # CI_JOB_TOKEN used for cross-project access
+        "GL-041":   ["ESF-D-INJECTION"],  # IaC apply on an untrusted MR trigger
         "GL-032":   ["ESF-D-INJECTION"],            # tags interpolates untrusted
         "GL-033":   ["ESF-D-INJECTION"],            # global before_script taint
         "GL-034":   ["ESF-S-VERIFY-DEPS"],          # npm install without audit signatures
@@ -616,6 +623,7 @@ STANDARD = Standard(
         # ── ArgoCD extended pack ──
         "ARGOCD-010": ["ESF-S-PIN-DEPS"],
         "ARGOCD-017": ["ESF-S-PIN-DEPS", "ESF-C-LEAST-PRIV"],  # in-cluster mutable source
+        "ARGOCD-019": ["ESF-C-LEAST-PRIV"],  # drift detection disabled on a sensitive field
         "ARGOCD-016": ["ESF-S-VERIFY-DEPS"],  # Helm valueFiles from a remote URL
         "ARGOCD-018": ["ESF-C-LEAST-PRIV"],  # custom resource health / action Lua
         "ARGOCD-011": ["ESF-C-LEAST-PRIV"],
@@ -693,6 +701,8 @@ STANDARD = Standard(
         "NPM-015":  ["ESF-S-VERIFY-DEPS"],
         "NPM-017":  ["ESF-S-VERIFY-DEPS"],  # provenance built from a non-release ref
         "NPM-018":  ["ESF-S-VERIFY-DEPS"],  # latest release from a new publisher
+        "NPM-019":  ["ESF-S-VERIFY-DEPS"],  # overrides / resolutions redirect
+        "NPM-020":  ["ESF-S-TRUSTED-REG", "ESF-S-VERIFY-DEPS"],  # .npmrc registry repoint
         "NPM-016":  ["ESF-S-VERIFY-DEPS"],
         "PYPI-008": ["ESF-S-VERIFY-DEPS"],
         "PYPI-009": ["ESF-S-VERIFY-DEPS"],
@@ -890,6 +900,7 @@ STANDARD = Standard(
         "K8S-021":  ["ESF-C-LEAST-PRIV"],           # wildcard RBAC verbs
         "K8S-022":  ["ESF-D-BUILD-ENV"],            # SSH service exposed
         "K8S-023":  ["ESF-D-PRIV-BUILD"],           # PSA enforce missing
+        "K8S-044":  ["ESF-D-PRIV-BUILD"],           # admission webhook fail-open / unscoped mutating
         "K8S-024":  ["ESF-C-DEPLOY-MON"],           # missing health probes
         "K8S-025":  ["ESF-D-BUILD-ENV"],            # system priority class
         "K8S-026":  ["ESF-D-BUILD-ENV"],            # LB without source ranges
@@ -1036,6 +1047,7 @@ STANDARD = Standard(
         "GCKMS-006": ["ESF-C-ARTIFACT-AUTHZ"],             # imported key
         # Developer-environment auto-execution
         "DEV-001":   ["ESF-D-INJECTION"],                  # vscode folderOpen task
+        "DEV-006":   ["ESF-D-INJECTION"],                  # vscode settings exec-path / env injection
         "DEV-002":   ["ESF-D-INJECTION"],                  # devcontainer lifecycle
         "DEV-003":   ["ESF-D-INJECTION"],                  # committed claude hook
         "DEV-004":   ["ESF-S-VERIFY-DEPS", "ESF-D-INJECTION"],  # remote fetch+exec

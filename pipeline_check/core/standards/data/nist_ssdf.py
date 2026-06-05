@@ -103,6 +103,8 @@ STANDARD = Standard(
         "IAM-006":  ["PO.5.1"],
         "IAM-007":  ["PS.1.1"],                        # access key > 90 days
         "IAM-008":  ["PO.5.1", "PS.1.1"],              # OIDC trust missing aud/sub pin
+        "IAM-009":  ["PO.5.1", "PS.1.1"],              # Azure WIF broad subject
+        "IAM-010":  ["PO.5.1", "PS.1.1"],              # GCP WIF no repo condition
         # PBAC
         "PBAC-001": ["PO.5.1", "PO.3.2"],              # no VPC for CodeBuild
         "PBAC-002": ["PO.5.1", "PO.3.2"],              # shared service role
@@ -149,6 +151,7 @@ STANDARD = Standard(
         "GHA-002":  ["PO.5.1", "PW.9.1"],              # pull_request_target with PR head
         "GHA-003":  ["PW.6.1", "PW.9.1"],              # script injection
         "GHA-117":  ["PW.6.1", "PW.9.1"],              # IaC apply on untrusted PR trigger
+        "GHA-118":  ["PW.6.1", "PW.9.1"],              # untrusted content into $GITHUB_ENV / $GITHUB_PATH
         "GHA-004":  ["PO.5.1"],                        # no explicit permissions
         "GHA-005":  ["PS.1.1"],                        # long-lived AWS keys
         "GHA-006":  ["PS.2.1", "PS.3.2"],              # unsigned artifacts
@@ -247,6 +250,7 @@ STANDARD = Standard(
         "GL-003":   ["PS.1.1"],
         "GL-004":   ["PO.5.1"],
         "GL-005":   ["PW.4.1", "PW.4.4"],
+        "GL-042":   ["PW.4.1", "PW.4.4"],    # include: component unpinned
         "GL-006":   ["PS.2.1", "PS.3.2"],              # unsigned artifacts
         "GL-007":   ["PS.3.2"],                        # no SBOM
         "GL-008":   ["PS.1.1"],                        # literal secrets
@@ -275,6 +279,7 @@ STANDARD = Standard(
         "GL-030":   ["PW.4.1", "PW.4.4"],              # trigger: include w/o pinned ref
         "GL-031":   ["PO.5.1", "PS.1.1"],              # id_tokens missing audience pin
         "GL-040":   ["PO.5.1", "PS.1.1"],              # CI_JOB_TOKEN used for cross-project access
+        "GL-041":   ["PW.6.1", "PW.9.1"],              # IaC apply on an untrusted MR trigger
         "GL-032":   ["PW.6.1", "PW.9.1"],              # tags interpolates untrusted
         "GL-033":   ["PO.5.1", "PW.9.1"],              # global before_script taint
         "GL-034":   ["PW.4.4"],                        # npm install without audit signatures
@@ -471,6 +476,8 @@ STANDARD = Standard(
         "ARGO-016": ["PO.5.1"],                        # cluster-admin / over-privileged ServiceAccount
         "ARGO-004": ["PO.5.1", "PW.9.1"],              # hostPath / host namespaces
         "ARGO-005": ["PW.6.1", "PW.9.1"],              # parameter injection in script
+        "ARGO-017": ["PW.6.1", "PW.9.1"],              # resource template manifest injection
+        "ARGOCD-019": ["PW.9.1"],                      # drift detection disabled on a sensitive field
         "ARGO-006": ["PS.1.1"],                        # leaked creds in env / param
         "ARGO-007": ["PO.5.2", "PW.9.1"],              # missing activeDeadlineSeconds
         "ARGO-008": ["PW.4.1", "PW.4.4"],              # remote install / TLS bypass
@@ -487,6 +494,7 @@ STANDARD = Standard(
         # PW.9.1 (env separation, secure defaults); credential-shape
         # rules tie to PS.1.1 (least-privilege code storage).
         "DF-001":   ["PW.4.1", "PW.4.4"],              # FROM not digest-pinned
+        "DF-031":   ["PW.4.1", "PW.4.4"],              # COPY --from external image not digest-pinned
         "DF-002":   ["PO.5.1", "PW.9.1"],              # runs as root
         "DF-003":   ["PW.4.4", "PS.2.1"],              # ADD remote, no integrity
         "DF-004":   ["PW.4.1", "PW.4.4"],              # curl-pipe in RUN
@@ -851,6 +859,7 @@ STANDARD = Standard(
         "K8S-021":  ["PO.5.1"],                        # wildcard RBAC verbs
         "K8S-022":  ["PO.5.1", "PW.9.1"],              # Service exposes SSH
         "K8S-023":  ["PW.9.1"],                        # PSA enforce label missing
+        "K8S-044":  ["PW.9.1"],                        # admission webhook fail-open / unscoped mutating
         "K8S-024":  ["PO.3.3"],                        # missing readiness / liveness probes
         "K8S-025":  ["PO.5.1"],                        # system priority class
         "K8S-026":  ["PO.5.1"],                        # LB without source ranges
@@ -1005,6 +1014,7 @@ STANDARD = Standard(
         "GCKMS-006": ["PS.1.1"],                       # imported key
         # Developer-environment auto-execution
         "DEV-001":   ["PW.6.1", "PW.9.1"],
+        "DEV-006":   ["PW.6.1", "PW.9.1"],
         "DEV-002":   ["PW.6.1", "PW.9.1"],
         "DEV-003":   ["PW.6.1", "PW.9.1"],
         "DEV-004":   ["PW.4.1", "PW.4.4"],

@@ -33,8 +33,8 @@ from .checks.base import (
     Severity,
     inline_exploit,
     markdown_code_fence,
-    severity_rank,
 )
+from .report_view import ReportView
 from .scorer import ScoreResult
 
 _SEVERITY_EMOJI: dict[Severity, str] = {
@@ -106,15 +106,13 @@ def report_markdown(
     """
     grade = score_result.get("grade", "?")
     score_value = score_result.get("score", 0)
-    failed = sum(1 for f in findings if not f.passed)
-    passed = sum(1 for f in findings if f.passed)
+    view = ReportView(findings)
+    failed = view.failed_count
+    passed = view.passed_count
 
     grade_emoji = _GRADE_EMOJI.get(grade, "")
-    # Sort: failures first, then by severity rank desc, then by check_id.
-    sorted_findings = sorted(
-        findings,
-        key=lambda f: (f.passed, -severity_rank(f.severity), f.check_id),
-    )
+    # Failures first, then by severity rank desc, then by check_id.
+    sorted_findings = view.ordered
     fails = [f for f in sorted_findings if not f.passed]
     passes = [f for f in sorted_findings if f.passed]
 

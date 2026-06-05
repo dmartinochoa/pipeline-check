@@ -371,7 +371,7 @@ def _iam_oidc(ctx: CloudFormationContext) -> list[Finding]:
             if not oidc_audience_pinned(stmt):
                 offending.append(f"stmt[{idx}]({host}): missing :aud condition")
             elif not oidc_subject_pinned(stmt):
-                offending.append(f"stmt[{idx}]({host}): missing :sub condition")
+                offending.append(f"stmt[{idx}]({host}): :sub missing or too broad")
         if not matched:
             continue
         out.append(Finding(

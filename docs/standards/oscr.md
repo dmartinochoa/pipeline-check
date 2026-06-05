@@ -25,7 +25,7 @@ axis.
 
 - **Controls in this standard:** 86
 - **Controls evidenced by at least one check:** 61 / 86
-- **Distinct checks evidencing this standard:** 654
+- **Distinct checks evidencing this standard:** 662
 - **Of those, autofixable with `--fix`:** 105
 
 _Severity levels (`CRITICAL` / `HIGH` / `MEDIUM` / `LOW` / `INFO`) follow the same scale across every provider and standard. See [How to read severity](README.md#how-to-read-severity) on the standards overview for the definitions._
@@ -62,12 +62,12 @@ Click a control ID to jump to the per-control section with the full check list. 
 | [`IA-8`](#ctrl-ia-8) | Exposed webhook | 1 | 1H |
 | [`IA-9`](#ctrl-ia-9) | Compromised token | 20 | 4C · 9H · 7M |
 | [`IA-10`](#ctrl-ia-10) | Vulnerable CI/CD plugins | 11 | 1C · 10H |
-| [`IA-11`](#ctrl-ia-11) | Vulnerable CI/CD template | 61 | 32H · 24M · 5L |
+| [`IA-11`](#ctrl-ia-11) | Vulnerable CI/CD template | 63 | 34H · 24M · 5L |
 | [`IA-12`](#ctrl-ia-12) | Exposed internal API | 0 | — |
 | [`IA-13`](#ctrl-ia-13) | Vulnerability in third-party dependency | 50 | 8C · 8H · 34M |
 | [`IA-14`](#ctrl-ia-14) | Compromised developer workstation | 0 | — |
 | [`IA-15`](#ctrl-ia-15) | Exposed database | 0 | — |
-| [`IA-16`](#ctrl-ia-16) | Compromised service account | 8 | 1C · 5H · 2M |
+| [`IA-16`](#ctrl-ia-16) | Compromised service account | 10 | 1C · 7H · 2M |
 | [`IA-17`](#ctrl-ia-17) | Dependency confusion | 8 | 6H · 2M |
 | [`IA-18`](#ctrl-ia-18) | Permissive network access | 10 | 1C · 5H · 4M |
 | [`IA-19`](#ctrl-ia-19) | Repojacking | 2 | 2H |
@@ -81,7 +81,7 @@ Click a control ID to jump to the per-control section with the full check list. 
 | [`EX-3`](#ctrl-ex-3) | IDE | 0 | — |
 | [`EX-4`](#ctrl-ex-4) | Runtime backdoor | 0 | — |
 | [`EX-5`](#ctrl-ex-5) | Package manager | 0 | — |
-| [`EX-6`](#ctrl-ex-6) | Command injection | 54 | 6C · 41H · 6M · 1L |
+| [`EX-6`](#ctrl-ex-6) | Command injection | 57 | 8C · 42H · 6M · 1L |
 | [`EX-7`](#ctrl-ex-7) | SQL injection | 0 | — |
 | [`EX-8`](#ctrl-ex-8) | Cross-site scripting | 0 | — |
 | [`EX-9`](#ctrl-ex-9) | Malicious artifact execution | 5 | 5C |
@@ -101,7 +101,7 @@ Click a control ID to jump to the per-control section with the full check list. 
 | [`DE-1`](#ctrl-de-1) | Bypass review using admin permission | 34 | 9H · 23M · 2L |
 | [`DE-2`](#ctrl-de-2) | SaaS sprawl | 1 | 1M |
 | [`DE-3`](#ctrl-de-3) | Misconfigured audit log settings | 33 | 3H · 7M · 7L · 16I |
-| [`DE-4`](#ctrl-de-4) | Misconfiguration of security measures | 85 | 1C · 13H · 50M · 21L |
+| [`DE-4`](#ctrl-de-4) | Misconfiguration of security measures | 86 | 1C · 14H · 50M · 21L |
 | [`DE-5`](#ctrl-de-5) | Malicious compiler / interpreter | 0 | — |
 | [`DE-6`](#ctrl-de-6) | Misconfigured traffic log settings | 2 | 1M · 1L |
 | [`CA-1`](#ctrl-ca-1) | Passwords in application logs | 1 | 1M |
@@ -404,7 +404,7 @@ _No checks in this scanner currently evidence this control. Open an issue if you
 
 ### IA-11: Vulnerable CI/CD template { #ctrl-ia-11 }
 
-**Evidenced by 61 checks** across 19 providers (AWS, Argo Workflows, Azure DevOps, Bitbucket, Buildkite, CircleCI, Cloud Build, Dockerfile, Drone CI, GitHub Actions, GitLab CI, Helm, Jenkins, Kubernetes, NuGet, PyPI, Tekton, maven, npm).
+**Evidenced by 63 checks** across 19 providers (AWS, Argo Workflows, Azure DevOps, Bitbucket, Buildkite, CircleCI, Cloud Build, Dockerfile, Drone CI, GitHub Actions, GitLab CI, Helm, Jenkins, Kubernetes, NuGet, PyPI, Tekton, maven, npm).
 
 | Check | Title | Severity | Provider | Fix |
 |-------|-------|----------|----------|-----|
@@ -428,6 +428,7 @@ _No checks in this scanner currently evidence this control. Open an issue if you
 | [`DF-003`](../providers/dockerfile.md#df-003) | ADD pulls remote URL without integrity verification | <span class="pg-sev pg-sev--high">HIGH</span> | [Dockerfile](../providers/dockerfile.md) |  |
 | [`DF-009`](../providers/dockerfile.md#df-009) | ADD used where COPY would suffice | <span class="pg-sev pg-sev--low">LOW</span> | [Dockerfile](../providers/dockerfile.md) |  |
 | [`DF-010`](../providers/dockerfile.md#df-010) | apt-get dist-upgrade / upgrade pulls unknown package versions | <span class="pg-sev pg-sev--low">LOW</span> | [Dockerfile](../providers/dockerfile.md) |  |
+| [`DF-031`](../providers/dockerfile.md#df-031) | COPY --from external image not pinned to sha256 digest | <span class="pg-sev pg-sev--high">HIGH</span> | [Dockerfile](../providers/dockerfile.md) |  |
 | [`DR-001`](../providers/drone.md#dr-001) | Step image not pinned to a digest | <span class="pg-sev pg-sev--high">HIGH</span> | [Drone CI](../providers/drone.md) |  |
 | [`DR-005`](../providers/drone.md#dr-005) | Plugin step uses a floating image tag | <span class="pg-sev pg-sev--high">HIGH</span> | [Drone CI](../providers/drone.md) |  |
 | [`DR-008`](../providers/drone.md#dr-008) | Step uses ``pull: never`` (skips registry verification) | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [Drone CI](../providers/drone.md) |  |
@@ -447,6 +448,7 @@ _No checks in this scanner currently evidence this control. Open an issue if you
 | [`GL-009`](../providers/gitlab.md#gl-009) | Image pinned to version tag rather than sha256 digest | <span class="pg-sev pg-sev--low">LOW</span> | [GitLab CI](../providers/gitlab.md) |  |
 | [`GL-021`](../providers/gitlab.md#gl-021) | Package install without lockfile enforcement | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [GitLab CI](../providers/gitlab.md) | <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> |
 | [`GL-028`](../providers/gitlab.md#gl-028) | services: image not pinned | <span class="pg-sev pg-sev--high">HIGH</span> | [GitLab CI](../providers/gitlab.md) |  |
+| [`GL-042`](../providers/gitlab.md#gl-042) | include: component pulls a CI/CD component without a pinned version | <span class="pg-sev pg-sev--high">HIGH</span> | [GitLab CI](../providers/gitlab.md) |  |
 | [`HELM-001`](../providers/helm.md#helm-001) | Chart.yaml declares legacy apiVersion: v1 | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [Helm](../providers/helm.md) | <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> |
 | [`HELM-004`](../providers/helm.md#helm-004) | Chart dependency version is a range, not an exact pin | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [Helm](../providers/helm.md) |  |
 | [`HELM-008`](../providers/helm.md#helm-008) | Chart.lock generated more than 90 days ago | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [Helm](../providers/helm.md) |  |
@@ -541,7 +543,7 @@ _No checks in this scanner currently evidence this control. Open an issue if you
 
 ### IA-16: Compromised service account { #ctrl-ia-16 }
 
-**Evidenced by 8 checks** across 2 providers (AWS, Cloud Build).
+**Evidenced by 10 checks** across 3 providers (AWS, Cloud Build, Terraform).
 
 | Check | Title | Severity | Provider | Fix |
 |-------|-------|----------|----------|-----|
@@ -553,6 +555,8 @@ _No checks in this scanner currently evidence this control. Open an issue if you
 | [`IAM-005`](../providers/aws.md#iam-005) | CI/CD role trust policy missing sts:ExternalId | <span class="pg-sev pg-sev--high">HIGH</span> | [AWS](../providers/aws.md) |  |
 | [`IAM-006`](../providers/aws.md#iam-006) | Sensitive actions granted with wildcard Resource | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [AWS](../providers/aws.md) |  |
 | [`IAM-008`](../providers/aws.md#iam-008) | OIDC-federated role trust policy missing audience or subject pin | <span class="pg-sev pg-sev--high">HIGH</span> | [AWS](../providers/aws.md) |  |
+| [`IAM-009`](../providers/terraform.md#iam-009) | Azure federated identity credential trusts a broad GitHub subject | <span class="pg-sev pg-sev--high">HIGH</span> | [Terraform](../providers/terraform.md) |  |
+| [`IAM-010`](../providers/terraform.md#iam-010) | GCP workload identity provider has no repository attribute condition | <span class="pg-sev pg-sev--high">HIGH</span> | [Terraform](../providers/terraform.md) |  |
 
 ### IA-17: Dependency confusion { #ctrl-ia-17 }
 
@@ -690,7 +694,7 @@ _No checks in this scanner currently evidence this control. Open an issue if you
 
 ### EX-6: Command injection { #ctrl-ex-6 }
 
-**Evidenced by 54 checks** across 13 providers (Argo CD, Argo Workflows, Azure DevOps, Bitbucket, Buildkite, CircleCI, Cloud Build, Dockerfile, Drone CI, GitHub Actions, GitLab CI, Jenkins, Tekton).
+**Evidenced by 57 checks** across 13 providers (Argo CD, Argo Workflows, Azure DevOps, Bitbucket, Buildkite, CircleCI, Cloud Build, Dockerfile, Drone CI, GitHub Actions, GitLab CI, Jenkins, Tekton).
 
 | Check | Title | Severity | Provider | Fix |
 |-------|-------|----------|----------|-----|
@@ -699,6 +703,7 @@ _No checks in this scanner currently evidence this control. Open an issue if you
 | [`ADO-027`](../providers/azure.md#ado-027) | Dangerous shell idiom (eval, sh -c variable, backtick exec) | <span class="pg-sev pg-sev--high">HIGH</span> | [Azure DevOps](../providers/azure.md) |  |
 | [`ADO-030`](../providers/azure.md#ado-030) | pool interpolates attacker-controllable value | <span class="pg-sev pg-sev--high">HIGH</span> | [Azure DevOps](../providers/azure.md) | <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> |
 | [`ARGO-005`](../providers/argo.md#argo-005) | Argo input parameter interpolated unsafely in script / args | <span class="pg-sev pg-sev--critical">CRITICAL</span> | [Argo Workflows](../providers/argo.md) |  |
+| [`ARGO-017`](../providers/argo.md#argo-017) | Argo resource template applies a manifest built from an untrusted parameter | <span class="pg-sev pg-sev--critical">CRITICAL</span> | [Argo Workflows](../providers/argo.md) |  |
 | [`ARGOCD-007`](../providers/argocd.md#argocd-007) | Argo CD Helm parameters interpolate generator output without goTemplate | <span class="pg-sev pg-sev--high">HIGH</span> | [Argo CD](../providers/argocd.md) |  |
 | [`BB-002`](../providers/bitbucket.md#bb-002) | Script injection via attacker-controllable context | <span class="pg-sev pg-sev--high">HIGH</span> | [Bitbucket](../providers/bitbucket.md) |  |
 | [`BB-018`](../providers/bitbucket.md#bb-018) | Cache key derives from attacker-controllable input | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [Bitbucket](../providers/bitbucket.md) |  |
@@ -730,11 +735,13 @@ _No checks in this scanner currently evidence this control. Open an issue if you
 | [`GHA-063`](../providers/github.md#gha-063) | ``if:`` predicate gates on a spoofable bot-actor comparison | <span class="pg-sev pg-sev--high">HIGH</span> | [GitHub Actions](../providers/github.md) |  |
 | [`GHA-064`](../providers/github.md#gha-064) | ``contains()`` invoked with comma-delimited string operand | <span class="pg-sev pg-sev--high">HIGH</span> | [GitHub Actions](../providers/github.md) |  |
 | [`GHA-117`](../providers/github.md#gha-117) | IaC apply on an untrusted pull_request trigger | <span class="pg-sev pg-sev--critical">CRITICAL</span> | [GitHub Actions](../providers/github.md) |  |
+| [`GHA-118`](../providers/github.md#gha-118) | Untrusted content written to $GITHUB_ENV / $GITHUB_PATH | <span class="pg-sev pg-sev--high">HIGH</span> | [GitHub Actions](../providers/github.md) |  |
 | [`GL-002`](../providers/gitlab.md#gl-002) | Script injection via untrusted commit/MR context | <span class="pg-sev pg-sev--high">HIGH</span> | [GitLab CI](../providers/gitlab.md) |  |
 | [`GL-012`](../providers/gitlab.md#gl-012) | Cache key derives from MR-controlled CI variable | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [GitLab CI](../providers/gitlab.md) |  |
 | [`GL-026`](../providers/gitlab.md#gl-026) | Dangerous shell idiom (eval, sh -c variable, backtick exec) | <span class="pg-sev pg-sev--high">HIGH</span> | [GitLab CI](../providers/gitlab.md) |  |
 | [`GL-032`](../providers/gitlab.md#gl-032) | tags: interpolates untrusted CI variable | <span class="pg-sev pg-sev--high">HIGH</span> | [GitLab CI](../providers/gitlab.md) | <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> |
 | [`GL-033`](../providers/gitlab.md#gl-033) | Global before_script / after_script propagates taint to every job | <span class="pg-sev pg-sev--high">HIGH</span> | [GitLab CI](../providers/gitlab.md) |  |
+| [`GL-041`](../providers/gitlab.md#gl-041) | IaC apply on an untrusted merge-request trigger | <span class="pg-sev pg-sev--critical">CRITICAL</span> | [GitLab CI](../providers/gitlab.md) |  |
 | [`JF-002`](../providers/jenkins.md#jf-002) | Script step interpolates attacker-controllable env var | <span class="pg-sev pg-sev--high">HIGH</span> | [Jenkins](../providers/jenkins.md) |  |
 | [`JF-030`](../providers/jenkins.md#jf-030) | Dangerous shell idiom (eval, sh -c variable, backtick exec) | <span class="pg-sev pg-sev--high">HIGH</span> | [Jenkins](../providers/jenkins.md) |  |
 | [`JF-032`](../providers/jenkins.md#jf-032) | Agent label interpolates attacker-controllable value | <span class="pg-sev pg-sev--high">HIGH</span> | [Jenkins](../providers/jenkins.md) | <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> |
@@ -1040,7 +1047,7 @@ _No checks in this scanner currently evidence this control. Open an issue if you
 
 ### DE-4: Misconfiguration of security measures { #ctrl-de-4 }
 
-**Evidenced by 85 checks** across 17 providers (AWS, Argo CD, Argo Workflows, Azure DevOps, Bitbucket, Buildkite, CircleCI, Cloud Build, Dockerfile, GitHub Actions, GitLab CI, Helm, Jenkins, Kubernetes, OCI manifest, SCM, Tekton).
+**Evidenced by 86 checks** across 17 providers (AWS, Argo CD, Argo Workflows, Azure DevOps, Bitbucket, Buildkite, CircleCI, Cloud Build, Dockerfile, GitHub Actions, GitLab CI, Helm, Jenkins, Kubernetes, OCI manifest, SCM, Tekton).
 
 | Check | Title | Severity | Provider | Fix |
 |-------|-------|----------|----------|-----|
@@ -1099,6 +1106,7 @@ _No checks in this scanner currently evidence this control. Open an issue if you
 | [`K8S-022`](../providers/kubernetes.md#k8s-022) | Service exposes SSH (port 22) | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [Kubernetes](../providers/kubernetes.md) |  |
 | [`K8S-023`](../providers/kubernetes.md#k8s-023) | Namespace missing Pod Security Admission enforcement label | <span class="pg-sev pg-sev--high">HIGH</span> | [Kubernetes](../providers/kubernetes.md) |  |
 | [`K8S-031`](../providers/kubernetes.md#k8s-031) | Namespace missing PSA warn label | <span class="pg-sev pg-sev--low">LOW</span> | [Kubernetes](../providers/kubernetes.md) |  |
+| [`K8S-044`](../providers/kubernetes.md#k8s-044) | Admission webhook fails open or mutates cluster-wide unscoped | <span class="pg-sev pg-sev--high">HIGH</span> | [Kubernetes](../providers/kubernetes.md) |  |
 | [`LMB-001`](../providers/aws.md#lmb-001) | Lambda function has no code-signing config | <span class="pg-sev pg-sev--high">HIGH</span> | [AWS](../providers/aws.md) |  |
 | [`OCI-001`](../providers/oci.md#oci-001) | Image manifest is missing OCI provenance annotations | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [OCI manifest](../providers/oci.md) |  |
 | [`OCI-002`](../providers/oci.md#oci-002) | Image is missing a build attestation manifest | <span class="pg-sev pg-sev--high">HIGH</span> | [OCI manifest](../providers/oci.md) |  |

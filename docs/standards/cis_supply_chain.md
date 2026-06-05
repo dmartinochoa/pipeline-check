@@ -11,7 +11,7 @@ and artifact controls covering the full pipeline trust chain.
 
 - **Controls in this standard:** 25
 - **Controls evidenced by at least one check:** 25 / 25
-- **Distinct checks evidencing this standard:** 876
+- **Distinct checks evidencing this standard:** 885
 - **Of those, autofixable with `--fix`:** 110
 
 _Severity levels (`CRITICAL` / `HIGH` / `MEDIUM` / `LOW` / `INFO`) follow the same scale across every provider and standard. See [How to read severity](README.md#how-to-read-severity) on the standards overview for the definitions._
@@ -27,24 +27,24 @@ Click a control ID to jump to the per-control section with the full check list. 
 | [`1.1.7`](#ctrl-1-1-7) | Ensure any change to code is automatically scanned for risks (SAST) | 8 | 1C · 4M · 3L |
 | [`1.1.8`](#ctrl-1-1-8) | Ensure scanners are in place to identify and confirm presence of vulnerabilities (SCA) | 24 | 1C · 6H · 14M · 3L |
 | [`1.1.17`](#ctrl-1-1-17) | Ensure default branches' commits are protected from being deleted/rewritten | 13 | 1C · 6H · 3M · 3L |
-| [`1.3.4`](#ctrl-1-3-4) | Ensure organization identity is required for contribution (no long-lived personal tokens) | 50 | 3C · 34H · 12M · 1L |
-| [`1.4.1`](#ctrl-1-4-1) | Ensure third-party artifacts and open-source libraries are verified | 260 | 24C · 139H · 88M · 9L |
+| [`1.3.4`](#ctrl-1-3-4) | Ensure organization identity is required for contribution (no long-lived personal tokens) | 52 | 3C · 36H · 12M · 1L |
+| [`1.4.1`](#ctrl-1-4-1) | Ensure third-party artifacts and open-source libraries are verified | 263 | 24C · 142H · 88M · 9L |
 | [`1.5.1`](#ctrl-1-5-1) | Ensure scanners are in place to identify and prevent sensitive data in code | 72 | 26C · 39H · 5M · 2L |
-| [`2.1.3`](#ctrl-2-1-3) | Ensure the build environment is hardened | 123 | 28C · 69H · 21M · 5L |
+| [`2.1.3`](#ctrl-2-1-3) | Ensure the build environment is hardened | 126 | 30C · 70H · 21M · 5L |
 | [`2.1.6`](#ctrl-2-1-6) | Ensure build workers have minimal network connectivity | 40 | 4C · 17H · 16M · 3L |
 | [`2.2.2`](#ctrl-2-2-2) | Ensure build workers are single-use | 19 | 2H · 13M · 4L |
 | [`2.3.4`](#ctrl-2-3-4) | Ensure pipelines are scanned for secrets and sensitive data | 40 | 21C · 17H · 1M · 1L |
 | [`2.3.7`](#ctrl-2-3-7) | Ensure pipeline steps produce audit logs | 55 | 11H · 24M · 6L · 14I |
-| [`2.3.8`](#ctrl-2-3-8) | Ensure pipeline configuration files are reviewed before execution | 59 | 12C · 33H · 11M · 3L |
+| [`2.3.8`](#ctrl-2-3-8) | Ensure pipeline configuration files are reviewed before execution | 60 | 13C · 33H · 11M · 3L |
 | [`2.4.2`](#ctrl-2-4-2) | Ensure pipeline integrity, artifacts are signed by the pipeline | 16 | 5H · 11M |
-| [`2.4.3`](#ctrl-2-4-3) | Ensure access to the pipeline execution environment is restricted | 82 | 17C · 39H · 25M · 1L |
-| [`3.1.3`](#ctrl-3-1-3) | Ensure signed metadata of dependencies is verified | 101 | 10C · 42H · 45M · 4L |
-| [`3.1.5`](#ctrl-3-1-5) | Ensure only trusted package managers and repositories are used | 73 | 1C · 54H · 17M · 1L |
+| [`2.4.3`](#ctrl-2-4-3) | Ensure access to the pipeline execution environment is restricted | 84 | 17C · 41H · 25M · 1L |
+| [`3.1.3`](#ctrl-3-1-3) | Ensure signed metadata of dependencies is verified | 103 | 10C · 44H · 45M · 4L |
+| [`3.1.5`](#ctrl-3-1-5) | Ensure only trusted package managers and repositories are used | 74 | 1C · 55H · 17M · 1L |
 | [`4.1.1`](#ctrl-4-1-1) | Ensure all artifacts on all releases are verified (signed, integrity-checked) | 47 | 16H · 28M · 2L · 1I |
 | [`4.2.1`](#ctrl-4-2-1) | Ensure access to artifacts is limited | 20 | 5C · 9H · 6M |
 | [`4.3.3`](#ctrl-4-3-3) | Ensure package registries use authentication and authorization | 10 | 3C · 6H · 1M |
 | [`4.4.1`](#ctrl-4-4-1) | Ensure artifacts have provenance/SBOM metadata | 40 | 5H · 26M · 9L |
-| [`5.1.4`](#ctrl-5-1-4) | Ensure deployment configuration manifests are reviewed before apply | 51 | 2C · 21H · 25M · 3L |
+| [`5.1.4`](#ctrl-5-1-4) | Ensure deployment configuration manifests are reviewed before apply | 52 | 2C · 22H · 25M · 3L |
 | [`5.2.1`](#ctrl-5-2-1) | Ensure deployment environments are separated | 25 | 12H · 11M · 2L |
 | [`5.2.3`](#ctrl-5-2-3) | Ensure deployment environment activity is audited | 15 | 3H · 6M · 3L · 3I |
 
@@ -177,7 +177,7 @@ pipeline_check --pipeline aws --standard cis_supply_chain --standard owasp_cicd_
 
 ### 1.3.4: Ensure organization identity is required for contribution (no long-lived personal tokens) { #ctrl-1-3-4 }
 
-**Evidenced by 50 checks** across 15 providers (AWS, Argo CD, Azure Cloud, Azure DevOps, Bitbucket, CircleCI, CloudFormation, GCP, GitHub Actions, GitLab CI, Jenkins, Pulumi, SCM, Terraform, npm).
+**Evidenced by 52 checks** across 15 providers (AWS, Argo CD, Azure Cloud, Azure DevOps, Bitbucket, CircleCI, CloudFormation, GCP, GitHub Actions, GitLab CI, Jenkins, Pulumi, SCM, Terraform, npm).
 
 | Check | Title | Severity | Provider | Fix |
 |-------|-------|----------|----------|-----|
@@ -222,6 +222,8 @@ pipeline_check --pipeline aws --standard cis_supply_chain --standard owasp_cicd_
 | [`IAM-005`](../providers/aws.md#iam-005) | CI/CD role trust policy missing sts:ExternalId | <span class="pg-sev pg-sev--high">HIGH</span> | [AWS](../providers/aws.md) |  |
 | [`IAM-007`](../providers/aws.md#iam-007) | IAM user has access key older than 90 days | <span class="pg-sev pg-sev--high">HIGH</span> | [AWS](../providers/aws.md) |  |
 | [`IAM-008`](../providers/aws.md#iam-008) | OIDC-federated role trust policy missing audience or subject pin | <span class="pg-sev pg-sev--high">HIGH</span> | [AWS](../providers/aws.md) |  |
+| [`IAM-009`](../providers/terraform.md#iam-009) | Azure federated identity credential trusts a broad GitHub subject | <span class="pg-sev pg-sev--high">HIGH</span> | [Terraform](../providers/terraform.md) |  |
+| [`IAM-010`](../providers/terraform.md#iam-010) | GCP workload identity provider has no repository attribute condition | <span class="pg-sev pg-sev--high">HIGH</span> | [Terraform](../providers/terraform.md) |  |
 | [`JF-004`](../providers/jenkins.md#jf-004) | AWS auth uses long-lived access keys via withCredentials | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [Jenkins](../providers/jenkins.md) | <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> |
 | [`JF-010`](../providers/jenkins.md#jf-010) | Long-lived AWS keys exposed via environment {} block | <span class="pg-sev pg-sev--high">HIGH</span> | [Jenkins](../providers/jenkins.md) | <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> |
 | [`NPM-012`](../providers/npm.md#npm-012) | .npmrc publish token lacks IP or readonly restriction | <span class="pg-sev pg-sev--high">HIGH</span> | [npm](../providers/npm.md) |  |
@@ -234,7 +236,7 @@ pipeline_check --pipeline aws --standard cis_supply_chain --standard owasp_cicd_
 
 ### 1.4.1: Ensure third-party artifacts and open-source libraries are verified { #ctrl-1-4-1 }
 
-**Evidenced by 260 checks** across 29 providers (AWS, Argo CD, Argo Workflows, Azure Cloud, Azure DevOps, Bitbucket, Buildkite, Cargo, CircleCI, Cloud Build, Composer, Dockerfile, Drone CI, GCP, GitHub Actions, GitLab CI, Go modules, Helm, Jenkins, Kubernetes, NuGet, OCI manifest, Pulumi, PyPI, RubyGems, SCM, Tekton, maven, npm).
+**Evidenced by 263 checks** across 29 providers (AWS, Argo CD, Argo Workflows, Azure Cloud, Azure DevOps, Bitbucket, Buildkite, Cargo, CircleCI, Cloud Build, Composer, Dockerfile, Drone CI, GCP, GitHub Actions, GitLab CI, Go modules, Helm, Jenkins, Kubernetes, NuGet, OCI manifest, Pulumi, PyPI, RubyGems, SCM, Tekton, maven, npm).
 
 | Check | Title | Severity | Provider | Fix |
 |-------|-------|----------|----------|-----|
@@ -261,6 +263,7 @@ pipeline_check --pipeline aws --standard cis_supply_chain --standard owasp_cicd_
 | [`ARGOCD-016`](../providers/argocd.md#argocd-016) | Application Helm valueFiles fetched from a remote URL | <span class="pg-sev pg-sev--high">HIGH</span> | [Argo CD](../providers/argocd.md) |  |
 | [`ARGOCD-017`](../providers/argocd.md#argocd-017) | Argo CD in-cluster Application deploys from a mutable source | <span class="pg-sev pg-sev--high">HIGH</span> | [Argo CD](../providers/argocd.md) |  |
 | [`ARGOCD-018`](../providers/argocd.md#argocd-018) | argocd-cm ships custom resource health / action Lua | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [Argo CD](../providers/argocd.md) |  |
+| [`ARGOCD-019`](../providers/argocd.md#argocd-019) | Argo CD Application disables drift detection on a sensitive field | <span class="pg-sev pg-sev--high">HIGH</span> | [Argo CD](../providers/argocd.md) |  |
 | [`ATTEST-002`](../providers/oci.md#attest-002) | SLSA provenance source-repo claim is missing or unverifiable | <span class="pg-sev pg-sev--high">HIGH</span> | [OCI manifest](../providers/oci.md) |  |
 | [`BB-001`](../providers/bitbucket.md#bb-001) | pipe: action not pinned to exact version | <span class="pg-sev pg-sev--high">HIGH</span> | [Bitbucket](../providers/bitbucket.md) | <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> |
 | [`BB-009`](../providers/bitbucket.md#bb-009) | pipe: pinned by version rather than sha256 digest | <span class="pg-sev pg-sev--low">LOW</span> | [Bitbucket](../providers/bitbucket.md) |  |
@@ -331,6 +334,7 @@ pipeline_check --pipeline aws --standard cis_supply_chain --standard owasp_cicd_
 | [`DF-027`](../providers/dockerfile.md#df-027) | ENV disables Python HTTPS certificate verification | <span class="pg-sev pg-sev--high">HIGH</span> | [Dockerfile](../providers/dockerfile.md) |  |
 | [`DF-028`](../providers/dockerfile.md#df-028) | ENV disables Git TLS certificate verification | <span class="pg-sev pg-sev--high">HIGH</span> | [Dockerfile](../providers/dockerfile.md) |  |
 | [`DF-029`](../providers/dockerfile.md#df-029) | ENV neuters Python requests CA bundle | <span class="pg-sev pg-sev--high">HIGH</span> | [Dockerfile](../providers/dockerfile.md) |  |
+| [`DF-031`](../providers/dockerfile.md#df-031) | COPY --from external image not pinned to sha256 digest | <span class="pg-sev pg-sev--high">HIGH</span> | [Dockerfile](../providers/dockerfile.md) |  |
 | [`DR-001`](../providers/drone.md#dr-001) | Step image not pinned to a digest | <span class="pg-sev pg-sev--high">HIGH</span> | [Drone CI](../providers/drone.md) |  |
 | [`DR-005`](../providers/drone.md#dr-005) | Plugin step uses a floating image tag | <span class="pg-sev pg-sev--high">HIGH</span> | [Drone CI](../providers/drone.md) |  |
 | [`DR-006`](../providers/drone.md#dr-006) | TLS verification disabled in step commands | <span class="pg-sev pg-sev--high">HIGH</span> | [Drone CI](../providers/drone.md) |  |
@@ -404,6 +408,7 @@ pipeline_check --pipeline aws --standard cis_supply_chain --standard owasp_cicd_
 | [`GL-034`](../providers/gitlab.md#gl-034) | npm install without registry-signature verification step | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [GitLab CI](../providers/gitlab.md) |  |
 | [`GL-035`](../providers/gitlab.md#gl-035) | pip install without `--require-hashes` verification | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [GitLab CI](../providers/gitlab.md) |  |
 | [`GL-037`](../providers/gitlab.md#gl-037) | Pipeline disables Go module checksum / sum-db verification | <span class="pg-sev pg-sev--high">HIGH</span> | [GitLab CI](../providers/gitlab.md) |  |
+| [`GL-042`](../providers/gitlab.md#gl-042) | include: component pulls a CI/CD component without a pinned version | <span class="pg-sev pg-sev--high">HIGH</span> | [GitLab CI](../providers/gitlab.md) |  |
 | [`GOMOD-001`](../providers/gomod.md) | go.mod present without sibling go.sum integrity manifest | <span class="pg-sev pg-sev--high">HIGH</span> | [Go modules](../providers/gomod.md) |  |
 | [`GOMOD-002`](../providers/gomod.md) | go.mod replace directive points to a local filesystem path | <span class="pg-sev pg-sev--high">HIGH</span> | [Go modules](../providers/gomod.md) |  |
 | [`GOMOD-003`](../providers/gomod.md) | go.mod replace directive substitutes a different module | <span class="pg-sev pg-sev--high">HIGH</span> | [Go modules](../providers/gomod.md) |  |
@@ -580,7 +585,7 @@ pipeline_check --pipeline aws --standard cis_supply_chain --standard owasp_cicd_
 
 ### 2.1.3: Ensure the build environment is hardened { #ctrl-2-1-3 }
 
-**Evidenced by 123 checks** across 17 providers (AWS, Argo Workflows, Azure Cloud, Azure DevOps, Bitbucket, Buildkite, CircleCI, Cloud Build, Dockerfile, Drone CI, GCP, GitHub Actions, GitLab CI, Jenkins, Kubernetes, Tekton, npm).
+**Evidenced by 126 checks** across 17 providers (AWS, Argo Workflows, Azure Cloud, Azure DevOps, Bitbucket, Buildkite, CircleCI, Cloud Build, Dockerfile, Drone CI, GCP, GitHub Actions, GitLab CI, Jenkins, Kubernetes, Tekton, npm).
 
 | Check | Title | Severity | Provider | Fix |
 |-------|-------|----------|----------|-----|
@@ -595,6 +600,7 @@ pipeline_check --pipeline aws --standard cis_supply_chain --standard owasp_cicd_
 | [`ARGO-002`](../providers/argo.md#argo-002) | Argo template container runs privileged or as root | <span class="pg-sev pg-sev--high">HIGH</span> | [Argo Workflows](../providers/argo.md) |  |
 | [`ARGO-004`](../providers/argo.md#argo-004) | Argo workflow mounts hostPath or shares host namespaces | <span class="pg-sev pg-sev--critical">CRITICAL</span> | [Argo Workflows](../providers/argo.md) |  |
 | [`ARGO-005`](../providers/argo.md#argo-005) | Argo input parameter interpolated unsafely in script / args | <span class="pg-sev pg-sev--critical">CRITICAL</span> | [Argo Workflows](../providers/argo.md) |  |
+| [`ARGO-017`](../providers/argo.md#argo-017) | Argo resource template applies a manifest built from an untrusted parameter | <span class="pg-sev pg-sev--critical">CRITICAL</span> | [Argo Workflows](../providers/argo.md) |  |
 | [`AZAPP-004`](../providers/azure_cloud.md) | App Service has remote debugging enabled | <span class="pg-sev pg-sev--high">HIGH</span> | [Azure Cloud](../providers/azure_cloud.md) |  |
 | [`AZAPP-005`](../providers/azure_cloud.md) | App Service FTP access not disabled | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [Azure Cloud](../providers/azure_cloud.md) |  |
 | [`AZST-005`](../providers/azure_cloud.md) | Storage account blob lifecycle policy should be reviewed | <span class="pg-sev pg-sev--low">LOW</span> | [Azure Cloud](../providers/azure_cloud.md) |  |
@@ -675,6 +681,7 @@ pipeline_check --pipeline aws --standard cis_supply_chain --standard owasp_cicd_
 | [`GHA-108`](../providers/github.md#gha-108) | Sensitive workflow has no runtime egress control | <span class="pg-sev pg-sev--low">LOW</span> | [GitHub Actions](../providers/github.md) |  |
 | [`GHA-109`](../providers/github.md#gha-109) | harden-runner is not the first step in the job | <span class="pg-sev pg-sev--low">LOW</span> | [GitHub Actions](../providers/github.md) |  |
 | [`GHA-117`](../providers/github.md#gha-117) | IaC apply on an untrusted pull_request trigger | <span class="pg-sev pg-sev--critical">CRITICAL</span> | [GitHub Actions](../providers/github.md) |  |
+| [`GHA-118`](../providers/github.md#gha-118) | Untrusted content written to $GITHUB_ENV / $GITHUB_PATH | <span class="pg-sev pg-sev--high">HIGH</span> | [GitHub Actions](../providers/github.md) |  |
 | [`GL-002`](../providers/gitlab.md#gl-002) | Script injection via untrusted commit/MR context | <span class="pg-sev pg-sev--high">HIGH</span> | [GitLab CI](../providers/gitlab.md) |  |
 | [`GL-011`](../providers/gitlab.md#gl-011) | include: local file pulled in MR-triggered pipeline | <span class="pg-sev pg-sev--high">HIGH</span> | [GitLab CI](../providers/gitlab.md) |  |
 | [`GL-012`](../providers/gitlab.md#gl-012) | Cache key derives from MR-controlled CI variable | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [GitLab CI](../providers/gitlab.md) |  |
@@ -684,6 +691,7 @@ pipeline_check --pipeline aws --standard cis_supply_chain --standard owasp_cicd_
 | [`GL-032`](../providers/gitlab.md#gl-032) | tags: interpolates untrusted CI variable | <span class="pg-sev pg-sev--high">HIGH</span> | [GitLab CI](../providers/gitlab.md) | <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> |
 | [`GL-033`](../providers/gitlab.md#gl-033) | Global before_script / after_script propagates taint to every job | <span class="pg-sev pg-sev--high">HIGH</span> | [GitLab CI](../providers/gitlab.md) |  |
 | [`GL-039`](../providers/gitlab.md#gl-039) | Docker-in-Docker service exposes an unauthenticated daemon | <span class="pg-sev pg-sev--high">HIGH</span> | [GitLab CI](../providers/gitlab.md) |  |
+| [`GL-041`](../providers/gitlab.md#gl-041) | IaC apply on an untrusted merge-request trigger | <span class="pg-sev pg-sev--critical">CRITICAL</span> | [GitLab CI](../providers/gitlab.md) |  |
 | [`JF-002`](../providers/jenkins.md#jf-002) | Script step interpolates attacker-controllable env var | <span class="pg-sev pg-sev--high">HIGH</span> | [Jenkins](../providers/jenkins.md) |  |
 | [`JF-017`](../providers/jenkins.md#jf-017) | Docker run with insecure flags (privileged/host mount) | <span class="pg-sev pg-sev--critical">CRITICAL</span> | [Jenkins](../providers/jenkins.md) | <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> |
 | [`JF-019`](../providers/jenkins.md#jf-019) | Groovy sandbox escape pattern detected | <span class="pg-sev pg-sev--critical">CRITICAL</span> | [Jenkins](../providers/jenkins.md) |  |
@@ -892,7 +900,7 @@ pipeline_check --pipeline aws --standard cis_supply_chain --standard owasp_cicd_
 
 ### 2.3.8: Ensure pipeline configuration files are reviewed before execution { #ctrl-2-3-8 }
 
-**Evidenced by 59 checks** across 14 providers (AWS, Argo CD, Argo Workflows, Azure DevOps, Bitbucket, Buildkite, CircleCI, Cloud Build, Drone CI, GitHub Actions, GitLab CI, Helm, Jenkins, Tekton).
+**Evidenced by 60 checks** across 14 providers (AWS, Argo CD, Argo Workflows, Azure DevOps, Bitbucket, Buildkite, CircleCI, Cloud Build, Drone CI, GitHub Actions, GitLab CI, Helm, Jenkins, Tekton).
 
 | Check | Title | Severity | Provider | Fix |
 |-------|-------|----------|----------|-----|
@@ -902,6 +910,7 @@ pipeline_check --pipeline aws --standard cis_supply_chain --standard owasp_cicd_
 | [`ADO-012`](../providers/azure.md#ado-012) | Cache@2 key derives from $(System.PullRequest.*) | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [Azure DevOps](../providers/azure.md) |  |
 | [`ADO-019`](../providers/azure.md#ado-019) | `extends:` template on PR-validated pipeline points to local path | <span class="pg-sev pg-sev--critical">CRITICAL</span> | [Azure DevOps](../providers/azure.md) |  |
 | [`ARGO-005`](../providers/argo.md#argo-005) | Argo input parameter interpolated unsafely in script / args | <span class="pg-sev pg-sev--critical">CRITICAL</span> | [Argo Workflows](../providers/argo.md) |  |
+| [`ARGO-017`](../providers/argo.md#argo-017) | Argo resource template applies a manifest built from an untrusted parameter | <span class="pg-sev pg-sev--critical">CRITICAL</span> | [Argo Workflows](../providers/argo.md) |  |
 | [`ARGOCD-008`](../providers/argocd.md#argocd-008) | Argo CD Application invokes a config-management plugin | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [Argo CD](../providers/argocd.md) |  |
 | [`ARGOCD-015`](../providers/argocd.md#argocd-015) | Argo CD Kustomize build options enable the Helm plugin | <span class="pg-sev pg-sev--high">HIGH</span> | [Argo CD](../providers/argocd.md) |  |
 | [`BB-002`](../providers/bitbucket.md#bb-002) | Script injection via attacker-controllable context | <span class="pg-sev pg-sev--high">HIGH</span> | [Bitbucket](../providers/bitbucket.md) |  |
@@ -981,7 +990,7 @@ pipeline_check --pipeline aws --standard cis_supply_chain --standard owasp_cicd_
 
 ### 2.4.3: Ensure access to the pipeline execution environment is restricted { #ctrl-2-4-3 }
 
-**Evidenced by 82 checks** across 15 providers (AWS, Argo CD, Argo Workflows, Azure Cloud, Azure DevOps, Bitbucket, CircleCI, Cloud Build, GCP, GitHub Actions, GitLab CI, Jenkins, Kubernetes, SCM, Tekton).
+**Evidenced by 84 checks** across 16 providers (AWS, Argo CD, Argo Workflows, Azure Cloud, Azure DevOps, Bitbucket, CircleCI, Cloud Build, GCP, GitHub Actions, GitLab CI, Jenkins, Kubernetes, SCM, Tekton, Terraform).
 
 | Check | Title | Severity | Provider | Fix |
 |-------|-------|----------|----------|-----|
@@ -1051,6 +1060,8 @@ pipeline_check --pipeline aws --standard cis_supply_chain --standard owasp_cicd_
 | [`IAM-005`](../providers/aws.md#iam-005) | CI/CD role trust policy missing sts:ExternalId | <span class="pg-sev pg-sev--high">HIGH</span> | [AWS](../providers/aws.md) |  |
 | [`IAM-006`](../providers/aws.md#iam-006) | Sensitive actions granted with wildcard Resource | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [AWS](../providers/aws.md) |  |
 | [`IAM-008`](../providers/aws.md#iam-008) | OIDC-federated role trust policy missing audience or subject pin | <span class="pg-sev pg-sev--high">HIGH</span> | [AWS](../providers/aws.md) |  |
+| [`IAM-009`](../providers/terraform.md#iam-009) | Azure federated identity credential trusts a broad GitHub subject | <span class="pg-sev pg-sev--high">HIGH</span> | [Terraform](../providers/terraform.md) |  |
+| [`IAM-010`](../providers/terraform.md#iam-010) | GCP workload identity provider has no repository attribute condition | <span class="pg-sev pg-sev--high">HIGH</span> | [Terraform](../providers/terraform.md) |  |
 | [`JF-003`](../providers/jenkins.md#jf-003) | Pipeline uses `agent any` (no executor isolation) | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [Jenkins](../providers/jenkins.md) |  |
 | [`K8S-011`](../providers/kubernetes.md#k8s-011) | Pod serviceAccountName unset or 'default' | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [Kubernetes](../providers/kubernetes.md) |  |
 | [`K8S-012`](../providers/kubernetes.md#k8s-012) | Pod automountServiceAccountToken not false | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [Kubernetes](../providers/kubernetes.md) |  |
@@ -1070,7 +1081,7 @@ pipeline_check --pipeline aws --standard cis_supply_chain --standard owasp_cicd_
 
 ### 3.1.3: Ensure signed metadata of dependencies is verified { #ctrl-3-1-3 }
 
-**Evidenced by 101 checks** across 20 providers (AWS, Argo Workflows, Azure DevOps, Bitbucket, Buildkite, CircleCI, Cloud Build, Dockerfile, Drone CI, GitHub Actions, GitLab CI, Helm, Jenkins, Kubernetes, NuGet, OCI manifest, PyPI, Tekton, maven, npm).
+**Evidenced by 103 checks** across 20 providers (AWS, Argo Workflows, Azure DevOps, Bitbucket, Buildkite, CircleCI, Cloud Build, Dockerfile, Drone CI, GitHub Actions, GitLab CI, Helm, Jenkins, Kubernetes, NuGet, OCI manifest, PyPI, Tekton, maven, npm).
 
 | Check | Title | Severity | Provider | Fix |
 |-------|-------|----------|----------|-----|
@@ -1099,6 +1110,7 @@ pipeline_check --pipeline aws --standard cis_supply_chain --standard owasp_cicd_
 | [`DF-009`](../providers/dockerfile.md#df-009) | ADD used where COPY would suffice | <span class="pg-sev pg-sev--low">LOW</span> | [Dockerfile](../providers/dockerfile.md) |  |
 | [`DF-022`](../providers/dockerfile.md#df-022) | RUN uses npm install instead of npm ci | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [Dockerfile](../providers/dockerfile.md) |  |
 | [`DF-024`](../providers/dockerfile.md#df-024) | RUN npm/yarn/pnpm install runs lifecycle scripts | <span class="pg-sev pg-sev--high">HIGH</span> | [Dockerfile](../providers/dockerfile.md) |  |
+| [`DF-031`](../providers/dockerfile.md#df-031) | COPY --from external image not pinned to sha256 digest | <span class="pg-sev pg-sev--high">HIGH</span> | [Dockerfile](../providers/dockerfile.md) |  |
 | [`DR-001`](../providers/drone.md#dr-001) | Step image not pinned to a digest | <span class="pg-sev pg-sev--high">HIGH</span> | [Drone CI](../providers/drone.md) |  |
 | [`DR-005`](../providers/drone.md#dr-005) | Plugin step uses a floating image tag | <span class="pg-sev pg-sev--high">HIGH</span> | [Drone CI](../providers/drone.md) |  |
 | [`DR-008`](../providers/drone.md#dr-008) | Step uses ``pull: never`` (skips registry verification) | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [Drone CI](../providers/drone.md) |  |
@@ -1132,6 +1144,7 @@ pipeline_check --pipeline aws --standard cis_supply_chain --standard owasp_cicd_
 | [`GL-030`](../providers/gitlab.md#gl-030) | trigger: include: pulls child pipeline without pinned ref | <span class="pg-sev pg-sev--high">HIGH</span> | [GitLab CI](../providers/gitlab.md) |  |
 | [`GL-034`](../providers/gitlab.md#gl-034) | npm install without registry-signature verification step | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [GitLab CI](../providers/gitlab.md) |  |
 | [`GL-035`](../providers/gitlab.md#gl-035) | pip install without `--require-hashes` verification | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [GitLab CI](../providers/gitlab.md) |  |
+| [`GL-042`](../providers/gitlab.md#gl-042) | include: component pulls a CI/CD component without a pinned version | <span class="pg-sev pg-sev--high">HIGH</span> | [GitLab CI](../providers/gitlab.md) |  |
 | [`HELM-001`](../providers/helm.md#helm-001) | Chart.yaml declares legacy apiVersion: v1 | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [Helm](../providers/helm.md) | <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> |
 | [`HELM-002`](../providers/helm.md#helm-002) | Chart.lock missing per-dependency digests | <span class="pg-sev pg-sev--high">HIGH</span> | [Helm](../providers/helm.md) | <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> |
 | [`HELM-004`](../providers/helm.md#helm-004) | Chart dependency version is a range, not an exact pin | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [Helm](../providers/helm.md) |  |
@@ -1178,7 +1191,7 @@ pipeline_check --pipeline aws --standard cis_supply_chain --standard owasp_cicd_
 
 ### 3.1.5: Ensure only trusted package managers and repositories are used { #ctrl-3-1-5 }
 
-**Evidenced by 73 checks** across 21 providers (AWS, Argo Workflows, Azure Cloud, Azure DevOps, Bitbucket, Buildkite, CircleCI, Cloud Build, Dockerfile, Drone CI, GCP, GitHub Actions, GitLab CI, Helm, Jenkins, NuGet, PyPI, SCM, Tekton, maven, npm).
+**Evidenced by 74 checks** across 21 providers (AWS, Argo Workflows, Azure Cloud, Azure DevOps, Bitbucket, Buildkite, CircleCI, Cloud Build, Dockerfile, Drone CI, GCP, GitHub Actions, GitLab CI, Helm, Jenkins, NuGet, PyPI, SCM, Tekton, maven, npm).
 
 | Check | Title | Severity | Provider | Fix |
 |-------|-------|----------|----------|-----|
@@ -1233,6 +1246,7 @@ pipeline_check --pipeline aws --standard cis_supply_chain --standard owasp_cicd_
 | [`GL-018`](../providers/gitlab.md#gl-018) | Package install from insecure source | <span class="pg-sev pg-sev--high">HIGH</span> | [GitLab CI](../providers/gitlab.md) | <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> |
 | [`GL-023`](../providers/gitlab.md#gl-023) | TLS / certificate verification bypass | <span class="pg-sev pg-sev--high">HIGH</span> | [GitLab CI](../providers/gitlab.md) | <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> |
 | [`GL-027`](../providers/gitlab.md#gl-027) | Package install bypasses registry integrity (git / path / tarball source) | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [GitLab CI](../providers/gitlab.md) |  |
+| [`GL-042`](../providers/gitlab.md#gl-042) | include: component pulls a CI/CD component without a pinned version | <span class="pg-sev pg-sev--high">HIGH</span> | [GitLab CI](../providers/gitlab.md) |  |
 | [`HELM-003`](../providers/helm.md#helm-003) | Chart dependency declared on a non-HTTPS repository | <span class="pg-sev pg-sev--high">HIGH</span> | [Helm](../providers/helm.md) | <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> |
 | [`HELM-009`](../providers/helm.md#helm-009) | Chart home / sources URL uses a non-HTTPS scheme | <span class="pg-sev pg-sev--low">LOW</span> | [Helm](../providers/helm.md) |  |
 | [`JF-016`](../providers/jenkins.md#jf-016) | Remote script piped to shell interpreter | <span class="pg-sev pg-sev--high">HIGH</span> | [Jenkins](../providers/jenkins.md) | <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> |
@@ -1403,7 +1417,7 @@ pipeline_check --pipeline aws --standard cis_supply_chain --standard owasp_cicd_
 
 ### 5.1.4: Ensure deployment configuration manifests are reviewed before apply { #ctrl-5-1-4 }
 
-**Evidenced by 51 checks** across 11 providers (AWS, Argo CD, Azure DevOps, Bitbucket, Buildkite, CircleCI, GitHub Actions, GitLab CI, Jenkins, Kubernetes, SCM).
+**Evidenced by 52 checks** across 11 providers (AWS, Argo CD, Azure DevOps, Bitbucket, Buildkite, CircleCI, GitHub Actions, GitLab CI, Jenkins, Kubernetes, SCM).
 
 | Check | Title | Severity | Provider | Fix |
 |-------|-------|----------|----------|-----|
@@ -1456,6 +1470,7 @@ pipeline_check --pipeline aws --standard cis_supply_chain --standard owasp_cicd_
 | [`K8S-040`](../providers/kubernetes.md#k8s-040) | Container securityContext.procMount: Unmasked | <span class="pg-sev pg-sev--high">HIGH</span> | [Kubernetes](../providers/kubernetes.md) |  |
 | [`K8S-041`](../providers/kubernetes.md#k8s-041) | Service.externalIPs allows traffic interception (CVE-2020-8554) | <span class="pg-sev pg-sev--high">HIGH</span> | [Kubernetes](../providers/kubernetes.md) |  |
 | [`K8S-043`](../providers/kubernetes.md#k8s-043) | Ingress rule has wildcard or missing host (catch-all) | <span class="pg-sev pg-sev--medium">MEDIUM</span> | [Kubernetes](../providers/kubernetes.md) |  |
+| [`K8S-044`](../providers/kubernetes.md#k8s-044) | Admission webhook fails open or mutates cluster-wide unscoped | <span class="pg-sev pg-sev--high">HIGH</span> | [Kubernetes](../providers/kubernetes.md) |  |
 | [`SCM-023`](../providers/scm_github.md#scm-023) | Deployment environment lacks required-reviewer protection | <span class="pg-sev pg-sev--high">HIGH</span> | [SCM](../providers/scm_github.md) |  |
 | [`SCM-041`](../providers/scm_github.md#scm-041) | Active ruleset doesn't gate on a deployment environment | <span class="pg-sev pg-sev--low">LOW</span> | [SCM](../providers/scm_github.md) |  |
 

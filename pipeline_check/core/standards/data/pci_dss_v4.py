@@ -97,6 +97,8 @@ STANDARD = Standard(
         "IAM-006":  ["7.2.5"],
         "IAM-007":  ["8.2.1"],                           # access key > 90 days
         "IAM-008":  ["7.2.1", "8.2.1"],                  # OIDC trust no aud/sub pin
+        "IAM-009":  ["7.2.1", "8.2.1"],                  # Azure WIF broad subject
+        "IAM-010":  ["7.2.1", "8.2.1"],                  # GCP WIF no repo condition
         # PBAC
         "PBAC-001": ["6.4.1"],                           # no VPC boundary
         "PBAC-002": ["7.2.2", "7.2.5", "8.2.2"],         # shared role = no per-classification access
@@ -114,6 +116,7 @@ STANDARD = Standard(
         "GHA-002":  ["6.5.1"],                           # pull_request_target + PR head
         "GHA-003":  ["6.5.1"],                           # script injection
         "GHA-117":  ["6.5.1"],                           # IaC apply on untrusted PR trigger
+        "GHA-118":  ["6.5.1"],                           # untrusted content into $GITHUB_ENV / $GITHUB_PATH
         "GHA-004":  ["7.2.5"],                           # unrestricted GITHUB_TOKEN
         "GHA-005":  ["8.2.1"],                           # long-lived AWS keys
         # GitLab CI
@@ -123,6 +126,7 @@ STANDARD = Standard(
         "GL-003":   ["8.2.1", "6.5.1"],
         "GL-004":   ["6.4.3"],
         "GL-005":   ["6.3.3"],
+        "GL-042":   ["6.3.3"],    # include: component unpinned
         # Bitbucket Pipelines
         "BB-001":   ["6.3.3"],
         "BB-002":   ["6.5.1"],
@@ -196,6 +200,7 @@ STANDARD = Standard(
         "ARGO-016": ["7.2.2", "7.2.5", "8.2.2"],         # cluster-admin / over-privileged ServiceAccount
         "ARGO-004": ["6.4.1"],                           # hostPath / host namespaces
         "ARGO-005": ["6.5.1"],                           # param injection
+        "ARGO-017": ["6.5.1"],                           # resource template manifest injection
         "ARGO-006": ["8.2.1", "6.5.1"],                  # literal secrets
         "ARGO-007": ["6.4.1"],                           # no activeDeadlineSeconds
         "ARGO-008": ["6.3.3"],                           # remote install / TLS
@@ -211,6 +216,7 @@ STANDARD = Standard(
         # (strong unique identifiers). Vuln-related rules tie to
         # 6.3.1 / 6.3.3.
         "DF-001": ["6.4.3", "6.5.1"],                    # FROM not digest-pinned
+        "DF-031": ["6.4.3", "6.5.1"],                    # COPY --from external image not digest-pinned
         "DF-002": ["6.4.1", "7.2.5"],                    # runs as root
         "DF-003": ["6.5.1", "6.3.3"],                    # ADD remote no integrity
         "DF-004": ["6.5.1", "6.3.3"],                    # curl-pipe
@@ -445,6 +451,7 @@ STANDARD = Standard(
         "GL-030":   ["6.3.3", "6.5.1"],                  # trigger: include w/o pinned ref
         "GL-031":   ["7.2.1", "8.2.1"],                  # id_tokens missing audience pin
         "GL-040":   ["7.2.1", "8.2.1"],                  # CI_JOB_TOKEN used for cross-project access
+        "GL-041":   ["6.5.1"],                           # IaC apply on an untrusted MR trigger
         "GL-032":   ["6.5.1"],                           # tags interpolates untrusted
         "GL-033":   ["6.4.1", "6.5.1"],                  # global before_script taint
         "GL-034":   ["6.3.3", "6.5.1"],                  # npm install without audit signatures
@@ -577,6 +584,7 @@ STANDARD = Standard(
         # ── Argo CD (GitOps deployment) ──
         "ARGOCD-010": ["6.3.1"],                         # mutable targetRevision
         "ARGOCD-017": ["6.3.1"],  # in-cluster mutable source
+        "ARGOCD-019": ["6.3.1"],  # drift detection disabled on a sensitive field
         "ARGOCD-016": ["6.3.1"],  # Helm valueFiles from a remote URL
         "ARGOCD-018": ["6.3.1"],  # custom resource health / action Lua
         "ARGOCD-011": ["7.2.1"],                         # cluster-resource wildcard
@@ -642,6 +650,8 @@ STANDARD = Standard(
         "NPM-015":  ["6.3.1", "6.3.3"],
         "NPM-017":  ["6.3.1", "6.3.3"],  # provenance built from a non-release ref
         "NPM-018":  ["6.3.1", "6.3.3"],  # latest release from a new publisher
+        "NPM-019":  ["6.3.1", "6.3.3"],  # overrides / resolutions redirect
+        "NPM-020":  ["6.3.1", "6.3.3"],  # .npmrc registry repoint
         "NPM-016":  ["6.3.1", "6.3.3"],
         "PYPI-008": ["6.3.1", "6.3.3"],
         "PYPI-009": ["6.3.1", "6.3.3"],
@@ -858,6 +868,7 @@ STANDARD = Standard(
         "K8S-021":  ["7.2.1", "7.2.5"],                  # wildcard RBAC verbs
         "K8S-022":  ["6.4.1"],                           # SSH service exposed
         "K8S-023":  ["6.4.1"],                           # PSA enforce missing
+        "K8S-044":  ["6.4.1"],                           # admission webhook fail-open / unscoped mutating
         "K8S-024":  ["10.2.1"],                          # missing health probes
         "K8S-025":  ["6.4.1"],                           # system priority class
         "K8S-026":  ["6.4.1"],                           # LB without source ranges
@@ -1003,6 +1014,7 @@ STANDARD = Standard(
         "GCKMS-006": ["10.3.2"],                            # imported key
         # Developer-environment auto-execution
         "DEV-001":   ["6.5.1"],
+        "DEV-006":   ["6.5.1"],
         "DEV-002":   ["6.5.1"],
         "DEV-003":   ["6.5.1"],
         "DEV-004":   ["6.3.3", "6.5.1"],

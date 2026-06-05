@@ -1320,13 +1320,13 @@ Rotate or delete IAM access keys older than 90 days. Long-lived static credentia
 <span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-2</span> <span class="pg-tag pg-tag--cwe">CWE-284</span>
 </div>
 
-IAM-005 already covers cross-account AWS principals. This rule targets the OIDC federation path specifically because the blast radius of a missed audience/subject pin is the entire identity provider's tenant base (e.g. all GitHub users, not just your org).
+IAM-005 already covers cross-account AWS principals. This rule targets the OIDC federation path specifically because the blast radius of a missed audience/subject pin is the entire identity provider's tenant base (e.g. all GitHub users, not just your org). For GitHub ``repo:`` subjects it also fires when the subject is present but wildcards the repo or ref segment, or trusts the ``pull_request`` context, since a fork PR then mints the role's token.
 
 <div class="pg-rule__rec" markdown>
 
 **Recommended action**
 
-Every Allow statement that trusts a federated OIDC provider (``token.actions.githubusercontent.com``, GitLab, CircleCI, Terraform Cloud, etc.) must pin both the audience (``...:aud = sts.amazonaws.com``) and a subject prefix (``...:sub`` matching ``repo:myorg/*``). Without these, any workflow from any tenant can assume the role.
+Every Allow statement that trusts a federated OIDC provider (``token.actions.githubusercontent.com``, GitLab, CircleCI, Terraform Cloud, etc.) must pin both the audience (``...:aud = sts.amazonaws.com``) and a specific subject (``...:sub`` matching one repo AND ref, e.g. ``repo:myorg/myrepo:ref:refs/heads/main`` or ``...:environment:production``). An org wildcard (``repo:myorg/*``), a ref wildcard (``repo:myorg/myrepo:*``), or the ``pull_request`` context all let an untrusted workflow run (including a fork PR) assume the role.
 
 </div>
 

@@ -25,6 +25,7 @@ from ..base import BaseCheck, Location
 # ── Document kinds ───────────────────────────────────────────────────────
 
 KIND_VSCODE_TASKS = "vscode_tasks"
+KIND_VSCODE_SETTINGS = "vscode_settings"
 KIND_DEVCONTAINER = "devcontainer"
 KIND_CLAUDE_SETTINGS = "claude_settings"
 
@@ -149,6 +150,8 @@ def _kind_for(path: Path) -> str | None:
     parent = path.parent.name
     if name == "tasks.json" and parent == ".vscode":
         return KIND_VSCODE_TASKS
+    if name == "settings.json" and parent == ".vscode":
+        return KIND_VSCODE_SETTINGS
     if name == "devcontainer.json" or name == ".devcontainer.json":
         return KIND_DEVCONTAINER
     if name in {"settings.json", "settings.local.json"} and parent == ".claude":
@@ -161,6 +164,7 @@ def _discover(root: Path) -> list[Path]:
     out: list[Path] = []
     candidates = [
         root / ".vscode" / "tasks.json",
+        root / ".vscode" / "settings.json",
         root / ".devcontainer.json",
         root / ".devcontainer" / "devcontainer.json",
         root / ".claude" / "settings.json",

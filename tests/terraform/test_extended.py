@@ -179,12 +179,41 @@ def test_iam008_oidc_pinned_passes():
         "Action": "sts:AssumeRoleWithWebIdentity",
         "Condition": {
             "StringEquals": {"token.actions.githubusercontent.com:aud": "sts.amazonaws.com"},
-            "StringLike": {"token.actions.githubusercontent.com:sub": "repo:org/repo:*"},
+            "StringLike": {"token.actions.githubusercontent.com:sub": "repo:org/repo:ref:refs/heads/main"},
         },
     }]})
     role = _r("aws_iam_role.r", "aws_iam_role", "r", {"assume_role_policy": doc})
     f = next(x for x in _run([role]) if x.check_id == "IAM-008")
     assert f.passed
+
+
+def _oidc_role_with_sub(sub):
+    doc = json.dumps({"Statement": [{
+        "Effect": "Allow",
+        "Principal": {"Federated": _GH_OIDC},
+        "Action": "sts:AssumeRoleWithWebIdentity",
+        "Condition": {
+            "StringEquals": {"token.actions.githubusercontent.com:aud": "sts.amazonaws.com"},
+            "StringLike": {"token.actions.githubusercontent.com:sub": sub},
+        },
+    }]})
+    return _r("aws_iam_role.r", "aws_iam_role", "r", {"assume_role_policy": doc})
+
+
+def test_iam008_ref_wildcard_subject_fails():
+    # repo pinned but any ref / environment - including a fork PR context.
+    f = next(x for x in _run([_oidc_role_with_sub("repo:org/repo:*")]) if x.check_id == "IAM-008")
+    assert not f.passed
+
+
+def test_iam008_org_wildcard_subject_fails():
+    f = next(x for x in _run([_oidc_role_with_sub("repo:org/*:ref:refs/heads/main")]) if x.check_id == "IAM-008")
+    assert not f.passed
+
+
+def test_iam008_pull_request_subject_fails():
+    f = next(x for x in _run([_oidc_role_with_sub("repo:org/repo:pull_request")]) if x.check_id == "IAM-008")
+    assert not f.passed
 
 
 def test_iam008_missing_audience_fails():

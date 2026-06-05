@@ -1,0 +1,16 @@
+terraform_plan:
+  stage: test
+  script:
+    - terraform init
+    - terraform plan
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+
+terraform_apply:
+  stage: deploy
+  environment: production
+  script:
+    - terraform apply -auto-approve
+  rules:
+    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
+      when: manual

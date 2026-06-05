@@ -157,7 +157,7 @@ class TestGitHubFixtures:
 
 class TestGitLabFixtures:
     EXPECTED_IDS = (
-        {f"GL-{i:03d}" for i in range(1, 41)}
+        {f"GL-{i:03d}" for i in range(1, 43)}
         | {"TAINT-004", "TAINT-008"}
     )
 
@@ -384,7 +384,7 @@ class TestBuildkiteFixtures:
 
 
 class TestDockerfileFixtures:
-    EXPECTED_IDS = {f"DF-{i:03d}" for i in range(1, 31)}
+    EXPECTED_IDS = {f"DF-{i:03d}" for i in range(1, 32)}
 
     def _scan(self, filename: str):
         ctx = DockerfileContext.from_path(FIXTURES / "dockerfile" / filename)
@@ -416,7 +416,7 @@ class TestDockerfileFixtures:
 
 
 class TestKubernetesFixtures:
-    EXPECTED_IDS = {f"K8S-{i:03d}" for i in range(1, 44)}
+    EXPECTED_IDS = {f"K8S-{i:03d}" for i in range(1, 45)}
 
     def _scan(self, filename: str):
         ctx = KubernetesContext.from_path(FIXTURES / "k8s" / filename)
@@ -480,7 +480,7 @@ class TestTektonFixtures:
 
 
 class TestArgoFixtures:
-    EXPECTED_IDS = {f"ARGO-{i:03d}" for i in range(1, 17)} | {"TAINT-007"}
+    EXPECTED_IDS = {f"ARGO-{i:03d}" for i in range(1, 18)} | {"TAINT-007"}
 
     def _scan(self, filename: str):
         ctx = ArgoContext.from_path(FIXTURES / "argo" / filename)

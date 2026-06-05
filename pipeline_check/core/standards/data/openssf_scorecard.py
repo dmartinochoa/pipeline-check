@@ -71,6 +71,7 @@ STANDARD = Standard(
         "GL-001":   ["Pinned-Dependencies"],
         "GL-037": ["Pinned-Dependencies"],  # CI env disables Go module verification
         "GL-005":   ["Pinned-Dependencies"],
+        "GL-042":   ["Pinned-Dependencies"],    # include: component unpinned
         "GL-009":   ["Pinned-Dependencies"],
         "GL-018":   ["Pinned-Dependencies"],
         "GL-028":   ["Pinned-Dependencies"],
@@ -225,6 +226,7 @@ STANDARD = Standard(
         "GHA-002":  ["Dangerous-Workflow"],
         "GHA-003":  ["Dangerous-Workflow"],
         "GHA-117":  ["Dangerous-Workflow"],# IaC apply on untrusted PR trigger
+        "GHA-118":  ["Dangerous-Workflow"],# untrusted content into $GITHUB_ENV / $GITHUB_PATH
         "GHA-009":  ["Dangerous-Workflow"],
         "GHA-010":  ["Dangerous-Workflow"],
         "GHA-011":  ["Dangerous-Workflow"],
@@ -350,6 +352,7 @@ STANDARD = Standard(
         "GL-039":   ["Dangerous-Workflow"],                            # dind daemon TLS disabled / exposed on 2375
         "GL-031":   ["Token-Permissions"],                             # id_tokens missing audience
         "GL-040":   ["Token-Permissions"],                             # CI_JOB_TOKEN used for cross-project access
+        "GL-041":   ["Dangerous-Workflow"],                            # IaC apply on an untrusted MR trigger
         "GL-032":   ["Dangerous-Workflow"],                            # tags interpolates untrusted
         "JF-017":   ["Dangerous-Workflow"],                            # docker run privileged/host
         "JF-025":   ["Dangerous-Workflow"],                            # K8s agent privileged / hostPath
@@ -438,6 +441,8 @@ STANDARD = Standard(
         "IAM-006":  ["Token-Permissions"],
         "IAM-007":  ["Token-Permissions"],
         "IAM-008":  ["Token-Permissions"],                             # OIDC audience not pinned
+        "IAM-009":  ["Token-Permissions"],                             # Azure WIF broad subject
+        "IAM-010":  ["Token-Permissions"],                             # GCP WIF no repo condition
         "KMS-001":  ["Token-Permissions"],                             # CMK rotation disabled
         "KMS-002":  ["Token-Permissions"],                             # KMS policy wildcard
         "LMB-002":  ["Token-Permissions"],                             # public Lambda function URL
@@ -568,6 +573,7 @@ STANDARD = Standard(
         "ARGO-016": ["Token-Permissions"],                             # cluster-admin / over-privileged ServiceAccount
         "ARGO-004": ["Dangerous-Workflow"],                            # hostPath / namespaces
         "ARGO-005": ["Dangerous-Workflow"],                            # parameter injection
+        "ARGO-017": ["Dangerous-Workflow"],                            # resource template manifest injection
         "ARGO-006": ["Token-Permissions"],                             # leaked creds
         "ARGO-008": ["Dangerous-Workflow", "Pinned-Dependencies"],     # remote install / TLS
         "ARGO-009": ["Signed-Releases"],                               # artifact signing
@@ -610,6 +616,7 @@ STANDARD = Standard(
         # includes, and packages. ``FROM image:tag`` without a
         # digest is the canonical image-not-pinned failure.
         "DF-001": ["Pinned-Dependencies"],                              # FROM not digest-pinned
+        "DF-031": ["Pinned-Dependencies"],                              # COPY --from external image not digest-pinned
         "DF-003": ["Pinned-Dependencies"],                              # ADD remote no integrity
         "DF-004": ["Pinned-Dependencies", "Dangerous-Workflow"],        # curl-pipe
         "DF-005": ["Dangerous-Workflow"],                               # shell-eval

@@ -79,6 +79,7 @@ STANDARD = Standard(
         "GL-001":   ["GV.SC-05", "GV.SC-07"],
         "GL-037": ["GV.SC-07"],  # CI env disables Go module verification
         "GL-005":   ["GV.SC-05"],
+        "GL-042":   ["GV.SC-05"],    # include: component unpinned
         "GL-009":   ["GV.SC-05"],
         "GL-021":   ["GV.SC-05"],
         "GL-027":   ["GV.SC-05"],
@@ -138,6 +139,8 @@ STANDARD = Standard(
         "IAM-006":  ["PR.AA-05"],
         "IAM-007":  ["PR.AA-01"],
         "IAM-008":  ["PR.AA-03"],
+        "IAM-009":  ["PR.AA-03"],
+        "IAM-010":  ["PR.AA-03"],
         "KMS-002":  ["PR.AA-05"],
         "CB-001":   ["PR.AA-01"],
         "CB-006":   ["PR.AA-01"],
@@ -252,6 +255,7 @@ STANDARD = Standard(
         "CB-011":   ["PR.PS-05"],
         "GHA-003":  ["PR.PS-05"],
         "GHA-117":  ["PR.PS-05"],# IaC apply on untrusted PR trigger
+        "GHA-118":  ["PR.PS-05"],# untrusted content into $GITHUB_ENV / $GITHUB_PATH
         "GHA-016":  ["PR.PS-05"],
         "GHA-027":  ["PR.PS-05"],
         "GHA-028":  ["PR.PS-05"],
@@ -378,6 +382,7 @@ STANDARD = Standard(
         "K8S-021":  ["PR.AA-05"],               # wildcard verbs
         "K8S-022":  ["PR.IR-01"],               # SSH service exposed
         "K8S-023":  ["PR.PS-01"],               # PSA enforce missing
+        "K8S-044":  ["PR.PS-01"],               # admission webhook fail-open / unscoped mutating
         "K8S-024":  ["DE.CM-09"],               # readiness/liveness probes
         "K8S-025":  ["PR.PS-01"],               # system priority class
         "K8S-026":  ["PR.IR-01"],               # LB without source ranges
@@ -425,6 +430,7 @@ STANDARD = Standard(
         # Credential rules tie to PR.AA-01 (identity / credential
         # management). Vuln-scan / outdated-dep rules tie to PR.PS-02.
         "DF-001": ["GV.SC-05"],                 # FROM not digest-pinned
+        "DF-031": ["GV.SC-05"],                 # COPY --from external image not digest-pinned
         "DF-002": ["PR.PS-01"],                 # runs as root
         "DF-003": ["GV.SC-05", "PR.DS-02"],     # ADD remote no integrity
         "DF-004": ["GV.SC-05", "PR.DS-02"],     # curl-pipe
@@ -542,6 +548,7 @@ STANDARD = Standard(
         "GL-029":  ["PR.PS-06"],                # manual deploy allow_failure (variant)
         "GL-031":  ["PR.AA-05"],                # id_tokens missing audience pin
         "GL-040":  ["PR.AA-05"],                # CI_JOB_TOKEN used for cross-project access
+        "GL-041":  ["PR.PS-05"],                # IaC apply on an untrusted MR trigger
         "GL-032":  ["PR.PS-05"],                # tags interpolates untrusted
         "GL-033":  ["PR.PS-05"],                # global before_script taint
         "GL-034":  ["GV.SC-05"],                # npm install without audit signatures
@@ -607,6 +614,7 @@ STANDARD = Standard(
         "ARGO-016": ["PR.AA-05"],               # cluster-admin / over-privileged ServiceAccount
         "ARGO-004": ["PR.PS-01"],               # hostPath / host namespaces
         "ARGO-005": ["PR.PS-05"],               # parameter injection
+        "ARGO-017": ["PR.PS-05"],               # resource template manifest injection
         "ARGO-006": ["PR.AA-01", "PR.DS-01"],   # leaked creds
         "ARGO-007": ["PR.PS-01"],               # missing activeDeadlineSeconds
         "ARGO-008": ["GV.SC-05", "PR.DS-02"],   # remote install / TLS bypass
@@ -620,6 +628,7 @@ STANDARD = Standard(
         # ── Argo CD (GitOps deployment) ──
         "ARGOCD-010": ["GV.SC-07"],             # mutable targetRevision
         "ARGOCD-017": ["GV.SC-07"],  # in-cluster mutable source
+        "ARGOCD-019": ["GV.SC-07"],  # drift detection disabled on a sensitive field
         "ARGOCD-016": ["GV.SC-07"],  # Helm valueFiles from a remote URL
         "ARGOCD-018": ["GV.SC-07"],  # custom resource health / action Lua
         "ARGOCD-011": ["PR.AA-05"],             # cluster-resource wildcard
@@ -772,6 +781,8 @@ STANDARD = Standard(
         "NPM-015":  ["GV.SC-05", "GV.SC-07", "PR.PS-02"],  # missing build provenance
         "NPM-017":  ["GV.SC-05", "GV.SC-07", "PR.PS-02"],  # provenance built from a non-release ref
         "NPM-018":  ["GV.SC-05", "GV.SC-07", "PR.PS-02"],  # latest release from a new publisher
+        "NPM-019":  ["GV.SC-05", "GV.SC-07", "PR.PS-02"],  # overrides / resolutions redirect
+        "NPM-020":  ["GV.SC-05", "GV.SC-07", "PR.PS-02"],  # .npmrc registry repoint
         "NPM-016":  ["GV.SC-05", "GV.SC-07", "PR.PS-02"],  # low OpenSSF Scorecard
         "PYPI-008": ["GV.SC-05", "GV.SC-07", "PR.PS-02"],  # cooldown gate (--resolve-remote)
         "PYPI-009": ["GV.SC-05", "GV.SC-07", "PR.PS-02"],  # OSV advisory (--resolve-remote)
@@ -1061,6 +1072,7 @@ STANDARD = Standard(
         "GCKMS-006": ["PR.DS-01"],               # imported key
         # Developer-environment auto-execution
         "DEV-001":   ["PR.PS-05"],
+        "DEV-006":   ["PR.PS-05"],
         "DEV-002":   ["PR.PS-05"],
         "DEV-003":   ["PR.PS-05"],
         "DEV-004":   ["PR.PS-05"],
