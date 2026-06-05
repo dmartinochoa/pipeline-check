@@ -2456,192 +2456,36 @@ def scan(
         if verbose:
             click.echo(f"[debug] {msg}", err=True)
 
-    if man_topic is not None:
-        from .core import manual as _manual
-        known = set(_manual.topics())
-        requested = (man_topic or "").lower()
-        # ``--man`` alone (empty string) prints the index; only flag a
-        # typo when the user supplied a non-empty topic that isn't in
-        # the registry so scripts piping this through ``| grep`` get
-        # a non-zero exit on misuse.
-        click.echo(_manual.render(man_topic), nl=False)
-        if requested and requested != "index" and requested not in known:
-            raise click.exceptions.Exit(3)
+    if _run_informational_commands(
+        man_topic=man_topic,
+        list_standards=list_standards,
+        serve=serve,
+        list_checks=list_checks,
+        list_fixers=list_fixers,
+        fixer_safety_filter=fixer_safety_filter,
+        annotate_fp=annotate_fp,
+        fp_path=fp_path,
+        list_chains=list_chains,
+        explain_chain_id=explain_chain_id,
+        explain_id=explain_id,
+        ai_explain_id=ai_explain_id,
+        ai_model_spec=ai_model_spec,
+        ai_context_file=ai_context_file,
+        standard_report=standard_report,
+        config_check=config_check,
+        pipeline=pipeline,
+    ):
         return
 
-    if list_standards:
-        for std in _standards.resolve():
-            click.echo(f"{std.name} ,  {std.title} (v{std.version or 'n/a'})")
-            if std.url:
-                click.echo(f"    {std.url}")
-        return
-
-    if serve:
-        # Lazy import so the optional ``mcp`` SDK doesn't load at
-        # CLI startup. The harness raises a clean RuntimeError when
-        # the package isn't installed; surface it as exit 3.
-        try:
-            from .mcp_server import run_stdio
-        except ImportError as exc:  # pragma: no cover - import-time safeguard
-            click.echo(
-                f"[error] MCP support unavailable: {exc}. "
-                "Install with ``pip install 'pipeline-check[mcp]'``.",
-                err=True,
-            )
-            raise click.exceptions.Exit(3) from exc
-        try:
-            run_stdio()
-        except RuntimeError as exc:
-            click.echo(f"[error] {exc}", err=True)
-            raise click.exceptions.Exit(3) from exc
-        except KeyboardInterrupt:
-            pass
-        return
-
-    if list_checks:
-        _list_checks_for_pipeline(pipeline.lower())
-        return
-
-    if list_fixers:
-        from .core.autofix import iter_fixers
-        from .core.explain import render_fixers
-
-        fixers_body, fixers_code = render_fixers(fixer_safety_filter)
-        click.echo(fixers_body, nl=False)
-        if fixers_code == 0:
-            all_fixers = iter_fixers()
-            safe_n = sum(1 for _, s in all_fixers if s == "safe")
-            unsafe_n = len(all_fixers) - safe_n
-            click.echo(
-                f"\n{len(all_fixers)} autofixers registered "
-                f"({safe_n} safe, {unsafe_n} unsafe). `--fix` runs safe "
-                "only; `--fix=unsafe` runs both. A registered fixer still "
-                "emits no patch when the finding is already remediated or "
-                "the edit wouldn't round-trip as valid YAML.",
-                err=True,
-            )
-        raise click.exceptions.Exit(fixers_code)
-
-    if annotate_fp:
-        # ``--annotate-fp CHECK_ID RESOURCE`` writes the local
-        # annotation file and exits without scanning. Idempotent.
-        from .core.fp_annotations import (
-            DEFAULT_FP_PATH,
-            append_annotation,
-        )
-
-        cid, resource = annotate_fp
-        target_path = fp_path or DEFAULT_FP_PATH
-        try:
-            wrote = append_annotation(cid, resource, path=target_path)
-        except (OSError, ValueError) as exc:
-            raise click.UsageError(
-                f"could not write {target_path}: {exc}"
-            ) from exc
-        if wrote:
-            click.echo(
-                f"[annotate-fp] recorded {cid.upper()}:{resource} "
-                f"in {target_path}"
-            )
-        else:
-            click.echo(
-                f"[annotate-fp] {cid.upper()}:{resource} already "
-                f"present in {target_path} (no change)"
-            )
-        return
-
-    if list_chains:
-        raise click.exceptions.Exit(_eager_print_list_chains())
-
-    if explain_chain_id:
-        raise click.exceptions.Exit(_eager_print_explain_chain(explain_chain_id))
-
-    if explain_id and ai_explain_id:
-        # ``--ai-explain`` already runs the deterministic body before
-        # the AI section, so passing both flags is always a mistake.
-        # Reject it explicitly instead of silently letting ``--explain``
-        # win (which used to drop the AI section without any signal).
-        raise click.UsageError(
-            "--explain and --ai-explain are mutually exclusive. "
-            "Use --ai-explain CHECK_ID for the deterministic body "
-            "plus the AI-generated section, or --explain CHECK_ID "
-            "for the deterministic body alone."
-        )
-
-    if explain_id:
-        from .core.explain import print_explain
-        raise click.exceptions.Exit(print_explain(explain_id))
-
-    if ai_explain_id:
-        raise click.exceptions.Exit(_run_ai_explain(
-            ai_explain_id,
-            model_spec=ai_model_spec,
-            context_file=ai_context_file,
-        ))
-
-    if standard_report:
-        _eager_print_standard_report(standard_report)
-        return
-
-    if config_check:
-        from .core.config import last_unknown_keys
-        dropped = last_unknown_keys()
-        if not dropped:
-            click.echo("[config] OK, no unknown keys.")
-            return
-        for source, key, reason in dropped:
-            click.echo(f"[config] {source}: {key!r}, {reason}", err=True)
-        click.echo(f"[config] {len(dropped)} unknown key(s) detected.", err=True)
-        raise click.exceptions.Exit(3)
-
-    # --config-strict: abort a real scan when the loaded config carried an
-    # unknown key, rather than the default warn-and-drop. Catches a typo
-    # that would otherwise silently disable a setting (e.g. a gate key
-    # written at the top level instead of under 'gate:').
-    if config_strict:
-        from .core.config import last_unknown_keys
-        dropped = last_unknown_keys()
-        if dropped:
-            for source, key, reason in dropped:
-                click.echo(f"[config] {source}: {key!r}, {reason}", err=True)
-            raise click.UsageError(
-                f"--config-strict: {len(dropped)} unknown config key(s) "
-                f"detected (see above). Fix the key(s) or drop "
-                f"--config-strict."
-            )
-
-    if apply_fixes and not fix:
-        raise click.UsageError("--apply requires --fix.")
-
-    # Mutually-exclusive flag combinations, catch these before the
-    # provider context is built so the error points at the conflict
-    # rather than surfacing as a silent no-op later.
-    if inventory_only and fix:
-        raise click.UsageError(
-            "--fix cannot be combined with --inventory-only "
-            "(no findings are produced to fix)."
-        )
-    if inventory_only and diff_base:
-        raise click.UsageError(
-            "--diff-base cannot be combined with --inventory-only "
-            "(inventory is a full-state snapshot, not a per-commit delta)."
-        )
-    if inventory_only and baseline:
-        raise click.UsageError(
-            "--baseline cannot be combined with --inventory-only "
-            "(baselines gate findings; --inventory-only emits no findings)."
-        )
-    if inventory_only and ingest_paths:
-        raise click.UsageError(
-            "--ingest cannot be combined with --inventory-only "
-            "(inventory-only emits no findings or chains for the "
-            "ingested SARIF to merge into)."
-        )
-
-    # Validate --baseline early so a typo'd path doesn't surface as
-    # "no regressions found" after a full scan completes.
-    if baseline and not os.path.isfile(baseline):
-        raise click.UsageError(f"--baseline file not found: {baseline}")
+    _validate_scan_flags_early(
+        config_strict=config_strict,
+        apply_fixes=apply_fixes,
+        fix=fix,
+        inventory_only=inventory_only,
+        diff_base=diff_base,
+        baseline=baseline,
+        ingest_paths=ingest_paths,
+    )
 
     # Parse --pipelines (multi-provider mode). Mutually exclusive
     # with the single-valued --pipeline flag, the user picks one or
@@ -2961,84 +2805,19 @@ def scan(
                 detect_label="Pulumi.yaml",
             )
 
-    if output == "html" and not output_file:
-        raise click.UsageError(
-            "--output-file PATH is required when --output html."
-        )
-
-    for pat in secret_patterns:
-        try:
-            re.compile(pat)
-        except re.error as exc:
-            raise click.UsageError(
-                f"--secret-pattern {pat!r} is not a valid regex: {exc}"
-            ) from exc
-
-    for crp in custom_rules:
-        if not os.path.exists(crp):
-            raise click.UsageError(f"--custom-rules not found: {crp}")
-
-    for rrp in rego_rules:
-        if not os.path.exists(rrp):
-            raise click.UsageError(f"--rego-rules not found: {rrp}")
-
-    if diff_base is not None and diff_base.startswith("-"):
-        # ``diff_base`` is composed into ``git diff --name-only
-        # <base>...HEAD``. A leading ``-`` makes git parse the value
-        # as an option (e.g. ``--output=path``, write-anywhere
-        # primitive). Catch it here so the CLI shows a clean
-        # UsageError; the helper also validates as defense in depth
-        # (CWE-88, argument injection).
-        raise click.UsageError(
-            "--diff-base must not start with '-' "
-            "(would be parsed as a git flag, not a positional ref)"
-        )
-
-    if pr_diff is not None:
-        if pr_diff.startswith("-"):
-            # Same argument-injection concern as ``--diff-base``: the
-            # ref string flows into ``git worktree add`` and ``git
-            # rev-parse``. The pr_diff module re-validates as a second
-            # line of defense.
-            raise click.UsageError(
-                "--pr-diff must not start with '-' "
-                "(would be parsed as a git flag, not a positional ref)"
-            )
-        if inventory_only:
-            raise click.UsageError(
-                "--pr-diff cannot be combined with --inventory-only "
-                "(inventory is a full-state snapshot, not a per-PR delta)."
-            )
-        if fix:
-            raise click.UsageError(
-                "--pr-diff cannot be combined with --fix "
-                "(diff mode reports the delta; it does not modify either side)."
-            )
-        if baseline or baseline_from_git:
-            raise click.UsageError(
-                "--pr-diff is mutually exclusive with --baseline / "
-                "--baseline-from-git (both define a comparison; pick one)."
-            )
-        if diff_base:
-            raise click.UsageError(
-                "--pr-diff is mutually exclusive with --diff-base. "
-                "--diff-base scopes the scan to changed files only, "
-                "which would leave the base side empty by construction."
-            )
-        # ``--pr-diff`` always emits Markdown to stdout (or
-        # ``--output-file``). The other formats don't fit the
-        # "delta of failures" shape we ship today, and silently
-        # honoring ``--output json`` while emitting Markdown was a
-        # surprising mismatch. Accept the default (``terminal``)
-        # since it's what every invocation without an explicit
-        # ``--output`` carries; accept ``markdown`` for an
-        # explicit-intent invocation; reject everything else.
-        if output not in ("terminal", "markdown"):
-            raise click.UsageError(
-                f"--pr-diff produces a Markdown delta report; "
-                f"--output {output!r} is not supported. Drop "
-                f"``--output`` or pass ``--output markdown``."
-            )
+    _validate_scan_inputs(
+        output=output,
+        output_file=output_file,
+        secret_patterns=secret_patterns,
+        custom_rules=custom_rules,
+        rego_rules=rego_rules,
+        diff_base=diff_base,
+        pr_diff=pr_diff,
+        inventory_only=inventory_only,
+        fix=fix,
+        baseline=baseline,
+        baseline_from_git=baseline_from_git,
+    )
 
     threshold = Severity(severity_threshold.upper())
     confidence_threshold = Confidence(min_confidence.upper())
@@ -3693,6 +3472,348 @@ def scan(
 
     if not gate.passed:
         raise click.exceptions.Exit(1)
+
+
+def _validate_scan_flags_early(
+    *,
+    config_strict: bool,
+    apply_fixes: bool,
+    fix: str | None,
+    inventory_only: bool,
+    diff_base: str | None,
+    baseline: str | None,
+    ingest_paths: tuple[str, ...],
+) -> None:
+    """Validate flags before the provider context is built.
+
+    ``--config-strict`` aborts when the loaded config carried an unknown
+    key; the rest are mutual-exclusion / existence guards (``--apply``
+    needs ``--fix``; ``--inventory-only`` can't combine with fix /
+    diff-base / baseline / ingest; ``--baseline`` must point at a real
+    file). Raising here points the error at the conflict rather than a
+    silent no-op later. Raises ``click.UsageError``.
+    """
+    # --config-strict: abort a real scan when the loaded config carried an
+    # unknown key, rather than the default warn-and-drop. Catches a typo
+    # that would otherwise silently disable a setting (e.g. a gate key
+    # written at the top level instead of under 'gate:').
+    if config_strict:
+        from .core.config import last_unknown_keys
+        dropped = last_unknown_keys()
+        if dropped:
+            for source, key, reason in dropped:
+                click.echo(f"[config] {source}: {key!r}, {reason}", err=True)
+            raise click.UsageError(
+                f"--config-strict: {len(dropped)} unknown config key(s) "
+                f"detected (see above). Fix the key(s) or drop "
+                f"--config-strict."
+            )
+
+    if apply_fixes and not fix:
+        raise click.UsageError("--apply requires --fix.")
+
+    # Mutually-exclusive flag combinations, catch these before the
+    # provider context is built so the error points at the conflict
+    # rather than surfacing as a silent no-op later.
+    if inventory_only and fix:
+        raise click.UsageError(
+            "--fix cannot be combined with --inventory-only "
+            "(no findings are produced to fix)."
+        )
+    if inventory_only and diff_base:
+        raise click.UsageError(
+            "--diff-base cannot be combined with --inventory-only "
+            "(inventory is a full-state snapshot, not a per-commit delta)."
+        )
+    if inventory_only and baseline:
+        raise click.UsageError(
+            "--baseline cannot be combined with --inventory-only "
+            "(baselines gate findings; --inventory-only emits no findings)."
+        )
+    if inventory_only and ingest_paths:
+        raise click.UsageError(
+            "--ingest cannot be combined with --inventory-only "
+            "(inventory-only emits no findings or chains for the "
+            "ingested SARIF to merge into)."
+        )
+
+    # Validate --baseline early so a typo'd path doesn't surface as
+    # "no regressions found" after a full scan completes.
+    if baseline and not os.path.isfile(baseline):
+        raise click.UsageError(f"--baseline file not found: {baseline}")
+
+
+def _validate_scan_inputs(
+    *,
+    output: str,
+    output_file: str | None,
+    secret_patterns: tuple[str, ...],
+    custom_rules: tuple[str, ...],
+    rego_rules: tuple[str, ...],
+    diff_base: str | None,
+    pr_diff: str | None,
+    inventory_only: bool,
+    fix: str | None,
+    baseline: str | None,
+    baseline_from_git: str | None,
+) -> None:
+    """Validate flag combinations checked after provider/path resolution.
+
+    These don't depend on the resolved paths: the ``--output html`` file
+    requirement, the regex / file-existence checks for
+    ``--secret-pattern`` / ``--custom-rules`` / ``--rego-rules``, and the
+    argument-injection + mutual-exclusivity guards on ``--diff-base`` /
+    ``--pr-diff``. Raises ``click.UsageError`` on the first problem.
+    """
+    if output == "html" and not output_file:
+        raise click.UsageError(
+            "--output-file PATH is required when --output html."
+        )
+
+    for pat in secret_patterns:
+        try:
+            re.compile(pat)
+        except re.error as exc:
+            raise click.UsageError(
+                f"--secret-pattern {pat!r} is not a valid regex: {exc}"
+            ) from exc
+
+    for crp in custom_rules:
+        if not os.path.exists(crp):
+            raise click.UsageError(f"--custom-rules not found: {crp}")
+
+    for rrp in rego_rules:
+        if not os.path.exists(rrp):
+            raise click.UsageError(f"--rego-rules not found: {rrp}")
+
+    if diff_base is not None and diff_base.startswith("-"):
+        # ``diff_base`` is composed into ``git diff --name-only
+        # <base>...HEAD``. A leading ``-`` makes git parse the value
+        # as an option (e.g. ``--output=path``, write-anywhere
+        # primitive). Catch it here so the CLI shows a clean
+        # UsageError; the helper also validates as defense in depth
+        # (CWE-88, argument injection).
+        raise click.UsageError(
+            "--diff-base must not start with '-' "
+            "(would be parsed as a git flag, not a positional ref)"
+        )
+
+    if pr_diff is not None:
+        if pr_diff.startswith("-"):
+            # Same argument-injection concern as ``--diff-base``: the
+            # ref string flows into ``git worktree add`` and ``git
+            # rev-parse``. The pr_diff module re-validates as a second
+            # line of defense.
+            raise click.UsageError(
+                "--pr-diff must not start with '-' "
+                "(would be parsed as a git flag, not a positional ref)"
+            )
+        if inventory_only:
+            raise click.UsageError(
+                "--pr-diff cannot be combined with --inventory-only "
+                "(inventory is a full-state snapshot, not a per-PR delta)."
+            )
+        if fix:
+            raise click.UsageError(
+                "--pr-diff cannot be combined with --fix "
+                "(diff mode reports the delta; it does not modify either side)."
+            )
+        if baseline or baseline_from_git:
+            raise click.UsageError(
+                "--pr-diff is mutually exclusive with --baseline / "
+                "--baseline-from-git (both define a comparison; pick one)."
+            )
+        if diff_base:
+            raise click.UsageError(
+                "--pr-diff is mutually exclusive with --diff-base. "
+                "--diff-base scopes the scan to changed files only, "
+                "which would leave the base side empty by construction."
+            )
+        # ``--pr-diff`` always emits Markdown to stdout (or
+        # ``--output-file``). The other formats don't fit the
+        # "delta of failures" shape we ship today, and silently
+        # honoring ``--output json`` while emitting Markdown was a
+        # surprising mismatch. Accept the default (``terminal``)
+        # since it's what every invocation without an explicit
+        # ``--output`` carries; accept ``markdown`` for an
+        # explicit-intent invocation; reject everything else.
+        if output not in ("terminal", "markdown"):
+            raise click.UsageError(
+                f"--pr-diff produces a Markdown delta report; "
+                f"--output {output!r} is not supported. Drop "
+                f"``--output`` or pass ``--output markdown``."
+            )
+
+
+def _run_informational_commands(
+    *,
+    man_topic: str | None,
+    list_standards: bool,
+    serve: bool,
+    list_checks: bool,
+    list_fixers: bool,
+    fixer_safety_filter: str,
+    annotate_fp: tuple[str, str] | None,
+    fp_path: str | None,
+    list_chains: bool,
+    explain_chain_id: str | None,
+    explain_id: str | None,
+    ai_explain_id: str | None,
+    ai_model_spec: str | None,
+    ai_context_file: str | None,
+    standard_report: str | None,
+    config_check: bool,
+    pipeline: str,
+) -> bool:
+    """Handle the informational / eager-exit flags that short-circuit a scan.
+
+    These flags (``--man``, ``--list-standards``, ``--serve``,
+    ``--list-checks``, ``--list-fixers``, ``--annotate-fp``,
+    ``--list-chains``, ``--explain-chain``, ``--explain`` /
+    ``--ai-explain``, ``--standard-report``, ``--config-check``) each do
+    their own thing and stop before any provider is scanned. Returns True
+    when one handled the invocation (the caller then returns); the ones
+    that carry a specific exit code raise ``click.exceptions.Exit``
+    directly. Returns False when none matched and a real scan should run.
+    """
+    if man_topic is not None:
+        from .core import manual as _manual
+        known = set(_manual.topics())
+        requested = (man_topic or "").lower()
+        # ``--man`` alone (empty string) prints the index; only flag a
+        # typo when the user supplied a non-empty topic that isn't in
+        # the registry so scripts piping this through ``| grep`` get
+        # a non-zero exit on misuse.
+        click.echo(_manual.render(man_topic), nl=False)
+        if requested and requested != "index" and requested not in known:
+            raise click.exceptions.Exit(3)
+        return True
+
+    if list_standards:
+        for std in _standards.resolve():
+            click.echo(f"{std.name} ,  {std.title} (v{std.version or 'n/a'})")
+            if std.url:
+                click.echo(f"    {std.url}")
+        return True
+
+    if serve:
+        # Lazy import so the optional ``mcp`` SDK doesn't load at
+        # CLI startup. The harness raises a clean RuntimeError when
+        # the package isn't installed; surface it as exit 3.
+        try:
+            from .mcp_server import run_stdio
+        except ImportError as exc:  # pragma: no cover - import-time safeguard
+            click.echo(
+                f"[error] MCP support unavailable: {exc}. "
+                "Install with ``pip install 'pipeline-check[mcp]'``.",
+                err=True,
+            )
+            raise click.exceptions.Exit(3) from exc
+        try:
+            run_stdio()
+        except RuntimeError as exc:
+            click.echo(f"[error] {exc}", err=True)
+            raise click.exceptions.Exit(3) from exc
+        except KeyboardInterrupt:
+            pass
+        return True
+
+    if list_checks:
+        _list_checks_for_pipeline(pipeline.lower())
+        return True
+
+    if list_fixers:
+        from .core.autofix import iter_fixers
+        from .core.explain import render_fixers
+
+        fixers_body, fixers_code = render_fixers(fixer_safety_filter)
+        click.echo(fixers_body, nl=False)
+        if fixers_code == 0:
+            all_fixers = iter_fixers()
+            safe_n = sum(1 for _, s in all_fixers if s == "safe")
+            unsafe_n = len(all_fixers) - safe_n
+            click.echo(
+                f"\n{len(all_fixers)} autofixers registered "
+                f"({safe_n} safe, {unsafe_n} unsafe). `--fix` runs safe "
+                "only; `--fix=unsafe` runs both. A registered fixer still "
+                "emits no patch when the finding is already remediated or "
+                "the edit wouldn't round-trip as valid YAML.",
+                err=True,
+            )
+        raise click.exceptions.Exit(fixers_code)
+
+    if annotate_fp:
+        # ``--annotate-fp CHECK_ID RESOURCE`` writes the local
+        # annotation file and exits without scanning. Idempotent.
+        from .core.fp_annotations import (
+            DEFAULT_FP_PATH,
+            append_annotation,
+        )
+
+        cid, resource = annotate_fp
+        target_path = fp_path or DEFAULT_FP_PATH
+        try:
+            wrote = append_annotation(cid, resource, path=target_path)
+        except (OSError, ValueError) as exc:
+            raise click.UsageError(
+                f"could not write {target_path}: {exc}"
+            ) from exc
+        if wrote:
+            click.echo(
+                f"[annotate-fp] recorded {cid.upper()}:{resource} "
+                f"in {target_path}"
+            )
+        else:
+            click.echo(
+                f"[annotate-fp] {cid.upper()}:{resource} already "
+                f"present in {target_path} (no change)"
+            )
+        return True
+
+    if list_chains:
+        raise click.exceptions.Exit(_eager_print_list_chains())
+
+    if explain_chain_id:
+        raise click.exceptions.Exit(_eager_print_explain_chain(explain_chain_id))
+
+    if explain_id and ai_explain_id:
+        # ``--ai-explain`` already runs the deterministic body before
+        # the AI section, so passing both flags is always a mistake.
+        # Reject it explicitly instead of silently letting ``--explain``
+        # win (which used to drop the AI section without any signal).
+        raise click.UsageError(
+            "--explain and --ai-explain are mutually exclusive. "
+            "Use --ai-explain CHECK_ID for the deterministic body "
+            "plus the AI-generated section, or --explain CHECK_ID "
+            "for the deterministic body alone."
+        )
+
+    if explain_id:
+        from .core.explain import print_explain
+        raise click.exceptions.Exit(print_explain(explain_id))
+
+    if ai_explain_id:
+        raise click.exceptions.Exit(_run_ai_explain(
+            ai_explain_id,
+            model_spec=ai_model_spec,
+            context_file=ai_context_file,
+        ))
+
+    if standard_report:
+        _eager_print_standard_report(standard_report)
+        return True
+
+    if config_check:
+        from .core.config import last_unknown_keys
+        dropped = last_unknown_keys()
+        if not dropped:
+            click.echo("[config] OK, no unknown keys.")
+            return True
+        for source, key, reason in dropped:
+            click.echo(f"[config] {source}: {key!r}, {reason}", err=True)
+        click.echo(f"[config] {len(dropped)} unknown key(s) detected.", err=True)
+        raise click.exceptions.Exit(3)
+    return False
 
 
 def _run_ai_explain(

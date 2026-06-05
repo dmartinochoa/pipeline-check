@@ -775,14 +775,25 @@ same day; the rest are queued for a later pass.
     ``core/fix_apply.py``. cli.py re-imports both under their old private
     names, so the public surface is unchanged. cli.py is down to ~5,254
     lines.
-  - Remaining (queued): the big one is ``scan()`` itself (1,372 lines /
-    ~70 params). Introduce a ``ScanRequest`` / ``ScanOptions`` dataclass
-    Click populates once, extract the body seams (path resolution,
-    scanner construction, post-scan filtering, output dispatch, gate),
-    and replace the 7-way output if-chain with a ``dict[str, Reporter]``
-    dispatch table. Then split the subcommands into a ``cli/`` package.
-    Also fold the LSP's hardcoded provider table (``lsp/detection.py``'s
-    dead ``_DETECTORS``) onto the new ``core/detect.py``.
+  - ~~``scan()`` body seams, phase 1 (done 2026-06-05 on ``dev``):~~ the
+    eager / informational-command cluster (``--man`` / ``--list-*`` /
+    ``--serve`` / ``--explain`` / ``--annotate-fp`` / ``--config-check``,
+    etc.) became ``_run_informational_commands``, and the two validation
+    phases became ``_validate_scan_flags_early`` (pre-resolution:
+    config-strict, apply/fix, inventory mutual-exclusions, baseline
+    exists) and ``_validate_scan_inputs`` (post-resolution: html /
+    secret-regex / custom-rules / diff-base / pr-diff). ~263 lines of
+    ``scan()``'s body moved into three named, focused helpers; behavior
+    byte-identical (full CLI suite green). ``scan()`` body is now ~1,110
+    lines.
+  - Remaining (queued): the larger seams still inline in ``scan()`` are
+    per-provider path resolution (mutates ~30 path vars, wants a
+    ``ScanRequest`` / paths-bundle to extract cleanly), the
+    ``_scanner_kwargs`` build + scanner construction, and the output
+    dispatch (replace the 7-way if-chain with a ``dict[str, Reporter]``
+    table). Then split the subcommands into a ``cli/`` package. Also fold
+    the LSP's dead ``_DETECTORS`` table (``lsp/detection.py``) onto the
+    new ``core/detect.py``.
 
 **Medium priority (queued):**
 
