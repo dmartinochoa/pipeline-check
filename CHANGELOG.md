@@ -10,6 +10,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 PRs landing on `dev` between releases append entries below. The
 release commit collapses this section into `## [X.Y.Z] - <date>`.
 
+## [1.10.0] - 2026-06-05
+
 ### Added
 
 - **HTML report: step-level pipeline graph (DAG v2), GitHub.** The HTML
