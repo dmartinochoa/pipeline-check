@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 from typing import Any
+from urllib.parse import urlparse
 
 from ...base import Finding, Severity
 from ...rule import Rule
@@ -82,7 +83,17 @@ def check(ctx: TerraformContext) -> list[Finding]:
             continue
         cond = prov.values.get("attribute_condition")
         cond_text = cond.lower() if isinstance(cond, str) else ""
-        is_ci_issuer = any(host in issuer for host in _CI_ISSUERS)
+        # Match on the parsed hostname, not a raw substring: ``host in
+        # issuer`` would treat ``gitlab.company.com`` as ``gitlab.com`` and
+        # ``...githubusercontent.com.attacker.com`` as the GitHub issuer.
+        issuer_host = (urlparse(
+            issuer if issuer.startswith(("http://", "https://"))
+            else f"https://{issuer}"
+        ).hostname or "").lower()
+        is_ci_issuer = any(
+            issuer_host == ci or issuer_host.endswith(f".{ci}")
+            for ci in _CI_ISSUERS
+        )
 
         if not cond_text.strip():
             reason = "no attribute_condition: any token from the issuer can federate"

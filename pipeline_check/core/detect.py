@@ -45,7 +45,7 @@ PROVIDER_DETECT_FILES: tuple[tuple[str, tuple[str, ...], tuple[str, ...]], ...] 
     ("composer", ("composer.json",), ()),
     ("rubygems", ("Gemfile",), ()),
     ("pulumi", ("Pulumi.yaml",), ()),
-    ("terraform", ("main.tf",), ()),
+    ("terraform", ("main.tf", "providers.tf", "versions.tf", "terraform.tf"), ()),
     (
         "cloudformation",
         (

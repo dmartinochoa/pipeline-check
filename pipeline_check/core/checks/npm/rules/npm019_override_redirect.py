@@ -102,6 +102,20 @@ def _redirect_kind(spec: str) -> str | None:
     return None
 
 
+def _npm_alias_target(spec: str) -> str | None:
+    """Package name an ``npm:`` alias points at, lowercased; ``None`` when the
+    spec is not an ``npm:`` alias or carries no name."""
+    s = spec.strip()
+    if not s.lower().startswith("npm:"):
+        return None
+    body = s[4:].strip()
+    if not body:
+        return None
+    # A scoped name keeps its leading ``@``; the version ``@`` is the next one.
+    at = body.find("@", 1) if body.startswith("@") else body.find("@")
+    return (body if at < 0 else body[:at]).lower()
+
+
 def _walk_overrides(
     node: Any, path: str, out: list[tuple[str, str]],
 ) -> None:
@@ -136,6 +150,13 @@ def check(manifest: NpmManifest) -> Finding:
         kind = _redirect_kind(spec)
         if kind is None:
             continue
+        if spec.strip().lower().startswith("npm:"):
+            target = _npm_alias_target(spec)
+            source = label.rsplit(" > ", 1)[-1].strip().lower()
+            if target and source and target == source:
+                # Same-package alias (``"foo": "npm:foo@2"``) only pins a
+                # version; it does not redirect to a different package.
+                continue
         offenders.append(f"{label or '?'} -> {spec} ({kind})")
         idx = manifest.text.find(spec)
         line_no = manifest.text[:idx].count("\n") + 1 if idx >= 0 else 1

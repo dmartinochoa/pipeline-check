@@ -237,7 +237,8 @@ def report_terminal(
         f"[dim]({total} checks)[/dim]",
     ]
     if incomplete:
-        header_lines.append(f"[yellow]incomplete scan: {incomplete_reason}[/yellow]")
+        reason = rich_escape(incomplete_reason or "")
+        header_lines.append(f"[yellow]incomplete scan: {reason}[/yellow]")
 
     console.print(
         Panel(

@@ -444,7 +444,13 @@ class Scanner:
 
         # Build the step-level pipeline graphs from the retained context.
         # Additive visual signal only; build_graphs_for swallows failures.
-        self.pipeline_graphs = build_graphs_for(self.pipeline, self._context)
+        pipeline = getattr(self, "pipeline", None)
+        context = getattr(self, "_context", None)
+        self.pipeline_graphs = (
+            build_graphs_for(pipeline, context)
+            if isinstance(pipeline, str) and context is not None
+            else []
+        )
 
         self.metadata.elapsed_seconds = time.monotonic() - t0
 
