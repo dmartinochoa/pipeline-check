@@ -766,15 +766,23 @@ same day; the rest are queued for a later pass.
     can detect an incomplete scan, and add an opt-in
     ``--fail-on-parse-error`` so the gate can treat an unparseable file
     as a failure rather than passing silently.
-- **Decompose ``cli.py`` (5,460 lines; ``scan()`` is 1,372 lines /
-  ~70 params).** Introduce a ``ScanRequest``/``ScanOptions`` dataclass
-  Click populates once; split into a ``cli/`` package (one module per
-  subcommand) over extracted ``core/`` seams: fix-application
-  (``cli.py:4084-4171``) into ``core/fix_apply.py``, provider
-  autodetection into a shared ``core/detect.py`` that the LSP
-  (``lsp/scan.py``, which re-implements provider dispatch) and MCP also
-  consume. Replace the 7-way output if-chain with a
-  ``dict[str, Reporter]`` dispatch table.
+- **Decompose ``cli.py`` (was 5,491 lines; ``scan()`` is 1,372 lines /
+  ~70 params).**
+  - ~~Core-seam extraction (done 2026-06-05 on ``dev``):~~ provider
+    autodetection moved to ``core/detect.py`` (Click-free, now shareable
+    by the LSP / MCP, with ``test_detect.py``), and the fix-application
+    engine (plan / write / apply / emit patches) moved to
+    ``core/fix_apply.py``. cli.py re-imports both under their old private
+    names, so the public surface is unchanged. cli.py is down to ~5,254
+    lines.
+  - Remaining (queued): the big one is ``scan()`` itself (1,372 lines /
+    ~70 params). Introduce a ``ScanRequest`` / ``ScanOptions`` dataclass
+    Click populates once, extract the body seams (path resolution,
+    scanner construction, post-scan filtering, output dispatch, gate),
+    and replace the 7-way output if-chain with a ``dict[str, Reporter]``
+    dispatch table. Then split the subcommands into a ``cli/`` package.
+    Also fold the LSP's hardcoded provider table (``lsp/detection.py``'s
+    dead ``_DETECTORS``) onto the new ``core/detect.py``.
 
 **Medium priority (queued):**
 
