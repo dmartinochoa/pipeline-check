@@ -86,6 +86,33 @@ class TestReportTerminal:
     def test_renders_empty_findings(self):
         self._run([])
 
+    def test_complete_scan_has_no_incomplete_banner(self):
+        import io
+        buf = io.StringIO()
+        console = Console(file=buf, highlight=False, width=120)
+        findings = [_f("CB-005", Severity.INFO, True)]
+        report_terminal(findings, score(findings), console=console)
+        output = buf.getvalue()
+        assert "incomplete" not in output.lower()
+        assert "Grade A" in output
+
+    def test_incomplete_reason_flags_the_grade(self):
+        # A degraded scan must not read as a confident pass. The grade
+        # gets an "(incomplete)" tag and a status line carries the reason.
+        import io
+        buf = io.StringIO()
+        console = Console(file=buf, highlight=False, width=120)
+        findings = [_f("CB-005", Severity.INFO, True)]
+        report_terminal(
+            findings, score(findings), console=console,
+            incomplete_reason="1 file(s) could not be parsed. "
+            "The grade reflects only what was scanned.",
+        )
+        output = buf.getvalue()
+        assert "(incomplete)" in output
+        assert "incomplete scan:" in output
+        assert "could not be parsed" in output
+
     def test_severity_threshold_filters(self):
         import io
         buf = io.StringIO()

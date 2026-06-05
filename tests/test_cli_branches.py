@@ -48,6 +48,46 @@ def _finding(
     )
 
 
+class TestIncompleteScan:
+    """A degraded scan (unparseable file, failed cloud probe) must not
+    present as a confident pass. The terminal report flags the grade as
+    incomplete and explains why."""
+
+    def test_terminal_flags_unparseable_file(self, tmp_path, monkeypatch):
+        monkeypatch.chdir(tmp_path)
+        wf = tmp_path / ".github" / "workflows"
+        wf.mkdir(parents=True)
+        # Unbalanced bracket: YAML parse error, so no checks run on it.
+        (wf / "bad.yml").write_text("on: [push\njobs:\n  b:\n")
+        result = CliRunner().invoke(
+            scan, ["--pipeline", "github", "--output", "terminal"]
+        )
+        out = result.output
+        assert "incomplete scan:" in out
+        assert "could not be parsed" in out
+        # The grade carries the explicit tag rather than reading clean.
+        assert "(incomplete)" in out
+
+    def test_reason_helper(self):
+        from types import SimpleNamespace
+
+        from pipeline_check.cli import _scan_incomplete_reason
+
+        # A parse-error warning marks the scan incomplete.
+        meta = SimpleNamespace(warnings=["bad.yml: YAML parse error: ..."])
+        assert "could not be parsed" in _scan_incomplete_reason(meta, [])
+
+        # A degraded ``*-000`` cloud probe marks it incomplete too.
+        degraded = _finding(check_id="IAM-000", passed=False)
+        clean_meta = SimpleNamespace(warnings=[])
+        reason = _scan_incomplete_reason(clean_meta, [degraded])
+        assert reason is not None and "failed API access" in reason
+
+        # A clean scan returns None (no banner).
+        ok = _finding(check_id="CB-001", passed=True)
+        assert _scan_incomplete_reason(SimpleNamespace(warnings=[]), [ok]) is None
+
+
 class TestListStandards:
     def test_prints_every_registered_standard(self, runner):
         from pipeline_check.core import standards

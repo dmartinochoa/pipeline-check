@@ -740,13 +740,21 @@ same day; the rest are queued for a later pass.
   CycloneDX 1.6, and JUnit output against vendored official schemas
   (these feed GitHub code-scanning / ADO / Jenkins blind today).
 - **Honest status on degraded / unparseable scans.** A malformed YAML
-  file or a credential-less cloud scan currently prints
+  file or a credential-less cloud scan used to print
   ``Score 100/100 · Grade A · [gate] PASS`` next to a parse warning (and
-  AWS-no-creds shows Grade A beside ``14 failed``). A security tool must
-  not report a green grade when it parsed nothing. Gate the grade behind
-  "did we actually parse a file", and surface a distinct
-  "scan incomplete" status. Terminal reporter + ``scanner.py`` degraded
-  flag.
+  AWS-no-creds showed Grade A beside ``14 failed``). A security tool must
+  not report a green grade when it parsed nothing.
+  - ~~Terminal report (done 2026-06-05 on ``dev``):~~ the headline now
+    renders ``Grade A (incomplete)`` in a caution style with an
+    ``incomplete scan: N file(s) could not be parsed ...`` status line
+    whenever a file failed to parse or a cloud module failed API access
+    (``reporter.py`` ``incomplete_reason`` +
+    ``cli.py:_scan_incomplete_reason``).
+  - Follow-up (queued): carry the same ``scan_status`` (files scanned /
+    unparsed / degraded) in the JSON and SARIF outputs so CI consumers
+    can detect an incomplete scan, and add an opt-in
+    ``--fail-on-parse-error`` so the gate can treat an unparseable file
+    as a failure rather than passing silently.
 - **Decompose ``cli.py`` (5,460 lines; ``scan()`` is 1,372 lines /
   ~70 params).** Introduce a ``ScanRequest``/``ScanOptions`` dataclass
   Click populates once; split into a ``cli/`` package (one module per
