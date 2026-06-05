@@ -16,9 +16,11 @@ release commit collapses this section into `## [X.Y.Z] - <date>`.
   report now renders each GitHub Actions workflow as a layered jobs ->
   steps SVG: jobs and steps are nodes, `needs:` are edges, and each node
   is colored by the worst finding that lands on it (mapped by source
-  line, with a job / file fallback for line-less findings). It sits above
-  the resource-level blast-radius heatmap, which still ranks every
-  resource. Pure inline SVG, no JS / CDN / network. The Scanner now
+  line, with a job / file fallback for line-less findings). Only pipelines
+  that have findings render, worst-load first, with a severity legend and
+  a count of any files elided beyond the display cap. It sits above the
+  resource-level blast-radius heatmap, which still ranks every resource.
+  Pure inline SVG, no JS / CDN / network. The Scanner now
   exposes a `pipeline_graphs` attribute (built from the retained provider
   context, like `chains`); only the HTML reporter consumes it, so every
   other reporter is unchanged. This is the first increment of the

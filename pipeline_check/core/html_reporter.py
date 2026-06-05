@@ -1338,31 +1338,56 @@ def _dag_job_layers(graph: PipelineGraph) -> dict[str, int]:
     return layer
 
 
-def _dag_job_worst(
-    graph: PipelineGraph, badges: dict[str, NodeBadge], job_id: str,
+def _dag_job_summary(
+    badges: dict[str, NodeBadge],
+    steps_by_job: dict[str, list[GraphNode]],
+    job_id: str,
 ) -> tuple[str, int]:
     """Aggregate (color, total count) for a job: itself plus its steps."""
     sevs: list[Severity] = []
     total = 0
-    own = badges.get(job_id)
-    if own:
-        sevs.append(own.worst)
-        total += own.count
-    for n in graph.nodes:
-        if n.parent == job_id and n.id in badges:
-            nb = badges[n.id]
-            sevs.append(nb.worst)
-            total += nb.count
+    for node_id in (job_id, *(s.id for s in steps_by_job.get(job_id, []))):
+        b = badges.get(node_id)
+        if b:
+            sevs.append(b.worst)
+            total += b.count
     if not sevs:
         return _DAG_NEUTRAL, 0
     return _SEVERITY_COLOR.get(max(sevs, key=severity_rank), _DAG_NEUTRAL), total
 
 
-def _dag_graph_svg(graph: PipelineGraph, findings: list[Finding]) -> str:
+def _dag_legend_html() -> str:
+    """A compact severity color legend for the pipeline-graph section."""
+    swatch = (
+        '<span style="width:11px;height:11px;border-radius:2px;'
+        'display:inline-block;background:{color}"></span>{label}'
+    )
+    items = [
+        '<span style="display:inline-flex;align-items:center;gap:4px">'
+        + swatch.format(color=_SEVERITY_COLOR[s], label=s.value.title())
+        + '</span>'
+        for s in (
+            Severity.CRITICAL, Severity.HIGH, Severity.MEDIUM,
+            Severity.LOW, Severity.INFO,
+        )
+    ]
+    items.append(
+        '<span style="display:inline-flex;align-items:center;gap:4px">'
+        + swatch.format(color=_DAG_NEUTRAL, label="No findings")
+        + '</span>'
+    )
+    return (
+        '<div style="display:flex;flex-wrap:wrap;gap:12px;font-size:11px;'
+        f'color:#6c757d;margin:0 0 8px">{"".join(items)}</div>'
+    )
+
+
+def _dag_graph_svg(
+    graph: PipelineGraph, badges: dict[str, NodeBadge],
+) -> str:
     job_nodes = [n for n in graph.nodes if n.kind in ("job", "stage")]
     if not job_nodes:
         return ""
-    badges = attach_findings(graph, findings)
     layers = _dag_job_layers(graph)
     steps_by_job: dict[str, list[GraphNode]] = {}
     for n in graph.nodes:
@@ -1405,7 +1430,7 @@ def _dag_graph_svg(graph: PipelineGraph, findings: list[Finding]) -> str:
         )
     for n in job_nodes:
         x, y, w, h = pos[n.id]
-        color, total = _dag_job_worst(graph, badges, n.id)
+        color, total = _dag_job_summary(badges, steps_by_job, n.id)
         count = (
             f'<text x="{x + w - 8}" y="{y + 17}" text-anchor="end" fill="#fff" '
             f'font-size="11" font-weight="600">{total}</text>' if total else ""
@@ -1443,40 +1468,64 @@ def _dag_graph_svg(graph: PipelineGraph, findings: list[Finding]) -> str:
     )
 
 
+# At most this many pipeline graphs render; the rest are summarized in a
+# note so a monorepo with hundreds of workflows doesn't bloat the report.
+_DAG_MAX_GRAPHS = 20
+
+
 def _pipeline_dag_section_html(
     graphs: list[PipelineGraph], findings: list[Finding],
 ) -> str:
-    """Render one layered jobs->steps SVG per pipeline file (worst-load first)."""
-    renderable: list[tuple[int, PipelineGraph]] = []
+    """Render a layered jobs->steps SVG per pipeline file that has findings.
+
+    Pipelines with no failing finding are omitted (the graph would be all
+    neutral), mirroring the blast-radius heatmap's failing-only focus. The
+    worst-load files render first; beyond :data:`_DAG_MAX_GRAPHS` a note
+    reports how many were elided so the cap is never silent.
+    """
+    scored: list[tuple[int, PipelineGraph, dict[str, NodeBadge]]] = []
     for g in graphs:
         if not any(n.kind in ("job", "stage") for n in g.nodes):
             continue
-        load = sum(b.count for b in attach_findings(g, findings).values())
-        renderable.append((load, g))
-    if not renderable:
+        badges = attach_findings(g, findings)
+        load = sum(b.count for b in badges.values())
+        if load:
+            scored.append((load, g, badges))
+    if not scored:
         return ""
-    renderable.sort(key=lambda t: -t[0])
+    scored.sort(key=lambda t: -t[0])
+    shown = scored[:_DAG_MAX_GRAPHS]
+    hidden = len(scored) - len(shown)
+    total_findings = sum(load for load, _, _ in scored)
 
     cards: list[str] = []
-    for _load, g in renderable:
-        svg = _dag_graph_svg(g, findings)
-        if svg:
-            cards.append(
-                '<div style="margin:14px 0;border-top:1px solid #e9ecef;'
-                'padding-top:8px">'
-                f'<h3 style="font-size:13px;margin:0 0 6px;font-weight:600">'
-                f'{_e(g.path)}</h3>'
-                f'<div style="overflow-x:auto">{svg}</div></div>'
-            )
+    for load, g, badges in shown:
+        svg = _dag_graph_svg(g, badges)
+        if not svg:
+            continue
+        cards.append(
+            '<div style="margin:14px 0;border-top:1px solid #e9ecef;'
+            'padding-top:8px">'
+            '<h3 style="font-size:13px;margin:0 0 6px;font-weight:600">'
+            f'{_e(g.path)} <span style="color:#6c757d;font-weight:400">'
+            f'· {load} finding(s)</span></h3>'
+            f'<div style="overflow-x:auto">{svg}</div></div>'
+        )
     if not cards:
         return ""
+    more = (
+        f'<p style="color:#6c757d;font-size:12px;margin:8px 0 0">+{hidden} more '
+        'pipeline file(s) with findings not shown (see the findings table).</p>'
+        if hidden else ""
+    )
     return (
         '<section style="margin:24px 0"><h2>Pipeline graph</h2>'
         '<p style="color:#6c757d;font-size:13px;margin:4px 0 8px">'
-        'Jobs and steps as nodes, <code>needs:</code> as edges. Node color is '
-        'the worst finding that lands on it; the blast-radius heatmap below '
-        'ranks every resource.</p>'
-        f'{"".join(cards)}</section>'
+        'Jobs and steps as nodes, <code>needs:</code> as edges, worst-load '
+        f'first ({len(scored)} pipeline file(s), {total_findings} finding(s)). '
+        'Node color is the worst finding that lands on it; the blast-radius '
+        'heatmap below ranks every resource.</p>'
+        f'{_dag_legend_html()}{"".join(cards)}{more}</section>'
     )
 
 

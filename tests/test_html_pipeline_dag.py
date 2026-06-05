@@ -36,12 +36,33 @@ def test_empty_when_no_graphs():
     assert _pipeline_dag_section_html([], [_crit()]) == ""
 
 
-def test_renders_one_svg_per_graph():
+def test_renders_one_svg_per_graph_with_findings():
     html = _pipeline_dag_section_html(
-        [_graph("a.yml"), _graph("b.yml")], [_crit(path="a.yml")],
+        [_graph("a.yml"), _graph("b.yml")],
+        [_crit(path="a.yml"), _crit(path="b.yml")],
     )
     assert html.count("<svg") == 2
     assert html.count("<svg") == html.count("</svg>")  # balanced
+
+
+def test_clean_pipeline_is_omitted():
+    # A pipeline with jobs but no findings renders nothing (all-neutral
+    # graph is noise); mirrors the blast-radius heatmap's failing-only focus.
+    assert _pipeline_dag_section_html([_graph()], []) == ""
+
+
+def test_legend_and_per_file_count_rendered():
+    html = _pipeline_dag_section_html([_graph()], [_crit()])
+    assert "No findings" in html       # severity legend present
+    assert "1 finding(s)" in html      # per-file / summary count
+
+
+def test_graph_cap_note_when_many_files():
+    graphs = [_graph(f"wf{i}.yml") for i in range(25)]
+    findings = [_crit(path=f"wf{i}.yml") for i in range(25)]
+    html = _pipeline_dag_section_html(graphs, findings)
+    assert html.count("<svg") == 20    # capped at _DAG_MAX_GRAPHS
+    assert "+5 more" in html           # the cap is never silent
 
 
 def test_node_colored_by_worst_finding_severity():
@@ -57,7 +78,7 @@ def test_finding_count_badge_rendered():
 
 def test_job_label_is_html_escaped():
     g = _graph(job_label="<script>alert(1)</script>")
-    html = _pipeline_dag_section_html([g], [])
+    html = _pipeline_dag_section_html([g], [_crit()])
     assert "<script>alert" not in html
     assert "&lt;script&gt;" in html
 
