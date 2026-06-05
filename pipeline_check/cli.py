@@ -49,6 +49,7 @@ missing canonical file raises a ``UsageError``.
 import os
 import re
 import sys
+from dataclasses import dataclass
 from typing import Any
 
 import click
@@ -2570,240 +2571,39 @@ def scan(
     # resolved + auto-detected the same way as a single-pipeline
     # invocation.
     pipelines_to_resolve = pipelines_list or [pipeline_lc]
-    for pipeline_lc in pipelines_to_resolve:
-        if pipeline_lc == "terraform":
-            if tf_plan and tf_source:
-                raise click.UsageError(
-                    "--tf-plan and --tf-source are mutually exclusive."
-                )
-            if tf_plan:
-                tf_plan = _resolve_provider_path(
-                    "terraform", flag="tf-plan", value=tf_plan,
-                    validate_kind="file", not_found_label="path",
-                )
-            elif tf_source:
-                tf_source = _resolve_provider_path(
-                    "terraform", flag="tf-source", value=tf_source,
-                    validate_kind="dir", not_found_label="directory",
-                )
-            elif os.path.isfile("main.tf"):
-                tf_source = "."
-                click.echo(
-                    "[auto] using --tf-source . (main.tf detected)",
-                    err=True,
-                )
-        elif pipeline_lc == "github":
-            gha_path = _resolve_provider_path(
-                "github", flag="gha-path", value=gha_path,
-                candidates=(".github/workflows",), candidate_kind="dir",
-                validate_kind="dir", detect_label=".github/workflows",
-                not_found_label="directory",
-            )
-        elif pipeline_lc == "gitea":
-            gitea_path = _resolve_provider_path(
-                "gitea", flag="gitea-path", value=gitea_path,
-                candidates=(".gitea/workflows", ".forgejo/workflows"),
-                candidate_kind="dir",
-                validate_kind="dir",
-                detect_label=".gitea/workflows or .forgejo/workflows",
-                not_found_label="directory",
-            )
-        elif pipeline_lc == "gitlab":
-            gitlab_path = _resolve_provider_path(
-                "gitlab", flag="gitlab-path", value=gitlab_path,
-                candidates=(".gitlab-ci.yml",),
-                detect_label=".gitlab-ci.yml",
-            )
-        elif pipeline_lc == "bitbucket":
-            bitbucket_path = _resolve_provider_path(
-                "bitbucket", flag="bitbucket-path", value=bitbucket_path,
-                candidates=("bitbucket-pipelines.yml",),
-                detect_label="bitbucket-pipelines.yml",
-            )
-        elif pipeline_lc == "azure":
-            azure_path = _resolve_provider_path(
-                "azure", flag="azure-path", value=azure_path,
-                candidates=("azure-pipelines.yml",),
-                detect_label="azure-pipelines.yml",
-            )
-        elif pipeline_lc == "jenkins":
-            jenkinsfile_path = _resolve_provider_path(
-                "jenkins", flag="jenkinsfile-path", value=jenkinsfile_path,
-                candidates=("Jenkinsfile",),
-                detect_label="Jenkinsfile",
-            )
-        elif pipeline_lc == "circleci":
-            circleci_path = _resolve_provider_path(
-                "circleci", flag="circleci-path", value=circleci_path,
-                candidates=(".circleci/config.yml",),
-                detect_label=".circleci/config.yml",
-            )
-        elif pipeline_lc == "cloudformation":
-            if not cfn_template:
-                for _candidate in (
-                    "template.yml", "template.yaml", "template.json",
-                    "cloudformation.yml", "cloudformation.yaml",
-                    "cfn.yml", "cfn.yaml",
-                ):
-                    if os.path.isfile(_candidate):
-                        cfn_template = _candidate
-                        click.echo(
-                            f"[auto] using --cfn-template {cfn_template}",
-                            err=True,
-                        )
-                        break
-            if not cfn_template:
-                raise click.UsageError(
-                    "--cfn-template PATH is required when --pipeline "
-                    "cloudformation (no template.yml / template.json / "
-                    "cloudformation.yml / cfn.yaml found in the current "
-                    "directory)."
-                )
-            if not os.path.exists(cfn_template):
-                raise click.UsageError(
-                    f"--cfn-template not found: {cfn_template}"
-                )
-            # Distinguish "directory but no templates" from "file not found" —
-            # the former is a common mistake when someone points the flag at
-            # their project root instead of an infrastructure subdirectory.
-            if os.path.isdir(cfn_template):
-                _exts = (".yml", ".yaml", ".json", ".template")
-                has_templates = any(
-                    _ent.is_file() and _ent.name.lower().endswith(_exts)
-                    for _ent in os.scandir(cfn_template)
-                )
-                if not has_templates:
-                    raise click.UsageError(
-                        f"--cfn-template directory {cfn_template!r} contains "
-                        f"no .yml / .yaml / .json / .template files."
-                    )
-        elif pipeline_lc == "cloudbuild":
-            cloudbuild_path = _resolve_provider_path(
-                "cloudbuild", flag="cloudbuild-path", value=cloudbuild_path,
-                candidates=("cloudbuild.yaml", "cloudbuild.yml"),
-                detect_label="cloudbuild.yaml/cloudbuild.yml",
-            )
-        elif pipeline_lc == "buildkite":
-            buildkite_path = _resolve_provider_path(
-                "buildkite", flag="buildkite-path", value=buildkite_path,
-                candidates=(".buildkite/pipeline.yml", ".buildkite/pipeline.yaml"),
-                detect_label=".buildkite/pipeline.yml",
-            )
-        elif pipeline_lc == "tekton":
-            tekton_path = _resolve_provider_path(
-                "tekton", flag="tekton-path", value=tekton_path,
-            )
-        elif pipeline_lc == "argo":
-            argo_path = _resolve_provider_path(
-                "argo", flag="argo-path", value=argo_path,
-            )
-        elif pipeline_lc == "argocd":
-            argocd_path = _resolve_provider_path(
-                "argocd", flag="argocd-path", value=argocd_path,
-            )
-        elif pipeline_lc == "dockerfile":
-            dockerfile_path = _resolve_provider_path(
-                "dockerfile", flag="dockerfile-path", value=dockerfile_path,
-                candidates=("Dockerfile", "Containerfile"),
-                detect_label="Dockerfile/Containerfile",
-            )
-        elif pipeline_lc == "kubernetes":
-            k8s_path = _resolve_provider_path(
-                "kubernetes", flag="k8s-path", value=k8s_path,
-                candidates=("kubernetes", "k8s", "manifests"),
-                candidate_kind="dir",
-                detect_label="kubernetes/, k8s/, or manifests/ directory",
-            )
-        elif pipeline_lc == "helm":
-            if not helm_path:
-                if os.path.isfile("Chart.yaml"):
-                    helm_path = "."
-                    click.echo("[auto] using --helm-path .", err=True)
-                elif os.path.isdir("charts"):
-                    helm_path = "charts"
-                    click.echo("[auto] using --helm-path charts", err=True)
-            if not helm_path:
-                raise click.UsageError(
-                    "--helm-path PATH is required when --pipeline helm "
-                    "(no Chart.yaml or charts/ directory found in cwd)."
-                )
-            if not os.path.exists(helm_path):
-                raise click.UsageError(
-                    f"--helm-path not found: {helm_path}"
-                )
-            for vf in helm_values:
-                if not os.path.isfile(vf):
-                    raise click.UsageError(
-                        f"--helm-values not found: {vf}"
-                    )
-        elif pipeline_lc == "oci":
-            oci_manifest = _resolve_provider_path(
-                "oci", flag="oci-manifest", value=oci_manifest,
-                candidates=("index.json",),
-                detect_label="index.json",
-            )
-        elif pipeline_lc == "drone":
-            drone_path = _resolve_provider_path(
-                "drone", flag="drone-path", value=drone_path,
-                candidates=(".drone.yml", ".drone.yaml"),
-                detect_label=".drone.yml/.drone.yaml",
-            )
-        elif pipeline_lc == "npm":
-            npm_path = _resolve_provider_path(
-                "npm", flag="npm-path", value=npm_path,
-                candidates=("package.json", "package-lock.json"),
-                detect_label="package.json/package-lock.json",
-            )
-        elif pipeline_lc == "pypi":
-            pypi_path = _resolve_provider_path(
-                "pypi", flag="pypi-path", value=pypi_path,
-                candidates=("requirements.txt",),
-                detect_label="requirements.txt",
-            )
-        elif pipeline_lc == "maven":
-            maven_path = _resolve_provider_path(
-                "maven", flag="maven-path", value=maven_path,
-                candidates=("pom.xml",),
-                detect_label="pom.xml",
-            )
-        elif pipeline_lc == "nuget":
-            nuget_path = _resolve_provider_path(
-                "nuget", flag="nuget-path", value=nuget_path,
-                candidates=("Directory.Packages.props",),
-                detect_label="Directory.Packages.props",
-            )
-        elif pipeline_lc == "gomod":
-            gomod_path = _resolve_provider_path(
-                "gomod", flag="gomod-path", value=gomod_path,
-                candidates=("go.mod",),
-                detect_label="go.mod",
-            )
-        elif pipeline_lc == "cargo":
-            cargo_path = _resolve_provider_path(
-                "cargo", flag="cargo-path", value=cargo_path,
-                candidates=("Cargo.toml",),
-                detect_label="Cargo.toml",
-            )
-        elif pipeline_lc == "composer":
-            composer_path = _resolve_provider_path(
-                "composer", flag="composer-path",
-                value=composer_path,
-                candidates=("composer.json",),
-                detect_label="composer.json",
-            )
-        elif pipeline_lc == "rubygems":
-            rubygems_path = _resolve_provider_path(
-                "rubygems", flag="rubygems-path",
-                value=rubygems_path,
-                candidates=("Gemfile",),
-                detect_label="Gemfile",
-            )
-        elif pipeline_lc == "pulumi":
-            pulumi_path = _resolve_provider_path(
-                "pulumi", flag="pulumi-path", value=pulumi_path,
-                candidates=("Pulumi.yaml",),
-                detect_label="Pulumi.yaml",
-            )
+    _paths = _resolve_provider_paths(
+        pipelines_to_resolve,
+        tf_plan=tf_plan,
+        tf_source=tf_source,
+        gha_path=gha_path,
+        gitea_path=gitea_path,
+        gitlab_path=gitlab_path,
+        bitbucket_path=bitbucket_path,
+        azure_path=azure_path,
+        jenkinsfile_path=jenkinsfile_path,
+        circleci_path=circleci_path,
+        cfn_template=cfn_template,
+        cloudbuild_path=cloudbuild_path,
+        buildkite_path=buildkite_path,
+        tekton_path=tekton_path,
+        argo_path=argo_path,
+        argocd_path=argocd_path,
+        dockerfile_path=dockerfile_path,
+        k8s_path=k8s_path,
+        helm_path=helm_path,
+        oci_manifest=oci_manifest,
+        drone_path=drone_path,
+        npm_path=npm_path,
+        pypi_path=pypi_path,
+        maven_path=maven_path,
+        nuget_path=nuget_path,
+        gomod_path=gomod_path,
+        cargo_path=cargo_path,
+        composer_path=composer_path,
+        rubygems_path=rubygems_path,
+        pulumi_path=pulumi_path,
+        helm_values=helm_values,
+    )
 
     _validate_scan_inputs(
         output=output,
@@ -2872,21 +2672,21 @@ def scan(
         rego_rules=list(rego_rules) or None,
         fp_annotations_path=fp_path,
         log=_debug if verbose else None,
-        tf_plan=tf_plan,
-        tf_source=tf_source,
-        gha_path=gha_path,
-        gitea_path=gitea_path,
-        gitlab_path=gitlab_path,
-        bitbucket_path=bitbucket_path,
-        azure_path=azure_path,
-        jenkinsfile_path=jenkinsfile_path,
-        circleci_path=circleci_path,
-        cfn_template=cfn_template,
-        cloudbuild_path=cloudbuild_path,
-        buildkite_path=buildkite_path,
-        tekton_path=tekton_path,
-        argo_path=argo_path,
-        argocd_path=argocd_path,
+        tf_plan=_paths.tf_plan,
+        tf_source=_paths.tf_source,
+        gha_path=_paths.gha_path,
+        gitea_path=_paths.gitea_path,
+        gitlab_path=_paths.gitlab_path,
+        bitbucket_path=_paths.bitbucket_path,
+        azure_path=_paths.azure_path,
+        jenkinsfile_path=_paths.jenkinsfile_path,
+        circleci_path=_paths.circleci_path,
+        cfn_template=_paths.cfn_template,
+        cloudbuild_path=_paths.cloudbuild_path,
+        buildkite_path=_paths.buildkite_path,
+        tekton_path=_paths.tekton_path,
+        argo_path=_paths.argo_path,
+        argocd_path=_paths.argocd_path,
         resolve_remote=resolve_remote,
         gh_token=gh_token,
         gitlab_token=gitlab_token,
@@ -2896,23 +2696,23 @@ def scan(
         verify_secrets_show_identity=verify_secrets_show_identity,
         gha_search_paths=list(gha_search_paths),
         gha_resolve_depth=gha_resolve_depth,
-        dockerfile_path=dockerfile_path,
-        k8s_path=k8s_path,
-        helm_path=helm_path,
+        dockerfile_path=_paths.dockerfile_path,
+        k8s_path=_paths.k8s_path,
+        helm_path=_paths.helm_path,
         helm_values=list(helm_values) or None,
         helm_set=list(helm_set) or None,
-        oci_manifest=oci_manifest,
-        drone_path=drone_path,
-        npm_path=npm_path,
+        oci_manifest=_paths.oci_manifest,
+        drone_path=_paths.drone_path,
+        npm_path=_paths.npm_path,
         npm_base_ref=npm_base_ref,
-        pypi_path=pypi_path,
-        maven_path=maven_path,
-        nuget_path=nuget_path,
-        gomod_path=gomod_path,
-        cargo_path=cargo_path,
-        composer_path=composer_path,
-        rubygems_path=rubygems_path,
-        pulumi_path=pulumi_path,
+        pypi_path=_paths.pypi_path,
+        maven_path=_paths.maven_path,
+        nuget_path=_paths.nuget_path,
+        gomod_path=_paths.gomod_path,
+        cargo_path=_paths.cargo_path,
+        composer_path=_paths.composer_path,
+        rubygems_path=_paths.rubygems_path,
+        pulumi_path=_paths.pulumi_path,
         devenv_path=devenv_path,
         scm_platform=scm_platform,
         scm_repo=scm_repo,
@@ -3643,6 +3443,355 @@ def _validate_scan_inputs(
                 f"--output {output!r} is not supported. Drop "
                 f"``--output`` or pass ``--output markdown``."
             )
+
+
+@dataclass
+class _ScanPaths:
+    """The per-provider source paths after auto-detect / validation.
+
+    ``scan()`` carries one ``--<provider>-path`` flag per provider;
+    :func:`_resolve_provider_paths` resolves each and returns them
+    bundled here so the scanner-kwargs construction reads one object
+    instead of ~30 loose locals.
+    """
+    tf_plan: str | None = None
+    tf_source: str | None = None
+    gha_path: str | None = None
+    gitea_path: str | None = None
+    gitlab_path: str | None = None
+    bitbucket_path: str | None = None
+    azure_path: str | None = None
+    jenkinsfile_path: str | None = None
+    circleci_path: str | None = None
+    cfn_template: str | None = None
+    cloudbuild_path: str | None = None
+    buildkite_path: str | None = None
+    tekton_path: str | None = None
+    argo_path: str | None = None
+    argocd_path: str | None = None
+    dockerfile_path: str | None = None
+    k8s_path: str | None = None
+    helm_path: str | None = None
+    oci_manifest: str | None = None
+    drone_path: str | None = None
+    npm_path: str | None = None
+    pypi_path: str | None = None
+    maven_path: str | None = None
+    nuget_path: str | None = None
+    gomod_path: str | None = None
+    cargo_path: str | None = None
+    composer_path: str | None = None
+    rubygems_path: str | None = None
+    pulumi_path: str | None = None
+
+
+def _resolve_provider_paths(
+    pipelines_to_resolve: list[str],
+    *,
+    tf_plan: str | None,
+    tf_source: str | None,
+    gha_path: str | None,
+    gitea_path: str | None,
+    gitlab_path: str | None,
+    bitbucket_path: str | None,
+    azure_path: str | None,
+    jenkinsfile_path: str | None,
+    circleci_path: str | None,
+    cfn_template: str | None,
+    cloudbuild_path: str | None,
+    buildkite_path: str | None,
+    tekton_path: str | None,
+    argo_path: str | None,
+    argocd_path: str | None,
+    dockerfile_path: str | None,
+    k8s_path: str | None,
+    helm_path: str | None,
+    oci_manifest: str | None,
+    drone_path: str | None,
+    npm_path: str | None,
+    pypi_path: str | None,
+    maven_path: str | None,
+    nuget_path: str | None,
+    gomod_path: str | None,
+    cargo_path: str | None,
+    composer_path: str | None,
+    rubygems_path: str | None,
+    pulumi_path: str | None,
+    helm_values: tuple[str, ...],
+) -> _ScanPaths:
+    """Resolve / auto-detect each selected provider's source path.
+
+    Runs once per provider in *pipelines_to_resolve* (one entry in
+    single-pipeline mode, the full list in multi-pipeline mode),
+    auto-detecting a canonical path when the flag was omitted and raising
+    ``click.UsageError`` on a missing or invalid one. Returns the
+    resolved paths bundled for the scanner kwargs.
+    """
+    for pipeline_lc in pipelines_to_resolve:
+        if pipeline_lc == "terraform":
+            if tf_plan and tf_source:
+                raise click.UsageError(
+                    "--tf-plan and --tf-source are mutually exclusive."
+                )
+            if tf_plan:
+                tf_plan = _resolve_provider_path(
+                    "terraform", flag="tf-plan", value=tf_plan,
+                    validate_kind="file", not_found_label="path",
+                )
+            elif tf_source:
+                tf_source = _resolve_provider_path(
+                    "terraform", flag="tf-source", value=tf_source,
+                    validate_kind="dir", not_found_label="directory",
+                )
+            elif os.path.isfile("main.tf"):
+                tf_source = "."
+                click.echo(
+                    "[auto] using --tf-source . (main.tf detected)",
+                    err=True,
+                )
+        elif pipeline_lc == "github":
+            gha_path = _resolve_provider_path(
+                "github", flag="gha-path", value=gha_path,
+                candidates=(".github/workflows",), candidate_kind="dir",
+                validate_kind="dir", detect_label=".github/workflows",
+                not_found_label="directory",
+            )
+        elif pipeline_lc == "gitea":
+            gitea_path = _resolve_provider_path(
+                "gitea", flag="gitea-path", value=gitea_path,
+                candidates=(".gitea/workflows", ".forgejo/workflows"),
+                candidate_kind="dir",
+                validate_kind="dir",
+                detect_label=".gitea/workflows or .forgejo/workflows",
+                not_found_label="directory",
+            )
+        elif pipeline_lc == "gitlab":
+            gitlab_path = _resolve_provider_path(
+                "gitlab", flag="gitlab-path", value=gitlab_path,
+                candidates=(".gitlab-ci.yml",),
+                detect_label=".gitlab-ci.yml",
+            )
+        elif pipeline_lc == "bitbucket":
+            bitbucket_path = _resolve_provider_path(
+                "bitbucket", flag="bitbucket-path", value=bitbucket_path,
+                candidates=("bitbucket-pipelines.yml",),
+                detect_label="bitbucket-pipelines.yml",
+            )
+        elif pipeline_lc == "azure":
+            azure_path = _resolve_provider_path(
+                "azure", flag="azure-path", value=azure_path,
+                candidates=("azure-pipelines.yml",),
+                detect_label="azure-pipelines.yml",
+            )
+        elif pipeline_lc == "jenkins":
+            jenkinsfile_path = _resolve_provider_path(
+                "jenkins", flag="jenkinsfile-path", value=jenkinsfile_path,
+                candidates=("Jenkinsfile",),
+                detect_label="Jenkinsfile",
+            )
+        elif pipeline_lc == "circleci":
+            circleci_path = _resolve_provider_path(
+                "circleci", flag="circleci-path", value=circleci_path,
+                candidates=(".circleci/config.yml",),
+                detect_label=".circleci/config.yml",
+            )
+        elif pipeline_lc == "cloudformation":
+            if not cfn_template:
+                for _candidate in (
+                    "template.yml", "template.yaml", "template.json",
+                    "cloudformation.yml", "cloudformation.yaml",
+                    "cfn.yml", "cfn.yaml",
+                ):
+                    if os.path.isfile(_candidate):
+                        cfn_template = _candidate
+                        click.echo(
+                            f"[auto] using --cfn-template {cfn_template}",
+                            err=True,
+                        )
+                        break
+            if not cfn_template:
+                raise click.UsageError(
+                    "--cfn-template PATH is required when --pipeline "
+                    "cloudformation (no template.yml / template.json / "
+                    "cloudformation.yml / cfn.yaml found in the current "
+                    "directory)."
+                )
+            if not os.path.exists(cfn_template):
+                raise click.UsageError(
+                    f"--cfn-template not found: {cfn_template}"
+                )
+            # Distinguish "directory but no templates" from "file not found" —
+            # the former is a common mistake when someone points the flag at
+            # their project root instead of an infrastructure subdirectory.
+            if os.path.isdir(cfn_template):
+                _exts = (".yml", ".yaml", ".json", ".template")
+                has_templates = any(
+                    _ent.is_file() and _ent.name.lower().endswith(_exts)
+                    for _ent in os.scandir(cfn_template)
+                )
+                if not has_templates:
+                    raise click.UsageError(
+                        f"--cfn-template directory {cfn_template!r} contains "
+                        f"no .yml / .yaml / .json / .template files."
+                    )
+        elif pipeline_lc == "cloudbuild":
+            cloudbuild_path = _resolve_provider_path(
+                "cloudbuild", flag="cloudbuild-path", value=cloudbuild_path,
+                candidates=("cloudbuild.yaml", "cloudbuild.yml"),
+                detect_label="cloudbuild.yaml/cloudbuild.yml",
+            )
+        elif pipeline_lc == "buildkite":
+            buildkite_path = _resolve_provider_path(
+                "buildkite", flag="buildkite-path", value=buildkite_path,
+                candidates=(".buildkite/pipeline.yml", ".buildkite/pipeline.yaml"),
+                detect_label=".buildkite/pipeline.yml",
+            )
+        elif pipeline_lc == "tekton":
+            tekton_path = _resolve_provider_path(
+                "tekton", flag="tekton-path", value=tekton_path,
+            )
+        elif pipeline_lc == "argo":
+            argo_path = _resolve_provider_path(
+                "argo", flag="argo-path", value=argo_path,
+            )
+        elif pipeline_lc == "argocd":
+            argocd_path = _resolve_provider_path(
+                "argocd", flag="argocd-path", value=argocd_path,
+            )
+        elif pipeline_lc == "dockerfile":
+            dockerfile_path = _resolve_provider_path(
+                "dockerfile", flag="dockerfile-path", value=dockerfile_path,
+                candidates=("Dockerfile", "Containerfile"),
+                detect_label="Dockerfile/Containerfile",
+            )
+        elif pipeline_lc == "kubernetes":
+            k8s_path = _resolve_provider_path(
+                "kubernetes", flag="k8s-path", value=k8s_path,
+                candidates=("kubernetes", "k8s", "manifests"),
+                candidate_kind="dir",
+                detect_label="kubernetes/, k8s/, or manifests/ directory",
+            )
+        elif pipeline_lc == "helm":
+            if not helm_path:
+                if os.path.isfile("Chart.yaml"):
+                    helm_path = "."
+                    click.echo("[auto] using --helm-path .", err=True)
+                elif os.path.isdir("charts"):
+                    helm_path = "charts"
+                    click.echo("[auto] using --helm-path charts", err=True)
+            if not helm_path:
+                raise click.UsageError(
+                    "--helm-path PATH is required when --pipeline helm "
+                    "(no Chart.yaml or charts/ directory found in cwd)."
+                )
+            if not os.path.exists(helm_path):
+                raise click.UsageError(
+                    f"--helm-path not found: {helm_path}"
+                )
+            for vf in helm_values:
+                if not os.path.isfile(vf):
+                    raise click.UsageError(
+                        f"--helm-values not found: {vf}"
+                    )
+        elif pipeline_lc == "oci":
+            oci_manifest = _resolve_provider_path(
+                "oci", flag="oci-manifest", value=oci_manifest,
+                candidates=("index.json",),
+                detect_label="index.json",
+            )
+        elif pipeline_lc == "drone":
+            drone_path = _resolve_provider_path(
+                "drone", flag="drone-path", value=drone_path,
+                candidates=(".drone.yml", ".drone.yaml"),
+                detect_label=".drone.yml/.drone.yaml",
+            )
+        elif pipeline_lc == "npm":
+            npm_path = _resolve_provider_path(
+                "npm", flag="npm-path", value=npm_path,
+                candidates=("package.json", "package-lock.json"),
+                detect_label="package.json/package-lock.json",
+            )
+        elif pipeline_lc == "pypi":
+            pypi_path = _resolve_provider_path(
+                "pypi", flag="pypi-path", value=pypi_path,
+                candidates=("requirements.txt",),
+                detect_label="requirements.txt",
+            )
+        elif pipeline_lc == "maven":
+            maven_path = _resolve_provider_path(
+                "maven", flag="maven-path", value=maven_path,
+                candidates=("pom.xml",),
+                detect_label="pom.xml",
+            )
+        elif pipeline_lc == "nuget":
+            nuget_path = _resolve_provider_path(
+                "nuget", flag="nuget-path", value=nuget_path,
+                candidates=("Directory.Packages.props",),
+                detect_label="Directory.Packages.props",
+            )
+        elif pipeline_lc == "gomod":
+            gomod_path = _resolve_provider_path(
+                "gomod", flag="gomod-path", value=gomod_path,
+                candidates=("go.mod",),
+                detect_label="go.mod",
+            )
+        elif pipeline_lc == "cargo":
+            cargo_path = _resolve_provider_path(
+                "cargo", flag="cargo-path", value=cargo_path,
+                candidates=("Cargo.toml",),
+                detect_label="Cargo.toml",
+            )
+        elif pipeline_lc == "composer":
+            composer_path = _resolve_provider_path(
+                "composer", flag="composer-path",
+                value=composer_path,
+                candidates=("composer.json",),
+                detect_label="composer.json",
+            )
+        elif pipeline_lc == "rubygems":
+            rubygems_path = _resolve_provider_path(
+                "rubygems", flag="rubygems-path",
+                value=rubygems_path,
+                candidates=("Gemfile",),
+                detect_label="Gemfile",
+            )
+        elif pipeline_lc == "pulumi":
+            pulumi_path = _resolve_provider_path(
+                "pulumi", flag="pulumi-path", value=pulumi_path,
+                candidates=("Pulumi.yaml",),
+                detect_label="Pulumi.yaml",
+            )
+    return _ScanPaths(
+        tf_plan=tf_plan,
+        tf_source=tf_source,
+        gha_path=gha_path,
+        gitea_path=gitea_path,
+        gitlab_path=gitlab_path,
+        bitbucket_path=bitbucket_path,
+        azure_path=azure_path,
+        jenkinsfile_path=jenkinsfile_path,
+        circleci_path=circleci_path,
+        cfn_template=cfn_template,
+        cloudbuild_path=cloudbuild_path,
+        buildkite_path=buildkite_path,
+        tekton_path=tekton_path,
+        argo_path=argo_path,
+        argocd_path=argocd_path,
+        dockerfile_path=dockerfile_path,
+        k8s_path=k8s_path,
+        helm_path=helm_path,
+        oci_manifest=oci_manifest,
+        drone_path=drone_path,
+        npm_path=npm_path,
+        pypi_path=pypi_path,
+        maven_path=maven_path,
+        nuget_path=nuget_path,
+        gomod_path=gomod_path,
+        cargo_path=cargo_path,
+        composer_path=composer_path,
+        rubygems_path=rubygems_path,
+        pulumi_path=pulumi_path,
+    )
 
 
 def _run_informational_commands(

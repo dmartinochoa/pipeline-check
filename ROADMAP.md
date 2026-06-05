@@ -786,14 +786,21 @@ same day; the rest are queued for a later pass.
     ``scan()``'s body moved into three named, focused helpers; behavior
     byte-identical (full CLI suite green). ``scan()`` body is now ~1,110
     lines.
-  - Remaining (queued): the larger seams still inline in ``scan()`` are
-    per-provider path resolution (mutates ~30 path vars, wants a
-    ``ScanRequest`` / paths-bundle to extract cleanly), the
-    ``_scanner_kwargs`` build + scanner construction, and the output
-    dispatch (replace the 7-way if-chain with a ``dict[str, Reporter]``
-    table). Then split the subcommands into a ``cli/`` package. Also fold
-    the LSP's dead ``_DETECTORS`` table (``lsp/detection.py``) onto the
-    new ``core/detect.py``.
+  - ~~``scan()`` body seams, phase 2 / paths-bundle (done 2026-06-05 on
+    ``dev``):~~ the ~234-line per-provider path-resolution loop moved into
+    ``_resolve_provider_paths`` (loop body byte-identical) returning a
+    ``_ScanPaths`` dataclass, and the ``_scanner_kwargs`` construction now
+    reads the resolved paths from that bundle (``gha_path=_paths.gha_path``,
+    ...) instead of ~30 loose mutated locals. Full serial suite green.
+    ``scan()`` body is now ~907 lines.
+  - Remaining (queued): the ``_scanner_kwargs`` dict build + (Multi)Scanner
+    construction (a ~30-key dict, no clean param reduction on its own) and
+    the output dispatch (replace the 7-way if-chain with a
+    ``dict[str, Reporter]`` table, the messiest seam since it's entangled
+    with pr-diff mode, chains / inventory rendering, file-writing, and the
+    gate). Then split the subcommands into a ``cli/`` package. Also fold
+    the LSP's dead ``_DETECTORS`` table (``lsp/detection.py``) onto the new
+    ``core/detect.py``.
 
 **Medium priority (queued):**
 
