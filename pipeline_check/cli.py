@@ -60,6 +60,24 @@ from .core import standards as _standards
 from .core.checks.base import Confidence, Severity, confidence_rank
 from .core.codequality_reporter import report_codequality
 from .core.config import load_config
+from .core.detect import (
+    detect_all_pipelines_from_cwd as _detect_all_pipelines_from_cwd,
+)
+from .core.detect import (
+    detect_pipeline_from_cwd as _detect_pipeline_from_cwd,
+)
+from .core.fix_apply import (
+    apply_fix_patches as _apply_fix_patches,
+)
+from .core.fix_apply import (
+    emit_fix_patches as _emit_fix_patches,
+)
+from .core.fix_apply import (
+    plan_fix_edits as _plan_fix_edits,
+)
+from .core.fix_apply import (
+    write_fix_edits as _write_fix_edits,
+)
 from .core.gate import (
     GateConfig,
     evaluate_gate,
@@ -607,116 +625,6 @@ def _resolve_provider_path(
             f"--{flag} {kind_word}not found: {value}"
         )
     return value
-
-
-# Provider detection table. Each entry maps a provider name to the list
-# of cwd-relative paths whose presence signals "this provider should
-# scan here". File entries use ``os.path.isfile``; directory entries use
-# ``os.path.isdir``. Iterated by both :func:`_detect_pipeline_from_cwd`
-# (first-match-wins single-provider detection) and
-# :func:`_detect_all_pipelines_from_cwd` (multi-provider walk that
-# returns every provider whose canonical path is present).
-#
-# Order matters: helm before kubernetes because a ``Chart.yaml`` at
-# the repo root is an unambiguous signal, whereas the k8s indicators
-# (``kubernetes/``, ``k8s/``, ``manifests/``) are generic directory
-# names that helm charts often use too. Multi-detect drops the
-# ambiguous-k8s case when helm already matched (see below).
-_PROVIDER_DETECT_FILES: tuple[tuple[str, tuple[str, ...], tuple[str, ...]], ...] = (
-    # (provider, files, directories)
-    ("github", (), (".github/workflows",)),
-    ("gitea", (), (".gitea/workflows", ".forgejo/workflows")),
-    ("gitlab", (".gitlab-ci.yml",), ()),
-    ("circleci", (".circleci/config.yml",), ()),
-    ("jenkins", ("Jenkinsfile",), ()),
-    ("azure", ("azure-pipelines.yml",), ()),
-    ("bitbucket", ("bitbucket-pipelines.yml",), ()),
-    ("cloudbuild", ("cloudbuild.yaml", "cloudbuild.yml"), ()),
-    ("buildkite", (".buildkite/pipeline.yml", ".buildkite/pipeline.yaml"), ()),
-    ("drone", (".drone.yml", ".drone.yaml"), ()),
-    ("dockerfile", ("Dockerfile", "Containerfile"), ()),
-    ("npm", ("package.json", "package-lock.json"), ()),
-    ("pypi", ("requirements.txt",), ()),
-    ("maven", ("pom.xml",), ()),
-    ("nuget", ("Directory.Packages.props",), ()),
-    ("gomod", ("go.mod",), ()),
-    ("cargo", ("Cargo.toml",), ()),
-    ("composer", ("composer.json",), ()),
-    ("rubygems", ("Gemfile",), ()),
-    ("pulumi", ("Pulumi.yaml",), ()),
-    ("terraform", ("main.tf",), ()),
-    (
-        "cloudformation",
-        (
-            "template.yml", "template.yaml", "template.json",
-            "cloudformation.yml", "cloudformation.yaml",
-            "cfn.yml", "cfn.yaml",
-        ),
-        (),
-    ),
-    # OCI deliberately omitted from auto-detect: ``index.json`` is too
-    # generic a filename to promote on presence alone (Backstage,
-    # Sphinx, and various Node tooling produce unrelated index.json
-    # files at repo roots). ``--pipeline oci`` still auto-resolves
-    # ``index.json`` when explicitly selected; multi-provider runs
-    # that want OCI in scope use ``--pipelines github,oci``.
-    ("helm", ("Chart.yaml",), ()),
-    # Developer-environment auto-execution configs. Listed late so a
-    # repo that also ships a real CI / registry manifest is detected as
-    # that provider first; multi-provider auto-detect still adds devenv.
-    (
-        "devenv",
-        (
-            ".vscode/tasks.json",
-            ".devcontainer.json",
-            ".devcontainer/devcontainer.json",
-            ".claude/settings.json",
-            ".claude/settings.local.json",
-        ),
-        (),
-    ),
-    ("kubernetes", (), ("kubernetes", "k8s", "manifests")),
-)
-
-
-def _provider_present(files: tuple[str, ...], dirs: tuple[str, ...]) -> bool:
-    return any(os.path.isfile(f) for f in files) or any(os.path.isdir(d) for d in dirs)
-
-
-def _detect_pipeline_from_cwd() -> str | None:
-    """Return the best-guess pipeline name based on files present at cwd.
-
-    First match wins. Returns None when nothing recognizable is found;
-    the caller then falls back to ``aws`` (preserves prior default).
-    """
-    for name, files, dirs in _PROVIDER_DETECT_FILES:
-        if _provider_present(files, dirs):
-            return name
-    return None
-
-
-def _detect_all_pipelines_from_cwd() -> list[str]:
-    """Return every provider whose canonical path is present at cwd.
-
-    Used by the no-args / ``--pipeline auto`` flow to switch into
-    multi-provider mode automatically when a repo carries more than
-    one pipeline-shape file (e.g. ``.github/workflows`` and a
-    ``Dockerfile``). Order follows :data:`_PROVIDER_DETECT_FILES` so
-    multi-mode runs sub-scanners in a stable, repeatable sequence.
-
-    Helm / Kubernetes disambiguation: a Helm chart's templates often
-    sit under ``charts/`` next to a ``Chart.yaml``, so when both helm
-    and kubernetes match at cwd, kubernetes is dropped to avoid
-    rendering the same charts twice (helm renders templates and
-    feeds them to the K8s rule pack already).
-    """
-    detected: list[str] = []
-    for name, files, dirs in _PROVIDER_DETECT_FILES:
-        if _provider_present(files, dirs):
-            detected.append(name)
-    if "helm" in detected and "kubernetes" in detected:
-        detected.remove("kubernetes")
-    return detected
 
 
 # ── Inline ignore collection ─────────────────────────────────────────────
@@ -4021,152 +3929,6 @@ def _build_pr_diff_subprocess_argv(
     # captured separately and discarded by the orchestrator.
     argv.append("--no-chains")
     return argv
-
-
-def _emit_fix_patches(findings: list[Any], *, to_stderr: bool = False, tier: str = "safe") -> None:
-    """Emit one unified-diff patch per failing finding that has a fixer.
-
-    Patches go to stdout by default so a user can pipe straight into
-    ``git apply``. When a machine-readable report is already occupying
-    stdout (``--output json/sarif/html/both``), the caller sets
-    ``to_stderr=True`` to avoid corrupting that stream.
-
-    File read errors are silently skipped, a missing file is almost
-    always due to a finding with a synthetic resource name (e.g. an
-    AWS check), not a real on-disk workflow. Per-path content is
-    cached so multiple findings against the same file only re-read
-    the source once.
-    """
-    import os
-    cache: dict[str, str] = {}
-    dirty: dict[str, str] = {}
-    patch_count = 0
-    patched_files: set[str] = set()
-    for f in findings:
-        if f.passed:
-            continue
-        path = f.resource
-        if not path or not os.path.isfile(path):
-            continue
-        before = dirty[path] if path in dirty else cache.get(path)
-        if before is None:
-            try:
-                with open(path, encoding="utf-8") as fh:
-                    before = fh.read()
-            except (OSError, UnicodeDecodeError):
-                continue
-            cache[path] = before
-        try:
-            after = _autofix.generate_fix(f, before, tier=tier)
-        except Exception as exc:
-            click.echo(
-                f"[autofix] fixer for {f.check_id} raised {type(exc).__name__}: {exc}",
-                err=True,
-            )
-            continue
-        if after is None:
-            continue
-        patch_count += 1
-        patched_files.add(path)
-        click.echo(
-            _autofix.render_patch(path, before, after),
-            nl=False,
-            err=to_stderr,
-        )
-        dirty[path] = after
-    if patch_count:
-        click.echo(
-            f"[autofix] {patch_count} patch(es) for {len(patched_files)} file(s)."
-            f" Run with --apply to modify in place.",
-            err=True,
-        )
-
-
-def _plan_fix_edits(
-    findings: list[Any], *, tier: str = "safe",
-) -> tuple[dict[str, str], dict[str, str], set[str]]:
-    """Compute the autofix edits without touching disk.
-
-    Returns ``(edits, newlines, fixed_ids)`` where *edits* maps each path
-    to its fully-patched content (every applicable fixer folded in,
-    idempotent), *newlines* records the path's original line ending, and
-    *fixed_ids* is the set of check IDs whose fixer actually produced a
-    change (used by ``fix-pr`` for the PR title / body). Splitting the
-    planning out of the write lets ``fix-pr`` decide whether there's
-    anything to commit before it creates a branch.
-
-    The line-ending bookkeeping matters on Windows: reading in text mode
-    normalizes CRLF to ``\\n``, and writing it back in text mode would
-    translate ``\\n`` to ``os.linesep``, silently flipping a pure-LF file
-    to CRLF. We read with ``newline=""``, patch the in-memory LF copy,
-    and re-apply the detected ending on write so only patched lines move.
-    """
-    import os
-    cache: dict[str, str] = {}
-    dirty: dict[str, str] = {}  # path → final content
-    newlines: dict[str, str] = {}
-    fixed_ids: set[str] = set()
-    for f in findings:
-        if f.passed:
-            continue
-        path = f.resource
-        if not path or not os.path.isfile(path):
-            continue
-        before = dirty[path] if path in dirty else cache.get(path)
-        if before is None:
-            try:
-                with open(path, encoding="utf-8", newline="") as fh:
-                    raw = fh.read()
-            except (OSError, UnicodeDecodeError):
-                continue
-            newlines[path] = "\r\n" if "\r\n" in raw else "\n"
-            before = raw.replace("\r\n", "\n")
-            cache[path] = before
-        try:
-            after = _autofix.generate_fix(f, before, tier=tier)
-        except Exception as exc:
-            click.echo(
-                f"[autofix] fixer for {f.check_id} raised {type(exc).__name__}: {exc}",
-                err=True,
-            )
-            continue
-        if after is None:
-            continue
-        dirty[path] = after
-        fixed_ids.add(f.check_id)
-    return dirty, newlines, fixed_ids
-
-
-def _write_fix_edits(
-    edits: dict[str, str], newlines: dict[str, str],
-) -> list[str]:
-    """Write planned *edits* to disk; return the paths actually written."""
-    written: list[str] = []
-    for path, content in edits.items():
-        eol = newlines.get(path, "\n")
-        if eol != "\n":
-            content = content.replace("\n", eol)
-        try:
-            with open(path, "w", encoding="utf-8", newline="") as fh:
-                fh.write(content)
-            written.append(path)
-        except OSError as exc:
-            click.echo(f"[autofix] could not write {path}: {exc}", err=True)
-    return written
-
-
-def _apply_fix_patches(findings: list[Any], *, tier: str = "safe") -> list[str]:
-    """Apply autofixes in place; print an N-files-modified summary to stderr.
-
-    Each fixer is idempotent, so it's safe to re-run after an apply —
-    already-fixed files produce no further patch. Unfixable findings
-    are silently skipped. Returns the list of modified paths so callers
-    (``fix-pr``) can stage exactly those files.
-    """
-    edits, newlines, _fixed_ids = _plan_fix_edits(findings, tier=tier)
-    written = _write_fix_edits(edits, newlines)
-    click.echo(f"[autofix] {len(written)} file(s) modified.", err=True)
-    return written
 
 
 def _find_sibling_package_jsons(root: str, max_depth: int = 3) -> list[str]:
