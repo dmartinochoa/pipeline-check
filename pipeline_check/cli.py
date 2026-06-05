@@ -3565,6 +3565,7 @@ def scan(
             show_passed=show_passed,
             group_similar=not no_group,
             inline_explain=inline_explain,
+            incomplete_reason=_scan_incomplete_reason(scanner.metadata, findings),
         )
         if chains:
             report_chains_terminal(chains, console=console)
@@ -4309,6 +4310,36 @@ def _maybe_emit_degraded_scan_warning(findings: list[Any]) -> None:
         f"with --verbose to see which modules were skipped.",
         err=True,
     )
+
+
+def _scan_incomplete_reason(meta: Any, findings: list[Any]) -> str | None:
+    """Describe why a scan is incomplete, or ``None`` when it fully ran.
+
+    A scan is incomplete when a file it tried to read could not be
+    parsed (malformed YAML / JSON, read error) or when a cloud module
+    failed API access (the ``*-000`` degraded probes). The score then
+    reflects only what was actually scanned, so the terminal report
+    flags the grade as incomplete instead of presenting a confident
+    pass. Returns a human-readable reason for the report's status line.
+    """
+    parse_fail = 0
+    for w in getattr(meta, "warnings", None) or []:
+        wl = str(w).lower()
+        if "parse error" in wl or "read error" in wl:
+            parse_fail += 1
+    degraded = sum(
+        1 for f in findings
+        if getattr(f, "check_id", "").endswith("-000")
+        and not getattr(f, "passed", True)
+    )
+    parts: list[str] = []
+    if parse_fail:
+        parts.append(f"{parse_fail} file(s) could not be parsed")
+    if degraded:
+        parts.append(f"{degraded} module(s) failed API access")
+    if not parts:
+        return None
+    return f"{'; '.join(parts)}. The grade reflects only what was scanned."
 
 
 def _emit_scan_summary(meta: Any) -> None:

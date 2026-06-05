@@ -220,6 +220,16 @@ release commit collapses this section into `## [X.Y.Z] - <date>`.
 
 ### Fixed
 
+- **The terminal report no longer shows a confident "Grade A" on a
+  degraded scan.** When a file could not be parsed (malformed YAML /
+  JSON) or a cloud module failed API access, the headline now renders
+  `Grade A (incomplete)` in a caution style with an `incomplete scan:
+  ...` status line explaining that the grade covers only what was
+  actually scanned. Previously a single unparseable file or a
+  credential-less cloud probe could display `Score 100 / Grade A` next
+  to a parse warning, which read as a clean pass. The JSON / SARIF
+  outputs and the gate are unchanged for now (a `scan_status` field and
+  an opt-in `--fail-on-parse-error` are tracked as follow-ups).
 - **Config / ignore files using a YAML merge-key override are no longer
   silently dropped.** The strict loader (`DupKeyLoader`) flattened `<<:`
   merge keys before running its duplicate-key guard, so a valid
