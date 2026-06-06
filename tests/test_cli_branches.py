@@ -87,6 +87,50 @@ class TestIncompleteScan:
         ok = _finding(check_id="CB-001", passed=True)
         assert _scan_incomplete_reason(SimpleNamespace(warnings=[]), [ok]) is None
 
+    def test_status_helper_counts(self):
+        from types import SimpleNamespace
+
+        from pipeline_check.cli import _scan_status
+
+        # A parse-error warning: incomplete, with counts and a reason.
+        meta = SimpleNamespace(
+            warnings=["bad.yml: YAML parse error: ..."], files_scanned=3,
+        )
+        status = _scan_status(meta, [])
+        assert status["complete"] is False
+        assert status["files_scanned"] == 3
+        assert status["files_unparsed"] == 1
+        assert status["degraded_modules"] == 0
+        assert "could not be parsed" in status["reason"]
+
+        # A clean scan: complete, no reason key (consumers test `complete`).
+        ok = _finding(check_id="CB-001", passed=True)
+        clean = _scan_status(SimpleNamespace(warnings=[], files_scanned=2), [ok])
+        assert clean == {
+            "complete": True, "files_scanned": 2,
+            "files_unparsed": 0, "degraded_modules": 0,
+        }
+
+        # A degraded ``*-000`` probe counts as a degraded module.
+        degraded = _finding(check_id="IAM-000", passed=False)
+        d = _scan_status(SimpleNamespace(warnings=[], files_scanned=0), [degraded])
+        assert d["degraded_modules"] == 1 and d["complete"] is False
+
+    def test_json_emits_scan_status(self, tmp_path, monkeypatch):
+        monkeypatch.chdir(tmp_path)
+        wf = tmp_path / ".github" / "workflows"
+        wf.mkdir(parents=True)
+        (wf / "bad.yml").write_text("on: [push\njobs:\n  b:\n")
+        out_file = tmp_path / "report.json"
+        CliRunner().invoke(
+            scan,
+            ["--pipeline", "github", "--output", "json",
+             "--output-file", str(out_file)],
+        )
+        data = json.loads(out_file.read_text())
+        assert data["scan_status"]["complete"] is False
+        assert data["scan_status"]["files_unparsed"] == 1
+
 
 class TestListStandards:
     def test_prints_every_registered_standard(self, runner):

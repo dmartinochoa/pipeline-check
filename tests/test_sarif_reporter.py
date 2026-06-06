@@ -583,6 +583,23 @@ class TestIntegrationWithCli:
         assert payload["runs"][0]["tool"]["driver"]["name"] == "pipeline_check"
 
 
+class TestScanStatus:
+    """The run carries scan_status so a SARIF consumer can detect an
+    incomplete scan."""
+
+    def test_in_run_properties(self):
+        status = {
+            "complete": False, "files_scanned": 1,
+            "files_unparsed": 1, "degraded_modules": 0, "reason": "x",
+        }
+        out = json.loads(report_sarif([_f()], _score(), scan_status=status))
+        assert out["runs"][0]["properties"]["scan_status"] == status
+
+    def test_omitted_when_none(self):
+        out = json.loads(report_sarif([_f()], _score()))
+        assert "scan_status" not in out["runs"][0]["properties"]
+
+
 class TestReachabilityProperties:
     """The chain result carries via_dataflow so machine consumers can
     tell the proven dataflow tier from the shared-job co-location tier."""

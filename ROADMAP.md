@@ -761,11 +761,18 @@ same day; the rest are queued for a later pass.
     whenever a file failed to parse or a cloud module failed API access
     (``reporter.py`` ``incomplete_reason`` +
     ``cli.py:_scan_incomplete_reason``).
-  - Follow-up (queued): carry the same ``scan_status`` (files scanned /
-    unparsed / degraded) in the JSON and SARIF outputs so CI consumers
-    can detect an incomplete scan, and add an opt-in
-    ``--fail-on-parse-error`` so the gate can treat an unparseable file
-    as a failure rather than passing silently.
+  - ~~Machine-readable scan_status (done 2026-06-06 on ``dev``):~~ the
+    JSON output gained a top-level ``scan_status`` object and SARIF a
+    run-level ``properties.scan_status`` (``complete`` plus
+    files-scanned / unparsed / degraded counts, and a ``reason`` when
+    incomplete), backed by a new ``cli._scan_status`` helper that
+    ``_scan_incomplete_reason`` now derives from. Added to the strict
+    ``tests/report_schema.json``.
+  - Follow-up (queued): an opt-in ``--fail-on-parse-error`` so the gate
+    can treat an unparseable file as a failure rather than passing
+    silently. Needs a ``GateConfig`` field + an ``evaluate_gate`` arg
+    (it doesn't currently receive scan metadata); the ``_scan_status``
+    helper supplies the count.
 - **Decompose ``cli.py`` (was 5,491 lines; ``scan()`` is 1,372 lines /
   ~70 params).**
   - ~~Core-seam extraction (done 2026-06-05 on ``dev``):~~ provider

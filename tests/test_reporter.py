@@ -368,6 +368,23 @@ class TestInlineExplain:
         assert "[aws_subnet.build.id]" in out
 
 
+class TestReportJsonScanStatus:
+    """JSON output carries scan_status so CI consumers can detect a scan
+    that parsed only part of what it was given."""
+
+    def test_included_when_provided(self):
+        status = {
+            "complete": False, "files_scanned": 2,
+            "files_unparsed": 1, "degraded_modules": 0, "reason": "x",
+        }
+        out = json.loads(report_json(FINDINGS, score(FINDINGS), scan_status=status))
+        assert out["scan_status"] == status
+
+    def test_omitted_when_none(self):
+        out = json.loads(report_json(FINDINGS, score(FINDINGS)))
+        assert "scan_status" not in out
+
+
 class TestReachabilityBadge:
     """The weak shared-job co-location tier must not borrow the proven
     dataflow tier's confident "confirmed" badge."""

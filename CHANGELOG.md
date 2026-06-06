@@ -10,6 +10,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 PRs landing on `dev` between releases append entries below. The
 release commit collapses this section into `## [X.Y.Z] - <date>`.
 
+### Added
+
+- **`scan_status` in the JSON and SARIF outputs.** The terminal report
+  already flags an incomplete scan (a file that failed to parse, a
+  credential-less cloud probe) instead of presenting a confident grade,
+  but the machine-readable outputs did not, so a CI consumer could not
+  tell a fully-completed scan from a partial one. JSON gains a top-level
+  `scan_status` object and SARIF a run-level `properties.scan_status`,
+  both carrying `complete`, `files_scanned`, `files_unparsed`,
+  `degraded_modules`, and a `reason` when incomplete. (An opt-in
+  `--fail-on-parse-error` gate that acts on this is a planned follow-up.)
+
 ### Changed
 
 - **Attack-chain reports distinguish the two reachability tiers.** A

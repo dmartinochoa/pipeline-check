@@ -3774,6 +3774,7 @@ def _emit_scan_report(
             findings, score_result, tool_version=__version__,
             inventory=components,
             chains=chains if not no_chains else None,
+            scan_status=_scan_status(scanner.metadata, findings),
         )
         # ``both`` always streams JSON to stdout regardless of
         # ``--output-file``; the file destination is only honored
@@ -3810,6 +3811,7 @@ def _emit_scan_report(
             lambda: report_sarif(
                 findings, score_result, tool_version=__version__,
                 chains=chains, inline_explain=inline_explain,
+                scan_status=_scan_status(scanner.metadata, findings),
             ),
             "SARIF report",
         ),
@@ -4395,15 +4397,16 @@ def _maybe_emit_degraded_scan_warning(findings: list[Any]) -> None:
     )
 
 
-def _scan_incomplete_reason(meta: Any, findings: list[Any]) -> str | None:
-    """Describe why a scan is incomplete, or ``None`` when it fully ran.
+def _scan_status(meta: Any, findings: list[Any]) -> dict[str, Any]:
+    """Structured completeness summary of a scan.
 
     A scan is incomplete when a file it tried to read could not be
     parsed (malformed YAML / JSON, read error) or when a cloud module
     failed API access (the ``*-000`` degraded probes). The score then
-    reflects only what was actually scanned, so the terminal report
-    flags the grade as incomplete instead of presenting a confident
-    pass. Returns a human-readable reason for the report's status line.
+    reflects only what was actually scanned. This summary is emitted in
+    the JSON and SARIF outputs so CI consumers can detect an incomplete
+    scan, and it backs :func:`_scan_incomplete_reason` (the terminal
+    status line). ``reason`` is present only when the scan is incomplete.
     """
     parse_fail = 0
     for w in getattr(meta, "warnings", None) or []:
@@ -4415,14 +4418,28 @@ def _scan_incomplete_reason(meta: Any, findings: list[Any]) -> str | None:
         if getattr(f, "check_id", "").endswith("-000")
         and not getattr(f, "passed", True)
     )
+    status: dict[str, Any] = {
+        "complete": parse_fail == 0 and degraded == 0,
+        "files_scanned": int(getattr(meta, "files_scanned", 0) or 0),
+        "files_unparsed": parse_fail,
+        "degraded_modules": degraded,
+    }
     parts: list[str] = []
     if parse_fail:
         parts.append(f"{parse_fail} file(s) could not be parsed")
     if degraded:
         parts.append(f"{degraded} module(s) failed API access")
-    if not parts:
-        return None
-    return f"{'; '.join(parts)}. The grade reflects only what was scanned."
+    if parts:
+        status["reason"] = (
+            f"{'; '.join(parts)}. The grade reflects only what was scanned."
+        )
+    return status
+
+
+def _scan_incomplete_reason(meta: Any, findings: list[Any]) -> str | None:
+    """The human-readable reason a scan is incomplete, or ``None`` when
+    it fully ran. Drives the terminal report's status line."""
+    return _scan_status(meta, findings).get("reason")
 
 
 def _emit_scan_summary(meta: Any) -> None:

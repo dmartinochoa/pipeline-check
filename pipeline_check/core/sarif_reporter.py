@@ -121,6 +121,7 @@ def report_sarif(
     tool_version: str = "",
     chains: list[Chain] | None = None,
     inline_explain: bool = False,
+    scan_status: dict[str, Any] | None = None,
 ) -> str:
     """Serialize findings to a SARIF 2.1.0 JSON string.
 
@@ -143,6 +144,11 @@ def report_sarif(
         carried in ``properties.triggering_checks`` for programmatic
         consumers; MITRE ATT&CK techniques are encoded as ``tags``
         prefixed with ``mitre/``.
+    scan_status:
+        Optional completeness summary (``complete`` plus the
+        files-scanned / unparsed / degraded counts). Surfaced under the
+        run's ``properties.scan_status`` so a consumer can detect a scan
+        that parsed only part of what it was given.
     """
     rules = _build_rules(findings, inline_explain=inline_explain)
     rule_index = {rule["id"]: idx for idx, rule in enumerate(rules)}
@@ -173,6 +179,12 @@ def report_sarif(
                 "results": results,
                 "properties": {
                     "score": score_result,
+                    # ``scan_status`` (when supplied) lets a SARIF
+                    # consumer tell a complete scan from one where a file
+                    # failed to parse or a cloud module degraded, the same
+                    # signal the JSON output and terminal report carry.
+                    **({"scan_status": scan_status}
+                       if scan_status is not None else {}),
                 },
             }
         ],
