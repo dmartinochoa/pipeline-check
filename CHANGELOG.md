@@ -43,6 +43,18 @@ release commit collapses this section into `## [X.Y.Z] - <date>`.
   finding badges a single file root instead of double-counting onto each
   definition. A new `checks/bitbucket/_graph.py` builder with no contract
   change.
+- **HTML report: step-level pipeline graph for Jenkins (DAG v2).** Extends
+  the step-level DAG to Jenkinsfiles. Jenkins is Groovy, not YAML, so the
+  builder recovers each `stage('Name') { ... }` block's range from the
+  same depth-aware brace walk the provider already uses, then graphs the
+  top-level stages (a stage not contained in another stage's body) chained
+  sequentially with `stage` edges. Nested stages (the branches of a
+  `parallel { }` block, declarative sub-stages) fold into their enclosing
+  top-level stage rather than inventing edges the flat stage list can't
+  justify. A new `checks/jenkins/_graph.py` builder with no contract
+  change. This completes the DAG-v2 rollout for every YAML/Groovy
+  pipeline provider; the Kubernetes-CRD providers (Argo, Tekton) remain
+  out of scope until their findings carry a file-path location.
 
 ## [1.11.0] - 2026-06-06
 

@@ -1139,9 +1139,18 @@ double-counting onto each definition's root). Ordering is positional (no
 ``depends_on``): sequential steps -> ``stage`` edges, a ``parallel`` block
 is one concurrent group (no edge between siblings, next step waits for
 all), a ``stage``'s inner steps run sequentially.
-Remaining pipeline providers: **Jenkins** (Groovy, hardest) and -
-blocked - **Tekton / Argo**. **Overlay prerequisite (learned building the
-6-8 batch):** a builder only renders if its provider's findings carry the
+~~**Jenkins** (increment 9, done 2026-06-06 on ``dev``):~~ Groovy, not
+YAML, so the builder reuses the provider's depth-aware brace walk to
+recover each ``stage('Name')`` block's char range, keeps the TOP-LEVEL
+stages (a stage not contained in another stage's body), and chains them
+sequentially with ``stage`` edges. Nested stages (``parallel { }``
+branches, declarative sub-stages) fold into their enclosing top-level
+stage rather than inventing edges the flat stage list can't justify.
+**With Jenkins done, every YAML/Groovy pipeline provider now ships a DAG
+builder.** The only DAG work left is the K8s-CRD finding-location design
+fix below, which would then unblock the Tekton and Argo builders.
+**Overlay prerequisite (learned building the
+6-9 batch):** a builder only renders if its provider's findings carry the
 file path so ``attach_findings`` can place them (the HTML DAG section omits
 any graph with no attached finding). The CI/CD providers use
 ``resource=path`` (fine). **Tekton AND Argo are blocked**: like the
