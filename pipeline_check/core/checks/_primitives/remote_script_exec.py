@@ -74,14 +74,25 @@ _VENDOR_HOSTS = frozenset({
 
 # ── Pattern catalog ────────────────────────────────────────────
 
-# A URL captured up to the first whitespace / pipe / redirect / term.
-_URL = r"https?://[^\s|;&'\">`]+"
+# ReDoS bound. Every fill below (the run between the fetcher, the URL,
+# and the closing token: a pipe, a paren, a redirect) is length-capped.
+# Left unbounded, a crafted line like ``curl https://x/<60 000 chars>``
+# with no trailing token drives the engine into O(n²) backtracking
+# (~5 s at 60 kB). These patterns run on PR-controlled CI files, so that
+# is a denial-of-service vector. No real command line approaches the
+# cap; it only defuses adversarial input. The regexes below write the
+# value literally to stay readable; keep them in sync with this constant.
+_MAX_FILL = 2048
+
+# A URL captured up to the first whitespace / pipe / redirect / term,
+# length-bounded per ``_MAX_FILL``.
+_URL = r"https?://[^\s|;&'\">`]{1,2048}"
 
 # curl/wget ... URL ... | (sudo )? bash|sh|python|perl|ruby
 _PIPE_RE = re.compile(
-    r"\b(?P<fetcher>curl|wget)\b[^|]*?"
+    r"\b(?P<fetcher>curl|wget)\b[^|]{0,2048}?"
     r"(?P<url>" + _URL + r")"
-    r"[^|]*\|\s*(?:sudo\s+)?"
+    r"[^|]{0,2048}\|\s*(?:sudo\s+)?"
     r"(?P<interp>(?:ba)?sh|python[23]?|perl|ruby)\b",
     re.IGNORECASE,
 )
@@ -90,9 +101,9 @@ _PIPE_RE = re.compile(
 # content. Single or double quotes.
 _SHELL_SUBSHELL_RE = re.compile(
     r"\b(?P<interp>(?:ba)?sh)\s+-c\s+"
-    r"[\"']\$\(\s*(?P<fetcher>curl|wget)\b[^)]*?"
+    r"[\"']\$\(\s*(?P<fetcher>curl|wget)\b[^)]{0,2048}?"
     r"(?P<url>" + _URL + r")"
-    r"[^)]*\)[\"']",
+    r"[^)]{0,2048}\)[\"']",
     re.IGNORECASE,
 )
 
@@ -104,9 +115,9 @@ _SHELL_SUBSHELL_RE = re.compile(
 _PROCESS_SUBST_RE = re.compile(
     r"(?:^|[\s;&|(])"
     r"(?P<interp>(?:ba)?sh|python[23]?|perl|ruby|source|\.)\s+"
-    r"<\(\s*(?P<fetcher>curl|wget)\b[^)]*?"
+    r"<\(\s*(?P<fetcher>curl|wget)\b[^)]{0,2048}?"
     r"(?P<url>" + _URL + r")"
-    r"[^)]*\)",
+    r"[^)]{0,2048}\)",
     re.IGNORECASE | re.MULTILINE,
 )
 
@@ -116,9 +127,9 @@ _PROCESS_SUBST_RE = re.compile(
 # quote style so single-quoted URL literals inside the double-quoted
 # ``-c`` payload still match.
 _PYTHON_INLINE_RE = re.compile(
-    r"\bpython[23]?\s+-c\s+[\"'][^\n]*?"
-    r"(?:urllib[^\n]*?\.urlopen|requests[^\n]*?\.get)"
-    r"[^\n]*?(?P<url>https?://[^\s'\"()\]]+)",
+    r"\bpython[23]?\s+-c\s+[\"'][^\n]{0,2048}?"
+    r"(?:urllib[^\n]{0,2048}?\.urlopen|requests[^\n]{0,2048}?\.get)"
+    r"[^\n]{0,2048}?(?P<url>https?://[^\s'\"()\]]{1,2048})",
     re.IGNORECASE,
 )
 
@@ -127,9 +138,9 @@ _PYTHON_INLINE_RE = re.compile(
 # on the same line after a statement separator, capturing the exact
 # filename is fragile across `&& / ; / newline` variants.
 _DOWNLOAD_EXEC_RE = re.compile(
-    r"\b(?P<fetcher>curl|wget)\b[^;&\n]*?"
+    r"\b(?P<fetcher>curl|wget)\b[^;&\n]{0,2048}?"
     r"(?P<url>" + _URL + r")"
-    r"[^;&\n]*>\s*\S+\.sh\s*[;&]+\s*"
+    r"[^;&\n]{0,2048}>\s*\S+\.sh\s*[;&]+\s*"
     r"(?P<interp>(?:ba)?sh|python[23]?|perl|ruby)\b",
     re.IGNORECASE,
 )
@@ -137,8 +148,8 @@ _DOWNLOAD_EXEC_RE = re.compile(
 # PowerShell: irm <url> | iex  /  Invoke-WebRequest / Invoke-RestMethod
 _POWERSHELL_RE = re.compile(
     r"\b(?P<fetcher>irm|iwr|Invoke-WebRequest|Invoke-RestMethod)\b"
-    r"\s+[^|]*?(?P<url>" + _URL + r")"
-    r"[^|]*\|\s*(?P<interp>iex|Invoke-Expression)\b",
+    r"\s+[^|]{0,2048}?(?P<url>" + _URL + r")"
+    r"[^|]{0,2048}\|\s*(?P<interp>iex|Invoke-Expression)\b",
     re.IGNORECASE,
 )
 

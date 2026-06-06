@@ -10,6 +10,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 PRs landing on `dev` between releases append entries below. The
 release commit collapses this section into `## [X.Y.Z] - <date>`.
 
+### Fixed
+
+- **ReDoS in the remote-script-exec primitive.** The curl-pipe detector
+  (`_primitives/remote_script_exec`, used by the GHA-016 / GL-016 /
+  BB-012 / ADO-016 / ... curl-pipe rules) used unbounded fills around the
+  captured URL. A crafted CI line such as `curl https://x/<60 000 chars>`
+  with no trailing pipe drove the engine into quadratic backtracking
+  (~5 s per pattern at 60 kB; ~11 s at 80 kB). Since these patterns run
+  on pull-request-controlled workflow files, that was a denial-of-service
+  vector against the scanner itself. The URL body and every fill are now
+  length-capped (`_MAX_FILL`, 2048), so a crafted long line scans in
+  ~15 ms with no change to detection on real command lines. Regression
+  test in `tests/test_primitives.py::TestRemoteScriptExecReDoS`.
+
 ## [1.10.0] - 2026-06-05
 
 ### Added
