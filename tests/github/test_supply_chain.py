@@ -268,6 +268,39 @@ class TestGHA018PackageInsecure:
         f = run_check(wf, "GHA-018")
         assert f.passed
 
+    def test_fails_on_pip_index_url_equals_form(self):
+        # ``--index-url=http://`` (equals form) is the same insecure source
+        # as the space form.
+        wf = """
+        name: ci
+        on: push
+        permissions: { contents: read }
+        jobs:
+          build:
+            runs-on: ubuntu-latest
+            timeout-minutes: 30
+            steps:
+              - run: pip install --index-url=http://example.com/simple/ requests
+        """
+        f = run_check(wf, "GHA-018")
+        assert not f.passed
+
+    def test_fails_on_npm_strict_ssl_false(self):
+        # Disabling TLS cert verification for the install.
+        wf = """
+        name: ci
+        on: push
+        permissions: { contents: read }
+        jobs:
+          build:
+            runs-on: ubuntu-latest
+            timeout-minutes: 30
+            steps:
+              - run: npm install --strict-ssl=false some-pkg
+        """
+        f = run_check(wf, "GHA-018")
+        assert not f.passed
+
 
 # ── GHA-021 lockfile enforcement ────────────────────────────────────
 

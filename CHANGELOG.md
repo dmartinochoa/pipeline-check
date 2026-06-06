@@ -155,6 +155,16 @@ release commit collapses this section into `## [X.Y.Z] - <date>`.
 
 ### Fixed
 
+- **Insecure package-install detection widened (cross-provider).** The
+  shared `PKG_INSECURE_RE` (the `*-018` insecure-package-source rules across
+  GitHub, GitLab, Azure, Bitbucket, CircleCI, Jenkins, plus the Argo /
+  Buildkite / Drone / Tekton variants) missed pip's equals form
+  (`--index-url=http://`, `--extra-index-url=http://` — only the
+  space-separated form matched) and npm/yarn `--strict-ssl=false` /
+  `--strict-ssl false` (disables TLS cert verification for the install).
+  Both are now flagged; `https://` sources and `--strict-ssl=true` stay
+  clean.
+
 - **Docker container-escape detection widened (cross-provider).** The
   shared `DOCKER_INSECURE_RE` (GHA-017, ADO-017, BB-013, CC-017, GL-017,
   JF-017, BK-005, all CRITICAL/HIGH) missed several escape idioms: the

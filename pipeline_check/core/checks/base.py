@@ -482,11 +482,12 @@ DOCKER_INSECURE_RE = _re.compile(
 #: Covers pip, npm, yarn, gem, nuget, and cargo.
 PKG_INSECURE_RE = _re.compile(
     r"(?:pip3?\s+install)"                                           # pip / pip3
-    r"[^;&]*(?:--index-url\s+http[^s]|-i\s+http[^s]"               # -i short form
-    r"|--extra-index-url\s+http[^s]"                                 # extra index
+    r"[^;&]*(?:--index-url[= ]\s*http[^s]|-i\s+http[^s]"           # -i short form, = or space
+    r"|--extra-index-url[= ]\s*http[^s]"                             # extra index
     r"|--trusted-host|--no-verify)"
     r"|(?:npm\s+install|yarn\s+add)"
-    r"[^;&]*(?:--registry[= ]http[^s]|--no-verify)"
+    # ``--strict-ssl=false`` disables TLS cert verification for the install.
+    r"[^;&]*(?:--registry[= ]http[^s]|--strict-ssl[= ]\s*false|--no-verify)"
     r"|gem\s+(?:install|sources\s+--add)\s[^;&]*(?:--source\s+http[^s]|http[^s])"  # gem
     r"|nuget\s+(?:install|restore)\s[^;&]*-Source\s+http[^s]"       # nuget
     r"|cargo\s+install\s[^;&]*--index\s+http[^s]",                  # cargo
