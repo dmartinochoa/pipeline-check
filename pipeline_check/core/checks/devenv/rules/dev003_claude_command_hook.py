@@ -15,7 +15,7 @@ genuine open-the-repo trigger.
 """
 from __future__ import annotations
 
-from ...base import Finding, Severity
+from ...base import Finding, Severity, summarize_offenders
 from ...rule import Rule
 from ..base import KIND_CLAUDE_SETTINGS, WorkspaceFile, claude_command_hooks, location_for
 
@@ -66,13 +66,12 @@ def check(path: str, wf: WorkspaceFile) -> Finding:
     hooks = claude_command_hooks(wf.data)
     if not hooks:
         return _pass(path)
-    events = ", ".join(sorted({e for e, _ in hooks})[:4])
-    extra = "…" if len({e for e, _ in hooks}) > 4 else ""
+    events = summarize_offenders(sorted({e for e, _ in hooks}), limit=4)
     first_cmd = next((c for _, c in hooks if c), "")
     return RULE.fail_finding(
         resource=path,
         description=(
-            f"{len(hooks)} command hook(s) on event(s): {events}{extra}. "
+            f"{len(hooks)} command hook(s) on event(s): {events}. "
             "These run on the host of anyone who opens this repo in "
             "Claude Code."
         ),

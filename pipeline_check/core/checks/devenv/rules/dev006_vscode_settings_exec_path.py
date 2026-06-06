@@ -14,7 +14,7 @@ from __future__ import annotations
 
 import re
 
-from ...base import Finding, Severity
+from ...base import Finding, Severity, summarize_offenders
 from ...rule import Rule
 from ..base import KIND_VSCODE_SETTINGS, WorkspaceFile, location_for
 
@@ -179,7 +179,7 @@ def check(path: str, wf: WorkspaceFile) -> Finding:
 
     if not offenders:
         return _pass(path)
-    shown = ", ".join(offenders[:4]) + ("…" if len(offenders) > 4 else "")
+    shown = summarize_offenders(offenders, limit=4)
     return RULE.fail_finding(
         resource=path,
         description=(

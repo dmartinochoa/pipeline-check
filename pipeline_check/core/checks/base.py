@@ -1,4 +1,5 @@
 import abc
+from collections.abc import Iterable
 from dataclasses import dataclass, field
 from enum import Enum
 from typing import Any, Generic, TypeVar
@@ -26,6 +27,7 @@ from .tokens import (
 # old names resolvable here so existing imports don't need to churn.
 __all__ = [
     "safe_load_yaml",
+    "summarize_offenders",
     "Severity",
     "severity_rank",
     "Confidence",
@@ -104,6 +106,19 @@ _SEVERITY_RANK: dict["Severity", int] = {
 
 def severity_rank(s: "Severity") -> int:
     return _SEVERITY_RANK[s]
+
+
+def summarize_offenders(items: Iterable[str], *, limit: int = 5) -> str:
+    """Join the first *limit* offenders with ``", "``, appending ``"…"``
+    when more were dropped.
+
+    Standardizes the ``", ".join(xs[:N]) + ("…" if len(xs) > N else "")``
+    tail hand-rolled across the rule pack (which drifted between a 3- and
+    a 5-item cap). Callers pass an already-sorted / deduplicated sequence;
+    this only formats it.
+    """
+    items = list(items)
+    return ", ".join(items[:limit]) + ("…" if len(items) > limit else "")
 
 
 class Confidence(str, Enum):

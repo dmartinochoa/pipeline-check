@@ -28,7 +28,11 @@ from pathlib import Path
 
 import pytest
 
-from pipeline_check.core.checks.base import Confidence, Severity
+from pipeline_check.core.checks.base import (
+    Confidence,
+    Severity,
+    summarize_offenders,
+)
 from pipeline_check.core.checks.rule import Rule, discover_rules
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
@@ -294,3 +298,34 @@ class TestRuleFindingHelpers:
             recommendation=self.RULE.recommendation, passed=False,
         )
         assert helper == manual
+
+
+class TestSummarizeOffenders:
+    """``summarize_offenders`` standardizes the ``", ".join(xs[:N]) +
+    ellipsis`` tail hand-rolled across the rule pack."""
+
+    def test_under_limit_no_ellipsis(self):
+        assert summarize_offenders(["a", "b"], limit=3) == "a, b"
+
+    def test_at_limit_no_ellipsis(self):
+        assert summarize_offenders(["a", "b", "c"], limit=3) == "a, b, c"
+
+    def test_over_limit_truncates_with_ellipsis(self):
+        assert summarize_offenders(["a", "b", "c", "d"], limit=3) == "a, b, c…"
+
+    def test_empty(self):
+        assert summarize_offenders([], limit=5) == ""
+
+    def test_default_limit_is_five(self):
+        assert summarize_offenders(list("abcdef")) == "a, b, c, d, e…"
+
+    def test_accepts_any_iterable(self):
+        # A set/generator is materialized; the caller pre-sorts when order
+        # matters, so just check it doesn't choke on a non-list iterable.
+        assert summarize_offenders(iter(["x"]), limit=2) == "x"
+
+    def test_matches_hand_rolled_pattern(self):
+        for xs, n in ([], 3), (["a"], 5), (list("abcdefg"), 5), (["a", "b"], 1):
+            xs = list(xs)
+            manual = ", ".join(xs[:n]) + ("…" if len(xs) > n else "")
+            assert summarize_offenders(xs, limit=n) == manual

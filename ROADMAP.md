@@ -852,15 +852,19 @@ same day; the rest are queued for a later pass.
     scaffolder and ``contributing_first_rule.md`` now emit the helper, and
     a test pins that it builds an identical ``Finding`` to the manual call.
     The other ~738 modules adopt incrementally.
-  - Still queued: a ``summarize_offenders(items, limit=5)`` helper (363
-    ``[:5]`` / 213 ``[:3]`` hand-rolled join-and-ellipsis tails, with an
-    inconsistent 5-vs-3 cap). Also ~95% of emitted findings are passing
-    and still fully post-processed before reporters discard them (NOTE:
-    the per-finding cost is mostly cheap, controls are cached by
-    ``check_id`` and the rest are O(1) lookups, so this skip is likely
-    marginal and risks changing ``--show-passed`` / JSON output that
-    includes passed findings with controls, reconsider value before
-    doing).
+  - ~~``summarize_offenders(items, *, limit=5)`` (done 2026-06-06 on
+    ``dev``):~~ in ``checks/base.py``, joins the first *limit* offenders
+    with ``", "`` and appends ``"…"`` when more were dropped, replacing
+    the hand-rolled ``", ".join(xs[:N]) + ellipsis`` tail. ``devenv``
+    (dev001 / 003 / 004 / 006) migrated byte-identically; the rest adopt
+    incrementally (the cap stays per-call, so a rule keeps whatever N it
+    used). Other ~570 sites are opportunistic.
+  - Still queued (low value): ~95% of emitted findings are passing and
+    still fully post-processed before reporters discard them. NOTE the
+    per-finding cost is mostly cheap (controls cached by ``check_id``,
+    the rest O(1) lookups), so this skip is likely marginal and risks
+    changing ``--show-passed`` / JSON output that includes passed
+    findings with controls. Reconsider value before doing.
 - ~~**Re-label the weak reachability tier** (badge done 2026-06-06 on
   ``dev``).~~ The shared-job co-location fallback
   (``confirmed_reachable=True``, ``via_dataflow=False``) used to render
