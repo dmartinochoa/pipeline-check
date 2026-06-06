@@ -1104,14 +1104,22 @@ no-needs jobs. ~~**CircleCI** (increment 3, done 2026-06-06 on ``dev``):~~
 jobs and their steps as nodes, with the
 ``workflows.<name>.jobs[].requires`` references (unioned across every
 workflow, only edges to real ``jobs:`` entries) as ``needs`` edges, the
-dependency structure lives in ``workflows:`` not on the jobs. Remaining
-pipeline providers (Azure, Bitbucket, Buildkite, Drone, Tekton, Argo,
-CloudBuild, Jenkins) follow the same shape; IaC / SCA / cloud providers
-have no job DAG. Per-provider notes: Azure (single-doc, stages + jobs +
-steps, ``dependsOn`` by name), Bitbucket (parallel groups, multiple
-pipeline definitions per file), Buildkite (``depends_on`` by key + ``wait``
-barriers), Drone / Tekton / Argo (multi-doc, need per-doc line bounds on
-the file root).
+dependency structure lives in ``workflows:`` not on the jobs.
+~~**CloudBuild** (increment 4, done 2026-06-06 on ``dev``):~~ each build
+step is a ``job``-kind node (steps are the unit of work, so they render
+as boxes), ``waitFor: [ids]`` -> ``needs`` edges, ``waitFor: ['-']`` ->
+no edge (immediate), no ``waitFor`` -> ``stage`` edge from the previous
+step (the sequential default). Remaining pipeline providers (Azure,
+Bitbucket, Buildkite, Drone, Tekton, Argo, Jenkins) follow the same
+shape; IaC / SCA / cloud providers have no job DAG. Per-provider notes:
+Azure (single-doc, stages + jobs + steps, ``dependsOn`` by name with a
+``job:`` / ``deployment:`` prefix, within-stage resolution + deployment
+strategy step nesting), Bitbucket (parallel groups, multiple pipeline
+definitions per file), Buildkite (``depends_on`` by key + ``wait``
+barriers + ``group`` flattening), Drone / Tekton / Argo (multi-doc, need
+per-doc line bounds on the file root). Renderer reminder: only ``needs``
+and ``stage`` edges are drawn between boxes (``sequence`` is for step
+nesting only).
 
 ### Reachability-aware attack chains
 
