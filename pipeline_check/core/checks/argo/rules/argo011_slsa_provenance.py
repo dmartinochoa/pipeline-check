@@ -3,7 +3,7 @@ from __future__ import annotations
 
 from ...base import NO_ARTIFACT_DESC, Finding, Severity, has_provenance, produces_artifacts
 from ...rule import Rule
-from ..base import ArgoContext
+from ..base import ArgoContext, doc_location
 
 RULE = Rule(
     id="ARGO-011",
@@ -62,4 +62,5 @@ def check(ctx: ArgoContext) -> Finding:
         check_id=RULE.id, title=RULE.title, severity=RULE.severity,
         resource="argo", description=desc,
         recommendation=RULE.recommendation, passed=passed,
+        locations=[doc_location(d) for d in no_prov],
     )

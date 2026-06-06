@@ -88,7 +88,7 @@ def _build_one(
         nxt = starts[ordered[i + 1][0]] if i + 1 < len(ordered) else None
         ends[tid] = (nxt - 1) if (nxt and starts[tid]) else root_end
 
-    for tid, t in records:
+    for tid, _t in records:
         nodes.append(GraphNode(
             id=tid, kind="job", label=tid, path=path,
             start_line=starts[tid], end_line=ends[tid], parent=_ROOT_ID,

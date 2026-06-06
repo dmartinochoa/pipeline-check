@@ -7,10 +7,11 @@ from ...base import (
     PKG_INSECURE_RE,
     PKG_NO_LOCKFILE_RE,
     Finding,
+    Location,
     Severity,
 )
 from ...rule import Rule
-from ..base import ArgoContext, iter_containers, iter_templates, template_name
+from ..base import ArgoContext, doc_location, iter_containers, iter_templates, template_name
 
 RULE = Rule(
     id="ARGO-014",
@@ -102,6 +103,7 @@ def _container_text(container: dict[str, Any]) -> str:
 
 def check(ctx: ArgoContext) -> Finding:
     offenders: list[str] = []
+    locations: list[Location] = []
     for doc in ctx.docs:
         for idx, tmpl in enumerate(iter_templates(doc)):
             for container in iter_containers(tmpl):
@@ -118,6 +120,7 @@ def check(ctx: ArgoContext) -> Finding:
                         f"{template_name(tmpl, idx)}: [{kind}] "
                         f"{hit.group(0)[:50].strip()}"
                     )
+                    locations.append(doc_location(doc, container))
     if not ctx.docs:
         return Finding(
             check_id=RULE.id, title=RULE.title, severity=RULE.severity,
@@ -139,4 +142,5 @@ def check(ctx: ArgoContext) -> Finding:
         check_id=RULE.id, title=RULE.title, severity=RULE.severity,
         resource="argo", description=desc,
         recommendation=RULE.recommendation, passed=passed,
+        locations=locations,
     )

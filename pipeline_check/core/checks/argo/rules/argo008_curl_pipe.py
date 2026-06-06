@@ -4,9 +4,9 @@ from __future__ import annotations
 from typing import Any
 
 from ..._primitives import remote_script_exec, tls_bypass
-from ...base import Finding, Severity
+from ...base import Finding, Location, Severity
 from ...rule import Rule
-from ..base import ArgoContext, iter_containers, iter_templates, template_name
+from ..base import ArgoContext, doc_location, iter_containers, iter_templates, template_name
 
 RULE = Rule(
     id="ARGO-008",
@@ -84,6 +84,7 @@ def _container_text(container: dict[str, Any]) -> str:
 
 def check(ctx: ArgoContext) -> Finding:
     offenders: list[str] = []
+    locations: list[Location] = []
     for doc in ctx.docs:
         for idx, tmpl in enumerate(iter_templates(doc)):
             for container in iter_containers(tmpl):
@@ -95,12 +96,14 @@ def check(ctx: ArgoContext) -> Finding:
                         f"{doc.kind}/{doc.name} "
                         f"{template_name(tmpl, idx)}: curl-pipe-shell"
                     )
+                    locations.append(doc_location(doc, container))
                     continue
                 if tls_bypass.scan(blob):
                     offenders.append(
                         f"{doc.kind}/{doc.name} "
                         f"{template_name(tmpl, idx)}: TLS bypass"
                     )
+                    locations.append(doc_location(doc, container))
     if not ctx.docs:
         return Finding(
             check_id=RULE.id, title=RULE.title, severity=RULE.severity,
@@ -120,4 +123,5 @@ def check(ctx: ArgoContext) -> Finding:
         check_id=RULE.id, title=RULE.title, severity=RULE.severity,
         resource="argo", description=desc,
         recommendation=RULE.recommendation, passed=passed,
+        locations=locations,
     )

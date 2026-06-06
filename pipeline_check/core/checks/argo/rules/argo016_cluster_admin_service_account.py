@@ -3,9 +3,9 @@ from __future__ import annotations
 
 from typing import Any
 
-from ...base import Confidence, Finding, Severity
+from ...base import Confidence, Finding, Location, Severity
 from ...rule import Rule
-from ..base import ArgoContext, workflow_spec
+from ..base import ArgoContext, doc_location, workflow_spec
 
 # ServiceAccount names that signal a cluster-wide admin binding. The
 # privilege itself lives in RBAC (a ClusterRoleBinding to ``cluster-admin``),
@@ -85,6 +85,7 @@ RULE = Rule(
 
 def check(ctx: ArgoContext) -> Finding:
     offenders: list[str] = []
+    locations: list[Location] = []
     examined = 0
     for doc in ctx.docs:
         if doc.kind not in ("Workflow", "CronWorkflow"):
@@ -93,6 +94,7 @@ def check(ctx: ArgoContext) -> Finding:
         sa = workflow_spec(doc).get("serviceAccountName")
         if _is_admin_sa(sa):
             offenders.append(f"{doc.kind}/{doc.name}: {sa}")
+            locations.append(doc_location(doc))
     if examined == 0:
         return Finding(
             check_id=RULE.id, title=RULE.title, severity=RULE.severity,
@@ -113,5 +115,6 @@ def check(ctx: ArgoContext) -> Finding:
         check_id=RULE.id, title=RULE.title, severity=RULE.severity,
         resource="argo", description=desc,
         recommendation=RULE.recommendation, passed=passed,
+        locations=locations,
         confidence=Confidence.HIGH if passed else Confidence.MEDIUM,
     )

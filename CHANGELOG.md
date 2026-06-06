@@ -92,7 +92,13 @@ release commit collapses this section into `## [X.Y.Z] - <date>`.
   `ArgoChecks.run` now resolves those anchors to a document and template
   line (ARGO-001 / ARGO-002 already set locations natively), so the
   findings carry file/line info in the terminal report, SARIF, the heatmap,
-  and the new pipeline graph.
+  and the new pipeline graph. The aggregate Argo rules (ARGO-003/004/006/
+  007/008/009/010/011/013/014/015/016) now also attach a `Location` per
+  offending document via a shared `argo/base.py::doc_location(doc, obj)`
+  helper, so the whole Argo provider emits located findings (ARGO-012 is a
+  whole-scan "no vulnerability scanner anywhere" finding with no resource
+  to point at). With the Kubernetes and Tekton fixes, every K8s-CRD
+  provider now emits located findings.
 - **Every Kubernetes finding now carries a source location.** The
   aggregate Kubernetes rules returned one Finding per check with
   `resource="kubernetes/manifests"` and no `Location`, so they showed no

@@ -22,7 +22,8 @@ from pathlib import Path
 from typing import Any
 
 from .._yaml_files import load_yaml_files
-from ..base import BaseCheck
+from .._yaml_lines import line_of as _line_of
+from ..base import BaseCheck, Location
 
 ARGO_KINDS: frozenset[str] = frozenset({
     "Workflow", "WorkflowTemplate", "ClusterWorkflowTemplate",
@@ -126,6 +127,23 @@ class ArgoBaseCheck(BaseCheck[ArgoContext]):
 
 
 # ── Helpers shared by multiple rule modules ────────────────────────────
+
+
+def doc_location(doc: ArgoDoc, obj: Any = None) -> Location:
+    """Build a :class:`Location` pointing at *obj* within document *doc*.
+
+    *obj* is the most specific dict available at the offending site (a
+    template, container, ...); the location uses its source line, falling
+    back to the document's line when *obj* isn't line-tagged. Carries
+    ``doc_index`` so a finding in one document of a multi-doc file resolves
+    to the right resource, matching the shape ARGO-001 sets natively.
+    """
+    line = _line_of(obj) if isinstance(obj, dict) else None
+    if line is None:
+        line = _line_of(doc.data)
+    return Location(
+        path=doc.path, start_line=line, end_line=line, doc_index=doc.doc_index,
+    )
 
 
 def workflow_spec(doc: ArgoDoc) -> dict[str, Any]:

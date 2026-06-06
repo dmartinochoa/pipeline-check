@@ -1,9 +1,9 @@
 """ARGO-013, automountServiceAccountToken not explicitly false."""
 from __future__ import annotations
 
-from ...base import Finding, Severity
+from ...base import Finding, Location, Severity
 from ...rule import Rule
-from ..base import ArgoContext, iter_templates, template_name, workflow_spec
+from ..base import ArgoContext, doc_location, iter_templates, template_name, workflow_spec
 
 RULE = Rule(
     id="ARGO-013",
@@ -81,6 +81,7 @@ RULE = Rule(
 
 def check(ctx: ArgoContext) -> Finding:
     offenders: list[str] = []
+    locations: list[Location] = []
     for doc in ctx.docs:
         spec = workflow_spec(doc)
         spec_value = spec.get("automountServiceAccountToken")
@@ -100,6 +101,7 @@ def check(ctx: ArgoContext) -> Finding:
             offenders.append(
                 f"{doc.kind}/{doc.name} {template_name(tmpl, idx)}"
             )
+            locations.append(doc_location(doc, tmpl))
     if not ctx.docs:
         return Finding(
             check_id=RULE.id, title=RULE.title, severity=RULE.severity,
@@ -123,4 +125,5 @@ def check(ctx: ArgoContext) -> Finding:
         check_id=RULE.id, title=RULE.title, severity=RULE.severity,
         resource="argo", description=desc,
         recommendation=RULE.recommendation, passed=passed,
+        locations=locations,
     )

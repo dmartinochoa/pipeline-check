@@ -1193,15 +1193,18 @@ each attach a ``Location`` per offending document (pinned by
 ``tests/tekton/test_aggregate_locations.py``); TKN-001 was native,
 TKN-002/003 use the anchor backfill, TKN-012 is a whole-scan
 "no scanner anywhere" finding with no resource to point at (left as-is),
-and TAINT-006 is the dataflow rule (separate). **Remaining:** only the
-doc-level **Argo** aggregate rules (ARGO-003/004/006/007/008/009/010/011/
-012/013/014/015/016) — same per-rule pattern: add an
-``argo/base.py::doc_location`` helper mirroring Tekton's, then attach
-``doc_location(doc, obj)`` (obj = template / container / sidecar / doc) at
-each offender. Use the transactional-script technique (write a Python
-script, per-file str.replace with count==1 asserts, then
-``ruff check --fix`` for import order) as the Tekton + Kubernetes batches
-did.
+and TAINT-006 is the dataflow rule (separate). **Argo is also done**
+(2026-06-06): an ``argo/base.py::doc_location(doc, obj)`` helper, and the
+aggregate rules ARGO-003/004/006/007/008/009/010/011/013/014/015/016 each
+attach a ``Location`` per offending document / template / container (pinned
+by ``tests/argo/test_aggregate_locations.py``); ARGO-001/002 native,
+ARGO-005/017 anchor backfill, ARGO-012 whole-scan absence (left as-is),
+TAINT-007 dataflow (separate). **THE K8s-CRD FINDING-LOCATION SUB-THREAD IS
+COMPLETE: kubernetes, tekton, and argo all emit located findings** (only
+the two whole-scan vuln-scanner-absence rules and the TAINT dataflow rules
+are intentionally location-less). The reusable technique was the
+transactional script (write a Python script, per-file str.replace with
+count==1 asserts, then ``ruff check --fix`` for import order).
 Renderer reminder: only ``needs`` and ``stage`` edges are drawn between
 boxes (``sequence`` is for step nesting only).
 

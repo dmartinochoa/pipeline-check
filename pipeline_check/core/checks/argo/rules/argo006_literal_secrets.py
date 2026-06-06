@@ -4,9 +4,9 @@ from __future__ import annotations
 import re
 from typing import Any
 
-from ...base import Finding, Severity
+from ...base import Finding, Location, Severity
 from ...rule import Rule
-from ..base import ArgoContext, iter_containers, iter_templates, template_name, workflow_spec
+from ..base import ArgoContext, doc_location, iter_containers, iter_templates, template_name, workflow_spec
 
 RULE = Rule(
     id="ARGO-006",
@@ -163,12 +163,14 @@ def _scan_parameters(params: Any) -> list[str]:
 
 def check(ctx: ArgoContext) -> Finding:
     offenders: list[str] = []
+    locations: list[Location] = []
     for doc in ctx.docs:
         spec = workflow_spec(doc)
         args = spec.get("arguments")
         if isinstance(args, dict):
             for h in _scan_parameters(args.get("parameters")):
                 offenders.append(f"{doc.kind}/{doc.name} arguments.{h}")
+                locations.append(doc_location(doc))
         for idx, tmpl in enumerate(iter_templates(doc)):
             inputs = tmpl.get("inputs")
             if isinstance(inputs, dict):
@@ -177,6 +179,7 @@ def check(ctx: ArgoContext) -> Finding:
                         f"{doc.kind}/{doc.name} "
                         f"{template_name(tmpl, idx)} inputs.{h}"
                     )
+                    locations.append(doc_location(doc, tmpl))
             for container in iter_containers(tmpl):
                 hits = _scan_env_list(container.get("env"))
                 if hits:
@@ -184,6 +187,7 @@ def check(ctx: ArgoContext) -> Finding:
                         f"{doc.kind}/{doc.name} "
                         f"{template_name(tmpl, idx)} env: {', '.join(hits)}"
                     )
+                    locations.append(doc_location(doc, container))
     if not ctx.docs:
         return Finding(
             check_id=RULE.id, title=RULE.title, severity=RULE.severity,
@@ -203,4 +207,5 @@ def check(ctx: ArgoContext) -> Finding:
         check_id=RULE.id, title=RULE.title, severity=RULE.severity,
         resource="argo", description=desc,
         recommendation=RULE.recommendation, passed=passed,
+        locations=locations,
     )
