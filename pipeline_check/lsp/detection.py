@@ -13,23 +13,6 @@ from __future__ import annotations
 
 from pathlib import PurePosixPath
 
-# (provider, predicate-on-PurePosixPath) entries. First match wins.
-# Order mirrors :data:`pipeline_check.cli._PROVIDER_DETECT_FILES`
-# where applicable so the LSP and the CLI agree on which provider
-# owns a given filename.
-_DETECTORS: tuple[tuple[str, str], ...] = (
-    ("github", "github-workflows-yaml"),
-    ("gitlab", "gitlab-ci-yaml"),
-    ("circleci", "circleci-config-yaml"),
-    ("azure", "azure-pipelines-yaml"),
-    ("bitbucket", "bitbucket-pipelines-yaml"),
-    ("buildkite", "buildkite-pipeline-yaml"),
-    ("cloudbuild", "cloudbuild-yaml"),
-    ("drone", "drone-yaml"),
-    ("jenkins", "jenkinsfile"),
-    ("dockerfile", "dockerfile"),
-)
-
 
 def detect_provider(path: str) -> str | None:
     """Return the provider name that owns *path*, or ``None``.
@@ -100,7 +83,4 @@ def detect_provider(path: str) -> str | None:
     if name_lc.endswith(".dockerfile"):
         return "dockerfile"
 
-    # Silence the unused-name warning on _DETECTORS; the table is kept
-    # for documentation symmetry with the CLI's _PROVIDER_DETECT_FILES.
-    _ = _DETECTORS
     return None

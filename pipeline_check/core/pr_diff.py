@@ -49,6 +49,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
 
+from .checks.base import Severity, severity_rank
 from .diff import _reject_dash_prefix
 
 #: How long the BASE subprocess scan is allowed to run before we kill
@@ -184,9 +185,11 @@ def _projection(raw_findings: list[Any]) -> list[FindingRef]:
     return out
 
 
-_SEVERITY_ORDER: dict[str, int] = {
-    "CRITICAL": 4, "HIGH": 3, "MEDIUM": 2, "LOW": 1, "INFO": 0,
-}
+# Derived from the canonical severity rank so a new tier can't drift out
+# of sync with a hand-maintained copy. Keyed by the upper-case string
+# value because ``FindingRef.severity`` (and the ``--fail-on`` threshold)
+# are strings at this layer.
+_SEVERITY_ORDER: dict[str, int] = {s.value: severity_rank(s) for s in Severity}
 
 
 def _sort_key(f: FindingRef) -> tuple[int, str, str]:

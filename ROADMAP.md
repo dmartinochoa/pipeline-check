@@ -813,8 +813,9 @@ same day; the rest are queued for a later pass.
     ``scan()`` body is now ~810 lines (from ~1,372 at the start).
   - Remaining (queued): the ``_scanner_kwargs`` dict build + (Multi)Scanner
     construction (a ~30-key dict, no clean param reduction on its own).
-    Then split the subcommands into a ``cli/`` package. Also fold the LSP's
-    dead ``_DETECTORS`` table (``lsp/detection.py``) onto ``core/detect.py``.
+    Then split the subcommands into a ``cli/`` package. (The LSP's dead
+    ``_DETECTORS`` table was deleted outright on 2026-06-06, see the Low
+    section below.)
 
 **Medium priority (queued):**
 
@@ -922,9 +923,13 @@ same day; the rest are queued for a later pass.
   pauses against the CLAUDE.md convention; a handful of banned words
   remain (``robust``, ``comprehensive``, ``leverage`` in a few rule
   docstrings). Consider a lint mirroring the English-variant test.
-- **De-stringify severity in ``pr_diff.py:187``** (use the canonical
-  ``severity_rank`` instead of a local ``_SEVERITY_ORDER`` dict), and
-  **delete the dead ``_DETECTORS`` table** in ``lsp/detection.py:20``.
+- ~~**De-stringify severity in ``pr_diff.py``** and **delete the dead
+  ``_DETECTORS`` table** in ``lsp/detection.py`` (done 2026-06-06 on
+  ``dev``).~~ ``pr_diff._SEVERITY_ORDER`` is now derived from the
+  canonical ``Severity`` enum + ``severity_rank`` (identical values,
+  drift-proof) rather than a hand-maintained copy; the LSP's unused
+  ``_DETECTORS`` table (out of sync with ``detect_provider``'s own logic
+  and kept alive only by a ``_ = _DETECTORS`` silencer) was removed.
 
 ### High-impact provider checks (2026-06-04 cross-provider sweep)
 
