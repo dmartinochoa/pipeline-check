@@ -12,6 +12,20 @@ release commit collapses this section into `## [X.Y.Z] - <date>`.
 
 ### Added
 
+- **BB-033: IaC apply on a pull-request pipeline (CRITICAL).** Flags a
+  `terraform apply` / `cloudformation deploy` / `cdk deploy` / `pulumi up` /
+  `sam deploy` in a step under Bitbucket's `pull-requests:` section, where
+  it executes the PR branch's IaC (an `external` data source or `local-exec`
+  provisioner runs arbitrary code on the runner with the job's cloud
+  credentials before review). The Bitbucket analog of GL-041 / GHA-117;
+  steps under `branches:` / `default:` / `custom:` are out of scope.
+- **GL-043: GitLab native security scanner explicitly disabled (MEDIUM).**
+  Flags a `*_DISABLED` CI/CD variable (`SAST_DISABLED`,
+  `SECRET_DETECTION_DISABLED`, `DEPENDENCY_SCANNING_DISABLED`,
+  `CONTAINER_SCANNING_DISABLED`, `DAST_DISABLED`) set to a truthy value at
+  the top level or on a job, which silently drops a GitLab-managed security
+  control the rest of the pipeline assumes is running. Reads both the plain
+  scalar and the typed `{value:, description:}` variable form.
 - **Pipeline-graph node icons (DAG v2).** The step-level pipeline graph in
   the HTML report now marks each node that a taint-engine finding
   (`TAINT-*`) lands on with a flame icon (an active dataflow path reaches

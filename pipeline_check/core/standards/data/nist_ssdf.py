@@ -266,6 +266,7 @@ STANDARD = Standard(
         "GL-039":   ["PO.5.1", "PW.9.1"],              # dind daemon TLS disabled / exposed on 2375
         "GL-018":   ["PW.4.1", "PW.4.4"],              # package install insecure source
         "GL-019":   ["RV.1.1"],                        # no vulnerability scanning
+        "GL-043":   ["RV.1.1"],                        # native security scanner disabled
         "GL-020":   ["PS.1.1"],                        # CI_JOB_TOKEN persisted
         "GL-021":   ["PW.4.4"],                        # install without lockfile
         "GL-022":   ["PW.4.4"],                        # dep-update bypasses lockfile pins
@@ -280,6 +281,7 @@ STANDARD = Standard(
         "GL-031":   ["PO.5.1", "PS.1.1"],              # id_tokens missing audience pin
         "GL-040":   ["PO.5.1", "PS.1.1"],              # CI_JOB_TOKEN used for cross-project access
         "GL-041":   ["PW.6.1", "PW.9.1"],              # IaC apply on an untrusted MR trigger
+        "BB-033":   ["PW.6.1", "PW.9.1"],              # IaC apply on a pull-request pipeline
         "GL-032":   ["PW.6.1", "PW.9.1"],              # tags interpolates untrusted
         "GL-033":   ["PO.5.1", "PW.9.1"],              # global before_script taint
         "GL-034":   ["PW.4.4"],                        # npm install without audit signatures

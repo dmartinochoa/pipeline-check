@@ -103,6 +103,8 @@ pipelines:
           deployment: staging
           script:
             - ./dist/install.sh
+            # BB-033 — IaC apply runs on the PR branch's Terraform.
+            - terraform apply -auto-approve
 
 # BB-020 — full clone depth.
 clone:

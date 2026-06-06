@@ -15,7 +15,7 @@ pipeline_check --pipeline bitbucket --bitbucket-path ci/
 
 ## What it covers
 
-32 checks · 11 have an autofix patch (``--fix``).
+33 checks · 11 have an autofix patch (``--fix``).
 
 | Check | Title | Severity | Fix |
 |-------|-------|----------|-----|
@@ -51,6 +51,7 @@ pipeline_check --pipeline bitbucket --bitbucket-path ci/
 | [BB-030](#bb-030) | npm install without registry-signature verification step | <span class="pg-sev pg-sev--medium">MEDIUM</span> |  |
 | [BB-031](#bb-031) | pip install without `--require-hashes` verification | <span class="pg-sev pg-sev--medium">MEDIUM</span> |  |
 | [BB-032](#bb-032) | Secret-named variable echoed / printed in a script block | <span class="pg-sev pg-sev--high">HIGH</span> |  |
+| [BB-033](#bb-033) | IaC apply on a pull-request pipeline | <span class="pg-sev pg-sev--critical">CRITICAL</span> |  |
 
 ---
 
@@ -745,6 +746,30 @@ Scans every ``script:`` line across all pipeline steps. Variable names matching 
 **Recommended action**
 
 Don't print secret values in pipeline scripts. Bitbucket's log masking covers secured variables, but only when the full value appears as a contiguous string. Base64-encoded, URL-encoded, or partial substrings bypass the mask. Log a boolean instead (``[ -n "$X" ] && echo set || echo unset``). Avoid ``set -x`` when secret-bound variables are in scope.
+
+</div>
+
+</div>
+
+<div class="pg-rule pg-rule--critical" markdown>
+
+## BB-033: IaC apply on a pull-request pipeline { #bb-033 }
+
+<div class="pg-rule__tags">
+<span class="pg-sev pg-sev--critical">CRITICAL</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-4</span> <span class="pg-tag pg-tag--esf">ESF-D-INJECTION</span> <span class="pg-tag pg-tag--cwe">CWE-94</span> <span class="pg-tag pg-tag--cwe">CWE-78</span>
+</div>
+
+Fires when a step in the `pull-requests:` section runs an IaC apply command (`terraform apply`, `cloudformation deploy`, `cdk deploy`, `pulumi up`, `sam deploy`, `terragrunt apply`) in its `script:` or `after-script:`. Steps under `branches:`, `default:`, `custom:`, and `tags:` are out of scope, only the pull-request-triggered section runs untrusted branch content. This is the Bitbucket analog of GL-041 / GHA-117.
+
+**Known false-positive modes**
+
+- A pipeline that runs `apply` only against a short-lived, fully-sandboxed review environment with no production-adjacent credentials. Even then the apply executes unreviewed IaC on the runner; prefer `plan` on PRs. Suppress with a rationale naming the sandbox scope.
+
+<div class="pg-rule__rec" markdown>
+
+**Recommended action**
+
+Never run `terraform apply` (or `cloudformation deploy` / `cdk deploy` / `pulumi up` / `sam deploy`) in a step under the `pull-requests:` section. That pipeline runs the PR branch's IaC, so an `external` data source, a `local-exec` provisioner, or a hijacked provider executes arbitrary code on the runner with whatever cloud credentials (often an OIDC identity) the apply uses, before the change is reviewed or merged. On pull requests run a read-only `plan`; move the `apply` into the `branches:` section for your default branch (or a `custom:` manual pipeline) gated by a `deployment:` environment so it runs against merged, reviewed code.
 
 </div>
 

@@ -159,6 +159,7 @@ STANDARD = Standard(
         "GL-039":   ["ESF-D-BUILD-ENV"],# dind daemon TLS disabled / exposed on 2375
         "GL-018":   ["ESF-S-VERIFY-DEPS"],
         "GL-019":   ["ESF-S-VULN-MGMT"],
+        "GL-043":   ["ESF-S-VULN-MGMT"],
         "GL-020":   ["ESF-D-SECRETS"],
         "GL-021":   ["ESF-S-PIN-DEPS"],
         "GL-022":   ["ESF-S-PIN-DEPS"],
@@ -581,6 +582,7 @@ STANDARD = Standard(
         "GL-031":   ["ESF-D-TOKEN-HYGIENE", "ESF-C-APPROVAL"],  # id_tokens missing audience pin
         "GL-040":   ["ESF-D-TOKEN-HYGIENE", "ESF-C-APPROVAL"],  # CI_JOB_TOKEN used for cross-project access
         "GL-041":   ["ESF-D-INJECTION"],  # IaC apply on an untrusted MR trigger
+        "BB-033":   ["ESF-D-INJECTION"],  # IaC apply on a pull-request pipeline
         "GL-032":   ["ESF-D-INJECTION"],            # tags interpolates untrusted
         "GL-033":   ["ESF-D-INJECTION"],            # global before_script taint
         "GL-034":   ["ESF-S-VERIFY-DEPS"],          # npm install without audit signatures

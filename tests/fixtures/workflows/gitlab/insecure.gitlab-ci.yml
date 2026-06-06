@@ -29,6 +29,8 @@ services:
 variables:
   AWS_ACCESS_KEY_ID: AKIAZ3MHALF2TESTHIJK
   DATABASE_PASSWORD: hunter2
+  # GL-043 — a GitLab-managed security scanner switched off pipeline-wide.
+  SECRET_DETECTION_DISABLED: "true"
   DEPLOY_TARGET: production
   # GL-037 — Go module checksum / sum-db verification disabled.
   GOSUMDB: "off"
