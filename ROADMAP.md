@@ -1124,16 +1124,33 @@ Tekton / Argo. ~~**Buildkite** (increment 6, done 2026-06-06 on
 wait-group (parallel siblings between two barriers carry no edge between
 themselves, so the barrier shows without a false order); ``group:``
 children flatten into the current wait-group, ``trigger:`` steps skipped.
-Remaining pipeline providers (Azure, Bitbucket, Tekton, Argo, Jenkins)
-follow the same shape; IaC / SCA / cloud providers have no job DAG.
-Per-provider notes:
-Azure (single-doc, stages + jobs + steps, ``dependsOn`` by name with a
-``job:`` / ``deployment:`` prefix, within-stage resolution + deployment
-strategy step nesting), Bitbucket (parallel groups, multiple pipeline
-definitions per file), Drone / Tekton / Argo (multi-doc, need
-per-doc line bounds on the file root). Renderer reminder: only ``needs``
-and ``stage`` edges are drawn between boxes (``sequence`` is for step
-nesting only).
+~~**Azure** (increment 7, done 2026-06-06 on ``dev``):~~ single-doc, all
+three shapes (flat ``steps:``, flat ``jobs:``, ``stages:`` -> ``jobs:`` ->
+``steps:``); jobs are ``job`` nodes with steps nested (deployment-strategy
+phases flattened by ``iter_steps``); job ``dependsOn`` (resolved within
+its stage) -> ``needs``; stages sequence via ``stage`` edges into each
+stage's entry jobs (explicit stage ``dependsOn`` when present, else the
+preceding stage; ``dependsOn: []`` opts out) - the Buildkite wait-group
+shape lifted to the stage level.
+Remaining pipeline providers (Bitbucket, Tekton, Argo, Jenkins) follow the
+same shape; IaC / SCA / cloud providers have no job DAG. **Overlay
+prerequisite (learned building this batch):** a builder only renders if
+its provider's findings carry the file path so ``attach_findings`` can
+place them. Azure / Bitbucket / Drone use ``resource=path`` (fine).
+**Tekton is blocked**: its rules emit ``resource="tekton"`` with no
+``Location`` on 15 of 16 rules, so every finding is dropped and the graph
+never renders, do the Tekton-finding ``resource``/location fix FIRST (a
+separate, ~16-file change, also improves the findings table / SARIF /
+heatmap for Tekton) before its ``_graph.py``. Argo likely has the same
+shape, check before building. Per-provider notes:
+Bitbucket (parallel groups map to wait-groups like Buildkite, but
+MULTIPLE pipeline definitions per file share one path - bound each
+definition's root to its line range, and note line-less findings will
+root-badge every definition), Tekton / Argo (multi-doc, need per-doc line
+bounds on the file root; Pipeline ``spec.tasks`` ``runAfter`` +
+``$(tasks.X.results.Y)`` -> needs, Task ``spec.steps`` sequential).
+Renderer reminder: only ``needs`` and ``stage`` edges are drawn between
+boxes (``sequence`` is for step nesting only).
 
 ### Reachability-aware attack chains
 

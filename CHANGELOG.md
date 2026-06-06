@@ -22,6 +22,16 @@ release commit collapses this section into `## [X.Y.Z] - <date>`.
   current wait-group, and `trigger:` steps are skipped. A new
   `checks/buildkite/_graph.py` builder with no contract change, so every
   other reporter and provider is unchanged.
+- **HTML report: step-level pipeline graph for Azure DevOps (DAG v2).**
+  Extends the step-level DAG to Azure Pipelines (`azure-pipelines.yml`)
+  across all three shapes (flat `steps:`, flat `jobs:`, and
+  `stages:` → `jobs:` → `steps:`). Jobs are nodes with their steps nested
+  (deployment-strategy phases flattened); job `dependsOn` (resolved within
+  its stage) becomes a `needs` edge, and stages sequence via `stage`
+  edges, an explicit stage `dependsOn` when present, otherwise the
+  immediately preceding stage, into each stage's entry jobs (`dependsOn:
+  []` opts out). A new `checks/azure/_graph.py` builder with no contract
+  change.
 
 ## [1.11.0] - 2026-06-06
 
