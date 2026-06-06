@@ -3,9 +3,9 @@ from __future__ import annotations
 
 from typing import Any
 
-from ...base import Finding, Severity
+from ...base import Finding, Location, Severity
 from ...rule import Rule
-from ..base import KubernetesContext
+from ..base import KubernetesContext, manifest_location
 
 RULE = Rule(
     id="K8S-027",
@@ -40,6 +40,7 @@ RULE = Rule(
 
 def check(ctx: KubernetesContext) -> Finding:
     offenders: list[str] = []
+    locations: list[Location] = []
     for m in ctx.manifests:
         if m.kind != "Ingress":
             continue
@@ -50,6 +51,7 @@ def check(ctx: KubernetesContext) -> Finding:
         if isinstance(tls, list) and tls:
             continue
         offenders.append(f"Ingress/{m.name}")
+        locations.append(manifest_location(m, m.data))
     passed = not offenders
     desc = (
         "Every Ingress declares a non-empty `spec.tls` block."
@@ -63,4 +65,5 @@ def check(ctx: KubernetesContext) -> Finding:
         resource="kubernetes/manifests",
         description=desc,
         recommendation=RULE.recommendation, passed=passed,
+        locations=locations,
     )

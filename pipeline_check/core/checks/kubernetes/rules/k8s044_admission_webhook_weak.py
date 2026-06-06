@@ -3,9 +3,9 @@ from __future__ import annotations
 
 from typing import Any
 
-from ...base import Finding, Severity
+from ...base import Finding, Location, Severity
 from ...rule import Rule
-from ..base import KubernetesContext
+from ..base import KubernetesContext, manifest_location
 
 _WEBHOOK_KINDS = frozenset({
     "MutatingWebhookConfiguration", "ValidatingWebhookConfiguration",
@@ -124,6 +124,7 @@ def _empty_selector(sel: Any) -> bool:
 
 def check(ctx: KubernetesContext) -> Finding:
     offenders: list[str] = []
+    locations: list[Location] = []
     for m in ctx.manifests:
         if m.kind not in _WEBHOOK_KINDS:
             continue
@@ -141,6 +142,7 @@ def check(ctx: KubernetesContext) -> Finding:
                     f"{m.display}: webhook {name} failurePolicy=Ignore "
                     f"on a broad rule (fail-open bypass)"
                 )
+                locations.append(manifest_location(m, wh))
             elif (
                 mutating and broad
                 and _empty_selector(wh.get("namespaceSelector"))
@@ -150,6 +152,7 @@ def check(ctx: KubernetesContext) -> Finding:
                     f"{m.display}: webhook {name} mutates cluster-wide "
                     f"with no namespace/object selector"
                 )
+                locations.append(manifest_location(m, wh))
     passed = not offenders
     desc = (
         "No admission webhook fails open on a broad rule or mutates "
@@ -163,4 +166,5 @@ def check(ctx: KubernetesContext) -> Finding:
         check_id=RULE.id, title=RULE.title, severity=RULE.severity,
         resource="kubernetes/manifests", description=desc,
         recommendation=RULE.recommendation, passed=passed,
+        locations=locations,
     )

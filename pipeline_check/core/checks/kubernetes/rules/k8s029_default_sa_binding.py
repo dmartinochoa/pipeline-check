@@ -4,9 +4,9 @@ from __future__ import annotations
 from typing import Any
 
 from ..._primitives.anchors import k8s_sa
-from ...base import Finding, ResourceAnchor, Severity
+from ...base import Finding, Location, ResourceAnchor, Severity
 from ...rule import Rule
-from ..base import KubernetesContext
+from ..base import KubernetesContext, manifest_location
 
 #: Namespaces whose ``default`` SA legitimately needs grants from
 #: bootstrap manifests shipped by the control plane.
@@ -100,6 +100,7 @@ def _subject_targets_default(s: Any) -> tuple[bool, str]:
 
 def check(ctx: KubernetesContext) -> Finding:
     offenders: list[str] = []
+    locations: list[Location] = []
     # ResourceAnchor phase 1: emit one k8s_sa anchor per
     # ``(namespace, default)`` pair this binding grants to. AC-021
     # intersects against ARGO-003's workflow-SA anchors (also
@@ -128,6 +129,7 @@ def check(ctx: KubernetesContext) -> Finding:
             offenders.append(
                 f"{m.kind}/{m.name} → ServiceAccount/default@{ns_disp}"
             )
+            locations.append(manifest_location(m, m.data))
             built = k8s_sa(ns if ns else None, "default")
             if built is not None:
                 anchor_set[built.identity] = built
@@ -144,5 +146,6 @@ def check(ctx: KubernetesContext) -> Finding:
         resource="kubernetes/manifests",
         description=desc,
         recommendation=RULE.recommendation, passed=passed,
+        locations=locations,
         resource_anchors=tuple(anchor_set.values()),
     )

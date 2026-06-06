@@ -89,23 +89,23 @@ release commit collapses this section into `## [X.Y.Z] - <date>`.
   line (ARGO-001 / ARGO-002 already set locations natively), so the
   findings carry file/line info in the terminal report, SARIF, the heatmap,
   and the new pipeline graph.
-- **Kubernetes workload findings now carry source locations.** The
+- **Every Kubernetes finding now carries a source location.** The
   aggregate Kubernetes rules returned one Finding per check with
   `resource="kubernetes/manifests"` and no `Location`, so they showed no
   file or line in the terminal report, SARIF (GitHub code-scanning
   annotations had nowhere to land), or the blast-radius heatmap. A shared
   `manifest_location(manifest, obj)` helper now builds a `Location` (with
-  `doc_index` for multi-doc files) at the offending site, and every
-  workload-level rule attaches one per offender: the pod-security cluster
-  (K8S-002/003/004 host network/PID/IPC, K8S-007 runAsNonRoot, K8S-008
-  readOnlyRootFilesystem, K8S-009 capabilities, K8S-010 seccompProfile)
-  plus K8S-011 (default ServiceAccount), K8S-012 (automount token), K8S-014
-  (sensitive hostPath), K8S-015/016 (memory/CPU limits), K8S-017 (env
-  credential), K8S-024 (missing probes), K8S-025 (system priority class),
-  K8S-028 (hostPort), and K8S-030 (control-plane scheduling). Detection,
-  severity, and finding counts are unchanged. The remaining manifest-level
-  Kubernetes rules (K8S-019/022/023/027/029/044) and the document-level
-  Tekton / Argo rules are tracked as the next batches.
+  `doc_index` for multi-doc files) at the offending site, and all 23 rules
+  that previously omitted one attach a location per offender: the
+  workload-level rules (pod-security K8S-002/003/004/007/008/009/010, plus
+  K8S-011/012 service-account, K8S-014 hostPath, K8S-015/016 resource
+  limits, K8S-017 env credential, K8S-024 probes, K8S-025 priority class,
+  K8S-028 hostPort, K8S-030 control-plane scheduling) and the
+  manifest-level rules (K8S-019 default namespace, K8S-022 SSH service,
+  K8S-023 pod-security admission, K8S-027 ingress TLS, K8S-029 default-SA
+  binding, K8S-044 admission webhook). Detection, severity, and finding
+  counts are unchanged. The remaining document-level Tekton / Argo rules
+  are tracked as the next batch.
 
 ## [1.11.0] - 2026-06-06
 

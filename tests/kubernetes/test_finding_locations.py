@@ -114,6 +114,78 @@ spec:
       image: app@sha256:aaaa
 """
 
+# Manifest-level rules.
+_DEFAULT_NS_POD = """\
+apiVersion: v1
+kind: Pod
+metadata:
+  name: app
+spec:
+  containers:
+    - name: app
+      image: app@sha256:aaaa
+"""
+
+_SSH_SERVICE = """\
+apiVersion: v1
+kind: Service
+metadata:
+  name: ssh
+spec:
+  ports:
+    - name: ssh
+      port: 22
+      targetPort: 22
+"""
+
+_BARE_NAMESPACE = """\
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: team-a
+"""
+
+_INSECURE_INGRESS = """\
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: web
+spec:
+  rules:
+    - host: example.com
+"""
+
+_DEFAULT_SA_BINDING = """\
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: bad
+  namespace: app
+subjects:
+  - kind: ServiceAccount
+    name: default
+    namespace: app
+roleRef:
+  kind: Role
+  name: r
+  apiGroup: rbac.authorization.k8s.io
+"""
+
+_WEAK_WEBHOOK = """\
+apiVersion: admissionregistration.k8s.io/v1
+kind: ValidatingWebhookConfiguration
+metadata:
+  name: weak
+webhooks:
+  - name: v.example.com
+    failurePolicy: Ignore
+    rules:
+      - apiGroups: ["*"]
+        apiVersions: ["*"]
+        resources: ["*"]
+        operations: ["*"]
+"""
+
 # module -> manifest that makes it fail.
 _CASES = {
     # batch 1 (pod security)
@@ -135,6 +207,13 @@ _CASES = {
     "k8s025_system_priority_class": _PRIORITY_POD,
     "k8s028_container_host_port": _HOSTPORT_POD,
     "k8s030_control_plane_scheduling": _CONTROL_PLANE_POD,
+    # batch 3 (manifest-level)
+    "k8s019_default_namespace": _DEFAULT_NS_POD,
+    "k8s022_service_ssh": _SSH_SERVICE,
+    "k8s023_pod_security_admission": _BARE_NAMESPACE,
+    "k8s027_ingress_without_tls": _INSECURE_INGRESS,
+    "k8s029_default_sa_binding": _DEFAULT_SA_BINDING,
+    "k8s044_admission_webhook_weak": _WEAK_WEBHOOK,
 }
 
 

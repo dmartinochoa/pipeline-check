@@ -3,9 +3,9 @@ from __future__ import annotations
 
 from typing import Any
 
-from ...base import Finding, Severity
+from ...base import Finding, Location, Severity
 from ...rule import Rule
-from ..base import KubernetesContext
+from ..base import KubernetesContext, manifest_location
 
 RULE = Rule(
     id="K8S-023",
@@ -76,6 +76,7 @@ def _labels(m_data: dict[str, Any]) -> dict[str, Any]:
 
 def check(ctx: KubernetesContext) -> Finding:
     offenders: list[str] = []
+    locations: list[Location] = []
     for m in ctx.manifests:
         if m.kind != "Namespace":
             continue
@@ -85,6 +86,7 @@ def check(ctx: KubernetesContext) -> Finding:
         level = labels.get(_PSA_KEY)
         if not isinstance(level, str) or level == "privileged":
             offenders.append(f"Namespace/{m.name}")
+            locations.append(manifest_location(m, m.data))
     passed = not offenders
     desc = (
         "Every Namespace declares a Pod Security Admission "
@@ -99,4 +101,5 @@ def check(ctx: KubernetesContext) -> Finding:
         resource="kubernetes/manifests",
         description=desc,
         recommendation=RULE.recommendation, passed=passed,
+        locations=locations,
     )

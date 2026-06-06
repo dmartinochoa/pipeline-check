@@ -3,9 +3,9 @@ from __future__ import annotations
 
 from typing import Any
 
-from ...base import Finding, Severity
+from ...base import Finding, Location, Severity
 from ...rule import Rule
-from ..base import KubernetesContext
+from ..base import KubernetesContext, manifest_location
 
 RULE = Rule(
     id="K8S-022",
@@ -42,6 +42,7 @@ def _is_ssh(port: Any) -> bool:
 
 def check(ctx: KubernetesContext) -> Finding:
     offenders: list[str] = []
+    locations: list[Location] = []
     for m in ctx.manifests:
         if m.kind != "Service":
             continue
@@ -57,6 +58,7 @@ def check(ctx: KubernetesContext) -> Finding:
             if _is_ssh(p.get("port")) or _is_ssh(p.get("targetPort")):
                 pname = p.get("name", f"ports[{idx}]")
                 offenders.append(f"Service/{m.name} {pname}=22")
+                locations.append(manifest_location(m, p))
                 break
     passed = not offenders
     desc = (
@@ -71,4 +73,5 @@ def check(ctx: KubernetesContext) -> Finding:
         resource="kubernetes/manifests",
         description=desc,
         recommendation=RULE.recommendation, passed=passed,
+        locations=locations,
     )
