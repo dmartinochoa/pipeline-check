@@ -97,3 +97,18 @@ def test_multi_location_finding_badges_each_node():
     badges = attach_findings(_graph(), [f])
     assert set(badges) == {"build#0", "build#1"}
     assert badges["build#0"].count == 1 and badges["build#1"].count == 1
+
+
+def test_taint_finding_marks_node_as_taint_sink():
+    taint = Finding(
+        check_id="TAINT-001", title="t", severity=Severity.HIGH,
+        resource=_PATH, description="", recommendation="", passed=False,
+        locations=[Location(path=_PATH, start_line=8)],
+    )
+    badges = attach_findings(_graph(), [taint])
+    assert badges["build#0"].taint_sink is True
+
+
+def test_non_taint_finding_leaves_taint_sink_false():
+    badges = attach_findings(_graph(), [_f(8)])
+    assert badges["build#0"].taint_sink is False

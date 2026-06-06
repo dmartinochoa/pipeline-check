@@ -12,6 +12,14 @@ release commit collapses this section into `## [X.Y.Z] - <date>`.
 
 ### Added
 
+- **Pipeline-graph node icons (DAG v2).** The step-level pipeline graph in
+  the HTML report now marks each node that a taint-engine finding
+  (`TAINT-*`) lands on with a flame icon (an active dataflow path reaches
+  it), and each step that attaches a build attestation
+  (`actions/attest-*`, the SLSA generator, or `cosign attest`) with a chain
+  icon. Both are surfaced in the node tooltip and the graph legend. Closes
+  the last sub-features of the DAG v2 (#165) roadmap item.
+
 - **SBOM dependency extraction for Maven, NuGet, and Helm.** Both SBOM
   outputs (`--output cyclonedx` and the new `--output spdx`) now include
   Maven, NuGet, and Helm-chart build dependencies, not just GitHub Actions /
