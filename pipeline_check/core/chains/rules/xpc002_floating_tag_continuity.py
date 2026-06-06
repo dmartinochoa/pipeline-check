@@ -15,7 +15,7 @@ runtime boundaries: an attacker who pushes a malicious manifest to
 the same upstream tag affects both the build artifact (the image
 the Dockerfile pulls into ``FROM`` chains) and the runtime workload
 (the cluster pulls the new digest on the next image refresh). The
-composite is therefore higher-leverage than either singleton, the
+composite is therefore higher-impact than either singleton, the
 attacker doesn't need to compromise both layers individually.
 
 This chain currently activates only when scanning Dockerfile + k8s

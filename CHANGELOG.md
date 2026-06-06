@@ -21,6 +21,12 @@ release commit collapses this section into `## [X.Y.Z] - <date>`.
   pipeline-execution payload exactly like a tampered `package.json` /
   `Makefile` / `setup.py`. No new rule ID; this is the widening the roadmap
   reserved instead of a separate check.
+- **Lint and prose cleanup.** Fixed a latent `zip()`-without-`strict=`
+  (ruff B905) in the Jenkins pipeline-graph builder, and reworded the four
+  remaining AI-tic words (`robust` / `comprehensive` / two `leverage`) in
+  rule docstrings and one `known_fp` note to match the CLAUDE.md prose
+  convention. The whole package is now ruff-clean and passes
+  `mypy --strict` across all source files. No behavior change.
 - **Single source of truth for valid severity names.** `config.py` and
   `policies.py` each hand-maintained an identical `_VALID_SEVERITIES`
   frozenset used to validate `overrides:` severities (which change a

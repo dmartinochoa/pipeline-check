@@ -92,7 +92,9 @@ def _build_one(path: str, text: str) -> PipelineGraph:
             parent=_ROOT_ID,
         ))
 
-    for prev, cur in zip(ids, ids[1:]):
+    # ``ids[1:]`` is intentionally one shorter, so pair consecutive stages
+    # non-strictly (strict=True would raise on the length mismatch).
+    for prev, cur in zip(ids, ids[1:], strict=False):
         edges.append(GraphEdge(src=prev, dst=cur, kind="stage"))
 
     return PipelineGraph(
