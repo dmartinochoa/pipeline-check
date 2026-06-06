@@ -170,11 +170,16 @@ class TestGraphBuilderResilience:
         def _boom(ctx):
             raise RuntimeError("kaboom")
 
+        sentinel = object()
+        prev = pgb._BUILDERS.get("faketestprovider", sentinel)
         pgb.register_builder("faketestprovider", _boom)
         try:
             assert pgb.build_graphs_for("faketestprovider", object()) == []
         finally:
-            pgb._BUILDERS.pop("faketestprovider", None)
+            if prev is sentinel:
+                pgb._BUILDERS.pop("faketestprovider", None)
+            else:
+                pgb._BUILDERS["faketestprovider"] = prev
 
 
 class TestVerifyAndEnrichFindings:

@@ -97,6 +97,14 @@ def test_finding_overlays_onto_containing_step(tmp_path):
 
 
 def test_registered_with_dispatcher(tmp_path):
+    # Drop the eager registration so build_graphs_for exercises the lazy
+    # import + registration path, not the one this module already triggered.
+    import sys
+
+    from pipeline_check.core import pipeline_graph_builders as gb
+    gb._BUILDERS.pop("cloudbuild", None)
+    sys.modules.pop("pipeline_check.core.checks.cloudbuild._graph", None)
+
     p = tmp_path / "cloudbuild.yaml"
     p.write_text("steps:\n  - id: a\n    name: img\n    args: ['x']\n")
     graphs = build_graphs_for("cloudbuild", CloudBuildContext.from_path(p))

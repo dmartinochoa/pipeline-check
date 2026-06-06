@@ -109,6 +109,15 @@ def test_finding_overlays_onto_containing_job(tmp_path):
 
 
 def test_registered_with_dispatcher(tmp_path):
+    # Drop the eager registration this module already triggered so
+    # build_graphs_for has to lazily re-import + re-register the builder
+    # (otherwise the test passes even if the _BUILDER_MODULES mapping breaks).
+    import sys
+
+    from pipeline_check.core import pipeline_graph_builders as gb
+    gb._BUILDERS.pop("gitlab", None)
+    sys.modules.pop("pipeline_check.core.checks.gitlab._graph", None)
+
     p = tmp_path / ".gitlab-ci.yml"
     p.write_text("build:\n  script: [x]\n")
     ctx = GitLabContext.from_path(p)

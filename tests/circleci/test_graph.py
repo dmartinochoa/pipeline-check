@@ -100,6 +100,14 @@ def test_finding_overlays_onto_containing_job(tmp_path):
 
 
 def test_registered_with_dispatcher(tmp_path):
+    # Drop the eager registration so build_graphs_for exercises the lazy
+    # import + registration path, not the one this module already triggered.
+    import sys
+
+    from pipeline_check.core import pipeline_graph_builders as gb
+    gb._BUILDERS.pop("circleci", None)
+    sys.modules.pop("pipeline_check.core.checks.circleci._graph", None)
+
     p = tmp_path / "config.yml"
     p.write_text("version: 2.1\n" + _JOBS + "workflows:\n  ci:\n    jobs:\n      - build\n")
     graphs = build_graphs_for("circleci", CircleCIContext.from_path(p))

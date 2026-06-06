@@ -89,6 +89,14 @@ def test_finding_in_second_document_not_attributed_to_first(tmp_path):
 
 
 def test_registered_with_dispatcher(tmp_path):
+    # Drop the eager registration so build_graphs_for exercises the lazy
+    # import + registration path, not the one this module already triggered.
+    import sys
+
+    from pipeline_check.core import pipeline_graph_builders as gb
+    gb._BUILDERS.pop("drone", None)
+    sys.modules.pop("pipeline_check.core.checks.drone._graph", None)
+
     p = tmp_path / ".drone.yml"
     p.write_text(_A)
     graphs = build_graphs_for("drone", DroneContext.from_path(p))

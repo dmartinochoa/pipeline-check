@@ -303,6 +303,18 @@ def test_known_installer_rejects_right_host_wrong_path():
     ) is False
 
 
+def test_known_installer_rejects_path_prefix_collision():
+    # ``nvm-sh/nvm-malicious`` shares a prefix with the ``nvm-sh/nvm``
+    # allowlist entry but is a different repo; the path-segment boundary
+    # must reject it. An exact-path or a deeper path under it still match.
+    assert is_known_installer(
+        "https://raw.githubusercontent.com/nvm-sh/nvm-malicious/install.sh"
+    ) is False
+    assert is_known_installer(
+        "https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.0/install.sh"
+    ) is True
+
+
 def test_known_installer_handles_non_string():
     assert is_known_installer(None) is False
     assert is_known_installer(42) is False

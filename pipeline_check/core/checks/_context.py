@@ -182,7 +182,11 @@ def is_known_installer(url: str) -> bool:
         marker_host, _, marker_path = marker.partition("/")
         if host != marker_host and not host.endswith("." + marker_host):
             continue
-        if marker_path and not path.startswith(marker_path):
+        # Match on a path-segment boundary, not a bare prefix, so
+        # ``nvm-sh/nvm-malicious`` doesn't satisfy ``nvm-sh/nvm``.
+        if marker_path and path != marker_path and not path.startswith(
+            marker_path + "/"
+        ):
             continue
         return True
     return False

@@ -253,12 +253,22 @@ pipeline_check -p github --chains-require-reachability \
 
 ## Confidence inheritance
 
-A chain is only as trustworthy as its weakest leg. `Chain.confidence`
-is set to the minimum confidence among the triggering findings, if
-one leg comes from a LOW-confidence blob heuristic, the chain is
-reported at LOW confidence even when every other leg is HIGH. The
-`--min-confidence` filter applies the same way to chains as to
-findings.
+An *unconfirmed* chain is only as trustworthy as its weakest leg.
+`Chain.confidence` is set to the minimum confidence among the triggering
+findings, so if one leg comes from a LOW-confidence blob heuristic the
+chain is reported at LOW confidence even when every other leg is HIGH.
+
+A *confirmed-reachable* chain is the exception (see "Confirmed-reachable
+chains are promoted to `HIGH`" above): the reachability evidence (a
+proven dataflow path, or shared-job co-location) is what the chain
+asserts, so its `Chain.confidence` is set to `HIGH` regardless of the
+legs rather than inheriting the minimum.
+
+The `--min-confidence` filter applies the same way to chains as to
+findings, comparing against the resolved `Chain.confidence`: a
+confirmed-reachable chain (HIGH) survives any threshold, while an
+unconfirmed chain carrying a LOW-confidence leg is dropped by
+`--min-confidence MEDIUM`.
 
 ## Adding a new chain
 
