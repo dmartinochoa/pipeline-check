@@ -26,6 +26,7 @@ _BUILDER_MODULES: dict[str, str] = {
     "circleci": "pipeline_check.core.checks.circleci._graph",
     "cloudbuild": "pipeline_check.core.checks.cloudbuild._graph",
     "drone": "pipeline_check.core.checks.drone._graph",
+    "buildkite": "pipeline_check.core.checks.buildkite._graph",
 }
 
 

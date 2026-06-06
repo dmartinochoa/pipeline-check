@@ -10,6 +10,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 PRs landing on `dev` between releases append entries below. The
 release commit collapses this section into `## [X.Y.Z] - <date>`.
 
+### Added
+
+- **HTML report: step-level pipeline graph for Buildkite (DAG v2).**
+  Extends the step-level DAG to Buildkite pipeline files
+  (`.buildkite/pipeline.yml`). Each command step is a node; `depends_on`
+  (by step `key`) becomes a `needs` edge, and `wait` / `block` / `input`
+  barriers become `stage` edges from every step in the previous wait-group
+  (so the parallel siblings between two barriers carry no false ordering
+  between themselves). `group:` steps flatten their children into the
+  current wait-group, and `trigger:` steps are skipped. A new
+  `checks/buildkite/_graph.py` builder with no contract change, so every
+  other reporter and provider is unchanged.
+
 ## [1.11.0] - 2026-06-06
 
 ### Added

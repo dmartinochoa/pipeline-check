@@ -1117,14 +1117,20 @@ Multi-doc needed two things: (1) each graph's file-root is bounded to its
 document's line range, and (2) ``attach_findings`` only falls back to the
 root for a finding with NO positioned line on the file (a line that lands
 in no node belongs to another document) - this is the reusable fix for
-Tekton / Argo. Remaining pipeline providers (Azure, Bitbucket, Buildkite,
-Tekton, Argo, Jenkins) follow the same shape; IaC / SCA / cloud providers
-have no job DAG. Per-provider notes:
+Tekton / Argo. ~~**Buildkite** (increment 6, done 2026-06-06 on
+``dev``):~~ single-doc, each command step is a ``job`` node;
+``depends_on`` (by step ``key``) -> ``needs``, and ``wait`` / ``block`` /
+``input`` barriers -> ``stage`` edges from every step in the previous
+wait-group (parallel siblings between two barriers carry no edge between
+themselves, so the barrier shows without a false order); ``group:``
+children flatten into the current wait-group, ``trigger:`` steps skipped.
+Remaining pipeline providers (Azure, Bitbucket, Tekton, Argo, Jenkins)
+follow the same shape; IaC / SCA / cloud providers have no job DAG.
+Per-provider notes:
 Azure (single-doc, stages + jobs + steps, ``dependsOn`` by name with a
 ``job:`` / ``deployment:`` prefix, within-stage resolution + deployment
 strategy step nesting), Bitbucket (parallel groups, multiple pipeline
-definitions per file), Buildkite (``depends_on`` by key + ``wait``
-barriers + ``group`` flattening), Drone / Tekton / Argo (multi-doc, need
+definitions per file), Drone / Tekton / Argo (multi-doc, need
 per-doc line bounds on the file root). Renderer reminder: only ``needs``
 and ``stage`` edges are drawn between boxes (``sequence`` is for step
 nesting only).
