@@ -137,6 +137,15 @@ release commit collapses this section into `## [X.Y.Z] - <date>`.
 
 ### Fixed
 
+- **GHA-046 now catches more manual PR-head fetch bypasses (critical
+  false-negatives).** The manual-fetch companion to GHA-002 (CRITICAL,
+  fires on `pull_request_target` / `workflow_run`) missed two forms: a
+  `git fetch origin pull/<n>/{head,merge}` where `<n>` is an expression
+  (`pull/${{ github.event.number }}/merge`) rather than literal digits,
+  and `git checkout ${{ github.event.pull_request.merge_commit_sha }}`
+  (the merge commit contains the PR's code). Both are now detected;
+  non-PR refs (`git fetch origin main`, `pull/abc/head`) stay clean.
+
 - **GHA-002 now catches more PR-head checkout bypasses (critical
   false-negatives).** The flagship `pull_request_target`-checks-out-PR-head
   rule (CRITICAL) matched `head.sha` / `head.ref` / `github.head_ref` but

@@ -822,6 +822,41 @@ class TestGHA046ManualPRFetch:
         f = run_check(wf, "GHA-046")
         assert not f.passed
 
+    def test_fails_on_git_fetch_pull_with_expression_number(self):
+        # The PR number is an expression, not a literal, a bypass of
+        # ``pull/\\d+/`` digit-only matching.
+        wf = """
+        name: pr-test
+        on: pull_request_target
+        jobs:
+          test:
+            runs-on: ubuntu-22.04
+            timeout-minutes: 10
+            permissions: { contents: read }
+            steps:
+              - uses: actions/checkout@a5ac7e51b41094c92402da3b24376905380afc29
+              - run: git fetch origin pull/${{ github.event.number }}/merge
+        """
+        f = run_check(wf, "GHA-046")
+        assert not f.passed
+
+    def test_fails_on_git_checkout_merge_commit_sha(self):
+        # The merge commit contains the PR's code merged into base.
+        wf = """
+        name: pr-test
+        on: pull_request_target
+        jobs:
+          test:
+            runs-on: ubuntu-22.04
+            timeout-minutes: 10
+            permissions: { contents: read }
+            steps:
+              - uses: actions/checkout@a5ac7e51b41094c92402da3b24376905380afc29
+              - run: git checkout ${{ github.event.pull_request.merge_commit_sha }}
+        """
+        f = run_check(wf, "GHA-046")
+        assert not f.passed
+
     def test_fails_on_git_checkout_pr_sha_expression(self):
         wf = """
         name: pr-test

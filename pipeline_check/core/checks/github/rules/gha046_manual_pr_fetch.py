@@ -116,20 +116,24 @@ _FETCH_PATTERNS: tuple[tuple[str, re.Pattern[str]], ...] = (
     ("git fetch pull/<N>",
      # ``git fetch origin pull/123/head``, ``git fetch origin
      # refs/pull/123/head:pr-123``. Matches any remote name (not just
-     # ``origin``) and either ``pull/`` or ``refs/pull/``.
+     # ``origin``) and either ``pull/`` or ``refs/pull/``. The ``<N>``
+     # is a literal number or a ``${{ }}`` expression
+     # (``pull/${{ github.event.number }}/head``).
      re.compile(
          r"^\s*(?:sudo\s+)?git\s+fetch\s+\S+\s+"
-         r"(?:refs/)?pull/\d+/(?:head|merge)"
+         r"(?:refs/)?pull/(?:\d+|\$\{\{[^}]*\}\})/(?:head|merge)"
      )),
     ("git checkout PR-head expr",
      # ``git checkout ${{ github.event.pull_request.head.sha }}``,
-     # ``.head.ref``, ``.head.label``. The expression form is the
+     # ``.head.ref``, ``.head.label``, ``.merge_commit_sha`` (the merge
+     # commit still contains the PR's code). The expression form is the
      # tell that an attacker-controlled value lands at the
      # checkout boundary.
      re.compile(
          r"^\s*(?:sudo\s+)?git\s+(?:checkout|switch|reset(?:\s+--hard)?)"
          r"\s+(?:\S+\s+)*\$\{\{\s*"
          r"(?:github\.event\.pull_request\.head\.(?:sha|ref|label)"
+         r"|github\.event\.pull_request\.merge_commit_sha"
          r"|github\.head_ref"
          r"|github\.event\.workflow_run\.head_(?:sha|branch))"
          r"\s*\}\}"
@@ -141,7 +145,7 @@ _FETCH_PATTERNS: tuple[tuple[str, re.Pattern[str]], ...] = (
 )
 
 _PULL_FETCH_RE = re.compile(
-    r"git\s+fetch\s+\S+\s+(?:refs/)?pull/\d+/(?:head|merge)"
+    r"git\s+fetch\s+\S+\s+(?:refs/)?pull/(?:\d+|\$\{\{[^}]*\}\})/(?:head|merge)"
 )
 
 
