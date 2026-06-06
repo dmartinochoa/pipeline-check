@@ -1157,24 +1157,32 @@ orchestrator (``TektonChecks.run``) now backfills the ``job_anchors``
 graph and gain real file/line locations in the terminal / SARIF / heatmap
 too. (A first ``_graph.py`` was written, reverted when this prerequisite
 surfaced, then re-landed with the backfill, see git history.)
-**With Jenkins + Tekton done, the only DAG providers left are blocked.**
-**Overlay prerequisite (learned building the 6-10 batch):** a builder only
+~~**Argo** (increment 11, done 2026-06-06 on ``dev``):~~ one graph per
+template-bearing document; nodes are the ``spec.templates``, and a ``dag``
+template's ``tasks[].template`` / a ``steps`` template's
+``steps[][].template`` invocations become ``needs`` edges (caller ->
+callee), multi-doc roots bounded like Drone. Unblocked the same way as
+Tekton: ``ArgoChecks.run`` backfills the ``job_anchors``
+(``<Kind>/<name>:<template>``) of ARGO-005 / ARGO-017 into ``Location``s
+(ARGO-001 / ARGO-002 already set them natively).
+**THE DAG-V2 THREAD IS COMPLETE: every pipeline provider now ships a
+builder (#1-11).**
+**Overlay prerequisite (learned building the 6-11 batch):** a builder only
 renders if its provider's findings carry the file path so
 ``attach_findings`` can place them (the HTML DAG section omits any graph
 with no attached finding). The CI/CD providers use ``resource=path``
-(fine). **Argo is still blocked, and most Tekton rules remain partial**:
-like the ``kubernetes`` provider, the K8s-CRD rules identify findings by
-``resource="<provider>"`` (Kind/name semantics) and the AGGREGATE ones
-(one Finding per check across the corpus) set neither anchors nor a
-``Location`` (kubernetes 44 / argo 40 / tekton 36 sites). The Tekton
-increment fixed only the two anchor-bearing per-step rules via the central
-backfill; the ~13 doc-level Tekton rules and all of Argo still need
-per-rule ``locations`` (or anchors the orchestrator can backfill) before
-their findings carry file/line info. Per-provider notes for what remains:
-Argo (multi-doc, need per-doc line bounds on the file root; DAG-template
-``dependencies``; first wire its rules' ``locations`` like Tekton's). The
-doc-level rules' fix (Tekton + Argo + Kubernetes) is the standalone
-follow-up that improves their findings table / SARIF / heatmap.
+(fine); the K8s-CRD providers (kubernetes / argo / tekton) identify
+findings by ``resource="<provider>"`` and the AGGREGATE rules (one Finding
+per check across the corpus) set neither anchors nor a ``Location``. The
+Tekton + Argo increments fixed only their anchor-bearing per-step /
+per-template rules via the central orchestrator backfill. **Standalone
+follow-up (no longer DAG-blocking):** the remaining doc-level Tekton / Argo
+rules and ALL ``kubernetes`` rules still emit anchor-less aggregate
+findings with no ``Location`` (so they show ``resource="<provider>"`` with
+no file/line in the terminal report / SARIF / heatmap). Fixing those is
+per-rule work (only anchor-bearing rules can be backfilled centrally) and
+would improve those reporters; it's the natural next quality pass for the
+K8s-CRD providers.
 Renderer reminder: only ``needs`` and ``stage`` edges are drawn between
 boxes (``sequence`` is for step nesting only).
 

@@ -60,6 +60,14 @@ release commit collapses this section into `## [X.Y.Z] - <date>`.
   one per `Task` / `ClusterTask` (steps chained sequentially), bounding
   each graph's root to its document's line range like the Drone builder.
   A new `checks/tekton/_graph.py` builder with no contract change.
+- **HTML report: step-level pipeline graph for Argo Workflows (DAG v2).**
+  Renders one graph per template-bearing document (`Workflow` /
+  `WorkflowTemplate` / `ClusterWorkflowTemplate` / `CronWorkflow`) whose
+  nodes are the `spec.templates`; a `dag` template's `tasks[].template` and
+  a `steps` template's `steps[][].template` invocations become `needs`
+  edges (caller to callee), with multi-doc roots bounded like the Drone
+  builder. A new `checks/argo/_graph.py` builder with no contract change.
+  **This completes the DAG-v2 rollout for every pipeline provider.**
 
 ### Fixed
 
@@ -72,9 +80,17 @@ release commit collapses this section into `## [X.Y.Z] - <date>`.
   in one place (`TektonChecks.run`), matching the `Location` shape TKN-001
   already sets natively. Detection, severity, and finding counts are
   unchanged; findings that already carry locations or have no anchors are
-  left untouched. (The remaining document-level Tekton rules, and the
-  parallel `argo` / `kubernetes` providers, still emit anchor-less
-  aggregate findings; giving those locations is tracked separately.)
+  left untouched.
+- **Argo Workflows findings now carry source locations.** Same fix as the
+  Tekton one, applied to Argo: the per-template rules (ARGO-005 parameter
+  injection, ARGO-017 resource manifest injection) attributed offenders
+  through `job_anchors` (`<Kind>/<name>:<template>`) and set no `Location`.
+  `ArgoChecks.run` now resolves those anchors to a document and template
+  line (ARGO-001 / ARGO-002 already set locations natively), so the
+  findings carry file/line info in the terminal report, SARIF, the heatmap,
+  and the new pipeline graph. (The remaining document-level Tekton / Argo
+  rules and the `kubernetes` provider still emit anchor-less aggregate
+  findings; giving those locations is tracked separately.)
 
 ## [1.11.0] - 2026-06-06
 
