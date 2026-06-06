@@ -1,9 +1,9 @@
 """K8S-025. System priority class used outside kube-system."""
 from __future__ import annotations
 
-from ...base import Finding, Severity
+from ...base import Finding, Location, Severity
 from ...rule import Rule
-from ..base import KubernetesContext, iter_workload_pod_specs
+from ..base import KubernetesContext, iter_workload_pod_specs, manifest_location
 
 RULE = Rule(
     id="K8S-025",
@@ -73,6 +73,7 @@ _SYSTEM_PCS = frozenset({"system-cluster-critical", "system-node-critical"})
 
 def check(ctx: KubernetesContext) -> Finding:
     offenders: list[str] = []
+    locations: list[Location] = []
     for m, ps in iter_workload_pod_specs(ctx):
         if m.namespace == "kube-system":
             continue
@@ -80,6 +81,7 @@ def check(ctx: KubernetesContext) -> Finding:
         if isinstance(pc, str) and pc in _SYSTEM_PCS:
             ns = m.namespace or "(no-namespace)"
             offenders.append(f"{m.kind}/{m.name} in {ns}: {pc}")
+            locations.append(manifest_location(m, ps))
     passed = not offenders
     desc = (
         "No workload outside kube-system claims a system-* priority class."
@@ -93,4 +95,5 @@ def check(ctx: KubernetesContext) -> Finding:
         resource="kubernetes/manifests",
         description=desc,
         recommendation=RULE.recommendation, passed=passed,
+        locations=locations,
     )

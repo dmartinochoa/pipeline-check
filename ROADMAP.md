@@ -1181,15 +1181,19 @@ rules show ``resource="<provider>"`` with no file/line in the terminal
 report / SARIF / heatmap. This is per-rule work (only anchor-bearing rules
 can be backfilled centrally). A shared
 ``kubernetes/base.py::manifest_location(m, obj)`` helper now exists, and
-**batch 1 (done 2026-06-06 on ``dev``)** converted the Kubernetes
-pod-security cluster: K8S-002/003/004 (host network/PID/IPC), K8S-007
-(runAsNonRoot), K8S-008 (readOnlyRootFilesystem), K8S-009 (capabilities),
-K8S-010 (seccompProfile), each now attaches one ``Location`` per offender
-(pinned by ``tests/kubernetes/test_finding_locations.py``). **Remaining
-batches:** the other ~16 location-less Kubernetes rules (K8S-011/012/014/
-015/016/017/019/022/023/024/025/027/028/029/030/044, a mix of pod-spec,
-container, volume, and manifest-level sites, all served by the same
-helper), then the ~13 doc-level Tekton rules and the doc-level Argo rules.
+the Kubernetes WORKLOAD-level rules are done (all pinned by
+``tests/kubernetes/test_finding_locations.py``): **batch 1 (2026-06-06)**
+the pod-security cluster K8S-002/003/004/007/008/009/010, **batch 2
+(2026-06-06)** the remaining workload rules K8S-011 (default SA), K8S-012
+(automount token), K8S-014 (sensitive hostPath), K8S-015/016 (mem/cpu
+limits), K8S-017 (env credential), K8S-024 (probes), K8S-025 (system
+priority class), K8S-028 (hostPort), K8S-030 (control-plane scheduling).
+**Remaining batches:** the 6 manifest-level Kubernetes rules
+(K8S-019 default-namespace, K8S-022 service-ssh, K8S-023 PSA,
+K8S-027 ingress-TLS, K8S-029 default-SA-binding, K8S-044 admission-webhook,
+all ``for m in ctx.manifests`` so obj is ``m.data`` or the offending
+sub-dict), then the ~13 doc-level Tekton rules and the doc-level Argo
+rules.
 Renderer reminder: only ``needs`` and ``stage`` edges are drawn between
 boxes (``sequence`` is for step nesting only).
 

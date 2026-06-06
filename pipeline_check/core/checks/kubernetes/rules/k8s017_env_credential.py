@@ -4,13 +4,14 @@ from __future__ import annotations
 from typing import Any
 
 from ..._primitives.secret_shapes import AWS_KEY_RE, SECRETISH_KEY_RE
-from ...base import Finding, Severity
+from ...base import Finding, Location, Severity
 from ...rule import Rule
 from ..base import (
     KubernetesContext,
     container_name,
     iter_containers,
     iter_workload_pod_specs,
+    manifest_location,
 )
 
 RULE = Rule(
@@ -91,6 +92,7 @@ def _looks_literal(value: Any) -> bool:
 
 def check(ctx: KubernetesContext) -> Finding:
     offenders: list[str] = []
+    locations: list[Location] = []
     for m, ps in iter_workload_pod_specs(ctx):
         for kind, c in iter_containers(ps):
             envs = c.get("env")
@@ -108,12 +110,14 @@ def check(ctx: KubernetesContext) -> Finding:
                         f"{m.kind}/{m.name} {kind}={container_name(c)} "
                         f"env={name} (AKIA-shaped value)"
                     )
+                    locations.append(manifest_location(m, c))
                     continue
                 if SECRETISH_KEY_RE.search(name) and _looks_literal(value):
                     offenders.append(
                         f"{m.kind}/{m.name} {kind}={container_name(c)} "
                         f"env={name} (literal credential-shaped name)"
                     )
+                    locations.append(manifest_location(m, c))
     passed = not offenders
     desc = (
         "No container env entry carries a credential-shaped literal."
@@ -127,4 +131,5 @@ def check(ctx: KubernetesContext) -> Finding:
         resource="kubernetes/manifests",
         description=desc,
         recommendation=RULE.recommendation, passed=passed,
+        locations=locations,
     )

@@ -89,19 +89,23 @@ release commit collapses this section into `## [X.Y.Z] - <date>`.
   line (ARGO-001 / ARGO-002 already set locations natively), so the
   findings carry file/line info in the terminal report, SARIF, the heatmap,
   and the new pipeline graph.
-- **Kubernetes pod-security findings now carry source locations (batch 1).**
-  The aggregate Kubernetes rules returned one Finding per check with
+- **Kubernetes workload findings now carry source locations.** The
+  aggregate Kubernetes rules returned one Finding per check with
   `resource="kubernetes/manifests"` and no `Location`, so they showed no
   file or line in the terminal report, SARIF (GitHub code-scanning
   annotations had nowhere to land), or the blast-radius heatmap. A shared
   `manifest_location(manifest, obj)` helper now builds a `Location` (with
-  `doc_index` for multi-doc files) at the offending site, and the
-  host-namespace and pod-`securityContext` cluster (K8S-002/003/004 host
-  network/PID/IPC, K8S-007 runAsNonRoot, K8S-008 readOnlyRootFilesystem,
-  K8S-009 capabilities, K8S-010 seccompProfile) attaches one per offender.
-  Detection, severity, and finding counts are unchanged. The remaining
-  location-less Kubernetes rules (and the document-level Tekton / Argo
-  rules) are tracked as the next batches.
+  `doc_index` for multi-doc files) at the offending site, and every
+  workload-level rule attaches one per offender: the pod-security cluster
+  (K8S-002/003/004 host network/PID/IPC, K8S-007 runAsNonRoot, K8S-008
+  readOnlyRootFilesystem, K8S-009 capabilities, K8S-010 seccompProfile)
+  plus K8S-011 (default ServiceAccount), K8S-012 (automount token), K8S-014
+  (sensitive hostPath), K8S-015/016 (memory/CPU limits), K8S-017 (env
+  credential), K8S-024 (missing probes), K8S-025 (system priority class),
+  K8S-028 (hostPort), and K8S-030 (control-plane scheduling). Detection,
+  severity, and finding counts are unchanged. The remaining manifest-level
+  Kubernetes rules (K8S-019/022/023/027/029/044) and the document-level
+  Tekton / Argo rules are tracked as the next batches.
 
 ## [1.11.0] - 2026-06-06
 
