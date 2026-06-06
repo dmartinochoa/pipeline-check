@@ -837,11 +837,15 @@ same day; the rest are queued for a later pass.
   co-location, not a proven path. Default the report badge to the
   ``via_dataflow`` (proven) tier; label shared-job as
   "co-located (unverified)".
-- **Test performance: ``test_english_variant.py`` re-reads the whole
-  repo once per word-pair** (~146 x ~2,600 files, the dominant cost in
-  the meta-test slice). Read every file once into a session/module
-  fixture and scan the cached text, or collapse the 146 params into one
-  all-patterns pass.
+- ~~**Test performance: ``test_english_variant.py`` re-reads the whole
+  repo once per word-pair** (done 2026-06-06 on ``dev``).~~ It re-walked
+  the tree and re-read every file (~2,600) per pair (~160 pairs), ~204 s
+  serial. Now a module fixture scans the corpus once with a combined
+  alternation and buckets each hit by the form it matched; the per-pair
+  test is an O(1) lookup. ``\b``-anchoring makes it equivalent to the
+  per-pair scan, pinned by ``test_combined_scan_matches_naive``. 204 s ->
+  5.2 s serial (~39x), ~17 s under xdist (per-worker corpus reads now
+  dominate the trivial regex work).
 - **Startup: defer heavy reporter/autofix imports.** ``cli.py:57,69``
   imports ``junit_reporter`` (``xml.sax``, ~22 ms) and ``autofix``
   (``difflib``, ~14 ms) at module top; move them into the format-dispatch
