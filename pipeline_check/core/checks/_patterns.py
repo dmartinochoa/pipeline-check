@@ -83,8 +83,9 @@ _BUILTIN_PATTERNS: dict[str, str] = {
     "shopify_token":          r"shp(?:at|ca|pa|ss)_[0-9a-fA-F]{32}",
     # Databricks personal access token, dapi prefix + 32 hex.
     "databricks_token":       r"dapi[0-9a-f]{32}",
-    # OpenAI API keys, legacy (sk-…T3BlbkFJ…) and new (sk-proj-…).
-    "openai_api_key":         r"sk-(?:proj-[A-Za-z0-9_\-]{40,}|[A-Za-z0-9]{20,}T3BlbkFJ[A-Za-z0-9]{20,})",
+    # OpenAI API keys, legacy (sk-…T3BlbkFJ…), project (sk-proj-…) and
+    # service-account (sk-svcacct-…).
+    "openai_api_key":         r"sk-(?:(?:proj|svcacct)-[A-Za-z0-9_\-]{40,}|[A-Za-z0-9]{20,}T3BlbkFJ[A-Za-z0-9]{20,})",
     # Hugging Face user access tokens.
     "huggingface_token":      r"hf_[A-Za-z0-9]{34,}",
     # age encryption tool secret key.
@@ -141,6 +142,13 @@ _BUILTIN_PATTERNS: dict[str, str] = {
     # ``<14 alnum>.atlasv1.<base64-padded body>``. The middle
     # ``.atlasv1.`` literal makes the regex very specific.
     "terraform_cloud_token":  r"[A-Za-z0-9]{14}\.atlasv1\.[A-Za-z0-9_\-]{60,}",
+    # Postman API key: PMAK- + 24 hex + - + 34 hex (used by Newman in CI).
+    "postman_api_key":        r"PMAK-[0-9a-f]{24}-[0-9a-f]{34}",
+    # Tailscale auth / API / OAuth-client / webhook key:
+    # tskey-<kind>-<keyID>-<secret>.
+    "tailscale_key":          r"tskey-(?:auth|api|client|webhook)-[0-9A-Za-z]+-[0-9A-Za-z]{24,}",
+    # Sentry auth token, org (sntrys_) and user (sntryu_) forms.
+    "sentry_auth_token":      r"sntry[su]_[A-Za-z0-9+/=_\-]{40,}",
 }
 
 

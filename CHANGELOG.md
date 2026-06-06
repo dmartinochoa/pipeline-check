@@ -40,6 +40,16 @@ release commit collapses this section into `## [X.Y.Z] - <date>`.
 
 ### Changed
 
+- **More hardcoded-credential formats detected.** The shared secret-shape
+  catalog (`_patterns.SECRET_DETECTORS`, used by GHA-008 and the
+  cross-provider literal-secret rules) gained four modern, high-confidence
+  token formats: Postman (`PMAK-`), Tailscale (`tskey-…`), Sentry auth
+  tokens (`sntrys_` / `sntryu_`), and OpenAI service-account keys
+  (`sk-svcacct-…`, previously only project/legacy keys matched). Each has a
+  specific fixed prefix, so a credential pasted into any scanned config now
+  surfaces instead of slipping through. Positive + undersized-negative
+  tests and `--man` catalog descriptions added for each.
+
 - **GHA-044 widened to container builds.** The build-tool PPE rule now
   also flags `docker build` / `docker buildx build` in a `run:` step and
   the `docker/build-push-action` action on an untrusted-trigger workflow

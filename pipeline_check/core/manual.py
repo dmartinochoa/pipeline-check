@@ -375,6 +375,9 @@ _DETECTOR_DESCRIPTIONS: dict[str, str] = {
     "asana_pat":              "1/<account-id>:<32 hex>",
     "square_access_token":    "sq0atp- / sq0csp- + 20+ chars",
     "terraform_cloud_token":  "<14 chars>.atlasv1.<60+ chars>",
+    "postman_api_key":        "PMAK- + 24 hex + - + 34 hex",
+    "tailscale_key":          "tskey-auth/api/client/webhook-<id>-<secret>",
+    "sentry_auth_token":      "sntrys_ (org) / sntryu_ (user) + 40+ chars",
 }
 
 

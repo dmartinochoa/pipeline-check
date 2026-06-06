@@ -94,6 +94,13 @@ DETECTORS: list[tuple[str, str]] = [
     ("square_access_token",   "sq0atp-" + _FILLER[:25]),
     ("square_access_token",   "sq0csp-" + _FILLER[:25]),
     ("terraform_cloud_token", "abcdef1234567g.atlasv1." + _FILLER[:65]),
+    # ── New detectors (round 4) ──
+    ("openai_api_key",        "sk-svcacct-" + _FILLER[:45]),
+    ("postman_api_key",       "PMAK-" + "0123456789abcdef01234567" + "-" + "0123456789abcdef0123456789abcdef01"),
+    ("tailscale_key",         "tskey-auth-k1A2B3C4CNTRL-" + _FILLER[:30]),
+    ("tailscale_key",         "tskey-api-k9Z8Y7X6CNTRL-" + _FILLER[:30]),
+    ("sentry_auth_token",     "sntrys_" + _FILLER[:55]),
+    ("sentry_auth_token",     "sntryu_" + _FILLER[:55]),
 ]
 
 
@@ -159,6 +166,11 @@ def test_detector_fires_on_real_shape_token(name, token):
     ("1/12345:short",                      "Asana PAT needs 15-18 digit ID and 32-hex secret"),
     ("sq0atp-short",                       "Square token needs 20+ chars after sq0atp-"),
     ("abc.atlasv1.short",                  "Terraform Cloud token needs 14 alnum + .atlasv1. + 60+ chars"),
+    # ── New detectors (round 4) ──
+    ("sk-svcacct-short",                   "OpenAI svcacct key needs 40+ chars after prefix"),
+    ("PMAK-short",                         "Postman key needs 24 hex + - + 34 hex"),
+    ("tskey-auth-short",                   "Tailscale key needs <keyID>-<secret 24+>"),
+    ("sntrys_short",                       "Sentry token needs 40+ chars after prefix"),
 ])
 def test_detectors_reject_undersized_tokens(token, reason):
     """Loose detector regexes are a constant source of false positives.
