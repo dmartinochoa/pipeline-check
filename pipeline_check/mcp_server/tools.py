@@ -238,45 +238,28 @@ def list_providers() -> dict[str, Any]:
 # ── Tool: list_checks ───────────────────────────────────────────────
 
 
-# Rules-package FQN per provider that exposes a discoverable
-# ``rules/`` subpackage. Aligns with ``scripts/gen_provider_docs.py``'s
-# ``SUPPORTED_PROVIDERS`` but lives here directly so the MCP tools
-# don't depend on the ``scripts/`` directory, which is excluded from
-# the pip distribution (``MANIFEST.in`` ``prune scripts``).
-_RULES_FQN: dict[str, str] = {
-    "github":         "pipeline_check.core.checks.github.rules",
-    "gitlab":         "pipeline_check.core.checks.gitlab.rules",
-    "bitbucket":      "pipeline_check.core.checks.bitbucket.rules",
-    "azure":          "pipeline_check.core.checks.azure.rules",
-    "jenkins":        "pipeline_check.core.checks.jenkins.rules",
-    "circleci":       "pipeline_check.core.checks.circleci.rules",
-    "cloudbuild":     "pipeline_check.core.checks.cloudbuild.rules",
-    "kubernetes":     "pipeline_check.core.checks.kubernetes.rules",
-    "buildkite":      "pipeline_check.core.checks.buildkite.rules",
-    "tekton":         "pipeline_check.core.checks.tekton.rules",
-    "argo":           "pipeline_check.core.checks.argo.rules",
-    "argocd":         "pipeline_check.core.checks.argocd.rules",
-    "drone":          "pipeline_check.core.checks.drone.rules",
-    "oci":            "pipeline_check.core.checks.oci.rules",
-    "dockerfile":     "pipeline_check.core.checks.dockerfile.rules",
-    "helm":           "pipeline_check.core.checks.helm.rules",
-    "cloudformation": "pipeline_check.core.checks.cloudformation.rules",
-    "terraform":      "pipeline_check.core.checks.terraform.rules",
-    "aws":            "pipeline_check.core.checks.aws.rules",
-    "azure_cloud":    "pipeline_check.core.checks.azure_cloud.rules",
-    "gcp":            "pipeline_check.core.checks.gcp.rules",
-    "scm":            "pipeline_check.core.checks.scm.rules",
-    "npm":            "pipeline_check.core.checks.npm.rules",
-    "pypi":           "pipeline_check.core.checks.pypi.rules",
-    "maven":          "pipeline_check.core.checks.maven.rules",
-    "nuget":          "pipeline_check.core.checks.nuget.rules",
-    "gomod":          "pipeline_check.core.checks.gomod.rules",
-    "cargo":          "pipeline_check.core.checks.cargo.rules",
-    "composer":       "pipeline_check.core.checks.composer.rules",
-    "rubygems":       "pipeline_check.core.checks.rubygems.rules",
-    "pulumi":         "pipeline_check.core.checks.pulumi.rules",
-    "devenv":         "pipeline_check.core.checks.devenv.rules",
-}
+def _discover_rules_fqns() -> dict[str, str]:
+    """Provider name -> rules-package FQN for every provider that ships a
+    discoverable ``checks/<provider>/rules/`` subpackage.
+
+    Derived from the filesystem (the same source the scanner's
+    custom-rule loader and ``scripts/gen_provider_docs.py`` walk) rather
+    than a hand-maintained list, so a new provider's rule pack is picked
+    up by the MCP tools automatically instead of having to be added in
+    two places. We glob the package directory directly rather than
+    importing ``scripts/``, which is pruned from the pip distribution
+    (``MANIFEST.in`` ``prune scripts``).
+    """
+    checks_root = Path(__file__).resolve().parent.parent / "core" / "checks"
+    return {
+        p.parent.parent.name: (
+            f"pipeline_check.core.checks.{p.parent.parent.name}.rules"
+        )
+        for p in sorted(checks_root.glob("*/rules/__init__.py"))
+    }
+
+
+_RULES_FQN: dict[str, str] = _discover_rules_fqns()
 
 
 def _discover(fqn: str) -> list[Any]:

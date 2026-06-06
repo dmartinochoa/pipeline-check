@@ -118,6 +118,17 @@ class TestToolListProviders:
         # that fails the moment an agent asks ``list_checks(provider=X)``.
         assert set(_tools._PROVIDER_PATH_KW) == set(_tools._RULES_FQN)
 
+    def test_rules_fqn_derived_from_filesystem(self):
+        # ``_RULES_FQN`` is derived from the on-disk ``rules/`` packages
+        # (no longer a hand-maintained list). A broken glob (e.g. a moved
+        # package dir) would silently empty it and take ``list_checks``
+        # down with it, so guard the derivation: non-empty, the core
+        # providers present, and FQNs shaped correctly.
+        fqns = _tools._RULES_FQN
+        assert len(fqns) >= 30
+        for core in ("github", "gitlab", "terraform", "aws", "npm"):
+            assert fqns.get(core) == f"pipeline_check.core.checks.{core}.rules"
+
 
 class TestToolListChecks:
     def test_unfiltered_lists_every_provider(self):

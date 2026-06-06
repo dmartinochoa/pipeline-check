@@ -895,10 +895,16 @@ same day; the rest are queued for a later pass.
   auto-bump the registry-derived counts (``EXPECTED_RULE_COUNTS``,
   README / ``docs/index.md`` numbers), leaving only judgment steps to the
   contributor.
-- **De-duplicate parallel registries.** Derive MCP ``_RULES_FQN``
-  (``mcp_server/tools.py:246``) from the provider registry; share one
-  overrides/severity parser between ``config.py:260`` and
-  ``policies.py:368``.
+- **De-duplicate parallel registries.**
+  - ~~MCP ``_RULES_FQN`` (done 2026-06-06 on ``dev``):~~ the
+    hand-maintained 32-provider dict in ``mcp_server/tools.py`` is now
+    derived from the ``checks/<p>/rules/__init__.py`` glob (the same
+    source the scanner's custom-rule loader uses), so a new provider's
+    rule pack is picked up automatically. The existing
+    ``test_rules_fqn_parity_with_path_kw`` now also catches when the
+    still-hardcoded ``_PROVIDER_PATH_KW`` drifts from it.
+  - Still queued: share one overrides/severity parser between
+    ``config.py`` and ``policies.py``.
 - ~~**Close substring-match seams** (done 2026-06-06 on ``dev``).~~
   ``is_known_installer`` (``_context.py``) matched the curl-pipe
   allowlist by bare substring, so ``https://get.docker.com.evil.com/x``
