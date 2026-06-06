@@ -12,19 +12,22 @@ release commit collapses this section into `## [X.Y.Z] - <date>`.
 
 ### Added
 
-- **HTML report: step-level pipeline graph for GitLab, CircleCI, and
-  Cloud Build (DAG v2).** The HTML report now renders these as layered
-  job graphs, each node colored by the worst finding that lands on it,
-  extending the step-level DAG that previously covered only GitHub
+- **HTML report: step-level pipeline graph for GitLab, CircleCI, Cloud
+  Build, and Drone (DAG v2).** The HTML report now renders these as
+  layered job graphs, each node colored by the worst finding that lands
+  on it, extending the step-level DAG that previously covered only GitHub
   Actions. GitLab (`.gitlab-ci.yml`): jobs as nodes, `needs:` as edges,
   and stage ordering as edges for jobs without explicit `needs`. CircleCI
   (`.circleci/config.yml`): jobs and their steps as nodes, with the
   `workflows.<name>.jobs[].requires` references (unioned across every
   workflow) as edges. Cloud Build (`cloudbuild.yaml`): each build step as
   a node, with `waitFor` as the DAG and a sequential chain for steps that
-  omit it. Each is a new `checks/<provider>/_graph.py` builder with no
-  contract change, so every other reporter and provider is unchanged.
-  Pure inline SVG, no JS / CDN / network.
+  omit it. Drone (`.drone.yml`): each step as a node, with `depends_on`
+  as the DAG (or a sequential chain when none is declared), and one graph
+  per `kind: pipeline` document in the multi-document file. Each is a new
+  `checks/<provider>/_graph.py` builder with no contract change, so every
+  other reporter and provider is unchanged. Pure inline SVG, no JS / CDN
+  / network.
 - **`scan_status` in the JSON and SARIF outputs.** The terminal report
   already flags an incomplete scan (a file that failed to parse, a
   credential-less cloud probe) instead of presenting a confident grade,

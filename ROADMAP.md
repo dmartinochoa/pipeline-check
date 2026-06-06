@@ -1109,9 +1109,17 @@ dependency structure lives in ``workflows:`` not on the jobs.
 step is a ``job``-kind node (steps are the unit of work, so they render
 as boxes), ``waitFor: [ids]`` -> ``needs`` edges, ``waitFor: ['-']`` ->
 no edge (immediate), no ``waitFor`` -> ``stage`` edge from the previous
-step (the sequential default). Remaining pipeline providers (Azure,
-Bitbucket, Buildkite, Drone, Tekton, Argo, Jenkins) follow the same
-shape; IaC / SCA / cloud providers have no job DAG. Per-provider notes:
+step (the sequential default). ~~**Drone** (increment 5, done 2026-06-06
+on ``dev``):~~ the first MULTI-DOC builder, one graph per ``kind:
+pipeline`` document; each step is a ``job`` node, ``depends_on`` ->
+``needs`` (sequential ``stage`` chain when no ``depends_on`` anywhere).
+Multi-doc needed two things: (1) each graph's file-root is bounded to its
+document's line range, and (2) ``attach_findings`` only falls back to the
+root for a finding with NO positioned line on the file (a line that lands
+in no node belongs to another document) - this is the reusable fix for
+Tekton / Argo. Remaining pipeline providers (Azure, Bitbucket, Buildkite,
+Tekton, Argo, Jenkins) follow the same shape; IaC / SCA / cloud providers
+have no job DAG. Per-provider notes:
 Azure (single-doc, stages + jobs + steps, ``dependsOn`` by name with a
 ``job:`` / ``deployment:`` prefix, within-stage resolution + deployment
 strategy step nesting), Bitbucket (parallel groups, multiple pipeline

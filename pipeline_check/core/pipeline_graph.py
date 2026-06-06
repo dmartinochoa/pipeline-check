@@ -148,7 +148,15 @@ def attach_findings(
                 placed.add(node.id)
         if not placed:
             anchored = [jid for jid in f.job_anchors if jid in node_ids]
-            placed.update(anchored or [graph.root_id])
+            if anchored:
+                placed.update(anchored)
+            elif not lines:
+                # A finding with no positioned line on this file falls back
+                # to the file root. A finding that DOES carry a line which
+                # landed in no node belongs to a different document of a
+                # multi-document file (each graph's root is bounded to its
+                # document's range), so it is left for that document's graph.
+                placed.add(graph.root_id)
         for node_id in placed:
             _add(node_id, f.severity)
     return badges
