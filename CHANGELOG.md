@@ -10,6 +10,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 PRs landing on `dev` between releases append entries below. The
 release commit collapses this section into `## [X.Y.Z] - <date>`.
 
+### Added
+
+- **SPDX 2.3 SBOM output (`--output spdx`).** The SPDX-format parallel of
+  the existing `--output cyclonedx` SBOM, for toolchains and procurement
+  flows that require SPDX rather than CycloneDX. Emits the same build-time
+  dependency inventory (`scanner.sbom()`) as an SPDX 2.3 JSON document: each
+  dependency is an SPDX `package` with a `purl` `externalRef`, a digest (when
+  known) as a `checksums` entry, and the provider / kind / source / pinned
+  metadata in the package `comment`; the document `DESCRIBES` every package
+  via a relationship. No new dependency, the JSON is emitted directly.
+  Closes the SPDX format deferred from v1.5.0's build-time SBOM work.
+
 ### Changed
 
 - **GHA-044 widened to container builds.** The build-tool PPE rule now

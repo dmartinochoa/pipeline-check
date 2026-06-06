@@ -81,7 +81,7 @@ inputs:
       Output format. ``sarif`` is the default so findings flow into
       the GitHub Security tab via the upload-sarif step. Other
       options: ``terminal``, ``json``, ``html``, ``junit``,
-      ``markdown``, ``codequality``, ``cyclonedx``, ``both``.
+      ``markdown``, ``codequality``, ``cyclonedx``, ``spdx``, ``both``.
     required: false
     default: 'sarif'
   output-file:
@@ -93,6 +93,7 @@ inputs:
       JUnit, ``pipeline-check.md`` for Markdown,
       ``gl-code-quality-report.json`` for Code Quality (the GitLab
       convention), ``pipeline-check-sbom.json`` for CycloneDX,
+      ``pipeline-check.spdx.json`` for SPDX,
       ``pipeline-check-threatmodel.json`` for the threat-model
       report. Terminal / both write to stdout when this is blank.
     required: false
@@ -287,6 +288,7 @@ runs:
             markdown)    OUTPUT_FILE="pipeline-check.md" ;;
             codequality) OUTPUT_FILE="gl-code-quality-report.json" ;;
             cyclonedx)   OUTPUT_FILE="pipeline-check-sbom.json" ;;
+            spdx)        OUTPUT_FILE="pipeline-check.spdx.json" ;;
             threatmodel) OUTPUT_FILE="pipeline-check-threatmodel.json" ;;
           esac
         fi

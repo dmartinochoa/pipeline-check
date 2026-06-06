@@ -14,6 +14,7 @@ format carries the same finding set, only the rendering differs.
 | `codequality` | stdout or `--output-file` | GitLab Code Quality JSON. Annotates Merge Request diffs natively via the `codequality` artifact report |
 | `threatmodel` | stdout or `--output-file` | STRIDE-mapped Markdown threat-model document. Auto-runs `--inventory`. SOC 2 / PCI / NIST SSDF evidence packages, architecture-review docs |
 | `cyclonedx` | stdout or `--output-file`  | CycloneDX 1.6 JSON SBOM of build-time dependencies (actions, base images, packages). PURL identifiers on every component |
+| `spdx` | stdout or `--output-file`  | SPDX 2.3 JSON SBOM of the same build-time dependencies. Each package carries a PURL `externalRef`; the document `DESCRIBES` every package |
 | `both`     | terminal → **stderr**, JSON → stdout | Pipe `jq` while still seeing a human report |
 
 `--pr-diff REF` is the diff-mode counterpart to the formats above: it
@@ -331,6 +332,23 @@ images), npm (``package.json`` dependencies), and PyPI
 The BOM format follows the
 [CycloneDX 1.6 specification](https://cyclonedx.org/docs/1.6/json/).
 No external library is required; the JSON is emitted directly.
+
+## SPDX 2.3
+
+```bash
+pipeline_check --pipeline github --gha-path .github/workflows \
+    --output spdx --output-file sbom.spdx.json
+```
+
+Emits the same build-dependency inventory as the CycloneDX output, in
+the [SPDX 2.3](https://spdx.github.io/spdx-spec/v2.3/) JSON format that
+some toolchains and procurement processes require instead of CycloneDX.
+Each dependency becomes an SPDX ``package`` with a ``purl``
+``externalRef``; a digest (when known) is emitted as a ``checksums``
+entry, and the provider / kind / source / pinned metadata goes in the
+package ``comment``. The document ``DESCRIBES`` every package via a
+relationship. No external library is required; the JSON is emitted
+directly.
 
 ## Exit codes are independent of format
 
