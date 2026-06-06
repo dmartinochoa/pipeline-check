@@ -818,18 +818,24 @@ same day; the rest are queued for a later pass.
 
 **Medium priority (queued):**
 
-- **Engine test-coverage gaps the 90% gate misses.** No
-  ``tests/test_scanner.py`` exists (the 969-line orchestrator is only
-  indirectly tested, ~46% in isolation). Add unit tests for
-  ``Scanner.run`` / ``MultiScanner.run`` dispatch, per-provider error
-  isolation, and the ``_verify_and_enrich_findings`` severity mutation.
-  Also untested: the ``pipeline_graph_builders`` resilience contract
-  (``pipeline_graph_builders.py:42-54``, "graph-building can't abort a
-  scan"), the gate's malformed-ignore-file fail-open branches
-  (``gate.py:285-329``), and the ``_MAX_YAML_BYTES`` 5 MB YAML-bomb guard
-  (``_yaml_files.py:40``). Consider bringing ``fleet.py`` + the rego
-  modules into the coverage measurement (currently ``omit``-ed in
-  ``.github/coveragerc-no-fleet``).
+- **Engine test-coverage gaps the 90% gate misses.**
+  - ~~``tests/test_scanner.py`` (done 2026-06-06 on ``dev``):~~ direct
+    unit tests for the orchestrator via ``__new__``-built scanners + fake
+    check classes (``run()`` already guards every optional attr behind
+    ``getattr``). Covers ``Scanner.run`` dispatch, the check allowlist
+    (exact / glob / case), the confidence default vs ``confidence_locked``,
+    the override severity mutation, the chains toggle, the unknown-provider
+    ``ValueError``; ``_verify_and_enrich_findings`` (verified -> CRITICAL,
+    all-revoked -> LOW); the ``build_graphs_for`` resilience contract
+    (swallows builder errors); and ``MultiScanner`` dispatch order, graph
+    aggregation, chains-once toggle, ``metadata`` aggregation, and the
+    empty-pipelines ``ValueError``. scanner.py in-isolation coverage
+    37% -> 48% from this file alone.
+  - Still untested (queued): the gate's malformed-ignore-file fail-open
+    branches (``gate.py:285-329``) and the ``_MAX_YAML_BYTES`` 5 MB
+    YAML-bomb guard (``_yaml_files.py:40``). Consider bringing
+    ``fleet.py`` + the rego modules into the coverage measurement
+    (currently ``omit``-ed in ``.github/coveragerc-no-fleet``).
 - **Rule/finding emission ergonomics + the 95%-passing overhead.** Add
   ``RULE.pass_finding()`` / ``fail_finding()`` helpers (the
   ``Finding(check_id=RULE.id, title=RULE.title, ...)`` block is
