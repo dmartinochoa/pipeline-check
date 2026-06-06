@@ -137,6 +137,19 @@ release commit collapses this section into `## [X.Y.Z] - <date>`.
 
 ### Fixed
 
+- **GHA-002 now catches more PR-head checkout bypasses (critical
+  false-negatives).** The flagship `pull_request_target`-checks-out-PR-head
+  rule (CRITICAL) matched `head.sha` / `head.ref` / `github.head_ref` but
+  missed two documented bypass forms that still run attacker code with a
+  write-scope token and secrets: `github.event.pull_request.merge_commit_sha`
+  (the auto-generated merge commit *contains* the PR's code) and the literal
+  `refs/pull/<n>/head` / `refs/pull/<n>/merge` refs (often written as
+  `refs/pull/${{ github.event.number }}/merge`). The shared
+  `PR_HEAD_REF_RE` now covers all of them, so GHA-002 (and GHA-058, which
+  reused a narrower private copy now unified onto the shared pattern) flag
+  these checkouts. Safe refs (`github.sha`, `refs/heads/...`) are
+  unaffected.
+
 - **Tekton findings now carry source locations.** The per-step Tekton
   rules (TKN-002 privileged step, TKN-003 parameter injection) attributed
   their offenders through `job_anchors` (`<Kind>/<name>:<step>`) and set no

@@ -82,11 +82,24 @@ UNTRUSTED_CONTEXT_RE = re.compile(
 # ``github.head_ref`` is the documented shorthand for
 # ``github.event.pull_request.head.ref`` and is the more common way
 # to write a PR-head checkout, so it must be caught too.
+#
+# ``merge_commit_sha`` is the auto-generated merge of the PR into the
+# base: checking it out still runs the attacker's PR code, so it is the
+# same hazard as ``head.sha`` and is a documented ``pull_request_target``
+# bypass. ``refs/pull/<n>/head`` (the PR head) and ``refs/pull/<n>/merge``
+# (the merge ref) are the literal-ref forms of the same checkout, written
+# without a ``${{ }}`` expression; the ``<n>`` is often itself an
+# expression (``refs/pull/${{ github.event.number }}/merge``) so the
+# middle segment is matched loosely. Case-insensitive because GitHub
+# context names are case-insensitive.
 PR_HEAD_REF_RE = re.compile(
     r"\$\{\{\s*(?:"
-    r"github\.event\.pull_request\.head\.(?:sha|ref)"
+    r"github\.event\.pull_request(?:_target)?\."
+    r"(?:head\.(?:sha|ref)|merge_commit_sha)"
     r"|github\.head_ref"
     r")\s*\}\}"
+    r"|refs/pull/[^/\n]+/(?:head|merge)(?![A-Za-z])",
+    re.IGNORECASE,
 )
 
 # Cache-key taint regex used by GHA-011.

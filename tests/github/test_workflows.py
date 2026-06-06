@@ -180,6 +180,46 @@ class TestGHA002PullRequestTarget:
         assert not f.passed
         assert f.severity == Severity.CRITICAL
 
+    def test_checkout_of_merge_commit_sha_fails(self):
+        # Regression: the auto-generated merge commit contains the PR's
+        # code merged into base, so checking it out on pull_request_target
+        # still runs attacker code, a documented bypass of head.sha-only
+        # detection.
+        f = _run(
+            """
+            on: pull_request_target
+            jobs:
+              build:
+                runs-on: ubuntu-latest
+                steps:
+                  - uses: actions/checkout@v4
+                    with:
+                      ref: ${{ github.event.pull_request.merge_commit_sha }}
+            """,
+            "GHA-002",
+        )
+        assert not f.passed
+        assert f.severity == Severity.CRITICAL
+
+    def test_checkout_of_refs_pull_merge_fails(self):
+        # The literal-ref form: ``refs/pull/<n>/merge`` (and ``/head``)
+        # check out PR-controlled code without a ``${{ }}`` expression.
+        f = _run(
+            """
+            on: pull_request_target
+            jobs:
+              build:
+                runs-on: ubuntu-latest
+                steps:
+                  - uses: actions/checkout@v4
+                    with:
+                      ref: refs/pull/${{ github.event.number }}/merge
+            """,
+            "GHA-002",
+        )
+        assert not f.passed
+        assert f.severity == Severity.CRITICAL
+
     def test_pull_request_target_without_head_checkout_passes(self):
         f = _run(
             """
@@ -189,6 +229,24 @@ class TestGHA002PullRequestTarget:
                 runs-on: ubuntu-latest
                 steps:
                   - uses: actions/checkout@v4
+            """,
+            "GHA-002",
+        )
+        assert f.passed
+
+    def test_pull_request_target_checkout_base_sha_passes(self):
+        # Checking out the base SHA (``github.sha``) is the safe pattern,
+        # it must not be confused with the PR-controlled refs above.
+        f = _run(
+            """
+            on: pull_request_target
+            jobs:
+              build:
+                runs-on: ubuntu-latest
+                steps:
+                  - uses: actions/checkout@v4
+                    with:
+                      ref: ${{ github.sha }}
             """,
             "GHA-002",
         )

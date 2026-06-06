@@ -21,6 +21,7 @@ from typing import Any
 from ...base import Finding, Severity
 from ...rule import Rule
 from ..base import iter_jobs, iter_steps, step_location
+from ._helpers import PR_HEAD_REF_RE
 
 RULE = Rule(
     id="GHA-058",
@@ -181,19 +182,6 @@ def _line_windows(body: str) -> list[str]:
 
 
 #: PR-head ref interpolations on an ``actions/checkout`` ``with.ref``.
-#: ``github.event.pull_request.head.sha`` / ``.head.ref`` /
-#: ``.pull_request_target`` (same shape, more dangerous trigger) and
-#: ``github.head_ref`` all resolve to a PR-controlled commit.
-_PR_HEAD_REF_RE = re.compile(
-    r"\$\{\{\s*github\.(?:"
-    r"event\.pull_request(?:_target)?\.head\.(?:sha|ref)"
-    r"|head_ref"
-    r")\s*\}\}"
-    r"|refs/pull/[^/\s]+/head",
-    re.IGNORECASE,
-)
-
-
 def _step_checks_out_pr_head(step: dict[str, Any]) -> bool:
     """True when *step* checks out a PR head via ``actions/checkout``.
 
@@ -214,7 +202,7 @@ def _step_checks_out_pr_head(step: dict[str, Any]) -> bool:
     ref = with_block.get("ref")
     if not isinstance(ref, str):
         return False
-    return bool(_PR_HEAD_REF_RE.search(ref))
+    return bool(PR_HEAD_REF_RE.search(ref))
 
 
 def _step_invokes_any_agentic_cli(body: str) -> str | None:
