@@ -1,9 +1,9 @@
 """ARGO-007. Workflow lacks ``activeDeadlineSeconds``."""
 from __future__ import annotations
 
-from ...base import Finding, Severity
+from ...base import Finding, Location, Severity
 from ...rule import Rule
-from ..base import ArgoContext, workflow_spec
+from ..base import ArgoContext, doc_location, workflow_spec
 
 RULE = Rule(
     id="ARGO-007",
@@ -33,6 +33,7 @@ RULE = Rule(
 
 def check(ctx: ArgoContext) -> Finding:
     offenders: list[str] = []
+    locations: list[Location] = []
     for doc in ctx.docs:
         spec = workflow_spec(doc)
         if not spec:
@@ -49,6 +50,7 @@ def check(ctx: ArgoContext) -> Finding:
         if per_template:
             continue
         offenders.append(f"{doc.kind}/{doc.name}")
+        locations.append(doc_location(doc))
     if not ctx.docs:
         return Finding(
             check_id=RULE.id, title=RULE.title, severity=RULE.severity,
@@ -69,4 +71,5 @@ def check(ctx: ArgoContext) -> Finding:
         check_id=RULE.id, title=RULE.title, severity=RULE.severity,
         resource="argo", description=desc,
         recommendation=RULE.recommendation, passed=passed,
+        locations=locations,
     )

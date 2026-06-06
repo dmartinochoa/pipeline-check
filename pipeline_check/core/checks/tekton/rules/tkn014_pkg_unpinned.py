@@ -5,10 +5,11 @@ from ...base import (
     PKG_INSECURE_RE,
     PKG_NO_LOCKFILE_RE,
     Finding,
+    Location,
     Severity,
 )
 from ...rule import Rule
-from ..base import TektonContext, iter_step_scripts
+from ..base import TektonContext, doc_location, iter_step_scripts
 
 RULE = Rule(
     id="TKN-014",
@@ -76,6 +77,7 @@ RULE = Rule(
 
 def check(ctx: TektonContext) -> Finding:
     offenders: list[str] = []
+    locations: list[Location] = []
     examined = 0
     for doc in ctx.docs:
         if doc.kind not in ("Task", "ClusterTask"):
@@ -91,6 +93,7 @@ def check(ctx: TektonContext) -> Finding:
                     f"{doc.kind}/{doc.name} {sname}: [{kind}] "
                     f"{hit.group(0)[:50].strip()}"
                 )
+                locations.append(doc_location(doc))
     if examined == 0:
         return Finding(
             check_id=RULE.id, title=RULE.title, severity=RULE.severity,
@@ -112,4 +115,5 @@ def check(ctx: TektonContext) -> Finding:
         check_id=RULE.id, title=RULE.title, severity=RULE.severity,
         resource="tekton", description=desc,
         recommendation=RULE.recommendation, passed=passed,
+        locations=locations,
     )

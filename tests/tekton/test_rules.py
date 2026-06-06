@@ -257,6 +257,27 @@ class TestTKN005LiteralSecrets:
         f = run_check(cfg, "TKN-005")
         assert f.passed
 
+    def test_fails_with_modern_token_under_innocuous_name(self):
+        # A GitLab PAT under a non-credential-looking env name: only the
+        # shared vendor-token catalog catches it (the name heuristic
+        # wouldn't), so this is the regression for unifying onto it.
+        cfg = """
+        apiVersion: tekton.dev/v1
+        kind: Task
+        metadata:
+          name: t
+        spec:
+          steps:
+            - name: build
+              image: alpine:3
+              env:
+                - name: REGISTRY_AUTH
+                  value: "glpat-abcdefghij1234567890"
+              script: echo
+        """
+        f = run_check(cfg, "TKN-005")
+        assert not f.passed
+
 
 # ── TKN-006 timeout ────────────────────────────────────────────────────
 

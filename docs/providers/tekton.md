@@ -32,7 +32,7 @@ All other flags (`--output`, `--severity-threshold`, `--checks`,
 
 ## What it covers
 
-16 checks · 2 have an autofix patch (``--fix``).
+17 checks · 2 have an autofix patch (``--fix``).
 
 | Check | Title | Severity | Fix |
 |-------|-------|----------|-----|
@@ -52,6 +52,7 @@ All other flags (`--output`, `--severity-threshold`, `--checks`,
 | [TKN-013](#tkn-013) | Tekton sidecar runs privileged or as root | <span class="pg-sev pg-sev--high">HIGH</span> |  |
 | [TKN-014](#tkn-014) | Tekton step script runs unpinned package install | <span class="pg-sev pg-sev--medium">MEDIUM</span> |  |
 | [TKN-015](#tkn-015) | Workspace subPath interpolates a Task parameter (path traversal) | <span class="pg-sev pg-sev--high">HIGH</span> |  |
+| [TKN-016](#tkn-016) | Remote resolver taskRef / pipelineRef not pinned to an immutable revision | <span class="pg-sev pg-sev--high">HIGH</span> |  |
 
 ---
 
@@ -394,6 +395,26 @@ The detection scans the step-level ``workspaces:`` list (``spec.steps[*].workspa
 **Recommended action**
 
 Pin every workspace ``subPath:`` to a static literal that your team controls. ``subPath: build/output`` is fine; ``subPath: $(params.target_dir)`` is not, because a parameter-driven sub-path lets an attacker break out of the workspace and write into a sibling directory of the shared volume. Tekton resolves ``$(params.x)`` substitution in workspace bindings before the volume mount happens, so ``../../../etc`` lands as a real path. If you genuinely need a runtime-chosen sub-path, sanitize the parameter with a step-level pre-check (``case`` against an allow-list, reject anything containing ``..``) and pass the validated value through a result rather than the raw parameter.
+
+</div>
+
+</div>
+
+<div class="pg-rule pg-rule--high" markdown>
+
+## TKN-016: Remote resolver taskRef / pipelineRef not pinned to an immutable revision { #tkn-016 }
+
+<div class="pg-rule__tags">
+<span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-3</span> <span class="pg-tag pg-tag--esf">ESF-S-PIN-DEPS</span> <span class="pg-tag pg-tag--esf">ESF-S-IMMUTABLE</span> <span class="pg-tag pg-tag--esf">ESF-S-VERIFY-DEPS</span> <span class="pg-tag pg-tag--cwe">CWE-829</span>
+</div>
+
+Tekton's Resolution framework fetches the *body* of a Task or Pipeline at run time from a remote source. TKN-001 pins the container ``image`` a step runs, but a mutable resolver ref lets whoever controls the upstream (a Git branch, a floating OCI tag, a Hub ``latest``) swap the executed task body itself, running arbitrary steps under the run's ServiceAccount. The ``cluster`` resolver is not flagged, it references an already-admitted in-cluster object rather than fetching remote content. Covers Pipeline ``spec.tasks`` / ``spec.finally`` ``taskRef``, ``PipelineRun.spec.pipelineRef``, and ``TaskRun.spec.taskRef``.
+
+<div class="pg-rule__rec" markdown>
+
+**Recommended action**
+
+Pin every remote ``taskRef`` / ``pipelineRef`` to an immutable revision: a ``git`` resolver's ``revision`` to a full 40-hex commit SHA (not a branch or tag), a ``bundles`` resolver's ``bundle`` image and the legacy ``taskRef.bundle`` to ``@sha256:<digest>``, and a ``hub`` resolver to a specific ``version`` (never ``latest``). Otherwise vendor the Task / Pipeline definition in-repo so it is reviewed and version-controlled like the rest of the pipeline.
 
 </div>
 

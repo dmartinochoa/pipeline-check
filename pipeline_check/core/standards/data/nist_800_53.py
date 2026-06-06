@@ -540,6 +540,7 @@ STANDARD = Standard(
         "BK-015":   ["CM-6", "SA-11"],                   # agents map untrusted interpolation
         # Tekton. Kubernetes-native pipeline kinds.
         "TKN-001":  ["SR-3", "SR-11", "SI-2"],           # step image not digest-pinned
+        "TKN-016": ["SR-3", "SR-11", "SI-2"],  # remote resolver / bundle task body not pinned
         "TKN-002":  ["AC-6", "CM-7"],                    # step privileged
         "TKN-003":  ["CM-6", "SA-11"],                   # param injection
         "TKN-004":  ["SC-7", "AC-6", "SI-7"],            # hostPath / host namespaces

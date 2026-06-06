@@ -302,6 +302,7 @@ STANDARD = Standard(
         "BK-013":   ["ESF-C-ENV-SEP"],                             # deploy without branch filter
         # ── Tekton ────────────────────────────────────────────────
         "TKN-001":  ["ESF-S-PIN-DEPS", "ESF-S-IMMUTABLE"],         # step image not digest-pinned
+        "TKN-016": ["ESF-S-PIN-DEPS", "ESF-S-IMMUTABLE"],  # remote resolver / bundle task body not pinned
         "TKN-002":  ["ESF-D-PRIV-BUILD"],                          # step privileged
         "TKN-003":  ["ESF-D-INJECTION"],                           # param injection
         "TKN-004":  ["ESF-D-PRIV-BUILD", "ESF-D-BUILD-ENV"],       # hostPath / namespaces

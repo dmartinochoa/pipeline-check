@@ -8,7 +8,7 @@ grants more GCP APIs than a typical build needs, and a compromised
 step (or a vulnerable builder image) can reuse those credentials.
 
 Binding a dedicated, least-privilege service account is the single
-highest-leverage Cloud Build hardening step and the only durable
+highest-impact Cloud Build hardening step and the only durable
 way to scope the blast radius of a compromised build step.
 """
 from __future__ import annotations

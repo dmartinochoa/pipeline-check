@@ -4,9 +4,9 @@ from __future__ import annotations
 import re
 from typing import Any
 
-from ...base import Finding, Severity
+from ...base import Finding, Location, Severity
 from ...rule import Rule
-from ..base import TektonContext, step_name, task_steps
+from ..base import TektonContext, doc_location, step_name, task_steps
 
 RULE = Rule(
     id="TKN-015",
@@ -108,6 +108,7 @@ def _step_workspaces(step: dict[str, Any]) -> list[dict[str, Any]]:
 
 def check(ctx: TektonContext) -> Finding:
     offenders: list[str] = []
+    locations: list[Location] = []
     examined = 0
     for doc in ctx.docs:
         if doc.kind not in ("Task", "ClusterTask"):
@@ -132,6 +133,7 @@ def check(ctx: TektonContext) -> Finding:
                             f"workspace.{ws.get('name', '?')}.subPath: "
                             f"params.{', params.'.join(refs[:3])}"
                         )
+                        locations.append(doc_location(doc, ws))
         for idx, step in enumerate(task_steps(doc)):
             for ws in _step_workspaces(step):
                 sub = ws.get("subPath")
@@ -144,6 +146,7 @@ def check(ctx: TektonContext) -> Finding:
                         f"workspace.{ws.get('name', '?')}.subPath: "
                         f"params.{', params.'.join(refs[:3])}"
                     )
+                    locations.append(doc_location(doc, ws))
     if examined == 0:
         return Finding(
             check_id=RULE.id, title=RULE.title, severity=RULE.severity,
@@ -164,4 +167,5 @@ def check(ctx: TektonContext) -> Finding:
         check_id=RULE.id, title=RULE.title, severity=RULE.severity,
         resource="tekton", description=desc,
         recommendation=RULE.recommendation, passed=passed,
+        locations=locations,
     )

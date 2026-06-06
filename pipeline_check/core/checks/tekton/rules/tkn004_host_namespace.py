@@ -4,9 +4,9 @@ from __future__ import annotations
 from typing import Any
 
 from ..._primitives.anchors import k8s_sa
-from ...base import Finding, ResourceAnchor, Severity
+from ...base import Finding, Location, ResourceAnchor, Severity
 from ...rule import Rule
-from ..base import TektonContext
+from ..base import TektonContext, doc_location
 
 RULE = Rule(
     id="TKN-004",
@@ -109,6 +109,7 @@ def _scan_pod_template(spec: dict[str, Any]) -> list[str]:
 
 def check(ctx: TektonContext) -> Finding:
     offenders: list[str] = []
+    locations: list[Location] = []
     examined = 0
     # ResourceAnchor phase 1: emit one k8s_sa anchor only when the
     # Task pins ``spec.podTemplate.serviceAccountName`` explicitly.
@@ -134,6 +135,7 @@ def check(ctx: TektonContext) -> Finding:
         for h in hits:
             offenders.append(f"{doc.kind}/{doc.name}: {h}")
         if hits:
+            locations.append(doc_location(doc))
             pt = spec.get("podTemplate")
             if isinstance(pt, dict):
                 sa = pt.get("serviceAccountName")
@@ -160,5 +162,6 @@ def check(ctx: TektonContext) -> Finding:
         check_id=RULE.id, title=RULE.title, severity=RULE.severity,
         resource="tekton", description=desc,
         recommendation=RULE.recommendation, passed=passed,
+        locations=locations,
         resource_anchors=tuple(anchor_set.values()),
     )

@@ -1,9 +1,9 @@
 """K8S-014. Pod ``hostPath`` references a sensitive host directory."""
 from __future__ import annotations
 
-from ...base import Finding, Severity
+from ...base import Finding, Location, Severity
 from ...rule import Rule
-from ..base import KubernetesContext, iter_volumes, iter_workload_pod_specs
+from ..base import KubernetesContext, iter_volumes, iter_workload_pod_specs, manifest_location
 
 #: Host paths whose mount inside a container amounts to cluster takeover.
 _SENSITIVE_PREFIXES: tuple[str, ...] = (
@@ -97,6 +97,7 @@ def _is_sensitive(path: str) -> bool:
 
 def check(ctx: KubernetesContext) -> Finding:
     offenders: list[str] = []
+    locations: list[Location] = []
     for m, ps in iter_workload_pod_specs(ctx):
         for v in iter_volumes(ps):
             hp = v.get("hostPath")
@@ -107,6 +108,7 @@ def check(ctx: KubernetesContext) -> Finding:
                 continue
             if _is_sensitive(path):
                 offenders.append(f"{m.kind}/{m.name}: {path}")
+                locations.append(manifest_location(m, v))
     passed = not offenders
     desc = (
         "No hostPath volume references a sensitive host directory."
@@ -120,4 +122,5 @@ def check(ctx: KubernetesContext) -> Finding:
         resource="kubernetes/manifests",
         description=desc,
         recommendation=RULE.recommendation, passed=passed,
+        locations=locations,
     )

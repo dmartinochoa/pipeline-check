@@ -10,6 +10,222 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 PRs landing on `dev` between releases append entries below. The
 release commit collapses this section into `## [X.Y.Z] - <date>`.
 
+### Added
+
+- **SBOM dependency extraction for Maven, NuGet, and Helm.** Both SBOM
+  outputs (`--output cyclonedx` and the new `--output spdx`) now include
+  Maven, NuGet, and Helm-chart build dependencies, not just GitHub Actions /
+  Dockerfile / npm / PyPI. The Maven provider emits each resolved
+  `<dependency>` (group:artifact@version, with `${prop}` substitution,
+  skipping `<dependencyManagement>` and version-less entries) as a
+  `pkg:maven/...` component; the NuGet provider emits each
+  `PackageReference` as a `pkg:nuget/...` component; the Helm provider emits
+  each `Chart.yaml` dependency as a `pkg:helm/name@version` component, with
+  a `?repository_url=` qualifier for HTTP / OCI chart repos. The GitLab
+  provider emits each `image:` / `services:` reference (top-level default
+  and per-job) as a `pkg:docker/...` container component, the runner images
+  a pipeline executes in, the GitLab parallel of the GitHub Actions
+  docker-step extraction. Version ranges, `LATEST` / `RELEASE`,
+  `-SNAPSHOT`, SemVer ranges, and mutable image tags are marked unpinned.
+  Closes most of the SBOM extractors deferred from v1.5.0.
+- **SPDX 2.3 SBOM output (`--output spdx`).** The SPDX-format parallel of
+  the existing `--output cyclonedx` SBOM, for toolchains and procurement
+  flows that require SPDX rather than CycloneDX. Emits the same build-time
+  dependency inventory (`scanner.sbom()`) as an SPDX 2.3 JSON document: each
+  dependency is an SPDX `package` with a `purl` `externalRef`, a digest (when
+  known) as a `checksums` entry, and the provider / kind / source / pinned
+  metadata in the package `comment`; the document `DESCRIBES` every package
+  via a relationship. No new dependency, the JSON is emitted directly.
+  Closes the SPDX format deferred from v1.5.0's build-time SBOM work.
+
+### Changed
+
+- **More hardcoded-credential formats detected.** The shared secret-shape
+  catalog (`_patterns.SECRET_DETECTORS`, used by GHA-008 and the
+  cross-provider literal-secret rules) gained four modern, high-confidence
+  token formats: Postman (`PMAK-`), Tailscale (`tskey-…`), Sentry auth
+  tokens (`sntrys_` / `sntryu_`), and OpenAI service-account keys
+  (`sk-svcacct-…`, previously only project/legacy keys matched). Each has a
+  specific fixed prefix, so a credential pasted into any scanned config now
+  surfaces instead of slipping through. Positive + undersized-negative
+  tests and `--man` catalog descriptions added for each.
+
+- **GHA-044 widened to container builds.** The build-tool PPE rule now
+  also flags `docker build` / `docker buildx build` in a `run:` step and
+  the `docker/build-push-action` action on an untrusted-trigger workflow
+  (`pull_request_target` / `workflow_run`). A container build executes the
+  checked-out `Dockerfile` (its `RUN` instructions) against a build context
+  that may be PR-controlled, so a fork-supplied Dockerfile is a poisoned-
+  pipeline-execution payload exactly like a tampered `package.json` /
+  `Makefile` / `setup.py`. No new rule ID; this is the widening the roadmap
+  reserved instead of a separate check.
+- **Lint and prose cleanup.** Fixed a latent `zip()`-without-`strict=`
+  (ruff B905) in the Jenkins pipeline-graph builder, and reworded the four
+  remaining AI-tic words (`robust` / `comprehensive` / two `leverage`) in
+  rule docstrings and one `known_fp` note to match the CLAUDE.md prose
+  convention. The whole package is now ruff-clean and passes
+  `mypy --strict` across all source files. No behavior change.
+- **Single source of truth for valid severity names.** `config.py` and
+  `policies.py` each hand-maintained an identical `_VALID_SEVERITIES`
+  frozenset used to validate `overrides:` severities (which change a
+  finding's gate severity). Both now import one `VALID_SEVERITY_NAMES` set
+  derived from the canonical `Severity` enum in `checks/base.py`, so the two
+  config loaders can't drift from each other or from the enum. No behavior
+  change.
+
+### Added
+
+- **TKN-016: remote resolver / bundle taskRef or pipelineRef not pinned
+  (HIGH).** Tekton's Resolution framework fetches the *body* of a Task or
+  Pipeline at run time from a remote source. TKN-001 pins the container
+  image a step runs, but a mutable resolver ref lets whoever controls the
+  upstream swap the executed task body itself. TKN-016 flags a `git`
+  resolver whose `revision` is not a full commit SHA, a `bundles` resolver
+  (or the legacy `taskRef.bundle`) image without an `@sha256:` digest, and
+  a `hub` resolver pinned to `latest` (or no version), across Pipeline
+  `spec.tasks` / `spec.finally`, `PipelineRun.spec.pipelineRef`, and
+  `TaskRun.spec.taskRef`. The `cluster` resolver is not flagged (it
+  references an already-admitted in-cluster object). Mapped across all
+  standards mirroring TKN-001's pinning controls. tekton 16 -> 17.
+
+- **HTML report: step-level pipeline graph for Buildkite (DAG v2).**
+  Extends the step-level DAG to Buildkite pipeline files
+  (`.buildkite/pipeline.yml`). Each command step is a node; `depends_on`
+  (by step `key`) becomes a `needs` edge, and `wait` / `block` / `input`
+  barriers become `stage` edges from every step in the previous wait-group
+  (so the parallel siblings between two barriers carry no false ordering
+  between themselves). `group:` steps flatten their children into the
+  current wait-group, and `trigger:` steps are skipped. A new
+  `checks/buildkite/_graph.py` builder with no contract change, so every
+  other reporter and provider is unchanged.
+- **HTML report: step-level pipeline graph for Azure DevOps (DAG v2).**
+  Extends the step-level DAG to Azure Pipelines (`azure-pipelines.yml`)
+  across all three shapes (flat `steps:`, flat `jobs:`, and
+  `stages:` → `jobs:` → `steps:`). Jobs are nodes with their steps nested
+  (deployment-strategy phases flattened); job `dependsOn` (resolved within
+  its stage) becomes a `needs` edge, and stages sequence via `stage`
+  edges, an explicit stage `dependsOn` when present, otherwise the
+  immediately preceding stage, into each stage's entry jobs (`dependsOn:
+  []` opts out). A new `checks/azure/_graph.py` builder with no contract
+  change.
+- **HTML report: step-level pipeline graph for Bitbucket Pipelines (DAG
+  v2).** Extends the step-level DAG to `bitbucket-pipelines.yml`. Bitbucket
+  ordering is positional (no `depends_on`): sequential steps chain via
+  `stage` edges, a `parallel` block runs its steps concurrently (no edge
+  between siblings, but the next step waits for all of them), and a
+  `stage`'s steps run in sequence. Every pipeline definition in the file
+  (`default` plus the `branches` / `pull-requests` / `custom` / `tags`
+  maps) renders as an independent chain in one graph, so a line-less
+  finding badges a single file root instead of double-counting onto each
+  definition. A new `checks/bitbucket/_graph.py` builder with no contract
+  change.
+- **HTML report: step-level pipeline graph for Jenkins (DAG v2).** Extends
+  the step-level DAG to Jenkinsfiles. Jenkins is Groovy, not YAML, so the
+  builder recovers each `stage('Name') { ... }` block's range from the
+  same depth-aware brace walk the provider already uses, then graphs the
+  top-level stages (a stage not contained in another stage's body) chained
+  sequentially with `stage` edges. Nested stages (the branches of a
+  `parallel { }` block, declarative sub-stages) fold into their enclosing
+  top-level stage rather than inventing edges the flat stage list can't
+  justify. A new `checks/jenkins/_graph.py` builder with no contract
+  change. This completes the DAG-v2 rollout for every YAML/Groovy
+  pipeline provider.
+- **HTML report: step-level pipeline graph for Tekton (DAG v2).** Renders
+  one graph per `Pipeline` document (tasks as nodes, `runAfter` plus
+  implicit `$(tasks.X.results.Y)` data dependencies as `needs` edges) and
+  one per `Task` / `ClusterTask` (steps chained sequentially), bounding
+  each graph's root to its document's line range like the Drone builder.
+  A new `checks/tekton/_graph.py` builder with no contract change.
+- **HTML report: step-level pipeline graph for Argo Workflows (DAG v2).**
+  Renders one graph per template-bearing document (`Workflow` /
+  `WorkflowTemplate` / `ClusterWorkflowTemplate` / `CronWorkflow`) whose
+  nodes are the `spec.templates`; a `dag` template's `tasks[].template` and
+  a `steps` template's `steps[][].template` invocations become `needs`
+  edges (caller to callee), with multi-doc roots bounded like the Drone
+  builder. A new `checks/argo/_graph.py` builder with no contract change.
+  **This completes the DAG-v2 rollout for every pipeline provider.**
+
+### Fixed
+
+- **Tekton and Argo literal-secret rules now use the full token catalog.**
+  TKN-005 and ARGO-006 matched only a hand-maintained six-pattern subset
+  (AWS / `ghp_` / `gho_` / broad `sk-` / JWT) for value-shape detection, so
+  a hardcoded GitLab PAT, Anthropic / OpenAI key, Docker Hub PAT, npm /
+  PyPI token, or any of the other 40+ vendor formats sitting in a Tekton or
+  Argo container `env:` value under an innocuous name slipped through. Both
+  now run value-shape detection through the shared
+  `_secrets.find_secret_values` catalog (49 detectors), the same one the
+  `*-008` literal-secret rules already use, while keeping their existing
+  env-name heuristics and FP guards.
+
+- **GHA-046 now catches more manual PR-head fetch bypasses (critical
+  false-negatives).** The manual-fetch companion to GHA-002 (CRITICAL,
+  fires on `pull_request_target` / `workflow_run`) missed two forms: a
+  `git fetch origin pull/<n>/{head,merge}` where `<n>` is an expression
+  (`pull/${{ github.event.number }}/merge`) rather than literal digits,
+  and `git checkout ${{ github.event.pull_request.merge_commit_sha }}`
+  (the merge commit contains the PR's code). Both are now detected;
+  non-PR refs (`git fetch origin main`, `pull/abc/head`) stay clean.
+
+- **GHA-002 now catches more PR-head checkout bypasses (critical
+  false-negatives).** The flagship `pull_request_target`-checks-out-PR-head
+  rule (CRITICAL) matched `head.sha` / `head.ref` / `github.head_ref` but
+  missed two documented bypass forms that still run attacker code with a
+  write-scope token and secrets: `github.event.pull_request.merge_commit_sha`
+  (the auto-generated merge commit *contains* the PR's code) and the literal
+  `refs/pull/<n>/head` / `refs/pull/<n>/merge` refs (often written as
+  `refs/pull/${{ github.event.number }}/merge`). The shared
+  `PR_HEAD_REF_RE` now covers all of them, so GHA-002 (and GHA-058, which
+  reused a narrower private copy now unified onto the shared pattern) flag
+  these checkouts. Safe refs (`github.sha`, `refs/heads/...`) are
+  unaffected.
+
+- **Tekton findings now carry source locations.** The per-step Tekton
+  rules (TKN-002 privileged step, TKN-003 parameter injection) attributed
+  their offenders through `job_anchors` (`<Kind>/<name>:<step>`) and set no
+  `Location`, so they reached the terminal report, SARIF, the blast-radius
+  heatmap, and the new pipeline graph with no file or line. The Tekton
+  orchestrator now resolves those anchors back to a document and step line
+  in one place (`TektonChecks.run`), matching the `Location` shape TKN-001
+  already sets natively. Detection, severity, and finding counts are
+  unchanged; findings that already carry locations or have no anchors are
+  left untouched. The aggregate Tekton rules (TKN-004/005/006/007/008/009/
+  010/011/013/014/015) now also attach a `Location` per offending document
+  via a shared `tekton/base.py::doc_location(doc, obj)` helper, so the whole
+  Tekton provider emits located findings (TKN-012 is a whole-scan
+  "no vulnerability scanner anywhere" finding with no resource to point at).
+- **Argo Workflows findings now carry source locations.** Same fix as the
+  Tekton one, applied to Argo: the per-template rules (ARGO-005 parameter
+  injection, ARGO-017 resource manifest injection) attributed offenders
+  through `job_anchors` (`<Kind>/<name>:<template>`) and set no `Location`.
+  `ArgoChecks.run` now resolves those anchors to a document and template
+  line (ARGO-001 / ARGO-002 already set locations natively), so the
+  findings carry file/line info in the terminal report, SARIF, the heatmap,
+  and the new pipeline graph. The aggregate Argo rules (ARGO-003/004/006/
+  007/008/009/010/011/013/014/015/016) now also attach a `Location` per
+  offending document via a shared `argo/base.py::doc_location(doc, obj)`
+  helper, so the whole Argo provider emits located findings (ARGO-012 is a
+  whole-scan "no vulnerability scanner anywhere" finding with no resource
+  to point at). With the Kubernetes and Tekton fixes, every K8s-CRD
+  provider now emits located findings.
+- **Every Kubernetes finding now carries a source location.** The
+  aggregate Kubernetes rules returned one Finding per check with
+  `resource="kubernetes/manifests"` and no `Location`, so they showed no
+  file or line in the terminal report, SARIF (GitHub code-scanning
+  annotations had nowhere to land), or the blast-radius heatmap. A shared
+  `manifest_location(manifest, obj)` helper now builds a `Location` (with
+  `doc_index` for multi-doc files) at the offending site, and all 23 rules
+  that previously omitted one attach a location per offender: the
+  workload-level rules (pod-security K8S-002/003/004/007/008/009/010, plus
+  K8S-011/012 service-account, K8S-014 hostPath, K8S-015/016 resource
+  limits, K8S-017 env credential, K8S-024 probes, K8S-025 priority class,
+  K8S-028 hostPort, K8S-030 control-plane scheduling) and the
+  manifest-level rules (K8S-019 default namespace, K8S-022 SSH service,
+  K8S-023 pod-security admission, K8S-027 ingress TLS, K8S-029 default-SA
+  binding, K8S-044 admission webhook). Detection, severity, and finding
+  counts are unchanged. The remaining document-level Tekton / Argo rules
+  are tracked as the next batch.
+
 ## [1.11.0] - 2026-06-06
 
 ### Added

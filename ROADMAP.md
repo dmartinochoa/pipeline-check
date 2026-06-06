@@ -354,9 +354,18 @@ What's planned, what's shipped, and what's deliberately out of scope.
   Dockerfile (FROM base images), npm (package.json deps), and PyPI
   (requirements.txt entries). Each component carries a PURL
   identifier. ``BaseProvider.build_dependencies()`` is the extension
-  point; providers not yet covered return an empty list. Deferred
-  to v2: GitLab include refs, Helm chart deps, Maven, NuGet, OCI,
-  SPDX output format. 49 tests.
+  point; providers not yet covered return an empty list. 49 tests.
+  (The deferred **SPDX 2.3 output** shipped 2026-06-06 on ``dev`` as
+  ``--output spdx``, the SPDX-format parallel of the CycloneDX reporter
+  over the same ``scanner.sbom()`` inventory; the deferred **Maven**,
+  **NuGet**, **Helm chart**, and **GitLab container-image** dependency
+  extractors also shipped 2026-06-06. Both SBOM formats now cover
+  npm / pypi / maven / nuget / gomod / cargo / composer / rubygems / helm
+  package deps plus GitHub Actions / Dockerfile / GitLab container images.
+  The only remaining build-dependency surface is OCI image references
+  (the OCI provider parses manifest *shape* by digest, with no clean
+  base-image name to emit as a package) and GitLab remote ``include:``
+  refs, both lower-value edge cases.)
 - **OPA/Rego custom rule engine (closes #176)** —
   ``--rego-rules ./policies/`` discovers ``.rego`` files, extracts
   metadata via ``opa inspect --annotations``, evaluates policies via
@@ -920,8 +929,14 @@ same day; the rest are queued for a later pass.
     rule pack is picked up automatically. The existing
     ``test_rules_fqn_parity_with_path_kw`` now also catches when the
     still-hardcoded ``_PROVIDER_PATH_KW`` drifts from it.
-  - Still queued: share one overrides/severity parser between
-    ``config.py`` and ``policies.py``.
+  - ~~Share one overrides/severity parser between ``config.py`` and
+    ``policies.py``.~~ Partly done 2026-06-06 on ``dev``: the duplicated
+    ``_VALID_SEVERITIES`` frozenset in both loaders is now one
+    ``VALID_SEVERITY_NAMES`` derived from the canonical ``Severity`` enum in
+    ``checks/base.py`` (drift-proof). The two ``overrides:`` parsers keep
+    their deliberately different error handling (config warns + continues,
+    policy raises ``PolicyError``), so only the shared validation set was
+    unified.
 - ~~**Close substring-match seams** (done 2026-06-06 on ``dev``).~~
   ``is_known_installer`` (``_context.py``) matched the curl-pipe
   allowlist by bare substring, so ``https://get.docker.com.evil.com/x``
@@ -1044,9 +1059,14 @@ queued here.**
 
 **Tier 3 (plausible, more scoping / FP risk):**
 
-- **TKN-016**: remote ``resolver`` (bundles / git / hub) ``taskRef`` /
+- ~~**TKN-016**: remote ``resolver`` (bundles / git / hub) ``taskRef`` /
   ``pipelineRef`` not pinned to a digest / immutable revision (the executed
-  Task body is fetched remotely; TKN-001 pins the image, not the body).
+  Task body is fetched remotely; TKN-001 pins the image, not the body).~~
+  Shipped 2026-06-06 on ``dev`` (HIGH). Flags a ``git`` resolver revision
+  that isn't a full commit SHA, a ``bundles`` resolver / legacy
+  ``taskRef.bundle`` image without ``@sha256:``, and a ``hub`` resolver on
+  ``latest``; across Pipeline ``tasks`` / ``finally``, PipelineRun, and
+  TaskRun. ``cluster`` resolver not flagged. tekton 16 -> 17.
 - **CC-034**: a reusable command / job ``parameters`` entry of ``type:
   steps`` (or an enum-less ``string``) spliced into a ``run`` via
   ``<< parameters.X >>`` (CC-002 explicitly treats ``<< parameters.* >>`` as
@@ -1059,8 +1079,11 @@ queued here.**
   scripts (COMPOSER-011 carves out the ``path`` type).
 - **DR-017**: a secret-bearing step reachable on a ``promote`` / ``rollback``
   event with no actor-trusted target gate (more runtime-trust dependent).
-- A ``docker build`` / ``docker/build-push-action`` PPE on an untrusted
-  trigger is better shipped as a *widening of GHA-044* than a new ID.
+- ~~A ``docker build`` / ``docker/build-push-action`` PPE on an untrusted
+  trigger is better shipped as a *widening of GHA-044* than a new ID.~~
+  Shipped 2026-06-06 on ``dev``: GHA-044 now flags ``docker build`` /
+  ``docker buildx build`` in a ``run:`` and the ``docker/build-push-action``
+  action (the checked-out ``Dockerfile`` is the PPE payload), no new ID.
 
 ### ~~``--inline-explain`` across every reporter~~ shipped
 
@@ -1117,17 +1140,96 @@ Multi-doc needed two things: (1) each graph's file-root is bounded to its
 document's line range, and (2) ``attach_findings`` only falls back to the
 root for a finding with NO positioned line on the file (a line that lands
 in no node belongs to another document) - this is the reusable fix for
-Tekton / Argo. Remaining pipeline providers (Azure, Bitbucket, Buildkite,
-Tekton, Argo, Jenkins) follow the same shape; IaC / SCA / cloud providers
-have no job DAG. Per-provider notes:
-Azure (single-doc, stages + jobs + steps, ``dependsOn`` by name with a
-``job:`` / ``deployment:`` prefix, within-stage resolution + deployment
-strategy step nesting), Bitbucket (parallel groups, multiple pipeline
-definitions per file), Buildkite (``depends_on`` by key + ``wait``
-barriers + ``group`` flattening), Drone / Tekton / Argo (multi-doc, need
-per-doc line bounds on the file root). Renderer reminder: only ``needs``
-and ``stage`` edges are drawn between boxes (``sequence`` is for step
-nesting only).
+Tekton / Argo. ~~**Buildkite** (increment 6, done 2026-06-06 on
+``dev``):~~ single-doc, each command step is a ``job`` node;
+``depends_on`` (by step ``key``) -> ``needs``, and ``wait`` / ``block`` /
+``input`` barriers -> ``stage`` edges from every step in the previous
+wait-group (parallel siblings between two barriers carry no edge between
+themselves, so the barrier shows without a false order); ``group:``
+children flatten into the current wait-group, ``trigger:`` steps skipped.
+~~**Azure** (increment 7, done 2026-06-06 on ``dev``):~~ single-doc, all
+three shapes (flat ``steps:``, flat ``jobs:``, ``stages:`` -> ``jobs:`` ->
+``steps:``); jobs are ``job`` nodes with steps nested (deployment-strategy
+phases flattened by ``iter_steps``); job ``dependsOn`` (resolved within
+its stage) -> ``needs``; stages sequence via ``stage`` edges into each
+stage's entry jobs (explicit stage ``dependsOn`` when present, else the
+preceding stage; ``dependsOn: []`` opts out) - the Buildkite wait-group
+shape lifted to the stage level.
+~~**Bitbucket** (increment 8, done 2026-06-06 on ``dev``):~~ ONE graph per
+file (definitions are alternative entry points, so they render as
+independent chains in one graph, which keeps a line-less finding from
+double-counting onto each definition's root). Ordering is positional (no
+``depends_on``): sequential steps -> ``stage`` edges, a ``parallel`` block
+is one concurrent group (no edge between siblings, next step waits for
+all), a ``stage``'s inner steps run sequentially.
+~~**Jenkins** (increment 9, done 2026-06-06 on ``dev``):~~ Groovy, not
+YAML, so the builder reuses the provider's depth-aware brace walk to
+recover each ``stage('Name')`` block's char range, keeps the TOP-LEVEL
+stages (a stage not contained in another stage's body), and chains them
+sequentially with ``stage`` edges. Nested stages (``parallel { }``
+branches, declarative sub-stages) fold into their enclosing top-level
+stage rather than inventing edges the flat stage list can't justify.
+~~**Tekton** (increment 10, done 2026-06-06 on ``dev``):~~ one graph per
+``Pipeline`` (tasks as nodes, ``runAfter`` + implicit
+``$(tasks.X.results.Y)`` data deps -> ``needs``) and per ``Task`` /
+``ClusterTask`` (steps sequential), multi-doc roots bounded like Drone.
+Unblocked by giving Tekton's per-step findings a ``Location``: the
+orchestrator (``TektonChecks.run``) now backfills the ``job_anchors``
+(``<Kind>/<name>:<step>``) of TKN-002 / TKN-003 into ``Location``s
+(TKN-001 already set them natively), so those findings overlay onto the
+graph and gain real file/line locations in the terminal / SARIF / heatmap
+too. (A first ``_graph.py`` was written, reverted when this prerequisite
+surfaced, then re-landed with the backfill, see git history.)
+~~**Argo** (increment 11, done 2026-06-06 on ``dev``):~~ one graph per
+template-bearing document; nodes are the ``spec.templates``, and a ``dag``
+template's ``tasks[].template`` / a ``steps`` template's
+``steps[][].template`` invocations become ``needs`` edges (caller ->
+callee), multi-doc roots bounded like Drone. Unblocked the same way as
+Tekton: ``ArgoChecks.run`` backfills the ``job_anchors``
+(``<Kind>/<name>:<template>``) of ARGO-005 / ARGO-017 into ``Location``s
+(ARGO-001 / ARGO-002 already set them natively).
+**THE DAG-V2 THREAD IS COMPLETE: every pipeline provider now ships a
+builder (#1-11).**
+**Overlay prerequisite (learned building the 6-11 batch):** a builder only
+renders if its provider's findings carry the file path so
+``attach_findings`` can place them (the HTML DAG section omits any graph
+with no attached finding). The CI/CD providers use ``resource=path``
+(fine); the K8s-CRD providers (kubernetes / argo / tekton) identify
+findings by ``resource="<provider>"`` and the AGGREGATE rules (one Finding
+per check across the corpus) set neither anchors nor a ``Location``. The
+Tekton + Argo increments fixed only their anchor-bearing per-step /
+per-template rules via the central orchestrator backfill. **Standalone
+follow-up (no longer DAG-blocking), IN PROGRESS:** the aggregate K8s-CRD
+rules show ``resource="<provider>"`` with no file/line in the terminal
+report / SARIF / heatmap. This is per-rule work (only anchor-bearing rules
+can be backfilled centrally). A shared
+``kubernetes/base.py::manifest_location(m, obj)`` helper now exists, and
+**the ENTIRE Kubernetes provider is done** (2026-06-06, all 44 rules carry
+locations; the 23 that lacked them were converted across three batches, all
+pinned by ``tests/kubernetes/test_finding_locations.py``): batch 1
+pod-security K8S-002/003/004/007/008/009/010, batch 2 the other
+workload-level rules (K8S-011/012/014/015/016/017/024/025/028/030), batch 3
+the manifest-level rules (K8S-019/022/023/027/029/044). **Tekton is also
+done** (2026-06-06): a ``tekton/base.py::doc_location(doc, obj)`` helper,
+and the aggregate rules TKN-004/005/006/007/008/009/010/011/013/014/015
+each attach a ``Location`` per offending document (pinned by
+``tests/tekton/test_aggregate_locations.py``); TKN-001 was native,
+TKN-002/003 use the anchor backfill, TKN-012 is a whole-scan
+"no scanner anywhere" finding with no resource to point at (left as-is),
+and TAINT-006 is the dataflow rule (separate). **Argo is also done**
+(2026-06-06): an ``argo/base.py::doc_location(doc, obj)`` helper, and the
+aggregate rules ARGO-003/004/006/007/008/009/010/011/013/014/015/016 each
+attach a ``Location`` per offending document / template / container (pinned
+by ``tests/argo/test_aggregate_locations.py``); ARGO-001/002 native,
+ARGO-005/017 anchor backfill, ARGO-012 whole-scan absence (left as-is),
+TAINT-007 dataflow (separate). **THE K8s-CRD FINDING-LOCATION SUB-THREAD IS
+COMPLETE: kubernetes, tekton, and argo all emit located findings** (only
+the two whole-scan vuln-scanner-absence rules and the TAINT dataflow rules
+are intentionally location-less). The reusable technique was the
+transactional script (write a Python script, per-file str.replace with
+count==1 asserts, then ``ruff check --fix`` for import order).
+Renderer reminder: only ``needs`` and ``stage`` edges are drawn between
+boxes (``sequence`` is for step nesting only).
 
 ### Reachability-aware attack chains
 

@@ -1,9 +1,9 @@
 """K8S-019. Workload deployed in the ``default`` namespace."""
 from __future__ import annotations
 
-from ...base import Finding, Severity
+from ...base import Finding, Location, Severity
 from ...rule import Rule
-from ..base import KubernetesContext, is_workload
+from ..base import KubernetesContext, is_workload, manifest_location
 
 RULE = Rule(
     id="K8S-019",
@@ -34,12 +34,14 @@ RULE = Rule(
 
 def check(ctx: KubernetesContext) -> Finding:
     offenders: list[str] = []
+    locations: list[Location] = []
     for m in ctx.manifests:
         if not is_workload(m):
             continue
         ns = m.namespace or ""
         if ns == "" or ns == "default":
             offenders.append(f"{m.kind}/{m.name}")
+            locations.append(manifest_location(m, m.data))
     passed = not offenders
     desc = (
         "No workload is deployed in the default namespace."
@@ -53,4 +55,5 @@ def check(ctx: KubernetesContext) -> Finding:
         resource="kubernetes/manifests",
         description=desc,
         recommendation=RULE.recommendation, passed=passed,
+        locations=locations,
     )

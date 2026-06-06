@@ -357,6 +357,7 @@ STANDARD = Standard(
         "BK-015":   ["Build.L3.Isolated"],                         # agents map untrusted interpolation
         # ── Tekton ────────────────────────────────────────────────
         "TKN-001":  ["Build.L3.NonFalsifiable"],                   # step image not digest-pinned
+        "TKN-016": ["Build.L3.NonFalsifiable"],  # remote resolver / bundle task body not pinned
         "TKN-002":  ["Build.L3.Isolated"],                         # step privileged / root
         "TKN-003":  ["Build.L3.Isolated"],                         # param injection in script
         "TKN-004":  ["Build.L3.Isolated"],                         # hostPath / host namespaces

@@ -21,7 +21,8 @@ from pathlib import Path
 from typing import Any
 
 from .._yaml_files import load_yaml_files
-from ..base import BaseCheck
+from .._yaml_lines import line_of as _line_of
+from ..base import BaseCheck, Location
 
 #: Kinds we recognize as Tekton resources.
 TEKTON_KINDS: frozenset[str] = frozenset({
@@ -125,6 +126,24 @@ class TektonBaseCheck(BaseCheck[TektonContext]):
 
 
 # ── Helpers shared by multiple rule modules ────────────────────────────
+
+
+def doc_location(doc: TektonDoc, obj: Any = None) -> Location:
+    """Build a :class:`Location` pointing at *obj* within document *doc*.
+
+    *obj* is the most specific dict available at the offending site (a
+    step, sidecar, workspace, ...); the location uses its source line,
+    falling back to the document's line when *obj* isn't line-tagged.
+    Carries ``doc_index`` so a finding in one document of a multi-doc file
+    resolves to the right resource, matching the shape TKN-001 sets
+    natively.
+    """
+    line = _line_of(obj) if isinstance(obj, dict) else None
+    if line is None:
+        line = _line_of(doc.data)
+    return Location(
+        path=doc.path, start_line=line, end_line=line, doc_index=doc.doc_index,
+    )
 
 
 def task_steps(doc: TektonDoc) -> list[dict[str, Any]]:

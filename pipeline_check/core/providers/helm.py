@@ -26,7 +26,15 @@ from ..checks.helm.base import HelmContext
 from ..checks.helm.charts_check import HelmChartChecks
 from ..checks.kubernetes.manifests import KubernetesManifestChecks
 from ..inventory import Component
+from ..sbom import BuildDependency, make_helm_purl
 from .base import BaseProvider
+
+
+def _helm_pinned(version: str) -> bool:
+    """A Helm dependency version is pinned only when it's an exact
+    version. SemVer ranges (``^1.2``, ``~1.2``, ``>=1.0``, ``1.x``, ``*``)
+    resolve to whatever the repo currently offers."""
+    return bool(version) and not any(c in version for c in "^~><=*x| ")
 
 
 class HelmProvider(BaseProvider):
@@ -63,6 +71,31 @@ class HelmProvider(BaseProvider):
         # of each chart on disk). HelmContext IS-A KubernetesContext,
         # so the K8s orchestrator accepts it unchanged.
         return [KubernetesManifestChecks, HelmChartChecks]
+
+    def build_dependencies(
+        self, context: HelmContext,
+    ) -> list[BuildDependency]:
+        deps: list[BuildDependency] = []
+        for chart in context.charts:
+            for dep in chart.dependencies:
+                name = dep.get("name")
+                version = dep.get("version")
+                if not isinstance(name, str) or not isinstance(version, str):
+                    continue
+                if not name.strip() or not version.strip():
+                    continue
+                repo = dep.get("repository")
+                repo = repo if isinstance(repo, str) else ""
+                deps.append(BuildDependency(
+                    name=name,
+                    version=version,
+                    dep_type="helm",
+                    purl=make_helm_purl(name, version, repo),
+                    provider=self.NAME,
+                    source=chart.chart_yaml_path,
+                    pinned=_helm_pinned(version),
+                ))
+        return deps
 
     def inventory(self, context: HelmContext) -> list[Component]:
         out: list[Component] = []

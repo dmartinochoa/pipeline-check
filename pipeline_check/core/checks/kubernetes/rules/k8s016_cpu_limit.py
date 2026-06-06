@@ -3,13 +3,14 @@ from __future__ import annotations
 
 from typing import Any
 
-from ...base import Finding, Severity
+from ...base import Finding, Location, Severity
 from ...rule import Rule
 from ..base import (
     KubernetesContext,
     container_name,
     iter_containers,
     iter_workload_pod_specs,
+    manifest_location,
 )
 
 RULE = Rule(
@@ -51,12 +52,14 @@ def _has_cpu_limit(c: dict[str, Any]) -> bool:
 
 def check(ctx: KubernetesContext) -> Finding:
     offenders: list[str] = []
+    locations: list[Location] = []
     for m, ps in iter_workload_pod_specs(ctx):
         for kind, c in iter_containers(ps):
             if not _has_cpu_limit(c):
                 offenders.append(
                     f"{m.kind}/{m.name} {kind}={container_name(c)}"
                 )
+                locations.append(manifest_location(m, c))
     passed = not offenders
     desc = (
         "Every container declares a CPU limit."
@@ -70,4 +73,5 @@ def check(ctx: KubernetesContext) -> Finding:
         resource="kubernetes/manifests",
         description=desc,
         recommendation=RULE.recommendation, passed=passed,
+        locations=locations,
     )

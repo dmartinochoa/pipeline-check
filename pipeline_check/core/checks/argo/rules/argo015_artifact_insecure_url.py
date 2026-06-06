@@ -3,9 +3,9 @@ from __future__ import annotations
 
 from typing import Any
 
-from ...base import Finding, Severity
+from ...base import Finding, Location, Severity
 from ...rule import Rule
-from ..base import ArgoContext, iter_templates, template_name
+from ..base import ArgoContext, doc_location, iter_templates, template_name
 
 RULE = Rule(
     id="ARGO-015",
@@ -119,6 +119,7 @@ def _template_artifacts(tmpl: dict[str, Any]) -> list[dict[str, Any]]:
 
 def check(ctx: ArgoContext) -> Finding:
     offenders: list[str] = []
+    locations: list[Location] = []
     for doc in ctx.docs:
         for idx, tmpl in enumerate(iter_templates(doc)):
             for art in _template_artifacts(tmpl):
@@ -129,6 +130,7 @@ def check(ctx: ArgoContext) -> Finding:
                         f"{template_name(tmpl, idx)} "
                         f"artifact[{art.get('name', '?')}]: {reason}"
                     )
+                    locations.append(doc_location(doc, tmpl))
     if not ctx.docs:
         return Finding(
             check_id=RULE.id, title=RULE.title, severity=RULE.severity,
@@ -148,4 +150,5 @@ def check(ctx: ArgoContext) -> Finding:
         check_id=RULE.id, title=RULE.title, severity=RULE.severity,
         resource="argo", description=desc,
         recommendation=RULE.recommendation, passed=passed,
+        locations=locations,
     )

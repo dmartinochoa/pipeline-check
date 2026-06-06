@@ -81,7 +81,7 @@ RULE = Rule(
 
 
 def _classify_image(image: str) -> PinKind:
-    """Robust wrapper, tolerate non-string image fields gracefully."""
+    """Defensive wrapper, tolerate non-string image fields gracefully."""
     if not isinstance(image, str) or not image.strip():
         # An entirely missing ``image:`` is its own bug, but it
         # isn't this rule's bug, treat as pinned (NO finding) so

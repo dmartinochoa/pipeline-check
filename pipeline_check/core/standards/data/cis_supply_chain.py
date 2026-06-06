@@ -410,6 +410,7 @@ STANDARD = Standard(
         "BK-015":   ["2.1.3"],                     # agents map interpolates untrusted variable
         # ── Tekton ────────────────────────────────────────────────
         "TKN-001":  ["1.4.1", "3.1.3"],            # step image not digest-pinned
+        "TKN-016": ["1.4.1", "3.1.3"],  # remote resolver / bundle task body not pinned
         "TKN-002":  ["2.1.3"],                     # step privileged
         "TKN-003":  ["2.1.3", "2.3.8"],            # param injection
         "TKN-004":  ["2.1.3"],                     # hostPath / host namespaces

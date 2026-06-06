@@ -531,6 +531,71 @@ class TestGHA044BuildToolPPE:
         f = run_check(wf, "GHA-044")
         assert f.passed
 
+    def test_fails_on_docker_build_under_pull_request_target(self):
+        wf = """
+        name: pr-build
+        on: pull_request_target
+        jobs:
+          build:
+            runs-on: ubuntu-22.04
+            timeout-minutes: 10
+            permissions: { contents: read }
+            steps:
+              - run: docker build -t app .
+        """
+        f = run_check(wf, "GHA-044")
+        assert not f.passed
+        assert "docker build" in f.description.lower()
+
+    def test_fails_on_docker_buildx_build(self):
+        wf = """
+        name: pr-build
+        on: pull_request_target
+        jobs:
+          build:
+            runs-on: ubuntu-22.04
+            timeout-minutes: 10
+            permissions: { contents: read }
+            steps:
+              - run: docker buildx build --push -t reg/app .
+        """
+        f = run_check(wf, "GHA-044")
+        assert not f.passed
+
+    def test_fails_on_docker_build_push_action(self):
+        wf = """
+        name: pr-build
+        on: pull_request_target
+        jobs:
+          build:
+            runs-on: ubuntu-22.04
+            timeout-minutes: 10
+            permissions: { contents: read }
+            steps:
+              - uses: docker/build-push-action@v6
+                with: { push: false }
+        """
+        f = run_check(wf, "GHA-044")
+        assert not f.passed
+        assert "build-push-action" in f.description.lower()
+
+    def test_passes_on_docker_build_under_trusted_trigger(self):
+        wf = """
+        name: release
+        on:
+          push: { branches: [main] }
+        jobs:
+          ship:
+            runs-on: ubuntu-22.04
+            timeout-minutes: 10
+            permissions: { contents: read }
+            steps:
+              - run: docker build -t app .
+              - uses: docker/build-push-action@v6
+        """
+        f = run_check(wf, "GHA-044")
+        assert f.passed
+
     def test_fails_on_bun_install_under_pull_request_target(self):
         wf = """
         name: pr-build
@@ -753,6 +818,41 @@ class TestGHA046ManualPRFetch:
             steps:
               - uses: actions/checkout@a5ac7e51b41094c92402da3b24376905380afc29
               - run: git fetch origin pull/123/head
+        """
+        f = run_check(wf, "GHA-046")
+        assert not f.passed
+
+    def test_fails_on_git_fetch_pull_with_expression_number(self):
+        # The PR number is an expression, not a literal, a bypass of
+        # ``pull/\\d+/`` digit-only matching.
+        wf = """
+        name: pr-test
+        on: pull_request_target
+        jobs:
+          test:
+            runs-on: ubuntu-22.04
+            timeout-minutes: 10
+            permissions: { contents: read }
+            steps:
+              - uses: actions/checkout@a5ac7e51b41094c92402da3b24376905380afc29
+              - run: git fetch origin pull/${{ github.event.number }}/merge
+        """
+        f = run_check(wf, "GHA-046")
+        assert not f.passed
+
+    def test_fails_on_git_checkout_merge_commit_sha(self):
+        # The merge commit contains the PR's code merged into base.
+        wf = """
+        name: pr-test
+        on: pull_request_target
+        jobs:
+          test:
+            runs-on: ubuntu-22.04
+            timeout-minutes: 10
+            permissions: { contents: read }
+            steps:
+              - uses: actions/checkout@a5ac7e51b41094c92402da3b24376905380afc29
+              - run: git checkout ${{ github.event.pull_request.merge_commit_sha }}
         """
         f = run_check(wf, "GHA-046")
         assert not f.passed

@@ -400,6 +400,28 @@ class TestARGO006LiteralSecrets:
         f = run_check(cfg, "ARGO-006")
         assert f.passed
 
+    def test_fails_with_modern_token_under_innocuous_name(self):
+        # A GitLab PAT under a non-credential-looking env name, caught by
+        # the shared vendor-token catalog, not the name heuristic.
+        cfg = """
+        apiVersion: argoproj.io/v1alpha1
+        kind: Workflow
+        metadata:
+          name: w
+        spec:
+          entrypoint: main
+          serviceAccountName: ci
+          templates:
+            - name: main
+              container:
+                image: alpine:3
+                env:
+                  - name: REGISTRY_AUTH
+                    value: "glpat-abcdefghij1234567890"
+        """
+        f = run_check(cfg, "ARGO-006")
+        assert not f.passed
+
 
 # ── ARGO-007 activeDeadlineSeconds ────────────────────────────────────
 

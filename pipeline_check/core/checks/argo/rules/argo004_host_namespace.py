@@ -5,9 +5,9 @@ import json
 import re
 from typing import Any
 
-from ...base import Finding, Severity
+from ...base import Finding, Location, Severity
 from ...rule import Rule
-from ..base import ArgoContext, workflow_spec
+from ..base import ArgoContext, doc_location, workflow_spec
 
 RULE = Rule(
     id="ARGO-004",
@@ -119,10 +119,12 @@ def _scan_pod_spec_patch(spec: dict[str, Any]) -> list[str]:
 
 def check(ctx: ArgoContext) -> Finding:
     offenders: list[str] = []
+    locations: list[Location] = []
     for doc in ctx.docs:
         spec = workflow_spec(doc)
         for h in _scan_volumes(spec) + _scan_pod_spec_patch(spec):
             offenders.append(f"{doc.kind}/{doc.name}: {h}")
+            locations.append(doc_location(doc))
     if not ctx.docs:
         return Finding(
             check_id=RULE.id, title=RULE.title, severity=RULE.severity,
@@ -142,4 +144,5 @@ def check(ctx: ArgoContext) -> Finding:
         check_id=RULE.id, title=RULE.title, severity=RULE.severity,
         resource="argo", description=desc,
         recommendation=RULE.recommendation, passed=passed,
+        locations=locations,
     )

@@ -52,7 +52,10 @@ RULE = Rule(
         "lifecycle hooks; ``pip install .`` runs the PR's "
         "``setup.py``; ``make`` runs the PR's ``Makefile``; ``mvn`` "
         "/ ``gradle`` load plugins declared in the PR's ``pom.xml`` "
-        "/ ``build.gradle``; ``cargo build`` runs ``build.rs``. "
+        "/ ``build.gradle``; ``cargo build`` runs ``build.rs``; "
+        "``docker build`` / ``docker/build-push-action`` execute the "
+        "PR's ``Dockerfile`` (its ``RUN`` instructions) against the "
+        "checked-out build context. "
         "Under ``pull_request_target`` / ``workflow_run``, the "
         "surrounding context already has secrets and a write-scope "
         "token, so the lifecycle hook is the entire attack."
@@ -187,7 +190,16 @@ _BUILD_TOOL_PATTERNS: tuple[tuple[str, re.Pattern[str]], ...] = (
      # ``go generate`` executes directives baked into source files;
      # ``go build`` doesn't auto-run external scripts so it's omitted.
      re.compile(r"^\s*(?:sudo\s+)?go\s+generate(?:\s|$)")),
+    ("docker build",
+     # ``docker build`` / ``docker buildx build`` execute the PR's
+     # ``Dockerfile`` (its ``RUN`` instructions) against the checked-out
+     # build context, so a fork-supplied Dockerfile is the payload.
+     re.compile(r"^\s*(?:sudo\s+)?docker\s+(?:buildx\s+)?build\b")),
 )
+
+# ``docker/build-push-action`` builds the PR's Dockerfile on the runner,
+# the ``uses:`` equivalent of a ``docker build`` run step.
+_USES_BUILD_RE = re.compile(r"^docker/build-push-action(?:/|@)")
 
 
 def _scan_run(run_body: str) -> str | None:
@@ -216,11 +228,13 @@ def check(path: str, doc: dict[str, Any]) -> Finding:
     for job_id, job in iter_jobs(doc):
         for idx, step in enumerate(iter_steps(job)):
             run = step.get("run")
-            if not isinstance(run, str):
-                continue
-            hit = _scan_run(run)
-            if hit is not None:
-                offenders.append(f"{job_id}[{idx}]: {hit}")
+            if isinstance(run, str):
+                hit = _scan_run(run)
+                if hit is not None:
+                    offenders.append(f"{job_id}[{idx}]: {hit}")
+            uses = step.get("uses")
+            if isinstance(uses, str) and _USES_BUILD_RE.match(uses):
+                offenders.append(f"{job_id}[{idx}]: docker/build-push-action")
     passed = not offenders
     desc = (
         f"No build-tool invocation detected on untrusted trigger(s) "

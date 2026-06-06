@@ -565,6 +565,7 @@ STANDARD = Standard(
         "DR-016":   ["CC8.1"],              # image field interpolation
         # ── Tekton (K8s-native pipeline kinds) ────────────────────
         "TKN-001":  ["CC8.1"],              # step image not digest-pinned
+        "TKN-016": ["CC8.1"],  # remote resolver / bundle task body not pinned
         "TKN-002":  ["CC6.1", "CC6.8"],     # step privileged / root
         "TKN-003":  ["CC6.8"],              # param injection in script
         "TKN-004":  ["CC6.6", "CC6.8"],     # hostPath / host namespaces

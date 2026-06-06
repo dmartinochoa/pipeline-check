@@ -3,9 +3,9 @@ from __future__ import annotations
 
 from typing import Any
 
-from ...base import Finding, Severity
+from ...base import Finding, Location, Severity
 from ...rule import Rule
-from ..base import TektonContext, TektonDoc
+from ..base import TektonContext, TektonDoc, doc_location
 
 RULE = Rule(
     id="TKN-013",
@@ -121,6 +121,7 @@ def _sidecar_name(sidecar: dict[str, Any], idx: int) -> str:
 
 def check(ctx: TektonContext) -> Finding:
     offenders: list[str] = []
+    locations: list[Location] = []
     examined = 0
     for doc in ctx.docs:
         if doc.kind not in ("Task", "ClusterTask"):
@@ -136,6 +137,7 @@ def check(ctx: TektonContext) -> Finding:
                     f"{doc.kind}/{doc.name} {_sidecar_name(sc, idx)}: "
                     f"{', '.join(issues)}"
                 )
+                locations.append(doc_location(doc, sc))
     if examined == 0:
         return Finding(
             check_id=RULE.id, title=RULE.title, severity=RULE.severity,
@@ -155,4 +157,5 @@ def check(ctx: TektonContext) -> Finding:
         check_id=RULE.id, title=RULE.title, severity=RULE.severity,
         resource="tekton", description=desc,
         recommendation=RULE.recommendation, passed=passed,
+        locations=locations,
     )

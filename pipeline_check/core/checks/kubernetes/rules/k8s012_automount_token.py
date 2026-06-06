@@ -1,9 +1,9 @@
 """K8S-012. Pod ``automountServiceAccountToken`` not explicitly false."""
 from __future__ import annotations
 
-from ...base import Finding, Severity
+from ...base import Finding, Location, Severity
 from ...rule import Rule
-from ..base import KubernetesContext, iter_workload_pod_specs
+from ..base import KubernetesContext, iter_workload_pod_specs, manifest_location
 
 RULE = Rule(
     id="K8S-012",
@@ -62,9 +62,11 @@ RULE = Rule(
 
 def check(ctx: KubernetesContext) -> Finding:
     offenders: list[str] = []
+    locations: list[Location] = []
     for m, ps in iter_workload_pod_specs(ctx):
         if ps.get("automountServiceAccountToken") is not False:
             offenders.append(f"{m.kind}/{m.name}")
+            locations.append(manifest_location(m, ps))
     passed = not offenders
     desc = (
         "Every workload sets automountServiceAccountToken: false."
@@ -78,4 +80,5 @@ def check(ctx: KubernetesContext) -> Finding:
         resource="kubernetes/manifests",
         description=desc,
         recommendation=RULE.recommendation, passed=passed,
+        locations=locations,
     )

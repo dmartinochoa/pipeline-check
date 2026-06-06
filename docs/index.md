@@ -98,17 +98,6 @@ CloudFormation templates before provisioning. Same rule IDs, same severities.
 
 <div class="pg-feature" markdown>
 <div class="pg-feature__icon">
-<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
-</div>
-### CI gate that does its job
-Severity thresholds, baseline diffs against a git ref, ignore files with
-expiries, glob check selection, autofix emit-or-apply. Failing the build is
-the default; turning it off is opt-in.
-<a class="pg-feature__link" href="ci_gate/">CI gate</a>
-</div>
-
-<div class="pg-feature" markdown>
-<div class="pg-feature__icon">
 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
 </div>
 ### Attack-chain correlation
@@ -120,19 +109,6 @@ attacker-controllable input across cross-step boundaries on five providers
 through that host's native channel: `$GITHUB_OUTPUT`, dotenv artifact,
 `buildkite-agent meta-data`, Tekton results, Argo `outputs.parameters`.
 <a class="pg-feature__link" href="attack_chains/">Attack chains</a>
-</div>
-
-<div class="pg-feature" markdown>
-<div class="pg-feature__icon">
-<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><circle cx="5" cy="6" r="2"/><circle cx="19" cy="6" r="2"/><circle cx="12" cy="18" r="2"/><path d="M7 7l4 9M17 7l-4 9"/></svg>
-</div>
-### Org-wide fleet scanning
-Point `fleet --from-org <org>` (or `--repos repos.yml`) at a whole GitHub /
-GitLab / Bitbucket org. It clones and scans every repo in parallel, writes one
-graded digest ranked worst-first, and re-runs the cross-repo `CXPC-NNN` attack
-chains over the union, catching risks that only exist *between* repos. A posture
-graph (repos as nodes, cross-repo chains as edges) ships in `fleet.json`.
-<a class="pg-feature__link" href="fleet/">Fleet scanning</a>
 </div>
 
 <div class="pg-feature" markdown>
@@ -150,6 +126,55 @@ Off by default so the base scan stays hermetic.
 
 <div class="pg-feature" markdown>
 <div class="pg-feature__icon">
+<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7l9-4 9 4-9 4-9-4z"/><path d="M3 12l9 4 9-4"/><path d="M3 17l9 4 9-4"/></svg>
+</div>
+### Benchmarked on real goats
+Recall is locked against deliberately-vulnerable training repos: 100% on
+`cicd-goat`, `cfngoat`, and `kubernetes-goat`. Every rule change that stops a
+goat finding from firing trips the bench in CI, so coverage can't silently
+regress between releases.
+<a class="pg-feature__link" href="goat_bench/">GOAT bench</a>
+</div>
+
+<div class="pg-feature" markdown>
+<div class="pg-feature__icon">
+<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg>
+</div>
+### Findings that fix themselves
+111 of the checks ship a one-shot patch. `--fix` prints a unified diff you can
+pipe to `git apply`, `--apply` writes the edits in place, and the `fix-pr`
+subcommand commits them to a fresh branch and opens the pull request (or GitLab
+MR). Fixers carry a `safe` / `unsafe` tier, so the default pass only touches
+edits that can't change behavior, and they're idempotent.
+<a class="pg-feature__link" href="ci_gate/#autofix-fix">Autofix</a>
+</div>
+
+<div class="pg-feature" markdown>
+<div class="pg-feature__icon">
+<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
+</div>
+### CI gate that does its job
+Severity thresholds, baseline diffs against a git ref, ignore files with
+expiries, glob check selection, autofix emit-or-apply. Failing the build is
+the default; turning it off is opt-in.
+<a class="pg-feature__link" href="ci_gate/">CI gate</a>
+</div>
+
+<div class="pg-feature" markdown>
+<div class="pg-feature__icon">
+<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><circle cx="5" cy="6" r="2"/><circle cx="19" cy="6" r="2"/><circle cx="12" cy="18" r="2"/><path d="M7 7l4 9M17 7l-4 9"/></svg>
+</div>
+### Org-wide fleet scanning
+Point `fleet --from-org <org>` (or `--repos repos.yml`) at a whole GitHub /
+GitLab / Bitbucket org. It clones and scans every repo in parallel, writes one
+graded digest ranked worst-first, and re-runs the cross-repo `CXPC-NNN` attack
+chains over the union, catching risks that only exist *between* repos. A posture
+graph (repos as nodes, cross-repo chains as edges) ships in `fleet.json`.
+<a class="pg-feature__link" href="fleet/">Fleet scanning</a>
+</div>
+
+<div class="pg-feature" markdown>
+<div class="pg-feature__icon">
 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
 </div>
 ### Output that integrates
@@ -158,16 +183,6 @@ per-resource blast-radius heatmap and an attack-chains panel) for sharing,
 SARIF 2.1.0 for GitHub code scanning and Defender for DevOps, plus
 markdown for PR comments and JUnit XML for test-runner UIs.
 <a class="pg-feature__link" href="output/">Output formats</a>
-</div>
-
-<div class="pg-feature" markdown>
-<div class="pg-feature__icon">
-<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M2 12h20M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
-</div>
-### Zero phone-home
-Workflow files are parsed from disk. AWS uses the standard boto3 credential
-chain. Nothing leaves your machine. MIT licensed, no signup, no account.
-<a class="pg-feature__link" href="https://github.com/dmartinochoa/pipeline-check">GitHub</a>
 </div>
 
 <div class="pg-feature" markdown>
@@ -185,18 +200,6 @@ source lives at <a href="https://github.com/greylag-ci/pipeline-check-vscode">gr
 
 <div class="pg-feature" markdown>
 <div class="pg-feature__icon">
-<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7l9-4 9 4-9 4-9-4z"/><path d="M3 12l9 4 9-4"/><path d="M3 17l9 4 9-4"/></svg>
-</div>
-### Benchmarked on real goats
-Recall is locked against deliberately-vulnerable training repos: 100% on
-`cicd-goat`, `cfngoat`, and `kubernetes-goat`. Every rule change that stops a
-goat finding from firing trips the bench in CI, so coverage can't silently
-regress between releases.
-<a class="pg-feature__link" href="goat_bench/">GOAT bench</a>
-</div>
-
-<div class="pg-feature" markdown>
-<div class="pg-feature__icon">
 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="12" rx="2"/><path d="M8 20h8"/><path d="M12 16v4"/><circle cx="9" cy="10" r="1"/><circle cx="15" cy="10" r="1"/></svg>
 </div>
 ### MCP server for AI clients
@@ -204,6 +207,16 @@ Drive scans and introspect the rule catalog from Claude Desktop, Claude Code,
 Cursor, Continue, or Zed over the Model Context Protocol. Runs locally on
 stdio: no network egress, no telemetry, no API tokens.
 <a class="pg-feature__link" href="mcp/">MCP server</a>
+</div>
+
+<div class="pg-feature" markdown>
+<div class="pg-feature__icon">
+<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M2 12h20M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
+</div>
+### Zero phone-home
+Workflow files are parsed from disk. AWS uses the standard boto3 credential
+chain. Nothing leaves your machine. MIT licensed, no signup, no account.
+<a class="pg-feature__link" href="https://github.com/dmartinochoa/pipeline-check">GitHub</a>
 </div>
 
 </div>

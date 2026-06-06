@@ -3,11 +3,12 @@ from __future__ import annotations
 
 from typing import Any
 
-from ...base import Finding, Severity
+from ...base import Finding, Location, Severity
 from ...rule import Rule
 from ..base import (
     KubernetesContext,
     iter_workload_pod_specs,
+    manifest_location,
 )
 
 #: Node-role labels that mark a control-plane node. ``master`` is the
@@ -112,6 +113,7 @@ def _toleration_targets_cp(tolerations: Any) -> bool:
 
 def check(ctx: KubernetesContext) -> Finding:
     offenders: list[str] = []
+    locations: list[Location] = []
     for m, ps in iter_workload_pod_specs(ctx):
         if m.namespace in _EXEMPT_NAMESPACES:
             continue
@@ -122,6 +124,7 @@ def check(ctx: KubernetesContext) -> Finding:
             hits.append("tolerations")
         if hits:
             offenders.append(f"{m.kind}/{m.name}: {'+'.join(hits)}")
+            locations.append(manifest_location(m, ps))
     passed = not offenders
     desc = (
         "No non-system workload targets the control-plane node role."
@@ -135,4 +138,5 @@ def check(ctx: KubernetesContext) -> Finding:
         resource="kubernetes/manifests",
         description=desc,
         recommendation=RULE.recommendation, passed=passed,
+        locations=locations,
     )

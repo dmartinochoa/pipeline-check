@@ -181,6 +181,7 @@ STANDARD = Standard(
         "BK-013":   ["6.4.3"],                           # deploy w/o branches filter
         # Tekton. Kubernetes-native pipeline kinds.
         "TKN-001":  ["6.3.3"],                           # step image not digest-pinned
+        "TKN-016": ["6.3.3"],  # remote resolver / bundle task body not pinned
         "TKN-002":  ["6.4.1", "6.5.1"],                  # step privileged
         "TKN-003":  ["6.5.1"],                           # param injection
         "TKN-004":  ["6.4.1"],                           # hostPath / host namespaces

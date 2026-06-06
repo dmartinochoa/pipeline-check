@@ -55,6 +55,7 @@ from typing import Any
 import yaml
 
 from ._yaml_strict import safe_load_strict as _safe_load_strict
+from .checks.base import VALID_SEVERITY_NAMES as _VALID_SEVERITIES
 
 #: Search roots, in priority order, for policy YAML files relative to
 #: cwd. First existing directory wins; later directories are skipped so
@@ -66,9 +67,6 @@ POLICY_DIRS: tuple[str, ...] = (
 
 _POLICY_SUFFIXES: tuple[str, ...] = (".yml", ".yaml")
 
-_VALID_SEVERITIES: frozenset[str] = frozenset({
-    "CRITICAL", "HIGH", "MEDIUM", "LOW", "INFO",
-})
 _VALID_GRADES: frozenset[str] = frozenset({"A", "B", "C", "D"})
 
 _GATE_KEYS: frozenset[str] = frozenset({

@@ -3,13 +3,14 @@ from __future__ import annotations
 
 from typing import Any
 
-from ...base import Finding, Severity
+from ...base import Finding, Location, Severity
 from ...rule import Rule
 from ..base import (
     KubernetesContext,
     container_name,
     iter_containers,
     iter_workload_pod_specs,
+    manifest_location,
 )
 
 #: Capabilities that grant kernel-level escape paths if added to a container.
@@ -94,6 +95,7 @@ def _cap_list(caps: dict[str, Any], key: str) -> list[str]:
 
 def check(ctx: KubernetesContext) -> Finding:
     offenders: list[str] = []
+    locations: list[Location] = []
     for m, ps in iter_workload_pod_specs(ctx):
         for kind, c in iter_containers(ps):
             caps = _sec_ctx(c).get("capabilities") or {}
@@ -112,6 +114,7 @@ def check(ctx: KubernetesContext) -> Finding:
                     f"{m.kind}/{m.name} {kind}={container_name(c)} "
                     f"({'; '.join(why)})"
                 )
+                locations.append(manifest_location(m, c))
     passed = not offenders
     desc = (
         "Every container drops ALL capabilities and adds none that "
@@ -126,4 +129,5 @@ def check(ctx: KubernetesContext) -> Finding:
         resource="kubernetes/manifests",
         description=desc,
         recommendation=RULE.recommendation, passed=passed,
+        locations=locations,
     )

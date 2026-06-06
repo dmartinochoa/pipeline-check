@@ -14,6 +14,7 @@ from ..checks.base import BaseCheck
 from ..checks.nuget.base import NuGetContext
 from ..checks.nuget.pipelines import NuGetChecks
 from ..inventory import Component
+from ..sbom import BuildDependency, make_nuget_purl
 from .base import BaseProvider
 
 
@@ -34,6 +35,25 @@ class NuGetProvider(BaseProvider):
     @property
     def check_classes(self) -> list[type[BaseCheck[Any]]]:
         return [NuGetChecks]
+
+    def build_dependencies(
+        self, context: NuGetContext,
+    ) -> list[BuildDependency]:
+        deps: list[BuildDependency] = []
+        for proj in context.projects:
+            for ref in proj.package_refs:
+                if not ref.version:
+                    continue
+                deps.append(BuildDependency(
+                    name=ref.name,
+                    version=ref.version,
+                    dep_type="nuget",
+                    purl=make_nuget_purl(ref.name, ref.version),
+                    provider=self.NAME,
+                    source=proj.path,
+                    pinned=not _is_range(ref.version),
+                ))
+        return deps
 
     def post_filter(
         self,

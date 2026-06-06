@@ -68,8 +68,16 @@ metadata:
 spec:
   # TKN-006: no timeout / timeouts block.
   # TKN-007: no serviceAccountName (defaults to "default").
+  # TKN-016: pipelineRef fetched from a mutable git branch (unpinned).
   pipelineRef:
-    name: build-and-deploy-pipeline
+    resolver: git
+    params:
+      - name: url
+        value: https://github.com/org/pipelines
+      - name: revision
+        value: main
+      - name: pathInRepo
+        value: build-and-deploy.yaml
 ---
 # TAINT-006: cross-task results-forwarding taint flow. The
 # ``extract`` task pipes ``$(params.title)`` into a result

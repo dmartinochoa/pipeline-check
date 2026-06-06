@@ -298,7 +298,7 @@ def _emit_report(
     """Write *text* to *output_file* or stdout; log destination to stderr.
 
     Every text-shaped reporter (JSON, SARIF, JUnit, markdown, codequality,
-    cyclonedx, threatmodel) shares the same write-or-stdout-or-quiet
+    cyclonedx, spdx, threatmodel) shares the same write-or-stdout-or-quiet
     cascade. Centralizing it here turns each output branch into one line
     so adding a new format only edits the dispatch site.
     """
@@ -1694,7 +1694,8 @@ def _install_completion_callback(
     type=click.Choice(
         [
             "terminal", "json", "html", "sarif", "junit",
-            "markdown", "threatmodel", "cyclonedx", "codequality", "both",
+            "markdown", "threatmodel", "cyclonedx", "spdx", "codequality",
+            "both",
         ],
         case_sensitive=False,
     ),
@@ -3845,6 +3846,12 @@ def _emit_scan_report(
             scanner.sbom(), tool_version=__version__, scanned_path=target or ".",
         )
 
+    def _spdx_text() -> str:
+        from pipeline_check.core.spdx_reporter import report_spdx
+        return report_spdx(
+            scanner.sbom(), tool_version=__version__, scanned_path=target or ".",
+        )
+
     def _threatmodel_text() -> str:
         from pipeline_check.core.threatmodel_reporter import report_threatmodel
         return report_threatmodel(
@@ -3858,6 +3865,7 @@ def _emit_scan_report(
         "markdown": (_markdown_text, "Markdown report"),
         "codequality": (_codequality_text, "Code Quality report"),
         "cyclonedx": (_cyclonedx_text, "CycloneDX SBOM"),
+        "spdx": (_spdx_text, "SPDX SBOM"),
         "threatmodel": (_threatmodel_text, "Threat-model report"),
     }
     reporter = text_reporters.get(output)

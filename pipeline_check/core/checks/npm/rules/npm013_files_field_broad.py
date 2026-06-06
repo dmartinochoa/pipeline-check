@@ -59,7 +59,7 @@ RULE = Rule(
         "A package that is genuinely meant to ship every file in a "
         "tightly-controlled subtree (e.g. a single-file documentation "
         "package whose entire repo IS the publishable content) may "
-        "legitimately use ``\"*\"`` paired with a comprehensive, "
+        "legitimately use ``\"*\"`` paired with a strict, "
         "audited ``.npmignore``. Suppress with a rationale that names "
         "the ``.npmignore`` file and the audit cadence; otherwise "
         "rewrite the field as a positive list.",

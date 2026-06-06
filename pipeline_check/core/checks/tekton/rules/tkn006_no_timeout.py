@@ -3,9 +3,9 @@ from __future__ import annotations
 
 from typing import Any
 
-from ...base import Finding, Severity
+from ...base import Finding, Location, Severity
 from ...rule import Rule
-from ..base import TektonContext
+from ..base import TektonContext, doc_location
 
 RULE = Rule(
     id="TKN-006",
@@ -77,6 +77,7 @@ def _pipeline_has_per_task_timeouts(spec: dict[str, Any]) -> bool:
 
 def check(ctx: TektonContext) -> Finding:
     offenders: list[str] = []
+    locations: list[Location] = []
     examined = 0
     for doc in ctx.docs:
         if doc.kind not in ("PipelineRun", "TaskRun", "Pipeline"):
@@ -91,6 +92,7 @@ def check(ctx: TektonContext) -> Finding:
             ok = _has_run_timeout(spec) or _pipeline_has_per_task_timeouts(spec)
         if not ok:
             offenders.append(f"{doc.kind}/{doc.name}")
+            locations.append(doc_location(doc))
     if examined == 0:
         return Finding(
             check_id=RULE.id, title=RULE.title, severity=RULE.severity,
@@ -111,4 +113,5 @@ def check(ctx: TektonContext) -> Finding:
         check_id=RULE.id, title=RULE.title, severity=RULE.severity,
         resource="tekton", description=desc,
         recommendation=RULE.recommendation, passed=passed,
+        locations=locations,
     )
