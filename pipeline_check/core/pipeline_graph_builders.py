@@ -23,6 +23,7 @@ _BUILDERS: dict[str, Callable[[Any], list[PipelineGraph]]] = {}
 _BUILDER_MODULES: dict[str, str] = {
     "github": "pipeline_check.core.checks.github._graph",
     "gitlab": "pipeline_check.core.checks.gitlab._graph",
+    "circleci": "pipeline_check.core.checks.circleci._graph",
 }
 
 

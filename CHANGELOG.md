@@ -12,15 +12,17 @@ release commit collapses this section into `## [X.Y.Z] - <date>`.
 
 ### Added
 
-- **HTML report: step-level pipeline graph for GitLab (DAG v2).** The
-  HTML report now renders a `.gitlab-ci.yml` as a layered job graph
-  (jobs as nodes, `needs:` as edges, and stage ordering as edges for
-  jobs without explicit `needs`), each node colored by the worst finding
-  that lands on it. This is the GitLab increment of the step-level DAG
-  that previously covered only GitHub Actions; it is a new
-  `checks/gitlab/_graph.py` builder with no contract change, so every
-  other reporter and provider is unchanged. Pure inline SVG, no JS / CDN
-  / network.
+- **HTML report: step-level pipeline graph for GitLab and CircleCI
+  (DAG v2).** The HTML report now renders these as layered job graphs,
+  each node colored by the worst finding that lands on it, extending the
+  step-level DAG that previously covered only GitHub Actions. GitLab
+  (`.gitlab-ci.yml`): jobs as nodes, `needs:` as edges, and stage
+  ordering as edges for jobs without explicit `needs`. CircleCI
+  (`.circleci/config.yml`): jobs and their steps as nodes, with the
+  `workflows.<name>.jobs[].requires` references (unioned across every
+  workflow) as edges. Each is a new `checks/<provider>/_graph.py` builder
+  with no contract change, so every other reporter and provider is
+  unchanged. Pure inline SVG, no JS / CDN / network.
 - **`scan_status` in the JSON and SARIF outputs.** The terminal report
   already flags an incomplete scan (a file that failed to parse, a
   credential-less cloud probe) instead of presenting a confident grade,

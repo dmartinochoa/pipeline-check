@@ -1100,9 +1100,18 @@ with the **GitHub** builder (increment 1). Each later provider is just a
 new ``checks/<p>/_graph.py`` + one ``_BUILDER_MODULES`` line, no contract
 change. ~~**GitLab** (increment 2, done 2026-06-06 on ``dev``):~~ jobs as
 nodes, ``needs:`` as edges, and stage ordering as ``stage`` edges for
-no-needs jobs. Remaining pipeline providers (Azure, Bitbucket, Buildkite,
-Drone, Tekton, Argo, CircleCI, CloudBuild, Jenkins) follow the same shape;
-IaC / SCA / cloud providers have no job DAG.
+no-needs jobs. ~~**CircleCI** (increment 3, done 2026-06-06 on ``dev``):~~
+jobs and their steps as nodes, with the
+``workflows.<name>.jobs[].requires`` references (unioned across every
+workflow, only edges to real ``jobs:`` entries) as ``needs`` edges, the
+dependency structure lives in ``workflows:`` not on the jobs. Remaining
+pipeline providers (Azure, Bitbucket, Buildkite, Drone, Tekton, Argo,
+CloudBuild, Jenkins) follow the same shape; IaC / SCA / cloud providers
+have no job DAG. Per-provider notes: Azure (single-doc, stages + jobs +
+steps, ``dependsOn`` by name), Bitbucket (parallel groups, multiple
+pipeline definitions per file), Buildkite (``depends_on`` by key + ``wait``
+barriers), Drone / Tekton / Argo (multi-doc, need per-doc line bounds on
+the file root).
 
 ### Reachability-aware attack chains
 
