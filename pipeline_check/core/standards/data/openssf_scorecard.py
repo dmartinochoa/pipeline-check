@@ -556,6 +556,7 @@ STANDARD = Standard(
         "BK-012":   ["Vulnerabilities", "SAST"],                       # vuln scanning
         # ── Tekton ───────────────────────────────────────────────────
         "TKN-001":  ["Pinned-Dependencies"],                           # step image not digest-pinned
+        "TKN-016": ["Pinned-Dependencies"],  # remote resolver / bundle task body not pinned
         "TKN-002":  ["Dangerous-Workflow"],                            # step privileged
         "TKN-003":  ["Dangerous-Workflow"],                            # param injection
         "TKN-004":  ["Dangerous-Workflow"],                            # hostPath / namespaces

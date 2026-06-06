@@ -455,6 +455,7 @@ STANDARD = Standard(
         "DR-016":   ["PW.4.4", "PW.6.1"],              # image field interpolation
         # ── Tekton ──────────────────────────────────────────────
         "TKN-001":  ["PW.4.1", "PW.4.4"],              # step image not digest-pinned
+        "TKN-016": ["PW.4.1", "PW.4.4"],  # remote resolver / bundle task body not pinned
         "TKN-002":  ["PO.5.1", "PW.9.1"],              # step privileged / root
         "TKN-003":  ["PW.6.1", "PW.9.1"],              # param injection in script
         "TKN-004":  ["PO.5.1", "PW.9.1"],              # hostPath / host namespaces

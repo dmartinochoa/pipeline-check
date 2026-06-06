@@ -12,6 +12,19 @@ release commit collapses this section into `## [X.Y.Z] - <date>`.
 
 ### Added
 
+- **TKN-016: remote resolver / bundle taskRef or pipelineRef not pinned
+  (HIGH).** Tekton's Resolution framework fetches the *body* of a Task or
+  Pipeline at run time from a remote source. TKN-001 pins the container
+  image a step runs, but a mutable resolver ref lets whoever controls the
+  upstream swap the executed task body itself. TKN-016 flags a `git`
+  resolver whose `revision` is not a full commit SHA, a `bundles` resolver
+  (or the legacy `taskRef.bundle`) image without an `@sha256:` digest, and
+  a `hub` resolver pinned to `latest` (or no version), across Pipeline
+  `spec.tasks` / `spec.finally`, `PipelineRun.spec.pipelineRef`, and
+  `TaskRun.spec.taskRef`. The `cluster` resolver is not flagged (it
+  references an already-admitted in-cluster object). Mapped across all
+  standards mirroring TKN-001's pinning controls. tekton 16 -> 17.
+
 - **HTML report: step-level pipeline graph for Buildkite (DAG v2).**
   Extends the step-level DAG to Buildkite pipeline files
   (`.buildkite/pipeline.yml`). Each command step is a node; `depends_on`

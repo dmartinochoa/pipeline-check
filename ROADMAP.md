@@ -1044,9 +1044,14 @@ queued here.**
 
 **Tier 3 (plausible, more scoping / FP risk):**
 
-- **TKN-016**: remote ``resolver`` (bundles / git / hub) ``taskRef`` /
+- ~~**TKN-016**: remote ``resolver`` (bundles / git / hub) ``taskRef`` /
   ``pipelineRef`` not pinned to a digest / immutable revision (the executed
-  Task body is fetched remotely; TKN-001 pins the image, not the body).
+  Task body is fetched remotely; TKN-001 pins the image, not the body).~~
+  Shipped 2026-06-06 on ``dev`` (HIGH). Flags a ``git`` resolver revision
+  that isn't a full commit SHA, a ``bundles`` resolver / legacy
+  ``taskRef.bundle`` image without ``@sha256:``, and a ``hub`` resolver on
+  ``latest``; across Pipeline ``tasks`` / ``finally``, PipelineRun, and
+  TaskRun. ``cluster`` resolver not flagged. tekton 16 -> 17.
 - **CC-034**: a reusable command / job ``parameters`` entry of ``type:
   steps`` (or an enum-less ``string``) spliced into a ``run`` via
   ``<< parameters.X >>`` (CC-002 explicitly treats ``<< parameters.* >>`` as

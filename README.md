@@ -136,7 +136,7 @@ for inputs, idempotency, and fork-PR fallback behavior.
 | **Google Cloud Build** | `cloudbuild.yaml` | `--cloudbuild-path` | 26 checks · `GCB-001..026` |
 | **Buildkite** | `.buildkite/pipeline.yml` | `--buildkite-path` | 16 checks · `BK-001..015` + `TAINT-005` |
 | **Drone CI** | `.drone.yml` / `.drone.yaml` | `--drone-path` | 16 checks · `DR-001..016` · image / plugin pinning, privileged steps, `${DRONE_*}` injection, fork-PR exposure, pipe-to-shell, sensitive host-path mounts |
-| **Tekton** | `Task` / `Pipeline` / `*Run` YAML | `--tekton-path` | 16 checks · `TKN-001..015` + `TAINT-006` |
+| **Tekton** | `Task` / `Pipeline` / `*Run` YAML | `--tekton-path` | 17 checks · `TKN-001..016` + `TAINT-006` |
 | **Argo Workflows** | `Workflow` / `WorkflowTemplate` YAML | `--argo-path` | 18 checks · `ARGO-001..017` + `TAINT-007` · over-privileged / default service account, untrusted-parameter manifest injection |
 | **Argo CD** | `Application` / `AppProject` YAML + `argocd-*` ConfigMaps | `--argocd-path` | 19 checks · `ARGOCD-001..019` · sourceRepo / destination wildcards, RBAC wildcards, mutable source refs, web terminal, drift-detection bypass. [Reference →](docs/providers/argocd.md) |
 | **Dockerfile** | `Dockerfile` / `Containerfile` | `--dockerfile-path` | 31 checks · `DF-001..031` · image digest pinning, lifecycle scripts, TLS / loader-hijack env, unpinned `COPY --from` |
@@ -525,7 +525,7 @@ pipeline_check/
         ├── cloudbuild/rules/  # GCB-001 .. GCB-026
         ├── buildkite/rules/   # BK-001 .. BK-015 + TAINT-005
         ├── drone/rules/       # DR-001 .. DR-016
-        ├── tekton/rules/      # TKN-001 .. TKN-015 + TAINT-006
+        ├── tekton/rules/      # TKN-001 .. TKN-016 + TAINT-006
         ├── argo/rules/        # ARGO-001 .. ARGO-017 + TAINT-007
         ├── argocd/rules/      # ARGOCD-001 .. ARGOCD-019
         ├── oci/rules/         # OCI-001 .. OCI-009 + ATTEST-001..007

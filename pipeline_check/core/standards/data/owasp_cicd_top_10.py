@@ -705,6 +705,7 @@ STANDARD = Standard(
         "BK-015":   ["CICD-SEC-7", "CICD-SEC-1"],  # agents map interpolation
         # Tekton
         "TKN-001":  ["CICD-SEC-3"],   # step image not pinned to digest
+        "TKN-016": ["CICD-SEC-3"],  # remote resolver / bundle task body not pinned
         "TKN-002":  ["CICD-SEC-5"],   # step runs privileged / as root
         "TKN-003":  ["CICD-SEC-4", "CICD-SEC-1"],  # param injection in script
         "TKN-004":  ["CICD-SEC-5"],   # hostPath / host namespaces

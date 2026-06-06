@@ -221,6 +221,7 @@ STANDARD = Standard(
         "ECR-002":  ["UPD-1"],
         "BK-001":   ["UPD-1"],
         "TKN-001":  ["UPD-1"],
+        "TKN-016": ["UPD-1"],  # remote resolver / bundle task body not pinned
         "ARGO-001": ["UPD-1"],
         # Drone pinning surface
         "DR-001":   ["UPD-1"],             # step image not digest-pinned

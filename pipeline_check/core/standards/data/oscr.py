@@ -288,6 +288,7 @@ STANDARD = Standard(
         "GL-028":   ["IA-11"],
         "BB-029":   ["IA-11"],
         "TKN-001":  ["IA-11"],
+        "TKN-016": ["IA-11"],  # remote resolver / bundle task body not pinned
         "ARGO-001": ["IA-11"],
         "DR-001":   ["IA-11"],
         "DR-005":   ["IA-11"],

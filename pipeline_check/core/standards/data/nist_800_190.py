@@ -276,6 +276,7 @@ STANDARD = Standard(
         # rules (TKN-009..012 signing/SBOM/provenance/vuln-scan) live
         # outside 800-190's scope and aren't mapped here.
         "TKN-001":  ["4.1.5"],
+        "TKN-016": ["4.1.5"],  # remote resolver / bundle task body not pinned
         "TKN-002":  ["4.1.2", "4.4.4"],
         "TKN-004":  ["4.4.4"],
         "TKN-005":  ["4.1.4"],
