@@ -58,23 +58,16 @@ def check(path: str, wf: WorkspaceFile) -> Finding:
         return _pass(path)
     keys = ", ".join(sorted({k for k, _ in hooks}))
     first_cmd = next((c for _, c in hooks if c), "")
-    return Finding(
-        check_id=RULE.id, title=RULE.title, severity=RULE.severity,
+    return RULE.fail_finding(
         resource=path,
         description=(
             f"Devcontainer runs lifecycle command(s) on create/attach: "
             f"{keys}. These execute automatically in any Codespace or "
             "local devcontainer."
         ),
-        recommendation=RULE.recommendation, passed=False,
         locations=location_for(path, wf.raw, first_cmd),
     )
 
 
 def _pass(path: str) -> Finding:
-    return Finding(
-        check_id=RULE.id, title=RULE.title, severity=RULE.severity,
-        resource=path,
-        description="No devcontainer lifecycle commands.",
-        recommendation=RULE.recommendation, passed=True,
-    )
+    return RULE.pass_finding(path, "No devcontainer lifecycle commands.")

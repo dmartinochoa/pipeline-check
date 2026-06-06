@@ -60,7 +60,6 @@ from .core import autofix as _autofix
 from .core import providers as _providers
 from .core import standards as _standards
 from .core.checks.base import Confidence, Severity, confidence_rank
-from .core.codequality_reporter import report_codequality
 from .core.config import load_config
 from .core.detect import (
     detect_all_pipelines_from_cwd as _detect_all_pipelines_from_cwd,
@@ -86,15 +85,12 @@ from .core.gate import (
     load_ignore_file,
     parse_expiry_window,
 )
-from .core.html_reporter import report_html
 from .core.inline_ignore import (
     InlineIgnoreIndex,
     InlineIgnoreRule,
     build_inline_index,
     extract_inline_ignores,
 )
-from .core.junit_reporter import report_junit
-from .core.markdown_reporter import report_markdown
 from .core.policies import (
     POLICY_DIRS,
     PolicyError,
@@ -109,10 +105,8 @@ from .core.reporter import (
     report_json,
     report_terminal,
 )
-from .core.sarif_reporter import report_sarif
 from .core.scanner import MultiScanner, Scanner
 from .core.scorer import score
-from .core.threatmodel_reporter import report_threatmodel
 
 
 def _tolerate_unencodable_stdio() -> None:
@@ -212,7 +206,8 @@ class _GroupedCommand(click.Command):
         })),
         ("Gate", frozenset({
             "--fail-on", "--min-grade", "--max-failures",
-            "--fail-on-check", "--baseline", "--baseline-from-git",
+            "--fail-on-check", "--fail-on-parse-error",
+            "--baseline", "--baseline-from-git",
             "--write-baseline",
             "--diff-base", "--pr-diff", "--ignore-file", "--no-inline-ignore",
             "--fail-on-chain", "--fail-on-any-chain",
@@ -1928,6 +1923,17 @@ def _install_completion_callback(
     ),
 )
 @click.option(
+    "--fail-on-parse-error",
+    is_flag=True,
+    help=(
+        "Fail the gate if any file could not be parsed (malformed YAML / "
+        "JSON, read error). A clean grade only reflects what was actually "
+        "scanned, so this refuses a scan that silently skipped part of "
+        "its input. Layers on top of the other gate conditions; see the "
+        "JSON / SARIF ``scan_status`` for the count."
+    ),
+)
+@click.option(
     "--secret-pattern",
     "secret_patterns",
     multiple=True,
@@ -2396,6 +2402,7 @@ def scan(
     min_grade: str | None,
     max_failures: int | None,
     fail_on_checks: tuple[str, ...],
+    fail_on_parse_error: bool,
     secret_patterns: tuple[str, ...],
     detect_entropy: bool,
     fix: str | None,
@@ -3170,6 +3177,7 @@ def scan(
         inline_ignores=inline_index,
         fail_on_chains={c.upper() for c in fail_on_chain_ids},
         fail_on_any_chain=fail_on_any_chain,
+        fail_on_parse_error=fail_on_parse_error,
         expiry_warning_days=expiry_window,
     )
 
@@ -3186,7 +3194,10 @@ def scan(
             parts.append(f"baseline-from-git={baseline_from_git}")
         _debug(f"gate config: {', '.join(parts)}")
 
-    gate = evaluate_gate(findings, score_result, gate_config, chains=chains)
+    gate = evaluate_gate(
+        findings, score_result, gate_config, chains=chains,
+        parse_error_count=_scan_status(scanner.metadata, findings)["files_unparsed"],
+    )
 
     if not quiet and output != "json":
         _emit_gate_summary(
@@ -3774,6 +3785,7 @@ def _emit_scan_report(
             findings, score_result, tool_version=__version__,
             inventory=components,
             chains=chains if not no_chains else None,
+            scan_status=_scan_status(scanner.metadata, findings),
         )
         # ``both`` always streams JSON to stdout regardless of
         # ``--output-file``; the file destination is only honored
@@ -3787,6 +3799,7 @@ def _emit_scan_report(
     if output == "html":
         # HTML reporter writes the file itself (it bundles assets), so
         # we don't route it through ``_emit_report``.
+        from pipeline_check.core.html_reporter import report_html
         report_html(
             findings, score_result, region=region, target=target or "",
             output_path=output_file, chains=chains,
@@ -3795,49 +3808,57 @@ def _emit_scan_report(
         if not quiet:
             click.echo(f"HTML report written to {output_file}", err=True)
 
-    # Single-artifact text formats. Each builder is a thunk so only the
-    # selected format runs (the CycloneDX one defers a lazy import and the
-    # ``scanner.sbom()`` call); a dispatch table keeps the per-format
-    # wiring in one place instead of a seven-way if-chain.
+    # Single-artifact text formats. Each builder imports its reporter
+    # lazily, so only the selected format's module loads, and nothing
+    # loads on a ``--version`` / ``--list-*`` run. Notably this keeps
+    # ``xml.sax`` (pulled in by the JUnit reporter) off every invocation's
+    # startup path, where it cost ~20 ms. A dispatch table keeps the
+    # per-format wiring in one place instead of a seven-way if-chain.
+    def _sarif_text() -> str:
+        from pipeline_check.core.sarif_reporter import report_sarif
+        return report_sarif(
+            findings, score_result, tool_version=__version__,
+            chains=chains, inline_explain=inline_explain,
+            scan_status=_scan_status(scanner.metadata, findings),
+        )
+
+    def _junit_text() -> str:
+        from pipeline_check.core.junit_reporter import report_junit
+        return report_junit(
+            findings, score_result, inline_explain=inline_explain,
+        )
+
+    def _markdown_text() -> str:
+        from pipeline_check.core.markdown_reporter import report_markdown
+        return report_markdown(
+            findings, score_result, chains=chains,
+            inline_explain=inline_explain,
+        )
+
+    def _codequality_text() -> str:
+        from pipeline_check.core.codequality_reporter import report_codequality
+        return report_codequality(findings, inline_explain=inline_explain)
+
     def _cyclonedx_text() -> str:
         from pipeline_check.core.cyclonedx_reporter import report_cyclonedx
         return report_cyclonedx(
             scanner.sbom(), tool_version=__version__, scanned_path=target or ".",
         )
 
+    def _threatmodel_text() -> str:
+        from pipeline_check.core.threatmodel_reporter import report_threatmodel
+        return report_threatmodel(
+            findings, score_result, inventory=components, chains=chains,
+            tool_version=__version__, region=region or "", target=target or "",
+        )
+
     text_reporters: dict[str, tuple[Callable[[], str], str]] = {
-        "sarif": (
-            lambda: report_sarif(
-                findings, score_result, tool_version=__version__,
-                chains=chains, inline_explain=inline_explain,
-            ),
-            "SARIF report",
-        ),
-        "junit": (
-            lambda: report_junit(
-                findings, score_result, inline_explain=inline_explain,
-            ),
-            "JUnit report",
-        ),
-        "markdown": (
-            lambda: report_markdown(
-                findings, score_result, chains=chains,
-                inline_explain=inline_explain,
-            ),
-            "Markdown report",
-        ),
-        "codequality": (
-            lambda: report_codequality(findings, inline_explain=inline_explain),
-            "Code Quality report",
-        ),
+        "sarif": (_sarif_text, "SARIF report"),
+        "junit": (_junit_text, "JUnit report"),
+        "markdown": (_markdown_text, "Markdown report"),
+        "codequality": (_codequality_text, "Code Quality report"),
         "cyclonedx": (_cyclonedx_text, "CycloneDX SBOM"),
-        "threatmodel": (
-            lambda: report_threatmodel(
-                findings, score_result, inventory=components, chains=chains,
-                tool_version=__version__, region=region or "", target=target or "",
-            ),
-            "Threat-model report",
-        ),
+        "threatmodel": (_threatmodel_text, "Threat-model report"),
     }
     reporter = text_reporters.get(output)
     if reporter is not None:
@@ -4395,15 +4416,16 @@ def _maybe_emit_degraded_scan_warning(findings: list[Any]) -> None:
     )
 
 
-def _scan_incomplete_reason(meta: Any, findings: list[Any]) -> str | None:
-    """Describe why a scan is incomplete, or ``None`` when it fully ran.
+def _scan_status(meta: Any, findings: list[Any]) -> dict[str, Any]:
+    """Structured completeness summary of a scan.
 
     A scan is incomplete when a file it tried to read could not be
     parsed (malformed YAML / JSON, read error) or when a cloud module
     failed API access (the ``*-000`` degraded probes). The score then
-    reflects only what was actually scanned, so the terminal report
-    flags the grade as incomplete instead of presenting a confident
-    pass. Returns a human-readable reason for the report's status line.
+    reflects only what was actually scanned. This summary is emitted in
+    the JSON and SARIF outputs so CI consumers can detect an incomplete
+    scan, and it backs :func:`_scan_incomplete_reason` (the terminal
+    status line). ``reason`` is present only when the scan is incomplete.
     """
     parse_fail = 0
     for w in getattr(meta, "warnings", None) or []:
@@ -4415,14 +4437,28 @@ def _scan_incomplete_reason(meta: Any, findings: list[Any]) -> str | None:
         if getattr(f, "check_id", "").endswith("-000")
         and not getattr(f, "passed", True)
     )
+    status: dict[str, Any] = {
+        "complete": parse_fail == 0 and degraded == 0,
+        "files_scanned": int(getattr(meta, "files_scanned", 0) or 0),
+        "files_unparsed": parse_fail,
+        "degraded_modules": degraded,
+    }
     parts: list[str] = []
     if parse_fail:
         parts.append(f"{parse_fail} file(s) could not be parsed")
     if degraded:
         parts.append(f"{degraded} module(s) failed API access")
-    if not parts:
-        return None
-    return f"{'; '.join(parts)}. The grade reflects only what was scanned."
+    if parts:
+        status["reason"] = (
+            f"{'; '.join(parts)}. The grade reflects only what was scanned."
+        )
+    return status
+
+
+def _scan_incomplete_reason(meta: Any, findings: list[Any]) -> str | None:
+    """The human-readable reason a scan is incomplete, or ``None`` when
+    it fully ran. Drives the terminal report's status line."""
+    return _scan_status(meta, findings).get("reason")
 
 
 def _emit_scan_summary(meta: Any) -> None:

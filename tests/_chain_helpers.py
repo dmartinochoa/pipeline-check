@@ -27,11 +27,34 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from typing import Any
 
+from pipeline_check.core.chains import Chain
 from pipeline_check.core.checks.base import (
     Confidence,
     Finding,
     Severity,
 )
+
+
+def make_reach_chain(
+    *, via_dataflow: bool, note: str = "legs share job `release`"
+) -> Chain:
+    """A confirmed-reachable ``Chain`` for reporter badge tests.
+
+    Toggle *via_dataflow* to exercise the two reachability tiers: a
+    proven source-to-sink dataflow path versus the weaker shared-job
+    co-location fallback. Reporters must render them with distinct
+    badges (the strong one says "confirmed", the weak one only
+    "co-located").
+    """
+    return Chain(
+        chain_id="AC-002", title="t", severity=Severity.CRITICAL,
+        confidence=Confidence.HIGH, summary="s", narrative="n",
+        mitre_attack=[], kill_chain_phase="",
+        triggering_check_ids=["GHA-003"], triggering_findings=[],
+        resources=["wf.yml"], references=[], recommendation="r",
+        confirmed_reachable=True, via_dataflow=via_dataflow,
+        reachability_note=note,
+    )
 
 
 def make_failing(

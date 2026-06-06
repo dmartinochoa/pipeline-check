@@ -153,7 +153,13 @@ def report_markdown(
                 + " ".join(f"`{cid}`" for cid in c.triggering_check_ids)
             )
             if c.confirmed_reachable:
-                badge = ":white_check_mark: **Reachability confirmed**"
+                # Proven dataflow path is the strong signal; the
+                # shared-job fallback is only co-location, so it gets a
+                # caution badge, not a confident "confirmed".
+                if c.via_dataflow:
+                    badge = ":white_check_mark: **Reachability confirmed (dataflow)**"
+                else:
+                    badge = ":warning: **Co-located** (shared job, unverified)"
                 if c.reachability_note:
                     badge += f": {c.reachability_note}"
                 lines.append(badge)

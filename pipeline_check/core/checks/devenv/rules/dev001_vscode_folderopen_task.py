@@ -12,7 +12,7 @@ CRITICAL by DEV-004.
 """
 from __future__ import annotations
 
-from ...base import Finding, Severity
+from ...base import Finding, Severity, summarize_offenders
 from ...rule import Rule
 from ..base import KIND_VSCODE_TASKS, WorkspaceFile, location_for, vscode_folderopen_tasks
 
@@ -46,25 +46,17 @@ def check(path: str, wf: WorkspaceFile) -> Finding:
     auto = vscode_folderopen_tasks(wf.data)
     if not auto:
         return _pass(path)
-    labels = ", ".join(sorted({label for label, _ in auto})[:3])
-    extra = "…" if len({label for label, _ in auto}) > 3 else ""
+    labels = summarize_offenders(sorted({label for label, _ in auto}), limit=3)
     first_cmd = next((c for _, c in auto if c), "")
-    return Finding(
-        check_id=RULE.id, title=RULE.title, severity=RULE.severity,
+    return RULE.fail_finding(
         resource=path,
         description=(
-            f"{len(auto)} VS Code task(s) run on folder open: {labels}{extra}. "
+            f"{len(auto)} VS Code task(s) run on folder open: {labels}. "
             "Opening this repo in VS Code (once trusted) runs them."
         ),
-        recommendation=RULE.recommendation, passed=False,
         locations=location_for(path, wf.raw, first_cmd or "folderOpen"),
     )
 
 
 def _pass(path: str) -> Finding:
-    return Finding(
-        check_id=RULE.id, title=RULE.title, severity=RULE.severity,
-        resource=path,
-        description="No folder-open VS Code tasks.",
-        recommendation=RULE.recommendation, passed=True,
-    )
+    return RULE.pass_finding(path, "No folder-open VS Code tasks.")

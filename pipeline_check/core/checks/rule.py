@@ -92,6 +92,52 @@ class Rule:
     #: literal) or where no public exploitation primitive exists.
     exploit_example: str | None = None
 
+    def fail_finding(
+        self, resource: str, description: str, **extra: Any,
+    ) -> Finding:
+        """Build a failing ``Finding`` (``passed=False``) that inherits
+        this rule's ``id`` / ``title`` / ``severity`` / ``recommendation``.
+
+        ``resource`` and ``description`` are the per-finding bits; every
+        other ``Finding`` field passes through ``**extra`` (e.g.
+        ``locations=``, ``job_anchors=``, ``confidence=``, or
+        ``severity=`` to override the rule default for one finding).
+        Replaces the ``Finding(check_id=RULE.id, title=RULE.title, ...)``
+        block copied across the rule pack; a rule that needs something
+        this doesn't cover can still construct ``Finding`` directly.
+        """
+        return self.finding(resource, description, passed=False, **extra)
+
+    def pass_finding(
+        self, resource: str, description: str, **extra: Any,
+    ) -> Finding:
+        """Build a passing ``Finding`` (``passed=True``); see
+        :meth:`fail_finding`."""
+        return self.finding(resource, description, passed=True, **extra)
+
+    def finding(
+        self, resource: str, description: str, *, passed: bool, **extra: Any,
+    ) -> Finding:
+        """Build a ``Finding`` for this rule with an explicit ``passed``.
+
+        Use when ``passed`` is computed at runtime; otherwise prefer the
+        :meth:`fail_finding` / :meth:`pass_finding` shorthands. Inherits
+        the rule's id / title / severity / recommendation; ``**extra``
+        overrides or adds any other ``Finding`` field.
+        """
+        fields: dict[str, Any] = {
+            "check_id": self.id,
+            "title": self.title,
+            "severity": self.severity,
+            "recommendation": self.recommendation,
+        }
+        # ``extra`` wins so a rule can override (e.g. a per-finding
+        # ``severity`` or ``recommendation``).
+        fields.update(extra)
+        return Finding(
+            resource=resource, description=description, passed=passed, **fields,
+        )
+
 
 _RULES_CACHE: dict[str, list[tuple[Any, Callable[..., Finding]]]] = {}
 

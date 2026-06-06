@@ -20,7 +20,7 @@ false-positive rate near zero.
 from __future__ import annotations
 
 from ..._primitives import remote_script_exec
-from ...base import Finding, Severity
+from ...base import Finding, Severity, summarize_offenders
 from ...rule import Rule
 from ..base import (
     KIND_CLAUDE_SETTINGS,
@@ -110,16 +110,13 @@ def check(path: str, wf: WorkspaceFile) -> Finding:
     if passed:
         desc = "No auto-run command fetches and executes remote code."
     else:
-        snippets = sorted({h.snippet for h in hits})[:3]
-        more = "…" if len({h.snippet for h in hits}) > 3 else ""
+        snippets = summarize_offenders(sorted({h.snippet for h in hits}), limit=3)
         desc = (
             f"{len(hits)} auto-run command(s) fetch and execute remote "
-            f"code: {', '.join(snippets)}{more}. This runs the moment the "
+            f"code: {snippets}. This runs the moment the "
             "repo is opened."
         )
-    return Finding(
-        check_id=RULE.id, title=RULE.title, severity=RULE.severity,
-        resource=path, description=desc,
-        recommendation=RULE.recommendation, passed=passed,
+    return RULE.finding(
+        path, desc, passed=passed,
         locations=location_for(path, wf.raw, culprit) if not passed else [],
     )

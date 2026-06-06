@@ -75,17 +75,15 @@ def check(path: str, doc: dict[str, Any]) -> Finding:
     scheduled = "schedule" in workflow_triggers(doc)
     has_permissions = "permissions" in doc
     passed = not (scheduled and not has_permissions)
-    return Finding(
-        check_id=RULE.id,
-        title=RULE.title,
-        severity=RULE.severity,
-        resource=path,
-        description=(
-            "Scheduled workflow has no top-level permissions block."
-            if not passed
-            else "No issue detected."
-        ),
-        recommendation=RULE.recommendation,
+    # ``RULE.finding`` fills check_id / title / severity / recommendation
+    # from RULE; pass any other Finding field as a keyword (locations=,
+    # job_anchors=, ...). RULE.fail_finding / pass_finding are the
+    # fixed-``passed`` shorthands.
+    return RULE.finding(
+        path,
+        "No issue detected."
+        if passed
+        else "Scheduled workflow has no top-level permissions block.",
         passed=passed,
     )
 ```

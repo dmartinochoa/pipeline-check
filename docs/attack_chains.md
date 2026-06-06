@@ -172,14 +172,23 @@ Chains that have opted in to the model expose two extra fields:
   `job_anchors` intersect (or a `TAINT-001` / `TAINT-002` dataflow
   path bridges them). `false` is the default for chains that haven't
   been migrated yet.
+- `via_dataflow: bool` — `true` only when reachability was established
+  by a proven source-to-sink taint path, as opposed to the weaker
+  shared-job co-location fallback. A chain can be `confirmed_reachable`
+  (co-located) without being `via_dataflow` (a proven executable path).
+  CI consumers can gate on the stronger tier with
+  `--chains-require-dataflow`.
 - `reachability_note: str` — a short rationale, e.g.
   `"injection and ungated deploy share job `release`"`. Empty when
   the chain isn't confirmed reachable.
 
-Confirmed-reachable chains are promoted to `HIGH` confidence
-regardless of their constituent legs and rendered with a
-`✓ Reachability confirmed` badge in the terminal / Markdown / HTML
-outputs.
+Confirmed-reachable chains are promoted to `HIGH` confidence regardless
+of their constituent legs. The reporters render the two tiers
+differently in the terminal / Markdown / HTML outputs: a proven
+dataflow path shows a green `✓ Reachability confirmed (dataflow)` badge,
+while the shared-job fallback shows a weaker caution `≈ Co-located
+(unverified)` badge so a reader is not told co-location is a proven
+path.
 
 Migrated chains:
 
@@ -244,12 +253,22 @@ pipeline_check -p github --chains-require-reachability \
 
 ## Confidence inheritance
 
-A chain is only as trustworthy as its weakest leg. `Chain.confidence`
-is set to the minimum confidence among the triggering findings, if
-one leg comes from a LOW-confidence blob heuristic, the chain is
-reported at LOW confidence even when every other leg is HIGH. The
-`--min-confidence` filter applies the same way to chains as to
-findings.
+An *unconfirmed* chain is only as trustworthy as its weakest leg.
+`Chain.confidence` is set to the minimum confidence among the triggering
+findings, so if one leg comes from a LOW-confidence blob heuristic the
+chain is reported at LOW confidence even when every other leg is HIGH.
+
+A *confirmed-reachable* chain is the exception (see "Confirmed-reachable
+chains are promoted to `HIGH`" above): the reachability evidence (a
+proven dataflow path, or shared-job co-location) is what the chain
+asserts, so its `Chain.confidence` is set to `HIGH` regardless of the
+legs rather than inheriting the minimum.
+
+The `--min-confidence` filter applies the same way to chains as to
+findings, comparing against the resolved `Chain.confidence`: a
+confirmed-reachable chain (HIGH) survives any threshold, while an
+unconfirmed chain carrying a LOW-confidence leg is dropped by
+`--min-confidence MEDIUM`.
 
 ## Adding a new chain
 

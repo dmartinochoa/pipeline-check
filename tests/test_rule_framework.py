@@ -28,6 +28,11 @@ from pathlib import Path
 
 import pytest
 
+from pipeline_check.core.checks.base import (
+    Confidence,
+    Severity,
+    summarize_offenders,
+)
 from pipeline_check.core.checks.rule import Rule, discover_rules
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
@@ -234,3 +239,93 @@ def test_orchestrator_runs_every_rule_once(tmp_path):
     assert ids == sorted(ids)
     assert len(ids) == expected
     assert len(set(ids)) == expected
+
+
+class TestRuleFindingHelpers:
+    """``Rule.fail_finding`` / ``pass_finding`` / ``finding`` build a
+    Finding that inherits the rule's id / title / severity / recommendation,
+    replacing the copy-pasted ``Finding(check_id=RULE.id, ...)`` block."""
+
+    RULE = Rule(
+        id="X-001", title="Example rule", severity=Severity.HIGH,
+        recommendation="do the thing",
+    )
+
+    def test_fail_finding_inherits_rule_metadata(self):
+        f = self.RULE.fail_finding("res.yml", "something is wrong")
+        assert f.check_id == "X-001"
+        assert f.title == "Example rule"
+        assert f.severity is Severity.HIGH
+        assert f.recommendation == "do the thing"
+        assert f.resource == "res.yml"
+        assert f.description == "something is wrong"
+        assert f.passed is False
+
+    def test_pass_finding_sets_passed_true(self):
+        f = self.RULE.pass_finding("res.yml", "all good")
+        assert f.passed is True
+        assert f.severity is Severity.HIGH  # still inherits the rule's fields
+
+    def test_finding_takes_explicit_passed(self):
+        for passed in (True, False):
+            f = self.RULE.finding("res.yml", "d", passed=passed)
+            assert f.passed is passed
+
+    def test_extra_kwargs_pass_through(self):
+        f = self.RULE.fail_finding(
+            "res.yml", "d",
+            job_anchors=("build",), confidence=Confidence.LOW,
+        )
+        assert f.job_anchors == ("build",)
+        assert f.confidence is Confidence.LOW
+
+    def test_extra_kwargs_can_override_inherited_fields(self):
+        # A rule that needs a per-finding severity / recommendation can
+        # override the rule default via **extra.
+        f = self.RULE.fail_finding(
+            "res.yml", "d",
+            severity=Severity.CRITICAL, recommendation="override",
+        )
+        assert f.severity is Severity.CRITICAL
+        assert f.recommendation == "override"
+
+    def test_matches_manual_construction(self):
+        from pipeline_check.core.checks.base import Finding
+        helper = self.RULE.fail_finding("res.yml", "d")
+        manual = Finding(
+            check_id=self.RULE.id, title=self.RULE.title,
+            severity=self.RULE.severity, resource="res.yml", description="d",
+            recommendation=self.RULE.recommendation, passed=False,
+        )
+        assert helper == manual
+
+
+class TestSummarizeOffenders:
+    """``summarize_offenders`` standardizes the ``", ".join(xs[:N]) +
+    ellipsis`` tail hand-rolled across the rule pack."""
+
+    def test_under_limit_no_ellipsis(self):
+        assert summarize_offenders(["a", "b"], limit=3) == "a, b"
+
+    def test_at_limit_no_ellipsis(self):
+        assert summarize_offenders(["a", "b", "c"], limit=3) == "a, b, c"
+
+    def test_over_limit_truncates_with_ellipsis(self):
+        assert summarize_offenders(["a", "b", "c", "d"], limit=3) == "a, b, c…"
+
+    def test_empty(self):
+        assert summarize_offenders([], limit=5) == ""
+
+    def test_default_limit_is_five(self):
+        assert summarize_offenders(list("abcdef")) == "a, b, c, d, e…"
+
+    def test_accepts_any_iterable(self):
+        # A set/generator is materialized; the caller pre-sorts when order
+        # matters, so just check it doesn't choke on a non-list iterable.
+        assert summarize_offenders(iter(["x"]), limit=2) == "x"
+
+    def test_matches_hand_rolled_pattern(self):
+        for xs, n in ([], 3), (["a"], 5), (list("abcdefg"), 5), (["a", "b"], 1):
+            xs = list(xs)
+            manual = ", ".join(xs[:n]) + ("…" if len(xs) > n else "")
+            assert summarize_offenders(xs, limit=n) == manual

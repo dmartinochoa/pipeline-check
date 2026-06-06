@@ -161,6 +161,12 @@ class GateConfig:
     #: When True, fail the gate if *any* attack chain matched. Useful as
     #: a blanket "no correlated attack paths" guard for high-trust repos.
     fail_on_any_chain: bool = False
+    #: When True, fail the gate if any file the scan tried to read could
+    #: not be parsed (the ``parse_error_count`` passed to
+    #: :func:`evaluate_gate`). Additive: it does NOT disable the default
+    #: ``--fail-on CRITICAL`` floor, so it layers a "the scan must have
+    #: read everything" requirement on top. Set by ``--fail-on-parse-error``.
+    fail_on_parse_error: bool = False
     #: Forewarning window (days) for soon-to-expire ignore rules. An
     #: ignore rule expiring within this many days is reported under
     #: :attr:`GateResult.expiring_soon`. ``None`` disables the forewarning
@@ -440,6 +446,7 @@ def evaluate_gate(
     score_result: ScoreResult,
     config: GateConfig,
     chains: list[Chain] | None = None,
+    parse_error_count: int = 0,
 ) -> GateResult:
     """Apply ``config`` to the scan's findings + score and decide pass/fail.
 
@@ -452,6 +459,11 @@ def evaluate_gate(
     to the gate result. Chains never apply baseline/ignore filtering;
     the rationale is that a correlated attack path is intrinsically a
     new finding even when the constituent legs were baselined.
+
+    *parse_error_count* is the number of files the scan could not parse
+    (from ``cli._scan_status``). When ``config.fail_on_parse_error`` is
+    set and the count is non-zero, the gate fails: a security gate should
+    be able to refuse a scan that silently skipped part of its input.
     """
     failing = [f for f in findings if not f.passed]
 
@@ -560,6 +572,14 @@ def evaluate_gate(
                     f"Disallowed attack chain(s) detected: {ids}, "
                     f"--fail-on-chain"
                 )
+
+    if config.fail_on_parse_error:
+        conditions.append("no unparseable files, --fail-on-parse-error")
+        if parse_error_count > 0:
+            reasons.append(
+                f"{parse_error_count} file(s) could not be parsed, "
+                f"--fail-on-parse-error"
+            )
 
     expired_rules = [r for r in config.ignore_rules if r.is_expired(today)]
     expiring_soon: list[IgnoreRule] = []

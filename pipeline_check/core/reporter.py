@@ -515,6 +515,7 @@ def report_json(
     tool_version: str = "",
     inventory: list[Component] | None = None,
     chains: list[Chain] | None = None,
+    scan_status: dict[str, Any] | None = None,
 ) -> str:
     """Serialize all findings and the score to a JSON string.
 
@@ -532,6 +533,12 @@ def report_json(
     array, multi-finding attack-chain correlations. Always present
     (possibly empty) when chain evaluation ran; omitted when the caller
     explicitly disabled chains via ``--no-chains``.
+
+    When *scan_status* is supplied the payload gains a ``scan_status``
+    object (``complete`` plus the files-scanned / unparsed / degraded
+    counts, and a ``reason`` when incomplete), so a CI consumer can tell
+    a fully-completed scan from one where a file failed to parse or a
+    cloud module degraded. The score alone can't convey that.
     """
     payload: dict[str, Any] = {
         "schema_version": JSON_SCHEMA_VERSION,
@@ -539,6 +546,8 @@ def report_json(
         "score": score_result,
         "findings": [f.to_dict() for f in findings],
     }
+    if scan_status is not None:
+        payload["scan_status"] = scan_status
     if inventory is not None:
         payload["inventory"] = [c.to_dict() for c in inventory]
     if chains is not None:
@@ -590,12 +599,16 @@ def report_chains_terminal(
             f"{rich_escape(', '.join(chain.triggering_check_ids))}",
         ]
         if chain.confirmed_reachable:
-            label = (
-                "✓ Reachability confirmed (dataflow)"
-                if chain.via_dataflow
-                else "✓ Reachability confirmed"
-            )
-            reach_line = f"[bold green]{label}[/bold green]"
+            # Two tiers: a proven source-to-sink dataflow path is the
+            # strong (green) signal; the shared-job fallback is only
+            # co-location, so it gets a weaker caution (yellow) label,
+            # not a confident "confirmed".
+            if chain.via_dataflow:
+                reach_line = (
+                    "[bold green]✓ Reachability confirmed (dataflow)[/bold green]"
+                )
+            else:
+                reach_line = "[bold yellow]≈ Co-located (unverified)[/bold yellow]"
             if chain.reachability_note:
                 reach_line += f": {rich_escape(chain.reachability_note)}"
             body_lines.append(reach_line)

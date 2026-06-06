@@ -36,6 +36,18 @@
     "findings": {
       "type": "array",
       "items": { "$ref": "#/definitions/finding" }
+    },
+    "scan_status": {
+      "type": "object",
+      "required": ["complete", "files_scanned", "files_unparsed", "degraded_modules"],
+      "additionalProperties": false,
+      "properties": {
+        "complete": { "type": "boolean" },
+        "files_scanned": { "type": "integer", "minimum": 0 },
+        "files_unparsed": { "type": "integer", "minimum": 0 },
+        "degraded_modules": { "type": "integer", "minimum": 0 },
+        "reason": { "type": "string" }
+      }
     }
   },
   "definitions": {

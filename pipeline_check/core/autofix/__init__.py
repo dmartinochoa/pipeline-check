@@ -33,7 +33,6 @@ module fails loudly at import time, not silently as a missing fixer.)
 """
 from __future__ import annotations
 
-import difflib
 import logging
 from collections.abc import Callable
 
@@ -180,6 +179,10 @@ def generate_fix(
 
 def render_patch(path: str, before: str, after: str) -> str:
     """Unified diff between ``before`` and ``after`` for *path*."""
+    # Imported here, not at module top, so ``difflib`` stays off the
+    # import path of a plain scan (autofix is pulled in by the fix
+    # engine on every CLI load, but a diff is only rendered under --fix).
+    import difflib
     return "".join(
         difflib.unified_diff(
             before.splitlines(keepends=True),

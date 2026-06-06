@@ -94,13 +94,13 @@ def check(<<SIG>>) -> Finding:
     # See docs/contributing_first_rule.md.
     offenders: list[str] = []
     passed = not offenders
-    return Finding(
-        check_id=RULE.id,
-        title=RULE.title,
-        severity=RULE.severity,
-        resource=<<RESOURCE>>,
-        description="No issue detected." if passed else f"{len(offenders)} offenders: {', '.join(offenders[:5])}",
-        recommendation=RULE.recommendation,
+    # ``RULE.finding`` fills check_id / title / severity / recommendation
+    # from RULE; pass any other Finding field as a keyword (locations=,
+    # job_anchors=, ...). Use RULE.fail_finding / RULE.pass_finding when
+    # ``passed`` is fixed.
+    return RULE.finding(
+        <<RESOURCE>>,
+        "No issue detected." if passed else f"{len(offenders)} offenders: {', '.join(offenders[:5])}",
         passed=passed,
     )
 '''

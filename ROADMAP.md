@@ -761,11 +761,20 @@ same day; the rest are queued for a later pass.
     whenever a file failed to parse or a cloud module failed API access
     (``reporter.py`` ``incomplete_reason`` +
     ``cli.py:_scan_incomplete_reason``).
-  - Follow-up (queued): carry the same ``scan_status`` (files scanned /
-    unparsed / degraded) in the JSON and SARIF outputs so CI consumers
-    can detect an incomplete scan, and add an opt-in
-    ``--fail-on-parse-error`` so the gate can treat an unparseable file
-    as a failure rather than passing silently.
+  - ~~Machine-readable scan_status (done 2026-06-06 on ``dev``):~~ the
+    JSON output gained a top-level ``scan_status`` object and SARIF a
+    run-level ``properties.scan_status`` (``complete`` plus
+    files-scanned / unparsed / degraded counts, and a ``reason`` when
+    incomplete), backed by a new ``cli._scan_status`` helper that
+    ``_scan_incomplete_reason`` now derives from. Added to the strict
+    ``tests/report_schema.json``.
+  - ~~``--fail-on-parse-error`` gate (done 2026-06-06 on ``dev``):~~ a
+    ``GateConfig.fail_on_parse_error`` flag + a ``parse_error_count`` arg
+    on ``evaluate_gate`` (fed by ``_scan_status(...)["files_unparsed"]``).
+    Additive: it adds a gate reason without disabling the default
+    ``--fail-on CRITICAL`` floor, so a clean scan still gates on CRITICAL.
+    The whole degraded-scan-honesty thread (terminal banner -> machine
+    scan_status -> opt-in gate) is now complete.
 - **Decompose ``cli.py`` (was 5,491 lines; ``scan()`` is 1,372 lines /
   ~70 params).**
   - ~~Core-seam extraction (done 2026-06-05 on ``dev``):~~ provider
@@ -804,50 +813,98 @@ same day; the rest are queued for a later pass.
     ``scan()`` body is now ~810 lines (from ~1,372 at the start).
   - Remaining (queued): the ``_scanner_kwargs`` dict build + (Multi)Scanner
     construction (a ~30-key dict, no clean param reduction on its own).
-    Then split the subcommands into a ``cli/`` package. Also fold the LSP's
-    dead ``_DETECTORS`` table (``lsp/detection.py``) onto ``core/detect.py``.
+    Then split the subcommands into a ``cli/`` package. (The LSP's dead
+    ``_DETECTORS`` table was deleted outright on 2026-06-06, see the Low
+    section below.)
 
 **Medium priority (queued):**
 
-- **Engine test-coverage gaps the 90% gate misses.** No
-  ``tests/test_scanner.py`` exists (the 969-line orchestrator is only
-  indirectly tested, ~46% in isolation). Add unit tests for
-  ``Scanner.run`` / ``MultiScanner.run`` dispatch, per-provider error
-  isolation, and the ``_verify_and_enrich_findings`` severity mutation.
-  Also untested: the ``pipeline_graph_builders`` resilience contract
-  (``pipeline_graph_builders.py:42-54``, "graph-building can't abort a
-  scan"), the gate's malformed-ignore-file fail-open branches
-  (``gate.py:285-329``), and the ``_MAX_YAML_BYTES`` 5 MB YAML-bomb guard
-  (``_yaml_files.py:40``). Consider bringing ``fleet.py`` + the rego
-  modules into the coverage measurement (currently ``omit``-ed in
-  ``.github/coveragerc-no-fleet``).
-- **Rule/finding emission ergonomics + the 95%-passing overhead.** Add
-  ``RULE.pass_finding()`` / ``fail_finding()`` helpers (the
-  ``Finding(check_id=RULE.id, title=RULE.title, ...)`` block is
-  copy-pasted across ~744 rule modules) and a
-  ``summarize_offenders(items, limit=5)`` helper (363 ``[:5]`` / 213
-  ``[:3]`` hand-rolled join-and-ellipsis tails, with an inconsistent
-  5-vs-3 cap). Separately, ~95% of emitted findings are passing and are
-  still fully post-processed (standards / confidence / FP-index /
-  metadata) before reporters discard them; skip that tail for
-  ``passed=True`` findings (``scanner.py:388``).
-- **Re-label the weak reachability tier.** The taint engine's phase-1
-  fallback returns ``confirmed_reachable=True`` when the only evidence is
-  two findings sharing a job name (``_reachability.py:154``), which is
-  co-location, not a proven path. Default the report badge to the
-  ``via_dataflow`` (proven) tier; label shared-job as
-  "co-located (unverified)".
-- **Test performance: ``test_english_variant.py`` re-reads the whole
-  repo once per word-pair** (~146 x ~2,600 files, the dominant cost in
-  the meta-test slice). Read every file once into a session/module
-  fixture and scan the cached text, or collapse the 146 params into one
-  all-patterns pass.
-- **Startup: defer heavy reporter/autofix imports.** ``cli.py:57,69``
-  imports ``junit_reporter`` (``xml.sax``, ~22 ms) and ``autofix``
-  (``difflib``, ~14 ms) at module top; move them into the format-dispatch
-  / ``--fix`` branches (~25 ms off every invocation). Also ship libyaml
-  in the published wheel/Docker image so ``yaml.CSafeLoader`` exists
-  (10-30x on the non-line YAML path).
+- **Engine test-coverage gaps the 90% gate misses.**
+  - ~~``tests/test_scanner.py`` (done 2026-06-06 on ``dev``):~~ direct
+    unit tests for the orchestrator via ``__new__``-built scanners + fake
+    check classes (``run()`` already guards every optional attr behind
+    ``getattr``). Covers ``Scanner.run`` dispatch, the check allowlist
+    (exact / glob / case), the confidence default vs ``confidence_locked``,
+    the override severity mutation, the chains toggle, the unknown-provider
+    ``ValueError``; ``_verify_and_enrich_findings`` (verified -> CRITICAL,
+    all-revoked -> LOW); the ``build_graphs_for`` resilience contract
+    (swallows builder errors); and ``MultiScanner`` dispatch order, graph
+    aggregation, chains-once toggle, ``metadata`` aggregation, and the
+    empty-pipelines ``ValueError``. scanner.py in-isolation coverage
+    37% -> 48% from this file alone.
+  - ~~Gate fail-open + YAML-bomb guard (done 2026-06-06 on ``dev``):~~
+    the gate's malformed-ignore-file fail-open branches now have tests in
+    ``test_ignore_yaml.py`` (malformed YAML / non-list top-level /
+    non-dict + non-string entries skipped / non-string resource+reason
+    coerced / missing file), and a new ``test_yaml_files.py`` covers the
+    shared loader's ``_MAX_YAML_BYTES`` size cap, read / parse errors,
+    multi-doc, and one-bad-file-doesn't-abort-the-batch. ``_yaml_files.py``
+    in-isolation coverage 0% -> 100%.
+  - Still queued: bring ``fleet.py`` + the rego modules into the coverage
+    measurement (currently ``omit``-ed in ``.github/coveragerc-no-fleet``).
+- **Rule/finding emission ergonomics + the 95%-passing overhead.**
+  - ~~``RULE.finding`` / ``fail_finding`` / ``pass_finding`` (done
+    2026-06-06 on ``dev``):~~ methods on ``Rule`` that fill
+    ``check_id`` / ``title`` / ``severity`` / ``recommendation`` from the
+    rule and pass any other ``Finding`` field through ``**extra``,
+    replacing the ``Finding(check_id=RULE.id, ...)`` block. The ``devenv``
+    provider (6 rules) is the canonical adopter, the ``new_rule.py``
+    scaffolder and ``contributing_first_rule.md`` now emit the helper, and
+    a test pins that it builds an identical ``Finding`` to the manual call.
+    The other ~738 modules adopt incrementally.
+  - ~~``summarize_offenders(items, *, limit=5)`` (done 2026-06-06 on
+    ``dev``):~~ in ``checks/base.py``, joins the first *limit* offenders
+    with ``", "`` and appends ``"…"`` when more were dropped, replacing
+    the hand-rolled ``", ".join(xs[:N]) + ellipsis`` tail. ``devenv``
+    (dev001 / 003 / 004 / 006) migrated byte-identically; the rest adopt
+    incrementally (the cap stays per-call, so a rule keeps whatever N it
+    used). Other ~570 sites are opportunistic.
+  - Still queued (low value): ~95% of emitted findings are passing and
+    still fully post-processed before reporters discard them. NOTE the
+    per-finding cost is mostly cheap (controls cached by ``check_id``,
+    the rest O(1) lookups), so this skip is likely marginal and risks
+    changing ``--show-passed`` / JSON output that includes passed
+    findings with controls. Reconsider value before doing.
+- ~~**Re-label the weak reachability tier** (badge done 2026-06-06 on
+  ``dev``).~~ The shared-job co-location fallback
+  (``confirmed_reachable=True``, ``via_dataflow=False``) used to render
+  the same green "Reachability confirmed" badge as a proven dataflow
+  path. The terminal / Markdown / HTML reports now show it as a weaker
+  caution "Co-located (unverified)" badge and reserve "Reachability
+  confirmed (dataflow)" for the proven tier; SARIF gained a
+  ``via_dataflow`` property. ``confirmed_reachable`` semantics and chain
+  emission are unchanged. **Follow-up (queued):** ~30 chain rules still
+  embed "Reachability confirmed: ..." in their per-rule ``narrative``
+  prose for the shared-job case (``ac001`` ... ``ac039``); a future
+  sweep could soften those to match the badge (lower value, the badge is
+  the at-a-glance signal).
+- ~~**Test performance: ``test_english_variant.py`` re-reads the whole
+  repo once per word-pair** (done 2026-06-06 on ``dev``).~~ It re-walked
+  the tree and re-read every file (~2,600) per pair (~160 pairs), ~204 s
+  serial. Now a module fixture scans the corpus once with a combined
+  alternation and buckets each hit by the form it matched; the per-pair
+  test is an O(1) lookup. ``\b``-anchoring makes it equivalent to the
+  per-pair scan, pinned by ``test_combined_scan_matches_naive``. 204 s ->
+  5.2 s serial (~39x), ~17 s under xdist (per-worker corpus reads now
+  dominate the trivial regex work).
+- **Startup: defer heavy reporter/autofix imports.**
+  - ~~Reporter imports (done 2026-06-06 on ``dev``):~~ the six
+    single-format reporters (JUnit / SARIF / Markdown / CodeQuality /
+    threat-model / HTML) now import lazily inside their format thunks in
+    ``_emit_scan_report`` (mirroring the existing ``_cyclonedx_text``).
+    The win is JUnit's ``xml.sax`` (~20 ms), which no longer loads on
+    every invocation; CLI import 150 ms -> 128 ms. No test imports or
+    patches ``cli.report_*``, so this was a clean lift.
+  - ~~``difflib`` (done 2026-06-06 on ``dev``):~~ the cleaner fix turned
+    out to be deferring ``difflib`` *inside* ``autofix`` (the import was
+    only used by ``render_patch``) rather than deferring the whole
+    ``autofix`` module. autofix is pulled onto every CLI load by the fix
+    engine (``fix_apply``), so deferring the cli ``_autofix`` import alone
+    wouldn't have helped, and the in-module lazy import sidesteps the
+    ``test_cli_fix`` patch of ``cli._autofix`` entirely. CLI import 128 ms
+    -> 114 ms. Still queued: ship libyaml in the published
+    wheel / Docker image so ``yaml.CSafeLoader`` exists (10-30x on the
+    non-line YAML path).
 
 **Low priority (queued):**
 
@@ -855,28 +912,52 @@ same day; the rest are queued for a later pass.
   auto-bump the registry-derived counts (``EXPECTED_RULE_COUNTS``,
   README / ``docs/index.md`` numbers), leaving only judgment steps to the
   contributor.
-- **De-duplicate parallel registries.** Derive MCP ``_RULES_FQN``
-  (``mcp_server/tools.py:246``) from the provider registry; share one
-  overrides/severity parser between ``config.py:260`` and
-  ``policies.py:368``.
-- **Close substring-match seams.** ``is_known_installer``
-  (``_context.py:161``) matches bare hosts by substring
-  (``get.k3s.io`` would match ``evil-get.k3s.io.attacker.com``); use
-  ``endswith`` on the canonical segment, matching the OIDC-host lesson.
-- **ReDoS hardening.** Bound the lazy/greedy fills in
-  ``_primitives/remote_script_exec.py`` (``_SHELL_SUBSHELL_RE`` /
-  ``_PROCESS_SUBST_RE`` / ``_DOWNLOAD_EXEC_RE``); an 80k-char crafted
-  line backtracks ~11 s, and these run on PR-controlled CI files.
-- **Strengthen the rule-coverage meta-test.** ``test_rule_test_coverage.py``
-  text-greps for a ``Test<ID>`` class and counts empty stubs as covered;
-  AST-parse and require >=1 ``assert`` per rule-test class.
+- **De-duplicate parallel registries.**
+  - ~~MCP ``_RULES_FQN`` (done 2026-06-06 on ``dev``):~~ the
+    hand-maintained 32-provider dict in ``mcp_server/tools.py`` is now
+    derived from the ``checks/<p>/rules/__init__.py`` glob (the same
+    source the scanner's custom-rule loader uses), so a new provider's
+    rule pack is picked up automatically. The existing
+    ``test_rules_fqn_parity_with_path_kw`` now also catches when the
+    still-hardcoded ``_PROVIDER_PATH_KW`` drifts from it.
+  - Still queued: share one overrides/severity parser between
+    ``config.py`` and ``policies.py``.
+- ~~**Close substring-match seams** (done 2026-06-06 on ``dev``).~~
+  ``is_known_installer`` (``_context.py``) matched the curl-pipe
+  allowlist by bare substring, so ``https://get.docker.com.evil.com/x``
+  (suffix) and ``https://evil.com/get.docker.com`` (path) demoted to the
+  trusted-installer path. Now parses the host (exact-or-subdomain, like
+  ``remote_script_exec._is_vendor``) plus a path prefix for the
+  path-bearing entries. Note: the function is currently reached only by
+  its own tests; the live curl-pipe vendor check (``_is_vendor``) already
+  parsed the host correctly. Bypass regression tests in
+  ``test_confidence.py``.
+- ~~**ReDoS hardening** (done 2026-06-06 on ``dev``).~~ Bounded every
+  fill and the captured URL in ``_primitives/remote_script_exec.py``
+  (``_PIPE_RE`` / ``_SHELL_SUBSHELL_RE`` / ``_PROCESS_SUBST_RE`` /
+  ``_DOWNLOAD_EXEC_RE`` / ``_POWERSHELL_RE``) at ``_MAX_FILL`` = 2048. An
+  80k-char crafted line backtracked ~5-11 s per pattern (these run on
+  PR-controlled CI files); now ~15 ms. Timing regression in
+  ``test_primitives.py::TestRemoteScriptExecReDoS``.
+- ~~**Strengthen the rule-coverage meta-test** (done 2026-06-06 on
+  ``dev``).~~ ``test_rule_test_coverage.py`` now AST-parses the test
+  files (cached in a module fixture) and a ``Test<ID>`` class counts as
+  coverage only when it carries a real assertion (a bare ``assert``,
+  ``pytest.raises`` / ``fail`` / ``warns``, or a ``self.assert*``), so an
+  empty stub no longer passes. Verified 0 current stubs across all 17
+  providers, so the 100% floors held; ``TestCoverageMechanics`` pins the
+  stub-rejection, the padded/unpadded matching, and the number boundary.
 - **Em-dash prose cleanup + minor tics.** ~914 lines use em-dashes as
   pauses against the CLAUDE.md convention; a handful of banned words
   remain (``robust``, ``comprehensive``, ``leverage`` in a few rule
   docstrings). Consider a lint mirroring the English-variant test.
-- **De-stringify severity in ``pr_diff.py:187``** (use the canonical
-  ``severity_rank`` instead of a local ``_SEVERITY_ORDER`` dict), and
-  **delete the dead ``_DETECTORS`` table** in ``lsp/detection.py:20``.
+- ~~**De-stringify severity in ``pr_diff.py``** and **delete the dead
+  ``_DETECTORS`` table** in ``lsp/detection.py`` (done 2026-06-06 on
+  ``dev``).~~ ``pr_diff._SEVERITY_ORDER`` is now derived from the
+  canonical ``Severity`` enum + ``severity_rank`` (identical values,
+  drift-proof) rather than a hand-maintained copy; the LSP's unused
+  ``_DETECTORS`` table (out of sync with ``detect_provider``'s own logic
+  and kept alive only by a ``_ = _DETECTORS`` silencer) was removed.
 
 ### High-impact provider checks (2026-06-04 cross-provider sweep)
 
@@ -1010,6 +1091,43 @@ heatmap to step-level granularity: steps as nodes, ``needs:`` /
 severity-colored badges on each node. Requires extending the
 Scanner-to-reporter API so the parsed pipeline structure flows
 through; the v1 heatmap intentionally avoided that plumbing change.
+
+**Landing incrementally.** The provider-neutral model
+(``core/pipeline_graph.py``), the Scanner-to-reporter plumbing
+(``Scanner.pipeline_graphs`` + the HTML ``_pipeline_dag_section_html``),
+and the lazy dispatcher (``core/pipeline_graph_builders.py``) shipped
+with the **GitHub** builder (increment 1). Each later provider is just a
+new ``checks/<p>/_graph.py`` + one ``_BUILDER_MODULES`` line, no contract
+change. ~~**GitLab** (increment 2, done 2026-06-06 on ``dev``):~~ jobs as
+nodes, ``needs:`` as edges, and stage ordering as ``stage`` edges for
+no-needs jobs. ~~**CircleCI** (increment 3, done 2026-06-06 on ``dev``):~~
+jobs and their steps as nodes, with the
+``workflows.<name>.jobs[].requires`` references (unioned across every
+workflow, only edges to real ``jobs:`` entries) as ``needs`` edges, the
+dependency structure lives in ``workflows:`` not on the jobs.
+~~**CloudBuild** (increment 4, done 2026-06-06 on ``dev``):~~ each build
+step is a ``job``-kind node (steps are the unit of work, so they render
+as boxes), ``waitFor: [ids]`` -> ``needs`` edges, ``waitFor: ['-']`` ->
+no edge (immediate), no ``waitFor`` -> ``stage`` edge from the previous
+step (the sequential default). ~~**Drone** (increment 5, done 2026-06-06
+on ``dev``):~~ the first MULTI-DOC builder, one graph per ``kind:
+pipeline`` document; each step is a ``job`` node, ``depends_on`` ->
+``needs`` (sequential ``stage`` chain when no ``depends_on`` anywhere).
+Multi-doc needed two things: (1) each graph's file-root is bounded to its
+document's line range, and (2) ``attach_findings`` only falls back to the
+root for a finding with NO positioned line on the file (a line that lands
+in no node belongs to another document) - this is the reusable fix for
+Tekton / Argo. Remaining pipeline providers (Azure, Bitbucket, Buildkite,
+Tekton, Argo, Jenkins) follow the same shape; IaC / SCA / cloud providers
+have no job DAG. Per-provider notes:
+Azure (single-doc, stages + jobs + steps, ``dependsOn`` by name with a
+``job:`` / ``deployment:`` prefix, within-stage resolution + deployment
+strategy step nesting), Bitbucket (parallel groups, multiple pipeline
+definitions per file), Buildkite (``depends_on`` by key + ``wait``
+barriers + ``group`` flattening), Drone / Tekton / Argo (multi-doc, need
+per-doc line bounds on the file root). Renderer reminder: only ``needs``
+and ``stage`` edges are drawn between boxes (``sequence`` is for step
+nesting only).
 
 ### Reachability-aware attack chains
 

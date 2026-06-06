@@ -540,3 +540,38 @@ class TestCliIntegration:
             "--output", "json",
         ])
         assert r.exit_code == 0
+
+
+class TestFailOnParseError:
+    """``--fail-on-parse-error`` refuses a scan that silently skipped
+    part of its input. It layers on top of the default CRITICAL floor."""
+
+    def test_fails_when_files_unparsed(self):
+        r = evaluate_gate(
+            [], _score("A"), GateConfig(fail_on_parse_error=True),
+            parse_error_count=2,
+        )
+        assert not r.passed
+        assert any("could not be parsed" in x for x in r.reasons)
+
+    def test_passes_when_nothing_unparsed(self):
+        r = evaluate_gate(
+            [], _score("A"), GateConfig(fail_on_parse_error=True),
+            parse_error_count=0,
+        )
+        assert r.passed
+
+    def test_flag_off_ignores_parse_errors(self):
+        # The count is non-zero but the flag is off: not a gate failure.
+        r = evaluate_gate([], _score("A"), GateConfig(), parse_error_count=3)
+        assert r.passed
+
+    def test_additive_to_default_critical_floor(self):
+        # Flag on, zero parse errors, but a CRITICAL finding: the default
+        # floor still trips. The flag adds a condition, it doesn't replace.
+        r = evaluate_gate(
+            [_f(severity=Severity.CRITICAL)], _score("A"),
+            GateConfig(fail_on_parse_error=True), parse_error_count=0,
+        )
+        assert not r.passed
+        assert any("default gate" in x for x in r.reasons)

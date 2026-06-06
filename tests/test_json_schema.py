@@ -67,6 +67,15 @@ class TestSchemaCompliance:
             report = _report([_finding(passed=passed, severity=Severity.CRITICAL)])
             assert 0 <= report["score"]["score"] <= 100
 
+    def test_scan_status_validates(self):
+        report = _report([_finding()])
+        report["scan_status"] = {
+            "complete": False, "files_scanned": 2,
+            "files_unparsed": 1, "degraded_modules": 0,
+            "reason": "1 file(s) could not be parsed.",
+        }
+        jsonschema.validate(report, _SCHEMA)
+
 
 class TestSchemaEnforcement:
     def test_invalid_grade_rejected(self):
@@ -100,5 +109,12 @@ class TestSchemaEnforcement:
     def test_extra_fields_rejected(self):
         report = _report([_finding()])
         report["unexpected_field"] = "value"
+        with pytest.raises(jsonschema.ValidationError):
+            jsonschema.validate(report, _SCHEMA)
+
+    def test_scan_status_bad_shape_rejected(self):
+        report = _report([_finding()])
+        # Missing the required count fields and wrong ``complete`` type.
+        report["scan_status"] = {"complete": "yes"}
         with pytest.raises(jsonschema.ValidationError):
             jsonschema.validate(report, _SCHEMA)

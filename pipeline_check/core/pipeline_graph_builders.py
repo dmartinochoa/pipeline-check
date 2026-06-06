@@ -22,6 +22,10 @@ _BUILDERS: dict[str, Callable[[Any], list[PipelineGraph]]] = {}
 #: use. Append one line here per provider increment.
 _BUILDER_MODULES: dict[str, str] = {
     "github": "pipeline_check.core.checks.github._graph",
+    "gitlab": "pipeline_check.core.checks.gitlab._graph",
+    "circleci": "pipeline_check.core.checks.circleci._graph",
+    "cloudbuild": "pipeline_check.core.checks.cloudbuild._graph",
+    "drone": "pipeline_check.core.checks.drone._graph",
 }
 
 

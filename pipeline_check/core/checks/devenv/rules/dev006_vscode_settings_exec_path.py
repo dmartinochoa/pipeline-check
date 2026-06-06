@@ -14,7 +14,7 @@ from __future__ import annotations
 
 import re
 
-from ...base import Finding, Severity
+from ...base import Finding, Severity, summarize_offenders
 from ...rule import Rule
 from ..base import KIND_VSCODE_SETTINGS, WorkspaceFile, location_for
 
@@ -179,9 +179,8 @@ def check(path: str, wf: WorkspaceFile) -> Finding:
 
     if not offenders:
         return _pass(path)
-    shown = ", ".join(offenders[:4]) + ("…" if len(offenders) > 4 else "")
-    return Finding(
-        check_id=RULE.id, title=RULE.title, severity=RULE.severity,
+    shown = summarize_offenders(offenders, limit=4)
+    return RULE.fail_finding(
         resource=path,
         description=(
             f"{len(offenders)} VS Code workspace setting(s) launch a "
@@ -189,15 +188,11 @@ def check(path: str, wf: WorkspaceFile) -> Finding:
             f"folder open: {shown}. Opening this repo in VS Code (once "
             f"trusted) runs the committed binary as the tool."
         ),
-        recommendation=RULE.recommendation, passed=False,
         locations=location_for(path, wf.raw, offenders[0].split("=", 1)[0]),
     )
 
 
 def _pass(path: str) -> Finding:
-    return Finding(
-        check_id=RULE.id, title=RULE.title, severity=RULE.severity,
-        resource=path,
-        description="No repo-local tool paths or env injection in VS Code settings.",
-        recommendation=RULE.recommendation, passed=True,
+    return RULE.pass_finding(
+        path, "No repo-local tool paths or env injection in VS Code settings.",
     )

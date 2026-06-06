@@ -1197,10 +1197,19 @@ def _chains_section_html(chains: list[Chain]) -> str:
                 if c.reachability_note
                 else ""
             )
+            # Proven dataflow path is the strong (green) signal; the
+            # shared-job fallback is only co-location, so it gets a
+            # caution (amber) label, not a confident "confirmed".
+            if c.via_dataflow:
+                reach_color = "#1f7a3a"
+                reach_label = "&#10003; Reachability confirmed (dataflow)"
+            else:
+                reach_color = "#8a5e00"
+                reach_label = "&#8776; Co-located (unverified)"
             reach_html = (
                 '<div class="chain-card__line chain-card__reachable" '
-                'style="color:#1f7a3a">'
-                '<strong>&#10003; Reachability confirmed</strong>'
+                f'style="color:{reach_color}">'
+                f'<strong>{reach_label}</strong>'
                 f'{reach_body}</div>'
             )
         refs_html = ""

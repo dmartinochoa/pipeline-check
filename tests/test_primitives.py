@@ -10,6 +10,8 @@ loading round-trip.
 """
 from __future__ import annotations
 
+import time
+
 import pytest
 
 from pipeline_check.core.checks._primitives import (
@@ -568,6 +570,39 @@ class TestRemoteScriptExecNegatives:
     ])
     def test_safe_idiom_not_flagged(self, text):
         assert remote_script_exec.scan(text) == []
+
+
+class TestRemoteScriptExecReDoS:
+    """A crafted long line must not drive the patterns into quadratic
+    backtracking. Each fill is length-capped (``_MAX_FILL``); before the
+    cap an 80k-char line backtracked ~5 s per pattern, a denial-of-service
+    vector since these run on PR-controlled CI files.
+    """
+
+    # Fetcher + URL prefix with no trailing pipe / paren / redirect: the
+    # shape that maximized backtracking for each catalog entry. The long
+    # tail is appended inside the test so the parametrize id stays small.
+    @pytest.mark.parametrize("prefix", [
+        "curl https://x.io/",             # pipe / download-exec
+        'bash -c "$(curl https://x.io/',  # shell-subshell
+        "bash <(curl https://x.io/",      # process-subst
+        "irm https://x.io/",              # powershell
+    ])
+    def test_long_line_does_not_backtrack(self, prefix):
+        payload = prefix + "a" * 80000
+        start = time.perf_counter()
+        remote_script_exec.scan(payload)
+        elapsed = time.perf_counter() - start
+        # Post-fix is ~15 ms; the 1 s bar catches the ~5 s regression
+        # with a wide margin for slow CI without flaking.
+        assert elapsed < 1.0, f"scan took {elapsed:.2f}s (ReDoS regression)"
+
+    def test_cap_preserves_detection_within_bound(self):
+        # A long-but-bounded URL (under ``_MAX_FILL``) still matches; the
+        # cap only defuses the adversarial unbounded case.
+        url = "https://example.com/" + "a" * 1000
+        hits = remote_script_exec.scan(f"curl {url} | bash")
+        assert len(hits) == 1 and hits[0].kind == "curl-pipe"
 
 
 # ──────────────────────────────────────────────────────────────────
