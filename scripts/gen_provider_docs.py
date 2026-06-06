@@ -1720,6 +1720,10 @@ Scope filter: `aws_iam_role.assume_role_policy` includes
 `codebuild.amazonaws.com`, `codepipeline.amazonaws.com`, or
 `codedeploy.amazonaws.com` as a `Service` principal.
 
+`IAM-009` / `IAM-010` are the cross-cloud OIDC-federation analogs
+(Azure / GCP). They read their own resource types and are not gated by
+the AWS service-principal scope filter above.
+
 | Check   | Primary input |
 |---------|---------------|
 | IAM-001 | `managed_policy_arns` + `aws_iam_role_policy_attachment.policy_arn` |
@@ -1729,6 +1733,8 @@ Scope filter: `aws_iam_role.assume_role_policy` includes
 | IAM-005 | `aws_iam_role.assume_role_policy` (external principal w/o `sts:ExternalId`) |
 | IAM-006 | inline + attached policy JSON (sensitive actions on `Resource = "*"`) |
 | IAM-008 | `aws_iam_role.assume_role_policy` (OIDC `:aud` / `:sub` pin) |
+| IAM-009 | `azurerm_federated_identity_credential.{issuer,subject}` |
+| IAM-010 | `google_iam_workload_identity_pool_provider` (`oidc.issuer_uri` + `attribute_condition`) |
 
 ### S3 (artifact buckets discovered from pipelines)
 
