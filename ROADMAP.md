@@ -1051,6 +1051,18 @@ severity-colored badges on each node. Requires extending the
 Scanner-to-reporter API so the parsed pipeline structure flows
 through; the v1 heatmap intentionally avoided that plumbing change.
 
+**Landing incrementally.** The provider-neutral model
+(``core/pipeline_graph.py``), the Scanner-to-reporter plumbing
+(``Scanner.pipeline_graphs`` + the HTML ``_pipeline_dag_section_html``),
+and the lazy dispatcher (``core/pipeline_graph_builders.py``) shipped
+with the **GitHub** builder (increment 1). Each later provider is just a
+new ``checks/<p>/_graph.py`` + one ``_BUILDER_MODULES`` line, no contract
+change. ~~**GitLab** (increment 2, done 2026-06-06 on ``dev``):~~ jobs as
+nodes, ``needs:`` as edges, and stage ordering as ``stage`` edges for
+no-needs jobs. Remaining pipeline providers (Azure, Bitbucket, Buildkite,
+Drone, Tekton, Argo, CircleCI, CloudBuild, Jenkins) follow the same shape;
+IaC / SCA / cloud providers have no job DAG.
+
 ### Reachability-aware attack chains
 
 Phase 1 (shared-job intersection) shipped incrementally across the
