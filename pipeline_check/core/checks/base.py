@@ -469,10 +469,11 @@ import re as _re
 #: ``docker run --privileged`` or ``-v /…:/…``, container escape via
 #: host mount, privileged mode, namespace sharing, or socket mount.
 DOCKER_INSECURE_RE = _re.compile(
-    r"docker\s+run\s[^;&]*(?:--privileged|--cap-add|--net(?:work)?[= ]host"
-    r"|--pid[= ]host|--userns[= ]host"                              # namespace sharing
-    r"|-v\s+/var/run/docker\.sock:/var/run/docker\.sock"            # socket mount
-    r"|-v\s+/:/)"                                                   # root mount
+    r"docker\s+run\s[^;&]*(?:--privileged|--cap-add"
+    r"|--(?:net(?:work)?|pid|ipc|userns)[= ]host"                   # namespace sharing
+    r"|--security-opt[= ]\s*(?:seccomp|apparmor)=unconfined"        # sandbox disabled
+    r"|(?:-v|--volume)\s+/var/run/docker\.sock:"                    # socket mount (any target)
+    r"|(?:-v|--volume)\s+/:/)"                                      # root mount
     r"|docker\s+compose\s[^;&]*--privileged",                       # compose
 )
 

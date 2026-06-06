@@ -147,6 +147,16 @@ release commit collapses this section into `## [X.Y.Z] - <date>`.
 
 ### Fixed
 
+- **Docker container-escape detection widened (cross-provider).** The
+  shared `DOCKER_INSECURE_RE` (GHA-017, ADO-017, BB-013, CC-017, GL-017,
+  JF-017, BK-005, all CRITICAL/HIGH) missed several escape idioms: the
+  Docker socket mounted to a non-canonical target (`-v
+  /var/run/docker.sock:/sock`), the `--volume` long form, `--ipc=host`,
+  and `--security-opt seccomp=unconfined` / `apparmor=unconfined`
+  (sandbox disabled). All are now flagged across every provider that
+  reuses the pattern; benign mounts (`-v ./data:/data`, `-p 8080:80`)
+  remain clean.
+
 - **Tekton, Argo, Buildkite, and Drone literal-secret rules now use the
   full token catalog.** TKN-005, ARGO-006, and BK-002 matched only a
   hand-maintained six-pattern subset (AWS / `ghp_` / `gho_` / broad `sk-` /
