@@ -831,11 +831,16 @@ same day; the rest are queued for a later pass.
     aggregation, chains-once toggle, ``metadata`` aggregation, and the
     empty-pipelines ``ValueError``. scanner.py in-isolation coverage
     37% -> 48% from this file alone.
-  - Still untested (queued): the gate's malformed-ignore-file fail-open
-    branches (``gate.py:285-329``) and the ``_MAX_YAML_BYTES`` 5 MB
-    YAML-bomb guard (``_yaml_files.py:40``). Consider bringing
-    ``fleet.py`` + the rego modules into the coverage measurement
-    (currently ``omit``-ed in ``.github/coveragerc-no-fleet``).
+  - ~~Gate fail-open + YAML-bomb guard (done 2026-06-06 on ``dev``):~~
+    the gate's malformed-ignore-file fail-open branches now have tests in
+    ``test_ignore_yaml.py`` (malformed YAML / non-list top-level /
+    non-dict + non-string entries skipped / non-string resource+reason
+    coerced / missing file), and a new ``test_yaml_files.py`` covers the
+    shared loader's ``_MAX_YAML_BYTES`` size cap, read / parse errors,
+    multi-doc, and one-bad-file-doesn't-abort-the-batch. ``_yaml_files.py``
+    in-isolation coverage 0% -> 100%.
+  - Still queued: bring ``fleet.py`` + the rego modules into the coverage
+    measurement (currently ``omit``-ed in ``.github/coveragerc-no-fleet``).
 - **Rule/finding emission ergonomics + the 95%-passing overhead.** Add
   ``RULE.pass_finding()`` / ``fail_finding()`` helpers (the
   ``Finding(check_id=RULE.id, title=RULE.title, ...)`` block is

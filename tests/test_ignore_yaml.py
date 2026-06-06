@@ -206,6 +206,48 @@ class TestExpiringSoonCLISurface:
         assert "1 days" not in err
 
 
+class TestIgnoreFailOpen:
+    """A malformed or garbage ignore file must fail OPEN: ``load_ignore_file``
+    returns no rules (so nothing is silently suppressed and findings keep
+    surfacing) rather than crashing or suppressing everything. Bad entries
+    inside an otherwise-valid list are skipped, not fatal."""
+
+    def test_malformed_yaml_loads_nothing(self, tmp_path, capsys):
+        p = tmp_path / "ignore.yml"
+        p.write_text("on: [push\n")  # unclosed flow sequence: a parse error
+        assert load_ignore_file(p) == []
+        assert "could not parse" in capsys.readouterr().err
+
+    def test_non_list_top_level_rejected(self, tmp_path, capsys):
+        p = tmp_path / "ignore.yml"
+        p.write_text("check_id: GHA-001\n")  # a mapping, not a list of rules
+        assert load_ignore_file(p) == []
+        assert "top-level list" in capsys.readouterr().err
+
+    def test_non_dict_entries_skipped(self, tmp_path):
+        p = tmp_path / "ignore.yml"
+        p.write_text("- just-a-string\n- check_id: GHA-001\n")
+        rules = load_ignore_file(p)
+        assert [r.check_id for r in rules] == ["GHA-001"]
+
+    def test_non_string_check_id_skipped(self, tmp_path):
+        p = tmp_path / "ignore.yml"
+        p.write_text("- check_id: 123\n- check_id: GHA-002\n")
+        rules = load_ignore_file(p)
+        assert [r.check_id for r in rules] == ["GHA-002"]
+
+    def test_non_string_resource_and_reason_coerced_to_none(self, tmp_path):
+        p = tmp_path / "ignore.yml"
+        p.write_text("- check_id: GHA-003\n  resource: 42\n  reason: [a, b]\n")
+        rules = load_ignore_file(p)
+        assert rules[0].check_id == "GHA-003"
+        assert rules[0].resource is None
+        assert rules[0].reason is None
+
+    def test_missing_file_returns_empty(self, tmp_path):
+        assert load_ignore_file(tmp_path / "nope.yml") == []
+
+
 def test_yaml_duplicate_key_rejected(tmp_path, capsys):
     """A YAML ignore rule with a duplicated field (typo or copy-paste
     mistake) must not silently drop half the user's intent. Loader
