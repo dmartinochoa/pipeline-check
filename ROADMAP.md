@@ -768,11 +768,13 @@ same day; the rest are queued for a later pass.
     incomplete), backed by a new ``cli._scan_status`` helper that
     ``_scan_incomplete_reason`` now derives from. Added to the strict
     ``tests/report_schema.json``.
-  - Follow-up (queued): an opt-in ``--fail-on-parse-error`` so the gate
-    can treat an unparseable file as a failure rather than passing
-    silently. Needs a ``GateConfig`` field + an ``evaluate_gate`` arg
-    (it doesn't currently receive scan metadata); the ``_scan_status``
-    helper supplies the count.
+  - ~~``--fail-on-parse-error`` gate (done 2026-06-06 on ``dev``):~~ a
+    ``GateConfig.fail_on_parse_error`` flag + a ``parse_error_count`` arg
+    on ``evaluate_gate`` (fed by ``_scan_status(...)["files_unparsed"]``).
+    Additive: it adds a gate reason without disabling the default
+    ``--fail-on CRITICAL`` floor, so a clean scan still gates on CRITICAL.
+    The whole degraded-scan-honesty thread (terminal banner -> machine
+    scan_status -> opt-in gate) is now complete.
 - **Decompose ``cli.py`` (was 5,491 lines; ``scan()`` is 1,372 lines /
   ~70 params).**
   - ~~Core-seam extraction (done 2026-06-05 on ``dev``):~~ provider

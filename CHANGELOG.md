@@ -19,8 +19,13 @@ release commit collapses this section into `## [X.Y.Z] - <date>`.
   tell a fully-completed scan from a partial one. JSON gains a top-level
   `scan_status` object and SARIF a run-level `properties.scan_status`,
   both carrying `complete`, `files_scanned`, `files_unparsed`,
-  `degraded_modules`, and a `reason` when incomplete. (An opt-in
-  `--fail-on-parse-error` gate that acts on this is a planned follow-up.)
+  `degraded_modules`, and a `reason` when incomplete.
+- **`--fail-on-parse-error` gate.** Opt-in CI gate that fails the run when
+  any file could not be parsed (malformed YAML / JSON, read error), so a
+  scan that silently skipped part of its input is treated as a failure
+  rather than a clean pass. Layers on top of the existing gate conditions
+  (it does not disable the default `--fail-on CRITICAL` floor); the count
+  it acts on is the same one surfaced in `scan_status.files_unparsed`.
 
 ### Changed
 

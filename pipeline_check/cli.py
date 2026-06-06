@@ -212,7 +212,8 @@ class _GroupedCommand(click.Command):
         })),
         ("Gate", frozenset({
             "--fail-on", "--min-grade", "--max-failures",
-            "--fail-on-check", "--baseline", "--baseline-from-git",
+            "--fail-on-check", "--fail-on-parse-error",
+            "--baseline", "--baseline-from-git",
             "--write-baseline",
             "--diff-base", "--pr-diff", "--ignore-file", "--no-inline-ignore",
             "--fail-on-chain", "--fail-on-any-chain",
@@ -1928,6 +1929,17 @@ def _install_completion_callback(
     ),
 )
 @click.option(
+    "--fail-on-parse-error",
+    is_flag=True,
+    help=(
+        "Fail the gate if any file could not be parsed (malformed YAML / "
+        "JSON, read error). A clean grade only reflects what was actually "
+        "scanned, so this refuses a scan that silently skipped part of "
+        "its input. Layers on top of the other gate conditions; see the "
+        "JSON / SARIF ``scan_status`` for the count."
+    ),
+)
+@click.option(
     "--secret-pattern",
     "secret_patterns",
     multiple=True,
@@ -2396,6 +2408,7 @@ def scan(
     min_grade: str | None,
     max_failures: int | None,
     fail_on_checks: tuple[str, ...],
+    fail_on_parse_error: bool,
     secret_patterns: tuple[str, ...],
     detect_entropy: bool,
     fix: str | None,
@@ -3170,6 +3183,7 @@ def scan(
         inline_ignores=inline_index,
         fail_on_chains={c.upper() for c in fail_on_chain_ids},
         fail_on_any_chain=fail_on_any_chain,
+        fail_on_parse_error=fail_on_parse_error,
         expiry_warning_days=expiry_window,
     )
 
@@ -3186,7 +3200,10 @@ def scan(
             parts.append(f"baseline-from-git={baseline_from_git}")
         _debug(f"gate config: {', '.join(parts)}")
 
-    gate = evaluate_gate(findings, score_result, gate_config, chains=chains)
+    gate = evaluate_gate(
+        findings, score_result, gate_config, chains=chains,
+        parse_error_count=_scan_status(scanner.metadata, findings)["files_unparsed"],
+    )
 
     if not quiet and output != "json":
         _emit_gate_summary(

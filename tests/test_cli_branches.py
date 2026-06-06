@@ -131,6 +131,19 @@ class TestIncompleteScan:
         assert data["scan_status"]["complete"] is False
         assert data["scan_status"]["files_unparsed"] == 1
 
+    def test_fail_on_parse_error_gate(self, tmp_path, monkeypatch):
+        monkeypatch.chdir(tmp_path)
+        wf = tmp_path / ".github" / "workflows"
+        wf.mkdir(parents=True)
+        (wf / "bad.yml").write_text("on: [push\njobs:\n  b:\n")
+        args = ["--pipeline", "github", "--output", "terminal"]
+        # Without the flag a parse failure is a warning, not a gate fail.
+        assert CliRunner().invoke(scan, args).exit_code == 0
+        # With it, the unparseable file trips the gate.
+        result = CliRunner().invoke(scan, [*args, "--fail-on-parse-error"])
+        assert result.exit_code == 1
+        assert "could not be parsed" in result.output
+
 
 class TestListStandards:
     def test_prints_every_registered_standard(self, runner):
