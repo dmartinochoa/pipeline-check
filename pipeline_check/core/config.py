@@ -34,6 +34,7 @@ from typing import Any
 import yaml
 
 from ._yaml_strict import safe_load_strict as _safe_load_strict
+from .checks.base import VALID_SEVERITY_NAMES as _VALID_SEVERITIES
 
 # Keys that are allowed in a config file (and map directly to click option names).
 _TOPLEVEL_KEYS: frozenset[str] = frozenset({
@@ -247,14 +248,6 @@ def _coerce(key: str, value: Any) -> Any:
     if key == "overrides":
         return _parse_overrides(value)
     return value
-
-
-# Severity values accepted in an ``overrides:`` block. Lower-case copies
-# accommodate the YAML convention of unquoted lower-case strings; the
-# Scanner converts to ``Severity`` enum values once.
-_VALID_SEVERITIES: frozenset[str] = frozenset({
-    "CRITICAL", "HIGH", "MEDIUM", "LOW", "INFO",
-})
 
 
 def _parse_overrides(raw: Any) -> dict[str, dict[str, str]]:

@@ -21,6 +21,13 @@ release commit collapses this section into `## [X.Y.Z] - <date>`.
   pipeline-execution payload exactly like a tampered `package.json` /
   `Makefile` / `setup.py`. No new rule ID; this is the widening the roadmap
   reserved instead of a separate check.
+- **Single source of truth for valid severity names.** `config.py` and
+  `policies.py` each hand-maintained an identical `_VALID_SEVERITIES`
+  frozenset used to validate `overrides:` severities (which change a
+  finding's gate severity). Both now import one `VALID_SEVERITY_NAMES` set
+  derived from the canonical `Severity` enum in `checks/base.py`, so the two
+  config loaders can't drift from each other or from the enum. No behavior
+  change.
 
 ### Added
 

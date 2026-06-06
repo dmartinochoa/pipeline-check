@@ -920,8 +920,14 @@ same day; the rest are queued for a later pass.
     rule pack is picked up automatically. The existing
     ``test_rules_fqn_parity_with_path_kw`` now also catches when the
     still-hardcoded ``_PROVIDER_PATH_KW`` drifts from it.
-  - Still queued: share one overrides/severity parser between
-    ``config.py`` and ``policies.py``.
+  - ~~Share one overrides/severity parser between ``config.py`` and
+    ``policies.py``.~~ Partly done 2026-06-06 on ``dev``: the duplicated
+    ``_VALID_SEVERITIES`` frozenset in both loaders is now one
+    ``VALID_SEVERITY_NAMES`` derived from the canonical ``Severity`` enum in
+    ``checks/base.py`` (drift-proof). The two ``overrides:`` parsers keep
+    their deliberately different error handling (config warns + continues,
+    policy raises ``PolicyError``), so only the shared validation set was
+    unified.
 - ~~**Close substring-match seams** (done 2026-06-06 on ``dev``).~~
   ``is_known_installer`` (``_context.py``) matched the curl-pipe
   allowlist by bare substring, so ``https://get.docker.com.evil.com/x``

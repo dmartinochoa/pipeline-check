@@ -30,6 +30,7 @@ __all__ = [
     "summarize_offenders",
     "Severity",
     "severity_rank",
+    "VALID_SEVERITY_NAMES",
     "Confidence",
     "confidence_rank",
     "Finding",
@@ -106,6 +107,13 @@ _SEVERITY_RANK: dict["Severity", int] = {
 
 def severity_rank(s: "Severity") -> int:
     return _SEVERITY_RANK[s]
+
+
+#: Severity names accepted in config / policy ``overrides:`` blocks and
+#: gate thresholds, derived from the canonical :class:`Severity` enum so the
+#: two loaders (``config.py`` / ``policies.py``) can't drift from it or from
+#: each other.
+VALID_SEVERITY_NAMES: frozenset[str] = frozenset(s.value for s in Severity)
 
 
 def summarize_offenders(items: Iterable[str], *, limit: int = 5) -> str:
