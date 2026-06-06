@@ -80,7 +80,11 @@ release commit collapses this section into `## [X.Y.Z] - <date>`.
   in one place (`TektonChecks.run`), matching the `Location` shape TKN-001
   already sets natively. Detection, severity, and finding counts are
   unchanged; findings that already carry locations or have no anchors are
-  left untouched.
+  left untouched. The aggregate Tekton rules (TKN-004/005/006/007/008/009/
+  010/011/013/014/015) now also attach a `Location` per offending document
+  via a shared `tekton/base.py::doc_location(doc, obj)` helper, so the whole
+  Tekton provider emits located findings (TKN-012 is a whole-scan
+  "no vulnerability scanner anywhere" finding with no resource to point at).
 - **Argo Workflows findings now carry source locations.** Same fix as the
   Tekton one, applied to Argo: the per-template rules (ARGO-005 parameter
   injection, ARGO-017 resource manifest injection) attributed offenders

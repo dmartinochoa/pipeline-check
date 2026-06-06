@@ -4,9 +4,9 @@ from __future__ import annotations
 import re
 from typing import Any
 
-from ...base import Finding, Severity
+from ...base import Finding, Location, Severity
 from ...rule import Rule
-from ..base import TektonContext, step_name, task_steps
+from ..base import TektonContext, doc_location, step_name, task_steps
 
 RULE = Rule(
     id="TKN-005",
@@ -134,6 +134,7 @@ def _scan_params(spec: dict[str, Any]) -> list[str]:
 
 def check(ctx: TektonContext) -> Finding:
     offenders: list[str] = []
+    locations: list[Location] = []
     for doc in ctx.docs:
         spec = doc.data.get("spec") or {}
         if not isinstance(spec, dict):
@@ -146,6 +147,7 @@ def check(ctx: TektonContext) -> Finding:
                         f"{doc.kind}/{doc.name} {step_name(step, idx)} "
                         f"env: {', '.join(hits)}"
                     )
+                    locations.append(doc_location(doc, step))
             st = spec.get("stepTemplate")
             if isinstance(st, dict):
                 hits = _scan_env_list(st.get("env"))
@@ -154,8 +156,10 @@ def check(ctx: TektonContext) -> Finding:
                         f"{doc.kind}/{doc.name} stepTemplate env: "
                         f"{', '.join(hits)}"
                     )
+                    locations.append(doc_location(doc, st))
         for h in _scan_params(spec):
             offenders.append(f"{doc.kind}/{doc.name} {h}")
+            locations.append(doc_location(doc))
     if not ctx.docs:
         return Finding(
             check_id=RULE.id, title=RULE.title, severity=RULE.severity,
@@ -175,4 +179,5 @@ def check(ctx: TektonContext) -> Finding:
         check_id=RULE.id, title=RULE.title, severity=RULE.severity,
         resource="tekton", description=desc,
         recommendation=RULE.recommendation, passed=passed,
+        locations=locations,
     )

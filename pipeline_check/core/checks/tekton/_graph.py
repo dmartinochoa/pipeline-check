@@ -33,7 +33,7 @@ from typing import Any
 from ...pipeline_graph import GraphEdge, GraphNode, PipelineGraph
 from ...pipeline_graph_builders import register_builder
 from .._yaml_lines import line_of
-from .base import TektonContext, TektonDoc, pipeline_tasks, step_name, task_steps
+from .base import TektonDoc, pipeline_tasks, step_name, task_steps
 
 _ROOT_ID = "__root__"
 

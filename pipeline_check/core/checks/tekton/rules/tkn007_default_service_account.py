@@ -3,9 +3,9 @@ from __future__ import annotations
 
 from typing import Any
 
-from ...base import Finding, Severity
+from ...base import Finding, Location, Severity
 from ...rule import Rule
-from ..base import TektonContext
+from ..base import TektonContext, doc_location
 
 RULE = Rule(
     id="TKN-007",
@@ -65,6 +65,7 @@ def _missing_or_default(spec: dict[str, Any]) -> bool:
 
 def check(ctx: TektonContext) -> Finding:
     offenders: list[str] = []
+    locations: list[Location] = []
     examined = 0
     for doc in ctx.docs:
         if doc.kind not in ("TaskRun", "PipelineRun"):
@@ -75,6 +76,7 @@ def check(ctx: TektonContext) -> Finding:
             spec = {}
         if _missing_or_default(spec):
             offenders.append(f"{doc.kind}/{doc.name}")
+            locations.append(doc_location(doc))
     if examined == 0:
         return Finding(
             check_id=RULE.id, title=RULE.title, severity=RULE.severity,
@@ -95,4 +97,5 @@ def check(ctx: TektonContext) -> Finding:
         check_id=RULE.id, title=RULE.title, severity=RULE.severity,
         resource="tekton", description=desc,
         recommendation=RULE.recommendation, passed=passed,
+        locations=locations,
     )

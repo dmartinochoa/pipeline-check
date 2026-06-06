@@ -1186,12 +1186,22 @@ locations; the 23 that lacked them were converted across three batches, all
 pinned by ``tests/kubernetes/test_finding_locations.py``): batch 1
 pod-security K8S-002/003/004/007/008/009/010, batch 2 the other
 workload-level rules (K8S-011/012/014/015/016/017/024/025/028/030), batch 3
-the manifest-level rules (K8S-019/022/023/027/029/044). **Remaining:** only
-the ~13 doc-level Tekton rules and the doc-level Argo rules (the per-step /
-per-template anchor-bearing ones were already handled by their orchestrator
-backfills; what's left is the aggregate rules that set neither anchors nor
-a ``Location``, e.g. host-namespace / podSpecPatch / SA rules, each needing
-per-rule ``locations`` like the Kubernetes batches).
+the manifest-level rules (K8S-019/022/023/027/029/044). **Tekton is also
+done** (2026-06-06): a ``tekton/base.py::doc_location(doc, obj)`` helper,
+and the aggregate rules TKN-004/005/006/007/008/009/010/011/013/014/015
+each attach a ``Location`` per offending document (pinned by
+``tests/tekton/test_aggregate_locations.py``); TKN-001 was native,
+TKN-002/003 use the anchor backfill, TKN-012 is a whole-scan
+"no scanner anywhere" finding with no resource to point at (left as-is),
+and TAINT-006 is the dataflow rule (separate). **Remaining:** only the
+doc-level **Argo** aggregate rules (ARGO-003/004/006/007/008/009/010/011/
+012/013/014/015/016) — same per-rule pattern: add an
+``argo/base.py::doc_location`` helper mirroring Tekton's, then attach
+``doc_location(doc, obj)`` (obj = template / container / sidecar / doc) at
+each offender. Use the transactional-script technique (write a Python
+script, per-file str.replace with count==1 asserts, then
+``ruff check --fix`` for import order) as the Tekton + Kubernetes batches
+did.
 Renderer reminder: only ``needs`` and ``stage`` edges are drawn between
 boxes (``sequence`` is for step nesting only).
 
