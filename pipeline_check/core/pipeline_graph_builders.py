@@ -28,6 +28,7 @@ _BUILDER_MODULES: dict[str, str] = {
     "drone": "pipeline_check.core.checks.drone._graph",
     "buildkite": "pipeline_check.core.checks.buildkite._graph",
     "azure": "pipeline_check.core.checks.azure._graph",
+    "bitbucket": "pipeline_check.core.checks.bitbucket._graph",
 }
 
 

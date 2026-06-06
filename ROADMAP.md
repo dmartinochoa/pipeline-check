@@ -1132,23 +1132,31 @@ its stage) -> ``needs``; stages sequence via ``stage`` edges into each
 stage's entry jobs (explicit stage ``dependsOn`` when present, else the
 preceding stage; ``dependsOn: []`` opts out) - the Buildkite wait-group
 shape lifted to the stage level.
-Remaining pipeline providers (Bitbucket, Tekton, Argo, Jenkins) follow the
-same shape; IaC / SCA / cloud providers have no job DAG. **Overlay
-prerequisite (learned building this batch):** a builder only renders if
-its provider's findings carry the file path so ``attach_findings`` can
-place them. Azure / Bitbucket / Drone use ``resource=path`` (fine).
-**Tekton is blocked**: its rules emit ``resource="tekton"`` with no
-``Location`` on 15 of 16 rules, so every finding is dropped and the graph
-never renders, do the Tekton-finding ``resource``/location fix FIRST (a
-separate, ~16-file change, also improves the findings table / SARIF /
-heatmap for Tekton) before its ``_graph.py``. Argo likely has the same
-shape, check before building. Per-provider notes:
-Bitbucket (parallel groups map to wait-groups like Buildkite, but
-MULTIPLE pipeline definitions per file share one path - bound each
-definition's root to its line range, and note line-less findings will
-root-badge every definition), Tekton / Argo (multi-doc, need per-doc line
-bounds on the file root; Pipeline ``spec.tasks`` ``runAfter`` +
-``$(tasks.X.results.Y)`` -> needs, Task ``spec.steps`` sequential).
+~~**Bitbucket** (increment 8, done 2026-06-06 on ``dev``):~~ ONE graph per
+file (definitions are alternative entry points, so they render as
+independent chains in one graph, which keeps a line-less finding from
+double-counting onto each definition's root). Ordering is positional (no
+``depends_on``): sequential steps -> ``stage`` edges, a ``parallel`` block
+is one concurrent group (no edge between siblings, next step waits for
+all), a ``stage``'s inner steps run sequentially.
+Remaining pipeline providers: **Jenkins** (Groovy, hardest) and -
+blocked - **Tekton / Argo**. **Overlay prerequisite (learned building the
+6-8 batch):** a builder only renders if its provider's findings carry the
+file path so ``attach_findings`` can place them (the HTML DAG section omits
+any graph with no attached finding). The CI/CD providers use
+``resource=path`` (fine). **Tekton AND Argo are blocked**: like the
+``kubernetes`` provider they identify findings by ``resource="<provider>"``
+(Kind/name semantics) with no path ``Location`` on most rules, so every
+finding is dropped and the graph never renders. This is NOT a Tekton-only
+defect (kubernetes 44 / argo 40 / tekton 36 sites all do it), so giving
+those findings a path ``Location`` is a shared design change for the
+K8s-CRD providers, not a quick rule edit, and must land FIRST (it also
+improves their findings table / SARIF / heatmap). A correct Tekton
+``_graph.py`` was written and reverted for this reason; the design is in
+git history if the prerequisite lands. Per-provider notes for the blocked
+two: Tekton / Argo (multi-doc, need per-doc line bounds on the file root;
+Tekton Pipeline ``spec.tasks`` ``runAfter`` + ``$(tasks.X.results.Y)`` ->
+needs, Task ``spec.steps`` sequential; Argo DAG-template ``dependencies``).
 Renderer reminder: only ``needs`` and ``stage`` edges are drawn between
 boxes (``sequence`` is for step nesting only).
 

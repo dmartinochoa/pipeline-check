@@ -32,6 +32,17 @@ release commit collapses this section into `## [X.Y.Z] - <date>`.
   immediately preceding stage, into each stage's entry jobs (`dependsOn:
   []` opts out). A new `checks/azure/_graph.py` builder with no contract
   change.
+- **HTML report: step-level pipeline graph for Bitbucket Pipelines (DAG
+  v2).** Extends the step-level DAG to `bitbucket-pipelines.yml`. Bitbucket
+  ordering is positional (no `depends_on`): sequential steps chain via
+  `stage` edges, a `parallel` block runs its steps concurrently (no edge
+  between siblings, but the next step waits for all of them), and a
+  `stage`'s steps run in sequence. Every pipeline definition in the file
+  (`default` plus the `branches` / `pull-requests` / `custom` / `tags`
+  maps) renders as an independent chain in one graph, so a line-less
+  finding badges a single file root instead of double-counting onto each
+  definition. A new `checks/bitbucket/_graph.py` builder with no contract
+  change.
 
 ## [1.11.0] - 2026-06-06
 
