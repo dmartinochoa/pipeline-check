@@ -859,14 +859,23 @@ same day; the rest are queued for a later pass.
   (``mcp_server/tools.py:246``) from the provider registry; share one
   overrides/severity parser between ``config.py:260`` and
   ``policies.py:368``.
-- **Close substring-match seams.** ``is_known_installer``
-  (``_context.py:161``) matches bare hosts by substring
-  (``get.k3s.io`` would match ``evil-get.k3s.io.attacker.com``); use
-  ``endswith`` on the canonical segment, matching the OIDC-host lesson.
-- **ReDoS hardening.** Bound the lazy/greedy fills in
-  ``_primitives/remote_script_exec.py`` (``_SHELL_SUBSHELL_RE`` /
-  ``_PROCESS_SUBST_RE`` / ``_DOWNLOAD_EXEC_RE``); an 80k-char crafted
-  line backtracks ~11 s, and these run on PR-controlled CI files.
+- ~~**Close substring-match seams** (done 2026-06-06 on ``dev``).~~
+  ``is_known_installer`` (``_context.py``) matched the curl-pipe
+  allowlist by bare substring, so ``https://get.docker.com.evil.com/x``
+  (suffix) and ``https://evil.com/get.docker.com`` (path) demoted to the
+  trusted-installer path. Now parses the host (exact-or-subdomain, like
+  ``remote_script_exec._is_vendor``) plus a path prefix for the
+  path-bearing entries. Note: the function is currently reached only by
+  its own tests; the live curl-pipe vendor check (``_is_vendor``) already
+  parsed the host correctly. Bypass regression tests in
+  ``test_confidence.py``.
+- ~~**ReDoS hardening** (done 2026-06-06 on ``dev``).~~ Bounded every
+  fill and the captured URL in ``_primitives/remote_script_exec.py``
+  (``_PIPE_RE`` / ``_SHELL_SUBSHELL_RE`` / ``_PROCESS_SUBST_RE`` /
+  ``_DOWNLOAD_EXEC_RE`` / ``_POWERSHELL_RE``) at ``_MAX_FILL`` = 2048. An
+  80k-char crafted line backtracked ~5-11 s per pattern (these run on
+  PR-controlled CI files); now ~15 ms. Timing regression in
+  ``test_primitives.py::TestRemoteScriptExecReDoS``.
 - **Strengthen the rule-coverage meta-test.** ``test_rule_test_coverage.py``
   text-greps for a ``Test<ID>`` class and counts empty stubs as covered;
   AST-parse and require >=1 ``assert`` per rule-test class.

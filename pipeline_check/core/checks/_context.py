@@ -161,16 +161,31 @@ _KNOWN_INSTALLERS: frozenset[str] = frozenset({
 def is_known_installer(url: str) -> bool:
     """Return True when *url* matches a vendored installer on the allowlist.
 
-    Matches by substring so query strings / path variations don't
-    cause spurious misses. The allowlist is intentionally conservative
-   , adding a new entry should require evidence that the installer
-    uses HTTPS with cryptographic trust (either sigstore / notary or
-    a published GPG key).
+    Matches on the parsed host (exact or subdomain) plus, for the
+    path-bearing entries, a path prefix. A bare substring test would let
+    an attacker-controlled URL that merely *contains* an allowlisted
+    string (``https://get.docker.com.evil.com/x`` via a suffix, or
+    ``https://evil.com/get.docker.com`` via the path) demote to the
+    trusted-installer path, weakening the curl-pipe finding. The
+    allowlist is intentionally conservative; adding a new entry should
+    require evidence that the installer uses HTTPS with cryptographic
+    trust (sigstore / notary or a published GPG key).
     """
     if not isinstance(url, str):
         return False
-    url_lower = url.lower()
-    return any(marker in url_lower for marker in _KNOWN_INSTALLERS)
+    m = re.match(r"https?://([^/\s:?#]+)(?::\d+)?(/[^\s?#]*)?", url.lower())
+    if not m:
+        return False
+    host = m.group(1)
+    path = (m.group(2) or "").lstrip("/")
+    for marker in _KNOWN_INSTALLERS:
+        marker_host, _, marker_path = marker.partition("/")
+        if host != marker_host and not host.endswith("." + marker_host):
+            continue
+        if marker_path and not path.startswith(marker_path):
+            continue
+        return True
+    return False
 
 
 # ── IAM Condition allow-list ─────────────────────────────────────────

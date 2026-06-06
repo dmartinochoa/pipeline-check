@@ -274,8 +274,33 @@ def test_known_installer_matches_rustup():
     assert is_known_installer("https://sh.rustup.rs") is True
 
 
+def test_known_installer_matches_subdomain_and_path():
+    # Subdomain of an allowlisted host, and the path-bearing entries
+    # match on their path prefix.
+    assert is_known_installer("https://get.bun.sh/install") is True
+    assert is_known_installer(
+        "https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.0/install.sh"
+    ) is True
+
+
 def test_known_installer_rejects_random_url():
     assert is_known_installer("https://evil.example.com/install.sh") is False
+
+
+def test_known_installer_rejects_host_confusion():
+    # A bare substring test would demote all three: a suffix lookalike,
+    # the allowlisted string sitting in the path, and the same in a query
+    # string. Host/path parsing rejects them.
+    assert is_known_installer("https://get.docker.com.evil.com/x") is False
+    assert is_known_installer("https://evil.com/get.docker.com") is False
+    assert is_known_installer("https://evil.com/?x=get.docker.com") is False
+
+
+def test_known_installer_rejects_right_host_wrong_path():
+    # Correct host for a path-bearing entry, but a different repo path.
+    assert is_known_installer(
+        "https://raw.githubusercontent.com/attacker/repo/x.sh"
+    ) is False
 
 
 def test_known_installer_handles_non_string():
