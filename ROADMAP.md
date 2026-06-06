@@ -916,9 +916,14 @@ same day; the rest are queued for a later pass.
   80k-char crafted line backtracked ~5-11 s per pattern (these run on
   PR-controlled CI files); now ~15 ms. Timing regression in
   ``test_primitives.py::TestRemoteScriptExecReDoS``.
-- **Strengthen the rule-coverage meta-test.** ``test_rule_test_coverage.py``
-  text-greps for a ``Test<ID>`` class and counts empty stubs as covered;
-  AST-parse and require >=1 ``assert`` per rule-test class.
+- ~~**Strengthen the rule-coverage meta-test** (done 2026-06-06 on
+  ``dev``).~~ ``test_rule_test_coverage.py`` now AST-parses the test
+  files (cached in a module fixture) and a ``Test<ID>`` class counts as
+  coverage only when it carries a real assertion (a bare ``assert``,
+  ``pytest.raises`` / ``fail`` / ``warns``, or a ``self.assert*``), so an
+  empty stub no longer passes. Verified 0 current stubs across all 17
+  providers, so the 100% floors held; ``TestCoverageMechanics`` pins the
+  stub-rejection, the padded/unpadded matching, and the number boundary.
 - **Em-dash prose cleanup + minor tics.** ~914 lines use em-dashes as
   pauses against the CLAUDE.md convention; a handful of banned words
   remain (``robust``, ``comprehensive``, ``leverage`` in a few rule
