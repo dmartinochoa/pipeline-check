@@ -69,23 +69,16 @@ def check(path: str, wf: WorkspaceFile) -> Finding:
     events = ", ".join(sorted({e for e, _ in hooks})[:4])
     extra = "…" if len({e for e, _ in hooks}) > 4 else ""
     first_cmd = next((c for _, c in hooks if c), "")
-    return Finding(
-        check_id=RULE.id, title=RULE.title, severity=RULE.severity,
+    return RULE.fail_finding(
         resource=path,
         description=(
             f"{len(hooks)} command hook(s) on event(s): {events}{extra}. "
             "These run on the host of anyone who opens this repo in "
             "Claude Code."
         ),
-        recommendation=RULE.recommendation, passed=False,
         locations=location_for(path, wf.raw, first_cmd),
     )
 
 
 def _pass(path: str) -> Finding:
-    return Finding(
-        check_id=RULE.id, title=RULE.title, severity=RULE.severity,
-        resource=path,
-        description="No committed Claude Code command hooks.",
-        recommendation=RULE.recommendation, passed=True,
-    )
+    return RULE.pass_finding(path, "No committed Claude Code command hooks.")

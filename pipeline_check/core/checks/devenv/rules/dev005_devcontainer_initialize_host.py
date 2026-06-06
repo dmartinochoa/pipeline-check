@@ -67,8 +67,7 @@ def check(path: str, wf: WorkspaceFile) -> Finding:
     cmds = devcontainer_initialize_commands(wf.data)
     if not cmds:
         return _pass(path)
-    return Finding(
-        check_id=RULE.id, title=RULE.title, severity=RULE.severity,
+    return RULE.fail_finding(
         resource=path,
         description=(
             f"initializeCommand runs on the host before the container is "
@@ -76,15 +75,9 @@ def check(path: str, wf: WorkspaceFile) -> Finding:
             + (f" (+{len(cmds) - 1} more)" if len(cmds) > 1 else "")
             + ". It executes outside container isolation."
         ),
-        recommendation=RULE.recommendation, passed=False,
         locations=location_for(path, wf.raw, cmds[0]),
     )
 
 
 def _pass(path: str) -> Finding:
-    return Finding(
-        check_id=RULE.id, title=RULE.title, severity=RULE.severity,
-        resource=path,
-        description="No host-side devcontainer initializeCommand.",
-        recommendation=RULE.recommendation, passed=True,
-    )
+    return RULE.pass_finding(path, "No host-side devcontainer initializeCommand.")

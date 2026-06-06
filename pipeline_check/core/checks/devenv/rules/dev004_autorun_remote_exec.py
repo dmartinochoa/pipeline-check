@@ -117,9 +117,7 @@ def check(path: str, wf: WorkspaceFile) -> Finding:
             f"code: {', '.join(snippets)}{more}. This runs the moment the "
             "repo is opened."
         )
-    return Finding(
-        check_id=RULE.id, title=RULE.title, severity=RULE.severity,
-        resource=path, description=desc,
-        recommendation=RULE.recommendation, passed=passed,
+    return RULE.finding(
+        path, desc, passed=passed,
         locations=location_for(path, wf.raw, culprit) if not passed else [],
     )

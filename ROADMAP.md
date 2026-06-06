@@ -842,16 +842,25 @@ same day; the rest are queued for a later pass.
     in-isolation coverage 0% -> 100%.
   - Still queued: bring ``fleet.py`` + the rego modules into the coverage
     measurement (currently ``omit``-ed in ``.github/coveragerc-no-fleet``).
-- **Rule/finding emission ergonomics + the 95%-passing overhead.** Add
-  ``RULE.pass_finding()`` / ``fail_finding()`` helpers (the
-  ``Finding(check_id=RULE.id, title=RULE.title, ...)`` block is
-  copy-pasted across ~744 rule modules) and a
-  ``summarize_offenders(items, limit=5)`` helper (363 ``[:5]`` / 213
-  ``[:3]`` hand-rolled join-and-ellipsis tails, with an inconsistent
-  5-vs-3 cap). Separately, ~95% of emitted findings are passing and are
-  still fully post-processed (standards / confidence / FP-index /
-  metadata) before reporters discard them; skip that tail for
-  ``passed=True`` findings (``scanner.py:388``).
+- **Rule/finding emission ergonomics + the 95%-passing overhead.**
+  - ~~``RULE.finding`` / ``fail_finding`` / ``pass_finding`` (done
+    2026-06-06 on ``dev``):~~ methods on ``Rule`` that fill
+    ``check_id`` / ``title`` / ``severity`` / ``recommendation`` from the
+    rule and pass any other ``Finding`` field through ``**extra``,
+    replacing the ``Finding(check_id=RULE.id, ...)`` block. The ``devenv``
+    provider (6 rules) is the canonical adopter, the ``new_rule.py``
+    scaffolder and ``contributing_first_rule.md`` now emit the helper, and
+    a test pins that it builds an identical ``Finding`` to the manual call.
+    The other ~738 modules adopt incrementally.
+  - Still queued: a ``summarize_offenders(items, limit=5)`` helper (363
+    ``[:5]`` / 213 ``[:3]`` hand-rolled join-and-ellipsis tails, with an
+    inconsistent 5-vs-3 cap). Also ~95% of emitted findings are passing
+    and still fully post-processed before reporters discard them (NOTE:
+    the per-finding cost is mostly cheap, controls are cached by
+    ``check_id`` and the rest are O(1) lookups, so this skip is likely
+    marginal and risks changing ``--show-passed`` / JSON output that
+    includes passed findings with controls, reconsider value before
+    doing).
 - ~~**Re-label the weak reachability tier** (badge done 2026-06-06 on
   ``dev``).~~ The shared-job co-location fallback
   (``confirmed_reachable=True``, ``via_dataflow=False``) used to render
