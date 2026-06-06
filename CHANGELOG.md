@@ -10,6 +10,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 PRs landing on `dev` between releases append entries below. The
 release commit collapses this section into `## [X.Y.Z] - <date>`.
 
+### Changed
+
+- **GHA-044 widened to container builds.** The build-tool PPE rule now
+  also flags `docker build` / `docker buildx build` in a `run:` step and
+  the `docker/build-push-action` action on an untrusted-trigger workflow
+  (`pull_request_target` / `workflow_run`). A container build executes the
+  checked-out `Dockerfile` (its `RUN` instructions) against a build context
+  that may be PR-controlled, so a fork-supplied Dockerfile is a poisoned-
+  pipeline-execution payload exactly like a tampered `package.json` /
+  `Makefile` / `setup.py`. No new rule ID; this is the widening the roadmap
+  reserved instead of a separate check.
+
 ### Added
 
 - **TKN-016: remote resolver / bundle taskRef or pipelineRef not pinned

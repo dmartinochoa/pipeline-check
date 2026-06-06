@@ -531,6 +531,71 @@ class TestGHA044BuildToolPPE:
         f = run_check(wf, "GHA-044")
         assert f.passed
 
+    def test_fails_on_docker_build_under_pull_request_target(self):
+        wf = """
+        name: pr-build
+        on: pull_request_target
+        jobs:
+          build:
+            runs-on: ubuntu-22.04
+            timeout-minutes: 10
+            permissions: { contents: read }
+            steps:
+              - run: docker build -t app .
+        """
+        f = run_check(wf, "GHA-044")
+        assert not f.passed
+        assert "docker build" in f.description.lower()
+
+    def test_fails_on_docker_buildx_build(self):
+        wf = """
+        name: pr-build
+        on: pull_request_target
+        jobs:
+          build:
+            runs-on: ubuntu-22.04
+            timeout-minutes: 10
+            permissions: { contents: read }
+            steps:
+              - run: docker buildx build --push -t reg/app .
+        """
+        f = run_check(wf, "GHA-044")
+        assert not f.passed
+
+    def test_fails_on_docker_build_push_action(self):
+        wf = """
+        name: pr-build
+        on: pull_request_target
+        jobs:
+          build:
+            runs-on: ubuntu-22.04
+            timeout-minutes: 10
+            permissions: { contents: read }
+            steps:
+              - uses: docker/build-push-action@v6
+                with: { push: false }
+        """
+        f = run_check(wf, "GHA-044")
+        assert not f.passed
+        assert "build-push-action" in f.description.lower()
+
+    def test_passes_on_docker_build_under_trusted_trigger(self):
+        wf = """
+        name: release
+        on:
+          push: { branches: [main] }
+        jobs:
+          ship:
+            runs-on: ubuntu-22.04
+            timeout-minutes: 10
+            permissions: { contents: read }
+            steps:
+              - run: docker build -t app .
+              - uses: docker/build-push-action@v6
+        """
+        f = run_check(wf, "GHA-044")
+        assert f.passed
+
     def test_fails_on_bun_install_under_pull_request_target(self):
         wf = """
         name: pr-build

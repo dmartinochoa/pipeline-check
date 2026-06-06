@@ -1064,8 +1064,11 @@ queued here.**
   scripts (COMPOSER-011 carves out the ``path`` type).
 - **DR-017**: a secret-bearing step reachable on a ``promote`` / ``rollback``
   event with no actor-trusted target gate (more runtime-trust dependent).
-- A ``docker build`` / ``docker/build-push-action`` PPE on an untrusted
-  trigger is better shipped as a *widening of GHA-044* than a new ID.
+- ~~A ``docker build`` / ``docker/build-push-action`` PPE on an untrusted
+  trigger is better shipped as a *widening of GHA-044* than a new ID.~~
+  Shipped 2026-06-06 on ``dev``: GHA-044 now flags ``docker build`` /
+  ``docker buildx build`` in a ``run:`` and the ``docker/build-push-action``
+  action (the checked-out ``Dockerfile`` is the PPE payload), no new ID.
 
 ### ~~``--inline-explain`` across every reporter~~ shipped
 
