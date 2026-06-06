@@ -97,6 +97,13 @@ def make_nuget_purl(name: str, version: str) -> str:
     return f"pkg:nuget/{_purl_encode(name)}@{_purl_encode(version)}"
 
 
+def make_helm_purl(name: str, version: str, repository: str = "") -> str:
+    base = f"pkg:helm/{_purl_encode(name)}@{_purl_encode(version)}"
+    if repository.startswith(("http://", "https://", "oci://")):
+        base += f"?repository_url={_purl_encode(repository)}"
+    return base
+
+
 def _purl_encode(segment: str) -> str:
     return quote(segment, safe="")
 
@@ -153,6 +160,7 @@ __all__ = [
     "deduplicate",
     "make_docker_purl",
     "make_github_purl",
+    "make_helm_purl",
     "make_maven_purl",
     "make_npm_purl",
     "make_nuget_purl",

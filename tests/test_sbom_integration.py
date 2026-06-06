@@ -232,6 +232,51 @@ class TestNuGetSBOM:
         assert serilog.pinned is False  # version range
 
 
+class TestHelmSBOM:
+    """Helm reads ``Chart.yaml`` dependencies directly (no ``helm`` binary
+    needed), so build the chart + context in-memory rather than rendering."""
+
+    def _deps(self) -> list:
+        from pipeline_check.core.checks.helm.base import HelmContext
+        from pipeline_check.core.checks.helm.charts import Chart
+        from pipeline_check.core.providers.helm import HelmProvider
+
+        chart = Chart(
+            path="mychart",
+            chart_yaml_path="mychart/Chart.yaml",
+            chart_yaml={
+                "name": "mychart",
+                "dependencies": [
+                    {
+                        "name": "redis", "version": "17.3.7",
+                        "repository": "https://charts.bitnami.com/bitnami",
+                    },
+                    {
+                        "name": "postgresql", "version": "^12.0.0",
+                        "repository": "oci://registry-1.docker.io/bitnamicharts",
+                    },
+                ],
+            },
+        )
+        ctx = HelmContext([])
+        ctx.charts = [chart]
+        return HelmProvider().build_dependencies(ctx)
+
+    def test_extracts_chart_dependencies(self) -> None:
+        names = {d.name for d in self._deps()}
+        assert names == {"redis", "postgresql"}
+
+    def test_purl_and_pinning(self) -> None:
+        deps = self._deps()
+        redis = next(d for d in deps if d.name == "redis")
+        assert redis.purl.startswith("pkg:helm/redis@17.3.7")
+        assert "repository_url=" in redis.purl
+        assert redis.pinned is True
+        pg = next(d for d in deps if d.name == "postgresql")
+        assert pg.pinned is False  # ``^12.0.0`` is a range
+        assert all(d.dep_type == "helm" for d in deps)
+
+
 class TestNoSBOM:
     def test_provider_without_override_returns_empty(
         self, tmp_path: Path,
