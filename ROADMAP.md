@@ -882,10 +882,14 @@ same day; the rest are queued for a later pass.
     The win is JUnit's ``xml.sax`` (~20 ms), which no longer loads on
     every invocation; CLI import 150 ms -> 128 ms. No test imports or
     patches ``cli.report_*``, so this was a clean lift.
-  - Still queued: defer ``autofix`` (``difflib``) too. It is used across
-    several ``--fix`` sites and ``test_cli_fix`` patches ``cli._autofix``,
-    so deferring it needs a usage sweep + that test repointed to
-    ``pipeline_check.core.autofix``. Also ship libyaml in the published
+  - ~~``difflib`` (done 2026-06-06 on ``dev``):~~ the cleaner fix turned
+    out to be deferring ``difflib`` *inside* ``autofix`` (the import was
+    only used by ``render_patch``) rather than deferring the whole
+    ``autofix`` module. autofix is pulled onto every CLI load by the fix
+    engine (``fix_apply``), so deferring the cli ``_autofix`` import alone
+    wouldn't have helped, and the in-module lazy import sidesteps the
+    ``test_cli_fix`` patch of ``cli._autofix`` entirely. CLI import 128 ms
+    -> 114 ms. Still queued: ship libyaml in the published
     wheel / Docker image so ``yaml.CSafeLoader`` exists (10-30x on the
     non-line YAML path).
 
