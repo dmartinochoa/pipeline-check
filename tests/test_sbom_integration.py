@@ -277,6 +277,44 @@ class TestHelmSBOM:
         assert all(d.dep_type == "helm" for d in deps)
 
 
+_GITLAB_CI = """\
+image: python:3.12
+build:
+  image: node@sha256:1111111111111111111111111111111111111111111111111111111111111111
+  services:
+    - postgres:14
+  script:
+    - make
+test:
+  image: golang:1.22
+  script:
+    - go test ./...
+"""
+
+
+class TestGitLabSBOM:
+    def test_extracts_container_images(self, tmp_path: Path) -> None:
+        ci = tmp_path / ".gitlab-ci.yml"
+        ci.write_text(_GITLAB_CI, encoding="utf-8")
+        deps = Scanner(pipeline="gitlab", gitlab_path=str(ci)).sbom()
+        names = {d.name for d in deps}
+        # top-level default image, job image, service, second job image.
+        assert {"python", "node", "postgres", "golang"} <= names
+        assert all(d.dep_type == "container" for d in deps)
+
+    def test_purl_and_digest_pinning(self, tmp_path: Path) -> None:
+        ci = tmp_path / ".gitlab-ci.yml"
+        ci.write_text(_GITLAB_CI, encoding="utf-8")
+        deps = Scanner(pipeline="gitlab", gitlab_path=str(ci)).sbom()
+        for d in deps:
+            assert d.purl.startswith("pkg:docker/")
+        node = next(d for d in deps if d.name == "node")
+        assert node.pinned is True  # digest-pinned
+        assert node.digest.startswith("sha256:")
+        python = next(d for d in deps if d.name == "python")
+        assert python.pinned is False  # mutable tag
+
+
 class TestNoSBOM:
     def test_provider_without_override_returns_empty(
         self, tmp_path: Path,

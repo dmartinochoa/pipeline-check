@@ -21,9 +21,13 @@ release commit collapses this section into `## [X.Y.Z] - <date>`.
   `pkg:maven/...` component; the NuGet provider emits each
   `PackageReference` as a `pkg:nuget/...` component; the Helm provider emits
   each `Chart.yaml` dependency as a `pkg:helm/name@version` component, with
-  a `?repository_url=` qualifier for HTTP / OCI chart repos. Version ranges,
-  `LATEST` / `RELEASE`, `-SNAPSHOT`, and SemVer ranges are marked unpinned.
-  Closes three of the SBOM extractors deferred from v1.5.0.
+  a `?repository_url=` qualifier for HTTP / OCI chart repos. The GitLab
+  provider emits each `image:` / `services:` reference (top-level default
+  and per-job) as a `pkg:docker/...` container component, the runner images
+  a pipeline executes in, the GitLab parallel of the GitHub Actions
+  docker-step extraction. Version ranges, `LATEST` / `RELEASE`,
+  `-SNAPSHOT`, SemVer ranges, and mutable image tags are marked unpinned.
+  Closes most of the SBOM extractors deferred from v1.5.0.
 - **SPDX 2.3 SBOM output (`--output spdx`).** The SPDX-format parallel of
   the existing `--output cyclonedx` SBOM, for toolchains and procurement
   flows that require SPDX rather than CycloneDX. Emits the same build-time

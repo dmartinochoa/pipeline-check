@@ -23,6 +23,7 @@ from ..checks.gitlab.base import (
     GitLabContext,
     Pipeline,
     _resolve_remote_includes,
+    iter_jobs,
 )
 from ..checks.gitlab.pipelines import GitLabPipelineChecks
 from ..checks.gitlab.resolver import (
@@ -30,7 +31,19 @@ from ..checks.gitlab.resolver import (
     count_unresolved_remote_includes,
 )
 from ..inventory import Component
+from ..sbom import BuildDependency, make_docker_purl, parse_docker_ref
 from .base import BaseProvider
+
+
+def _image_ref(value: Any) -> str | None:
+    """A GitLab ``image:`` / ``services:`` entry is a string or a dict
+    with a ``name:`` key."""
+    if isinstance(value, str):
+        return value.strip() or None
+    if isinstance(value, dict):
+        name = value.get("name")
+        return name.strip() if isinstance(name, str) and name.strip() else None
+    return None
 
 _GITLAB_TOPLEVEL_KEYWORDS = {
     "default", "include", "stages", "variables", "workflow",
@@ -54,6 +67,41 @@ class GitLabProvider(BaseProvider):
     @property
     def check_classes(self) -> list[type[BaseCheck[Any]]]:
         return [GitLabPipelineChecks]
+
+    def build_dependencies(
+        self, context: GitLabContext,
+    ) -> list[BuildDependency]:
+        """Emit each ``image:`` / ``services:`` reference as a container
+        dependency, the runner images a GitLab pipeline executes in."""
+        deps: list[BuildDependency] = []
+        for pipe in context.pipelines:
+            doc = pipe.data
+            if not isinstance(doc, dict):
+                continue
+            # The top-level default plus every job inherits the same
+            # ``image:`` / ``services:`` schema.
+            scopes: list[dict[str, Any]] = [doc]
+            scopes.extend(job for _name, job in iter_jobs(doc))
+            for scope in scopes:
+                refs = [_image_ref(scope.get("image"))]
+                services = scope.get("services")
+                if isinstance(services, list):
+                    refs.extend(_image_ref(s) for s in services)
+                for ref in refs:
+                    if not ref:
+                        continue
+                    img, tag, digest = parse_docker_ref(ref)
+                    deps.append(BuildDependency(
+                        name=img,
+                        version=tag or digest or "latest",
+                        dep_type="container",
+                        purl=make_docker_purl(img, tag, digest),
+                        provider=self.NAME,
+                        source=pipe.path,
+                        pinned=bool(digest),
+                        digest=digest,
+                    ))
+        return deps
 
     def post_filter(self, context: Any, **kwargs: Any) -> None:
         resolve_remote: bool = kwargs.get("resolve_remote", False)

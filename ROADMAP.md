@@ -354,15 +354,18 @@ What's planned, what's shipped, and what's deliberately out of scope.
   Dockerfile (FROM base images), npm (package.json deps), and PyPI
   (requirements.txt entries). Each component carries a PURL
   identifier. ``BaseProvider.build_dependencies()`` is the extension
-  point; providers not yet covered return an empty list. Deferred
-  to v2: GitLab include refs, OCI. 49 tests. (The deferred **SPDX 2.3
-  output** shipped 2026-06-06 on ``dev`` as ``--output spdx``, the
-  SPDX-format parallel of the CycloneDX reporter over the same
-  ``scanner.sbom()`` inventory; the deferred **Maven**, **NuGet**, and
-  **Helm chart** dependency extractors also shipped 2026-06-06, so both
-  SBOM formats now cover npm / pypi / maven / nuget / gomod / cargo /
-  composer / rubygems / helm plus GitHub Actions / Dockerfile. Still
-  deferred: GitLab include refs and OCI image references.)
+  point; providers not yet covered return an empty list. 49 tests.
+  (The deferred **SPDX 2.3 output** shipped 2026-06-06 on ``dev`` as
+  ``--output spdx``, the SPDX-format parallel of the CycloneDX reporter
+  over the same ``scanner.sbom()`` inventory; the deferred **Maven**,
+  **NuGet**, **Helm chart**, and **GitLab container-image** dependency
+  extractors also shipped 2026-06-06. Both SBOM formats now cover
+  npm / pypi / maven / nuget / gomod / cargo / composer / rubygems / helm
+  package deps plus GitHub Actions / Dockerfile / GitLab container images.
+  The only remaining build-dependency surface is OCI image references
+  (the OCI provider parses manifest *shape* by digest, with no clean
+  base-image name to emit as a package) and GitLab remote ``include:``
+  refs, both lower-value edge cases.)
 - **OPA/Rego custom rule engine (closes #176)** —
   ``--rego-rules ./policies/`` discovers ``.rego`` files, extracts
   metadata via ``opa inspect --annotations``, evaluates policies via
