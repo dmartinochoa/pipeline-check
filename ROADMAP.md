@@ -1146,26 +1146,35 @@ stages (a stage not contained in another stage's body), and chains them
 sequentially with ``stage`` edges. Nested stages (``parallel { }``
 branches, declarative sub-stages) fold into their enclosing top-level
 stage rather than inventing edges the flat stage list can't justify.
-**With Jenkins done, every YAML/Groovy pipeline provider now ships a DAG
-builder.** The only DAG work left is the K8s-CRD finding-location design
-fix below, which would then unblock the Tekton and Argo builders.
-**Overlay prerequisite (learned building the
-6-9 batch):** a builder only renders if its provider's findings carry the
-file path so ``attach_findings`` can place them (the HTML DAG section omits
-any graph with no attached finding). The CI/CD providers use
-``resource=path`` (fine). **Tekton AND Argo are blocked**: like the
-``kubernetes`` provider they identify findings by ``resource="<provider>"``
-(Kind/name semantics) with no path ``Location`` on most rules, so every
-finding is dropped and the graph never renders. This is NOT a Tekton-only
-defect (kubernetes 44 / argo 40 / tekton 36 sites all do it), so giving
-those findings a path ``Location`` is a shared design change for the
-K8s-CRD providers, not a quick rule edit, and must land FIRST (it also
-improves their findings table / SARIF / heatmap). A correct Tekton
-``_graph.py`` was written and reverted for this reason; the design is in
-git history if the prerequisite lands. Per-provider notes for the blocked
-two: Tekton / Argo (multi-doc, need per-doc line bounds on the file root;
-Tekton Pipeline ``spec.tasks`` ``runAfter`` + ``$(tasks.X.results.Y)`` ->
-needs, Task ``spec.steps`` sequential; Argo DAG-template ``dependencies``).
+~~**Tekton** (increment 10, done 2026-06-06 on ``dev``):~~ one graph per
+``Pipeline`` (tasks as nodes, ``runAfter`` + implicit
+``$(tasks.X.results.Y)`` data deps -> ``needs``) and per ``Task`` /
+``ClusterTask`` (steps sequential), multi-doc roots bounded like Drone.
+Unblocked by giving Tekton's per-step findings a ``Location``: the
+orchestrator (``TektonChecks.run``) now backfills the ``job_anchors``
+(``<Kind>/<name>:<step>``) of TKN-002 / TKN-003 into ``Location``s
+(TKN-001 already set them natively), so those findings overlay onto the
+graph and gain real file/line locations in the terminal / SARIF / heatmap
+too. (A first ``_graph.py`` was written, reverted when this prerequisite
+surfaced, then re-landed with the backfill, see git history.)
+**With Jenkins + Tekton done, the only DAG providers left are blocked.**
+**Overlay prerequisite (learned building the 6-10 batch):** a builder only
+renders if its provider's findings carry the file path so
+``attach_findings`` can place them (the HTML DAG section omits any graph
+with no attached finding). The CI/CD providers use ``resource=path``
+(fine). **Argo is still blocked, and most Tekton rules remain partial**:
+like the ``kubernetes`` provider, the K8s-CRD rules identify findings by
+``resource="<provider>"`` (Kind/name semantics) and the AGGREGATE ones
+(one Finding per check across the corpus) set neither anchors nor a
+``Location`` (kubernetes 44 / argo 40 / tekton 36 sites). The Tekton
+increment fixed only the two anchor-bearing per-step rules via the central
+backfill; the ~13 doc-level Tekton rules and all of Argo still need
+per-rule ``locations`` (or anchors the orchestrator can backfill) before
+their findings carry file/line info. Per-provider notes for what remains:
+Argo (multi-doc, need per-doc line bounds on the file root; DAG-template
+``dependencies``; first wire its rules' ``locations`` like Tekton's). The
+doc-level rules' fix (Tekton + Argo + Kubernetes) is the standalone
+follow-up that improves their findings table / SARIF / heatmap.
 Renderer reminder: only ``needs`` and ``stage`` edges are drawn between
 boxes (``sequence`` is for step nesting only).
 

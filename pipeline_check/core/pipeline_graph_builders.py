@@ -30,6 +30,7 @@ _BUILDER_MODULES: dict[str, str] = {
     "azure": "pipeline_check.core.checks.azure._graph",
     "bitbucket": "pipeline_check.core.checks.bitbucket._graph",
     "jenkins": "pipeline_check.core.checks.jenkins._graph",
+    "tekton": "pipeline_check.core.checks.tekton._graph",
 }
 
 

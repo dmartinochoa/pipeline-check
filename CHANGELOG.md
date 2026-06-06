@@ -53,8 +53,28 @@ release commit collapses this section into `## [X.Y.Z] - <date>`.
   top-level stage rather than inventing edges the flat stage list can't
   justify. A new `checks/jenkins/_graph.py` builder with no contract
   change. This completes the DAG-v2 rollout for every YAML/Groovy
-  pipeline provider; the Kubernetes-CRD providers (Argo, Tekton) remain
-  out of scope until their findings carry a file-path location.
+  pipeline provider.
+- **HTML report: step-level pipeline graph for Tekton (DAG v2).** Renders
+  one graph per `Pipeline` document (tasks as nodes, `runAfter` plus
+  implicit `$(tasks.X.results.Y)` data dependencies as `needs` edges) and
+  one per `Task` / `ClusterTask` (steps chained sequentially), bounding
+  each graph's root to its document's line range like the Drone builder.
+  A new `checks/tekton/_graph.py` builder with no contract change.
+
+### Fixed
+
+- **Tekton findings now carry source locations.** The per-step Tekton
+  rules (TKN-002 privileged step, TKN-003 parameter injection) attributed
+  their offenders through `job_anchors` (`<Kind>/<name>:<step>`) and set no
+  `Location`, so they reached the terminal report, SARIF, the blast-radius
+  heatmap, and the new pipeline graph with no file or line. The Tekton
+  orchestrator now resolves those anchors back to a document and step line
+  in one place (`TektonChecks.run`), matching the `Location` shape TKN-001
+  already sets natively. Detection, severity, and finding counts are
+  unchanged; findings that already carry locations or have no anchors are
+  left untouched. (The remaining document-level Tekton rules, and the
+  parallel `argo` / `kubernetes` providers, still emit anchor-less
+  aggregate findings; giving those locations is tracked separately.)
 
 ## [1.11.0] - 2026-06-06
 
