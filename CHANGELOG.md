@@ -12,6 +12,16 @@ release commit collapses this section into `## [X.Y.Z] - <date>`.
 
 ### Added
 
+- **SBOM dependency extraction for Maven and NuGet.** Both SBOM outputs
+  (`--output cyclonedx` and the new `--output spdx`) now include Maven and
+  NuGet build dependencies, not just GitHub Actions / Dockerfile / npm /
+  PyPI. The Maven provider emits each resolved `<dependency>` (group:
+  artifact@version, with `${prop}` substitution, skipping
+  `<dependencyManagement>` and version-less entries) as a
+  `pkg:maven/...` component; the NuGet provider emits each
+  `PackageReference` as a `pkg:nuget/...` component. Version ranges,
+  `LATEST` / `RELEASE`, and `-SNAPSHOT` are marked unpinned. Closes two of
+  the SBOM extractors deferred from v1.5.0.
 - **SPDX 2.3 SBOM output (`--output spdx`).** The SPDX-format parallel of
   the existing `--output cyclonedx` SBOM, for toolchains and procurement
   flows that require SPDX rather than CycloneDX. Emits the same build-time

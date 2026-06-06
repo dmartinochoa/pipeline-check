@@ -22,7 +22,19 @@ from ..checks.maven.registry_fetcher import (
     fetch_publish_times,
 )
 from ..inventory import Component
+from ..sbom import BuildDependency, make_maven_purl
 from .base import BaseProvider
+
+
+def _maven_pinned(version: str) -> bool:
+    """A Maven version is pinned only when it's a concrete coordinate.
+
+    Version ranges (``[1.0,2.0)``), the special ``LATEST`` / ``RELEASE``
+    markers, and ``-SNAPSHOT`` builds all resolve to mutable content.
+    """
+    if version in ("LATEST", "RELEASE") or version.endswith("-SNAPSHOT"):
+        return False
+    return not any(c in version for c in "[](),")
 
 
 class MavenProvider(BaseProvider):
@@ -46,6 +58,25 @@ class MavenProvider(BaseProvider):
     @property
     def check_classes(self) -> list[type[BaseCheck[Any]]]:
         return [MavenChecks]
+
+    def build_dependencies(
+        self, context: MavenContext,
+    ) -> list[BuildDependency]:
+        deps: list[BuildDependency] = []
+        for pom in context.files:
+            if pom.is_settings or not pom.parsed_ok:
+                continue
+            for group_id, artifact_id, version in iter_resolved_coordinates(pom):
+                deps.append(BuildDependency(
+                    name=f"{group_id}:{artifact_id}",
+                    version=version,
+                    dep_type="maven",
+                    purl=make_maven_purl(group_id, artifact_id, version),
+                    provider=self.NAME,
+                    source=pom.path,
+                    pinned=_maven_pinned(version),
+                ))
+        return deps
 
     def post_filter(
         self,

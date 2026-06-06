@@ -86,6 +86,17 @@ def make_pypi_purl(name: str, version: str) -> str:
     return f"pkg:pypi/{_purl_encode(normalized)}@{_purl_encode(version)}"
 
 
+def make_maven_purl(group: str, artifact: str, version: str) -> str:
+    return (
+        f"pkg:maven/{_purl_encode(group)}/{_purl_encode(artifact)}"
+        f"@{_purl_encode(version)}"
+    )
+
+
+def make_nuget_purl(name: str, version: str) -> str:
+    return f"pkg:nuget/{_purl_encode(name)}@{_purl_encode(version)}"
+
+
 def _purl_encode(segment: str) -> str:
     return quote(segment, safe="")
 
@@ -142,7 +153,9 @@ __all__ = [
     "deduplicate",
     "make_docker_purl",
     "make_github_purl",
+    "make_maven_purl",
     "make_npm_purl",
+    "make_nuget_purl",
     "make_pypi_purl",
     "parse_docker_ref",
     "parse_requirement_line",

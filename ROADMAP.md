@@ -355,10 +355,13 @@ What's planned, what's shipped, and what's deliberately out of scope.
   (requirements.txt entries). Each component carries a PURL
   identifier. ``BaseProvider.build_dependencies()`` is the extension
   point; providers not yet covered return an empty list. Deferred
-  to v2: GitLab include refs, Helm chart deps, Maven, NuGet, OCI.
-  49 tests. (The deferred **SPDX 2.3 output** shipped 2026-06-06 on
-  ``dev`` as ``--output spdx``, the SPDX-format parallel of the
-  CycloneDX reporter over the same ``scanner.sbom()`` inventory.)
+  to v2: GitLab include refs, Helm chart deps, OCI. 49 tests. (The
+  deferred **SPDX 2.3 output** shipped 2026-06-06 on ``dev`` as
+  ``--output spdx``, the SPDX-format parallel of the CycloneDX reporter
+  over the same ``scanner.sbom()`` inventory; the deferred **Maven** and
+  **NuGet** dependency extractors also shipped 2026-06-06, so both SBOM
+  formats now cover npm / pypi / maven / nuget / gomod / cargo / composer /
+  rubygems plus GitHub Actions / Dockerfile.)
 - **OPA/Rego custom rule engine (closes #176)** —
   ``--rego-rules ./policies/`` discovers ``.rego`` files, extracts
   metadata via ``opa inspect --annotations``, evaluates policies via

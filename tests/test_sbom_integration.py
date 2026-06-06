@@ -167,6 +167,71 @@ class TestPypiSBOM:
         assert requests_dep[0].pinned is False
 
 
+_POM = """\
+<project>
+  <dependencies>
+    <dependency>
+      <groupId>org.apache.commons</groupId>
+      <artifactId>commons-lang3</artifactId>
+      <version>3.12.0</version>
+    </dependency>
+    <dependency>
+      <groupId>com.google.guava</groupId>
+      <artifactId>guava</artifactId>
+      <version>[30.0,)</version>
+    </dependency>
+  </dependencies>
+</project>
+"""
+
+_CSPROJ = """\
+<Project Sdk="Microsoft.NET.Sdk">
+  <ItemGroup>
+    <PackageReference Include="Newtonsoft.Json" Version="13.0.1" />
+    <PackageReference Include="Serilog" Version="[2.0.0,)" />
+  </ItemGroup>
+</Project>
+"""
+
+
+class TestMavenSBOM:
+    def test_extracts_dependencies(self, tmp_path: Path) -> None:
+        pom = tmp_path / "pom.xml"
+        pom.write_text(_POM, encoding="utf-8")
+        deps = Scanner(pipeline="maven", maven_path=str(pom)).sbom()
+        names = {d.name for d in deps}
+        assert "org.apache.commons:commons-lang3" in names
+        assert "com.google.guava:guava" in names
+
+    def test_purl_and_pinning(self, tmp_path: Path) -> None:
+        pom = tmp_path / "pom.xml"
+        pom.write_text(_POM, encoding="utf-8")
+        deps = Scanner(pipeline="maven", maven_path=str(pom)).sbom()
+        commons = next(d for d in deps if d.name.endswith("commons-lang3"))
+        assert commons.purl == "pkg:maven/org.apache.commons/commons-lang3@3.12.0"
+        assert commons.pinned is True
+        guava = next(d for d in deps if d.name.endswith("guava"))
+        assert guava.pinned is False  # version range
+
+
+class TestNuGetSBOM:
+    def test_extracts_dependencies(self, tmp_path: Path) -> None:
+        (tmp_path / "app.csproj").write_text(_CSPROJ, encoding="utf-8")
+        deps = Scanner(pipeline="nuget", nuget_path=str(tmp_path)).sbom()
+        names = {d.name for d in deps}
+        assert "Newtonsoft.Json" in names
+        assert "Serilog" in names
+
+    def test_purl_and_pinning(self, tmp_path: Path) -> None:
+        (tmp_path / "app.csproj").write_text(_CSPROJ, encoding="utf-8")
+        deps = Scanner(pipeline="nuget", nuget_path=str(tmp_path)).sbom()
+        nj = next(d for d in deps if d.name == "Newtonsoft.Json")
+        assert nj.purl == "pkg:nuget/Newtonsoft.Json@13.0.1"
+        assert nj.pinned is True
+        serilog = next(d for d in deps if d.name == "Serilog")
+        assert serilog.pinned is False  # version range
+
+
 class TestNoSBOM:
     def test_provider_without_override_returns_empty(
         self, tmp_path: Path,
