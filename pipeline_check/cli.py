@@ -60,7 +60,6 @@ from .core import autofix as _autofix
 from .core import providers as _providers
 from .core import standards as _standards
 from .core.checks.base import Confidence, Severity, confidence_rank
-from .core.codequality_reporter import report_codequality
 from .core.config import load_config
 from .core.detect import (
     detect_all_pipelines_from_cwd as _detect_all_pipelines_from_cwd,
@@ -86,15 +85,12 @@ from .core.gate import (
     load_ignore_file,
     parse_expiry_window,
 )
-from .core.html_reporter import report_html
 from .core.inline_ignore import (
     InlineIgnoreIndex,
     InlineIgnoreRule,
     build_inline_index,
     extract_inline_ignores,
 )
-from .core.junit_reporter import report_junit
-from .core.markdown_reporter import report_markdown
 from .core.policies import (
     POLICY_DIRS,
     PolicyError,
@@ -109,10 +105,8 @@ from .core.reporter import (
     report_json,
     report_terminal,
 )
-from .core.sarif_reporter import report_sarif
 from .core.scanner import MultiScanner, Scanner
 from .core.scorer import score
-from .core.threatmodel_reporter import report_threatmodel
 
 
 def _tolerate_unencodable_stdio() -> None:
@@ -3805,6 +3799,7 @@ def _emit_scan_report(
     if output == "html":
         # HTML reporter writes the file itself (it bundles assets), so
         # we don't route it through ``_emit_report``.
+        from pipeline_check.core.html_reporter import report_html
         report_html(
             findings, score_result, region=region, target=target or "",
             output_path=output_file, chains=chains,
@@ -3813,50 +3808,57 @@ def _emit_scan_report(
         if not quiet:
             click.echo(f"HTML report written to {output_file}", err=True)
 
-    # Single-artifact text formats. Each builder is a thunk so only the
-    # selected format runs (the CycloneDX one defers a lazy import and the
-    # ``scanner.sbom()`` call); a dispatch table keeps the per-format
-    # wiring in one place instead of a seven-way if-chain.
+    # Single-artifact text formats. Each builder imports its reporter
+    # lazily, so only the selected format's module loads, and nothing
+    # loads on a ``--version`` / ``--list-*`` run. Notably this keeps
+    # ``xml.sax`` (pulled in by the JUnit reporter) off every invocation's
+    # startup path, where it cost ~20 ms. A dispatch table keeps the
+    # per-format wiring in one place instead of a seven-way if-chain.
+    def _sarif_text() -> str:
+        from pipeline_check.core.sarif_reporter import report_sarif
+        return report_sarif(
+            findings, score_result, tool_version=__version__,
+            chains=chains, inline_explain=inline_explain,
+            scan_status=_scan_status(scanner.metadata, findings),
+        )
+
+    def _junit_text() -> str:
+        from pipeline_check.core.junit_reporter import report_junit
+        return report_junit(
+            findings, score_result, inline_explain=inline_explain,
+        )
+
+    def _markdown_text() -> str:
+        from pipeline_check.core.markdown_reporter import report_markdown
+        return report_markdown(
+            findings, score_result, chains=chains,
+            inline_explain=inline_explain,
+        )
+
+    def _codequality_text() -> str:
+        from pipeline_check.core.codequality_reporter import report_codequality
+        return report_codequality(findings, inline_explain=inline_explain)
+
     def _cyclonedx_text() -> str:
         from pipeline_check.core.cyclonedx_reporter import report_cyclonedx
         return report_cyclonedx(
             scanner.sbom(), tool_version=__version__, scanned_path=target or ".",
         )
 
+    def _threatmodel_text() -> str:
+        from pipeline_check.core.threatmodel_reporter import report_threatmodel
+        return report_threatmodel(
+            findings, score_result, inventory=components, chains=chains,
+            tool_version=__version__, region=region or "", target=target or "",
+        )
+
     text_reporters: dict[str, tuple[Callable[[], str], str]] = {
-        "sarif": (
-            lambda: report_sarif(
-                findings, score_result, tool_version=__version__,
-                chains=chains, inline_explain=inline_explain,
-                scan_status=_scan_status(scanner.metadata, findings),
-            ),
-            "SARIF report",
-        ),
-        "junit": (
-            lambda: report_junit(
-                findings, score_result, inline_explain=inline_explain,
-            ),
-            "JUnit report",
-        ),
-        "markdown": (
-            lambda: report_markdown(
-                findings, score_result, chains=chains,
-                inline_explain=inline_explain,
-            ),
-            "Markdown report",
-        ),
-        "codequality": (
-            lambda: report_codequality(findings, inline_explain=inline_explain),
-            "Code Quality report",
-        ),
+        "sarif": (_sarif_text, "SARIF report"),
+        "junit": (_junit_text, "JUnit report"),
+        "markdown": (_markdown_text, "Markdown report"),
+        "codequality": (_codequality_text, "Code Quality report"),
         "cyclonedx": (_cyclonedx_text, "CycloneDX SBOM"),
-        "threatmodel": (
-            lambda: report_threatmodel(
-                findings, score_result, inventory=components, chains=chains,
-                tool_version=__version__, region=region or "", target=target or "",
-            ),
-            "Threat-model report",
-        ),
+        "threatmodel": (_threatmodel_text, "Threat-model report"),
     }
     reporter = text_reporters.get(output)
     if reporter is not None:

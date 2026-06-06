@@ -873,12 +873,20 @@ same day; the rest are queued for a later pass.
   per-pair scan, pinned by ``test_combined_scan_matches_naive``. 204 s ->
   5.2 s serial (~39x), ~17 s under xdist (per-worker corpus reads now
   dominate the trivial regex work).
-- **Startup: defer heavy reporter/autofix imports.** ``cli.py:57,69``
-  imports ``junit_reporter`` (``xml.sax``, ~22 ms) and ``autofix``
-  (``difflib``, ~14 ms) at module top; move them into the format-dispatch
-  / ``--fix`` branches (~25 ms off every invocation). Also ship libyaml
-  in the published wheel/Docker image so ``yaml.CSafeLoader`` exists
-  (10-30x on the non-line YAML path).
+- **Startup: defer heavy reporter/autofix imports.**
+  - ~~Reporter imports (done 2026-06-06 on ``dev``):~~ the six
+    single-format reporters (JUnit / SARIF / Markdown / CodeQuality /
+    threat-model / HTML) now import lazily inside their format thunks in
+    ``_emit_scan_report`` (mirroring the existing ``_cyclonedx_text``).
+    The win is JUnit's ``xml.sax`` (~20 ms), which no longer loads on
+    every invocation; CLI import 150 ms -> 128 ms. No test imports or
+    patches ``cli.report_*``, so this was a clean lift.
+  - Still queued: defer ``autofix`` (``difflib``) too. It is used across
+    several ``--fix`` sites and ``test_cli_fix`` patches ``cli._autofix``,
+    so deferring it needs a usage sweep + that test repointed to
+    ``pipeline_check.core.autofix``. Also ship libyaml in the published
+    wheel / Docker image so ``yaml.CSafeLoader`` exists (10-30x on the
+    non-line YAML path).
 
 **Low priority (queued):**
 

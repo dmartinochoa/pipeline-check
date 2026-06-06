@@ -38,6 +38,13 @@ release commit collapses this section into `## [X.Y.Z] - <date>`.
 
 ### Changed
 
+- **Faster startup: report imports are deferred.** The single-format
+  reporters (JUnit, SARIF, Markdown, CodeQuality, threat-model, HTML)
+  were imported at CLI load, so every invocation, including `--version`
+  and `--list-*`, paid for them. They now import lazily when their format
+  is actually selected. The headline win is the JUnit reporter pulling in
+  `xml.sax` (~20 ms off every run); CLI import drops from ~150 ms to
+  ~128 ms.
 - **Attack-chain reports distinguish the two reachability tiers.** A
   chain confirmed only by the shared-job co-location fallback
   (`via_dataflow=False`) used to render the same confident green
