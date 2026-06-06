@@ -379,6 +379,10 @@ def _chain_to_result(chain: Chain, rule_index: dict[str, int]) -> dict[str, Any]
             "kill_chain_phase": chain.kill_chain_phase,
             "references": list(chain.references),
             "confirmed_reachable": chain.confirmed_reachable,
+            # Distinguish the proven dataflow tier from the weaker
+            # shared-job co-location fallback so machine consumers can
+            # gate on the stronger signal (mirrors --chains-require-dataflow).
+            "via_dataflow": chain.via_dataflow,
             "reachability_note": chain.reachability_note,
         },
     }

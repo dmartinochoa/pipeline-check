@@ -9,6 +9,8 @@ from pipeline_check.core.checks.base import Finding, Severity
 from pipeline_check.core.sarif_reporter import report_sarif
 from pipeline_check.core.standards.base import ControlRef
 
+from ._chain_helpers import make_reach_chain
+
 
 def _f(check_id="CB-001", passed=False, severity=Severity.HIGH, controls=None, cwe=None, **kw):
     return Finding(
@@ -579,3 +581,25 @@ class TestIntegrationWithCli:
         payload = json.loads(result.stdout)
         assert payload["version"] == "2.1.0"
         assert payload["runs"][0]["tool"]["driver"]["name"] == "pipeline_check"
+
+
+class TestReachabilityProperties:
+    """The chain result carries via_dataflow so machine consumers can
+    tell the proven dataflow tier from the shared-job co-location tier."""
+
+    def _props(self, *, via_dataflow):
+        out = json.loads(report_sarif(
+            [_f()], _score(),
+            chains=[make_reach_chain(via_dataflow=via_dataflow)],
+        ))
+        return out["runs"][0]["results"][-1]["properties"]
+
+    def test_dataflow_tier(self):
+        props = self._props(via_dataflow=True)
+        assert props["confirmed_reachable"] is True
+        assert props["via_dataflow"] is True
+
+    def test_shared_job_tier(self):
+        props = self._props(via_dataflow=False)
+        assert props["confirmed_reachable"] is True
+        assert props["via_dataflow"] is False

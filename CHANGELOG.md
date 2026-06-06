@@ -10,6 +10,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 PRs landing on `dev` between releases append entries below. The
 release commit collapses this section into `## [X.Y.Z] - <date>`.
 
+### Changed
+
+- **Attack-chain reports distinguish the two reachability tiers.** A
+  chain confirmed only by the shared-job co-location fallback
+  (`via_dataflow=False`) used to render the same confident green
+  `Reachability confirmed` badge as a chain backed by a proven
+  source-to-sink dataflow path. Co-location is not a proven path, so the
+  terminal / Markdown / HTML reports now show it as a weaker caution
+  badge (`Co-located (unverified)`) and reserve `Reachability confirmed
+  (dataflow)` for the proven tier. The SARIF chain result also gains a
+  `via_dataflow` property so machine consumers can gate on the stronger
+  signal (mirroring `--chains-require-dataflow`). The underlying
+  `confirmed_reachable` flag and which chains emit are unchanged.
+
 ### Fixed
 
 - **ReDoS in the remote-script-exec primitive.** The curl-pipe detector

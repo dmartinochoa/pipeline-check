@@ -831,12 +831,19 @@ same day; the rest are queued for a later pass.
   still fully post-processed (standards / confidence / FP-index /
   metadata) before reporters discard them; skip that tail for
   ``passed=True`` findings (``scanner.py:388``).
-- **Re-label the weak reachability tier.** The taint engine's phase-1
-  fallback returns ``confirmed_reachable=True`` when the only evidence is
-  two findings sharing a job name (``_reachability.py:154``), which is
-  co-location, not a proven path. Default the report badge to the
-  ``via_dataflow`` (proven) tier; label shared-job as
-  "co-located (unverified)".
+- ~~**Re-label the weak reachability tier** (badge done 2026-06-06 on
+  ``dev``).~~ The shared-job co-location fallback
+  (``confirmed_reachable=True``, ``via_dataflow=False``) used to render
+  the same green "Reachability confirmed" badge as a proven dataflow
+  path. The terminal / Markdown / HTML reports now show it as a weaker
+  caution "Co-located (unverified)" badge and reserve "Reachability
+  confirmed (dataflow)" for the proven tier; SARIF gained a
+  ``via_dataflow`` property. ``confirmed_reachable`` semantics and chain
+  emission are unchanged. **Follow-up (queued):** ~30 chain rules still
+  embed "Reachability confirmed: ..." in their per-rule ``narrative``
+  prose for the shared-job case (``ac001`` ... ``ac039``); a future
+  sweep could soften those to match the badge (lower value, the badge is
+  the at-a-glance signal).
 - ~~**Test performance: ``test_english_variant.py`` re-reads the whole
   repo once per word-pair** (done 2026-06-06 on ``dev``).~~ It re-walked
   the tree and re-read every file (~2,600) per pair (~160 pairs), ~204 s

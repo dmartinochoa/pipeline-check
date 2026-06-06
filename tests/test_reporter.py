@@ -5,9 +5,15 @@ import json
 from rich.console import Console
 
 from pipeline_check.core.checks.base import Finding, Severity
-from pipeline_check.core.reporter import report_json, report_terminal
+from pipeline_check.core.reporter import (
+    report_chains_terminal,
+    report_json,
+    report_terminal,
+)
 from pipeline_check.core.scorer import score
 from pipeline_check.core.standards.base import ControlRef
+
+from ._chain_helpers import make_reach_chain
 
 
 def _f(check_id, severity, passed, resource="proj"):
@@ -360,3 +366,25 @@ class TestInlineExplain:
         assert "[ALL]" in out
         assert "[extract]" in out
         assert "[aws_subnet.build.id]" in out
+
+
+class TestReachabilityBadge:
+    """The weak shared-job co-location tier must not borrow the proven
+    dataflow tier's confident "confirmed" badge."""
+
+    def _render(self, chain):
+        import io
+        buf = io.StringIO()
+        console = Console(file=buf, highlight=False, width=200)
+        report_chains_terminal([chain], console=console)
+        return buf.getvalue()
+
+    def test_dataflow_tier_confirmed(self):
+        out = self._render(make_reach_chain(via_dataflow=True))
+        assert "Reachability confirmed (dataflow)" in out
+        assert "Co-located (unverified)" not in out
+
+    def test_shared_job_tier_colocated_not_confirmed(self):
+        out = self._render(make_reach_chain(via_dataflow=False))
+        assert "Co-located (unverified)" in out
+        assert "Reachability confirmed" not in out

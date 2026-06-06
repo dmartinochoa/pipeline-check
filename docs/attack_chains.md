@@ -172,14 +172,23 @@ Chains that have opted in to the model expose two extra fields:
   `job_anchors` intersect (or a `TAINT-001` / `TAINT-002` dataflow
   path bridges them). `false` is the default for chains that haven't
   been migrated yet.
+- `via_dataflow: bool` — `true` only when reachability was established
+  by a proven source-to-sink taint path, as opposed to the weaker
+  shared-job co-location fallback. A chain can be `confirmed_reachable`
+  (co-located) without being `via_dataflow` (a proven executable path).
+  CI consumers can gate on the stronger tier with
+  `--chains-require-dataflow`.
 - `reachability_note: str` — a short rationale, e.g.
   `"injection and ungated deploy share job `release`"`. Empty when
   the chain isn't confirmed reachable.
 
-Confirmed-reachable chains are promoted to `HIGH` confidence
-regardless of their constituent legs and rendered with a
-`✓ Reachability confirmed` badge in the terminal / Markdown / HTML
-outputs.
+Confirmed-reachable chains are promoted to `HIGH` confidence regardless
+of their constituent legs. The reporters render the two tiers
+differently in the terminal / Markdown / HTML outputs: a proven
+dataflow path shows a green `✓ Reachability confirmed (dataflow)` badge,
+while the shared-job fallback shows a weaker caution `≈ Co-located
+(unverified)` badge so a reader is not told co-location is a proven
+path.
 
 Migrated chains:
 

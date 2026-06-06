@@ -13,6 +13,8 @@ from pipeline_check.core.html_reporter import (
 )
 from pipeline_check.core.standards.base import ControlRef
 
+from ._chain_helpers import make_reach_chain
+
 
 def _f(check_id="GHA-001", passed=False, severity=Severity.HIGH, **kw):
     return Finding(
@@ -540,3 +542,22 @@ class TestStickyHeaderOffset:
         html = report_html([_f()], _score())
         assert "@media (max-width: 900px)" in html
         assert "@media (max-width: 600px)" in html
+
+
+class TestReachabilityBadge:
+    """The weak shared-job co-location tier must not borrow the proven
+    dataflow tier's confident "confirmed" badge."""
+
+    def test_dataflow_tier_confirmed(self):
+        html = report_html(
+            [_f()], _score(), chains=[make_reach_chain(via_dataflow=True)]
+        )
+        assert "Reachability confirmed (dataflow)" in html
+        assert "Co-located (unverified)" not in html
+
+    def test_shared_job_tier_colocated_not_confirmed(self):
+        html = report_html(
+            [_f()], _score(), chains=[make_reach_chain(via_dataflow=False)]
+        )
+        assert "Co-located (unverified)" in html
+        assert "Reachability confirmed" not in html

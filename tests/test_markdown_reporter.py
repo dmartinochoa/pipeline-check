@@ -5,6 +5,8 @@ from pipeline_check.core.checks.base import Finding, Severity
 from pipeline_check.core.markdown_reporter import report_markdown
 from pipeline_check.core.standards.base import ControlRef
 
+from ._chain_helpers import make_reach_chain
+
 
 def _f(check_id="GHA-001", passed=False, severity=Severity.HIGH, **kw):
     return Finding(
@@ -103,3 +105,22 @@ class TestControlsPropagation:
         assert "`std5:C5`" in md
         assert "+4" in md
         assert "`std9:C9`" not in md
+
+
+class TestReachabilityBadge:
+    """The weak shared-job co-location tier must not borrow the proven
+    dataflow tier's confident "confirmed" badge."""
+
+    def test_dataflow_tier_confirmed(self):
+        md = report_markdown(
+            [_f()], _score(), chains=[make_reach_chain(via_dataflow=True)]
+        )
+        assert ":white_check_mark: **Reachability confirmed (dataflow)**" in md
+        assert "Co-located" not in md
+
+    def test_shared_job_tier_colocated_not_confirmed(self):
+        md = report_markdown(
+            [_f()], _score(), chains=[make_reach_chain(via_dataflow=False)]
+        )
+        assert ":warning: **Co-located** (shared job, unverified)" in md
+        assert "Reachability confirmed" not in md
