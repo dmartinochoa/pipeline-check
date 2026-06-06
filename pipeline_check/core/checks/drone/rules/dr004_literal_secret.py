@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import re
 
+from ..._secrets import find_secret_values
 from ...base import Finding, Severity
 from ...rule import Rule
 from ..base import (
@@ -112,10 +113,6 @@ _CRED_KEY_RE = re.compile(
     re.IGNORECASE,
 )
 
-# AKIA-prefixed AWS access key. Independent of the key-name
-# vocabulary because seeing one in source is itself the leak.
-_AWS_ACCESS_KEY_RE = re.compile(r"\bAKIA[0-9A-Z]{16}\b")
-
 # Values that are obvious non-secrets even when the key name
 # matches. Booleans / null literals end up in
 # ``API_KEY: ${SECRET_FROM_HOOK}`` substitution shapes when the
@@ -177,11 +174,12 @@ def _scan_block(
         if _is_credential_key(key) and _value_looks_literal(value):
             offenders.append(f"{source_label}.{key}")
             continue
-        # AWS access key shape fires regardless of key name; the
-        # length / placeholder filters don't apply because the
-        # AKIA prefix is itself the leak signal.
-        if _AWS_ACCESS_KEY_RE.search(value):
-            offenders.append(f"{source_label}.{key} (AKIA prefix)")
+        # A recognized vendor-token shape fires regardless of key name;
+        # the length / placeholder filters don't apply because the token
+        # shape (AWS / GitHub / GitLab / cloud / AI-provider keys, JWTs,
+        # etc., via the shared 49-detector catalog) is itself the leak.
+        if find_secret_values([value]):
+            offenders.append(f"{source_label}.{key} (token shape)")
 
 
 def check(pipeline: Pipeline) -> Finding:

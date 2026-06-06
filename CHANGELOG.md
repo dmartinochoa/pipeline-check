@@ -147,16 +147,19 @@ release commit collapses this section into `## [X.Y.Z] - <date>`.
 
 ### Fixed
 
-- **Tekton and Argo literal-secret rules now use the full token catalog.**
-  TKN-005 and ARGO-006 matched only a hand-maintained six-pattern subset
-  (AWS / `ghp_` / `gho_` / broad `sk-` / JWT) for value-shape detection, so
-  a hardcoded GitLab PAT, Anthropic / OpenAI key, Docker Hub PAT, npm /
-  PyPI token, or any of the other 40+ vendor formats sitting in a Tekton or
-  Argo container `env:` value under an innocuous name slipped through. Both
-  now run value-shape detection through the shared
-  `_secrets.find_secret_values` catalog (49 detectors), the same one the
-  `*-008` literal-secret rules already use, while keeping their existing
-  env-name heuristics and FP guards.
+- **Tekton, Argo, Buildkite, and Drone literal-secret rules now use the
+  full token catalog.** TKN-005, ARGO-006, and BK-002 matched only a
+  hand-maintained six-pattern subset (AWS / `ghp_` / `gho_` / broad `sk-` /
+  JWT) for value-shape detection, and DR-004 matched AWS `AKIA` keys only,
+  so a hardcoded GitLab PAT, Anthropic / OpenAI key, Docker Hub PAT, npm /
+  PyPI token, or any of the other 40+ vendor formats sitting in one of
+  those providers' `env:` / `settings:` values under an innocuous name
+  slipped through. All four now run value-shape detection through the
+  shared `_secrets.find_secret_values` catalog (49 detectors), the same one
+  the `*-008` literal-secret rules already use, while keeping their existing
+  key-name heuristics and FP guards. (The `*-003` family is name/field-based
+  over `variables:` blocks and intentionally complements the value-shape
+  `*-008` rules, so it's unchanged.)
 
 - **GHA-046 now catches more manual PR-head fetch bypasses (critical
   false-negatives).** The manual-fetch companion to GHA-002 (CRITICAL,
