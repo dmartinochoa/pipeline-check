@@ -1176,13 +1176,20 @@ findings by ``resource="<provider>"`` and the AGGREGATE rules (one Finding
 per check across the corpus) set neither anchors nor a ``Location``. The
 Tekton + Argo increments fixed only their anchor-bearing per-step /
 per-template rules via the central orchestrator backfill. **Standalone
-follow-up (no longer DAG-blocking):** the remaining doc-level Tekton / Argo
-rules and ALL ``kubernetes`` rules still emit anchor-less aggregate
-findings with no ``Location`` (so they show ``resource="<provider>"`` with
-no file/line in the terminal report / SARIF / heatmap). Fixing those is
-per-rule work (only anchor-bearing rules can be backfilled centrally) and
-would improve those reporters; it's the natural next quality pass for the
-K8s-CRD providers.
+follow-up (no longer DAG-blocking), IN PROGRESS:** the aggregate K8s-CRD
+rules show ``resource="<provider>"`` with no file/line in the terminal
+report / SARIF / heatmap. This is per-rule work (only anchor-bearing rules
+can be backfilled centrally). A shared
+``kubernetes/base.py::manifest_location(m, obj)`` helper now exists, and
+**batch 1 (done 2026-06-06 on ``dev``)** converted the Kubernetes
+pod-security cluster: K8S-002/003/004 (host network/PID/IPC), K8S-007
+(runAsNonRoot), K8S-008 (readOnlyRootFilesystem), K8S-009 (capabilities),
+K8S-010 (seccompProfile), each now attaches one ``Location`` per offender
+(pinned by ``tests/kubernetes/test_finding_locations.py``). **Remaining
+batches:** the other ~16 location-less Kubernetes rules (K8S-011/012/014/
+015/016/017/019/022/023/024/025/027/028/029/030/044, a mix of pod-spec,
+container, volume, and manifest-level sites, all served by the same
+helper), then the ~13 doc-level Tekton rules and the doc-level Argo rules.
 Renderer reminder: only ``needs`` and ``stage`` edges are drawn between
 boxes (``sequence`` is for step nesting only).
 

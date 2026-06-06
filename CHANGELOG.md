@@ -88,9 +88,20 @@ release commit collapses this section into `## [X.Y.Z] - <date>`.
   `ArgoChecks.run` now resolves those anchors to a document and template
   line (ARGO-001 / ARGO-002 already set locations natively), so the
   findings carry file/line info in the terminal report, SARIF, the heatmap,
-  and the new pipeline graph. (The remaining document-level Tekton / Argo
-  rules and the `kubernetes` provider still emit anchor-less aggregate
-  findings; giving those locations is tracked separately.)
+  and the new pipeline graph.
+- **Kubernetes pod-security findings now carry source locations (batch 1).**
+  The aggregate Kubernetes rules returned one Finding per check with
+  `resource="kubernetes/manifests"` and no `Location`, so they showed no
+  file or line in the terminal report, SARIF (GitHub code-scanning
+  annotations had nowhere to land), or the blast-radius heatmap. A shared
+  `manifest_location(manifest, obj)` helper now builds a `Location` (with
+  `doc_index` for multi-doc files) at the offending site, and the
+  host-namespace and pod-`securityContext` cluster (K8S-002/003/004 host
+  network/PID/IPC, K8S-007 runAsNonRoot, K8S-008 readOnlyRootFilesystem,
+  K8S-009 capabilities, K8S-010 seccompProfile) attaches one per offender.
+  Detection, severity, and finding counts are unchanged. The remaining
+  location-less Kubernetes rules (and the document-level Tekton / Argo
+  rules) are tracked as the next batches.
 
 ## [1.11.0] - 2026-06-06
 
