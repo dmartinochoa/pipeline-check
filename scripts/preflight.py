@@ -35,6 +35,7 @@ _DRIFT_TESTS = [
     "tests/test_cli_docs_drift.py",
     "tests/test_doc_claims.py",
     "tests/test_english_variant.py",
+    "tests/test_prose_style.py",
     "tests/test_rule_framework.py",
     "tests/test_rule_test_coverage.py",
     "tests/test_standards.py",
