@@ -148,7 +148,7 @@ def match(findings: list[Finding]) -> list[Chain]:
             )
         elif confirmed:
             reach_narrative = (
-                f"  4. Reachability confirmed: {reach.note}. The "
+                f"  4. Co-located (unverified): {reach.note}. The "
                 f"untrusted interpolation and the ungated deploy execute "
                 f"in the same job, so the injection reaches the deploy "
                 f"context."

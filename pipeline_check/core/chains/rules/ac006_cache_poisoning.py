@@ -69,7 +69,7 @@ def match(findings: list[Finding]) -> list[Chain]:
                 f"{shared_repr}"
             )
             reach_narrative = (
-                f"  4. Reachability confirmed: the same job(s) "
+                f"  4. Co-located (unverified): the same job(s) "
                 f"({shared_repr}) both run PR-head code AND "
                 f"populate the cache under the attacker-influenced "
                 f"key. The malicious build script writes directly "

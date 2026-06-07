@@ -117,7 +117,7 @@ def match(findings: list[Finding]) -> list[Chain]:
                 f"Untrusted-trigger and secrets-dump legs share job {shared_repr}"
             )
             reach_narrative = (
-                f"  3. Reachability confirmed: job {shared_repr} is both "
+                f"  3. Co-located (unverified): job {shared_repr} is both "
                 f"attacker-reachable and serializes the secrets context, "
                 f"so one fork PR / comment dumps every secret in a single "
                 f"execution context."

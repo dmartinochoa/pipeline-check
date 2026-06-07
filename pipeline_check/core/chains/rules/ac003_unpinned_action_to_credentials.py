@@ -71,7 +71,7 @@ def match(findings: list[Finding]) -> list[Chain]:
                 f"{shared_repr}"
             )
             reach_narrative = (
-                f"  4. Reachability confirmed: the unpinned action "
+                f"  4. Co-located (unverified): the unpinned action "
                 f"and the long-lived AWS credential are reachable "
                 f"from the same job(s) ({shared_repr}). The "
                 f"compromised upstream code runs in the same runner "

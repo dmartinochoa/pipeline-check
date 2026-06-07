@@ -94,6 +94,17 @@ release commit collapses this section into `## [X.Y.Z] - <date>`.
   derived from the canonical `Severity` enum in `checks/base.py`, so the two
   config loaders can't drift from each other or from the enum. No behavior
   change.
+- **Attack-chain narratives match the reachability badge.** When a chain's
+  reachability is only shared-job co-location (not a proven dataflow path),
+  its narrative now opens that leg with "Co-located (unverified): ..." to
+  match the yellow "Co-located (unverified)" badge already shown in the
+  terminal / Markdown / HTML reports, instead of the stronger "Reachability
+  confirmed: ...". The proven-dataflow branches still read "Reachability
+  confirmed by dataflow", and the structural-identity chains (a shared
+  image, IAM role, ServiceAccount, or repo, not job co-location: AC-005 /
+  AC-007 / AC-011 / AC-016 / AC-017 / AC-020 / AC-021 / XPC-002) keep
+  "Reachability confirmed" since they aren't co-location. Prose only; chain
+  emission, severity, confidence, and `confirmed_reachable` are unchanged.
 
 ### Added
 
