@@ -173,7 +173,7 @@ def match(findings: list[Finding]) -> list[Chain]:
             )
         elif confirmed:
             reach_narrative = (
-                f"  4. Reachability confirmed: {reach.note}. The same "
+                f"  4. Co-located (unverified): {reach.note}. The same "
                 f"template BOTH runs privileged AND interpolates "
                 f"``{{{{inputs.parameters.<name>}}}}`` unquoted. A "
                 f"crafted Workflow-submission param value executes as "

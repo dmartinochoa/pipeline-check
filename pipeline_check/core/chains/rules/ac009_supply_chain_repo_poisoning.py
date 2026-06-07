@@ -86,7 +86,7 @@ def match(findings: list[Finding]) -> list[Chain]:
                 f"credential share job {shared_repr}"
             )
             reach_narrative = (
-                f"  4. Reachability confirmed: the same job(s) "
+                f"  4. Co-located (unverified): the same job(s) "
                 f"({shared_repr}) pull the unpinned action AND "
                 f"interpolate PR-controlled context AND have the "
                 f"literal credential in scope. A fork PR exfiltrates "

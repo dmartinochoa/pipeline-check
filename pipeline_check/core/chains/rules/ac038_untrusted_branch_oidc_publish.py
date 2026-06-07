@@ -105,7 +105,7 @@ def match(findings: list[Finding]) -> list[Chain]:
                 f"job {shared_repr}"
             )
             reach_narrative = (
-                f"  4. Reachability confirmed: job {shared_repr} both "
+                f"  4. Co-located (unverified): job {shared_repr} both "
                 f"mints the OIDC token with no environment gate AND is "
                 f"reachable from the unrestricted trigger. One job is "
                 f"the whole attack: a publish token mintable from any "

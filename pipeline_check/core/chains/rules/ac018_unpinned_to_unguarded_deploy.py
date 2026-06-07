@@ -91,7 +91,7 @@ def match(findings: list[Finding]) -> list[Chain]:
                 f"{shared_repr}"
             )
             reach_narrative = (
-                f"  4. Reachability confirmed: the unpinned "
+                f"  4. Co-located (unverified): the unpinned "
                 f"action and the ungated deploy fire in the same "
                 f"job(s) ({shared_repr}). A compromised upstream "
                 f"release runs in the deploy job itself, with its "

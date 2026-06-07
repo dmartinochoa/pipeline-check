@@ -152,7 +152,7 @@ def match(findings: list[Finding]) -> list[Chain]:
         elif confirmed:
             shared_repr = reach.note
             reach_narrative = (
-                f"  4. Reachability confirmed: {shared_repr}. The "
+                f"  4. Co-located (unverified): {shared_repr}. The "
                 f"untrusted interpolation and the unmanual deploy fire "
                 f"on the same step, so the injected command executes "
                 f"in the deploy step's own runner with its secrets in "

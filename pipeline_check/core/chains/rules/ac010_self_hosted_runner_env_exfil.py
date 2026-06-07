@@ -116,7 +116,7 @@ def match(findings: list[Finding]) -> list[Chain]:
                 f"job {shared_repr}"
             )
             reach_narrative = (
-                f"  4. Reachability confirmed: the same job(s) "
+                f"  4. Co-located (unverified): the same job(s) "
                 f"({shared_repr}) both persist the GitHub token AND "
                 f"run on a non-ephemeral self-hosted runner. The "
                 f"token outlives the step that wrote it on a host "
