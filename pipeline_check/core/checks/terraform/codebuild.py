@@ -9,7 +9,9 @@ CB-006  Source auth uses long-lived token (not CodeConnect) HIGH      CICD-SEC-6
 CB-007  CodeBuild webhook has no filter_group               MEDIUM    CICD-SEC-1
 
 CB-001 fails on **either** a secret-like variable name (PASSWORD, TOKEN, …)
-**or** a value that looks like a credential (AKIA…, ghp_…, xoxb-…, eyJ…).
+**or** a value matching any shape in the shared credential-shape catalog
+(``_patterns.SECRET_VALUE_RE`` over ``_BUILTIN_PATTERNS``, e.g. AKIA…,
+ghp_…, glpat-…, npm_…, dckr_pat_…, xoxb-…, eyJ… JWTs).
 """
 from __future__ import annotations
 

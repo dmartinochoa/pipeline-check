@@ -267,7 +267,7 @@ Enumerate specific actions and resources instead of ``codeartifact:*`` with ``Re
 <span class="pg-sev pg-sev--critical">CRITICAL</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-6</span> <span class="pg-tag pg-tag--cwe">CWE-798</span>
 </div>
 
-Walks every ``AWS::CodeBuild::Project``'s ``Properties.Environment.EnvironmentVariables`` list. Flags any entry whose ``Type`` is ``PLAINTEXT`` (or absent — the CFN default) when (a) the ``Name`` matches a secret-like pattern (``PASSWORD``, ``TOKEN``, ``API_KEY``, …) or (b) the ``Value`` matches a known credential shape (AKIA/ASIA, GitHub tokens, JWTs).
+Walks every ``AWS::CodeBuild::Project``'s ``Properties.Environment.EnvironmentVariables`` list. Flags any entry whose ``Type`` is ``PLAINTEXT`` (or absent — the CFN default) when (a) the ``Name`` matches a secret-like pattern (``PASSWORD``, ``TOKEN``, ``API_KEY``, …) or (b) the ``Value`` matches one of pipeline-check's known credential shapes (cloud access keys, VCS / registry / CI / cloud-service tokens, JWTs — the same shared detector catalog GHA-008 uses).
 
 <div class="pg-rule__rec" markdown>
 
