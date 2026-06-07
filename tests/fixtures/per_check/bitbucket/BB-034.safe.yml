@@ -1,0 +1,15 @@
+pipelines:
+  pull-requests:
+    '**':
+      - step:
+          name: preview deploy
+          deployment: preview
+          script:
+            - ./deploy-preview.sh
+  branches:
+    main:
+      - step:
+          name: prod deploy
+          deployment: production
+          script:
+            - ./deploy.sh

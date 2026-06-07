@@ -282,6 +282,7 @@ STANDARD = Standard(
         "GL-040":   ["PO.5.1", "PS.1.1"],              # CI_JOB_TOKEN used for cross-project access
         "GL-041":   ["PW.6.1", "PW.9.1"],              # IaC apply on an untrusted MR trigger
         "BB-033":   ["PW.6.1", "PW.9.1"],              # IaC apply on a pull-request pipeline
+        "BB-034":   ["PO.5.1"],                        # production deploy on a pull-request pipeline
         "GL-032":   ["PW.6.1", "PW.9.1"],              # tags interpolates untrusted
         "GL-033":   ["PO.5.1", "PW.9.1"],              # global before_script taint
         "GL-034":   ["PW.4.4"],                        # npm install without audit signatures

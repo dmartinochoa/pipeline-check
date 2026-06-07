@@ -427,6 +427,7 @@ CASES: list[CheckCase] = [
     CheckCase("BB-031", "CICD-SEC-3", ("ESF-S-VERIFY-DEPS",)),
     CheckCase("BB-032", "CICD-SEC-6", ("ESF-D-SECRETS",)),
     CheckCase("BB-033", "CICD-SEC-4", ("ESF-D-INJECTION",)),
+    CheckCase("BB-034", "CICD-SEC-1", ("ESF-C-APPROVAL", "ESF-C-ENV-SEP")),
     # ── Azure DevOps backfill (ADO-027..030) ─────────────────────────
     CheckCase("ADO-027", "CICD-SEC-4", ("ESF-D-INJECTION",)),
     CheckCase("ADO-028", "CICD-SEC-3", ("ESF-S-PIN-DEPS", "ESF-S-VERIFY-DEPS")),

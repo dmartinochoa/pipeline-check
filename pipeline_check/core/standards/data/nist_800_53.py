@@ -278,6 +278,7 @@ STANDARD = Standard(
         "BB-002":   ["SI-7", "SA-11", "CM-6"],
         "BB-003":   ["IA-5"],
         "BB-004":   ["SA-10", "AC-3"],
+        "BB-034":   ["SA-10", "AC-3"],                   # prod deploy on a PR pipeline
         "BB-005":   ["CM-6"],
         "BB-006":   ["SI-7", "SR-4"],                    # unsigned artifacts
         "BB-007":   ["SR-4", "CM-8"],                    # no SBOM
