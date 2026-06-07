@@ -187,7 +187,7 @@ Chains that have opted in to the model expose two extra fields:
   reported separately. A chain sets at most one of `via_dataflow` /
   `via_structural`.
 - `reachability_note: str` — a short rationale, e.g.
-  `"injection and ungated deploy share job `release`"`. Empty when
+  `"injection and ungated deploy share job 'release'"`. Empty when
   the chain isn't confirmed reachable.
 
 Confirmed-reachable chains are promoted to `HIGH` confidence regardless

@@ -256,6 +256,7 @@ STANDARD = Standard(
         "GL-039":   ["CM-6", "CM-7"],                    # dind daemon TLS disabled / exposed on 2375
         "GL-018":   ["SR-3", "SR-11"],                   # package install insecure source
         "GL-019":   ["RA-5", "SI-2"],                    # no vulnerability scanning
+        "GL-043":   ["RA-5", "SI-2"],                    # native security scanner disabled
         "GL-020":   ["IA-5"],                            # CI_JOB_TOKEN persisted
         "GL-021":   ["SR-3", "SR-11"],                   # install without lockfile
         "GL-022":   ["SR-3", "SR-11", "SI-2"],           # dep-update bypasses lockfile pins
@@ -280,6 +281,7 @@ STANDARD = Standard(
         "BB-003":   ["IA-5"],
         "BB-004":   ["SA-10", "AC-3"],
         "BB-034":   ["SA-10", "AC-3"],                   # prod deploy on a PR pipeline
+        "BB-033":   ["CM-6", "SA-11", "SA-15"],          # IaC apply on a PR pipeline
         "BB-005":   ["CM-6"],
         "BB-006":   ["SI-7", "SR-4"],                    # unsigned artifacts
         "BB-007":   ["SR-4", "CM-8"],                    # no SBOM

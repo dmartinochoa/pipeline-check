@@ -234,6 +234,7 @@ STANDARD = Standard(
         "ECR-002":  ["GV.SC-05", "PR.PS-02", "RC.RP-01"],   # mutable tags also break recovery-by-digest
         "GHA-020":  ["PR.PS-02"],
         "GL-019":   ["PR.PS-02"],
+        "GL-043":   ["PR.PS-02"],               # native security scanner disabled
         "BB-015":   ["PR.PS-02"],
         "ADO-020":  ["PR.PS-02"],
         "JF-020":   ["PR.PS-02"],
@@ -557,6 +558,7 @@ STANDARD = Standard(
         # ── Bitbucket Pipelines ──────────────────────────────────
         "BB-004":  ["PR.PS-06"],                # deploy step missing environment
         "BB-034":  ["PR.PS-06"],                # prod deploy on a PR pipeline
+        "BB-033":  ["PR.PS-05"],                # IaC apply on a PR pipeline
         "BB-028":  ["PR.AA-05"],                # OIDC step w/o env gate
         "BB-029":  ["GV.SC-05"],                # step+service image not pinned
         "BB-030":  ["GV.SC-05"],                # npm install without audit signatures
