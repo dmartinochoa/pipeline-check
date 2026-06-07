@@ -138,6 +138,7 @@ def match(findings: list[Finding]) -> list[Chain]:
             references=list(RULE.references),
             recommendation=RULE.recommendation,
             confirmed_reachable=True,
+            via_structural=True,
             reachability_note=(
                 f"Tekton Task pins SA `{sa_identity}`, a cluster-admin "
                 f"binding subject"

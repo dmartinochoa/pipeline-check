@@ -178,17 +178,26 @@ Chains that have opted in to the model expose two extra fields:
   (co-located) without being `via_dataflow` (a proven executable path).
   CI consumers can gate on the stronger tier with
   `--chains-require-dataflow`.
+- `via_structural: bool` — `true` when reachability rests on a shared
+  structural identity (the two legs reference the same build artifact /
+  image digest, IAM role, ServiceAccount, or repo) rather than job
+  co-location. Like `via_dataflow` this is a confirmed tier (the rule
+  sets `confirmed_reachable=true` at `HIGH`), but the link is
+  established by identity-matching, not a traced taint path, so it is
+  reported separately. A chain sets at most one of `via_dataflow` /
+  `via_structural`.
 - `reachability_note: str` — a short rationale, e.g.
   `"injection and ungated deploy share job `release`"`. Empty when
   the chain isn't confirmed reachable.
 
 Confirmed-reachable chains are promoted to `HIGH` confidence regardless
-of their constituent legs. The reporters render the two tiers
+of their constituent legs. The reporters render the three tiers
 differently in the terminal / Markdown / HTML outputs: a proven
-dataflow path shows a green `✓ Reachability confirmed (dataflow)` badge,
-while the shared-job fallback shows a weaker caution `≈ Co-located
-(unverified)` badge so a reader is not told co-location is a proven
-path.
+dataflow path shows a green `✓ Reachability confirmed (dataflow)` badge
+and a structural-identity link shows a green `✓ Reachability confirmed
+(structural)` badge, while the shared-job fallback shows a weaker
+caution `≈ Co-located (unverified)` badge so a reader is not told
+co-location is a proven path.
 
 Migrated chains:
 

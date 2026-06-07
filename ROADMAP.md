@@ -896,10 +896,20 @@ same day; the rest are queued for a later pass.
   ServiceAccount / repo rather than job co-location (``ac005`` / ``ac007``
   / ``ac011`` / ``ac016`` / ``ac017`` / ``ac020`` / ``ac021`` / ``xpc002``)
   deliberately keep "Reachability confirmed" in prose, since softening
-  them to "co-located" would be less accurate. The badge for those eight
-  still reads "Co-located (unverified)" (the 2-tier model collapses
-  structural-identity into the non-dataflow tier); a separate, larger
-  follow-up could give the badge a third "structural" tier.
+  them to "co-located" would be less accurate. ~~**Follow-up (structural
+  badge tier, done 2026-06-07 on ``dev``):**~~ those eight no longer
+  render the wrong "Co-located (unverified)" badge. A new
+  ``Chain.via_structural`` flag (set by ac005/007/011/016/017/020/021 +
+  xpc002 in their confirmed branch) drives a third green badge tier,
+  ``✓ Reachability confirmed (structural)``, between the proven-dataflow
+  tier and the shared-job co-location fallback, across the terminal /
+  Markdown / HTML reporters; ``via_structural`` is also emitted in the
+  SARIF (and JSON ``to_dict``) chain properties next to ``via_dataflow``.
+  Gating unchanged (structural passes ``--chains-require-reachability``,
+  dropped by ``--chains-require-dataflow``). Badge ↔ narrative ↔
+  confidence now agree across all three tiers; docs/attack_chains.md +
+  docs/usage.md updated. The whole reachability-honesty thread (badge
+  softening -> narrative prose -> structural tier) is now complete.
 - ~~**Test performance: ``test_english_variant.py`` re-reads the whole
   repo once per word-pair** (done 2026-06-06 on ``dev``).~~ It re-walked
   the tree and re-read every file (~2,600) per pair (~160 pairs), ~204 s

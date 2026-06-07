@@ -555,6 +555,14 @@ class TestReachabilityBadge:
         assert "Reachability confirmed (dataflow)" in html
         assert "Co-located (unverified)" not in html
 
+    def test_structural_tier_confirmed(self):
+        html = report_html(
+            [_f()], _score(),
+            chains=[make_reach_chain(via_dataflow=False, via_structural=True)],
+        )
+        assert "Reachability confirmed (structural)" in html
+        assert "Co-located (unverified)" not in html
+
     def test_shared_job_tier_colocated_not_confirmed(self):
         html = report_html(
             [_f()], _score(), chains=[make_reach_chain(via_dataflow=False)]

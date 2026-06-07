@@ -135,6 +135,7 @@ def _emit_confirmed(
         references=list(RULE.references),
         recommendation=RULE.recommendation,
         confirmed_reachable=True,
+        via_structural=True,
         reachability_note=(
             f"Build leg {build_f.check_id} and deploy leg "
             f"{deploy_f.check_id} share image `{image}`"
