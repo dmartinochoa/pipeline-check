@@ -129,6 +129,16 @@ release commit collapses this section into `## [X.Y.Z] - <date>`.
   missed, while still excluding `product` / `preprod` / `non-prod`. New
   primitive tests pin `DEPLOY_CMD_RE` and `PROD_ENV_RE`. ~70 lines of
   duplicated regex removed.
+- **GHA-111 IaC-apply detection widened to match its siblings.** `GHA-111`
+  (AI agent applies IaC in the same job) carried a private IaC-apply regex
+  that had drifted to a subset of the shared `IAC_APPLY_RE` the other
+  IaC-apply rules (`GHA-117`, `GL-041`, `BB-033`) use, missing OpenTofu
+  (`tofu`), `terragrunt run-all`, and every `destroy` / teardown variant.
+  An AI agent running `terraform destroy` or `tofu apply` against the cloud
+  account is the same blast radius the rule targets, so it now imports the
+  shared `IAC_APPLY_RE` and detects those forms. New primitive tests pin
+  `IAC_APPLY_RE` (the full apply/destroy vocabulary, read-only `plan` /
+  `diff` excluded).
 - **Attack-chain narratives match the reachability badge.** When a chain's
   reachability is only shared-job co-location (not a proven dataflow path),
   its narrative now opens that leg with "Co-located (unverified): ..." to

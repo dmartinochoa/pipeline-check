@@ -844,6 +844,35 @@ class TestDeployNames:
     def test_non_production_env_names_do_not_match(self, env):
         assert deploy_names.PROD_ENV_RE.match(env) is None
 
+    @pytest.mark.parametrize("cmd", [
+        "terraform apply -auto-approve",
+        "terraform destroy",
+        "terragrunt run-all apply",
+        # OpenTofu is a Terraform fork; the catalog covers it so every
+        # IaC-apply rule (GHA-117, GL-041, BB-033, GHA-111) recognizes it.
+        "tofu apply",
+        "tofu destroy",
+        "aws cloudformation deploy --stack-name x",
+        "aws cloudformation create-stack --stack-name x",
+        "cdk deploy",
+        "cdk destroy",
+        "pulumi up --yes",
+        "pulumi destroy",
+        "sam deploy",
+    ])
+    def test_iac_apply_matches(self, cmd):
+        assert deploy_names.IAC_APPLY_RE.search(cmd) is not None
+
+    @pytest.mark.parametrize("cmd", [
+        # Read-only IaC verbs are deliberately excluded.
+        "terraform plan",
+        "cdk diff",
+        "pulumi preview",
+        "terraform validate",
+    ])
+    def test_iac_read_only_does_not_match(self, cmd):
+        assert deploy_names.IAC_APPLY_RE.search(cmd) is None
+
 
 # ──────────────────────────────────────────────────────────────────
 # secret_shapes
