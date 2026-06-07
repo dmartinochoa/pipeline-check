@@ -496,6 +496,10 @@ class TestChainAC005:
         assert len(ac5) == 1
         chain = ac5[0]
         assert chain.confirmed_reachable is True
+        # Shared image identity is a structural-identity confirmation,
+        # not job co-location and not a traced taint path.
+        assert chain.via_structural is True
+        assert chain.via_dataflow is False
         assert "ghcr.io/acme/app" in chain.reachability_note
         assert chain.resources == ["ghcr.io/acme/app"]
         assert chain.confidence is Confidence.HIGH
@@ -1283,6 +1287,9 @@ class TestChainAC011:
         assert len(ac11) == 1
         chain = ac11[0]
         assert chain.confirmed_reachable is True
+        # Shared ServiceAccount identity is a structural-identity link.
+        assert chain.via_structural is True
+        assert chain.via_dataflow is False
         assert "prod/build-runner" in chain.reachability_note
         assert chain.resources == ["prod/build-runner"]
         assert chain.confidence is Confidence.HIGH

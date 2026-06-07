@@ -36,15 +36,20 @@ from pipeline_check.core.checks.base import (
 
 
 def make_reach_chain(
-    *, via_dataflow: bool, note: str = "legs share job `release`"
+    *,
+    via_dataflow: bool,
+    via_structural: bool = False,
+    note: str = "legs share job `release`",
 ) -> Chain:
     """A confirmed-reachable ``Chain`` for reporter badge tests.
 
-    Toggle *via_dataflow* to exercise the two reachability tiers: a
-    proven source-to-sink dataflow path versus the weaker shared-job
-    co-location fallback. Reporters must render them with distinct
-    badges (the strong one says "confirmed", the weak one only
-    "co-located").
+    Toggle the tier knobs to exercise the three reachability tiers:
+    *via_dataflow* (a proven source-to-sink taint path) and
+    *via_structural* (a shared artifact / role / SA / repo identity) are
+    both confirmed tiers; with neither set the chain is the weaker
+    shared-job co-location fallback. Reporters must render them with
+    distinct badges (the two strong ones say "confirmed", the weak one
+    only "co-located").
     """
     return Chain(
         chain_id="AC-002", title="t", severity=Severity.CRITICAL,
@@ -53,6 +58,7 @@ def make_reach_chain(
         triggering_check_ids=["GHA-003"], triggering_findings=[],
         resources=["wf.yml"], references=[], recommendation="r",
         confirmed_reachable=True, via_dataflow=via_dataflow,
+        via_structural=via_structural,
         reachability_note=note,
     )
 

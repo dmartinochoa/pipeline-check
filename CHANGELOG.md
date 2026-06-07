@@ -105,6 +105,20 @@ release commit collapses this section into `## [X.Y.Z] - <date>`.
   AC-007 / AC-011 / AC-016 / AC-017 / AC-020 / AC-021 / XPC-002) keep
   "Reachability confirmed" since they aren't co-location. Prose only; chain
   emission, severity, confidence, and `confirmed_reachable` are unchanged.
+- **Structural-identity reachability is now its own confirmed badge tier.**
+  The eight structural-identity chains above set `confirmed_reachable=True`
+  at HIGH confidence (the two legs share a build artifact / image digest /
+  IAM role / ServiceAccount / repo), but the reports rendered them with the
+  weak yellow `≈ Co-located (unverified)` badge, which both contradicted
+  their "Reachability confirmed" narrative and was factually wrong (they
+  aren't co-located in a job). They now render a green
+  `✓ Reachability confirmed (structural)` badge, a third tier between the
+  proven-dataflow tier and the shared-job co-location fallback. A new
+  `Chain.via_structural` flag drives it and is emitted in the SARIF /
+  JSON chain properties next to `via_dataflow`. Gating is unchanged:
+  structural chains pass `--chains-require-reachability` (they're
+  confirmed) and are dropped by `--chains-require-dataflow` (no traced
+  taint path).
 
 ### Added
 

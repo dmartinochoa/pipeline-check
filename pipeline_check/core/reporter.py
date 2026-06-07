@@ -599,13 +599,18 @@ def report_chains_terminal(
             f"{rich_escape(', '.join(chain.triggering_check_ids))}",
         ]
         if chain.confirmed_reachable:
-            # Two tiers: a proven source-to-sink dataflow path is the
-            # strong (green) signal; the shared-job fallback is only
-            # co-location, so it gets a weaker caution (yellow) label,
-            # not a confident "confirmed".
+            # Three tiers: a proven source-to-sink dataflow path and a
+            # structural-identity link (same artifact / role / SA / repo)
+            # are both confirmed (green) signals; the shared-job fallback
+            # is only co-location, so it gets a weaker caution (yellow)
+            # label, not a confident "confirmed".
             if chain.via_dataflow:
                 reach_line = (
                     "[bold green]✓ Reachability confirmed (dataflow)[/bold green]"
+                )
+            elif chain.via_structural:
+                reach_line = (
+                    "[bold green]✓ Reachability confirmed (structural)[/bold green]"
                 )
             else:
                 reach_line = "[bold yellow]≈ Co-located (unverified)[/bold yellow]"

@@ -401,6 +401,13 @@ class TestReachabilityBadge:
         assert "Reachability confirmed (dataflow)" in out
         assert "Co-located (unverified)" not in out
 
+    def test_structural_tier_confirmed(self):
+        out = self._render(
+            make_reach_chain(via_dataflow=False, via_structural=True)
+        )
+        assert "Reachability confirmed (structural)" in out
+        assert "Co-located (unverified)" not in out
+
     def test_shared_job_tier_colocated_not_confirmed(self):
         out = self._render(make_reach_chain(via_dataflow=False))
         assert "Co-located (unverified)" in out

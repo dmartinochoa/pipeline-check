@@ -99,6 +99,7 @@ def _emit_confirmed(
         references=list(RULE.references),
         recommendation=RULE.recommendation,
         confirmed_reachable=True,
+        via_structural=True,
         reachability_note=(
             f"CB-002 project(s) serviceRole matches IAM-side role "
             f"`{role_arn}`"

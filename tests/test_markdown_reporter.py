@@ -118,6 +118,14 @@ class TestReachabilityBadge:
         assert ":white_check_mark: **Reachability confirmed (dataflow)**" in md
         assert "Co-located" not in md
 
+    def test_structural_tier_confirmed(self):
+        md = report_markdown(
+            [_f()], _score(),
+            chains=[make_reach_chain(via_dataflow=False, via_structural=True)],
+        )
+        assert ":white_check_mark: **Reachability confirmed (structural)**" in md
+        assert "Co-located" not in md
+
     def test_shared_job_tier_colocated_not_confirmed(self):
         md = report_markdown(
             [_f()], _score(), chains=[make_reach_chain(via_dataflow=False)]

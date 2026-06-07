@@ -601,13 +601,16 @@ class TestScanStatus:
 
 
 class TestReachabilityProperties:
-    """The chain result carries via_dataflow so machine consumers can
-    tell the proven dataflow tier from the shared-job co-location tier."""
+    """The chain result carries via_dataflow / via_structural so machine
+    consumers can tell the two confirmed tiers (proven dataflow path,
+    structural-identity link) from the shared-job co-location tier."""
 
-    def _props(self, *, via_dataflow):
+    def _props(self, *, via_dataflow, via_structural=False):
         out = json.loads(report_sarif(
             [_f()], _score(),
-            chains=[make_reach_chain(via_dataflow=via_dataflow)],
+            chains=[make_reach_chain(
+                via_dataflow=via_dataflow, via_structural=via_structural,
+            )],
         ))
         return out["runs"][0]["results"][-1]["properties"]
 
@@ -615,8 +618,16 @@ class TestReachabilityProperties:
         props = self._props(via_dataflow=True)
         assert props["confirmed_reachable"] is True
         assert props["via_dataflow"] is True
+        assert props["via_structural"] is False
+
+    def test_structural_tier(self):
+        props = self._props(via_dataflow=False, via_structural=True)
+        assert props["confirmed_reachable"] is True
+        assert props["via_dataflow"] is False
+        assert props["via_structural"] is True
 
     def test_shared_job_tier(self):
         props = self._props(via_dataflow=False)
         assert props["confirmed_reachable"] is True
         assert props["via_dataflow"] is False
+        assert props["via_structural"] is False

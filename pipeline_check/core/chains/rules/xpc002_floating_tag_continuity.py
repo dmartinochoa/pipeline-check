@@ -130,6 +130,7 @@ def _emit_confirmed(
         references=list(RULE.references),
         recommendation=RULE.recommendation,
         confirmed_reachable=True,
+        via_structural=True,
         reachability_note=(
             f"DF-001 and K8S-001 share image `{image}`"
         ),
