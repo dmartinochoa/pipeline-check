@@ -238,6 +238,7 @@ STANDARD = Standard(
         "GL-002":   ["SI-7", "SA-11", "CM-6"],
         "GL-003":   ["IA-5"],
         "GL-004":   ["SA-10", "AC-3"],
+        "GL-044":   ["SA-10", "AC-3"],                   # auto production deploy on an MR pipeline
         "GL-005":   ["SR-3", "SR-11", "CM-6"],
         "GL-042":   ["SR-3", "SR-11", "CM-6"],    # include: component unpinned
         "GL-006":   ["SI-7", "SR-4"],                    # unsigned artifacts

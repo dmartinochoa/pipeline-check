@@ -128,7 +128,7 @@ for inputs, idempotency, and fork-PR fallback behavior.
 | **Pulumi** | `Pulumi.yaml` + stack config + project source | `--pulumi-path` | 14 checks · `PULUMI-001..014` · plaintext secrets, wildcard IAM, public resources, insecure state backend, unpinned plugins, deploy-time exec (Python / TypeScript / Go / C#, no Pulumi CLI needed) |
 | **GitHub Actions** | `.github/workflows/*.yml` | `--gha-path` | 109 checks · `GHA-001..073`, `GHA-086..118` + `TAINT-001..003`/`009` · SHA pinning, script injection, OIDC trusted-publishing abuse, agentic-CLI / IaC-apply RCE, compromised-action and npm-worm IOCs, `$GITHUB_ENV` poisoning. [Full reference →](docs/providers/github.md) |
 | **Gitea / Forgejo Actions** | `.gitea/` or `.forgejo/workflows/*.yml` | `--gitea-path` | Reuses the full GitHub Actions rule pack; GitHub-only reputation rules pass silently without `--resolve-remote` metadata |
-| **GitLab CI** | `.gitlab-ci.yml` | `--gitlab-path` | 45 checks · `GL-001..043` + `TAINT-004`/`008` · `CI_JOB_TOKEN` cross-project scope, DinD TLS bypass, debug-trace secret leaks, MR-pipeline IaC apply, disabled native scanners, mutable `include: component:` |
+| **GitLab CI** | `.gitlab-ci.yml` | `--gitlab-path` | 46 checks · `GL-001..044` + `TAINT-004`/`008` · `CI_JOB_TOKEN` cross-project scope, DinD TLS bypass, debug-trace secret leaks, MR-pipeline IaC apply + prod deploy, disabled native scanners, mutable `include: component:` |
 | **Bitbucket Pipelines** | `bitbucket-pipelines.yml` | `--bitbucket-path` | 34 checks · `BB-001..034` · PR-pipeline IaC apply + prod deploy |
 | **Azure DevOps** | `azure-pipelines.yml` | `--azure-path` | 32 checks · `ADO-001..032` · incl. `persistCredentials` leaving the pipeline token in `.git/config` |
 | **Jenkins** | `Jenkinsfile` (Declarative / Scripted) | `--jenkinsfile-path` | 35 checks · `JF-001..035` |
@@ -517,7 +517,7 @@ pipeline_check/
         ├── cloudformation/    # AWS-parity checks against CFN templates (YAML/JSON)
         ├── pulumi/rules/      # PULUMI-001 .. PULUMI-014 — Pulumi.yaml + stack config + project source IaC static analysis (plaintext secrets, wildcard IAM, public resources, unpinned plugins, deploy-time exec)
         ├── github/rules/      # GHA-001 .. GHA-073, GHA-086..118 + TAINT-001..003, TAINT-009
-        ├── gitlab/rules/      # GL-001 .. GL-043 + TAINT-004 / TAINT-008
+        ├── gitlab/rules/      # GL-001 .. GL-044 + TAINT-004 / TAINT-008
         ├── bitbucket/rules/   # BB-001 .. BB-034
         ├── azure/rules/       # ADO-001 .. ADO-032
         ├── jenkins/rules/     # JF-001 .. JF-035

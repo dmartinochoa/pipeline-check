@@ -1,0 +1,7 @@
+deploy_prod:
+  stage: deploy
+  environment: production
+  script:
+    - ./deploy.sh
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"

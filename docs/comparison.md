@@ -30,7 +30,7 @@ missing major surfaces or requires extra config. No = not in scope.
 |---|---|---|---|---|---|---|
 | **CI/CD pipeline configs** | | | | | | |
 | GitHub Actions | Yes (109 rules) | Partial | Yes | Partial | No | No |
-| GitLab CI | Yes (45) | No | Partial | No | No | No |
+| GitLab CI | Yes (46) | No | Partial | No | No | No |
 | Jenkins (Declarative + Scripted) | Yes (35) | No | No | Partial | No | No |
 | CircleCI | Yes (33) | No | Partial | No | No | No |
 | Azure DevOps | Yes (32) | No | Partial | No | No | No |

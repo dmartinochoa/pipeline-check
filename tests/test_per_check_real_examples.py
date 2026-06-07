@@ -417,6 +417,7 @@ CASES: list[CheckCase] = [
     CheckCase("GL-041", "CICD-SEC-4", ("ESF-D-INJECTION",)),
     CheckCase("GL-042", "CICD-SEC-3", ("ESF-S-PIN-DEPS", "ESF-S-TRUSTED-REG")),
     CheckCase("GL-043", "CICD-SEC-7", ("ESF-S-VULN-MGMT",)),
+    CheckCase("GL-044", "CICD-SEC-1", ("ESF-C-APPROVAL", "ESF-C-ENV-SEP")),
     CheckCase("GL-037", "CICD-SEC-3", ("ESF-S-VERIFY-DEPS",)),
     # ── Bitbucket Pipelines backfill (BB-026..029) ───────────────────
     CheckCase("BB-026", "CICD-SEC-4", ("ESF-D-INJECTION",)),

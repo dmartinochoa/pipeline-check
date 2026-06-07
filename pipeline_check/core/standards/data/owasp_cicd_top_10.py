@@ -240,6 +240,7 @@ STANDARD = Standard(
         "GL-002":   ["CICD-SEC-4"],
         "GL-003":   ["CICD-SEC-6"],
         "GL-004":   ["CICD-SEC-1"],
+        "GL-044":   ["CICD-SEC-1"],   # auto production deploy on an MR pipeline
         "GL-005":   ["CICD-SEC-3"],
         "GL-042":   ["CICD-SEC-3"],   # include: component unpinned
         "GL-006":   ["CICD-SEC-9"],

@@ -545,6 +545,7 @@ STANDARD = Standard(
         "GHA-096":  ["GV.SC-05", "GV.SC-07"],   # known-vulnerable action ref (GHSA)
         # ── GitLab CI ─────────────────────────────────────────────
         "GL-004":  ["PR.PS-06"],                # manual deploy allow_failure
+        "GL-044":  ["PR.PS-06"],                # auto production deploy on an MR pipeline
         "GL-029":  ["PR.PS-06"],                # manual deploy allow_failure (variant)
         "GL-031":  ["PR.AA-05"],                # id_tokens missing audience pin
         "GL-040":  ["PR.AA-05"],                # CI_JOB_TOKEN used for cross-project access
