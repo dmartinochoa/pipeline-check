@@ -3,6 +3,7 @@ from __future__ import annotations
 
 from typing import Any
 
+from ..._primitives.deploy_names import DEPLOY_RE as _DEPLOY_NAME_RE
 from ..._secrets import find_secret_values
 from ...base import Finding, Severity
 from ...rule import Rule
@@ -70,11 +71,6 @@ RULE = Rule(
         "          aws-region: us-east-1"
     ),
 )
-
-_DEPLOY_NAME_RE = __import__("re").compile(
-    r"(?i)\b(deploy|release|publish|promote)\b"
-)
-
 
 def _is_deploy_job(job_id: str, job: dict[str, Any]) -> bool:
     if job.get("environment") is not None:
