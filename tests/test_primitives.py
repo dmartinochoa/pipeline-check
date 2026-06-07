@@ -793,6 +793,57 @@ class TestDeployNames:
         positive (``builddeploy`` would otherwise hit too)."""
         assert deploy_names.DEPLOY_RE.search("deploy_to_prod") is None
 
+    @pytest.mark.parametrize("cmd", [
+        "kubectl apply -f k8s/",
+        "terraform apply -auto-approve",
+        "aws s3 sync ./dist s3://prod",
+        "aws cloudformation deploy --stack-name x",
+        "aws ecs update-service --service x",
+        # The shared catalog now carries the Lambda code-deploy verb, so
+        # every deploy-gating rule that imports DEPLOY_CMD_RE picks it up.
+        "aws lambda update-function-code --function-name x",
+        "docker push registry/app:tag",
+        "helm upgrade app ./chart",
+        "gcloud run deploy svc",
+        "serverless deploy",
+        "az webapp deploy",
+    ])
+    def test_deploy_command_matches(self, cmd):
+        assert deploy_names.DEPLOY_CMD_RE.search(cmd) is not None
+
+    @pytest.mark.parametrize("cmd", [
+        "terraform plan",
+        "kubectl get pods",
+        "aws s3 ls",
+        "docker build -t app .",
+        "echo deploying",
+    ])
+    def test_non_deploy_command_does_not_match(self, cmd):
+        assert deploy_names.DEPLOY_CMD_RE.search(cmd) is None
+
+    @pytest.mark.parametrize("env", [
+        "production",
+        "prod",
+        "Production",
+        "PROD",
+        "prod-eu",
+        "production_us",
+        "prod/$CI_COMMIT_REF_NAME",
+    ])
+    def test_production_env_names_match(self, env):
+        assert deploy_names.PROD_ENV_RE.match(env) is not None
+
+    @pytest.mark.parametrize("env", [
+        "product-tests",
+        "preprod",
+        "non-prod",
+        "staging",
+        "test",
+        "review/feature-x",
+    ])
+    def test_non_production_env_names_do_not_match(self, env):
+        assert deploy_names.PROD_ENV_RE.match(env) is None
+
 
 # ──────────────────────────────────────────────────────────────────
 # secret_shapes

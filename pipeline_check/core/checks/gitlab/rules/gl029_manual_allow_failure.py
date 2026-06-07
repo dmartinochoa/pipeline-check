@@ -15,29 +15,13 @@ or via ``rules:``) but leave ``allow_failure`` unset or ``true``.
 """
 from __future__ import annotations
 
-import re
 from typing import Any
 
+from ..._primitives.deploy_names import DEPLOY_CMD_RE as _DEPLOY_CMD_RE
 from ...base import Finding, Severity
 from ...rule import Rule
 from ..base import iter_jobs, job_scripts
 from ._helpers import DEPLOY_RE, rules_manual
-
-# Mirror GL-004's deploy-command heuristic so the two rules agree on
-# which jobs are "deploy-like". Kept as a local copy (rather than an
-# import of a private from GL-004) to avoid a cross-rule dependency.
-_DEPLOY_CMD_RE = re.compile(
-    r"(?:kubectl\s+(?:apply|create|set\s+image|rollout\s+restart)"
-    r"|terraform\s+(?:apply|destroy)"
-    r"|aws\s+(?:s3\s+(?:cp|sync)|cloudformation\s+deploy|ecs\s+update-service)"
-    r"|docker\s+push"
-    r"|helm\s+(?:upgrade|install)"
-    r"|gcloud\s+(?:app\s+deploy|run\s+deploy|functions\s+deploy)"
-    r"|ansible-playbook"
-    r"|serverless\s+deploy"
-    r"|az\s+(?:webapp\s+deploy|functionapp\s+deploy|containerapp\s+update))",
-    re.IGNORECASE,
-)
 
 RULE = Rule(
     id="GL-029",

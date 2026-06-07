@@ -115,6 +115,20 @@ release commit collapses this section into `## [X.Y.Z] - <date>`.
   derived from the canonical `Severity` enum in `checks/base.py`, so the two
   config loaders can't drift from each other or from the enum. No behavior
   change.
+- **Deploy-command vocabulary centralized (and Lambda-deploy coverage
+  widened).** Five deploy-gating rules (`ADO-004`, `BB-004`, `GL-004`,
+  `GL-029`, `GHA-098`) each carried a private copy of the deploy-command
+  regex; a new verb added to one (`GHA-098` had `aws lambda
+  update-function-code`) silently didn't reach the others. They now all
+  import the shared `DEPLOY_CMD_RE` from `_primitives/deploy_names.py`, and
+  that catalog gained `aws lambda update-function-code`, so every
+  deploy-gating rule now recognizes a Lambda code deploy as a deployment.
+  The shared `PROD_ENV_RE` (production-environment name heuristic, used by
+  `BB-034` / `GL-044`) was also corrected to match underscore-separated
+  names (`prod_us`, `production_east`) that the previous `\b` boundary
+  missed, while still excluding `product` / `preprod` / `non-prod`. New
+  primitive tests pin `DEPLOY_CMD_RE` and `PROD_ENV_RE`. ~70 lines of
+  duplicated regex removed.
 - **Attack-chain narratives match the reachability badge.** When a chain's
   reachability is only shared-job co-location (not a proven dataflow path),
   its narrative now opens that leg with "Co-located (unverified): ..." to

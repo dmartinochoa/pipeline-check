@@ -16,14 +16,16 @@ DEPLOY_RE = re.compile(r"(?i)\b(deploy|release|publish|promote)\b")
 
 # Production-tier *environment name* regex. A deployment-environment name
 # that denotes the production tier, used by the "production deploy on an
-# untrusted trigger" rules (BB-034) to tell a real prod target from a
-# per-PR preview / test / staging environment. Anchored at the start so
-# ``production`` / ``prod`` / ``prod-eu`` / ``production_us`` match but
-# ``product``, ``preprod``, and ``non-prod`` do not. Custom-named prod
-# environments (a Bitbucket environment configured as Production but named
+# untrusted trigger" rules (BB-034, GL-044) to tell a real prod target
+# from a per-PR preview / test / staging environment. Anchored at the
+# start, with a not-a-letter boundary so ``production`` / ``prod`` /
+# ``prod-eu`` / ``prod_us`` / ``production-east`` / ``prod1`` match but
+# ``product``, ``preprod``, and ``non-prod`` do not (a ``\b`` boundary
+# would miss the common underscore form, since ``_`` is a word char).
+# Custom-named prod environments (one configured as Production but named
 # something else) can't be recognized from the name alone, so this is a
 # precision-first heuristic over the canonical names.
-PROD_ENV_RE = re.compile(r"(?i)^(?:prod|production)\b")
+PROD_ENV_RE = re.compile(r"(?i)^(?:production|prod)(?![a-z])")
 
 # Deploy-like *command* regex: a shell command that pushes state to a
 # real deployment target. Used by the "ungated deploy" rules that
@@ -32,7 +34,8 @@ PROD_ENV_RE = re.compile(r"(?i)^(?:prod|production)\b")
 DEPLOY_CMD_RE = re.compile(
     r"(?:kubectl\s+(?:apply|create|set\s+image|rollout\s+restart)"
     r"|terraform\s+(?:apply|destroy)"
-    r"|aws\s+(?:s3\s+(?:cp|sync)|cloudformation\s+deploy|ecs\s+update-service)"
+    r"|aws\s+(?:s3\s+(?:cp|sync)|cloudformation\s+deploy|ecs\s+update-service"
+    r"|lambda\s+update-function-code)"
     r"|docker\s+push"
     r"|helm\s+(?:upgrade|install)"
     r"|gcloud\s+(?:app\s+deploy|run\s+deploy|functions\s+deploy)"
