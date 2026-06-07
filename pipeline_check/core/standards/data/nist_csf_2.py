@@ -555,6 +555,7 @@ STANDARD = Standard(
         "GL-035":  ["GV.SC-05"],                # pip install without --require-hashes
         # ── Bitbucket Pipelines ──────────────────────────────────
         "BB-004":  ["PR.PS-06"],                # deploy step missing environment
+        "BB-034":  ["PR.PS-06"],                # prod deploy on a PR pipeline
         "BB-028":  ["PR.AA-05"],                # OIDC step w/o env gate
         "BB-029":  ["GV.SC-05"],                # step+service image not pinned
         "BB-030":  ["GV.SC-05"],                # npm install without audit signatures

@@ -19,7 +19,16 @@ release commit collapses this section into `## [X.Y.Z] - <date>`.
   provisioner runs arbitrary code on the runner with the job's cloud
   credentials before review). The Bitbucket analog of GL-041 / GHA-117;
   steps under `branches:` / `default:` / `custom:` are out of scope.
-- **GL-043: GitLab native security scanner explicitly disabled (MEDIUM).**
+- **BB-034: production deployment on a pull-request pipeline (CRITICAL).**
+  Flags a step under Bitbucket's `pull-requests:` section bound to a
+  production-tier `deployment:` environment (a name matching `production` /
+  `prod`). The PR branch's code ships to production before it is reviewed or
+  merged, and the production deployment's scoped variables are exposed to
+  PR-controlled pipeline steps. Per-PR preview, `test`, and `staging`
+  environments don't fire (only the production tier), and steps under
+  `branches:` / `default:` / `custom:` / `tags:` are out of scope. The
+  deploy-time sibling of BB-033. New shared `PROD_ENV_RE` primitive in
+  `_primitives/deploy_names.py`.
   Flags a `*_DISABLED` CI/CD variable (`SAST_DISABLED`,
   `SECRET_DETECTION_DISABLED`, `DEPENDENCY_SCANNING_DISABLED`,
   `CONTAINER_SCANNING_DISABLED`, `DAST_DISABLED`) set to a truthy value at

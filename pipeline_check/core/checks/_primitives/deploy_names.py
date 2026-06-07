@@ -14,6 +14,17 @@ import re
 
 DEPLOY_RE = re.compile(r"(?i)\b(deploy|release|publish|promote)\b")
 
+# Production-tier *environment name* regex. A deployment-environment name
+# that denotes the production tier, used by the "production deploy on an
+# untrusted trigger" rules (BB-034) to tell a real prod target from a
+# per-PR preview / test / staging environment. Anchored at the start so
+# ``production`` / ``prod`` / ``prod-eu`` / ``production_us`` match but
+# ``product``, ``preprod``, and ``non-prod`` do not. Custom-named prod
+# environments (a Bitbucket environment configured as Production but named
+# something else) can't be recognized from the name alone, so this is a
+# precision-first heuristic over the canonical names.
+PROD_ENV_RE = re.compile(r"(?i)^(?:prod|production)\b")
+
 # Deploy-like *command* regex: a shell command that pushes state to a
 # real deployment target. Used by the "ungated deploy" rules that
 # recognize a deploy job by what it runs, not just its name (GHA-014,

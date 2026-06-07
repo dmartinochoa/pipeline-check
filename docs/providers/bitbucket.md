@@ -15,7 +15,7 @@ pipeline_check --pipeline bitbucket --bitbucket-path ci/
 
 ## What it covers
 
-33 checks · 11 have an autofix patch (``--fix``).
+34 checks · 11 have an autofix patch (``--fix``).
 
 | Check | Title | Severity | Fix |
 |-------|-------|----------|-----|
@@ -52,6 +52,7 @@ pipeline_check --pipeline bitbucket --bitbucket-path ci/
 | [BB-031](#bb-031) | pip install without `--require-hashes` verification | <span class="pg-sev pg-sev--medium">MEDIUM</span> |  |
 | [BB-032](#bb-032) | Secret-named variable echoed / printed in a script block | <span class="pg-sev pg-sev--high">HIGH</span> |  |
 | [BB-033](#bb-033) | IaC apply on a pull-request pipeline | <span class="pg-sev pg-sev--critical">CRITICAL</span> |  |
+| [BB-034](#bb-034) | Production deployment on a pull-request pipeline | <span class="pg-sev pg-sev--critical">CRITICAL</span> |  |
 
 ---
 
@@ -770,6 +771,30 @@ Fires when a step in the `pull-requests:` section runs an IaC apply command (`te
 **Recommended action**
 
 Never run `terraform apply` (or `cloudformation deploy` / `cdk deploy` / `pulumi up` / `sam deploy`) in a step under the `pull-requests:` section. That pipeline runs the PR branch's IaC, so an `external` data source, a `local-exec` provisioner, or a hijacked provider executes arbitrary code on the runner with whatever cloud credentials (often an OIDC identity) the apply uses, before the change is reviewed or merged. On pull requests run a read-only `plan`; move the `apply` into the `branches:` section for your default branch (or a `custom:` manual pipeline) gated by a `deployment:` environment so it runs against merged, reviewed code.
+
+</div>
+
+</div>
+
+<div class="pg-rule pg-rule--critical" markdown>
+
+## BB-034: Production deployment on a pull-request pipeline { #bb-034 }
+
+<div class="pg-rule__tags">
+<span class="pg-sev pg-sev--critical">CRITICAL</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-1</span> <span class="pg-tag pg-tag--esf">ESF-C-APPROVAL</span> <span class="pg-tag pg-tag--esf">ESF-C-ENV-SEP</span> <span class="pg-tag pg-tag--cwe">CWE-284</span>
+</div>
+
+Fires when a step under the `pull-requests:` section declares a production-tier `deployment:` environment (a name matching `production` / `prod`). The PR branch's code reaches production before it is reviewed or merged, and the production deployment's scoped variables are exposed to PR-controlled pipeline steps. Steps under `branches:` / `default:` / `custom:` / `tags:` are out of scope, and per-PR preview, `test`, or `staging` environments don't fire, only a production-tier name on the pull-request-triggered section.
+
+**Known false-positive modes**
+
+- A repo that intentionally publishes a per-PR preview deployment to an environment it happens to have named `production`. Rename it to a preview / review tier, or suppress with a rationale. A production environment configured under a custom name (not `production` / `prod`) can't be recognized from the YAML alone and won't fire.
+
+<div class="pg-rule__rec" markdown>
+
+**Recommended action**
+
+Don't bind a `pull-requests:` step to a production `deployment:` environment. A pull-request pipeline runs the PR branch's code, so this ships unreviewed (and on fork PRs, untrusted) changes straight to production with the production environment's scoped credentials, before any reviewer or merge gate. On pull requests deploy only to an ephemeral preview or `test` environment; move the production `deployment:` into the `branches:` section for your default branch (or a manual `custom:` pipeline) so it runs against merged, reviewed code with the environment's required reviewers enforced.
 
 </div>
 
