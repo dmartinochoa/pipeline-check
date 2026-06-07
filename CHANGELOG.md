@@ -128,7 +128,10 @@ release commit collapses this section into `## [X.Y.Z] - <date>`.
   names (`prod_us`, `production_east`) that the previous `\b` boundary
   missed, while still excluding `product` / `preprod` / `non-prod`. New
   primitive tests pin `DEPLOY_CMD_RE` and `PROD_ENV_RE`. ~70 lines of
-  duplicated regex removed.
+  duplicated regex removed. `ADO-004` and `GHA-099` likewise carried their
+  own copy of the deploy-*name* regex (`GHA-099` via an inline
+  `__import__("re").compile`); both now import the shared `DEPLOY_RE`, so
+  the whole deploy vocabulary (name, command, IaC-apply) is single-sourced.
 - **GHA-111 IaC-apply detection widened to match its siblings.** `GHA-111`
   (AI agent applies IaC in the same job) carried a private IaC-apply regex
   that had drifted to a subset of the shared `IAC_APPLY_RE` the other
