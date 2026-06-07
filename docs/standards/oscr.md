@@ -11,7 +11,7 @@ supply chain attacks. Twelve tactics (Reconnaissance through Impact),
 [pbom-dev/OSCAR](https://github.com/pbom-dev/OSCAR).
 
 OSC&R fills a gap between the OWASP CI/CD Top 10 (CI/CD-specific but
-only 10 items) and broader frameworks like NIST 800-53 (comprehensive
+only 10 items) and broader frameworks like NIST 800-53 (exhaustive
 but not attack-centric). Use this page when you want to map pipeline
 posture findings to a supply-chain attack taxonomy, showing which
 attacker techniques your current configuration would or would not

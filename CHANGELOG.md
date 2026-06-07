@@ -167,6 +167,17 @@ release commit collapses this section into `## [X.Y.Z] - <date>`.
   structural chains pass `--chains-require-reachability` (they're
   confirmed) and are dropped by `--chains-require-dataflow` (no traced
   taint path).
+- **Prose-style lint enforces the AI-tic word ban.** The CLAUDE.md prose
+  convention ("read like a coworker wrote it") was guidance only, so
+  AI-essay tics kept creeping back into docs and rule prose (a stray
+  `comprehensive` was just removed from the OSC&R standards-page intro).
+  A new `tests/test_prose_style.py` (the sibling of
+  `test_english_variant.py`) now fails the suite if `moreover`,
+  `furthermore`, `comprehensive`, or `delve` lands in any tracked `.py`
+  or `.md` file. `robust` and `leverage` are left to review rather than
+  gated, because they carry real technical meanings in the codebase
+  (code robustness; "leverage" as the security noun); CHANGELOG / ROADMAP
+  are exempt as historical records.
 
 ### Added
 
