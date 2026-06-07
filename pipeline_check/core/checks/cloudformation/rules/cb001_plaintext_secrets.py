@@ -24,8 +24,9 @@ RULE = Rule(
         "any entry whose ``Type`` is ``PLAINTEXT`` (or absent — the "
         "CFN default) when (a) the ``Name`` matches a secret-like "
         "pattern (``PASSWORD``, ``TOKEN``, ``API_KEY``, …) or (b) the "
-        "``Value`` matches a known credential shape (AKIA/ASIA, "
-        "GitHub tokens, JWTs)."
+        "``Value`` matches one of pipeline-check's known credential "
+        "shapes (cloud access keys, VCS / registry / CI / cloud-service "
+        "tokens, JWTs — the same shared detector catalog GHA-008 uses)."
     ),
     exploit_example=(
         "# Vulnerable: every build run prints the env to CloudWatch\n"

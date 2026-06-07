@@ -251,6 +251,15 @@ release commit collapses this section into `## [X.Y.Z] - <date>`.
   `--strict-ssl false` (disables TLS cert verification for the install).
   Both are now flagged; `https://` sources and `--strict-ssl=true` stay
   clean.
+- **CB-001 docs now match what it detects.** The CloudFormation and
+  Terraform CB-001 (plaintext-secret CodeBuild env var) `docs_note`s listed
+  a stale subset of credential shapes ("AKIA/ASIA, GitHub tokens, JWTs")
+  while the check has long matched the full shared credential-shape catalog
+  (`_patterns.SECRET_VALUE_RE` over `_BUILTIN_PATTERNS`, the same 49 shapes
+  GHA-008 uses: GitLab `glpat-`, npm `npm_`, Docker `dckr_pat_`, Slack
+  `xox*`, and the rest). The docs now describe the catalog instead of an
+  out-of-date hand-list, so a reader isn't told a `glpat-` / `npm_` token in
+  a plaintext env var slips through when it does not. Detection unchanged.
 
 - **Docker container-escape detection widened (cross-provider).** The
   shared `DOCKER_INSECURE_RE` (GHA-017, ADO-017, BB-013, CC-017, GL-017,

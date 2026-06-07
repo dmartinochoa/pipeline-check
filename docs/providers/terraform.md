@@ -333,7 +333,7 @@ Enumerate specific actions (``codeartifact:GetPackageVersion``, ``codeartifact:D
 <span class="pg-sev pg-sev--critical">CRITICAL</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-6</span> <span class="pg-tag pg-tag--cwe">CWE-798</span>
 </div>
 
-Walks every ``aws_codebuild_project.environment[0].environment_variable[*]``. Flags any entry whose ``type`` is ``PLAINTEXT`` (or absent, which Terraform defaults to PLAINTEXT) when (a) the ``name`` matches a secret-like pattern (``PASSWORD``, ``TOKEN``, ``API_KEY``, …) or (b) the ``value`` matches a known credential shape (AKIA/ASIA access keys, GitHub tokens, Slack ``xox*`` tokens, JWTs). Plaintext values land in the AWS console, CloudTrail, and build logs.
+Walks every ``aws_codebuild_project.environment[0].environment_variable[*]``. Flags any entry whose ``type`` is ``PLAINTEXT`` (or absent, which Terraform defaults to PLAINTEXT) when (a) the ``name`` matches a secret-like pattern (``PASSWORD``, ``TOKEN``, ``API_KEY``, …) or (b) the ``value`` matches one of pipeline-check's known credential shapes (cloud access keys, VCS / registry / CI / cloud-service tokens, Slack ``xox*`` tokens, JWTs — the same shared detector catalog GHA-008 uses). Plaintext values land in the AWS console, CloudTrail, and build logs.
 
 <div class="pg-rule__rec" markdown>
 
