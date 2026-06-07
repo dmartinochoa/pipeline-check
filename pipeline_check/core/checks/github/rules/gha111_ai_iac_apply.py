@@ -28,6 +28,7 @@ from __future__ import annotations
 import re
 from typing import Any
 
+from ..._primitives.deploy_names import IAC_APPLY_RE as _IAC_APPLY_RE
 from ...base import Finding, Severity
 from ...rule import Rule
 from ..base import find_run_command, iter_jobs, iter_steps, step_location
@@ -36,20 +37,6 @@ from ..base import find_run_command, iter_jobs, iter_steps, step_location
 # is the Amazon Q CLI; the bare ``q`` is too ambiguous to match alone.
 _AI_CLI_RE = re.compile(
     r"\b(?:claude|gemini|q\s+chat|cursor-agent|aider|openhands|goose)\b",
-    re.IGNORECASE,
-)
-
-# Unattended IaC apply / deploy commands. Each realizes a state change
-# in the cloud account, and in CI they run non-interactively (a bare
-# ``terraform apply`` without ``-auto-approve`` would block on a prompt
-# and is therefore not a real CI shape). ``terraform plan`` and
-# ``cdk diff`` are read-only and deliberately excluded.
-_IAC_APPLY_RE = re.compile(
-    r"\b(?:terraform|terragrunt)\s+apply\b"
-    r"|\baws\s+cloudformation\s+(?:deploy|create-stack|update-stack|execute-change-set)\b"
-    r"|\bcdk\s+deploy\b"
-    r"|\bpulumi\s+up\b"
-    r"|\bsam\s+deploy\b",
     re.IGNORECASE,
 )
 
