@@ -249,6 +249,7 @@ STANDARD = Standard(
         "GL-002":   ["PW.6.1", "PW.9.1"],
         "GL-003":   ["PS.1.1"],
         "GL-004":   ["PO.5.1"],
+        "GL-044":   ["PO.5.1"],                        # auto production deploy on an MR pipeline
         "GL-005":   ["PW.4.1", "PW.4.4"],
         "GL-042":   ["PW.4.1", "PW.4.4"],    # include: component unpinned
         "GL-006":   ["PS.2.1", "PS.3.2"],              # unsigned artifacts

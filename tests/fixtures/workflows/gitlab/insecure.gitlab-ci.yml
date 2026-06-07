@@ -99,6 +99,15 @@ deploy-prod:
     - terraform apply -auto-approve
     - ./scripts/deploy.sh
 
+# GL-044 — a job bound to the production environment runs automatically
+# on the MR pipeline (inherits the merge_request_event workflow: rule,
+# no when: manual), so every MR ships its unreviewed branch to prod.
+deploy-prod-auto:
+  stage: deploy
+  environment: production
+  script:
+    - ./scripts/deploy.sh
+
 # GL-030 — job-level trigger:include: pulls a child pipeline from a
 # floating branch in another project (same class of risk as GL-005
 # but nested under trigger: rather than the top-level include:).

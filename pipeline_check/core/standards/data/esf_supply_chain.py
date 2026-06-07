@@ -142,6 +142,7 @@ STANDARD = Standard(
         "GL-002":   ["ESF-D-INJECTION"],
         "GL-003":   ["ESF-D-SECRETS"],
         "GL-004":   ["ESF-C-APPROVAL", "ESF-C-ENV-SEP"],
+        "GL-044":   ["ESF-C-APPROVAL", "ESF-C-ENV-SEP"],  # auto production deploy on an MR pipeline
         "GL-005":   ["ESF-S-PIN-DEPS", "ESF-S-TRUSTED-REG"],
         "GL-042":   ["ESF-S-PIN-DEPS", "ESF-S-TRUSTED-REG"],    # include: component unpinned
         "GL-006":   ["ESF-D-SIGN-ARTIFACTS"],

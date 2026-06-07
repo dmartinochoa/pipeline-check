@@ -29,6 +29,18 @@ release commit collapses this section into `## [X.Y.Z] - <date>`.
   `branches:` / `default:` / `custom:` / `tags:` are out of scope. The
   deploy-time sibling of BB-033. New shared `PROD_ENV_RE` primitive in
   `_primitives/deploy_names.py`.
+- **GL-044: automatic production deployment on a merge-request pipeline
+  (CRITICAL).** Flags a GitLab job reachable on a merge-request pipeline
+  (its `rules:` admit `merge_request_event`, its legacy `only:` includes
+  `merge_requests`, or it inherits a `workflow:` that admits MR pipelines)
+  that binds a production-tier `environment:` (a name matching `production`
+  / `prod`) and is *not* gated by `when: manual`. GL-004 treats any
+  `environment:` as sufficient gating, so it misses an automatic production
+  deploy on an MR; GL-044 names that shape and raises it to CRITICAL. The
+  GitLab analog of BB-034. Review-app / `test` / `staging` environments and
+  manual-approval jobs don't fire, and an `environment:` `action:` of
+  `stop` / `prepare` / `verify` / `access` (no deploy) is excluded.
+- **GL-043: GitLab native security scanner explicitly disabled (MEDIUM).**
   Flags a `*_DISABLED` CI/CD variable (`SAST_DISABLED`,
   `SECRET_DETECTION_DISABLED`, `DEPENDENCY_SCANNING_DISABLED`,
   `CONTAINER_SCANNING_DISABLED`, `DAST_DISABLED`) set to a truthy value at
