@@ -1,0 +1,14 @@
+pipelines:
+  pull-requests:
+    '**':
+      - step:
+          name: terraform plan
+          script:
+            - terraform init
+            - terraform plan
+  branches:
+    main:
+      - step:
+          deployment: production
+          script:
+            - terraform apply -auto-approve

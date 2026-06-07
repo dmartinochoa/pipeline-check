@@ -1,28 +1,14 @@
 """ADO-004, deployment jobs must bind an environment."""
 from __future__ import annotations
 
-import re
 from typing import Any
 
+from ..._primitives.deploy_names import DEPLOY_CMD_RE as _DEPLOY_CMD_RE
+from ..._primitives.deploy_names import DEPLOY_RE as _DEPLOY_NAME_RE
 from ..._primitives.oci_refs import extract_image_anchors_from_strings
 from ...base import Finding, ResourceAnchor, Severity
 from ...rule import Rule
 from ..base import iter_jobs, iter_steps
-
-_DEPLOY_CMD_RE = re.compile(
-    r"(?:kubectl\s+(?:apply|create|set\s+image|rollout\s+restart)"
-    r"|terraform\s+(?:apply|destroy)"
-    r"|aws\s+(?:s3\s+(?:cp|sync)|cloudformation\s+deploy|ecs\s+update-service)"
-    r"|docker\s+push"
-    r"|helm\s+(?:upgrade|install)"
-    r"|gcloud\s+(?:app\s+deploy|run\s+deploy|functions\s+deploy)"
-    r"|ansible-playbook"
-    r"|serverless\s+deploy"
-    r"|az\s+(?:webapp\s+deploy|functionapp\s+deploy|containerapp\s+update))",
-    re.IGNORECASE,
-)
-
-_DEPLOY_NAME_RE = re.compile(r"(?i)\b(deploy|release|publish|promote)\b")
 
 RULE = Rule(
     id="ADO-004",

@@ -66,7 +66,7 @@ def match(findings: list[Finding]) -> list[Chain]:
                 f"{shared_repr}"
             )
             reach_narrative = (
-                f"  4. Reachability confirmed: the same job(s) "
+                f"  4. Co-located (unverified): the same job(s) "
                 f"({shared_repr}) both check out PR-head code AND "
                 f"run on a self-hosted, non-ephemeral runner. The "
                 f"attacker's payload runs on a runner instance "

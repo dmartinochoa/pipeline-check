@@ -16,7 +16,7 @@ pipeline_check --pipeline gitlab --gitlab-path ci/
 
 ## What it covers
 
-44 checks · 12 have an autofix patch (``--fix``).
+46 checks · 12 have an autofix patch (``--fix``).
 
 | Check | Title | Severity | Fix |
 |-------|-------|----------|-----|
@@ -62,6 +62,8 @@ pipeline_check --pipeline gitlab --gitlab-path ci/
 | [GL-040](#gl-040) | CI_JOB_TOKEN used for cross-project / remote access | <span class="pg-sev pg-sev--high">HIGH</span> |  |
 | [GL-041](#gl-041) | IaC apply on an untrusted merge-request trigger | <span class="pg-sev pg-sev--critical">CRITICAL</span> |  |
 | [GL-042](#gl-042) | include: component pulls a CI/CD component without a pinned version | <span class="pg-sev pg-sev--high">HIGH</span> |  |
+| [GL-043](#gl-043) | GitLab native security scanner explicitly disabled | <span class="pg-sev pg-sev--medium">MEDIUM</span> |  |
+| [GL-044](#gl-044) | Automatic production deployment on a merge-request pipeline | <span class="pg-sev pg-sev--critical">CRITICAL</span> |  |
 | [TAINT-004](#taint-004) | Untrusted input flows across jobs via dotenv artifact | <span class="pg-sev pg-sev--high">HIGH</span> |  |
 | [TAINT-008](#taint-008) | Untrusted input flows via GitLab ``extends:`` template inheritance | <span class="pg-sev pg-sev--high">HIGH</span> |  |
 
@@ -980,6 +982,54 @@ GitLab CI/CD components are third-party pipeline code merged into the consumer's
 **Recommended action**
 
 Pin every `include: component:` to an immutable version: a 40-character commit SHA, or a full release tag (`X.Y.Z`) on a component project that enforces tag protection. A mutable version (`~latest`, a branch like `main`, or a floating major / minor like `1` / `1.2`) lets whoever controls the component project re-point that reference and ship arbitrary pipeline code into every consumer's next pipeline, running with the consumer's `CI_JOB_TOKEN` and CI/CD variables. Bump pins in reviewable MRs (Renovate's GitLab CI/CD component updater supports this).
+
+</div>
+
+</div>
+
+<div class="pg-rule pg-rule--medium" markdown>
+
+## GL-043: GitLab native security scanner explicitly disabled { #gl-043 }
+
+<div class="pg-rule__tags">
+<span class="pg-sev pg-sev--medium">MEDIUM</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-7</span> <span class="pg-tag pg-tag--esf">ESF-S-VULN-MGMT</span> <span class="pg-tag pg-tag--cwe">CWE-693</span>
+</div>
+
+Fires when a `*_DISABLED` variable for a GitLab-managed scanner (SAST, Secret Detection, Dependency Scanning, Container Scanning, DAST) is set to a truthy value (`"true"` / `"1"` / `"yes"`) at the top level or on a job. Both the plain scalar and the typed `{value:, description:}` variable form are read. Disabling a scanner pipeline-wide silently drops the finding stream the rest of your supply-chain controls assume exists.
+
+**Known false-positive modes**
+
+- A pipeline that runs the scanner through a dedicated security pipeline (e.g. a scheduled `secret_detection` job) and disables the auto-included template here to avoid a duplicate run. Suppress with a rationale that names the other pipeline.
+
+<div class="pg-rule__rec" markdown>
+
+**Recommended action**
+
+Remove the `*_DISABLED: "true"` CI/CD variable so GitLab's managed scanner runs again, or scope the opt-out narrowly with `rules:` instead of disabling it pipeline-wide. Each of `SAST_DISABLED`, `SECRET_DETECTION_DISABLED`, `DEPENDENCY_SCANNING_DISABLED`, `CONTAINER_SCANNING_DISABLED`, and `DAST_DISABLED` turns off a security control that would otherwise gate the pipeline. If a scanner is noisy, tune it (`SAST_EXCLUDED_PATHS`, ruleset overrides) rather than switching it off, and keep the opt-out in code review via the pipeline file rather than a hidden project variable.
+
+</div>
+
+</div>
+
+<div class="pg-rule pg-rule--critical" markdown>
+
+## GL-044: Automatic production deployment on a merge-request pipeline { #gl-044 }
+
+<div class="pg-rule__tags">
+<span class="pg-sev pg-sev--critical">CRITICAL</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-1</span> <span class="pg-tag pg-tag--esf">ESF-C-APPROVAL</span> <span class="pg-tag pg-tag--esf">ESF-C-ENV-SEP</span> <span class="pg-tag pg-tag--cwe">CWE-284</span>
+</div>
+
+Fires when a job reachable on a merge-request pipeline (its `rules:` admit `merge_request_event`, its legacy `only:` includes `merge_requests`, or it inherits a `workflow:` that admits MR pipelines) binds a production-tier `environment:` (a name matching `production` / `prod`) AND is not gated by `when: manual`. GL-004 treats any `environment:` as sufficient gating, so it misses an automatic production deploy on an MR; GL-044 names that shape and raises it to CRITICAL. Review-app, `test`, and `staging` environments don't fire (only the production tier), manual-approval jobs are out of scope (GitLab's accepted gate), and an `environment:` `action:` of `stop` / `prepare` / `verify` / `access` (no deploy) is excluded.
+
+**Known false-positive modes**
+
+- A repo that deploys per-MR preview apps to an environment it happens to have named `production`. Rename it to a review / preview tier, or suppress with a rationale. A production environment under a custom name (not `production` / `prod`) can't be recognized from the YAML and won't fire.
+
+<div class="pg-rule__rec" markdown>
+
+**Recommended action**
+
+Don't run a job bound to a production `environment:` automatically on a merge-request pipeline. A merge-request pipeline runs the MR branch's code, so this ships unreviewed (and on fork MRs, untrusted) changes to production on every MR with the production environment's scoped credentials, before review or merge. Deploy to an ephemeral review-app environment on MRs; gate the production `environment:` job behind `when: manual` and a protected-branch rule (`if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH`) so it runs against merged, reviewed code.
 
 </div>
 

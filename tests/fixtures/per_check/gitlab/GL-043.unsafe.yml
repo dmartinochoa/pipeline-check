@@ -1,0 +1,7 @@
+variables:
+  SECRET_DETECTION_DISABLED: "true"
+  DEPENDENCY_SCANNING_DISABLED: "true"
+
+build:
+  script:
+    - make

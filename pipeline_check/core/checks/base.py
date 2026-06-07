@@ -469,10 +469,11 @@ import re as _re
 #: ``docker run --privileged`` or ``-v /…:/…``, container escape via
 #: host mount, privileged mode, namespace sharing, or socket mount.
 DOCKER_INSECURE_RE = _re.compile(
-    r"docker\s+run\s[^;&]*(?:--privileged|--cap-add|--net(?:work)?[= ]host"
-    r"|--pid[= ]host|--userns[= ]host"                              # namespace sharing
-    r"|-v\s+/var/run/docker\.sock:/var/run/docker\.sock"            # socket mount
-    r"|-v\s+/:/)"                                                   # root mount
+    r"docker\s+run\s[^;&]*(?:--privileged|--cap-add"
+    r"|--(?:net(?:work)?|pid|ipc|userns)[= ]host"                   # namespace sharing
+    r"|--security-opt[= ]\s*(?:seccomp|apparmor)=unconfined"        # sandbox disabled
+    r"|(?:-v|--volume)\s+/var/run/docker\.sock:"                    # socket mount (any target)
+    r"|(?:-v|--volume)\s+/:/)"                                      # root mount
     r"|docker\s+compose\s[^;&]*--privileged",                       # compose
 )
 
@@ -481,11 +482,12 @@ DOCKER_INSECURE_RE = _re.compile(
 #: Covers pip, npm, yarn, gem, nuget, and cargo.
 PKG_INSECURE_RE = _re.compile(
     r"(?:pip3?\s+install)"                                           # pip / pip3
-    r"[^;&]*(?:--index-url\s+http[^s]|-i\s+http[^s]"               # -i short form
-    r"|--extra-index-url\s+http[^s]"                                 # extra index
+    r"[^;&]*(?:--index-url[= ]\s*http[^s]|-i\s+http[^s]"           # -i short form, = or space
+    r"|--extra-index-url[= ]\s*http[^s]"                             # extra index
     r"|--trusted-host|--no-verify)"
     r"|(?:npm\s+install|yarn\s+add)"
-    r"[^;&]*(?:--registry[= ]http[^s]|--no-verify)"
+    # ``--strict-ssl=false`` disables TLS cert verification for the install.
+    r"[^;&]*(?:--registry[= ]http[^s]|--strict-ssl[= ]\s*false|--no-verify)"
     r"|gem\s+(?:install|sources\s+--add)\s[^;&]*(?:--source\s+http[^s]|http[^s])"  # gem
     r"|nuget\s+(?:install|restore)\s[^;&]*-Source\s+http[^s]"       # nuget
     r"|cargo\s+install\s[^;&]*--index\s+http[^s]",                  # cargo

@@ -53,6 +53,12 @@ class GraphNode:
     start_line: int | None = None
     end_line: int | None = None
     parent: str | None = None
+    #: ``True`` when this node attaches a build attestation / provenance
+    #: (e.g. ``actions/attest-build-provenance``, ``cosign attest``, the
+    #: SLSA generator). The renderer marks it with a chain icon. Set by the
+    #: per-provider builder; providers with no attestation idiom leave it
+    #: ``False``.
+    attestation: bool = False
 
 
 @dataclass(frozen=True, slots=True)
@@ -82,6 +88,10 @@ class NodeBadge:
     worst: Severity
     count: int
     breakdown: dict[str, int]
+    #: ``True`` when a taint-engine finding (``TAINT-*`` family) lands on
+    #: this node, i.e. an active dataflow path reaches it. The renderer
+    #: marks it with a flame icon.
+    taint_sink: bool = False
 
 
 def _deepest_containing(
@@ -116,17 +126,19 @@ def attach_findings(
     badges: dict[str, NodeBadge] = {}
     node_ids = {n.id for n in graph.nodes}
 
-    def _add(node_id: str, sev: Severity) -> None:
+    def _add(node_id: str, sev: Severity, taint: bool) -> None:
         badge = badges.get(node_id)
         if badge is None:
             badges[node_id] = NodeBadge(
-                worst=sev, count=1, breakdown={sev.value: 1},
+                worst=sev, count=1, breakdown={sev.value: 1}, taint_sink=taint,
             )
             return
         badge.count += 1
         badge.breakdown[sev.value] = badge.breakdown.get(sev.value, 0) + 1
         if severity_rank(sev) > severity_rank(badge.worst):
             badge.worst = sev
+        if taint:
+            badge.taint_sink = True
 
     for f in findings:
         if f.passed:
@@ -155,6 +167,7 @@ def attach_findings(
             # rather than being pinned here by an anchor or the root.
             anchored = [jid for jid in f.job_anchors if jid in node_ids]
             placed.update(anchored or [graph.root_id])
+        is_taint = f.check_id.startswith("TAINT-")
         for node_id in placed:
-            _add(node_id, f.severity)
+            _add(node_id, f.severity, is_taint)
     return badges

@@ -136,7 +136,7 @@ def match(findings: list[Finding]) -> list[Chain]:
                 f"share job {shared_repr}"
             )
             reach_narrative = (
-                f"  4. Reachability confirmed: the executing code and "
+                f"  4. Co-located (unverified): the executing code and "
                 f"the uncontained credential are in the same job(s) "
                 f"({shared_repr}). The injected payload runs where the "
                 f"OIDC token / secret lives, a direct exfil path."

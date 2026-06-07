@@ -96,7 +96,7 @@ def match(findings: list[Finding]) -> list[Chain]:
                 f"job {shared_repr}"
             )
             reach_narrative = (
-                f"  4. Reachability confirmed: the same job(s) "
+                f"  4. Co-located (unverified): the same job(s) "
                 f"({shared_repr}) both let the pipeline trigger pick "
                 f"the runner via a tainted ``tags:`` AND write the "
                 f"CI token to disk on whatever runner was picked."

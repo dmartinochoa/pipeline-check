@@ -95,6 +95,18 @@ class TestBK002LiteralSecrets:
         f = run_check(cfg, "BK-002")
         assert f.passed
 
+    def test_fails_with_modern_token_under_innocuous_name(self):
+        # A GitLab PAT under a non-credential env name: only the shared
+        # vendor-token catalog catches it, not the name heuristic.
+        cfg = """
+        env:
+          REGISTRY_AUTH: "glpat-abcdefghij1234567890"
+        steps:
+          - command: build
+        """
+        f = run_check(cfg, "BK-002")
+        assert not f.passed
+
 
 # ── BK-003 untrusted interpolation ─────────────────────────────────────
 

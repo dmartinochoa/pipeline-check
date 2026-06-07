@@ -85,7 +85,7 @@ def match(findings: list[Finding]) -> list[Chain]:
                 f"share job {shared_repr}"
             )
             reach_narrative = (
-                f"  4. Reachability confirmed: the same job(s) "
+                f"  4. Co-located (unverified): the same job(s) "
                 f"({shared_repr}) both call the reusable workflow "
                 f"via a mutable ref AND pass ``secrets: inherit``. "
                 f"A tag move on the callee repo exfiltrates the "

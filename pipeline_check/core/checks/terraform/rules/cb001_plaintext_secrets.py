@@ -24,9 +24,11 @@ RULE = Rule(
         "``PLAINTEXT`` (or absent, which Terraform defaults to "
         "PLAINTEXT) when (a) the ``name`` matches a secret-like pattern "
         "(``PASSWORD``, ``TOKEN``, ``API_KEY``, …) or (b) the ``value`` "
-        "matches a known credential shape (AKIA/ASIA access keys, "
-        "GitHub tokens, Slack ``xox*`` tokens, JWTs). Plaintext values "
-        "land in the AWS console, CloudTrail, and build logs."
+        "matches one of pipeline-check's known credential shapes (cloud "
+        "access keys, VCS / registry / CI / cloud-service tokens, Slack "
+        "``xox*`` tokens, JWTs — the same shared detector catalog GHA-008 "
+        "uses). Plaintext values land in the AWS console, CloudTrail, and "
+        "build logs."
     ),
     exploit_example=(
         "# Vulnerable: secret value is PLAINTEXT (the default).\n"

@@ -1,0 +1,9 @@
+pipelines:
+  pull-requests:
+    '**':
+      - step:
+          name: terraform
+          oidc: true
+          script:
+            - terraform init
+            - terraform apply -auto-approve

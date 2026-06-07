@@ -8,6 +8,7 @@ the reporter can map each finding onto the deepest node that contains it.
 """
 from __future__ import annotations
 
+import re
 from typing import Any
 
 from ...pipeline_graph import GraphEdge, GraphNode, PipelineGraph
@@ -16,6 +17,21 @@ from .._yaml_lines import line_of, line_of_item
 from .base import iter_jobs
 
 _ROOT_ID = "__root__"
+
+# Actions / commands that attach a build attestation or provenance to an
+# artifact. ``actions/attest`` covers attest / attest-build-provenance /
+# attest-sbom; the SLSA generator and a manual ``cosign attest`` are the
+# other common idioms.
+_ATTEST_USES = ("actions/attest", "slsa-framework/slsa-github-generator")
+_ATTEST_RUN_RE = re.compile(r"\bcosign\s+attest\b")
+
+
+def _step_has_attestation(step: dict[str, Any]) -> bool:
+    uses = step.get("uses")
+    if isinstance(uses, str) and uses.strip().lower().startswith(_ATTEST_USES):
+        return True
+    run = step.get("run")
+    return isinstance(run, str) and bool(_ATTEST_RUN_RE.search(run))
 
 
 def _step_label(step: dict[str, Any]) -> str:
@@ -85,6 +101,7 @@ def _build_one(path: str, data: dict[str, Any]) -> PipelineGraph:
             nodes.append(GraphNode(
                 id=sid, kind="step", label=_step_label(step), path=path,
                 start_line=s_start, end_line=s_end, parent=job_id,
+                attestation=_step_has_attestation(step),
             ))
             if prev_step_id is not None:
                 edges.append(GraphEdge(

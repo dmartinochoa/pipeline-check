@@ -275,7 +275,18 @@ class TestDR004LiteralSecret:
         ])
         f = r4.check(p)
         assert not f.passed
-        assert "AKIA prefix" in f.description
+        assert "token shape" in f.description
+
+    def test_fails_on_modern_token_regardless_of_key_name(self) -> None:
+        # A GitLab PAT under a non-credential key name: caught by the
+        # shared vendor-token catalog (the AKIA-only check missed it).
+        p = _pipeline(steps=[
+            {"name": "deploy", "image": f"x{_DIGEST}",
+             "environment": {"FOO": "glpat-abcdefghij1234567890"}},
+        ])
+        f = r4.check(p)
+        assert not f.passed
+        assert "token shape" in f.description
 
     def test_passes_on_non_credential_keys(self) -> None:
         p = _pipeline(steps=[

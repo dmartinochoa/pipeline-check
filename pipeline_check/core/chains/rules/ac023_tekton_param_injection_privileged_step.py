@@ -171,7 +171,7 @@ def match(findings: list[Finding]) -> list[Chain]:
                     f"step {shared_repr}"
                 )
                 reach_narrative = (
-                    f"  4. Reachability confirmed: the same step(s) "
+                    f"  4. Co-located (unverified): the same step(s) "
                     f"({shared_repr}) BOTH run privileged AND interpolate "
                     f"``$(params.<name>)`` unquoted. A crafted PipelineRun "
                     f"param value executes as a shell command inside the "

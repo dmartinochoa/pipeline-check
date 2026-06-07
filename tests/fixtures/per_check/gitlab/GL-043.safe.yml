@@ -1,0 +1,6 @@
+variables:
+  SAST_EXCLUDED_PATHS: "spec, test, tmp"
+
+build:
+  script:
+    - make

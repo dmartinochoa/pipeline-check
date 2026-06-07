@@ -496,6 +496,10 @@ class TestChainAC005:
         assert len(ac5) == 1
         chain = ac5[0]
         assert chain.confirmed_reachable is True
+        # Shared image identity is a structural-identity confirmation,
+        # not job co-location and not a traced taint path.
+        assert chain.via_structural is True
+        assert chain.via_dataflow is False
         assert "ghcr.io/acme/app" in chain.reachability_note
         assert chain.resources == ["ghcr.io/acme/app"]
         assert chain.confidence is Confidence.HIGH
@@ -1283,6 +1287,9 @@ class TestChainAC011:
         assert len(ac11) == 1
         chain = ac11[0]
         assert chain.confirmed_reachable is True
+        # Shared ServiceAccount identity is a structural-identity link.
+        assert chain.via_structural is True
+        assert chain.via_dataflow is False
         assert "prod/build-runner" in chain.reachability_note
         assert chain.resources == ["prod/build-runner"]
         assert chain.confidence is Confidence.HIGH
@@ -3631,6 +3638,146 @@ class TestCrossRepoDirectionalDedup:
         producers = {c.resources[0] for c in out}
         assert producers == {wf}
         assert all(c.chain_id == "CXPC-004" for c in out)
+
+
+class TestChainAC028:
+    """AC-028: npm worm propagation primitive co-located (Shai-Hulud).
+
+    Fires on a single repo carrying NPM-004 (install-time lifecycle
+    scripts) AND a self-mutating (GHA-048) or cross-repo-pushing
+    (GHA-049) workflow.
+    """
+
+    NPM = "package.json"
+    WF = ".github/workflows/ci.yml"
+
+    def _ac028(self, findings: list) -> list:
+        return [c for c in chains_pkg.evaluate(findings) if c.chain_id == "AC-028"]
+
+    def test_fires_with_npm004_and_self_mutation(self):
+        out = self._ac028([_f("NPM-004", self.NPM), _f("GHA-048", self.WF)])
+        assert len(out) == 1
+        assert out[0].severity is Severity.CRITICAL
+        assert set(out[0].triggering_check_ids) == {"NPM-004", "GHA-048"}
+        assert "T1195.002" in out[0].mitre_attack
+
+    def test_fires_with_npm004_and_cross_repo_push(self):
+        out = self._ac028([_f("NPM-004", self.NPM), _f("GHA-049", self.WF)])
+        assert len(out) == 1
+        assert set(out[0].triggering_check_ids) == {"NPM-004", "GHA-049"}
+
+    def test_fires_with_both_workflow_legs(self):
+        out = self._ac028([
+            _f("NPM-004", self.NPM),
+            _f("GHA-048", self.WF),
+            _f("GHA-049", self.WF),
+        ])
+        assert len(out) == 1
+        assert set(out[0].triggering_check_ids) == {"NPM-004", "GHA-048", "GHA-049"}
+
+    def test_does_not_fire_without_npm004(self):
+        # The workflow legs alone are hygiene debt, not the worm topology.
+        assert not self._ac028([_f("GHA-048", self.WF), _f("GHA-049", self.WF)])
+
+    def test_does_not_fire_without_a_workflow_leg(self):
+        assert not self._ac028([_f("NPM-004", self.NPM)])
+
+    def test_does_not_fire_when_legs_passed(self):
+        assert not self._ac028([
+            _f("NPM-004", self.NPM, passed=True),
+            _f("GHA-048", self.WF, passed=True),
+        ])
+
+
+class TestChainCXPC001:
+    """CXPC-001: npm install-scripts package in one repo + unpinned /
+    confusable npm deps in a partner repo, across a fleet scan."""
+
+    def _fire(self, fbr: dict) -> list:
+        return chains_pkg.evaluate_cross_repo(fbr, enabled={"CXPC-001"})
+
+    def test_fires_across_two_repos(self):
+        out = self._fire({
+            "org/lib": [_f("NPM-008", "package.json")],
+            "org/app": [_f("NPM-001", "package.json")],
+        })
+        assert len(out) == 1
+        assert out[0].chain_id == "CXPC-001"
+        assert out[0].severity is Severity.HIGH
+        assert set(out[0].repos) == {"org/lib", "org/app"}
+
+    def test_does_not_fire_within_one_repo(self):
+        assert not self._fire({
+            "org/mono": [_f("NPM-008", "a/package.json"), _f("NPM-001", "b/package.json")],
+        })
+
+    def test_does_not_fire_on_a_single_leg(self):
+        assert not self._fire({"org/lib": [_f("NPM-008", "package.json")]})
+
+
+class TestChainCXPC002:
+    """CXPC-002: Argo CD wildcard sourceRepos in one repo + weakened CI
+    gate in a partner repo."""
+
+    def _fire(self, fbr: dict) -> list:
+        return chains_pkg.evaluate_cross_repo(fbr, enabled={"CXPC-002"})
+
+    def test_fires_across_two_repos(self):
+        out = self._fire({
+            "org/gitops": [_f("ARGOCD-001", "appproject.yaml")],
+            "org/service": [_f("GHA-002", ".github/workflows/ci.yml")],
+        })
+        assert len(out) == 1
+        assert out[0].chain_id == "CXPC-002"
+        assert out[0].severity is Severity.CRITICAL
+        assert set(out[0].repos) == {"org/gitops", "org/service"}
+
+    def test_fires_with_taint_leg_b(self):
+        out = self._fire({
+            "org/gitops": [_f("ARGOCD-001", "appproject.yaml")],
+            "org/service": [_f("TAINT-001", ".github/workflows/ci.yml")],
+        })
+        assert len(out) == 1
+
+    def test_does_not_fire_within_one_repo(self):
+        assert not self._fire({
+            "org/mono": [
+                _f("ARGOCD-001", "appproject.yaml"),
+                _f("GHA-002", ".github/workflows/ci.yml"),
+            ],
+        })
+
+    def test_does_not_fire_on_a_single_leg(self):
+        assert not self._fire({"org/gitops": [_f("ARGOCD-001", "appproject.yaml")]})
+
+
+class TestChainCXPC003:
+    """CXPC-003: GitHub App token without a permissions filter in one
+    repo + credential exposure in a partner repo of the same org."""
+
+    def _fire(self, fbr: dict) -> list:
+        return chains_pkg.evaluate_cross_repo(fbr, enabled={"CXPC-003"})
+
+    def test_fires_across_two_repos(self):
+        out = self._fire({
+            "org/app-host": [_f("GHA-061", ".github/workflows/release.yml")],
+            "org/partner": [_f("GHA-005", ".github/workflows/ci.yml")],
+        })
+        assert len(out) == 1
+        assert out[0].chain_id == "CXPC-003"
+        assert out[0].severity is Severity.HIGH
+        assert set(out[0].repos) == {"org/app-host", "org/partner"}
+
+    def test_does_not_fire_within_one_repo(self):
+        assert not self._fire({
+            "org/mono": [
+                _f("GHA-061", ".github/workflows/release.yml"),
+                _f("GHA-008", ".github/workflows/ci.yml"),
+            ],
+        })
+
+    def test_does_not_fire_on_a_single_leg(self):
+        assert not self._fire({"org/partner": [_f("GHA-005", ".github/workflows/ci.yml")]})
 
 
 class TestChainAC037:

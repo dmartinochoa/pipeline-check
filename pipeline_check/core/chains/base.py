@@ -90,6 +90,18 @@ class Chain:
     #: ``via_dataflow`` (a proven executable path). CI consumers can
     #: gate on the stronger tier with ``--chains-require-dataflow``.
     via_dataflow: bool = False
+    #: True when ``confirmed_reachable`` rests on a *structural identity*
+    #: link rather than job co-location: the two legs share the same
+    #: build artifact / image digest, IAM role, ServiceAccount, or repo,
+    #: so the produce-to-consume edge is direct, not inferred from
+    #: co-occurrence in a file. This is a confirmed tier (the rule sets
+    #: ``confirmed_reachable=True`` at HIGH confidence), distinct from the
+    #: weak shared-job fallback, but established by identity-matching
+    #: rather than a traced taint path, so it is reported separately from
+    #: ``via_dataflow``. A chain sets at most one of ``via_dataflow`` /
+    #: ``via_structural``; neither set with ``confirmed_reachable`` means
+    #: the shared-job co-location fallback.
+    via_structural: bool = False
     #: For cross-repo (CXPC) chains, the repo coordinates the chain
     #: spans, in ``[source, target]`` order (the producer repo that
     #: carries the risk, then the consumer / partner repo that inherits
@@ -121,6 +133,8 @@ class Chain:
         }
         if self.via_dataflow:
             out["via_dataflow"] = True
+        if self.via_structural:
+            out["via_structural"] = True
         if self.reachability_note:
             out["reachability_note"] = self.reachability_note
         if self.repos:

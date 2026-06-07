@@ -98,11 +98,15 @@ pipelines:
           script: [npm run build]
           artifacts:
             - dist/**
+      # BB-034 — a pull-request step deploys to a production environment,
+      # shipping the unreviewed PR branch straight to prod.
       - step:
           name: PR deploy
-          deployment: staging
+          deployment: production
           script:
             - ./dist/install.sh
+            # BB-033 — IaC apply runs on the PR branch's Terraform.
+            - terraform apply -auto-approve
 
 # BB-020 — full clone depth.
 clone:

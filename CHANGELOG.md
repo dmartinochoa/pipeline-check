@@ -12,6 +12,49 @@ release commit collapses this section into `## [X.Y.Z] - <date>`.
 
 ### Added
 
+- **BB-033: IaC apply on a pull-request pipeline (CRITICAL).** Flags a
+  `terraform apply` / `cloudformation deploy` / `cdk deploy` / `pulumi up` /
+  `sam deploy` in a step under Bitbucket's `pull-requests:` section, where
+  it executes the PR branch's IaC (an `external` data source or `local-exec`
+  provisioner runs arbitrary code on the runner with the job's cloud
+  credentials before review). The Bitbucket analog of GL-041 / GHA-117;
+  steps under `branches:` / `default:` / `custom:` are out of scope.
+- **BB-034: production deployment on a pull-request pipeline (CRITICAL).**
+  Flags a step under Bitbucket's `pull-requests:` section bound to a
+  production-tier `deployment:` environment (a name matching `production` /
+  `prod`). The PR branch's code ships to production before it is reviewed or
+  merged, and the production deployment's scoped variables are exposed to
+  PR-controlled pipeline steps. Per-PR preview, `test`, and `staging`
+  environments don't fire (only the production tier), and steps under
+  `branches:` / `default:` / `custom:` / `tags:` are out of scope. The
+  deploy-time sibling of BB-033. New shared `PROD_ENV_RE` primitive in
+  `_primitives/deploy_names.py`.
+- **GL-044: automatic production deployment on a merge-request pipeline
+  (CRITICAL).** Flags a GitLab job reachable on a merge-request pipeline
+  (its `rules:` admit `merge_request_event`, its legacy `only:` includes
+  `merge_requests`, or it inherits a `workflow:` that admits MR pipelines)
+  that binds a production-tier `environment:` (a name matching `production`
+  / `prod`) and is *not* gated by `when: manual`. GL-004 treats any
+  `environment:` as sufficient gating, so it misses an automatic production
+  deploy on an MR; GL-044 names that shape and raises it to CRITICAL. The
+  GitLab analog of BB-034. Review-app / `test` / `staging` environments and
+  manual-approval jobs don't fire, and an `environment:` `action:` of
+  `stop` / `prepare` / `verify` / `access` (no deploy) is excluded.
+- **GL-043: GitLab native security scanner explicitly disabled (MEDIUM).**
+  Flags a `*_DISABLED` CI/CD variable (`SAST_DISABLED`,
+  `SECRET_DETECTION_DISABLED`, `DEPENDENCY_SCANNING_DISABLED`,
+  `CONTAINER_SCANNING_DISABLED`, `DAST_DISABLED`) set to a truthy value at
+  the top level or on a job, which silently drops a GitLab-managed security
+  control the rest of the pipeline assumes is running. Reads both the plain
+  scalar and the typed `{value:, description:}` variable form.
+- **Pipeline-graph node icons (DAG v2).** The step-level pipeline graph in
+  the HTML report now marks each node that a taint-engine finding
+  (`TAINT-*`) lands on with a flame icon (an active dataflow path reaches
+  it), and each step that attaches a build attestation
+  (`actions/attest-*`, the SLSA generator, or `cosign attest`) with a chain
+  icon. Both are surfaced in the node tooltip and the graph legend. Closes
+  the last sub-features of the DAG v2 (#165) roadmap item.
+
 - **SBOM dependency extraction for Maven, NuGet, and Helm.** Both SBOM
   outputs (`--output cyclonedx` and the new `--output spdx`) now include
   Maven, NuGet, and Helm-chart build dependencies, not just GitHub Actions /
@@ -72,6 +115,69 @@ release commit collapses this section into `## [X.Y.Z] - <date>`.
   derived from the canonical `Severity` enum in `checks/base.py`, so the two
   config loaders can't drift from each other or from the enum. No behavior
   change.
+- **Deploy-command vocabulary centralized (and Lambda-deploy coverage
+  widened).** Five deploy-gating rules (`ADO-004`, `BB-004`, `GL-004`,
+  `GL-029`, `GHA-098`) each carried a private copy of the deploy-command
+  regex; a new verb added to one (`GHA-098` had `aws lambda
+  update-function-code`) silently didn't reach the others. They now all
+  import the shared `DEPLOY_CMD_RE` from `_primitives/deploy_names.py`, and
+  that catalog gained `aws lambda update-function-code`, so every
+  deploy-gating rule now recognizes a Lambda code deploy as a deployment.
+  The shared `PROD_ENV_RE` (production-environment name heuristic, used by
+  `BB-034` / `GL-044`) was also corrected to match underscore-separated
+  names (`prod_us`, `production_east`) that the previous `\b` boundary
+  missed, while still excluding `product` / `preprod` / `non-prod`. New
+  primitive tests pin `DEPLOY_CMD_RE` and `PROD_ENV_RE`. ~70 lines of
+  duplicated regex removed. `ADO-004` and `GHA-099` likewise carried their
+  own copy of the deploy-*name* regex (`GHA-099` via an inline
+  `__import__("re").compile`); both now import the shared `DEPLOY_RE`, so
+  the whole deploy vocabulary (name, command, IaC-apply) is single-sourced.
+- **GHA-111 IaC-apply detection widened to match its siblings.** `GHA-111`
+  (AI agent applies IaC in the same job) carried a private IaC-apply regex
+  that had drifted to a subset of the shared `IAC_APPLY_RE` the other
+  IaC-apply rules (`GHA-117`, `GL-041`, `BB-033`) use, missing OpenTofu
+  (`tofu`), `terragrunt run-all`, and every `destroy` / teardown variant.
+  An AI agent running `terraform destroy` or `tofu apply` against the cloud
+  account is the same blast radius the rule targets, so it now imports the
+  shared `IAC_APPLY_RE` and detects those forms. New primitive tests pin
+  `IAC_APPLY_RE` (the full apply/destroy vocabulary, read-only `plan` /
+  `diff` excluded).
+- **Attack-chain narratives match the reachability badge.** When a chain's
+  reachability is only shared-job co-location (not a proven dataflow path),
+  its narrative now opens that leg with "Co-located (unverified): ..." to
+  match the yellow "Co-located (unverified)" badge already shown in the
+  terminal / Markdown / HTML reports, instead of the stronger "Reachability
+  confirmed: ...". The proven-dataflow branches still read "Reachability
+  confirmed by dataflow", and the structural-identity chains (a shared
+  image, IAM role, ServiceAccount, or repo, not job co-location: AC-005 /
+  AC-007 / AC-011 / AC-016 / AC-017 / AC-020 / AC-021 / XPC-002) keep
+  "Reachability confirmed" since they aren't co-location. Prose only; chain
+  emission, severity, confidence, and `confirmed_reachable` are unchanged.
+- **Structural-identity reachability is now its own confirmed badge tier.**
+  The eight structural-identity chains above set `confirmed_reachable=True`
+  at HIGH confidence (the two legs share a build artifact / image digest /
+  IAM role / ServiceAccount / repo), but the reports rendered them with the
+  weak yellow `≈ Co-located (unverified)` badge, which both contradicted
+  their "Reachability confirmed" narrative and was factually wrong (they
+  aren't co-located in a job). They now render a green
+  `✓ Reachability confirmed (structural)` badge, a third tier between the
+  proven-dataflow tier and the shared-job co-location fallback. A new
+  `Chain.via_structural` flag drives it and is emitted in the SARIF /
+  JSON chain properties next to `via_dataflow`. Gating is unchanged:
+  structural chains pass `--chains-require-reachability` (they're
+  confirmed) and are dropped by `--chains-require-dataflow` (no traced
+  taint path).
+- **Prose-style lint enforces the AI-tic word ban.** The CLAUDE.md prose
+  convention ("read like a coworker wrote it") was guidance only, so
+  AI-essay tics kept creeping back into docs and rule prose (a stray
+  `comprehensive` was just removed from the OSC&R standards-page intro).
+  A new `tests/test_prose_style.py` (the sibling of
+  `test_english_variant.py`) now fails the suite if `moreover`,
+  `furthermore`, `comprehensive`, or `delve` lands in any tracked `.py`
+  or `.md` file. `robust` and `leverage` are left to review rather than
+  gated, because they carry real technical meanings in the codebase
+  (code robustness; "leverage" as the security noun); CHANGELOG / ROADMAP
+  are exempt as historical records.
 
 ### Added
 
@@ -147,16 +253,48 @@ release commit collapses this section into `## [X.Y.Z] - <date>`.
 
 ### Fixed
 
-- **Tekton and Argo literal-secret rules now use the full token catalog.**
-  TKN-005 and ARGO-006 matched only a hand-maintained six-pattern subset
-  (AWS / `ghp_` / `gho_` / broad `sk-` / JWT) for value-shape detection, so
-  a hardcoded GitLab PAT, Anthropic / OpenAI key, Docker Hub PAT, npm /
-  PyPI token, or any of the other 40+ vendor formats sitting in a Tekton or
-  Argo container `env:` value under an innocuous name slipped through. Both
-  now run value-shape detection through the shared
-  `_secrets.find_secret_values` catalog (49 detectors), the same one the
-  `*-008` literal-secret rules already use, while keeping their existing
-  env-name heuristics and FP guards.
+- **Insecure package-install detection widened (cross-provider).** The
+  shared `PKG_INSECURE_RE` (the `*-018` insecure-package-source rules across
+  GitHub, GitLab, Azure, Bitbucket, CircleCI, Jenkins, plus the Argo /
+  Buildkite / Drone / Tekton variants) missed pip's equals form
+  (`--index-url=http://`, `--extra-index-url=http://` — only the
+  space-separated form matched) and npm/yarn `--strict-ssl=false` /
+  `--strict-ssl false` (disables TLS cert verification for the install).
+  Both are now flagged; `https://` sources and `--strict-ssl=true` stay
+  clean.
+- **CB-001 docs now match what it detects.** The CloudFormation and
+  Terraform CB-001 (plaintext-secret CodeBuild env var) `docs_note`s listed
+  a stale subset of credential shapes ("AKIA/ASIA, GitHub tokens, JWTs")
+  while the check has long matched the full shared credential-shape catalog
+  (`_patterns.SECRET_VALUE_RE` over `_BUILTIN_PATTERNS`, the same 49 shapes
+  GHA-008 uses: GitLab `glpat-`, npm `npm_`, Docker `dckr_pat_`, Slack
+  `xox*`, and the rest). The docs now describe the catalog instead of an
+  out-of-date hand-list, so a reader isn't told a `glpat-` / `npm_` token in
+  a plaintext env var slips through when it does not. Detection unchanged.
+
+- **Docker container-escape detection widened (cross-provider).** The
+  shared `DOCKER_INSECURE_RE` (GHA-017, ADO-017, BB-013, CC-017, GL-017,
+  JF-017, BK-005, all CRITICAL/HIGH) missed several escape idioms: the
+  Docker socket mounted to a non-canonical target (`-v
+  /var/run/docker.sock:/sock`), the `--volume` long form, `--ipc=host`,
+  and `--security-opt seccomp=unconfined` / `apparmor=unconfined`
+  (sandbox disabled). All are now flagged across every provider that
+  reuses the pattern; benign mounts (`-v ./data:/data`, `-p 8080:80`)
+  remain clean.
+
+- **Tekton, Argo, Buildkite, and Drone literal-secret rules now use the
+  full token catalog.** TKN-005, ARGO-006, and BK-002 matched only a
+  hand-maintained six-pattern subset (AWS / `ghp_` / `gho_` / broad `sk-` /
+  JWT) for value-shape detection, and DR-004 matched AWS `AKIA` keys only,
+  so a hardcoded GitLab PAT, Anthropic / OpenAI key, Docker Hub PAT, npm /
+  PyPI token, or any of the other 40+ vendor formats sitting in one of
+  those providers' `env:` / `settings:` values under an innocuous name
+  slipped through. All four now run value-shape detection through the
+  shared `_secrets.find_secret_values` catalog (49 detectors), the same one
+  the `*-008` literal-secret rules already use, while keeping their existing
+  key-name heuristics and FP guards. (The `*-003` family is name/field-based
+  over `variables:` blocks and intentionally complements the value-shape
+  `*-008` rules, so it's unchanged.)
 
 - **GHA-046 now catches more manual PR-head fetch bypasses (critical
   false-negatives).** The manual-fetch companion to GHA-002 (CRITICAL,

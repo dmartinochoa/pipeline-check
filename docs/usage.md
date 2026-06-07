@@ -420,16 +420,26 @@ pipeline_check --fail-on-any-chain        # gate on any matched chain
 pipeline_check --no-chains                # disable correlation entirely
 
 # Reachability gates (precision tiers, strictest last):
-pipeline_check --chains-require-reachability  # only confirmed-reachable chains
+pipeline_check --chains-require-reachability  # confirmed-reachable chains (all 3 tiers)
 pipeline_check --chains-require-dataflow       # only proven source->sink dataflow
 ```
 
-Reachability has two tiers. `--chains-require-reachability` keeps chains
-whose two legs are confirmed connected (phase-1 shared-job, or a real
-dataflow path). `--chains-require-dataflow` is stricter: it keeps only
-chains the taint engine confirms with an actual source-to-sink dataflow
+Reachability is reported in three tiers, all of which set
+`confirmed_reachable`, weakest first: shared-job co-location
+(`≈ Co-located (unverified)`, the legs run in the same job but no
+produce-to-consume link was traced), a structural-identity link where
+the legs share an artifact / image / IAM role / ServiceAccount / repo
+(`✓ Reachability confirmed (structural)`), and a proven source-to-sink
+dataflow path (`✓ Reachability confirmed (dataflow)`).
+`--chains-require-reachability` keeps every `confirmed_reachable` chain,
+so all three tiers pass. The co-located tier is "unverified" only in
+that no dataflow or structural proof was traced, not that the chain is
+unreachable, so it still counts as connected here.
+`--chains-require-dataflow` is the strictest: it keeps only the dataflow
+tier, chains the taint engine confirms with an actual source-to-sink
 path (the connecting job chain and the rendered taint path appear in the
-report). Pair either with `--fail-on-any-chain` for a high-precision CI
+report), dropping the structural and co-located tiers. Pair either with
+`--fail-on-any-chain` for a high-precision CI
 gate.
 
 Chain gates **bypass baseline and ignore-file filtering**, a correlated

@@ -240,6 +240,7 @@ STANDARD = Standard(
         "GL-002":   ["CICD-SEC-4"],
         "GL-003":   ["CICD-SEC-6"],
         "GL-004":   ["CICD-SEC-1"],
+        "GL-044":   ["CICD-SEC-1"],   # auto production deploy on an MR pipeline
         "GL-005":   ["CICD-SEC-3"],
         "GL-042":   ["CICD-SEC-3"],   # include: component unpinned
         "GL-006":   ["CICD-SEC-9"],
@@ -271,6 +272,9 @@ STANDARD = Standard(
         "GL-031":   ["CICD-SEC-2"],   # id_tokens missing audience pin / env binding
         "GL-040":   ["CICD-SEC-2"],   # CI_JOB_TOKEN used for cross-project access
         "GL-041":   ["CICD-SEC-4"],   # IaC apply on an untrusted MR trigger
+        "GL-043":   ["CICD-SEC-7"],   # native security scanner disabled
+        "BB-033":   ["CICD-SEC-4"],   # IaC apply on a pull-request pipeline
+        "BB-034":   ["CICD-SEC-1"],   # production deploy on a pull-request pipeline
         "GL-032":   ["CICD-SEC-7"],   # tags interpolates untrusted CI variable
         "GL-033":   ["CICD-SEC-4", "CICD-SEC-1"],  # global before_script taint
         "GL-034":   ["CICD-SEC-3"],                # npm install without audit signatures

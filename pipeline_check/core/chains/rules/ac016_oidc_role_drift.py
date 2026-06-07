@@ -141,6 +141,7 @@ def match(findings: list[Finding]) -> list[Chain]:
             references=list(RULE.references),
             recommendation=RULE.recommendation,
             confirmed_reachable=True,
+            via_structural=True,
             reachability_note=(
                 f"GHA-030 workflow's ``role-to-assume`` matches "
                 f"IAM-002 role `{role_arn}`"

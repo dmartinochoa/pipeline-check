@@ -148,7 +148,7 @@ def match(findings: list[Finding]) -> list[Chain]:
                 f"job {shared_repr}"
             )
             reach_narrative = (
-                f"  5. Reachability confirmed: the same job(s) "
+                f"  5. Co-located (unverified): the same job(s) "
                 f"({shared_repr}) carry all three legs — an "
                 f"attacker-landed input lands in a job that holds "
                 f"the long-lived publish credential AND runs the "

@@ -157,6 +157,7 @@ STANDARD = Standard(
         "GL-002":   ["CC6.8"],
         "GL-016":   ["CC6.8"],
         "GL-019":   ["CC6.8"],
+        "GL-043":   ["CC6.8"],
         "GL-025":   ["CC6.8"],
         "GL-026":   ["CC6.8"],
         "BB-002":   ["CC6.8"],
@@ -219,8 +220,10 @@ STANDARD = Standard(
         "CB-008":   ["CC8.1"],
         "GHA-014":  ["CC8.1"],
         "GL-004":   ["CC8.1"],
+        "GL-044":   ["CC8.1"],
         "GL-029":   ["CC8.1"],
         "BB-004":   ["CC8.1"],
+        "BB-034":   ["CC8.1"],
         "ADO-004":  ["CC8.1"],
         "JF-005":   ["CC8.1"],
         "JF-024":   ["CC8.1"],
@@ -479,6 +482,7 @@ STANDARD = Standard(
         "GL-031":   ["CC6.1", "CC8.1"],     # id_tokens missing audience pin
         "GL-040":   ["CC6.1", "CC8.1"],     # CI_JOB_TOKEN used for cross-project access
         "GL-041":   ["CC6.8"],              # IaC apply on an untrusted MR trigger
+        "BB-033":   ["CC6.8"],              # IaC apply on a PR pipeline
         "GL-032":   ["CC6.8"],              # tags interpolates untrusted
         "GL-033":   ["CC6.8"],              # global before_script taint
         "GL-034":   ["CC8.1"],              # npm install without audit signatures

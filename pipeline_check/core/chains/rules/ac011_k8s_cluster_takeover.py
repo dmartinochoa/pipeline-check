@@ -134,6 +134,7 @@ def match(findings: list[Finding]) -> list[Chain]:
             references=list(RULE.references),
             recommendation=RULE.recommendation,
             confirmed_reachable=True,
+            via_structural=True,
             reachability_note=(
                 f"hostPath workload runs as cluster-admin-bound SA "
                 f"`{sa_identity}`"

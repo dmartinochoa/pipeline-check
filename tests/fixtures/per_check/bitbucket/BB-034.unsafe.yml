@@ -1,0 +1,8 @@
+pipelines:
+  pull-requests:
+    '**':
+      - step:
+          name: deploy
+          deployment: production
+          script:
+            - ./deploy.sh

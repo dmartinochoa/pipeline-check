@@ -131,3 +131,23 @@ jobs:
 def test_empty_workflow_yields_only_root():
     g = _graph("on: push\n")
     assert [n.kind for n in g.nodes] == ["file"]
+
+
+def test_attestation_steps_flagged():
+    g = _graph(
+        "on: push\n"
+        "jobs:\n"
+        "  build:\n"
+        "    steps:\n"
+        "      - uses: actions/checkout@v4\n"
+        "      - uses: actions/attest-build-provenance@v1\n"
+        "      - run: cosign attest --predicate p.json img\n"
+    )
+    steps = {n.label: n.attestation for n in g.nodes if n.kind == "step"}
+    assert steps["uses: actions/checkout@v4"] is False
+    assert steps["uses: actions/attest-build-provenance@v1"] is True
+    # the cosign-attest run step (label is the run line)
+    assert any(
+        n.attestation for n in g.nodes
+        if n.kind == "step" and "cosign attest" in n.label
+    )

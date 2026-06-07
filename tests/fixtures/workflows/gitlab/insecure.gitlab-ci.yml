@@ -29,6 +29,8 @@ services:
 variables:
   AWS_ACCESS_KEY_ID: AKIAZ3MHALF2TESTHIJK
   DATABASE_PASSWORD: hunter2
+  # GL-043 — a GitLab-managed security scanner switched off pipeline-wide.
+  SECRET_DETECTION_DISABLED: "true"
   DEPLOY_TARGET: production
   # GL-037 — Go module checksum / sum-db verification disabled.
   GOSUMDB: "off"
@@ -95,6 +97,15 @@ deploy-prod:
     # declares no rules:/only:, so it inherits MR reachability; applying
     # the MR branch's Terraform runs its code with the deploy creds.
     - terraform apply -auto-approve
+    - ./scripts/deploy.sh
+
+# GL-044 — a job bound to the production environment runs automatically
+# on the MR pipeline (inherits the merge_request_event workflow: rule,
+# no when: manual), so every MR ships its unreviewed branch to prod.
+deploy-prod-auto:
+  stage: deploy
+  environment: production
+  script:
     - ./scripts/deploy.sh
 
 # GL-030 — job-level trigger:include: pulls a child pipeline from a

@@ -125,6 +125,7 @@ STANDARD = Standard(
         "GL-002":   ["6.5.1"],
         "GL-003":   ["8.2.1", "6.5.1"],
         "GL-004":   ["6.4.3"],
+        "GL-044":   ["6.4.3"],
         "GL-005":   ["6.3.3"],
         "GL-042":   ["6.3.3"],    # include: component unpinned
         # Bitbucket Pipelines
@@ -132,6 +133,8 @@ STANDARD = Standard(
         "BB-002":   ["6.5.1"],
         "BB-003":   ["8.2.1", "6.5.1"],
         "BB-004":   ["6.4.3"],
+        "BB-034":   ["6.4.3"],
+        "BB-033":   ["6.5.1"],                           # IaC apply on a PR pipeline
         "BB-005":   ["6.4.1"],
         # Azure DevOps Pipelines
         "ADO-001":  ["6.3.3"],
@@ -439,6 +442,7 @@ STANDARD = Standard(
         "GL-039":   ["6.4.1", "6.5.1"],                  # dind daemon TLS disabled / exposed on 2375
         "GL-018":   ["6.3.3", "6.5.1"],                  # package install insecure source
         "GL-019":   ["6.3.1", "6.3.3"],                  # no vulnerability scanning
+        "GL-043":   ["6.3.1", "6.3.3"],                  # native security scanner disabled
         "GL-020":   ["8.2.1"],                           # CI_JOB_TOKEN persisted
         "GL-021":   ["6.3.3", "6.5.1"],                  # install without lockfile
         "GL-022":   ["6.3.3", "6.5.1"],                  # dep-update bypasses lockfile pins

@@ -882,11 +882,34 @@ same day; the rest are queued for a later pass.
   caution "Co-located (unverified)" badge and reserve "Reachability
   confirmed (dataflow)" for the proven tier; SARIF gained a
   ``via_dataflow`` property. ``confirmed_reachable`` semantics and chain
-  emission are unchanged. **Follow-up (queued):** ~30 chain rules still
-  embed "Reachability confirmed: ..." in their per-rule ``narrative``
-  prose for the shared-job case (``ac001`` ... ``ac039``); a future
-  sweep could soften those to match the badge (lower value, the badge is
-  the at-a-glance signal).
+  emission are unchanged. ~~**Follow-up (narrative prose, done 2026-06-07
+  on ``dev``):**~~ the 20 chain rules whose ``narrative`` opened the
+  shared-job leg with "Reachability confirmed: ..." now say "Co-located
+  (unverified): ..." to match the badge (``ac001`` / ``ac002``-colocated /
+  ``ac003`` / ``ac004`` / ``ac006`` / ``ac008`` / ``ac009`` / ``ac010`` /
+  ``ac012`` / ``ac013`` / ``ac014`` / ``ac018`` / ``ac022``-colocated /
+  ``ac023``-colocated / ``ac025``-colocated / ``ac026``-colocated /
+  ``ac029`` / ``ac036`` / ``ac038`` / ``ac039``). The "by dataflow"
+  branches keep "Reachability confirmed by dataflow" (the proven tier),
+  and the eight *structural-identity* chains that set
+  ``confirmed_reachable=True`` from a shared image / IAM role /
+  ServiceAccount / repo rather than job co-location (``ac005`` / ``ac007``
+  / ``ac011`` / ``ac016`` / ``ac017`` / ``ac020`` / ``ac021`` / ``xpc002``)
+  deliberately keep "Reachability confirmed" in prose, since softening
+  them to "co-located" would be less accurate. ~~**Follow-up (structural
+  badge tier, done 2026-06-07 on ``dev``):**~~ those eight no longer
+  render the wrong "Co-located (unverified)" badge. A new
+  ``Chain.via_structural`` flag (set by ac005/007/011/016/017/020/021 +
+  xpc002 in their confirmed branch) drives a third green badge tier,
+  ``✓ Reachability confirmed (structural)``, between the proven-dataflow
+  tier and the shared-job co-location fallback, across the terminal /
+  Markdown / HTML reporters; ``via_structural`` is also emitted in the
+  SARIF (and JSON ``to_dict``) chain properties next to ``via_dataflow``.
+  Gating unchanged (structural passes ``--chains-require-reachability``,
+  dropped by ``--chains-require-dataflow``). Badge ↔ narrative ↔
+  confidence now agree across all three tiers; docs/attack_chains.md +
+  docs/usage.md updated. The whole reachability-honesty thread (badge
+  softening -> narrative prose -> structural tier) is now complete.
 - ~~**Test performance: ``test_english_variant.py`` re-reads the whole
   repo once per word-pair** (done 2026-06-06 on ``dev``).~~ It re-walked
   the tree and re-read every file (~2,600) per pair (~160 pairs), ~204 s

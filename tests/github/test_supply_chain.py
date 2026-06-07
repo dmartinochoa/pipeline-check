@@ -171,6 +171,53 @@ class TestGHA017DockerInsecure:
         f = run_check(wf, "GHA-017")
         assert f.passed
 
+    def test_fails_on_socket_mount_to_noncanonical_target(self):
+        # Mounting the Docker socket anywhere is an escape, not only to
+        # the canonical /var/run/docker.sock target.
+        wf = """
+        name: ci
+        on: push
+        permissions: { contents: read }
+        jobs:
+          build:
+            runs-on: ubuntu-latest
+            timeout-minutes: 30
+            steps:
+              - run: docker run --volume /var/run/docker.sock:/sock builder make all
+        """
+        f = run_check(wf, "GHA-017")
+        assert not f.passed
+
+    def test_fails_on_seccomp_unconfined(self):
+        wf = """
+        name: ci
+        on: push
+        permissions: { contents: read }
+        jobs:
+          build:
+            runs-on: ubuntu-latest
+            timeout-minutes: 30
+            steps:
+              - run: docker run --security-opt seccomp=unconfined builder make all
+        """
+        f = run_check(wf, "GHA-017")
+        assert not f.passed
+
+    def test_fails_on_ipc_host(self):
+        wf = """
+        name: ci
+        on: push
+        permissions: { contents: read }
+        jobs:
+          build:
+            runs-on: ubuntu-latest
+            timeout-minutes: 30
+            steps:
+              - run: docker run --ipc=host builder make all
+        """
+        f = run_check(wf, "GHA-017")
+        assert not f.passed
+
 
 # ── GHA-018 insecure package source ─────────────────────────────────
 
@@ -220,6 +267,39 @@ class TestGHA018PackageInsecure:
         """
         f = run_check(wf, "GHA-018")
         assert f.passed
+
+    def test_fails_on_pip_index_url_equals_form(self):
+        # ``--index-url=http://`` (equals form) is the same insecure source
+        # as the space form.
+        wf = """
+        name: ci
+        on: push
+        permissions: { contents: read }
+        jobs:
+          build:
+            runs-on: ubuntu-latest
+            timeout-minutes: 30
+            steps:
+              - run: pip install --index-url=http://example.com/simple/ requests
+        """
+        f = run_check(wf, "GHA-018")
+        assert not f.passed
+
+    def test_fails_on_npm_strict_ssl_false(self):
+        # Disabling TLS cert verification for the install.
+        wf = """
+        name: ci
+        on: push
+        permissions: { contents: read }
+        jobs:
+          build:
+            runs-on: ubuntu-latest
+            timeout-minutes: 30
+            steps:
+              - run: npm install --strict-ssl=false some-pkg
+        """
+        f = run_check(wf, "GHA-018")
+        assert not f.passed
 
 
 # ── GHA-021 lockfile enforcement ────────────────────────────────────

@@ -1,0 +1,17 @@
+deploy_review:
+  stage: deploy
+  environment:
+    name: review/$CI_COMMIT_REF_SLUG
+  script:
+    - ./deploy-preview.sh
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+
+deploy_prod:
+  stage: deploy
+  environment: production
+  script:
+    - ./deploy.sh
+  rules:
+    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
+      when: manual

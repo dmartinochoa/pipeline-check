@@ -1197,12 +1197,16 @@ def _chains_section_html(chains: list[Chain]) -> str:
                 if c.reachability_note
                 else ""
             )
-            # Proven dataflow path is the strong (green) signal; the
-            # shared-job fallback is only co-location, so it gets a
-            # caution (amber) label, not a confident "confirmed".
+            # A proven dataflow path and a structural-identity link (same
+            # artifact / role / SA / repo) are both confirmed (green)
+            # signals; the shared-job fallback is only co-location, so it
+            # gets a caution (amber) label, not a confident "confirmed".
             if c.via_dataflow:
                 reach_color = "#1f7a3a"
                 reach_label = "&#10003; Reachability confirmed (dataflow)"
+            elif c.via_structural:
+                reach_color = "#1f7a3a"
+                reach_label = "&#10003; Reachability confirmed (structural)"
             else:
                 reach_color = "#8a5e00"
                 reach_label = "&#8776; Co-located (unverified)"
@@ -1385,6 +1389,14 @@ def _dag_legend_html() -> str:
         + swatch.format(color=_DAG_NEUTRAL, label="No findings")
         + '</span>'
     )
+    items.append(
+        '<span style="display:inline-flex;align-items:center;gap:4px">'
+        '\U0001f525 taint sink (active path)</span>'
+    )
+    items.append(
+        '<span style="display:inline-flex;align-items:center;gap:4px">'
+        '\U0001f517 attestation attached</span>'
+    )
     return (
         '<div style="display:flex;flex-wrap:wrap;gap:12px;font-size:11px;'
         f'color:#6c757d;margin:0 0 8px">{"".join(items)}</div>'
@@ -1458,13 +1470,33 @@ def _dag_graph_svg(
             sb = badges.get(s.id)
             scolor = _SEVERITY_COLOR.get(sb.worst, _DAG_NEUTRAL) if sb else _DAG_NEUTRAL
             tip = f" ({sb.count})" if sb else ""
+            # Right-aligned status icons: flame for a taint-engine sink with
+            # an active path, chain for a step that attaches an attestation.
+            taint = bool(sb and sb.taint_sink)
+            icons = ""
+            ix = x + w - 11
+            if taint:
+                icons += (
+                    f'<text x="{ix}" y="{sy + 11}" font-size="10" '
+                    f'text-anchor="end">\U0001f525</text>'
+                )
+                ix -= 14
+            if s.attestation:
+                icons += (
+                    f'<text x="{ix}" y="{sy + 11}" font-size="10" '
+                    f'text-anchor="end">\U0001f517</text>'
+                )
+            tip += (" · taint sink" if taint else "")
+            tip += (" · attestation" if s.attestation else "")
+            label_max = 20 if (taint or s.attestation) else 26
             parts.append(
                 f'<g><title>{_e(s.label)}{_e(tip)}</title>'
                 f'<rect x="{x + 5}" y="{sy}" width="{w - 10}" '
                 f'height="{_DAG_STEP_H - 3}" rx="3" fill="{scolor}" '
                 f'fill-opacity="{0.85 if sb else 0.18}"/>'
                 f'<text x="{x + 10}" y="{sy + 11}" font-size="10" '
-                f'fill="#1b1f24">{_dag_text(s.label, 26)}</text></g>'
+                f'fill="#1b1f24">{_dag_text(s.label, label_max)}</text>'
+                f'{icons}</g>'
             )
             sy += _DAG_STEP_H
 
