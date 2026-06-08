@@ -488,6 +488,13 @@ Subcommands:
 - **`pipeline_check fp-stats`** prints rule-to-false-positive-vote
   totals from the local `--annotate-fp` annotation file so rule authors
   can see which checks accumulate the most FP reports.
+- **`pipeline_check verify-artifact REF`** runs the supply-chain
+  verifiers on your PATH (`cosign`, `slsa-verifier`, `gh attestation`)
+  against an OCI image or release file and reports whether its
+  signature / SLSA provenance validates against an expected source repo
+  and signing identity. Turns the static "you should sign" findings into
+  a runtime pass/fail gate. Exit `0` verified, `1` verification failed,
+  `3` no installed verifier matched the policy.
 
 ---
 
