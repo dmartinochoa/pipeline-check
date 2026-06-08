@@ -399,6 +399,7 @@ STANDARD = Standard(
         "GCB-024": ["ESF-D-SBOM"],
         "GCB-025": ["ESF-S-PIN-DEPS"],
         "GCB-026": ["ESF-C-ARTIFACT-AUTHZ"],
+        "GCB-027": ["ESF-D-INJECTION", "ESF-S-VERIFY-DEPS"],  # malicious-activity
         # ── SCM posture (governance via the platform REST API) ──────
         # The SCM provider evidences the platform-side controls that
         # gate code into the build pipeline. Map to the Developer

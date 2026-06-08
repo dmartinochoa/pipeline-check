@@ -265,6 +265,7 @@ STANDARD = Standard(
         "GCB-022": ["6.5.1"],                            # ALLOW_LOOSE substitution
         "GCB-023": ["6.5.1", "10.3.2"],                  # build artifacts not signed
         "GCB-026": ["7.2.1", "7.2.5"],                   # public storage bucket
+        "GCB-027": ["6.3.1", "6.5.1"],                   # malicious-activity indicators
         # ── SCM posture (governance via the platform REST API) ──────
         # Branch protection / review controls map to 6.4.3 (change
         # control) and 6.5.1 (secure development procedures) — the

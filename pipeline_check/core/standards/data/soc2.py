@@ -635,6 +635,7 @@ STANDARD = Standard(
         "GCB-024": ["CC8.1"],               # images: missing for docker push
         "GCB-025": ["CC7.2"],               # tags: empty (audit/discoverability)
         "GCB-026": ["CC8.1"],               # waitFor unknown step id
+        "GCB-027": ["CC6.8"],               # malicious-activity indicators
         # ── NPM / PyPI / Maven dep supply-chain ──────────────────
         # Dep-supply-chain rules land on CC8.1 (change management).
         # Compromised packages also evidence CC6.8 (malicious software)

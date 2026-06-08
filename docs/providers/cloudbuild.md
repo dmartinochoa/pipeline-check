@@ -35,7 +35,7 @@ analogue in other providers:
 
 ## What it covers
 
-26 checks · 7 have an autofix patch (``--fix``).
+27 checks · 7 have an autofix patch (``--fix``).
 
 | Check | Title | Severity | Fix |
 |-------|-------|----------|-----|
@@ -65,6 +65,7 @@ analogue in other providers:
 | [GCB-024](#gcb-024) | Build pushes Docker images but top-level images: is empty | <span class="pg-sev pg-sev--low">LOW</span> |  |
 | [GCB-025](#gcb-025) | Build has no tags for audit / discoverability | <span class="pg-sev pg-sev--low">LOW</span> |  |
 | [GCB-026](#gcb-026) | Step waitFor: references an unknown step id | <span class="pg-sev pg-sev--medium">MEDIUM</span> |  |
+| [GCB-027](#gcb-027) | Config contains indicators of malicious activity | <span class="pg-sev pg-sev--critical">CRITICAL</span> |  |
 
 ---
 
@@ -627,6 +628,31 @@ Cloud Build's step dependency graph is built from each step's ``waitFor:`` array
 **Recommended action**
 
 Verify every ID listed in a step's ``waitFor:`` array matches an ``id:`` declared on a sibling step in the same build. The special token ``-`` (start at the beginning of the build, no dependencies) is the only non-id value Cloud Build accepts. A typo in ``waitFor:`` doesn't fail the build, Cloud Build silently skips the wait, so a step that was supposed to run *after* a setup step ends up running in parallel with it.
+
+</div>
+
+</div>
+
+<div class="pg-rule pg-rule--critical" markdown>
+
+## GCB-027: Config contains indicators of malicious activity { #gcb-027 }
+
+<div class="pg-rule__tags">
+<span class="pg-sev pg-sev--critical">CRITICAL</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-4</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-7</span> <span class="pg-tag pg-tag--esf">ESF-D-INJECTION</span> <span class="pg-tag pg-tag--esf">ESF-S-VERIFY-DEPS</span> <span class="pg-tag pg-tag--cwe">CWE-506</span> <span class="pg-tag pg-tag--cwe">CWE-913</span>
+</div>
+
+Specific indicators only (reverse shells, base64-decoded execution, miner binaries, Discord/Telegram webhooks, credential-dump pipes, audit-erasure commands). Does not replace GCB-011 (TLS bypass) or GCB-013 (Docker insecure), those are hygiene; this is evidence. The Cloud Build analog of GHA-027 / GL-025 / BB-025 / ADO-026 / CC-026.
+
+**Known false-positive modes**
+
+- Security-training repositories, CTF challenges, and red-team exercise pipelines legitimately contain reverse-shell strings or exfil domains as literals. Matches inside YAML keys whose names contain ``example``, ``fixture``, ``sample``, ``demo``, or ``test`` are auto-suppressed; bare lines in a production build still fire.
+- Defaults to LOW confidence. Filter with ``--min-confidence MEDIUM`` to ignore all matches; the rule still surfaces the hit for teams that want to spot-check.
+
+<div class="pg-rule__rec" markdown>
+
+**Recommended action**
+
+Treat as a potential compromise. Identify the change that added the matching step(s), rotate any Secret Manager secrets the build can reach, and audit recent builds in Cloud Build history.
 
 </div>
 

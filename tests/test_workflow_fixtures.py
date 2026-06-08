@@ -313,7 +313,7 @@ class TestCircleCIFixtures:
 
 
 class TestCloudBuildFixtures:
-    EXPECTED_IDS = {f"GCB-{i:03d}" for i in range(1, 27)}
+    EXPECTED_IDS = {f"GCB-{i:03d}" for i in range(1, 28)}
     # GCB-002 (``serviceAccount`` unset) and GCB-020 (``serviceAccount``
     # points at the default Cloud Build SA email) are mutually-exclusive
     # triggers — a single document satisfies one or the other, never

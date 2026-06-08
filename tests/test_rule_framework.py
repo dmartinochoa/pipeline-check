@@ -51,7 +51,7 @@ EXPECTED_RULE_COUNTS: dict[str, int] = {
     "azure":      33,
     "jenkins":    36,
     "circleci":   33,
-    "cloudbuild": 26,
+    "cloudbuild": 27,
     "gcp":        50,
     "kubernetes": 44,
     "helm":       17,

@@ -661,6 +661,7 @@ STANDARD = Standard(
         "GCB-024": ["GV.SC-04"],                # images: missing for docker push
         "GCB-025": ["PR.PS-04"],                # tags: empty (audit/discoverability)
         "GCB-026": ["PR.PS-01"],                # waitFor unknown step id
+        "GCB-027": ["PR.PS-05"],                # malicious-activity indicators
         # ── AWS extras ───────────────────────────────────────────
         "CB-008":  ["PR.PS-06"],                # inline buildspec, not from protected repo
         "CB-010":  ["PR.IR-01"],                # fork-PR webhook unfiltered

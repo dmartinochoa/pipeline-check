@@ -133,7 +133,7 @@ for inputs, idempotency, and fork-PR fallback behavior.
 | **Azure DevOps** | `azure-pipelines.yml` | `--azure-path` | 33 checks · `ADO-001..033` · incl. IaC apply on a PR-validated pipeline |
 | **Jenkins** | `Jenkinsfile` (Declarative / Scripted) | `--jenkinsfile-path` | 36 checks · `JF-001..036` |
 | **CircleCI** | `.circleci/config.yml` | `--circleci-path` | 33 checks · `CC-001..033` · incl. Go-module-verification bypass |
-| **Google Cloud Build** | `cloudbuild.yaml` | `--cloudbuild-path` | 26 checks · `GCB-001..026` |
+| **Google Cloud Build** | `cloudbuild.yaml` | `--cloudbuild-path` | 27 checks · `GCB-001..027` |
 | **Buildkite** | `.buildkite/pipeline.yml` | `--buildkite-path` | 17 checks · `BK-001..016` + `TAINT-005` |
 | **Drone CI** | `.drone.yml` / `.drone.yaml` | `--drone-path` | 17 checks · `DR-001..017` · image / plugin pinning, privileged steps, `${DRONE_*}` injection, fork-PR exposure, pipe-to-shell, dangerous shell idioms, sensitive host-path mounts |
 | **Tekton** | `Task` / `Pipeline` / `*Run` YAML | `--tekton-path` | 17 checks · `TKN-001..016` + `TAINT-006` |
@@ -522,7 +522,7 @@ pipeline_check/
         ├── azure/rules/       # ADO-001 .. ADO-033
         ├── jenkins/rules/     # JF-001 .. JF-036
         ├── circleci/rules/    # CC-001 .. CC-033
-        ├── cloudbuild/rules/  # GCB-001 .. GCB-026
+        ├── cloudbuild/rules/  # GCB-001 .. GCB-027
         ├── buildkite/rules/   # BK-001 .. BK-016 + TAINT-005
         ├── drone/rules/       # DR-001 .. DR-017
         ├── tekton/rules/      # TKN-001 .. TKN-016 + TAINT-006

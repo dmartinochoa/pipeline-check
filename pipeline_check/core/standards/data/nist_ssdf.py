@@ -572,6 +572,7 @@ STANDARD = Standard(
         "GCB-024": ["PS.3.2"],                         # missing provenance labels
         "GCB-025": ["PW.4.1"],                         # outdated runner image
         "GCB-026": ["PS.1.1"],                         # public storage bucket
+        "GCB-027": ["PW.4.4", "RV.1.1"],               # malicious-activity indicators
         # ── NPM / PyPI / Maven dep supply-chain ─────────────────
         # PW.4.* (acquire / verify components) is the natural home
         # for pinning + integrity + non-registry sources.

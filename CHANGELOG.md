@@ -12,6 +12,14 @@ release commit collapses this section into `## [X.Y.Z] - <date>`.
 
 ### Added
 
+- **GCB-027: Cloud Build config contains indicators of malicious activity
+  (CRITICAL).** Flags specific compromise evidence (reverse shells,
+  base64-decoded execution, miner binaries, Discord/Telegram webhooks,
+  credential-dump pipes, audit-erasure commands) in a `cloudbuild.yaml`. The
+  Google Cloud Build analog of GHA-027 / GL-025 / BB-025 / ADO-026 / CC-026,
+  reusing the shared `_malicious` indicator catalog and `yaml_blob_check`.
+  Defaults to LOW confidence; matches inside `example` / `fixture` / `sample`
+  / `demo` / `test` keys are auto-suppressed. cloudbuild 26 -> 27.
 - **DR-017: dangerous shell idiom in a Drone step command (HIGH).** Flags
   `eval "$VAR"` / `sh -c "$VAR"` / backtick exec in a step's `commands:`,
   completing the dangerous-shell-idiom family across every CI provider

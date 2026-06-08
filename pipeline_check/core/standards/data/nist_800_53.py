@@ -458,6 +458,7 @@ STANDARD = Standard(
         "GCB-024":  ["SR-4", "CM-8"],                    # images: missing
         "GCB-025":  ["AU-2", "SI-2"],                    # tags: empty
         "GCB-026":  ["CM-6"],                            # waitFor unknown id
+        "GCB-027":  ["SR-3", "RA-5"],                    # malicious-activity indicators
         # Kubernetes, runtime configuration evidences SC-7 (boundary
         # protection), CM-6/CM-7 (least functionality), AC-3/AC-6
         # (least privilege), AU-2/AU-12 (audit), SC-28 (data at rest).
