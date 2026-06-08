@@ -10,7 +10,6 @@
 [![Docker Hub](https://img.shields.io/docker/v/dmartinochoa/pipeline-check?logo=docker&logoColor=white&label=docker&sort=semver)](https://hub.docker.com/r/dmartinochoa/pipeline-check)
 [![Python](https://img.shields.io/badge/python-3.11%20%7C%203.12%20%7C%203.13%20%7C%203.14-blue)](pyproject.toml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE) ![CodeRabbit Pull Request Reviews](https://img.shields.io/coderabbit/prs/github/dmartinochoa/pipeline-check?utm_source=oss&utm_medium=github&utm_campaign=dmartinochoa%2Fpipeline-check&labelColor=171717&color=FF570A&link=https%3A%2F%2Fcoderabbit.ai&label=CodeRabbit+Reviews)
-[![Socket Badge](https://badge.socket.dev/pypi/package/pipeline-check/1.10.0?artifact_id=tar-gz)](https://badge.socket.dev/pypi/package/pipeline-check/1.10.0?artifact_id=tar-gz)
 [![SLSA Build L3](https://img.shields.io/badge/SLSA-Build_L3-22c55e?logo=slsa)](#-verifying-a-release)
 [![Sigstore signed](https://img.shields.io/badge/Sigstore-signed-orange?logo=sigstore)](#-verifying-a-release)
 
@@ -322,7 +321,7 @@ providers your repo ships through:
 # .pre-commit-config.yaml
 repos:
   - repo: https://github.com/dmartinochoa/pipeline-check
-    rev: v1.11.0   # pin to a release tag
+    rev: v1.12.0   # pin to a release tag
     hooks:
       - id: pipeline-check-github
       - id: pipeline-check-dockerfile
@@ -629,7 +628,7 @@ the tagged commit, in CI, by this project's workflow.
 go install github.com/slsa-framework/slsa-verifier/v2/cli/slsa-verifier@v2.7.0
 
 # 2. Find the release.yml workflow run that built the version you want.
-TAG=v1.11.0
+TAG=v1.12.0
 RUN_ID=$(gh run list \
   --repo dmartinochoa/pipeline-check \
   --workflow release.yml \
