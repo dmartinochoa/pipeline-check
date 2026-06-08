@@ -12,6 +12,19 @@ release commit collapses this section into `## [X.Y.Z] - <date>`.
 
 ### Added
 
+- **GHA-122: Unsafe deserialization of a fetched artifact (pickle RCE).**
+  The deserialization leg of the AI/LLM-pipeline pack. Loading a model /
+  artifact through a pickle-backed deserializer executes arbitrary Python
+  embedded in the file at load time, and in CI that file is routinely
+  downloaded. Two firing shapes, both per `run:` step: an explicit unsafe
+  opt-in (`weights_only=False`, or `allow_pickle=True` on `numpy.load`),
+  always; or a remote fetch (`curl` / `wget` / `hf_hub_download` /
+  `snapshot_download` / `huggingface-cli download` / `requests`) alongside
+  a pickle-backed loader (`torch.load` / `pickle.load(s)` / `joblib.load`)
+  with no safe path (`weights_only=True` or safetensors) in the same step.
+  Does not fire on a bare local load (no fetch) or the safe path. Pairs
+  with GHA-120 (`trust_remote_code`) and GHA-121 (unpinned model ref).
+  HIGH.
 - **GHA-121: AI model pulled without a pinned revision.** Extends the
   AI/LLM-pipeline pack (GHA-119/120) with the supply-chain pinning leg.
   Fires on a `run:` step that fetches a model from a registry by a

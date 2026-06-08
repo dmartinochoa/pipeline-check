@@ -1,0 +1,7 @@
+name: model-eval
+on: push
+jobs:
+  eval:
+    runs-on: ubuntu-latest
+    steps:
+      - run: python -c "import torch; torch.load('downloaded.pt', weights_only=False)"

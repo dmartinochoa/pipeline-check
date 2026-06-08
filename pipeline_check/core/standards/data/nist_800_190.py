@@ -77,6 +77,7 @@ STANDARD = Standard(
         "GHA-003":  ["4.1.3"],
         "GHA-119":  ["4.1.3"],# untrusted context into an agentic AI CLI
         "GHA-120":  ["4.1.3"],# trust_remote_code model load = code exec
+        "GHA-122":  ["4.1.3"],# unsafe pickle deser of fetched artifact = code exec
         "GHA-117":  ["4.1.3"],# IaC apply on untrusted PR trigger
         "GHA-118":  ["4.1.3"],# untrusted content into $GITHUB_ENV / $GITHUB_PATH
         "GHA-016":  ["4.1.3"],

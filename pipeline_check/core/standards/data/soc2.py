@@ -150,6 +150,7 @@ STANDARD = Standard(
         "GHA-003":  ["CC6.8"],             # script injection = malware vector
         "GHA-119":  ["CC6.8"],             # untrusted context into an agentic AI CLI
         "GHA-120":  ["CC6.8"],             # trust_remote_code model load = code exec
+        "GHA-122":  ["CC6.8"],             # unsafe pickle deser of fetched artifact = code exec
         "GHA-117":  ["CC6.8"],             # IaC apply on untrusted PR trigger
         "GHA-118":  ["CC6.8"],             # untrusted content into $GITHUB_ENV / $GITHUB_PATH
         "GHA-016":  ["CC6.8"],             # curl|bash = malware vector

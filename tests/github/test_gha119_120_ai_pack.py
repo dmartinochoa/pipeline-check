@@ -1,7 +1,8 @@
 """Per-rule tests for the AI/LLM-pipeline pack:
 GHA-119 (untrusted context reaches an agentic CLI prompt -> injection),
 GHA-120 (ML model loaded with trust_remote_code -> code execution),
-GHA-121 (model pulled from a mutable / unpinned registry ref).
+GHA-121 (model pulled from a mutable / unpinned registry ref),
+GHA-122 (unsafe deserialization of a fetched artifact -> pickle RCE).
 """
 from __future__ import annotations
 
@@ -187,3 +188,78 @@ class TestGHA121ModelPinning:
               - run: pip install -r requirements.txt && pytest -q
         """
         assert run_check(wf, "GHA-121").passed is True
+
+
+class TestGHA122UnsafeDeserialization:
+    def test_fails_on_explicit_weights_only_false(self):
+        wf = """
+        on: push
+        jobs:
+          b:
+            runs-on: ubuntu-latest
+            steps:
+              - run: python -c "import torch; torch.load('m.pt', weights_only=False)"
+        """
+        assert run_check(wf, "GHA-122").passed is False
+
+    def test_fails_on_allow_pickle_true(self):
+        wf = """
+        on: push
+        jobs:
+          b:
+            runs-on: ubuntu-latest
+            steps:
+              - run: python -c "import numpy; numpy.load('a.npy', allow_pickle=True)"
+        """
+        assert run_check(wf, "GHA-122").passed is False
+
+    def test_fails_on_fetch_then_unpickle(self):
+        wf = """
+        on: push
+        jobs:
+          b:
+            runs-on: ubuntu-latest
+            steps:
+              - run: |
+                  curl -o m.pkl https://example.com/m.pkl
+                  python -c "import pickle; pickle.load(open('m.pkl','rb'))"
+        """
+        assert run_check(wf, "GHA-122").passed is False
+
+    def test_passes_on_safe_weights_only_true(self):
+        wf = """
+        on: push
+        jobs:
+          b:
+            runs-on: ubuntu-latest
+            steps:
+              - run: |
+                  curl -o m.pt https://example.com/m.pt
+                  python -c "import torch; torch.load('m.pt', weights_only=True)"
+        """
+        assert run_check(wf, "GHA-122").passed is True
+
+    def test_passes_on_safetensors(self):
+        wf = """
+        on: push
+        jobs:
+          b:
+            runs-on: ubuntu-latest
+            steps:
+              - run: |
+                  huggingface-cli download acme/m model.safetensors
+                  python -c "from safetensors.torch import load_file; load_file('model.safetensors')"
+        """
+        assert run_check(wf, "GHA-122").passed is True
+
+    def test_passes_on_local_load_without_fetch(self):
+        # Loading a self-produced local checkpoint, no remote fetch: not GHA-122.
+        wf = """
+        on: push
+        jobs:
+          b:
+            runs-on: ubuntu-latest
+            steps:
+              - run: python -c "import torch; torch.load('ckpt.pt')"
+        """
+        assert run_check(wf, "GHA-122").passed is True
