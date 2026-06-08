@@ -12,6 +12,20 @@ release commit collapses this section into `## [X.Y.Z] - <date>`.
 
 ### Added
 
+- **Run-history forensics provider (`--pipeline runs`).** A new live-API
+  provider that audits what a repository's GitHub Actions *actually
+  executed*, complementing the static `github` provider's "what could
+  run" analysis. It pulls recent runs via the Actions REST API
+  (`GET /repos/{owner}/{repo}/actions/runs`, reusing the SCM fetcher, so
+  `--gh-token` / `$GITHUB_TOKEN` authenticate it and `--scm-fixture-dir`
+  drives offline tests) and flags: **RUN-001** (HIGH) a fork PR that
+  executed on a privileged trigger (`pull_request_target` /
+  `workflow_run`) — untrusted code that ran with the base repo's secrets,
+  the live shape of the tj-actions/changed-files (CVE-2025-30066) and
+  GhostAction incidents; and **RUN-002** (MEDIUM) privileged triggers
+  exercised in the run history (the surface is live in production). A
+  missing token / 404 / network error degrades to a warning rather than
+  crashing. Usage: `pipeline_check --pipeline runs --scm-repo owner/name`.
 - **GCB-027: Cloud Build config contains indicators of malicious activity
   (CRITICAL).** Flags specific compromise evidence (reverse shells,
   base64-decoded execution, miner binaries, Discord/Telegram webhooks,

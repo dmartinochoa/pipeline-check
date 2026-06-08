@@ -22,7 +22,7 @@ hide:
 # Catch supply-chain risks <span class="accent">before they ship.</span>
 
 <p class="pg-hero__lede">
-A read-only scanner for 33 providers, graded against 18 compliance frameworks. 
+A read-only scanner for 34 providers, graded against 18 compliance frameworks. 
 111 of the 1160+ checks also emit a one-shot patch you can apply with <code>--fix</code>.
 </p>
 
@@ -57,7 +57,7 @@ A read-only scanner for 33 providers, graded against 18 compliance frameworks.
 <section class="pg-stats" data-reveal>
 <div class="pg-stats__inner">
   <div class="pg-stat"><div class="pg-stat__num" data-count-to="1160">1160+</div><div class="pg-stat__label">Checks</div></div>
-  <div class="pg-stat"><div class="pg-stat__num" data-count-to="33">33</div><div class="pg-stat__label">Providers</div></div>
+  <div class="pg-stat"><div class="pg-stat__num" data-count-to="34">34</div><div class="pg-stat__label">Providers</div></div>
   <div class="pg-stat"><div class="pg-stat__num" data-count-to="18">18</div><div class="pg-stat__label">Compliance standards</div></div>
   <div class="pg-stat"><div class="pg-stat__num" data-count-to="111">111</div><div class="pg-stat__label">Autofixers</div></div>
 </div>

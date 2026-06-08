@@ -59,6 +59,7 @@ _BUILTINS: dict[str, str] = {
     "pulumi": "PulumiProvider",
     "pypi": "PypiProvider",
     "rubygems": "RubyGemsProvider",
+    "runs": "RunsProvider",
     "scm": "SCMProvider",
     "tekton": "TektonProvider",
     "terraform": "TerraformProvider",

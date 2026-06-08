@@ -196,6 +196,7 @@ nav:
               - GitHub: providers/scm_github.md
               - GitLab: providers/scm_gitlab.md
               - Bitbucket Cloud: providers/scm_bitbucket.md
+              - Actions run history: providers/runs.md
           - Package registries:
               - Overview: providers/registries.md
               - npm: providers/npm.md
