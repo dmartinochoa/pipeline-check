@@ -138,6 +138,9 @@ STANDARD = Standard(
         "GHA-001":  ["SR-3", "SR-11", "SI-2", "RA-5"],   # unpinned action
         "GHA-110": ["CM-7", "SR-3"],  # CI env disables Go module verification
         "GHA-002":  ["CM-6", "SI-7", "SA-11"],           # pull_request_target + PR head
+        "RUN-001":  ["CM-6", "SI-7", "SA-11"],           # forensics: fork PR ran on privileged trigger
+        "RUN-002":  ["CM-6", "SI-7", "SA-11"],           # forensics: privileged trigger fired
+        "RUN-003":  ["CM-6", "SI-7", "SA-11"],           # forensics: secret leaked in run logs
         "GHA-003":  ["CM-6", "SA-11", "SA-15"],          # script injection
         "GHA-117":  ["CM-6", "SA-11", "SA-15"],          # IaC apply on untrusted PR trigger
         "GHA-118":  ["CM-6", "SA-11", "SA-15"],          # untrusted content into $GITHUB_ENV / $GITHUB_PATH

@@ -13,6 +13,8 @@ crash (every rule then sees an empty run list and passes).
 """
 from __future__ import annotations
 
+import io
+import zipfile
 from dataclasses import dataclass, field
 from typing import Any
 
@@ -21,6 +23,15 @@ from ..base import BaseCheck
 #: How many recent runs to audit. The Actions API caps ``per_page`` at
 #: 100; one page is ample forensic signal without paginating all history.
 DEFAULT_RUN_LIMIT = 100
+
+#: Log scanning (``--audit-runs-logs``) downloads a ZIP per run, so it is
+#: bounded: at most this many privileged-trigger runs are fetched, each
+#: log file is read up to ``_MAX_LOG_FILE_BYTES`` and the whole run's
+#: decompressed text is capped at ``_MAX_LOG_TOTAL_BYTES`` (a guard
+#: against a pathological / zip-bomb log archive).
+DEFAULT_LOG_FETCH_LIMIT = 25
+_MAX_LOG_FILE_BYTES = 5 * 1024 * 1024
+_MAX_LOG_TOTAL_BYTES = 50 * 1024 * 1024
 
 #: Triggers that execute in the *base* repository's privileged context
 #: (repo secrets + a write-scoped ``GITHUB_TOKEN``) while potentially
@@ -80,6 +91,12 @@ class RunsContext:
     warnings: list[str] = field(default_factory=list)
     files_scanned: int = 0   # repurposed: number of runs audited
     files_skipped: int = 0
+    #: run_id -> sorted, deduped "detector:redacted" labels for secrets
+    #: found in that run's logs (only populated when ``scan_logs=True``).
+    log_leaks: dict[int, list[str]] = field(default_factory=dict)
+    #: True once log scanning was requested + attempted, so RUN-003 can
+    #: tell "no leaks found" from "logs were never scanned".
+    logs_scanned: bool = False
 
     @property
     def slug(self) -> str:
@@ -92,6 +109,9 @@ class RunsContext:
         name: str,
         fetcher: Any,
         limit: int = DEFAULT_RUN_LIMIT,
+        *,
+        scan_logs: bool = False,
+        log_fetch_limit: int = DEFAULT_LOG_FETCH_LIMIT,
     ) -> RunsContext:
         ctx = cls(owner=owner, name=name)
         per_page = max(1, min(limit, 100))
@@ -124,7 +144,41 @@ class RunsContext:
                 f"recent run(s) of {total} total; older runs were not "
                 "fetched."
             )
+        if scan_logs:
+            ctx.logs_scanned = True
+            ctx._scan_logs(fetcher, log_fetch_limit)
         return ctx
+
+    def _scan_logs(self, fetcher: Any, fetch_limit: int) -> None:
+        """Download + scan logs for the privileged-trigger runs (the risk
+        surface), bounded to *fetch_limit* runs. A leaked secret-shaped
+        string in CI output is recorded under ``log_leaks[run_id]``.
+
+        Needs a fetcher exposing ``fetch_bytes`` (the live HTTP fetcher
+        does; an offline fixture fetcher may not). Each log fetch can 404
+        (logs expire / were deleted), which degrades to a skip.
+        """
+        fetch_bytes = getattr(fetcher, "fetch_bytes", None)
+        if not callable(fetch_bytes):
+            self.warnings.append(
+                "[runs] --audit-runs-logs needs a fetcher that can download "
+                "log archives; the configured fetcher cannot, so log "
+                "scanning was skipped."
+            )
+            return
+        targets = [
+            r for r in self.runs if r.event in PRIVILEGED_TRIGGERS
+        ][:fetch_limit]
+        for run in targets:
+            raw = fetch_bytes(
+                f"repos/{self.owner}/{self.name}/actions/runs/"
+                f"{run.run_id}/logs"
+            )
+            if not raw:
+                continue
+            leaks = _scan_log_zip(raw)
+            if leaks:
+                self.log_leaks[run.run_id] = leaks
 
 
 def _to_record(entry: Any) -> RunRecord | None:
@@ -160,6 +214,38 @@ def _to_record(entry: Any) -> RunRecord | None:
         html_url=_str(entry.get("html_url")),
         created_at=_str(entry.get("created_at")),
     )
+
+
+def _scan_log_zip(raw: bytes) -> list[str]:
+    """Scan a run-logs ZIP for secret-shaped strings.
+
+    GitHub masks registered secrets in logs, so a hit here is a secret
+    that leaked *past* masking (a credential a tool printed, a value
+    never registered as a secret, a base64/transformed token) -- exactly
+    the high-signal case. Bounded per-file and in total against a
+    pathological archive; ``find_secret_values`` is imported lazily so a
+    metadata-only scan never pays for the detector catalog.
+    """
+    from .._secrets import find_secret_values
+    try:
+        archive = zipfile.ZipFile(io.BytesIO(raw))
+    except (zipfile.BadZipFile, OSError, EOFError):
+        return []
+    leaks: set[str] = set()
+    consumed = 0
+    with archive:
+        for info in archive.infolist():
+            if info.is_dir() or info.file_size > _MAX_LOG_FILE_BYTES:
+                continue
+            consumed += info.file_size
+            if consumed > _MAX_LOG_TOTAL_BYTES:
+                break
+            try:
+                text = archive.read(info).decode("utf-8", errors="replace")
+            except (OSError, RuntimeError, zipfile.BadZipFile):
+                continue
+            leaks.update(find_secret_values([text]))
+    return sorted(leaks)
 
 
 def run_resource(ctx: RunsContext, run: RunRecord) -> str:

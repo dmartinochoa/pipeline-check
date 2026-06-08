@@ -141,6 +141,7 @@ STANDARD = Standard(
         "GHA-002":  ["CICD-SEC-4"],
         "RUN-001":  ["CICD-SEC-4"],
         "RUN-002":  ["CICD-SEC-4"],
+        "RUN-003":  ["CICD-SEC-4"],
         "GHA-003":  ["CICD-SEC-4"],
         "GHA-117":  ["CICD-SEC-4"],# IaC apply on untrusted PR trigger
         "GHA-118":  ["CICD-SEC-4"],# untrusted content into $GITHUB_ENV / $GITHUB_PATH

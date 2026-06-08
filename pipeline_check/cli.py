@@ -1642,6 +1642,17 @@ def _install_completion_callback(
     ),
 )
 @click.option(
+    "--audit-runs-logs",
+    "audit_runs_logs",
+    is_flag=True,
+    help=(
+        "With ``--pipeline runs``: also download recent privileged-trigger "
+        "run logs (the Actions ``.../logs`` archive) and scan them for "
+        "leaked secrets (RUN-003). Heavier than the default metadata-only "
+        "audit (one download per run, needs the ``actions:read`` scope)."
+    ),
+)
+@click.option(
     "--ingest",
     "ingest_paths",
     multiple=True,
@@ -2392,6 +2403,7 @@ def scan(
     scm_platform: str | None,
     scm_repo: str | None,
     scm_fixture_dir: str | None,
+    audit_runs_logs: bool,
     ingest_paths: tuple[str, ...],
     inventory_flag: bool,
     inventory_types: tuple[str, ...],
@@ -2740,6 +2752,7 @@ def scan(
         scm_platform=scm_platform,
         scm_repo=scm_repo,
         scm_fixture_dir=scm_fixture_dir,
+        audit_runs_logs=audit_runs_logs,
     )
 
     scanner: Scanner | MultiScanner

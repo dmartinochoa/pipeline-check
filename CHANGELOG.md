@@ -22,10 +22,15 @@ release commit collapses this section into `## [X.Y.Z] - <date>`.
   executed on a privileged trigger (`pull_request_target` /
   `workflow_run`) — untrusted code that ran with the base repo's secrets,
   the live shape of the tj-actions/changed-files (CVE-2025-30066) and
-  GhostAction incidents; and **RUN-002** (MEDIUM) privileged triggers
-  exercised in the run history (the surface is live in production). A
-  missing token / 404 / network error degrades to a warning rather than
-  crashing. Usage: `pipeline_check --pipeline runs --scm-repo owner/name`.
+  GhostAction incidents; **RUN-002** (MEDIUM) privileged triggers
+  exercised in the run history (the surface is live in production); and,
+  with the opt-in `--audit-runs-logs` flag, **RUN-003** (HIGH) a secret
+  that leaked into a run's logs (it downloads each privileged-trigger
+  run's log archive and scans it with the shared secret-shape catalog;
+  GitHub masks registered secrets, so a hit is a credential that leaked
+  past masking). A missing token / 404 / network error degrades to a
+  warning rather than crashing. Usage:
+  `pipeline_check --pipeline runs --scm-repo owner/name [--audit-runs-logs]`.
 - **GCB-027: Cloud Build config contains indicators of malicious activity
   (CRITICAL).** Flags specific compromise evidence (reverse shells,
   base64-decoded execution, miner binaries, Discord/Telegram webhooks,

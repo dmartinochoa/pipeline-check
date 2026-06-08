@@ -6,6 +6,8 @@ so the suite never touches the network or relies on disk fixtures (the
 """
 from __future__ import annotations
 
+import io
+import zipfile
 from typing import Any
 
 import pytest
@@ -15,18 +17,39 @@ from pipeline_check.core.checks.runs.base import DEFAULT_RUN_LIMIT, RunsContext
 from pipeline_check.core.checks.runs.checks import RunsChecks
 
 _RUNS_PATH = f"repos/owner/r/actions/runs?per_page={DEFAULT_RUN_LIMIT}"
+# A realistically-shaped (fake) leaked GitHub classic PAT: ghp_ + 36 chars.
+_LEAKED_TOKEN = "ghp_016d8d1f2a3b4c5d6e7f8a9b0c1d2e3f4a5b"
 
 
 class FakeFetcher:
-    """In-memory ``path -> body`` map; anything else returns ``None``."""
+    """In-memory ``path -> body`` map; anything else returns ``None``.
 
-    def __init__(self, mapping: dict[str, Any]) -> None:
+    ``blobs`` is the binary side (``fetch_bytes``) used for the run-logs
+    ZIP endpoint; a fetcher without ``blobs`` still has ``fetch_bytes``
+    so the duck-typed check in the context succeeds.
+    """
+
+    def __init__(
+        self, mapping: dict[str, Any], blobs: dict[str, bytes] | None = None,
+    ) -> None:
         self.mapping = mapping
+        self.blobs = blobs or {}
         self.calls: list[str] = []
 
     def fetch(self, path: str) -> Any:
         self.calls.append(path)
         return self.mapping.get(path)
+
+    def fetch_bytes(self, path: str, **_: Any) -> bytes | None:
+        self.calls.append(path)
+        return self.blobs.get(path)
+
+
+def _log_zip(text: str, name: str = "1_build.txt") -> bytes:
+    buf = io.BytesIO()
+    with zipfile.ZipFile(buf, "w") as zf:
+        zf.writestr(name, text)
+    return buf.getvalue()
 
 
 def _run(rid: int, event: str, *, fork: bool = False, name: str = "ci") -> dict:
@@ -175,3 +198,78 @@ class TestProvider:
         from pipeline_check.core import providers
         assert "runs" in providers.available()
         assert providers.get("runs").NAME == "runs"
+
+
+# ── RUN-003: leaked secret in run logs (--audit-runs-logs) ───────────────
+
+class TestRun003LogScan:
+    def _ctx_with_log(self, run: dict, log_text: str) -> RunsContext:
+        payload = {"total_count": 1, "workflow_runs": [run]}
+        blobs = {f"repos/owner/r/actions/runs/{run['id']}/logs": _log_zip(log_text)}
+        return RunsContext.for_repo(
+            "owner", "r", FakeFetcher({_RUNS_PATH: payload}, blobs),
+            scan_logs=True,
+        )
+
+    def test_passes_with_skip_note_when_logs_not_scanned(self):
+        # Default metadata-only run must not imply the logs were checked.
+        ctx = _ctx(_run(1, "pull_request_target", fork=True))
+        assert ctx.logs_scanned is False
+        run003 = _for(_findings(ctx), "RUN-003")
+        assert run003 and all(f.passed for f in run003)
+        assert "not enabled" in run003[0].description
+
+    def test_fires_on_leaked_secret_and_redacts(self):
+        run = _run(1, "pull_request_target", fork=True)
+        ctx = self._ctx_with_log(run, f"step\nexport T={_LEAKED_TOKEN}\nok\n")
+        assert ctx.logs_scanned is True
+        failing = [f for f in _for(_findings(ctx), "RUN-003") if not f.passed]
+        assert len(failing) == 1
+        f = failing[0]
+        assert f.severity == Severity.HIGH
+        assert "#run/1" in f.resource
+        assert "github_token" in f.description
+        # The raw secret value must never appear in output.
+        assert _LEAKED_TOKEN not in f.description
+
+    def test_passes_when_scanned_logs_are_clean(self):
+        run = _run(1, "pull_request_target", fork=False)
+        ctx = self._ctx_with_log(run, "step\nbuilding the project\nall good\n")
+        run003 = _for(_findings(ctx), "RUN-003")
+        assert run003 and all(f.passed for f in run003)
+        assert "No secret-shaped" in run003[0].description
+
+    def test_only_privileged_runs_have_logs_fetched(self):
+        run = _run(1, "push")  # not a privileged trigger
+        payload = {"total_count": 1, "workflow_runs": [run]}
+        blobs = {"repos/owner/r/actions/runs/1/logs": _log_zip(f"T={_LEAKED_TOKEN}")}
+        fetcher = FakeFetcher({_RUNS_PATH: payload}, blobs)
+        ctx = RunsContext.for_repo("owner", "r", fetcher, scan_logs=True)
+        assert not any("/logs" in c for c in fetcher.calls)
+        assert ctx.log_leaks == {}
+
+    def test_corrupt_zip_degrades_without_crashing(self):
+        run = _run(1, "pull_request_target", fork=True)
+        payload = {"total_count": 1, "workflow_runs": [run]}
+        blobs = {"repos/owner/r/actions/runs/1/logs": b"this is not a zip file"}
+        ctx = RunsContext.for_repo(
+            "owner", "r", FakeFetcher({_RUNS_PATH: payload}, blobs),
+            scan_logs=True,
+        )
+        assert ctx.log_leaks == {}  # corrupt archive -> no leaks, no raise
+
+    def test_graceful_when_fetcher_cannot_download(self):
+        # A fetcher without ``fetch_bytes`` (e.g. an offline fixture
+        # fetcher) skips log scanning with a warning instead of crashing.
+        class NoBytes:
+            def fetch(self, path: str) -> Any:
+                if "runs?per_page" in path:
+                    return {"total_count": 1, "workflow_runs": [
+                        _run(1, "pull_request_target", fork=True),
+                    ]}
+                return None
+
+        ctx = RunsContext.for_repo("owner", "r", NoBytes(), scan_logs=True)
+        assert ctx.logs_scanned is True
+        assert ctx.log_leaks == {}
+        assert any("cannot" in w for w in ctx.warnings)

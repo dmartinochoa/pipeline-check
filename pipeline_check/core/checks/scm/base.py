@@ -30,6 +30,10 @@ _DEFAULT_TIMEOUT = 10.0
 #: larger is either a misrouted endpoint or attacker-controlled and
 #: we'd rather treat the fetch as a failure than blow scanner memory.
 _MAX_RESPONSE_BYTES = 5 * 1024 * 1024
+#: Larger cap for binary endpoints (the Actions run-logs ZIP, fetched by
+#: ``fetch_bytes``). Run logs are bigger than JSON metadata but still
+#: bounded so a pathological response can't exhaust memory.
+_MAX_BINARY_RESPONSE_BYTES = 25 * 1024 * 1024
 
 
 # ── Fetcher protocol + implementations ────────────────────────────────
@@ -85,6 +89,32 @@ class HttpSCMFetcher:
         if isinstance(parsed, (dict, list)):
             return parsed
         return None
+
+    def fetch_bytes(
+        self, path: str, *, max_bytes: int = _MAX_BINARY_RESPONSE_BYTES,
+    ) -> bytes | None:
+        """Fetch a raw binary response (the Actions run-logs ZIP).
+
+        urllib follows the logs endpoint's 302 redirect to the signed
+        blob URL automatically. Returns ``None`` on any error or when the
+        body exceeds *max_bytes*, mirroring :meth:`fetch`'s
+        degrade-don't-raise contract.
+        """
+        url = f"{self.BASE_URL}/{path.lstrip('/')}"
+        req = urllib.request.Request(url)
+        req.add_header("Accept", "application/vnd.github+json")
+        req.add_header("X-GitHub-Api-Version", "2022-11-28")
+        req.add_header("User-Agent", "pipeline-check-scm")
+        if self.token:
+            req.add_header("Authorization", f"Bearer {self.token}")
+        try:
+            with urllib.request.urlopen(req, timeout=self.timeout) as resp:
+                body: bytes = resp.read(max_bytes + 1)
+        except (urllib.error.URLError, TimeoutError, OSError, ValueError):
+            return None
+        if len(body) > max_bytes:
+            return None
+        return body
 
 
 class DiskSCMFetcher:

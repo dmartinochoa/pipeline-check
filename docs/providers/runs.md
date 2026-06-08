@@ -26,12 +26,13 @@ pipeline_check --pipeline runs --scm-repo owner/name \
 
 ## What it covers
 
-2 checks · 0 have an autofix patch (``--fix``).
+3 checks · 0 have an autofix patch (``--fix``).
 
 | Check | Title | Severity | Fix |
 |-------|-------|----------|-----|
 | [RUN-001](#run-001) | Fork PR executed on a privileged trigger | <span class="pg-sev pg-sev--high">HIGH</span> |  |
 | [RUN-002](#run-002) | Privileged trigger exercised in run history | <span class="pg-sev pg-sev--medium">MEDIUM</span> |  |
+| [RUN-003](#run-003) | Secret leaked in workflow run logs | <span class="pg-sev pg-sev--high">HIGH</span> |  |
 
 ---
 
@@ -70,6 +71,26 @@ Sourced from the Actions REST API. Counts recent runs whose ``event`` is ``pull_
 **Recommended action**
 
 Review the workflows that run on these triggers and confirm none check out or execute PR-controlled content while holding secrets. See RUN-001 for any of these runs that came from a fork (the high-severity subset).
+
+</div>
+
+</div>
+
+<div class="pg-rule pg-rule--high" markdown>
+
+## RUN-003: Secret leaked in workflow run logs { #run-003 }
+
+<div class="pg-rule__tags">
+<span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-4</span> <span class="pg-tag pg-tag--cwe">CWE-532</span>
+</div>
+
+Only evaluated with ``--audit-runs-logs``. Downloads each privileged-trigger run's log archive (the Actions REST API ``.../logs`` endpoint) and scans the text with the shared secret-shape catalog (``find_secret_values``). GitHub masks registered secrets, so a match is a credential that leaked past masking. The token value is redacted in the finding.
+
+<div class="pg-rule__rec" markdown>
+
+**Recommended action**
+
+Rotate the leaked credential immediately, then stop it reaching the log: register it as an Actions secret so GitHub masks it, avoid `set -x` / `env` dumps in steps that hold it, and pipe tool output that may echo credentials through a redactor.
 
 </div>
 

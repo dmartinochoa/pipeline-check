@@ -32,6 +32,7 @@ class RunsProvider(BaseProvider):
         scm_repo: str | None = None,
         scm_fixture_dir: str | None = None,
         gh_token: str | None = None,
+        audit_runs_logs: bool = False,
         **_: Any,
     ) -> RunsContext:
         if not scm_repo or "/" not in scm_repo:
@@ -50,7 +51,9 @@ class RunsProvider(BaseProvider):
             fetcher = DiskSCMFetcher([Path(scm_fixture_dir)])
         else:
             fetcher = HttpSCMFetcher(token=gh_token)
-        return RunsContext.for_repo(owner, name, fetcher)
+        return RunsContext.for_repo(
+            owner, name, fetcher, scan_logs=audit_runs_logs,
+        )
 
     @property
     def check_classes(self) -> list[type[BaseCheck[Any]]]:

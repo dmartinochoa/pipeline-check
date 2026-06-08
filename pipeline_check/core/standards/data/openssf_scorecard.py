@@ -226,6 +226,7 @@ STANDARD = Standard(
         "GHA-002":  ["Dangerous-Workflow"],
         "RUN-001":  ["Dangerous-Workflow"],
         "RUN-002":  ["Dangerous-Workflow"],
+        "RUN-003":  ["Dangerous-Workflow"],
         "GHA-003":  ["Dangerous-Workflow"],
         "GHA-117":  ["Dangerous-Workflow"],# IaC apply on untrusted PR trigger
         "GHA-118":  ["Dangerous-Workflow"],# untrusted content into $GITHUB_ENV / $GITHUB_PATH
