@@ -492,20 +492,34 @@ def next_steps_tip(
     if not fails:
         return None
     fails.sort(key=failure_sort_key)
-    from .autofix import available_fixers
+    from .autofix import SAFE, available_fixers, fixer_safety
 
     fixers = set(available_fixers())
-    n_fixable = sum(1 for f in fails if f.check_id.upper() in fixers)
+    fixable = [f for f in fails if f.check_id.upper() in fixers]
     top_id = fails[0].check_id
     tip = (
         f"[dim]Next →[/dim] inspect a rule: "
         f"[bold]pipeline_check explain {top_id}[/bold]"
     )
-    if n_fixable:
-        tip += (
-            f"   [dim]·[/dim]   autofix {n_fixable} of {len(fails)}: "
-            f"[bold]pipeline_check --fix --apply[/bold]"
-        )
+    if fixable:
+        n_safe = sum(1 for f in fixable if fixer_safety(f.check_id.upper()) == SAFE)
+        if n_safe:
+            # Bare ``--fix`` applies safe fixers only; count what it will
+            # actually write, and flag the unsafe remainder separately.
+            tip += (
+                f"   [dim]·[/dim]   autofix {n_safe} of {len(fails)}: "
+                f"[bold]pipeline_check --fix --apply[/bold]"
+            )
+            n_unsafe = len(fixable) - n_safe
+            if n_unsafe:
+                tip += f" [dim](+{n_unsafe} via --fix unsafe)[/dim]"
+        else:
+            # Every available fixer is unsafe-tier, so bare ``--fix``
+            # would skip them all; point at the unsafe tier explicitly.
+            tip += (
+                f"   [dim]·[/dim]   autofix {len(fixable)} of {len(fails)}: "
+                f"[bold]pipeline_check --fix unsafe --apply[/bold]"
+            )
     return tip
 
 
