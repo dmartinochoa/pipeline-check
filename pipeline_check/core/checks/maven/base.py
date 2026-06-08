@@ -272,8 +272,11 @@ def _line_of(text: str, needle: str, start: int = 0) -> int:
 
 
 #: Reject POM/settings bodies above this size before handing them to
-#: the XML parser (mirrors the NuGet loader's ``_MAX_XML_BYTES``).
-_MAX_POM_BYTES = 10 * 1024 * 1024  # 10 MB
+#: the XML parser. Measured in characters, not bytes: ``_parse_pom``
+#: already holds the decoded ``str`` and ``ElementTree`` parses that, so
+#: character count is what bounds the parser's work (the NuGet loader's
+#: ``_MAX_XML_BYTES`` checks on-disk size because it guards before read).
+_MAX_POM_CHARS = 10 * 1024 * 1024  # ~10 MB
 
 #: A ``pom.xml`` / ``settings.xml`` never legitimately carries a DTD.
 #: stdlib ``ElementTree`` expands internal entities, so a crafted
@@ -290,7 +293,7 @@ def _parse_pom(path: str, text: str) -> PomFile:
     warning. The text is preserved on the returned object so rules can
     run line-number lookups against the original source.
     """
-    if len(text) > _MAX_POM_BYTES or _DOCTYPE_RE.search(text):
+    if len(text) > _MAX_POM_CHARS or _DOCTYPE_RE.search(text):
         return PomFile(path=path, text=text, parsed_ok=False)
     try:
         root = ET.fromstring(text)

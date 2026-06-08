@@ -360,21 +360,31 @@ def test_bug_f_gha003_ref_pattern_escapes_regex_metachars():
 
 def test_bug_f_gha004_handles_scalar_with_block():
     """A scalar ``with:`` on an OIDC/docker step used to raise inside
-    ``_is_oidc_step`` / ``_step_consumes_scope``."""
+    ``_is_oidc_step`` / ``_step_consumes_scope``. It must degrade
+    equivalently to a step carrying no ``with:`` at all (the keys those
+    helpers read just aren't there), not crash and not silently flip the
+    verdict (which ``finding is not None`` alone would never catch)."""
     from pipeline_check.core.checks.github.rules import gha004_permissions as gha004
-    doc = {
-        "on": "push",
-        "jobs": {"build": {
-            "permissions": {"id-token": "write", "packages": "write"},
-            "steps": [
-                {"uses": "docker/build-push-action@v5", "with": "scalar"},
-                {"uses": "aws-actions/configure-aws-credentials@v4",
-                 "with": "scalar"},
-            ],
-        }},
-    }
-    finding = gha004.check("wf.yml", doc)  # must not raise
-    assert finding is not None
+    base = [
+        {"uses": "docker/build-push-action@v5"},
+        {"uses": "aws-actions/configure-aws-credentials@v4"},
+    ]
+
+    def _doc(steps: list[dict]) -> dict:
+        return {
+            "on": "push",
+            "jobs": {"build": {
+                "permissions": {"id-token": "write", "packages": "write"},
+                "steps": steps,
+            }},
+        }
+
+    no_with = gha004.check("wf.yml", _doc([dict(s) for s in base]))
+    scalar_with = gha004.check(  # must not raise
+        "wf.yml", _doc([{**s, "with": "scalar"} for s in base]),
+    )
+    assert scalar_with.check_id == "GHA-004"
+    assert scalar_with.passed == no_with.passed
 
 
 def test_bug_f_gha011_handles_numeric_cache_key():
@@ -388,6 +398,59 @@ def test_bug_f_gha011_handles_numeric_cache_key():
     }
     finding = gha011.check("wf.yml", doc)  # must not raise
     assert finding.passed
+
+
+def test_bug_f_as_finding_list_normalizes_single_none_and_list():
+    """The list-pack orchestrators (AWS/GCP/Azure/CFN/TF) ``extend`` a
+    ``list[Finding]``, but ``_guard_check`` degrades a crash to a single
+    ``Finding``. ``as_finding_list`` reconciles both shapes plus ``None``."""
+    from pipeline_check.core.checks.base import Finding, Severity
+    from pipeline_check.core.checks.rule import as_finding_list
+    one = Finding(
+        check_id="A-1", title="t", severity=Severity.LOW, resource="r",
+        description="d", recommendation="r", passed=True,
+    )
+    assert as_finding_list(None) == []
+    assert as_finding_list(one) == [one]
+    assert as_finding_list([one, one]) == [one, one]
+
+
+def test_bug_f_list_pack_crash_keeps_sibling_rules():
+    """A crashing rule in a list-shaped pack must degrade to ONE finding
+    without taking down the OTHER rules in the same provider. Before the
+    fix the guard returned a lone ``Finding``, the orchestrator's
+    ``for f in batch`` / ``extend`` raised ``TypeError: 'Finding' object
+    is not iterable``, and the surrounding scanner guard dropped every
+    finding from that provider. This replicates the CFN / TF run() loop."""
+    from pipeline_check.core.checks.base import Severity
+    from pipeline_check.core.checks.rule import (
+        Rule,
+        _guard_check,
+        apply_rule_metadata,
+        as_finding_list,
+    )
+    good = Rule(id="CFN-1", title="ok", severity=Severity.HIGH)
+    bad = Rule(id="CFN-2", title="boom", severity=Severity.HIGH)
+
+    def good_check(ctx):
+        return [good.fail_finding("res", "a real finding")]
+
+    def bad_check(ctx):
+        raise ValueError("malformed template")
+
+    rules = [
+        (good, _guard_check(good, good_check)),
+        (bad, _guard_check(bad, bad_check)),
+    ]
+    findings = []
+    for rule, check_fn in rules:
+        batch = as_finding_list(check_fn({"ctx": 1}))  # must not raise
+        for finding in batch:
+            apply_rule_metadata(finding, rule)
+        findings.extend(batch)
+    ids = {f.check_id for f in findings}
+    assert ids == {"CFN-1", "CFN-2"}  # sibling survived; crash degraded
+    assert len(findings) == 2
 
 
 # ────────────────────────────────────────────────────────────────────────
@@ -544,6 +607,25 @@ def test_bug_i_ignore_files_survive_non_utf8(tmp_path):
     yml = tmp_path / "ig.yml"
     yml.write_bytes(b"- caf\xe9\n")
     assert _load_ignore_yaml(yml) == []  # must not raise
+
+
+def test_bug_i_pyproject_load_survives_non_utf8(tmp_path):
+    # ``tomllib.load`` decodes UTF-8 and raises ``UnicodeDecodeError``
+    # (a sibling of ``TOMLDecodeError``, not a subclass), which the
+    # sibling ``_load_path`` guarded but ``_load_pyproject`` did not.
+    from pipeline_check.core.config import _load_pyproject
+    p = tmp_path / "pyproject.toml"
+    p.write_bytes(b'[tool.pipeline_check]\nfail_on = "caf\xe9"\n')
+    assert _load_pyproject(p) == {}  # must not raise
+
+
+def test_bug_i_baseline_load_survives_non_utf8(tmp_path):
+    # ``load_baseline`` promises an empty set "rather than raising" so it
+    # can't crash CI; a non-UTF-8 file raised ``UnicodeDecodeError``.
+    from pipeline_check.core.gate import load_baseline
+    p = tmp_path / "baseline.json"
+    p.write_bytes(b'{"findings": "caf\xe9"}\n')
+    assert load_baseline(p) == set()  # must not raise
 
 
 def test_bug_i_fleet_repo_list_non_utf8_is_clean_error(tmp_path):

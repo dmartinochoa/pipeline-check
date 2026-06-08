@@ -367,7 +367,11 @@ def load_baseline(path: str | Path) -> set[tuple[str, str]]:
         return set()
     try:
         doc = json.loads(p.read_text(encoding="utf-8"))
-    except (OSError, json.JSONDecodeError):
+    except (OSError, UnicodeDecodeError, json.JSONDecodeError):
+        # A non-UTF-8 baseline raises ``UnicodeDecodeError`` (a
+        # ``ValueError``, not an ``OSError``); without it this loader
+        # crashes CI despite the docstring's "empty set rather than
+        # raising" promise. Mirrors the ignore-file loaders above.
         return set()
     return _baseline_from_doc(doc)
 

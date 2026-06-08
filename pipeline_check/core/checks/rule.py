@@ -234,6 +234,31 @@ def wants_ctx_kwarg(check_fn: Callable[..., Finding]) -> bool:
     return len(params) >= 2
 
 
+def as_finding_list(
+    result: Finding | list[Finding] | None,
+) -> list[Finding]:
+    """Normalize a check's return value into a ``list[Finding]``.
+
+    The AWS / GCP / Azure / CloudFormation / Terraform orchestrators
+    expect their ``check`` callables to return ``list[Finding]`` and
+    ``extend`` the batch. But :func:`_guard_check` degrades a crashing
+    check to a *single* ``Finding`` (it can't tell the list-shaped packs
+    from the github-style ones, where a lone ``Finding`` is the
+    contract). Without this, a crashing list-pack rule returns one
+    ``Finding``, the orchestrator's ``for f in batch`` / ``extend(batch)``
+    raises ``TypeError: 'Finding' object is not iterable``, and the
+    surrounding scanner guard then drops the *whole provider* (the exact
+    failure ``_guard_check`` exists to prevent). Wrap a bare ``Finding``
+    (and ``None``) so one crashing rule degrades to one finding without
+    taking down its provider.
+    """
+    if result is None:
+        return []
+    if isinstance(result, Finding):
+        return [result]
+    return list(result)
+
+
 def apply_rule_metadata(finding: Finding, rule: Rule) -> None:
     """Copy rule-level metadata onto a finding the rule didn't set.
 

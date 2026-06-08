@@ -371,7 +371,11 @@ release commit collapses this section into `## [X.Y.Z] - <date>`.
   now wraps each check so an unhandled exception degrades to a logged warning
   plus a passing finding, and the scanner loop guards provider context
   construction (e.g. a malformed Terraform plan) so one provider's failure
-  doesn't drop the others in a multi-provider run.
+  doesn't drop the others in a multi-provider run. The AWS / GCP / Azure /
+  CloudFormation / Terraform orchestrators `extend` a `list[Finding]` from
+  each check; their call sites now normalize the guard's single-finding
+  degrade through `as_finding_list` so a lone crashing rule degrades to one
+  finding instead of raising `TypeError` and dropping the whole provider.
 - **GHA-002 / GHA-003 / GHA-004 / GHA-011 crashes on malformed workflows.**
   GHA-002 and GHA-004 raised `AttributeError` on a scalar `with:` block
   (`with: ref` instead of a mapping); GHA-003 raised `re.error` when an
@@ -396,8 +400,8 @@ release commit collapses this section into `## [X.Y.Z] - <date>`.
   `settings.xml` were parsed with stdlib ElementTree and no size guard
   (unlike the NuGet loader). A crafted `<!DOCTYPE>` with nested `<!ENTITY>`
   definitions (a "billion laughs" payload) could exhaust memory. POM bodies
-  carrying a DTD, or larger than 10 MB, are now refused (`parsed_ok=False`)
-  before parsing; a POM never legitimately needs a DTD.
+  carrying a DTD, or above a ~10M-character cap, are now refused
+  (`parsed_ok=False`) before parsing; a POM never legitimately needs a DTD.
 - **SARIF regions no longer omit `startLine`.** A `Location` can carry a
   column or end position without a start line; the region builder emitted
   `startColumn` / `endLine` / `endColumn` with no `startLine`, which GitHub
@@ -410,8 +414,9 @@ release commit collapses this section into `## [X.Y.Z] - <date>`.
   XML that CI ingestors reject. Control characters (except tab / LF / CR)
   are now stripped before escaping.
 - **Non-UTF-8 config / ignore / repo-list files no longer crash the run.**
-  The config loader, both ignore-file loaders (flat + YAML), the inline-ignore
-  scanner, and the fleet `--repos` loader caught `OSError` but not
+  The config loaders (`.pipeline-check.*` and the `pyproject.toml` section),
+  both ignore-file loaders (flat + YAML), the inline-ignore scanner, the gate
+  baseline loader, and the fleet `--repos` loader caught `OSError` but not
   `UnicodeDecodeError` (a `ValueError`), so a latin-1 / cp1252 file aborted
   the process with a traceback before scanning. These reads now degrade
   cleanly (skip the file with a warning, or raise a usage error). Because

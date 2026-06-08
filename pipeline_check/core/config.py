@@ -203,7 +203,11 @@ def _load_pyproject(p: Path) -> dict[str, Any]:
     try:
         with p.open("rb") as fh:
             doc = tomllib.load(fh)
-    except (OSError, tomllib.TOMLDecodeError):
+    except (OSError, UnicodeDecodeError, tomllib.TOMLDecodeError):
+        # ``tomllib.load`` decodes UTF-8 and raises ``UnicodeDecodeError``
+        # (a sibling of ``TOMLDecodeError``, not a subclass) on a non-UTF-8
+        # ``pyproject.toml``; without it the eager config callback crashes
+        # before the scan. Mirrors the guard in ``_load_path``.
         return {}
     section = doc.get("tool", {}).get("pipeline_check", {}) or {}
     if not section:
