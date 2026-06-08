@@ -943,6 +943,7 @@ STANDARD = Standard(
         "BB-032":   ["ESF-D-SECRETS"],             # secret echoed to Bitbucket log
         "ADO-031":  ["ESF-D-SECRETS"],             # secret echoed to Azure DevOps log
         "ADO-032":  ["ESF-D-SECRETS"],             # checkout persistCredentials leaks token to .git/config
+        "ADO-033":  ["ESF-D-INJECTION"],           # IaC apply on a PR-validated pipeline
         "CC-032":   ["ESF-D-SECRETS"],             # secret echoed to CircleCI log
         "SCM-048":  ["ESF-D-SECRETS"],             # org codespace secret scoped to all repos
         "SCM-049":  ["ESF-D-SECRETS"],             # classic PAT where fine-grained suffices

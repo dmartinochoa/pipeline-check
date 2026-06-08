@@ -882,6 +882,7 @@ STANDARD = Standard(
         "BB-032":   ["CICD-SEC-6"],               # secret echoed to Bitbucket log
         "ADO-031":  ["CICD-SEC-6"],               # secret echoed to Azure DevOps log
         "ADO-032":  ["CICD-SEC-6"],               # checkout persistCredentials leaks token to .git/config
+        "ADO-033":  ["CICD-SEC-4"],               # IaC apply on a PR-validated pipeline
         "CC-032":   ["CICD-SEC-6"],               # secret echoed to CircleCI log
         # npm supply-chain posture
         "NPM-012":  ["CICD-SEC-3", "CICD-SEC-6"],  # publish token missing restrictions

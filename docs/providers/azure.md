@@ -30,7 +30,7 @@ The walker handles every layout ADO supports:
 
 ## What it covers
 
-32 checks · 11 have an autofix patch (``--fix``).
+33 checks · 11 have an autofix patch (``--fix``).
 
 | Check | Title | Severity | Fix |
 |-------|-------|----------|-----|
@@ -66,6 +66,7 @@ The walker handles every layout ADO supports:
 | [ADO-030](#ado-030) | pool interpolates attacker-controllable value | <span class="pg-sev pg-sev--high">HIGH</span> | <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> |
 | [ADO-031](#ado-031) | Secret variable echoed / printed in a script step | <span class="pg-sev pg-sev--high">HIGH</span> |  |
 | [ADO-032](#ado-032) | checkout persistCredentials leaves the pipeline token in .git/config | <span class="pg-sev pg-sev--high">HIGH</span> |  |
+| [ADO-033](#ado-033) | IaC apply on a PR-validated pipeline | <span class="pg-sev pg-sev--critical">CRITICAL</span> |  |
 
 ---
 
@@ -745,6 +746,30 @@ The Azure analogue of the GitHub ``persist-credentials`` / ArtiPACKED leak (GHA-
 **Recommended action**
 
 Drop ``persistCredentials: true`` from ``checkout`` steps (the default is ``false``). When set, Azure Pipelines writes the ``System.AccessToken`` (the pipeline's OAuth token) into ``.git/config`` as an ``AUTHORIZATION: bearer`` extraheader after fetch, where every later step, including code from an untrusted PR, can read and reuse it to push or reach other repos. If a step genuinely needs to push back, scope a dedicated credential to that step instead of persisting the ambient token for the whole job.
+
+</div>
+
+</div>
+
+<div class="pg-rule pg-rule--critical" markdown>
+
+## ADO-033: IaC apply on a PR-validated pipeline { #ado-033 }
+
+<div class="pg-rule__tags">
+<span class="pg-sev pg-sev--critical">CRITICAL</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-4</span> <span class="pg-tag pg-tag--esf">ESF-D-INJECTION</span> <span class="pg-tag pg-tag--cwe">CWE-94</span> <span class="pg-tag pg-tag--cwe">CWE-78</span>
+</div>
+
+Fires when a pipeline declares PR validation (`pr:` set to anything other than `none` / `false`) and any `script:` / `bash:` / `pwsh:` / `powershell:` step (or a task's `inputs.script`) runs an IaC apply command. A `pr:`-validated pipeline runs the PR branch's YAML and scripts, so the apply executes untrusted IaC. This is the Azure DevOps analog of GHA-117 / GL-041 / BB-033. A pipeline with no `pr:` key (or `pr: none`) is out of scope, matching ADO-011 / ADO-019.
+
+**Known false-positive modes**
+
+- A pipeline that runs `apply` only against a short-lived, fully-sandboxed review environment with no production-adjacent credentials. Even then the apply executes unreviewed IaC on the agent; prefer `plan` on PR validation. Suppress with a rationale naming the sandbox scope.
+
+<div class="pg-rule__rec" markdown>
+
+**Recommended action**
+
+Never run `terraform apply` (or `cloudformation deploy` / `cdk deploy` / `pulumi up` / `sam deploy` / `terragrunt apply`) in a pipeline that opts into PR validation (`pr:`). The PR branch's IaC executes at apply time, so an `external` data source, a `local-exec` provisioner, or a hijacked provider runs arbitrary code on the agent with whatever cloud credentials (often a federated service connection) the apply uses, before the change is reviewed or merged. On PR validation run a read-only `plan`; move the `apply` onto the default-branch (`trigger:`) leg, gated by a protected `environment:`.
 
 </div>
 

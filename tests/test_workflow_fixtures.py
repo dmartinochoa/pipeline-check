@@ -223,7 +223,7 @@ class TestBitbucketFixtures:
 
 
 class TestAzureFixtures:
-    EXPECTED_IDS = {f"ADO-{i:03d}" for i in range(1, 33)}
+    EXPECTED_IDS = {f"ADO-{i:03d}" for i in range(1, 34)}
 
     def _scan(self, filename: str):
         ctx = AzureContext.from_path(FIXTURES / "azure" / filename)

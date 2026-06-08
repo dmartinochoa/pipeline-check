@@ -12,6 +12,17 @@ release commit collapses this section into `## [X.Y.Z] - <date>`.
 
 ### Added
 
+- **ADO-033: IaC apply on a PR-validated pipeline (CRITICAL).** Flags an IaC
+  apply command (`terraform apply` / `cloudformation deploy` / `cdk deploy` /
+  `pulumi up` / `sam deploy` / `terragrunt apply`) in a `script:` / `bash:` /
+  `pwsh:` / `powershell:` step (or a task's `inputs.script`) on an Azure
+  DevOps pipeline that opts into PR validation (`pr:` set to anything but
+  `none` / `false`). The PR branch's IaC runs at apply time, so an `external`
+  data source or a `local-exec` provisioner executes arbitrary code on the
+  agent with the service-connection credentials before the change is reviewed.
+  The Azure DevOps analog of GHA-117 / GL-041 / BB-033, reusing the shared
+  `IAC_APPLY_RE` primitive and the `pr:` heuristic from ADO-011 / ADO-019.
+  azure 32 -> 33.
 - **JF-036: shell step interpolates a build parameter (`params.*`) (HIGH).**
   Flags a `${params.X}` spliced into a double-quoted `sh` / `bat` /
   `powershell` body. A Jenkins build parameter is set by whoever queues the
