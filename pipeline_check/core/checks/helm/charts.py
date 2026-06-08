@@ -263,7 +263,7 @@ def _parse_yaml_text(
     text = raw.decode("utf-8", errors="replace") if isinstance(raw, bytes) else raw
     try:
         doc = yaml.safe_load(io.StringIO(text))
-    except yaml.YAMLError as exc:
+    except (yaml.YAMLError, RecursionError, MemoryError) as exc:
         first = str(exc).split("\n", 1)[0]
         warnings.append(f"{label}: YAML parse error: {first}")
         return None

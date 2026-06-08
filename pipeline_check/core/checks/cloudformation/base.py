@@ -242,7 +242,7 @@ def _parse_template(text: str) -> Any:
             pass  # fall through to YAML
     try:
         return yaml.load(text, Loader=_CfnSafeLoader)
-    except yaml.YAMLError:
+    except (yaml.YAMLError, RecursionError, MemoryError):
         return None
 
 

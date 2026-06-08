@@ -381,7 +381,7 @@ def render_chart_offline(chart_path: str | Path) -> RenderResult:
         # named-template includes, ...) rather than failing the chart.
         try:
             list(yaml.safe_load_all(neutralized))
-        except yaml.YAMLError:
+        except (yaml.YAMLError, RecursionError, MemoryError):
             continue
         rel = tpl.relative_to(chart).as_posix()
         parts.append(f"# Source: {chart.name}/{rel}\n{neutralized}")
