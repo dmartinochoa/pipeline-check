@@ -128,6 +128,76 @@ release commit collapses this section into `## [X.Y.Z] - <date>`.
   via a relationship. No new dependency, the JSON is emitted directly.
   Closes the SPDX format deferred from v1.5.0's build-time SBOM work.
 
+- **TKN-016: remote resolver / bundle taskRef or pipelineRef not pinned
+  (HIGH).** Tekton's Resolution framework fetches the *body* of a Task or
+  Pipeline at run time from a remote source. TKN-001 pins the container
+  image a step runs, but a mutable resolver ref lets whoever controls the
+  upstream swap the executed task body itself. TKN-016 flags a `git`
+  resolver whose `revision` is not a full commit SHA, a `bundles` resolver
+  (or the legacy `taskRef.bundle`) image without an `@sha256:` digest, and
+  a `hub` resolver pinned to `latest` (or no version), across Pipeline
+  `spec.tasks` / `spec.finally`, `PipelineRun.spec.pipelineRef`, and
+  `TaskRun.spec.taskRef`. The `cluster` resolver is not flagged (it
+  references an already-admitted in-cluster object). Mapped across all
+  standards mirroring TKN-001's pinning controls. tekton 16 -> 17.
+
+- **HTML report: step-level pipeline graph for Buildkite (DAG v2).**
+  Extends the step-level DAG to Buildkite pipeline files
+  (`.buildkite/pipeline.yml`). Each command step is a node; `depends_on`
+  (by step `key`) becomes a `needs` edge, and `wait` / `block` / `input`
+  barriers become `stage` edges from every step in the previous wait-group
+  (so the parallel siblings between two barriers carry no false ordering
+  between themselves). `group:` steps flatten their children into the
+  current wait-group, and `trigger:` steps are skipped. A new
+  `checks/buildkite/_graph.py` builder with no contract change, so every
+  other reporter and provider is unchanged.
+- **HTML report: step-level pipeline graph for Azure DevOps (DAG v2).**
+  Extends the step-level DAG to Azure Pipelines (`azure-pipelines.yml`)
+  across all three shapes (flat `steps:`, flat `jobs:`, and
+  `stages:` → `jobs:` → `steps:`). Jobs are nodes with their steps nested
+  (deployment-strategy phases flattened); job `dependsOn` (resolved within
+  its stage) becomes a `needs` edge, and stages sequence via `stage`
+  edges, an explicit stage `dependsOn` when present, otherwise the
+  immediately preceding stage, into each stage's entry jobs (`dependsOn:
+  []` opts out). A new `checks/azure/_graph.py` builder with no contract
+  change.
+- **HTML report: step-level pipeline graph for Bitbucket Pipelines (DAG
+  v2).** Extends the step-level DAG to `bitbucket-pipelines.yml`. Bitbucket
+  ordering is positional (no `depends_on`): sequential steps chain via
+  `stage` edges, a `parallel` block runs its steps concurrently (no edge
+  between siblings, but the next step waits for all of them), and a
+  `stage`'s steps run in sequence. Every pipeline definition in the file
+  (`default` plus the `branches` / `pull-requests` / `custom` / `tags`
+  maps) renders as an independent chain in one graph, so a line-less
+  finding badges a single file root instead of double-counting onto each
+  definition. A new `checks/bitbucket/_graph.py` builder with no contract
+  change.
+- **HTML report: step-level pipeline graph for Jenkins (DAG v2).** Extends
+  the step-level DAG to Jenkinsfiles. Jenkins is Groovy, not YAML, so the
+  builder recovers each `stage('Name') { ... }` block's range from the
+  same depth-aware brace walk the provider already uses, then graphs the
+  top-level stages (a stage not contained in another stage's body) chained
+  sequentially with `stage` edges. Nested stages (the branches of a
+  `parallel { }` block, declarative sub-stages) fold into their enclosing
+  top-level stage rather than inventing edges the flat stage list can't
+  justify. A new `checks/jenkins/_graph.py` builder with no contract
+  change. This completes the DAG-v2 rollout for every YAML/Groovy
+  pipeline provider.
+- **HTML report: step-level pipeline graph for Tekton (DAG v2).** Renders
+  one graph per `Pipeline` document (tasks as nodes, `runAfter` plus
+  implicit `$(tasks.X.results.Y)` data dependencies as `needs` edges) and
+  one per `Task` / `ClusterTask` (steps chained sequentially), bounding
+  each graph's root to its document's line range like the Drone builder.
+  A new `checks/tekton/_graph.py` builder with no contract change.
+- **HTML report: step-level pipeline graph for Argo Workflows (DAG v2).**
+  Renders one graph per template-bearing document (`Workflow` /
+  `WorkflowTemplate` / `ClusterWorkflowTemplate` / `CronWorkflow`) whose
+  nodes are the `spec.templates`; a `dag` template's `tasks[].template` and
+  a `steps` template's `steps[][].template` invocations become `needs`
+  edges (caller to callee), with multi-doc roots bounded like the Drone
+  builder. A new `checks/argo/_graph.py` builder with no contract change.
+  **This completes the DAG-v2 rollout for every pipeline provider.**
+
 ### Changed
 
 - **`--output json` now lists failing findings only by default.** The JSON
@@ -255,78 +325,6 @@ release commit collapses this section into `## [X.Y.Z] - <date>`.
   gated, because they carry real technical meanings in the codebase
   (code robustness; "leverage" as the security noun); CHANGELOG / ROADMAP
   are exempt as historical records.
-
-### Added
-
-- **TKN-016: remote resolver / bundle taskRef or pipelineRef not pinned
-  (HIGH).** Tekton's Resolution framework fetches the *body* of a Task or
-  Pipeline at run time from a remote source. TKN-001 pins the container
-  image a step runs, but a mutable resolver ref lets whoever controls the
-  upstream swap the executed task body itself. TKN-016 flags a `git`
-  resolver whose `revision` is not a full commit SHA, a `bundles` resolver
-  (or the legacy `taskRef.bundle`) image without an `@sha256:` digest, and
-  a `hub` resolver pinned to `latest` (or no version), across Pipeline
-  `spec.tasks` / `spec.finally`, `PipelineRun.spec.pipelineRef`, and
-  `TaskRun.spec.taskRef`. The `cluster` resolver is not flagged (it
-  references an already-admitted in-cluster object). Mapped across all
-  standards mirroring TKN-001's pinning controls. tekton 16 -> 17.
-
-- **HTML report: step-level pipeline graph for Buildkite (DAG v2).**
-  Extends the step-level DAG to Buildkite pipeline files
-  (`.buildkite/pipeline.yml`). Each command step is a node; `depends_on`
-  (by step `key`) becomes a `needs` edge, and `wait` / `block` / `input`
-  barriers become `stage` edges from every step in the previous wait-group
-  (so the parallel siblings between two barriers carry no false ordering
-  between themselves). `group:` steps flatten their children into the
-  current wait-group, and `trigger:` steps are skipped. A new
-  `checks/buildkite/_graph.py` builder with no contract change, so every
-  other reporter and provider is unchanged.
-- **HTML report: step-level pipeline graph for Azure DevOps (DAG v2).**
-  Extends the step-level DAG to Azure Pipelines (`azure-pipelines.yml`)
-  across all three shapes (flat `steps:`, flat `jobs:`, and
-  `stages:` → `jobs:` → `steps:`). Jobs are nodes with their steps nested
-  (deployment-strategy phases flattened); job `dependsOn` (resolved within
-  its stage) becomes a `needs` edge, and stages sequence via `stage`
-  edges, an explicit stage `dependsOn` when present, otherwise the
-  immediately preceding stage, into each stage's entry jobs (`dependsOn:
-  []` opts out). A new `checks/azure/_graph.py` builder with no contract
-  change.
-- **HTML report: step-level pipeline graph for Bitbucket Pipelines (DAG
-  v2).** Extends the step-level DAG to `bitbucket-pipelines.yml`. Bitbucket
-  ordering is positional (no `depends_on`): sequential steps chain via
-  `stage` edges, a `parallel` block runs its steps concurrently (no edge
-  between siblings, but the next step waits for all of them), and a
-  `stage`'s steps run in sequence. Every pipeline definition in the file
-  (`default` plus the `branches` / `pull-requests` / `custom` / `tags`
-  maps) renders as an independent chain in one graph, so a line-less
-  finding badges a single file root instead of double-counting onto each
-  definition. A new `checks/bitbucket/_graph.py` builder with no contract
-  change.
-- **HTML report: step-level pipeline graph for Jenkins (DAG v2).** Extends
-  the step-level DAG to Jenkinsfiles. Jenkins is Groovy, not YAML, so the
-  builder recovers each `stage('Name') { ... }` block's range from the
-  same depth-aware brace walk the provider already uses, then graphs the
-  top-level stages (a stage not contained in another stage's body) chained
-  sequentially with `stage` edges. Nested stages (the branches of a
-  `parallel { }` block, declarative sub-stages) fold into their enclosing
-  top-level stage rather than inventing edges the flat stage list can't
-  justify. A new `checks/jenkins/_graph.py` builder with no contract
-  change. This completes the DAG-v2 rollout for every YAML/Groovy
-  pipeline provider.
-- **HTML report: step-level pipeline graph for Tekton (DAG v2).** Renders
-  one graph per `Pipeline` document (tasks as nodes, `runAfter` plus
-  implicit `$(tasks.X.results.Y)` data dependencies as `needs` edges) and
-  one per `Task` / `ClusterTask` (steps chained sequentially), bounding
-  each graph's root to its document's line range like the Drone builder.
-  A new `checks/tekton/_graph.py` builder with no contract change.
-- **HTML report: step-level pipeline graph for Argo Workflows (DAG v2).**
-  Renders one graph per template-bearing document (`Workflow` /
-  `WorkflowTemplate` / `ClusterWorkflowTemplate` / `CronWorkflow`) whose
-  nodes are the `spec.templates`; a `dag` template's `tasks[].template` and
-  a `steps` template's `steps[][].template` invocations become `needs`
-  edges (caller to callee), with multi-doc roots bounded like the Drone
-  builder. A new `checks/argo/_graph.py` builder with no contract change.
-  **This completes the DAG-v2 rollout for every pipeline provider.**
 
 ### Fixed
 
