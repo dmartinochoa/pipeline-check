@@ -109,6 +109,7 @@ STANDARD = Standard(
         "GHA-003":  ["ESF-D-INJECTION"],
         "GHA-119":  ["ESF-D-INJECTION"],# untrusted context into an agentic AI CLI
         "GHA-120":  ["ESF-D-INJECTION"],# trust_remote_code model load = code exec
+        "GHA-121":  ["ESF-S-PIN-DEPS", "ESF-S-VERIFY-DEPS"],# unpinned model registry ref
         "GHA-117":  ["ESF-D-INJECTION"],# IaC apply on untrusted PR trigger
         "GHA-118":  ["ESF-D-INJECTION"],# untrusted content into $GITHUB_ENV / $GITHUB_PATH
         "GHA-004":  ["ESF-C-LEAST-PRIV"],
