@@ -944,6 +944,38 @@ authoring-time gaps that don't survive into the manifest.
   blob.
 """,
     ),
+    "runs": (
+        "GitHub Actions run forensics",
+        "pipeline_check.core.checks.runs.rules",
+        _REPO_ROOT / "docs" / "providers" / "runs.md",
+        """\
+# GitHub Actions run forensics
+
+Where the `github` provider reasons about what a workflow *could* do,
+the `runs` provider audits what *actually executed*. It pulls recent
+Actions runs via the REST API
+(`GET /repos/{owner}/{repo}/actions/runs`) and flags runs that fired on
+a privileged trigger (`pull_request_target` / `workflow_run`) and, in
+particular, any whose head came from a fork: untrusted code that ran
+with the base repository's secrets and a write-scoped `GITHUB_TOKEN`.
+That is the live shape of the tj-actions/changed-files (CVE-2025-30066)
+and GhostAction incidents, which were visible in run history before
+anyone read the workflow file.
+
+Findings carry the run's URL, actor, and trigger so an operator can
+open the run directly. A missing token, a 404, or a network error
+degrades to a warning (every rule then sees an empty run list and
+passes) rather than crashing the scan.
+
+## Producer workflow
+
+```bash
+# Token comes from --gh-token or $GITHUB_TOKEN (needs ``actions:read``).
+pipeline_check --pipeline runs --scm-repo owner/name \\
+               --gh-token "$GITHUB_TOKEN"
+```
+""",
+    ),
     "scm": (
         "SCM posture (GitHub)",
         "pipeline_check.core.checks.scm.rules",

@@ -68,6 +68,7 @@ _PROVIDER_PACKAGES: tuple[tuple[str, str, str], ...] = (
     ("helm",       "pipeline_check.core.checks.helm.rules",       "Helm"),
     ("oci",        "pipeline_check.core.checks.oci.rules",        "OCI manifest"),
     ("scm",        "pipeline_check.core.checks.scm.rules",        "SCM"),
+    ("runs",       "pipeline_check.core.checks.runs.rules",       "Actions run history"),
     ("devenv",     "pipeline_check.core.checks.devenv.rules",     "Developer environment"),
     # cloudformation, terraform, npm, pypi each ship a rule-based
     # ``rules/`` package now. Listing them BEFORE aws preserves the
@@ -103,7 +104,7 @@ _PROVIDER_PACKAGES: tuple[tuple[str, str, str], ...] = (
 _ANCHORED_PROVIDERS: frozenset[str] = frozenset({
     "github", "gitlab", "bitbucket", "azure", "jenkins", "circleci",
     "cloudbuild", "buildkite", "drone", "tekton", "argo", "dockerfile",
-    "kubernetes", "scm", "oci", "maven", "nuget",
+    "kubernetes", "scm", "runs", "oci", "maven", "nuget",
     "aws", "cloudformation", "terraform", "npm", "pypi", "helm", "argocd",
 })
 

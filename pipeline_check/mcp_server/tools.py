@@ -106,6 +106,7 @@ _PROVIDER_PATH_KW: dict[str, str | None] = {
     "azure_cloud":    None,
     "gcp":            None,
     "scm":            None,
+    "runs":           None,
 }
 
 PROVIDERS: tuple[str, ...] = tuple(sorted(_PROVIDER_PATH_KW))
@@ -168,6 +169,32 @@ def _provider_kwarg(
                     )
                 out["scm_fixture_dir"] = str(resolved_fx)
             return out
+        if provider == "runs":
+            # ``runs`` is path-less and GitHub-only: it audits a repo's
+            # recent Actions runs over the REST API. It reuses ``scm_repo``
+            # (owner/name) but takes no ``scm_platform``. A fixture dir is
+            # honored the same way as ``scm`` for offline replay.
+            if not scm_repo or "/" not in scm_repo:
+                raise ValueError(
+                    "provider 'runs' requires scm_repo in 'owner/name' form."
+                )
+            runs_out: dict[str, Any] = {"scm_repo": scm_repo}
+            if scm_fixture_dir:
+                resolved_fx = Path(scm_fixture_dir).expanduser().resolve()
+                roots = _allowed_scan_roots()
+                if not any(_is_within(resolved_fx, root) for root in roots):
+                    raise ValueError(
+                        f"scm_fixture_dir {resolved_fx} is outside the MCP "
+                        f"server's allowed scan roots ("
+                        + ", ".join(str(r) for r in roots)
+                        + f"). Set {_SCAN_ROOTS_ENV} to widen."
+                    )
+                if not resolved_fx.exists():
+                    raise ValueError(
+                        f"scm_fixture_dir does not exist: {resolved_fx}"
+                    )
+                runs_out["scm_fixture_dir"] = str(resolved_fx)
+            return runs_out
         # AWS: no path, but accept ``path`` silently when supplied
         # so an agent guessing the call shape doesn't trip over it.
         return {}
@@ -763,14 +790,14 @@ def scan_pr_diff(
 
     Notes for callers:
 
-    * Live providers (``aws``, ``scm``) don't have a meaningful BASE
-      side and are rejected up front, the CLI rejects the same
+    * Live providers (``aws``, ``scm``, ``runs``) don't have a meaningful
+      BASE side and are rejected up front, the CLI rejects the same
       combination.
     * ``fail-on`` semantics aren't applied here; the agent can read
       ``summary.introduced_by_severity`` and decide itself whether
       to block the PR.
     """
-    if provider in ("aws", "scm"):
+    if provider in ("aws", "scm", "runs"):
         raise ValueError(
             f"provider {provider!r} has no local BASE ref to diff against; "
             f"scan_pr_diff is only meaningful for file-based providers."
@@ -1165,7 +1192,8 @@ TOOL_SPECS: list[dict[str, Any]] = [
             "BASE is scanned in a throwaway ``git worktree`` "
             "subprocess. Returns structured introduced / resolved / "
             "preserved lists plus the rendered Markdown PR comment. "
-            "Not supported for the ``aws`` or ``scm`` live providers."
+            "Not supported for the ``aws``, ``scm``, or ``runs`` live "
+            "providers."
         ),
         "input_schema": {
             "type": "object",
@@ -1174,7 +1202,7 @@ TOOL_SPECS: list[dict[str, Any]] = [
                     "type": "string",
                     "enum": [
                         p for p in _PROVIDER_ENUM
-                        if p not in ("aws", "scm")
+                        if p not in ("aws", "scm", "runs")
                     ],
                 },
                 "base_ref": {

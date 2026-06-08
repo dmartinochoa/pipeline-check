@@ -149,6 +149,8 @@ STANDARD = Standard(
         "GHA-001":  ["PW.4.1", "PW.4.4"],              # action not pinned to SHA
         "GHA-110": ["PW.4.4"],  # CI env disables Go module verification
         "GHA-002":  ["PO.5.1", "PW.9.1"],              # pull_request_target with PR head
+        "RUN-001":  ["PO.5.1", "PW.9.1"],              # forensics: fork PR ran on a privileged trigger
+        "RUN-002":  ["PO.5.1", "PW.9.1"],              # forensics: privileged trigger fired
         "GHA-003":  ["PW.6.1", "PW.9.1"],              # script injection
         "GHA-117":  ["PW.6.1", "PW.9.1"],              # IaC apply on untrusted PR trigger
         "GHA-118":  ["PW.6.1", "PW.9.1"],              # untrusted content into $GITHUB_ENV / $GITHUB_PATH
