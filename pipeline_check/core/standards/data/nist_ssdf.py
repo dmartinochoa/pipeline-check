@@ -459,6 +459,7 @@ STANDARD = Standard(
         "DR-014":   ["PW.4.4"],                        # pipe-to-shell
         "DR-015":   ["PW.4.4"],                        # clone recursive
         "DR-016":   ["PW.4.4", "PW.6.1"],              # image field interpolation
+        "DR-017":   ["PW.6.1", "PW.9.1"],              # dangerous shell idiom
         # ── Tekton ──────────────────────────────────────────────
         "TKN-001":  ["PW.4.1", "PW.4.4"],              # step image not digest-pinned
         "TKN-016": ["PW.4.1", "PW.4.4"],  # remote resolver / bundle task body not pinned

@@ -794,6 +794,7 @@ STANDARD = Standard(
         "DR-014":   ["CICD-SEC-3", "CICD-SEC-5"],   # pipe-to-shell
         "DR-015":   ["CICD-SEC-3", "CICD-SEC-5"],   # clone recursive
         "DR-016":   ["CICD-SEC-3", "CICD-SEC-5"],   # image field interpolation
+        "DR-017":   ["CICD-SEC-4"],                 # dangerous shell idiom
         # OCI image manifests
         "OCI-001":  ["CICD-SEC-3", "CICD-SEC-10"],  # missing provenance annotations
         "OCI-002":  ["CICD-SEC-3", "CICD-SEC-9", "CICD-SEC-10"],  # missing build attestation

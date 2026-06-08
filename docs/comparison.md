@@ -37,7 +37,7 @@ missing major surfaces or requires extra config. No = not in scope.
 | Bitbucket Pipelines | Yes (34) | No | No | No | No | No |
 | Google Cloud Build | Yes (26) | No | Partial | No | No | No |
 | Buildkite | Yes (17) | No | No | No | No | No |
-| Drone CI | Yes (16) | No | No | No | No | No |
+| Drone CI | Yes (17) | No | No | No | No | No |
 | Tekton | Yes (17) | No | Partial | No | No | No |
 | Argo Workflows | Yes (18) | No | Partial | No | No | No |
 | Argo CD | Yes (19) | No | No | No | No | No |

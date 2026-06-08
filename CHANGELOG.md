@@ -12,6 +12,13 @@ release commit collapses this section into `## [X.Y.Z] - <date>`.
 
 ### Added
 
+- **DR-017: dangerous shell idiom in a Drone step command (HIGH).** Flags
+  `eval "$VAR"` / `sh -c "$VAR"` / backtick exec in a step's `commands:`,
+  completing the dangerous-shell-idiom family across every CI provider
+  (GHA-028 / GL-026 / BB-026 / ADO-027 / CC-027 / BK-016). Reuses the shared
+  `shell_eval` primitive and scans each `commands:` entry on container-flavored
+  pipelines; the `eval "$(ssh-agent -s)"` literal-bootstrap form stays out of
+  scope. drone 16 -> 17.
 - **BK-016: dangerous shell idiom in a Buildkite step command (HIGH).** Flags
   `eval "$VAR"` / `sh -c "$VAR"` / backtick exec in a step `command:`, the
   Buildkite analog of GHA-028 / GL-026 / BB-026 / ADO-027 / CC-027 (the one

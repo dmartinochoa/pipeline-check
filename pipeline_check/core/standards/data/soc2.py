@@ -570,6 +570,7 @@ STANDARD = Standard(
         "DR-014":   ["CC8.1"],              # pipe-to-shell
         "DR-015":   ["CC8.1"],              # clone recursive
         "DR-016":   ["CC8.1"],              # image field interpolation
+        "DR-017":   ["CC6.8"],              # dangerous shell idiom
         # ── Tekton (K8s-native pipeline kinds) ────────────────────
         "TKN-001":  ["CC8.1"],              # step image not digest-pinned
         "TKN-016": ["CC8.1"],  # remote resolver / bundle task body not pinned

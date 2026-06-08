@@ -430,6 +430,7 @@ STANDARD = Standard(
         "DR-014":   ["SI-7", "CM-7"],                    # pipe-to-shell
         "DR-015":   ["SI-7", "CM-7"],                    # clone recursive
         "DR-016":   ["CM-7", "SI-7"],                    # image field interpolation
+        "DR-017":   ["CM-6", "SA-11"],                   # dangerous shell idiom
         # Cloud Build
         "GCB-001":  ["SR-3", "SR-11", "SI-2", "RA-5"],   # step image not digest-pinned
         "GCB-002":  ["AC-3", "AC-6"],                    # default service account

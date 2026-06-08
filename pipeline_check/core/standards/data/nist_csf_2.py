@@ -598,6 +598,7 @@ STANDARD = Standard(
         "DR-014":  ["GV.SC-05"],                # pipe-to-shell
         "DR-015":  ["GV.SC-05"],                # clone recursive
         "DR-016":  ["GV.SC-07"],                # image field interpolation
+        "DR-017":  ["PR.PS-05"],                # dangerous shell idiom
         # ── Tekton (K8s-native pipeline kinds) ────────────────────
         "TKN-001": ["GV.SC-05", "PR.PS-02"],    # step image not digest-pinned
         "TKN-016": ["GV.SC-05", "PR.PS-02"],  # remote resolver / bundle task body not pinned

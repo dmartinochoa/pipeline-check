@@ -580,6 +580,7 @@ STANDARD = Standard(
         "DR-014":   ["6.3.1"],                           # pipe-to-shell
         "DR-015":   ["6.3.1"],                           # clone recursive
         "DR-016":   ["6.5.1"],                           # image field interpolation
+        "DR-017":   ["6.5.1"],                           # dangerous shell idiom
         # ── Buildkite extras ─────────────────────────────────────
         "BK-014":   ["6.3.3", "6.5.1"],                  # unpinned package install
         "BK-015":   ["6.5.1"],                           # agents map untrusted interpolation

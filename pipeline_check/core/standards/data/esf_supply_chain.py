@@ -654,6 +654,7 @@ STANDARD = Standard(
         "DR-014":   ["ESF-S-VERIFY-DEPS"],          # pipe-to-shell
         "DR-015":   ["ESF-S-VERIFY-DEPS"],          # clone recursive
         "DR-016":   ["ESF-D-INJECTION", "ESF-S-PIN-DEPS"],   # image field interpolation
+        "DR-017":   ["ESF-D-INJECTION"],            # dangerous shell idiom
         # ── NPM / PyPI / Maven dep supply-chain ──────────────────
         # Per-package pinning / integrity / non-registry source →
         # ESF-S-PIN-DEPS (+ ESF-S-VERIFY-DEPS). Compromised pkgs add
