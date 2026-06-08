@@ -741,7 +741,7 @@ def _parse_versions_catalog(text: str) -> VersionCatalog:
     out: VersionCatalog = {}
     try:
         raw = tomllib.loads(text)
-    except tomllib.TOMLDecodeError:
+    except (tomllib.TOMLDecodeError, RecursionError, MemoryError):
         return out
     if not isinstance(raw, dict):
         return out

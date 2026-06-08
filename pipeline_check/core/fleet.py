@@ -234,7 +234,7 @@ def load_repo_list(yaml_path: Path | str) -> list[RepoCoordinate]:
         raise ValueError(f"--repos {path}: could not read file: {exc}") from exc
     try:
         raw = yaml.safe_load(text)
-    except yaml.YAMLError as exc:
+    except (yaml.YAMLError, RecursionError, MemoryError) as exc:
         raise ValueError(
             f"--repos {path}: YAML parse error: {exc}"
         ) from exc

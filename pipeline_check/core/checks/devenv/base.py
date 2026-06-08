@@ -226,7 +226,7 @@ class DevEnvContext:
                 continue
             try:
                 data = loads_jsonc(raw)
-            except (json.JSONDecodeError, ValueError):
+            except (json.JSONDecodeError, ValueError, RecursionError, MemoryError):
                 warnings.append(f"could not parse {p} as JSON(C); skipped")
                 skipped += 1
                 continue

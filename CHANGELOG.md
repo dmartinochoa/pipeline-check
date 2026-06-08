@@ -337,6 +337,24 @@ release commit collapses this section into `## [X.Y.Z] - <date>`.
 
 ### Fixed
 
+- **Loader hardening sweep: pathological scanned inputs degrade across
+  every format, not just YAML.** Extending the deeply-nested-YAML fix to
+  the whole loader surface, an audit found the same `RecursionError` /
+  `MemoryError` gap (the builtin slips past a parser's
+  `except json.JSONDecodeError` / `except tomllib.TOMLDecodeError` /
+  `except yaml.YAMLError`) in ~21 context-build loaders that run before
+  the per-check guard, so a malformed or pathologically deep repo file
+  could abort the whole scan with a raw traceback. Hardened the JSON
+  loaders (CloudFormation templates, Terraform plans, OCI manifests +
+  attestations, npm `package.json` / lockfiles, Composer, devenv JSONC,
+  the SARIF `--ingest` parser, FP-annotation and baseline readers), the
+  TOML loaders (Cargo, the Gradle version catalog, config files), and the
+  GitLab `include:` resolvers, plus the Terraform plan reader (which had
+  no error handling at all). A new `tests/test_loader_robustness.py`
+  fuzz + differential harness drives every loader with a deterministic
+  battery (deep nesting, alias bombs, non-UTF-8 bytes, truncation, wrong
+  top-level type, empty) and asserts the scan degrades rather than
+  crashes, so a future loader can't reintroduce the gap.
 - **A deeply-nested YAML file no longer crashes the scan.** PyYAML's
   parser is recursive, so a pathologically deep document (>= ~327 levels
   of nesting) raised a `RecursionError` straight out of the loader during

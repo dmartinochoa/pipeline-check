@@ -298,7 +298,7 @@ def _load_ignore_flat(p: Path) -> list[IgnoreRule]:
 def _load_ignore_yaml(p: Path) -> list[IgnoreRule]:
     try:
         doc = yaml.load(p.read_text(encoding="utf-8"), Loader=_DupKeyIgnoreLoader)
-    except yaml.YAMLError as exc:
+    except (yaml.YAMLError, RecursionError, MemoryError) as exc:
         # Surface the parse error, a typo here silently removes every
         # suppression and the user has no way to tell without diffing
         # findings against a prior run.
@@ -367,7 +367,7 @@ def load_baseline(path: str | Path) -> set[tuple[str, str]]:
         return set()
     try:
         doc = json.loads(p.read_text(encoding="utf-8"))
-    except (OSError, UnicodeDecodeError, json.JSONDecodeError):
+    except (OSError, UnicodeDecodeError, json.JSONDecodeError, RecursionError, MemoryError):
         # A non-UTF-8 baseline raises ``UnicodeDecodeError`` (a
         # ``ValueError``, not an ``OSError``); without it this loader
         # crashes CI despite the docstring's "empty set rather than
@@ -390,7 +390,7 @@ def load_baseline_from_git(ref: str, path: str, cwd: str | Path = ".") -> set[tu
         return set()
     try:
         doc = json.loads(content)
-    except json.JSONDecodeError:
+    except (json.JSONDecodeError, RecursionError, MemoryError):
         return set()
     return _baseline_from_doc(doc)
 

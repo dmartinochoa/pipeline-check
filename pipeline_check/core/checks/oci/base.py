@@ -241,7 +241,7 @@ class OCIContext:
                 continue
             try:
                 doc = json.loads(text)
-            except json.JSONDecodeError as exc:
+            except (json.JSONDecodeError, RecursionError, MemoryError) as exc:
                 warnings.append(
                     f"{f}: JSON parse error: {str(exc).split(chr(10), 1)[0]}"
                 )
@@ -421,7 +421,7 @@ def _resolve_attestations(
             attest_doc = json.loads(
                 attest_manifest_blob.read_text(encoding="utf-8")
             )
-        except (OSError, UnicodeDecodeError, json.JSONDecodeError) as exc:
+        except (OSError, UnicodeDecodeError, json.JSONDecodeError, RecursionError, MemoryError) as exc:
             warnings.append(
                 f"attestation manifest {entry.digest} parse error: {exc}"
             )
@@ -447,7 +447,7 @@ def _resolve_attestations(
                 payload_doc = json.loads(
                     blob_path.read_text(encoding="utf-8")
                 )
-            except (OSError, UnicodeDecodeError, json.JSONDecodeError) as exc:
+            except (OSError, UnicodeDecodeError, json.JSONDecodeError, RecursionError, MemoryError) as exc:
                 warnings.append(
                     f"in-toto blob {layer_digest} parse error: {exc}"
                 )
