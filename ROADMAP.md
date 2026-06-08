@@ -704,6 +704,127 @@ is summarized in the ``### Fixed`` block in ``CHANGELOG.md``.
 Larger items not yet scoped to a specific release. Landing order
 is open.
 
+### Strategic improvement investigation (2026-06-08)
+
+A multi-angle investigation (feature / competitive gaps, architecture,
+robustness, UX) of where the project goes next, run after a live
+dynamic-analysis pass. The static-breadth + attack-chain-correlation
+moat is mature, and net-new static rules are now diminishing returns
+(the candidates below this section are FP-prone / niche, deliberately
+deferred). The next frontier is three-fold: close the static -> runtime
+gap, own the AI-pipeline surface, and convert the breadth into a
+product. Grouped by horizon; effort (S/M/L) and impact noted.
+
+**Quick wins (S, ship first):**
+
+- **Confidence-tier the hygiene-rule family (S, high).** On cicd-goat,
+  ~84% of firings are non-canonical "missing-control" noise (GHA-015
+  no-timeout, GHA-037 persist-credentials) because `Finding.confidence`
+  defaults to HIGH and only ~4 of ~1005 rules override it. Give the
+  hygiene / best-practice family a lower default confidence so
+  `--min-confidence MEDIUM` yields a high-signal view. Signal-to-noise
+  is the top reason scanners get ignored; cheapest precision win
+  available. (Also tracked under "Hygiene-rule confidence tiering".)
+- **RecursionError on deeply-nested YAML (S, med).** A YAML file with
+  >= 327 levels of nesting crashes the scan with an unhandled
+  `RecursionError` (PyYAML's recursive parser, during `Scanner.__init__`)
+  across every YAML-based provider; the loaders catch `yaml.YAMLError`
+  but not the builtin. A malicious PR can weaponize it. Catch
+  `RecursionError` / `MemoryError` at the YAML-load boundary and degrade
+  the file to `parsed_ok=False`, mirroring the malformed-input hardening
+  already shipped (the crashing-rule / non-UTF-8 batch). (JSON-based and
+  Dockerfile providers are immune.)
+- **Autofix hint for unsafe-only findings (S, low).** The terminal
+  footer suggests `pipeline_check --fix --apply` even when the only
+  available fixer is `unsafe` (bare `--fix` runs safe-only, so it
+  modifies nothing). Suggest `--fix unsafe --apply` when the finding's
+  only fixer is unsafe.
+- **Grade-vs-gate clarity (S, low).** A scan can print "Grade A" while
+  the gate fails (grade is overall posture %, the gate is the blocking
+  policy on CRITICAL). Add a one-line clarifier when the two disagree.
+
+**Sharpen the existing edge (M-L):**
+
+- **Runtime / run-log forensics (`--audit-runs`) (L, very high).** Pull
+  recent Actions / GitLab pipeline run logs + metadata via API and check
+  what actually executed, not just what the config could: workflows that
+  ran on `pull_request_target`, jobs that minted OIDC tokens,
+  secret-shaped strings echoed in logs, runtime-resolved third-party
+  actions. The 2025 tj-actions/changed-files (CVE-2025-30066) and
+  GhostAction incidents were visible in run history first. Every
+  competitor (and the tool today) is purely static; this is the biggest
+  true capability gap and the most defensible differentiation. Builds on
+  the SCM REST fetchers + `_primitives/log_leak.py`.
+- **Live org-wide SCM governance (`--scm-org ORG`) (M, high).** The
+  55-rule SCM pack runs one repo at a time today; fleet clones configs.
+  Enumerate every repo + org-level settings (org-secret scoping, Actions
+  allow-lists, org-wide branch-protection defaults, member 2FA / SSO) in
+  one pass. The Legitify / Allstar buyer; rule pack and fetchers exist,
+  needs org enumeration + ~10 org-level rules.
+- **Provenance verification as a gate (`verify-artifact <ref>`) (M, high).**
+  The tool detects missing signing (GHA-100) and reads attestation
+  content, but never verifies a real artifact. Run the slsa-verifier /
+  cosign flow against an OCI ref or release and report pass/fail. Closes
+  "you should sign" -> "this artifact is verifiably built by who it
+  claims". Reuses the `opa`/`helm` shell-out pattern.
+- **Robustness / quality hardening sweep (M, med-high).** Audit every
+  loader for the exception-class gap the RecursionError exposed
+  (`RecursionError` / `MemoryError` / encoding cases slipping past
+  `except yaml.YAMLError` / `except OSError`). Add a fuzz harness
+  (Hypothesis) and differential testing (the same logical pipeline in
+  different syntaxes must yield the same findings) as standing quality
+  gates beyond the goat bench.
+- **Reduce new-rule wiring friction (M, med).** A new rule touches ~16
+  files. Derive the standards-mapping and doc-count surfaces from a
+  single source rather than hand-maintaining across `owasp_cicd_top_10`
+  / `esf_supply_chain` / `nist_ssdf` / `nist_800_53` / `nist_csf_2` /
+  `soc2` / `pci_dss_v4` + the per-provider counts + docs. Continue the
+  `cli.py` decomposition (~5,400 lines).
+
+**New frontier / big bets (M-L):**
+
+- **AI / LLM-pipeline risk pack (M, very high, timing).** Extend the
+  agentic-CLI rules the tool pioneered (GHA-058/103/104/106/111): MCP
+  server configs invoked in pipelines, prompt-injection sinks where
+  untrusted PR content reaches an LLM tool call, models pulled from
+  unpinned HuggingFace refs (`trust_remote_code`, pickle weights),
+  AI-codegen committing without review, `.cursor` / `.claude` / copilot
+  agent configs with exec permissions, unscoped LLM API keys in CI. A
+  natural model-registry provider extends the package-registry packs.
+  Fastest-growing, least-covered surface; clean category-leadership play.
+- **Hosted control plane + GitHub App (#171 is the wedge) (L, very
+  high, business).** The `history` dashboard already renders posture
+  trends from JSON snapshots; it needs a backend. Continuous org-wide
+  scanning, trend storage, policy distribution, fleet drift alerts. The
+  CLI is the wedge; the SaaS is the commercialization path (the policy
+  mgmt / dashboards / ticketing OSS competitors lack). #171 as scoped
+  (PR-comment App) is a good S/M first step.
+- **CI -> cloud effective-permission blast-radius (L, high).** The tool
+  scans live AWS / Azure / GCP and CI OIDC trust, and AC-016 links them
+  structurally. Go further: resolve the federated CI roles' effective
+  permissions (IAM simulator) and report "a fork PR on repo X can assume
+  role Y that can delete prod". Turns a misconfig list into an
+  executive-legible risk story no CI scanner tells.
+- **Shareable policy packs (`--policy-pack URL`) (M, med-high).** Ship
+  curated packs ("PCI-baseline", "SLSA-L3-gate", "fintech-strict") plus
+  a community registry. Turns the 18-framework compliance mapping into
+  distributable, sticky gates. Builds on `--policy` profiles + the Rego
+  / YAML loaders.
+- **New providers (M each, med).** A HuggingFace / model-registry
+  provider (ties to the AI pack), the enterprise CD systems with no
+  scanner coverage (Harness / Spinnaker / Octopus), and a Backstage /
+  IDP catalog integration so findings land in the developer portal.
+
+**On the open roadmap issues:** #167 `--triage` is the right problem
+(the 84% noise) but should follow the confidence-tiering above so
+deterministic tiering handles the easy majority and the LLM handles only
+the ambiguous remainder; make the exploitability narrative the product
+(the rich `exploit_example` + taint flows + chain narratives are a far
+better LLM prompt than competitors can assemble) and allow a hosted-LLM
+endpoint, not just Ollama. #171 GitHub App is a good S/M win and the
+wedge for the hosted bet. #170 branch protection is repo housekeeping,
+not a product feature.
+
 ### Full-project review findings (2026-06-05)
 
 A multi-angle review (architecture, code quality, correctness, test
