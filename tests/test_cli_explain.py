@@ -16,11 +16,12 @@ from pipeline_check.core.explain import (
 
 
 def test_explain_rule_based_check_renders_all_sections():
-    body, code = render("GHA-024")
+    body, code = render("GHA-002")
     assert code == 0
     # Header with severity + confidence
-    assert "GHA-024" in body
-    assert "HIGH confidence" in body  # GHA-024 not in demotion list
+    assert "GHA-002" in body
+    # GHA-002 is a structural active-risk rule, not in any demotion list.
+    assert "HIGH confidence" in body
     # Standards block
     assert "owasp_cicd_top_10" in body
     # Docs note section

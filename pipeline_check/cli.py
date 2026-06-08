@@ -1892,10 +1892,13 @@ def _install_completion_callback(
     show_default=True,
     help=(
         "Minimum confidence to display and gate on. HIGH = only "
-        "findings the scanner is certain about; MEDIUM = includes "
-        "well-known heuristics; LOW (default) = includes blob-search "
-        "patterns that have FP modes. For CI gates that only block "
-        "on high-signal evidence, pass ``--min-confidence HIGH``."
+        "findings the scanner is certain about; MEDIUM = active-risk "
+        "findings plus well-known heuristics, but drops the "
+        "best-practice / missing-control hygiene family (no timeout, no "
+        "SBOM, no signing, no vuln scan); LOW (default) = everything, "
+        "including that hygiene family and the blob-search patterns that "
+        "have FP modes. For a high-signal view focused on active risk, "
+        "pass ``--min-confidence MEDIUM``."
     ),
 )
 @click.option(
