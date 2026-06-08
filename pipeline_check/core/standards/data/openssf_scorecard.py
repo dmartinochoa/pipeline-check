@@ -230,6 +230,7 @@ STANDARD = Standard(
         "GHA-003":  ["Dangerous-Workflow"],
         "GHA-119":  ["Dangerous-Workflow"],# untrusted context into an agentic AI CLI
         "GHA-120":  ["Dangerous-Workflow"],# trust_remote_code model load = code exec
+        "GHA-122":  ["Dangerous-Workflow"],# unsafe pickle deser of fetched artifact = code exec
         "GHA-117":  ["Dangerous-Workflow"],# IaC apply on untrusted PR trigger
         "GHA-118":  ["Dangerous-Workflow"],# untrusted content into $GITHUB_ENV / $GITHUB_PATH
         "GHA-009":  ["Dangerous-Workflow"],

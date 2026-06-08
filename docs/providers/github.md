@@ -72,7 +72,7 @@ Resolution rules:
 
 ## What it covers
 
-112 checks · 17 have an autofix patch (``--fix``).
+113 checks · 17 have an autofix patch (``--fix``).
 
 | Check | Title | Severity | Fix |
 |-------|-------|----------|-----|
@@ -184,6 +184,7 @@ Resolution rules:
 | [GHA-119](#gha-119) | Untrusted context reaches an agentic AI CLI (prompt injection) | <span class="pg-sev pg-sev--high">HIGH</span> |  |
 | [GHA-120](#gha-120) | ML model loaded with trust_remote_code (code execution) | <span class="pg-sev pg-sev--high">HIGH</span> |  |
 | [GHA-121](#gha-121) | AI model pulled without a pinned revision | <span class="pg-sev pg-sev--medium">MEDIUM</span> |  |
+| [GHA-122](#gha-122) | Unsafe deserialization of a fetched artifact (pickle RCE) | <span class="pg-sev pg-sev--high">HIGH</span> |  |
 | [TAINT-001](#taint-001) | Untrusted input flows across step boundaries via step outputs | <span class="pg-sev pg-sev--high">HIGH</span> |  |
 | [TAINT-002](#taint-002) | Untrusted input flows across jobs via ``jobs.<id>.outputs:`` | <span class="pg-sev pg-sev--high">HIGH</span> |  |
 | [TAINT-003](#taint-003) | Untrusted input forwarded into reusable workflow ``with:`` | <span class="pg-sev pg-sev--high">HIGH</span> |  |
@@ -3260,6 +3261,32 @@ Does NOT fire when a revision is pinned in the same step (``revision='<sha>'`` /
 **Recommended action**
 
 Pin the model to an immutable revision. Pass an exact commit ``revision=`` to ``from_pretrained`` / ``hf_hub_download`` / ``snapshot_download`` (a 40-char commit SHA, not a branch or a tag, both of which the owner can move), or ``--revision <sha>`` to ``huggingface-cli download``. A pinned revision is what makes a swapped-weights or swapped-loader-code attack show up as a diff in your repo instead of silently landing on the next build. Pair with ``trust_remote_code=False`` (GHA-120) and prefer safetensors weights over pickle.
+
+</div>
+
+</div>
+
+<div class="pg-rule pg-rule--high" markdown>
+
+## GHA-122: Unsafe deserialization of a fetched artifact (pickle RCE) { #gha-122 }
+
+<div class="pg-rule__tags">
+<span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-4</span> <span class="pg-tag pg-tag--cwe">CWE-502</span> <span class="pg-tag pg-tag--cwe">CWE-494</span> <span class="pg-tag pg-tag--cwe">CWE-829</span>
+</div>
+
+Fires per ``run:`` step in two shapes. **(A) Explicit unsafe opt-in**, always: ``weights_only=False`` on a load, or ``allow_pickle=True`` on ``numpy.load`` / ``np.load``. **(B) Fetch + unpickle**, only when both appear in the same step: a remote fetch (``curl`` / ``wget`` / ``hf_hub_download`` / ``snapshot_download`` / ``huggingface-cli download`` / ``hf download`` / ``requests.get`` / ``urlretrieve`` / ``urlopen``) alongside a pickle-backed loader (``torch.load`` / ``pickle.load`` / ``pickle.loads`` / ``joblib.load``).
+
+Does NOT fire when the step takes the safe path (``weights_only=True``, or safetensors via ``safe_open`` / ``load_file``), nor on a bare ``torch.load`` / ``pickle.load`` with no remote fetch in the same step (a load of a locally produced, trusted artifact). The fetch-and-unpickle coupling is what raises it from a hygiene nudge to a code-execution finding.
+
+**Known false-positive modes**
+
+- A step that downloads a non-pickle file for one purpose and separately unpickles a trusted local file for another would match shape B by co-location. Split the two concerns into separate steps, or suppress on the specific step with a rationale naming the artifact's verified source.
+
+<div class="pg-rule__rec" markdown>
+
+**Recommended action**
+
+Don't deserialize a downloaded artifact through pickle. Load weights with safetensors, or pass ``weights_only=True`` to ``torch.load`` (the PyTorch 2.6+ default) so only tensors, not arbitrary Python, are unpickled. Drop ``allow_pickle=True`` from ``numpy.load``. If a pickle / joblib artifact is unavoidable, pin and verify its source (a pinned model revision, a checksum, or a signature) and load it in a sandboxed job with no production secrets, not on the default runner with the workflow token in scope.
 
 </div>
 

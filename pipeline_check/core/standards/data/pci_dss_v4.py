@@ -120,6 +120,7 @@ STANDARD = Standard(
         "GHA-003":  ["6.5.1"],                           # script injection
         "GHA-119":  ["6.5.1"],                           # untrusted context into an agentic AI CLI
         "GHA-120":  ["6.5.1"],                           # trust_remote_code model load = code exec
+        "GHA-122":  ["6.5.1"],                           # unsafe pickle deser of fetched artifact = code exec
         "GHA-117":  ["6.5.1"],                           # IaC apply on untrusted PR trigger
         "GHA-118":  ["6.5.1"],                           # untrusted content into $GITHUB_ENV / $GITHUB_PATH
         "GHA-004":  ["7.2.5"],                           # unrestricted GITHUB_TOKEN
