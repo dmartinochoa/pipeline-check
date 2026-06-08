@@ -141,7 +141,7 @@ class KubernetesContext:
         ctx = cls([])
         try:
             docs = list(yaml.safe_load_all(text))
-        except yaml.YAMLError as exc:
+        except (yaml.YAMLError, RecursionError, MemoryError) as exc:
             first_line = str(exc).split("\n", 1)[0]
             ctx.warnings = [f"{path_hint}: YAML parse error: {first_line}"]
             return ctx

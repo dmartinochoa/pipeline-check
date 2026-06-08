@@ -300,6 +300,16 @@ release commit collapses this section into `## [X.Y.Z] - <date>`.
 
 ### Fixed
 
+- **A deeply-nested YAML file no longer crashes the scan.** PyYAML's
+  parser is recursive, so a pathologically deep document (>= ~327 levels
+  of nesting) raised a `RecursionError` straight out of the loader during
+  context construction, before the per-rule guard, aborting the whole
+  scan with a raw traceback. A scanned PR could weaponize this. The
+  shared YAML loaders (`load_yaml_files` plus the kubernetes,
+  cloudformation, and helm parse paths) now treat `RecursionError` /
+  `MemoryError` like a parse failure and skip the file with a warning,
+  the same degrade-don't-crash behavior the malformed-input hardening
+  established. JSON-based and Dockerfile providers were never affected.
 - **Insecure package-install detection widened (cross-provider).** The
   shared `PKG_INSECURE_RE` (the `*-018` insecure-package-source rules across
   GitHub, GitLab, Azure, Bitbucket, CircleCI, Jenkins, plus the Argo /

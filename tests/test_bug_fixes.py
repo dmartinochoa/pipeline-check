@@ -682,3 +682,38 @@ def test_bug_i_argocd_handles_spec_as_list():
         data = {"spec": [1, 2, 3]}  # spec authored as a sequence
 
     assert list(application_sources(_App())) == []  # must not raise
+
+
+# ────────────────────────────────────────────────────────────────────────
+# Bug J — a pathologically deep YAML document must not crash the scan.
+#   PyYAML's parser is recursive, so a deeply-nested file raised
+#   RecursionError straight out of the loader (during context build,
+#   before the per-rule guard) and aborted the whole scan with a raw
+#   traceback. A scanned PR can craft this. The shared loaders now treat
+#   RecursionError / MemoryError like a parse failure and skip the file.
+# ────────────────────────────────────────────────────────────────────────
+
+def test_bug_j_deeply_nested_yaml_degrades_not_crashes(tmp_path):
+    from pipeline_check.core.checks._yaml_files import load_yaml_files
+
+    deep = "a:\n" + "".join("  " * i + "k:\n" for i in range(1, 600))
+    p = tmp_path / "deep.yml"
+    p.write_text(deep, encoding="utf-8")
+    loaded, warnings, skipped = load_yaml_files([p])  # must not raise
+    assert loaded == []
+    assert skipped == 1
+    assert warnings and "too deeply nested" in warnings[0]
+
+
+def test_bug_j_deeply_nested_yaml_scan_does_not_crash(tmp_path):
+    """End-to-end: the github provider scans a deeply-nested workflow
+    without an unhandled RecursionError reaching the scanner."""
+    from pipeline_check.core.checks.github.base import GitHubContext
+    from pipeline_check.core.checks.github.workflows import WorkflowChecks
+
+    wf = tmp_path / ".github" / "workflows"
+    wf.mkdir(parents=True)
+    deep = "on: push\na:\n" + "".join("  " * i + "k:\n" for i in range(1, 600))
+    (wf / "deep.yml").write_text(deep, encoding="utf-8")
+    ctx = GitHubContext.from_path(wf)  # must not raise
+    WorkflowChecks(ctx).run()  # must not raise
