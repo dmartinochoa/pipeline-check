@@ -559,6 +559,9 @@ STANDARD = Standard(
         "BB-004":  ["PR.PS-06"],                # deploy step missing environment
         "BB-034":  ["PR.PS-06"],                # prod deploy on a PR pipeline
         "BB-033":  ["PR.PS-05"],                # IaC apply on a PR pipeline
+        "ADO-033": ["PR.PS-05"],                # IaC apply on a PR-validated pipeline
+        "BK-016":  ["PR.PS-05"],                # dangerous shell idiom
+        "JF-036":  ["PR.PS-05"],                # shell step interpolates params.*
         "BB-028":  ["PR.AA-05"],                # OIDC step w/o env gate
         "BB-029":  ["GV.SC-05"],                # step+service image not pinned
         "BB-030":  ["GV.SC-05"],                # npm install without audit signatures

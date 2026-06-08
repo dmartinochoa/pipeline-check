@@ -610,6 +610,7 @@ STANDARD = Standard(
         # ── Buildkite + Tekton + Argo extras ─────────────────────
         "BK-014":   ["ESF-S-PIN-DEPS", "ESF-S-VERIFY-DEPS"],   # unpinned package install
         "BK-015":   ["ESF-D-INJECTION"],            # agents map untrusted interpolation
+        "BK-016":   ["ESF-D-INJECTION"],            # dangerous shell idiom
         "TKN-014":  ["ESF-S-PIN-DEPS", "ESF-S-VERIFY-DEPS"],   # unpinned package install
         "TKN-015":  ["ESF-D-INJECTION"],            # workspace subPath param injection
         "ARGO-014": ["ESF-S-PIN-DEPS", "ESF-S-VERIFY-DEPS"],   # unpinned package install

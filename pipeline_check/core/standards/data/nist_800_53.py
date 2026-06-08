@@ -282,6 +282,9 @@ STANDARD = Standard(
         "BB-004":   ["SA-10", "AC-3"],
         "BB-034":   ["SA-10", "AC-3"],                   # prod deploy on a PR pipeline
         "BB-033":   ["CM-6", "SA-11", "SA-15"],          # IaC apply on a PR pipeline
+        "ADO-033":  ["CM-6", "SA-11", "SA-15"],          # IaC apply on a PR-validated pipeline
+        "BK-016":   ["CM-6", "SA-11"],                   # dangerous shell idiom
+        "JF-036":   ["CM-6", "SA-11"],                   # shell step interpolates params.*
         "BB-005":   ["CM-6"],
         "BB-006":   ["SI-7", "SR-4"],                    # unsigned artifacts
         "BB-007":   ["SR-4", "CM-8"],                    # no SBOM

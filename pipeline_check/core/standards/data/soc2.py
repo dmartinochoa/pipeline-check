@@ -483,6 +483,9 @@ STANDARD = Standard(
         "GL-040":   ["CC6.1", "CC8.1"],     # CI_JOB_TOKEN used for cross-project access
         "GL-041":   ["CC6.8"],              # IaC apply on an untrusted MR trigger
         "BB-033":   ["CC6.8"],              # IaC apply on a PR pipeline
+        "ADO-033":  ["CC6.8"],              # IaC apply on a PR-validated pipeline
+        "BK-016":   ["CC6.8"],              # dangerous shell idiom
+        "JF-036":   ["CC6.8"],              # shell step interpolates params.*
         "GL-032":   ["CC6.8"],              # tags interpolates untrusted
         "GL-033":   ["CC6.8"],              # global before_script taint
         "GL-034":   ["CC8.1"],              # npm install without audit signatures

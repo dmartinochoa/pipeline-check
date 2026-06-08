@@ -23,9 +23,11 @@ steps:
       - docker-login
     # BK-003: branch name interpolated unquoted into a shell command.
     # BK-005: docker --privileged in the integration command.
+    # BK-016: eval on a variable (dangerous shell idiom).
     command: |
       echo Building branch $BUILDKITE_BRANCH
       docker run --privileged build/integration:latest npm test
+      eval "$BUILD_CMD"
 
   - label: ":package: Install"
     # BK-004: remote install script piped into bash.

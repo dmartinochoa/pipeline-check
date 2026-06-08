@@ -12,6 +12,14 @@ release commit collapses this section into `## [X.Y.Z] - <date>`.
 
 ### Added
 
+- **BK-016: dangerous shell idiom in a Buildkite step command (HIGH).** Flags
+  `eval "$VAR"` / `sh -c "$VAR"` / backtick exec in a step `command:`, the
+  Buildkite analog of GHA-028 / GL-026 / BB-026 / ADO-027 / CC-027 (the one
+  CI provider that still lacked it). Fires on the intrinsically risky idiom
+  regardless of whether the value's source is currently trusted, because the
+  idiom hands the value full shell-grammar reach. Reuses the shared
+  `shell_eval` primitive; the `eval "$(ssh-agent -s)"` literal-bootstrap form
+  is intentionally not flagged. buildkite 16 -> 17.
 - **ADO-033: IaC apply on a PR-validated pipeline (CRITICAL).** Flags an IaC
   apply command (`terraform apply` / `cloudformation deploy` / `cdk deploy` /
   `pulumi up` / `sam deploy` / `terragrunt apply`) in a `script:` / `bash:` /

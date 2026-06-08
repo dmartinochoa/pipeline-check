@@ -708,6 +708,7 @@ STANDARD = Standard(
         "BK-013":   ["CICD-SEC-1"],   # deploy step has no branches filter
         "BK-014":   ["CICD-SEC-3"],   # unpinned package install
         "BK-015":   ["CICD-SEC-7", "CICD-SEC-1"],  # agents map interpolation
+        "BK-016":   ["CICD-SEC-4"],                # dangerous shell idiom
         # Tekton
         "TKN-001":  ["CICD-SEC-3"],   # step image not pinned to digest
         "TKN-016": ["CICD-SEC-3"],  # remote resolver / bundle task body not pinned

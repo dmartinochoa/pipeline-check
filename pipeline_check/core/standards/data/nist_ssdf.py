@@ -403,6 +403,7 @@ STANDARD = Standard(
         "BK-013":   ["PO.5.1"],                        # no branches filter
         "BK-014":   ["PW.4.1", "PW.4.4"],              # unpinned package install
         "BK-015":   ["PW.6.1", "PW.9.1"],              # agents map untrusted interpolation
+        "BK-016":   ["PW.6.1", "PW.9.1"],              # dangerous shell idiom
         # ── Jenkins ─────────────────────────────────────────────
         "JF-001":   ["PW.4.1", "PW.4.4"],              # shared library not pinned
         "JF-002":   ["PW.6.1", "PW.9.1"],              # script step untrusted env

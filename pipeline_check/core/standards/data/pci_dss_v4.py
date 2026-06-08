@@ -135,6 +135,9 @@ STANDARD = Standard(
         "BB-004":   ["6.4.3"],
         "BB-034":   ["6.4.3"],
         "BB-033":   ["6.5.1"],                           # IaC apply on a PR pipeline
+        "ADO-033":  ["6.5.1"],                           # IaC apply on a PR-validated pipeline
+        "BK-016":   ["6.5.1"],                           # dangerous shell idiom
+        "JF-036":   ["6.5.1"],                           # shell step interpolates params.*
         "BB-005":   ["6.4.1"],
         # Azure DevOps Pipelines
         "ADO-001":  ["6.3.3"],

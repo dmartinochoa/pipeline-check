@@ -402,7 +402,7 @@ class TestPerFrameworkCoverageFloor:
         "slsa":                   67,   # current 69%
         "nist_800_190":           54,   # current 56%, container-scoped
         "s2c2f":                  31,   # current 33%, OSS-consumption-scoped
-        "cis_aws_foundations":    13,   # current 13%, AWS-pack-only (registry rule packs grow the denominator)
+        "cis_aws_foundations":    12,   # current 12-13%, AWS-pack-only (CI / registry rule packs grow the denominator without expected new coverage)
         "cis_github":             12,   # current 12-13%, GitHub-platform-scoped; non-GitHub rule packs grow the denominator without expected new coverage
         "oscr":                   55,   # current ~58%, supply-chain-attack-scoped
         "cis_kubernetes":          4,   # current 4-5%, K8s-manifest-scoped (denominator grows with non-K8s rule packs)

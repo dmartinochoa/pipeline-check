@@ -134,7 +134,7 @@ for inputs, idempotency, and fork-PR fallback behavior.
 | **Jenkins** | `Jenkinsfile` (Declarative / Scripted) | `--jenkinsfile-path` | 36 checks · `JF-001..036` |
 | **CircleCI** | `.circleci/config.yml` | `--circleci-path` | 33 checks · `CC-001..033` · incl. Go-module-verification bypass |
 | **Google Cloud Build** | `cloudbuild.yaml` | `--cloudbuild-path` | 26 checks · `GCB-001..026` |
-| **Buildkite** | `.buildkite/pipeline.yml` | `--buildkite-path` | 16 checks · `BK-001..015` + `TAINT-005` |
+| **Buildkite** | `.buildkite/pipeline.yml` | `--buildkite-path` | 17 checks · `BK-001..016` + `TAINT-005` |
 | **Drone CI** | `.drone.yml` / `.drone.yaml` | `--drone-path` | 16 checks · `DR-001..016` · image / plugin pinning, privileged steps, `${DRONE_*}` injection, fork-PR exposure, pipe-to-shell, sensitive host-path mounts |
 | **Tekton** | `Task` / `Pipeline` / `*Run` YAML | `--tekton-path` | 17 checks · `TKN-001..016` + `TAINT-006` |
 | **Argo Workflows** | `Workflow` / `WorkflowTemplate` YAML | `--argo-path` | 18 checks · `ARGO-001..017` + `TAINT-007` · over-privileged / default service account, untrusted-parameter manifest injection |
@@ -523,7 +523,7 @@ pipeline_check/
         ├── jenkins/rules/     # JF-001 .. JF-036
         ├── circleci/rules/    # CC-001 .. CC-033
         ├── cloudbuild/rules/  # GCB-001 .. GCB-026
-        ├── buildkite/rules/   # BK-001 .. BK-015 + TAINT-005
+        ├── buildkite/rules/   # BK-001 .. BK-016 + TAINT-005
         ├── drone/rules/       # DR-001 .. DR-016
         ├── tekton/rules/      # TKN-001 .. TKN-016 + TAINT-006
         ├── argo/rules/        # ARGO-001 .. ARGO-017 + TAINT-007
