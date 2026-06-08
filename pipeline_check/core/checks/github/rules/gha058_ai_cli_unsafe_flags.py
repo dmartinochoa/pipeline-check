@@ -21,7 +21,7 @@ from typing import Any
 from ...base import Finding, Severity
 from ...rule import Rule
 from ..base import iter_jobs, iter_steps, step_location
-from ._helpers import PR_HEAD_REF_RE
+from ._helpers import AGENTIC_CLI_RE, PR_HEAD_REF_RE
 
 RULE = Rule(
     id="GHA-058",
@@ -125,10 +125,10 @@ RULE = Rule(
 )
 
 
-# CLI binary names. Detected separately from the flags so the rule
-# can report which CLI was invoked, not just "some agent."
-_CLI_NAMES = r"(?:claude|gemini|q\s+chat|cursor-agent|aider|openhands|goose)"
-_CLI_RE = re.compile(rf"\b{_CLI_NAMES}\b", re.IGNORECASE)
+# CLI binary names come from the shared catalog (also used by GHA-119
+# prompt injection); detected separately from the flags so the rule can
+# report which CLI was invoked, not just "some agent."
+_CLI_RE = AGENTIC_CLI_RE
 
 # Permission-bypass flags. ``--dangerously-skip-permissions`` and
 # ``--yolo`` are the most common; ``--trust-all-tools`` is the Amazon

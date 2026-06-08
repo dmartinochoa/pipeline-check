@@ -273,13 +273,25 @@ def _checklist(provider: str, rule_id: str, count: int, rule_path: Path, test_pa
             "     tests/test_workflow_fixtures.py.",
         ]
     lines += [
-        "  4. Regenerate the provider doc:",
+        f"  4. Add a real-example pair (REQUIRED for workflow checks): "
+        f"tests/fixtures/per_check/{provider}/{rule_id}.unsafe.<ext> and "
+        f".safe.<ext>, plus a CheckCase in",
+        "     tests/test_per_check_real_examples.py.",
+        f"  5. Map {rule_id} to OWASP CICD-SEC controls in",
+        "     pipeline_check/core/standards/data/owasp_cicd_top_10.py "
+        "(MANDATORY -- every rule must be mapped). To hold the broad "
+        "per-framework floors, mirror a sibling rule's controls in the "
+        "other framework files the floor test flags.",
+        "  6. Regenerate docs:",
         f"     python scripts/gen_provider_docs.py {provider}",
-        "  5. Update the counts in README.md and docs/index.md (test_doc_claims.py).",
-        f"  6. (optional) Map {rule_id} to controls in",
-        "     pipeline_check/core/standards/data/<framework>.py.",
-        "  7. Add a CHANGELOG [Unreleased] entry.",
-        "  8. Run the full gate:  python scripts/preflight.py",
+        "     python scripts/gen_standards_docs.py",
+        "  7. Bump the rule range / counts in README.md (test_doc_claims.py).",
+        "  8. Add a CHANGELOG [Unreleased] entry.",
+        "  9. Run the full gate:  python scripts/preflight.py",
+        "",
+        "  Note: the autodetect / config emitted-set assertions "
+        "(test_cli.py, test_config.py) now derive the expected check set "
+        "from the registry, so a new rule no longer needs an edit there.",
         "",
     ]
     return "\n".join(lines)

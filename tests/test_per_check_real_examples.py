@@ -399,6 +399,8 @@ CASES: list[CheckCase] = [
     CheckCase("GHA-116", "CICD-SEC-6", ("ESF-D-SECRETS",)),
     CheckCase("GHA-117", "CICD-SEC-4", ("ESF-D-INJECTION",)),
     CheckCase("GHA-118", "CICD-SEC-4", ("ESF-D-INJECTION",)),
+    CheckCase("GHA-119", "CICD-SEC-4", ("ESF-D-INJECTION",)),
+    CheckCase("GHA-120", "CICD-SEC-4", ("ESF-D-INJECTION",)),
     # ── GitLab CI backfill (GL-026..033) ─────────────────────────────
     CheckCase("GL-026", "CICD-SEC-4", ("ESF-D-INJECTION",)),
     CheckCase("GL-027", "CICD-SEC-3", ("ESF-S-PIN-DEPS", "ESF-S-VERIFY-DEPS")),
@@ -436,6 +438,7 @@ CASES: list[CheckCase] = [
     CheckCase("ADO-030", "CICD-SEC-7"),
     CheckCase("ADO-031", "CICD-SEC-6", ("ESF-D-SECRETS",)),
     CheckCase("ADO-032", "CICD-SEC-6", ("ESF-D-SECRETS",)),
+    CheckCase("ADO-033", "CICD-SEC-4", ("ESF-D-INJECTION",)),
     # ── Jenkins backfill (JF-030..035) ───────────────────────────────
     CheckCase("JF-030", "CICD-SEC-4", ("ESF-D-INJECTION",)),
     CheckCase("JF-031", "CICD-SEC-3", ("ESF-S-PIN-DEPS", "ESF-S-VERIFY-DEPS")),
@@ -443,6 +446,7 @@ CASES: list[CheckCase] = [
     CheckCase("JF-033", "CICD-SEC-6"),
     CheckCase("JF-034", "CICD-SEC-6"),
     CheckCase("JF-035", "CICD-SEC-3"),
+    CheckCase("JF-036", "CICD-SEC-4", ("ESF-D-INJECTION",)),
     # Category 3 — reusable-workflow / template pinning
     CheckCase("GHA-025", "CICD-SEC-3", ("ESF-S-PIN-DEPS", "ESF-S-VERIFY-DEPS")),
     CheckCase("ADO-025", "CICD-SEC-3", ("ESF-S-PIN-DEPS", "ESF-S-VERIFY-DEPS")),

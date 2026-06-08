@@ -255,6 +255,8 @@ STANDARD = Standard(
         # PS-05: prevent unauthorized software execution
         "CB-011":   ["PR.PS-05"],
         "GHA-003":  ["PR.PS-05"],
+        "GHA-119":  ["PR.PS-05"],# untrusted context into an agentic AI CLI
+        "GHA-120":  ["PR.PS-05"],# trust_remote_code model load = code exec
         "GHA-117":  ["PR.PS-05"],# IaC apply on untrusted PR trigger
         "GHA-118":  ["PR.PS-05"],# untrusted content into $GITHUB_ENV / $GITHUB_PATH
         "GHA-016":  ["PR.PS-05"],
@@ -317,6 +319,9 @@ STANDARD = Standard(
         "CP-003":   ["PR.IR-01"],
         "CP-007":   ["PR.IR-01"],
         "GHA-002":  ["PR.IR-01"],
+        "RUN-001":  ["PR.IR-01"],
+        "RUN-002":  ["PR.IR-01"],
+        "RUN-003":  ["PR.IR-01"],
         "GHA-009":  ["PR.IR-01"],
         "GHA-010":  ["PR.IR-01"],
         "GHA-011":  ["PR.IR-01"],
@@ -559,6 +564,9 @@ STANDARD = Standard(
         "BB-004":  ["PR.PS-06"],                # deploy step missing environment
         "BB-034":  ["PR.PS-06"],                # prod deploy on a PR pipeline
         "BB-033":  ["PR.PS-05"],                # IaC apply on a PR pipeline
+        "ADO-033": ["PR.PS-05"],                # IaC apply on a PR-validated pipeline
+        "BK-016":  ["PR.PS-05"],                # dangerous shell idiom
+        "JF-036":  ["PR.PS-05"],                # shell step interpolates params.*
         "BB-028":  ["PR.AA-05"],                # OIDC step w/o env gate
         "BB-029":  ["GV.SC-05"],                # step+service image not pinned
         "BB-030":  ["GV.SC-05"],                # npm install without audit signatures
@@ -595,6 +603,7 @@ STANDARD = Standard(
         "DR-014":  ["GV.SC-05"],                # pipe-to-shell
         "DR-015":  ["GV.SC-05"],                # clone recursive
         "DR-016":  ["GV.SC-07"],                # image field interpolation
+        "DR-017":  ["PR.PS-05"],                # dangerous shell idiom
         # ── Tekton (K8s-native pipeline kinds) ────────────────────
         "TKN-001": ["GV.SC-05", "PR.PS-02"],    # step image not digest-pinned
         "TKN-016": ["GV.SC-05", "PR.PS-02"],  # remote resolver / bundle task body not pinned
@@ -657,6 +666,7 @@ STANDARD = Standard(
         "GCB-024": ["GV.SC-04"],                # images: missing for docker push
         "GCB-025": ["PR.PS-04"],                # tags: empty (audit/discoverability)
         "GCB-026": ["PR.PS-01"],                # waitFor unknown step id
+        "GCB-027": ["PR.PS-05"],                # malicious-activity indicators
         # ── AWS extras ───────────────────────────────────────────
         "CB-008":  ["PR.PS-06"],                # inline buildspec, not from protected repo
         "CB-010":  ["PR.IR-01"],                # fork-PR webhook unfiltered

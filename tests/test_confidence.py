@@ -114,6 +114,53 @@ def test_demotion_map_contains_all_demoted_ids():
     assert dmap["GHA-004"] == Confidence.MEDIUM
 
 
+def test_best_practice_family_demoted_to_low():
+    # Missing-control hygiene rules (timeout, signing, SBOM, SLSA,
+    # vuln-scan) demote to LOW so ``--min-confidence MEDIUM`` hides them.
+    for cid in ("GHA-015", "GHA-006", "GHA-007", "GHA-024", "GHA-020",
+                "GL-006", "JF-020", "BK-010", "ARGO-011"):
+        assert confidence_for(cid) == Confidence.LOW, cid
+
+
+def test_best_practice_demotion_does_not_override_explicit_curation():
+    # Specific over category: a rule explicitly curated keeps its tier.
+    assert confidence_for("GHA-004") == Confidence.MEDIUM  # explicit MEDIUM
+    assert confidence_for("GHA-016") == Confidence.LOW      # explicit LOW
+
+
+def test_demotion_map_includes_best_practice_family():
+    dmap = demotion_map()
+    assert dmap["GHA-015"] == Confidence.LOW       # best-practice
+    assert dmap["GHA-004"] == Confidence.MEDIUM     # explicit MEDIUM still wins
+
+
+def test_best_practice_finding_filtered_at_min_confidence_medium(
+    tmp_path, monkeypatch,
+):
+    """A hygiene finding (GHA-015 no-timeout) is LOW confidence, so it
+    survives the default LOW threshold but drops at ``--min-confidence
+    MEDIUM`` (the high-signal view)."""
+    monkeypatch.chdir(tmp_path)
+    wf = tmp_path / ".github" / "workflows"
+    wf.mkdir(parents=True)
+    (wf / "w.yml").write_text(
+        "name: w\non: [push]\njobs:\n  b:\n    runs-on: ubuntu-latest\n"
+        "    steps:\n      - run: echo hi\n"
+    )
+
+    def emitted(threshold):
+        r = CliRunner().invoke(
+            scan,
+            ["--pipeline", "github", "--output", "json",
+             "--min-confidence", threshold],
+        )
+        data = json.loads(r.output[r.output.find("{"):])
+        return {f["check_id"] for f in data["findings"] if not f["passed"]}
+
+    assert "GHA-015" in emitted("LOW")        # visible at the default
+    assert "GHA-015" not in emitted("MEDIUM")  # filtered in the high-signal view
+
+
 # ─── Scanner applies defaults ──────────────────────────────────────────────
 
 
@@ -149,11 +196,14 @@ def test_min_confidence_filters_low_findings(tmp_path, monkeypatch):
     monkeypatch.chdir(tmp_path)
     wf_dir = tmp_path / ".github" / "workflows"
     wf_dir.mkdir(parents=True)
-    # A workflow that triggers at least one LOW (GHA-016) and one non-LOW rule.
+    # A workflow that triggers a LOW finding (GHA-016 curl-pipe) and a
+    # HIGH-confidence finding (GHA-001 unpinned action) that survives the
+    # --min-confidence HIGH filter.
     (wf_dir / "w.yml").write_text(
         "name: w\non: [push]\n"
         "jobs:\n  b:\n    runs-on: ubuntu-latest\n"
         "    steps:\n"
+        "      - uses: actions/checkout@main\n"
         "      - run: curl https://example.com/install.sh | bash\n"
     )
     # Baseline: LOW includes GHA-016 + HIGH
@@ -171,8 +221,8 @@ def test_min_confidence_filters_low_findings(tmp_path, monkeypatch):
     strict_data = json.loads(strict.output[strict.output.find("{"):])
     strict_ids = {f["check_id"] for f in strict_data["findings"]}
     assert "GHA-016" not in strict_ids
-    # But HIGH-confidence rules still present.
-    assert len(strict_ids) > 0
+    # But the HIGH-confidence GHA-001 (unpinned action) survives.
+    assert "GHA-001" in strict_ids
 
 
 # ─── Example-awareness context helper ──────────────────────────────────────

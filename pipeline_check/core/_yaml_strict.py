@@ -60,3 +60,14 @@ class DupKeyLoader(yaml.SafeLoader):
 def safe_load_strict(text: str) -> Any:
     """YAML load that raises on duplicate mapping keys."""
     return yaml.load(text, Loader=DupKeyLoader)
+
+
+def safe_load_all_strict(text: str) -> list[Any]:
+    """Parse a multi-document YAML stream, raising on duplicate keys.
+
+    The multi-doc counterpart of :func:`safe_load_strict`. Used by the
+    autofix round-trip gate: stock ``yaml.safe_load_all`` accepts a
+    duplicate mapping key (last-wins) and would wave through corrupt
+    fixer output that silently drops the earlier value.
+    """
+    return list(yaml.load_all(text, Loader=DupKeyLoader))

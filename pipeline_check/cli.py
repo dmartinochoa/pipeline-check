@@ -303,8 +303,15 @@ def _emit_report(
     so adding a new format only edits the dispatch site.
     """
     if output_file:
-        with open(output_file, "w", encoding="utf-8") as fh:
-            fh.write(text)
+        try:
+            with open(output_file, "w", encoding="utf-8") as fh:
+                fh.write(text)
+        except OSError as exc:
+            # A directory path, a missing parent dir, or a read-only
+            # destination should be a clean usage error, not a traceback.
+            raise click.UsageError(
+                f"could not write {label} to {output_file}: {exc}"
+            ) from exc
         if not quiet:
             click.echo(f"{label} written to {output_file}", err=True)
     elif not quiet:
@@ -713,7 +720,9 @@ def _collect_inline_ignores(
                     continue
                 try:
                     text = open(filepath, encoding="utf-8").read()
-                except OSError:
+                except (OSError, UnicodeDecodeError):
+                    # Skip unreadable or non-UTF-8 files rather than
+                    # aborting the whole scan over one stray byte.
                     continue
                 try:
                     rel = os.path.relpath(filepath).replace("\\", "/")
@@ -1633,6 +1642,17 @@ def _install_completion_callback(
     ),
 )
 @click.option(
+    "--audit-runs-logs",
+    "audit_runs_logs",
+    is_flag=True,
+    help=(
+        "With ``--pipeline runs``: also download recent privileged-trigger "
+        "run logs (the Actions ``.../logs`` archive) and scan them for "
+        "leaked secrets (RUN-003). Heavier than the default metadata-only "
+        "audit (one download per run, needs the ``actions:read`` scope)."
+    ),
+)
+@click.option(
     "--ingest",
     "ingest_paths",
     multiple=True,
@@ -1883,10 +1903,13 @@ def _install_completion_callback(
     show_default=True,
     help=(
         "Minimum confidence to display and gate on. HIGH = only "
-        "findings the scanner is certain about; MEDIUM = includes "
-        "well-known heuristics; LOW (default) = includes blob-search "
-        "patterns that have FP modes. For CI gates that only block "
-        "on high-signal evidence, pass ``--min-confidence HIGH``."
+        "findings the scanner is certain about; MEDIUM = active-risk "
+        "findings plus well-known heuristics, but drops the "
+        "best-practice / missing-control hygiene family (no timeout, no "
+        "SBOM, no signing, no vuln scan); LOW (default) = everything, "
+        "including that hygiene family and the blob-search patterns that "
+        "have FP modes. For a high-signal view focused on active risk, "
+        "pass ``--min-confidence MEDIUM``."
     ),
 )
 @click.option(
@@ -2152,10 +2175,12 @@ def _install_completion_callback(
     is_flag=True,
     default=False,
     help=(
-        "Include passed checks in the terminal table. Off by default "
-        "so the table focuses on failures; the headline still shows "
-        "the failed-vs-passed counts. Passed findings always appear "
-        "in JSON / SARIF / JUnit outputs regardless of this flag."
+        "Include passed checks in the terminal table and the JSON "
+        "report. Off by default so both focus on failures; the headline "
+        "and the JSON ``score.summary`` block still carry the "
+        "failed-vs-passed counts. SARIF is always failures-only "
+        "(code-scanning semantics); JUnit always lists every check "
+        "(test-report semantics), both regardless of this flag."
     ),
 )
 @click.option(
@@ -2378,6 +2403,7 @@ def scan(
     scm_platform: str | None,
     scm_repo: str | None,
     scm_fixture_dir: str | None,
+    audit_runs_logs: bool,
     ingest_paths: tuple[str, ...],
     inventory_flag: bool,
     inventory_types: tuple[str, ...],
@@ -2726,6 +2752,7 @@ def scan(
         scm_platform=scm_platform,
         scm_repo=scm_repo,
         scm_fixture_dir=scm_fixture_dir,
+        audit_runs_logs=audit_runs_logs,
     )
 
     scanner: Scanner | MultiScanner
@@ -3203,6 +3230,7 @@ def scan(
     if not quiet and output != "json":
         _emit_gate_summary(
             gate,
+            grade=score_result["grade"],
             baseline_path=baseline,
             baseline_from_git=baseline_from_git,
         )
@@ -3787,6 +3815,7 @@ def _emit_scan_report(
             inventory=components,
             chains=chains if not no_chains else None,
             scan_status=_scan_status(scanner.metadata, findings),
+            show_passed=show_passed,
         )
         # ``both`` always streams JSON to stdout regardless of
         # ``--output-file``; the file destination is only honored
@@ -3801,11 +3830,16 @@ def _emit_scan_report(
         # HTML reporter writes the file itself (it bundles assets), so
         # we don't route it through ``_emit_report``.
         from pipeline_check.core.html_reporter import report_html
-        report_html(
-            findings, score_result, region=region, target=target or "",
-            output_path=output_file, chains=chains,
-            pipeline_graphs=pipeline_graphs,
-        )
+        try:
+            report_html(
+                findings, score_result, region=region, target=target or "",
+                output_path=output_file, chains=chains,
+                pipeline_graphs=pipeline_graphs,
+            )
+        except OSError as exc:
+            raise click.UsageError(
+                f"could not write HTML report to {output_file}: {exc}"
+            ) from exc
         if not quiet:
             click.echo(f"HTML report written to {output_file}", err=True)
 
@@ -4534,6 +4568,7 @@ def _build_gate_trailer(
 def _emit_gate_summary(
     gate: Any,
     *,
+    grade: str | None = None,
     baseline_path: str | None = None,
     baseline_from_git: str | None = None,
 ) -> None:
@@ -4544,6 +4579,12 @@ def _emit_gate_summary(
     one-command path to close the loop (fix-and-apply, baseline-write,
     or explain-the-rule). The trailer is intentionally short so a CI
     log scan picks it up without scrolling.
+
+    A strong *grade* (A or B) sitting on top of a failing gate is the
+    most confusing outcome a first-time user hits, since the grade reads
+    as "all good" while the build still exits non-zero. When that
+    happens, a one-line note clarifies that the grade is a posture score
+    and the gate is a separate blocking policy.
     """
     n_effective = len(gate.effective)
     n_chains_tripped = len(getattr(gate, "tripped_chains", []) or [])
@@ -4555,6 +4596,12 @@ def _emit_gate_summary(
         msg_lines = ["[gate] FAIL"]
         for reason in gate.reasons:
             msg_lines.append(f"        - {reason}")
+        if grade in ("A", "B"):
+            msg_lines.append(
+                f"[gate] note: Grade {grade} is overall posture (checks "
+                "weighted by severity), not this gate. A strong grade can "
+                "still fail the gate on a single blocking finding."
+            )
         trailer = _build_gate_trailer(
             gate,
             baseline_path=baseline_path,
@@ -5231,7 +5278,12 @@ def fleet_cmd(
             f"[fleet] {source} yielded no repo coordinates."
         )
     out_dir = Path(output_dir)
-    scan_flags = shlex.split(scan_flags_str) if scan_flags_str else None
+    try:
+        scan_flags = shlex.split(scan_flags_str) if scan_flags_str else None
+    except ValueError as exc:
+        # Unbalanced quotes in --scan-flags shouldn't crash with a raw
+        # traceback.
+        raise click.UsageError(f"--scan-flags is not parseable: {exc}") from exc
     effective_jobs = jobs if jobs is not None else default_worker_count(len(repos))
     digest = run_fleet(
         repos, out_dir,

@@ -261,7 +261,7 @@ def _resolve_local_includes(
             continue
         try:
             included = safe_load_yaml_lines(text)
-        except yaml.YAMLError as exc:
+        except (yaml.YAMLError, RecursionError, MemoryError) as exc:
             first_line = str(exc).split("\n", 1)[0]
             warnings.append(f"include parse error: {ref_path}: {first_line}")
             continue
@@ -372,7 +372,7 @@ def _resolve_remote_includes(
 
         try:
             included = safe_load_yaml_lines(text)
-        except yaml.YAMLError as exc:
+        except (yaml.YAMLError, RecursionError, MemoryError) as exc:
             first_line = str(exc).split("\n", 1)[0]
             warnings.append(
                 f"remote include parse error ({kind}:"

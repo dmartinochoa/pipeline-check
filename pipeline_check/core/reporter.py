@@ -492,20 +492,34 @@ def next_steps_tip(
     if not fails:
         return None
     fails.sort(key=failure_sort_key)
-    from .autofix import available_fixers
+    from .autofix import SAFE, available_fixers, fixer_safety
 
     fixers = set(available_fixers())
-    n_fixable = sum(1 for f in fails if f.check_id.upper() in fixers)
+    fixable = [f for f in fails if f.check_id.upper() in fixers]
     top_id = fails[0].check_id
     tip = (
         f"[dim]Next →[/dim] inspect a rule: "
         f"[bold]pipeline_check explain {top_id}[/bold]"
     )
-    if n_fixable:
-        tip += (
-            f"   [dim]·[/dim]   autofix {n_fixable} of {len(fails)}: "
-            f"[bold]pipeline_check --fix --apply[/bold]"
-        )
+    if fixable:
+        n_safe = sum(1 for f in fixable if fixer_safety(f.check_id.upper()) == SAFE)
+        if n_safe:
+            # Bare ``--fix`` applies safe fixers only; count what it will
+            # actually write, and flag the unsafe remainder separately.
+            tip += (
+                f"   [dim]·[/dim]   autofix {n_safe} of {len(fails)}: "
+                f"[bold]pipeline_check --fix --apply[/bold]"
+            )
+            n_unsafe = len(fixable) - n_safe
+            if n_unsafe:
+                tip += f" [dim](+{n_unsafe} via --fix unsafe)[/dim]"
+        else:
+            # Every available fixer is unsafe-tier, so bare ``--fix``
+            # would skip them all; point at the unsafe tier explicitly.
+            tip += (
+                f"   [dim]·[/dim]   autofix {len(fixable)} of {len(fails)}: "
+                f"[bold]pipeline_check --fix unsafe --apply[/bold]"
+            )
     return tip
 
 
@@ -516,8 +530,18 @@ def report_json(
     inventory: list[Component] | None = None,
     chains: list[Chain] | None = None,
     scan_status: dict[str, Any] | None = None,
+    show_passed: bool = False,
 ) -> str:
-    """Serialize all findings and the score to a JSON string.
+    """Serialize the findings and the score to a JSON string.
+
+    The ``findings`` array carries the *failing* findings only by
+    default, matching the terminal table and SARIF output (a real repo
+    runs ~100 checks per file, almost all passing, so the full list is
+    mostly noise and bloats the report by ~50x). The per-severity
+    ``passed`` / ``failed`` tallies live in the ``score.summary`` block
+    regardless, so the grade and counts are unaffected. Pass
+    ``show_passed=True`` (the ``--show-passed`` flag) to emit every
+    check, passed and failed, as the full audit record.
 
     The payload carries ``schema_version`` (bumped on breaking format
     changes) and ``tool_version`` (the pipeline_check release that
@@ -540,11 +564,12 @@ def report_json(
     a fully-completed scan from one where a file failed to parse or a
     cloud module degraded. The score alone can't convey that.
     """
+    emitted = findings if show_passed else [f for f in findings if not f.passed]
     payload: dict[str, Any] = {
         "schema_version": JSON_SCHEMA_VERSION,
         "tool_version": tool_version or "0.0.0",
         "score": score_result,
-        "findings": [f.to_dict() for f in findings],
+        "findings": [f.to_dict() for f in emitted],
     }
     if scan_status is not None:
         payload["scan_status"] = scan_status

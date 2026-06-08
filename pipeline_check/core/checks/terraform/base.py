@@ -59,8 +59,27 @@ class TerraformContext:
 
     @classmethod
     def from_path(cls, path: str | Path) -> TerraformContext:
-        with open(path, encoding="utf-8") as fh:
-            return cls(json.load(fh))
+        try:
+            with open(path, encoding="utf-8") as fh:
+                plan = json.load(fh)
+        except (
+            OSError, UnicodeDecodeError, json.JSONDecodeError,
+            RecursionError, MemoryError,
+        ) as exc:
+            # build_context runs unguarded, so a malformed or
+            # pathologically deep tf-plan would abort the whole scan with
+            # a raw traceback (RecursionError / MemoryError slip past
+            # JSONDecodeError). Degrade to an empty plan with a warning,
+            # like the other loaders, so the scan reports "0 scanned" with
+            # a reason instead of crashing.
+            ctx = cls({})
+            ctx.files_skipped = 1
+            ctx.warnings = [
+                f"{path}: tf-plan parse error: "
+                f"{str(exc).split(chr(10), 1)[0]}"
+            ]
+            return ctx
+        return cls(plan)
 
     @classmethod
     def from_hcl_dir(cls, path: str | Path) -> TerraformContext:

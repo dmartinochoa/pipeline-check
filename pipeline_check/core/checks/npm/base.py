@@ -221,7 +221,7 @@ class NpmContext:
                 continue
             try:
                 data = json.loads(text)
-            except json.JSONDecodeError as exc:
+            except (json.JSONDecodeError, RecursionError, MemoryError) as exc:
                 warnings.append(f"{f}: JSON decode error: {exc}")
                 skipped += 1
                 continue
@@ -279,7 +279,7 @@ def _parse_lock_text(
     # package-lock.json / npm-shrinkwrap.json (JSON variants)
     try:
         data = json.loads(text)
-    except json.JSONDecodeError as exc:
+    except (json.JSONDecodeError, RecursionError, MemoryError) as exc:
         return None, f"JSON decode error: {exc}"
     if not isinstance(data, dict):
         return None, "top-level JSON is not an object"

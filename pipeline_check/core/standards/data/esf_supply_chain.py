@@ -107,6 +107,8 @@ STANDARD = Standard(
         "GHA-110": ["ESF-S-VERIFY-DEPS"],  # CI env disables Go module verification
         "GHA-002":  ["ESF-D-INJECTION", "ESF-D-BUILD-ENV"],
         "GHA-003":  ["ESF-D-INJECTION"],
+        "GHA-119":  ["ESF-D-INJECTION"],# untrusted context into an agentic AI CLI
+        "GHA-120":  ["ESF-D-INJECTION"],# trust_remote_code model load = code exec
         "GHA-117":  ["ESF-D-INJECTION"],# IaC apply on untrusted PR trigger
         "GHA-118":  ["ESF-D-INJECTION"],# untrusted content into $GITHUB_ENV / $GITHUB_PATH
         "GHA-004":  ["ESF-C-LEAST-PRIV"],
@@ -399,6 +401,7 @@ STANDARD = Standard(
         "GCB-024": ["ESF-D-SBOM"],
         "GCB-025": ["ESF-S-PIN-DEPS"],
         "GCB-026": ["ESF-C-ARTIFACT-AUTHZ"],
+        "GCB-027": ["ESF-D-INJECTION", "ESF-S-VERIFY-DEPS"],  # malicious-activity
         # ── SCM posture (governance via the platform REST API) ──────
         # The SCM provider evidences the platform-side controls that
         # gate code into the build pipeline. Map to the Developer
@@ -606,9 +609,11 @@ STANDARD = Standard(
         "JF-033":   ["ESF-D-SECRETS"],              # withCredentials leaked via Groovy ${}
         "JF-034":   ["ESF-D-SECRETS"],              # password() build parameter
         "JF-035":   ["ESF-S-TRUSTED-REG"],          # httpRequest SSL off
+        "JF-036":   ["ESF-D-INJECTION"],            # sh body interpolates params.*
         # ── Buildkite + Tekton + Argo extras ─────────────────────
         "BK-014":   ["ESF-S-PIN-DEPS", "ESF-S-VERIFY-DEPS"],   # unpinned package install
         "BK-015":   ["ESF-D-INJECTION"],            # agents map untrusted interpolation
+        "BK-016":   ["ESF-D-INJECTION"],            # dangerous shell idiom
         "TKN-014":  ["ESF-S-PIN-DEPS", "ESF-S-VERIFY-DEPS"],   # unpinned package install
         "TKN-015":  ["ESF-D-INJECTION"],            # workspace subPath param injection
         "ARGO-014": ["ESF-S-PIN-DEPS", "ESF-S-VERIFY-DEPS"],   # unpinned package install
@@ -652,6 +657,7 @@ STANDARD = Standard(
         "DR-014":   ["ESF-S-VERIFY-DEPS"],          # pipe-to-shell
         "DR-015":   ["ESF-S-VERIFY-DEPS"],          # clone recursive
         "DR-016":   ["ESF-D-INJECTION", "ESF-S-PIN-DEPS"],   # image field interpolation
+        "DR-017":   ["ESF-D-INJECTION"],            # dangerous shell idiom
         # ── NPM / PyPI / Maven dep supply-chain ──────────────────
         # Per-package pinning / integrity / non-registry source →
         # ESF-S-PIN-DEPS (+ ESF-S-VERIFY-DEPS). Compromised pkgs add
@@ -942,6 +948,7 @@ STANDARD = Standard(
         "BB-032":   ["ESF-D-SECRETS"],             # secret echoed to Bitbucket log
         "ADO-031":  ["ESF-D-SECRETS"],             # secret echoed to Azure DevOps log
         "ADO-032":  ["ESF-D-SECRETS"],             # checkout persistCredentials leaks token to .git/config
+        "ADO-033":  ["ESF-D-INJECTION"],           # IaC apply on a PR-validated pipeline
         "CC-032":   ["ESF-D-SECRETS"],             # secret echoed to CircleCI log
         "SCM-048":  ["ESF-D-SECRETS"],             # org codespace secret scoped to all repos
         "SCM-049":  ["ESF-D-SECRETS"],             # classic PAT where fine-grained suffices

@@ -707,3 +707,45 @@ class TestBK015AgentsTargeting:
         """
         f = run_check(cfg, "BK-015")
         assert f.passed
+
+
+# ── BK-016 dangerous shell idiom ───────────────────────────────────────
+
+
+class TestBK016ShellEval:
+    def test_fails_on_eval_of_variable(self):
+        cfg = """
+        steps:
+          - command:
+              - eval "$BUILD_CMD"
+        """
+        f = run_check(cfg, "BK-016")
+        assert not f.passed
+        assert "idiom" in f.description.lower()
+
+    def test_fails_on_sh_c_unquoted_variable(self):
+        cfg = """
+        steps:
+          - command: sh -c $RAW_HOOK
+        """
+        f = run_check(cfg, "BK-016")
+        assert not f.passed
+
+    def test_passes_on_direct_command(self):
+        cfg = """
+        steps:
+          - command:
+              - ./scripts/dispatch.sh "$BUILD_CMD"
+        """
+        f = run_check(cfg, "BK-016")
+        assert f.passed
+
+    def test_passes_on_ssh_agent_bootstrap_idiom(self):
+        # ``eval "$(ssh-agent -s)"`` substitutes a literal command;
+        # only its output is eval'd, so it is intentionally not flagged.
+        cfg = """
+        steps:
+          - command: eval "$(ssh-agent -s)"
+        """
+        f = run_check(cfg, "BK-016")
+        assert f.passed

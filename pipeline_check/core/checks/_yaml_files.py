@@ -123,6 +123,20 @@ def load_yaml_files(
             warnings.append(f"{f}: YAML parse error: {first_line}")
             skipped += 1
             continue
+        except (RecursionError, MemoryError):
+            # A pathologically deep (or alias-expanding) document can
+            # exhaust the parser's recursion limit / memory before
+            # ``yaml.YAMLError`` is raised. ``RecursionError`` /
+            # ``MemoryError`` are builtins, not ``yaml.YAMLError``, so the
+            # clause above misses them. A scanned PR can craft this, so
+            # degrade the file like a parse failure instead of letting the
+            # exception abort the whole scan.
+            warnings.append(
+                f"{f}: skipped (document too deeply nested or large to "
+                "parse safely)"
+            )
+            skipped += 1
+            continue
         if multi_doc:
             loaded.append(LoadedYamlFile(
                 path=f,

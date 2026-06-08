@@ -33,7 +33,9 @@ def _finding(check_id="CB-001", passed=True, severity=Severity.HIGH):
 
 
 def _report(findings):
-    return json.loads(report_json(findings, score(findings)))
+    # show_passed=True so a passed-only fixture still emits its finding
+    # object for schema validation (the default JSON is failures-only).
+    return json.loads(report_json(findings, score(findings), show_passed=True))
 
 
 class TestSchemaCompliance:

@@ -212,7 +212,9 @@ def _s3005_secure_transport(policy_props: dict[str, Any], bucket: str) -> Findin
     else:
         doc = {}
     has_deny = False
-    for stmt in doc.get("Statement", []):
+    # ``.get(k, [])`` keeps an explicit ``"Statement": null`` as None,
+    # which would raise on iteration; ``or []`` normalizes it.
+    for stmt in doc.get("Statement") or []:
         if not isinstance(stmt, dict) or stmt.get("Effect") != "Deny":
             continue
         conditions = stmt.get("Condition") or {}

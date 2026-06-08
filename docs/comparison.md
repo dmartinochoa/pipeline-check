@@ -29,15 +29,15 @@ missing major surfaces or requires extra config. No = not in scope.
 | Capability | Pipeline-Check | Checkov | KICS | Semgrep | tfsec | Trivy |
 |---|---|---|---|---|---|---|
 | **CI/CD pipeline configs** | | | | | | |
-| GitHub Actions | Yes (109 rules) | Partial | Yes | Partial | No | No |
+| GitHub Actions | Yes (111 rules) | Partial | Yes | Partial | No | No |
 | GitLab CI | Yes (46) | No | Partial | No | No | No |
-| Jenkins (Declarative + Scripted) | Yes (35) | No | No | Partial | No | No |
+| Jenkins (Declarative + Scripted) | Yes (36) | No | No | Partial | No | No |
 | CircleCI | Yes (33) | No | Partial | No | No | No |
-| Azure DevOps | Yes (32) | No | Partial | No | No | No |
+| Azure DevOps | Yes (33) | No | Partial | No | No | No |
 | Bitbucket Pipelines | Yes (34) | No | No | No | No | No |
-| Google Cloud Build | Yes (26) | No | Partial | No | No | No |
-| Buildkite | Yes (16) | No | No | No | No | No |
-| Drone CI | Yes (16) | No | No | No | No | No |
+| Google Cloud Build | Yes (27) | No | Partial | No | No | No |
+| Buildkite | Yes (17) | No | No | No | No | No |
+| Drone CI | Yes (17) | No | No | No | No | No |
 | Tekton | Yes (17) | No | Partial | No | No | No |
 | Argo Workflows | Yes (18) | No | Partial | No | No | No |
 | Argo CD | Yes (19) | No | No | No | No | No |

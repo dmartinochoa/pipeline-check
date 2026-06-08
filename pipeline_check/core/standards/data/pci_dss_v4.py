@@ -114,7 +114,12 @@ STANDARD = Standard(
         "GHA-001":  ["6.3.3"],                           # unpinned action
         "GHA-110": ["6.3.1"],  # CI env disables Go module verification
         "GHA-002":  ["6.5.1"],                           # pull_request_target + PR head
+        "RUN-001":  ["6.5.1"],                           # forensics: fork PR ran on privileged trigger
+        "RUN-002":  ["6.5.1"],                           # forensics: privileged trigger fired
+        "RUN-003":  ["6.5.1"],                           # forensics: secret leaked in run logs
         "GHA-003":  ["6.5.1"],                           # script injection
+        "GHA-119":  ["6.5.1"],                           # untrusted context into an agentic AI CLI
+        "GHA-120":  ["6.5.1"],                           # trust_remote_code model load = code exec
         "GHA-117":  ["6.5.1"],                           # IaC apply on untrusted PR trigger
         "GHA-118":  ["6.5.1"],                           # untrusted content into $GITHUB_ENV / $GITHUB_PATH
         "GHA-004":  ["7.2.5"],                           # unrestricted GITHUB_TOKEN
@@ -135,6 +140,9 @@ STANDARD = Standard(
         "BB-004":   ["6.4.3"],
         "BB-034":   ["6.4.3"],
         "BB-033":   ["6.5.1"],                           # IaC apply on a PR pipeline
+        "ADO-033":  ["6.5.1"],                           # IaC apply on a PR-validated pipeline
+        "BK-016":   ["6.5.1"],                           # dangerous shell idiom
+        "JF-036":   ["6.5.1"],                           # shell step interpolates params.*
         "BB-005":   ["6.4.1"],
         # Azure DevOps Pipelines
         "ADO-001":  ["6.3.3"],
@@ -262,6 +270,7 @@ STANDARD = Standard(
         "GCB-022": ["6.5.1"],                            # ALLOW_LOOSE substitution
         "GCB-023": ["6.5.1", "10.3.2"],                  # build artifacts not signed
         "GCB-026": ["7.2.1", "7.2.5"],                   # public storage bucket
+        "GCB-027": ["6.3.1", "6.5.1"],                   # malicious-activity indicators
         # ── SCM posture (governance via the platform REST API) ──────
         # Branch protection / review controls map to 6.4.3 (change
         # control) and 6.5.1 (secure development procedures) — the
@@ -577,6 +586,7 @@ STANDARD = Standard(
         "DR-014":   ["6.3.1"],                           # pipe-to-shell
         "DR-015":   ["6.3.1"],                           # clone recursive
         "DR-016":   ["6.5.1"],                           # image field interpolation
+        "DR-017":   ["6.5.1"],                           # dangerous shell idiom
         # ── Buildkite extras ─────────────────────────────────────
         "BK-014":   ["6.3.3", "6.5.1"],                  # unpinned package install
         "BK-015":   ["6.5.1"],                           # agents map untrusted interpolation

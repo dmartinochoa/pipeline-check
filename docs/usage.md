@@ -161,6 +161,13 @@ pipeline_check --pipeline scm --scm-platform github \
 pipeline_check --pipeline scm --scm-platform github \
     --scm-repo octocat/hello-world \
     --scm-fixture-dir ./scm-fixtures/
+
+# Actions run-history forensics (GitHub only). Audits recent
+# Actions runs via the REST API for privileged-trigger and
+# fork-originated executions. Token comes from --gh-token or
+# $GITHUB_TOKEN.
+pipeline_check --pipeline runs --scm-repo owner/name \
+    --gh-token "$GITHUB_TOKEN"
 ```
 
 Full per-provider reference: [providers/](providers/README.md).

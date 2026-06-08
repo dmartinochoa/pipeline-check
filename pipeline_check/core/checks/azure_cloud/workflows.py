@@ -2,7 +2,7 @@
 from __future__ import annotations
 
 from ..base import Finding, Severity
-from ..rule import apply_rule_metadata, discover_rules
+from ..rule import apply_rule_metadata, as_finding_list, discover_rules
 from ._catalog import ResourceCatalog
 from ._session import AzureCloudSession
 from .base import AzureCloudBaseCheck
@@ -99,7 +99,11 @@ class AzureCloudRuleChecks(AzureCloudBaseCheck):
         pending: list[tuple[str, list[Finding]]] = []
         for rule, check_fn in self._rules:
             try:
-                batch = check_fn(catalog) or []
+                # ``_guard_check`` degrades a crashing rule to a single
+                # ``Finding``; normalize it (and the normal ``list``) so
+                # the ``for f in batch`` below can't raise on the lone
+                # finding and drop the whole provider.
+                batch = as_finding_list(check_fn(catalog))
             except Exception as exc:
                 prefix = rule.id.split("-", 1)[0]
                 svc = _RULE_PREFIX_TO_SERVICE.get(prefix, prefix.lower())

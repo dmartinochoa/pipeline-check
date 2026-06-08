@@ -58,6 +58,16 @@ UNTRUSTED_ENV_RE = re.compile(
     r"\s*\}?"
 )
 
+# ── Build-parameter taint ─────────────────────────────────────────────
+#: A Groovy ``${params.X}`` / ``$params.X`` interpolation. ``params.*``
+#: is set by whoever queues the run (Jenkins' analogue to GHA
+#: ``inputs.X`` / ADO ``parameters.X``), so it's attacker-controllable
+#: for any job a non-author can trigger. Shared so JF-032 (agent
+#: labels) and JF-036 (shell bodies) stay in lockstep on what counts as
+#: a tainted parameter reference.
+_PARAMS_TAINT = r"\$\{?\s*params\.[A-Za-z_][A-Za-z0-9_]*\s*\}?"
+PARAMS_TAINT_RE = re.compile(_PARAMS_TAINT)
+
 # ── JF-032: agent label / node targeting taint ───────────────────────
 #: Matches Groovy ``${...}`` interpolations whose body resolves to an
 #: attacker-controllable value: any ``env.*`` reference from the
@@ -76,7 +86,7 @@ LABEL_TAINT_RE = re.compile(
     r"|GIT_AUTHOR_NAME|GIT_AUTHOR_EMAIL"
     r"|GIT_COMMITTER_NAME|GIT_COMMITTER_EMAIL)"
     r"\s*\}?"
-    r"|\$\{?\s*params\.[A-Za-z_][A-Za-z0-9_]*\s*\}?"
+    r"|" + _PARAMS_TAINT
 )
 
 

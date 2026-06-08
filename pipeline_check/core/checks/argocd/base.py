@@ -190,7 +190,10 @@ def application_sources(app: ArgoCDDoc) -> Iterator[dict[str, Any]]:
     the same shape lives one level deeper under ``spec.template.spec``.
     """
     if app.kind == "ApplicationSet":
-        tmpl = (app.data.get("spec") or {}).get("template") or {}
+        # ``spec`` can be authored as a YAML sequence; ``x or {}`` keeps a
+        # non-empty list, so ``.get`` would raise — guard on dict instead.
+        spec_block = app.data.get("spec")
+        tmpl = spec_block.get("template") if isinstance(spec_block, dict) else None
         spec = tmpl.get("spec") if isinstance(tmpl, dict) else None
     else:
         spec = app.data.get("spec")

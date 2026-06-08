@@ -72,7 +72,7 @@ Resolution rules:
 
 ## What it covers
 
-109 checks · 17 have an autofix patch (``--fix``).
+111 checks · 17 have an autofix patch (``--fix``).
 
 | Check | Title | Severity | Fix |
 |-------|-------|----------|-----|
@@ -181,6 +181,8 @@ Resolution rules:
 | [GHA-116](#gha-116) | Workflow serializes the entire secrets context (toJSON(secrets)) | <span class="pg-sev pg-sev--high">HIGH</span> |  |
 | [GHA-117](#gha-117) | IaC apply on an untrusted pull_request trigger | <span class="pg-sev pg-sev--critical">CRITICAL</span> |  |
 | [GHA-118](#gha-118) | Untrusted content written to $GITHUB_ENV / $GITHUB_PATH | <span class="pg-sev pg-sev--high">HIGH</span> |  |
+| [GHA-119](#gha-119) | Untrusted context reaches an agentic AI CLI (prompt injection) | <span class="pg-sev pg-sev--high">HIGH</span> |  |
+| [GHA-120](#gha-120) | ML model loaded with trust_remote_code (code execution) | <span class="pg-sev pg-sev--high">HIGH</span> |  |
 | [TAINT-001](#taint-001) | Untrusted input flows across step boundaries via step outputs | <span class="pg-sev pg-sev--high">HIGH</span> |  |
 | [TAINT-002](#taint-002) | Untrusted input flows across jobs via ``jobs.<id>.outputs:`` | <span class="pg-sev pg-sev--high">HIGH</span> |  |
 | [TAINT-003](#taint-003) | Untrusted input forwarded into reusable workflow ``with:`` | <span class="pg-sev pg-sev--high">HIGH</span> |  |
@@ -3191,6 +3193,46 @@ Fires when a workflow reachable from ``pull_request`` / ``pull_request_target`` 
 **Recommended action**
 
 Never write file content, command output, or any attacker-influenceable value into ``$GITHUB_ENV`` / ``$GITHUB_PATH`` on an untrusted trigger. GitHub sets those vars (and prepends those PATH entries) for every later step, so a single injected line sets ``LD_PRELOAD`` / ``NODE_OPTIONS`` / ``PATH`` and turns a benign later step (which may hold secrets and a write token) into arbitrary code execution. Write only fixed, literal ``KEY=value`` pairs; if a value must be dynamic, validate it against an allowlist first, and never set a process-hijack key from a computed value. This is the file-channel successor to the retired ``::set-env::`` command (GHA-038 covers that legacy stdout channel).
+
+</div>
+
+</div>
+
+<div class="pg-rule pg-rule--high" markdown>
+
+## GHA-119: Untrusted context reaches an agentic AI CLI (prompt injection) { #gha-119 }
+
+<div class="pg-rule__tags">
+<span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-4</span> <span class="pg-tag pg-tag--cwe">CWE-94</span> <span class="pg-tag pg-tag--cwe">CWE-77</span>
+</div>
+
+The AI analog of GHA-003 (script injection). Fires when a ``run:`` step invokes an agentic CLI (claude / gemini / cursor-agent / aider / openhands / goose) AND attacker-controllable context reaches that step, either interpolated directly or via an ``env:`` variable the command references. Unlike a shell, an LLM ingests an env-routed value as prompt text, so the GHA-003 mitigation (route through env) does not apply, which is why this is a separate rule.
+
+<div class="pg-rule__rec" markdown>
+
+**Recommended action**
+
+Do not place attacker-controllable context (PR / issue / comment bodies, branch names) in an agentic CLI's prompt. Env-var indirection does NOT sanitize a prompt the way it does a shell command, the model still reads the value. If the agent must see PR content, run it with no write token and no tool / shell access on a sandboxed job behind an environment gate, and treat its output as untrusted.
+
+</div>
+
+</div>
+
+<div class="pg-rule pg-rule--high" markdown>
+
+## GHA-120: ML model loaded with trust_remote_code (code execution) { #gha-120 }
+
+<div class="pg-rule__tags">
+<span class="pg-sev pg-sev--high">HIGH</span> <span class="pg-tag pg-tag--owasp">CICD-SEC-4</span> <span class="pg-tag pg-tag--cwe">CWE-494</span> <span class="pg-tag pg-tag--cwe">CWE-829</span>
+</div>
+
+Fires on ``trust_remote_code=True`` / ``--trust-remote-code`` in a ``run:`` step. The transformers / huggingface_hub loader executes the model repo's own Python at load time, so an untrusted or unpinned model is arbitrary code execution in CI with the job's secrets and token.
+
+<div class="pg-rule__rec" markdown>
+
+**Recommended action**
+
+Load models with ``trust_remote_code=False`` (the library default). If a model genuinely needs custom code, vet it and pin an exact revision (a commit SHA, not a tag or branch), run the load in a sandboxed job with no production secrets, and prefer safetensors weights over pickle.
 
 </div>
 

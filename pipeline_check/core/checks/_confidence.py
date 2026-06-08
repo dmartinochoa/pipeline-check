@@ -16,6 +16,7 @@ default is what it is.
 """
 from __future__ import annotations
 
+from ._best_practice import BEST_PRACTICE_IDS, is_best_practice
 from .base import Confidence
 
 # ── MEDIUM: heuristic rules with known FP modes ──────────────────────
@@ -124,18 +125,36 @@ def confidence_for(check_id: str) -> Confidence:
     HIGH is the fallback, the vast majority of checks assert on
     structural properties (an IAM policy grants ``Action: "*"``; a
     CloudTrail trail has ``LogFileValidationEnabled: false``) and their
-    findings are unambiguous. Only the IDs listed above demote.
+    findings are unambiguous. Only the IDs listed above demote, plus
+    the best-practice / missing-control family below.
     """
     if check_id in _LOW:
         return Confidence.LOW
     if check_id in _MEDIUM:
         return Confidence.MEDIUM
+    # Best-practice / "missing-control" rules (no timeout, no SBOM, no
+    # signing, no vuln scan) demote to LOW so the high-signal
+    # ``--min-confidence MEDIUM`` view focuses on active risk rather than
+    # hygiene gaps. The detection itself is certain (the control really is
+    # absent); LOW here means "low-priority", not "likely a false
+    # positive". On a real repo this family is the bulk of the firings, so
+    # surfacing it at the default LOW threshold while letting CI gates
+    # filter it out is the signal-to-noise win. An explicit ``_LOW`` /
+    # ``_MEDIUM`` entry above still wins (specific over category).
+    if is_best_practice(check_id):
+        return Confidence.LOW
     return Confidence.HIGH
 
 
 def demotion_map() -> dict[str, Confidence]:
-    """Full demotion table for documentation / introspection."""
+    """Full demotion table for documentation / introspection.
+
+    Best-practice IDs come first so an explicit ``_MEDIUM`` / ``_LOW``
+    entry (later in the merge) wins, mirroring :func:`confidence_for`'s
+    specific-over-category precedence.
+    """
     return {
+        **dict.fromkeys(BEST_PRACTICE_IDS, Confidence.LOW),
         **dict.fromkeys(_MEDIUM, Confidence.MEDIUM),
         **dict.fromkeys(_LOW, Confidence.LOW),
     }

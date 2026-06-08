@@ -49,7 +49,7 @@ def test_glob_check_selection(tmp_path, monkeypatch):
     (tmp_path / ".gitlab-ci.yml").write_text("build: {script: [make]}\n")
     result = CliRunner().invoke(scan, [
         "--pipeline", "gitlab", "--checks", "GL-00[12]",
-        "--output", "json",
+        "--output", "json", "--show-passed",
     ])
     payload = json.loads(result.stdout)
     ids = {f["check_id"] for f in payload["findings"]}

@@ -223,7 +223,7 @@ class TestBitbucketFixtures:
 
 
 class TestAzureFixtures:
-    EXPECTED_IDS = {f"ADO-{i:03d}" for i in range(1, 33)}
+    EXPECTED_IDS = {f"ADO-{i:03d}" for i in range(1, 34)}
 
     def _scan(self, filename: str):
         ctx = AzureContext.from_path(FIXTURES / "azure" / filename)
@@ -249,7 +249,7 @@ class TestAzureFixtures:
 
 
 class TestJenkinsFixtures:
-    EXPECTED_IDS = {f"JF-{i:03d}" for i in range(1, 36)}
+    EXPECTED_IDS = {f"JF-{i:03d}" for i in range(1, 37)}
 
     def _scan(self, filename: str):
         ctx = JenkinsContext.from_path(FIXTURES / "jenkins" / filename)
@@ -313,7 +313,7 @@ class TestCircleCIFixtures:
 
 
 class TestCloudBuildFixtures:
-    EXPECTED_IDS = {f"GCB-{i:03d}" for i in range(1, 27)}
+    EXPECTED_IDS = {f"GCB-{i:03d}" for i in range(1, 28)}
     # GCB-002 (``serviceAccount`` unset) and GCB-020 (``serviceAccount``
     # points at the default Cloud Build SA email) are mutually-exclusive
     # triggers — a single document satisfies one or the other, never
@@ -352,7 +352,7 @@ class TestCloudBuildFixtures:
 
 
 class TestBuildkiteFixtures:
-    EXPECTED_IDS = {f"BK-{i:03d}" for i in range(1, 16)} | {"TAINT-005"}
+    EXPECTED_IDS = {f"BK-{i:03d}" for i in range(1, 17)} | {"TAINT-005"}
 
     def _scan(self, filename: str):
         ctx = BuildkiteContext.from_path(FIXTURES / "buildkite" / filename)

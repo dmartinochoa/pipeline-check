@@ -238,11 +238,11 @@ def _parse_template(text: str) -> Any:
     if stripped.startswith("{"):
         try:
             return json.loads(text)
-        except json.JSONDecodeError:
+        except (json.JSONDecodeError, RecursionError, MemoryError):
             pass  # fall through to YAML
     try:
         return yaml.load(text, Loader=_CfnSafeLoader)
-    except yaml.YAMLError:
+    except (yaml.YAMLError, RecursionError, MemoryError):
         return None
 
 

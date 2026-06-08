@@ -1,0 +1,13 @@
+trigger:
+  - main
+# PR validation runs a read-only plan only.
+pr:
+  branches:
+    include: [main]
+
+stages:
+  - stage: Validate
+    jobs:
+      - job: Plan
+        steps:
+          - script: terraform plan

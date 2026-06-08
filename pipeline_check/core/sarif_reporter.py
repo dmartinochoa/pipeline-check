@@ -504,15 +504,21 @@ def _finding_to_result(f: Finding, rule_index: dict[str, int]) -> dict[str, Any]
             phys: dict[str, Any] = {
                 "artifactLocation": {"uri": _artifact_uri(loc.path)},
             }
+            # SARIF anchors a region on ``startLine``: ``startColumn`` is
+            # defined relative to it, and ``endLine`` / ``endColumn``
+            # without it produce an invalid region that GitHub code
+            # scanning rejects. Only emit the column/end fields when a
+            # start line is known; otherwise fall back to a file-level
+            # location (no region).
             region: dict[str, Any] = {}
             if loc.start_line is not None:
                 region["startLine"] = loc.start_line
-            if loc.end_line is not None and loc.end_line != loc.start_line:
-                region["endLine"] = loc.end_line
-            if loc.start_column is not None:
-                region["startColumn"] = loc.start_column
-            if loc.end_column is not None:
-                region["endColumn"] = loc.end_column
+                if loc.end_line is not None and loc.end_line != loc.start_line:
+                    region["endLine"] = loc.end_line
+                if loc.start_column is not None:
+                    region["startColumn"] = loc.start_column
+                if loc.end_column is not None:
+                    region["endColumn"] = loc.end_column
             if region:
                 phys["region"] = region
             locations.append({

@@ -382,6 +382,8 @@ STANDARD = Standard(
         "NPM-007":  ["EX-1"],
         # EX-6: Command injection (script injection in CI/CD)
         "GHA-003":  ["EX-6"],
+        "GHA-119":  ["EX-6"],# untrusted context into an agentic AI CLI
+        "GHA-120":  ["EX-6"],# trust_remote_code model load = code exec
         "GHA-117":  ["EX-6"],# IaC apply on untrusted PR trigger
         "GHA-118":  ["EX-6"],# untrusted content into $GITHUB_ENV / $GITHUB_PATH
         "GHA-002":  ["EX-6", "PE-1"],

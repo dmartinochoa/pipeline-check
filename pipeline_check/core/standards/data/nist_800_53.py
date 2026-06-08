@@ -138,7 +138,12 @@ STANDARD = Standard(
         "GHA-001":  ["SR-3", "SR-11", "SI-2", "RA-5"],   # unpinned action
         "GHA-110": ["CM-7", "SR-3"],  # CI env disables Go module verification
         "GHA-002":  ["CM-6", "SI-7", "SA-11"],           # pull_request_target + PR head
+        "RUN-001":  ["CM-6", "SI-7", "SA-11"],           # forensics: fork PR ran on privileged trigger
+        "RUN-002":  ["CM-6", "SI-7", "SA-11"],           # forensics: privileged trigger fired
+        "RUN-003":  ["CM-6", "SI-7", "SA-11"],           # forensics: secret leaked in run logs
         "GHA-003":  ["CM-6", "SA-11", "SA-15"],          # script injection
+        "GHA-119":  ["CM-6", "SA-11", "SA-15"],          # untrusted context into an agentic AI CLI
+        "GHA-120":  ["CM-6", "SA-11", "SA-15"],          # trust_remote_code model load = code exec
         "GHA-117":  ["CM-6", "SA-11", "SA-15"],          # IaC apply on untrusted PR trigger
         "GHA-118":  ["CM-6", "SA-11", "SA-15"],          # untrusted content into $GITHUB_ENV / $GITHUB_PATH
         "GHA-004":  ["AC-6", "CM-6", "CM-7"],            # unrestricted GITHUB_TOKEN
@@ -282,6 +287,9 @@ STANDARD = Standard(
         "BB-004":   ["SA-10", "AC-3"],
         "BB-034":   ["SA-10", "AC-3"],                   # prod deploy on a PR pipeline
         "BB-033":   ["CM-6", "SA-11", "SA-15"],          # IaC apply on a PR pipeline
+        "ADO-033":  ["CM-6", "SA-11", "SA-15"],          # IaC apply on a PR-validated pipeline
+        "BK-016":   ["CM-6", "SA-11"],                   # dangerous shell idiom
+        "JF-036":   ["CM-6", "SA-11"],                   # shell step interpolates params.*
         "BB-005":   ["CM-6"],
         "BB-006":   ["SI-7", "SR-4"],                    # unsigned artifacts
         "BB-007":   ["SR-4", "CM-8"],                    # no SBOM
@@ -427,6 +435,7 @@ STANDARD = Standard(
         "DR-014":   ["SI-7", "CM-7"],                    # pipe-to-shell
         "DR-015":   ["SI-7", "CM-7"],                    # clone recursive
         "DR-016":   ["CM-7", "SI-7"],                    # image field interpolation
+        "DR-017":   ["CM-6", "SA-11"],                   # dangerous shell idiom
         # Cloud Build
         "GCB-001":  ["SR-3", "SR-11", "SI-2", "RA-5"],   # step image not digest-pinned
         "GCB-002":  ["AC-3", "AC-6"],                    # default service account
@@ -454,6 +463,7 @@ STANDARD = Standard(
         "GCB-024":  ["SR-4", "CM-8"],                    # images: missing
         "GCB-025":  ["AU-2", "SI-2"],                    # tags: empty
         "GCB-026":  ["CM-6"],                            # waitFor unknown id
+        "GCB-027":  ["SR-3", "RA-5"],                    # malicious-activity indicators
         # Kubernetes, runtime configuration evidences SC-7 (boundary
         # protection), CM-6/CM-7 (least functionality), AC-3/AC-6
         # (least privilege), AU-2/AU-12 (audit), SC-28 (data at rest).

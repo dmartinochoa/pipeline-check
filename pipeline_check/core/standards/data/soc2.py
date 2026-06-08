@@ -148,6 +148,8 @@ STANDARD = Standard(
         # ── CC6.8. Malicious software prevention / detection ───────
         "CB-011":   ["CC6.8"],
         "GHA-003":  ["CC6.8"],             # script injection = malware vector
+        "GHA-119":  ["CC6.8"],             # untrusted context into an agentic AI CLI
+        "GHA-120":  ["CC6.8"],             # trust_remote_code model load = code exec
         "GHA-117":  ["CC6.8"],             # IaC apply on untrusted PR trigger
         "GHA-118":  ["CC6.8"],             # untrusted content into $GITHUB_ENV / $GITHUB_PATH
         "GHA-016":  ["CC6.8"],             # curl|bash = malware vector
@@ -393,6 +395,9 @@ STANDARD = Standard(
         "CF-003":  ["CC6.6"],               # CodeBuild VPC shares public subnet
         # ── GitHub Actions ───────────────────────────────────────
         "GHA-002":  ["CC6.6", "CC6.8"],     # pull_request_target + PR head
+        "RUN-001":  ["CC6.6", "CC6.8"],     # forensics: fork PR ran on privileged trigger
+        "RUN-002":  ["CC6.6", "CC6.8"],     # forensics: privileged trigger fired
+        "RUN-003":  ["CC6.6", "CC6.8"],     # forensics: secret leaked in run logs
         "GHA-006":  ["CC8.1"],              # unsigned artifacts
         "GHA-007":  ["CC8.1"],              # no SBOM
         "GHA-009":  ["CC6.6", "CC6.8"],     # workflow_run upstream artifact unverified
@@ -483,6 +488,9 @@ STANDARD = Standard(
         "GL-040":   ["CC6.1", "CC8.1"],     # CI_JOB_TOKEN used for cross-project access
         "GL-041":   ["CC6.8"],              # IaC apply on an untrusted MR trigger
         "BB-033":   ["CC6.8"],              # IaC apply on a PR pipeline
+        "ADO-033":  ["CC6.8"],              # IaC apply on a PR-validated pipeline
+        "BK-016":   ["CC6.8"],              # dangerous shell idiom
+        "JF-036":   ["CC6.8"],              # shell step interpolates params.*
         "GL-032":   ["CC6.8"],              # tags interpolates untrusted
         "GL-033":   ["CC6.8"],              # global before_script taint
         "GL-034":   ["CC8.1"],              # npm install without audit signatures
@@ -567,6 +575,7 @@ STANDARD = Standard(
         "DR-014":   ["CC8.1"],              # pipe-to-shell
         "DR-015":   ["CC8.1"],              # clone recursive
         "DR-016":   ["CC8.1"],              # image field interpolation
+        "DR-017":   ["CC6.8"],              # dangerous shell idiom
         # ── Tekton (K8s-native pipeline kinds) ────────────────────
         "TKN-001":  ["CC8.1"],              # step image not digest-pinned
         "TKN-016": ["CC8.1"],  # remote resolver / bundle task body not pinned
@@ -631,6 +640,7 @@ STANDARD = Standard(
         "GCB-024": ["CC8.1"],               # images: missing for docker push
         "GCB-025": ["CC7.2"],               # tags: empty (audit/discoverability)
         "GCB-026": ["CC8.1"],               # waitFor unknown step id
+        "GCB-027": ["CC6.8"],               # malicious-activity indicators
         # ── NPM / PyPI / Maven dep supply-chain ──────────────────
         # Dep-supply-chain rules land on CC8.1 (change management).
         # Compromised packages also evidence CC6.8 (malicious software)
