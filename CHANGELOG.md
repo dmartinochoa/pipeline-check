@@ -141,6 +141,14 @@ release commit collapses this section into `## [X.Y.Z] - <date>`.
   JUnit stays a complete test report, both regardless of the flag. This is a
   behavior change for JSON consumers that iterated passing findings; they
   should add `--show-passed`.
+- **Autofix nudge points at the tier that will actually apply the fix.**
+  The terminal "Next ->" footer always suggested `--fix --apply`, but
+  bare `--fix` runs safe fixers only, so for a finding whose only fixer
+  is unsafe-tier (e.g. GHA-003 script-injection) that command modified
+  nothing. The hint now counts the safe-fixable findings for
+  `--fix --apply`, notes the unsafe remainder (`+N via --fix unsafe`),
+  and suggests `--fix unsafe --apply` outright when every available fixer
+  is unsafe.
 - **More hardcoded-credential formats detected.** The shared secret-shape
   catalog (`_patterns.SECRET_DETECTORS`, used by GHA-008 and the
   cross-provider literal-secret rules) gained four modern, high-confidence

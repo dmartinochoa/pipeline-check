@@ -429,3 +429,34 @@ class TestReachabilityBadge:
         out = self._render(make_reach_chain(via_dataflow=False))
         assert "Co-located (unverified)" in out
         assert "Reachability confirmed" not in out
+
+
+class TestNextStepsTipAutofix:
+    """The autofix nudge must point at the tier that will actually apply
+    the fix: bare ``--fix`` runs safe fixers only, so an unsafe-only
+    finding needs ``--fix unsafe --apply``."""
+
+    def test_unsafe_only_finding_suggests_unsafe_tier(self):
+        from pipeline_check.core import autofix
+        from pipeline_check.core.reporter import next_steps_tip
+        assert autofix.fixer_safety("GHA-003") == "unsafe"  # precondition
+        tip = next_steps_tip([_f("GHA-003", Severity.HIGH, False)])
+        assert "--fix unsafe --apply" in tip
+
+    def test_safe_fixer_suggests_bare_fix(self):
+        from pipeline_check.core import autofix
+        from pipeline_check.core.reporter import next_steps_tip
+        assert autofix.fixer_safety("GHA-001") == "safe"  # precondition
+        tip = next_steps_tip([_f("GHA-001", Severity.HIGH, False)])
+        assert "--fix --apply" in tip
+        assert "--fix unsafe --apply" not in tip
+
+    def test_mixed_counts_safe_and_notes_unsafe_remainder(self):
+        from pipeline_check.core.reporter import next_steps_tip
+        tip = next_steps_tip([
+            _f("GHA-001", Severity.HIGH, False),
+            _f("GHA-003", Severity.HIGH, False),
+        ])
+        assert "1 of 2" in tip  # only the safe one is counted for bare --fix
+        assert "--fix --apply" in tip
+        assert "via --fix unsafe" in tip
