@@ -25,7 +25,7 @@ axis.
 
 - **Controls in this standard:** 86
 - **Controls evidenced by at least one check:** 61 / 86
-- **Distinct checks evidencing this standard:** 667
+- **Distinct checks evidencing this standard:** 668
 - **Of those, autofixable with `--fix`:** 105
 
 _Severity levels (`CRITICAL` / `HIGH` / `MEDIUM` / `LOW` / `INFO`) follow the same scale across every provider and standard. See [How to read severity](README.md#how-to-read-severity) on the standards overview for the definitions._
@@ -81,7 +81,7 @@ Click a control ID to jump to the per-control section with the full check list. 
 | [`EX-3`](#ctrl-ex-3) | IDE | 0 | — |
 | [`EX-4`](#ctrl-ex-4) | Runtime backdoor | 0 | — |
 | [`EX-5`](#ctrl-ex-5) | Package manager | 0 | — |
-| [`EX-6`](#ctrl-ex-6) | Command injection | 60 | 8C · 45H · 6M · 1L |
+| [`EX-6`](#ctrl-ex-6) | Command injection | 61 | 8C · 46H · 6M · 1L |
 | [`EX-7`](#ctrl-ex-7) | SQL injection | 0 | — |
 | [`EX-8`](#ctrl-ex-8) | Cross-site scripting | 0 | — |
 | [`EX-9`](#ctrl-ex-9) | Malicious artifact execution | 5 | 5C |
@@ -695,7 +695,7 @@ _No checks in this scanner currently evidence this control. Open an issue if you
 
 ### EX-6: Command injection { #ctrl-ex-6 }
 
-**Evidenced by 60 checks** across 13 providers (Argo CD, Argo Workflows, Azure DevOps, Bitbucket, Buildkite, CircleCI, Cloud Build, Dockerfile, Drone CI, GitHub Actions, GitLab CI, Jenkins, Tekton).
+**Evidenced by 61 checks** across 13 providers (Argo CD, Argo Workflows, Azure DevOps, Bitbucket, Buildkite, CircleCI, Cloud Build, Dockerfile, Drone CI, GitHub Actions, GitLab CI, Jenkins, Tekton).
 
 | Check | Title | Severity | Provider | Fix |
 |-------|-------|----------|----------|-----|
@@ -746,6 +746,7 @@ _No checks in this scanner currently evidence this control. Open an issue if you
 | [`GL-032`](../providers/gitlab.md#gl-032) | tags: interpolates untrusted CI variable | <span class="pg-sev pg-sev--high">HIGH</span> | [GitLab CI](../providers/gitlab.md) | <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> |
 | [`GL-033`](../providers/gitlab.md#gl-033) | Global before_script / after_script propagates taint to every job | <span class="pg-sev pg-sev--high">HIGH</span> | [GitLab CI](../providers/gitlab.md) |  |
 | [`GL-041`](../providers/gitlab.md#gl-041) | IaC apply on an untrusted merge-request trigger | <span class="pg-sev pg-sev--critical">CRITICAL</span> | [GitLab CI](../providers/gitlab.md) |  |
+| [`GL-045`](../providers/gitlab.md#gl-045) | ML model loaded with trust_remote_code (code execution) | <span class="pg-sev pg-sev--high">HIGH</span> | [GitLab CI](../providers/gitlab.md) |  |
 | [`JF-002`](../providers/jenkins.md#jf-002) | Script step interpolates attacker-controllable env var | <span class="pg-sev pg-sev--high">HIGH</span> | [Jenkins](../providers/jenkins.md) |  |
 | [`JF-030`](../providers/jenkins.md#jf-030) | Dangerous shell idiom (eval, sh -c variable, backtick exec) | <span class="pg-sev pg-sev--high">HIGH</span> | [Jenkins](../providers/jenkins.md) |  |
 | [`JF-032`](../providers/jenkins.md#jf-032) | Agent label interpolates attacker-controllable value | <span class="pg-sev pg-sev--high">HIGH</span> | [Jenkins](../providers/jenkins.md) | <span class="pg-fix" title="`--fix` will patch this rule">🔧 fix</span> |

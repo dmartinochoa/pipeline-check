@@ -12,6 +12,14 @@ release commit collapses this section into `## [X.Y.Z] - <date>`.
 
 ### Added
 
+- **GL-045: ML model loaded with `trust_remote_code` (GitLab).** The
+  GitLab analog of GHA-120, extending the AI/model-supply-chain coverage
+  to the #2 CI platform. Fires on `trust_remote_code=True` /
+  `--trust-remote-code` in a job's `script` / `before_script` /
+  `after_script`: the transformers / huggingface_hub loader executes the
+  model repo's own Python at load time, so an untrusted or unpinned model
+  is arbitrary code execution in CI with the job's `CI_JOB_TOKEN` and
+  secrets. HIGH.
 - **Built-in policy packs (`--policy <name>`).** Five curated scan
   profiles ship with the tool so the common compliance / release gates
   work by name without authoring a file: `pr-gate` (full pack, fail on
