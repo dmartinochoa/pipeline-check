@@ -149,6 +149,17 @@ release commit collapses this section into `## [X.Y.Z] - <date>`.
   `--fix --apply`, notes the unsafe remainder (`+N via --fix unsafe`),
   and suggests `--fix unsafe --apply` outright when every available fixer
   is unsafe.
+- **Best-practice / missing-control rules now default to LOW confidence.**
+  The hygiene family (no timeout, no SBOM, no signing, no SLSA
+  provenance, no vuln-scan step, ~55 rules across providers) is the bulk
+  of the firings on a real repo, and it drowned the active-risk findings.
+  These rules now demote to LOW confidence (the detection is still
+  certain, LOW means low-priority, not likely-false), so the default
+  scan still shows them but `--min-confidence MEDIUM` filters them out
+  for a high-signal view focused on exploitable risk. An explicit
+  per-rule confidence (the curated MEDIUM / LOW lists, or a
+  `confidence_locked` finding) still wins. Scores / grades are unchanged
+  (the scorer weights severity, not confidence).
 - **More hardcoded-credential formats detected.** The shared secret-shape
   catalog (`_patterns.SECRET_DETECTORS`, used by GHA-008 and the
   cross-provider literal-secret rules) gained four modern, high-confidence
