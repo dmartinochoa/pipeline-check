@@ -1,6 +1,7 @@
 """Per-rule tests for the AI/LLM-pipeline pack:
 GHA-119 (untrusted context reaches an agentic CLI prompt -> injection),
-GHA-120 (ML model loaded with trust_remote_code -> code execution).
+GHA-120 (ML model loaded with trust_remote_code -> code execution),
+GHA-121 (model pulled from a mutable / unpinned registry ref).
 """
 from __future__ import annotations
 
@@ -115,3 +116,74 @@ class TestGHA120TrustRemoteCode:
               - run: python -c "AutoModel.from_pretrained('x', trust_remote_code=False)"
         """
         assert run_check(wf, "GHA-120").passed is True
+
+
+class TestGHA121ModelPinning:
+    def test_fails_on_unpinned_from_pretrained(self):
+        wf = """
+        on: push
+        jobs:
+          b:
+            runs-on: ubuntu-latest
+            steps:
+              - run: python -c "AutoModel.from_pretrained('acme/sentiment')"
+        """
+        assert run_check(wf, "GHA-121").passed is False
+
+    def test_fails_on_unpinned_hf_cli_download(self):
+        wf = """
+        on: push
+        jobs:
+          b:
+            runs-on: ubuntu-latest
+            steps:
+              - run: huggingface-cli download acme/model
+        """
+        assert run_check(wf, "GHA-121").passed is False
+
+    def test_passes_when_revision_pinned(self):
+        wf = """
+        on: push
+        jobs:
+          b:
+            runs-on: ubuntu-latest
+            steps:
+              - run: |
+                  python -c "AutoModel.from_pretrained('acme/sentiment', \\
+                      revision='a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2')"
+        """
+        assert run_check(wf, "GHA-121").passed is True
+
+    def test_passes_on_canonical_single_segment_name(self):
+        # No org/ namespace -> first-party canonical hub model, out of scope.
+        wf = """
+        on: push
+        jobs:
+          b:
+            runs-on: ubuntu-latest
+            steps:
+              - run: python -c "AutoModel.from_pretrained('bert-base-uncased')"
+        """
+        assert run_check(wf, "GHA-121").passed is True
+
+    def test_passes_on_local_path(self):
+        wf = """
+        on: push
+        jobs:
+          b:
+            runs-on: ubuntu-latest
+            steps:
+              - run: python -c "AutoModel.from_pretrained('./checkpoints/final')"
+        """
+        assert run_check(wf, "GHA-121").passed is True
+
+    def test_passes_on_non_model_step(self):
+        wf = """
+        on: push
+        jobs:
+          b:
+            runs-on: ubuntu-latest
+            steps:
+              - run: pip install -r requirements.txt && pytest -q
+        """
+        assert run_check(wf, "GHA-121").passed is True

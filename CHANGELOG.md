@@ -10,6 +10,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 PRs landing on `dev` between releases append entries below. The
 release commit collapses this section into `## [X.Y.Z] - <date>`.
 
+### Added
+
+- **GHA-121: AI model pulled without a pinned revision.** Extends the
+  AI/LLM-pipeline pack (GHA-119/120) with the supply-chain pinning leg.
+  Fires on a `run:` step that fetches a model from a registry by a
+  *mutable* reference (`from_pretrained("org/model")`, `hf_hub_download`
+  / `snapshot_download` with a bare `repo_id`, or `huggingface-cli
+  download org/model`) and supplies no `revision` pin. Without a pinned
+  revision the registry serves whatever the default branch points at, so
+  the owner (or whoever compromises the account / upstream) can swap the
+  weights, tokenizer, or custom loader code under a green build. It is
+  the model-registry analog of pinning an action to a SHA (GHA-001) and
+  the prerequisite for the `trust_remote_code` execution path GHA-120
+  flags. Scoped to org-namespaced ids (`org/model`), so canonical
+  first-party hub names (`bert-base-uncased`), local paths, and `${{ }}`
+  interpolations don't fire. MEDIUM.
+
 ## [1.13.0] - 2026-06-08
 
 ### Added

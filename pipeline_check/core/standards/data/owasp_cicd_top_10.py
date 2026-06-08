@@ -145,6 +145,7 @@ STANDARD = Standard(
         "GHA-003":  ["CICD-SEC-4"],
         "GHA-119":  ["CICD-SEC-4"],# untrusted context into an agentic AI CLI
         "GHA-120":  ["CICD-SEC-4"],# trust_remote_code model load = code exec
+        "GHA-121":  ["CICD-SEC-3"],# model pulled without a pinned revision
         "GHA-117":  ["CICD-SEC-4"],# IaC apply on untrusted PR trigger
         "GHA-118":  ["CICD-SEC-4"],# untrusted content into $GITHUB_ENV / $GITHUB_PATH
         "GHA-004":  ["CICD-SEC-5"],
