@@ -321,7 +321,7 @@ providers your repo ships through:
 # .pre-commit-config.yaml
 repos:
   - repo: https://github.com/dmartinochoa/pipeline-check
-    rev: v1.0.4   # pin to a release tag
+    rev: v1.11.0   # pin to a release tag
     hooks:
       - id: pipeline-check-github
       - id: pipeline-check-dockerfile
@@ -627,7 +627,7 @@ the tagged commit, in CI, by this project's workflow.
 go install github.com/slsa-framework/slsa-verifier/v2/cli/slsa-verifier@v2.7.0
 
 # 2. Find the release.yml workflow run that built the version you want.
-TAG=v1.0.4
+TAG=v1.11.0
 RUN_ID=$(gh run list \
   --repo dmartinochoa/pipeline-check \
   --workflow release.yml \
