@@ -389,6 +389,7 @@ STANDARD = Standard(
         "GHA-118":  ["EX-6"],# untrusted content into $GITHUB_ENV / $GITHUB_PATH
         "GHA-002":  ["EX-6", "PE-1"],
         "GL-002":   ["EX-6"],
+        "GL-045":   ["EX-6"],# trust_remote_code model load = code exec
         "BB-002":   ["EX-6"],
         "ADO-002":  ["EX-6"],
         "JF-002":   ["EX-6"],

@@ -157,7 +157,7 @@ class TestGitHubFixtures:
 
 class TestGitLabFixtures:
     EXPECTED_IDS = (
-        {f"GL-{i:03d}" for i in range(1, 45)}
+        {f"GL-{i:03d}" for i in range(1, 46)}
         | {"TAINT-004", "TAINT-008"}
     )
 

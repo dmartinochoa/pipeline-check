@@ -1,0 +1,3 @@
+eval:
+  script:
+    - python -c "from transformers import AutoModel; AutoModel.from_pretrained('acme/m')"

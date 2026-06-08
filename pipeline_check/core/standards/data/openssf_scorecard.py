@@ -246,6 +246,7 @@ STANDARD = Standard(
         "GHA-028":  ["Dangerous-Workflow"],
         "GHA-038":  ["Dangerous-Workflow"],                            # ACTIONS_ALLOW_UNSECURE_COMMANDS
         "GL-002":   ["Dangerous-Workflow"],
+        "GL-045":   ["Dangerous-Workflow"],# trust_remote_code model load = code exec
         "GL-011":   ["Dangerous-Workflow"],
         "GL-012":   ["Dangerous-Workflow"],
         "GL-023":   ["Dangerous-Workflow"],

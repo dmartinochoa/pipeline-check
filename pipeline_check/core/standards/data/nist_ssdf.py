@@ -255,6 +255,7 @@ STANDARD = Standard(
         "GL-001":   ["PW.4.1", "PW.4.4"],
         "GL-037": ["PW.4.4"],  # CI env disables Go module verification
         "GL-002":   ["PW.6.1", "PW.9.1"],
+        "GL-045":   ["PW.6.1", "PW.9.1"],   # trust_remote_code model load = code exec
         "GL-003":   ["PS.1.1"],
         "GL-004":   ["PO.5.1"],
         "GL-044":   ["PO.5.1"],                        # auto production deploy on an MR pipeline

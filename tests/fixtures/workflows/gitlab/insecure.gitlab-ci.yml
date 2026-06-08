@@ -64,6 +64,9 @@ unit-tests:
   script:
     - echo "Running tests for MR ${CI_MERGE_REQUEST_TITLE}"
     - npm test
+    # GL-045 — model loaded with trust_remote_code (executes the model
+    # repo's own Python at load time = code execution in CI).
+    - python -c "from transformers import AutoModel; AutoModel.from_pretrained('acme/m', trust_remote_code=True)"
 
 # GL-010 — multi-project artifact ingestion without verification.
 ingest-upstream:
